@@ -46,6 +46,7 @@
       <Filter>NetLib</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="FileSys.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ByteStream.h">
@@ -96,5 +97,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="NeuronCore.h" />
     <ClInclude Include="Debug.h" />
+    <ClInclude Include="FileSys.h" />
+    <ClInclude Include="NeuronHelper.h" />
   </ItemGroup>
 </Project>

@@ -354,7 +354,7 @@ void PrefsManager::Load(char const *_filename)
 	m_items.EmptyAndDelete();
 
     // Try to read preferences if they exist
-    FILE *in = fopen(_filename, "r");
+    FILE *in = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
 
     if( !in )
     {
@@ -413,7 +413,7 @@ void PrefsManager::Save()
 	}
 
 	// Now use m_fileText as a template to write most of the items
-	FILE *out = fopen(m_filename, "w");
+	FILE *out = fopen(FileSys::GetFullPathA(m_filename).c_str(), "w");
 
 	// If we couldn't open the prefs file for writing then just silently fail -
 	// it's better than crashing.

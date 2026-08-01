@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    Stages the shared GameData tree next to the executable after each build.
+
+    Import this from any project that needs the game's content laid out beside
+    its output, e.g. in the ExtensionTargets ImportGroup of a .vcxproj:
+
+      <Import Project="$(MSBuildThisFileDirectory)..\GameData.targets" />
+  -->
+
+  <PropertyGroup>
+    <GameDataSourceDir Condition="'$(GameDataSourceDir)' == ''">$(MSBuildThisFileDirectory)GameData\</GameDataSourceDir>
+
+    <!-- The tree keeps its own name next to the executable. Resource.cpp still
+         resolves content as "Shapes/foo.shp" relative to the working
+         directory, so those references are being updated to match. -->
+    <GameDataDestName Condition="'$(GameDataDestName)' == ''">GameData</GameDataDestName>
+    <GameDataDestDir Condition="'$(GameDataDestDir)' == ''">$(OutDir)$(GameDataDestName)\</GameDataDestDir>
+  </PropertyGroup>
+
+  <Target Name="CopyGameData" AfterTargets="Build" Condition="'$(GameDataSkipCopy)' != 'true'">
+
+    <!-- Globbed inside the target rather than at project scope: MSBuild expands
+         project-level wildcards once at evaluation time, so files added to
+         GameData after the project was loaded would be missed until a reload. -->
+    <ItemGroup>
+      <GameDataFile Include="$(GameDataSourceDir)**\*"
+                    Exclude="$(GameDataSourceDir)**\Thumbs.db;
+                             $(GameDataSourceDir)**\desktop.ini;
+                             $(GameDataSourceDir)**\*.tmp" />
+    </ItemGroup>
+
+    <!-- SkipUnchangedFiles compares timestamp *and* size, so unchanged files are
+         never rewritten. Retries cover the case where the game is still holding
+         a file open from a previous run. -->
+    <Copy SourceFiles="@(GameDataFile)"
+          DestinationFiles="@(GameDataFile->'$(GameDataDestDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Retries="3"
+          RetryDelayMilliseconds="500">
+      <Output TaskParameter="CopiedFiles" ItemName="_GameDataStaged" />
+    </Copy>
+
+    <Message Importance="High"
+             Text="GameData: @(_GameDataStaged->Count()) file(s) staged in $(GameDataDestDir)" />
+  </Target>
+
+  <!-- The C++ Clean target only deletes what the compiler and linker recorded in
+       their .tlog files, so the staged tree would otherwise survive a Rebuild.
+       Removing it here is also what clears out files deleted from GameData: an
+       incremental copy has no way to know they ever existed. -->
+  <Target Name="CleanGameData" AfterTargets="Clean" Condition="'$(GameDataSkipCopy)' != 'true'">
+    <ItemGroup>
+      <_GameDataStale Include="$(GameDataDestDir)**\*" />
+    </ItemGroup>
+    <Delete Files="@(_GameDataStale)" TreatErrorsAsWarnings="true" />
+    <RemoveDir Directories="$(GameDataDestDir)" Condition="Exists('$(GameDataDestDir)')" />
+  </Target>
+
+</Project>

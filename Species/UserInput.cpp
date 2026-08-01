@@ -4,7 +4,7 @@
 #include <math.h>
 #include <float.h>
 
-#include <Eclipse.h>
+#include "Eclipse.h"
 
 #include "Debug.h"
 #include "HiResTime.h"

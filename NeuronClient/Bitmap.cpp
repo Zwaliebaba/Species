@@ -304,7 +304,7 @@ void BitmapRGBA::Write24BitLine(FILE* _out, int _y)
 
 void BitmapRGBA::SaveBmp(const char* _filename)
 {
-  FILE* _out = fopen(_filename, "wb");
+  FILE* _out = fopen(FileSys::GetFullPathA(_filename).c_str(), "wb");
   ASSERT_TEXT(_out, "Couldn't create image file %s", _filename);
   WriteBmp(_out);
   fclose(_out);

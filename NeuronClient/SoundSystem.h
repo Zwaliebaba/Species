@@ -3,14 +3,9 @@
 
 #include "FastDArray.h"
 #include "LList.h"
-#include "TextStreamReaders.h"
 #include "Vector3.h"
-
 #include "SoundInstance.h"
-#include "SoundParameter.h"
-
 #include "WorldObject.h"
-
 
 class Entity;
 class Building;
@@ -19,23 +14,20 @@ class SoundInstance;
 class Profiler;
 class FileWriter;
 
-
 //*****************************************************************************
 // Class SoundEventBlueprint
 //*****************************************************************************
 
 class SoundEventBlueprint
 {
-public:
-    char            *m_eventName;
-    SoundInstance   *m_instance;
+  public:
+    char* m_eventName;
+    SoundInstance* m_instance;
 
-public:
     SoundEventBlueprint();
 
-    void    SetEventName( char *_name );
+    void SetEventName(const char* _name);
 };
-
 
 //*****************************************************************************
 // Class SoundSourceBlueprint
@@ -43,30 +35,28 @@ public:
 
 class SoundSourceBlueprint
 {
-public:
-    enum                    // Other types of Sound Source
+  public:
+    enum // Other types of Sound Source
     {
-        TypeLaser,
-        TypeGrenade,
-        TypeRocket,
-        TypeAirstrikeBomb,
-        TypeSpirit,
-        TypeSepulveda,
-        TypeGesture,
-        TypeAmbience,
-        TypeMusic,
-        TypeInterface,
-        NumOtherSoundSources
+      TypeLaser,
+      TypeGrenade,
+      TypeRocket,
+      TypeAirstrikeBomb,
+      TypeSpirit,
+      TypeSepulveda,
+      TypeGesture,
+      TypeAmbience,
+      TypeMusic,
+      TypeInterface,
+      NumOtherSoundSources
     };
 
-public:
-    LList       <SoundEventBlueprint *> m_events;
+    LList<SoundEventBlueprint*> m_events;
 
-    static int   GetSoundSoundType ( char const *_name );
-    static char const *GetSoundSourceName( int _type );
-    static void  ListSoundEvents   ( int _type, LList<char const *> *_list );
+    static int GetSoundSoundType(const char* _name);
+    static const char* GetSoundSourceName(int _type);
+    static void ListSoundEvents(int _type, LList<const char*>* _list);
 };
-
 
 //*****************************************************************************
 // Class DspParameterBlueprint
@@ -74,14 +64,13 @@ public:
 
 class DspParameterBlueprint
 {
-public:
-    char    m_name[256];
-    float   m_min;
-    float   m_max;
-    float   m_default;
-    int     m_dataType;                     // 0 = float, 1 = long
+  public:
+    char m_name[256];
+    float m_min;
+    float m_max;
+    float m_default;
+    int m_dataType; // 0 = float, 1 = long
 };
-
 
 //*****************************************************************************
 // Class DspBlueprint
@@ -89,14 +78,12 @@ public:
 
 class DspBlueprint
 {
-public:
-    char    m_name[256];
-    DArray  <DspParameterBlueprint *> m_params;
+  public:
+    char m_name[256];
+    DArray<DspParameterBlueprint*> m_params;
 
-public:
-    char *GetParameter   ( int _param, float *_min=NULL, float *_max=NULL, float *_default=NULL, int *_dataType=NULL );
+    char* GetParameter(int _param, float* _min = nullptr, float* _max = nullptr, float* _default = nullptr, int* _dataType = nullptr);
 };
-
 
 //*****************************************************************************
 // Class SampleGroup
@@ -104,16 +91,14 @@ public:
 
 class SampleGroup
 {
-public:
-    char    m_name[256];
-    LList   <char *> m_samples;
+  public:
+    char m_name[256];
+    LList<char*> m_samples;
 
-public:
-	~SampleGroup            ();
-    void    SetName         ( char const *_name );
-    void    AddSample       ( char const *_sample );
+    ~SampleGroup();
+    void SetName(const char* _name);
+    void AddSample(const char* _sample);
 };
-
 
 //*****************************************************************************
 // Class SoundSystem
@@ -121,107 +106,103 @@ public:
 
 class SoundSystem
 {
-public:
-	enum
-	{
-		SoundSourceNoError,											// Remember to update g_soundSourceErrors in soundsystem.cpp
-		SoundSourceNotMono,
-		SoundSourceFileDoesNotExist,
-		SoundSourceFilenameHasSpace,
-		SoundSourceNumErrors
-	};
+  public:
+    enum
+    {
+      SoundSourceNoError,
+      // Remember to update g_soundSourceErrors in soundsystem.cpp
+      SoundSourceNotMono,
+      SoundSourceFileDoesNotExist,
+      SoundSourceFilenameHasSpace,
+      SoundSourceNumErrors
+    };
 
-    float           m_timeSync;
-    bool            m_propagateBlueprints;                          // If true, looping sounds will sync with blueprints
-    Profiler        *m_mainProfiler;
-	Profiler		*m_eventProfiler;
-	bool			m_quitWithoutSave;
+    float m_timeSync;
+    bool m_propagateBlueprints; // If true, looping sounds will sync with blueprints
+    Profiler* m_mainProfiler;
+    Profiler* m_eventProfiler;
+    bool m_quitWithoutSave;
 
-    Vector3         m_editorPos;
+    Vector3 m_editorPos;
     SoundInstanceId m_editorInstanceId;
 
-    FastDArray      <SoundInstance *> m_sounds;						// All the sounds that want to play
-	SoundInstance	*m_music;										// There can only be one piece of music at a time
-	SoundInstance	*m_requestedMusic;
+    FastDArray<SoundInstance*> m_sounds; // All the sounds that want to play
+    SoundInstance* m_music; // There can only be one piece of music at a time
+    SoundInstance* m_requestedMusic;
 
-    SoundInstanceId *m_channels;
-    int             m_numChannels;
+    SoundInstanceId* m_channels;
+    int m_numChannels;
 
-    DArray      <SoundSourceBlueprint *> m_entityBlueprints;        // Indexed on Entity::m_type
-    DArray      <SoundSourceBlueprint *> m_buildingBlueprints;      // Indexed on Building::m_type
-    DArray      <SoundSourceBlueprint *> m_otherBlueprints;         // Indexed on SoundSourceBlueprint
-    DArray      <DspBlueprint *> m_filterBlueprints;        // Indexed on SoundLibrary3d::FX types
+    DArray<SoundSourceBlueprint*> m_entityBlueprints; // Indexed on Entity::m_type
+    DArray<SoundSourceBlueprint*> m_buildingBlueprints; // Indexed on Building::m_type
+    DArray<SoundSourceBlueprint*> m_otherBlueprints; // Indexed on SoundSourceBlueprint
+    DArray<DspBlueprint*> m_filterBlueprints; // Indexed on SoundLibrary3d::FX types
 
-    DArray      <SampleGroup *> m_sampleGroups;
+    DArray<SampleGroup*> m_sampleGroups;
 
-protected:
-    void ParseSoundEvent		( TextReader *_in, SoundSourceBlueprint *_source, char const *_entityName );
-    void ParseSoundEffect		( TextReader *_in, SoundEventBlueprint *_blueprint );
-    void ParseSampleGroup       ( TextReader *_in, SampleGroup *_group );
+  protected:
+    void ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, const char* _entityName);
+    void ParseSoundEffect(TextReader* _in, SoundEventBlueprint* _blueprint);
+    void ParseSampleGroup(TextReader* _in, SampleGroup* _group);
 
-    void WriteSoundEvent		( FileWriter *_file, SoundEventBlueprint *_event );
-    void WriteSampleGroup       ( FileWriter *_file, SampleGroup *_group );
+    void WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event);
+    void WriteSampleGroup(FileWriter* _file, SampleGroup* _group);
 
-    void SaveBlueprints			( char const *_filename );
+    void SaveBlueprints(const char* _filename);
 
     int FindBestAvailableChannel();
 
-    static bool SoundLibraryMainCallback( unsigned int _channel,
-                                          signed short *_data,
-                                          unsigned int _numSamples,
-                                          int *_silenceRemaining );
-    static bool SoundLibraryMusicCallback(signed short *_data,
-                                          unsigned int _numSamples,
-                                          int *_silenceRemaining );
+    static bool SoundLibraryMainCallback(unsigned int _channel, signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
+    static bool SoundLibraryMusicCallback(signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
 
-public:
+  public:
     SoundSystem();
     ~SoundSystem();
 
-	void Initialise				();
-    void RestartSoundLibrary    ();
+    void Initialise();
+    void RestartSoundLibrary();
 
-    void LoadEffects			();
-    void LoadBlueprints			();
-    void SaveBlueprints			();
-	bool AreBlueprintsModified	();
+    void LoadEffects();
+    void LoadBlueprints();
+    void SaveBlueprints();
+    bool AreBlueprintsModified();
 
     void Advance();
 
-    bool InitialiseSound        ( SoundInstance *_instance );                   // Sets up sound, adds to instance list
-    void ShutdownSound          ( SoundInstance *_instance );                   // Stops / deletes sound + removes refs
+    bool InitialiseSound(SoundInstance* _instance); // Sets up sound, adds to instance list
+    void ShutdownSound(SoundInstance* _instance); // Stops / deletes sound + removes refs
 
-    int  IsSoundPlaying         ( SoundInstanceId _id );
-    int  NumInstancesPlaying    ( WorldObjectId _id, char const *_eventName );
-    int  NumInstances           ( WorldObjectId _id, char const *_eventName );
+    int IsSoundPlaying(SoundInstanceId _id);
+    int NumInstancesPlaying(WorldObjectId _id, const char* _eventName);
+    int NumInstances(WorldObjectId _id, const char* _eventName);
 
-    int  NumSoundInstances      ();
-    int  NumChannelsUsed        ();
-    int  NumSoundsDiscarded     ();
+    int NumSoundInstances();
+    int NumChannelsUsed();
+    int NumSoundsDiscarded();
 
-    void TriggerEntityEvent     ( Entity *_entity,      char const *_eventName );
-    void TriggerBuildingEvent   ( Building *_building,  char const *_eventName );
-    void TriggerOtherEvent      ( WorldObject *_other,  char const *_eventName, int _type );
+    void TriggerEntityEvent(Entity* _entity, const char* _eventName);
+    void TriggerBuildingEvent(Building* _building, const char* _eventName);
+    void TriggerOtherEvent(WorldObject* _other, const char* _eventName, int _type);
 
-    void StopAllSounds          ( WorldObjectId _id, char const *_eventName=NULL );        // Pass in NULL to stop every event.
-                                                                                     // Full event name required, eg "Darwinian SeenThreat"
+    void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in NULL to stop every event.
+    // Full event name required, eg "Darwinian SeenThreat"
 
-    void StopAllDSPEffects      ();
+    void StopAllDSPEffects();
 
-    void TriggerDuplicateSound  ( SoundInstance *_instance );
+    void TriggerDuplicateSound(SoundInstance* _instance);
 
-    void PropagateBlueprints    ();                                             // Call this to update all looping sounds
-    void RuntimeVerify          ();												// Verifies that the sound system has screwed it's own datastructures
-	void LoadtimeVerify			();												// Verifies that the data load from sounds.txt is OK
-	char const *IsSoundSourceOK	(char const *_soundName);						// Tests that file names and file formats are OK, returns an error code from the SoundSource enum
-	bool IsSampleUsed           (char const *_soundName);                       // Looks to see if that sound name is used in any blueprints
+    void PropagateBlueprints(); // Call this to update all looping sounds
+    void RuntimeVerify(); // Verifies that the sound system has screwed it's own datastructures
+    void LoadtimeVerify(); // Verifies that the data load from sounds.txt is OK
+    const char* IsSoundSourceOK(const char* _soundName);
+    // Tests that file names and file formats are OK, returns an error code from the SoundSource enum
+    bool IsSampleUsed(const char* _soundName); // Looks to see if that sound name is used in any blueprints
 
-    SampleGroup *GetSampleGroup     ( char const *_name );
-    SampleGroup *NewSampleGroup     ( char const *_name=NULL );
-    bool        RenameSampleGroup   ( char const *_oldName, char const *_newName );
+    SampleGroup* GetSampleGroup(const char* _name);
+    SampleGroup* NewSampleGroup(const char* _name = nullptr);
+    bool RenameSampleGroup(const char* _oldName, const char* _newName);
 
-    SoundInstance *GetSoundInstance( SoundInstanceId id );
+    SoundInstance* GetSoundInstance(SoundInstanceId id);
 };
-
 
 #endif

@@ -580,14 +580,3 @@ void SoundLibrary3dSoftware::DisableDspFX( int _channel )
 	}
 }
 
-
-void SoundLibrary3dSoftware::StartRecordToFile(char const *_filename)
-{
-	g_soundLibrary2d->StartRecordToFile(_filename);
-}
-
-
-void SoundLibrary3dSoftware::EndRecordToFile()
-{
-	g_soundLibrary2d->EndRecordToFile();
-}

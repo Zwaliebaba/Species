@@ -441,7 +441,7 @@ void LangTable::TestAgainstEnglish()
     //
     // Open the errors file
 
-    FILE *output = fopen( "language_errors.txt", "wt" );
+    FILE *output = fopen(FileSys::GetFullPathA("language_errors.txt").c_str(), "wt" );
 
 
     //

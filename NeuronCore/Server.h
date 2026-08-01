@@ -4,7 +4,6 @@
 #include "LList.h"
 #include "DArray.h"
 
-
 class NetLib;
 class NetMutex;
 class NetSocketListner;
@@ -12,62 +11,53 @@ class ServerToClient;
 class ServerToClientLetter;
 class NetworkUpdate;
 
-
 class ServerTeam
 {
-public:
+  public:
     int m_clientId;
 
     ServerTeam(int _clientId);
 };
 
-
 class Server
 {
-private:
-    NetLib	        *m_netLib;
+  NetLib* m_netLib;
 
-    LList           <ServerToClientLetter *> m_history;
+  LList<ServerToClientLetter*> m_history;
 
-public:
-    int             m_sequenceId;
+  public:
+    int m_sequenceId;
 
-    DArray          <ServerToClient *> m_clients;
-    DArray          <ServerTeam *> m_teams;
+    DArray<ServerToClient*> m_clients;
+    DArray<ServerTeam*> m_teams;
 
-    NetMutex         *m_inboxMutex;
-    NetMutex         *m_outboxMutex;
-    LList           <NetworkUpdate *> m_inbox;
-    LList           <ServerToClientLetter *> m_outbox;
+    NetMutex* m_inboxMutex;
+    NetMutex* m_outboxMutex;
+    LList<NetworkUpdate*> m_inbox;
+    LList<ServerToClientLetter*> m_outbox;
 
-    DArray          <unsigned char> m_sync;                                     // Synchronisation values for each sequenceId
+    DArray<unsigned char> m_sync; // Synchronisation values for each sequenceId
 
-public:
     Server();
     ~Server();
 
-    void Initialise			();
+    void Initialise();
 
-    NetworkUpdate *GetNextLetter();
+    NetworkUpdate* GetNextLetter();
 
-    void ReceiveLetter      ( NetworkUpdate *update, char *fromIP );
-    void SendLetter         ( ServerToClientLetter *letter );
+    void ReceiveLetter(NetworkUpdate* update, char* fromIP);
+    void SendLetter(ServerToClientLetter* letter);
 
-    int  GetClientId        ( char *_ip );
-    void RegisterNewClient  ( char *_ip );
-    void RemoveClient       ( char *_ip );
-    void RegisterNewTeam    ( char *_ip, int _teamType, int _desiredTeamId );
+    int GetClientId(char* _ip);
+    void RegisterNewClient(char* _ip);
+    void RemoveClient(char* _ip);
+    void RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId);
 
-	void AdvanceSender		();
-    void Advance			();
+    void AdvanceSender();
+    void Advance();
 
-    void LoadHistory        ( char *_filename );
-    void SaveHistory        ( char *_filename );
-
-    static int   ConvertIPToInt( const char *_ip );
-    static char *ConvertIntToIP( const int _ip );
+    static int ConvertIPToInt(const char* _ip);
+    static char* ConvertIntToIP(int _ip);
 };
 
-
 #endif
-

@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientToServer.cpp" />
+    <ClCompile Include="FileSys.cpp" />
     <ClCompile Include="Generic.cpp" />
     <ClCompile Include="NetworkUpdate.cpp" />
     <ClCompile Include="NetLib.cpp" />
@@ -31,6 +32,7 @@
     <ClInclude Include="ByteStream.h" />
     <ClInclude Include="ClientToServer.h" />
     <ClInclude Include="Debug.h" />
+    <ClInclude Include="FileSys.h" />
     <ClInclude Include="Generic.h" />
     <ClInclude Include="NetworkUpdate.h" />
     <ClInclude Include="NetLib.h" />
@@ -42,6 +44,7 @@
     <ClInclude Include="NetThread.h" />
     <ClInclude Include="NetUdpPacket.h" />
     <ClInclude Include="NeuronCore.h" />
+    <ClInclude Include="NeuronHelper.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="ServerToClient.h" />

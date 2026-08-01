@@ -11,7 +11,7 @@
 #ifndef _included_darwiniawindow_h
 #define _included_darwiniawindow_h
 
-#include <Eclipse.h>
+#include "Eclipse.h"
 
 class DarwiniaButton;
 

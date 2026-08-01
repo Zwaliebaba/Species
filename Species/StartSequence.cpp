@@ -7,7 +7,7 @@
 #include "HiResTime.h"
 #include "LanguageTable.h"
 
-#include <Eclipse.h>
+#include "Eclipse.h"
 
 #include "MainMenus.h"
 

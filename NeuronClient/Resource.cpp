@@ -1,7 +1,4 @@
 #include "pch.h"
-
-#include <stdio.h>
-
 #include "BinaryStreamReaders.h"
 #include "Bitmap.h"
 #include "Debug.h"
@@ -12,16 +9,10 @@
 #include "TextRenderer.h"
 #include "TextStreamReaders.h"
 #include "Preferences.h"
-#include "HiResTime.h"
-
 #include "SoundStreamDecoder.h"
-#include "SoundSystem.h"
-
 #include "App.h"
-#include "LandscapeRenderer.h"
 #include "Location.h"
 #include "Renderer.h"
-#include "Water.h"
 
 Resource::Resource()
   : m_nameSeed(1),
@@ -62,31 +53,8 @@ TextReader* Resource::GetTextReader(const std::string& _filename) { return GetTe
 TextReader* Resource::GetTextReader(const char* _filename)
 {
   TextReader* reader = nullptr;
-  char fullFilename[256];
-
-  if (m_modName)
-  {
-    sprintf(fullFilename, "%smods/%s/%s", g_app->GetProfileDirectory(), m_modName, _filename);
-    if (DoesFileExist(fullFilename))
-      reader = new TextFileReader(fullFilename);
-
-#ifdef TARGET_OS_VISTA
-    // The Oberon build bundles the Perdition mod
-    if (!reader)
-    {
-      sprintf(fullFilename, "mods/%s/%s", m_modName, _filename);
-      if (DoesFileExist(fullFilename))
-        reader = new TextFileReader(fullFilename);
-    }
-#endif
-  }
-
-  if (!reader)
-  {
-    sprintf(fullFilename, "data/%s", _filename);
-    if (DoesFileExist(fullFilename))
-      reader = new TextFileReader(fullFilename);
-  }
+  if (DoesFileExist(_filename))
+    reader = new TextFileReader(_filename);
 
   return reader;
 }
@@ -94,32 +62,8 @@ TextReader* Resource::GetTextReader(const char* _filename)
 BinaryReader* Resource::GetBinaryReader(const char* _filename)
 {
   BinaryReader* reader = nullptr;
-  char fullFilename[256];
-
-  if (m_modName)
-  {
-    sprintf(fullFilename, "%smods/%s/%s", g_app->GetProfileDirectory(), m_modName, _filename);
-    if (DoesFileExist(fullFilename))
-      reader = new BinaryFileReader(fullFilename);
-  }
-
-#ifdef TARGET_OS_VISTA
-
-  if (!reader)
-  {
-    sprintf(fullFilename, "mods/%s/%s", m_modName, _filename);
-    if (DoesFileExist(fullFilename))
-      reader = new BinaryFileReader(fullFilename);
-  }
-
-#endif
-
-  if (!reader)
-  {
-    sprintf(fullFilename, "data/%s", _filename);
-    if (DoesFileExist(fullFilename))
-      reader = new BinaryFileReader(fullFilename);
-  }
+  if (DoesFileExist(_filename))
+    reader = new BinaryFileReader(_filename);
 
   return reader;
 }
@@ -227,7 +171,7 @@ Shape* Resource::GetShapeCopy(const char* _name, bool _animating)
   char fullPath[512];
   Shape* theShape = nullptr;
 
-  sprintf(fullPath, "data/Shapes/%s", _name);
+  sprintf(fullPath, "Shapes/%s", _name);
   strlwr(fullPath);
   if (DoesFileExist(fullPath))
     theShape = new Shape(fullPath, _animating);
@@ -389,76 +333,11 @@ char* Resource::GenerateName()
   return name;
 }
 
-void Resource::LoadMod(const char* _modName)
-{
-#ifndef DEMOBUILD
-#ifndef PURITY_CONTROL
-  bool modsEnabled = g_prefsManager->GetInt("ModSystemEnabled", 0) != 0;
-  if (modsEnabled)
-  {
-    if (m_modName)
-    {
-      delete m_modName;
-      m_modName = nullptr;
-    }
-
-    if (stricmp(_modName, "none") != 0)
-    {
-      m_modName = strdup(_modName);
-
-      FlushOpenGlState();
-      RegenerateOpenGlState();
-    }
-
-    EntityBlueprint::Initialise();
-    g_app->SetLanguage(g_prefsManager->GetString("TextLanguage", "English"), false);
-    g_prefsManager->SetString("Mod", _modName);
-    g_prefsManager->Save();
-  }
-#endif
-#endif
-}
-
-char* Resource::GetBaseDirectory()
-{
-  static char result[256];
-
-  if (m_modName)
-    sprintf(result, "%smods/%s/", g_app->GetProfileDirectory(), m_modName);
-  else
-    sprintf(result, "data/");
-
-  return result;
-}
-
-const char* Resource::GetModName() { return m_modName; }
-
-bool Resource::IsModLoaded() { return (m_modName != nullptr); }
-
 FileWriter* Resource::GetFileWriter(const char* _filename, bool _encrypt)
 {
-  char fullFilename[256];
-
-  if (m_modName)
-  {
-    sprintf(fullFilename, "%smods/%s/%s", g_app->GetProfileDirectory(), m_modName, _filename);
-
-    char* nextSlash = fullFilename;
-    while (nextSlash = strchr(nextSlash, '/'))
-    {
-      *nextSlash = 0;
-      bool result = CreateDirectory(fullFilename);
-      ASSERT_TEXT(result, "Failed to write to %s", fullFilename);
-      *nextSlash = '/';
-      ++nextSlash;
-    }
-
-    return new FileWriter(fullFilename, _encrypt);
+    return new FileWriter(_filename, _encrypt);
   }
 
-  sprintf(fullFilename, "data/%s", _filename);
-  return new FileWriter(fullFilename, _encrypt);
-}
 
 // The string is copied and entered into llist
 // in correct alphabetical order.
@@ -499,9 +378,7 @@ LList<char*>* Resource::ListResources(const char* _dir, const char* _filter, boo
   //
   // List the base data directory
 
-  char fullDirectory[256];
-  sprintf(fullDirectory, "data/%s", _dir);
-  results = ListDirectory(fullDirectory, _filter, _longResults);
+  results = ListDirectory(_dir, _filter, _longResults);
 
   return results;
 }

@@ -8,7 +8,7 @@
 #include "DebugRender.h"
 #include "BinaryStreamReaders.h"
 
-#include <Eclipse.h>
+#include "Eclipse.h"
 
 #include "App.h"
 #include "GlobalWorld.h"

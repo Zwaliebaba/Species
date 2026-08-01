@@ -2,7 +2,7 @@
 
 #include <float.h>
 
-#include <Eclipse.h>
+#include "Eclipse.h"
 
 #include "HiResTime.h"
 #include "Matrix34.h"

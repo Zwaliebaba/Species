@@ -62,6 +62,8 @@
 #undef GetCurrentTime
 
 #include "Debug.h"
+#include "FileSys.h"
+#include "NeuronHelper.h"
 
 using namespace Neuron;
 

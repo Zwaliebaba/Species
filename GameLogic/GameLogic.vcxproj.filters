@@ -240,9 +240,6 @@
     <ClCompile Include="MessageDialog.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
-    <ClCompile Include="ModsWindow.cpp">
-      <Filter>Interface</Filter>
-    </ClCompile>
     <ClCompile Include="NetworkWindow.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
@@ -514,9 +511,6 @@
       <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="MessageDialog.h">
-      <Filter>Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="ModsWindow.h">
       <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="NetworkWindow.h">

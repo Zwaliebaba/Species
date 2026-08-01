@@ -3,70 +3,61 @@
 
 #include "SoundLibrary3d.h"
 
-
 class SoftwareChannel;
 class StereoSample;
 class Profiler;
-
 
 //*****************************************************************************
 // Class SoundLibrary3dSoftware
 //*****************************************************************************
 
-class SoundLibrary3dSoftware: public SoundLibrary3d
+class SoundLibrary3dSoftware : public SoundLibrary3d
 {
-protected:
-	SoftwareChannel			*m_channels;
-	float					*m_left;						// Temp buffers used by mixer
-	float					*m_right;
+  protected:
+    SoftwareChannel* m_channels;
+    float* m_left; // Temp buffers used by mixer
+    float* m_right;
 
-	Vector3					m_listenerFront;
-	Vector3					m_listenerUp;
-	Vector3					m_listenerRight;
+    Vector3 m_listenerFront;
+    Vector3 m_listenerUp;
+    Vector3 m_listenerRight;
 
-protected:
-	void GetChannelData		(float _duration);
-	void ApplyDspFX			(float _duration);
-	void MixSameFreqFixedVol(signed short *in, unsigned int numSamples, float volL, float volR);
-	void MixDiffFreqFixedVol(signed short *in, unsigned int numSamples, float volL, float volR, float relFreq);
-	void MixSameFreqRampVol (signed short *in, unsigned int num, float volL1, float volR1, float volL2, float volR2);
-	void MixDiffFreqRampVol (signed short *in, unsigned int num, float volL1, float volR1, float volL2, float volR2, float relFreq);
-	void CalcChannelVolumes	(int _channelIndex, float *_left, float *_right);
+    void GetChannelData(float _duration);
+    void ApplyDspFX(float _duration);
+    void MixSameFreqFixedVol(signed short* in, unsigned int numSamples, float volL, float volR);
+    void MixDiffFreqFixedVol(signed short* in, unsigned int numSamples, float volL, float volR, float relFreq);
+    void MixSameFreqRampVol(signed short* in, unsigned int num, float volL1, float volR1, float volL2, float volR2);
+    void MixDiffFreqRampVol(signed short* in, unsigned int num, float volL1, float volR1, float volL2, float volR2, float relFreq);
+    void CalcChannelVolumes(int _channelIndex, float* _left, float* _right);
 
-public:
-    SoundLibrary3dSoftware	();
-	~SoundLibrary3dSoftware ();
+  public:
+    SoundLibrary3dSoftware();
+    ~SoundLibrary3dSoftware() override;
 
-    void Initialise         (int _mixFreq, int _numChannels,
-                             bool hw3d, int _mainBufNumSamples, int _musicBufNumSamples);
+    void Initialise(int _mixFreq, int _numChannels, bool hw3d, int _mainBufNumSamples, int _musicBufNumSamples) override;
 
-    void Advance            ();
-	void Callback			(StereoSample *_buf, unsigned int _numSamples); // Called from SoundLibrary2d
+    void Advance() override;
+    void Callback(StereoSample* _buf, unsigned int _numSamples); // Called from SoundLibrary2d
 
-    bool Hardware3DSupport	();
-    int  GetMaxChannels		();
-    int  GetCPUOverhead		();
-    float GetChannelHealth  (int _channel);					// 0.0 = BAD, 1.0 = GOOD
-	int GetChannelBufSize	(int _channel) const;
+    bool Hardware3DSupport() override;
+    int GetMaxChannels() override;
+    int GetCPUOverhead() override;
+    float GetChannelHealth(int _channel) override; // 0.0 = BAD, 1.0 = GOOD
+    int GetChannelBufSize(int _channel) const override;
 
-    void ResetChannel       (int _channel);					// Refills entire channel with data immediately
+    void ResetChannel(int _channel) override; // Refills entire channel with data immediately
 
-    void SetChannel3DMode   (int _channel, int _mode);
-    void SetChannelPosition (int _channel, Vector3 const &_pos, Vector3 const &_vel);
-    void SetChannelFrequency(int _channel, int _frequency);
-    void SetChannelMinDistance( int _channel, float _minDistance);
-    void SetChannelVolume   (int _channel, float _volume);	// logarithmic, 0.0f - 10.0f
+    void SetChannel3DMode(int _channel, int _mode) override;
+    void SetChannelPosition(int _channel, const Vector3& _pos, const Vector3& _vel) override;
+    void SetChannelFrequency(int _channel, int _frequency) override;
+    void SetChannelMinDistance(int _channel, float _minDistance) override;
+    void SetChannelVolume(int _channel, float _volume) override; // logarithmic, 0.0f - 10.0f
 
-    void EnableDspFX        (int _channel, int _numFilters, int const *_filterTypes);
-    void UpdateDspFX        (int _channel, int _filterType, int _numParams, float const *_params);
-    void DisableDspFX       (int _channel);
+    void EnableDspFX(int _channel, int _numFilters, const int* _filterTypes) override;
+    void UpdateDspFX(int _channel, int _filterType, int _numParams, const float* _params) override;
+    void DisableDspFX(int _channel) override;
 
-    void SetListenerPosition(Vector3 const &_pos, Vector3 const &_front,
-                             Vector3 const &_up, Vector3 const &_vel);
-
-	void StartRecordToFile	(char const *_filename);
-	void EndRecordToFile	();
+    void SetListenerPosition(const Vector3& _pos, const Vector3& _front, const Vector3& _up, const Vector3& _vel) override;
 };
-
 
 #endif

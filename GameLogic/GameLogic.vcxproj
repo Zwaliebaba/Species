@@ -76,7 +76,6 @@
     <ClCompile Include="MainMenus.cpp" />
     <ClCompile Include="MessageDialog.cpp" />
     <ClCompile Include="Mine.cpp" />
-    <ClCompile Include="ModsWindow.cpp" />
     <ClCompile Include="NetworkWindow.cpp" />
     <ClCompile Include="Officer.cpp" />
     <ClCompile Include="pch.cpp">
@@ -172,7 +171,6 @@
     <ClInclude Include="MainMenus.h" />
     <ClInclude Include="MessageDialog.h" />
     <ClInclude Include="Mine.h" />
-    <ClInclude Include="ModsWindow.h" />
     <ClInclude Include="NetworkWindow.h" />
     <ClInclude Include="Officer.h" />
     <ClInclude Include="pch.h" />

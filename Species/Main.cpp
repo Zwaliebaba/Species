@@ -1,77 +1,61 @@
 #include "pch.h"
-#include "Eclipse.h"
+#include "Main.h"
+#include "App.h"
+#include "Attract.h"
+#include "Camera.h"
+#include "ClientToServer.h"
+#include "ControlHelp.h"
 #include "Debug.h"
+#include "DebugMenu.h"
+#include "Eclipse.h"
+#include "Explosion.h"
+#include "FilePaths.h"
+#include "GameMenu.h"
+#include "GlobalWorld.h"
+#include "GlobalWorldEditorWindow.h"
 #include "HiResTime.h"
 #include "Input.h"
-#include "FilePaths.h"
-#include "TargetCursor.h"
+#include "InputDriverAlias.h"
+#include "InputDriverChord.h"
+#include "InputDriverConjoin.h"
+#include "InputDriverIdle.h"
+#include "InputDriverInvert.h"
+#include "InputDriverPrefs.h"
+#include "InputDriverValue.h"
+#include "InputDriverWin32.h"
+#include "Landscape.h"
+#include "LanguageTable.h"
+#include "Location.h"
+#include "LocationEditor.h"
+#include "LocationInput.h"
+#include "MainMenus.h"
 #include "MathUtils.h"
+#include "ParticleSystem.h"
 #include "Preferences.h"
 #include "Profiler.h"
-#include "SystemInfo.h"
-#include "TextRenderer.h"
-#include "Vector3.h"
-#include "WindowManager.h"
-#include "Resource.h"
-#include "TextStreamReaders.h"
-#include "LanguageTable.h"
-
-#include "Win32EventHandler.h"
-#include "InputDriverWin32.h"
-#include "InputDriverPrefs.h"
-#include "InputDriverAlias.h"
-#include "InputDriverConjoin.h"
-#include "InputDriverChord.h"
-#include "InputDriverInvert.h"
-#include "InputDriverIdle.h"
-#include "InputDriverValue.h"
-
-#include "PrefsOtherWindow.h"
-
-#include "SoundLibrary2d.h"
-#include "SoundLibrary3dSoftware.h"
-
-#ifdef HAVE_DSOUND
-#include "SoundLibrary3dDSound.h"
-#endif
-
-#include "App.h"
-#include "Camera.h"
-#include "LocationEditor.h"
-#include "Explosion.h"
-#include "GlobalWorld.h"
-#include "Landscape.h"
-#include "Location.h"
-#include "LocationInput.h"
-#include "Main.h"
-#include "ParticleSystem.h"
 #include "Renderer.h"
+#include "Resource.h"
 #include "Script.h"
+#include "Server.h"
+#include "ServerToClientLetter.h"
+#include "SoundLibrary2d.h"
+#include "SoundLibrary3dDSound.h"
 #include "SoundSystem.h"
+#include "StartSequence.h"
+#include "SystemInfo.h"
+#include "TargetCursor.h"
 #include "TaskManager.h"
 #include "TaskManagerInterface.h"
 #include "TaskManagerInterfaceIcons.h"
 #include "Team.h"
-#include "UserInput.h"
-#include "TestHarness.h"
-#include "StartSequence.h"
-#include "GameCursor.h"
+#include "TextStreamReaders.h"
 #include "Unit.h"
-#include "Attract.h"
-#include "ControlHelp.h"
-#include "Water.h"
-#include "GameMenu.h"
-
-#include "GlobalWorldEditorWindow.h"
-#include "MainMenus.h"
 #include "UpdateAvailableWindow.h"
-#include "DebugMenu.h"
-
-#include "ClientToServer.h"
-#include "Server.h"
-#include "ServerToClientLetter.h"
-
-#include "Darwinian.h"
+#include "UserInput.h"
+#include "Vector3.h"
+#include "Water.h"
+#include "Win32EventHandler.h"
+#include "WindowManager.h"
 
 #define TARGET_FRAME_RATE_INCREMENT 0.25f
 
@@ -152,18 +136,18 @@ void UpdateTargetFrameRate(int _currentSlice)
 /*
 int GetNumSlicesToAdvance()
 {
-	int slicesPerSecond = SERVER_ADVANCE_FREQ * NUM_SLICES_PER_FRAME;
-	float ratio = (float)slicesPerSecond / (float)g_targetFrameRate;
+    int slicesPerSecond = SERVER_ADVANCE_FREQ * NUM_SLICES_PER_FRAME;
+    float ratio = (float)slicesPerSecond / (float)g_targetFrameRate;
 
 
-	static float accumulator = 0.0f;
-	accumulator += ratio;
+    static float accumulator = 0.0f;
+    accumulator += ratio;
 
-	int returnVal = floorf(accumulator);
+    int returnVal = floorf(accumulator);
 
-	accumulator -= (float)returnVal;
+    accumulator -= (float)returnVal;
 
-	return returnVal;
+    return returnVal;
 }*/
 
 int GetNumSlicesToAdvance()
@@ -172,9 +156,8 @@ int GetNumSlicesToAdvance()
   int numSlicesPending = numUpdatesToProcess * NUM_SLICES_PER_FRAME;
   if (g_sliceNum != -1)
     numSlicesPending -= g_sliceNum;
-  else
-    if (g_sliceNum == -1)
-      numSlicesPending -= 10;
+  else if (g_sliceNum == -1)
+    numSlicesPending -= 10;
 
   float timeSinceStartOfAdvance = g_gameTime - g_lastServerAdvance;
   //int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
@@ -895,81 +878,6 @@ void InitialiseInputManager()
   }
 }
 
-bool IsRunningVista()
-{
-  OSVERSIONINFOEX versionInfo;
-  ZeroMemory(&versionInfo, sizeof(OSVERSIONINFOEX));
-
-  versionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-  GetVersionEx((OSVERSIONINFO*)&versionInfo);
-
-  if (versionInfo.dwMajorVersion < 6 || versionInfo.wProductType != VER_NT_WORKSTATION)
-    return false;
-
-  return true;
-}
-
-#if defined(TARGET_OS_VISTA)
-void DoVistaChecks()
-{
-  // Check to make sure the game is running on Vista
-
-  if (!IsRunningVista()) { return; }
-
-  // Check Parental Controls to make sure current user is allowed to run Darwinia
-
-  HRESULT hr = CoInitialize(NULL);
-
-  IWindowsParentalControls* wpc = NULL;
-  hr = CoCreateInstance(__uuidof(WindowsParentalControls), 0, CLSCTX_INPROC_SERVER, __uuidof(IWindowsParentalControls), (LPVOID*)&wpc);
-
-  if (FAILED(hr))
-  {
-    wprintf(L"Info:  Parental Controls interface not detected.\n");
-    wprintf(L"Info:   This is an error if on a supported SKU of Windows Vista.\n");
-  }
-  else
-  {
-    IWPCGamesSettings* wpcGamesSettings = NULL;
-    hr = wpc->GetGamesSettings(NULL, &wpcGamesSettings);
-    if (FAILED(hr))
-    {
-      wprintf(L"Warning:  Unable to obtain the Parental Controls user\n");
-      wprintf(L"          settings interface.  This is expected if the\n");
-      wprintf(L"          current user is a Protected Administrator or\n");
-      wprintf(L"          Built-In Administrator.\n");
-    }
-    else
-    {
-      GUID guidGameId;
-      guidGameId.Data1 = 0xF58175C7;
-      guidGameId.Data2 = 0xE99C;
-      guidGameId.Data3 = 0x4151;
-      guidGameId.Data4[0] = 0x80;
-      guidGameId.Data4[1] = 0x0D;
-      guidGameId.Data4[2] = 0x7B;
-      guidGameId.Data4[3] = 0xB5;
-      guidGameId.Data4[4] = 0xE8;
-      guidGameId.Data4[5] = 0x9E;
-      guidGameId.Data4[6] = 0x49;
-      guidGameId.Data4[7] = 0x60;
-
-      DWORD reasons = 0;
-      hr = wpcGamesSettings->IsBlocked(guidGameId, &reasons);
-
-      if (FAILED(hr) || reasons != WPCFLAG_ISBLOCKED_NOTBLOCKED)
-      {
-        MessageBox(NULL, LANGUAGEPHRASE("error_parental"), LANGUAGEPHRASE("darwinia_vistaedition"), MB_OK | MB_ICONERROR);
-        exit(0);
-      }
-      wpcGamesSettings->Release();
-    }
-    wpc->Release();
-  }
-}
-
-#endif
-
 void Initialise()
 {
   //
@@ -1218,5 +1126,12 @@ void RunTheGame()
 // Main Function
 void AppMain()
 {
+  wchar_t filename[MAX_PATH];
+  GetModuleFileNameW(nullptr, filename, MAX_PATH);
+  auto path = std::wstring(filename);
+  path = path.substr(0, path.find_last_of('\\'));
+
+  FileSys::SetHomeDirectory(path);
+
   RunTheGame();
 }

@@ -16,7 +16,7 @@ FileWriter::FileWriter(char const *_filename, bool _encrypt)
 :	m_offsetIndex(0),
 	m_encrypt(_encrypt)
 {
-	m_file = fopen(_filename, "w");
+	m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "w");
 
 	ASSERT_TEXT(m_file, "Couldn't create file %s", _filename);
 

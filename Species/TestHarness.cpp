@@ -25,7 +25,7 @@ TestHarness::TestHarness()
 	m_indent[255] = '\0';
 	m_indent = &m_indent[255];
 
-	m_out = fopen("test_log.txt", "w");
+	m_out = fopen(FileSys::GetFullPathA("test_log.txt").c_str(), "w");
 	setvbuf(m_out, NULL, _IONBF, 0 );
 }
 

@@ -21,22 +21,6 @@ ChoosePixelFormatARB gglChoosePixelFormatARB = nullptr;
 
 void InitialiseOGLExtensions()
 {
-  //	char const *extensions = (char const *)glGetString(GL_EXTENSIONS);
-  //	int len = strlen(extensions);
-  //	char *c = new char[len];
-  //	memcpy(c, extensions, len);
-  //	extensions = c;
-  //
-  //	while(*c)
-  //	{
-  //		if (*c == ' ') *c = '\n';
-  //		++c;
-  //	}
-  //
-  //	FILE *out = fopen("blah.txt", "w");
-  //	fprintf(out, "%s\n", extensions);
-  //	fclose(out);
-
   gglMultiTexCoord2fARB = (MultiTexCoord2fARB)wglGetProcAddress("glMultiTexCoord2fARB");
   gglActiveTextureARB = (ActiveTextureARB)wglGetProcAddress("glActiveTextureARB");
 
