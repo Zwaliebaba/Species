@@ -1,0 +1,6 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=B7224325A521804392468C87DBD0E59C/AbsolutePath/@EntryValue">C:\Users\zwali\OneDrive\DevSettings\Zwaliebaba.DotSettings</s:String>
+	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=B7224325A521804392468C87DBD0E59C/RelativePath/@EntryValue">..\..\..\..\OneDrive\DevSettings\Zwaliebaba.DotSettings</s:String>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=B7224325A521804392468C87DBD0E59C/@KeyIndexDefined">True</s:Boolean>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=FileB7224325A521804392468C87DBD0E59C/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=FileB7224325A521804392468C87DBD0E59C/RelativePriority/@EntryValue">1</s:Double></wpf:ResourceDictionary>

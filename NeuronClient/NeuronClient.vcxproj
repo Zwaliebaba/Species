@@ -1,0 +1,279 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
+      <Project>{1f4dcebf-ece5-4714-88e9-64a8271dc522}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="3dSprite.cpp" />
+    <ClCompile Include="BinaryStreamReaders.cpp" />
+    <ClCompile Include="Bitmap.cpp" />
+    <ClCompile Include="ControlBindings.cpp" />
+    <ClCompile Include="ControlTypes.cpp" />
+    <ClCompile Include="DebugRender.cpp" />
+    <ClCompile Include="DebugUtils.cpp" />
+    <ClCompile Include="EclButton.cpp" />
+    <ClCompile Include="Eclipse.cpp" />
+    <ClCompile Include="EclWindow.cpp" />
+    <ClCompile Include="EventHandler.cpp" />
+    <ClCompile Include="FilesysUtils.cpp" />
+    <ClCompile Include="FilePaths.cpp" />
+    <ClCompile Include="FileWriter.cpp" />
+    <ClCompile Include="HiResTime.cpp" />
+    <ClCompile Include="Input.cpp" />
+    <ClCompile Include="InputDriver.cpp" />
+    <ClCompile Include="InputDriverAlias.cpp" />
+    <ClCompile Include="InputDriverChord.cpp" />
+    <ClCompile Include="InputDriverConjoin.cpp" />
+    <ClCompile Include="InputDriverIdle.cpp" />
+    <ClCompile Include="InputDriverInvert.cpp" />
+    <ClCompile Include="InputDriverPipe.cpp" />
+    <ClCompile Include="InputDriverPrefs.cpp" />
+    <ClCompile Include="InputDriverSimple.cpp" />
+    <ClCompile Include="InputDriverValue.cpp" />
+    <ClCompile Include="InputDriverWin32.cpp" />
+    <ClCompile Include="InputDriverXInput.cpp" />
+    <ClCompile Include="InputFilter.cpp" />
+    <ClCompile Include="InputFilterManager.cpp" />
+    <ClCompile Include="InputFilterSpec.cpp" />
+    <ClCompile Include="InputFilterDirection.cpp" />
+    <ClCompile Include="InputFilterWithDelta.cpp" />
+    <ClCompile Include="InputSpec.cpp" />
+    <ClCompile Include="InputTypes.cpp" />
+    <ClCompile Include="InvertMatrix.cpp" />
+    <ClCompile Include="KeyNames.cpp" />
+    <ClCompile Include="LanguageTable.cpp" />
+    <ClCompile Include="MathUtils.cpp" />
+    <ClCompile Include="Matrix33.cpp" />
+    <ClCompile Include="Matrix34.cpp" />
+    <ClCompile Include="MouseCursor.cpp" />
+    <ClCompile Include="Movement2d.cpp" />
+    <ClCompile Include="OGLExtensions.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="PersistingDebugRender.cpp" />
+    <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="Preferences.cpp" />
+    <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="Random.cpp" />
+    <ClCompile Include="RenderUtils.cpp" />
+    <ClCompile Include="Resource.cpp" />
+    <ClCompile Include="RgbColour.cpp" />
+    <ClCompile Include="SampleCache.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Shape.cpp" />
+    <ClCompile Include="SoundSystem.cpp" />
+    <ClCompile Include="SoundFilter.cpp" />
+    <ClCompile Include="SoundInstance.cpp" />
+    <ClCompile Include="SoundLibrary2d.cpp" />
+    <ClCompile Include="SoundLibrary2dNoSnd.cpp" />
+    <ClCompile Include="SoundLibrary3d.cpp" />
+    <ClCompile Include="SoundLibrary3dDSound.cpp" />
+    <ClCompile Include="SoundLibrary3dSoftware.cpp" />
+    <ClCompile Include="SoundParameter.cpp" />
+    <ClCompile Include="SoundStreamDecoder.cpp" />
+    <ClCompile Include="SphereRenderer.cpp" />
+    <ClCompile Include="StringUtils.cpp" />
+    <ClCompile Include="SystemInfo.cpp" />
+    <ClCompile Include="TargetCursor.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureUv.cpp" />
+    <ClCompile Include="TextRenderer.cpp" />
+    <ClCompile Include="TextStreamReaders.cpp" />
+    <ClCompile Include="Transform.cpp" />
+    <ClCompile Include="TriTri.cpp" />
+    <ClCompile Include="UserInfo.cpp" />
+    <ClCompile Include="Vector2.cpp" />
+    <ClCompile Include="Vector3.cpp" />
+    <ClCompile Include="Win32EventHandler.cpp" />
+    <ClCompile Include="WindowManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="2dArray.h" />
+    <ClInclude Include="2dSurfaceMap.h" />
+    <ClInclude Include="3dSprite.h" />
+    <ClInclude Include="AutoVector.h" />
+    <ClInclude Include="BinaryStreamReaders.h" />
+    <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="BoundedArray.h" />
+    <ClInclude Include="BTree.h" />
+    <ClInclude Include="ControlBindings.h" />
+    <ClInclude Include="ControlTypes.h" />
+    <ClInclude Include="DArray.h" />
+    <ClInclude Include="DebugRender.h" />
+    <ClInclude Include="DebugUtils.h" />
+    <ClInclude Include="EclButton.h" />
+    <ClInclude Include="Eclipse.h" />
+    <ClInclude Include="EclWindow.h" />
+    <ClInclude Include="EventHandler.h" />
+    <ClInclude Include="FastDArray.h" />
+    <ClInclude Include="FilesysUtils.h" />
+    <ClInclude Include="FilePaths.h" />
+    <ClInclude Include="FileWriter.h" />
+    <ClInclude Include="HashTable.h" />
+    <ClInclude Include="HiResTime.h" />
+    <ClInclude Include="Input.h" />
+    <ClInclude Include="InputDriver.h" />
+    <ClInclude Include="InputDriverAlias.h" />
+    <ClInclude Include="InputDriverChord.h" />
+    <ClInclude Include="InputDriverConjoin.h" />
+    <ClInclude Include="InputDriverIdle.h" />
+    <ClInclude Include="InputDriverInvert.h" />
+    <ClInclude Include="InputDriverPipe.h" />
+    <ClInclude Include="InputDriverPrefs.h" />
+    <ClInclude Include="InputDriverSimple.h" />
+    <ClInclude Include="InputDriverValue.h" />
+    <ClInclude Include="InputDriverWin32.h" />
+    <ClInclude Include="InputDriverXInput.h" />
+    <ClInclude Include="InputFilter.h" />
+    <ClInclude Include="InputFilterManager.h" />
+    <ClInclude Include="InputFilterSpec.h" />
+    <ClInclude Include="InputFilterDirection.h" />
+    <ClInclude Include="InputFilterWithDelta.h" />
+    <ClInclude Include="InputSpec.h" />
+    <ClInclude Include="InputSpecList.h" />
+    <ClInclude Include="InputTypes.h" />
+    <ClInclude Include="InvertMatrix.h" />
+    <ClInclude Include="KeyDefs.h" />
+    <ClInclude Include="KeyNames.h" />
+    <ClInclude Include="LanguageTable.h" />
+    <ClInclude Include="LList.h" />
+    <ClInclude Include="MathUtils.h" />
+    <ClInclude Include="Matrix33.h" />
+    <ClInclude Include="Matrix34.h" />
+    <ClInclude Include="MouseCursor.h" />
+    <ClInclude Include="Movement2d.h" />
+    <ClInclude Include="NeuronClient.h" />
+    <ClInclude Include="OGLExtensions.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="PersistingDebugRender.h" />
+    <ClInclude Include="Plane.h" />
+    <ClInclude Include="Preferences.h" />
+    <ClInclude Include="PreferenceNames.h" />
+    <ClInclude Include="PresizedArray.h" />
+    <ClInclude Include="Profiler.h" />
+    <ClInclude Include="Random.h" />
+    <ClInclude Include="RenderUtils.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="RgbColour.h" />
+    <ClInclude Include="SampleCache.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="Shape.h" />
+    <ClInclude Include="SliceDArray.h" />
+    <ClInclude Include="SortingHashTable.h" />
+    <ClInclude Include="SoundSystem.h" />
+    <ClInclude Include="SoundFilter.h" />
+    <ClInclude Include="SoundInstance.h" />
+    <ClInclude Include="SoundLibrary2d.h" />
+    <ClInclude Include="SoundLibrary3d.h" />
+    <ClInclude Include="SoundLibrary3dDSound.h" />
+    <ClInclude Include="SoundLibrary3dSoftware.h" />
+    <ClInclude Include="SoundParameter.h" />
+    <ClInclude Include="SoundStreamDecoder.h" />
+    <ClInclude Include="SphereRenderer.h" />
+    <ClInclude Include="StringUtils.h" />
+    <ClInclude Include="SystemInfo.h" />
+    <ClInclude Include="TargetCursor.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureUv.h" />
+    <ClInclude Include="TextRenderer.h" />
+    <ClInclude Include="TextStreamReaders.h" />
+    <ClInclude Include="Transform.h" />
+    <ClInclude Include="UserInfo.h" />
+    <ClInclude Include="Vector2.h" />
+    <ClInclude Include="Vector3.h" />
+    <ClInclude Include="Win32EventHandler.h" />
+    <ClInclude Include="Win32EventProc.h" />
+    <ClInclude Include="WindowManager.h" />
+    <ClInclude Include="WindowManagerWin32.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{fc22e734-574b-40ad-9ddb-817414cb3610}</ProjectGuid>
+    <RootNamespace>NeuronClient</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)NeuronCore;$(SolutionDir)GameLogic;$(SolutionDir)Species</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

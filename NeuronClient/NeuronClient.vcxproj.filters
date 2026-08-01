@@ -1,0 +1,368 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Audio">
+      <UniqueIdentifier>{67249a58-6228-4a5d-92bc-5ea745033d5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{6960e7f3-9b0c-4b7d-bf54-9956ea72b5f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Canvas">
+      <UniqueIdentifier>{a4f64ccd-30e8-421f-8133-44ed6f134227}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SampleCache.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundFilter.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundInstance.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundLibrary2d.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundLibrary2dNoSnd.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundLibrary3d.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundLibrary3dDSound.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundLibrary3dSoftware.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundParameter.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundStreamDecoder.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundSystem.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="ControlBindings.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="ControlTypes.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="EventHandler.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePaths.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputTypes.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriver.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverAlias.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverChord.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverConjoin.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverIdle.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverInvert.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverPipe.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverPrefs.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverSimple.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverValue.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverWin32.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDriverXInput.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputFilter.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputFilterDirection.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputFilterWithDelta.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputFilterManager.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputFilterSpec.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="InputSpec.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyNames.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Movement2d.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32EventHandler.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="3dSprite.cpp" />
+    <ClCompile Include="BinaryStreamReaders.cpp" />
+    <ClCompile Include="Bitmap.cpp" />
+    <ClCompile Include="DebugRender.cpp" />
+    <ClCompile Include="DebugUtils.cpp" />
+    <ClCompile Include="FileWriter.cpp" />
+    <ClCompile Include="FilesysUtils.cpp" />
+    <ClCompile Include="HiResTime.cpp" />
+    <ClCompile Include="InvertMatrix.cpp" />
+    <ClCompile Include="LanguageTable.cpp" />
+    <ClCompile Include="MathUtils.cpp" />
+    <ClCompile Include="Matrix33.cpp" />
+    <ClCompile Include="Matrix34.cpp" />
+    <ClCompile Include="MouseCursor.cpp" />
+    <ClCompile Include="PersistingDebugRender.cpp" />
+    <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="Preferences.cpp" />
+    <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="Random.cpp" />
+    <ClCompile Include="RenderUtils.cpp" />
+    <ClCompile Include="Resource.cpp" />
+    <ClCompile Include="RgbColour.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Shape.cpp" />
+    <ClCompile Include="SphereRenderer.cpp" />
+    <ClCompile Include="StringUtils.cpp" />
+    <ClCompile Include="SystemInfo.cpp" />
+    <ClCompile Include="TargetCursor.cpp" />
+    <ClCompile Include="TextRenderer.cpp" />
+    <ClCompile Include="TextStreamReaders.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureUv.cpp" />
+    <ClCompile Include="TriTri.cpp" />
+    <ClCompile Include="UserInfo.cpp" />
+    <ClCompile Include="Vector2.cpp" />
+    <ClCompile Include="Vector3.cpp" />
+    <ClCompile Include="WindowManager.cpp" />
+    <ClCompile Include="EclButton.cpp">
+      <Filter>Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Eclipse.cpp">
+      <Filter>Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="EclWindow.cpp">
+      <Filter>Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="OGLExtensions.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SampleCache.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundFilter.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundInstance.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundLibrary2d.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundLibrary3d.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundLibrary3dDSound.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundLibrary3dSoftware.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundParameter.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundStreamDecoder.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundSystem.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ControlBindings.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="ControlTypes.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="EventHandler.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePaths.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Input.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputTypes.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriver.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverAlias.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverChord.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverConjoin.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverIdle.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverInvert.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverPipe.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverPrefs.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverSimple.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverValue.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverWin32.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverXInput.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputFilter.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputFilterDirection.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputFilterWithDelta.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputFilterManager.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputFilterSpec.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSpec.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSpecList.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyDefs.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyNames.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Movement2d.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32EventHandler.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32EventProc.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="2dArray.h" />
+    <ClInclude Include="2dSurfaceMap.h" />
+    <ClInclude Include="3dSprite.h" />
+    <ClInclude Include="AutoVector.h" />
+    <ClInclude Include="BinaryStreamReaders.h" />
+    <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="BoundedArray.h" />
+    <ClInclude Include="BTree.h" />
+    <ClInclude Include="DArray.h" />
+    <ClInclude Include="DebugRender.h" />
+    <ClInclude Include="DebugUtils.h" />
+    <ClInclude Include="FastDArray.h" />
+    <ClInclude Include="FileWriter.h" />
+    <ClInclude Include="FilesysUtils.h" />
+    <ClInclude Include="HashTable.h" />
+    <ClInclude Include="HiResTime.h" />
+    <ClInclude Include="InvertMatrix.h" />
+    <ClInclude Include="LanguageTable.h" />
+    <ClInclude Include="LList.h" />
+    <ClInclude Include="MathUtils.h" />
+    <ClInclude Include="Matrix33.h" />
+    <ClInclude Include="Matrix34.h" />
+    <ClInclude Include="MouseCursor.h" />
+    <ClInclude Include="PersistingDebugRender.h" />
+    <ClInclude Include="Plane.h" />
+    <ClInclude Include="PreferenceNames.h" />
+    <ClInclude Include="Preferences.h" />
+    <ClInclude Include="PresizedArray.h" />
+    <ClInclude Include="Profiler.h" />
+    <ClInclude Include="Random.h" />
+    <ClInclude Include="RenderUtils.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="RgbColour.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="Shape.h" />
+    <ClInclude Include="SliceDArray.h" />
+    <ClInclude Include="SortingHashTable.h" />
+    <ClInclude Include="SphereRenderer.h" />
+    <ClInclude Include="StringUtils.h" />
+    <ClInclude Include="SystemInfo.h" />
+    <ClInclude Include="TargetCursor.h" />
+    <ClInclude Include="TextRenderer.h" />
+    <ClInclude Include="TextStreamReaders.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureUv.h" />
+    <ClInclude Include="UserInfo.h" />
+    <ClInclude Include="Vector2.h" />
+    <ClInclude Include="Vector3.h" />
+    <ClInclude Include="WindowManager.h" />
+    <ClInclude Include="WindowManagerWin32.h" />
+    <ClInclude Include="EclButton.h">
+      <Filter>Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Eclipse.h">
+      <Filter>Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="EclWindow.h">
+      <Filter>Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="NeuronClient.h" />
+    <ClInclude Include="OGLExtensions.h" />
+  </ItemGroup>
+</Project>

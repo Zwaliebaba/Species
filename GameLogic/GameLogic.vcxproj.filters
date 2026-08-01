@@ -1,0 +1,563 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Game Objects">
+      <UniqueIdentifier>{d59353d7-5df9-429a-a492-3e72b06e97b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interface">
+      <UniqueIdentifier>{5c044e47-1a3e-413e-8a29-10f46b3bb856}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Ai.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Airstrike.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="AntHill.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Armour.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ArmyAnt.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="BlueprintStore.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Bridge.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Building.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Cave.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Centipede.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstructionYard.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ControlTower.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Darwinian.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Egg.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Engineer.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityLeg.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Factory.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="FeedingTube.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Flag.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Generator.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="GenericHub.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="GodDish.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="GunTurret.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Incubator.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="InsertionSquad.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Lander.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="LaserFence.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="LaserTrooper.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Mine.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Officer.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerStation.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="RadarDish.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ResearchItem.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Rocket.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="SafeArea.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptTrigger.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Snow.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="SoulDestroyer.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Spam.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="SpawnPoint.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Spider.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Spirit.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="SpiritReceiver.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="SpiritStore.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="SporeGenerator.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticShape.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Switch.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Teleport.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Tree.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Triffid.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Tripod.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="TrunkPort.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="UpgradePort.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Virii.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Wall.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Weapons.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldObject.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="BuildingsWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="BuyNowWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraAnimWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraMountWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="CheatWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="DarwiniaWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugMenu.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="DemoEndWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="DropDownMenu.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="EditorWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDialog.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalWorldEditorWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="InputField.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="InstantUnitWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="LandscapeWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="LightsWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="MainMenus.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageDialog.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="ModsWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="PrefsGraphicsWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="PrefsKeybindingsWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="PrefsOtherWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="PrefsScreenWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="PrefsSoundWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="ProfileWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="ReallyQuitWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="SaveOnQuitWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="ScrollBar.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="UpdateAvailableWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="UserProfileWindow.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Ai.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Airstrike.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="AntHill.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Armour.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ArmyAnt.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="BlueprintStore.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Bridge.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Building.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Cave.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Centipede.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstructionYard.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ControlTower.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Darwinian.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Egg.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Engineer.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityLeg.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Factory.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="FeedingTube.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Flag.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Generator.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="GenericHub.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="GodDish.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="GunTurret.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Incubator.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="InsertionSquad.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Lander.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="LaserFence.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="LaserTrooper.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Mine.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Officer.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerStation.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="RadarDish.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ResearchItem.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Rocket.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SafeArea.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptTrigger.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Snow.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SoulDestroyer.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Spam.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SpawnPoint.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Spider.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Spirit.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SpiritReceiver.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SpiritStore.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SporeGenerator.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticShape.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Switch.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Teleport.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Tree.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Triffid.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Tripod.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="TrunkPort.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="UpgradePort.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Virii.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Wall.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Weapons.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldObject.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="BuildingsWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="BuyNowWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraAnimWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraMountWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="CheatWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="DarwiniaWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugMenu.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="DemoEndWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="DropDownMenu.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="EditorWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDialog.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalWorldEditorWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="InputField.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="InstantUnitWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="LandscapeWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="LightsWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="MainMenus.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageDialog.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="ModsWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="PrefsGraphicsWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="PrefsKeybindingsWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="PrefsOtherWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="PrefsScreenWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="PrefsSoundWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="ProfileWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="ReallyQuitWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="SaveOnQuitWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="ScrollBar.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateAvailableWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="UserProfileWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+</Project>
