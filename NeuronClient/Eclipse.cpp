@@ -371,7 +371,7 @@ char *EclGetCurrentButton ()
     return currentButton;
 }
 
-char *EclGetCurrentClickedButton ()
+char const *EclGetCurrentClickedButton ()
 {
     if ( lmb )
         return currentButton;

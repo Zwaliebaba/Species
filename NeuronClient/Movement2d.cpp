@@ -84,7 +84,7 @@ void AnalogMovement2D::Advance() {
 
 PriorityMovement2D::PriorityMovement2D( std::unique_ptr<Movement2D> _first,
                                         std::unique_ptr<Movement2D> _second )
-: first( _first ), second( _second ) {}
+: first( std::move( _first ) ), second( std::move( _second ) ) {}
 
 
 void PriorityMovement2D::Advance() {

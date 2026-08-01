@@ -408,13 +408,13 @@ void Task::Stop()
 }
 
 
-char *Task::GetTaskName( int _type )
+char const *Task::GetTaskName( int _type )
 {
     return GlobalResearch::GetTypeName( _type );
 }
 
 
-char *Task::GetTaskNameTranslated( int _type )
+char const *Task::GetTaskNameTranslated( int _type )
 {
     return GlobalResearch::GetTypeNameTranslated( _type );
 }

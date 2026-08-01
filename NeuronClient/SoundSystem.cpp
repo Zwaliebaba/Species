@@ -77,9 +77,9 @@ int SoundSourceBlueprint::GetSoundSoundType ( char const *_name )
 }
 
 
-char *SoundSourceBlueprint::GetSoundSourceName( int _type )
+char const *SoundSourceBlueprint::GetSoundSourceName( int _type )
 {
-    char *names[] = {
+    char const *names[] = {
                         "Laser",
                         "Grenade",
                         "Rocket",

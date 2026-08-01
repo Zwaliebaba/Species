@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "MathUtils.h"
 #include "RgbColour.h"
 
 RGBAColour g_colourBlack(0,0,0);

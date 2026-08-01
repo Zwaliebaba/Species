@@ -114,7 +114,7 @@ public:
     bool    SaveProfile     ( bool _global, bool _local );
     void    ResetLevel      ( bool _global );
 
-    void    SetLanguage     ( char *_language, bool _test );
+    void    SetLanguage     ( char const *_language, bool _test );
 
 	bool	HasBoughtGame	();
 

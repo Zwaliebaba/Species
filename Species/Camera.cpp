@@ -1128,10 +1128,17 @@ void Camera::AdvanceEntityTrackMode()
 
   UpdateEntityTrackingMode();
 
+  // Declared up front so that the jumps to finishMode don't skip over any
+  // initialisation.
+  Entity* entity = nullptr;
+  Task* currentTask = nullptr;
+  int halfHeight = 0;
+  int halfWidth = 0;
+
   if (!g_app->m_location || !m_entityTrack)
     goto finishMode;
 
-  Entity* entity = g_app->m_location->GetEntity(m_objectId);
+  entity = g_app->m_location->GetEntity(m_objectId);
   if (!entity || entity->m_dead)
   {
     WorldObjectId id;
@@ -1143,7 +1150,7 @@ void Camera::AdvanceEntityTrackMode()
   if (!entity || entity->m_dead)
     goto finishMode;
 
-  Task* currentTask = g_app->m_taskManager->GetCurrentTask();
+  currentTask = g_app->m_taskManager->GetCurrentTask();
   if (currentTask && currentTask->m_state != Task::StateRunning)
     goto finishMode;
 
@@ -1161,8 +1168,8 @@ void Camera::AdvanceEntityTrackMode()
   AdvanceAutomaticTracking();
 
   // Ensure that the target cursor remains in the centre of the screen
-  int halfHeight = g_app->m_renderer->ScreenH() / 2;
-  int halfWidth = g_app->m_renderer->ScreenW() / 2;
+  halfHeight = g_app->m_renderer->ScreenH() / 2;
+  halfWidth = g_app->m_renderer->ScreenW() / 2;
   g_target->SetMousePos(halfWidth, halfHeight);
 
   return;

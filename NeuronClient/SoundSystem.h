@@ -63,7 +63,7 @@ public:
     LList       <SoundEventBlueprint *> m_events;
 
     static int   GetSoundSoundType ( char const *_name );
-    static char *GetSoundSourceName( int _type );
+    static char const *GetSoundSourceName( int _type );
     static void  ListSoundEvents   ( int _type, LList<char const *> *_list );
 };
 

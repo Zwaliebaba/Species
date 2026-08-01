@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "MathUtils.h"
 #include "TextRenderer.h"
 #include "LanguageTable.h"
 

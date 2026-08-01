@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
@@ -16,6 +16,11 @@
     <ProjectGuid>{f62a3df8-f39f-465f-81b5-26dcb8e2d510}</ProjectGuid>
     <RootNamespace>Species</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <!-- The 32-bit x86-hosted cross compiler runs out of address space loading
+         this project's PCH (C3859 / C1076), so ask for a 64-bit host. When
+         MSBuild itself runs as ARM64 the toolset already defaults to the native
+         arm64 tools, so leave that case alone. -->
+    <PreferredToolArchitecture Condition="'$(PreferredToolArchitecture)' == '' and '$(PROCESSOR_ARCHITECTURE)' != 'ARM64'">x64</PreferredToolArchitecture>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
@@ -55,8 +60,9 @@
       <AdditionalIncludeDirectories>$(SolutionDir)NeuronCore;$(SolutionDir)NeuronClient;$(SolutionDir)GameLogic</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;dsound.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -75,12 +81,16 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;dsound.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ProjectReference Include="..\GameLogic\GameLogic.vcxproj">
+      <Project>{3e429795-659b-4c9e-8732-3e3cadc9352e}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\NeuronClient\NeuronClient.vcxproj">
       <Project>{fc22e734-574b-40ad-9ddb-817414cb3610}</Project>
     </ProjectReference>

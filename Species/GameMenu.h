@@ -31,7 +31,7 @@ class GameMenuButton : public DarwiniaButton
 public:
     char    *m_iconName;
 public:
-    GameMenuButton( char *_iconName );
+    GameMenuButton( char const *_iconName );
     void Render( int realX, int realY, bool highlighted, bool clicked );
 };
 

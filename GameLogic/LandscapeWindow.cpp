@@ -189,7 +189,7 @@ public:
 // Class LandscapeFlatAreaEditWindow
 // ****************************************************************************
 
-LandscapeFlattenAreaEditWindow::LandscapeFlattenAreaEditWindow(char *_name, int areaId)
+LandscapeFlattenAreaEditWindow::LandscapeFlattenAreaEditWindow(char const *_name, int areaId)
 :   DarwiniaWindow(_name),
     m_areaId(areaId)
 {

@@ -37,7 +37,7 @@ public:
 	LandscapeFlattenArea	*m_areaDef;
     int						m_areaId;
 
-    LandscapeFlattenAreaEditWindow(char *_name, int areaId);
+    LandscapeFlattenAreaEditWindow(char const *_name, int areaId);
     ~LandscapeFlattenAreaEditWindow();
 
 	void					Create();

@@ -54,7 +54,7 @@ void EclMaximiseWindow( char const *name );
 void EclUnMaximise              ();
 
 char *EclGetCurrentButton          ();
-char *EclGetCurrentClickedButton   ();
+char const *EclGetCurrentClickedButton   ();
 
 char *EclGetCurrentFocus             ();
 void EclSetCurrentFocus              ( char *name );

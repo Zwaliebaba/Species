@@ -151,7 +151,7 @@ void SoundParameter::Read( TextReader *_in )
 }
 
 
-void SoundParameter::Write( FileWriter *_file, char *_paramName, int _tabs )
+void SoundParameter::Write( FileWriter *_file, char const *_paramName, int _tabs )
 {
     for( int i = 0; i < _tabs; ++i )
     {
@@ -198,9 +198,9 @@ float SoundParameter::GetSmooth()
 }
 
 
-char *SoundParameter::GetParameterTypeName( int _type )
+char const *SoundParameter::GetParameterTypeName( int _type )
 {
-    char *names[] = {
+    char const *names[] = {
                         "TypeFixedValue",
                         "TypeRangedRandom",
                         "TypeLinked"
@@ -223,9 +223,9 @@ int SoundParameter::GetParameterType( char *_name )
 }
 
 
-char *SoundParameter::GetLinkName( int _type )
+char const *SoundParameter::GetLinkName( int _type )
 {
-    char *names[] = {
+    char const *names[] = {
                         "Nothing",
                         "HeightAboveGround",
                         "Xpos",
@@ -253,9 +253,9 @@ int SoundParameter::GetLinkType( char *_name )
 }
 
 
-char *SoundParameter::GetUpdateTypeName( int _type )
+char const *SoundParameter::GetUpdateTypeName( int _type )
 {
-    char *names[] = {
+    char const *names[] = {
                         "UpdateConstantly",
                         "UpdateOncePerLoop"
                     };

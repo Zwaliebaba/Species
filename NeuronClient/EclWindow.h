@@ -47,8 +47,8 @@ public:
     EclWindow( char const *_name );
     virtual ~EclWindow  ();
 
-    void SetName                    ( char *_name );
-    void SetTitle                   ( char *_title );
+    void SetName                    ( char const *_name );
+    void SetTitle                   ( char const *_title );
     void SetPosition                ( int _x, int _y );
     void SetSize                    ( int _w, int _h );
     void SetMovable                 ( bool _movable );

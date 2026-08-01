@@ -48,7 +48,7 @@
 
 
 
-ScreenZone::ScreenZone( char *_name, char *_tooltip,
+ScreenZone::ScreenZone( char const *_name, char const *_tooltip,
                         float _x, float _y, float _w, float _h,
                         int _data )
 :   m_x(_x),

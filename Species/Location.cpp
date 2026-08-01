@@ -556,7 +556,7 @@ Building *Location::GetBuilding(Vector3 const &_rayStart, Vector3 const &_rayDir
 		}
 	}
 
-	return false;
+	return NULL;
 }
 
 

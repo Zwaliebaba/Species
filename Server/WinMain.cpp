@@ -1,5 +1,6 @@
+#include "pch.h"
 
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int main(int argc, char *argv[])
 {
-    return static_cast<int>(msg.wParam);
+    return 0;
 }

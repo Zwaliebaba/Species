@@ -38,7 +38,7 @@ LangPhrase::~LangPhrase()
 // Class LangTable
 // ****************************************************************************
 
-LangTable::LangTable(char *_filename)
+LangTable::LangTable(char const *_filename)
 {
 	// Create the "not found" Phrase that will be returned when
 	// the LookupPhrase is called with an unknown key

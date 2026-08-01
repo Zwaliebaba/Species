@@ -49,8 +49,8 @@ public:
     static WorldObjectId Demote          ( WorldObjectId _id );
     static WorldObjectId FindDarwinian   ( Vector3 const &_pos );
 
-    static char *GetTaskName            ( int _type );
-    static char *GetTaskNameTranslated  ( int _type );
+    static char const *GetTaskName            ( int _type );
+    static char const *GetTaskNameTranslated  ( int _type );
 };
 
 

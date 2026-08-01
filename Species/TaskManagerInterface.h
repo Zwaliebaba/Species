@@ -30,7 +30,7 @@ public:
 	bool	m_subZones;		// does the zone have sub icons? (ie, weapons)
 
 public:
-    ScreenZone( char *_name, char *_tooltip,
+    ScreenZone( char const *_name, char const *_tooltip,
                 float _x, float _y, float _w, float _h,
                 int _data );
 };

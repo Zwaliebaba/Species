@@ -93,7 +93,7 @@ public:
 
     bool    Evaluate    ();
 
-    void    SetStringId ( char *_stringId );
+    void    SetStringId ( char const *_stringId );
     void    SetCutScene ( char *_cutScene );
 
     void    Save        ( FileWriter *_out );
@@ -304,10 +304,10 @@ public:
     bool            EvaluateEvents          ();	                        // Returns true if an event was triggered
     void            TransferSpirits         (int _locationId);
 
-    void			LoadGame				(char *_filename);
+    void			LoadGame				(char const *_filename);
     void			SaveGame				(char const *_filename);
 
-    void            LoadLocations           (char *_filename);
+    void            LoadLocations           (char const *_filename);
     void            SaveLocations           (char const *_filename);
 
 	void			SetupLights				();

@@ -108,10 +108,6 @@ App::App()
 	// Load resources
 
     m_resource = new Resource();
-    m_resource->ParseArchive( "main.dat", NULL );
-    m_resource->ParseArchive( "sounds.dat", NULL );
-	m_resource->ParseArchive( "patch.dat", NULL );
-    m_resource->ParseArchive( "language.dat", NULL );
 
 	g_prefsManager = new PrefsManager(App::GetPreferencesPath());
 	SetPreferenceOverrides();
@@ -278,7 +274,7 @@ void App::UpdateDifficultyFromPreferences()
 }
 
 
-void App::SetLanguage( char *_language, bool _test )
+void App::SetLanguage( char const *_language, bool _test )
 {
     //
     // Delete existing language data

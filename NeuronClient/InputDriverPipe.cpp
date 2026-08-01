@@ -125,7 +125,7 @@ InputParserState PipeInputDriver::parseInputSpecification( InputSpecTokens const
 		return STATE_CONJ_ERROR;
 
 	// Parsing went OK. Save this.
-	m_specs.push_back( filterWithArgs );
+	m_specs.push_back( std::move( filterWithArgs ) );
 	spec.control_id = m_specs.size() - 1;
 	return STATE_DONE;
 }

@@ -46,7 +46,6 @@ public:
 	// *** Initialisation/Destruction ***
     Resource();
 	~Resource();
-    void            ParseArchive		( char const *_dataFile, char const *_password);
 
 	// *** Bitmaps ***
     void            AddBitmap			(char const *_name, BitmapRGBA const &_bmp, bool _mipMapping=true);

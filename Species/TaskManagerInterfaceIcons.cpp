@@ -1106,7 +1106,7 @@ void TaskManagerInterfaceIcons::RenderMessages()
         //
         // Lookup task name
 
-        char *taskName = NULL;
+        char const *taskName = NULL;
 
         if( m_currentTaskType == 999 )
         {
@@ -2077,7 +2077,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
                 Building *building = g_app->m_location->GetBuilding( condition->m_id );
                 if( building )
                 {
-                    char *objectiveCounter = building->GetObjectiveCounter();
+                    char const *objectiveCounter = building->GetObjectiveCounter();
                     g_gameFont.DrawText2D( completeX, textY+textH*0.75f, textH/3, "%s", objectiveCounter );
                 }
             }

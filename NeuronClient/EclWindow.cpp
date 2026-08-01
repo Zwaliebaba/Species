@@ -33,7 +33,7 @@ EclWindow::~EclWindow()
 
 }
 
-void EclWindow::SetName ( char *_name )
+void EclWindow::SetName ( char const *_name )
 {
 
     if ( strlen(_name) > SIZE_ECLWINDOW_NAME )
@@ -45,7 +45,7 @@ void EclWindow::SetName ( char *_name )
 
 }
 
-void EclWindow::SetTitle ( char *_title )
+void EclWindow::SetTitle ( char const *_title )
 {
     if ( strlen(_title) > SIZE_ECLWINDOW_TITLE )
     {

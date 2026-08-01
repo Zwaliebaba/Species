@@ -682,7 +682,7 @@ void LocationEditor::Advance()
 
 void LocationEditor::RenderUnit(InstantUnit *_iu)
 {
-	char *typeName = Entity::GetTypeName(_iu->m_type);
+	char const *typeName = Entity::GetTypeName(_iu->m_type);
 
 	float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(_iu->m_posX, _iu->m_posZ);
 	glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );

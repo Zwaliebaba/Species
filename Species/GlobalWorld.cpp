@@ -115,7 +115,7 @@ GlobalEventCondition::~GlobalEventCondition()
 	delete [] m_cutScene;
 }
 
-void GlobalEventCondition::SetStringId ( char *_stringId )
+void GlobalEventCondition::SetStringId ( char const *_stringId )
 {
 	delete [] m_stringId;
     m_stringId = NewStr( _stringId );
@@ -749,7 +749,7 @@ void GlobalResearch::Read( TextReader *_in )
 
 char const *GlobalResearch::GetTypeName( int _type )
 {
-    char *names[] = {
+    char const *names[] = {
                         "Darwinian",
                         "Officer",
                         "Squad",
@@ -1868,7 +1868,7 @@ void GlobalWorld::AddLevelBuildingToGlobalBuildings(Building *_building, int _lo
 	}
 }
 
-void GlobalWorld::LoadGame( char *_filename )
+void GlobalWorld::LoadGame( char const *_filename )
 {
     TextReader *in = NULL;
     char fullFilename[256];
@@ -2055,7 +2055,7 @@ void GlobalWorld::ParseTutorial(TextReader *_in)
 }
 
 
-void GlobalWorld::LoadLocations(char *_filename)
+void GlobalWorld::LoadLocations(char const *_filename)
 {
     TextReader *in = g_app->m_resource->GetTextReader(_filename);
 

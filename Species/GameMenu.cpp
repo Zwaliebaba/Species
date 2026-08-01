@@ -25,7 +25,7 @@
 // Button Classes
 // *************************
 
-GameMenuButton::GameMenuButton(char *_iconName)
+GameMenuButton::GameMenuButton(char const *_iconName)
 {
     m_iconName = strdup(_iconName );
     m_fontSize = 65.0f;
@@ -131,7 +131,7 @@ public:
 class PrologueButton : public GameMenuButton
 {
 public:
-    PrologueButton( char *_iconName )
+    PrologueButton( char const *_iconName )
     :   GameMenuButton( _iconName )
     {
     }
@@ -145,7 +145,7 @@ public:
 class CampaignButton : public GameMenuButton
 {
 public:
-    CampaignButton( char *_iconName )
+    CampaignButton( char const *_iconName )
     :   GameMenuButton( _iconName )
     {
     }
@@ -159,7 +159,7 @@ public:
 class DarwiniaModeButton : public GameMenuButton
 {
 public:
-    DarwiniaModeButton( char *_iconName )
+    DarwiniaModeButton( char const *_iconName )
     :   GameMenuButton( _iconName )
     {
     }

@@ -66,19 +66,19 @@ public:
     float       GetOutput();
 
     void        Read    ( TextReader *_in );
-    void        Write   ( FileWriter *_file, char *_paramName, int _tabs );
+    void        Write   ( FileWriter *_file, char const *_paramName, int _tabs );
 
 	float		GetSmooth();	// Currently returns sqrtf(m_smooth)
 
     bool        IsFixedValue( float _value );
 
-    static char *GetParameterTypeName   ( int _type );
+    static char const *GetParameterTypeName   ( int _type );
     static int   GetParameterType       ( char *_name );
 
-    static char *GetLinkName            ( int _type );
+    static char const *GetLinkName            ( int _type );
     static int   GetLinkType            ( char *_name );
 
-    static char *GetUpdateTypeName      ( int _type );
+    static char const *GetUpdateTypeName      ( int _type );
     static int   GetUpdateType          ( char *_name );
 };
 

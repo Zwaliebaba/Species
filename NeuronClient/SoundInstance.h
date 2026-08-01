@@ -174,10 +174,10 @@ public:
 
     WorldObject *GetAttachedObject  ();
 
-    static char *GetPositionTypeName    ( int _type );
-    static char *GetInstanceTypeName    ( int _type );
-    static char *GetLoopTypeName        ( int _type );
-    static char *GetSourceTypeName      ( int _type );
+    static char const *GetPositionTypeName    ( int _type );
+    static char const *GetInstanceTypeName    ( int _type );
+    static char const *GetLoopTypeName        ( int _type );
+    static char const *GetSourceTypeName      ( int _type );
 };
 
 

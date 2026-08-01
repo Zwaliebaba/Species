@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "MathUtils.h"
 #include "TextRenderer.h"
 #include "Resource.h"
 #include "Input.h"

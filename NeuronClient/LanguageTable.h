@@ -38,7 +38,7 @@ private:
 	void RebuildTable( HashTable<int> *_phrases, std::ostrstream &stream, InputMode _mood );
 
 public:
-	LangTable   (char *_filename);
+	LangTable   (char const *_filename);
 	~LangTable  ();
 
     void ParseLanguageFile    (char const *_filename);

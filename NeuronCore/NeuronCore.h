@@ -55,7 +55,7 @@
 #include <restrictederrorinfo.h>
 #include <unknwn.h>
 
-#pragma comment(lib, "WS2.lib")
+#pragma comment(lib, "Ws2_32.lib")
 
 // Undefine GetCurrentTime macro to prevent
 // conflict with Storyboard::GetCurrentTime

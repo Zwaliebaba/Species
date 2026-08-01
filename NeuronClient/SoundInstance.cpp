@@ -189,7 +189,7 @@ void SoundInstance::SetEventName( char const *_entityName, char const *_eventNam
 }
 
 
-char *SoundInstance::GetPositionTypeName( int _type )
+char const *SoundInstance::GetPositionTypeName( int _type )
 {
     static char const *types[] = {    "Type2D",
                                 "Type3DStationary",
@@ -206,7 +206,7 @@ char *SoundInstance::GetPositionTypeName( int _type )
 }
 
 
-char *SoundInstance::GetInstanceTypeName( int _type )
+char const *SoundInstance::GetInstanceTypeName( int _type )
 {
     static char const *types[] = {    "Polyphonic",
                                 "MonophonicRandom",
@@ -222,7 +222,7 @@ char *SoundInstance::GetInstanceTypeName( int _type )
 }
 
 
-char *SoundInstance::GetLoopTypeName( int _type )
+char const *SoundInstance::GetLoopTypeName( int _type )
 {
     static char const *types[] = {    "PlayOnce",
                                 "Loop",
@@ -238,7 +238,7 @@ char *SoundInstance::GetLoopTypeName( int _type )
 }
 
 
-char *SoundInstance::GetSourceTypeName( int _type )
+char const *SoundInstance::GetSourceTypeName( int _type )
 {
     static char const *types[] = {    "Sample",
                                 "SampleGroupRandom"
@@ -1041,7 +1041,7 @@ char *SoundInstance::GetDescriptor()
 {
     static char descriptor[256];
 
-    char *looping = GetLoopTypeName( m_loopType );
+    char const *looping = GetLoopTypeName( m_loopType );
     char const *inEditor = m_positionType == TypeInEditor ? " editor" : "       ";
 
     char priority[32];

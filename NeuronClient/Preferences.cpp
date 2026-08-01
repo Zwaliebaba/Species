@@ -57,7 +57,7 @@ PrefsItem::PrefsItem(char *_line)
 	char *value = c + 1;
 	while (isspace(*value) || *value == '=')
 	{
-		if (value == '\0') break;
+		if (*value == '\0') break;
 		value++;
 	}
 

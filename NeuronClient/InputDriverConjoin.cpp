@@ -57,7 +57,7 @@ InputParserState ConjoinInputDriver::parseInputSpecification( InputSpecTokens co
 	}
 
 	// Parsing went OK. Save this.
-	m_specs.push_back( speclist );
+	m_specs.push_back( std::move( speclist ) );
 	spec.control_id = m_specs.size() - 1;
 	return STATE_DONE;
 }

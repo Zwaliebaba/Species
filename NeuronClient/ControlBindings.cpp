@@ -107,9 +107,9 @@ bool ControlBindings::bind( int type, InputSpec const &spec, bool replace )
 		std::unique_ptr<const InputSpec> specCopy( new InputSpec( spec ) );
 		if ( replace && bindings[ type ].size() > 0 ) {
 			bindings[ type ].erase( 0 );
-			bindings[ type ].insert( 0, specCopy );
+			bindings[ type ].insert( 0, std::move( specCopy ) );
 		} else
-			bindings[ type ].push_back( specCopy );
+			bindings[ type ].push_back( std::move( specCopy ) );
 		return true;
 	} else
 		return false;
