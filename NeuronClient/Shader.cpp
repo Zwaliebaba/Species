@@ -5,13 +5,13 @@
 #include "App.h"
 #include "BinaryStreamReaders.h"
 #include "Resource.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "OpenGLDirectXInternals.h"
 #include "Shader.h"
 
 #pragma comment(lib,"d3dx9.lib")
 
-#define CHECK_HR(hr) {DarwiniaDebugAssert(SUCCEEDED(hr)); if(FAILED(hr)) return;}
+#define CHECK_HR(hr) {DEBUG_ASSERT(SUCCEEDED(hr)); if(FAILED(hr)) return;}
 
 // general purpose whole file -> memory loader
 // could be moved to public header, if anyone else wants to use it
@@ -24,7 +24,7 @@ struct MemFile
 		BinaryReader* reader = g_app->m_resource->GetBinaryReader(filename);
 		if(!reader)
 		{
-			DarwiniaDebugAssert(0);
+			DEBUG_ASSERT(0);
 			return;
 		}
 		m_size = reader->GetSize();

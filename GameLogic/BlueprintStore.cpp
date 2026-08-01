@@ -37,7 +37,7 @@ void BlueprintBuilding::Initialise( Building *_template )
     Building::Initialise( _template );
 
     m_marker = m_shape->m_rootFragment->LookupMarker( "MarkerBlueprint" );
-    DarwiniaDebugAssert( m_marker );
+    DEBUG_ASSERT( m_marker );
 
     BlueprintBuilding *blueprintBuilding = (BlueprintBuilding *) _template;
 
@@ -205,7 +205,7 @@ BlueprintStore::BlueprintStore()
 }
 
 
-char *BlueprintStore::GetObjectiveCounter()
+char const *BlueprintStore::GetObjectiveCounter()
 {
     static char result[256];
 

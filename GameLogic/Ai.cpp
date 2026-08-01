@@ -78,7 +78,7 @@ void AI::Begin()
                 {
                     int cId = a->m_neighbours[n];
                     AITarget *c = (AITarget *) g_app->m_location->GetBuilding(cId);
-                    DarwiniaDebugAssert( c && c->m_type == Building::TypeAITarget );
+                    DEBUG_ASSERT( c && c->m_type == Building::TypeAITarget );
                     float distanceAtoC = a->IsNearTo( cId );
 
                     for( int x = 0; x < a->m_neighbours.Size(); ++x )
@@ -87,7 +87,7 @@ void AI::Begin()
                         {
                             int bId = a->m_neighbours[x];
                             AITarget *b = (AITarget *) g_app->m_location->GetBuilding( bId );
-                            DarwiniaDebugAssert( b && b->m_type == Building::TypeAITarget );
+                            DEBUG_ASSERT( b && b->m_type == Building::TypeAITarget );
                             float distanceAtoB = a->IsNearTo( bId );
                             float distanceBtoC = b->IsNearTo( cId );
                             if( distanceBtoC > 0.0f &&
@@ -106,14 +106,14 @@ void AI::Begin()
 
 
     float timeTaken = GetHighResTime() - startTime;
-    DebugOut( "AI Node graph rebuilt in %dms\n", int( timeTaken * 1000.0f ) );
+    DebugTrace( "AI Node graph rebuilt in %dms\n", int( timeTaken * 1000.0f ) );
 }
 
 
 int AI::FindTargetBuilding( int _fromTargetId, int _fromTeamId )
 {
     AITarget *fromBuilding = (AITarget *) g_app->m_location->GetBuilding(_fromTargetId);
-    DarwiniaDebugAssert( fromBuilding && fromBuilding->m_type == Building::TypeAITarget );
+    DEBUG_ASSERT( fromBuilding && fromBuilding->m_type == Building::TypeAITarget );
 
 
     // Note by Chris
@@ -148,7 +148,7 @@ int AI::FindTargetBuilding( int _fromTargetId, int _fromTeamId )
         {
             int toBuildingId = fromBuilding->m_neighbours[i];
             AITarget *target = (AITarget *) g_app->m_location->GetBuilding(toBuildingId);
-            DarwiniaDebugAssert( target && target->m_type == Building::TypeAITarget );
+            DEBUG_ASSERT( target && target->m_type == Building::TypeAITarget );
 
             float thisPriority = target->m_priority[_fromTeamId];
             if( thisPriority > bestPriority )

@@ -14,7 +14,7 @@
 
 #include "3dSprite.h"
 #include "DebugRender.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Input.h"
 #include "TargetCursor.h"
 #include "MathUtils.h"
@@ -337,7 +337,7 @@ void LocationEditor::AdvanceModeLandTile()
 			m_waitingForRelease = true;
 
 			EclWindow *cw = EclGetWindow(LANGUAGEPHRASE("editor_landscape"));
-			DarwiniaDebugAssert(cw);
+			DEBUG_ASSERT(cw);
 			LandscapeTileEditWindow *ew = new LandscapeTileEditWindow(LANGUAGEPHRASE("editor_landscapetile"), newSelectionId);
 			ew->m_w = cw->m_w;
 			ew->m_h = 150;
@@ -419,7 +419,7 @@ void LocationEditor::AdvanceModeLandFlat()
 			m_waitingForRelease = true;
 
 			EclWindow *cw = EclGetWindow(LANGUAGEPHRASE("editor_landscape"));
-			DarwiniaDebugAssert(cw);
+			DEBUG_ASSERT(cw);
 			LandscapeFlattenAreaEditWindow *ew = new LandscapeFlattenAreaEditWindow("Flatten Area", newSelectionId);
 			ew->m_w = cw->m_w;
 			ew->m_h = 100;
@@ -484,8 +484,8 @@ void LocationEditor::AdvanceModeBuilding()
 		{
 			m_selectionId = newSelectionId;
 			BuildingsCreateWindow *cw = (BuildingsCreateWindow*)EclGetWindow(LANGUAGEPHRASE("editor_buildings"));
-			DarwiniaDebugAssert(!ew);
-			DarwiniaDebugAssert(cw);
+			DEBUG_ASSERT(!ew);
+			DEBUG_ASSERT(cw);
 			BuildingEditWindow *bew = new BuildingEditWindow(LANGUAGEPHRASE("editor_buildingid"));
 			bew->m_w = cw->m_w;
 			bew->m_h = 140;
@@ -581,7 +581,7 @@ void LocationEditor::AdvanceModeInstantUnit()
 		{
 			m_selectionId = newSelectionId;
 			EclWindow *cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
-			DarwiniaDebugAssert(cw);
+			DEBUG_ASSERT(cw);
 			InstantUnitEditWindow *ew = new InstantUnitEditWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
 			ew->m_w = cw->m_w;
 			ew->m_h = 160;
@@ -635,10 +635,10 @@ void LocationEditor::AdvanceModeCameraMount()
 			if (mountId != -1)
 			{
 				CameraMount *mount = g_app->m_location->m_levelFile->m_cameraMounts[mountId];
-				DarwiniaDebugAssert(mount);
+				DEBUG_ASSERT(mount);
 
 				CameraAnimation *anim = g_app->m_location->m_levelFile->m_cameraAnimations[m_selectionId];
-				DarwiniaDebugAssert(anim);
+				DEBUG_ASSERT(anim);
 
 				CamAnimNode *node = new CamAnimNode;
 				node->m_mountName = strdup(mount->m_name);

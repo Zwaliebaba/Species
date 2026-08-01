@@ -520,7 +520,7 @@ bool GunTurret::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
 }
 
 
-void GunTurret::ListSoundEvents( LList<char *> *_list )
+void GunTurret::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 

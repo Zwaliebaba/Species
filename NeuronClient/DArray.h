@@ -68,7 +68,7 @@ public:
 
 #include <stdlib.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "DArray.h"
 
 
@@ -221,7 +221,7 @@ int DArray<T>::PutData(const T& newdata)
 template <class T>
 void DArray<T>::PutData(const T& newdata, int index)
 {
-	DarwiniaDebugAssert(index < m_arraySize && index >= 0);
+	DEBUG_ASSERT(index < m_arraySize && index >= 0);
 
 	array[index] = newdata;
 	shadow[index] = 1;
@@ -259,8 +259,8 @@ void DArray<T>::EmptyAndDelete()
 template <class T>
 T DArray<T>::GetData(int index) const
 {
-	DarwiniaDebugAssert(index < m_arraySize && index >= 0);
-	DarwiniaDebugAssert(shadow[index] != 0);
+	DEBUG_ASSERT(index < m_arraySize && index >= 0);
+	DEBUG_ASSERT(shadow[index] != 0);
 
 	return array[index];
 }
@@ -269,8 +269,8 @@ T DArray<T>::GetData(int index) const
 template <class T>
 T* DArray<T>::GetPointer(int index) const
 {
-	DarwiniaDebugAssert(index < m_arraySize && index >= 0);
-	DarwiniaDebugAssert(shadow[index] != 0);
+	DEBUG_ASSERT(index < m_arraySize && index >= 0);
+	DEBUG_ASSERT(shadow[index] != 0);
 
 	return &(array[index]);
 }
@@ -279,8 +279,8 @@ T* DArray<T>::GetPointer(int index) const
 template <class T>
 inline T& DArray<T>::operator [] (int index)
 {
-	DarwiniaDebugAssert(index < m_arraySize && index >= 0);
-	DarwiniaDebugAssert(shadow[index] != 0);
+	DEBUG_ASSERT(index < m_arraySize && index >= 0);
+	DEBUG_ASSERT(shadow[index] != 0);
 
 	return array[index];
 }
@@ -289,18 +289,18 @@ inline T& DArray<T>::operator [] (int index)
 template <class T>
 inline const T& DArray<T>::operator [] (int _index) const
 {
-	DarwiniaDebugAssert(_index < this->m_arraySize && _index >= 0);
-	DarwiniaDebugAssert(shadow[_index] != 0);
+	DEBUG_ASSERT(_index < this->m_arraySize && _index >= 0);
+	DEBUG_ASSERT(shadow[_index] != 0);
 
-	return array[index];
+	return array[_index];
 }
 
 
 template <class T>
 void DArray<T>::MarkUsed(int _index)
 {
-	DarwiniaDebugAssert(_index < m_arraySize && _index >= 0);
-	DarwiniaDebugAssert(shadow[_index] == 0);
+	DEBUG_ASSERT(_index < m_arraySize && _index >= 0);
+	DEBUG_ASSERT(shadow[_index] == 0);
 
 	shadow[_index] = 1;
 }
@@ -309,8 +309,8 @@ void DArray<T>::MarkUsed(int _index)
 template <class T>
 void DArray<T>::MarkNotUsed(int index)
 {
-	DarwiniaDebugAssert(index < m_arraySize && index >= 0);
-	DarwiniaDebugAssert(shadow[index] != 0);
+	DEBUG_ASSERT(index < m_arraySize && index >= 0);
+	DEBUG_ASSERT(shadow[index] != 0);
 
 	shadow[index] = 0;
 }

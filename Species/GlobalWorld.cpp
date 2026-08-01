@@ -3,7 +3,7 @@
 #include <float.h>
 
 #include "DebugRender.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "LanguageTable.h"
 #include "FilesysUtils.h"
 #include "FileWriter.h"
@@ -129,9 +129,9 @@ void GlobalEventCondition::SetCutScene ( char *_cutScene )
 }
 
 
-char *GlobalEventCondition::GetTypeName( int _type )
+char const *GlobalEventCondition::GetTypeName( int _type )
 {
-    static char *names[] = {
+    static char const *names[] = {
                                 "AlwaysTrue",
                                 "BuildingOnline",
                                 "BuildingOffline",
@@ -141,7 +141,7 @@ char *GlobalEventCondition::GetTypeName( int _type )
 								"NeverTrue"
                            };
 
-    DarwiniaDebugAssert( _type >= 0 && _type < NumConditions );
+    DEBUG_ASSERT( _type >= 0 && _type < NumConditions );
 
     return names[_type];
 }
@@ -197,7 +197,7 @@ bool GlobalEventCondition::Evaluate()
 			return false;
 
         default:
-            DarwiniaDebugAssert(false);
+            DEBUG_ASSERT(false);
     }
 
     return false;
@@ -234,15 +234,15 @@ void GlobalEventCondition::Save( FileWriter *_out )
 // Class GlobalEventAction
 // ****************************************************************************
 
-char *GlobalEventAction::GetTypeName(int _type)
+char const *GlobalEventAction::GetTypeName(int _type)
 {
-    static char *names[] = {
+    static char const *names[] = {
                                 "SetMission",
                                 "RunScript",
                                 "MakeAvailable"
                             };
 
-    DarwiniaDebugAssert( _type >= 0 && _type < NumActionTypes );
+    DEBUG_ASSERT( _type >= 0 && _type < NumActionTypes );
 
     return names[_type];
 }
@@ -262,7 +262,7 @@ void GlobalEventAction::Read( TextReader *_in )
     {
         m_type = SetMission;
         m_locationId = g_app->m_globalWorld->GetLocationId( _in->GetNextToken() );
-        DarwiniaDebugAssert( m_locationId != -1 );
+        DEBUG_ASSERT( m_locationId != -1 );
         strcpy( m_filename, _in->GetNextToken() );
     }
     else if( stricmp( action, "RunScript" ) == 0 )
@@ -274,11 +274,11 @@ void GlobalEventAction::Read( TextReader *_in )
     {
         m_type = MakeAvailable;
         m_locationId = g_app->m_globalWorld->GetLocationId( _in->GetNextToken() );
-        DarwiniaDebugAssert( m_locationId != -1 );
+        DEBUG_ASSERT( m_locationId != -1 );
     }
     else
     {
-        DarwiniaDebugAssert( false );
+        DEBUG_ASSERT( false );
     }
 }
 
@@ -296,7 +296,7 @@ void GlobalEventAction::Write(FileWriter *_out)
         case MakeAvailable:     _out->printf( "%s", locationName);                      break;
 
         default:
-            DarwiniaDebugAssert(false);
+            DEBUG_ASSERT(false);
     }
 
     _out->printf( "\n");
@@ -345,7 +345,7 @@ void GlobalEventAction::Execute()
         case SetMission:
         {
             GlobalLocation *loc = g_app->m_globalWorld->GetLocation(m_locationId);
-            DarwiniaDebugAssert(loc);
+            DEBUG_ASSERT(loc);
             strcpy(loc->m_missionFilename, m_filename);
             break;
         }
@@ -357,13 +357,13 @@ void GlobalEventAction::Execute()
         case MakeAvailable:
         {
             GlobalLocation *loc = g_app->m_globalWorld->GetLocation(m_locationId);
-            DarwiniaDebugAssert(loc);
+            DEBUG_ASSERT(loc);
             loc->m_available = true;
             break;
         }
 
         default:
-            DarwiniaDebugAssert(false);
+            DEBUG_ASSERT(false);
     }
 }
 
@@ -454,7 +454,7 @@ void GlobalEvent::Read( TextReader *_in )
 
         GlobalEventCondition *condition = new GlobalEventCondition;
 		condition->m_type = condition->GetType(conditionTypeName);
-        DarwiniaDebugAssert( condition->m_type != -1 );
+        DEBUG_ASSERT( condition->m_type != -1 );
 
 		switch (condition->m_type)
 		{
@@ -466,12 +466,12 @@ void GlobalEvent::Read( TextReader *_in )
 			case GlobalEventCondition::BuildingOnline:
 				condition->m_locationId = g_app->m_globalWorld->GetLocationId( _in->GetNextToken() );
 				condition->m_id = atoi( _in->GetNextToken() );
-                DarwiniaDebugAssert( condition->m_locationId != -1 );
+                DEBUG_ASSERT( condition->m_locationId != -1 );
 				break;
 
             case GlobalEventCondition::ResearchOwned:
                 condition->m_id = GlobalResearch::GetType( _in->GetNextToken() );
-                DarwiniaDebugAssert( condition->m_id != -1 );
+                DEBUG_ASSERT( condition->m_id != -1 );
                 break;
 
             case GlobalEventCondition::DebugKey:
@@ -492,7 +492,7 @@ void GlobalEvent::Read( TextReader *_in )
         {
             char *word = _in->GetNextToken();
             if( stricmp( word, "end" ) == 0 ) break;
-            DarwiniaDebugAssert( stricmp( word, "action" ) == 0 );
+            DEBUG_ASSERT( stricmp( word, "action" ) == 0 );
 
             GlobalEventAction *action = new GlobalEventAction;
             action->Read( _in );
@@ -544,7 +544,7 @@ GlobalResearch::GlobalResearch()
 
 void GlobalResearch::AddResearch( int _type )
 {
-    DarwiniaDebugAssert( _type >= 0 && _type < NumResearchItems );
+    DEBUG_ASSERT( _type >= 0 && _type < NumResearchItems );
 
     if( m_researchLevel[_type] < 1 )
     {
@@ -556,7 +556,7 @@ void GlobalResearch::AddResearch( int _type )
 
 bool GlobalResearch::HasResearch( int _type )
 {
-    DarwiniaDebugAssert( _type >= 0 && _type < NumResearchItems );
+    DEBUG_ASSERT( _type >= 0 && _type < NumResearchItems );
 
     return( m_researchLevel[_type] > 0 );
 }
@@ -564,7 +564,7 @@ bool GlobalResearch::HasResearch( int _type )
 
 int GlobalResearch::CurrentProgress ( int _type )
 {
-    DarwiniaDebugAssert( _type >= 0 && _type < NumResearchItems );
+    DEBUG_ASSERT( _type >= 0 && _type < NumResearchItems );
 
     return m_researchProgress[_type];
 }
@@ -572,7 +572,7 @@ int GlobalResearch::CurrentProgress ( int _type )
 
 int GlobalResearch::RequiredProgress( int _level )
 {
-    DarwiniaDebugAssert( _level >= 0 && _level < 4 );
+    DEBUG_ASSERT( _level >= 0 && _level < 4 );
 
     static int s_requiredProgress[] = { 1, 50, 100, 200 };
 
@@ -664,7 +664,7 @@ void GlobalResearch::AdvanceResearch()
 
 void GlobalResearch::SetCurrentProgress( int _type, int _progress )
 {
-    DarwiniaDebugAssert( _type >= 0 && _type < NumResearchItems );
+    DEBUG_ASSERT( _type >= 0 && _type < NumResearchItems );
 
     m_researchProgress[_type] = _progress;
     EvaluateLevel( _type );
@@ -687,7 +687,7 @@ void GlobalResearch::DecreaseProgress( int _amount )
 
 int GlobalResearch::CurrentLevel( int _type )
 {
-    DarwiniaDebugAssert( _type >= 0 && _type < NumResearchItems );
+    DEBUG_ASSERT( _type >= 0 && _type < NumResearchItems );
 
     return m_researchLevel[_type];
 }
@@ -742,12 +742,12 @@ void GlobalResearch::Read( TextReader *_in )
         }
         else
         {
-            DarwiniaReleaseAssert( false, "Error loading GlobalResearch" );
+            ASSERT_TEXT( false, "Error loading GlobalResearch" );
         }
     }
 }
 
-char *GlobalResearch::GetTypeName( int _type )
+char const *GlobalResearch::GetTypeName( int _type )
 {
     char *names[] = {
                         "Darwinian",
@@ -763,14 +763,14 @@ char *GlobalResearch::GetTypeName( int _type )
                         "Engineer"
                     };
 
-    DarwiniaDebugAssert( _type >= 0 && _type < NumResearchItems );
+    DEBUG_ASSERT( _type >= 0 && _type < NumResearchItems );
     return names[_type];
 }
 
 
-char *GlobalResearch::GetTypeNameTranslated ( int _type )
+char const *GlobalResearch::GetTypeNameTranslated ( int _type )
 {
-    char *typeName = GetTypeName(_type);
+    char const *typeName = GetTypeName(_type);
 
     char stringId[256];
     sprintf( stringId, "researchname_%s", typeName );
@@ -1613,7 +1613,7 @@ int GlobalWorld::GetLocationId( char const *_name )
     for( int i = 0; i < m_locations.Size(); ++i )
     {
         GlobalLocation *loc = m_locations[i];
-        DarwiniaDebugAssert(loc);
+        DEBUG_ASSERT(loc);
         if( stricmp(loc->m_name, _name) == 0 )
         {
             return loc->m_id;
@@ -1836,7 +1836,7 @@ void GlobalWorld::ParseEvents(TextReader *_in)
             return;
         }
 
-        DarwiniaDebugAssert( stricmp( word, "Event" ) == 0 );
+        DEBUG_ASSERT( stricmp( word, "Event" ) == 0 );
 
         GlobalEvent *event = new GlobalEvent();
         event->Read( _in );
@@ -1960,7 +1960,7 @@ void GlobalWorld::LoadGame( char *_filename )
                 {
                     if( !building->m_dynamic )
                     {
-                        DebugOut( "%s found on level %s should be dynamic (otherwise save games wont work)\n",
+                        DebugTrace( "%s found on level %s should be dynamic (otherwise save games wont work)\n",
                                     Building::GetTypeName(building->m_type),
                                     GetLocationName(loc->m_id) );
                     }
@@ -1991,7 +1991,7 @@ void GlobalWorld::LoadGame( char *_filename )
 }
 
 
-void GlobalWorld::SaveGame( char *_filename )
+void GlobalWorld::SaveGame( char const *_filename )
 {
     FileWriter *out = NULL;
     char fullFilename[256];
@@ -2076,7 +2076,7 @@ void GlobalWorld::LoadLocations(char *_filename)
 }
 
 
-void GlobalWorld::SaveLocations(char *_filename)
+void GlobalWorld::SaveLocations(char const *_filename)
 {
     FileWriter *out = g_app->m_resource->GetFileWriter( _filename, false );
 
@@ -2146,11 +2146,11 @@ void GlobalWorld::TransferSpirits(int _locationId)
     //
     // Count how many spirits remain on the location
 
-    DarwiniaDebugAssert( g_app->m_location );
+    DEBUG_ASSERT( g_app->m_location );
     int remainingSpirits = g_app->m_location->m_spirits.NumUsed();
 
     GlobalLocation *location = GetLocation( _locationId );
-    DarwiniaReleaseAssert(location, "GlobalWorld::TransferSpirits, failed to lookup location %d", _locationId );
+    ASSERT_TEXT(location, "GlobalWorld::TransferSpirits, failed to lookup location %d", _locationId );
 
     int spiritCount = location->m_numSpirits + remainingSpirits/2;
     location->m_numSpirits = remainingSpirits/2;

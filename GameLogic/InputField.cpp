@@ -5,7 +5,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "HiResTime.h"
 #include "Input.h"
 #include "TargetCursor.h"
@@ -217,7 +217,7 @@ void InputField::Keypress ( int keyCode, bool shift, bool ctrl, bool alt )
 
 void InputField::RegisterChar(unsigned char *_char)
 {
-	DarwiniaDebugAssert(m_type == TypeNowt);
+	DEBUG_ASSERT(m_type == TypeNowt);
 	m_type = TypeChar;
 	m_char = _char;
 }
@@ -225,7 +225,7 @@ void InputField::RegisterChar(unsigned char *_char)
 
 void InputField::RegisterInt(int *_int)
 {
-	DarwiniaDebugAssert(m_type == TypeNowt);
+	DEBUG_ASSERT(m_type == TypeNowt);
 	m_type = TypeInt;
 	m_int = _int;
 }
@@ -233,7 +233,7 @@ void InputField::RegisterInt(int *_int)
 
 void InputField::RegisterFloat(float *_float)
 {
-	DarwiniaDebugAssert(m_type == TypeNowt);
+	DEBUG_ASSERT(m_type == TypeNowt);
 	m_type = TypeFloat;
 	m_float = _float;
 }
@@ -241,7 +241,7 @@ void InputField::RegisterFloat(float *_float)
 
 void InputField::RegisterString(char *_string)
 {
-	DarwiniaDebugAssert(m_type == TypeNowt);
+	DEBUG_ASSERT(m_type == TypeNowt);
 	m_type = TypeString;
 	m_string = _string;
 }
@@ -420,7 +420,7 @@ void ColourWidget::SetCallback(DarwiniaButton *button)
 // Class ColourButton
 // ****************************************************************************
 
-ColourWindow::ColourWindow( char *_name )
+ColourWindow::ColourWindow( char const *_name )
 :   DarwiniaWindow( _name ),
     m_callback(NULL),
     m_value(NULL)

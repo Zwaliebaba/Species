@@ -37,7 +37,7 @@ public:
     {
         TreeWindow *tw = (TreeWindow *) m_parent;
         Building *building = g_app->m_location->GetBuilding( tw->m_selectionId );
-        DarwiniaDebugAssert( building && building->m_type == Building::TypeTree )
+        DEBUG_ASSERT( building && building->m_type == Building::TypeTree )
         Tree *tree = (Tree *) building;
 
         switch( m_type )
@@ -79,7 +79,7 @@ public:
 
 
 
-TreeWindow::TreeWindow( char *_name )
+TreeWindow::TreeWindow( char const *_name )
 :   DarwiniaWindow( _name ),
     m_selectionId(-1)
 {
@@ -91,7 +91,7 @@ void TreeWindow::Create()
 
     m_selectionId = g_app->m_locationEditor->m_selectionId;
     Building *building = g_app->m_location->GetBuilding( m_selectionId );
-    DarwiniaDebugAssert( building && building->m_type == Building::TypeTree )
+    DEBUG_ASSERT( building && building->m_type == Building::TypeTree )
     Tree *tree = (Tree *) building;
 
     int y = 25;

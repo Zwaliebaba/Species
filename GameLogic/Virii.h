@@ -88,7 +88,7 @@ public:
 
     void Render             ( float predictionTime, int teamId, int _detail );
 
-    void ListSoundEvents    ( LList<char *> *_list );
+    void ListSoundEvents    ( LList<char const *> *_list );
 };
 
 

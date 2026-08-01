@@ -6,7 +6,7 @@
 
 #include "WindowManager.h"
 #include "WindowManagerWin32.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 #include "App.h"
 
@@ -79,7 +79,7 @@ LRESULT CALLBACK W32EventHandler::WndProc( HWND hWnd, UINT message,
 			return 0;
 
 		case WM_INPUTLANGCHANGE:
-			DebugOut( "Input language change: w = %d, l = %d\n", wParam, lParam );
+			DebugTrace( "Input language change: w = %d, l = %d\n", wParam, lParam );
 			// Might want to reload key bindings and translations here if we can be bothered.
 			return 0;
 	}
@@ -119,7 +119,7 @@ void W32EventHandler::ResetWindowHandle()
 
 void W32EventHandler::BindAltTab()
 {
-	DarwiniaDebugAssert(g_windowManager->m_win32Specific->m_hWnd);
+	DEBUG_ASSERT(g_windowManager->m_win32Specific->m_hWnd);
 	RegisterHotKey(g_windowManager->m_win32Specific->m_hWnd, 0, MOD_ALT, VK_TAB);
     g_altTabBound = true;
 }
@@ -127,7 +127,7 @@ void W32EventHandler::BindAltTab()
 
 void W32EventHandler::UnbindAltTab()
 {
-	DarwiniaDebugAssert(g_windowManager->m_win32Specific->m_hWnd);
+	DEBUG_ASSERT(g_windowManager->m_win32Specific->m_hWnd);
 	UnregisterHotKey(g_hwnd, 0);
 	UnregisterHotKey(g_windowManager->m_win32Specific->m_hWnd, 0);
 }

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "HiResTime.h"
 #include "DebugRender.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Vector2.h"
 
 #include "App.h"
@@ -128,7 +128,7 @@ void ObstructionGrid::CalculateAll()
     }
 
     float totalTime = GetHighResTime() - startTime;
-    DebugOut( "ObstructionGrid took %dms to generate\n", int(totalTime * 1000) );
+    DebugTrace( "ObstructionGrid took %dms to generate\n", int(totalTime * 1000) );
 }
 
 

@@ -56,14 +56,16 @@ inline float syncsfrand( float range = 1.0f ) { return (syncfrand() - 0.5f) * ra
 //#endif
 
 
-#define clamp(a, low, high)	if (a>high) a = high; else if (a<low) a = low;
+// NB: this is a statement macro that clamps 'a' in place. It used to be called
+// 'clamp', which collides with std::clamp once <algorithm> is included.
+#define ClampInPlace(a, low, high)	if (a>high) a = high; else if (a<low) a = low;
 
 #define NearlyEquals(a, b)	(fabsf((a) - (b)) < 1e-6 ? 1 : 0)
 
 float Log2(float x);
 
 #define ASSERT_FLOAT_IS_SANE(x) \
-	DarwiniaDebugAssert((x + 1.0f) != x);
+	DEBUG_ASSERT((x + 1.0f) != x);
 #define ASSERT_VECTOR3_IS_SANE(v) \
 	ASSERT_FLOAT_IS_SANE((v).x) \
 	ASSERT_FLOAT_IS_SANE((v).y) \

@@ -59,7 +59,7 @@ public:
 
     bool    UpdateEntityInTransit( Entity *_entity );
 
-    void    ListSoundEvents ( LList<char *> *_list );
+    void    ListSoundEvents ( LList<char const *> *_list );
 };
 
 

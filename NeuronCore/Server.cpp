@@ -7,7 +7,7 @@
 #include "NetThread.h"
 #include "NetUdpPacket.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Profiler.h"
 #include "Preferences.h"
 
@@ -128,7 +128,7 @@ int Server::GetClientId ( char *_ip )
 
 int Server::ConvertIPToInt( const char *_ip )
 {
-	DarwiniaReleaseAssert(strlen(_ip) < 17, "IP address too long");
+	ASSERT_TEXT(strlen(_ip) < 17, "IP address too long");
     char ipCopy[17];
 	strcpy(ipCopy, _ip);
     int ipLen = strlen(ipCopy);
@@ -167,7 +167,7 @@ char *Server::ConvertIntToIP ( const int _ip )
 // ***RegisterNewClient
 void Server::RegisterNewClient ( char *_ip )
 {
-    DarwiniaDebugAssert(GetClientId(_ip) == -1);
+    DEBUG_ASSERT(GetClientId(_ip) == -1);
     ServerToClient *sToC = new ServerToClient(_ip);
     m_clients.PutData(sToC);
 
@@ -205,7 +205,7 @@ void Server::RemoveClient( char *_ip )
 void Server::RegisterNewTeam ( char *_ip, int _teamType, int _desiredTeamId )
 {
     int clientId = GetClientId(_ip);
-    DarwiniaDebugAssert( clientId != -1 );                           // Client not properly connected
+    DEBUG_ASSERT( clientId != -1 );                           // Client not properly connected
 
     if( _desiredTeamId != -1 )                              // Specified Team ID - An AI
     {
@@ -221,7 +221,7 @@ void Server::RegisterNewTeam ( char *_ip, int _teamType, int _desiredTeamId )
     }
     else
     {
-        DarwiniaDebugAssert( m_teams.NumUsed() < NUM_TEAMS );
+        DEBUG_ASSERT( m_teams.NumUsed() < NUM_TEAMS );
         ServerTeam *team = new ServerTeam(clientId);
         int teamId = m_teams.PutData( team );
 
@@ -234,7 +234,7 @@ void Server::RegisterNewTeam ( char *_ip, int _teamType, int _desiredTeamId )
     }
 
 /*
-    DarwiniaDebugAssert(GetClientId(_ip) != -1);
+    DEBUG_ASSERT(GetClientId(_ip) != -1);
 
     if (m_teams.NumUsed() < NUM_TEAMS)
     {
@@ -248,7 +248,7 @@ void Server::RegisterNewTeam ( char *_ip, int _teamType, int _desiredTeamId )
 		}
 		else
 		{
-			DarwiniaDebugAssert(!m_teams.ValidIndex(_desiredTeamId));
+			DEBUG_ASSERT(!m_teams.ValidIndex(_desiredTeamId));
 			teamId = _desiredTeamId;
 			if (m_teams.Size() <= _desiredTeamId)
 			{
@@ -320,7 +320,7 @@ void Server::AdvanceSender()
     while (m_outbox.Size())
     {
         ServerToClientLetter *letter = m_outbox[0];
-        DarwiniaDebugAssert(letter);
+        DEBUG_ASSERT(letter);
 
         if (m_clients.ValidIndex(letter->GetClientId()))
         {
@@ -372,7 +372,7 @@ void Server::Advance()
         {
             if( GetClientId( incoming->m_clientIp ) == -1 )
             {
-                DebugOut ( "SERVER: New Client connected from %s\n", incoming->m_clientIp );
+                DebugTrace ( "SERVER: New Client connected from %s\n", incoming->m_clientIp );
                 RegisterNewClient( incoming->m_clientIp );
             }
         }
@@ -380,7 +380,7 @@ void Server::Advance()
         {
             if( GetClientId( incoming->m_clientIp ) != -1 )
             {
-                DebugOut ( "SERVER: Client at %s disconnected gracefully\n", incoming->m_clientIp );
+                DebugTrace ( "SERVER: Client at %s disconnected gracefully\n", incoming->m_clientIp );
                 RemoveClient( incoming->m_clientIp );
             }
         }
@@ -388,7 +388,7 @@ void Server::Advance()
         {
             if( GetClientId( incoming->m_clientIp ) != -1 )
             {
-                DebugOut ( "SERVER: New team request from %s\n", incoming->m_clientIp );
+                DebugTrace ( "SERVER: New team request from %s\n", incoming->m_clientIp );
                 RegisterNewTeam(incoming->m_clientIp, incoming->m_teamType, incoming->m_desiredTeamId);
             }
         }
@@ -404,7 +404,7 @@ void Server::Advance()
                 // Then that server shut down, and this one started up
                 // Then this server received the packet intended for the old server
                 // So we simply discard it
-                //DebugOut( "Sync %d discarded as bogus\n", sequenceId );
+                //DebugTrace( "Sync %d discarded as bogus\n", sequenceId );
             }
             else
             {
@@ -416,13 +416,13 @@ void Server::Advance()
                 if( m_sync.ValidIndex(sequenceId) )
                 {
                     unsigned char lastKnownSync = m_sync[sequenceId];
-                    DarwiniaDebugAssert( lastKnownSync == sync );
-                    //DebugOut( "Sync %02d verified as %03d\n", sequenceId, sync );
+                    DEBUG_ASSERT( lastKnownSync == sync );
+                    //DebugTrace( "Sync %02d verified as %03d\n", sequenceId, sync );
                 }
                 else
                 {
                     m_sync.PutData( sync, sequenceId );
-                    //DebugOut( "Sync %02d set to %03d\n", sequenceId, sync );
+                    //DebugTrace( "Sync %02d set to %03d\n", sequenceId, sync );
                 }
             }
         }

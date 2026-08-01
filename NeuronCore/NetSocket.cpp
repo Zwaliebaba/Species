@@ -1,5 +1,7 @@
 // See header file for module description
 
+#include "pch.h"
+
 #include "NetSocket.h"
 
 #ifdef TARGET_MSVC
@@ -84,7 +86,7 @@ NetRetCode NetSocket::CheckTimeout(unsigned int *timeout, unsigned int *timedout
 }
 
 
-NetRetCode NetSocket::Connect(char *host, unsigned short port)
+NetRetCode NetSocket::Connect(char const *host, unsigned short port)
 {
 	NetRetCode ret = NetFailed;
 	

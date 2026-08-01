@@ -103,17 +103,17 @@ public:
 
     virtual void    DirectControl       ( TeamControls const& _teamControls );
 
-    virtual void    ListSoundEvents	( LList<char *> *_list );
+    virtual void    ListSoundEvents	( LList<char const *> *_list );
 
     static void     BeginRenderShadow   ();
     static void     RenderShadow        ( Vector3 const &_pos, float _size );
     static void     EndRenderShadow     ();
 
-    static char    *GetTypeName     ( int _troopType );
+    static char const *GetTypeName     ( int _troopType );
     static int      GetTypeId       ( char const *_typeName );
     static Entity  *NewEntity       ( int _troopType );
 
-    static char    *GetTypeNameTranslated ( int _troopType );
+    static char const *GetTypeNameTranslated ( int _troopType );
 
 	bool RayHit(Vector3 const &_rayStart, Vector3 const &_rayDir);
 

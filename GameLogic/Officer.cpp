@@ -45,7 +45,7 @@ Officer::Officer()
     m_orders = OrderNone;
 
     m_shape = g_app->m_resource->GetShape( "Darwinian.shp" );
-    DarwiniaReleaseAssert( m_shape, "Shape not found : officer.shp" );
+    ASSERT_TEXT( m_shape, "Shape not found : officer.shp" );
 
     m_flagMarker = m_shape->m_rootFragment->LookupMarker( "MarkerFlag" );
 
@@ -548,7 +548,7 @@ void Officer::SetWaypoint( Vector3 const &_wayPoint )
 }
 
 
-void Officer::ListSoundEvents( LList<char *> *_list )
+void Officer::ListSoundEvents( LList<char const *> *_list )
 {
     Entity::ListSoundEvents( _list );
 
@@ -816,9 +816,9 @@ void Officer::SetPreviousMode()
     }
 }
 
-char *Officer::GetOrderType( int _orderType )
+char const *Officer::GetOrderType( int _orderType )
 {
-    static char *orders[] = {   "None",
+    static char const *orders[] = {   "None",
                                 "Goto",
                                 "Follow"
                             };

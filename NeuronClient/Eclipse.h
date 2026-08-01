@@ -32,7 +32,7 @@ void EclShutdown ();
 
 
 void EclRegisterWindow          ( EclWindow *window, EclWindow *parent=NULL );
-void EclRemoveWindow            ( char *name );
+void EclRemoveWindow            ( char const *name );
 void EclRegisterPopup           ( EclWindow *window );
 void EclRemovePopup             ();
 
@@ -40,8 +40,8 @@ void EclBringWindowToFront      ( char *name );
 void EclSetWindowPosition       ( char *name, int x, int y );
 void EclSetWindowSize           ( char *name, int w, int h );
 
-int EclGetWindowIndex           ( char *name );                                             // -1 = failure
-EclWindow *EclGetWindow         ( char *name );
+int EclGetWindowIndex           ( char const *name );                                             // -1 = failure
+EclWindow *EclGetWindow         ( char const *name );
 EclWindow *EclGetWindow         ( int x, int y );                                           
 
 bool EclMouseInWindow           ( EclWindow *window );
@@ -50,7 +50,7 @@ bool EclIsTextEditing			();
 
 void EclRegisterTooltipCallback ( void (*_callback) (EclWindow *, EclButton *) );
 
-void EclMaximiseWindow          ( char *name );
+void EclMaximiseWindow( char const *name );
 void EclUnMaximise              ();
 
 char *EclGetCurrentButton          ();
@@ -80,7 +80,7 @@ public:
 
 void EclRegisterClearFunction   ( void (*_clearDraw) (int, int, int, int) );
 
-void EclDirtyWindow             ( char *name );
+void EclDirtyWindow( char const *name );
 void EclDirtyWindow             ( EclWindow *window );
 void EclDirtyRectangle          ( int x, int y, int w, int h );
 

@@ -90,7 +90,7 @@ public:
 // Main Edit Window Class
 // ****************************************************************************
 
-CameraAnimMainEditWindow::CameraAnimMainEditWindow( char *name )
+CameraAnimMainEditWindow::CameraAnimMainEditWindow( char const *name )
 :	DarwiniaWindow(name)
 {
 }
@@ -201,10 +201,10 @@ public:
 		if (parent->m_newNodeArmed)
 		{
 			CameraAnimation *anim = g_app->m_location->m_levelFile->m_cameraAnimations[parent->m_animId];
-			DarwiniaDebugAssert(anim);
+			DEBUG_ASSERT(anim);
 
 			CamAnimNode *node = new CamAnimNode;
-			node->m_mountName = MAGIC_MOUNT_NAME_START_POS;
+			node->m_mountName = strdup(MAGIC_MOUNT_NAME_START_POS);
 
 			anim->m_nodes.PutData(node);
 

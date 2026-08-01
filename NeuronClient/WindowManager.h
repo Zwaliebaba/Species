@@ -2,7 +2,7 @@
 #define INCLUDED_WINDOW_MANAGER_H
 
 
-#include <lib/LList.h>
+#include "LList.h"
 
 
 class WindowManagerWin32;
@@ -95,7 +95,7 @@ public:
 
     void SuggestDefaultRes( int *_width, int *_height, int *_refresh, int *_depth );
 
-    static void OpenWebsite( char *_url );
+    static void OpenWebsite( char const *_url );
 };
 
 

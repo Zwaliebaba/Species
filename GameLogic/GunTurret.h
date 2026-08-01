@@ -60,7 +60,7 @@ public:
     bool DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
                     float _rayLen, Vector3 *_pos, Vector3 *norm );
 
-    void ListSoundEvents( LList<char *> *_list );
+    void ListSoundEvents( LList<char const *> *_list );
 };
 
 

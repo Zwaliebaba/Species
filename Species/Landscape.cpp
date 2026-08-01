@@ -6,7 +6,7 @@
 #include "BinaryStreamReaders.h"
 #include "Bitmap.h"
 #include "DebugRender.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "HiResTime.h"
 #include "MathUtils.h"
 #include "Preferences.h"
@@ -71,7 +71,7 @@ void LandscapeTile::GuideGridSetPower(int _power)
 		int resolution = (1 << _power) - 1;
 		int a = GetPowerOfTwo(resolution + 1);
 		int b = GetPowerOfTwo(resolution + 2);
-		DarwiniaDebugAssert(a != b);
+		DEBUG_ASSERT(a != b);
 
         delete m_guideGrid;
 		m_guideGrid = NULL;
@@ -965,17 +965,17 @@ float Landscape::SphereHit(Vector3 const &_centre, float _radius) const
 {
 	// Make sure the specified radius is +ve and not so large to cause
 	// major efficiency problems
-	DarwiniaDebugAssert(_radius > 0.0f && _radius < 200.0f);
+	DEBUG_ASSERT(_radius > 0.0f && _radius < 200.0f);
 
 	int x1 = m_heightMap->GetMapIndexX(_centre.x - _radius);
 	int x2 = m_heightMap->GetMapIndexX(_centre.x + _radius);
 	int y1 = m_heightMap->GetMapIndexY(_centre.z - _radius);
 	int y2 = m_heightMap->GetMapIndexY(_centre.z + _radius);
 
-	clamp(x1, 0, m_heightMap->GetNumColumns());
-	clamp(x2, 0, m_heightMap->GetNumColumns());
-	clamp(y1, 0, m_heightMap->GetNumRows());
-	clamp(y2, 0, m_heightMap->GetNumRows());
+	ClampInPlace( x1, 0, m_heightMap->GetNumColumns());
+	ClampInPlace( x2, 0, m_heightMap->GetNumColumns());
+	ClampInPlace( y1, 0, m_heightMap->GetNumRows());
+	ClampInPlace( y2, 0, m_heightMap->GetNumRows());
 
 	float nearestSqrd = FLT_MAX;
 	Vector3 pos;

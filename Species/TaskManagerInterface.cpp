@@ -2,7 +2,7 @@
 #include "TextRenderer.h"
 #include "MathUtils.h"
 #include "Vector2.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Resource.h"
 #include "Bitmap.h"
 #include "Profiler.h"
@@ -59,8 +59,8 @@ ScreenZone::ScreenZone( char *_name, char *_tooltip,
     m_scrollZone(-1),
 	m_subZones(false)
 {
-    DarwiniaReleaseAssert( strlen(_name) < sizeof(m_name), "Button name too long : %s", _name );
-    DarwiniaReleaseAssert( strlen(_tooltip) < sizeof(m_toolTip), "Tooltip too long : %s", _tooltip );
+    ASSERT_TEXT( strlen(_name) < sizeof(m_name), "Button name too long : %s", _name );
+    ASSERT_TEXT( strlen(_tooltip) < sizeof(m_toolTip), "Tooltip too long : %s", _tooltip );
     strcpy( m_name, _name );
     strcpy( m_toolTip, _tooltip );
 }

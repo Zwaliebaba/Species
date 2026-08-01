@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
 #include "TextStreamReaders.h"
@@ -111,7 +111,7 @@ float SoundParameter::GetOutput()
 void SoundParameter::Read( TextReader *_in )
 {
     char *parameter = _in->GetNextToken();
-    DarwiniaDebugAssert( stricmp( parameter, "PARAMETER" ) == 0 );
+    DEBUG_ASSERT( stricmp( parameter, "PARAMETER" ) == 0 );
 
     char *paramType     = _in->GetNextToken();
     m_type              = GetParameterType( paramType );
@@ -206,7 +206,7 @@ char *SoundParameter::GetParameterTypeName( int _type )
                         "TypeLinked"
                     };
 
-    DarwiniaDebugAssert( _type >= 0 && _type < NumParameterTypes );
+    DEBUG_ASSERT( _type >= 0 && _type < NumParameterTypes );
     return names[_type];
 }
 
@@ -235,7 +235,7 @@ char *SoundParameter::GetLinkName( int _type )
                         "CameraDistance"
                     };
 
-    DarwiniaDebugAssert( _type >= 0 && _type < NumLinkTypes );
+    DEBUG_ASSERT( _type >= 0 && _type < NumLinkTypes );
     return names[_type];
 }
 
@@ -260,7 +260,7 @@ char *SoundParameter::GetUpdateTypeName( int _type )
                         "UpdateOncePerLoop"
                     };
 
-    DarwiniaDebugAssert( _type >= 0 && _type < NumUpdateTypes );
+    DEBUG_ASSERT( _type >= 0 && _type < NumUpdateTypes );
     return names[ _type ];
 }
 

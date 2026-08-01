@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "HiResTime.h"
 #include "MathUtils.h"
 #include "Profiler.h"
@@ -92,7 +92,7 @@ SoftwareChannel::SoftwareChannel()
 
 void SoundLib3dSoftwareCallbackWrapper(StereoSample *_buf, unsigned int _numSamples)
 {
-	DarwiniaDebugAssert(g_soundLibrary3d);
+	DEBUG_ASSERT(g_soundLibrary3d);
 	SoundLibrary3dSoftware *lib = (SoundLibrary3dSoftware*)g_soundLibrary3d;
 	if (lib)
 		lib->Callback(_buf, _numSamples);
@@ -105,7 +105,7 @@ SoundLibrary3dSoftware::SoundLibrary3dSoftware()
 	m_listenerFront(1,0,0),
 	m_listenerUp(0,1,0)
 {
-	DarwiniaReleaseAssert(g_soundLibrary2d, "SoundLibrary2d must be initialised before SoundLibrary3d");
+	ASSERT_TEXT(g_soundLibrary2d, "SoundLibrary2d must be initialised before SoundLibrary3d");
 
 	g_soundLibrary2d->SetCallback(SoundLib3dSoftwareCallbackWrapper);
 
@@ -133,7 +133,7 @@ void SoundLibrary3dSoftware::Initialise(int _mixFreq, int _numChannels, bool _hw
 
 	int log2NumChannels = ceilf(Log2(_numChannels));
 	m_numChannels = 1 << log2NumChannels;
-	DarwiniaReleaseAssert(m_numChannels == _numChannels, "Num channels must be a power of 2");
+	ASSERT_TEXT(m_numChannels == _numChannels, "Num channels must be a power of 2");
 
 	m_channels = new SoftwareChannel[m_numChannels];
 
@@ -525,12 +525,12 @@ void SoundLibrary3dSoftware::ResetChannel( int _channel )
 
 void SoundLibrary3dSoftware::EnableDspFX(int _channel, int _numFilters, int const *_filterTypes)
 {
-    DarwiniaReleaseAssert( _numFilters > 0, "Bad argument passed to EnableFilters" );
+    ASSERT_TEXT( _numFilters > 0, "Bad argument passed to EnableFilters" );
 
 	SoftwareChannel *channel = &m_channels[_channel];
     for( int i = 0; i < _numFilters; ++i )
     {
-		DarwiniaDebugAssert(_filterTypes[i] >= 0 && _filterTypes[i] < NUM_FILTERS);
+		DEBUG_ASSERT(_filterTypes[i] >= 0 && _filterTypes[i] < NUM_FILTERS);
 
 		channel->m_dspFX[_filterTypes[i]].m_chainIndex = i;
 

@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "HiResTime.h"
 #include "MathUtils.h"
@@ -53,7 +53,7 @@ Vector3 PowerBuilding::GetPowerLocation()
     if( !m_powerLocation )
     {
         m_powerLocation = m_shape->m_rootFragment->LookupMarker( "MarkerPowerLocation" );
-        DarwiniaDebugAssert( m_powerLocation );
+        DEBUG_ASSERT( m_powerLocation );
     }
 
     Matrix34 rootMat( m_front, m_up, m_pos );
@@ -191,7 +191,7 @@ void PowerBuilding::TriggerSurge ( float _initValue )
 }
 
 
-void PowerBuilding::ListSoundEvents( LList<char *> *_list )
+void PowerBuilding::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 
@@ -252,7 +252,7 @@ void Generator::TriggerSurge( float _initValue )
 }
 
 
-char *Generator::GetObjectiveCounter()
+char const *Generator::GetObjectiveCounter()
 {
     static char result[256];
     sprintf( result, "%s : %d Gq/s", LANGUAGEPHRASE("objective_output"),
@@ -268,7 +268,7 @@ void Generator::ReprogramComplete()
 }
 
 
-void Generator::ListSoundEvents( LList<char *> *_list )
+void Generator::ListSoundEvents( LList<char const *> *_list )
 {
     PowerBuilding::ListSoundEvents( _list );
 
@@ -523,7 +523,7 @@ SolarPanel::SolarPanel()
         char name[64];
         sprintf( name, "MarkerGlow0%d", i+1 );
         m_glowMarker[i] = m_shape->m_rootFragment->LookupMarker( name );
-        DarwiniaDebugAssert( m_glowMarker[i] );
+        DEBUG_ASSERT( m_glowMarker[i] );
     }
 
     for( int i = 0; i < SOLARPANEL_NUMSTATUSMARKERS; ++i )
@@ -671,7 +671,7 @@ void SolarPanel::RenderAlphas( float _predictionTime )
 }
 
 
-void SolarPanel::ListSoundEvents( LList<char *> *_list )
+void SolarPanel::ListSoundEvents( LList<char const *> *_list )
 {
     PowerBuilding::ListSoundEvents( _list );
 

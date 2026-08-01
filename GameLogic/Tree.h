@@ -61,7 +61,7 @@ public:
     bool DoesRayHit             (Vector3 const &_rayStart, Vector3 const &_rayDir,
                                  float _rayLen=1e10, Vector3 *_pos=NULL, Vector3 *_norm=NULL);        // pos/norm will not always be available
 
-    void ListSoundEvents( LList<char *> *_list );
+    void ListSoundEvents( LList<char const *> *_list );
 
     void Read           ( TextReader *_in, bool _dynamic );
     void Write          ( FileWriter *_out );

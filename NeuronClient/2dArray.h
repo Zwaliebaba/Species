@@ -41,7 +41,7 @@ public:
 
 
 #include "2dArray.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 template <class T>
 Array2D<T>::Array2D()
@@ -72,7 +72,7 @@ Array2D<T>::~Array2D()
 template <class T>
 void Array2D<T>::Initialise(unsigned short _numColumns, unsigned short _numRows, T _outsideValue)
 {
-	DarwiniaDebugAssert(m_numColumns == 0 && m_numRows == 0);
+	DEBUG_ASSERT(m_numColumns == 0 && m_numRows == 0);
 	m_numColumns = _numColumns;
 	m_numRows = _numRows;
 	m_outsideValue = _outsideValue;

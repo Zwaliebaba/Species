@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "Profiler.h"
 #include "Resource.h"
@@ -35,7 +35,7 @@ Powerstation::Powerstation()
 void Powerstation::Initialise( Building *_template )
 {
     Building::Initialise( _template );
-	DarwiniaDebugAssert(_template->m_type == Building::TypePowerstation);
+	DEBUG_ASSERT(_template->m_type == Building::TypePowerstation);
     m_linkedBuildingId = ((Powerstation *) _template)->m_linkedBuildingId;
 }
 

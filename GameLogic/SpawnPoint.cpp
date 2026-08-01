@@ -258,7 +258,7 @@ Vector3 SpawnBuilding::GetSpiritLink()
     if( !m_spiritLink )
     {
         m_spiritLink = m_shape->m_rootFragment->LookupMarker( "MarkerSpiritLink" );
-        DarwiniaDebugAssert( m_spiritLink );
+        DEBUG_ASSERT( m_spiritLink );
     }
 
     Matrix34 mat( m_front, g_upVector, m_pos );
@@ -411,7 +411,7 @@ bool MasterSpawnPoint::Advance()
         float startTime = GetHighResTime();
         ExploreLinks();
         float timeTaken = GetHighResTime() - startTime;
-        DebugOut( "Time to Explore all Spawn Point links : %d ms\n", int(timeTaken*1000.0f) );
+        DebugTrace( "Time to Explore all Spawn Point links : %d ms\n", int(timeTaken*1000.0f) );
     }
 
 
@@ -469,7 +469,7 @@ void MasterSpawnPoint::RenderAlphas ( float _predictionTime )
 
 
 
-char *MasterSpawnPoint::GetObjectiveCounter()
+char const *MasterSpawnPoint::GetObjectiveCounter()
 {
     static char result[256];
 

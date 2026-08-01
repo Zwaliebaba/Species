@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "HiResTime.h"
 #include "MathUtils.h"
@@ -24,7 +24,9 @@
 #include "Team.h"
 #include "Renderer.h"
 #include "EntityGrid.h"
+#ifdef USE_DIRECT3D
 #include "WaterReflection.h"
+#endif
 
 #include "SoundSystem.h"
 
@@ -52,7 +54,7 @@ Vector3 ReceiverBuilding::GetSpiritLocation()
     if( !m_spiritLocation )
     {
         m_spiritLocation = m_shape->m_rootFragment->LookupMarker( "MarkerSpiritLink" );
-        DarwiniaDebugAssert( m_spiritLocation );
+        DEBUG_ASSERT( m_spiritLocation );
     }
 
     Matrix34 rootMat( m_front, m_up, m_pos );
@@ -79,7 +81,7 @@ bool ReceiverBuilding::IsInView()
 }
 
 
-void ReceiverBuilding::ListSoundEvents( LList<char *> *_list )
+void ReceiverBuilding::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 
@@ -448,7 +450,7 @@ void SpiritProcessor::Initialise( Building *_building )
 }
 
 
-char *SpiritProcessor::GetObjectiveCounter()
+char const *SpiritProcessor::GetObjectiveCounter()
 {
     static char result[256];
     sprintf( result, "%s : %2.2f", LANGUAGEPHRASE("objective_throughput"), m_throughput );

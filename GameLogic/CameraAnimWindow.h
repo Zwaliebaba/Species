@@ -14,7 +14,7 @@
 class CameraAnimMainEditWindow: public DarwiniaWindow
 {
 public:
-    CameraAnimMainEditWindow( char *name );
+    CameraAnimMainEditWindow( char const *name );
 	~CameraAnimMainEditWindow();
 
 	void Create();

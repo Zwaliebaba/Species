@@ -3,7 +3,7 @@
 #include "BinaryStreamReaders.h"
 #include "Bitmap.h"
 #include "DebugRender.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "MathUtils.h"
 #include "Profiler.h"
 #include "Resource.h"
@@ -519,7 +519,7 @@ bool Virii::AdvanceToEgg()
     // At this point we MUST have found an egg, otherwise we'd have returned by now
 
     theEgg = (Egg *) g_app->m_location->GetEntitySafe( m_eggId, Entity::TypeEgg );
-    DarwiniaDebugAssert( theEgg );
+    DEBUG_ASSERT( theEgg );
 
     bool arrived = AdvanceToTargetPos( theEgg->m_pos );
 
@@ -818,7 +818,7 @@ bool Virii::IsInView()
 }
 
 
-void Virii::ListSoundEvents( LList<char *> *_list )
+void Virii::ListSoundEvents( LList<char const *> *_list )
 {
     Entity::ListSoundEvents( _list );
     _list->PutData( "ChangeDirection" );

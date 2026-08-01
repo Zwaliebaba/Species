@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "HiResTime.h"
 #include "MathUtils.h"
 #include "Profiler.h"
@@ -51,7 +51,7 @@ Particle::Particle()
 void Particle::Initialise(Vector3 const &_pos, Vector3 const &_vel,
                           int _typeId, float _size)
 {
-	DarwiniaDebugAssert(_typeId < Particle::TypeNumTypes);
+	DEBUG_ASSERT(_typeId < Particle::TypeNumTypes);
 
 	m_pos = _pos;
 	m_vel = _vel;

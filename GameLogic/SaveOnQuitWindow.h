@@ -7,7 +7,7 @@
 class SaveOnQuitWindow : public DarwiniaWindow
 {
 public:
-    SaveOnQuitWindow( char *_name );
+    SaveOnQuitWindow( char const *_name );
 
     void Create();
 	void Render(bool hasFocus);

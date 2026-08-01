@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "TextStreamReaders.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 #include <string.h>
 
@@ -18,13 +18,13 @@ bool GetUserInfoData( char const *_userInfoFilename, char const **_username, cha
         {
             fileReader.ReadLine();
 
-            DarwiniaReleaseAssert( stricmp( fileReader.GetNextToken(), "Username" ) == 0, "Failed to parse %s", _userInfoFilename );
+            ASSERT_TEXT( stricmp( fileReader.GetNextToken(), "Username" ) == 0, "Failed to parse %s", _userInfoFilename );
 
             s_username = strdup( fileReader.GetRestOfLine() );
 
             fileReader.ReadLine();
 
-            DarwiniaReleaseAssert( stricmp( fileReader.GetNextToken(), "Email" ) == 0, "Failed to parse %s", _userInfoFilename );
+            ASSERT_TEXT( stricmp( fileReader.GetNextToken(), "Email" ) == 0, "Failed to parse %s", _userInfoFilename );
 
             s_email = strdup( fileReader.GetRestOfLine() );
         }

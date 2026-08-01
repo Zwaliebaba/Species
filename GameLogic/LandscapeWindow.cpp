@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "HiResTime.h"
 #include "Input.h"
 #include "TargetCursor.h"
@@ -355,7 +355,7 @@ public:
 // Class LandscapeEditWindow
 // ****************************************************************************
 
-LandscapeEditWindow::LandscapeEditWindow( char *name )
+LandscapeEditWindow::LandscapeEditWindow( char const *name )
 :   DarwiniaWindow(name)
 {
 }

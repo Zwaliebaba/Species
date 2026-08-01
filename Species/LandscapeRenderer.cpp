@@ -132,12 +132,12 @@ void LandscapeRenderer::BuildNormArray()
 			m_verts[nextNormId++].m_norm = norm2;
 
 			int vertIndex = strip->m_firstVertIndex + j + 2;
-			DarwiniaDebugAssert(nextNormId - 2 == vertIndex);
+			DEBUG_ASSERT(nextNormId - 2 == vertIndex);
 		}
 	}
 
 	int vertIndex = m_verts.NumUsed();
-	DarwiniaDebugAssert(nextNormId == vertIndex);
+	DEBUG_ASSERT(nextNormId == vertIndex);
 }
 
 
@@ -165,7 +165,7 @@ void LandscapeRenderer::BuildUVArray(SurfaceMap2D <float> *_heightMap)
 		}
 	}
 
-	DarwiniaDebugAssert(nextUVId == m_verts.NumUsed());
+	DEBUG_ASSERT(nextUVId == m_verts.NumUsed());
 }
 
 
@@ -222,7 +222,7 @@ void LandscapeRenderer::BuildColourArray()
 							   (unsigned int)centre.x, (unsigned int)centre.z,
 							   &col);
 
-			//DebugOut("%d[%d]: r:%02x g:%02x b:%02x a:%02x\n", i, j,  col.r, col.g, col.b, col.a);
+			//DebugTrace("%d[%d]: r:%02x g:%02x b:%02x a:%02x\n", i, j,  col.r, col.g, col.b, col.a);
 #ifdef USE_DIRECT3D
 			D3DCOLOR d3dCol = D3DCOLOR_ARGB(col.a, col.r, col.g, col.b);
 			memcpy(&m_verts[nextColId++].m_col, &d3dCol, sizeof(d3dCol));
@@ -240,7 +240,7 @@ void LandscapeRenderer::BuildColourArray()
 		}
 	}
 
-	DarwiniaDebugAssert(nextColId == m_verts.NumUsed());
+	DEBUG_ASSERT(nextColId == m_verts.NumUsed());
 }
 
 
@@ -282,7 +282,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D <float> *_heightMap)
 	}
 
 	BinaryReader *reader = g_app->m_resource->GetBinaryReader(fullFilname);
-	DarwiniaReleaseAssert(reader != NULL, "Failed to get resource %s", fullFilname);
+	ASSERT_TEXT(reader != NULL, "Failed to get resource %s", fullFilname);
 	m_landscapeColour = new BitmapRGBA(reader, "bmp");
 	delete reader;
 
@@ -365,7 +365,7 @@ void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D <float> *_heightMap)
 
 	switch (m_renderMode) {
 		case RenderModeVertexBufferObject:
-			DarwiniaDebugAssert(!m_vertexBuffer);
+			DEBUG_ASSERT(!m_vertexBuffer);
 			gglGenBuffersARB( 1, &m_vertexBuffer );
 			gglBindBufferARB( GL_ARRAY_BUFFER_ARB, m_vertexBuffer );
 			gglBufferDataARB( GL_ARRAY_BUFFER_ARB, m_verts.Size() * sizeof(LandVertex), m_verts.GetPointer(0), GL_STATIC_DRAW_ARB );
@@ -417,7 +417,7 @@ void LandscapeRenderer::RenderMainSlow()
 
 	switch (m_renderMode) {
 		case RenderModeVertexBufferObject:
-			DarwiniaDebugAssert(m_vertexBuffer);
+			DEBUG_ASSERT(m_vertexBuffer);
 			gglBindBufferARB	( GL_ARRAY_BUFFER_ARB, m_vertexBuffer );
 #ifdef USE_DIRECT3D
 			OpenGLD3D::g_pd3dDevice->SetVertexDeclaration( GetVertexDecl() );
@@ -500,7 +500,7 @@ void LandscapeRenderer::RenderOverlaySlow()
 
 	switch (m_renderMode) {
 		case RenderModeVertexBufferObject:
-			DarwiniaDebugAssert(m_vertexBuffer);
+			DEBUG_ASSERT(m_vertexBuffer);
 			gglBindBufferARB	( GL_ARRAY_BUFFER_ARB, m_vertexBuffer );
 #ifdef USE_DIRECT3D
 			OpenGLD3D::g_pd3dDevice->SetVertexDeclaration( GetVertexDecl() );
@@ -575,7 +575,7 @@ void LandscapeRenderer::Render()
 		case RenderModeDisplayList:
 			{
 				int id = g_app->m_resource->GetDisplayList(MAIN_DISPLAY_LIST_NAME);
-				DarwiniaDebugAssert(id != -1);
+				DEBUG_ASSERT(id != -1);
 				glCallList(id);
 			}
 			break;
@@ -594,7 +594,7 @@ void LandscapeRenderer::Render()
 			case RenderModeDisplayList:
 				{
 					int id = g_app->m_resource->GetDisplayList(OVERLAY_DISPLAY_LIST_NAME);
-					DarwiniaDebugAssert(id != -1);
+					DEBUG_ASSERT(id != -1);
 					glCallList(id);
 				}
 				break;

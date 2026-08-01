@@ -56,7 +56,7 @@ public:
 
     void GetDockPoint( Vector3 &_pos, Vector3 &_front );
 
-    void ListSoundEvents( LList<char *> *_list );
+    void ListSoundEvents( LList<char const *> *_list );
 };
 
 

@@ -37,7 +37,7 @@ public:
 
     bool    DoesSphereHit   (Vector3 const &_pos, float _radius);
 
-    void    ListSoundEvents ( LList<char *> *_list );
+    void    ListSoundEvents ( LList<char const *> *_list );
     bool IsInView();
 };
 

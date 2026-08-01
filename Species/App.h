@@ -109,7 +109,7 @@ public:
 	~App();
 
 
-    void    SetProfileName  ( char *_profileName );
+    void    SetProfileName  ( char const *_profileName );
     bool    LoadProfile     ();
     bool    SaveProfile     ( bool _global, bool _local );
     void    ResetLevel      ( bool _global );

@@ -1,5 +1,70 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <cwchar>
+#include <exception>
+#include <format>
+#include <functional>
+#include <future>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <queue>
+#include <ranges>
+#include <set>
+#include <stack>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+// Use the C++ standard templated min/max
+#define NOMINMAX
+
+// DirectX apps don't need GDI
+#define NODRAWTEXT
+// #define NOGDI
+#define NOBITMAP
+
+// Include <mcx.h> if you need this
+#define NOMCX
+
+// Include <winsvc.h> if you need this
+#define NOSERVICE
+
+// WinHelp is deprecated
+#define NOHELP
+
+#if !defined WIN32_LEAN_AND_MEAN
+// #define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <WinSock2.h>
+
+#include <Windows.h>
+#include <hstring.h>
+#include <restrictederrorinfo.h>
+#include <unknwn.h>
+
+#pragma comment(lib, "WS2.lib")
+
+// Undefine GetCurrentTime macro to prevent
+// conflict with Storyboard::GetCurrentTime
+#undef GetCurrentTime
+
+#include "Debug.h"
+
+using namespace Neuron;
+
 #define TARGET_MSVC
 #define TARGET_DEBUG
 

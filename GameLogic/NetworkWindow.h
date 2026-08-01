@@ -8,7 +8,7 @@
 class NetworkWindow : public DarwiniaWindow
 {
 public:
-    NetworkWindow( char *name );
+    NetworkWindow( char const *name );
 
     void Render( bool hasFocus );
 };

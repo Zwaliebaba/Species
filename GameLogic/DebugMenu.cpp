@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 //#include "Input.h"
 #include "TextRenderer.h"
 #include "Preferences.h"
@@ -213,7 +213,7 @@ void DebugMenu::Render(bool hasFocus)
 	DarwiniaWindow::Render(hasFocus);
 
 	EclButton *camDbgButton = GetButton("Dbg Cam (F2)");
-	DarwiniaDebugAssert(camDbgButton);
+	DEBUG_ASSERT(camDbgButton);
 	int y = m_y + camDbgButton->m_y + 11;
 
 	switch (g_app->m_camera->GetDebugMode())

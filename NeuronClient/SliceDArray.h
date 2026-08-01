@@ -46,7 +46,7 @@ public:
 
 #include <stdlib.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "SliceDArray.h"
 
 template <class T>
@@ -87,7 +87,7 @@ void SliceDArray<T>::Empty()
 template <class T>
 void SliceDArray <T>::GetNextSliceBounds(int _slice, int* _lower, int* _upper)
 {
-    DarwiniaDebugAssert(lastSlice == -1 ||
+    DEBUG_ASSERT(lastSlice == -1 ||
         _slice == lastSlice + 1 ||
         (_slice == 0 && lastSlice == totalNumSlices - 1));
 
@@ -102,11 +102,11 @@ void SliceDArray <T>::GetNextSliceBounds(int _slice, int* _lower, int* _upper)
 
     if (_slice == totalNumSlices - 1)
     {
-        *_upper = Size() - 1;
+        *_upper = this->Size() - 1;
     }
     else
     {
-        int numPerSlice = int(Size() / (float)totalNumSlices);
+        int numPerSlice = int(this->Size() / (float)totalNumSlices);
         *_upper = *_lower + numPerSlice;
     }
 

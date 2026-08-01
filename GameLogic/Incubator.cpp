@@ -41,12 +41,12 @@ Incubator::Incubator()
     m_spiritEntrance[2] = m_shape->m_rootFragment->LookupMarker( "MarkerSpiritIncoming2" );
 
 
-    DarwiniaDebugAssert( m_spiritCentre );
-    DarwiniaDebugAssert( m_exit );
-    DarwiniaDebugAssert( m_dock );
-    DarwiniaDebugAssert( m_spiritEntrance[0] );
-    DarwiniaDebugAssert( m_spiritEntrance[1] );
-    DarwiniaDebugAssert( m_spiritEntrance[2] );
+    DEBUG_ASSERT( m_spiritCentre );
+    DEBUG_ASSERT( m_exit );
+    DEBUG_ASSERT( m_dock );
+    DEBUG_ASSERT( m_spiritEntrance[0] );
+    DEBUG_ASSERT( m_spiritEntrance[1] );
+    DEBUG_ASSERT( m_spiritEntrance[2] );
 
     m_spirits.SetStepSize( 20 );
 }
@@ -314,7 +314,7 @@ void Incubator::RenderAlphas( float _predictionTime )
 }
 
 
-void Incubator::ListSoundEvents( LList<char *> *_list )
+void Incubator::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 

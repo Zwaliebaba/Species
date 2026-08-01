@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "MathUtils.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "Matrix33.h"
 #include "Profiler.h"
@@ -50,15 +50,15 @@ LaserFence::LaserFence()
     m_marker1 = m_shape->m_rootFragment->LookupMarker( "MarkerFence01" );
     m_marker2 = m_shape->m_rootFragment->LookupMarker( "MarkerFence02" );
 
-    DarwiniaReleaseAssert( m_marker1, "MarkerFence01 not found in laserfence.shp" );
-    DarwiniaReleaseAssert( m_marker2, "MarkerFence02 not found in laserfence.shp" );
+    ASSERT_TEXT( m_marker1, "MarkerFence01 not found in laserfence.shp" );
+    ASSERT_TEXT( m_marker2, "MarkerFence02 not found in laserfence.shp" );
 }
 
 
 void LaserFence::Initialise( Building *_template )
 {
     Building::Initialise( _template );
-	DarwiniaDebugAssert(_template->m_type == Building::TypeLaserFence);
+	DEBUG_ASSERT(_template->m_type == Building::TypeLaserFence);
 
     m_nextLaserFenceId = ((LaserFence *) _template)->m_nextLaserFenceId;
     m_scale            = ((LaserFence *) _template)->m_scale;
@@ -601,7 +601,7 @@ bool LaserFence::DoesShapeHit(Shape *_shape, Matrix34 _transform)
 }
 
 
-void LaserFence::ListSoundEvents(LList<char *> *_list )
+void LaserFence::ListSoundEvents(LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 

@@ -81,7 +81,7 @@ void DeformEffect::AddPunch(Vector3 pos, float range)
 
 //	punchtest++;
 //	if(punchtest>PUNCH_LAST) punchtest=PUNCH_FIRST;
-//	DebugOut("Doing punch %d.\n",punchtest);
+//	DebugTrace("Doing punch %d.\n",punchtest);
 }
 
 void DeformEffect::Start()
@@ -218,7 +218,7 @@ void DeformEffect::Stop()
 	//{
 	//	extern int soulType;
 	//	++soulType %= SOUL_TYPES;
-	//	DebugOut("Soul effect=%d.\n",soulType);
+	//	DebugTrace("Soul effect=%d.\n",soulType);
 	//}
 
 	CHECK_OK;

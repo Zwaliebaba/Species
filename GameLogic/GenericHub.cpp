@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "HiResTime.h"
 #include "MathUtils.h"
@@ -64,7 +64,7 @@ bool DynamicBase::Advance()
     return Building::Advance();
 }
 
-void DynamicBase::ListSoundEvents( LList<char *> *_list )
+void DynamicBase::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 
@@ -148,7 +148,7 @@ void DynamicHub::ReprogramComplete()
 }
 
 
-void DynamicHub::ListSoundEvents( LList<char *> *_list )
+void DynamicHub::ListSoundEvents( LList<char const *> *_list )
 {
     DynamicBase::ListSoundEvents( _list );
 
@@ -292,7 +292,7 @@ void DynamicHub::Write( FileWriter *_out )
     _out->printf( "%-8d", m_minActiveLinks );
 }
 
-char *DynamicHub::GetObjectiveCounter()
+char const *DynamicHub::GetObjectiveCounter()
 {
     static char result[256];
 
@@ -436,7 +436,7 @@ void DynamicNode::RenderAlphas( float _predictionTime )
 }
 
 
-void DynamicNode::ListSoundEvents( LList<char *> *_list )
+void DynamicNode::ListSoundEvents( LList<char const *> *_list )
 {
     DynamicBase::ListSoundEvents( _list );
 

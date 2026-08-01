@@ -43,9 +43,6 @@ public:
 	void Initialise(char const *_filename);
 	void Initialise(BinaryReader *_reader, char const *_type);
 
-	void SavePng(const char *_filename, bool _saveAlpha = false);
-	void WritePng(FILE *_out, bool _saveAlpha = false);
-
 	void SaveBmp(char const *_filename);
 	void WriteBmp(FILE *_out);
 

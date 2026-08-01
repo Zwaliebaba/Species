@@ -10,7 +10,7 @@
 #include "OpenGLDirectXInternals.h"
 #endif
 #include "BoundedArray.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "HiResTime.h"
 #include "Input.h"
 #include "Profiler.h"
@@ -211,7 +211,7 @@ void Location::InitBuildings()
         Building *existing = g_app->m_location->GetBuilding(building->m_id.GetUniqueId());
         if( existing )
         {
-            DarwiniaReleaseAssert( false,
+            ASSERT_TEXT( false,
                            "Error loading level file...duplicate building found\n"
                            "Map filename = %s, Mission filename = %s\n"
                            "Existing building type = %s, new building type = %s",
@@ -251,7 +251,7 @@ WorldObjectId Location::SpawnEntities( Vector3 const &_pos, unsigned char _teamI
                                        unsigned char _type, int _numEntities, Vector3 const &_vel,
                                        float _spread, float _range, int _routeId, int _routeWaypointId )
 {
-    DarwiniaDebugAssert( _teamId < NUM_TEAMS &&
+    DEBUG_ASSERT( _teamId < NUM_TEAMS &&
                 m_teams[_teamId].m_teamType > Team::TeamTypeUnused );
 
     Team *team = &m_teams[_teamId];
@@ -261,7 +261,7 @@ WorldObjectId Location::SpawnEntities( Vector3 const &_pos, unsigned char _teamI
     {
         int unitIndex;
         Entity *s = team->NewEntity( _type, _unitId, &unitIndex );
-        DarwiniaDebugAssert( s );
+        DEBUG_ASSERT( s );
 
         s->SetType( _type );
         s->m_pos         = FindValidSpawnPosition( _pos, _spread );
@@ -346,7 +346,7 @@ Vector3 Location::FindValidSpawnPosition( Vector3 const &_pos, float _spread )
 
 int Location::SpawnSpirit( Vector3 const &_pos, Vector3 const &_vel, unsigned char _teamId, WorldObjectId _id )
 {
-    DarwiniaDebugAssert( _teamId < NUM_TEAMS );
+    DEBUG_ASSERT( _teamId < NUM_TEAMS );
 
     int index = m_spirits.GetNextFree();
     Spirit *s = m_spirits.GetPointer( index );
@@ -1176,7 +1176,7 @@ void Location::RenderBuildingAlphas()
                     s_sortedBuildings[s_nextSortedBuilding].m_buildingIndex = i;
                     s_sortedBuildings[s_nextSortedBuilding].m_distance = distance;
                     s_nextSortedBuilding++;
-                    DarwiniaReleaseAssert( s_nextSortedBuilding < MaxDepthSortedBuildings, "More that 256 buildings require Depth Sorting!" );
+                    ASSERT_TEXT( s_nextSortedBuilding < MaxDepthSortedBuildings, "More that 256 buildings require Depth Sorting!" );
                 }
                 else
                 {
@@ -1339,18 +1339,18 @@ void Location::RenderWeapons()
 
 void Location::InitialiseTeam( unsigned char _teamId, unsigned char _teamType )
 {
-    DarwiniaDebugAssert( _teamId < NUM_TEAMS );
-    DarwiniaDebugAssert( m_teams[_teamId].m_teamType == Team::TeamTypeUnused );
+    DEBUG_ASSERT( _teamId < NUM_TEAMS );
+    DEBUG_ASSERT( m_teams[_teamId].m_teamType == Team::TeamTypeUnused );
 
     Team *team = &m_teams[_teamId];
     team->Initialise(_teamId);
     team->SetTeamType( _teamType );
 
-    DebugOut( "CLIENT : New team created, id %d, type %d\n", _teamId, _teamType );
+    DebugTrace( "CLIENT : New team created, id %d, type %d\n", _teamId, _teamType );
 
     if( _teamType == Team::TeamTypeLocalPlayer )
     {
-        DebugOut( "CLIENT : Assigned team %d\n", _teamId );
+        DebugTrace( "CLIENT : Assigned team %d\n", _teamId );
         g_app->m_globalWorld->m_myTeamId = _teamId;
 //		g_target->SetMousePos(g_app->m_renderer->ScreenW(), g_app->m_renderer->ScreenH());
 //		g_app->m_camera->RequestMode(Camera::ModeFreeMovement);
@@ -1474,7 +1474,7 @@ void Location::InitialiseTeam( unsigned char _teamId, unsigned char _teamType )
 
                 for( int s = 0; s < squad->m_entities.Size(); ++s )
                 {
-                    DarwiniaDebugAssert( squad->m_entities.ValidIndex(s) );
+                    DEBUG_ASSERT( squad->m_entities.ValidIndex(s) );
                     Entity *entity = squad->m_entities[s];
                     entity->m_stats[Entity::StatHealth] = program->m_health[s];
                 }

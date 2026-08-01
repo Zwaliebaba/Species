@@ -32,7 +32,7 @@ public:
     virtual Vector3 GetSpiritLocation   ();
     virtual void    TriggerSpirit       ( float _initValue );
 
-    void ListSoundEvents( LList<char *> *_list );
+    void ListSoundEvents( LList<char const *> *_list );
 
     static SpiritProcessor *GetSpiritProcessor();
 
@@ -71,7 +71,7 @@ public:
 
     void TriggerSpirit ( float _initValue );
 
-    char *GetObjectiveCounter();
+    char const *GetObjectiveCounter();
 
     void Initialise( Building *_building );
     bool Advance();

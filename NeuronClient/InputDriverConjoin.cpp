@@ -23,7 +23,7 @@ InputParserState ConjoinInputDriver::parseInputSpecification( InputSpecTokens co
                                                               InputSpec &spec )
 {
 	string s = "";
-	auto_ptr<InputSpecList> speclist( new InputSpecList() );
+	std::unique_ptr<InputSpecList> speclist( new InputSpecList() );
 	bool haveComplexInput = false;
 	bool hasParts = false;
 
@@ -48,7 +48,7 @@ InputParserState ConjoinInputDriver::parseInputSpecification( InputSpecTokens co
 						spec.type = partspec.type;
 					}
 				}
-				speclist->push_back( auto_ptr<const InputSpec>( new InputSpec( partspec ) ) );
+				speclist->push_back( std::unique_ptr<const InputSpec>( new InputSpec( partspec ) ) );
 				s.clear(); // Ready for another spec
 			} else {
 				return STATE_CONJ_ERROR;

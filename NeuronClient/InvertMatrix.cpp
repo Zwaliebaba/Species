@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 
 class Matrix {
 
@@ -18,10 +18,10 @@ Matrix () {
 // Regular Constructor. Creates an nR by nC matrix; sets values to zero.
 // If number of columns is not specified, it is set to 1.
 Matrix(int nR, int nC = 1) {
-  DarwiniaDebugAssert(nR > 0 && nC > 0);    // Check that nC and nR both > 0.
+  DEBUG_ASSERT(nR > 0 && nC > 0);    // Check that nC and nR both > 0.
   nRow_ = nR; nCol_ = nC;
   data_ = new double [nR*nC];  // Allocate memory
-  DarwiniaDebugAssert(data_ != 0);          // Check that memory was allocated
+  DEBUG_ASSERT(data_ != 0);          // Check that memory was allocated
   set(0.0);                    // Set values of data_[] to 0.0
 }
 
@@ -56,15 +56,15 @@ int nCol() const { return nCol_; }
 // Example: a(1,1) = 2*b(2,3);
 // If column is unspecified, take as 1.
 double& operator() (int i, int j = 1) {
-  DarwiniaDebugAssert(i > 0 && i <= nRow_);          // Bounds checking for rows
-  DarwiniaDebugAssert(j > 0 && j <= nCol_);          // Bounds checking for columns
+  DEBUG_ASSERT(i > 0 && i <= nRow_);          // Bounds checking for rows
+  DEBUG_ASSERT(j > 0 && j <= nCol_);          // Bounds checking for columns
   return data_[ nCol_*(i-1) + (j-1) ];  // Access appropriate value
 }
 
 // Parenthesis operator function (const version).
 const double& operator() (int i, int j = 1) const{
-  DarwiniaDebugAssert(i > 0 && i <= nRow_);          // Bounds checking for rows
-  DarwiniaDebugAssert(j > 0 && j <= nCol_);          // Bounds checking for columns
+  DEBUG_ASSERT(i > 0 && i <= nRow_);          // Bounds checking for rows
+  DEBUG_ASSERT(j > 0 && j <= nCol_);          // Bounds checking for columns
   return data_[ nCol_*(i-1) + (j-1) ];  // Access appropriate value
 }
 
@@ -106,7 +106,7 @@ double inv(Matrix A, Matrix& Ainv)
 {
 
   int N = A.nRow();
-  DarwiniaDebugAssert( N == A.nCol() );
+  DEBUG_ASSERT( N == A.nCol() );
 
   Ainv = A;  // Copy matrix to ensure Ainv is same size
 

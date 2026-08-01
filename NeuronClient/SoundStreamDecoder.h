@@ -1,10 +1,7 @@
 #ifndef INCLUDED_SOUND_STREAM_DECODER_H
 #define INCLUDED_SOUND_STREAM_DECODER_H
 
-
 class BinaryReader;
-struct OggVorbis_File;
-
 
 //*****************************************************************************
 // Class SoundStreamDecoder
@@ -16,41 +13,34 @@ struct OggVorbis_File;
 
 class SoundStreamDecoder
 {
-protected:
-	BinaryReader	*m_in;
+  protected:
+    BinaryReader* m_in;
 
-	OggVorbis_File	*m_vorbisFile;		// Ogg only
+    unsigned int m_samplesRemaining; // Wav only
+    unsigned int m_dataStartOffset; // Wav only - bytes from start of file
 
-	unsigned int	m_samplesRemaining;	// Wav only
-	unsigned int	m_dataStartOffset;	// Wav only - bytes from start of file
+    unsigned char m_bits; // 8 or 16 - Indicates source file format - output is always 16 bit
+    int m_fileType;
 
-	unsigned char	m_bits;				// 8 or 16 - Indicates source file format - output is always 16 bit
-	int				m_fileType;
+    void ReadWavHeader();
+    unsigned ReadWavData(signed short* _data, unsigned int _numSamples);
 
-	void ReadWavHeader();
-	void ReadOggHeader();
-	unsigned ReadWavData(signed short *_data, unsigned int _numSamples);
-	unsigned ReadOggData(signed short *_data, unsigned int _numSamples);
+  public:
+    unsigned int m_numChannels;
+    unsigned int m_freq;
+    unsigned int m_numSamples;
 
-public:
-	unsigned int	m_numChannels;
-	unsigned int	m_freq;
-	unsigned int	m_numSamples;
+    enum
+    {
+      TypeUnknown,
+      TypeWav
+    };
 
-	enum
-	{
-		TypeUnknown,
-		TypeWav,
-		TypeOgg
-	};
+    SoundStreamDecoder(BinaryReader* _in);
+    ~SoundStreamDecoder();
 
-	SoundStreamDecoder(BinaryReader *_in);
-	~SoundStreamDecoder();
-
-	unsigned int Read(signed short *_data, unsigned int _numSamples);
-	void Restart();
+    unsigned int Read(signed short* _data, unsigned int _numSamples);
+    void Restart();
 };
-
-
 
 #endif

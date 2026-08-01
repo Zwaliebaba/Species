@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "TextStreamReaders.h"
 #include "MathUtils.h"
@@ -39,7 +39,7 @@ Factory::Factory()
 
 void Factory::Initialise(Building *_template)
 {
-	DarwiniaDebugAssert(_template->m_type == Building::TypeFactory);
+	DEBUG_ASSERT(_template->m_type == Building::TypeFactory);
 	Factory *factory = (Factory*)_template;
 	m_initialCapacity = factory->m_initialCapacity;
 

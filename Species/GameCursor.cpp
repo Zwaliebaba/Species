@@ -75,7 +75,7 @@ GameCursor::GameCursor()
 	sprintf( m_selectionArrowFilename, "Icons/SelectionArrow.bmp" );
 
     BinaryReader *binReader = g_app->m_resource->GetBinaryReader( m_selectionArrowFilename );
-	DarwiniaReleaseAssert(binReader, "Failed to open mouse cursor resource %s", m_selectionArrowFilename );
+	ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", m_selectionArrowFilename );
     BitmapRGBA bmp( binReader, "bmp" );
 	SAFE_DELETE(binReader);
 
@@ -628,7 +628,7 @@ void GameCursor::FindScreenEdge( Vector2 const &_line, float *_posX, float *_pos
     }
 
     // We should never ever get here
-    DarwiniaDebugAssert( false );
+    DEBUG_ASSERT( false );
     *_posX = 0;
     *_posY = 0;
 }
@@ -967,7 +967,7 @@ MouseCursor::MouseCursor( char const *_filename )
 	m_mainFilename = strdup(fullFilename);
 
     BinaryReader *binReader = g_app->m_resource->GetBinaryReader( m_mainFilename );
-	DarwiniaReleaseAssert(binReader, "Failed to open mouse cursor resource %s", _filename);
+	ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", _filename);
     BitmapRGBA bmp( binReader, "bmp" );
 	SAFE_DELETE(binReader);
 

@@ -965,7 +965,7 @@ bool Darwinian::AdvanceFollowingOfficer()
             {
                 m_ordersBuildingId = officer->m_ordersBuildingId;
                 Building *building = g_app->m_location->GetBuilding( m_ordersBuildingId );
-                DarwiniaDebugAssert( building );
+                DEBUG_ASSERT( building );
                 Teleport *teleport = (Teleport *) building;
                 if( !teleport->Connected() )
                 {
@@ -1026,7 +1026,7 @@ bool Darwinian::AdvanceFollowingOfficer()
             // We have arrived but are trying to enter a teleport
             // Just wiggle around until we are given entry
             Building *building = g_app->m_location->GetBuilding( m_ordersBuildingId );
-            DarwiniaDebugAssert(building);
+            DEBUG_ASSERT(building);
             Teleport *teleport = (Teleport *) building;
             if( !teleport->Connected() )
             {
@@ -1304,7 +1304,7 @@ bool Darwinian::SearchForOfficers()
             int chosenOfficer = syncrand() % officers.Size();
             WorldObjectId officerId = *officers.GetPointer(chosenOfficer);
             Officer *officer = (Officer *) g_app->m_location->GetEntitySafe(officerId, TypeOfficer);
-            DarwiniaDebugAssert( officer );
+            DEBUG_ASSERT( officer );
 
             if( g_app->m_location->IsWalkable( m_pos, officer->m_orderPosition ) )
             {
@@ -1703,7 +1703,7 @@ bool Darwinian::SearchForPorts()
 
     int chosenBuildingIndex = syncrand() % availableBuildings.Size();
     Building *chosenBuilding = g_app->m_location->GetBuilding( availableBuildings[chosenBuildingIndex] );
-    DarwiniaDebugAssert(chosenBuilding);
+    DEBUG_ASSERT(chosenBuilding);
 
 
     //
@@ -2441,7 +2441,7 @@ void Darwinian::Render( float _predictionTime, float _highDetail )
 }
 
 
-void Darwinian::ListSoundEvents( LList<char *> *_list )
+void Darwinian::ListSoundEvents( LList<char const *> *_list )
 {
     Entity::ListSoundEvents( _list );
 

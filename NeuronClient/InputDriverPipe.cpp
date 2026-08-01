@@ -51,7 +51,7 @@ InputParserState PipeInputDriver::parseInputSpecification( InputSpecTokens const
                                                            InputSpec &spec )
 {
 	string s = "";
-	auto_ptr<InputFilterWithArgs> filterWithArgs( new InputFilterWithArgs() );
+	std::unique_ptr<InputFilterWithArgs> filterWithArgs( new InputFilterWithArgs() );
 
 	spec.type = INPUT_TYPE_BOOL;
 

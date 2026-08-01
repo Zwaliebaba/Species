@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "TargetCursor.h"
 
 #include "ScrollBar.h"
@@ -19,7 +19,7 @@ ScrollBar::ScrollBar( EclWindow *parent )
     m_winSize(0),
     m_currentValue(0)
 {
-    DarwiniaDebugAssert( parent );
+    DEBUG_ASSERT( parent );
     strcpy( m_parentWindow, parent->m_name );
     strcpy( m_name, "New Scrollbar" );
 }
@@ -28,7 +28,7 @@ ScrollBar::~ScrollBar()
 {
 }
 
-void ScrollBar::Create( char *name,
+void ScrollBar::Create( char const *name,
                         int x, int y, int w, int h,
                         int numRows, int winSize,
                         int stepSize )
@@ -43,7 +43,7 @@ void ScrollBar::Create( char *name,
     m_winSize = winSize;
 
     EclWindow *parent = EclGetWindow( m_parentWindow );
-    DarwiniaDebugAssert( parent );
+    DEBUG_ASSERT( parent );
 
     char barName[256];
     char upName[256];
@@ -136,7 +136,7 @@ ScrollBarButton::ScrollBarButton( ScrollBar *scrollBar )
 void ScrollBarButton::Render( int realX, int realY, bool highlighted, bool clicked )
 {
 
-    DarwiniaDebugAssert( m_scrollBar );
+    DEBUG_ASSERT( m_scrollBar );
 
     // Background
 
@@ -179,10 +179,10 @@ void ScrollBarButton::MouseUp()
     if( m_grabOffset == -1 )
     {
 
-        DarwiniaDebugAssert( m_scrollBar );
+        DEBUG_ASSERT( m_scrollBar );
 
         EclWindow *parent = EclGetWindow( m_scrollBar->m_parentWindow );
-        DarwiniaDebugAssert( parent );
+        DEBUG_ASSERT( parent );
 
         int barTop = int( parent->m_y + m_y + m_h * (float) m_scrollBar->m_currentValue / (float) m_scrollBar->m_numRows );
         int barEnd = int( parent->m_y + m_y + m_h * (float) (m_scrollBar->m_currentValue + m_scrollBar->m_winSize) / (float) m_scrollBar->m_numRows );
@@ -211,7 +211,7 @@ void ScrollBarButton::MouseDown()
 {
     if( m_grabOffset > -1 )
     {
-        DarwiniaDebugAssert( m_scrollBar );
+        DEBUG_ASSERT( m_scrollBar );
         int pixelsInside = g_target->Y() - ( m_parent->m_y + m_y );
         float fractionInside = (float) pixelsInside / (float) m_h;
         int centreVal = fractionInside * m_scrollBar->m_numRows;
@@ -220,9 +220,9 @@ void ScrollBarButton::MouseDown()
     }
     else
     {
-        DarwiniaDebugAssert( m_scrollBar );
+        DEBUG_ASSERT( m_scrollBar );
         EclWindow *parent = EclGetWindow( m_scrollBar->m_parentWindow );
-        DarwiniaDebugAssert( parent );
+        DEBUG_ASSERT( parent );
         int mouseY = g_target->Y();
         int barTop = int( m_parent->m_y + m_y + m_h * (float) m_scrollBar->m_currentValue / (float) m_scrollBar->m_numRows );
         int barEnd = int( m_parent->m_y + m_y + m_h * (float) (m_scrollBar->m_currentValue + m_scrollBar->m_winSize) / (float) m_scrollBar->m_numRows );
@@ -243,6 +243,6 @@ ScrollChangeButton::ScrollChangeButton( ScrollBar *scrollbar, int amount )
 
 void ScrollChangeButton::MouseDown()
 {
-    DarwiniaDebugAssert( m_scrollBar );
+    DEBUG_ASSERT( m_scrollBar );
     m_scrollBar->ChangeCurrentValue( m_amount );
 }

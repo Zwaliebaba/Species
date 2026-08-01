@@ -1,5 +1,7 @@
 // See header file for module description
 
+#include "pch.h"
+
 #include "NetLib.h"
 #include "NetSocket.h"
 #include "NetSocketListener.h"

@@ -228,7 +228,7 @@ Vector3 Explosion::GetCenter() const
 		summed++;
 	}
 	if(summed) return sum/summed;
-	DarwiniaDebugAssert(0);
+	DEBUG_ASSERT(0);
 	return sum;
 }
 

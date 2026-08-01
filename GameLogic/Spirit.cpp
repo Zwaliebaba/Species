@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "MathUtils.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "DebugRender.h"
 
 #include "App.h"
@@ -226,7 +226,7 @@ void Spirit::AddToGlobalWorld()
 {
     int locationId = g_app->m_locationId;
     GlobalLocation *location = g_app->m_globalWorld->GetLocation( locationId );
-    DarwiniaDebugAssert(location);
+    DEBUG_ASSERT(location);
     location->AddSpirits(1);
 }
 

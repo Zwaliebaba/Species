@@ -44,7 +44,7 @@ FuelBuilding::FuelBuilding()
     if( !s_fuelPipe )
     {
         s_fuelPipe = g_app->m_resource->GetShape( "FuelPipe.shp" );
-        DarwiniaDebugAssert( s_fuelPipe );
+        DEBUG_ASSERT( s_fuelPipe );
     }
 }
 
@@ -62,7 +62,7 @@ Vector3 FuelBuilding::GetFuelPosition()
     if( !m_fuelMarker )
     {
         m_fuelMarker = m_shape->m_rootFragment->LookupMarker( "MarkerFuel" );
-        DarwiniaDebugAssert( m_fuelMarker );
+        DEBUG_ASSERT( m_fuelMarker );
     }
 
     Matrix34 mat( m_front, m_up, m_pos );
@@ -153,7 +153,7 @@ void FuelBuilding::Render( float _predictionTime )
         ourPipePos += pipeVector * 10;
 
         Matrix34 pipeMat( up, pipeVector, ourPipePos );
-        DarwiniaDebugAssert( s_fuelPipe );
+        DEBUG_ASSERT( s_fuelPipe );
         s_fuelPipe->Render( _predictionTime, pipeMat );
     }
 }
@@ -359,7 +359,7 @@ bool FuelGenerator::Advance()
 }
 
 
-void FuelGenerator::ListSoundEvents( LList<char *> *_list )
+void FuelGenerator::ListSoundEvents( LList<char const *> *_list )
 {
     FuelBuilding::ListSoundEvents( _list );
 
@@ -405,7 +405,7 @@ void FuelGenerator::RenderAlphas( float _predictionTime )
 }
 
 
-char *FuelGenerator::GetObjectiveCounter()
+char const *FuelGenerator::GetObjectiveCounter()
 {
     static char buffer[256];
     sprintf( buffer, "%s %d%%", LANGUAGEPHRASE("objective_fuelpressure"), int( m_currentLevel * 100 ) );
@@ -447,7 +447,7 @@ bool FuelPipe::Advance()
 }
 
 
-void FuelPipe::ListSoundEvents( LList<char *> *_list )
+void FuelPipe::ListSoundEvents( LList<char const *> *_list )
 {
     FuelBuilding::ListSoundEvents( _list );
 
@@ -564,7 +564,7 @@ bool FuelStation::BoardRocket( WorldObjectId _id )
 }
 
 
-void FuelStation::ListSoundEvents( LList<char *> *_list )
+void FuelStation::ListSoundEvents( LList<char const *> *_list )
 {
     FuelBuilding::ListSoundEvents( _list );
 
@@ -755,19 +755,19 @@ EscapeRocket::EscapeRocket()
     SetShape( g_app->m_resource->GetShape( "Rocket.shp" ) );
 
     m_booster = m_shape->m_rootFragment->LookupMarker( "MarkerBooster" );
-    DarwiniaReleaseAssert( m_booster, "MarkerBooster not found in rocket.shp" );
+    ASSERT_TEXT( m_booster, "MarkerBooster not found in rocket.shp" );
 
     for( int i = 0; i < 3; ++i )
     {
         char name[256];
         sprintf( name, "MarkerWindow0%d", i+1 );
         m_window[i] = m_shape->m_rootFragment->LookupMarker( name );
-        DarwiniaReleaseAssert( m_window[i], "%s not found", name );
+        ASSERT_TEXT( m_window[i], "%s not found", name );
     }
 }
 
 
-void EscapeRocket::ListSoundEvents( LList<char *> *_list )
+void EscapeRocket::ListSoundEvents( LList<char const *> *_list )
 {
     FuelBuilding::ListSoundEvents( _list );
 
@@ -783,7 +783,7 @@ void EscapeRocket::ListSoundEvents( LList<char *> *_list )
 
 void EscapeRocket::SetupSounds()
 {
-    char *requiredSoundName = NULL;
+    char const *requiredSoundName = NULL;
 
     //
     // What ambience should be playing?
@@ -876,7 +876,7 @@ void EscapeRocket::Initialise( Building *_template )
 }
 
 
-char *EscapeRocket::GetObjectiveCounter()
+char const *EscapeRocket::GetObjectiveCounter()
 {
     static char buffer[256];
     sprintf( buffer, "%s %d%%, %s %d%%", LANGUAGEPHRASE("objective_fuel"),
@@ -1471,7 +1471,7 @@ void EscapeRocket::Write( FileWriter *_out )
 
 int EscapeRocket::GetStateId( char *_state )
 {
-    static char *stateNames[] = {
+    static char const *stateNames[] = {
                                     "Refueling",
                                     "Loading",
                                     "Ignition",

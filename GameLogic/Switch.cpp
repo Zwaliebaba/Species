@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "DebugRender.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "Profiler.h"
 #include "Resource.h"
@@ -50,7 +50,7 @@ FenceSwitch::FenceSwitch()
 void FenceSwitch::Initialise( Building *_template )
 {
     Building::Initialise( _template );
-	DarwiniaDebugAssert(_template->m_type == Building::TypeFenceSwitch);
+	DEBUG_ASSERT(_template->m_type == Building::TypeFenceSwitch);
     m_linkedBuildingId = ((FenceSwitch *) _template)->m_linkedBuildingId;
     m_linkedBuildingId2 = ((FenceSwitch *) _template)->m_linkedBuildingId2;
     m_switchValue = ((FenceSwitch *) _template)->m_switchValue;
@@ -483,7 +483,7 @@ Vector3 FenceSwitch::GetConnectionLocation()
     if( !m_connectionLocation )
     {
         m_connectionLocation = m_shape->m_rootFragment->LookupMarker( "MarkerConnectionLocation" );
-        DarwiniaDebugAssert( m_connectionLocation );
+        DEBUG_ASSERT( m_connectionLocation );
     }
 
     Matrix34 rootMat( m_front, m_up, m_pos );

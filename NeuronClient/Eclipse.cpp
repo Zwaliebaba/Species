@@ -17,7 +17,7 @@
 
 #include "Eclipse.h"
 #include "LList.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 // ============================================================================
 
@@ -438,7 +438,7 @@ void EclRemovePopup ()
     strcpy( popupWindow, "None" );
 }
 
-void EclRemoveWindow ( char *name )
+void EclRemoveWindow ( char const *name )
 {
     
     int index = EclGetWindowIndex(name);
@@ -543,7 +543,7 @@ bool EclIsTextEditing()
 	 return (currentWindow && strcmp( currentWindow->m_currentTextEdit, "None" ) != 0);
 }
 
-int EclGetWindowIndex ( char *name )
+int EclGetWindowIndex ( char const *name )
 {
     for ( int i = 0; i < windows.Size(); ++i )
     {
@@ -555,7 +555,7 @@ int EclGetWindowIndex ( char *name )
     return -1;
 }
 
-EclWindow *EclGetWindow ( char *name )
+EclWindow *EclGetWindow ( char const *name )
 {
     
     int index = EclGetWindowIndex (name);
@@ -586,7 +586,7 @@ EclWindow *EclGetWindow ( int x, int y )
     return NULL;
 }
 
-void EclMaximiseWindow ( char *name )
+void EclMaximiseWindow( char const *name )
 {
     EclUnMaximise();
     EclWindow *w = EclGetWindow( name );
@@ -674,7 +674,7 @@ void EclRegisterClearFunction ( void (*_clearDraw) (int, int, int, int) )
     clearDraw = _clearDraw;
 }
 
-void EclDirtyWindow ( char *name )
+void EclDirtyWindow( char const *name )
 {
 
     EclWindow *window = EclGetWindow(name);

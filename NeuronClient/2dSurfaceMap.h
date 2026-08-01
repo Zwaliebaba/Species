@@ -126,15 +126,15 @@ T SurfaceMap2D<T>::GetValue(float _x, float _y) const
 	fractionalX = fractionalX - floorf(fractionalX);
 	fractionalY = fractionalY - floorf(fractionalY);
 
-	if (x1 >= m_numColumns) x1 = 0;
-	if (x2 >= m_numColumns) x2 = 0;
-	if (y1 >= m_numRows) y1 = 0;
-	if (y2 >= m_numRows) y2 = 0;
+	if (x1 >= this->m_numColumns) x1 = 0;
+	if (x2 >= this->m_numColumns) x2 = 0;
+	if (y1 >= this->m_numRows) y1 = 0;
+	if (y2 >= this->m_numRows) y2 = 0;
 
-	T value11 = GetData(x1, y1);
-	T value12 = GetData(x1, y2);
-	T value21 = GetData(x2, y1);
-	T value22 = GetData(x2, y2);
+	T value11 = this->GetData(x1, y1);
+	T value12 = this->GetData(x1, y2);
+	T value21 = this->GetData(x2, y1);
+	T value22 = this->GetData(x2, y2);
 
 	float weight11 = (1.0f - fractionalX) * (1.0f - fractionalY);
 	float weight12 = (1.0f - fractionalX) * (fractionalY);
@@ -153,26 +153,26 @@ T SurfaceMap2D<T>::GetValue(float _x, float _y) const
 template <class T>
 T const& SurfaceMap2D<T>::GetValueNearest(float _x, float _y) const
 {
-	return GetData(floorf(_x * m_invCellSizeX), floorf(_y * m_invCellSizeY));
+	return this->GetData(floorf(_x * m_invCellSizeX), floorf(_y * m_invCellSizeY));
 }
 
 
 template <class T>
 T* SurfaceMap2D<T>::GetPointerNearest(float _x, float _y) const
 {
-	return GetPointer(floorf(_x * m_invCellSizeX), floorf(_y * m_invCellSizeY));
+	return this->GetPointer(floorf(_x * m_invCellSizeX), floorf(_y * m_invCellSizeY));
 }
 
 
 template <class T>
 T SurfaceMap2D<T>::GetHighestValue() const
 {
-	T highest = GetData(0, 0);
-	for (unsigned short y = 0; y < m_numRows; ++y)
+	T highest = this->GetData(0, 0);
+	for (unsigned short y = 0; y < this->m_numRows; ++y)
 	{
-		for (unsigned short x = 0; x < m_numRows; ++x)
+		for (unsigned short x = 0; x < this->m_numRows; ++x)
 		{
-			T val = GetData(x, y);
+			T val = this->GetData(x, y);
 			if (val > highest)
 			{
 				highest = val;

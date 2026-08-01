@@ -2,7 +2,7 @@
 #include "TextRenderer.h"
 #include "MathUtils.h"
 #include "Vector2.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Resource.h"
 #include "Bitmap.h"
 #include "Profiler.h"
@@ -146,7 +146,7 @@ WorldObjectId Task::Promote( WorldObjectId _id )
     int teamId = g_app->m_globalWorld->m_myTeamId;
 
     Entity *entity = g_app->m_location->GetEntity( _id );
-    DarwiniaDebugAssert( entity );
+    DEBUG_ASSERT( entity );
 
 
     //
@@ -154,7 +154,7 @@ WorldObjectId Task::Promote( WorldObjectId _id )
 
     WorldObjectId spawnedId = g_app->m_location->SpawnEntities( entity->m_pos, teamId, -1, Entity::TypeOfficer, 1, entity->m_vel, 0 );
     Officer *officer = (Officer *) g_app->m_location->GetEntity( spawnedId );
-    DarwiniaDebugAssert( officer );
+    DEBUG_ASSERT( officer );
 
 
     //
@@ -183,7 +183,7 @@ WorldObjectId Task::Demote( WorldObjectId _id )
     int teamId = 0;
 
     Entity *entity = g_app->m_location->GetEntity( _id );
-    DarwiniaDebugAssert( entity );
+    DEBUG_ASSERT( entity );
 
 
     //
@@ -675,7 +675,7 @@ void TaskManager::SelectTask( int _id )
             }
         }
 
-        DarwiniaReleaseAssert( currentIndex != -1, "Error in TaskManager::SelectTask. Tried to select a task that doesn't exist." );
+        ASSERT_TEXT( currentIndex != -1, "Error in TaskManager::SelectTask. Tried to select a task that doesn't exist." );
 
         Task *task = m_tasks[ currentIndex ];
         //m_tasks.RemoveData(currentIndex);

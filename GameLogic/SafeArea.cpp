@@ -173,7 +173,7 @@ bool SafeArea::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
 }
 
 
-char *SafeArea::GetObjectiveCounter()
+char const *SafeArea::GetObjectiveCounter()
 {
     static char result[256];
     sprintf( result, "%s : %d", LANGUAGEPHRASE("objective_currentcount"), m_entitiesCounted );

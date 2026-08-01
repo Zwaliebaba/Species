@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "HiResTime.h"
 #include "MathUtils.h"
 #include "Profiler.h"
@@ -10,7 +10,6 @@
 
 #include <MMSYSTEM.H>
 #include <DSOUND.H>
-#include <DXERR9.H>
 
 #include "SoundFilter.h"
 #include "SoundLibrary3dDSound.h"
@@ -24,17 +23,39 @@
 
 static char s_dxErrorMsg[512];
 
+// DXGetErrorString9/DXGetErrorDescription9 came from DXERR9.H in the retired
+// DirectX SDK, which no longer ships with the Windows SDK. FormatMessage gives
+// us the same information for a DirectSound HRESULT.
+static char const *DSoundErrorString( HRESULT _hr )
+{
+    static char buf[256];
+
+    DWORD len = FormatMessageA( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                NULL, (DWORD) _hr, 0, buf, sizeof(buf), NULL );
+    if( len == 0 )
+    {
+        sprintf( buf, "HRESULT 0x%08lx", (unsigned long) _hr );
+    }
+    else
+    {
+        // Trim the trailing newline FormatMessage appends
+        while( len > 0 && (buf[len-1] == '\n' || buf[len-1] == '\r') ) buf[--len] = '\0';
+    }
+
+    return buf;
+}
+
 #define SOUNDASSERT(x, y)     { if(x != DS_OK && x != S_FALSE) {  \
-                                sprintf( s_dxErrorMsg, "%s %s", \
-                                DXGetErrorString9(x),   \
-                                DXGetErrorDescription9(x) );  \
+                                sprintf( s_dxErrorMsg, "0x%08lx %s", \
+                                (unsigned long)(x),   \
+                                DSoundErrorString(x) );  \
                                 char msg[512];             \
-                                sprintf( msg, "DirectSound ERROR\n%s line %d\n\n%s\nError Code : %s\n%s",  \
+                                sprintf( msg, "DirectSound ERROR\n%s line %d\n\n%s\nError Code : 0x%08lx\n%s",  \
                                 __FILE__, __LINE__,   \
                                 y,                    \
-                                DXGetErrorString9(x),   \
-                                DXGetErrorDescription9(x) );  \
-                                DarwiniaReleaseAssert( false, msg );  } }
+                                (unsigned long)(x),   \
+                                DSoundErrorString(x) );  \
+                                ASSERT_TEXT( false, msg );  } }
 
 
 
@@ -289,8 +310,8 @@ void SoundLibrary3dDirectSound::Initialise(int _mixFreq, int _numChannels, bool 
 {
     int errCode;
 
-    DarwiniaReleaseAssert( g_systemInfo->m_directXVersion >= 9.0f, "Darwinia requires DirectX9 or Greater" );
-	DarwiniaReleaseAssert( _numChannels > 0, "SoundLibrary3d asked to create too few channels" );
+    ASSERT_TEXT( g_systemInfo->m_directXVersion >= 9.0f, "Darwinia requires DirectX9 or Greater" );
+	ASSERT_TEXT( _numChannels > 0, "SoundLibrary3d asked to create too few channels" );
 
 
     //
@@ -577,7 +598,7 @@ void SoundLibrary3dDirectSound::SetChannelMinDistance( int _channel, float _minD
 
 	if (!NearlyEquals(_minDistance, channel->m_minDist))
 	{
-        DarwiniaReleaseAssert( _minDistance >= DS3D_DEFAULTMINDISTANCE &&
+        ASSERT_TEXT( _minDistance >= DS3D_DEFAULTMINDISTANCE &&
                        _minDistance <= DS3D_DEFAULTMAXDISTANCE,
                        "Channel MinDistance must be between %2.2f and %2.2f."
                        "You requested %2.2f",
@@ -603,7 +624,7 @@ void SoundLibrary3dDirectSound::SetChannelVolume( int _channel, float _volume )
 
 	if (!NearlyEquals(_volume, channel->m_volume))
 	{
-		DarwiniaDebugAssert(_volume >= 0.0f && _volume <= 10.0f);
+		DEBUG_ASSERT(_volume >= 0.0f && _volume <= 10.0f);
 
 		channel->m_volume = _volume;
 
@@ -867,7 +888,7 @@ void SoundLibrary3dDirectSound::Verify()
 	for (int i = 0; i < m_numChannels; ++i)
 	{
 		int numFilters = GetNumFilters(i);
-		DarwiniaDebugAssert(numFilters <= 1);
+		DEBUG_ASSERT(numFilters <= 1);
 	}
 }
 
@@ -913,7 +934,7 @@ void SoundLibrary3dDirectSound::ResetChannel( int _channel )
     int errCode;
 
 
-	DarwiniaDebugAssert(_channel >= -1);
+	DEBUG_ASSERT(_channel >= -1);
 
 
 	//
@@ -959,9 +980,9 @@ void SoundLibrary3dDirectSound::ResetChannel( int _channel )
 
 void SoundLibrary3dDirectSound::EnableDspFX(int _channel, int _numFilters, int const *_filterTypes)
 {
-    DarwiniaReleaseAssert( _numFilters > 0, "Bad argument passed to EnableFilters" );
+    ASSERT_TEXT( _numFilters > 0, "Bad argument passed to EnableFilters" );
 
-	DarwiniaDebugAssert(_channel >= 0 && _channel < m_numChannels);
+	DEBUG_ASSERT(_channel >= 0 && _channel < m_numChannels);
 	DirectSoundChannel *channel;
 	if (_channel == m_musicChannelId) channel = m_musicChannel;
 	else				channel = &m_channels[_channel];
@@ -990,7 +1011,7 @@ void SoundLibrary3dDirectSound::EnableDspFX(int _channel, int _numFilters, int c
 			desc[numDSoundFilters].dwFlags = DSFX_LOCSOFTWARE;
 			desc[numDSoundFilters].guidDSFXClass = *s_dxDescriptors[ _filterTypes[i] ].m_sfxClass;
 
-			DarwiniaDebugAssert(
+			DEBUG_ASSERT(
 				desc[numDSoundFilters].guidDSFXClass == GUID_DSFX_STANDARD_CHORUS ||
 				desc[numDSoundFilters].guidDSFXClass == GUID_DSFX_STANDARD_COMPRESSOR ||
 				desc[numDSoundFilters].guidDSFXClass == GUID_DSFX_STANDARD_DISTORTION ||
@@ -1032,11 +1053,11 @@ void SoundLibrary3dDirectSound::EnableDspFX(int _channel, int _numFilters, int c
 
     for( int i = 0; i < _numFilters; ++i )
     {
-		DarwiniaDebugAssert(_filterTypes[i] >= 0);
+		DEBUG_ASSERT(_filterTypes[i] >= 0);
 
 		if (_filterTypes[i] <= DSP_DSOUND_WAVESREVERB)
 		{
-	        DarwiniaReleaseAssert( results[i] == DSFXR_LOCSOFTWARE, "DirectSound couldn't enable filter" );
+	        ASSERT_TEXT( results[i] == DSFXR_LOCSOFTWARE, "DirectSound couldn't enable filter" );
 			channel->m_dspFX[i].m_dxFilter = true;
 		}
 
@@ -1064,8 +1085,8 @@ void SoundLibrary3dDirectSound::EnableDspFX(int _channel, int _numFilters, int c
 
 void SoundLibrary3dDirectSound::UpdateDspFX( int _channel, int _filterType, int _numParams, float const *_params )
 {
-	DarwiniaDebugAssert(_channel >= 0 && _channel < m_numChannels);
-	DarwiniaDebugAssert(GetNumFilters(_channel) > 0);
+	DEBUG_ASSERT(_channel >= 0 && _channel < m_numChannels);
+	DEBUG_ASSERT(GetNumFilters(_channel) > 0);
 
 	DirectSoundChannel *channel;
 	if (_channel == m_musicChannelId) channel = m_musicChannel;
@@ -1116,14 +1137,14 @@ void SoundLibrary3dDirectSound::UpdateDspFX( int _channel, int _filterType, int 
 				errCode = ((IDirectSoundFXI3DL2Reverb8 *)effect)->SetQuality( _params[12] );
 				break;
 			default:
-				DarwiniaReleaseAssert( false, "Unknown filter type" );
+				ASSERT_TEXT( false, "Unknown filter type" );
 		}
 
 		SOUNDASSERT( errCode, "Failed to set filter parameters" );
 	}
     else
 	{
-		DarwiniaDebugAssert(channel->m_dspFX[_filterType].m_userFilter);
+		DEBUG_ASSERT(channel->m_dspFX[_filterType].m_userFilter);
         channel->m_dspFX[_filterType].m_userFilter->SetParameters( _params );
     }
 }
@@ -1133,7 +1154,7 @@ void SoundLibrary3dDirectSound::DisableDspFX( int _channel )
 {
     int errCode;
 
-	DarwiniaDebugAssert(GetNumFilters(_channel) > 0);
+	DEBUG_ASSERT(GetNumFilters(_channel) > 0);
 
    	DirectSoundChannel *channel;
 	if (_channel == m_musicChannelId) channel = m_musicChannel;

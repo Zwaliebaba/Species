@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Resource.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "TextStreamReaders.h"
 #include "Shape.h"
@@ -49,7 +49,7 @@ void TrunkPort::SetDetail( int _detail )
     memset( m_heightMap, 0, m_heightMapSize * m_heightMapSize * sizeof(Vector3) );
 
     ShapeMarker *marker = m_shape->m_rootFragment->LookupMarker( "MarkerSurface" );
-    DarwiniaDebugAssert( marker );
+    DEBUG_ASSERT( marker );
 
     Matrix34 transform( m_front, g_upVector, m_pos );
     Vector3 worldPos = marker->GetWorldMatrix( transform ).pos;
@@ -170,7 +170,7 @@ void TrunkPort::RenderAlphas( float predictionTime )
     if( m_openTimer > 0.0f )
     {
         ShapeMarker *marker = m_shape->m_rootFragment->LookupMarker( "MarkerSurface" );
-        DarwiniaDebugAssert( marker );
+        DEBUG_ASSERT( marker );
 
         Matrix34 transform( m_front, g_upVector, m_pos );
         Vector3 markerPos = marker->GetWorldMatrix( transform ).pos;
@@ -308,7 +308,7 @@ void TrunkPort::ReprogramComplete()
 }
 
 
-void TrunkPort::ListSoundEvents( LList<char *> *_list )
+void TrunkPort::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 

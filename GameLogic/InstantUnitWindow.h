@@ -13,7 +13,7 @@
 class InstantUnitEditWindow: public DarwiniaWindow
 {
 public:
-	InstantUnitEditWindow(char *name);
+	InstantUnitEditWindow( char const *name );
 	~InstantUnitEditWindow();
 
 	void Create();
@@ -27,7 +27,7 @@ public:
 class InstantUnitCreateWindow: public DarwiniaWindow
 {
 public:
-    InstantUnitCreateWindow( char *name );
+    InstantUnitCreateWindow( char const *name );
 	~InstantUnitCreateWindow();
 
 	void Create();

@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Profiler.h"
 
 #include "SoundLibrary3d.h"
@@ -50,7 +50,7 @@ void SoundLibrary3d::SetMusicCallback( bool (*_callback) (signed short *, unsign
 // 0 = silence, 255 = full volume
 void SoundLibrary3d::SetMasterVolume( int _volume )
 {
-	DarwiniaReleaseAssert(_volume >=0 && _volume <= 255, "Invalid value passed to SoundLibrary3d::SetMasterVolume");
+	ASSERT_TEXT(_volume >=0 && _volume <= 255, "Invalid value passed to SoundLibrary3d::SetMasterVolume");
 
 	// Converts 0-255 into 1/100ths of a decibel of attenuation
 	m_masterVolume = (float)(255 - _volume) * -32.0f;

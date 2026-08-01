@@ -96,7 +96,7 @@ void Spam::Destroy( float _intensity )
 	m_damage = 0.0f;
 }
 
-void Spam::ListSoundEvents( LList<char *> *_list )
+void Spam::ListSoundEvents( LList<char const *> *_list )
 {
     _list->PutData( "Attack" );
     _list->PutData( "Explode" );

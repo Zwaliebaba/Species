@@ -84,6 +84,12 @@ public:
 	char			*GenerateName		();
 
 	LList <char *> *ListResources(char const *_dir, char const *_filter, bool _longResults = true);
+
+	// *** Mods ***
+	void			LoadMod				(char const *_modName);
+	char			*GetBaseDirectory	();
+	const char		*GetModName			();
+	bool			IsModLoaded			();
 };
 
 

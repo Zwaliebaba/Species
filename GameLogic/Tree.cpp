@@ -6,7 +6,7 @@
 #include "Profiler.h"
 #include "Resource.h"
 #include "TextStreamReaders.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Shape.h"
 #include "HiResTime.h"
 #include "TextRenderer.h"
@@ -58,7 +58,7 @@ void Tree::Initialise( Building *_template )
 {
     Building::Initialise( _template );
 
-    DarwiniaDebugAssert( _template->m_type == TypeTree );
+    DEBUG_ASSERT( _template->m_type == TypeTree );
     Tree *tree = (Tree *) _template;
 
     m_height = tree->m_height;
@@ -295,7 +295,7 @@ void Tree::Generate()
     m_hitcheckRadius *= 0.8f;
 
     float totalTime = GetHighResTime() - timeNow;
-    DebugOut( "Tree generated in %dms\n", int(totalTime * 1000.0f) );
+    DebugTrace( "Tree generated in %dms\n", int(totalTime * 1000.0f) );
 }
 
 void Tree::Render( float _predictionTime )
@@ -544,7 +544,7 @@ void Tree::RenderBranch( Vector3 _from, Vector3 _to, int _iterations,
 }
 
 
-void Tree::ListSoundEvents( LList<char *> *_list )
+void Tree::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 

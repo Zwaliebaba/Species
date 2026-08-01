@@ -43,7 +43,7 @@ ConstructionYard::ConstructionYard()
         char name[64];
         sprintf( name, "MarkerPrimitive0%d", i+1 );
         m_primitives[i] = m_shape->m_rootFragment->LookupMarker( name );
-        DarwiniaDebugAssert( m_primitives[i] );
+        DEBUG_ASSERT( m_primitives[i] );
     }
 
     for( int i = 0; i < YARD_NUMRUNGSPIKES; ++i )
@@ -51,7 +51,7 @@ ConstructionYard::ConstructionYard()
         char name[64];
         sprintf( name, "MarkerSpike0%d", i+1 );
         m_rungSpikes[i] = m_rung->m_rootFragment->LookupMarker( name );
-        DarwiniaDebugAssert( m_rungSpikes[i] );
+        DEBUG_ASSERT( m_rungSpikes[i] );
     }
 }
 

@@ -2,7 +2,7 @@
 
 #include "TextStreamReaders.h"
 #include "Shape.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "Resource.h"
 #include "MathUtils.h"
@@ -355,7 +355,7 @@ bool MineBuilding::Advance()
 }
 
 
-void MineBuilding::ListSoundEvents( LList<char *> *_list )
+void MineBuilding::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 
@@ -375,7 +375,7 @@ Vector3 MineBuilding::GetTrackMarker1()
     if( !m_trackMarker1 || g_app->m_editing )
     {
         m_trackMarker1 = m_shape->m_rootFragment->LookupMarker( "MarkerTrack1" );
-        DarwiniaDebugAssert( m_trackMarker1 );
+        DEBUG_ASSERT( m_trackMarker1 );
         Matrix34 rootMat( m_front, g_upVector, m_pos );
         m_trackMatrix1 = m_trackMarker1->GetWorldMatrix( rootMat );
     }
@@ -389,7 +389,7 @@ Vector3 MineBuilding::GetTrackMarker2()
     if( !m_trackMarker2 || g_app->m_editing )
     {
         m_trackMarker2 = m_shape->m_rootFragment->LookupMarker( "MarkerTrack2" );
-        DarwiniaDebugAssert( m_trackMarker2 );
+        DEBUG_ASSERT( m_trackMarker2 );
         Matrix34 rootMat( m_front, g_upVector, m_pos );
         m_trackMatrix2 = m_trackMarker2->GetWorldMatrix( rootMat );
     }
@@ -860,7 +860,7 @@ Refinery::Refinery()
 }
 
 
-char *Refinery::GetObjectiveCounter()
+char const *Refinery::GetObjectiveCounter()
 {
     GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
     int numRefined = 0;

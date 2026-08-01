@@ -15,7 +15,7 @@
 class CameraMountEditWindow: public DarwiniaWindow
 {
 public:
-    CameraMountEditWindow( char *name );
+    CameraMountEditWindow( char const *name );
 	~CameraMountEditWindow();
 
 	void Create();

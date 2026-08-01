@@ -24,9 +24,6 @@
     <ClCompile Include="SoundLibrary2d.cpp">
       <Filter>Audio</Filter>
     </ClCompile>
-    <ClCompile Include="SoundLibrary2dNoSnd.cpp">
-      <Filter>Audio</Filter>
-    </ClCompile>
     <ClCompile Include="SoundLibrary3d.cpp">
       <Filter>Audio</Filter>
     </ClCompile>
@@ -96,9 +93,6 @@
     <ClCompile Include="InputDriverWin32.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="InputDriverXInput.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
     <ClCompile Include="InputFilter.cpp">
       <Filter>Input</Filter>
     </ClCompile>
@@ -133,7 +127,6 @@
     <ClCompile Include="BinaryStreamReaders.cpp" />
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="DebugRender.cpp" />
-    <ClCompile Include="DebugUtils.cpp" />
     <ClCompile Include="FileWriter.cpp" />
     <ClCompile Include="FilesysUtils.cpp" />
     <ClCompile Include="HiResTime.cpp" />
@@ -260,9 +253,6 @@
     <ClInclude Include="InputDriverWin32.h">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="InputDriverXInput.h">
-      <Filter>Input</Filter>
-    </ClInclude>
     <ClInclude Include="InputFilter.h">
       <Filter>Input</Filter>
     </ClInclude>
@@ -312,7 +302,6 @@
     <ClInclude Include="BTree.h" />
     <ClInclude Include="DArray.h" />
     <ClInclude Include="DebugRender.h" />
-    <ClInclude Include="DebugUtils.h" />
     <ClInclude Include="FastDArray.h" />
     <ClInclude Include="FileWriter.h" />
     <ClInclude Include="FilesysUtils.h" />

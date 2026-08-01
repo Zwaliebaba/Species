@@ -24,7 +24,7 @@ InputParserState ChordInputDriver::parseInputSpecification( InputSpecTokens cons
 {
 	string s;
 
-	auto_ptr<InputSpecList> speclist( new InputSpecList() );
+	std::unique_ptr<InputSpecList> speclist( new InputSpecList() );
 	vector<string> strings;
 	bool hasParts = false;
 

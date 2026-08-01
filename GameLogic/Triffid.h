@@ -53,13 +53,13 @@ public:
 
     void Damage         ( float _damage );
 
-    void ListSoundEvents( LList<char *> *_list );
+    void ListSoundEvents( LList<char const *> *_list );
 
     bool DoesRayHit     (Vector3 const &_rayStart, Vector3 const &_rayDir,
                          float _rayLen=1e10, Vector3 *_pos=NULL, Vector3 *_norm=NULL);
 
-    static char *GetSpawnName( int _spawnType );
-    static char *GetSpawnNameTranslated( int _spawnType );
+    static char const *GetSpawnName( int _spawnType );
+    static char const *GetSpawnNameTranslated( int _spawnType );
 
     void Read   ( TextReader *_in, bool _dynamic );
     void Write  ( FileWriter *_out );
@@ -94,7 +94,7 @@ public:
     void Render             ( float _predictionTime );
     bool RenderPixelEffect  ( float _predictionTime );
 
-    void ListSoundEvents    ( LList<char *> *_list );
+    void ListSoundEvents    ( LList<char const *> *_list );
 };
 
 

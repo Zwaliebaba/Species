@@ -67,7 +67,7 @@ public:
 
 	void Clear		();
 
-	char *GetString (char const *_key, char *_default=NULL) const;
+	char const *GetString (char const *_key, char const *_default=NULL) const;
 	float GetFloat  (char const *_key, float _default=-1.0f) const;
 	int	  GetInt    (char const *_key, int _default=-1) const;
 

@@ -90,7 +90,7 @@ class NewLightButton : public DarwiniaButton
 // Class LightsEditWindow
 // ****************************************************************************
 
-LightsEditWindow::LightsEditWindow( char *name )
+LightsEditWindow::LightsEditWindow( char const *name )
 :	DarwiniaWindow(name)
 {
 }

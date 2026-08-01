@@ -58,7 +58,7 @@ public:
 // Class ProfileWindow
 // ****************************************************************************
 
-ProfileWindow::ProfileWindow( char *name )
+ProfileWindow::ProfileWindow( char const *name )
 :   DarwiniaWindow( name ),
 	m_totalPerSecond(true)
 {
@@ -138,7 +138,7 @@ void ProfileWindow::RenderElementProfile(ProfiledElement *_pe, unsigned int _ind
 				if (x > m_x && x < m_x+m_w &&
 					y > m_yPos + 5 && y < m_yPos + 17)
 				{
-					DarwiniaReleaseAssert(child != g_app->m_profiler->m_rootElement,
+					ASSERT_TEXT(child != g_app->m_profiler->m_rootElement,
 						"ProfileWindow::RenderElementProfile child==root");
 					child->m_isExpanded = !child->m_isExpanded;
 				}

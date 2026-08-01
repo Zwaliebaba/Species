@@ -142,14 +142,14 @@ public:
     virtual void            OperatePort            ( int _portId, int _teamId );
     virtual int             GetPortOperatorCount   ( int _portId, int _teamId );
 
-    virtual char            *GetObjectiveCounter   ();
+    virtual char const *GetObjectiveCounter   ();
 
     virtual bool DoesSphereHit          (Vector3 const &_pos, float _radius);
     virtual bool DoesShapeHit           (Shape *_shape, Matrix34 _transform);
     virtual bool DoesRayHit             (Vector3 const &_rayStart, Vector3 const &_rayDir,
                                         float _rayLen=1e10, Vector3 *_pos=NULL, Vector3 *_norm=NULL);        // pos/norm will not always be available
 
-    virtual void ListSoundEvents        ( LList<char *> *_list );
+    virtual void ListSoundEvents        ( LList<char const *> *_list );
 
     virtual void Read   ( TextReader *_in, bool _dynamic );     // Use these to read/write additional building-specific
     virtual void Write  ( FileWriter *_out );					// data to the level files
@@ -157,12 +157,12 @@ public:
     virtual int  GetBuildingLink();                             // Allows a building to link to another
     virtual void SetBuildingLink( int _buildingId );            // eg control towers
 
-    static char *GetTypeName    ( int _type );
+    static char const *GetTypeName    ( int _type );
     static int   GetTypeId	    ( char const *_name );
     static Building *CreateBuilding ( int _type );
     static Building *CreateBuilding ( char *_name );
 
-    static char *GetTypeNameTranslated( int _type );
+    static char const *GetTypeNameTranslated( int _type );
 };
 
 

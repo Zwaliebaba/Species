@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "TextStreamReaders.h"
 
 #define DEFAULT_SEPERATOR_CHARS " \t\n\r:,"
@@ -46,7 +46,7 @@ TextReader::~TextReader()
 
 void TextReader::DoubleMaxLineLen()
 {
-	DarwiniaReleaseAssert(m_maxLineLen < 65536, "Text file contains line with more than 65536 characters");
+	ASSERT_TEXT(m_maxLineLen < 65536, "Text file contains line with more than 65536 characters");
 	char *newLine = new char [m_maxLineLen * 2 + 1];
 	memcpy(newLine, m_line, m_maxLineLen + 1);
 	delete m_line;
@@ -108,7 +108,7 @@ void TextReader::CleanLine()
 		if (c[0] == '<' || c[0] == '>')
 		{
 			numAdjacentAngleBracketsFound++;
-			DarwiniaDebugAssert(numAdjacentAngleBracketsFound < 3);
+			DEBUG_ASSERT(numAdjacentAngleBracketsFound < 3);
             // Looks like you've got a merge error mate
 		}
 		else

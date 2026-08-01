@@ -3,12 +3,12 @@
 #ifdef USE_DIRECT3D
 
 #include "Texture.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "OpenGLDirectXInternals.h"
 
 #pragma comment(lib,"d3dx9.lib")
 
-#define CHECK_HR(hr) {DarwiniaDebugAssert(SUCCEEDED(hr)); if(FAILED(hr)) return;}
+#define CHECK_HR(hr) {DEBUG_ASSERT(SUCCEEDED(hr)); if(FAILED(hr)) return;}
 
 Texture* Texture::Create(const TextureParams& tp)
 {
@@ -25,10 +25,10 @@ Texture::Texture(const TextureParams& tp) : m_textureParams(tp)
 	for(unsigned i=0;i<6;i++) m_D3DRenderTarget[i] = NULL;
 
 	// size must be positive
-	DarwiniaDebugAssert(tp.m_w && tp.m_h);
+	DEBUG_ASSERT(tp.m_w && tp.m_h);
 
 	// rendertarget & lockable at once not possible
-	DarwiniaDebugAssert(!(tp.m_flags&TF_RENDERTARGET) || !(tp.m_flags&TF_LOCKABLE));
+	DEBUG_ASSERT(!(tp.m_flags&TF_RENDERTARGET) || !(tp.m_flags&TF_LOCKABLE));
 
 	// set d3d textures
 	unsigned flags;
@@ -51,7 +51,7 @@ Texture::Texture(const TextureParams& tp) : m_textureParams(tp)
 	}
 	if(tp.m_flags&TF_CUBE)
 	{
-		DarwiniaDebugAssert(tp.m_w==tp.m_h);
+		DEBUG_ASSERT(tp.m_w==tp.m_h);
 		HRESULT hr = OpenGLD3D::g_pd3dDevice->CreateCubeTexture(tp.m_w,1,flags,tp.m_format,pool,&m_D3DTextureCube,NULL);
 		CHECK_HR(hr);
 	}
@@ -109,9 +109,9 @@ IDirect3DTexture9* Texture::GetTexture2D()
 
 IDirect3DSurface9* Texture::GetRenderTarget(unsigned index)
 {
-	DarwiniaDebugAssert(index < 6);
-	DarwiniaDebugAssert(index==0 || (m_textureParams.m_flags&TF_CUBE));
-	DarwiniaDebugAssert(m_textureParams.m_flags&TF_RENDERTARGET);
+	DEBUG_ASSERT(index < 6);
+	DEBUG_ASSERT(index==0 || (m_textureParams.m_flags&TF_CUBE));
+	DEBUG_ASSERT(m_textureParams.m_flags&TF_RENDERTARGET);
 	return m_D3DRenderTarget[index];
 }
 

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FilesysUtils.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
@@ -92,12 +92,12 @@ char *SoundSourceBlueprint::GetSoundSourceName( int _type )
                         "Interface"
                     };
 
-    DarwiniaDebugAssert( _type >= 0 && _type < NumOtherSoundSources );
+    DEBUG_ASSERT( _type >= 0 && _type < NumOtherSoundSources );
     return names[_type];
 }
 
 
-void SoundSourceBlueprint::ListSoundEvents( int _type, LList<char *> *_list )
+void SoundSourceBlueprint::ListSoundEvents( int _type, LList<char const *> *_list )
 {
     switch( _type )
     {
@@ -214,13 +214,13 @@ char *DspBlueprint::GetParameter( int _param, float *_min, float *_max, float *_
 // Class SampleGroup
 //*****************************************************************************
 
-void SampleGroup::SetName( char *_name )
+void SampleGroup::SetName( char const *_name )
 {
     strcpy( m_name, _name );
 }
 
 
-void SampleGroup::AddSample( char *_sample )
+void SampleGroup::AddSample( char const *_sample )
 {
     char *sampleCopy = NewStr( _sample );
     m_samples.PutData( sampleCopy );
@@ -306,7 +306,7 @@ void SoundSystem::RestartSoundLibrary()
 	int volume      = g_prefsManager->GetInt("SoundMasterVolume", 255);
     m_numChannels   = g_prefsManager->GetInt("SoundChannels", 32);
     int hw3d        = g_prefsManager->GetInt("SoundHW3D", 0);
-    char *libName   = g_prefsManager->GetString("SoundLibrary", "dsound");
+    char const *libName   = g_prefsManager->GetString("SoundLibrary", "dsound");
 	int bufSize		= 20000;
 
 	g_soundLibrary2d = new SoundLibrary2d;
@@ -505,13 +505,13 @@ void SoundSystem::LoadEffects()
     m_filterBlueprints.SetSize( SoundLibrary3d::NUM_FILTERS );
 
     TextReader *in = g_app->m_resource->GetTextReader( "Effects.txt" );
-	DarwiniaReleaseAssert(in && in->IsOpen(), "Couldn't load effects.txt");
+	ASSERT_TEXT(in && in->IsOpen(), "Couldn't load effects.txt");
 
     while( in->ReadLine() )
     {
         if( !in->TokenAvailable() ) continue;
         char *effect = in->GetNextToken();
-        DarwiniaDebugAssert( stricmp( effect, "EFFECT" ) == 0 );
+        DEBUG_ASSERT( stricmp( effect, "EFFECT" ) == 0 );
 
         DspBlueprint *bp = new DspBlueprint();
         m_filterBlueprints.PutData( bp );
@@ -555,7 +555,7 @@ void SoundSystem::LoadBlueprints()
     m_otherBlueprints.SetSize( SoundSourceBlueprint::NumOtherSoundSources );
 
     TextReader *in = g_app->m_resource->GetTextReader( "Sounds.txt" );
-	DarwiniaReleaseAssert(in && in->IsOpen(), "Couldn't open sounds.txt");
+	ASSERT_TEXT(in && in->IsOpen(), "Couldn't open sounds.txt");
 
 	char objectName[128];
 
@@ -571,8 +571,8 @@ void SoundSystem::LoadBlueprints()
         {
 			strncpy(objectName, type, 127);
             int entityType = Entity::GetTypeId( type );
-            DarwiniaDebugAssert( entityType >= 0 && entityType < Entity::NumEntityTypes );
-            DarwiniaDebugAssert( !m_entityBlueprints.ValidIndex( entityType ) );
+            DEBUG_ASSERT( entityType >= 0 && entityType < Entity::NumEntityTypes );
+            DEBUG_ASSERT( !m_entityBlueprints.ValidIndex( entityType ) );
 
             ssb = new SoundSourceBlueprint();
             m_entityBlueprints.PutData( ssb, entityType );
@@ -582,8 +582,8 @@ void SoundSystem::LoadBlueprints()
         {
 			strncpy(objectName, type, 127);
             int buildingType = Building::GetTypeId( type );
-            DarwiniaDebugAssert( buildingType >= 0 && buildingType < Building::NumBuildingTypes );
-            DarwiniaDebugAssert( !m_buildingBlueprints.ValidIndex( buildingType ) );
+            DEBUG_ASSERT( buildingType >= 0 && buildingType < Building::NumBuildingTypes );
+            DEBUG_ASSERT( !m_buildingBlueprints.ValidIndex( buildingType ) );
 
             ssb = new SoundSourceBlueprint();
             m_buildingBlueprints.PutData( ssb, buildingType );
@@ -593,8 +593,8 @@ void SoundSystem::LoadBlueprints()
         {
 			strncpy(objectName, type, 127);
             int otherType = SoundSourceBlueprint::GetSoundSoundType( type );
-            DarwiniaDebugAssert( otherType >= 0 && otherType < SoundSourceBlueprint::NumOtherSoundSources );
-            DarwiniaDebugAssert( !m_otherBlueprints.ValidIndex( otherType ) );
+            DEBUG_ASSERT( otherType >= 0 && otherType < SoundSourceBlueprint::NumOtherSoundSources );
+            DEBUG_ASSERT( !m_otherBlueprints.ValidIndex( otherType ) );
 
             ssb = new SoundSourceBlueprint();
             m_otherBlueprints.PutData( ssb, otherType );
@@ -615,7 +615,7 @@ void SoundSystem::LoadBlueprints()
                 {
                     char *word = in->GetNextToken();
                     if( stricmp( word, "END" ) == 0 ) break;
-                    DarwiniaDebugAssert( stricmp( word, "EVENT"  ) == 0 );
+                    DEBUG_ASSERT( stricmp( word, "EVENT"  ) == 0 );
                     ParseSoundEvent( in, ssb, objectName );
                 }
             }
@@ -678,7 +678,7 @@ void SoundSystem::SaveBlueprints(char const *_filename)
 
     for( int i = 0; i < m_entityBlueprints.Size(); ++i )
     {
-        DarwiniaDebugAssert( m_entityBlueprints.ValidIndex(i) );
+        DEBUG_ASSERT( m_entityBlueprints.ValidIndex(i) );
         SoundSourceBlueprint *ssb = m_entityBlueprints[i];
 
         if( ssb->m_events.Size() > 0 )
@@ -698,7 +698,7 @@ void SoundSystem::SaveBlueprints(char const *_filename)
 
     for( int i = 0; i < m_buildingBlueprints.Size(); ++i )
     {
-        DarwiniaDebugAssert( m_buildingBlueprints.ValidIndex(i) );
+        DEBUG_ASSERT( m_buildingBlueprints.ValidIndex(i) );
         SoundSourceBlueprint *ssb = m_buildingBlueprints[i];
 
         if( ssb->m_events.Size() > 0 )
@@ -718,7 +718,7 @@ void SoundSystem::SaveBlueprints(char const *_filename)
 
     for( int i = 0; i < m_otherBlueprints.Size(); ++i )
     {
-        DarwiniaDebugAssert( m_otherBlueprints.ValidIndex(i) );
+        DEBUG_ASSERT( m_otherBlueprints.ValidIndex(i) );
         SoundSourceBlueprint *ssb = m_otherBlueprints[i];
 
         if( ssb->m_events.Size() > 0 )
@@ -790,11 +790,11 @@ void SoundSystem::ParseSoundEvent( TextReader *_in, SoundSourceBlueprint *_sourc
         else if ( stricmp( fieldName, "RELEASE" ) == 0 )        seb->m_instance->m_release.Read( _in );
         else if ( stricmp( fieldName, "LOOPDELAY" ) == 0 )      seb->m_instance->m_loopDelay.Read( _in );
         else if ( stricmp( fieldName, "EFFECT" ) == 0 )         ParseSoundEffect( _in, seb );
-        else												    DarwiniaDebugAssert( false );
+        else												    DEBUG_ASSERT( false );
 
         // This is bad, we have a looping sound that won't be attached
         // to any one object
-//        DarwiniaDebugAssert( !( seb->m_instance->m_loopType &&
+//        DEBUG_ASSERT( !( seb->m_instance->m_loopType &&
 //                        seb->m_instance->m_positionType != SoundInstance::Type3DAttachedToObject ) );
 
         _in->ReadLine();
@@ -820,7 +820,7 @@ void SoundSystem::ParseSoundEffect( TextReader *_in, SoundEventBlueprint *_bluep
         }
     }
 
-    DarwiniaDebugAssert( fxType != -1 );
+    DEBUG_ASSERT( fxType != -1 );
 
     DspHandle *effect = new DspHandle();
     effect->m_type = fxType;
@@ -859,8 +859,8 @@ void SoundSystem::ParseSampleGroup( TextReader *_in, SampleGroup *_group )
 
 void SoundSystem::WriteSoundEvent( FileWriter *_file, SoundEventBlueprint *_event )
 {
-    DarwiniaDebugAssert( _event );
-    DarwiniaDebugAssert( _event->m_instance );
+    DEBUG_ASSERT( _event );
+    DEBUG_ASSERT( _event->m_instance );
 
     _file->printf( "\tEVENT %-20s\n"
                     "\t\tSOUNDNAME          %s\n"
@@ -1035,7 +1035,7 @@ SoundInstance *SoundSystem::GetSoundInstance( SoundInstanceId id )
 }
 
 
-void SoundSystem::TriggerEntityEvent( Entity *_entity, char *_eventName )
+void SoundSystem::TriggerEntityEvent( Entity *_entity, char const *_eventName )
 {
     if( !m_channels ) return;
 
@@ -1050,7 +1050,7 @@ void SoundSystem::TriggerEntityEvent( Entity *_entity, char *_eventName )
             SoundEventBlueprint *seb = sourceBlueprint->m_events[i];
             if( stricmp( seb->m_eventName, _eventName ) == 0 )
             {
-                DarwiniaDebugAssert( seb->m_instance );
+                DEBUG_ASSERT( seb->m_instance );
                 SoundInstance *instance = new SoundInstance();
                 instance->Copy( seb->m_instance );
                 instance->m_objIds.PutData( new WorldObjectId(objId) );
@@ -1065,7 +1065,7 @@ void SoundSystem::TriggerEntityEvent( Entity *_entity, char *_eventName )
 	END_PROFILE(m_mainProfiler, "TriggerEntityEvent");
 }
 
-void SoundSystem::TriggerBuildingEvent( Building *_building, char *_eventName )
+void SoundSystem::TriggerBuildingEvent( Building *_building, char const *_eventName )
 {
     if( !m_channels ) return;
 
@@ -1078,7 +1078,7 @@ void SoundSystem::TriggerBuildingEvent( Building *_building, char *_eventName )
             SoundEventBlueprint *seb = sourceBlueprint->m_events[i];
             if( stricmp( seb->m_eventName, _eventName ) == 0 )
             {
-                DarwiniaDebugAssert( seb->m_instance );
+                DEBUG_ASSERT( seb->m_instance );
                 SoundInstance *instance = new SoundInstance();
                 instance->Copy( seb->m_instance );
                 instance->m_objIds.PutData( new WorldObjectId(_building->m_id) );
@@ -1093,7 +1093,7 @@ void SoundSystem::TriggerBuildingEvent( Building *_building, char *_eventName )
 }
 
 
-void SoundSystem::TriggerOtherEvent( WorldObject *_other, char *_eventName, int _type )
+void SoundSystem::TriggerOtherEvent( WorldObject *_other, char const *_eventName, int _type )
 {
     if( !m_channels ) return;
 
@@ -1115,7 +1115,7 @@ void SoundSystem::TriggerOtherEvent( WorldObject *_other, char *_eventName, int 
             if( stricmp( seb->m_eventName, _eventName ) == 0 )
             {
 				// We have a match
-                DarwiniaDebugAssert( seb->m_instance );
+                DEBUG_ASSERT( seb->m_instance );
                 SoundInstance *instance = new SoundInstance();
                 instance->Copy( seb->m_instance );
                 if( _type == musicType )
@@ -1178,7 +1178,7 @@ void SoundSystem::TriggerDuplicateSound ( SoundInstance *_instance )
 }
 
 
-void SoundSystem::StopAllSounds( WorldObjectId _id, char *_eventName )
+void SoundSystem::StopAllSounds( WorldObjectId _id, char const *_eventName )
 {
     if( strstr( _eventName, "Music" ) )
     {
@@ -1227,7 +1227,7 @@ int SoundSystem::IsSoundPlaying( SoundInstanceId _id )
 }
 
 
-int SoundSystem::NumInstancesPlaying( WorldObjectId _id, char *_eventName )
+int SoundSystem::NumInstancesPlaying( WorldObjectId _id, char const *_eventName )
 {
     int result = 0;
 
@@ -1249,7 +1249,7 @@ int SoundSystem::NumInstancesPlaying( WorldObjectId _id, char *_eventName )
 }
 
 
-int SoundSystem::NumInstances( WorldObjectId _id, char *_eventName )
+int SoundSystem::NumInstances( WorldObjectId _id, char const *_eventName )
 {
     int result = 0;
 
@@ -1310,8 +1310,8 @@ int SoundInstanceCompare(const void *elem1, const void *elem2 )
     SoundInstance *instance1 = g_app->m_soundSystem->GetSoundInstance( id1 );
     SoundInstance *instance2 = g_app->m_soundSystem->GetSoundInstance( id2 );
 
-    DarwiniaDebugAssert( instance1 );
-    DarwiniaDebugAssert( instance2 );
+    DEBUG_ASSERT( instance1 );
+    DEBUG_ASSERT( instance2 );
 
 
     if      ( instance1->m_perceivedVolume < instance2->m_perceivedVolume )     return +1;
@@ -1464,7 +1464,7 @@ void SoundSystem::Advance()
         {
             SoundInstanceId id = sortedIds[i];
             SoundInstance *instance = GetSoundInstance( id );
-            DarwiniaDebugAssert( instance );
+            DEBUG_ASSERT( instance );
 
             instance->m_calculatedPriority = instance->m_perceivedVolume;
 
@@ -1650,7 +1650,7 @@ void SoundSystem::Advance()
                     int channelIndex = newRequests[x];
                     SoundChannel *thisChannel = &m_channels[channelIndex];
                     SoundInstance *thisRequestedSound = GetSoundInstance( thisChannel->m_requestedSound );
-                    DarwiniaDebugAssert( thisRequestedSound );
+                    DEBUG_ASSERT( thisRequestedSound );
                     if( requestedSound->m_calculatedPriority > thisRequestedSound->m_calculatedPriority )
                     {
                         newRequests.PutDataAtIndex( i, x );
@@ -1856,7 +1856,7 @@ void SoundSystem::RuntimeVerify()
     {
         SoundInstanceId id1 = m_channels[i];
         SoundInstance *currentSound = GetSoundInstance( id1 );
-        DarwiniaDebugAssert( !currentSound ||
+        DEBUG_ASSERT( !currentSound ||
                      !(currentSound->IsPlaying() && currentSound->m_channelIndex == -1) );
 
         if( currentSound )
@@ -1868,7 +1868,7 @@ void SoundSystem::RuntimeVerify()
                     SoundInstanceId id2 = m_channels[j];
                     if( GetSoundInstance(id2) )
                     {
-                        DarwiniaDebugAssert( !(id1 == id2) );
+                        DEBUG_ASSERT( !(id1 == id2) );
                     }
                 }
             }
@@ -2040,7 +2040,7 @@ void SoundSystem::LoadtimeVerify()
 
 
     fclose( soundErrors );
-    DarwiniaReleaseAssert( !errorFound, "Errors found in sounds.txt : refer to sounderrors.txt for details" );
+    ASSERT_TEXT( !errorFound, "Errors found in sounds.txt : refer to sounderrors.txt for details" );
 
 }
 
@@ -2224,7 +2224,7 @@ void SoundSystem::PropagateBlueprints()
 }
 
 
-SampleGroup *SoundSystem::GetSampleGroup ( char *_name )
+SampleGroup *SoundSystem::GetSampleGroup ( char const *_name )
 {
     for( int i = 0; i < m_sampleGroups.Size(); ++i )
     {
@@ -2242,7 +2242,7 @@ SampleGroup *SoundSystem::GetSampleGroup ( char *_name )
 }
 
 
-SampleGroup *SoundSystem::NewSampleGroup ( char *_name )
+SampleGroup *SoundSystem::NewSampleGroup ( char const *_name )
 {
     SampleGroup *group = new SampleGroup();
     m_sampleGroups.PutData( group );
@@ -2270,7 +2270,7 @@ SampleGroup *SoundSystem::NewSampleGroup ( char *_name )
 }
 
 
-bool SoundSystem::RenameSampleGroup( char *_oldName, char *_newName )
+bool SoundSystem::RenameSampleGroup( char const *_oldName, char const *_newName )
 {
     //
     // Check the new name is unique

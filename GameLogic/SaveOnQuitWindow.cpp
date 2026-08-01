@@ -39,7 +39,7 @@ class CancelButton : public DarwiniaButton
 };
 
 
-SaveOnQuitWindow::SaveOnQuitWindow( char *_name )
+SaveOnQuitWindow::SaveOnQuitWindow( char const *_name )
 :   DarwiniaWindow( _name )
 {
 	m_w = 200;

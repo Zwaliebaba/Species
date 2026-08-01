@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "LanguageTable.h"
 #include "Resource.h"
 #include "TextRenderer.h"
@@ -78,7 +78,7 @@ LangTable::~LangTable()
 void LangTable::ParseLanguageFile(char const *_filename)
 {
     TextReader *in = g_app->m_resource->GetTextReader(_filename);
-	DarwiniaReleaseAssert(in && in->IsOpen(), "Couldn't open language file %s", _filename );
+	ASSERT_TEXT(in && in->IsOpen(), "Couldn't open language file %s", _filename );
 
 	// Read all the phrases from the language file
 	while (in->ReadLine())
@@ -99,7 +99,7 @@ void LangTable::ParseLanguageFile(char const *_filename)
 		char *aString = in->GetRestOfLine();
 
 		// Make sure a language key always has a some text with it
-		DarwiniaDebugAssert(aString && aString[0] != '\0');
+		DEBUG_ASSERT(aString && aString[0] != '\0');
 
         for( unsigned int i = 0; i < strlen(aString)-1; ++i )
         {
@@ -242,7 +242,7 @@ void LangTable::RebuildTable( HashTable<int> *_phrases, std::ostrstream &stream,
 
 	stream << '\x0'; // This is our empty string
 
-	// DebugOut(" There are %d keys to add\n", ary->Size() );
+	// DebugTrace(" There are %d keys to add\n", ary->Size() );
 
 	for ( int i = 0; i < ary->Size(); ++i ) {
 		if ( ary->ValidIndex( i ) ) {
@@ -258,7 +258,7 @@ void LangTable::RebuildTable( HashTable<int> *_phrases, std::ostrstream &stream,
 						buildCaption( phrase->m_string, theString, _mood );
 						stream << theString << '\x0';
 
-						// DebugOut("%d Adding key %d: %s -> %s\n", _mood, i, key, theString );
+						// DebugTrace("%d Adding key %d: %s -> %s\n", _mood, i, key, theString );
 						_phrases->PutData( key, currPos );
 					}
 				} else {
@@ -266,7 +266,7 @@ void LangTable::RebuildTable( HashTable<int> *_phrases, std::ostrstream &stream,
 					if ( chomp_mode_suffix( key ) && !RawDoesPhraseExist( key, _mood ) &&
 					     !specific_key_exists( key, _mood ) ) {
 
-						// DebugOut("%d Adding key %d: %s -> 0\n", _mood, i, key );
+						// DebugTrace("%d Adding key %d: %s -> 0\n", _mood, i, key );
 						_phrases->PutData( key, 0 ); // Give me an empty string
 					}
 				}

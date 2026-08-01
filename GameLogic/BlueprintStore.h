@@ -57,7 +57,7 @@ public:
     void RenderAlphas   ( float _predictionTime );
     void SendBlueprint  ( int _segment, bool _infected );
 
-    char *GetObjectiveCounter();
+    char const *GetObjectiveCounter();
 
     int GetNumInfected();                           // Returns number of segments totally infected ie == 100.0f
     int GetNumClean();                              // Returns number of segments totally clean ie == 0.0f

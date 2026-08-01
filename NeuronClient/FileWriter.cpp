@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 
 
@@ -18,7 +18,7 @@ FileWriter::FileWriter(char const *_filename, bool _encrypt)
 {
 	m_file = fopen(_filename, "w");
 
-	DarwiniaReleaseAssert(m_file, "Couldn't create file %s", _filename);
+	ASSERT_TEXT(m_file, "Couldn't create file %s", _filename);
 
 	if (_encrypt)
 	{

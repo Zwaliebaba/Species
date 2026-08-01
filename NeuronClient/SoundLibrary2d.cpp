@@ -2,7 +2,7 @@
 
 #include <MMSYSTEM.H>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Preferences.h"
 #include "SystemInfo.h"
 
@@ -38,7 +38,7 @@ SoundLib2dBuf::SoundLib2dBuf()
 	m_header.dwBufferLength = numSamples * blockAlign;
 	m_header.dwFlags = WHDR_DONE;
 	int result = waveOutPrepareHeader(s_device, &m_header, sizeof(WAVEHDR));
-	DarwiniaReleaseAssert(result == MMSYSERR_NOERROR, "Couldn't init buffer");
+	ASSERT_TEXT(result == MMSYSERR_NOERROR, "Couldn't init buffer");
 
 	// Play the buffer
 	static int count = 0;
@@ -46,7 +46,7 @@ SoundLib2dBuf::SoundLib2dBuf()
 	{
 		count++;
 		result = waveOutWrite(s_device, &m_header, sizeof(WAVEHDR));
-		DarwiniaReleaseAssert(result == MMSYSERR_NOERROR, "Couldn't send sound data");
+		ASSERT_TEXT(result == MMSYSERR_NOERROR, "Couldn't send sound data");
 	}
 }
 
@@ -80,7 +80,7 @@ SoundLibrary2d::SoundLibrary2d()
 	m_nextBuffer(0),
 	m_fillsRequested(0)
 {
-	DarwiniaReleaseAssert(!g_soundLibrary2d, "SoundLibrary2d already exists");
+	ASSERT_TEXT(!g_soundLibrary2d, "SoundLibrary2d already exists");
 
 	m_freq = g_prefsManager->GetInt("SoundMixFreq", 44100);
 	m_samplesPerBuffer = g_prefsManager->GetInt("SoundBufferSize", 2000);
@@ -108,7 +108,7 @@ SoundLibrary2d::SoundLibrary2d()
 		case WAVERR_BADFORMAT:		errString = "Attempted to open with an unsupported waveform-audio format";	break;
 		case WAVERR_SYNC:			errString = "Device is synchronous but waveOutOpen called without WAVE_ALLOWSYNC flag";	break;
 	}
-	DarwiniaReleaseAssert(result == MMSYSERR_NOERROR, "Failed to open audio output device: \"%s\"", errString);
+	ASSERT_TEXT(result == MMSYSERR_NOERROR, "Failed to open audio output device: \"%s\"", errString);
 
 
 	//
@@ -185,7 +185,7 @@ void SoundLibrary2d::Stop()
 void SoundLibrary2d::StartRecordToFile(char const *_filename)
 {
 	m_wavOutput = fopen(_filename, "wb");
-	DarwiniaReleaseAssert(m_wavOutput != NULL, "Couldn't create wave outout file %s", _filename);
+	ASSERT_TEXT(m_wavOutput != NULL, "Couldn't create wave outout file %s", _filename);
 }
 
 

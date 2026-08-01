@@ -15,7 +15,7 @@
 #include "NetworkWindow.h"
 
 
-NetworkWindow::NetworkWindow( char *name )
+NetworkWindow::NetworkWindow( char const *name )
 :   DarwiniaWindow( name )
 {
 }

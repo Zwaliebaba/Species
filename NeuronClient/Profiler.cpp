@@ -3,7 +3,7 @@
 #include <math.h>
 #include <float.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Profiler.h"
 #include "HiResTime.h"
 
@@ -222,7 +222,7 @@ void Profiler::StartProfile(char const *_name)
 		m_currentElement->m_children.PutData(_name, pe);
 	}
 
-	DarwiniaReleaseAssert(m_rootElement->m_isExpanded, "Profiler root element has been un-expanded");
+	ASSERT_TEXT(m_rootElement->m_isExpanded, "Profiler root element has been un-expanded");
 
     bool wasExpanded = m_currentElement->m_isExpanded;
 
@@ -245,7 +245,7 @@ void Profiler::EndProfile(char const *_name)
 {
 	MAIN_THREAD_ONLY;
 
-    DarwiniaDebugAssert( m_currentElement->m_wasExpanded == m_currentElement->m_parent->m_isExpanded );
+    DEBUG_ASSERT( m_currentElement->m_wasExpanded == m_currentElement->m_parent->m_isExpanded );
 
 	if (m_currentElement->m_parent->m_isExpanded)
 	{
@@ -254,13 +254,13 @@ void Profiler::EndProfile(char const *_name)
 			glFinish();
 		}
 
-		DarwiniaDebugAssert(m_currentElement != m_rootElement);
-		DarwiniaDebugAssert(stricmp(_name, m_currentElement->m_name) == 0);
+		DEBUG_ASSERT(m_currentElement != m_rootElement);
+		DEBUG_ASSERT(stricmp(_name, m_currentElement->m_name) == 0);
 
 		m_currentElement->End();
 	}
 
-    DarwiniaDebugAssert( strcmp( m_currentElement->m_name, m_currentElement->m_parent->m_name ) != 0 );
+    DEBUG_ASSERT( strcmp( m_currentElement->m_name, m_currentElement->m_parent->m_name ) != 0 );
 	m_currentElement = m_currentElement->m_parent;
 }
 

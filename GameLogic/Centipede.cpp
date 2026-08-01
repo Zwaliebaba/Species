@@ -159,7 +159,7 @@ void Centipede::Panic( float _time )
 
 bool Centipede::Advance( Unit *_unit )
 {
-    DarwiniaReleaseAssert( _unit, "Centipedes must be created in a unit" );
+    ASSERT_TEXT( _unit, "Centipedes must be created in a unit" );
 
     if( m_dead ) return AdvanceDead( _unit );
 
@@ -451,7 +451,7 @@ bool Centipede::SearchForRetreatPosition()
     if( targetId.IsValid() )
     {
         WorldObject *obj = g_app->m_location->GetEntity( targetId );
-        DarwiniaDebugAssert( obj );
+        DEBUG_ASSERT( obj );
 
         float distance = 50.0f;
         Vector3 retreatVector = ( m_pos - obj->m_pos ).Normalise();
@@ -641,7 +641,7 @@ bool Centipede::AdvanceToTargetPosition()
 }
 
 
-void Centipede::ListSoundEvents( LList<char *> *_list )
+void Centipede::ListSoundEvents( LList<char const *> *_list )
 {
     Entity::ListSoundEvents( _list );
 

@@ -6,7 +6,7 @@
 
 #include "BinaryStreamReaders.h"
 #include "Bitmap.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FilesysUtils.h"
 #include "Resource.h"
 #include "Vector3.h"

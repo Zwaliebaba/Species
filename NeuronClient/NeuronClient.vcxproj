@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
@@ -22,7 +22,6 @@
     <ClCompile Include="ControlBindings.cpp" />
     <ClCompile Include="ControlTypes.cpp" />
     <ClCompile Include="DebugRender.cpp" />
-    <ClCompile Include="DebugUtils.cpp" />
     <ClCompile Include="EclButton.cpp" />
     <ClCompile Include="Eclipse.cpp" />
     <ClCompile Include="EclWindow.cpp" />
@@ -43,7 +42,6 @@
     <ClCompile Include="InputDriverSimple.cpp" />
     <ClCompile Include="InputDriverValue.cpp" />
     <ClCompile Include="InputDriverWin32.cpp" />
-    <ClCompile Include="InputDriverXInput.cpp" />
     <ClCompile Include="InputFilter.cpp" />
     <ClCompile Include="InputFilterManager.cpp" />
     <ClCompile Include="InputFilterSpec.cpp" />
@@ -78,7 +76,6 @@
     <ClCompile Include="SoundFilter.cpp" />
     <ClCompile Include="SoundInstance.cpp" />
     <ClCompile Include="SoundLibrary2d.cpp" />
-    <ClCompile Include="SoundLibrary2dNoSnd.cpp" />
     <ClCompile Include="SoundLibrary3d.cpp" />
     <ClCompile Include="SoundLibrary3dDSound.cpp" />
     <ClCompile Include="SoundLibrary3dSoftware.cpp" />
@@ -113,7 +110,6 @@
     <ClInclude Include="ControlTypes.h" />
     <ClInclude Include="DArray.h" />
     <ClInclude Include="DebugRender.h" />
-    <ClInclude Include="DebugUtils.h" />
     <ClInclude Include="EclButton.h" />
     <ClInclude Include="Eclipse.h" />
     <ClInclude Include="EclWindow.h" />
@@ -136,7 +132,6 @@
     <ClInclude Include="InputDriverSimple.h" />
     <ClInclude Include="InputDriverValue.h" />
     <ClInclude Include="InputDriverWin32.h" />
-    <ClInclude Include="InputDriverXInput.h" />
     <ClInclude Include="InputFilter.h" />
     <ClInclude Include="InputFilterManager.h" />
     <ClInclude Include="InputFilterSpec.h" />
@@ -211,14 +206,14 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -235,13 +230,13 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)NeuronCore;$(SolutionDir)GameLogic;$(SolutionDir)Species</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)NeuronCore;$(SolutionDir)NeuronClient;$(SolutionDir)GameLogic;$(SolutionDir)Species</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -257,8 +252,8 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>

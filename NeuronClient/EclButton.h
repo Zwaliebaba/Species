@@ -36,11 +36,11 @@ public:
 	EclButton ();
 	virtual ~EclButton ();
 
-    virtual void SetProperties   ( char *_name, int _x, int _y, int _w, int _h,
-			        		       char *_caption=NULL, char *_tooltip=NULL );
+    virtual void SetProperties ( char const *_name, int _x, int _y, int _w, int _h,
+			        		       char const *_caption=NULL, char const *_tooltip=NULL );
 
 	virtual void SetCaption      ( const char *_caption );
-	virtual void SetTooltip      ( char *_tooltip );
+	virtual void SetTooltip      ( char const *_tooltip );
     virtual void SetParent       ( EclWindow *_parent );
 
 	virtual void Render     ( int realX, int realY, bool highlighted, bool clicked );

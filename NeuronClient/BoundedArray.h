@@ -36,7 +36,7 @@ public:
 
 
 #include "BoundedArray.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 
 // Constructor
@@ -90,7 +90,7 @@ void BoundedArray<T>::Initialise(unsigned int _numElements)
 template <class T>
 T& BoundedArray<T>::operator [] (unsigned int _index)
 {
-	DarwiniaDebugAssert(_index < m_numElements);
+	DEBUG_ASSERT(_index < m_numElements);
 	return m_data[_index];
 }
 
@@ -98,7 +98,7 @@ T& BoundedArray<T>::operator [] (unsigned int _index)
 template <class T>
 T const& BoundedArray<T>::operator [] (unsigned int _index) const
 {
-	DarwiniaDebugAssert(_index < m_numElements);
+	DEBUG_ASSERT(_index < m_numElements);
 	return m_data[_index];
 }
 

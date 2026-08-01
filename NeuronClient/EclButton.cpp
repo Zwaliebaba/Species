@@ -27,8 +27,8 @@ EclButton::~EclButton ()
 
 }
 
-void EclButton::SetProperties ( char *_name, int _x, int _y, int _w, int _h,
-		 	   				    char *_caption, char *_tooltip )
+void EclButton::SetProperties ( char const *_name, int _x, int _y, int _w, int _h,
+		 	   				    char const *_caption, char const *_tooltip )
 {
 
 	if ( !_caption )
@@ -67,7 +67,7 @@ void EclButton::SetCaption ( const char *_caption )
 
 }
 
-void EclButton::SetTooltip ( char *_tooltip )
+void EclButton::SetTooltip ( char const *_tooltip )
 {
 
 	if ( !_tooltip ) _tooltip = "";

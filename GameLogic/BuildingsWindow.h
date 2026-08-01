@@ -14,7 +14,7 @@
 class BuildingEditWindow : public DarwiniaWindow
 {
 public:
-    BuildingEditWindow( char *name );
+    BuildingEditWindow( char const *name );
 	~BuildingEditWindow();
 
 	void Create();
@@ -33,7 +33,7 @@ public:
     int m_buildingType;
 
 public:
-    BuildingsCreateWindow( char *_name );
+    BuildingsCreateWindow( char const *_name );
 	~BuildingsCreateWindow();
 
     void Create();

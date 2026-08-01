@@ -4,7 +4,7 @@
 //#include <dxdiag.h>
 #include <stdio.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "SystemInfo.h"
 
 
@@ -33,14 +33,14 @@ void SystemInfo::GetLocaleDetails()
     {
 	    size = GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGLANGUAGE, NULL, 0);
 	    m_localeInfo.m_language = new char[size + 1];
-	    DarwiniaReleaseAssert(GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGLANGUAGE, m_localeInfo.m_language, size),
+	    ASSERT_TEXT(GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGLANGUAGE, m_localeInfo.m_language, size),
 				      "Couldn't get locale details");
     }
 
 
 	size = GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGCOUNTRY, NULL, 0);
 	m_localeInfo.m_country = new char[size + 1];
-	DarwiniaReleaseAssert(GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGCOUNTRY, m_localeInfo.m_country, size),
+	ASSERT_TEXT(GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGCOUNTRY, m_localeInfo.m_country, size),
 				  "Couldn't get country details");
 }
 
@@ -85,7 +85,7 @@ void SystemInfo::GetAudioDetails()
 		}
 	}
 
-	DarwiniaReleaseAssert(m_audioInfo.m_preferredDevice != -1, "No suitable audio hardware found");
+	ASSERT_TEXT(m_audioInfo.m_preferredDevice != -1, "No suitable audio hardware found");
 }
 
 
@@ -99,7 +99,7 @@ void SystemInfo::GetDirectXVersion()
 	m_directXVersion = -1;
 
 	errCode = RegOpenKeyEx(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\DirectX", 0, KEY_READ, &hkey);
-	DarwiniaReleaseAssert(errCode == ERROR_SUCCESS, "Failed to get DirectX Version");
+	ASSERT_TEXT(errCode == ERROR_SUCCESS, "Failed to get DirectX Version");
 	errCode = RegQueryValueEx(hkey, "InstalledVersion", NULL, NULL, buf, &bufLen);
 
     if( errCode == ERROR_SUCCESS )

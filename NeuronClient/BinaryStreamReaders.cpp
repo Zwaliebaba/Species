@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "BinaryStreamReaders.h"
 
 
@@ -39,7 +39,7 @@ BinaryFileReader::BinaryFileReader(char const *_filename)
 	{
 		strncpy(m_filename, _filename, sizeof(m_filename) - 1);
 		m_file = fopen(_filename, "rb");
-		DarwiniaDebugAssert(m_file);
+		DEBUG_ASSERT(m_file);
 	}
 }
 

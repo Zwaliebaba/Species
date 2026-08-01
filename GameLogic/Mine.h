@@ -56,7 +56,7 @@ public:
 
     virtual void TriggerCart ( MineCart *_cart, float _initValue );
 
-    void ListSoundEvents    ( LList<char *> *_list );
+    void ListSoundEvents    ( LList<char const *> *_list );
 
     void Read   ( TextReader *_in, bool _dynamic );
     void Write  ( FileWriter *_out );
@@ -179,7 +179,7 @@ public:
     bool Advance();
     void Render         ( float _predictionTime );
 
-    char *GetObjectiveCounter();
+    char const *GetObjectiveCounter();
 
     void TriggerCart    ( MineCart *_cart, float _initValue );
 };

@@ -14,7 +14,7 @@ public:
     int m_selectionId;
 
 public:
-    TreeWindow( char *_name );
+    TreeWindow( char const *_name );
 
     void Create();
     void Update();

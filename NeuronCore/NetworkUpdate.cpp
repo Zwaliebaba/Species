@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 
 #include "ByteStream.h"
 #include "NetworkUpdate.h"
@@ -105,7 +105,7 @@ int NetworkUpdate::ReadByteStream(char *_byteStream)
             break;
 
         case Invalid:
-            DarwiniaDebugAssert(false);
+            DEBUG_ASSERT(false);
 
     };
 
@@ -294,12 +294,12 @@ char *NetworkUpdate::GetByteStream(int *_linearSize)
             break;
 
         case Invalid:
-            DarwiniaDebugAssert(false);
+            DEBUG_ASSERT(false);
 
     }
 
     *_linearSize = byteStream - m_byteStream;
-	DarwiniaDebugAssert( *_linearSize < NETWORKUPDATE_BYTESTREAMSIZE );
+	DEBUG_ASSERT( *_linearSize < NETWORKUPDATE_BYTESTREAMSIZE );
 	return m_byteStream;
 
 }

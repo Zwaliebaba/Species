@@ -379,7 +379,7 @@ void CheatWindow::Create()
 
 #endif  // CHEATMENU_ENABLED
 
-CheatWindow::CheatWindow( char *_name )
+CheatWindow::CheatWindow( char const *_name )
 :   DarwiniaWindow( _name )
 {
 }

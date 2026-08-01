@@ -153,9 +153,9 @@ public:
 		{
 			InputSpec spec;
 			if ( g_inputManager->getFirstActiveInput( spec, m_instant ) ) {
-				auto_ptr<InputDescription> desc( new InputDescription() );
+				std::unique_ptr<InputDescription> desc( new InputDescription() );
 				if ( g_inputManager->getInputDescription( spec, *desc ) ) {
-					parent->m_bindings[m_id] = desc;
+					parent->m_bindings[m_id] = std::move(desc);
 					m_listening = false;
 				}
 			}
@@ -206,9 +206,9 @@ PrefsKeybindingsWindow::PrefsKeybindingsWindow()
 	unsigned i;
 	for ( i = 0; s_controls[i].type != ControlNull; ++i )
 	{
-		auto_ptr<InputDescription> desc( new InputDescription() );
+		std::unique_ptr<InputDescription> desc( new InputDescription() );
 		g_inputManager->getBoundInputDescription( s_controls[i].type, *desc );
-		m_bindings.push_back( desc );
+		m_bindings.push_back( std::move(desc) );
 	}
 
 	SetMenuSize( 460, 125 + 25*i );

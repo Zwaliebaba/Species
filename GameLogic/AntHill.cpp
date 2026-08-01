@@ -422,7 +422,7 @@ void AntHill::Render( float _predictionTime )
 }
 
 
-void AntHill::ListSoundEvents( LList<char *> *_list )
+void AntHill::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 
@@ -438,7 +438,7 @@ void AntHill::Read( TextReader *_in, bool _dynamic )
 
     if( m_numAntsInside < 0 || m_numAntsInside > 10000 )
     {
-        DebugOut( "Error loading Anthill : Bogus population of %d\n", m_numAntsInside );
+        DebugTrace( "Error loading Anthill : Bogus population of %d\n", m_numAntsInside );
         m_numAntsInside = 0;
     }
 }

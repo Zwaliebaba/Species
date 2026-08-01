@@ -122,7 +122,7 @@ PrefsOtherWindow::PrefsOtherWindow()
     m_helpEnabled = g_prefsManager->GetInt( OTHER_HELPENABLED, 1 );
 	m_controlHelpEnabled = g_prefsManager->GetInt( OTHER_CONTROLHELPENABLED, 1 );
 
-    char *bootloader = g_prefsManager->GetString( OTHER_BOOTLOADER, "random" );
+    char const *bootloader = g_prefsManager->GetString( OTHER_BOOTLOADER, "random" );
     if      ( stricmp( bootloader, "none" ) == 0 )      m_bootLoader = 0;
     else if ( stricmp( bootloader, "random" ) == 0 )    m_bootLoader = 1;
     else                                                m_bootLoader = 2;

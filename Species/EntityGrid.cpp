@@ -5,7 +5,7 @@
 #include <string.h>
 #include <float.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "MathUtils.h"
 #include "TextRenderer.h"
 #include "HiResTime.h"
@@ -93,7 +93,7 @@ void EntityGridCell::OutputContents()
         strcat(buffer, buf2);
     }
     strcat(buffer, "\n");
-    DebugOut(buffer);
+    DebugTrace(buffer);
 }
 
 
@@ -104,7 +104,7 @@ void EntityGridCell::AddObjectId(WorldObjectId _objectId)
 
 	if (m_firstFree == END_OF_LIST)
 	{
-        DarwiniaDebugAssert( m_numSlotsFree == 0 );
+        DEBUG_ASSERT( m_numSlotsFree == 0 );
 
 		int newArraySize = m_arraySize * 2;
 		if (m_arraySize == 0)
@@ -144,8 +144,8 @@ void EntityGridCell::AddObjectId(WorldObjectId _objectId)
 
 	int target = m_firstFree;
 
-    DarwiniaDebugAssert( target >= 0 );
-    DarwiniaDebugAssert( target < m_arraySize);
+    DEBUG_ASSERT( target >= 0 );
+    DEBUG_ASSERT( target < m_arraySize);
 
     m_firstFree = m_usageLists[target];
 
@@ -200,7 +200,7 @@ void LogEntityGridError( WorldObjectId _id, Vector3 const &_pos, int _error )
     theError->m_errorCode = _error;
     s_entityGridErrors.PutData( theError );
 #else
-    DarwiniaDebugAssert( false );
+    DEBUG_ASSERT( false );
 #endif
 }
 
@@ -249,7 +249,7 @@ void EntityGrid::EnsureMaxNeighbours( int _maxNeighbours )
         m_maxNeighbours = newMaxNeighbours;
 
         float time = GetHighResTime() - startTime;
-        DebugOut( "EntityGrid max neighbours set to %d (time taken %2.2fms)\n", m_maxNeighbours, time*1000.0f );
+        DebugTrace( "EntityGrid max neighbours set to %d (time taken %2.2fms)\n", m_maxNeighbours, time*1000.0f );
     }
 }
 
@@ -290,8 +290,8 @@ EntityGridCell *EntityGrid::GetCell(float _worldX, float _worldZ, int _team)
 // *** GetCell
 EntityGridCell *EntityGrid::GetCell(int _indexX, int _indexZ, int _team)
 {
-    DarwiniaDebugAssert(_indexX >= 0 && _indexX < m_numCellsX);
-    DarwiniaDebugAssert(_indexZ >= 0 && _indexZ < m_numCellsZ);
+    DEBUG_ASSERT(_indexX >= 0 && _indexX < m_numCellsX);
+    DEBUG_ASSERT(_indexZ >= 0 && _indexZ < m_numCellsZ);
 
     return &m_cells[_team][_indexZ * m_numCellsX + _indexX];
 }
@@ -530,7 +530,7 @@ WorldObjectId *EntityGrid::GetNeighbours(float _worldX, float _worldZ, float _ra
 
                         if (distSqrd < rangeSqrd)
                         {
-                            //DarwiniaReleaseAssert(numFoundSoFar < MAX_NUM_NEIGHBOURS, "Too many entities in one area" );
+                            //ASSERT_TEXT(numFoundSoFar < MAX_NUM_NEIGHBOURS, "Too many entities in one area" );
                             EnsureMaxNeighbours( numFoundSoFar+1 );
                             m_neighbours[numFoundSoFar] = objId;
                             numFoundSoFar++;

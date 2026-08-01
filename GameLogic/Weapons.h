@@ -26,7 +26,7 @@ protected:
 
     RGBAColour m_colour;
 
-    void TriggerSoundEvent( char *_event );
+    void TriggerSoundEvent( char const *_event );
 
 public:
     ThrowableWeapon( int _type, Vector3 const &_startPos, Vector3 const &_front, float _force );

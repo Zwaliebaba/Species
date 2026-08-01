@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "OGLExtensions.h"
 
 MultiTexCoord2fARB gglMultiTexCoord2fARB = nullptr;

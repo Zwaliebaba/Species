@@ -51,7 +51,7 @@ public:
 class LandscapeEditWindow: public DarwiniaWindow
 {
 public:
-    LandscapeEditWindow( char *name );
+    LandscapeEditWindow( char const *name );
     ~LandscapeEditWindow();
 
 	void					Create();

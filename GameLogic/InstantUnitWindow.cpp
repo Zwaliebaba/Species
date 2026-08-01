@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "LanguageTable.h"
 
 #include "InputField.h"
@@ -137,7 +137,7 @@ public:
 // Class InstantUnitEditWindow
 // ****************************************************************************
 
-InstantUnitEditWindow::InstantUnitEditWindow( char *name )
+InstantUnitEditWindow::InstantUnitEditWindow( char const *name )
 :	DarwiniaWindow(name)
 {
 }
@@ -232,7 +232,7 @@ public:
 
 				// Create an edit window for the new instant unit
 				EclWindow *cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
-				DarwiniaDebugAssert(cw);
+				DEBUG_ASSERT(cw);
 				ew = new InstantUnitEditWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
 				ew->m_w = cw->m_w;
 				ew->m_h = 160;
@@ -249,7 +249,7 @@ public:
 // Class InstantUnitCreateWindow
 // ****************************************************************************
 
-InstantUnitCreateWindow::InstantUnitCreateWindow( char *name )
+InstantUnitCreateWindow::InstantUnitCreateWindow( char const *name )
 :	DarwiniaWindow(name)
 {
 }
@@ -268,15 +268,15 @@ void InstantUnitCreateWindow::Create()
 
 	int y = 3;
 	int const buttonYPitch = 18;
-	char *lowerLimit = " ";
-	char *best;
+	char const *lowerLimit = " ";
+	char const *best;
 
 	for (int i = 0; i < Entity::NumEntityTypes; ++i)
 	{
 		best = "~~~~"; // All reasonable strings come before this when alphabetically sorted
 		for (int j = 0; j < Entity::NumEntityTypes; ++j)
 		{
-			char *typeName = Entity::GetTypeNameTranslated(j);
+			char const *typeName = Entity::GetTypeNameTranslated(j);
 			if (stricmp(typeName, lowerLimit) > 0 &&
 				stricmp(typeName, best) < 0)
 			{

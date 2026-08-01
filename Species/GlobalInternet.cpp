@@ -6,7 +6,7 @@
 #include "MathUtils.h"
 #include "Resource.h"
 #include "Profiler.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 #include "App.h"
 #include "Camera.h"
@@ -33,7 +33,7 @@ GlobalInternetNode::GlobalInternetNode()
 
 void GlobalInternetNode::AddLink(int _id)
 {
-	DarwiniaDebugAssert(m_numLinks < GLOBALINTERNET_MAXNODELINKS);
+	DEBUG_ASSERT(m_numLinks < GLOBALINTERNET_MAXNODELINKS);
 	m_links[m_numLinks] = _id;
 	m_numLinks++;
 }
@@ -71,7 +71,7 @@ unsigned short GlobalInternet::GenerateInternet( Vector3 const &_pos, unsigned c
     node->m_size = _size;
     unsigned short nodeIndex = m_numNodes;
 	m_numNodes++;
-	DarwiniaDebugAssert(m_numNodes < GLOBALINTERNET_MAXNODES);
+	DEBUG_ASSERT(m_numNodes < GLOBALINTERNET_MAXNODES);
 
     float distanceToCentre = _pos.Mag();
     if( distanceToCentre < m_nearestDistance )
@@ -98,7 +98,7 @@ unsigned short GlobalInternet::GenerateInternet( Vector3 const &_pos, unsigned c
         node->AddLink( m_numLinks );
 
 		m_numLinks++;
-		DarwiniaDebugAssert(m_numLinks <= GLOBALINTERNET_MAXLINKS);
+		DEBUG_ASSERT(m_numLinks <= GLOBALINTERNET_MAXLINKS);
 
         --numLinks;
     }
@@ -123,13 +123,13 @@ void GlobalInternet::GenerateInternet()
     m_nodes[m_numNodes].m_size = 0.0f;
     unsigned short nodeIndex = m_numNodes;
 	m_numNodes++;
-	DarwiniaDebugAssert(m_numNodes <= GLOBALINTERNET_MAXNODES);
+	DEBUG_ASSERT(m_numNodes <= GLOBALINTERNET_MAXNODES);
 
     m_links[m_numLinks].m_from = m_nearestNodeToCentre;
     m_links[m_numLinks].m_to = nodeIndex;
     m_links[m_numLinks].m_size = 1.0f;
     m_numLinks++;
-	DarwiniaDebugAssert(m_numLinks <= GLOBALINTERNET_MAXLINKS);
+	DEBUG_ASSERT(m_numLinks <= GLOBALINTERNET_MAXLINKS);
 
     for( int i = 0; i < m_numNodes; ++i )
     {
@@ -144,7 +144,7 @@ void GlobalInternet::GenerateInternet()
     for( int i = 0; i < 5; ++i )
     {
         GlobalInternetNode *node = &m_nodes[i];
-        DebugOut( "Node %d : %2.2f %2.2f %2.2f\n", i, node->m_pos.x, node->m_pos.y, node->m_pos.z );
+        DebugTrace( "Node %d : %2.2f %2.2f %2.2f\n", i, node->m_pos.x, node->m_pos.y, node->m_pos.z );
 
 /*
         Node 0 : -797.00 1949.00 -1135.00
@@ -156,10 +156,10 @@ void GlobalInternet::GenerateInternet()
     }
 
     double timeTaken = GetHighResTime() - timeStart;
-    DebugOut( "Global Internet time to generate : %.2fms\n", timeTaken*1000.0 );
-    DebugOut( "Global Internet number of nodes  : %d\n", m_numNodes );
-    DebugOut( "Global Internet number of links  : %d\n", m_numLinks );
-    DebugOut( "Global Internet number of leafs  : %d\n", m_leafs.Size() );
+    DebugTrace( "Global Internet time to generate : %.2fms\n", timeTaken*1000.0 );
+    DebugTrace( "Global Internet number of nodes  : %d\n", m_numNodes );
+    DebugTrace( "Global Internet number of links  : %d\n", m_numLinks );
+    DebugTrace( "Global Internet number of leafs  : %d\n", m_leafs.Size() );
 #endif
 }
 

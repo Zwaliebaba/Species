@@ -93,7 +93,7 @@ public:
 // Class MainEditWindow
 // ****************************************************************************
 
-MainEditWindow::MainEditWindow(char *name)
+MainEditWindow::MainEditWindow( char const *name )
 :	DarwiniaWindow(name),
 	m_currentEditWindow(NULL)
 {

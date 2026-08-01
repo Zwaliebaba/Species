@@ -44,7 +44,7 @@ public:
 
 public:
 
-    EclWindow                       ( char *_name );
+    EclWindow( char const *_name );
     virtual ~EclWindow  ();
 
     void SetName                    ( char *_name );
@@ -55,12 +55,12 @@ public:
 	void MakeAllOnScreen			();
 
     void RegisterButton             ( EclButton *button );
-    void RemoveButton               ( char *_name );
+    void RemoveButton               ( char const *_name );
 
     void BeginTextEdit              ( char *_name );
     void EndTextEdit                ();
 
-    virtual EclButton   *GetButton  ( char *_name );
+    virtual EclButton   *GetButton  ( char const *_name );
     virtual EclButton   *GetButton  ( int _x, int _y );                             
 
     virtual void Create ();

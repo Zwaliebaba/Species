@@ -135,7 +135,7 @@ public:
 
     void Advance            ();
     void AdvanceScript      ();
-    void RunScript          (char *_filename);
+    void RunScript          (char const *_filename);
 	void TestScript			(char *_filename);
     bool IsRunningScript    ();
     bool Skip               ();

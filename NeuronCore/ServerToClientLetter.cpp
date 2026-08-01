@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 
 #include "ByteStream.h"
 #include "ServerToClientLetter.h"
@@ -72,7 +72,7 @@ ServerToClientLetter::ServerToClientLetter(char *_byteStream, int _len)
 
     case Update:
         int numUpdates = READ_INT(_byteStream);
-		DarwiniaDebugAssert(numUpdates >= 0);
+		DEBUG_ASSERT(numUpdates >= 0);
 
         for( int i = 0; i < numUpdates; ++i )
         {
@@ -171,7 +171,7 @@ char *ServerToClientLetter::GetByteStream(int *_linearSize)
 
     case Update:
         int numUpdates = m_updates.Size();
-		DarwiniaDebugAssert(numUpdates >= 0);
+		DEBUG_ASSERT(numUpdates >= 0);
         WRITE_INT(byteStream, numUpdates);
 
         for( int i = 0; i < numUpdates; ++i )
@@ -186,7 +186,7 @@ char *ServerToClientLetter::GetByteStream(int *_linearSize)
     }
 
 	*_linearSize = byteStream - s_byteStream;
-	DarwiniaDebugAssert( *_linearSize < SERVERTOCLIENTLETTER_BYTESTREAMSIZE );
+	DEBUG_ASSERT( *_linearSize < SERVERTOCLIENTLETTER_BYTESTREAMSIZE );
 
 	return s_byteStream;
 }

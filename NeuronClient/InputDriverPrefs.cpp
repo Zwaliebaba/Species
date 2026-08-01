@@ -112,7 +112,7 @@ int PrefsInputDriver::keyPosition( string const &key )
 		if ( **i == key ) break;
 
 	if ( i == m_keys.end() ) {
-		m_keys.push_back( auto_ptr<string>( new string( key ) ) );
+		m_keys.push_back( std::unique_ptr<string>( new string( key ) ) );
 		return m_keys.size();
 	} else {
 		return i - m_keys.begin();

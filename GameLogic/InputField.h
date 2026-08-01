@@ -120,7 +120,7 @@ public:
     int *m_value;
 
 public:
-    ColourWindow( char *_name );
+    ColourWindow( char const *_name );
 
     void SetValue           (int *value);
     void SetCallback        (DarwiniaButton *button);              // This button will be clicked on Refresh

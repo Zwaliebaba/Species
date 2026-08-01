@@ -6,7 +6,7 @@
 #include "MathUtils.h"
 #include "SphereRenderer.h"
 #include "TextRenderer.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 #include "App.h"
 #include "Camera.h"
@@ -292,14 +292,14 @@ void PrintMatrix( const char *_name, GLenum _whichMatrix )
 
 	glGetDoublev( _whichMatrix, matrix );
 
-	DebugOut( "\tMatrix: %s\n", _name );
+	DebugTrace( "\tMatrix: %s\n", _name );
 	for (int row = 0; row < 4; row++) {
-		DebugOut("\t\t");
+		DebugTrace("\t\t");
 		for (int col = 0; col < 4; col++)
-			DebugOut("% 13.1f ", matrix[col * 4 + row]);
-		DebugOut("\n");
+			DebugTrace("% 13.1f ", matrix[col * 4 + row]);
+		DebugTrace("\n");
 	}
-	DebugOut("\n");
+	DebugTrace("\n");
 }
 
 void PrintMatrices( const char *_title )
@@ -309,7 +309,7 @@ void PrintMatrices( const char *_title )
 	if (numTimes > 10)
 		return;
 
-	DebugOut(
+	DebugTrace(
 #ifdef USE_DIRECT3D
 		"Direct3D: "
 #else

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Vector3.h"
 #include "TextRenderer.h"
 #include "MathUtils.h"
@@ -212,7 +212,7 @@ class CloneBuildingButton : public DarwiniaButton
         g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
         Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
-        DarwiniaDebugAssert(building);
+        DEBUG_ASSERT(building);
 
         Building *newBuilding = Building::CreateBuilding( building->m_type );
         newBuilding->Initialise( building );
@@ -228,7 +228,7 @@ class CloneBuildingButton : public DarwiniaButton
 // Class BuildingEditWindow
 // ****************************************************************************
 
-BuildingEditWindow::BuildingEditWindow( char *name )
+BuildingEditWindow::BuildingEditWindow( char const *name )
 :   DarwiniaWindow( name )
 {
 }
@@ -244,7 +244,7 @@ void BuildingEditWindow::Create()
 	DarwiniaWindow::Create();
 
 	Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
-	DarwiniaDebugAssert(building);
+	DEBUG_ASSERT(building);
 
 	int buttonPitch = 18;
 	int y = 6;
@@ -508,7 +508,7 @@ void BuildingEditWindow::Render( bool hasFocus )
     DarwiniaWindow::Render( hasFocus );
 
 	Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
-	DarwiniaDebugAssert(building);
+	DEBUG_ASSERT(building);
 
     g_editorFont.SetRenderShadow(true);
     glColor4ub( 255, 255, 150, 30 );
@@ -550,7 +550,7 @@ public:
 // Class BuildingsCreateWindow
 // ****************************************************************************
 
-BuildingsCreateWindow::BuildingsCreateWindow( char *_name )
+BuildingsCreateWindow::BuildingsCreateWindow( char const *_name )
 :	DarwiniaWindow( _name ),
     m_buildingType(0)
 {

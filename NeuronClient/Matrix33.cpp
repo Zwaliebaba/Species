@@ -4,7 +4,7 @@
 #include <memory.h>
 
 #include "Matrix33.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 
 float Matrix33::m_openGLFormat[16];
@@ -438,9 +438,9 @@ Vector3	Matrix33::InverseMultiplyVector(Vector3 const &s) const
 
 void Matrix33::OutputToDebugStream()
 {
-	DebugOut("%4.1f %4.1f %4.1f\n", r.x, r.y, r.z );
-	DebugOut("%4.1f %4.1f %4.1f\n", f.x, f.y, f.z );
-	DebugOut("%4.1f %4.1f %4.1f\n", u.x, u.y, u.z );
+	DebugTrace("%4.1f %4.1f %4.1f\n", r.x, r.y, r.z );
+	DebugTrace("%4.1f %4.1f %4.1f\n", f.x, f.y, f.z );
+	DebugTrace("%4.1f %4.1f %4.1f\n", u.x, u.y, u.z );
 }
 
 float *Matrix33::ConvertToOpenGLFormat(Vector3 const *_pos)

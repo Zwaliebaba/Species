@@ -8,7 +8,7 @@
 #include <shellapi.h>
 
 #include "Win32EventHandler.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "WindowManager.h"
 #include "WindowManagerWin32.h"
 
@@ -42,7 +42,7 @@ WindowManager::WindowManager()
 	m_mouseOffsetX(INT_MAX),
 	m_mouseCaptured(false)
 {
-	DarwiniaDebugAssert(g_windowManager == NULL);
+	DEBUG_ASSERT(g_windowManager == NULL);
 	m_win32Specific = new WindowManagerWin32;
 
 	ListAllDisplayModes();
@@ -273,7 +273,7 @@ bool WindowManager::CreateWin(int _width, int _height, bool _windowed,
 		long result = ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
         if( result != DISP_CHANGE_SUCCESSFUL ) return false;
 
-//		DarwiniaReleaseAssert(result == DISP_CHANGE_SUCCESSFUL, "Couldn't set full screen mode of %dx%d",
+//		ASSERT_TEXT(result == DISP_CHANGE_SUCCESSFUL, "Couldn't set full screen mode of %dx%d",
 //														_width, _height);
 //      This assert goes off on many systems, regardless of success
 
@@ -445,7 +445,7 @@ void WindowManager::SuggestDefaultRes( int *_width, int *_height, int *_refresh,
     *_depth = m_desktopColourDepth;
 }
 
-void WindowManager::OpenWebsite( char *_url )
+void WindowManager::OpenWebsite( char const *_url )
 {
     ShellExecute(NULL, "open", _url, NULL, NULL, SW_SHOWNORMAL);
 }

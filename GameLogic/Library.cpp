@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Resource.h"
 #include "Shape.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 #include "Library.h"
 #include "ResearchItem.h"
@@ -30,7 +30,7 @@ bool Library::Advance()
             char markerName[256];
             sprintf( markerName, "MarkerResearch%02d", i+1 );
             ShapeMarker *scrollMarker = m_shape->m_rootFragment->LookupMarker( markerName );
-            DarwiniaDebugAssert( scrollMarker );
+            DEBUG_ASSERT( scrollMarker );
 
             Matrix34 rootMat(m_front, g_upVector, m_pos);
             Matrix34 scrollPos = scrollMarker->GetWorldMatrix( rootMat );

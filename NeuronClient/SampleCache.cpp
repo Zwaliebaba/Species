@@ -21,7 +21,7 @@ CachedSample::CachedSample(char const *_sampleName)
 	strcat(fullPath, _sampleName);
 
 	m_soundStreamDecoder = g_app->m_resource->GetSoundStreamDecoder(fullPath);
-    DarwiniaReleaseAssert( m_soundStreamDecoder, "Failed to open sound stream decoder : %s", fullPath );
+    ASSERT_TEXT( m_soundStreamDecoder, "Failed to open sound stream decoder : %s", fullPath );
 
 	m_numChannels = m_soundStreamDecoder->m_numChannels;
 	m_numSamples = m_soundStreamDecoder->m_numSamples;
@@ -50,7 +50,7 @@ void CachedSample::Read(signed short *_data, unsigned int _startSample, unsigned
 										&m_rawSampleData[m_amountCached],
 										amountToRead);
 			m_amountCached += amountRead;
-			DarwiniaDebugAssert(m_amountCached <= m_numSamples);
+			DEBUG_ASSERT(m_amountCached <= m_numSamples);
 			if (m_amountCached == m_numSamples)
 			{
 				delete m_soundStreamDecoder; m_soundStreamDecoder = NULL;

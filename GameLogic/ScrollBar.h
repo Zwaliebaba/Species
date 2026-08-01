@@ -37,7 +37,7 @@ public:
     ScrollBar( EclWindow *parent );
     ~ScrollBar();
 
-    void Create( char *name,
+    void Create( char const *name,
                  int x, int y, int w, int h,
                  int numRows, int winSize,
                  int stepSize=1 );

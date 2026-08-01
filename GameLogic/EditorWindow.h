@@ -11,7 +11,7 @@ class MainEditWindow : public DarwiniaWindow
 public:
 	DarwiniaWindow *m_currentEditWindow;
 
-	MainEditWindow( char *name );
+	MainEditWindow( char const *name );
 
 	void Create();
 };

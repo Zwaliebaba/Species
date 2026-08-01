@@ -6,7 +6,7 @@
 #include "EclWindow.h"
 
 
-EclWindow::EclWindow( char *_name )
+EclWindow::EclWindow( char const *_name )
 :   m_x(0),
     m_y(0),
     m_w(0),
@@ -111,7 +111,7 @@ void EclWindow::RegisterButton ( EclButton *button )
 	EclDirtyWindow ( this );
 }
 
-void EclWindow::RemoveButton ( char *_name )
+void EclWindow::RemoveButton ( char const *_name )
 {
     for ( int i = 0; i < m_buttons.Size(); ++i )
     {
@@ -124,7 +124,7 @@ void EclWindow::RemoveButton ( char *_name )
     }            
 }
 
-EclButton *EclWindow::GetButton ( char *_name )
+EclButton *EclWindow::GetButton ( char const *_name )
 {
 
     for ( int i = 0; i < m_buttons.Size(); ++i )

@@ -14,7 +14,7 @@
 #include <string.h>
 #include <stdlib.h>                     // needed for errno definition
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FilesysUtils.h"
 #include "StringUtils.h"
 
@@ -72,7 +72,7 @@ LList <char *> *ListDirectory( char const *_dir, char const *_filter, bool _full
     // Now add on all files found locally
 #ifdef TARGET_MSVC
 	char searchstring [256];
-	DarwiniaDebugAssert(strlen(_dir) + strlen(_filter) < sizeof(searchstring) - 1);
+	DEBUG_ASSERT(strlen(_dir) + strlen(_filter) < sizeof(searchstring) - 1);
 	sprintf( searchstring, "%s%s", _dir, _filter );
 
 	_finddata_t thisfile;

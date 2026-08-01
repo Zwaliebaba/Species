@@ -8,7 +8,7 @@
 #include "NetUdpPacket.h"
 
 #include "HiResTime.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "Preferences.h"
 #include "Profiler.h"
 #include "Input.h"
@@ -54,7 +54,7 @@ static NetCallBackRetType ListenThread(void *ignored)
 {
     g_app->m_clientToServer->m_receiveSocket = new NetSocketListener( 4001 );
     NetRetCode retCode = g_app->m_clientToServer->m_receiveSocket->StartListening( ListenCallback );
-    DarwiniaDebugAssert( retCode == NetOk );
+    DEBUG_ASSERT( retCode == NetOk );
     return 0;
 }
 
@@ -72,7 +72,7 @@ ClientToServer::ClientToServer()
         m_netLib->Initialise();
 
         m_sendSocket = new NetSocket();
-	    char *serverAddress = g_prefsManager->GetString("ServerAddress");
+	    char const *serverAddress = g_prefsManager->GetString("ServerAddress");
         m_sendSocket->Connect( serverAddress, 4000 );
 
 		NetStartThread( ListenThread );
@@ -108,7 +108,7 @@ void ClientToServer::AdvanceSender()
     while (g_app->m_clientToServer->m_outbox.Size())
     {
         NetworkUpdate *letter = g_app->m_clientToServer->m_outbox[0];
-        DarwiniaDebugAssert(letter);
+        DEBUG_ASSERT(letter);
 
         if( g_app->m_bypassNetworking )
         {
@@ -272,14 +272,14 @@ void ClientToServer::ReceiveLetter( ServerToClientLetter *letter )
     {
       g_startTime = newStartTime;
 #ifdef _DEBUG
-	  // DebugOut( "Start Time set to %f\n", (float) g_startTime );
+	  // DebugTrace( "Start Time set to %f\n", (float) g_startTime );
 #endif
     }
 //#ifdef _DEBUG
 	else if (newStartTime > g_startTime + 0.1f)
 	{
 		g_startTime = newStartTime;
-//        DebugOut( "Start Time set to %f\n", (float) g_startTime );
+//        DebugTrace( "Start Time set to %f\n", (float) g_startTime );
 	}
 //#endif
 
@@ -341,7 +341,7 @@ void ClientToServer::SendLetter( NetworkUpdate *letter )
 
 void ClientToServer::ClientJoin()
 {
-    DebugOut( "CLIENT : Attempting connection...\n" );
+    DebugTrace( "CLIENT : Attempting connection...\n" );
     NetworkUpdate *letter = new NetworkUpdate();
     letter->SetType( NetworkUpdate::ClientJoin );
     SendLetter( letter );
@@ -350,7 +350,7 @@ void ClientToServer::ClientJoin()
 
 void ClientToServer::ClientLeave()
 {
-    DebugOut( "CLIENT : Sending disconnect...\n" );
+    DebugTrace( "CLIENT : Sending disconnect...\n" );
     NetworkUpdate *letter = new NetworkUpdate();
     letter->SetType( NetworkUpdate::ClientLeave );
     SendLetter( letter );
@@ -362,7 +362,7 @@ void ClientToServer::ClientLeave()
 
 void ClientToServer::RequestTeam(int _teamType, int _desiredId)
 {
-    DebugOut( "CLIENT : Requesting Team...\n" );
+    DebugTrace( "CLIENT : Requesting Team...\n" );
 
     NetworkUpdate *letter = new NetworkUpdate();
 	letter->SetDesiredTeamId(_desiredId);
@@ -482,7 +482,7 @@ void ClientToServer::RequestTargetProgram( unsigned char _teamId, unsigned char 
 void ClientToServer::ProcessServerUpdates( ServerToClientLetter *letter )
 {
 
-    DarwiniaDebugAssert(letter->m_type == ServerToClientLetter::Update);
+    DEBUG_ASSERT(letter->m_type == ServerToClientLetter::Update);
 
     for( int i = 0; i < letter->m_updates.Size(); ++i )
     {
@@ -514,7 +514,7 @@ void ClientToServer::ProcessServerUpdates( ServerToClientLetter *letter )
                 }
                 else
                 {
-                    DarwiniaDebugAssert( update->GetWorldPos() != g_zeroVector );
+                    DEBUG_ASSERT( update->GetWorldPos() != g_zeroVector );
                     int unitId;
                     Unit *unit = g_app->m_location->m_teams[ update->m_teamId ].NewUnit( update->m_entityType, update->m_numTroops, &unitId, update->GetWorldPos() );
                     g_app->m_location->SpawnEntities( update->GetWorldPos(), update->m_teamId, unitId, update->m_entityType, update->m_numTroops, g_zeroVector, update->m_numTroops*2 );

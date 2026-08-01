@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
 #include "Resource.h"
@@ -30,8 +30,8 @@ Bridge::Bridge()
     m_shapes[0] = g_app->m_resource->GetShape( "BridgeEnd.shp" );
     m_shapes[1] = g_app->m_resource->GetShape( "BridgeTower.shp" );
 
-    DarwiniaDebugAssert( m_shapes[0] );
-    DarwiniaDebugAssert( m_shapes[1] );
+    DEBUG_ASSERT( m_shapes[0] );
+    DEBUG_ASSERT( m_shapes[1] );
 
     SetBridgeType( BridgeTypeTower );
 }
@@ -51,7 +51,7 @@ void Bridge::SetBridgeType ( int _type )
     SetShape( m_shapes[m_bridgeType] );
 
     m_signal = m_shape->m_rootFragment->LookupMarker("MarkerSignal");
-    DarwiniaDebugAssert( m_signal );
+    DEBUG_ASSERT( m_signal );
 }
 
 

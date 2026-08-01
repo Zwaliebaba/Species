@@ -98,7 +98,7 @@ public:
 
     void    Save        ( FileWriter *_out );
 
-    static char *GetTypeName( int _type );
+    static char const *GetTypeName( int _type );
 	static int  GetType(char const *_typeName);
 };
 
@@ -124,7 +124,7 @@ public:
     void    Write       ( FileWriter *_file );
     void    Execute     ();
 
-    static char *GetTypeName( int _type );
+    static char const *GetTypeName( int _type );
 };
 
 
@@ -203,10 +203,10 @@ public:
     void    Write               ( FileWriter *_out );
     void    Read                ( TextReader *_in );
 
-    static char *GetTypeName    ( int _type );
+    static char const *GetTypeName    ( int _type );
     static int   GetType        ( char *_name );
 
-    static char *GetTypeNameTranslated ( int _type );
+    static char const *GetTypeNameTranslated ( int _type );
 };
 
 
@@ -305,10 +305,10 @@ public:
     void            TransferSpirits         (int _locationId);
 
     void			LoadGame				(char *_filename);
-    void			SaveGame				(char *_filename);
+    void			SaveGame				(char const *_filename);
 
     void            LoadLocations           (char *_filename);
-    void            SaveLocations           (char *_filename);
+    void            SaveLocations           (char const *_filename);
 
 	void			SetupLights				();
 	void			SetupFog				();

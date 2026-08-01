@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "DebugRender.h"
 #include "MathUtils.h"
 #include "Profiler.h"
@@ -66,14 +66,14 @@ float	 EntityBlueprint::m_stats[Entity::NumEntityTypes][Entity::NumStats];
 void EntityBlueprint::Initialise()
 {
 	TextReader *theFile = g_app->m_resource->GetTextReader("Stats.txt");
-	DarwiniaReleaseAssert(theFile && theFile->IsOpen(), "Couldn't open stats.txt");
+	ASSERT_TEXT(theFile && theFile->IsOpen(), "Couldn't open stats.txt");
 
     int entityIndex = 0;
 
     while( theFile->ReadLine() )
     {
 		if (!theFile->TokenAvailable()) continue;
-        DarwiniaReleaseAssert(entityIndex < Entity::NumEntityTypes, "Too many entity blueprints defined");
+        ASSERT_TEXT(entityIndex < Entity::NumEntityTypes, "Too many entity blueprints defined");
 
         m_names[entityIndex] = strdup(theFile->GetNextToken());
 		m_stats[entityIndex][0] = atof(theFile->GetNextToken());
@@ -88,14 +88,14 @@ void EntityBlueprint::Initialise()
 
 char *EntityBlueprint::GetName( unsigned char _type )
 {
-    DarwiniaDebugAssert( _type < Entity::NumEntityTypes );
+    DEBUG_ASSERT( _type < Entity::NumEntityTypes );
     return m_names[_type];
 }
 
 float EntityBlueprint::GetStat( unsigned char _type, int _stat )
 {
-    DarwiniaDebugAssert( _type < Entity::NumEntityTypes );
-    DarwiniaDebugAssert( _stat < Entity::NumStats );
+    DEBUG_ASSERT( _type < Entity::NumEntityTypes );
+    DEBUG_ASSERT( _stat < Entity::NumStats );
 
 	if (_stat == Entity::StatSpeed)
 	{
@@ -234,7 +234,7 @@ int Entity::EnterTeleports( int _requiredId )
         }
 
         Building *building = g_app->m_location->GetBuilding( buildingId );
-        DarwiniaDebugAssert( building );
+        DEBUG_ASSERT( building );
 
         if( building->m_type == Building::TypeRadarDish  )
         {
@@ -658,7 +658,7 @@ Entity *Entity::NewEntity( int _troopType )
         case Entity::TypeTriffidEgg:            entity = new TriffidEgg();          break;
         case Entity::TypeAI:                    entity = new AI();                  break;
 
-        default:                                DarwiniaDebugAssert(false);
+        default:                                DEBUG_ASSERT(false);
     }
 
     entity->m_id.GenerateUniqueId();
@@ -680,9 +680,9 @@ int Entity::GetTypeId( char const *_typeName )
 }
 
 
-char *Entity::GetTypeName( int _troopType )
+char const *Entity::GetTypeName( int _troopType )
 {
-    static char *typeNames[NumEntityTypes] = {
+    static char const *typeNames[NumEntityTypes] = {
                                                 "InvalidType",
                                                 "LaserTroop",
                                                 "Engineer",
@@ -704,14 +704,14 @@ char *Entity::GetTypeName( int _troopType )
                                                 "AI"
                                                 };
 
-    DarwiniaDebugAssert( _troopType >= 0 && _troopType < NumEntityTypes );
+    DEBUG_ASSERT( _troopType >= 0 && _troopType < NumEntityTypes );
     return typeNames[ _troopType ];
 }
 
 
-char *Entity::GetTypeNameTranslated ( int _troopType )
+char const *Entity::GetTypeNameTranslated ( int _troopType )
 {
-    char *typeName = GetTypeName( _troopType );
+    char const *typeName = GetTypeName( _troopType );
 
     char stringId[256];
     sprintf( stringId, "entityname_%s", typeName );
@@ -727,7 +727,7 @@ char *Entity::GetTypeNameTranslated ( int _troopType )
 }
 
 
-void Entity::ListSoundEvents( LList<char *> *_list )
+void Entity::ListSoundEvents( LList<char const *> *_list )
 {
     _list->PutData( "Create" );
     _list->PutData( "Attack" );
@@ -768,9 +768,9 @@ void Entity::SetWaypoint( Vector3 const _waypoint )
 
 void Entity::FollowRoute()
 {
-	DarwiniaDebugAssert(m_routeId != -1);
+	DEBUG_ASSERT(m_routeId != -1);
 	Route *route = g_app->m_location->m_levelFile->GetRoute(m_routeId);
-	DarwiniaDebugAssert(route);
+	DEBUG_ASSERT(route);
 
 	if (m_routeWayPointId == -1)
 	{

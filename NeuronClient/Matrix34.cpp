@@ -5,7 +5,7 @@
 
 #include "Matrix33.h"
 #include "Matrix34.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 
 float Matrix34::m_openGLFormat[16];
@@ -368,10 +368,10 @@ Vector3	Matrix34::InverseMultiplyVector(Vector3 const &s) const
 
 void Matrix34::WriteToDebugStream()
 {
-    DebugOut("%5.2f %5.2f %5.2f\n", r.x, r.y, r.z);
-    DebugOut("%5.2f %5.2f %5.2f\n", u.x, u.y, u.z);
-    DebugOut("%5.2f %5.2f %5.2f\n", f.x, f.y, f.z);
-    DebugOut("%5.2f %5.2f %5.2f\n\n", pos.x, pos.y, pos.z);
+    DebugTrace("%5.2f %5.2f %5.2f\n", r.x, r.y, r.z);
+    DebugTrace("%5.2f %5.2f %5.2f\n", u.x, u.y, u.z);
+    DebugTrace("%5.2f %5.2f %5.2f\n", f.x, f.y, f.z);
+    DebugTrace("%5.2f %5.2f %5.2f\n\n", pos.x, pos.y, pos.z);
 }
 
 
@@ -380,7 +380,7 @@ void Matrix34::Test()
     Matrix34 a(Vector3(0,0,1), g_upVector, g_zeroVector);
     Matrix34 b(Vector3(0,0,1), g_upVector, g_zeroVector);
     Matrix34 c=a*b;
-    DebugOut("c = a * b\n");
+    DebugTrace("c = a * b\n");
     c.WriteToDebugStream();
 
     Vector3 front(10,20,2);
@@ -391,11 +391,11 @@ void Matrix34::Test()
     up = front ^ right;
     up.Normalise();
     Matrix34 d(front, up, Vector3(-1,2,-3));
-    DebugOut("d = \n");
+    DebugTrace("d = \n");
     d.WriteToDebugStream();
 
     Matrix34 e = d * d;
-    DebugOut("e = d * d\n");
+    DebugTrace("e = d * d\n");
     e.WriteToDebugStream();
 }
 

@@ -25,7 +25,7 @@
 #endif
 
 
-void NetDebugOut(char *fmt, ...);
+void NetDebugOut(char const *fmt, ...);
 
 
 #define MAX_HOSTNAME_LEN   	256

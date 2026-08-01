@@ -43,8 +43,8 @@ ToggleInputTransform::ToggleInputTransform( ControlType _on, ControlType _off )
   m_state( false ), m_change( false ) {}
 
 
-ToggleInputTransform::ToggleInputTransform( auto_ptr<InputTransform> _on,
-                                            auto_ptr<InputTransform> _off )
+ToggleInputTransform::ToggleInputTransform( std::unique_ptr<InputTransform> _on,
+                                            std::unique_ptr<InputTransform> _off )
 : m_on( _on ), m_off( _off ), m_state( false ), m_change( false ) {}
 
 

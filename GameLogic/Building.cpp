@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "DebugRender.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
 #include "Matrix34.h"
@@ -86,10 +86,10 @@ Building::Building()
     if( !s_controlPad )
     {
         s_controlPad = g_app->m_resource->GetShape( "ControlPad.shp" );
-        DarwiniaDebugAssert( s_controlPad );
+        DEBUG_ASSERT( s_controlPad );
 
         s_controlPadStatus = s_controlPad->m_rootFragment->LookupMarker( "MarkerStatus" );
-        DarwiniaDebugAssert( s_controlPadStatus );
+        DEBUG_ASSERT( s_controlPadStatus );
     }
 
     m_id.SetTeamId(1);
@@ -695,7 +695,7 @@ int Building::GetPortOperatorCount( int _portId, int _teamId )
 }
 
 
-char *Building::GetObjectiveCounter()
+char const *Building::GetObjectiveCounter()
 {
     return "";
 }
@@ -744,7 +744,7 @@ Building *Building::CreateBuilding( char *_name )
         }
     }
 
-    //DarwiniaDebugAssert(false);
+    //DEBUG_ASSERT(false);
 	return NULL;
 }
 
@@ -839,9 +839,9 @@ int Building::GetTypeId( char const *_name )
     return -1;
 }
 
-char *Building::GetTypeName( int _type )
+char const *Building::GetTypeName( int _type )
 {
-    static char *buildingNames[] = {    "Invalid",
+    static char const *buildingNames[] = {    "Invalid",
                                         "Factory",                              // These must be in the
                                         "Cave",                                 // Same order as defined
                                         "RadarDish",                            // in building.h
@@ -907,15 +907,15 @@ char *Building::GetTypeName( int _type )
     }
     else
     {
-        DarwiniaDebugAssert(false);
+        DEBUG_ASSERT(false);
         return NULL;
     }
 }
 
 
-char *Building::GetTypeNameTranslated( int _type )
+char const *Building::GetTypeNameTranslated( int _type )
 {
-    char *typeName = GetTypeName(_type);
+    char const *typeName = GetTypeName(_type);
 
     char stringId[256];
     sprintf( stringId, "buildingname_%s", typeName );
@@ -931,7 +931,7 @@ char *Building::GetTypeNameTranslated( int _type )
 }
 
 
-void Building::ListSoundEvents( LList<char *> *_list )
+void Building::ListSoundEvents( LList<char const *> *_list )
 {
     _list->PutData( "Create" );
     _list->PutData( "Reprogramming" );              // Remove me

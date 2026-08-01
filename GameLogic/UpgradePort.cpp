@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Resource.h"
 
-#include "DebugUtils.h"
+#include "Debug.h"
 
 #include "UpgradePort.h"
 

@@ -1,7 +1,7 @@
 #ifndef INCLUDED_PRESIZED_ARRAY_H
 #define INCLUDED_PRESIZED_ARRAY_H
 
-#include "DebugUtils.h"
+#include "Debug.h"
 
 
 template<class T, unsigned int N>
@@ -11,8 +11,8 @@ public:
     T m_data[N];    // fixed-size array of elements of type T
 
 public:
-    T & operator[](unsigned int i) { DarwiniaDebugAssert(i < N); return m_data[i]; }
-    const T & operator[](unsigned int i) const { DarwiniaDebugAssert(i < N); return m_data[i]; }
+    T & operator[](unsigned int i) { DEBUG_ASSERT(i < N); return m_data[i]; }
+    const T & operator[](unsigned int i) const { DEBUG_ASSERT(i < N); return m_data[i]; }
 
     static unsigned int Size() { return N; }
 

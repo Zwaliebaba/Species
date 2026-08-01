@@ -245,7 +245,7 @@ bool SoulDestroyer::SearchForRetreatPosition()
     if( targetId.IsValid() )
     {
         WorldObject *obj = g_app->m_location->GetEntity( targetId );
-        DarwiniaDebugAssert( obj );
+        DEBUG_ASSERT( obj );
 
         float distance = 50.0f;
         Vector3 retreatVector = ( m_pos - obj->m_pos ).Normalise();
@@ -411,7 +411,7 @@ bool SoulDestroyer::AdvanceToTargetPosition()
 }
 
 
-void SoulDestroyer::ListSoundEvents( LList<char *> *_list )
+void SoulDestroyer::ListSoundEvents( LList<char const *> *_list )
 {
     Entity::ListSoundEvents( _list );
 

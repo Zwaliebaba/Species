@@ -44,7 +44,7 @@ const string &InputSpecTokens::operator[] ( unsigned _index ) const
 }
 
 
-auto_ptr<InputSpecTokens> InputSpecTokens::operator()( int _start, int _end ) const {
+std::unique_ptr<InputSpecTokens> InputSpecTokens::operator()( int _start, int _end ) const {
 
 	vector<string> vec;
 	vec.clear();
@@ -61,7 +61,7 @@ auto_ptr<InputSpecTokens> InputSpecTokens::operator()( int _start, int _end ) co
 			vec.push_back( (*this)[ idx ] );
 	}
 
-	auto_ptr<InputSpecTokens> tokens( new InputSpecTokens( vec ) );
+	std::unique_ptr<InputSpecTokens> tokens( new InputSpecTokens( vec ) );
 	return tokens;
 }
 

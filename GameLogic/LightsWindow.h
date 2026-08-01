@@ -13,7 +13,7 @@
 class LightsEditWindow: public DarwiniaWindow
 {
 public:
-    LightsEditWindow( char *name );
+    LightsEditWindow( char const *name );
 	~LightsEditWindow();
 
 	void Create();

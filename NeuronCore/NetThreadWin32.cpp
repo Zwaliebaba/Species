@@ -1,5 +1,7 @@
 // See net_thread.h for description of module
 
+#include "pch.h"
+
 #include "NetThread.h"
 
 

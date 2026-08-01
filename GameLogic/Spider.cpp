@@ -343,7 +343,7 @@ void Spider::DetectCollisions()
             ent->m_id != m_id )
 		{
 		    Entity *entity = g_app->m_location->GetEntity(neighbours[darwiniaRandom() % numFound]);
-		    DarwiniaDebugAssert(entity);
+		    DEBUG_ASSERT(entity);
 		    Vector3 toNeighbour = m_pos - entity->m_pos;
 		    toNeighbour.y = 0.0f;
 		    toNeighbour.Normalise();
@@ -800,7 +800,7 @@ bool Spider::IsInView()
 }
 
 
-void Spider::ListSoundEvents(LList<char *> *_list)
+void Spider::ListSoundEvents(LList<char const *> *_list)
 {
     Entity::ListSoundEvents( _list );
 

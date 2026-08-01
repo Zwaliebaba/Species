@@ -3,7 +3,7 @@
 #include <windows.h>
 #include <string>
 
-#include <Eclipse.h>
+#include "Eclipse.h"
 
 #include "InputTypes.h"
 #include "ControlBindings.h"
@@ -15,7 +15,7 @@
 #include "WindowManagerWin32.h"
 #include "LanguageTable.h"
 #include "App.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 
 using namespace std;
 
@@ -94,7 +94,7 @@ bool W32InputDriver::getKeyInput( InputSpec const &spec, InputDetails &details )
 {
 
 	int button = spec.control_id;
-	DarwiniaDebugAssert( 0 <= button && button < KEY_MAX );
+	DEBUG_ASSERT( 0 <= button && button < KEY_MAX );
 	details.type = INPUT_TYPE_BOOL;
 
 	switch ( spec.condition ) {
@@ -337,7 +337,7 @@ LRESULT CALLBACK W32InputDriver::WndProc( HWND hWnd, UINT message,
 
 		case WM_KEYUP:
 		{
-			DarwiniaDebugAssert(wParam >= 0 && wParam < KEY_MAX);
+			DEBUG_ASSERT(wParam >= 0 && wParam < KEY_MAX);
 			if (g_keys[wParam] != 0)
 			{
 				m_keyNewDeltas[wParam] = -1;
@@ -348,7 +348,7 @@ LRESULT CALLBACK W32InputDriver::WndProc( HWND hWnd, UINT message,
 
 		case WM_KEYDOWN:
 		{
-			DarwiniaDebugAssert(wParam >= 0 && wParam < KEY_MAX);
+			DEBUG_ASSERT(wParam >= 0 && wParam < KEY_MAX);
 
 			if (g_keys[wParam] != 1)
 			{

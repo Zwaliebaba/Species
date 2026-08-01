@@ -538,7 +538,7 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
 }
 
 
-void RadarDish::ListSoundEvents ( LList<char *> *_list )
+void RadarDish::ListSoundEvents ( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 

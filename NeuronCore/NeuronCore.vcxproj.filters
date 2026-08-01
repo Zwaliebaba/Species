@@ -95,5 +95,6 @@
     </ClInclude>
     <ClInclude Include="pch.h" />
     <ClInclude Include="NeuronCore.h" />
+    <ClInclude Include="Debug.h" />
   </ItemGroup>
 </Project>

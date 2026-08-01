@@ -1,7 +1,7 @@
 #ifndef INCLUDED_RGB_COLOUR_H
 #define INCLUDED_RGB_COLOUR_H
 
-#include "DebugUtils.h"
+#include "Debug.h"
 
 class RGBAColour
 {
@@ -30,7 +30,7 @@ public:
 		//a = _b.a;
 		// faster code:
 		//  but not completely safe (c++ aliasing rules)
-		DarwiniaDebugAssert(sizeof(int)==4);
+		DEBUG_ASSERT(sizeof(int)==4);
 		*(int*)this = *(int*)&b;
 		return *this;
 	}

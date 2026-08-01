@@ -94,7 +94,7 @@ public:
 	bool    RenderPixelEffect   (float _predictionTime);
 
     bool    IsInView            ();
-    void    ListSoundEvents     (LList<char *> *_list);
+    void    ListSoundEvents     (LList<char const *> *_list);
 };
 
 

@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "MathUtils.h"
 
 #include "App.h"
@@ -48,9 +48,9 @@ void WorldObjectId::Set( unsigned char _teamId,
                          int _index,
                          int _uniqueId )
 {
-    DarwiniaDebugAssert( _teamId < ID_MAXTEAMS );
-    DarwiniaDebugAssert( _unitId < ID_MAXUNITS );
-    DarwiniaDebugAssert( _index < ID_MAXTROOPS );
+    DEBUG_ASSERT( _teamId < ID_MAXTEAMS );
+    DEBUG_ASSERT( _unitId < ID_MAXUNITS );
+    DEBUG_ASSERT( _index < ID_MAXTROOPS );
 
     m_teamId = _teamId;
     m_unitId = _unitId;

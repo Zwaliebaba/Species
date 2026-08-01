@@ -65,7 +65,7 @@ void ThrowableWeapon::Initialise ()
 }
 
 
-void ThrowableWeapon::TriggerSoundEvent( char *_event )
+void ThrowableWeapon::TriggerSoundEvent( char const *_event )
 {
     switch( m_type )
     {

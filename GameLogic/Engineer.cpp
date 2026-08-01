@@ -6,7 +6,7 @@
 #include "Resource.h"
 #include "Matrix34.h"
 #include "Shape.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "TextRenderer.h"
 #include "DebugRender.h"
 #include "LanguageTable.h"
@@ -692,7 +692,7 @@ bool Engineer::AdvanceToControlTower ()
         return false;
     }
 
-    DarwiniaDebugAssert( building->m_type == Building::TypeControlTower );
+    DEBUG_ASSERT( building->m_type == Building::TypeControlTower );
 
     ControlTower *ct = (ControlTower *) building;
     int positionId = ct->GetAvailablePosition( m_targetPos, m_targetFront );
@@ -1169,7 +1169,7 @@ char *Engineer::GetCurrentAction()
 }
 
 
-void Engineer::ListSoundEvents( LList<char *> *_list )
+void Engineer::ListSoundEvents( LList<char const *> *_list )
 {
     Entity::ListSoundEvents( _list );
 

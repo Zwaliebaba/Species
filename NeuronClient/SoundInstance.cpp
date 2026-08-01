@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "BinaryStreamReaders.h"
-#include "DebugUtils.h"
+#include "Debug.h"
 #include "HiResTime.h"
 #include "Profiler.h"
 #include "Resource.h"
@@ -64,7 +64,7 @@ void DspHandle::Advance()
             case 0 :        *((float *) &params[i]) = (float) m_params[i].GetOutput();        break;
             case 1 :        *((long *) &params[i])  = (long) m_params[i].GetOutput();         break;
             default:
-                DarwiniaReleaseAssert( false, "Unknown datatype" );
+                ASSERT_TEXT( false, "Unknown datatype" );
         }
     }
 
@@ -178,9 +178,9 @@ void SoundInstance::SetSoundName( char const *_name )
 
 void SoundInstance::SetEventName( char const *_entityName, char const *_eventName )
 {
-	DarwiniaDebugAssert(m_eventName == NULL);
-    DarwiniaDebugAssert(_entityName && _eventName);
-	DarwiniaDebugAssert(g_app->m_soundSystem);
+	DEBUG_ASSERT(m_eventName == NULL);
+    DEBUG_ASSERT(_entityName && _eventName);
+	DEBUG_ASSERT(g_app->m_soundSystem);
 
 	m_eventName = (char*)malloc(strlen(_entityName) + strlen(_eventName) + 2);
 	strcpy(m_eventName, _entityName);
@@ -191,7 +191,7 @@ void SoundInstance::SetEventName( char const *_entityName, char const *_eventNam
 
 char *SoundInstance::GetPositionTypeName( int _type )
 {
-    static char *types[] = {    "Type2D",
+    static char const *types[] = {    "Type2D",
                                 "Type3DStationary",
                                 "Type3DAttachedToObject",
                                 "TypeInEditor"
@@ -208,7 +208,7 @@ char *SoundInstance::GetPositionTypeName( int _type )
 
 char *SoundInstance::GetInstanceTypeName( int _type )
 {
-    static char *types[] = {    "Polyphonic",
+    static char const *types[] = {    "Polyphonic",
                                 "MonophonicRandom",
                                 "MonophonicNearest"
                             };
@@ -224,7 +224,7 @@ char *SoundInstance::GetInstanceTypeName( int _type )
 
 char *SoundInstance::GetLoopTypeName( int _type )
 {
-    static char *types[] = {    "PlayOnce",
+    static char const *types[] = {    "PlayOnce",
                                 "Loop",
                                 "LoopADSR"
                                 };
@@ -240,7 +240,7 @@ char *SoundInstance::GetLoopTypeName( int _type )
 
 char *SoundInstance::GetSourceTypeName( int _type )
 {
-    static char *types[] = {    "Sample",
+    static char const *types[] = {    "Sample",
                                 "SampleGroupRandom"
                                 };
 
@@ -263,7 +263,7 @@ void SoundInstance::Copy( SoundInstance *_copyMe )
     m_volume        = _copyMe->m_volume;
     m_minDistance   = _copyMe->m_minDistance;
 
-	DarwiniaDebugAssert(_copyMe->m_eventName);
+	DEBUG_ASSERT(_copyMe->m_eventName);
 	m_eventName = strdup(_copyMe->m_eventName);
 
     m_freq.Copy( &_copyMe->m_freq );
@@ -401,7 +401,7 @@ void SoundInstance::PropagateBlueprints()
 
         for( int i = 0; i < m_parent->m_dspFX.Size(); ++i )
         {
-            DarwiniaDebugAssert( m_dspFX.ValidIndex(i) );
+            DEBUG_ASSERT( m_dspFX.ValidIndex(i) );
             DspHandle *effect = m_parent->m_dspFX[i];
             DspHandle *copy = m_dspFX[i];
             copy->Copy( effect );
@@ -521,7 +521,7 @@ void SoundInstance::OpenStream( bool _keepCurrentStream )
     if (m_sourceType == SampleGroupRandom)
     {
 		SampleGroup *group = g_app->m_soundSystem->GetSampleGroup( m_soundName );
-		DarwiniaReleaseAssert( group, "Failed to find Sample Group %s", m_soundName );
+		ASSERT_TEXT( group, "Failed to find Sample Group %s", m_soundName );
 		int numSamples = group->m_samples.Size();
 
         int memoryUsage = g_prefsManager->GetInt( "SoundMemoryUsage", 1 );
@@ -587,7 +587,7 @@ bool SoundInstance::AdvanceLoop()
     }
     else
     {
-        DarwiniaReleaseAssert( false, "AdvanceLoop called on SinglePlay sound?" );
+        ASSERT_TEXT( false, "AdvanceLoop called on SinglePlay sound?" );
         return false;
     }
 }

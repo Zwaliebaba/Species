@@ -121,7 +121,7 @@ void HelpIcon::Clear()
 
 void HelpIcon::Set( int _index, const char *_helpText, float _alpha )
 {
-	DarwiniaDebugAssert( _helpText != NULL );
+	DEBUG_ASSERT( _helpText != NULL );
 
 	m_texts[_index].m_text = _helpText;
 	m_texts[_index].m_alpha = _alpha;
@@ -387,7 +387,7 @@ void ControlHelpSystem::InitialiseIcons()
 	m_sets[set]->AddIcon( m_icons[DPAD] );
 
 
-	DarwiniaDebugAssert( set < MaxSets );
+	DEBUG_ASSERT( set < MaxSets );
 }
 
 void ControlHelpSystem::InitialiseConditions()
@@ -750,7 +750,7 @@ bool ControlHelpSystem::CheckCondition( int _condition )
 
 
 		default:
-			DarwiniaDebugAssert( false );
+			DEBUG_ASSERT( false );
 			return false;
 	}
 }

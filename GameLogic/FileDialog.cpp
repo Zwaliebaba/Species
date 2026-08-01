@@ -31,7 +31,7 @@ public:
         for( int i = 0; i < fd->m_selected.Size(); ++i )
         {
             int index = fd->m_selected[i];
-            DarwiniaDebugAssert( fd->m_files->ValidIndex(index) );
+            DEBUG_ASSERT( fd->m_files->ValidIndex(index) );
             char *filename = fd->m_files->GetData( index );
             fd->FileSelected( filename );
         }

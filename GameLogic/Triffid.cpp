@@ -50,8 +50,8 @@ Triffid::Triffid()
     m_launchPoint = m_shape->m_rootFragment->LookupMarker( "MarkerLaunchPoint" );
     m_stem = m_shape->m_rootFragment->LookupMarker( "MarkerTriffidStem" );
 
-    DarwiniaDebugAssert( m_launchPoint );
-    DarwiniaDebugAssert( m_stem );
+    DEBUG_ASSERT( m_launchPoint );
+    DEBUG_ASSERT( m_stem );
 
     m_triggerTimer = syncfrand(5.0f);
 
@@ -476,9 +476,9 @@ void Triffid::Write( FileWriter *_out )
 }
 
 
-char *Triffid::GetSpawnName( int _spawnType )
+char const *Triffid::GetSpawnName( int _spawnType )
 {
-    static char *names[NumSpawnTypes] = {
+    static char const *names[NumSpawnTypes] = {
                                             "SpawnVirii",
                                             "SpawnCentipedes",
                                             "SpawnSpider",
@@ -492,9 +492,9 @@ char *Triffid::GetSpawnName( int _spawnType )
 }
 
 
-char *Triffid::GetSpawnNameTranslated( int _spawnType )
+char const *Triffid::GetSpawnNameTranslated( int _spawnType )
 {
-    char *spawnName = GetSpawnName( _spawnType );
+    char const *spawnName = GetSpawnName( _spawnType );
 
     char stringId[256];
     sprintf( stringId, "spawnname_%s", spawnName );
@@ -510,7 +510,7 @@ char *Triffid::GetSpawnNameTranslated( int _spawnType )
 }
 
 
-void Triffid::ListSoundEvents( LList<char *> *_list )
+void Triffid::ListSoundEvents( LList<char const *> *_list )
 {
     Building::ListSoundEvents( _list );
 
@@ -749,7 +749,7 @@ bool TriffidEgg::RenderPixelEffect( float _predictionTime )
 }
 
 
-void TriffidEgg::ListSoundEvents( LList<char *> *_list )
+void TriffidEgg::ListSoundEvents( LList<char const *> *_list )
 {
     Entity::ListSoundEvents( _list );
 
