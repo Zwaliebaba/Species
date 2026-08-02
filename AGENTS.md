@@ -355,6 +355,9 @@ Real, currently true, and worth knowing before you trip over them:
   spot has not recurred and is now attributed to the C3859 memory pressure
   described below; it is written up there as a resolved instance rather than
   kept as a standing mystery.
+  - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
+    runner is a preview image that roughly doubles wall clock, and ARM64 is built
+    constantly at the desk anyway. Deliberate, not an oversight.
 - **`NeuronClient` and `GameLogic` still reach up into `Species`.** 627 upward
   includes remain, and the direction that mattered most is already fixed:
   `NeuronCore` is standalone, reaches upward nowhere, and `NeuronCore.vcxproj`
@@ -370,6 +373,11 @@ Real, currently true, and worth knowing before you trip over them:
   it and nobody builds it by hand, which means it can be broken right now and
   nothing would say so. Build it locally before anything that ships. Details in
   [`docs/BUILD.md`](docs/BUILD.md).
+  - Adding a Release build to CI was proposed and **declined on 2026-08-02**:
+    `ci.yml` argues Release differs from Debug in optimisation settings alone and
+    catches little Debug does not, and that reasoning still holds. This bullet is
+    the accepted cost of that, not an oversight — do not re-propose it without a
+    Release-only break to point at.
 - **The test suite is thin.** Four projects, 45 tests, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
