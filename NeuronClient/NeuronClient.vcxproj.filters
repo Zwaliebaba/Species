@@ -151,6 +151,7 @@
     <ClCompile Include="SystemInfo.cpp" />
     <ClCompile Include="TargetCursor.cpp" />
     <ClCompile Include="TextRenderer.cpp" />
+    <ClCompile Include="SepulvedaStrings.cpp" />
     <ClCompile Include="TextStreamReaders.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureUv.cpp" />
@@ -208,6 +209,9 @@
     <ClInclude Include="ControlTypes.h">
       <Filter>Input</Filter>
     </ClInclude>
+    <ClInclude Include="ControlTypes.inc">
+      <Filter>Input</Filter>
+    </ClInclude>
     <ClInclude Include="EventHandler.h">
       <Filter>Input</Filter>
     </ClInclude>
@@ -248,6 +252,9 @@
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputDriverValue.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDriverValues.inc">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputDriverWin32.h">

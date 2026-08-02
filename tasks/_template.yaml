@@ -1,0 +1,40 @@
+# Copy this file to tasks/<plan-name>.yaml and fill it in.
+# Schema and conventions: docs/TASK_DAG.md
+# Validate with:  python3 tools/check_task_dag.py tasks/<plan-name>.yaml
+
+plan: my-plan-name
+title: One line describing what this plan achieves
+phase: 2
+summary: >
+  Why this plan exists and what the system looks like once it is finished.
+  Delete this key if the title says it all.
+
+tasks:
+  - id: T1
+    title: First thing, as an imperative phrase
+    intent: >
+      What changes about the system once this lands, and why that matters.
+      Not how — the how is the diff.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/Example.cpp
+      - NeuronCore/Example.h
+    acceptance:
+      - An outcome someone else could check without asking you
+      - Another one
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+    parallel_safe: true
+    status: todo
+
+  - id: T2
+    title: Second thing, which genuinely cannot start until T1 lands
+    intent: >
+      Add an edge only when the work is actually blocked, not when it merely
+      reads better in this order.
+    depends_on: [T1]
+    acceptance:
+      - Something observable
+    status: todo

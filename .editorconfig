@@ -1,0 +1,43 @@
+# Baseline whitespace rules, so an editor gets it right before clang-format runs.
+# See .clang-format for the full C++ style and CODING_STANDARDS.md for the rules
+# a formatter cannot express.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.{cpp,h,inc}]
+indent_size = 2
+max_line_length = 150
+
+[*.{vcxproj,filters,slnx,props,targets}]
+indent_size = 2
+
+# GitHub Actions and the checker tools run on Linux runners.
+[*.{yml,yaml}]
+end_of_line = lf
+indent_size = 2
+
+[*.py]
+end_of_line = lf
+indent_size = 4
+max_line_length = 100
+
+[*.sh]
+end_of_line = lf
+indent_size = 2
+
+[*.md]
+end_of_line = lf
+trim_trailing_whitespace = false
+
+# Game content is authored by tools outside this repo; leave it exactly as-is.
+[GameData/**]
+trim_trailing_whitespace = false
+insert_final_newline = false

@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch supersedes an in-flight run. main is exempt so
+# every commit on the default branch keeps a result.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Everything that does not need a compiler. Runs in under a minute and gives a
+  # fast answer on the mistakes that are easiest to make without an IDE open.
+  # ---------------------------------------------------------------------------
+  checks:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # check_format.py diffs against the merge base, so it needs history.
+          fetch-depth: 0
+
+      - name: Install tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-18
+          sudo update-alternatives --install /usr/bin/clang-format clang-format \
+            /usr/bin/clang-format-18 100
+          pip install pyyaml
+          clang-format --version
+
+      - name: Project files match the tree
+        run: python3 tools/check_project_files.py
+
+      - name: No new layering violations
+        run: python3 tools/check_layering.py
+
+      - name: Task plans are valid DAGs
+        run: python3 tools/check_task_dag.py
+
+      - name: Changed lines are formatted
+        run: |
+          python3 tools/check_format.py \
+            --base "origin/${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}"
+
+  # ---------------------------------------------------------------------------
+  # The real build. Both images carry Visual Studio 2026, so CI compiles with the
+  # same v145 toolset used locally — no downgrade, no per-CI project settings.
+  #
+  # windows-11-vs2026-arm is a public preview image; the windows-11-arm label
+  # migrates onto it in early September 2026, at which point this can be renamed.
+  # ---------------------------------------------------------------------------
+  build:
+    name: ${{ matrix.platform }} ${{ matrix.configuration }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: x64,   runner: windows-2025-vs2026,    configuration: Debug }
+          - { platform: x64,   runner: windows-2025-vs2026,    configuration: Release }
+          - { platform: ARM64, runner: windows-11-vs2026-arm,  configuration: Debug }
+          - { platform: ARM64, runner: windows-11-vs2026-arm,  configuration: Release }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build
+        shell: pwsh
+        run: |
+          msbuild Species.slnx `
+            /p:Configuration=${{ matrix.configuration }} `
+            /p:Platform=${{ matrix.platform }} `
+            /m `
+            /nologo `
+            /verbosity:minimal
+
+      - name: Check GameData was staged beside the executables
+        shell: pwsh
+        run: |
+          # GameData.targets copies the content tree after every build. If it
+          # silently stopped running, the game would launch and then fail to find
+          # a single asset — a far worse failure to debug than this check.
+          $source = Join-Path $PWD 'GameData\Locations.txt'
+          $staged = Get-ChildItem -Recurse -Filter 'Locations.txt' -File |
+                    Where-Object { $_.FullName -ne $source }
+          if (-not $staged) { throw 'GameData was not staged next to any build output' }
+          $staged | ForEach-Object { Write-Host "staged: $($_.FullName)" }

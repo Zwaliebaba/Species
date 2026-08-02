@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""Check that no project includes a header from a layer above it.
+
+The intended dependency direction is described in docs/ARCHITECTURE.md:
+
+    NeuronCore                      shared foundation, no dependencies
+      NeuronClient                  presentation: render, sound, input, UI
+      NeuronServer                  authoritative simulation host
+        GameLogic                   entities, buildings, teams
+          Species                   client executable
+          Server                    server executable
+
+An include is a violation when the header it names is owned by a project the
+including project is not allowed to depend on. Because every project puts the
+others on its include path and all includes are written as bare basenames
+(`#include "App.h"`), the owning project is resolved by looking the basename up
+against the files actually on disk.
+
+The tree still carries violations inherited from the original single-binary
+Darwinia layout. Those are recorded in tools/layering_allowlist.txt so the check
+fails only on *new* ones; the allowlist is expected to shrink to empty as the
+modernization proceeds, never to grow.
+
+    python3 tools/check_layering.py             # fail on unlisted violations
+    python3 tools/check_layering.py --update    # rewrite the allowlist
+"""
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+ALLOWLIST_PATH = Path(__file__).resolve().parent / "layering_allowlist.txt"
+
+# project -> projects it is allowed to include from (transitively closed below)
+DIRECT_DEPENDENCIES: dict[str, set[str]] = {
+    "NeuronCore": set(),
+    "NeuronClient": {"NeuronCore"},
+    "NeuronServer": {"NeuronCore"},
+    "GameLogic": {"NeuronCore", "NeuronClient", "NeuronServer"},
+    "Species": {"GameLogic", "NeuronClient", "NeuronCore"},
+    "Server": {"GameLogic", "NeuronServer", "NeuronCore"},
+}
+
+SOURCE_SUFFIXES = {".cpp", ".h", ".inc"}
+INCLUDE_RE = re.compile(r'^\s*#\s*include\s+"([^"]+)"', re.M)
+
+
+def allowed_dependencies(project: str) -> set[str]:
+    """DIRECT_DEPENDENCIES closed over itself, plus the project itself."""
+    seen = {project}
+    pending = list(DIRECT_DEPENDENCIES[project])
+    while pending:
+        current = pending.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        pending.extend(DIRECT_DEPENDENCIES[current])
+    return seen
+
+
+def build_header_index() -> dict[str, str]:
+    """basename -> owning project, for every header in the tree.
+
+    pch.h exists once per project and always resolves to the including project's
+    own copy, so it is excluded here and handled at the call site.
+    """
+    index: dict[str, str] = {}
+    for project in DIRECT_DEPENDENCIES:
+        for path in (REPO_ROOT / project).iterdir():
+            if path.suffix in {".h", ".inc"} and path.name != "pch.h":
+                index[path.name] = project
+    return index
+
+
+def load_allowlist() -> set[str]:
+    if not ALLOWLIST_PATH.exists():
+        return set()
+    return {
+        line.strip()
+        for line in ALLOWLIST_PATH.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    }
+
+
+def write_allowlist(entries: set[str]) -> None:
+    header = (
+        "# Pre-existing layering violations, inherited from the original\n"
+        "# single-binary Darwinia layout. tools/check_layering.py fails on any\n"
+        "# violation that is NOT listed here.\n"
+        "#\n"
+        "# This file may only shrink. Adding a line means a new upward dependency\n"
+        "# was introduced, which is exactly what the check exists to prevent.\n"
+        "#\n"
+        "# Format: <including project>/<including file> -> <included header>\n"
+        "#\n"
+        "# Regenerate with: python3 tools/check_layering.py --update\n\n"
+    )
+    ALLOWLIST_PATH.write_text(header + "\n".join(sorted(entries)) + "\n", encoding="utf-8")
+
+
+def find_violations(header_index: dict[str, str]) -> list[str]:
+    violations: list[str] = []
+    for project in sorted(DIRECT_DEPENDENCIES):
+        permitted = allowed_dependencies(project)
+        for path in sorted((REPO_ROOT / project).iterdir()):
+            if path.suffix not in SOURCE_SUFFIXES:
+                continue
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for included in INCLUDE_RE.findall(text):
+                name = Path(included).name
+                owner = header_index.get(name)
+                if owner is not None and owner not in permitted:
+                    violations.append(f"{project}/{path.name} -> {name}")
+    return violations
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="rewrite the allowlist from the current tree instead of checking",
+    )
+    args = parser.parse_args()
+
+    violations = set(find_violations(build_header_index()))
+
+    if args.update:
+        write_allowlist(violations)
+        print(f"wrote {len(violations)} entries to {ALLOWLIST_PATH.relative_to(REPO_ROOT)}")
+        return 0
+
+    allowlist = load_allowlist()
+
+    new = sorted(violations - allowlist)
+    if new:
+        print("New layering violations (an include reaching into a higher layer):\n")
+        for entry in new:
+            print(f"  {entry}")
+        print(
+            "\nMove the shared declaration down into a layer both sides may see, or"
+            "\ninvert the dependency with an interface. Do not add these to"
+            f"\n{ALLOWLIST_PATH.relative_to(REPO_ROOT)} — that file may only shrink."
+        )
+        return 1
+
+    fixed = sorted(allowlist - violations)
+    if fixed:
+        print("These allowlisted violations no longer exist. Please remove them:\n")
+        for entry in fixed:
+            print(f"  {entry}")
+        print("\n  python3 tools/check_layering.py --update")
+        return 1
+
+    print(f"Layering OK ({len(allowlist)} known violations still allowlisted).")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
