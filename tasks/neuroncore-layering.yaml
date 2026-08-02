@@ -232,6 +232,14 @@ tasks:
       NETWORKUPDATE_BYTESTREAMSIZE is untouched at 42 and no serialisation code
       changed, so the wire layout is identical.
 
+      TeamControls did not move cleanly. Its data and flags encoding are core —
+      that is what the wire carries — but Advance() polls g_app->m_camera,
+      g_app->m_userInput, g_inputManager and the control-help system. That is
+      client input-gathering and cannot live in the foundation, so the class is
+      split: the struct, constructor, GetFlags, SetFlags, Clear and ClearFlags in
+      NeuronCore; Advance() defined in Species/Team.cpp with the declaration
+      annotated to say why. CI found this, not review.
+
       No new id types were needed. If the protocol later wants stronger typing
       than bare ints that is a separate design task, not a prerequisite for the
       split.

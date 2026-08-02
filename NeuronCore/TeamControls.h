@@ -15,6 +15,9 @@ class TeamControls
     unsigned short GetFlags() const;
     void SetFlags(unsigned short _flags);
     void ClearFlags();
+    // Defined in Species, not here: populating these fields means reading the
+    // camera, mouse and input manager. Only the data and its flags encoding
+    // are core, because that is what goes on the wire.
     void Advance();
     void Clear();
 
