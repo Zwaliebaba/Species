@@ -12,6 +12,7 @@ linked documents; this file is the map.
 | How the layers fit together | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | How to write code that fits | [`CODING_STANDARDS.md`](CODING_STANDARDS.md) |
 | How work is broken down | [`docs/TASK_DAG.md`](docs/TASK_DAG.md) |
+| What a Spirit / Officer / Trunk Port *is* | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
 
 ---
 
@@ -83,7 +84,7 @@ Server/           ~0      Server executable. A stub — WinMain only.
 
 tools/                    The checks CI runs. Run them locally too.
 tasks/                    Task DAGs. See docs/TASK_DAG.md.
-docs/                     Architecture, build, task breakdown standard.
+docs/                     Architecture, build, glossary, task breakdown standard.
 ```
 
 `NeuronServer` and `Server` being empty is not an oversight — the server has not

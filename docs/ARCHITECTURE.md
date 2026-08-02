@@ -173,6 +173,9 @@ produce an executable that starts and then fails to find any asset.
 
 ## Where to look
 
+If a type name means nothing to you — `Spirit`, `TrunkPort`, `Incubator` —
+[`GLOSSARY.md`](GLOSSARY.md) defines it.
+
 | Concern | Start at |
 |---|---|
 | Frame loop, timing, prediction | `Species/Main.cpp` |

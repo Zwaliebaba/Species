@@ -342,7 +342,9 @@ file at stage *n* is fully at stage *n* before it advances.
 ### Converting a file
 
 1. Read it first. Darwinia code has non-obvious invariants, especially around
-   `LList` ownership semantics and the fixed-size buffers in the netcode.
+   `LList` ownership semantics and the fixed-size buffers in the netcode. If the
+   domain terms are unfamiliar, [`docs/GLOSSARY.md`](docs/GLOSSARY.md) defines
+   them — converting code you cannot read is how invariants get lost.
    If the file is simulation code, re-read [Determinism](#determinism) — the
    conversion must not change iteration order, arithmetic grouping, or the
    sequence of `darwiniaRandom()` calls.

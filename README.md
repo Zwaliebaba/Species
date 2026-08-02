@@ -46,6 +46,7 @@ rules, and what to run before pushing. Then:
 - [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — style, and the modernisation plan
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the layers fit together
 - [`docs/TASK_DAG.md`](docs/TASK_DAG.md) — how work is broken down
+- [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — the game's domain vocabulary
 
 Before pushing:
 
