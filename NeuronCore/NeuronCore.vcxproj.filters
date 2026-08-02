@@ -19,9 +19,6 @@
     <ClCompile Include="HiResTime.cpp" />
     <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="Profiler.cpp" />
-    <ClCompile Include="ClientToServer.cpp">
-      <Filter>Network</Filter>
-    </ClCompile>
     <ClCompile Include="Generic.cpp">
       <Filter>Network</Filter>
     </ClCompile>
@@ -87,9 +84,6 @@
     <ClInclude Include="Preferences.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="ByteStream.h">
-      <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="ClientToServer.h">
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="Generic.h">

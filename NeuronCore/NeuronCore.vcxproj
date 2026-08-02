@@ -30,7 +30,6 @@
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="Vector2.cpp" />
     <ClCompile Include="Vector3.cpp" />
-    <ClCompile Include="ClientToServer.cpp" />
     <ClCompile Include="FileSys.cpp" />
     <ClCompile Include="Generic.cpp" />
     <ClCompile Include="NetworkUpdate.cpp" />
@@ -71,7 +70,6 @@
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="ByteStream.h" />
-    <ClInclude Include="ClientToServer.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
     <ClInclude Include="Generic.h" />

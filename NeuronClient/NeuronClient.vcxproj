@@ -30,6 +30,7 @@
     <ClCompile Include="3dSprite.cpp" />
     <ClCompile Include="BinaryStreamReaders.cpp" />
     <ClCompile Include="Bitmap.cpp" />
+    <ClCompile Include="ClientToServer.cpp" />
     <ClCompile Include="ControlBindings.cpp" />
     <ClCompile Include="ControlTypes.cpp" />
     <ClCompile Include="DebugRender.cpp" />
@@ -102,6 +103,7 @@
     <ClInclude Include="3dSprite.h" />
     <ClInclude Include="BinaryStreamReaders.h" />
     <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="ClientToServer.h" />
     <ClInclude Include="ControlBindings.h" />
     <ClInclude Include="ControlTypes.h" />
     <ClInclude Include="ControlTypes.inc" />

@@ -402,12 +402,13 @@ tasks:
       - No NeuronCore/ClientToServer entries remain in the allowlist
       - Entries that are still violations were moved with check_layering.py --rename, not regenerated
       - NeuronClientTests still builds and passes with ClientToServer in the project
+      - ClientToServer includes no NeuronServer header, so the move does not create the one dependency the plan forbids
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
       Re-measured on 6eb17e4. With T12 done first — which is why the edge is
       there — this task's only remaining allowlist work is one entry:
@@ -418,6 +419,42 @@ tasks:
       NeuronCore's remaining violations" was true of 30, but T12 takes 11 of the
       14 that are left and this task takes the twelfth. It is still the move that
       lets NeuronCore stop knowing a client endpoint exists.
+
+      Done, and it played out exactly that way: one entry pruned,
+      ClientToServer.cpp -> Input.h, which stopped being a violation the moment
+      the file landed in the project that owns Input.h. 629 -> 628.
+
+      **tools/layering_allowlist.txt now contains no entry beginning NeuronCore/.**
+      That is the first of the four definition-of-done conditions in AGENTS.md,
+      met. The other three are T10's: the .vcxproj still lists NeuronClient,
+      Species and GameLogic on NeuronCore's include path, and Server.exe still
+      does nothing.
+
+      --prune, not --rename. The acceptance criterion says entries that are
+      still violations move with --rename; there were none. The one entry stopped
+      being a violation rather than moving, so pruning is what the tool is for
+      and the diff shows the removal.
+
+      One include had to go with the move, and it is the interesting part. The
+      file carried #include "Server.h" and never named Server — dead since T7
+      deleted the loopback. Left in place it would have become a
+      NeuronClient -> NeuronServer include the moment T9 moves the host, which is
+      the single direction this whole plan exists to forbid, and it could not
+      have been allowlisted away because the allowlist may only shrink. Checked
+      before removing rather than after, the T6 way: Server.h carries only
+      LList.h and DArray.h, ClientToServer.h includes LList.h itself, and DArray
+      appears nowhere in the file.
+
+      NeuronClient.vcxproj.filters had no Network filter — its categories were
+      Audio, Input and Canvas — so one was added to keep the endpoint grouped the
+      way it was in NeuronCore rather than dropping it loose at the root.
+
+      NeuronClientTests needed no change: it links NeuronClient.lib but names
+      nothing in ClientToServer, so the linker never pulls that object in. The
+      constructor opens sockets and starts a listen thread, which is why there is
+      no direct test of it here.
+
+      Not built: Linux. Four checks pass; x64 Debug CI is the verification.
 
   - id: T9
     title: Move Server and ServerToClient into NeuronServer

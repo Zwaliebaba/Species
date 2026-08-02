@@ -15,8 +15,12 @@
 #include "Profiler.h"
 #include "Input.h"
 
+// Server.h was included here and never used — no Server appears in this file.
+// Left alone it would become a NeuronClient -> NeuronServer include the moment
+// T9 moves the host, which is the one direction the layering forbids outright.
+// Everything it carried transitively (LList, DArray) either comes from
+// ClientToServer.h or is unused here.
 #include "ProtocolLimits.h"
-#include "Server.h"
 #include "ClientToServer.h"
 #include "ServerToClientLetter.h"
 #include "Generic.h"
