@@ -785,6 +785,27 @@ tasks:
       checks are what ran here and the x64 Debug CI job is the build
       verification. Nothing here can tell you the game runs.
 
+      CI caught one thing the four checks could not, and it was worth having.
+      AliveCarriesTheTeamControlFlagsAsOneWord failed with "Expected:<-4.5>
+      Actual:<0>" — the build was green and 30 of 31 tests passed. The cause is
+      an aliasing nobody would guess from the header: NetworkUpdate::GetWorldPos
+      does not return a position field, it returns m_teamControls.m_mousePos, and
+      SetWorldPos assigns through it. The two are one storage location.
+
+      So SetTeamControls after SetWorldPos silently discards the position. The
+      test set a position and then the controls, and the position went to zero.
+      SendIAmAlive escapes this only because it passes _teamControls.m_mousePos
+      to SetWorldPos, making the first call redundant rather than wrong — which
+      also means the redundancy is load-bearing camouflage.
+
+      Fixed by building the packet in the order SendIAmAlive builds it, and a new
+      test — TheWorldPositionIsTheTeamControlsMousePosition — now pins the
+      aliasing directly, so it fails loudly if the storage is ever separated and
+      documents the trap where the next person will look for it.
+
+      Worth stating plainly: a test I wrote was wrong, not the code. That is the
+      argument for CI existing on a machine that cannot build.
+
       Formatting note: adding a member to ClientToServer.h reindented the
       following `public:` to `  public:`, because clang-format's affected-range
       expansion reaches the access specifier that closes the region. The file's

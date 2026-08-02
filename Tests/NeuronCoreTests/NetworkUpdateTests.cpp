@@ -45,8 +45,9 @@ namespace NeuronCoreTests
         _update.SetProgram(1);
         _update.SetLastProcessedId(1);
         _update.SetSync(1);
-        _update.SetWorldPos(Vector3(1.0f, 1.0f, 1.0f));
+        // Controls before position: SetTeamControls would otherwise overwrite it.
         _update.SetTeamControls(TeamControls());
+        _update.SetWorldPos(Vector3(1.0f, 1.0f, 1.0f));
       }
 
     public:
@@ -144,7 +145,11 @@ namespace NeuronCoreTests
         // SendIAmAlive is the highest-frequency packet — one per client per
         // IAMALIVE_PERIOD. TeamControls goes out through GetFlags, so the bit
         // assignment in TeamControls.cpp is part of the wire format.
+        //
+        // Built in the order SendIAmAlive builds it, which matters more than it
+        // looks — see TheWorldPositionIsTheTeamControlsMousePosition below.
         TeamControls controls;
+        controls.m_mousePos = Vector3(-4.5f, 0.0f, 4.5f);
         controls.m_unitMove = 1;
         controls.m_cameraEntityTracking = 1;
 
@@ -152,7 +157,7 @@ namespace NeuronCoreTests
         update.SetType(NetworkUpdate::Alive);
         update.SetLastSequenceId(9);
         update.SetTeamId(0);
-        update.SetWorldPos(Vector3(-4.5f, 0.0f, 4.5f));
+        update.SetWorldPos(controls.m_mousePos);
         update.SetTeamControls(controls);
         update.SetSync(200);
 
@@ -177,6 +182,29 @@ namespace NeuronCoreTests
         Assert::AreEqual(static_cast<int>(0x0001 | 0x0040), static_cast<int>(flags));
         Assert::AreEqual(static_cast<unsigned char>(200), sync);
         Assert::AreEqual(24, length);
+      }
+
+      TEST_METHOD(TheWorldPositionIsTheTeamControlsMousePosition)
+      {
+        // Not a separate field. Both GetWorldPos overloads return
+        // m_teamControls.m_mousePos, and SetWorldPos assigns through one of
+        // them — "Shared with m_teamControls", as NetworkUpdate.cpp puts it.
+        //
+        // The consequence is a trap: SetTeamControls after SetWorldPos discards
+        // the position, silently, because it copies the whole struct back over
+        // it. SendIAmAlive gets away with calling both because it passes
+        // _teamControls.m_mousePos to the first one. Any other caller ordering
+        // them that way sends a zero position and nothing says so.
+        //
+        // This test exists to make that fact fail loudly if the aliasing is
+        // ever removed, and to document it where the next person will look.
+        NetworkUpdate update;
+        update.SetWorldPos(Vector3(1.0f, 2.0f, 3.0f));
+        Assert::AreEqual(1.0f, update.m_teamControls.m_mousePos.x);
+
+        TeamControls empty;
+        update.SetTeamControls(empty);
+        Assert::AreEqual(0.0f, update.GetWorldPos().x);
       }
 
       TEST_METHOD(EveryClientPacketFitsTheFixedBuffer)
