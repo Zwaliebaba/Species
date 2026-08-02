@@ -155,6 +155,7 @@
     <ClCompile Include="TriTri.cpp" />
     <ClCompile Include="UserInfo.cpp" />
     <ClCompile Include="WindowManager.cpp" />
+    <ClCompile Include="AppCommands.cpp" />
     <ClCompile Include="AppState.cpp" />
     <ClCompile Include="WorldPointers.cpp" />
     <ClCompile Include="EclButton.cpp">
@@ -326,6 +327,7 @@
     <ClInclude Include="UserInfo.h" />
     <ClInclude Include="WindowManager.h" />
     <ClInclude Include="WindowManagerWin32.h" />
+    <ClInclude Include="AppCommands.h" />
     <ClInclude Include="AppState.h" />
     <ClInclude Include="WorldPointers.h" />
     <ClInclude Include="EclButton.h">

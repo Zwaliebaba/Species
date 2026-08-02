@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "MainMenus.h"
-#include "App.h"
 #include "GlobalWorld.h"
 #include "LanguageTable.h"
 #include "Preferences.h"
@@ -18,6 +17,7 @@
 #include "WindowManager.h"
 #include "WorldPointers.h"
 #include "AppState.h"
+#include "AppCommands.h"
 
 class WebsiteButton;
 
@@ -42,7 +42,7 @@ class SkipPrologueButton : public SpeciesButton
     }
 
     g_script->Skip();
-    g_app->LoadCampaign();
+    g_appCommands->LoadCampaign();
   }
 };
 
@@ -58,7 +58,7 @@ class PlayPrologueButton : public SpeciesButton
     }
 
     g_script->Skip();
-    g_app->LoadPrologue();
+    g_appCommands->LoadPrologue();
   }
 };
 
@@ -303,7 +303,7 @@ void LocationWindow::Create()
 
   GlobalLocation* loc = g_globalWorld->GetLocation(g_locationId);
 
-  if (g_app->HasBoughtGame())
+  if (g_appCommands->HasBoughtGame())
   {
     // Full game menu
 
@@ -373,7 +373,7 @@ void LocationWindow::Create()
   RegisterButton(options);
   m_buttonOrder.PutData(options);
 
-  if (g_app->HasBoughtGame() && g_gameMode == GameModePrologue)
+  if (g_appCommands->HasBoughtGame() && g_gameMode == GameModePrologue)
   {
     auto skip = new SkipPrologueWindowButton();
     skip->SetShortProperties(LANGUAGEPHRASE("dialog_skipprologue"), border, y += h, buttonW, buttonH);

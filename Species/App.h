@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AppCommands.h"
 #include "AppState.h"
 
 #include "RgbColour.h"
@@ -31,8 +32,7 @@ class BitmapRGBA;
 class GameMenu;
 
 
-
-class App
+class App : public AppCommands
 {
 public:
 	// Library Code Objects
@@ -72,22 +72,22 @@ public:
 	~App();
 
 
-    void    SetProfileName  ( char const *_profileName );
-    bool    LoadProfile     ();
+  void SetProfileName(char const* _profileName) override;
+  bool LoadProfile() override;
 
-    void    SetLanguage     ( char const *_language, bool _test );
+  void SetLanguage(char const* _language, bool _test) override;
 
-	bool	HasBoughtGame	();
+  bool HasBoughtGame() override;
 
-    void    LoadPrologue    ();
-    void    LoadCampaign    ();
+  void LoadPrologue() override;
+  void LoadCampaign() override;
 
-	static const char *GetProfileDirectory();
-	static const char *GetPreferencesPath();
-    static const char *GetScreenshotDirectory();
+  static const char* GetProfileDirectory();
+  char const* ProfileDirectory() override { return GetProfileDirectory(); }
+  static const char* GetPreferencesPath();
+  static const char* GetScreenshotDirectory();
 
-	void	UpdateDifficultyFromPreferences();
-
+  void UpdateDifficultyFromPreferences();
 };
 
 extern App *g_app;

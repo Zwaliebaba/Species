@@ -77,6 +77,7 @@ App::App()
     m_levelReset(false)
 {
   g_app = this;
+  g_appCommands = this;
 
   // Load resources
 

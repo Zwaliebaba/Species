@@ -3,10 +3,10 @@
 #include <map>
 
 #include "FilePaths.h"
-#include "App.h"
 #include "Preferences.h"
 #include "Resource.h"
 #include "TextStreamReaders.h"
+#include "AppCommands.h"
 
 using std::string;
 
@@ -72,9 +72,9 @@ const string & InputPrefs::GetUserPrefsPath()
 	static string path = "";
 
 	if ( path == "" ) {
-		path = App::GetProfileDirectory();
-		path.append( USER_INPUT_PREFS_FILE );
-	}
+    path = g_appCommands ? g_appCommands->ProfileDirectory() : "";
+    path.append(USER_INPUT_PREFS_FILE);
+  }
 
-	return path;
+  return path;
 }

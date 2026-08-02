@@ -8,13 +8,13 @@
 #include "PrefsOtherWindow.h"
 #include "DropDownMenu.h"
 
-#include "App.h"
 #include "Renderer.h"
 #include "Location.h"
 #include "LevelFile.h"
 #include "Water.h"
 #include "WorldPointers.h"
 #include "AppState.h"
+#include "AppCommands.h"
 
 class ApplyOtherButton : public SpeciesButton
 {
@@ -66,7 +66,7 @@ class ApplyOtherButton : public SpeciesButton
         if( stricmp( desiredLanguage, g_prefsManager->GetString( OTHER_LANGUAGE ) ) != 0 )
         {
             g_prefsManager->SetString( OTHER_LANGUAGE, desiredLanguage );
-            g_app->SetLanguage( desiredLanguage, false );
+            g_appCommands->SetLanguage( desiredLanguage, false );
 
 	        removeWindows = true;
 

@@ -203,7 +203,6 @@ GameLogic/Library.cpp -> Location.h
 GameLogic/Library.h -> GlobalWorld.h
 GameLogic/LightsWindow.cpp -> Location.h
 GameLogic/LightsWindow.cpp -> LocationEditor.h
-GameLogic/MainMenus.cpp -> App.h
 GameLogic/MainMenus.cpp -> GlobalWorld.h
 GameLogic/MainMenus.cpp -> Renderer.h
 GameLogic/MainMenus.cpp -> Script.h
@@ -228,7 +227,6 @@ GameLogic/PrefsGraphicsWindow.cpp -> Renderer.h
 GameLogic/PrefsGraphicsWindow.cpp -> Water.h
 GameLogic/PrefsKeybindingsWindow.cpp -> Renderer.h
 GameLogic/PrefsKeybindingsWindow.cpp -> TaskManagerInterfaceIcons.h
-GameLogic/PrefsOtherWindow.cpp -> App.h
 GameLogic/PrefsOtherWindow.cpp -> LevelFile.h
 GameLogic/PrefsOtherWindow.cpp -> Location.h
 GameLogic/PrefsOtherWindow.cpp -> Renderer.h
@@ -343,7 +341,6 @@ GameLogic/Tripod.cpp -> Location.h
 GameLogic/Tripod.cpp -> Renderer.h
 GameLogic/TrunkPort.cpp -> GlobalWorld.h
 GameLogic/UpgradePort.cpp -> GlobalWorld.h
-GameLogic/UserProfileWindow.cpp -> App.h
 GameLogic/UserProfileWindow.cpp -> Renderer.h
 GameLogic/Virii.cpp -> Camera.h
 GameLogic/Virii.cpp -> EntityGrid.h
@@ -367,7 +364,6 @@ GameLogic/Weapons.cpp -> Unit.h
 GameLogic/WorldObject.cpp -> Location.h
 NeuronClient/3dSprite.cpp -> Camera.h
 NeuronClient/DebugRender.cpp -> Camera.h
-NeuronClient/FilePaths.cpp -> App.h
 NeuronClient/Resource.cpp -> Location.h
 NeuronClient/Resource.cpp -> Renderer.h
 NeuronClient/SoundInstance.cpp -> Camera.h

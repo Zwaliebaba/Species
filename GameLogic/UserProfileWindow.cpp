@@ -7,11 +7,11 @@
 
 #include "Server.h"
 
-#include "App.h"
 #include "InputField.h"
 #include "Renderer.h"
 #include "WorldPointers.h"
 #include "AppState.h"
+#include "AppCommands.h"
 
 
 class LoadUserProfileButton : public SpeciesButton
@@ -20,8 +20,8 @@ public:
     char *m_profileName;
     void MouseUp()
     {
-        g_app->SetProfileName( m_profileName );
-        g_app->LoadProfile();
+        g_appCommands->SetProfileName( m_profileName );
+        g_appCommands->LoadProfile();
         EclRemoveWindow( m_parent->m_name );
         EclRemoveWindow( LANGUAGEPHRASE("dialog_mainmenu") );
     }
@@ -57,7 +57,7 @@ void UserProfileWindow::Render( bool hasFocus )
 void UserProfileWindow::Create()
 {
     char profileDir[256];
-    sprintf( profileDir, "%susers/*.*", g_app->GetProfileDirectory() );
+    sprintf(profileDir, "%susers/*.*", g_appCommands->ProfileDirectory());
     LList<char *> *profileList = ListSubDirectoryNames( profileDir );
     int numProfiles = profileList->Size();
 
@@ -132,8 +132,8 @@ class NewProfileButton : public SpeciesButton
     void MouseUp()
     {
         NewUserProfileWindow *parent = (NewUserProfileWindow *) m_parent;
-        g_app->SetProfileName( parent->s_profileName );
-        g_app->LoadProfile();
+        g_appCommands->SetProfileName( parent->s_profileName );
+        g_appCommands->LoadProfile();
         EclRemoveWindow( m_parent->m_name );
         EclRemoveWindow( LANGUAGEPHRASE("dialog_newprofile") );
         EclRemoveWindow( LANGUAGEPHRASE("dialog_mainmenu") );
