@@ -209,13 +209,15 @@ telling them apart before changing anything.
 `PreferredToolArchitecture` is taking effect, or build from a 64-bit developer
 prompt.
 
-*Intermittent, a different file each time, only in solution builds:* this is the
-PCH mapping failing under memory pressure, and it is a known local flake — see
-AGENTS.md, Known issues. It has been reproduced on an ARM64 host building x64,
-with no test projects in the solution, and forcing `PreferredToolArchitecture`
-does not change it. Reducing `/m` does not reliably help either. Re-run the
-build; it picks up where it left off and usually gets through. Do not treat it
-as a break in whichever file it happened to land on.
+*Intermittent, a different file each time:* the machine is short of memory. These
+PCHs are large and every `cl.exe` has to map one, so on a 16 GB machine with
+Visual Studio open — `devenv` alone holds around 1.7 GB, plus the ReSharper
+backend — a build can simply run out of room. Reducing `/m` does not reliably
+help; one `cl.exe` short of address space is enough. Close Visual Studio, or
+re-run: each pass gets further, and a project that failed inside a solution build
+usually succeeds when built on its own. Lingering MSBuild nodes make it worse, so
+add `/nr:false` if a dozen of them have accumulated. Do not treat it as a break
+in whichever file it happened to land on — see AGENTS.md, Known issues.
 
 **A test binary fails to link with an unresolved external in a library you did
 not touch.** The library reaches upward and the symbol lives in an executable

@@ -133,11 +133,7 @@ unsigned int SoundStreamDecoder::ReadWavData(signed short* _data, unsigned int _
   return _numSamples;
 }
 
-#ifdef _BIG_ENDIAN
-#define IS_BIG_ENDIAN 1
-#else
 #define IS_BIG_ENDIAN 0
-#endif
 
 unsigned int SoundStreamDecoder::Read(signed short* _data, unsigned int _numSamples)
 {

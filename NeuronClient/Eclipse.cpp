@@ -1,23 +1,7 @@
 #include "pch.h"
 #include "Random.h"
-
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <sys/time.h> 
-#include <unistd.h> 
-#include <string.h>
-#endif
-
-#include <stdio.h>
-#include <stdarg.h>
-#include <time.h>
-#include <stdlib.h>
-#include <assert.h>
-
 #include "Eclipse.h"
 #include "LList.h"
-#include "Debug.h"
 
 // ============================================================================
 
@@ -626,37 +610,7 @@ LList <EclWindow *> *EclGetWindows ()
 int EclGetAccurateTime ()
 {
 
-
-#ifdef WIN32
-
 	return GetTickCount ();
-
-#else
-
-	// Linux version
-
-	static bool initted = false; 
-	static struct timeval startTime; 
-	struct timeval tv; 
-  
-	if (!initted) { 
-		initted = true; 
-		gettimeofday(&startTime, NULL); 
-		return 0; 
-	} 
-
-	gettimeofday(&tv, NULL); 
-  
-	long diff_usec = tv.tv_usec - startTime.tv_usec; 
-	if (diff_usec < 0) { 
-		diff_usec += 1000000; 
-		tv.tv_sec --; 
-	} 
-	long diff_sec = tv.tv_sec - startTime.tv_sec; 
-
-	return 1000 * diff_sec + diff_usec / 1000; 
-
-#endif
 }
 
 int EclGetScreenW()

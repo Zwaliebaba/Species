@@ -76,29 +76,12 @@ using namespace Neuron;
 
 // === PICK ONE OF THESE TARGETS ===
 
-//#define TARGET_FULLGAME
-//#define TARGET_DEMOGAME
-//#define TARGET_PURITYCONTROL
-//#define TARGET_DEMO2
-//#define TARGET_DEBUG
-//#define TARGET_VISTA
-//#define TARGET_VISTA_DEMO2
-
-// === PICK ONE OF THESE TARGETS ===
-
 #define DEBUG_RENDER_ENABLED
 
 //#define USE_CRASHREPORTING
 
 #ifndef _OPENMP
 #define PROFILER_ENABLED
-#endif
-
-#ifdef TARGET_VISTA
-#define SPECIES_GAMETYPE "vista"
-#define LOCATION_EDITOR
-#define TARGET_OS_VISTA
-#define ATTRACTMODE_ENABLED
 #endif
 
 #ifdef TARGET_FULLGAME
@@ -112,24 +95,6 @@ using namespace Neuron;
 #define FRENCH
 #endif
 
-#ifdef TARGET_DEMOGAME
-#define SPECIES_GAMETYPE "demo"
-#define DEMOBUILD
-#endif
-
-#ifdef TARGET_DEMO2
-#define SPECIES_GAMETYPE "demo2"
-#define DEMOBUILD
-#define DEMO2
-#endif
-
-#ifdef TARGET_VISTA_DEMO2
-#define SPECIES_GAMETYPE "vista-demo2"
-#define DEMOBUILD
-#define DEMO2
-#define TARGET_OS_VISTA
-#endif
-
 #ifdef TARGET_PURITYCONTROL
 #define SPECIES_GAMETYPE "full"
 #define PURITY_CONTROL
@@ -139,22 +104,7 @@ using namespace Neuron;
 #define SPECIES_GAMETYPE "debug"
 #define LOCATION_EDITOR
 #define CHEATMENU_ENABLED
-//#define TEST_HARNESS_ENABLED
-//#define SCRIPT_TEST_ENABLED
-//#define TRACK_MEMORY_LEAKS
 #define D3D_DEBUG_INFO
-#endif
-
-//#define PROMOTIONAL_BUILD                         // Their company logo is shown on screen
-
-#if !defined(TARGET_DEBUG) &&       \
-    !defined(TARGET_FULLGAME) &&    \
-    !defined(TARGET_DEMOGAME) &&    \
-    !defined(TARGET_DEMO2) &&       \
-    !defined(TARGET_PURITYCONTROL) && \
-    !defined(TARGET_VISTA) && \
-    !defined(TARGET_VISTA_DEMO2 )
-#error "Unknown target, cannot determine game type"
 #endif
 
 #ifndef PROFILER_ENABLED

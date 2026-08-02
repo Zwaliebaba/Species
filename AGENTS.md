@@ -353,16 +353,24 @@ Real, currently true, and worth knowing before you trip over them:
   [`docs/TESTING.md`](docs/TESTING.md).
 - **`Species/TestHarness.cpp` is not part of it.** It is dead code behind
   `TEST_HARNESS_ENABLED`, and is a level-progression explorer rather than a test.
-- **C3859 / C1076 hits solution builds intermittently.** "Failed to create
+- **C3859 / C1076 is memory pressure, not a code fault.** "Failed to create
   virtual memory for PCH" / "compiler limit: internal heap limit reached",
-  landing on a different file each run — `NeuronClient` on one build, a single
-  `Server/WinMain.cpp` on the next, and neither on a third. Re-running picks up
-  where it left off and usually gets through. It reproduces on an ARM64 host
-  building x64 with no test projects present, so it is neither new nor caused by
-  the test projects, and it is not the 32-bit-host case
-  [`docs/BUILD.md`](docs/BUILD.md) describes — forcing
-  `PreferredToolArchitecture` does not change it. **This is the most likely
-  explanation for the unexplained ARM64 Debug failure recorded below.**
+  landing on a different file every run and on whichever project happens to be
+  compiling. These PCHs are large and each `cl.exe` has to map one; on a 16 GB
+  machine with Visual Studio open (`devenv` alone holds ~1.7 GB, plus the
+  ReSharper backend) there is not always room. Observed with ~1.8 GB free.
+  - It is **not** the 32-bit-host case [`docs/BUILD.md`](docs/BUILD.md)
+    describes. It reproduces on an ARM64 host building x64, forcing
+    `PreferredToolArchitecture` changes nothing, and it happens with no test
+    projects in the solution — so it is neither new nor caused by them.
+  - `/m:2` and `/m:1` do not reliably avoid it; a single `cl.exe` short of
+    address space is enough.
+  - **Close Visual Studio, or re-run the build.** Each pass gets further, and a
+    project that failed in a solution build usually succeeds when built alone.
+  - Lingering MSBuild nodes make it worse — node reuse leaves a dozen alive.
+    `/nr:false` if they accumulate.
+  - **This is the most likely explanation for the unexplained ARM64 Debug
+    failure recorded below.**
 - **Provenance is unresolved.** [`LICENSE`](LICENSE) states the project's terms —
   internal research, non-commercial, not for distribution — but those terms cover
   only this project's own contributions. The licence covering the original

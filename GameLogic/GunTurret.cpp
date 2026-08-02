@@ -301,11 +301,7 @@ bool GunTurret::Advance()
             return Building::Advance();
         }
         m_target = g_app->m_userInput->GetMousePos3d();
-
-#ifdef JAMES_FIX
-        primaryFire = g_controlBindings->ControlMouseEvent( ControlBindings::ControlUnitPrimaryFire, team->m_currentMouseStatus, team->m_mouseDeltas );
-        secondaryFire = g_controlBindings->ControlMouseEvent( ControlBindings::ControlUnitSecondaryFire, team->m_currentMouseStatus, team->m_mouseDeltas );
-#endif // JAMES_FIX
+      
         primaryFire = g_inputManager->controlEvent( ControlUnitPrimaryFireTarget ) || g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected );
         secondaryFire = g_inputManager->controlEvent( ControlUnitSecondaryFireTarget );
     }

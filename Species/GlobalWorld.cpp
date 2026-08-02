@@ -147,11 +147,6 @@ bool GlobalEventCondition::Evaluate()
   case NotInLocation:
     return (g_app->m_location == nullptr);
 
-#ifdef JAMES_FIX
-  case DebugKey:
-    return g_keys[KEY_0 + m_id];
-#endif // JAMES_FIX
-
   case NeverTrue:
     return false;
 
