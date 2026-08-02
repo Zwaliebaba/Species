@@ -538,9 +538,6 @@ float Camera::DistanceToBlockage(const Vector3& _dir, const float _maxDist)
 
 void Camera::AdvanceFreeMovementMode()
 {
-  if (g_app->m_renderer->m_renderingPoster)
-    return;
-
   UpdateEntityTrackingMode();
 
   // Check to see whether we should switch to entity tracking mode

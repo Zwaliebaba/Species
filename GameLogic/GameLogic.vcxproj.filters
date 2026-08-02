@@ -207,9 +207,6 @@
     <ClCompile Include="DebugMenu.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
-    <ClCompile Include="DemoEndWindow.cpp">
-      <Filter>Interface</Filter>
-    </ClCompile>
     <ClCompile Include="DropDownMenu.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
@@ -478,9 +475,6 @@
       <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="DebugMenu.h">
-      <Filter>Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="DemoEndWindow.h">
       <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="DropDownMenu.h">

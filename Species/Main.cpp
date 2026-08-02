@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "Main.h"
 #include "App.h"
-#include "Attract.h"
 #include "Camera.h"
 #include "ClientToServer.h"
 #include "ControlHelp.h"
@@ -261,9 +260,6 @@ bool HandleCommonConditions()
 
   if (g_app->m_requestQuit)
   {
-    if (g_app->m_gameMode == App::GameModePrologue)
-      g_app->SaveProfile(true, true);
-
     Finalise();
     exit(0);
   }
@@ -609,8 +605,6 @@ void LocationGameLoop()
     }
   }
 
-  g_app->SaveProfile(false, true);
-
   g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterLocation");
   g_app->m_soundSystem->TriggerOtherEvent(nullptr, "ExitLocation", SoundSourceBlueprint::TypeAmbience);
 
@@ -640,7 +634,6 @@ void LocationGameLoop()
 
   g_app->m_globalWorld->m_myTeamId = 255;
   g_app->m_globalWorld->EvaluateEvents();
-  g_app->SaveProfile(true, false);
 }
 
 void SwitchTaskManagerForX360Controller()

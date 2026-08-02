@@ -1,26 +1,21 @@
 #include "pch.h"
-#include "Preferences.h"
-#include "TextRenderer.h"
-#include "WindowManager.h"
-#include "Resource.h"
-#include "LanguageTable.h"
-#include "Win32EventHandler.h"
-
 #include "MainMenus.h"
-#include "PrefsScreenWindow.h"
+#include "App.h"
+#include "GlobalWorld.h"
+#include "LanguageTable.h"
+#include "Preferences.h"
 #include "PrefsGraphicsWindow.h"
-#include "PrefsSoundWindow.h"
 #include "PrefsKeybindingsWindow.h"
 #include "PrefsOtherWindow.h"
-#include "UserProfileWindow.h"
-#include "DemoEndWindow.h"
-
-#include "App.h"
+#include "PrefsScreenWindow.h"
+#include "PrefsSoundWindow.h"
 #include "Renderer.h"
-#include "GlobalWorld.h"
+#include "Resource.h"
 #include "Script.h"
-
-#include "Input.h"
+#include "TextRenderer.h"
+#include "UserProfileWindow.h"
+#include "Win32EventHandler.h"
+#include "WindowManager.h"
 
 class WebsiteButton;
 
@@ -244,18 +239,7 @@ class ExitLevelButton : public SpeciesButton
   {
     EclRemoveWindow(m_parent->m_name);
 
-    if (!g_app->HasBoughtGame())
-      EclRegisterWindow(new DemoEndWindow(1.0f, true));
-    else
-      g_app->m_requestedLocationId = -1;
-
-#ifdef	TARGET_OS_VISTA
-    g_app->m_saveThumbnail = true;
-#endif
-    if (g_app->m_gameMode != App::GameModeCampaign)
-    {
-      //g_app->m_atMainMenu = true;
-    }
+    g_app->m_requestedLocationId = -1;
   }
 };
 
@@ -413,12 +397,6 @@ class ResetLocationButton : public SpeciesButton
   {
     EclRemoveWindow(m_parent->m_name);
     EclRemoveWindow(LANGUAGEPHRASE("dialog_locationmenu"));
-
-#ifdef DEMO2
-    g_app->ResetLevel(true);
-#else
-    g_app->ResetLevel(g_app->m_gameMode == App::GameModePrologue);
-#endif
   }
 };
 

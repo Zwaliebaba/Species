@@ -248,7 +248,6 @@ void PrefsManager::CreateDefaultValues()
 	char line[1024];
 
     AddLine( "ServerAddress = 127.0.0.1" );
-    AddLine( "BypassNetwork = 1" );
     AddLine( "IAmAServer = 1" );
 
     AddLine( "\n" );
@@ -256,9 +255,6 @@ void PrefsManager::CreateDefaultValues()
     AddLine( "TextLanguage = unknown" );
 
     AddLine( "TextSpeed = 15" );
-
-	sprintf( line, "HelpEnabled = %d", GetDefaultHelpEnabled() );
-	AddLine( line );
 
     AddLine( "\n" );
 
@@ -278,12 +274,8 @@ void PrefsManager::CreateDefaultValues()
 
     AddLine( "\n" );
 
-    //AddLine( "ScreenWidth = 1024" );
-    //AddLine( "ScreenHeight = 768" );
-    AddLine( "ScreenWindowed = 0" );
+    AddLine( "ScreenWindowed = 1" );
     AddLine( "ScreenZDepth = 24" );
-    //AddLine( "ScreenColourDepth = 32" );
-    //AddLine( "ScreenRefresh = 60" );
 
     AddLine( "\n" );
 
@@ -303,33 +295,13 @@ void PrefsManager::CreateDefaultValues()
 
     AddLine( "\n" );
 
-#ifdef TARGET_OS_MACOSX
-    AddLine( "ControlMouseButtons = 1" );
-#else
     AddLine( "ControlMouseButtons = 3" );
-#endif
     AddLine( "ControlMethod = 1" );
 
-#if defined(TARGET_OS_LINUX) || defined(TARGET_OS_MACOSX)
-	AddLine( "RenderLandscapeMode = 2" );
-	AddLine( "ManuallyScaleTextures = 0" );
-#endif
-
-#ifdef DEMOBUILD
-    #ifndef DEMO2
-        AddLine( "StartMap = mine" );
-        AddLine( "RenderSpecialLighting = 0" );
-    #else
-        AddLine( "UserProfile = DemoUser" );
-        AddLine( "RenderSpecialLighting = 1" );
-        AddLine( "StartMap = launchpad" );
-    #endif
-#else
     AddLine( "BootLoader = firsttime" );
     AddLine( "UserProfile = NewUser" );
     AddLine( "RenderSpecialLighting = 0" );
 	AddLine( OTHER_DIFFICULTY " = 1" );
-#endif
 
 	// Override the defaults above with stuff from a default preferences file
 	if ( g_app && g_app->m_resource )
@@ -370,10 +342,6 @@ void PrefsManager::Load(char const *_filename)
         }
     	fclose(in);
     }
-
-#ifdef DEMOBUILD
-	AddLine( OTHER_DIFFICULTY " = 1", true );
-#endif
 }
 
 
