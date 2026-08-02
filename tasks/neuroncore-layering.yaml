@@ -46,6 +46,7 @@ tasks:
       - NeuronClient/NeuronClient.vcxproj
     acceptance:
       - The container headers live under NeuronCore/ and are listed in NeuronCore.vcxproj
+      - AutoVector.h still carries its Reliable Software copyright notice verbatim (see LICENSE)
       - NeuronCore/Server.h and NeuronCore/ClientToServer.h no longer appear in the allowlist for LList.h or DArray.h
       - No file needed its #include lines changed, since includes are resolved by basename
     verify:

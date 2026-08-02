@@ -203,6 +203,14 @@ saying `// copy the files` would not.
 Delete commented-out code. It is in git. The tree still carries large commented
 blocks from Darwinia; removing them is fair game when you are converting a file.
 
+**Never delete a copyright or licence notice.** Three files carry third-party
+terms — `NeuronClient/AutoVector.h`, `NeuronClient/MathUtils.cpp` and
+`NeuronClient/TriTri.cpp` — and two of them require their notice be retained. The
+notice travels with the code: if you move one of these files to another project,
+the header goes with it, and if you reformat one, the header survives verbatim.
+See [`LICENSE`](LICENSE). This applies to `AutoVector.h` in particular, which
+migration stage 1 moves into `NeuronCore`.
+
 ---
 
 ## Modernisation migration

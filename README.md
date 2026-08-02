@@ -56,8 +56,12 @@ python3 tools/check_task_dag.py
 python3 tools/check_format.py
 ```
 
-## Provenance
+## Licence
 
-Species derives from the Darwinia source by Introversion Software. The repository
-does not currently carry a `LICENSE` file; one should be added reflecting the
-terms the original source was made available under.
+**Internal research project. Not for commercial use, and not for distribution.**
+See [`LICENSE`](LICENSE).
+
+Species derives from the Darwinia source by Introversion Software. The terms in
+`LICENSE` cover this project's own contributions only — the licence covering the
+original source has not been established, so treat the provenance as unresolved
+rather than permissive.

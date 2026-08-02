@@ -1,0 +1,84 @@
+# Licence and use
+
+Copyright (c) 2026 Zwaliebaba (github.com/Zwaliebaba).
+
+**Species is an internal research project. It is not licensed for commercial
+use, and it is not an open-source project.**
+
+This file is a statement of the project's intended terms of use. It is not legal
+advice, and — importantly — it is not a complete account of the rights covering
+this repository. See "Provenance" below.
+
+---
+
+## Terms
+
+Subject to the limits in "Provenance", the project's own contributions — the
+`Neuron` engine code, the build and CI tooling under `tools/`, the documentation,
+and modifications made to the inherited code in this repository — are made
+available on these terms:
+
+**Permitted**
+
+- Use, study, modification and experimentation for private research, learning and
+  evaluation.
+- Making copies for those purposes.
+
+**Not permitted**
+
+- Commercial use of any kind. This includes sale, licensing, use in a product or
+  service offered for payment, use in advertising, and use in any activity
+  intended to generate revenue directly or indirectly.
+- Public distribution or redistribution of the source, of binaries built from it,
+  or of the game content in `GameData/`, in original or modified form.
+- Public hosting of a playable build, or operating a server accessible to people
+  outside the project.
+- Removing or altering any copyright, attribution or licence notice in this
+  repository.
+
+No warranty of any kind is given. The software is provided as-is, and the
+copyright holder accepts no liability arising from its use.
+
+---
+
+## Provenance
+
+**This repository is a derivative of the Darwinia source code by Introversion
+Software.** The great majority of the code here originates from that work.
+
+The terms above apply to this project's own contributions. **They cannot and do
+not grant any rights over the underlying Darwinia code**, which remains the
+copyright of its owners and is governed by whatever terms that source was made
+available under. Those terms have not been established for this repository, and
+no notice from the original authors is present in the tree.
+
+The practical consequence:
+
+- Keeping the project private and non-commercial — which is what these terms
+  describe — is the posture that avoids relying on rights nobody here has
+  confirmed.
+- **Public distribution, publishing binaries, or any commercial use would require
+  first establishing the licence covering the original source**, and would need
+  real legal review rather than a file like this one.
+
+If the upstream terms are established, record them here. Until then, treat the
+provenance as unresolved rather than permissive.
+
+---
+
+## Third-party components
+
+The following files came from third parties and carry their own terms, which
+survive independently of this file. None of them may have its notice stripped,
+including when a file is moved or modernised — see `CODING_STANDARDS.md`.
+
+| File | Origin | Terms |
+|---|---|---|
+| `NeuronClient/AutoVector.h` | Reliable Software, 2003 (relisoft.com) | Any use, commercial or non-commercial, granted **on the condition that the copyright notice is not removed**. |
+| `NeuronClient/MathUtils.cpp` (Mersenne Twister, MT19937) | Makoto Matsumoto and Takuji Nishimura, 1997–2002 | BSD 3-clause, reproduced in the file. Requires the copyright notice and disclaimer be retained in source and binary redistributions. |
+| `NeuronClient/TriTri.cpp` | Tomas Möller, 1997, *Journal of Graphics Tools* 2(2) | No explicit grant in the file. Terms unresolved — treat as all rights reserved. |
+
+`GameData/` contains game content — models, textures, sounds, level and script
+data — inherited with the original source. The provenance note above applies to
+it in full, and it is the part of the repository least likely to be covered by
+any source-code licence.

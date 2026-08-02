@@ -242,5 +242,10 @@ Real, currently true, and worth knowing before you trip over them:
 - **There is no test suite.** `Species/TestHarness.cpp` is dead code behind
   `TEST_HARNESS_ENABLED`, and is a level-progression explorer rather than a unit
   test framework.
-- **No `LICENSE` file.** Given the Darwinia provenance, the repository should
-  carry one. That is the owner's call, not an agent's.
+- **Provenance is unresolved.** [`LICENSE`](LICENSE) states the project's terms —
+  internal research, non-commercial, not for distribution — but those terms cover
+  only this project's own contributions. The licence covering the original
+  Darwinia source has never been established, so nothing here may be published,
+  redistributed or used commercially without settling that first. Three files
+  carry third-party notices that must never be stripped, including when moved or
+  modernised; they are listed in `LICENSE`.
