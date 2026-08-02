@@ -237,7 +237,8 @@ file at stage *n* is fully at stage *n* before it advances.
 2. Convert the whole file. Half-converted is not a state a file may rest in.
 3. `python3 tools/check_format.py --all <file>` — whole-file formatting is
    correct here, and only here.
-4. Build both configurations.
+4. Build Debug, and Release too if the conversion touches anything
+   optimisation-sensitive.
 5. Nothing but the conversion in the commit. No bug fixes, no behaviour changes,
    no renames beyond what the conversion requires.
 

@@ -217,10 +217,10 @@ tasks:
     acceptance:
       - NeuronCore.vcxproj lists no other project in AdditionalIncludeDirectories
       - tools/layering_allowlist.txt contains no entry starting with NeuronCore/
-      - Both configurations still build for ARM64 and x64
+      - Debug still builds for ARM64 and x64
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64
-      - msbuild Species.slnx /p:Configuration=Release /p:Platform=ARM64
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
     status: todo

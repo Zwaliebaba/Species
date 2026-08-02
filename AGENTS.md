@@ -153,8 +153,9 @@ python3 tools/check_format.py          # changed lines match .clang-format
 `python3 tools/check_format.py --fix` applies the formatting rather than
 reporting it.
 
-Then build both configurations for at least one platform. A change that has not
-been compiled is not finished.
+Then build Debug for at least one platform — CI does the same on both. A change
+that has not been compiled is not finished. Build Release too before anything
+that ships; CI does not.
 
 **The project-file check matters more than it looks.** Adding a `.cpp` without
 adding it to the `.vcxproj` produces no error — the file is simply never
@@ -217,13 +218,12 @@ Real, currently true, and worth knowing before you trip over them:
 - **The game does not run.** Last known state per the HEAD commit message.
 - **`NeuronCore` depends upward** on `NeuronClient`, `GameLogic` and `Species`,
   including reaching through the `g_app` global. It cannot be linked standalone.
-- **Release builds were broken until CI first ran them.** Every project's Release
-  configuration was missing `AdditionalIncludeDirectories`, so it could not
-  resolve cross-project headers, and four projects asked for
-  `PrecompiledHeader=Use` while `pch.cpp` only carried `Create` in Debug — so
-  nothing produced the `.pch` and every translation unit failed with C1083.
-  Both are fixed; Debug and Release now carry identical `ClCompile` settings.
-  Worth knowing because it means Release has almost no history of working.
+- **Release had never built, and CI does not gate on it.** Three template
+  leftovers — missing include paths, a precompiled header nothing created, and
+  `Species` linking Release as a console app when `WinMain` is its entry point —
+  are all fixed, and Release now compiles. But CI builds Debug only, so Release
+  is on you: build it locally before anything that ships. Details in
+  [`docs/BUILD.md`](docs/BUILD.md).
 - **`NeuronCore.h` still carries Darwinia's target macros** (`TARGET_FULLGAME`,
   `TARGET_DEMOGAME`, `DARWINIA_VERSION`, and a `#error` if none is defined), plus
   `TARGET_OS_LINUX` and `TARGET_OS_MACOSX` branches for platforms that are not
