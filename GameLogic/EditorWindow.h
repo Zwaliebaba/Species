@@ -3,13 +3,13 @@
 
 #ifdef LOCATION_EDITOR
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class MainEditWindow : public DarwiniaWindow
+class MainEditWindow : public SpeciesWindow
 {
 public:
-	DarwiniaWindow *m_currentEditWindow;
+	SpeciesWindow *m_currentEditWindow;
 
 	MainEditWindow( char const *name );
 

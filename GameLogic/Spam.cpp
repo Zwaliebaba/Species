@@ -499,7 +499,7 @@ void SpamInfection::AdvanceAttackingEntity()
             target->ChangeHealth( -999 );
         }
 
-        int numFlashes = 5 + darwiniaRandom() % 5;
+        int numFlashes = 5 + speciesRandom() % 5;
         for( int i = 0; i < numFlashes; ++i )
         {
             Vector3 vel( sfrand(15.0f), frand(15.0f), sfrand(15.0f) );
@@ -544,7 +544,7 @@ void SpamInfection::AdvanceAttackingSpirit()
         g_app->m_location->SpawnEntities( spirit->m_pos, 1, -1, entityType, 1, g_zeroVector, 0.0f, 200.0f );
         g_app->m_location->m_spirits.MarkNotUsed(m_spiritId);
 
-        int numFlashes = 5 + darwiniaRandom() % 5;
+        int numFlashes = 5 + speciesRandom() % 5;
         for( int i = 0; i < numFlashes; ++i )
         {
             Vector3 vel( sfrand(15.0f), frand(15.0f), sfrand(15.0f) );

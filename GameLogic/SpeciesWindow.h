@@ -1,23 +1,23 @@
 
 /*
  * ===============
- * DARWINIA WINDOW
+ * SPECIES WINDOW
  * ===============
  *
- * A basic window for use in Darwinia
+ * A basic window for use in Species
  *
  */
 
-#ifndef _included_darwiniawindow_h
-#define _included_darwiniawindow_h
+#ifndef _included_specieswindow_h
+#define _included_specieswindow_h
 
 #include "Eclipse.h"
 
-class DarwiniaButton;
+class SpeciesButton;
 
 
 
-class DarwiniaWindow : public EclWindow
+class SpeciesWindow : public EclWindow
 {
 public:
 	LList<EclButton *>	m_buttonOrder;
@@ -26,8 +26,8 @@ public:
     bool                m_skipUpdate;
 
 public:
-    DarwiniaWindow( char const *name );
-	~DarwiniaWindow();
+    SpeciesWindow( char const *name );
+	~SpeciesWindow();
 
     void Create();
     void Remove();
@@ -36,9 +36,9 @@ public:
 
     void CreateValueControl( char const *name, int dataType, void *value, int y, float change,
 							 float _lowBound, float _highBound,
-                             DarwiniaButton *callback=NULL, int x=-1, int w=-1 );
+                             SpeciesButton *callback=NULL, int x=-1, int w=-1 );
 
-    void CreateColourControl( char const *name, int *value, int y, DarwiniaButton *callback=NULL, int x=-1, int w=-1 );
+    void CreateColourControl( char const *name, int *value, int y, SpeciesButton *callback=NULL, int x=-1, int w=-1 );
 
     void RemoveValueControl( char *name );
 
@@ -53,7 +53,7 @@ public:
 	void SetCurrentButton( EclButton *button );
 };
 
-class DarwiniaButton : public EclButton
+class SpeciesButton : public EclButton
 {
 public:
     float   m_fontSize;
@@ -63,7 +63,7 @@ public:
 	bool	m_mouseHighlightMode;
 
 public:
-    DarwiniaButton();
+    SpeciesButton();
 
     void Render( int realX, int realY, bool highlighted, bool clicked );
 	virtual void SetShortProperties(char const *_name, int x, int y, int w=-1, int h=-1, char *_caption=NULL, char *_tooltip=NULL);
@@ -72,7 +72,7 @@ public:
 };
 
 
-class BorderlessButton : public DarwiniaButton
+class BorderlessButton : public SpeciesButton
 {
 public:
     BorderlessButton();
@@ -81,7 +81,7 @@ public:
 };
 
 
-class CloseButton : public DarwiniaButton
+class CloseButton : public SpeciesButton
 {
 public:
     bool m_iconised;
@@ -92,20 +92,20 @@ public:
 };
 
 
-class GameExitButton : public DarwiniaButton
+class GameExitButton : public SpeciesButton
 {
     void MouseUp();
 };
 
 
-class InvertedBox : public DarwiniaButton
+class InvertedBox : public SpeciesButton
 {
 public:
     void Render( int realX, int realY, bool highlighted, bool clicked );
 };
 
 
-class LabelButton : public DarwiniaButton
+class LabelButton : public SpeciesButton
 {
 public:
     void Render( int realX, int realY, bool highlighted, bool clicked );

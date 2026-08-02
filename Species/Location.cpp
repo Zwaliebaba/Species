@@ -106,7 +106,7 @@ Location::~Location()
 void Location::Init( char const *_missionFilename, char const *_mapFilename )
 {
     LoadLevel(_missionFilename, _mapFilename);
-    darwiniaSeedRandom( 1 );
+    speciesSeedRandom( 1 );
 
     InitLights();
     InitLandscape();

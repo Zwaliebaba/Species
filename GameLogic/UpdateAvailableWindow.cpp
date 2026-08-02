@@ -5,7 +5,7 @@
 #endif
 #include "WindowManager.h"
 
-class GetItNowButton : public DarwiniaButton {
+class GetItNowButton : public SpeciesButton {
 public:
     void MouseUp()
     {
@@ -37,7 +37,7 @@ void UpdateAvailableWindow::Create()
 
 	int const buttonWidth = 80;
 	int const buttonHeight = 18;
-	DarwiniaButton *button = new GetItNowButton();
+	SpeciesButton *button = new GetItNowButton();
     button->SetShortProperties( "Get It Now!", (m_w - buttonWidth)/2, m_h - 60, buttonWidth, buttonHeight );
     RegisterButton( button );
 }

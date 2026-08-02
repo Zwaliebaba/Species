@@ -1,11 +1,11 @@
 #ifndef _included_debugmenu_h
 #define _included_debugmenu_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 #include "App.h"
 
 
-class DebugMenu : public DarwiniaWindow
+class DebugMenu : public SpeciesWindow
 {
 public:
     DebugMenu( char *name );

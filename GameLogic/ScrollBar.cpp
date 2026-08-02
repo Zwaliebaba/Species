@@ -235,7 +235,7 @@ void ScrollBarButton::MouseDown()
 }
 
 ScrollChangeButton::ScrollChangeButton( ScrollBar *scrollbar, int amount )
-:   DarwiniaButton(),
+:   SpeciesButton(),
     m_scrollBar( scrollbar ),
     m_amount( amount )
 {

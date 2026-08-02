@@ -16,7 +16,7 @@
 
 
 
-class LoadUserProfileButton : public DarwiniaButton
+class LoadUserProfileButton : public SpeciesButton
 {
 public:
     char *m_profileName;
@@ -30,7 +30,7 @@ public:
 };
 
 
-class NewProfileWindowButton : public DarwiniaButton
+class NewProfileWindowButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -41,14 +41,14 @@ public:
 
 
 UserProfileWindow::UserProfileWindow()
-:   DarwiniaWindow(LANGUAGEPHRASE("dialog_profile"))
+:   SpeciesWindow(LANGUAGEPHRASE("dialog_profile"))
 {
 }
 
 
 void UserProfileWindow::Render( bool hasFocus )
 {
-    DarwiniaWindow::Render( hasFocus );
+    SpeciesWindow::Render( hasFocus );
 
     glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
     g_editorFont.DrawText2DCentre( m_x+m_w/2, m_y+GetMenuSize(30), GetMenuSize(12), LANGUAGEPHRASE("dialog_currentprofilename") );
@@ -68,7 +68,7 @@ void UserProfileWindow::Create()
 	SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
                  g_app->m_renderer->ScreenH()/2 - m_h/2 );
 
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     //
     // New profile
@@ -129,7 +129,7 @@ void UserProfileWindow::Create()
 // ============================================================================
 
 
-class NewProfileButton : public DarwiniaButton
+class NewProfileButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -147,7 +147,7 @@ char NewUserProfileWindow::s_profileName[256] = "NewUser";
 
 
 NewUserProfileWindow::NewUserProfileWindow()
-:   DarwiniaWindow( LANGUAGEPHRASE("dialog_newprofile") )
+:   SpeciesWindow( LANGUAGEPHRASE("dialog_newprofile") )
 {
 }
 
@@ -158,7 +158,7 @@ void NewUserProfileWindow::Create()
 	SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
                  g_app->m_renderer->ScreenH()/2 - m_h/2 );
 
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     InvertedBox *box = new InvertedBox();
     box->SetShortProperties( "box", 10, GetMenuSize(30), m_w-20, GetMenuSize(40) );

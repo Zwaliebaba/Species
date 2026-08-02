@@ -33,9 +33,9 @@ GameMenuButton::GameMenuButton(char const *_iconName)
 
 void GameMenuButton::Render( int realX, int realY, bool highlighted, bool clicked )
 {
-    //DarwiniaButton::Render( realX, realY, highlighted, clicked );
+    //SpeciesButton::Render( realX, realY, highlighted, clicked );
     if( !m_iconName ) return;
-    DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+    SpeciesWindow *parent = (SpeciesWindow *)m_parent;
 
     realX += 150;
     UpdateButtonHighlight();
@@ -156,17 +156,17 @@ public:
     }
 };
 
-class DarwiniaModeButton : public GameMenuButton
+class SpeciesModeButton : public GameMenuButton
 {
 public:
-    DarwiniaModeButton( char const *_iconName )
+    SpeciesModeButton( char const *_iconName )
     :   GameMenuButton( _iconName )
     {
     }
 
     void MouseUp()
     {
-        ((GameMenuWindow *) m_parent)->m_newPage = GameMenuWindow::PageDarwinia;
+        ((GameMenuWindow *) m_parent)->m_newPage = GameMenuWindow::PageSpecies;
         /*if( g_app->m_multiwinia )
         {
             delete g_app->m_multiwinia;
@@ -356,9 +356,9 @@ void GameMenu::CreateMapList()
 
 
 GameMenuWindow::GameMenuWindow()
-:   DarwiniaWindow("GameMenu"),
+:   SpeciesWindow("GameMenu"),
     m_currentPage(-1),
-    m_newPage(PageDarwinia)
+    m_newPage(PageSpecies)
 {
     int w = g_app->m_renderer->ScreenW();
     int h = g_app->m_renderer->ScreenH();
@@ -374,7 +374,7 @@ void GameMenuWindow::Create()
 
 void GameMenuWindow::Update()
 {
-    DarwiniaWindow::Update();
+    SpeciesWindow::Update();
     if( m_currentPage != m_newPage )
     {
         SetupNewPage( m_newPage );
@@ -388,7 +388,7 @@ void GameMenuWindow::Update()
 
 void GameMenuWindow::Render( bool _hasFocus )
 {
-    //DarwiniaWindow::Render( _hasFocus );
+    //SpeciesWindow::Render( _hasFocus );
     // render nothing but the buttons
     EclWindow::Render( _hasFocus );
 
@@ -412,7 +412,7 @@ void GameMenuWindow::SetupNewPage( int _page )
     switch( _page )
     {
         case PageMain:      SetupMainPage();                    break;
-        case PageDarwinia:  SetupDarwiniaPage();                break;
+        case PageSpecies:  SetupSpeciesPage();                break;
         /*case PageMultiwinia:SetupMultiwiniaPage();              break;
         case PageGameSetup: SetupMultiplayerPage( m_gameType ); break;
         case PageResearch:  SetupResearchPage();                break;*/
@@ -428,8 +428,8 @@ void GameMenuWindow::SetupMainPage()
     int h = 60;
     int w = 300;
 
-    //DarwiniaModeButton *dmb = new DarwiniaModeButton( "Icons/menu_darwinia.bmp" );
-    DarwiniaModeButton *dmb = new DarwiniaModeButton( "Darwinia" );
+    //SpeciesModeButton *dmb = new SpeciesModeButton( "Icons/menu_darwinia.bmp" );
+    SpeciesModeButton *dmb = new SpeciesModeButton( "Darwinia" );
     dmb->SetShortProperties("darwinia", x, y, w, h );
     RegisterButton( dmb );
     m_buttonOrder.PutData( dmb );
@@ -440,7 +440,7 @@ void GameMenuWindow::SetupMainPage()
     m_buttonOrder.PutData( quit );
 }
 
-void GameMenuWindow::SetupDarwiniaPage()
+void GameMenuWindow::SetupSpeciesPage()
 {
     int x, y, gap;
     GetDefaultPositions( &x, &y, &gap );
@@ -474,7 +474,7 @@ void GameMenuWindow::GetDefaultPositions(int *_x, int *_y, int *_gap)
     switch( m_newPage )
     {
         case PageMain:
-        case PageDarwinia:      *_y = float((h / 864.0f ) * 200.0f); *_gap = *_y;            break;
+        case PageSpecies:      *_y = float((h / 864.0f ) * 200.0f); *_gap = *_y;            break;
         case PageMultiwinia:    *_y = float((h / 864.0f ) * 200.0f); *_gap = *_y / 1.5f;     break;
         case PageGameSetup:
         case PageResearch:      *_y = float((h / 864.0f ) * 70.0f); *_gap = (h / 864 ) * 60; break;

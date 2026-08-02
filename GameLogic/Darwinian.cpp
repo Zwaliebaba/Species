@@ -796,7 +796,7 @@ bool Darwinian::AdvanceUnderControl()
     if( !task || !controller )
     {
         m_state = StateIdle;
-        int numFlashes = 5 + darwiniaRandom() % 5;
+        int numFlashes = 5 + speciesRandom() % 5;
         for( int i = 0; i < numFlashes; ++i )
         {
             Vector3 vel( sfrand(5.0f), frand(15.0f), sfrand(5.0f) );
@@ -1989,7 +1989,7 @@ void Darwinian::TakeControl( int _controllerId )
         m_state = StateUnderControl;
         m_ordersSet = false;
 
-        int numFlashes = 5 + darwiniaRandom() % 5;
+        int numFlashes = 5 + speciesRandom() % 5;
         for( int i = 0; i < numFlashes; ++i )
         {
             Vector3 vel( sfrand(5.0f), frand(15.0f), sfrand(5.0f) );

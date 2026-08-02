@@ -2,11 +2,11 @@
 #ifndef _included_cheatwindow_h
 #define _included_cheatwindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 
-class CheatWindow : public DarwiniaWindow
+class CheatWindow : public SpeciesWindow
 {
 public:
     CheatWindow( char const *_name );

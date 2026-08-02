@@ -260,7 +260,7 @@ void Tree::Generate()
         m_leafColourArray[3] = alpha;
     }
 
-    darwiniaSeedRandom( m_seed );
+    speciesSeedRandom( m_seed );
     m_branchDisplayListId = glGenLists(1);
     glNewList       ( m_branchDisplayListId, GL_COMPILE );
     glBegin         ( GL_QUADS );
@@ -274,7 +274,7 @@ void Tree::Generate()
     glEnd           ();
     glEndList       ();
 
-    darwiniaSeedRandom( m_seed );
+    speciesSeedRandom( m_seed );
     m_leafDisplayListId = glGenLists(1);
     glNewList       ( m_leafDisplayListId, GL_COMPILE );
 #ifdef USE_DIRECT3D

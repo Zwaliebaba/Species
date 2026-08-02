@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <!--
+    Imported automatically by every project in the tree, before the project body
+    is evaluated. Settings that must be identical across all six projects belong
+    here rather than being copy-pasted into each .vcxproj.
+  -->
+
+  <PropertyGroup>
+
+    <!--
+      Projects reference each other's headers relative to the repository root.
+      Anchoring on this file rather than $(SolutionDir) keeps a project buildable
+      on its own — `msbuild Species\Species.vcxproj` — which is how CI and most
+      agent workflows invoke it.
+    -->
+    <SpeciesRoot>$(MSBuildThisFileDirectory)</SpeciesRoot>
+
+  </PropertyGroup>
+
+</Project>

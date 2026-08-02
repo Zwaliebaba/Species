@@ -26,7 +26,7 @@
 // ****************************************************************************
 
 #ifdef PROFILER_ENABLED
-class ProfileButton : public DarwiniaButton
+class ProfileButton : public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -37,7 +37,7 @@ public:
 #endif // PROFILER_ENABLED
 
 
-class NetworkButton: public DarwiniaButton
+class NetworkButton: public SpeciesButton
 {
 public:
     void MouseUp()
@@ -48,7 +48,7 @@ public:
 
 
 #ifdef LOCATION_EDITOR
-class EditorButton : public DarwiniaButton
+class EditorButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -59,7 +59,7 @@ public:
 #endif // LOCATION_EDITOR
 
 
-class DebugCameraButton: public DarwiniaButton
+class DebugCameraButton: public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -69,7 +69,7 @@ public:
 };
 
 
-class FPSButton: public DarwiniaButton
+class FPSButton: public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -79,7 +79,7 @@ public:
 };
 
 
-class PrefsScreenButton: public DarwiniaButton
+class PrefsScreenButton: public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -92,7 +92,7 @@ public:
 };
 
 
-class PrefsGfxDetailButton: public DarwiniaButton
+class PrefsGfxDetailButton: public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -105,7 +105,7 @@ public:
 };
 
 
-class PrefsSoundButton : public DarwiniaButton
+class PrefsSoundButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -119,7 +119,7 @@ public:
 
 
 #ifdef CHEATMENU_ENABLED
-class CheatButton : public DarwiniaButton
+class CheatButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -135,7 +135,7 @@ public:
 // ****************************************************************************
 
 DebugMenu::DebugMenu( char *name )
-:   DarwiniaWindow( name )
+:   SpeciesWindow( name )
 {
 	m_x = 10;
 	m_y = 20;
@@ -151,12 +151,12 @@ void DebugMenu::Advance()
 
 void DebugMenu::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
     int pitch = 18;
 	int y = 5;
 
-	DarwiniaButton *button;
+	SpeciesButton *button;
 
 #ifdef PROFILER_ENABLED
 	button = new ProfileButton();
@@ -210,7 +210,7 @@ void DebugMenu::Render(bool hasFocus)
 {
 	Advance();
 
-	DarwiniaWindow::Render(hasFocus);
+	SpeciesWindow::Render(hasFocus);
 
 	EclButton *camDbgButton = GetButton("Dbg Cam (F2)");
 	DEBUG_ASSERT(camDbgButton);

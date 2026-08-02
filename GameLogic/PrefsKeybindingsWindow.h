@@ -4,13 +4,13 @@
 
 #include "AutoVector.h"
 #include "Input.h"
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 typedef auto_vector<InputDescription> InputDescList;
 
 
-class PrefsKeybindingsWindow : public DarwiniaWindow
+class PrefsKeybindingsWindow : public SpeciesWindow
 {
 public:
 	InputDescList m_bindings;

@@ -27,13 +27,13 @@
 // Buttons for Main Window
 //*****************************************************************************
 
-class NewAnimButton : public DarwiniaButton
+class NewAnimButton : public SpeciesButton
 {
 public:
     void MouseUp()
     {
 		CameraAnimation *anim = new CameraAnimation;
-		sprintf(anim->m_name, "CamAnim%d", darwiniaRandom() & 0x3ff);
+		sprintf(anim->m_name, "CamAnim%d", speciesRandom() & 0x3ff);
 		g_app->m_location->m_levelFile->m_cameraAnimations.PutData(anim);
 
 		CameraAnimMainEditWindow *parent = (CameraAnimMainEditWindow *)m_parent;
@@ -43,7 +43,7 @@ public:
 };
 
 
-class DeleteAnimButton : public DarwiniaButton
+class DeleteAnimButton : public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -66,7 +66,7 @@ public:
 };
 
 
-class SelectAnimButton : public DarwiniaButton
+class SelectAnimButton : public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -91,7 +91,7 @@ public:
 // ****************************************************************************
 
 CameraAnimMainEditWindow::CameraAnimMainEditWindow( char const *name )
-:	DarwiniaWindow(name)
+:	SpeciesWindow(name)
 {
 }
 
@@ -106,7 +106,7 @@ CameraAnimMainEditWindow::~CameraAnimMainEditWindow()
 
 void CameraAnimMainEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 	AddButtons();
 }
 
@@ -135,13 +135,13 @@ void CameraAnimMainEditWindow::AddButtons()
 		button->RegisterString(anim->m_name);
 		RegisterButton(button);
 
-		DarwiniaButton *delButton = new DeleteAnimButton();
+		SpeciesButton *delButton = new DeleteAnimButton();
 		delButton->SetShortProperties("Del", 170, height);
 		sprintf(delButton->m_name, "%s", anim->m_name);
 		RegisterButton(delButton);
 
 		sprintf(buttonName, "select:%s", anim->m_name);
-		DarwiniaButton *selectButton = new SelectAnimButton();
+		SpeciesButton *selectButton = new SelectAnimButton();
 		selectButton->SetShortProperties("Select", 210, height);
 		strcpy(selectButton->m_name, buttonName);
 		RegisterButton(selectButton);
@@ -164,7 +164,7 @@ void CameraAnimMainEditWindow::RemoveButtons()
 //*****************************************************************************
 
 
-class NewNodeButton : public DarwiniaButton
+class NewNodeButton : public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -181,17 +181,17 @@ public:
 		int halfSecond = (int)(g_gameTime * 2.0f) & 1;
 		if (parent->m_newNodeArmed && halfSecond)
 		{
-			DarwiniaButton::Render(x, y, true, false);
+			SpeciesButton::Render(x, y, true, false);
 		}
 		else
 		{
-			DarwiniaButton::Render(x, y, false, false);
+			SpeciesButton::Render(x, y, false, false);
 		}
 	}
 };
 
 
-class CamBeforeMountButton: public DarwiniaButton
+class CamBeforeMountButton: public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -216,7 +216,7 @@ public:
 };
 
 
-class StartPreviewButton : public DarwiniaButton
+class StartPreviewButton : public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -230,7 +230,7 @@ public:
 };
 
 
-class StopPreviewButton : public DarwiniaButton
+class StopPreviewButton : public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -240,17 +240,17 @@ public:
 };
 
 
-class SelectMountButton : public DarwiniaButton
+class SelectMountButton : public SpeciesButton
 {
 public:
 	void Render(int x, int y, bool _hasFocus, bool _clicked)
 	{
-		DarwiniaButton::Render(x, y, false, false);
+		SpeciesButton::Render(x, y, false, false);
 	}
 };
 
 
-class DeleteNodeButton : public DarwiniaButton
+class DeleteNodeButton : public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -282,7 +282,7 @@ public:
 // ****************************************************************************
 
 CameraAnimSecondaryEditWindow::CameraAnimSecondaryEditWindow(char *name, int _animId)
-:	DarwiniaWindow(name),
+:	SpeciesWindow(name),
 	m_animId(_animId),
 	m_newNodeArmed(false)
 {
@@ -301,7 +301,7 @@ CameraAnimSecondaryEditWindow::~CameraAnimSecondaryEditWindow()
 
 void CameraAnimSecondaryEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 	AddButtons();
 }
 
@@ -358,7 +358,7 @@ void CameraAnimSecondaryEditWindow::AddButtons()
 		    b->m_caption[0] = '\0';
 		    x += 100;
 
-		    DarwiniaButton *but;
+		    SpeciesButton *but;
 
 		    but = new SelectMountButton();
 		    but->SetShortProperties(node->m_mountName, x, height, 80);

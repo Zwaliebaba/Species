@@ -2,10 +2,10 @@
 #ifndef _included_prefsgraphicswindow_h
 #define _included_prefsgraphicswindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class PrefsGraphicsWindow : public DarwiniaWindow
+class PrefsGraphicsWindow : public SpeciesWindow
 {
 public:
     int     m_landscapeDetail;

@@ -4,7 +4,7 @@
 
 #ifdef LOCATION_EDITOR
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 
@@ -12,7 +12,7 @@
 // Class CameraMountEditWindow
 // ****************************************************************************
 
-class CameraMountEditWindow: public DarwiniaWindow
+class CameraMountEditWindow: public SpeciesWindow
 {
 public:
     CameraMountEditWindow( char const *name );

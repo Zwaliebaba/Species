@@ -201,7 +201,7 @@
     <ClCompile Include="CheatWindow.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
-    <ClCompile Include="DarwiniaWindow.cpp">
+    <ClCompile Include="SpeciesWindow.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="DebugMenu.cpp">
@@ -474,7 +474,7 @@
     <ClInclude Include="CheatWindow.h">
       <Filter>Interface</Filter>
     </ClInclude>
-    <ClInclude Include="DarwiniaWindow.h">
+    <ClInclude Include="SpeciesWindow.h">
       <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="DebugMenu.h">

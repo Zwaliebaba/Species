@@ -1,10 +1,10 @@
 #ifndef _included_demoendwindow_h
 #define _included_demoendwindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class DemoEndWindow : public DarwiniaWindow
+class DemoEndWindow : public SpeciesWindow
 {
 protected:
     float m_timer;

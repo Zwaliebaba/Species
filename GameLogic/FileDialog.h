@@ -13,13 +13,13 @@
 
 
 #include "DArray.h"
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 class ScrollBar;
 
 
 
-class FileDialog : public DarwiniaWindow
+class FileDialog : public SpeciesWindow
 {
 public:
     char    *m_path;

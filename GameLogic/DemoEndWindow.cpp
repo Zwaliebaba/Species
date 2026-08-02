@@ -14,7 +14,7 @@
 #include "DemoEndWindow.h"
 
 
-class BuyOnlineButton : public DarwiniaButton
+class BuyOnlineButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -91,7 +91,7 @@ class BuyOnlineButton : public DarwiniaButton
 };
 
 
-class ExitDemoButton : public DarwiniaButton
+class ExitDemoButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -165,7 +165,7 @@ class ExitDemoButton : public DarwiniaButton
 };
 
 
-class ReturnToGameButton : public DarwiniaButton
+class ReturnToGameButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -175,7 +175,7 @@ class ReturnToGameButton : public DarwiniaButton
 
 
 DemoEndWindow::DemoEndWindow( float _fadeInTime, bool _saveGame )
-:   DarwiniaWindow( "DemoEnd" ),
+:   SpeciesWindow( "DemoEnd" ),
     m_saveGame(_saveGame)
 {
     int screenW = g_app->m_renderer->ScreenW();

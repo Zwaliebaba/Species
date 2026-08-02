@@ -5,7 +5,7 @@
 #include "ReallyQuitWindow.h"
 
 ReallyQuitWindow::ReallyQuitWindow()
-	:   DarwiniaWindow(REALLYQUIT_WINDOWNAME)
+	:   SpeciesWindow(REALLYQUIT_WINDOWNAME)
 {
 	m_w = 160;
 	m_h = 90;
@@ -15,17 +15,17 @@ ReallyQuitWindow::ReallyQuitWindow()
 
 void ReallyQuitWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int y = 0, h = 30;
 
-    DarwiniaButton *exit = new GameExitButton();
+    SpeciesButton *exit = new GameExitButton();
     exit->SetShortProperties( "Leave Darwinia", 10, y+=h, m_w-20, 20 );
     exit->m_fontSize = 13;
     exit->m_centered = true;
     RegisterButton( exit );
 
-    DarwiniaButton *close = new CloseButton();
+    SpeciesButton *close = new CloseButton();
     close->SetShortProperties( "No. Play On!", 10, y+=h, m_w-20, 20 );
     close->m_fontSize = 13;
     close->m_centered = true;

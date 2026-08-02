@@ -2,9 +2,9 @@
 #define INCLUDED_MESSAGE_DIALOG_H
 
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
-class MessageDialog : public DarwiniaWindow
+class MessageDialog : public SpeciesWindow
 {
 protected:
 	char *m_messageLines[20];

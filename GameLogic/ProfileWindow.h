@@ -4,7 +4,7 @@
 #ifdef PROFILER_ENABLED
 
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 class ProfiledElement;
@@ -14,7 +14,7 @@ class ProfiledElement;
 // Class ProfileWindow
 //*****************************************************************************
 
-class ProfileWindow : public DarwiniaWindow
+class ProfileWindow : public SpeciesWindow
 {
 protected:
 	int		m_yPos;

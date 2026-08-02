@@ -206,7 +206,7 @@ void LocationEditor::CreateEditWindowForMode(int _mode)
 		mainWin->m_currentEditWindow = NULL;
 	}
 
-	DarwiniaWindow *window = NULL;
+	SpeciesWindow *window = NULL;
 	switch(_mode)
 	{
 		case LocationEditor::ModeLandTile:
@@ -233,7 +233,7 @@ void LocationEditor::CreateEditWindowForMode(int _mode)
 			{
 				window = new CameraMountEditWindow(LANGUAGEPHRASE("editor_cameramounts"));
 				window->m_w = 320;
-//				DarwiniaWindow *otherWin = new CameraAnimMainEditWindow(LANGUAGEPHRASE("editor_cameraanims"));
+//				SpeciesWindow *otherWin = new CameraAnimMainEditWindow(LANGUAGEPHRASE("editor_cameraanims"));
 //				otherWin->m_w = 270;
 //				otherWin->m_h = 100;
 //				otherWin->m_x = 340;

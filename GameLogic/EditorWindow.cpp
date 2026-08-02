@@ -94,7 +94,7 @@ public:
 // ****************************************************************************
 
 MainEditWindow::MainEditWindow( char const *name )
-:	DarwiniaWindow(name),
+:	SpeciesWindow(name),
 	m_currentEditWindow(NULL)
 {
 }

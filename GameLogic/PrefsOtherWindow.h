@@ -2,10 +2,10 @@
 #ifndef _included_prefsotherwindow_h
 #define _included_prefsotherwindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class PrefsOtherWindow : public DarwiniaWindow
+class PrefsOtherWindow : public SpeciesWindow
 {
 public:
     int     m_helpEnabled;

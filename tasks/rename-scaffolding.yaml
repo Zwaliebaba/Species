@@ -1,0 +1,236 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: rename-scaffolding
+title: Rename the Darwinia-named scaffolding that has no content coupling
+phase: 2
+summary: >
+  550+ identifiers still carry Darwinia naming. This plan renames only the group
+  that is safe to rename: UI base classes and build macros whose names appear
+  nowhere in GameData/. Entity and domain names — Darwinian above all — are
+  deliberately excluded, because level files name entity types as strings and
+  shapes, sprites and sounds resolve by filename at runtime. A missed reference
+  there fails silently at load, and the game does not currently run to catch it.
+
+  The policy, including the check to run before renaming anything, is in
+  CODING_STANDARDS.md under "Renaming away from Darwinia".
+
+  Counts were measured when the plan was written. Re-measure with
+  `grep -rho "\bDarwiniaWindow\b" --include=*.cpp --include=*.h . | wc -l`
+  rather than trusting them.
+
+tasks:
+  # ---------------------------------------------------------------------------
+  # Wave 1: the two independent renames. Different files, so they can run
+  # concurrently — though both touch GameLogic.vcxproj, so sequence the project
+  # file edits or expect a trivial conflict there.
+  # ---------------------------------------------------------------------------
+
+  - id: T1
+    title: Rename DarwiniaWindow to SpeciesWindow
+    intent: >
+      DarwiniaWindow is the styled Eclipse window base class every in-game window
+      derives from. It is pure UI scaffolding with no asset coupling, and it is
+      the single largest block of inherited naming in the tree. Renaming it is
+      the visible half of moving the project's identity off Darwinia.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/DarwiniaWindow.h
+      - GameLogic/DarwiniaWindow.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+    acceptance:
+      - DarwiniaWindow.h/.cpp are renamed to SpeciesWindow.h/.cpp via git mv, preserving history
+      - All 213 occurrences across 62 files are updated, including #include lines
+      - grep -r "DarwiniaWindow" over *.cpp and *.h returns nothing
+      - grep -rl "SpeciesWindow" GameData/ returns nothing, confirming no content coupling was introduced
+      - Both project files list the new filenames
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: false
+    status: done
+    notes: >
+      parallel_safe lowered to false: T1 and T2 both list DarwiniaWindow.h/.cpp,
+      so despite sharing a wave they cannot be worked concurrently. Serialised.
+      msbuild cannot run on this machine (Linux), so the x64 Debug CI job was the
+      build verification — green on 69dc5df.
+
+      AboutDarwiniaWindow was folded in: code-only by the GameData test, and
+      leaving it would have half-converted MainMenus.cpp. Its two content strings
+      were left alone — LANGUAGEPHRASE("about_darwinia") is a live language key
+      and "Sprites/Darwinian.bmp" is a real asset.
+
+      Regression during execution: a `git checkout --` used to undo a test probe
+      restored the file from the index, which `git mv` had staged with pre-rename
+      content, reintroducing 21 DarwiniaWindow references. Caught by a tree-wide
+      grep and fixed in the T2 commit.
+
+  - id: T2
+    title: Rename DarwiniaButton and DarwiniaModeButton to Species*
+    intent: >
+      The button classes that pair with DarwiniaWindow. Same reasoning, and they
+      are declared in the same header, so leaving them behind would produce a
+      SpeciesWindow full of DarwiniaButtons.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/DarwiniaWindow.h
+      - GameLogic/DarwiniaWindow.cpp
+    acceptance:
+      - 178 DarwiniaButton and 6 DarwiniaModeButton occurrences are renamed
+      - grep -r "DarwiniaButton\|DarwiniaModeButton" over *.cpp and *.h returns nothing
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: false
+    status: done
+    notes: >
+      Serialised after T1 — same files. The header T1 renamed to SpeciesWindow.h
+      is where both button classes are declared. AboutDarwiniaButton was included
+      for the same reason AboutDarwiniaWindow was in T1: code-only by the
+      GameData test, and leaving it would half-convert MainMenus.cpp.
+      Verified by the x64 Debug CI job on 69dc5df.
+
+  # ---------------------------------------------------------------------------
+  # The macros. Originally placed in wave 2 behind T1 and T2; that edge was
+  # wrong and has been removed — see the note on T3.
+  # ---------------------------------------------------------------------------
+
+  - id: T3
+    title: Rename the DARWINIA_* macros to SPECIES_*
+    intent: >
+      DARWINIA_VERSION, _GAMETYPE, _PLATFORM, _EXE_VERSION, _VERSION_STRING,
+      _VERSION_PROFILER and _RAND_MAX. 30 occurrences, almost all in
+      NeuronCore.h. Some feed version strings the game displays, so check what
+      the rename surfaces in the UI rather than assuming it is invisible.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/NeuronCore.h
+      - NeuronClient/Random.h
+    acceptance:
+      - All DARWINIA_* macros are renamed to SPECIES_*
+      - grep -rE "\bDARWINIA_[A-Z_]+\b" over *.cpp and *.h returns nothing
+      - Any user-visible version or platform string that changes as a result is noted in the task notes
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: true
+    status: done
+    notes: >
+      Verified by the x64 Debug CI job on 69dc5df.
+
+      depends_on emptied. It originally listed [T1, T2], but the stated reason
+      for holding this task back was a future collision with migration stage 8 in
+      NeuronCore.h — nothing to do with T1 or T2, which touch GameLogic only.
+      docs/TASK_DAG.md is explicit that an edge means "cannot start until", not
+      "reads better after", so the edge was removed rather than worked around.
+      check_task_dag.py is what surfaced it, by refusing to let T3 be in_progress
+      behind two unfinished dependencies.
+
+      No user-visible string changes: the rename is value-preserving. SPECIES_VERSION
+      is still "1.5.11", so the version text drawn in PrefsOtherWindow.cpp is
+      unchanged, and the save-directory literals in App.cpp ("~/.darwinia/",
+      "Application Support/Darwinia") are lowercase string constants rather than
+      macros and were deliberately left alone — changing them would orphan existing
+      user data.
+
+  # ---------------------------------------------------------------------------
+  # Wave 3: record where the line now sits.
+  # ---------------------------------------------------------------------------
+
+  - id: T4
+    title: Update the docs to reflect what remains Darwinia-named
+    intent: >
+      Once the scaffolding is renamed, the counts in CODING_STANDARDS.md,
+      AGENTS.md and docs/GLOSSARY.md are wrong, and the remaining names are all
+      content-coupled ones. The docs should say that plainly, so the next person
+      does not have to re-derive which names are safe to touch.
+    depends_on: [T1, T2, T3]
+    files:
+      - CODING_STANDARDS.md
+      - AGENTS.md
+      - docs/GLOSSARY.md
+    acceptance:
+      - The scaffolding table in CODING_STANDARDS.md is replaced with a note that the rename is done
+      - Remaining Darwinia-named identifiers are re-counted and the new figure recorded
+      - The glossary's naming warning states that everything still named Darwinia is content-coupled
+    verify:
+      - python3 tools/check_task_dag.py
+    parallel_safe: true
+    status: done
+    notes: >
+      Re-counted with `\\b\\w*[Dd]arwini\\w*\\b` over *.cpp/*.h/*.inc: 421
+      occurrences, 31 distinct spellings. Classified by running the policy's own
+      GameData test per spelling.
+
+      The classification produced a refinement worth more than the counts. 101 of
+      the remaining occurrences pass the filename test but are derived from the
+      entity name — TypeDarwinian, FindDarwinian, numDarwinians. Entity::GetTypeId
+      matches level-file strings against a typeNames[] table holding the literal
+      "Darwinian", so renaming the enum without the string would half-convert the
+      concept. The policy is now two questions, not one.
+
+      Also found 50 occurrences that are scaffolding by this plan's own criterion
+      and were missed when it was written — darwiniaRandom and friends derive from
+      the game name, not the entity. Recorded as T5 rather than absorbed silently.
+
+  # ---------------------------------------------------------------------------
+  # Added during T4. The original plan missed these: they are derived from the
+  # game name rather than the entity, so they meet the plan's own criterion.
+  # ---------------------------------------------------------------------------
+
+  - id: T5
+    title: Rename the remaining game-name-derived identifiers
+    intent: >
+      T4's re-count found 50 occurrences that are scaffolding by this plan's own
+      definition but were not in the original list: darwiniaRandom (32),
+      darwiniaSeedRandom (9), PageDarwinia (5), SetupDarwiniaPage (3) and a dead
+      commented reference. They derive from the game name, not from the Darwinian
+      entity, and appear nowhere in GameData. Leaving them means the plan did not
+      finish what it set out to do.
+    project: NeuronClient
+    depends_on: [T4]
+    files:
+      - NeuronClient/Random.h
+      - NeuronClient/Random.cpp
+      - Species/GameMenu.cpp
+    acceptance:
+      - darwiniaRandom and darwiniaSeedRandom are renamed, matching SPECIES_RAND_MAX
+      - PageDarwinia and SetupDarwiniaPage are renamed
+      - No identifier derived from the game name remains; the 371 that remain are all entity-derived or content-named
+      - The RNG's behaviour is untouched — this is a pure identifier rename, and the call sequence is load-bearing for lockstep
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: true
+    status: done
+    notes: >
+      49 occurrences renamed across 26 files, not the estimated 50. The 50th was
+      menu_darwinia inside a commented-out line referencing Icons/menu_darwinia.bmp,
+      an asset that does not exist — dead code, left alone rather than folded into
+      a rename task.
+
+      Re-count afterwards: 372 occurrences remain and no game-name-derived
+      identifier is among them. The classification also exposed a counting error
+      in T4: `grep -rl Darwinia GameData/` matches files containing "Darwinian",
+      so Darwinia/darwinia were wrongly counted as content-named. With -w the
+      split is 241 named in GameData, 101 entity-derived, 30 game-name strings.
+      T4's figures are corrected in the docs.
+
+      The 30 game-name strings are a category the plan did not anticipate: the
+      "DARWINIA" title drawn on screen, the "~/.darwinia" and "Application Support/
+      Darwinia" user-data paths, and the "Darwinia" Win32 window class. None is an
+      identifier. Renaming them is a product and data-migration decision, not a
+      refactor — changing the paths orphans every existing save.
+
+      Naming: keeping the existing lowerCamel on speciesRandom/speciesSeedRandom
+      rather than converting to the PascalCase the standards specify. Random.cpp
+      is a legacy-style file, and mixing a style conversion into a rename is
+      exactly what CODING_STANDARDS.md forbids. The casing moves when the file is
+      converted.
+
+      darwiniaRandom is the simulation's single shared RNG. Renaming the
+      identifier is safe; changing where or how often it is called is not. See
+      CODING_STANDARDS.md, Determinism.

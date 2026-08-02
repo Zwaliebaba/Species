@@ -179,7 +179,7 @@ void LandscapeTile::GenerateDiamondMidpoint(int _x, int _z, int _halfSize)
 			newHeight *= 0.25f;
 			break;
 		case 1:
-			if (darwiniaRandom() & 1)
+			if (speciesRandom() & 1)
 			{
 				newHeight = m_heightMap->GetData(_x - _halfSize, _z) +
 							m_heightMap->GetData(_x + _halfSize, _z);
@@ -193,7 +193,7 @@ void LandscapeTile::GenerateDiamondMidpoint(int _x, int _z, int _halfSize)
 			break;
 		case 2:
 		{
-			int rnd = darwiniaRandom() & 0xffff;
+			int rnd = speciesRandom() & 0xffff;
 			if (rnd < 0x3fff)			newHeight = m_heightMap->GetData(_x - _halfSize, _z);
 			else if (rnd < 0x7fff)		newHeight = m_heightMap->GetData(_x + _halfSize, _z);
 			else if (rnd < 0xbfff)		newHeight = m_heightMap->GetData(_x, _z + _halfSize);
@@ -222,7 +222,7 @@ void LandscapeTile::GenerateSquareMidpoint(int _x, int _z, int _halfSize)
 			newHeight *= 0.25f;
 			break;
 		case 1:
-			if (darwiniaRandom() & 1)
+			if (speciesRandom() & 1)
 			{
 				newHeight = m_heightMap->GetData(_x - _halfSize, _z - _halfSize) +
 							m_heightMap->GetData(_x + _halfSize, _z + _halfSize);
@@ -236,7 +236,7 @@ void LandscapeTile::GenerateSquareMidpoint(int _x, int _z, int _halfSize)
 			break;
 		case 2:
 		{
-			int rnd = darwiniaRandom() & 0xffff;
+			int rnd = speciesRandom() & 0xffff;
 			if (rnd < 0x3fff)			newHeight = m_heightMap->GetData(_x - _halfSize, _z - _halfSize);
 			else if (rnd < 0x7fff)		newHeight = m_heightMap->GetData(_x - _halfSize, _z + _halfSize);
 			else if (rnd < 0xbfff)		newHeight = m_heightMap->GetData(_x + _halfSize, _z - _halfSize);
@@ -323,7 +323,7 @@ void LandscapeTile::Generate(LandscapeDef *_def)
 		int numIterations = GetPowerOfTwo(m_heightMap->GetNumColumns()) - numIterationsToSkip;
 		int stepSize = ((m_heightMap->GetNumColumns()) - 1 ) >> numIterationsToSkip;
 
-		darwiniaSeedRandom(m_randomSeed);
+		speciesSeedRandom(m_randomSeed);
 
 		for (int i = 0; i < numIterations; ++i)
 		{

@@ -24,7 +24,7 @@
 // Buttons for CameraMountEditWindow
 //*****************************************************************************
 
-class NewMountButton : public DarwiniaButton
+class NewMountButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -33,7 +33,7 @@ public:
 		mount->m_pos = g_app->m_camera->GetPos();
 		mount->m_front = g_app->m_camera->GetFront();
 		mount->m_up = g_app->m_camera->GetUp();
-		sprintf(mount->m_name, "blah%d", darwiniaRandom());
+		sprintf(mount->m_name, "blah%d", speciesRandom());
 
         g_app->m_location->m_levelFile->m_cameraMounts.PutDataAtEnd( mount );
 
@@ -44,7 +44,7 @@ public:
 };
 
 
-class GotoMountButton: public DarwiniaButton
+class GotoMountButton: public SpeciesButton
 {
 public:
 	char *m_mountName;
@@ -69,7 +69,7 @@ public:
 };
 
 
-class DeleteMountButton: public DarwiniaButton
+class DeleteMountButton: public SpeciesButton
 {
 public:
 	char *m_mountName;
@@ -99,7 +99,7 @@ public:
 };
 
 
-class UpdateMountButton: public DarwiniaButton
+class UpdateMountButton: public SpeciesButton
 {
 public:
 	char *m_mountName;
@@ -132,7 +132,7 @@ public:
 // ****************************************************************************
 
 CameraMountEditWindow::CameraMountEditWindow( char const *name )
-:	DarwiniaWindow(name)
+:	SpeciesWindow(name)
 {
 }
 
@@ -147,7 +147,7 @@ CameraMountEditWindow::~CameraMountEditWindow()
 
 void CameraMountEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int height = 5;
 	int pitch = 17;
@@ -172,19 +172,19 @@ void CameraMountEditWindow::Create()
 		RegisterButton(button);
 
 		sprintf(buttonName, "%s:%s", LANGUAGEPHRASE("dialog_delete"), mount->m_name);
-		DarwiniaButton *delButton = new DeleteMountButton(mount->m_name);
+		SpeciesButton *delButton = new DeleteMountButton(mount->m_name);
 		delButton->SetShortProperties(LANGUAGEPHRASE("editor_del"), 170, height);
 		strcpy(delButton->m_name, buttonName);
 		RegisterButton(delButton);
 
 		sprintf(buttonName, "%s:%s", LANGUAGEPHRASE("editor_goto"), mount->m_name);
-		DarwiniaButton *gotoButton = new GotoMountButton(mount->m_name);
+		SpeciesButton *gotoButton = new GotoMountButton(mount->m_name);
 		gotoButton->SetShortProperties(LANGUAGEPHRASE("editor_goto"), 210, height);
 		strcpy(gotoButton->m_name, buttonName);
 		RegisterButton(gotoButton);
 
 		sprintf(buttonName, "%s:%s", LANGUAGEPHRASE("editor_update"), mount->m_name);
-		DarwiniaButton *updateButton = new UpdateMountButton(mount->m_name);
+		SpeciesButton *updateButton = new UpdateMountButton(mount->m_name);
 		updateButton->SetShortProperties(LANGUAGEPHRASE("editor_update"), 256, height);
 		strcpy(updateButton->m_name, buttonName);
 		RegisterButton(updateButton);

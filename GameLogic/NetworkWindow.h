@@ -2,10 +2,10 @@
 #ifndef _included_networkwindow_h
 #define _included_networkwindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class NetworkWindow : public DarwiniaWindow
+class NetworkWindow : public SpeciesWindow
 {
 public:
     NetworkWindow( char const *name );

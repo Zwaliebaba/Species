@@ -8,7 +8,7 @@
 #include "Resource.h"
 #include "Input.h"
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 #include "InputField.h"
 
 #include "App.h"
@@ -21,11 +21,11 @@
 
 
 // ****************************************************************************
-// Class DarwiniaButton
+// Class SpeciesButton
 // ****************************************************************************
 
 
-DarwiniaButton::DarwiniaButton()
+SpeciesButton::SpeciesButton()
 :   EclButton(),
     m_fontSize(11.0f),
     m_centered(false),
@@ -35,7 +35,7 @@ DarwiniaButton::DarwiniaButton()
 {
 }
 
-void DarwiniaButton::SetShortProperties(char const *_name, int _x, int _y,
+void SpeciesButton::SetShortProperties(char const *_name, int _x, int _y,
 										 int _w, int _h, char *_caption, char *_tooltip)
 {
 	if ( _w == -1 )
@@ -51,14 +51,14 @@ void DarwiniaButton::SetShortProperties(char const *_name, int _x, int _y,
 	SetProperties((char *)_name, _x, _y, _w, _h, _caption, _tooltip);
 }
 
-void DarwiniaButton::SetDisabled( bool _disabled )
+void SpeciesButton::SetDisabled( bool _disabled )
 {
 	m_disabled = _disabled;
 }
 
 
 
-void DarwiniaButton::Render( int realX, int realY, bool highlighted, bool clicked )
+void SpeciesButton::Render( int realX, int realY, bool highlighted, bool clicked )
 {
 //    if      ( clicked )         glColor4f( 0.9f, 0.9f, 1.0f, 0.6f );
 //    else if ( highlighted )     glColor4f( 0.9f, 0.9f, 0.9f, 0.3f );
@@ -66,7 +66,7 @@ void DarwiniaButton::Render( int realX, int realY, bool highlighted, bool clicke
 
 	float y = 7.5 + realY + (m_h - m_fontSize) / 2;
 
-	DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+	SpeciesWindow *parent = (SpeciesWindow *)m_parent;
 
     UpdateButtonHighlight();
 
@@ -163,9 +163,9 @@ void DarwiniaButton::Render( int realX, int realY, bool highlighted, bool clicke
     EclButton::Render( realX, realY, highlighted, clicked );
 }
 
-void DarwiniaButton::UpdateButtonHighlight()
+void SpeciesButton::UpdateButtonHighlight()
 {
-    DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+    SpeciesWindow *parent = (SpeciesWindow *)m_parent;
 
 	if( parent->m_buttonChangedThisUpdate )
 	{
@@ -192,7 +192,7 @@ void DarwiniaButton::UpdateButtonHighlight()
 
 
 BorderlessButton::BorderlessButton()
-:   DarwiniaButton()
+:   SpeciesButton()
 {
 }
 
@@ -216,7 +216,7 @@ void BorderlessButton::SetShortProperties(char const *_name, int _x, int _y,
 
 void BorderlessButton::Render( int realX, int realY, bool highlighted, bool clicked )
 {
-	DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+	SpeciesWindow *parent = (SpeciesWindow *)m_parent;
 	if( parent->m_buttonOrder[parent->m_currentButton] == this )
 	{
 		clicked = true;
@@ -305,10 +305,10 @@ void BorderlessButton::Render( int realX, int realY, bool highlighted, bool clic
 
 
 // ****************************************************************************
-// Class DarwiniaWindow
+// Class SpeciesWindow
 // ****************************************************************************
 
-DarwiniaWindow::DarwiniaWindow( char const *name )
+SpeciesWindow::SpeciesWindow( char const *name )
 :   EclWindow((char *)name),
 	m_currentButton(0),
 	m_buttonChangedThisUpdate(false),
@@ -320,7 +320,7 @@ DarwiniaWindow::DarwiniaWindow( char const *name )
 	EclSetCurrentFocus( m_name );
 }
 
-DarwiniaWindow::~DarwiniaWindow()
+SpeciesWindow::~SpeciesWindow()
 {
 	LList<EclWindow *> *windows = EclGetWindows();
 	if( windows->GetData(0) )
@@ -330,9 +330,9 @@ DarwiniaWindow::~DarwiniaWindow()
 }
 
 
-void DarwiniaWindow::CreateValueControl( char const *name, int dataType, void *value, int y,
+void SpeciesWindow::CreateValueControl( char const *name, int dataType, void *value, int y,
 										  float change, float _lowBound, float _highBound,
-                                          DarwiniaButton *callback, int x, int w )
+                                          SpeciesButton *callback, int x, int w )
 {
     if( x == -1 ) x = 10;
     if( w == -1 ) w = m_w - x * 2;
@@ -380,7 +380,7 @@ void DarwiniaWindow::CreateValueControl( char const *name, int dataType, void *v
     }
 }
 
-void DarwiniaWindow::RemoveValueControl( char *name )
+void SpeciesWindow::RemoveValueControl( char *name )
 {
     RemoveButton( name );
 
@@ -393,7 +393,7 @@ void DarwiniaWindow::RemoveValueControl( char *name )
     RemoveButton( nameRight );
 }
 
-void DarwiniaWindow::CreateColourControl( char const *name, int *value, int y, DarwiniaButton *callback, int x, int w )
+void SpeciesWindow::CreateColourControl( char const *name, int *value, int y, SpeciesButton *callback, int x, int w )
 {
     if( x == -1 ) x = 10;
     if( w == -1 ) w = m_w - x;
@@ -405,7 +405,7 @@ void DarwiniaWindow::CreateColourControl( char const *name, int *value, int y, D
     RegisterButton( cw );
 }
 
-void DarwiniaWindow::Create()
+void SpeciesWindow::Create()
 {
 	CloseButton *close = new CloseButton();
     close->SetProperties( "Close", m_w - 12, 2, 10, 10, " ", "Close this window" );
@@ -414,7 +414,7 @@ void DarwiniaWindow::Create()
 }
 
 
-void DarwiniaWindow::Remove()
+void SpeciesWindow::Remove()
 {
     while( m_buttons.Size() > 0 )
     {
@@ -426,27 +426,27 @@ void DarwiniaWindow::Remove()
 }
 
 // Get the coordinates of the drawable area on the rectangle
-int DarwiniaWindow::GetClientRectX1()
+int SpeciesWindow::GetClientRectX1()
 {
 	return 2;
 }
 
-int DarwiniaWindow::GetClientRectX2()
+int SpeciesWindow::GetClientRectX2()
 {
 	return m_w - 2;
 }
 
-int DarwiniaWindow::GetClientRectY1()
+int SpeciesWindow::GetClientRectY1()
 {
 	return GetMenuSize(15) + 1;
 }
 
-int DarwiniaWindow::GetClientRectY2()
+int SpeciesWindow::GetClientRectY2()
 {
 	return m_h - 2;
 }
 
-void DarwiniaWindow::Render ( bool hasFocus )
+void SpeciesWindow::Render ( bool hasFocus )
 {
     //
     // Main body fill
@@ -546,7 +546,7 @@ void DarwiniaWindow::Render ( bool hasFocus )
     EclWindow::Render( hasFocus );
 }
 
-int DarwiniaWindow::GetMenuSize( int _value )
+int SpeciesWindow::GetMenuSize( int _value )
 {
 	if( g_app->m_largeMenus )
 	{
@@ -563,7 +563,7 @@ int DarwiniaWindow::GetMenuSize( int _value )
 	}
 }
 
-void DarwiniaWindow::SetMenuSize(int _w, int _h)
+void SpeciesWindow::SetMenuSize(int _w, int _h)
 {
 	if( g_app->m_largeMenus )
 	{
@@ -578,7 +578,7 @@ void DarwiniaWindow::SetMenuSize(int _w, int _h)
 	SetSize( _w, _h );
 }
 
-void DarwiniaWindow::Update()
+void SpeciesWindow::Update()
 {
 	m_buttonChangedThisUpdate = false;
     if( m_skipUpdate )
@@ -620,7 +620,7 @@ void DarwiniaWindow::Update()
 
 }
 
-void DarwiniaWindow::SetCurrentButton( EclButton *button )
+void SpeciesWindow::SetCurrentButton( EclButton *button )
 {
 	for( int i = 0; i < m_buttonOrder.Size(); ++i )
 	{
@@ -649,7 +649,7 @@ void GameExitButton::MouseUp()
 // ****************************************************************************
 
 CloseButton::CloseButton()
-:   DarwiniaButton(),
+:   SpeciesButton(),
     m_iconised(false)
 {
 }
@@ -693,7 +693,7 @@ void CloseButton::Render( int realX, int realY, bool highlighted, bool clicked )
     }
     else
     {
-        DarwiniaButton::Render( realX, realY, highlighted, clicked );
+        SpeciesButton::Render( realX, realY, highlighted, clicked );
     }
 }
 
@@ -704,7 +704,7 @@ void CloseButton::Render( int realX, int realY, bool highlighted, bool clicked )
 
 void InvertedBox::Render( int realX, int realY, bool highlighted, bool clicked )
 {
-    //DarwiniaButton::Render( realX, realY, highlighted, clicked );
+    //SpeciesButton::Render( realX, realY, highlighted, clicked );
 
     glColor4f( 0.05f, 0.0f, 0.0f, 0.4f );
     glBegin( GL_QUADS );

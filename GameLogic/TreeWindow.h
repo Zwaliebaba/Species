@@ -5,10 +5,10 @@
 #ifdef LOCATION_EDITOR
 
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class TreeWindow : public DarwiniaWindow
+class TreeWindow : public SpeciesWindow
 {
 public:
     int m_selectionId;

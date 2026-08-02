@@ -51,7 +51,7 @@ GlobalInternet::GlobalInternet()
     m_nearestNodeToCentre(-1),
     m_nearestDistance(FLT_MAX)
 {
-    darwiniaSeedRandom(1);
+    speciesSeedRandom(1);
     GenerateInternet();
 }
 
@@ -325,7 +325,7 @@ void GlobalInternet::TriggerPacket( unsigned short _nodeId, unsigned short _from
 
     while( true )
     {
-        int newLinkIndex = darwiniaRandom() % newNode->m_numLinks;
+        int newLinkIndex = speciesRandom() % newNode->m_numLinks;
         if( newNode->m_links[newLinkIndex] != _fromLinkId )
         {
             GlobalInternetLink *newLink = &m_links[ newNode->m_links[newLinkIndex] ];

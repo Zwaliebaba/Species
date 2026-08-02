@@ -2,10 +2,10 @@
 #ifndef _included_prefssoundwindow_h
 #define _included_prefssoundwindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class PrefsSoundWindow : public DarwiniaWindow
+class PrefsSoundWindow : public SpeciesWindow
 {
 public:
     int     m_soundLib;

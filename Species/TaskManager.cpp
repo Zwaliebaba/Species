@@ -160,7 +160,7 @@ WorldObjectId Task::Promote( WorldObjectId _id )
     //
     // Particle effect
 
-    int numFlashes = 5 + darwiniaRandom() % 5;
+    int numFlashes = 5 + speciesRandom() % 5;
     for( int i = 0; i < numFlashes; ++i )
     {
         Vector3 vel( sfrand(5.0f), frand(15.0f), sfrand(5.0f) );
@@ -195,7 +195,7 @@ WorldObjectId Task::Demote( WorldObjectId _id )
     //
     // Particle effect
 
-    int numFlashes = 5 + darwiniaRandom() % 5;
+    int numFlashes = 5 + speciesRandom() % 5;
     for( int i = 0; i < numFlashes; ++i )
     {
         Vector3 vel( sfrand(5.0f), frand(15.0f), sfrand(5.0f) );

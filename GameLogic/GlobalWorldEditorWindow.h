@@ -1,10 +1,10 @@
 #ifndef _included_globalworldeditorwindow_h
 #define _included_globalworldeditorwindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class GlobalWorldEditorWindow : public DarwiniaWindow
+class GlobalWorldEditorWindow : public SpeciesWindow
 {
 public:
     GlobalWorldEditorWindow();

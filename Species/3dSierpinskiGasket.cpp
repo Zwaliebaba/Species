@@ -25,7 +25,7 @@ Sierpinski3D::Sierpinski3D(unsigned int _numPoints)
 
 	for(unsigned int i = 0; i < m_numPoints; ++i)
 	{
-		switch( darwiniaRandom()%5 )
+		switch( speciesRandom()%5 )
 		{
 			case 0:
 				x = ( x+x1 ) / 2;

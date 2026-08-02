@@ -20,7 +20,7 @@
 // Class LightButton
 // ****************************************************************************
 
-class LightButton: public DarwiniaButton
+class LightButton: public SpeciesButton
 {
 public:
 	int m_lightNum;
@@ -44,17 +44,17 @@ public:
 	{
 		if (g_app->m_locationEditor->m_selectionId == m_lightNum)
 		{
-			DarwiniaButton::Render(realX, realY, highlighted, true);
+			SpeciesButton::Render(realX, realY, highlighted, true);
 		}
 		else
 		{
-			DarwiniaButton::Render(realX, realY, highlighted, clicked);
+			SpeciesButton::Render(realX, realY, highlighted, clicked);
 		}
 	}
 };
 
 
-class LightGammaButton : public DarwiniaButton
+class LightGammaButton : public SpeciesButton
 {
 public:
     int m_lightNum;
@@ -72,7 +72,7 @@ public:
 };
 
 
-class NewLightButton : public DarwiniaButton
+class NewLightButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -91,7 +91,7 @@ class NewLightButton : public DarwiniaButton
 // ****************************************************************************
 
 LightsEditWindow::LightsEditWindow( char const *name )
-:	DarwiniaWindow(name)
+:	SpeciesWindow(name)
 {
 }
 
@@ -104,7 +104,7 @@ LightsEditWindow::~LightsEditWindow()
 
 void LightsEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int height = 5;
 	int pitch = 17;
