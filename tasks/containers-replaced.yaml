@@ -25,7 +25,10 @@ summary: >
   FastDArray::PutData pops a freelist, which assign DIFFERENT indices after
   removals. T2 pins both sequences before T3 exists. LList order is
   insertion order and every conversion preserves traversal order.
-  std::unordered_* may hold caches and UI state, never simulation state.
+  std::unordered_* may hold caches and UI state; in simulation state only
+  through the sanctioned patterns in CODING_STANDARDS.md — lookup-only via
+  Neuron::LookupTable (T17), insertion-ordered iteration, or
+  sort-before-iterate.
 
   Characterisation limits, stated up front: the container templates
   themselves are fully testable in NeuronCoreTests (T1, T2). Per-file
@@ -120,6 +123,14 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
+    notes: >
+      Future-proofing decided with the owner (2026-08-02), recorded in
+      docs/ARCHITECTURE.md (runtime model): when the lockstep protocol is
+      eventually replaced, object identity moves from slot indices to
+      deterministically generated stable ids. None of that is built now —
+      but SlotMap's API is shaped as a narrow seam (handle in, reference
+      out; no caller performs raw index arithmetic) so that swap stays one
+      bounded change. Migration tasks T4-T13 hold callers to that surface.
     status: todo
 
   - id: T4
@@ -564,4 +575,36 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
+    status: todo
+
+  - id: T17
+    title: Add Neuron::LookupTable, the no-iteration hashed lookup
+    intent: >
+      CODING_STANDARDS.md sanctions hashed containers in simulation code
+      only when their order can never be observed. LookupTable wraps
+      std::unordered_map and exposes Insert, Erase, Find, Contains and
+      Size — no begin/end, no traversal of any kind — so "never iterated"
+      is a compile-time property instead of a review hope. Gives
+      simulation code O(1) lookup without opening the unordered-traversal
+      door; available to any migration task (T4-T13) whose profiling
+      justifies it.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/LookupTable.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/LookupTableTests.cpp
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj.filters
+    acceptance:
+      - LookupTable exposes no begin/end or any other way to observe element order; the header comment states why, citing CODING_STANDARDS.md
+      - Tests cover insert, find, erase, contains and size, including collision-prone keys
+      - CODING_STANDARDS.md's reference to this task resolves — the "until it lands" caveat there can be dropped in the same commit
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
     status: todo

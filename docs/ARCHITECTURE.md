@@ -171,6 +171,21 @@ precisely why extracting `NeuronCore` from the client matters: a real
 authoritative server cannot be written while the network layer depends on the
 renderer's containers and the game's entity types.
 
+**Recorded for that replacement, so it is not forgotten (owner, 2026-08-02):**
+when the protocol changes, object identity should stop being a slot index and
+become a deterministically generated stable object id — a counter incremented
+in sequenced creation order assigns identical ids on every client — resolved
+through a lookup table. Slot reuse means a stale `WorldObjectId` can silently
+alias whatever entity later occupies the slot; generated ids cannot alias, and
+they free the storage layer's container choice. This is deliberately **not**
+part of the modernisation plans: it changes the wire format and the entity
+update order, both frozen while behaviour must not change, and slot-index
+resolution is hot-path O(1) where a tree map is not. What the plans do now is
+keep the swap cheap: `Neuron::SlotMap` (`tasks/containers-replaced.yaml` T3)
+exposes a narrow handle-in/reference-out API so no caller does raw index
+arithmetic, leaving the eventual identity change one bounded edit rather than
+a tree-wide hunt.
+
 ---
 
 ## Content

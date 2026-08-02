@@ -281,6 +281,31 @@ semantics, not `std::vector`'s.
 iteration order **must not hold simulation state**. Order can differ between
 builds of the same source. They are fine for asset caches, editor state and UI.
 
+Three transformations make hashed containers legitimate in simulation code,
+because what desyncs is *observing the order*, not the container existing:
+
+1. **Lookup-only.** A table that is never traversed is deterministic —
+   `find`, `insert` and `erase` results do not depend on bucket order. Use
+   `Neuron::LookupTable`, a wrapper that exposes no iteration, so "never
+   traversed" is enforced by the compiler rather than by review. (Added by
+   `tasks/containers-replaced.yaml` T17; until it lands, a bare
+   `unordered_map` used lookup-only carries a comment saying it must never
+   be iterated.)
+2. **Insertion-ordered iteration.** Pair the hash table with a vector of
+   keys in insertion order and traverse the vector, looking up the table.
+   Insertions happen in sequenced order, so every client iterates
+   identically. Erase must preserve the vector's order — tombstone or
+   linear remove; swap-with-last reorders the traversal and desyncs.
+3. **Sort before iterating.** For infrequent traversals, snapshot the keys,
+   sort them, iterate the snapshot. Never on a hot path.
+
+What stays forbidden is relying on two machines' hash tables happening to
+iterate alike: the order is unspecified by contract, so a toolset update can
+desync clients silently, and cross-architecture behaviour is already
+unproven. At simulation sizes — hundreds of entities — a sorted
+`std::vector` or `std::map` often wins outright anyway; reach for these
+patterns when profiling says so, not by default.
+
 ### Rules for simulation code
 
 Simulation code is `GameLogic/`, plus the world, entity, team and physics code in
