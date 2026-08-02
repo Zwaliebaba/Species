@@ -186,8 +186,14 @@ def main() -> int:
         except subprocess.CalledProcessError:
             base = args.base
         targets = dict(changed_line_ranges(base))
-        renames = [tuple(r.split("=", 1)) for r in args.rename]
-        renames += declared_renames(base)
+        # Deduplicated: the same rename is often given on the command line *and*
+        # declared in a commit trailer. Applying it twice turns Foo into
+        # Bar::Bar::Foo when reversing, so nothing matches the base revision.
+        renames = list(
+            dict.fromkeys(
+                [tuple(r.split("=", 1)) for r in args.rename] + declared_renames(base)
+            )
+        )
         if renames:
             moved = renamed_paths(base)
             targets = {

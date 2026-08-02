@@ -77,38 +77,5 @@ public:
 //   over the network for "remote" control of units
 // ****************************************************************************
 
-class TeamControls {
-public:
-	TeamControls();
-
-	unsigned short GetFlags() const;
-	void SetFlags( unsigned short _flags );
-	void ClearFlags();
-	void Advance();
-	void Clear();
-
-public:
-
-	Vector3			m_mousePos;
-
-	// Be sure to update GetFlags, SetFlags, ZeroFlags if you change these flags
-	// Also, NetworkUpdate::GetByteStream and NetworkUpdate::ReadByteStream
-	// if you use more than 8 bits
-
-	unsigned int	m_unitMove : 1;
-	unsigned int	m_primaryFireTarget : 1;
-	unsigned int	m_secondaryFireTarget : 1;
-	unsigned int	m_primaryFireDirected : 1;
-	unsigned int	m_secondaryFireDirected : 1;
-	unsigned int	m_cameraEntityTracking : 1;
-	unsigned int	m_directUnitMove : 1;
-	unsigned int	m_unitSecondaryMode : 1;
-	unsigned int	m_endSetTarget : 1;
-
-	int				m_directUnitMoveDx;
-	int				m_directUnitMoveDy;
-    int             m_directUnitFireDx;
-    int             m_directUnitFireDy;
-};
 
 #endif

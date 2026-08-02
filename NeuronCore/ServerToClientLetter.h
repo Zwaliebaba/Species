@@ -2,7 +2,6 @@
 #define SERVER_TO_CLIENT_LETTER_H
 
 #include "Vector3.h"
-#include "WorldObject.h"
 #include "NetworkUpdate.h"
 
 

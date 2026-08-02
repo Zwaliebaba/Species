@@ -13,7 +13,7 @@ NetworkUpdate::NetworkUpdate()
     m_lastSequenceId(-1),
     m_radius(0.0f),
     m_teamId(255),
-    m_entityType(Entity::TypeInvalid),
+    m_entityType(EntityTypeInvalid),
     m_numTroops(0),
     m_unitId(0),
     m_buildingId(-1),

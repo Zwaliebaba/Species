@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="TeamControls.cpp" />
     <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Random.cpp" />
     <ClCompile Include="HiResTime.cpp" />
@@ -46,6 +47,7 @@
     <ClCompile Include="ServerToClientLetter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="TeamControls.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="Random.h" />
     <ClInclude Include="SortingHashTable.h" />

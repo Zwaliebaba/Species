@@ -78,7 +78,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
 
   - id: T2
     title: Move Vector3 and the maths utilities down into NeuronCore
@@ -107,7 +107,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
 
   - id: T3
     title: Move HiResTime down into NeuronCore
@@ -128,7 +128,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
 
   - id: T4
     title: Move Profiler down into NeuronCore
@@ -150,7 +150,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
 
   - id: T5
     title: Move the IP conversion helpers off Server and into Generic
@@ -177,7 +177,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
 
   # ---------------------------------------------------------------------------
   # Wave 2: sever the wire protocol from the game model. Needs the containers and
@@ -212,7 +212,29 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
+    notes: >
+      Far smaller than the intent assumed, and worth recording why. The protocol
+      did not reference Entity, Team or WorldObject as *types* at all — every id
+      it carries was already a plain int or unsigned char. Four of the five
+      includes were simply dead, left behind by earlier edits.
+
+      The one real dependency was TeamControls, which NetworkUpdate holds by
+      value and serialises through GetFlags/SetFlags. It is a mouse position, a
+      bitfield and a few deltas — a wire payload with no game-model dependency —
+      so it moved down into NeuronCore rather than being abstracted away.
+
+      The only other reference was Entity::TypeInvalid as a default. The protocol
+      now declares its own EntityTypeInvalid = 0 and treats the entity-type tag
+      as an opaque byte, which is what it always was on the wire. Entity.h's
+      TypeInvalid is 0, verified, so the value is unchanged.
+
+      NETWORKUPDATE_BYTESTREAMSIZE is untouched at 42 and no serialisation code
+      changed, so the wire layout is identical.
+
+      No new id types were needed. If the protocol later wants stronger typing
+      than bare ints that is a separate design task, not a prerequisite for the
+      split.
 
   # ---------------------------------------------------------------------------
   # Wave 3: the seam that makes the split possible at all.

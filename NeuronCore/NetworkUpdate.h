@@ -11,12 +11,16 @@
 #ifndef _included_networkupdate_h
 #define _included_networkupdate_h
 
+#include "TeamControls.h"
+
 #define NETWORKUPDATE_BYTESTREAMSIZE        42
 
-#include "WorldObject.h"
-#include "Entity.h"
+// The protocol carries the entity-type tag as an opaque byte. It deliberately
+// does not know GameLogic's Entity::Type enum — only that zero means "none".
+// GameLogic maps its enum onto this at the boundary, and the enum's TypeInvalid
+// is 0 to match.
+const unsigned char EntityTypeInvalid = 0;
 
-#include "Team.h"
 
 class NetworkUpdate
 {
