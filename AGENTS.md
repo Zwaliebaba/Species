@@ -63,7 +63,7 @@ This phase ends when **`NeuronCore` and `NeuronServer` link into a headless
 server that ticks without `NeuronClient`.** Concretely, all four of:
 
 1. `tools/layering_allowlist.txt` contains no entry beginning `NeuronCore/`
-   (30 today).
+   (14 today, down from 30).
 2. `NeuronCore.vcxproj` lists no other project in `AdditionalIncludeDirectories`.
 3. `Server.exe` links without `NeuronClient.lib` and advances sequence ids with
    no client attached.
@@ -72,7 +72,7 @@ server that ticks without `NeuronClient`.** Concretely, all four of:
 Every one of those is checkable, and none depends on the game client working.
 `tasks/neuroncore-layering.yaml` is the plan that gets there.
 
-Deliberately *not* the exit criterion: the full 663-entry allowlist (the
+Deliberately *not* the exit criterion: the full 644-entry allowlist (the
 `GameLogic` → `Species` cluster is 586 of them and blocks nothing here), and the
 client running. Both matter; neither gates the world server.
 
@@ -128,26 +128,28 @@ NeuronCore                   no dependencies
       Server   (exe)         -> GameLogic, NeuronServer, NeuronCore
 ```
 
-**Includes may only ever point downward.** The tree does not obey this yet: 663
+**Includes may only ever point downward.** The tree does not obey this yet: 644
 upward includes are recorded in `tools/layering_allowlist.txt`, inherited from
 Darwinia's single-binary layout.
 
 | From | Into | Count |
 |---|---|---|
-| GameLogic | Species | 586 |
-| NeuronClient | Species | 42 |
-| NeuronCore | NeuronClient | 11 |
-| NeuronCore | Species | 10 |
-| NeuronCore | GameLogic | 9 |
+| GameLogic | Species | 584 |
+| NeuronClient | Species | 41 |
+| NeuronCore | GameLogic | 6 |
 | NeuronClient | GameLogic | 5 |
+| NeuronCore | Species | 5 |
+| NeuronCore | NeuronClient | 3 |
 
 The check fails on any violation **not** already in that file. The allowlist may
 only ever shrink. If your change needs a new upward include, the design is wrong:
 move the shared declaration down into a layer both sides can see, or invert the
 dependency behind an interface.
 
-`tasks/neuroncore-layering.yaml` is the plan for eliminating the 30 `NeuronCore`
-entries, which unblocks a headless server build.
+`tasks/neuroncore-layering.yaml` is the plan for eliminating the `NeuronCore`
+entries, which unblocks a headless server build. Seven of its twelve tasks are
+done and the remaining fourteen entries are all accounted for: eleven belong to
+T12, two to T11 and one to T8.
 
 ---
 
@@ -330,6 +332,10 @@ Real, currently true, and worth knowing before you trip over them:
   **Capture the first `error C...` line and record it here either way.**
 - **`NeuronCore` depends upward** on `NeuronClient`, `GameLogic` and `Species`,
   including reaching through the `g_app` global. It cannot be linked standalone.
+  All fourteen remaining violations are now in three files — `ClientToServer.h`,
+  `ClientToServer.cpp` and one `Preferences.h` include in `Server.cpp` — and
+  every `g_app` reference left in the project is inside
+  `ClientToServer::ProcessServerUpdates`.
 - **Release had never built, and CI does not gate on it.** Three template
   leftovers — missing include paths, a precompiled header nothing created, and
   `Species` linking Release as a console app when `WinMain` is its entry point —

@@ -70,12 +70,14 @@ The foundation. Everything else may depend on it; it may depend on nothing.
 This is the layer furthest through modernisation: `FileSys`, `Debug` and
 `NeuronHelper` are fully Neuron-style, and `Server.cpp` is partly converted.
 
-It is also the layer with the most damaging violations. Thirty upward includes —
-into `NeuronClient` for containers and maths, into `GameLogic` for `Entity` and
-`WorldObject`, into `Species` for `App`, `Globals`, `Main` and `Team` — mean
-`NeuronCore` **cannot currently be linked without the game client**. That is the
-single largest structural obstacle to a headless server.
-`tasks/neuroncore-layering.yaml` is the plan to remove them.
+It is also the layer with the most damaging violations. Fourteen upward includes
+— into `NeuronClient` for `Input` and `Preferences`, into `GameLogic` for
+`Entity` and `WorldObject`, into `Species` for `App`, `Main`, `Location`, `Team`
+and `TaskManager` — mean `NeuronCore` **cannot currently be linked without the
+game client**. That is the single largest structural obstacle to a headless
+server. All fourteen are in `ClientToServer.h`, `ClientToServer.cpp` and one
+include in `Server.cpp`; `tasks/neuroncore-layering.yaml` is the plan to remove
+them, and has taken the count down from thirty.
 
 ### NeuronClient
 
@@ -89,10 +91,13 @@ Presentation and platform services for a graphical client.
   `Alias`, `Invert`, `Pipe`, `Idle`, `Prefs` — resolving to `ControlTypes`.
 - **UI:** the **Eclipse** toolkit (`Eclipse`, `EclWindow`, `EclButton`), which
   every in-game window derives from.
-- **Utilities that do not belong here:** containers (`LList`, `DArray`, `BTree`,
-  `FastDArray`, `HashTable`), maths (`Vector3`, `Matrix33/34`, `MathUtils`),
-  `HiResTime`, `Preferences`, `Profiler`. Migration stages 1 and 2 move these
-  down into `NeuronCore`.
+- **Utilities that do not belong here:** `Preferences`, the last one left. The
+  containers (`LList`, `DArray`, `BTree`, `FastDArray`, `HashTable`), the maths
+  types (`Vector3`, `Matrix33/34`, `MathUtils`), `HiResTime` and `Profiler` have
+  all moved down into `NeuronCore`. `Preferences` did not, because
+  `Preferences.cpp` reaches into `App`, the resource system and a settings
+  window — a dependency inversion rather than a file move. See T11 in
+  `tasks/neuroncore-layering.yaml`.
 
 ### NeuronServer
 
@@ -106,7 +111,7 @@ The bulk of the inherited code, ~48k lines. Entities (`Darwinian`, `Engineer`,
 (`Factory`, `Generator`, `RadarDish`, `GunTurret`, `LaserFence`, `Teleport`, …),
 `Ai`, `Weapons`, and the in-game windows built on Eclipse.
 
-586 of its includes reach up into `Species` — for `App`, `Location`, `Team`,
+584 of its includes reach up into `Species` — for `App`, `Location`, `Team`,
 `GlobalWorld` and `LevelFile`. This is by far the largest violation cluster and
 reflects Darwinia's original design, where everything lived in one binary.
 

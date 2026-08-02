@@ -5,7 +5,7 @@ title: Split the network layer three ways and make NeuronCore standalone
 phase: 2
 summary: >
   NeuronCore is meant to be the foundation every other project sits on, but it
-  reaches upward 30 times and cannot be linked without the game client. Fixing
+  reached upward 30 times and cannot be linked without the game client. Fixing
   that is not only a matter of moving includes: NeuronCore currently holds all
   three sides of the network layer at once — the shared wire protocol, the
   client's endpoint, and the authoritative server.
@@ -20,18 +20,18 @@ summary: >
     -> NeuronServer        Server and ServerToClient, the authoritative host
                            and its per-connection record
 
-  What makes this more than a file move is a bidirectional coupling through the
-  application singleton, which exists because the client can host a server
+  What made this more than a file move was a bidirectional coupling through the
+  application singleton, which existed because the client could host a server
   in-process (Species/App.h: "Server *m_server; // Server process, can be NULL
   if client"):
 
     NeuronCore/Server.cpp:293          g_app->m_clientToServer->ReceiveLetter(...)
     NeuronCore/ClientToServer.cpp:115  g_app->m_server->ReceiveLetter(...)
 
-  Each side reaches through g_app for the other. Put them in different projects
-  and that stops compiling, which is the point — the loopback has to become an
-  explicit seam in NeuronCore that both sides use, instead of two globals
-  reaching across a layer boundary.
+  Each side reached through g_app for the other. T7 removed that coupling — not
+  by building the seam this plan proposed, but because the owner deleted
+  bypass networking outright, leaving nothing for a loopback to carry. Both
+  endpoints now always use their sockets. See T7's notes.
 
   Listen-server hosting is a real requirement, not a bug, so Species is allowed
   to depend on NeuronServer. What is not allowed is NeuronServer depending on
@@ -39,6 +39,21 @@ summary: >
 
   Counts come from `python3 tools/check_layering.py --update`. Re-measure rather
   than trusting them.
+
+  Re-measured on 6eb17e4 ("Testing functionality added"): 644 allowlist entries
+  tree-wide, of which 14 begin NeuronCore/ — down from 663 and 30 when the plan
+  was written. The 14 that remain are:
+
+    ClientToServer.cpp -> App, Engineer, Factory, LaserFence, Location, Main,
+                          RadarDish, TaskManager, Team        (9)  -> T12
+    ClientToServer.h   -> Entity, WorldObject                 (2)  -> T12
+    ClientToServer.cpp -> Input.h                             (1)  -> T8
+    ClientToServer.cpp -> Preferences.h                       (1)  -> T11
+    Server.cpp         -> Preferences.h                       (1)  -> T11
+
+  So T11, T12 and T8 between them account for every remaining entry, and T9 no
+  longer removes any — its value is now structural (NeuronServer stops being a
+  stub) rather than measured in the allowlist.
 
 tasks:
   # ---------------------------------------------------------------------------
@@ -280,15 +295,15 @@ tasks:
       - Species/App.cpp
       - Species/App.h
     acceptance:
-      - Neither Server.cpp nor ClientToServer.cpp mentions g_app
-      - The loopback path is wired by Species at construction, not reached for at call time
-      - Hosting still works the same way from the player's point of view
+      - Neither Server.cpp nor ClientToServer.cpp mentions g_app for transport
+      - There is no in-process delivery path left for either side to reach for
+      - Hosting still works, now over UDP loopback rather than in-process
       - Server.cpp includes none of App.h, Globals.h, Main.h, Team.h
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: >
       Resolved by deletion rather than abstraction. The seam was first built as
       NeuronCore/NetworkSinks.h — two one-method interfaces the endpoints held
@@ -340,6 +355,27 @@ tasks:
 
       Only 1-4 belong in T7. Doing 5 here would make the diff unreviewable.
 
+      Closed on 6eb17e4, verified against the tree rather than from memory:
+
+        - Server.cpp mentions g_app once, in a comment explaining what used to be
+          reached for. No code reference, and it includes none of App.h,
+          Globals.h, Main.h or Team.h.
+        - ClientToServer.cpp has 12 g_app references, all at lines 491-555 —
+          inside ProcessServerUpdates, which is T12's half. The transport half
+          and the static callback are clean.
+        - ServerToClient.cpp includes only NetLib, NetSocket and Debug.
+        - No NetworkSinks.h and no BypassNetwork anywhere in the tree.
+        - Of the five NeuronCore/Server.cpp allowlist entries this task started
+          with, one remains: Server.cpp -> Preferences.h, which is T11's to
+          remove, not T7's.
+
+      Acceptance criteria 2 and 3 were reworded to describe what was delivered.
+      The original said the loopback "is wired by Species at construction" and
+      that hosting is unchanged "from the player's point of view"; neither is
+      true of a deletion, and both would have failed a literal check while the
+      task's actual intent — no cross-layer reach for delivery — was fully met.
+      The behavioural change is recorded above rather than hidden by the rewrite.
+
   # ---------------------------------------------------------------------------
   # Wave 4: the moves themselves. Different destination projects, no shared
   # files, so these two can run concurrently once T7 has cut the tie.
@@ -360,16 +396,28 @@ tasks:
       - NeuronCore/ClientToServer.cpp
       - NeuronCore/NeuronCore.vcxproj
       - NeuronClient/NeuronClient.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
     acceptance:
       - ClientToServer lives under NeuronClient/ and is listed in NeuronClient.vcxproj
       - No NeuronCore/ClientToServer entries remain in the allowlist
       - Entries that are still violations were moved with check_layering.py --rename, not regenerated
+      - NeuronClientTests still builds and passes with ClientToServer in the project
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
     status: todo
+    notes: >
+      Re-measured on 6eb17e4. With T12 done first — which is why the edge is
+      there — this task's only remaining allowlist work is one entry:
+      ClientToServer.cpp -> Input.h. Input.h is owned by NeuronClient, so the
+      violation disappears the moment the file lands there, with no code change.
+
+      The intent paragraph overstates the payoff now: "a large share of
+      NeuronCore's remaining violations" was true of 30, but T12 takes 11 of the
+      14 that are left and this task takes the twelfth. It is still the move that
+      lets NeuronCore stop knowing a client endpoint exists.
 
   - id: T9
     title: Move Server and ServerToClient into NeuronServer
@@ -396,14 +444,33 @@ tasks:
     acceptance:
       - Server and ServerToClient live under NeuronServer/ and are listed in NeuronServer.vcxproj
       - check_layering.py allows Species -> NeuronServer, and still forbids NeuronServer -> NeuronClient
-      - The five NeuronCore/Server.cpp entries are gone from the allowlist
+      - The one remaining Server.cpp entry moves with check_layering.py --rename, and the tree-wide count does not go up
       - NeuronServer.vcxproj lists NeuronCore only in AdditionalIncludeDirectories
+      - Tests/NeuronServerTests/LayerWiringTests.cpp is replaced by coverage of the moved code, per its own comment
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
     status: todo
+    notes: >
+      Two criteria rewritten on 6eb17e4 because the tree moved underneath them.
+
+      "The five NeuronCore/Server.cpp entries are gone from the allowlist" is no
+      longer achievable by this task: T7 removed four of them, and the fifth is
+      Server.cpp -> Preferences.h, which only T11 can fix. Moving Server.cpp into
+      NeuronServer with T11 unfinished relocates that entry rather than removing
+      it, so the criterion is now that the rename is done with --rename and the
+      count does not grow.
+
+      The NeuronServer.vcxproj criterion already holds today — it lists
+      $(SpeciesRoot)NeuronCore and nothing else — and needs to survive the move,
+      not be established by it.
+
+      NeuronServerTests now exists and holds one scaffolding test that only
+      proves the project wiring is intact. This is the task that gives
+      NeuronServer behaviour worth testing, so it is also the task that retires
+      that placeholder.
 
   # ---------------------------------------------------------------------------
   # Wave 5: close the door, and prove the point of the exercise.
@@ -429,6 +496,7 @@ tasks:
       - NeuronCore.vcxproj lists no other project in AdditionalIncludeDirectories
       - tools/layering_allowlist.txt contains no entry starting with NeuronCore/
       - Server.exe links against NeuronCore and NeuronServer only, with no NeuronClient.lib
+      - Server.exe advances sequence ids with no client attached
       - AGENTS.md records which of the four definition-of-done conditions now hold
     verify:
       - python3 tools/check_layering.py
@@ -436,6 +504,27 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
     status: todo
+    notes: >
+      Where the four definition-of-done conditions stand on 6eb17e4:
+
+        1. no NeuronCore/ allowlist entries    14 left. T11 (2), T12 (11), T8 (1).
+        2. NeuronCore.vcxproj include dirs     not started. Still lists
+                                               NeuronClient;Species;GameLogic in
+                                               both Debug and Release.
+        3. Server.exe links without the client already structurally true and not
+                                               by this task's doing —
+                                               Server.vcxproj references only
+                                               NeuronCore and NeuronServer, and
+                                               its include path is those two.
+                                               But WinMain.cpp is `int main() {
+                                               return 0; }`, so nothing ticks and
+                                               no sequence id advances. That half
+                                               is the real work here.
+        4. green build                         x64 Debug is what CI gates.
+
+      Condition 3 was folded into acceptance explicitly, because the linking half
+      passing on its own would otherwise let this task be closed against a binary
+      that does nothing.
 
   # ---------------------------------------------------------------------------
   # Split out of T4 during wave 1: Preferences is not foundational.
@@ -468,6 +557,22 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
     status: todo
+    notes: >
+      Still true as written, re-checked on 6eb17e4: Preferences.h/.cpp are under
+      NeuronClient/ and Preferences.cpp still includes App.h, Resource.h,
+      TextStreamReaders.h and PrefsOtherWindow.h.
+
+      It is now the only task standing between the tree and two of the fourteen
+      NeuronCore entries — ClientToServer.cpp -> Preferences.h and
+      Server.cpp -> Preferences.h — and the second of those is the last thing
+      keeping Server.cpp itself upward-dependent. Everything else in Server.cpp
+      was resolved by T7. That makes this a better next pick than its wave-1
+      placement suggests.
+
+      Closing T7 opened T9 and T12, so `--next` now returns three tasks. This one
+      shares no `files` with either, and none of the three overlap, so all three
+      may be worked concurrently — with the caveat that T12 is
+      `parallel_safe: false`.
 
   # ---------------------------------------------------------------------------
   # Discovered while surveying T7: moving ClientToServer does not clean it.
@@ -505,8 +610,26 @@ tasks:
       - ClientToServer holds inbox, outbox, sockets and sequence ids, and includes no game header
       - ProcessServerUpdates and the Request* builders live in the game layer, calling ClientToServer to send
       - The wire format is unchanged
+      - NeuronCoreTests covers the packet the Request* builders produce, so "unchanged" is checked rather than asserted
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
     status: todo
+    notes: >
+      Re-measured on 6eb17e4, and the split line is now exact. Every g_app
+      reference left in NeuronCore is in this file, at lines 491-555 — all
+      twelve inside ProcessServerUpdates, which begins at line 479. Nothing above
+      it touches the game.
+
+      This task carries 11 of the 14 remaining NeuronCore allowlist entries: the
+      nine game headers ClientToServer.cpp includes (App, Engineer, Factory,
+      LaserFence, Location, Main, RadarDish, TaskManager, Team) and the two
+      ClientToServer.h includes (Entity, WorldObject). It is the largest single
+      piece of work left in the plan by that measure, and T8 is close to a no-op
+      without it.
+
+      The test criterion is new. The plan predates Tests/, and docs/TESTING.md
+      now requires anything on the wire to ship with coverage; "the wire format
+      is unchanged" is precisely the claim that a round-trip test can hold and
+      prose cannot. NETWORKUPDATE_BYTESTREAMSIZE is 42 today.
