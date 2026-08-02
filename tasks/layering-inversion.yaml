@@ -33,11 +33,28 @@ summary: >
   Mechanics that keep this honest: every file move is a `git mv` plus
   `python3 tools/check_layering.py --rename OLD NEW` so unchanged
   violations are not orphaned, plus the four-edit .vcxproj rule in BOTH
-  projects. A moved file's own upward includes (Location.cpp -> Renderer.h)
-  survive as renamed entries until their target also lands — counts shrink
-  per task by the measured amount, never grow. Pure moves change no
-  behaviour; the simulation rules still apply to any signature or include
-  change inside moved files.
+  projects. Pure moves change no behaviour; the simulation rules still
+  apply to any signature or include change inside moved files.
+
+  ORDERING CORRECTED 2026-08-02, on evidence from trying T3. The original
+  graph had every move depending only on T1, on the assumption that a
+  moved file's own upward includes would survive as renamed allowlist
+  entries. They do not. The allowlist is keyed on the INCLUDING file, and
+  a Species file's includes of other Species headers are not violations
+  at all — so they have no entries to rename. The moment such a file
+  lands in GameLogic those same includes become NEW violations, and
+  AGENTS.md forbids adding to the allowlist outright.
+
+  Measured on the T3 candidates: EntityGrid.cpp uses g_app 16 times,
+  ObstructionGrid.cpp 8, RoutingSystem.cpp 3, and all three include
+  App.h, Location.h or Team.h. Moving them first would trade 47 removed
+  entries for a handful of forbidden new ones.
+
+  So T8 — the g_app seam — moves ahead of the file moves rather than
+  behind them, and T3/T4/T5/T6 depend on it. T8 does not need the world
+  types to have moved first: GameLogic can declare `extern Location
+  *g_location;` behind a forward declaration and let App set it at
+  startup, which is what makes every later move a pure relocation.
 
   Payoff beyond hygiene: each move brings code inside GameLogicTests'
   reach, shrinking LinkStubs (which may only shrink) and making entity and
@@ -203,7 +220,7 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T3
     title: Move the spatial grids down into GameLogic
@@ -213,7 +230,7 @@ tasks:
       the cheapest large chunk. Once in GameLogic they are also inside
       GameLogicTests' reach.
     project: GameLogic
-    depends_on: [T1]
+    depends_on: [T1, T8]
     files:
       - Species/EntityGrid.h
       - Species/EntityGrid.cpp
@@ -244,7 +261,7 @@ tasks:
       DArray slots are network identity, so the move is pure relocation:
       no signature, container or iteration change rides along.
     project: GameLogic
-    depends_on: [T1]
+    depends_on: [T1, T8]
     files:
       - Species/Team.h
       - Species/Team.cpp
@@ -273,7 +290,7 @@ tasks:
       time — the move task carries the first LevelFile round-trip test with
       it, using a temporary directory per TESTING.md, not GameData/.
     project: GameLogic
-    depends_on: [T1]
+    depends_on: [T1, T8]
     files:
       - Species/LevelFile.h
       - Species/LevelFile.cpp
@@ -305,7 +322,7 @@ tasks:
       cosmetic. Pure relocation, same rules as T4; their render calls keep
       working because GameLogic already sits above NeuronClient.
     project: GameLogic
-    depends_on: [T1]
+    depends_on: [T1, T8]
     files:
       - Species/ParticleSystem.h
       - Species/ParticleSystem.cpp
@@ -381,7 +398,7 @@ tasks:
       treatment per T1's findings. No object changes lifetime; only who
       holds the pointer moves.
     project: GameLogic
-    depends_on: [T7]
+    depends_on: [T1]
     files:
       - Species/App.h
       - Species/App.cpp
@@ -397,6 +414,15 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
     notes: >
+      Runs BEFORE the file moves, not after — see the plan summary's
+      ordering correction. It does not need Location to have moved:
+      declare the world pointers in a GameLogic header behind forward
+      declarations (class Location; class Team;) and have App assign them
+      during startup, so no include direction changes to introduce the
+      seam. Files that dereference those pointers still include the
+      Species headers they already do, on entries that already exist —
+      nothing new is added, and each later move then removes them.
+
       Expect several commits: one introducing the GameLogic-side access,
       then sweeps of the reaching files. The exact shape (globals like
       g_location, or a context struct) follows T1's findings and the
@@ -412,7 +438,7 @@ tasks:
       gone after T7/T8) or extracts the narrow interface entity render code
       actually uses. Ends the largest remaining cluster.
     project: NeuronClient
-    depends_on: [T8]
+    depends_on: [T7, T8]
     files:
       - Species/Camera.h
       - Species/Camera.cpp
