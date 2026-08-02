@@ -414,7 +414,17 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
     notes: >
-      FIRST HALF LANDED 2026-08-02 (abbd898), CI green: the five
+      BOTH HALVES LANDED 2026-08-02, CI green (abbd898 and 3b2303f +
+      the Team.cpp include fix). Allowlist 474 -> 418 across the two.
+      One defect escaped to CI and is worth recording: the sweep inserted
+      each new include after the file's LAST #include, which is right
+      almost everywhere but put the header below every use in Team.cpp,
+      whose last include sits at line 660. The fix relocated it to the
+      leading block, and a scan across all five projects confirmed no
+      other file had a use preceding its include. Insert into the leading
+      include block, not after the last include line.
+
+      First half detail: the five
       library-owned singletons — Resource, SoundSystem, Profiler,
       LangTable, ClientToServer — now have globals declared in their own
       layer's header and assigned by App beside its own members. 641 call
