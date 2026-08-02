@@ -8,14 +8,13 @@ mechanic is stated in a code comment or an enum, that is quoted; where the code
 only shows structure, this says what the structure is rather than guessing at
 intent.
 
-> **These names are inherited from Darwinia and are not all settled.** The
-> rename policy is in
-> [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia):
-> UI scaffolding (`DarwiniaWindow`, `DarwiniaButton`, `DARWINIA_*`) is being
-> renamed via `tasks/rename-scaffolding.yaml`; **entity and domain names are
-> frozen** until the game runs again. `Darwinian` and friends appear in
-> `GameData` asset filenames and as literal strings in level files, all
-> resolved at runtime — renaming one silently breaks content loading.
+> **These names are inherited from Darwinia and are not all settled.** The UI
+> scaffolding has been renamed (`DarwiniaWindow` → `SpeciesWindow` and friends);
+> **every domain name below is frozen.** `Darwinian` appears in 45 `GameData`
+> files and as a literal string in level files, and names derived from it —
+> `TypeDarwinian`, `numDarwinians` — move with it or not at all. The full policy
+> is in
+> [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia).
 
 ---
 
@@ -178,7 +177,10 @@ moves away from Darwinia — `Darwinian` most obviously. This glossary describes
 the code **as it is**.
 
 Renaming is governed by
-[`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia).
-The short version: scaffolding is fair game, domain names are frozen. Before
-renaming anything, run `grep -rl "<TheName>" GameData/` — any output means the
-name is content-coupled and off limits for now.
+[`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia). The
+short version: the UI scaffolding rename is done, and every domain term in this
+glossary is frozen until the game runs again. 421 Darwinia-derived occurrences
+remain, 371 of them either named in `GameData/` or derived from something that
+is. Before renaming anything, ask both questions the policy sets out — `grep -rl
+"<TheName>" GameData/`, *and* whether the name derives from one that would fail
+that grep.

@@ -159,4 +159,54 @@ tasks:
     verify:
       - python3 tools/check_task_dag.py
     parallel_safe: true
-    status: in_progress
+    status: done
+    notes: >
+      Re-counted with `\\b\\w*[Dd]arwini\\w*\\b` over *.cpp/*.h/*.inc: 421
+      occurrences, 31 distinct spellings. Classified by running the policy's own
+      GameData test per spelling.
+
+      The classification produced a refinement worth more than the counts. 101 of
+      the remaining occurrences pass the filename test but are derived from the
+      entity name — TypeDarwinian, FindDarwinian, numDarwinians. Entity::GetTypeId
+      matches level-file strings against a typeNames[] table holding the literal
+      "Darwinian", so renaming the enum without the string would half-convert the
+      concept. The policy is now two questions, not one.
+
+      Also found 50 occurrences that are scaffolding by this plan's own criterion
+      and were missed when it was written — darwiniaRandom and friends derive from
+      the game name, not the entity. Recorded as T5 rather than absorbed silently.
+
+  # ---------------------------------------------------------------------------
+  # Added during T4. The original plan missed these: they are derived from the
+  # game name rather than the entity, so they meet the plan's own criterion.
+  # ---------------------------------------------------------------------------
+
+  - id: T5
+    title: Rename the remaining game-name-derived identifiers
+    intent: >
+      T4's re-count found 50 occurrences that are scaffolding by this plan's own
+      definition but were not in the original list: darwiniaRandom (32),
+      darwiniaSeedRandom (9), PageDarwinia (5), SetupDarwiniaPage (3) and a dead
+      commented reference. They derive from the game name, not from the Darwinian
+      entity, and appear nowhere in GameData. Leaving them means the plan did not
+      finish what it set out to do.
+    project: NeuronClient
+    depends_on: [T4]
+    files:
+      - NeuronClient/Random.h
+      - NeuronClient/Random.cpp
+      - Species/GameMenu.cpp
+    acceptance:
+      - darwiniaRandom and darwiniaSeedRandom are renamed, matching SPECIES_RAND_MAX
+      - PageDarwinia and SetupDarwiniaPage are renamed
+      - No identifier derived from the game name remains; the 371 that remain are all entity-derived or content-named
+      - The RNG's behaviour is untouched — this is a pure identifier rename, and the call sequence is load-bearing for lockstep
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: true
+    status: todo
+    notes: >
+      darwiniaRandom is the simulation's single shared RNG. Renaming the
+      identifier is safe; changing where or how often it is called is not. See
+      CODING_STANDARDS.md, Determinism.

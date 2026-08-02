@@ -55,21 +55,40 @@ is a migration task, not something to do opportunistically.
 
 ### Renaming away from Darwinia
 
-The tree still carries 550+ Darwinia-named identifiers. They split into two
-groups, and **only one of them may be renamed right now**.
+**The UI scaffolding rename is done.** `DarwiniaWindow` → `SpeciesWindow` (213),
+`DarwiniaButton` → `SpeciesButton` (178), `DarwiniaModeButton` (6), the
+`DARWINIA_*` macros (30), and the `About*` pair that sat on top of them — landed
+via `tasks/rename-scaffolding.yaml`, CI-verified.
 
-**Scaffolding — rename it.** UI base classes and build macros with no content
-coupling. Verified: none of these strings appear anywhere in `GameData/`.
+**421 Darwinia-derived occurrences across 31 distinct spellings remain.** Ask of
+any of them: *is this name derived from the game, or from the entity?*
 
-| Identifier | Occurrences | Becomes |
+| Group | Occurrences | Status |
 |---|---|---|
-| `DarwiniaWindow` (+ `.h`/`.cpp`) | 213 in 62 files | `SpeciesWindow` |
-| `DarwiniaButton` | 178 in 35 files | `SpeciesButton` |
-| `DarwiniaModeButton` | 6 in 1 file | `SpeciesModeButton` |
-| `DARWINIA_VERSION`, `_GAMETYPE`, `_PLATFORM`, `_EXE_VERSION`, `_VERSION_STRING`, `_VERSION_PROFILER` | 23 total | `SPECIES_*` |
-| `DARWINIA_RAND_MAX` | 7 | `SPECIES_RAND_MAX` |
+| Named in `GameData/` — `Darwinian`, `Darwinians`, the `about_darwinia`-style language keys | 270 | **Frozen.** Renaming breaks content loading. |
+| Derived from the entity but code-only — `TypeDarwinian`, `FindDarwinian`, `numDarwinians`, `RenderDarwinians`, … | 101 | **Frozen.** See below. |
+| Derived from the *game* name — `darwiniaRandom`, `darwiniaSeedRandom`, `PageDarwinia`, `SetupDarwiniaPage` | 50 | Renamable. Not yet done — `tasks/rename-scaffolding.yaml` T5. |
 
-`tasks/rename-scaffolding.yaml` is the plan. Do it as that plan, not ad hoc.
+**Code-only is necessary but not sufficient.** `TypeDarwinian` appears nowhere in
+`GameData/`, so the filename test passes — yet `Entity::GetTypeId` matches
+level-file strings against a `typeNames[]` table whose entry is the literal
+`"Darwinian"`:
+
+```
+MissionGardenLiberate.txt:   Darwinian   0   598.8   1202.4   30 …
+Entity.cpp typeNames[]:      "Darwinian"
+```
+
+Renaming the enum without the string would leave a `TypeCitizen` that loads
+`"Darwinian"` — technically working, conceptually half-converted. Anything
+derived from an entity name moves with that entity, in one task, or not at all.
+
+So the test is two questions, both of which must pass:
+
+```bash
+grep -rl "<TheName>" GameData/          # 1. is the name itself in content?
+                                        # 2. is it derived from a name that is?
+```
 
 **Declare the rename in the commit.** A rename touches every line mentioning the
 old name without authoring any of them, so the changed-lines format check would
