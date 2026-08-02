@@ -247,4 +247,4 @@ tasks:
       - python3 tools/check_hygiene.py
       - python3 tools/check_task_dag.py
     parallel_safe: true
-    status: todo
+    status: in_progress
