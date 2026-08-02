@@ -42,6 +42,7 @@ tasks:
     files:
       - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
       - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+      - Tests/GameLogicTests/WorldObjectIdTests.cpp
     acceptance:
       - notes lists every serialised char buffer in the tree with file and field name
       - Every wire-crossing buffer is covered by a byte-pinning test
@@ -50,6 +51,34 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     status: in_progress
+    notes: >
+      Audit complete (2026-08-02). Serialised or serialisation-adjacent char
+      buffers in the tree, with what protects each:
+      (1) NetworkUpdate::m_byteStream[42] and the letter's stream buffer are
+      the wire image itself — do not touch; sizes covered by the existing
+      EveryClientPacketFitsTheFixedBuffer test.
+      (2) WorldObjectId is raw-copied by WRITE_/READ_WORLDOBJECTID, so its
+      sizeof (16), field offsets and the three padding bytes after m_teamId
+      are wire format — now pinned by WorldObjectIdTests::
+      TheWireLayoutIsSixteenBytesWithTheTeamByteFirst.
+      (3) NetworkUpdate::m_clientIp[16] is NOT serialised: ClientJoin sends
+      the 8-byte header only, and the server fills the field from the UDP
+      source address (Server.cpp, SetClientIp(fromIP)). It is a registry
+      key. The real constraint found instead: ServerToClientLetter
+      memcpy()s whole NetworkUpdate structs (AddUpdate and its copy ctor),
+      so NetworkUpdate must stay trivially copyable — m_clientIp may only
+      be converted together with turning those memcpys into assignments.
+      Also noted: SetClientIp strcpy()s unbounded into 16 bytes — safe for
+      dotted IPv4 (15 chars + NUL), a hazard if ever fed a hostname; fix
+      with the conversion, not silently.
+      (4) NeuronServer/ServerToClient::m_ip[16] — per-connection record
+      key, never serialised.
+      (5) TeamControls serialises as a flags word via GetFlags — no char
+      buffers; the nine-flag round trip is already pinned.
+      Nothing else in NeuronCore or NeuronServer writes a fixed char buffer
+      to the wire. The file-format writers (Preferences, LevelFile,
+      GlobalWorld) are text emitters with no fixed-width binary fields;
+      their byte-identical output is pinned by T2 and T8 as planned.
 
   - id: T2
     title: Convert NeuronCore string handling
