@@ -50,12 +50,22 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: >
       parallel_safe lowered to false: T1 and T2 both list DarwiniaWindow.h/.cpp,
       so despite sharing a wave they cannot be worked concurrently. Serialised.
-      msbuild cannot run on this machine (Linux) — the x64 Debug CI job is the
-      build verification, so this stays in_progress until CI is green.
+      msbuild cannot run on this machine (Linux), so the x64 Debug CI job was the
+      build verification — green on 69dc5df.
+
+      AboutDarwiniaWindow was folded in: code-only by the GameData test, and
+      leaving it would have half-converted MainMenus.cpp. Its two content strings
+      were left alone — LANGUAGEPHRASE("about_darwinia") is a live language key
+      and "Sprites/Darwinian.bmp" is a real asset.
+
+      Regression during execution: a `git checkout --` used to undo a test probe
+      restored the file from the index, which `git mv` had staged with pre-rename
+      content, reintroducing 21 DarwiniaWindow references. Caught by a tree-wide
+      grep and fixed in the T2 commit.
 
   - id: T2
     title: Rename DarwiniaButton and DarwiniaModeButton to Species*
@@ -75,12 +85,13 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: >
       Serialised after T1 — same files. The header T1 renamed to SpeciesWindow.h
       is where both button classes are declared. AboutDarwiniaButton was included
       for the same reason AboutDarwiniaWindow was in T1: code-only by the
       GameData test, and leaving it would half-convert MainMenus.cpp.
+      Verified by the x64 Debug CI job on 69dc5df.
 
   # ---------------------------------------------------------------------------
   # The macros. Originally placed in wave 2 behind T1 and T2; that edge was
@@ -106,8 +117,10 @@ tasks:
     verify:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
+      Verified by the x64 Debug CI job on 69dc5df.
+
       depends_on emptied. It originally listed [T1, T2], but the stated reason
       for holding this task back was a future collision with migration stage 8 in
       NeuronCore.h — nothing to do with T1 or T2, which touch GameLogic only.
@@ -146,4 +159,4 @@ tasks:
     verify:
       - python3 tools/check_task_dag.py
     parallel_safe: true
-    status: todo
+    status: in_progress
