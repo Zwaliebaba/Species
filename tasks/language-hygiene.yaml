@@ -247,4 +247,40 @@ tasks:
       - python3 tools/check_hygiene.py
       - python3 tools/check_task_dag.py
     parallel_safe: true
-    status: in_progress
+    notes: >
+      Landed 2026-08-02. tools/check_hygiene.py enforces four rules on changed
+      lines only, the same contract as check_format.py and for the same reason:
+      a whole-file rule would fail most of the tree, because stages 4 and 5 have
+      not run, and a check that has to be switched off to get work done is not a
+      check. `--all` scans whole files as a diagnostic and is explicitly not a
+      gate.
+
+      Acceptance evidence, all run on Linux: a synthetic file exercising every
+      rule reports exactly eight findings and exits 1, while `enum class`,
+      `enum struct`, a comment naming NULL and sprintf, and a string literal
+      containing both are all correctly ignored. Four diff scenarios were run
+      against real history — untracked file inside a checked root (flagged),
+      untracked file outside one (ignored), a committed file diffed against
+      HEAD~1 (flagged), and one line inserted into NeuronCore/Preferences.cpp,
+      a legacy file already full of violations, which reported that line and
+      nothing else. The clean tree exits 0.
+
+      Two design decisions worth keeping. String literals and comments are
+      blanked before matching, because the first false positive on a comment
+      is what teaches people to suppress the tool reflexively —
+      layering-inversion T13 recorded the mirror-image failure, where a
+      substring search for g_app matched "dialog_apply". And the escape hatch
+      is a `hygiene-ok` marker rather than a config file, so an exception is
+      visible on the line it applies to; T1's two typedef'd-integer NULLs in
+      ControlTypes.cpp and InputDriver.cpp are what it exists for, though
+      neither carries the marker yet since neither line has been touched
+      since.
+
+      Known limitation, accepted: strip_noise is single-line, so a banned token
+      inside a multi-line block comment still matches. `hygiene-ok` covers it.
+
+      Not verified here: nothing in this task compiles, so the msbuild and
+      vstest lines other tasks carry do not apply. CI's static-checks job runs
+      the new check on every push, which is the verification that matters for
+      it.
+    status: done

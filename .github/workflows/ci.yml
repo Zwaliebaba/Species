@@ -56,6 +56,16 @@ jobs:
           python3 tools/check_format.py \
             --base "origin/${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}"
 
+      # Same changed-lines-only contract as the format check, and for the same
+      # reason: most of the tree has not had its conversion task yet, so a
+      # whole-file rule would fail everything and get switched off. This one only
+      # rejects patterns a change *writes*, which is what stops a completed sweep
+      # from regrowing one commit at a time.
+      - name: Changed lines do not reintroduce swept patterns
+        run: |
+          python3 tools/check_hygiene.py \
+            --base "origin/${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}"
+
   # ---------------------------------------------------------------------------
   # The real build. Both images carry Visual Studio 2026, so CI compiles with the
   # same v145 toolset used locally — no downgrade, no per-CI project settings.

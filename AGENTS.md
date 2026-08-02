@@ -186,17 +186,27 @@ troubleshooting — is in [`docs/BUILD.md`](docs/BUILD.md).
 
 ## Before you push
 
-Run all four. CI runs the same four and will fail on anything you skip.
+Run all five. CI runs the same five and will fail on anything you skip.
 
 ```bash
 python3 tools/check_project_files.py   # .vcxproj matches the files on disk
 python3 tools/check_layering.py        # no new upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
 python3 tools/check_format.py          # changed lines match .clang-format
+python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
+                                       # _included guards, strcpy or plain enum
 ```
 
 `python3 tools/check_format.py --fix` applies the formatting rather than
 reporting it.
+
+The last two share a contract worth understanding before one surprises you: they
+judge **the lines your change writes**, not the file you wrote them in. A legacy
+file with two hundred `sprintf`s stays legal until its conversion task; add one
+more and only that line is reported. It is a ratchet, so it only ever turns one
+way. A genuine exception is marked `hygiene-ok` in a comment on the line, with a
+reason — there are two in the tree today, and both are explained in
+`tasks/language-hygiene.yaml` T1.
 
 Then build **and run the tests**. A change that has not been compiled is not
 finished; a change with new behaviour and no test is not finished either.
