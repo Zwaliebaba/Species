@@ -365,7 +365,7 @@ void LandscapeRenderer::RenderMainSlow()
   }
 
   if (m_renderMode == RenderModeVertexBufferObject)
-    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, nullptr);
+    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
@@ -444,7 +444,7 @@ void LandscapeRenderer::RenderOverlaySlow()
   switch (m_renderMode)
   {
   case RenderModeVertexBufferObject:
-    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, nullptr);
+    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
     break;
   }
 
