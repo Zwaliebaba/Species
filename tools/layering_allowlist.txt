@@ -613,7 +613,6 @@ NeuronClient/Resource.cpp -> Location.h
 NeuronClient/Resource.cpp -> Renderer.h
 NeuronClient/SampleCache.cpp -> App.h
 NeuronClient/SepulvedaStrings.cpp -> App.h
-NeuronClient/Shader.cpp -> App.h
 NeuronClient/Shape.cpp -> App.h
 NeuronClient/SoundFilter.cpp -> App.h
 NeuronClient/SoundInstance.cpp -> App.h
