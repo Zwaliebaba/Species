@@ -205,8 +205,14 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: >
+      Naming: keeping the existing lowerCamel on speciesRandom/speciesSeedRandom
+      rather than converting to the PascalCase the standards specify. Random.cpp
+      is a legacy-style file, and mixing a style conversion into a rename is
+      exactly what CODING_STANDARDS.md forbids. The casing moves when the file is
+      converted.
+
       darwiniaRandom is the simulation's single shared RNG. Renaming the
       identifier is safe; changing where or how often it is called is not. See
       CODING_STANDARDS.md, Determinism.
