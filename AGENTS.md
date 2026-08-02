@@ -55,9 +55,10 @@ What that means for a task in front of you:
 If a task you have been given falls outside this, say so before starting rather
 than after.
 
-> **Note:** the most recent commit is titled *"Cleanup done, But does not work
-> yet"*. Assume the game does not currently run. Do not report a change as
-> working on the basis of a successful compile.
+> **Note:** the last commit before this tooling landed was titled *"Cleanup
+> done, But does not work yet"*. Assume the game does not currently run until
+> someone records otherwise here. Do not report a change as working on the basis
+> of a successful compile.
 
 ---
 
@@ -134,8 +135,9 @@ msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64 /m
 ```
 
 Visual Studio 2026 (toolset v145), C++20, Windows-only. ARM64 is the primary
-development platform; x64 is supported and built in CI. Full detail, including
-the x64 story and the known PCH quirk, is in [`docs/BUILD.md`](docs/BUILD.md).
+development platform; x64 is also supported, and x64 Debug is the one
+configuration CI builds. Full detail — configurations, what CI does not cover,
+troubleshooting — is in [`docs/BUILD.md`](docs/BUILD.md).
 
 ---
 
@@ -153,9 +155,10 @@ python3 tools/check_format.py          # changed lines match .clang-format
 `python3 tools/check_format.py --fix` applies the formatting rather than
 reporting it.
 
-Then build Debug for at least one platform — CI does the same on both. A change
-that has not been compiled is not finished. Build Release too before anything
-that ships; CI does not.
+Then build. A change that has not been compiled is not finished. CI builds
+**x64 Debug only** — if you touched anything ARM64-sensitive or
+optimisation-sensitive, build that configuration yourself, because nothing else
+will.
 
 **The project-file check matters more than it looks.** Adding a `.cpp` without
 adding it to the `.vcxproj` produces no error — the file is simply never
