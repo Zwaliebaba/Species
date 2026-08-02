@@ -1,7 +1,6 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "NetworkSinks.h"
 #include "LList.h"
 #include "DArray.h"
 
@@ -20,13 +19,9 @@ class ServerTeam
     ServerTeam(int _clientId);
 };
 
-class Server : public ServerUpdateSink
+class Server
 {
   NetLib* m_netLib;
-
-  // A locally hosted client, or null when this server only talks over sockets.
-  ClientLetterSink* m_localClient;
-  bool m_bypassNetworking;
   class Profiler* m_profiler;
 
   LList<ServerToClientLetter*> m_history;
@@ -47,14 +42,13 @@ class Server : public ServerUpdateSink
     Server();
     ~Server();
 
-    // The server is handed what it needs rather than reading it off a global:
-    // whether to skip sockets, where profiling goes, and the local client to
-    // deliver to when hosting in-process. _localClient may be null.
-    void Initialise(bool _bypassNetworking, class Profiler* _profiler, ClientLetterSink* _localClient);
+    // Handed its profiler rather than reaching for it through the application
+    // object. Networking is always real UDP; there is no in-process shortcut.
+    void Initialise(class Profiler* _profiler);
 
     NetworkUpdate* GetNextLetter();
 
-    void ReceiveLetter(NetworkUpdate* update, char* fromIP) override;
+    void ReceiveLetter(NetworkUpdate* update, char* fromIP);
     void SendLetter(ServerToClientLetter* letter);
 
     int GetClientId(char* _ip);

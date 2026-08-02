@@ -65,7 +65,6 @@ public:
     ControlHelpSystem   *m_controlHelpSystem;
     GameMenu            *m_gameMenu;
 
-    bool                m_bypassNetworking;
     bool                m_negativeRenderer;
 	int					m_difficultyLevel;			// Cached from preferences
 	bool				m_largeMenus;

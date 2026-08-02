@@ -58,8 +58,6 @@ static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 
 Server::Server()
   : m_netLib(nullptr),
-    m_localClient(nullptr),
-    m_bypassNetworking(false),
     m_profiler(nullptr),
     m_sequenceId(0),
     m_inboxMutex(nullptr),
@@ -90,23 +88,18 @@ static NetCallBackRetType ListenThread(void* ptr)
   return 0;
 }
 
-void Server::Initialise(bool _bypassNetworking, Profiler* _profiler, ClientLetterSink* _localClient)
+void Server::Initialise(Profiler* _profiler)
 {
-  m_bypassNetworking = _bypassNetworking;
   m_profiler = _profiler;
-  m_localClient = _localClient;
   s_server = this;
 
   m_inboxMutex = new NetMutex();
   m_outboxMutex = new NetMutex();
 
-  if (!m_bypassNetworking)
-  {
-    m_netLib = new NetLib();
-    m_netLib->Initialise();
+  m_netLib = new NetLib();
+  m_netLib->Initialise();
 
-    NetStartThread(ListenThread);
-  }
+  NetStartThread(ListenThread);
 }
 
 int Server::GetClientId(char* _ip)
@@ -130,7 +123,7 @@ int Server::GetClientId(char* _ip)
 void Server::RegisterNewClient(char* _ip)
 {
   DEBUG_ASSERT(GetClientId(_ip) == -1);
-  auto sToC = new ServerToClient(_ip, m_bypassNetworking);
+  auto sToC = new ServerToClient(_ip);
   m_clients.PutData(sToC);
 
   //
@@ -276,11 +269,6 @@ void Server::AdvanceSender()
 
     if (m_clients.ValidIndex(letter->GetClientId()))
     {
-      // Hosting in-process: hand the letter straight to the local client rather
-      // than reaching for it through the application object.
-      if (m_localClient)
-        m_localClient->ReceiveLetter(letter);
-      else
       {
         int linearSize = 0;
         ServerToClient* client = m_clients[letter->GetClientId()];

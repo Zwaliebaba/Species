@@ -290,13 +290,21 @@ tasks:
     parallel_safe: false
     status: in_progress
     notes: >
-      Implemented as NeuronCore/NetworkSinks.h: two one-method interfaces,
-      ServerUpdateSink (implemented by Server) and ClientLetterSink (implemented
-      by ClientToServer). Each side holds the other as a sink, handed over once
-      at construction by Species rather than reached for through g_app at every
-      call. Behaviour is preserved exactly: the sinks are wired only when
-      bypassNetworking is set, which is the same condition that used to guard
-      each of the two calls.
+      Resolved by deletion rather than abstraction. The seam was first built as
+      NeuronCore/NetworkSinks.h — two one-method interfaces the endpoints held
+      for each other — but the owner then removed the bypass-networking mode
+      entirely: UDP only, no in-process delivery. With no loopback there is
+      nothing for the sinks to carry, so NetworkSinks.h was deleted and both
+      endpoints simply always use their sockets.
+
+      That is the better outcome. The bidirectional g_app coupling this task
+      existed to break is gone because the feature that required it is gone, and
+      no indirection was left behind to pay for.
+
+      Note the behavioural change: BypassNetwork defaulted to 1, so a local game
+      previously delivered in-process. It now goes over real UDP loopback —
+      client to 127.0.0.1:4000, server back on 4001. The socket path was always
+      there but was not the default, so it is the less-travelled code.
 
       Two things the survey did not predict. Server.cpp needed NUM_TEAMS, which
       lived in Species/Globals.h next to GRAVITY and the render budget; the

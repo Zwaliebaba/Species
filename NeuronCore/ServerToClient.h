@@ -15,9 +15,7 @@ private:
     NetSocket	*m_socket;
 
 public:
-  // Told whether to open a socket rather than reading it off the application
-  // object; Server is the only thing that constructs these and already knows.
-  ServerToClient(char* _ip, bool _bypassNetworking);
+  ServerToClient(char* _ip);
 
   char* GetIP();
   NetSocket* GetSocket();

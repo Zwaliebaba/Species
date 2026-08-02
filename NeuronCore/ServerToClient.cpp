@@ -10,17 +10,14 @@
 #include "ServerToClient.h"
 
 
-ServerToClient::ServerToClient(char* _ip, bool _bypassNetworking)
+ServerToClient::ServerToClient(char* _ip)
   : m_socket(NULL)
 {
     strcpy ( m_ip, _ip );
 
-    if (!_bypassNetworking)
-    {
-        m_socket = new NetSocket();
-        NetRetCode retCode = m_socket->Connect( _ip, 4001 );
-        DEBUG_ASSERT( retCode == NetOk );
-    }
+    m_socket = new NetSocket();
+    NetRetCode retCode = m_socket->Connect(_ip, 4001);
+    DEBUG_ASSERT(retCode == NetOk);
 
     m_lastKnownSequenceId = -1;
 }

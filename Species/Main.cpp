@@ -981,16 +981,7 @@ void EnterLocation()
     if (iAmAServer)
     {
       g_app->m_server = new Server();
-
-      // Hosting in-process. The two endpoints used to find each other through
-      // g_app at call time; now they are introduced once, here, and only when
-      // bypassing the network — which is exactly the condition that used to
-      // guard each of those calls.
-      ClientLetterSink* localClient = g_app->m_bypassNetworking ? g_app->m_clientToServer : nullptr;
-      g_app->m_server->Initialise(g_app->m_bypassNetworking, g_app->m_profiler, localClient);
-
-      if (g_app->m_bypassNetworking)
-        g_app->m_clientToServer->SetLocalServer(g_app->m_server);
+      g_app->m_server->Initialise(g_app->m_profiler);
     }
 
     g_app->m_clientToServer->ClientJoin();

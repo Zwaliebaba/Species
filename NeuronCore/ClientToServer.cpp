@@ -64,10 +64,8 @@ static NetCallBackRetType ListenThread(void *ignored)
 }
 
 
-ClientToServer::ClientToServer(bool _bypassNetworking)
+ClientToServer::ClientToServer()
 {
-  m_localServer = nullptr;
-  m_bypassNetworking = _bypassNetworking;
   s_client = this;
 
   m_lastValidSequenceIdFromServer = -1;
@@ -75,22 +73,15 @@ ClientToServer::ClientToServer(bool _bypassNetworking)
   m_inboxMutex = new NetMutex();
   m_outboxMutex = new NetMutex();
 
-  if (!m_bypassNetworking)
-  {
-    m_netLib = new NetLib();
-    m_netLib->Initialise();
+  m_netLib = new NetLib();
+  m_netLib->Initialise();
 
-    m_sendSocket = new NetSocket();
-    char const* serverAddress = g_prefsManager->GetString("ServerAddress");
-    m_sendSocket->Connect(serverAddress, 4000);
+  m_sendSocket = new NetSocket();
+  char const* serverAddress = g_prefsManager->GetString("ServerAddress");
+  m_sendSocket->Connect(serverAddress, 4000);
 
-    NetStartThread(ListenThread);
-  }
-  else
-  {
-    m_netLib = NULL;
-    m_sendSocket = NULL;
-  }
+  NetStartThread(ListenThread);
+
   m_receiveSocket = NULL;
 }
 
@@ -109,9 +100,6 @@ ClientToServer::~ClientToServer()
 }
 
 
-void ClientToServer::SetLocalServer(ServerUpdateSink* _server) { m_localServer = _server; }
-
-
 void ClientToServer::AdvanceSender()
 {
     int bytesSentThisFrame = 0;
@@ -122,23 +110,16 @@ void ClientToServer::AdvanceSender()
       NetworkUpdate* letter = m_outbox[0];
       DEBUG_ASSERT(letter);
 
-      // Hosting in-process: hand the update straight to the local server
-      // instead of reaching for it through the application object.
-      if (m_localServer)
       {
-        m_localServer->ReceiveLetter(letter, GetOurIP_String());
+        int letterSize = 0;
+        char* byteStream = letter->GetByteStream(&letterSize);
+        NetSocket* socket = m_sendSocket;
+        socket->WriteData(byteStream, letterSize);
+        bytesSentThisFrame += letterSize;
+        delete letter;
       }
-        else
-        {
-            int letterSize = 0;
-            char *byteStream = letter->GetByteStream(&letterSize);
-            NetSocket* socket = m_sendSocket;
-            socket->WriteData( byteStream, letterSize);
-            bytesSentThisFrame += letterSize;
-            delete letter;
-        }
 
-        m_outbox.RemoveData(0);
+      m_outbox.RemoveData(0);
     }
     m_outboxMutex->Unlock();
 

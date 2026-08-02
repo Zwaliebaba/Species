@@ -84,7 +84,6 @@ App::App()
   g_prefsManager = new PrefsManager(GetPreferencesPath());
   SetPreferenceOverrides();
 
-  m_bypassNetworking = g_prefsManager->GetInt("BypassNetwork") ? true : false;
 
   m_negativeRenderer = g_prefsManager->GetInt("RenderNegative", 0) ? true : false;
   if (m_negativeRenderer)
@@ -112,7 +111,7 @@ App::App()
 
   m_gameCursor = new GameCursor();
   m_soundSystem = new SoundSystem();
-  m_clientToServer = new ClientToServer(m_bypassNetworking);
+  m_clientToServer = new ClientToServer();
   m_userInput = new UserInput();
   //    m_location          = new Location();
   //    m_locationInput		= new LocationInput();
