@@ -407,7 +407,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: >
       Re-measured on 6eb17e4. With T12 done first — which is why the edge is
       there — this task's only remaining allowlist work is one entry:
