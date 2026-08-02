@@ -76,7 +76,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T2
     title: Move Vector3 and the maths utilities down into NeuronCore
@@ -103,7 +103,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T3
     title: Move HiResTime down into NeuronCore
@@ -124,7 +124,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T4
     title: Move Preferences and Profiler down into NeuronCore
@@ -147,7 +147,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T5
     title: Move the IP conversion helpers off Server and into Generic
@@ -174,7 +174,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   # ---------------------------------------------------------------------------
   # Wave 2: sever the wire protocol from the game model. Needs the containers and

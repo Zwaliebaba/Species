@@ -8,11 +8,6 @@
 # Format: <including project>/<including file> -> <included header>
 #
 # Regenerate with: python3 tools/check_layering.py --update
-#
-# If a file was renamed or moved, its entries stop matching and the same
-# violations look new. Rewrite just those entries with:
-#   python3 tools/check_layering.py --rename OLD NEW
-# That is not growth — the count is unchanged and the diff shows the rename.
 
 GameLogic/Ai.cpp -> App.h
 GameLogic/Ai.cpp -> EntityGrid.h

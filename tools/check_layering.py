@@ -24,6 +24,7 @@ modernization proceeds, never to grow.
     python3 tools/check_layering.py             # fail on unlisted violations
     python3 tools/check_layering.py --update    # rewrite the allowlist
     python3 tools/check_layering.py --rename OLD NEW   # a file moved or was renamed
+    python3 tools/check_layering.py --prune            # drop entries that are now fixed
 
 Renaming or moving a file makes its allowlisted entries stop matching, and the
 same violations then look brand new. `--rename` rewrites just those entries, so
@@ -131,6 +132,11 @@ def main() -> int:
         help="rewrite the allowlist from the current tree instead of checking",
     )
     parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="remove allowlist entries whose violations no longer exist; refuses to add any",
+    )
+    parser.add_argument(
         "--rename",
         nargs=2,
         metavar=("OLD", "NEW"),
@@ -153,6 +159,20 @@ def main() -> int:
         return 0
 
     violations = set(find_violations(build_header_index()))
+
+    if args.prune:
+        allowlist = load_allowlist()
+        added = violations - allowlist
+        if added:
+            print("Refusing to prune: these violations are new, not fixed.\n")
+            for entry in sorted(added):
+                print(f"  {entry}")
+            print("\nPrune only shrinks. Resolve these first.")
+            return 1
+        removed = allowlist - violations
+        write_allowlist(allowlist & violations)
+        print(f"pruned {len(removed)} fixed entr(y/ies); {len(violations)} remain")
+        return 0
 
     if args.update:
         write_allowlist(violations)
