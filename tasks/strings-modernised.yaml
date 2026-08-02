@@ -49,7 +49,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T2
     title: Convert NeuronCore string handling
