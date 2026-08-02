@@ -74,7 +74,7 @@ App::App()
     m_gameMenu(nullptr),
     m_negativeRenderer(false),
     m_paused(false),
-    m_levelReset(false),
+    m_levelReset(false)
 {
   g_app = this;
 
