@@ -4,8 +4,8 @@
 
 #define SPECIES_RAND_MAX 32767
 
-void  darwiniaSeedRandom (unsigned int seed);
-int  darwiniaRandom ();
+void  speciesSeedRandom (unsigned int seed);
+int  speciesRandom ();
 
 
 

@@ -215,7 +215,7 @@ void Armour::DetectCollisions()
     Entity* ent = g_app->m_location->GetEntity(neighbours[i]);
     if (ent->m_type == TypeArmour && ent->m_id != m_id)
     {
-      Entity* entity = g_app->m_location->GetEntity(neighbours[darwiniaRandom() % numFound]);
+      Entity* entity = g_app->m_location->GetEntity(neighbours[speciesRandom() % numFound]);
       DEBUG_ASSERT(entity);
       Vector3 toNeighbour = m_pos - entity->m_pos;
       toNeighbour.y = 0.0f;

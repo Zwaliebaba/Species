@@ -33,7 +33,7 @@ public:
     void MouseUp()
     {
 		CameraAnimation *anim = new CameraAnimation;
-		sprintf(anim->m_name, "CamAnim%d", darwiniaRandom() & 0x3ff);
+		sprintf(anim->m_name, "CamAnim%d", speciesRandom() & 0x3ff);
 		g_app->m_location->m_levelFile->m_cameraAnimations.PutData(anim);
 
 		CameraAnimMainEditWindow *parent = (CameraAnimMainEditWindow *)m_parent;

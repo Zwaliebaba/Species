@@ -205,8 +205,26 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
+      49 occurrences renamed across 26 files, not the estimated 50. The 50th was
+      menu_darwinia inside a commented-out line referencing Icons/menu_darwinia.bmp,
+      an asset that does not exist — dead code, left alone rather than folded into
+      a rename task.
+
+      Re-count afterwards: 372 occurrences remain and no game-name-derived
+      identifier is among them. The classification also exposed a counting error
+      in T4: `grep -rl Darwinia GameData/` matches files containing "Darwinian",
+      so Darwinia/darwinia were wrongly counted as content-named. With -w the
+      split is 241 named in GameData, 101 entity-derived, 30 game-name strings.
+      T4's figures are corrected in the docs.
+
+      The 30 game-name strings are a category the plan did not anticipate: the
+      "DARWINIA" title drawn on screen, the "~/.darwinia" and "Application Support/
+      Darwinia" user-data paths, and the "Darwinia" Win32 window class. None is an
+      identifier. Renaming them is a product and data-migration decision, not a
+      refactor — changing the paths orphans every existing save.
+
       Naming: keeping the existing lowerCamel on speciesRandom/speciesSeedRandom
       rather than converting to the PascalCase the standards specify. Random.cpp
       is a legacy-style file, and mixing a style conversion into a rename is

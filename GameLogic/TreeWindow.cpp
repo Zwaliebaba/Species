@@ -65,7 +65,7 @@ public:
                 newBuilding->m_id.SetUniqueId( g_app->m_globalWorld->GenerateBuildingId() );
                 g_app->m_location->m_levelFile->m_buildings.PutData( newBuilding );
 
-                darwiniaSeedRandom(time(NULL));
+                speciesSeedRandom(time(NULL));
                 Tree *newTree = (Tree *) newBuilding;
                 newTree->m_pos = _pos;
                 newTree->m_seed = (int) frand(99999);

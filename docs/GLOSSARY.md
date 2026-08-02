@@ -179,8 +179,9 @@ the code **as it is**.
 Renaming is governed by
 [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia). The
 short version: the UI scaffolding rename is done, and every domain term in this
-glossary is frozen until the game runs again. 421 Darwinia-derived occurrences
-remain, 371 of them either named in `GameData/` or derived from something that
-is. Before renaming anything, ask both questions the policy sets out — `grep -rl
-"<TheName>" GameData/`, *and* whether the name derives from one that would fail
-that grep.
+glossary is frozen until the game runs again. 372 Darwinia-derived occurrences
+remain: 342 either named in `GameData/` or derived from something that is, and 30
+that are game-name *strings* — on-screen branding and user-data paths — rather
+than identifiers. Before renaming anything, ask both questions the policy sets
+out: `grep -rlw "<TheName>" GameData/`, *and* whether the name derives from one
+that would fail that grep.

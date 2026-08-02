@@ -166,7 +166,7 @@ public:
 
     void MouseUp()
     {
-        ((GameMenuWindow *) m_parent)->m_newPage = GameMenuWindow::PageDarwinia;
+        ((GameMenuWindow *) m_parent)->m_newPage = GameMenuWindow::PageSpecies;
         /*if( g_app->m_multiwinia )
         {
             delete g_app->m_multiwinia;
@@ -358,7 +358,7 @@ void GameMenu::CreateMapList()
 GameMenuWindow::GameMenuWindow()
 :   SpeciesWindow("GameMenu"),
     m_currentPage(-1),
-    m_newPage(PageDarwinia)
+    m_newPage(PageSpecies)
 {
     int w = g_app->m_renderer->ScreenW();
     int h = g_app->m_renderer->ScreenH();
@@ -412,7 +412,7 @@ void GameMenuWindow::SetupNewPage( int _page )
     switch( _page )
     {
         case PageMain:      SetupMainPage();                    break;
-        case PageDarwinia:  SetupDarwiniaPage();                break;
+        case PageSpecies:  SetupSpeciesPage();                break;
         /*case PageMultiwinia:SetupMultiwiniaPage();              break;
         case PageGameSetup: SetupMultiplayerPage( m_gameType ); break;
         case PageResearch:  SetupResearchPage();                break;*/
@@ -440,7 +440,7 @@ void GameMenuWindow::SetupMainPage()
     m_buttonOrder.PutData( quit );
 }
 
-void GameMenuWindow::SetupDarwiniaPage()
+void GameMenuWindow::SetupSpeciesPage()
 {
     int x, y, gap;
     GetDefaultPositions( &x, &y, &gap );
@@ -474,7 +474,7 @@ void GameMenuWindow::GetDefaultPositions(int *_x, int *_y, int *_gap)
     switch( m_newPage )
     {
         case PageMain:
-        case PageDarwinia:      *_y = float((h / 864.0f ) * 200.0f); *_gap = *_y;            break;
+        case PageSpecies:      *_y = float((h / 864.0f ) * 200.0f); *_gap = *_y;            break;
         case PageMultiwinia:    *_y = float((h / 864.0f ) * 200.0f); *_gap = *_y / 1.5f;     break;
         case PageGameSetup:
         case PageResearch:      *_y = float((h / 864.0f ) * 70.0f); *_gap = (h / 864 ) * 60; break;

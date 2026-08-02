@@ -529,7 +529,7 @@ void SoundInstance::OpenStream( bool _keepCurrentStream )
         if( memoryUsage == 3 ) numSamples *= 0.25f;
         numSamples = max( numSamples, 1 );
 
-        int sampleIndex = darwiniaRandom() % numSamples;
+        int sampleIndex = speciesRandom() % numSamples;
 		sampleName = group->m_samples[ sampleIndex ];
     }
 
@@ -1005,7 +1005,7 @@ WorldObject *SoundInstance::GetAttachedObject()
 
                     case MonophonicRandom:
                     {
-                        int index = darwiniaRandom() % m_objIds.Size();
+                        int index = speciesRandom() % m_objIds.Size();
                         m_objId = *m_objIds[index];
                         break;
                     }

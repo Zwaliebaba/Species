@@ -10,8 +10,8 @@ class Vector2;
 class Matrix34;
 class Plane;
 
-inline float frand(float range = 1.0f) { return range * ((float)darwiniaRandom() / (float)SPECIES_RAND_MAX); }
-inline float sfrand(float range = 1.0f) { return (0.5f - (float)darwiniaRandom() / (float)(SPECIES_RAND_MAX)) * range; }
+inline float frand(float range = 1.0f) { return range * ((float)speciesRandom() / (float)SPECIES_RAND_MAX); }
+inline float sfrand(float range = 1.0f) { return (0.5f - (float)speciesRandom() / (float)(SPECIES_RAND_MAX)) * range; }
 
 // Network Syncronised versions (only call inside Net-Safe code)
 unsigned long syncrand();

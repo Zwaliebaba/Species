@@ -60,14 +60,19 @@ is a migration task, not something to do opportunistically.
 `DARWINIA_*` macros (30), and the `About*` pair that sat on top of them — landed
 via `tasks/rename-scaffolding.yaml`, CI-verified.
 
-**421 Darwinia-derived occurrences across 31 distinct spellings remain.** Ask of
-any of them: *is this name derived from the game, or from the entity?*
+**No Darwinia-named identifier derived from the game remains.** 372 occurrences
+across 27 spellings are left, and every one falls into a group that is frozen for
+a stated reason:
 
-| Group | Occurrences | Status |
+| Group | Occurrences | Why it is frozen |
 |---|---|---|
-| Named in `GameData/` — `Darwinian`, `Darwinians`, the `about_darwinia`-style language keys | 270 | **Frozen.** Renaming breaks content loading. |
-| Derived from the entity but code-only — `TypeDarwinian`, `FindDarwinian`, `numDarwinians`, `RenderDarwinians`, … | 101 | **Frozen.** See below. |
-| Derived from the *game* name — `darwiniaRandom`, `darwiniaSeedRandom`, `PageDarwinia`, `SetupDarwiniaPage` | 50 | Renamable. Not yet done — `tasks/rename-scaffolding.yaml` T5. |
+| Named in `GameData/` — `Darwinian`, `Darwinians`, `dialog_leavedarwinia` and the other language keys | 241 | Level files and language tables resolve these by string at runtime. Renaming breaks content loading, silently. |
+| Entity-derived identifiers — `TypeDarwinian`, `FindDarwinian`, `numDarwinians`, `RenderDarwinians` | 101 | Code-only, so the filename test passes — but they name the same concept. See below. |
+| Game-name **strings**, not identifiers — the `"DARWINIA"` title text, `"~/.darwinia"` and `"Application Support/Darwinia"` user-data paths, the `"Darwinia"` Win32 window class | 30 | Not a refactor. The title text is a branding decision, and changing the data paths orphans every existing save. |
+
+> Counting note: `grep -rl Darwinia GameData/` matches files containing
+> *Darwinian*, which inflates the first group. Use `grep -rlw` for whole-word
+> matching when re-deriving these figures.
 
 **Code-only is necessary but not sufficient.** `TypeDarwinian` appears nowhere in
 `GameData/`, so the filename test passes — yet `Entity::GetTypeId` matches

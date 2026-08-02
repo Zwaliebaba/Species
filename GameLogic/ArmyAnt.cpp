@@ -148,7 +148,7 @@ bool ArmyAnt::Advance( Unit *_unit )
     int newIndex = -1;
     while( true )
     {
-        newIndex = darwiniaRandom() % 3;
+        newIndex = speciesRandom() % 3;
         if( newIndex != currentIndex ) break;
     }
 

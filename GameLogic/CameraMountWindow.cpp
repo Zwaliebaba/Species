@@ -33,7 +33,7 @@ public:
 		mount->m_pos = g_app->m_camera->GetPos();
 		mount->m_front = g_app->m_camera->GetFront();
 		mount->m_up = g_app->m_camera->GetUp();
-		sprintf(mount->m_name, "blah%d", darwiniaRandom());
+		sprintf(mount->m_name, "blah%d", speciesRandom());
 
         g_app->m_location->m_levelFile->m_cameraMounts.PutDataAtEnd( mount );
 
