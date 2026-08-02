@@ -2,9 +2,13 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="ServerToClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="NeuronServer.h" />
+    <ClInclude Include="Server.h" />
+    <ClInclude Include="ServerToClient.h" />
   </ItemGroup>
 </Project>

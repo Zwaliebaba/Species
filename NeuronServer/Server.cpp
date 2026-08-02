@@ -72,13 +72,23 @@ Server::~Server()
   m_clients.EmptyAndDelete();
   m_teams.EmptyAndDelete();
 
-  m_inboxMutex->Lock();
-  m_inbox.EmptyAndDelete();
-  m_inboxMutex->Unlock();
+  // The mutexes are created by Initialise, not by the constructor, so a Server
+  // that was built and never initialised used to null-dereference here. Species
+  // always pairs the two, which is why nothing hit it — but a class you cannot
+  // destroy without starting its network threads is a class no test can hold.
+  if (m_inboxMutex)
+  {
+    m_inboxMutex->Lock();
+    m_inbox.EmptyAndDelete();
+    m_inboxMutex->Unlock();
+  }
 
-  m_outboxMutex->Lock();
-  m_outbox.EmptyAndDelete();
-  m_outboxMutex->Unlock();
+  if (m_outboxMutex)
+  {
+    m_outboxMutex->Lock();
+    m_outbox.EmptyAndDelete();
+    m_outboxMutex->Unlock();
+  }
 }
 
 static NetCallBackRetType ListenThread(void* ptr)

@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Network">
+      <UniqueIdentifier>{3f2a1c7e-5d64-4b18-9a30-7c8e2f6b4d95}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Audio">
       <UniqueIdentifier>{67249a58-6228-4a5d-92bc-5ea745033d5a}</UniqueIdentifier>
     </Filter>
@@ -12,7 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="SampleCache.cpp">
       <Filter>Audio</Filter>
@@ -43,6 +45,9 @@
     </ClCompile>
     <ClCompile Include="SoundSystem.cpp">
       <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientToServer.cpp">
+      <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="ControlBindings.cpp">
       <Filter>Input</Filter>
@@ -164,7 +169,6 @@
     <ClCompile Include="OGLExtensions.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Preferences.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SampleCache.h">
       <Filter>Audio</Filter>
@@ -195,6 +199,9 @@
     </ClInclude>
     <ClInclude Include="SoundSystem.h">
       <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientToServer.h">
+      <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="ControlBindings.h">
       <Filter>Input</Filter>

@@ -7,24 +7,20 @@
 #include "NetThread.h"
 #include "NetUdpPacket.h"
 
+#include <float.h>
+
 #include "HiResTime.h"
 #include "Debug.h"
 #include "Preferences.h"
 #include "Profiler.h"
 #include "Input.h"
 
-#include "App.h"
-#include "Main.h"
-#include "Location.h"
-#include "TaskManager.h"
-#include "Team.h"
-
-#include "Factory.h"
-#include "RadarDish.h"
-#include "Engineer.h"
-#include "LaserFence.h"
-
-#include "Server.h"
+// Server.h was included here and never used — no Server appears in this file.
+// Left alone it would become a NeuronClient -> NeuronServer include the moment
+// T9 moves the host, which is the one direction the layering forbids outright.
+// Everything it carried transitively (LList, DArray) either comes from
+// ClientToServer.h or is unused here.
+#include "ProtocolLimits.h"
 #include "ClientToServer.h"
 #include "ServerToClientLetter.h"
 #include "Generic.h"
@@ -69,6 +65,7 @@ ClientToServer::ClientToServer()
   s_client = this;
 
   m_lastValidSequenceIdFromServer = -1;
+  m_startTime = DBL_MAX; // Same initial value g_startTime carried in Main.cpp
 
   m_inboxMutex = new NetMutex();
   m_outboxMutex = new NetMutex();
@@ -215,7 +212,7 @@ int ClientToServer::GetNextLetterSeqID()
 }
 
 
-ServerToClientLetter *ClientToServer::GetNextLetter()
+ServerToClientLetter* ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
 {
     m_inboxMutex->Lock();
     ServerToClientLetter *letter = NULL;
@@ -223,7 +220,7 @@ ServerToClientLetter *ClientToServer::GetNextLetter()
     if( m_inbox.Size() > 0 )
     {
         letter = m_inbox[0];
-        if( letter->GetSequenceId() == g_lastProcessedSequenceId+1 )
+        if (letter->GetSequenceId() == _lastProcessedSequenceId + 1)
         {
             m_inbox.RemoveData(0);
         }
@@ -265,19 +262,19 @@ void ClientToServer::ReceiveLetter( ServerToClientLetter *letter )
     // Work out our start time
 
     double newStartTime = GetHighResTime() - (float) letter->GetSequenceId() * SERVER_ADVANCE_PERIOD;
-    if( newStartTime < g_startTime )
+    if (newStartTime < m_startTime)
     {
-      g_startTime = newStartTime;
+      m_startTime = newStartTime;
 #ifdef _DEBUG
-	  // DebugTrace( "Start Time set to %f\n", (float) g_startTime );
+      // DebugTrace( "Start Time set to %f\n", (float) m_startTime );
 #endif
     }
 //#ifdef _DEBUG
-	else if (newStartTime > g_startTime + 0.1f)
-	{
-		g_startTime = newStartTime;
-//        DebugTrace( "Start Time set to %f\n", (float) g_startTime );
-	}
+    else if (newStartTime > m_startTime + 0.1f)
+    {
+      m_startTime = newStartTime;
+      //        DebugTrace( "Start Time set to %f\n", (float) m_startTime );
+    }
 //#endif
 
     //
@@ -352,8 +349,9 @@ void ClientToServer::ClientLeave()
     letter->SetType( NetworkUpdate::ClientLeave );
     SendLetter( letter );
 
+    // Only the endpoint's own counter is reset here. The caller resets the one
+    // that tracks how far the simulation has advanced, because that is its.
     m_lastValidSequenceIdFromServer = -1;
-    g_lastProcessedSequenceId = -1;
 }
 
 
@@ -473,87 +471,4 @@ void ClientToServer::RequestTargetProgram( unsigned char _teamId, unsigned char 
     letter->SetProgram( _program );
     letter->SetWorldPos( _pos );
     SendLetter( letter );
-}
-
-
-void ClientToServer::ProcessServerUpdates( ServerToClientLetter *letter )
-{
-
-    DEBUG_ASSERT(letter->m_type == ServerToClientLetter::Update);
-
-    for( int i = 0; i < letter->m_updates.Size(); ++i )
-    {
-        NetworkUpdate *update = letter->m_updates[i];
-
-        switch( update->m_type )
-        {
-            case NetworkUpdate::Alive:
-                g_app->m_location->UpdateTeam( update->m_teamId, update->m_teamControls );
-                break;
-
-            case NetworkUpdate::Pause:
-                g_app->m_paused = !g_app->m_paused;
-                break;
-
-            case NetworkUpdate::SelectUnit:
-                g_app->m_location->m_teams[ update->m_teamId ].SelectUnit( update->m_unitId, update->m_entityId, update->m_buildingId );
-                g_app->m_taskManager->SelectTask( WorldObjectId( update->m_teamId, update->m_unitId, update->m_entityId, -1 ) );
-                break;
-
-            case NetworkUpdate::CreateUnit:
-            {
-                Building *building = g_app->m_location->GetBuilding( update->m_buildingId );
-                if( building &&
-                    building->m_type == Building::TypeFactory )
-                {
-                    Factory *factory = (Factory *) building;
-                    factory->RequestUnit( update->m_entityType, update->m_numTroops );
-                }
-                else
-                {
-                    DEBUG_ASSERT( update->GetWorldPos() != g_zeroVector );
-                    int unitId;
-                    Unit *unit = g_app->m_location->m_teams[ update->m_teamId ].NewUnit( update->m_entityType, update->m_numTroops, &unitId, update->GetWorldPos() );
-                    g_app->m_location->SpawnEntities( update->GetWorldPos(), update->m_teamId, unitId, update->m_entityType, update->m_numTroops, g_zeroVector, update->m_numTroops*2 );
-                }
-				break;
-            }
-
-            case NetworkUpdate::AimBuilding:
-            {
-                Building *building = g_app->m_location->GetBuilding( update->m_buildingId );
-                if( building &&
-                    building->m_id.GetTeamId() == update->m_teamId &&
-                    building->m_type == Building::TypeRadarDish )
-                {
-                    RadarDish *radarDish = (RadarDish *) building;
-                    radarDish->Aim( update->GetWorldPos() );
-                }
-                break;
-            }
-
-            case NetworkUpdate::ToggleLaserFence:
-            {
-				Building *building = g_app->m_location->GetBuilding( update->m_buildingId );
-				if (building && building->m_type == Building::TypeLaserFence)
-				{
-					LaserFence *laserfence = (LaserFence*)building;
-					laserfence->Toggle();
-				}
-                break;
-            }
-
-            case NetworkUpdate::RunProgram:
-            {
-                g_app->m_taskManager->RunTask( update->m_program );
-                break;
-            }
-
-            case NetworkUpdate::TargetProgram:
-            {
-                int programId = update->m_program;
-                g_app->m_taskManager->TargetTask( programId, update->GetWorldPos() );
-            }
-        }
-    }
 }

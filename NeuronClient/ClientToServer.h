@@ -2,11 +2,14 @@
 #define _CLIENTTOSERVER_H
 
 #include "LList.h"
+#include "TeamControls.h"
 #include "Vector3.h"
 
-#include "WorldObject.h"
-#include "Entity.h"
-
+// TeamControls.h is included rather than forward-declared: SendIAmAlive takes it
+// by const reference, which a declaration would satisfy, but the declaration used
+// to arrive transitively through Entity.h. WorldObject.h and Entity.h are gone —
+// the game types they carried were only ever used by ProcessServerUpdates, which
+// now lives in Species/ServerUpdates.cpp.
 
 class NetLib;
 class NetSocket;
@@ -33,22 +36,28 @@ public:
     LList               <NetworkUpdate *> m_outbox;
 
     int                 m_lastValidSequenceIdFromServer;    // eg if we have 11,12,13,15,18 then this is 13
+    // When the client believes server sequence 0 happened, derived from the sequence id of every letter
+    // that arrives. This was the g_startTime global in Species/Main.h, which only this class ever wrote.
+    // Written on the listen thread and read on the main thread, unsynchronised — as it always was.
+    double m_startTime;
 
-public:
+  public:
     ClientToServer();
     ~ClientToServer();
 
     int GetOurIP_Int();
     char* GetOurIP_String();
 
-    ServerToClientLetter* GetNextLetter();
+    // Releases the head of the inbox only when it is the letter the caller is
+    // next expecting. The caller owns that counter — it tracks how far the
+    // simulation has advanced, not how far the socket has.
+    ServerToClientLetter* GetNextLetter(int _lastProcessedSequenceId);
     int GetNextLetterSeqID();
 
     void Advance();
 
     void ReceiveLetter(ServerToClientLetter* letter);
     void SendLetter(NetworkUpdate* letter);
-    void ProcessServerUpdates(ServerToClientLetter* letter);
 
     void ClientJoin();
     void ClientLeave();
