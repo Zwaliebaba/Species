@@ -1,0 +1,125 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: rename-darwinian
+title: Rename the Darwinian entity across code, assets and content, gated on the owner
+summary: >
+  The one rename CODING_STANDARDS.md describes as unblocked but unwritten:
+  the Darwinian entity and everything derived from it. It was gated on the
+  game running so a missed reference is catchable — the game runs, so this
+  is now executable, but only as ONE deliberate operation covering code,
+  assets and content together, verified by an owner-run Garden smoke test.
+
+  Measured scope on b69c951 (re-derive with grep -rlw): ~372 occurrences
+  across 27 spellings — level-file entity strings ("Darwinian 0 598.8 ..."),
+  GameData filenames (Shapes/Darwinian.shp, Sprites/Darwinian.bmp,
+  Icons/IconDarwinian.bmp, ~40 Sounds/*Darwinian*.wav), language-table
+  keys, and the code identifiers derived from the entity name
+  (TypeDarwinian, FindDarwinian, numDarwinians, RenderDarwinians, the
+  Darwinian class itself).
+
+  Explicitly OUT of scope, per the frozen-groups table: the "DARWINIA"
+  title text and window class (branding, owner's call, not a refactor) and
+  the ~/.darwinia user-data paths (renaming orphans every existing save).
+  Those stay until the owner opens a separate decision.
+
+  Why a rename plan lives among modernisation plans: content resolves by
+  string at runtime and fails silently when missed, which is exactly why
+  this must be a planned, gated task rather than something an agent does
+  opportunistically. Nothing else in any plan may rename Darwinian or any
+  GameData-coupled name.
+
+tasks:
+  - id: T1
+    title: Owner decides the replacement name
+    intent: >
+      Every downstream step substitutes one name; nothing can start until
+      the owner picks it. CODING_STANDARDS.md's worked example uses
+      "Citizen" (TypeCitizen), which fits the colony framing — offered as
+      the default, not assumed.
+    depends_on: []
+    files: []
+    acceptance:
+      - The chosen name is recorded in this task's notes by or with the owner
+    status: blocked
+    notes: >
+      Blocked on an owner decision, which is outside the graph. Suggested
+      default: Citizen.
+
+  - id: T2
+    title: Build the complete rename inventory
+    intent: >
+      A rename that misses one string fails silently at load. Before
+      anything changes, enumerate every occurrence: code identifiers
+      (grouped by the two-question test in CODING_STANDARDS.md), GameData
+      filenames, level-file entity strings, language keys, and sound-script
+      references, with the exact command that found each group. The
+      inventory is the checklist T3 executes and the evidence T4 checks
+      against. Name-independent, so it can run before T1 resolves.
+    depends_on: []
+    files: []
+    acceptance:
+      - notes carries the full occurrence table — spelling, count, file class, resolved-by-string or code-only — reproducible by the recorded commands
+      - The frozen-for-branding strings are listed as explicitly excluded
+    verify:
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  - id: T3
+    title: Execute the rename in one operation
+    intent: >
+      Code, GameData filenames, level files, language keys and sound
+      references change together, in one commit, so the tree never holds a
+      TypeCitizen that loads "Darwinian". Uses git mv for renamed files,
+      Rename: trailers for the changed-lines format check, and
+      check_layering.py --rename for every renamed source file so the
+      allowlist count is untouched.
+    depends_on: [T1, T2]
+    files:
+      - GameLogic/Darwinian.cpp
+      - GameLogic/Darwinian.h
+      - GameLogic/Entity.cpp
+      - GameData/Levels
+      - GameData/Shapes
+      - GameData/Sprites
+      - GameData/Icons
+      - GameData/Sounds
+      - GameData/Language
+      - tools/layering_allowlist.txt
+    acceptance:
+      - grep -rlw Darwinian over code and GameData/ returns nothing outside the branding/save-path exclusions listed by T2
+      - Entity.cpp's typeNames[] entry, the class, the level files and every asset filename agree on the new name
+      - The commit carries Rename trailers and the allowlist entry count is unchanged
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    notes: >
+      parallel_safe false and then some: nothing else may be in flight in
+      ANY plan while this lands — it touches entity code, content and the
+      allowlist at once.
+    status: todo
+
+  - id: T4
+    title: Owner runs the full Garden smoke test against the rename
+    intent: >
+      The smoke test is the only thing that can catch a missed
+      string-resolved reference — 50 Darwinians spawning under their new
+      name, sounds firing, the Task Manager listing programs. All seven
+      steps, run by the owner on a Windows machine, results recorded in
+      AGENTS.md's "What working looks like" section as the standard
+      requires.
+    depends_on: [T3]
+    files:
+      - AGENTS.md
+    acceptance:
+      - All seven Garden smoke-test steps pass on the renamed build, owner-reported
+      - AGENTS.md records the run with the commit hash
+    status: blocked
+    notes: >
+      Blocked on owner execution — agents in this environment cannot launch
+      the Windows client. This is the gate the whole plan exists for; T3
+      landing without T4 passing is not done.

@@ -1,0 +1,567 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: containers-replaced
+title: Replace the hand-rolled containers with standard ones and a Neuron slot map
+summary: >
+  Migration stage 3 (CODING_STANDARDS.md). The legacy containers all live in
+  NeuronCore since stage 1; this plan replaces their users and then deletes
+  them. Measured on b69c951 — re-measure rather than trusting these:
+
+    LList        127 files (GameLogic 82, Species 26, NeuronClient 16,
+                 NeuronCore 2, NeuronServer 1)
+    DArray       14 files    FastDArray  17 files    SliceDArray  Location
+    BTree        5 files     HashTable/SortingHashTable  7 files
+    2dArray/BoundedArray/2dSurfaceMap  ~12 files (input system, grids, water)
+
+  Owner decisions (2026-08-02): DArray/FastDArray are replaced by a NEW
+  Neuron slot map, then deleted — not modernised in place. Everything else
+  goes to std:: equivalents.
+
+  Determinism is the whole game here. DArray indices are network identity
+  (WorldObjectId::m_index serialises them verbatim) and GenerateSyncValue()
+  accumulates in container index order, so the slot map must reproduce
+  DArray's index-assignment behaviour EXACTLY — including the fact that
+  DArray::PutData scans linearly for the first free slot while
+  FastDArray::PutData pops a freelist, which assign DIFFERENT indices after
+  removals. T2 pins both sequences before T3 exists. LList order is
+  insertion order and every conversion preserves traversal order.
+  std::unordered_* may hold caches and UI state, never simulation state.
+
+  Characterisation limits, stated up front: the container templates
+  themselves are fully testable in NeuronCoreTests (T1, T2). Per-file
+  conversions in GameLogic sit behind the LinkStubs link wall and Species is
+  an exe with no test project, so those tasks rely on the template-level
+  pinned tests, an unchanged call-site structure, the build, and the Garden
+  smoke test — each such task says so in notes rather than implying more.
+
+  Cross-plan ordering: a file finishes its task here before its
+  strings-modernised task, which finishes before its ownership task
+  (stage 3 -> 4 -> 5 per file, CODING_STANDARDS.md). Tasks in different
+  plans that list the same file must not run concurrently — check `files`.
+
+tasks:
+  - id: T1
+    title: Characterise LList semantics in NeuronCoreTests
+    intent: >
+      Every LList conversion claims behaviour preservation; this task creates
+      the evidence. Pins insertion order, index stability under
+      PutDataAtStart/PutDataAtIndex, removal shifting, FindData, and the
+      ownership semantics of EmptyAndDelete, against the legacy template.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - Tests/NeuronCoreTests/LListTests.cpp
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj.filters
+    acceptance:
+      - LListTests pins traversal order and index behaviour for insert-at-end, insert-at-start, insert-at-index and removal
+      - LListTests demonstrates EmptyAndDelete deletes pointees and Empty does not
+      - python3 tools/check_project_files.py passes (the four-edit rule)
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T2
+    title: Characterise DArray and FastDArray slot-assignment semantics
+    intent: >
+      Slot indices are network identity, and DArray (linear first-free scan)
+      and FastDArray (freelist pop) assign different indices after removals.
+      Pin the exact index sequence each returns from PutData across a
+      scripted mix of puts and MarkNotUsed calls, plus ValidIndex, NumUsed,
+      Grow behaviour and SetStepDouble. These pinned sequences are the
+      contract T3 implements against.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - Tests/NeuronCoreTests/DArrayTests.cpp
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj.filters
+    acceptance:
+      - Tests pin the PutData index sequence for DArray and FastDArray over identical scripted put/remove mixes, and the two sequences differ where the implementations differ
+      - Tests pin ValidIndex/NumUsed/Size across growth and slot reuse
+      - python3 tools/check_project_files.py passes
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T3
+    title: Implement Neuron::SlotMap with DArray-identical index semantics
+    intent: >
+      The owner chose a new slot map over modernising DArray in place. A
+      C++20 Neuron::SlotMap (NeuronCore, namespace Neuron) whose index
+      assignment reproduces the legacy behaviour bit-for-bit — both the
+      DArray linear-scan flavour and the FastDArray freelist flavour, since
+      callers of each depend on different sequences. How the two flavours
+      are expressed (policy parameter or two types) is this task's design
+      decision; what is not negotiable is that T2's pinned sequences pass
+      unchanged against the replacement.
+    project: NeuronCore
+    depends_on: [T2]
+    files:
+      - NeuronCore/SlotMap.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/SlotMapTests.cpp
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj.filters
+    acceptance:
+      - T2's pinned index sequences pass verbatim against both SlotMap flavours
+      - SlotMap supports iteration in index order over occupied slots only
+      - SlotMap is Neuron style throughout — no raw owning pointers, no legacy macros
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T4
+    title: Migrate the protocol-adjacent containers (ServerToClientLetter, Server)
+    intent: >
+      NeuronCore/ServerToClientLetter.h uses DArray and LList, and
+      NeuronServer/Server.h holds the client and team registries in DArray —
+      registry indices are client identity on the wire. Converting these
+      first, under the existing wire-format and Server-initial-state tests,
+      proves the SlotMap on the highest-stakes users while they are the
+      smallest.
+    project: NeuronServer
+    depends_on: [T1, T3]
+    files:
+      - NeuronCore/ServerToClientLetter.h
+      - NeuronCore/ServerToClientLetter.cpp
+      - NeuronServer/Server.h
+      - NeuronServer/Server.cpp
+      - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+      - Tests/NeuronServerTests/ServerTests.cpp
+    acceptance:
+      - grep -lwE "DArray|LList" on the four source files returns nothing
+      - Existing ServerToClientLetter byte-pinning tests and Server initial-state tests pass unchanged
+      - Server.exe --ticks 20 still advances the sequence id (CI asserts this)
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T5
+    title: Convert the sound subsystem containers
+    intent: >
+      SoundSystem, SoundInstance and SampleCache use DArray, FastDArray,
+      BTree, HashTable and LList for what are caches and playback lists —
+      frame-rate code, not simulation state, so std::vector and
+      std::unordered_map are legitimate here. Removes a large cluster of
+      container users in one reviewable, low-determinism-risk diff.
+    project: NeuronClient
+    depends_on: [T1, T3]
+    files:
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundInstance.h
+      - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SampleCache.h
+      - NeuronClient/SampleCache.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|FastDArray|BTree|HashTable" on the six files returns nothing
+      - No speciesRandom() call is added or removed (sound must not touch the simulation stream)
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      Not characterisable ahead of time — sound needs a device. Relies on T1/T2
+      template tests, the build, and audible behaviour in the smoke test.
+    status: todo
+
+  - id: T6
+    title: Convert the resource and language containers
+    intent: >
+      Resource and LanguageTable are the main BTree/HashTable/SortingHashTable
+      users — asset and string caches keyed by name, explicitly permitted to
+      become std::unordered_map because they hold no simulation state.
+      FilesysUtils' DArray-of-filenames becomes std::vector<std::string>.
+    project: NeuronClient
+    depends_on: [T1, T3]
+    files:
+      - NeuronClient/Resource.h
+      - NeuronClient/Resource.cpp
+      - NeuronClient/LanguageTable.h
+      - NeuronClient/LanguageTable.cpp
+      - NeuronClient/FilesysUtils.cpp
+      - Tests/NeuronClientTests/FilesysUtilsTests.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|BTree|HashTable|SortingHashTable" on the five source files returns nothing
+      - Existing FilesysUtils tests pass unchanged; new tests cover the converted filename-listing behaviour
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T7
+    title: Convert the Eclipse UI toolkit and window-manager containers
+    intent: >
+      Eclipse, EclWindow and WindowManager hold widget and window lists in
+      LList. UI runs at frame rate and holds no simulation state; order still
+      matters for draw and event dispatch, so lists become std::vector with
+      insertion order preserved.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/Eclipse.cpp
+      - NeuronClient/Eclipse.h
+      - NeuronClient/EclWindow.cpp
+      - NeuronClient/EclWindow.h
+      - NeuronClient/WindowManager.cpp
+      - NeuronClient/WindowManager.h
+    acceptance:
+      - grep -lw LList on the six files returns nothing
+      - Draw order and event-dispatch order are by-construction identical (insertion-ordered vector)
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T8
+    title: Convert Shape and ClientToServer containers
+    intent: >
+      Shape's fragment lists and ClientToServer's inbox/outbox are the
+      remaining NeuronClient container users. The inbox/outbox order the
+      client applies server letters in, which feeds the simulation — order
+      is preserved exactly and the conversion is treated as
+      determinism-sensitive.
+    project: NeuronClient
+    depends_on: [T1, T3, T4]
+    files:
+      - NeuronClient/Shape.cpp
+      - NeuronClient/Shape.h
+      - NeuronClient/ClientToServer.cpp
+      - NeuronClient/ClientToServer.h
+    acceptance:
+      - grep -lwE "LList|DArray" on the four files returns nothing
+      - Letter-processing order in ClientToServer is by-construction unchanged
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T9
+    title: Convert the GameLogic entity containers
+    intent: >
+      The entity classes (Darwinian, Engineer, Officer, Armour, Spider,
+      Centipede, SoulDestroyer, Virii, Spirit, SpiritStore, InsertionSquad,
+      Entity, Incubator) hold simulation state in LList and FastDArray.
+      Every list here feeds Location::Advance and the sync value; traversal
+      order and slot indices are preserved exactly — LList becomes an
+      insertion-ordered std::vector, FastDArray becomes the freelist-flavour
+      SlotMap, never an unordered container.
+    project: GameLogic
+    depends_on: [T1, T3]
+    files:
+      - GameLogic/Darwinian.cpp
+      - GameLogic/Engineer.cpp
+      - GameLogic/Officer.cpp
+      - GameLogic/Armour.cpp
+      - GameLogic/Spider.cpp
+      - GameLogic/Centipede.cpp
+      - GameLogic/SoulDestroyer.cpp
+      - GameLogic/SoulDestroyer.h
+      - GameLogic/Virii.cpp
+      - GameLogic/Spirit.cpp
+      - GameLogic/SpiritStore.h
+      - GameLogic/SpiritStore.cpp
+      - GameLogic/InsertionSquad.cpp
+      - GameLogic/Entity.cpp
+      - GameLogic/Incubator.h
+      - GameLogic/Incubator.cpp
+    acceptance:
+      - grep -lwE "LList|FastDArray" on the listed files returns nothing
+      - Every replaced traversal visits elements in the same order as before, confirmed file-by-file in review
+      - No speciesRandom() call added, removed or made conditional
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Behind the LinkStubs link wall — entity behaviour is not unit-testable
+      yet. Evidence is the T1/T2/T3 pinned template tests, unchanged call-site
+      structure, and the Garden smoke test (steps 3-5 and 7 cover exactly this
+      code). Split into per-entity commits within the task if the diff grows
+      past reviewable.
+    status: todo
+
+  - id: T10
+    title: Convert the GameLogic building and AI containers
+    intent: >
+      Buildings (Building, ControlTower, Generator, GunTurret, LaserFence,
+      RadarDish, Teleport, TrunkPort, SpawnPoint, Mine, Tree, Triffid,
+      SporeGenerator, AntHill, FeedingTube, GodDish, GenericHub, Rocket,
+      SpiritReceiver, Spam) plus Ai, Weapons and Airstrike hold simulation
+      state in LList and DArray. Same determinism rules as T9: order and
+      indices preserved exactly.
+    project: GameLogic
+    depends_on: [T1, T3]
+    files:
+      - GameLogic/Building.cpp
+      - GameLogic/ControlTower.cpp
+      - GameLogic/Generator.cpp
+      - GameLogic/GunTurret.cpp
+      - GameLogic/LaserFence.cpp
+      - GameLogic/RadarDish.cpp
+      - GameLogic/Teleport.cpp
+      - GameLogic/TrunkPort.cpp
+      - GameLogic/SpawnPoint.cpp
+      - GameLogic/Mine.cpp
+      - GameLogic/Tree.cpp
+      - GameLogic/Triffid.cpp
+      - GameLogic/SporeGenerator.cpp
+      - GameLogic/AntHill.cpp
+      - GameLogic/FeedingTube.cpp
+      - GameLogic/GodDish.cpp
+      - GameLogic/GenericHub.cpp
+      - GameLogic/Rocket.cpp
+      - GameLogic/SpiritReceiver.cpp
+      - GameLogic/Spam.cpp
+      - GameLogic/Ai.cpp
+      - GameLogic/Weapons.cpp
+      - GameLogic/Airstrike.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|FastDArray" on the listed files returns nothing
+      - Every replaced traversal visits elements in the same order as before
+      - No speciesRandom() call added, removed or made conditional
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      Same link-wall caveat as T9. Large touch set — land as several commits
+      grouped by building family, one task.
+    status: todo
+
+  - id: T11
+    title: Convert the GameLogic window and menu containers
+    intent: >
+      The in-game windows (SpeciesWindow, MainMenus, Prefs* windows,
+      DropDownMenu, FileDialog, UserProfileWindow, CameraAnimWindow,
+      ResearchItem) use LList and DArray for UI lists. Frame-rate code, no
+      simulation state — the low-risk half of GameLogic.
+    project: GameLogic
+    depends_on: [T1, T7]
+    files:
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/MainMenus.cpp
+      - GameLogic/PrefsGraphicsWindow.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/PrefsScreenWindow.cpp
+      - GameLogic/PrefsKeybindingsWindow.h
+      - GameLogic/DropDownMenu.cpp
+      - GameLogic/FileDialog.h
+      - GameLogic/FileDialog.cpp
+      - GameLogic/UserProfileWindow.cpp
+      - GameLogic/CameraAnimWindow.cpp
+      - GameLogic/ResearchItem.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|InputSpecList" on the listed files returns nothing
+      - Menu and list display order is by-construction unchanged
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T12
+    title: Convert the Species world-core containers
+    intent: >
+      Location, GlobalWorld, Team, Unit, LevelFile, EntityGrid,
+      ObstructionGrid, RoutingSystem and Landscape are the heart of the
+      simulation: FastDArray slots here ARE WorldObjectId identity, and
+      SliceDArray drives the ten-slice advance loop. The most
+      determinism-critical task in the plan — freelist-flavour SlotMap for
+      every FastDArray, index-order iteration everywhere, grids stay
+      row-major fixed arrays (std::array/vector-backed 2d wrappers), nothing
+      unordered.
+    project: Species
+    depends_on: [T1, T3, T4]
+    files:
+      - Species/Location.h
+      - Species/Location.cpp
+      - Species/GlobalWorld.h
+      - Species/GlobalWorld.cpp
+      - Species/Team.h
+      - Species/Team.cpp
+      - Species/Unit.h
+      - Species/Unit.cpp
+      - Species/LevelFile.h
+      - Species/LevelFile.cpp
+      - Species/EntityGrid.cpp
+      - Species/ObstructionGrid.h
+      - Species/ObstructionGrid.cpp
+      - Species/RoutingSystem.cpp
+      - Species/Landscape.h
+      - Species/Landscape.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|FastDArray|SliceDArray|BoundedArray" on the listed files returns nothing
+      - Slot indices assigned to entities, units and buildings are by-construction identical (freelist-flavour SlotMap, pinned by T2/T3)
+      - GenerateSyncValue()'s traversal order is unchanged
+      - No speciesRandom() call added, removed or made conditional
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Species has no test project (exe). Evidence is the pinned SlotMap tests,
+      review against the determinism rules, and the full Garden smoke test —
+      request an owner run after this lands. Consider landing Location last
+      within the task, after the smaller files prove the pattern.
+    status: todo
+
+  - id: T13
+    title: Convert the Species app, task-manager and effects containers
+    intent: >
+      The remaining Species users: TaskManager and its interfaces, Main,
+      UserInput, LocationInput, GameMenu, GameCursor, ControlHelp, Script,
+      StartSequence, GlobalInternet, LocationEditor, Explosion,
+      ParticleSystem, Water. Explosion and ParticleSystem feed
+      GenerateSyncValue (effects are summed), so they follow the simulation
+      rules; the rest is frame-rate UI and editor state.
+    project: Species
+    depends_on: [T1, T3, T12]
+    files:
+      - Species/TaskManager.cpp
+      - Species/TaskManagerInterface.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/Main.cpp
+      - Species/UserInput.cpp
+      - Species/LocationInput.cpp
+      - Species/GameMenu.cpp
+      - Species/GameCursor.cpp
+      - Species/ControlHelp.h
+      - Species/ControlHelp.cpp
+      - Species/Script.cpp
+      - Species/StartSequence.cpp
+      - Species/GlobalInternet.h
+      - Species/GlobalInternet.cpp
+      - Species/LocationEditor.cpp
+      - Species/Explosion.cpp
+      - Species/ParticleSystem.h
+      - Species/ParticleSystem.cpp
+      - Species/Water.h
+      - Species/Water.cpp
+      - Species/LandscapeRenderer.h
+    acceptance:
+      - grep -lwE "LList|DArray|FastDArray|BoundedArray" on the listed files returns nothing
+      - Explosion and ParticleSystem keep slot indices and iteration order by-construction identical
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T14
+    title: Convert the input-driver stack off InputSpecList and legacy arrays
+    intent: >
+      The composable input drivers (Prefs, Invert, Pipe, Conjoin, filters)
+      pass InputSpecList and legacy array types through their interfaces.
+      Input is sampled at frame rate and feeds the simulation only through
+      sequenced NetworkUpdates, so std containers are safe; the interface
+      change touches every driver at once, which is why it is one task.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/InputSpecList.h
+      - NeuronClient/InputTypes.h
+      - NeuronClient/InputDriverPrefs.h
+      - NeuronClient/InputDriverInvert.h
+      - NeuronClient/InputDriverPipe.h
+      - NeuronClient/InputDriverConjoin.h
+      - NeuronClient/InputFilterManager.h
+      - NeuronClient/InputFilterWithDelta.h
+    acceptance:
+      - grep -lwE "LList|InputSpecList" on the driver headers returns nothing, or InputSpecList is a std-backed alias
+      - The driver stack composes exactly as before (same resolution order)
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T15
+    title: Convert the remaining scattered container users
+    intent: >
+      The long tail found by re-measuring after T4-T14: Preferences.h
+      (FastDArray), Profiler.h (HashTable), PersistingDebugRender.h,
+      2dSurfaceMap.h, and whatever the sweep-up grep still finds. Ends with
+      zero users of every legacy container outside the container headers
+      themselves.
+    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]
+    files:
+      - NeuronCore/Preferences.h
+      - NeuronCore/Preferences.cpp
+      - NeuronCore/Profiler.h
+      - NeuronCore/Profiler.cpp
+      - NeuronClient/PersistingDebugRender.h
+      - NeuronClient/PersistingDebugRender.cpp
+      - NeuronClient/2dSurfaceMap.h
+    acceptance:
+      - grep -rlwE "LList|DArray|FastDArray|SliceDArray|BTree|HashTable|SortingHashTable|BoundedArray" over the six projects matches only the container headers themselves
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+
+  - id: T16
+    title: Delete the legacy container headers
+    intent: >
+      With zero users, LList.h, DArray.h, FastDArray.h, SliceDArray.h,
+      BTree.h, HashTable.h, SortingHashTable.h, 2dArray.h, BoundedArray.h
+      and AutoVector.h leave the tree, closing stage 3. Deleting
+      AutoVector.h removes a file named in LICENSE's third-party list, so
+      LICENSE's file list is updated in the same commit — removing the file
+      is not stripping a notice, but the LICENSE text must stay accurate.
+    project: NeuronCore
+    depends_on: [T15]
+    files:
+      - NeuronCore/LList.h
+      - NeuronCore/DArray.h
+      - NeuronCore/FastDArray.h
+      - NeuronCore/SliceDArray.h
+      - NeuronCore/BTree.h
+      - NeuronCore/HashTable.h
+      - NeuronCore/SortingHashTable.h
+      - NeuronCore/2dArray.h
+      - NeuronCore/BoundedArray.h
+      - NeuronCore/AutoVector.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - LICENSE
+      - Tests/NeuronCoreTests/LListTests.cpp
+      - Tests/NeuronCoreTests/DArrayTests.cpp
+    acceptance:
+      - The ten container headers no longer exist on disk or in any .vcxproj
+      - LICENSE no longer lists AutoVector.h; the MathUtils.cpp and TriTri.cpp notices are untouched
+      - The T1/T2 characterisation tests for deleted templates are retired in the same commit; the SlotMap tests remain
+      - The full solution builds and the suite passes
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo

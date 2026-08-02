@@ -1,0 +1,201 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: language-hygiene
+title: Tree-wide language cleanups — nullptr, pragma once, enum class, dead files
+summary: >
+  The mechanical modernisations that are safe as sweeps, plus the enum and
+  dead-file work that is not. Owner approved tree-wide sweeps as single
+  diffs (2026-08-02). Measured on b69c951 — re-measure: ~578 NULL, 223 of
+  242 headers on `#ifndef _included_*` guards (a reserved-form identifier —
+  `_lowercase` at global scope — so the sweep also fixes a conformance
+  wart), 11 plain enums in headers and zero `enum class` anywhere.
+
+  Sweeps interact with the changed-lines format check: a mechanical
+  substitution must not force reformatting of otherwise-untouched legacy
+  lines. Both sweep tasks use the `Rename:` commit-trailer mechanism
+  (CODING_STANDARDS.md, "Declare the rename in the commit") so
+  check_format.py skips lines whose only change is the substitution.
+
+  Sweeps are parallel_safe: false and touch nearly every file — run each at
+  a moment when no other task (in any plan) is in flight, land it, and let
+  everyone rebase. They are cheap to redo from scratch if they collide.
+
+  Determinism: nullptr-for-NULL and pragma-once-for-guards are compile-time
+  identical. The enum tasks are not automatically safe — three enums are
+  wire values — which is why they are separate, ordered tasks with pinning.
+
+tasks:
+  - id: T1
+    title: Sweep NULL to nullptr tree-wide
+    intent: >
+      ~578 occurrences across all six projects become nullptr, ending the
+      convention split. Purely textual for pointer contexts; any NULL used
+      as an integer 0 (rare, found during the sweep) is left in place and
+      listed in notes rather than silently changed.
+    depends_on: []
+    files:
+      - NeuronCore
+      - NeuronClient
+      - NeuronServer
+      - GameLogic
+      - Species
+      - Server
+    acceptance:
+      - grep -rw NULL over the six projects returns 0 code occurrences (comments and any noted integer-context exceptions aside)
+      - The commit carries a "Rename: NULL=nullptr" trailer and check_format.py passes without reformatting legacy lines
+      - The solution builds and the suite passes
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+
+  - id: T2
+    title: Sweep include guards to pragma once
+    intent: >
+      223 headers still open with `#ifndef _included_foo_h`, identifiers in
+      the reserved `_lowercase` global form. Each becomes `#pragma once`,
+      the project standard. Three-line deletion plus one-line insertion per
+      header; no include-order or content changes.
+    depends_on: []
+    files:
+      - NeuronCore
+      - NeuronClient
+      - NeuronServer
+      - GameLogic
+      - Species
+      - Server
+    acceptance:
+      - grep -rlE "#ifndef _included" over the six projects returns nothing
+      - Every header in the six projects contains exactly one `#pragma once`
+      - The solution builds and the suite passes
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+
+  - id: T3
+    title: Pin and convert the wire enums to enum class
+    intent: >
+      NetworkUpdate::UpdateType, ServerToClientLetter::LetterType and
+      NetLib's NetRetCode are serialised as integers — their numeric values
+      are the protocol. Each enumerator's value gets pinned in the wire
+      tests first (where the byte-pinning tests do not already fix them),
+      then the enums become enum class with explicit underlying type and
+      unchanged values, with casts at the serialisation boundary.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/NetworkUpdate.h
+      - NeuronCore/NetworkUpdate.cpp
+      - NeuronCore/ServerToClientLetter.h
+      - NeuronCore/ServerToClientLetter.cpp
+      - NeuronCore/NetLib.h
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
+      - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+    acceptance:
+      - Each enumerator's numeric value is asserted by a test that passes on both sides of the conversion
+      - The three enums are enum class with an explicit underlying type
+      - The existing byte-pinning wire tests pass unchanged
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T4
+    title: Convert the input-system enums to enum class
+    intent: >
+      ControlType, InputType, InputMode, InputCondition and InputParserState
+      thread through the whole driver stack but never cross the wire —
+      NetworkUpdate carries sequenced intent, not raw input codes. Converting
+      them hardens the input layer's type boundaries. ControlTypes.h is
+      generated-table-adjacent (ControlTypes.inc); the conversion keeps the
+      table mechanism working.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/ControlTypes.h
+      - NeuronClient/InputTypes.h
+      - NeuronClient/InputDriver.h
+    acceptance:
+      - The five enums are enum class; every use site compiles without C-style casts back to int except at documented table boundaries
+      - grep -E "^\s*enum\s+[A-Za-z]" over NeuronClient headers returns nothing
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T5
+    title: Convert the game-side enums to enum class
+    intent: >
+      EntityLeg::FootState, TaskManagerInterface::TMControl and Camera::Mode
+      are the remaining plain header enums. None is serialised (verify that
+      claim while working — if one turns out to reach a file or the wire,
+      pin it first like T3). ENUM_HELPER from NeuronHelper.h where iteration
+      is needed.
+    depends_on: [T3]
+    files:
+      - GameLogic/EntityLeg.h
+      - Species/TaskManagerInterface.h
+      - Species/Camera.h
+    acceptance:
+      - grep -rE "^\s*enum\s+[A-Za-z]" over all six projects' headers returns nothing
+      - notes records the serialisation check for each enum
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T6
+    title: Delete the dead platform files
+    intent: >
+      NetLibApple.h is listed in the project but never built — the stage 8
+      dead-target cleanup deleted the unbuilt branches inside files but left
+      whole dead files. Find every file listed as content but compiled on no
+      configuration, confirm dead, delete with the four-edit rule. If
+      anything looks like an unfinished feature rather than a leftover, stop
+      and ask the owner instead of deleting.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/NetLibApple.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+    acceptance:
+      - NetLibApple.h (and anything else confirmed dead, listed in notes) is gone from disk and every project file
+      - python3 tools/check_project_files.py passes
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T7
+    title: Ratchet the sweeps with a hygiene check in CI
+    intent: >
+      A sweep that is not enforced regrows. A small tools/check_hygiene.py
+      rejects NEW occurrences of NULL, `#ifndef _included`, strcpy-family
+      calls and plain `enum` in changed lines — same changed-lines-only
+      philosophy as check_format.py, so legacy files not yet converted do
+      not fail. Added to ci.yml alongside the existing four checks; this is
+      a new check, not a build-topology change, but flag it to the owner in
+      the PR since ci.yml is shared.
+    depends_on: [T1, T2]
+    files:
+      - tools/check_hygiene.py
+      - .github/workflows/ci.yml
+      - AGENTS.md
+    acceptance:
+      - check_hygiene.py fails on a synthetic diff reintroducing each banned pattern and passes on the clean tree
+      - CI runs it on every push; AGENTS.md's "Before you push" section lists it
+    verify:
+      - python3 tools/check_hygiene.py
+      - python3 tools/check_task_dag.py
+    parallel_safe: true
+    status: todo

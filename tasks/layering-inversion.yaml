@@ -1,0 +1,396 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: layering-inversion
+title: Remove the 628 upward includes from GameLogic and NeuronClient into Species
+summary: >
+  The next phase after neuroncore-layering (AGENTS.md): every remaining
+  allowlist entry points into Species (624) or GameLogic (4). Measured on
+  b69c951 by clustering tools/layering_allowlist.txt on target header —
+  re-measure with check_layering.py rather than trusting this:
+
+    GameLogic -> Species (584):
+      App.h 89, Location.h 69, Renderer.h 57, Camera.h 50, Main.h 45,
+      Team.h 40, GlobalWorld.h 37, EntityGrid.h 32, ParticleSystem.h 31,
+      Globals.h 21, Explosion.h 21, Unit.h 19, LevelFile.h 18,
+      ObstructionGrid.h 11, LocationEditor.h 11, UserInput.h 10,
+      TaskManager.h 8, tail 14
+    NeuronClient -> Species (40):
+      App.h 22, Camera.h 6, Renderer.h 4, Location.h 3, Main.h 2, tail 3
+    NeuronClient -> GameLogic (4):
+      Entity.h 2, WorldObject.h 1, tail 1
+
+  The strategy follows from what the targets ARE. Location, GlobalWorld,
+  Team, Unit, LevelFile, EntityGrid, ObstructionGrid, RoutingSystem,
+  ParticleSystem and Explosion are simulation — they belong in GameLogic,
+  and moving them down converts hundreds of upward includes into ordinary
+  intra-layer ones. Camera and Renderer are presentation reached from
+  entity render code — they move down into NeuronClient or hide behind an
+  interface, decided by T1's findings. App.h is the singleton everything
+  reaches through — it gets the same treatment NeuronCore got in
+  neuroncore-layering T7: the things GameLogic needs stop living behind
+  g_app.
+
+  Mechanics that keep this honest: every file move is a `git mv` plus
+  `python3 tools/check_layering.py --rename OLD NEW` so unchanged
+  violations are not orphaned, plus the four-edit .vcxproj rule in BOTH
+  projects. A moved file's own upward includes (Location.cpp -> Renderer.h)
+  survive as renamed entries until their target also lands — counts shrink
+  per task by the measured amount, never grow. Pure moves change no
+  behaviour; the simulation rules still apply to any signature or include
+  change inside moved files.
+
+  Payoff beyond hygiene: each move brings code inside GameLogicTests'
+  reach, shrinking LinkStubs (which may only shrink) and making entity and
+  level-file behaviour testable for the first time (T11). This unblocks
+  the characterisation work the modernisation plans lean on — where both
+  plans are active, prefer landing a file's move before its conversion.
+
+  Out of scope, stated to prevent drift: no new projects (build topology
+  needs the owner), no netcode or renderer redesign, no behaviour change
+  anywhere.
+
+tasks:
+  - id: T1
+    title: Catalogue what each upward-included Species header is used for
+    intent: >
+      The clusters say how many; they do not say why. For each of the 23
+      Species headers reached from below, record in notes which members are
+      actually used and classify the fix — move-down, interface extraction,
+      or trivial relocation of a declaration. The Camera/Renderer decision
+      (move vs interface) and the App decomposition shape hang on these
+      findings, so this lands first and its notes are the plan's map.
+    depends_on: []
+    files: []
+    acceptance:
+      - notes lists every target header with its used members and a proposed fix, grounded in grep evidence
+      - The Camera.h and Renderer.h entries state which of their members entity render code actually calls
+    verify:
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  - id: T2
+    title: Move the frame-clock globals down out of Main.h and Globals.h
+    intent: >
+      g_gameTime, g_predictionTime and the other frame/advance globals are
+      what most Main.h and Globals.h reaches want — simulation vocabulary
+      stranded in the exe. They move to a header in GameLogic (or NeuronCore
+      if genuinely engine-level, per T1's findings), leaving Main.h to the
+      real main loop.
+    project: GameLogic
+    depends_on: [T1]
+    files:
+      - Species/Main.h
+      - Species/Main.cpp
+      - Species/Globals.h
+      - Species/Globals.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+      - tools/layering_allowlist.txt
+    acceptance:
+      - No allowlist entry from GameLogic or NeuronClient targets Globals.h; Main.h entries drop by the measured share that wanted the globals
+      - The allowlist shrank and check_layering.py passes
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T3
+    title: Move the spatial grids down into GameLogic
+    intent: >
+      EntityGrid (32 entries), ObstructionGrid (11) and RoutingSystem (4)
+      are pure simulation data structures with no rendering dependency —
+      the cheapest large chunk. Once in GameLogic they are also inside
+      GameLogicTests' reach.
+    project: GameLogic
+    depends_on: [T1]
+    files:
+      - Species/EntityGrid.h
+      - Species/EntityGrid.cpp
+      - Species/ObstructionGrid.h
+      - Species/ObstructionGrid.cpp
+      - Species/RoutingSystem.h
+      - Species/RoutingSystem.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+      - tools/layering_allowlist.txt
+    acceptance:
+      - The six files live under GameLogic/ and no allowlist entry targets EntityGrid.h, ObstructionGrid.h or RoutingSystem.h
+      - Every move used git mv and check_layering.py --rename; the entry count only shrank
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T4
+    title: Move Team and Unit down into GameLogic
+    intent: >
+      Team (40 entries) and Unit (19) are simulation state — teams and
+      their unit rosters — reached upward by nearly every entity. Their
+      DArray slots are network identity, so the move is pure relocation:
+      no signature, container or iteration change rides along.
+    project: GameLogic
+    depends_on: [T1]
+    files:
+      - Species/Team.h
+      - Species/Team.cpp
+      - Species/Unit.h
+      - Species/Unit.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+      - tools/layering_allowlist.txt
+    acceptance:
+      - No allowlist entry targets Team.h or Unit.h
+      - The move is a pure relocation — diff shows renames plus include fixes only
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T5
+    title: Move LevelFile down into GameLogic and characterise its parser
+    intent: >
+      LevelFile (18 entries) parses and writes the level format. Moving it
+      down removes its entries AND makes the parser testable for the first
+      time — the move task carries the first LevelFile round-trip test with
+      it, using a temporary directory per TESTING.md, not GameData/.
+    project: GameLogic
+    depends_on: [T1]
+    files:
+      - Species/LevelFile.h
+      - Species/LevelFile.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+      - Tests/GameLogicTests/LevelFileTests.cpp
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
+      - tools/layering_allowlist.txt
+    acceptance:
+      - No allowlist entry targets LevelFile.h
+      - GameLogicTests round-trips a representative level file written to a temp directory, byte-identically
+      - LinkStubs did not grow
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T6
+    title: Move ParticleSystem and Explosion down into GameLogic
+    intent: >
+      Effects are summed by GenerateSyncValue, so ParticleSystem (31
+      entries) and Explosion (21) are simulation state despite looking
+      cosmetic. Pure relocation, same rules as T4; their render calls keep
+      working because GameLogic already sits above NeuronClient.
+    project: GameLogic
+    depends_on: [T1]
+    files:
+      - Species/ParticleSystem.h
+      - Species/ParticleSystem.cpp
+      - Species/Explosion.h
+      - Species/Explosion.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+      - tools/layering_allowlist.txt
+    acceptance:
+      - No allowlist entry targets ParticleSystem.h or Explosion.h
+      - Pure relocation — no behaviour, container or iteration change
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T7
+    title: Move Location and GlobalWorld down into GameLogic
+    intent: >
+      The world model itself — Location (69 entries) and GlobalWorld (37)
+      — moves once the things it owns and walks (grids, teams, level file,
+      effects) are already below it. The largest single shrink in the plan.
+      Location's remaining reaches into Species (Renderer, Camera, Water,
+      LandscapeRenderer) survive as renamed allowlist entries for T9.
+    project: GameLogic
+    depends_on: [T2, T3, T4, T5, T6]
+    files:
+      - Species/Location.h
+      - Species/Location.cpp
+      - Species/GlobalWorld.h
+      - Species/GlobalWorld.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+      - tools/layering_allowlist.txt
+    acceptance:
+      - No allowlist entry from GameLogic targets Location.h or GlobalWorld.h
+      - Location's own upward includes were renamed with --rename, not added
+      - The Garden smoke test still passes (owner-run) — this move touches the world's home
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+
+  - id: T8
+    title: Give GameLogic its own world access, ending g_app reaches from below
+    intent: >
+      89 GameLogic and 22 NeuronClient includes of App.h exist to write
+      g_app->m_location and friends. With the world types living in
+      GameLogic, the pointers GameLogic needs (location, global world,
+      teams, client-to-server) become GameLogic-owned state that App SETS
+      during startup — the same inversion neuroncore-layering T7 performed
+      for NeuronCore. NeuronClient's App reaches get the equivalent
+      treatment per T1's findings. No object changes lifetime; only who
+      holds the pointer moves.
+    project: GameLogic
+    depends_on: [T7]
+    files:
+      - Species/App.h
+      - Species/App.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - tools/layering_allowlist.txt
+    acceptance:
+      - No allowlist entry from GameLogic targets App.h; NeuronClient's App.h entries shrank by the share T1 attributed to world access
+      - Subsystem construction order in App is unchanged
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    notes: >
+      Expect several commits: one introducing the GameLogic-side access,
+      then sweeps of the reaching files. The exact shape (globals like
+      g_location, or a context struct) follows T1's findings and the
+      neuroncore-layering precedent.
+    status: todo
+
+  - id: T9
+    title: Resolve the Camera and Renderer reaches from entity code
+    intent: >
+      117 entries (Camera.h 50+6, Renderer.h 57+4) come from entity render
+      code calling into presentation. Per T1's findings this either moves
+      Camera/Renderer down into NeuronClient (if their world coupling is
+      gone after T7/T8) or extracts the narrow interface entity render code
+      actually uses. Ends the largest remaining cluster.
+    project: NeuronClient
+    depends_on: [T8]
+    files:
+      - Species/Camera.h
+      - Species/Camera.cpp
+      - Species/Renderer.h
+      - Species/Renderer.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+      - tools/layering_allowlist.txt
+    acceptance:
+      - No allowlist entry from GameLogic or NeuronClient targets Camera.h or Renderer.h
+      - Rendering output is unchanged (owner-run smoke test; no drawing logic modified)
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+
+  - id: T10
+    title: Clear the long-tail upward includes
+    intent: >
+      The remaining entries after the big clusters: LocationEditor (11),
+      UserInput (10), TaskManager (8), Script (4), Water (2),
+      TaskManagerInterface (2), GameCursor (2), TaskManagerInterfaceIcons
+      (1), plus NeuronClient's SaveOnQuitWindow and ControlHelp reaches and
+      the four NeuronClient -> GameLogic entries (Entity.h, WorldObject.h).
+      Each is small; the fixes follow T1's per-header findings — move the
+      declaration down, or invert. Windows in GameLogic that exist purely
+      to drive Species editor state may move UP into Species instead,
+      which is equally legal layering.
+    depends_on: [T8]
+    files:
+      - Species/LocationEditor.h
+      - Species/UserInput.h
+      - Species/TaskManager.h
+      - Species/Script.h
+      - Species/GameCursor.h
+      - Species/TaskManagerInterface.h
+      - tools/layering_allowlist.txt
+    acceptance:
+      - Re-measured allowlist contains no entry naming any long-tail header
+      - Every fix was a move or inversion — no entry was added at any point
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T11
+    title: Shrink LinkStubs and land the first real GameLogic behaviour tests
+    intent: >
+      The stubs exist because GameLogic reached up for Species globals; as
+      T2-T10 land, each stub loses its reason. This task deletes every stub
+      whose real symbol now links, and proves the point of the whole plan by
+      adding behaviour tests that were impossible before — EntityGrid
+      queries and Team/Unit bookkeeping are the candidates.
+    project: GameLogic
+    depends_on: [T8]
+    files:
+      - Tests/GameLogicTests/LinkStubs.cpp
+      - Tests/GameLogicTests/EntityGridTests.cpp
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
+    acceptance:
+      - LinkStubs.cpp shrank to stubs for not-yet-moved symbols only, each annotated with the task that will remove it
+      - New tests cover at least EntityGrid spatial queries against pinned expected results
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T12
+    title: Empty the layering allowlist and make the check strict
+    intent: >
+      The end state neuroncore-layering reached for NeuronCore, tree-wide:
+      zero allowlisted violations, so any upward include anywhere fails CI
+      outright. If a residue survives T10, this task does not paper over it
+      — the residue becomes new tasks appended to this plan, and this one
+      stays open until the file is genuinely empty.
+    depends_on: [T9, T10, T11]
+    files:
+      - tools/layering_allowlist.txt
+      - AGENTS.md
+    acceptance:
+      - tools/layering_allowlist.txt contains zero entries
+      - check_layering.py passes with the empty allowlist; AGENTS.md's layering section records the milestone
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_task_dag.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo

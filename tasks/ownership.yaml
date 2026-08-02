@@ -1,0 +1,216 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: ownership
+title: Replace raw owning pointers with unique_ptr and values
+summary: >
+  Migration stage 5 (CODING_STANDARDS.md): raw new/delete, SAFE_DELETE and
+  EmptyAndDelete become std::unique_ptr and values. Measured on b69c951 —
+  re-measure: ~813 raw `new` in .cpp files, ~246 `delete`, 35 SAFE_DELETE
+  (NeuronCore.h defines it; ClientToServer.cpp, Shape.cpp, SpawnPoint.cpp,
+  GameCursor.cpp, App.cpp use it), and EmptyAndDelete callers in 23 files
+  outside the container headers.
+
+  Stage 5 depends on stage 3 PER FILE: most ownership currently lives
+  inside LList/DArray (EmptyAndDelete), so a file's containers-replaced
+  task lands before its task here. That ordering is cross-plan and cannot
+  be an edge — every task below restates it in notes, and same-file tasks
+  in different plans never run concurrently.
+
+  Determinism note: converting owner-ship changes WHERE deletion happens in
+  the source but must not change WHEN objects die relative to the
+  simulation. unique_ptr reset at the same program point as the old delete;
+  no lifetime extension of anything Location::Advance walks; destruction
+  order within containers preserved where destructors have side effects
+  (sound handles, GL resources).
+
+tasks:
+  - id: T1
+    title: Adopt unique_ptr in NeuronCore (Preferences, Profiler)
+    intent: >
+      The foundation demonstrates the pattern under test coverage:
+      Preferences' item list and Profiler's element map own their contents
+      via container EmptyAndDelete today; both become containers of
+      unique_ptr (or values where the type allows) with deletion at the
+      same program points.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/Preferences.cpp
+      - NeuronCore/Preferences.h
+      - NeuronCore/Profiler.cpp
+      - NeuronCore/Profiler.h
+    acceptance:
+      - grep -wE "EmptyAndDelete|SAFE_DELETE" over the four files returns nothing
+      - No raw owning `new` remains in the four files; observers stay raw
+      - Existing NeuronCore tests pass unchanged
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Runs after these files' containers-replaced task (T15 there) — cross-plan
+      ordering, restated per the summary.
+    status: todo
+
+  - id: T2
+    title: Adopt unique_ptr in NeuronServer
+    intent: >
+      Server.cpp owns its per-client ServerToClient records and letter
+      queues. Making that ownership explicit under the existing
+      Server-initial-state tests keeps the authoritative host the
+      best-covered ownership conversion in the tree.
+    project: NeuronServer
+    depends_on: []
+    files:
+      - NeuronServer/Server.cpp
+      - NeuronServer/Server.h
+      - NeuronServer/ServerToClient.h
+      - Tests/NeuronServerTests/ServerTests.cpp
+    acceptance:
+      - grep -wE "EmptyAndDelete|SAFE_DELETE" over the listed files returns nothing
+      - Server.exe --ticks 20 still advances the sequence id
+      - ServerTests pass unchanged
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      After containers-replaced T4 for these files (cross-plan).
+    status: todo
+
+  - id: T3
+    title: Adopt unique_ptr across NeuronClient subsystems
+    intent: >
+      ClientToServer (inbox/outbox letters), Shape (fragments), Eclipse
+      (widgets), SoundSystem/SoundInstance/SampleCache (sounds, cached
+      samples), Resource and LanguageTable (cached assets and strings) all
+      own heap objects through legacy patterns. Sound and GL destructors
+      have side effects, so destruction order within each converted
+      container is preserved.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/ClientToServer.cpp
+      - NeuronClient/Shape.cpp
+      - NeuronClient/Eclipse.cpp
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SampleCache.cpp
+      - NeuronClient/Resource.cpp
+      - NeuronClient/LanguageTable.cpp
+    acceptance:
+      - grep -wE "EmptyAndDelete|SAFE_DELETE" over the listed files returns nothing
+      - Letter-processing order in ClientToServer is unchanged
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      After each file's containers-replaced task (T5, T6, T7, T8 there).
+      Split into per-subsystem commits.
+    status: todo
+
+  - id: T4
+    title: Adopt unique_ptr in GameLogic
+    intent: >
+      SpawnPoint, FileDialog, InsertionSquad, DropDownMenu, PrefsOtherWindow,
+      Virii and Building carry the EmptyAndDelete/SAFE_DELETE sites. Virii
+      and Building delete simulation objects — those deletions stay at the
+      same tick-relative points and the surrounding slot bookkeeping
+      (MarkNotUsed ordering) is untouched, because freed slots are reused as
+      network identity.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/SpawnPoint.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/InsertionSquad.cpp
+      - GameLogic/DropDownMenu.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/Virii.cpp
+      - GameLogic/Building.cpp
+    acceptance:
+      - grep -wE "EmptyAndDelete|SAFE_DELETE" over the listed files returns nothing
+      - Entity/building deletion happens at the same program points; slot release order unchanged, confirmed in review
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      After these files' containers-replaced tasks (T9, T10, T11 there).
+      Behind the LinkStubs wall — evidence is review plus the Garden smoke
+      test.
+    status: todo
+
+  - id: T5
+    title: Adopt unique_ptr in Species outside App
+    intent: >
+      LevelFile, Explosion, TaskManagerInterfaceIcons, GlobalWorld,
+      RoutingSystem, TaskManager and GameCursor own heap objects through
+      legacy patterns. Explosion is sync-relevant (effects are summed by
+      GenerateSyncValue), so its object lifetimes stay tick-identical.
+    project: Species
+    depends_on: []
+    files:
+      - Species/LevelFile.cpp
+      - Species/LevelFile.h
+      - Species/Explosion.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/GlobalWorld.cpp
+      - Species/RoutingSystem.cpp
+      - Species/TaskManager.cpp
+      - Species/GameCursor.cpp
+    acceptance:
+      - grep -wE "EmptyAndDelete|SAFE_DELETE" over the listed files returns nothing
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      After these files' containers-replaced tasks (T12, T13 there).
+    status: todo
+
+  - id: T6
+    title: Make App own its subsystems with unique_ptr
+    intent: >
+      App.cpp constructs and SAFE_DELETEs the whole subsystem graph —
+      renderer, sound, world, camera, netcode. Converting it makes every
+      subsystem lifetime explicit and is the single highest-blast-radius
+      ownership change in the tree, so it runs last, in small commits
+      (one subsystem group at a time), each preserving construction and
+      destruction ORDER exactly — subsystems reach each other during
+      teardown.
+    project: Species
+    depends_on: [T1, T2, T3, T4, T5]
+    files:
+      - Species/App.cpp
+      - Species/App.h
+    acceptance:
+      - grep -wE "SAFE_DELETE|SAFE_FREE" over App.cpp and App.h returns nothing
+      - Subsystem construction and destruction order is byte-for-byte the same sequence as before, stated in the commit message
+      - The game reaches the main menu (Garden smoke test step 1) after each commit, owner-verified for the final one
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+
+  - id: T7
+    title: Retire the SAFE_DELETE and SAFE_FREE macros
+    intent: >
+      With zero users, the macros leave NeuronCore.h, and with them the
+      invitation to write new legacy-style ownership. Closes stage 5.
+    project: NeuronCore
+    depends_on: [T1, T2, T3, T4, T5, T6]
+    files:
+      - NeuronCore/NeuronCore.h
+    acceptance:
+      - grep -rwE "SAFE_DELETE|SAFE_FREE" over the six projects returns nothing
+      - The solution builds and the suite passes
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
