@@ -76,7 +76,6 @@
     <ClInclude Include="NetworkUpdate.h" />
     <ClInclude Include="NetworkUpdate.inc" />
     <ClInclude Include="NetLib.h" />
-    <ClInclude Include="NetLibApple.h" />
     <ClInclude Include="NetLibWin32.h" />
     <ClInclude Include="NetMutex.h" />
     <ClInclude Include="NetSocket.h" />

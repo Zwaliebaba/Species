@@ -95,9 +95,6 @@
     <ClInclude Include="NetLib.h">
       <Filter>NetLib</Filter>
     </ClInclude>
-    <ClInclude Include="NetLibApple.h">
-      <Filter>NetLib</Filter>
-    </ClInclude>
     <ClInclude Include="NetLibWin32.h">
       <Filter>NetLib</Filter>
     </ClInclude>
