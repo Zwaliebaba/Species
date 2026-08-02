@@ -615,7 +615,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: >
       Re-measured on 6eb17e4, and the split line is now exact. Every g_app
       reference left in NeuronCore is in this file, at lines 491-555 — all
