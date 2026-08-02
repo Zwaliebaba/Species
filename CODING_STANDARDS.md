@@ -286,11 +286,9 @@ because what desyncs is *observing the order*, not the container existing:
 
 1. **Lookup-only.** A table that is never traversed is deterministic —
    `find`, `insert` and `erase` results do not depend on bucket order. Use
-   `Neuron::LookupTable`, a wrapper that exposes no iteration, so "never
-   traversed" is enforced by the compiler rather than by review. (Added by
-   `tasks/containers-replaced.yaml` T17; until it lands, a bare
-   `unordered_map` used lookup-only carries a comment saying it must never
-   be iterated.)
+   `Neuron::LookupTable` (`NeuronCore/LookupTable.h`), a wrapper that
+   exposes no iteration, so "never traversed" is enforced by the compiler
+   rather than by review.
 2. **Insertion-ordered iteration.** Pair the hash table with a vector of
    keys in insertion order and traverse the vector, looking up the table.
    Insertions happen in sequenced order, so every client iterates

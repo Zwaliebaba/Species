@@ -23,6 +23,9 @@
     <ClCompile Include="LListTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LookupTableTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="NetworkUpdateTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
