@@ -220,7 +220,7 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
 
   - id: T3
     title: Move the spatial grids down into GameLogic
@@ -479,7 +479,7 @@ tasks:
       then sweeps of the reaching files. The exact shape (globals like
       g_location, or a context struct) follows T1's findings and the
       neuroncore-layering precedent.
-    status: todo
+    status: done
 
   - id: T9
     title: Resolve the Camera and Renderer reaches from entity code
