@@ -85,15 +85,14 @@ SoundLibrary2d::SoundLibrary2d()
   //
   // Initialise the output device
 
-  WAVEFORMATEX format;
-  memset(&format, 0, sizeof(WAVEFORMATEX));
+  WAVEFORMATEX format = {};
   format.wFormatTag = WAVE_FORMAT_PCM;
   format.nChannels = 2;
   format.nSamplesPerSec = m_freq;
   format.wBitsPerSample = 16;
   format.nBlockAlign = 4; // 2 channels * 2 bytes per sample
   format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
-  int result = waveOutOpen(&s_device, WAVE_MAPPER, &format, (DWORD)&WaveOutProc, 0, CALLBACK_FUNCTION);
+  int result = waveOutOpen(&s_device, WAVE_MAPPER, &format, (DWORD_PTR)&WaveOutProc, 0, CALLBACK_FUNCTION);
   const char* errString = nullptr;
   switch (result)
   {
