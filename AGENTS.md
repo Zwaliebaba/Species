@@ -149,7 +149,7 @@ move the shared declaration down into a layer both sides can see, or invert the
 dependency behind an interface.
 
 `tasks/neuroncore-layering.yaml` is the plan that eliminated the `NeuronCore`
-entries. Eleven of its twelve tasks are done; only T10 is left, which drops the
+entries. Twelve of its thirteen tasks are done; only T10 is left, which drops the
 upward include paths from `NeuronCore.vcxproj` and makes `Server.exe` tick.
 
 ---
