@@ -74,8 +74,8 @@ including when a file is moved or modernised — see `CODING_STANDARDS.md`.
 
 | File | Origin | Terms |
 |---|---|---|
-| `NeuronClient/AutoVector.h` | Reliable Software, 2003 (relisoft.com) | Any use, commercial or non-commercial, granted **on the condition that the copyright notice is not removed**. |
-| `NeuronClient/MathUtils.cpp` (Mersenne Twister, MT19937) | Makoto Matsumoto and Takuji Nishimura, 1997–2002 | BSD 3-clause, reproduced in the file. Requires the copyright notice and disclaimer be retained in source and binary redistributions. |
+| `NeuronCore/AutoVector.h` | Reliable Software, 2003 (relisoft.com) | Any use, commercial or non-commercial, granted **on the condition that the copyright notice is not removed**. |
+| `NeuronCore/MathUtils.cpp` (Mersenne Twister, MT19937) | Makoto Matsumoto and Takuji Nishimura, 1997–2002 | BSD 3-clause, reproduced in the file. Requires the copyright notice and disclaimer be retained in source and binary redistributions. |
 | `NeuronClient/TriTri.cpp` | Tomas Möller, 1997, *Journal of Graphics Tools* 2(2) | No explicit grant in the file. Terms unresolved — treat as all rights reserved. |
 
 `GameData/` contains game content — models, textures, sounds, level and script

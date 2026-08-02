@@ -46,8 +46,9 @@ shrink.
 <!--
 What did you actually do to check this, and what did you not check?
 
-A green suite is not a running game — it covers wire encoding, string helpers
-and object identity. The game does not currently run, so "it builds and the
-suite passes; I could not verify it runs" is often the honest ceiling. Say that
-rather than implying more.
+A green suite is not a running game — it covers wire encoding, string helpers,
+object identity and the protocol. The game does run, so the Garden smoke test in
+AGENTS.md is available to anyone on Windows; if you could not launch it, say
+"it builds and the suite passes; I could not launch the client" rather than
+implying more.
 -->
