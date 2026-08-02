@@ -39,6 +39,7 @@
 #include "Airstrike.h"
 #include "WorldObject.h"
 #include "Darwinian.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -658,7 +659,6 @@ void Team::RenderOthers(float _predictionTime)
 // ****************************************************************************
 
 #include "Input.h"
-#include "WorldPointers.h"
 
 // TeamControls' data and its flags encoding live in NeuronCore, because the wire
 // protocol serialises them. Advance() stays here: filling the struct in means
