@@ -9,7 +9,6 @@
 
 #include "SoundSystem.h"
 
-#include "Renderer.h"
 #include "Location.h"
 #include "Unit.h"
 #include "Explosion.h"

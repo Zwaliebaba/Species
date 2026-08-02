@@ -16,7 +16,6 @@
 #include "ParticleSystem.h"
 #include "TaskManager.h"
 #include "RoutingSystem.h"
-#include "Renderer.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
 #include "ObstructionGrid.h"

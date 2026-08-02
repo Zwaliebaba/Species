@@ -25,7 +25,6 @@
 #include "GlobalWorld.h"
 #include "Script.h"
 #include "EntityGrid.h"
-#include "Renderer.h"
 #include "TaskManagerInterface.h"
 
 #include "SoundSystem.h"

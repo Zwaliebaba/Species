@@ -15,7 +15,6 @@
 #include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Camera.h"
-#include "Renderer.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "TaskManagerInterface.h"

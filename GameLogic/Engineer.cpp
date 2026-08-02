@@ -19,7 +19,6 @@
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "ParticleSystem.h"
-#include "Renderer.h"
 #include "ObstructionGrid.h"
 #include "Camera.h"
 #include "GameTime.h"

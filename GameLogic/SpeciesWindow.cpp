@@ -11,7 +11,6 @@
 #include "SpeciesWindow.h"
 #include "InputField.h"
 
-#include "Renderer.h"
 #include "ControlBindings.h"
 
 #include "TargetCursor.h"

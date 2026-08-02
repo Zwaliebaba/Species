@@ -18,7 +18,6 @@
 #include "Camera.h"
 #include "Explosion.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "TaskManager.h"
 #include "RoutingSystem.h"

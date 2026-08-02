@@ -1,5 +1,8 @@
 #pragma once
 
+#include "RendererAccess.h"
+#include "WorldPointers.h"
+
 #define CHECK_OPENGL_STATE()
 
 #define PIXEL_EFFECT_GRID_RES	16
@@ -9,11 +12,15 @@ class ShapeFragment;
 class Vector3;
 class Matrix34;
 
-class Renderer
+class Renderer : public RendererAccess
 {
   public:
     int m_fps;
     bool m_displayFPS;
+
+    int Fps() const override { return m_fps; }
+    bool DisplayFps() const override { return m_displayFPS; }
+    void SetDisplayFps(bool _display) override { m_displayFPS = _display; }
     bool m_renderDebug;
     bool m_displayInputMode;
 
@@ -54,41 +61,47 @@ class Renderer
   public:
     Renderer();
 
-    void Initialise();
+    void Initialise() override;
     void Restart();
 
     void Render();
     void FPSMeterAdvance();
 
-    void BuildOpenGlState();
+    void BuildOpenGlState() override;
 
-    float GetNearPlane() const;
-    float GetFarPlane() const;
+    float GetNearPlane() const override;
+    float GetFarPlane() const override;
     void SetNearAndFar(float _nearPlane, float _farPlane);
 
     void CheckOpenGLState() const;
     void SetOpenGLState() const;
 
-    void SetObjectLighting() const;
-    void UnsetObjectLighting() const;
+    void SetObjectLighting() const override;
+    void UnsetObjectLighting() const override;
 
-    int ScreenW() const;
-    int ScreenH() const;
+    int ScreenW() const override;
+    int ScreenH() const override;
 
     void SetupProjMatrixFor3D() const;
-    void SetupMatricesFor3D() const;
-    void SetupMatricesFor2D() const;
+    void SetupMatricesFor3D() const override;
+    void SetupMatricesFor2D() const override;
 
     void UpdateTotalMatrix();
     void Get2DScreenPos(const Vector3& _in, Vector3* _out);
     const double* GetTotalMatrix();
 
-    void RasteriseSphere(const Vector3& _pos, float _radius);
-    void MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform);
-    void MarkUsedCells(const Shape* _shape, const Matrix34& _transform);
+    void RasteriseSphere(const Vector3& _pos, float _radius) override;
+    void MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform) override;
+    void MarkUsedCells(const Shape* _shape, const Matrix34& _transform) override;
 
     bool IsFadeComplete() const;
-    void StartFadeOut();
+    void StartFadeOut() override;
     void StartFadeIn(float _delay);
 };
 
+// g_renderer is a RendererAccess* so the layers below Species need only the
+// interface. Species owns the concrete type and drives the frame, so it
+// reaches the rest of the API — Render, the fade and OpenGL state, the
+// projection setup — through here. The cast is safe because App is the only
+// thing that ever assigns g_renderer, and it assigns a Renderer.
+inline Renderer* TheRenderer() { return static_cast<Renderer*>(g_renderer); }

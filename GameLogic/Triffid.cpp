@@ -15,7 +15,6 @@
 
 #include "Triffid.h"
 
-#include "Renderer.h"
 #include "Location.h"
 #include "Explosion.h"
 #include "Team.h"

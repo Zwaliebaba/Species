@@ -17,7 +17,6 @@
 #include "ReallyQuitWindow.h"
 
 #include "Camera.h"
-#include "Renderer.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -291,10 +290,7 @@ void DebugKeyBindings::DebugCameraButton()
 	g_camera->SetNextDebugMode();
 }
 
-void DebugKeyBindings::FPSButton()
-{
-	g_renderer->m_displayFPS = !g_renderer->m_displayFPS;
-}
+void DebugKeyBindings::FPSButton() { g_renderer->SetDisplayFps(!g_renderer->DisplayFps()); }
 
 
 #ifdef CHEATMENU_ENABLED

@@ -18,7 +18,6 @@
 #include "Camera.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "EntityGrid.h"
 #include "ParticleSystem.h"

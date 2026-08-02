@@ -1,0 +1,51 @@
+#pragma once
+
+class Shape;
+class ShapeFragment;
+class Matrix34;
+class Vector3;
+
+// What the layers below Species ask the renderer to do.
+//
+// Renderer itself lives in Species, so entity and window code reaching it had
+// to include Renderer.h upward — 61 allowlist entries, the third largest
+// cluster. This is the surface those files actually use, taken from the T1
+// catalogue: lighting and culling for entity render bodies, screen size for
+// windows, and a few frame-level calls.
+//
+// The seam is the pointer's TYPE rather than a second global: g_renderer in
+// WorldPointers.h is a RendererAccess*, so dereferencing it needs only this
+// header. Code that constructs a Renderer, or reaches a member not listed
+// here, still includes Renderer.h and is still recorded in the allowlist.
+// See tasks/layering-inversion.yaml T9.
+class RendererAccess
+{
+  public:
+    virtual ~RendererAccess() = default;
+
+    virtual void Initialise() = 0;
+    virtual void BuildOpenGlState() = 0;
+
+    virtual float GetNearPlane() const = 0;
+    virtual float GetFarPlane() const = 0;
+
+    virtual void SetObjectLighting() const = 0;
+    virtual void UnsetObjectLighting() const = 0;
+
+    virtual int ScreenW() const = 0;
+    virtual int ScreenH() const = 0;
+
+    virtual void SetupMatricesFor3D() const = 0;
+    virtual void SetupMatricesFor2D() const = 0;
+
+    virtual void RasteriseSphere(const Vector3& _pos, float _radius) = 0;
+    virtual void MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform) = 0;
+    virtual void MarkUsedCells(const Shape* _shape, const Matrix34& _transform) = 0;
+
+    virtual void StartFadeOut() = 0;
+
+    // Read by the debug overlay in GameLogic; owned by Renderer.
+    virtual int Fps() const = 0;
+    virtual bool DisplayFps() const = 0;
+    virtual void SetDisplayFps(bool _display) = 0;
+};

@@ -99,9 +99,9 @@ bool StartSequence::Advance()
 	g_app->m_profiler->Advance();
 #endif // PROFILER_ENABLED
 
-    g_renderer->Render();
+  TheRenderer()->Render();
 
-    return false;
+  return false;
 }
 
 

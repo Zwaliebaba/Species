@@ -13,7 +13,6 @@
 
 #include "Location.h"
 #include "GameTime.h"
-#include "Renderer.h"
 #include "Explosion.h"
 #include "Camera.h"
 

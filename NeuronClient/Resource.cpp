@@ -11,7 +11,6 @@
 #include "Preferences.h"
 #include "SoundStreamDecoder.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "WorldPointers.h"
 
 Resource* g_resource = nullptr;

@@ -33,7 +33,6 @@
 #include "GlobalWorld.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"
-#include "Renderer.h"
 #include "Location.h"
 #include "Team.h"
 #include "WorldPointers.h"

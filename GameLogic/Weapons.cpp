@@ -22,7 +22,6 @@
 #include "ObstructionGrid.h"
 #include "Location.h"
 #include "ParticleSystem.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "Unit.h"
 #include "GlobalWorld.h"

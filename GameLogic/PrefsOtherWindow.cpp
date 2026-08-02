@@ -8,7 +8,6 @@
 #include "PrefsOtherWindow.h"
 #include "DropDownMenu.h"
 
-#include "Renderer.h"
 #include "Location.h"
 #include "LevelFile.h"
 #include "Water.h"

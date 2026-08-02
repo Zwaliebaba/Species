@@ -1,5 +1,7 @@
 #pragma once
 
+#include "RendererAccess.h"
+
 // The running game's subsystems, reachable from every layer.
 //
 // These used to be members of Species::App, so anything below Species that
@@ -15,7 +17,6 @@
 class Location;
 class GlobalWorld;
 class Camera;
-class Renderer;
 class ParticleSystem;
 class LocationEditor;
 class TaskManager;
@@ -26,7 +27,7 @@ class UserInput;
 extern Location* g_location;
 extern GlobalWorld* g_globalWorld;
 extern Camera* g_camera;
-extern Renderer* g_renderer;
+extern RendererAccess* g_renderer;
 extern ParticleSystem* g_particleSystem;
 extern LocationEditor* g_locationEditor;
 extern TaskManager* g_taskManager;

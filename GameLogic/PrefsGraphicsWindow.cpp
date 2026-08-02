@@ -8,7 +8,6 @@
 #include "PrefsGraphicsWindow.h"
 #include "DropDownMenu.h"
 
-#include "Renderer.h"
 #include "Location.h"
 #include "LevelFile.h"
 #include "Water.h"
@@ -226,7 +225,7 @@ void PrefsGraphicsWindow::Render( bool _hasFocus )
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_pixeleffect") );
 
     char fpsCaption[64];
-    sprintf( fpsCaption, "%d FPS", g_renderer->m_fps );
+    sprintf(fpsCaption, "%d FPS", g_renderer->Fps());
     g_editorFont.DrawText2DCentre( m_x+m_w/2, m_y + m_h - GetMenuSize(60), GetMenuSize(20), fpsCaption );
 
 }

@@ -11,7 +11,6 @@
 #include "Unit.h"
 #include "Team.h"
 #include "Camera.h"
-#include "Renderer.h"
 #include "TaskManager.h"
 #include "WorldPointers.h"
 

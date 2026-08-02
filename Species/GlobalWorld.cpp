@@ -1346,7 +1346,7 @@ void GlobalWorld::Advance()
     }
 
     // Has the fade out finished?
-    if (m_locationRequested != -1 && g_renderer->IsFadeComplete())
+    if (m_locationRequested != -1 && TheRenderer()->IsFadeComplete())
     {
       GlobalLocation* loc = GetLocation(m_locationRequested);
       g_requestedLocationId = m_locationRequested;

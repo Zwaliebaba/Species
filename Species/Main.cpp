@@ -234,8 +234,8 @@ bool HandleCommonConditions()
     g_app->m_soundSystem->Advance();
 
     // Render twice to avoid double buffering artefacts
-    g_renderer->Render();
-    g_renderer->Render();
+    TheRenderer()->Render();
+    TheRenderer()->Render();
     return true;
   }
 
@@ -359,7 +359,7 @@ void LocationGameLoop()
 
   g_sliceNum = -1;
 
-  g_renderer->StartFadeIn(0.6f);
+  TheRenderer()->StartFadeIn(0.6f);
   g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterLocation", SoundSourceBlueprint::TypeAmbience);
 
   //
@@ -378,7 +378,7 @@ void LocationGameLoop()
     }
     else
     {
-      if (g_renderer->IsFadeComplete())
+      if (TheRenderer()->IsFadeComplete())
       {
         g_controlHelpSystem->Shutdown();
         break;
@@ -386,7 +386,7 @@ void LocationGameLoop()
     }
 
     g_inputManager->PollForEvents();
-    if (g_inputManager->controlEvent(ControlMenuEscape) && g_renderer->IsFadeComplete())
+    if (g_inputManager->controlEvent(ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
       if (g_script && g_script->IsRunningScript()) {}
       else
@@ -579,9 +579,9 @@ void LocationGameLoop()
       // DELETEME: for debug purposes only
       g_globalWorld->EvaluateEvents();
 
-      g_renderer->Render();
+      TheRenderer()->Render();
 
-      if (g_renderer->m_fps < 15)
+      if (g_renderer->Fps() < 15)
         g_app->m_soundSystem->Advance();
     }
   }
@@ -663,7 +663,7 @@ void LocationEditorLoop()
     g_app->m_profiler->Advance();
 #endif
 
-    g_renderer->Render();
+    TheRenderer()->Render();
   }
 
   delete g_locationEditor;
@@ -682,7 +682,7 @@ void LocationEditorLoop()
 
 void GlobalWorldGameLoop()
 {
-  g_renderer->StartFadeIn(0.25f);
+  TheRenderer()->StartFadeIn(0.25f);
 
   g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
 
@@ -693,7 +693,7 @@ void GlobalWorldGameLoop()
 
     g_inputManager->PollForEvents();
 
-    if (g_inputManager->controlEvent(ControlMenuEscape) && g_renderer->IsFadeComplete())
+    if (g_inputManager->controlEvent(ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
       if (WindowsOnScreen())
         RemoveAllWindows();
@@ -727,7 +727,7 @@ void GlobalWorldGameLoop()
 
     g_globalWorld->EvaluateEvents();
 
-    g_renderer->Render();
+    TheRenderer()->Render();
   }
 
   if (g_requestToggleEditing)
@@ -773,7 +773,7 @@ void GlobalWorldEditorLoop()
     g_app->m_profiler->Advance();
 #endif // PROFILER_ENABLED
 
-    g_renderer->Render();
+    TheRenderer()->Render();
   }
 
   if (g_requestToggleEditing)
@@ -859,7 +859,7 @@ void Initialise()
     }
   }
 
-  g_renderer->SetOpenGLState();
+  TheRenderer()->SetOpenGLState();
 }
 
 void Finalise()
@@ -987,7 +987,7 @@ void MainMenuLoop()
   while (g_atMainMenu)
   {
     UpdateAdvanceTime();
-    g_renderer->Render();
+    TheRenderer()->Render();
     g_userInput->Advance();
     g_camera->Advance();
     g_app->m_soundSystem->Advance();
@@ -995,7 +995,7 @@ void MainMenuLoop()
 
     if (!g_app->m_gameMenu->m_menuCreated)
     {
-      if (g_renderer->IsFadeComplete())
+      if (TheRenderer()->IsFadeComplete())
         g_app->m_gameMenu->CreateMenu();
     }
   }

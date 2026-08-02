@@ -15,7 +15,6 @@
 #include "Location.h"
 #include "EntityGrid.h"
 #include "ParticleSystem.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "SoundSystem.h"
 

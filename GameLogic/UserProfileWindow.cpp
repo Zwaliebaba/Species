@@ -8,7 +8,6 @@
 #include "Server.h"
 
 #include "InputField.h"
-#include "Renderer.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 #include "AppCommands.h"

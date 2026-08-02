@@ -1672,8 +1672,8 @@ void Camera::SetupProjectionMatrix(float _nearPlane, float _farPlane)
 
   ClampInPlace(m_fov, 1, 180);
 
-  g_renderer->SetNearAndFar(_nearPlane, _farPlane);
-  g_renderer->SetupProjMatrixFor3D();
+  TheRenderer()->SetNearAndFar(_nearPlane, _farPlane);
+  TheRenderer()->SetupProjMatrixFor3D();
 
   float fovRadians = m_fov * M_PI / 180.0f;
   m_cosFov = cosf(fovRadians);

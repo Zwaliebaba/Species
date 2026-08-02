@@ -16,7 +16,6 @@
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "Camera.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "WorldPointers.h"
 #include "AppState.h"

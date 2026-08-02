@@ -4,7 +4,6 @@
 #include "Resource.h"
 #include "LanguageTable.h"
 
-#include "Renderer.h"
 #include "BuyNowWindow.h"
 #include "Preferences.h"
 #include "PreferenceNames.h"

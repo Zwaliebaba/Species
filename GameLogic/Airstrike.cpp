@@ -8,7 +8,6 @@
 
 #include "Explosion.h"
 #include "Location.h"
-#include "Renderer.h"
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"

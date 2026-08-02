@@ -4,7 +4,6 @@
 
 #include <string.h>
 
-#include "Renderer.h"
 
 #include "DropDownMenu.h"
 #include "WorldPointers.h"

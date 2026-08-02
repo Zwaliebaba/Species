@@ -735,7 +735,7 @@ void Water::Render()
 	}
 
     g_location->SetupFog();
-    g_renderer->CheckOpenGLState();
+    TheRenderer()->CheckOpenGLState();
 }
 
 void Water::Advance()

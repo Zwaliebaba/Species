@@ -8,7 +8,6 @@
 
 #include "MessageDialog.h"
 
-#include "Renderer.h"
 #include "WorldPointers.h"
 
 

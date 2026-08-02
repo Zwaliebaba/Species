@@ -18,7 +18,6 @@
 #include "Location.h"
 #include "Camera.h"
 #include "GlobalWorld.h"
-#include "Renderer.h"
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"

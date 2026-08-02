@@ -378,7 +378,7 @@ void Script::RunCommand_PurityControl()
 
 void Script::RunCommand_ShowDarwinLogo()
 {
-  g_renderer->m_renderDarwinLogo = GetHighResTime();
+  TheRenderer()->m_renderDarwinLogo = GetHighResTime();
   g_app->m_soundSystem->TriggerOtherEvent(nullptr, "ShowLogo", SoundSourceBlueprint::TypeInterface);
 }
 
@@ -445,7 +445,7 @@ bool Script::Skip()
   m_waitForCamera = false;
   m_waitForRocket = false;
   m_waitForPlayerNotBusy = false;
-  g_renderer->m_renderDarwinLogo = -1.0f;
+  TheRenderer()->m_renderDarwinLogo = -1.0f;
 
   if (m_permitEscape)
   {
@@ -473,7 +473,7 @@ void Script::Advance()
   if (m_permitEscape)
     g_taskManagerInterface->SetVisible(false);
 
-  if (m_waitForFade && !g_renderer->IsFadeComplete())
+  if (m_waitForFade && !TheRenderer()->IsFadeComplete())
     return;
   if (m_waitUntil > g_gameTime)
     return;

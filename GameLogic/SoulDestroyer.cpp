@@ -15,7 +15,6 @@
 #include "Unit.h"
 #include "GameTime.h"
 #include "ParticleSystem.h"
-#include "Renderer.h"
 
 #include "SoundSystem.h"
 

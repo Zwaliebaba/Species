@@ -175,6 +175,7 @@
     <ClInclude Include="Win32EventProc.h" />
     <ClInclude Include="WindowManager.h" />
     <ClInclude Include="AppCommands.h" />
+<ClInclude Include="RendererAccess.h" />
     <ClInclude Include="AppState.h" />
     <ClInclude Include="WorldPointers.h" />
     <ClInclude Include="WindowManagerWin32.h" />

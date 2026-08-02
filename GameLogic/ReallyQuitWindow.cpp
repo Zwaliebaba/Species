@@ -1,6 +1,5 @@
 #include "pch.h"
 
-#include "Renderer.h"
 #include "ReallyQuitWindow.h"
 #include "WorldPointers.h"
 

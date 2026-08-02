@@ -23,7 +23,6 @@
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "GameTime.h"
-#include "Renderer.h"
 
 #include "SoundSystem.h"
 

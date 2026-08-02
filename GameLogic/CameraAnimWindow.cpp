@@ -16,7 +16,6 @@
 #include "LevelFile.h"
 #include "Location.h"
 #include "GameTime.h"
-#include "Renderer.h"
 #include "WorldPointers.h"
 
 

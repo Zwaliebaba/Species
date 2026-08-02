@@ -13,7 +13,6 @@
 #include "LevelFile.h"
 #include "Location.h"
 #include "LocationEditor.h"
-#include "Renderer.h"
 #include "Team.h"
 
 #include "Entity.h"

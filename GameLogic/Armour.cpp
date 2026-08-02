@@ -8,7 +8,6 @@
 #include "Armour.h"
 #include "GunTurret.h"
 #include "SoundSystem.h"
-#include "Renderer.h"
 #include "Location.h"
 #include "GameTime.h"
 #include "ParticleSystem.h"

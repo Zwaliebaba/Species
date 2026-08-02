@@ -14,7 +14,6 @@
 #include "LocationEditor.h"
 #include "InputField.h"
 #include "Camera.h"
-#include "Renderer.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
 #include "WorldPointers.h"

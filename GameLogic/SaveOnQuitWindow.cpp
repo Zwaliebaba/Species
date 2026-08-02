@@ -6,7 +6,6 @@
 
 #include "SaveOnQuitWindow.h"
 
-#include "Renderer.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 

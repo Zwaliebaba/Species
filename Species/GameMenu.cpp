@@ -278,13 +278,14 @@ void GameMenu::Render()
 
 void GameMenu::CreateMenu()
 {
-    g_renderer->StartFadeIn(0.25f);
-    // close all currently open windows
-    LList<EclWindow *> *windows = EclGetWindows();
-	while (windows->Size() > 0) {
-		EclWindow *w = windows->GetData(0);
-		EclRemoveWindow(w->m_name);
-	}
+  TheRenderer()->StartFadeIn(0.25f);
+  // close all currently open windows
+  LList<EclWindow*>* windows = EclGetWindows();
+  while (windows->Size() > 0)
+  {
+    EclWindow* w = windows->GetData(0);
+    EclRemoveWindow(w->m_name);
+  }
 
     // create the actual menu window
     EclRegisterWindow( new GameMenuWindow() );
