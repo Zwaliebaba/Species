@@ -48,7 +48,7 @@ public:
 
     void Advance();
 
-    void ReceiveLetter(ServerToClientLetter* letter) override;
+    void ReceiveLetter(ServerToClientLetter* letter);
     void SendLetter(NetworkUpdate* letter);
     void ProcessServerUpdates(ServerToClientLetter* letter);
 
