@@ -15,7 +15,6 @@
 #include "Location.h"
 #include "LocationEditor.h"
 #include "Renderer.h"
-#include "UserInput.h"
 #include "Team.h"
 
 #include "Entity.h"

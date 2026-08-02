@@ -1,7 +1,6 @@
 #ifndef _included_ai_h
 #define _included_ai_h
 
-#include "Location.h"
 
 #include "Entity.h"
 

@@ -4,7 +4,6 @@
 
 #include "App.h"
 #include "Camera.h"
-#include "Renderer.h"
 
 
 void Render3DSprite(Vector3 const &_pos, float _width, float _height, int _textureId)

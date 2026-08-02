@@ -11,7 +11,6 @@
 
 #include "App.h"
 #include "Location.h"
-#include "Camera.h"
 
 
 StaticShape::StaticShape()

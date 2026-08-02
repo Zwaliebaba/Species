@@ -9,7 +9,6 @@
 #include "Globals.h"
 #include "Location.h"
 #include "ParticleSystem.h"
-#include "GlobalWorld.h"
 #include "Camera.h"
 #include "SoundSystem.h"
 #include "Incubator.h"

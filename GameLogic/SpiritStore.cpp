@@ -5,7 +5,6 @@
 #include "Resource.h"
 
 #include "App.h"
-#include "Renderer.h"
 
 #include "SpiritStore.h"
 

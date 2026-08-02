@@ -9,7 +9,6 @@
 #include "SoundLibrary3dSoftware.h"
 #include "SoundLibrary2d.h"
 
-#include "App.h"
 
 
 

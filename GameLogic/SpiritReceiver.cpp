@@ -19,11 +19,7 @@
 #include "Location.h"
 #include "Camera.h"
 #include "GlobalWorld.h"
-#include "ParticleSystem.h"
-#include "Main.h"
-#include "Team.h"
 #include "Renderer.h"
-#include "EntityGrid.h"
 
 #include "SoundSystem.h"
 

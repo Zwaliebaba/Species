@@ -19,7 +19,6 @@
 #include "App.h"
 #include "Camera.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "Main.h"
 #include "ParticleSystem.h"

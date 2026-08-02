@@ -2,7 +2,6 @@
 #define _included_debugmenu_h
 
 #include "SpeciesWindow.h"
-#include "App.h"
 
 
 class DebugMenu : public SpeciesWindow

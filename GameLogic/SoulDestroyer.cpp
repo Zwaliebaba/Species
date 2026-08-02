@@ -13,7 +13,6 @@
 #include "Explosion.h"
 #include "Globals.h"
 #include "Location.h"
-#include "Team.h"
 #include "Unit.h"
 #include "Main.h"
 #include "ParticleSystem.h"

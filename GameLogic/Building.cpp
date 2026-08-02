@@ -21,9 +21,7 @@
 #include "Location.h"
 #include "Renderer.h"
 #include "Team.h"
-#include "Unit.h"
 #include "EntityGrid.h"
-#include "ObstructionGrid.h"
 #include "ParticleSystem.h"
 #include "Explosion.h"
 

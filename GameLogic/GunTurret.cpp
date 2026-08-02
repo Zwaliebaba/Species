@@ -15,13 +15,11 @@
 #include "App.h"
 #include "Location.h"
 #include "Team.h"
-#include "Unit.h"
 #include "EntityGrid.h"
 #include "Camera.h"
 #include "UserInput.h"
 #include "Main.h"
 #include "GlobalWorld.h"
-#include "LevelFile.h"
 #include "Explosion.h"
 
 #include "GunTurret.h"

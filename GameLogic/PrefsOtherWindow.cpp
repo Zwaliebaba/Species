@@ -13,7 +13,6 @@
 #include "Location.h"
 #include "LevelFile.h"
 #include "Water.h"
-#include "Main.h"
 
 class ApplyOtherButton : public SpeciesButton
 {

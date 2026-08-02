@@ -16,7 +16,6 @@
 #include "Explosion.h"
 #include "ParticleSystem.h"
 #include "EntityGrid.h"
-#include "Camera.h"
 
 #include "ArmyAnt.h"
 #include "AntHill.h"

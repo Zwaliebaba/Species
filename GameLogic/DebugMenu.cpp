@@ -19,7 +19,6 @@
 #include "App.h"
 #include "Camera.h"
 #include "Renderer.h"
-#include "UserInput.h"
 
 // ****************************************************************************
 // Menu Buttons

@@ -20,10 +20,8 @@
 #include "PowerStation.h"
 
 #include "App.h"
-#include "Camera.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"
-#include "Renderer.h"
 #include "Location.h"
 
 #ifdef LOCATION_EDITOR

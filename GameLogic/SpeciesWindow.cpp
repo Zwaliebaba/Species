@@ -13,7 +13,6 @@
 
 #include "App.h"
 #include "Renderer.h"
-#include "Globals.h"
 #include "ControlBindings.h"
 
 #include "TargetCursor.h"

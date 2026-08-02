@@ -8,10 +8,7 @@
 #include "Server.h"
 
 #include "App.h"
-#include "GlobalWorld.h"
 #include "InputField.h"
-#include "Location.h"
-#include "LevelFile.h"
 #include "Renderer.h"
 
 

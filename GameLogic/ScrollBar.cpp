@@ -7,7 +7,6 @@
 
 #include "ScrollBar.h"
 
-#include "App.h"
 
 
 ScrollBar::ScrollBar( EclWindow *parent )

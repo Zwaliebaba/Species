@@ -10,7 +10,6 @@
 #include "Explosion.h"
 #include "Location.h"
 #include "Renderer.h"
-#include "Camera.h"
 
 #include "SoundSystem.h"
 

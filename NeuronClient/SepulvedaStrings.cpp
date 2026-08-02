@@ -14,7 +14,6 @@
 #include "Input.h"
 #include "LanguageTable.h"
 
-#include "App.h"
 
 #ifndef SEPULVEDA_MAX_PHRASE_LENGTH
 #define SEPULVEDA_MAX_PHRASE_LENGTH	1024

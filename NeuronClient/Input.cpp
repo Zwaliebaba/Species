@@ -7,7 +7,6 @@
 #include "Input.h"
 #include "TargetCursor.h"
 #include "InputFilterManager.h"
-#include "App.h"
 #include "LanguageTable.h"
 #include "HiResTime.h"
 

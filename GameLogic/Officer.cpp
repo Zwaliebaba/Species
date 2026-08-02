@@ -19,13 +19,11 @@
 #include "Team.h"
 #include "Renderer.h"
 #include "Main.h"
-#include "TaskManager.h"
 #include "Camera.h"
 #include "ParticleSystem.h"
 #include "Explosion.h"
 #include "ObstructionGrid.h"
 #include "EntityGrid.h"
-#include "UserInput.h"
 #include "GlobalWorld.h"
 
 #include "SoundSystem.h"

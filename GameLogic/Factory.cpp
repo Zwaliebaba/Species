@@ -10,9 +10,7 @@
 
 #include "App.h"
 #include "Globals.h"
-#include "Main.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "SoundSystem.h"
 #include "Team.h"
 #include "Unit.h"

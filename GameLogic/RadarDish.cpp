@@ -10,14 +10,10 @@
 #include "Shape.h"
 
 #include "App.h"
-#include "Camera.h"
 #include "EntityGrid.h"
 #include "Globals.h"
 #include "Location.h"
 #include "Main.h"
-#include "ParticleSystem.h"
-#include "Renderer.h"
-#include "Team.h"
 #include "GlobalWorld.h"
 #include "Unit.h"
 

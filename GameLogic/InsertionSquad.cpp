@@ -21,14 +21,12 @@
 #include "Location.h"
 #include "Renderer.h"
 #include "Team.h"
-#include "UserInput.h"
 #include "TaskManager.h"
 #include "RoutingSystem.h"
 #include "ParticleSystem.h"
 #include "EntityGrid.h"
 #include "ObstructionGrid.h"
 #include "Main.h"
-#include "GameCursor.h"
 
 #include "GlobalWorld.h"
 

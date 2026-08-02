@@ -18,11 +18,8 @@
 
 #include "App.h"
 #include "Globals.h"
-#include "Camera.h"
 #include "ParticleSystem.h"
 #include "Location.h"
-#include "ObstructionGrid.h"
-#include "GlobalWorld.h"
 #include "Main.h"
 
 Tree::Tree()

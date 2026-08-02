@@ -13,9 +13,7 @@
 
 #include "App.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "Camera.h"
-#include "EntityGrid.h"
 #include "Main.h"
 #include "Team.h"
 #include "GlobalWorld.h"

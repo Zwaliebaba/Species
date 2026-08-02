@@ -24,11 +24,7 @@
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "Main.h"
-#include "ParticleSystem.h"
 #include "Renderer.h"
-#include "Team.h"
-#include "TaskManager.h"
-#include "GameCursor.h"
 
 #include "SoundSystem.h"
 

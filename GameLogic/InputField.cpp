@@ -14,9 +14,6 @@
 
 #include "KeyDefs.h" // Key code definitions (bit of a hack)
 
-#include "App.h"
-#include "Globals.h"
-#include "Main.h"
 
 #include "InputField.h"
 

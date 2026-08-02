@@ -7,7 +7,6 @@
 #include "Team.h"
 #include "Unit.h"
 #include "UserInput.h"
-#include "EntityGrid.h"
 #include "Camera.h"
 
 #include "LaserTrooper.h"

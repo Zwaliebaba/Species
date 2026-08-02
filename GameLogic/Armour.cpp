@@ -14,7 +14,6 @@
 #include "Main.h"
 #include "ParticleSystem.h"
 #include "Explosion.h"
-#include "Camera.h"
 #include "GlobalWorld.h"
 #include "ObstructionGrid.h"
 #include "Team.h"

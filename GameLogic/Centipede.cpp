@@ -16,7 +16,6 @@
 #include "Team.h"
 #include "Unit.h"
 #include "Main.h"
-#include "ParticleSystem.h"
 #include "Renderer.h"
 
 #include "SoundSystem.h"

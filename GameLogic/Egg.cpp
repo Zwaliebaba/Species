@@ -10,7 +10,6 @@
 #include "App.h"
 #include "Camera.h"
 #include "Location.h"
-#include "Main.h"
 #include "Team.h"
 
 

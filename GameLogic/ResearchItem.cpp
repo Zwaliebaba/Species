@@ -19,7 +19,6 @@
 #include "Renderer.h"
 #include "Globals.h"
 #include "Location.h"
-#include "TaskManager.h"
 #include "TaskManagerInterface.h"
 
 #include "SoundSystem.h"

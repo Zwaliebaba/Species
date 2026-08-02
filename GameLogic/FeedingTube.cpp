@@ -13,11 +13,8 @@
 
 #include "App.h"
 #include "Camera.h"
-#include "Globals.h"
 #include "Location.h"
 #include "Main.h"
-#include "Renderer.h"
-#include "GlobalWorld.h"
 
 #include "FeedingTube.h"
 

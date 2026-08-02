@@ -11,7 +11,6 @@
 #include "App.h"
 #include "Camera.h"
 #include "DebugRender.h"
-#include "Renderer.h"
 
 
 #ifdef DEBUG_RENDER_ENABLED

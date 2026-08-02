@@ -11,7 +11,6 @@
 #include "App.h"
 #include "Location.h"
 #include "ParticleSystem.h"
-#include "Renderer.h"
 
 
 Wall::Wall()
