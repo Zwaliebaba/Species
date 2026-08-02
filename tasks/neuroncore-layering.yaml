@@ -288,8 +288,28 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: >
+      Implemented as NeuronCore/NetworkSinks.h: two one-method interfaces,
+      ServerUpdateSink (implemented by Server) and ClientLetterSink (implemented
+      by ClientToServer). Each side holds the other as a sink, handed over once
+      at construction by Species rather than reached for through g_app at every
+      call. Behaviour is preserved exactly: the sinks are wired only when
+      bypassNetworking is set, which is the same condition that used to guard
+      each of the two calls.
+
+      Two things the survey did not predict. Server.cpp needed NUM_TEAMS, which
+      lived in Species/Globals.h next to GRAVITY and the render budget; the
+      protocol constants (NUM_TEAMS, the server tick rates, IAMALIVE_PERIOD) are
+      now NeuronCore/ProtocolLimits.h, which Globals.h includes so no existing
+      user changed. And ServerToClient was reaching for g_app->m_bypassNetworking
+      in its constructor — it is built only by Server, which already knows, so it
+      is passed in.
+
+      Server.cpp, ServerToClient.cpp and ClientToServer's transport half no
+      longer mention g_app. What remains in ClientToServer.cpp is entirely inside
+      ProcessServerUpdates, which is T12.
+
       parallel_safe false: it rewires two files that T8 and T9 then move, and
       touches App.cpp, which almost everything else in Species also touches.
 

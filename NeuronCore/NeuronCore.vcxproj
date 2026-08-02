@@ -47,6 +47,8 @@
     <ClCompile Include="ServerToClientLetter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="NetworkSinks.h" />
+    <ClInclude Include="ProtocolLimits.h" />
     <ClInclude Include="TeamControls.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="Random.h" />

@@ -112,7 +112,7 @@ App::App()
 
   m_gameCursor = new GameCursor();
   m_soundSystem = new SoundSystem();
-  m_clientToServer = new ClientToServer();
+  m_clientToServer = new ClientToServer(m_bypassNetworking);
   m_userInput = new UserInput();
   //    m_location          = new Location();
   //    m_locationInput		= new LocationInput();

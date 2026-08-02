@@ -652,8 +652,4 @@ NeuronCore/ClientToServer.cpp -> TaskManager.h
 NeuronCore/ClientToServer.cpp -> Team.h
 NeuronCore/ClientToServer.h -> Entity.h
 NeuronCore/ClientToServer.h -> WorldObject.h
-NeuronCore/Server.cpp -> App.h
-NeuronCore/Server.cpp -> Globals.h
 NeuronCore/Server.cpp -> Preferences.h
-NeuronCore/Server.cpp -> Team.h
-NeuronCore/ServerToClient.cpp -> App.h

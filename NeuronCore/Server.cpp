@@ -11,15 +11,12 @@
 #include "Profiler.h"
 #include "Preferences.h"
 
-#include "App.h"
-#include "Globals.h"
-#include "Team.h"
 
+#include "ProtocolLimits.h"
 #include "Generic.h"
 #include "Server.h"
 #include "ServerToClient.h"
 #include "ServerToClientLetter.h"
-#include "ClientToServer.h"
 
 // ****************************************************************************
 // Class ServerTeam
@@ -32,6 +29,11 @@ ServerTeam::ServerTeam(int _clientId)
 // Class Server
 // ****************************************************************************
 
+// The socket listener takes a plain function pointer, so the running server has
+// to be reachable from file scope. This replaces g_app->m_server; it is set in
+// Initialise and is the only global state left in this file.
+static Server* s_server = nullptr;
+
 // ***ListenCallback
 static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 {
@@ -41,11 +43,11 @@ static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
     char newip[16];
     IpToString(fromAddr->sin_addr, newip);
 
-    if (g_app->m_server)
+    if (s_server)
     {
       auto letter = new NetworkUpdate(udpdata->m_data);
-      g_app->m_server->ReceiveLetter(letter, newip);
-      //            SET_PROFILE(g_app->m_profiler,  "#Server Receive", (double) udpdata->getLength() );
+      s_server->ReceiveLetter(letter, newip);
+      //            SET_PROFILE(m_profiler,  "#Server Receive", (double) udpdata->getLength() );
     }
 
     delete udpdata;
@@ -56,9 +58,15 @@ static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 
 Server::Server()
   : m_netLib(nullptr),
+    m_localClient(nullptr),
+    m_bypassNetworking(false),
+    m_profiler(nullptr),
     m_sequenceId(0),
     m_inboxMutex(nullptr),
-    m_outboxMutex(nullptr) { m_sync.SetSize(0); }
+    m_outboxMutex(nullptr)
+{
+  m_sync.SetSize(0);
+}
 
 Server::~Server()
 {
@@ -82,12 +90,17 @@ static NetCallBackRetType ListenThread(void* ptr)
   return 0;
 }
 
-void Server::Initialise()
+void Server::Initialise(bool _bypassNetworking, Profiler* _profiler, ClientLetterSink* _localClient)
 {
+  m_bypassNetworking = _bypassNetworking;
+  m_profiler = _profiler;
+  m_localClient = _localClient;
+  s_server = this;
+
   m_inboxMutex = new NetMutex();
   m_outboxMutex = new NetMutex();
 
-  if (!g_app->m_bypassNetworking)
+  if (!m_bypassNetworking)
   {
     m_netLib = new NetLib();
     m_netLib->Initialise();
@@ -117,7 +130,7 @@ int Server::GetClientId(char* _ip)
 void Server::RegisterNewClient(char* _ip)
 {
   DEBUG_ASSERT(GetClientId(_ip) == -1);
-  auto sToC = new ServerToClient(_ip);
+  auto sToC = new ServerToClient(_ip, m_bypassNetworking);
   m_clients.PutData(sToC);
 
   //
@@ -263,8 +276,10 @@ void Server::AdvanceSender()
 
     if (m_clients.ValidIndex(letter->GetClientId()))
     {
-      if (g_app->m_bypassNetworking)
-        g_app->m_clientToServer->ReceiveLetter(letter);
+      // Hosting in-process: hand the letter straight to the local client rather
+      // than reaching for it through the application object.
+      if (m_localClient)
+        m_localClient->ReceiveLetter(letter);
       else
       {
         int linearSize = 0;
@@ -285,13 +300,13 @@ void Server::AdvanceSender()
 
   if (bytesSentThisFrame > 0)
   {
-    //        SET_PROFILE(g_app->m_profiler,  "#Server Send", (double) bytesSentThisFrame );
+    //        SET_PROFILE(m_profiler,  "#Server Send", (double) bytesSentThisFrame );
   }
 }
 
 void Server::Advance()
 {
-  START_PROFILE(g_app->m_profiler, "Advance Server");
+  START_PROFILE(m_profiler, "Advance Server");
 
   //
   // Compile all incoming messages into a ServerToClientLetter
@@ -411,5 +426,5 @@ void Server::Advance()
 
   AdvanceSender();
 
-  END_PROFILE(g_app->m_profiler, "Advance Server");
+  END_PROFILE(m_profiler, "Advance Server");
 }

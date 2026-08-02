@@ -15,12 +15,14 @@ private:
     NetSocket	*m_socket;
 
 public:
-    ServerToClient( char *_ip );
+  // Told whether to open a socket rather than reading it off the application
+  // object; Server is the only thing that constructs these and already knows.
+  ServerToClient(char* _ip, bool _bypassNetworking);
 
-    char        *GetIP ();
-    NetSocket   *GetSocket ();
+  char* GetIP();
+  NetSocket* GetSocket();
 
-    int         m_lastKnownSequenceId;
+  int m_lastKnownSequenceId;
 };
 
 
