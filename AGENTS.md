@@ -217,10 +217,13 @@ Real, currently true, and worth knowing before you trip over them:
 - **The game does not run.** Last known state per the HEAD commit message.
 - **`NeuronCore` depends upward** on `NeuronClient`, `GameLogic` and `Species`,
   including reaching through the `g_app` global. It cannot be linked standalone.
-- **Release builds do not use the precompiled header.** Only the Debug
-  configuration sets `PrecompiledHeader`; `pch.cpp` only has `Create` in Debug.
-  Release therefore compiles every translation unit cold. It works, it is just
-  slow. Fixing it is a real change to build behaviour — do it deliberately.
+- **Release builds were broken until CI first ran them.** Every project's Release
+  configuration was missing `AdditionalIncludeDirectories`, so it could not
+  resolve cross-project headers, and four projects asked for
+  `PrecompiledHeader=Use` while `pch.cpp` only carried `Create` in Debug — so
+  nothing produced the `.pch` and every translation unit failed with C1083.
+  Both are fixed; Debug and Release now carry identical `ClCompile` settings.
+  Worth knowing because it means Release has almost no history of working.
 - **`NeuronCore.h` still carries Darwinia's target macros** (`TARGET_FULLGAME`,
   `TARGET_DEMOGAME`, `DARWINIA_VERSION`, and a `#error` if none is defined), plus
   `TARGET_OS_LINUX` and `TARGET_OS_MACOSX` branches for platforms that are not

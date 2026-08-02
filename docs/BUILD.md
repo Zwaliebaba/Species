@@ -53,24 +53,25 @@ platform-specific, so the configuration groups are conditioned on
 |---|---|---|
 | `_DEBUG` / `NDEBUG` | `_DEBUG` | `NDEBUG` |
 | Subsystem | Windows (`Species`), Console (`Server`) | Console |
-| Precompiled header | Used | **Not used** — see below |
+| Precompiled header | Used | Used |
 | Whole program optimisation | off | on |
 | Debug info | generated | generated |
+
+Both configurations carry identical `ClCompile` settings — include paths,
+precompiled header, language standard, conformance. Only the optimisation and
+`_DEBUG`/`NDEBUG` settings differ.
 
 Every configuration defines `_CRT_SECURE_NO_WARNINGS`,
 `_CRT_NONSTDC_NO_WARNINGS` and `_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS`,
 because the legacy code still uses the deprecated CRT string functions.
 
-### The precompiled header quirk
-
-Only the Debug configuration sets `<PrecompiledHeader>Use</PrecompiledHeader>`,
-and `pch.cpp` only carries `Create` in Debug. Release therefore compiles every
-translation unit without a PCH, which is correct but slow — `#include "pch.h"`
-still resolves as an ordinary include.
-
-This is pre-existing and is left as-is deliberately: enabling the PCH in Release
-changes what every translation unit sees, and is a change to make on purpose with
-a full rebuild, not a drive-by fix.
+> **Release had never built.** Until CI first exercised it, every project's
+> Release configuration was missing `AdditionalIncludeDirectories` — so it could
+> not find a single cross-project header — and `GameLogic`, `NeuronClient`,
+> `NeuronCore` and `NeuronServer` set `PrecompiledHeader=Use` in Release while
+> `pch.cpp` only carried `Create` in Debug, so nothing produced the `.pch` and
+> every translation unit failed with C1083. Both are fixed. Treat Release results
+> with the suspicion due a configuration with no history of working.
 
 ### 32-bit host toolchain
 

@@ -71,7 +71,7 @@
     <ClCompile Include="NetworkWindow.cpp" />
     <ClCompile Include="Officer.cpp" />
     <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)'=='Debug'">Create</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="PowerStation.cpp" />
     <ClCompile Include="PrefsGraphicsWindow.cpp" />
@@ -275,6 +275,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronClient;$(SpeciesRoot)Species</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>

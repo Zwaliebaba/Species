@@ -134,8 +134,9 @@ iteration or bitwise operators over it.
 
 Each project's `pch.h` pulls in its layer header (`NeuronCore.h` /
 `NeuronClient.h` / `NeuronServer.h`), which brings in the standard library and
-the Windows headers. **Every `.cpp` starts with `#include "pch.h"`** — the
-compiler requires it, and it must be the first line.
+the Windows headers. **Every `.cpp` includes `pch.h` first** — the compiler
+requires it to precede any code. A leading comment block is fine; another
+`#include` is not.
 
 After that, group with a blank line between groups and order alphabetically
 *within* each group:
