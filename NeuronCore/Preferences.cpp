@@ -96,17 +96,24 @@ PrefsItem::PrefsItem(char const *_key, char const *_str)
 }
 
 
-PrefsItem::PrefsItem(char const *_key, float _float)
-:	m_type(TypeFloat),
-	m_float(_float)
+// m_str is nulled even though neither of these is a string item: the destructor
+// free()s it unconditionally, so leaving it indeterminate meant SetFloat or
+// SetInt on a key the file did not already contain built an item that crashed
+// when the manager was destroyed. That is the upgrade path for every new
+// setting — old prefs file, new key — so it was reachable in normal use.
+PrefsItem::PrefsItem(char const* _key, float _float)
+  : m_type(TypeFloat),
+    m_str(nullptr),
+    m_float(_float)
 {
 	m_key = strdup(_key);
 }
 
 
-PrefsItem::PrefsItem(char const *_key, int _int)
-:	m_type(TypeInt),
-	m_int(_int)
+PrefsItem::PrefsItem(char const* _key, int _int)
+  : m_type(TypeInt),
+    m_str(nullptr),
+    m_int(_int)
 {
 	m_key = strdup(_key);
 }
@@ -347,55 +354,85 @@ void PrefsManager::Save()
 		char const *line = m_fileText[i];
 		if (IsLineEmpty(line))
 		{
-			fprintf(out, line);
-		}
-		else
-		{
-			char const *c = line;
-			char const *keyStart = nullptr;
-			char const *keyEnd;
-			while (*c != '=')
-			{
-				if (keyStart)
-				{
-					if (!isalnum(c[0]))
-					{
-						keyEnd = c;
-					}
-				}
-				else
-				{
-					if (isalnum(c[0]))
-					{
-						keyStart = c;
-					}
-				}
-				++c;
-			}
-			char key[128];
-			int keyLen = keyEnd - keyStart;
-			strncpy(key, keyStart, keyLen);
-			key[keyLen] = '\0';
-			int itemIndex = m_items.GetIndex(key);
-			PrefsItem *item = m_items.GetData(itemIndex);
-			SaveItem(out, item);
-		}
-	}
+      // "%s", not line: comments are user-written, and one containing a
+      // percent sign made this read arguments that were never passed.
+      fprintf(out, "%s", line);
+    }
+    else
+    {
+      char const* c = line;
+      char const* keyStart = nullptr;
+      char const* keyEnd = nullptr;
+      while (*c != '=' && *c != '\0')
+      {
+        if (keyStart)
+        {
+          // First non-alphanumeric only. Tracking the last one meant
+          // "Key    = 1" produced the key "Key   " — trailing spaces
+          // included — which then failed to look up.
+          if (!keyEnd && !isalnum(c[0]))
+          {
+            keyEnd = c;
+          }
+        }
+        else
+        {
+          if (isalnum(c[0]))
+          {
+            keyStart = c;
+          }
+        }
+        ++c;
+      }
 
-	// Finally output any items that haven't already been written
-	for (int i = 0; i < m_items.Size(); ++i)
-	{
-		if (m_items.ValidIndex(i))
-		{
-			PrefsItem *item = m_items.GetData(i);
-			if (!item->m_hasBeenWritten)
-			{
-				SaveItem(out, item);
-			}
-		}
-	}
+      // A line with no key at all ("= 5"). Nothing to look up, so it goes
+      // back out as the user wrote it rather than being dropped.
+      if (!keyStart)
+      {
+        fprintf(out, "%s", line);
+        continue;
+      }
 
-	fclose(out);
+      // A key running straight into '=' with no space between. keyEnd was
+      // previously left indeterminate here, so keyLen was garbage.
+      if (!keyEnd)
+        keyEnd = c;
+
+      char key[128];
+      int keyLen = static_cast<int>(keyEnd - keyStart);
+      if (keyLen > static_cast<int>(sizeof(key)) - 1)
+        keyLen = static_cast<int>(sizeof(key)) - 1;
+      strncpy(key, keyStart, keyLen);
+      key[keyLen] = '\0';
+
+      // A template line naming a key the manager no longer holds is not a
+      // reason to dereference slot -1. Echo the line instead of losing it.
+      int itemIndex = m_items.GetIndex(key);
+      if (itemIndex == -1)
+      {
+        fprintf(out, "%s", line);
+        continue;
+      }
+
+      PrefsItem* item = m_items.GetData(itemIndex);
+      SaveItem(out, item);
+    }
+  }
+
+  // Finally output any items that haven't already been written
+  for (int i = 0; i < m_items.Size(); ++i)
+  {
+    if (m_items.ValidIndex(i))
+    {
+      PrefsItem* item = m_items.GetData(i);
+      if (!item->m_hasBeenWritten)
+      {
+        SaveItem(out, item);
+      }
+    }
+  }
+
+  fclose(out);
 }
 
 

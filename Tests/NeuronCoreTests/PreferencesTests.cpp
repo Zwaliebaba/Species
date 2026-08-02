@@ -214,6 +214,13 @@ namespace NeuronCoreTests
       // means Save is not a byte-identical rewrite of its input, so a
       // conversion cannot be checked by diffing a saved file against the
       // original one — only against a previously saved one.
+      //
+      // Aligned spacing is the input here because it used to crash. The key
+      // scan tracked the LAST non-alphanumeric before '=' rather than the
+      // first, so this line yielded the key "SoundChannels   " — trailing
+      // spaces and all — which missed, and Save then dereferenced slot -1.
+      // Column-aligning a preferences file is an obvious thing for a user to
+      // do, and it took the game down on the next save.
       TEST_METHOD(SaveNormalisesSpacingAroundTheEqualsSign)
       {
         ScopedPrefsHome home;
@@ -228,6 +235,40 @@ namespace NeuronCoreTests
         Assert::IsTrue(saved.find("SoundChannels = 32\n") != std::string::npos, L"the line was not regenerated in canonical form");
       }
 
+      // The other half of the same scan bug: with no space at all, keyEnd was
+      // never assigned and keyLen was computed from an indeterminate pointer.
+      TEST_METHOD(SaveHandlesAKeyWrittenHardAgainstTheEqualsSign)
+      {
+        ScopedPrefsHome home;
+        home.Write("prefs.txt", "SoundChannels=32\n");
+
+        {
+          PrefsManager prefs("prefs.txt");
+          prefs.Save();
+        }
+
+        const std::string saved = home.Read("prefs.txt");
+        Assert::IsTrue(saved.find("SoundChannels = 32\n") != std::string::npos, L"the key was not recovered without a space before '='");
+      }
+
+      // Comments went to fprintf as the format string, so a percent sign in one
+      // made it read arguments nobody passed.
+      TEST_METHOD(ACommentContainingAPercentSignSurvivesSaving)
+      {
+        ScopedPrefsHome home;
+        home.Write("prefs.txt", "# volume is 50% of maximum\n"
+                                "ControlMethod = 1\n");
+
+        {
+          PrefsManager prefs("prefs.txt");
+          prefs.Save();
+        }
+
+        Assert::AreEqual("# volume is 50% of maximum\n"
+                         "ControlMethod = 1\n",
+                         home.Read("prefs.txt").c_str());
+      }
+
       TEST_METHOD(SaveWritesFloatsWithExactlyTwoDecimalPlaces)
       {
         ScopedPrefsHome home;
@@ -240,9 +281,30 @@ namespace NeuronCoreTests
           prefs.Save();
         }
 
-        // 0.125 -> "0.13", not "0.125" and not "0.12": %.2f rounds half away
-        // from zero here. The precision is part of the file format.
-        Assert::AreEqual("Volume = 0.13\n"
+        // 0.125 is exactly representable, so %.2f faces a true tie and resolves
+        // it to even: "0.12", not "0.13". Pinned because std::format rounds the
+        // same way and a conversion that reaches for a manual rounding step
+        // would introduce the half-away-from-zero answer instead.
+        Assert::AreEqual("Volume = 0.12\n"
+                         "ControlMethod = 1\n",
+                         home.Read("prefs.txt").c_str());
+      }
+
+      // A value needing no rounding at all, to pin the padding rather than the
+      // rounding: one decimal digit is written as two.
+      TEST_METHOD(SavePadsAFloatOutToTwoDecimalPlaces)
+      {
+        ScopedPrefsHome home;
+        home.Write("prefs.txt", "Volume = 1.5\n"
+                                "ControlMethod = 1\n");
+
+        {
+          PrefsManager prefs("prefs.txt");
+          prefs.SetFloat("Volume", 3.5f);
+          prefs.Save();
+        }
+
+        Assert::AreEqual("Volume = 3.50\n"
                          "ControlMethod = 1\n",
                          home.Read("prefs.txt").c_str());
       }

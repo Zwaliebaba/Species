@@ -169,6 +169,39 @@ def violations(path: Path, numbered: list[tuple[int, str]]) -> list[str]:
     return found
 
 
+def squeeze(line: str) -> str:
+    """The line with every run of whitespace removed, for identity comparison."""
+    return "".join(line.split())
+
+
+def drop_reformatted_lines(
+    base: str, path: Path, numbered: list[tuple[int, str]]
+) -> list[tuple[int, str]]:
+    """Drop lines that already existed in `base` and only moved or reindented.
+
+    The same problem check_format.py solves with `--rename`, from the other side.
+    Editing one line of a tab-indented legacy file makes clang-format reindent its
+    neighbours, and those neighbours then arrive here looking newly authored —
+    a `strncpy` the change never wrote gets reported, and the honest fix is a
+    `hygiene-ok` marker that then hides the real call from the conversion task
+    that has to remove it. Judging what a change *authored* rather than what it
+    *moved* is the only version of this check that stays useful.
+
+    The hole this leaves, stated rather than hidden: a genuinely new line that is
+    character-for-character identical to one already in the same file is not
+    reported. It only exists in files that already contain the pattern — a
+    converted file has none for a new line to match — so the ratchet's actual
+    job, keeping converted files converted, is unaffected.
+    """
+    try:
+        original = git("show", f"{base}:{path.as_posix()}").splitlines()
+    except subprocess.CalledProcessError:
+        return numbered  # new file: every line is genuinely authored here
+
+    before = {squeeze(line) for line in original}
+    return [(number, line) for number, line in numbered if squeeze(line) not in before]
+
+
 def added_lines(base: str) -> dict[Path, list[tuple[int, str]]]:
     """path -> [(line number, text)] for lines this change added or rewrote.
 
@@ -227,7 +260,10 @@ def main() -> int:
             base = git("merge-base", "HEAD", args.base).strip()
         except subprocess.CalledProcessError:
             base = args.base
-        targets = added_lines(base)
+        targets = {
+            path: drop_reformatted_lines(base, path, numbered)
+            for path, numbered in added_lines(base).items()
+        }
 
     failures: list[str] = []
     checked = 0
