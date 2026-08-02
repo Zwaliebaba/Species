@@ -131,7 +131,7 @@ tasks:
       but SlotMap's API is shaped as a narrow seam (handle in, reference
       out; no caller performs raw index arithmetic) so that swap stays one
       bounded change. Migration tasks T4-T13 hold callers to that surface.
-    status: in_progress
+    status: done
 
   - id: T4
     title: Migrate the protocol-adjacent containers (ServerToClientLetter, Server)

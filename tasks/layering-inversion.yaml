@@ -549,7 +549,7 @@ tasks:
       macro coupling dissolves when T8 gives the language table a
       layer-owned home, and SoundSystem's Building reach is the
       NeuronClient -> GameLogic cluster T10 handles.
-    status: in_progress
+    status: done
 
   - id: T12
     title: Empty the layering allowlist and make the check strict
