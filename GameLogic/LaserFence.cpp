@@ -14,7 +14,7 @@
 #include "DebugRender.h"
 #include "Preferences.h"
 
-#include "Main.h"
+#include "GameTime.h"
 #include "App.h"
 #include "Location.h"
 #include "ObstructionGrid.h"

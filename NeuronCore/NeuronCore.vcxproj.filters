@@ -46,6 +46,7 @@
     <ClCompile Include="NetUdpPacket.cpp">
       <Filter>NetLib</Filter>
     </ClCompile>
+    <ClCompile Include="GameTime.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="FileSys.cpp" />
     <ClCompile Include="MathUtils.cpp">
@@ -114,6 +115,7 @@
       <Filter>NetLib</Filter>
     </ClInclude>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="GameTime.h" />
     <ClInclude Include="NeuronCore.h" />
     <ClInclude Include="LookupTable.h" />
     <ClInclude Include="SlotMap.h" />

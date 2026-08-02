@@ -12,7 +12,7 @@
 
 #include "App.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Renderer.h"
 
 EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, const char* _shapeNameLower, const char* _rootMarkerName)

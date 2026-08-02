@@ -9,7 +9,7 @@
 #include "App.h"
 #include "Location.h"
 #include "WorldObject.h"
-#include "Main.h"
+#include "GameTime.h"
 
 
 #define COEF_OF_RESTITUTION	0.85f

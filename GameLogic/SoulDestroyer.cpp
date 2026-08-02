@@ -11,10 +11,10 @@
 #include "Camera.h"
 #include "EntityGrid.h"
 #include "Explosion.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "Unit.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ParticleSystem.h"
 #include "Renderer.h"
 

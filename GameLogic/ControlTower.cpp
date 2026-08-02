@@ -20,7 +20,7 @@
 #include "Camera.h"
 #include "Location.h"
 #include "Team.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ParticleSystem.h"
 #include "GlobalWorld.h"
 

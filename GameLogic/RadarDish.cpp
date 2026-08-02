@@ -11,9 +11,9 @@
 
 #include "App.h"
 #include "EntityGrid.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Unit.h"
 

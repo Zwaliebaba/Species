@@ -9,7 +9,7 @@
 #include "ScriptTrigger.h"
 
 #include "App.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "EntityGrid.h"
 #include "Script.h"

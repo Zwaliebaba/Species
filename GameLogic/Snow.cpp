@@ -6,7 +6,7 @@
 
 #include "Snow.h"
 
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "App.h"
 #include "Location.h"
 

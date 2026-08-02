@@ -26,7 +26,7 @@
 #include "ParticleSystem.h"
 #include "EntityGrid.h"
 #include "ObstructionGrid.h"
-#include "Main.h"
+#include "GameTime.h"
 
 #include "GlobalWorld.h"
 

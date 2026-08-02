@@ -18,7 +18,7 @@
 #include "Location.h"
 #include "Team.h"
 #include "Renderer.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Camera.h"
 #include "ParticleSystem.h"
 #include "Explosion.h"

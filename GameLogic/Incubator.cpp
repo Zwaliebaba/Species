@@ -6,7 +6,7 @@
 #include "Shape.h"
 #include "TextStreamReaders.h"
 #include "App.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "ParticleSystem.h"
 #include "Camera.h"

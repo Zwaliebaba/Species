@@ -11,14 +11,14 @@
 #include "Input.h"
 #include "InputTypes.h"
 
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "App.h"
 #include "Location.h"
 #include "Team.h"
 #include "EntityGrid.h"
 #include "Camera.h"
 #include "UserInput.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Explosion.h"
 

@@ -11,7 +11,7 @@
 #include "App.h"
 #include "Renderer.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ParticleSystem.h"
 #include "Explosion.h"
 #include "GlobalWorld.h"

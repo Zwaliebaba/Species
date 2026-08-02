@@ -17,7 +17,7 @@
 
 #include "App.h"
 #include "Camera.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "Renderer.h"
 #include "Team.h"

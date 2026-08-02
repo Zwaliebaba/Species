@@ -20,7 +20,7 @@
 #include "EntityGrid.h"
 #include "Explosion.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ParticleSystem.h"
 #include "Renderer.h"
 #include "Camera.h"

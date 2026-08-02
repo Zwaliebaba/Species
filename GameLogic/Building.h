@@ -7,7 +7,7 @@
 #include "Entity.h"
 #include "WorldObject.h"
 
-#include "Globals.h"
+#include "ProtocolLimits.h"
 
 class Shape;
 class ShapeFragment;

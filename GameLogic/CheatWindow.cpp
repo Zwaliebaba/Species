@@ -7,7 +7,7 @@
 
 #include "App.h"
 #include "GlobalWorld.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "Unit.h"
 #include "Team.h"

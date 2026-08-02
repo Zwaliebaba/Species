@@ -12,7 +12,7 @@
 
 #include "App.h"
 #include "Camera.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "EntityGrid.h"
 #include "ParticleSystem.h"

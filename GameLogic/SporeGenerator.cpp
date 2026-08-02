@@ -13,7 +13,7 @@
 
 #include "App.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Renderer.h"
 #include "Explosion.h"
 #include "Camera.h"

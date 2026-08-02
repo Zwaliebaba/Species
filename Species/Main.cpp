@@ -67,13 +67,6 @@ static void Finalise();
 
 // g_startTime moved to ClientToServer::m_startTime — it was derived entirely from
 // arriving letters, and this was the only translation unit that read it.
-double g_gameTime = 0.0;
-float g_advanceTime;
-double g_lastServerAdvance;
-float g_predictionTime;
-float g_targetFrameRate = 20.0f;
-int g_lastProcessedSequenceId = -1;
-int g_sliceNum; // Most recently advanced slice
 
 void SwitchTaskManagerForX360Controller();
 

@@ -13,7 +13,7 @@
 #include "Armour.h"
 
 #include "App.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "Camera.h"

@@ -18,7 +18,7 @@
 #include "Team.h"
 #include "LocationEditor.h"
 #include "GlobalWorld.h"
-#include "Main.h"
+#include "GameTime.h"
 
 #include "SpawnPoint.h"
 #include "Darwinian.h"

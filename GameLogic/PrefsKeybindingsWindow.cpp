@@ -15,7 +15,7 @@
 #include "DropDownMenu.h"
 
 #include "App.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Renderer.h"
 #include "TaskManagerInterfaceIcons.h"
 

@@ -16,7 +16,7 @@
 #include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Renderer.h"
 
 

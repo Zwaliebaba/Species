@@ -14,7 +14,7 @@
 #include "Location.h"
 #include "Team.h"
 #include "EntityGrid.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ParticleSystem.h"
 #include "GlobalWorld.h"
 

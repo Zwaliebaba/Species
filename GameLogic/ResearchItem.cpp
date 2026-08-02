@@ -12,12 +12,12 @@
 #include "ResearchItem.h"
 
 #include "Explosion.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "App.h"
 #include "GlobalWorld.h"
 #include "Camera.h"
 #include "Renderer.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "TaskManagerInterface.h"
 

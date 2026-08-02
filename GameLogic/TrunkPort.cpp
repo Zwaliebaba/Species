@@ -15,7 +15,7 @@
 
 #include "App.h"
 #include "GlobalWorld.h"
-#include "Main.h"
+#include "GameTime.h"
 
 
 TrunkPort::TrunkPort()

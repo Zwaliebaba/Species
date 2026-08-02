@@ -9,7 +9,7 @@
 #include "Shape.h"
 
 #include "App.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "SoundSystem.h"
 #include "Team.h"

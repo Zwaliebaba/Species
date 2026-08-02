@@ -16,7 +16,7 @@
 
 #include "App.h"
 #include "Camera.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Renderer.h"
 #include "SoundSystem.h"
 #include "Unit.h"

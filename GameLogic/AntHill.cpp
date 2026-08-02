@@ -14,7 +14,7 @@
 #include "EntityGrid.h"
 #include "Explosion.h"
 #include "Team.h"
-#include "Main.h"
+#include "GameTime.h"
 
 #include "AntHill.h"
 #include "ArmyAnt.h"

@@ -9,7 +9,7 @@
 
 #include "App.h"
 #include "Camera.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "Team.h"
 #include "Unit.h"

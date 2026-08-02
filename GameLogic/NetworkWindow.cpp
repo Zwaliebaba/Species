@@ -10,7 +10,7 @@
 #include "ClientToServer.h"
 
 #include "App.h"
-#include "Main.h"
+#include "GameTime.h"
 
 #include "NetworkWindow.h"
 

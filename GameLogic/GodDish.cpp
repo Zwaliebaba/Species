@@ -9,12 +9,12 @@
 #include "Darwinian.h"
 
 #include "App.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "Team.h"
 #include "Camera.h"
-#include "Main.h"
+#include "GameTime.h"
 
 #include "SoundSystem.h"
 

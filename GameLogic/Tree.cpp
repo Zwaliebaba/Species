@@ -17,10 +17,10 @@
 #include "SoundSystem.h"
 
 #include "App.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "ParticleSystem.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 
 Tree::Tree()
 :   Building(),

@@ -12,7 +12,7 @@
 #include "Team.h"
 #include "Camera.h"
 #include "EntityGrid.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Unit.h"
 #include "ParticleSystem.h"
 #include "TaskManager.h"

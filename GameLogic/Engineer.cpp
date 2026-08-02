@@ -16,14 +16,14 @@
 
 #include "App.h"
 #include "Explosion.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "ParticleSystem.h"
 #include "Renderer.h"
 #include "ObstructionGrid.h"
 #include "Camera.h"
-#include "Main.h"
+#include "GameTime.h"
 
 #include "SoundSystem.h"
 

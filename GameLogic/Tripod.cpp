@@ -17,7 +17,7 @@
 #include "EntityGrid.h"
 #include "Explosion.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Renderer.h"
 
 
