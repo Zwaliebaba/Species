@@ -67,7 +67,7 @@ tasks:
     verify:
       - python3 tools/check_layering.py
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T2
     title: Move the frame-clock globals down out of Main.h and Globals.h
