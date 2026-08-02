@@ -548,15 +548,20 @@ tasks:
     files:
       - NeuronClient/Preferences.h
       - NeuronClient/Preferences.cpp
+      - GameLogic/PrefsOtherWindow.h
+      - Species/App.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronClient/NeuronClient.vcxproj
     acceptance:
       - Preferences.cpp includes none of App.h, Resource.h, TextStreamReaders.h, PrefsOtherWindow.h
       - Reading and writing the preferences file does not require the resource system or a window
       - Preferences then lives under NeuronCore/ with no upward includes
+      - The DefaultPreferences.txt override still applies, and only when there is no prefs file yet
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: >
       Still true as written, re-checked on 6eb17e4: Preferences.h/.cpp are under
       NeuronClient/ and Preferences.cpp still includes App.h, Resource.h,
