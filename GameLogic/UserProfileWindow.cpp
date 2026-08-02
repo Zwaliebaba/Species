@@ -136,7 +136,6 @@ class NewProfileButton : public SpeciesButton
         NewUserProfileWindow *parent = (NewUserProfileWindow *) m_parent;
         g_app->SetProfileName( parent->s_profileName );
         g_app->LoadProfile();
-        g_app->SaveProfile( true, false );
         EclRemoveWindow( m_parent->m_name );
         EclRemoveWindow( LANGUAGEPHRASE("dialog_newprofile") );
         EclRemoveWindow( LANGUAGEPHRASE("dialog_mainmenu") );

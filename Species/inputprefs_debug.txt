@@ -1,0 +1,240 @@
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonDpadLr.bmp"
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonA.bmp"
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Blank line.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Blank line.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Success. Driver = W32
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Blank line.
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonLa.bmp"
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonLa.bmp"
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonRa.bmp"
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonLtRa.bmp"
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonRa.bmp"
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Blank line.
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonB.bmp"
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonLb.bmp"
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonRb.bmp"
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Success. Driver = Conjoin
+Success. Driver = W32
+Success. Driver = Conjoin
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonA.bmp"
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonLa.bmp"
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonRa.bmp"
+Blank line.
+Blank line.
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonRt.bmp"
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonLt.bmp"
+Treated as icon: "Icons/ButtonRtRa.bmp"
+Blank line.
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Blank line.
+Parse failed - The value type was not recognised.
+Blank line.
+Parse failed - The value type was not recognised.
+Blank line.
+Blank line.
+Assignment not found.
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = Chord
+Success. Driver = W32
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Success. Driver = W32
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Success. Driver = W32
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonY.bmp"
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Treated as icon: "Icons/ButtonX.bmp"
+Blank line.
+Blank line.
+Blank line.
+Blank line.
+Blank line.
+Blank line.
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Blank line.
+Blank line.
+Success. Driver = Idle
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Blank line.
+Success. Driver = W32
+Parse failed - The value type was not recognised.
+Blank line.
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Success. Driver = W32
+Blank line.
+Parse failed - The value type was not recognised.
+Parse failed - The value type was not recognised.

@@ -225,7 +225,6 @@ bool ControlTower::Reprogram( int _teamId )
                     }
 
 
-                    g_app->SaveProfile( true, true );
                     return true;
                 }
             }

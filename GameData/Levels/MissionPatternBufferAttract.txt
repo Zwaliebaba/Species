@@ -63,6 +63,6 @@ InstantUnits_StartDefinition
 InstantUnits_EndDefinition
 
 PrimaryObjectives_StartDefinition
-	BuildingOnline :pattern_buffer,1 	patternbuffer_objective1	PatternBufferPrimary1.txt
-	BuildingOnline :pattern_buffer,36 	patternbuffer_objective2	PatternBufferPrimary2.txt
+	BuildingOnline :PatternBuffer,1 	patternbuffer_objective1	PatternBufferPrimary1.txt
+	BuildingOnline :PatternBuffer,36 	patternbuffer_objective2	PatternBufferPrimary2.txt
 PrimaryObjectives_EndDefinition

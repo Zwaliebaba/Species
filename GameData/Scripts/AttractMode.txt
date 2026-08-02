@@ -1,7 +1,7 @@
 
 
 SetMission mine MissionMineAttract.txt
-SetMission pattern_buffer MissionPatternBufferAttract.txt
+SetMission PatternBuffer MissionPatternBufferAttract.txt
 SetMission biosphere MissionBiosphereAttract.txt
 
 EnterLocation mine
@@ -17,7 +17,7 @@ CamMove attract5 10
 Wait 7
 
 ExitLocation
-EnterLocation pattern_buffer
+EnterLocation PatternBuffer
 
 CamMove	attract1 20
 WaitCam

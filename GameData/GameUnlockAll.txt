@@ -88,7 +88,7 @@ Events_StartDefinition
 
     Event NotInLocation BuildingOnline:yard,4 BuildingOnline:yard,3 BuildingOnline:yard,1 BuildingOnline:yard,110 BuildingOnline:yard,101
         Action SetMission receiver MissionReceiverRecapture.txt
-        Action SetMission pattern_buffer MissionPatternBufferRecapture.txt
+        Action SetMission PatternBuffer MissionPatternBufferRecapture.txt
         Action RunScript YardEnd.txt
         End
 
@@ -97,7 +97,7 @@ Events_StartDefinition
     # Receiver and Pattern Buffer
     # ===========================
 
-    Event NotInLocation BuildingOnline:pattern_buffer,1 BuildingOnline:receiver,1
+    Event NotInLocation BuildingOnline:PatternBuffer,1 BuildingOnline:receiver,1
         Action SetMission biosphere MissionBiosphereRecapture.txt
         Action RunScript prebiosphere
         End

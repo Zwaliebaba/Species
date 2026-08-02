@@ -112,7 +112,6 @@
   <ItemGroup>
     <ClCompile Include="3dSierpinskiGasket.cpp" />
     <ClCompile Include="App.cpp" />
-    <ClCompile Include="Attract.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Clouds.cpp" />
     <ClCompile Include="ControlHelp.cpp" />
@@ -151,7 +150,6 @@
   <ItemGroup>
     <ClInclude Include="3dSierpinskiGasket.h" />
     <ClInclude Include="App.h" />
-    <ClInclude Include="Attract.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Clouds.h" />
     <ClInclude Include="ControlHelp.h" />

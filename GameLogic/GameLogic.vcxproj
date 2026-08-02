@@ -39,7 +39,6 @@
     <ClCompile Include="Darwinian.cpp" />
     <ClCompile Include="SpeciesWindow.cpp" />
     <ClCompile Include="DebugMenu.cpp" />
-    <ClCompile Include="DemoEndWindow.cpp" />
     <ClCompile Include="DropDownMenu.cpp" />
     <ClCompile Include="EditorWindow.cpp" />
     <ClCompile Include="Egg.cpp" />
@@ -134,7 +133,6 @@
     <ClInclude Include="Darwinian.h" />
     <ClInclude Include="SpeciesWindow.h" />
     <ClInclude Include="DebugMenu.h" />
-    <ClInclude Include="DemoEndWindow.h" />
     <ClInclude Include="DropDownMenu.h" />
     <ClInclude Include="EditorWindow.h" />
     <ClInclude Include="Egg.h" />

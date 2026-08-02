@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "App.h"
-#include "Attract.h"
 #include "Camera.h"
 #include "ClientToServer.h"
 #include "ControlHelp.h"
@@ -415,101 +414,6 @@ bool App::LoadProfile()
   }
 
   return true;
-}
-
-bool App::SaveProfile(bool _global, bool _local)
-{
-  if (stricmp(m_userProfileName, "none") == 0)
-    return false;
-  if (stricmp(m_userProfileName, "AccessAllAreas") == 0)
-    return false;
-  if (stricmp(m_userProfileName, "AttractMode") == 0)
-    return false;
-
-  DebugTrace("Saving profile %s\n", m_userProfileName);
-
-  char folderName[512];
-  sprintf(folderName, "%susers/", GetProfileDirectory());
-  bool success = CreateDirectory(folderName);
-  if (!success)
-  {
-    DebugTrace("failed to create folder %s\n", folderName);
-    return false;
-  }
-
-  sprintf(folderName, "%susers/%s", GetProfileDirectory(), m_userProfileName);
-  success = CreateDirectory(folderName);
-  if (!success)
-  {
-    DebugTrace("failed to create folder %s\n", folderName);
-    return false;
-  }
-
-#ifdef TARGET_OS_VISTA
-  if (_global) { SaveRichHeader(); }
-#endif
-
-  if (_global)
-  {
-    m_globalWorld->SaveGame(m_gameDataFile);
-    DebugTrace("Saved global data for profile %s\n", m_userProfileName);
-  }
-
-  if (_local && g_app->m_location)
-  {
-    if (m_levelReset)
-    {
-      m_levelReset = false;
-      return false;
-    }
-
-    g_app->m_location->m_levelFile->GenerateInstantUnits();
-    g_app->m_location->m_levelFile->GenerateDynamicBuildings();
-    char* missionFilename = m_location->m_levelFile->m_missionFilename;
-    m_location->m_levelFile->SaveMissionFile(missionFilename);
-    DebugTrace("Saved level %s for profile %s\n", missionFilename, m_userProfileName);
-  }
-  return true;
-}
-
-void App::ResetLevel(bool _global)
-{
-  if (m_location)
-  {
-    m_requestedLocationId = -1;
-    m_requestedMission[0] = '\0';
-    m_requestedMap[0] = '\0';
-
-    //
-    // Delete the saved mission file
-
-    char* missionFilename = m_location->m_levelFile->m_missionFilename;
-    char saveFilename[256];
-    sprintf(saveFilename, "%susers/%s/%s", GetProfileDirectory(), m_userProfileName, missionFilename);
-
-    DeleteThisFile(saveFilename);
-
-    m_levelReset = true;
-
-    //
-    // Delete the game file if required
-
-    if (_global)
-    {
-      sprintf(saveFilename, "%susers/%s/%s", GetProfileDirectory(), m_userProfileName, m_gameDataFile);
-
-      DeleteThisFile(saveFilename);
-
-      if (m_globalWorld)
-      {
-        delete m_globalWorld;
-        m_globalWorld = nullptr;
-      }
-
-      m_globalWorld = new GlobalWorld();
-      m_globalWorld->LoadGame(m_gameDataFile);
-    }
-  }
 }
 
 bool App::HasBoughtGame()

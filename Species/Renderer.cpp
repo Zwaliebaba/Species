@@ -1,16 +1,9 @@
 #include "pch.h"
-
-#include <math.h>
-
 #include "Input.h"
-
-#include "3dSprite.h"
-#include "Bitmap.h"
 #include "Debug.h"
 #include "HiResTime.h"
 #include "Win32EventHandler.h"
 #include "MathUtils.h"
-#include "MouseCursor.h"
 #include "OglExtensions.h"
 #include "PersistingDebugRender.h"
 #include "Preferences.h"
@@ -19,13 +12,9 @@
 #include "TextRenderer.h"
 #include "WindowManager.h"
 #include "LanguageTable.h"
-#include "UserInfo.h"
-#include "Resource.h"
 #include "DebugRender.h"
-
 #include "App.h"
 #include "Camera.h"
-#include "Deform.h"
 #include "Explosion.h"
 #include "GlobalWorld.h"
 #include "LandscapeRenderer.h"
@@ -39,45 +28,20 @@
 #include "Team.h"
 #include "Unit.h"
 #include "UserInput.h"
-#include "Water.h"
-#ifdef USE_DIRECT3D
-#include "WaterReflection.h"
-#endif
 #include "GameCursor.h"
 #include "StartSequence.h"
 #include "ControlHelp.h"
-
-#include "SoundSystem.h"
-
 #include "Eclipse.h"
-
-#include "ClientToServer.h"
-
 #include "MessageDialog.h"
-
 #include "InsertionSquad.h"
-#include "Virii.h"
-#include "Engineer.h"
 
-#ifdef USE_DIRECT3D
 #define USE_PIXEL_EFFECT_GRID_OPTIMISATION	1
-#else
-#define USE_PIXEL_EFFECT_GRID_OPTIMISATION	1
-#endif
-
-enum
-{
-  PosterMakerInactive,
-  PosterMakerTiling,
-  PosterMakerPixelEffect
-} PosterMakerState;
 
 Renderer::Renderer()
   : m_fps(60),
     m_displayFPS(false),
     m_renderDebug(false),
     m_displayInputMode(false),
-    m_renderingPoster(PosterMakerInactive),
     m_renderDarwinLogo(-1.0f),
     m_nearPlane(5.0f),
     m_farPlane(150000.0f),
@@ -411,22 +375,8 @@ void Renderer::RenderFrame(bool withFlip)
     {
       if (renderPixelShaderPref > 0)
       {
-        switch (m_renderingPoster)
-        {
-        case PosterMakerInactive:
           PreRenderPixelEffect();
 
-#ifdef USE_DIRECT3D
-          if (renderPixelShaderPref == 1)
-          {
-            if (g_waterReflectionEffect) { g_waterReflectionEffect->PreRenderWaterReflection(); }
-            if (g_deformEffect)
-            {
-              deformStarted = true;
-              g_deformEffect->Start();
-            }
-          }
-#endif
           START_PROFILE(g_app->m_profiler, "Render Clear");
           glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
           END_PROFILE(g_app->m_profiler, "Render Clear");
@@ -435,16 +385,6 @@ void Renderer::RenderFrame(bool withFlip)
           ApplyPixelEffect();
 
           SetupMatricesFor3D();
-          break;
-        case PosterMakerTiling:
-          g_app->m_location->Render();
-          ApplyPixelEffect();
-          SetupMatricesFor3D();
-          break;
-        case PosterMakerPixelEffect:
-          PreRenderPixelEffect();
-          break;
-        }
       }
       else
         g_app->m_location->Render();
@@ -558,17 +498,6 @@ void Renderer::RenderFrame(bool withFlip)
     }
   }
 
-  //
-  // Personalisation information
-
-  if (!g_app->m_taskManagerInterface->m_visible && m_renderingPoster == PosterMakerInactive && !g_app->m_camera->
-    IsInMode(Camera::ModeSphereWorldIntro) && !g_app->m_camera->IsInMode(Camera::ModeSphereWorldOutro))
-  {
-#ifdef PROMOTIONAL_BUILD
-    RenderLogo();
-#endif
-  }
-
   if (g_app->m_startSequence)
     g_app->m_startSequence->Render();
 
@@ -671,31 +600,8 @@ void Renderer::SetupProjMatrixFor3D() const
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  if (m_renderingPoster == PosterMakerTiling)
-  {
-    const int screenH = ScreenH();
-    const int screenW = ScreenW();
-    int posterResolution = g_prefsManager->GetInt("RenderPosterResolution", 1);
-
-    float scale = g_app->m_camera->GetFov() / 78.0f;
-    float left = -scale * m_nearPlane;
-    float top = -0.75f * scale * m_nearPlane;
-    float tileWidth = (-left * 2.0f) / static_cast<float>(posterResolution);
-    float tileHeight = (-top * 2.0f) / static_cast<float>(posterResolution);
-
-    float y = m_tileIndex / posterResolution;
-    float x = m_tileIndex % posterResolution;
-    float x1 = left + x * tileWidth;
-    float x2 = x1 + tileWidth;
-    float y1 = top + y * tileHeight;
-    float y2 = y1 + tileHeight;
-    glFrustum(x1, x2, y1, y2, m_nearPlane, m_farPlane);
-  }
-  else
-  {
-    gluPerspective(g_app->m_camera->GetFov(), static_cast<float>(m_screenW) / static_cast<float>(m_screenH), // Aspect ratio
-                   m_nearPlane, m_farPlane);
-  }
+  gluPerspective(g_app->m_camera->GetFov(), static_cast<float>(m_screenW) / static_cast<float>(m_screenH), // Aspect ratio
+                 m_nearPlane, m_farPlane);
 }
 
 void Renderer::SetupMatricesFor3D() const
@@ -1374,11 +1280,8 @@ void Renderer::UpdateTotalMatrix()
   DEBUG_ASSERT(p[4] == 0.0);
   DEBUG_ASSERT(p[6] == 0.0);
   DEBUG_ASSERT(p[7] == 0.0);
-  if (m_renderingPoster == PosterMakerInactive)
-  {
-    DEBUG_ASSERT(p[8] == 0.0);
-    DEBUG_ASSERT(p[9] == 0.0);
-  }
+  DEBUG_ASSERT(p[8] == 0.0);
+  DEBUG_ASSERT(p[9] == 0.0);
   DEBUG_ASSERT(p[12] == 0.0);
   DEBUG_ASSERT(p[13] == 0.0);
   DEBUG_ASSERT(p[15] == 0.0);
