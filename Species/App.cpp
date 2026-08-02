@@ -52,6 +52,12 @@ static void ApplyShippedPreferenceDefaults(PrefsManager& _prefs)
   }
 }
 
+// Drains the graphics pipeline so a render timing measures work that has actually
+// happened rather than work still queued. Installed on Profiler, which cannot
+// make the call itself without dragging OpenGL into NeuronCore and with it every
+// binary that links the foundation — including the headless server.
+static void ProfilerRenderSync() { glFinish(); }
+
 App* g_app = nullptr;
 
 #ifdef DEMO2
@@ -120,6 +126,7 @@ App::App()
 
 #ifdef PROFILER_ENABLED
   m_profiler = new Profiler();
+  Profiler::SetRenderSyncHook(&ProfilerRenderSync);
 #endif
 
   m_renderer = new Renderer();

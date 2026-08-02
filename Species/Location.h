@@ -7,8 +7,6 @@
 #include "SliceDArray.h"
 #include "Vector3.h"
 
-#include "Server.h"
-
 #include "Globals.h"
 #include "Landscape.h"
 #include "Building.h"

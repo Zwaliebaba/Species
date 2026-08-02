@@ -154,6 +154,10 @@ void Profiler::Advance()
 }
 
 // *** RenderStarted
+Profiler::RenderSyncHook Profiler::sm_renderSync = nullptr;
+
+void Profiler::SetRenderSyncHook(RenderSyncHook _hook) { sm_renderSync = _hook; }
+
 void Profiler::RenderStarted() { m_insideRenderSection = true; }
 
 // *** RenderEnded
@@ -182,8 +186,8 @@ void Profiler::StartProfile(const char* _name)
 
   if (m_currentElement->m_isExpanded)
   {
-    if (m_doGlFinish && m_insideRenderSection)
-      glFinish();
+    if (m_doGlFinish && m_insideRenderSection && sm_renderSync)
+      sm_renderSync();
     pe->Start();
   }
   m_currentElement = pe;
@@ -200,8 +204,8 @@ void Profiler::EndProfile(const char* _name)
 
   if (m_currentElement->m_parent->m_isExpanded)
   {
-    if (m_doGlFinish && m_insideRenderSection)
-      glFinish();
+    if (m_doGlFinish && m_insideRenderSection && sm_renderSync)
+      sm_renderSync();
 
     DEBUG_ASSERT(m_currentElement != m_rootElement);
     DEBUG_ASSERT(stricmp(_name, m_currentElement->m_name) == 0);

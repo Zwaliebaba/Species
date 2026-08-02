@@ -731,6 +731,67 @@ tasks:
       pass; x64 Debug CI is the build verification.
 
   # ---------------------------------------------------------------------------
+  # Found by CI on T9: NeuronCore was not actually headless-clean.
+  # ---------------------------------------------------------------------------
+
+  - id: T13
+    title: Take the OpenGL call out of NeuronCore's Profiler
+    intent: >
+      T4 moved Profiler down into NeuronCore on the reasoning that a headless
+      server needs profiling as much as a client does. True, but it brought a
+      glFinish() with it, so NeuronCore carried an unresolved OpenGL symbol.
+      Nothing noticed while every binary linking NeuronCore also linked
+      opengl32.lib — which stops being true the moment anything headless links
+      it, and is the third of this phase's definition-of-done conditions.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/Profiler.h
+      - NeuronCore/Profiler.cpp
+      - Species/App.cpp
+    acceptance:
+      - No file under NeuronCore/ references an OpenGL symbol
+      - The render sync still happens for the client, driven by the same m_doGlFinish flag
+      - NeuronServerTests links without opengl32.lib
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: true
+    status: done
+    notes: >
+      Found by CI, not by review, and not by the four checks — which is the point
+      worth recording. check_layering.py reads #include lines; it cannot see that
+      a .cpp in the foundation calls into a library the foundation must not need.
+      The failure was a link error in NeuronServerTests:
+
+        NeuronCore.lib(Profiler.obj) : error LNK2019: unresolved external symbol
+        __imp_glFinish referenced in function Profiler::EndProfile
+
+      It only surfaced now because T9 gave NeuronServer real code: ServerTests
+      pulls in Server.obj, which references Profiler, which drags Profiler.obj
+      into a test DLL that has no business linking OpenGL. Before that,
+      NeuronServerTests named nothing and the linker never looked.
+
+      Fixed with the same seam T11 used for Preferences: Profiler holds a static
+      RenderSyncHook, Species installs one that calls glFinish, and with no hook
+      the m_doGlFinish flag simply does nothing. Behaviour for the client is
+      identical — same flag, same two call sites, same order. The flag defaults
+      to false and is only ever turned on by GameLogic/ProfileWindow.cpp, a debug
+      window, so the affected path is developer instrumentation rather than
+      anything the game does normally.
+
+      glFinish was the only live external symbol in NeuronCore. The SDL calls in
+      Profiler.cpp sit behind #ifdef SINGLE_THREADED_PROFILER, which nothing
+      defines.
+
+      Note what is *not* fixed: NeuronCore.h still includes <GL/gl.h> and
+      <GL/glu.h> unconditionally, so every translation unit in the tree still
+      sees the OpenGL headers. That is a declaration, not a symbol, so it does
+      not break a headless link — but a foundation header pulling in the graphics
+      API is the same mistake one level up, and it belongs with the rest of the
+      NeuronCore.h cleanup AGENTS.md already lists under known issues.
+
+  # ---------------------------------------------------------------------------
   # Discovered while surveying T7: moving ClientToServer does not clean it.
   # ---------------------------------------------------------------------------
 

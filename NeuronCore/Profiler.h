@@ -57,12 +57,27 @@ class ProfiledElement
 
 class Profiler
 {
-    bool m_insideRenderSection; // Used to decide whether to do a glFinish for each call to EndProfile
+    bool m_insideRenderSection; // Used to decide whether to do a render sync for each call to EndProfile
 
   public:
+    // Draining the graphics pipeline before taking a timestamp is what makes a
+    // render timing mean anything — otherwise the work is still queued when the
+    // clock is read. But it is a graphics call, and this is the foundation: a
+    // headless server links NeuronCore and must not need OpenGL to do it.
+    //
+    // So the client installs the call and the profiler makes it through here.
+    // With no hook installed, m_doGlFinish simply does nothing, which is the
+    // right behaviour for anything that has no pipeline to drain.
+    using RenderSyncHook = void (*)();
+    static void SetRenderSyncHook(RenderSyncHook _hook);
     ProfiledElement* m_currentElement; // Stores the currently active profiled element
     ProfiledElement* m_rootElement;
-    bool m_doGlFinish;
+    bool m_doGlFinish; // Only ever set by the debug profile window
+
+  private:
+    static RenderSyncHook sm_renderSync;
+
+  public:
     double m_endOfSecond;
     double m_lengthOfLastSecond; // Will be somewhere between 1.0 and (1.0 + g_advanceTime)
 
