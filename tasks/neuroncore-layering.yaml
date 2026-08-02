@@ -606,16 +606,23 @@ tasks:
     files:
       - NeuronCore/ClientToServer.cpp
       - NeuronCore/ClientToServer.h
+      - Species/ServerUpdates.cpp
+      - Species/ServerUpdates.h
+      - Species/Main.cpp
+      - Species/Main.h
+      - Species/Species.vcxproj
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
     acceptance:
       - ClientToServer holds inbox, outbox, sockets and sequence ids, and includes no game header
-      - ProcessServerUpdates and the Request* builders live in the game layer, calling ClientToServer to send
+      - ProcessServerUpdates lives in the game layer, called by Main rather than reached through the endpoint
+      - No Species global is read or written from inside ClientToServer
       - The wire format is unchanged
-      - NeuronCoreTests covers the packet the Request* builders produce, so "unchanged" is checked rather than asserted
+      - NeuronCoreTests pins the bytes each packet type produces, so "unchanged" is checked rather than asserted
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: >
       Re-measured on 6eb17e4, and the split line is now exact. Every g_app
       reference left in NeuronCore is in this file, at lines 491-555 — all
@@ -633,3 +640,79 @@ tasks:
       now requires anything on the wire to ship with coverage; "the wire format
       is unchanged" is precisely the claim that a round-trip test can hold and
       prose cannot. NETWORKUPDATE_BYTESTREAMSIZE is 42 today.
+
+      Done. 11 allowlist entries removed with --prune, 644 -> 633 tree-wide and
+      14 -> 3 for NeuronCore. What is left is Input.h (T8) and two Preferences.h
+      (T11), exactly as predicted.
+
+      This was a lift, not a split, and the intent paragraph was wrong about why.
+      It claims "Building, Unit, Team, Factory, LaserFence and RadarDish are used
+      by both halves, which is what makes this a split rather than a lift". They
+      are not. Every game type in the file appears inside ProcessServerUpdates
+      and nowhere else, and the Request* builders take nothing but int, unsigned
+      char, Vector3 and TeamControls — all NeuronCore vocabulary. So the builders
+      did not move: relocating 30-odd call sites across GameLogic and Species
+      would have bought no layering change at all. The acceptance criterion that
+      required it was rewritten to match, since meeting it literally would have
+      been churn.
+
+      What the survey did miss is the reverse coupling — the transport half
+      reaching up for three Species globals, which is what really stood between
+      this file and "includes no game header":
+
+        g_lastProcessedSequenceId  read in GetNextLetter, written in ClientLeave.
+                                   It tracks how far the *simulation* has
+                                   advanced, so it stays in the game loop.
+                                   GetNextLetter now takes it as a parameter, and
+                                   ClientLeave resets only its own counter while
+                                   Main.cpp resets that one.
+        g_startTime                written in ReceiveLetter, read in exactly one
+                                   place in Main.cpp. Derived entirely from
+                                   arriving letters, so it was already this
+                                   class's state living in someone else's header
+                                   — now ClientToServer::m_startTime, same
+                                   DBL_MAX initial value. Still written on the
+                                   listen thread and read on the main thread with
+                                   no lock, exactly as before; that race is
+                                   pre-existing and was not touched.
+        Main.h                     included only for those two.
+
+      Header includes needed care for the reason T6 recorded. ClientToServer.h
+      declares SendIAmAlive(TeamControls const&) and was getting that name from
+      a forward declaration inside Entity.h. Dropping Entity.h and WorldObject.h
+      without adding TeamControls.h would have failed to compile in a way that
+      looks unrelated to the change. Engineer.h was carried by the old file and
+      is not carried by the new one — Engineer appears nowhere in the body, and
+      the rest of the include set is a far larger transitive closure than it
+      provides. If CI disagrees it goes back with a comment saying why.
+
+      One unrelated defect found while writing the tests, deliberately not fixed
+      here: ReadByteStream does `unsigned char flags = READ_UNSIGNED_SHORT(...)`
+      for the Alive case. The cursor advances the correct two bytes, so the
+      packet stays aligned, but the value is truncated to 8 bits — and
+      TeamControls::GetFlags assigns m_endSetTarget 0x0100, the ninth bit. So
+      that flag is dropped in transit. TeamControls.h even carries the warning:
+      "Also, NetworkUpdate::GetByteStream and NetworkUpdate::ReadByteStream if
+      you use more than 8 bits". Fixing it changes what arrives at the far end
+      and therefore what the simulation computes, which is its own task with its
+      own test, not a rider on a file move. Not recorded as a node here because
+      it is not part of making NeuronCore standalone.
+
+      The new tests pin bytes rather than round-tripping only: a round trip
+      passes on either byte order because one machine does both halves. They
+      cover the header prefix, SelectUnit, CreateUnit and Alive field-for-field
+      with their exact lengths (8, 21, 30, 24), check every client-sendable type
+      fits the 42-byte buffer in Release as well as Debug, and round-trip
+      TargetProgram. Note the READ_/WRITE_ macros are two statements each, not
+      expressions, so they cannot be inlined into an Assert call — every read
+      goes through a local.
+
+      Not built. msbuild is Windows-only and this machine is Linux, so the four
+      checks are what ran here and the x64 Debug CI job is the build
+      verification. Nothing here can tell you the game runs.
+
+      Formatting note: adding a member to ClientToServer.h reindented the
+      following `public:` to `  public:`, because clang-format's affected-range
+      expansion reaches the access specifier that closes the region. The file's
+      other `public:` is untouched at column 0. That is the documented cost of
+      formatting changed lines only; converting the whole file is its own task.

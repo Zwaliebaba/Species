@@ -70,14 +70,12 @@ The foundation. Everything else may depend on it; it may depend on nothing.
 This is the layer furthest through modernisation: `FileSys`, `Debug` and
 `NeuronHelper` are fully Neuron-style, and `Server.cpp` is partly converted.
 
-It is also the layer with the most damaging violations. Fourteen upward includes
-— into `NeuronClient` for `Input` and `Preferences`, into `GameLogic` for
-`Entity` and `WorldObject`, into `Species` for `App`, `Main`, `Location`, `Team`
-and `TaskManager` — mean `NeuronCore` **cannot currently be linked without the
-game client**. That is the single largest structural obstacle to a headless
-server. All fourteen are in `ClientToServer.h`, `ClientToServer.cpp` and one
-include in `Server.cpp`; `tasks/neuroncore-layering.yaml` is the plan to remove
-them, and has taken the count down from thirty.
+It no longer reaches into `GameLogic` or `Species`. Three upward includes
+remain, all in `ClientToServer.cpp` and all into `NeuronClient`: `Input.h` and
+`Preferences.h` twice. `NeuronCore` still **cannot be linked without the game
+client**, because its `.vcxproj` keeps the three upward include paths and
+`Preferences` has not moved down yet — but the count is three, from thirty when
+`tasks/neuroncore-layering.yaml` was written.
 
 ### NeuronClient
 

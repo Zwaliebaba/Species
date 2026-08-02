@@ -137,6 +137,7 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RoutingSystem.cpp" />
     <ClCompile Include="Script.cpp" />
+    <ClCompile Include="ServerUpdates.cpp" />
     <ClCompile Include="StartSequence.cpp" />
     <ClCompile Include="TaskManager.cpp" />
     <ClCompile Include="TaskManagerInterface.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RoutingSystem.h" />
     <ClInclude Include="Script.h" />
+    <ClInclude Include="ServerUpdates.h" />
     <ClInclude Include="StartSequence.h" />
     <ClInclude Include="TaskManager.h" />
     <ClInclude Include="TaskManagerInterface.h" />
