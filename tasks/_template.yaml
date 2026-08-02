@@ -20,12 +20,16 @@ tasks:
     files:
       - NeuronCore/Example.cpp
       - NeuronCore/Example.h
+      # Tests ship with the change, not after it. See docs/TESTING.md.
+      - Tests/NeuronCoreTests/ExampleTests.cpp
     acceptance:
       - An outcome someone else could check without asking you
       - Another one
+      - NeuronCoreTests covers <the behaviour this task adds or changes>
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
     status: todo
 

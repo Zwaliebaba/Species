@@ -39,8 +39,15 @@ This describes the code as it exists. Where something is aspirational it says so
 ```
 
 Dependencies point downward only. `tools/check_layering.py` enforces it against
-`tools/layering_allowlist.txt`, which holds the 663 inherited violations the
+`tools/layering_allowlist.txt`, which holds the inherited violations the
 migration has yet to remove.
+
+Each static library carries a `Tests/<Name>Tests` project that sits directly
+above it and inherits its dependencies — a test may reach no further up than the
+code it covers already does, and the same checker enforces that. The two
+executables have none: an `.exe` cannot be linked into a test DLL, so code in
+`Species` or `Server` worth testing is code that belongs in a library. See
+[`TESTING.md`](TESTING.md).
 
 ### NeuronCore
 
@@ -138,7 +145,7 @@ lockstep**, not client-server authority in the modern sense.
 **This makes bit-identical simulation a hard requirement, not a nicety.**
 `GenerateSyncValue()` sums entity positions and velocities in container index
 order, so iteration order, container identity, floating-point arithmetic order
-and the `darwiniaRandom()` call sequence are all load-bearing. `DArray` indices
+and the `speciesRandom()` call sequence are all load-bearing. `DArray` indices
 are part of object identity on the wire (`WorldObjectId::m_index` is serialised
 verbatim). The constraints this puts on ordinary refactoring are spelled out in
 [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#determinism) — read that before
@@ -168,6 +175,11 @@ and `Resource.cpp` asks for paths like `Shapes/foo.shp`.
 
 CI asserts the staging actually happened; a build where it silently stopped would
 produce an executable that starts and then fails to find any asset.
+
+Tests do not read `GameData/`. An integration test that needs content on disk
+creates it under its own temporary directory — reading the real tree in place
+couples the suite to content that changes for unrelated reasons, and writing into
+it makes the next test's failure somebody else's problem.
 
 ---
 

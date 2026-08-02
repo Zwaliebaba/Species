@@ -70,10 +70,13 @@ jobs:
   # constantly on the desk and gains little from being built here too — and the
   # arm64 runner is a preview image that roughly doubles the wall clock.
   #
-  # This is a compile gate, not a coverage matrix. Build ARM64 and Release
-  # locally; CI will not catch a break in either.
+  # Build ARM64 and Release locally; CI will not catch a break in either.
+  #
+  # The unit tests run in this job rather than a separate one because they need
+  # the build output, and shipping a few hundred megabytes of .lib and .obj
+  # between jobs to save nothing is not a trade worth making.
   build:
-    name: x64 Debug
+    name: x64 Debug build and tests
     runs-on: windows-2025-vs2026
 
     steps:
@@ -119,3 +122,42 @@ jobs:
                     Where-Object { $_.FullName -ne $source }
           if (-not $staged) { throw 'GameData was not staged next to any build output' }
           $staged | ForEach-Object { Write-Host "staged: $($_.FullName)" }
+
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          # Every test project is a NativeUnitTestProject, so the build drops one
+          # <Name>Tests.dll per covered library into the solution output
+          # directory. Discovering them by glob rather than listing them means a
+          # test project added later is picked up without anyone remembering to
+          # edit this file.
+          $tests = Get-ChildItem 'x64\Debug' -Filter '*Tests.dll' -File |
+                   Select-Object -ExpandProperty FullName
+
+          # An empty glob would otherwise let vstest.console exit 0 and report a
+          # green run for nothing at all — the one failure mode a test gate must
+          # never have. Tests/ holds one project per covered library; if that
+          # ever legitimately drops to zero, this number changes with it.
+          if ($tests.Count -lt 4) {
+            throw "expected at least 4 test DLLs in x64\Debug, found $($tests.Count)"
+          }
+          $tests | ForEach-Object { Write-Host "discovered: $_" }
+
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vstest = & $vswhere -latest -products * `
+            -find 'Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe' |
+            Select-Object -First 1
+          if (-not $vstest) { throw 'vstest.console.exe not found on the runner' }
+
+          & $vstest $tests /Platform:x64 /Logger:trx /ResultsDirectory:TestResults
+          if ($LASTEXITCODE -ne 0) { throw "tests failed (vstest.console exit $LASTEXITCODE)" }
+
+      - name: Upload test results
+        # Kept on failure only. A green run's .trx says nothing the job summary
+        # does not, and uploading one per push is storage spent on nothing.
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/*.trx
+          if-no-files-found: ignore

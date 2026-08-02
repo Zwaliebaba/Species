@@ -80,9 +80,11 @@ ClientToServer::ClientToServer()
   char const* serverAddress = g_prefsManager->GetString("ServerAddress");
   m_sendSocket->Connect(serverAddress, 4000);
 
-  NetStartThread(ListenThread);
-
+  // Null it before the listen thread starts: the thread's first act is to store
+  // its listener here, and this write used to be able to land on top of that.
   m_receiveSocket = NULL;
+
+  NetStartThread(ListenThread);
 }
 
 

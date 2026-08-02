@@ -166,7 +166,7 @@ The buildings that move Spirits around:
 | **Sequence id** | `NeuronCore/Server.h` | The server's monotonic tick counter. Every broadcast carries one; clients apply them in order. |
 | **Sync value** | `Species/Main.cpp:274` | One-byte checksum of all entity positions and velocities, compared across clients to detect desync. |
 | **Shape / `.shp`** | `NeuronClient/Shape.*`, `GameData/Shapes/` | The model format. `ShapeMarker` names an attachment point on a model — buildings use them for spirit entrances, docks and exits. |
-| **`darwiniaRandom()`** | `NeuronClient/Random.cpp` | The single global LCG the simulation shares. Its call sequence is load-bearing. |
+| **`speciesRandom()`** | `NeuronCore/Random.cpp` | The single global LCG the simulation shares. Its call sequence is load-bearing. |
 
 ---
 

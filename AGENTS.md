@@ -11,6 +11,7 @@ linked documents; this file is the map.
 | How to build and run it | [`docs/BUILD.md`](docs/BUILD.md) |
 | How the layers fit together | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | How to write code that fits | [`CODING_STANDARDS.md`](CODING_STANDARDS.md) |
+| **What to test, and where the test goes** | [`docs/TESTING.md`](docs/TESTING.md) |
 | How work is broken down | [`docs/TASK_DAG.md`](docs/TASK_DAG.md) |
 | What a Spirit / Officer / Trunk Port *is* | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
 
@@ -101,9 +102,11 @@ Species/          ~32k    Client executable: app, world, camera, landscape,
                           task manager, level loading.
 Server/           ~0      Server executable. A stub — WinMain only.
 
+Tests/            ~0.4k   One <Name>Tests project per library, on the Microsoft
+                          Native Unit Test Framework. Built and run by CI.
 tools/                    The checks CI runs. Run them locally too.
 tasks/                    Task DAGs. See docs/TASK_DAG.md.
-docs/                     Architecture, build, glossary, task breakdown standard.
+docs/                     Architecture, build, testing, glossary, task breakdown.
 ```
 
 `NeuronServer` and `Server` being empty is not an oversight — the server has not
@@ -175,21 +178,43 @@ python3 tools/check_format.py          # changed lines match .clang-format
 `python3 tools/check_format.py --fix` applies the formatting rather than
 reporting it.
 
-Then build. A change that has not been compiled is not finished. CI builds
-**x64 Debug only** — if you touched anything ARM64-sensitive or
-optimisation-sensitive, build that configuration yourself, because nothing else
-will.
+Then build **and run the tests**. A change that has not been compiled is not
+finished; a change with new behaviour and no test is not finished either.
+
+```powershell
+msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64 /m
+vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+```
+
+CI builds and tests **x64 Debug only** — if you touched anything
+ARM64-sensitive or optimisation-sensitive, build that configuration yourself,
+because nothing else will.
 
 **The project-file check matters more than it looks.** Adding a `.cpp` without
 adding it to the `.vcxproj` produces no error — the file is simply never
-compiled, and the symbols go missing at link time with no indication why.
+compiled, and the symbols go missing at link time with no indication why. For a
+test file it is worse: the suite still reports green, for a test nobody is
+running.
 
 ---
 
 ## What working looks like
 
-There is no test suite, and the game does not currently run — so "it compiles" is
-usually the honest ceiling. When it does run again, **this is the smoke test**.
+There are two separate questions here, and only one of them has an answer today.
+
+**Does the code you changed still do what it should?** That is what the test
+suite is for. `Tests/` holds one `<Name>Tests` project per library on the
+Microsoft Native Unit Test Framework; CI builds and runs all of it on every
+push. Write the tests with the change — [`docs/TESTING.md`](docs/TESTING.md) is
+the standard, and it is not optional reading for anything that touches wire
+format, the simulation, or a file being converted.
+
+**Does the game work?** Nothing here can tell you. The suite covers a few
+hundred lines out of 113,000 — encoding, string helpers, object identity — and
+the game does not currently run, so "it compiles and the suite passes" is still
+the honest ceiling. Do not let a green suite stand in for the paragraph below.
+
+When it does run again, **this is the smoke test**.
 
 **The Garden.** It is the only location `GameData/Game.txt` marks available at
 start (`Id 2, Avail 1`), built from `MapGarden.txt` +
@@ -255,7 +280,7 @@ entries and leaves the count untouched.
 
 **Do not change what the simulation computes.** Multiplayer is deterministic
 lockstep with a runtime checksum, so iteration order, floating-point arithmetic
-order, container choice and the `darwiniaRandom()` call sequence are all
+order, container choice and the `speciesRandom()` call sequence are all
 load-bearing. A refactor that looks purely cosmetic can desync the game while
 every build stays green. `DArray` in particular is a slot map whose indices are
 network identity — it is not a `std::vector`. Read
@@ -267,9 +292,16 @@ on changed lines only, deliberately: a repo-wide reformat would destroy `git
 blame` across 113,000 lines. Whole-file formatting is a migration task, done
 deliberately, one file at a time, in its own commit.
 
-**Say when something did not work.** A compile is not a test. This project has no
-test suite yet, so the honest report is often "it builds; I could not verify it
-runs". Write that, rather than implying more.
+**Test what you build.** New behaviour ships with the tests that cover it, in
+the same change — not as a follow-up node. What earns a test, what does not, and
+what a test is allowed to touch are in [`docs/TESTING.md`](docs/TESTING.md).
+Anything on the wire or anything the simulation depends on being identical
+everywhere earns one every time.
+
+**Say when something did not work.** A compile is not a test, and a green suite
+is not a running game. Report what you actually ran: "it builds and the suite
+passes; I could not verify it runs" is the honest sentence most of the time.
+Write that, rather than implying more.
 
 **Ask before changing build topology.** Adding a project, changing the toolset,
 adding a dependency, or restructuring the solution affects everyone's build. It
@@ -292,8 +324,10 @@ Real, currently true, and worth knowing before you trip over them:
   failed after `NeuronClient.lib` linked — meaning the break is in `GameLogic`
   or `Species` — but the error scrolled past the retrievable log tail and was
   never isolated. A later run got much further without failing, so it may have
-  been a flake. **If you develop on ARM64 and hit a Debug build error, this is
-  known and unexplained; capture the first error and record it here.**
+  been a flake. The intermittent C3859 / C1076 above fits the description
+  exactly — same symptom, same "passes on a re-run" behaviour — so treat that as
+  the leading explanation until an ARM64 Debug failure turns up that is not it.
+  **Capture the first `error C...` line and record it here either way.**
 - **`NeuronCore` depends upward** on `NeuronClient`, `GameLogic` and `Species`,
   including reaching through the `g_app` global. It cannot be linked standalone.
 - **Release had never built, and CI does not gate on it.** Three template
@@ -307,9 +341,28 @@ Real, currently true, and worth knowing before you trip over them:
   `TARGET_DEMOGAME`, `DARWINIA_VERSION`, and a `#error` if none is defined), plus
   `TARGET_OS_LINUX` and `TARGET_OS_MACOSX` branches for platforms that are not
   built. Most of it is dead.
-- **There is no test suite.** `Species/TestHarness.cpp` is dead code behind
-  `TEST_HARNESS_ENABLED`, and is a level-progression explorer rather than a unit
-  test framework.
+- **The test suite is new and thin.** Four projects, 25 tests, covering IP
+  conversion, the `speciesRandom` sequence, the `ByteStream` macros, the
+  `FilesysUtils` path helpers and `WorldObjectId`. That is the encoding and
+  identity layer and nothing else. `NeuronServer` has no behaviour to test yet;
+  `GameLogic` can only be linked into a test DLL through
+  `Tests/GameLogicTests/LinkStubs.cpp`, which stands in for the `Species`
+  globals it reaches up for and may only shrink. `Species` and `Server` have no
+  test project at all — an `.exe` cannot be linked into a test DLL, so code in
+  either that is worth testing belongs in a library. See
+  [`docs/TESTING.md`](docs/TESTING.md).
+- **`Species/TestHarness.cpp` is not part of it.** It is dead code behind
+  `TEST_HARNESS_ENABLED`, and is a level-progression explorer rather than a test.
+- **C3859 / C1076 hits solution builds intermittently.** "Failed to create
+  virtual memory for PCH" / "compiler limit: internal heap limit reached",
+  landing on a different file each run — `NeuronClient` on one build, a single
+  `Server/WinMain.cpp` on the next, and neither on a third. Re-running picks up
+  where it left off and usually gets through. It reproduces on an ARM64 host
+  building x64 with no test projects present, so it is neither new nor caused by
+  the test projects, and it is not the 32-bit-host case
+  [`docs/BUILD.md`](docs/BUILD.md) describes — forcing
+  `PreferredToolArchitecture` does not change it. **This is the most likely
+  explanation for the unexplained ARM64 Debug failure recorded below.**
 - **Provenance is unresolved.** [`LICENSE`](LICENSE) states the project's terms —
   internal research, non-commercial, not for distribution — but those terms cover
   only this project's own contributions. The licence covering the original

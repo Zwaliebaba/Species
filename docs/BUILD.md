@@ -30,6 +30,15 @@ msbuild Species.slnx /p:Configuration=Release /p:Platform=x64   /m
 
 Or open `Species.slnx` in Visual Studio and build normally.
 
+That includes the four test projects under `Tests/` — they are part of the
+solution, not an opt-in target. To run what it just built:
+
+```powershell
+vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+```
+
+See [`TESTING.md`](TESTING.md).
+
 A single project builds on its own, pulling its dependencies through project
 references:
 
@@ -133,11 +142,25 @@ build result is most useful earliest.
 | `tools/check_task_dag.py` | A task plan with a cycle, dangling edge or inconsistent status |
 | `tools/check_format.py` | Changed lines that do not match `.clang-format` |
 
-**Build**: one job, **x64 Debug**, on `windows-2025-vs2026` with the same v145
-toolset used locally. It then asserts `GameData` was staged beside the output.
+The first two cover `Tests/<Name>Tests` as well as the six library projects, and
+discover those directories from the tree rather than from a hard-coded list — so
+a test project added later is checked from the moment it exists.
 
-CI is a compile gate, not a coverage matrix. Two things it deliberately does not
-build, both of which are therefore your responsibility:
+**Build and test**: one job, **x64 Debug**, on `windows-2025-vs2026` with the
+same v145 toolset used locally. It then:
+
+- asserts `GameData` was staged beside the output;
+- runs every `x64\Debug\*Tests.dll` through `vstest.console`, failing if fewer
+  than four test DLLs are discovered — an empty glob would otherwise let the run
+  go green having tested nothing;
+- uploads the `.trx` as an artifact when the run fails.
+
+The tests share the build job rather than getting their own because they need the
+build output, and shipping several hundred megabytes of `.lib` and `.obj` between
+jobs to save nothing is not a trade worth making.
+
+CI is a compile-and-unit-test gate, not a coverage matrix. Two things it
+deliberately does not build, both of which are therefore your responsibility:
 
 - **Release.** It differs from Debug in optimisation settings alone and catches
   little Debug does not. Build it before anything that ships.
@@ -179,9 +202,30 @@ owning project is not on the including project's include path, or you are
 reaching upward through the layering — which should not work and should not be
 made to work. See [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-**C3859 / C1076, out of heap space.** The host compiler is 32-bit. Confirm
+**C3859 / C1076, out of heap space.** Two different causes, and it is worth
+telling them apart before changing anything.
+
+*Reproducible, every build, same file:* the host compiler is 32-bit. Confirm
 `PreferredToolArchitecture` is taking effect, or build from a 64-bit developer
 prompt.
+
+*Intermittent, a different file each time, only in solution builds:* this is the
+PCH mapping failing under memory pressure, and it is a known local flake — see
+AGENTS.md, Known issues. It has been reproduced on an ARM64 host building x64,
+with no test projects in the solution, and forcing `PreferredToolArchitecture`
+does not change it. Reducing `/m` does not reliably help either. Re-run the
+build; it picks up where it left off and usually gets through. Do not treat it
+as a break in whichever file it happened to land on.
+
+**A test binary fails to link with an unresolved external in a library you did
+not touch.** The library reaches upward and the symbol lives in an executable
+that a test DLL does not link. That is a layering defect surfacing, not a build
+misconfiguration; [`TESTING.md`](TESTING.md) covers what to do about it and why
+adding a stub is a last resort.
+
+**A test that no longer exists keeps showing up in the results.** Its DLL is
+still in the solution output directory. `Clean` only removes what a project
+still in the tree recorded, so delete the orphan by hand.
 
 **The game starts and immediately fails to load content.** It is being run from
 the wrong working directory. Run it from its output directory, where

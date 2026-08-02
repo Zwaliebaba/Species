@@ -164,13 +164,23 @@ def drop_rename_only_lines(
     return collapsed
 
 
-def format_file(binary: str, path: Path, line_ranges: list[tuple[int, int]] | None) -> str:
+def format_file(binary: str, path: Path, line_ranges: list[tuple[int, int]] | None) -> bytes:
+    """clang-format's output for `path`, as raw bytes.
+
+    Bytes rather than text throughout, because clang-format passes line endings
+    through unchanged. Reading the file with Python's text mode instead would
+    fold CRLF to LF on one side of the comparison only, so every file in a CRLF
+    working tree would differ from its own formatted output — reported as a
+    whole-file diff, and not fixable, since --fix would rewrite the same bytes
+    forever. That is every file on Windows, which is the platform this project
+    is developed on.
+    """
     command = [binary, f"--assume-filename={path}"]
     for start, end in line_ranges or []:
         command.append(f"--lines={start}:{end}")
     source = (REPO_ROOT / path).read_bytes()
     result = subprocess.run(command, input=source, capture_output=True, check=True)
-    return result.stdout.decode("utf-8", errors="replace")
+    return result.stdout
 
 
 def main() -> int:
@@ -222,19 +232,19 @@ def main() -> int:
     for path, line_ranges in targets.items():
         if path.suffix not in FORMATTED_SUFFIXES or not (REPO_ROOT / path).exists():
             continue
-        original = (REPO_ROOT / path).read_text(encoding="utf-8", errors="replace")
+        original = (REPO_ROOT / path).read_bytes()
         formatted = format_file(binary, path, line_ranges)
         if original == formatted:
             continue
         if args.fix:
-            (REPO_ROOT / path).write_text(formatted, encoding="utf-8", newline="")
+            (REPO_ROOT / path).write_bytes(formatted)
             print(f"formatted {path}")
             continue
         failures.append(
             "".join(
                 difflib.unified_diff(
-                    original.splitlines(keepends=True),
-                    formatted.splitlines(keepends=True),
+                    original.decode("utf-8", errors="replace").splitlines(keepends=True),
+                    formatted.decode("utf-8", errors="replace").splitlines(keepends=True),
                     fromfile=f"a/{path}",
                     tofile=f"b/{path}",
                 )

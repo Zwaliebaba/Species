@@ -7,18 +7,17 @@
     <Filter Include="NetLib">
       <UniqueIdentifier>{cbcfdef4-992e-4d96-8219-917f58565848}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameMath">
+      <UniqueIdentifier>{75733e07-9db7-431f-8332-5e463a7f438b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Legacy Containers">
+      <UniqueIdentifier>{7f288c1a-fe6a-44a2-a563-6c50be718807}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TeamControls.cpp" />
-    <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Random.cpp" />
     <ClCompile Include="HiResTime.cpp" />
-    <ClCompile Include="MathUtils.cpp" />
-    <ClCompile Include="Matrix33.cpp" />
-    <ClCompile Include="Matrix34.cpp" />
     <ClCompile Include="Profiler.cpp" />
-    <ClCompile Include="Vector2.cpp" />
-    <ClCompile Include="Vector3.cpp" />
     <ClCompile Include="ClientToServer.cpp">
       <Filter>Network</Filter>
     </ClCompile>
@@ -57,29 +56,34 @@
     </ClCompile>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="FileSys.cpp" />
+    <ClCompile Include="MathUtils.cpp">
+      <Filter>GameMath</Filter>
+    </ClCompile>
+    <ClCompile Include="Matrix33.cpp">
+      <Filter>GameMath</Filter>
+    </ClCompile>
+    <ClCompile Include="Matrix34.cpp">
+      <Filter>GameMath</Filter>
+    </ClCompile>
+    <ClCompile Include="Plane.cpp">
+      <Filter>GameMath</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector2.cpp">
+      <Filter>GameMath</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector3.cpp">
+      <Filter>GameMath</Filter>
+    </ClCompile>
+    <ClCompile Include="TeamControls.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ProtocolLimits.h" />
-    <ClInclude Include="TeamControls.h" />
-    <ClInclude Include="Plane.h" />
     <ClInclude Include="Random.h" />
-    <ClInclude Include="SortingHashTable.h" />
     <ClInclude Include="2dArray.h" />
     <ClInclude Include="AutoVector.h" />
-    <ClInclude Include="BTree.h" />
-    <ClInclude Include="BoundedArray.h" />
-    <ClInclude Include="DArray.h" />
-    <ClInclude Include="FastDArray.h" />
-    <ClInclude Include="HashTable.h" />
     <ClInclude Include="HiResTime.h" />
-    <ClInclude Include="LList.h" />
-    <ClInclude Include="MathUtils.h" />
-    <ClInclude Include="Matrix33.h" />
-    <ClInclude Include="Matrix34.h" />
     <ClInclude Include="Profiler.h" />
-    <ClInclude Include="SliceDArray.h" />
-    <ClInclude Include="Vector2.h" />
-    <ClInclude Include="Vector3.h" />
     <ClInclude Include="ByteStream.h">
       <Filter>Network</Filter>
     </ClInclude>
@@ -133,5 +137,53 @@
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
     <ClInclude Include="NeuronHelper.h" />
+    <ClInclude Include="MathUtils.h">
+      <Filter>GameMath</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix33.h">
+      <Filter>GameMath</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix34.h">
+      <Filter>GameMath</Filter>
+    </ClInclude>
+    <ClInclude Include="Plane.h">
+      <Filter>GameMath</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector2.h">
+      <Filter>GameMath</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>GameMath</Filter>
+    </ClInclude>
+    <ClInclude Include="BoundedArray.h">
+      <Filter>Legacy Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="BTree.h">
+      <Filter>Legacy Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="DArray.h">
+      <Filter>Legacy Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="FastDArray.h">
+      <Filter>Legacy Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="HashTable.h">
+      <Filter>Legacy Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="LList.h">
+      <Filter>Legacy Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="SliceDArray.h">
+      <Filter>Legacy Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="SortingHashTable.h">
+      <Filter>Legacy Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="ProtocolLimits.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="TeamControls.h">
+      <Filter>Network</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

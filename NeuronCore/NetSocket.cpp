@@ -10,8 +10,8 @@
 
 NetSocket::NetSocket()
 {
-	m_sockfd = -1;
-	m_stdiofd = (FILE *)0;
+  m_sockfd = NET_INVALID_SOCKET;
+  m_stdiofd = (FILE *)0;
 	m_timeout = 10000;
 	m_polltime = 100;
 	m_port = 0;
@@ -24,11 +24,11 @@ NetSocket::NetSocket()
 
 NetSocket::~NetSocket()
 {
-	if (m_sockfd != -1)
-	{
+  if (m_sockfd != NET_INVALID_SOCKET)
+  {
 		NetCloseSocket(m_sockfd);
-		m_sockfd = -1;
-	}
+    m_sockfd = NET_INVALID_SOCKET;
+  }
 }
 
 
@@ -105,11 +105,11 @@ NetRetCode NetSocket::Connect(char const *host, unsigned short port)
 
 void NetSocket::Close()
 {
-	if (m_sockfd != -1)
-	{
+  if (m_sockfd != NET_INVALID_SOCKET)
+  {
 		NetCloseSocket(m_sockfd);
-		m_sockfd = -1;
-	}
+    m_sockfd = NET_INVALID_SOCKET;
+  }
 }
 
 
@@ -120,11 +120,15 @@ NetRetCode NetSocket::Connect()
 	int err = 0;
 	struct sockaddr_in *servaddr = &m_to;
 	int sockType = SOCK_DGRAM;
-	
-	m_sockfd = socket(AF_INET, sockType, 0);
-	if (!m_sockfd)
-	{
-		return NetFailed;
+
+  // socket() reports failure as INVALID_SOCKET, which is ~0 and not 0. Testing
+  // !m_sockfd only caught a handle of zero, so a failed call was treated as a
+  // success and every later call ran against an invalid handle.
+  m_sockfd = socket(AF_INET, sockType, 0);
+  if (m_sockfd == NET_INVALID_SOCKET)
+  {
+    NetDebugOut("Could not create socket: %d", NetGetLastError());
+    return NetFailed;
 	}
 	
 	memset(servaddr, 0, sizeof(struct sockaddr_in));
@@ -157,8 +161,12 @@ NetRetCode NetSocket::Connect()
 	// Attempt the connect until we timeout
 	while (::connect(m_sockfd, (struct sockaddr *)servaddr, sizeof(*servaddr)) < 0)
 	{
-		NetDebugOut("Connection error");
-		if (NetIsBlockingError(err))
+    // This used to test a stale zero, because err was initialised to 0 and
+    // never read back from winsock, so every failure fell through to the
+    // catch-all branch no matter what had actually gone wrong.
+    err = NetGetLastError();
+    NetDebugOut("Connection error: %d", err);
+    if (NetIsBlockingError(err))
 		{
 			timeout += 100;
 			if (timeout > m_timeout)
@@ -201,8 +209,15 @@ NetRetCode NetSocket::WriteData(void *bufAsVoid, int bufLen, int *numActualBytes
 	struct timeval timeVal;
 	long timeoutSeconds = (long)((m_polltime*1000) / 100000);
 	long timeoutUSeconds = (long)((m_polltime*1000) % 100000);
-	
-	while ((bytesLeft > 0) && (!timedout))
+
+  // Callers ignore the return of Connect, so say no rather than spin a select
+  // loop against a handle that was never opened.
+  if (m_sockfd == NET_INVALID_SOCKET)
+  {
+    return NetFailed;
+  }
+
+  while ((bytesLeft > 0) && (!timedout))
 	{
 		FD_ZERO(&m_listener);
 		FD_SET(m_sockfd, &m_listener);

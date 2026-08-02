@@ -84,9 +84,11 @@ tasks:                               # required. non-empty list
     acceptance:                      # required. non-empty. observable outcomes
       - Server.cpp no longer includes App.h or Globals.h
       - tools/check_layering.py reports 2 fewer allowlisted violations
+      - NeuronCoreTests covers the extracted seam
     verify:                          # optional. commands that prove acceptance
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true              # optional. default true. false = needs
                                      # exclusive access to the tree
     status: todo                     # required. see below
@@ -117,6 +119,20 @@ someone else would check it, the task is not specified yet.
 
 **Prefer `verify` commands over prose.** A criterion backed by a command an agent
 can run is a criterion that cannot be fudged.
+
+**A task that adds or changes behaviour states its tests in `acceptance`, and
+runs them in `verify`.** Not as a separate downstream node — a node that lands
+code and defers its tests is a node that will be marked `done` while the tests
+never arrive. The exception is characterising legacy behaviour before a
+conversion, which genuinely is its own task and its own commit: there the test
+node comes *first* and the conversion depends on it. What earns a test is in
+[`TESTING.md`](TESTING.md); the short version is that anything on the wire and
+anything the simulation depends on being identical everywhere earns one.
+
+If a task's honest answer is that nothing it touches can be tested yet — the
+`GameLogic` link wall, a layer that is still a stub — say that in `notes`. "Not
+tested because X" is a finding. Silence is indistinguishable from having not
+thought about it.
 
 **One reviewable change per task.** If a task would produce a diff too large to
 review in one sitting, split it. The DAG is the right place to express that split.
@@ -181,6 +197,12 @@ wave 1 (3 tasks, may run concurrently):
   [todo       ] T4  Add NetworkUpdate round-trip coverage
   [todo       ] T7  Split Preferences off the client layer
 ```
+
+Note that two tasks in the same wave may both add files to the same
+`Tests/<Name>Tests` project without conflicting, as long as they add *different*
+files — which is the usual case, since test files are named for what they cover.
+Both will touch that project's `.vcxproj` and `.vcxproj.filters` though, so list
+those in `files` and expect to resolve a small merge there.
 
 Two caveats the tool cannot check for you:
 

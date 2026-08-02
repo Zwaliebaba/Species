@@ -7,10 +7,6 @@ work, live and survive persistently. The codebase is partway there: it began as
 the Darwinia source and is being reshaped — renamed, relayered and modernised —
 into a foundation an authoritative world server can be built on.
 
-> **Status: not runnable.** The most recent commit is titled *"Cleanup done, But
-> does not work yet"*. This is a project under reconstruction, not a playable
-> game.
-
 ---
 
 ## Layout
@@ -24,6 +20,7 @@ into a foundation an authoritative world server can be built on.
 | `Species/` | Client executable |
 | `Server/` | Server executable *(stub)* |
 | `GameData/` | Levels, shapes, textures, sounds, scripts |
+| `Tests/` | One `<Name>Tests` project per library |
 
 ~113,000 lines of C++20. No third-party dependencies — it links only against the
 operating system.
@@ -38,12 +35,25 @@ msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64 /m
 
 Full detail in [`docs/BUILD.md`](docs/BUILD.md).
 
+## Tests
+
+One `<Name>Tests` project per library under `Tests/`, on the Microsoft Native
+Unit Test Framework that ships with Visual Studio — no third-party dependency,
+so "clone and build" still holds. CI builds and runs all of them on every push.
+
+```powershell
+vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+```
+
+What to test and where it goes: [`docs/TESTING.md`](docs/TESTING.md).
+
 ## Contributing
 
 Start with [`AGENTS.md`](AGENTS.md) — it covers the current priority, the layering
 rules, and what to run before pushing. Then:
 
 - [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — style, and the modernisation plan
+- [`docs/TESTING.md`](docs/TESTING.md) — what earns a test, and what a test may touch
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the layers fit together
 - [`docs/TASK_DAG.md`](docs/TASK_DAG.md) — how work is broken down
 - [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — the game's domain vocabulary
@@ -56,6 +66,8 @@ python3 tools/check_layering.py
 python3 tools/check_task_dag.py
 python3 tools/check_format.py
 ```
+
+then build and run the suite.
 
 ## Licence
 

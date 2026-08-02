@@ -57,6 +57,17 @@ PackConstructorInitializers: Never
 SortIncludes: Never
 IncludeBlocks: Preserve
 
+# The Microsoft Native Unit Test macros. Without these, clang-format reads
+# `TEST_CLASS(Foo) { ... };` as a call followed by a stray block and folds the
+# whole test class onto one line — so a formatted test file becomes unreadable
+# and the format check fails on code that is correct.
+#
+# `Macros` needs clang-format 17 or newer. CI pins 18; the copy shipped with
+# Visual Studio 2026 is newer still. Both understand it.
+Macros:
+  - TEST_CLASS(name)=class name
+  - TEST_METHOD(name)=void name()
+
 AlignAfterOpenBracket: Align
 AlignEscapedNewlines: Left
 AlignTrailingComments: true

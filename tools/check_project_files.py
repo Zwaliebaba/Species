@@ -10,6 +10,11 @@ exactly how an agent works.
 The matching .vcxproj.filters file is checked too, since a file missing there
 still builds but disappears from the Solution Explorer tree.
 
+Both the six library projects and every Tests/<Name>Tests project are checked. A
+test file that never gets compiled is worse than a library file that never gets
+compiled: the suite still reports green, and it reports green for a test nobody
+is running.
+
     python3 tools/check_project_files.py
 """
 from __future__ import annotations
@@ -20,7 +25,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-PROJECTS = [
+LIBRARY_PROJECTS = [
     "GameLogic",
     "NeuronClient",
     "NeuronCore",
@@ -28,6 +33,24 @@ PROJECTS = [
     "Server",
     "Species",
 ]
+
+
+def test_projects() -> list[str]:
+    """Every Tests/<Name>Tests directory, discovered rather than listed.
+
+    The six projects above are fixed; test projects are not — one is added every
+    time a library gains coverage. A test project left off a hard-coded list
+    would be silently unchecked, which is precisely the failure this tool exists
+    to catch, so the list is derived from the tree instead.
+    """
+    tests_root = REPO_ROOT / "Tests"
+    if not tests_root.is_dir():
+        return []
+    return sorted(
+        f"Tests/{path.name}"
+        for path in tests_root.iterdir()
+        if path.is_dir() and (path / f"{path.name}.vcxproj").exists()
+    )
 
 # Suffix -> the MSBuild item type a file of that kind belongs to.
 ITEM_TYPE_FOR_SUFFIX = {
@@ -65,8 +88,9 @@ def report(problems: list[str], label: str, entries: set[str], project: str) -> 
 def main() -> int:
     problems: list[str] = []
 
-    for project in PROJECTS:
-        project_dir = REPO_ROOT / project
+    for project_path in LIBRARY_PROJECTS + test_projects():
+        project = Path(project_path).name
+        project_dir = REPO_ROOT / project_path
         project_file = project_dir / f"{project}.vcxproj"
         filters_file = project_dir / f"{project}.vcxproj.filters"
 

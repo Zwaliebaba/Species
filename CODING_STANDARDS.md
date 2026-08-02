@@ -18,6 +18,7 @@ migration proceeds.
 | The file you are editing | What to write |
 |---|---|
 | New file | Neuron style, no exceptions. |
+| Anything under `Tests/` | Neuron style. Test code is new code. |
 | Already converted (`NeuronCore/FileSys.*`, `Debug.h`, `NeuronHelper.h`, `Server.*`) | Neuron style. |
 | Legacy, and you are fixing a bug | Match the file. Fix the bug and nothing else. |
 | Legacy, and converting it *is* the task | Neuron style, whole file, own commit. |
@@ -235,9 +236,17 @@ clients:
 DEBUG_ASSERT(lastKnownSync == sync);   // Server.cpp — a desync lands here
 ```
 
-That assert is the whole safety net. It fires far from whatever caused it, in a
-Debug build, possibly minutes later. Read this section before touching anything
-the simulation advances.
+That assert is the whole safety net at runtime. It fires far from whatever caused
+it, in a Debug build, possibly minutes later. Read this section before touching
+anything the simulation advances.
+
+The other half of the net is the test suite, and it is the half you can actually
+use while working. A test that **pins the values** — the `speciesRandom()`
+sequence from a known seed, the exact bytes a `ByteStream` macro writes — fails
+in the commit that broke it, named, in under a millisecond. Determinism is the
+one property in this codebase where pinning a constant is the right thing to do
+rather than over-specification: the constant *is* the contract between two
+machines. See [`docs/TESTING.md`](docs/TESTING.md).
 
 ### What the sync value actually depends on
 
@@ -283,12 +292,12 @@ Simulation code is `GameLogic/`, plus the world, entity, team and physics code i
 - **Do not use `std::execution` parallel policies.** Non-deterministic reduction
   order.
 - **Do not introduce a new random source.** There is exactly one:
-  `darwiniaRandom()` in `NeuronClient/Random.cpp`, a linear congruential
+  `speciesRandom()` in `NeuronCore/Random.cpp`, a linear congruential
   generator over a single global `holdrand`. It is deterministic only because
   every client makes the *same sequence of calls*. Adding a call, removing one,
   or making one conditional shifts the stream for everything downstream.
   `rand()`, `std::mt19937` and `std::random_device` are all forbidden here.
-- **Never call `darwiniaRandom()` from rendering, UI, sound or the editor.**
+- **Never call `speciesRandom()` from rendering, UI, sound or the editor.**
   Those run at frame rate rather than tick rate, so they would consume the shared
   stream at a client-dependent rate. Use a separate generator for anything
   cosmetic.
@@ -367,6 +376,10 @@ Every added or removed source file needs **four** edits:
 `.inc` files count as `ClInclude`. They are not compiled, but they need to be
 listed so they appear in the IDE and so the check stays meaningful.
 
+The same four apply to files under `Tests/`, where the consequence is worse: a
+test file missing from its `.vcxproj` leaves the suite reporting green for a test
+nobody is running. The check covers every `Tests/<Name>Tests` directory.
+
 ---
 
 ## Comments
@@ -431,13 +444,21 @@ file at stage *n* is fully at stage *n* before it advances.
    them — converting code you cannot read is how invariants get lost.
    If the file is simulation code, re-read [Determinism](#determinism) — the
    conversion must not change iteration order, arithmetic grouping, or the
-   sequence of `darwiniaRandom()` calls.
-2. Convert the whole file. Half-converted is not a state a file may rest in.
-3. `python3 tools/check_format.py --all <file>` — whole-file formatting is
+   sequence of `speciesRandom()` calls.
+2. **Characterise it before you touch it.** A conversion commit claims no
+   behaviour change; a test written against the legacy code and still passing
+   after is the only thing that turns that claim into evidence. Write those
+   tests first, in their own commit, so the diff shows them passing on both
+   sides. If the behaviour is too entangled to characterise, that is the
+   finding — record it in the task's `notes` and say so, rather than converting
+   blind. [`docs/TESTING.md`](docs/TESTING.md).
+3. Convert the whole file. Half-converted is not a state a file may rest in.
+4. `python3 tools/check_format.py --all <file>` — whole-file formatting is
    correct here, and only here.
-4. Build Debug, and Release too if the conversion touches anything
-   optimisation-sensitive.
-5. Nothing but the conversion in the commit. No bug fixes, no behaviour changes,
+5. Build Debug, and Release too if the conversion touches anything
+   optimisation-sensitive. Run the suite; the characterisation tests from step 2
+   are the point of it.
+6. Nothing but the conversion in the commit. No bug fixes, no behaviour changes,
    no renames beyond what the conversion requires.
 
 If you find a bug while converting, note it in the task's `notes` and fix it

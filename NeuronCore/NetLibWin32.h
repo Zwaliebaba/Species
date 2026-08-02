@@ -18,7 +18,15 @@ typedef unsigned long (WINAPI *NetThreadFunc)(void *ptr);
 #define NetSleep(a) 				Sleep(a)
 #define NetCloseSocket 				closesocket
 #define NetGetHostByName 			gethostbyname // Should eventually be getaddrinfo (?)
-#define NetSetSocketNonBlocking(a) 	ioctlsocket(a, FIONBIO, (unsigned long *)0x01)
+
+// ioctlsocket's third argument points at the flag value; it is not the value.
+// This used to be a macro passing the literal 1 as that pointer, so winsock
+// dereferenced address 0x1 and faulted on the first socket ever opened.
+inline int NetSetSocketNonBlocking(SOCKET _socket)
+{
+  unsigned long nonBlocking = 1;
+  return ioctlsocket(_socket, FIONBIO, &nonBlocking);
+}
 
 // Define portable names for Win32 types
 #define NetSocketLenType 			int
@@ -31,6 +39,7 @@ typedef unsigned long (WINAPI *NetThreadFunc)(void *ptr);
 
 // Define portable names for Win32 constants
 #define NET_SOCKET_ERROR 			SOCKET_ERROR
+#define NET_INVALID_SOCKET INVALID_SOCKET
 #define NCSD_SEND 					SD_SEND
 #define NCSD_READ 					SD_RECEIVE
 #define NET_RECEIVE_FLAG 			0
@@ -41,6 +50,7 @@ typedef unsigned long (WINAPI *NetThreadFunc)(void *ptr);
 #define NetIsBlockingError(a) 		((a == WSAEALREADY) || (a == WSAEWOULDBLOCK) || (a == WSAEINVAL))
 #define NetIsConnected(a) 			(a == WSAEISCONN)
 #define NetIsReset(a) 				((a == WSAECONNRESET) || (a == WSAESHUTDOWN))
+#define NetIsMsgTruncated(a) (a == WSAEMSGSIZE)
 
 
 #endif

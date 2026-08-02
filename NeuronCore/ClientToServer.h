@@ -21,8 +21,6 @@ class ClientToServer
 private:
 	NetLib				*m_netLib;
 
-  // A server hosted in this process, or null when talking over sockets.
-
   void AdvanceSender();
 
 public:

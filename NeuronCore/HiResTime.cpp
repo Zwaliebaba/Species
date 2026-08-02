@@ -1,13 +1,6 @@
 #include "pch.h"
-
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <math.h>
 #include "HiResTime.h"
 
-#define USE_PENTIUM_COUNTER 0
-
-static unsigned int g_ticksPerSec = 0;
 static double g_tickInterval = 1.0;
 static double g_lastGetHighResTime = 0.0;
 static double g_timeShift = 0.0;
@@ -53,12 +46,6 @@ double GetHighResTime()
 
   double timeNow = GetLowLevelTime();
   timeNow -= g_timeShift;
-
-  //    if( timeNow > g_lastGetHighResTime + 1.0f )
-  //    {
-  //        g_timeShift += timeNow - g_lastGetHighResTime;
-  //        timeNow -= timeNow - g_lastGetHighResTime;
-  //    }
 
   g_lastGetHighResTime = timeNow;
   return timeNow;
