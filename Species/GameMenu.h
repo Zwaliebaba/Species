@@ -2,7 +2,7 @@
 #ifndef _included_gamemenu_h
 #define _included_gamemenu_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 #include "DropDownMenu.h"
 #include "InputField.h"
 
@@ -26,7 +26,7 @@ public:
     void DestroyMenu();
 };
 
-class GameMenuButton : public DarwiniaButton
+class GameMenuButton : public SpeciesButton
 {
 public:
     char    *m_iconName;
@@ -35,7 +35,7 @@ public:
     void Render( int realX, int realY, bool highlighted, bool clicked );
 };
 
-class GameMenuWindow : public DarwiniaWindow
+class GameMenuWindow : public SpeciesWindow
 {
 public:
     int     m_currentPage;
@@ -45,7 +45,7 @@ public:
     enum
     {
         PageMain = 0,
-        PageDarwinia,
+        PageSpecies,
         PageMultiwinia,
         PageGameSetup,
         PageResearch,
@@ -61,11 +61,11 @@ public:
 
     void SetupNewPage( int _page );
     void SetupMainPage();
-    void SetupDarwiniaPage();
+    void SetupSpeciesPage();
 
     void CreateMenuControl( char const *name, int dataType, void *value, int y,
 							float change, float _lowBound, float _highBound,
-                            DarwiniaButton *callback, int x, int w, float fontSize);
+                            SpeciesButton *callback, int x, int w, float fontSize);
 
     void GetDefaultPositions( int *_x, int *_y, int *_gap );
 };

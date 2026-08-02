@@ -3,7 +3,7 @@
 
 #include "RgbColour.h"
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 // ****************************************************************************
@@ -39,7 +39,7 @@ public:
 	float			m_lowBound;
 	float			m_highBound;
 
-    DarwiniaButton *m_callback;
+    SpeciesButton *m_callback;
 
 public:
 	InputField();
@@ -58,7 +58,7 @@ public:
 
 	void ClampToBounds		();
 
-    void SetCallback        (DarwiniaButton *button);              // This button will be clicked on Refresh
+    void SetCallback        (SpeciesButton *button);              // This button will be clicked on Refresh
 
 	void Refresh			();	// Updates the display if the registered variable has changed
 };
@@ -69,7 +69,7 @@ public:
 // Class InputScroller
 // ****************************************************************************
 
-class InputScroller : public DarwiniaButton
+class InputScroller : public SpeciesButton
 {
 public:
     InputField *m_inputField;
@@ -91,10 +91,10 @@ public:
 // Class ColourWidget
 // ****************************************************************************
 
-class ColourWidget : public DarwiniaButton
+class ColourWidget : public SpeciesButton
 {
 public:
-    DarwiniaButton *m_callback;
+    SpeciesButton *m_callback;
     int *m_value;
 
 public:
@@ -104,7 +104,7 @@ public:
     void MouseUp    ();
 
     void SetValue           (int *value);
-    void SetCallback        (DarwiniaButton *button);              // This button will be clicked on Refresh
+    void SetCallback        (SpeciesButton *button);              // This button will be clicked on Refresh
 };
 
 
@@ -113,17 +113,17 @@ public:
 // Class ColourWindow
 // ****************************************************************************
 
-class ColourWindow : public DarwiniaWindow
+class ColourWindow : public SpeciesWindow
 {
 public:
-    DarwiniaButton *m_callback;
+    SpeciesButton *m_callback;
     int *m_value;
 
 public:
     ColourWindow( char const *_name );
 
     void SetValue           (int *value);
-    void SetCallback        (DarwiniaButton *button);              // This button will be clicked on Refresh
+    void SetCallback        (SpeciesButton *button);              // This button will be clicked on Refresh
 
     void Create();
     void Render( bool hasFocus );

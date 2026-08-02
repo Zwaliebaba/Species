@@ -24,7 +24,7 @@
 
 class WebsiteButton;
 
-class SkipPrologueWindowButton : public DarwiniaButton
+class SkipPrologueWindowButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -33,7 +33,7 @@ class SkipPrologueWindowButton : public DarwiniaButton
   }
 };
 
-class SkipPrologueButton : public DarwiniaButton
+class SkipPrologueButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -49,7 +49,7 @@ class SkipPrologueButton : public DarwiniaButton
   }
 };
 
-class PlayPrologueButton : public DarwiniaButton
+class PlayPrologueButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -65,7 +65,7 @@ class PlayPrologueButton : public DarwiniaButton
   }
 };
 
-class PlayPrologueWindowButton : public DarwiniaButton
+class PlayPrologueWindowButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -74,16 +74,16 @@ class PlayPrologueWindowButton : public DarwiniaButton
   }
 };
 
-class AboutDarwiniaButton : public DarwiniaButton
+class AboutSpeciesButton : public SpeciesButton
 {
   void MouseUp() override
   {
     if (!EclGetWindow(LANGUAGEPHRASE("about_darwinia")))
-      EclRegisterWindow(new AboutDarwiniaWindow(), m_parent);
+      EclRegisterWindow(new AboutSpeciesWindow(), m_parent);
   }
 };
 
-class MainMenuUserProfileButton : public DarwiniaButton
+class MainMenuUserProfileButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -92,7 +92,7 @@ class MainMenuUserProfileButton : public DarwiniaButton
   }
 };
 
-class OptionsButton : public DarwiniaButton
+class OptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -101,7 +101,7 @@ class OptionsButton : public DarwiniaButton
   }
 };
 
-class ScreenOptionsButton : public DarwiniaButton
+class ScreenOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -110,7 +110,7 @@ class ScreenOptionsButton : public DarwiniaButton
   }
 };
 
-class GraphicsOptionsButton : public DarwiniaButton
+class GraphicsOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -119,7 +119,7 @@ class GraphicsOptionsButton : public DarwiniaButton
   }
 };
 
-class SoundOptionsButton : public DarwiniaButton
+class SoundOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -128,7 +128,7 @@ class SoundOptionsButton : public DarwiniaButton
   }
 };
 
-class OtherOptionsButton : public DarwiniaButton
+class OtherOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -137,7 +137,7 @@ class OtherOptionsButton : public DarwiniaButton
   }
 };
 
-class KeybindingsOptionsButton : public DarwiniaButton
+class KeybindingsOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -151,7 +151,7 @@ class KeybindingsOptionsButton : public DarwiniaButton
 // ****************************************************************************
 
 MainMenuWindow::MainMenuWindow()
-  : DarwiniaWindow(LANGUAGEPHRASE("dialog_mainmenu"))
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_mainmenu"))
 {
   int screenW = g_app->m_renderer->ScreenW();
   int screenH = g_app->m_renderer->ScreenH();
@@ -160,14 +160,14 @@ MainMenuWindow::MainMenuWindow()
   SetPosition(screenW / 2.0f - m_w / 2.0f, screenH / 2.0f - m_h / 2.0f);
 }
 
-void MainMenuWindow::Render(bool _hasFocus) { DarwiniaWindow::Render(_hasFocus); }
+void MainMenuWindow::Render(bool _hasFocus) { SpeciesWindow::Render(_hasFocus); }
 
 // ***************************************************************************
 // Class OptionsMenuWindow
 // ***************************************************************************
 
 OptionsMenuWindow::OptionsMenuWindow()
-  : DarwiniaWindow(LANGUAGEPHRASE("dialog_options"))
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_options"))
 {
   int screenW = g_app->m_renderer->ScreenW();
   int screenH = g_app->m_renderer->ScreenH();
@@ -179,7 +179,7 @@ OptionsMenuWindow::OptionsMenuWindow()
 
 void OptionsMenuWindow::Create()
 {
-  DarwiniaWindow::Create();
+  SpeciesWindow::Create();
 
   int fontSize = GetMenuSize(13);
   int y = GetClientRectY1();
@@ -233,12 +233,12 @@ void OptionsMenuWindow::Create()
 
 // ============================================================================
 
-class ResetLevelButton : public DarwiniaButton
+class ResetLevelButton : public SpeciesButton
 {
   void MouseUp() override { EclRegisterWindow(new ResetLocationWindow(), m_parent); }
 };
 
-class ExitLevelButton : public DarwiniaButton
+class ExitLevelButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -259,7 +259,7 @@ class ExitLevelButton : public DarwiniaButton
   }
 };
 
-class WebsiteButton : public DarwiniaButton
+class WebsiteButton : public SpeciesButton
 {
   public:
     char m_website[256];
@@ -293,7 +293,7 @@ class WebsiteButton : public DarwiniaButton
 };
 
 LocationWindow::LocationWindow()
-  : DarwiniaWindow(LANGUAGEPHRASE("dialog_locationmenu"))
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_locationmenu"))
 {
   int screenW = g_app->m_renderer->ScreenW();
   int screenH = g_app->m_renderer->ScreenH();
@@ -304,7 +304,7 @@ LocationWindow::LocationWindow()
 
 void LocationWindow::Create()
 {
-  DarwiniaWindow::Create();
+  SpeciesWindow::Create();
 
   int fontSize = GetMenuSize(13);
   int y = GetClientRectY1();
@@ -407,7 +407,7 @@ void LocationWindow::Create()
 
 // ============================================================================
 
-class ResetLocationButton : public DarwiniaButton
+class ResetLocationButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -423,11 +423,11 @@ class ResetLocationButton : public DarwiniaButton
 };
 
 ResetLocationWindow::ResetLocationWindow()
-  : DarwiniaWindow(LANGUAGEPHRASE("dialog_resetlocation")) { SetMenuSize(300, 200); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_resetlocation")) { SetMenuSize(300, 200); }
 
 void ResetLocationWindow::Create()
 {
-  DarwiniaWindow::Create();
+  SpeciesWindow::Create();
 
   int fontSize = GetMenuSize(13);
   int y = GetClientRectY1();
@@ -459,7 +459,7 @@ void ResetLocationWindow::Create()
 
 void ResetLocationWindow::Render(bool _hasFocus)
 {
-  DarwiniaWindow::Render(_hasFocus);
+  SpeciesWindow::Render(_hasFocus);
 
   float y = m_y + 25;
   float h = GetMenuSize(18);
@@ -479,7 +479,7 @@ void ResetLocationWindow::Render(bool _hasFocus)
 
 void MainMenuWindow::Create()
 {
-  DarwiniaWindow::Create();
+  SpeciesWindow::Create();
 
   int y = GetClientRectY1();
   int border = GetClientRectX1() + 10;
@@ -533,10 +533,10 @@ void MainMenuWindow::Create()
   m_buttonOrder.PutData(close);
 }
 
-AboutDarwiniaWindow::AboutDarwiniaWindow()
-  : DarwiniaWindow(LANGUAGEPHRASE("about_darwinia")) { SetMenuSize(350, 250); }
+AboutSpeciesWindow::AboutSpeciesWindow()
+  : SpeciesWindow(LANGUAGEPHRASE("about_darwinia")) { SetMenuSize(350, 250); }
 
-void AboutDarwiniaWindow::Create()
+void AboutSpeciesWindow::Create()
 {
   int y = GetClientRectY1();
   int border = GetClientRectX1() + 10;
@@ -553,9 +553,9 @@ void AboutDarwiniaWindow::Create()
   m_buttonOrder.PutData(close);
 }
 
-void AboutDarwiniaWindow::Render(bool _hasFocus)
+void AboutSpeciesWindow::Render(bool _hasFocus)
 {
-  DarwiniaWindow::Render(_hasFocus);
+  SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Sprites/Darwinian.bmp"));
@@ -595,7 +595,7 @@ void AboutDarwiniaWindow::Render(bool _hasFocus)
 }
 
 SkipPrologueWindow::SkipPrologueWindow()
-  : DarwiniaWindow(LANGUAGEPHRASE("dialog_skipprologue")) { SetMenuSize(360, 350); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_skipprologue")) { SetMenuSize(360, 350); }
 
 void SkipPrologueWindow::Create()
 {
@@ -623,7 +623,7 @@ void SkipPrologueWindow::Create()
 
 void SkipPrologueWindow::Render(bool _hasFocus)
 {
-  DarwiniaWindow::Render(_hasFocus);
+  SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Campaign.bmp"));
@@ -663,7 +663,7 @@ void SkipPrologueWindow::Render(bool _hasFocus)
 };
 
 PlayPrologueWindow::PlayPrologueWindow()
-  : DarwiniaWindow(LANGUAGEPHRASE("dialog_playprologue")) { SetMenuSize(350, 350); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_playprologue")) { SetMenuSize(350, 350); }
 
 void PlayPrologueWindow::Create()
 {
@@ -691,7 +691,7 @@ void PlayPrologueWindow::Create()
 
 void PlayPrologueWindow::Render(bool _hasFocus)
 {
-  DarwiniaWindow::Render(_hasFocus);
+  SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Prologue.bmp"));

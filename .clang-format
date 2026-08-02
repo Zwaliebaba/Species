@@ -1,0 +1,70 @@
+# Formatting for Species. Derived from the modernised Neuron code
+# (NeuronCore/FileSys.h, NeuronCore/Server.h, NeuronCore/Server.cpp), which is
+# the style the whole tree is migrating towards.
+#
+# CI only checks lines a change actually touches (tools/check_format.sh), so the
+# large body of unconverted Darwinia code is not reformatted wholesale. Running
+# clang-format across an untouched legacy file is a migration task in its own
+# right — see CODING_STANDARDS.md, "Modernisation migration".
+
+Language: Cpp
+Standard: c++20
+BasedOnStyle: LLVM
+
+ColumnLimit: 150
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ContinuationIndentWidth: 2
+
+# Allman: every brace on its own line, except for short inline bodies.
+BreakBeforeBraces: Allman
+
+# class Foo
+# {
+#   public:      <- one level in
+#     int m_bar; <- two
+NamespaceIndentation: All
+AccessModifierOffset: 0
+IndentAccessModifiers: true
+
+# case labels sit at the same level as the switch.
+IndentCaseLabels: false
+
+# NetLib* m_netLib, not NetLib *m_netLib.
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# Accessors and other one-liners stay on one line; control flow never does.
+AllowShortFunctionsOnASingleLine: All
+AllowShortBlocksOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortLambdasOnASingleLine: All
+
+# Server::Server()
+#   : m_netLib(nullptr),
+#     m_sequenceId(0)
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 2
+PackConstructorInitializers: Never
+
+# Legacy code has load-bearing include order in places, and reordering includes
+# is not something a formatter should do behind a change's back. Group and order
+# includes by hand — CODING_STANDARDS.md says how.
+SortIncludes: Never
+IncludeBlocks: Preserve
+
+AlignAfterOpenBracket: Align
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+BinPackArguments: true
+BinPackParameters: true
+Cpp11BracedListStyle: true
+FixNamespaceComments: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
+SpaceBeforeParens: ControlStatements
+SpacesBeforeTrailingComments: 1

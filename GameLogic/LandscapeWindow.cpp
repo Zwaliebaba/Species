@@ -26,7 +26,7 @@
 // Class LandscapeTileButton
 // ****************************************************************************
 
-class LandscapeTileButton: public DarwiniaButton
+class LandscapeTileButton: public SpeciesButton
 {
 public:
 	LandscapeTile *m_def;
@@ -100,7 +100,7 @@ public:
 // ****************************************************************************
 
 LandscapeTileEditWindow::LandscapeTileEditWindow( char *name, int tileId )
-:   DarwiniaWindow(name),
+:   SpeciesWindow(name),
     m_tileId(tileId)
 {
 }
@@ -114,7 +114,7 @@ LandscapeTileEditWindow::~LandscapeTileEditWindow()
 
 void LandscapeTileEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	m_tileDef = g_app->m_location->m_levelFile->m_landscape.m_tiles.GetData(m_tileId);
 	Landscape *land = &g_app->m_location->m_landscape;
@@ -169,7 +169,7 @@ void LandscapeTileEditWindow::Create()
 // Class LandscapeFlatAreaDeleteButton
 // ****************************************************************************
 
-class LandscapeFlattenAreaDeleteButton: public DarwiniaButton
+class LandscapeFlattenAreaDeleteButton: public SpeciesButton
 {
 public:
 	int m_areaId;
@@ -190,7 +190,7 @@ public:
 // ****************************************************************************
 
 LandscapeFlattenAreaEditWindow::LandscapeFlattenAreaEditWindow(char const *_name, int areaId)
-:   DarwiniaWindow(_name),
+:   SpeciesWindow(_name),
     m_areaId(areaId)
 {
 }
@@ -204,7 +204,7 @@ LandscapeFlattenAreaEditWindow::~LandscapeFlattenAreaEditWindow()
 
 void LandscapeFlattenAreaEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	m_areaDef = g_app->m_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_areaId);
 
@@ -231,7 +231,7 @@ void LandscapeFlattenAreaEditWindow::Create()
 // Class NewTileButton
 // ****************************************************************************
 
-class NewTileButton : public DarwiniaButton
+class NewTileButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -265,7 +265,7 @@ public:
 // Class NewFlattenAreaButton
 // ****************************************************************************
 
-class NewFlattenAreaButton : public DarwiniaButton
+class NewFlattenAreaButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -293,7 +293,7 @@ public:
 // Class ScaleLandscapeButton
 // ****************************************************************************
 
-class ScaleLandscapeButton : public DarwiniaButton
+class ScaleLandscapeButton : public SpeciesButton
 {
 public:
     float m_scaleFactor;
@@ -356,7 +356,7 @@ public:
 // ****************************************************************************
 
 LandscapeEditWindow::LandscapeEditWindow( char const *name )
-:   DarwiniaWindow(name)
+:   SpeciesWindow(name)
 {
 }
 
@@ -371,7 +371,7 @@ LandscapeEditWindow::~LandscapeEditWindow()
 
 void LandscapeEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int height = 5;
 	int pitch = 17;
@@ -426,7 +426,7 @@ void LandscapeEditWindow::Create()
 // Class LandscapeGuideGridWindow
 // ****************************************************************************
 
-class GuideGridButton : public DarwiniaButton
+class GuideGridButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -686,13 +686,13 @@ public:
     }
 };
 
-class GuideGridTool : public DarwiniaButton
+class GuideGridTool : public SpeciesButton
 {
 public:
     int     m_toolType;
 
     GuideGridTool( int _toolType )
-        :   DarwiniaButton(),
+        :   SpeciesButton(),
             m_toolType(_toolType) {}
 
     void Render( int realX, int realY, bool highlighted, bool clicked )
@@ -700,11 +700,11 @@ public:
         LandscapeGuideGridWindow *parent = (LandscapeGuideGridWindow *) m_parent;
         if( parent->m_tool == m_toolType )
         {
-            DarwiniaButton::Render( realX, realY, highlighted, true );
+            SpeciesButton::Render( realX, realY, highlighted, true );
         }
         else
         {
-            DarwiniaButton::Render( realX, realY, highlighted, clicked );
+            SpeciesButton::Render( realX, realY, highlighted, clicked );
         }
     }
 
@@ -716,7 +716,7 @@ public:
 };
 
 LandscapeGuideGridWindow::LandscapeGuideGridWindow( char *name, int tileId )
-:   DarwiniaWindow(name),
+:   SpeciesWindow(name),
     m_tileId(tileId),
     m_tool(GuideGridToolFreehand),
     m_toolSize(1)
@@ -777,7 +777,7 @@ void LandscapeGuideGridWindow::Create()
     binary->SetShortProperties( LANGUAGEPHRASE("editor_binary"), controlsX, controlsY += controlsH, controlsW );
     RegisterButton( binary );
 
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 }
 
 #endif // LOCATION_EDITOR

@@ -61,6 +61,9 @@
     <ClInclude Include="NetworkUpdate.h">
       <Filter>Network</Filter>
     </ClInclude>
+    <ClInclude Include="NetworkUpdate.inc">
+      <Filter>Network</Filter>
+    </ClInclude>
     <ClInclude Include="Server.h">
       <Filter>Network</Filter>
     </ClInclude>

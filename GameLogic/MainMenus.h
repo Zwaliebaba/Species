@@ -2,10 +2,10 @@
 #ifndef _included_mainmenus_h
 #define _included_mainmenus_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class MainMenuWindow : public DarwiniaWindow
+class MainMenuWindow : public SpeciesWindow
 {
 public:
     MainMenuWindow();
@@ -15,7 +15,7 @@ public:
 };
 
 
-class OptionsMenuWindow : public DarwiniaWindow
+class OptionsMenuWindow : public SpeciesWindow
 {
 public:
     OptionsMenuWindow();
@@ -24,7 +24,7 @@ public:
 };
 
 
-class LocationWindow : public DarwiniaWindow
+class LocationWindow : public SpeciesWindow
 {
 public:
     LocationWindow();
@@ -33,7 +33,7 @@ public:
 };
 
 
-class ResetLocationWindow : public DarwiniaWindow
+class ResetLocationWindow : public SpeciesWindow
 {
 public:
     ResetLocationWindow();
@@ -43,16 +43,16 @@ public:
 };
 
 
-class AboutDarwiniaWindow : public DarwiniaWindow
+class AboutSpeciesWindow : public SpeciesWindow
 {
 public:
-    AboutDarwiniaWindow();
+    AboutSpeciesWindow();
 
     void Create();
     void Render( bool _hasFocus );
 };
 
-class SkipPrologueWindow : public DarwiniaWindow
+class SkipPrologueWindow : public SpeciesWindow
 {
 public:
 	SkipPrologueWindow();
@@ -61,7 +61,7 @@ public:
 	void Render( bool _hasFocus );
 };
 
-class PlayPrologueWindow : public DarwiniaWindow
+class PlayPrologueWindow : public SpeciesWindow
 {
 public:
 	PlayPrologueWindow();

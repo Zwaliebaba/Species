@@ -11,7 +11,7 @@
 #include "PreferenceNames.h"
 
 
-class BuyNowButton : public DarwiniaButton
+class BuyNowButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -22,7 +22,7 @@ class BuyNowButton : public DarwiniaButton
 
 
 BuyNowWindow::BuyNowWindow()
-: DarwiniaWindow( LANGUAGEPHRASE("dialog_buydarwinia" ) )
+: SpeciesWindow( LANGUAGEPHRASE("dialog_buydarwinia" ) )
 {
     int screenW = g_app->m_renderer->ScreenW();
     int screenH = g_app->m_renderer->ScreenH();
@@ -34,18 +34,18 @@ BuyNowWindow::BuyNowWindow()
 
 void BuyNowWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int y = m_h;
 	int h = 30;
 
-    DarwiniaButton *close = new CloseButton();
+    SpeciesButton *close = new CloseButton();
     close->SetShortProperties( LANGUAGEPHRASE("dialog_later"), 10, y-=h, m_w-20, 20 );
     close->m_fontSize = 13;
     close->m_centered = true;
     RegisterButton( close );
 
-    DarwiniaButton *buy = new BuyNowButton();
+    SpeciesButton *buy = new BuyNowButton();
     buy->SetShortProperties( LANGUAGEPHRASE("dialog_buynow"), 10, y-=h, m_w-20, 20 );
     buy->m_fontSize = 13;
     buy->m_centered = true;
@@ -54,7 +54,7 @@ void BuyNowWindow::Create()
 
 void BuyNowWindow::Render(bool _hasFocus)
 {
-	DarwiniaWindow::Render(_hasFocus);
+	SpeciesWindow::Render(_hasFocus);
 
     glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 

@@ -309,7 +309,7 @@ bool ControllerGrenade::Advance()
     {
         g_app->m_soundSystem->TriggerOtherEvent( this, "ExplodeController", SoundSourceBlueprint::TypeGrenade );
 
-        int numFlashes = 5 + darwiniaRandom() % 5;
+        int numFlashes = 5 + speciesRandom() % 5;
         for( int i = 0; i < numFlashes; ++i )
         {
             Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );

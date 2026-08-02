@@ -3,7 +3,7 @@
 
 #ifdef LOCATION_EDITOR
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 // ****************************************************************************
@@ -11,7 +11,7 @@
 // ****************************************************************************
 
 // This window is displayed when a building is selected for editing
-class BuildingEditWindow : public DarwiniaWindow
+class BuildingEditWindow : public SpeciesWindow
 {
 public:
     BuildingEditWindow( char const *name );
@@ -27,7 +27,7 @@ public:
 // ****************************************************************************
 
 // Top level window that contains a "create" button for every type of builing
-class BuildingsCreateWindow : public DarwiniaWindow
+class BuildingsCreateWindow : public SpeciesWindow
 {
 public:
     int m_buildingType;

@@ -3,7 +3,7 @@
 
 #ifdef LOCATION_EDITOR
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 class LandscapeFlattenArea;
@@ -14,7 +14,7 @@ class LandscapeTile;
 // Class LandscapeTileEditWindow
 // ****************************************************************************
 
-class LandscapeTileEditWindow: public DarwiniaWindow
+class LandscapeTileEditWindow: public SpeciesWindow
 {
 public:
 	LandscapeTile        	*m_tileDef;
@@ -31,7 +31,7 @@ public:
 // Class LandscapeFlatAreaEditWindow
 // ****************************************************************************
 
-class LandscapeFlattenAreaEditWindow: public DarwiniaWindow
+class LandscapeFlattenAreaEditWindow: public SpeciesWindow
 {
 public:
 	LandscapeFlattenArea	*m_areaDef;
@@ -48,7 +48,7 @@ public:
 // Class LandscapeEditWindow
 // ****************************************************************************
 
-class LandscapeEditWindow: public DarwiniaWindow
+class LandscapeEditWindow: public SpeciesWindow
 {
 public:
     LandscapeEditWindow( char const *name );
@@ -62,7 +62,7 @@ public:
 // Class LandscapeGuideGridWindow
 // ****************************************************************************
 
-class LandscapeGuideGridWindow : public DarwiniaWindow
+class LandscapeGuideGridWindow : public SpeciesWindow
 {
 public:
 	LandscapeTile       	*m_tileDef;

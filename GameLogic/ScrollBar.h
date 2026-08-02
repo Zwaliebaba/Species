@@ -13,7 +13,7 @@
 #define _included_scrollbar_h
 
 #include "Eclipse.h"
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 class ScrollBar
@@ -67,7 +67,7 @@ public:
 };
 
 
-class ScrollChangeButton : public DarwiniaButton
+class ScrollChangeButton : public SpeciesButton
 {
 protected:
     ScrollBar *m_scrollBar;

@@ -120,7 +120,7 @@ Explosion::Explosion(ShapeFragment *_frag, Matrix34 const &_transform, float _fr
 		tri.m_vel = (centre - transformedFragCentre) * (MAX_INITIAL_SPEED);
 		tri.m_vel.y += INITIAL_VERTICAL_SPEED;
 		tri.m_pos = centre;
-		tri.m_tumbler = &m_tumblers[darwiniaRandom() % NUM_TUMBLERS];
+		tri.m_tumbler = &m_tumblers[speciesRandom() % NUM_TUMBLERS];
 		float const minFragLife = EXPLOSION_LIFETIME * MIN_FRAG_LIFE;
 		//tri.m_timeToDie = frand(EXPLOSION_LIFETIME - minFragLife) + g_gameTime + minFragLife;
         tri.m_timeToDie = g_gameTime + EXPLOSION_LIFETIME;

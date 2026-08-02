@@ -65,7 +65,7 @@ class FullscreenRequiredMenu : public DropDownMenu
         else
         {
             glColor4f( 1.0f, 1.0f, 1.0f, 0.5f );
-			DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+			SpeciesWindow *parent = (SpeciesWindow *)m_parent;
             g_editorFont.DrawText2D( realX+10, realY+9, parent->GetMenuSize(13), LANGUAGEPHRASE("dialog_windowedmode") );
         }
     }
@@ -194,7 +194,7 @@ void SetWindowed(bool _isWindowed, bool _isPermanent, bool &_isSwitchingToWindow
 }
 
 
-class SetScreenButton : public DarwiniaButton
+class SetScreenButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -231,7 +231,7 @@ class SetScreenButton : public DarwiniaButton
 
 
 PrefsScreenWindow::PrefsScreenWindow()
-:   DarwiniaWindow( LANGUAGEPHRASE("dialog_screenoptions") )
+:   SpeciesWindow( LANGUAGEPHRASE("dialog_screenoptions") )
 {
 	int height = 240;
 
@@ -254,7 +254,7 @@ PrefsScreenWindow::PrefsScreenWindow()
 
 void PrefsScreenWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     /*int x = GetMenuSize(150);
     int w = GetMenuSize(170);
@@ -352,7 +352,7 @@ void PrefsScreenWindow::Create()
 
 void PrefsScreenWindow::Render( bool _hasFocus )
 {
-    DarwiniaWindow::Render( _hasFocus );
+    SpeciesWindow::Render( _hasFocus );
 
 	int border = GetClientRectX1() + 10;
     int x = m_x + 20;

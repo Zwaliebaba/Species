@@ -1,0 +1,227 @@
+# Worked example of the task DAG standard — and a real plan.
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: neuroncore-layering
+title: Make NeuronCore independent of the client, game and app layers
+phase: 2
+summary: >
+  NeuronCore is meant to be the foundation every other project sits on, but it
+  currently reaches upward 30 times: into NeuronClient for containers, maths and
+  timing; into GameLogic for Entity and WorldObject; and into Species for App,
+  Globals, Main and Team. Until that is untangled NeuronCore cannot be linked
+  into a headless server build, which is a prerequisite for the authoritative
+  world server.
+
+  The 30 violations are listed in tools/layering_allowlist.txt under the
+  NeuronCore/ prefix. This plan removes all of them; when it lands, NeuronCore's
+  AdditionalIncludeDirectories can drop NeuronClient, GameLogic and Species.
+
+  Counts below come from `python3 tools/check_layering.py --update` at the time
+  the plan was written. Re-measure rather than trusting them if they look stale.
+
+tasks:
+  # ---------------------------------------------------------------------------
+  # Wave 1: move genuinely-foundational code down. These are independent of each
+  # other and of everything else, so they can be worked concurrently.
+  # ---------------------------------------------------------------------------
+
+  - id: T1
+    title: Move the container templates from NeuronClient down into NeuronCore
+    intent: >
+      LList, DArray, BTree, FastDArray and friends are general-purpose containers
+      with no client dependency. They live in NeuronClient purely because that is
+      where Darwinia's shared code happened to sit. Moving them down lets
+      NeuronCore's own headers stop reaching upward for them.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronClient/LList.h
+      - NeuronClient/DArray.h
+      - NeuronClient/BTree.h
+      - NeuronClient/FastDArray.h
+      - NeuronClient/BoundedArray.h
+      - NeuronClient/AutoVector.h
+      - NeuronClient/HashTable.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronClient/NeuronClient.vcxproj
+    acceptance:
+      - The container headers live under NeuronCore/ and are listed in NeuronCore.vcxproj
+      - AutoVector.h still carries its Reliable Software copyright notice verbatim (see LICENSE)
+      - NeuronCore/Server.h and NeuronCore/ClientToServer.h no longer appear in the allowlist for LList.h or DArray.h
+      - No file needed its #include lines changed, since includes are resolved by basename
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  - id: T2
+    title: Move Vector3 and the maths utilities down into NeuronCore
+    intent: >
+      The wire protocol serialises positions and directions, so the maths types
+      are part of NeuronCore's vocabulary, not the renderer's. A headless server
+      needs them without needing NeuronClient.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronClient/Vector3.h
+      - NeuronClient/Vector2.h
+      - NeuronClient/Matrix33.h
+      - NeuronClient/Matrix34.h
+      - NeuronClient/MathUtils.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronClient/NeuronClient.vcxproj
+    acceptance:
+      - The maths headers and their .cpp files live under NeuronCore/
+      - NeuronCore/ClientToServer.h and ServerToClientLetter.h no longer appear in the allowlist for Vector3.h
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  - id: T3
+    title: Move HiResTime down into NeuronCore
+    intent: >
+      Server tick timing belongs to the core. It is a small, self-contained move
+      that unblocks the ClientToServer cleanup.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronClient/HiResTime.h
+      - NeuronClient/HiResTime.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronClient/NeuronClient.vcxproj
+    acceptance:
+      - HiResTime lives under NeuronCore/
+      - NeuronCore/ClientToServer.cpp -> HiResTime.h is gone from the allowlist
+    verify:
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  - id: T4
+    title: Move Preferences and Profiler down into NeuronCore
+    intent: >
+      Both are infrastructure the server needs as much as the client does, and
+      both are currently reached for from inside NeuronCore's networking code.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronClient/Preferences.h
+      - NeuronClient/Preferences.cpp
+      - NeuronClient/Profiler.h
+      - NeuronClient/Profiler.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronClient/NeuronClient.vcxproj
+    acceptance:
+      - Preferences and Profiler live under NeuronCore/
+      - Neither appears on the right-hand side of a NeuronCore/ allowlist entry
+    verify:
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  # ---------------------------------------------------------------------------
+  # Wave 2: the protocol's dependency on game types. Needs the maths and
+  # container moves first, because the replacement types use them.
+  # ---------------------------------------------------------------------------
+
+  - id: T5
+    title: Give the wire protocol its own identifier types
+    intent: >
+      NetworkUpdate.h, ClientToServer.h and ServerToClientLetter.h reference
+      Entity, Team and WorldObject directly, which drags the whole game model
+      into the networking layer. The protocol only ever needs opaque ids and a
+      type tag. Defining those in NeuronCore severs the dependency and makes the
+      protocol independently testable — which is what will let the realtime world
+      server be built without a renderer attached.
+    project: NeuronCore
+    depends_on: [T1, T2]
+    files:
+      - NeuronCore/NetworkUpdate.h
+      - NeuronCore/NetworkUpdate.cpp
+      - NeuronCore/ClientToServer.h
+      - NeuronCore/ServerToClientLetter.h
+    acceptance:
+      - NeuronCore defines its own id types for objects, teams and units
+      - No header under NeuronCore/ includes Entity.h, Team.h or WorldObject.h
+      - GameLogic and Species convert between their types and the protocol ids at the boundary, not inside NeuronCore
+    verify:
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  # ---------------------------------------------------------------------------
+  # Wave 3: remove the global application singleton from the core. Both depend on
+  # T5 because the replacement interfaces are phrased in the new protocol types.
+  # These two tasks touch different files, so they can run concurrently.
+  # ---------------------------------------------------------------------------
+
+  - id: T6
+    title: Remove g_app from NeuronCore/Server.cpp
+    intent: >
+      Server.cpp reaches through the g_app singleton for its socket
+      configuration and team registry, which is why NeuronCore cannot be linked
+      without the Species executable. Passing what it needs in at Initialise()
+      makes the server construct-able from a headless host.
+    project: NeuronCore
+    depends_on: [T5]
+    files:
+      - NeuronCore/Server.cpp
+      - NeuronCore/Server.h
+    acceptance:
+      - Server.cpp includes none of App.h, Globals.h, Main.h, Team.h
+      - Server::Initialise takes its configuration as parameters rather than reading globals
+      - The five NeuronCore/Server.cpp entries are gone from the allowlist
+    verify:
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  - id: T7
+    title: Remove g_app and the game entity includes from NeuronCore/ClientToServer.cpp
+    intent: >
+      ClientToServer.cpp includes eight game headers — Engineer, Factory,
+      LaserFence, RadarDish, TaskManager, Location, Input, App — to build update
+      packets. Those packets should be assembled by the caller and handed to the
+      core already serialised.
+    project: NeuronCore
+    depends_on: [T5]
+    files:
+      - NeuronCore/ClientToServer.cpp
+      - NeuronCore/ClientToServer.h
+    acceptance:
+      - ClientToServer.cpp includes no header owned by GameLogic or Species
+      - Packet construction for game-specific updates has moved to the calling layer
+      - All NeuronCore/ClientToServer.* entries are gone from the allowlist
+    verify:
+      - python3 tools/check_layering.py
+    parallel_safe: true
+    status: todo
+
+  # ---------------------------------------------------------------------------
+  # Wave 4: close the door behind the migration.
+  # ---------------------------------------------------------------------------
+
+  - id: T8
+    title: Drop the upward include paths from NeuronCore.vcxproj and enforce the layer
+    intent: >
+      Removing the violations is only half the job. Until NeuronClient, GameLogic
+      and Species come off NeuronCore's AdditionalIncludeDirectories, the next
+      upward include compiles fine and the layer quietly rots again.
+    project: NeuronCore
+    depends_on: [T6, T7]
+    files:
+      - NeuronCore/NeuronCore.vcxproj
+      - tools/layering_allowlist.txt
+    acceptance:
+      - NeuronCore.vcxproj lists no other project in AdditionalIncludeDirectories
+      - tools/layering_allowlist.txt contains no entry starting with NeuronCore/
+      - Debug still builds for ARM64 and x64
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: true
+    status: todo

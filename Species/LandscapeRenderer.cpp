@@ -177,7 +177,7 @@ void LandscapeRenderer::GetLandscapeColour( float _height, float _gradient,
 	float heightAboveSea = _height;
     float u = powf(1.0f - _gradient, 0.4f);
 	float v = 1.0f - heightAboveSea / m_highest;
-    darwiniaSeedRandom(_x | _y + darwiniaRandom());
+    speciesSeedRandom(_x | _y + speciesRandom());
 	if (heightAboveSea < 0.0f) heightAboveSea = 0.0f;
 	v += sfrand(0.45f / (heightAboveSea + 2.0f));
 

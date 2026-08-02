@@ -42,7 +42,7 @@ InputField::InputField()
 }
 
 
-void InputField::SetCallback(DarwiniaButton *button)
+void InputField::SetCallback(SpeciesButton *button)
 {
     m_callback = button;
 }
@@ -115,7 +115,7 @@ void InputField::Render( int realX, int realY, bool highlighted, bool clicked )
 	    }
 		m_inputBoxWidth = strlen(m_buf) * PIXELS_PER_CHAR + 7;
     }
-	DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+	SpeciesWindow *parent = (SpeciesWindow *)m_parent;
 	fieldX = realX + m_w - parent->GetMenuSize(m_inputBoxWidth);
 	g_editorFont.DrawText2D( fieldX + 2, realY + 10, parent->GetMenuSize(DEF_FONT_SIZE), m_buf);
 }
@@ -297,7 +297,7 @@ void InputField::Refresh()
 // ****************************************************************************
 
 InputScroller::InputScroller()
-:   DarwiniaButton(),
+:   SpeciesButton(),
     m_inputField(NULL),
     m_change(0.0f),
     m_mouseDownStartTime(-1.0f)
@@ -309,7 +309,7 @@ InputScroller::InputScroller()
 
 void InputScroller::Render( int realX, int realY, bool highlighted, bool clicked )
 {
-    DarwiniaButton::Render( realX, realY, highlighted, clicked );
+    SpeciesButton::Render( realX, realY, highlighted, clicked );
 
     if( m_mouseDownStartTime > 0.0f &&
 		m_inputField &&
@@ -372,7 +372,7 @@ void InputScroller::MouseUp()
 
 
 ColourWidget::ColourWidget()
-:   DarwiniaButton(),
+:   SpeciesButton(),
     m_callback(NULL),
     m_value(NULL)
 {
@@ -381,7 +381,7 @@ ColourWidget::ColourWidget()
 
 void ColourWidget::Render( int realX, int realY, bool highlighted, bool clicked )
 {
-    DarwiniaButton::Render( realX, realY, highlighted, clicked );
+    SpeciesButton::Render( realX, realY, highlighted, clicked );
 
     glColor4ubv( (unsigned char *) m_value );
     glBegin( GL_QUADS );
@@ -409,7 +409,7 @@ void ColourWidget::SetValue(int *value)
 }
 
 
-void ColourWidget::SetCallback(DarwiniaButton *button)
+void ColourWidget::SetCallback(SpeciesButton *button)
 {
     m_callback = button;
 }
@@ -421,7 +421,7 @@ void ColourWidget::SetCallback(DarwiniaButton *button)
 // ****************************************************************************
 
 ColourWindow::ColourWindow( char const *_name )
-:   DarwiniaWindow( _name ),
+:   SpeciesWindow( _name ),
     m_callback(NULL),
     m_value(NULL)
 {
@@ -434,7 +434,7 @@ void ColourWindow::SetValue(int *value)
 }
 
 
-void ColourWindow::SetCallback(DarwiniaButton *button)
+void ColourWindow::SetCallback(SpeciesButton *button)
 {
     m_callback = button;
 }
@@ -442,7 +442,7 @@ void ColourWindow::SetCallback(DarwiniaButton *button)
 
 void ColourWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     int y = 25;
     int h = 18;
@@ -461,7 +461,7 @@ void ColourWindow::Create()
 
 void ColourWindow::Render( bool hasFocus )
 {
-    DarwiniaWindow::Render( hasFocus );
+    SpeciesWindow::Render( hasFocus );
 
     glColor4ubv( (unsigned char *) m_value );
     glBegin( GL_QUADS );

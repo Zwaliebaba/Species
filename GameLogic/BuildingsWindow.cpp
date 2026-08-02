@@ -46,7 +46,7 @@
 // Class ToolButton
 // ****************************************************************************
 
-class ToolButton : public DarwiniaButton
+class ToolButton : public SpeciesButton
 {
 public:
 	int m_toolType;
@@ -65,11 +65,11 @@ public:
 	{
 		if(g_app->m_locationEditor->m_tool == m_toolType)
 		{
-			DarwiniaButton::Render(realX, realY, highlighted, true);
+			SpeciesButton::Render(realX, realY, highlighted, true);
 		}
 		else
 		{
-			DarwiniaButton::Render(realX, realY, highlighted, clicked);
+			SpeciesButton::Render(realX, realY, highlighted, clicked);
 		}
 
         if(m_toolType == LocationEditor::ToolLink)
@@ -85,7 +85,7 @@ public:
 // Class DeleteBuildingButton
 // ****************************************************************************
 
-class DeleteBuildingButton : public DarwiniaButton
+class DeleteBuildingButton : public SpeciesButton
 {
 public:
     bool m_safetyCatch;
@@ -114,7 +114,7 @@ public:
 // Class TeamButton
 // ****************************************************************************
 
-class TeamButton : public DarwiniaButton
+class TeamButton : public SpeciesButton
 {
 public:
     int m_teamId;
@@ -140,11 +140,11 @@ public:
         {
             if( b->m_id.GetTeamId() == m_teamId )
             {
-                DarwiniaButton::Render( realX, realY, true, clicked );
+                SpeciesButton::Render( realX, realY, true, clicked );
             }
             else
             {
-                DarwiniaButton::Render( realX, realY, highlighted, clicked );
+                SpeciesButton::Render( realX, realY, highlighted, clicked );
             }
         }
 
@@ -172,12 +172,12 @@ public:
 // Class IsGlobalButton
 // ****************************************************************************
 
-class IsGlobalButton : public DarwiniaButton
+class IsGlobalButton : public SpeciesButton
 {
 public:
     void Render( int realX, int realY, bool highlighted, bool clicked )
     {
-        DarwiniaButton::Render( realX, realY, highlighted, clicked );
+        SpeciesButton::Render( realX, realY, highlighted, clicked );
         Building *b = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
         if( b )
         {
@@ -200,7 +200,7 @@ public:
 // Class CloneBuildingButton
 // ****************************************************************************
 
-class CloneBuildingButton : public DarwiniaButton
+class CloneBuildingButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -229,7 +229,7 @@ class CloneBuildingButton : public DarwiniaButton
 // ****************************************************************************
 
 BuildingEditWindow::BuildingEditWindow( char const *name )
-:   DarwiniaWindow( name )
+:   SpeciesWindow( name )
 {
 }
 
@@ -241,7 +241,7 @@ BuildingEditWindow::~BuildingEditWindow()
 
 void BuildingEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
 	DEBUG_ASSERT(building);
@@ -422,7 +422,7 @@ void BuildingEditWindow::Create()
              building->m_type == Building::TypeSpawnPointMaster ||
              building->m_type == Building::TypeSpawnPoint )
     {
-        class ClearLinksButton: public DarwiniaButton
+        class ClearLinksButton: public SpeciesButton
         {
         public:
             int m_buildingId;
@@ -505,7 +505,7 @@ void BuildingEditWindow::Create()
 
 void BuildingEditWindow::Render( bool hasFocus )
 {
-    DarwiniaWindow::Render( hasFocus );
+    SpeciesWindow::Render( hasFocus );
 
 	Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
 	DEBUG_ASSERT(building);
@@ -522,7 +522,7 @@ void BuildingEditWindow::Render( bool hasFocus )
 // Class NewBuildingButton
 // ****************************************************************************
 
-class NewBuildingButton : public DarwiniaButton
+class NewBuildingButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -551,7 +551,7 @@ public:
 // ****************************************************************************
 
 BuildingsCreateWindow::BuildingsCreateWindow( char const *_name )
-:	DarwiniaWindow( _name ),
+:	SpeciesWindow( _name ),
     m_buildingType(0)
 {
 }
@@ -566,7 +566,7 @@ BuildingsCreateWindow::~BuildingsCreateWindow()
 
 void BuildingsCreateWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int y = 25;
 	int ySpacing = 18;

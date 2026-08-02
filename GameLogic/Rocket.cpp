@@ -547,7 +547,7 @@ bool FuelStation::BoardRocket( WorldObjectId _id )
             Vector3 entityPos = entity ? entity->m_pos : g_zeroVector;
             entityPos.y += 2;
 
-            int numFlashes = 4 + darwiniaRandom() % 4;
+            int numFlashes = 4 + speciesRandom() % 4;
             for( int i = 0; i < numFlashes; ++i )
             {
                 Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );

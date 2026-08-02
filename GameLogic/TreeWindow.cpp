@@ -22,7 +22,7 @@
 
 #ifdef LOCATION_EDITOR
 
-class TreeButton : public DarwiniaButton
+class TreeButton : public SpeciesButton
 {
 public:
     enum
@@ -65,7 +65,7 @@ public:
                 newBuilding->m_id.SetUniqueId( g_app->m_globalWorld->GenerateBuildingId() );
                 g_app->m_location->m_levelFile->m_buildings.PutData( newBuilding );
 
-                darwiniaSeedRandom(time(NULL));
+                speciesSeedRandom(time(NULL));
                 Tree *newTree = (Tree *) newBuilding;
                 newTree->m_pos = _pos;
                 newTree->m_seed = (int) frand(99999);
@@ -80,14 +80,14 @@ public:
 
 
 TreeWindow::TreeWindow( char const *_name )
-:   DarwiniaWindow( _name ),
+:   SpeciesWindow( _name ),
     m_selectionId(-1)
 {
 }
 
 void TreeWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     m_selectionId = g_app->m_locationEditor->m_selectionId;
     Building *building = g_app->m_location->GetBuilding( m_selectionId );

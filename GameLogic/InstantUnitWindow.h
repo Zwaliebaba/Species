@@ -3,14 +3,14 @@
 
 #ifdef LOCATION_EDITOR
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 // ****************************************************************************
 // Class InstantUnitEditWindow
 // ****************************************************************************
 
-class InstantUnitEditWindow: public DarwiniaWindow
+class InstantUnitEditWindow: public SpeciesWindow
 {
 public:
 	InstantUnitEditWindow( char const *name );
@@ -24,7 +24,7 @@ public:
 // Class InstantUnitCreateWindow
 // ****************************************************************************
 
-class InstantUnitCreateWindow: public DarwiniaWindow
+class InstantUnitCreateWindow: public SpeciesWindow
 {
 public:
     InstantUnitCreateWindow( char const *name );

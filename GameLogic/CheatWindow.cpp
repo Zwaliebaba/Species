@@ -18,7 +18,7 @@
 
 #ifdef CHEATMENU_ENABLED
 
-class KillAllEnemiesButton : public DarwiniaButton
+class KillAllEnemiesButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -77,7 +77,7 @@ class KillAllEnemiesButton : public DarwiniaButton
 };
 
 
-class SpawnDarwiniansButton : public DarwiniaButton
+class SpawnDarwiniansButton : public SpeciesButton
 {
 public:
     int m_teamId;
@@ -99,7 +99,7 @@ public:
 };
 
 
-class SpawnTankButton : public DarwiniaButton
+class SpawnTankButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -118,7 +118,7 @@ class SpawnTankButton : public DarwiniaButton
 };
 
 
-class SpawnViriiButton : public DarwiniaButton
+class SpawnViriiButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -137,7 +137,7 @@ class SpawnViriiButton : public DarwiniaButton
 };
 
 
-class SpawnSpiritButton : public DarwiniaButton
+class SpawnSpiritButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -160,7 +160,7 @@ class SpawnSpiritButton : public DarwiniaButton
 };
 
 
-class AllowArbitraryPlacementButton : public DarwiniaButton
+class AllowArbitraryPlacementButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -169,7 +169,7 @@ class AllowArbitraryPlacementButton : public DarwiniaButton
 };
 
 
-class EnableGeneratorAndMineButton : public DarwiniaButton
+class EnableGeneratorAndMineButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -200,7 +200,7 @@ class EnableGeneratorAndMineButton : public DarwiniaButton
 };
 
 
-class EnableReceiverAndBufferButton : public DarwiniaButton
+class EnableReceiverAndBufferButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -231,7 +231,7 @@ class EnableReceiverAndBufferButton : public DarwiniaButton
 };
 
 
-class OpenAllLocationsButton : public DarwiniaButton
+class OpenAllLocationsButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -244,7 +244,7 @@ class OpenAllLocationsButton : public DarwiniaButton
 };
 
 
-class ClearResourcesButton : public DarwiniaButton
+class ClearResourcesButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -254,7 +254,7 @@ class ClearResourcesButton : public DarwiniaButton
 };
 
 
-class GiveAllResearchButton : public DarwiniaButton
+class GiveAllResearchButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -268,7 +268,7 @@ class GiveAllResearchButton : public DarwiniaButton
 };
 
 
-class SpawnPortsButton : public DarwiniaButton
+class SpawnPortsButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -290,7 +290,7 @@ class SpawnPortsButton : public DarwiniaButton
 };
 
 #ifdef PROFILER_ENABLED
-class ProfilerCreateButton : public DarwiniaButton
+class ProfilerCreateButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -302,7 +302,7 @@ class ProfilerCreateButton : public DarwiniaButton
 
 void CheatWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     int y = 25;
 
@@ -380,7 +380,7 @@ void CheatWindow::Create()
 #endif  // CHEATMENU_ENABLED
 
 CheatWindow::CheatWindow( char const *_name )
-:   DarwiniaWindow( _name )
+:   SpeciesWindow( _name )
 {
 }
 
