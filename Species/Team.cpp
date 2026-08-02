@@ -659,60 +659,8 @@ void Team::RenderOthers(float _predictionTime)
 
 #include "Input.h"
 
-TeamControls::TeamControls()
-{
-	Clear();
-}
 
 
 
 
 
-
-void TeamControls::Advance()
-{
-	if( g_app->m_camera->IsInMode( Camera::ModeBuildingFocus ) ) return;
-
-	m_mousePos = g_app->m_userInput->GetMousePos3d();
-
-	m_primaryFireTarget |= g_inputManager->controlEvent( ControlUnitPrimaryFireTarget );
-	m_secondaryFireTarget |= g_inputManager->controlEvent( ControlUnitSecondaryFireTarget );
-    m_primaryFireDirected |= g_inputManager->controlEvent( ControlUnitPrimaryFireDirected ) && !g_inputManager->controlEvent( ControlCameraRotate );
-	m_secondaryFireDirected |= g_inputManager->controlEvent( ControlUnitSecondaryFireDirected ) /* && g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected ) */;
-	m_cameraEntityTracking |= g_app->m_camera->IsInMode( Camera::ModeEntityTrack );
-    m_unitMove |= g_inputManager->controlEvent( ControlUnitSetTarget ) && !m_secondaryFireTarget;
-	m_unitSecondaryMode |= g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected );
-	m_endSetTarget |= g_inputManager->controlEvent( ControlUnitEndSetTarget );
-
-	InputDetails details;
-	if (g_inputManager->controlEvent( ControlUnitMove, details )) {
-
-		Vector3 right = g_app->m_camera->GetControlVector();
-		Vector3 front = g_upVector ^ -right;
-
-		Vector3 waypoint = right * -details.x;
-		waypoint += front * -details.y;
-
-		m_directUnitMove = true;
-		m_directUnitMoveDx = waypoint.x;
-		m_directUnitMoveDy = waypoint.z;
-
-		g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
-	}
-
-    if( g_inputManager->controlEvent( ControlUnitPrimaryFireDirected, details ) &&
-        !g_inputManager->controlEvent( ControlCameraRotate ))
-    {
-        m_primaryFireDirected = true;
-        m_directUnitFireDx = details.x;
-        m_directUnitFireDy = details.y;
-
-		g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondSquaddieFire);
-    }
-
-	if (m_secondaryFireDirected) {
-		g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireAirstrike);
-		g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireGrenades);
-		g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireRocket);
-	}
-}

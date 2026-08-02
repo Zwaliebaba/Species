@@ -4,6 +4,7 @@
 #include "FastDArray.h"
 #include "SliceDArray.h"
 #include "RgbColour.h"
+#include "TeamControls.h"
 
 #include "WorldObject.h"
 #include "Entity.h"

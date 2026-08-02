@@ -7,36 +7,36 @@
 
 #include "Vector3.h"
 
-class TeamControls {
-public:
-	TeamControls();
+class TeamControls
+{
+  public:
+    TeamControls();
 
-	unsigned short GetFlags() const;
-	void SetFlags( unsigned short _flags );
-	void ClearFlags();
-	void Advance();
-	void Clear();
+    unsigned short GetFlags() const;
+    void SetFlags(unsigned short _flags);
+    void ClearFlags();
+    void Advance();
+    void Clear();
 
-public:
+  public:
+    Vector3 m_mousePos;
 
-	Vector3			m_mousePos;
+    // Be sure to update GetFlags, SetFlags, ZeroFlags if you change these flags
+    // Also, NetworkUpdate::GetByteStream and NetworkUpdate::ReadByteStream
+    // if you use more than 8 bits
 
-	// Be sure to update GetFlags, SetFlags, ZeroFlags if you change these flags
-	// Also, NetworkUpdate::GetByteStream and NetworkUpdate::ReadByteStream
-	// if you use more than 8 bits
+    unsigned int m_unitMove : 1;
+    unsigned int m_primaryFireTarget : 1;
+    unsigned int m_secondaryFireTarget : 1;
+    unsigned int m_primaryFireDirected : 1;
+    unsigned int m_secondaryFireDirected : 1;
+    unsigned int m_cameraEntityTracking : 1;
+    unsigned int m_directUnitMove : 1;
+    unsigned int m_unitSecondaryMode : 1;
+    unsigned int m_endSetTarget : 1;
 
-	unsigned int	m_unitMove : 1;
-	unsigned int	m_primaryFireTarget : 1;
-	unsigned int	m_secondaryFireTarget : 1;
-	unsigned int	m_primaryFireDirected : 1;
-	unsigned int	m_secondaryFireDirected : 1;
-	unsigned int	m_cameraEntityTracking : 1;
-	unsigned int	m_directUnitMove : 1;
-	unsigned int	m_unitSecondaryMode : 1;
-	unsigned int	m_endSetTarget : 1;
-
-	int				m_directUnitMoveDx;
-	int				m_directUnitMoveDy;
-    int             m_directUnitFireDx;
-    int             m_directUnitFireDy;
+    int m_directUnitMoveDx;
+    int m_directUnitMoveDy;
+    int m_directUnitFireDx;
+    int m_directUnitFireDy;
 };
