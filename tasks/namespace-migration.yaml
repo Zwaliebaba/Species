@@ -35,10 +35,11 @@ tasks:
     files: []
     acceptance:
       - The chosen namespace name is recorded in this task's notes by or with the owner
-    status: blocked
+    status: done
     notes: >
-      Blocked on an owner decision, outside the graph. Suggested default:
-      Species.
+      Decided by the owner on 2026-08-02: game code lives in namespace
+      Species. Chosen over Game and Colony; the collision with the
+      Species/ project directory was noted and accepted.
 
   - id: T2
     title: Bring the rest of NeuronClient into namespace Neuron

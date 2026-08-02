@@ -40,10 +40,11 @@ tasks:
     files: []
     acceptance:
       - The chosen name is recorded in this task's notes by or with the owner
-    status: blocked
+    status: done
     notes: >
-      Blocked on an owner decision, which is outside the graph. Suggested
-      default: Citizen.
+      Decided by the owner on 2026-08-02: the replacement name is Citizen
+      (TypeCitizen, numCitizens, Citizen.shp, and the "Citizen" entity
+      string in level files). Chosen over Colonist and Settler.
 
   - id: T2
     title: Build the complete rename inventory
