@@ -489,7 +489,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: >
       Two criteria rewritten on 6eb17e4 because the tree moved underneath them.
 
