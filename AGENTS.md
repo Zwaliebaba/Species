@@ -216,13 +216,21 @@ warrants a question first.
 Real, currently true, and worth knowing before you trip over them:
 
 - **The game does not run.** Last known state per the HEAD commit message.
+- **ARM64 Debug has an unresolved failure.** CI builds x64 Debug only, so the
+  primary development platform is not gated. One CI run built ARM64 Debug and
+  failed after `NeuronClient.lib` linked — meaning the break is in `GameLogic`
+  or `Species` — but the error scrolled past the retrievable log tail and was
+  never isolated. A later run got much further without failing, so it may have
+  been a flake. **If you develop on ARM64 and hit a Debug build error, this is
+  known and unexplained; capture the first error and record it here.**
 - **`NeuronCore` depends upward** on `NeuronClient`, `GameLogic` and `Species`,
   including reaching through the `g_app` global. It cannot be linked standalone.
 - **Release had never built, and CI does not gate on it.** Three template
   leftovers — missing include paths, a precompiled header nothing created, and
   `Species` linking Release as a console app when `WinMain` is its entry point —
-  are all fixed, and Release now compiles. But CI builds Debug only, so Release
-  is on you: build it locally before anything that ships. Details in
+  are all fixed. The first two were confirmed fixed by a CI run; the third was
+  applied after CI dropped to Debug-only, so **Release has not been built since**.
+  Build it locally before anything that ships. Details in
   [`docs/BUILD.md`](docs/BUILD.md).
 - **`NeuronCore.h` still carries Darwinia's target macros** (`TARGET_FULLGAME`,
   `TARGET_DEMOGAME`, `DARWINIA_VERSION`, and a `#error` if none is defined), plus

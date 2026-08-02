@@ -78,9 +78,12 @@ because the legacy code still uses the deprecated CRT string functions.
 >    `WinMain` lives in `NeuronClient/WindowManager.cpp`, so the console entry
 >    point looked for `main` and the link failed with LNK2001.
 >
-> All three are fixed and Release compiles cleanly. It is still the
-> less-travelled configuration, and CI no longer gates on it — build it locally
-> before anything that ships.
+> All three are fixed. (1) and (2) were confirmed by a CI run in which Release
+> compiled every translation unit cleanly and failed only at the link step on
+> (3). The fix for (3) was applied after CI dropped to Debug-only, so **no
+> Release build has been run since** — it is expected to link, because Debug
+> links with the same subsystem, but that is inference, not evidence. Build
+> Release locally before anything that ships.
 
 ### 32-bit host toolchain
 
@@ -117,7 +120,9 @@ msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64 /p:GameDataSkipCop
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every push to `main` and every pull request.
+`.github/workflows/ci.yml` runs on every push, on every branch, and on every
+pull request — work happens on a branch for a while before a PR exists, and the
+build result is most useful earliest.
 
 **Static checks** (`ubuntu-latest`, under a minute):
 
@@ -128,22 +133,25 @@ msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64 /p:GameDataSkipCop
 | `tools/check_task_dag.py` | A task plan with a cycle, dangling edge or inconsistent status |
 | `tools/check_format.py` | Changed lines that do not match `.clang-format` |
 
-**Build**, Debug only, with the same v145 toolset used locally:
+**Build**: one job, **x64 Debug**, on `windows-2025-vs2026` with the same v145
+toolset used locally. It then asserts `GameData` was staged beside the output.
 
-| Platform | Runner image |
-|---|---|
-| x64 | `windows-2025-vs2026` (GA) |
-| ARM64 | `windows-11-vs2026-arm` (public preview) |
+CI is a compile gate, not a coverage matrix. Two things it deliberately does not
+build, both of which are therefore your responsibility:
 
-Each build job then asserts `GameData` was staged beside the output.
+- **Release.** It differs from Debug in optimisation settings alone and catches
+  little Debug does not. Build it before anything that ships.
+- **ARM64.** It is the primary development platform, so it gets built constantly
+  on the desk, and the `windows-11-vs2026-arm` runner is a preview image that
+  took over fifteen minutes per build against roughly ninety seconds on x64.
 
-Release is not built in CI. It differs from Debug in optimisation settings
-alone, and catches little Debug does not for twice the runner time — so building
-it is your responsibility before anything that ships.
-
-> The ARM64 image is a public preview. The `windows-11-arm` label migrates onto
-> the VS 2026 image in early September 2026, after which the matrix entry can be
-> renamed and the preview label dropped.
+> **ARM64 Debug has one unexplained failure.** While the ARM64 job still existed,
+> a run failed immediately after `NeuronClient.lib` linked — placing the break in
+> `GameLogic` or `Species` — but the first error had scrolled past the
+> retrievable portion of the log and was never isolated. A later run on the same
+> code got much further without failing, so it may have been a flake. If you hit
+> an ARM64 Debug error, capture the first `error C...` line and record it in
+> AGENTS.md rather than assuming it is new.
 
 Run the static checks locally before pushing — they are fast and they fail on
 exactly the mistakes that are easy to make without an IDE open:
