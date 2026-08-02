@@ -60,8 +60,19 @@ def clang_format_binary() -> str:
 
 
 def changed_line_ranges(base: str) -> dict[Path, list[tuple[int, int]]]:
-    """path -> list of (first, last) line ranges added or modified since `base`."""
+    """path -> list of (first, last) line ranges added or modified since `base`.
+
+    Untracked files are included. `git diff` ignores them, so a brand-new file
+    would sail through locally and then fail in CI the moment it was committed —
+    which is exactly the wrong way round for a pre-push check.
+    """
     diff = git("diff", "-U0", "--diff-filter=d", base, "--", "*.cpp", "*.h", "*.inc")
+
+    untracked = [
+        Path(line)
+        for line in git("ls-files", "--others", "--exclude-standard").splitlines()
+        if Path(line).suffix in FORMATTED_SUFFIXES
+    ]
 
     ranges: dict[Path, list[tuple[int, int]]] = {}
     current: Path | None = None
@@ -78,6 +89,11 @@ def changed_line_ranges(base: str) -> dict[Path, list[tuple[int, int]]]:
         count = int(match.group(2)) if match.group(2) is not None else 1
         if count:  # count == 0 means the hunk only deleted lines
             ranges.setdefault(current, []).append((start, start + count - 1))
+
+    for path in untracked:
+        total = len((REPO_ROOT / path).read_text(encoding="utf-8", errors="replace").splitlines())
+        if total:
+            ranges[path] = [(1, total)]
     return ranges
 
 
@@ -186,8 +202,14 @@ def main() -> int:
         except subprocess.CalledProcessError:
             base = args.base
         targets = dict(changed_line_ranges(base))
-        renames = [tuple(r.split("=", 1)) for r in args.rename]
-        renames += declared_renames(base)
+        # Deduplicated: the same rename is often given on the command line *and*
+        # declared in a commit trailer. Applying it twice turns Foo into
+        # Bar::Bar::Foo when reversing, so nothing matches the base revision.
+        renames = list(
+            dict.fromkeys(
+                [tuple(r.split("=", 1)) for r in args.rename] + declared_renames(base)
+            )
+        )
         if renames:
             moved = renamed_paths(base)
             targets = {

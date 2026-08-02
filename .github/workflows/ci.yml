@@ -84,12 +84,29 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
+          # The file logger is what makes a failure diagnosable. /m interleaves
+          # output from parallel projects, so a compiler error can end up
+          # thousands of lines above the point the build gives up — and the
+          # console tail then shows only "exit code 1".
           msbuild Species.slnx `
             /p:Configuration=Debug `
             /p:Platform=x64 `
             /m `
             /nologo `
-            /verbosity:minimal
+            /verbosity:minimal `
+            /fileLogger `
+            /fileLoggerParameters:LogFile=build-errors.log`;ErrorsOnly`;Verbosity=normal
+
+      - name: Show build errors
+        if: failure()
+        shell: pwsh
+        run: |
+          if (Test-Path build-errors.log) {
+            Write-Host '===== compiler errors ====='
+            Get-Content build-errors.log
+          } else {
+            Write-Host 'no build-errors.log produced'
+          }
 
       - name: Check GameData was staged beside the executables
         shell: pwsh

@@ -19,6 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="TeamControls.cpp" />
+    <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="Random.cpp" />
+    <ClCompile Include="HiResTime.cpp" />
+    <ClCompile Include="MathUtils.cpp" />
+    <ClCompile Include="Matrix33.cpp" />
+    <ClCompile Include="Matrix34.cpp" />
+    <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="Vector2.cpp" />
+    <ClCompile Include="Vector3.cpp" />
     <ClCompile Include="ClientToServer.cpp" />
     <ClCompile Include="FileSys.cpp" />
     <ClCompile Include="Generic.cpp" />
@@ -37,6 +47,27 @@
     <ClCompile Include="ServerToClientLetter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ProtocolLimits.h" />
+    <ClInclude Include="TeamControls.h" />
+    <ClInclude Include="Plane.h" />
+    <ClInclude Include="Random.h" />
+    <ClInclude Include="SortingHashTable.h" />
+    <ClInclude Include="2dArray.h" />
+    <ClInclude Include="AutoVector.h" />
+    <ClInclude Include="BTree.h" />
+    <ClInclude Include="BoundedArray.h" />
+    <ClInclude Include="DArray.h" />
+    <ClInclude Include="FastDArray.h" />
+    <ClInclude Include="HashTable.h" />
+    <ClInclude Include="HiResTime.h" />
+    <ClInclude Include="LList.h" />
+    <ClInclude Include="MathUtils.h" />
+    <ClInclude Include="Matrix33.h" />
+    <ClInclude Include="Matrix34.h" />
+    <ClInclude Include="Profiler.h" />
+    <ClInclude Include="SliceDArray.h" />
+    <ClInclude Include="Vector2.h" />
+    <ClInclude Include="Vector3.h" />
     <ClInclude Include="ByteStream.h" />
     <ClInclude Include="ClientToServer.h" />
     <ClInclude Include="Debug.h" />

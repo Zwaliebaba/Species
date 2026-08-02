@@ -6,23 +6,18 @@
 #include "NetLib.h"
 #include "NetSocket.h"
 
-#include "App.h"
 #include "Debug.h"
 #include "ServerToClient.h"
 
 
-
-ServerToClient::ServerToClient( char *_ip )
-:   m_socket(NULL)
+ServerToClient::ServerToClient(char* _ip)
+  : m_socket(NULL)
 {
     strcpy ( m_ip, _ip );
 
-    if( !g_app->m_bypassNetworking )
-    {
-        m_socket = new NetSocket();
-        NetRetCode retCode = m_socket->Connect( _ip, 4001 );
-        DEBUG_ASSERT( retCode == NetOk );
-    }
+    m_socket = new NetSocket();
+    NetRetCode retCode = m_socket->Connect(_ip, 4001);
+    DEBUG_ASSERT(retCode == NetOk);
 
     m_lastKnownSequenceId = -1;
 }

@@ -22,6 +22,7 @@ class ServerTeam
 class Server
 {
   NetLib* m_netLib;
+  class Profiler* m_profiler;
 
   LList<ServerToClientLetter*> m_history;
 
@@ -41,7 +42,9 @@ class Server
     Server();
     ~Server();
 
-    void Initialise();
+    // Handed its profiler rather than reaching for it through the application
+    // object. Networking is always real UDP; there is no in-process shortcut.
+    void Initialise(class Profiler* _profiler);
 
     NetworkUpdate* GetNextLetter();
 
@@ -55,9 +58,6 @@ class Server
 
     void AdvanceSender();
     void Advance();
-
-    static int ConvertIPToInt(const char* _ip);
-    static char* ConvertIntToIP(int _ip);
 };
 
 #endif

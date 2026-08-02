@@ -30,6 +30,11 @@
 #include "Generic.h"
 
 
+// The socket callbacks are plain function pointers and cannot carry state, so
+// the running client has to be reachable from file scope. This replaces
+// g_app->m_clientToServer; it is set in the constructor.
+static ClientToServer* s_client = nullptr;
+
 static NetCallBackRetType ListenCallback(NetUdpPacket *udpdata)
 {
     if (udpdata)
@@ -39,8 +44,8 @@ static NetCallBackRetType ListenCallback(NetUdpPacket *udpdata)
 		IpToString(fromAddr->sin_addr, newip);
 
         ServerToClientLetter *letter = new ServerToClientLetter(udpdata->m_data, udpdata->m_length);
-        g_app->m_clientToServer->ReceiveLetter( letter );
-//        SET_PROFILE(g_app->m_profiler,  "#Client Receive", udpdata->getLength() );
+        s_client->ReceiveLetter(letter);
+        //        SET_PROFILE(m_profiler,  "#Client Receive", udpdata->getLength() );
 
         delete udpdata;
     }
@@ -52,37 +57,32 @@ static NetCallBackRetType ListenCallback(NetUdpPacket *udpdata)
 
 static NetCallBackRetType ListenThread(void *ignored)
 {
-    g_app->m_clientToServer->m_receiveSocket = new NetSocketListener( 4001 );
-    NetRetCode retCode = g_app->m_clientToServer->m_receiveSocket->StartListening( ListenCallback );
-    DEBUG_ASSERT( retCode == NetOk );
-    return 0;
+  s_client->m_receiveSocket = new NetSocketListener(4001);
+  NetRetCode retCode = s_client->m_receiveSocket->StartListening(ListenCallback);
+  DEBUG_ASSERT(retCode == NetOk);
+  return 0;
 }
 
 
 ClientToServer::ClientToServer()
 {
-    m_lastValidSequenceIdFromServer = -1;
+  s_client = this;
 
-    m_inboxMutex = new NetMutex();
-    m_outboxMutex = new NetMutex();
+  m_lastValidSequenceIdFromServer = -1;
 
-    if( !g_app->m_bypassNetworking )
-    {
-        m_netLib = new NetLib();
-        m_netLib->Initialise();
+  m_inboxMutex = new NetMutex();
+  m_outboxMutex = new NetMutex();
 
-        m_sendSocket = new NetSocket();
-	    char const *serverAddress = g_prefsManager->GetString("ServerAddress");
-        m_sendSocket->Connect( serverAddress, 4000 );
+  m_netLib = new NetLib();
+  m_netLib->Initialise();
 
-		NetStartThread( ListenThread );
-    }
-	else
-	{
-		m_netLib = NULL;
-		m_sendSocket = NULL;
-	}
-	m_receiveSocket = NULL;
+  m_sendSocket = new NetSocket();
+  char const* serverAddress = g_prefsManager->GetString("ServerAddress");
+  m_sendSocket->Connect(serverAddress, 4000);
+
+  NetStartThread(ListenThread);
+
+  m_receiveSocket = NULL;
 }
 
 
@@ -103,34 +103,29 @@ ClientToServer::~ClientToServer()
 void ClientToServer::AdvanceSender()
 {
     int bytesSentThisFrame = 0;
-    g_app->m_clientToServer->m_outboxMutex->Lock();
+    m_outboxMutex->Lock();
 
-    while (g_app->m_clientToServer->m_outbox.Size())
+    while (m_outbox.Size())
     {
-        NetworkUpdate *letter = g_app->m_clientToServer->m_outbox[0];
-        DEBUG_ASSERT(letter);
+      NetworkUpdate* letter = m_outbox[0];
+      DEBUG_ASSERT(letter);
 
-        if( g_app->m_bypassNetworking )
-        {
-            g_app->m_server->ReceiveLetter( letter, g_app->m_clientToServer->GetOurIP_String() );
-        }
-        else
-        {
-            int letterSize = 0;
-            char *byteStream = letter->GetByteStream(&letterSize);
-            NetSocket *socket = g_app->m_clientToServer->m_sendSocket;
-            socket->WriteData( byteStream, letterSize);
-            bytesSentThisFrame += letterSize;
-            delete letter;
-        }
+      {
+        int letterSize = 0;
+        char* byteStream = letter->GetByteStream(&letterSize);
+        NetSocket* socket = m_sendSocket;
+        socket->WriteData(byteStream, letterSize);
+        bytesSentThisFrame += letterSize;
+        delete letter;
+      }
 
-        g_app->m_clientToServer->m_outbox.RemoveData(0);
+      m_outbox.RemoveData(0);
     }
-    g_app->m_clientToServer->m_outboxMutex->Unlock();
+    m_outboxMutex->Unlock();
 
     if( bytesSentThisFrame > 0 )
     {
-//        SET_PROFILE(g_app->m_profiler,  "#Client Send", bytesSentThisFrame );
+      //        SET_PROFILE(m_profiler,  "#Client Send", bytesSentThisFrame );
     }
 }
 
@@ -144,7 +139,7 @@ void ClientToServer::Advance()
 int ClientToServer::GetOurIP_Int()
 {
 	// We're not doing networking for now
-	static int s_localIP = Server::ConvertIPToInt( "127.0.0.1" );
+	static int s_localIP = ConvertIPToInt( "127.0.0.1" );
 	return s_localIP;
 
 // Notes by John
@@ -185,7 +180,7 @@ int ClientToServer::GetOurIP_Int()
 //		if (hostEnt && hostEnt->h_addr_list[0])
 //			return *((int*)hostEnt->h_addr_list[0]);
 //	}
-//	return Server::ConvertIPToInt( "127.0.0.1" );
+//	return ConvertIPToInt( "127.0.0.1" );
 }
 
 
@@ -196,7 +191,7 @@ char *ClientToServer::GetOurIP_String()
     if( !result )
     {
         result = new char[16];
-        strcpy( result, Server::ConvertIntToIP( GetOurIP_Int() ) );
+        strcpy( result, ConvertIntToIP( GetOurIP_Int() ) );
     }
 
     return result;

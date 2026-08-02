@@ -11,15 +11,12 @@
 #include "Profiler.h"
 #include "Preferences.h"
 
-#include "App.h"
-#include "Globals.h"
-#include "Team.h"
 
+#include "ProtocolLimits.h"
 #include "Generic.h"
 #include "Server.h"
 #include "ServerToClient.h"
 #include "ServerToClientLetter.h"
-#include "ClientToServer.h"
 
 // ****************************************************************************
 // Class ServerTeam
@@ -32,6 +29,11 @@ ServerTeam::ServerTeam(int _clientId)
 // Class Server
 // ****************************************************************************
 
+// The socket listener takes a plain function pointer, so the running server has
+// to be reachable from file scope. This replaces g_app->m_server; it is set in
+// Initialise and is the only global state left in this file.
+static Server* s_server = nullptr;
+
 // ***ListenCallback
 static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 {
@@ -41,11 +43,11 @@ static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
     char newip[16];
     IpToString(fromAddr->sin_addr, newip);
 
-    if (g_app->m_server)
+    if (s_server)
     {
       auto letter = new NetworkUpdate(udpdata->m_data);
-      g_app->m_server->ReceiveLetter(letter, newip);
-      //            SET_PROFILE(g_app->m_profiler,  "#Server Receive", (double) udpdata->getLength() );
+      s_server->ReceiveLetter(letter, newip);
+      //            SET_PROFILE(m_profiler,  "#Server Receive", (double) udpdata->getLength() );
     }
 
     delete udpdata;
@@ -56,9 +58,13 @@ static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 
 Server::Server()
   : m_netLib(nullptr),
+    m_profiler(nullptr),
     m_sequenceId(0),
     m_inboxMutex(nullptr),
-    m_outboxMutex(nullptr) { m_sync.SetSize(0); }
+    m_outboxMutex(nullptr)
+{
+  m_sync.SetSize(0);
+}
 
 Server::~Server()
 {
@@ -82,18 +88,18 @@ static NetCallBackRetType ListenThread(void* ptr)
   return 0;
 }
 
-void Server::Initialise()
+void Server::Initialise(Profiler* _profiler)
 {
+  m_profiler = _profiler;
+  s_server = this;
+
   m_inboxMutex = new NetMutex();
   m_outboxMutex = new NetMutex();
 
-  if (!g_app->m_bypassNetworking)
-  {
-    m_netLib = new NetLib();
-    m_netLib->Initialise();
+  m_netLib = new NetLib();
+  m_netLib->Initialise();
 
-    NetStartThread(ListenThread);
-  }
+  NetStartThread(ListenThread);
 }
 
 int Server::GetClientId(char* _ip)
@@ -111,33 +117,7 @@ int Server::GetClientId(char* _ip)
   return -1;
 }
 
-int Server::ConvertIPToInt(const char* _ip)
-{
-  ASSERT_TEXT(strlen(_ip) < 17, "IP address too long");
-  char ipCopy[17];
-  strcpy(ipCopy, _ip);
-  int ipLen = strlen(ipCopy);
 
-  for (int i = 0; i < ipLen; ++i)
-  {
-    if (ipCopy[i] == '.')
-      ipCopy[i] = '\n';
-  }
-
-  int part1, part2, part3, part4;
-  sscanf(ipCopy, "%d %d %d %d", &part1, &part2, &part3, &part4);
-
-  int result = ((part4 & 0xff) << 24) + ((part3 & 0xff) << 16) + ((part2 & 0xff) << 8) + (part1 & 0xff);
-  return result;
-}
-
-char* Server::ConvertIntToIP(const int _ip)
-{
-  static char result[16];
-  sprintf(result, "%d.%d.%d.%d", (_ip & 0x000000ff), (_ip & 0x0000ff00) >> 8, (_ip & 0x00ff0000) >> 16, (_ip & 0xff000000) >> 24);
-
-  return result;
-}
 
 // ***RegisterNewClient
 void Server::RegisterNewClient(char* _ip)
@@ -289,9 +269,6 @@ void Server::AdvanceSender()
 
     if (m_clients.ValidIndex(letter->GetClientId()))
     {
-      if (g_app->m_bypassNetworking)
-        g_app->m_clientToServer->ReceiveLetter(letter);
-      else
       {
         int linearSize = 0;
         ServerToClient* client = m_clients[letter->GetClientId()];
@@ -311,13 +288,13 @@ void Server::AdvanceSender()
 
   if (bytesSentThisFrame > 0)
   {
-    //        SET_PROFILE(g_app->m_profiler,  "#Server Send", (double) bytesSentThisFrame );
+    //        SET_PROFILE(m_profiler,  "#Server Send", (double) bytesSentThisFrame );
   }
 }
 
 void Server::Advance()
 {
-  START_PROFILE(g_app->m_profiler, "Advance Server");
+  START_PROFILE(m_profiler, "Advance Server");
 
   //
   // Compile all incoming messages into a ServerToClientLetter
@@ -437,5 +414,5 @@ void Server::Advance()
 
   AdvanceSender();
 
-  END_PROFILE(g_app->m_profiler, "Advance Server");
+  END_PROFILE(m_profiler, "Advance Server");
 }

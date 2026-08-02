@@ -8,11 +8,6 @@
 # Format: <including project>/<including file> -> <included header>
 #
 # Regenerate with: python3 tools/check_layering.py --update
-#
-# If a file was renamed or moved, its entries stop matching and the same
-# violations look new. Rewrite just those entries with:
-#   python3 tools/check_layering.py --rename OLD NEW
-# That is not growth — the count is unchanged and the diff shows the rename.
 
 GameLogic/Ai.cpp -> App.h
 GameLogic/Ai.cpp -> EntityGrid.h
@@ -164,8 +159,6 @@ GameLogic/DebugMenu.cpp -> Camera.h
 GameLogic/DebugMenu.cpp -> Renderer.h
 GameLogic/DebugMenu.cpp -> UserInput.h
 GameLogic/DebugMenu.h -> App.h
-GameLogic/DemoEndWindow.cpp -> App.h
-GameLogic/DemoEndWindow.cpp -> Renderer.h
 GameLogic/DropDownMenu.cpp -> App.h
 GameLogic/DropDownMenu.cpp -> Renderer.h
 GameLogic/EditorWindow.cpp -> App.h
@@ -608,7 +601,6 @@ NeuronClient/DebugRender.cpp -> App.h
 NeuronClient/DebugRender.cpp -> Camera.h
 NeuronClient/DebugRender.cpp -> Renderer.h
 NeuronClient/FilePaths.cpp -> App.h
-NeuronClient/HiResTime.cpp -> Main.h
 NeuronClient/Input.cpp -> App.h
 NeuronClient/InputDriverWin32.cpp -> App.h
 NeuronClient/InputTypes.cpp -> App.h
@@ -650,30 +642,14 @@ NeuronClient/Win32EventHandler.cpp -> App.h
 NeuronCore/ClientToServer.cpp -> App.h
 NeuronCore/ClientToServer.cpp -> Engineer.h
 NeuronCore/ClientToServer.cpp -> Factory.h
-NeuronCore/ClientToServer.cpp -> HiResTime.h
 NeuronCore/ClientToServer.cpp -> Input.h
 NeuronCore/ClientToServer.cpp -> LaserFence.h
 NeuronCore/ClientToServer.cpp -> Location.h
 NeuronCore/ClientToServer.cpp -> Main.h
 NeuronCore/ClientToServer.cpp -> Preferences.h
-NeuronCore/ClientToServer.cpp -> Profiler.h
 NeuronCore/ClientToServer.cpp -> RadarDish.h
 NeuronCore/ClientToServer.cpp -> TaskManager.h
 NeuronCore/ClientToServer.cpp -> Team.h
 NeuronCore/ClientToServer.h -> Entity.h
-NeuronCore/ClientToServer.h -> LList.h
-NeuronCore/ClientToServer.h -> Vector3.h
 NeuronCore/ClientToServer.h -> WorldObject.h
-NeuronCore/NetworkUpdate.h -> Entity.h
-NeuronCore/NetworkUpdate.h -> Team.h
-NeuronCore/NetworkUpdate.h -> WorldObject.h
-NeuronCore/Server.cpp -> App.h
-NeuronCore/Server.cpp -> Globals.h
 NeuronCore/Server.cpp -> Preferences.h
-NeuronCore/Server.cpp -> Profiler.h
-NeuronCore/Server.cpp -> Team.h
-NeuronCore/Server.h -> DArray.h
-NeuronCore/Server.h -> LList.h
-NeuronCore/ServerToClient.cpp -> App.h
-NeuronCore/ServerToClientLetter.h -> Vector3.h
-NeuronCore/ServerToClientLetter.h -> WorldObject.h

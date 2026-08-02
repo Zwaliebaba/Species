@@ -981,7 +981,7 @@ void EnterLocation()
     if (iAmAServer)
     {
       g_app->m_server = new Server();
-      g_app->m_server->Initialise();
+      g_app->m_server->Initialise(g_app->m_profiler);
     }
 
     g_app->m_clientToServer->ClientJoin();

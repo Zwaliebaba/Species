@@ -12,6 +12,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Preferences.cpp" />
+    <ClCompile Include="pch.cpp" />
     <ClCompile Include="SampleCache.cpp">
       <Filter>Audio</Filter>
     </ClCompile>
@@ -129,18 +131,10 @@
     <ClCompile Include="DebugRender.cpp" />
     <ClCompile Include="FileWriter.cpp" />
     <ClCompile Include="FilesysUtils.cpp" />
-    <ClCompile Include="HiResTime.cpp" />
     <ClCompile Include="InvertMatrix.cpp" />
     <ClCompile Include="LanguageTable.cpp" />
-    <ClCompile Include="MathUtils.cpp" />
-    <ClCompile Include="Matrix33.cpp" />
-    <ClCompile Include="Matrix34.cpp" />
     <ClCompile Include="MouseCursor.cpp" />
     <ClCompile Include="PersistingDebugRender.cpp" />
-    <ClCompile Include="Plane.cpp" />
-    <ClCompile Include="Preferences.cpp" />
-    <ClCompile Include="Profiler.cpp" />
-    <ClCompile Include="Random.cpp" />
     <ClCompile Include="RenderUtils.cpp" />
     <ClCompile Include="Resource.cpp" />
     <ClCompile Include="RgbColour.cpp" />
@@ -157,8 +151,6 @@
     <ClCompile Include="TextureUv.cpp" />
     <ClCompile Include="TriTri.cpp" />
     <ClCompile Include="UserInfo.cpp" />
-    <ClCompile Include="Vector2.cpp" />
-    <ClCompile Include="Vector3.cpp" />
     <ClCompile Include="WindowManager.cpp" />
     <ClCompile Include="EclButton.cpp">
       <Filter>Canvas</Filter>
@@ -169,10 +161,11 @@
     <ClCompile Include="EclWindow.cpp">
       <Filter>Canvas</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp" />
     <ClCompile Include="OGLExtensions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Preferences.h" />
+    <ClInclude Include="pch.h" />
     <ClInclude Include="SampleCache.h">
       <Filter>Audio</Filter>
     </ClInclude>
@@ -299,42 +292,24 @@
     <ClInclude Include="Win32EventProc.h">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="2dArray.h" />
     <ClInclude Include="2dSurfaceMap.h" />
     <ClInclude Include="3dSprite.h" />
-    <ClInclude Include="AutoVector.h" />
     <ClInclude Include="BinaryStreamReaders.h" />
     <ClInclude Include="Bitmap.h" />
-    <ClInclude Include="BoundedArray.h" />
-    <ClInclude Include="BTree.h" />
-    <ClInclude Include="DArray.h" />
     <ClInclude Include="DebugRender.h" />
-    <ClInclude Include="FastDArray.h" />
     <ClInclude Include="FileWriter.h" />
     <ClInclude Include="FilesysUtils.h" />
-    <ClInclude Include="HashTable.h" />
-    <ClInclude Include="HiResTime.h" />
     <ClInclude Include="InvertMatrix.h" />
     <ClInclude Include="LanguageTable.h" />
-    <ClInclude Include="LList.h" />
-    <ClInclude Include="MathUtils.h" />
-    <ClInclude Include="Matrix33.h" />
-    <ClInclude Include="Matrix34.h" />
     <ClInclude Include="MouseCursor.h" />
     <ClInclude Include="PersistingDebugRender.h" />
-    <ClInclude Include="Plane.h" />
     <ClInclude Include="PreferenceNames.h" />
-    <ClInclude Include="Preferences.h" />
     <ClInclude Include="PresizedArray.h" />
-    <ClInclude Include="Profiler.h" />
-    <ClInclude Include="Random.h" />
     <ClInclude Include="RenderUtils.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RgbColour.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Shape.h" />
-    <ClInclude Include="SliceDArray.h" />
-    <ClInclude Include="SortingHashTable.h" />
     <ClInclude Include="SphereRenderer.h" />
     <ClInclude Include="StringUtils.h" />
     <ClInclude Include="SystemInfo.h" />
@@ -344,8 +319,6 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureUv.h" />
     <ClInclude Include="UserInfo.h" />
-    <ClInclude Include="Vector2.h" />
-    <ClInclude Include="Vector3.h" />
     <ClInclude Include="WindowManager.h" />
     <ClInclude Include="WindowManagerWin32.h" />
     <ClInclude Include="EclButton.h">
@@ -357,7 +330,6 @@
     <ClInclude Include="EclWindow.h">
       <Filter>Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h" />
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="OGLExtensions.h" />
   </ItemGroup>

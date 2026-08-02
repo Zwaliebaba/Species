@@ -15,12 +15,12 @@ private:
     NetSocket	*m_socket;
 
 public:
-    ServerToClient( char *_ip );
+  ServerToClient(char* _ip);
 
-    char        *GetIP ();
-    NetSocket   *GetSocket ();
+  char* GetIP();
+  NetSocket* GetSocket();
 
-    int         m_lastKnownSequenceId;
+  int m_lastKnownSequenceId;
 };
 
 
