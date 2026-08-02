@@ -11,7 +11,7 @@ static ControlAction s_actions[] = {
 
 	"",                                  INPUT_TYPE_ANY,
 
-	nullptr,                                nullptr
+	nullptr,                                NULL
 
 };
 

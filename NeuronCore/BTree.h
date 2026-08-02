@@ -85,7 +85,7 @@ BTree<T>::BTree()
     ltree = nullptr;
     rtree = nullptr;
     id = nullptr;
-    data = nullptr;
+    data = T();
 }
 
 

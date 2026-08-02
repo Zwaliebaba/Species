@@ -38,7 +38,7 @@ public:
 	int				GetIndex	(char const *_key) const;			// Returns -1 if key isn't present
 
 	int				PutData		(char const *_key, T const &_data); // Returns slot used
-	T				GetData		(char const *_key, T const &_default = nullptr) const;
+	T				GetData		(char const *_key, T const &_default = T()) const;
 	T				GetData		(unsigned int _index) const;
 	T *				GetPointer	(char const *_key) const;
 	T *				GetPointer  (unsigned int _index) const;

@@ -34,12 +34,32 @@ tasks:
       listed in notes rather than silently changed.
     depends_on: []
     notes: >
-      Two integer-context NULLs existed, both now the literal 0 they always
-      expanded to: ParticleSystem.h:91's default argument constructs
-      RGBAColour(0) through the int constructor (CI caught this one as
-      C2440), and NetThreadWin32.cpp:13 passes 0 to CreateThread's SIZE_T
-      stack-size and DWORD flags parameters. Everything else in the tree
-      was a genuine pointer context.
+      Six NULLs were not null pointers, in three disguises CI unmasked one
+      compile round at a time — worth knowing before the next sweep of
+      this kind, because none is greppable:
+
+      (1) Value contexts, now the literal 0 NULL expanded to:
+      ParticleSystem.h:91's default argument constructs RGBAColour(0)
+      through the int constructor (C2440), and NetThreadWin32.cpp:13
+      feeds CreateThread's SIZE_T stack-size and DWORD flags.
+
+      (2) Template-dependent T, now T(): HashTable.h:41's GetData default
+      argument and BTree.h:88's node reset assigned NULL to T, converting
+      per instantiation. T() value-initialises to the same 0 / 0.0f /
+      null for every instantiation in the tree.
+
+      (3) Typedef'd integers, KEPT as NULL: the ControlTypes.cpp:14 and
+      InputDriver.cpp:25 table terminator rows put NULL in
+      inputtype_t/condition_t columns (typedef int, InputSpec.h). These
+      are the integer-context exception this task's intent reserves.
+      Writing 0 is semantically identical but makes the line newly
+      authored, and the changed-lines format check then rewrites the
+      whole hand-aligned table — an incidental reformat of legacy code
+      the standards forbid. Two documented NULLs cost less.
+
+      Everything else in the tree was a genuine pointer context. The
+      remaining grep hits are these two plus a comment and a string
+      literal (Matrix33.h:5, Win32EventHandler.cpp:101).
     files:
       - NeuronCore
       - NeuronClient
