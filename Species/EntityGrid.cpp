@@ -20,19 +20,6 @@
 
 #define END_OF_LIST -100000
 
-//#define DEBUG_ENTITY_GRID
-
-#ifdef DEBUG_ENTITY_GRID
-struct EntityGridError
-{
-    Vector3 m_pos;
-    WorldObjectId m_id;
-    int m_errorCode;
-};
-static LList<EntityGridError *> s_entityGridErrors;
-#endif
-
-
 // ****************************************************************************
 //  Class EntityGridCell
 // ****************************************************************************
@@ -184,24 +171,7 @@ bool EntityGridCell::RemoveObjectId(WorldObjectId _objectId)
 
 void LogEntityGridError( WorldObjectId _id, Vector3 const &_pos, int _error )
 {
-#ifdef DEBUG_ENTITY_GRID
-    for( int i = 0; i < s_entityGridErrors.Size(); ++i )
-    {
-        EntityGridError *theError = s_entityGridErrors[i];
-        if( theError->m_id == _id )
-        {
-            // The error already exists
-            return;
-        }
-    }
-    EntityGridError *theError = new EntityGridError();
-    theError->m_id = _id;
-    theError->m_pos = _pos;
-    theError->m_errorCode = _error;
-    s_entityGridErrors.PutData( theError );
-#else
     DEBUG_ASSERT( false );
-#endif
 }
 
 
@@ -739,61 +709,6 @@ void EntityGrid::Render ()
 
     glDisable( GL_BLEND );
     glEnable( GL_CULL_FACE );
-
-#ifdef DEBUG_ENTITY_GRID
-    if( s_entityGridErrors.Size() > 0 )
-    {
-        for( int i = 0; i < s_entityGridErrors.Size(); ++i )
-        {
-            EntityGridError *theError = s_entityGridErrors[i];
-            Vector3 pos = theError->m_pos;
-            glColor4f( 1.0f, 0.0f, 0.0f, 1.0f );
-            glBegin( GL_LINES );
-                glVertex3fv( (pos - Vector3(0,500,0)).GetData() );
-                glVertex3fv( (pos + Vector3(0,500,0)).GetData() );
-            glEnd();
-
-            int index = theError->m_id.GetIndex();
-            int uniqueIndex = theError->m_id.GetUniqueId();
-            int errorCode = theError->m_errorCode;
-            float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z );
-            Vector3 thisPos = pos;
-            thisPos.y = landHeight;
-            thisPos.y += uniqueIndex;
-            g_editorFont.DrawText3D( thisPos, 5, "id %d, uniqueID %d, errCode %d", index, uniqueIndex, errorCode );
-        }
-
-        g_editorFont.BeginText2D();
-        g_editorFont.DrawText2D( 10, 100, 20, "Entity Grid Errors : %d", s_entityGridErrors.Size() );
-        g_editorFont.EndText2D();
-    }
-
-    static float lastCheck = 0;
-    if( GetHighResTime() > lastCheck + 1.0f )
-    {
-        for( int x = 0; x < m_numCellsX; ++x )
-        {
-            for( int z = 0; z < m_numCellsZ; ++z )
-            {
-                EntityGridCell *ogc = GetCell(x, z);
-
-                for (int i = 0; i < ogc->m_arraySize; i++)
-                {
-                    WorldObjectId const &objId = ogc->m_objectIds[i];
-                    if (!objId.IsValid()) continue;
-
-                    Entity *obj = g_app->m_location->GetEntity( objId );
-                    if( !obj )
-                    {
-                        LogEntityGridError( objId, Vector3(x*m_cellSizeX, 0.0f, z*m_cellSizeZ), 1 );
-                    }
-                }
-            }
-        }
-
-        lastCheck = GetHighResTime();
-    }
-#endif
 
 }
 #endif

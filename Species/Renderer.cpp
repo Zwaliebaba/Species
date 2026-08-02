@@ -229,10 +229,6 @@ void Renderer::Render()
 
   RenderFrame();
 
-#ifdef TARGET_OS_VISTA
-  if (g_app->m_saveThumbnail) { g_app->SaveThumbnailScreenshot(); }
-#endif
-
 #ifdef PROFILER_ENABLED
   g_app->m_profiler->RenderEnded();
 #endif // PROFILER_ENABLED
@@ -401,13 +397,6 @@ void Renderer::RenderFrame(bool withFlip)
   g_app->m_controlHelpSystem->Render();
   g_explosionManager.Render();
   g_app->m_particleSystem->Render();
-#ifdef USE_DIRECT3D
-  if (renderPixelShaderPref == 1)
-  {
-    if (g_deformEffect && deformStarted)
-      g_deformEffect->Stop();
-  }
-#endif
 
   g_app->m_userInput->Render();
   g_app->m_gameCursor->Render();
@@ -1066,11 +1055,7 @@ void Renderer::PreRenderPixelEffect()
   END_PROFILE(g_app->m_profiler, "Pixel Pre-render");
 }
 
-#ifdef USE_DIRECT3D
-inline float d3dOneMinus(float _x) { return 1.0f - _x; }
-#else
 #define d3dOneMinus( _x ) _x
-#endif
 
 void Renderer::PaintPixels()
 {

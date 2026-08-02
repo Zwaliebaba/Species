@@ -128,7 +128,6 @@ void Task::TargetEngineer( Vector3 const &_pos )
 
 void Task::TargetArmour( Vector3 const &_pos )
 {
-#ifndef DEMOBUILD
     int teamId = g_app->m_globalWorld->m_myTeamId;
 
     m_objId = g_app->m_location->SpawnEntities( _pos, teamId, -1, Entity::TypeArmour, 1, g_zeroVector, 0 );
@@ -137,7 +136,6 @@ void Task::TargetArmour( Vector3 const &_pos )
     m_state = StateRunning;
 
     g_app->m_soundSystem->TriggerOtherEvent( NULL, "GestureSuccess", SoundSourceBlueprint::TypeGesture );
-#endif
 }
 
 
@@ -460,9 +458,7 @@ bool TaskManager::RunTask( int _type )
         case GlobalResearch::TypeSquad:
         case GlobalResearch::TypeEngineer:
         case GlobalResearch::TypeOfficer:
-#ifndef DEMOBUILD
         case GlobalResearch::TypeArmour:
-#endif
         {
             Task *task = new Task();
             task->m_type = _type;

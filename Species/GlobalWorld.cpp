@@ -247,35 +247,6 @@ void GlobalEventAction::Write(FileWriter* _out)
 
 void GlobalEventAction::Execute()
 {
-#ifdef TEST_HARNESS_ENABLED
-  switch (m_type)
-  {
-  case SetMission:
-    {
-      if (g_app->m_testHarness)
-      {
-        fprintf(g_app->m_testHarness->m_out, "%sSetting Mission: %s in location %s\n", g_app->m_testHarness->m_indent, m_filename,
-                g_app->m_globalWorld->GetLocationName(m_locationId));
-      }
-      break;
-    }
-  case RunScript:
-    if (g_app->m_testHarness)
-    {
-      fprintf(g_app->m_testHarness->m_out, "%sRunning script: %s\n", g_app->m_testHarness->m_indent, m_filename);
-    }
-    break;
-  case MakeAvailable:
-    if (g_app->m_testHarness)
-    {
-      fprintf(g_app->m_testHarness->m_out, "%sMaking location available: %s\n", g_app->m_testHarness->m_indent,
-              g_app->m_globalWorld->GetLocationName(m_locationId));
-    }
-    break;
-  default:
-    break;
-  }
-#endif // TEST_HARNESS_ENABLED
 
   switch (m_type)
   {
@@ -704,11 +675,9 @@ SphereWorld::SphereWorld()
     m_numLocations(0),
     m_spirits(nullptr)
 {
-  //#ifndef DEMOBUILD
   m_shapeOuter = g_app->m_resource->GetShape("GlobalWorldOuter.shp");
   m_shapeMiddle = g_app->m_resource->GetShape("GlobalWorldMiddle.shp");
   m_shapeInner = g_app->m_resource->GetShape("GlobalWorldInner.shp");
-  //#endif
 }
 
 void SphereWorld::AddLocation(int _locationId)
@@ -1826,10 +1795,6 @@ void GlobalWorld::SaveGame(const char* _filename)
 
 void GlobalWorld::WriteTutorial(FileWriter* _out)
 {
-#ifdef DEMO2
-  int currentChapter = -1; _out->printf("Tutorial_StartDefinition\n"); _out->printf("\tCurrentChapter = %d\n", currentChapter); _out->
-    printf("Tutorial_EndDefinition\n\n");
-#endif
 }
 
 void GlobalWorld::ParseTutorial(TextReader* _in)

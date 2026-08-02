@@ -9,11 +9,6 @@
 #include "Debug.h"
 #include "Preferences.h"
 
-#ifdef TARGET_OS_MACOSX
-#include "macosx_hardware_detect.h"
-#endif
-
-
 PrefsManager *g_prefsManager = NULL;
 
 static bool s_overwrite = false;
@@ -172,11 +167,7 @@ bool PrefsManager::IsLineEmpty(char const *_line)
 
 int GetDefaultHelpEnabled()
 {
-#ifndef DEMOBUILD
 	return 1;
-#else
-	return 0;				// Demo has a tutorial instead
-#endif
 }
 
 const char *GetDefaultSoundLibrary()
@@ -190,55 +181,22 @@ const char *GetDefaultSoundLibrary()
 
 int GetDefaultSoundDSP()
 {
-#ifdef DEMOBUILD
-    return 0;
-#elif defined(TARGET_OS_MACOSX)
-	if (MacOSXSlowCPU())
-		return 0;
-	else
-		return 1;
-#else
 	return 1;
-#endif
 }
 
 int GetDefaultSoundChannels()
 {
-#ifdef TARGET_OS_MACOSX
-	if (MacOSXSlowCPU())
-		return 16;
-	else
-		return 32;
-#else
 	return 32;
-#endif
 }
 
 int GetDefaultPixelShader()
 {
-#ifdef TARGET_OS_MACOSX
-	// Add call to graphics card check here
-	if (MacOSXGraphicsNoAcceleration() || MacOSXGraphicsLowMemory())
-		return 0;
-	else
-		return 1;
-#else
 	return 1;
-#endif
 }
 
 int GetDefaultGraphicsDetail()
 {
-#ifdef TARGET_OS_MACOSX
-	if (MacOSXGraphicsNoAcceleration())
-		return 3;
-	else if (MacOSXGraphicsLowMemory())
-		return 2;
-	else
-		return 1;
-#else
 	return 1;
-#endif
 }
 
 void PrefsManager::CreateDefaultValues()

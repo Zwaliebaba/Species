@@ -1,11 +1,5 @@
 #include "pch.h"
 
-#ifdef USE_DIRECT3D
-#include "OpenGLDirectXInternals.h"
-#include "Shader.h"
-#include "Texture.h"
-#endif
-
 #include <math.h>
 #include <float.h>
 
@@ -26,9 +20,6 @@
 #include "Main.h"
 #include "Renderer.h"
 #include "Water.h"
-#ifdef USE_DIRECT3D
-#include "WaterReflection.h"
-#endif
 #include "Location.h"
 #include "LevelFile.h"
 
@@ -37,10 +28,6 @@
 float const waveBrightnessScale = 4.0f;
 float const shoreBrighteningFactor = 250.0f;
 float const shoreNoiseFactor = 0.25f;
-#ifdef USE_DIRECT3D
-LPDIRECT3DVERTEXDECLARATION9 s_vertexDecl = NULL;
-#endif
-
 
 // ****************************************************************************
 // Class Water
@@ -53,9 +40,6 @@ Water::Water()
 	m_waveTableX(NULL),
 	m_waveTableZ(NULL),
 	m_renderWaterEffect(0),
-#ifdef USE_DIRECT3D
-	m_vertexBuffer(NULL),
-#endif
 	m_colourTable(NULL)
 {
     if( !g_app->m_editing )
@@ -92,16 +76,8 @@ Water::Water()
 			    m_numColours = bmp.m_width;
 			    for( int x = 0; x < bmp.m_width; ++x )
 			    {
-#ifndef USE_DIRECT3D
 				    m_colourTable[x] = bmp.GetPixel( x, 1 );
 				    m_colourTable[x].a = alpha;
-#else
-                    RGBAColour col = bmp.GetPixel( x, 1 );
-                    col.a = alpha;
-
-                    D3DCOLOR c = D3DCOLOR_RGBA( col.r, col.g, col.b, col.a );
-                    memcpy( &m_colourTable[x], &c, sizeof(D3DCOLOR) );
-#endif
 
 			    }
 			    delete in;
@@ -129,9 +105,6 @@ Water::~Water()
 	delete [] m_colourTable;	m_colourTable = NULL;
 	delete [] m_waveTableX;		m_waveTableX = NULL;
 	delete [] m_waveTableZ;		m_waveTableZ = NULL;
-#ifdef USE_DIRECT3D
-	ReleaseD3DResources();
-#endif
 }
 
 void Water::GenerateLightMap()
@@ -314,9 +287,6 @@ void Water::GenerateLightMap()
 
 void Water::BuildOpenGlState()
 {
-#ifdef USE_DIRECT3D
-	SAFE_RELEASE(m_vertexBuffer);
-#endif
 }
 
 
@@ -424,35 +394,6 @@ void Water::BuildTriangleStrips()
 
 	delete m_waterDepthMap; m_waterDepthMap = NULL;
 }
-
-
-#ifdef USE_DIRECT3D
-static LPDIRECT3DVERTEXDECLARATION9 GetVertexDeclWater()
-{
-	static D3DVERTEXELEMENT9 s_vertexDesc[] = {
-		{0, 0, D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
-		{0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
-		{0, 16, D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0},
-		{0xFF,0,D3DDECLTYPE_UNUSED, 0,0,0} // D3DDECL_END
-	};
-
-	if (!s_vertexDecl)
-		OpenGLD3D::g_pd3dDevice->CreateVertexDeclaration( s_vertexDesc, &s_vertexDecl );
-
-	return s_vertexDecl;
-};
-
-void Water::ReleaseD3DPoolDefaultResources()
-{
-	SAFE_RELEASE(m_vertexBuffer);
-}
-
-void Water::ReleaseD3DResources()
-{
-	ReleaseD3DPoolDefaultResources();
-	SAFE_RELEASE(s_vertexDecl);
-}
-#endif
 
 void Water::RenderFlatWaterTiles(
 		float posNorth, float posSouth, float posEast, float posWest, float height,
@@ -564,12 +505,6 @@ void Water::RenderFlatWater()
     float borderZ = landSizeZ / 2.0f;
 
 	float const timeFactor = g_gameTime / 30.0f;
-
-#ifdef USE_DIRECT3D
-	// sets default vertex format (somebody changes it and not returns back, where?)
-	extern LPDIRECT3DVERTEXDECLARATION9 s_pCustomVertexDecl;
-	OpenGLD3D::g_pd3dDevice->SetVertexDeclaration( s_pCustomVertexDecl );
-#endif
 
 	RenderFlatWaterTiles(
 		landSizeZ + borderZ, -borderZ, -borderX, landSizeX + borderX, -9.0f,
@@ -706,101 +641,36 @@ void Water::UpdateDynamicWater()
 		}
 	}
 
-#ifdef USE_DIRECT3D
-
-	if (m_renderVerts.Size() > 0) {
-		// Update the vertex buffer
-
-		unsigned bufferSize = m_renderVerts.Size() * sizeof(WaterVertex);
-
-		if (m_vertexBuffer == NULL) {
-			HRESULT hr = OpenGLD3D::g_pd3dDevice->CreateVertexBuffer(
-				bufferSize,
-				D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY|(OpenGLD3D::g_supportsHwVertexProcessing?0:D3DUSAGE_SOFTWAREPROCESSING),
-				0,
-				D3DPOOL_DEFAULT,
-				&m_vertexBuffer,
-				NULL);
-
-			DEBUG_ASSERT( hr != D3DERR_INVALIDCALL );
-			DEBUG_ASSERT( hr != D3DERR_OUTOFVIDEOMEMORY );
-			DEBUG_ASSERT( hr != E_OUTOFMEMORY );
-			DEBUG_ASSERT( hr == D3D_OK );
-			DEBUG_ASSERT( m_vertexBuffer != NULL );
-		}
-
-		void *data;
-
-		m_vertexBuffer->Lock(0, bufferSize, &data, D3DLOCK_DISCARD);
-		memcpy(data, &m_renderVerts[0], bufferSize);
-		m_vertexBuffer->Unlock();
-	}
-
-#endif
-
 }
 
 
 void Water::RenderDynamicWater()
 {
-#ifdef USE_DIRECT3D
-	if (m_vertexBuffer == NULL)
-		return;
-#endif
 
 	glEnable		    (GL_BLEND);
     glBlendFunc         (GL_SRC_ALPHA, GL_ONE);
     glEnable            (GL_FOG);
 	glEnable			(GL_CULL_FACE);
 
-#ifdef USE_DIRECT3D
-	IDirect3DVertexDeclaration9*	savedDecl;
-
-	OpenGLD3D::g_pd3dDevice->GetVertexDeclaration( &savedDecl );
-	OpenGLD3D::g_pd3dDevice->SetVertexDeclaration( GetVertexDeclWater() );
-	OpenGLD3D::g_pd3dDevice->SetStreamSource( 0, m_vertexBuffer, 0, sizeof(WaterVertex) );
-#else
 	glEnableClientState	(GL_VERTEX_ARRAY);
 	glEnableClientState	(GL_COLOR_ARRAY);
 
 	glVertexPointer	(3, GL_FLOAT, sizeof(WaterVertex), &m_renderVerts[0].m_pos);
 	glColorPointer	(4, GL_UNSIGNED_BYTE, sizeof(WaterVertex), &m_renderVerts[0].m_col);
-#endif
 
-#ifdef USE_DIRECT3D
-	if (m_renderWaterEffect && g_waterReflectionEffect)
-	{
-		g_waterReflectionEffect->Start();
-	}
-#endif
 
 	int numStrips = m_strips.Size();
 	for (int i = 0; i < numStrips; ++i)
 	{
 		WaterTriangleStrip *strip = m_strips[i];
 
-#ifdef USE_DIRECT3D
-		OpenGLD3D::g_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, strip->m_startRenderVertIndex, strip->m_numVerts-2);
-#else
 		glDrawArrays(GL_TRIANGLE_STRIP,
 					 strip->m_startRenderVertIndex,
 					 strip->m_numVerts);
-#endif
 	}
 
-#ifdef USE_DIRECT3D
-	if (m_renderWaterEffect && g_waterReflectionEffect)
-	{
-		g_waterReflectionEffect->Stop();
-	}
-#endif
-
-#ifdef USE_DIRECT3D
-	OpenGLD3D::g_pd3dDevice->SetVertexDeclaration( savedDecl );
-#else
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
-#endif
 
     glDisable           (GL_FOG);
     glBlendFunc         (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
@@ -851,9 +721,6 @@ void Water::Render()
 			//Advance();
 			START_PROFILE(g_app->m_profiler,  "Render Water" );
 			RenderFlatWater();
-#ifdef USE_DIRECT3D
-			if(OpenGLD3D::g_supportsHwVertexProcessing)
-#endif
 				RenderDynamicWater();
             END_PROFILE(g_app->m_profiler,  "Render Water" );
         }
@@ -872,9 +739,6 @@ void Water::Render()
 void Water::Advance()
 {
 	if( !g_app->m_editing && g_prefsManager->GetInt( "RenderWaterDetail" ) > 0
-#ifdef USE_DIRECT3D
-		&& OpenGLD3D::g_supportsHwVertexProcessing
-#endif
 		)
 	{
 		START_PROFILE(g_app->m_profiler,  "Advance Water" );

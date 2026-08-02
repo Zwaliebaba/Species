@@ -4,9 +4,7 @@
 
 #include "NetSocket.h"
 
-#ifdef TARGET_MSVC
 #define fdopen _fdopen
-#endif
 
 NetSocket::NetSocket()
 {

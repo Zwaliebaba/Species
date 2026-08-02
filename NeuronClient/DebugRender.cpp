@@ -310,11 +310,7 @@ void PrintMatrices( const char *_title )
 		return;
 
 	DebugTrace(
-#ifdef USE_DIRECT3D
-		"Direct3D: "
-#else
 		"OpenGL:   "
-#endif
 		"%s\n", _title);
 	PrintMatrix( "Model View", GL_MODELVIEW_MATRIX );
 	PrintMatrix( "Projection", GL_PROJECTION_MATRIX );

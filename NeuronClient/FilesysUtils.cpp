@@ -129,37 +129,23 @@ const char* RemoveExtension(const char* _fullFileName)
 
 bool CreateDirectory(const char* _directory)
 {
-#ifdef TARGET_MSVC
   int result = _mkdir(_directory);
   if (result == 0)
     return true; // Directory was created
   if (result == -1 && errno == 17 /* EEXIST */)
     return true; // Directory already exists
   return false;
-#else
-  if (access(_directory, W_OK | X_OK | R_OK) == 0)
-    return true; return mkdir(_directory, 0777) == 0;
-#endif
 }
 
 void DeleteThisFile(const char* _filename)
 {
-#ifdef TARGET_MSVC
   bool result = DeleteFile(_filename);
-#else
-  unlink(_filename);
-#endif
 }
 
 bool IsDirectory(const char* _fullPath)
 {
-#ifdef TARGET_MSVC
   // To do
   return false;
-#else
-  struct stat s; int rc = stat(_fullPath, &s); if (rc != 0)
-    return false; return (s.st_mode & S_IFDIR);
-#endif
 }
 
 // ***************************************************************************

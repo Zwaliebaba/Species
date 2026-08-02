@@ -67,14 +67,11 @@
 
 using namespace Neuron;
 
-#define TARGET_MSVC
 #define TARGET_DEBUG
 
 #define SPECIES_VERSION "1.5.11"
 #define SPECIES_EXE_VERSION 1,5,11,0
 #define STR_SPECIES_EXE_VERSION "1, 5, 11, 0\0"
-
-// === PICK ONE OF THESE TARGETS ===
 
 #define DEBUG_RENDER_ENABLED
 
@@ -84,27 +81,10 @@ using namespace Neuron;
 #define PROFILER_ENABLED
 #endif
 
-#ifdef TARGET_FULLGAME
-#define SPECIES_GAMETYPE "full"
-#define LOCATION_EDITOR
-#endif
-
-#ifdef TARGET_FULLGAME_FRENCH
-#define SPECIES_GAMETYPE "full"
-#define LOCATION_EDITOR
-#define FRENCH
-#endif
-
-#ifdef TARGET_PURITYCONTROL
-#define SPECIES_GAMETYPE "full"
-#define PURITY_CONTROL
-#endif
-
 #ifdef TARGET_DEBUG
 #define SPECIES_GAMETYPE "debug"
 #define LOCATION_EDITOR
 #define CHEATMENU_ENABLED
-#define D3D_DEBUG_INFO
 #endif
 
 #ifndef PROFILER_ENABLED
@@ -118,7 +98,6 @@ using namespace Neuron;
 #include <stdio.h>
 #include <math.h>
 
-#ifdef TARGET_MSVC
 #pragma warning( disable : 4244 4305 4800 4018 )
 
 // Defines that will enable you to double click on a #pragma message
@@ -148,99 +127,9 @@ using namespace Neuron;
 #include "windows.h"
 
 #define HAVE_DSOUND
-#endif
 
-#ifdef TARGET_MINGW
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#define HAVE_INET_NTOA
-#define HAVE_DSOUND
-#endif
-
-#ifdef TARGET_OS_LINUX
-#include <ctype.h>
-#include <string.h>
-
-#define stricmp strcasecmp
-#define strnicmp strncasecmp
-#define __stdcall
-template<class T> inline T min(T a, T b) {
-	return (a < b) ? a : b;
-};
-template<class T> inline T max(T a, T b) {
-	return (a > b) ? a : b;
-};
-inline char* strlwr(char* s) {
-	char* p = s;
-	for (char* p = s; *p; p++)
-		*p = tolower(*p);
-	return s;
-}
-inline char* strupr(char* s) {
-	char* p = s;
-	for (char* p = s; *p; p++)
-		*p = toupper(*p);
-	return s;
-}
-#include <unistd.h>
-#define Sleep sleep
-
-#define SPECIES_PLATFORM "linux"
-#define _snprintf snprintf
-
-#endif
-
-#ifdef TARGET_OS_MACOSX
-#define SPECIES_PLATFORM "macosx"
-
-#include <unistd.h>
-#define Sleep sleep
-
-#include <ctype.h>
-#define stricmp strcasecmp
-#define strnicmp strncasecmp
-
-template<class T> inline T min(T a, T b) {
-	return (a < b) ? a : b;
-};
-template<class T> inline T max(T a, T b) {
-	return (a > b) ? a : b;
-};
-
-inline char* strlwr(char* s) {
-	for (char* p = s; *p; p++)
-		*p = tolower(*p);
-	return s;
-}
-inline char* strupr(char* s) {
-	for (char* p = s; *p; p++)
-		*p = toupper(*p);
-	return s;
-}
-
-#define __stdcall
-#define HAVE_INET_NTOA
-#define _snprintf snprintf
-
-/* acosf and asinf don't link for some reason */
-#define acosf acos
-#define asinf asin
-
-#endif // TARGET_OS_MACOSX
-
-#ifdef TARGET_OS_MACOSX
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#else
-#ifdef USE_DIRECT3D
-#include <d3d9.h>
-#include <d3dx9.h>
-#include "OpenGLDirectX.h"
-#else
 #include <GL/gl.h>
 #include <GL/glu.h>
-#endif // USE_DIRECTX
-#endif // !TARGET_OS_MACOSX
 
 #define SAFE_FREE(x) {free(x);x=NULL;}
 #define SAFE_DELETE(x) {delete x;x=NULL;}

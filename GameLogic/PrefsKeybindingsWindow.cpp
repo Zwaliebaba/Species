@@ -268,16 +268,6 @@ void PrefsKeybindingsWindow::Create()
 		m_buttonOrder.PutData( but );
 	}
 
-#ifdef TARGET_OS_MACOSX
-	DropDownMenu *numMouseButtons = new DropDownMenu();
-    numMouseButtons->SetShortProperties( " ", x, y+=h, buttonW, buttonH );
-    numMouseButtons->AddOption( "1", 1 );
-    numMouseButtons->AddOption( "3", 3 );
-    numMouseButtons->RegisterInt( &m_numMouseButtons );
-    RegisterButton( numMouseButtons );
-	m_buttonOrder.PutData( numMouseButtons );
-#endif
-
 	y = m_h - (h+5);
 
 	RestoreDefaultsButton *restore = new RestoreDefaultsButton();
@@ -338,7 +328,4 @@ void PrefsKeybindingsWindow::Render( bool _hasFocus )
 		g_editorFont.DrawText2D(x, y += h, size, eventName);
 	}
 
-#ifdef TARGET_OS_MACOSX
-    g_editorFont.DrawText2D(x, y+=h, 13, LANGUAGEPHRASE("dialog_mousebuttons") );
-#endif
 }

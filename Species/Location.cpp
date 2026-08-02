@@ -6,9 +6,6 @@
 #include <time.h>
 #include <float.h>
 
-#ifdef USE_DIRECT3D
-#include "OpenGLDirectXInternals.h"
-#endif
 #include "BoundedArray.h"
 #include "Debug.h"
 #include "HiResTime.h"
@@ -30,7 +27,6 @@
 #include "App.h"
 #include "Camera.h"
 #include "Clouds.h"
-#include "Deform.h"
 #include "EntityGrid.h"
 #include "GlobalWorld.h"
 #include "Landscape.h"
@@ -990,9 +986,6 @@ void Location::Render(bool renderWaterAndClouds)
     RenderLandscape();
 	CHECK_OPENGL_STATE();
     if( renderWaterAndClouds ) RenderWater();
-#ifdef USE_DIRECT3D
-		else glDisable(GL_CLIP_PLANE2);
-#endif
 	CHECK_OPENGL_STATE();
 
 	// don't reflect buildings, teams etc.
@@ -1043,10 +1036,6 @@ void Location::RenderBuildings()
     SetupFog        ();
     glEnable        (GL_FOG);
 	g_app->m_renderer->SetObjectLighting();
-#ifdef USE_DIRECT3D
-	OpenGLD3D::g_pd3dDevice->SetRenderState( D3DRS_SPECULARENABLE, TRUE );
-#endif
-
 
     //
     // Special lighting mode used for Demo2
@@ -1109,9 +1098,6 @@ void Location::RenderBuildings()
         }
     }
 
-#ifdef USE_DIRECT3D
-	OpenGLD3D::g_pd3dDevice->SetRenderState( D3DRS_SPECULARENABLE, FALSE );
-#endif
     glDisable       (GL_FOG);
 	g_app->m_renderer->SetObjectLighting();
 	g_app->m_renderer->UnsetObjectLighting();
@@ -1987,11 +1973,6 @@ void Location::Bang( Vector3 const &_pos, float _range, float _damage )
 	//
 	// Punch effect
 
-#ifdef USE_DIRECT3D
-	if(g_deformEffect && isVisible) g_deformEffect->AddPunch( _pos, _range );
-#endif
-
-
 	//
 	// Wow, that was a big bang. Maybe we killed a building
 
@@ -2096,9 +2077,6 @@ void Location::SetupLights()
 
 int Location::ChristmasModEnabled()
 {
-#ifdef DEMOBUILD
-    return 0;
-#endif
 
     if( g_app->m_editing ) return 0;
 

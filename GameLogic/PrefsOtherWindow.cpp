@@ -80,13 +80,6 @@ class ApplyOtherButton : public SpeciesButton
 			g_app->m_largeMenus = true;
 
 		}
-#ifdef TARGET_OS_VISTA
-        else if( parent->m_largeMenus == 0 &&
-            g_mediaCenter == true )
-        {
-            g_app->m_largeMenus = true;
-        }
-#endif
 		else
 		{
 			g_app->m_largeMenus = false;
@@ -237,7 +230,6 @@ void PrefsOtherWindow::Create()
     RegisterButton( language );
 	m_buttonOrder.PutData( language );
 
-#ifndef DEMOBUILD
 	DropDownMenu *difficulty = new DropDownMenu();
 	difficulty->SetShortProperties( LANGUAGEPHRASE("dialog_difficulty"), x, y+=h, buttonW, buttonH );
 
@@ -263,7 +255,6 @@ void PrefsOtherWindow::Create()
 	difficulty->m_fontSize = fontSize;
 	RegisterButton(difficulty);
 	m_buttonOrder.PutData( difficulty );
-#endif // DEMOBUILD
 
     if( Location::ChristmasModEnabled() )
     {
@@ -333,12 +324,10 @@ void PrefsOtherWindow::Render( bool _hasFocus )
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_bootloaders") );
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_language") );
 
-#ifndef DEMOBUILD
 	if (g_app->m_locationId != -1)
 		glColor4f( 0.5f, 0.5f, 0.5f, 1.0f );
 
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_difficulty") );
-#endif // DEMOBUILD
 
 	glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
     if( Location::ChristmasModEnabled() )

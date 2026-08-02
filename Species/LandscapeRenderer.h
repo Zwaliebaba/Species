@@ -82,11 +82,6 @@ public:
 	LandscapeRenderer(SurfaceMap2D <float> *_heightMap);
 	~LandscapeRenderer();
 
-#ifdef USE_DIRECT3D
-	void ReleaseD3DPoolDefaultResources();
-	void ReleaseD3DResources();
-#endif
-
 	void BuildOpenGlState(SurfaceMap2D <float> *_heightMap);
 
 	void Initialise();

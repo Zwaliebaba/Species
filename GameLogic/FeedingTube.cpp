@@ -188,12 +188,6 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     glColor4f           (1.0f,1.0f,1.0f,_alpha);
 
     glMatrixMode        (GL_MODELVIEW);
-#ifdef USE_DIRECT3D
-	void SwapToViewMatrix();
-	void SwapToModelMatrix();
-
-	SwapToViewMatrix();
-#endif
     glTranslatef        ( startPos.x, startPos.y, startPos.z );
 	Vector3 dishFront   = GetForwardsClippingDir(_predictionTime, receiver);
     double eqn1[4]      = { dishFront.x, dishFront.y, dishFront.z, -1.0f };
@@ -208,9 +202,7 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     Vector3 diff = receiverPos - startPos;
     float thisDistance = -(receiverFront * diff);
 
-#ifndef USE_DIRECT3D
     thisDistance = -1.0f;
-#endif
 
     double eqn2[4]      = { receiverFront.x, receiverFront.y, receiverFront.z, thisDistance };
     glClipPlane         (GL_CLIP_PLANE1, eqn2 );
@@ -261,10 +253,6 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     glEnd();
 	}
     glTranslatef        ( -startPos.x, -startPos.y, -startPos.z );
-
-#ifdef USE_DIRECT3D
-	SwapToModelMatrix();
-#endif
 
     glDisable           (GL_CLIP_PLANE0);
     glDisable           (GL_CLIP_PLANE1);

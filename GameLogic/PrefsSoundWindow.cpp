@@ -196,11 +196,6 @@ void PrefsSoundWindow::Create()
     numChannels->AddOption( LANGUAGEPHRASE("dialog_8channels"), 8 );
     numChannels->AddOption( LANGUAGEPHRASE("dialog_16channels"), 16 );
     numChannels->AddOption( LANGUAGEPHRASE("dialog_32channels"), 32 );
-//#if !(defined (TARGET_OS_MACOSX) || defined(TARGET_OS_LINUX))
-//	// Number of channels must be a power of 2 for the
-//	// Software 3d library
-//    numChannels->AddOption( "48 Channels", 48 );
-//#endif
     numChannels->AddOption( LANGUAGEPHRASE("dialog_64channels"), 64 );
     numChannels->RegisterInt( &m_numChannels );
 	numChannels->m_fontSize = fontSize;

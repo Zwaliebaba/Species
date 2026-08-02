@@ -30,10 +30,6 @@
 
 #define SOUNDSYSTEM_UPDATEPERIOD    0.05f
 
-//#define SOUNDSYSTEM_VERIFY                          // Define this to make the sound system
-// Perform a series of (very slow)
-// tests every frame for correctness
-
 //*****************************************************************************
 // Class SoundEventBlueprint
 //*****************************************************************************
@@ -1439,10 +1435,6 @@ void SoundSystem::Advance()
     g_soundLibrary3d->Advance();
     END_PROFILE(g_app->m_profiler, "SoundLibrary3d Advance");
 
-#ifdef SOUNDSYSTEM_VERIFY
-    RuntimeVerify();
-#endif
-
     END_PROFILE(g_app->m_profiler, "Advance SoundSystem");
   }
 }
@@ -1566,9 +1558,6 @@ void SoundSystem::Advance()
             g_soundLibrary3d->ResetChannel( channelIndex );
             numChannelChanges++;
 
-#ifdef SOUNDSYSTEM_VERIFY
-			RuntimeVerify();
-#endif
         }
 
         END_PROFILE(g_app->m_profiler,  "StartNewSound" );
@@ -1691,11 +1680,6 @@ void SoundSystem::Advance()
         START_PROFILE(g_app->m_profiler, "SoundLibrary3d Advance" );
         g_soundLibrary3d->Advance();
         END_PROFILE(g_app->m_profiler, "SoundLibrary3d Advance" );
-
-
-#ifdef SOUNDSYSTEM_VERIFY
-        RuntimeVerify();
-#endif
 
         END_PROFILE(g_app->m_profiler, "Advance SoundSystem");
     }

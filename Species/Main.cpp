@@ -74,10 +74,6 @@ float g_predictionTime;
 float g_targetFrameRate = 20.0f;
 int g_lastProcessedSequenceId = -1;
 int g_sliceNum; // Most recently advanced slice
-#ifdef TARGET_OS_VISTA
-char g_saveFile[128]; // The profile name extracted from the save file that was used to launch darwinia
-bool g_mediaCenter = false;
-#endif
 
 void SwitchTaskManagerForX360Controller();
 
@@ -247,18 +243,6 @@ bool HandleCommonConditions()
     g_app->m_renderer->Render();
     return true;
   }
-
-#ifdef TARGET_OS_MACOSX
-  // Quit on Command-Q
-  if (g_keyDeltas[KEY_Q] && g_keys[KEY_META])
-  {
-    // TODO: This
-    if (g_app->m_requestedLocationId != -1)
-      DebugKeyBindings::ReallyQuitButton();
-    else
-      g_app->m_requestQuit = true;
-  }
-#endif
 
   if (g_app->m_requestQuit)
   {
@@ -662,7 +646,6 @@ void SwitchTaskManagerForX360Controller()
 }
 
 #ifdef LOCATION_EDITOR
-#ifndef PURITY_CONTROL
 void LocationEditorLoop()
 {
   while (!g_inputManager->controlEvent(ControlMenuEscape))
@@ -700,7 +683,6 @@ void LocationEditorLoop()
   delete g_app->m_locationInput;
   g_app->m_locationInput = nullptr;
 }
-#endif // PURITY_CONTROL
 #endif // LOCATION_EDITOR
 
 void GlobalWorldGameLoop()
@@ -806,33 +788,6 @@ void GlobalWorldEditorLoop()
   }
 }
 
-void TestHarnessLoop()
-{
-#ifdef TEST_HARNESS_ENABLED
-  g_app->m_testHarness->RunTest();
-#endif
-}
-
-void SetPreferenceOverrides()
-{
-#ifdef TARGET_OS_MACOSX
-  // Mac OS X 10.2.8 and I presume earlier require textures to be scaled.
-  long version = 0; Gestalt(gestaltSystemVersion, &version); if (version < 0x1030)
-    g_prefsManager->SetInt("ManuallyScaleTextures", 1); ASSERT_TEXT(version >= 0x1020,
-                                                                    "Darwinia requires at least Mac OS X version 10.2.x to run");
-#endif
-
-  // Fog can be an issue on certain drivers (e.g. Mac OS X - can causes FIFO hangs)
-
-#ifdef FOG_LOGGING
-  extern bool g_fogLogging; g_fogLogging = g_prefsManager->GetInt("RenderFog", 1) == 2;
-#endif
-
-#ifdef FOG_PREFERENCE
-  extern bool g_fogEnabled; g_fogEnabled = g_prefsManager->GetInt("RenderFog", 1);
-#endif
-}
-
 void InitialiseInputManager()
 {
   g_inputManager = new InputManager;
@@ -840,9 +795,7 @@ void InitialiseInputManager()
   g_inputManager->addDriver(new ChordInputDriver());
   g_inputManager->addDriver(new InvertInputDriver());
   g_inputManager->addDriver(new IdleInputDriver());
-#ifdef TARGET_MSVC
   g_inputManager->addDriver(new W32InputDriver());
-#endif
   g_inputManager->addDriver(new PrefsInputDriver());
   g_inputManager->addDriver(new ValueInputDriver());
   g_inputManager->addDriver(new AliasInputDriver());
@@ -884,16 +837,10 @@ void Initialise()
   g_systemInfo = new SystemInfo;
   InitialiseHighResTime();
 
-#ifdef TARGET_MSVC
   g_eventHandler = new W32EventHandler();
-#endif
   g_app = new App();
 
   InitialiseInputManager();
-
-#if defined(TARGET_OS_VISTA)
-  DoVistaChecks();
-#endif
 
   g_target = new TargetCursor();
   //if( g_prefsManager->GetInt("ControlMethod")==0 ) getW32EventHandler()->BindAltTab();
@@ -931,28 +878,10 @@ void Finalise()
   delete g_app->m_resource;
   delete g_windowManager;
 
-#ifdef TARGET_OS_VISTA
-  // Skip if not running on a Media Center
-  if (g_mediaCenter)
-  {
-    // Get the path to Media Center
-    WCHAR szExpandedPath[MAX_PATH];
-    if (ExpandEnvironmentStringsW(L"%SystemRoot%\\ehome\\ehshell.exe", szExpandedPath, MAX_PATH))
-    {
-      // Skip if ehshell.exe doesn't exist
-      if (GetFileAttributesW(szExpandedPath) != 0xFFFFFFFF)
-      {
-        // Launch ehshell.exe
-        INT_PTR result = (INT_PTR)ShellExecuteW(NULL, L"open", szExpandedPath, NULL, NULL, SW_SHOWNORMAL);
-      }
-    }
-  }
-#endif
 }
 
 void RunBootLoaders()
 {
-#ifndef DEMOBUILD
   if (g_app->HasBoughtGame() && g_prefsManager->GetInt("CurrentGameMode", 1) == 1)
   {
     const char* loaderName = g_prefsManager->GetString("BootLoader", "none");
@@ -975,7 +904,6 @@ void RunBootLoaders()
     g_inputManager->Advance(); // clears g_keyDeltas[KEY_ESC]
     g_inputManager->Advance();
   }
-#endif
 }
 
 void EnterLocation()
@@ -1020,12 +948,10 @@ void EnterLocation()
   if (g_app->m_editing)
   {
 #ifdef LOCATION_EDITOR
-#ifndef PURITY_CONTROL
     g_app->m_locationEditor = new LocationEditor();
     g_app->m_camera->SetDebugMode(Camera::DebugModeAlways);
 
     LocationEditorLoop();
-#endif  // PURITY_CONTROL
 #endif // LOCATION_EDITOR
   }
   else
@@ -1034,11 +960,6 @@ void EnterLocation()
     g_app->m_camera->RequestMode(Camera::ModeFreeMovement);
 
     LocationGameLoop();
-#ifdef DEMOBUILD
-#ifndef DEMO2
-    PrintMemoryLeaks(); g_windowManager->OpenWebsite("http://www.darwinia.co.uk/demoend/"); Finalise(); exit(0);
-#endif // DEMO2
-#endif // DEMOBUILD
   }
 }
 
@@ -1091,16 +1012,6 @@ void RunTheGame()
 {
   Initialise();
   RunBootLoaders();
-
-#ifdef TEST_HARNESS_ENABLED
-  if (g_prefsManager->GetInt("TestHarness") == 1)
-  {
-    g_app->m_testHarness = new TestHarness();
-    TestHarnessLoop();
-    Finalise();
-    exit(0);
-  }
-#endif // TEST_HARNESS_ENABLED
 
   //
   // Do whatever mode was requested

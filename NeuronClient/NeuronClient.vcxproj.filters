@@ -143,7 +143,6 @@
     <ClCompile Include="RenderUtils.cpp" />
     <ClCompile Include="Resource.cpp" />
     <ClCompile Include="RgbColour.cpp" />
-    <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Shape.cpp" />
     <ClCompile Include="SphereRenderer.cpp" />
     <ClCompile Include="StringUtils.cpp" />
@@ -152,7 +151,6 @@
     <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="SepulvedaStrings.cpp" />
     <ClCompile Include="TextStreamReaders.cpp" />
-    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureUv.cpp" />
     <ClCompile Include="TriTri.cpp" />
     <ClCompile Include="UserInfo.cpp" />
@@ -315,7 +313,6 @@
     <ClInclude Include="RenderUtils.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RgbColour.h" />
-    <ClInclude Include="Shader.h" />
     <ClInclude Include="Shape.h" />
     <ClInclude Include="SphereRenderer.h" />
     <ClInclude Include="StringUtils.h" />
@@ -323,7 +320,6 @@
     <ClInclude Include="TargetCursor.h" />
     <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="TextStreamReaders.h" />
-    <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureUv.h" />
     <ClInclude Include="UserInfo.h" />
     <ClInclude Include="WindowManager.h" />

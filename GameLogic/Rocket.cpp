@@ -1005,11 +1005,7 @@ void EscapeRocket::AdvanceIgnition()
             {
                 g_app->m_script->Skip();
             }
-#ifdef DEMOBUILD
-            g_app->m_script->RunScript( "launchpad_victory_demo.txt" );
-#else
 			g_app->m_script->RunScript( "LaunchpadVictory.txt");
-#endif
         }
     }
 }

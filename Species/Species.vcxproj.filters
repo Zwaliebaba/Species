@@ -6,7 +6,6 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Clouds.cpp" />
     <ClCompile Include="ControlHelp.cpp" />
-    <ClCompile Include="Deform.cpp" />
     <ClCompile Include="EntityGrid.cpp" />
     <ClCompile Include="Explosion.cpp" />
     <ClCompile Include="GameMenu.cpp" />
@@ -31,7 +30,6 @@
     <ClCompile Include="TaskManagerInterface.cpp" />
     <ClCompile Include="TaskManagerInterfaceIcons.cpp" />
     <ClCompile Include="Team.cpp" />
-    <ClCompile Include="TestHarness.cpp" />
     <ClCompile Include="Unit.cpp" />
     <ClCompile Include="UserInput.cpp" />
     <ClCompile Include="Water.cpp" />
@@ -43,7 +41,6 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Clouds.h" />
     <ClInclude Include="ControlHelp.h" />
-    <ClInclude Include="Deform.h" />
     <ClInclude Include="EntityGrid.h" />
     <ClInclude Include="Explosion.h" />
     <ClInclude Include="GameMenu.h" />
@@ -69,7 +66,6 @@
     <ClInclude Include="TaskManagerInterface.h" />
     <ClInclude Include="TaskManagerInterfaceIcons.h" />
     <ClInclude Include="Team.h" />
-    <ClInclude Include="TestHarness.h" />
     <ClInclude Include="Unit.h" />
     <ClInclude Include="UserInput.h" />
     <ClInclude Include="Water.h" />

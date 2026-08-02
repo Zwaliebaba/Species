@@ -18,7 +18,6 @@ class ParticleSystem;
 class TaskManager;
 class TaskManagerInterface;
 class Script;
-class TestHarness;
 class Profiler;
 class LocationEditor;
 class MouseCursor;
@@ -58,7 +57,6 @@ public:
     TaskManager         *m_taskManager;
     TaskManagerInterface *m_taskManagerInterface;
     Script              *m_script;
-    TestHarness         *m_testHarness;
     GameCursor          *m_gameCursor;
     StartSequence       *m_startSequence;
 	AttractMode			*m_attractMode;
@@ -88,11 +86,6 @@ public:
 
     bool                m_atMainMenu;       // true when the player is viewing the darwinia/mutliwinia menu
     int                 m_gameMode;
-
-#ifdef TARGET_OS_VISTA
-	BitmapRGBA			*m_thumbnailScreenshot;
-	bool				m_saveThumbnail;
-#endif
 
     enum
     {
@@ -124,34 +117,7 @@ public:
 
 	void	UpdateDifficultyFromPreferences();
 
-#ifdef	TARGET_OS_VISTA
-	void	SaveRichHeader();
-	void	SaveThumbnailScreenshot();
-#endif
 };
-
-#ifdef TARGET_OS_VISTA
-#define RM_MAXLENGTH     1024
-#define RM_MAGICNUMBER   'HMGR'
-
-#pragma pack(push)
-#pragma pack(1)
-typedef  struct  _RICH_GAME_MEDIA_HEADER
-{
-     DWORD        dwMagicNumber;
-     DWORD        dwHeaderVersion;
-     DWORD        dwHeaderSize;
-     LARGE_INTEGER liThumbnailOffset;
-     DWORD        dwThumbnailSize;
-     GUID         guidGameId;
-     WCHAR        szGameName[RM_MAXLENGTH];
-     WCHAR        szSaveName[RM_MAXLENGTH];
-     WCHAR        szLevelName[RM_MAXLENGTH];
-     WCHAR        szComments[RM_MAXLENGTH];
-}  RICH_GAME_MEDIA_HEADER;
-#pragma pack(pop)
-
-#endif
 
 extern App *g_app;
 

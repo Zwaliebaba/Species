@@ -220,20 +220,7 @@ void LandscapeRenderer::BuildColourArray()
       GetLandscapeColour(centre.y, norm.y, static_cast<unsigned int>(centre.x), static_cast<unsigned int>(centre.z), &col);
 
       // DebugTrace("%d[%d]: r:%02x g:%02x b:%02x a:%02x\n", i, j,  col.r, col.g, col.b, col.a);
-#ifdef USE_DIRECT3D
-      D3DCOLOR d3dCol = D3DCOLOR_ARGB(col.a, col.r, col.g, col.b);
-      memcpy(&m_verts[nextColId++].m_col, &d3dCol, sizeof(d3dCol));
-      if (j == 0)
-      {
-        // We need to set the colours of the first two verticies to something
-        // other than bright pink. Why this isn't a problem in OpenGL I
-        // don't know.
-        memcpy(&m_verts[nextColId - 3].m_col, &d3dCol, sizeof(d3dCol));
-        memcpy(&m_verts[nextColId - 2].m_col, &d3dCol, sizeof(d3dCol));
-      }
-#else
       m_verts[nextColId++].m_col = col;
-#endif
     }
   }
 
@@ -259,11 +246,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
     strcpy(fullFilname, "Terrain/LandscapeIcecaps.bmp");
 
   // Read render mode from prefs file
-#ifdef USE_DIRECT3D
-  m_renderMode = RenderModeVertexBufferObject;
-#else
   m_renderMode = g_prefsManager->GetInt("RenderLandscapeMode", 2);
-#endif
 
   // Make sure the selected mode is supported on the user's hardware
   if (m_renderMode == RenderModeVertexBufferObject)
@@ -293,42 +276,7 @@ LandscapeRenderer::~LandscapeRenderer()
 
   m_verts.Empty();
 
-#ifdef USE_DIRECT3D
-  ReleaseD3DResources();
-#endif
 }
-
-#ifdef USE_DIRECT3D
-#include "OpenGLDirectXInternals.h"
-
-static LPDIRECT3DVERTEXDECLARATION9 s_vertexDecl = NULL;
-void LandscapeRenderer::ReleaseD3DPoolDefaultResources() { SAFE_RELEASE(s_vertexDecl); }
-void LandscapeRenderer::ReleaseD3DResources()
-{
-  ReleaseD3DPoolDefaultResources();
-  if (m_vertexBuffer)
-  {
-    gglDeleteBuffersARB(1, &m_vertexBuffer);
-    m_vertexBuffer = 0;
-  }
-}
-static LPDIRECT3DVERTEXDECLARATION9 GetVertexDecl()
-{
-  static D3DVERTEXELEMENT9 s_vertexDesc[] = {
-    {0, LandscapeRenderer::m_posOffset, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
-    {0, LandscapeRenderer::m_normOffset, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0},
-    {0, LandscapeRenderer::m_colOffset, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
-    {0, LandscapeRenderer::m_uvOffset, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0},
-    {0xFF, 0, D3DDECLTYPE_UNUSED, 0, 0, 0} // D3DDECL_END
-  };
-
-  if (!s_vertexDecl)
-    OpenGLD3D::g_pd3dDevice->CreateVertexDeclaration(s_vertexDesc, &s_vertexDecl);
-
-  return s_vertexDecl;
-};
-
-#endif
 
 void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D<float>* _heightMap)
 {
@@ -336,15 +284,6 @@ void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D<float>* _heightMap)
   BuildNormArray();
   BuildColourArray();
   BuildUVArray(_heightMap);
-
-#ifdef USE_DIRECT3D
-  // Flip the normals for Direct3D
-  const int numUsed = m_verts.NumUsed();
-  for (int i = 0; i < numUsed; ++i)
-  {
-    m_verts[i].m_norm *= -1;
-  }
-#endif
 
   if (m_verts.NumUsed() <= 0)
     return;
@@ -405,14 +344,9 @@ void LandscapeRenderer::RenderMainSlow()
   case RenderModeVertexBufferObject:
     DEBUG_ASSERT(m_vertexBuffer);
     gglBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertexBuffer);
-#ifdef USE_DIRECT3D
-    OpenGLD3D::g_pd3dDevice->SetVertexDeclaration(GetVertexDecl());
-    OpenGLD3D::g_pd3dDevice->SetStreamSource(0, *OpenGLD3D::g_currentVertexBuffer, 0, sizeof(LandVertex));
-#else
     glVertexPointer(3, GL_FLOAT, sizeof(LandVertex), (char*)m_posOffset);
     glNormalPointer(GL_FLOAT, sizeof(LandVertex), (char*)m_normOffset);
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(LandVertex), (char*)m_colOffset);
-#endif
     break;
 
   default:
@@ -427,12 +361,7 @@ void LandscapeRenderer::RenderMainSlow()
   for (int z = 0; z < m_strips.Size(); ++z)
   {
     LandTriangleStrip* strip = m_strips[z];
-#ifdef USE_DIRECT3D
-    if (strip->m_numVerts > 2)
-      OpenGLD3D::g_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, strip->m_firstVertIndex, strip->m_numVerts - 2);
-#else
     glDrawArrays(GL_TRIANGLE_STRIP, strip->m_firstVertIndex, strip->m_numVerts);
-#endif
   }
 
   if (m_renderMode == RenderModeVertexBufferObject)
@@ -488,15 +417,10 @@ void LandscapeRenderer::RenderOverlaySlow()
   case RenderModeVertexBufferObject:
     DEBUG_ASSERT(m_vertexBuffer);
     gglBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertexBuffer);
-#ifdef USE_DIRECT3D
-    OpenGLD3D::g_pd3dDevice->SetVertexDeclaration(GetVertexDecl());
-    OpenGLD3D::g_pd3dDevice->SetStreamSource(0, *OpenGLD3D::g_currentVertexBuffer, 0, sizeof(LandVertex));
-#else
     glVertexPointer(3, GL_FLOAT, sizeof(LandVertex), (char*)m_posOffset);
     glNormalPointer(GL_FLOAT, sizeof(LandVertex), (char*)m_normOffset);
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(LandVertex), (char*)m_colOffset);
     glTexCoordPointer(2, GL_FLOAT, sizeof(LandVertex), (char*)m_uvOffset);
-#endif
     break;
 
   default:
@@ -514,11 +438,7 @@ void LandscapeRenderer::RenderOverlaySlow()
   {
     LandTriangleStrip* strip = m_strips[z];
 
-#ifdef USE_DIRECT3D
-    OpenGLD3D::g_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, strip->m_firstVertIndex, strip->m_numVerts - 2);
-#else
     glDrawArrays(GL_TRIANGLE_STRIP, strip->m_firstVertIndex, strip->m_numVerts);
-#endif
   }
 
   switch (m_renderMode)

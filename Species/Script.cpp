@@ -20,7 +20,6 @@
 #include "Main.h"
 #include "Renderer.h"
 #include "Script.h"
-#include "TestHarness.h"
 #include "TaskManager.h"
 #include "TaskManagerInterface.h"
 
@@ -33,32 +32,6 @@
 //*****************************************************************************
 // Private Functions
 //*****************************************************************************
-
-#ifdef SCRIPT_TEST_ENABLED
-void Script::ReportError(LevelFile const* _levelFile, char* _fmt, ...)
-{
-  char buf[512];
-  va_list ap;
-  va_start(ap, _fmt);
-  vsprintf(buf, _fmt, ap);
-
-  char location[128];
-
-  if (_levelFile)
-  {
-    sprintf(location, " (%s %s line: %d)", _levelFile->m_mapFilename + 12, _levelFile->m_missionFilename + 12, m_in->m_lineNum);
-  }
-  else { sprintf(location, " (no map, no mission, line: %d)", m_in->m_lineNum); }
-
-  strcat(buf, location);
-
-  if (g_app->m_testHarness) { g_app->m_testHarness->PrintError(buf); }
-  else
-  {
-    DEBUG_ASSERT(false); // Error message is in buf
-  }
-}
-#endif // SCRIPT_TEST_ENABLED
 
 //*****************************************************************************
 // Public Functions
@@ -75,13 +48,7 @@ Script::Script()
     m_waitForRocket(false),
     m_permitEscape(false) {}
 
-bool Script::IsRunningScript()
-{
-  if (g_app->m_testHarness)
-    return false;
-
-  return (m_in != nullptr);
-}
+bool Script::IsRunningScript() { return (m_in != nullptr); }
 
 void Script::RunCommand_CamCut(const char* _mountName)
 {
@@ -445,9 +412,6 @@ void Script::RunScript(const char* _filename)
 {
   if (strstr(_filename, ".txt"))
   {
-#ifdef SCRIPT_TEST_ENABLED
-    TestScript(_filename);
-#endif
 
     // Run a script, speficied by filename
     char fullFilename[256] = "Scripts/";
@@ -760,157 +724,6 @@ void Script::AdvanceScript()
     break;
   }
 }
-
-#ifdef SCRIPT_TEST_ENABLED
-void Script::TestScript(char* _filename)
-{
-  char fullFilename[256] = "Scripts/";
-  strcat(fullFilename, _filename);
-  m_in = g_app->m_resource->GetTextReader(fullFilename);
-  if (!m_in) { ReportError(NULL, "Script file not found"); }
-
-  LevelFile* levelFile = NULL;
-
-  while (m_in->ReadLine())
-  {
-    if (!m_in->TokenAvailable())
-      continue;
-
-    char* firstWord = m_in->GetNextToken();
-    int opCode = GetOpCode(firstWord);
-    char* nextWord = NULL;
-    float nextFloat = 0.0f;
-    if (m_in->TokenAvailable())
-    {
-      nextWord = m_in->GetNextToken();
-      nextFloat = atof(nextWord);
-    }
-
-    switch (opCode)
-    {
-    case OpCamMove:
-      {
-        if (!nextWord)
-        {
-          ReportError(levelFile, "CamMove called with no mount specified");
-          break;
-        }
-        if (!levelFile)
-        {
-          ReportError(levelFile, "CamMove called when not in a location");
-          break;
-        }
-        if (!levelFile->GetCameraMount(nextWord))
-        {
-          ReportError(levelFile, "CamMove called with invalid mount name: %s", nextWord);
-          break;
-        }
-        if (!m_in->TokenAvailable())
-        {
-          ReportError(levelFile, "CamMove called with no duration parameter");
-          break;
-        }
-        float duration = atof(m_in->GetNextToken());
-        if (duration < 0.01f || duration > 20.0f)
-        {
-          ReportError(levelFile, "CamMove called with invalid duration parameter: %f", duration);
-          break;
-        }
-        break;
-      }
-    case OpCamCut:
-      if (!nextWord)
-      {
-        ReportError(levelFile, "CamCut called with no mount specified");
-        break;
-      }
-      if (!levelFile)
-      {
-        ReportError(levelFile, "CamCut called when not in a location");
-        break;
-      }
-      if (!levelFile->GetCameraMount(nextWord))
-      {
-        ReportError(levelFile, "CamCut called with invalid mount name: %s", nextWord);
-        break;
-      }
-      break;
-    case OpCamAnim:
-      if (!nextWord)
-      {
-        ReportError(levelFile, "CamAnim called with no anim name specified");
-        break;
-      }
-      if (g_app->m_location->m_levelFile->GetCameraAnimId(nextWord) == -1)
-      {
-        ReportError(levelFile, "CamAnim called with bad anim name specified");
-        break;
-      }
-      break;
-    case OpEnterLocation:
-      {
-        if (!nextWord)
-        {
-          ReportError(levelFile, "EnterLocation called with no location name specified");
-          break;
-        }
-        GlobalLocation* globalLoc = g_app->m_globalWorld->GetLocation(nextWord);
-        if (!globalLoc)
-        {
-          ReportError(levelFile, "EnterLocation called with an invalid location name: %s", nextWord);
-          break;
-        }
-        delete levelFile;
-        levelFile = new LevelFile(globalLoc->m_missionFilename, globalLoc->m_mapFilename);
-        break;
-      }
-    case OpExitLocation:
-      delete levelFile;
-      levelFile = NULL;
-      break;
-    case OpWaitSay:
-    case OpWaitCam:
-      break;
-    case OpSay:
-      if (!nextWord)
-      {
-        ReportError(levelFile, "Say called with no language symbol specified");
-        break;
-      }
-      if (!ISLANGUAGEPHRASE_ANY(nextWord))
-      {
-        ReportError(levelFile, "Say called with an invalid language symbol: %s", nextWord);
-        break;
-      }
-      break;
-    case OpWait:
-      if (nextFloat < 0.01f || nextFloat > 20.0f)
-      {
-        ReportError(levelFile, "Wait called with invalid duration: %f", nextFloat);
-        break;
-      }
-      break;
-
-    case OpHighlight:
-      if (!g_app->m_location->GetBuilding((int)nextFloat))
-      {
-        ReportError(levelFile, "HighlightBuilding called with invalid buildingId: %d", (int)nextFloat);
-      }
-      break;
-
-    case OpClearHighlights:
-      break;
-
-    default:
-      ReportError(levelFile, "Invalid script command: %s", firstWord);
-      break;
-    }
-  }
-
-  delete m_in;
-  m_in = NULL;
-}
-#endif // SCRIPT_TEST_ENABLED
 
 static const char* g_opCodeNames[] = {
   "CamCut", "CamMove", "CamAnim", "CamFov", "CamBuildingFocus", "CamBuildingApproach", "CamLocationFocus", "CamGlobalWorldFocus",

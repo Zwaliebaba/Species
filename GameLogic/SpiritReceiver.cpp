@@ -24,9 +24,6 @@
 #include "Team.h"
 #include "Renderer.h"
 #include "EntityGrid.h"
-#ifdef USE_DIRECT3D
-#include "WaterReflection.h"
-#endif
 
 #include "SoundSystem.h"
 
@@ -98,10 +95,6 @@ void ReceiverBuilding::Render( float _predictionTime )
 
 void ReceiverBuilding::RenderAlphas ( float _predictionTime )
 {
-#ifdef USE_DIRECT3D
-	// don't reflect us in water
-	if(g_waterReflectionEffect && g_waterReflectionEffect->IsPrerendering()) return;
-#endif
 
 	Building::RenderAlphas( _predictionTime );
 
@@ -163,7 +156,6 @@ void ReceiverBuilding::RenderAlphas ( float _predictionTime )
         // Render any surges
 
         BeginRenderUnprocessedSpirits();
-#ifndef USE_DIRECT3D
 		for( int i = 0; i < m_spirits.Size(); ++i )
 		{
 			float thisSpirit = m_spirits[i];
@@ -173,36 +165,6 @@ void ReceiverBuilding::RenderAlphas ( float _predictionTime )
 			Vector3 thisSpiritPos = ourPos + (theirPos-ourPos) * thisSpirit;
 			RenderUnprocessedSpirit( thisSpiritPos, 1.0f );
 		}
-#else
-		glBegin( GL_QUADS );
-			for( int i = 0; i < m_spirits.Size(); ++i )
-			{
-				float thisSpirit = m_spirits[i];
-				thisSpirit += _predictionTime * 0.8f;
-				if( thisSpirit < 0.0f ) thisSpirit = 0.0f;
-				if( thisSpirit > 1.0f ) thisSpirit = 1.0f;
-				Vector3 thisSpiritPos = ourPos + (theirPos-ourPos) * thisSpirit;
-				RenderUnprocessedSpirit_basic( thisSpiritPos, 1.0f );
-			}
-		glEnd();
-		int buildingDetail = g_prefsManager->GetInt( "RenderBuildingDetail", 1 );
-		if( buildingDetail == 1 )
-		{
-			glEnable( GL_TEXTURE_2D );
-			glBegin( GL_QUADS );
-				for( int i = 0; i < m_spirits.Size(); ++i )
-				{
-					float thisSpirit = m_spirits[i];
-					thisSpirit += _predictionTime * 0.8f;
-					if( thisSpirit < 0.0f ) thisSpirit = 0.0f;
-					if( thisSpirit > 1.0f ) thisSpirit = 1.0f;
-					Vector3 thisSpiritPos = ourPos + (theirPos-ourPos) * thisSpirit;
-					RenderUnprocessedSpirit_detail( thisSpiritPos, 1.0f );
-				}
-			glEnd();
-			glDisable( GL_TEXTURE_2D );
-		}
-#endif
         EndRenderUnprocessedSpirits();
     }
 }
@@ -550,10 +512,6 @@ void SpiritProcessor::Render( float _predictionTime )
 
 void SpiritProcessor::RenderAlphas( float _predictionTime )
 {
-#ifdef USE_DIRECT3D
-	// don't reflect us in water
-	if(g_waterReflectionEffect && g_waterReflectionEffect->IsPrerendering()) return;
-#endif
 
     ReceiverBuilding::RenderAlphas( _predictionTime );
 
@@ -564,7 +522,6 @@ void SpiritProcessor::RenderAlphas( float _predictionTime )
 
     _predictionTime -= SERVER_ADVANCE_PERIOD;
 
-#ifndef USE_DIRECT3D
     for( int i = 0; i < m_floatingSpirits.Size(); ++i )
     {
         UnprocessedSpirit *spirit = m_floatingSpirits[i];
@@ -574,36 +531,6 @@ void SpiritProcessor::RenderAlphas( float _predictionTime )
         float life = spirit->GetLife();
         RenderUnprocessedSpirit( pos, life );
     }
-#else
-	glBegin( GL_QUADS );
-		for( int i = 0; i < m_floatingSpirits.Size(); ++i )
-		{
-			UnprocessedSpirit *spirit = m_floatingSpirits[i];
-			Vector3 pos = spirit->m_pos;
-			pos += spirit->m_vel * _predictionTime;
-			pos += spirit->m_hover * _predictionTime;
-			float life = spirit->GetLife();
-			RenderUnprocessedSpirit_basic( pos, life );
-		}
-	glEnd();
-	int buildingDetail = g_prefsManager->GetInt( "RenderBuildingDetail", 1 );
-	if( buildingDetail == 1 )
-	{
-		glEnable( GL_TEXTURE_2D );
-		glBegin( GL_QUADS );
-			for( int i = 0; i < m_floatingSpirits.Size(); ++i )
-			{
-				UnprocessedSpirit *spirit = m_floatingSpirits[i];
-				Vector3 pos = spirit->m_pos;
-				pos += spirit->m_vel * _predictionTime;
-				pos += spirit->m_hover * _predictionTime;
-				float life = spirit->GetLife();
-				RenderUnprocessedSpirit_detail( pos, life );
-			}
-		glEnd();
-		glDisable( GL_TEXTURE_2D );
-	}
-#endif
     EndRenderUnprocessedSpirits();
 }
 

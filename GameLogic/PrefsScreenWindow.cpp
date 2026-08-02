@@ -17,9 +17,7 @@
 #include "Win32EventHandler.h"
 #include "WindowManagerWin32.h"
 
-#ifdef TARGET_MSVC
 #define HAVE_REFRESH_RATES
-#endif
 
 class ScreenResDropDownMenu : public DropDownMenu
 {
@@ -110,16 +108,6 @@ static void AdjustWindowPositions(int _newWidth, int _newHeight, int _oldWidth, 
 
 void RestartWindowManagerAndRenderer()
 {
-#ifdef TARGET_OS_LINUX
-	// Resolution/Fullscreen switching is broken on linux, pop up a dialog box
-	// asking the user to restart to get the effect.
-
-	EclRegisterWindow(
-		new MessageDialog("Restart Required",
-			"Please restart Darwinia for the screen\n"
-			"settings to take affect")
-		);
-#else
 	int oldWidth = g_app->m_renderer->ScreenW();
 	int oldHeight = g_app->m_renderer->ScreenH();
 
@@ -159,7 +147,6 @@ void RestartWindowManagerAndRenderer()
 	int newHeight = g_app->m_renderer->ScreenH();
 
 	AdjustWindowPositions(newWidth, newHeight, oldWidth, oldHeight);
-#endif
 }
 
 // SetWindowed - switch to windowed or fullscreen mode.

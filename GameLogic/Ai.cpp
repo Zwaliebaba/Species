@@ -127,10 +127,6 @@ int AI::FindTargetBuilding( int _fromTargetId, int _fromTeamId )
     int id = -1;
     bool randomMovement = syncfrand() < 0.25f;
 
-#ifdef DEMO2
-    randomMovement = false;
-#endif
-
     if( randomMovement )
     {
         int numNeighbours = fromBuilding->m_neighbours.Size();

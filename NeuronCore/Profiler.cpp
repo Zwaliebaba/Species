@@ -113,14 +113,7 @@ double ProfiledElement::GetMaxChildTime()
 //  Class Profiler
 // ****************************************************************************
 
-#ifdef SINGLE_THREADED_PROFILER
-#include <SDL.h>
-#include <SDL_thread.h>
-static Uint32 s_profileThread;
-#define MAIN_THREAD_ONLY { if (SDL_ThreadID() != s_profileThread) return; }
-#else
 #define MAIN_THREAD_ONLY {}
-#endif
 
 // *** Constructor
 Profiler::Profiler()
@@ -132,9 +125,6 @@ Profiler::Profiler()
   m_rootElement->m_isExpanded = true;
   m_currentElement = m_rootElement;
   m_endOfSecond = GetHighResTime() + 1.0f;
-#ifdef SINGLE_THREADED_PROFILER
-  s_profileThread = SDL_ThreadID();
-#endif
 }
 
 // *** Destructor

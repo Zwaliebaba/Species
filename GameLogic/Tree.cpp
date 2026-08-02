@@ -25,10 +25,6 @@
 #include "GlobalWorld.h"
 #include "Main.h"
 
-#ifdef USE_DIRECT3D
-#include "OpenGLDirectXInternals.h"
-#endif
-
 Tree::Tree()
 :   Building(),
     m_branchDisplayListId(-1),
@@ -264,12 +260,6 @@ void Tree::Generate()
     m_branchDisplayListId = glGenLists(1);
     glNewList       ( m_branchDisplayListId, GL_COMPILE );
     glBegin         ( GL_QUADS );
-#ifdef USE_DIRECT3D
-	// The colour is not supposed to be specified here so that it can be changed
-	// easily in the editor (when experimenting).
-	// Really, the Trees should be rewritten for Direct3D to use Meshes
-    glColor4ubv     ( m_branchColourArray ); // Direct3D hack
-#endif
     RenderBranch    ( g_zeroVector, g_upVector, m_iterations, false, true, false );
     glEnd           ();
     glEndList       ();
@@ -277,9 +267,6 @@ void Tree::Generate()
     speciesSeedRandom( m_seed );
     m_leafDisplayListId = glGenLists(1);
     glNewList       ( m_leafDisplayListId, GL_COMPILE );
-#ifdef USE_DIRECT3D
-    glColor4ubv     ( m_leafColourArray );	// Direct3D hack
-#endif
     glBegin         ( GL_QUADS );
     RenderBranch    ( g_zeroVector, g_upVector, m_iterations, false, false, true );
     glEnd           ();
