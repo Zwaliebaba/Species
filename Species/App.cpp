@@ -294,7 +294,7 @@ const char* App::GetProfileDirectory()
     sprintf(userdir, "%s/.darwinia", home);
     mkdir(userdir, 0777);
 
-    sprintf(userdir, "%s/.darwinia/%s/", home, DARWINIA_GAMETYPE);
+    sprintf(userdir, "%s/.darwinia/%s/", home, SPECIES_GAMETYPE);
     mkdir(userdir, 0777);
     return userdir;
   }
@@ -314,7 +314,7 @@ const char* App::GetProfileDirectory()
     sprintf(userdir, "%s/Library/Application Support/Darwinia", home);
     mkdir(userdir, 0777);
 
-    sprintf(userdir, "%s/Library/Application Support/Darwinia/%s/", home, DARWINIA_GAMETYPE);
+    sprintf(userdir, "%s/Library/Application Support/Darwinia/%s/", home, SPECIES_GAMETYPE);
     mkdir(userdir, 0777);
 
     return userdir;

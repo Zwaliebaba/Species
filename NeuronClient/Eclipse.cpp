@@ -408,10 +408,10 @@ void EclRegisterWindow ( EclWindow *window, EclWindow *parent )
         // We should place the window in a decent location
         int left = screenW / 2 - parent->m_x;
         int above = screenH / 2 - parent->m_y;
-        if( left > window->m_w / 2 )    window->m_x = int( parent->m_x + parent->m_w * (float) darwiniaRandom() / (float) DARWINIA_RAND_MAX );
-        else                            window->m_x = int( parent->m_x - window->m_w * (float) darwiniaRandom() / (float) DARWINIA_RAND_MAX );
-        if( above > window->m_h / 2 )   window->m_y = int( parent->m_y + parent->m_h * (float) darwiniaRandom() / (float) DARWINIA_RAND_MAX );
-        else                            window->m_y = int( parent->m_y - window->m_h/2 * (float) darwiniaRandom() / (float) DARWINIA_RAND_MAX );
+        if( left > window->m_w / 2 )    window->m_x = int( parent->m_x + parent->m_w * (float) darwiniaRandom() / (float) SPECIES_RAND_MAX );
+        else                            window->m_x = int( parent->m_x - window->m_w * (float) darwiniaRandom() / (float) SPECIES_RAND_MAX );
+        if( above > window->m_h / 2 )   window->m_y = int( parent->m_y + parent->m_h * (float) darwiniaRandom() / (float) SPECIES_RAND_MAX );
+        else                            window->m_y = int( parent->m_y - window->m_h/2 * (float) darwiniaRandom() / (float) SPECIES_RAND_MAX );
     }
 
 	window->MakeAllOnScreen();

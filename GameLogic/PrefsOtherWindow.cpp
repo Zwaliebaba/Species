@@ -349,6 +349,6 @@ void PrefsOtherWindow::Render( bool _hasFocus )
 	g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_largemenus") );
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_autocam") );
 
-    g_editorFont.DrawText2DCentre( m_x+m_w/2.0f, m_y+m_h - GetMenuSize(50), GetMenuSize(15), DARWINIA_VERSION_STRING );
+    g_editorFont.DrawText2DCentre( m_x+m_w/2.0f, m_y+m_h - GetMenuSize(50), GetMenuSize(15), SPECIES_VERSION_STRING );
 }
 

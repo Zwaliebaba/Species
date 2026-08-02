@@ -83,9 +83,8 @@ tasks:
       GameData test, and leaving it would half-convert MainMenus.cpp.
 
   # ---------------------------------------------------------------------------
-  # Wave 2: the macros. Held back because NeuronCore.h is also where migration
-  # stage 8 deletes the dead TARGET_* block, and doing both at once would make
-  # either change unreviewable.
+  # The macros. Originally placed in wave 2 behind T1 and T2; that edge was
+  # wrong and has been removed — see the note on T3.
   # ---------------------------------------------------------------------------
 
   - id: T3
@@ -96,7 +95,7 @@ tasks:
       NeuronCore.h. Some feed version strings the game displays, so check what
       the rename surfaces in the UI rather than assuming it is invisible.
     project: NeuronCore
-    depends_on: [T1, T2]
+    depends_on: []
     files:
       - NeuronCore/NeuronCore.h
       - NeuronClient/Random.h
@@ -107,7 +106,22 @@ tasks:
     verify:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
+    notes: >
+      depends_on emptied. It originally listed [T1, T2], but the stated reason
+      for holding this task back was a future collision with migration stage 8 in
+      NeuronCore.h — nothing to do with T1 or T2, which touch GameLogic only.
+      docs/TASK_DAG.md is explicit that an edge means "cannot start until", not
+      "reads better after", so the edge was removed rather than worked around.
+      check_task_dag.py is what surfaced it, by refusing to let T3 be in_progress
+      behind two unfinished dependencies.
+
+      No user-visible string changes: the rename is value-preserving. SPECIES_VERSION
+      is still "1.5.11", so the version text drawn in PrefsOtherWindow.cpp is
+      unchanged, and the save-directory literals in App.cpp ("~/.darwinia/",
+      "Application Support/Darwinia") are lowercase string constants rather than
+      macros and were deliberately left alone — changing them would orphan existing
+      user data.
 
   # ---------------------------------------------------------------------------
   # Wave 3: record where the line now sits.
@@ -120,7 +134,7 @@ tasks:
       AGENTS.md and docs/GLOSSARY.md are wrong, and the remaining names are all
       content-coupled ones. The docs should say that plainly, so the next person
       does not have to re-derive which names are safe to touch.
-    depends_on: [T3]
+    depends_on: [T1, T2, T3]
     files:
       - CODING_STANDARDS.md
       - AGENTS.md

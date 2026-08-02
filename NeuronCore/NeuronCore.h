@@ -70,9 +70,9 @@ using namespace Neuron;
 #define TARGET_MSVC
 #define TARGET_DEBUG
 
-#define DARWINIA_VERSION "1.5.11"
-#define DARWINIA_EXE_VERSION 1,5,11,0
-#define STR_DARWINIA_EXE_VERSION "1, 5, 11, 0\0"
+#define SPECIES_VERSION "1.5.11"
+#define SPECIES_EXE_VERSION 1,5,11,0
+#define STR_SPECIES_EXE_VERSION "1, 5, 11, 0\0"
 
 // === PICK ONE OF THESE TARGETS ===
 
@@ -95,48 +95,48 @@ using namespace Neuron;
 #endif
 
 #ifdef TARGET_VISTA
-#define DARWINIA_GAMETYPE "vista"
+#define SPECIES_GAMETYPE "vista"
 #define LOCATION_EDITOR
 #define TARGET_OS_VISTA
 #define ATTRACTMODE_ENABLED
 #endif
 
 #ifdef TARGET_FULLGAME
-#define DARWINIA_GAMETYPE "full"
+#define SPECIES_GAMETYPE "full"
 #define LOCATION_EDITOR
 #endif
 
 #ifdef TARGET_FULLGAME_FRENCH
-#define DARWINIA_GAMETYPE "full"
+#define SPECIES_GAMETYPE "full"
 #define LOCATION_EDITOR
 #define FRENCH
 #endif
 
 #ifdef TARGET_DEMOGAME
-#define DARWINIA_GAMETYPE "demo"
+#define SPECIES_GAMETYPE "demo"
 #define DEMOBUILD
 #endif
 
 #ifdef TARGET_DEMO2
-#define DARWINIA_GAMETYPE "demo2"
+#define SPECIES_GAMETYPE "demo2"
 #define DEMOBUILD
 #define DEMO2
 #endif
 
 #ifdef TARGET_VISTA_DEMO2
-#define DARWINIA_GAMETYPE "vista-demo2"
+#define SPECIES_GAMETYPE "vista-demo2"
 #define DEMOBUILD
 #define DEMO2
 #define TARGET_OS_VISTA
 #endif
 
 #ifdef TARGET_PURITYCONTROL
-#define DARWINIA_GAMETYPE "full"
+#define SPECIES_GAMETYPE "full"
 #define PURITY_CONTROL
 #endif
 
 #ifdef TARGET_DEBUG
-#define DARWINIA_GAMETYPE "debug"
+#define SPECIES_GAMETYPE "debug"
 #define LOCATION_EDITOR
 #define CHEATMENU_ENABLED
 //#define TEST_HARNESS_ENABLED
@@ -158,12 +158,12 @@ using namespace Neuron;
 #endif
 
 #ifndef PROFILER_ENABLED
-#define DARWINIA_VERSION_PROFILER "-np"
+#define SPECIES_VERSION_PROFILER "-np"
 #else
-#define DARWINIA_VERSION_PROFILER ""
+#define SPECIES_VERSION_PROFILER ""
 #endif
 
-#define DARWINIA_VERSION_STRING DARWINIA_PLATFORM "-" DARWINIA_GAMETYPE "-" DARWINIA_VERSION DARWINIA_VERSION_PROFILER
+#define SPECIES_VERSION_STRING SPECIES_PLATFORM "-" SPECIES_GAMETYPE "-" SPECIES_VERSION SPECIES_VERSION_PROFILER
 
 #include <stdio.h>
 #include <math.h>
@@ -191,7 +191,7 @@ using namespace Neuron;
 #include <stdlib.h>
 #define itoa _itoa
 
-#define DARWINIA_PLATFORM "win32"
+#define SPECIES_PLATFORM "win32"
 
 #define WIN32_LEAN_AND_MEAN
 #define _WIN32_WINDOWS 0x0500	// for IsDebuggerPresent
@@ -235,13 +235,13 @@ inline char* strupr(char* s) {
 #include <unistd.h>
 #define Sleep sleep
 
-#define DARWINIA_PLATFORM "linux"
+#define SPECIES_PLATFORM "linux"
 #define _snprintf snprintf
 
 #endif
 
 #ifdef TARGET_OS_MACOSX
-#define DARWINIA_PLATFORM "macosx"
+#define SPECIES_PLATFORM "macosx"
 
 #include <unistd.h>
 #define Sleep sleep
