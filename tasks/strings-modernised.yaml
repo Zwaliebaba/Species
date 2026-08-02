@@ -50,7 +50,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
       Audit complete (2026-08-02). Serialised or serialisation-adjacent char
       buffers in the tree, with what protects each:
