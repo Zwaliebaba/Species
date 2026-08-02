@@ -759,7 +759,29 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
+    notes: >
+      Landed 2026-08-02 in two commits, CI green. State half: the nine
+      scalars plus m_server, m_controlHelpSystem, m_userProfileName and
+      App's anonymous game-mode enum moved to NeuronClient/AppState.h,
+      storage and all — 244 reaches across 59 files, 45 files dropped
+      App.h. Behaviour half: the seven actions only App can perform could
+      not become globals, so the dependency inverted instead —
+      AppCommands is an abstract interface in NeuronClient that App
+      implements and installs at startup, null in a test DLL because the
+      definition lives in NeuronClient rather than the executable.
+      FilePaths.cpp null-checks because it can run before startup.
+
+      Result: no GameLogic or NeuronClient file includes App.h, the only
+      g_app below Species is a commented-out line, and LinkStubs.cpp is
+      empty — the link wall is gone. Allowlist 418 -> 369.
+
+      Two defects reached CI and are worth remembering. A dangling comma:
+      deleting the last entry of App's constructor initialiser list left
+      the comma on the line before it (C3806). And a false positive that
+      hid five files from the include-drop pass: the check searched for
+      the substring g_app, and the language key "dialog_apply" contains
+      it. Match on word boundaries, and ignore commented lines.
 
   - id: T15
     title: Move the simulation cluster into GameLogic in one operation
