@@ -533,6 +533,22 @@ tasks:
       parallel_safe false not for correctness but for merge hygiene — it
       touches dozens of files other tasks also list. Run it between move
       tasks, not during one.
+
+      Executed 2026-08-02: 104 includes deleted by checking every
+      allowlisted entry against its target's use surface; CI then proved
+      four of them load-bearing in ways grep cannot see, and they were
+      restored with their allowlist entries. Net: 98 entries removed,
+      627 -> 529. The two failure modes, for the next sweep of this kind:
+      (1) macro-hidden g_app — LANGUAGEPHRASE/ISLANGUAGEPHRASE in
+      LanguageTable.h:65 expand to g_app->m_langTable, so any file using
+      those macros needs App.h without ever containing the token g_app
+      (InputTypes.cpp, SepulvedaStrings.cpp, InputField.cpp); (2)
+      transitive type definitions — SoundSystem.cpp calls
+      Building::GetTypeName/NumBuildingTypes and got the class definition
+      through Location.h. Both root causes belong to later tasks: the
+      macro coupling dissolves when T8 gives the language table a
+      layer-owned home, and SoundSystem's Building reach is the
+      NeuronClient -> GameLogic cluster T10 handles.
     status: in_progress
 
   - id: T12

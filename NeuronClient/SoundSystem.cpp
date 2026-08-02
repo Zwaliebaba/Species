@@ -24,6 +24,7 @@
 #include "App.h"
 #include "Main.h"
 #include "Camera.h"
+#include "Location.h"
 
 #include "Entity.h"
 

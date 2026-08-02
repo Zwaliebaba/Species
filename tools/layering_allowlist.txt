@@ -222,6 +222,7 @@ GameLogic/Incubator.cpp -> Camera.h
 GameLogic/Incubator.cpp -> Globals.h
 GameLogic/Incubator.cpp -> Location.h
 GameLogic/Incubator.cpp -> ParticleSystem.h
+GameLogic/InputField.cpp -> App.h
 GameLogic/InsertionSquad.cpp -> App.h
 GameLogic/InsertionSquad.cpp -> Camera.h
 GameLogic/InsertionSquad.cpp -> EntityGrid.h
@@ -509,11 +510,13 @@ NeuronClient/DebugRender.cpp -> App.h
 NeuronClient/DebugRender.cpp -> Camera.h
 NeuronClient/FilePaths.cpp -> App.h
 NeuronClient/InputDriverWin32.cpp -> App.h
+NeuronClient/InputTypes.cpp -> App.h
 NeuronClient/LanguageTable.cpp -> App.h
 NeuronClient/Resource.cpp -> App.h
 NeuronClient/Resource.cpp -> Location.h
 NeuronClient/Resource.cpp -> Renderer.h
 NeuronClient/SampleCache.cpp -> App.h
+NeuronClient/SepulvedaStrings.cpp -> App.h
 NeuronClient/Shape.cpp -> App.h
 NeuronClient/SoundFilter.cpp -> App.h
 NeuronClient/SoundInstance.cpp -> App.h
@@ -524,6 +527,7 @@ NeuronClient/SoundLibrary3dDSound.cpp -> App.h
 NeuronClient/SoundSystem.cpp -> App.h
 NeuronClient/SoundSystem.cpp -> Camera.h
 NeuronClient/SoundSystem.cpp -> Entity.h
+NeuronClient/SoundSystem.cpp -> Location.h
 NeuronClient/SoundSystem.cpp -> Main.h
 NeuronClient/SoundSystem.cpp -> SaveOnQuitWindow.h
 NeuronClient/SoundSystem.h -> WorldObject.h

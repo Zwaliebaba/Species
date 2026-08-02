@@ -3,6 +3,7 @@
 #include <string>
 
 #include "InputTypes.h"
+#include "App.h"
 #include "LanguageTable.h"
 
 using std::string;
