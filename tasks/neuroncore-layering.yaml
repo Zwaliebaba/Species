@@ -662,6 +662,21 @@ tasks:
 
       Not built or run locally: Linux. Everything above is verified by CI.
 
+      One bug in this task's own code, found after CI went green rather than by
+      it. The step passed and printed "Stopped at sequence id 20", but the run
+      took 0.4s when 20 ticks at SERVER_ADVANCE_FREQ is 2s. Cause:
+      GetHighResTime's tick interval is 1.0 until InitialiseHighResTime runs, so
+      it returns raw performance-counter ticks rather than seconds. Every sleep
+      computed as negative, the fell-behind branch fired every iteration, and the
+      host free-ran. Species/Main.cpp was the only caller of that function in the
+      tree, so a second binary was always going to hit this.
+
+      The check was the real failure. Asserting only that the sequence id reached
+      20 verified the half that was already true and said nothing about pacing —
+      a server that ignores its tick rate entirely still passes it. The step now
+      measures elapsed wall time and requires it between 1.5s and 8s, which is
+      the assertion that would have caught this on the first run.
+
   # ---------------------------------------------------------------------------
   # Split out of T4 during wave 1: Preferences is not foundational.
   # ---------------------------------------------------------------------------

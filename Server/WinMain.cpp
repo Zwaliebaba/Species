@@ -52,6 +52,13 @@ int main(int argc, char* argv[])
 {
   const int tickLimit = ParseTickLimit(argc, argv);
 
+  // Required before GetHighResTime means anything. Until this runs the tick
+  // interval is 1.0, so the "seconds" it returns are raw performance-counter
+  // ticks — millions of them — and every sleep below computes as negative and is
+  // skipped. The host then spins as fast as the CPU allows instead of ticking at
+  // SERVER_ADVANCE_FREQ. Species/Main.cpp was the only caller before this.
+  InitialiseHighResTime();
+
   // Server::Advance reads RecordDemo, so the store has to exist. There being no
   // preferences file beside a fresh server is fine: PrefsManager falls back to
   // its built-in defaults, and with no defaults provider installed it does not

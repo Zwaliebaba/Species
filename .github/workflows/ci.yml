@@ -167,7 +167,9 @@ jobs:
           $exe = 'x64\Debug\Server.exe'
           if (-not (Test-Path $exe)) { throw "$exe was not built" }
 
+          $started = Get-Date
           $output = & $exe --ticks 20 2>&1
+          $elapsed = ((Get-Date) - $started).TotalSeconds
           $output | ForEach-Object { Write-Host $_ }
           if ($LASTEXITCODE -ne 0) { throw "server exited $LASTEXITCODE" }
 
@@ -176,7 +178,17 @@ jobs:
 
           $seq = [int]$final.Matches[0].Groups[1].Value
           if ($seq -lt 20) { throw "sequence id only reached $seq after 20 ticks" }
-          Write-Host "headless server reached sequence id $seq with no client attached"
+
+          # The rate matters as much as the count, and checking only the count
+          # missed a real bug once: without InitialiseHighResTime the sleep
+          # computes negative every iteration and the host free-runs, reaching
+          # 20 ticks in a tenth of the time it should. 20 ticks at
+          # SERVER_ADVANCE_FREQ is 2s; the window allows for sleep granularity
+          # and a loaded runner without allowing a spin.
+          if ($elapsed -lt 1.5 -or $elapsed -gt 8.0) {
+            throw "20 ticks took ${elapsed}s, expected about 2s — the host is not pacing itself"
+          }
+          Write-Host "headless server reached sequence id $seq in ${elapsed}s with no client attached"
 
       - name: Upload test results
         # Kept on failure only. A green run's .trx says nothing the job summary
