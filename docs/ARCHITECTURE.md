@@ -135,6 +135,15 @@ lockstep**, not client-server authority in the modern sense.
 - A periodic `Syncronise` update carries a checksum; `Server::m_sync` records one
   value per sequence id so divergence is detected.
 
+**This makes bit-identical simulation a hard requirement, not a nicety.**
+`GenerateSyncValue()` sums entity positions and velocities in container index
+order, so iteration order, container identity, floating-point arithmetic order
+and the `darwiniaRandom()` call sequence are all load-bearing. `DArray` indices
+are part of object identity on the wire (`WorldObjectId::m_index` is serialised
+verbatim). The constraints this puts on ordinary refactoring are spelled out in
+[`CODING_STANDARDS.md`](../CODING_STANDARDS.md#determinism) — read that before
+changing anything reachable from `Location::Advance`.
+
 **This will not scale to the target.** Deterministic lockstep requires every
 client to simulate the entire world, which is incompatible with a large
 persistent world holding many colonies. Replacing it is future work and is

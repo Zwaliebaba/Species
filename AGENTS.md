@@ -199,6 +199,15 @@ its own plan entry — mixing the two produces a diff nobody can review.
 
 **Never add to the layering allowlist.** It exists to shrink.
 
+**Do not change what the simulation computes.** Multiplayer is deterministic
+lockstep with a runtime checksum, so iteration order, floating-point arithmetic
+order, container choice and the `darwiniaRandom()` call sequence are all
+load-bearing. A refactor that looks purely cosmetic can desync the game while
+every build stays green. `DArray` in particular is a slot map whose indices are
+network identity — it is not a `std::vector`. Read
+[`CODING_STANDARDS.md`](CODING_STANDARDS.md#determinism) before touching anything
+reachable from `Location::Advance`.
+
 **Do not reformat files you are not otherwise changing.** Formatting is enforced
 on changed lines only, deliberately: a repo-wide reformat would destroy `git
 blame` across 113,000 lines. Whole-file formatting is a migration task, done
@@ -219,6 +228,11 @@ warrants a question first.
 Real, currently true, and worth knowing before you trip over them:
 
 - **The game does not run.** Last known state per the HEAD commit message.
+- **Cross-architecture play is unproven.** The projects now build ARM64 and x64
+  with MSVC float defaults — no `<FloatingPointModel>` is set. Deterministic
+  lockstep requires bit-identical results, and nobody has verified that an ARM64
+  client and an x64 client agree, given FMA contraction and the 270+ `sinf`/
+  `cosf`/`powf` calls in simulation code. Assume they desync until tested.
 - **ARM64 Debug has an unresolved failure.** CI builds x64 Debug only, so the
   primary development platform is not gated. One CI run built ARM64 Debug and
   failed after `NeuronClient.lib` linked — meaning the break is in `GameLogic`

@@ -106,10 +106,14 @@ do not use them in new code.
 `printf`-family varargs.
 
 **Containers.** `std::vector` by default; `std::unordered_map` / `std::map` /
-`std::set` as the shape demands. Not `LList`, `DArray`, `BTree`, `FastDArray`.
+`std::set` as the shape demands. Not `LList`, `BTree`, `FastDArray`.
+
+`DArray` is the exception and is **not** a `std::vector` in disguise — see
+[Determinism](#determinism) before replacing one.
 
 **Iteration.** Range-`for` and `<ranges>` over index loops. Reach for
-`std::ranges::` algorithms before writing a loop.
+`std::ranges::` algorithms before writing a loop — but never a parallel execution
+policy, and never an unordered traversal, in simulation code.
 
 **Const and constexpr.** `const` by default on anything not mutated. `constexpr`
 for anything computable at compile time. `[[nodiscard]]` on any function whose
@@ -127,6 +131,103 @@ only worth checking in Debug. `Neuron::Fatal` for unrecoverable states.
 
 **Enums.** `enum class`, with `ENUM_HELPER` from `NeuronHelper.h` when you need
 iteration or bitwise operators over it.
+
+---
+
+## Determinism
+
+**The simulation must produce bit-identical results on every client.** This is
+not an aspiration — it is checked at runtime, and violating it is the easiest way
+to break this game while leaving every build green.
+
+Multiplayer is deterministic lockstep. The server sequences player *intent*;
+every client then advances its own copy of the world and is expected to arrive at
+the same state. `Species/Main.cpp` `GenerateSyncValue()` sums every unit's,
+entity's, laser's and effect's `m_pos` and `m_vel`, folds the result to one byte,
+and sends it up each frame. `NeuronCore/Server.cpp` compares it against the other
+clients:
+
+```cpp
+DEBUG_ASSERT(lastKnownSync == sync);   // Server.cpp — a desync lands here
+```
+
+That assert is the whole safety net. It fires far from whatever caused it, in a
+Debug build, possibly minutes later. Read this section before touching anything
+the simulation advances.
+
+### What the sync value actually depends on
+
+`GenerateSyncValue()` accumulates floats **in container index order**. So the
+result is sensitive to all of:
+
+- the **order** entities are visited in,
+- the **number** of entities and the slots they occupy,
+- the **exact floating-point value** of every position and velocity,
+- and therefore every arithmetic operation that produced them.
+
+### `DArray` is a slot map, not a vector
+
+Its own header states the contract: *"an entry's index never changes"*. It keeps
+a `shadow` array marking which slots are live, so `PutData` reuses free slots and
+removal leaves a hole rather than shifting anything down.
+
+**Those indices are network identity.** `WorldObjectId` (`GameLogic/WorldObject.h`)
+stores `m_unitId` and `m_index` — a raw `DArray` slot — and the whole struct goes
+onto the wire through `WRITE_WORLDOBJECTID`. `NetworkUpdate` carries
+`m_unitId`, `m_entityId` and `m_buildingId` as bare indices too.
+
+Replacing a `DArray` with `std::vector` therefore breaks two things at once:
+erase shifts every later index, silently repointing object references *and*
+changing the sync traversal order. If you need to replace one, write or adopt a
+**slot map** with stable indices and an occupancy mask — matching `DArray`'s
+semantics, not `std::vector`'s.
+
+`std::unordered_map`, `std::unordered_set` and anything else with unspecified
+iteration order **must not hold simulation state**. Order can differ between
+builds of the same source. They are fine for asset caches, editor state and UI.
+
+### Rules for simulation code
+
+Simulation code is `GameLogic/`, plus the world, entity, team and physics code in
+`Species/` — anything reachable from `Location::Advance`.
+
+- **Do not change iteration order.** Not by switching container, not by
+  reversing a loop, not by "tidying" a traversal.
+- **Do not change the order or grouping of floating-point arithmetic.**
+  `(a + b) + c` and `a + (b + c)` are different numbers. Refactoring a sum into
+  an accumulator, or hoisting a term out of a loop, changes results.
+- **Do not use `std::execution` parallel policies.** Non-deterministic reduction
+  order.
+- **Do not introduce a new random source.** There is exactly one:
+  `darwiniaRandom()` in `NeuronClient/Random.cpp`, a linear congruential
+  generator over a single global `holdrand`. It is deterministic only because
+  every client makes the *same sequence of calls*. Adding a call, removing one,
+  or making one conditional shifts the stream for everything downstream.
+  `rand()`, `std::mt19937` and `std::random_device` are all forbidden here.
+- **Never call `darwiniaRandom()` from rendering, UI, sound or the editor.**
+  Those run at frame rate rather than tick rate, so they would consume the shared
+  stream at a client-dependent rate. Use a separate generator for anything
+  cosmetic.
+- **Be careful with `sinf`, `cosf`, `powf`, `acosf`, `asinf`, `expf`.** The
+  simulation calls them heavily — over 270 sites in `GameLogic/` and `Species/`.
+  IEEE-754 pins down `+ - * /` and `sqrt`; it does **not** pin down the
+  transcendentals, whose results can differ between CRT versions and between
+  architectures. Do not swap one for another form (`powf(x, 0.5f)` for `sqrtf(x)`,
+  a lookup table for a call, or vice versa) inside the simulation.
+
+> **Cross-architecture play is unproven.** The projects build both ARM64 and x64
+> with MSVC defaults — no `<FloatingPointModel>` is set anywhere. Whether an
+> ARM64 client and an x64 client stay in sync depends on contraction and libm
+> behaviour that nobody here has verified. Assume they do not until someone
+> tests it. If mixed-architecture play is ever a goal, pinning the float model
+> and auditing the transcendentals becomes a project in its own right.
+
+### If you must change simulation behaviour
+
+Sometimes you have to — a bug fix changes results by definition. That is fine,
+provided **every client changes the same way**, which means the change ships to
+everyone at once. What is not fine is a change whose result depends on the
+compiler, the platform, the container implementation, or the frame rate.
 
 ---
 
@@ -228,7 +329,7 @@ ahead within a file.
 |---|---|---|---|
 | 1 | **Containers down** | `LList`, `DArray`, `BTree`, `FastDArray` move from `NeuronClient` into `NeuronCore` | Nothing else can be layered correctly while the foundation reaches upward for its own containers |
 | 2 | **Maths down** | `Vector3`, `Matrix33/34`, `MathUtils` move into `NeuronCore` | The wire protocol serialises these; a headless server needs them without a renderer |
-| 3 | **Containers replaced** | `LList`/`DArray` → `std::vector`, `std::list`, `std::map` | Once they are in one place, replacing them is mechanical and reviewable |
+| 3 | **Containers replaced** | `LList` → `std::vector`/`std::list`. **`DArray` → a slot map, never `std::vector`** — its indices are network identity, see [Determinism](#determinism) | Once they are in one place they can be replaced one at a time. This is the stage most able to break lockstep silently; treat every `DArray` as a design question, not a substitution |
 | 4 | **Strings** | `char*`, `char[N]`, `strcpy`, `sprintf` → `std::string`, `string_view`, `std::format` | The largest source of latent buffer bugs |
 | 5 | **Ownership** | raw `new`/`delete`, `SAFE_DELETE`, `EmptyAndDelete` → `unique_ptr` and values | Depends on containers being standard, since ownership currently lives in `LList` |
 | 6 | **Protocol types** | `Entity`, `Team`, `WorldObject` out of `NeuronCore`'s headers | Severs the last game dependency from the network layer |
@@ -242,6 +343,9 @@ file at stage *n* is fully at stage *n* before it advances.
 
 1. Read it first. Darwinia code has non-obvious invariants, especially around
    `LList` ownership semantics and the fixed-size buffers in the netcode.
+   If the file is simulation code, re-read [Determinism](#determinism) — the
+   conversion must not change iteration order, arithmetic grouping, or the
+   sequence of `darwiniaRandom()` calls.
 2. Convert the whole file. Half-converted is not a state a file may rest in.
 3. `python3 tools/check_format.py --all <file>` — whole-file formatting is
    correct here, and only here.
