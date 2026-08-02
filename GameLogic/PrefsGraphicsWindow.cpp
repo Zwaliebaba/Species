@@ -22,7 +22,7 @@
 #define GRAPHICS_CLOUDDETAIL        "RenderCloudDetail"
 
 
-class ApplyGraphicsButton : public DarwiniaButton
+class ApplyGraphicsButton : public SpeciesButton
 {
 public:
     void MouseUp()

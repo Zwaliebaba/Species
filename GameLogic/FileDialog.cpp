@@ -21,7 +21,7 @@
 // Class FileOKButton
 //*****************************************************************************
 
-class FileOKButton: public DarwiniaButton
+class FileOKButton: public SpeciesButton
 {
 public:
     void MouseUp()
@@ -116,7 +116,7 @@ public:
 };
 
 
-class FileCancelButton: public DarwiniaButton
+class FileCancelButton: public SpeciesButton
 {
     void MouseUp()
     {
@@ -129,7 +129,7 @@ class FileCancelButton: public DarwiniaButton
 // Class SelectedButton
 //*****************************************************************************
 
-class SelectedButton : public DarwiniaButton
+class SelectedButton : public SpeciesButton
 {
     void Render( int realX, int realY, bool highlighted, bool clicked )
     {
@@ -149,7 +149,7 @@ class SelectedButton : public DarwiniaButton
             SetCaption( " " );
         }
 
-        DarwiniaButton::Render( realX, realY, highlighted, clicked );
+        SpeciesButton::Render( realX, realY, highlighted, clicked );
     }
 };
 

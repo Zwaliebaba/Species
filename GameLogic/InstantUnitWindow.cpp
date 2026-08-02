@@ -27,7 +27,7 @@
 // Class EditButton
 // ****************************************************************************
 
-class EditButton: public DarwiniaButton
+class EditButton: public SpeciesButton
 {
 public:
 	EditButton() {}
@@ -46,7 +46,7 @@ public:
 // Class TeamButton1
 // ****************************************************************************
 
-class TeamButton1 : public DarwiniaButton
+class TeamButton1 : public SpeciesButton
 {
 public:
     int m_teamId;
@@ -72,11 +72,11 @@ public:
         {
             if( iu->m_teamId == m_teamId )
             {
-                DarwiniaButton::Render( realX, realY, true, clicked );
+                SpeciesButton::Render( realX, realY, true, clicked );
             }
             else
             {
-                DarwiniaButton::Render( realX, realY, highlighted, clicked );
+                SpeciesButton::Render( realX, realY, highlighted, clicked );
             }
         }
 
@@ -104,7 +104,7 @@ public:
 // Class DeleteInstantUnitButton
 // ****************************************************************************
 
-class DeleteInstantUnitButton : public DarwiniaButton
+class DeleteInstantUnitButton : public SpeciesButton
 {
 public:
     bool m_safetyCatch;
@@ -192,7 +192,7 @@ void InstantUnitEditWindow::Create()
 // Class CreateButton
 // ****************************************************************************
 
-class CreateButton: public DarwiniaButton
+class CreateButton: public SpeciesButton
 {
 public:
 	CreateButton() {}

@@ -67,7 +67,7 @@ public:
 };
 
 
-class ScrollChangeButton : public DarwiniaButton
+class ScrollChangeButton : public SpeciesButton
 {
 protected:
     ScrollBar *m_scrollBar;

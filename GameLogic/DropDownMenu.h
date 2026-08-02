@@ -38,7 +38,7 @@ public:
 };
 
 
-class DropDownMenu : public DarwiniaButton
+class DropDownMenu : public SpeciesButton
 {
 protected:
     LList   <DropDownOptionData *> m_options;

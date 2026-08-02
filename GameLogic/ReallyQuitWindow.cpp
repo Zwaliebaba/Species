@@ -19,13 +19,13 @@ void ReallyQuitWindow::Create()
 
 	int y = 0, h = 30;
 
-    DarwiniaButton *exit = new GameExitButton();
+    SpeciesButton *exit = new GameExitButton();
     exit->SetShortProperties( "Leave Darwinia", 10, y+=h, m_w-20, 20 );
     exit->m_fontSize = 13;
     exit->m_centered = true;
     RegisterButton( exit );
 
-    DarwiniaButton *close = new CloseButton();
+    SpeciesButton *close = new CloseButton();
     close->SetShortProperties( "No. Play On!", 10, y+=h, m_w-20, 20 );
     close->m_fontSize = 13;
     close->m_centered = true;

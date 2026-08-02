@@ -22,7 +22,7 @@
 
 #ifdef LOCATION_EDITOR
 
-class TreeButton : public DarwiniaButton
+class TreeButton : public SpeciesButton
 {
 public:
     enum

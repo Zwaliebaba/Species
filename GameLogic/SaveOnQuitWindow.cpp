@@ -10,7 +10,7 @@
 #include "Renderer.h"
 
 
-class YesButton : public DarwiniaButton
+class YesButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -20,7 +20,7 @@ class YesButton : public DarwiniaButton
 };
 
 
-class NoButton : public DarwiniaButton
+class NoButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -30,7 +30,7 @@ class NoButton : public DarwiniaButton
 };
 
 
-class CancelButton : public DarwiniaButton
+class CancelButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -53,7 +53,7 @@ void SaveOnQuitWindow::Create()
 {
 	SpeciesWindow::Create();
 
-    DarwiniaButton *button;
+    SpeciesButton *button;
 	int width = 55;
 	int pitch = width + 8;
 	int x = 1 - width;

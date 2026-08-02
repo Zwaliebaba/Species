@@ -24,7 +24,7 @@
 
 class WebsiteButton;
 
-class SkipPrologueWindowButton : public DarwiniaButton
+class SkipPrologueWindowButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -33,7 +33,7 @@ class SkipPrologueWindowButton : public DarwiniaButton
   }
 };
 
-class SkipPrologueButton : public DarwiniaButton
+class SkipPrologueButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -49,7 +49,7 @@ class SkipPrologueButton : public DarwiniaButton
   }
 };
 
-class PlayPrologueButton : public DarwiniaButton
+class PlayPrologueButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -65,7 +65,7 @@ class PlayPrologueButton : public DarwiniaButton
   }
 };
 
-class PlayPrologueWindowButton : public DarwiniaButton
+class PlayPrologueWindowButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -74,7 +74,7 @@ class PlayPrologueWindowButton : public DarwiniaButton
   }
 };
 
-class AboutDarwiniaButton : public DarwiniaButton
+class AboutSpeciesButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -83,7 +83,7 @@ class AboutDarwiniaButton : public DarwiniaButton
   }
 };
 
-class MainMenuUserProfileButton : public DarwiniaButton
+class MainMenuUserProfileButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -92,7 +92,7 @@ class MainMenuUserProfileButton : public DarwiniaButton
   }
 };
 
-class OptionsButton : public DarwiniaButton
+class OptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -101,7 +101,7 @@ class OptionsButton : public DarwiniaButton
   }
 };
 
-class ScreenOptionsButton : public DarwiniaButton
+class ScreenOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -110,7 +110,7 @@ class ScreenOptionsButton : public DarwiniaButton
   }
 };
 
-class GraphicsOptionsButton : public DarwiniaButton
+class GraphicsOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -119,7 +119,7 @@ class GraphicsOptionsButton : public DarwiniaButton
   }
 };
 
-class SoundOptionsButton : public DarwiniaButton
+class SoundOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -128,7 +128,7 @@ class SoundOptionsButton : public DarwiniaButton
   }
 };
 
-class OtherOptionsButton : public DarwiniaButton
+class OtherOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -137,7 +137,7 @@ class OtherOptionsButton : public DarwiniaButton
   }
 };
 
-class KeybindingsOptionsButton : public DarwiniaButton
+class KeybindingsOptionsButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -233,12 +233,12 @@ void OptionsMenuWindow::Create()
 
 // ============================================================================
 
-class ResetLevelButton : public DarwiniaButton
+class ResetLevelButton : public SpeciesButton
 {
   void MouseUp() override { EclRegisterWindow(new ResetLocationWindow(), m_parent); }
 };
 
-class ExitLevelButton : public DarwiniaButton
+class ExitLevelButton : public SpeciesButton
 {
   void MouseUp() override
   {
@@ -259,7 +259,7 @@ class ExitLevelButton : public DarwiniaButton
   }
 };
 
-class WebsiteButton : public DarwiniaButton
+class WebsiteButton : public SpeciesButton
 {
   public:
     char m_website[256];
@@ -407,7 +407,7 @@ void LocationWindow::Create()
 
 // ============================================================================
 
-class ResetLocationButton : public DarwiniaButton
+class ResetLocationButton : public SpeciesButton
 {
   void MouseUp() override
   {

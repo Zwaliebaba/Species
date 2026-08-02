@@ -15,7 +15,7 @@
 #include "Water.h"
 #include "Main.h"
 
-class ApplyOtherButton : public DarwiniaButton
+class ApplyOtherButton : public SpeciesButton
 {
     void MouseUp()
     {

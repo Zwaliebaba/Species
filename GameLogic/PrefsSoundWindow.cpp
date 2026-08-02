@@ -26,7 +26,7 @@
 
 
 
-class RestartSoundButton : public DarwiniaButton
+class RestartSoundButton : public SpeciesButton
 {
 public:
     void MouseUp()

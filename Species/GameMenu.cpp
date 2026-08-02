@@ -33,7 +33,7 @@ GameMenuButton::GameMenuButton(char const *_iconName)
 
 void GameMenuButton::Render( int realX, int realY, bool highlighted, bool clicked )
 {
-    //DarwiniaButton::Render( realX, realY, highlighted, clicked );
+    //SpeciesButton::Render( realX, realY, highlighted, clicked );
     if( !m_iconName ) return;
     SpeciesWindow *parent = (SpeciesWindow *)m_parent;
 
@@ -156,10 +156,10 @@ public:
     }
 };
 
-class DarwiniaModeButton : public GameMenuButton
+class SpeciesModeButton : public GameMenuButton
 {
 public:
-    DarwiniaModeButton( char const *_iconName )
+    SpeciesModeButton( char const *_iconName )
     :   GameMenuButton( _iconName )
     {
     }
@@ -428,8 +428,8 @@ void GameMenuWindow::SetupMainPage()
     int h = 60;
     int w = 300;
 
-    //DarwiniaModeButton *dmb = new DarwiniaModeButton( "Icons/menu_darwinia.bmp" );
-    DarwiniaModeButton *dmb = new DarwiniaModeButton( "Darwinia" );
+    //SpeciesModeButton *dmb = new SpeciesModeButton( "Icons/menu_darwinia.bmp" );
+    SpeciesModeButton *dmb = new SpeciesModeButton( "Darwinia" );
     dmb->SetShortProperties("darwinia", x, y, w, h );
     RegisterButton( dmb );
     m_buttonOrder.PutData( dmb );

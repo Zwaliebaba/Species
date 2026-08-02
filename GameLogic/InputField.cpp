@@ -42,7 +42,7 @@ InputField::InputField()
 }
 
 
-void InputField::SetCallback(DarwiniaButton *button)
+void InputField::SetCallback(SpeciesButton *button)
 {
     m_callback = button;
 }
@@ -297,7 +297,7 @@ void InputField::Refresh()
 // ****************************************************************************
 
 InputScroller::InputScroller()
-:   DarwiniaButton(),
+:   SpeciesButton(),
     m_inputField(NULL),
     m_change(0.0f),
     m_mouseDownStartTime(-1.0f)
@@ -309,7 +309,7 @@ InputScroller::InputScroller()
 
 void InputScroller::Render( int realX, int realY, bool highlighted, bool clicked )
 {
-    DarwiniaButton::Render( realX, realY, highlighted, clicked );
+    SpeciesButton::Render( realX, realY, highlighted, clicked );
 
     if( m_mouseDownStartTime > 0.0f &&
 		m_inputField &&
@@ -372,7 +372,7 @@ void InputScroller::MouseUp()
 
 
 ColourWidget::ColourWidget()
-:   DarwiniaButton(),
+:   SpeciesButton(),
     m_callback(NULL),
     m_value(NULL)
 {
@@ -381,7 +381,7 @@ ColourWidget::ColourWidget()
 
 void ColourWidget::Render( int realX, int realY, bool highlighted, bool clicked )
 {
-    DarwiniaButton::Render( realX, realY, highlighted, clicked );
+    SpeciesButton::Render( realX, realY, highlighted, clicked );
 
     glColor4ubv( (unsigned char *) m_value );
     glBegin( GL_QUADS );
@@ -409,7 +409,7 @@ void ColourWidget::SetValue(int *value)
 }
 
 
-void ColourWidget::SetCallback(DarwiniaButton *button)
+void ColourWidget::SetCallback(SpeciesButton *button)
 {
     m_callback = button;
 }
@@ -434,7 +434,7 @@ void ColourWindow::SetValue(int *value)
 }
 
 
-void ColourWindow::SetCallback(DarwiniaButton *button)
+void ColourWindow::SetCallback(SpeciesButton *button)
 {
     m_callback = button;
 }

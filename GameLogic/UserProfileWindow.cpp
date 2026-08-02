@@ -16,7 +16,7 @@
 
 
 
-class LoadUserProfileButton : public DarwiniaButton
+class LoadUserProfileButton : public SpeciesButton
 {
 public:
     char *m_profileName;
@@ -30,7 +30,7 @@ public:
 };
 
 
-class NewProfileWindowButton : public DarwiniaButton
+class NewProfileWindowButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -129,7 +129,7 @@ void UserProfileWindow::Create()
 // ============================================================================
 
 
-class NewProfileButton : public DarwiniaButton
+class NewProfileButton : public SpeciesButton
 {
     void MouseUp()
     {

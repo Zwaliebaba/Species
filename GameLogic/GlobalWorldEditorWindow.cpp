@@ -14,7 +14,7 @@
 static char s_locationName[256] = "NewLevel";
 
 
-class SetModeButton : public DarwiniaButton
+class SetModeButton : public SpeciesButton
 {
 public:
     int m_mode;
@@ -27,17 +27,17 @@ public:
     {
         if( g_app->m_globalWorld->m_editorMode == m_mode )
         {
-            DarwiniaButton::Render( realX, realY, true, clicked );
+            SpeciesButton::Render( realX, realY, true, clicked );
         }
         else
         {
-            DarwiniaButton::Render( realX, realY, highlighted, clicked );
+            SpeciesButton::Render( realX, realY, highlighted, clicked );
         }
     }
 };
 
 
-class NewLocationButton : public DarwiniaButton
+class NewLocationButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -89,7 +89,7 @@ class NewLocationButton : public DarwiniaButton
 };
 
 
-class SaveLocationsButton : public DarwiniaButton
+class SaveLocationsButton : public SpeciesButton
 {
     void MouseUp()
     {

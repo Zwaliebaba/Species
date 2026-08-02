@@ -62,7 +62,7 @@ static int s_icon_controls[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, -1 };
 static int *s_indices = s_gesture_controls;
 
 
-class RestoreDefaultsButton : public DarwiniaButton
+class RestoreDefaultsButton : public SpeciesButton
 {
 public:
 	void MouseUp()
@@ -79,7 +79,7 @@ public:
 };
 
 
-class ApplyKeybindingsButton : public DarwiniaButton
+class ApplyKeybindingsButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -131,7 +131,7 @@ class ApplyKeybindingsButton : public DarwiniaButton
 };
 
 
-class ChangeKeybindingButton : public DarwiniaButton
+class ChangeKeybindingButton : public SpeciesButton
 {
 public:
 	int m_id;
@@ -172,7 +172,7 @@ public:
 			m_caption[0] = '\0';
 		}
 
-		DarwiniaButton::Render(x, y, highlighted, clicked);
+		SpeciesButton::Render(x, y, highlighted, clicked);
 	}
 };
 

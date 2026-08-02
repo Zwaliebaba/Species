@@ -80,7 +80,7 @@ void DropDownWindow::RemoveDropDownWindow()
 
 
 DropDownMenu::DropDownMenu(bool _sortItems)
-:   DarwiniaButton(),
+:   SpeciesButton(),
     m_currentOption(-1),
     m_int(NULL),
 	m_sortItems(_sortItems),
@@ -214,11 +214,11 @@ void DropDownMenu::Render( int realX, int realY, bool highlighted, bool clicked 
 {
     if( IsMenuVisible() )
     {
-        DarwiniaButton::Render( realX, realY, true, clicked );
+        SpeciesButton::Render( realX, realY, true, clicked );
     }
     else
     {
-        DarwiniaButton::Render( realX, realY, highlighted, clicked );
+        SpeciesButton::Render( realX, realY, highlighted, clicked );
     }
 
     glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );

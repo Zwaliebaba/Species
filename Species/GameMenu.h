@@ -26,7 +26,7 @@ public:
     void DestroyMenu();
 };
 
-class GameMenuButton : public DarwiniaButton
+class GameMenuButton : public SpeciesButton
 {
 public:
     char    *m_iconName;
@@ -65,7 +65,7 @@ public:
 
     void CreateMenuControl( char const *name, int dataType, void *value, int y,
 							float change, float _lowBound, float _highBound,
-                            DarwiniaButton *callback, int x, int w, float fontSize);
+                            SpeciesButton *callback, int x, int w, float fontSize);
 
     void GetDefaultPositions( int *_x, int *_y, int *_gap );
 };

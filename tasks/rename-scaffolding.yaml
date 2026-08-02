@@ -78,7 +78,9 @@ tasks:
     status: in_progress
     notes: >
       Serialised after T1 — same files. The header T1 renamed to SpeciesWindow.h
-      is where both button classes are declared.
+      is where both button classes are declared. AboutDarwiniaButton was included
+      for the same reason AboutDarwiniaWindow was in T1: code-only by the
+      GameData test, and leaving it would half-convert MainMenus.cpp.
 
   # ---------------------------------------------------------------------------
   # Wave 2: the macros. Held back because NeuronCore.h is also where migration

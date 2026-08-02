@@ -14,7 +14,7 @@
 #include "DemoEndWindow.h"
 
 
-class BuyOnlineButton : public DarwiniaButton
+class BuyOnlineButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -91,7 +91,7 @@ class BuyOnlineButton : public DarwiniaButton
 };
 
 
-class ExitDemoButton : public DarwiniaButton
+class ExitDemoButton : public SpeciesButton
 {
     void MouseUp()
     {
@@ -165,7 +165,7 @@ class ExitDemoButton : public DarwiniaButton
 };
 
 
-class ReturnToGameButton : public DarwiniaButton
+class ReturnToGameButton : public SpeciesButton
 {
     void MouseUp()
     {

@@ -194,7 +194,7 @@ void SetWindowed(bool _isWindowed, bool _isPermanent, bool &_isSwitchingToWindow
 }
 
 
-class SetScreenButton : public DarwiniaButton
+class SetScreenButton : public SpeciesButton
 {
     void MouseUp()
     {

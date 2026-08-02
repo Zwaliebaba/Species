@@ -24,7 +24,7 @@
 // Class ProfilerButton
 // ****************************************************************************
 
-class ProfilerButton : public DarwiniaButton
+class ProfilerButton : public SpeciesButton
 {
 public:
     void MouseUp()

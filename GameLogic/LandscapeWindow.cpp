@@ -26,7 +26,7 @@
 // Class LandscapeTileButton
 // ****************************************************************************
 
-class LandscapeTileButton: public DarwiniaButton
+class LandscapeTileButton: public SpeciesButton
 {
 public:
 	LandscapeTile *m_def;
@@ -169,7 +169,7 @@ void LandscapeTileEditWindow::Create()
 // Class LandscapeFlatAreaDeleteButton
 // ****************************************************************************
 
-class LandscapeFlattenAreaDeleteButton: public DarwiniaButton
+class LandscapeFlattenAreaDeleteButton: public SpeciesButton
 {
 public:
 	int m_areaId;
@@ -231,7 +231,7 @@ void LandscapeFlattenAreaEditWindow::Create()
 // Class NewTileButton
 // ****************************************************************************
 
-class NewTileButton : public DarwiniaButton
+class NewTileButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -265,7 +265,7 @@ public:
 // Class NewFlattenAreaButton
 // ****************************************************************************
 
-class NewFlattenAreaButton : public DarwiniaButton
+class NewFlattenAreaButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -293,7 +293,7 @@ public:
 // Class ScaleLandscapeButton
 // ****************************************************************************
 
-class ScaleLandscapeButton : public DarwiniaButton
+class ScaleLandscapeButton : public SpeciesButton
 {
 public:
     float m_scaleFactor;
@@ -426,7 +426,7 @@ void LandscapeEditWindow::Create()
 // Class LandscapeGuideGridWindow
 // ****************************************************************************
 
-class GuideGridButton : public DarwiniaButton
+class GuideGridButton : public SpeciesButton
 {
 public:
     void MouseUp()
@@ -686,13 +686,13 @@ public:
     }
 };
 
-class GuideGridTool : public DarwiniaButton
+class GuideGridTool : public SpeciesButton
 {
 public:
     int     m_toolType;
 
     GuideGridTool( int _toolType )
-        :   DarwiniaButton(),
+        :   SpeciesButton(),
             m_toolType(_toolType) {}
 
     void Render( int realX, int realY, bool highlighted, bool clicked )
@@ -700,11 +700,11 @@ public:
         LandscapeGuideGridWindow *parent = (LandscapeGuideGridWindow *) m_parent;
         if( parent->m_tool == m_toolType )
         {
-            DarwiniaButton::Render( realX, realY, highlighted, true );
+            SpeciesButton::Render( realX, realY, highlighted, true );
         }
         else
         {
-            DarwiniaButton::Render( realX, realY, highlighted, clicked );
+            SpeciesButton::Render( realX, realY, highlighted, clicked );
         }
     }
 

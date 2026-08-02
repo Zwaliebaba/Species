@@ -16,7 +16,7 @@
 // Class OKButton
 //*****************************************************************************
 
-class OKButton : public DarwiniaButton
+class OKButton : public SpeciesButton
 {
 protected:
 	MessageDialog *m_parent;
