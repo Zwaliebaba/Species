@@ -74,8 +74,11 @@ tasks:
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
-    parallel_safe: true
-    status: todo
+    parallel_safe: false
+    status: in_progress
+    notes: >
+      Serialised after T1 — same files. The header T1 renamed to SpeciesWindow.h
+      is where both button classes are declared.
 
   # ---------------------------------------------------------------------------
   # Wave 2: the macros. Held back because NeuronCore.h is also where migration
