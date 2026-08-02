@@ -85,10 +85,11 @@ Deliberately *not* the exit criterion: the full 628-entry allowlist (the
 `GameLogic` → `Species` cluster is 584 of them and blocks nothing here), and the
 client running. Both matter; neither gates the world server.
 
-> **Note:** the last commit before this tooling landed was titled *"Cleanup
-> done, But does not work yet"*. Assume the game does not currently run until
-> someone records otherwise here. Do not report a change as working on the basis
-> of a successful compile.
+> **Note:** the game runs again as of `7ee8c00`. That is recorded here because
+> this file is where it gets recorded — see *What working looks like*. It does
+> not lower the bar for a change: a successful compile is still not evidence that
+> anything works, and most agents cannot launch the client at all. Report what
+> you actually ran.
 
 ---
 
@@ -222,12 +223,16 @@ push. Write the tests with the change — [`docs/TESTING.md`](docs/TESTING.md) i
 the standard, and it is not optional reading for anything that touches wire
 format, the simulation, or a file being converted.
 
-**Does the game work?** Nothing here can tell you. The suite covers a few
-hundred lines out of 113,000 — encoding, string helpers, object identity — and
-the game does not currently run, so "it compiles and the suite passes" is still
-the honest ceiling. Do not let a green suite stand in for the paragraph below.
+**Does the game work?** The suite cannot tell you. It covers a few hundred
+lines out of 113,000 — encoding, string helpers, object identity — so "it
+compiles and the suite passes" is not the same claim, and a green suite must
+never stand in for the smoke test below.
 
-When it does run again, **this is the smoke test**.
+The game **does** run, so the smoke test is something you can actually perform
+rather than something to wait for. If you are working somewhere that cannot
+launch a Windows client, say so instead of implying you checked.
+
+**This is the smoke test.**
 
 **The Garden.** It is the only location `GameData/Game.txt` marks available at
 start (`Id 2, Avail 1`), built from `MapGarden.txt` +
@@ -248,9 +253,13 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**Record what you find here.** If the game starts running again, update this
-section with what actually works — the value is in it being current, not
-aspirational.
+**Last run: all seven steps pass, as of `7ee8c00` (2026-08-02).** Reported by the
+project owner, not observed by the agent that wrote this line — if only some
+steps were checked, correct this rather than leaving it overstated.
+
+**Record what you find here.** The value is in it being current, not
+aspirational. If a step starts failing, say which one: that is the difference
+between "the game is broken" and a named subsystem to look at.
 
 ---
 
@@ -313,8 +322,10 @@ everywhere earns one every time.
 
 **Say when something did not work.** A compile is not a test, and a green suite
 is not a running game. Report what you actually ran: "it builds and the suite
-passes; I could not verify it runs" is the honest sentence most of the time.
-Write that, rather than implying more.
+passes; I could not launch the client" is the honest sentence whenever you are
+working somewhere that cannot run a Windows build, which is most agents most of
+the time. Write that, rather than implying more. The game running again raises
+what *can* be checked, not what you may claim without checking.
 
 **Ask before changing build topology.** Adding a project, changing the toolset,
 adding a dependency, or restructuring the solution affects everyone's build. It
@@ -326,49 +337,60 @@ warrants a question first.
 
 Real, currently true, and worth knowing before you trip over them:
 
-- **The game does not run.** Last known state per the HEAD commit message.
-- **Cross-architecture play is unproven.** The projects now build ARM64 and x64
-  with MSVC float defaults — no `<FloatingPointModel>` is set. Deterministic
-  lockstep requires bit-identical results, and nobody has verified that an ARM64
-  client and an x64 client agree, given FMA contraction and the 270+ `sinf`/
-  `cosf`/`powf` calls in simulation code. Assume they desync until tested.
-- **ARM64 Debug has an unresolved failure.** CI builds x64 Debug only, so the
-  primary development platform is not gated. One CI run built ARM64 Debug and
-  failed after `NeuronClient.lib` linked — meaning the break is in `GameLogic`
-  or `Species` — but the error scrolled past the retrievable log tail and was
-  never isolated. A later run got much further without failing, so it may have
-  been a flake. The intermittent C3859 / C1076 above fits the description
-  exactly — same symptom, same "passes on a re-run" behaviour — so treat that as
-  the leading explanation until an ARM64 Debug failure turns up that is not it.
-  **Capture the first `error C...` line and record it here either way.**
-- **`NeuronCore` is standalone and the door is shut.** No source under
-  `NeuronCore/` reaches upward, and `NeuronCore.vcxproj` lists no include
-  directories at all, so a new upward include fails to compile rather than
-  quietly working. `NeuronClient` and `GameLogic` still reach into `Species`
-  heavily — that is the next phase, not this one.
-- **Release had never built, and CI does not gate on it.** Three template
-  leftovers — missing include paths, a precompiled header nothing created, and
-  `Species` linking Release as a console app when `WinMain` is its entry point —
-  are all fixed. The first two were confirmed fixed by a CI run; the third was
-  applied after CI dropped to Debug-only, so **Release has not been built since**.
-  Build it locally before anything that ships. Details in
+- **The game runs, and almost nothing here proves your change kept it that
+  way.** All seven Garden smoke-test steps passed as of `7ee8c00` — see *What
+  working looks like*. CI builds and runs the unit suite; it does not launch the
+  client, and neither does any agent working on Linux. A change that compiles and
+  passes 37 tests can still break the game on the first frame.
+- **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
+  MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
+  Deterministic lockstep requires bit-identical results, and nobody has verified
+  that an ARM64 client and an x64 client agree, given FMA contraction and the 281
+  `sinf`/`cosf`/`powf` calls in simulation code. Assume they desync until tested.
+  Now that the game runs this is finally testable: two clients, one per
+  architecture, and watch for the sync assert in `Server.cpp`.
+- **ARM64 Debug is not gated by CI.** CI builds x64 Debug only, so the primary
+  development platform is never checked here — build it yourself before relying
+  on it. The unexplained ARM64 Debug failure that used to be recorded in this
+  spot has not recurred and is now attributed to the C3859 memory pressure
+  described below; it is written up there as a resolved instance rather than
+  kept as a standing mystery.
+  - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
+    runner is a preview image that roughly doubles wall clock, and ARM64 is built
+    constantly at the desk anyway. Deliberate, not an oversight.
+- **`NeuronClient` and `GameLogic` still reach up into `Species`.** 627 upward
+  includes remain, and the direction that mattered most is already fixed:
+  `NeuronCore` is standalone, reaches upward nowhere, and `NeuronCore.vcxproj`
+  lists no include directories at all, so a new upward include there fails to
+  compile rather than quietly working. The remaining debt is the next phase, and
+  it is the reason `Tests/GameLogicTests/LinkStubs.cpp` has to exist.
+- **Release is not built by anyone.** Three template leftovers — missing include
+  paths, a precompiled header nothing created, and `Species` linking Release as a
+  console app when `WinMain` is its entry point — are all fixed, and
+  `Species.vcxproj` now sets `SubSystem` to `Windows` in both configurations. But
+  the first two were confirmed by a CI run and the third landed after CI dropped
+  to Debug-only, so **Release has still not been built since**. CI does not gate
+  it and nobody builds it by hand, which means it can be broken right now and
+  nothing would say so. Build it locally before anything that ships. Details in
   [`docs/BUILD.md`](docs/BUILD.md).
-- **`NeuronCore.h` still carries Darwinia's target macros** (`TARGET_FULLGAME`,
-  `TARGET_DEMOGAME`, `DARWINIA_VERSION`, and a `#error` if none is defined), plus
-  `TARGET_OS_LINUX` and `TARGET_OS_MACOSX` branches for platforms that are not
-  built. Most of it is dead.
-- **The test suite is new and thin.** Four projects, 25 tests, covering IP
-  conversion, the `speciesRandom` sequence, the `ByteStream` macros, the
-  `FilesysUtils` path helpers and `WorldObjectId`. That is the encoding and
-  identity layer and nothing else. `NeuronServer` has no behaviour to test yet;
+  - Adding a Release build to CI was proposed and **declined on 2026-08-02**:
+    `ci.yml` argues Release differs from Debug in optimisation settings alone and
+    catches little Debug does not, and that reasoning still holds. This bullet is
+    the accepted cost of that, not an oversight — do not re-propose it without a
+    Release-only break to point at.
+- **The test suite is thin.** Four projects, 45 tests, covering IP conversion,
+  the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
+  format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
+  helpers, `WorldObjectId` and the state a new `Server` starts in. That is the
+  encoding, identity and protocol layer and almost nothing else — no entity
+  behaviour, no rendering, no level loading, and nothing at all that would notice
+  the game failing to start.
   `GameLogic` can only be linked into a test DLL through
   `Tests/GameLogicTests/LinkStubs.cpp`, which stands in for the `Species`
   globals it reaches up for and may only shrink. `Species` and `Server` have no
   test project at all — an `.exe` cannot be linked into a test DLL, so code in
   either that is worth testing belongs in a library. See
   [`docs/TESTING.md`](docs/TESTING.md).
-- **`Species/TestHarness.cpp` is not part of it.** It is dead code behind
-  `TEST_HARNESS_ENABLED`, and is a level-progression explorer rather than a test.
 - **C3859 / C1076 is memory pressure, not a code fault.** "Failed to create
   virtual memory for PCH" / "compiler limit: internal heap limit reached",
   landing on a different file every run and on whichever project happens to be
@@ -385,8 +407,12 @@ Real, currently true, and worth knowing before you trip over them:
     project that failed in a solution build usually succeeds when built alone.
   - Lingering MSBuild nodes make it worse — node reuse leaves a dozen alive.
     `/nr:false` if they accumulate.
-  - **This is the most likely explanation for the unexplained ARM64 Debug
-    failure recorded below.**
+  - It is the accepted explanation for a one-off ARM64 Debug failure that used
+    to be recorded above as unexplained: it failed after `NeuronClient.lib`
+    linked, the error scrolled past the retrievable log tail, and a later run got
+    much further without failing. Same symptom, same "passes on a re-run"
+    behaviour. It has not recurred. **If an ARM64 Debug failure turns up that is
+    not this, capture the first `error C...` line and record it here.**
 - **Provenance is unresolved.** [`LICENSE`](LICENSE) states the project's terms —
   internal research, non-commercial, not for distribution — but those terms cover
   only this project's own contributions. The licence covering the original

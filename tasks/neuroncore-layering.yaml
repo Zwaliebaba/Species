@@ -984,6 +984,13 @@ tasks:
       own test, not a rider on a file move. Not recorded as a node here because
       it is not part of making NeuronCore standalone.
 
+      Fixed separately after this plan closed: one token, unsigned char to
+      unsigned short, guarded by AllNineTeamControlFlagsSurviveARoundTrip in
+      NeuronCoreTests. Worse in practice than the note above suggests — the
+      server deserialises each update and re-serialises it into the letter it
+      broadcasts, so the bit was destroyed at the hop and no client ever saw it,
+      rather than each client losing it locally.
+
       The new tests pin bytes rather than round-tripping only: a round trip
       passes on either byte order because one machine does both halves. They
       cover the header prefix, SelectUnit, CreateUnit and Alive field-for-field

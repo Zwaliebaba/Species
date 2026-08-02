@@ -126,12 +126,14 @@ GameData/Sounds/DarwinianThreat*.wav GameData/Levels/MissionGardenLiberate.txt
 
 Level files name entity types as **strings** (`Darwinian 0 598.8 1202.4 30 …`),
 and shapes, sprites and sounds are resolved by filename at runtime. A rename that
-misses one fails silently at load rather than at compile time — and the game does
-not currently run, so nothing would catch it.
+misses one fails silently at load rather than at compile time.
 
-The entity rename happens after the game runs again, as one deliberate task
-covering code, assets and content together. Until then: **do not rename
-`Darwinian`, and do not rename anything whose name appears in `GameData/`.**
+That rename was gated on the game running again, which it now does — so the
+Garden smoke test can finally catch a missed reference, and the task is
+unblocked rather than done. It remains one deliberate task covering code, assets
+and content together, and nobody has written it. Until someone does: **do not
+rename `Darwinian`, and do not rename anything whose name appears in
+`GameData/`.**
 Check before you assume:
 
 ```bash
@@ -422,19 +424,25 @@ and not all at once. Each conversion is its own task in a DAG under `tasks/`
 Later stages assume earlier ones have landed for the code they touch. Do not skip
 ahead within a file.
 
-| # | Stage | What changes | Why here |
-|---|---|---|---|
-| 1 | **Containers down** | `LList`, `DArray`, `BTree`, `FastDArray` move from `NeuronClient` into `NeuronCore` | Nothing else can be layered correctly while the foundation reaches upward for its own containers |
-| 2 | **Maths down** | `Vector3`, `Matrix33/34`, `MathUtils` move into `NeuronCore` | The wire protocol serialises these; a headless server needs them without a renderer |
-| 3 | **Containers replaced** | `LList` → `std::vector`/`std::list`. **`DArray` → a slot map, never `std::vector`** — its indices are network identity, see [Determinism](#determinism) | Once they are in one place they can be replaced one at a time. This is the stage most able to break lockstep silently; treat every `DArray` as a design question, not a substitution |
-| 4 | **Strings** | `char*`, `char[N]`, `strcpy`, `sprintf` → `std::string`, `string_view`, `std::format` | The largest source of latent buffer bugs |
-| 5 | **Ownership** | raw `new`/`delete`, `SAFE_DELETE`, `EmptyAndDelete` → `unique_ptr` and values | Depends on containers being standard, since ownership currently lives in `LList` |
-| 6 | **Protocol types** | `Entity`, `Team`, `WorldObject` out of `NeuronCore`'s headers | Severs the last game dependency from the network layer |
-| 7 | **Globals** | `g_app` reached from inside `NeuronCore` → injected dependencies | The final blocker on a standalone server binary |
-| 8 | **Dead targets** | `TARGET_FULLGAME`, `TARGET_DEMOGAME`, `DARWINIA_*`, the unbuilt Linux/macOS branches in `NeuronCore.h` | Safe to do any time; deliberately last so it does not churn files mid-migration |
+| # | Stage | Status | What changes | Why here |
+|---|---|---|---|---|
+| 1 | **Containers down** | done | `LList`, `DArray`, `BTree`, `FastDArray` move from `NeuronClient` into `NeuronCore` | Nothing else can be layered correctly while the foundation reaches upward for its own containers |
+| 2 | **Maths down** | done | `Vector3`, `Matrix33/34`, `MathUtils` move into `NeuronCore` | The wire protocol serialises these; a headless server needs them without a renderer |
+| 3 | **Containers replaced** | **todo** | `LList` → `std::vector`/`std::list`. **`DArray` → a slot map, never `std::vector`** — its indices are network identity, see [Determinism](#determinism) | Once they are in one place they can be replaced one at a time. This is the stage most able to break lockstep silently; treat every `DArray` as a design question, not a substitution |
+| 4 | **Strings** | **todo** | `char*`, `char[N]`, `strcpy`, `sprintf` → `std::string`, `string_view`, `std::format` | The largest source of latent buffer bugs |
+| 5 | **Ownership** | **todo** | raw `new`/`delete`, `SAFE_DELETE`, `EmptyAndDelete` → `unique_ptr` and values | Depends on containers being standard, since ownership currently lives in `LList` |
+| 6 | **Protocol types** | done | `Entity`, `Team`, `WorldObject` out of `NeuronCore`'s headers | Severs the last game dependency from the network layer |
+| 7 | **Globals** | done | `g_app` reached from inside `NeuronCore` → injected dependencies | The final blocker on a standalone server binary |
+| 8 | **Dead targets** | done | `TARGET_FULLGAME`, `TARGET_DEMOGAME`, `DARWINIA_*`, the unbuilt Linux/macOS branches in `NeuronCore.h` | Safe to do any time; deliberately last so it does not churn files mid-migration |
 
 Stages 1, 2 and 8 are tree-wide moves. Stages 3–7 proceed file by file, and a
 file at stage *n* is fully at stage *n* before it advances.
+
+Status re-measured on 2026-08-02, and re-measure rather than trusting it: stage 3
+has `LList` in 127 files, stage 4 has 324 `strcpy`/`sprintf` calls, stage 5 has 34
+`SAFE_DELETE` uses. Stages 1, 2, 6 and 7 landed with
+`tasks/neuroncore-layering.yaml`; stage 8 landed with `7ee8c00`. The only `g_app`
+left anywhere under `NeuronCore/` is a comment explaining what replaced it.
 
 ### Converting a file
 

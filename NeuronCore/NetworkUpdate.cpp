@@ -50,10 +50,10 @@ int NetworkUpdate::ReadByteStream(char *_byteStream)
             GetWorldPos().x = READ_FLOAT(_byteStream);
             GetWorldPos().y = READ_FLOAT(_byteStream);
             GetWorldPos().z = READ_FLOAT(_byteStream);
-			{
-				unsigned char flags = READ_UNSIGNED_SHORT(_byteStream);
-				m_teamControls.SetFlags( flags );
-			}
+            {
+              unsigned short flags = READ_UNSIGNED_SHORT(_byteStream);
+              m_teamControls.SetFlags(flags);
+            }
             m_sync = READ_UNSIGNED_CHAR(_byteStream);
             break;
 

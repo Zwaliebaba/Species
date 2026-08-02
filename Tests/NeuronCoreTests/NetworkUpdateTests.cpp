@@ -257,5 +257,50 @@ namespace NeuronCoreTests
         Assert::AreEqual(-0.5f, received.GetWorldPos().y);
         Assert::AreEqual(300.0f, received.GetWorldPos().z);
       }
+
+      TEST_METHOD(AllNineTeamControlFlagsSurviveARoundTrip)
+      {
+        // Regression guard for a flag that used to be lost in transit.
+        //
+        // TeamControls has nine flags and GetFlags puts the ninth,
+        // m_endSetTarget, at 0x0100. The wire always carried both bytes, but
+        // ReadByteStream read them into an unsigned char, so that bit was
+        // discarded on receive. The cursor still advanced two bytes, so packets
+        // stayed aligned and nothing downstream ever complained — the flag just
+        // silently arrived clear.
+        //
+        // The server made it worse than a client-side glitch: it deserialises
+        // each update, then re-serialises it into the letter it broadcasts, so
+        // the bit was destroyed at the hop and no client ever saw it.
+        // Species/Location.cpp gates unit targeting on m_endSetTarget.
+        TeamControls sentControls;
+        sentControls.m_unitMove = 1;
+        sentControls.m_directUnitMove = 1;
+        sentControls.m_primaryFireTarget = 1;
+        sentControls.m_secondaryFireTarget = 1;
+        sentControls.m_primaryFireDirected = 1;
+        sentControls.m_secondaryFireDirected = 1;
+        sentControls.m_cameraEntityTracking = 1;
+        sentControls.m_unitSecondaryMode = 1;
+        sentControls.m_endSetTarget = 1;
+
+        Assert::AreEqual(0x01FF, static_cast<int>(sentControls.GetFlags()), L"all nine flags should encode");
+
+        NetworkUpdate sent;
+        sent.SetType(NetworkUpdate::Alive);
+        sent.SetLastSequenceId(3);
+        sent.SetTeamId(1);
+        sent.SetTeamControls(sentControls);
+        sent.SetWorldPos(sentControls.m_mousePos);
+        sent.SetSync(7);
+
+        int length = 0;
+        char* stream = sent.GetByteStream(&length);
+
+        NetworkUpdate received(stream);
+
+        Assert::AreEqual(0x01FF, static_cast<int>(received.m_teamControls.GetFlags()));
+        Assert::IsTrue(received.m_teamControls.m_endSetTarget == 1, L"m_endSetTarget is the bit that used to be dropped");
+      }
   };
 } // namespace NeuronCoreTests
