@@ -159,8 +159,6 @@ GameLogic/DebugMenu.cpp -> Camera.h
 GameLogic/DebugMenu.cpp -> Renderer.h
 GameLogic/DebugMenu.cpp -> UserInput.h
 GameLogic/DebugMenu.h -> App.h
-GameLogic/DemoEndWindow.cpp -> App.h
-GameLogic/DemoEndWindow.cpp -> Renderer.h
 GameLogic/DropDownMenu.cpp -> App.h
 GameLogic/DropDownMenu.cpp -> Renderer.h
 GameLogic/EditorWindow.cpp -> App.h
