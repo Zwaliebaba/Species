@@ -64,7 +64,85 @@ tasks:
     verify:
       - python3 tools/check_layering.py
     parallel_safe: true
-    status: in_progress
+    status: done
+    notes: >
+      Inventory complete (2026-08-02, re-derived at 4840da3). Baseline:
+      grep -ril darwini (excl .git) = 126 files, 2043 tokens; code = 394
+      tokens across 36 spellings in GameLogic/Species/NeuronClient/Tests
+      (NeuronCore, NeuronServer, Server: zero).
+
+      TWO ANCHORS everything derives from: Entity.cpp typeNames[] slot 12
+      ("Darwinian", Entity.cpp:698) and GlobalResearch::GetTypeName names[]
+      slot 0 (GlobalWorld.cpp:621). The constructed-string machinery
+      (entityname_%s, research_%s[_v%d], researchname_%s,
+      newcontrols_research_%s, spawnname_%s, Icons/Icon%s.bmp, Shapes/%s,
+      %s.wav, "ENTITY %s" in Sounds.txt, ScriptTrigger's entity field)
+      follows automatically IF both anchors, the GameData filenames and the
+      language keys change together. LANGUAGEPHRASE matches
+      case-insensitively, so entityname_citizen works against typeName
+      "Citizen".
+
+      FILES TO git mv: GameLogic/Darwinian.cpp + .h (20 include sites, 4
+      vcxproj/filters entries). Allowlist: 14 entries, all
+      GameLogic/Darwinian.cpp ->; exactly one invocation needed:
+      "python3 tools/check_layering.py --rename GameLogic/Darwinian.cpp
+      GameLogic/Citizen.cpp" (Darwinian.h has no entries).
+
+      HARDCODED LITERALS that do NOT follow automatically (hand edits):
+      "Sprites/Darwinian.bmp" x5 (Darwinian.cpp:2357, BlueprintStore:383,
+      430, MainMenus:539, Team.cpp:564); "Darwinian.shp" in Officer.cpp:47;
+      "Darwinian SeenThreat"/"Darwinian TakenControl" StopAllSounds
+      literals x4 (Darwinian.cpp:464,481,805,1660 — mirror
+      SoundInstance::SetEventName's "<TypeName> <Event>" format);
+      "SpawnDarwinians" (Triffid.cpp:488 names[] + spawnname key +
+      SpawnPoint.cpp:651,671 PROFILE labels); "Render Darwinians" PROFILE
+      label (Team.cpp:478,480); "LoadDarwinian"/"UnloadDarwinian"
+      (Armour.cpp:390-414 — orphan sound events, not in Sounds.txt);
+      FilesysUtilsTests path fixtures x6 (cosmetic).
+
+      GAMEDATA BY FILENAME (37): Shapes/Darwinian.shp,
+      Sprites/Darwinian.bmp, Icons/IconDarwinian.bmp, 34 wavs — of which 13
+      are referenced by Sounds.txt SAMPLEs (DarwinianThreatAttack{,2,3},
+      DarwinianThreatRun{,2..10}) and 21 are orphans
+      (LaserHitDarwinian1..19, CrateRewradDarwinians1..2; nothing loads
+      them — rename for consistency only).
+
+      GAMEDATA BY CONTENT (1246 lines / 24 text files): 61 Units/
+      InstantUnits rows across 10 mission files (incl. the two
+      MissionGardenLiberate.txt rows the smoke test counts); 6
+      ScriptTrigger trailing entity fields; MapLaunchpad.txt:126
+      ResearchItem "Darwinian 4"; Game.txt:26 + GameUnlockAll.txt:26
+      "Research Darwinian"; Stats.txt:26 (POSITIONAL parse — name never
+      string-matched, cosmetic); Sounds.txt: "ENTITY Darwinian" :495, 3
+      SAMPLEGROUPs darwinian{die,losehealth,create} — CAUTION: those
+      groups are SHARED, referenced from ENTITY LaserTroop and ENTITY
+      Officer too — plus 13 SAMPLE names.
+
+      LANGUAGE FILES: 12 distinct darwini keys; 8 entity-derived (rename):
+      entityname_darwinian, researchname_darwinian, research_darwinian,
+      _v3, _v4 (+2 commented), newcontrols_research_darwinian,
+      spawnname_spawndarwinians. 4 BRANDING keys (keep):
+      dialog_leavedarwinia, dialog_buydarwinia, about_darwinia,
+      darwinia_vistaedition. ~1087 prose-value lines use LOCALISED
+      derivations (Darwinianer/Darwiniens/Darwiniani/darwinianos) — T3
+      needs an owner decision on translated forms of "Citizen" per
+      language, or an explicit choice to rename keys+English only.
+
+      EXCLUSIONS CONFIRMED, one stale: title text ("DARWINIA" x4 in
+      GameMenu/Renderer), Win32 class "Darwinia" (WindowManager.cpp:183),
+      game-name strings in MainMenus/BuyNowWindow/ReallyQuitWindow/
+      UpdateAvailableWindow/SoundLibrary3dDSound/Script.cpp URLs, the
+      branding language keys, Textures/ProgramDarwinia.bmp (unreferenced).
+      The save-path half of CODING_STANDARDS' frozen table
+      ("~/.darwinia", "Application Support/Darwinia") NO LONGER EXISTS —
+      App::GetProfileDirectory now returns "" — so the doc's count of 30
+      overstates; correct that table when T3 lands. Docs to update with T3:
+      CODING_STANDARDS.md (rename section + worked example), GLOSSARY.md
+      (Darwinian row + frozen-names note), AGENTS.md:247 (smoke-test row
+      "50 Darwinians"), ARCHITECTURE.md:225, containers-replaced.yaml T9
+      files list (GameLogic/Darwinian.cpp). LICENSE derivation notice: do
+      not touch. Binary wav INFO chunks carrying old filenames: harmless,
+      leave.
 
   - id: T3
     title: Execute the rename in one operation

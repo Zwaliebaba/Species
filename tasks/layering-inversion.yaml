@@ -67,7 +67,113 @@ tasks:
     verify:
       - python3 tools/check_layering.py
     parallel_safe: true
-    status: in_progress
+    status: done
+    notes: >
+      Catalogue complete (2026-08-02, at 4840da3). Per header — refs from
+      below, classification, surprises:
+
+      App.h (89 GL / 22 NC): g_app-> members from GL: m_location 962,
+      m_camera 214, m_resource 190, m_soundSystem 179, m_renderer 148,
+      m_profiler 139, m_globalWorld 111, m_locationEditor 52, tail ~140;
+      from NC: m_profiler 80, m_camera 25, m_soundSystem 23, m_resource
+      16, m_location 12, tail ~15 — zero App METHODS called from NC.
+      ~641 refs are library-owned singletons parked on App (m_resource,
+      m_soundSystem, m_profiler, m_langTable, m_clientToServer) — those
+      can become layer-owned globals (the T7-of-neuroncore treatment)
+      WITHOUT waiting for the world moves; the sim members follow
+      Location down. Fix: interface-extraction in two independent halves.
+      Hidden coupling: NeuronClient/LanguageTable.h and ClientToServer.cpp
+      use g_app via transitive include — invisible to the allowlist.
+
+      Location.h (69/3): m_landscape 254, GetBuilding 144, m_buildings 96,
+      m_spirits 80, m_teams 62, GetEntity 61, m_entityGrid 57, m_levelFile
+      53, tail ~120. Nothing below constructs/advances/renders it. Fix:
+      move-down-to-GameLogic. BLOCKER: Location.h includes Species'
+      Globals.h and Landscape.h — Landscape must move (or split) in the
+      same step; Landscape is mixed (m_heightMap 173 + RayHit/world-size
+      from GL are sim; m_renderer/BuildOpenGlState are presentation).
+      Location.h already includes four GameLogic headers, so it is
+      downward-coupled today. Location.cpp carries 19 upward includes that
+      survive as renamed entries.
+
+      Renderer.h (57/4): entity render code uses exactly
+      {Set,Unset}ObjectLighting 40, MarkUsedCells 12, GetNear/FarPlane 15,
+      RasteriseSphere 1; windows use ScreenW/H 65. 14 GL includes are
+      stale. Header has zero includes, only NC/Core forward decls — both
+      interface-extraction and move-down-to-NeuronClient are viable; the
+      six-method render face + screen-size accessor covers everything.
+
+      Camera.h (50/6): entity render uses GetUp 58, GetRight 56, GetPos
+      36, frustum tests 20, GetFront 6, SetupProjectionMatrix 10,
+      CreateCameraShake 3; GetClickRay 11 is editor windows only; mode/anim
+      setters confined to 6 files. 8 GL includes stale. Fix:
+      interface-extraction ONLY — Camera.h includes GameLogic's Entity.h
+      and WorldObject.h (m_trackingEntity, m_objectId), so a move to
+      NeuronClient would invert the violation.
+
+      Main.h (45/2): g_gameTime 117, g_advanceTime 9,
+      g_lastProcessedSequenceId 2; g_predictionTime/g_lastServerAdvance/
+      g_targetFrameRate/g_sliceNum UNUSED from below; 10 includes stale.
+      Fix: trivial — relocate the clock, leave AppMain.
+
+      Team.h (40): m_others 25, m_colour 26, m_units 8, NewUnit 7, tail
+      ~25; 7 stale. Clean move-down (header already includes GameLogic's
+      WorldObject.h/Entity.h). Team.cpp carries 11 upward includes.
+
+      GlobalWorld.h (37): GetBuilding 31, m_research 25 (CurrentLevel 16),
+      m_buildings 14, EvaluateEvents 13, tail ~30; 4 stale. Clean
+      move-down; header's SphereRenderer.h include is legal from GameLogic.
+
+      EntityGrid.h (32): GetEnemies 12, GetBestEnemy 10, GetNeighbours 9,
+      Add/RemoveObject 11, tail; 6 stale. Move-down; its only upward need
+      is Globals.h for NUM_TEAMS, which actually lives in
+      NeuronCore/ProtocolLimits.h — repoint and it needs nothing.
+
+      ParticleSystem.h (31): CreateParticle 47 + 48 Particle::Type enum
+      refs, nothing else; 11 stale. Move-down (GameLogic per plan; header
+      includes only Core/Client).
+
+      Globals.h (21): 18 of 21 includers only want
+      SERVER_ADVANCE_PERIOD/NUM_TEAMS = ProtocolLimits.h; GRAVITY used
+      once (Tripod.cpp). Fix: trivial repoint + move GRAVITY down.
+
+      Explosion.h (21): entire surface is g_explosionManager.AddExplosion
+      27; 2 stale. Clean move-down.
+
+      Unit.h (19): subclassed by AirstrikeUnit/ViriiUnit/InsertionSquad —
+      full class needed; 2 stale. Clean move-down.
+
+      LevelFile.h (18): m_landscape 18, m_cameraMounts 10, m_instantUnits
+      7, tail; 5 stale. Move-down; SAME Landscape.h blocker as Location.
+
+      ObstructionGrid.h (11): GetBuildings 11, CalculateAll 5. Clean move.
+      LocationEditor.h (11): all consumers are GameLogic editor windows;
+      body is #ifdef LOCATION_EDITOR (usage measurements understate).
+      Move-down. UserInput.h (10): 8 of 10 includes STALE; residual want
+      is one accessor (GetMousePos3d, 2 files). TaskManager.h (8): GetTask
+      4, m_tasks 3, tail; move-down (Task is simulation). Script.h (4):
+      RunScript/Skip/IsRunningScript only; 3-method face or trivial move.
+      RoutingSystem.h (4): cleanest move in the set. Water.h (2): two
+      prefs handlers do delete/new on m_water — replace with
+      Location::RebuildWater(). TaskManagerInterface.h (2/1): below wants
+      only SetCurrentMessage + m_visible; split the abstract base off
+      Transform.h. GameCursor.h (2): BOTH includes stale — free removal.
+      TaskManagerInterfaceIcons.h (1): one construction site in
+      PrefsKeybindingsWindow — give Species a Recreate hook.
+
+      NeuronClient -> GameLogic (4): SoundInstance/SoundSystem want
+      WorldObjectId + the entity-type-name table; TargetCursor.cpp wants
+      ControlHelpSystem::CondCameraAim; SoundSystem.cpp also reaches
+      SaveOnQuitWindow.h. Moving WorldObjectId + a type-name table down to
+      NeuronCore clears most of it.
+
+      STALE INCLUDES TOTAL: ~60 upward includes are dead (Renderer 14+,
+      Main 10, UserInput 8, ParticleSystem 11, EntityGrid 6, Team 7,
+      Camera 8, GameCursor 2, others) — removing them is free allowlist
+      shrinkage with zero behaviour risk; added as T13.
+
+      LinkStubs.cpp stubs exactly ONE symbol: App* g_app = nullptr. The
+      whole link wall is the App singleton.
 
   - id: T2
     title: Move the frame-clock globals down out of Main.h and Globals.h
@@ -250,6 +356,17 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
+    notes: >
+      T1 finding that reshapes this task: Location.h and LevelFile.h both
+      include Species/Landscape.h, so Landscape moves (or splits) in the
+      same step or the 87 entries just get renamed instead of removed.
+      Landscape is mixed — m_heightMap/RayHit/world-size queries are what
+      GameLogic reaches (simulation), while m_renderer/BuildOpenGlState
+      are presentation; expect to move the class and leave
+      LandscapeRenderer above, mirroring how Location itself keeps its
+      Render half working via GameLogic's legal downward reach into
+      NeuronClient. Add Species/Landscape.h and Species/Landscape.cpp to
+      the touch set when starting.
     status: todo
 
   - id: T8
@@ -314,6 +431,16 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
+    notes: >
+      T1 settled the open choice: Camera is interface-extraction ONLY —
+      Camera.h includes GameLogic's Entity.h and WorldObject.h for its
+      tracking members, so moving it down would invert the violation. The
+      face entity render code needs is small: GetPos/GetFront/GetUp/
+      GetRight/GetVel, the two frustum tests, SetupProjectionMatrix,
+      CreateCameraShake. Renderer.h has zero includes, so either approach
+      works; its render face is six methods plus ScreenW/H. GetClickRay
+      and the mode/animation setters are editor/window-only and can stay
+      behind Species.
     status: todo
 
   - id: T10
@@ -372,6 +499,42 @@ tasks:
     parallel_safe: true
     status: todo
 
+  - id: T13
+    title: Delete the stale upward includes
+    intent: >
+      T1 found ~60 upward includes that are simply dead: Renderer.h 14,
+      Main.h 10, UserInput.h 8 (of 10!), ParticleSystem.h 11, Camera.h 8,
+      Team.h 7, EntityGrid.h 6, GameCursor.h both, and more. Deleting a
+      dead include removes an allowlist entry with zero behaviour risk —
+      the cheapest shrinkage in the whole plan, and it cleans the ground
+      the move tasks walk on. Re-derive the exact list from T1's notes
+      (grep each file for actual use before deleting; the
+      LOCATION_EDITOR ifdef understates LocationEditor.h usage).
+    project: GameLogic
+    depends_on: [T1]
+    files:
+      - tools/layering_allowlist.txt
+      - NeuronClient/Input.cpp
+      - NeuronClient/SoundLibrary2d.cpp
+      - NeuronClient/MouseCursor.cpp
+      - NeuronClient/SepulvedaStrings.cpp
+      - NeuronClient/InputTypes.cpp
+      - NeuronClient/SoundLibrary3dSoftware.cpp
+    acceptance:
+      - Every include deleted is proven unused by grep before deletion
+      - The allowlist shrinks by the number of deletions and check_layering.py passes
+      - No other change rides along — the diff is include-line deletions only
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    notes: >
+      parallel_safe false not for correctness but for merge hygiene — it
+      touches dozens of files other tasks also list. Run it between move
+      tasks, not during one.
+    status: todo
+
   - id: T12
     title: Empty the layering allowlist and make the check strict
     intent: >
@@ -380,7 +543,7 @@ tasks:
       outright. If a residue survives T10, this task does not paper over it
       — the residue becomes new tasks appended to this plan, and this one
       stays open until the file is genuinely empty.
-    depends_on: [T9, T10, T11]
+    depends_on: [T9, T10, T11, T13]
     files:
       - tools/layering_allowlist.txt
       - AGENTS.md
