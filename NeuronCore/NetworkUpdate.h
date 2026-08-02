@@ -12,6 +12,7 @@
 #define _included_networkupdate_h
 
 #include "TeamControls.h"
+#include "Vector3.h"
 
 #define NETWORKUPDATE_BYTESTREAMSIZE        42
 
