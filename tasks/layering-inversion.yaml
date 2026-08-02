@@ -414,6 +414,48 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
     notes: >
+      FIRST HALF LANDED 2026-08-02 (abbd898), CI green: the five
+      library-owned singletons — Resource, SoundSystem, Profiler,
+      LangTable, ClientToServer — now have globals declared in their own
+      layer's header and assigned by App beside its own members. 641 call
+      sites swept, 12 files dropped App.h, allowlist 474 -> 462. That
+      half was safe to alias because App assigns each exactly once, at
+      startup.
+
+      SECOND HALF NEEDS A DIFFERENT DESIGN, and this is the finding that
+      matters. The world members are NOT assigned once by App: Main.cpp
+      reassigns m_location three times (nullptr on unload, new Location()
+      on load) and m_locationEditor twice; GameLogic itself reassigns
+      m_renderer in MainMenus.cpp:263 and PrefsScreenWindow.cpp:131,141,
+      and m_taskManagerInterface in PrefsKeybindingsWindow.cpp:113. A
+      global that merely ALIASES the member would go stale at any
+      assignment site that forgot to mirror it, and the symptom would be
+      code holding a renderer App no longer owns — silent, and not
+      something the type system or a test would catch.
+
+      So the second half must MOVE the storage rather than alias it: the
+      global becomes the only variable, App's member is deleted, and
+      every assignment site writes the global. That makes the sweep
+      tree-wide (Species included, since Species holds most of the
+      assignments) rather than lower-layers-only. Remaining reach counts
+      to convert: m_location 974, m_camera 239, m_renderer 149,
+      m_globalWorld 111, m_locationEditor 52, m_particleSystem 47,
+      m_taskManager 11, m_script 9, m_taskManagerInterface 6, m_server 3,
+      m_userInput 2.
+
+      The declarations belong in a NeuronClient header, not GameLogic:
+      NeuronClient reaches m_camera 25 times and m_location 12, and
+      NeuronClient cannot include a GameLogic header. Forward
+      declarations (class Location; class Camera;) are enough to declare
+      the pointers; only files that dereference them need the Species
+      headers they already include on existing entries.
+
+      App's scalar state — m_editing 41, m_locationId 38,
+      m_difficultyLevel 10, m_requestQuit 10, m_largeMenus 7, and the
+      rest — is a separate problem again: those are mutable application
+      state rather than subsystem handles, so they want accessors on a
+      small interface, not globals. Splitting them out is a third slice.
+
       Runs BEFORE the file moves, not after — see the plan summary's
       ordering correction. It does not need Location to have moved:
       declare the world pointers in a GameLogic header behind forward
