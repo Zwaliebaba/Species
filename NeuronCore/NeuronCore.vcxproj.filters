@@ -17,20 +17,12 @@
   <ItemGroup>
     <ClCompile Include="Random.cpp" />
     <ClCompile Include="HiResTime.cpp" />
+    <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="Profiler.cpp" />
-    <ClCompile Include="ClientToServer.cpp">
-      <Filter>Network</Filter>
-    </ClCompile>
     <ClCompile Include="Generic.cpp">
       <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="NetworkUpdate.cpp">
-      <Filter>Network</Filter>
-    </ClCompile>
-    <ClCompile Include="Server.cpp">
-      <Filter>Network</Filter>
-    </ClCompile>
-    <ClCompile Include="ServerToClient.cpp">
       <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="ServerToClientLetter.cpp">
@@ -83,11 +75,9 @@
     <ClInclude Include="2dArray.h" />
     <ClInclude Include="AutoVector.h" />
     <ClInclude Include="HiResTime.h" />
+    <ClInclude Include="Preferences.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="ByteStream.h">
-      <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="ClientToServer.h">
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="Generic.h">
@@ -97,12 +87,6 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="NetworkUpdate.inc">
-      <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="Server.h">
-      <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="ServerToClient.h">
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="ServerToClientLetter.h">

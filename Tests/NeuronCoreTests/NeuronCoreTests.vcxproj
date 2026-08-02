@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="ByteStreamTests.cpp" />
     <ClCompile Include="GenericTests.cpp" />
+    <ClCompile Include="NetworkUpdateTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

@@ -37,6 +37,7 @@
 #include "Script.h"
 #include "Server.h"
 #include "ServerToClientLetter.h"
+#include "ServerUpdates.h"
 #include "SoundLibrary2d.h"
 #include "SoundLibrary3dDSound.h"
 #include "SoundSystem.h"
@@ -64,7 +65,8 @@ static void Finalise();
 //  Global Variables
 // ******************
 
-double g_startTime = DBL_MAX;
+// g_startTime moved to ClientToServer::m_startTime — it was derived entirely from
+// arriving letters, and this was the only translation unit that read it.
 double g_gameTime = 0.0;
 float g_advanceTime;
 double g_lastServerAdvance;
@@ -527,7 +529,7 @@ void LocationGameLoop()
         if (g_sliceNum == -1)
         {
           // Read latest update from Server
-          ServerToClientLetter* letter = g_app->m_clientToServer->GetNextLetter();
+          ServerToClientLetter* letter = g_app->m_clientToServer->GetNextLetter(g_lastProcessedSequenceId);
 
           if (letter)
           {
@@ -538,11 +540,11 @@ void LocationGameLoop()
             //g_app->m_clientToServer->m_lastKnownSequenceIdFromServer = letter->GetSequenceId();
             bool handled = ProcessServerLetters(letter);
             if (handled == false)
-              g_app->m_clientToServer->ProcessServerUpdates(letter);
+              ProcessServerUpdates(letter);
 
             g_sliceNum = 0;
             heavyWeightAdvanceStartTime = timeNow;
-            g_lastServerAdvance = static_cast<float>(letter->GetSequenceId()) * SERVER_ADVANCE_PERIOD + g_startTime;
+            g_lastServerAdvance = static_cast<float>(letter->GetSequenceId()) * SERVER_ADVANCE_PERIOD + g_app->m_clientToServer->m_startTime;
             g_lastProcessedSequenceId = letter->GetSequenceId();
             delete letter;
 
@@ -614,6 +616,9 @@ void LocationGameLoop()
     g_app->m_globalWorld->TransferSpirits(g_app->m_locationId);
 
   g_app->m_clientToServer->ClientLeave();
+  // ClientLeave used to reset this itself, reaching down from the endpoint into
+  // the game loop's own counter. It resets its own; this one is ours.
+  g_lastProcessedSequenceId = -1;
   g_app->m_location->Empty();
   g_app->m_particleSystem->Empty();
 

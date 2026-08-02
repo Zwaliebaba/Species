@@ -23,6 +23,10 @@
 #include "Main.h"
 #include "ParticleSystem.h"
 #include "Renderer.h"
+// Reads m_server->m_sequenceId for the latency readout. App.h only forward
+// declares Server, and the complete type used to arrive through Location.h,
+// which included Server.h without ever naming it.
+#include "Server.h"
 #include "TaskManager.h"
 #include "TaskManagerInterface.h"
 #include "Team.h"

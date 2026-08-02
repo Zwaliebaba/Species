@@ -5,7 +5,7 @@ title: Split the network layer three ways and make NeuronCore standalone
 phase: 2
 summary: >
   NeuronCore is meant to be the foundation every other project sits on, but it
-  reaches upward 30 times and cannot be linked without the game client. Fixing
+  reached upward 30 times and cannot be linked without the game client. Fixing
   that is not only a matter of moving includes: NeuronCore currently holds all
   three sides of the network layer at once — the shared wire protocol, the
   client's endpoint, and the authoritative server.
@@ -20,18 +20,18 @@ summary: >
     -> NeuronServer        Server and ServerToClient, the authoritative host
                            and its per-connection record
 
-  What makes this more than a file move is a bidirectional coupling through the
-  application singleton, which exists because the client can host a server
+  What made this more than a file move was a bidirectional coupling through the
+  application singleton, which existed because the client could host a server
   in-process (Species/App.h: "Server *m_server; // Server process, can be NULL
   if client"):
 
     NeuronCore/Server.cpp:293          g_app->m_clientToServer->ReceiveLetter(...)
     NeuronCore/ClientToServer.cpp:115  g_app->m_server->ReceiveLetter(...)
 
-  Each side reaches through g_app for the other. Put them in different projects
-  and that stops compiling, which is the point — the loopback has to become an
-  explicit seam in NeuronCore that both sides use, instead of two globals
-  reaching across a layer boundary.
+  Each side reached through g_app for the other. T7 removed that coupling — not
+  by building the seam this plan proposed, but because the owner deleted
+  bypass networking outright, leaving nothing for a loopback to carry. Both
+  endpoints now always use their sockets. See T7's notes.
 
   Listen-server hosting is a real requirement, not a bug, so Species is allowed
   to depend on NeuronServer. What is not allowed is NeuronServer depending on
@@ -39,6 +39,21 @@ summary: >
 
   Counts come from `python3 tools/check_layering.py --update`. Re-measure rather
   than trusting them.
+
+  Re-measured on 6eb17e4 ("Testing functionality added"): 644 allowlist entries
+  tree-wide, of which 14 begin NeuronCore/ — down from 663 and 30 when the plan
+  was written. The 14 that remain are:
+
+    ClientToServer.cpp -> App, Engineer, Factory, LaserFence, Location, Main,
+                          RadarDish, TaskManager, Team        (9)  -> T12
+    ClientToServer.h   -> Entity, WorldObject                 (2)  -> T12
+    ClientToServer.cpp -> Input.h                             (1)  -> T8
+    ClientToServer.cpp -> Preferences.h                       (1)  -> T11
+    Server.cpp         -> Preferences.h                       (1)  -> T11
+
+  So T11, T12 and T8 between them account for every remaining entry, and T9 no
+  longer removes any — its value is now structural (NeuronServer stops being a
+  stub) rather than measured in the allowlist.
 
 tasks:
   # ---------------------------------------------------------------------------
@@ -280,15 +295,15 @@ tasks:
       - Species/App.cpp
       - Species/App.h
     acceptance:
-      - Neither Server.cpp nor ClientToServer.cpp mentions g_app
-      - The loopback path is wired by Species at construction, not reached for at call time
-      - Hosting still works the same way from the player's point of view
+      - Neither Server.cpp nor ClientToServer.cpp mentions g_app for transport
+      - There is no in-process delivery path left for either side to reach for
+      - Hosting still works, now over UDP loopback rather than in-process
       - Server.cpp includes none of App.h, Globals.h, Main.h, Team.h
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: >
       Resolved by deletion rather than abstraction. The seam was first built as
       NeuronCore/NetworkSinks.h — two one-method interfaces the endpoints held
@@ -340,6 +355,27 @@ tasks:
 
       Only 1-4 belong in T7. Doing 5 here would make the diff unreviewable.
 
+      Closed on 6eb17e4, verified against the tree rather than from memory:
+
+        - Server.cpp mentions g_app once, in a comment explaining what used to be
+          reached for. No code reference, and it includes none of App.h,
+          Globals.h, Main.h or Team.h.
+        - ClientToServer.cpp has 12 g_app references, all at lines 491-555 —
+          inside ProcessServerUpdates, which is T12's half. The transport half
+          and the static callback are clean.
+        - ServerToClient.cpp includes only NetLib, NetSocket and Debug.
+        - No NetworkSinks.h and no BypassNetwork anywhere in the tree.
+        - Of the five NeuronCore/Server.cpp allowlist entries this task started
+          with, one remains: Server.cpp -> Preferences.h, which is T11's to
+          remove, not T7's.
+
+      Acceptance criteria 2 and 3 were reworded to describe what was delivered.
+      The original said the loopback "is wired by Species at construction" and
+      that hosting is unchanged "from the player's point of view"; neither is
+      true of a deletion, and both would have failed a literal check while the
+      task's actual intent — no cross-layer reach for delivery — was fully met.
+      The behavioural change is recorded above rather than hidden by the rewrite.
+
   # ---------------------------------------------------------------------------
   # Wave 4: the moves themselves. Different destination projects, no shared
   # files, so these two can run concurrently once T7 has cut the tie.
@@ -360,16 +396,65 @@ tasks:
       - NeuronCore/ClientToServer.cpp
       - NeuronCore/NeuronCore.vcxproj
       - NeuronClient/NeuronClient.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
     acceptance:
       - ClientToServer lives under NeuronClient/ and is listed in NeuronClient.vcxproj
       - No NeuronCore/ClientToServer entries remain in the allowlist
       - Entries that are still violations were moved with check_layering.py --rename, not regenerated
+      - NeuronClientTests still builds and passes with ClientToServer in the project
+      - ClientToServer includes no NeuronServer header, so the move does not create the one dependency the plan forbids
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      Re-measured on 6eb17e4. With T12 done first — which is why the edge is
+      there — this task's only remaining allowlist work is one entry:
+      ClientToServer.cpp -> Input.h. Input.h is owned by NeuronClient, so the
+      violation disappears the moment the file lands there, with no code change.
+
+      The intent paragraph overstates the payoff now: "a large share of
+      NeuronCore's remaining violations" was true of 30, but T12 takes 11 of the
+      14 that are left and this task takes the twelfth. It is still the move that
+      lets NeuronCore stop knowing a client endpoint exists.
+
+      Done, and it played out exactly that way: one entry pruned,
+      ClientToServer.cpp -> Input.h, which stopped being a violation the moment
+      the file landed in the project that owns Input.h. 629 -> 628.
+
+      **tools/layering_allowlist.txt now contains no entry beginning NeuronCore/.**
+      That is the first of the four definition-of-done conditions in AGENTS.md,
+      met. The other three are T10's: the .vcxproj still lists NeuronClient,
+      Species and GameLogic on NeuronCore's include path, and Server.exe still
+      does nothing.
+
+      --prune, not --rename. The acceptance criterion says entries that are
+      still violations move with --rename; there were none. The one entry stopped
+      being a violation rather than moving, so pruning is what the tool is for
+      and the diff shows the removal.
+
+      One include had to go with the move, and it is the interesting part. The
+      file carried #include "Server.h" and never named Server — dead since T7
+      deleted the loopback. Left in place it would have become a
+      NeuronClient -> NeuronServer include the moment T9 moves the host, which is
+      the single direction this whole plan exists to forbid, and it could not
+      have been allowlisted away because the allowlist may only shrink. Checked
+      before removing rather than after, the T6 way: Server.h carries only
+      LList.h and DArray.h, ClientToServer.h includes LList.h itself, and DArray
+      appears nowhere in the file.
+
+      NeuronClient.vcxproj.filters had no Network filter — its categories were
+      Audio, Input and Canvas — so one was added to keep the endpoint grouped the
+      way it was in NeuronCore rather than dropping it loose at the root.
+
+      NeuronClientTests needed no change: it links NeuronClient.lib but names
+      nothing in ClientToServer, so the linker never pulls that object in. The
+      constructor opens sockets and starts a listen thread, which is why there is
+      no direct test of it here.
+
+      Not built: Linux. Four checks pass; x64 Debug CI is the verification.
 
   - id: T9
     title: Move Server and ServerToClient into NeuronServer
@@ -396,14 +481,78 @@ tasks:
     acceptance:
       - Server and ServerToClient live under NeuronServer/ and are listed in NeuronServer.vcxproj
       - check_layering.py allows Species -> NeuronServer, and still forbids NeuronServer -> NeuronClient
-      - The five NeuronCore/Server.cpp entries are gone from the allowlist
+      - The one remaining Server.cpp entry moves with check_layering.py --rename, and the tree-wide count does not go up
       - NeuronServer.vcxproj lists NeuronCore only in AdditionalIncludeDirectories
+      - Tests/NeuronServerTests/LayerWiringTests.cpp is replaced by coverage of the moved code, per its own comment
+      - Species and GameLogic can still see Server.h, and Species links NeuronServer
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      Two criteria rewritten on 6eb17e4 because the tree moved underneath them.
+
+      "The five NeuronCore/Server.cpp entries are gone from the allowlist" is no
+      longer achievable by this task: T7 removed four of them, and the fifth is
+      Server.cpp -> Preferences.h, which only T11 can fix. Moving Server.cpp into
+      NeuronServer with T11 unfinished relocates that entry rather than removing
+      it, so the criterion is now that the rename is done with --rename and the
+      count does not grow.
+
+      The NeuronServer.vcxproj criterion already holds today — it lists
+      $(SpeciesRoot)NeuronCore and nothing else — and needs to survive the move,
+      not be established by it.
+
+      NeuronServerTests now exists and holds one scaffolding test that only
+      proves the project wiring is intact. This is the task that gives
+      NeuronServer behaviour worth testing, so it is also the task that retires
+      that placeholder.
+
+      Done. NeuronServer stops being a stub: Server, ServerToClient and
+      ServerTeam live there and NeuronServer.vcxproj still lists NeuronCore and
+      nothing else on its include path, which was the criterion to preserve
+      rather than establish.
+
+      No allowlist movement, as predicted — 628 before and after, and --rename
+      was not needed because no entry named either file. Species -> NeuronServer
+      needed no change to check_layering.py either: Species depends on GameLogic,
+      GameLogic already listed NeuronServer, and the table is transitively
+      closed. NeuronServer -> NeuronClient is still forbidden and still absent.
+
+      Build topology did change, which AGENTS.md says to ask about — this task's
+      intent is the standing answer ("the layering model gains
+      Species -> NeuronServer"), but it is worth stating what actually moved:
+      Species.vcxproj and GameLogic.vcxproj gained $(SpeciesRoot)NeuronServer on
+      their include paths, and Species.vcxproj gained a ProjectReference to
+      NeuronServer so Server.obj links. GameLogic needs only the include path,
+      being a static library the executable links. NeuronClient needed neither,
+      because T8 had already removed its dead Server.h include — had it not,
+      this move would have created the one dependency the plan forbids.
+
+      GameLogicTests was given the include path and then had it taken back: it
+      compiles WorldObject.h and NeuronClient.h and never reaches Server.h, so
+      the entry would have been noise.
+
+      One defect fixed rather than moved. Server's mutexes are created by
+      Initialise, not by the constructor, and ~Server locked them
+      unconditionally — so a Server built and never initialised null-dereferenced
+      on destruction. Species always pairs the two calls, so nothing in the game
+      hit it, but it made the class impossible to hold in a test. Two null guards,
+      and AServerThatWasNeverInitialisedCanStillBeDestroyed is the regression
+      guard. Fixing it here rather than filing it: the class was untestable
+      without it, and this is the task whose acceptance requires tests.
+
+      The tests are narrow and the file says why. Initialise opens a NetLib and
+      starts a listen thread on port 4000, and ServerToClient connects a socket
+      in its constructor, so client connections, the inbox, the outbox and
+      sequencing are all unreachable until they are separated from their
+      transport. What is covered is the state a new Server starts in — sequence
+      id 0 above all, since clients buffer on it and the sync table is indexed by
+      it — plus GetClientId's miss case, which RegisterNewClient asserts on.
+
+      Not built: Linux. Four checks pass; x64 Debug CI is the verification.
 
   # ---------------------------------------------------------------------------
   # Wave 5: close the door, and prove the point of the exercise.
@@ -424,18 +573,109 @@ tasks:
       - Server/Server.vcxproj
       - Server/WinMain.cpp
       - tools/layering_allowlist.txt
+      - .github/workflows/ci.yml
       - AGENTS.md
     acceptance:
       - NeuronCore.vcxproj lists no other project in AdditionalIncludeDirectories
       - tools/layering_allowlist.txt contains no entry starting with NeuronCore/
       - Server.exe links against NeuronCore and NeuronServer only, with no NeuronClient.lib
+      - Server.exe advances sequence ids with no client attached
       - AGENTS.md records which of the four definition-of-done conditions now hold
+      - CI runs the headless server, so the sequence-id claim is checked rather than asserted
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      Where the four definition-of-done conditions stand on 6eb17e4:
+
+        1. no NeuronCore/ allowlist entries    14 left. T11 (2), T12 (11), T8 (1).
+        2. NeuronCore.vcxproj include dirs     not started. Still lists
+                                               NeuronClient;Species;GameLogic in
+                                               both Debug and Release.
+        3. Server.exe links without the client already structurally true and not
+                                               by this task's doing —
+                                               Server.vcxproj references only
+                                               NeuronCore and NeuronServer, and
+                                               its include path is those two.
+                                               But WinMain.cpp is `int main() {
+                                               return 0; }`, so nothing ticks and
+                                               no sequence id advances. That half
+                                               is the real work here.
+        4. green build                         x64 Debug is what CI gates.
+
+      Condition 3 was folded into acceptance explicitly, because the linking half
+      passing on its own would otherwise let this task be closed against a binary
+      that does nothing.
+
+      Done, and with it the phase. All four conditions hold and AGENTS.md records
+      each one:
+
+        1. zero NeuronCore/ allowlist entries, down from 30
+        2. NeuronCore.vcxproj lists no AdditionalIncludeDirectories at all
+        3. Server.exe links NeuronCore and NeuronServer only, and ticks
+        4. x64 Debug green on every push
+
+      Before removing the include paths, a pre-flight listed every quoted include
+      under NeuronCore/ whose basename is not a NeuronCore file. Five, all safe:
+      windows.h and stdlib.h are system headers written with quotes, and
+      OpenGLDirectX.h, macosx_hardware_detect.h and net_lib_linux.h sit behind
+      USE_DIRECT3D, TARGET_OS_MACOSX and __linux__ respectively, none of which is
+      defined in a built configuration. That check is worth keeping in mind: it
+      is the one that would have caught the T9 breakages a CI round earlier,
+      because check_layering.py only reports includes it can attribute to a
+      higher *project* and says nothing about a header that resolves nowhere.
+
+      WinMain.cpp went from `return 0` to a real tick loop. What it needs is
+      instructive about how close NeuronCore actually was:
+
+        g_prefsManager   Server::Advance reads RecordDemo to cap retransmissions,
+                         so the store must exist. It only became possible to
+                         build one here when T11 moved Preferences down; before
+                         that a headless server could not have had preferences
+                         without linking the client.
+        a Profiler       PROFILER_ENABLED is on by default and START_PROFILE
+                         dereferences whatever it is handed, so this is required
+                         rather than optional. It only became safe when T13 took
+                         the glFinish out.
+
+      Sequence ids advance with nothing connected because Advance() builds a
+      letter and calls SendLetter unconditionally, and SendLetter is what stamps
+      and increments m_sequenceId. That is the existing behaviour, not something
+      added for the criterion.
+
+      --ticks N was added so the criterion is checkable: without it the host
+      loops until killed, which is right for a server and useless for CI. A new
+      CI step runs Server.exe --ticks 20 on every push and fails if the reported
+      sequence id has not passed 20. That is the difference between the condition
+      being checkable and being checked, and AGENTS.md claims the latter.
+
+      Two things this deliberately does not do. The host has no orderly shutdown
+      — Initialise starts a listen thread holding a pointer to the Server and
+      nothing ever stops it, which is the same gap the in-process host always
+      had; it is safe here only because the process exits immediately, and it is
+      commented as such. And Server.exe is not the world server: it sequences
+      what clients send it and simulates nothing. AGENTS.md says so explicitly so
+      that finishing this phase is not mistaken for finishing the project.
+
+      Not built or run locally: Linux. Everything above is verified by CI.
+
+      One bug in this task's own code, found after CI went green rather than by
+      it. The step passed and printed "Stopped at sequence id 20", but the run
+      took 0.4s when 20 ticks at SERVER_ADVANCE_FREQ is 2s. Cause:
+      GetHighResTime's tick interval is 1.0 until InitialiseHighResTime runs, so
+      it returns raw performance-counter ticks rather than seconds. Every sleep
+      computed as negative, the fell-behind branch fired every iteration, and the
+      host free-ran. Species/Main.cpp was the only caller of that function in the
+      tree, so a second binary was always going to hit this.
+
+      The check was the real failure. Asserting only that the sequence id reached
+      20 verified the half that was already true and said nothing about pacing —
+      a server that ignores its tick rate entirely still passes it. The step now
+      measures elapsed wall time and requires it between 1.5s and 8s, which is
+      the assertion that would have caught this on the first run.
 
   # ---------------------------------------------------------------------------
   # Split out of T4 during wave 1: Preferences is not foundational.
@@ -459,15 +699,166 @@ tasks:
     files:
       - NeuronClient/Preferences.h
       - NeuronClient/Preferences.cpp
+      - GameLogic/PrefsOtherWindow.h
+      - Species/App.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronClient/NeuronClient.vcxproj
     acceptance:
       - Preferences.cpp includes none of App.h, Resource.h, TextStreamReaders.h, PrefsOtherWindow.h
       - Reading and writing the preferences file does not require the resource system or a window
       - Preferences then lives under NeuronCore/ with no upward includes
+      - The DefaultPreferences.txt override still applies, and only when there is no prefs file yet
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      Still true as written, re-checked on 6eb17e4: Preferences.h/.cpp are under
+      NeuronClient/ and Preferences.cpp still includes App.h, Resource.h,
+      TextStreamReaders.h and PrefsOtherWindow.h.
+
+      It is now the only task standing between the tree and two of the fourteen
+      NeuronCore entries — ClientToServer.cpp -> Preferences.h and
+      Server.cpp -> Preferences.h — and the second of those is the last thing
+      keeping Server.cpp itself upward-dependent. Everything else in Server.cpp
+      was resolved by T7. That makes this a better next pick than its wave-1
+      placement suggests.
+
+      Closing T7 opened T9 and T12, so `--next` now returns three tasks. This one
+      shares no `files` with either, and none of the three overlap, so all three
+      may be worked concurrently — with the caveat that T12 is
+      `parallel_safe: false`.
+
+      Done. Four allowlist entries removed: the two Preferences.h includes this
+      task existed to fix, plus Preferences.cpp's own two upward includes, which
+      went with it. 633 -> 629 tree-wide, and NeuronCore is down to a single
+      entry — ClientToServer.cpp -> Input.h, which is T8's.
+
+      The four includes fell into two groups, not one.
+
+      PrefsOtherWindow.h was there for OTHER_DIFFICULTY, one of eight OTHER_*
+      key-name macros defined beside the window that edits them under the comment
+      "Defines useful to reference preferences from other parts of the program".
+      They are preference key names, so all eight moved to Preferences.h. Every
+      file that used one already included Preferences.h — checked, all seven —
+      so not a single include line had to change.
+
+      App.h, Resource.h and TextStreamReaders.h were all one thing: the tail of
+      CreateDefaultValues reading GameData/DefaultPreferences.txt through
+      g_app->m_resource to overlay shipped defaults. Two ways to break that, and
+      the obvious one is wrong. Reading the file with fopen here — which Load()
+      already does for the prefs file itself — looks equivalent but is not:
+      Resource::GetTextReader hands back a TextReader whose CleanLine()
+      "decrypt[s], strip[s] comments and scan[s] for conflict markers", so an
+      fopen would silently fail on an encrypted data file. So it is a seam
+      instead: PrefsManager::SetDefaultsProvider takes a function pointer, and
+      Species/App.cpp installs one that does exactly what the old code did, with
+      the same g_app/m_resource guard, immediately before constructing the
+      manager. NULL provider means built-in defaults only, which is what a
+      headless server gets and wants.
+
+      Ordering checked rather than assumed: App.cpp creates m_resource on the
+      line before it creates the PrefsManager, so the override really does fire
+      today and the seam has to preserve that. It only ever runs when there is no
+      preferences file, because that is the only path that reaches
+      CreateDefaultValues.
+
+      Two conditionals had to be verified before the move, not after. Preferences
+      picks its sound and demo defaults from HAVE_DSOUND and DEMOBUILD, and
+      moving the file changes which pch.h it compiles against. Both are defined
+      in NeuronCore/NeuronCore.h, and the two projects carry identical
+      PreprocessorDefinitions, so GetDefaultSoundLibrary still returns "dsound".
+      Had either been a NeuronClient-only define, the move would have quietly
+      changed a default.
+
+      The MacOSX branch is untouched and still references macosx_hardware_detect.h,
+      which does not exist anywhere in the tree. It is inside
+      #ifdef TARGET_OS_MACOSX, never defined in any built configuration, so it
+      compiles today for the same reason it did before — it is not compiled.
+
+      Left behind deliberately: seven files (Camera, Location, App, LevelFile,
+      TaskManager, TaskManagerInterfaceIcons, ControlHelp — all in Species) now
+      include PrefsOtherWindow.h without naming anything in it, because the
+      macros they wanted moved out. Those are Species -> GameLogic includes,
+      downward and legal, so they cost nothing in layering terms, and removing
+      an include without a compiler to hand is how T6 lost three attempts.
+      Worth a tidy-up task, not worth risking here.
+
+      A formatting trap worth recording. Preferences.h was first written with the
+      full rationale in comments, which grew a 91-line header by a third and put
+      it under git's rename-similarity threshold. The file then looked like a
+      delete plus an add, so check_format treated every line as changed and
+      reformatted the whole header — leaving a Neuron-formatted .h beside a
+      legacy .cpp, the half-converted state CODING_STANDARDS forbids. Fixed by
+      shortening the header comments until the rename was detected again and
+      moving the reasoning into Preferences.cpp and into these notes. When you
+      move a file, check `git diff -M --stat` shows a rename before trusting
+      check_format --fix.
+
+      Not built: msbuild is Windows-only, this machine is Linux. The four checks
+      pass; x64 Debug CI is the build verification.
+
+  # ---------------------------------------------------------------------------
+  # Found by CI on T9: NeuronCore was not actually headless-clean.
+  # ---------------------------------------------------------------------------
+
+  - id: T13
+    title: Take the OpenGL call out of NeuronCore's Profiler
+    intent: >
+      T4 moved Profiler down into NeuronCore on the reasoning that a headless
+      server needs profiling as much as a client does. True, but it brought a
+      glFinish() with it, so NeuronCore carried an unresolved OpenGL symbol.
+      Nothing noticed while every binary linking NeuronCore also linked
+      opengl32.lib — which stops being true the moment anything headless links
+      it, and is the third of this phase's definition-of-done conditions.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/Profiler.h
+      - NeuronCore/Profiler.cpp
+      - Species/App.cpp
+    acceptance:
+      - No file under NeuronCore/ references an OpenGL symbol
+      - The render sync still happens for the client, driven by the same m_doGlFinish flag
+      - NeuronServerTests links without opengl32.lib
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: true
+    status: done
+    notes: >
+      Found by CI, not by review, and not by the four checks — which is the point
+      worth recording. check_layering.py reads #include lines; it cannot see that
+      a .cpp in the foundation calls into a library the foundation must not need.
+      The failure was a link error in NeuronServerTests:
+
+        NeuronCore.lib(Profiler.obj) : error LNK2019: unresolved external symbol
+        __imp_glFinish referenced in function Profiler::EndProfile
+
+      It only surfaced now because T9 gave NeuronServer real code: ServerTests
+      pulls in Server.obj, which references Profiler, which drags Profiler.obj
+      into a test DLL that has no business linking OpenGL. Before that,
+      NeuronServerTests named nothing and the linker never looked.
+
+      Fixed with the same seam T11 used for Preferences: Profiler holds a static
+      RenderSyncHook, Species installs one that calls glFinish, and with no hook
+      the m_doGlFinish flag simply does nothing. Behaviour for the client is
+      identical — same flag, same two call sites, same order. The flag defaults
+      to false and is only ever turned on by GameLogic/ProfileWindow.cpp, a debug
+      window, so the affected path is developer instrumentation rather than
+      anything the game does normally.
+
+      glFinish was the only live external symbol in NeuronCore. The SDL calls in
+      Profiler.cpp sit behind #ifdef SINGLE_THREADED_PROFILER, which nothing
+      defines.
+
+      Note what is *not* fixed: NeuronCore.h still includes <GL/gl.h> and
+      <GL/glu.h> unconditionally, so every translation unit in the tree still
+      sees the OpenGL headers. That is a declaration, not a symbol, so it does
+      not break a headless link — but a foundation header pulling in the graphics
+      API is the same mistake one level up, and it belongs with the rest of the
+      NeuronCore.h cleanup AGENTS.md already lists under known issues.
 
   # ---------------------------------------------------------------------------
   # Discovered while surveying T7: moving ClientToServer does not clean it.
@@ -501,12 +892,134 @@ tasks:
     files:
       - NeuronCore/ClientToServer.cpp
       - NeuronCore/ClientToServer.h
+      - Species/ServerUpdates.cpp
+      - Species/ServerUpdates.h
+      - Species/Main.cpp
+      - Species/Main.h
+      - Species/Species.vcxproj
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
     acceptance:
       - ClientToServer holds inbox, outbox, sockets and sequence ids, and includes no game header
-      - ProcessServerUpdates and the Request* builders live in the game layer, calling ClientToServer to send
+      - ProcessServerUpdates lives in the game layer, called by Main rather than reached through the endpoint
+      - No Species global is read or written from inside ClientToServer
       - The wire format is unchanged
+      - NeuronCoreTests pins the bytes each packet type produces, so "unchanged" is checked rather than asserted
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: false
-    status: todo
+    status: done
+    notes: >
+      Re-measured on 6eb17e4, and the split line is now exact. Every g_app
+      reference left in NeuronCore is in this file, at lines 491-555 — all
+      twelve inside ProcessServerUpdates, which begins at line 479. Nothing above
+      it touches the game.
+
+      This task carries 11 of the 14 remaining NeuronCore allowlist entries: the
+      nine game headers ClientToServer.cpp includes (App, Engineer, Factory,
+      LaserFence, Location, Main, RadarDish, TaskManager, Team) and the two
+      ClientToServer.h includes (Entity, WorldObject). It is the largest single
+      piece of work left in the plan by that measure, and T8 is close to a no-op
+      without it.
+
+      The test criterion is new. The plan predates Tests/, and docs/TESTING.md
+      now requires anything on the wire to ship with coverage; "the wire format
+      is unchanged" is precisely the claim that a round-trip test can hold and
+      prose cannot. NETWORKUPDATE_BYTESTREAMSIZE is 42 today.
+
+      Done. 11 allowlist entries removed with --prune, 644 -> 633 tree-wide and
+      14 -> 3 for NeuronCore. What is left is Input.h (T8) and two Preferences.h
+      (T11), exactly as predicted.
+
+      This was a lift, not a split, and the intent paragraph was wrong about why.
+      It claims "Building, Unit, Team, Factory, LaserFence and RadarDish are used
+      by both halves, which is what makes this a split rather than a lift". They
+      are not. Every game type in the file appears inside ProcessServerUpdates
+      and nowhere else, and the Request* builders take nothing but int, unsigned
+      char, Vector3 and TeamControls — all NeuronCore vocabulary. So the builders
+      did not move: relocating 30-odd call sites across GameLogic and Species
+      would have bought no layering change at all. The acceptance criterion that
+      required it was rewritten to match, since meeting it literally would have
+      been churn.
+
+      What the survey did miss is the reverse coupling — the transport half
+      reaching up for three Species globals, which is what really stood between
+      this file and "includes no game header":
+
+        g_lastProcessedSequenceId  read in GetNextLetter, written in ClientLeave.
+                                   It tracks how far the *simulation* has
+                                   advanced, so it stays in the game loop.
+                                   GetNextLetter now takes it as a parameter, and
+                                   ClientLeave resets only its own counter while
+                                   Main.cpp resets that one.
+        g_startTime                written in ReceiveLetter, read in exactly one
+                                   place in Main.cpp. Derived entirely from
+                                   arriving letters, so it was already this
+                                   class's state living in someone else's header
+                                   — now ClientToServer::m_startTime, same
+                                   DBL_MAX initial value. Still written on the
+                                   listen thread and read on the main thread with
+                                   no lock, exactly as before; that race is
+                                   pre-existing and was not touched.
+        Main.h                     included only for those two.
+
+      Header includes needed care for the reason T6 recorded. ClientToServer.h
+      declares SendIAmAlive(TeamControls const&) and was getting that name from
+      a forward declaration inside Entity.h. Dropping Entity.h and WorldObject.h
+      without adding TeamControls.h would have failed to compile in a way that
+      looks unrelated to the change. Engineer.h was carried by the old file and
+      is not carried by the new one — Engineer appears nowhere in the body, and
+      the rest of the include set is a far larger transitive closure than it
+      provides. If CI disagrees it goes back with a comment saying why.
+
+      One unrelated defect found while writing the tests, deliberately not fixed
+      here: ReadByteStream does `unsigned char flags = READ_UNSIGNED_SHORT(...)`
+      for the Alive case. The cursor advances the correct two bytes, so the
+      packet stays aligned, but the value is truncated to 8 bits — and
+      TeamControls::GetFlags assigns m_endSetTarget 0x0100, the ninth bit. So
+      that flag is dropped in transit. TeamControls.h even carries the warning:
+      "Also, NetworkUpdate::GetByteStream and NetworkUpdate::ReadByteStream if
+      you use more than 8 bits". Fixing it changes what arrives at the far end
+      and therefore what the simulation computes, which is its own task with its
+      own test, not a rider on a file move. Not recorded as a node here because
+      it is not part of making NeuronCore standalone.
+
+      The new tests pin bytes rather than round-tripping only: a round trip
+      passes on either byte order because one machine does both halves. They
+      cover the header prefix, SelectUnit, CreateUnit and Alive field-for-field
+      with their exact lengths (8, 21, 30, 24), check every client-sendable type
+      fits the 42-byte buffer in Release as well as Debug, and round-trip
+      TargetProgram. Note the READ_/WRITE_ macros are two statements each, not
+      expressions, so they cannot be inlined into an Assert call — every read
+      goes through a local.
+
+      Not built. msbuild is Windows-only and this machine is Linux, so the four
+      checks are what ran here and the x64 Debug CI job is the build
+      verification. Nothing here can tell you the game runs.
+
+      CI caught one thing the four checks could not, and it was worth having.
+      AliveCarriesTheTeamControlFlagsAsOneWord failed with "Expected:<-4.5>
+      Actual:<0>" — the build was green and 30 of 31 tests passed. The cause is
+      an aliasing nobody would guess from the header: NetworkUpdate::GetWorldPos
+      does not return a position field, it returns m_teamControls.m_mousePos, and
+      SetWorldPos assigns through it. The two are one storage location.
+
+      So SetTeamControls after SetWorldPos silently discards the position. The
+      test set a position and then the controls, and the position went to zero.
+      SendIAmAlive escapes this only because it passes _teamControls.m_mousePos
+      to SetWorldPos, making the first call redundant rather than wrong — which
+      also means the redundancy is load-bearing camouflage.
+
+      Fixed by building the packet in the order SendIAmAlive builds it, and a new
+      test — TheWorldPositionIsTheTeamControlsMousePosition — now pins the
+      aliasing directly, so it fails loudly if the storage is ever separated and
+      documents the trap where the next person will look for it.
+
+      Worth stating plainly: a test I wrote was wrong, not the code. That is the
+      argument for CI existing on a machine that cannot build.
+
+      Formatting note: adding a member to ClientToServer.h reindented the
+      following `public:` to `  public:`, because clang-format's affected-range
+      expansion reaches the access specifier that closes the region. The file's
+      other `public:` is untouched at column 0. That is the documented cost of
+      formatting changed lines only; converting the whole file is its own task.

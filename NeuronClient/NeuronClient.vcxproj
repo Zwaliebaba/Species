@@ -24,13 +24,13 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="3dSprite.cpp" />
     <ClCompile Include="BinaryStreamReaders.cpp" />
     <ClCompile Include="Bitmap.cpp" />
+    <ClCompile Include="ClientToServer.cpp" />
     <ClCompile Include="ControlBindings.cpp" />
     <ClCompile Include="ControlTypes.cpp" />
     <ClCompile Include="DebugRender.cpp" />
@@ -98,12 +98,12 @@
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Preferences.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="2dSurfaceMap.h" />
     <ClInclude Include="3dSprite.h" />
     <ClInclude Include="BinaryStreamReaders.h" />
     <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="ClientToServer.h" />
     <ClInclude Include="ControlBindings.h" />
     <ClInclude Include="ControlTypes.h" />
     <ClInclude Include="ControlTypes.inc" />
