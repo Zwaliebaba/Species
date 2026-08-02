@@ -370,11 +370,13 @@ Real, currently true, and worth knowing before you trip over them:
   it and nobody builds it by hand, which means it can be broken right now and
   nothing would say so. Build it locally before anything that ships. Details in
   [`docs/BUILD.md`](docs/BUILD.md).
-- **The test suite is thin.** Four projects, 37 tests, covering IP conversion,
-  the `speciesRandom` sequence, the `ByteStream` macros, the `NetworkUpdate` wire
-  format, the `FilesysUtils` path helpers, `WorldObjectId` and the state a new
-  `Server` starts in. That is the encoding, identity and protocol layer and
-  almost nothing else — no entity behaviour, no rendering, no level loading.
+- **The test suite is thin.** Four projects, 45 tests, covering IP conversion,
+  the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
+  format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
+  helpers, `WorldObjectId` and the state a new `Server` starts in. That is the
+  encoding, identity and protocol layer and almost nothing else — no entity
+  behaviour, no rendering, no level loading, and nothing at all that would notice
+  the game failing to start.
   `GameLogic` can only be linked into a test DLL through
   `Tests/GameLogicTests/LinkStubs.cpp`, which stands in for the `Species`
   globals it reaches up for and may only shrink. `Species` and `Server` have no
