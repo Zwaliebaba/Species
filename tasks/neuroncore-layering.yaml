@@ -585,7 +585,7 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: >
       Where the four definition-of-done conditions stand on 6eb17e4:
 
