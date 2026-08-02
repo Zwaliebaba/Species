@@ -53,6 +53,48 @@ Engine code lives in `namespace Neuron`. Game code does not — `Species`,
 `GameLogic` and most of `NeuronClient` are still at global scope, and moving them
 is a migration task, not something to do opportunistically.
 
+### Renaming away from Darwinia
+
+The tree still carries 550+ Darwinia-named identifiers. They split into two
+groups, and **only one of them may be renamed right now**.
+
+**Scaffolding — rename it.** UI base classes and build macros with no content
+coupling. Verified: none of these strings appear anywhere in `GameData/`.
+
+| Identifier | Occurrences | Becomes |
+|---|---|---|
+| `DarwiniaWindow` (+ `.h`/`.cpp`) | 213 in 62 files | `SpeciesWindow` |
+| `DarwiniaButton` | 178 in 35 files | `SpeciesButton` |
+| `DarwiniaModeButton` | 6 in 1 file | `SpeciesModeButton` |
+| `DARWINIA_VERSION`, `_GAMETYPE`, `_PLATFORM`, `_EXE_VERSION`, `_VERSION_STRING`, `_VERSION_PROFILER` | 23 total | `SPECIES_*` |
+| `DARWINIA_RAND_MAX` | 7 | `SPECIES_RAND_MAX` |
+
+`tasks/rename-scaffolding.yaml` is the plan. Do it as that plan, not ad hoc.
+
+**Domain names — leave them alone.** `Darwinian` (140 occurrences) and anything
+else naming an entity, building or program. These names are load-bearing in
+content:
+
+```
+GameData/Shapes/Darwinian.shp        GameData/Sprites/Darwinian.bmp
+GameData/Icons/IconDarwinian.bmp     GameData/Sounds/LaserHitDarwinian1..19.wav
+GameData/Sounds/DarwinianThreat*.wav GameData/Levels/MissionGardenLiberate.txt
+```
+
+Level files name entity types as **strings** (`Darwinian 0 598.8 1202.4 30 …`),
+and shapes, sprites and sounds are resolved by filename at runtime. A rename that
+misses one fails silently at load rather than at compile time — and the game does
+not currently run, so nothing would catch it.
+
+The entity rename happens after the game runs again, as one deliberate task
+covering code, assets and content together. Until then: **do not rename
+`Darwinian`, and do not rename anything whose name appears in `GameData/`.**
+Check before you assume:
+
+```bash
+grep -rl "<TheName>" GameData/     # any output means it is content-coupled
+```
+
 ---
 
 ## Layout

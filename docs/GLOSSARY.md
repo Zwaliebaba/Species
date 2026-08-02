@@ -8,11 +8,14 @@ mechanic is stated in a code comment or an enum, that is quoted; where the code
 only shows structure, this says what the structure is rather than guessing at
 intent.
 
-> **These names are inherited from Darwinia and are not settled.** 550+
-> identifiers still carry Darwinia naming (`Darwinian`, `DarwiniaWindow`,
-> `DARWINIA_*`), and ~40 `GameData` assets are named to match and loaded **by
-> name** from level and sound configuration. No rename policy exists yet, so do
-> not rename any of these opportunistically — you will break content loading.
+> **These names are inherited from Darwinia and are not all settled.** The
+> rename policy is in
+> [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia):
+> UI scaffolding (`DarwiniaWindow`, `DarwiniaButton`, `DARWINIA_*`) is being
+> renamed via `tasks/rename-scaffolding.yaml`; **entity and domain names are
+> frozen** until the game runs again. `Darwinian` and friends appear in
+> `GameData` asset filenames and as literal strings in level files, all
+> resolved at runtime — renaming one silently breaks content loading.
 
 ---
 
@@ -170,9 +173,12 @@ The buildings that move Spirits around:
 
 ## A note on naming
 
-Several terms here describe mechanics whose names will likely change as the
-project moves away from Darwinia — `Darwinian` most obviously. Until a rename
-policy exists, this glossary describes the code **as it is**, and renaming is not
-a task to take on opportunistically: entity names appear in `GameData` asset
-filenames, level files and sound configuration, all resolved by string at
-runtime.
+Several terms here describe mechanics whose names will change as the project
+moves away from Darwinia — `Darwinian` most obviously. This glossary describes
+the code **as it is**.
+
+Renaming is governed by
+[`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia).
+The short version: scaffolding is fair game, domain names are frozen. Before
+renaming anything, run `grep -rl "<TheName>" GameData/` — any output means the
+name is content-coupled and off limits for now.

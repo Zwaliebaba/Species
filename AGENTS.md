@@ -56,6 +56,25 @@ What that means for a task in front of you:
 If a task you have been given falls outside this, say so before starting rather
 than after.
 
+### Definition of done
+
+This phase ends when **`NeuronCore` and `NeuronServer` link into a headless
+server that ticks without `NeuronClient`.** Concretely, all four of:
+
+1. `tools/layering_allowlist.txt` contains no entry beginning `NeuronCore/`
+   (30 today).
+2. `NeuronCore.vcxproj` lists no other project in `AdditionalIncludeDirectories`.
+3. `Server.exe` links without `NeuronClient.lib` and advances sequence ids with
+   no client attached.
+4. The build is green.
+
+Every one of those is checkable, and none depends on the game client working.
+`tasks/neuroncore-layering.yaml` is the plan that gets there.
+
+Deliberately *not* the exit criterion: the full 663-entry allowlist (the
+`GameLogic` → `Species` cluster is 586 of them and blocks nothing here), and the
+client running. Both matter; neither gates the world server.
+
 > **Note:** the last commit before this tooling landed was titled *"Cleanup
 > done, But does not work yet"*. Assume the game does not currently run until
 > someone records otherwise here. Do not report a change as working on the basis
@@ -164,6 +183,36 @@ will.
 **The project-file check matters more than it looks.** Adding a `.cpp` without
 adding it to the `.vcxproj` produces no error — the file is simply never
 compiled, and the symbols go missing at link time with no indication why.
+
+---
+
+## What working looks like
+
+There is no test suite, and the game does not currently run — so "it compiles" is
+usually the honest ceiling. When it does run again, **this is the smoke test**.
+
+**The Garden.** It is the only location `GameData/Game.txt` marks available at
+start (`Id 2, Avail 1`), built from `MapGarden.txt` +
+`MissionGardenLiberate.txt`.
+
+Launch, start a new profile, enter The Garden, and check:
+
+| # | Expected | What it proves |
+|---|---|---|
+| 1 | The executable starts and the main menu renders | `GameData` staging and resolution work |
+| 2 | The location loads without an assert | Landscape, level file and building parsing |
+| 3 | **50 Darwinians** spawn on team 0 — two groups of 30 and 20 | Entity creation from `InstantUnits` |
+| 4 | **179 Virii** spawn on team 1 across eight groups | Multi-team spawning |
+| 5 | Both move under their own behaviour for 30s with no assert | `Location::Advance`, the slice loop, entity AI |
+| 6 | The Task Manager opens and lists available programs | Eclipse UI and `GlobalResearch` |
+| 7 | `GenerateSyncValue()` does not trip the sync assert in single player | The simulation is at least self-consistent |
+
+Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
+rather than approximate. Any step failing localises the break to a subsystem.
+
+**Record what you find here.** If the game starts running again, update this
+section with what actually works — the value is in it being current, not
+aspirational.
 
 ---
 
