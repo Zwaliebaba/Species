@@ -119,6 +119,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="NeuronCore.h" />
     <ClInclude Include="LookupTable.h" />
+    <ClInclude Include="SlotMap.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
     <ClInclude Include="NeuronHelper.h" />
