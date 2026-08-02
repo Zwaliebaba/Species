@@ -484,12 +484,13 @@ tasks:
       - The one remaining Server.cpp entry moves with check_layering.py --rename, and the tree-wide count does not go up
       - NeuronServer.vcxproj lists NeuronCore only in AdditionalIncludeDirectories
       - Tests/NeuronServerTests/LayerWiringTests.cpp is replaced by coverage of the moved code, per its own comment
+      - Species and GameLogic can still see Server.h, and Species links NeuronServer
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
       Two criteria rewritten on 6eb17e4 because the tree moved underneath them.
 
@@ -508,6 +509,50 @@ tasks:
       proves the project wiring is intact. This is the task that gives
       NeuronServer behaviour worth testing, so it is also the task that retires
       that placeholder.
+
+      Done. NeuronServer stops being a stub: Server, ServerToClient and
+      ServerTeam live there and NeuronServer.vcxproj still lists NeuronCore and
+      nothing else on its include path, which was the criterion to preserve
+      rather than establish.
+
+      No allowlist movement, as predicted — 628 before and after, and --rename
+      was not needed because no entry named either file. Species -> NeuronServer
+      needed no change to check_layering.py either: Species depends on GameLogic,
+      GameLogic already listed NeuronServer, and the table is transitively
+      closed. NeuronServer -> NeuronClient is still forbidden and still absent.
+
+      Build topology did change, which AGENTS.md says to ask about — this task's
+      intent is the standing answer ("the layering model gains
+      Species -> NeuronServer"), but it is worth stating what actually moved:
+      Species.vcxproj and GameLogic.vcxproj gained $(SpeciesRoot)NeuronServer on
+      their include paths, and Species.vcxproj gained a ProjectReference to
+      NeuronServer so Server.obj links. GameLogic needs only the include path,
+      being a static library the executable links. NeuronClient needed neither,
+      because T8 had already removed its dead Server.h include — had it not,
+      this move would have created the one dependency the plan forbids.
+
+      GameLogicTests was given the include path and then had it taken back: it
+      compiles WorldObject.h and NeuronClient.h and never reaches Server.h, so
+      the entry would have been noise.
+
+      One defect fixed rather than moved. Server's mutexes are created by
+      Initialise, not by the constructor, and ~Server locked them
+      unconditionally — so a Server built and never initialised null-dereferenced
+      on destruction. Species always pairs the two calls, so nothing in the game
+      hit it, but it made the class impossible to hold in a test. Two null guards,
+      and AServerThatWasNeverInitialisedCanStillBeDestroyed is the regression
+      guard. Fixing it here rather than filing it: the class was untestable
+      without it, and this is the task whose acceptance requires tests.
+
+      The tests are narrow and the file says why. Initialise opens a NetLib and
+      starts a listen thread on port 4000, and ServerToClient connects a socket
+      in its constructor, so client connections, the inbox, the outbox and
+      sequencing are all unreachable until they are separated from their
+      transport. What is covered is the state a new Server starts in — sequence
+      id 0 above all, since clients buffer on it and the sync table is indexed by
+      it — plus GetClientId's miss case, which RegisterNewClient asserts on.
+
+      Not built: Linux. Four checks pass; x64 Debug CI is the verification.
 
   # ---------------------------------------------------------------------------
   # Wave 5: close the door, and prove the point of the exercise.

@@ -27,9 +27,13 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="ServerToClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NeuronServer.h" />
+    <ClInclude Include="Server.h" />
+    <ClInclude Include="ServerToClient.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

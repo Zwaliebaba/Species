@@ -25,12 +25,6 @@
     <ClCompile Include="NetworkUpdate.cpp">
       <Filter>Network</Filter>
     </ClCompile>
-    <ClCompile Include="Server.cpp">
-      <Filter>Network</Filter>
-    </ClCompile>
-    <ClCompile Include="ServerToClient.cpp">
-      <Filter>Network</Filter>
-    </ClCompile>
     <ClCompile Include="ServerToClientLetter.cpp">
       <Filter>Network</Filter>
     </ClCompile>
@@ -93,12 +87,6 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="NetworkUpdate.inc">
-      <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="Server.h">
-      <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="ServerToClient.h">
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="ServerToClientLetter.h">

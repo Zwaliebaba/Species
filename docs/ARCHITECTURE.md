@@ -58,11 +58,14 @@ The foundation. Everything else may depend on it; it may depend on nothing.
   (`NetThreadWin32.cpp`, `NetMutexWin32.cpp`) behind platform-neutral headers.
   `NetLibApple.h` exists but is not built.
 - **Protocol:** `NetworkUpdate` (client→server events), `ServerToClientLetter`
-  (server→client broadcasts), `ClientToServer`, `ServerToClient`, and the
+  (server→client broadcasts), `TeamControls`, `ProtocolLimits.h` and the
   `ByteStream.h` read/write macros. Fixed 42-byte packets
-  (`NETWORKUPDATE_BYTESTREAMSIZE`).
-- **Server core:** `Server`, holding the client list, team registry, sequence
-  counter and sync values.
+  (`NETWORKUPDATE_BYTESTREAMSIZE`). The two endpoints that speak it live above:
+  `ClientToServer` in `NeuronClient`, `Server` and `ServerToClient` in
+  `NeuronServer`.
+- **Settings:** `Preferences`, which reads and writes the preferences file
+  without the resource system. The host overlays its shipped defaults through
+  `PrefsManager::SetDefaultsProvider`.
 - **Platform:** `FileSys`, `Debug.h` (`ASSERT`, `DebugTrace`, `Fatal`),
   `NeuronHelper.h` (`BaseException`, `NonCopyable`, `ScopedHandle`,
   `ENUM_HELPER`).
@@ -70,12 +73,11 @@ The foundation. Everything else may depend on it; it may depend on nothing.
 This is the layer furthest through modernisation: `FileSys`, `Debug` and
 `NeuronHelper` are fully Neuron-style, and `Server.cpp` is partly converted.
 
-It no longer reaches into `GameLogic` or `Species`. Three upward includes
-remain, all in `ClientToServer.cpp` and all into `NeuronClient`: `Input.h` and
-`Preferences.h` twice. `NeuronCore` still **cannot be linked without the game
-client**, because its `.vcxproj` keeps the three upward include paths and
-`Preferences` has not moved down yet — but the count is three, from thirty when
-`tasks/neuroncore-layering.yaml` was written.
+**It has no upward includes left**, down from thirty when
+`tasks/neuroncore-layering.yaml` was written. What is left is the door rather
+than the violations: `NeuronCore.vcxproj` still lists `NeuronClient`, `Species`
+and `GameLogic` in `AdditionalIncludeDirectories`, so a new upward include would
+still compile. Closing that, and linking a `Server.exe` that ticks, is T10.
 
 ### NeuronClient
 
@@ -89,18 +91,23 @@ Presentation and platform services for a graphical client.
   `Alias`, `Invert`, `Pipe`, `Idle`, `Prefs` — resolving to `ControlTypes`.
 - **UI:** the **Eclipse** toolkit (`Eclipse`, `EclWindow`, `EclButton`), which
   every in-game window derives from.
-- **Utilities that do not belong here:** `Preferences`, the last one left. The
-  containers (`LList`, `DArray`, `BTree`, `FastDArray`, `HashTable`), the maths
-  types (`Vector3`, `Matrix33/34`, `MathUtils`), `HiResTime` and `Profiler` have
-  all moved down into `NeuronCore`. `Preferences` did not, because
-  `Preferences.cpp` reaches into `App`, the resource system and a settings
-  window — a dependency inversion rather than a file move. See T11 in
-  `tasks/neuroncore-layering.yaml`.
+- **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,
+  sockets and sequence ids. Moved up out of `NeuronCore` by T8.
+- **Utilities that do not belong here:** none left. The containers (`LList`,
+  `DArray`, `BTree`, `FastDArray`, `HashTable`), the maths types (`Vector3`,
+  `Matrix33/34`, `MathUtils`), `HiResTime`, `Profiler` and `Preferences` have all
+  moved down into `NeuronCore`.
 
 ### NeuronServer
 
-A stub — a header that includes `NeuronCore.h`, and a `pch`. This is where the
-authoritative simulation host will live. It does not exist yet.
+The authoritative host. `Server` holds the client list, team registry, sequence
+counter, inbox, outbox and the per-sequence sync values; `ServerToClient` is one
+connection to one client. Both moved down out of `NeuronCore`, which is what
+turned this from a stub into a library a headless binary can link.
+
+It depends on `NeuronCore` and nothing else — `NeuronServer` → `NeuronClient` is
+the one direction the layering forbids outright, because it is what would make a
+headless server impossible again.
 
 ### GameLogic
 
@@ -122,7 +129,9 @@ particle systems, and the location editor.
 
 ### Server
 
-A stub: `WinMain.cpp` and a `pch`. Links `NeuronCore` and `NeuronServer`.
+A stub: `WinMain.cpp` returning 0, and a `pch`. Links `NeuronCore` and
+`NeuronServer` and nothing else — the library it needs now exists, but nothing
+drives it. Making it tick is T10.
 
 ---
 

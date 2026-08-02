@@ -62,8 +62,8 @@ than after.
 This phase ends when **`NeuronCore` and `NeuronServer` link into a headless
 server that ticks without `NeuronClient`.** Concretely, all four of:
 
-1. `tools/layering_allowlist.txt` contains no entry beginning `NeuronCore/`
-   (3 today, down from 30).
+1. `tools/layering_allowlist.txt` contains no entry beginning `NeuronCore/`.
+   **Met** — zero today, down from 30.
 2. `NeuronCore.vcxproj` lists no other project in `AdditionalIncludeDirectories`.
 3. `Server.exe` links without `NeuronClient.lib` and advances sequence ids with
    no client attached.
@@ -72,7 +72,7 @@ server that ticks without `NeuronClient`.** Concretely, all four of:
 Every one of those is checkable, and none depends on the game client working.
 `tasks/neuroncore-layering.yaml` is the plan that gets there.
 
-Deliberately *not* the exit criterion: the full 633-entry allowlist (the
+Deliberately *not* the exit criterion: the full 628-entry allowlist (the
 `GameLogic` → `Species` cluster is 584 of them and blocks nothing here), and the
 client running. Both matter; neither gates the world server.
 
@@ -95,7 +95,8 @@ NeuronCore/       ~3.4k   Foundation: sockets, threads, byte streams, the wire
                           protocol, filesystem, assertions. Static library.
 NeuronClient/     ~30k    Presentation: OpenGL renderer, sound, input drivers,
                           the Eclipse UI toolkit, resource loading. Static library.
-NeuronServer/     ~0      Authoritative simulation host. A stub — header only.
+NeuronServer/     ~0.5k   Authoritative simulation host: Server, ServerToClient,
+                          the client and team registries. Static library.
 GameLogic/        ~48k    Entities, buildings, teams, unit behaviour, in-game
                           windows. The bulk of the inherited code. Static library.
 Species/          ~32k    Client executable: app, world, camera, landscape,
@@ -109,9 +110,10 @@ tasks/                    Task DAGs. See docs/TASK_DAG.md.
 docs/                     Architecture, build, testing, glossary, task breakdown.
 ```
 
-`NeuronServer` and `Server` being empty is not an oversight — the server has not
-been written. `NeuronCore` currently cannot be linked without the client and game
-layers, which is the first thing standing in the way.
+`Server` being empty is not an oversight — the headless binary has not been
+written; `WinMain.cpp` returns 0. `NeuronServer` now holds the authoritative host
+moved out of `NeuronCore`, so the library it would link exists even though the
+executable does nothing with it yet. That is T10.
 
 ---
 
@@ -128,29 +130,27 @@ NeuronCore                   no dependencies
       Server   (exe)         -> GameLogic, NeuronServer, NeuronCore
 ```
 
-**Includes may only ever point downward.** The tree does not obey this yet: 633
+**Includes may only ever point downward.** The tree does not obey this yet: 628
 upward includes are recorded in `tools/layering_allowlist.txt`, inherited from
 Darwinia's single-binary layout.
 
 | From | Into | Count |
 |---|---|---|
 | GameLogic | Species | 584 |
-| NeuronClient | Species | 41 |
-| NeuronClient | GameLogic | 5 |
-| NeuronCore | NeuronClient | 3 |
+| NeuronClient | Species | 40 |
+| NeuronClient | GameLogic | 4 |
 
-`NeuronCore` no longer reaches into `GameLogic` or `Species` at all.
+**`NeuronCore` has no upward includes left.** Every remaining violation is in
+`NeuronClient` or `GameLogic` reaching into `Species`.
 
 The check fails on any violation **not** already in that file. The allowlist may
 only ever shrink. If your change needs a new upward include, the design is wrong:
 move the shared declaration down into a layer both sides can see, or invert the
 dependency behind an interface.
 
-`tasks/neuroncore-layering.yaml` is the plan for eliminating the `NeuronCore`
-entries, which unblocks a headless server build. Eight of its twelve tasks are
-done and the three remaining entries are all in `ClientToServer.cpp`: two
-`Preferences.h` includes belong to T11, and one `Input.h` include resolves itself
-when T8 moves the file into `NeuronClient`.
+`tasks/neuroncore-layering.yaml` is the plan that eliminated the `NeuronCore`
+entries. Eleven of its twelve tasks are done; only T10 is left, which drops the
+upward include paths from `NeuronCore.vcxproj` and makes `Server.exe` tick.
 
 ---
 
@@ -331,12 +331,11 @@ Real, currently true, and worth knowing before you trip over them:
   exactly — same symptom, same "passes on a re-run" behaviour — so treat that as
   the leading explanation until an ARM64 Debug failure turns up that is not it.
   **Capture the first `error C...` line and record it here either way.**
-- **`NeuronCore` depends upward** on `NeuronClient`, `GameLogic` and `Species`,
-  including reaching through the `g_app` global. It cannot be linked standalone.
-  Much narrower than it was: three violations remain, all in
-  `ClientToServer.cpp`, and all into `NeuronClient` rather than into the game.
-  No file under `NeuronCore/` mentions `g_app` or includes a `GameLogic` or
-  `Species` header.
+- **`NeuronCore.vcxproj` still lists `NeuronClient`, `Species` and `GameLogic`**
+  in `AdditionalIncludeDirectories`, so nothing stops the next upward include
+  compiling. No source under `NeuronCore/` reaches upward any more — no `g_app`,
+  no `GameLogic` or `Species` header — but until those paths come off, the layer
+  can rot again quietly. That is T10.
 - **Release had never built, and CI does not gate on it.** Three template
   leftovers — missing include paths, a precompiled header nothing created, and
   `Species` linking Release as a console app when `WinMain` is its entry point —
