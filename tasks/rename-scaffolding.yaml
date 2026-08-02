@@ -49,8 +49,13 @@ tasks:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
-    parallel_safe: true
-    status: todo
+    parallel_safe: false
+    status: in_progress
+    notes: >
+      parallel_safe lowered to false: T1 and T2 both list DarwiniaWindow.h/.cpp,
+      so despite sharing a wave they cannot be worked concurrently. Serialised.
+      msbuild cannot run on this machine (Linux) — the x64 Debug CI job is the
+      build verification, so this stays in_progress until CI is green.
 
   - id: T2
     title: Rename DarwiniaButton and DarwiniaModeButton to Species*
