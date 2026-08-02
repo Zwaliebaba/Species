@@ -49,7 +49,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: in_progress
 
   - id: T2
     title: Sweep include guards to pragma once
@@ -75,7 +75,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: in_progress
 
   - id: T3
     title: Pin and convert the wire enums to enum class
@@ -174,7 +174,7 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T7
     title: Ratchet the sweeps with a hygiene check in CI

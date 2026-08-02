@@ -533,7 +533,7 @@ tasks:
       parallel_safe false not for correctness but for merge hygiene — it
       touches dozens of files other tasks also list. Run it between move
       tasks, not during one.
-    status: todo
+    status: in_progress
 
   - id: T12
     title: Empty the layering allowlist and make the check strict
