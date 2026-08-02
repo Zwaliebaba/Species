@@ -413,14 +413,25 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, 82 tests, covering IP conversion,
+- **The test suite is thin.** Four projects, 103 tests, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
-  `Server` starts in, and the legacy containers plus their `Neuron::SlotMap`
-  replacement. That is the encoding, identity and protocol layer and almost
-  nothing else — no entity behaviour, no rendering, no level loading, and
-  nothing at all that would notice the game failing to start.
+  `Server` starts in, the legacy containers plus their `Neuron::SlotMap`
+  replacement, and the preferences file format. That is the encoding, identity
+  and protocol layer and almost nothing else — no entity behaviour, no
+  rendering, no level loading, and nothing at all that would notice the game
+  failing to start.
+  - The preferences tests are worth the paragraph they cost, as an argument for
+    writing more of them. They were added as characterisation before a
+    conversion (`containers-replaced` T19) and the first CI run was red: three
+    of the four failures were **access violations in shipped code**, not test
+    bugs. `SetInt` on a key an existing preferences file did not contain
+    crashed on shutdown; column-aligning that file with more than one space
+    before `=` crashed the next save. Both are ordinary things for a user to
+    do, both had been there since the file was inherited, and neither was
+    findable by reading. 21 tests over one 575-line file found them in an
+    afternoon.
   **`Tests/GameLogicTests/LinkStubs.cpp` is now empty**: `GameLogic` no longer
   names a symbol the executable owns, so it links into a test DLL on its own.
   Entity and building behaviour is finally testable — nobody has written those

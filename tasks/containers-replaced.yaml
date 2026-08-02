@@ -591,7 +591,65 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    notes: >
+      Landed 2026-08-02 across two commits, CI green at 35a8422: 21 tests,
+      suite 82 -> 103.
+
+      The first push was RED, and that is the finding. Four tests failed;
+      three were access violations in shipped code, at exactly the call sites
+      the tests were written to describe, and one was my own wrong
+      expectation. They are fixed in the follow-up commit, which is a bug-fix
+      commit and carries no conversion:
+
+      (1) SetFloat/SetInt on a key the loaded file did not contain built a
+      PrefsItem whose m_str was never initialised, and ~PrefsItem free()s it
+      unconditionally — crash on destruction, every time. Reachable on the
+      upgrade path: new setting shipped, old preferences file, key absent.
+
+      (2) Save() recorded the LAST non-alphanumeric before '=' instead of the
+      first, so "SoundChannels    =    32" produced the key
+      "SoundChannels   " with trailing spaces. GetIndex missed and
+      GetData(-1) indexed out of bounds. Column-aligning a preferences file
+      took the game down on the next save.
+
+      (3) The same scan left keyEnd indeterminate for "Key=value" with no
+      space. Found by reading before the first push and reported then.
+
+      Plus three hardenings in the same function: no end-of-string guard on
+      the scan, no clamp on the 128-byte key buffer, and comment lines passed
+      to fprintf as the FORMAT STRING, so "# volume is 50% of maximum" read
+      arguments nobody passed.
+
+      Behaviour for well-formed input is unchanged and checkable rather than
+      asserted: for "Key = value" the old and new scans stop at the same
+      character, so keyStart and keyEnd are identical.
+
+      Findings that shape the conversions downstream, beyond the crashes:
+
+      The type guess counts dots — one is a float, more than one falls back
+      to string. That is the only reason "ServerAddress = 127.0.0.1"
+      survives a round trip instead of parsing as 127. A parser tidied into
+      strtof/strtol without the dot-counting rule breaks every multiplayer
+      address on disk and looks like a cleanup in review.
+
+      %.2f resolves a true tie half-to-even: 0.125 writes as "0.12", not
+      "0.13". std::format rounds the same way, so strings-modernised T2 is
+      safe converting it 1:1 — but a manual rounding step would not be.
+
+      Save is not a byte-identical rewrite of its input. Comments, blank
+      lines and order survive exactly; value lines are regenerated, so
+      spacing around '=' is normalised. A conversion can only be checked
+      against a previously saved file, never against the original.
+
+      The appended new-key block is emitted by walking m_items, a HashTable,
+      so its internal order is unreproducible by any std:: container. T18's
+      acceptance criterion was corrected to match; the test asserts presence
+      and explicitly not order.
+
+      One tooling change was needed to land it: check_hygiene.py reported a
+      strncpy this change never wrote, because clang-format reindented it.
+      It now ignores lines that existed in the base revision and only moved.
+    status: done
 
   - id: T18
     title: Convert the leaf container users that gate other plans
