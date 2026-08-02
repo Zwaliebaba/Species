@@ -212,7 +212,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
       Far smaller than the intent assumed, and worth recording why. The protocol
       did not reference Entity, Team or WorldObject as *types* at all — every id
@@ -243,6 +243,13 @@ tasks:
       No new id types were needed. If the protocol later wants stronger typing
       than bare ints that is a separate design task, not a prerequisite for the
       split.
+
+      Took four attempts. Two of the removed includes were not dead but
+      load-bearing by accident: ServerToClientLetter.h declares
+      LList<NetworkUpdate*> and NetworkUpdate.h declares Vector3 m_direction,
+      and both were getting those types transitively through WorldObject.h.
+      Grepping a header for type *usage* does not tell you whether its includes
+      are dead. Verified green on aa20f67.
 
   # ---------------------------------------------------------------------------
   # Wave 3: the seam that makes the split possible at all.
@@ -286,6 +293,25 @@ tasks:
       parallel_safe false: it rewires two files that T8 and T9 then move, and
       touches App.cpp, which almost everything else in Species also touches.
 
+      Surveyed before starting. The g_app uses are not one loopback but five
+      distinct couplings, and they want different fixes:
+
+        1. loopback delivery   Server.cpp:267 -> m_clientToServer->ReceiveLetter
+                               ClientToServer.cpp:115 -> m_server->ReceiveLetter
+                               This is the seam this task is about.
+        2. self-reference      ClientToServer reaches its own instance through
+                               g_app->m_clientToServer in a static callback and
+                               in AdvanceSender. Wants a file-scope instance
+                               pointer or a bound callback, not a global.
+        3. config              g_app->m_bypassNetworking, read by both. Inject at
+                               Initialise().
+        4. profiler            g_app->m_profiler. Profiler is in NeuronCore since
+                               T4; only the instance is held by App.
+        5. game translation    ProcessServerUpdates and the Request* builders.
+                               Not networking at all — see T12.
+
+      Only 1-4 belong in T7. Doing 5 here would make the diff unreviewable.
+
   # ---------------------------------------------------------------------------
   # Wave 4: the moves themselves. Different destination projects, no shared
   # files, so these two can run concurrently once T7 has cut the tie.
@@ -300,7 +326,7 @@ tasks:
       Input, TaskManager, the entity headers and the rest that ClientToServer
       drags in, which is a large share of NeuronCore's remaining violations.
     project: NeuronClient
-    depends_on: [T7]
+    depends_on: [T7, T12]
     files:
       - NeuronCore/ClientToServer.h
       - NeuronCore/ClientToServer.cpp
@@ -413,4 +439,46 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
+    status: todo
+
+  # ---------------------------------------------------------------------------
+  # Discovered while surveying T7: moving ClientToServer does not clean it.
+  # ---------------------------------------------------------------------------
+
+  - id: T12
+    title: Split the game-to-protocol translation out of ClientToServer
+    intent: >
+      T8 assumed moving ClientToServer into NeuronClient would resolve its
+      violations. It will not — NeuronClient cannot see GameLogic or Species
+      either, so the violations relocate rather than disappear.
+
+      ClientToServer is two things wearing one name. One half is transport: an
+      inbox, an outbox, sockets, sequence ids, and nothing game-specific. The
+      other half translates between the game and the protocol —
+      ProcessServerUpdates (81 lines) applies inbound updates to m_location and
+      m_taskManager, and the Request* methods build outbound packets from
+      buildings, units and teams. Every game header ClientToServer includes is
+      there for the second half.
+
+      Measured: m_location and m_taskManager appear only inside
+      ProcessServerUpdates; Building, Unit, Team, Factory, LaserFence and
+      RadarDish are used by both halves, which is what makes this a split rather
+      than a lift.
+
+      The same reasoning that split the network layer three ways applies one
+      level down: the transport half is client infrastructure, the translation
+      half is game code that happens to talk to it.
+    project: NeuronClient
+    depends_on: [T7]
+    files:
+      - NeuronCore/ClientToServer.cpp
+      - NeuronCore/ClientToServer.h
+    acceptance:
+      - ClientToServer holds inbox, outbox, sockets and sequence ids, and includes no game header
+      - ProcessServerUpdates and the Request* builders live in the game layer, calling ClientToServer to send
+      - The wire format is unchanged
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: false
     status: todo
