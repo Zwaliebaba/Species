@@ -20,7 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ByteStreamTests.cpp" />
+    <ClCompile Include="DArrayTests.cpp" />
     <ClCompile Include="GenericTests.cpp" />
+    <ClCompile Include="LListTests.cpp" />
     <ClCompile Include="NetworkUpdateTests.cpp" />
     <ClCompile Include="ServerToClientLetterTests.cpp" />
     <ClCompile Include="pch.cpp">
