@@ -7,5 +7,10 @@ TextSpeed = 15
 
 ControlMethod = 1
 
+ScreenHeight = 768
+ScreenColourDepth = 32
+ScreenRefresh = 60
+ScreenWidth = 1280
+
 
 WaitVerticalRetrace = 0
