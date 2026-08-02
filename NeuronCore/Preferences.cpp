@@ -6,14 +6,8 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "App.h"
-
 #include "Debug.h"
 #include "Preferences.h"
-#include "Resource.h"
-#include "TextStreamReaders.h"
-
-#include "PrefsOtherWindow.h"
 
 #ifdef TARGET_OS_MACOSX
 #include "macosx_hardware_detect.h"
@@ -23,6 +17,10 @@
 PrefsManager *g_prefsManager = NULL;
 
 static bool s_overwrite = false;
+
+PrefsManager::DefaultsProvider PrefsManager::sm_defaultsProvider = NULL;
+
+void PrefsManager::SetDefaultsProvider(DefaultsProvider _provider) { sm_defaultsProvider = _provider; }
 
 // ***************
 // Class PrefsItem
@@ -303,19 +301,15 @@ void PrefsManager::CreateDefaultValues()
     AddLine( "RenderSpecialLighting = 0" );
 	AddLine( OTHER_DIFFICULTY " = 1" );
 
-	// Override the defaults above with stuff from a default preferences file
-	if ( g_app && g_app->m_resource )
-	{
-		TextReader *reader = g_app->m_resource->GetTextReader( "DefaultPreferences.txt" );
-		if ( reader && reader->IsOpen() )
-		{
-			while ( reader->ReadLine() )
-			{
-				AddLine( reader->GetRestOfLine(), true );
-			}
-		}
-	}
-
+  // Override the defaults above with stuff from a default preferences file.
+  // The host installs the reader — see SetDefaultsProvider. This used to read
+  // GameData/DefaultPreferences.txt through g_app->m_resource directly, which
+  // is what kept a settings store dependent on the application object and the
+  // renderer's resource loader.
+  if (sm_defaultsProvider)
+  {
+    sm_defaultsProvider(*this);
+  }
 }
 
 

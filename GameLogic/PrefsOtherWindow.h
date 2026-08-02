@@ -28,15 +28,8 @@ public:
     void ListAvailableLanguages();
 };
 
-// Defines useful to reference preferences from
-// other parts of the program.
-#define OTHER_HELPENABLED       "HelpEnabled"
-#define OTHER_CONTROLHELPENABLED "ControlHelpEnabled"
-#define OTHER_BOOTLOADER        "BootLoader"
-#define OTHER_CHRISTMASENABLED  "ChristmasEnabled"
-#define OTHER_LANGUAGE          "TextLanguage"
-#define OTHER_DIFFICULTY		"Difficulty"
-#define OTHER_LARGEMENUS		"LargeMenus"
-#define OTHER_AUTOMATICCAM      "AutomaticCamera"
+// The OTHER_* preference keys moved to NeuronCore/Preferences.h. They are key
+// names rather than anything to do with this window, and leaving them here meant
+// Preferences.cpp had to include a UI header to name its own defaults.
 
 #endif

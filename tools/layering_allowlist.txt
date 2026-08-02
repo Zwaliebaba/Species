@@ -608,8 +608,6 @@ NeuronClient/LanguageTable.cpp -> App.h
 NeuronClient/MouseCursor.cpp -> App.h
 NeuronClient/MouseCursor.cpp -> Main.h
 NeuronClient/MouseCursor.cpp -> Renderer.h
-NeuronClient/Preferences.cpp -> App.h
-NeuronClient/Preferences.cpp -> PrefsOtherWindow.h
 NeuronClient/Resource.cpp -> App.h
 NeuronClient/Resource.cpp -> Location.h
 NeuronClient/Resource.cpp -> Renderer.h
@@ -640,5 +638,3 @@ NeuronClient/TextRenderer.cpp -> App.h
 NeuronClient/TextRenderer.cpp -> Camera.h
 NeuronClient/Win32EventHandler.cpp -> App.h
 NeuronCore/ClientToServer.cpp -> Input.h
-NeuronCore/ClientToServer.cpp -> Preferences.h
-NeuronCore/Server.cpp -> Preferences.h

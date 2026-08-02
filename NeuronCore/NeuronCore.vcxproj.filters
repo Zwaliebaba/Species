@@ -17,6 +17,7 @@
   <ItemGroup>
     <ClCompile Include="Random.cpp" />
     <ClCompile Include="HiResTime.cpp" />
+    <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="ClientToServer.cpp">
       <Filter>Network</Filter>
@@ -83,6 +84,7 @@
     <ClInclude Include="2dArray.h" />
     <ClInclude Include="AutoVector.h" />
     <ClInclude Include="HiResTime.h" />
+    <ClInclude Include="Preferences.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="ByteStream.h">
       <Filter>Network</Filter>

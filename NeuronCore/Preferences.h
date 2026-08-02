@@ -47,9 +47,17 @@ public:
 
 class PrefsManager
 {
-private:
-	HashTable <PrefsItem *> m_items;
-	FastDArray<char *> m_fileText;
+  public:
+    // Lets the host overlay its own shipped defaults, called from
+    // CreateDefaultValues. See Preferences.cpp for why this is a seam.
+    using DefaultsProvider = void (*)(PrefsManager& _prefs);
+    static void SetDefaultsProvider(DefaultsProvider _provider);
+
+  private:
+    static DefaultsProvider sm_defaultsProvider;
+
+    HashTable<PrefsItem*> m_items;
+    FastDArray<char*> m_fileText;
     char *m_filename;
 
 	bool IsLineEmpty(char const *_line);
@@ -86,6 +94,20 @@ public:
 
 
 extern PrefsManager *g_prefsManager;
+
+
+// Preference key names. They were declared in GameLogic/PrefsOtherWindow.h,
+// beside the window that edits them, which meant naming a setting required a UI
+// header. Every file that used them already includes this one.
+
+#define OTHER_HELPENABLED "HelpEnabled"
+#define OTHER_CONTROLHELPENABLED "ControlHelpEnabled"
+#define OTHER_BOOTLOADER "BootLoader"
+#define OTHER_CHRISTMASENABLED "ChristmasEnabled"
+#define OTHER_LANGUAGE "TextLanguage"
+#define OTHER_DIFFICULTY "Difficulty"
+#define OTHER_LARGEMENUS "LargeMenus"
+#define OTHER_AUTOMATICCAM "AutomaticCamera"
 
 
 #endif

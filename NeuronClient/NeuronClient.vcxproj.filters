@@ -12,7 +12,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="SampleCache.cpp">
       <Filter>Audio</Filter>
@@ -164,7 +163,6 @@
     <ClCompile Include="OGLExtensions.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Preferences.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SampleCache.h">
       <Filter>Audio</Filter>

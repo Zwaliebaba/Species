@@ -561,7 +561,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
       Still true as written, re-checked on 6eb17e4: Preferences.h/.cpp are under
       NeuronClient/ and Preferences.cpp still includes App.h, Resource.h,
@@ -578,6 +578,75 @@ tasks:
       shares no `files` with either, and none of the three overlap, so all three
       may be worked concurrently — with the caveat that T12 is
       `parallel_safe: false`.
+
+      Done. Four allowlist entries removed: the two Preferences.h includes this
+      task existed to fix, plus Preferences.cpp's own two upward includes, which
+      went with it. 633 -> 629 tree-wide, and NeuronCore is down to a single
+      entry — ClientToServer.cpp -> Input.h, which is T8's.
+
+      The four includes fell into two groups, not one.
+
+      PrefsOtherWindow.h was there for OTHER_DIFFICULTY, one of eight OTHER_*
+      key-name macros defined beside the window that edits them under the comment
+      "Defines useful to reference preferences from other parts of the program".
+      They are preference key names, so all eight moved to Preferences.h. Every
+      file that used one already included Preferences.h — checked, all seven —
+      so not a single include line had to change.
+
+      App.h, Resource.h and TextStreamReaders.h were all one thing: the tail of
+      CreateDefaultValues reading GameData/DefaultPreferences.txt through
+      g_app->m_resource to overlay shipped defaults. Two ways to break that, and
+      the obvious one is wrong. Reading the file with fopen here — which Load()
+      already does for the prefs file itself — looks equivalent but is not:
+      Resource::GetTextReader hands back a TextReader whose CleanLine()
+      "decrypt[s], strip[s] comments and scan[s] for conflict markers", so an
+      fopen would silently fail on an encrypted data file. So it is a seam
+      instead: PrefsManager::SetDefaultsProvider takes a function pointer, and
+      Species/App.cpp installs one that does exactly what the old code did, with
+      the same g_app/m_resource guard, immediately before constructing the
+      manager. NULL provider means built-in defaults only, which is what a
+      headless server gets and wants.
+
+      Ordering checked rather than assumed: App.cpp creates m_resource on the
+      line before it creates the PrefsManager, so the override really does fire
+      today and the seam has to preserve that. It only ever runs when there is no
+      preferences file, because that is the only path that reaches
+      CreateDefaultValues.
+
+      Two conditionals had to be verified before the move, not after. Preferences
+      picks its sound and demo defaults from HAVE_DSOUND and DEMOBUILD, and
+      moving the file changes which pch.h it compiles against. Both are defined
+      in NeuronCore/NeuronCore.h, and the two projects carry identical
+      PreprocessorDefinitions, so GetDefaultSoundLibrary still returns "dsound".
+      Had either been a NeuronClient-only define, the move would have quietly
+      changed a default.
+
+      The MacOSX branch is untouched and still references macosx_hardware_detect.h,
+      which does not exist anywhere in the tree. It is inside
+      #ifdef TARGET_OS_MACOSX, never defined in any built configuration, so it
+      compiles today for the same reason it did before — it is not compiled.
+
+      Left behind deliberately: seven files (Camera, Location, App, LevelFile,
+      TaskManager, TaskManagerInterfaceIcons, ControlHelp — all in Species) now
+      include PrefsOtherWindow.h without naming anything in it, because the
+      macros they wanted moved out. Those are Species -> GameLogic includes,
+      downward and legal, so they cost nothing in layering terms, and removing
+      an include without a compiler to hand is how T6 lost three attempts.
+      Worth a tidy-up task, not worth risking here.
+
+      A formatting trap worth recording. Preferences.h was first written with the
+      full rationale in comments, which grew a 91-line header by a third and put
+      it under git's rename-similarity threshold. The file then looked like a
+      delete plus an add, so check_format treated every line as changed and
+      reformatted the whole header — leaving a Neuron-formatted .h beside a
+      legacy .cpp, the half-converted state CODING_STANDARDS forbids. Fixed by
+      shortening the header comments until the rename was detected again and
+      moving the reasoning into Preferences.cpp and into these notes. When you
+      move a file, check `git diff -M --stat` shows a rename before trusting
+      check_format --fix.
+
+      Not built: msbuild is Windows-only, this machine is Linux. The four checks
+      pass; x64 Debug CI is the build verification.
 
   # ---------------------------------------------------------------------------
   # Discovered while surveying T7: moving ClientToServer does not clean it.

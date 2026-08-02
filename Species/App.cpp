@@ -24,9 +24,33 @@
 #include "TaskManager.h"
 #include "TaskManagerInterfaceIcons.h"
 #include "TextRenderer.h"
+#include "TextStreamReaders.h"
 #include "UserInput.h"
 
 void SetPreferenceOverrides(); // See main.cpp
+
+// Overlays GameData/DefaultPreferences.txt onto the built-in defaults, and is
+// installed on PrefsManager before the first one is constructed. It runs only
+// when there is no preferences file yet, because that is the only time
+// CreateDefaultValues runs.
+//
+// This lives here rather than in Preferences.cpp because reaching the file means
+// going through the resource system, which decrypts and strips comments — a
+// settings store in NeuronCore has no business knowing that exists.
+static void ApplyShippedPreferenceDefaults(PrefsManager& _prefs)
+{
+  if (!g_app || !g_app->m_resource)
+    return;
+
+  TextReader* reader = g_app->m_resource->GetTextReader("DefaultPreferences.txt");
+  if (reader && reader->IsOpen())
+  {
+    while (reader->ReadLine())
+    {
+      _prefs.AddLine(reader->GetRestOfLine(), true);
+    }
+  }
+}
 
 App* g_app = nullptr;
 
@@ -81,6 +105,7 @@ App::App()
 
   m_resource = new Resource();
 
+  PrefsManager::SetDefaultsProvider(&ApplyShippedPreferenceDefaults);
   g_prefsManager = new PrefsManager(GetPreferencesPath());
   SetPreferenceOverrides();
 
