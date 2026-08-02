@@ -1,6 +1,5 @@
 
-#ifndef _included_souldestroyer_h
-#define _included_souldestroyer_h
+#pragma once
 
 #include "Entity.h"
 
@@ -85,4 +84,3 @@ public:
     void Render( float _predictionTime );
 };
 
-#endif

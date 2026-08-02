@@ -1,5 +1,4 @@
-#ifndef INCLUDED_HASH_TABLE_H
-#define INCLUDED_HASH_TABLE_H
+#pragma once
 
 
 // Implements a simple hash table with null terminated char arrays for keys.
@@ -400,4 +399,3 @@ void HashTable<T>::DumpKeys() const
 }
 
 
-#endif

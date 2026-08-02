@@ -1,5 +1,4 @@
-#ifndef _INCLUDED_APP_H
-#define _INCLUDED_APP_H
+#pragma once
 
 #include "RgbColour.h"
 
@@ -121,4 +120,3 @@ public:
 
 extern App *g_app;
 
-#endif

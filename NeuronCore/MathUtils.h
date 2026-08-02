@@ -1,5 +1,4 @@
-#ifndef MATHUTILS_H
-#define MATHUTILS_H
+#pragma once
 
 #include <stdlib.h>
 
@@ -136,5 +135,4 @@ bool SphereTriangleIntersection(Vector3 const &sphereCentre, float sphereRadius,
 bool TriTriIntersection(Vector3 const &v0, Vector3 const &v1, Vector3 const &v2,
 						Vector3 const &u0, Vector3 const &u1, Vector3 const &u2);
 
-#endif
 

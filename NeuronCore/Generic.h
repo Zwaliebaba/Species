@@ -1,5 +1,4 @@
-#ifndef NETWORK_GENERIC
-#define NETWORK_GENERIC
+#pragma once
 
 void IpToString(struct in_addr in, char *newip);
 
@@ -9,4 +8,3 @@ void IpToString(struct in_addr in, char *newip);
 int ConvertIPToInt(const char* _ip);
 char* ConvertIntToIP(int _ip);
 
-#endif // NETWORK_GENERIC

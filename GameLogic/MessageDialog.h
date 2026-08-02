@@ -1,5 +1,4 @@
-#ifndef INCLUDED_MESSAGE_DIALOG_H
-#define INCLUDED_MESSAGE_DIALOG_H
+#pragma once
 
 
 #include "SpeciesWindow.h"
@@ -19,4 +18,3 @@ public:
 };
 
 
-#endif

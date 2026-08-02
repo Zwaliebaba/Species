@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef _included_specieswindow_h
-#define _included_specieswindow_h
+#pragma once
 
 #include "Eclipse.h"
 
@@ -111,4 +110,3 @@ public:
     void Render( int realX, int realY, bool highlighted, bool clicked );
 };
 
-#endif

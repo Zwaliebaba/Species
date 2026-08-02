@@ -1,5 +1,4 @@
-#ifndef _CLIENTTOSERVER_H
-#define _CLIENTTOSERVER_H
+#pragma once
 
 #include "LList.h"
 #include "TeamControls.h"
@@ -78,4 +77,3 @@ public:
 };
 
 
-#endif

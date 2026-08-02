@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SORTING_HASH_TABLE_H
-#define INCLUDED_SORTING_HASH_TABLE_H
+#pragma once
 
 #include "HashTable.h"
 
@@ -218,4 +217,3 @@ short SortingHashTable<T>::GetNextOrderedIndex()
   return rv;
 }
 
-#endif

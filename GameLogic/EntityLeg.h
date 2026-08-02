@@ -1,5 +1,4 @@
- #ifndef INCLUDED_ENTITY_LEG_H
-#define INCLUDED_ENTITY_LEG_H
+#pragma once
 
 
 #include "Vector3.h"
@@ -77,4 +76,3 @@ public:
 };
 
 
-#endif

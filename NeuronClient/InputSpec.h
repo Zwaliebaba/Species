@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUTSPEC_H
-#define INCLUDED_INPUTSPEC_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -40,4 +39,3 @@ public:
 std::ostream &operator<<( std::ostream &stream, InputSpecTokens const &tokens );
 
 
-#endif // INCLUDED_INPUTSPEC_H

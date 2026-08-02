@@ -1,5 +1,4 @@
-#ifndef _included_script_h
-#define _included_script_h
+#pragma once
 
 class TextReader;
 class LevelFile;
@@ -145,4 +144,3 @@ public:
 
 
 
-#endif

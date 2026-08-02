@@ -1,6 +1,5 @@
 
-#ifndef _included_cheatwindow_h
-#define _included_cheatwindow_h
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -16,4 +15,3 @@ public:
 
 
 
-#endif

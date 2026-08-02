@@ -1,6 +1,5 @@
 
-#ifndef _included_dynamicbuilding_h
-#define _included_dynamicbuilding_h
+#pragma once
 
 #include "Building.h"
 
@@ -118,4 +117,3 @@ public:
     void Write          ( FileWriter *_out );
 };
 
-#endif

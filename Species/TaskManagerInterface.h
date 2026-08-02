@@ -1,5 +1,4 @@
-#ifndef _included_taskmanagerinterface_h
-#define _included_taskmanagerinterface_h
+#pragma once
 
 #include <string>
 
@@ -114,4 +113,3 @@ public:
 
 
 
-#endif

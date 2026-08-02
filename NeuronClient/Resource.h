@@ -3,8 +3,7 @@
  *
  */
 
-#ifndef _included_resource_h
-#define _included_resource_h
+#pragma once
 
 #include <string>
 
@@ -84,4 +83,3 @@ class Resource
     LList<char*>* ListResources(const char* _dir, const char* _filter, bool _longResults = true);
 };
 
-#endif

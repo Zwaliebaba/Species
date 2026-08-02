@@ -1,5 +1,4 @@
-#ifndef INCLUDED_LOCATION_H
-#define INCLUDED_LOCATION_H
+#pragma once
 
 #include <float.h>
 
@@ -157,4 +156,3 @@ public:
 
 
 
-#endif

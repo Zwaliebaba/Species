@@ -1,6 +1,5 @@
 
-#ifndef _included_trunkport_h
-#define _included_trunkport_h
+#pragma once
 
 #include "Building.h"
 
@@ -40,4 +39,3 @@ public:
 
 
 
-#endif

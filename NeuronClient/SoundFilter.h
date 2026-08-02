@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SOUND_FILTER_H
-#define INCLUDED_SOUND_FILTER_H
+#pragma once
 
 
 //*****************************************************************************
@@ -150,4 +149,3 @@ public:
 };
 
 
-#endif

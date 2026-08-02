@@ -1,6 +1,5 @@
 
-#ifndef _included_scripttrigger_h
-#define _included_scripttrigger_h
+#pragma once
 
 #include "Building.h"
 
@@ -43,5 +42,3 @@ public:
     void Write      ( FileWriter *_out );
 };
 
-
-#endif

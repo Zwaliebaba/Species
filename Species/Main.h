@@ -1,5 +1,4 @@
-#ifndef INCLUDED_MAIN_H
-#define INCLUDED_MAIN_H
+#pragma once
 
 extern double g_gameTime; // Updated from GetHighResTime every frame
 extern float g_advanceTime; // How long the last frame took
@@ -11,4 +10,3 @@ extern int g_sliceNum; // Most recently advanced slice
 
 void AppMain();
 
-#endif

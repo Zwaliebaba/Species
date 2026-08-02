@@ -1,5 +1,4 @@
-#ifndef INCLUDED_BOUNDED_ARRAY_H
-#define INCLUDED_BOUNDED_ARRAY_H
+#pragma once
 
 
 // ****************************************************************************
@@ -120,4 +119,3 @@ void BoundedArray<T>::SetAll(T const& _value)
 }
 
 
-#endif

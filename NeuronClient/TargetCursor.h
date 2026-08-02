@@ -1,5 +1,4 @@
-#ifndef INCLUDED_TARGETCURSOR_H
-#define INCLUDED_TARGETCURSOR_H
+#pragma once
 
 
 class TargetCursor {
@@ -38,4 +37,3 @@ public:
 extern TargetCursor *g_target;
 
 
-#endif // INCLUDED_TARGETCURSOR_H

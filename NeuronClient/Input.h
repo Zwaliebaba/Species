@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUT_H
-#define INCLUDED_INPUT_H
+#pragma once
 
 #include <vector>
 #include <string>
@@ -108,4 +107,3 @@ public:
 extern InputManager *g_inputManager;
 
 
-#endif

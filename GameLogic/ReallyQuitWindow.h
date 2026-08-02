@@ -1,5 +1,4 @@
-#ifndef _included_reallyquit_window_h
-#define _included_reallyquit_window_h
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -10,5 +9,3 @@ public:
 	ReallyQuitWindow();
 	void Create();
 };
-
-#endif // _included_reallyquit_window_h

@@ -1,5 +1,4 @@
-#ifndef _included_spirit_h
-#define _included_spirit_h
+#pragma once
 
 #include "Entity.h"
 #include "WorldObject.h"
@@ -65,4 +64,3 @@ public:
 };
 
 
-#endif

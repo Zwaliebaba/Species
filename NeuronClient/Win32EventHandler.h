@@ -1,5 +1,4 @@
-#ifndef INCLUDED_W32_EVENTHANDLER_H
-#define INCLUDED_W32_EVENTHANDLER_H
+#pragma once
 
 #include <windows.h>
 #include <vector>
@@ -40,4 +39,3 @@ public:
 W32EventHandler *getW32EventHandler();
 
 
-#endif // INCLUDED_W32_EVENTHANDLER_H

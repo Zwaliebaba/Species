@@ -5,8 +5,7 @@
 //                           V1.3                                //
 //===============================================================//
 
-#ifndef _included_binary_tree_h
-#define _included_binary_tree_h
+#pragma once
 
 
 #include <iostream>
@@ -367,4 +366,3 @@ void BTree<T>::RecursiveConvertIndexToDArray(DArray <char*>* darray, BTree<T>* b
     RecursiveConvertIndexToDArray(darray, btree->Right());
 }
 
-#endif

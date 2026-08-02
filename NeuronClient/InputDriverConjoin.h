@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUTDRIVER_CONJOIN_H
-#define INCLUDED_INPUTDRIVER_CONJOIN_H
+#pragma once
 
 #include "AutoVector.h"
 #include "InputDriver.h"
@@ -44,4 +43,3 @@ public:
 };
 
 
-#endif // INCLUDED_INPUTDRIVER_CONJOIN_H

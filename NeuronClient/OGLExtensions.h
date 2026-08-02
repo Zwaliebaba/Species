@@ -1,5 +1,4 @@
-#ifndef _included_ogl_extensions_h
-#define _included_ogl_extensions_h
+#pragma once
 
 
 #include <stddef.h>
@@ -127,4 +126,3 @@ extern ChoosePixelFormatARB gglChoosePixelFormatARB;
 void InitialiseOGLExtensions();
 int IsOGLExtensionSupported(const char *extension);
 
-#endif

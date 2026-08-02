@@ -1,5 +1,4 @@
-#ifndef INCLUDED_BITMAP_H
-#define INCLUDED_BITMAP_H
+#pragma once
 
 
 class RGBAColour;
@@ -71,4 +70,3 @@ public:
 };
 
 
-#endif

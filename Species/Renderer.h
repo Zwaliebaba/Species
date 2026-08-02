@@ -1,5 +1,4 @@
-#ifndef INCLUDED_RENDERER_H
-#define INCLUDED_RENDERER_H
+#pragma once
 
 #define CHECK_OPENGL_STATE()
 
@@ -93,4 +92,3 @@ class Renderer
     void StartFadeIn(float _delay);
 };
 
-#endif

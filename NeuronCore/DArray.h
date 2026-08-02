@@ -5,8 +5,7 @@
 //                           V1.3                                //
 //===============================================================//
 
-#ifndef _included_darray_h
-#define _included_darray_h
+#pragma once
 
 
 //=================================================================
@@ -368,5 +367,4 @@ int DArray<T>::FindData(const T& newdata) const
 	return -1;
 }
 
-#endif
 

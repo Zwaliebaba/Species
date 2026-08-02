@@ -1,6 +1,5 @@
 
-#ifndef _included_library_h
-#define _included_library_h
+#pragma once
 
 #include "Building.h"
 
@@ -20,4 +19,3 @@ public:
 };
 
 
-#endif

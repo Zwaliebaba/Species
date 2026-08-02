@@ -1,5 +1,4 @@
-#ifndef SERVER_H
-#define SERVER_H
+#pragma once
 
 #include "LList.h"
 #include "DArray.h"
@@ -60,4 +59,3 @@ class Server
     void Advance();
 };
 
-#endif

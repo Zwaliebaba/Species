@@ -1,5 +1,4 @@
-#ifndef INCLUDED_PROFILER_H
-#define INCLUDED_PROFILER_H
+#pragma once
 
 #include "SortingHashTable.h"
 
@@ -105,4 +104,3 @@ class Profiler
 #define END_PROFILE(profiler, itemName)
 #endif // PROFILER_ENABLED
 
-#endif

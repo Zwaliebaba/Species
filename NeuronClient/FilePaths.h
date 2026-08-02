@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUT_FILE_PATHS_H
-#define INCLUDED_INPUT_FILE_PATHS_H
+#pragma once
 
 #include <string>
 
@@ -14,4 +13,3 @@ public:
 
 };
 
-#endif // INCLUDED_INPUT_FILE_PATHS_H

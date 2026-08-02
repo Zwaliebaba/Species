@@ -1,6 +1,5 @@
 
-#ifndef _included_generator_h
-#define _included_generator_h
+#pragma once
 
 #include "Building.h"
 
@@ -151,4 +150,3 @@ public:
     void ListSoundEvents( LList<char const *> *_list );
 };
 
-#endif

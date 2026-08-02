@@ -1,5 +1,4 @@
-#ifndef INCLUDED_UPGRADE_PORT_H
-#define INCLUDED_UPGRADE_PORT_H
+#pragma once
 
 
 #include "Building.h"
@@ -24,4 +23,3 @@ public:
     void ReprogramComplete();
 };
 
-#endif

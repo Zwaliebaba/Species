@@ -1,6 +1,5 @@
 
-#ifndef _included_wall_h
-#define _included_wall_h
+#pragma once
 
 #include "Building.h"
 
@@ -21,4 +20,3 @@ public:
 };
 
 
-#endif

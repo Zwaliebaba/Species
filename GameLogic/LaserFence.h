@@ -1,5 +1,4 @@
-#ifndef _included_laserfence_h
-#define _included_laserfence_h
+#pragma once
 
 #include <stdio.h>
 
@@ -80,4 +79,3 @@ public:
 };
 
 
-#endif

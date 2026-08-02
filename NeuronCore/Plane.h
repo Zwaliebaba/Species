@@ -1,5 +1,4 @@
-#ifndef INCLUDED_PLANE_H
-#define INCLUDED_PLANE_H
+#pragma once
 
 
 #include "Vector3.h"
@@ -18,4 +17,3 @@ public:
 };
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef _included_building_h
-#define _included_building_h
+#pragma once
 
 #include "Vector3.h"
 #include "Matrix34.h"
@@ -176,4 +175,3 @@ public:
     int             m_counter[NUM_TEAMS];
 };
 
-#endif

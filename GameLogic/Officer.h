@@ -1,6 +1,5 @@
 
-#ifndef _included_officer_h
-#define _included_officer_h
+#pragma once
 
 #include "Entity.h"
 #include "Flag.h"
@@ -97,4 +96,3 @@ public:
 };
 
 
-#endif

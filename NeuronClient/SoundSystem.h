@@ -1,5 +1,4 @@
-#ifndef _included_soundsystem_h
-#define _included_soundsystem_h
+#pragma once
 
 #include "FastDArray.h"
 #include "LList.h"
@@ -205,4 +204,3 @@ class SoundSystem
     SoundInstance* GetSoundInstance(SoundInstanceId id);
 };
 
-#endif

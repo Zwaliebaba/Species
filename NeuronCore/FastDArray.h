@@ -5,8 +5,7 @@
 //                           V1.3                                //
 //===============================================================//
 
-#ifndef _included_fdarray_h
-#define _included_fdarray_h
+#pragma once
 
 
 #include "DArray.h"
@@ -368,4 +367,3 @@ int FastDArray <T>::NumUsed() const
 	return this->numused;
 }
 
-#endif

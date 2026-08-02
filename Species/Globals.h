@@ -1,5 +1,4 @@
-#ifndef INCLUDED_GLOBALS_H
-#define INCLUDED_GLOBALS_H
+#pragma once
 
 // NUM_TEAMS and the server tick constants are protocol facts and live in
 // NeuronCore, where the server can reach them. Included here so every existing
@@ -11,4 +10,3 @@
 #define GRAVITY	                10.0f
 
 
-#endif

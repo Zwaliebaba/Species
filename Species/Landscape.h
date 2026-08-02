@@ -1,5 +1,4 @@
-#ifndef INCLUDED_LANDSCAPE_H
-#define INCLUDED_LANDSCAPE_H
+#pragma once
 
 #include "2dArray.h"
 #include "2dSurfaceMap.h"
@@ -116,4 +115,3 @@ public:
 
 
 
-#endif

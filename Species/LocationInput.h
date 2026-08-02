@@ -1,5 +1,4 @@
-#ifndef INCLUDED_LOCATION_INPUT
-#define INCLUDED_LOCATION_INPUT
+#pragma once
 
 
 class Building;
@@ -22,4 +21,3 @@ public:
 };
 
 
-#endif

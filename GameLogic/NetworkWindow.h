@@ -1,6 +1,5 @@
 
-#ifndef _included_networkwindow_h
-#define _included_networkwindow_h
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -14,4 +13,3 @@ public:
 };
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef _included_incubator_h
-#define _included_incubator_h
+#pragma once
 
 #include "FastDArray.h"
 #include "Building.h"
@@ -55,4 +54,3 @@ class Incubator : public Building
     void ListSoundEvents(LList<const char*>* _list) override;
 };
 
-#endif

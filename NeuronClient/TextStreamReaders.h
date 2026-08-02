@@ -1,5 +1,4 @@
-#ifndef INCLUDE_TEXT_STREAM_READERS_H
-#define INCLUDE_TEXT_STREAM_READERS_H
+#pragma once
 
 #include <stdio.h>
 #include <string>
@@ -83,4 +82,3 @@ public:
 };
 
 
-#endif

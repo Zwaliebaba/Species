@@ -1,5 +1,4 @@
-#ifndef _BUILDINGS_EDIT_WINDOW
-#define _BUILDINGS_EDIT_WINDOW
+#pragma once
 
 #ifdef LOCATION_EDITOR
 
@@ -43,4 +42,3 @@ public:
 #endif // LOCATION_EDITOR
 
 
-#endif

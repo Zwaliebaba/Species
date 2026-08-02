@@ -1,5 +1,4 @@
-#ifndef _included_profilewindow_h
-#define _included_profilewindow_h
+#pragma once
 
 #ifdef PROFILER_ENABLED
 
@@ -36,4 +35,3 @@ public:
 
 #endif // PROFILER_ENABLED
 
-#endif

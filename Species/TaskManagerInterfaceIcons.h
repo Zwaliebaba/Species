@@ -1,5 +1,4 @@
-#ifndef _included_taskmanagerinterfaceicons_h
-#define _included_taskmanagerinterfaceicons_h
+#pragma once
 
 #include "LList.h"
 #include "Entity.h"
@@ -116,4 +115,3 @@ public:
 };
 
 
-#endif

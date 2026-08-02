@@ -1,5 +1,4 @@
-#ifndef INCLUDED_PREFERENCES_H
-#define INCLUDED_PREFERENCES_H
+#pragma once
 
 #include <string>
 
@@ -110,4 +109,3 @@ extern PrefsManager *g_prefsManager;
 #define OTHER_AUTOMATICCAM "AutomaticCamera"
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef INCLUDED_PRESIZED_ARRAY_H
-#define INCLUDED_PRESIZED_ARRAY_H
+#pragma once
 
 #include "Debug.h"
 
@@ -65,4 +64,3 @@ public:
 //}
 
 
-#endif

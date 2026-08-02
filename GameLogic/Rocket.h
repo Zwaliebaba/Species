@@ -1,5 +1,4 @@
-#ifndef _included_rocket_h
-#define _included_rocket_h
+#pragma once
 
 #include "Building.h"
 
@@ -190,5 +189,3 @@ public:
 
     static int GetStateId( char *_state );
 };
-
-#endif

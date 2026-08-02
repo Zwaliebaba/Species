@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INSERTION_SQUAD
-#define INCLUDED_INSERTION_SQUAD
+#pragma once
 
 #include "Unit.h"
 #include "Shape.h"
@@ -95,4 +94,3 @@ class Squadie : public Entity
     Vector3 GetSecondaryWeaponTarget();
 };
 
-#endif

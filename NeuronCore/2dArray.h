@@ -1,5 +1,4 @@
-#ifndef INCLUDED_2D_ARRAY_H
-#define INCLUDED_2D_ARRAY_H
+#pragma once
 
 
 // ****************************************************************************
@@ -147,4 +146,3 @@ void Array2D<T>::SetAll(T const& _value)
 }
 
 
-#endif

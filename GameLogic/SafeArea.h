@@ -1,6 +1,5 @@
 
-#ifndef _included_safearea_h
-#define _included_safearea_h
+#pragma once
 
 #include "Building.h"
 
@@ -34,4 +33,3 @@ public:
 };
 
 
-#endif

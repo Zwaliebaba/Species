@@ -1,5 +1,4 @@
-#ifndef _included_engineer_h
-#define _included_engineer_h
+#pragma once
 
 #include "LList.h"
 
@@ -92,4 +91,3 @@ public:
 };
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SYSTEM_INFO_H
-#define INCLUDED_SYSTEM_INFO_H
+#pragma once
 
 
 //*****************************************************************************
@@ -64,4 +63,3 @@ public:
 extern SystemInfo *g_systemInfo;
 
 
-#endif

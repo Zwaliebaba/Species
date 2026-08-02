@@ -1,6 +1,5 @@
 
-#ifndef _included_startsequence_h
-#define _included_startsequence_h
+#pragma once
 
 
 class StartSequenceCaption;
@@ -36,5 +35,3 @@ public:
 
 };
 
-
-#endif

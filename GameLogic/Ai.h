@@ -1,5 +1,4 @@
-#ifndef _included_ai_h
-#define _included_ai_h
+#pragma once
 
 
 #include "Entity.h"
@@ -101,5 +100,3 @@ public:
 };
 
 
-
-#endif

@@ -1,6 +1,5 @@
 
-#ifndef _included_userprofilewindow_h
-#define _included_userprofilewindow_h
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -24,5 +23,3 @@ public:
     NewUserProfileWindow();
     void Create();
 };
-
-#endif

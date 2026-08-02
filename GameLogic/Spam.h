@@ -1,6 +1,5 @@
 
-#ifndef _included_spam_h
-#define _included_spam_h
+#pragma once
 
 #include "Building.h"
 
@@ -89,4 +88,3 @@ public:
 };
 
 
-#endif

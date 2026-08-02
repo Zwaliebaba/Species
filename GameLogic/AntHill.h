@@ -1,6 +1,5 @@
 
-#ifndef _included_anthill_h
-#define _included_anthill_h
+#pragma once
 
 #include "Building.h"
 
@@ -65,4 +64,3 @@ public:
 
 
 
-#endif

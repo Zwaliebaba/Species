@@ -1,5 +1,4 @@
-#ifndef _included_entity_h
-#define _included_entity_h
+#pragma once
 
 #include "LList.h"
 #include "TextureUv.h"
@@ -141,5 +140,4 @@ public:
 
 
 
-#endif
 

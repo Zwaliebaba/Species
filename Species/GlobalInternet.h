@@ -1,5 +1,4 @@
-#ifndef INCLUDED_GLOBAL_INTERNET
-#define INCLUDED_GLOBAL_INTERNET
+#pragma once
 
 
 #include "FastDArray.h"
@@ -81,4 +80,3 @@ public:
 
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef INCLUDED_LEVEL_FILE
-#define INCLUDED_LEVEL_FILE
+#pragma once
 
 #include <stdlib.h>
 #include "LList.h"
@@ -240,4 +239,3 @@ public:
 };
 
 
-#endif

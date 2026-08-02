@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUT_W32_H
-#define INCLUDED_INPUT_W32_H
+#pragma once
 
 
 #include <string>
@@ -86,4 +85,3 @@ private:
 };
 
 
-#endif //INCLUDED_INPUT_W32_H

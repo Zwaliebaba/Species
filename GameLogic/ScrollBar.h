@@ -9,8 +9,7 @@
  *
  */
 
-#ifndef _included_scrollbar_h
-#define _included_scrollbar_h
+#pragma once
 
 #include "Eclipse.h"
 #include "SpeciesWindow.h"
@@ -78,4 +77,3 @@ public:
     void MouseDown();
 };
 
-#endif

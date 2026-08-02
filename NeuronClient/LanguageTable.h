@@ -1,5 +1,4 @@
-#ifndef LANGUAGE_TABLE_H
-#define LANGUAGE_TABLE_H
+#pragma once
 
 #include "InputTypes.h"
 
@@ -71,4 +70,3 @@ LList <char *> *WordWrapText(const char *_string,
 #define MOODYLANGUAGEPHRASE(x,y)       g_app->m_langTable->RawLookupPhrase((x),(y))
 #define MOODYISLANGUAGEPHRASE(x,y)     g_app->m_langTable->RawDoesPhraseExist((x),(y))
 
-#endif

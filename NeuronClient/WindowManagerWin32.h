@@ -1,5 +1,4 @@
-#ifndef INCLUDED_WINDOW_MANAGER_WIN32_H
-#define INCLUDED_WINDOW_MANAGER_WIN32_H
+#pragma once
 
 class WindowManagerWin32
 {
@@ -16,4 +15,3 @@ public:
 	}
 };
 
-#endif

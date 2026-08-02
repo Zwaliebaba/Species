@@ -1,5 +1,4 @@
-#ifndef VECTOR3_H
-#define VECTOR3_H
+#pragma once
 
 
 #include "MathUtils.h"
@@ -209,4 +208,3 @@ inline Vector3 operator * (	float _scale, Vector3 const &_v )
 }
 
 
-#endif

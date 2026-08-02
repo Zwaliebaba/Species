@@ -1,5 +1,4 @@
-#ifndef _included_spawnpoint_h
-#define _included_spawnpoint_h
+#pragma once
 
 #include "Building.h"
 
@@ -151,5 +150,3 @@ public:
     bool DoesSphereHit      (Vector3 const &_pos, float _radius);
     bool DoesShapeHit       (Shape *_shape, Matrix34 _transform);
 };
-
-#endif

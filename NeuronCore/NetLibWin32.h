@@ -1,5 +1,4 @@
-#ifndef INCLUDED_NET_LIB_WIN32_H
-#define INCLUDED_NET_LIB_WIN32_H
+#pragma once
 
 
 #include <winsock2.h>
@@ -53,4 +52,3 @@ inline int NetSetSocketNonBlocking(SOCKET _socket)
 #define NetIsMsgTruncated(a) (a == WSAEMSGSIZE)
 
 
-#endif

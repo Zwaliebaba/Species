@@ -1,5 +1,4 @@
-#ifndef TEXT_RENDERER_H
-#define TEXT_RENDERER_H
+#pragma once
 
 class RGBAColour;
 class Vector3;
@@ -64,4 +63,3 @@ extern TextRenderer g_gameFont;
 extern TextRenderer g_editorFont;
 
 
-#endif

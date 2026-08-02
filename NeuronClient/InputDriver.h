@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUTDRIVER_H
-#define INCLUDED_INPUTDRIVER_H
+#pragma once
 
 #include <string>
 
@@ -107,4 +106,3 @@ public:
 std::ostream &operator<<( std::ostream &stream, InputDriver const &driver );
 
 
-#endif // INCLUDED_INPUTDRIVER_H

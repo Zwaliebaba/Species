@@ -1,6 +1,5 @@
 
-#ifndef _included_tree_h
-#define _included_tree_h
+#pragma once
 
 #include "Building.h"
 
@@ -68,4 +67,3 @@ public:
 };
 
 
-#endif

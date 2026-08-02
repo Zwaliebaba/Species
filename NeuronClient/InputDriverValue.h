@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUTDRIVER_VALUE_H
-#define INCLUDED_INPUTDRIVER_VALUE_H
+#pragma once
 
 #include "InputDriver.h"
 
@@ -28,4 +27,3 @@ public:
 };
 
 
-#endif // INCLUDED_INPUTDRIVER_VALUE_H

@@ -8,9 +8,7 @@
  *
  */
 
-#ifndef _included_bytestream_h
-#define _included_bytestream_h
-
+#pragma once
 
 
 #define READ_INT(_stream)                   *((int*)_stream); _stream += sizeof(int);
@@ -31,4 +29,3 @@
 
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef _included_unit_h
-#define _included_unit_h
+#pragma once
 
 #include "SliceDArray.h"
 #include "Vector3.h"
@@ -73,4 +72,3 @@ public:
 };
 
 
-#endif

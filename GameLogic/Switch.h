@@ -1,5 +1,4 @@
-#ifndef _included_fenceswitch_h
-#define _included_fenceswitch_h
+#pragma once
 
 #include "Building.h"
 
@@ -54,4 +53,3 @@ public:
 };
 
 
-#endif

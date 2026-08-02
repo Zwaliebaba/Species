@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef _included_filedialog_h
-#define _included_filedialog_h
+#pragma once
 
 
 #include "DArray.h"
@@ -55,4 +54,3 @@ public:
 };
 
 
-#endif

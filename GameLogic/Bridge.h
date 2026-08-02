@@ -1,5 +1,4 @@
-#ifndef _included_bridge_h
-#define _included_bridge_h
+#pragma once
 
 #include "Teleport.h"
 
@@ -55,4 +54,3 @@ public:
 };
 
 
-#endif

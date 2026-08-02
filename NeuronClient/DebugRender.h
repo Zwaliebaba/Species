@@ -1,5 +1,4 @@
-#ifndef _included_debug_render_h
-#define _included_debug_render_h
+#pragma once
 
 #ifdef DEBUG_RENDER_ENABLED
 
@@ -24,4 +23,3 @@ void PrintMatrices( const char *_title );
 
 #endif // DEBUG_RENDER_ENABLED
 
-#endif

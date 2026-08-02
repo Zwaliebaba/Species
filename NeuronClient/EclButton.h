@@ -4,8 +4,7 @@
 // Part of the Eclipse interface library
 // By Christopher Delay
 
-#ifndef _included_eclbutton_h
-#define _included_eclbutton_h
+#pragma once
 
 
 #define SIZE_ECLBUTTON_NAME     256
@@ -51,4 +50,3 @@ public:
 
 };
 
-#endif

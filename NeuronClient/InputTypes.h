@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUT_TYPES_H
-#define INCLUDED_INPUT_TYPES_H
+#pragma once
 
 #include <string>
 #include <memory>
@@ -55,4 +54,3 @@ enum InputMode {
 };
 
 
-#endif INCLUDED_INPUT_TYPES_H

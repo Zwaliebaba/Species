@@ -1,5 +1,4 @@
-#ifndef MATRIX33_H
-#define MATRIX33_H
+#pragma once
 
 
 #include "Vector3.h"
@@ -72,5 +71,4 @@ inline Vector3 operator * (	Vector3 const & _v, Matrix33 const &_m )
 }
 
 
-#endif
 

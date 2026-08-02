@@ -1,5 +1,4 @@
-#ifndef INCLUDED_NET_UDPDATA_H
-#define INCLUDED_NET_UDPDATA_H
+#pragma once
 
 
 // ****************************************************************************
@@ -21,4 +20,3 @@ public:
 };
 
 
-#endif

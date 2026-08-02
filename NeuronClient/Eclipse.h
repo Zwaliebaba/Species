@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef _included_eclipse_h
-#define _included_eclipse_h
+#pragma once
 
 #include "EclWindow.h"
 #include "EclButton.h"
@@ -100,4 +99,3 @@ int EclGetScreenW				();
 int EclGetScreenH				();
 
 
-#endif

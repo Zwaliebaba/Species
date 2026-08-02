@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SPIDER_H
-#define INCLUDED_SPIDER_H
+#pragma once
 
 
 #include "Vector2.h"
@@ -98,4 +97,3 @@ public:
 };
 
 
-#endif
