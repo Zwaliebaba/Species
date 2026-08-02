@@ -213,7 +213,7 @@ bool TextFileReader::ReadLine()
   //
   // Read some data from the file
 
-  // If fgets returns NULL that means we've found the EOF
+  // If fgets returns nullptr that means we've found the EOF
   if (fgets(m_line, m_maxLineLen + 1, m_file) == nullptr)
     eof = true;
 

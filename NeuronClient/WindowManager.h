@@ -1,5 +1,4 @@
-#ifndef INCLUDED_WINDOW_MANAGER_H
-#define INCLUDED_WINDOW_MANAGER_H
+#pragma once
 
 
 #include "LList.h"
@@ -104,4 +103,3 @@ void AppMain();
 extern WindowManager *g_windowManager;
 
 
-#endif

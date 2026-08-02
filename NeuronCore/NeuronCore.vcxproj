@@ -31,6 +31,7 @@
     <ClCompile Include="Vector2.cpp" />
     <ClCompile Include="Vector3.cpp" />
     <ClCompile Include="FileSys.cpp" />
+    <ClCompile Include="GameTime.cpp" />
     <ClCompile Include="Generic.cpp" />
     <ClCompile Include="NetworkUpdate.cpp" />
     <ClCompile Include="NetLib.cpp" />
@@ -59,6 +60,8 @@
     <ClInclude Include="HashTable.h" />
     <ClInclude Include="HiResTime.h" />
     <ClInclude Include="LList.h" />
+    <ClInclude Include="LookupTable.h" />
+    <ClInclude Include="SlotMap.h" />
     <ClInclude Include="MathUtils.h" />
     <ClInclude Include="Matrix33.h" />
     <ClInclude Include="Matrix34.h" />
@@ -70,11 +73,11 @@
     <ClInclude Include="ByteStream.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
+    <ClInclude Include="GameTime.h" />
     <ClInclude Include="Generic.h" />
     <ClInclude Include="NetworkUpdate.h" />
     <ClInclude Include="NetworkUpdate.inc" />
     <ClInclude Include="NetLib.h" />
-    <ClInclude Include="NetLibApple.h" />
     <ClInclude Include="NetLibWin32.h" />
     <ClInclude Include="NetMutex.h" />
     <ClInclude Include="NetSocket.h" />

@@ -1,5 +1,4 @@
-#ifndef INCLUDED_MOVEMENT3D_H
-#define INCLUDED_MOVEMENT3D_H
+#pragma once
 
 #include <memory>
 
@@ -93,4 +92,3 @@ public:
 };
 
 
-#endif // INCLUDED_MOVEMENT2D_H

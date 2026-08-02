@@ -1,5 +1,4 @@
-#ifndef INCLUDED_TEXTURE_UV_H
-#define INCLUDED_TEXTURE_UV_H
+#pragma once
 
 class TextureUV
 {
@@ -34,4 +33,3 @@ inline TextureUV operator * ( float _scale, TextureUV const &_v )
 	return _v * _scale;
 }
 
-#endif

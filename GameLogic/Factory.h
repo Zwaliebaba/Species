@@ -1,5 +1,4 @@
-#ifndef _included_factory_h
-#define _included_factory_h
+#pragma once
 
 #include "Building.h"
 #include "Entity.h"
@@ -55,4 +54,3 @@ public:
 	void Write(FileWriter *_out);
 };
 
-#endif

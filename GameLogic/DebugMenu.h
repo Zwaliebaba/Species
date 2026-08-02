@@ -1,8 +1,6 @@
-#ifndef _included_debugmenu_h
-#define _included_debugmenu_h
+#pragma once
 
 #include "SpeciesWindow.h"
-#include "App.h"
 
 
 class DebugMenu : public SpeciesWindow
@@ -39,4 +37,3 @@ public:
 };
 
 
-#endif

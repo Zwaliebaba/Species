@@ -309,8 +309,8 @@ float RayRayDist(Vector3 const &a, Vector3 const &aDir,
   	Vector3 cDir = aDir ^ bDir;
 	Vector3 temp1, temp2;
 
-	if (posOnA == NULL) posOnA = &temp1;
-	if (posOnB == NULL) posOnB = &temp2;
+	if (posOnA == nullptr) posOnA = &temp1;
+	if (posOnB == nullptr) posOnB = &temp2;
 
     // Check for near-parallel lines
 //    if ( 0 )

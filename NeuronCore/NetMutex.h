@@ -2,8 +2,7 @@
 //  A platform independent mutex implementation
 // ****************************************************************************
 
-#ifndef INCLUDED_NET_MUTEX_H
-#define INCLUDED_NET_MUTEX_H
+#pragma once
 
 
 #include "NetLib.h"
@@ -26,4 +25,3 @@ protected:
 };
 
 
-#endif

@@ -8,17 +8,15 @@
 #include "Armour.h"
 #include "GunTurret.h"
 #include "SoundSystem.h"
-#include "App.h"
-#include "Renderer.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ParticleSystem.h"
 #include "Explosion.h"
-#include "Camera.h"
 #include "GlobalWorld.h"
 #include "ObstructionGrid.h"
 #include "Team.h"
 #include "EntityGrid.h"
+#include "WorldPointers.h"
 
 Armour::Armour()
   : Entity(),
@@ -30,7 +28,7 @@ Armour::Armour()
 {
   SetType(TypeArmour);
 
-  m_shape = g_app->m_resource->GetShape("Armour.shp");
+  m_shape = g_resource->GetShape("Armour.shp");
   m_markerEntrance = m_shape->m_rootFragment->LookupMarker("MarkerEntrance");
   m_markerFlag = m_shape->m_rootFragment->LookupMarker("MarkerFlag");
 
@@ -42,7 +40,7 @@ Armour::~Armour()
 {
   if (m_id.GetTeamId() != 255)
   {
-    Team* team = &g_app->m_location->m_teams[m_id.GetTeamId()];
+    Team* team = &g_location->m_teams[m_id.GetTeamId()];
     team->UnRegisterSpecial(m_id);
   }
 }
@@ -55,7 +53,7 @@ void Armour::Begin()
 
   if (m_id.GetTeamId() != 255)
   {
-    Team* team = &g_app->m_location->m_teams[m_id.GetTeamId()];
+    Team* team = &g_location->m_teams[m_id.GetTeamId()];
     team->RegisterSpecial(m_id);
   }
 
@@ -75,7 +73,7 @@ void Armour::ChangeHealth(int _amount)
   if (!m_dead)
   {
     if (_amount < 0)
-      g_app->m_soundSystem->TriggerEntityEvent(this, "LoseHealth");
+      g_soundSystem->TriggerEntityEvent(this, "LoseHealth");
 
     int oldHealth = m_stats[StatHealth];
     int newHealth = oldHealth + _amount;
@@ -96,7 +94,7 @@ void Armour::ChangeHealth(int _amount)
     if (newHealth == 0)
     {
       m_dead = true;
-      g_app->m_soundSystem->TriggerEntityEvent(this, "Die");
+      g_soundSystem->TriggerEntityEvent(this, "Die");
     }
   }
 }
@@ -109,12 +107,12 @@ void Armour::ConvertToGunTurret()
   turretTemplate.m_dynamic = true;
 
   auto turret = static_cast<GunTurret*>(Building::CreateBuilding(Building::TypeGunTurret));
-  g_app->m_location->m_buildings.PutData(turret);
+  g_location->m_buildings.PutData(turret);
   turret->Initialise(&turretTemplate);
-  int id = g_app->m_globalWorld->GenerateBuildingId();
+  int id = g_globalWorld->GenerateBuildingId();
   turret->m_id.SetUnitId(UNIT_BUILDINGS);
   turret->m_id.SetUniqueId(id);
-  g_app->m_location->m_obstructionGrid->CalculateAll();
+  g_location->m_obstructionGrid->CalculateAll();
 
   //
   // Explode some polys, to cover the ropey change
@@ -171,14 +169,14 @@ void Armour::AdvanceToTargetPos()
   Vector3 oldPos = m_pos;
   m_pos += m_front * m_speed * SERVER_ADVANCE_PERIOD;
   PushFromObstructions(m_pos);
-  float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+  float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   if (m_pos.y <= landHeight)
   {
     float factor = SERVER_ADVANCE_PERIOD * 5.0f;
     m_pos.y = m_pos.y * (1.0f - factor) + landHeight * factor;
 
     factor = SERVER_ADVANCE_PERIOD * 5.0f;
-    Vector3 landUp = g_app->m_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+    Vector3 landUp = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
     m_up = m_up * (1.0f - factor) + landUp * factor;
 
     float distTravelled = (m_pos - oldPos).Mag();
@@ -193,7 +191,7 @@ void Armour::AdvanceToTargetPos()
     m_pos.y = max(m_pos.y, landHeight);
 
     float factor = SERVER_ADVANCE_PERIOD * 0.5f;
-    Vector3 landUp = g_app->m_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+    Vector3 landUp = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
     m_up = m_up * (1.0f - factor) + landUp * factor;
   }
 
@@ -205,17 +203,17 @@ void Armour::DetectCollisions()
   Vector3 pos(m_pos);
   pos += m_vel;
   int numFound;
-  WorldObjectId* neighbours = g_app->m_location->m_entityGrid->GetNeighbours(pos.x, pos.z, 30.0f, &numFound);
+  WorldObjectId* neighbours = g_location->m_entityGrid->GetNeighbours(pos.x, pos.z, 30.0f, &numFound);
 
   Vector3 escapeVector;
   bool collisionDetected = false;
 
   for (int i = 0; i < numFound; ++i)
   {
-    Entity* ent = g_app->m_location->GetEntity(neighbours[i]);
+    Entity* ent = g_location->GetEntity(neighbours[i]);
     if (ent->m_type == TypeArmour && ent->m_id != m_id)
     {
-      Entity* entity = g_app->m_location->GetEntity(neighbours[speciesRandom() % numFound]);
+      Entity* entity = g_location->GetEntity(neighbours[speciesRandom() % numFound]);
       DEBUG_ASSERT(entity);
       Vector3 toNeighbour = m_pos - entity->m_pos;
       toNeighbour.y = 0.0f;
@@ -253,7 +251,7 @@ bool Armour::Advance(Unit* _unit)
     Vector3 pos = m_pos + vel * 2;
     pos.y += 3.0f;
     float size = 50.0f + (syncrand() % 50);
-    g_app->m_particleSystem->CreateParticle(pos, vel, Particle::TypeMissileTrail, size);
+    g_particleSystem->CreateParticle(pos, vel, Particle::TypeMissileTrail, size);
   }
 
   //
@@ -317,20 +315,20 @@ void Armour::SetWayPoint(const Vector3& _wayPoint)
   m_conversionPoint.Zero();
 
   m_wayPoint = _wayPoint;
-  m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_wayPoint.x, m_wayPoint.z);
+  m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue(m_wayPoint.x, m_wayPoint.z);
 }
 
 void Armour::SetConversionPoint(const Vector3& _conversionPoint)
 {
   m_conversionPoint.Zero();
 
-  Vector3 landNormal = g_app->m_location->m_landscape.m_normalMap->GetValue(_conversionPoint.x, _conversionPoint.z);
+  Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(_conversionPoint.x, _conversionPoint.z);
   if (landNormal.y > 0.95f)
   {
     SetWayPoint(_conversionPoint);
 
     m_conversionPoint = _conversionPoint;
-    m_conversionPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_conversionPoint.x, m_conversionPoint.z);
+    m_conversionPoint.y = g_location->m_landscape.m_heightMap->GetValue(m_conversionPoint.x, m_conversionPoint.z);
   }
   else {}
 }
@@ -345,7 +343,7 @@ bool Armour::IsUnloading()
 
 int Armour::Capacity()
 {
-  int research = g_app->m_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeArmour);
+  int research = g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeArmour);
   switch (research)
   {
   case 0:
@@ -387,7 +385,7 @@ void Armour::AddPassenger()
 {
   ++m_numPassengers;
 
-  g_app->m_soundSystem->TriggerEntityEvent(this, "LoadDarwinian");
+  g_soundSystem->TriggerEntityEvent(this, "LoadDarwinian");
 }
 
 void Armour::RemovePassenger()
@@ -395,7 +393,7 @@ void Armour::RemovePassenger()
   --m_numPassengers;
   m_previousUnloadTimer = GetHighResTime();
 
-  g_app->m_soundSystem->TriggerEntityEvent(this, "UnloadDarwinian");
+  g_soundSystem->TriggerEntityEvent(this, "UnloadDarwinian");
 }
 
 void Armour::GetEntrance(Vector3& _exitPos, Vector3& _exitDir)
@@ -420,8 +418,8 @@ void Armour::SetMissileTarget( Vector3 const &_startRay, Vector3 const &_rayDir 
     //
     // Look for enemy entities
 
-    WorldObjectId id = g_app->m_location->GetEntityId( _startRay, _rayDir, 1 );
-    Entity *entity = g_app->m_location->GetEntity( id );
+    WorldObjectId id = g_location->GetEntityId( _startRay, _rayDir, 1 );
+    Entity *entity = g_location->GetEntity( id );
     if( entity )
     {
         m_missileTarget = entity->m_pos+entity->m_centrePos;
@@ -433,7 +431,7 @@ void Armour::SetMissileTarget( Vector3 const &_startRay, Vector3 const &_rayDir 
     // Hit against the landscape
 
     Vector3 landscapeHit;
-    bool hit = g_app->m_location->m_landscape.RayHit( _startRay, _rayDir, &landscapeHit );
+    bool hit = g_location->m_landscape.RayHit( _startRay, _rayDir, &landscapeHit );
     if( hit )
     {
         m_missileTarget = landscapeHit;
@@ -462,7 +460,7 @@ void Armour::LaunchMissile()
     missile->m_vel = front * 200.0f;
     missile->m_tankId = m_id;
     missile->m_target = m_missileTarget;
-    g_app->m_location->m_effects.PutData( missile );
+    g_location->m_effects.PutData( missile );
 }*/
 
 void Armour::Render(float _predictionTime)
@@ -484,10 +482,10 @@ void Armour::Render(float _predictionTime)
   // Work out our predicted position
 
   Vector3 predictedPos = m_pos + m_vel * _predictionTime;
-  //predictedPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
+  //predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
   //predictedPos.y = max( predictedPos.y, 0.0f );
   predictedPos.y += sinf(g_gameTime + m_id.GetUniqueId()) * 2;
-  Vector3 predictedUp = m_up; //g_app->m_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
+  Vector3 predictedUp = m_up; //g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
   predictedUp.x += sinf((g_gameTime + m_id.GetUniqueId()) * 2) * 0.05f;
   predictedUp.z += cosf(g_gameTime + m_id.GetUniqueId()) * 0.05f;
 
@@ -513,9 +511,9 @@ void Armour::Render(float _predictionTime)
       bodyMat.f *= (1.0f + sinf(g_gameTime) * 0.5f);
   }
 
-  g_app->m_renderer->SetObjectLighting();
+  g_renderer->SetObjectLighting();
   m_shape->Render(_predictionTime, bodyMat);
-  g_app->m_renderer->UnsetObjectLighting();
+  g_renderer->UnsetObjectLighting();
 
   glDisable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -532,13 +530,13 @@ void Armour::Render(float _predictionTime)
   switch (m_state)
   {
   case StateIdle:
-    m_flag.SetTexture(g_app->m_resource->GetTexture("Icons/BannerNone.bmp"));
+    m_flag.SetTexture(g_resource->GetTexture("Icons/BannerNone.bmp"));
     break;
   case StateUnloading:
-    m_flag.SetTexture(g_app->m_resource->GetTexture("Icons/BannerUnload.bmp"));
+    m_flag.SetTexture(g_resource->GetTexture("Icons/BannerUnload.bmp"));
     break;
   case StateLoading:
-    m_flag.SetTexture(g_app->m_resource->GetTexture("Icons/BannerFollow.bmp"));
+    m_flag.SetTexture(g_resource->GetTexture("Icons/BannerFollow.bmp"));
     break;
   }
 
@@ -564,7 +562,7 @@ void Armour::Render(float _predictionTime)
     m_deployFlag.SetPosition(m_conversionPoint);
     m_deployFlag.SetOrientation(front, up);
     m_deployFlag.SetSize(30.0f);
-    m_deployFlag.SetTexture(g_app->m_resource->GetTexture("Icons/BannerDeploy.bmp"));
+    m_deployFlag.SetTexture(g_resource->GetTexture("Icons/BannerDeploy.bmp"));
     m_deployFlag.Render();
   }
 }

@@ -1,5 +1,4 @@
-#ifndef INCLUDED_FILESYS_UTILS
-#define INCLUDED_FILESYS_UTILS
+#pragma once
 
 #include <stdio.h>
 
@@ -39,4 +38,3 @@ public:
 	void WriteLine(char *_line);	// _line gets modified
 };
 
-#endif

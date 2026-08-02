@@ -20,6 +20,7 @@
 #include "Location.h"	// For SetupFog
 #include "Renderer.h"
 #include "LevelFile.h"
+#include "WorldPointers.h"
 
 #define MAIN_DISPLAY_LIST_NAME "LandscapeMain"
 #define OVERLAY_DISPLAY_LIST_NAME "LandscapeOverlay"
@@ -240,7 +241,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
   : m_vertexBuffer(0)
 {
   char fullFilname[256];
-  sprintf(fullFilname, "Terrain/%s", g_app->m_location->m_levelFile->m_landscapeColourFilename);
+  sprintf(fullFilname, "Terrain/%s", g_location->m_levelFile->m_landscapeColourFilename);
 
   if (Location::ChristmasModEnabled() == 1)
     strcpy(fullFilname, "Terrain/LandscapeIcecaps.bmp");
@@ -259,7 +260,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
   }
 
   BinaryReader* reader = g_app->m_resource->GetBinaryReader(fullFilname);
-  ASSERT_TEXT(reader != NULL, "Failed to get resource %s", fullFilname);
+  ASSERT_TEXT(reader != nullptr, "Failed to get resource %s", fullFilname);
   m_landscapeColour = new BitmapRGBA(reader, "bmp");
   delete reader;
 
@@ -365,7 +366,7 @@ void LandscapeRenderer::RenderMainSlow()
   }
 
   if (m_renderMode == RenderModeVertexBufferObject)
-    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, NULL);
+    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
@@ -444,7 +445,7 @@ void LandscapeRenderer::RenderOverlaySlow()
   switch (m_renderMode)
   {
   case RenderModeVertexBufferObject:
-    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, NULL);
+    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
     break;
   }
 
@@ -471,7 +472,7 @@ void LandscapeRenderer::Render()
   if (m_verts.Size() <= 0)
     return;
 
-  g_app->m_location->SetupFog();
+  g_location->SetupFog();
   glEnable(GL_FOG);
 
   START_PROFILE(g_app->m_profiler, "Render Landscape Main");

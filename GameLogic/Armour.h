@@ -1,6 +1,5 @@
 
-#ifndef _included_tank_h
-#define _included_tank_h
+#pragma once
 
 #include "Entity.h"
 #include "Flag.h"
@@ -69,5 +68,3 @@ public:
     void GetEntrance( Vector3 &_exitPos, Vector3 &_exitDir );
 };
 
-
-#endif

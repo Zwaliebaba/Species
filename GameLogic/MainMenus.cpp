@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "MainMenus.h"
-#include "App.h"
 #include "GlobalWorld.h"
 #include "LanguageTable.h"
 #include "Preferences.h"
@@ -16,6 +15,9 @@
 #include "UserProfileWindow.h"
 #include "Win32EventHandler.h"
 #include "WindowManager.h"
+#include "WorldPointers.h"
+#include "AppState.h"
+#include "AppCommands.h"
 
 class WebsiteButton;
 
@@ -39,8 +41,8 @@ class SkipPrologueButton : public SpeciesButton
       EclRemoveWindow(w->m_name);
     }
 
-    g_app->m_script->Skip();
-    g_app->LoadCampaign();
+    g_script->Skip();
+    g_appCommands->LoadCampaign();
   }
 };
 
@@ -55,8 +57,8 @@ class PlayPrologueButton : public SpeciesButton
       EclRemoveWindow(w->m_name);
     }
 
-    g_app->m_script->Skip();
-    g_app->LoadPrologue();
+    g_script->Skip();
+    g_appCommands->LoadPrologue();
   }
 };
 
@@ -148,8 +150,8 @@ class KeybindingsOptionsButton : public SpeciesButton
 MainMenuWindow::MainMenuWindow()
   : SpeciesWindow(LANGUAGEPHRASE("dialog_mainmenu"))
 {
-  int screenW = g_app->m_renderer->ScreenW();
-  int screenH = g_app->m_renderer->ScreenH();
+  int screenW = g_renderer->ScreenW();
+  int screenH = g_renderer->ScreenH();
 
   SetMenuSize(220, 260);
   SetPosition(screenW / 2.0f - m_w / 2.0f, screenH / 2.0f - m_h / 2.0f);
@@ -164,8 +166,8 @@ void MainMenuWindow::Render(bool _hasFocus) { SpeciesWindow::Render(_hasFocus); 
 OptionsMenuWindow::OptionsMenuWindow()
   : SpeciesWindow(LANGUAGEPHRASE("dialog_options"))
 {
-  int screenW = g_app->m_renderer->ScreenW();
-  int screenH = g_app->m_renderer->ScreenH();
+  int screenW = g_renderer->ScreenW();
+  int screenH = g_renderer->ScreenH();
 
   SetMenuSize(240, 230);
   //    SetPosition( screenW/2.0f - m_w/2.0f,
@@ -239,7 +241,7 @@ class ExitLevelButton : public SpeciesButton
   {
     EclRemoveWindow(m_parent->m_name);
 
-    g_app->m_requestedLocationId = -1;
+    g_requestedLocationId = -1;
   }
 };
 
@@ -259,18 +261,18 @@ class WebsiteButton : public SpeciesButton
         g_prefsManager->SetInt("ScreenHeight", 600);
 
         g_windowManager->DestroyWin();
-        delete g_app->m_renderer;
-        g_app->m_renderer = new Renderer();
-        g_app->m_renderer->Initialise();
+        delete g_renderer;
+        g_renderer = new Renderer();
+        g_renderer->Initialise();
         getW32EventHandler()->ResetWindowHandle();
-        g_app->m_resource->FlushOpenGlState();
-        g_app->m_resource->RegenerateOpenGlState();
+        g_resource->FlushOpenGlState();
+        g_resource->RegenerateOpenGlState();
 
         g_prefsManager->Save();
 
         EclInitialise(800, 600);
 
-        m_parent->SetPosition(g_app->m_renderer->ScreenW() / 2 - m_parent->m_w / 2, g_app->m_renderer->ScreenH() / 2 - m_parent->m_h / 2);
+        m_parent->SetPosition(g_renderer->ScreenW() / 2 - m_parent->m_w / 2, g_renderer->ScreenH() / 2 - m_parent->m_h / 2);
       }
       g_windowManager->OpenWebsite(m_website);
     }
@@ -279,8 +281,8 @@ class WebsiteButton : public SpeciesButton
 LocationWindow::LocationWindow()
   : SpeciesWindow(LANGUAGEPHRASE("dialog_locationmenu"))
 {
-  int screenW = g_app->m_renderer->ScreenW();
-  int screenH = g_app->m_renderer->ScreenH();
+  int screenW = g_renderer->ScreenW();
+  int screenH = g_renderer->ScreenH();
 
   SetMenuSize(200, 220);
   SetPosition(screenW / 2.0f - m_w / 2.0f, screenH / 2.0f - m_h / 2.0f);
@@ -299,9 +301,9 @@ void LocationWindow::Create()
 
   int gap = border;
 
-  GlobalLocation* loc = g_app->m_globalWorld->GetLocation(g_app->m_locationId);
+  GlobalLocation* loc = g_globalWorld->GetLocation(g_locationId);
 
-  if (g_app->HasBoughtGame())
+  if (g_appCommands->HasBoughtGame())
   {
     // Full game menu
 
@@ -316,7 +318,7 @@ void LocationWindow::Create()
       gap = h;
     }
 
-    if (g_app->m_gameMode == App::GameModePrologue)
+    if (g_gameMode == GameModePrologue)
     {
       auto exit = new GameExitButton();
       exit->SetShortProperties(LANGUAGEPHRASE("dialog_leavedarwinia"), border, y += h, buttonW, buttonH);
@@ -371,7 +373,7 @@ void LocationWindow::Create()
   RegisterButton(options);
   m_buttonOrder.PutData(options);
 
-  if (g_app->HasBoughtGame() && g_app->m_gameMode == App::GameModePrologue)
+  if (g_appCommands->HasBoughtGame() && g_gameMode == GameModePrologue)
   {
     auto skip = new SkipPrologueWindowButton();
     skip->SetShortProperties(LANGUAGEPHRASE("dialog_skipprologue"), border, y += h, buttonW, buttonH);
@@ -536,7 +538,7 @@ void AboutSpeciesWindow::Render(bool _hasFocus)
   SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Sprites/Darwinian.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Darwinian.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -604,7 +606,7 @@ void SkipPrologueWindow::Render(bool _hasFocus)
   SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Campaign.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Campaign.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -672,7 +674,7 @@ void PlayPrologueWindow::Render(bool _hasFocus)
   SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Prologue.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Prologue.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);

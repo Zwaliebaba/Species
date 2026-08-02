@@ -1,6 +1,5 @@
 
-#ifndef _included_researchitem_h
-#define _included_researchitem_h
+#pragma once
 
 #include "Building.h"
 
@@ -48,4 +47,3 @@ public:
 
 
 
-#endif

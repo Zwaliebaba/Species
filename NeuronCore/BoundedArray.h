@@ -1,5 +1,4 @@
-#ifndef INCLUDED_BOUNDED_ARRAY_H
-#define INCLUDED_BOUNDED_ARRAY_H
+#pragma once
 
 
 // ****************************************************************************
@@ -43,7 +42,7 @@ public:
 template <class T>
 BoundedArray<T>::BoundedArray()
 	: m_numElements(0),
-	m_data(NULL)
+	m_data(nullptr)
 {}
 
 
@@ -120,4 +119,3 @@ void BoundedArray<T>::SetAll(T const& _value)
 }
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef _included_virii_h
-#define _included_virii_h
+#pragma once
 
 #include "Entity.h"
 #include "Unit.h"
@@ -108,4 +107,3 @@ public:
 };
 
 
-#endif

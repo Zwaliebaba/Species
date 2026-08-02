@@ -22,7 +22,7 @@ static ConditionInfo s_conditions[] = {
 	INPUT_TYPE_ANALOG, "move",     COND_MOVED,    // Analog is outside dead zone (return delta)
 	INPUT_TYPE_ANALOG, "zero",     COND_ZERO,     // Analog is still in dead zone
 	INPUT_TYPE_ANALOG, "read",     COND_READ,     // Analog always triggers (return default device info)
-	NULL,              NULL,       NULL
+	NULL,              nullptr,       NULL
 };
 
 condition_t InputDriver::getDefaultConditionID( std::string const &name, inputtype_t &type )

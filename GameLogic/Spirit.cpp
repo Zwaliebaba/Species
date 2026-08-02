@@ -6,7 +6,6 @@
 #include "Debug.h"
 #include "DebugRender.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "EntityGrid.h"
 #include "ObstructionGrid.h"
@@ -19,6 +18,8 @@
 #include "Spirit.h"
 #include "Virii.h"
 #include "Egg.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 Spirit::Spirit()
@@ -49,7 +50,7 @@ void Spirit::Begin()
     m_numNearbyEggs = 0;
     m_eggSearchTimer = 0.0f;
 
-    g_app->m_soundSystem->TriggerOtherEvent( this, "Create", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "Create", SoundSourceBlueprint::TypeSpirit );
 }
 
 bool Spirit::Advance()
@@ -82,7 +83,7 @@ bool Spirit::Advance()
             case StateBirth:
             {
                 m_hover.y = max( m_hover.y, 0.0f + syncfrand(0.5f) );
-                float heightAboveGround = m_pos.y - g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+                float heightAboveGround = m_pos.y - g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
                 if( heightAboveGround > 10.0f )
                 {
                     float fractionAboveGround = heightAboveGround / 100.0f;
@@ -101,7 +102,7 @@ bool Spirit::Advance()
                 if( m_timeSync <= 0.0f )
                 {
                     m_state = StateDeath;
-                    g_app->m_soundSystem->TriggerOtherEvent( this, "BeginAscent", SoundSourceBlueprint::TypeSpirit );
+                    g_soundSystem->TriggerOtherEvent( this, "BeginAscent", SoundSourceBlueprint::TypeSpirit );
                     m_timeSync = 180.0f;
                     AddToGlobalWorld();
                 }
@@ -132,8 +133,8 @@ bool Spirit::Advance()
 
     m_pos += m_vel * SERVER_ADVANCE_PERIOD;
     m_pos += m_hover * SERVER_ADVANCE_PERIOD;
-    float worldSizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float worldSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float worldSizeX = g_location->m_landscape.GetWorldSizeX();
+    float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
     if( m_pos.x < 0.0f ) m_pos.x = 0.0f;
     if( m_pos.z < 0.0f ) m_pos.z = 0.0f;
     if( m_pos.x >= worldSizeX ) m_pos.x = worldSizeX;
@@ -141,7 +142,7 @@ bool Spirit::Advance()
 
     if( m_state != StateInEgg && m_state != StateDeath )
     {
-        float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+        float landHeight = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
         if( m_pos.y < landHeight + 2.0f ) m_pos.y = landHeight + 2.0f;
     }
 
@@ -160,13 +161,13 @@ bool Spirit::Advance()
             m_numNearbyEggs = 0;
 
             int numNeighbours;
-            WorldObjectId *ids = g_app->m_location->m_entityGrid->GetNeighbours(
+            WorldObjectId *ids = g_location->m_entityGrid->GetNeighbours(
 								    m_pos.x, m_pos.z, VIRII_MAXSEARCHRANGE, &numNeighbours );
 
             for( int i = 0; i < numNeighbours; ++i )
             {
                 WorldObjectId id = ids[i];
-                Egg *egg = (Egg *) g_app->m_location->GetEntitySafe( id, Entity::TypeEgg );
+                Egg *egg = (Egg *) g_location->GetEntitySafe( id, Entity::TypeEgg );
                 if( egg &&
                     egg->m_state == Egg::StateDormant &&
                     egg->m_onGround )
@@ -188,14 +189,14 @@ bool Spirit::Advance()
 
 void Spirit::PushFromBuildings()
 {
-    LList<int> *obstructions = g_app->m_location->m_obstructionGrid->GetBuildings( m_pos.x, m_pos.z );
+    LList<int> *obstructions = g_location->m_obstructionGrid->GetBuildings( m_pos.x, m_pos.z );
 
     bool hitFound = false;
 
     for( int i = 0; i < obstructions->Size(); ++i )
     {
         int buildingId = obstructions->GetData(i);
-        Building *building = g_app->m_location->GetBuilding( buildingId );
+        Building *building = g_location->GetBuilding( buildingId );
         if( building && building->DoesSphereHit( m_pos, 5.0f ) )
         {
             hitFound = true;
@@ -224,8 +225,8 @@ void Spirit::SkipStage()
 
 void Spirit::AddToGlobalWorld()
 {
-    int locationId = g_app->m_locationId;
-    GlobalLocation *location = g_app->m_globalWorld->GetLocation( locationId );
+    int locationId = g_locationId;
+    GlobalLocation *location = g_globalWorld->GetLocation( locationId );
     DEBUG_ASSERT(location);
     location->AddSpirits(1);
 }
@@ -234,7 +235,7 @@ void Spirit::AddToGlobalWorld()
 void Spirit::CollectorArrives()
 {
     m_state = StateAttached;
-    g_app->m_soundSystem->TriggerOtherEvent( this, "PickedUp", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "PickedUp", SoundSourceBlueprint::TypeSpirit );
 }
 
 void Spirit::CollectorDrops()
@@ -244,7 +245,7 @@ void Spirit::CollectorDrops()
     m_state = StateFloating;
     m_pushFromBuildings = true;
 //    Begin();
-    g_app->m_soundSystem->TriggerOtherEvent( this, "Dropped", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "Dropped", SoundSourceBlueprint::TypeSpirit );
 }
 
 void Spirit::InEgg()
@@ -252,7 +253,7 @@ void Spirit::InEgg()
     m_state = StateInEgg;
     m_vel.Zero();
     m_hover.Zero();
-    g_app->m_soundSystem->TriggerOtherEvent( this, "PlacedInEgg", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "PlacedInEgg", SoundSourceBlueprint::TypeSpirit );
 }
 
 void Spirit::EggDestroyed()
@@ -261,7 +262,7 @@ void Spirit::EggDestroyed()
     m_hover.Zero();
     m_state = StateFloating;
 //    Begin();
-    g_app->m_soundSystem->TriggerOtherEvent( this, "EggDestroyed", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "EggDestroyed", SoundSourceBlueprint::TypeSpirit );
 }
 
 void Spirit::Render( float predictionTime )
@@ -293,7 +294,7 @@ void Spirit::Render( float predictionTime )
     RGBAColour colour;
     if( m_teamId != 255 )
     {
-        colour = g_app->m_location->m_teams[ m_teamId ].m_colour;
+        colour = g_location->m_teams[ m_teamId ].m_colour;
     }
     else
     {
@@ -309,19 +310,19 @@ void Spirit::Render( float predictionTime )
     glColor4ub(colour.r, colour.g, colour.b, innerAlpha );
 
     glBegin( GL_QUADS );
-        glVertex3fv( (predictedPos - g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (predictedPos + g_app->m_camera->GetRight()*size).GetData() );
-        glVertex3fv( (predictedPos + g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (predictedPos - g_app->m_camera->GetRight()*size).GetData() );
+        glVertex3fv( (predictedPos - g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (predictedPos + g_camera->GetRight()*size).GetData() );
+        glVertex3fv( (predictedPos + g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (predictedPos - g_camera->GetRight()*size).GetData() );
     glEnd();
 
     size = spiritOuterSize;
     glColor4ub(colour.r, colour.g, colour.b, outerAlpha );
     glBegin( GL_QUADS );
-        glVertex3fv( (predictedPos - g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (predictedPos + g_app->m_camera->GetRight()*size).GetData() );
-        glVertex3fv( (predictedPos + g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (predictedPos - g_app->m_camera->GetRight()*size).GetData() );
+        glVertex3fv( (predictedPos - g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (predictedPos + g_camera->GetRight()*size).GetData() );
+        glVertex3fv( (predictedPos + g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (predictedPos - g_camera->GetRight()*size).GetData() );
     glEnd();
 }
 

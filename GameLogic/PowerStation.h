@@ -1,5 +1,4 @@
-#ifndef _included_powerstation_h
-#define _included_powerstation_h
+#pragma once
 
 #include "Building.h"
 
@@ -30,4 +29,3 @@ public:
 };
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef FILE_WRITER_H
-#define FILE_WRITER_H
+#pragma once
 
 #include <stdio.h>
 
@@ -19,4 +18,3 @@ public:
 };
 
 
-#endif

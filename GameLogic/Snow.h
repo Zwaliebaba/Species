@@ -1,6 +1,5 @@
 
-#ifndef _included_snow_h
-#define _included_snow_h
+#pragma once
 
 #include "WorldObject.h"
 
@@ -26,5 +25,3 @@ public:
     float GetLife();                        // Returns 0.0f-1.0f (0.0f=dead, 1.0f=alive)
 };
 
-
-#endif

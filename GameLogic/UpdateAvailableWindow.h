@@ -1,5 +1,4 @@
-#if !defined __UPDATE_AVAILABLEWINDOW_H
-#define __UPDATE_AVAILABLEWINDOW_H
+#pragma once
 
 #include "MessageDialog.h"
 
@@ -8,5 +7,3 @@ public:
 	UpdateAvailableWindow( const char *newVersion, const char *changeLog );
 	void Create();
 };
-
-#endif

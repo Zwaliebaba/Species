@@ -1,6 +1,5 @@
 
-#ifndef _included_controltower_h
-#define _included_controltower_h
+#pragma once
 
 #include "Building.h"
 
@@ -56,4 +55,3 @@ public:
 };
 
 
-#endif

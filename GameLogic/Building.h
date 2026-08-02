@@ -1,5 +1,4 @@
-#ifndef _included_building_h
-#define _included_building_h
+#pragma once
 
 #include "Vector3.h"
 #include "Matrix34.h"
@@ -8,7 +7,7 @@
 #include "Entity.h"
 #include "WorldObject.h"
 
-#include "Globals.h"
+#include "ProtocolLimits.h"
 
 class Shape;
 class ShapeFragment;
@@ -147,7 +146,7 @@ public:
     virtual bool DoesSphereHit          (Vector3 const &_pos, float _radius);
     virtual bool DoesShapeHit           (Shape *_shape, Matrix34 _transform);
     virtual bool DoesRayHit             (Vector3 const &_rayStart, Vector3 const &_rayDir,
-                                        float _rayLen=1e10, Vector3 *_pos=NULL, Vector3 *_norm=NULL);        // pos/norm will not always be available
+                                        float _rayLen=1e10, Vector3 *_pos=nullptr, Vector3 *_norm=nullptr);        // pos/norm will not always be available
 
     virtual void ListSoundEvents        ( LList<char const *> *_list );
 
@@ -176,4 +175,3 @@ public:
     int             m_counter[NUM_TEAMS];
 };
 
-#endif

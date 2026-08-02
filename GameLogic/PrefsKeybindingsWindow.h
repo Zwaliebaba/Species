@@ -1,5 +1,4 @@
-#ifndef INCLUDED_KEYBINDINGS_WINDOW_H
-#define INCLUDED_KEYBINDINGS_WINDOW_H
+#pragma once
 
 
 #include "AutoVector.h"
@@ -27,4 +26,3 @@ public:
 };
 
 
-#endif

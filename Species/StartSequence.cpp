@@ -19,13 +19,15 @@
 #include "GlobalWorld.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 StartSequence::StartSequence()
 {
     m_startTime = GetHighResTime();
 
-    float screenRatio = (float) g_app->m_renderer->ScreenH() / (float) g_app->m_renderer->ScreenW();
+    float screenRatio = (float) g_renderer->ScreenH() / (float) g_renderer->ScreenW();
     int screenH = 800 * screenRatio;
 
     float x = 150;
@@ -68,9 +70,9 @@ bool StartSequence::Advance()
     if( GetHighResTime() > m_startTime && !started )
     {
         started = true;
-        g_app->m_soundSystem->TriggerOtherEvent( NULL, "StartSequence", SoundSourceBlueprint::TypeMusic );
-	    g_app->m_camera->SetDebugMode(Camera::DebugModeAuto);
-        g_app->m_camera->RequestMode(Camera::ModeSphereWorldIntro);
+        g_app->m_soundSystem->TriggerOtherEvent( nullptr, "StartSequence", SoundSourceBlueprint::TypeMusic );
+	    g_camera->SetDebugMode(Camera::DebugModeAuto);
+        g_camera->RequestMode(Camera::ModeSphereWorldIntro);
     }
 
     g_inputManager->PollForEvents();
@@ -78,34 +80,34 @@ bool StartSequence::Advance()
 	if( !g_eventHandler->WindowHasFocus() )
     {
 		Sleep(1);
-		g_app->m_userInput->Advance();
+		g_userInput->Advance();
 		return false;
     }
 
     if( g_inputManager->controlEvent( ControlSkipMessage ) ||
-		g_app->m_requestQuit ||
+		g_requestQuit ||
 		( GetHighResTime() - m_startTime ) > 90 )
     {
         g_app->m_soundSystem->StopAllSounds( WorldObjectId(), "Music StartSequence" );
         return true;
     }
 
-    g_app->m_userInput->Advance();
-    g_app->m_camera->Advance();
+    g_userInput->Advance();
+    g_camera->Advance();
     g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
 	g_app->m_profiler->Advance();
 #endif // PROFILER_ENABLED
 
-    g_app->m_renderer->Render();
+  TheRenderer()->Render();
 
-    return false;
+  return false;
 }
 
 
 void StartSequence::Render()
 {
-    float screenRatio = (float) g_app->m_renderer->ScreenH() / (float) g_app->m_renderer->ScreenW();
+    float screenRatio = (float) g_renderer->ScreenH() / (float) g_renderer->ScreenW();
     int screenH = 800 * screenRatio;
 
 	glMatrixMode(GL_MODELVIEW);
@@ -190,7 +192,7 @@ void StartSequence::Render()
         }
     }
 
-    g_app->m_renderer->SetupMatricesFor3D();
+    g_renderer->SetupMatricesFor3D();
 
 
     //
@@ -253,7 +255,7 @@ void StartSequence::Render()
 	    glBlendFunc		(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDepthMask		(true);
 
-        g_app->m_globalWorld->SetupFog();
+        g_globalWorld->SetupFog();
         glDisable( GL_FOG );
 
         glPopMatrix ();

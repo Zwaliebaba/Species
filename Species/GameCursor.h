@@ -1,5 +1,4 @@
-#ifndef _included_gamecursor_h
-#define _included_gamecursor_h
+#pragma once
 
 /*
     Renders all mouse cursors of any kind in-game.
@@ -113,5 +112,3 @@ public:
     void Render3D       (Vector3 const &_pos, Vector3 const &_front, Vector3 const &_up, bool _cameraScale=true);
 };
 
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _INCLUDED_LANDSCAPE_WINDOW_H
-#define _INCLUDED_LANDSCAPE_WINDOW_H
+#pragma once
 
 #ifdef LOCATION_EDITOR
 
@@ -89,4 +88,3 @@ public:
 #endif // LOCATION_EDITOR
 
 
-#endif

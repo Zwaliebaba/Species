@@ -1,5 +1,4 @@
-#ifndef _included_soundsystem_h
-#define _included_soundsystem_h
+#pragma once
 
 #include "FastDArray.h"
 #include "LList.h"
@@ -184,7 +183,7 @@ class SoundSystem
     void TriggerBuildingEvent(Building* _building, const char* _eventName);
     void TriggerOtherEvent(WorldObject* _other, const char* _eventName, int _type);
 
-    void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in NULL to stop every event.
+    void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in nullptr to stop every event.
     // Full event name required, eg "Darwinian SeenThreat"
 
     void StopAllDSPEffects();
@@ -205,4 +204,7 @@ class SoundSystem
     SoundInstance* GetSoundInstance(SoundInstanceId id);
 };
 
-#endif
+// Owned by App, which assigns this during startup. Declared here so the layers
+// below Species can reach the subsystem without including App.h — see
+// tasks/layering-inversion.yaml T8.
+extern SoundSystem* g_soundSystem;

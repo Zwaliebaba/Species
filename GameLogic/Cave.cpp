@@ -6,15 +6,13 @@
 #include "Debug.h"
 
 #include "Explosion.h"
-#include "App.h"
 #include "EntityGrid.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "Unit.h"
 
 #include "Cave.h"
-
+#include "WorldPointers.h"
 
 
 Cave::Cave()
@@ -27,7 +25,7 @@ Cave::Cave()
     m_type = TypeCave;
     m_troopType = Entity::TypeVirii;
 
-    SetShape( g_app->m_resource->GetShape( "Cave.shp" ) );
+    SetShape( g_resource->GetShape( "Cave.shp" ) );
 
     m_spawnPoint = m_shape->m_rootFragment->LookupMarker( "MarkerSpawnPoint" );
     DEBUG_ASSERT( m_spawnPoint );
@@ -39,7 +37,7 @@ bool Cave::Advance()
     if( m_dead ) return true;
 
     if( m_id.GetTeamId() < 0 || m_id.GetTeamId() >= NUM_TEAMS ) return false;
-    if( g_app->m_location->m_teams[ m_id.GetTeamId() ].m_teamType == Team::TeamTypeUnused ) return false;
+    if( g_location->m_teams[ m_id.GetTeamId() ].m_teamType == Team::TeamTypeUnused ) return false;
 
     m_spawnTimer -= SERVER_ADVANCE_PERIOD;
 
@@ -51,21 +49,21 @@ bool Cave::Advance()
         Matrix34 rootMat(m_front, g_upVector, m_pos);
         Matrix34 worldMat = m_spawnPoint->GetWorldMatrix(rootMat);
         Vector3 spawnPoint = worldMat.pos;
-        spawnPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( spawnPoint.x, spawnPoint.z );
+        spawnPoint.y = g_location->m_landscape.m_heightMap->GetValue( spawnPoint.x, spawnPoint.z );
 
         int numFound;
-        WorldObjectId *objs = g_app->m_location->m_entityGrid->GetFriends( spawnPoint.x, spawnPoint.z, 100.0f, &numFound, m_id.GetTeamId() );
+        WorldObjectId *objs = g_location->m_entityGrid->GetFriends( spawnPoint.x, spawnPoint.z, 100.0f, &numFound, m_id.GetTeamId() );
         if( numFound < 30 )
         {
             //int numToCreate = int( syncfrand(5.0f) + 3.0f );
-            Team *team = &g_app->m_location->m_teams[m_id.GetTeamId()];
+            Team *team = &g_location->m_teams[m_id.GetTeamId()];
 
             //Unit *unit = team->NewUnit( m_troopType, numToCreate, &m_unitId );
             //unit->m_wayPoint = spawnPoint + worldMat.f * 25.0f;
             //unit->m_wayPoint += Vector3( syncsfrand(25.0f), 0.0f, syncsfrand(25.0f) );
-            //unit->m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( unit->m_wayPoint.x, unit->m_wayPoint.z );
+            //unit->m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue( unit->m_wayPoint.x, unit->m_wayPoint.z );
 
-            g_app->m_location->SpawnEntities( spawnPoint, m_id.GetTeamId(), m_id.GetUniqueId(), m_troopType, 1, g_zeroVector, 0.0f );
+            g_location->SpawnEntities( spawnPoint, m_id.GetTeamId(), m_id.GetUniqueId(), m_troopType, 1, g_zeroVector, 0.0f );
         }
 
         m_spawnTimer = syncfrand(0.5f);

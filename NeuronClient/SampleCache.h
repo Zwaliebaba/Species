@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SAMPLE_CACHE_H
-#define INCLUDED_SAMPLE_CACHE_H
+#pragma once
 
 #include "HashTable.h"
 
@@ -14,7 +13,7 @@ class SoundStreamDecoder;
 class CachedSample
 {
 protected:
-	SoundStreamDecoder *m_soundStreamDecoder;	// NULL once sample has been read fully once
+	SoundStreamDecoder *m_soundStreamDecoder;	// nullptr once sample has been read fully once
 	signed short	*m_rawSampleData;
 	unsigned int	m_amountCached;				// Zero at first, ranging up to m_numSamples once sample has been read fully
 
@@ -75,4 +74,3 @@ extern CachedSampleManager g_cachedSampleManager;
 extern bool g_deletingCachedSampleHandle;
 
 
-#endif

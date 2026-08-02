@@ -1,5 +1,4 @@
-#ifndef __BUYNOW_WINDOW_H
-#define __BUYNOW_WINDOW_H
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -11,5 +10,3 @@ public:
 	void Create();
     void Render(bool _hasFocus);
 };
-
-#endif // __BUYNOW_WINDOW_H

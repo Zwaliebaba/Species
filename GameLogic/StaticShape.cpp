@@ -9,9 +9,8 @@
 
 #include "StaticShape.h"
 
-#include "App.h"
 #include "Location.h"
-#include "Camera.h"
+#include "WorldPointers.h"
 
 
 StaticShape::StaticShape()
@@ -37,7 +36,7 @@ void StaticShape::Initialise( Building *_template )
 
 void StaticShape::SetDetail( int _detail )
 {
-    m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
     if( m_shape )
     {
@@ -58,7 +57,7 @@ void StaticShape::SetShapeName( char *_shapeName )
 
     if( strcmp( m_shapeName, "none" ) != 0 )
     {
-        SetShape( g_app->m_resource->GetShape( m_shapeName ) );
+        SetShape( g_resource->GetShape( m_shapeName ) );
 
         Matrix34 mat( m_front, m_up, m_pos );
         mat.u *= m_scale;

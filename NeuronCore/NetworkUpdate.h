@@ -8,8 +8,7 @@
  */
 
 
-#ifndef _included_networkupdate_h
-#define _included_networkupdate_h
+#pragma once
 
 #include "TeamControls.h"
 #include "Vector3.h"
@@ -108,4 +107,3 @@ public:
 // Inlines
 #include "NetworkUpdate.inc"
 
-#endif

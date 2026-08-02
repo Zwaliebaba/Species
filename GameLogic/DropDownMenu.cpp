@@ -4,10 +4,9 @@
 
 #include <string.h>
 
-#include "App.h"
-#include "Renderer.h"
 
 #include "DropDownMenu.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -29,7 +28,7 @@ DropDownOptionData::~DropDownOptionData()
 // Class DropDownWindow
 // ****************************************************************************
 
-DropDownWindow *DropDownWindow::s_window = NULL;
+DropDownWindow *DropDownWindow::s_window = nullptr;
 
 DropDownWindow::DropDownWindow( char *_name, char *_parentName )
 :   SpeciesWindow(_name)
@@ -55,7 +54,7 @@ DropDownWindow *DropDownWindow::CreateDropDownWindow( char *_name, char *_parent
     if( s_window )
     {
         EclRemoveWindow( s_window->m_name );
-        s_window = NULL;
+        s_window = nullptr;
     }
 
     s_window = new DropDownWindow( _name, _parentName );
@@ -68,7 +67,7 @@ void DropDownWindow::RemoveDropDownWindow()
     if( s_window )
     {
         EclRemoveWindow( s_window->m_name );
-        s_window = NULL;
+        s_window = nullptr;
     }
 }
 
@@ -82,7 +81,7 @@ void DropDownWindow::RemoveDropDownWindow()
 DropDownMenu::DropDownMenu(bool _sortItems)
 :   SpeciesButton(),
     m_currentOption(-1),
-    m_int(NULL),
+    m_int(nullptr),
 	m_sortItems(_sortItems),
 	m_nextValue(0)
 {
@@ -182,7 +181,7 @@ char const *DropDownMenu::GetSelectionName()
 {
 	if (m_currentOption < 0 || m_currentOption > m_options.Size())
 	{
-		return NULL;
+		return nullptr;
 	}
 	return m_options[m_currentOption]->m_word;
 }
@@ -236,7 +235,7 @@ void DropDownMenu::CreateMenu()
     window->SetPosition( m_parent->m_x + m_x + m_w, m_parent->m_y + m_y );
     EclRegisterWindow( window );
 
-    int screenH = g_app->m_renderer->ScreenH();
+    int screenH = g_renderer->ScreenH();
     int numColumnsRequired = 1 + ( m_h * m_options.Size() ) / (screenH * 0.8f);
     int numPerColumn =  ceil( (float) m_options.Size() / (float) numColumnsRequired );
 
@@ -296,7 +295,7 @@ void DropDownMenu::MouseUp()
 
 bool DropDownMenu::IsMenuVisible()
 {
-    return( EclGetWindow( m_name ) != NULL );
+    return( EclGetWindow( m_name ) != nullptr );
 }
 
 
@@ -306,8 +305,8 @@ bool DropDownMenu::IsMenuVisible()
 
 DropDownMenuOption::DropDownMenuOption()
 :   BorderlessButton(),
-    m_parentWindowName(NULL),
-    m_parentMenuName(NULL),
+    m_parentWindowName(nullptr),
+    m_parentMenuName(nullptr),
     m_value(-1)
 {
 }
@@ -323,14 +322,14 @@ void DropDownMenuOption::SetParentMenu( EclWindow *_window, DropDownMenu *_menu,
     if( m_parentWindowName )
     {
         delete [] m_parentWindowName;
-        m_parentWindowName = NULL;
+        m_parentWindowName = nullptr;
     }
     m_parentWindowName = NewStr( _window->m_name );
 
     if( m_parentMenuName )
     {
         delete [] m_parentMenuName;
-        m_parentMenuName = NULL;
+        m_parentMenuName = nullptr;
     }
     m_parentMenuName = NewStr( _menu->m_name );
 

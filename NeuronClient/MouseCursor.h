@@ -1,8 +1,6 @@
-#ifndef INCLUDED_MOUSE_CURSOR_H
-#define INCLUDED_MOUSE_CURSOR_H
+#pragma once
 
 #include "RgbColour.h"
 
 
 
-#endif

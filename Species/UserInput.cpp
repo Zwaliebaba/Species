@@ -35,16 +35,17 @@
 #include "SoundSystem.h"
 #include "Unit.h"
 #include "UserInput.h"
+#include "WorldPointers.h"
 
 
 // *** Constructor
 UserInput::UserInput()
 :	m_removeTopLevelMenu(false)
 {
-	int const screenH = g_app->m_renderer->ScreenH();
-	int const screenW = g_app->m_renderer->ScreenW();
+	int const screenH = g_renderer->ScreenH();
+	int const screenW = g_renderer->ScreenW();
 
-    EclInitialise( g_app->m_renderer->ScreenW(), g_app->m_renderer->ScreenH() );
+    EclInitialise( g_renderer->ScreenW(), g_renderer->ScreenH() );
 }
 
 
@@ -191,16 +192,16 @@ void UserInput::RecalcMousePos3d()
 	// Get click ray
     Vector3 rayStart;
     Vector3 rayDir;
-    g_app->m_camera->GetClickRay( g_target->X(), g_target->Y(), &rayStart, &rayDir );
+    g_camera->GetClickRay( g_target->X(), g_target->Y(), &rayStart, &rayDir );
 	ASSERT_VECTOR3_IS_SANE(rayStart);
 	ASSERT_VECTOR3_IS_SANE(rayDir);
 	rayStart += rayDir * 0.0f;
 
 
     bool landscapeHit = false;
-	if (g_app->m_location)
+	if (g_location)
 	{
-		landscapeHit = g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &m_mousePos3d );
+		landscapeHit = g_location->m_landscape.RayHit( rayStart, rayDir, &m_mousePos3d );
 	}
     else
     {
@@ -224,11 +225,11 @@ void UserInput::RecalcMousePos3d()
 		// OK, we didn't hit against the landscape mesh, so hit against a sphere that
 		// encloses the whole world
 		Vector3 sphereCentre;
-		sphereCentre.x = g_app->m_globalWorld->GetSize() * 0.5f;
+		sphereCentre.x = g_globalWorld->GetSize() * 0.5f;
 		sphereCentre.y = 0.0f;
-		sphereCentre.z = g_app->m_globalWorld->GetSize() * 0.5f;
+		sphereCentre.z = g_globalWorld->GetSize() * 0.5f;
 
-		float sphereRadius = g_app->m_globalWorld->GetSize() * 40.0f;
+		float sphereRadius = g_globalWorld->GetSize() * 40.0f;
 
         float dist = (rayStart - sphereCentre).Mag();
         //DEBUG_ASSERT(dist < sphereRadius);

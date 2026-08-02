@@ -1,5 +1,4 @@
-#ifndef _included_laserfence_h
-#define _included_laserfence_h
+#pragma once
 
 #include <stdio.h>
 
@@ -71,7 +70,7 @@ public:
 
     bool DoesSphereHit          (Vector3 const &_pos, float _radius);
     bool DoesRayHit             (Vector3 const &_rayStart, Vector3 const &_rayDir,
-                                 float _rayLen=1e10, Vector3 *_pos=NULL, Vector3 *_norm=NULL);
+                                 float _rayLen=1e10, Vector3 *_pos=nullptr, Vector3 *_norm=nullptr);
     bool DoesShapeHit           (Shape *_shape, Matrix34 _transform);
 
     void ListSoundEvents        (LList<char const *> *_list );
@@ -80,4 +79,3 @@ public:
 };
 
 
-#endif

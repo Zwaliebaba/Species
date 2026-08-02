@@ -7,28 +7,26 @@
 #include "Shape.h"
 #include "TextStreamReaders.h"
 
-#include "App.h"
 #include "EntityGrid.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "Team.h"
-#include "Main.h"
 
 #include "Bridge.h"
+#include "WorldPointers.h"
 
 
 Bridge::Bridge()
 :   Teleport(),
     m_nextBridgeId(-1),
     m_status(0.0f),
-    m_signal(NULL),
+    m_signal(nullptr),
     m_beingOperated(false)
 {
     m_type = Building::TypeBridge;
     m_sendPeriod = BRIDGE_TRANSPORTPERIOD;
 
-    m_shapes[0] = g_app->m_resource->GetShape( "BridgeEnd.shp" );
-    m_shapes[1] = g_app->m_resource->GetShape( "BridgeTower.shp" );
+    m_shapes[0] = g_resource->GetShape( "BridgeEnd.shp" );
+    m_shapes[1] = g_resource->GetShape( "BridgeTower.shp" );
 
     DEBUG_ASSERT( m_shapes[0] );
     DEBUG_ASSERT( m_shapes[1] );
@@ -72,7 +70,7 @@ void Bridge::RenderAlphas ( float predictionTime )
 
     if( m_nextBridgeId != -1 )
     {
-        Building *building = g_app->m_location->GetBuilding( m_nextBridgeId );
+        Building *building = g_location->GetBuilding( m_nextBridgeId );
         if( building && building->m_type == Building::TypeBridge )
         {
             Bridge *bridge = (Bridge *) building;
@@ -87,7 +85,7 @@ void Bridge::RenderAlphas ( float predictionTime )
 		        }
 		        else
 		        {
-                    RGBAColour col = g_app->m_location->m_teams[ m_id.GetTeamId() ].m_colour;
+                    RGBAColour col = g_location->m_teams[ m_id.GetTeamId() ].m_colour;
 			        glColor4ub( col.r, col.g, col.b, (unsigned char)(255.0f * m_status / 100.0f) );
 		        }
 
@@ -179,7 +177,7 @@ void Bridge::Write( FileWriter *_out )
 
 bool Bridge::ReadyToSend ()
 {
-    Building *nextBridge = g_app->m_location->GetBuilding( m_nextBridgeId );
+    Building *nextBridge = g_location->GetBuilding( m_nextBridgeId );
     return( m_status > 0.0f &&
             nextBridge &&
             m_bridgeType == Bridge::BridgeTypeEnd &&
@@ -199,7 +197,7 @@ Vector3 Bridge::GetEndPoint()
     Bridge *nextBridge = (Bridge *) this;
     while( nextBridge->m_nextBridgeId != -1 )
     {
-        nextBridge = (Bridge *) g_app->m_location->GetBuilding( nextBridge->m_nextBridgeId );
+        nextBridge = (Bridge *) g_location->GetBuilding( nextBridge->m_nextBridgeId );
     }
 
     if( !nextBridge ) return g_zeroVector;
@@ -214,7 +212,7 @@ bool Bridge::GetExit( Vector3 &_pos, Vector3 &_front )
     Bridge *nextBridge = (Bridge *) this;
     while( nextBridge->m_nextBridgeId != -1 )
     {
-        nextBridge = (Bridge *) g_app->m_location->GetBuilding( nextBridge->m_nextBridgeId );
+        nextBridge = (Bridge *) g_location->GetBuilding( nextBridge->m_nextBridgeId );
     }
 
     if( !nextBridge ) return false;
@@ -230,7 +228,7 @@ bool Bridge::GetExit( Vector3 &_pos, Vector3 &_front )
 
 bool Bridge::UpdateEntityInTransit( Entity *_entity )
 {
-    Building *building = g_app->m_location->GetBuilding( m_nextBridgeId );
+    Building *building = g_location->GetBuilding( m_nextBridgeId );
     Bridge *nextBridge = (Bridge *) building;
 
     WorldObjectId id( _entity->m_id );
@@ -271,7 +269,7 @@ bool Bridge::UpdateEntityInTransit( Entity *_entity )
                 _entity->m_onGround = true;
                 _entity->m_vel.Zero();
 
-                g_app->m_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
+                g_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
                 return true;
             }
             else if( nextBridge->m_bridgeType == Bridge::BridgeTypeTower )
@@ -290,7 +288,7 @@ bool Bridge::UpdateEntityInTransit( Entity *_entity )
         _entity->m_enabled = true;
         _entity->m_vel = Vector3(syncsfrand(10.0f), syncfrand(10.0f), syncsfrand(10.0f) );
 
-        g_app->m_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
+        g_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
         return true;
     }
 }

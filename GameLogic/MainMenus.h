@@ -1,6 +1,5 @@
 
-#ifndef _included_mainmenus_h
-#define _included_mainmenus_h
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -69,5 +68,3 @@ public:
 	void Create();
 	void Render ( bool _hasFocus );
 };
-
-#endif

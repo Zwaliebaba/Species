@@ -1,0 +1,302 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: strings-modernised
+title: Replace C string handling with std::string, string_view and std::format
+summary: >
+  Migration stage 4 (CODING_STANDARDS.md): char*/char[N] buffers and the
+  strcpy/strncpy/strcat/sprintf/snprintf family become std::string,
+  std::string_view and std::format. Measured on b69c951 — re-measure:
+  ~345 call sites across 84 files. Hotspots: Species/GlobalWorld.cpp (22),
+  Species/TaskManagerInterfaceIcons.cpp (21), NeuronClient/Eclipse.cpp (20),
+  Species/LevelFile.cpp (19), NeuronClient/LanguageTable.cpp (16),
+  Species/App.cpp (15), GameLogic/InputField.cpp (15).
+
+  Two hard exclusions:
+
+    Wire format. Fixed-size char fields inside NetworkUpdate,
+    ServerToClientLetter and anything else the ByteStream macros serialise
+    keep their exact layout and size. T1 audits and pins them before any
+    netcode file is converted.
+
+    File format. LevelFile and GlobalWorld WRITE level and profile files.
+    Their output must stay byte-identical or every existing save and level
+    stops round-tripping. Format strings are converted 1:1 (e.g. %d -> {},
+    %.2f -> {:.2f}) and T8 states the equivalence per call site.
+
+  Cross-plan ordering: per file, containers-replaced finishes before this
+  plan's task for that file, and this plan's task finishes before
+  ownership's (stage 3 -> 4 -> 5). Same-file tasks in different plans never
+  run concurrently — check `files` overlap before starting.
+
+tasks:
+  - id: T1
+    title: Audit and pin every serialised char buffer
+    intent: >
+      Establishes the do-not-touch list for the whole plan. Every fixed
+      char[N] that crosses the wire or lands in a file gets found, listed in
+      this task's notes, and — for wire fields not already covered by the
+      NetworkUpdate/ServerToClientLetter byte-pinning tests — pinned with a
+      test that fails if size, offset or encoding changes.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
+      - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+      - Tests/GameLogicTests/WorldObjectIdTests.cpp
+    acceptance:
+      - notes lists every serialised char buffer in the tree with file and field name
+      - Every wire-crossing buffer is covered by a byte-pinning test
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: done
+    notes: >
+      Audit complete (2026-08-02). Serialised or serialisation-adjacent char
+      buffers in the tree, with what protects each:
+      (1) NetworkUpdate::m_byteStream[42] and the letter's stream buffer are
+      the wire image itself — do not touch; sizes covered by the existing
+      EveryClientPacketFitsTheFixedBuffer test.
+      (2) WorldObjectId is raw-copied by WRITE_/READ_WORLDOBJECTID, so its
+      sizeof (16), field offsets and the three padding bytes after m_teamId
+      are wire format — now pinned by WorldObjectIdTests::
+      TheWireLayoutIsSixteenBytesWithTheTeamByteFirst.
+      (3) NetworkUpdate::m_clientIp[16] is NOT serialised: ClientJoin sends
+      the 8-byte header only, and the server fills the field from the UDP
+      source address (Server.cpp, SetClientIp(fromIP)). It is a registry
+      key. The real constraint found instead: ServerToClientLetter
+      memcpy()s whole NetworkUpdate structs (AddUpdate and its copy ctor),
+      so NetworkUpdate must stay trivially copyable — m_clientIp may only
+      be converted together with turning those memcpys into assignments.
+      Also noted: SetClientIp strcpy()s unbounded into 16 bytes — safe for
+      dotted IPv4 (15 chars + NUL), a hazard if ever fed a hostname; fix
+      with the conversion, not silently.
+      (4) NeuronServer/ServerToClient::m_ip[16] — per-connection record
+      key, never serialised.
+      (5) TeamControls serialises as a flags word via GetFlags — no char
+      buffers; the nine-flag round trip is already pinned.
+      Nothing else in NeuronCore or NeuronServer writes a fixed char buffer
+      to the wire. The file-format writers (Preferences, LevelFile,
+      GlobalWorld) are text emitters with no fixed-width binary fields;
+      their byte-identical output is pinned by T2 and T8 as planned.
+
+  - id: T2
+    title: Convert NeuronCore string handling
+    intent: >
+      The foundation goes first and sets the pattern: Preferences.cpp (10
+      calls), Generic.cpp and the stragglers a re-measure finds. Preferences
+      writes the preferences file, so its output format is pinned by a test
+      before conversion — the file must round-trip byte-identically.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/Preferences.cpp
+      - NeuronCore/Preferences.h
+      - NeuronCore/Generic.cpp
+      - NeuronCore/Generic.h
+      - Tests/NeuronCoreTests/PreferencesTests.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over NeuronCore returns 0 outside the legacy container headers
+      - A test pins the preferences-file output format and passes on both sides of the conversion
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T3
+    title: Convert NeuronClient text and UI string handling
+    intent: >
+      Eclipse (20), EclWindow, EclButton, TextRenderer, SepulvedaStrings and
+      TextStreamReaders format what appears on screen. Frame-rate code with
+      no wire or file output — the safest large cluster, good early
+      throughput.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/Eclipse.cpp
+      - NeuronClient/EclWindow.cpp
+      - NeuronClient/EclButton.cpp
+      - NeuronClient/TextRenderer.cpp
+      - NeuronClient/SepulvedaStrings.cpp
+      - NeuronClient/TextStreamReaders.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the six files returns 0
+      - No fixed char[N] buffer remains in their class declarations
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T4
+    title: Convert NeuronClient sound, resource and filesystem string handling
+    intent: >
+      SoundInstance (10), SoundSystem (9), SoundLibrary3dDSound,
+      LanguageTable (16), Resource, FilesysUtils and PersistingDebugRender
+      build asset paths and cache keys from C strings. FilesysUtils has
+      tests and two documented UB edges (GetFilenamePart/GetExtensionPart on
+      separator-less paths) — the conversion may define that behaviour ONLY
+      as its own noted follow-up, not silently.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundLibrary3dDSound.cpp
+      - NeuronClient/LanguageTable.cpp
+      - NeuronClient/Resource.cpp
+      - NeuronClient/FilesysUtils.cpp
+      - NeuronClient/FilesysUtils.h
+      - NeuronClient/PersistingDebugRender.cpp
+      - Tests/NeuronClientTests/FilesysUtilsTests.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the listed files returns 0
+      - Existing FilesysUtils tests pass unchanged; the UB edges stay uncovered or become a separately-noted behaviour decision
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T5
+    title: Convert GameLogic window and editor string handling
+    intent: >
+      InputField (15), CameraAnimWindow (10), CameraMountWindow (9),
+      ScrollBar (9), LightsWindow (8), GlobalWorldEditorWindow, ProfileWindow,
+      PrefsOtherWindow, SpeciesWindow, MainMenus and the other Eclipse-derived
+      windows. UI-only; InputField is the one to read carefully since it
+      edits into a caller-owned buffer — the conversion makes that ownership
+      explicit without changing editing behaviour.
+    project: GameLogic
+    depends_on: [T1, T3]
+    files:
+      - GameLogic/InputField.cpp
+      - GameLogic/InputField.h
+      - GameLogic/CameraAnimWindow.cpp
+      - GameLogic/CameraMountWindow.cpp
+      - GameLogic/ScrollBar.cpp
+      - GameLogic/LightsWindow.cpp
+      - GameLogic/GlobalWorldEditorWindow.cpp
+      - GameLogic/ProfileWindow.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/MainMenus.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the listed files returns 0
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T6
+    title: Convert GameLogic simulation-side string handling
+    intent: >
+      ScriptTrigger (9), Rocket, GenericHub, Switch and the remaining
+      GameLogic call sites live in code the simulation advances. Strings
+      here name levels, buildings and script events — they do not enter
+      GenerateSyncValue, but the files are simulation files, so the
+      conversions change no control flow, no speciesRandom() usage, and no
+      float arithmetic while swapping the string types.
+    project: GameLogic
+    depends_on: [T1]
+    files:
+      - GameLogic/ScriptTrigger.cpp
+      - GameLogic/Rocket.cpp
+      - GameLogic/GenericHub.cpp
+      - GameLogic/Switch.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the listed files returns 0
+      - No change to control flow or arithmetic in any Advance path, confirmed in review
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      Behind the LinkStubs link wall; evidence is review plus the Garden
+      smoke test.
+    status: todo
+
+  - id: T7
+    title: Convert Species app and interface string handling
+    intent: >
+      TaskManagerInterfaceIcons (21), App.cpp (15), Main, GameCursor,
+      GameMenu, EntityGrid, Water and the remaining Species call sites
+      outside the file-writing pair handled by T8. Mostly screen text and
+      asset-path assembly.
+    project: Species
+    depends_on: [T1]
+    files:
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/App.cpp
+      - Species/Main.cpp
+      - Species/GameCursor.cpp
+      - Species/GameMenu.cpp
+      - Species/EntityGrid.cpp
+      - Species/Water.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the listed files returns 0
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T8
+    title: Convert the level and profile file writers byte-identically
+    intent: >
+      GlobalWorld.cpp (22) and LevelFile.cpp (19) parse AND write the level,
+      location and profile formats; Script.cpp reads scripted sequences.
+      Every sprintf that produces file output is converted to a std::format
+      call proven equivalent — same width, precision, sign and separator per
+      call site — so existing GameData content and user profiles round-trip
+      unchanged. The riskiest strings task, deliberately last among the
+      big ones.
+    project: Species
+    depends_on: [T1, T7]
+    files:
+      - Species/GlobalWorld.cpp
+      - Species/LevelFile.cpp
+      - Species/Script.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the three files returns 0
+      - A written level or profile is byte-identical to the pre-conversion output for the same state (compared on a real save during review, and by the Garden smoke test loading MapGarden.txt + MissionGardenLiberate.txt)
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      Species is an exe, so the round-trip cannot be a unit test yet. If the
+      layering-inversion plan has moved LevelFile into GameLogic by the time
+      this runs, write the round-trip as a real test there instead — that is
+      the better order if both plans are active.
+    status: todo
+
+  - id: T9
+    title: Sweep the long tail to zero
+    intent: >
+      Re-measure after T2-T8 and convert every remaining call site the
+      grouped tasks missed, ending stage 4 with a tree-wide zero outside
+      whatever T1 listed as legitimately fixed-format.
+    depends_on: [T2, T3, T4, T5, T6, T7, T8]
+    files:
+      - NeuronClient/SoundLibrary2d.cpp
+      - GameLogic/EntityLeg.cpp
+      - Species/StartSequence.cpp
+    acceptance:
+      - grep -rcE "strcpy|strncpy|strcat|sprintf|snprintf" over the six projects totals 0, excluding only buffers on T1's pinned list
+      - The pinned wire tests from T1 still pass
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    notes: >
+      The files listed are a placeholder guess at the tail — the task IS the
+      re-measure; expect the real list to differ and update it when starting.
+    status: todo

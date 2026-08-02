@@ -4,8 +4,7 @@
 // Part of the Eclipse interface library
 // By Christopher Delay
 
-#ifndef _included_eclbutton_h
-#define _included_eclbutton_h
+#pragma once
 
 
 #define SIZE_ECLBUTTON_NAME     256
@@ -37,7 +36,7 @@ public:
 	virtual ~EclButton ();
 
     virtual void SetProperties ( char const *_name, int _x, int _y, int _w, int _h,
-			        		       char const *_caption=NULL, char const *_tooltip=NULL );
+			        		       char const *_caption=nullptr, char const *_tooltip=nullptr );
 
 	virtual void SetCaption      ( const char *_caption );
 	virtual void SetTooltip      ( char const *_tooltip );
@@ -51,4 +50,3 @@ public:
 
 };
 
-#endif

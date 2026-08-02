@@ -16,7 +16,6 @@
 
 #ifndef EXPORTER_BUILD
 #include "Resource.h"
-#include "App.h"
 #endif
 
 #define USE_DISPLAY_LISTS
@@ -29,7 +28,7 @@
 // This constructor is used in the export process. The m_parents array is never
 // populated in the exporter, so it is intentionally left blank
 ShapeMarker::ShapeMarker(char const *_name, char *_parentName, int _depth, Matrix34 const &_transform)
-:	m_parents(NULL),
+:	m_parents(nullptr),
 	m_depth(_depth),
 	m_transform(_transform)
 {
@@ -70,7 +69,7 @@ ShapeMarker::ShapeMarker(char const *_name, char *_parentName, int _depth, Matri
 ShapeMarker::ShapeMarker(TextReader *_in, char const *_name)
 {
 	m_name = strdup(_name);
-	m_parentName = NULL;
+	m_parentName = nullptr;
 	while(_in->ReadLine())
 	{
 		char *firstWord = _in->GetNextToken();
@@ -164,21 +163,21 @@ void ShapeMarker::WriteToFile(FILE *_out) const
 
 // This constructor is used to load a shape from a file.
 ShapeFragment::ShapeFragment(TextReader *_in, char const *_name)
-:	m_displayListName(NULL),
+:	m_displayListName(nullptr),
 	m_numPositions(0),
-	m_positions(NULL),
-	m_positionsInWS(NULL),
+	m_positions(nullptr),
+	m_positionsInWS(nullptr),
 	m_numNormals(0),
-	m_normals(NULL),
+	m_normals(nullptr),
 	m_numColours(0),
-	m_colours(NULL),
+	m_colours(nullptr),
 	m_numVertices(0),
-	m_vertices(NULL),
+	m_vertices(nullptr),
 	m_numTriangles(0),
 	m_maxTriangles(0),
-	m_triangles(NULL),
-	m_name(NULL),
-	m_parentName(NULL),
+	m_triangles(nullptr),
+	m_name(nullptr),
+	m_parentName(nullptr),
 	m_transform(1),
 	m_angVel(0,0,0),
 	m_vel(0,0,0),
@@ -275,19 +274,19 @@ ShapeFragment::ShapeFragment(TextReader *_in, char const *_name)
 // This constructor is used when you want to build a shape from scratch yourself,
 // eg in the exporter.
 ShapeFragment::ShapeFragment(char const *_name, char const *_parentName)
-:	m_displayListName(NULL),
+:	m_displayListName(nullptr),
 	m_numPositions(0),
-	m_positions(NULL),
+	m_positions(nullptr),
 	m_numNormals(0),
-	m_normals(NULL),
+	m_normals(nullptr),
 	m_numColours(0),
-	m_colours(NULL),
+	m_colours(nullptr),
 	m_numVertices(0),
-	m_vertices(NULL),
-	m_positionsInWS(NULL),
+	m_vertices(nullptr),
+	m_positionsInWS(nullptr),
 	m_numTriangles(0),
 	m_maxTriangles(0),
-	m_triangles(NULL),
+	m_triangles(nullptr),
 	m_useCylinder(false),
 	m_centre(0.0f, 0.0f, 0.0f),
 	m_radius(-1.0f),
@@ -337,18 +336,18 @@ ShapeFragment::~ShapeFragment()
 {
 	SAFE_DELETE_ARRAY(m_positions);
 	SAFE_DELETE_ARRAY(m_positionsInWS);
-	free(m_name);				m_name = NULL;
-	free(m_parentName);			m_parentName = NULL;
-    delete [] m_vertices;		m_vertices = NULL;
-    delete [] m_normals;		m_normals = NULL;
-    delete [] m_colours;		m_colours = NULL;
-    delete [] m_triangles;		m_triangles = NULL;
+	free(m_name);				m_name = nullptr;
+	free(m_parentName);			m_parentName = nullptr;
+    delete [] m_vertices;		m_vertices = nullptr;
+    delete [] m_normals;		m_normals = nullptr;
+    delete [] m_colours;		m_colours = nullptr;
+    delete [] m_triangles;		m_triangles = nullptr;
 	m_childFragments.EmptyAndDelete();
 	m_childMarkers.EmptyAndDelete();
 #ifndef EXPORTER_BUILD
-	g_app->m_resource->DeleteDisplayList(m_displayListName);
+	g_resource->DeleteDisplayList(m_displayListName);
 	delete [] m_displayListName;
-	m_displayListName = NULL;
+	m_displayListName = nullptr;
 #endif
 }
 
@@ -356,9 +355,9 @@ ShapeFragment::~ShapeFragment()
 void ShapeFragment::BuildDisplayList()
 {
 #ifndef EXPORTER_BUILD
-	DEBUG_ASSERT(m_displayListName == NULL);
-	m_displayListName = g_app->m_resource->GenerateName();
-	int id = g_app->m_resource->CreateDisplayList(m_displayListName);
+	DEBUG_ASSERT(m_displayListName == nullptr);
+	m_displayListName = g_resource->GenerateName();
+	int id = g_resource->CreateDisplayList(m_displayListName);
 	glNewList(id, GL_COMPILE);
 		RenderSlow();
 	glEndList();
@@ -713,7 +712,7 @@ void ShapeFragment::ParseAllStripBlocks(TextReader *_in, unsigned int _numStrips
 
 void ShapeFragment::ParseTriangleBlock(TextReader *_in, unsigned int _numTriangles)
 {
-	DEBUG_ASSERT(m_numTriangles == 0 && m_maxTriangles == 1 && m_triangles != NULL);
+	DEBUG_ASSERT(m_numTriangles == 0 && m_maxTriangles == 1 && m_triangles != nullptr);
 	delete [] m_triangles;
 
 	m_maxTriangles = _numTriangles;
@@ -897,7 +896,7 @@ void ShapeFragment::Render(float _predictionTime)
 
 #ifdef USE_DISPLAY_LISTS
 	int id = -1;
-	if (m_displayListName) id = g_app->m_resource->GetDisplayList(m_displayListName);
+	if (m_displayListName) id = g_resource->GetDisplayList(m_displayListName);
 	if (id != -1)
 	{
 		glCallList(id);
@@ -997,7 +996,7 @@ ShapeFragment *ShapeFragment::LookupFragment(char const *_name)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -1028,7 +1027,7 @@ ShapeMarker *ShapeFragment::LookupMarker(char const *_name)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -1312,9 +1311,9 @@ Shape::Shape()
 
 
 Shape::Shape(char const *filename, bool _animating)
-:	m_displayListName(NULL),
-	m_rootFragment(NULL),
-	m_name(NULL),
+:	m_displayListName(nullptr),
+	m_rootFragment(nullptr),
+	m_name(nullptr),
 	m_animating(_animating)
 {
 	TextFileReader in(filename);
@@ -1326,8 +1325,8 @@ Shape::Shape(char const *filename, bool _animating)
 
 
 Shape::Shape(TextReader *in, bool _animating)
-:	m_displayListName(NULL),
-	m_rootFragment(NULL),
+:	m_displayListName(nullptr),
+	m_rootFragment(nullptr),
 	m_animating(_animating)
 {
 	Load(in);
@@ -1340,9 +1339,9 @@ Shape::~Shape()
 	delete m_rootFragment;
 	free(m_name);
 #ifndef EXPORTER_BUILD
-	g_app->m_resource->DeleteDisplayList(m_displayListName);
+	g_resource->DeleteDisplayList(m_displayListName);
 	delete [] m_displayListName;
-	m_displayListName = NULL;
+	m_displayListName = nullptr;
 #endif
 }
 
@@ -1352,8 +1351,8 @@ void Shape::BuildDisplayList()
 #ifndef EXPORTER_BUILD
 	if (!m_animating)
 	{
-		m_displayListName = g_app->m_resource->GenerateName();
-		int id = g_app->m_resource->CreateDisplayList(m_displayListName);
+		m_displayListName = g_resource->GenerateName();
+		int id = g_resource->CreateDisplayList(m_displayListName);
 		glNewList(id, GL_COMPILE);
 			m_rootFragment->Render(0.0f);
 		glEndList();
@@ -1458,7 +1457,7 @@ void Shape::Render(float _predictionTime, Matrix34 const &_transform)
 
 #ifdef USE_DISPLAY_LISTS
 	int id = -1;
-	if (m_displayListName) id = g_app->m_resource->GetDisplayList(m_displayListName);
+	if (m_displayListName) id = g_resource->GetDisplayList(m_displayListName);
 	if (id != -1)
 	{
 		glCallList(id);

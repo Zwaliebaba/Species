@@ -1,5 +1,4 @@
-#ifndef INCLUDED_LANDSCAPE_RENDERER_H
-#define INCLUDED_LANDSCAPE_RENDERER_H
+#pragma once
 
 
 #include "2dSurfaceMap.h"
@@ -92,4 +91,3 @@ public:
 };
 
 
-#endif

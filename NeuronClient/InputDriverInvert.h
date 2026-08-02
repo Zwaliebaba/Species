@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUTDRIVER_INVERT_H
-#define INCLUDED_INPUTDRIVER_INVERT_H
+#pragma once
 
 #include "AutoVector.h"
 #include "InputDriver.h"
@@ -40,4 +39,3 @@ public:
 };
 
 
-#endif // INCLUDED_INPUTDRIVER_INVERT_H

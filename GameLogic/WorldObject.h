@@ -1,5 +1,4 @@
-#ifndef WORLDOBJECT_H
-#define WORLDOBJECT_H
+#pragma once
 
 #include "RgbColour.h"
 #include "Vector3.h"
@@ -116,4 +115,3 @@ public:
 };
 
 
-#endif

@@ -14,14 +14,9 @@
 #include "TextStreamReaders.h"
 #include "LanguageTable.h"
 
-#include "App.h"
 #include "Camera.h"
-#include "Main.h"
-#include "ParticleSystem.h"
-#include "UserInput.h"
-#include "Renderer.h"
+#include "GameTime.h"
 #include "SoundSystem.h"
-#include "Team.h"
 #include "Unit.h"
 #include "Location.h"
 #include "EntityGrid.h"
@@ -52,7 +47,8 @@
 #include "Triffid.h"
 #include "Ai.h"
 #include "LaserFence.h"
-
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ****************************************************************************
@@ -65,7 +61,7 @@ float	 EntityBlueprint::m_stats[Entity::NumEntityTypes][Entity::NumStats];
 
 void EntityBlueprint::Initialise()
 {
-	TextReader *theFile = g_app->m_resource->GetTextReader("Stats.txt");
+	TextReader *theFile = g_resource->GetTextReader("Stats.txt");
 	ASSERT_TEXT(theFile && theFile->IsOpen(), "Couldn't open stats.txt");
 
     int entityIndex = 0;
@@ -100,7 +96,7 @@ float EntityBlueprint::GetStat( unsigned char _type, int _stat )
 	if (_stat == Entity::StatSpeed)
 	{
 		if (_type != Entity::TypeSpaceInvader)
-			return m_stats[_type][_stat] * (1.0f + (float) g_app->m_difficultyLevel / 10.0f);
+			return m_stats[_type][_stat] * (1.0f + (float) g_difficultyLevel / 10.0f);
 	}
 
     return m_stats[_type][_stat];
@@ -118,7 +114,7 @@ Entity::Entity()
     m_formationIndex(-1),
     m_dead(false),
     m_reloading(0.0f),
-    m_shape(NULL),
+    m_shape(nullptr),
     m_justFired(false),
     m_radius(0.0f),
     m_buildingId(-1),
@@ -158,15 +154,15 @@ void Entity::ChangeHealth( int amount )
     {
         if( amount < 0 )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
+            g_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
         }
 
         if( m_stats[StatHealth] + amount <= 0 )
         {
             m_stats[StatHealth] = 100;
             m_dead = true;
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Die" );
-            g_app->m_location->SpawnSpirit( m_pos, m_vel * 0.5f, m_id.GetTeamId(), m_id );
+            g_soundSystem->TriggerEntityEvent( this, "Die" );
+            g_location->SpawnSpirit( m_pos, m_vel * 0.5f, m_id.GetTeamId(), m_id );
         }
         else if( m_stats[StatHealth] + amount > 255 )
         {
@@ -190,12 +186,12 @@ void Entity::Attack( Vector3 const &pos )
 		Vector3 fromPos = m_pos;
 		fromPos.y += 2.0f;
 		Vector3 velocity = (toPos - fromPos).SetLength(200.0f);
-		g_app->m_location->FireLaser( fromPos, velocity, m_id.GetTeamId() );
+		g_location->FireLaser( fromPos, velocity, m_id.GetTeamId() );
 
         m_reloading = m_stats[StatRate];
         m_justFired = true;
 
-        g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
+        g_soundSystem->TriggerEntityEvent( this, "Attack" );
     }
 }
 
@@ -222,7 +218,7 @@ bool Entity::AdvanceDead( Unit *_unit )
 
 int Entity::EnterTeleports( int _requiredId )
 {
-    LList<int> *buildings = g_app->m_location->m_obstructionGrid->GetBuildings( m_pos.x, m_pos.z );
+    LList<int> *buildings = g_location->m_obstructionGrid->GetBuildings( m_pos.x, m_pos.z );
 
     for( int i = 0; i < buildings->Size(); ++i )
     {
@@ -233,7 +229,7 @@ int Entity::EnterTeleports( int _requiredId )
             continue;
         }
 
-        Building *building = g_app->m_location->GetBuilding( buildingId );
+        Building *building = g_location->GetBuilding( buildingId );
         DEBUG_ASSERT( building );
 
         if( building->m_type == Building::TypeRadarDish  )
@@ -248,7 +244,7 @@ int Entity::EnterTeleports( int _requiredId )
             {
                 WorldObjectId id(m_id);
                 radarDish->EnterTeleport( id );
-                g_app->m_soundSystem->TriggerEntityEvent( this, "EnterTeleport" );
+                g_soundSystem->TriggerEntityEvent( this, "EnterTeleport" );
                 return buildingId;
             }
         }
@@ -265,7 +261,7 @@ int Entity::EnterTeleports( int _requiredId )
                 {
                     WorldObjectId id( m_id );
                     bridge->EnterTeleport( id );
-                    g_app->m_soundSystem->TriggerEntityEvent( this, "EnterTeleport" );
+                    g_soundSystem->TriggerEntityEvent( this, "EnterTeleport" );
                     return buildingId;
                 }
             }
@@ -283,7 +279,7 @@ void Entity::AdvanceInAir( Unit *_unit )
 
     if( !m_dead )
     {
-        float groundLevel = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 0.1f;
+        float groundLevel = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 0.1f;
         if( m_pos.y <= groundLevel )
         {
             m_onGround = true;
@@ -335,7 +331,7 @@ void Entity::AdvanceInWater( Unit *_unit )
     m_pos += m_vel * SERVER_ADVANCE_PERIOD;
     m_pos.y = 0.0f - sinf(m_inWater * 3.0f) - 4.0f;
 
-    float groundLevel = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    float groundLevel = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     if( groundLevel > 0.0f )
     {
         m_inWater = -1;
@@ -345,7 +341,7 @@ void Entity::AdvanceInWater( Unit *_unit )
 
 void Entity::Begin()
 {
-    g_app->m_soundSystem->TriggerEntityEvent( this, "Create" );
+    g_soundSystem->TriggerEntityEvent( this, "Create" );
 
     if( m_shape )
     {
@@ -383,8 +379,8 @@ bool Entity::Advance(Unit *_unit)
 
     if( m_inWater != -1 )   AdvanceInWater(_unit);
 
-    float worldSizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float worldSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float worldSizeX = g_location->m_landscape.GetWorldSizeX();
+    float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
     if( m_pos.x < 0.0f ) m_pos.x = 0.0f;
     if( m_pos.z < 0.0f ) m_pos.z = 0.0f;
     if( m_pos.x >= worldSizeX ) m_pos.x = worldSizeX;
@@ -420,7 +416,7 @@ Vector3 Entity::PushFromEachOther( Vector3 const &_pos )
     Vector3 result = _pos;
 
     int numFound;
-    WorldObjectId *neighbours = g_app->m_location->m_entityGrid->GetNeighbours( _pos.x, _pos.z, 2.0f, &numFound );
+    WorldObjectId *neighbours = g_location->m_entityGrid->GetNeighbours( _pos.x, _pos.z, 2.0f, &numFound );
 
 
     for( int i = 0; i < numFound; ++i )
@@ -428,7 +424,7 @@ Vector3 Entity::PushFromEachOther( Vector3 const &_pos )
         WorldObjectId id = neighbours[i];
         if( !( id == m_id ) )
         {
-            WorldObject *obj = g_app->m_location->GetEntity( id );
+            WorldObject *obj = g_location->GetEntity( id );
 //            float distance = (obj->m_pos - thisPos).Mag();
 //            while( distance < 1.0f )
 //            {
@@ -448,7 +444,7 @@ Vector3 Entity::PushFromEachOther( Vector3 const &_pos )
         }
     }
 
-    result.y = g_app->m_location->m_landscape.m_heightMap->GetValue( result.x, result.z );
+    result.y = g_location->m_landscape.m_heightMap->GetValue( result.x, result.z );
     return result;
 }
 
@@ -470,7 +466,7 @@ Vector3 Entity::PushFromCliffs( Vector3 const &pos, Vector3 const &oldPos )
             float angle = distance * 2.0f * M_PI;
             Vector3 offset( cosf(angle) * distance, 0.0f, sinf(angle) * distance );
             Vector3 newPos = result + offset;
-            newPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( newPos.x, newPos.z );
+            newPos.y = g_location->m_landscape.m_heightMap->GetValue( newPos.x, newPos.z );
             horiz = ( newPos - oldPos );
             horiz.y = 0.0f;
             horizDistance = horiz.Mag();
@@ -493,7 +489,7 @@ Vector3 Entity::PushFromObstructions( Vector3 const &pos, bool killem )
     Vector3 result = pos;
     if( m_onGround )
     {
-        result.y = g_app->m_location->m_landscape.m_heightMap->GetValue( result.x, result.z );
+        result.y = g_location->m_landscape.m_heightMap->GetValue( result.x, result.z );
     }
 
     Matrix34 transform( m_front, g_upVector, result );
@@ -510,7 +506,7 @@ Vector3 Entity::PushFromObstructions( Vector3 const &pos, bool killem )
             float angle = distance * pushAngle * M_PI;
             Vector3 offset( cosf(angle) * distance, 0.0f, sinf(angle) * distance );
             Vector3 newPos = result + offset;
-            float height = g_app->m_location->m_landscape.m_heightMap->GetValue( newPos.x, newPos.z );
+            float height = g_location->m_landscape.m_heightMap->GetValue( newPos.x, newPos.z );
             if( height > 1.0f )
             {
                 result = newPos;
@@ -525,12 +521,12 @@ Vector3 Entity::PushFromObstructions( Vector3 const &pos, bool killem )
     //
     // Push from buildings
 
-    LList<int> *buildings = g_app->m_location->m_obstructionGrid->GetBuildings( result.x, result.z );
+    LList<int> *buildings = g_location->m_obstructionGrid->GetBuildings( result.x, result.z );
 
     for( int b = 0; b < buildings->Size(); ++b )
     {
         int buildingId = buildings->GetData(b);
-        Building *building = g_app->m_location->GetBuilding( buildingId );
+        Building *building = g_location->GetBuilding( buildingId );
         if( building )
         {
             bool hit = false;
@@ -551,7 +547,7 @@ Vector3 Entity::PushFromObstructions( Vector3 const &pos, bool killem )
                     while( building->DoesSphereHit( result, 1.0f ) )
                     {
                         result -= pushForce;
-                        //result.y = g_app->m_location->m_landscape.m_heightMap->GetValue( result.x, result.z );
+                        //result.y = g_location->m_landscape.m_heightMap->GetValue( result.x, result.z );
                     }
                 }
             }
@@ -567,7 +563,7 @@ static float s_nearPlaneStart;
 void Entity::BeginRenderShadow()
 {
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
 	glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glDisable       ( GL_CULL_FACE );
@@ -577,9 +573,9 @@ void Entity::BeginRenderShadow()
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR );
     glColor4f       ( 0.6f, 0.6f, 0.6f, 0.0f );
 
-	s_nearPlaneStart = g_app->m_renderer->GetNearPlane();
-	g_app->m_camera->SetupProjectionMatrix(s_nearPlaneStart * 1.05f,
-							 			   g_app->m_renderer->GetFarPlane());
+	s_nearPlaneStart = g_renderer->GetNearPlane();
+	g_camera->SetupProjectionMatrix(s_nearPlaneStart * 1.05f,
+							 			   g_renderer->GetFarPlane());
 }
 
 
@@ -592,8 +588,8 @@ void Entity::EndRenderShadow()
     glEnable        ( GL_CULL_FACE );
     glDisable       ( GL_TEXTURE_2D );
 
-	g_app->m_camera->SetupProjectionMatrix(s_nearPlaneStart,
-								 		   g_app->m_renderer->GetFarPlane());
+	g_camera->SetupProjectionMatrix(s_nearPlaneStart,
+								 		   g_renderer->GetFarPlane());
 }
 
 
@@ -608,10 +604,10 @@ void Entity::RenderShadow( Vector3 const &_pos, float _size )
     Vector3 posC = shadowPos + shadowR + shadowU;
     Vector3 posD = shadowPos - shadowR + shadowU;
 
-    posA.y = g_app->m_location->m_landscape.m_heightMap->GetValue( posA.x, posA.z ) + 0.9f;
-    posB.y = g_app->m_location->m_landscape.m_heightMap->GetValue( posB.x, posB.z ) + 0.9f;
-    posC.y = g_app->m_location->m_landscape.m_heightMap->GetValue( posC.x, posC.z ) + 0.9f;
-    posD.y = g_app->m_location->m_landscape.m_heightMap->GetValue( posD.x, posD.z ) + 0.9f;
+    posA.y = g_location->m_landscape.m_heightMap->GetValue( posA.x, posA.z ) + 0.9f;
+    posB.y = g_location->m_landscape.m_heightMap->GetValue( posB.x, posB.z ) + 0.9f;
+    posC.y = g_location->m_landscape.m_heightMap->GetValue( posC.x, posC.z ) + 0.9f;
+    posD.y = g_location->m_landscape.m_heightMap->GetValue( posD.x, posD.z ) + 0.9f;
 
     posA.y = max( posA.y, 1.0f );
     posB.y = max( posB.y, 1.0f );
@@ -635,7 +631,7 @@ void Entity::RenderShadow( Vector3 const &_pos, float _size )
 
 Entity *Entity::NewEntity( int _troopType )
 {
-    Entity *entity = NULL;
+    Entity *entity = nullptr;
 
     switch(_troopType)
     {
@@ -769,7 +765,7 @@ void Entity::SetWaypoint( Vector3 const _waypoint )
 void Entity::FollowRoute()
 {
 	DEBUG_ASSERT(m_routeId != -1);
-	Route *route = g_app->m_location->m_levelFile->GetRoute(m_routeId);
+	Route *route = g_location->m_levelFile->GetRoute(m_routeId);
 	DEBUG_ASSERT(route);
 
 	if (m_routeWayPointId == -1)

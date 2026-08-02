@@ -10,17 +10,16 @@
 #include "Entity.h"
 #include "EntityLeg.h"
 
-#include "App.h"
 #include "Location.h"
-#include "Main.h"
-#include "Renderer.h"
+#include "GameTime.h"
+#include "WorldPointers.h"
 
 EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, const char* _shapeNameLower, const char* _rootMarkerName)
   : m_legNum(_legNum),
     m_parent(_parent)
 {
-  m_shapeUpper = g_app->m_resource->GetShape(_shapeNameUpper);
-  m_shapeLower = g_app->m_resource->GetShape(_shapeNameLower);
+  m_shapeUpper = g_resource->GetShape(_shapeNameUpper);
+  m_shapeLower = g_resource->GetShape(_shapeNameLower);
   ASSERT_TEXT(m_shapeUpper, "EntityLeg: Couldn't load leg shape %s", _shapeNameUpper);
   ASSERT_TEXT(m_shapeLower, "EntityLeg: Couldn't load leg shape %s", _shapeNameLower);
 
@@ -53,7 +52,7 @@ Vector3 EntityLeg::CalcFootHomePos(float _targetHoverHeight)
   Vector3 fromCentreToRoot = rootWorldPos - m_parent->m_pos;
   fromCentreToRoot.HorizontalAndNormalise();
 
-  Vector3 groundNormal = g_app->m_location->m_landscape.m_normalMap->GetValue(m_parent->m_pos.x, m_parent->m_pos.z);
+  Vector3 groundNormal = g_location->m_landscape.m_normalMap->GetValue(m_parent->m_pos.x, m_parent->m_pos.z);
   fromCentreToRoot *= groundNormal.y;
 
   Vector3 returnVal = rootWorldPos;
@@ -122,7 +121,7 @@ Vector3 EntityLeg::CalcKneePos(const Vector3& _footPos, const Vector3& _rootPos,
 void EntityLeg::LiftFoot(float _targetHoverHeight)
 {
   m_foot.m_targetPos = CalcDesiredFootPos(_targetHoverHeight);
-  m_foot.m_targetPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_foot.m_targetPos.x, m_foot.m_targetPos.z);
+  m_foot.m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_foot.m_targetPos.x, m_foot.m_targetPos.z);
   m_foot.m_state = EntityFoot::Swinging;
   m_foot.m_leftGroundTimeStamp = g_gameTime;
   m_foot.m_lastGroundPos = m_foot.m_pos;
@@ -254,14 +253,14 @@ bool EntityLeg::RenderPixelEffect(float _predictionTime, const Vector3& _predict
     Vector3 up((kneePos - footPos).Normalise());
     Vector3 front(up ^ Vector3(1, 0, 0).Normalise());
     Matrix34 mat(front, up, footPos);
-    g_app->m_renderer->MarkUsedCells(m_shapeLower, mat);
+    g_renderer->MarkUsedCells(m_shapeLower, mat);
   }
 
   {
     Vector3 up((rootPos - kneePos).Normalise());
     Vector3 front(up ^ Vector3(1, 0, 0).Normalise());
     Matrix34 mat(front, up, kneePos);
-    g_app->m_renderer->MarkUsedCells(m_shapeUpper, mat);
+    g_renderer->MarkUsedCells(m_shapeUpper, mat);
   }
 
   return true;

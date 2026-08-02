@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef _included_eclipse_h
-#define _included_eclipse_h
+#pragma once
 
 #include "EclWindow.h"
 #include "EclButton.h"
@@ -31,7 +30,7 @@ void EclShutdown ();
 // Window management
 
 
-void EclRegisterWindow          ( EclWindow *window, EclWindow *parent=NULL );
+void EclRegisterWindow          ( EclWindow *window, EclWindow *parent=nullptr );
 void EclRemoveWindow            ( char const *name );
 void EclRegisterPopup           ( EclWindow *window );
 void EclRemovePopup             ();
@@ -100,4 +99,3 @@ int EclGetScreenW				();
 int EclGetScreenH				();
 
 
-#endif

@@ -1,6 +1,5 @@
 
-#ifndef _included_armyant_h
-#define _included_armyant_h
+#pragma once
 
 #include "Entity.h"
 
@@ -61,4 +60,3 @@ public:
 };
 
 
-#endif

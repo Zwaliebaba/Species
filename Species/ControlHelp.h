@@ -1,5 +1,4 @@
-#ifndef _included_controlhelp_h
-#define _included_controlhelp_h
+#pragma once
 
 #include "LList.h"
 #include "DArray.h"
@@ -113,4 +112,3 @@ class ControlHelpSystem
     TextIndicator m_conditionIconMap[MaxConditions];
 };
 
-#endif

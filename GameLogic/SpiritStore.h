@@ -1,5 +1,4 @@
-#ifndef _included_spiritstore_h
-#define _included_spiritstore_h
+#pragma once
 
 #include "FastDArray.h"
 #include "Vector3.h"
@@ -33,4 +32,3 @@ public:
 };
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUTFILTERMANAGER_H
-#define INCLUDED_INPUTFILTERMANAGER_H
+#pragma once
 
 #include <string>
 
@@ -52,4 +51,3 @@ public:
 extern InputFilterManager *g_inputFilterManager;
 
 
-#endif // INCLUDED_INPUTFILTERMANAGER_H

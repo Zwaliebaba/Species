@@ -6,13 +6,11 @@
 
 #include "Airstrike.h"
 
-#include "App.h"
 #include "Explosion.h"
 #include "Location.h"
-#include "Renderer.h"
-#include "Camera.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
 
 
 AirstrikeUnit::AirstrikeUnit(int teamId, int unitId, int numEntities, Vector3 const &_pos)
@@ -23,7 +21,7 @@ AirstrikeUnit::AirstrikeUnit(int teamId, int unitId, int numEntities, Vector3 co
     m_effectId(-1)
 {
     m_attackPosition = _pos;
-    m_attackPosition.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_attackPosition.x, m_attackPosition.z ) + 70.0f;
+    m_attackPosition.y = g_location->m_landscape.m_heightMap->GetValue( m_attackPosition.x, m_attackPosition.z ) + 70.0f;
 
     m_speed = EntityBlueprint::GetStat( Entity::TypeSpaceInvader, Entity::StatSpeed ) * 10.0f;
 }
@@ -33,8 +31,8 @@ void AirstrikeUnit::Begin()
 {
     float inset = 100.0f;
     float startHeight = 500.0f;
-    float landSizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float landSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float landSizeX = g_location->m_landscape.GetWorldSizeX();
+    float landSizeZ = g_location->m_landscape.GetWorldSizeZ();
 
     DArray<Vector3> startPositions;
     startPositions.PutData( Vector3(inset,startHeight,inset) );
@@ -95,7 +93,7 @@ void AirstrikeUnit::Begin()
     //
     // Spawn our space invaders
 
-    g_app->m_location->SpawnEntities( m_enterPosition, m_teamId, m_unitId, Entity::TypeSpaceInvader, m_numInvaders, front, 0.0f );
+    g_location->SpawnEntities( m_enterPosition, m_teamId, m_unitId, Entity::TypeSpaceInvader, m_numInvaders, front, 0.0f );
 }
 
 
@@ -133,11 +131,11 @@ bool AirstrikeUnit::Advance( int _slice )
     //
     // Has our target marker moved?
 
-    if( g_app->m_location->m_effects.ValidIndex(m_effectId) )
+    if( g_location->m_effects.ValidIndex(m_effectId) )
     {
-        WorldObject *targetMarker = g_app->m_location->m_effects[ m_effectId ];
+        WorldObject *targetMarker = g_location->m_effects[ m_effectId ];
         m_attackPosition = targetMarker->m_pos;
-        m_attackPosition.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_attackPosition.x, m_attackPosition.z ) + 70.0f;
+        m_attackPosition.y = g_location->m_landscape.m_heightMap->GetValue( m_attackPosition.x, m_attackPosition.z ) + 70.0f;
     }
 
     switch( m_state )
@@ -192,8 +190,8 @@ SpaceInvader::SpaceInvader()
 :   Entity(),
     m_armed(true)
 {
-    m_shape = g_app->m_resource->GetShape( "SpaceInvader.shp" );
-    m_bombShape = g_app->m_resource->GetShape( "Throwable.shp" );
+    m_shape = g_resource->GetShape( "SpaceInvader.shp" );
+    m_bombShape = g_resource->GetShape( "Throwable.shp" );
 }
 
 
@@ -230,10 +228,10 @@ bool SpaceInvader::Advance( Unit *_unit )
             weapon->m_type = EffectThrowableAirstrikeBomb;
             weapon->m_life = 1.5f;
             weapon->m_power = 50.0f;
-            int index = g_app->m_location->m_effects.PutData( weapon );
+            int index = g_location->m_effects.PutData( weapon );
             weapon->m_id.Set( m_id.GetTeamId(), UNIT_EFFECTS, index, -1 );
             weapon->m_id.GenerateUniqueId();
-            g_app->m_soundSystem->TriggerEntityEvent( this, "DropGrenade" );
+            g_soundSystem->TriggerEntityEvent( this, "DropGrenade" );
             m_armed = false;
         }
     }
@@ -242,8 +240,8 @@ bool SpaceInvader::Advance( Unit *_unit )
     //
     // Clip to edge of world
 
-    float worldSizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float worldSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float worldSizeX = g_location->m_landscape.GetWorldSizeX();
+    float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
 
     if( m_pos.x < 0.0f ||
         m_pos.z < 0.0f ||
@@ -291,7 +289,7 @@ void SpaceInvader::Render( float _predictionTime )
     //RenderSphere( m_targetPos, 5.0f );
 #endif
 
-    g_app->m_renderer->SetObjectLighting();
+    g_renderer->SetObjectLighting();
 
     Matrix34 mat(m_front, g_upVector, predictedPos);
     mat.f *= 2.0f;
@@ -305,7 +303,7 @@ void SpaceInvader::Render( float _predictionTime )
         m_bombShape->Render(_predictionTime, mat);
     }
 
-    g_app->m_renderer->UnsetObjectLighting();
+    g_renderer->UnsetObjectLighting();
 
 }
 

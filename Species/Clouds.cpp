@@ -11,6 +11,7 @@
 #include "Globals.h"
 #include "Clouds.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 Clouds::Clouds()
@@ -138,7 +139,7 @@ void Clouds::RenderFlat( float _predictionTime )
 			       offset.x/2, offset.x/2 + detail, offset.x/2, offset.x/2 + detail);
     }
 
-    g_app->m_location->SetupFog();
+    g_location->SetupFog();
     glDepthMask     ( true );
     glEnable		( GL_DEPTH_TEST );
     glDisable       ( GL_BLEND );
@@ -204,7 +205,7 @@ void Clouds::RenderBlobby( float _predictionTime )
 					     offset.x, detail + offset.x, offset.z, detail + offset.z);
     }
 
-    g_app->m_location->SetupFog();
+    g_location->SetupFog();
     glEnable		( GL_DEPTH_TEST );
     glDepthMask     ( true );
     glDisable       ( GL_BLEND );
@@ -264,5 +265,5 @@ void Clouds::RenderSky()
 	glDisable		( GL_BLEND);
 	glBlendFunc		( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask		( true);
-	g_app->m_location->SetupFog();
+	g_location->SetupFog();
 }

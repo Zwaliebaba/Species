@@ -8,13 +8,14 @@
 
 #include "ScriptTrigger.h"
 
-#include "App.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "EntityGrid.h"
 #include "Script.h"
 #include "Team.h"
 #include "Camera.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 ScriptTrigger::ScriptTrigger()
@@ -48,7 +49,7 @@ void ScriptTrigger::Trigger()
     if( strstr( m_scriptFilename, ".txt" ) )
     {
         // Run a script, speficied by filename
-        g_app->m_script->RunScript( m_scriptFilename );
+        g_script->RunScript( m_scriptFilename );
         m_triggered = -1;
     }
     else
@@ -80,8 +81,8 @@ bool ScriptTrigger::Advance()
         }
         else
         {
-            bool alreadyRunningScript = g_app->m_script->IsRunningScript() ||
-                                        !g_app->m_camera->IsInteractive();
+            bool alreadyRunningScript = g_script->IsRunningScript() ||
+                                        !g_camera->IsInteractive();
 
             if( !alreadyRunningScript )
             {
@@ -98,9 +99,9 @@ bool ScriptTrigger::Advance()
                     }
                     else if( m_entityType == SCRIPTRIGGER_RUNCAMENTER )
                     {
-                        float camDistance = (g_app->m_camera->GetPos() - m_pos).Mag();
-                        Vector3 camVel = g_app->m_camera->GetVel();
-                        bool camInteractive = g_app->m_camera->IsInteractive();
+                        float camDistance = (g_camera->GetPos() - m_pos).Mag();
+                        Vector3 camVel = g_camera->GetVel();
+                        bool camInteractive = g_camera->IsInteractive();
 
                         if( camDistance <= m_range && camVel.Mag() < 5.0f && camInteractive )
                         {
@@ -109,10 +110,10 @@ bool ScriptTrigger::Advance()
                     }
                     else if( m_entityType == SCRIPTRIGGER_RUNCAMVIEW )
                     {
-                        float camDistance = (g_app->m_camera->GetPos() - m_pos).Mag();
-                        Vector3 camVel = g_app->m_camera->GetVel();
-                        bool camInteractive = g_app->m_camera->IsInteractive();
-                        bool inView = RaySphereIntersection( g_app->m_camera->GetPos(), g_app->m_camera->GetFront(), m_pos, m_range );
+                        float camDistance = (g_camera->GetPos() - m_pos).Mag();
+                        Vector3 camVel = g_camera->GetVel();
+                        bool camInteractive = g_camera->IsInteractive();
+                        bool inView = RaySphereIntersection( g_camera->GetPos(), g_camera->GetFront(), m_pos, m_range );
 
                         if( camDistance <= (m_range+300.0f) && camVel.Mag() < 5.0f && camInteractive && inView )
                         {
@@ -128,13 +129,13 @@ bool ScriptTrigger::Advance()
                     {
                         int numFound;
                         int numCorrectTypeFound = 0;
-                        WorldObjectId *ids = g_app->m_location->m_entityGrid->GetNeighbours( m_pos.x, m_pos.z, m_range, &numFound );
+                        WorldObjectId *ids = g_location->m_entityGrid->GetNeighbours( m_pos.x, m_pos.z, m_range, &numFound );
                         for( int i = 0; i < numFound; ++i )
                         {
                             WorldObjectId id = ids[i];
                             if( id.IsValid() && id.GetTeamId() == m_id.GetTeamId() )
                             {
-                                Entity *entity = g_app->m_location->GetEntity( id );
+                                Entity *entity = g_location->GetEntity( id );
                                 if( entity && entity->m_type == m_entityType )
                                 {
                                     ++numCorrectTypeFound;
@@ -159,7 +160,7 @@ bool ScriptTrigger::Advance()
 
 void ScriptTrigger::RenderAlphas( float predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         RGBAColour colour;
         if( m_id.GetTeamId() == 255 )
@@ -168,7 +169,7 @@ void ScriptTrigger::RenderAlphas( float predictionTime )
         }
         else
         {
-            colour = g_app->m_location->m_teams[m_id.GetTeamId()].m_colour;
+            colour = g_location->m_teams[m_id.GetTeamId()].m_colour;
         }
 
         RenderSphere( m_pos, m_range, colour );
@@ -195,7 +196,7 @@ bool ScriptTrigger::DoesShapeHit(Shape *_shape, Matrix34 _transform)
 bool ScriptTrigger::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
                                 float _rayLen, Vector3 *_pos, Vector3 *_norm)
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         return Building::DoesRayHit( _rayStart, _rayDir, _rayLen, _pos, _norm );
     }

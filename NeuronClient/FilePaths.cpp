@@ -3,10 +3,10 @@
 #include <map>
 
 #include "FilePaths.h"
-#include "App.h"
 #include "Preferences.h"
 #include "Resource.h"
 #include "TextStreamReaders.h"
+#include "AppCommands.h"
 
 using std::string;
 
@@ -20,7 +20,7 @@ typedef std::map<int,string>::const_iterator localeIt;
 
 void readLocaleNames()
 {
-	TextReader *reader = g_app->m_resource->GetTextReader( INPUT_DATA_DIR + "Locales.txt" );
+	TextReader *reader = g_resource->GetTextReader( INPUT_DATA_DIR + "Locales.txt" );
 	if ( reader && reader->IsOpen() ) {
 		while ( reader->ReadLine() ) {
 			char *k = reader->GetNextToken();
@@ -72,9 +72,9 @@ const string & InputPrefs::GetUserPrefsPath()
 	static string path = "";
 
 	if ( path == "" ) {
-		path = App::GetProfileDirectory();
-		path.append( USER_INPUT_PREFS_FILE );
-	}
+    path = g_appCommands ? g_appCommands->ProfileDirectory() : "";
+    path.append(USER_INPUT_PREFS_FILE);
+  }
 
-	return path;
+  return path;
 }

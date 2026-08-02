@@ -4,18 +4,18 @@
 #include "Resource.h"
 #include "LanguageTable.h"
 
-#include "App.h"
-#include "Renderer.h"
 #include "BuyNowWindow.h"
 #include "Preferences.h"
 #include "PreferenceNames.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 class BuyNowButton : public SpeciesButton
 {
     void MouseUp()
     {
-		g_app->m_requestQuit = true;
+		g_requestQuit = true;
 		EclRemoveWindow( m_parent->m_name );
     }
 };
@@ -24,8 +24,8 @@ class BuyNowButton : public SpeciesButton
 BuyNowWindow::BuyNowWindow()
 : SpeciesWindow( LANGUAGEPHRASE("dialog_buydarwinia" ) )
 {
-    int screenW = g_app->m_renderer->ScreenW();
-    int screenH = g_app->m_renderer->ScreenH();
+    int screenW = g_renderer->ScreenW();
+    int screenH = g_renderer->ScreenH();
 
     SetSize( 370, 150 );
     SetPosition( screenW/2.0f - m_w/2.0f,
@@ -64,7 +64,7 @@ void BuyNowWindow::Render(bool _hasFocus)
 	const char *line[] = {
 		LANGUAGEPHRASE("dialog_buynow1"),
 		LANGUAGEPHRASE("dialog_buynow2"),
-		NULL
+		nullptr
 	};
 
 	for (int i = 0; line[i]; i++)

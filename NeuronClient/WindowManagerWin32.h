@@ -1,5 +1,4 @@
-#ifndef INCLUDED_WINDOW_MANAGER_WIN32_H
-#define INCLUDED_WINDOW_MANAGER_WIN32_H
+#pragma once
 
 class WindowManagerWin32
 {
@@ -9,11 +8,10 @@ public:
 	HGLRC		m_hRC;
 
 	WindowManagerWin32()
-	:	m_hWnd(NULL),
-		m_hDC(NULL),
-		m_hRC(NULL)
+	:	m_hWnd(nullptr),
+		m_hDC(nullptr),
+		m_hRC(nullptr)
 	{
 	}
 };
 
-#endif

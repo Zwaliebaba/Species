@@ -1,5 +1,4 @@
-#ifndef _included_teleport_h
-#define _included_teleport_h
+#pragma once
 
 #include "Vector3.h"
 
@@ -58,4 +57,3 @@ public:
 };
 
 
-#endif

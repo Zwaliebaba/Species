@@ -1,5 +1,4 @@
-#ifndef INCLUDED_RENDER_UTILS_H
-#define INCLUDED_RENDER_UTILS_H
+#pragma once
 
 // Renders a textured quad by spliting it up into a regular grid of smaller quads.
 // This is needed to prevent fog artifacts on Radeon cards.
@@ -13,4 +12,3 @@ void RenderSplitUpQuadMultiTextured(
 		float texNorth1, float texSouth1, float texEast1, float texWest1,
 		float texNorth2, float texSouth2, float texEast2, float texWest2, int steps);
 
-#endif

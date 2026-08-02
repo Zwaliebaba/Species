@@ -1,5 +1,4 @@
-#ifndef INCLUDED_PERSISTING_DEBUG_RENDER
-#define INCLUDED_PERSISTING_DEBUG_RENDER
+#pragma once
 
 #ifdef DEBUG_RENDER_ENABLED
 
@@ -58,4 +57,3 @@ extern PersistingDebugRenderer g_debugRenderer;
 
 #endif // ifdef DEBUG_RENDER_ENABLED
 
-#endif

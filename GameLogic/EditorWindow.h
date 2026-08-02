@@ -1,5 +1,4 @@
-#ifndef _included_EditWindow_h
-#define _included_EditWindow_h
+#pragma once
 
 #ifdef LOCATION_EDITOR
 
@@ -19,4 +18,3 @@ public:
 #endif // LOCATION_EDITOR
 
 
-#endif

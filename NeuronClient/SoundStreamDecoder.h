@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SOUND_STREAM_DECODER_H
-#define INCLUDED_SOUND_STREAM_DECODER_H
+#pragma once
 
 class BinaryReader;
 
@@ -43,4 +42,3 @@ class SoundStreamDecoder
     void Restart();
 };
 
-#endif

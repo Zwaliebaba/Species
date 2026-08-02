@@ -8,12 +8,12 @@
 #include "PrefsOtherWindow.h"
 #include "DropDownMenu.h"
 
-#include "App.h"
-#include "Renderer.h"
 #include "Location.h"
 #include "LevelFile.h"
 #include "Water.h"
-#include "Main.h"
+#include "WorldPointers.h"
+#include "AppState.h"
+#include "AppCommands.h"
 
 class ApplyOtherButton : public SpeciesButton
 {
@@ -25,12 +25,12 @@ class ApplyOtherButton : public SpeciesButton
 
 		g_prefsManager->SetInt( OTHER_CONTROLHELPENABLED, parent->m_controlHelpEnabled );
 
-		if (g_app->m_locationId == -1)
+		if (g_locationId == -1)
 		{
 			// Only set the difficulty from the top level
 			// Preferences value is 1-based, m_difficultyLevel is 0-based.
 			g_prefsManager->SetInt( OTHER_DIFFICULTY, parent->m_difficulty + 1 );
-			g_app->m_difficultyLevel = parent->m_difficulty;
+			g_difficultyLevel = parent->m_difficulty;
 		}
 
         if( parent->m_bootLoader == 0 )
@@ -51,13 +51,13 @@ class ApplyOtherButton : public SpeciesButton
             g_prefsManager->SetInt( OTHER_CHRISTMASENABLED, parent->m_christmas );
         }
 
-        if( g_app->m_location )
+        if( g_location )
         {
-            LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-		    g_app->m_location->m_landscape.Init(def);
+            LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+		    g_location->m_landscape.Init(def);
 
-            delete g_app->m_location->m_water;
-            g_app->m_location->m_water = new Water();
+            delete g_location->m_water;
+            g_location->m_water = new Water();
         }
 
 		bool removeWindows = false;
@@ -65,7 +65,7 @@ class ApplyOtherButton : public SpeciesButton
         if( stricmp( desiredLanguage, g_prefsManager->GetString( OTHER_LANGUAGE ) ) != 0 )
         {
             g_prefsManager->SetString( OTHER_LANGUAGE, desiredLanguage );
-            g_app->SetLanguage( desiredLanguage, false );
+            g_appCommands->SetLanguage( desiredLanguage, false );
 
 	        removeWindows = true;
 
@@ -73,19 +73,19 @@ class ApplyOtherButton : public SpeciesButton
 
 		g_prefsManager->SetInt( OTHER_AUTOMATICCAM, parent->m_automaticCamera );
 
-		bool oldMode = g_app->m_largeMenus;
+		bool oldMode = g_largeMenus;
 		g_prefsManager->SetInt( OTHER_LARGEMENUS, parent->m_largeMenus );
 		if( parent->m_largeMenus == 2 ) // (todo) or is running in media center and tenFootMode == -1
 		{
-			g_app->m_largeMenus = true;
+			g_largeMenus = true;
 
 		}
 		else
 		{
-			g_app->m_largeMenus = false;
+			g_largeMenus = false;
 		}
 
-		if( oldMode != g_app->m_largeMenus ) // tenFootMode option has changed, close all windows
+		if( oldMode != g_largeMenus ) // tenFootMode option has changed, close all windows
 		{
 			removeWindows = true;
 		}
@@ -109,8 +109,8 @@ PrefsOtherWindow::PrefsOtherWindow()
 {
     SetMenuSize( 468, 350 );
 
-    SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
-                 g_app->m_renderer->ScreenH()/2 - m_h/2 );
+    SetPosition( g_renderer->ScreenW()/2 - m_w/2,
+                 g_renderer->ScreenH()/2 - m_h/2 );
 
     m_helpEnabled = g_prefsManager->GetInt( OTHER_HELPENABLED, 1 );
 	m_controlHelpEnabled = g_prefsManager->GetInt( OTHER_CONTROLHELPENABLED, 1 );
@@ -121,13 +121,13 @@ PrefsOtherWindow::PrefsOtherWindow()
     else                                                m_bootLoader = 2;
 
     m_christmas = g_prefsManager->GetInt( OTHER_CHRISTMASENABLED, 1 );
-	if( g_app->m_locationId == -1 ) {
+	if( g_locationId == -1 ) {
 		m_difficulty = g_prefsManager->GetInt( OTHER_DIFFICULTY, 1 ) - 1;
 		if( m_difficulty < 0 ) m_difficulty = 0;
 	}
 	else
 	{
-		m_difficulty = g_app->m_difficultyLevel;
+		m_difficulty = g_difficultyLevel;
 	}
 
 	m_largeMenus = g_prefsManager->GetInt( OTHER_LARGEMENUS, 0 );
@@ -149,7 +149,7 @@ void PrefsOtherWindow::ListAvailableLanguages()
 {
     m_languages.EmptyAndDelete();
 
-    LList<char *> *fileList = g_app->m_resource->ListResources( "Language/", "*.*", false );
+    LList<char *> *fileList = g_resource->ListResources( "Language/", "*.*", false );
     for( int i = 0; i < fileList->Size(); ++i )
     {
         char *lang = fileList->GetData(i);
@@ -251,7 +251,7 @@ void PrefsOtherWindow::Create()
 		difficulty->AddOption(option, i);
 	}
 	difficulty->RegisterInt( &m_difficulty );
-	difficulty->SetDisabled( g_app->m_locationId != -1 );
+	difficulty->SetDisabled( g_locationId != -1 );
 	difficulty->m_fontSize = fontSize;
 	RegisterButton(difficulty);
 	m_buttonOrder.PutData( difficulty );
@@ -324,7 +324,7 @@ void PrefsOtherWindow::Render( bool _hasFocus )
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_bootloaders") );
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_language") );
 
-	if (g_app->m_locationId != -1)
+	if (g_locationId != -1)
 		glColor4f( 0.5f, 0.5f, 0.5f, 1.0f );
 
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_difficulty") );

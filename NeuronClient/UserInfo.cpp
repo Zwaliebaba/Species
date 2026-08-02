@@ -8,8 +8,8 @@
 // Which must be allocated beforehand
 bool GetUserInfoData( char const *_userInfoFilename, char const **_username, char const **_email )
 {
-    static char *s_username = NULL;
-    static char *s_email = NULL;
+    static char *s_username = nullptr;
+    static char *s_email = nullptr;
 
     if( !s_username || !s_email )
     {

@@ -1,5 +1,4 @@
-#ifndef _included_location_editor_h
-#define _included_location_editor_h
+#pragma once
 
 #ifdef LOCATION_EDITOR
 
@@ -93,4 +92,3 @@ public:
 #endif // LOCATION_EDITOR
 
 
-#endif

@@ -1,6 +1,5 @@
 
-#ifndef _included_obstructiongrid_h
-#define _included_obstructiongrid_h
+#pragma once
 
 #include "2dArray.h"
 #include "2dSurfaceMap.h"
@@ -34,4 +33,3 @@ public:
 
 
 
-#endif

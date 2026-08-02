@@ -10,9 +10,10 @@
 #include "TextStreamReaders.h"
 #include "Preferences.h"
 #include "SoundStreamDecoder.h"
-#include "App.h"
 #include "Location.h"
-#include "Renderer.h"
+#include "WorldPointers.h"
+
+Resource* g_resource = nullptr;
 
 Resource::Resource()
   : m_nameSeed(1),
@@ -236,7 +237,7 @@ int Resource::WildCmp(const char* wild, const char* string)
 
 int Resource::CreateDisplayList(const char* _name)
 {
-  // Make sure name isn't NULL and isn't too long
+  // Make sure name isn't nullptr and isn't too long
   DEBUG_ASSERT(_name && strlen(_name) < 20);
 
   unsigned int id = glGenLists(1);
@@ -247,7 +248,7 @@ int Resource::CreateDisplayList(const char* _name)
 
 int Resource::GetDisplayList(const char* _name)
 {
-  // Make sure name isn't NULL and isn't too long
+  // Make sure name isn't nullptr and isn't too long
   DEBUG_ASSERT(_name && strlen(_name) < 20);
 
   return m_displayLists.GetData(_name, -1);
@@ -296,8 +297,8 @@ void Resource::FlushOpenGlState()
   // Forget all the texture handles
   m_textures.Empty();
 
-  if (g_app->m_location)
-    g_app->m_location->FlushOpenGlState();
+  if (g_location)
+    g_location->FlushOpenGlState();
 }
 
 void Resource::RegenerateOpenGlState()
@@ -316,11 +317,11 @@ void Resource::RegenerateOpenGlState()
   }
 
   // Tell the renderer (for the pixel effect texture)
-  g_app->m_renderer->BuildOpenGlState();
+  g_renderer->BuildOpenGlState();
 
   // Tell the location
-  if (g_app->m_location)
-    g_app->m_location->RegenerateOpenGlState();
+  if (g_location)
+    g_location->RegenerateOpenGlState();
 }
 
 char* Resource::GenerateName()
@@ -368,7 +369,7 @@ void OrderedInsert(LList<char*>* _llist, char* _newString)
 
 // Finds all the filenames in the specified directory that match the specified
 // filter. Directory should be like "textures" or "Textures/".
-// Filter can be NULL or "" or "*.bmp" or "map_*" or "map_*.txt"
+// Filter can be nullptr or "" or "*.bmp" or "map_*" or "map_*.txt"
 // Set _longResults to true if you want results like "Textures/blah.bmp"
 // or false for "blah.bmp"
 LList<char*>* Resource::ListResources(const char* _dir, const char* _filter, bool _longResults /* = true */)

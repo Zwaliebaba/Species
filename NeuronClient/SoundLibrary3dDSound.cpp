@@ -14,7 +14,6 @@
 #include "SoundFilter.h"
 #include "SoundLibrary3dDSound.h"
 
-#include "App.h"
 
 
 //*****************************************************************************
@@ -31,7 +30,7 @@ static char const *DSoundErrorString( HRESULT _hr )
     static char buf[256];
 
     DWORD len = FormatMessageA( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                                NULL, (DWORD) _hr, 0, buf, sizeof(buf), NULL );
+                                nullptr, (DWORD) _hr, 0, buf, sizeof(buf), nullptr );
     if( len == 0 )
     {
         sprintf( buf, "HRESULT 0x%08lx", (unsigned long) _hr );
@@ -93,13 +92,13 @@ public:
 	static int			m_hwNumDevices;
 
 	DirectSoundData():
-		m_device(NULL),
-		m_primaryBuffer(NULL)
+		m_device(nullptr),
+		m_primaryBuffer(nullptr)
 	{
 	}
 };
 
-char *DirectSoundData::m_hwDescription = NULL;
+char *DirectSoundData::m_hwDescription = nullptr;
 int DirectSoundData::m_hwNumDevices = 0;
 
 
@@ -113,7 +112,7 @@ public:
 	DspEffect			*m_userFilter;
 	bool				m_dxFilter;			// True if a direct sound filter has been created
 
-	SoundLibFilter(): m_userFilter(NULL), m_dxFilter(false) {}
+	SoundLibFilter(): m_userFilter(nullptr), m_dxFilter(false) {}
 };
 
 
@@ -149,8 +148,8 @@ public:
 
 
 DirectSoundChannel::DirectSoundChannel()
-:	m_bufferInterface(NULL),
-	m_buffer3DInterface(NULL),
+:	m_bufferInterface(nullptr),
+	m_buffer3DInterface(nullptr),
 	m_numBufferSamples(0),
     m_lastSampleWritten(0),
     m_channelHealth(0.0f),
@@ -190,8 +189,8 @@ void DirectSoundChannel::UpdateSimulatedPlayCursor(long _playCursor)
 
 SoundLibrary3dDirectSound::SoundLibrary3dDirectSound()
 :   SoundLibrary3d(),
-	m_musicChannel(NULL),
-	m_channels(NULL)
+	m_musicChannel(nullptr),
+	m_channels(nullptr)
 {
 	m_directSound = new DirectSoundData;
 }
@@ -209,7 +208,7 @@ SoundLibrary3dDirectSound::~SoundLibrary3dDirectSound()
         IDirectSoundBuffer8 *buffer = (IDirectSoundBuffer8 *) m_channels[i].m_bufferInterface;
 		errCode = buffer->Stop();
         SOUNDASSERT( errCode, "DirectSound failed to stop secondary buffer" );
-//        errCode = buffer->SetFX(0, NULL, NULL);
+//        errCode = buffer->SetFX(0, nullptr, nullptr);
 //        SOUNDASSERT( errCode, "DirectSound failed to remove FX from secondary buffer" );
         errCode = buffer->Release();
         SOUNDASSERT( errCode, "DirectSound failed to release secondary buffer" );
@@ -252,7 +251,7 @@ SoundLibrary3dDirectSound::~SoundLibrary3dDirectSound()
 IDirectSoundBuffer *SoundLibrary3dDirectSound::CreateSecondaryBuffer(int _numSamples)
 {
 	int errCode;
-	IDirectSoundBuffer *buffer = NULL;
+	IDirectSoundBuffer *buffer = nullptr;
 
 	WAVEFORMATEX wfx;
 	ZeroMemory( &wfx, sizeof(WAVEFORMATEX) );
@@ -280,7 +279,7 @@ IDirectSoundBuffer *SoundLibrary3dDirectSound::CreateSecondaryBuffer(int _numSam
 	dsbd.lpwfxFormat   = &wfx;
     dsbd.guid3DAlgorithm = DS3DALG_DEFAULT;
 
-	errCode = m_directSound->m_device->CreateSoundBuffer(&dsbd, &buffer, NULL);
+	errCode = m_directSound->m_device->CreateSoundBuffer(&dsbd, &buffer, nullptr);
     SOUNDASSERT( errCode, "Direct sound couldn't create a secondary buffer");
 
     // Fill the buffer with zeros to start with
@@ -290,12 +289,12 @@ IDirectSoundBuffer *SoundLibrary3dDirectSound::CreateSecondaryBuffer(int _numSam
 						   0,	        // Size (ignored because using DSBLOCK_ENTIREBUFFER)
 							&buf1,
 							&buf1Size,
-							NULL,
-							NULL,
+							nullptr,
+							nullptr,
 							DSBLOCK_ENTIREBUFFER);
     SOUNDASSERT( errCode, "Direct Sound couldn't lock buffer" );
     memset( buf1, 0, buf1Size );
-	buffer->Unlock(buf1, buf1Size, NULL, 0);
+	buffer->Unlock(buf1, buf1Size, nullptr, 0);
 
 	// Start the stream playing
 	errCode = buffer->Play( 0, 0, DSBPLAY_LOOPING );
@@ -318,15 +317,15 @@ void SoundLibrary3dDirectSound::Initialise(int _mixFreq, int _numChannels, bool 
     // Initialise COM
     // We need to do this in order to use the directX FX stuff
 
-    errCode = CoInitialize( NULL );
+    errCode = CoInitialize( nullptr );
 
 
     //
 	// Create Direct Sound Device
 
-	errCode = DirectSoundCreate8(NULL,              // Specifies default device
+	errCode = DirectSoundCreate8(nullptr,              // Specifies default device
 								 &m_directSound->m_device,
-								 NULL);             // Has to be NULL - stupid, stupid Microsoft
+								 nullptr);             // Has to be nullptr - stupid, stupid Microsoft
 	SOUNDASSERT(errCode, "Direct Sound couldn't create a sound device");
 
 
@@ -357,9 +356,9 @@ void SoundLibrary3dDirectSound::Initialise(int _mixFreq, int _numChannels, bool 
 		dsbd.dwSize        = sizeof(DSBUFFERDESC);
 		dsbd.dwFlags       = flags;
 		dsbd.dwBufferBytes = 0;
-		dsbd.lpwfxFormat   = NULL;
+		dsbd.lpwfxFormat   = nullptr;
 
-		errCode = m_directSound->m_device->CreateSoundBuffer(&dsbd, &m_directSound->m_primaryBuffer, NULL);
+		errCode = m_directSound->m_device->CreateSoundBuffer(&dsbd, &m_directSound->m_primaryBuffer, nullptr);
 		SOUNDASSERT(errCode, "Direct sound couldn't create the primary sound buffer");
 
 		WAVEFORMATEX wfx;
@@ -417,7 +416,7 @@ void SoundLibrary3dDirectSound::Initialise(int _mixFreq, int _numChannels, bool 
     //
     // Set our listener properties
 
-    IDirectSound3DListener *listener = NULL;
+    IDirectSound3DListener *listener = nullptr;
     errCode = m_directSound->m_primaryBuffer->QueryInterface( IID_IDirectSound3DListener, (void **) &listener );
     SOUNDASSERT(errCode, "Direct sound couldn't get Sound3DListener interface");
 
@@ -656,7 +655,7 @@ void SoundLibrary3dDirectSound::SetListenerPosition( Vector3 const &_pos,
 {
 	m_listenerPos = _pos;
 
-    IDirectSound3DListener *listener = NULL;
+    IDirectSound3DListener *listener = nullptr;
     int errCode = m_directSound->m_primaryBuffer->QueryInterface( IID_IDirectSound3DListener, (void **) &listener );
     SOUNDASSERT(errCode, "Direct sound couldn't get Sound3DListener interface");
 
@@ -674,7 +673,7 @@ void SoundLibrary3dDirectSound::SetListenerPosition( Vector3 const &_pos,
 
 void SoundLibrary3dDirectSound::CommitChanges()
 {
-    IDirectSound3DListener *listener = NULL;
+    IDirectSound3DListener *listener = nullptr;
     int errCode = m_directSound->m_primaryBuffer->QueryInterface( IID_IDirectSound3DListener, (void **) &listener );
     SOUNDASSERT(errCode, "Direct sound couldn't get Sound3DListener interface");
 
@@ -701,12 +700,12 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
 
     void *buf1, *buf2;
     unsigned long size1, size2;
-	START_PROFILE(g_app->m_profiler, "LockBuf");
+	START_PROFILE(g_profiler, "LockBuf");
     errCode = channel->m_bufferInterface->Lock(byteOffset, byteSize,
                                      &buf1, &size1,
                                      &buf2, &size2,
                                       0);
-	END_PROFILE(g_app->m_profiler, "LockBuf");
+	END_PROFILE(g_profiler, "LockBuf");
 	if (errCode == DSERR_BUFFERLOST)
 		channel->m_bufferInterface->Restore();
     else
@@ -716,7 +715,7 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
     //
     // Fill some of the buffer
 
-	START_PROFILE(g_app->m_profiler, "FillBuf");
+	START_PROFILE(g_profiler, "FillBuf");
     if (_isMusic && m_musicCallback)
 	{
         if( buf1 )
@@ -739,7 +738,7 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
             m_mainCallback(_channel, (signed short *)buf2, size2/2, &channel->m_silenceRemaining);
         }
     }
-	END_PROFILE(g_app->m_profiler, "FillBuf");
+	END_PROFILE(g_profiler, "FillBuf");
 
 
     //
@@ -747,7 +746,7 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
 
     for( int i = DSP_RESONANTLOWPASS; i < NUM_FILTERS; ++i )
     {
-		if (channel->m_dspFX[i].m_userFilter == NULL) continue;
+		if (channel->m_dspFX[i].m_userFilter == nullptr) continue;
 
 		if (buf1)
 		{
@@ -763,9 +762,9 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
     //
     // Unlock the buffer
 
-	START_PROFILE(g_app->m_profiler, "UnlockBuf");
+	START_PROFILE(g_profiler, "UnlockBuf");
     errCode = channel->m_bufferInterface->Unlock(buf1, size1, buf2, size2);
-	END_PROFILE(g_app->m_profiler, "UnlockBuf");
+	END_PROFILE(g_profiler, "UnlockBuf");
     SOUNDASSERT(errCode, "Direct sound couldn't unlock a secondary buffer");
 
     channel->m_lastSampleWritten = _fromSample + _numSamples - 1;
@@ -810,12 +809,12 @@ void SoundLibrary3dDirectSound::AdvanceChannel(int _channel, int _frameNum)
 
 	// Get Play Cursor
 
-	START_PROFILE(g_app->m_profiler, "GetPlayCursor");
+	START_PROFILE(g_profiler, "GetPlayCursor");
 	unsigned long playCursor;
 	if (channel->m_simulatedPlayCursor == -1 ||
 		(_channel & 1) == (_frameNum&1))
 	{
-		errCode = channel->m_bufferInterface->GetCurrentPosition(&playCursor, NULL);
+		errCode = channel->m_bufferInterface->GetCurrentPosition(&playCursor, nullptr);
 
 		if (errCode == DSERR_BUFFERLOST)
 			channel->m_bufferInterface->Restore();
@@ -836,7 +835,7 @@ void SoundLibrary3dDirectSound::AdvanceChannel(int _channel, int _frameNum)
 			playCursor = channel->m_lastSampleWritten * 2 + 2;
 		}
 	}
-	END_PROFILE(g_app->m_profiler, "GetPlayCursor");
+	END_PROFILE(g_profiler, "GetPlayCursor");
 
 
     // Find out where we can write our samples
@@ -858,9 +857,9 @@ void SoundLibrary3dDirectSound::AdvanceChannel(int _channel, int _frameNum)
 
     if (numSamples > 0)
     {
-		START_PROFILE(g_app->m_profiler, "PopulateBuf");
+		START_PROFILE(g_profiler, "PopulateBuf");
 		PopulateBuffer( _channel, firstSample, numSamples, isMusicChannel);
-		END_PROFILE(g_app->m_profiler, "PopulateBuf");
+		END_PROFILE(g_profiler, "PopulateBuf");
     }
 }
 
@@ -897,9 +896,9 @@ void SoundLibrary3dDirectSound::Advance()
 {
 //	Verify();
 
-    START_PROFILE(g_app->m_profiler, "Commit");
+    START_PROFILE(g_profiler, "Commit");
     CommitChanges();
-	END_PROFILE(g_app->m_profiler, "Commit");
+	END_PROFILE(g_profiler, "Commit");
 
 	static int frameNum = 0;
 	++frameNum;
@@ -1176,14 +1175,14 @@ void SoundLibrary3dDirectSound::DisableDspFX( int _channel )
 	for (int i = 0; i < NUM_FILTERS; ++i)
 	{
 		SoundLibFilter *filter = &channel->m_dspFX[i];
-		if (filter->m_userFilter != NULL)
+		if (filter->m_userFilter != nullptr)
 		{
 			filter->m_dxFilter = false;
 			delete filter->m_userFilter;
-            filter->m_userFilter = NULL;
+            filter->m_userFilter = nullptr;
 		}
 	}
-	errCode = buffer->SetFX( 0, NULL, NULL );
+	errCode = buffer->SetFX( 0, nullptr, nullptr );
     SOUNDASSERT( errCode, "Direct sound couldn't set fx" );
 
 

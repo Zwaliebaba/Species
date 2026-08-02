@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef _included_specieswindow_h
-#define _included_specieswindow_h
+#pragma once
 
 #include "Eclipse.h"
 
@@ -36,9 +35,9 @@ public:
 
     void CreateValueControl( char const *name, int dataType, void *value, int y, float change,
 							 float _lowBound, float _highBound,
-                             SpeciesButton *callback=NULL, int x=-1, int w=-1 );
+                             SpeciesButton *callback=nullptr, int x=-1, int w=-1 );
 
-    void CreateColourControl( char const *name, int *value, int y, SpeciesButton *callback=NULL, int x=-1, int w=-1 );
+    void CreateColourControl( char const *name, int *value, int y, SpeciesButton *callback=nullptr, int x=-1, int w=-1 );
 
     void RemoveValueControl( char *name );
 
@@ -66,7 +65,7 @@ public:
     SpeciesButton();
 
     void Render( int realX, int realY, bool highlighted, bool clicked );
-	virtual void SetShortProperties(char const *_name, int x, int y, int w=-1, int h=-1, char *_caption=NULL, char *_tooltip=NULL);
+	virtual void SetShortProperties(char const *_name, int x, int y, int w=-1, int h=-1, char *_caption=nullptr, char *_tooltip=nullptr);
 	void SetDisabled( bool _disabled = true );
     void UpdateButtonHighlight();
 };
@@ -77,7 +76,7 @@ class BorderlessButton : public SpeciesButton
 public:
     BorderlessButton();
     void Render( int realX, int realY, bool highlighted, bool clicked );
-    void SetShortProperties(char const *_name, int x, int y, int w=-1, int h=-1, char *_caption=NULL, char *_tooltip=NULL);
+    void SetShortProperties(char const *_name, int x, int y, int w=-1, int h=-1, char *_caption=nullptr, char *_tooltip=nullptr);
 };
 
 
@@ -111,4 +110,3 @@ public:
     void Render( int realX, int realY, bool highlighted, bool clicked );
 };
 
-#endif

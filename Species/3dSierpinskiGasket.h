@@ -1,5 +1,4 @@
-#ifndef INCLUDED_3DSIERPINSKI_GASKET_H
-#define INCLUDED_3DSIERPINSKI_GASKET_H
+#pragma once
 
 
 class Sierpinski3D
@@ -15,5 +14,4 @@ public:
 };
 
 
-#endif
 

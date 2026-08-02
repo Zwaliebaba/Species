@@ -1,5 +1,4 @@
-#ifndef _included_weapons_h
-#define _included_weapons_h
+#pragma once
 
 
 #include "Entity.h"
@@ -219,4 +218,3 @@ public:
     void Render( float _predictionTime );
 };
 
-#endif

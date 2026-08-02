@@ -2,6 +2,8 @@
 #include "Profiler.h"
 #include "HiResTime.h"
 
+Profiler* g_profiler = nullptr;
+
 #ifdef PROFILER_ENABLED
 
 #define PROFILE_HISTORY_LENGTH  10

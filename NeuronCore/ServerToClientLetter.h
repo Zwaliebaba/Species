@@ -1,5 +1,4 @@
-#ifndef SERVER_TO_CLIENT_LETTER_H
-#define SERVER_TO_CLIENT_LETTER_H
+#pragma once
 
 #include "LList.h"
 #include "Vector3.h"
@@ -61,4 +60,3 @@ public:
 
 
 
-#endif

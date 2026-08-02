@@ -1,5 +1,4 @@
-#ifndef MATRIX33_H
-#define MATRIX33_H
+#pragma once
 
 
 #include "Vector3.h"
@@ -45,7 +44,7 @@ public:
 	Vector3			InverseMultiplyVector(Vector3 const &) const;
 
 	void OutputToDebugStream();
-	float *ConvertToOpenGLFormat(Vector3 const *_pos = NULL);
+	float *ConvertToOpenGLFormat(Vector3 const *_pos = nullptr);
 
 	// Operators
 	Matrix33 const &operator =  ( Matrix33 const &_o );
@@ -72,5 +71,4 @@ inline Vector3 operator * (	Vector3 const & _v, Matrix33 const &_m )
 }
 
 
-#endif
 

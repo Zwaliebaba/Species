@@ -6,9 +6,10 @@
 #include "GlobalWorldEditorWindow.h"
 #include "MessageDialog.h"
 
-#include "App.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 static char s_locationName[256] = "NewLevel";
@@ -20,12 +21,12 @@ public:
     int m_mode;
     void MouseUp()
     {
-        g_app->m_globalWorld->m_editorMode = m_mode;
+        g_globalWorld->m_editorMode = m_mode;
     }
 
     void Render( int realX, int realY, bool highlighted, bool clicked )
     {
-        if( g_app->m_globalWorld->m_editorMode == m_mode )
+        if( g_globalWorld->m_editorMode == m_mode )
         {
             SpeciesButton::Render( realX, realY, true, clicked );
         }
@@ -47,7 +48,7 @@ class NewLocationButton : public SpeciesButton
         // for the end user (but allow it for us)
 
 #ifndef TARGET_DEBUG
-        if( !g_app->m_resource->IsModLoaded() )
+        if( !g_resource->IsModLoaded() )
         {
             EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_newlocationfail1" ),
                                                   LANGUAGEPHRASE( "dialog_newlocationfail2" ) ),
@@ -78,13 +79,13 @@ class NewLocationButton : public SpeciesButton
         strcpy( loc->m_name, s_locationName );
         loc->m_available = true;
         loc->m_pos.Set( -96.25, -274.02, 75.16 );
-        g_app->m_globalWorld->AddLocation( loc );
+        g_globalWorld->AddLocation( loc );
 
         //
         // Save game.txt and locations.txt
 
-        g_app->m_globalWorld->SaveGame( "Game.txt" );
-        g_app->m_globalWorld->SaveLocations( "Locations.txt" );
+        g_globalWorld->SaveGame( "Game.txt" );
+        g_globalWorld->SaveLocations( "Locations.txt" );
     }
 };
 
@@ -99,7 +100,7 @@ class SaveLocationsButton : public SpeciesButton
         // for the end user (but allow it for us)
 
 #ifndef TARGET_DEBUG
-        if( !g_app->m_resource->IsModLoaded() )
+        if( !g_resource->IsModLoaded() )
         {
             EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_savelocationsfail1" ),
                                                   LANGUAGEPHRASE( "dialog_savelocationsfail2" ) ),
@@ -111,7 +112,7 @@ class SaveLocationsButton : public SpeciesButton
         //
         // It's ok to save
 
-        g_app->m_globalWorld->SaveLocations( "Locations.txt" );
+        g_globalWorld->SaveLocations( "Locations.txt" );
     }
 };
 
@@ -147,7 +148,7 @@ void GlobalWorldEditorWindow::Create()
     newLoc->SetShortProperties( LANGUAGEPHRASE("editor_createnewlocation"), 10, y += h, m_w - 20 );
     RegisterButton( newLoc );
 
-    CreateValueControl( LANGUAGEPHRASE("dialog_name"), InputField::TypeString, s_locationName, y +=h, 0, 0, 0, NULL, 10, m_w-20 );
+    CreateValueControl( LANGUAGEPHRASE("dialog_name"), InputField::TypeString, s_locationName, y +=h, 0, 0, 0, nullptr, 10, m_w-20 );
 
     y += h;
 
@@ -159,8 +160,8 @@ void GlobalWorldEditorWindow::Create()
 
 void GlobalWorldEditorWindow::Update()
 {
-    if( !g_app->m_editing ||
-        g_app->m_location )
+    if( !g_editing ||
+        g_location )
     {
         EclRemoveWindow( m_name );
     }

@@ -56,6 +56,8 @@
 #include "Water.h"
 #include "Win32EventHandler.h"
 #include "WindowManager.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 #define TARGET_FRAME_RATE_INCREMENT 0.25f
 
@@ -67,13 +69,6 @@ static void Finalise();
 
 // g_startTime moved to ClientToServer::m_startTime — it was derived entirely from
 // arriving letters, and this was the only translation unit that read it.
-double g_gameTime = 0.0;
-float g_advanceTime;
-double g_lastServerAdvance;
-float g_predictionTime;
-float g_targetFrameRate = 20.0f;
-int g_lastProcessedSequenceId = -1;
-int g_sliceNum; // Most recently advanced slice
 
 void SwitchTaskManagerForX360Controller();
 
@@ -182,15 +177,15 @@ bool ProcessServerLetters(ServerToClientLetter* letter)
     return true;
 
   case ServerToClientLetter::GoodbyeClient:
-    //g_app->m_location->RemoveTeam( letter->m_teamId );
+    //g_location->RemoveTeam( letter->m_teamId );
     return true;
 
   case ServerToClientLetter::TeamAssign:
 
     if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
-      g_app->m_location->InitialiseTeam(letter->m_teamId, letter->m_teamType);
+      g_location->InitialiseTeam(letter->m_teamId, letter->m_teamType);
     else
-      g_app->m_location->InitialiseTeam(letter->m_teamId, Team::TeamTypeRemotePlayer);
+      g_location->InitialiseTeam(letter->m_teamId, Team::TeamTypeRemotePlayer);
     return true;
 
   default:
@@ -235,16 +230,16 @@ bool HandleCommonConditions()
 
   if (!curWindowHasFocus)
   {
-    g_app->m_userInput->Advance();
+    g_userInput->Advance();
     g_app->m_soundSystem->Advance();
 
     // Render twice to avoid double buffering artefacts
-    g_app->m_renderer->Render();
-    g_app->m_renderer->Render();
+    TheRenderer()->Render();
+    TheRenderer()->Render();
     return true;
   }
 
-  if (g_app->m_requestQuit)
+  if (g_requestQuit)
   {
     Finalise();
     exit(0);
@@ -263,7 +258,7 @@ unsigned char GenerateSyncValue()
 
   for (int t = 0; t < NUM_TEAMS; ++t)
   {
-    Team* team = &g_app->m_location->m_teams[t];
+    Team* team = &g_location->m_teams[t];
     if (team->m_teamType != Team::TeamTypeUnused)
     {
       for (int u = 0; u < team->m_units.Size(); ++u)
@@ -296,21 +291,21 @@ unsigned char GenerateSyncValue()
     }
   }
 
-  for (int l = 0; l < g_app->m_location->m_lasers.Size(); ++l)
+  for (int l = 0; l < g_location->m_lasers.Size(); ++l)
   {
-    if (g_app->m_location->m_lasers.ValidIndex(l))
+    if (g_location->m_lasers.ValidIndex(l))
     {
-      Laser* laser = g_app->m_location->m_lasers.GetPointer(l);
+      Laser* laser = g_location->m_lasers.GetPointer(l);
       laserPosition += laser->m_pos;
       laserPosition += laser->m_vel;
     }
   }
 
-  for (int e = 0; e < g_app->m_location->m_effects.Size(); ++e)
+  for (int e = 0; e < g_location->m_effects.Size(); ++e)
   {
-    if (g_app->m_location->m_effects.ValidIndex(e))
+    if (g_location->m_effects.ValidIndex(e))
     {
-      WorldObject* wobj = g_app->m_location->m_effects[e];
+      WorldObject* wobj = g_location->m_effects[e];
       effectsPosition += wobj->m_pos;
       effectsPosition += wobj->m_vel;
     }
@@ -364,7 +359,7 @@ void LocationGameLoop()
 
   g_sliceNum = -1;
 
-  g_app->m_renderer->StartFadeIn(0.6f);
+  TheRenderer()->StartFadeIn(0.6f);
   g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterLocation", SoundSourceBlueprint::TypeAmbience);
 
   //
@@ -375,38 +370,38 @@ void LocationGameLoop()
   {
     if (!fadingOut)
     {
-      if (g_app->m_requestedLocationId != g_app->m_locationId)
+      if (g_requestedLocationId != g_locationId)
       {
-        g_app->m_renderer->StartFadeOut();
+        g_renderer->StartFadeOut();
         fadingOut = true;
       }
     }
     else
     {
-      if (g_app->m_renderer->IsFadeComplete())
+      if (TheRenderer()->IsFadeComplete())
       {
-        g_app->m_controlHelpSystem->Shutdown();
+        g_controlHelpSystem->Shutdown();
         break;
       }
     }
 
     g_inputManager->PollForEvents();
-    if (g_inputManager->controlEvent(ControlMenuEscape) && g_app->m_renderer->IsFadeComplete())
+    if (g_inputManager->controlEvent(ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
-      if (g_app->m_script && g_app->m_script->IsRunningScript()) {}
+      if (g_script && g_script->IsRunningScript()) {}
       else
       {
         if (WindowsOnScreen())
           RemoveAllWindows();
-        else if (g_app->m_taskManagerInterface->m_visible)
-          g_app->m_taskManagerInterface->m_visible = false;
+        else if (g_taskManagerInterface->m_visible)
+          g_taskManagerInterface->m_visible = false;
         else
         {
-          g_app->m_camera->SetDebugMode(Camera::DebugModeAuto);
+          g_camera->SetDebugMode(Camera::DebugModeAuto);
           EclRegisterWindow(new LocationWindow());
         }
       }
-      g_app->m_userInput->Advance();
+      g_userInput->Advance();
     }
 
     if (HandleCommonConditions())
@@ -422,7 +417,7 @@ void LocationGameLoop()
     {
       if (timeNow > nextServerAdvanceTime)
       {
-        g_app->m_server->Advance();
+        g_server->Advance();
         nextServerAdvanceTime += SERVER_ADVANCE_PERIOD;
         if (timeNow > nextServerAdvanceTime)
           nextServerAdvanceTime = timeNow + SERVER_ADVANCE_PERIOD;
@@ -446,7 +441,7 @@ void LocationGameLoop()
         bool entityUnderMouse = false;
         int numMouseButtons = g_prefsManager->GetInt("ControlMouseButtons", 3);
 
-        Team* team = g_app->m_location->GetMyTeam();
+        Team* team = g_location->GetMyTeam();
         if (team)
         {
           bool checkMouse = false;
@@ -469,7 +464,7 @@ void LocationGameLoop()
             // entity is about to be selected.  We don't want our original entity
             // walking up to him.
             WorldObjectId idUnderMouse;
-            bool objectUnderMouse = g_app->m_locationInput->GetObjectUnderMouse(idUnderMouse, g_app->m_globalWorld->m_myTeamId);
+            bool objectUnderMouse = g_app->m_locationInput->GetObjectUnderMouse(idUnderMouse, g_globalWorld->m_myTeamId);
 
             bool isCurrentEntity = (objectUnderMouse && idUnderMouse.GetUnitId() == -1 && idUnderMouse.GetIndex() == team->
               m_currentEntityId);
@@ -480,17 +475,17 @@ void LocationGameLoop()
             if (idUnderMouse.GetUnitId() == UNIT_BUILDINGS)
             {
               // Focus the mouse on a Radar Dish if one exists under the mouse
-              Building* building = g_app->m_location->GetBuilding(idUnderMouse.GetUniqueId());
+              Building* building = g_location->GetBuilding(idUnderMouse.GetUniqueId());
               if (building && building->m_type == Building::TypeRadarDish)
                 teamControls.m_mousePos = building->m_pos;
             }
           }
         }
 
-        if (g_app->m_taskManagerInterface->m_visible || EclGetWindows()->Size() != 0 || chatLog || entityUnderMouse)
+        if (g_taskManagerInterface->m_visible || EclGetWindows()->Size() != 0 || chatLog || entityUnderMouse)
           teamControls.ClearFlags();
 
-        g_app->m_clientToServer->SendIAmAlive(g_app->m_globalWorld->m_myTeamId, teamControls);
+        g_app->m_clientToServer->SendIAmAlive(g_globalWorld->m_myTeamId, teamControls);
 
         nextIAmAliveMessage += IAMALIVE_PERIOD;
         if (timeNow > nextIAmAliveMessage)
@@ -539,8 +534,8 @@ void LocationGameLoop()
 
         if (g_sliceNum != -1)
         {
-          g_app->m_location->Advance(g_sliceNum);
-          g_app->m_particleSystem->Advance(g_sliceNum);
+          g_location->Advance(g_sliceNum);
+          g_particleSystem->Advance(g_sliceNum);
 
           if (g_sliceNum < NUM_SLICES_PER_FRAME - 1)
             g_sliceNum++;
@@ -559,34 +554,34 @@ void LocationGameLoop()
       g_app->m_profiler->Advance();
 #endif // PROFILER_ENABLED
 
-      g_app->m_userInput->Advance();
+      g_userInput->Advance();
 
       // Check Task Manager
       SwitchTaskManagerForX360Controller();
 
       // The following are candidates for running in parallel
       // using something like OpenMP
-      g_app->m_location->m_water->Advance();
+      g_location->m_water->Advance();
       g_soundLibrary2d->TopupBuffer();
-      g_app->m_camera->Advance();
+      g_camera->Advance();
       g_app->m_locationInput->Advance();
-      g_app->m_taskManager->Advance();
-      g_app->m_taskManagerInterface->Advance();
-      g_app->m_script->Advance();
+      g_taskManager->Advance();
+      g_taskManagerInterface->Advance();
+      g_script->Advance();
       g_explosionManager.Advance();
       g_app->m_soundSystem->Advance();
-      g_app->m_controlHelpSystem->Advance();
+      g_controlHelpSystem->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
       if (g_app->m_attractMode->m_running) { g_app->m_attractMode->Advance(); }
 #endif // ATTRACTMODE_ENABLED
 
       // DELETEME: for debug purposes only
-      g_app->m_globalWorld->EvaluateEvents();
+      g_globalWorld->EvaluateEvents();
 
-      g_app->m_renderer->Render();
+      TheRenderer()->Render();
 
-      if (g_app->m_renderer->m_fps < 15)
+      if (g_renderer->Fps() < 15)
         g_app->m_soundSystem->Advance();
     }
   }
@@ -596,51 +591,51 @@ void LocationGameLoop()
 
   g_explosionManager.Reset();
 
-  if (g_app->m_globalWorld->GetLocationName(g_app->m_locationId))
-    g_app->m_globalWorld->TransferSpirits(g_app->m_locationId);
+  if (g_globalWorld->GetLocationName(g_locationId))
+    g_globalWorld->TransferSpirits(g_locationId);
 
   g_app->m_clientToServer->ClientLeave();
   // ClientLeave used to reset this itself, reaching down from the endpoint into
   // the game loop's own counter. It resets its own; this one is ours.
   g_lastProcessedSequenceId = -1;
-  g_app->m_location->Empty();
-  g_app->m_particleSystem->Empty();
+  g_location->Empty();
+  g_particleSystem->Empty();
 
   //	g_app->m_inLocation = false;
-  //	g_app->m_requestedLocationId = false;
+  //	g_requestedLocationId = false;
 
-  delete g_app->m_location;
-  g_app->m_location = nullptr;
-  g_app->m_locationId = -1;
+  delete g_location;
+  g_location = nullptr;
+  g_locationId = -1;
 
   delete g_app->m_locationInput;
   g_app->m_locationInput = nullptr;
 
-  delete g_app->m_server;
-  g_app->m_server = nullptr;
+  delete g_server;
+  g_server = nullptr;
 
-  g_app->m_taskManager->StopAllTasks();
+  g_taskManager->StopAllTasks();
 
-  g_app->m_globalWorld->m_myTeamId = 255;
-  g_app->m_globalWorld->EvaluateEvents();
+  g_globalWorld->m_myTeamId = 255;
+  g_globalWorld->EvaluateEvents();
 }
 
 void SwitchTaskManagerForX360Controller()
 {
   static int oldControlType = INPUT_MODE_KEYBOARD;
 
-  if (oldControlType != INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && !g_app->m_taskManagerInterface->
+  if (oldControlType != INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && !g_taskManagerInterface->
     m_visible)
   {
     // user has just switched to the game pad
     if (g_prefsManager->GetInt("ControlMethod") == 0)
     {
-      delete g_app->m_taskManagerInterface;
-      g_app->m_taskManagerInterface = new TaskManagerInterfaceIcons();
+      delete g_taskManagerInterface;
+      g_taskManagerInterface = new TaskManagerInterfaceIcons();
     }
     oldControlType = INPUT_MODE_GAMEPAD;
   }
-  else if (oldControlType == INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && !g_app->m_taskManagerInterface->
+  else if (oldControlType == INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && !g_taskManagerInterface->
     m_visible)
     oldControlType = g_inputManager->getInputMode();
 }
@@ -660,25 +655,25 @@ void LocationEditorLoop()
     UpdateAdvanceTime();
     double timeNow = GetHighResTime();
 
-    g_app->m_userInput->Advance();
-    g_app->m_camera->Advance();
-    g_app->m_locationEditor->Advance();
+    g_userInput->Advance();
+    g_camera->Advance();
+    g_locationEditor->Advance();
     g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
     g_app->m_profiler->Advance();
 #endif
 
-    g_app->m_renderer->Render();
+    TheRenderer()->Render();
   }
 
-  delete g_app->m_locationEditor;
-  g_app->m_locationEditor = nullptr;
+  delete g_locationEditor;
+  g_locationEditor = nullptr;
 
-  g_app->m_location->Empty();
-  delete g_app->m_location;
-  g_app->m_location = nullptr;
-  g_app->m_locationId = -1;
-  g_app->m_requestedLocationId = -1;
+  g_location->Empty();
+  delete g_location;
+  g_location = nullptr;
+  g_locationId = -1;
+  g_requestedLocationId = -1;
 
   delete g_app->m_locationInput;
   g_app->m_locationInput = nullptr;
@@ -687,27 +682,27 @@ void LocationEditorLoop()
 
 void GlobalWorldGameLoop()
 {
-  g_app->m_renderer->StartFadeIn(0.25f);
+  TheRenderer()->StartFadeIn(0.25f);
 
   g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
 
-  while (g_app->m_requestedLocationId == -1 && !g_app->m_requestToggleEditing)
+  while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
-    if (g_app->m_atMainMenu)
+    if (g_atMainMenu)
       break;
 
     g_inputManager->PollForEvents();
 
-    if (g_inputManager->controlEvent(ControlMenuEscape) && g_app->m_renderer->IsFadeComplete())
+    if (g_inputManager->controlEvent(ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
       if (WindowsOnScreen())
         RemoveAllWindows();
       else
       {
-        g_app->m_camera->SetDebugMode(Camera::DebugModeAuto);
+        g_camera->SetDebugMode(Camera::DebugModeAuto);
         EclRegisterWindow(new MainMenuWindow());
       }
-      g_app->m_userInput->Advance();
+      g_userInput->Advance();
     }
 
     if (HandleCommonConditions())
@@ -717,10 +712,10 @@ void GlobalWorldGameLoop()
     UpdateAdvanceTime();
     double timeNow = GetHighResTime();
 
-    g_app->m_script->Advance();
-    g_app->m_globalWorld->Advance();
-    g_app->m_userInput->Advance();
-    g_app->m_camera->Advance();
+    g_script->Advance();
+    g_globalWorld->Advance();
+    g_userInput->Advance();
+    g_camera->Advance();
     g_app->m_soundSystem->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
@@ -730,15 +725,15 @@ void GlobalWorldGameLoop()
     g_app->m_profiler->Advance();
 #endif // PROFILER_ENABLED
 
-    g_app->m_globalWorld->EvaluateEvents();
+    g_globalWorld->EvaluateEvents();
 
-    g_app->m_renderer->Render();
+    TheRenderer()->Render();
   }
 
-  if (g_app->m_requestToggleEditing)
+  if (g_requestToggleEditing)
   {
-    g_app->m_editing = true;
-    g_app->m_requestToggleEditing = false;
+    g_editing = true;
+    g_requestToggleEditing = false;
   }
 
   g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
@@ -747,18 +742,18 @@ void GlobalWorldGameLoop()
 // *** GlobalWorldEditorLoop
 void GlobalWorldEditorLoop()
 {
-  g_app->m_camera->SetDebugMode(Camera::DebugModeAlways);
+  g_camera->SetDebugMode(Camera::DebugModeAlways);
 
   auto gweWindow = new GlobalWorldEditorWindow();
   EclRegisterWindow(gweWindow);
 
-  while (g_app->m_requestedLocationId == -1 && !g_app->m_requestToggleEditing)
+  while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
     g_inputManager->PollForEvents();
 
     if (g_inputManager->controlEvent(ControlMenuEscape))
     {
-      g_app->m_editing = false;
+      g_editing = false;
       return;
     }
 
@@ -770,21 +765,21 @@ void GlobalWorldEditorLoop()
     UpdateAdvanceTime();
     double timeNow = GetHighResTime();
 
-    g_app->m_globalWorld->Advance();
-    g_app->m_userInput->Advance();
-    g_app->m_camera->Advance();
+    g_globalWorld->Advance();
+    g_userInput->Advance();
+    g_camera->Advance();
     g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
     g_app->m_profiler->Advance();
 #endif // PROFILER_ENABLED
 
-    g_app->m_renderer->Render();
+    TheRenderer()->Render();
   }
 
-  if (g_app->m_requestToggleEditing)
+  if (g_requestToggleEditing)
   {
-    g_app->m_editing = false;
-    g_app->m_requestToggleEditing = false;
+    g_editing = false;
+    g_requestToggleEditing = false;
   }
 }
 
@@ -853,18 +848,18 @@ void Initialise()
   const char* startMap = g_prefsManager->GetString("StartMap");
   if (startMap && g_app->HasBoughtGame())
   {
-    int requestedLocationId = g_app->m_globalWorld->GetLocationId(startMap);
-    GlobalLocation* gloc = g_app->m_globalWorld->GetLocation(requestedLocationId);
+    int requestedLocationId = g_globalWorld->GetLocationId(startMap);
+    GlobalLocation* gloc = g_globalWorld->GetLocation(requestedLocationId);
 
     if (gloc)
     {
-      g_app->m_requestedLocationId = requestedLocationId;
+      g_requestedLocationId = requestedLocationId;
       strcpy(g_app->m_requestedMap, gloc->m_mapFilename);
       strcpy(g_app->m_requestedMission, gloc->m_missionFilename);
     }
   }
 
-  g_app->m_renderer->SetOpenGLState();
+  TheRenderer()->SetOpenGLState();
 }
 
 void Finalise()
@@ -898,8 +893,8 @@ void RunBootLoaders()
     delete g_app->m_startSequence;
     g_app->m_startSequence = nullptr;
 
-    g_app->m_camera->SetTarget(Vector3(1000, 500, 1000), Vector3(0, -0.5f, -1));
-    g_app->m_camera->CutToTarget();
+    g_camera->SetTarget(Vector3(1000, 500, 1000), Vector3(0, -0.5f, -1));
+    g_camera->CutToTarget();
 
     g_inputManager->Advance(); // clears g_keyDeltas[KEY_ESC]
     g_inputManager->Advance();
@@ -909,25 +904,25 @@ void RunBootLoaders()
 void EnterLocation()
 {
   bool iAmAServer = g_prefsManager->GetInt("IAmAServer") ? true : false;
-  if (!g_app->m_editing)
+  if (!g_editing)
   {
     if (iAmAServer)
     {
-      g_app->m_server = new Server();
-      g_app->m_server->Initialise(g_app->m_profiler);
+      g_server = new Server();
+      g_server->Initialise(g_app->m_profiler);
     }
 
     g_app->m_clientToServer->ClientJoin();
   }
 
-  g_app->m_location = new Location();
+  g_location = new Location();
   g_app->m_locationInput = new LocationInput();
-  g_app->m_location->Init(g_app->m_requestedMission, g_app->m_requestedMap);
-  g_app->m_locationId = g_app->m_requestedLocationId;
+  g_location->Init(g_app->m_requestedMission, g_app->m_requestedMap);
+  g_locationId = g_requestedLocationId;
 
-  g_app->m_camera->UpdateEntityTrackingMode();
+  g_camera->UpdateEntityTrackingMode();
 
-  if (!g_app->m_editing)
+  if (!g_editing)
   {
     if (iAmAServer)
     {
@@ -939,25 +934,25 @@ void EnterLocation()
 
   constexpr float borderSize = 200.0f;
   float minX = -borderSize;
-  float maxX = g_app->m_location->m_landscape.GetWorldSizeX() + borderSize;
-  g_app->m_camera->SetBounds(minX, maxX, minX, maxX);
-  g_app->m_camera->SetTarget(Vector3(maxX, 1000, maxX), Vector3(-1, -0.7, -1)); // Incase start doesn't exist
-  g_app->m_camera->SetTarget("start");
-  g_app->m_camera->CutToTarget();
+  float maxX = g_location->m_landscape.GetWorldSizeX() + borderSize;
+  g_camera->SetBounds(minX, maxX, minX, maxX);
+  g_camera->SetTarget(Vector3(maxX, 1000, maxX), Vector3(-1, -0.7, -1)); // Incase start doesn't exist
+  g_camera->SetTarget("start");
+  g_camera->CutToTarget();
 
-  if (g_app->m_editing)
+  if (g_editing)
   {
 #ifdef LOCATION_EDITOR
-    g_app->m_locationEditor = new LocationEditor();
-    g_app->m_camera->SetDebugMode(Camera::DebugModeAlways);
+    g_locationEditor = new LocationEditor();
+    g_camera->SetDebugMode(Camera::DebugModeAlways);
 
     LocationEditorLoop();
 #endif // LOCATION_EDITOR
   }
   else
   {
-    g_app->m_camera->SetDebugMode(Camera::DebugModeAuto);
-    g_app->m_camera->RequestMode(Camera::ModeFreeMovement);
+    g_camera->SetDebugMode(Camera::DebugModeAuto);
+    g_camera->RequestMode(Camera::ModeFreeMovement);
 
     LocationGameLoop();
   }
@@ -965,22 +960,22 @@ void EnterLocation()
 
 void EnterGlobalWorld()
 {
-  if (g_app->m_gameMode == App::GameModePrologue && !g_app->m_script->IsRunningScript())
+  if (g_gameMode == GameModePrologue && !g_script->IsRunningScript())
   {
     // the only time you should see the world in prologue is during the cutscene
-    //g_app->m_atMainMenu = true;
-    g_app->m_requestedLocationId = g_app->m_globalWorld->GetLocationId("launchpad");
-    GlobalLocation* gloc = g_app->m_globalWorld->GetLocation(g_app->m_requestedLocationId);
+    //g_atMainMenu = true;
+    g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
+    GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
     strcpy(g_app->m_requestedMap, gloc->m_mapFilename);
     strcpy(g_app->m_requestedMission, gloc->m_missionFilename);
   }
 
   // Put the camera in a sensible place
-  g_app->m_camera->SetDebugMode(Camera::DebugModeAuto);
-  g_app->m_camera->RequestMode(Camera::ModeSphereWorld);
-  g_app->m_camera->SetHeight(50.0f);
+  g_camera->SetDebugMode(Camera::DebugModeAuto);
+  g_camera->RequestMode(Camera::ModeSphereWorld);
+  g_camera->SetHeight(50.0f);
 
-  if (g_app->m_editing)
+  if (g_editing)
     GlobalWorldEditorLoop();
   else
     GlobalWorldGameLoop();
@@ -988,19 +983,19 @@ void EnterGlobalWorld()
 
 void MainMenuLoop()
 {
-  g_app->m_camera->RequestMode(Camera::ModeMainMenu);
-  while (g_app->m_atMainMenu)
+  g_camera->RequestMode(Camera::ModeMainMenu);
+  while (g_atMainMenu)
   {
     UpdateAdvanceTime();
-    g_app->m_renderer->Render();
-    g_app->m_userInput->Advance();
-    g_app->m_camera->Advance();
+    TheRenderer()->Render();
+    g_userInput->Advance();
+    g_camera->Advance();
     g_app->m_soundSystem->Advance();
     HandleCommonConditions();
 
     if (!g_app->m_gameMenu->m_menuCreated)
     {
-      if (g_app->m_renderer->IsFadeComplete())
+      if (TheRenderer()->IsFadeComplete())
         g_app->m_gameMenu->CreateMenu();
     }
   }
@@ -1023,7 +1018,7 @@ void RunTheGame()
 
   while (true)
   {
-    if (g_app->m_requestedLocationId != -1)
+    if (g_requestedLocationId != -1)
       EnterLocation();
     else // Not in location
       EnterGlobalWorld();

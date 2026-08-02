@@ -12,8 +12,7 @@
 #include "SoundLibrary3d.h"
 #include "SampleCache.h"
 
-#include "App.h"
-#include "Renderer.h"
+#include "WorldPointers.h"
 
 
 #define SOUND_LIBRARY       "SoundLibrary"
@@ -45,7 +44,7 @@ public:
         if( parent->m_soundLib == 0 ) g_prefsManager->SetString( SOUND_LIBRARY, "software" );
         else                          g_prefsManager->SetString( SOUND_LIBRARY, "dsound" );
 
-        g_app->m_soundSystem->RestartSoundLibrary();
+        g_soundSystem->RestartSoundLibrary();
 
         if( parent->m_memoryUsage != oldMemoryUsage )
         {
@@ -54,42 +53,42 @@ public:
 
             g_cachedSampleManager.EmptyCache();
 
-            for( int i = 0; i < g_app->m_soundSystem->m_sounds.Size(); ++i )
+            for( int i = 0; i < g_soundSystem->m_sounds.Size(); ++i )
             {
-                if( g_app->m_soundSystem->m_sounds.ValidIndex(i) )
+                if( g_soundSystem->m_sounds.ValidIndex(i) )
                 {
-                    SoundInstance *instance = g_app->m_soundSystem->m_sounds[i];
+                    SoundInstance *instance = g_soundSystem->m_sounds[i];
                     if( instance->m_cachedSampleHandle )
                     {
                         g_deletingCachedSampleHandle = true;
                         delete instance->m_cachedSampleHandle;
-                        instance->m_cachedSampleHandle = NULL;
+                        instance->m_cachedSampleHandle = nullptr;
                         g_deletingCachedSampleHandle = false;
                         instance->OpenStream(false);
                     }
                 }
             }
 
-            if( g_app->m_soundSystem->m_music &&
-                g_app->m_soundSystem->m_music->m_cachedSampleHandle )
+            if( g_soundSystem->m_music &&
+                g_soundSystem->m_music->m_cachedSampleHandle )
             {
                 g_deletingCachedSampleHandle = true;
-                delete g_app->m_soundSystem->m_music->m_cachedSampleHandle;
-                g_app->m_soundSystem->m_music->m_cachedSampleHandle = NULL;
+                delete g_soundSystem->m_music->m_cachedSampleHandle;
+                g_soundSystem->m_music->m_cachedSampleHandle = nullptr;
                 g_deletingCachedSampleHandle = false;
-                g_app->m_soundSystem->m_music->OpenStream(false);
+                g_soundSystem->m_music->OpenStream(false);
             }
         }
 
 
         if( parent->m_dspEffects )
         {
-            g_app->m_soundSystem->PropagateBlueprints();
+            g_soundSystem->PropagateBlueprints();
             // Causes all sounds to reload their DSP effects from the blueprints
         }
         else
         {
-            g_app->m_soundSystem->StopAllDSPEffects();
+            g_soundSystem->StopAllDSPEffects();
         }
 
 		g_prefsManager->Save();
@@ -130,8 +129,8 @@ PrefsSoundWindow::PrefsSoundWindow()
 :   SpeciesWindow( LANGUAGEPHRASE("dialog_soundoptions") )
 {
     SetMenuSize( 532, 390 );
-    SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
-                 g_app->m_renderer->ScreenH()/2 - m_h/2 );
+    SetPosition( g_renderer->ScreenW()/2 - m_w/2,
+                 g_renderer->ScreenH()/2 - m_h/2 );
 
     m_mixFreq       = g_prefsManager->GetInt( SOUND_MIXFREQ, 22050 );
     m_numChannels   = g_prefsManager->GetInt( SOUND_CHANNELS, 16 );
@@ -285,7 +284,7 @@ void PrefsSoundWindow::Render( bool _hasFocus )
 //    g_editorFont.DrawText2DCentre( m_x + m_w/2, m_y + m_h - 70, 12, "%d channels allocated", numChannels );
 
 #ifdef PROFILER_ENABLED
-    ProfiledElement *element = g_app->m_profiler->m_rootElement->m_children.GetData( "Advance SoundSystem" );
+    ProfiledElement *element = g_profiler->m_rootElement->m_children.GetData( "Advance SoundSystem" );
     if( element->m_lastNumCalls > 0 )
     {
         float occup = element->m_lastTotalTime * 100;

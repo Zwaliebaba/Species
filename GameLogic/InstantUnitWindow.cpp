@@ -9,16 +9,14 @@
 #include "InputField.h"
 #include "InstantUnitWindow.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "LevelFile.h"
 #include "Location.h"
 #include "LocationEditor.h"
-#include "Renderer.h"
-#include "UserInput.h"
 #include "Team.h"
 
 #include "Entity.h"
+#include "WorldPointers.h"
 
 #ifdef LOCATION_EDITOR
 
@@ -36,7 +34,7 @@ public:
 	{
 		if (stricmp(m_name, LANGUAGEPHRASE("editor_move")) == 0)
 		{
-			g_app->m_locationEditor->m_tool = LocationEditor::ToolMove;
+			g_locationEditor->m_tool = LocationEditor::ToolMove;
 		}
 	}
 };
@@ -58,7 +56,7 @@ public:
 
     void MouseUp()
     {
-		InstantUnit *iu = g_app->m_location->m_levelFile->m_instantUnits.GetData(g_app->m_locationEditor->m_selectionId);
+		InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
         if( iu )
         {
             iu->m_teamId = m_teamId;
@@ -67,7 +65,7 @@ public:
 
     void Render( int realX, int realY, bool highlighted, bool clicked)
     {
-		InstantUnit *iu = g_app->m_location->m_levelFile->m_instantUnits.GetData(g_app->m_locationEditor->m_selectionId);
+		InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
         if( iu )
         {
             if( iu->m_teamId == m_teamId )
@@ -86,7 +84,7 @@ public:
         }
         else
         {
-            RGBAColour col = g_app->m_location->m_teams[ m_teamId ].m_colour;
+            RGBAColour col = g_location->m_teams[ m_teamId ].m_colour;
             glColor3ubv( col.GetData() );
         }
 
@@ -120,13 +118,13 @@ public:
         }
         else
         {
-			InstantUnit *iu = g_app->m_location->m_levelFile->m_instantUnits.GetData(g_app->m_locationEditor->m_selectionId);
+			InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
 			delete iu;
 
-            g_app->m_location->m_levelFile->m_instantUnits.RemoveData(g_app->m_locationEditor->m_selectionId);
+            g_location->m_levelFile->m_instantUnits.RemoveData(g_locationEditor->m_selectionId);
     	    EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
-            g_app->m_locationEditor->m_tool = LocationEditor::ToolNone;
-            g_app->m_locationEditor->m_selectionId = -1;
+            g_locationEditor->m_tool = LocationEditor::ToolNone;
+            g_locationEditor->m_selectionId = -1;
         }
     }
 };
@@ -145,7 +143,7 @@ InstantUnitEditWindow::InstantUnitEditWindow( char const *name )
 
 InstantUnitEditWindow::~InstantUnitEditWindow()
 {
-	g_app->m_locationEditor->m_selectionId = -1;
+	g_locationEditor->m_selectionId = -1;
 }
 
 
@@ -178,8 +176,8 @@ void InstantUnitEditWindow::Create()
 
 	y += 7;
 
-	InstantUnit *iu = g_app->m_location->m_levelFile->m_instantUnits.GetData(
-						g_app->m_locationEditor->m_selectionId);
+	InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(
+						g_locationEditor->m_selectionId);
     CreateValueControl( LANGUAGEPHRASE("editor_numentities"), InputField::TypeInt, &iu->m_number, y+=buttonPitch, 1, 1, 1000 );
     CreateValueControl( LANGUAGEPHRASE("editor_spread"), InputField::TypeFloat, &iu->m_spread, y+=buttonPitch, 1.0f, 0.0f, 1000.0f );
     CreateValueControl( LANGUAGEPHRASE("editor_inunit"), InputField::TypeChar, &iu->m_inAUnit, y+=buttonPitch, 1,0,1 );
@@ -203,14 +201,14 @@ public:
 		{
 			if (stricmp(m_name, Entity::GetTypeNameTranslated(i)) == 0)
 			{
-				g_app->m_locationEditor->m_tool = LocationEditor::ToolMove;
+				g_locationEditor->m_tool = LocationEditor::ToolMove;
 
 				// Where did we click?
 				Vector3 rayStart, rayDir, hitPos;
-	            g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2,
-                                             g_app->m_renderer->ScreenH()/2,
+	            g_camera->GetClickRay(g_renderer->ScreenW()/2,
+                                             g_renderer->ScreenH()/2,
                                              &rayStart, &rayDir);
-                g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &hitPos );
+                g_location->m_landscape.RayHit( rayStart, rayDir, &hitPos );
 
 				// Make sure that any old edit window is removed
 				EclWindow *ew = EclGetWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
@@ -227,8 +225,8 @@ public:
 				iu->m_teamId = 0;
 				iu->m_type = i;
                 iu->m_inAUnit = false;
-				g_app->m_locationEditor->m_selectionId = g_app->m_location->m_levelFile->m_instantUnits.Size();
-				g_app->m_location->m_levelFile->m_instantUnits.PutData(iu);
+				g_locationEditor->m_selectionId = g_location->m_levelFile->m_instantUnits.Size();
+				g_location->m_levelFile->m_instantUnits.PutData(iu);
 
 				// Create an edit window for the new instant unit
 				EclWindow *cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
@@ -257,7 +255,7 @@ InstantUnitCreateWindow::InstantUnitCreateWindow( char const *name )
 
 InstantUnitCreateWindow::~InstantUnitCreateWindow()
 {
-	g_app->m_locationEditor->RequestMode(LocationEditor::ModeNone);
+	g_locationEditor->RequestMode(LocationEditor::ModeNone);
 	EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
 }
 

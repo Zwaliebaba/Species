@@ -5,15 +5,14 @@
 #include "CheatWindow.h"
 #include "DebugMenu.h"
 
-#include "App.h"
 #include "GlobalWorld.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "Unit.h"
 #include "Team.h"
 #include "Camera.h"
-#include "Renderer.h"
 #include "TaskManager.h"
+#include "WorldPointers.h"
 
 
 #ifdef CHEATMENU_ENABLED
@@ -22,14 +21,14 @@ class KillAllEnemiesButton : public SpeciesButton
 {
     void MouseUp()
     {
-        if( g_app->m_location )
+        if( g_location )
         {
-            int myTeamId = g_app->m_globalWorld->m_myTeamId;
+            int myTeamId = g_globalWorld->m_myTeamId;
             for( int t = 0; t < NUM_TEAMS; ++t )
             {
-                if( !g_app->m_location->IsFriend( myTeamId, t ) )
+                if( !g_location->IsFriend( myTeamId, t ) )
                 {
-                    Team *team = &g_app->m_location->m_teams[t];
+                    Team *team = &g_location->m_teams[t];
 
                     // Kill all UNITS
                     for( int u = 0; u < team->m_units.Size(); ++u )
@@ -60,11 +59,11 @@ class KillAllEnemiesButton : public SpeciesButton
                 }
             }
 
-            for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+            for( int i = 0; i < g_location->m_buildings.Size(); ++i )
             {
-                if( g_app->m_location->m_buildings.ValidIndex(i) )
+                if( g_location->m_buildings.ValidIndex(i) )
                 {
-                    Building *building = g_app->m_location->m_buildings[i];
+                    Building *building = g_location->m_buildings[i];
                     if( building->m_type == Building::TypeAntHill ||
                         building->m_type == Building::TypeTriffid )
                     {
@@ -84,16 +83,16 @@ public:
 
     void MouseUp()
     {
-        if( g_app->m_location )
+        if( g_location )
         {
 	        Vector3 rayStart;
 	        Vector3 rayDir;
-	        g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2,
-									     g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	        g_camera->GetClickRay(g_renderer->ScreenW()/2,
+									     g_renderer->ScreenH()/2, &rayStart, &rayDir);
             Vector3 _pos;
-            g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+            g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
-            g_app->m_location->SpawnEntities( _pos, m_teamId, -1, Entity::TypeDarwinian, 20, g_zeroVector, 30 );
+            g_location->SpawnEntities( _pos, m_teamId, -1, Entity::TypeDarwinian, 20, g_zeroVector, 30 );
         }
     }
 };
@@ -103,16 +102,16 @@ class SpawnTankButton : public SpeciesButton
 {
     void MouseUp()
     {
-        if( g_app->m_location )
+        if( g_location )
         {
 	        Vector3 rayStart;
 	        Vector3 rayDir;
-	        g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2,
-									     g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	        g_camera->GetClickRay(g_renderer->ScreenW()/2,
+									     g_renderer->ScreenH()/2, &rayStart, &rayDir);
             Vector3 _pos;
-            g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+            g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
-            g_app->m_location->SpawnEntities( _pos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0 );
+            g_location->SpawnEntities( _pos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0 );
         }
     }
 };
@@ -122,16 +121,16 @@ class SpawnViriiButton : public SpeciesButton
 {
     void MouseUp()
     {
-        if( g_app->m_location )
+        if( g_location )
         {
 	        Vector3 rayStart;
 	        Vector3 rayDir;
-	        g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2,
-									     g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	        g_camera->GetClickRay(g_renderer->ScreenW()/2,
+									     g_renderer->ScreenH()/2, &rayStart, &rayDir);
             Vector3 _pos;
-            g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+            g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
-            g_app->m_location->SpawnEntities( _pos, 1, -1, Entity::TypeVirii, 20, g_zeroVector, 0, 1000.0f );
+            g_location->SpawnEntities( _pos, 1, -1, Entity::TypeVirii, 20, g_zeroVector, 0, 1000.0f );
         }
     }
 };
@@ -141,19 +140,19 @@ class SpawnSpiritButton : public SpeciesButton
 {
     void MouseUp()
     {
-        if( g_app->m_location )
+        if( g_location )
         {
 	        Vector3 rayStart;
 	        Vector3 rayDir;
-	        g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2,
-									     g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	        g_camera->GetClickRay(g_renderer->ScreenW()/2,
+									     g_renderer->ScreenH()/2, &rayStart, &rayDir);
             Vector3 _pos;
-            g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+            g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
             for( int i = 0; i < 10; ++i )
             {
                 Vector3 spiritPos = _pos + Vector3( syncsfrand(20.0f), 0.0f, syncsfrand(20.0f) );
-                g_app->m_location->SpawnSpirit( spiritPos, g_zeroVector, 2, WorldObjectId() );
+                g_location->SpawnSpirit( spiritPos, g_zeroVector, 2, WorldObjectId() );
             }
         }
     }
@@ -164,7 +163,7 @@ class AllowArbitraryPlacementButton : public SpeciesButton
 {
     void MouseUp()
     {
-        g_app->m_taskManager->m_verifyTargetting = false;
+        g_taskManager->m_verifyTargetting = false;
     }
 };
 
@@ -173,14 +172,14 @@ class EnableGeneratorAndMineButton : public SpeciesButton
 {
     void MouseUp()
     {
-        int generatorLocationId = g_app->m_globalWorld->GetLocationId( "generator" );
-        int mineLocationId = g_app->m_globalWorld->GetLocationId( "mine" );
+        int generatorLocationId = g_globalWorld->GetLocationId( "generator" );
+        int mineLocationId = g_globalWorld->GetLocationId( "mine" );
 
-        for( int i = 0; i < g_app->m_globalWorld->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_globalWorld->m_buildings.Size(); ++i )
         {
-            if( g_app->m_globalWorld->m_buildings.ValidIndex(i) )
+            if( g_globalWorld->m_buildings.ValidIndex(i) )
             {
-                GlobalBuilding *gb = g_app->m_globalWorld->m_buildings[i];
+                GlobalBuilding *gb = g_globalWorld->m_buildings[i];
                 if( gb && gb->m_locationId == generatorLocationId &&
                     gb->m_type == Building::TypeGenerator )
                 {
@@ -195,7 +194,7 @@ class EnableGeneratorAndMineButton : public SpeciesButton
             }
         }
 
-        g_app->m_globalWorld->EvaluateEvents();
+        g_globalWorld->EvaluateEvents();
     }
 };
 
@@ -204,14 +203,14 @@ class EnableReceiverAndBufferButton : public SpeciesButton
 {
     void MouseUp()
     {
-        int receiverLocationId = g_app->m_globalWorld->GetLocationId( "receiver" );
-        int bufferLocationId = g_app->m_globalWorld->GetLocationId( "PatternBuffer" );
+        int receiverLocationId = g_globalWorld->GetLocationId( "receiver" );
+        int bufferLocationId = g_globalWorld->GetLocationId( "PatternBuffer" );
 
-        for( int i = 0; i < g_app->m_globalWorld->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_globalWorld->m_buildings.Size(); ++i )
         {
-            if( g_app->m_globalWorld->m_buildings.ValidIndex(i) )
+            if( g_globalWorld->m_buildings.ValidIndex(i) )
             {
-                GlobalBuilding *gb = g_app->m_globalWorld->m_buildings[i];
+                GlobalBuilding *gb = g_globalWorld->m_buildings[i];
                 if( gb && gb->m_locationId == receiverLocationId &&
                     gb->m_type == Building::TypeSpiritProcessor )
                 {
@@ -226,7 +225,7 @@ class EnableReceiverAndBufferButton : public SpeciesButton
             }
         }
 
-        g_app->m_globalWorld->EvaluateEvents();
+        g_globalWorld->EvaluateEvents();
     }
 };
 
@@ -235,9 +234,9 @@ class OpenAllLocationsButton : public SpeciesButton
 {
     void MouseUp()
     {
-        for( int i = 0; i < g_app->m_globalWorld->m_locations.Size(); ++i )
+        for( int i = 0; i < g_globalWorld->m_locations.Size(); ++i )
         {
-            GlobalLocation *loc = g_app->m_globalWorld->m_locations[i];
+            GlobalLocation *loc = g_globalWorld->m_locations[i];
             loc->m_available = true;
         }
     }
@@ -248,8 +247,8 @@ class ClearResourcesButton : public SpeciesButton
 {
     void MouseUp()
     {
-        g_app->m_resource->FlushOpenGlState();
-		g_app->m_resource->RegenerateOpenGlState();
+        g_resource->FlushOpenGlState();
+		g_resource->RegenerateOpenGlState();
     }
 };
 
@@ -260,9 +259,9 @@ class GiveAllResearchButton : public SpeciesButton
     {
         for( int i = 0; i < GlobalResearch::NumResearchItems; ++i )
         {
-            g_app->m_globalWorld->m_research->AddResearch( i );
-            //g_app->m_globalWorld->m_research->SetCurrentProgress( i, 400 );
-            g_app->m_globalWorld->m_research->EvaluateLevel( i );
+            g_globalWorld->m_research->AddResearch( i );
+            //g_globalWorld->m_research->SetCurrentProgress( i, 400 );
+            g_globalWorld->m_research->EvaluateLevel( i );
         }
     }
 };
@@ -272,17 +271,17 @@ class SpawnPortsButton : public SpeciesButton
 {
     void MouseUp()
     {
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 for( int p = 0; p < building->GetNumPorts(); ++p )
                 {
                     Vector3 portPos, portFront;
                     building->GetPortPosition( p, portPos, portFront );
 
-                    g_app->m_location->SpawnEntities( portPos, 0, -1, Entity::TypeDarwinian, 3, g_zeroVector, 30.0f );
+                    g_location->SpawnEntities( portPos, 0, -1, Entity::TypeDarwinian, 3, g_zeroVector, 30.0f );
                 }
             }
         }

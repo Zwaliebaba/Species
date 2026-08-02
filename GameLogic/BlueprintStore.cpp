@@ -11,14 +11,13 @@
 #include "BlueprintStore.h"
 #include "Darwinian.h"
 
-#include "App.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "Camera.h"
-#include "EntityGrid.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Team.h"
 #include "GlobalWorld.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 BlueprintBuilding::BlueprintBuilding()
@@ -26,7 +25,7 @@ BlueprintBuilding::BlueprintBuilding()
     m_buildingLink(-1),
     m_infected(0.0f),
     m_segment(0),
-    m_marker(NULL)
+    m_marker(nullptr)
 {
     m_vel.Zero();
 }
@@ -50,7 +49,7 @@ void BlueprintBuilding::Initialise( Building *_template )
 
 bool BlueprintBuilding::Advance()
 {
-    BlueprintBuilding *blueprintBuilding = (BlueprintBuilding *) g_app->m_location->GetBuilding( m_buildingLink );
+    BlueprintBuilding *blueprintBuilding = (BlueprintBuilding *) g_location->GetBuilding( m_buildingLink );
     if( blueprintBuilding )
     {
         if( m_infected > 80.0f ) blueprintBuilding->SendBlueprint( m_segment, true );
@@ -80,14 +79,14 @@ Matrix34 BlueprintBuilding::GetMarker( float _predictionTime )
 
 bool BlueprintBuilding::IsInView()
 {
-    Building *link = g_app->m_location->GetBuilding( m_buildingLink );
+    Building *link = g_location->GetBuilding( m_buildingLink );
 
     if( link )
     {
         Vector3 midPoint = ( link->m_centrePos + m_centrePos ) / 2.0f;
         float radius = ( link->m_centrePos - m_centrePos ).Mag();
         radius += m_radius;
-        return( g_app->m_camera->SphereInViewFrustum( midPoint, radius ) );
+        return( g_camera->SphereInViewFrustum( midPoint, radius ) );
     }
     else
     {
@@ -108,7 +107,7 @@ void BlueprintBuilding::RenderAlphas( float _predictionTime )
 {
     Building::RenderAlphas( _predictionTime );
 
-    BlueprintBuilding *link = (BlueprintBuilding *) g_app->m_location->GetBuilding( m_buildingLink );
+    BlueprintBuilding *link = (BlueprintBuilding *) g_location->GetBuilding( m_buildingLink );
     if( link )
     {
         float infected = m_infected / 100.0f;
@@ -126,12 +125,12 @@ void BlueprintBuilding::RenderAlphas( float _predictionTime )
         Vector3 ourPos = GetMarker(_predictionTime).pos;
         Vector3 theirPos = link->GetMarker(_predictionTime).pos;
 
-        Vector3 rightAngle = ( g_app->m_camera->GetPos() - ourPos ) ^ ( theirPos - ourPos );
+        Vector3 rightAngle = ( g_camera->GetPos() - ourPos ) ^ ( theirPos - ourPos );
         rightAngle.SetLength( 20.0f );
 
         glDisable( GL_CULL_FACE );
         glEnable( GL_TEXTURE_2D );
-        glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+        glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
 
         glEnable( GL_BLEND );
         glBlendFunc( GL_SRC_ALPHA, GL_ONE );
@@ -201,7 +200,7 @@ BlueprintStore::BlueprintStore()
 {
     m_type = Building::TypeBlueprintStore;
 
-    SetShape( g_app->m_resource->GetShape( "BlueprintStore.shp" ) );
+    SetShape( g_resource->GetShape( "BlueprintStore.shp" ) );
 }
 
 
@@ -304,7 +303,7 @@ bool BlueprintStore::Advance()
 
     if( totallyClean )
     {
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_online = true;
     }
 
@@ -380,7 +379,7 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
     glDisable( GL_CULL_FACE );
     glEnable( GL_BLEND );
     glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
     glDepthMask( false );
 
     int numSteps = sqrt(BLUEPRINTSTORE_NUMSEGMENTS);
@@ -427,7 +426,7 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
     // Render main darwinian
 
     glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
     glDisable( GL_CULL_FACE );
     glEnable( GL_BLEND );
     glDepthMask( false );
@@ -464,7 +463,7 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
     //
     // Render lines for over effect
 
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/InterfaceGrey.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/InterfaceGrey.bmp" ) );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
     glBlendFunc( GL_SRC_ALPHA, GL_ONE );
@@ -517,7 +516,7 @@ BlueprintConsole::BlueprintConsole()
 {
     m_type = Building::TypeBlueprintConsole;
 
-    SetShape( g_app->m_resource->GetShape( "BlueprintConsole.shp" ) );
+    SetShape( g_resource->GetShape( "BlueprintConsole.shp" ) );
 }
 
 
@@ -625,11 +624,11 @@ void BlueprintConsole::RenderPorts()
         // Render the status light
 
         float size = 6.0f;
-        Vector3 camR = g_app->m_camera->GetRight() * size;
-        Vector3 camU = g_app->m_camera->GetUp() * size;
+        Vector3 camR = g_camera->GetRight() * size;
+        Vector3 camU = g_camera->GetUp() * size;
 
         Vector3 statusPos = s_controlPadStatus->GetWorldMatrix( mat ).pos;
-        statusPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
+        statusPos.y = g_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
         statusPos.y += 5.0f;
 
         WorldObjectId occupantId = GetPortOccupant(i);
@@ -639,13 +638,13 @@ void BlueprintConsole::RenderPorts()
         }
         else
         {
-            RGBAColour teamColour = g_app->m_location->m_teams[occupantId.GetTeamId()].m_colour;
+            RGBAColour teamColour = g_location->m_teams[occupantId.GetTeamId()].m_colour;
             glColor4ubv( teamColour.GetData() );
         }
 
         glDisable       ( GL_CULL_FACE );
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
         glDepthMask     ( false );
         glEnable        ( GL_BLEND );
         glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
@@ -674,7 +673,7 @@ BlueprintRelay::BlueprintRelay()
 {
     m_type = Building::TypeBlueprintRelay;
 
-    SetShape( g_app->m_resource->GetShape( "BlueprintRelay.shp" ) );
+    SetShape( g_resource->GetShape( "BlueprintRelay.shp" ) );
 }
 
 
@@ -723,7 +722,7 @@ void BlueprintRelay::Render( float _predictionTime )
 {
     BlueprintBuilding::Render( _predictionTime );
 
-    if( g_app->m_editing )
+    if( g_editing )
     {
         m_pos.y = m_altitude;
     }

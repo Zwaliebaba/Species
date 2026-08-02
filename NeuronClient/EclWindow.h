@@ -8,8 +8,7 @@
   */
 
 
-#ifndef _included_eclwindow_h
-#define _included_eclwindow_h
+#pragma once
 
 #define SIZE_ECLWINDOW_NAME     256
 #define SIZE_ECLWINDOW_TITLE    256
@@ -74,4 +73,3 @@ public:
 };
 
 
-#endif

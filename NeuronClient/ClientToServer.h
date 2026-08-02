@@ -1,5 +1,4 @@
-#ifndef _CLIENTTOSERVER_H
-#define _CLIENTTOSERVER_H
+#pragma once
 
 #include "LList.h"
 #include "TeamControls.h"
@@ -77,5 +76,7 @@ public:
     void RequestPause();
 };
 
-
-#endif
+// Owned by App, which assigns this during startup. Declared here so the layers
+// below Species can reach the subsystem without including App.h — see
+// tasks/layering-inversion.yaml T8.
+extern ClientToServer* g_clientToServer;

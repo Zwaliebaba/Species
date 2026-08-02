@@ -1,7 +1,5 @@
-#ifndef _included_ai_h
-#define _included_ai_h
+#pragma once
 
-#include "Location.h"
 
 #include "Entity.h"
 
@@ -102,5 +100,3 @@ public:
 };
 
 
-
-#endif

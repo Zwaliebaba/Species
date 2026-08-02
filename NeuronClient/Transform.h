@@ -1,5 +1,4 @@
-#ifndef INCLUDED_INPUTTRANSFORM_H
-#define INCLUDED_INPUTTRANSFORM_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -59,4 +58,3 @@ public:
 };
 
 
-#endif // INCLUDED_INPUTTRANSFORM_H

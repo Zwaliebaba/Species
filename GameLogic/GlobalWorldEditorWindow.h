@@ -1,5 +1,4 @@
-#ifndef _included_globalworldeditorwindow_h
-#define _included_globalworldeditorwindow_h
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -13,5 +12,3 @@ public:
     void Update();
 };
 
-
-#endif

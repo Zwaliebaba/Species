@@ -16,14 +16,12 @@
 
 #include "SoundSystem.h"
 
-#include "App.h"
-#include "Globals.h"
-#include "Camera.h"
+#include "ProtocolLimits.h"
 #include "ParticleSystem.h"
 #include "Location.h"
-#include "ObstructionGrid.h"
-#include "GlobalWorld.h"
-#include "Main.h"
+#include "GameTime.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 Tree::Tree()
 :   Building(),
@@ -107,7 +105,7 @@ bool Tree::Advance()
                                   sfrand(actualHeight*1.0f) );
             float fireSize = actualHeight*2.0f;
             fireSize *= (1.0f + sfrand(0.5f) );
-            g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
+            g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
         }
 
         if( frand(100.0f) < 10.0f )
@@ -116,7 +114,7 @@ bool Tree::Advance()
             fireSpawn += Vector3( sfrand(actualHeight*0.75f),
                                   sfrand(actualHeight*0.75f),
                                   sfrand(actualHeight*0.75f) );
-            g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeExplosionDebris );
+            g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeExplosionDebris );
         }
 
         //
@@ -134,11 +132,11 @@ bool Tree::Advance()
         Vector3 hitCentre = m_pos + m_hitcheckCentre*actualHeight;
         float hitRadius = m_hitcheckRadius * actualHeight;
 
-        for( int b = 0; b < g_app->m_location->m_buildings.Size(); ++b )
+        for( int b = 0; b < g_location->m_buildings.Size(); ++b )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(b) )
+            if( g_location->m_buildings.ValidIndex(b) )
             {
-                Building *building = g_app->m_location->m_buildings[b];
+                Building *building = g_location->m_buildings[b];
                 if( building != this &&
                     building->m_type == TypeTree )
                 {
@@ -161,8 +159,8 @@ bool Tree::Advance()
     {
         if( m_burnSoundPlaying )
         {
-            g_app->m_soundSystem->StopAllSounds( m_id, "Tree Burn" );
-            g_app->m_soundSystem->TriggerBuildingEvent( this, "Create" );
+            g_soundSystem->StopAllSounds( m_id, "Tree Burn" );
+            g_soundSystem->TriggerBuildingEvent( this, "Create" );
             m_burnSoundPlaying = false;
         }
 
@@ -187,7 +185,7 @@ bool Tree::Advance()
 			fireSpawn += Vector3( sfrand(actualHeight*1.0f),
 								  sfrand(actualHeight*0.25f),
 								  sfrand(actualHeight*1.0f) );
-			g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeLeaf, -1.0f, RGBAColour (m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2] ) );
+			g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeLeaf, -1.0f, RGBAColour (m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2] ) );
 		}
 	}
 
@@ -306,7 +304,7 @@ void Tree::RenderAlphas( float _predictionTime )
         Generate();
     }
 
-    if( g_app->m_editing )
+    if( g_editing )
     {
 	    intToArray(m_branchColour, m_branchColourArray);
 	    intToArray(m_leafColour, m_leafColourArray);
@@ -317,7 +315,7 @@ void Tree::RenderAlphas( float _predictionTime )
     glEnable        ( GL_TEXTURE_2D );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
 	glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glDisable       ( GL_CULL_FACE );
@@ -385,8 +383,8 @@ void Tree::Damage( float _damage )
 
             if( !m_burnSoundPlaying )
             {
-                g_app->m_soundSystem->StopAllSounds( m_id, "Tree Create" );
-                g_app->m_soundSystem->TriggerBuildingEvent( this, "Burn" );
+                g_soundSystem->StopAllSounds( m_id, "Tree Create" );
+                g_soundSystem->TriggerBuildingEvent( this, "Burn" );
                 m_burnSoundPlaying = true;
             }
         }

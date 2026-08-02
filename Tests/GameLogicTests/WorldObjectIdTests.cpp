@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "ByteStream.h"
 #include "WorldObject.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -72,6 +73,39 @@ namespace GameLogicTests
         target = source;
 
         Assert::IsTrue(target == source);
+      }
+
+      TEST_METHOD(TheWireLayoutIsSixteenBytesWithTheTeamByteFirst)
+      {
+        // WRITE_WORLDOBJECTID raw-copies the struct, so its size, its field
+        // offsets and even the three padding bytes after m_teamId are wire
+        // format. MSVC lays it out as the team byte at offset 0, three bytes
+        // of padding, then the three ints. If this fails, the protocol
+        // changed: adding a field, reordering, or packing all desync an old
+        // build against a new one.
+        Assert::AreEqual(16, static_cast<int>(sizeof(WorldObjectId)));
+
+        alignas(WorldObjectId) char buffer[sizeof(WorldObjectId) * 2] = {};
+        char* stream = buffer;
+        const WorldObjectId id(3, 7, 11, 13);
+        WRITE_WORLDOBJECTID(stream, id);
+
+        Assert::AreEqual(16, static_cast<int>(stream - buffer));
+        Assert::AreEqual(static_cast<char>(3), buffer[0]);
+
+        int unitId = 0;
+        int index = 0;
+        int uniqueId = 0;
+        memcpy(&unitId, buffer + 4, sizeof(int));
+        memcpy(&index, buffer + 8, sizeof(int));
+        memcpy(&uniqueId, buffer + 12, sizeof(int));
+        Assert::AreEqual(7, unitId);
+        Assert::AreEqual(11, index);
+        Assert::AreEqual(13, uniqueId);
+
+        char* readStream = buffer;
+        const WorldObjectId received = READ_WORLDOBJECTID(readStream);
+        Assert::IsTrue(received == id);
       }
   };
 } // namespace GameLogicTests

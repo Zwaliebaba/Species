@@ -8,17 +8,16 @@
 #include "Resource.h"
 #include "Shape.h"
 
-#include "App.h"
-#include "Globals.h"
-#include "Main.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "SoundSystem.h"
 #include "Team.h"
 #include "Unit.h"
 
 #include "Factory.h"
 #include "InsertionSquad.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 Factory::Factory()
@@ -33,7 +32,7 @@ Factory::Factory()
     m_timeSoFar(0.0f)
 {
     m_type = TypeFactory;
-	SetShape( g_app->m_resource->GetShape("Factory.shp") );
+	SetShape( g_resource->GetShape("Factory.shp") );
 }
 
 
@@ -57,7 +56,7 @@ void Factory::Initialise(Building *_template)
 void Factory::Render( float predictionTime )
 {
 //    Shape *oldShape = m_shape;
-//    m_shape = NULL;
+//    m_shape = nullptr;
     Building::Render( predictionTime );
 //    m_shape = oldShape;
 
@@ -81,7 +80,7 @@ void Factory::Render( float predictionTime )
 
 void Factory::RenderAlphas( float predictionTime )
 {
-    if( !g_app->m_editing )
+    if( !g_editing )
     {
         m_spiritStore.Render( predictionTime );
     }
@@ -105,7 +104,7 @@ void Factory::RequestUnit( unsigned char _troopType, int _numToCreate )
 	if( _troopType < Entity::TypeEngineer ||
         _troopType == Entity::TypeInsertionSquadie)
     {
-        Team *team          = &g_app->m_location->m_teams[m_id.GetTeamId()];
+        Team *team          = &g_location->m_teams[m_id.GetTeamId()];
         Unit *unit          = team->NewUnit( _troopType, _numToCreate, &m_unitId, m_pos );
         unit->SetWayPoint(m_pos + m_front * 30.0f);
     }
@@ -158,7 +157,7 @@ void Factory::AdvanceStateCreating()
                          5.0f + syncsfrand(1.0f) );
 
             m_spiritStore.RemoveSpirits( 1 );
-            g_app->m_location->SpawnEntities( pos, m_id.GetTeamId(), m_unitId, m_troopType, 1, vel, 0.0f );
+            g_location->SpawnEntities( pos, m_id.GetTeamId(), m_unitId, m_troopType, 1, vel, 0.0f );
 
             ++numActuallyCreated;
         }

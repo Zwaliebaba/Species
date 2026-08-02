@@ -11,13 +11,11 @@
 #include "SpeciesWindow.h"
 #include "InputField.h"
 
-#include "App.h"
-#include "Renderer.h"
-#include "Globals.h"
 #include "ControlBindings.h"
 
 #include "TargetCursor.h"
-
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ****************************************************************************
@@ -452,7 +450,7 @@ void SpeciesWindow::Render ( bool hasFocus )
     // Main body fill
 
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/InterfaceRed.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/InterfaceRed.bmp" ) );
     glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -534,7 +532,7 @@ void SpeciesWindow::Render ( bool hasFocus )
     glColor4ub( 255, 255, 150, 30 );
 	int y = m_y+9;
 	int fontSize = GetMenuSize(12);
-	if( g_app->m_largeMenus )
+	if( g_largeMenus )
 	{
 		y = m_y + fontSize/2;
 	}
@@ -548,11 +546,11 @@ void SpeciesWindow::Render ( bool hasFocus )
 
 int SpeciesWindow::GetMenuSize( int _value )
 {
-	if( g_app->m_largeMenus )
+	if( g_largeMenus )
 	{
 		//int h = m_originalH;
 		//float scale = float(m_h)/float(h);
-		int screenH = g_app->m_renderer->ScreenH();
+		int screenH = g_renderer->ScreenH();
 		float scale = 0.96f * (float(screenH)/460.0f);
 
 		return _value * scale;
@@ -565,9 +563,9 @@ int SpeciesWindow::GetMenuSize( int _value )
 
 void SpeciesWindow::SetMenuSize(int _w, int _h)
 {
-	if( g_app->m_largeMenus )
+	if( g_largeMenus )
 	{
-		int screenH = g_app->m_renderer->ScreenH();
+		int screenH = g_renderer->ScreenH();
 
 		float ratio = 0.96f * (float(screenH)/460.0f);
 
@@ -612,7 +610,7 @@ void SpeciesWindow::Update()
 		}
 
         if( g_inputManager->controlEvent( ControlMenuClose ) &&
-            !g_app->m_atMainMenu )
+            !g_atMainMenu )
         {
             EclRemoveWindow( m_name );
         }
@@ -638,9 +636,9 @@ void SpeciesWindow::SetCurrentButton( EclButton *button )
 
 void GameExitButton::MouseUp()
 {
-	g_app->m_requestQuit = true;
-    //g_app->m_atMainMenu = true;
-    //g_app->m_renderer->StartFadeOut();
+	g_requestQuit = true;
+    //g_atMainMenu = true;
+    //g_renderer->StartFadeOut();
 }
 
 

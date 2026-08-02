@@ -14,9 +14,6 @@
 
 #include "KeyDefs.h" // Key code definitions (bit of a hack)
 
-#include "App.h"
-#include "Globals.h"
-#include "Main.h"
 
 #include "InputField.h"
 
@@ -29,12 +26,12 @@
 
 InputField::InputField()
 :	m_type(TypeNowt),
-	m_string(NULL),
-	m_int(NULL),
-	m_float(NULL),
-    m_char(NULL),
+	m_string(nullptr),
+	m_int(nullptr),
+	m_float(nullptr),
+    m_char(nullptr),
 	m_inputBoxWidth(0),
-    m_callback(NULL),
+    m_callback(nullptr),
 	m_lowBound(0.0f),
 	m_highBound(1e4)
 {
@@ -298,7 +295,7 @@ void InputField::Refresh()
 
 InputScroller::InputScroller()
 :   SpeciesButton(),
-    m_inputField(NULL),
+    m_inputField(nullptr),
     m_change(0.0f),
     m_mouseDownStartTime(-1.0f)
 {
@@ -373,8 +370,8 @@ void InputScroller::MouseUp()
 
 ColourWidget::ColourWidget()
 :   SpeciesButton(),
-    m_callback(NULL),
-    m_value(NULL)
+    m_callback(nullptr),
+    m_value(nullptr)
 {
 }
 
@@ -422,8 +419,8 @@ void ColourWidget::SetCallback(SpeciesButton *button)
 
 ColourWindow::ColourWindow( char const *_name )
 :   SpeciesWindow( _name ),
-    m_callback(NULL),
-    m_value(NULL)
+    m_callback(nullptr),
+    m_value(nullptr)
 {
 }
 

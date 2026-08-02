@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SYSTEM_INFO_H
-#define INCLUDED_SYSTEM_INFO_H
+#pragma once
 
 
 //*****************************************************************************
@@ -12,7 +11,7 @@ public:
 	char *m_language;
 	char *m_country;
 
-	LocaleInfo(): m_language(NULL), m_country(NULL) {}
+	LocaleInfo(): m_language(nullptr), m_country(nullptr) {}
 	~LocaleInfo() { delete [] m_language; delete [] m_country; }
 };
 
@@ -29,7 +28,7 @@ public:
 	unsigned int m_numDevices;
 	int m_preferredDevice;
 
-	AudioInfo(): m_deviceNames(NULL), m_numDevices(0) {}
+	AudioInfo(): m_deviceNames(nullptr), m_numDevices(0) {}
 	~AudioInfo()
 	{
 		for (unsigned int i = 0; i < m_numDevices; ++i)
@@ -64,4 +63,3 @@ public:
 extern SystemInfo *g_systemInfo;
 
 
-#endif

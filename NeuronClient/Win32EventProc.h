@@ -1,5 +1,4 @@
-#ifndef INCLUDED_WIN32EVENTPROC_H
-#define INCLUDED_WIN32EVENTPROC_H
+#pragma once
 
 #include <windows.h>
 
@@ -14,4 +13,3 @@ public:
 };
 
 
-#endif // INCLUDED_WIN32EVENTPROC_H

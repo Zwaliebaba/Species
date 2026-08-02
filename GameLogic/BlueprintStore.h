@@ -1,5 +1,4 @@
-#ifndef _included_blueprintstore_h
-#define _included_blueprintstore_h
+#pragma once
 
 #include "Building.h"
 
@@ -105,5 +104,3 @@ public:
     void Read   ( TextReader *_in, bool _dynamic );
     void Write  ( FileWriter *_out );
 };
-
-#endif

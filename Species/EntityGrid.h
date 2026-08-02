@@ -1,5 +1,4 @@
-#ifndef ENTITY_GRID_H
-#define ENTITY_GRID_H
+#pragma once
 
 #include "Globals.h"
 
@@ -72,4 +71,3 @@ public:
 };
 
 
-#endif

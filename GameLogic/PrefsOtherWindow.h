@@ -1,6 +1,5 @@
 
-#ifndef _included_prefsotherwindow_h
-#define _included_prefsotherwindow_h
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -31,5 +30,3 @@ public:
 // The OTHER_* preference keys moved to NeuronCore/Preferences.h. They are key
 // names rather than anything to do with this window, and leaving them here meant
 // Preferences.cpp had to include a UI header to name its own defaults.
-
-#endif

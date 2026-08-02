@@ -1,5 +1,4 @@
-#ifndef _included_global_world_h
-#define _included_global_world_h
+#pragma once
 
 #include "LList.h"
 #include "FastDArray.h"
@@ -317,4 +316,3 @@ public:
 };
 
 
-#endif

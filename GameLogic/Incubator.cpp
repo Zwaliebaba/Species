@@ -5,14 +5,13 @@
 #include "Resource.h"
 #include "Shape.h"
 #include "TextStreamReaders.h"
-#include "App.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "ParticleSystem.h"
-#include "GlobalWorld.h"
 #include "Camera.h"
 #include "SoundSystem.h"
 #include "Incubator.h"
+#include "WorldPointers.h"
 
 Incubator::Incubator()
   : Building(),
@@ -23,7 +22,7 @@ Incubator::Incubator()
 {
   m_type = TypeIncubator;
 
-  SetShape(g_app->m_resource->GetShape("Incubator.shp"));
+  SetShape(g_resource->GetShape("Incubator.shp"));
 
   m_spiritCentre = m_shape->m_rootFragment->LookupMarker("MarkerSpirits");
   m_exit = m_shape->m_rootFragment->LookupMarker("MarkerExit");
@@ -130,7 +129,7 @@ void Incubator::SpawnEntity()
   if (teamId == 2)
     teamId = 0; // Green rather than yellow
 
-  g_app->m_location->SpawnEntities(exit.pos, teamId, -1, m_troopType, 1, exit.f, 0.0f);
+  g_location->SpawnEntities(exit.pos, teamId, -1, m_troopType, 1, exit.f, 0.0f);
 
   //
   // Remove a spirit
@@ -158,14 +157,14 @@ void Incubator::SpawnEntity()
   for (int i = 0; i < numFlashes; ++i)
   {
     Vector3 vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
-    g_app->m_particleSystem->CreateParticle(exit.pos, vel, Particle::TypeControlFlash);
-    //g_app->m_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
+    g_particleSystem->CreateParticle(exit.pos, vel, Particle::TypeControlFlash);
+    //g_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
   }
 
   //
   // Sound effect
 
-  g_app->m_soundSystem->TriggerBuildingEvent(this, "SpawnEntity");
+  g_soundSystem->TriggerBuildingEvent(this, "SpawnEntity");
 }
 
 void Incubator::AddSpirit(Spirit* _spirit)
@@ -184,7 +183,7 @@ void Incubator::AddSpirit(Spirit* _spirit)
   ii->m_alpha = 1.0f;
   m_incoming.PutData(ii);
 
-  g_app->m_soundSystem->TriggerBuildingEvent(this, "AddSpirit");
+  g_soundSystem->TriggerBuildingEvent(this, "AddSpirit");
 }
 
 void Incubator::GetDockPoint(Vector3& _pos, Vector3& _front)
@@ -247,7 +246,7 @@ void Incubator::RenderAlphas(float _predictionTime)
   // Render incoming and outgoing effects
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Laser.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
 
   Matrix34 mat(m_front, g_upVector, m_pos);
   Vector3 entrances[3];
@@ -262,7 +261,7 @@ void Incubator::RenderAlphas(float _predictionTime)
     Vector3 toPos = entrances[ii->m_entrance];
 
     Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
-    Vector3 camToMidPoint = g_app->m_camera->GetPos() - midPoint;
+    Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
     Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
 
     rightAngle *= 1.5f;

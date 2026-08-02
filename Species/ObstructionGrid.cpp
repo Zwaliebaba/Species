@@ -9,13 +9,13 @@
 #include "ObstructionGrid.h"
 
 #include "LaserFence.h"
-
+#include "WorldPointers.h"
 
 
 ObstructionGrid::ObstructionGrid( float _cellSizeX, float _cellSizeZ )
 {
-    float sizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float sizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float sizeX = g_location->m_landscape.GetWorldSizeX();
+    float sizeZ = g_location->m_landscape.GetWorldSizeZ();
 
     ObstructionGridCell outSideValue;
     m_cells.Initialise( sizeX, sizeZ, 0.0f, 0.0f, _cellSizeX, _cellSizeZ, outSideValue);
@@ -26,7 +26,7 @@ ObstructionGrid::ObstructionGrid( float _cellSizeX, float _cellSizeZ )
 
 void ObstructionGrid::CalculateBuildingArea( int _buildingId )
 {
-    Building *building = g_app->m_location->GetBuilding( _buildingId );
+    Building *building = g_location->GetBuilding( _buildingId );
     if( building )
     {
         int buildingCellX = m_cells.GetMapIndexX( building->m_centrePos.x );
@@ -48,7 +48,7 @@ void ObstructionGrid::CalculateBuildingArea( int _buildingId )
                 float cellRadius = m_cells.m_cellSizeX*0.5f;
 
                 Vector3 cellPos( cellCentreX, 0.0f, cellCentreZ );
-                cellPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(cellPos.x, cellPos.z);
+                cellPos.y = g_location->m_landscape.m_heightMap->GetValue(cellPos.x, cellPos.z);
 
                 if( building->DoesSphereHit( cellPos, cellRadius ) )
                 {
@@ -64,7 +64,7 @@ void ObstructionGrid::CalculateBuildingArea( int _buildingId )
 				LaserFence *fence = (LaserFence *)building;
 				if( fence->IsEnabled() )
 				{
-					Building *link = g_app->m_location->GetBuilding( building->GetBuildingLink() );
+					Building *link = g_location->GetBuilding( building->GetBuildingLink() );
 
 					Vector3 direction = ( link->m_pos - building->m_pos );
 
@@ -118,11 +118,11 @@ void ObstructionGrid::CalculateAll()
     //
     // Add each building to the grid
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             CalculateBuildingArea( building->m_id.GetUniqueId() );
         }
     }

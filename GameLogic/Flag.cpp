@@ -4,9 +4,9 @@
 
 #include "Flag.h"
 
-#include "App.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "Camera.h"
+#include "WorldPointers.h"
 
 
 Flag::Flag()
@@ -57,7 +57,7 @@ void Flag::SetSize( float _size )
 
 void Flag::Render()
 {
-    START_PROFILE( g_app->m_profiler, "RenderFlag" );
+    START_PROFILE( g_profiler, "RenderFlag" );
 
     //
     // Advance the flag
@@ -110,7 +110,7 @@ void Flag::Render()
     glDisable       ( GL_CULL_FACE );
     glDisable       ( GL_TEXTURE_2D );
 
-    Vector3 right = m_up ^ ( g_app->m_camera->GetFront() );
+    Vector3 right = m_up ^ ( g_camera->GetFront() );
     right.SetLength( 0.2f );
 
     glBegin( GL_QUADS );
@@ -153,7 +153,7 @@ void Flag::Render()
     glDisable       ( GL_TEXTURE_2D );
     glEnable        ( GL_CULL_FACE );
 
-    END_PROFILE( g_app->m_profiler, "RenderFlag" );
+    END_PROFILE( g_profiler, "RenderFlag" );
 }
 
 

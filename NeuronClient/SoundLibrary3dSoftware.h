@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SOUND_LIBRARY_3D_SOFTWARE_H
-#define INCLUDED_SOUND_LIBRARY_3D_SOFTWARE_H
+#pragma once
 
 #include "SoundLibrary3d.h"
 
@@ -60,4 +59,3 @@ class SoundLibrary3dSoftware : public SoundLibrary3d
     void SetListenerPosition(const Vector3& _pos, const Vector3& _front, const Vector3& _up, const Vector3& _vel) override;
 };
 
-#endif

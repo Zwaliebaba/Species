@@ -11,16 +11,13 @@
 #include "FileWriter.h"
 #include "TextStreamReaders.h"
 
-#include "App.h"
 #include "Camera.h"
-#include "Globals.h"
 #include "Location.h"
-#include "Main.h"
-#include "Renderer.h"
-#include "GlobalWorld.h"
+#include "GameTime.h"
 
 #include "FeedingTube.h"
-
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 FeedingTube::FeedingTube()
@@ -31,7 +28,7 @@ FeedingTube::FeedingTube()
     m_type = Building::TypeFeedingTube;
     //m_front.Set(0,0,1);
 
-    SetShape( g_app->m_resource->GetShape( "FeedingTube.shp" ) );
+    SetShape( g_resource->GetShape( "FeedingTube.shp" ) );
 	m_focusMarker = m_shape->m_rootFragment->LookupMarker("MarkerFocus");
 }
 
@@ -49,7 +46,7 @@ bool FeedingTube::Advance ()
     Matrix34 worldMat = m_focusMarker->GetWorldMatrix(rootMat);
 	Vector3 dishPos = worldMat.pos;
 
-    FeedingTube *ft = (FeedingTube *)g_app->m_location->GetBuilding( m_receiverId );
+    FeedingTube *ft = (FeedingTube *)g_location->GetBuilding( m_receiverId );
     if( ft &&
         ft->m_type == Building::TypeFeedingTube )
     {
@@ -76,7 +73,7 @@ Vector3 FeedingTube::GetDishFront( float _predictionTime )
 {
     if( m_receiverId != -1 )
     {
-        FeedingTube *receiver = (FeedingTube *) g_app->m_location->GetBuilding( m_receiverId );
+        FeedingTube *receiver = (FeedingTube *) g_location->GetBuilding( m_receiverId );
         if( receiver )
         {
             Vector3 ourDishPos = GetDishPos( _predictionTime );
@@ -92,7 +89,7 @@ Vector3 FeedingTube::GetDishFront( float _predictionTime )
 
 Vector3 FeedingTube::GetForwardsClippingDir( float _predictionTime, FeedingTube *_sender )
 {
-	if (_sender == NULL) {
+	if (_sender == nullptr) {
 		return GetDishFront( _predictionTime );
 	}
 
@@ -129,7 +126,7 @@ void FeedingTube::Render( float _predictionTime )
 
 void FeedingTube::RenderAlphas ( float _predictionTime )
 {
-    if( g_app->m_editing ) return;
+    if( g_editing ) return;
 
     if( m_receiverId != -1 )
     {
@@ -143,9 +140,9 @@ void FeedingTube::RenderAlphas ( float _predictionTime )
 
 void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alpha )
 {
-	START_PROFILE(g_app->m_profiler, "Signal");
+	START_PROFILE(g_profiler, "Signal");
 
-    FeedingTube *receiver = (FeedingTube *) g_app->m_location->GetBuilding( m_receiverId );
+    FeedingTube *receiver = (FeedingTube *) g_location->GetBuilding( m_receiverId );
     if( !receiver ) return;
 
     Vector3 startPos = GetStartPoint();
@@ -162,7 +159,7 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     glEnable            (GL_TEXTURE_2D);
 
     gglActiveTextureARB  (GL_TEXTURE0_ARB);
-    glBindTexture	    (GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/LaserFence.bmp", true, true));
+    glBindTexture	    (GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence.bmp", true, true));
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -172,7 +169,7 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     glEnable            (GL_TEXTURE_2D);
 
     gglActiveTextureARB  (GL_TEXTURE1_ARB);
-    glBindTexture	    (GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/RadarSignal.bmp", true, true));
+    glBindTexture	    (GL_TEXTURE_2D, g_resource->GetTexture("Textures/RadarSignal.bmp", true, true));
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -272,7 +269,7 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
     glTexEnvf           (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	END_PROFILE(g_app->m_profiler, "Signal");
+	END_PROFILE(g_profiler, "Signal");
 }
 
 Vector3 FeedingTube::GetStartPoint()
@@ -318,7 +315,7 @@ int  FeedingTube::GetBuildingLink()
 
 void FeedingTube::SetBuildingLink(int _buildingId)
 {
-    Building *b = g_app->m_location->GetBuilding( _buildingId );
+    Building *b = g_location->GetBuilding( _buildingId );
     if( b &&
         b->m_type == Building::TypeFeedingTube )
     {
@@ -354,7 +351,7 @@ bool FeedingTube::IsInView()
     float radius = ( startPoint - endPoint ).Mag() / 2.0f;
     radius += m_radius;
 
-    if( g_app->m_camera->SphereInViewFrustum( midPoint, radius ) )
+    if( g_camera->SphereInViewFrustum( midPoint, radius ) )
     {
         return true;
     }

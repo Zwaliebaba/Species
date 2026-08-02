@@ -141,15 +141,21 @@ NeuronCore                   no dependencies
       Server   (exe)         -> GameLogic, NeuronServer, NeuronCore
 ```
 
-**Includes may only ever point downward.** The tree does not obey this yet: 628
+**Includes may only ever point downward.** The tree does not obey this yet: 326
 upward includes are recorded in `tools/layering_allowlist.txt`, inherited from
-Darwinia's single-binary layout.
+Darwinia's single-binary layout — down from 628 as `tasks/layering-inversion.yaml`
+works through them.
 
 | From | Into | Count |
 |---|---|---|
-| GameLogic | Species | 584 |
-| NeuronClient | Species | 40 |
+| GameLogic | Species | ~290 |
+| NeuronClient | Species | ~32 |
 | NeuronClient | GameLogic | 4 |
+
+Re-derive rather than trusting the split: `python3 tools/check_layering.py`
+prints the total, and clustering the allowlist on the target header gives the
+rest. What is already gone is `App.h` — no file below `Species` includes it —
+along with the frame clock, `Globals.h` and `Renderer.h`.
 
 **`NeuronCore` has no upward includes left.** Every remaining violation is in
 `NeuronClient` or `GameLogic` reaching into `Species`.
@@ -253,9 +259,15 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**Last run: all seven steps pass, as of `7ee8c00` (2026-08-02).** Reported by the
-project owner, not observed by the agent that wrote this line — if only some
-steps were checked, correct this rather than leaving it overstated.
+**Last run: all seven steps pass, as of the layering-inversion branch
+(2026-08-02), after the `g_app` seam moved the world subsystems, the frame
+clock and App's state out of the executable.** Reported by the project owner,
+not observed by the agent that wrote this line — if only some steps were
+checked, correct this rather than leaving it overstated.
+
+That run is the reason those changes were merged: CI proved they compile and
+the unit suite passes, and neither says anything about whether the game still
+starts, spawns and advances.
 
 **Record what you find here.** The value is in it being current, not
 aspirational. If a step starts failing, say which one: that is the difference
@@ -358,12 +370,18 @@ Real, currently true, and worth knowing before you trip over them:
   - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
     runner is a preview image that roughly doubles wall clock, and ARM64 is built
     constantly at the desk anyway. Deliberate, not an oversight.
-- **`NeuronClient` and `GameLogic` still reach up into `Species`.** 627 upward
-  includes remain, and the direction that mattered most is already fixed:
-  `NeuronCore` is standalone, reaches upward nowhere, and `NeuronCore.vcxproj`
-  lists no include directories at all, so a new upward include there fails to
-  compile rather than quietly working. The remaining debt is the next phase, and
-  it is the reason `Tests/GameLogicTests/LinkStubs.cpp` has to exist.
+- **`NeuronClient` and `GameLogic` still reach up into `Species`.** 326 upward
+  includes remain, down from 628. `NeuronCore` is standalone, reaches upward
+  nowhere, and `NeuronCore.vcxproj` lists no include directories at all, so a
+  new upward include there fails to compile rather than quietly working.
+  `App.h` is now in the same position for the layers below it: the subsystem
+  pointers live in `NeuronClient/WorldPointers.h`, the application state in
+  `AppState.h`, and the seven actions only `App` can perform behind the
+  `AppCommands` interface it installs at startup. `Renderer` is reached through
+  `RendererAccess`. What is left is `Location.h`, `Camera.h` and a long tail —
+  see `tasks/layering-inversion.yaml`, where the moves are deliberately
+  sequenced *after* the reaches they would otherwise turn into new allowlist
+  entries.
 - **Release is not built by anyone.** Three template leftovers — missing include
   paths, a precompiled header nothing created, and `Species` linking Release as a
   console app when `WinMain` is its entry point — are all fixed, and
@@ -378,16 +396,18 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, 45 tests, covering IP conversion,
+- **The test suite is thin.** Four projects, 82 tests, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
-  helpers, `WorldObjectId` and the state a new `Server` starts in. That is the
-  encoding, identity and protocol layer and almost nothing else — no entity
-  behaviour, no rendering, no level loading, and nothing at all that would notice
-  the game failing to start.
-  `GameLogic` can only be linked into a test DLL through
-  `Tests/GameLogicTests/LinkStubs.cpp`, which stands in for the `Species`
-  globals it reaches up for and may only shrink. `Species` and `Server` have no
+  helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
+  `Server` starts in, and the legacy containers plus their `Neuron::SlotMap`
+  replacement. That is the encoding, identity and protocol layer and almost
+  nothing else — no entity behaviour, no rendering, no level loading, and
+  nothing at all that would notice the game failing to start.
+  **`Tests/GameLogicTests/LinkStubs.cpp` is now empty**: `GameLogic` no longer
+  names a symbol the executable owns, so it links into a test DLL on its own.
+  Entity and building behaviour is finally testable — nobody has written those
+  tests yet, which is `tasks/layering-inversion.yaml` T11. `Species` and `Server` have no
   test project at all — an `.exe` cannot be linked into a test DLL, so code in
   either that is worth testing belongs in a library. See
   [`docs/TESTING.md`](docs/TESTING.md).

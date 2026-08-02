@@ -1,5 +1,4 @@
-#if !defined AUTO_VECTOR_H
-#define AUTO_VECTOR_H
+#pragma once
 //------------------------------------
 // Reliable Software (c) 2003
 // www.relisoft.com
@@ -242,4 +241,3 @@ void auto_vector<T>::insert (size_t idx, std::unique_ptr<T> p)
 	p.release ();
 }
 
-#endif

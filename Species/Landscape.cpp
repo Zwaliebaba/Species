@@ -25,6 +25,7 @@
 #include "Renderer.h"
 #include "Location.h"
 #include "Water.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -36,9 +37,9 @@
 LandscapeTile::LandscapeTile()
 :	m_outsideHeight(0.0f),
 	m_size(256),
-	m_heightMap(NULL),
+	m_heightMap(nullptr),
     m_guideGridPower(0),
-    m_guideGrid(NULL),
+    m_guideGrid(nullptr),
 	m_generationMethod(1),
 	m_desiredHeight(200),
     m_fractalDimension(1.2f),
@@ -74,7 +75,7 @@ void LandscapeTile::GuideGridSetPower(int _power)
 		DEBUG_ASSERT(a != b);
 
         delete m_guideGrid;
-		m_guideGrid = NULL;
+		m_guideGrid = nullptr;
         m_guideGridPower = _power;
 
 		if (resolution != 0)
@@ -96,11 +97,11 @@ int LandscapeTile::GuideGridGetPower()
 // *** GuideGridToString
 char *LandscapeTile::GuideGridToString()
 {
-    static char *result = NULL;
+    static char *result = nullptr;
     if( result )
     {
         delete result;
-        result = NULL;
+        result = nullptr;
     }
 
 	int res = m_guideGrid->GetNumColumns();
@@ -448,10 +449,10 @@ void Landscape::GenerateHeightMap(LandscapeDef *_def)
 
 void Landscape::DeleteTile( int tileId )
 {
-    LandscapeTile *tile = g_app->m_location->m_levelFile->m_landscape.m_tiles[ tileId ];
+    LandscapeTile *tile = g_location->m_levelFile->m_landscape.m_tiles[ tileId ];
     delete tile;
-    g_app->m_location->m_levelFile->m_landscape.m_tiles.RemoveData( tileId );
-	LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
+    g_location->m_levelFile->m_landscape.m_tiles.RemoveData( tileId );
+	LandscapeDef *def = &g_location->m_levelFile->m_landscape;
     Init(def);
 }
 
@@ -522,10 +523,10 @@ void Landscape::RenderHitNormals() const
 // *** Constructor
 // This one creates a
 Landscape::Landscape()
-:	m_heightMap(NULL),
-	m_normalMap(NULL),
+:	m_heightMap(nullptr),
+	m_normalMap(nullptr),
     m_outsideHeight(-20),
-	m_renderer(NULL)
+	m_renderer(nullptr)
 {
 }
 
@@ -587,9 +588,9 @@ void Landscape::Init(LandscapeDef *_def, bool _justMakeTheHeightMap)
     GenerateNormals();
     BuildOpenGlState();
 
-	if( g_app->m_location->m_water )
+	if( g_location->m_water )
 	{
-	    g_app->m_location->m_water->GenerateLightMap();
+	    g_location->m_water->GenerateLightMap();
 	}
 
     _def->m_cellSize = oldCellSize;
@@ -599,9 +600,9 @@ void Landscape::Init(LandscapeDef *_def, bool _justMakeTheHeightMap)
 // *** Empty
 void Landscape::Empty()
 {
-	delete m_renderer;			m_renderer = NULL;
-	delete m_heightMap;			m_heightMap = NULL;
-	delete m_normalMap;			m_normalMap = NULL;
+	delete m_renderer;			m_renderer = nullptr;
+	delete m_heightMap;			m_heightMap = nullptr;
+	delete m_normalMap;			m_normalMap = nullptr;
 }
 
 

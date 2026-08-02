@@ -14,8 +14,8 @@
 #include "WindowManager.h"
 #include "WindowManagerWin32.h"
 #include "LanguageTable.h"
-#include "App.h"
 #include "Debug.h"
+#include "AppState.h"
 
 using namespace std;
 
@@ -48,7 +48,7 @@ enum MouseControl {
 signed char g_keyDeltas[KEY_MAX];
 signed char g_keys[KEY_MAX];
 
-W32InputDriver *g_win32InputDriver = NULL;
+W32InputDriver *g_win32InputDriver = nullptr;
 
 W32InputDriver::W32InputDriver()
 {
@@ -205,7 +205,7 @@ bool W32InputDriver::getFirstActiveInput( InputSpec &spec, bool instant )
 	// Check for pressed keys
 	for ( unsigned i = 0; i < KEY_TILDE; ++i ) {
 		if ( 1 == g_keyDeltas[ i ] && // key was pressed
-		     strstr( getKeyNames()[ i ], " " ) == NULL ) { // Key is bindable
+		     strstr( getKeyNames()[ i ], " " ) == nullptr ) { // Key is bindable
 			spec.handler_id = KEY_DRIVER;
 			spec.control_id = i;
 			if ( instant )
@@ -329,7 +329,7 @@ LRESULT CALLBACK W32InputDriver::WndProc( HWND hWnd, UINT message,
 				g_keys[wParam] = 1;
 				if (wParam == KEY_F4)
 				{
-                    g_app->m_requestQuit = true;
+                    g_requestQuit = true;
 				}
 			}
 			break;

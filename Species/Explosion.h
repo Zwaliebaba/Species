@@ -1,5 +1,4 @@
-#ifndef INCLUDED_EXPLOSION
-#define INCLUDED_EXPLOSION
+#pragma once
 
 
 #include "Matrix33.h"
@@ -93,4 +92,3 @@ public:
 extern ExplosionManager g_explosionManager;
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SOUND_INSTANCE_H
-#define INCLUDED_SOUND_INSTANCE_H
+#pragma once
 
 #include "Vector3.h"
 #include "SoundParameter.h"
@@ -181,4 +180,3 @@ public:
 };
 
 
-#endif

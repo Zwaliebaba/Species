@@ -39,6 +39,8 @@
 #include "Airstrike.h"
 #include "WorldObject.h"
 #include "Darwinian.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ****************************************************************************
@@ -133,7 +135,7 @@ void Team::SelectUnit(int _unitId, int _entityId, int _buildingId )
     m_currentUnitId = _unitId;
     m_currentEntityId = _entityId;
 
-    if( m_teamId == g_app->m_globalWorld->m_myTeamId )
+    if( m_teamId == g_globalWorld->m_myTeamId )
     {
         g_app->m_gameCursor->BoostSelectionArrows(2.0f);
     }
@@ -144,31 +146,31 @@ void Team::SelectUnit(int _unitId, int _entityId, int _buildingId )
         Entity *entity = m_others[m_currentEntityId];
         if( entity && entity->m_type == Entity::TypeOfficer )
         {
-            g_app->m_taskManager->SelectTask(-1);
+            g_taskManager->SelectTask(-1);
         }
     }
 
     if( _unitId == -1 && _entityId == -1 && _buildingId == -1 )
     {
-        g_app->m_soundSystem->TriggerOtherEvent( NULL, "TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface );
+        g_app->m_soundSystem->TriggerOtherEvent( nullptr, "TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface );
     }
     else
     {
-        g_app->m_soundSystem->TriggerOtherEvent( NULL, "TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface );
+        g_app->m_soundSystem->TriggerOtherEvent( nullptr, "TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface );
     }
 
-//    if( m_teamId == g_app->m_globalWorld->m_myTeamId )
+//    if( m_teamId == g_globalWorld->m_myTeamId )
 //    {
 //        Vector3 worldpos;
 //        if( m_units.ValidIndex(_unitId) )
 //        {
 //            Unit *unit = m_units[_unitId];
-//            worldpos = unit->m_centrePos - g_app->m_camera->GetFront() * 200.0f;
+//            worldpos = unit->m_centrePos - g_camera->GetFront() * 200.0f;
 //        }
 //        else if( m_others.ValidIndex(_entityId) )
 //        {
 //            Entity *entity = m_others[_entityId];
-//            worldpos = entity->m_pos - g_app->m_camera->GetFront() * 200.0f;
+//            worldpos = entity->m_pos - g_camera->GetFront() * 200.0f;
 //        }
 //    }
 }
@@ -178,7 +180,7 @@ Unit *Team::GetMyUnit()
 {
     if( m_currentUnitId == -1 || !m_units.ValidIndex(m_currentUnitId))
     {
-        return NULL;
+        return nullptr;
     }
     else if( m_units.ValidIndex( m_currentUnitId ) )
     {
@@ -186,7 +188,7 @@ Unit *Team::GetMyUnit()
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -218,7 +220,7 @@ Entity *Team::RayHitEntity(Vector3 const &_rayStart, Vector3 const &_rayEnd)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -226,7 +228,7 @@ Entity *Team::GetMyEntity()
 {
     if( m_currentEntityId == -1 )
     {
-        return NULL;
+        return nullptr;
     }
     else if( m_others.ValidIndex( m_currentEntityId ) )
     {
@@ -234,7 +236,7 @@ Entity *Team::GetMyEntity()
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -242,7 +244,7 @@ Entity *Team::GetMyEntity()
 Unit *Team::NewUnit(int _troopType, int _numEntities, int *_unitId, Vector3 const &_pos)
 {
     *_unitId = m_units.GetNextFree();
-    Unit *unit = NULL;
+    Unit *unit = nullptr;
 
 	if (_troopType == Entity::TypeInsertionSquadie)
 	{
@@ -284,7 +286,7 @@ Entity *Team::NewEntity(int _troopType, int _unitId, int *_index)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 int Team::NumEntities( int _troopType)
@@ -380,7 +382,7 @@ void Team::Advance(int _slice)
 
                     char const *entityName = Entity::GetTypeName( ent->m_type );
                     START_PROFILE( g_app->m_profiler, entityName );
-                    bool amIdead = ent->Advance(NULL);
+                    bool amIdead = ent->Advance(nullptr);
                     END_PROFILE( g_app->m_profiler, entityName );
 
 #ifdef PROFILER_ENABLED
@@ -389,17 +391,17 @@ void Team::Advance(int _slice)
 
                     if( amIdead )
                     {
-                        g_app->m_location->m_entityGrid->RemoveObject( myId, oldPos.x, oldPos.z, ent->m_radius );
+                        g_location->m_entityGrid->RemoveObject( myId, oldPos.x, oldPos.z, ent->m_radius );
                         m_others.MarkNotUsed(i);
                         delete ent;
                     }
                     else if( !ent->m_enabled )
                     {
-                        g_app->m_location->m_entityGrid->RemoveObject( myId, oldPos.x, oldPos.z, ent->m_radius );
+                        g_location->m_entityGrid->RemoveObject( myId, oldPos.x, oldPos.z, ent->m_radius );
                     }
                     else
                     {
-                        g_app->m_location->m_entityGrid->UpdateObject( myId, oldPos.x, oldPos.z, ent->m_pos.x, ent->m_pos.z, ent->m_radius );
+                        g_location->m_entityGrid->UpdateObject( myId, oldPos.x, oldPos.z, ent->m_pos.x, ent->m_pos.z, ent->m_radius );
                     }
                 }
             }
@@ -488,9 +490,9 @@ void Team::RenderVirii(float _predictionTime)
 
     int lastUpdated = m_others.GetLastUpdated();
 
-	float nearPlaneStart = g_app->m_renderer->GetNearPlane();
-	g_app->m_camera->SetupProjectionMatrix(nearPlaneStart * 1.05f,
-							 			   g_app->m_renderer->GetFarPlane());
+	float nearPlaneStart = g_renderer->GetNearPlane();
+	g_camera->SetupProjectionMatrix(nearPlaneStart * 1.05f,
+							 			   g_renderer->GetFarPlane());
 
     //
     // Render Red Virii shapes
@@ -518,7 +520,7 @@ void Team::RenderVirii(float _predictionTime)
                 Virii *virii = (Virii *) entity;
                 if( virii->IsInView() )
                 {
-                    float rangeToCam = ( virii->m_pos - g_app->m_camera->GetPos() ).Mag();
+                    float rangeToCam = ( virii->m_pos - g_camera->GetPos() ).Mag();
                     int viriiDetail = 1;
                     if      ( entityDetail == 1 && rangeToCam > 1000.0f )        viriiDetail = 2;
                     else if ( entityDetail == 2 && rangeToCam > 1000.0f )        viriiDetail = 3;
@@ -549,8 +551,8 @@ void Team::RenderVirii(float _predictionTime)
     glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
     glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
 
-	g_app->m_camera->SetupProjectionMatrix(nearPlaneStart,
-								 		   g_app->m_renderer->GetFarPlane());
+	g_camera->SetupProjectionMatrix(nearPlaneStart,
+								 		   g_renderer->GetFarPlane());
 }
 
 
@@ -587,7 +589,7 @@ void Team::RenderDarwinians(float _predictionTime)
                 Darwinian *darwinian = (Darwinian *) entity;
                 if( darwinian->IsInView() )
                 {
-                    float camDistSqd = ( darwinian->m_pos - g_app->m_camera->GetPos() ).MagSquared();
+                    float camDistSqd = ( darwinian->m_pos - g_camera->GetPos() ).MagSquared();
                     float highDetail = 1.0f - ( camDistSqd / highDetailDistanceSqd );
                     highDetail = max( highDetail, 0.0f );
                     highDetail = min( highDetail, 1.0f );
@@ -665,17 +667,17 @@ void Team::RenderOthers(float _predictionTime)
 // has no place in the foundation.
 void TeamControls::Advance()
 {
-  if (g_app->m_camera->IsInMode(Camera::ModeBuildingFocus))
+  if (g_camera->IsInMode(Camera::ModeBuildingFocus))
     return;
 
-  m_mousePos = g_app->m_userInput->GetMousePos3d();
+  m_mousePos = g_userInput->GetMousePos3d();
 
   m_primaryFireTarget |= g_inputManager->controlEvent(ControlUnitPrimaryFireTarget);
   m_secondaryFireTarget |= g_inputManager->controlEvent(ControlUnitSecondaryFireTarget);
   m_primaryFireDirected |= g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && !g_inputManager->controlEvent(ControlCameraRotate);
   m_secondaryFireDirected |=
     g_inputManager->controlEvent(ControlUnitSecondaryFireDirected) /* && g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected ) */;
-  m_cameraEntityTracking |= g_app->m_camera->IsInMode(Camera::ModeEntityTrack);
+  m_cameraEntityTracking |= g_camera->IsInMode(Camera::ModeEntityTrack);
   m_unitMove |= g_inputManager->controlEvent(ControlUnitSetTarget) && !m_secondaryFireTarget;
   m_unitSecondaryMode |= g_inputManager->controlEvent(ControlUnitStartSecondaryFireDirected);
   m_endSetTarget |= g_inputManager->controlEvent(ControlUnitEndSetTarget);
@@ -683,7 +685,7 @@ void TeamControls::Advance()
   InputDetails details;
   if (g_inputManager->controlEvent(ControlUnitMove, details))
   {
-    Vector3 right = g_app->m_camera->GetControlVector();
+    Vector3 right = g_camera->GetControlVector();
     Vector3 front = g_upVector ^ -right;
 
     Vector3 waypoint = right * -details.x;
@@ -693,7 +695,7 @@ void TeamControls::Advance()
     m_directUnitMoveDx = waypoint.x;
     m_directUnitMoveDy = waypoint.z;
 
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
   }
 
   if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details) && !g_inputManager->controlEvent(ControlCameraRotate))
@@ -702,13 +704,13 @@ void TeamControls::Advance()
     m_directUnitFireDx = details.x;
     m_directUnitFireDy = details.y;
 
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondSquaddieFire);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondSquaddieFire);
   }
 
   if (m_secondaryFireDirected)
   {
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireAirstrike);
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireGrenades);
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireRocket);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireAirstrike);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireGrenades);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireRocket);
   }
 }

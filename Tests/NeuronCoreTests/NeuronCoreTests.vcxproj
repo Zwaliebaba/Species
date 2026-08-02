@@ -20,13 +20,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ByteStreamTests.cpp" />
+    <ClCompile Include="DArrayTests.cpp" />
     <ClCompile Include="GenericTests.cpp" />
+    <ClCompile Include="LListTests.cpp" />
+    <ClCompile Include="LookupTableTests.cpp" />
     <ClCompile Include="NetworkUpdateTests.cpp" />
     <ClCompile Include="ServerToClientLetterTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="RandomTests.cpp" />
+    <ClCompile Include="SlotMapTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

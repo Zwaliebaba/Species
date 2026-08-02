@@ -16,14 +16,13 @@
 
 #include "SoundSystem.h"
 
-#include "App.h"
 #include "EntityGrid.h"
 #include "Explosion.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ParticleSystem.h"
-#include "Renderer.h"
 #include "Camera.h"
+#include "WorldPointers.h"
 
 
 //#define FOOT_MOVE_THRESHOLD	        5.0f	// Lower means feet are lifted when less distant from their ideal pos, and thus smaller steps are taken
@@ -76,11 +75,11 @@ Spider::Spider()
 	m_up(g_upVector),
     m_retargetTimer(0.0f),
     m_spiritId(-1),
-    m_eggLay(NULL)
+    m_eggLay(nullptr)
 {
 	m_stats[StatHealth] = 200;
 
-	m_shape = g_app->m_resource->GetShape("Spider.shp");
+	m_shape = g_resource->GetShape("Spider.shp");
     m_eggLay = m_shape->m_rootFragment->LookupMarker( "MarkerEggLay" );
 
 	m_parameters[0].m_legLift = 3.0f;
@@ -201,7 +200,7 @@ void Spider::StompFoot(Vector3 const &_pos)
                      5.0f + syncfrand( 5.0f ),
                      syncsfrand( 20.0f ) );
 
-        g_app->m_particleSystem->CreateParticle( _pos, vel,
+        g_particleSystem->CreateParticle( _pos, vel,
 			Particle::TypeMuzzleFlash, 10.0f );
     }
 
@@ -210,12 +209,12 @@ void Spider::StompFoot(Vector3 const &_pos)
     // Damage everyone nearby
 
     int numFound;
-    WorldObjectId *ids = g_app->m_location->m_entityGrid->GetEnemies( _pos.x, _pos.z,
+    WorldObjectId *ids = g_location->m_entityGrid->GetEnemies( _pos.x, _pos.z,
 						FOOT_DAMAGE_RADIUS, &numFound, m_id.GetTeamId() );
     for( int i = 0; i < numFound; ++i )
     {
         WorldObjectId id = ids[i];
-        WorldObject *obj = g_app->m_location->GetEntity( id );
+        WorldObject *obj = g_location->GetEntity( id );
         Entity *entity = (Entity *) obj;
 
         float distance = (entity->m_pos - _pos).Mag();
@@ -294,7 +293,7 @@ void Spider::UpdateLegs()
 //			StompFoot(legPos);
 //		}
 
-        if( footPlanted ) g_app->m_soundSystem->TriggerEntityEvent( this, "FootFall" );
+        if( footPlanted ) g_soundSystem->TriggerEntityEvent( this, "FootFall" );
 	}
 
 	m_delayBetweenLifts = m_parameters[stage].m_delayBetweenLifts;
@@ -312,7 +311,7 @@ float Spider::IsPathOK(Vector3 const &_dest)
 	Vector3 pos(m_pos);
 	for (float i = 0.0f; i < distToDest; i += sampleSeperation)
 	{
-		float height = g_app->m_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
+		float height = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
 		if (height > MAX_PATH_HEIGHT || height < 0.1f /*Sea level*/)
 		{
 			float rv = i / distToDest;
@@ -330,7 +329,7 @@ void Spider::DetectCollisions()
 	Vector3 pos(m_pos);
 	pos += m_vel;
 	int numFound;
-	WorldObjectId *neighbours = g_app->m_location->m_entityGrid->GetNeighbours(
+	WorldObjectId *neighbours = g_location->m_entityGrid->GetNeighbours(
 								pos.x, pos.z, 22.0f, &numFound);
 
     Vector3 escapeVector;
@@ -338,11 +337,11 @@ void Spider::DetectCollisions()
 
     for (int i = 0; i < numFound; ++i)
 	{
-		Entity *ent = g_app->m_location->GetEntity(neighbours[i]);
+		Entity *ent = g_location->GetEntity(neighbours[i]);
 		if (ent->m_type == Entity::TypeSpider &&
             ent->m_id != m_id )
 		{
-		    Entity *entity = g_app->m_location->GetEntity(neighbours[speciesRandom() % numFound]);
+		    Entity *entity = g_location->GetEntity(neighbours[speciesRandom() % numFound]);
 		    DEBUG_ASSERT(entity);
 		    Vector3 toNeighbour = m_pos - entity->m_pos;
 		    toNeighbour.y = 0.0f;
@@ -488,8 +487,8 @@ bool Spider::AdvanceAttack()
 				m_legs[i]->m_foot.m_targetPos = m_legs[i]->m_foot.m_pos + forwards;
 			}
 
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Pounce" );
+            g_soundSystem->TriggerEntityEvent( this, "Attack" );
+            g_soundSystem->TriggerEntityEvent( this, "Pounce" );
         }
     }
 
@@ -502,7 +501,7 @@ bool Spider::AdvancePouncing()
     m_vel.y -= 40.0f;
     m_pos += m_vel * SERVER_ADVANCE_PERIOD;
 
-    float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+    float landHeight = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
     if( m_pos.y < landHeight + 1.0f )
     {
         m_pos.y = landHeight + 1.0f;
@@ -516,17 +515,17 @@ bool Spider::AdvancePouncing()
 			m_legs[i]->m_foot.m_state = EntityFoot::OnGround;
 		}
 
-        g_app->m_soundSystem->TriggerEntityEvent( this, "PounceLand" );
+        g_soundSystem->TriggerEntityEvent( this, "PounceLand" );
 
         // Squash people
         float squashRange = 40.0f;
         float damage = 100.0f;
         int numFound;
-        WorldObjectId *enemies = g_app->m_location->m_entityGrid->GetEnemies( m_pos.x, m_pos.z, squashRange, &numFound, m_id.GetTeamId() );
+        WorldObjectId *enemies = g_location->m_entityGrid->GetEnemies( m_pos.x, m_pos.z, squashRange, &numFound, m_id.GetTeamId() );
         for( int i = 0; i < numFound; ++i )
         {
             WorldObjectId id = enemies[i];
-            Entity *entity = g_app->m_location->GetEntity( id );
+            Entity *entity = g_location->GetEntity( id );
 
             float distance = (entity->m_pos - m_pos).Mag();
             float fraction = (squashRange - distance) / squashRange;
@@ -564,7 +563,7 @@ bool Spider::SearchForRandomPos()
 		}
 	}
 
-	float height = g_app->m_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
+	float height = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
 	m_targetPos.y = height;
 	return true;
 }
@@ -575,10 +574,10 @@ bool Spider::SearchForEnemies()
     float maxRange = ATTACK_SEARCH_MAX_RADIUS;
     float minRange = ATTACK_SEARCH_MIN_RADIUS;
 
-    WorldObjectId targetId = g_app->m_location->m_entityGrid->GetBestEnemy(
+    WorldObjectId targetId = g_location->m_entityGrid->GetBestEnemy(
 							    m_pos.x, m_pos.z, minRange, maxRange, m_id.GetTeamId());
 
-    Entity *entity = g_app->m_location->GetEntity( targetId );
+    Entity *entity = g_location->GetEntity( targetId );
 
     if( entity && !entity->m_dead )
     {
@@ -595,16 +594,16 @@ bool Spider::SearchForEnemies()
 
 bool Spider::SearchForSpirits()
 {
-	START_PROFILE(g_app->m_profiler, "SearchSpirits");
-    Spirit *found = NULL;
+	START_PROFILE(g_profiler, "SearchSpirits");
+    Spirit *found = nullptr;
     int foundIndex = -1;
     float nearest = 9999.9f;
 
-    for( int i = 0; i < g_app->m_location->m_spirits.Size(); ++i )
+    for( int i = 0; i < g_location->m_spirits.Size(); ++i )
     {
-        if( g_app->m_location->m_spirits.ValidIndex(i) )
+        if( g_location->m_spirits.ValidIndex(i) )
         {
-            Spirit *s = g_app->m_location->m_spirits.GetPointer(i);
+            Spirit *s = g_location->m_spirits.GetPointer(i);
             if( s->NumNearbyEggs() < 3 && s->m_pos.y > 10 )
             {
                 float theDist = ( s->m_pos - m_pos ).Mag();
@@ -627,11 +626,11 @@ bool Spider::SearchForSpirits()
         m_spiritId = foundIndex;
         Vector3 usToThem = ( found->m_pos - m_pos ).Normalise() * 45.0f;
         m_targetPos = found->m_pos + usToThem;
-        m_targetPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_targetPos.x, m_targetPos.z );
+        m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue( m_targetPos.x, m_targetPos.z );
         m_state = StateEggLaying;
     }
 
-	END_PROFILE(g_app->m_profiler, "SearchSpirits");
+	END_PROFILE(g_profiler, "SearchSpirits");
     return found;
 }
 
@@ -665,9 +664,9 @@ bool Spider::AdvanceEggLaying()
         Matrix34 mat( m_front, m_up, m_pos );
         Matrix34 eggLayMat = m_eggLay->GetWorldMatrix(mat);
 
-        g_app->m_location->SpawnEntities( eggLayMat.pos, m_id.GetTeamId(), -1, TypeEgg, 1, g_zeroVector, 0.0f );
+        g_location->SpawnEntities( eggLayMat.pos, m_id.GetTeamId(), -1, TypeEgg, 1, g_zeroVector, 0.0f );
 
-        g_app->m_soundSystem->TriggerEntityEvent( this, "LayEgg" );
+        g_soundSystem->TriggerEntityEvent( this, "LayEgg" );
 
         m_spiritId = -1;
         m_state = StateIdle;
@@ -702,7 +701,7 @@ bool Spider::Advance(Unit *_unit)
 		}
 		else
 	    {
-		    float targetHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+		    float targetHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 		    targetHeight += m_targetHoverHeight;
 		    float factor1 = 1.0f * SERVER_ADVANCE_PERIOD;
 		    float factor2 = 1.0f - factor1;
@@ -729,7 +728,7 @@ void Spider::Render(float _predictionTime)
         //RenderArrow(m_pos, m_pounceTarget, 1.0f, RGBAColour(255,0,0) );
     }
 
-	g_app->m_renderer->SetObjectLighting();
+	g_renderer->SetObjectLighting();
 
 
 	//
@@ -737,10 +736,10 @@ void Spider::Render(float _predictionTime)
 
 	Vector3 predictedMovement = _predictionTime * m_vel;
 	Vector3 predictedPos = m_pos + predictedMovement;
-//	predictedPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) +
+//	predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) +
 //					 m_targetHoverHeight;
 
-	Vector3 up = g_app->m_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+	Vector3 up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
 	Vector3 right = m_up ^ m_front;
 	Vector3 front = right ^ up;
 
@@ -768,7 +767,7 @@ void Spider::Render(float _predictionTime)
 		m_legs[i]->Render(_predictionTime, predictedMovement);
 	}
 
-	g_app->m_renderer->UnsetObjectLighting();
+	g_renderer->UnsetObjectLighting();
 }
 
 
@@ -778,12 +777,12 @@ bool Spider::RenderPixelEffect(float _predictionTime)
 
 	Vector3 predictedMovement = _predictionTime * m_vel;
 	Vector3 predictedPos = m_pos + predictedMovement;
-	Vector3 up = g_app->m_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+	Vector3 up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
 	Vector3 right = m_up ^ m_front;
 	Vector3 front = right ^ up;
 
 	Matrix34 mat(front, up, predictedPos);
-	g_app->m_renderer->MarkUsedCells(m_shape, mat);
+	g_renderer->MarkUsedCells(m_shape, mat);
 
 	for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
 	{
@@ -796,7 +795,7 @@ bool Spider::RenderPixelEffect(float _predictionTime)
 
 bool Spider::IsInView()
 {
-    return g_app->m_camera->SphereInViewFrustum( m_pos+m_centrePos, m_radius );
+    return g_camera->SphereInViewFrustum( m_pos+m_centrePos, m_radius );
 }
 
 

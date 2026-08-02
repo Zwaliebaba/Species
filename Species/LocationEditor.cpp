@@ -36,6 +36,7 @@
 #include "RoutingSystem.h"
 #include "Team.h"
 #include "UserInput.h"
+#include "WorldPointers.h"
 
 
 #ifdef LOCATION_EDITOR
@@ -54,7 +55,7 @@ LocationEditor::LocationEditor()
 	MainEditWindow *mainWin = new MainEditWindow(LANGUAGEPHRASE("editor_mainedit"));
 	mainWin->m_w = 150;
 	mainWin->m_h = 140;
-	mainWin->m_x = g_app->m_renderer->ScreenW();
+	mainWin->m_x = g_renderer->ScreenW();
 	mainWin->m_y = 0;
 	EclRegisterWindow(mainWin);
 }
@@ -68,7 +69,7 @@ LocationEditor::~LocationEditor()
 	if (mainWin->m_currentEditWindow)
 	{
 		EclRemoveWindow(mainWin->m_currentEditWindow->m_name);
-		mainWin->m_currentEditWindow = NULL;
+		mainWin->m_currentEditWindow = nullptr;
 	}
 
 	// Remove main edit window
@@ -78,7 +79,7 @@ LocationEditor::~LocationEditor()
 
 int LocationEditor::DoesRayHitBuilding(Vector3 const &rayStart, Vector3 const &rayDir)
 {
-	Location *location = g_app->m_location;
+	Location *location = g_location;
 
 	for (int i = 0; i < location->m_levelFile->m_buildings.Size(); i++)
 	{
@@ -98,7 +99,7 @@ int LocationEditor::DoesRayHitBuilding(Vector3 const &rayStart, Vector3 const &r
 
 int LocationEditor::DoesRayHitInstantUnit(Vector3 const &rayStart, Vector3 const &rayDir)
 {
-	Location *location = g_app->m_location;
+	Location *location = g_location;
 
 	for (int i = 0; i < location->m_levelFile->m_instantUnits.Size(); i++)
 	{
@@ -126,9 +127,9 @@ int LocationEditor::DoesRayHitCameraMount(Vector3 const &rayStart, Vector3 const
 	Vector3 centre = camShape->CalculateCentre(g_identityMatrix34);
 	float radius = camShape->CalculateRadius(g_identityMatrix34, centre);
 
-	for (int i = 0; i < g_app->m_location->m_levelFile->m_cameraMounts.Size(); ++i)
+	for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
 	{
-		CameraMount *mount = g_app->m_location->m_levelFile->m_cameraMounts[i];
+		CameraMount *mount = g_location->m_levelFile->m_cameraMounts[i];
 		if (RaySphereIntersection(rayStart, rayDir, mount->m_pos, radius))
 		{
 			return i;
@@ -141,8 +142,8 @@ int LocationEditor::DoesRayHitCameraMount(Vector3 const &rayStart, Vector3 const
 
 int	LocationEditor::IsPosInLandTile(Vector3 const &pos)
 {
-	Landscape *land = &g_app->m_location->m_landscape;
-	LList<LandscapeTile *> *tiles = &g_app->m_location->m_levelFile->m_landscape.m_tiles;
+	Landscape *land = &g_location->m_landscape;
+	LList<LandscapeTile *> *tiles = &g_location->m_levelFile->m_landscape.m_tiles;
 	int smallestId = -1;
 	int smallestSize = INT_MAX;
 
@@ -172,8 +173,8 @@ int	LocationEditor::IsPosInLandTile(Vector3 const &pos)
 
 int	LocationEditor::IsPosInFlattenArea(Vector3 const &pos)
 {
-	LList<LandscapeFlattenArea *> *areas = &g_app->m_location->m_levelFile->m_landscape.m_flattenAreas;
-	Landscape *land = &g_app->m_location->m_landscape;
+	LList<LandscapeFlattenArea *> *areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
+	Landscape *land = &g_location->m_landscape;
 
 	for (int i = 0; i < areas->Size(); ++i)
 	{
@@ -203,10 +204,10 @@ void LocationEditor::CreateEditWindowForMode(int _mode)
 	if (mainWin->m_currentEditWindow)
 	{
 		EclRemoveWindow(mainWin->m_currentEditWindow->m_name);
-		mainWin->m_currentEditWindow = NULL;
+		mainWin->m_currentEditWindow = nullptr;
 	}
 
-	SpeciesWindow *window = NULL;
+	SpeciesWindow *window = nullptr;
 	switch(_mode)
 	{
 		case LocationEditor::ModeLandTile:
@@ -237,7 +238,7 @@ void LocationEditor::CreateEditWindowForMode(int _mode)
 //				otherWin->m_w = 270;
 //				otherWin->m_h = 100;
 //				otherWin->m_x = 340;
-//				otherWin->m_y = g_app->m_renderer->ScreenH() - window->m_h;
+//				otherWin->m_y = g_renderer->ScreenH() - window->m_h;
 //				EclRegisterWindow(otherWin);
 			}
 			break;
@@ -245,7 +246,7 @@ void LocationEditor::CreateEditWindowForMode(int _mode)
 
 	window->m_h = 100;
 	window->m_x = 0;
-	window->m_y = g_app->m_renderer->ScreenH() - window->m_h;
+	window->m_y = g_renderer->ScreenH() - window->m_h;
 	EclRegisterWindow(window);
 
 	mainWin->m_currentEditWindow = window;
@@ -273,9 +274,9 @@ int LocationEditor::GetMode()
 
 void LocationEditor::AdvanceModeNone()
 {
-	Vector3 pos = g_app->m_userInput->GetMousePos3d();
+	Vector3 pos = g_userInput->GetMousePos3d();
 	Vector3 rayStart, rayDir;
-	g_app->m_camera->GetClickRay( g_target->X(), g_target->Y(), &rayStart, &rayDir );
+	g_camera->GetClickRay( g_target->X(), g_target->Y(), &rayStart, &rayDir );
 
 	if ( g_inputManager->controlEvent( ControlSelectLocation ) ) // TODO: Really?
 	{
@@ -290,11 +291,11 @@ void LocationEditor::AdvanceModeNone()
 
 void LocationEditor::MoveBuildingsInTile( LandscapeTile *_tile, float _dX, float _dZ )
 {
-    for( int i = 0; i < g_app->m_location->m_levelFile->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_levelFile->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_levelFile->m_buildings.ValidIndex(i) )
+        if( g_location->m_levelFile->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_levelFile->m_buildings[i];
+            Building *building = g_location->m_levelFile->m_buildings[i];
             if( building->m_pos.x >= _tile->m_posX &&
                 building->m_pos.z >= _tile->m_posZ &&
                 building->m_pos.x <= _tile->m_posX + _tile->m_size &&
@@ -311,7 +312,7 @@ void LocationEditor::MoveBuildingsInTile( LandscapeTile *_tile, float _dX, float
 
 void LocationEditor::AdvanceModeLandTile()
 {
-	Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
+	Vector3 mousePos3D = g_userInput->GetMousePos3d();
 
 	int newSelectionId = -1;
 	if ( g_inputManager->controlEvent( ControlTileSelect ) )
@@ -323,8 +324,8 @@ void LocationEditor::AdvanceModeLandTile()
 	{
 		// No selection
 
-		Landscape *land = &g_app->m_location->m_landscape;
-		LList<LandscapeTile *> *tiles = &g_app->m_location->m_levelFile->m_landscape.m_tiles;
+		Landscape *land = &g_location->m_landscape;
+		LList<LandscapeTile *> *tiles = &g_location->m_levelFile->m_landscape.m_tiles;
 
 		// Has the user selected a tile
 		if (newSelectionId != -1)
@@ -354,7 +355,7 @@ void LocationEditor::AdvanceModeLandTile()
 		if( g_inputManager->controlEvent( ControlTileDrop ) )
 		{
 			// Move the selected landscape to the new position and regenerate it
-			LandscapeTile *tileDef = g_app->m_location->m_levelFile->m_landscape.m_tiles.GetData(m_selectionId);
+			LandscapeTile *tileDef = g_location->m_levelFile->m_landscape.m_tiles.GetData(m_selectionId);
 			if( m_newLandscapeX != tileDef->m_posX ||
 				m_newLandscapeZ != tileDef->m_posZ )
 			{
@@ -365,8 +366,8 @@ void LocationEditor::AdvanceModeLandTile()
 
 				tileDef->m_posX = m_newLandscapeX;
 				tileDef->m_posZ = m_newLandscapeZ;
-				LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-				g_app->m_location->m_landscape.Init(def);
+				LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+				g_location->m_landscape.Init(def);
 			}
 		}
 		if( g_inputManager->controlEvent( ControlTileSelect ) ) // TODO: Should this be ControlTileGrab?
@@ -374,8 +375,8 @@ void LocationEditor::AdvanceModeLandTile()
 			if (newSelectionId == m_selectionId)
 			{
 				// The user "grabs" the landscape at this position
-				LandscapeDef *landscapeDef = &(g_app->m_location->m_levelFile->m_landscape);
-				LandscapeTile *tileDef = g_app->m_location->m_levelFile->m_landscape.m_tiles.GetData(m_selectionId);
+				LandscapeDef *landscapeDef = &(g_location->m_levelFile->m_landscape);
+				LandscapeTile *tileDef = g_location->m_levelFile->m_landscape.m_tiles.GetData(m_selectionId);
 				m_landscapeGrabX = mousePos3D.x - tileDef->m_posX;
 				m_landscapeGrabZ = mousePos3D.z - tileDef->m_posZ;
 			}
@@ -401,12 +402,12 @@ void LocationEditor::AdvanceModeLandTile()
 
 void LocationEditor::AdvanceModeLandFlat()
 {
-	Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
+	Vector3 mousePos3D = g_userInput->GetMousePos3d();
 
 	int newSelectionId = -1;
 	if ( g_inputManager->controlEvent( ControlTileSelect ) )
 	{
-		Vector3 mousePos = g_app->m_userInput->GetMousePos3d();
+		Vector3 mousePos = g_userInput->GetMousePos3d();
 		newSelectionId = IsPosInFlattenArea(mousePos);
 	}
 
@@ -430,15 +431,15 @@ void LocationEditor::AdvanceModeLandFlat()
 	}
 	else
 	{
-		Location *location = g_app->m_location;
+		Location *location = g_location;
 
 		if ( g_inputManager->controlEvent( ControlTileSelect ) )
 		{
 			if (newSelectionId == m_selectionId)
 			{
 				// The user "grabs" the landscape at this position
-				LandscapeDef *landscapeDef = &(g_app->m_location->m_levelFile->m_landscape);
-				LandscapeFlattenArea *areaDef = g_app->m_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
+				LandscapeDef *landscapeDef = &(g_location->m_levelFile->m_landscape);
+				LandscapeFlattenArea *areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
 				m_landscapeGrabX = mousePos3D.x - areaDef->m_centre.x;
 				m_landscapeGrabZ = mousePos3D.z - areaDef->m_centre.z;
 			}
@@ -453,7 +454,7 @@ void LocationEditor::AdvanceModeLandFlat()
 		else if ( g_inputManager->controlEvent( ControlTileDrag ) )
 		{
 			// The user "drags" the flatten area around
-			LandscapeFlattenArea *areaDef = g_app->m_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
+			LandscapeFlattenArea *areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
 			areaDef->m_centre.x = mousePos3D.x - m_landscapeGrabX;
 			areaDef->m_centre.z = mousePos3D.z - m_landscapeGrabZ;
 		}
@@ -466,7 +467,7 @@ void LocationEditor::AdvanceModeBuilding()
 	BuildingEditWindow *ew = (BuildingEditWindow *)EclGetWindow(LANGUAGEPHRASE("editor_buildingid"));
 	if (ew && EclMouseInWindow(ew))	return;
 
-	Camera *cam = g_app->m_camera;
+	Camera *cam = g_camera;
 
 	// Find the ID of the building the user is clicking on
 	int newSelectionId = -1;
@@ -494,7 +495,7 @@ void LocationEditor::AdvanceModeBuilding()
 			bew->m_y = cw->m_y - bew->m_h - 10;
 			m_waitingForRelease = true;
 
-            Location *location = g_app->m_location;
+            Location *location = g_location;
 		    Building *building = location->GetBuilding(m_selectionId);
             if( building->m_type == Building::TypeTree )
             {
@@ -509,7 +510,7 @@ void LocationEditor::AdvanceModeBuilding()
 	}
 	else
 	{
-		Location *location = g_app->m_location;
+		Location *location = g_location;
 		Building *building = location->GetBuilding(m_selectionId);
 
 
@@ -532,7 +533,7 @@ void LocationEditor::AdvanceModeBuilding()
 			{
 				case ToolMove:
 				{
-					Vector3 mousePos = g_app->m_userInput->GetMousePos3d();
+					Vector3 mousePos = g_userInput->GetMousePos3d();
 					building->m_pos = mousePos;
 					break;
 				}
@@ -551,7 +552,7 @@ void LocationEditor::AdvanceModeBuilding()
 
 void LocationEditor::AdvanceModeLight()
 {
-	Location *location = g_app->m_location;
+	Location *location = g_location;
 
 	if (location->m_lights.ValidIndex(m_selectionId) &&  g_inputManager->controlEvent( ControlTileDrag ) )
 	{
@@ -565,7 +566,7 @@ void LocationEditor::AdvanceModeLight()
 
 void LocationEditor::AdvanceModeInstantUnit()
 {
-	Camera *cam = g_app->m_camera;
+	Camera *cam = g_camera;
 
 	int newSelectionId = -1;
 	if ( g_inputManager->controlEvent( ControlTileSelect ) ) // TODO: Should be something else?
@@ -603,12 +604,12 @@ void LocationEditor::AdvanceModeInstantUnit()
 		}
 		else if ( g_inputManager->controlEvent( ControlTileDrag ) ) // TODO: Something else?
 		{
-			InstantUnit *iu = g_app->m_location->m_levelFile->m_instantUnits.GetData(m_selectionId);
+			InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(m_selectionId);
 			switch (m_tool)
 			{
 				case ToolMove:
 				{
-					Vector3 mousePos = g_app->m_userInput->GetMousePos3d();
+					Vector3 mousePos = g_userInput->GetMousePos3d();
 					iu->m_posX = mousePos.x;
 					iu->m_posZ = mousePos.z;
 					break;
@@ -628,16 +629,16 @@ void LocationEditor::AdvanceModeCameraMount()
 		if (win && win->m_newNodeArmed)
 		{
 			Vector3 rayStart, rayDir;
-			g_app->m_camera->GetClickRay( g_target->X(),
+			g_camera->GetClickRay( g_target->X(),
 										  g_target->Y(),
 										  &rayStart, &rayDir );
 			int mountId = DoesRayHitCameraMount(rayStart, rayDir);
 			if (mountId != -1)
 			{
-				CameraMount *mount = g_app->m_location->m_levelFile->m_cameraMounts[mountId];
+				CameraMount *mount = g_location->m_levelFile->m_cameraMounts[mountId];
 				DEBUG_ASSERT(mount);
 
-				CameraAnimation *anim = g_app->m_location->m_levelFile->m_cameraAnimations[m_selectionId];
+				CameraAnimation *anim = g_location->m_levelFile->m_cameraAnimations[m_selectionId];
 				DEBUG_ASSERT(anim);
 
 				CamAnimNode *node = new CamAnimNode;
@@ -684,7 +685,7 @@ void LocationEditor::RenderUnit(InstantUnit *_iu)
 {
 	char const *typeName = Entity::GetTypeName(_iu->m_type);
 
-	float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(_iu->m_posX, _iu->m_posZ);
+	float landHeight = g_location->m_landscape.m_heightMap->GetValue(_iu->m_posX, _iu->m_posZ);
 	glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
     g_editorFont.DrawText3DCentre(Vector3(_iu->m_posX, landHeight + 15.0f, _iu->m_posZ),
 								  15.0f, "%d %s(s)", _iu->m_number, typeName);
@@ -697,12 +698,12 @@ void LocationEditor::RenderUnit(InstantUnit *_iu)
 	float offsetX = -maxX * pitch * 0.5f;
 	float offsetZ = -maxZ * pitch * 0.5f;
 	RGBAColour colour;
-    if( _iu->m_teamId >= 0 ) colour = g_app->m_location->m_teams[_iu->m_teamId].m_colour;
+    if( _iu->m_teamId >= 0 ) colour = g_location->m_teams[_iu->m_teamId].m_colour;
 	colour.a = 200;
     glColor4ubv(colour.GetData());
 
-    Vector3 camUp = g_app->m_camera->GetUp() * 5.0f;
-    Vector3 camRight = g_app->m_camera->GetRight() * 5.0f;
+    Vector3 camUp = g_camera->GetUp() * 5.0f;
+    Vector3 camRight = g_camera->GetRight() * 5.0f;
 
     glDisable   (GL_CULL_FACE );
     glEnable    (GL_BLEND);
@@ -719,7 +720,7 @@ void LocationEditor::RenderUnit(InstantUnit *_iu)
 		{
 			Vector3 pos(_iu->m_posX + offsetX + x * pitch, 0,
 						_iu->m_posZ + offsetZ + z * pitch);
-			pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 2.0f;
+			pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 2.0f;
 			glVertex3fv( (pos - camUp - camRight).GetData() );
             glVertex3fv( (pos - camUp + camRight).GetData() );
             glVertex3fv( (pos + camUp + camRight).GetData() );
@@ -747,7 +748,7 @@ void LocationEditor::RenderUnit(InstantUnit *_iu)
             float xDiff = _iu->m_spread * sinf(angle);
             float zDiff = _iu->m_spread * cosf(angle);
             Vector3 pos = Vector3(_iu->m_posX, 0.0f, _iu->m_posZ) + Vector3(xDiff,5,zDiff);
-	        pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
+	        pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
             if( pos.y < 2 ) pos.y = 2;
             glVertex3fv( pos.GetData() );
             angle += 2.0f * M_PI / (float) numSteps;
@@ -766,11 +767,11 @@ void LocationEditor::RenderUnit(InstantUnit *_iu)
 
 void LocationEditor::RenderModeLandTile()
 {
-	Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
-	Landscape *land = &g_app->m_location->m_landscape;
+	Vector3 mousePos3D = g_userInput->GetMousePos3d();
+	Landscape *land = &g_location->m_landscape;
 
 	// Highlight any tile under our mouse cursor
-	LList<LandscapeTile *> *tiles = &g_app->m_location->m_levelFile->m_landscape.m_tiles;
+	LList<LandscapeTile *> *tiles = &g_location->m_levelFile->m_landscape.m_tiles;
 	for (int i = 0; i < tiles->Size(); ++i)
 	{
 		if (i == m_selectionId) continue;
@@ -891,11 +892,11 @@ void LocationEditor::RenderModeLandTile()
 
 void LocationEditor::RenderModeLandFlat()
 {
-	Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
-	Landscape *land = &g_app->m_location->m_landscape;
+	Vector3 mousePos3D = g_userInput->GetMousePos3d();
+	Landscape *land = &g_location->m_landscape;
 
 	// Highlight any flatten area under our mouse cursor
-	LList<LandscapeFlattenArea *> *areas = &g_app->m_location->m_levelFile->m_landscape.m_flattenAreas;
+	LList<LandscapeFlattenArea *> *areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
 	for (int i = 0; i < areas->Size(); ++i)
 	{
 		if (i == m_selectionId) continue;
@@ -917,8 +918,8 @@ void LocationEditor::RenderModeLandFlat()
 
 	if (m_selectionId != -1)
 	{
-		LandscapeDef *landscapeDef = &(g_app->m_location->m_levelFile->m_landscape);
-		LandscapeFlattenArea *areaDef = g_app->m_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
+		LandscapeDef *landscapeDef = &(g_location->m_levelFile->m_landscape);
+		LandscapeFlattenArea *areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
 		float x = areaDef->m_centre.x;
 		float y = areaDef->m_centre.y;
 		float z = areaDef->m_centre.z;
@@ -936,7 +937,7 @@ void LocationEditor::RenderModeBuilding()
 {
 	if (m_selectionId != -1)
 	{
-		Building *building = g_app->m_location->GetBuilding(m_selectionId);
+		Building *building = g_location->GetBuilding(m_selectionId);
 
         if( building->m_shape )
         {
@@ -953,7 +954,7 @@ void LocationEditor::RenderModeBuilding()
 		if (m_tool == ToolLink)
 		{
 			Vector3     height(0,10,0);
-			Vector3     mousePos(g_app->m_userInput->GetMousePos3d());
+			Vector3     mousePos(g_userInput->GetMousePos3d());
 			Vector3     arrowDir(mousePos - building->m_pos);
 			Vector3     arrowSize(0,3,0);
 
@@ -984,9 +985,9 @@ void LocationEditor::RenderModeInstantUnit()
 {
 	if (m_selectionId != -1)
 	{
-		InstantUnit *iu = g_app->m_location->m_levelFile->m_instantUnits.GetData(m_selectionId);
+		InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(m_selectionId);
 		Vector3 pos(iu->m_posX, 0, iu->m_posZ);
-		pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
+		pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
 		RenderSphere(pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
 	}
 }
@@ -997,7 +998,7 @@ void LocationEditor::RenderModeCameraMount()
 	RGBAColour bright(255,255,0);
 	RGBAColour dim(90,90,0);
 
-	LList <CameraAnimation*> *list = &g_app->m_location->m_levelFile->m_cameraAnimations;
+	LList <CameraAnimation*> *list = &g_location->m_levelFile->m_cameraAnimations;
 	for (int i = 0; i < list->Size(); ++i)
 	{
 		CameraAnimation *anim = list->GetData(i);
@@ -1011,8 +1012,8 @@ void LocationEditor::RenderModeCameraMount()
 				continue;
 			}
 
-			CameraMount *mount1 = g_app->m_location->m_levelFile->GetCameraMount(lastNode->m_mountName);
-			CameraMount *mount2 = g_app->m_location->m_levelFile->GetCameraMount(node->m_mountName);
+			CameraMount *mount1 = g_location->m_levelFile->GetCameraMount(lastNode->m_mountName);
+			CameraMount *mount2 = g_location->m_levelFile->GetCameraMount(node->m_mountName);
 			if (i == m_selectionId)
 			{
 				RenderArrow(mount1->m_pos, mount2->m_pos, 1.0f, bright);
@@ -1033,8 +1034,8 @@ void LocationEditor::Render()
     //
     // Render our buildings
 
-	g_app->m_renderer->SetObjectLighting();
-    LevelFile *levelFile = g_app->m_location->m_levelFile;
+	g_renderer->SetObjectLighting();
+    LevelFile *levelFile = g_location->m_levelFile;
     for( int i = 0; i < levelFile->m_buildings.Size(); ++i )
     {
         if( levelFile->m_buildings.ValidIndex(i) )
@@ -1043,7 +1044,7 @@ void LocationEditor::Render()
             b->Render(0.0f);
         }
     }
-    g_app->m_renderer->UnsetObjectLighting();
+    g_renderer->UnsetObjectLighting();
 	if (m_mode == ModeBuilding)
 	{
 		for( int i = 0; i < levelFile->m_buildings.Size(); ++i )
@@ -1062,24 +1063,24 @@ void LocationEditor::Render()
 	// Render camera mounts
 
 	{
-		g_app->m_renderer->SetObjectLighting();
+		g_renderer->SetObjectLighting();
 		Shape *camShape = g_app->m_resource->GetShape("Camera.shp");
 		Matrix34 mat;
 
-		for (int i = 0; i < g_app->m_location->m_levelFile->m_cameraMounts.Size(); ++i)
+		for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
 		{
-			CameraMount *mount = g_app->m_location->m_levelFile->m_cameraMounts[i];
-			Vector3 camToMount = g_app->m_camera->GetPos() - mount->m_pos;
+			CameraMount *mount = g_location->m_levelFile->m_cameraMounts[i];
+			Vector3 camToMount = g_camera->GetPos() - mount->m_pos;
 			if (camToMount.Mag() < 20.0f) continue;
 			mat.OrientFU(mount->m_front, mount->m_up);
 			mat.pos = mount->m_pos;
 			camShape->Render(0.0f, mat);
 		}
-	    g_app->m_renderer->UnsetObjectLighting();
+	    g_renderer->UnsetObjectLighting();
 	}
 
 
-    g_app->m_renderer->UnsetObjectLighting();
+    g_renderer->UnsetObjectLighting();
 
 
 	//
@@ -1105,8 +1106,8 @@ void LocationEditor::Render()
 	//
 	// Render axes
 
-	float sizeX = g_app->m_location->m_landscape.GetWorldSizeX() / 2;
-	float sizeZ = g_app->m_location->m_landscape.GetWorldSizeZ() / 2;
+	float sizeX = g_location->m_landscape.GetWorldSizeX() / 2;
+	float sizeZ = g_location->m_landscape.GetWorldSizeZ() / 2;
 	RenderArrow(Vector3(10, 200, 0), Vector3(sizeX, 200, 0), 4.0f);
 	glBegin(GL_LINES);
 		glVertex3f(sizeX,      250, 0);
@@ -1133,17 +1134,17 @@ void LocationEditor::Render()
     //
     // Render targetting crosshair
 
-    g_app->m_renderer->SetupMatricesFor2D();
+    g_renderer->SetupMatricesFor2D();
 	glColor3ub(255,255,255);
     glLineWidth( 1.0f );
     glBegin( GL_LINES );
-        glVertex2i( g_app->m_renderer->ScreenW()/2, g_app->m_renderer->ScreenH()/2 - 30 );
-        glVertex2i( g_app->m_renderer->ScreenW()/2, g_app->m_renderer->ScreenH()/2 + 30 );
+        glVertex2i( g_renderer->ScreenW()/2, g_renderer->ScreenH()/2 - 30 );
+        glVertex2i( g_renderer->ScreenW()/2, g_renderer->ScreenH()/2 + 30 );
 
-        glVertex2i( g_app->m_renderer->ScreenW()/2 - 30, g_app->m_renderer->ScreenH()/2 );
-        glVertex2i( g_app->m_renderer->ScreenW()/2 + 30, g_app->m_renderer->ScreenH()/2 );
+        glVertex2i( g_renderer->ScreenW()/2 - 30, g_renderer->ScreenH()/2 );
+        glVertex2i( g_renderer->ScreenW()/2 + 30, g_renderer->ScreenH()/2 );
     glEnd();
-    g_app->m_renderer->SetupMatricesFor3D();
+    g_renderer->SetupMatricesFor3D();
 
 
 	CHECK_OPENGL_STATE();

@@ -4,8 +4,7 @@
 //  NetLib - A very thin portable UDP network library
 // ****************************************************************************
 
-#ifndef INCLUDED_NET_LIB_H
-#define INCLUDED_NET_LIB_H
+#pragma once
 
 #include "NetLibWin32.h"
 
@@ -40,4 +39,3 @@ class NetLib
     bool Initialise(); // Returns false on failure
 };
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef INCLUDED_RGB_COLOUR_H
-#define INCLUDED_RGB_COLOUR_H
+#pragma once
 
 #include "Debug.h"
 
@@ -59,4 +58,3 @@ extern RGBAColour g_colourBlack;
 extern RGBAColour g_colourWhite;
 
 
-#endif

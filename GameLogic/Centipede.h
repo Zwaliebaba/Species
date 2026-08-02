@@ -1,6 +1,5 @@
 
-#ifndef _included_centipede_h
-#define _included_centipede_h
+#pragma once
 
 #include "Entity.h"
 
@@ -63,4 +62,3 @@ public:
 };
 
 
-#endif

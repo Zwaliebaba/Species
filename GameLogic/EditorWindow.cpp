@@ -19,12 +19,10 @@
 #include "LaserFence.h"
 #include "PowerStation.h"
 
-#include "App.h"
-#include "Camera.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"
-#include "Renderer.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 #ifdef LOCATION_EDITOR
 
@@ -57,7 +55,7 @@ public:
             // for the end user (but allow it for us)
 
 #ifndef TARGET_DEBUG
-            if( !g_app->m_resource->IsModLoaded() )
+            if( !g_resource->IsModLoaded() )
             {
                 EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_savelocationsfail1" ),
                                                       LANGUAGEPHRASE( "dialog_savelocationsfail2" ) ),
@@ -66,17 +64,17 @@ public:
             }
 #endif
 
-            g_app->m_location->m_levelFile->Save();
+            g_location->m_levelFile->Save();
 
 			return;
 		}
 
-		g_app->m_locationEditor->RequestMode(m_type);
+		g_locationEditor->RequestMode(m_type);
     }
 
 	void Render(int realX, int realY, bool highlighted, bool clicked)
 	{
-		LocationEditor *editor = g_app->m_locationEditor;
+		LocationEditor *editor = g_locationEditor;
 		if (editor->GetMode() == m_type)
 		{
 			BorderlessButton::Render(realX, realY, highlighted, true);
@@ -95,7 +93,7 @@ public:
 
 MainEditWindow::MainEditWindow( char const *name )
 :	SpeciesWindow(name),
-	m_currentEditWindow(NULL)
+	m_currentEditWindow(nullptr)
 {
 }
 

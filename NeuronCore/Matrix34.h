@@ -1,5 +1,4 @@
-#ifndef _INCLUDED_MATRIX34_H
-#define _INCLUDED_MATRIX34_H
+#pragma once
 
 
 //#include <string.h>
@@ -159,4 +158,3 @@ inline Vector3 operator * ( Vector3 const &v, Matrix34 const &m )
 }
 
 
-#endif

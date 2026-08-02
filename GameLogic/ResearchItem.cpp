@@ -12,17 +12,16 @@
 #include "ResearchItem.h"
 
 #include "Explosion.h"
-#include "Main.h"
-#include "App.h"
+#include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Camera.h"
-#include "Renderer.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
-#include "TaskManager.h"
 #include "TaskManagerInterface.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 ResearchItem::ResearchItem()
@@ -30,14 +29,14 @@ ResearchItem::ResearchItem()
     m_researchType(-1),
     m_inLibrary(false),
     m_reprogrammed(100.0f),
-    m_end1(NULL),
-    m_end2(NULL),
+    m_end1(nullptr),
+    m_end2(nullptr),
     m_level(1)
 {
     m_type = TypeResearchItem;
     m_researchType = GlobalResearch::TypeEngineer;
 
-    SetShape( g_app->m_resource->GetShape( "ResearchItem.shp" ) );
+    SetShape( g_resource->GetShape( "ResearchItem.shp" ) );
 
     m_front.RotateAroundY( frand(2.0f * M_PI) );
 
@@ -57,7 +56,7 @@ void ResearchItem::Initialise ( Building *_template )
 
 void ResearchItem::SetDetail( int _detail )
 {
-    m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     m_pos.y += 20.0f;
 
     Matrix34 mat( m_front, m_up, m_pos );
@@ -71,7 +70,7 @@ bool ResearchItem::Advance()
     if( m_vel.Mag() > 1.0f )
     {
         m_pos += m_vel * SERVER_ADVANCE_PERIOD;
-        m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+        m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
         m_vel *= ( 1.0f - SERVER_ADVANCE_PERIOD * 0.5f );
 
         Matrix34 mat( m_front, g_upVector, m_pos );
@@ -83,8 +82,8 @@ bool ResearchItem::Advance()
     }
 
     if( m_researchType > -1 &&
-        g_app->m_globalWorld->m_research->HasResearch( m_researchType ) &&
-        g_app->m_globalWorld->m_research->CurrentLevel( m_researchType ) >= m_level )
+        g_globalWorld->m_research->HasResearch( m_researchType ) &&
+        g_globalWorld->m_research->CurrentLevel( m_researchType ) >= m_level )
     {
         return true;
     }
@@ -95,20 +94,20 @@ bool ResearchItem::Advance()
         Matrix34 mat( m_front, m_up, m_pos );
         g_explosionManager.AddExplosion( m_shape, mat, 1.0f );
 
-        int existingLevel = g_app->m_globalWorld->m_research->CurrentLevel( m_researchType );
+        int existingLevel = g_globalWorld->m_research->CurrentLevel( m_researchType );
 
-        g_app->m_globalWorld->m_research->AddResearch( m_researchType );
-        g_app->m_globalWorld->m_research->m_researchLevel[ m_researchType ] = m_level;
+        g_globalWorld->m_research->AddResearch( m_researchType );
+        g_globalWorld->m_research->m_researchLevel[ m_researchType ] = m_level;
 
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "AquireResearch" );
+        g_soundSystem->TriggerBuildingEvent( this, "AquireResearch" );
 
         if( existingLevel == 0 )
         {
-            g_app->m_taskManagerInterface->SetCurrentMessage( TaskManagerInterface::MessageResearch, m_researchType, 4.0f );
+            g_taskManagerInterface->SetCurrentMessage( TaskManagerInterface::MessageResearch, m_researchType, 4.0f );
         }
         else
         {
-            g_app->m_taskManagerInterface->SetCurrentMessage( TaskManagerInterface::MessageResearchUpgrade, m_researchType, 4.0f );
+            g_taskManagerInterface->SetCurrentMessage( TaskManagerInterface::MessageResearchUpgrade, m_researchType, 4.0f );
         }
 
         return true;
@@ -158,7 +157,7 @@ void ResearchItem::Render( float _predictionTime )
 
 	m_shape->Render(0.0f, mat);
 
-    if( g_app->m_editing && m_researchType != -1 )
+    if( g_editing && m_researchType != -1 )
     {
         g_gameFont.DrawText3DCentre( predictedPos + Vector3(0,25,0), 5, GlobalResearch::GetTypeName( m_researchType ) );
         g_gameFont.DrawText3DCentre( predictedPos + Vector3(0,20,0), 5, "%2.2f", m_reprogrammed );
@@ -170,14 +169,14 @@ void ResearchItem::RenderAlphas( float _predictionTime )
 {
     Building::RenderAlphas( _predictionTime );
 
-    Vector3 camUp = g_app->m_camera->GetUp();
-    Vector3 camRight = g_app->m_camera->GetRight();
+    Vector3 camUp = g_camera->GetUp();
+    Vector3 camRight = g_camera->GetRight();
 
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
 
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10.0f;
 
@@ -216,7 +215,7 @@ void ResearchItem::RenderAlphas( float _predictionTime )
     alpha = 1.0f - m_reprogrammed / 100.0f;
     alpha *= 0.3f;
 
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
     if( alpha > 0.0f )
     {
@@ -255,7 +254,7 @@ void ResearchItem::RenderAlphas( float _predictionTime )
 
     if( alpha > 0.0f )
     {
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
         glDisable( GL_CULL_FACE );
         glShadeModel( GL_SMOOTH );
 
@@ -296,7 +295,7 @@ bool ResearchItem::RenderPixelEffect(float _predictionTime)
 {
 //	Matrix34 mat(m_front, m_up, m_pos);
 //	m_shape->Render(0.0f, mat);
-//	g_app->m_renderer->MarkUsedCells(m_shape, mat);
+//	g_renderer->MarkUsedCells(m_shape, mat);
     return false;
 }
 
@@ -354,7 +353,7 @@ bool ResearchItem::IsInView()
 {
     if( Building::IsInView() ) return true;
 
-    if( g_app->m_camera->PosInViewFrustum( m_pos+Vector3(0,g_app->m_camera->GetPos().y,0) ))
+    if( g_camera->PosInViewFrustum( m_pos+Vector3(0,g_camera->GetPos().y,0) ))
     {
         return true;
     }

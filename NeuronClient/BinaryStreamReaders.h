@@ -1,5 +1,4 @@
-#ifndef INCLUDED_BINARY_STREAM_READERS_H
-#define INCLUDED_BINARY_STREAM_READERS_H
+#pragma once
 
 
 //*****************************************************************************
@@ -98,4 +97,3 @@ public:
 };
 
 
-#endif

@@ -1,6 +1,5 @@
 
-#ifndef _included_darwinian_h
-#define _included_darwinian_h
+#pragma once
 
 #include "Entity.h"
 
@@ -148,4 +147,3 @@ public:
     void Render     ( float _predictionTime );
 };
 
-#endif

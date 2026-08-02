@@ -1,5 +1,4 @@
-#ifndef INCLUDED_LOCATION_H
-#define INCLUDED_LOCATION_H
+#pragma once
 
 #include <float.h>
 
@@ -104,9 +103,9 @@ public:
 
     void RemoveTeam         ( unsigned char _teamId );
 
-    int GetBuildingId           ( Vector3 const &startRay, Vector3 const &direction, unsigned char teamId, float _maxDistance=FLT_MAX, float *_range=NULL );
-    int GetUnitId               ( Vector3 const &startRay, Vector3 const &direction, unsigned char teamId, float *_range=NULL );
-    WorldObjectId GetEntityId   ( Vector3 const &startRay, Vector3 const &direction, unsigned char teamId, float *_range=NULL );
+    int GetBuildingId           ( Vector3 const &startRay, Vector3 const &direction, unsigned char teamId, float _maxDistance=FLT_MAX, float *_range=nullptr );
+    int GetUnitId               ( Vector3 const &startRay, Vector3 const &direction, unsigned char teamId, float *_range=nullptr );
+    WorldObjectId GetEntityId   ( Vector3 const &startRay, Vector3 const &direction, unsigned char teamId, float *_range=nullptr );
 
     bool IsWalkable         ( Vector3 const &_from, Vector3 const &_to, bool _evaluateCliffs=false );
     bool IsVisible          ( Vector3 const &_from, Vector3 const &_to );
@@ -157,4 +156,3 @@ public:
 
 
 
-#endif

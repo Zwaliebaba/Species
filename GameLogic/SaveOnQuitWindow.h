@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SAVE_ON_QUIT_WINDOW_H
-#define INCLUDED_SAVE_ON_QUIT_WINDOW_H
+#pragma once
 
 #include "SpeciesWindow.h"
 
@@ -14,4 +13,3 @@ public:
 };
 
 
-#endif

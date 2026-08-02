@@ -9,22 +9,18 @@
 #include "Resource.h"
 #include "Shape.h"
 
-#include "App.h"
-#include "Camera.h"
 #include "EntityGrid.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
-#include "Main.h"
-#include "ParticleSystem.h"
-#include "Renderer.h"
-#include "Team.h"
+#include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Unit.h"
 
 #include "SoundSystem.h"
 
 #include "RadarDish.h"
-
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 RadarDish::RadarDish()
@@ -42,7 +38,7 @@ RadarDish::RadarDish()
     m_front.Set(0,0,1);
     m_sendPeriod = RADARDISH_TRANSPORTPERIOD;
 
-	Shape *radarShape = g_app->m_resource->GetShapeCopy("RadarDish.shp", true);
+	Shape *radarShape = g_resource->GetShapeCopy("RadarDish.shp", true);
 	SetShape( radarShape );
 
 	m_dish = m_shape->m_rootFragment->LookupFragment("Dish");
@@ -54,7 +50,7 @@ RadarDish::RadarDish()
 RadarDish::~RadarDish()
 {
 	delete m_shape;
-	m_shape = NULL;
+	m_shape = nullptr;
 }
 
 
@@ -84,10 +80,10 @@ bool RadarDish::Advance ()
     // if we saved a target dish previously
     if( m_newlyCreated )
     {
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb )
         {
-            Building *targetBuilding = g_app->m_location->GetBuilding( gb->m_link );
+            Building *targetBuilding = g_location->GetBuilding( gb->m_link );
             if( targetBuilding && targetBuilding->m_type == TypeRadarDish )
             {
                 RadarDish *dish = (RadarDish *) targetBuilding;
@@ -153,8 +149,8 @@ bool RadarDish::Advance ()
 
     if( m_movementSoundsPlaying && m_horizontallyAligned && m_dish->m_angVel.Mag() < 0.05f )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "EndRotation" );
+        g_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
+        g_soundSystem->TriggerBuildingEvent( this, "EndRotation" );
         m_movementSoundsPlaying = false;
     }
 
@@ -167,13 +163,13 @@ bool RadarDish::Advance ()
 
     bool previouslyAligned = ( m_receiverId != -1 );
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
 		// Skip empty slots
-        if( !g_app->m_location->m_buildings.ValidIndex(i) ) continue;
+        if( !g_location->m_buildings.ValidIndex(i) ) continue;
 
 		// Filter out non radar dish buildings
-		Building *building = g_app->m_location->m_buildings.GetData(i);
+		Building *building = g_location->m_buildings.GetData(i);
         if( building->m_type != TypeRadarDish ) continue;
 
 		// Don't compare against ourself
@@ -189,7 +185,7 @@ bool RadarDish::Advance ()
 			float dotProd = dishFront * theirFront;
 			if (dotProd < 0.0f)
 			{
-				if (g_app->m_location->IsVisible( dishPos, otherDish->GetDishPos(0.0f)))
+				if (g_location->IsVisible( dishPos, otherDish->GetDishPos(0.0f)))
 				{
 					float newRange = (otherDish->GetDishPos(0.0f) - dishPos).Mag();
 					if( newRange < m_range )
@@ -209,18 +205,18 @@ bool RadarDish::Advance ()
         m_range = 0.0f;
         m_signal = 0.0f;
         m_receiverId = -1;
-        g_app->m_soundSystem->StopAllSounds( m_id, "RadarDish ConnectionEstablished" );
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "ConnectionLost" );
+        g_soundSystem->StopAllSounds( m_id, "RadarDish ConnectionEstablished" );
+        g_soundSystem->TriggerBuildingEvent( this, "ConnectionLost" );
 
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_link = -1;
     }
 
     if( !previouslyAligned && found )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "ConnectionEstablished" );
+        g_soundSystem->TriggerBuildingEvent( this, "ConnectionEstablished" );
 
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_link = m_receiverId;
     }
 
@@ -240,7 +236,7 @@ Vector3 RadarDish::GetDishFront( float _predictionTime )
 {
     if( m_receiverId != -1 )
     {
-        RadarDish *receiver = (RadarDish *) g_app->m_location->GetBuilding( m_receiverId );
+        RadarDish *receiver = (RadarDish *) g_location->GetBuilding( m_receiverId );
         if( receiver )
         {
             Vector3 ourDishPos = GetDishPos( _predictionTime );
@@ -264,10 +260,10 @@ void RadarDish::Aim( Vector3 _worldPos )
 
     if( m_movementSoundsPlaying )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
+        g_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
     }
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "BeginRotation" );
+    g_soundSystem->TriggerBuildingEvent( this, "BeginRotation" );
     m_movementSoundsPlaying = true;
 }
 
@@ -293,7 +289,7 @@ void RadarDish::RenderAlphas ( float _predictionTime )
 
 void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha )
 {
-	START_PROFILE(g_app->m_profiler, "Signal");
+	START_PROFILE(g_profiler, "Signal");
 
     Vector3 startPos = GetStartPoint();
     Vector3 endPos = GetEndPoint();
@@ -309,7 +305,7 @@ void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha
     glEnable            (GL_TEXTURE_2D);
 
     gglActiveTextureARB  (GL_TEXTURE0_ARB);
-    glBindTexture	    (GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/LaserFence.bmp", true, true));
+    glBindTexture	    (GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence.bmp", true, true));
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -319,7 +315,7 @@ void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha
     glEnable            (GL_TEXTURE_2D);
 
     gglActiveTextureARB  (GL_TEXTURE1_ARB);
-    glBindTexture	    (GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/RadarSignal.bmp", true, true));
+    glBindTexture	    (GL_TEXTURE_2D, g_resource->GetTexture("Textures/RadarSignal.bmp", true, true));
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -340,7 +336,7 @@ void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha
     double eqn1[4]      = { dishFront.x, dishFront.y, dishFront.z, -1.0f };
     glClipPlane         (GL_CLIP_PLANE0, eqn1 );
 
-    RadarDish *receiver = (RadarDish *) g_app->m_location->GetBuilding( m_receiverId );
+    RadarDish *receiver = (RadarDish *) g_location->GetBuilding( m_receiverId );
     Vector3 receiverPos = receiver->GetDishPos( _predictionTime );
     Vector3 receiverFront = receiver->GetDishFront( _predictionTime );
     glTranslatef        ( -startPos.x, -startPos.y, -startPos.z );
@@ -413,7 +409,7 @@ void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
     glTexEnvf           (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	END_PROFILE(g_app->m_profiler, "Signal");
+	END_PROFILE(g_profiler, "Signal");
 }
 
 
@@ -449,7 +445,7 @@ Vector3 RadarDish::GetEndPoint()
 
 bool RadarDish::GetExit( Vector3 &_pos, Vector3 &_front )
 {
-    RadarDish *receiver = (RadarDish *) g_app->m_location->GetBuilding( m_receiverId );
+    RadarDish *receiver = (RadarDish *) g_location->GetBuilding( m_receiverId );
     if( receiver )
     {
         Matrix34 rootMat(receiver->m_front, g_upVector, receiver->m_pos);
@@ -478,7 +474,7 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
 
     if( _entity->m_id.GetUnitId() != -1 )
     {
-        Unit *unit = g_app->m_location->GetUnit( _entity->m_id );
+        Unit *unit = g_location->GetUnit( _entity->m_id );
         unit->UpdateEntityPosition( _entity->m_pos, _entity->m_radius );
     }
 
@@ -491,7 +487,7 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
         _entity->m_enabled = true;
         _entity->m_vel += Vector3(syncsfrand(10.0f), syncfrand(10.0f), syncsfrand(10.0f) );
 
-        g_app->m_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
+        g_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
         return true;
     }
     else if( distTravelled >= m_range )
@@ -505,9 +501,9 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
         _entity->m_onGround = true;
         _entity->m_vel.Zero();
 
-        g_app->m_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
+        g_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
 
-        g_app->m_soundSystem->TriggerEntityEvent( _entity, "ExitTeleport" );
+        g_soundSystem->TriggerEntityEvent( _entity, "ExitTeleport" );
         return true;
     }
 

@@ -5,8 +5,7 @@
 //                           V1.3                                //
 //===============================================================//
 
-#ifndef _included_slice_darray_h
-#define _included_slice_darray_h
+#pragma once
 
 
 #include "FastDArray.h"
@@ -128,4 +127,3 @@ int SliceDArray <T>::GetLastUpdated()
     return lastUpdated;
 }
 
-#endif

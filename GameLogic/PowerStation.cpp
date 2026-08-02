@@ -9,12 +9,12 @@
 #include "Shape.h"
 #include "TextStreamReaders.h"
 
-#include "App.h"
 #include "Location.h"
 
 #include "Building.h"
 #include "LaserFence.h"
 #include "PowerStation.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -27,7 +27,7 @@ Powerstation::Powerstation()
     m_linkedBuildingId(-1)
 {
     m_type = Building::TypePowerstation;
-	SetShape( g_app->m_resource->GetShape("PowerStation.shp") );
+	SetShape( g_resource->GetShape("PowerStation.shp") );
 }
 
 
@@ -43,7 +43,7 @@ void Powerstation::Initialise( Building *_template )
 // *** Advance
 bool Powerstation::Advance()
 {
-	Building *b = g_app->m_location->GetBuilding(m_linkedBuildingId);
+	Building *b = g_location->GetBuilding(m_linkedBuildingId);
 	if (b->m_type == Building::TypeLaserFence)
     {
         LaserFence *fence = (LaserFence *) b;

@@ -1,5 +1,4 @@
-#ifndef _included_entity_h
-#define _included_entity_h
+#pragma once
 
 #include "LList.h"
 #include "TextureUv.h"
@@ -65,7 +64,7 @@ public:
     Vector3             m_front;
     Vector3				m_angVel;
 
-    Shape               *m_shape;                   // Might be NULL
+    Shape               *m_shape;                   // Might be nullptr
     Vector3             m_centrePos;
     float               m_radius;                   // Can be Zero, which means its a sprite
 
@@ -141,5 +140,4 @@ public:
 
 
 
-#endif
 

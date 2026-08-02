@@ -11,9 +11,9 @@
 #include "Resource.h"
 #include "Vector3.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "TextRenderer.h"
+#include "WorldPointers.h"
 
 
 TextRenderer g_gameFont;
@@ -45,7 +45,7 @@ void TextRenderer::Initialise(char const *_filename)
 
 void TextRenderer::BuildOpenGlState()
 {
-	BinaryReader *reader = g_app->m_resource->GetBinaryReader(m_filename);
+	BinaryReader *reader = g_resource->GetBinaryReader(m_filename);
 	char const *extension = GetExtensionPart(m_filename);
 	BitmapRGBA bmp(reader, extension);
 	delete reader;
@@ -464,7 +464,7 @@ void TextRenderer::DrawText3DSimple( Vector3 const &_pos, float _size, char cons
 	// Store the GL state
 	SaveGLFontDrawAttributes saveAttribs;
 
-	Camera *cam = g_app->m_camera;
+	Camera *cam = g_camera;
     Vector3 pos(_pos);
 	Vector3 vertSize = cam->GetUp() * _size;
 	Vector3 horiSize = -cam->GetRight() * _size * HORIZONTAL_SIZE;
@@ -531,7 +531,7 @@ void TextRenderer::DrawText3DCentre( Vector3 const &_pos, float _size, char cons
 
 	Vector3 pos = _pos;
 	float amount =  HORIZONTAL_SIZE * (float)strlen(buf) * 0.5f * _size;
-	pos += g_app->m_camera->GetRight() * amount;
+	pos += g_camera->GetRight() * amount;
 
 	DrawText3DSimple(pos, _size, buf);
 }
@@ -546,7 +546,7 @@ void TextRenderer::DrawText3DRight( Vector3 const &_pos, float _size, char const
 
 	Vector3 pos = _pos;
 	float amount =  HORIZONTAL_SIZE * (float)strlen(buf) * _size;
-	pos += g_app->m_camera->GetRight() * amount;
+	pos += g_camera->GetRight() * amount;
 
 	DrawText3DSimple(pos, _size, buf);
 }
@@ -562,7 +562,7 @@ void TextRenderer::DrawText3D( Vector3 const &_pos, Vector3 const &_front, Vecto
 
 	SaveGLFontDrawAttributes saveAttribs;
 
-	Camera *cam = g_app->m_camera;
+	Camera *cam = g_camera;
 
     Vector3 pos = _pos;
 	Vector3 vertSize = _up * _size;

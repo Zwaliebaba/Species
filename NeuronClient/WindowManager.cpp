@@ -25,7 +25,7 @@ WindowManager::WindowManager()
     m_mouseCaptured(false),
     m_mouseOffsetX(INT_MAX)
 {
-  DEBUG_ASSERT(g_windowManager == NULL);
+  DEBUG_ASSERT(g_windowManager == nullptr);
   m_win32Specific = new WindowManagerWin32;
 
   ListAllDisplayModes();
@@ -236,8 +236,8 @@ bool WindowManager::CreateWin(int _width, int _height, bool _windowed, int _colo
   }
 
   // Create main window
-  m_win32Specific->m_hWnd = CreateWindow(wc.lpszClassName, wc.lpszClassName, windowStyle, posX, posY, _width, _height, NULL, NULL,
-                                         g_hInstance, NULL);
+  m_win32Specific->m_hWnd = CreateWindow(wc.lpszClassName, wc.lpszClassName, windowStyle, posX, posY, _width, _height, nullptr, nullptr,
+                                         g_hInstance, nullptr);
 
   if (!m_win32Specific->m_hWnd)
     return false;

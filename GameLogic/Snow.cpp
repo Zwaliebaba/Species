@@ -6,10 +6,9 @@
 
 #include "Snow.h"
 
-#include "Main.h"
-#include "Globals.h"
-#include "App.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -50,7 +49,7 @@ bool Snow::Advance()
     m_hover.y = sinf( m_positionOffset ) * m_yaxisRate;
     m_hover.z = sinf( m_positionOffset ) * m_zaxisRate;
 
-    float heightAboveGround = m_pos.y - g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+    float heightAboveGround = m_pos.y - g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
     if( heightAboveGround > -10.0f )
     {
         float fractionAboveGround = heightAboveGround / 100.0f;
@@ -67,8 +66,8 @@ bool Snow::Advance()
 
     m_pos += m_vel * SERVER_ADVANCE_PERIOD;
     m_pos += m_hover * SERVER_ADVANCE_PERIOD;
-    float worldSizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float worldSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float worldSizeX = g_location->m_landscape.GetWorldSizeX();
+    float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
     if( m_pos.x < 0.0f ) m_pos.x = 0.0f;
     if( m_pos.z < 0.0f ) m_pos.z = 0.0f;
     if( m_pos.x >= worldSizeX ) m_pos.x = worldSizeX;
@@ -97,6 +96,6 @@ void Snow::Render( float _predictionTime )
     float size = 20.0f;
 
     glColor4f( 1.0f, 1.0f, 1.0f, 1.0 );
-    Render3DSprite( predictedPos, size, size, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    Render3DSprite( predictedPos, size, size, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 }
 

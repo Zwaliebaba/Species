@@ -1,5 +1,4 @@
-#ifndef SPHERE_RENDERER_H
-#define SPHERE_RENDERER_H
+#pragma once
 
 #include "Vector3.h"
 
@@ -29,4 +28,3 @@ private:
 };
 
 
-#endif

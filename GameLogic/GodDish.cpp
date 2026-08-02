@@ -8,16 +8,15 @@
 #include "ResearchItem.h"
 #include "Darwinian.h"
 
-#include "App.h"
-#include "Globals.h"
+#include "ProtocolLimits.h"
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "Team.h"
 #include "Camera.h"
-#include "Main.h"
+#include "GameTime.h"
 
 #include "SoundSystem.h"
-
+#include "WorldPointers.h"
 
 
 GodDish::GodDish()
@@ -28,7 +27,7 @@ GodDish::GodDish()
     m_activated(false)
 {
     m_type = TypeGodDish;
-    SetShape( g_app->m_resource->GetShape( "GodDish.shp" ) );
+    SetShape( g_resource->GetShape( "GodDish.shp" ) );
 }
 
 
@@ -71,14 +70,14 @@ void GodDish::RenderAlphas( float _predictionTime )
 {
     Building::RenderAlphas( _predictionTime );
 
-    Vector3 camUp = g_app->m_camera->GetUp();
-    Vector3 camRight = g_app->m_camera->GetRight();
+    Vector3 camUp = g_camera->GetUp();
+    Vector3 camRight = g_camera->GetRight();
 
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
     glDisable       ( GL_DEPTH_TEST );
 
     float timeIndex = g_gameTime * 2;
@@ -121,7 +120,7 @@ void GodDish::RenderAlphas( float _predictionTime )
     //
     // Central starbursts
 
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
     int numStars = 10;
     if( buildingDetail == 2 ) numStars = 5;
@@ -160,7 +159,7 @@ void GodDish::Activate()
     //
     // Make all green darwinians watch us
 
-    Team *team = &g_app->m_location->m_teams[0];
+    Team *team = &g_location->m_teams[0];
 
     for( int i = 0; i < team->m_others.Size(); ++i )
     {
@@ -177,7 +176,7 @@ void GodDish::Activate()
     }
 
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "ConnectToGod" );
+    g_soundSystem->TriggerBuildingEvent( this, "ConnectToGod" );
 }
 
 
@@ -186,21 +185,21 @@ void GodDish::DeActivate()
     m_activated = false;
 
 
-    g_app->m_soundSystem->StopAllSounds( m_id, "GodDish ConnectToGod" );
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "DisconnectFromGod" );
+    g_soundSystem->StopAllSounds( m_id, "GodDish ConnectToGod" );
+    g_soundSystem->TriggerBuildingEvent( this, "DisconnectFromGod" );
 }
 
 
 void GodDish::SpawnSpam( bool _isResearch )
 {
     Spam spamTemplate;
-    int buildingId = g_app->m_globalWorld->GenerateBuildingId();
+    int buildingId = g_globalWorld->GenerateBuildingId();
     spamTemplate.m_id.SetUniqueId( buildingId );
     spamTemplate.m_id.SetUnitId( UNIT_BUILDINGS );
 
     Spam *spam = (Spam *) CreateBuilding( TypeSpam );
     spam->Initialise( &spamTemplate );
-    g_app->m_location->m_buildings.PutData( spam );
+    g_location->m_buildings.PutData( spam );
 
     spam->SendFromHeaven();
     if( _isResearch ) spam->SetAsResearch();
@@ -213,11 +212,11 @@ void GodDish::SpawnSpam( bool _isResearch )
 
 void GodDish::TriggerSpam()
 {
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *b = g_app->m_location->m_buildings[i];
+            Building *b = g_location->m_buildings[i];
             if( b && b->m_type == TypeSpam )
             {
                 Spam *spam = (Spam *) b;

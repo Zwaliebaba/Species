@@ -1,5 +1,4 @@
-#ifndef INCLUDED_SOUND_LIBRARY_3D_DSOUND_H
-#define INCLUDED_SOUND_LIBRARY_3D_DSOUND_H
+#pragma once
 
 
 #include "SoundLibrary3d.h"
@@ -63,4 +62,3 @@ public:
 };
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef _INCLUDED_TEAM_H
-#define _INCLUDED_TEAM_H
+#pragma once
 
 #include "FastDArray.h"
 #include "SliceDArray.h"
@@ -79,4 +78,3 @@ public:
 // ****************************************************************************
 
 
-#endif

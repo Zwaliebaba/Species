@@ -1,5 +1,4 @@
-#ifndef INCLUDED_TRIPOD_H
-#define INCLUDED_TRIPOD_H
+#pragma once
 
 
 #include "Vector2.h"
@@ -79,4 +78,3 @@ public:
 };
 
 
-#endif

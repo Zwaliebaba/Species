@@ -11,17 +11,14 @@
 #include "Input.h"
 #include "InputTypes.h"
 
-#include "Globals.h"
-#include "App.h"
+#include "ProtocolLimits.h"
 #include "Location.h"
 #include "Team.h"
-#include "Unit.h"
 #include "EntityGrid.h"
 #include "Camera.h"
 #include "UserInput.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "GlobalWorld.h"
-#include "LevelFile.h"
 #include "Explosion.h"
 
 #include "GunTurret.h"
@@ -29,6 +26,8 @@
 #include "Ai.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 GunTurret::GunTurret()
@@ -36,17 +35,17 @@ GunTurret::GunTurret()
     m_retargetTimer(0.0f),
     m_fireTimer(0.0f),
     m_nextBarrel(0),
-    m_turret(NULL),
+    m_turret(nullptr),
     m_ownershipTimer(0.0f),
     m_health(60.0f),
     m_targetCreated(false),
     m_aiTargetCreated(false)
 {
-    SetShape( g_app->m_resource->GetShape( "BattleCannonBase.shp" ) );
+    SetShape( g_resource->GetShape( "BattleCannonBase.shp" ) );
     m_type = TypeGunTurret;
 
-    m_turret = g_app->m_resource->GetShape( "BattleCannonTurret.shp" );
-    m_barrel = g_app->m_resource->GetShape( "BattleCannonBarrel.shp" );
+    m_turret = g_resource->GetShape( "BattleCannonTurret.shp" );
+    m_barrel = g_resource->GetShape( "BattleCannonBarrel.shp" );
 
     m_barrelMount = m_turret->m_rootFragment->LookupMarker( "MarkerBarrel" );
 
@@ -68,7 +67,7 @@ GunTurret::GunTurret()
 
 void GunTurret::Initialise( Building *_template )
 {
-    _template->m_up = g_app->m_location->m_landscape.m_normalMap->GetValue( _template->m_pos.x, _template->m_pos.z );
+    _template->m_up = g_location->m_landscape.m_normalMap->GetValue( _template->m_pos.x, _template->m_pos.z );
     Vector3 right( 1, 0, 0 );
     _template->m_front = right ^ _template->m_up;
 
@@ -122,17 +121,17 @@ bool GunTurret::SearchForTargets()
 
     if( m_id.GetTeamId() != 255 )
     {
-        m_targetId = g_app->m_location->m_entityGrid->GetBestEnemy( m_pos.x, m_pos.z,
+        m_targetId = g_location->m_entityGrid->GetBestEnemy( m_pos.x, m_pos.z,
                                                                     GUNTURRET_MINRANGE,
                                                                     GUNTURRET_MAXRANGE,
                                                                     m_id.GetTeamId() );
     }
 
-    Entity *entity = g_app->m_location->GetEntity( m_targetId );
+    Entity *entity = g_location->GetEntity( m_targetId );
 
     if( entity && m_targetId != previousTarget )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "TargetSighted" );
+        g_soundSystem->TriggerBuildingEvent( this, "TargetSighted" );
     }
 
     return( m_targetId.IsValid() );
@@ -219,7 +218,7 @@ void GunTurret::PrimaryFire()
             Vector3 shellVel = barrelMountFront.SetLength(500.0f);
 
 
-            g_app->m_location->FireTurretShell( shellPos, shellVel );
+            g_location->FireTurretShell( shellPos, shellVel );
             fired = true;
         }
 
@@ -233,7 +232,7 @@ void GunTurret::PrimaryFire()
 
     if( fired )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "FireShell" );
+        g_soundSystem->TriggerBuildingEvent( this, "FireShell" );
     }
 }
 
@@ -251,8 +250,8 @@ bool GunTurret::Advance()
         Building *aiTarget = Building::CreateBuilding( TypeAITarget );
         aiTarget->m_pos = m_pos;
         aiTarget->m_front = m_front;
-        g_app->m_location->m_buildings.PutData( aiTarget );
-        int uniqueId = g_app->m_globalWorld->GenerateBuildingId();
+        g_location->m_buildings.PutData( aiTarget );
+        int uniqueId = g_globalWorld->GenerateBuildingId();
         aiTarget->m_id.SetUniqueId( uniqueId );
         m_aiTargetCreated = true;
     }
@@ -263,7 +262,7 @@ bool GunTurret::Advance()
     if( !m_targetCreated )
     {
         GunTurretTarget *target = new GunTurretTarget( m_id.GetUniqueId() );
-        int index = g_app->m_location->m_effects.PutData( target );
+        int index = g_location->m_effects.PutData( target );
         target->m_id.Set( m_id.GetTeamId(), UNIT_EFFECTS, index, -1 );
         target->m_id.GenerateUniqueId();
         m_targetCreated = true;
@@ -281,7 +280,7 @@ bool GunTurret::Advance()
     }
 
 
-    Team *team = g_app->m_location->GetMyTeam();
+    Team *team = g_location->GetMyTeam();
     bool underPlayerControl = ( team && team->m_currentBuildingId == m_id.GetUniqueId() );
 
 
@@ -297,10 +296,10 @@ bool GunTurret::Advance()
         {
             // Player has lost control of the building
             team->SelectUnit( -1, -1, -1 );
-            g_app->m_camera->RequestMode( Camera::ModeFreeMovement );
+            g_camera->RequestMode( Camera::ModeFreeMovement );
             return Building::Advance();
         }
-        m_target = g_app->m_userInput->GetMousePos3d();
+        m_target = g_userInput->GetMousePos3d();
       
         primaryFire = g_inputManager->controlEvent( ControlUnitPrimaryFireTarget ) || g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected );
         secondaryFire = g_inputManager->controlEvent( ControlUnitSecondaryFireTarget );
@@ -318,7 +317,7 @@ bool GunTurret::Advance()
         if( m_targetId.IsValid() )
         {
             // Check our target is still alive
-            Entity *target = g_app->m_location->GetEntity( m_targetId );
+            Entity *target = g_location->GetEntity( m_targetId );
             if( !target )
             {
                 m_targetId.SetInvalid();
@@ -377,7 +376,7 @@ Vector3 GunTurret::GetTarget()
 
 bool GunTurret::IsInView()
 {
-    Team *team = g_app->m_location->GetMyTeam();
+    Team *team = g_location->GetMyTeam();
     bool underPlayerControl = ( team && team->m_currentBuildingId == m_id.GetUniqueId() );
 
     if( underPlayerControl )
@@ -393,7 +392,7 @@ bool GunTurret::IsInView()
 
 void GunTurret::Render( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         m_turretFront = m_front;
     }
@@ -415,18 +414,18 @@ void GunTurret::Render( float _predictionTime )
     // Render targetting crosshair
 
 /*
-    Team *team = g_app->m_location->GetMyTeam();
+    Team *team = g_location->GetMyTeam();
     bool underPlayerControl = ( team && team->m_currentBuildingId == m_id.GetUniqueId() );
 
     if( underPlayerControl )
     {
         Vector3 targetPos = barrelPos + Vector3(0,10,0) + barrelFront.SetLength( 300.0f );
         float size = 20.0f;
-        Vector3 camUp = g_app->m_camera->GetUp();
-        Vector3 camRight = g_app->m_camera->GetRight();
+        Vector3 camUp = g_camera->GetUp();
+        Vector3 camRight = g_camera->GetRight();
         targetPos += camUp * 5.0f;
 
-        glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Icons/MouseMissileTarget.bmp" ) );
+        glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Icons/MouseMissileTarget.bmp" ) );
         glEnable( GL_TEXTURE_2D );
         glDisable( GL_CULL_FACE );
         glBlendFunc( GL_SRC_ALPHA, GL_ONE );
@@ -457,7 +456,7 @@ void GunTurret::RenderPorts()
 {
     glDisable       ( GL_CULL_FACE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
@@ -471,8 +470,8 @@ void GunTurret::RenderPorts()
         // Render the status light
 
         float size = 6.0f;
-        Vector3 camR = g_app->m_camera->GetRight() * size;
-        Vector3 camU = g_app->m_camera->GetUp() * size;
+        Vector3 camR = g_camera->GetRight() * size;
+        Vector3 camU = g_camera->GetUp() * size;
 
         Vector3 statusPos = worldMat.pos;
 
@@ -483,7 +482,7 @@ void GunTurret::RenderPorts()
         }
         else
         {
-            RGBAColour teamColour = g_app->m_location->m_teams[occupantId.GetTeamId()].m_colour;
+            RGBAColour teamColour = g_location->m_teams[occupantId.GetTeamId()].m_colour;
             glColor4ubv( teamColour.GetData() );
         }
 
@@ -505,7 +504,7 @@ void GunTurret::RenderPorts()
 bool GunTurret::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
                           float _rayLen, Vector3 *_pos, Vector3 *norm )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         return RaySphereIntersection(_rayStart, _rayDir, m_pos, m_radius, _rayLen);
     }
@@ -535,7 +534,7 @@ GunTurretTarget::GunTurretTarget( int _buildingId )
 
 bool GunTurretTarget::Advance()
 {
-    GunTurret *turret = (GunTurret *) g_app->m_location->GetBuilding( m_buildingId );
+    GunTurret *turret = (GunTurret *) g_location->GetBuilding( m_buildingId );
     if( !turret || turret->m_type != Building::TypeGunTurret )
     {
         return true;

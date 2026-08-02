@@ -1,5 +1,4 @@
-#ifndef _included_gunturret_h
-#define _included_gunturret_h
+#pragma once
 
 #include "Building.h"
 
@@ -76,4 +75,3 @@ public:
 };
 
 
-#endif

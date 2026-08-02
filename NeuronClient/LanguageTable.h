@@ -1,5 +1,4 @@
-#ifndef LANGUAGE_TABLE_H
-#define LANGUAGE_TABLE_H
+#pragma once
 
 #include "InputTypes.h"
 
@@ -63,12 +62,15 @@ LList <char *> *WordWrapText(const char *_string,
                              float _fontWidth,
                              bool _wrapToWindow=true);
 
-#define LANGUAGEPHRASE(x)       g_app->m_langTable->LookupPhrase(x)
-#define ISLANGUAGEPHRASE(x)     g_app->m_langTable->DoesPhraseExist(x)
-#define ISLANGUAGEPHRASE_ANY(x) g_app->m_langTable->DoesPhraseExist(x)
+#define LANGUAGEPHRASE(x)       g_langTable->LookupPhrase(x)
+#define ISLANGUAGEPHRASE(x)     g_langTable->DoesPhraseExist(x)
+#define ISLANGUAGEPHRASE_ANY(x) g_langTable->DoesPhraseExist(x)
 
-#define RAWLANGUAGEPHRASE(x)           g_app->m_langTable->RawLookupPhrase(x)
-#define MOODYLANGUAGEPHRASE(x,y)       g_app->m_langTable->RawLookupPhrase((x),(y))
-#define MOODYISLANGUAGEPHRASE(x,y)     g_app->m_langTable->RawDoesPhraseExist((x),(y))
+#define RAWLANGUAGEPHRASE(x)           g_langTable->RawLookupPhrase(x)
+#define MOODYLANGUAGEPHRASE(x,y)       g_langTable->RawLookupPhrase((x),(y))
+#define MOODYISLANGUAGEPHRASE(x,y)     g_langTable->RawDoesPhraseExist((x),(y))
 
-#endif
+// Owned by App, which assigns this during startup. Declared here so the layers
+// below Species can reach the subsystem without including App.h — see
+// tasks/layering-inversion.yaml T8.
+extern LangTable* g_langTable;

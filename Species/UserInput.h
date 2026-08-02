@@ -1,5 +1,4 @@
-#ifndef USER_INPUT_H
-#define USER_INPUT_H
+#pragma once
 
 #include "LList.h"
 #include "Vector3.h"
@@ -34,4 +33,3 @@ public:
 };
 
 
-#endif

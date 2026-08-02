@@ -38,6 +38,8 @@
 #include "Eclipse.h"
 #include "MessageDialog.h"
 #include "InsertionSquad.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 #define USE_PIXEL_EFFECT_GRID_OPTIMISATION	1
 
@@ -135,9 +137,9 @@ void Renderer::RenderFlatTexture()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
   float size = m_nearPlane * 0.3f;
-  Vector3 up = g_app->m_camera->GetUp() * 1.0f * size;
-  Vector3 right = g_app->m_camera->GetRight() * 1.0f * size;
-  Vector3 pos = g_app->m_camera->GetPos() + g_app->m_camera->GetFront() * m_nearPlane * 1.01f;
+  Vector3 up = g_camera->GetUp() * 1.0f * size;
+  Vector3 right = g_camera->GetRight() * 1.0f * size;
+  Vector3 pos = g_camera->GetPos() + g_camera->GetFront() * m_nearPlane * 1.01f;
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -306,8 +308,8 @@ void Renderer::RenderFadeOut()
 void Renderer::RenderPaused()
 {
   auto msg = "PAUSED";
-  int x = g_app->m_renderer->ScreenW() / 2;
-  int y = g_app->m_renderer->ScreenH() / 2;
+  int x = g_renderer->ScreenW() / 2;
+  int y = g_renderer->ScreenH() / 2;
   TextRenderer& font = g_gameFont;
 
   font.BeginText2D();
@@ -331,7 +333,7 @@ void Renderer::RenderFrame(bool withFlip)
 
   SetOpenGLState();
 
-  if (g_app->m_locationId == -1)
+  if (g_locationId == -1)
   {
     m_nearPlane = 50.0f;
     m_farPlane = 10000000.0f;
@@ -347,7 +349,7 @@ void Renderer::RenderFrame(bool withFlip)
 
   START_PROFILE(g_app->m_profiler, "Render Clear");
   RGBAColour* col = &g_app->m_backgroundColour;
-  if (g_app->m_location)
+  if (g_location)
     glClearColor(col->r / 255.0f, col->g / 255.0f, col->b / 255.0f, col->a / 255.0f);
   else
     glClearColor(0.05f, 0.0f, 0.05f, 0.1f);
@@ -356,22 +358,22 @@ void Renderer::RenderFrame(bool withFlip)
 
   bool deformStarted = false;
 
-  if (g_app->m_editing)
+  if (g_editing)
   {
-    if (g_app->m_locationId != -1)
+    if (g_locationId != -1)
     {
 #ifdef LOCATION_EDITOR
       SetupMatricesFor3D();
-      g_app->m_location->Render();
-      g_app->m_locationEditor->Render();
+      g_location->Render();
+      g_locationEditor->Render();
 #endif // LOCATION_EDITOR
     }
     else
-      g_app->m_globalWorld->Render();
+      g_globalWorld->Render();
   }
   else
   {
-    if (g_app->m_locationId != -1)
+    if (g_locationId != -1)
     {
       if (renderPixelShaderPref > 0)
       {
@@ -380,28 +382,28 @@ void Renderer::RenderFrame(bool withFlip)
           START_PROFILE(g_app->m_profiler, "Render Clear");
           glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
           END_PROFILE(g_app->m_profiler, "Render Clear");
-          g_app->m_location->Render();
+          g_location->Render();
 
           ApplyPixelEffect();
 
           SetupMatricesFor3D();
       }
       else
-        g_app->m_location->Render();
+        g_location->Render();
     }
     else
-      g_app->m_globalWorld->Render();
+      g_globalWorld->Render();
   }
 
   CHECK_OPENGL_STATE();
-  g_app->m_controlHelpSystem->Render();
+  g_controlHelpSystem->Render();
   g_explosionManager.Render();
-  g_app->m_particleSystem->Render();
+  g_particleSystem->Render();
 
-  g_app->m_userInput->Render();
+  g_userInput->Render();
   g_app->m_gameCursor->Render();
-  g_app->m_taskManagerInterface->Render();
-  g_app->m_camera->Render();
+  g_taskManagerInterface->Render();
+  g_camera->Render();
 
 #ifdef DEBUG_RENDER_ENABLED
   g_debugRenderer.Render();
@@ -430,7 +432,7 @@ void Renderer::RenderFrame(bool withFlip)
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     g_editorFont.DrawText2D(12, 10, DEF_FONT_SIZE, "FPS: %d", m_fps);
     //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "TFPS: %2.0f", g_targetFrameRate);
-    //		Vector3 const camPos = g_app->m_camera->GetPos();
+    //		Vector3 const camPos = g_camera->GetPos();
     //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "cam: %.1f, %.1f, %.1f", camPos.x, camPos.y, camPos.z);
   }
 
@@ -461,22 +463,22 @@ void Renderer::RenderFrame(bool withFlip)
     g_editorFont.DrawText2D(84, 10, DEF_FONT_SIZE, "InputMode: %s", inmode.c_str());
   }
 
-  if (g_app->m_editing)
+  if (g_editing)
   {
     g_gameFont.DrawText2DCentre(m_screenW / 2, 10, 17, "= EDITOR ENABLED =");
 
-    if (g_app->m_locationId != -1)
+    if (g_locationId != -1)
     {
       g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : %d",
-                              g_app->m_location->m_landscape.m_renderer->m_numTriangles);
+                              g_location->m_landscape.m_renderer->m_numTriangles);
       g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : %s", g_app->m_requestedMission);
       g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : %s", g_app->m_requestedMap);
     }
   }
 
-  if (g_app->m_server)
+  if (g_server)
   {
-    int latency = g_app->m_server->m_sequenceId - g_lastProcessedSequenceId;
+    int latency = g_server->m_sequenceId - g_lastProcessedSequenceId;
     if (latency > 10)
     {
       glColor4f(0.0f, 0.0f, 0.0f, 0.8f);
@@ -593,13 +595,13 @@ void Renderer::SetupProjMatrixFor3D() const
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  gluPerspective(g_app->m_camera->GetFov(), static_cast<float>(m_screenW) / static_cast<float>(m_screenH), // Aspect ratio
+  gluPerspective(g_camera->GetFov(), static_cast<float>(m_screenW) / static_cast<float>(m_screenH), // Aspect ratio
                  m_nearPlane, m_farPlane);
 }
 
 void Renderer::SetupMatricesFor3D() const
 {
-  Camera* camera = g_app->m_camera;
+  Camera* camera = g_camera;
 
   SetupProjMatrixFor3D();
   camera->SetupModelviewMatrix();
@@ -705,11 +707,11 @@ void Renderer::CheckOpenGLState() const
   glGetFloatv(GL_LIGHT_MODEL_AMBIENT, resultsf);
   DEBUG_ASSERT(resultsf[0] < 0.001f && resultsf[1] < 0.001f && resultsf[2] < 0.001f && resultsf[3] < 0.001f);
 
-  if (g_app->m_location)
+  if (g_location)
   {
-    for (int i = 0; i < g_app->m_location->m_lights.Size(); i++)
+    for (int i = 0; i < g_location->m_lights.Size(); i++)
     {
-      Light* light = g_app->m_location->m_lights.GetData(i);
+      Light* light = g_location->m_lights.GetData(i);
 
       float amb = 0.0f;
       GLfloat ambCol1[] = {amb, amb, amb, 1.0f};
@@ -746,10 +748,10 @@ void Renderer::CheckOpenGLState() const
   DEBUG_ASSERT(GetGLStateFloat(GL_FOG_END) >= 4000.0f);
   //DEBUG_ASSERT(GetGLStateFloat(GL_FOG_START) >= 1000.0f);
   glGetFloatv(GL_FOG_COLOR, resultsf);
-  //	DEBUG_ASSERT(fabsf(resultsf[0] - g_app->m_location->m_backgroundColour.r/255.0f) < 0.001f);
-  //	DEBUG_ASSERT(fabsf(resultsf[1] - g_app->m_location->m_backgroundColour.g/255.0f) < 0.001f);
-  //	DEBUG_ASSERT(fabsf(resultsf[2] - g_app->m_location->m_backgroundColour.b/255.0f) < 0.001f);
-  //	DEBUG_ASSERT(fabsf(resultsf[3] - g_app->m_location->m_backgroundColour.a/255.0f) < 0.001f);
+  //	DEBUG_ASSERT(fabsf(resultsf[0] - g_location->m_backgroundColour.r/255.0f) < 0.001f);
+  //	DEBUG_ASSERT(fabsf(resultsf[1] - g_location->m_backgroundColour.g/255.0f) < 0.001f);
+  //	DEBUG_ASSERT(fabsf(resultsf[2] - g_location->m_backgroundColour.b/255.0f) < 0.001f);
+  //	DEBUG_ASSERT(fabsf(resultsf[3] - g_location->m_backgroundColour.a/255.0f) < 0.001f);
   DEBUG_ASSERT(GetGLStateInt(GL_FOG_MODE) == GL_LINEAR);
   DEBUG_ASSERT(!glIsEnabled(GL_LINE_SMOOTH));
   DEBUG_ASSERT(!glIsEnabled(GL_POINT_SMOOTH));
@@ -803,10 +805,10 @@ void Renderer::SetOpenGLState() const
   glDisable(GL_LIGHT5);
   glDisable(GL_LIGHT6);
   glDisable(GL_LIGHT7);
-  if (g_app->m_location)
-    g_app->m_location->SetupLights();
+  if (g_location)
+    g_location->SetupLights();
   else
-    g_app->m_globalWorld->SetupLights();
+    g_globalWorld->SetupLights();
   float ambient[] = {0, 0, 0, 0};
   glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
 
@@ -815,10 +817,10 @@ void Renderer::SetOpenGLState() const
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glDisable(GL_ALPHA_TEST);
   glAlphaFunc(GL_GREATER, 0.01);
-  if (g_app->m_location)
-    g_app->m_location->SetupFog();
+  if (g_location)
+    g_location->SetupFog();
   else
-    g_app->m_globalWorld->SetupFog();
+    g_globalWorld->SetupFog();
   glDisable(GL_LINE_SMOOTH);
   glDisable(GL_POINT_SMOOTH);
 
@@ -931,17 +933,17 @@ void Renderer::PreRenderPixelEffect()
   float nearest = 99999.9f;
 
   float cutoff = 1000.0f;
-  Vector3 camPos = g_app->m_camera->GetPos();
+  Vector3 camPos = g_camera->GetPos();
 
   for (int t = 0; t < NUM_TEAMS; ++t)
   {
-    if (g_app->m_location->m_teams[t].m_teamType != Team::TeamTypeUnused)
+    if (g_location->m_teams[t].m_teamType != Team::TeamTypeUnused)
     {
-      for (int i = 0; i < g_app->m_location->m_teams[t].m_units.Size(); ++i)
+      for (int i = 0; i < g_location->m_teams[t].m_units.Size(); ++i)
       {
-        if (g_app->m_location->m_teams[t].m_units.ValidIndex(i))
+        if (g_location->m_teams[t].m_units.ValidIndex(i))
         {
-          Unit* unit = g_app->m_location->m_teams[t].m_units[i];
+          Unit* unit = g_location->m_teams[t].m_units[i];
           if (unit->m_troopType == Entity::TypeInsertionSquadie || unit->m_troopType == Entity::TypeCentipede)
           {
             if (unit->IsInView())
@@ -961,7 +963,7 @@ void Renderer::PreRenderPixelEffect()
                       rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
                     if (rendered)
                     {
-                      float distance = (entity->m_pos - g_app->m_camera->GetPos()).Mag();
+                      float distance = (entity->m_pos - g_camera->GetPos()).Mag();
                       if (distance < nearest)
                         nearest = distance;
                     }
@@ -973,24 +975,24 @@ void Renderer::PreRenderPixelEffect()
         }
       }
 
-      for (int i = 0; i < g_app->m_location->m_teams[t].m_others.Size(); ++i)
+      for (int i = 0; i < g_location->m_teams[t].m_others.Size(); ++i)
       {
-        if (g_app->m_location->m_teams[t].m_others.ValidIndex(i))
+        if (g_location->m_teams[t].m_others.ValidIndex(i))
         {
-          Entity* entity = g_app->m_location->m_teams[t].m_others[i];
+          Entity* entity = g_location->m_teams[t].m_others[i];
           if (entity->IsInView())
           {
             float distance = (entity->m_pos - camPos).Mag();
             if (distance < cutoff)
             {
               bool rendered = false;
-              if (i <= g_app->m_location->m_teams[t].m_others.GetLastUpdated())
+              if (i <= g_location->m_teams[t].m_others.GetLastUpdated())
                 rendered = entity->RenderPixelEffect(g_predictionTime);
               else
                 rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
               if (rendered)
               {
-                float distance = (entity->m_pos - g_app->m_camera->GetPos()).Mag();
+                float distance = (entity->m_pos - g_camera->GetPos()).Mag();
                 if (distance < nearest)
                   nearest = distance;
               }
@@ -1001,18 +1003,18 @@ void Renderer::PreRenderPixelEffect()
     }
   }
 
-  for (int i = 0; i < g_app->m_location->m_buildings.Size(); ++i)
+  for (int i = 0; i < g_location->m_buildings.Size(); ++i)
   {
-    if (g_app->m_location->m_buildings.ValidIndex(i))
+    if (g_location->m_buildings.ValidIndex(i))
     {
-      Building* building = g_app->m_location->m_buildings[i];
+      Building* building = g_location->m_buildings[i];
       float distance = (building->m_centrePos - camPos).Mag();
       if (distance < cutoff)
       {
         bool rendered = building->RenderPixelEffect(g_predictionTime);
         if (rendered)
         {
-          float distance = (building->m_pos - g_app->m_camera->GetPos()).Mag();
+          float distance = (building->m_pos - g_camera->GetPos()).Mag();
           if (distance < nearest)
             nearest = distance;
         }
@@ -1061,8 +1063,8 @@ void Renderer::PaintPixels()
 {
 #if USE_PIXEL_EFFECT_GRID_OPTIMISATION
   const double aspectRatio = static_cast<double>(m_screenW) / static_cast<double>(m_screenH);
-  double zoomCorrection = 0.000037 * static_cast<double>(g_app->m_camera->GetFov());
-  double scale = (0.017 + zoomCorrection) * static_cast<double>(g_app->m_camera->GetFov());
+  double zoomCorrection = 0.000037 * static_cast<double>(g_camera->GetFov());
+  double scale = (0.017 + zoomCorrection) * static_cast<double>(g_camera->GetFov());
 
   const double step = scale * aspectRatio / static_cast<double>(PIXEL_EFFECT_GRID_RES);
   const double xOffset = scale * (-0.5 * aspectRatio);
@@ -1329,7 +1331,7 @@ const double* Renderer::GetTotalMatrix() { return m_totalMatrix; }
 void Renderer::RasteriseSphere(const Vector3& _pos, float _radius)
 {
   const float screenToGridFactor = static_cast<float>(PIXEL_EFFECT_GRID_RES) / static_cast<float>(m_screenW);
-  Camera* cam = g_app->m_camera;
+  Camera* cam = g_camera;
   Vector3 centre;
   Vector3 topLeft;
   Vector3 bottomRight;
@@ -1368,7 +1370,7 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
 
   // Return early if this shape fragment isn't on the screen
   {
-    if (!g_app->m_camera->SphereInViewFrustum(worldPos, _frag->m_radius))
+    if (!g_camera->SphereInViewFrustum(worldPos, _frag->m_radius))
       return;
   }
 

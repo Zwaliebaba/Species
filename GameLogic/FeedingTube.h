@@ -1,5 +1,4 @@
-#ifndef _included_feedingtube_h
-#define _included_feedingtube_h
+#pragma once
 
 
 class FeedingTube : public Building
@@ -43,4 +42,3 @@ public:
 
 
 
-#endif

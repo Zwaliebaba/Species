@@ -28,6 +28,8 @@
 #include "ConstructionYard.h"
 #include "GodDish.h"
 #include "Rocket.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 //*****************************************************************************
 // Private Functions
@@ -52,81 +54,81 @@ bool Script::IsRunningScript() { return (m_in != nullptr); }
 
 void Script::RunCommand_CamCut(const char* _mountName)
 {
-  if (!g_app->m_location)
+  if (!g_location)
     return;
 
-  bool mountFound = g_app->m_camera->SetTarget(_mountName);
+  bool mountFound = g_camera->SetTarget(_mountName);
   DEBUG_ASSERT(mountFound);
-  g_app->m_camera->CutToTarget();
+  g_camera->CutToTarget();
 }
 
 void Script::RunCommand_CamMove(const char* _mountName, float _duration)
 {
-  if (!g_app->m_location)
+  if (!g_location)
     return;
 
-  if (g_app->m_camera->SetTarget(_mountName))
+  if (g_camera->SetTarget(_mountName))
   {
-    g_app->m_camera->SetMoveDuration(_duration);
+    g_camera->SetMoveDuration(_duration);
 
-    g_app->m_camera->RequestMode(Camera::ModeMoveToTarget);
+    g_camera->RequestMode(Camera::ModeMoveToTarget);
   }
 }
 
 void Script::RunCommand_CamAnim(const char* _animName)
 {
-  if (!g_app->m_location)
+  if (!g_location)
     return;
 
-  int animId = g_app->m_location->m_levelFile->GetCameraAnimId(_animName);
+  int animId = g_location->m_levelFile->GetCameraAnimId(_animName);
   ASSERT_TEXT(animId != -1, "Invalid camera animation requested %s", _animName);
-  CameraAnimation* camAnim = g_app->m_location->m_levelFile->m_cameraAnimations[animId];
-  g_app->m_camera->PlayAnimation(camAnim);
+  CameraAnimation* camAnim = g_location->m_levelFile->m_cameraAnimations[animId];
+  g_camera->PlayAnimation(camAnim);
 }
 
 void Script::RunCommand_CamFov(float _fov, bool _immediate)
 {
   if (_immediate)
-    g_app->m_camera->SetFOV(_fov);
+    g_camera->SetFOV(_fov);
   else
-    g_app->m_camera->SetTargetFOV(_fov);
+    g_camera->SetTargetFOV(_fov);
 }
 
 void Script::RunCommand_CamBuildingFocus(int _buildingId, float _range, float _height)
 {
-  if (!g_app->m_location)
+  if (!g_location)
     return;
 
-  Building* building = g_app->m_location->GetBuilding(_buildingId);
+  Building* building = g_location->GetBuilding(_buildingId);
 
   if (building)
-    g_app->m_camera->RequestBuildingFocusMode(building, _range, _height);
+    g_camera->RequestBuildingFocusMode(building, _range, _height);
   else
     DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
 }
 
 void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float _height, float _duration)
 {
-  if (!g_app->m_location)
+  if (!g_location)
     return;
 
-  Building* building = g_app->m_location->GetBuilding(_buildingId);
+  Building* building = g_location->GetBuilding(_buildingId);
 
   if (building)
   {
-    g_app->m_camera->SetTarget(building->m_centrePos, _range, _height);
-    g_app->m_camera->SetMoveDuration(_duration);
-    g_app->m_camera->RequestMode(Camera::ModeMoveToTarget);
+    g_camera->SetTarget(building->m_centrePos, _range, _height);
+    g_camera->SetMoveDuration(_duration);
+    g_camera->RequestMode(Camera::ModeMoveToTarget);
   }
   else
     DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
 }
 
-void Script::RunCommand_CamGlobalWorldFocus() { g_app->m_camera->RequestSphereFocusMode(); }
+void Script::RunCommand_CamGlobalWorldFocus() { g_camera->RequestSphereFocusMode(); }
 
 void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
 {
-  if (g_app->m_location)
+  if (g_location)
     return;
 
   Vector3 targetPos;
@@ -135,38 +137,38 @@ void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
     targetPos = g_zeroVector;
   else
   {
-    int locationId = g_app->m_globalWorld->GetLocationId(_locationName);
+    int locationId = g_globalWorld->GetLocationId(_locationName);
     if (locationId == -1)
       return;
 
-    targetPos = g_app->m_globalWorld->GetLocationPosition(locationId);
+    targetPos = g_globalWorld->GetLocationPosition(locationId);
   }
 
-  if (!g_app->m_camera->IsInMode(Camera::ModeSphereWorldScripted))
-    g_app->m_camera->RequestMode(Camera::ModeSphereWorldScripted);
+  if (!g_camera->IsInMode(Camera::ModeSphereWorldScripted))
+    g_camera->RequestMode(Camera::ModeSphereWorldScripted);
 
-  g_app->m_camera->SetTargetFOV(_fov);
-  g_app->m_camera->SetTarget(targetPos, Vector3(0, 0, 1), g_upVector);
+  g_camera->SetTargetFOV(_fov);
+  g_camera->SetTarget(targetPos, Vector3(0, 0, 1), g_upVector);
 }
 
 void Script::RunCommand_CamReset()
 {
-  if (g_app->m_camera->IsAnimPlaying())
-    g_app->m_camera->StopAnimation();
+  if (g_camera->IsAnimPlaying())
+    g_camera->StopAnimation();
 
-  if (g_app->m_location)
-    g_app->m_camera->RequestMode(Camera::ModeFreeMovement);
+  if (g_location)
+    g_camera->RequestMode(Camera::ModeFreeMovement);
   else
-    g_app->m_camera->RequestMode(Camera::ModeSphereWorld);
+    g_camera->RequestMode(Camera::ModeSphereWorld);
 }
 
 void Script::RunCommand_EnterLocation(char* _name)
 {
-  g_app->m_requestedLocationId = g_app->m_globalWorld->GetLocationId(_name);
+  g_requestedLocationId = g_globalWorld->GetLocationId(_name);
 
-  m_requestedLocationId = g_app->m_requestedLocationId;
+  m_requestedLocationId = g_requestedLocationId;
 
-  GlobalLocation* loc = g_app->m_globalWorld->GetLocation(g_app->m_requestedLocationId);
+  GlobalLocation* loc = g_globalWorld->GetLocation(g_requestedLocationId);
   DEBUG_ASSERT(loc);
 
   strcpy(g_app->m_requestedMission, loc->m_missionFilename);
@@ -175,16 +177,16 @@ void Script::RunCommand_EnterLocation(char* _name)
 
 void Script::RunCommand_ExitLocation()
 {
-  g_app->m_requestedLocationId = -1;
+  g_requestedLocationId = -1;
   g_app->m_requestedMission[0] = '\0';
   g_app->m_requestedMap[0] = '\0';
 
-  m_requestedLocationId = g_app->m_requestedLocationId;
+  m_requestedLocationId = g_requestedLocationId;
 }
 
 void Script::RunCommand_SetMission(char* _locName, char* _missionName)
 {
-  GlobalLocation* loc = g_app->m_globalWorld->GetLocation(_locName);
+  GlobalLocation* loc = g_globalWorld->GetLocation(_locName);
   DEBUG_ASSERT(loc);
   strcpy(loc->m_missionFilename, _missionName);
   loc->m_missionCompleted = false;
@@ -241,7 +243,7 @@ void Script::RunCommand_GiveResearch(const char* _name)
     g_prefsManager->SetInt("ModSystemEnabled", 1);
     g_prefsManager->Save();
 
-    g_app->m_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, 999, 4.0f);
+    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, 999, 4.0f);
   }
   else if (stricmp(_name, "accessallareas") == 0)
   {
@@ -256,15 +258,15 @@ void Script::RunCommand_GiveResearch(const char* _name)
     if (!success)
       DebugTrace("failed to create folder %s\n", folderName);
 
-    g_app->m_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
+    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
   }
   else
   {
     int researchType = GlobalResearch::GetType((char*)_name);
     if (researchType != -1)
     {
-      g_app->m_globalWorld->m_research->AddResearch(researchType);
-      g_app->m_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, researchType, 4.0f);
+      g_globalWorld->m_research->AddResearch(researchType);
+      g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, researchType, 4.0f);
     }
   }
 }
@@ -276,7 +278,7 @@ void Script::RunCommand_GameOver()
   //
   // Go into the outro camera mode
 
-  g_app->m_camera->RequestMode(Camera::ModeSphereWorldOutro);
+  g_camera->RequestMode(Camera::ModeSphereWorldOutro);
 
   //
   // Kill global world ambiences
@@ -286,22 +288,22 @@ void Script::RunCommand_GameOver()
 
 void Script::RunCommand_ResetResearch()
 {
-  m_darwinianResearchLevel = g_app->m_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian];
-  g_app->m_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian] = 1;
+  m_darwinianResearchLevel = g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian];
+  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian] = 1;
 }
 
 void Script::RunCommand_RestoreResearch()
 {
-  g_app->m_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian] = m_darwinianResearchLevel;
+  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian] = m_darwinianResearchLevel;
 }
 
 GodDish* GetGodDish()
 {
-  for (int i = 0; i < g_app->m_location->m_buildings.Size(); ++i)
+  for (int i = 0; i < g_location->m_buildings.Size(); ++i)
   {
-    if (g_app->m_location->m_buildings.ValidIndex(i))
+    if (g_location->m_buildings.ValidIndex(i))
     {
-      Building* building = g_app->m_location->m_buildings[i];
+      Building* building = g_location->m_buildings[i];
       if (building && building->m_type == Building::TypeGodDish)
       {
         auto dish = static_cast<GodDish*>(building);
@@ -354,7 +356,7 @@ void Script::RunCommand_PurityControl()
   // Delete the save game
 
   char saveDir[256];
-  sprintf(saveDir, "users/%s/", g_app->m_userProfileName);
+  sprintf(saveDir, "users/%s/", g_userProfileName);
   LList<char*>* allFiles = ListDirectory(saveDir, "*.*");
 
   for (int i = 0; i < allFiles->Size(); ++i)
@@ -376,7 +378,7 @@ void Script::RunCommand_PurityControl()
 
 void Script::RunCommand_ShowDarwinLogo()
 {
-  g_app->m_renderer->m_renderDarwinLogo = GetHighResTime();
+  TheRenderer()->m_renderDarwinLogo = GetHighResTime();
   g_app->m_soundSystem->TriggerOtherEvent(nullptr, "ShowLogo", SoundSourceBlueprint::TypeInterface);
 }
 
@@ -386,21 +388,21 @@ void Script::RunCommand_PermitEscape() { m_permitEscape = true; }
 
 void Script::RunCommand_DestroyBuilding(int _buildingId, float _intensity)
 {
-  Building* b = g_app->m_location->GetBuilding(_buildingId);
+  Building* b = g_location->GetBuilding(_buildingId);
   if (b)
     b->Destroy(_intensity);
 }
 
 void Script::RunCommand_ActivateTrunkPort(int _buildingId, bool _fullActivation)
 {
-  Building* b = g_app->m_location->GetBuilding(_buildingId);
+  Building* b = g_location->GetBuilding(_buildingId);
   if (b && b->m_type == Building::TypeTrunkPort)
   {
     if (_fullActivation)
       b->ReprogramComplete();
     else
     {
-      GlobalBuilding* gb = g_app->m_globalWorld->GetBuilding(b->m_id.GetUniqueId(), g_app->m_locationId);
+      GlobalBuilding* gb = g_globalWorld->GetBuilding(b->m_id.GetUniqueId(), g_locationId);
       gb->m_online = true;
     }
   }
@@ -443,7 +445,7 @@ bool Script::Skip()
   m_waitForCamera = false;
   m_waitForRocket = false;
   m_waitForPlayerNotBusy = false;
-  g_app->m_renderer->m_renderDarwinLogo = -1.0f;
+  TheRenderer()->m_renderDarwinLogo = -1.0f;
 
   if (m_permitEscape)
   {
@@ -452,10 +454,10 @@ bool Script::Skip()
     m_in = nullptr;
     g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Music");
     m_permitEscape = false;
-    if (g_app->m_location)
-      g_app->m_camera->RequestMode(Camera::ModeFreeMovement);
+    if (g_location)
+      g_camera->RequestMode(Camera::ModeFreeMovement);
     else
-      g_app->m_camera->RequestMode(Camera::ModeSphereWorld);
+      g_camera->RequestMode(Camera::ModeSphereWorld);
     return true;
   }
 
@@ -469,18 +471,18 @@ void Script::Advance()
       return;
 
   if (m_permitEscape)
-    g_app->m_taskManagerInterface->SetVisible(false);
+    g_taskManagerInterface->SetVisible(false);
 
-  if (m_waitForFade && !g_app->m_renderer->IsFadeComplete())
+  if (m_waitForFade && !TheRenderer()->IsFadeComplete())
     return;
   if (m_waitUntil > g_gameTime)
     return;
-  if (m_waitForCamera && g_app->m_camera->IsAnimPlaying())
+  if (m_waitForCamera && g_camera->IsAnimPlaying())
     return;
 
   if (m_waitForRocket)
   {
-    auto rocket = static_cast<EscapeRocket*>(g_app->m_location->GetBuilding(m_rocketId));
+    auto rocket = static_cast<EscapeRocket*>(g_location->GetBuilding(m_rocketId));
     if (!rocket || rocket->m_type != Building::TypeEscapeRocket)
     {
       m_waitForRocket = false;
@@ -497,7 +499,7 @@ void Script::Advance()
 
   if (m_requestedLocationId != -1)
   {
-    if (g_app->m_locationId != m_requestedLocationId)
+    if (g_locationId != m_requestedLocationId)
       return;
     m_requestedLocationId = -1;
   }

@@ -1,6 +1,5 @@
 
-#ifndef _included_clouds_h
-#define _included_clouds_h
+#pragma once
 
 #include "Vector3.h"
 
@@ -27,4 +26,3 @@ public:
 };
 
 
-#endif

@@ -16,10 +16,9 @@
 #include "UserProfileWindow.h"
 #include "ReallyQuitWindow.h"
 
-#include "App.h"
 #include "Camera.h"
-#include "Renderer.h"
-#include "UserInput.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 // ****************************************************************************
 // Menu Buttons
@@ -216,7 +215,7 @@ void DebugMenu::Render(bool hasFocus)
 	DEBUG_ASSERT(camDbgButton);
 	int y = m_y + camDbgButton->m_y + 11;
 
-	switch (g_app->m_camera->GetDebugMode())
+	switch (g_camera->GetDebugMode())
 	{
 		case Camera::DebugModeAlways:
 			g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Always");
@@ -256,7 +255,7 @@ void DebugKeyBindings::ProfileButton()
         ProfileWindow *pw = new ProfileWindow("Profiler");
         pw->m_w = 570;
         pw->m_h = 450;
-        pw->m_x = g_app->m_renderer->ScreenW() - pw->m_w - 20;
+        pw->m_x = g_renderer->ScreenW() - pw->m_w - 20;
         pw->m_y = 30;
         EclRegisterWindow(pw);
     }
@@ -272,7 +271,7 @@ void DebugKeyBindings::NetworkButton()
         nw->m_w = 200;
         nw->m_h = 200;
         nw->m_x = 10;
-        nw->m_y = g_app->m_renderer->ScreenH() - nw->m_h;
+        nw->m_y = g_renderer->ScreenH() - nw->m_h;
         EclRegisterWindow(nw);
     }
 }
@@ -281,20 +280,17 @@ void DebugKeyBindings::NetworkButton()
 #ifdef LOCATION_EDITOR
 void DebugKeyBindings::EditorButton()
 {
-	g_app->m_requestToggleEditing = true;
+	g_requestToggleEditing = true;
 }
 #endif // LOCATION_EDITOR
 
 
 void DebugKeyBindings::DebugCameraButton()
 {
-	g_app->m_camera->SetNextDebugMode();
+	g_camera->SetNextDebugMode();
 }
 
-void DebugKeyBindings::FPSButton()
-{
-	g_app->m_renderer->m_displayFPS = !g_app->m_renderer->m_displayFPS;
-}
+void DebugKeyBindings::FPSButton() { g_renderer->SetDisplayFps(!g_renderer->DisplayFps()); }
 
 
 #ifdef CHEATMENU_ENABLED

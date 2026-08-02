@@ -15,20 +15,16 @@
 #include "Input.h"
 #include "InputTypes.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "Explosion.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "Team.h"
-#include "UserInput.h"
 #include "TaskManager.h"
 #include "RoutingSystem.h"
 #include "ParticleSystem.h"
 #include "EntityGrid.h"
 #include "ObstructionGrid.h"
-#include "Main.h"
-#include "GameCursor.h"
+#include "GameTime.h"
 
 #include "GlobalWorld.h"
 
@@ -36,6 +32,7 @@
 
 #include "InsertionSquad.h"
 #include "Teleport.h"
+#include "WorldPointers.h"
 
 
 unsigned int HistoricWayPoint::s_lastId = 0;
@@ -76,7 +73,7 @@ Entity *InsertionSquad::GetPointMan()
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 /*Entity *InsertionSquad::GetFirstValidUnit()
@@ -93,7 +90,7 @@ Entity *InsertionSquad::GetPointMan()
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 */
 
@@ -119,7 +116,7 @@ void InsertionSquad::SetWayPoint(Vector3 const &_pos)
 
     // If this squad is using a Controller, update the Route
     // that the Controller points to
-    Task *controller = g_app->m_taskManager->GetTask( m_controllerId );
+    Task *controller = g_taskManager->GetTask( m_controllerId );
     if( controller )
     {
         Vector3 lastAddedPos = controller->m_route->m_wayPoints[ controller->m_route->m_wayPoints.Size()-1 ]->GetPos();
@@ -134,11 +131,11 @@ void InsertionSquad::SetWayPoint(Vector3 const &_pos)
     //
     // If we clicked near a teleport, tell the unit to go into it
     m_teleportId = -1;
-    LList<int> *nearbyBuildings = g_app->m_location->m_obstructionGrid->GetBuildings( _pos.x, _pos.z );
+    LList<int> *nearbyBuildings = g_location->m_obstructionGrid->GetBuildings( _pos.x, _pos.z );
     for( int i = 0; i < nearbyBuildings->Size(); ++i )
     {
         int buildingId = nearbyBuildings->GetData(i);
-        Building *building = g_app->m_location->GetBuilding( buildingId );
+        Building *building = g_location->GetBuilding( buildingId );
         if( building->m_type == Building::TypeRadarDish ||
             building->m_type == Building::TypeBridge )
         {
@@ -219,7 +216,7 @@ void InsertionSquad::Attack( Vector3 pos, bool withGrenade )
 	if (withGrenade)
 	{
         float nearest = 999999.9f;
-        Squadie *nearestEnt = NULL;
+        Squadie *nearestEnt = nullptr;
 
         //
         // Find the entity nearest to the target that has a grenade
@@ -307,7 +304,7 @@ void InsertionSquad::DirectControl( TeamControls const& _teamControls )
 	}
 	Squadie *pointMan = (Squadie *)point;
 
-	Vector3 right = g_app->m_camera->GetControlVector();
+	Vector3 right = g_camera->GetControlVector();
 	Vector3 front = g_upVector ^ -right;
 
 	if( _teamControls.m_directUnitMove )
@@ -318,11 +315,11 @@ void InsertionSquad::DirectControl( TeamControls const& _teamControls )
 		t.z+= _teamControls.m_directUnitMoveDy;
         //t+= front * - _teamControls.m_directUnitMoveDy;
 
-        LList<int> *nearbyBuildings = g_app->m_location->m_obstructionGrid->GetBuildings( t.x, t.z );
+        LList<int> *nearbyBuildings = g_location->m_obstructionGrid->GetBuildings( t.x, t.z );
         for( int i = 0; i < nearbyBuildings->Size(); ++i )
         {
             int buildingId = nearbyBuildings->GetData(i);
-            Building *building = g_app->m_location->GetBuilding( buildingId );
+            Building *building = g_location->GetBuilding( buildingId );
             if( building->m_type == Building::TypeRadarDish ||
                 building->m_type == Building::TypeBridge )
             {
@@ -363,7 +360,7 @@ Squadie::Squadie()
     m_secondaryTimer(0.0f),
     m_retargetTimer(0.0f)
 {
-    m_shape = g_app->m_resource->GetShape( "Squad.shp" );
+    m_shape = g_resource->GetShape( "Squad.shp" );
     DEBUG_ASSERT( m_shape );
 
 	m_centrePos = m_shape->CalculateCentre(g_identityMatrix34);
@@ -390,14 +387,14 @@ void Squadie::ChangeHealth( int _amount )
     {
         if( _amount < 0 )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
+            g_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
         }
 
         if( m_stats[StatHealth] + _amount <= 0 )
         {
             m_stats[StatHealth] = 100;
             m_dead = true;
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Die" );
+            g_soundSystem->TriggerEntityEvent( this, "Die" );
         }
         else if( m_stats[StatHealth] + _amount > 255 )
         {
@@ -426,7 +423,7 @@ bool Squadie::Advance(Unit *_theUnit)
         if( m_secondaryTimer <= 0.0f )
         {
             // Secondary weapon is reloaded
-            g_app->m_soundSystem->TriggerEntityEvent( this, "WeaponReturns" );
+            g_soundSystem->TriggerEntityEvent( this, "WeaponReturns" );
         }
     }
 
@@ -454,10 +451,10 @@ bool Squadie::Advance(Unit *_theUnit)
             // Speed up if going down hill
 
             Vector3 nextPos = m_pos + m_vel * SERVER_ADVANCE_PERIOD;
-            nextPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
-            float currentHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
-            float nextHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( nextPos.x, nextPos.z );
-            Vector3 landNormal = g_app->m_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
+            nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
+            float currentHeight = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+            float nextHeight = g_location->m_landscape.m_heightMap->GetValue( nextPos.x, nextPos.z );
+            Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
             float factor = 1.0f - (currentHeight - nextHeight) / -3.0f;
             if( factor < 0.2f ) factor = 0.2f;
             if( factor > 2.0f ) factor = 2.0f;
@@ -470,10 +467,10 @@ bool Squadie::Advance(Unit *_theUnit)
 			}
             m_pos += m_vel * SERVER_ADVANCE_PERIOD;
             m_pos = PushFromObstructions( m_pos );
-			m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 0.1f;
+			m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 0.1f;
 		}
 
-    	Team *team = &g_app->m_location->m_teams[m_id.GetTeamId()];
+    	Team *team = &g_location->m_teams[m_id.GetTeamId()];
 		if (m_id.GetUnitId() == team->m_currentUnitId)
 		{
 			Vector3 toMouse = team->m_currentMousePos - m_pos;
@@ -494,7 +491,7 @@ bool Squadie::Advance(Unit *_theUnit)
 
             RunAI();
 
-            Entity *enemy = g_app->m_location->GetEntity( m_enemyId );
+            Entity *enemy = g_location->GetEntity( m_enemyId );
             if( enemy )
             {
                 m_angVel = ((m_pos - enemy->m_pos).Normalise() ^ m_front) * 4.0f;
@@ -524,12 +521,12 @@ bool Squadie::Advance(Unit *_theUnit)
         }
     }
 
-	if( !m_onGround ) AdvanceInAir(NULL);
+	if( !m_onGround ) AdvanceInAir(nullptr);
 
     m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
 
-    float worldSizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float worldSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float worldSizeX = g_location->m_landscape.GetWorldSizeX();
+    float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
     if( m_pos.x < 0.0f ) m_pos.x = 0.0f;
     if( m_pos.z < 0.0f ) m_pos.z = 0.0f;
     if( m_pos.x >= worldSizeX ) m_pos.x = worldSizeX;
@@ -563,12 +560,12 @@ void Squadie::Render( float _predictionTime )
     Vector3 predictedPos = m_pos + m_vel * _predictionTime;
     if( m_onGround )
     {
-        predictedPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
+        predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
     }
 
     float size = 0.5f;
 
-    Vector3 entityUp = g_upVector;          //g_app->m_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
+    Vector3 entityUp = g_upVector;          //g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
     Vector3 entityFront = m_front;
     entityFront.Normalise();
     Vector3 entityRight = entityFront ^ entityUp;
@@ -579,7 +576,7 @@ void Squadie::Render( float _predictionTime )
         //
         // 3d Shape
 
-		g_app->m_renderer->SetObjectLighting();
+		g_renderer->SetObjectLighting();
         glDisable       (GL_TEXTURE_2D);
         glEnable        (GL_COLOR_MATERIAL);
         glDisable       (GL_BLEND);
@@ -607,7 +604,7 @@ void Squadie::Render( float _predictionTime )
         glBlendFunc     ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
         glDisable       (GL_COLOR_MATERIAL);
         glEnable        (GL_TEXTURE_2D);
-		g_app->m_renderer->UnsetObjectLighting();
+		g_renderer->UnsetObjectLighting();
     }
 }
 
@@ -624,19 +621,19 @@ bool Squadie::RenderPixelEffect( float _predictionTime )
     Vector3 predictedPos = m_pos + m_vel * _predictionTime;
     if( m_onGround )
     {
-        predictedPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
+        predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
     }
 
     float size = 0.5f;
 
-    Vector3 entityUp = g_upVector;          //g_app->m_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
+    Vector3 entityUp = g_upVector;          //g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
     Vector3 entityFront = m_front;
     entityFront.Normalise();
     Vector3 entityRight = entityFront ^ entityUp;
     entityUp = entityRight ^ entityFront;
 
     Matrix34 mat(entityFront, entityUp, predictedPos);
-    g_app->m_renderer->MarkUsedCells(m_shape, mat);
+    g_renderer->MarkUsedCells(m_shape, mat);
 
     return true;
 }
@@ -651,7 +648,7 @@ void Squadie::RunAI()
 
     if( m_retargetTimer <= 0.0f )
     {
-        m_enemyId = g_app->m_location->m_entityGrid->GetBestEnemy( m_pos.x, m_pos.z, 0.0f, 100.0f, m_id.GetTeamId() );
+        m_enemyId = g_location->m_entityGrid->GetBestEnemy( m_pos.x, m_pos.z, 0.0f, 100.0f, m_id.GetTeamId() );
         m_retargetTimer = 1.0f;
     }
 
@@ -659,7 +656,7 @@ void Squadie::RunAI()
     //
     // Fire at the nearest enemy now and then
 
-    Entity *enemy = g_app->m_location->GetEntity( m_enemyId );;
+    Entity *enemy = g_location->GetEntity( m_enemyId );;
     if( enemy )
     {
         float distance = (enemy->m_pos - m_pos).Mag();
@@ -686,7 +683,7 @@ void Squadie::Attack( Vector3 const &_pos )
 				       _pos.y,
 				       _pos.z + syncsfrand(7.0f) );
 	    Vector3 velocity = (toPos - fromPos).SetLength(200.0f);
-        g_app->m_location->FireLaser( fromPos, velocity, m_id.GetTeamId() );
+        g_location->FireLaser( fromPos, velocity, m_id.GetTeamId() );
         m_justFired = true;
 
         //
@@ -695,14 +692,14 @@ void Squadie::Attack( Vector3 const &_pos )
         Matrix34 brass = m_brass->GetWorldMatrix( mat );
         Vector3 particleVel = brass.f * ( 5.0f + syncfrand(10.0f));
         particleVel += Vector3( syncsfrand(5.0f), syncsfrand(5.0f), syncsfrand(5.0f) );
-        g_app->m_particleSystem->CreateParticle( brass.pos, particleVel, Particle::TypeBrass );
+        g_particleSystem->CreateParticle( brass.pos, particleVel, Particle::TypeBrass );
 
 
         //
         //
         m_reloading = m_stats[StatRate];
-        g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
-        g_app->m_soundSystem->TriggerEntityEvent( this, "FireLaser" );
+        g_soundSystem->TriggerEntityEvent( this, "Attack" );
+        g_soundSystem->TriggerEntityEvent( this, "FireLaser" );
     }
 }
 
@@ -715,10 +712,10 @@ bool Squadie::HasSecondaryWeapon()
 
 void Squadie::FireSecondaryWeapon( Vector3 const &_pos )
 {
-    InsertionSquad *squad = (InsertionSquad *) g_app->m_location->GetUnit( m_id );
+    InsertionSquad *squad = (InsertionSquad *) g_location->GetUnit( m_id );
     DEBUG_ASSERT(squad);
 
-    if( g_app->m_globalWorld->m_research->HasResearch( squad->m_weaponType ) )
+    if( g_globalWorld->m_research->HasResearch( squad->m_weaponType ) )
     {
         Matrix34 mat( m_front, g_upVector, m_pos );
         Vector3 laserPos = m_laser->GetWorldMatrix( mat ).pos;
@@ -726,26 +723,26 @@ void Squadie::FireSecondaryWeapon( Vector3 const &_pos )
         switch( squad->m_weaponType )
         {
             case GlobalResearch::TypeGrenade:
-                g_app->m_soundSystem->TriggerEntityEvent( this, "ThrowGrenade" );
-                g_app->m_location->ThrowWeapon( laserPos, _pos, EffectThrowableGrenade, m_id.GetTeamId() );
+                g_soundSystem->TriggerEntityEvent( this, "ThrowGrenade" );
+                g_location->ThrowWeapon( laserPos, _pos, EffectThrowableGrenade, m_id.GetTeamId() );
                 m_secondaryTimer = 4.0f;
                 break;
 
             case GlobalResearch::TypeAirStrike:
-                g_app->m_soundSystem->TriggerEntityEvent( this, "ThrowAirStrike" );
-                g_app->m_location->ThrowWeapon( laserPos, _pos, EffectThrowableAirstrikeMarker, m_id.GetTeamId() );
+                g_soundSystem->TriggerEntityEvent( this, "ThrowAirStrike" );
+                g_location->ThrowWeapon( laserPos, _pos, EffectThrowableAirstrikeMarker, m_id.GetTeamId() );
                 m_secondaryTimer = 20.0f;
                 break;
 
             case GlobalResearch::TypeController:
-                g_app->m_soundSystem->TriggerEntityEvent( this, "ThrowController" );
-                g_app->m_location->ThrowWeapon( laserPos, _pos, EffectThrowableControllerGrenade, m_id.GetTeamId() );
+                g_soundSystem->TriggerEntityEvent( this, "ThrowController" );
+                g_location->ThrowWeapon( laserPos, _pos, EffectThrowableControllerGrenade, m_id.GetTeamId() );
                 m_secondaryTimer = 4.0f;
                 break;
 
             case GlobalResearch::TypeRocket:
-                g_app->m_soundSystem->TriggerEntityEvent( this, "FireRocket" );
-                g_app->m_location->FireRocket( laserPos, _pos, m_id.GetTeamId() );
+                g_soundSystem->TriggerEntityEvent( this, "FireRocket" );
+                g_location->FireRocket( laserPos, _pos, m_id.GetTeamId() );
                 m_secondaryTimer = 4.0f;
                 break;
         }
@@ -768,7 +765,7 @@ void Squadie::ListSoundEvents( LList<char const *> *_list )
 Vector3 Squadie::GetCameraFocusPoint()
 {
 	if( g_inputManager->controlEvent( ControlUnitPrimaryFireDirected /* ControlUnitStartSecondaryFireDirected */ ) &&
-        g_app->m_camera->IsInMode( Camera::ModeEntityTrack ) )
+        g_camera->IsInMode( Camera::ModeEntityTrack ) )
 	{
 		InputDetails details;
         g_inputManager->controlEvent( ControlUnitPrimaryFireDirected, details );
@@ -788,13 +785,13 @@ Vector3 Squadie::GetSecondaryWeaponTarget()
 
 	Vector3 t = m_pos;
 
-	Vector3 front = (m_pos - g_app->m_camera->GetPos() );
+	Vector3 front = (m_pos - g_camera->GetPos() );
 	front.y = 0.0f;
 	front.Normalise();
 	Vector3 right = front;
 	right.RotateAroundY( M_PI / 2.0f );
 
-	float force = ThrowableWeapon::GetMaxForce( g_app->m_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeGrenade ) );
+	float force = ThrowableWeapon::GetMaxForce( g_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeGrenade ) );
 	float maxRange = ThrowableWeapon::GetApproxMaxRange( force );
 
 	//float total = abs(details.x) + abs(details.y);
@@ -813,7 +810,7 @@ Vector3 Squadie::GetSecondaryWeaponTarget()
 	float fMod = (rangeFactor * maxRange * float(float(details.y)/40.0f));
 	t+= right * - rMod;
 	t+= front * - fMod;
-	t.y = g_app->m_location->m_landscape.m_heightMap->GetValue( t.x, t.z )+5.0f;
+	t.y = g_location->m_landscape.m_heightMap->GetValue( t.x, t.z )+5.0f;
 
 	return t;
 }

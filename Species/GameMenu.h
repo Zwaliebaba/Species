@@ -1,6 +1,5 @@
 
-#ifndef _included_gamemenu_h
-#define _included_gamemenu_h
+#pragma once
 
 #include "SpeciesWindow.h"
 #include "DropDownMenu.h"
@@ -69,5 +68,3 @@ public:
 
     void GetDefaultPositions( int *_x, int *_y, int *_gap );
 };
-
-#endif

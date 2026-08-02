@@ -94,6 +94,9 @@
     <ClCompile Include="UserInfo.cpp" />
     <ClCompile Include="Win32EventHandler.cpp" />
     <ClCompile Include="WindowManager.cpp" />
+    <ClCompile Include="AppCommands.cpp" />
+    <ClCompile Include="AppState.cpp" />
+    <ClCompile Include="WorldPointers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -171,6 +174,10 @@
     <ClInclude Include="Win32EventHandler.h" />
     <ClInclude Include="Win32EventProc.h" />
     <ClInclude Include="WindowManager.h" />
+    <ClInclude Include="AppCommands.h" />
+<ClInclude Include="RendererAccess.h" />
+    <ClInclude Include="AppState.h" />
+    <ClInclude Include="WorldPointers.h" />
     <ClInclude Include="WindowManagerWin32.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

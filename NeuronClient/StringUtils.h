@@ -1,5 +1,4 @@
-#ifndef INCLUDED_STRING_UTILS_H
-#define INCLUDED_STRING_UTILS_H
+#pragma once
 
 #include <string.h>
 
@@ -10,4 +9,3 @@ inline char *NewStr(const char *src)
 	return strcpy(new char[strlen(src)+1], src);
 }
 
-#endif

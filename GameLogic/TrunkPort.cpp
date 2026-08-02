@@ -13,24 +13,21 @@
 
 #include "SoundSystem.h"
 
-#include "App.h"
-#include "Team.h"
-#include "Location.h"
 #include "GlobalWorld.h"
-#include "ParticleSystem.h"
-#include "Main.h"
-#include "Renderer.h"
+#include "GameTime.h"
+#include "WorldPointers.h"
+#include "AppState.h"
 
 
 TrunkPort::TrunkPort()
 :   Building(),
     m_targetLocationId(-1),
     m_openTimer(0.0f),
-    m_heightMap(NULL),
+    m_heightMap(nullptr),
     m_heightMapSize(TRUNKPORT_HEIGHTMAP_MAXSIZE)
 {
     m_type = TypeTrunkPort;
-    SetShape( g_app->m_resource->GetShape( "TrunkPort.shp" ) );
+    SetShape( g_resource->GetShape( "TrunkPort.shp" ) );
 
     m_destination1 = m_shape->m_rootFragment->LookupMarker( "MarkerDestination1" );
     m_destination2 = m_shape->m_rootFragment->LookupMarker( "MarkerDestination2" );
@@ -87,11 +84,11 @@ void TrunkPort::SetDetail( int _detail )
 
 bool TrunkPort::Advance()
 {
-    GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
     if( gb && gb->m_online && m_openTimer == 0.0f)
     {
         m_openTimer = GetHighResTime();
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "PowerUp" );
+        g_soundSystem->TriggerBuildingEvent( this, "PowerUp" );
     }
 
     return Building::Advance();
@@ -111,7 +108,7 @@ void TrunkPort::Render( float predictionTime )
 
     char caption[256];
 
-    char *locationName = g_app->m_globalWorld->GetLocationNameTranslated( m_targetLocationId );
+    char *locationName = g_globalWorld->GetLocationNameTranslated( m_targetLocationId );
     if( locationName )
     {
         strcpy( caption, locationName );
@@ -121,7 +118,7 @@ void TrunkPort::Render( float predictionTime )
         sprintf( caption, "[%s]", LANGUAGEPHRASE("location_unknown") );
     }
 
-    START_PROFILE( g_app->m_profiler, "RenderDestination" );
+    START_PROFILE( g_profiler, "RenderDestination" );
 
     float fontSize = 70.0f / strlen(caption);
     fontSize = min( fontSize, 10.0f );
@@ -151,7 +148,7 @@ void TrunkPort::Render( float predictionTime )
 
     g_gameFont.SetRenderShadow(false);
 
-    END_PROFILE( g_app->m_profiler, "RenderDestination" );
+    END_PROFILE( g_profiler, "RenderDestination" );
 }
 
 
@@ -183,7 +180,7 @@ void TrunkPort::RenderAlphas( float predictionTime )
         //
         // Calculate our Dif map based on some nice sine curves
 
-        START_PROFILE( g_app->m_profiler, "Advance Heightmap" );
+        START_PROFILE( g_profiler, "Advance Heightmap" );
 
         Vector3 difMap[TRUNKPORT_HEIGHTMAP_MAXSIZE][TRUNKPORT_HEIGHTMAP_MAXSIZE];
 
@@ -205,12 +202,12 @@ void TrunkPort::RenderAlphas( float predictionTime )
             }
         }
 
-        END_PROFILE( g_app->m_profiler, "Advance Heightmap" );
+        END_PROFILE( g_profiler, "Advance Heightmap" );
 
         //
         // Render our height map with the dif map added on
 
-        START_PROFILE( g_app->m_profiler, "Render Heightmap" );
+        START_PROFILE( g_profiler, "Render Heightmap" );
 
         glDisable       ( GL_CULL_FACE );
         glEnable        ( GL_BLEND );
@@ -218,7 +215,7 @@ void TrunkPort::RenderAlphas( float predictionTime )
         glDepthMask     ( false );
 
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/LaserFence.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/LaserFence.bmp" ) );
 
         float alphaValue = timeOpen;
         if( alphaValue > 0.7f ) alphaValue = 0.7f;
@@ -247,7 +244,7 @@ void TrunkPort::RenderAlphas( float predictionTime )
         }
 
         glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
         glColor4f       ( 1.0f, 1.0f, 1.0f, 1.0f );
 
         for( int x = 0; x < m_heightMapSize-1; ++x )
@@ -279,25 +276,25 @@ void TrunkPort::RenderAlphas( float predictionTime )
         glDisable       ( GL_BLEND );
         glEnable        ( GL_CULL_FACE );
 
-        END_PROFILE( g_app->m_profiler, "Render Heightmap" );
+        END_PROFILE( g_profiler, "Render Heightmap" );
 
     }
 }
 
 void TrunkPort::ReprogramComplete()
 {
-    GlobalLocation *location = g_app->m_globalWorld->GetLocation( m_targetLocationId );
+    GlobalLocation *location = g_globalWorld->GetLocation( m_targetLocationId );
     if( location )
     {
         location->m_available = true;
 
         // Look for a "receiver" trunk port and set that to the same state
-        for( int i = 0; i < g_app->m_globalWorld->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_globalWorld->m_buildings.Size(); ++i )
         {
-            GlobalBuilding *building = g_app->m_globalWorld->m_buildings[i];
+            GlobalBuilding *building = g_globalWorld->m_buildings[i];
             if( building->m_type == Building::TypeTrunkPort &&
                 building->m_locationId == m_targetLocationId &&
-                building->m_link == g_app->m_locationId )
+                building->m_link == g_locationId )
             {
                 building->m_online = true;
             }
