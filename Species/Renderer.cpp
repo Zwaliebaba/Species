@@ -39,6 +39,7 @@
 #include "MessageDialog.h"
 #include "InsertionSquad.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 #define USE_PIXEL_EFFECT_GRID_OPTIMISATION	1
 
@@ -332,7 +333,7 @@ void Renderer::RenderFrame(bool withFlip)
 
   SetOpenGLState();
 
-  if (g_app->m_locationId == -1)
+  if (g_locationId == -1)
   {
     m_nearPlane = 50.0f;
     m_farPlane = 10000000.0f;
@@ -357,9 +358,9 @@ void Renderer::RenderFrame(bool withFlip)
 
   bool deformStarted = false;
 
-  if (g_app->m_editing)
+  if (g_editing)
   {
-    if (g_app->m_locationId != -1)
+    if (g_locationId != -1)
     {
 #ifdef LOCATION_EDITOR
       SetupMatricesFor3D();
@@ -372,7 +373,7 @@ void Renderer::RenderFrame(bool withFlip)
   }
   else
   {
-    if (g_app->m_locationId != -1)
+    if (g_locationId != -1)
     {
       if (renderPixelShaderPref > 0)
       {
@@ -395,7 +396,7 @@ void Renderer::RenderFrame(bool withFlip)
   }
 
   CHECK_OPENGL_STATE();
-  g_app->m_controlHelpSystem->Render();
+  g_controlHelpSystem->Render();
   g_explosionManager.Render();
   g_particleSystem->Render();
 
@@ -462,11 +463,11 @@ void Renderer::RenderFrame(bool withFlip)
     g_editorFont.DrawText2D(84, 10, DEF_FONT_SIZE, "InputMode: %s", inmode.c_str());
   }
 
-  if (g_app->m_editing)
+  if (g_editing)
   {
     g_gameFont.DrawText2DCentre(m_screenW / 2, 10, 17, "= EDITOR ENABLED =");
 
-    if (g_app->m_locationId != -1)
+    if (g_locationId != -1)
     {
       g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : %d",
                               g_location->m_landscape.m_renderer->m_numTriangles);
@@ -475,9 +476,9 @@ void Renderer::RenderFrame(bool withFlip)
     }
   }
 
-  if (g_app->m_server)
+  if (g_server)
   {
-    int latency = g_app->m_server->m_sequenceId - g_lastProcessedSequenceId;
+    int latency = g_server->m_sequenceId - g_lastProcessedSequenceId;
     if (latency > 10)
     {
       glColor4f(0.0f, 0.0f, 0.0f, 0.8f);

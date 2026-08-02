@@ -11,13 +11,13 @@
 #include "FileWriter.h"
 #include "TextStreamReaders.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "Location.h"
 #include "GameTime.h"
 
 #include "FeedingTube.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 FeedingTube::FeedingTube()
@@ -126,7 +126,7 @@ void FeedingTube::Render( float _predictionTime )
 
 void FeedingTube::RenderAlphas ( float _predictionTime )
 {
-    if( g_app->m_editing ) return;
+    if( g_editing ) return;
 
     if( m_receiverId != -1 )
     {

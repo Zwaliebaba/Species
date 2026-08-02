@@ -21,6 +21,7 @@
 #include "GlobalInternet.h"
 #include "Renderer.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 // *************************
 // Button Classes
@@ -125,7 +126,7 @@ public:
 
     void MouseUp()
     {
-        g_app->m_requestQuit = true;
+        g_requestQuit = true;
     }
 };
 
@@ -231,14 +232,14 @@ public:
             strcpy( g_app->m_requestedMission, "null" );
         }
 
-        g_app->m_requestToggleEditing = false;
-        g_app->m_requestedLocationId = 999;
+        g_requestToggleEditing = false;
+        g_requestedLocationId = 999;
 
         g_app->m_multiwinia->SetGameResearch( parent->m_researchLevel );
         g_app->m_multiwinia->SetGameOptions( parent->m_gameType, parent->m_params );
 
-        g_app->m_atMainMenu = false;
-        g_app->m_gameMode = App::GameModeMultiwinia;
+        g_atMainMenu = false;
+        g_gameMode = GameModeMultiwinia;
     }
 };
 
@@ -300,7 +301,7 @@ void GameMenu::CreateMenu()
         g_app->m_multiwinia = nullptr;
     }*/
 
-    g_app->m_gameMode = App::GameModeNone;
+    g_gameMode = GameModeNone;
 
     m_menuCreated = true;
 }

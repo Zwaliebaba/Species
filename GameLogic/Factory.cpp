@@ -8,7 +8,6 @@
 #include "Resource.h"
 #include "Shape.h"
 
-#include "App.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "SoundSystem.h"
@@ -18,6 +17,7 @@
 #include "Factory.h"
 #include "InsertionSquad.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 Factory::Factory()
@@ -80,7 +80,7 @@ void Factory::Render( float predictionTime )
 
 void Factory::RenderAlphas( float predictionTime )
 {
-    if( !g_app->m_editing )
+    if( !g_editing )
     {
         m_spiritStore.Render( predictionTime );
     }

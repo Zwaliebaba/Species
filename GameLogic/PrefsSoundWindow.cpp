@@ -12,7 +12,6 @@
 #include "SoundLibrary3d.h"
 #include "SampleCache.h"
 
-#include "App.h"
 #include "Renderer.h"
 #include "WorldPointers.h"
 

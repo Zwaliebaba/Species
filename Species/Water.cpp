@@ -23,6 +23,7 @@
 #include "Location.h"
 #include "LevelFile.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 #define LIGHTMAP_TEXTURE_NAME "water_lightmap"
 
@@ -43,7 +44,7 @@ Water::Water()
 	m_renderWaterEffect(0),
 	m_colourTable(nullptr)
 {
-    if( !g_app->m_editing )
+    if( !g_editing )
     {
         Landscape *land = &g_location->m_landscape;
 
@@ -230,7 +231,7 @@ void Water::GenerateLightMap()
 							landSizeX * 2.0f, landSizeZ * 2.0f,
 							-landSizeX/2.0f, -landSizeZ/2.0f,
 							depthMapCellSize, depthMapCellSize, 1.0f);
-	if (!g_app->m_editing)
+	if (!g_editing)
 	{
 		for (int z = 0; z < finalImage.m_height; ++z)
 		{
@@ -681,7 +682,7 @@ void Water::RenderDynamicWater()
 void Water::Render()
 {
 	m_renderWaterEffect = g_prefsManager->GetInt("RenderPixelShader", 2) == 1;
-	if( g_app->m_editing )
+	if( g_editing )
 	{
         START_PROFILE(g_app->m_profiler,  "Render Water" );
 
@@ -739,7 +740,7 @@ void Water::Render()
 
 void Water::Advance()
 {
-	if( !g_app->m_editing && g_prefsManager->GetInt( "RenderWaterDetail" ) > 0
+	if( !g_editing && g_prefsManager->GetInt( "RenderWaterDetail" ) > 0
 		)
 	{
 		START_PROFILE(g_app->m_profiler,  "Advance Water" );

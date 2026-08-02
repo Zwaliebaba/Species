@@ -7,7 +7,6 @@
 #include "TextStreamReaders.h"
 #include "HiResTime.h"
 
-#include "App.h"
 #include "Team.h"
 #include "Location.h"
 #include "EntityGrid.h"
@@ -20,6 +19,7 @@
 #include "Darwinian.h"
 #include "BlueprintStore.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 AI::AI()
@@ -325,7 +325,7 @@ bool AI::Advance( Unit *_unit )
 
 void AI::Render( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         RGBAColour teamCol = g_location->m_teams[m_id.GetTeamId()].m_colour;
 
@@ -541,7 +541,7 @@ void AITarget::RecalculatePriority()
 
 void AITarget::Render( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         Building::Render( _predictionTime );
     }
@@ -612,7 +612,7 @@ void AITarget::RenderAlphas( float _predictionTime )
 
 
 #ifdef LOCATION_EDITOR
-    if( g_app->m_editing &&
+    if( g_editing &&
         g_locationEditor->m_mode == LocationEditor::ModeBuilding &&
         g_locationEditor->m_selectionId == m_id.GetUniqueId() )
     {
@@ -749,7 +749,7 @@ bool AISpawnPoint::Advance()
         }
         else
         {
-            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_activatorId, g_app->m_locationId );
+            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_activatorId, g_locationId );
             if( !gb ) m_online = true;
             if( gb && gb->m_online ) m_online = true;
         }
@@ -809,7 +809,7 @@ bool AISpawnPoint::Advance()
 
 void AISpawnPoint::RenderAlphas( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         RGBAColour colour;
         if( m_id.GetTeamId() == 255 ) colour.Set( 100, 100, 100, 255 );

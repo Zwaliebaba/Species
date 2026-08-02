@@ -11,7 +11,6 @@
 #include "DropDownMenu.h"
 #include "MessageDialog.h"
 
-#include "App.h"
 #include "Renderer.h"
 
 #include "Win32EventHandler.h"

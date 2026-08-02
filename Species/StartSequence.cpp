@@ -20,6 +20,7 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 StartSequence::StartSequence()
@@ -84,7 +85,7 @@ bool StartSequence::Advance()
     }
 
     if( g_inputManager->controlEvent( ControlSkipMessage ) ||
-		g_app->m_requestQuit ||
+		g_requestQuit ||
 		( GetHighResTime() - m_startTime ) > 90 )
     {
         g_app->m_soundSystem->StopAllSounds( WorldObjectId(), "Music StartSequence" );

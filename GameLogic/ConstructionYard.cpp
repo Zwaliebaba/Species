@@ -12,7 +12,6 @@
 #include "ResearchItem.h"
 #include "Armour.h"
 
-#include "App.h"
 #include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Location.h"
@@ -20,6 +19,7 @@
 #include "Renderer.h"
 #include "Team.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 ConstructionYard::ConstructionYard()
@@ -63,7 +63,7 @@ bool ConstructionYard::Advance()
         m_numSurges > 0 &&
         m_numPrimitives > 0 )
     {
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb && !gb->m_online )
         {
             gb->m_online = true;

@@ -4,19 +4,19 @@
 #include "Resource.h"
 #include "LanguageTable.h"
 
-#include "App.h"
 #include "Renderer.h"
 #include "BuyNowWindow.h"
 #include "Preferences.h"
 #include "PreferenceNames.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 class BuyNowButton : public SpeciesButton
 {
     void MouseUp()
     {
-		g_app->m_requestQuit = true;
+		g_requestQuit = true;
 		EclRemoveWindow( m_parent->m_name );
     }
 };

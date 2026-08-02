@@ -10,7 +10,6 @@
 
 #include "SafeArea.h"
 
-#include "App.h"
 #include "Location.h"
 #include "Team.h"
 #include "EntityGrid.h"
@@ -18,6 +17,7 @@
 #include "ParticleSystem.h"
 #include "GlobalWorld.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 SafeArea::SafeArea()
@@ -78,7 +78,7 @@ bool SafeArea::Advance()
         if( (m_id.GetTeamId() == 1 && m_entitiesCounted <= m_entitiesRequired) ||
             (m_id.GetTeamId() != 1 && m_entitiesCounted >= m_entitiesRequired) )
         {
-            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
             if( gb && !gb->m_online )
             {
                 gb->m_online = true;
@@ -94,7 +94,7 @@ bool SafeArea::Advance()
 
 void SafeArea::Render( float predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         RGBAColour colour;
 
@@ -162,7 +162,7 @@ bool SafeArea::DoesShapeHit(Shape *_shape, Matrix34 _transform)
 bool SafeArea::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
                           float _rayLen, Vector3 *_pos, Vector3 *_norm)
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         return Building::DoesRayHit( _rayStart, _rayDir, _rayLen, _pos, _norm );
     }

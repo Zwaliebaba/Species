@@ -9,7 +9,6 @@
 #include "TextStreamReaders.h"
 #include "TextRenderer.h"
 
-#include "App.h"
 #include "Location.h"
 #include "EntityGrid.h"
 #include "Explosion.h"
@@ -23,6 +22,7 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 AntHill::AntHill()
@@ -306,7 +306,7 @@ bool AntHill::Advance()
             objective->m_pos = targetPos;
             objective->m_targetId = targetId;
 
-            objective->m_numToSend = 5 + 5 * (g_app->m_difficultyLevel / 10.0);
+            objective->m_numToSend = 5 + 5 * (g_difficultyLevel / 10.0);
             m_objectives.PutData( objective );
         }
 
@@ -357,7 +357,7 @@ bool AntHill::Advance()
             m_objectives.RemoveData( chosenIndex );
         }
 
-        m_spawnTimer = GetHighResTime() + 0.2f - (0.2 * g_app->m_difficultyLevel / 10.0);
+        m_spawnTimer = GetHighResTime() + 0.2f - (0.2 * g_difficultyLevel / 10.0);
     }
 
 

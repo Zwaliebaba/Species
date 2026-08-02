@@ -16,10 +16,10 @@
 #include "UserProfileWindow.h"
 #include "ReallyQuitWindow.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "Renderer.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 // ****************************************************************************
 // Menu Buttons
@@ -281,7 +281,7 @@ void DebugKeyBindings::NetworkButton()
 #ifdef LOCATION_EDITOR
 void DebugKeyBindings::EditorButton()
 {
-	g_app->m_requestToggleEditing = true;
+	g_requestToggleEditing = true;
 }
 #endif // LOCATION_EDITOR
 

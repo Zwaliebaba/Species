@@ -6,13 +6,13 @@
 
 #include "WindowManager.h"
 
-#include "App.h"
 #include "ControlHelp.h"
 #include "Camera.h"
 
 #include "Eclipse.h"
 #include "TaskManagerInterface.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 #define AXIS_X 0
 #define AXIS_Y 1
@@ -95,7 +95,7 @@ void TargetCursor::Advance() {
 		m_screenCoords[AXIS_Y] += m_velocity[AXIS_Y];
 
 		if (g_camera->IsInMode(Camera::ModeFreeMovement))
-			g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraAim);
+			g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraAim);
 	} else
 		m_velocity[AXIS_X] = m_velocity[AXIS_Y] = 0;
 

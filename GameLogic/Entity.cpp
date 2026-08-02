@@ -14,7 +14,6 @@
 #include "TextStreamReaders.h"
 #include "LanguageTable.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "GameTime.h"
 #include "Renderer.h"
@@ -50,6 +49,7 @@
 #include "Ai.h"
 #include "LaserFence.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ****************************************************************************
@@ -97,7 +97,7 @@ float EntityBlueprint::GetStat( unsigned char _type, int _stat )
 	if (_stat == Entity::StatSpeed)
 	{
 		if (_type != Entity::TypeSpaceInvader)
-			return m_stats[_type][_stat] * (1.0f + (float) g_app->m_difficultyLevel / 10.0f);
+			return m_stats[_type][_stat] * (1.0f + (float) g_difficultyLevel / 10.0f);
 	}
 
     return m_stats[_type][_stat];

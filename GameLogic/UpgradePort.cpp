@@ -5,9 +5,9 @@
 
 #include "UpgradePort.h"
 
-#include "App.h"
 #include "GlobalWorld.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 UpgradePort::UpgradePort()
@@ -34,7 +34,7 @@ void PrimaryUpgradePort::ReprogramComplete()
 
     if( m_controlTowersOwned == 3 )
     {
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb )
         {
             gb->m_online = true;

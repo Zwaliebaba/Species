@@ -11,6 +11,7 @@
 #include "InputField.h"
 #include "Renderer.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 class LoadUserProfileButton : public SpeciesButton
@@ -49,7 +50,7 @@ void UserProfileWindow::Render( bool hasFocus )
 
     glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
     g_editorFont.DrawText2DCentre( m_x+m_w/2, m_y+GetMenuSize(30), GetMenuSize(12), LANGUAGEPHRASE("dialog_currentprofilename") );
-    g_editorFont.DrawText2DCentre( m_x+m_w/2, m_y+GetMenuSize(45), GetMenuSize(16), g_app->m_userProfileName );
+    g_editorFont.DrawText2DCentre( m_x+m_w/2, m_y+GetMenuSize(45), GetMenuSize(16), g_userProfileName );
 }
 
 

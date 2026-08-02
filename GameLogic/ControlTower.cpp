@@ -16,7 +16,6 @@
 
 #include "SoundSystem.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "Location.h"
 #include "Team.h"
@@ -27,6 +26,7 @@
 #include "ControlTower.h"
 #include "TrunkPort.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 Shape *ControlTower::s_dishShape = nullptr;
 
@@ -217,7 +217,7 @@ bool ControlTower::Reprogram( int _teamId )
                     SetTeamId( _teamId );
 				    g_globalWorld->m_research->GiveResearchPoints( GLOBALRESEARCH_POINTS_CONTROLTOWER );
 
-                    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+                    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
                     if( gb )
                     {
                         gb->m_online = true;
@@ -342,7 +342,7 @@ void ControlTower::RenderAlphas ( float _predictionTime )
     //
     // Draw control line to heaven
 
-    if( !g_app->m_editing )
+    if( !g_editing )
     {
         Vector3 controlUp( 0, 50.0f + (m_id.GetUniqueId() % 50), 0 );
 
@@ -407,7 +407,7 @@ void ControlTower::RenderAlphas ( float _predictionTime )
 
     if( (m_id.GetTeamId() != 255 && (lastSeqId % 10)/2 == m_id.GetTeamId() ) ||
         m_beingReprogrammed[ lastSeqId % 3 ] ||
-        g_app->m_editing )
+        g_editing )
     {
 
 	    Matrix34 rootMat(m_front, g_upVector, m_pos);

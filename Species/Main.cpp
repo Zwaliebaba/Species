@@ -57,6 +57,7 @@
 #include "Win32EventHandler.h"
 #include "WindowManager.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 #define TARGET_FRAME_RATE_INCREMENT 0.25f
 
@@ -238,7 +239,7 @@ bool HandleCommonConditions()
     return true;
   }
 
-  if (g_app->m_requestQuit)
+  if (g_requestQuit)
   {
     Finalise();
     exit(0);
@@ -369,7 +370,7 @@ void LocationGameLoop()
   {
     if (!fadingOut)
     {
-      if (g_app->m_requestedLocationId != g_app->m_locationId)
+      if (g_requestedLocationId != g_locationId)
       {
         g_renderer->StartFadeOut();
         fadingOut = true;
@@ -379,7 +380,7 @@ void LocationGameLoop()
     {
       if (g_renderer->IsFadeComplete())
       {
-        g_app->m_controlHelpSystem->Shutdown();
+        g_controlHelpSystem->Shutdown();
         break;
       }
     }
@@ -416,7 +417,7 @@ void LocationGameLoop()
     {
       if (timeNow > nextServerAdvanceTime)
       {
-        g_app->m_server->Advance();
+        g_server->Advance();
         nextServerAdvanceTime += SERVER_ADVANCE_PERIOD;
         if (timeNow > nextServerAdvanceTime)
           nextServerAdvanceTime = timeNow + SERVER_ADVANCE_PERIOD;
@@ -569,7 +570,7 @@ void LocationGameLoop()
       g_script->Advance();
       g_explosionManager.Advance();
       g_app->m_soundSystem->Advance();
-      g_app->m_controlHelpSystem->Advance();
+      g_controlHelpSystem->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
       if (g_app->m_attractMode->m_running) { g_app->m_attractMode->Advance(); }
@@ -590,8 +591,8 @@ void LocationGameLoop()
 
   g_explosionManager.Reset();
 
-  if (g_globalWorld->GetLocationName(g_app->m_locationId))
-    g_globalWorld->TransferSpirits(g_app->m_locationId);
+  if (g_globalWorld->GetLocationName(g_locationId))
+    g_globalWorld->TransferSpirits(g_locationId);
 
   g_app->m_clientToServer->ClientLeave();
   // ClientLeave used to reset this itself, reaching down from the endpoint into
@@ -601,17 +602,17 @@ void LocationGameLoop()
   g_particleSystem->Empty();
 
   //	g_app->m_inLocation = false;
-  //	g_app->m_requestedLocationId = false;
+  //	g_requestedLocationId = false;
 
   delete g_location;
   g_location = nullptr;
-  g_app->m_locationId = -1;
+  g_locationId = -1;
 
   delete g_app->m_locationInput;
   g_app->m_locationInput = nullptr;
 
-  delete g_app->m_server;
-  g_app->m_server = nullptr;
+  delete g_server;
+  g_server = nullptr;
 
   g_taskManager->StopAllTasks();
 
@@ -671,8 +672,8 @@ void LocationEditorLoop()
   g_location->Empty();
   delete g_location;
   g_location = nullptr;
-  g_app->m_locationId = -1;
-  g_app->m_requestedLocationId = -1;
+  g_locationId = -1;
+  g_requestedLocationId = -1;
 
   delete g_app->m_locationInput;
   g_app->m_locationInput = nullptr;
@@ -685,9 +686,9 @@ void GlobalWorldGameLoop()
 
   g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
 
-  while (g_app->m_requestedLocationId == -1 && !g_app->m_requestToggleEditing)
+  while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
-    if (g_app->m_atMainMenu)
+    if (g_atMainMenu)
       break;
 
     g_inputManager->PollForEvents();
@@ -729,10 +730,10 @@ void GlobalWorldGameLoop()
     g_renderer->Render();
   }
 
-  if (g_app->m_requestToggleEditing)
+  if (g_requestToggleEditing)
   {
-    g_app->m_editing = true;
-    g_app->m_requestToggleEditing = false;
+    g_editing = true;
+    g_requestToggleEditing = false;
   }
 
   g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
@@ -746,13 +747,13 @@ void GlobalWorldEditorLoop()
   auto gweWindow = new GlobalWorldEditorWindow();
   EclRegisterWindow(gweWindow);
 
-  while (g_app->m_requestedLocationId == -1 && !g_app->m_requestToggleEditing)
+  while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
     g_inputManager->PollForEvents();
 
     if (g_inputManager->controlEvent(ControlMenuEscape))
     {
-      g_app->m_editing = false;
+      g_editing = false;
       return;
     }
 
@@ -775,10 +776,10 @@ void GlobalWorldEditorLoop()
     g_renderer->Render();
   }
 
-  if (g_app->m_requestToggleEditing)
+  if (g_requestToggleEditing)
   {
-    g_app->m_editing = false;
-    g_app->m_requestToggleEditing = false;
+    g_editing = false;
+    g_requestToggleEditing = false;
   }
 }
 
@@ -852,7 +853,7 @@ void Initialise()
 
     if (gloc)
     {
-      g_app->m_requestedLocationId = requestedLocationId;
+      g_requestedLocationId = requestedLocationId;
       strcpy(g_app->m_requestedMap, gloc->m_mapFilename);
       strcpy(g_app->m_requestedMission, gloc->m_missionFilename);
     }
@@ -903,12 +904,12 @@ void RunBootLoaders()
 void EnterLocation()
 {
   bool iAmAServer = g_prefsManager->GetInt("IAmAServer") ? true : false;
-  if (!g_app->m_editing)
+  if (!g_editing)
   {
     if (iAmAServer)
     {
-      g_app->m_server = new Server();
-      g_app->m_server->Initialise(g_app->m_profiler);
+      g_server = new Server();
+      g_server->Initialise(g_app->m_profiler);
     }
 
     g_app->m_clientToServer->ClientJoin();
@@ -917,11 +918,11 @@ void EnterLocation()
   g_location = new Location();
   g_app->m_locationInput = new LocationInput();
   g_location->Init(g_app->m_requestedMission, g_app->m_requestedMap);
-  g_app->m_locationId = g_app->m_requestedLocationId;
+  g_locationId = g_requestedLocationId;
 
   g_camera->UpdateEntityTrackingMode();
 
-  if (!g_app->m_editing)
+  if (!g_editing)
   {
     if (iAmAServer)
     {
@@ -939,7 +940,7 @@ void EnterLocation()
   g_camera->SetTarget("start");
   g_camera->CutToTarget();
 
-  if (g_app->m_editing)
+  if (g_editing)
   {
 #ifdef LOCATION_EDITOR
     g_locationEditor = new LocationEditor();
@@ -959,12 +960,12 @@ void EnterLocation()
 
 void EnterGlobalWorld()
 {
-  if (g_app->m_gameMode == App::GameModePrologue && !g_script->IsRunningScript())
+  if (g_gameMode == GameModePrologue && !g_script->IsRunningScript())
   {
     // the only time you should see the world in prologue is during the cutscene
-    //g_app->m_atMainMenu = true;
-    g_app->m_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
-    GlobalLocation* gloc = g_globalWorld->GetLocation(g_app->m_requestedLocationId);
+    //g_atMainMenu = true;
+    g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
+    GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
     strcpy(g_app->m_requestedMap, gloc->m_mapFilename);
     strcpy(g_app->m_requestedMission, gloc->m_missionFilename);
   }
@@ -974,7 +975,7 @@ void EnterGlobalWorld()
   g_camera->RequestMode(Camera::ModeSphereWorld);
   g_camera->SetHeight(50.0f);
 
-  if (g_app->m_editing)
+  if (g_editing)
     GlobalWorldEditorLoop();
   else
     GlobalWorldGameLoop();
@@ -983,7 +984,7 @@ void EnterGlobalWorld()
 void MainMenuLoop()
 {
   g_camera->RequestMode(Camera::ModeMainMenu);
-  while (g_app->m_atMainMenu)
+  while (g_atMainMenu)
   {
     UpdateAdvanceTime();
     g_renderer->Render();
@@ -1017,7 +1018,7 @@ void RunTheGame()
 
   while (true)
   {
-    if (g_app->m_requestedLocationId != -1)
+    if (g_requestedLocationId != -1)
       EnterLocation();
     else // Not in location
       EnterGlobalWorld();

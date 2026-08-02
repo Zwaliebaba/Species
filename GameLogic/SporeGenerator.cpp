@@ -11,7 +11,6 @@
 
 #include "SporeGenerator.h"
 
-#include "App.h"
 #include "Location.h"
 #include "GameTime.h"
 #include "Renderer.h"
@@ -20,6 +19,7 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 #define SPOREGENERATOR_HOVERHEIGHT          100.0f
@@ -104,7 +104,7 @@ bool SporeGenerator::SearchForRandomPos()
     //
     // Give us a random chance we will lay some eggs anyway
 
-    if( syncfrand(100.0f) < 10.0f + 20.0f * g_app->m_difficultyLevel / 10.0f )
+    if( syncfrand(100.0f) < 10.0f + 20.0f * g_difficultyLevel / 10.0f )
     {
         m_state = StateEggLaying;
         m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue( m_targetPos.x, m_targetPos.z );
@@ -263,7 +263,7 @@ bool SporeGenerator::AdvanceEggLaying()
         m_eggTimer -= SERVER_ADVANCE_PERIOD;
         if( m_eggTimer <= 0.0f )
         {
-            m_eggTimer = 2.0f + syncfrand(2.0f) - 1.0 * (float) g_app->m_difficultyLevel / 10.0f;
+            m_eggTimer = 2.0f + syncfrand(2.0f) - 1.0 * (float) g_difficultyLevel / 10.0f;
             Matrix34 mat( m_front, g_upVector, m_pos );
             Matrix34 eggLayMat = m_eggMarker->GetWorldMatrix(mat);
             g_location->SpawnEntities( eggLayMat.pos, m_id.GetTeamId(), -1, TypeEgg, 1, m_vel, 0.0f );

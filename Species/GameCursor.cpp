@@ -29,6 +29,7 @@
 #include "RadarDish.h"
 #include "InsertionSquad.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 GameCursor::GameCursor()
@@ -299,7 +300,7 @@ void GameCursor::Render()
 	glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 	glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
-    if( g_app->m_editing || EclGetWindows()->Size() > 0 )
+    if( g_editing || EclGetWindows()->Size() > 0 )
     {
         // Editing
     }

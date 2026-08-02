@@ -17,6 +17,7 @@
 #include "Win32EventHandler.h"
 #include "WindowManager.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 class WebsiteButton;
 
@@ -240,7 +241,7 @@ class ExitLevelButton : public SpeciesButton
   {
     EclRemoveWindow(m_parent->m_name);
 
-    g_app->m_requestedLocationId = -1;
+    g_requestedLocationId = -1;
   }
 };
 
@@ -300,7 +301,7 @@ void LocationWindow::Create()
 
   int gap = border;
 
-  GlobalLocation* loc = g_globalWorld->GetLocation(g_app->m_locationId);
+  GlobalLocation* loc = g_globalWorld->GetLocation(g_locationId);
 
   if (g_app->HasBoughtGame())
   {
@@ -317,7 +318,7 @@ void LocationWindow::Create()
       gap = h;
     }
 
-    if (g_app->m_gameMode == App::GameModePrologue)
+    if (g_gameMode == GameModePrologue)
     {
       auto exit = new GameExitButton();
       exit->SetShortProperties(LANGUAGEPHRASE("dialog_leavedarwinia"), border, y += h, buttonW, buttonH);
@@ -372,7 +373,7 @@ void LocationWindow::Create()
   RegisterButton(options);
   m_buttonOrder.PutData(options);
 
-  if (g_app->HasBoughtGame() && g_app->m_gameMode == App::GameModePrologue)
+  if (g_app->HasBoughtGame() && g_gameMode == GameModePrologue)
   {
     auto skip = new SkipPrologueWindowButton();
     skip->SetShortProperties(LANGUAGEPHRASE("dialog_skipprologue"), border, y += h, buttonW, buttonH);

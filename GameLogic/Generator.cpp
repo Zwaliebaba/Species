@@ -19,7 +19,6 @@
 #include "Rocket.h"
 #include "Switch.h"
 
-#include "App.h"
 #include "Location.h"
 #include "Camera.h"
 #include "GlobalWorld.h"
@@ -27,6 +26,7 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ****************************************************************************
@@ -318,7 +318,7 @@ bool Generator::Advance()
 
         if( m_throughput > 6.5f )
         {
-            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
             gb->m_online = true;
         }
     }
@@ -418,7 +418,7 @@ bool PylonStart::Advance()
     {
         //
         // Is our required building online yet?
-        GlobalBuilding *globalBuilding = g_globalWorld->GetBuilding( m_reqBuildingId, g_app->m_locationId );
+        GlobalBuilding *globalBuilding = g_globalWorld->GetBuilding( m_reqBuildingId, g_locationId );
         if( globalBuilding && globalBuilding->m_online )
         {
             if( syncfrand() > 0.7f )
@@ -437,7 +437,7 @@ void PylonStart::RenderAlphas( float _predictionTime )
     PowerBuilding::RenderAlphas( _predictionTime );
 
 #ifdef DEBUG_RENDER_ENABLED
-    if( g_app->m_editing )
+    if( g_editing )
     {
         Building *req = g_location->GetBuilding( m_reqBuildingId );
         if( req )
@@ -614,7 +614,7 @@ void SolarPanel::RenderPorts()
 
 void SolarPanel::Render( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         m_up = g_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
         Vector3 right( 1, 0, 0 );

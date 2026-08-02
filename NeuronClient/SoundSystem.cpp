@@ -21,13 +21,13 @@
 #include "SoundLibrary3dDSound.h"
 #include "SoundLibrary3dSoftware.h"
 
-#include "App.h"
 #include "GameTime.h"
 #include "Camera.h"
 #include "Location.h"
 
 #include "Entity.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 SoundSystem* g_soundSystem = nullptr;
 
@@ -1217,10 +1217,10 @@ int SoundInstanceCompare(const void* elem1, const void* elem2)
 
 void SoundSystem::Advance()
 {
-  if (g_app->m_requestQuit && !m_quitWithoutSave)
+  if (g_requestQuit && !m_quitWithoutSave)
   {
     if (AreBlueprintsModified())
-      g_app->m_requestQuit = false;
+      g_requestQuit = false;
   }
 
   if (!m_channels)
@@ -1446,11 +1446,11 @@ void SoundSystem::Advance()
 void SoundSystem::Advance()
 {
 
-	if (g_app->m_requestQuit && !m_quitWithoutSave)
+	if (g_requestQuit && !m_quitWithoutSave)
 	{
 		if (AreBlueprintsModified())
 		{
-			g_app->m_requestQuit = false;
+			g_requestQuit = false;
 		}
 	}
 

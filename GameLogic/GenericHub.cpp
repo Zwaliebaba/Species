@@ -15,12 +15,12 @@
 #include "Darwinian.h"
 #include "ControlTower.h"
 
-#include "App.h"
 #include "Location.h"
 #include "GlobalWorld.h"
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ****************************************************************************
@@ -213,7 +213,7 @@ bool DynamicHub::Advance()
         {
             if( m_enabled )
             {
-                GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+                GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
                 if( gb && !gb->m_online )
                 {
                     gb->m_online = true;
@@ -222,7 +222,7 @@ bool DynamicHub::Advance()
             }
             else if( !g_location->MissionComplete() )
             {
-                GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+                GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
                 if( gb && gb->m_online )
                 {
                     gb->m_online = false;
@@ -413,7 +413,7 @@ void DynamicNode::RenderPorts()
 
 void DynamicNode::Render( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         m_up = g_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
         Vector3 right( 1, 0, 0 );

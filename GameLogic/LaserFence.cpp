@@ -15,7 +15,6 @@
 #include "Preferences.h"
 
 #include "GameTime.h"
-#include "App.h"
 #include "Location.h"
 #include "ObstructionGrid.h"
 #include "Team.h"
@@ -28,6 +27,7 @@
 #include "Building.h"
 #include "LaserFence.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 LaserFence::LaserFence()
 :   Building(),
@@ -281,7 +281,7 @@ void LaserFence::RenderAlphas( float predictionTime )
             float predictedStatus = m_status;
             if( m_mode == ModeDisabling ) predictedStatus -= LASERFENCE_RAISESPEED * predictionTime;
             if( m_mode == ModeEnabling ) predictedStatus += LASERFENCE_RAISESPEED * predictionTime;
-            if( g_app->m_editing ) predictedStatus = 1.0f;
+            if( g_editing ) predictedStatus = 1.0f;
 
             float ourFenceHeight = ourFenceMaxHeight * predictedStatus;
             float theirFenceHeight = theirFenceMaxHeight * predictedStatus;
@@ -500,7 +500,7 @@ void LaserFence::Electrocute( Vector3 const &_pos )
 
 bool LaserFence::DoesSphereHit(Vector3 const &_pos, float _radius)
 {
-    if( m_mode == ModeDisabled || g_app->m_editing )
+    if( m_mode == ModeDisabled || g_editing )
     {
         SpherePackage sphere(_pos, _radius);
         Matrix34 transform(m_front, m_up, m_pos);
@@ -543,7 +543,7 @@ bool LaserFence::DoesSphereHit(Vector3 const &_pos, float _radius)
 bool LaserFence::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
                             float _rayLen, Vector3 *_pos, Vector3 *_norm)
 {
-    if( m_mode == ModeDisabled ||  g_app->m_editing )
+    if( m_mode == ModeDisabled ||  g_editing )
     {
 		RayPackage ray(_rayStart, _rayDir, _rayLen);
 		Matrix34 transform(m_front, m_up, m_pos);

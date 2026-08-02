@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AppState.h"
+
 #include "RgbColour.h"
 
 class Camera;
@@ -40,32 +42,22 @@ public:
     Profiler            *m_profiler;
 
 	// Things that are the world
-	int					m_locationId;
 
 	// Everything else
-	Server              *m_server;                  // Server process, can be nullptr if client
     ClientToServer      *m_clientToServer;          // Clients connection to Server
 	LocationInput		*m_locationInput;
     GameCursor          *m_gameCursor;
     StartSequence       *m_startSequence;
 	AttractMode			*m_attractMode;
-    ControlHelpSystem   *m_controlHelpSystem;
     GameMenu            *m_gameMenu;
 
     bool                m_negativeRenderer;
-	int					m_difficultyLevel;			// Cached from preferences
-	bool				m_largeMenus;
 
 	// State flags
     bool                m_paused;
-	bool                m_editing;
 
 	// Requested state flags
-	int					m_requestedLocationId;		// -1 for global world
-	bool                m_requestToggleEditing;
-	bool				m_requestQuit;
 
-    char                m_userProfileName[256];
     char                m_requestedMission[256];
     char                m_requestedMap[256];
     bool                m_levelReset;
@@ -73,17 +65,7 @@ public:
 
 	RGBAColour			m_backgroundColour;
 
-    bool                m_atMainMenu;       // true when the player is viewing the darwinia/mutliwinia menu
-    int                 m_gameMode;
 
-    enum
-    {
-        GameModeNone,
-        GameModePrologue,
-        GameModeCampaign,
-        GameModeMultiwinia,
-        NumGameModes
-    };
 
 public:
     App ();

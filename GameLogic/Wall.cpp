@@ -8,10 +8,10 @@
 
 #include "Wall.h"
 
-#include "App.h"
 #include "Location.h"
 #include "ParticleSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 Wall::Wall()
@@ -61,7 +61,7 @@ void Wall::Damage( float _damage )
 void Wall::Render( float _predictionTime )
 {
 #ifdef DEBUG_RENDER_ENABLED
-	if (g_app->m_editing)
+	if (g_editing)
 	{
 		Vector3 pos(m_pos);
 		pos.y += 5.0f;

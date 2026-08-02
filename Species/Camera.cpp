@@ -41,6 +41,7 @@
 #include "Teleport.h"
 #include "InsertionSquad.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 #define MIN_GROUND_CLEARANCE	10.0f	// Minimum height relative to land
 #define MIN_HEIGHT				10.0f	// Height above sea level (which is y=0)
@@ -53,17 +54,17 @@
 
 void Camera::AdvanceDebugMode()
 {
-  if (strcmp(EclGetCurrentFocus(), "none") != 0 && !g_app->m_editing)
+  if (strcmp(EclGetCurrentFocus(), "none") != 0 && !g_editing)
     return;
 
-  if (g_app->m_editing)
+  if (g_editing)
     m_targetFov = 60.0f;
 
   float advanceTime = g_advanceTime;
   Vector3 right = m_front ^ m_up;
 
   float speedSideways = g_globalWorld->GetSize() / 30.0f;
-  if (g_app->m_locationId != -1)
+  if (g_locationId != -1)
     speedSideways = g_location->m_landscape.GetWorldSizeX() / 30.0f;
   float speedVertical = speedSideways;
   float speedForwards = speedSideways;
@@ -607,7 +608,7 @@ void Camera::AdvanceFreeMovementMode()
         m_targetPos -= accelRight * g_advanceTime * details.x * 10.0f;
         m_targetPos -= accelForward * g_advanceTime * details.y * 10.0f;
 
-        g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
+        g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
       }
     }
 
@@ -978,16 +979,16 @@ bool Camera::AdvanceManualCameraHeight(Vector3& cameraTarget)
     if (g_inputManager->controlEvent(ControlCameraUp))
     {
       m_heightMultiplier += heightScale;
-      g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
+      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
+      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
     if (g_inputManager->controlEvent(ControlCameraDown))
     {
       m_heightMultiplier -= heightScale;
       camDown = true;
-      g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
+      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
+      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
     m_heightMultiplier = min(2.0f, m_heightMultiplier);
@@ -1850,8 +1851,8 @@ void Camera::AdvanceComponentMouseWheelHeight()
       delta -= g_advanceTime * 7.0f;
     if (keyUp || keyDown)
     {
-      g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
+      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
+      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
   }
 

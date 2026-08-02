@@ -8,7 +8,6 @@
 
 #include "ScriptTrigger.h"
 
-#include "App.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "EntityGrid.h"
@@ -16,6 +15,7 @@
 #include "Team.h"
 #include "Camera.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 ScriptTrigger::ScriptTrigger()
@@ -160,7 +160,7 @@ bool ScriptTrigger::Advance()
 
 void ScriptTrigger::RenderAlphas( float predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         RGBAColour colour;
         if( m_id.GetTeamId() == 255 )
@@ -196,7 +196,7 @@ bool ScriptTrigger::DoesShapeHit(Shape *_shape, Matrix34 _transform)
 bool ScriptTrigger::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
                                 float _rayLen, Vector3 *_pos, Vector3 *_norm)
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         return Building::DoesRayHit( _rayStart, _rayDir, _rayLen, _pos, _norm );
     }

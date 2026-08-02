@@ -15,7 +15,6 @@
 
 #include "Triffid.h"
 
-#include "App.h"
 #include "Renderer.h"
 #include "Location.h"
 #include "Explosion.h"
@@ -26,6 +25,7 @@
 #include "EntityGrid.h"
 #include "Unit.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 Triffid::Triffid()
@@ -145,7 +145,7 @@ void Triffid::Render( float _predictionTime )
     //
     // If we are damaged, flicked in and out based on our health
 
-    if( m_renderDamaged && !g_app->m_editing && m_damage > 0.0f )
+    if( m_renderDamaged && !g_editing && m_damage > 0.0f )
     {
         float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
         float thefrand = frand();
@@ -180,7 +180,7 @@ void Triffid::Render( float _predictionTime )
 
 void Triffid::RenderAlphas( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         glColor4f( 1.0f, 0.0f, 0.0f, 1.0f );
         glLineWidth( 1.0f );

@@ -6,7 +6,6 @@
 #include "Debug.h"
 #include "DebugRender.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "EntityGrid.h"
 #include "ObstructionGrid.h"
@@ -20,6 +19,7 @@
 #include "Virii.h"
 #include "Egg.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 Spirit::Spirit()
@@ -225,7 +225,7 @@ void Spirit::SkipStage()
 
 void Spirit::AddToGlobalWorld()
 {
-    int locationId = g_app->m_locationId;
+    int locationId = g_locationId;
     GlobalLocation *location = g_globalWorld->GetLocation( locationId );
     DEBUG_ASSERT(location);
     location->AddSpirits(1);

@@ -40,6 +40,7 @@
 #include "WorldObject.h"
 #include "Darwinian.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ****************************************************************************
@@ -694,7 +695,7 @@ void TeamControls::Advance()
     m_directUnitMoveDx = waypoint.x;
     m_directUnitMoveDy = waypoint.z;
 
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
   }
 
   if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details) && !g_inputManager->controlEvent(ControlCameraRotate))
@@ -703,13 +704,13 @@ void TeamControls::Advance()
     m_directUnitFireDx = details.x;
     m_directUnitFireDy = details.y;
 
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondSquaddieFire);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondSquaddieFire);
   }
 
   if (m_secondaryFireDirected)
   {
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireAirstrike);
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireGrenades);
-    g_app->m_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireRocket);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireAirstrike);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireGrenades);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireRocket);
   }
 }

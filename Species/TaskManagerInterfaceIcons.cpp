@@ -33,6 +33,7 @@
 #include "Unit.h"
 #include "Vector2.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 // ============================================================================
 
@@ -334,7 +335,7 @@ void TaskManagerInterfaceIcons::RestoreRenderMatrices() { g_renderer->SetupMatri
 
 void TaskManagerInterfaceIcons::Render()
 {
-  if (g_app->m_editing || !g_location || EclGetWindows()->Size())
+  if (g_editing || !g_location || EclGetWindows()->Size())
     return;
 
   START_PROFILE(g_app->m_profiler, "Render Taskman");
@@ -342,7 +343,7 @@ void TaskManagerInterfaceIcons::Render()
   glEnable(GL_BLEND);
   glDisable(GL_CULL_FACE);
 
-  if (g_app->m_locationId != -1)
+  if (g_locationId != -1)
     RenderTargetAreas();
 
   g_gameFont.BeginText2D();

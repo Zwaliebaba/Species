@@ -6,10 +6,10 @@
 #include "GlobalWorldEditorWindow.h"
 #include "MessageDialog.h"
 
-#include "App.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 static char s_locationName[256] = "NewLevel";
@@ -160,7 +160,7 @@ void GlobalWorldEditorWindow::Create()
 
 void GlobalWorldEditorWindow::Update()
 {
-    if( !g_app->m_editing ||
+    if( !g_editing ||
         g_location )
     {
         EclRemoveWindow( m_name );

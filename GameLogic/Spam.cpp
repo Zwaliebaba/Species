@@ -9,7 +9,6 @@
 #include "Spam.h"
 
 #include "Explosion.h"
-#include "App.h"
 #include "Location.h"
 #include "ProtocolLimits.h"
 #include "EntityGrid.h"
@@ -21,10 +20,11 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 static inline float SpamReloadTime()
 {
-	return SPAM_RELOADTIME - (SPAM_RELOADTIME / 2.0) * g_app->m_difficultyLevel / 10.0;
+	return SPAM_RELOADTIME - (SPAM_RELOADTIME / 2.0) * g_difficultyLevel / 10.0;
 }
 
 Spam::Spam()
@@ -85,7 +85,7 @@ void Spam::Damage( float _damage )
     if( !dead && m_damage <= 0.0f )
     {
         // We just died
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_online = true;
         g_soundSystem->TriggerBuildingEvent( this, "Explode" );
     }

@@ -11,7 +11,6 @@
 #include "Preferences.h"
 #include "LanguageTable.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "Location.h"
 #include "EntityGrid.h"
@@ -23,6 +22,7 @@
 #include "SpawnPoint.h"
 #include "Darwinian.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 SpawnBuilding::SpawnBuilding()
@@ -53,7 +53,7 @@ void SpawnBuilding::Initialise( Building *_template )
 
 bool SpawnBuilding::IsInView()
 {
-    if( m_visibilityRadius == 0.0f || g_app->m_editing )
+    if( m_visibilityRadius == 0.0f || g_editing )
     {
         if( m_links.Size() == 0 )
         {
@@ -442,7 +442,7 @@ bool MasterSpawnPoint::Advance()
         int numRed = g_location->m_teams[1].m_others.NumUsed();
         if( numRed < 10 )
         {
-            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
             if( gb ) gb->m_online = true;
         }
     }
@@ -453,7 +453,7 @@ bool MasterSpawnPoint::Advance()
 
 void MasterSpawnPoint::Render( float _predictionTime )
 {
-    if( m_isGlobal || g_app->m_editing )
+    if( m_isGlobal || g_editing )
     {
         SpawnBuilding::Render( _predictionTime );
     }
@@ -462,7 +462,7 @@ void MasterSpawnPoint::Render( float _predictionTime )
 
 void MasterSpawnPoint::RenderAlphas ( float _predictionTime )
 {
-    if( m_isGlobal || g_app->m_editing )
+    if( m_isGlobal || g_editing )
     {
         SpawnBuilding::RenderAlphas( _predictionTime );
     }
@@ -664,9 +664,9 @@ bool SpawnPoint::Advance()
 
 			// Reds spawn a bit quicker
 			if (m_id.GetTeamId() == 1)
-			  m_spawnTimer -= 1.0 * (g_app->m_difficultyLevel / 10.0);
+			  m_spawnTimer -= 1.0 * (g_difficultyLevel / 10.0);
 			else
-			  m_spawnTimer -= 0.5 * (g_app->m_difficultyLevel / 10.0);
+			  m_spawnTimer -= 0.5 * (g_difficultyLevel / 10.0);
         }
     }
     END_PROFILE( g_profiler, "SpawnDarwinians" );
@@ -888,7 +888,7 @@ void SpawnPopulationLock::Render( float _predictionTime )
 
 void SpawnPopulationLock::RenderAlphas( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         RenderSphere( m_pos, 30.0f, RGBAColour(255,255,255,255) );
 
@@ -911,7 +911,7 @@ void SpawnPopulationLock::RenderAlphas( float _predictionTime )
         }
 
 #ifdef LOCATION_EDITOR
-        if( g_app->m_editing &&
+        if( g_editing &&
             g_locationEditor->m_mode == LocationEditor::ModeBuilding &&
             g_locationEditor->m_selectionId == m_id.GetUniqueId() )
         {

@@ -13,7 +13,6 @@
 
 #include "Explosion.h"
 #include "GameTime.h"
-#include "App.h"
 #include "GlobalWorld.h"
 #include "Camera.h"
 #include "Renderer.h"
@@ -23,6 +22,7 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 ResearchItem::ResearchItem()
@@ -158,7 +158,7 @@ void ResearchItem::Render( float _predictionTime )
 
 	m_shape->Render(0.0f, mat);
 
-    if( g_app->m_editing && m_researchType != -1 )
+    if( g_editing && m_researchType != -1 )
     {
         g_gameFont.DrawText3DCentre( predictedPos + Vector3(0,25,0), 5, GlobalResearch::GetTypeName( m_researchType ) );
         g_gameFont.DrawText3DCentre( predictedPos + Vector3(0,20,0), 5, "%2.2f", m_reprogrammed );

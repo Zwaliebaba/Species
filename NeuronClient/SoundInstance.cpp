@@ -13,10 +13,10 @@
 #include "SoundStreamDecoder.h"
 #include "SoundLibrary3d.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "Location.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ============================================================================
@@ -962,7 +962,7 @@ WorldObject *SoundInstance::GetAttachedObject()
 
     WorldObject *obj = nullptr;
 
-    if( g_app->m_locationId != -1 )
+    if( g_locationId != -1 )
     {
         //
         // We are linked to one or more world objects

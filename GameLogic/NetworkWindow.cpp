@@ -9,10 +9,10 @@
 #include "Server.h"
 #include "ClientToServer.h"
 
-#include "App.h"
 #include "GameTime.h"
 
 #include "NetworkWindow.h"
+#include "AppState.h"
 
 
 NetworkWindow::NetworkWindow( char const *name )
@@ -30,7 +30,7 @@ void NetworkWindow::Render( bool hasFocus )
     //
     // Render some Networking stats
 
-    if( g_app->m_server )
+    if( g_server )
     {
 #ifdef PROFILER_ENABLED
 //        g_editorFont.DrawText2D( m_x + 10, m_y + 120, DEF_FONT_SIZE,
@@ -39,9 +39,9 @@ void NetworkWindow::Render( bool hasFocus )
 //			"Server RECV  : %4.0f bytes", g_profiler->GetTotalTime("Server Receive") );
 #endif // PROFILER_ENABLED
         g_editorFont.DrawText2D( m_x + 10, m_y + 30,  DEF_FONT_SIZE,
-			"SERVER SeqID : %d", g_app->m_server->m_sequenceId );
+			"SERVER SeqID : %d", g_server->m_sequenceId );
 
-        int diff = g_app->m_server->m_sequenceId - g_lastProcessedSequenceId;
+        int diff = g_server->m_sequenceId - g_lastProcessedSequenceId;
         g_editorFont.DrawText2D( m_x + 10, m_y + 60, DEF_FONT_SIZE, "Diff         : %d", diff );
     }
 

@@ -29,6 +29,7 @@
 #include "GodDish.h"
 #include "Rocket.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 //*****************************************************************************
 // Private Functions
@@ -163,11 +164,11 @@ void Script::RunCommand_CamReset()
 
 void Script::RunCommand_EnterLocation(char* _name)
 {
-  g_app->m_requestedLocationId = g_globalWorld->GetLocationId(_name);
+  g_requestedLocationId = g_globalWorld->GetLocationId(_name);
 
-  m_requestedLocationId = g_app->m_requestedLocationId;
+  m_requestedLocationId = g_requestedLocationId;
 
-  GlobalLocation* loc = g_globalWorld->GetLocation(g_app->m_requestedLocationId);
+  GlobalLocation* loc = g_globalWorld->GetLocation(g_requestedLocationId);
   DEBUG_ASSERT(loc);
 
   strcpy(g_app->m_requestedMission, loc->m_missionFilename);
@@ -176,11 +177,11 @@ void Script::RunCommand_EnterLocation(char* _name)
 
 void Script::RunCommand_ExitLocation()
 {
-  g_app->m_requestedLocationId = -1;
+  g_requestedLocationId = -1;
   g_app->m_requestedMission[0] = '\0';
   g_app->m_requestedMap[0] = '\0';
 
-  m_requestedLocationId = g_app->m_requestedLocationId;
+  m_requestedLocationId = g_requestedLocationId;
 }
 
 void Script::RunCommand_SetMission(char* _locName, char* _missionName)
@@ -355,7 +356,7 @@ void Script::RunCommand_PurityControl()
   // Delete the save game
 
   char saveDir[256];
-  sprintf(saveDir, "users/%s/", g_app->m_userProfileName);
+  sprintf(saveDir, "users/%s/", g_userProfileName);
   LList<char*>* allFiles = ListDirectory(saveDir, "*.*");
 
   for (int i = 0; i < allFiles->Size(); ++i)
@@ -401,7 +402,7 @@ void Script::RunCommand_ActivateTrunkPort(int _buildingId, bool _fullActivation)
       b->ReprogramComplete();
     else
     {
-      GlobalBuilding* gb = g_globalWorld->GetBuilding(b->m_id.GetUniqueId(), g_app->m_locationId);
+      GlobalBuilding* gb = g_globalWorld->GetBuilding(b->m_id.GetUniqueId(), g_locationId);
       gb->m_online = true;
     }
   }
@@ -498,7 +499,7 @@ void Script::Advance()
 
   if (m_requestedLocationId != -1)
   {
-    if (g_app->m_locationId != m_requestedLocationId)
+    if (g_locationId != m_requestedLocationId)
       return;
     m_requestedLocationId = -1;
   }

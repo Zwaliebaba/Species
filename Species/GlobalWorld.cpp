@@ -30,6 +30,7 @@
 #include "TrunkPort.h"
 #include "BuyNowWindow.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 // ****************************************************************************
 // Class GlobalLocation
@@ -744,7 +745,7 @@ void SphereWorld::Render()
   RenderIslands();
   RenderTrunkLinks();
 
-  if (!g_app->m_editing)
+  if (!g_editing)
   {
     RenderSpirits();
     RenderHeaven();
@@ -938,7 +939,7 @@ void SphereWorld::RenderWorldShape()
 
 void SphereWorld::RenderTrunkLinks()
 {
-  //if( g_app->m_editing ) return;
+  //if( g_editing ) return;
 
   Matrix34 rootMat(0);
 
@@ -956,7 +957,7 @@ void SphereWorld::RenderTrunkLinks()
       GlobalLocation* fromLoc = g_globalWorld->GetLocation(building->m_locationId);
       GlobalLocation* toLoc = g_globalWorld->GetLocation(building->m_link);
 
-      if (fromLoc && toLoc && (fromLoc->m_available && toLoc->m_available) || g_app->m_editing)
+      if (fromLoc && toLoc && (fromLoc->m_available && toLoc->m_available) || g_editing)
       {
         Vector3 fromPos = g_globalWorld->GetLocationPosition(building->m_locationId);
         Vector3 toPos = g_globalWorld->GetLocationPosition(building->m_link);
@@ -1107,7 +1108,7 @@ void SphereWorld::RenderIslands()
   for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
   {
     GlobalLocation* loc = g_globalWorld->m_locations.GetData(i);
-    if (loc->m_available || g_app->m_editing)
+    if (loc->m_available || g_editing)
     {
       Vector3 islandPos = g_globalWorld->GetLocationPosition(loc->m_id);
 
@@ -1145,7 +1146,7 @@ void SphereWorld::RenderIslands()
   for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
   {
     GlobalLocation* loc = g_globalWorld->m_locations.GetData(i);
-    if (loc->m_available || g_app->m_editing)
+    if (loc->m_available || g_editing)
     {
       Vector3 islandPos = g_globalWorld->GetLocationPosition(loc->m_id);
       char* islandName = strdup(g_globalWorld->GetLocationNameTranslated(loc->m_id));
@@ -1158,7 +1159,7 @@ void SphereWorld::RenderIslands()
       glColor4f(0.7f, 0.7f, 0.7f, 0.0f);
       g_gameFont.DrawText3DCentre(islandPos + camUp * size * 1.5f, size * 3.0f, islandName);
 
-      if (g_app->m_editing)
+      if (g_editing)
       {
         g_gameFont.DrawText3DCentre(islandPos, size, loc->m_mapFilename);
         g_gameFont.DrawText3DCentre(islandPos - camUp * size, size, loc->m_missionFilename);
@@ -1174,7 +1175,7 @@ void SphereWorld::RenderIslands()
 
       g_gameFont.DrawText3DCentre(islandPos + camUp * size * 1.5f, size * 3.0f, islandName);
 
-      if (g_app->m_editing)
+      if (g_editing)
       {
         g_gameFont.DrawText3DCentre(islandPos, size, loc->m_mapFilename);
         g_gameFont.DrawText3DCentre(islandPos - camUp * size, size, loc->m_missionFilename);
@@ -1244,7 +1245,7 @@ GlobalWorld::~GlobalWorld()
 
 void GlobalWorld::Advance()
 {
-  if (g_app->m_editing)
+  if (g_editing)
   {
     if (m_editorMode == 0)
     {
@@ -1257,7 +1258,7 @@ void GlobalWorld::Advance()
         if (locId != -1)
         {
           GlobalLocation* loc = GetLocation(locId);
-          g_app->m_requestedLocationId = locId;
+          g_requestedLocationId = locId;
           strcpy(g_app->m_requestedMission, loc->m_missionFilename);
           strcpy(g_app->m_requestedMap, loc->m_mapFilename);
         }
@@ -1348,7 +1349,7 @@ void GlobalWorld::Advance()
     if (m_locationRequested != -1 && g_renderer->IsFadeComplete())
     {
       GlobalLocation* loc = GetLocation(m_locationRequested);
-      g_app->m_requestedLocationId = m_locationRequested;
+      g_requestedLocationId = m_locationRequested;
       strcpy(g_app->m_requestedMission, loc->m_missionFilename);
       strcpy(g_app->m_requestedMap, loc->m_mapFilename);
 
@@ -1361,7 +1362,7 @@ void GlobalWorld::Render()
 {
   START_PROFILE(g_app->m_profiler, "Render Global World");
 
-  if (!g_app->m_editing)
+  if (!g_editing)
     m_globalInternet->Render();
   CHECK_OPENGL_STATE();
   m_sphereWorld->Render();
@@ -1414,7 +1415,7 @@ GlobalLocation* GlobalWorld::GetHighlightedLocation()
 
   if (loc && loc->m_available)
     return loc;
-  if (loc && g_app->m_editing)
+  if (loc && g_editing)
     return loc;
 
   return nullptr;
@@ -1665,9 +1666,9 @@ void GlobalWorld::LoadGame(const char* _filename)
   TextReader* in = nullptr;
   char fullFilename[256];
 
-  if (!g_app->m_editing)
+  if (!g_editing)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_app->m_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_userProfileName, _filename);
     if (DoesFileExist(fullFilename))
       in = new TextFileReader(fullFilename);
   }
@@ -1772,9 +1773,9 @@ void GlobalWorld::SaveGame(const char* _filename)
   FileWriter* out = nullptr;
   char fullFilename[256];
 
-  if (!g_app->m_editing && stricmp(g_app->m_userProfileName, "none") != 0)
+  if (!g_editing && stricmp(g_userProfileName, "none") != 0)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_app->m_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_userProfileName, _filename);
 #ifdef TARGET_DEBUG
     out = new FileWriter(fullFilename, false);
 #else

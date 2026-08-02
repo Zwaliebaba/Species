@@ -8,7 +8,6 @@
 #include "PrefsGraphicsWindow.h"
 #include "DropDownMenu.h"
 
-#include "App.h"
 #include "Renderer.h"
 #include "Location.h"
 #include "LevelFile.h"

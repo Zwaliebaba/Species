@@ -61,6 +61,7 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 // ****************************************************************************
 //  Class Location
@@ -110,7 +111,7 @@ void Location::Init( char const *_missionFilename, char const *_mapFilename )
 
     m_water = new Water();
 
-    if( !g_app->m_editing )
+    if( !g_editing )
     {
         InitBuildings();
 
@@ -132,12 +133,12 @@ void Location::Init( char const *_missionFilename, char const *_mapFilename )
 	if( m_levelFile->m_levelDifficulty == -1 )
 	{
 		// Remember the difficulty factor that this with which this level was created.
-		m_levelFile->m_levelDifficulty = g_app->m_difficultyLevel;
+		m_levelFile->m_levelDifficulty = g_difficultyLevel;
 	}
 	else
 	{
 		// Set difficulty level to the created level difficulty
-		g_app->m_difficultyLevel = m_levelFile->m_levelDifficulty;
+		g_difficultyLevel = m_levelFile->m_levelDifficulty;
 	}
 }
 
@@ -174,7 +175,7 @@ void Location::LoadLevel(char const *missionFilename, char const *mapFilename)
     {
         m_missionComplete = true;
 
-        GlobalLocation *gloc = g_globalWorld->GetLocation(g_app->m_requestedLocationId);
+        GlobalLocation *gloc = g_globalWorld->GetLocation(g_requestedLocationId);
         gloc->m_missionCompleted = true;
     }
 
@@ -516,7 +517,7 @@ Building *Location::GetBuilding( int _id )
 {
     if( _id == -1 ) return nullptr;
 
-    if( g_app->m_editing )
+    if( g_editing )
     {
         return m_levelFile->GetBuilding( _id );
     }
@@ -792,7 +793,7 @@ void Location::DoMissionCompleteActions()
 	//
 	// Update the mission file for this location
 
-	GlobalLocation *gloc = g_globalWorld->GetLocation(g_app->m_locationId);
+	GlobalLocation *gloc = g_globalWorld->GetLocation(g_locationId);
     gloc->m_missionCompleted = true;
 
     //gloc->m_missionAvailable = false;
@@ -997,7 +998,7 @@ void Location::Render(bool renderWaterAndClouds)
     RenderBuildings();
 	CHECK_OPENGL_STATE();
 
-    if (!g_app->m_editing && m_teams)
+    if (!g_editing && m_teams)
 	{
 		RenderTeams();
 		CHECK_OPENGL_STATE();
@@ -1012,7 +1013,7 @@ void Location::Render(bool renderWaterAndClouds)
 	RenderBuildingAlphas();
 	CHECK_OPENGL_STATE();
 
-    if(!g_app->m_editing)
+    if(!g_editing)
     {
 		CHECK_OPENGL_STATE();
         RenderParticles();
@@ -2079,7 +2080,7 @@ void Location::SetupLights()
 int Location::ChristmasModEnabled()
 {
 
-    if( g_app->m_editing ) return 0;
+    if( g_editing ) return 0;
 
     // Last 2 weeks in December only
     // Also allow user to disable if he wishes

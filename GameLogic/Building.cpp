@@ -15,7 +15,6 @@
 #include "TextRenderer.h"
 #include "LanguageTable.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
@@ -65,6 +64,7 @@
 #include "GenericHub.h"
 #include "FeedingTube.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 Shape *Building::s_controlPad = nullptr;
@@ -121,7 +121,7 @@ void Building::Initialise( Building *_template )
         m_radius = 13.0f;
     }
 
-    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_requestedLocationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_requestedLocationId );
     if( gb ) m_id.SetTeamId( gb->m_teamId );
 
     g_soundSystem->TriggerBuildingEvent( this, "Create" );
@@ -241,7 +241,7 @@ void Building::ReprogramComplete()
 {
     g_soundSystem->TriggerBuildingEvent( this, "ReprogramComplete" );
 
-    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
     if( gb )
     {
         gb->m_online = !gb->m_online;
@@ -255,7 +255,7 @@ void Building::SetTeamId( int _teamId )
 {
     m_id.SetTeamId( _teamId );
 
-    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
     if( gb ) gb->m_teamId = _teamId;
 
     g_soundSystem->TriggerBuildingEvent( this, "ChangeTeam" );
@@ -301,7 +301,7 @@ bool Building::PerformDepthSort( Vector3 &_centrePos )
 void Building::Render( float predictionTime )
 {
 #ifdef DEBUG_RENDER_ENABLED
-	if (g_app->m_editing)
+	if (g_editing)
 	{
 		Vector3 pos(m_pos);
 		pos.y += 5.0f;
@@ -340,7 +340,7 @@ void Building::RenderLights()
     if( m_id.GetTeamId() != 255 && m_lights.Size() > 0 )
     {
         if( (g_clientToServer->m_lastValidSequenceIdFromServer % 10)/2 == m_id.GetTeamId() ||
-            g_app->m_editing )
+            g_editing )
         {
             for( int i = 0; i < m_lights.Size(); ++i )
             {

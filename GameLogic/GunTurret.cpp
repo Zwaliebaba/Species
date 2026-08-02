@@ -12,7 +12,6 @@
 #include "InputTypes.h"
 
 #include "ProtocolLimits.h"
-#include "App.h"
 #include "Location.h"
 #include "Team.h"
 #include "EntityGrid.h"
@@ -28,6 +27,7 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 GunTurret::GunTurret()
@@ -392,7 +392,7 @@ bool GunTurret::IsInView()
 
 void GunTurret::Render( float _predictionTime )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         m_turretFront = m_front;
     }
@@ -504,7 +504,7 @@ void GunTurret::RenderPorts()
 bool GunTurret::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
                           float _rayLen, Vector3 *_pos, Vector3 *norm )
 {
-    if( g_app->m_editing )
+    if( g_editing )
     {
         return RaySphereIntersection(_rayStart, _rayDir, m_pos, m_radius, _rayLen);
     }

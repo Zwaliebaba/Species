@@ -8,7 +8,7 @@
 #include "WindowManagerWin32.h"
 #include "Debug.h"
 
-#include "App.h"
+#include "AppState.h"
 
 using std::cerr;
 
@@ -75,7 +75,7 @@ LRESULT CALLBACK W32EventHandler::WndProc( HWND hWnd, UINT message,
 			return 0;
 
 		case WM_CLOSE:
-			g_app->m_requestQuit = true;
+			g_requestQuit = true;
 			return 0;
 
 		case WM_INPUTLANGCHANGE:

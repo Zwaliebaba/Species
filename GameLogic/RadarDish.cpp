@@ -9,7 +9,6 @@
 #include "Resource.h"
 #include "Shape.h"
 
-#include "App.h"
 #include "EntityGrid.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
@@ -21,6 +20,7 @@
 
 #include "RadarDish.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 RadarDish::RadarDish()
@@ -80,7 +80,7 @@ bool RadarDish::Advance ()
     // if we saved a target dish previously
     if( m_newlyCreated )
     {
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb )
         {
             Building *targetBuilding = g_location->GetBuilding( gb->m_link );
@@ -208,7 +208,7 @@ bool RadarDish::Advance ()
         g_soundSystem->StopAllSounds( m_id, "RadarDish ConnectionEstablished" );
         g_soundSystem->TriggerBuildingEvent( this, "ConnectionLost" );
 
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_link = -1;
     }
 
@@ -216,7 +216,7 @@ bool RadarDish::Advance ()
     {
         g_soundSystem->TriggerBuildingEvent( this, "ConnectionEstablished" );
 
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_link = m_receiverId;
     }
 

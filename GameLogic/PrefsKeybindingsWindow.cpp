@@ -14,7 +14,6 @@
 #include "PrefsKeybindingsWindow.h"
 #include "DropDownMenu.h"
 
-#include "App.h"
 #include "GameTime.h"
 #include "Renderer.h"
 #include "TaskManagerInterfaceIcons.h"

@@ -12,7 +12,6 @@
 
 #include "ClientToServer.h"
 
-#include "App.h"
 #include "Location.h"
 #include "Camera.h"
 #include "GlobalWorld.h"
@@ -23,6 +22,7 @@
 #include "Switch.h"
 #include "Generator.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 // ****************************************************************************
@@ -110,7 +110,7 @@ bool FenceSwitch::Advance()
 
             if( GetNumPorts() == GetNumPortsOccupied() )
             {
-			    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+			    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
 			    if( gb &&
                     !gb->m_online )
 			    {
@@ -181,7 +181,7 @@ bool FenceSwitch::Advance()
             }
             else
 		    {
-			    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+			    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
 			    if( gb &&
                     gb->m_online)
 			    {
@@ -410,7 +410,7 @@ void FenceSwitch::Switch()
 			m_switchValue = m_linkedBuildingId;
 		}
 
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         gb->m_online = false;
         g_globalWorld->EvaluateEvents();
         /*if( strstr( m_script, ".txt" ) )
@@ -425,7 +425,7 @@ void FenceSwitch::RenderLights()
     if( m_id.GetTeamId() != 255 && m_lights.Size() > 0 )
     {
         if( (g_clientToServer->m_lastValidSequenceIdFromServer % 10)/2 == m_id.GetTeamId() ||
-            g_app->m_editing )
+            g_editing )
         {
             for( int i = 0; i < m_lights.Size(); ++i )
             {

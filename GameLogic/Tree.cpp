@@ -16,12 +16,12 @@
 
 #include "SoundSystem.h"
 
-#include "App.h"
 #include "ProtocolLimits.h"
 #include "ParticleSystem.h"
 #include "Location.h"
 #include "GameTime.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 Tree::Tree()
 :   Building(),
@@ -304,7 +304,7 @@ void Tree::RenderAlphas( float _predictionTime )
         Generate();
     }
 
-    if( g_app->m_editing )
+    if( g_editing )
     {
 	    intToArray(m_branchColour, m_branchColourArray);
 	    intToArray(m_leafColour, m_leafColourArray);

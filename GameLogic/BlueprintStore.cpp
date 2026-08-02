@@ -11,13 +11,13 @@
 #include "BlueprintStore.h"
 #include "Darwinian.h"
 
-#include "App.h"
 #include "Location.h"
 #include "Camera.h"
 #include "GameTime.h"
 #include "Team.h"
 #include "GlobalWorld.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 BlueprintBuilding::BlueprintBuilding()
@@ -303,7 +303,7 @@ bool BlueprintStore::Advance()
 
     if( totallyClean )
     {
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_online = true;
     }
 
@@ -722,7 +722,7 @@ void BlueprintRelay::Render( float _predictionTime )
 {
     BlueprintBuilding::Render( _predictionTime );
 
-    if( g_app->m_editing )
+    if( g_editing )
     {
         m_pos.y = m_altitude;
     }

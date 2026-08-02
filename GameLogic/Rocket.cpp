@@ -16,7 +16,6 @@
 #include "Rocket.h"
 #include "Darwinian.h"
 
-#include "App.h"
 #include "Location.h"
 #include "Camera.h"
 #include "Team.h"
@@ -31,6 +30,7 @@
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 Shape *FuelBuilding::s_fuelPipe = nullptr;
@@ -306,7 +306,7 @@ bool FuelGenerator::Advance()
 
     if( m_surges > 8 )
     {
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_online = true;
     }
 
@@ -1055,7 +1055,7 @@ void EscapeRocket::AdvanceCountdown()
     {
         m_state = StateFlight;
 
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         //if( gb ) gb->m_online = true;
     }
 }
@@ -1327,7 +1327,7 @@ void EscapeRocket::RenderAlphas( float _predictionTime )
 {
     FuelBuilding::RenderAlphas( _predictionTime );
 
-    if( g_app->m_editing )
+    if( g_editing )
     {
         Building *spawnBuilding = g_location->GetBuilding( m_spawnBuildingId );
         if( spawnBuilding )

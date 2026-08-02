@@ -13,10 +13,10 @@
 
 #include "SoundSystem.h"
 
-#include "App.h"
 #include "GlobalWorld.h"
 #include "GameTime.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 TrunkPort::TrunkPort()
@@ -84,7 +84,7 @@ void TrunkPort::SetDetail( int _detail )
 
 bool TrunkPort::Advance()
 {
-    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
     if( gb && gb->m_online && m_openTimer == 0.0f)
     {
         m_openTimer = GetHighResTime();
@@ -294,7 +294,7 @@ void TrunkPort::ReprogramComplete()
             GlobalBuilding *building = g_globalWorld->m_buildings[i];
             if( building->m_type == Building::TypeTrunkPort &&
                 building->m_locationId == m_targetLocationId &&
-                building->m_link == g_app->m_locationId )
+                building->m_link == g_locationId )
             {
                 building->m_online = true;
             }

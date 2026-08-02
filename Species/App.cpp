@@ -27,6 +27,7 @@
 #include "TextStreamReaders.h"
 #include "UserInput.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 // Overlays GameData/DefaultPreferences.txt onto the built-in defaults, and is
 // installed on PrefsManager before the first one is constructed. It runs only
@@ -66,25 +67,14 @@ App::App()
     m_soundSystem(nullptr),
     m_langTable(nullptr),
     m_profiler(nullptr),
-    m_locationId(-1),
-    m_server(nullptr),
     m_clientToServer(nullptr),
     m_locationInput(nullptr),
     m_startSequence(nullptr),
     m_attractMode(nullptr),
-    m_controlHelpSystem(nullptr),
     m_gameMenu(nullptr),
     m_negativeRenderer(false),
-    m_difficultyLevel(0),
-    m_largeMenus(false),
     m_paused(false),
-    m_editing(false),
-    m_requestedLocationId(-1),
-    m_requestToggleEditing(false),
-    m_requestQuit(false),
     m_levelReset(false),
-    m_atMainMenu(false),
-    m_gameMode(GameModeNone)
 {
   g_app = this;
 
@@ -162,7 +152,7 @@ App::App()
 #ifdef ATTRACTMODE_ENABLED
   m_attractMode = new AttractMode();
 #endif
-  m_controlHelpSystem = new ControlHelpSystem();
+  g_controlHelpSystem = new ControlHelpSystem();
 
   g_taskManagerInterface = new TaskManagerInterfaceIcons();
 
@@ -170,7 +160,7 @@ App::App()
 
   int menuOption = g_prefsManager->GetInt(OTHER_LARGEMENUS, 0);
   if (menuOption == 2) // (todo) or is running in media center and tenFootMode == -1
-    m_largeMenus = true;
+    g_largeMenus = true;
 
   //
   // Load save games
@@ -183,7 +173,7 @@ App::~App()
   SAFE_DELETE(g_globalWorld);
   SAFE_DELETE(m_langTable);
   SAFE_DELETE(g_taskManagerInterface);
-  SAFE_DELETE(m_controlHelpSystem);
+  SAFE_DELETE(g_controlHelpSystem);
 #ifdef ATTRACTMODE_ENABLED
   SAFE_DELETE(m_attractMode);
 #endif
@@ -205,11 +195,11 @@ App::~App()
 
 void App::SetProfileName(const char* _profileName)
 {
-  strcpy(m_userProfileName, _profileName);
+  strcpy(g_userProfileName, _profileName);
 
   if (stricmp(_profileName, "AttractMode") != 0)
   {
-    g_prefsManager->SetString("UserProfile", m_userProfileName);
+    g_prefsManager->SetString("UserProfile", g_userProfileName);
     g_prefsManager->Save();
   }
 }
@@ -276,13 +266,13 @@ void App::SetLanguage(const char* _language, bool _test)
 void App::UpdateDifficultyFromPreferences()
 {
   // This method is called to make sure that the difficulty setting
-  // used to control the game play (g_app->m_difficultyLevel) is
+  // used to control the game play (g_difficultyLevel) is
   // consistent with the user preferences.
 
-  // Preferences value is 1-based, m_difficultyLevel is 0-based.
-  m_difficultyLevel = g_prefsManager->GetInt(OTHER_DIFFICULTY, 1) - 1;
-  if (m_difficultyLevel < 0)
-    m_difficultyLevel = 0;
+  // Preferences value is 1-based, g_difficultyLevel is 0-based.
+  g_difficultyLevel = g_prefsManager->GetInt(OTHER_DIFFICULTY, 1) - 1;
+  if (g_difficultyLevel < 0)
+    g_difficultyLevel = 0;
 }
 
 const char* App::GetProfileDirectory()
@@ -314,10 +304,9 @@ const char* App::GetScreenshotDirectory()
 
 bool App::LoadProfile()
 {
-  DebugTrace("Loading profile %s\n", m_userProfileName);
+  DebugTrace("Loading profile %s\n", g_userProfileName);
 
-  if ((stricmp(m_userProfileName, "AccessAllAreas") == 0 || stricmp(m_userProfileName, "AttractMode") == 0) && g_app->m_gameMode !=
-    GameModePrologue)
+  if ((stricmp(g_userProfileName, "AccessAllAreas") == 0 || stricmp(g_userProfileName, "AttractMode") == 0) && g_gameMode != GameModePrologue)
   {
     // Cheat username that opens all locations
     // aimed at beta testers who've completed the game already
@@ -364,19 +353,19 @@ bool App::HasBoughtGame()
 
 void App::LoadPrologue()
 {
-  m_gameMode = GameModePrologue;
+  g_gameMode = GameModePrologue;
 
   m_soundSystem->StopAllSounds(WorldObjectId(), "Music");
 
   strcpy(m_gameDataFile, "game_demo2.txt");
   LoadProfile();
 
-  m_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
-  GlobalLocation* gloc = g_globalWorld->GetLocation(m_requestedLocationId);
+  g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
+  GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
   strcpy(m_requestedMap, gloc->m_mapFilename);
   strcpy(m_requestedMission, gloc->m_missionFilename);
 
-  m_atMainMenu = false;
+  g_atMainMenu = false;
 
   g_prefsManager->SetInt("RenderSpecialLighting", 1);
   g_prefsManager->SetInt("CurrentGameMode", 0);
@@ -387,12 +376,12 @@ void App::LoadCampaign()
 {
   m_soundSystem->StopAllSounds(WorldObjectId(), "Music");
 
-  //m_atMainMenu = false;
+  // g_atMainMenu = false;
 
   strcpy(m_gameDataFile, "Game.txt");
   LoadProfile();
-  m_gameMode = GameModeCampaign;
-  m_requestedLocationId = -1;
+  g_gameMode = GameModeCampaign;
+  g_requestedLocationId = -1;
   g_prefsManager->SetInt("RenderSpecialLighting", 0);
   g_prefsManager->SetInt("CurrentGameMode", 1);
   g_prefsManager->Save();

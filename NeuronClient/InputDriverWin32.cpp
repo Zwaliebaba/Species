@@ -14,8 +14,8 @@
 #include "WindowManager.h"
 #include "WindowManagerWin32.h"
 #include "LanguageTable.h"
-#include "App.h"
 #include "Debug.h"
+#include "AppState.h"
 
 using namespace std;
 
@@ -329,7 +329,7 @@ LRESULT CALLBACK W32InputDriver::WndProc( HWND hWnd, UINT message,
 				g_keys[wParam] = 1;
 				if (wParam == KEY_F4)
 				{
-                    g_app->m_requestQuit = true;
+                    g_requestQuit = true;
 				}
 			}
 			break;

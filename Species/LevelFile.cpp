@@ -39,6 +39,7 @@
 #include "Unit.h"
 #include "TaskManager.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 //*****************************************************************************
@@ -86,10 +87,10 @@ void LevelFile::ParseMissionFile(char const *_filename)
 	TextReader *in = nullptr;
     char fullFilename[256];
 
-    if( !g_app->m_editing )
+    if( !g_editing )
     {
         // Try to load a save game first
-        sprintf( fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_app->m_userProfileName, _filename );
+        sprintf( fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_userProfileName, _filename );
         if( DoesFileExist( fullFilename ) ) in = new TextFileReader( fullFilename );
     }
 
@@ -299,7 +300,7 @@ void LevelFile::ParseBuildings(TextReader *_in, bool _dynamic)
 {
 	float loadDifficultyFactor = 1.0;
 	if (m_levelDifficulty < 0)
-		loadDifficultyFactor = 1.0f + (float) g_app->m_difficultyLevel / 5.0f;
+		loadDifficultyFactor = 1.0f + (float) g_difficultyLevel / 5.0f;
 
 	while(_in->ReadLine())
 	{
@@ -377,7 +378,7 @@ void LevelFile::ParseInstantUnits(TextReader *_in)
 {
 	float loadDifficultyFactor = 1.0;
 	if (m_levelDifficulty < 0)
-		loadDifficultyFactor = 1.0f + (float) g_app->m_difficultyLevel / 5.0f;
+		loadDifficultyFactor = 1.0f + (float) g_difficultyLevel / 5.0f;
 
 	while(_in->ReadLine())
 	{
@@ -442,7 +443,7 @@ void LevelFile::ParseInstantUnits(TextReader *_in)
 			else
 			{
 				if( loadDifficultyFactor > 1.0f )
-					iu->m_spread *= pow(1.2, g_app->m_difficultyLevel / 5.0);
+					iu->m_spread *= pow(1.2, g_difficultyLevel / 5.0);
 			}
 
 		}
@@ -1175,9 +1176,9 @@ void LevelFile::SaveMissionFile(char const *_filename)
     FileWriter *out = nullptr;
     char fullFilename[256];
 
-    if( !g_app->m_editing )
+    if( !g_editing )
     {
-        sprintf( fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_app->m_userProfileName, _filename );
+        sprintf( fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_userProfileName, _filename );
 #ifdef TARGET_DEBUG
         out = new FileWriter( fullFilename, false );
 #else
@@ -1649,7 +1650,7 @@ void LevelFile::ParseRunningPrograms(TextReader *_in)
 
 void LevelFile::WriteRunningPrograms(FileWriter *_out)
 {
-    if( !g_app->m_editing )
+    if( !g_editing )
     {
         Team *team = g_location->GetMyTeam();
 

@@ -34,6 +34,7 @@
 
 #include <vector>
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 // HelpIcon ------------------
@@ -157,7 +158,7 @@ void HelpIcon::Render( const Vector2 &_setPosition, float _alpha )
 
 	Vector2 iconCentre = Vector2(position.x, position.y);
 
-	//if( g_app->m_largeMenus )
+	//if( g_largeMenus )
 	//{
 	//	iconGap *= 2.0f;
 	//	iconSize *= 1.5f;
@@ -214,7 +215,7 @@ void HelpIcon::Render( const Vector2 &_setPosition, float _alpha )
 				continue;
 
 			float fontSize = 12.0f;
-			//if( g_app->m_largeMenus )
+			//if( g_largeMenus )
 			//{
 			//	fontSize *= 1.5f;
 			//}
@@ -802,7 +803,7 @@ void ControlHelpSystem::Shutdown()
 void ControlHelpSystem::Render()
 {
 	// Don't render if not in location
-	if (g_app->m_locationId == -1 ||
+	if (g_locationId == -1 ||
 		g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD ||
 		!g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
 	{

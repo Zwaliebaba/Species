@@ -6,9 +6,9 @@
 
 #include "SaveOnQuitWindow.h"
 
-#include "App.h"
 #include "Renderer.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 
 class YesButton : public SpeciesButton
@@ -16,7 +16,7 @@ class YesButton : public SpeciesButton
     void MouseUp()
     {
 		g_soundSystem->SaveBlueprints();
-		g_app->m_requestQuit = true;
+		g_requestQuit = true;
     }
 };
 
@@ -25,7 +25,7 @@ class NoButton : public SpeciesButton
 {
     void MouseUp()
     {
-		g_app->m_requestQuit = true;
+		g_requestQuit = true;
 		g_soundSystem->m_quitWithoutSave = true;
     }
 };

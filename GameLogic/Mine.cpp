@@ -19,7 +19,6 @@
 #include "InputTypes.h"
 #endif
 
-#include "App.h"
 #include "Camera.h"
 #include "GlobalWorld.h"
 #include "Location.h"
@@ -32,6 +31,7 @@
 #include "ConstructionYard.h"
 #include "TrunkPort.h"
 #include "WorldPointers.h"
+#include "AppState.h"
 
 // ****************************************************************************
 // Class MineBuilding
@@ -369,7 +369,7 @@ void MineBuilding::TriggerCart ( MineCart *_cart, float _initValue )
 
 Vector3 MineBuilding::GetTrackMarker1()
 {
-    if( !m_trackMarker1 || g_app->m_editing )
+    if( !m_trackMarker1 || g_editing )
     {
         m_trackMarker1 = m_shape->m_rootFragment->LookupMarker( "MarkerTrack1" );
         DEBUG_ASSERT( m_trackMarker1 );
@@ -383,7 +383,7 @@ Vector3 MineBuilding::GetTrackMarker1()
 
 Vector3 MineBuilding::GetTrackMarker2()
 {
-    if( !m_trackMarker2 || g_app->m_editing )
+    if( !m_trackMarker2 || g_editing )
     {
         m_trackMarker2 = m_shape->m_rootFragment->LookupMarker( "MarkerTrack2" );
         DEBUG_ASSERT( m_trackMarker2 );
@@ -660,7 +660,7 @@ bool TrackStart::Advance()
     // Is our required building online yet?
     // Fill carts with primitives when they reach 50%
 
-    GlobalBuilding *globalBuilding = g_globalWorld->GetBuilding( m_reqBuildingId, g_app->m_locationId );
+    GlobalBuilding *globalBuilding = g_globalWorld->GetBuilding( m_reqBuildingId, g_locationId );
 
     if( globalBuilding && globalBuilding->m_online )
     {
@@ -698,7 +698,7 @@ void TrackStart::RenderAlphas( float _predictionTime )
     MineBuilding::RenderAlphas( _predictionTime );
 
 #ifdef DEBUG_RENDER_ENABLED
-    if( g_app->m_editing )
+    if( g_editing )
     {
         Building *req = g_location->GetBuilding( m_reqBuildingId );
         if( req )
@@ -755,7 +755,7 @@ bool TrackEnd::Advance()
     // Is our required building online yet?
     // Empty carts of primitives when they reach 50%
 
-    //GlobalBuilding *globalBuilding = g_globalWorld->GetBuilding( m_reqBuildingId, g_app->m_locationId );
+    //GlobalBuilding *globalBuilding = g_globalWorld->GetBuilding( m_reqBuildingId, g_locationId );
     Building *building = g_location->GetBuilding( m_reqBuildingId );
 
     bool online = false;
@@ -805,7 +805,7 @@ void TrackEnd::RenderAlphas( float _predictionTime )
     MineBuilding::RenderAlphas( _predictionTime );
 
 #ifdef DEBUG_RENDER_ENABLED
-    if( g_app->m_editing )
+    if( g_editing )
     {
         Building *req = g_location->GetBuilding( m_reqBuildingId );
         if( req )
@@ -859,7 +859,7 @@ Refinery::Refinery()
 
 char const *Refinery::GetObjectiveCounter()
 {
-    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
     int numRefined = 0;
     if( gb ) numRefined = gb->m_link;
 
@@ -871,7 +871,7 @@ char const *Refinery::GetObjectiveCounter()
 
 bool Refinery::Advance()
 {
-    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
 
     if(gb && gb->m_link == -1 )
     {
@@ -916,7 +916,7 @@ void Refinery::TriggerCart( MineCart *_cart, float _initValue )
         int primIndex = syncrand() % 3;
         _cart->m_primitives[primIndex] = true;
 
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
 
         if( gb ) gb->m_link++;
     }
@@ -959,7 +959,7 @@ void Refinery::Render( float _predictionTime )
     s_wheelShape->Render( _predictionTime, wheel2Mat );
     s_wheelShape->Render( _predictionTime, wheel3Mat );
 
-    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
     int numRefined = 0;
     if( gb ) numRefined = gb->m_link;
 
