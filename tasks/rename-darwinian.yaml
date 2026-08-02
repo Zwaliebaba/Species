@@ -28,6 +28,26 @@ summary: >
   opportunistically. Nothing else in any plan may rename Darwinian or any
   GameData-coupled name.
 
+  TWO OWNER DECISIONS, 2026-08-02, which together unblock T3.
+
+  Localisation: rename the entity-derived language KEYS and their ENGLISH
+  values only. The ~1087 prose lines in the other language files keep their
+  localised derivations (Darwinianer, Darwiniens, Darwiniani, darwinianos)
+  for now — T3 lists them in notes as known-stale text rather than
+  machine-translating forms nobody has reviewed. Wrong translated prose is
+  a visible in-game text bug; stale prose under a correct key is not, and
+  it stays findable with the same grep. The four branding keys stay frozen
+  regardless.
+
+  Position in the effort: this lands BEFORE the container and string
+  conversions reach the entity files — containers-replaced T9 is
+  blocked_by T3 for exactly that reason. Two grounds. T2's inventory was
+  derived at 4840da3 and every task that moves or rewrites those files
+  degrades it, and a rename that shares a window with a conversion produces
+  a diff where a missed string and a botched container swap are
+  indistinguishable. Running it alone means the owner smoke test that
+  follows tests one thing.
+
 tasks:
   - id: T1
     title: Owner decides the replacement name
@@ -166,9 +186,12 @@ tasks:
       - GameData/Language
       - tools/layering_allowlist.txt
     acceptance:
-      - grep -rlw Darwinian over code and GameData/ returns nothing outside the branding/save-path exclusions listed by T2
+      - grep -rlw Darwinian over code and GameData/ returns nothing outside the branding exclusions listed by T2 and the non-English prose values the owner deferred
       - Entity.cpp's typeNames[] entry, the class, the level files and every asset filename agree on the new name
+      - The 8 entity-derived language keys are renamed and their English values updated; non-English prose values are left as-is and listed in notes as known-stale
       - The commit carries Rename trailers and the allowlist entry count is unchanged
+      - containers-replaced T9's `files` list names GameLogic/Citizen.cpp, not Darwinian.cpp, and check_task_dag.py passes
+      - CODING_STANDARDS.md, GLOSSARY.md, ARCHITECTURE.md and AGENTS.md's smoke-test row are updated per T2's doc list, including the stale save-path row T2 found
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
@@ -180,6 +203,17 @@ tasks:
       parallel_safe false and then some: nothing else may be in flight in
       ANY plan while this lands — it touches entity code, content and the
       allowlist at once.
+
+      The localisation question T2 raised is settled — keys plus English
+      only, see the plan summary. That was the last thing holding this task,
+      which is why it is todo rather than blocked. Record the deferred
+      non-English prose in notes when it lands, with the grep that finds it,
+      so the follow-up is a lookup rather than a re-survey.
+
+      GameLogic/Citizen.cpp is named by containers-replaced T9, which is
+      blocked_by this task. Rewriting that file list is in the acceptance
+      criteria above, not an afterthought — T9 cannot resolve its own touch
+      set until this decides what the file is called.
     status: todo
 
   - id: T4

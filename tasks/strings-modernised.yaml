@@ -25,8 +25,20 @@ summary: >
 
   Cross-plan ordering: per file, containers-replaced finishes before this
   plan's task for that file, and this plan's task finishes before
-  ownership's (stage 3 -> 4 -> 5). Same-file tasks in different plans never
-  run concurrently — check `files` overlap before starting.
+  ownership's (stage 3 -> 4 -> 5). Every task below now carries the
+  `blocked_by` edges that state which containers-replaced task gates it
+  (docs/TASK_DAG.md, "Ordering across plans"), so `--next` enforces the
+  stage order instead of contradicting it. Same-file tasks in different
+  plans never run concurrently even where no ordering exists — check
+  `files` overlap before starting.
+
+  Re-measured 2026-08-02 at 11aee84 with
+  grep -rEo '\b(strcpy|strncpy|strcat|sprintf|snprintf)\b' over the six
+  projects: 367 sites (GameLogic 132, Species 115, NeuronClient 99,
+  NeuronCore 20, NeuronServer 1). Not comparable to the 345 above without
+  care — that figure was cited from the planning survey and this one counts
+  headers too — but the direction is unambiguous: stage 4 has not started,
+  and only T1's audit has landed.
 
 tasks:
   - id: T1
@@ -89,6 +101,7 @@ tasks:
       before conversion — the file must round-trip byte-identically.
     project: NeuronCore
     depends_on: [T1]
+    blocked_by: [containers-replaced/T18]
     files:
       - NeuronCore/Preferences.cpp
       - NeuronCore/Preferences.h
@@ -115,6 +128,7 @@ tasks:
       throughput.
     project: NeuronClient
     depends_on: [T1]
+    blocked_by: [containers-replaced/T7]
     files:
       - NeuronClient/Eclipse.cpp
       - NeuronClient/EclWindow.cpp
@@ -143,6 +157,7 @@ tasks:
       as its own noted follow-up, not silently.
     project: NeuronClient
     depends_on: [T1]
+    blocked_by: [containers-replaced/T5, containers-replaced/T6, containers-replaced/T18]
     files:
       - NeuronClient/SoundInstance.cpp
       - NeuronClient/SoundSystem.cpp
@@ -174,6 +189,7 @@ tasks:
       explicit without changing editing behaviour.
     project: GameLogic
     depends_on: [T1, T3]
+    blocked_by: [containers-replaced/T11]
     files:
       - GameLogic/InputField.cpp
       - GameLogic/InputField.h
@@ -205,6 +221,7 @@ tasks:
       float arithmetic while swapping the string types.
     project: GameLogic
     depends_on: [T1]
+    blocked_by: [containers-replaced/T10]
     files:
       - GameLogic/ScriptTrigger.cpp
       - GameLogic/Rocket.cpp
@@ -231,6 +248,7 @@ tasks:
       asset-path assembly.
     project: Species
     depends_on: [T1]
+    blocked_by: [containers-replaced/T12, containers-replaced/T13]
     files:
       - Species/TaskManagerInterfaceIcons.cpp
       - Species/App.cpp
@@ -259,6 +277,7 @@ tasks:
       big ones.
     project: Species
     depends_on: [T1, T7]
+    blocked_by: [containers-replaced/T12, containers-replaced/T13, layering-inversion/T15]
     files:
       - Species/GlobalWorld.cpp
       - Species/LevelFile.cpp

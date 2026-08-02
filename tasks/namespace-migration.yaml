@@ -18,6 +18,14 @@ summary: >
   land the move first — namespacing a file and then moving it double-churns
   the allowlist.
 
+  That sequencing is now stated as `blocked_by` edges rather than left to
+  whoever reads this paragraph (docs/TASK_DAG.md, "Ordering across plans").
+  Each task names the conversion tasks covering ITS project — T2 the eight
+  NeuronClient container/string/ownership tasks, T4 and T5 their GameLogic
+  and Species equivalents plus layering-inversion T15, which decides where
+  those files live. The effect is that every task here sorts behind the
+  work it would otherwise churn, and `--next` says so.
+
   Style note: CODING_STANDARDS.md sets the shape — namespace contents
   indented, PascalCase namespace names. Wrapping a file is not converting
   it; a legacy file gains the namespace wrapper without any style
@@ -50,6 +58,15 @@ tasks:
       they are touched. Engine namespace complete when this and T3 land.
     project: NeuronClient
     depends_on: []
+    blocked_by:
+      - containers-replaced/T5
+      - containers-replaced/T6
+      - containers-replaced/T7
+      - containers-replaced/T8
+      - containers-replaced/T14
+      - strings-modernised/T3
+      - strings-modernised/T4
+      - ownership/T3
     files:
       - NeuronClient
       - GameLogic
@@ -75,6 +92,9 @@ tasks:
       and ServerToClient join whatever of the layer is not already inside.
     project: NeuronServer
     depends_on: []
+    blocked_by:
+      - containers-replaced/T4
+      - ownership/T2
     files:
       - NeuronServer
       - Server
@@ -95,6 +115,14 @@ tasks:
       the layering-inversion moves have settled which files live here.
     project: GameLogic
     depends_on: [T1, T2, T3]
+    blocked_by:
+      - layering-inversion/T15
+      - containers-replaced/T9
+      - containers-replaced/T10
+      - containers-replaced/T11
+      - strings-modernised/T5
+      - strings-modernised/T6
+      - ownership/T4
     files:
       - GameLogic
       - Species
@@ -116,6 +144,14 @@ tasks:
       except main entry points and the C ABI surface.
     project: Species
     depends_on: [T4]
+    blocked_by:
+      - layering-inversion/T15
+      - containers-replaced/T12
+      - containers-replaced/T13
+      - strings-modernised/T7
+      - strings-modernised/T8
+      - ownership/T5
+      - ownership/T6
     files:
       - Species
     acceptance:

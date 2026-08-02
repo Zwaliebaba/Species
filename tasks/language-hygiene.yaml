@@ -123,6 +123,15 @@ tasks:
       - NeuronCore/NetLib.h
       - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
       - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+    notes: >
+      File overlap without an ordering: containers-replaced T4 also touches
+      ServerToClientLetter.h/.cpp and the letter tests. Neither task has to
+      precede the other — this one changes enumerator types at the
+      serialisation boundary, that one changes the container behind the
+      updates — but they must not run concurrently. Whichever starts second
+      rebases. There is deliberately no blocked_by edge here: a collision is
+      not an ordering, and inventing one would serialise two tasks that are
+      genuinely independent.
     acceptance:
       - Each enumerator's numeric value is asserted by a test that passes on both sides of the conversion
       - The three enums are enum class with an explicit underlying type
@@ -166,6 +175,9 @@ tasks:
       pin it first like T3). ENUM_HELPER from NeuronHelper.h where iteration
       is needed.
     depends_on: [T3]
+    blocked_by:
+      - layering-inversion/T9
+      - layering-inversion/T10
     files:
       - GameLogic/EntityLeg.h
       - Species/TaskManagerInterface.h
@@ -173,6 +185,16 @@ tasks:
     acceptance:
       - grep -rE "^\s*enum\s+[A-Za-z]" over all six projects' headers returns nothing
       - notes records the serialisation check for each enum
+    notes: >
+      blocked_by layering-inversion T9 and T10: Camera.h is what T9's
+      remaining half reshapes (Renderer's half already landed), and
+      TaskManagerInterface.h is on T10's list. Converting an enum inside a
+      header that is about to be split behind an interface means doing it
+      twice.
+
+      Re-measured 2026-08-02 at 11aee84: 12 plain enums in headers, not 11,
+      and `enum class` appears once in the tree. Re-derive the list when
+      starting — the twelfth is not identified here.
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m

@@ -39,8 +39,19 @@ summary: >
 
   Cross-plan ordering: a file finishes its task here before its
   strings-modernised task, which finishes before its ownership task
-  (stage 3 -> 4 -> 5 per file, CODING_STANDARDS.md). Tasks in different
-  plans that list the same file must not run concurrently — check `files`.
+  (stage 3 -> 4 -> 5 per file, CODING_STANDARDS.md). That ordering is no
+  longer prose — the downstream tasks carry `blocked_by` edges naming the
+  task here that gates them (docs/TASK_DAG.md, "Ordering across plans"),
+  so `--next` will not offer a stage-4 or stage-5 task before its stage-3
+  task lands. Tasks in different plans that list the same file must still
+  not run concurrently even where no ordering exists — check `files`.
+
+  Re-measured 2026-08-02 at 11aee84, and the headline is that stage 3 has
+  not started: LList 126 files (GameLogic 82, Species 26, NeuronClient 16,
+  NeuronCore 2, NeuronServer 1), DArray 14, FastDArray 17 — all within one
+  file of the b69c951 figures. T3's SlotMap and T17's LookupTable exist and
+  are tested; they have zero callers. The foundation is built and no
+  production code has moved onto it.
 
 tasks:
   - id: T1
@@ -281,6 +292,7 @@ tasks:
       SlotMap, never an unordered container.
     project: GameLogic
     depends_on: [T1, T3]
+    blocked_by: [rename-darwinian/T3]
     files:
       - GameLogic/Darwinian.cpp
       - GameLogic/Engineer.cpp
@@ -308,11 +320,25 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     notes: >
-      Behind the LinkStubs link wall — entity behaviour is not unit-testable
-      yet. Evidence is the T1/T2/T3 pinned template tests, unchanged call-site
-      structure, and the Garden smoke test (steps 3-5 and 7 cover exactly this
-      code). Split into per-entity commits within the task if the diff grows
-      past reviewable.
+      Evidence for this task: the T1/T2/T3 pinned template tests, unchanged
+      call-site structure, and the Garden smoke test (steps 3-5 and 7 cover
+      exactly this code). Split into per-entity commits within the task if the
+      diff grows past reviewable.
+
+      Two things changed the caveat that used to sit here. The LinkStubs link
+      wall is GONE — layering-inversion T14 emptied it, so GameLogic links
+      into a test DLL on its own and entity behaviour is unit-testable in
+      principle. What is missing is tests, not the ability to write them:
+      layering-inversion T11 lands the first ones, and where it has landed
+      coverage for something this task converts, use it rather than falling
+      back on the smoke test.
+
+      blocked_by rename-darwinian/T3: that plan renames Darwinian.cpp to
+      Citizen.cpp and rewrites Entity.cpp's typeNames[] table, both of which
+      this task's file list names. Running the rename first keeps it a pure
+      rename with an accurate inventory, and keeps this conversion off files
+      that are about to move. Update this task's `files` to the post-rename
+      names when it starts — rename-darwinian T3 does that rewrite.
     status: todo
 
   - id: T10
@@ -386,7 +412,7 @@ tasks:
       - GameLogic/CameraAnimWindow.cpp
       - GameLogic/ResearchItem.cpp
     acceptance:
-      - grep -lwE "LList|DArray|InputSpecList" on the listed files returns nothing
+      - grep -lwE "LList|DArray|InputSpecList|AutoVector" on the listed files returns nothing
       - Menu and list display order is by-construction unchanged
     verify:
       - python3 tools/check_layering.py
@@ -407,6 +433,7 @@ tasks:
       unordered.
     project: Species
     depends_on: [T1, T3, T4]
+    blocked_by: [layering-inversion/T15]
     files:
       - Species/Location.h
       - Species/Location.cpp
@@ -435,10 +462,22 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     notes: >
-      Species has no test project (exe). Evidence is the pinned SlotMap tests,
-      review against the determinism rules, and the full Garden smoke test —
-      request an owner run after this lands. Consider landing Location last
-      within the task, after the smaller files prove the pattern.
+      blocked_by layering-inversion/T15, and this is the most consequential
+      ordering decision in the plan. T15 moves every file listed here out of
+      Species and into GameLogic. Two reasons it goes first: the paths above
+      are wrong the moment it lands (T15 rewrites this list as part of its own
+      acceptance), and — the real reason — Species is an exe with no test
+      project, so this task, the most determinism-critical in the tree,
+      would otherwise run against code no unit test can reach. After T15 the
+      same code sits in GameLogic, where GameLogicTests can construct it.
+      Doing the riskiest conversion in the tree where it can be tested is
+      worth waiting for.
+
+      Evidence once it runs: the pinned SlotMap tests, whatever
+      layering-inversion T11 has covered by then, review against the
+      determinism rules, and the full Garden smoke test — request an owner run
+      after this lands. Consider landing Location last within the task, after
+      the smaller files prove the pattern.
     status: todo
 
   - id: T13
@@ -452,6 +491,7 @@ tasks:
       rules; the rest is frame-rate UI and editor state.
     project: Species
     depends_on: [T1, T3, T12]
+    blocked_by: [layering-inversion/T15]
     files:
       - Species/TaskManager.cpp
       - Species/TaskManagerInterface.cpp
@@ -475,12 +515,19 @@ tasks:
       - Species/Water.cpp
       - Species/LandscapeRenderer.h
     acceptance:
-      - grep -lwE "LList|DArray|FastDArray|BoundedArray" on the listed files returns nothing
+      - grep -lwE "LList|DArray|FastDArray|BoundedArray|2dArray|2dSurfaceMap" on the listed files returns nothing
       - Explosion and ParticleSystem keep slot indices and iteration order by-construction identical
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
+    notes: >
+      blocked_by layering-inversion/T15 for Explosion and ParticleSystem, which
+      that task moves into GameLogic; the rest of this list stays in Species.
+      The acceptance grep gained 2dArray and 2dSurfaceMap: Water.cpp and
+      LandscapeRenderer use them, and T16 deletes both headers, so leaving them
+      out of every acceptance criterion in the plan let T16 delete a header
+      still in use.
     status: todo
 
   - id: T14
@@ -503,23 +550,33 @@ tasks:
       - NeuronClient/InputFilterManager.h
       - NeuronClient/InputFilterWithDelta.h
     acceptance:
-      - grep -lwE "LList|InputSpecList" on the driver headers returns nothing, or InputSpecList is a std-backed alias
+      - grep -lwE "LList|InputSpecList|AutoVector" on the driver headers returns nothing, or InputSpecList is a std-backed alias
       - The driver stack composes exactly as before (same resolution order)
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
+    notes: >
+      AutoVector is in the acceptance grep because eight of its nine users in
+      the tree are exactly this task's file list (the ninth is
+      GameLogic/PrefsKeybindingsWindow.h, which T11 covers). T16 deletes
+      AutoVector.h, and no acceptance criterion in the plan mentioned it — so
+      this task and T11 between them now own retiring it. AutoVector.h carries
+      a third-party notice listed in LICENSE; see T16 for what happens to that.
     status: todo
 
-  - id: T15
-    title: Convert the remaining scattered container users
+  - id: T18
+    title: Convert the leaf container users that gate other plans
     intent: >
-      The long tail found by re-measuring after T4-T14: Preferences.h
-      (FastDArray), Profiler.h (HashTable), PersistingDebugRender.h,
-      2dSurfaceMap.h, and whatever the sweep-up grep still finds. Ends with
-      zero users of every legacy container outside the container headers
-      themselves.
-    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]
+      Preferences (FastDArray), Profiler (HashTable) and PersistingDebugRender
+      are leaves: no other task in this plan touches them, and nothing about
+      them has to wait for the rest of stage 3. They were sitting inside T15,
+      behind all thirteen of T4-T14, which parked ownership T1 — the cheapest
+      and best-covered stage-5 conversion in the tree, under NeuronCore's
+      existing tests — behind the entire container effort for no reason.
+      Split out so it can run in the first wave.
+    project: NeuronCore
+    depends_on: [T1, T3]
     files:
       - NeuronCore/Preferences.h
       - NeuronCore/Preferences.cpp
@@ -527,14 +584,48 @@ tasks:
       - NeuronCore/Profiler.cpp
       - NeuronClient/PersistingDebugRender.h
       - NeuronClient/PersistingDebugRender.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|FastDArray|BTree|HashTable|SortingHashTable" on the six files returns nothing
+      - Preferences' item order is unchanged — the preferences file it writes is a text format users hand-edit, and its line order is observable
+      - The existing NeuronCore suite passes unchanged
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Split out of T15 on 2026-08-02 with the owner. Gates ownership/T1 and
+      strings-modernised/T2 and T4, which name it in blocked_by. Profiler's
+      HashTable is a name-keyed cache with no simulation state, so
+      std::unordered_map is legitimate there; Preferences' list is ordered
+      output and stays a vector.
+    status: todo
+
+  - id: T15
+    title: Sweep up the remaining scattered container users
+    intent: >
+      Whatever the grouped tasks missed, found by re-measuring after T4-T14
+      and T18: 2dSurfaceMap.h and anything else still standing. This task IS
+      the re-measure — the file list below is what is known today, not a
+      prediction. Ends with zero users of every legacy container outside the
+      container headers themselves.
+    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T18]
+    files:
       - NeuronClient/2dSurfaceMap.h
     acceptance:
-      - grep -rlwE "LList|DArray|FastDArray|SliceDArray|BTree|HashTable|SortingHashTable|BoundedArray" over the six projects matches only the container headers themselves
+      - grep -rlwE "LList|DArray|FastDArray|SliceDArray|BTree|HashTable|SortingHashTable|BoundedArray|2dArray|2dSurfaceMap|AutoVector" over the six projects matches only the container headers themselves
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
+    notes: >
+      The acceptance grep gained 2dArray, 2dSurfaceMap and AutoVector. It did
+      not name them before, while T16 deleted all three headers — so every
+      task in the plan could pass its own criteria with 15 users still
+      compiling against headers about to be removed. This is the gate that
+      catches that, which is why it is the tree-wide one.
     status: todo
 
   - id: T16

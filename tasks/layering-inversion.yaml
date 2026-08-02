@@ -81,6 +81,22 @@ summary: >
   needs the owner), no netcode or renderer redesign, no behaviour change
   anywhere.
 
+  RE-MEASURED 2026-08-02 at 11aee84 (`python3 tools/check_layering.py`,
+  then clustering the allowlist on target header). 326 entries remain,
+  down from 628 — GameLogic -> Species 311, NeuronClient -> * 15. By
+  target: Location.h 69, Camera.h 47, Team.h 33, GlobalWorld.h 33,
+  EntityGrid.h 26, ParticleSystem.h 21, Explosion.h 19, Unit.h 17,
+  LevelFile.h 13, LocationEditor.h 11, ObstructionGrid.h 9, TaskManager.h
+  5, Script.h 4, RoutingSystem.h 4, TaskManagerInterface.h 3, Renderer.h 2,
+  UserInput.h 2, Water.h 2, Entity.h 2, WorldObject.h 1.
+
+  Two things that table tells you and the task statuses did not. Renderer
+  is effectively finished — 57 -> 2 — because T9's Renderer half landed at
+  a543e5a without the task recording it; T9 is now a Camera-only task. And
+  what remains is overwhelmingly T15's cluster: Location, Team, GlobalWorld,
+  EntityGrid, ParticleSystem, Explosion, Unit, LevelFile, ObstructionGrid
+  and RoutingSystem account for 244 of the 326.
+
 tasks:
   - id: T1
     title: Catalogue what each upward-included Species header is used for
@@ -590,6 +606,17 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
     notes: >
+      HALF LANDED 2026-08-02 at a543e5a — recorded here late, which is the
+      first thing to know before picking this up. Renderer is done: it sits
+      behind NeuronClient/RendererAccess.h and its allowlist targets went 57
+      -> 2 (`grep -c Renderer.h tools/layering_allowlist.txt`). AGENTS.md
+      already says so; this task did not, so the work looked unstarted.
+
+      WHAT IS LEFT IS CAMERA, 47 entries — 41 from GameLogic, 6 from
+      NeuronClient. Re-measure with
+      `grep Camera.h tools/layering_allowlist.txt | cut -d/ -f1 | sort | uniq -c`
+      before starting, and do not re-derive the Renderer half.
+
       T1 settled the open choice: Camera is interface-extraction ONLY —
       Camera.h includes GameLogic's Entity.h and WorldObject.h for its
       tracking members, so moving it down would invert the violation. The
@@ -829,6 +856,7 @@ tasks:
       - The allowlist shrank and gained no entry at any point
       - GameLogicTests can construct an EntityGrid and a Route without LinkStubs
       - The Garden smoke test passes, owner-run — this moves the world's home
+      - The `files` lists naming these paths in other plans are rewritten to GameLogic/ in the same commit — containers-replaced T12 and T13, ownership T5, strings-modernised T8 — and check_task_dag.py still passes
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
@@ -840,4 +868,16 @@ tasks:
       it; its LandscapeRenderer member stays above, so the class splits or
       keeps a forward-declared pointer. Expect several commits inside the
       one task: move, then fix includes, then update both project files.
+
+      This task is now a gate for three other plans, not just this one.
+      containers-replaced T12 and T13 are blocked_by it, and the reason is
+      worth stating because it is the single most consequential sequencing
+      call in the modernisation effort: T12 is the most determinism-critical
+      conversion in the tree (FastDArray slots ARE WorldObjectId identity),
+      and while these files live in Species — an exe, no test project — no
+      unit test can reach them. Moving them here first puts that conversion
+      somewhere GameLogicTests can construct the objects. The path rewrite in
+      the acceptance list is the mechanical half of the same thing: 22 of
+      these paths appear in other plans' `files` lists and are wrong the
+      moment this lands.
     status: todo

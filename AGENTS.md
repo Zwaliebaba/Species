@@ -290,6 +290,13 @@ Set a task to `in_progress` and commit that *before* starting it, so a concurren
 agent does not pick up the same node. Set it to `done` only when every `verify`
 command passes, and commit the plan update with the code.
 
+`--next` also reports tasks it will *not* offer yet, under "held by another
+plan". Those carry a `blocked_by` edge into a different plan file — the
+modernisation stages run per file across three separate plans, so "this file
+finishes stage 3 before it starts stage 5" is an ordering no single plan's graph
+can see. Trust it: before those edges existed, `--next` offered every
+`tasks/ownership.yaml` task on files whose stage-3 conversion had not begun.
+
 The full standard — schema, status semantics, how to write acceptance criteria,
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.

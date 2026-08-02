@@ -10,11 +10,27 @@ summary: >
   GameCursor.cpp, App.cpp use it), and EmptyAndDelete callers in 23 files
   outside the container headers.
 
+  Re-measured 2026-08-02 at 11aee84: 815 `new` and 246 `delete` in .cpp
+  files (the `new` figure is a raw token count and includes comments), 35
+  SAFE_DELETE occurrences across five callers plus the NeuronCore.h
+  definition, and EmptyAndDelete in 26 files outside the container headers.
+  The b69c951 figures above stand; nothing in stage 5 has been converted.
+
   Stage 5 depends on stage 3 PER FILE: most ownership currently lives
   inside LList/DArray (EmptyAndDelete), so a file's containers-replaced
-  task lands before its task here. That ordering is cross-plan and cannot
-  be an edge — every task below restates it in notes, and same-file tasks
-  in different plans never run concurrently.
+  task lands before its task here — and its strings-modernised task in
+  between, per the stage order. That ordering IS now an edge: `blocked_by`
+  (docs/TASK_DAG.md, "Ordering across plans") names the specific upstream
+  task per file, and the validator refuses to let a task here go
+  in_progress or done while one is outstanding.
+
+  This matters more here than in any other plan. Before those edges
+  existed, `check_task_dag.py --next` reported all five of T1-T5 as ready
+  to start, on files whose stage-3 conversion had not begun — an agent
+  following the documented execution loop would have picked one up and
+  rewritten ownership that still lived inside an LList. Every task below
+  has no depends_on and is genuinely a graph root; the ordering was
+  entirely in prose, and --next does not read prose.
 
   Determinism note: converting owner-ship changes WHERE deletion happens in
   the source but must not change WHEN objects die relative to the
@@ -34,6 +50,9 @@ tasks:
       same program points.
     project: NeuronCore
     depends_on: []
+    blocked_by:
+      - containers-replaced/T18
+      - strings-modernised/T2
     files:
       - NeuronCore/Preferences.cpp
       - NeuronCore/Preferences.h
@@ -49,8 +68,11 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     notes: >
-      Runs after these files' containers-replaced task (T15 there) — cross-plan
-      ordering, restated per the summary.
+      The blocked_by names containers-replaced/T18, not T15. These files used
+      to sit inside T15, which depends on all thirteen of T4-T14 — so this
+      task, the cheapest and best-covered ownership conversion in the tree,
+      was parked behind the whole of stage 3 for no reason. T18 split them
+      out (owner decision, 2026-08-02) precisely so this one can run early.
     status: todo
 
   - id: T2
@@ -62,6 +84,8 @@ tasks:
       best-covered ownership conversion in the tree.
     project: NeuronServer
     depends_on: []
+    blocked_by:
+      - containers-replaced/T4
     files:
       - NeuronServer/Server.cpp
       - NeuronServer/Server.h
@@ -90,6 +114,13 @@ tasks:
       container is preserved.
     project: NeuronClient
     depends_on: []
+    blocked_by:
+      - containers-replaced/T5
+      - containers-replaced/T6
+      - containers-replaced/T7
+      - containers-replaced/T8
+      - strings-modernised/T3
+      - strings-modernised/T4
     files:
       - NeuronClient/ClientToServer.cpp
       - NeuronClient/Shape.cpp
@@ -123,6 +154,12 @@ tasks:
       network identity.
     project: GameLogic
     depends_on: []
+    blocked_by:
+      - containers-replaced/T9
+      - containers-replaced/T10
+      - containers-replaced/T11
+      - strings-modernised/T5
+      - strings-modernised/T6
     files:
       - GameLogic/SpawnPoint.cpp
       - GameLogic/FileDialog.cpp
@@ -139,9 +176,12 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     notes: >
-      After these files' containers-replaced tasks (T9, T10, T11 there).
-      Behind the LinkStubs wall — evidence is review plus the Garden smoke
-      test.
+      The LinkStubs wall this note used to cite is gone — layering-inversion
+      T14 emptied the file, so GameLogic links into a test DLL on its own and
+      these conversions can be covered by real tests. Prefer whatever
+      layering-inversion T11 has landed by then over review-plus-smoke-test;
+      fall back on review and the Garden smoke test only where no coverage
+      exists yet, and say which in the commit.
     status: todo
 
   - id: T5
@@ -153,6 +193,11 @@ tasks:
       GenerateSyncValue), so its object lifetimes stay tick-identical.
     project: Species
     depends_on: []
+    blocked_by:
+      - containers-replaced/T12
+      - containers-replaced/T13
+      - strings-modernised/T7
+      - strings-modernised/T8
     files:
       - Species/LevelFile.cpp
       - Species/LevelFile.h
@@ -169,7 +214,10 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     notes: >
-      After these files' containers-replaced tasks (T12, T13 there).
+      Paths shown pre-move. layering-inversion T15 relocates LevelFile,
+      Explosion, GlobalWorld and RoutingSystem into GameLogic and rewrites
+      this list as part of its own acceptance; containers-replaced T12 and
+      T13, which gate this task, already wait on that move.
     status: todo
 
   - id: T6
@@ -184,6 +232,8 @@ tasks:
       teardown.
     project: Species
     depends_on: [T1, T2, T3, T4, T5]
+    blocked_by:
+      - strings-modernised/T7
     files:
       - Species/App.cpp
       - Species/App.h
