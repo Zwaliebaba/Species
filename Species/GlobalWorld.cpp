@@ -1480,7 +1480,7 @@ int GlobalWorld::GetLocationIdFromMapFilename(const char* _mapFilename)
 {
   char buf[MAX_FILENAME_LEN];
   strcpy(buf, _mapFilename);
-  char* mapName = strstr(buf, "map_") + 4;
+  char* mapName = strstr(buf, "Map") + 3;
   mapName[strlen(mapName) - 4] = '\0';
 
   return GetLocationId(mapName);

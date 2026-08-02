@@ -5,7 +5,7 @@
 
 // Finds all the filenames in the specified directory that match the specified
 // filter. Directory should be like "textures" or "Textures/".
-// Filter can be NULL or "" or "*.bmp" or "map_*" or "map_*.txt"
+// Filter can be NULL or "" or "*.bmp" or "Map*" or "Map*.txt"
 // Set FullFilename to true if you want results like "Textures/blah.bmp"
 // or false for "blah.bmp"
 LList<char*>* ListDirectory(const char* _dir, const char* _filter, bool _fullFilename)

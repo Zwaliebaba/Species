@@ -205,7 +205,7 @@ class EnableReceiverAndBufferButton : public SpeciesButton
     void MouseUp()
     {
         int receiverLocationId = g_app->m_globalWorld->GetLocationId( "receiver" );
-        int bufferLocationId = g_app->m_globalWorld->GetLocationId( "pattern_buffer" );
+        int bufferLocationId = g_app->m_globalWorld->GetLocationId( "PatternBuffer" );
 
         for( int i = 0; i < g_app->m_globalWorld->m_buildings.Size(); ++i )
         {

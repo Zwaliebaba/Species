@@ -46,11 +46,11 @@ Say                         yardend_9
 Say                         yardend_9b  
 WaitSay
 
-CamLocationFocus            pattern_buffer  70
+CamLocationFocus            PatternBuffer  70
 Say                         yardend_10
 WaitSay
 
-EnterLocation               pattern_buffer
+EnterLocation               PatternBuffer
 
 
 ########################### Now in the Pattern Buffer
@@ -73,7 +73,7 @@ WaitFade
 Say                         yardend_14
 WaitSay
 
-CamLocationFocus            pattern_buffer  70
+CamLocationFocus            PatternBuffer  70
 Say                         yardend_15
 WaitSay
 

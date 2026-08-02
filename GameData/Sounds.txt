@@ -26,7 +26,7 @@ END
 # =========================================================
 ENTITY Engineer
 	EVENT Create              
-		SOUNDNAME          engineer_hover
+		SOUNDNAME          EngineerHover
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -35,7 +35,7 @@ ENTITY Engineer
 		VOLUME             PARAMETER TypeFixedValue        9.03  UpdateConstantly
 	END
 	EVENT BeginReprogramming  
-		SOUNDNAME          engineer_reprog_radar_loop
+		SOUNDNAME          EngineerReprogRadarLoop
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -44,7 +44,7 @@ ENTITY Engineer
 		VOLUME             PARAMETER TypeFixedValue        9.00  UpdateConstantly
 	END
 	EVENT EndReprogramming    
-		SOUNDNAME          engineer_repog_radar_loop_end
+		SOUNDNAME          EngineerRepogRadarLoopEnd
 		SOURCETYPE         0
 		POSITIONTYPE       1
 		INSTANCETYPE       0
@@ -168,7 +168,7 @@ ENTITY Squadie
 		END
 	END
 	EVENT WeaponReturns       
-		SOUNDNAME          grenade_return3
+		SOUNDNAME          GrenadeReturn3
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       1
@@ -177,7 +177,7 @@ ENTITY Squadie
 		VOLUME             PARAMETER TypeFixedValue        9.00  UpdateOncePerLoop
 	END
 	EVENT ThrowAirStrike      
-		SOUNDNAME          airstrike_alarm
+		SOUNDNAME          AirstrikeAlarm
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -389,7 +389,7 @@ END
 # =========================================================
 ENTITY SpaceInvader
 	EVENT DropGrenade         
-		SOUNDNAME          airstrike_drop
+		SOUNDNAME          AirstrikeDrop
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -398,7 +398,7 @@ ENTITY SpaceInvader
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 	END
 	EVENT Create              
-		SOUNDNAME          airstrike_hover2
+		SOUNDNAME          AirstrikeHover2
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -776,7 +776,7 @@ END
 # =========================================================
 ENTITY Armour
 	EVENT Create              
-		SOUNDNAME          tank_hover
+		SOUNDNAME          TankHover
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -931,7 +931,7 @@ END
 # =========================================================
 BUILDING RadarDish
 	EVENT BeginRotation       
-		SOUNDNAME          radar_start_turn
+		SOUNDNAME          RadarStartTurn
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -940,7 +940,7 @@ BUILDING RadarDish
 		VOLUME             PARAMETER TypeFixedValue        9.03  UpdateConstantly
 	END
 	EVENT EndRotation         
-		SOUNDNAME          radar_stop_turn
+		SOUNDNAME          RadarStopTurn
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -949,7 +949,7 @@ BUILDING RadarDish
 		VOLUME             PARAMETER TypeFixedValue        9.00  UpdateConstantly
 	END
 	EVENT BeginRotation       
-		SOUNDNAME          radar_motor_run
+		SOUNDNAME          RadarMotorRun
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -958,7 +958,7 @@ BUILDING RadarDish
 		VOLUME             PARAMETER TypeFixedValue        8.97  UpdateConstantly
 	END
 	EVENT ReprogramComplete   
-		SOUNDNAME          radar_reprog_complete
+		SOUNDNAME          RadarReprogComplete
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -997,7 +997,7 @@ END
 # =========================================================
 BUILDING LaserFence
 	EVENT Create              
-		SOUNDNAME          fence_hum
+		SOUNDNAME          FenceHum
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1065,7 +1065,7 @@ END
 # =========================================================
 BUILDING Powerstation
 	EVENT Create              
-		SOUNDNAME          power_station_online
+		SOUNDNAME          PowerStationOnline
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1142,7 +1142,7 @@ END
 # =========================================================
 BUILDING Library
 	EVENT Create              
-		SOUNDNAME          ablaster
+		SOUNDNAME          ABlaster
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1156,7 +1156,7 @@ END
 # =========================================================
 BUILDING Generator
 	EVENT ReprogramComplete   
-		SOUNDNAME          generator_online
+		SOUNDNAME          GeneratorOnline
 		SOURCETYPE         0
 		POSITIONTYPE       1
 		INSTANCETYPE       0
@@ -1205,7 +1205,7 @@ BUILDING SolarPanel
 		FREQUENCY          PARAMETER TypeRangedRandom      0.89     1.24     0.00  UpdateOncePerLoop
 	END
 	EVENT Operate             
-		SOUNDNAME          solarcharge
+		SOUNDNAME          SolarCharge
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1289,7 +1289,7 @@ END
 # =========================================================
 BUILDING Yard
 	EVENT Create              
-		SOUNDNAME          yard
+		SOUNDNAME          Yard
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       1
@@ -1304,7 +1304,7 @@ END
 # =========================================================
 BUILDING Incubator
 	EVENT Reprogramming       
-		SOUNDNAME          engineer_reprog_radar_loop
+		SOUNDNAME          EngineerReprogRadarLoop
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1585,7 +1585,7 @@ END
 # =========================================================
 BUILDING FuelGenerator
 	EVENT PumpUp              
-		SOUNDNAME          fuelpumpexhale1
+		SOUNDNAME          FuelPumpExhale1
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1605,7 +1605,7 @@ BUILDING FuelGenerator
 		FREQUENCY          PARAMETER TypeFixedValue        1.02  UpdateConstantly
 	END
 	EVENT PumpDown            
-		SOUNDNAME          fuelpumpup1
+		SOUNDNAME          FuelPumpup1
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1630,7 +1630,7 @@ END
 # =========================================================
 BUILDING FuelPipe
 	EVENT PumpFuel            
-		SOUNDNAME          fuelpipe2_loop
+		SOUNDNAME          Fuelpipe2Loop
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1672,7 +1672,7 @@ BUILDING EscapeRocket
 		LOOPDELAY          PARAMETER TypeFixedValue        4.65  UpdateConstantly
 	END
 	EVENT Happy               
-		SOUNDNAME          shipheartbeat1
+		SOUNDNAME          Shipheartbeat1
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1682,7 +1682,7 @@ BUILDING EscapeRocket
 		FREQUENCY          PARAMETER TypeRangedRandom      0.72     0.82     0.59  UpdateOncePerLoop
 	END
 	EVENT Malfunction         
-		SOUNDNAME          shipmalfunction1
+		SOUNDNAME          ShipMalfunction1
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1691,7 +1691,7 @@ BUILDING EscapeRocket
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 	END
 	EVENT Explode             
-		SOUNDNAME          engineexplode
+		SOUNDNAME          EngineExplode
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1711,7 +1711,7 @@ BUILDING EscapeRocket
 		FREQUENCY          PARAMETER TypeFixedValue        1.05  UpdateConstantly
 	END
 	EVENT EngineBurn          
-		SOUNDNAME          engineburn
+		SOUNDNAME          EngineBurn
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1720,7 +1720,7 @@ BUILDING EscapeRocket
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 	END
 	EVENT EngineBurn          
-		SOUNDNAME          ignitionzap1
+		SOUNDNAME          Ignitionzap1
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1834,7 +1834,7 @@ OTHER Grenade
 		FREQUENCY          PARAMETER TypeRangedRandom      0.74     1.54     0.84  UpdateConstantly
 	END
 	EVENT Flash               
-		SOUNDNAME          grenade_beep
+		SOUNDNAME          GrenadeBeep
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1843,7 +1843,7 @@ OTHER Grenade
 		VOLUME             PARAMETER TypeFixedValue        7.90  UpdateConstantly
 	END
 	EVENT ExplodeController   
-		SOUNDNAME          hypno_loop_run
+		SOUNDNAME          HypnoLoopRun
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1877,7 +1877,7 @@ OTHER Rocket
 		FREQUENCY          PARAMETER TypeRangedRandom      0.80     1.20     0.00  UpdateConstantly
 	END
 	EVENT Create              
-		SOUNDNAME          rocket_fire4_run
+		SOUNDNAME          RocketFire4Run
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1886,7 +1886,7 @@ OTHER Rocket
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 	END
 	EVENT Create              
-		SOUNDNAME          rocketlauncher
+		SOUNDNAME          RocketLauncher
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1910,7 +1910,7 @@ OTHER AirStrikeBomb
 		VOLUME             PARAMETER TypeFixedValue        9.23  UpdateConstantly
 	END
 	EVENT Flash               
-		SOUNDNAME          grenade_beep
+		SOUNDNAME          GrenadeBeep
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1924,7 +1924,7 @@ END
 # =========================================================
 OTHER Spirit
 	EVENT PickedUp            
-		SOUNDNAME          sonar
+		SOUNDNAME          Sonar
 		SOURCETYPE         0
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -1938,7 +1938,7 @@ END
 # =========================================================
 OTHER Sepulveda
 	EVENT Appear              
-		SOUNDNAME          sepulveda_appear
+		SOUNDNAME          SepulvedaAppear
 		SOURCETYPE         0
 		POSITIONTYPE       3
 		INSTANCETYPE       0
@@ -1947,7 +1947,7 @@ OTHER Sepulveda
 		VOLUME             PARAMETER TypeFixedValue        8.00  UpdateOncePerLoop
 	END
 	EVENT Disappear           
-		SOUNDNAME          sepulveda_disappear
+		SOUNDNAME          SepulvedaDisappear
 		SOURCETYPE         0
 		POSITIONTYPE       3
 		INSTANCETYPE       0
@@ -1962,7 +1962,7 @@ END
 # =========================================================
 OTHER Gesture
 	EVENT GestureBegin        
-		SOUNDNAME          gesturestart
+		SOUNDNAME          GestureStart
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -1971,7 +1971,7 @@ OTHER Gesture
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 	END
 	EVENT GestureSuccess      
-		SOUNDNAME          gesturesuccess
+		SOUNDNAME          GestureSuccess
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -1980,7 +1980,7 @@ OTHER Gesture
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 	END
 	EVENT GestureFail         
-		SOUNDNAME          gesturefail
+		SOUNDNAME          GestureFail
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2006,7 +2006,7 @@ OTHER Ambience
 		RELEASE            PARAMETER TypeFixedValue       10.00  UpdateConstantly
 	END
 	EVENT EnterLocation       
-		SOUNDNAME          white_noise
+		SOUNDNAME          WhiteNoise
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2066,7 +2066,7 @@ OTHER Ambience
 		END
 	END
 	EVENT EnterGlobalWorld    
-		SOUNDNAME          altitude1
+		SOUNDNAME          Altitude1
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2078,7 +2078,7 @@ OTHER Ambience
 		RELEASE            PARAMETER TypeFixedValue       11.23  UpdateConstantly
 	END
 	EVENT EnterGlobalWorld    
-		SOUNDNAME          rumble1
+		SOUNDNAME          Rumble1
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2095,7 +2095,7 @@ END
 # =========================================================
 OTHER Music
 	EVENT Cutscene1           
-		SOUNDNAME          tresk_-_excuses
+		SOUNDNAME          TreskExcuses
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2105,7 +2105,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       20.13  UpdateConstantly
 	END
 	EVENT Cutscene2           
-		SOUNDNAME          tresk_-_faces-of-a-fashion
+		SOUNDNAME          TreskFacesOfAFashion
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2115,7 +2115,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       20.13  UpdateConstantly
 	END
 	EVENT Cutscene3           
-		SOUNDNAME          trash80_-_pain-fade-down
+		SOUNDNAME          Trash80PainFadeDown
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2126,7 +2126,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       20.13  UpdateConstantly
 	END
 	EVENT Cutscene4           
-		SOUNDNAME          tresk_-_impact-of-silence
+		SOUNDNAME          TreskImpactOfSilence
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2137,7 +2137,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       20.13  UpdateConstantly
 	END
 	EVENT LoaderRaytrace      
-		SOUNDNAME          dma_sc-visitors_from_dreams
+		SOUNDNAME          DmaScVisitorsFromDreams
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2147,7 +2147,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       10.06  UpdateConstantly
 	END
 	EVENT LoaderFodder        
-		SOUNDNAME          fodder
+		SOUNDNAME          Fodder
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2156,7 +2156,7 @@ OTHER Music
 		VOLUME             PARAMETER TypeFixedValue        9.03  UpdateConstantly
 	END
 	EVENT LoaderSoul          
-		SOUNDNAME          tresk_-weeklies-_schroeders-failure
+		SOUNDNAME          TreskWeekliesSchroedersFailure
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2166,7 +2166,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       10.06  UpdateConstantly
 	END
 	EVENT EndSequence         
-		SOUNDNAME          tresk_-_faces-of-a-fashion
+		SOUNDNAME          TreskFacesOfAFashion
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2177,7 +2177,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue        3.29  UpdateConstantly
 	END
 	EVENT Credits             
-		SOUNDNAME          trash80_-_pain-fade-down
+		SOUNDNAME          Trash80PainFadeDown
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2188,7 +2188,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       10.06  UpdateConstantly
 	END
 	EVENT StartSequence       
-		SOUNDNAME          dma_sc-visitors_from_dreams
+		SOUNDNAME          DmaScVisitorsFromDreams
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2198,7 +2198,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       10.06  UpdateConstantly
 	END
 	EVENT Cutscene5           
-		SOUNDNAME          tresk_-_excuses
+		SOUNDNAME          TreskExcuses
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2209,7 +2209,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       15.48  UpdateConstantly
 	END
 	EVENT LoaderSpeccy        
-		SOUNDNAME          speccyloader
+		SOUNDNAME          SpeccyLoader
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2218,7 +2218,7 @@ OTHER Music
 		VOLUME             PARAMETER TypeFixedValue        9.00  UpdateConstantly
 	END
 	EVENT LoaderAmiga         
-		SOUNDNAME          pang
+		SOUNDNAME          Pang
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2228,7 +2228,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       10.06  UpdateConstantly
 	END
 	EVENT LoaderMatrix        
-		SOUNDNAME          matrix
+		SOUNDNAME          Matrix
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2238,7 +2238,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue        7.55  UpdateConstantly
 	END
 	EVENT LoaderGameOfLife    
-		SOUNDNAME          twoataris
+		SOUNDNAME          TwoAtaris
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2248,7 +2248,7 @@ OTHER Music
 		RELEASE            PARAMETER TypeFixedValue       10.26  UpdateConstantly
 	END
 	EVENT Demo2Intro          
-		SOUNDNAME          trash80_-_pain-fade-down
+		SOUNDNAME          Trash80PainFadeDown
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2257,7 +2257,7 @@ OTHER Music
 		VOLUME             PARAMETER TypeFixedValue        9.03  UpdateConstantly
 	END
 	EVENT Demo2Mid            
-		SOUNDNAME          tresk_-_faces-of-a-fashion
+		SOUNDNAME          TreskFacesOfAFashion
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2272,7 +2272,7 @@ END
 # =========================================================
 OTHER Interface
 	EVENT Show                
-		SOUNDNAME          taskin
+		SOUNDNAME          TaskIn
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2282,7 +2282,7 @@ OTHER Interface
 		FREQUENCY          PARAMETER TypeFixedValue        1.05  UpdateConstantly
 	END
 	EVENT Hide                
-		SOUNDNAME          taskout
+		SOUNDNAME          TaskOut
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2292,7 +2292,7 @@ OTHER Interface
 		FREQUENCY          PARAMETER TypeFixedValue        0.72  UpdateConstantly
 	END
 	EVENT Slide               
-		SOUNDNAME          menuscroll2
+		SOUNDNAME          MenuScroll2
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
@@ -2301,7 +2301,7 @@ OTHER Interface
 		VOLUME             PARAMETER TypeFixedValue        9.48  UpdateConstantly
 	END
 	EVENT DeleteTask          
-		SOUNDNAME          deselect1
+		SOUNDNAME          Deselect1
 		SOURCETYPE         0
 		POSITIONTYPE       0
 		INSTANCETYPE       0
