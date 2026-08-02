@@ -1,8 +1,11 @@
 name: CI
 
 on:
+  # Every branch, not just main. Work here happens on branches for a while before
+  # a pull request exists, and "did it build" is the answer that is most useful
+  # earliest. The cost is a duplicate run once a PR is opened, which the
+  # concurrency group below keeps cheap.
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
