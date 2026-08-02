@@ -63,14 +63,23 @@ This phase ends when **`NeuronCore` and `NeuronServer` link into a headless
 server that ticks without `NeuronClient`.** Concretely, all four of:
 
 1. `tools/layering_allowlist.txt` contains no entry beginning `NeuronCore/`.
-   **Met** — zero today, down from 30.
+   **Met** — zero, down from 30.
 2. `NeuronCore.vcxproj` lists no other project in `AdditionalIncludeDirectories`.
+   **Met** — it lists none at all.
 3. `Server.exe` links without `NeuronClient.lib` and advances sequence ids with
-   no client attached.
-4. The build is green.
+   no client attached. **Met** — `Server.vcxproj` references `NeuronCore` and
+   `NeuronServer` only, and CI runs `Server.exe --ticks 20` on every push and
+   fails if the sequence id has not advanced.
+4. The build is green. **Met** — x64 Debug, every push.
 
-Every one of those is checkable, and none depends on the game client working.
-`tasks/neuroncore-layering.yaml` is the plan that gets there.
+**This phase is done.** `tasks/neuroncore-layering.yaml` is the plan that got
+there; all thirteen of its tasks are complete.
+
+What that does *not* mean: the game client runs, the world server exists, or
+cross-architecture play works. It means the foundation no longer depends on the
+things above it, so a server can be built without dragging a renderer in. The
+next phase starts above it: every one of the 628 remaining violations points
+into `Species` (624 of them) or `GameLogic` (4).
 
 Deliberately *not* the exit criterion: the full 628-entry allowlist (the
 `GameLogic` → `Species` cluster is 584 of them and blocks nothing here), and the
@@ -101,7 +110,8 @@ GameLogic/        ~48k    Entities, buildings, teams, unit behaviour, in-game
                           windows. The bulk of the inherited code. Static library.
 Species/          ~32k    Client executable: app, world, camera, landscape,
                           task manager, level loading.
-Server/           ~0      Server executable. A stub — WinMain only.
+Server/           ~0.1k   Headless server executable. Links NeuronCore and
+                          NeuronServer only; ticks the host at 10 Hz.
 
 Tests/            ~0.4k   One <Name>Tests project per library, on the Microsoft
                           Native Unit Test Framework. Built and run by CI.
@@ -110,10 +120,10 @@ tasks/                    Task DAGs. See docs/TASK_DAG.md.
 docs/                     Architecture, build, testing, glossary, task breakdown.
 ```
 
-`Server` being empty is not an oversight — the headless binary has not been
-written; `WinMain.cpp` returns 0. `NeuronServer` now holds the authoritative host
-moved out of `NeuronCore`, so the library it would link exists even though the
-executable does nothing with it yet. That is T10.
+`NeuronServer` holds the authoritative host moved out of `NeuronCore`, and
+`Server` is the binary that drives it — `Server.exe --ticks 20` runs the host for
+two seconds and reports the sequence id it reached. Neither simulates a world
+yet; the host sequences whatever clients send it, which is what it always did.
 
 ---
 
@@ -331,11 +341,11 @@ Real, currently true, and worth knowing before you trip over them:
   exactly — same symptom, same "passes on a re-run" behaviour — so treat that as
   the leading explanation until an ARM64 Debug failure turns up that is not it.
   **Capture the first `error C...` line and record it here either way.**
-- **`NeuronCore.vcxproj` still lists `NeuronClient`, `Species` and `GameLogic`**
-  in `AdditionalIncludeDirectories`, so nothing stops the next upward include
-  compiling. No source under `NeuronCore/` reaches upward any more — no `g_app`,
-  no `GameLogic` or `Species` header — but until those paths come off, the layer
-  can rot again quietly. That is T10.
+- **`NeuronCore` is standalone and the door is shut.** No source under
+  `NeuronCore/` reaches upward, and `NeuronCore.vcxproj` lists no include
+  directories at all, so a new upward include fails to compile rather than
+  quietly working. `NeuronClient` and `GameLogic` still reach into `Species`
+  heavily — that is the next phase, not this one.
 - **Release had never built, and CI does not gate on it.** Three template
   leftovers — missing include paths, a precompiled header nothing created, and
   `Species` linking Release as a console app when `WinMain` is its entry point —

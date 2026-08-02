@@ -133,7 +133,6 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronClient;$(SpeciesRoot)Species;$(SpeciesRoot)GameLogic</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -155,7 +154,6 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronClient;$(SpeciesRoot)Species;$(SpeciesRoot)GameLogic</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>

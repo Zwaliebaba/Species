@@ -573,6 +573,7 @@ tasks:
       - Server/Server.vcxproj
       - Server/WinMain.cpp
       - tools/layering_allowlist.txt
+      - .github/workflows/ci.yml
       - AGENTS.md
     acceptance:
       - NeuronCore.vcxproj lists no other project in AdditionalIncludeDirectories
@@ -580,12 +581,13 @@ tasks:
       - Server.exe links against NeuronCore and NeuronServer only, with no NeuronClient.lib
       - Server.exe advances sequence ids with no client attached
       - AGENTS.md records which of the four definition-of-done conditions now hold
+      - CI runs the headless server, so the sequence-id claim is checked rather than asserted
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
       Where the four definition-of-done conditions stand on 6eb17e4:
 
@@ -607,6 +609,58 @@ tasks:
       Condition 3 was folded into acceptance explicitly, because the linking half
       passing on its own would otherwise let this task be closed against a binary
       that does nothing.
+
+      Done, and with it the phase. All four conditions hold and AGENTS.md records
+      each one:
+
+        1. zero NeuronCore/ allowlist entries, down from 30
+        2. NeuronCore.vcxproj lists no AdditionalIncludeDirectories at all
+        3. Server.exe links NeuronCore and NeuronServer only, and ticks
+        4. x64 Debug green on every push
+
+      Before removing the include paths, a pre-flight listed every quoted include
+      under NeuronCore/ whose basename is not a NeuronCore file. Five, all safe:
+      windows.h and stdlib.h are system headers written with quotes, and
+      OpenGLDirectX.h, macosx_hardware_detect.h and net_lib_linux.h sit behind
+      USE_DIRECT3D, TARGET_OS_MACOSX and __linux__ respectively, none of which is
+      defined in a built configuration. That check is worth keeping in mind: it
+      is the one that would have caught the T9 breakages a CI round earlier,
+      because check_layering.py only reports includes it can attribute to a
+      higher *project* and says nothing about a header that resolves nowhere.
+
+      WinMain.cpp went from `return 0` to a real tick loop. What it needs is
+      instructive about how close NeuronCore actually was:
+
+        g_prefsManager   Server::Advance reads RecordDemo to cap retransmissions,
+                         so the store must exist. It only became possible to
+                         build one here when T11 moved Preferences down; before
+                         that a headless server could not have had preferences
+                         without linking the client.
+        a Profiler       PROFILER_ENABLED is on by default and START_PROFILE
+                         dereferences whatever it is handed, so this is required
+                         rather than optional. It only became safe when T13 took
+                         the glFinish out.
+
+      Sequence ids advance with nothing connected because Advance() builds a
+      letter and calls SendLetter unconditionally, and SendLetter is what stamps
+      and increments m_sequenceId. That is the existing behaviour, not something
+      added for the criterion.
+
+      --ticks N was added so the criterion is checkable: without it the host
+      loops until killed, which is right for a server and useless for CI. A new
+      CI step runs Server.exe --ticks 20 on every push and fails if the reported
+      sequence id has not passed 20. That is the difference between the condition
+      being checkable and being checked, and AGENTS.md claims the latter.
+
+      Two things this deliberately does not do. The host has no orderly shutdown
+      — Initialise starts a listen thread holding a pointer to the Server and
+      nothing ever stops it, which is the same gap the in-process host always
+      had; it is safe here only because the process exits immediately, and it is
+      commented as such. And Server.exe is not the world server: it sequences
+      what clients send it and simulates nothing. AGENTS.md says so explicitly so
+      that finishing this phase is not mistaken for finishing the project.
+
+      Not built or run locally: Linux. Everything above is verified by CI.
 
   # ---------------------------------------------------------------------------
   # Split out of T4 during wave 1: Preferences is not foundational.

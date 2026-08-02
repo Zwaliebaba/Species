@@ -152,6 +152,32 @@ jobs:
           & $vstest $tests /Platform:x64 /Logger:trx /ResultsDirectory:TestResults
           if ($LASTEXITCODE -ne 0) { throw "tests failed (vstest.console exit $LASTEXITCODE)" }
 
+      - name: Headless server ticks with no client attached
+        shell: pwsh
+        run: |
+          # Condition 3 of the definition of done in AGENTS.md, checked rather
+          # than asserted. Server.exe references NeuronCore and NeuronServer and
+          # nothing else, so it having built at all is most of the claim — if the
+          # foundation still needed the game client, there would be no binary
+          # here to run. Running it proves the other half: the host sequences
+          # letters with nothing connected to it.
+          #
+          # --ticks bounds the run; without it the server loops until killed,
+          # which is what it does in earnest.
+          $exe = 'x64\Debug\Server.exe'
+          if (-not (Test-Path $exe)) { throw "$exe was not built" }
+
+          $output = & $exe --ticks 20 2>&1
+          $output | ForEach-Object { Write-Host $_ }
+          if ($LASTEXITCODE -ne 0) { throw "server exited $LASTEXITCODE" }
+
+          $final = $output | Select-String -Pattern 'Stopped at sequence id (\d+)\.'
+          if (-not $final) { throw 'server did not report a final sequence id' }
+
+          $seq = [int]$final.Matches[0].Groups[1].Value
+          if ($seq -lt 20) { throw "sequence id only reached $seq after 20 ticks" }
+          Write-Host "headless server reached sequence id $seq with no client attached"
+
       - name: Upload test results
         # Kept on failure only. A green run's .trx says nothing the job summary
         # does not, and uploading one per push is storage spent on nothing.
