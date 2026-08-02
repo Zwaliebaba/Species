@@ -116,9 +116,13 @@ The bulk of the inherited code, ~48k lines. Entities (`Darwinian`, `Engineer`,
 (`Factory`, `Generator`, `RadarDish`, `GunTurret`, `LaserFence`, `Teleport`, …),
 `Ai`, `Weapons`, and the in-game windows built on Eclipse.
 
-584 of its includes reach up into `Species` — for `App`, `Location`, `Team`,
-`GlobalWorld` and `LevelFile`. This is by far the largest violation cluster and
-reflects Darwinia's original design, where everything lived in one binary.
+Its includes still reach up into `Species` for `Location`, `Team`,
+`GlobalWorld`, `LevelFile` and `Camera` — the largest remaining violation
+cluster, reflecting Darwinia's original design where everything lived in one
+binary. `App` is no longer among them: the subsystem pointers, the application
+state and the few app-level actions moved to `NeuronClient` behind
+`WorldPointers.h`, `AppState.h` and the `AppCommands` interface, so nothing
+below `Species` includes `App.h`.
 
 ### Species
 
