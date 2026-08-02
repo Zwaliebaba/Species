@@ -25,6 +25,7 @@
     <ClCompile Include="LListTests.cpp" />
     <ClCompile Include="LookupTableTests.cpp" />
     <ClCompile Include="NetworkUpdateTests.cpp" />
+    <ClCompile Include="PreferencesTests.cpp" />
     <ClCompile Include="ServerToClientLetterTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

@@ -565,6 +565,34 @@ tasks:
       a third-party notice listed in LICENSE; see T16 for what happens to that.
     status: todo
 
+  - id: T19
+    title: Characterise the preferences file format before converting it
+    intent: >
+      PrefsManager is the first thing T18 converts and the only one of its
+      files with user-visible output: the preferences file is hand-edited, so
+      its content is a format rather than an implementation detail. Nothing
+      pinned it. This is the characterisation node docs/TASK_DAG.md describes
+      — test first, its own commit, still passing after the conversion — and
+      it gates both T18 (containers) and strings-modernised T2, which rewrites
+      the same writer.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - Tests/NeuronCoreTests/PreferencesTests.cpp
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj.filters
+    acceptance:
+      - Tests pin the three-way type guess including the dotted-quad case, the wrong-type-returns-default rule, and the constructor's ControlMethod fallback
+      - Tests pin that Save preserves comments, blank lines and template order, formats floats with %.2f, and is a fixed point on a second save
+      - The tests write only into a temporary directory and never read GameData/ in place
+      - python3 tools/check_project_files.py passes (the four-edit rule)
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: in_progress
+
   - id: T18
     title: Convert the leaf container users that gate other plans
     intent: >
@@ -576,7 +604,7 @@ tasks:
       existing tests — behind the entire container effort for no reason.
       Split out so it can run in the first wave.
     project: NeuronCore
-    depends_on: [T1, T3]
+    depends_on: [T1, T3, T19]
     files:
       - NeuronCore/Preferences.h
       - NeuronCore/Preferences.cpp
@@ -586,7 +614,8 @@ tasks:
       - NeuronClient/PersistingDebugRender.cpp
     acceptance:
       - grep -lwE "LList|DArray|FastDArray|BTree|HashTable|SortingHashTable" on the six files returns nothing
-      - Preferences' item order is unchanged — the preferences file it writes is a text format users hand-edit, and its line order is observable
+      - Every test T19 landed passes unchanged, with no edit to PreferencesTests.cpp in the same commit
+      - Template lines in a saved preferences file keep their exact positions; the order of the appended new-key block is explicitly not preserved, per T19's finding
       - The existing NeuronCore suite passes unchanged
     verify:
       - python3 tools/check_project_files.py
@@ -598,8 +627,18 @@ tasks:
       Split out of T15 on 2026-08-02 with the owner. Gates ownership/T1 and
       strings-modernised/T2 and T4, which name it in blocked_by. Profiler's
       HashTable is a name-keyed cache with no simulation state, so
-      std::unordered_map is legitimate there; Preferences' list is ordered
-      output and stays a vector.
+      std::unordered_map is legitimate there; Preferences' m_fileText is
+      ordered output and becomes a vector.
+
+      The acceptance criterion about item order was CORRECTED after T19
+      characterised the writer, and the correction is the reason T19 exists.
+      "Preferences' item order is unchanged" is not achievable as written:
+      Save() emits keys the loaded file did not contain by walking m_items
+      from slot 0 to Size(), and m_items is a HashTable, so that order is a
+      function of the key text, the insertion sequence and where the table
+      last doubled. No std:: container reproduces it and neither would a
+      different hash. What is achievable, and what T19 pins, is that template
+      lines keep their exact positions and no key is lost.
     status: todo
 
   - id: T15

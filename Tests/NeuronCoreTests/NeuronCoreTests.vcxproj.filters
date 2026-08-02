@@ -29,6 +29,9 @@
     <ClCompile Include="NetworkUpdateTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PreferencesTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="ServerToClientLetterTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
