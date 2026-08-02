@@ -87,11 +87,10 @@ private:
 public:
 	ParticleSystem();
 
-	void CreateParticle(Vector3 const &_pos, Vector3 const &_vel,
-                        int _particleTypeId, float _size=-1.0f, RGBAColour col = nullptr );
+  void CreateParticle(Vector3 const& _pos, Vector3 const& _vel, int _particleTypeId, float _size = -1.0f, RGBAColour col = 0);
 
-	void Advance(int _slice);
-	void Render();
-	void Empty();
+  void Advance(int _slice);
+  void Render();
+  void Empty();
 };
 

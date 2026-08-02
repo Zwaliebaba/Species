@@ -33,6 +33,13 @@ tasks:
       as an integer 0 (rare, found during the sweep) is left in place and
       listed in notes rather than silently changed.
     depends_on: []
+    notes: >
+      Two integer-context NULLs existed, both now the literal 0 they always
+      expanded to: ParticleSystem.h:91's default argument constructs
+      RGBAColour(0) through the int constructor (CI caught this one as
+      C2440), and NetThreadWin32.cpp:13 passes 0 to CreateThread's SIZE_T
+      stack-size and DWORD flags parameters. Everything else in the tree
+      was a genuine pointer context.
     files:
       - NeuronCore
       - NeuronClient
