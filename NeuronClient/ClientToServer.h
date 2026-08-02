@@ -76,4 +76,7 @@ public:
     void RequestPause();
 };
 
-
+// Owned by App, which assigns this during startup. Declared here so the layers
+// below Species can reach the subsystem without including App.h — see
+// tasks/layering-inversion.yaml T8.
+extern ClientToServer* g_clientToServer;

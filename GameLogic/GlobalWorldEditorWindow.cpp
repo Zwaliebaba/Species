@@ -47,7 +47,7 @@ class NewLocationButton : public SpeciesButton
         // for the end user (but allow it for us)
 
 #ifndef TARGET_DEBUG
-        if( !g_app->m_resource->IsModLoaded() )
+        if( !g_resource->IsModLoaded() )
         {
             EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_newlocationfail1" ),
                                                   LANGUAGEPHRASE( "dialog_newlocationfail2" ) ),
@@ -99,7 +99,7 @@ class SaveLocationsButton : public SpeciesButton
         // for the end user (but allow it for us)
 
 #ifndef TARGET_DEBUG
-        if( !g_app->m_resource->IsModLoaded() )
+        if( !g_resource->IsModLoaded() )
         {
             EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_savelocationsfail1" ),
                                                   LANGUAGEPHRASE( "dialog_savelocationsfail2" ) ),

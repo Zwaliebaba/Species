@@ -40,11 +40,11 @@ GunTurret::GunTurret()
     m_targetCreated(false),
     m_aiTargetCreated(false)
 {
-    SetShape( g_app->m_resource->GetShape( "BattleCannonBase.shp" ) );
+    SetShape( g_resource->GetShape( "BattleCannonBase.shp" ) );
     m_type = TypeGunTurret;
 
-    m_turret = g_app->m_resource->GetShape( "BattleCannonTurret.shp" );
-    m_barrel = g_app->m_resource->GetShape( "BattleCannonBarrel.shp" );
+    m_turret = g_resource->GetShape( "BattleCannonTurret.shp" );
+    m_barrel = g_resource->GetShape( "BattleCannonBarrel.shp" );
 
     m_barrelMount = m_turret->m_rootFragment->LookupMarker( "MarkerBarrel" );
 
@@ -130,7 +130,7 @@ bool GunTurret::SearchForTargets()
 
     if( entity && m_targetId != previousTarget )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "TargetSighted" );
+        g_soundSystem->TriggerBuildingEvent( this, "TargetSighted" );
     }
 
     return( m_targetId.IsValid() );
@@ -231,7 +231,7 @@ void GunTurret::PrimaryFire()
 
     if( fired )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "FireShell" );
+        g_soundSystem->TriggerBuildingEvent( this, "FireShell" );
     }
 }
 
@@ -424,7 +424,7 @@ void GunTurret::Render( float _predictionTime )
         Vector3 camRight = g_app->m_camera->GetRight();
         targetPos += camUp * 5.0f;
 
-        glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Icons/MouseMissileTarget.bmp" ) );
+        glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Icons/MouseMissileTarget.bmp" ) );
         glEnable( GL_TEXTURE_2D );
         glDisable( GL_CULL_FACE );
         glBlendFunc( GL_SRC_ALPHA, GL_ONE );
@@ -455,7 +455,7 @@ void GunTurret::RenderPorts()
 {
     glDisable       ( GL_CULL_FACE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );

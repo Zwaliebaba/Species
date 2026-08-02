@@ -45,7 +45,7 @@ Triffid::Triffid()
 {
     m_type = TypeTriffid;
 
-    SetShape( g_app->m_resource->GetShape("TriffidHead.shp") );
+    SetShape( g_resource->GetShape("TriffidHead.shp") );
 
     m_launchPoint = m_shape->m_rootFragment->LookupMarker( "MarkerLaunchPoint" );
     m_stem = m_shape->m_rootFragment->LookupMarker( "MarkerTriffidStem" );
@@ -162,7 +162,7 @@ void Triffid::Render( float _predictionTime )
     if( m_triggered && GetHighResTime() > m_timerSync - m_reloadTime * 0.25f )
     {
         Matrix34 launchMat = m_launchPoint->GetWorldMatrix(mat);
-        Shape *eggShape = g_app->m_resource->GetShape( "TriffidEgg.shp" );
+        Shape *eggShape = g_resource->GetShape( "TriffidEgg.shp" );
         Matrix34 eggMat( launchMat.u, -launchMat.f, launchMat.pos );
         eggMat.f *= m_size;
         eggMat.u *= m_size;
@@ -276,7 +276,7 @@ void Triffid::Damage( float _damage )
 
     if( m_damage <= 0.0f && !dead )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "Burn" );
+        g_soundSystem->TriggerBuildingEvent( this, "Burn" );
     }
 }
 
@@ -320,7 +320,7 @@ void Triffid::Launch()
         triffidEgg->m_roamRange = m_triggerRadius;
     }
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "LaunchEgg" );
+    g_soundSystem->TriggerBuildingEvent( this, "LaunchEgg" );
 }
 
 
@@ -398,12 +398,12 @@ bool Triffid::Advance()
 
     if( m_useTrigger > 0 && GetHighResTime() > m_triggerTimer )
     {
-        START_PROFILE( g_app->m_profiler, "CheckTrigger" );
+        START_PROFILE( g_profiler, "CheckTrigger" );
         Vector3 triggerPos = m_pos + m_triggerLocation;
         bool enemiesFound = g_app->m_location->m_entityGrid->AreEnemiesPresent( triggerPos.x, triggerPos.z, m_triggerRadius, m_id.GetTeamId() );
         m_triggered = enemiesFound;
         m_triggerTimer = GetHighResTime() + 5.0f;
-        END_PROFILE( g_app->m_profiler, "CheckTrigger" );
+        END_PROFILE( g_profiler, "CheckTrigger" );
     }
 
 
@@ -531,7 +531,7 @@ TriffidEgg::TriffidEgg()
     SetType( TypeTriffidEgg );
 
     m_up = g_upVector;
-    m_shape = g_app->m_resource->GetShape( "TriffidEgg.shp" );
+    m_shape = g_resource->GetShape( "TriffidEgg.shp" );
 
     m_life = 20.0f + syncfrand(10.0f);
     m_timerSync = GetHighResTime() + m_life;
@@ -666,7 +666,7 @@ bool TriffidEgg::Advance( Unit *_unit )
         if( m_pos.y < landHeight + 3.0f ) m_pos.y = landHeight + 3.0f;
         if( m_force > 0.1f )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Bounce" );
+            g_soundSystem->TriggerEntityEvent( this, "Bounce" );
         }
     }
 
@@ -689,7 +689,7 @@ bool TriffidEgg::Advance( Unit *_unit )
         Matrix34 transform( m_front, m_up, m_pos );
         g_explosionManager.AddExplosion( m_shape, transform );
         Spawn();
-        g_app->m_soundSystem->TriggerEntityEvent( this, "BurstOpen" );
+        g_soundSystem->TriggerEntityEvent( this, "BurstOpen" );
         return true;
     }
 

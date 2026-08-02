@@ -28,7 +28,7 @@ FeedingTube::FeedingTube()
     m_type = Building::TypeFeedingTube;
     //m_front.Set(0,0,1);
 
-    SetShape( g_app->m_resource->GetShape( "FeedingTube.shp" ) );
+    SetShape( g_resource->GetShape( "FeedingTube.shp" ) );
 	m_focusMarker = m_shape->m_rootFragment->LookupMarker("MarkerFocus");
 }
 
@@ -140,7 +140,7 @@ void FeedingTube::RenderAlphas ( float _predictionTime )
 
 void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alpha )
 {
-	START_PROFILE(g_app->m_profiler, "Signal");
+	START_PROFILE(g_profiler, "Signal");
 
     FeedingTube *receiver = (FeedingTube *) g_app->m_location->GetBuilding( m_receiverId );
     if( !receiver ) return;
@@ -159,7 +159,7 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     glEnable            (GL_TEXTURE_2D);
 
     gglActiveTextureARB  (GL_TEXTURE0_ARB);
-    glBindTexture	    (GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/LaserFence.bmp", true, true));
+    glBindTexture	    (GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence.bmp", true, true));
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -169,7 +169,7 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     glEnable            (GL_TEXTURE_2D);
 
     gglActiveTextureARB  (GL_TEXTURE1_ARB);
-    glBindTexture	    (GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/RadarSignal.bmp", true, true));
+    glBindTexture	    (GL_TEXTURE_2D, g_resource->GetTexture("Textures/RadarSignal.bmp", true, true));
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -269,7 +269,7 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
     glTexEnvf           (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	END_PROFILE(g_app->m_profiler, "Signal");
+	END_PROFILE(g_profiler, "Signal");
 }
 
 Vector3 FeedingTube::GetStartPoint()

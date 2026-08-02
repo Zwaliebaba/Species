@@ -45,7 +45,7 @@ void TextRenderer::Initialise(char const *_filename)
 
 void TextRenderer::BuildOpenGlState()
 {
-	BinaryReader *reader = g_app->m_resource->GetBinaryReader(m_filename);
+	BinaryReader *reader = g_resource->GetBinaryReader(m_filename);
 	char const *extension = GetExtensionPart(m_filename);
 	BitmapRGBA bmp(reader, extension);
 	delete reader;

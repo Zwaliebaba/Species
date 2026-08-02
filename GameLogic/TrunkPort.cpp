@@ -26,7 +26,7 @@ TrunkPort::TrunkPort()
     m_heightMapSize(TRUNKPORT_HEIGHTMAP_MAXSIZE)
 {
     m_type = TypeTrunkPort;
-    SetShape( g_app->m_resource->GetShape( "TrunkPort.shp" ) );
+    SetShape( g_resource->GetShape( "TrunkPort.shp" ) );
 
     m_destination1 = m_shape->m_rootFragment->LookupMarker( "MarkerDestination1" );
     m_destination2 = m_shape->m_rootFragment->LookupMarker( "MarkerDestination2" );
@@ -87,7 +87,7 @@ bool TrunkPort::Advance()
     if( gb && gb->m_online && m_openTimer == 0.0f)
     {
         m_openTimer = GetHighResTime();
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "PowerUp" );
+        g_soundSystem->TriggerBuildingEvent( this, "PowerUp" );
     }
 
     return Building::Advance();
@@ -117,7 +117,7 @@ void TrunkPort::Render( float predictionTime )
         sprintf( caption, "[%s]", LANGUAGEPHRASE("location_unknown") );
     }
 
-    START_PROFILE( g_app->m_profiler, "RenderDestination" );
+    START_PROFILE( g_profiler, "RenderDestination" );
 
     float fontSize = 70.0f / strlen(caption);
     fontSize = min( fontSize, 10.0f );
@@ -147,7 +147,7 @@ void TrunkPort::Render( float predictionTime )
 
     g_gameFont.SetRenderShadow(false);
 
-    END_PROFILE( g_app->m_profiler, "RenderDestination" );
+    END_PROFILE( g_profiler, "RenderDestination" );
 }
 
 
@@ -179,7 +179,7 @@ void TrunkPort::RenderAlphas( float predictionTime )
         //
         // Calculate our Dif map based on some nice sine curves
 
-        START_PROFILE( g_app->m_profiler, "Advance Heightmap" );
+        START_PROFILE( g_profiler, "Advance Heightmap" );
 
         Vector3 difMap[TRUNKPORT_HEIGHTMAP_MAXSIZE][TRUNKPORT_HEIGHTMAP_MAXSIZE];
 
@@ -201,12 +201,12 @@ void TrunkPort::RenderAlphas( float predictionTime )
             }
         }
 
-        END_PROFILE( g_app->m_profiler, "Advance Heightmap" );
+        END_PROFILE( g_profiler, "Advance Heightmap" );
 
         //
         // Render our height map with the dif map added on
 
-        START_PROFILE( g_app->m_profiler, "Render Heightmap" );
+        START_PROFILE( g_profiler, "Render Heightmap" );
 
         glDisable       ( GL_CULL_FACE );
         glEnable        ( GL_BLEND );
@@ -214,7 +214,7 @@ void TrunkPort::RenderAlphas( float predictionTime )
         glDepthMask     ( false );
 
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/LaserFence.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/LaserFence.bmp" ) );
 
         float alphaValue = timeOpen;
         if( alphaValue > 0.7f ) alphaValue = 0.7f;
@@ -243,7 +243,7 @@ void TrunkPort::RenderAlphas( float predictionTime )
         }
 
         glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
         glColor4f       ( 1.0f, 1.0f, 1.0f, 1.0f );
 
         for( int x = 0; x < m_heightMapSize-1; ++x )
@@ -275,7 +275,7 @@ void TrunkPort::RenderAlphas( float predictionTime )
         glDisable       ( GL_BLEND );
         glEnable        ( GL_CULL_FACE );
 
-        END_PROFILE( g_app->m_profiler, "Render Heightmap" );
+        END_PROFILE( g_profiler, "Render Heightmap" );
 
     }
 }

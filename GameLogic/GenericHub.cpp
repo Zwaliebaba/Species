@@ -99,7 +99,7 @@ void DynamicBase::SetShapeName( char *_shapeName )
 
     if( strcmp( m_shapeName, "none" ) != 0 )
     {
-        SetShape( g_app->m_resource->GetShape( m_shapeName ) );
+        SetShape( g_resource->GetShape( m_shapeName ) );
 
         Matrix34 mat( m_front, m_up, m_pos );
 
@@ -124,7 +124,7 @@ DynamicHub::DynamicHub()
     m_minActiveLinks(0)
 {
     m_type = TypeDynamicHub;
-    //SetShape( g_app->m_resource->GetShape( "Generator.shp" ) );
+    //SetShape( g_resource->GetShape( "Generator.shp" ) );
 }
 
 void DynamicHub::Initialise( Building *_template )
@@ -139,7 +139,7 @@ void DynamicHub::Initialise( Building *_template )
 void DynamicHub::ReprogramComplete()
 {
     m_reprogrammed = true;
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "Enable" );
+    g_soundSystem->TriggerBuildingEvent( this, "Enable" );
 }
 
 
@@ -322,7 +322,7 @@ DynamicNode::DynamicNode()
     m_scoreSupplied(0)
 {
     m_type = TypeDynamicNode;
-    //SetShape( g_app->m_resource->GetShape( "SolarPanel.shp" ) );
+    //SetShape( g_resource->GetShape( "SolarPanel.shp" ) );
 }
 
 void DynamicNode::Initialise( Building *_template )

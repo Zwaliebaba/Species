@@ -29,7 +29,7 @@ Armour::Armour()
 {
   SetType(TypeArmour);
 
-  m_shape = g_app->m_resource->GetShape("Armour.shp");
+  m_shape = g_resource->GetShape("Armour.shp");
   m_markerEntrance = m_shape->m_rootFragment->LookupMarker("MarkerEntrance");
   m_markerFlag = m_shape->m_rootFragment->LookupMarker("MarkerFlag");
 
@@ -74,7 +74,7 @@ void Armour::ChangeHealth(int _amount)
   if (!m_dead)
   {
     if (_amount < 0)
-      g_app->m_soundSystem->TriggerEntityEvent(this, "LoseHealth");
+      g_soundSystem->TriggerEntityEvent(this, "LoseHealth");
 
     int oldHealth = m_stats[StatHealth];
     int newHealth = oldHealth + _amount;
@@ -95,7 +95,7 @@ void Armour::ChangeHealth(int _amount)
     if (newHealth == 0)
     {
       m_dead = true;
-      g_app->m_soundSystem->TriggerEntityEvent(this, "Die");
+      g_soundSystem->TriggerEntityEvent(this, "Die");
     }
   }
 }
@@ -386,7 +386,7 @@ void Armour::AddPassenger()
 {
   ++m_numPassengers;
 
-  g_app->m_soundSystem->TriggerEntityEvent(this, "LoadDarwinian");
+  g_soundSystem->TriggerEntityEvent(this, "LoadDarwinian");
 }
 
 void Armour::RemovePassenger()
@@ -394,7 +394,7 @@ void Armour::RemovePassenger()
   --m_numPassengers;
   m_previousUnloadTimer = GetHighResTime();
 
-  g_app->m_soundSystem->TriggerEntityEvent(this, "UnloadDarwinian");
+  g_soundSystem->TriggerEntityEvent(this, "UnloadDarwinian");
 }
 
 void Armour::GetEntrance(Vector3& _exitPos, Vector3& _exitDir)
@@ -531,13 +531,13 @@ void Armour::Render(float _predictionTime)
   switch (m_state)
   {
   case StateIdle:
-    m_flag.SetTexture(g_app->m_resource->GetTexture("Icons/BannerNone.bmp"));
+    m_flag.SetTexture(g_resource->GetTexture("Icons/BannerNone.bmp"));
     break;
   case StateUnloading:
-    m_flag.SetTexture(g_app->m_resource->GetTexture("Icons/BannerUnload.bmp"));
+    m_flag.SetTexture(g_resource->GetTexture("Icons/BannerUnload.bmp"));
     break;
   case StateLoading:
-    m_flag.SetTexture(g_app->m_resource->GetTexture("Icons/BannerFollow.bmp"));
+    m_flag.SetTexture(g_resource->GetTexture("Icons/BannerFollow.bmp"));
     break;
   }
 
@@ -563,7 +563,7 @@ void Armour::Render(float _predictionTime)
     m_deployFlag.SetPosition(m_conversionPoint);
     m_deployFlag.SetOrientation(front, up);
     m_deployFlag.SetSize(30.0f);
-    m_deployFlag.SetTexture(g_app->m_resource->GetTexture("Icons/BannerDeploy.bmp"));
+    m_deployFlag.SetTexture(g_resource->GetTexture("Icons/BannerDeploy.bmp"));
     m_deployFlag.Render();
   }
 }

@@ -191,8 +191,8 @@ SpaceInvader::SpaceInvader()
 :   Entity(),
     m_armed(true)
 {
-    m_shape = g_app->m_resource->GetShape( "SpaceInvader.shp" );
-    m_bombShape = g_app->m_resource->GetShape( "Throwable.shp" );
+    m_shape = g_resource->GetShape( "SpaceInvader.shp" );
+    m_bombShape = g_resource->GetShape( "Throwable.shp" );
 }
 
 
@@ -232,7 +232,7 @@ bool SpaceInvader::Advance( Unit *_unit )
             int index = g_app->m_location->m_effects.PutData( weapon );
             weapon->m_id.Set( m_id.GetTeamId(), UNIT_EFFECTS, index, -1 );
             weapon->m_id.GenerateUniqueId();
-            g_app->m_soundSystem->TriggerEntityEvent( this, "DropGrenade" );
+            g_soundSystem->TriggerEntityEvent( this, "DropGrenade" );
             m_armed = false;
         }
     }

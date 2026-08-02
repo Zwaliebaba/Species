@@ -104,3 +104,7 @@ class Profiler
 #define END_PROFILE(profiler, itemName)
 #endif // PROFILER_ENABLED
 
+// Owned by App, which assigns this during startup. Declared here so the layers
+// below Species can reach the subsystem without including App.h — see
+// tasks/layering-inversion.yaml T8.
+extern Profiler* g_profiler;

@@ -14,6 +14,8 @@
 #include "Location.h"
 #include "Renderer.h"
 
+Resource* g_resource = nullptr;
+
 Resource::Resource()
   : m_nameSeed(1),
     m_modName(nullptr) {}

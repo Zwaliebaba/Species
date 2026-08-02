@@ -356,7 +356,7 @@ AITarget::AITarget()
     memset( m_idleCount, 0, NUM_TEAMS*sizeof(int) );
     memset( m_priority, 0, NUM_TEAMS*sizeof(float) );
 
-    SetShape( g_app->m_resource->GetShape("AiTarget.shp") );
+    SetShape( g_resource->GetShape("AiTarget.shp") );
 
     m_teamCountTimer = syncfrand( 2.0f );
 }

@@ -38,8 +38,8 @@ Centipede::Centipede()
 
     if( !s_shapeBody )
     {
-        s_shapeBody         = g_app->m_resource->GetShape( "Centipede.shp" );
-        s_shapeHead         = g_app->m_resource->GetShape( "CentipedeHead.shp" );
+        s_shapeBody         = g_resource->GetShape( "Centipede.shp" );
+        s_shapeHead         = g_resource->GetShape( "CentipedeHead.shp" );
     }
 
     m_shape = s_shapeBody;
@@ -140,7 +140,7 @@ void Centipede::Panic( float _time )
 {
     if( m_panic <= 0.0f )
     {
-        g_app->m_soundSystem->TriggerEntityEvent( this, "Panic" );
+        g_soundSystem->TriggerEntityEvent( this, "Panic" );
     }
 
     m_panic = max( _time, m_panic );
@@ -309,7 +309,7 @@ void Centipede::Attack( Vector3 const &_pos )
         float distance = pushVector.Mag();
         if( distance < m_radius )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
+            g_soundSystem->TriggerEntityEvent( this, "Attack" );
 
             pushVector.SetLength( m_radius - distance );
 
@@ -415,7 +415,7 @@ void Centipede::EatSpirits()
             centipede->Begin();
 
             g_app->m_location->m_entityGrid->AddObject( centipede->m_id, centipede->m_pos.x, centipede->m_pos.z, centipede->m_radius );
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Grow" );
+            g_soundSystem->TriggerEntityEvent( this, "Grow" );
 
             tail = centipede;
             m_numSpiritsEaten -= CENTIPEDE_NUMSPIRITSTOREGROW;
@@ -477,7 +477,7 @@ bool Centipede::SearchForTargetEnemy()
     if( targetId.IsValid() )
     {
         m_targetEntity = targetId;
-        g_app->m_soundSystem->TriggerEntityEvent( this, "EnemySighted" );
+        g_soundSystem->TriggerEntityEvent( this, "EnemySighted" );
         return true;
     }
     else
@@ -496,7 +496,7 @@ bool Centipede::SearchForSpirits()
     int size = g_app->m_location->GetUnit( m_id )->NumAliveEntities();
     if( size > CENTIPEDE_MAXSIZE ) return false;
 
-    START_PROFILE(g_app->m_profiler, "SearchSpirits");
+    START_PROFILE(g_profiler, "SearchSpirits");
     Spirit *found = nullptr;
     float nearest = 9999.9f;
 
@@ -524,7 +524,7 @@ bool Centipede::SearchForSpirits()
         m_targetPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_targetPos.x, m_targetPos.z );
     }
 
-	END_PROFILE(g_app->m_profiler, "SearchSpirits");
+	END_PROFILE(g_profiler, "SearchSpirits");
     return found;
 }
 

@@ -49,7 +49,7 @@ void Spirit::Begin()
     m_numNearbyEggs = 0;
     m_eggSearchTimer = 0.0f;
 
-    g_app->m_soundSystem->TriggerOtherEvent( this, "Create", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "Create", SoundSourceBlueprint::TypeSpirit );
 }
 
 bool Spirit::Advance()
@@ -101,7 +101,7 @@ bool Spirit::Advance()
                 if( m_timeSync <= 0.0f )
                 {
                     m_state = StateDeath;
-                    g_app->m_soundSystem->TriggerOtherEvent( this, "BeginAscent", SoundSourceBlueprint::TypeSpirit );
+                    g_soundSystem->TriggerOtherEvent( this, "BeginAscent", SoundSourceBlueprint::TypeSpirit );
                     m_timeSync = 180.0f;
                     AddToGlobalWorld();
                 }
@@ -234,7 +234,7 @@ void Spirit::AddToGlobalWorld()
 void Spirit::CollectorArrives()
 {
     m_state = StateAttached;
-    g_app->m_soundSystem->TriggerOtherEvent( this, "PickedUp", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "PickedUp", SoundSourceBlueprint::TypeSpirit );
 }
 
 void Spirit::CollectorDrops()
@@ -244,7 +244,7 @@ void Spirit::CollectorDrops()
     m_state = StateFloating;
     m_pushFromBuildings = true;
 //    Begin();
-    g_app->m_soundSystem->TriggerOtherEvent( this, "Dropped", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "Dropped", SoundSourceBlueprint::TypeSpirit );
 }
 
 void Spirit::InEgg()
@@ -252,7 +252,7 @@ void Spirit::InEgg()
     m_state = StateInEgg;
     m_vel.Zero();
     m_hover.Zero();
-    g_app->m_soundSystem->TriggerOtherEvent( this, "PlacedInEgg", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "PlacedInEgg", SoundSourceBlueprint::TypeSpirit );
 }
 
 void Spirit::EggDestroyed()
@@ -261,7 +261,7 @@ void Spirit::EggDestroyed()
     m_hover.Zero();
     m_state = StateFloating;
 //    Begin();
-    g_app->m_soundSystem->TriggerOtherEvent( this, "EggDestroyed", SoundSourceBlueprint::TypeSpirit );
+    g_soundSystem->TriggerOtherEvent( this, "EggDestroyed", SoundSourceBlueprint::TypeSpirit );
 }
 
 void Spirit::Render( float predictionTime )

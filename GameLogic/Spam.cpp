@@ -39,7 +39,7 @@ Spam::Spam()
 
     m_front.RotateAroundY( frand(2.0f * M_PI) );
 
-    SetShape( g_app->m_resource->GetShape( "ResearchItem.shp" ) );
+    SetShape( g_resource->GetShape( "ResearchItem.shp" ) );
 }
 
 
@@ -86,7 +86,7 @@ void Spam::Damage( float _damage )
         // We just died
         GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb ) gb->m_online = true;
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "Explode" );
+        g_soundSystem->TriggerBuildingEvent( this, "Explode" );
     }
 }
 
@@ -139,7 +139,7 @@ void Spam::RenderAlphas( float _predictionTime )
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
 
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10.0f;
 
@@ -183,7 +183,7 @@ void Spam::RenderAlphas( float _predictionTime )
     alpha = 1.0f - m_timer / SpamReloadTime();
     alpha *= 0.3f;
 
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
     int numStars = 10;
     if( buildingDetail == 2 ) numStars = 5;
@@ -235,7 +235,7 @@ void Spam::SpawnInfection()
         infection->m_id.GenerateUniqueId();
     }
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "Attack" );
+    g_soundSystem->TriggerBuildingEvent( this, "Attack" );
 }
 
 
@@ -316,7 +316,7 @@ bool Spam::Advance()
 
     if( m_research )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "Spam Create" );
+        g_soundSystem->StopAllSounds( m_id, "Spam Create" );
     }
 
     return Building::Advance();
@@ -335,7 +335,7 @@ void Spam::SetAsResearch()
     m_research = true;
     m_activated = false;
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "CreateResearch" );
+    g_soundSystem->TriggerBuildingEvent( this, "CreateResearch" );
 }
 
 
@@ -612,7 +612,7 @@ void SpamInfection::Render( float _time )
     int numRepeats = 4;
 
     glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
     glBlendFunc( GL_SRC_ALPHA, GL_ONE );
 
     for( int j = 0; j < numRepeats; ++j )

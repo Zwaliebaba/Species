@@ -125,7 +125,7 @@ void ReceiverBuilding::RenderAlphas ( float _predictionTime )
         if( buildingDetail == 1 )
         {
             glEnable        ( GL_TEXTURE_2D );
-            glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+            glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
             glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
             glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 
@@ -190,7 +190,7 @@ bool ReceiverBuilding::Advance()
 void ReceiverBuilding::TriggerSpirit ( float _initValue )
 {
     m_spirits.PutDataAtStart( _initValue );
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "TriggerSpirit" );
+    g_soundSystem->TriggerBuildingEvent( this, "TriggerSpirit" );
 }
 
 void ReceiverBuilding::Read( TextReader *_in, bool _dynamic )
@@ -256,7 +256,7 @@ void ReceiverBuilding::BeginRenderUnprocessedSpirits()
     int buildingDetail = g_prefsManager->GetInt( "RenderBuildingDetail", 1 );
     if( buildingDetail == 1 )
     {
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
     }
 
 	s_nearPlaneStart = g_app->m_renderer->GetNearPlane();
@@ -383,7 +383,7 @@ SpiritProcessor::SpiritProcessor()
     m_spawnSync(0.0f)
 {
     m_type = TypeSpiritProcessor;
-    SetShape( g_app->m_resource->GetShape( "SpiritProcessor.shp" ) );
+    SetShape( g_resource->GetShape( "SpiritProcessor.shp" ) );
 }
 
 
@@ -539,7 +539,7 @@ ReceiverLink::ReceiverLink()
 :   ReceiverBuilding()
 {
     m_type = TypeReceiverLink;
-    SetShape( g_app->m_resource->GetShape( "ReceiverLink.shp" ) );
+    SetShape( g_resource->GetShape( "ReceiverLink.shp" ) );
 }
 
 
@@ -557,7 +557,7 @@ ReceiverSpiritSpawner::ReceiverSpiritSpawner()
 :   ReceiverBuilding()
 {
     m_type = TypeReceiverSpiritSpawner;
-    SetShape( g_app->m_resource->GetShape( "ReceiverLink.shp" ) );
+    SetShape( g_resource->GetShape( "ReceiverLink.shp" ) );
 }
 
 
@@ -583,7 +583,7 @@ SpiritReceiver::SpiritReceiver()
     m_spiritLink(nullptr)
 {
     m_type = TypeSpiritReceiver;
-    SetShape( g_app->m_resource->GetShape( "SpiritReceiver.shp" ) );
+    SetShape( g_resource->GetShape( "SpiritReceiver.shp" ) );
     m_headMarker = m_shape->m_rootFragment->LookupMarker( "MarkerHead" );
 
     for( int i = 0; i < SPIRITRECEIVER_NUMSTATUSMARKERS; ++i )
@@ -593,7 +593,7 @@ SpiritReceiver::SpiritReceiver()
         m_statusMarkers[i] = m_shape->m_rootFragment->LookupMarker( name );
     }
 
-    m_headShape = g_app->m_resource->GetShape( "SpiritReceiverHead.shp" );
+    m_headShape = g_resource->GetShape( "SpiritReceiverHead.shp" );
     m_spiritLink = m_headShape->m_rootFragment->LookupMarker( "MarkerSpiritLink" );
 }
 
@@ -694,7 +694,7 @@ void SpiritReceiver::RenderPorts()
 {
     glDisable       ( GL_CULL_FACE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );

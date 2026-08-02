@@ -64,7 +64,7 @@ Tripod::Tripod()
 	m_bodyVel(0,0,0),
 	m_up(g_upVector)
 {
-	m_shape = g_app->m_resource->GetShape("Tripod.shp");
+	m_shape = g_resource->GetShape("Tripod.shp");
 	m_modeStartTime = 0.0f;
 
 	// Initialise legs
@@ -205,7 +205,7 @@ void Tripod::DoFallForTwoLegs()
 
 WorldObjectId Tripod::FindEntityToAttack()
 {
-	START_PROFILE(g_app->m_profiler, "FindEntityToA");
+	START_PROFILE(g_profiler, "FindEntityToA");
 
 	WorldObjectId id;
 
@@ -233,7 +233,7 @@ WorldObjectId Tripod::FindEntityToAttack()
 		id = enemies[nearest];
 	}
 
-	END_PROFILE(g_app->m_profiler, "FindEntityToA");
+	END_PROFILE(g_profiler, "FindEntityToA");
 
 	return id;
 }
@@ -241,7 +241,7 @@ WorldObjectId Tripod::FindEntityToAttack()
 
 Vector2 Tripod::ChooseDestination()
 {
-	START_PROFILE(g_app->m_profiler, "ChooseDest");
+	START_PROFILE(g_profiler, "ChooseDest");
 
 	int numFound;
 	WorldObjectId *enemies = g_app->m_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z,
@@ -263,7 +263,7 @@ Vector2 Tripod::ChooseDestination()
 		pos.y += syncsfrand(100.0f);
 	}
 
-	END_PROFILE(g_app->m_profiler, "ChooseDest");
+	END_PROFILE(g_profiler, "ChooseDest");
 
 	return pos;
 }
@@ -271,7 +271,7 @@ Vector2 Tripod::ChooseDestination()
 
 void Tripod::DoNavigation()
 {
-	START_PROFILE(g_app->m_profiler, "DoNav");
+	START_PROFILE(g_profiler, "DoNav");
 
 	// If m_dir is -1 that means we aren't trying to go anywhere. We need to
 	// wait until we come to rest before we choose a new direction to travel in
@@ -280,7 +280,7 @@ void Tripod::DoNavigation()
 		float speed = m_vel.Mag();
 		if (speed > 0.5f)
 		{
-			END_PROFILE(g_app->m_profiler, "DoNav");
+			END_PROFILE(g_profiler, "DoNav");
 			return;
 		}
 	}
@@ -335,7 +335,7 @@ void Tripod::DoNavigation()
 	m_vel.x += m_navData.m_directions[m_navData.m_dir].x * 1.0f;
 	m_vel.z += m_navData.m_directions[m_navData.m_dir].y * 1.0f;
 
-	END_PROFILE(g_app->m_profiler, "DoNav");
+	END_PROFILE(g_profiler, "DoNav");
 }
 
 
@@ -354,7 +354,7 @@ Vector3 Tripod::CalcAttackUpVector()
 
 void Tripod::AdvanceWalk()
 {
-	START_PROFILE(g_app->m_profiler, "AdvanceWalk");
+	START_PROFILE(g_profiler, "AdvanceWalk");
 
 	// Consider mode switch
 	{
@@ -368,7 +368,7 @@ void Tripod::AdvanceWalk()
 				m_attackTarget = target->m_pos;
 				m_mode = ModePreAttack;
 				m_modeStartTime = g_gameTime;
-				END_PROFILE(g_app->m_profiler, "AdvanceWalk");
+				END_PROFILE(g_profiler, "AdvanceWalk");
 				return;
 			}
 		}
@@ -407,18 +407,18 @@ void Tripod::AdvanceWalk()
 		}
 	}
 
-	END_PROFILE(g_app->m_profiler, "AdvanceWalk");
+	END_PROFILE(g_profiler, "AdvanceWalk");
 }
 
 
 void Tripod::AdvancePreAttack()
 {
-	START_PROFILE(g_app->m_profiler, "AdvancePreAttack");
+	START_PROFILE(g_profiler, "AdvancePreAttack");
 
 	// Exit if we haven't come to a stop yet
 	if (m_vel.Mag() > 0.05f)
 	{
-		END_PROFILE(g_app->m_profiler, "AdvancePreAttack");
+		END_PROFILE(g_profiler, "AdvancePreAttack");
 		return;
 	}
 
@@ -441,13 +441,13 @@ void Tripod::AdvancePreAttack()
 	m_front = right ^ m_up;
 	m_front.Normalise();
 
-	END_PROFILE(g_app->m_profiler, "AdvancePreAttack");
+	END_PROFILE(g_profiler, "AdvancePreAttack");
 }
 
 
 void Tripod::AdvanceAttack()
 {
-	START_PROFILE(g_app->m_profiler, "AdvanceAttack");
+	START_PROFILE(g_profiler, "AdvanceAttack");
 
 
 	// Consider mode switch
@@ -456,7 +456,7 @@ void Tripod::AdvanceAttack()
 	{
 		m_mode = ModePostAttack;
 		m_modeStartTime = g_gameTime;
-		END_PROFILE(g_app->m_profiler, "AdvanceAttack");
+		END_PROFILE(g_profiler, "AdvanceAttack");
 		return;
 	}
 
@@ -484,7 +484,7 @@ void Tripod::AdvanceAttack()
 		}
 	}
 
-	END_PROFILE(g_app->m_profiler, "AdvanceAttack");
+	END_PROFILE(g_profiler, "AdvanceAttack");
 }
 
 

@@ -46,7 +46,7 @@ Engineer::Engineer()
 {
     m_idleRotateRate = syncsfrand(0.5f);
 
-    m_shape = g_app->m_resource->GetShape( "Engineer.shp" );
+    m_shape = g_resource->GetShape( "Engineer.shp" );
 
     Matrix34 mat( Vector3(0,0,1), g_upVector, g_zeroVector );
     m_centrePos = m_shape->CalculateCentre(mat);
@@ -260,14 +260,14 @@ void Engineer::ChangeHealth( int amount )
 
         if( amount < 0 )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
+            g_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
         }
 
         if( m_stats[StatHealth] + amount < 0 )
         {
             m_stats[StatHealth] = 0;
             m_dead = true;
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Die" );
+            g_soundSystem->TriggerEntityEvent( this, "Die" );
         }
         else if( m_stats[StatHealth] + amount > 255 )
         {
@@ -338,16 +338,16 @@ bool Engineer::Advance( Unit *_unit )
             if( ct )
             {
                 ct->EndReprogram( m_positionId );
-                g_app->m_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
-                g_app->m_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
+                g_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
+                g_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
             }
         }
 
         // If I was researching something, stop now
         if( m_state == StateResearching )
         {
-            g_app->m_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
-            g_app->m_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
+            g_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
+            g_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
         }
 
         // If I was operating a bridge, stop now
@@ -408,8 +408,8 @@ bool Engineer::Advance( Unit *_unit )
         ControlTower *ct = (ControlTower *) building;
         ct->EndReprogram( m_positionId );
         m_positionId = -1;
-        g_app->m_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
-        g_app->m_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
+        g_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
+        g_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
     }
 
     if( building && building->m_type == Building::TypeBridge
@@ -424,8 +424,8 @@ bool Engineer::Advance( Unit *_unit )
         && m_state != StateResearching )
     {
         // We've been moved away from researching a research item
-        g_app->m_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
-        //g_app->m_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
+        g_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
+        //g_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
     }
 
 
@@ -711,7 +711,7 @@ bool Engineer::AdvanceToControlTower ()
         {
             m_positionId = positionId;
             ct->BeginReprogram( m_positionId );
-            g_app->m_soundSystem->TriggerEntityEvent( this, "BeginReprogramming" );
+            g_soundSystem->TriggerEntityEvent( this, "BeginReprogramming" );
             m_state = StateReprogramming;
         }
     }
@@ -734,7 +734,7 @@ bool Engineer::AdvanceResearching()
         item->m_type != Building::TypeResearchItem ||
         !item->NeedsReprogram() )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
+        g_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
 
         m_buildingId = -1;
         m_state = StateIdle;
@@ -749,8 +749,8 @@ bool Engineer::AdvanceResearching()
 
     if( amIDone )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
-        g_app->m_soundSystem->TriggerEntityEvent( this, "ReprogrammingComplete" );
+        g_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
+        g_soundSystem->TriggerEntityEvent( this, "ReprogrammingComplete" );
         m_buildingId = -1;
         m_state = StateIdle;
         return false;
@@ -805,7 +805,7 @@ bool Engineer::AdvanceReprogramming()
     if( !building )
     {
         m_state = StateIdle;
-        g_app->m_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
+        g_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
         return false;
     }
 
@@ -816,8 +816,8 @@ bool Engineer::AdvanceReprogramming()
         bool finished = ct->Reprogram( m_id.GetTeamId() );
         if( finished )
         {
-            g_app->m_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
-            g_app->m_soundSystem->TriggerEntityEvent( this, "ReprogrammingComplete" );
+            g_soundSystem->StopAllSounds( m_id, "Engineer BeginReprogramming" );
+            g_soundSystem->TriggerEntityEvent( this, "ReprogrammingComplete" );
             ct->EndReprogram( m_positionId );
             m_buildingId = -1;
             m_positionId = -1;
@@ -998,7 +998,7 @@ bool Engineer::AdvanceToResearchItem()
     bool arrived = AdvanceToTargetPos();
     if( arrived )
     {
-        g_app->m_soundSystem->TriggerEntityEvent( this, "BeginReprogramming" );
+        g_soundSystem->TriggerEntityEvent( this, "BeginReprogramming" );
         m_state = StateResearching;
     }
 
@@ -1117,7 +1117,7 @@ void Engineer::Render( float predictionTime )
             glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
             glDepthMask     ( false );
             glEnable        ( GL_TEXTURE_2D );
-            glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+            glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
 
             glBegin( GL_QUADS );
                 glTexCoord2i(0,0);      glVertex3fv( (fromPos - rightAngle).GetData() );

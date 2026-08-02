@@ -42,7 +42,7 @@ ThrowableWeapon::ThrowableWeapon( int _type, Vector3 const &_startPos, Vector3 c
     m_force(1.0f),
     m_numFlashes(0)
 {
-    m_shape = g_app->m_resource->GetShape( "Throwable.shp" );
+    m_shape = g_resource->GetShape( "Throwable.shp" );
     m_pos = _startPos;
     m_vel = _front * _force;
 
@@ -70,11 +70,11 @@ void ThrowableWeapon::TriggerSoundEvent( char const *_event )
         case EffectThrowableGrenade:
         case EffectThrowableAirstrikeMarker:
         case EffectThrowableControllerGrenade:
-            g_app->m_soundSystem->TriggerOtherEvent( this, _event, SoundSourceBlueprint::TypeGrenade );
+            g_soundSystem->TriggerOtherEvent( this, _event, SoundSourceBlueprint::TypeGrenade );
             break;
 
         case EffectThrowableAirstrikeBomb:
-            g_app->m_soundSystem->TriggerOtherEvent( this, _event, SoundSourceBlueprint::TypeAirstrikeBomb );
+            g_soundSystem->TriggerOtherEvent( this, _event, SoundSourceBlueprint::TypeAirstrikeBomb );
             break;
     }
 }
@@ -152,7 +152,7 @@ void ThrowableWeapon::Render( float _predictionTime )
         float size = 1000.0f / sqrtf(distToThrowable);
         glColor4ub      ( m_colour.r, m_colour.g, m_colour.b, 200 );
         glEnable        (GL_TEXTURE_2D);
-        glBindTexture   (GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   (GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
         glDisable       (GL_CULL_FACE);
         glBegin( GL_QUADS );
             glTexCoord2i( 0, 0 );       glVertex3fv( (predictedPos - g_app->m_camera->GetUp()*size).GetData() );
@@ -162,7 +162,7 @@ void ThrowableWeapon::Render( float _predictionTime )
         glEnd();
         size *= 0.4f;
         glColor4f       ( 1.0f, 1.0f, 1.0f, 0.7f );
-        glBindTexture   (GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   (GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
         glBegin( GL_QUADS );
             glTexCoord2i( 0, 1 );       glVertex3fv( (predictedPos - g_app->m_camera->GetUp()*size).GetData() );
             glTexCoord2i( 1, 1 );       glVertex3fv( (predictedPos + g_app->m_camera->GetRight()*size).GetData() );
@@ -305,7 +305,7 @@ bool ControllerGrenade::Advance()
 
     if( GetHighResTime() > m_birthTime + 3.0f )
     {
-        g_app->m_soundSystem->TriggerOtherEvent( this, "ExplodeController", SoundSourceBlueprint::TypeGrenade );
+        g_soundSystem->TriggerOtherEvent( this, "ExplodeController", SoundSourceBlueprint::TypeGrenade );
 
         int numFlashes = 5 + speciesRandom() % 5;
         for( int i = 0; i < numFlashes; ++i )
@@ -355,7 +355,7 @@ Rocket::Rocket(Vector3 _startPos, Vector3 _targetPos)
     m_pos = _startPos + Vector3(0,2,0);
     m_vel = ( _targetPos - m_pos ).Normalise() * 50.0f;
 
-    m_shape = g_app->m_resource->GetShape( "Throwable.shp" );
+    m_shape = g_resource->GetShape( "Throwable.shp" );
 
     m_timer = GetHighResTime();
     m_type = EffectRocket;
@@ -364,7 +364,7 @@ Rocket::Rocket(Vector3 _startPos, Vector3 _targetPos)
 
 void Rocket::Initialise()
 {
-    g_app->m_soundSystem->TriggerOtherEvent( this, "Create", SoundSourceBlueprint::TypeRocket );
+    g_soundSystem->TriggerOtherEvent( this, "Create", SoundSourceBlueprint::TypeRocket );
 }
 
 
@@ -411,8 +411,8 @@ bool Rocket::Advance()
     if( GetHighResTime() > m_timer + maxLife )
     {
         g_app->m_location->Bang( m_pos, 15.0f, 25.0f );
-        g_app->m_soundSystem->StopAllSounds( m_id, "Rocket Create" );
-        g_app->m_soundSystem->TriggerOtherEvent( this, "Explode", SoundSourceBlueprint::TypeRocket );
+        g_soundSystem->StopAllSounds( m_id, "Rocket Create" );
+        g_soundSystem->TriggerOtherEvent( this, "Explode", SoundSourceBlueprint::TypeRocket );
         return true;
     }
 
@@ -423,7 +423,7 @@ bool Rocket::Advance()
     if (g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) >= m_pos.y)
     {
         g_app->m_location->Bang( m_pos, 15.0f, 25.0f );
-        g_app->m_soundSystem->TriggerOtherEvent( this, "Explode", SoundSourceBlueprint::TypeRocket );
+        g_soundSystem->TriggerOtherEvent( this, "Explode", SoundSourceBlueprint::TypeRocket );
         return true;
     }
 
@@ -440,7 +440,7 @@ bool Rocket::Advance()
         if( building->DoesSphereHit( m_pos, 3.0f ) )
         {
             g_app->m_location->Bang( m_pos, 15.0f, 25.0f );
-            g_app->m_soundSystem->TriggerOtherEvent( this, "Explode", SoundSourceBlueprint::TypeRocket );
+            g_soundSystem->TriggerOtherEvent( this, "Explode", SoundSourceBlueprint::TypeRocket );
             return true;
         }
     }
@@ -499,7 +499,7 @@ void Laser::Initialise(float _lifeTime)
     m_harmless = false;
     m_bounced = false;
 
-    g_app->m_soundSystem->TriggerOtherEvent( this, "Create", SoundSourceBlueprint::TypeLaser );
+    g_soundSystem->TriggerOtherEvent( this, "Create", SoundSourceBlueprint::TypeLaser );
 }
 
 
@@ -546,7 +546,7 @@ bool Laser::Advance()
             distanceRemaining.SetLength( distanceTotal - distanceTravelled );
 
             m_pos += distanceRemaining;
-            g_app->m_soundSystem->TriggerOtherEvent( this, "Richochet", SoundSourceBlueprint::TypeLaser );
+            g_soundSystem->TriggerOtherEvent( this, "Richochet", SoundSourceBlueprint::TypeLaser );
 
             m_bounced = true;
         }
@@ -578,7 +578,7 @@ bool Laser::Advance()
                 vel.y += sfrand(10.0f);
                 vel.z += sfrand(10.0f);
                 g_app->m_particleSystem->CreateParticle( m_pos, vel, Particle::TypeRocketTrail );
-                g_app->m_soundSystem->TriggerOtherEvent( this, "HitBuilding", SoundSourceBlueprint::TypeLaser );
+                g_soundSystem->TriggerOtherEvent( this, "HitBuilding", SoundSourceBlueprint::TypeLaser );
                 return true;
             }
         }
@@ -603,7 +603,7 @@ bool Laser::Advance()
 
 			    if( PointSegDist2D(Vector2(entity->m_pos), Vector2(rayStart), Vector2(rayEnd)) < 10.0f )
                 {
-                    g_app->m_soundSystem->TriggerOtherEvent( this, "HitEntity", SoundSourceBlueprint::TypeLaser );
+                    g_soundSystem->TriggerOtherEvent( this, "HitEntity", SoundSourceBlueprint::TypeLaser );
                     if( entity->m_type == Entity::TypeSpider ||
                         entity->m_type == Entity::TypeSporeGenerator ||
                         entity->m_type == Entity::TypeEngineer ||
@@ -691,7 +691,7 @@ Shockwave::Shockwave( int _teamId, float _size )
     m_life(_size),
     m_shape(nullptr)
 {
-//    m_shape = g_app->m_resource->GetShape( "shockwave.shp" );
+//    m_shape = g_resource->GetShape( "shockwave.shp" );
     m_type = EffectShockwave;
 }
 
@@ -830,7 +830,7 @@ void Shockwave::Render( float predictionTime )
         float alpha = 1.0f - ( m_size - predictedLife ) / 1.0f;
         glColor4f       (1.0f,0.4f,0.4f,alpha);
         glEnable        (GL_TEXTURE_2D);
-        glBindTexture   (GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   (GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
         glDisable       (GL_CULL_FACE);
         glBegin( GL_QUADS );
             glTexCoord2i( 0, 0 );       glVertex3fv( (predictedPos - g_app->m_camera->GetUp()*size).GetData() );
@@ -841,7 +841,7 @@ void Shockwave::Render( float predictionTime )
 
         size *= 0.4f;
         glColor4f       ( 1.0f, 1.0f, 0.0f, alpha );
-        glBindTexture   (GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   (GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
         glBegin( GL_QUADS );
             glTexCoord2i( 0, 1 );       glVertex3fv( (predictedPos - g_app->m_camera->GetUp()*size).GetData() );
             glTexCoord2i( 1, 1 );       glVertex3fv( (predictedPos + g_app->m_camera->GetRight()*size).GetData() );
@@ -910,7 +910,7 @@ void MuzzleFlash::Render( float _predictionTime )
     rightAngle *= m_size * 0.5f;
 
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/MuzzleFlash.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/MuzzleFlash.bmp" ) );
     glDepthMask     ( false );
 
     float alpha = predictedLife;
@@ -941,7 +941,7 @@ void MuzzleFlash::Render( float _predictionTime )
 Missile::Missile()
 :   WorldObject()
 {
-    m_shape = g_app->m_resource->GetShape( "Missile.shp" );
+    m_shape = g_resource->GetShape( "Missile.shp" );
     m_booster = m_shape->m_rootFragment->LookupMarker( "MarkerBooster" );
 
     int rocketResearch = g_app->m_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeRocket );
@@ -1227,7 +1227,7 @@ void TurretShell::Render( float predictionTime )
     predictedFront.Normalise();
     Vector3 right = predictedFront ^ g_upVector;
     Vector3 up = right ^ predictedFront;
-    Shape *shape = g_app->m_resource->GetShape( "TurretShell.shp" );
+    Shape *shape = g_resource->GetShape( "TurretShell.shp" );
 
 
     Matrix34 shellMat( predictedFront, up, predictedPos );

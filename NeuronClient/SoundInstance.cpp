@@ -58,7 +58,7 @@ void DspHandle::Advance()
     {
         m_parent->UpdateParameter( m_params[i] );
         int dataType;
-        g_app->m_soundSystem->m_filterBlueprints[ m_type ]->GetParameter( i, nullptr, nullptr, nullptr, &dataType );
+        g_soundSystem->m_filterBlueprints[ m_type ]->GetParameter( i, nullptr, nullptr, nullptr, &dataType );
         switch( dataType )
         {
             case 0 :        *((float *) &params[i]) = (float) m_params[i].GetOutput();        break;
@@ -180,7 +180,7 @@ void SoundInstance::SetEventName( char const *_entityName, char const *_eventNam
 {
 	DEBUG_ASSERT(m_eventName == nullptr);
     DEBUG_ASSERT(_entityName && _eventName);
-	DEBUG_ASSERT(g_app->m_soundSystem);
+	DEBUG_ASSERT(g_soundSystem);
 
 	m_eventName = (char*)malloc(strlen(_entityName) + strlen(_eventName) + 2);
 	strcpy(m_eventName, _entityName);
@@ -483,7 +483,7 @@ void SoundInstance::BeginRelease( bool _final )
         {
             if( NearlyEquals(m_loopDelay.GetOutput(), 0.0f) )
             {
-                g_app->m_soundSystem->TriggerDuplicateSound( this );
+                g_soundSystem->TriggerDuplicateSound( this );
             }
             else
             {
@@ -520,7 +520,7 @@ void SoundInstance::OpenStream( bool _keepCurrentStream )
 	char *sampleName = m_soundName;
     if (m_sourceType == SampleGroupRandom)
     {
-		SampleGroup *group = g_app->m_soundSystem->GetSampleGroup( m_soundName );
+		SampleGroup *group = g_soundSystem->GetSampleGroup( m_soundName );
 		ASSERT_TEXT( group, "Failed to find Sample Group %s", m_soundName );
 		int numSamples = group->m_samples.Size();
 
@@ -548,7 +548,7 @@ bool SoundInstance::AdvanceLoop()
             float loopFinish = m_loopDelayTimer + m_loopDelay.GetOutput();
             if( GetHighResTime() >= loopFinish )
             {
-                g_app->m_soundSystem->TriggerDuplicateSound( this );
+                g_soundSystem->TriggerDuplicateSound( this );
                 m_loopDelayTimer = 0.0f;
             }
         }
@@ -601,20 +601,20 @@ bool SoundInstance::StartPlaying( int _channelIndex )
         return false;
     }
 
-	START_PROFILE(g_app->m_profiler, "StartPlaying");
+	START_PROFILE(g_profiler, "StartPlaying");
 
     //
     // If we don't have our stream yet, load it now
 
-	START_PROFILE(g_app->m_profiler, "OpenStream");
+	START_PROFILE(g_profiler, "OpenStream");
     OpenStream( false );
-	END_PROFILE(g_app->m_profiler, "OpenStream");
+	END_PROFILE(g_profiler, "OpenStream");
 
 
     //
     // Set up our parameters
 
-	START_PROFILE(g_app->m_profiler, "Set Parameters");
+	START_PROFILE(g_profiler, "Set Parameters");
     m_channelIndex = _channelIndex;
 
 
@@ -629,9 +629,9 @@ bool SoundInstance::StartPlaying( int _channelIndex )
     }
 
     g_soundLibrary3d->SetChannelMinDistance( m_channelIndex, m_minDistance );
-	END_PROFILE(g_app->m_profiler, "Set Parameters");
+	END_PROFILE(g_profiler, "Set Parameters");
 
-	START_PROFILE(g_app->m_profiler, "Set freq/vol/pos");
+	START_PROFILE(g_profiler, "Set freq/vol/pos");
     UpdateParameter( m_freq );
     g_soundLibrary3d->SetChannelFrequency( m_channelIndex, m_cachedSampleHandle->m_cachedSample->m_freq * m_freq.GetOutput() );
 
@@ -639,13 +639,13 @@ bool SoundInstance::StartPlaying( int _channelIndex )
 
     Update3DPosition();
     g_soundLibrary3d->SetChannelPosition( m_channelIndex, m_pos, m_vel );
-	END_PROFILE(g_app->m_profiler, "Set freq/vol/pos");
+	END_PROFILE(g_profiler, "Set freq/vol/pos");
 
 
     //
     // Start our DSP effects
 
-	START_PROFILE(g_app->m_profiler, "Setup DSP Effects");
+	START_PROFILE(g_profiler, "Setup DSP Effects");
     int filterTypes[16];
     int numActiveFilters = 0;
 
@@ -661,9 +661,9 @@ bool SoundInstance::StartPlaying( int _channelIndex )
     {
         g_soundLibrary3d->EnableDspFX( m_channelIndex, numActiveFilters, filterTypes );
     }
-	END_PROFILE(g_app->m_profiler, "Setup DSP Effects");
+	END_PROFILE(g_profiler, "Setup DSP Effects");
 
-	END_PROFILE(g_app->m_profiler, "StartPlaying");
+	END_PROFILE(g_profiler, "StartPlaying");
     return true;
 }
 
@@ -750,9 +750,9 @@ bool SoundInstance::Update3DPosition()
 
         case TypeInEditor:
         {
-            Vector3 relativePos( g_app->m_soundSystem->m_editorPos.x,
+            Vector3 relativePos( g_soundSystem->m_editorPos.x,
                                  0.0f,
-                                 g_app->m_soundSystem->m_editorPos.z );
+                                 g_soundSystem->m_editorPos.z );
             m_pos = relativePos;
             m_vel.Zero();
 
@@ -886,12 +886,12 @@ void SoundInstance::StopPlaying()
     // Make sure there aren't any channels that think they are
     // playing our sound
 
-    for( int i = 0; i < g_app->m_soundSystem->m_numChannels; ++i )
+    for( int i = 0; i < g_soundSystem->m_numChannels; ++i )
     {
-        SoundInstanceId soundId = g_app->m_soundSystem->m_channels[i];
+        SoundInstanceId soundId = g_soundSystem->m_channels[i];
         if( soundId == m_id )
         {
-            g_app->m_soundSystem->m_channels[i].SetInvalid();
+            g_soundSystem->m_channels[i].SetInvalid();
         }
     }
 }
@@ -911,8 +911,8 @@ int SoundInstance::GetChannelIndex()
     }
 
     if( m_channelIndex >= 0 &&
-        m_channelIndex < g_app->m_soundSystem->m_numChannels &&
-        g_app->m_soundSystem->m_channels[ m_channelIndex ] == m_id )
+        m_channelIndex < g_soundSystem->m_numChannels &&
+        g_soundSystem->m_channels[ m_channelIndex ] == m_id )
     {
         return m_channelIndex;
     }

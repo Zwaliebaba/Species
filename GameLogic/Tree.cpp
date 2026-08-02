@@ -158,8 +158,8 @@ bool Tree::Advance()
     {
         if( m_burnSoundPlaying )
         {
-            g_app->m_soundSystem->StopAllSounds( m_id, "Tree Burn" );
-            g_app->m_soundSystem->TriggerBuildingEvent( this, "Create" );
+            g_soundSystem->StopAllSounds( m_id, "Tree Burn" );
+            g_soundSystem->TriggerBuildingEvent( this, "Create" );
             m_burnSoundPlaying = false;
         }
 
@@ -314,7 +314,7 @@ void Tree::RenderAlphas( float _predictionTime )
     glEnable        ( GL_TEXTURE_2D );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
 	glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glDisable       ( GL_CULL_FACE );
@@ -382,8 +382,8 @@ void Tree::Damage( float _damage )
 
             if( !m_burnSoundPlaying )
             {
-                g_app->m_soundSystem->StopAllSounds( m_id, "Tree Create" );
-                g_app->m_soundSystem->TriggerBuildingEvent( this, "Burn" );
+                g_soundSystem->StopAllSounds( m_id, "Tree Create" );
+                g_soundSystem->TriggerBuildingEvent( this, "Burn" );
                 m_burnSoundPlaying = true;
             }
         }

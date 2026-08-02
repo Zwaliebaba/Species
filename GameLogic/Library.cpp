@@ -14,7 +14,7 @@ Library::Library()
 :   Building()
 {
     m_type = Building::TypeLibrary;
-    SetShape( g_app->m_resource->GetShape( "Library.shp" ) );
+    SetShape( g_resource->GetShape( "Library.shp" ) );
 
     memset( m_scrollSpawned, 0, GlobalResearch::NumResearchItems * sizeof(bool) );
 }

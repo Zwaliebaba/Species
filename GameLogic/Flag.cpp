@@ -57,7 +57,7 @@ void Flag::SetSize( float _size )
 
 void Flag::Render()
 {
-    START_PROFILE( g_app->m_profiler, "RenderFlag" );
+    START_PROFILE( g_profiler, "RenderFlag" );
 
     //
     // Advance the flag
@@ -153,7 +153,7 @@ void Flag::Render()
     glDisable       ( GL_TEXTURE_2D );
     glEnable        ( GL_CULL_FACE );
 
-    END_PROFILE( g_app->m_profiler, "RenderFlag" );
+    END_PROFILE( g_profiler, "RenderFlag" );
 }
 
 

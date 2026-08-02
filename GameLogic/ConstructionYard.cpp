@@ -31,10 +31,10 @@ ConstructionYard::ConstructionYard()
     m_alpha(0.0f)
 {
     m_type = TypeYard;
-    SetShape( g_app->m_resource->GetShape( "ConstructionYard.shp" ) );
+    SetShape( g_resource->GetShape( "ConstructionYard.shp" ) );
 
-    m_rung = g_app->m_resource->GetShape( "ConstructionYardRung.shp" );
-    m_primitive = g_app->m_resource->GetShape( "MinePrimitive1.shp" );
+    m_rung = g_resource->GetShape( "ConstructionYardRung.shp" );
+    m_primitive = g_resource->GetShape( "MinePrimitive1.shp" );
 
     for( int i = 0; i < YARD_NUMPRIMITIVES; ++i )
     {
@@ -193,7 +193,7 @@ void ConstructionYard::RenderAlphas( float _predictionTime )
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
 
     float timeIndex = g_gameTime * 2;
 
@@ -254,7 +254,7 @@ void ConstructionYard::RenderAlphas( float _predictionTime )
     //
     // Central starbursts
 
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
     int numStars = 10;
     if( buildingDetail == 2 ) numStars = 5;
@@ -286,7 +286,7 @@ void ConstructionYard::RenderAlphas( float _predictionTime )
 
     if( m_timer > 0.0f )
     {
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
         for( int r = 0; r < 2; ++r )
         {
@@ -372,9 +372,9 @@ DisplayScreen::DisplayScreen()
 :   Building()
 {
     m_type = TypeDisplayScreen;
-    SetShape( g_app->m_resource->GetShape( "DisplayScreen.shp" ) );
+    SetShape( g_resource->GetShape( "DisplayScreen.shp" ) );
 
-    m_armour = g_app->m_resource->GetShape( "Armour.shp" );
+    m_armour = g_resource->GetShape( "Armour.shp" );
 
     for( int i = 0; i < DISPLAYSCREEN_NUMRAYS; ++i )
     {
@@ -412,7 +412,7 @@ void DisplayScreen::RenderAlphas( float _predictionTime )
     float size = 70.0f;
     glColor4f( 0.4f, 0.3f, 0.4f, 0.0f );
     glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
 
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR );
 

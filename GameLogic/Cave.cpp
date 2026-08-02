@@ -26,7 +26,7 @@ Cave::Cave()
     m_type = TypeCave;
     m_troopType = Entity::TypeVirii;
 
-    SetShape( g_app->m_resource->GetShape( "Cave.shp" ) );
+    SetShape( g_resource->GetShape( "Cave.shp" ) );
 
     m_spawnPoint = m_shape->m_rootFragment->LookupMarker( "MarkerSpawnPoint" );
     DEBUG_ASSERT( m_spawnPoint );

@@ -129,7 +129,7 @@ void BlueprintBuilding::RenderAlphas( float _predictionTime )
 
         glDisable( GL_CULL_FACE );
         glEnable( GL_TEXTURE_2D );
-        glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+        glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
 
         glEnable( GL_BLEND );
         glBlendFunc( GL_SRC_ALPHA, GL_ONE );
@@ -199,7 +199,7 @@ BlueprintStore::BlueprintStore()
 {
     m_type = Building::TypeBlueprintStore;
 
-    SetShape( g_app->m_resource->GetShape( "BlueprintStore.shp" ) );
+    SetShape( g_resource->GetShape( "BlueprintStore.shp" ) );
 }
 
 
@@ -378,7 +378,7 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
     glDisable( GL_CULL_FACE );
     glEnable( GL_BLEND );
     glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
     glDepthMask( false );
 
     int numSteps = sqrt(BLUEPRINTSTORE_NUMSEGMENTS);
@@ -425,7 +425,7 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
     // Render main darwinian
 
     glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
     glDisable( GL_CULL_FACE );
     glEnable( GL_BLEND );
     glDepthMask( false );
@@ -462,7 +462,7 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
     //
     // Render lines for over effect
 
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/InterfaceGrey.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/InterfaceGrey.bmp" ) );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
     glBlendFunc( GL_SRC_ALPHA, GL_ONE );
@@ -515,7 +515,7 @@ BlueprintConsole::BlueprintConsole()
 {
     m_type = Building::TypeBlueprintConsole;
 
-    SetShape( g_app->m_resource->GetShape( "BlueprintConsole.shp" ) );
+    SetShape( g_resource->GetShape( "BlueprintConsole.shp" ) );
 }
 
 
@@ -643,7 +643,7 @@ void BlueprintConsole::RenderPorts()
 
         glDisable       ( GL_CULL_FACE );
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
         glDepthMask     ( false );
         glEnable        ( GL_BLEND );
         glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
@@ -672,7 +672,7 @@ BlueprintRelay::BlueprintRelay()
 {
     m_type = Building::TypeBlueprintRelay;
 
-    SetShape( g_app->m_resource->GetShape( "BlueprintRelay.shp" ) );
+    SetShape( g_resource->GetShape( "BlueprintRelay.shp" ) );
 }
 
 

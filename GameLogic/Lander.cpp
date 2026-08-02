@@ -23,7 +23,7 @@ Lander::Lander()
 {
     m_type = Entity::TypeLander;
 
-    m_shape = g_app->m_resource->GetShape( "Lander.shp" );
+    m_shape = g_resource->GetShape( "Lander.shp" );
     DEBUG_ASSERT( m_shape );
 }
 

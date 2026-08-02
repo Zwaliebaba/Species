@@ -83,7 +83,7 @@ Building::Building()
 {
     if( !s_controlPad )
     {
-        s_controlPad = g_app->m_resource->GetShape( "ControlPad.shp" );
+        s_controlPad = g_resource->GetShape( "ControlPad.shp" );
         DEBUG_ASSERT( s_controlPad );
 
         s_controlPadStatus = s_controlPad->m_rootFragment->LookupMarker( "MarkerStatus" );
@@ -124,7 +124,7 @@ void Building::Initialise( Building *_template )
     GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_requestedLocationId );
     if( gb ) m_id.SetTeamId( gb->m_teamId );
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "Create" );
+    g_soundSystem->TriggerBuildingEvent( this, "Create" );
 }
 
 
@@ -239,7 +239,7 @@ void Building::Reprogram( float _complete )
 
 void Building::ReprogramComplete()
 {
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "ReprogramComplete" );
+    g_soundSystem->TriggerBuildingEvent( this, "ReprogramComplete" );
 
     GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
     if( gb )
@@ -258,13 +258,13 @@ void Building::SetTeamId( int _teamId )
     GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
     if( gb ) gb->m_teamId = _teamId;
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "ChangeTeam" );
+    g_soundSystem->TriggerBuildingEvent( this, "ChangeTeam" );
 }
 
 
 Vector3 Building::PushFromBuilding( Vector3 const &pos, float _radius )
 {
-    START_PROFILE( g_app->m_profiler, "PushFromBuilding" );
+    START_PROFILE( g_profiler, "PushFromBuilding" );
 
     Vector3 result = pos;
 
@@ -280,7 +280,7 @@ Vector3 Building::PushFromBuilding( Vector3 const &pos, float _radius )
         }
     }
 
-    END_PROFILE( g_app->m_profiler, "PushFromBuilding" );
+    END_PROFILE( g_profiler, "PushFromBuilding" );
 
     return result;
 }
@@ -339,7 +339,7 @@ void Building::RenderLights()
 {
     if( m_id.GetTeamId() != 255 && m_lights.Size() > 0 )
     {
-        if( (g_app->m_clientToServer->m_lastValidSequenceIdFromServer % 10)/2 == m_id.GetTeamId() ||
+        if( (g_clientToServer->m_lastValidSequenceIdFromServer % 10)/2 == m_id.GetTeamId() ||
             g_app->m_editing )
         {
             for( int i = 0; i < m_lights.Size(); ++i )
@@ -363,7 +363,7 @@ void Building::RenderLights()
 	            }
 
                 glEnable        ( GL_TEXTURE_2D );
-                glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+                glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 	            glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	            glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
                 glDisable       ( GL_CULL_FACE );
@@ -447,7 +447,7 @@ void Building::EvaluatePorts()
 
 void Building::RenderPorts()
 {
-    START_PROFILE( g_app->m_profiler, "RenderPorts" );
+    START_PROFILE( g_profiler, "RenderPorts" );
 
     int buildingDetail = g_prefsManager->GetInt( "RenderBuildingDetail" );
 
@@ -488,7 +488,7 @@ void Building::RenderPorts()
 
         glDisable       ( GL_CULL_FACE );
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
         glDepthMask     ( false );
         glEnable        ( GL_BLEND );
         glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
@@ -505,7 +505,7 @@ void Building::RenderPorts()
         glEnable        ( GL_CULL_FACE );
     }
 
-    END_PROFILE( g_app->m_profiler, "RenderPorts" );
+    END_PROFILE( g_profiler, "RenderPorts" );
 }
 
 
@@ -546,7 +546,7 @@ void Building::RenderLink()
 
 void Building::Damage( float _damage )
 {
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "Damage" );
+    g_soundSystem->TriggerBuildingEvent( this, "Damage" );
 }
 
 void Building::Destroy( float _intensity )
@@ -560,7 +560,7 @@ void Building::Destroy( float _intensity )
 	}
 	g_app->m_location->Bang( m_pos, _intensity, _intensity/4.0f );
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "Explode" );
+    g_soundSystem->TriggerBuildingEvent( this, "Explode" );
 
 	for( int i = 0; i < (int)(_intensity/4.0f); ++i )
 	{

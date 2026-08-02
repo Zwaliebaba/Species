@@ -73,13 +73,13 @@ PrefsGraphicsWindow::PrefsGraphicsWindow()
     m_buildingDetail    = g_prefsManager->GetInt( GRAPHICS_BUILDINGDETAIL, 1 );
     m_entityDetail      = g_prefsManager->GetInt( GRAPHICS_ENTITYDETAIL, 1 );
 
-    //g_app->m_profiler->m_doGlFinish = true;
+    //g_profiler->m_doGlFinish = true;
 }
 
 
 PrefsGraphicsWindow::~PrefsGraphicsWindow()
 {
-    //g_app->m_profiler->m_doGlFinish = false;
+    //g_profiler->m_doGlFinish = false;
 }
 
 
@@ -185,7 +185,7 @@ void RenderCPUUsage( LList<char *> *elements, int x, int y )
     float totalOccup = 0.0f;
     for( int i = 0; i < elements->Size(); ++i )
     {
-        ProfiledElement *element = g_app->m_profiler->m_rootElement->m_children.GetData( elements->GetData(i) );
+        ProfiledElement *element = g_profiler->m_rootElement->m_children.GetData( elements->GetData(i) );
         if( element && element->m_lastNumCalls > 0 )
         {
             float occup = element->m_lastTotalTime * 100;

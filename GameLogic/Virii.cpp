@@ -52,7 +52,7 @@ void ViriiUnit::Render( float _predictionTime )
 							 			   g_app->m_renderer->GetFarPlane());
 
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Sprites/viriifull.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/viriifull.bmp" ) );
     glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 
@@ -263,7 +263,7 @@ bool Virii::Advance( Unit *_unit )
 
 void Virii::RecordHistoryPosition( bool _required )
 {
-    START_PROFILE( g_app->m_profiler, "RecordHistory" );
+    START_PROFILE( g_profiler, "RecordHistory" );
 
     Vector3 landNormal = g_app->m_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
     Vector3 prevPos;
@@ -312,13 +312,13 @@ void Virii::RecordHistoryPosition( bool _required )
         }
     }
 
-    END_PROFILE( g_app->m_profiler, "RecordHistory" );
+    END_PROFILE( g_profiler, "RecordHistory" );
 }
 
 
 bool Virii::AdvanceToTargetPos(Vector3 const &_pos)
 {
-    START_PROFILE( g_app->m_profiler, "AdvanceToTargetPos" );
+    START_PROFILE( g_profiler, "AdvanceToTargetPos" );
 
     Vector3 oldPos = m_pos;
 
@@ -359,7 +359,7 @@ bool Virii::AdvanceToTargetPos(Vector3 const &_pos)
     m_pos = nextPos;
     m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
 
-    END_PROFILE( g_app->m_profiler, "AdvanceToTargetPos" );
+    END_PROFILE( g_profiler, "AdvanceToTargetPos" );
 
     return arrived;
 }
@@ -367,7 +367,7 @@ bool Virii::AdvanceToTargetPos(Vector3 const &_pos)
 
 bool Virii::AdvanceIdle()
 {
-	START_PROFILE(g_app->m_profiler, "AdvanceIdle");
+	START_PROFILE(g_profiler, "AdvanceIdle");
 
     m_retargetTimer -= SERVER_ADVANCE_PERIOD;
     bool foundTarget = false;
@@ -391,14 +391,14 @@ bool Virii::AdvanceIdle()
         AdvanceToTargetPos( m_wayPoint );
     }
 
-	END_PROFILE(g_app->m_profiler, "AdvanceIdle");
+	END_PROFILE(g_profiler, "AdvanceIdle");
     return false;
 }
 
 
 bool Virii::AdvanceAttacking()
 {
-	START_PROFILE(g_app->m_profiler, "AdvanceAttacking");
+	START_PROFILE(g_profiler, "AdvanceAttacking");
 
     WorldObject *enemy = g_app->m_location->GetEntity( m_enemyId );
     Entity *entity = (Entity *) enemy;
@@ -406,7 +406,7 @@ bool Virii::AdvanceAttacking()
     if( !entity || entity->m_dead )
     {
         m_state = StateIdle;
-	    END_PROFILE(g_app->m_profiler, "AdvanceAttacking");
+	    END_PROFILE(g_profiler, "AdvanceAttacking");
         return false;
     }
 
@@ -436,18 +436,18 @@ bool Virii::AdvanceAttacking()
                                                                syncsfrand(15.0f) ),
 															   Particle::TypeMuzzleFlash );
         }
-        g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
+        g_soundSystem->TriggerEntityEvent( this, "Attack" );
         SearchForEnemies();
     }
 
-	END_PROFILE(g_app->m_profiler, "AdvanceAttacking");
+	END_PROFILE(g_profiler, "AdvanceAttacking");
     return false;
 }
 
 
 bool Virii::AdvanceToSpirit()
 {
-	START_PROFILE(g_app->m_profiler, "AdvanceToSpirit");
+	START_PROFILE(g_profiler, "AdvanceToSpirit");
 
     Spirit *s = nullptr;
     if( g_app->m_location->m_spirits.ValidIndex(m_spiritId) )
@@ -462,7 +462,7 @@ bool Virii::AdvanceToSpirit()
     {
         m_spiritId = -1;
         m_state = StateIdle;
-		END_PROFILE(g_app->m_profiler, "AdvanceToSpirit");
+		END_PROFILE(g_profiler, "AdvanceToSpirit");
         return false;
     }
 
@@ -476,14 +476,14 @@ bool Virii::AdvanceToSpirit()
         m_state = StateToEgg;
     }
 
-	END_PROFILE(g_app->m_profiler, "AdvanceToSpirit");
+	END_PROFILE(g_profiler, "AdvanceToSpirit");
     return false;
 }
 
 
 bool Virii::AdvanceToEgg()
 {
-	START_PROFILE(g_app->m_profiler, "AdvanceToEgg");
+	START_PROFILE(g_profiler, "AdvanceToEgg");
     Egg *theEgg = (Egg *) g_app->m_location->GetEntitySafe( m_eggId, Entity::TypeEgg );
 
     if( !theEgg || theEgg->m_state == Egg::StateFertilised )
@@ -502,7 +502,7 @@ bool Virii::AdvanceToEgg()
                 m_spiritId = -1;
             }
             m_state = StateIdle;
-            END_PROFILE(g_app->m_profiler, "AdvanceToEgg");
+            END_PROFILE(g_profiler, "AdvanceToEgg");
             return false;
         }
     }
@@ -511,7 +511,7 @@ bool Virii::AdvanceToEgg()
     {
         m_spiritId = -1;
         m_state = StateIdle;
-        END_PROFILE(g_app->m_profiler, "AdvanceToEgg");
+        END_PROFILE(g_profiler, "AdvanceToEgg");
         return false;
     }
 
@@ -530,19 +530,19 @@ bool Virii::AdvanceToEgg()
         m_eggId.SetInvalid();
     }
 
-	END_PROFILE(g_app->m_profiler, "AdvanceToEgg");
+	END_PROFILE(g_profiler, "AdvanceToEgg");
     return false;
 }
 
 
 bool Virii::SearchForEnemies()
 {
-	START_PROFILE(g_app->m_profiler, "SearchForEnemies");
+	START_PROFILE(g_profiler, "SearchForEnemies");
 
     ViriiUnit *unit = (ViriiUnit *) g_app->m_location->GetUnit( m_id );
     if( unit && !unit->m_enemiesFound )
     {
-    	END_PROFILE(g_app->m_profiler, "SearchForEnemies");
+    	END_PROFILE(g_profiler, "SearchForEnemies");
         return false;
     }
 
@@ -556,18 +556,18 @@ bool Virii::SearchForEnemies()
     {
         m_enemyId = bestEnemyId;
         m_state = StateAttacking;
-		END_PROFILE(g_app->m_profiler, "SearchForEnemies");
+		END_PROFILE(g_profiler, "SearchForEnemies");
         return true;
     }
 
-	END_PROFILE(g_app->m_profiler, "SearchForEnemies");
+	END_PROFILE(g_profiler, "SearchForEnemies");
     return false;
 }
 
 
 bool Virii::SearchForSpirits()
 {
-	START_PROFILE(g_app->m_profiler, "SearchForSpirits");
+	START_PROFILE(g_profiler, "SearchForSpirits");
 
     Spirit *found = nullptr;
     int spiritId = -1;
@@ -597,11 +597,11 @@ bool Virii::SearchForSpirits()
     {
         m_spiritId = spiritId;
         m_state = StateToSpirit;
-		END_PROFILE(g_app->m_profiler, "SearchForSpirits");
+		END_PROFILE(g_profiler, "SearchForSpirits");
         return true;
     }
 
-	END_PROFILE(g_app->m_profiler, "SearchForSpirits");
+	END_PROFILE(g_profiler, "SearchForSpirits");
     return false;
 }
 
@@ -688,7 +688,7 @@ WorldObjectId Virii::FindNearbyEgg( Vector3 const &_pos )
 
 bool Virii::SearchForEggs()
 {
-	START_PROFILE(g_app->m_profiler, "SearchForEggs");
+	START_PROFILE(g_profiler, "SearchForEggs");
 
     WorldObjectId eggId = FindNearbyEgg( m_pos );
 
@@ -696,18 +696,18 @@ bool Virii::SearchForEggs()
     {
         m_eggId = eggId;
         m_state = StateToEgg;
-		END_PROFILE(g_app->m_profiler, "SearchForEggs");
+		END_PROFILE(g_profiler, "SearchForEggs");
         return true;
     }
 
-	END_PROFILE(g_app->m_profiler, "SearchFprEggs");
+	END_PROFILE(g_profiler, "SearchFprEggs");
     return false;
 }
 
 
 bool Virii::SearchForIdleDirection()
 {
-	START_PROFILE(g_app->m_profiler, "SearchForIdleDir");
+	START_PROFILE(g_profiler, "SearchForIdleDir");
 
     float distToSpawnPoint = ( m_pos - m_spawnPoint ).Mag();
     float chanceOfReturn = ( distToSpawnPoint / m_roamRange );
@@ -730,8 +730,8 @@ bool Virii::SearchForIdleDirection()
         m_wayPoint = nextPos;
         m_state = StateIdle;
         RecordHistoryPosition(true);
-        g_app->m_soundSystem->TriggerEntityEvent( this, "ChangeDirection" );
-		END_PROFILE(g_app->m_profiler, "SearchForIdleDir");
+        g_soundSystem->TriggerEntityEvent( this, "ChangeDirection" );
+		END_PROFILE(g_profiler, "SearchForIdleDir");
         return true;
     }
     else
@@ -754,14 +754,14 @@ bool Virii::SearchForIdleDirection()
                 m_wayPoint = nextPos;
                 m_state = StateIdle;
                 RecordHistoryPosition(true);
-                g_app->m_soundSystem->TriggerEntityEvent( this, "ChangeDirection" );
-				END_PROFILE(g_app->m_profiler, "SearchForIdleDir");
+                g_soundSystem->TriggerEntityEvent( this, "ChangeDirection" );
+				END_PROFILE(g_profiler, "SearchForIdleDir");
                 return true;
             }
         }
     }
 
-	END_PROFILE(g_app->m_profiler, "SearchForIdleDir");
+	END_PROFILE(g_profiler, "SearchForIdleDir");
     return false;
 }
 

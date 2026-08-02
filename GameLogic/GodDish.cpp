@@ -28,7 +28,7 @@ GodDish::GodDish()
     m_activated(false)
 {
     m_type = TypeGodDish;
-    SetShape( g_app->m_resource->GetShape( "GodDish.shp" ) );
+    SetShape( g_resource->GetShape( "GodDish.shp" ) );
 }
 
 
@@ -78,7 +78,7 @@ void GodDish::RenderAlphas( float _predictionTime )
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
     glDisable       ( GL_DEPTH_TEST );
 
     float timeIndex = g_gameTime * 2;
@@ -121,7 +121,7 @@ void GodDish::RenderAlphas( float _predictionTime )
     //
     // Central starbursts
 
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
     int numStars = 10;
     if( buildingDetail == 2 ) numStars = 5;
@@ -177,7 +177,7 @@ void GodDish::Activate()
     }
 
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "ConnectToGod" );
+    g_soundSystem->TriggerBuildingEvent( this, "ConnectToGod" );
 }
 
 
@@ -186,8 +186,8 @@ void GodDish::DeActivate()
     m_activated = false;
 
 
-    g_app->m_soundSystem->StopAllSounds( m_id, "GodDish ConnectToGod" );
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "DisconnectFromGod" );
+    g_soundSystem->StopAllSounds( m_id, "GodDish ConnectToGod" );
+    g_soundSystem->TriggerBuildingEvent( this, "DisconnectFromGod" );
 }
 
 

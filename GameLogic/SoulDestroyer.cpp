@@ -36,8 +36,8 @@ SoulDestroyer::SoulDestroyer()
 
     if( !s_shapeTail || !s_shapeHead )
     {
-        s_shapeTail = g_app->m_resource->GetShape( "SoulDestroyerTail.shp" );
-        s_shapeHead = g_app->m_resource->GetShape( "SoulDestroyerHead.shp" );
+        s_shapeTail = g_resource->GetShape( "SoulDestroyerTail.shp" );
+        s_shapeHead = g_resource->GetShape( "SoulDestroyerHead.shp" );
 
         s_tailMarker = s_shapeHead->m_rootFragment->LookupMarker( "MarkerTail" );
     }
@@ -178,7 +178,7 @@ void SoulDestroyer::Attack( Vector3 const &_pos )
         float distance = pushVector.Mag();
         if( distance < SOULDESTROYER_DAMAGERANGE )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
+            g_soundSystem->TriggerEntityEvent( this, "Attack" );
 
             pushVector.SetLength( SOULDESTROYER_DAMAGERANGE - distance );
 
@@ -230,7 +230,7 @@ void SoulDestroyer::Panic( float _time )
 {
     if( m_panic <= 0.0f )
     {
-        g_app->m_soundSystem->TriggerEntityEvent( this, "Panic" );
+        g_soundSystem->TriggerEntityEvent( this, "Panic" );
     }
 
     m_panic = max( _time, m_panic );
@@ -290,7 +290,7 @@ bool SoulDestroyer::SearchForTargetEnemy()
     if( targetId.IsValid() )
     {
         m_targetEntity = targetId;
-        g_app->m_soundSystem->TriggerEntityEvent( this, "EnemySighted" );
+        g_soundSystem->TriggerEntityEvent( this, "EnemySighted" );
         return true;
     }
     else
@@ -730,7 +730,7 @@ void Zombie::Render( float _predictionTime )
     glDisable       ( GL_CULL_FACE );
     glColor4f       ( 0.9f, 0.9f, 1.0f, alpha );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Sprites/Ghost.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/Ghost.bmp" ) );
 
     glBegin( GL_QUADS );
         glTexCoord2i(0,0);      glVertex3fv( (predictedPos - size*predictedRight - size*predictedUp).GetData() );

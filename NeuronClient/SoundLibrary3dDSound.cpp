@@ -14,7 +14,6 @@
 #include "SoundFilter.h"
 #include "SoundLibrary3dDSound.h"
 
-#include "App.h"
 
 
 //*****************************************************************************
@@ -701,12 +700,12 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
 
     void *buf1, *buf2;
     unsigned long size1, size2;
-	START_PROFILE(g_app->m_profiler, "LockBuf");
+	START_PROFILE(g_profiler, "LockBuf");
     errCode = channel->m_bufferInterface->Lock(byteOffset, byteSize,
                                      &buf1, &size1,
                                      &buf2, &size2,
                                       0);
-	END_PROFILE(g_app->m_profiler, "LockBuf");
+	END_PROFILE(g_profiler, "LockBuf");
 	if (errCode == DSERR_BUFFERLOST)
 		channel->m_bufferInterface->Restore();
     else
@@ -716,7 +715,7 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
     //
     // Fill some of the buffer
 
-	START_PROFILE(g_app->m_profiler, "FillBuf");
+	START_PROFILE(g_profiler, "FillBuf");
     if (_isMusic && m_musicCallback)
 	{
         if( buf1 )
@@ -739,7 +738,7 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
             m_mainCallback(_channel, (signed short *)buf2, size2/2, &channel->m_silenceRemaining);
         }
     }
-	END_PROFILE(g_app->m_profiler, "FillBuf");
+	END_PROFILE(g_profiler, "FillBuf");
 
 
     //
@@ -763,9 +762,9 @@ void SoundLibrary3dDirectSound::PopulateBuffer(int _channel, int _fromSample, in
     //
     // Unlock the buffer
 
-	START_PROFILE(g_app->m_profiler, "UnlockBuf");
+	START_PROFILE(g_profiler, "UnlockBuf");
     errCode = channel->m_bufferInterface->Unlock(buf1, size1, buf2, size2);
-	END_PROFILE(g_app->m_profiler, "UnlockBuf");
+	END_PROFILE(g_profiler, "UnlockBuf");
     SOUNDASSERT(errCode, "Direct sound couldn't unlock a secondary buffer");
 
     channel->m_lastSampleWritten = _fromSample + _numSamples - 1;
@@ -810,7 +809,7 @@ void SoundLibrary3dDirectSound::AdvanceChannel(int _channel, int _frameNum)
 
 	// Get Play Cursor
 
-	START_PROFILE(g_app->m_profiler, "GetPlayCursor");
+	START_PROFILE(g_profiler, "GetPlayCursor");
 	unsigned long playCursor;
 	if (channel->m_simulatedPlayCursor == -1 ||
 		(_channel & 1) == (_frameNum&1))
@@ -836,7 +835,7 @@ void SoundLibrary3dDirectSound::AdvanceChannel(int _channel, int _frameNum)
 			playCursor = channel->m_lastSampleWritten * 2 + 2;
 		}
 	}
-	END_PROFILE(g_app->m_profiler, "GetPlayCursor");
+	END_PROFILE(g_profiler, "GetPlayCursor");
 
 
     // Find out where we can write our samples
@@ -858,9 +857,9 @@ void SoundLibrary3dDirectSound::AdvanceChannel(int _channel, int _frameNum)
 
     if (numSamples > 0)
     {
-		START_PROFILE(g_app->m_profiler, "PopulateBuf");
+		START_PROFILE(g_profiler, "PopulateBuf");
 		PopulateBuffer( _channel, firstSample, numSamples, isMusicChannel);
-		END_PROFILE(g_app->m_profiler, "PopulateBuf");
+		END_PROFILE(g_profiler, "PopulateBuf");
     }
 }
 
@@ -897,9 +896,9 @@ void SoundLibrary3dDirectSound::Advance()
 {
 //	Verify();
 
-    START_PROFILE(g_app->m_profiler, "Commit");
+    START_PROFILE(g_profiler, "Commit");
     CommitChanges();
-	END_PROFILE(g_app->m_profiler, "Commit");
+	END_PROFILE(g_profiler, "Commit");
 
 	static int frameNum = 0;
 	++frameNum;

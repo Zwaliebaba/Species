@@ -263,8 +263,8 @@ class WebsiteButton : public SpeciesButton
         g_app->m_renderer = new Renderer();
         g_app->m_renderer->Initialise();
         getW32EventHandler()->ResetWindowHandle();
-        g_app->m_resource->FlushOpenGlState();
-        g_app->m_resource->RegenerateOpenGlState();
+        g_resource->FlushOpenGlState();
+        g_resource->RegenerateOpenGlState();
 
         g_prefsManager->Save();
 
@@ -536,7 +536,7 @@ void AboutSpeciesWindow::Render(bool _hasFocus)
   SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Sprites/Darwinian.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Darwinian.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -604,7 +604,7 @@ void SkipPrologueWindow::Render(bool _hasFocus)
   SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Campaign.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Campaign.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -672,7 +672,7 @@ void PlayPrologueWindow::Render(bool _hasFocus)
   SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Prologue.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Prologue.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);

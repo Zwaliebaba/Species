@@ -6,7 +6,6 @@
 #include "SoundSystem.h"
 #include "SoundFilter.h"
 
-#include "App.h"
 
 #include <string.h>
 
@@ -67,7 +66,7 @@ void DspResLowPass::SetParameters( float const *_params )
 // Perform core IIR filter calculation with permutation.
 void DspResLowPass::Process(signed short *_data, unsigned int _numSamples)
 {
-	START_PROFILE( g_app->m_profiler, "DspResLowPass" );
+	START_PROFILE( g_profiler, "DspResLowPass" );
 
     float xn;
 	for( unsigned int i=0; i<_numSamples; ++i)
@@ -101,7 +100,7 @@ void DspResLowPass::Process(signed short *_data, unsigned int _numSamples)
 	// which can cause the FPU to interrupt the CPU.
 	m_yn1 += (float) 1.0E-26;
 
-    END_PROFILE( g_app->m_profiler, "DspResLowPass" );
+    END_PROFILE( g_profiler, "DspResLowPass" );
 }
 
 
@@ -217,7 +216,7 @@ void DspGargle::ProcessSquare(signed short *_data, unsigned int _numSamples)
 
 void DspGargle::Process(signed short *_data, unsigned int _numSamples)
 {
-    START_PROFILE( g_app->m_profiler, "DspGargle" );
+    START_PROFILE( g_profiler, "DspGargle" );
 
 	if (m_waveType == WaveTriangle)
 	{
@@ -228,7 +227,7 @@ void DspGargle::Process(signed short *_data, unsigned int _numSamples)
 		ProcessSquare(_data, _numSamples);
 	}
 
-    END_PROFILE( g_app->m_profiler, "DspGargle" );
+    END_PROFILE( g_profiler, "DspGargle" );
 }
 
 
@@ -285,7 +284,7 @@ void DspEcho::SetParameters(float const *_params)
 
 void DspEcho::Process(signed short *_data, unsigned int _numSamples)
 {
-    START_PROFILE( g_app->m_profiler, "DspEcho" );
+    START_PROFILE( g_profiler, "DspEcho" );
 
 	DEBUG_ASSERT(m_buffer);
 
@@ -345,7 +344,7 @@ void DspEcho::Process(signed short *_data, unsigned int _numSamples)
 		m_currentBufferIndex = (finalIndex + 1) % delayInSamples;
 	}
 
-    END_PROFILE( g_app->m_profiler, "DspEcho" );
+    END_PROFILE( g_profiler, "DspEcho" );
 }
 
 

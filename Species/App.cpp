@@ -99,6 +99,7 @@ App::App()
   // Load resources
 
   m_resource = new Resource();
+  g_resource = m_resource;
 
   PrefsManager::SetDefaultsProvider(&ApplyShippedPreferenceDefaults);
   g_prefsManager = new PrefsManager(GetPreferencesPath());
@@ -113,6 +114,7 @@ App::App()
 
 #ifdef PROFILER_ENABLED
   m_profiler = new Profiler();
+  g_profiler = m_profiler;
   Profiler::SetRenderSyncHook(&ProfilerRenderSync);
 #endif
 
@@ -130,7 +132,9 @@ App::App()
 
   m_gameCursor = new GameCursor();
   m_soundSystem = new SoundSystem();
+  g_soundSystem = m_soundSystem;
   m_clientToServer = new ClientToServer();
+  g_clientToServer = m_clientToServer;
   m_userInput = new UserInput();
   //    m_location          = new Location();
   //    m_locationInput		= new LocationInput();
@@ -227,6 +231,7 @@ void App::SetLanguage(const char* _language, bool _test)
   {
     delete m_langTable;
     m_langTable = nullptr;
+    g_langTable = m_langTable;
   }
 
   //
@@ -236,6 +241,7 @@ void App::SetLanguage(const char* _language, bool _test)
   sprintf(langFilename, "Language/%s.txt", _language);
 
   m_langTable = new LangTable(langFilename);
+  g_langTable = m_langTable;
 
   if (_test)
     m_langTable->TestAgainstEnglish();

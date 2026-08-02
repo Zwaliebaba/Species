@@ -80,7 +80,7 @@ Spider::Spider()
 {
 	m_stats[StatHealth] = 200;
 
-	m_shape = g_app->m_resource->GetShape("Spider.shp");
+	m_shape = g_resource->GetShape("Spider.shp");
     m_eggLay = m_shape->m_rootFragment->LookupMarker( "MarkerEggLay" );
 
 	m_parameters[0].m_legLift = 3.0f;
@@ -294,7 +294,7 @@ void Spider::UpdateLegs()
 //			StompFoot(legPos);
 //		}
 
-        if( footPlanted ) g_app->m_soundSystem->TriggerEntityEvent( this, "FootFall" );
+        if( footPlanted ) g_soundSystem->TriggerEntityEvent( this, "FootFall" );
 	}
 
 	m_delayBetweenLifts = m_parameters[stage].m_delayBetweenLifts;
@@ -488,8 +488,8 @@ bool Spider::AdvanceAttack()
 				m_legs[i]->m_foot.m_targetPos = m_legs[i]->m_foot.m_pos + forwards;
 			}
 
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Pounce" );
+            g_soundSystem->TriggerEntityEvent( this, "Attack" );
+            g_soundSystem->TriggerEntityEvent( this, "Pounce" );
         }
     }
 
@@ -516,7 +516,7 @@ bool Spider::AdvancePouncing()
 			m_legs[i]->m_foot.m_state = EntityFoot::OnGround;
 		}
 
-        g_app->m_soundSystem->TriggerEntityEvent( this, "PounceLand" );
+        g_soundSystem->TriggerEntityEvent( this, "PounceLand" );
 
         // Squash people
         float squashRange = 40.0f;
@@ -595,7 +595,7 @@ bool Spider::SearchForEnemies()
 
 bool Spider::SearchForSpirits()
 {
-	START_PROFILE(g_app->m_profiler, "SearchSpirits");
+	START_PROFILE(g_profiler, "SearchSpirits");
     Spirit *found = nullptr;
     int foundIndex = -1;
     float nearest = 9999.9f;
@@ -631,7 +631,7 @@ bool Spider::SearchForSpirits()
         m_state = StateEggLaying;
     }
 
-	END_PROFILE(g_app->m_profiler, "SearchSpirits");
+	END_PROFILE(g_profiler, "SearchSpirits");
     return found;
 }
 
@@ -667,7 +667,7 @@ bool Spider::AdvanceEggLaying()
 
         g_app->m_location->SpawnEntities( eggLayMat.pos, m_id.GetTeamId(), -1, TypeEgg, 1, g_zeroVector, 0.0f );
 
-        g_app->m_soundSystem->TriggerEntityEvent( this, "LayEgg" );
+        g_soundSystem->TriggerEntityEvent( this, "LayEgg" );
 
         m_spiritId = -1;
         m_state = StateIdle;

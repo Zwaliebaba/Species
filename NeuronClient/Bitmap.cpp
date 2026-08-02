@@ -9,7 +9,6 @@
 #include "RgbColour.h"
 #include "Preferences.h"
 
-#include "App.h"
 
 #define BMP_RGB				0
 #define OS2INFOHEADERSIZE  12
@@ -573,7 +572,7 @@ void BitmapRGBA::ApplyDilateFilter()
 
 void BitmapRGBA::ApplyBlurFilter(float _scale)
 {
-  START_PROFILE(g_app->m_profiler, "ApplyBlur");
+  START_PROFILE(g_profiler, "ApplyBlur");
 
   DEBUG_ASSERT(m_width > 0 && m_width <= 1024);
   DEBUG_ASSERT(m_height > 0 && m_height <= 1024);
@@ -661,7 +660,7 @@ void BitmapRGBA::ApplyBlurFilter(float _scale)
 
   delete[] temp;
 
-  END_PROFILE(g_app->m_profiler, "ApplyBlur");
+  END_PROFILE(g_profiler, "ApplyBlur");
 }
 
 void BitmapRGBA::ConvertColourToAlpha()

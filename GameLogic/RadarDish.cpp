@@ -38,7 +38,7 @@ RadarDish::RadarDish()
     m_front.Set(0,0,1);
     m_sendPeriod = RADARDISH_TRANSPORTPERIOD;
 
-	Shape *radarShape = g_app->m_resource->GetShapeCopy("RadarDish.shp", true);
+	Shape *radarShape = g_resource->GetShapeCopy("RadarDish.shp", true);
 	SetShape( radarShape );
 
 	m_dish = m_shape->m_rootFragment->LookupFragment("Dish");
@@ -149,8 +149,8 @@ bool RadarDish::Advance ()
 
     if( m_movementSoundsPlaying && m_horizontallyAligned && m_dish->m_angVel.Mag() < 0.05f )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "EndRotation" );
+        g_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
+        g_soundSystem->TriggerBuildingEvent( this, "EndRotation" );
         m_movementSoundsPlaying = false;
     }
 
@@ -205,8 +205,8 @@ bool RadarDish::Advance ()
         m_range = 0.0f;
         m_signal = 0.0f;
         m_receiverId = -1;
-        g_app->m_soundSystem->StopAllSounds( m_id, "RadarDish ConnectionEstablished" );
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "ConnectionLost" );
+        g_soundSystem->StopAllSounds( m_id, "RadarDish ConnectionEstablished" );
+        g_soundSystem->TriggerBuildingEvent( this, "ConnectionLost" );
 
         GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb ) gb->m_link = -1;
@@ -214,7 +214,7 @@ bool RadarDish::Advance ()
 
     if( !previouslyAligned && found )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "ConnectionEstablished" );
+        g_soundSystem->TriggerBuildingEvent( this, "ConnectionEstablished" );
 
         GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb ) gb->m_link = m_receiverId;
@@ -260,10 +260,10 @@ void RadarDish::Aim( Vector3 _worldPos )
 
     if( m_movementSoundsPlaying )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
+        g_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
     }
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "BeginRotation" );
+    g_soundSystem->TriggerBuildingEvent( this, "BeginRotation" );
     m_movementSoundsPlaying = true;
 }
 
@@ -289,7 +289,7 @@ void RadarDish::RenderAlphas ( float _predictionTime )
 
 void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha )
 {
-	START_PROFILE(g_app->m_profiler, "Signal");
+	START_PROFILE(g_profiler, "Signal");
 
     Vector3 startPos = GetStartPoint();
     Vector3 endPos = GetEndPoint();
@@ -305,7 +305,7 @@ void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha
     glEnable            (GL_TEXTURE_2D);
 
     gglActiveTextureARB  (GL_TEXTURE0_ARB);
-    glBindTexture	    (GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/LaserFence.bmp", true, true));
+    glBindTexture	    (GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence.bmp", true, true));
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -315,7 +315,7 @@ void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha
     glEnable            (GL_TEXTURE_2D);
 
     gglActiveTextureARB  (GL_TEXTURE1_ARB);
-    glBindTexture	    (GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/RadarSignal.bmp", true, true));
+    glBindTexture	    (GL_TEXTURE_2D, g_resource->GetTexture("Textures/RadarSignal.bmp", true, true));
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -409,7 +409,7 @@ void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha
     glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
     glTexEnvf           (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	END_PROFILE(g_app->m_profiler, "Signal");
+	END_PROFILE(g_profiler, "Signal");
 }
 
 
@@ -503,7 +503,7 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
 
         g_app->m_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
 
-        g_app->m_soundSystem->TriggerEntityEvent( _entity, "ExitTeleport" );
+        g_soundSystem->TriggerEntityEvent( _entity, "ExitTeleport" );
         return true;
     }
 

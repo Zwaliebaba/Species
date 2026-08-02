@@ -248,8 +248,8 @@ class ClearResourcesButton : public SpeciesButton
 {
     void MouseUp()
     {
-        g_app->m_resource->FlushOpenGlState();
-		g_app->m_resource->RegenerateOpenGlState();
+        g_resource->FlushOpenGlState();
+		g_resource->RegenerateOpenGlState();
     }
 };
 

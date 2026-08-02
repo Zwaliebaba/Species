@@ -27,7 +27,7 @@ Powerstation::Powerstation()
     m_linkedBuildingId(-1)
 {
     m_type = Building::TypePowerstation;
-	SetShape( g_app->m_resource->GetShape("PowerStation.shp") );
+	SetShape( g_resource->GetShape("PowerStation.shp") );
 }
 
 

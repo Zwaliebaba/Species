@@ -30,9 +30,9 @@ ArmyAnt::ArmyAnt()
 {
     m_type = TypeArmyAnt;
 
-    m_shapes[0] = g_app->m_resource->GetShape( "ArmyAnt.shp" );
-    m_shapes[1] = g_app->m_resource->GetShape( "ArmyAnt2.shp" );
-    m_shapes[2] = g_app->m_resource->GetShape( "ArmyAnt3.shp" );
+    m_shapes[0] = g_resource->GetShape( "ArmyAnt.shp" );
+    m_shapes[1] = g_resource->GetShape( "ArmyAnt2.shp" );
+    m_shapes[2] = g_resource->GetShape( "ArmyAnt3.shp" );
 
     m_shape = m_shapes[0];
     m_carryMarker = m_shape->m_rootFragment->LookupMarker( "MarkerCarry" );
@@ -295,7 +295,7 @@ bool ArmyAnt::AdvanceAttackEnemy()
                                                                syncsfrand(15.0f) ),
 															   Particle::TypeMuzzleFlash );
         }
-        g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
+        g_soundSystem->TriggerEntityEvent( this, "Attack" );
     }
 
     return false;

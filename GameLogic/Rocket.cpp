@@ -43,7 +43,7 @@ FuelBuilding::FuelBuilding()
 {
     if( !s_fuelPipe )
     {
-        s_fuelPipe = g_app->m_resource->GetShape( "FuelPipe.shp" );
+        s_fuelPipe = g_resource->GetShape( "FuelPipe.shp" );
         DEBUG_ASSERT( s_fuelPipe );
     }
 }
@@ -175,7 +175,7 @@ void FuelBuilding::RenderAlphas( float _predictionTime )
             Vector3 rightAngle = ( g_app->m_camera->GetPos() - midPos ) ^ ( startPos - endPos );
             rightAngle.SetLength( 25.0f );
 
-            glBindTexture       ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Fuel.bmp" ) );
+            glBindTexture       ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Fuel.bmp" ) );
             glEnable            ( GL_TEXTURE_2D );
             glTexParameteri     ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
             glTexParameteri     ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
@@ -281,9 +281,9 @@ FuelGenerator::FuelGenerator()
 {
     m_type = TypeFuelGenerator;
 
-    SetShape( g_app->m_resource->GetShape( "FuelGenerator.shp" ) );
+    SetShape( g_resource->GetShape( "FuelGenerator.shp" ) );
 
-    m_pump = g_app->m_resource->GetShape( "FuelGeneratorPump.shp" );
+    m_pump = g_resource->GetShape( "FuelGeneratorPump.shp" );
     m_pumpTip = m_pump->m_rootFragment->LookupMarker( "MarkerTip" );
 }
 
@@ -348,11 +348,11 @@ bool FuelGenerator::Advance()
 
     if( previousPumpPos >= 0.1f && m_previousPumpPos < 0.1f )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "PumpUp" );
+        g_soundSystem->TriggerBuildingEvent( this, "PumpUp" );
     }
     else if( previousPumpPos <= 0.9f && m_previousPumpPos > 0.9f )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "PumpDown" );
+        g_soundSystem->TriggerBuildingEvent( this, "PumpDown" );
     }
 
     return FuelBuilding::Advance();
@@ -422,7 +422,7 @@ FuelPipe::FuelPipe()
 {
     m_type = TypeFuelPipe;
 
-    SetShape( g_app->m_resource->GetShape( "FuelPipeBase.shp" ) );
+    SetShape( g_resource->GetShape( "FuelPipeBase.shp" ) );
 }
 
 
@@ -431,15 +431,15 @@ bool FuelPipe::Advance()
     //
     // Ensure our sound ambiences are playing
 
-    int numInstances = g_app->m_soundSystem->NumInstances( m_id, "FuelPipe PumpFuel" );
+    int numInstances = g_soundSystem->NumInstances( m_id, "FuelPipe PumpFuel" );
 
     if( m_currentLevel > 0.2f && numInstances == 0 )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "PumpFuel" );
+        g_soundSystem->TriggerBuildingEvent( this, "PumpFuel" );
     }
     else if( m_currentLevel <= 0.2f && numInstances > 0 )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "FuelPipe PumpFuel" );
+        g_soundSystem->StopAllSounds( m_id, "FuelPipe PumpFuel" );
     }
 
 
@@ -464,7 +464,7 @@ FuelStation::FuelStation()
 {
     m_type = TypeFuelStation;
 
-    SetShape( g_app->m_resource->GetShape( "FuelStation.shp" ) );
+    SetShape( g_resource->GetShape( "FuelStation.shp" ) );
 
     m_entrance = m_shape->m_rootFragment->LookupMarker( "MarkerEntrance" );
 }
@@ -554,7 +554,7 @@ bool FuelStation::BoardRocket( WorldObjectId _id )
                 g_app->m_particleSystem->CreateParticle( entityPos, vel, Particle::TypeControlFlash );
             }
 
-            g_app->m_soundSystem->TriggerBuildingEvent( this, "LoadPassenger" );
+            g_soundSystem->TriggerBuildingEvent( this, "LoadPassenger" );
         }
 
         return result;
@@ -606,7 +606,7 @@ void FuelStation::RenderAlphas( float _predictionTime )
             //
             // Render lines for over effect
 
-            glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/InterfaceGrey.bmp" ) );
+            glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/InterfaceGrey.bmp" ) );
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
             glEnable( GL_TEXTURE_2D );
@@ -683,7 +683,7 @@ void FuelStation::RenderAlphas( float _predictionTime )
             //
             // Render projection effect
 
-            glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+            glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
 
             Vector3 ourPos = m_pos + Vector3(0,90,0);
             Vector3 theirPos = m_pos + Vector3(0,200,0);
@@ -752,7 +752,7 @@ EscapeRocket::EscapeRocket()
 {
     m_type = TypeEscapeRocket;
 
-    SetShape( g_app->m_resource->GetShape( "Rocket.shp" ) );
+    SetShape( g_resource->GetShape( "Rocket.shp" ) );
 
     m_booster = m_shape->m_rootFragment->LookupMarker( "MarkerBooster" );
     ASSERT_TEXT( m_booster, "MarkerBooster not found in rocket.shp" );
@@ -820,15 +820,15 @@ void EscapeRocket::SetupSounds()
     // If we're not set up right, kill all sounds first
 
 
-    int numInstances = requiredSoundName ? g_app->m_soundSystem->NumInstances( m_id, fullName ) : 0;
+    int numInstances = requiredSoundName ? g_soundSystem->NumInstances( m_id, fullName ) : 0;
 
     if( !requiredSoundName || numInstances == 0 )
     {
-        g_app->m_soundSystem->StopAllSounds( m_id, "EscapeRocket Refueling" );
-        g_app->m_soundSystem->StopAllSounds( m_id, "EscapeRocket Happy" );
-        g_app->m_soundSystem->StopAllSounds( m_id, "EscapeRocket Unhappy" );
-        g_app->m_soundSystem->StopAllSounds( m_id, "EscapeRocket Malfunction" );
-        g_app->m_soundSystem->StopAllSounds( m_id, "EscapeRocket Flight" );
+        g_soundSystem->StopAllSounds( m_id, "EscapeRocket Refueling" );
+        g_soundSystem->StopAllSounds( m_id, "EscapeRocket Happy" );
+        g_soundSystem->StopAllSounds( m_id, "EscapeRocket Unhappy" );
+        g_soundSystem->StopAllSounds( m_id, "EscapeRocket Malfunction" );
+        g_soundSystem->StopAllSounds( m_id, "EscapeRocket Flight" );
     }
 
 
@@ -837,14 +837,14 @@ void EscapeRocket::SetupSounds()
 
     if( requiredSoundName && numInstances == 0 )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, requiredSoundName );
+        g_soundSystem->TriggerBuildingEvent( this, requiredSoundName );
     }
 
 
     //
     // If our engines are on then trigger the event
 
-    int numEngineInstances = g_app->m_soundSystem->NumInstances( m_id, "EscapeRocket EngineBurn" );
+    int numEngineInstances = g_soundSystem->NumInstances( m_id, "EscapeRocket EngineBurn" );
 
     if( m_state == StateReady ||
         m_state == StateCountdown ||
@@ -852,14 +852,14 @@ void EscapeRocket::SetupSounds()
     {
         if( numEngineInstances == 0 )
         {
-            g_app->m_soundSystem->TriggerBuildingEvent( this, "EngineBurn" );
+            g_soundSystem->TriggerBuildingEvent( this, "EngineBurn" );
         }
     }
     else
     {
         if( numEngineInstances > 0 )
         {
-            g_app->m_soundSystem->StopAllSounds( m_id, "EscapeRocket EngineBurn" );
+            g_soundSystem->StopAllSounds( m_id, "EscapeRocket EngineBurn" );
         }
     }
 }
@@ -1233,7 +1233,7 @@ void EscapeRocket::Damage( float _damage )
         if( m_damage > 100.0f )
         {
             m_state = StateExploding;
-            g_app->m_soundSystem->TriggerBuildingEvent( this, "Explode" );
+            g_soundSystem->TriggerBuildingEvent( this, "Explode" );
         }
     }
 }
@@ -1369,7 +1369,7 @@ void EscapeRocket::RenderAlphas( float _predictionTime )
         glEnable        ( GL_BLEND );
         glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
         //glDisable       ( GL_DEPTH_TEST );
 
         float timeIndex = g_gameTime * 2;
@@ -1414,7 +1414,7 @@ void EscapeRocket::RenderAlphas( float _predictionTime )
         //
         // Central starbursts
 
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
         int numStars = 10;
         if( buildingDetail == 2 ) numStars = 5;

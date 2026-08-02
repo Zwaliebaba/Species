@@ -148,7 +148,7 @@ void PrefsOtherWindow::ListAvailableLanguages()
 {
     m_languages.EmptyAndDelete();
 
-    LList<char *> *fileList = g_app->m_resource->ListResources( "Language/", "*.*", false );
+    LList<char *> *fileList = g_resource->ListResources( "Language/", "*.*", false );
     for( int i = 0; i < fileList->Size(); ++i )
     {
         char *lang = fileList->GetData(i);

@@ -16,7 +16,6 @@
 
 #ifndef EXPORTER_BUILD
 #include "Resource.h"
-#include "App.h"
 #endif
 
 #define USE_DISPLAY_LISTS
@@ -346,7 +345,7 @@ ShapeFragment::~ShapeFragment()
 	m_childFragments.EmptyAndDelete();
 	m_childMarkers.EmptyAndDelete();
 #ifndef EXPORTER_BUILD
-	g_app->m_resource->DeleteDisplayList(m_displayListName);
+	g_resource->DeleteDisplayList(m_displayListName);
 	delete [] m_displayListName;
 	m_displayListName = nullptr;
 #endif
@@ -357,8 +356,8 @@ void ShapeFragment::BuildDisplayList()
 {
 #ifndef EXPORTER_BUILD
 	DEBUG_ASSERT(m_displayListName == nullptr);
-	m_displayListName = g_app->m_resource->GenerateName();
-	int id = g_app->m_resource->CreateDisplayList(m_displayListName);
+	m_displayListName = g_resource->GenerateName();
+	int id = g_resource->CreateDisplayList(m_displayListName);
 	glNewList(id, GL_COMPILE);
 		RenderSlow();
 	glEndList();
@@ -897,7 +896,7 @@ void ShapeFragment::Render(float _predictionTime)
 
 #ifdef USE_DISPLAY_LISTS
 	int id = -1;
-	if (m_displayListName) id = g_app->m_resource->GetDisplayList(m_displayListName);
+	if (m_displayListName) id = g_resource->GetDisplayList(m_displayListName);
 	if (id != -1)
 	{
 		glCallList(id);
@@ -1340,7 +1339,7 @@ Shape::~Shape()
 	delete m_rootFragment;
 	free(m_name);
 #ifndef EXPORTER_BUILD
-	g_app->m_resource->DeleteDisplayList(m_displayListName);
+	g_resource->DeleteDisplayList(m_displayListName);
 	delete [] m_displayListName;
 	m_displayListName = nullptr;
 #endif
@@ -1352,8 +1351,8 @@ void Shape::BuildDisplayList()
 #ifndef EXPORTER_BUILD
 	if (!m_animating)
 	{
-		m_displayListName = g_app->m_resource->GenerateName();
-		int id = g_app->m_resource->CreateDisplayList(m_displayListName);
+		m_displayListName = g_resource->GenerateName();
+		int id = g_resource->CreateDisplayList(m_displayListName);
 		glNewList(id, GL_COMPILE);
 			m_rootFragment->Render(0.0f);
 		glEndList();
@@ -1458,7 +1457,7 @@ void Shape::Render(float _predictionTime, Matrix34 const &_transform)
 
 #ifdef USE_DISPLAY_LISTS
 	int id = -1;
-	if (m_displayListName) id = g_app->m_resource->GetDisplayList(m_displayListName);
+	if (m_displayListName) id = g_resource->GetDisplayList(m_displayListName);
 	if (id != -1)
 	{
 		glCallList(id);

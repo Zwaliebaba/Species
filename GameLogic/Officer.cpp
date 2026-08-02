@@ -42,7 +42,7 @@ Officer::Officer()
     m_state = StateIdle;
     m_orders = OrderNone;
 
-    m_shape = g_app->m_resource->GetShape( "Darwinian.shp" );
+    m_shape = g_resource->GetShape( "Darwinian.shp" );
     ASSERT_TEXT( m_shape, "Shape not found : officer.shp" );
 
     m_flagMarker = m_shape->m_rootFragment->LookupMarker( "MarkerFlag" );
@@ -158,7 +158,7 @@ void Officer::RenderSpirit( Vector3 const &_pos )
     glColor4ub(100,250,100, glowAlpha );
 
     glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
     glBegin( GL_QUADS );
         glTexCoord2i(0,0);      glVertex3fv( (pos - g_app->m_camera->GetUp()*size).GetData() );
         glTexCoord2i(1,0);      glVertex3fv( (pos + g_app->m_camera->GetRight()*size).GetData() );
@@ -220,10 +220,10 @@ void Officer::RenderFlag( float _predictionTime )
     Vector3 flagPos = m_flagMarker->GetWorldMatrix(mat).pos;
 
     int texId = -1;
-    if      ( m_orders == OrderNone )                   texId = g_app->m_resource->GetTexture( "Icons/BannerNone.bmp" );
-    else if ( m_orders == OrderGoto )                   texId = g_app->m_resource->GetTexture( "Icons/BannerGoto.bmp" );
-    else if ( m_orders == OrderFollow && !m_absorb )    texId = g_app->m_resource->GetTexture( "Icons/BannerFollow.bmp" );
-    else if ( m_orders == OrderFollow && m_absorb )     texId = g_app->m_resource->GetTexture( "Icons/BannerAbsorb.bmp" );
+    if      ( m_orders == OrderNone )                   texId = g_resource->GetTexture( "Icons/BannerNone.bmp" );
+    else if ( m_orders == OrderGoto )                   texId = g_resource->GetTexture( "Icons/BannerGoto.bmp" );
+    else if ( m_orders == OrderFollow && !m_absorb )    texId = g_resource->GetTexture( "Icons/BannerFollow.bmp" );
+    else if ( m_orders == OrderFollow && m_absorb )     texId = g_resource->GetTexture( "Icons/BannerAbsorb.bmp" );
 
     m_flag.SetTexture( texId );
     m_flag.SetPosition( flagPos );
@@ -559,10 +559,10 @@ void Officer::ListSoundEvents( LList<char const *> *_list )
 
 void Officer::CancelOrderSounds()
 {
-    g_app->m_soundSystem->StopAllSounds( m_id, "Officer SetOrderNone" );
-    g_app->m_soundSystem->StopAllSounds( m_id, "Officer SetOrderGoto" );
-    g_app->m_soundSystem->StopAllSounds( m_id, "Officer SetOrderFollow" );
-    g_app->m_soundSystem->StopAllSounds( m_id, "Officer SetOrderAbsorb" );
+    g_soundSystem->StopAllSounds( m_id, "Officer SetOrderNone" );
+    g_soundSystem->StopAllSounds( m_id, "Officer SetOrderGoto" );
+    g_soundSystem->StopAllSounds( m_id, "Officer SetOrderFollow" );
+    g_soundSystem->StopAllSounds( m_id, "Officer SetOrderAbsorb" );
 }
 
 
@@ -640,7 +640,7 @@ void Officer::SetOrders( Vector3 const &_orders )
                 }
 
                 CancelOrderSounds();
-                g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderGoto" );
+                g_soundSystem->TriggerEntityEvent( this, "SetOrderGoto" );
             }
         }
         else
@@ -686,11 +686,11 @@ void Officer::SetOrders( Vector3 const &_orders )
 
                 switch( m_orders )
                 {
-                    case OrderNone:     g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderNone" );       break;
-                    case OrderGoto:     g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderGoto" );       break;
+                    case OrderNone:     g_soundSystem->TriggerEntityEvent( this, "SetOrderNone" );       break;
+                    case OrderGoto:     g_soundSystem->TriggerEntityEvent( this, "SetOrderGoto" );       break;
                     case OrderFollow:
-                        if( m_absorb )  g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderAbsorb" );
-                        else            g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderFollow" );
+                        if( m_absorb )  g_soundSystem->TriggerEntityEvent( this, "SetOrderAbsorb" );
+                        else            g_soundSystem->TriggerEntityEvent( this, "SetOrderFollow" );
                         break;
                 }
 
@@ -745,11 +745,11 @@ void Officer::SetNextMode()
 
         switch( m_orders )
         {
-            case OrderNone:     g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderNone" );       break;
-            case OrderGoto:     g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderGoto" );       break;
+            case OrderNone:     g_soundSystem->TriggerEntityEvent( this, "SetOrderNone" );       break;
+            case OrderGoto:     g_soundSystem->TriggerEntityEvent( this, "SetOrderGoto" );       break;
             case OrderFollow:
-                if( m_absorb )  g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderAbsorb" );
-                else            g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderFollow" );
+                if( m_absorb )  g_soundSystem->TriggerEntityEvent( this, "SetOrderAbsorb" );
+                else            g_soundSystem->TriggerEntityEvent( this, "SetOrderFollow" );
                 break;
         }
 
@@ -802,11 +802,11 @@ void Officer::SetPreviousMode()
 
         switch( m_orders )
         {
-            case OrderNone:     g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderNone" );       break;
-            case OrderGoto:     g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderGoto" );       break;
+            case OrderNone:     g_soundSystem->TriggerEntityEvent( this, "SetOrderNone" );       break;
+            case OrderGoto:     g_soundSystem->TriggerEntityEvent( this, "SetOrderGoto" );       break;
             case OrderFollow:
-                if( m_absorb )  g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderAbsorb" );
-                else            g_app->m_soundSystem->TriggerEntityEvent( this, "SetOrderFollow" );
+                if( m_absorb )  g_soundSystem->TriggerEntityEvent( this, "SetOrderAbsorb" );
+                else            g_soundSystem->TriggerEntityEvent( this, "SetOrderFollow" );
                 break;
         }
 
@@ -895,7 +895,7 @@ void OfficerOrders::Render( float _time )
     glColor4f( 1.0f, 0.3f, 1.0f, alpha );
 
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
     glDisable       ( GL_DEPTH_TEST );
 
     glBegin( GL_QUADS );

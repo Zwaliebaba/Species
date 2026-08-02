@@ -4,7 +4,6 @@
 #include "Profiler.h"
 #include "Resource.h"
 
-#include "App.h"
 
 #include "SpiritStore.h"
 
@@ -49,7 +48,7 @@ void SpiritStore::Advance()
 
 void SpiritStore::Render( float _predictionTime )
 {
-	START_PROFILE(g_app->m_profiler, "Spirit Store");
+	START_PROFILE(g_profiler, "Spirit Store");
 
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
@@ -59,7 +58,7 @@ void SpiritStore::Render( float _predictionTime )
     glColor4f       ( 1.0f, 1.0f, 1.0f, 0.5f );
 
     glEnable        (GL_TEXTURE_2D);
-    glBindTexture	(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/TriangleOutline.bmp", true, false));
+    glBindTexture	(GL_TEXTURE_2D, g_resource->GetTexture("Textures/TriangleOutline.bmp", true, false));
 	glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -115,7 +114,7 @@ void SpiritStore::Render( float _predictionTime )
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
     glDepthMask     ( true );
 
-	END_PROFILE(g_app->m_profiler, "Spirit Store");
+	END_PROFILE(g_profiler, "Spirit Store");
 }
 
 

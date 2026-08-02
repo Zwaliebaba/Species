@@ -114,7 +114,7 @@ void PowerBuilding::RenderAlphas ( float _predictionTime )
         glColor4f   ( 0.9f, 0.9f, 0.5f, 1.0f );
 
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
         glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
         glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 
@@ -129,7 +129,7 @@ void PowerBuilding::RenderAlphas ( float _predictionTime )
         // Render any surges
 
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
         float surgeSize = 25.0f;
         glColor4f( 0.5f, 0.5f, 1.0f, 1.0f );
@@ -184,7 +184,7 @@ void PowerBuilding::TriggerSurge ( float _initValue )
 {
     m_surges.PutDataAtStart( _initValue );
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "TriggerSurge" );
+    g_soundSystem->TriggerBuildingEvent( this, "TriggerSurge" );
 }
 
 
@@ -233,7 +233,7 @@ Generator::Generator()
     m_enabled(false)
 {
     m_type = TypeGenerator;
-    SetShape( g_app->m_resource->GetShape( "Generator.shp" ) );
+    SetShape( g_resource->GetShape( "Generator.shp" ) );
 
     m_counter = m_shape->m_rootFragment->LookupMarker( "MarkerCounter" );
 }
@@ -261,7 +261,7 @@ char const *Generator::GetObjectiveCounter()
 void Generator::ReprogramComplete()
 {
     m_enabled = true;
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "Enable" );
+    g_soundSystem->TriggerBuildingEvent( this, "Enable" );
 }
 
 
@@ -359,7 +359,7 @@ Pylon::Pylon()
 :   PowerBuilding()
 {
     m_type = TypePylon;
-    SetShape( g_app->m_resource->GetShape( "Pylon.shp" ) );
+    SetShape( g_resource->GetShape( "Pylon.shp" ) );
 }
 
 
@@ -378,7 +378,7 @@ PylonStart::PylonStart()
     m_reqBuildingId(-1)
 {
     m_type = TypePylonStart;
-    SetShape( g_app->m_resource->GetShape( "Pylon.shp" ) );
+    SetShape( g_resource->GetShape( "Pylon.shp" ) );
 };
 
 
@@ -474,7 +474,7 @@ PylonEnd::PylonEnd()
 :   PowerBuilding()
 {
     m_type = TypePylonEnd;
-    SetShape( g_app->m_resource->GetShape( "Pylon.shp" ) );
+    SetShape( g_resource->GetShape( "Pylon.shp" ) );
 };
 
 
@@ -511,7 +511,7 @@ SolarPanel::SolarPanel()
     m_operating(false)
 {
     m_type = TypeSolarPanel;
-    SetShape( g_app->m_resource->GetShape( "SolarPanel.shp" ) );
+    SetShape( g_resource->GetShape( "SolarPanel.shp" ) );
 
     memset( m_glowMarker, 0, SOLARPANEL_NUMGLOWS * sizeof(ShapeMarker *) );
 
@@ -553,13 +553,13 @@ bool SolarPanel::Advance()
 
     if( fractionOccupied > 0.6f )
     {
-        if( !m_operating ) g_app->m_soundSystem->TriggerBuildingEvent( this, "Operate" );
+        if( !m_operating ) g_soundSystem->TriggerBuildingEvent( this, "Operate" );
         m_operating = true;
     }
 
     if( fractionOccupied < 0.3f )
     {
-        if( m_operating ) g_app->m_soundSystem->StopAllSounds( m_id, "SolarPanel Operate" );
+        if( m_operating ) g_soundSystem->StopAllSounds( m_id, "SolarPanel Operate" );
         m_operating = false;
     }
 
@@ -571,7 +571,7 @@ void SolarPanel::RenderPorts()
 {
     glDisable       ( GL_CULL_FACE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
@@ -643,7 +643,7 @@ void SolarPanel::RenderAlphas( float _predictionTime )
         glEnable        ( GL_BLEND );
         glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
         glDepthMask     ( false );
         glDisable       ( GL_CULL_FACE );
 

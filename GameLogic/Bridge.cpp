@@ -25,8 +25,8 @@ Bridge::Bridge()
     m_type = Building::TypeBridge;
     m_sendPeriod = BRIDGE_TRANSPORTPERIOD;
 
-    m_shapes[0] = g_app->m_resource->GetShape( "BridgeEnd.shp" );
-    m_shapes[1] = g_app->m_resource->GetShape( "BridgeTower.shp" );
+    m_shapes[0] = g_resource->GetShape( "BridgeEnd.shp" );
+    m_shapes[1] = g_resource->GetShape( "BridgeTower.shp" );
 
     DEBUG_ASSERT( m_shapes[0] );
     DEBUG_ASSERT( m_shapes[1] );

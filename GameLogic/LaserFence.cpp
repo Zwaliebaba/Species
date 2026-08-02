@@ -42,7 +42,7 @@ LaserFence::LaserFence()
 {
     m_type = Building::TypeLaserFence;
 
-	SetShape( g_app->m_resource->GetShape("LaserFence.shp") );
+	SetShape( g_resource->GetShape("LaserFence.shp") );
 
     m_marker1 = m_shape->m_rootFragment->LookupMarker( "MarkerFence01" );
     m_marker2 = m_shape->m_rootFragment->LookupMarker( "MarkerFence02" );
@@ -90,7 +90,7 @@ void LaserFence::Spark()
         g_app->m_particleSystem->CreateParticle( sparkPos, particleVel, Particle::TypeSpark, size );
     }
 
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "Spark" );
+    g_soundSystem->TriggerBuildingEvent( this, "Spark" );
 }
 
 
@@ -294,7 +294,7 @@ void LaserFence::RenderAlphas( float predictionTime )
                 glEnable            (GL_TEXTURE_2D);
 
                 gglActiveTextureARB  (GL_TEXTURE0_ARB);
-                glBindTexture       (GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/LaserFence.bmp" ) );
+                glBindTexture       (GL_TEXTURE_2D, g_resource->GetTexture( "Textures/LaserFence.bmp" ) );
 	            glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	            glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
                 glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -304,7 +304,7 @@ void LaserFence::RenderAlphas( float predictionTime )
                 glEnable            (GL_TEXTURE_2D);
 
                 gglActiveTextureARB  (GL_TEXTURE1_ARB);
-                glBindTexture       (GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/LaserFence2.bmp" ) );
+                glBindTexture       (GL_TEXTURE_2D, g_resource->GetTexture( "Textures/LaserFence2.bmp" ) );
 	            glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	            glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
                 glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -349,7 +349,7 @@ void LaserFence::RenderAlphas( float predictionTime )
             // Blend another poly over the top for burn effect
 
             glEnable            (GL_TEXTURE_2D);
-            glBindTexture       (GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/LaserFence2.bmp" ) );
+            glBindTexture       (GL_TEXTURE_2D, g_resource->GetTexture( "Textures/LaserFence2.bmp" ) );
 	        glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	        glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
             glBlendFunc         (GL_SRC_ALPHA, GL_ONE);
@@ -493,7 +493,7 @@ void LaserFence::SetBuildingLink( int _buildingId )
 
 void LaserFence::Electrocute( Vector3 const &_pos )
 {
-    g_app->m_soundSystem->TriggerBuildingEvent( this, "Electrocute" );
+    g_soundSystem->TriggerBuildingEvent( this, "Electrocute" );
 }
 
 

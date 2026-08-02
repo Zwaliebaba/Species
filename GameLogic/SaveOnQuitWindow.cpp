@@ -14,7 +14,7 @@ class YesButton : public SpeciesButton
 {
     void MouseUp()
     {
-		g_app->m_soundSystem->SaveBlueprints();
+		g_soundSystem->SaveBlueprints();
 		g_app->m_requestQuit = true;
     }
 };
@@ -25,7 +25,7 @@ class NoButton : public SpeciesButton
     void MouseUp()
     {
 		g_app->m_requestQuit = true;
-		g_app->m_soundSystem->m_quitWithoutSave = true;
+		g_soundSystem->m_quitWithoutSave = true;
     }
 };
 

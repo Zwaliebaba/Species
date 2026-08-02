@@ -10,6 +10,7 @@
 #include "Camera.h"
 
 #include "LaserTrooper.h"
+#include "Resource.h"
 
 
 // *** Advance
@@ -235,7 +236,7 @@ void LaserTrooper::Render( float predictionTime, int teamId )
 	entityFront.RotateAround(m_angVel * predictionTime);
 
 //	Matrix34 transform(entityFront, entityUp, predictedPos);
-//	Shape *aShape = g_app->m_resource->GetShape("LaserTroop.shp");
+//	Shape *aShape = g_resource->GetShape("LaserTroop.shp");
 //	aShape->Render(predictionTime, transform);
 
     Vector3 entityRight = entityFront ^ entityUp;

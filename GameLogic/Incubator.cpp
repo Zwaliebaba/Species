@@ -22,7 +22,7 @@ Incubator::Incubator()
 {
   m_type = TypeIncubator;
 
-  SetShape(g_app->m_resource->GetShape("Incubator.shp"));
+  SetShape(g_resource->GetShape("Incubator.shp"));
 
   m_spiritCentre = m_shape->m_rootFragment->LookupMarker("MarkerSpirits");
   m_exit = m_shape->m_rootFragment->LookupMarker("MarkerExit");
@@ -164,7 +164,7 @@ void Incubator::SpawnEntity()
   //
   // Sound effect
 
-  g_app->m_soundSystem->TriggerBuildingEvent(this, "SpawnEntity");
+  g_soundSystem->TriggerBuildingEvent(this, "SpawnEntity");
 }
 
 void Incubator::AddSpirit(Spirit* _spirit)
@@ -183,7 +183,7 @@ void Incubator::AddSpirit(Spirit* _spirit)
   ii->m_alpha = 1.0f;
   m_incoming.PutData(ii);
 
-  g_app->m_soundSystem->TriggerBuildingEvent(this, "AddSpirit");
+  g_soundSystem->TriggerBuildingEvent(this, "AddSpirit");
 }
 
 void Incubator::GetDockPoint(Vector3& _pos, Vector3& _front)
@@ -246,7 +246,7 @@ void Incubator::RenderAlphas(float _predictionTime)
   // Render incoming and outgoing effects
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Laser.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
 
   Matrix34 mat(m_front, g_upVector, m_pos);
   Vector3 entrances[3];

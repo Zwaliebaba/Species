@@ -39,7 +39,7 @@ ControlTower::ControlTower()
     m_radius = 4.0f;
     m_type = TypeControlTower;
 
-    SetShape( g_app->m_resource->GetShape( "ControlTower.shp" ) );
+    SetShape( g_resource->GetShape( "ControlTower.shp" ) );
     m_lightPos = m_shape->m_rootFragment->LookupMarker("MarkerLightPos");
     m_dishPos = m_shape->m_rootFragment->LookupMarker("MarkerDishPos" );
 
@@ -57,7 +57,7 @@ ControlTower::ControlTower()
 
     if( !s_dishShape )
     {
-        s_dishShape = g_app->m_resource->GetShape( "ControlTowerDish.shp" );
+        s_dishShape = g_resource->GetShape( "ControlTowerDish.shp" );
     }
 }
 
@@ -210,7 +210,7 @@ bool ControlTower::Reprogram( int _teamId )
 
                 if( m_ownership == 100.0f )
                 {
-                    g_app->m_soundSystem->TriggerBuildingEvent( this, "ReprogramComplete" );
+                    g_soundSystem->TriggerBuildingEvent( this, "ReprogramComplete" );
 			        //g_app->m_sepulveda->Say("building_captured");
                     targetBuilding->ReprogramComplete();
                     SetTeamId( _teamId );
@@ -352,7 +352,7 @@ void ControlTower::RenderAlphas ( float _predictionTime )
         glDepthMask     ( false );
 
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
 	    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 
@@ -402,7 +402,7 @@ void ControlTower::RenderAlphas ( float _predictionTime )
     //
     // Draw our signal flash
 
-    int lastSeqId = g_app->m_clientToServer->m_lastValidSequenceIdFromServer;
+    int lastSeqId = g_clientToServer->m_lastValidSequenceIdFromServer;
 
     if( (m_id.GetTeamId() != 255 && (lastSeqId % 10)/2 == m_id.GetTeamId() ) ||
         m_beingReprogrammed[ lastSeqId % 3 ] ||
@@ -418,7 +418,7 @@ void ControlTower::RenderAlphas ( float _predictionTime )
         glColor4ub( colour.r, colour.g, colour.b, 255 );
 
         glEnable        ( GL_TEXTURE_2D );
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 	    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
         glDisable       ( GL_CULL_FACE );

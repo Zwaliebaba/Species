@@ -126,7 +126,7 @@ class ApplyKeybindingsButton : public SpeciesButton
         g_prefsManager->Save();
 		prefsMan.Save();
 
-		g_app->m_langTable->RebuildTables();
+		g_langTable->RebuildTables();
     }
 };
 

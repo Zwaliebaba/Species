@@ -361,7 +361,7 @@ Squadie::Squadie()
     m_secondaryTimer(0.0f),
     m_retargetTimer(0.0f)
 {
-    m_shape = g_app->m_resource->GetShape( "Squad.shp" );
+    m_shape = g_resource->GetShape( "Squad.shp" );
     DEBUG_ASSERT( m_shape );
 
 	m_centrePos = m_shape->CalculateCentre(g_identityMatrix34);
@@ -388,14 +388,14 @@ void Squadie::ChangeHealth( int _amount )
     {
         if( _amount < 0 )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
+            g_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
         }
 
         if( m_stats[StatHealth] + _amount <= 0 )
         {
             m_stats[StatHealth] = 100;
             m_dead = true;
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Die" );
+            g_soundSystem->TriggerEntityEvent( this, "Die" );
         }
         else if( m_stats[StatHealth] + _amount > 255 )
         {
@@ -424,7 +424,7 @@ bool Squadie::Advance(Unit *_theUnit)
         if( m_secondaryTimer <= 0.0f )
         {
             // Secondary weapon is reloaded
-            g_app->m_soundSystem->TriggerEntityEvent( this, "WeaponReturns" );
+            g_soundSystem->TriggerEntityEvent( this, "WeaponReturns" );
         }
     }
 
@@ -699,8 +699,8 @@ void Squadie::Attack( Vector3 const &_pos )
         //
         //
         m_reloading = m_stats[StatRate];
-        g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
-        g_app->m_soundSystem->TriggerEntityEvent( this, "FireLaser" );
+        g_soundSystem->TriggerEntityEvent( this, "Attack" );
+        g_soundSystem->TriggerEntityEvent( this, "FireLaser" );
     }
 }
 
@@ -724,25 +724,25 @@ void Squadie::FireSecondaryWeapon( Vector3 const &_pos )
         switch( squad->m_weaponType )
         {
             case GlobalResearch::TypeGrenade:
-                g_app->m_soundSystem->TriggerEntityEvent( this, "ThrowGrenade" );
+                g_soundSystem->TriggerEntityEvent( this, "ThrowGrenade" );
                 g_app->m_location->ThrowWeapon( laserPos, _pos, EffectThrowableGrenade, m_id.GetTeamId() );
                 m_secondaryTimer = 4.0f;
                 break;
 
             case GlobalResearch::TypeAirStrike:
-                g_app->m_soundSystem->TriggerEntityEvent( this, "ThrowAirStrike" );
+                g_soundSystem->TriggerEntityEvent( this, "ThrowAirStrike" );
                 g_app->m_location->ThrowWeapon( laserPos, _pos, EffectThrowableAirstrikeMarker, m_id.GetTeamId() );
                 m_secondaryTimer = 20.0f;
                 break;
 
             case GlobalResearch::TypeController:
-                g_app->m_soundSystem->TriggerEntityEvent( this, "ThrowController" );
+                g_soundSystem->TriggerEntityEvent( this, "ThrowController" );
                 g_app->m_location->ThrowWeapon( laserPos, _pos, EffectThrowableControllerGrenade, m_id.GetTeamId() );
                 m_secondaryTimer = 4.0f;
                 break;
 
             case GlobalResearch::TypeRocket:
-                g_app->m_soundSystem->TriggerEntityEvent( this, "FireRocket" );
+                g_soundSystem->TriggerEntityEvent( this, "FireRocket" );
                 g_app->m_location->FireRocket( laserPos, _pos, m_id.GetTeamId() );
                 m_secondaryTimer = 4.0f;
                 break;

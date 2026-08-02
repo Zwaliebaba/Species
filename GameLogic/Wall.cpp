@@ -19,7 +19,7 @@ Wall::Wall()
 {
     m_type = TypeWall;
 
-    SetShape( g_app->m_resource->GetShape( "Wall.shp" ) );
+    SetShape( g_resource->GetShape( "Wall.shp" ) );
 }
 
 bool Wall::Advance()

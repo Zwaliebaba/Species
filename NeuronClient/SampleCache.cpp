@@ -3,7 +3,6 @@
 #include "Resource.h"
 #include "SampleCache.h"
 #include "SoundStreamDecoder.h"
-#include "App.h"
 
 
 CachedSampleManager g_cachedSampleManager;
@@ -20,7 +19,7 @@ CachedSample::CachedSample(char const *_sampleName)
     char fullPath[512] = "Sounds/";
 	strcat(fullPath, _sampleName);
 
-	m_soundStreamDecoder = g_app->m_resource->GetSoundStreamDecoder(fullPath);
+	m_soundStreamDecoder = g_resource->GetSoundStreamDecoder(fullPath);
     ASSERT_TEXT( m_soundStreamDecoder, "Failed to open sound stream decoder : %s", fullPath );
 
 	m_numChannels = m_soundStreamDecoder->m_numChannels;

@@ -57,7 +57,7 @@ void StaticShape::SetShapeName( char *_shapeName )
 
     if( strcmp( m_shapeName, "none" ) != 0 )
     {
-        SetShape( g_app->m_resource->GetShape( m_shapeName ) );
+        SetShape( g_resource->GetShape( m_shapeName ) );
 
         Matrix34 mat( m_front, m_up, m_pos );
         mat.u *= m_scale;

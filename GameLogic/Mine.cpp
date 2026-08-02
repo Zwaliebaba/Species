@@ -60,16 +60,16 @@ MineBuilding::MineBuilding()
 {
     if( !s_cartShape )
     {
-        s_wheelShape = g_app->m_resource->GetShape( "Wheel.shp" );
-        s_cartShape = g_app->m_resource->GetShape( "MineCart.shp" );
+        s_wheelShape = g_resource->GetShape( "Wheel.shp" );
+        s_cartShape = g_resource->GetShape( "MineCart.shp" );
         s_cartMarker1   = s_cartShape->m_rootFragment->LookupMarker( "MarkerTrack1" );
         s_cartMarker2   = s_cartShape->m_rootFragment->LookupMarker( "MarkerTrack2" );
         s_cartContents[0] = s_cartShape->m_rootFragment->LookupMarker( "MarkerContents1" );
         s_cartContents[1] = s_cartShape->m_rootFragment->LookupMarker( "MarkerContents2" );
         s_cartContents[2] = s_cartShape->m_rootFragment->LookupMarker( "MarkerContents3" );
 
-        s_polygon1 = g_app->m_resource->GetShape( "MinePolygon1.shp" );
-        s_primitive1 = g_app->m_resource->GetShape( "MinePrimitive1.shp" );
+        s_polygon1 = g_resource->GetShape( "MinePolygon1.shp" );
+        s_primitive1 = g_resource->GetShape( "MinePrimitive1.shp" );
     }
 }
 
@@ -154,7 +154,7 @@ void MineBuilding::RenderAlphas( float _predictionTime )
             if( buildingDetail == 1 )
             {
                 glEnable        ( GL_TEXTURE_2D );
-                glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+                glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
                 glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
                 glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 
@@ -204,7 +204,7 @@ void MineBuilding::Render( float _predictionTime )
 
 void MineBuilding::RenderCart( MineCart *_cart, float _predictionTime )
 {
-	//START_PROFILE(g_app->m_profiler, "Mine Cart");
+	//START_PROFILE(g_profiler, "Mine Cart");
 
     if( m_trackLink != -1 )
     {
@@ -238,15 +238,15 @@ void MineBuilding::RenderCart( MineCart *_cart, float _predictionTime )
             cartFront.y = 0.0f;
             cartFront.Normalise();
 
-            //START_PROFILE(g_app->m_profiler, "RenderCartShape" );
+            //START_PROFILE(g_profiler, "RenderCartShape" );
             Matrix34 transform( cartFront, g_upVector, cartPos );
             s_cartShape->Render( 0.0f, transform );
-            //END_PROFILE(g_app->m_profiler, "RenderCartShape" );
+            //END_PROFILE(g_profiler, "RenderCartShape" );
 
             Vector3 cartLinkLeft = s_cartMarker1->GetWorldMatrix( transform ).pos;
             Vector3 cartLinkRight = s_cartMarker2->GetWorldMatrix( transform ).pos;
 
-            //START_PROFILE(g_app->m_profiler, "RenderLines" );
+            //START_PROFILE(g_profiler, "RenderLines" );
             Vector3 camRight = g_app->m_camera->GetRight() * 0.5f;
             glBegin( GL_QUADS );
                 glVertex3fv( (trackLeft - camRight).GetData() );
@@ -259,9 +259,9 @@ void MineBuilding::RenderCart( MineCart *_cart, float _predictionTime )
                 glVertex3fv( (cartLinkRight + camRight).GetData() );
                 glVertex3fv( (cartLinkRight - camRight).GetData() );
             glEnd();
-            //END_PROFILE(g_app->m_profiler, "RenderLines" );
+            //END_PROFILE(g_profiler, "RenderLines" );
 
-            //START_PROFILE(g_app->m_profiler, "RenderPolygons" );
+            //START_PROFILE(g_profiler, "RenderPolygons" );
             for( int i = 0; i < 3; ++i )
             {
                 if( _cart->m_polygons[i] )
@@ -289,7 +289,7 @@ void MineBuilding::RenderCart( MineCart *_cart, float _predictionTime )
 	                    g_app->m_camera->SetupProjectionMatrix(nearPlaneStart * 1.1f,
 							 			                       g_app->m_renderer->GetFarPlane());
 
-                        Render3DSprite( polyMat.pos - Vector3(0,25,0), 50.0f, 50.0f, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+                        Render3DSprite( polyMat.pos - Vector3(0,25,0), 50.0f, 50.0f, g_resource->GetTexture( "Textures/Glow.bmp" ) );
 
                         g_app->m_camera->SetupProjectionMatrix(nearPlaneStart,
 								 		                       g_app->m_renderer->GetFarPlane());
@@ -302,11 +302,11 @@ void MineBuilding::RenderCart( MineCart *_cart, float _predictionTime )
                     }
                 }
             }
-            //END_PROFILE(g_app->m_profiler, "RenderPolygons" );
+            //END_PROFILE(g_profiler, "RenderPolygons" );
         }
     }
 
-	//END_PROFILE(g_app->m_profiler, "Mine Cart");
+	//END_PROFILE(g_profiler, "Mine Cart");
 }
 
 
@@ -315,7 +315,7 @@ bool MineBuilding::Advance()
     float mineSpeed = RefinerySpeed();
     if( m_previousMineSpeed <= 0.1f && mineSpeed > 0.1f )
     {
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "CogTurn" );
+        g_soundSystem->TriggerBuildingEvent( this, "CogTurn" );
     }
     m_previousMineSpeed = mineSpeed;
 
@@ -523,7 +523,7 @@ TrackLink::TrackLink()
 :   MineBuilding()
 {
     m_type = TypeTrackLink;
-    SetShape( g_app->m_resource->GetShape( "TrackLink.shp" ) );
+    SetShape( g_resource->GetShape( "TrackLink.shp" ) );
 }
 
 
@@ -541,7 +541,7 @@ TrackJunction::TrackJunction()
 :   MineBuilding()
 {
     m_type = TypeTrackJunction;
-    SetShape( g_app->m_resource->GetShape( "TrackLink.shp" ) );
+    SetShape( g_resource->GetShape( "TrackLink.shp" ) );
 }
 
 
@@ -641,7 +641,7 @@ TrackStart::TrackStart()
     m_reqBuildingId(-1)
 {
     m_type = TypeTrackStart;
-    SetShape( g_app->m_resource->GetShape( "TrackLink.shp" ) );
+    SetShape( g_resource->GetShape( "TrackLink.shp" ) );
 }
 
 
@@ -736,7 +736,7 @@ TrackEnd::TrackEnd()
     m_reqBuildingId(-1)
 {
     m_type = TypeTrackEnd;
-    SetShape( g_app->m_resource->GetShape( "TrackLink.shp" ) );
+    SetShape( g_resource->GetShape( "TrackLink.shp" ) );
 }
 
 
@@ -846,7 +846,7 @@ Refinery::Refinery()
     m_counter1(nullptr)
 {
     m_type = TypeRefinery;
-    SetShape( g_app->m_resource->GetShape( "Refinery.shp" ) );
+    SetShape( g_resource->GetShape( "Refinery.shp" ) );
 
     m_wheel1 = m_shape->m_rootFragment->LookupMarker( "MarkerWheel01" );
     m_wheel2 = m_shape->m_rootFragment->LookupMarker( "MarkerWheel02" );
@@ -985,7 +985,7 @@ Mine::Mine()
     m_wheel2(nullptr)
 {
     m_type = TypeMine;
-    SetShape( g_app->m_resource->GetShape( "Mine.shp" ) );
+    SetShape( g_resource->GetShape( "Mine.shp" ) );
 
     m_wheel1 = m_shape->m_rootFragment->LookupMarker( "MarkerWheel01" );
     m_wheel2 = m_shape->m_rootFragment->LookupMarker( "MarkerWheel02" );

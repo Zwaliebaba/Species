@@ -167,7 +167,6 @@ GameLogic/Factory.cpp -> Unit.h
 GameLogic/FeedingTube.cpp -> App.h
 GameLogic/FeedingTube.cpp -> Camera.h
 GameLogic/FeedingTube.cpp -> Location.h
-GameLogic/FileDialog.cpp -> App.h
 GameLogic/Flag.cpp -> App.h
 GameLogic/Flag.cpp -> Camera.h
 GameLogic/Generator.cpp -> App.h
@@ -197,7 +196,6 @@ GameLogic/Incubator.cpp -> App.h
 GameLogic/Incubator.cpp -> Camera.h
 GameLogic/Incubator.cpp -> Location.h
 GameLogic/Incubator.cpp -> ParticleSystem.h
-GameLogic/InputField.cpp -> App.h
 GameLogic/InsertionSquad.cpp -> App.h
 GameLogic/InsertionSquad.cpp -> Camera.h
 GameLogic/InsertionSquad.cpp -> EntityGrid.h
@@ -288,7 +286,6 @@ GameLogic/PrefsScreenWindow.cpp -> App.h
 GameLogic/PrefsScreenWindow.cpp -> Renderer.h
 GameLogic/PrefsSoundWindow.cpp -> App.h
 GameLogic/PrefsSoundWindow.cpp -> Renderer.h
-GameLogic/ProfileWindow.cpp -> App.h
 GameLogic/RadarDish.cpp -> App.h
 GameLogic/RadarDish.cpp -> EntityGrid.h
 GameLogic/RadarDish.cpp -> GlobalWorld.h
@@ -374,7 +371,6 @@ GameLogic/SpiritReceiver.cpp -> Camera.h
 GameLogic/SpiritReceiver.cpp -> GlobalWorld.h
 GameLogic/SpiritReceiver.cpp -> Location.h
 GameLogic/SpiritReceiver.cpp -> Renderer.h
-GameLogic/SpiritStore.cpp -> App.h
 GameLogic/SporeGenerator.cpp -> App.h
 GameLogic/SporeGenerator.cpp -> Camera.h
 GameLogic/SporeGenerator.cpp -> Explosion.h
@@ -451,25 +447,17 @@ GameLogic/WorldObject.cpp -> App.h
 GameLogic/WorldObject.cpp -> Location.h
 NeuronClient/3dSprite.cpp -> App.h
 NeuronClient/3dSprite.cpp -> Camera.h
-NeuronClient/Bitmap.cpp -> App.h
 NeuronClient/DebugRender.cpp -> App.h
 NeuronClient/DebugRender.cpp -> Camera.h
 NeuronClient/FilePaths.cpp -> App.h
 NeuronClient/InputDriverWin32.cpp -> App.h
-NeuronClient/InputTypes.cpp -> App.h
-NeuronClient/LanguageTable.cpp -> App.h
 NeuronClient/Resource.cpp -> App.h
 NeuronClient/Resource.cpp -> Location.h
 NeuronClient/Resource.cpp -> Renderer.h
-NeuronClient/SampleCache.cpp -> App.h
-NeuronClient/SepulvedaStrings.cpp -> App.h
-NeuronClient/Shape.cpp -> App.h
-NeuronClient/SoundFilter.cpp -> App.h
 NeuronClient/SoundInstance.cpp -> App.h
 NeuronClient/SoundInstance.cpp -> Camera.h
 NeuronClient/SoundInstance.cpp -> Location.h
 NeuronClient/SoundInstance.h -> Entity.h
-NeuronClient/SoundLibrary3dDSound.cpp -> App.h
 NeuronClient/SoundSystem.cpp -> App.h
 NeuronClient/SoundSystem.cpp -> Camera.h
 NeuronClient/SoundSystem.cpp -> Entity.h

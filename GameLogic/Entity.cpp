@@ -62,7 +62,7 @@ float	 EntityBlueprint::m_stats[Entity::NumEntityTypes][Entity::NumStats];
 
 void EntityBlueprint::Initialise()
 {
-	TextReader *theFile = g_app->m_resource->GetTextReader("Stats.txt");
+	TextReader *theFile = g_resource->GetTextReader("Stats.txt");
 	ASSERT_TEXT(theFile && theFile->IsOpen(), "Couldn't open stats.txt");
 
     int entityIndex = 0;
@@ -155,14 +155,14 @@ void Entity::ChangeHealth( int amount )
     {
         if( amount < 0 )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
+            g_soundSystem->TriggerEntityEvent( this, "LoseHealth" );
         }
 
         if( m_stats[StatHealth] + amount <= 0 )
         {
             m_stats[StatHealth] = 100;
             m_dead = true;
-            g_app->m_soundSystem->TriggerEntityEvent( this, "Die" );
+            g_soundSystem->TriggerEntityEvent( this, "Die" );
             g_app->m_location->SpawnSpirit( m_pos, m_vel * 0.5f, m_id.GetTeamId(), m_id );
         }
         else if( m_stats[StatHealth] + amount > 255 )
@@ -192,7 +192,7 @@ void Entity::Attack( Vector3 const &pos )
         m_reloading = m_stats[StatRate];
         m_justFired = true;
 
-        g_app->m_soundSystem->TriggerEntityEvent( this, "Attack" );
+        g_soundSystem->TriggerEntityEvent( this, "Attack" );
     }
 }
 
@@ -245,7 +245,7 @@ int Entity::EnterTeleports( int _requiredId )
             {
                 WorldObjectId id(m_id);
                 radarDish->EnterTeleport( id );
-                g_app->m_soundSystem->TriggerEntityEvent( this, "EnterTeleport" );
+                g_soundSystem->TriggerEntityEvent( this, "EnterTeleport" );
                 return buildingId;
             }
         }
@@ -262,7 +262,7 @@ int Entity::EnterTeleports( int _requiredId )
                 {
                     WorldObjectId id( m_id );
                     bridge->EnterTeleport( id );
-                    g_app->m_soundSystem->TriggerEntityEvent( this, "EnterTeleport" );
+                    g_soundSystem->TriggerEntityEvent( this, "EnterTeleport" );
                     return buildingId;
                 }
             }
@@ -342,7 +342,7 @@ void Entity::AdvanceInWater( Unit *_unit )
 
 void Entity::Begin()
 {
-    g_app->m_soundSystem->TriggerEntityEvent( this, "Create" );
+    g_soundSystem->TriggerEntityEvent( this, "Create" );
 
     if( m_shape )
     {
@@ -564,7 +564,7 @@ static float s_nearPlaneStart;
 void Entity::BeginRenderShadow()
 {
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Glow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
 	glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glDisable       ( GL_CULL_FACE );

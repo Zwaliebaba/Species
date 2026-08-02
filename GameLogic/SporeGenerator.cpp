@@ -34,7 +34,7 @@ SporeGenerator::SporeGenerator()
 {
     SetType( TypeSporeGenerator );
 
-    m_shape = g_app->m_resource->GetShape( "SporeGenerator.shp" );
+    m_shape = g_resource->GetShape( "SporeGenerator.shp" );
     m_eggMarker = m_shape->m_rootFragment->LookupMarker( "MarkerEggs" );
 
     for( int i = 0; i < SPOREGENERATOR_NUMTAILS; ++i )
@@ -266,7 +266,7 @@ bool SporeGenerator::AdvanceEggLaying()
             Matrix34 mat( m_front, g_upVector, m_pos );
             Matrix34 eggLayMat = m_eggMarker->GetWorldMatrix(mat);
             g_app->m_location->SpawnEntities( eggLayMat.pos, m_id.GetTeamId(), -1, TypeEgg, 1, m_vel, 0.0f );
-            g_app->m_soundSystem->TriggerEntityEvent( this, "LayEgg" );
+            g_soundSystem->TriggerEntityEvent( this, "LayEgg" );
         }
     }
 

@@ -25,10 +25,12 @@
 #include "ServerToClientLetter.h"
 #include "Generic.h"
 
+ClientToServer* g_clientToServer = nullptr;
+
 
 // The socket callbacks are plain function pointers and cannot carry state, so
 // the running client has to be reachable from file scope. This replaces
-// g_app->m_clientToServer; it is set in the constructor.
+// g_clientToServer; it is set in the constructor.
 static ClientToServer* s_client = nullptr;
 
 static NetCallBackRetType ListenCallback(NetUdpPacket *udpdata)

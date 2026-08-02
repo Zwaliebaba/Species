@@ -38,7 +38,7 @@ AntHill::AntHill()
 {
     m_type = TypeAntHill;
 
-    SetShape( g_app->m_resource->GetShape( "AntHill.shp" ) );
+    SetShape( g_resource->GetShape( "AntHill.shp" ) );
 }
 
 
@@ -66,7 +66,7 @@ void AntHill::Damage ( float _damage )
         {
             Matrix34 mat( m_front, g_upVector, m_pos );
             g_explosionManager.AddExplosion( m_shape, mat, 1.0f - (float)m_health/100.0f );
-            g_app->m_soundSystem->TriggerBuildingEvent( this, "Damage" );
+            g_soundSystem->TriggerBuildingEvent( this, "Damage" );
         }
 
         if( m_health <= 0 )
@@ -89,7 +89,7 @@ void AntHill::Damage ( float _damage )
                 g_app->m_location->SpawnSpirit( pos, vel, m_id.GetTeamId(), WorldObjectId() );
             }
 
-            g_app->m_soundSystem->TriggerBuildingEvent( this, "Explode" );
+            g_soundSystem->TriggerBuildingEvent( this, "Explode" );
             m_health = 0;
         }
     }

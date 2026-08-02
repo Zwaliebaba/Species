@@ -31,7 +31,7 @@ Factory::Factory()
     m_timeSoFar(0.0f)
 {
     m_type = TypeFactory;
-	SetShape( g_app->m_resource->GetShape("Factory.shp") );
+	SetShape( g_resource->GetShape("Factory.shp") );
 }
 
 

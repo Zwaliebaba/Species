@@ -167,7 +167,7 @@ void SpawnBuilding::RenderAlphas( float _predictionTime )
                 glBlendFunc ( GL_SRC_ALPHA, GL_ONE );
 
                 glEnable        ( GL_TEXTURE_2D );
-                glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+                glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
                 glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
                 glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 
@@ -359,7 +359,7 @@ SpawnLink::SpawnLink()
 {
     m_type = TypeSpawnLink;
 
-    SetShape( g_app->m_resource->GetShape("SpawnLink.shp") );
+    SetShape( g_resource->GetShape("SpawnLink.shp") );
 }
 
 
@@ -374,7 +374,7 @@ MasterSpawnPoint::MasterSpawnPoint()
 {
     m_type = TypeSpawnPointMaster;
 
-    SetShape( g_app->m_resource->GetShape("MasterSpawnPoint.shp") );
+    SetShape( g_resource->GetShape("MasterSpawnPoint.shp") );
 }
 
 
@@ -498,7 +498,7 @@ SpawnPoint::SpawnPoint()
 {
     m_type = Building::TypeSpawnPoint;
 
-    SetShape( g_app->m_resource->GetShape("SpawnPoint.shp") );
+    SetShape( g_resource->GetShape("SpawnPoint.shp") );
     m_doorMarker = m_shape->m_rootFragment->LookupMarker( "MarkerDoor" );
 
     m_evaluateTimer = syncfrand(2.0f);
@@ -636,19 +636,19 @@ bool SpawnPoint::Advance()
     m_evaluateTimer -= SERVER_ADVANCE_PERIOD;
     if( m_evaluateTimer <= 0.0f )
     {
-        START_PROFILE( g_app->m_profiler, "Evaluate" );
+        START_PROFILE( g_profiler, "Evaluate" );
 
         RecalculateOwnership();
         m_evaluateTimer = 2.0f;
 
-        END_PROFILE( g_app->m_profiler, "Evaluate" );
+        END_PROFILE( g_profiler, "Evaluate" );
     }
 
 
     //
     // Time to request more spirits for our Darwinians?
 
-    START_PROFILE( g_app->m_profiler, "SpawnDarwinians" );
+    START_PROFILE( g_profiler, "SpawnDarwinians" );
     if( m_id.GetTeamId() != 255 && !PopulationLocked() )
     {
         m_spawnTimer -= SERVER_ADVANCE_PERIOD;
@@ -668,7 +668,7 @@ bool SpawnPoint::Advance()
 			  m_spawnTimer -= 0.5 * (g_app->m_difficultyLevel / 10.0);
         }
     }
-    END_PROFILE( g_app->m_profiler, "SpawnDarwinians" );
+    END_PROFILE( g_profiler, "SpawnDarwinians" );
 
     return SpawnBuilding::Advance();
 }
@@ -691,7 +691,7 @@ void SpawnPoint::RenderAlphas( float _predictionTime )
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
 
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10.0f;
 
@@ -732,7 +732,7 @@ void SpawnPoint::RenderPorts()
 {
     glDisable       ( GL_CULL_FACE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );

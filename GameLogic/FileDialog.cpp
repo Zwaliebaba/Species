@@ -14,7 +14,6 @@
 #include "ScrollBar.h"
 #include "FileDialog.h"
 
-#include "App.h"
 
 
 //*****************************************************************************
@@ -274,7 +273,7 @@ void FileDialog::RefreshFileList()
 
     m_selected.Empty();
 
-    m_files = g_app->m_resource->ListResources( m_path, m_filter, false );
+    m_files = g_resource->ListResources( m_path, m_filter, false );
 
     EclDirtyWindow( m_name );
 }

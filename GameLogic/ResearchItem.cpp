@@ -36,7 +36,7 @@ ResearchItem::ResearchItem()
     m_type = TypeResearchItem;
     m_researchType = GlobalResearch::TypeEngineer;
 
-    SetShape( g_app->m_resource->GetShape( "ResearchItem.shp" ) );
+    SetShape( g_resource->GetShape( "ResearchItem.shp" ) );
 
     m_front.RotateAroundY( frand(2.0f * M_PI) );
 
@@ -99,7 +99,7 @@ bool ResearchItem::Advance()
         g_app->m_globalWorld->m_research->AddResearch( m_researchType );
         g_app->m_globalWorld->m_research->m_researchLevel[ m_researchType ] = m_level;
 
-        g_app->m_soundSystem->TriggerBuildingEvent( this, "AquireResearch" );
+        g_soundSystem->TriggerBuildingEvent( this, "AquireResearch" );
 
         if( existingLevel == 0 )
         {
@@ -176,7 +176,7 @@ void ResearchItem::RenderAlphas( float _predictionTime )
     glEnable        ( GL_BLEND );
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/CloudyGlow.bmp" ) );
 
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10.0f;
 
@@ -215,7 +215,7 @@ void ResearchItem::RenderAlphas( float _predictionTime )
     alpha = 1.0f - m_reprogrammed / 100.0f;
     alpha *= 0.3f;
 
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
     if( alpha > 0.0f )
     {
@@ -254,7 +254,7 @@ void ResearchItem::RenderAlphas( float _predictionTime )
 
     if( alpha > 0.0f )
     {
-        glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+        glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
         glDisable( GL_CULL_FACE );
         glShadeModel( GL_SMOOTH );
 

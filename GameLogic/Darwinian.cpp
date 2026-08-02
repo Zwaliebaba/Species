@@ -448,7 +448,7 @@ bool Darwinian::AdvanceCapturedByAnt()
 
 bool Darwinian::AdvanceCombat()
 {
-    START_PROFILE( g_app->m_profiler, "AdvanceCombat" );
+    START_PROFILE( g_profiler, "AdvanceCombat" );
 
     //
     // Does our threat still exist?
@@ -461,8 +461,8 @@ bool Darwinian::AdvanceCombat()
     {
         m_state = StateIdle;
         m_retargetTimer = 0.0;
-        g_app->m_soundSystem->StopAllSounds( m_id, "Darwinian SeenThreat" );
-        END_PROFILE( g_app->m_profiler, "AdvanceCombat" );
+        g_soundSystem->StopAllSounds( m_id, "Darwinian SeenThreat" );
+        END_PROFILE( g_profiler, "AdvanceCombat" );
         return false;
     }
 
@@ -478,8 +478,8 @@ bool Darwinian::AdvanceCombat()
         {
             m_state = StateIdle;
             m_retargetTimer = 0.0;
-            g_app->m_soundSystem->StopAllSounds( m_id, "Darwinian SeenThreat" );
-            END_PROFILE( g_app->m_profiler, "AdvanceCombat" );
+            g_soundSystem->StopAllSounds( m_id, "Darwinian SeenThreat" );
+            END_PROFILE( g_profiler, "AdvanceCombat" );
             return false;
         }
     }
@@ -570,7 +570,7 @@ bool Darwinian::AdvanceCombat()
                             g_app->m_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeDarwinian ) > 3;
         if( hasGrenade )
         {
-            START_PROFILE( g_app->m_profiler, "ThrowGrenade" );
+            START_PROFILE( g_profiler, "ThrowGrenade" );
             m_grenadeTimer -= SERVER_ADVANCE_PERIOD;
             if( m_grenadeTimer <= 0.0f )
             {
@@ -614,18 +614,18 @@ bool Darwinian::AdvanceCombat()
                     }
                 }
             }
-            END_PROFILE( g_app->m_profiler, "ThrowGrenade" );
+            END_PROFILE( g_profiler, "ThrowGrenade" );
         }
     }
 
-    END_PROFILE( g_app->m_profiler, "AdvanceCombat" );
+    END_PROFILE( g_profiler, "AdvanceCombat" );
     return false;
 }
 
 
 bool Darwinian::AdvanceWorshipSpirit()
 {
-    START_PROFILE( g_app->m_profiler, "AdvanceWorship" );
+    START_PROFILE( g_profiler, "AdvanceWorship" );
 
     //
     // Check our spirit is still there and valid
@@ -634,7 +634,7 @@ bool Darwinian::AdvanceWorshipSpirit()
     {
         m_state = StateIdle;
         m_retargetTimer = 3.0f;
-        END_PROFILE( g_app->m_profiler, "AdvanceWorship" );
+        END_PROFILE( g_profiler, "AdvanceWorship" );
         return false;
     }
 
@@ -652,7 +652,7 @@ bool Darwinian::AdvanceWorshipSpirit()
             m_boxKiteId.SetInvalid();
         }
 
-        END_PROFILE( g_app->m_profiler, "AdvanceWorship" );
+        END_PROFILE( g_profiler, "AdvanceWorship" );
         return false;
     }
 
@@ -717,7 +717,7 @@ bool Darwinian::AdvanceWorshipSpirit()
     }
 
 
-    END_PROFILE( g_app->m_profiler, "AdvanceWorship" );
+    END_PROFILE( g_profiler, "AdvanceWorship" );
     return false;
 }
 
@@ -802,8 +802,8 @@ bool Darwinian::AdvanceUnderControl()
             Vector3 vel( sfrand(5.0f), frand(15.0f), sfrand(5.0f) );
             g_app->m_particleSystem->CreateParticle( m_pos, vel, Particle::TypeControlFlash );
         }
-        g_app->m_soundSystem->StopAllSounds( m_id, "Darwinian TakenControl" );
-        g_app->m_soundSystem->TriggerEntityEvent( this, "EscapedControl" );
+        g_soundSystem->StopAllSounds( m_id, "Darwinian TakenControl" );
+        g_soundSystem->TriggerEntityEvent( this, "EscapedControl" );
         return false;
     }
 
@@ -1152,7 +1152,7 @@ bool Darwinian::AdvanceAttackingBuilding()
 
 bool Darwinian::SearchForRandomPosition()
 {
-    START_PROFILE( g_app->m_profiler, "SearchRandomPos" );
+    START_PROFILE( g_profiler, "SearchRandomPos" );
 
     //
     // Search for a new random position
@@ -1172,7 +1172,7 @@ bool Darwinian::SearchForRandomPosition()
         m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
     }
 
-    END_PROFILE( g_app->m_profiler, "SearchRandomPos" );
+    END_PROFILE( g_profiler, "SearchRandomPos" );
 
     return true;
 }
@@ -1186,7 +1186,7 @@ bool Darwinian::SearchForArmour()
     if( m_id.GetTeamId() == 1 ) return false;
 
 
-    START_PROFILE( g_app->m_profiler, "SearchArmour" );
+    START_PROFILE( g_profiler, "SearchArmour" );
 
     //
     // Build a list of nearby armour
@@ -1224,7 +1224,7 @@ bool Darwinian::SearchForArmour()
         m_state = StateApproachingArmour;
     }
 
-    END_PROFILE( g_app->m_profiler, "SearchArmour" );
+    END_PROFILE( g_profiler, "SearchArmour" );
     return ( m_armour.Size() > 0 );
 }
 
@@ -1237,7 +1237,7 @@ bool Darwinian::SearchForOfficers()
     if( m_id.GetTeamId() == 1 ) return false;
 
 
-    START_PROFILE( g_app->m_profiler, "SearchOfficers" );
+    START_PROFILE( g_profiler, "SearchOfficers" );
 
     //
     // Do we already have some orders that have yet to be completed?
@@ -1254,7 +1254,7 @@ bool Darwinian::SearchForOfficers()
         m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
 
         m_state = StateFollowingOrders;
-        END_PROFILE( g_app->m_profiler, "SearchOfficers" );
+        END_PROFILE( g_profiler, "SearchOfficers" );
         return true;
     }
 
@@ -1322,10 +1322,10 @@ bool Darwinian::SearchForOfficers()
                 m_wayPoint = PushFromObstructions( m_wayPoint, false );
                 m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
 
-                g_app->m_soundSystem->TriggerEntityEvent( this, "GivenOrders" );
+                g_soundSystem->TriggerEntityEvent( this, "GivenOrders" );
 
                 m_state = StateFollowingOrders;
-                END_PROFILE( g_app->m_profiler, "SearchOfficers" );
+                END_PROFILE( g_profiler, "SearchOfficers" );
                 return true;
             }
         }
@@ -1352,13 +1352,13 @@ bool Darwinian::SearchForOfficers()
 
                 m_state = StateFollowingOfficer;
                 m_officerTimer = 5.0f;
-                END_PROFILE( g_app->m_profiler, "SearchOfficers" );
+                END_PROFILE( g_profiler, "SearchOfficers" );
                 return true;
             }
         }
     }
 
-    END_PROFILE( g_app->m_profiler, "SearchOfficers" );
+    END_PROFILE( g_profiler, "SearchOfficers" );
     return false;
 }
 
@@ -1412,7 +1412,7 @@ void Darwinian::GiveOrders( Vector3 const &_targetPos )
     m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
     m_wayPoint = PushFromObstructions( m_wayPoint );
 
-    g_app->m_soundSystem->TriggerEntityEvent( this, "GivenOrders" );
+    g_soundSystem->TriggerEntityEvent( this, "GivenOrders" );
 
     m_state = StateFollowingOrders;
 }
@@ -1423,7 +1423,7 @@ bool Darwinian::SearchForSpirits()
     // Red darwinians don't worship spirits
     if( m_id.GetTeamId() == 1 ) return false;
 
-    START_PROFILE( g_app->m_profiler, "SearchSpirits" );
+    START_PROFILE( g_profiler, "SearchSpirits" );
 
     Spirit *found = nullptr;
     int spiritId = -1;
@@ -1456,14 +1456,14 @@ bool Darwinian::SearchForSpirits()
         m_state = StateWorshipSpirit;
     }
 
-    END_PROFILE( g_app->m_profiler, "SearchSpirits" );
+    END_PROFILE( g_profiler, "SearchSpirits" );
     return found;
 }
 
 
 bool Darwinian::SearchForThreats()
 {
-    START_PROFILE( g_app->m_profiler, "SearchThreats" );
+    START_PROFILE( g_profiler, "SearchThreats" );
 
     //
     // Allow our threat range to creep back up to the max
@@ -1482,7 +1482,7 @@ bool Darwinian::SearchForThreats()
         Building *building = g_app->m_location->GetBuilding( m_buildingId );
         if( building && building->m_type == Building::TypeGunTurret )
         {
-            END_PROFILE( g_app->m_profiler, "SearchThreats" );
+            END_PROFILE( g_profiler, "SearchThreats" );
             return false;
         }
     }
@@ -1529,10 +1529,10 @@ bool Darwinian::SearchForThreats()
         m_scared = true;
         if( m_threatId != threatId )
         {
-            g_app->m_soundSystem->TriggerEntityEvent( this, "SeenThreatRunAway" );
+            g_soundSystem->TriggerEntityEvent( this, "SeenThreatRunAway" );
             m_threatId = threatId;
         }
-        END_PROFILE( g_app->m_profiler, "SearchThreats" );
+        END_PROFILE( g_profiler, "SearchThreats" );
         return true;
     }
 
@@ -1555,7 +1555,7 @@ bool Darwinian::SearchForThreats()
                     int numEnemiesNearby = target->m_enemyCount[ m_id.GetTeamId() ];
                     if( numEnemiesNearby == 0 )
                     {
-                        END_PROFILE( g_app->m_profiler, "SearchThreats" );
+                        END_PROFILE( g_profiler, "SearchThreats" );
                         return false;
                     }
                 }
@@ -1634,11 +1634,11 @@ bool Darwinian::SearchForThreats()
         {
             if( m_scared )
             {
-                g_app->m_soundSystem->TriggerEntityEvent( this, "SeenThreatRunAway" );
+                g_soundSystem->TriggerEntityEvent( this, "SeenThreatRunAway" );
             }
             else
             {
-                g_app->m_soundSystem->TriggerEntityEvent( this, "SeenThreatAttack" );
+                g_soundSystem->TriggerEntityEvent( this, "SeenThreatAttack" );
             }
             m_threatId = threatId;
         }
@@ -1650,16 +1650,16 @@ bool Darwinian::SearchForThreats()
         }
 
         m_threatRange = sqrtf( nearestThreatSqd );
-        END_PROFILE( g_app->m_profiler, "SearchThreats" );
+        END_PROFILE( g_profiler, "SearchThreats" );
         return true;
     }
     else
     {
         // There are no nearby threats
         m_threatId.SetInvalid();
-        g_app->m_soundSystem->StopAllSounds( m_id, "Darwinian SeenThreat" );
+        g_soundSystem->StopAllSounds( m_id, "Darwinian SeenThreat" );
 
-        END_PROFILE( g_app->m_profiler, "SearchThreats" );
+        END_PROFILE( g_profiler, "SearchThreats" );
         return false;
     }
 }
@@ -1667,7 +1667,7 @@ bool Darwinian::SearchForThreats()
 
 bool Darwinian::SearchForPorts()
 {
-    START_PROFILE( g_app->m_profiler, "SearchPorts" );
+    START_PROFILE( g_profiler, "SearchPorts" );
 
     //
     // Build a list of available buildings
@@ -1693,7 +1693,7 @@ bool Darwinian::SearchForPorts()
 
     if( availableBuildings.Size() == 0 )
     {
-        END_PROFILE( g_app->m_profiler, "SearchPorts" );
+        END_PROFILE( g_profiler, "SearchPorts" );
         return false;
     }
 
@@ -1725,7 +1725,7 @@ bool Darwinian::SearchForPorts()
 
     if( availablePorts.Size() == 0 )
     {
-        END_PROFILE( g_app->m_profiler, "SearchPorts" );
+        END_PROFILE( g_profiler, "SearchPorts" );
         return false;
     }
 
@@ -1738,7 +1738,7 @@ bool Darwinian::SearchForPorts()
     m_wayPoint = portPos;
     //m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
 
-    END_PROFILE( g_app->m_profiler, "SearchPorts" );
+    END_PROFILE( g_profiler, "SearchPorts" );
     return true;
 }
 
@@ -1766,7 +1766,7 @@ bool Darwinian::BeginVictoryDance()
             // jump!
             m_vel.y += 15.0f + syncfrand(15.0f);
             m_onGround = false;
-            g_app->m_soundSystem->TriggerEntityEvent( this, "VictoryJump" );
+            g_soundSystem->TriggerEntityEvent( this, "VictoryJump" );
             return true;
         }
     }
@@ -1777,7 +1777,7 @@ bool Darwinian::BeginVictoryDance()
 
 bool Darwinian::AdvanceToTargetPosition()
 {
-    START_PROFILE( g_app->m_profiler, "AdvanceToTargetPos" );
+    START_PROFILE( g_profiler, "AdvanceToTargetPos" );
 
     Vector3 oldPos = m_pos;
 
@@ -1790,14 +1790,14 @@ bool Darwinian::AdvanceToTargetPosition()
     if( distance == 0.0f )
     {
         m_vel.Zero();
-        END_PROFILE( g_app->m_profiler, "AdvanceToTargetPos" );
+        END_PROFILE( g_profiler, "AdvanceToTargetPos" );
         return true;
     }
     else if (distance < 1.0f)
     {
         m_pos = m_wayPoint;
         m_vel = ( m_pos - oldPos ) / SERVER_ADVANCE_PERIOD;
-        END_PROFILE( g_app->m_profiler, "AdvanceToTargetPos" );
+        END_PROFILE( g_profiler, "AdvanceToTargetPos" );
         return false;
     }
 
@@ -1850,7 +1850,7 @@ bool Darwinian::AdvanceToTargetPosition()
     m_vel = ( m_pos - oldPos ) / SERVER_ADVANCE_PERIOD;
     m_front = ( newPos - oldPos ).Normalise();
 
-    END_PROFILE( g_app->m_profiler, "AdvanceToTargetPos" );
+    END_PROFILE( g_profiler, "AdvanceToTargetPos" );
     return false;
 }
 
@@ -1871,7 +1871,7 @@ Vector3 Darwinian::PushFromObstructions( Vector3 const &pos, bool killem )
 
     if( result.y <= 1.0f )
     {
-        START_PROFILE( g_app->m_profiler, "PushFromWater" );
+        START_PROFILE( g_profiler, "PushFromWater" );
 
         float pushAngle = syncsfrand(1.0f);
         float distance = 40.0f;
@@ -1891,14 +1891,14 @@ Vector3 Darwinian::PushFromObstructions( Vector3 const &pos, bool killem )
             distance += 5.0f;
         }
 
-        END_PROFILE( g_app->m_profiler, "PushFromWater" );
+        END_PROFILE( g_profiler, "PushFromWater" );
     }
 
 
     //
     // Push from buildings
 
-    START_PROFILE( g_app->m_profiler, "PushFromBuildings" );
+    START_PROFILE( g_profiler, "PushFromBuildings" );
 
     LList<int> *buildings = g_app->m_location->m_obstructionGrid->GetBuildings( result.x, result.z );
 
@@ -1952,7 +1952,7 @@ Vector3 Darwinian::PushFromObstructions( Vector3 const &pos, bool killem )
         }
     }
 
-    END_PROFILE( g_app->m_profiler, "PushFromBuildings" );
+    END_PROFILE( g_profiler, "PushFromBuildings" );
 
     //
     // If we already have some avoidance rules,
@@ -1996,7 +1996,7 @@ void Darwinian::TakeControl( int _controllerId )
             g_app->m_particleSystem->CreateParticle( m_pos, vel, Particle::TypeControlFlash );
         }
 
-        g_app->m_soundSystem->TriggerEntityEvent( this, "TakenControl" );
+        g_soundSystem->TriggerEntityEvent( this, "TakenControl" );
     }
 }
 
@@ -2036,7 +2036,7 @@ bool Darwinian::AdvanceOnFire()
 
     if( syncrand() % 50 == 0 )
     {
-        g_app->m_soundSystem->TriggerEntityEvent( this, "OnFire" );
+        g_soundSystem->TriggerEntityEvent( this, "OnFire" );
     }
 
     if( !m_dead && syncfrand(10) < 2 && m_onGround) ChangeHealth(-2);
@@ -2341,7 +2341,7 @@ void Darwinian::Render( float _predictionTime, float _highDetail )
     {
         if( m_id.GetUniqueId() % 3 == 0 )
         {
-            int santaHatId = g_app->m_resource->GetTexture( "Sprites/SantaHat.bmp" );
+            int santaHatId = g_resource->GetTexture( "Sprites/SantaHat.bmp" );
             glBindTexture( GL_TEXTURE_2D, santaHatId );
             glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
             predictedPos += entityUp * 0.95f;
@@ -2354,7 +2354,7 @@ void Darwinian::Render( float _predictionTime, float _highDetail )
                 glTexCoord2i(1, 0);     glVertex3fv( (predictedPos + entityRight).GetData() );
                 glTexCoord2i(0, 0);     glVertex3fv( (predictedPos - entityRight).GetData() );
             glEnd();
-            glBindTexture( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
+            glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
         }
     }
 
@@ -2464,7 +2464,7 @@ BoxKite::BoxKite()
     m_birthTime(0.0f),
     m_deathTime(0.0f)
 {
-    m_shape = g_app->m_resource->GetShape( "BoxKite.shp" );
+    m_shape = g_resource->GetShape( "BoxKite.shp" );
     m_birthTime = GetHighResTime();
 
     m_size = 1.0f + syncsfrand(1.0f);
@@ -2549,7 +2549,7 @@ void BoxKite::Render( float _predictionTime )
     glColor4f( 1.0f, 0.75f, 0.2f, m_brightness );
 
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 
     glBegin( GL_QUADS );
         glTexCoord2i(0,0);      glVertex3fv( (predictedPos-camRight+camUp).GetData() );

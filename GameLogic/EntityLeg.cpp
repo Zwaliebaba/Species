@@ -19,8 +19,8 @@ EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, 
   : m_legNum(_legNum),
     m_parent(_parent)
 {
-  m_shapeUpper = g_app->m_resource->GetShape(_shapeNameUpper);
-  m_shapeLower = g_app->m_resource->GetShape(_shapeNameLower);
+  m_shapeUpper = g_resource->GetShape(_shapeNameUpper);
+  m_shapeLower = g_resource->GetShape(_shapeNameLower);
   ASSERT_TEXT(m_shapeUpper, "EntityLeg: Couldn't load leg shape %s", _shapeNameUpper);
   ASSERT_TEXT(m_shapeLower, "EntityLeg: Couldn't load leg shape %s", _shapeNameLower);
 

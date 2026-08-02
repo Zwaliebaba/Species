@@ -13,7 +13,7 @@ UpgradePort::UpgradePort()
 :   Building()
 {
 	m_type = TypeUpgradePort;
-	SetShape( g_app->m_resource->GetShape("UpgradePort.shp") );
+	SetShape( g_resource->GetShape("UpgradePort.shp") );
 }
 
 
@@ -23,7 +23,7 @@ PrimaryUpgradePort::PrimaryUpgradePort()
     m_controlTowersOwned(0)
 {
     m_type = TypePrimaryUpgradePort;
-    SetShape( g_app->m_resource->GetShape("PrimaryUpgradePort.shp" ) );
+    SetShape( g_resource->GetShape("PrimaryUpgradePort.shp" ) );
 }
 
 

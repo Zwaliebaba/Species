@@ -41,7 +41,7 @@ FenceSwitch::FenceSwitch()
     m_connectionLocation(nullptr)
 {
     m_type = Building::TypeFenceSwitch;
-	SetShape( g_app->m_resource->GetShape("FenceSwitch.shp") );
+	SetShape( g_resource->GetShape("FenceSwitch.shp") );
     strcpy( m_script, "none");
 }
 
@@ -290,7 +290,7 @@ void FenceSwitch::RenderConnection( Vector3 _targetPos, bool _active )
     }
 
     glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Laser.bmp" ) );
+    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
     glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 
@@ -423,7 +423,7 @@ void FenceSwitch::RenderLights()
 {
     if( m_id.GetTeamId() != 255 && m_lights.Size() > 0 )
     {
-        if( (g_app->m_clientToServer->m_lastValidSequenceIdFromServer % 10)/2 == m_id.GetTeamId() ||
+        if( (g_clientToServer->m_lastValidSequenceIdFromServer % 10)/2 == m_id.GetTeamId() ||
             g_app->m_editing )
         {
             for( int i = 0; i < m_lights.Size(); ++i )
@@ -447,7 +447,7 @@ void FenceSwitch::RenderLights()
 	            }
 
                 glEnable        ( GL_TEXTURE_2D );
-                glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/Starburst.bmp" ) );
+                glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Starburst.bmp" ) );
 	            glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	            glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
                 glDisable       ( GL_CULL_FACE );

@@ -28,6 +28,8 @@
 
 #include "Entity.h"
 
+SoundSystem* g_soundSystem = nullptr;
+
 #define SOUNDSYSTEM_UPDATEPERIOD    0.05f
 
 //*****************************************************************************
@@ -314,16 +316,16 @@ void SoundSystem::StopAllDSPEffects()
 
 bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* _data, unsigned int _numSamples, int* _silenceRemaining)
 {
-  if (!g_app->m_soundSystem)
+  if (!g_soundSystem)
     return false;
 
-  SoundInstanceId soundId = g_app->m_soundSystem->m_channels[_channel];
-  SoundInstance* instance = g_app->m_soundSystem->GetSoundInstance(soundId);
+  SoundInstanceId soundId = g_soundSystem->m_channels[_channel];
+  SoundInstance* instance = g_soundSystem->GetSoundInstance(soundId);
 
   if (instance && instance->m_cachedSampleHandle)
   {
 #ifdef PROFILER_ENABLED
-    g_app->m_soundSystem->m_eventProfiler->StartProfile(instance->m_eventName);
+    g_soundSystem->m_eventProfiler->StartProfile(instance->m_eventName);
 #endif
 
     //
@@ -374,7 +376,7 @@ bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* 
     }
 
 #ifdef PROFILER_ENABLED
-    g_app->m_soundSystem->m_eventProfiler->EndProfile(instance->m_eventName);
+    g_soundSystem->m_eventProfiler->EndProfile(instance->m_eventName);
 #endif
     return true;
   }
@@ -384,15 +386,15 @@ bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* 
 
 bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _numSamples, int* _silenceRemaining)
 {
-  if (!g_app->m_soundSystem)
+  if (!g_soundSystem)
     return false;
 
-  SoundInstance* instance = g_app->m_soundSystem->m_music;
+  SoundInstance* instance = g_soundSystem->m_music;
 
   if (instance && instance->m_cachedSampleHandle)
   {
 #ifdef PROFILER_ENABLED
-    g_app->m_soundSystem->m_eventProfiler->StartProfile(instance->m_eventName);
+    g_soundSystem->m_eventProfiler->StartProfile(instance->m_eventName);
 #endif
 
     //
@@ -443,7 +445,7 @@ bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _n
     }
 
 #ifdef PROFILER_ENABLED
-    g_app->m_soundSystem->m_eventProfiler->EndProfile(instance->m_eventName);
+    g_soundSystem->m_eventProfiler->EndProfile(instance->m_eventName);
 #endif
     return true;
   }
@@ -455,7 +457,7 @@ void SoundSystem::LoadEffects()
 {
   m_filterBlueprints.SetSize(SoundLibrary3d::NUM_FILTERS);
 
-  TextReader* in = g_app->m_resource->GetTextReader("Effects.txt");
+  TextReader* in = g_resource->GetTextReader("Effects.txt");
   ASSERT_TEXT(in && in->IsOpen(), "Couldn't load effects.txt");
 
   while (in->ReadLine())
@@ -504,7 +506,7 @@ void SoundSystem::LoadBlueprints()
   m_buildingBlueprints.SetSize(Building::NumBuildingTypes);
   m_otherBlueprints.SetSize(SoundSourceBlueprint::NumOtherSoundSources);
 
-  TextReader* in = g_app->m_resource->GetTextReader("Sounds.txt");
+  TextReader* in = g_resource->GetTextReader("Sounds.txt");
   ASSERT_TEXT(in && in->IsOpen(), "Couldn't open sounds.txt");
 
   char objectName[128];
@@ -617,7 +619,7 @@ void SoundSystem::SaveBlueprints() { SaveBlueprints("Sounds.txt"); }
 
 void SoundSystem::SaveBlueprints(const char* _filename)
 {
-  FileWriter* file = g_app->m_resource->GetFileWriter(_filename, false);
+  FileWriter* file = g_resource->GetFileWriter(_filename, false);
   // Not always possible - this may be a release version with a data.dat
   if (!file)
     return;
@@ -1199,8 +1201,8 @@ int SoundInstanceCompare(const void* elem1, const void* elem2)
   SoundInstanceId id1 = *((SoundInstanceId*)elem1);
   SoundInstanceId id2 = *((SoundInstanceId*)elem2);
 
-  SoundInstance* instance1 = g_app->m_soundSystem->GetSoundInstance(id1);
-  SoundInstance* instance2 = g_app->m_soundSystem->GetSoundInstance(id2);
+  SoundInstance* instance1 = g_soundSystem->GetSoundInstance(id1);
+  SoundInstance* instance2 = g_soundSystem->GetSoundInstance(id2);
 
   DEBUG_ASSERT(instance1);
   DEBUG_ASSERT(instance2);
@@ -1233,7 +1235,7 @@ void SoundSystem::Advance()
   {
     m_timeSync -= SOUNDSYSTEM_UPDATEPERIOD;
 
-    START_PROFILE(g_app->m_profiler, "Advance SoundSystem");
+    START_PROFILE(g_profiler, "Advance SoundSystem");
 
     //
     // Advance music
@@ -1243,10 +1245,10 @@ void SoundSystem::Advance()
       bool amIDone = m_music->Advance();
       if (amIDone)
       {
-        START_PROFILE(g_app->m_profiler, "Shutdown Music");
+        START_PROFILE(g_profiler, "Shutdown Music");
         ShutdownSound(m_music);
         m_music = nullptr;
-        END_PROFILE(g_app->m_profiler, "Shutdown Music");
+        END_PROFILE(g_profiler, "Shutdown Music");
       }
     }
 
@@ -1263,17 +1265,17 @@ void SoundSystem::Advance()
     //
     // Resync with blueprints (changed by editor)
 
-    START_PROFILE(g_app->m_profiler, "Propagate Blueprints");
+    START_PROFILE(g_profiler, "Propagate Blueprints");
     if (m_propagateBlueprints)
       PropagateBlueprints();
-    END_PROFILE(g_app->m_profiler, "Propagate Blueprints");
+    END_PROFILE(g_profiler, "Propagate Blueprints");
 
     //
     // First pass : Recalculate all Perceived Sound Volumes
     // Throw away sounds that have had their chance
     // Build a list of instanceIDs for sorting
 
-    START_PROFILE(g_app->m_profiler, "Allocate Sorted Array");
+    START_PROFILE(g_profiler, "Allocate Sorted Array");
     static int sortedArraySize = 128;
     static SoundInstanceId* sortedIds = nullptr;
     if (m_sounds.NumUsed() > sortedArraySize)
@@ -1286,9 +1288,9 @@ void SoundSystem::Advance()
       sortedIds = new SoundInstanceId[sortedArraySize];
 
     int numSortedIds = 0;
-    END_PROFILE(g_app->m_profiler, "Allocate Sorted Array");
+    END_PROFILE(g_profiler, "Allocate Sorted Array");
 
-    START_PROFILE(g_app->m_profiler, "Perceived Volumes");
+    START_PROFILE(g_profiler, "Perceived Volumes");
     for (int i = 0; i < m_sounds.Size(); ++i)
     {
       if (m_sounds.ValidIndex(i))
@@ -1308,16 +1310,16 @@ void SoundSystem::Advance()
         }
       }
     }
-    END_PROFILE(g_app->m_profiler, "Perceived Volumes");
+    END_PROFILE(g_profiler, "Perceived Volumes");
 
     //
     // Sort sounds into perceived volume order
     // NOTE : There are exactly numSortedId elements in sortedIds.
     // NOTE : It isn't safe to assume numSortedIds == m_sounds.NumUsed()
 
-    START_PROFILE(g_app->m_profiler, "Sort Samples");
+    START_PROFILE(g_profiler, "Sort Samples");
     qsort(sortedIds, numSortedIds, sizeof(SoundInstanceId), SoundInstanceCompare);
-    END_PROFILE(g_app->m_profiler, "Sort Samples");
+    END_PROFILE(g_profiler, "Sort Samples");
 
     //
     // Second pass : Recalculate all Sound Priorities starting with the nearest sounds
@@ -1328,7 +1330,7 @@ void SoundSystem::Advance()
     //
     // Also look out for the highest priority new sound to swap in
 
-    START_PROFILE(g_app->m_profiler, "Recalculate Priorities");
+    START_PROFILE(g_profiler, "Recalculate Priorities");
 
     SoundInstance* newInstance = nullptr;
     float highestInstancePriority = 0.0f;
@@ -1357,25 +1359,25 @@ void SoundSystem::Advance()
       }
     }
 
-    END_PROFILE(g_app->m_profiler, "Recalculate Priorities");
+    END_PROFILE(g_profiler, "Recalculate Priorities");
 
     if (newInstance)
     {
       // Find worst old sound to get rid of
-      START_PROFILE(g_app->m_profiler, "Find best Channel");
+      START_PROFILE(g_profiler, "Find best Channel");
       int bestAvailableChannel = FindBestAvailableChannel();
-      END_PROFILE(g_app->m_profiler, "Find best Channel");
+      END_PROFILE(g_profiler, "Find best Channel");
 
-      START_PROFILE(g_app->m_profiler, "Stop Old Sound");
+      START_PROFILE(g_profiler, "Stop Old Sound");
       // Stop the old sound
       SoundInstance* existingInstance = GetSoundInstance(m_channels[bestAvailableChannel]);
       if (existingInstance && !existingInstance->m_loopType)
         ShutdownSound(existingInstance);
       else if (existingInstance)
         existingInstance->StopPlaying();
-      END_PROFILE(g_app->m_profiler, "Stop Old Sound");
+      END_PROFILE(g_profiler, "Stop Old Sound");
 
-      START_PROFILE(g_app->m_profiler, "Start New Sound");
+      START_PROFILE(g_profiler, "Start New Sound");
       // Start the new sound
       bool success = newInstance->StartPlaying(bestAvailableChannel);
       if (success)
@@ -1386,17 +1388,17 @@ void SoundSystem::Advance()
         // Which means it failed to load, or to go into a channel
         ShutdownSound(newInstance);
       }
-      END_PROFILE(g_app->m_profiler, "Start New Sound");
+      END_PROFILE(g_profiler, "Start New Sound");
 
-      START_PROFILE(g_app->m_profiler, "Reset Channel");
+      START_PROFILE(g_profiler, "Reset Channel");
       g_soundLibrary3d->ResetChannel(bestAvailableChannel);
-      END_PROFILE(g_app->m_profiler, "Reset Channel");
+      END_PROFILE(g_profiler, "Reset Channel");
     }
 
     //
     // Advance all sound channels
 
-    START_PROFILE(g_app->m_profiler, "Advance All Channels");
+    START_PROFILE(g_profiler, "Advance All Channels");
     for (int i = 0; i < m_numChannels; ++i)
     {
       SoundInstanceId soundId = m_channels[i];
@@ -1406,18 +1408,18 @@ void SoundSystem::Advance()
         bool amIDone = currentSound->Advance();
         if (amIDone)
         {
-          START_PROFILE(g_app->m_profiler, "Shutdown Sound");
+          START_PROFILE(g_profiler, "Shutdown Sound");
           ShutdownSound(currentSound);
-          END_PROFILE(g_app->m_profiler, "Shutdown Sound");
+          END_PROFILE(g_profiler, "Shutdown Sound");
         }
       }
     }
-    END_PROFILE(g_app->m_profiler, "Advance All Channels");
+    END_PROFILE(g_profiler, "Advance All Channels");
 
     //
     // Update our listener position
 
-    START_PROFILE(g_app->m_profiler, "UpdateListener");
+    START_PROFILE(g_profiler, "UpdateListener");
 
     Vector3 camUp = g_app->m_camera->GetUp();
     if (g_prefsManager->GetInt("SoundSwapStereo", 0) == 0)
@@ -1426,16 +1428,16 @@ void SoundSystem::Advance()
     Vector3 camVel = g_app->m_camera->GetVel() * 0.2f;
     g_soundLibrary3d->SetListenerPosition(g_app->m_camera->GetPos(), g_app->m_camera->GetFront(), camUp, camVel);
 
-    END_PROFILE(g_app->m_profiler, "UpdateListener");
+    END_PROFILE(g_profiler, "UpdateListener");
 
     //
     // Advance our sound library
 
-    START_PROFILE(g_app->m_profiler, "SoundLibrary3d Advance");
+    START_PROFILE(g_profiler, "SoundLibrary3d Advance");
     g_soundLibrary3d->Advance();
-    END_PROFILE(g_app->m_profiler, "SoundLibrary3d Advance");
+    END_PROFILE(g_profiler, "SoundLibrary3d Advance");
 
-    END_PROFILE(g_app->m_profiler, "Advance SoundSystem");
+    END_PROFILE(g_profiler, "Advance SoundSystem");
   }
 }
 
@@ -1463,23 +1465,23 @@ void SoundSystem::Advance()
     {
         m_timeSync -= SOUNDSYSTEM_UPDATEPERIOD;
 
-        START_PROFILE(g_app->m_profiler, "Advance SoundSystem");
+        START_PROFILE(g_profiler, "Advance SoundSystem");
 
         //
         // Resync with blueprints (changed by editor)
 
-        START_PROFILE(g_app->m_profiler,  "Propagate Blueprints" );
+        START_PROFILE(g_profiler,  "Propagate Blueprints" );
         if( m_propagateBlueprints )
         {
             PropagateBlueprints();
         }
-        END_PROFILE(g_app->m_profiler,  "Propagate Blueprints" );
+        END_PROFILE(g_profiler,  "Propagate Blueprints" );
 
 
         //
         // Build a list of change requests, ordered on priority
 
-        START_PROFILE(g_app->m_profiler,  "HandleRequests" );
+        START_PROFILE(g_profiler,  "HandleRequests" );
 
         int maxChannelChanges = 1;
         int numChannelChanges = 0;
@@ -1515,13 +1517,13 @@ void SoundSystem::Advance()
             }
         }
 
-        END_PROFILE(g_app->m_profiler,  "HandleRequests" );
+        END_PROFILE(g_profiler,  "HandleRequests" );
 
 
         //
         // Start the highest priority new requests
 
-        START_PROFILE(g_app->m_profiler,  "StartNewSound" );
+        START_PROFILE(g_profiler,  "StartNewSound" );
 
         while( newRequests.Size() > 0 &&
                numChannelChanges < maxChannelChanges )
@@ -1560,14 +1562,14 @@ void SoundSystem::Advance()
 
         }
 
-        END_PROFILE(g_app->m_profiler,  "StartNewSound" );
+        END_PROFILE(g_profiler,  "StartNewSound" );
 
 
         //
         // Advance all our channels
         // Clear out all the sound requests that have failed to start
 
-        START_PROFILE(g_app->m_profiler,  "Advance Channels" );
+        START_PROFILE(g_profiler,  "Advance Channels" );
 
         for( int i = 0; i < m_numChannels; ++i )
         {
@@ -1593,14 +1595,14 @@ void SoundSystem::Advance()
             }
         }
 
-        END_PROFILE(g_app->m_profiler,  "Advance Channels" );
+        END_PROFILE(g_profiler,  "Advance Channels" );
 
 
         //
         // Recalculate all sound priorities
         // If we're attached to a bogus object then give up trying
 
-        START_PROFILE(g_app->m_profiler,  "UpdatePriority" );
+        START_PROFILE(g_profiler,  "UpdatePriority" );
 
         for( int i = 0; i < m_sounds.Size(); ++i )
         {
@@ -1617,14 +1619,14 @@ void SoundSystem::Advance()
             }
         }
 
-        END_PROFILE(g_app->m_profiler,  "UpdatePriority" );
+        END_PROFILE(g_profiler,  "UpdatePriority" );
 
 
         //
         // If we're a looping sound and we're not playing, try to start us playing now
         // If we're not looping but still have restart attempts left, try to restart now
 
-        START_PROFILE(g_app->m_profiler,  "Restart loops" );
+        START_PROFILE(g_profiler,  "Restart loops" );
         for( int i = 0; i < m_sounds.Size(); ++i )
         {
             if( m_sounds.ValidIndex(i) )
@@ -1649,13 +1651,13 @@ void SoundSystem::Advance()
                 }
             }
         }
-        END_PROFILE(g_app->m_profiler,  "Restart loops" );
+        END_PROFILE(g_profiler,  "Restart loops" );
 
 
         //
         // Update our listener position
 
-        START_PROFILE(g_app->m_profiler, "UpdateListener" );
+        START_PROFILE(g_profiler, "UpdateListener" );
 
         Vector3 camUp = g_app->m_camera->GetUp();
         if( g_prefsManager->GetInt("SoundSwapStereo",0) == 1 )
@@ -1668,20 +1670,20 @@ void SoundSystem::Advance()
                                             camUp,
                                             g_app->m_camera->GetVel() );
 
-        END_PROFILE(g_app->m_profiler, "UpdateListener" );
+        END_PROFILE(g_profiler, "UpdateListener" );
 
 
         //
         // Advance our sound library
 
-        START_PROFILE(g_app->m_profiler, "SoundLibrary3d Commit" );
+        START_PROFILE(g_profiler, "SoundLibrary3d Commit" );
         g_soundLibrary3d->CommitChanges();
-        END_PROFILE(g_app->m_profiler, "SoundLibrary3d Commit" );
-        START_PROFILE(g_app->m_profiler, "SoundLibrary3d Advance" );
+        END_PROFILE(g_profiler, "SoundLibrary3d Commit" );
+        START_PROFILE(g_profiler, "SoundLibrary3d Advance" );
         g_soundLibrary3d->Advance();
-        END_PROFILE(g_app->m_profiler, "SoundLibrary3d Advance" );
+        END_PROFILE(g_profiler, "SoundLibrary3d Advance" );
 
-        END_PROFILE(g_app->m_profiler, "Advance SoundSystem");
+        END_PROFILE(g_profiler, "Advance SoundSystem");
     }
 }
 */
@@ -1889,7 +1891,7 @@ const char* SoundSystem::IsSoundSourceOK(const char* _soundName)
   char fullPath[256] = "Sounds/";
   strcat(fullPath, _soundName);
 
-  SoundStreamDecoder* sound = g_app->m_resource->GetSoundStreamDecoder(fullPath);
+  SoundStreamDecoder* sound = g_resource->GetSoundStreamDecoder(fullPath);
   if (!sound)
   {
     // File does not exist
