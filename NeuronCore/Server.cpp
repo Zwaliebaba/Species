@@ -111,33 +111,7 @@ int Server::GetClientId(char* _ip)
   return -1;
 }
 
-int Server::ConvertIPToInt(const char* _ip)
-{
-  ASSERT_TEXT(strlen(_ip) < 17, "IP address too long");
-  char ipCopy[17];
-  strcpy(ipCopy, _ip);
-  int ipLen = strlen(ipCopy);
 
-  for (int i = 0; i < ipLen; ++i)
-  {
-    if (ipCopy[i] == '.')
-      ipCopy[i] = '\n';
-  }
-
-  int part1, part2, part3, part4;
-  sscanf(ipCopy, "%d %d %d %d", &part1, &part2, &part3, &part4);
-
-  int result = ((part4 & 0xff) << 24) + ((part3 & 0xff) << 16) + ((part2 & 0xff) << 8) + (part1 & 0xff);
-  return result;
-}
-
-char* Server::ConvertIntToIP(const int _ip)
-{
-  static char result[16];
-  sprintf(result, "%d.%d.%d.%d", (_ip & 0x000000ff), (_ip & 0x0000ff00) >> 8, (_ip & 0x00ff0000) >> 16, (_ip & 0xff000000) >> 24);
-
-  return result;
-}
 
 // ***RegisterNewClient
 void Server::RegisterNewClient(char* _ip)

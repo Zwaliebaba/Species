@@ -55,9 +55,6 @@ class Server
 
     void AdvanceSender();
     void Advance();
-
-    static int ConvertIPToInt(const char* _ip);
-    static char* ConvertIntToIP(int _ip);
 };
 
 #endif

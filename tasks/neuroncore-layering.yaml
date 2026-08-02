@@ -64,6 +64,8 @@ tasks:
       - NeuronClient/BoundedArray.h
       - NeuronClient/AutoVector.h
       - NeuronClient/HashTable.h
+      - NeuronClient/SortingHashTable.h
+      - NeuronClient/2dArray.h
       - NeuronCore/NeuronCore.vcxproj
       - NeuronClient/NeuronClient.vcxproj
     acceptance:
@@ -92,6 +94,8 @@ tasks:
       - NeuronClient/Matrix33.h
       - NeuronClient/Matrix34.h
       - NeuronClient/MathUtils.h
+      - NeuronClient/Random.h
+      - NeuronClient/Plane.h
       - NeuronCore/NeuronCore.vcxproj
       - NeuronClient/NeuronClient.vcxproj
     acceptance:
@@ -127,22 +131,21 @@ tasks:
     status: in_progress
 
   - id: T4
-    title: Move Preferences and Profiler down into NeuronCore
+    title: Move Profiler down into NeuronCore
     intent: >
-      Both are infrastructure a headless server needs as much as a client does,
-      and both are currently reached for from inside NeuronCore's networking code.
+      The profiler is infrastructure a headless server needs as much as a client
+      does, and NeuronCore's networking code already reaches for it. Preferences
+      was originally in this task and has been split out to T11 — see the notes.
     project: NeuronCore
     depends_on: []
     files:
-      - NeuronClient/Preferences.h
-      - NeuronClient/Preferences.cpp
       - NeuronClient/Profiler.h
       - NeuronClient/Profiler.cpp
       - NeuronCore/NeuronCore.vcxproj
       - NeuronClient/NeuronClient.vcxproj
     acceptance:
-      - Preferences and Profiler live under NeuronCore/
-      - Neither appears on the right-hand side of a NeuronCore/ allowlist entry
+      - Profiler lives under NeuronCore/, along with the SortingHashTable it uses
+      - Profiler does not appear on the right-hand side of a NeuronCore/ allowlist entry
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
@@ -346,6 +349,38 @@ tasks:
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
+    parallel_safe: true
+    status: todo
+
+  # ---------------------------------------------------------------------------
+  # Split out of T4 during wave 1: Preferences is not foundational.
+  # ---------------------------------------------------------------------------
+
+  - id: T11
+    title: Make Preferences foundational, then move it into NeuronCore
+    intent: >
+      T4 assumed Preferences was infrastructure that could simply move down.
+      Moving it proved otherwise: Preferences.cpp includes App.h, Resource.h,
+      TextStreamReaders.h and PrefsOtherWindow.h — a settings *store* reaching
+      into the application object, the resource system and a settings *window*.
+      That is a dependency inversion to fix, not a file to relocate, so it was
+      moved back and given its own task.
+
+      NeuronCore's networking still reads preferences, so this stays on the
+      critical path for a standalone core, but it is a design change rather than
+      the mechanical move the rest of wave 1 was.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronClient/Preferences.h
+      - NeuronClient/Preferences.cpp
+    acceptance:
+      - Preferences.cpp includes none of App.h, Resource.h, TextStreamReaders.h, PrefsOtherWindow.h
+      - Reading and writing the preferences file does not require the resource system or a window
+      - Preferences then lives under NeuronCore/ with no upward includes
+    verify:
+      - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64
     parallel_safe: true
     status: todo

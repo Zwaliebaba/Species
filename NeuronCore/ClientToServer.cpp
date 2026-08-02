@@ -144,7 +144,7 @@ void ClientToServer::Advance()
 int ClientToServer::GetOurIP_Int()
 {
 	// We're not doing networking for now
-	static int s_localIP = Server::ConvertIPToInt( "127.0.0.1" );
+	static int s_localIP = ConvertIPToInt( "127.0.0.1" );
 	return s_localIP;
 
 // Notes by John
@@ -185,7 +185,7 @@ int ClientToServer::GetOurIP_Int()
 //		if (hostEnt && hostEnt->h_addr_list[0])
 //			return *((int*)hostEnt->h_addr_list[0]);
 //	}
-//	return Server::ConvertIPToInt( "127.0.0.1" );
+//	return ConvertIPToInt( "127.0.0.1" );
 }
 
 
@@ -196,7 +196,7 @@ char *ClientToServer::GetOurIP_String()
     if( !result )
     {
         result = new char[16];
-        strcpy( result, Server::ConvertIntToIP( GetOurIP_Int() ) );
+        strcpy( result, ConvertIntToIP( GetOurIP_Int() ) );
     }
 
     return result;

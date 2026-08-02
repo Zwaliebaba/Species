@@ -24,6 +24,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Preferences.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="3dSprite.cpp" />
     <ClCompile Include="BinaryStreamReaders.cpp" />
     <ClCompile Include="Bitmap.cpp" />
@@ -37,7 +41,6 @@
     <ClCompile Include="FilesysUtils.cpp" />
     <ClCompile Include="FilePaths.cpp" />
     <ClCompile Include="FileWriter.cpp" />
-    <ClCompile Include="HiResTime.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="InputDriver.cpp" />
     <ClCompile Include="InputDriverAlias.cpp" />
@@ -60,20 +63,10 @@
     <ClCompile Include="InvertMatrix.cpp" />
     <ClCompile Include="KeyNames.cpp" />
     <ClCompile Include="LanguageTable.cpp" />
-    <ClCompile Include="MathUtils.cpp" />
-    <ClCompile Include="Matrix33.cpp" />
-    <ClCompile Include="Matrix34.cpp" />
     <ClCompile Include="MouseCursor.cpp" />
     <ClCompile Include="Movement2d.cpp" />
     <ClCompile Include="OGLExtensions.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="PersistingDebugRender.cpp" />
-    <ClCompile Include="Plane.cpp" />
-    <ClCompile Include="Preferences.cpp" />
-    <ClCompile Include="Profiler.cpp" />
-    <ClCompile Include="Random.cpp" />
     <ClCompile Include="RenderUtils.cpp" />
     <ClCompile Include="Resource.cpp" />
     <ClCompile Include="RgbColour.cpp" />
@@ -101,35 +94,27 @@
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="TriTri.cpp" />
     <ClCompile Include="UserInfo.cpp" />
-    <ClCompile Include="Vector2.cpp" />
-    <ClCompile Include="Vector3.cpp" />
     <ClCompile Include="Win32EventHandler.cpp" />
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="2dArray.h" />
+    <ClInclude Include="Preferences.h" />
+    <ClInclude Include="pch.h" />
     <ClInclude Include="2dSurfaceMap.h" />
     <ClInclude Include="3dSprite.h" />
-    <ClInclude Include="AutoVector.h" />
     <ClInclude Include="BinaryStreamReaders.h" />
     <ClInclude Include="Bitmap.h" />
-    <ClInclude Include="BoundedArray.h" />
-    <ClInclude Include="BTree.h" />
     <ClInclude Include="ControlBindings.h" />
     <ClInclude Include="ControlTypes.h" />
     <ClInclude Include="ControlTypes.inc" />
-    <ClInclude Include="DArray.h" />
     <ClInclude Include="DebugRender.h" />
     <ClInclude Include="EclButton.h" />
     <ClInclude Include="Eclipse.h" />
     <ClInclude Include="EclWindow.h" />
     <ClInclude Include="EventHandler.h" />
-    <ClInclude Include="FastDArray.h" />
     <ClInclude Include="FilesysUtils.h" />
     <ClInclude Include="FilePaths.h" />
     <ClInclude Include="FileWriter.h" />
-    <ClInclude Include="HashTable.h" />
-    <ClInclude Include="HiResTime.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="InputDriver.h" />
     <ClInclude Include="InputDriverAlias.h" />
@@ -155,30 +140,19 @@
     <ClInclude Include="KeyDefs.h" />
     <ClInclude Include="KeyNames.h" />
     <ClInclude Include="LanguageTable.h" />
-    <ClInclude Include="LList.h" />
-    <ClInclude Include="MathUtils.h" />
-    <ClInclude Include="Matrix33.h" />
-    <ClInclude Include="Matrix34.h" />
     <ClInclude Include="MouseCursor.h" />
     <ClInclude Include="Movement2d.h" />
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="OGLExtensions.h" />
-    <ClInclude Include="pch.h" />
     <ClInclude Include="PersistingDebugRender.h" />
-    <ClInclude Include="Plane.h" />
-    <ClInclude Include="Preferences.h" />
     <ClInclude Include="PreferenceNames.h" />
     <ClInclude Include="PresizedArray.h" />
-    <ClInclude Include="Profiler.h" />
-    <ClInclude Include="Random.h" />
     <ClInclude Include="RenderUtils.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RgbColour.h" />
     <ClInclude Include="SampleCache.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Shape.h" />
-    <ClInclude Include="SliceDArray.h" />
-    <ClInclude Include="SortingHashTable.h" />
     <ClInclude Include="SoundSystem.h" />
     <ClInclude Include="SoundFilter.h" />
     <ClInclude Include="SoundInstance.h" />
@@ -198,8 +172,6 @@
     <ClInclude Include="TextStreamReaders.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="UserInfo.h" />
-    <ClInclude Include="Vector2.h" />
-    <ClInclude Include="Vector3.h" />
     <ClInclude Include="Win32EventHandler.h" />
     <ClInclude Include="Win32EventProc.h" />
     <ClInclude Include="WindowManager.h" />
