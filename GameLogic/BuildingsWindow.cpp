@@ -229,7 +229,7 @@ class CloneBuildingButton : public DarwiniaButton
 // ****************************************************************************
 
 BuildingEditWindow::BuildingEditWindow( char const *name )
-:   DarwiniaWindow( name )
+:   SpeciesWindow( name )
 {
 }
 
@@ -241,7 +241,7 @@ BuildingEditWindow::~BuildingEditWindow()
 
 void BuildingEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
 	DEBUG_ASSERT(building);
@@ -505,7 +505,7 @@ void BuildingEditWindow::Create()
 
 void BuildingEditWindow::Render( bool hasFocus )
 {
-    DarwiniaWindow::Render( hasFocus );
+    SpeciesWindow::Render( hasFocus );
 
 	Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
 	DEBUG_ASSERT(building);
@@ -551,7 +551,7 @@ public:
 // ****************************************************************************
 
 BuildingsCreateWindow::BuildingsCreateWindow( char const *_name )
-:	DarwiniaWindow( _name ),
+:	SpeciesWindow( _name ),
     m_buildingType(0)
 {
 }
@@ -566,7 +566,7 @@ BuildingsCreateWindow::~BuildingsCreateWindow()
 
 void BuildingsCreateWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int y = 25;
 	int ySpacing = 18;

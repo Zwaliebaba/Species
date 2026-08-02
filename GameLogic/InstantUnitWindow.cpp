@@ -138,7 +138,7 @@ public:
 // ****************************************************************************
 
 InstantUnitEditWindow::InstantUnitEditWindow( char const *name )
-:	DarwiniaWindow(name)
+:	SpeciesWindow(name)
 {
 }
 
@@ -151,7 +151,7 @@ InstantUnitEditWindow::~InstantUnitEditWindow()
 
 void InstantUnitEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int y = 4;
 	int buttonPitch = 18;
@@ -250,7 +250,7 @@ public:
 // ****************************************************************************
 
 InstantUnitCreateWindow::InstantUnitCreateWindow( char const *name )
-:	DarwiniaWindow(name)
+:	SpeciesWindow(name)
 {
 }
 
@@ -264,7 +264,7 @@ InstantUnitCreateWindow::~InstantUnitCreateWindow()
 
 void InstantUnitCreateWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int y = 3;
 	int const buttonYPitch = 18;

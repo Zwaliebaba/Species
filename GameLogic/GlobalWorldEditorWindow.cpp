@@ -117,7 +117,7 @@ class SaveLocationsButton : public DarwiniaButton
 
 
 GlobalWorldEditorWindow::GlobalWorldEditorWindow()
-:   DarwiniaWindow( LANGUAGEPHRASE("editor_globalworldeditor") )
+:   SpeciesWindow( LANGUAGEPHRASE("editor_globalworldeditor") )
 {
     SetPosition( 20, 20 );
     SetSize( 200, 100 );
@@ -126,7 +126,7 @@ GlobalWorldEditorWindow::GlobalWorldEditorWindow()
 
 void GlobalWorldEditorWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     int y = 20;
     int h = 18;

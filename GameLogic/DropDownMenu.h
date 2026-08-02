@@ -4,7 +4,7 @@
 
 #include <limits.h>
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 class DropDownOptionData
@@ -22,7 +22,7 @@ public:
 // Class DropDownMenu
 // ****************************************************************************
 
-class DropDownWindow : public DarwiniaWindow
+class DropDownWindow : public SpeciesWindow
 {
 public:
     char m_parentName[256];

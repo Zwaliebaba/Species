@@ -115,7 +115,7 @@ void InputField::Render( int realX, int realY, bool highlighted, bool clicked )
 	    }
 		m_inputBoxWidth = strlen(m_buf) * PIXELS_PER_CHAR + 7;
     }
-	DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+	SpeciesWindow *parent = (SpeciesWindow *)m_parent;
 	fieldX = realX + m_w - parent->GetMenuSize(m_inputBoxWidth);
 	g_editorFont.DrawText2D( fieldX + 2, realY + 10, parent->GetMenuSize(DEF_FONT_SIZE), m_buf);
 }
@@ -421,7 +421,7 @@ void ColourWidget::SetCallback(DarwiniaButton *button)
 // ****************************************************************************
 
 ColourWindow::ColourWindow( char const *_name )
-:   DarwiniaWindow( _name ),
+:   SpeciesWindow( _name ),
     m_callback(NULL),
     m_value(NULL)
 {
@@ -442,7 +442,7 @@ void ColourWindow::SetCallback(DarwiniaButton *button)
 
 void ColourWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     int y = 25;
     int h = 18;
@@ -461,7 +461,7 @@ void ColourWindow::Create()
 
 void ColourWindow::Render( bool hasFocus )
 {
-    DarwiniaWindow::Render( hasFocus );
+    SpeciesWindow::Render( hasFocus );
 
     glColor4ubv( (unsigned char *) m_value );
     glBegin( GL_QUADS );

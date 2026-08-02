@@ -112,7 +112,7 @@ class ApplyOtherButton : public DarwiniaButton
 
 
 PrefsOtherWindow::PrefsOtherWindow()
-:   DarwiniaWindow( LANGUAGEPHRASE("dialog_otheroptions") )
+:   SpeciesWindow( LANGUAGEPHRASE("dialog_otheroptions") )
 {
     SetMenuSize( 468, 350 );
 
@@ -170,7 +170,7 @@ void PrefsOtherWindow::ListAvailableLanguages()
 
 void PrefsOtherWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     /*int x = GetMenuSize(150);
     int w = GetMenuSize(170);
@@ -320,7 +320,7 @@ void PrefsOtherWindow::Create()
 
 void PrefsOtherWindow::Render( bool _hasFocus )
 {
-    DarwiniaWindow::Render( _hasFocus );
+    SpeciesWindow::Render( _hasFocus );
 
 	int border = GetClientRectX1() + 10;
 	int size = GetMenuSize(13);

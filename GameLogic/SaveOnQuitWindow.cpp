@@ -40,7 +40,7 @@ class CancelButton : public DarwiniaButton
 
 
 SaveOnQuitWindow::SaveOnQuitWindow( char const *_name )
-:   DarwiniaWindow( _name )
+:   SpeciesWindow( _name )
 {
 	m_w = 200;
 	m_h = 100;
@@ -51,7 +51,7 @@ SaveOnQuitWindow::SaveOnQuitWindow( char const *_name )
 
 void SaveOnQuitWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
     DarwiniaButton *button;
 	int width = 55;
@@ -75,7 +75,7 @@ void SaveOnQuitWindow::Create()
 
 void SaveOnQuitWindow::Render(bool _hasFocus)
 {
-	DarwiniaWindow::Render(_hasFocus);
+	SpeciesWindow::Render(_hasFocus);
 	g_editorFont.DrawText2D(m_x + 15, m_y + 30, DEF_FONT_SIZE * 4, "!");
 	g_editorFont.DrawText2D(m_x + 55, m_y + 38, DEF_FONT_SIZE, "Save changes to");
 	g_editorFont.DrawText2D(m_x + 55, m_y + 52, DEF_FONT_SIZE, "sounds.txt?");

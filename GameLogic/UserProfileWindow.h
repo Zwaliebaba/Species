@@ -2,10 +2,10 @@
 #ifndef _included_userprofilewindow_h
 #define _included_userprofilewindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class UserProfileWindow : public DarwiniaWindow
+class UserProfileWindow : public SpeciesWindow
 {
 public:
     UserProfileWindow();
@@ -15,7 +15,7 @@ public:
 };
 
 
-class NewUserProfileWindow : public DarwiniaWindow
+class NewUserProfileWindow : public SpeciesWindow
 {
 public:
     static char s_profileName[256];

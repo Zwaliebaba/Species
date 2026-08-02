@@ -247,7 +247,11 @@ depends on the file you are in, not on your preference. See
 file, fix the bug. Converting the file is valuable but it is a separate task with
 its own plan entry — mixing the two produces a diff nobody can review.
 
-**Never add to the layering allowlist.** It exists to shrink.
+**Never add to the layering allowlist.** It exists to shrink. The one
+exception is a file rename, which orphans its entries and makes unchanged
+violations look new — rewrite those with
+`python3 tools/check_layering.py --rename OLD NEW`, which cannot invent
+entries and leaves the count untouched.
 
 **Do not change what the simulation computes.** Multiplayer is deterministic
 lockstep with a runtime checksum, so iteration order, floating-point arithmetic

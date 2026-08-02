@@ -16,14 +16,14 @@
 
 
 NetworkWindow::NetworkWindow( char const *name )
-:   DarwiniaWindow( name )
+:   SpeciesWindow( name )
 {
 }
 
 
 void NetworkWindow::Render( bool hasFocus )
 {
-    DarwiniaWindow::Render( hasFocus );
+    SpeciesWindow::Render( hasFocus );
 
     glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 

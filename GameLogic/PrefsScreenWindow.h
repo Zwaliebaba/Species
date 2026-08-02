@@ -2,10 +2,10 @@
 #ifndef _included_prefsscreenwindow_h
 #define _included_prefsscreenwindow_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
-class PrefsScreenWindow : public DarwiniaWindow
+class PrefsScreenWindow : public SpeciesWindow
 {
 public:
     int     m_resId;

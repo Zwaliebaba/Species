@@ -80,14 +80,14 @@ public:
 
 
 TreeWindow::TreeWindow( char const *_name )
-:   DarwiniaWindow( _name ),
+:   SpeciesWindow( _name ),
     m_selectionId(-1)
 {
 }
 
 void TreeWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     m_selectionId = g_app->m_locationEditor->m_selectionId;
     Building *building = g_app->m_location->GetBuilding( m_selectionId );

@@ -22,7 +22,7 @@ class BuyNowButton : public DarwiniaButton
 
 
 BuyNowWindow::BuyNowWindow()
-: DarwiniaWindow( LANGUAGEPHRASE("dialog_buydarwinia" ) )
+: SpeciesWindow( LANGUAGEPHRASE("dialog_buydarwinia" ) )
 {
     int screenW = g_app->m_renderer->ScreenW();
     int screenH = g_app->m_renderer->ScreenH();
@@ -34,7 +34,7 @@ BuyNowWindow::BuyNowWindow()
 
 void BuyNowWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int y = m_h;
 	int h = 30;
@@ -54,7 +54,7 @@ void BuyNowWindow::Create()
 
 void BuyNowWindow::Render(bool _hasFocus)
 {
-	DarwiniaWindow::Render(_hasFocus);
+	SpeciesWindow::Render(_hasFocus);
 
     glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 

@@ -91,7 +91,7 @@ public:
 // ****************************************************************************
 
 CameraAnimMainEditWindow::CameraAnimMainEditWindow( char const *name )
-:	DarwiniaWindow(name)
+:	SpeciesWindow(name)
 {
 }
 
@@ -106,7 +106,7 @@ CameraAnimMainEditWindow::~CameraAnimMainEditWindow()
 
 void CameraAnimMainEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 	AddButtons();
 }
 
@@ -282,7 +282,7 @@ public:
 // ****************************************************************************
 
 CameraAnimSecondaryEditWindow::CameraAnimSecondaryEditWindow(char *name, int _animId)
-:	DarwiniaWindow(name),
+:	SpeciesWindow(name),
 	m_animId(_animId),
 	m_newNodeArmed(false)
 {
@@ -301,7 +301,7 @@ CameraAnimSecondaryEditWindow::~CameraAnimSecondaryEditWindow()
 
 void CameraAnimSecondaryEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 	AddButtons();
 }
 

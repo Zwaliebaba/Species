@@ -175,7 +175,7 @@ class ReturnToGameButton : public DarwiniaButton
 
 
 DemoEndWindow::DemoEndWindow( float _fadeInTime, bool _saveGame )
-:   DarwiniaWindow( "DemoEnd" ),
+:   SpeciesWindow( "DemoEnd" ),
     m_saveGame(_saveGame)
 {
     int screenW = g_app->m_renderer->ScreenW();

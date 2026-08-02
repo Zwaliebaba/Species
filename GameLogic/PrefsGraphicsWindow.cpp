@@ -60,7 +60,7 @@ public:
 
 
 PrefsGraphicsWindow::PrefsGraphicsWindow()
-:   DarwiniaWindow(LANGUAGEPHRASE("dialog_graphicsoptions"))
+:   SpeciesWindow(LANGUAGEPHRASE("dialog_graphicsoptions"))
 {
     SetMenuSize( 360, 300 );
     SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
@@ -85,7 +85,7 @@ PrefsGraphicsWindow::~PrefsGraphicsWindow()
 
 void PrefsGraphicsWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
 	int fontSize = GetMenuSize(11);
 	int y = GetClientRectY1();
@@ -209,7 +209,7 @@ void RenderCPUUsage( LList<char *> *elements, int x, int y )
 
 void PrefsGraphicsWindow::Render( bool _hasFocus )
 {
-    DarwiniaWindow::Render( _hasFocus );
+    SpeciesWindow::Render( _hasFocus );
 
 	int border = GetClientRectX1() + 10;
 	int h = GetMenuSize(20)+ border;

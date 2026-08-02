@@ -35,7 +35,7 @@ void GameMenuButton::Render( int realX, int realY, bool highlighted, bool clicke
 {
     //DarwiniaButton::Render( realX, realY, highlighted, clicked );
     if( !m_iconName ) return;
-    DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+    SpeciesWindow *parent = (SpeciesWindow *)m_parent;
 
     realX += 150;
     UpdateButtonHighlight();
@@ -356,7 +356,7 @@ void GameMenu::CreateMapList()
 
 
 GameMenuWindow::GameMenuWindow()
-:   DarwiniaWindow("GameMenu"),
+:   SpeciesWindow("GameMenu"),
     m_currentPage(-1),
     m_newPage(PageDarwinia)
 {
@@ -374,7 +374,7 @@ void GameMenuWindow::Create()
 
 void GameMenuWindow::Update()
 {
-    DarwiniaWindow::Update();
+    SpeciesWindow::Update();
     if( m_currentPage != m_newPage )
     {
         SetupNewPage( m_newPage );
@@ -388,7 +388,7 @@ void GameMenuWindow::Update()
 
 void GameMenuWindow::Render( bool _hasFocus )
 {
-    //DarwiniaWindow::Render( _hasFocus );
+    //SpeciesWindow::Render( _hasFocus );
     // render nothing but the buttons
     EclWindow::Render( _hasFocus );
 

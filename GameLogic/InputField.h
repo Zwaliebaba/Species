@@ -3,7 +3,7 @@
 
 #include "RgbColour.h"
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
 
 // ****************************************************************************
@@ -113,7 +113,7 @@ public:
 // Class ColourWindow
 // ****************************************************************************
 
-class ColourWindow : public DarwiniaWindow
+class ColourWindow : public SpeciesWindow
 {
 public:
     DarwiniaButton *m_callback;

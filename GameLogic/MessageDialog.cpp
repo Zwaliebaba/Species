@@ -39,7 +39,7 @@ public:
 //*****************************************************************************
 
 MessageDialog::MessageDialog(char const *_name, char const *_message)
-:	DarwiniaWindow(_name),
+:	SpeciesWindow(_name),
 	m_numLines(0)
 {
 	char const *lineStart = _message;
@@ -101,7 +101,7 @@ void MessageDialog::Create()
 
 void MessageDialog::Render(bool _hasFocus)
 {
-	DarwiniaWindow::Render(_hasFocus);
+	SpeciesWindow::Render(_hasFocus);
 
 	for (int i = 0; i < m_numLines; ++i)
 	{

@@ -302,7 +302,7 @@ class ProfilerCreateButton : public DarwiniaButton
 
 void CheatWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     int y = 25;
 
@@ -380,7 +380,7 @@ void CheatWindow::Create()
 #endif  // CHEATMENU_ENABLED
 
 CheatWindow::CheatWindow( char const *_name )
-:   DarwiniaWindow( _name )
+:   SpeciesWindow( _name )
 {
 }
 

@@ -135,7 +135,7 @@ public:
 // ****************************************************************************
 
 DebugMenu::DebugMenu( char *name )
-:   DarwiniaWindow( name )
+:   SpeciesWindow( name )
 {
 	m_x = 10;
 	m_y = 20;
@@ -151,7 +151,7 @@ void DebugMenu::Advance()
 
 void DebugMenu::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
     int pitch = 18;
 	int y = 5;
@@ -210,7 +210,7 @@ void DebugMenu::Render(bool hasFocus)
 {
 	Advance();
 
-	DarwiniaWindow::Render(hasFocus);
+	SpeciesWindow::Render(hasFocus);
 
 	EclButton *camDbgButton = GetButton("Dbg Cam (F2)");
 	DEBUG_ASSERT(camDbgButton);

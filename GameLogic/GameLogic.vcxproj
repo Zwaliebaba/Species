@@ -37,7 +37,7 @@
     <ClCompile Include="ConstructionYard.cpp" />
     <ClCompile Include="ControlTower.cpp" />
     <ClCompile Include="Darwinian.cpp" />
-    <ClCompile Include="DarwiniaWindow.cpp" />
+    <ClCompile Include="SpeciesWindow.cpp" />
     <ClCompile Include="DebugMenu.cpp" />
     <ClCompile Include="DemoEndWindow.cpp" />
     <ClCompile Include="DropDownMenu.cpp" />
@@ -132,7 +132,7 @@
     <ClInclude Include="ConstructionYard.h" />
     <ClInclude Include="ControlTower.h" />
     <ClInclude Include="Darwinian.h" />
-    <ClInclude Include="DarwiniaWindow.h" />
+    <ClInclude Include="SpeciesWindow.h" />
     <ClInclude Include="DebugMenu.h" />
     <ClInclude Include="DemoEndWindow.h" />
     <ClInclude Include="DropDownMenu.h" />

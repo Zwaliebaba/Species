@@ -110,7 +110,7 @@ public:
         }
         else
         {
-			DarwiniaWindow *parent = (DarwiniaWindow *)m_parent;
+			SpeciesWindow *parent = (SpeciesWindow *)m_parent;
             g_editorFont.DrawText2D( realX+10, realY+9, parent->GetMenuSize(13), LANGUAGEPHRASE("dialog_unavailable") );
         }
     }
@@ -127,7 +127,7 @@ public:
 
 
 PrefsSoundWindow::PrefsSoundWindow()
-:   DarwiniaWindow( LANGUAGEPHRASE("dialog_soundoptions") )
+:   SpeciesWindow( LANGUAGEPHRASE("dialog_soundoptions") )
 {
     SetMenuSize( 532, 390 );
     SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
@@ -149,7 +149,7 @@ PrefsSoundWindow::PrefsSoundWindow()
 
 void PrefsSoundWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     /*int x = GetMenuSize(150);
     int w = GetMenuSize(170);
@@ -264,7 +264,7 @@ void PrefsSoundWindow::Create()
 
 void PrefsSoundWindow::Render( bool _hasFocus )
 {
-    DarwiniaWindow::Render( _hasFocus );
+    SpeciesWindow::Render( _hasFocus );
 
 	unsigned int deviceId = g_systemInfo->m_audioInfo.m_preferredDevice;
     char const *hwDescription = g_systemInfo->m_audioInfo.m_deviceNames[deviceId];

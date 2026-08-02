@@ -132,7 +132,7 @@ public:
 // ****************************************************************************
 
 CameraMountEditWindow::CameraMountEditWindow( char const *name )
-:	DarwiniaWindow(name)
+:	SpeciesWindow(name)
 {
 }
 
@@ -147,7 +147,7 @@ CameraMountEditWindow::~CameraMountEditWindow()
 
 void CameraMountEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int height = 5;
 	int pitch = 17;

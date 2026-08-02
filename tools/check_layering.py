@@ -23,6 +23,12 @@ modernization proceeds, never to grow.
 
     python3 tools/check_layering.py             # fail on unlisted violations
     python3 tools/check_layering.py --update    # rewrite the allowlist
+    python3 tools/check_layering.py --rename OLD NEW   # a file moved or was renamed
+
+Renaming or moving a file makes its allowlisted entries stop matching, and the
+same violations then look brand new. `--rename` rewrites just those entries, so
+the change shows up in the diff as the rename it is rather than being absorbed
+silently by `--update`. It refuses to invent entries that did not already exist.
 """
 from __future__ import annotations
 
@@ -124,7 +130,27 @@ def main() -> int:
         action="store_true",
         help="rewrite the allowlist from the current tree instead of checking",
     )
+    parser.add_argument(
+        "--rename",
+        nargs=2,
+        metavar=("OLD", "NEW"),
+        help="rewrite allowlist entries after a file was renamed or moved, "
+        "e.g. --rename GameLogic/Foo.cpp GameLogic/Bar.cpp",
+    )
     args = parser.parse_args()
+
+    if args.rename:
+        old_path, new_path = args.rename
+        allowlist = load_allowlist()
+        moved = {e for e in allowlist if e.split(" -> ")[0] == old_path}
+        if not moved:
+            print(f"no allowlist entries for '{old_path}' — nothing to rename")
+            return 1
+        allowlist -= moved
+        allowlist |= {e.replace(old_path, new_path, 1) for e in moved}
+        write_allowlist(allowlist)
+        print(f"renamed {len(moved)} entr(y/ies): {old_path} -> {new_path}")
+        return 0
 
     violations = set(find_violations(build_header_index()))
 

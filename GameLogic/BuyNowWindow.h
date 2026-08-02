@@ -1,9 +1,9 @@
 #ifndef __BUYNOW_WINDOW_H
 #define __BUYNOW_WINDOW_H
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 
-class BuyNowWindow : public DarwiniaWindow {
+class BuyNowWindow : public SpeciesWindow {
 public:
 
 	BuyNowWindow();

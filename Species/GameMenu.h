@@ -2,7 +2,7 @@
 #ifndef _included_gamemenu_h
 #define _included_gamemenu_h
 
-#include "DarwiniaWindow.h"
+#include "SpeciesWindow.h"
 #include "DropDownMenu.h"
 #include "InputField.h"
 
@@ -35,7 +35,7 @@ public:
     void Render( int realX, int realY, bool highlighted, bool clicked );
 };
 
-class GameMenuWindow : public DarwiniaWindow
+class GameMenuWindow : public SpeciesWindow
 {
 public:
     int     m_currentPage;

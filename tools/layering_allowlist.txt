@@ -8,6 +8,11 @@
 # Format: <including project>/<including file> -> <included header>
 #
 # Regenerate with: python3 tools/check_layering.py --update
+#
+# If a file was renamed or moved, its entries stop matching and the same
+# violations look new. Rewrite just those entries with:
+#   python3 tools/check_layering.py --rename OLD NEW
+# That is not growth — the count is unchanged and the diff shows the rename.
 
 GameLogic/Ai.cpp -> App.h
 GameLogic/Ai.cpp -> EntityGrid.h
@@ -140,9 +145,6 @@ GameLogic/ControlTower.cpp -> Main.h
 GameLogic/ControlTower.cpp -> ParticleSystem.h
 GameLogic/ControlTower.cpp -> Renderer.h
 GameLogic/ControlTower.cpp -> Team.h
-GameLogic/DarwiniaWindow.cpp -> App.h
-GameLogic/DarwiniaWindow.cpp -> Globals.h
-GameLogic/DarwiniaWindow.cpp -> Renderer.h
 GameLogic/Darwinian.cpp -> App.h
 GameLogic/Darwinian.cpp -> Camera.h
 GameLogic/Darwinian.cpp -> EntityGrid.h
@@ -469,6 +471,9 @@ GameLogic/SpawnPoint.cpp -> Location.h
 GameLogic/SpawnPoint.cpp -> LocationEditor.h
 GameLogic/SpawnPoint.cpp -> Main.h
 GameLogic/SpawnPoint.cpp -> Team.h
+GameLogic/SpeciesWindow.cpp -> App.h
+GameLogic/SpeciesWindow.cpp -> Globals.h
+GameLogic/SpeciesWindow.cpp -> Renderer.h
 GameLogic/Spider.cpp -> App.h
 GameLogic/Spider.cpp -> Camera.h
 GameLogic/Spider.cpp -> EntityGrid.h

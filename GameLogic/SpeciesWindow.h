@@ -1,15 +1,15 @@
 
 /*
  * ===============
- * DARWINIA WINDOW
+ * SPECIES WINDOW
  * ===============
  *
- * A basic window for use in Darwinia
+ * A basic window for use in Species
  *
  */
 
-#ifndef _included_darwiniawindow_h
-#define _included_darwiniawindow_h
+#ifndef _included_specieswindow_h
+#define _included_specieswindow_h
 
 #include "Eclipse.h"
 
@@ -17,7 +17,7 @@ class DarwiniaButton;
 
 
 
-class DarwiniaWindow : public EclWindow
+class SpeciesWindow : public EclWindow
 {
 public:
 	LList<EclButton *>	m_buttonOrder;
@@ -26,8 +26,8 @@ public:
     bool                m_skipUpdate;
 
 public:
-    DarwiniaWindow( char const *name );
-	~DarwiniaWindow();
+    SpeciesWindow( char const *name );
+	~SpeciesWindow();
 
     void Create();
     void Remove();

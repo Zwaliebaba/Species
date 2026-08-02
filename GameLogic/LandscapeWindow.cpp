@@ -100,7 +100,7 @@ public:
 // ****************************************************************************
 
 LandscapeTileEditWindow::LandscapeTileEditWindow( char *name, int tileId )
-:   DarwiniaWindow(name),
+:   SpeciesWindow(name),
     m_tileId(tileId)
 {
 }
@@ -114,7 +114,7 @@ LandscapeTileEditWindow::~LandscapeTileEditWindow()
 
 void LandscapeTileEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	m_tileDef = g_app->m_location->m_levelFile->m_landscape.m_tiles.GetData(m_tileId);
 	Landscape *land = &g_app->m_location->m_landscape;
@@ -190,7 +190,7 @@ public:
 // ****************************************************************************
 
 LandscapeFlattenAreaEditWindow::LandscapeFlattenAreaEditWindow(char const *_name, int areaId)
-:   DarwiniaWindow(_name),
+:   SpeciesWindow(_name),
     m_areaId(areaId)
 {
 }
@@ -204,7 +204,7 @@ LandscapeFlattenAreaEditWindow::~LandscapeFlattenAreaEditWindow()
 
 void LandscapeFlattenAreaEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	m_areaDef = g_app->m_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_areaId);
 
@@ -356,7 +356,7 @@ public:
 // ****************************************************************************
 
 LandscapeEditWindow::LandscapeEditWindow( char const *name )
-:   DarwiniaWindow(name)
+:   SpeciesWindow(name)
 {
 }
 
@@ -371,7 +371,7 @@ LandscapeEditWindow::~LandscapeEditWindow()
 
 void LandscapeEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int height = 5;
 	int pitch = 17;
@@ -716,7 +716,7 @@ public:
 };
 
 LandscapeGuideGridWindow::LandscapeGuideGridWindow( char *name, int tileId )
-:   DarwiniaWindow(name),
+:   SpeciesWindow(name),
     m_tileId(tileId),
     m_tool(GuideGridToolFreehand),
     m_toolSize(1)
@@ -777,7 +777,7 @@ void LandscapeGuideGridWindow::Create()
     binary->SetShortProperties( LANGUAGEPHRASE("editor_binary"), controlsX, controlsY += controlsH, controlsW );
     RegisterButton( binary );
 
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 }
 
 #endif // LOCATION_EDITOR

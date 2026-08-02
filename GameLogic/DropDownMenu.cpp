@@ -32,7 +32,7 @@ DropDownOptionData::~DropDownOptionData()
 DropDownWindow *DropDownWindow::s_window = NULL;
 
 DropDownWindow::DropDownWindow( char *_name, char *_parentName )
-:   DarwiniaWindow(_name)
+:   SpeciesWindow(_name)
 {
     strcpy( m_parentName, _parentName );
 }
@@ -40,7 +40,7 @@ DropDownWindow::DropDownWindow( char *_name, char *_parentName )
 
 void DropDownWindow::Update()
 {
-    DarwiniaWindow::Update();
+    SpeciesWindow::Update();
 
     EclWindow *parent = EclGetWindow( m_parentName );
     if( !parent )
@@ -344,7 +344,7 @@ void DropDownMenuOption::Render( int realX, int realY, bool highlighted, bool cl
     //BorderlessButton::Render( realX, realY, highlighted, clicked );
     //return;
 
-    DarwiniaWindow *window = (DarwiniaWindow *)EclGetWindow( m_parentWindowName );
+    SpeciesWindow *window = (SpeciesWindow *)EclGetWindow( m_parentWindowName );
     if( window )
     {
         EclButton *button = window->GetButton( m_parentMenuName );

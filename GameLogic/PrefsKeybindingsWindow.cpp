@@ -201,7 +201,7 @@ class ControlMethodDropDownMenu : public DropDownMenu
 
 
 PrefsKeybindingsWindow::PrefsKeybindingsWindow()
-:   DarwiniaWindow( LANGUAGEPHRASE("dialog_inputoptions") )
+:   SpeciesWindow( LANGUAGEPHRASE("dialog_inputoptions") )
 {
 	unsigned i;
 	for ( i = 0; s_controls[i].type != ControlNull; ++i )
@@ -222,7 +222,7 @@ PrefsKeybindingsWindow::PrefsKeybindingsWindow()
 
 void PrefsKeybindingsWindow::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
 	int fontSize = GetMenuSize(11);
 	int y = GetClientRectY1();
@@ -320,7 +320,7 @@ void PrefsKeybindingsWindow::Remove()
 
 void PrefsKeybindingsWindow::Render( bool _hasFocus )
 {
-    DarwiniaWindow::Render( _hasFocus );
+    SpeciesWindow::Render( _hasFocus );
 
     int x = m_x + 32;
 	int border = GetClientRectX1() + GetMenuSize(5);

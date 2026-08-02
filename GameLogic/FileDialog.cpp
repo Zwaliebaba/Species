@@ -161,7 +161,7 @@ class SelectedButton : public DarwiniaButton
 FileDialog::FileDialog( char const *name, char const *parent,
                         char const *path, char const *filter,
                         bool allowMultiSelect )
-:   DarwiniaWindow( name ),
+:   SpeciesWindow( name ),
     m_files(NULL),
     m_path(NULL),
     m_filter(NULL),
@@ -198,7 +198,7 @@ FileDialog::~FileDialog()
 
 void FileDialog::Create()
 {
-    DarwiniaWindow::Create();
+    SpeciesWindow::Create();
 
     int numRows = (m_h - 60) / 13;
 
@@ -229,7 +229,7 @@ void FileDialog::Create()
 
 void FileDialog::Remove()
 {
-    DarwiniaWindow::Remove();
+    SpeciesWindow::Remove();
 
     m_scrollBar->Remove();
 }

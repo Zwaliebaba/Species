@@ -5,7 +5,7 @@
 #include "ReallyQuitWindow.h"
 
 ReallyQuitWindow::ReallyQuitWindow()
-	:   DarwiniaWindow(REALLYQUIT_WINDOWNAME)
+	:   SpeciesWindow(REALLYQUIT_WINDOWNAME)
 {
 	m_w = 160;
 	m_h = 90;
@@ -15,7 +15,7 @@ ReallyQuitWindow::ReallyQuitWindow()
 
 void ReallyQuitWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int y = 0, h = 30;
 

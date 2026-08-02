@@ -59,7 +59,7 @@ public:
 // ****************************************************************************
 
 ProfileWindow::ProfileWindow( char const *name )
-:   DarwiniaWindow( name ),
+:   SpeciesWindow( name ),
 	m_totalPerSecond(true)
 {
 }
@@ -179,7 +179,7 @@ void ProfileWindow::RenderElementProfile(ProfiledElement *_pe, unsigned int _ind
 
 void ProfileWindow::Render( bool hasFocus )
 {
-    DarwiniaWindow::Render( hasFocus );
+    SpeciesWindow::Render( hasFocus );
 
     if (g_app->m_profiler->m_doGlFinish)
 	{
@@ -205,7 +205,7 @@ END_PROFILE(g_app->m_profiler, "render profile");
 
 void ProfileWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	ProfilerButton *but = new ProfilerButton();
 	but->SetShortProperties("Toggle glFinish", 10, 18);
@@ -225,7 +225,7 @@ void ProfileWindow::Create()
 
 void ProfileWindow::Remove()
 {
-    DarwiniaWindow::Remove();
+    SpeciesWindow::Remove();
 
     RemoveButton( "Toggle glFinish" );
     RemoveButton( "Min" );

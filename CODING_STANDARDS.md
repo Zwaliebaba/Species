@@ -71,6 +71,24 @@ coupling. Verified: none of these strings appear anywhere in `GameData/`.
 
 `tasks/rename-scaffolding.yaml` is the plan. Do it as that plan, not ad hoc.
 
+**Declare the rename in the commit.** A rename touches every line mentioning the
+old name without authoring any of them, so the changed-lines format check would
+otherwise demand you reformat fragments of files you did not really edit — the
+half-converted state forbidden above. Add a trailer to the commit performing it:
+
+```
+Rename: DarwiniaWindow=SpeciesWindow
+```
+
+`tools/check_format.py` reads those trailers and skips lines that reverse to a
+line already present in the base revision. Lines you genuinely wrote are still
+checked, so this cannot be used to sneak unformatted code past CI. If the file
+itself was renamed, `git mv` it so git records the rename and the check can
+follow it.
+
+The same problem hits the layering allowlist, which is keyed on filename — see
+`python3 tools/check_layering.py --rename OLD NEW`.
+
 **Domain names — leave them alone.** `Darwinian` (140 occurrences) and anything
 else naming an entity, building or program. These names are load-bearing in
 content:

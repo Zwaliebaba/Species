@@ -91,7 +91,7 @@ class NewLightButton : public DarwiniaButton
 // ****************************************************************************
 
 LightsEditWindow::LightsEditWindow( char const *name )
-:	DarwiniaWindow(name)
+:	SpeciesWindow(name)
 {
 }
 
@@ -104,7 +104,7 @@ LightsEditWindow::~LightsEditWindow()
 
 void LightsEditWindow::Create()
 {
-	DarwiniaWindow::Create();
+	SpeciesWindow::Create();
 
 	int height = 5;
 	int pitch = 17;
