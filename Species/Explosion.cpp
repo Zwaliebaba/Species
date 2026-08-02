@@ -62,7 +62,7 @@ void Tumbler::Advance()
 Explosion::Explosion(ShapeFragment *_frag, Matrix34 const &_transform, float _fraction)
 :	m_numTumblers(NUM_TUMBLERS),
 	m_numTris(0),
-    m_tris(NULL)
+    m_tris(nullptr)
 {
 	m_tumblers = new Tumbler[m_numTumblers];
 
@@ -141,11 +141,11 @@ Explosion::~Explosion()
 {
 	m_numTumblers = 0;
 	delete [] m_tumblers;
-	m_tumblers = NULL;
+	m_tumblers = nullptr;
 
 	m_numTris = 0;
 	delete [] m_tris;
-	m_tris = NULL;
+	m_tris = nullptr;
 }
 
 

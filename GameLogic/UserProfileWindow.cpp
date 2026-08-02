@@ -160,7 +160,7 @@ void NewUserProfileWindow::Create()
     box->SetShortProperties( "box", 10, GetMenuSize(30), m_w-20, GetMenuSize(40) );
     RegisterButton( box );
 
-    CreateValueControl( LANGUAGEPHRASE("dialog_name"), InputField::TypeString, s_profileName, GetMenuSize(40), 0, 0, 0, NULL, 20, m_w-40 );
+    CreateValueControl( LANGUAGEPHRASE("dialog_name"), InputField::TypeString, s_profileName, GetMenuSize(40), 0, 0, 0, nullptr, 20, m_w-40 );
 
 	int y = m_h-GetMenuSize(30);
 

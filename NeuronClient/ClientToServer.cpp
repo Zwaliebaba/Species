@@ -79,7 +79,7 @@ ClientToServer::ClientToServer()
 
   // Null it before the listen thread starts: the thread's first act is to store
   // its listener here, and this write used to be able to land on top of that.
-  m_receiveSocket = NULL;
+  m_receiveSocket = nullptr;
 
   NetStartThread(ListenThread);
 }
@@ -185,7 +185,7 @@ int ClientToServer::GetOurIP_Int()
 
 char *ClientToServer::GetOurIP_String()
 {
-    static char *result = NULL;
+    static char *result = nullptr;
 
     if( !result )
     {
@@ -215,7 +215,7 @@ int ClientToServer::GetNextLetterSeqID()
 ServerToClientLetter* ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
 {
     m_inboxMutex->Lock();
-    ServerToClientLetter *letter = NULL;
+    ServerToClientLetter *letter = nullptr;
 
     if( m_inbox.Size() > 0 )
     {
@@ -226,7 +226,7 @@ ServerToClientLetter* ClientToServer::GetNextLetter(int _lastProcessedSequenceId
         }
         else
         {
-            letter = NULL;
+            letter = nullptr;
         }
     }
 

@@ -54,8 +54,8 @@ EntityGridCell::EntityGridCell()
 	m_numSlotsFree(INITIAL_OBJECT_ID_ARRAY_SIZE),
 	m_firstFree(END_OF_LIST)
 {
-	m_objectIds = NULL;
-    m_usageLists = NULL;
+	m_objectIds = nullptr;
+    m_usageLists = nullptr;
 }
 
 
@@ -179,7 +179,7 @@ void LogEntityGridError( WorldObjectId _id, Vector3 const &_pos, int _error )
 EntityGrid::EntityGrid(float _cellSizeX, float _cellSizeZ)
 :   m_cellSizeX(_cellSizeX),
     m_cellSizeZ(_cellSizeZ),
-    m_neighbours(NULL),
+    m_neighbours(nullptr),
     m_maxNeighbours(0)
 {
     m_cellSizeXRecip = 1.0f / _cellSizeX;

@@ -38,7 +38,7 @@ FenceSwitch::FenceSwitch()
     m_timer(20.0f),
 	m_locked(false),
 	m_lockable(0),
-    m_connectionLocation(NULL)
+    m_connectionLocation(nullptr)
 {
     m_type = Building::TypeFenceSwitch;
 	SetShape( g_app->m_resource->GetShape("FenceSwitch.shp") );

@@ -451,8 +451,8 @@ void LocationInput::AdvanceTeamControl()
                         if( oldWeapon != currentWeapon )
                         {
                             g_app->m_clientToServer->RequestRunProgram( squad->m_teamId, weaponList[currentWeapon] );
-                            g_app->m_soundSystem->TriggerOtherEvent( NULL, "GestureBegin", SoundSourceBlueprint::TypeGesture );
-                            g_app->m_soundSystem->TriggerOtherEvent( NULL, "GestureSuccess", SoundSourceBlueprint::TypeGesture );
+                            g_app->m_soundSystem->TriggerOtherEvent( nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture );
+                            g_app->m_soundSystem->TriggerOtherEvent( nullptr, "GestureSuccess", SoundSourceBlueprint::TypeGesture );
                         }
                     }
                 }

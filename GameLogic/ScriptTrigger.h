@@ -34,7 +34,7 @@ public:
     bool DoesSphereHit          (Vector3 const &_pos, float _radius);
     bool DoesShapeHit           (Shape *_shape, Matrix34 _transform);
     bool DoesRayHit             (Vector3 const &_rayStart, Vector3 const &_rayDir,
-                                 float _rayLen=1e10, Vector3 *_pos=NULL, Vector3 *_norm=NULL);
+                                 float _rayLen=1e10, Vector3 *_pos=nullptr, Vector3 *_norm=nullptr);
 
     int  GetBuildingLink();
     void SetBuildingLink( int _buildingId );

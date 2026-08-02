@@ -50,7 +50,7 @@ RadarDish::RadarDish()
 RadarDish::~RadarDish()
 {
 	delete m_shape;
-	m_shape = NULL;
+	m_shape = nullptr;
 }
 
 

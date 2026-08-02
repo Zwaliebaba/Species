@@ -7,8 +7,8 @@
 
 static LList <EclWindow *> windows;
 
-static void (*clearDraw) (int, int, int, int) = NULL;
-static void (*tooltipCallback) (EclWindow *, EclButton *) = NULL;
+static void (*clearDraw) (int, int, int, int) = nullptr;
+static void (*tooltipCallback) (EclWindow *, EclButton *) = nullptr;
 
 static LList <DirtyRect *> dirtyrects;
 
@@ -108,7 +108,7 @@ void EclUpdateMouse ( int _mouseX, int _mouseY, bool _lmb, bool _rmb )
                 {
                     strcpy ( currentButton, "None" );
                     EclDirtyWindow ( currentWindow );
-                    if( tooltipCallback ) tooltipCallback( NULL, NULL );
+                    if( tooltipCallback ) tooltipCallback( nullptr, nullptr );
                 }
             }
         }
@@ -117,7 +117,7 @@ void EclUpdateMouse ( int _mouseX, int _mouseY, bool _lmb, bool _rmb )
             if ( strcmp ( currentButton, "None" ) != 0 )
             {
                 strcpy ( currentButton, "None" );
-                if( tooltipCallback ) tooltipCallback( NULL, NULL );
+                if( tooltipCallback ) tooltipCallback( nullptr, nullptr );
             }
         }
     }
@@ -545,7 +545,7 @@ EclWindow *EclGetWindow ( char const *name )
     int index = EclGetWindowIndex (name);
     if ( index == -1 )
     {
-        return NULL;
+        return nullptr;
     }
     else
     {
@@ -567,7 +567,7 @@ EclWindow *EclGetWindow ( int x, int y )
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 void EclMaximiseWindow( char const *name )

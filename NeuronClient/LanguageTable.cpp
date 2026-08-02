@@ -21,8 +21,8 @@
 // ****************************************************************************
 
 LangPhrase::LangPhrase()
-:	m_key(NULL),
-	m_string(NULL)
+:	m_key(nullptr),
+	m_string(nullptr)
 {
 }
 
@@ -42,12 +42,12 @@ LangTable::LangTable(char const *_filename)
 {
 	// Create the "not found" Phrase that will be returned when
 	// the LookupPhrase is called with an unknown key
-	m_notFound.m_key = NULL;
+	m_notFound.m_key = nullptr;
 	m_notFound.m_string = (char*)malloc(256);
 
-	m_phrasesKbd = NULL;
-	m_phrasesXin = NULL;
-	m_chunk = NULL;
+	m_phrasesKbd = nullptr;
+	m_phrasesXin = nullptr;
+	m_chunk = nullptr;
 
 	// Open the required language file
     ParseLanguageFile( _filename );
@@ -282,7 +282,7 @@ HashTable<int> *LangTable::GetCurrentTable()
 {
 	if ( g_inputManager )
 		return GetCurrentTable( g_inputManager->getInputMode() );
-	return NULL;
+	return nullptr;
 }
 
 
@@ -298,7 +298,7 @@ HashTable<int> *LangTable::GetCurrentTable( InputMode _mood )
 		case INPUT_MODE_GAMEPAD:
 			return m_phrasesXin;
 	}
-	return NULL;
+	return nullptr;
 }
 
 
@@ -348,7 +348,7 @@ bool LangTable::RawDoesPhraseExist(char const *_key)
     else
     {
         LangPhrase const *phrase = m_phrasesRaw.GetData( _key );
-        return( phrase != NULL );
+        return( phrase != nullptr );
     }
 }
 
@@ -356,7 +356,7 @@ bool LangTable::RawDoesPhraseExist(char const *_key)
 char *LangTable::LookupPhrase(char const *_key)
 {
 	HashTable<int> *phrases = GetCurrentTable();
-    char *phrase = NULL;
+    char *phrase = nullptr;
 
     if( !_key || !phrases || !m_chunk )
     {
@@ -398,7 +398,7 @@ char *LangTable::RawLookupPhrase(char const *_key)
 
 char *LangTable::RawLookupPhrase(char const *_key, InputMode _mood)
 {
-	LangPhrase *phrase = NULL;
+	LangPhrase *phrase = nullptr;
 
     if( !_key )
     {
@@ -521,8 +521,8 @@ DArray<LangPhrase *> *LangTable::GetPhraseList()
 // and the width of the text area.
 LList <char *> *WordWrapText (const char *_string, float _lineWidth, float _fontWidth, bool _wrapToWindow)
 {
-	if ( !_string ) return NULL;
-    if ( _lineWidth < 0 && _wrapToWindow ) return NULL;
+	if ( !_string ) return nullptr;
+    if ( _lineWidth < 0 && _wrapToWindow ) return nullptr;
 
 	// Calculate the maximum width in characters for 1 line
     int linewidth = int(_lineWidth / _fontWidth);

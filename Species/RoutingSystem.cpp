@@ -117,7 +117,7 @@ WayPoint *Route::GetWayPoint(int _id)
         return wayPoint;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 

@@ -83,7 +83,7 @@ char const *CamAnimNode::GetTransitModeName(int _modeId)
 
 void LevelFile::ParseMissionFile(char const *_filename)
 {
-	TextReader *in = NULL;
+	TextReader *in = nullptr;
     char fullFilename[256];
 
     if( !g_app->m_editing )
@@ -467,7 +467,7 @@ void LevelFile::ParseLandscapeData(TextReader *_in)
 	while(_in->ReadLine())
 	{
 		char *word = _in->GetNextToken();
-		char *secondWord = NULL;
+		char *secondWord = nullptr;
 
 		if (_in->TokenAvailable()) secondWord = _in->GetNextToken();
 
@@ -1142,13 +1142,13 @@ LevelFile::~LevelFile()
 void LevelFile::Save()
 {
 	// Write the mission file
-	if (strstr(m_missionFilename, "null") == NULL)
+	if (strstr(m_missionFilename, "null") == nullptr)
 	{
         SaveMissionFile(m_missionFilename);
     }
 
 	// Write the map file
-	if (strstr(m_mapFilename, "null") == NULL)
+	if (strstr(m_mapFilename, "null") == nullptr)
 	{
         SaveMapFile(m_mapFilename);
     }
@@ -1172,7 +1172,7 @@ void LevelFile::SaveMapFile(char const *_filename)
 
 void LevelFile::SaveMissionFile(char const *_filename)
 {
-    FileWriter *out = NULL;
+    FileWriter *out = nullptr;
     char fullFilename[256];
 
     if( !g_app->m_editing )
@@ -1214,7 +1214,7 @@ Building *LevelFile::GetBuilding( int _id )
             return building;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 
@@ -1228,7 +1228,7 @@ CameraMount *LevelFile::GetCameraMount(char const *_name)
             return mount;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 
@@ -1301,7 +1301,7 @@ Route *LevelFile::GetRoute(int _id)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -1489,7 +1489,7 @@ void LevelFile::GenerateInstantUnits()
                     WorldObjectId id = *dish->m_inTransit.GetPointer(e);
                     Entity *entity = g_app->m_location->GetEntity( id );
 
-					if( entity == NULL )
+					if( entity == nullptr )
 						continue;
 
 					if( entity->m_type == Entity::TypeInsertionSquadie )

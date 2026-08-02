@@ -68,13 +68,13 @@
 // *** Constructor
 Location::Location()
 :   m_missionComplete(false),
-	m_entityGrid(NULL),
-    m_obstructionGrid(NULL),
-	m_levelFile(NULL),
-    m_clouds(NULL),
-    m_water(NULL),
+	m_entityGrid(nullptr),
+    m_obstructionGrid(nullptr),
+	m_levelFile(nullptr),
+    m_clouds(nullptr),
+    m_water(nullptr),
     m_lastSliceProcessed(0),
-	m_teams(NULL),
+	m_teams(nullptr),
     m_christmasTimer(-99.9f)
 {
     m_spirits.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
@@ -151,12 +151,12 @@ void Location::Empty()
     m_lasers.Empty();
     m_effects.Empty();
 
-	delete m_levelFile;			m_levelFile = NULL;
-	delete [] m_teams;			m_teams = NULL;
-	delete m_entityGrid;		m_entityGrid = NULL;
-	delete m_obstructionGrid;	m_obstructionGrid = NULL;
-	delete m_clouds;			m_clouds = NULL;
-	delete m_water;				m_water = NULL;
+	delete m_levelFile;			m_levelFile = nullptr;
+	delete [] m_teams;			m_teams = nullptr;
+	delete m_entityGrid;		m_entityGrid = nullptr;
+	delete m_obstructionGrid;	m_obstructionGrid = nullptr;
+	delete m_clouds;			m_clouds = nullptr;
+	delete m_water;				m_water = nullptr;
 }
 
 
@@ -400,7 +400,7 @@ Spirit *Location::GetSpirit( int _index )
         return &m_spirits[_index];
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -415,7 +415,7 @@ WorldObject *Location::GetEffect( WorldObjectId _id )
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -429,7 +429,7 @@ Entity *Location::GetEntity( WorldObjectId _id )
     if( teamId >= NUM_TEAMS ||
         m_teams[teamId].m_teamType == Team::TeamTypeUnused )
     {
-        return NULL;
+        return nullptr;
     }
 
     if( m_teams[teamId].m_units.ValidIndex(unitId) )
@@ -457,7 +457,7 @@ Entity *Location::GetEntity( WorldObjectId _id )
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -472,7 +472,7 @@ Entity *Location::GetEntity(Vector3 const &_rayStart, Vector3 const &_rayDir)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -486,7 +486,7 @@ Entity *Location::GetEntitySafe( WorldObjectId _id, unsigned char _type )
         return ent;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -498,7 +498,7 @@ Unit *Location::GetUnit( WorldObjectId _id )
     if( teamId >= NUM_TEAMS ||
         m_teams[teamId].m_teamType == Team::TeamTypeUnused )
     {
-        return NULL;
+        return nullptr;
     }
 
     if( m_teams[teamId].m_units.ValidIndex(unitId) )
@@ -507,13 +507,13 @@ Unit *Location::GetUnit( WorldObjectId _id )
         return unit;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
 Building *Location::GetBuilding( int _id )
 {
-    if( _id == -1 ) return NULL;
+    if( _id == -1 ) return nullptr;
 
     if( g_app->m_editing )
     {
@@ -534,7 +534,7 @@ Building *Location::GetBuilding( int _id )
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -552,7 +552,7 @@ Building *Location::GetBuilding(Vector3 const &_rayStart, Vector3 const &_rayDir
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -1352,7 +1352,7 @@ void Location::InitialiseTeam( unsigned char _teamId, unsigned char _teamType )
 		Vector3 pos(iu->m_posX, 0, iu->m_posZ);
 		pos.y = m_landscape.m_heightMap->GetValue(pos.x, pos.z);
 		int unitId = -1;
-        Unit *newUnit = NULL;
+        Unit *newUnit = nullptr;
         if( iu->m_inAUnit )
         {
             newUnit = team->NewUnit(iu->m_type, iu->m_number, &unitId, pos);
@@ -1761,7 +1761,7 @@ void Location::ThrowWeapon( Vector3 const &_pos, Vector3 const &_target, int _ty
     front.y = 1.0f;
     front.Normalise();
 
-    ThrowableWeapon *weapon = NULL;
+    ThrowableWeapon *weapon = nullptr;
 
     switch( _type )
     {
@@ -1882,7 +1882,7 @@ Team *Location::GetMyTeam()
 {
     if (g_app->m_globalWorld->m_myTeamId == 255)
     {
-        return NULL;
+        return nullptr;
     }
     return &m_teams[g_app->m_globalWorld->m_myTeamId];
 }
@@ -2083,7 +2083,7 @@ int Location::ChristmasModEnabled()
     // Last 2 weeks in December only
     // Also allow user to disable if he wishes
 
-	time_t now = time(NULL);
+	time_t now = time(nullptr);
     tm *theTime = localtime(&now);
 
     if( theTime->tm_mon == 11 &&

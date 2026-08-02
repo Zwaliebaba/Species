@@ -236,7 +236,7 @@ int Resource::WildCmp(const char* wild, const char* string)
 
 int Resource::CreateDisplayList(const char* _name)
 {
-  // Make sure name isn't NULL and isn't too long
+  // Make sure name isn't nullptr and isn't too long
   DEBUG_ASSERT(_name && strlen(_name) < 20);
 
   unsigned int id = glGenLists(1);
@@ -247,7 +247,7 @@ int Resource::CreateDisplayList(const char* _name)
 
 int Resource::GetDisplayList(const char* _name)
 {
-  // Make sure name isn't NULL and isn't too long
+  // Make sure name isn't nullptr and isn't too long
   DEBUG_ASSERT(_name && strlen(_name) < 20);
 
   return m_displayLists.GetData(_name, -1);
@@ -368,7 +368,7 @@ void OrderedInsert(LList<char*>* _llist, char* _newString)
 
 // Finds all the filenames in the specified directory that match the specified
 // filter. Directory should be like "textures" or "Textures/".
-// Filter can be NULL or "" or "*.bmp" or "map_*" or "map_*.txt"
+// Filter can be nullptr or "" or "*.bmp" or "map_*" or "map_*.txt"
 // Set _longResults to true if you want results like "Textures/blah.bmp"
 // or false for "blah.bmp"
 LList<char*>* Resource::ListResources(const char* _dir, const char* _filter, bool _longResults /* = true */)

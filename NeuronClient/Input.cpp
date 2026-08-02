@@ -15,7 +15,7 @@
 using namespace std;
 
 
-InputManager *g_inputManager = NULL;
+InputManager *g_inputManager = nullptr;
 
 
 InputManager::InputManager()

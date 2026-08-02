@@ -316,7 +316,7 @@ void ParticleSystem::CreateParticle(Vector3 const &_pos, Vector3 const &_vel,
 {
 	Particle *aParticle = m_particles.GetPointer();
     aParticle->Initialise(_pos, _vel, _typeId, _size);
-	if( col != NULL)
+	if( col != nullptr)
 	{
 		aParticle->m_colour = col;
 	}

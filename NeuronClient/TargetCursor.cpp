@@ -18,7 +18,7 @@
 #define AXIS_Z 2
 
 
-TargetCursor *g_target = NULL;
+TargetCursor *g_target = nullptr;
 
 
 TargetCursor::TargetCursor() {

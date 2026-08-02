@@ -115,7 +115,7 @@ Entity::Entity()
     m_formationIndex(-1),
     m_dead(false),
     m_reloading(0.0f),
-    m_shape(NULL),
+    m_shape(nullptr),
     m_justFired(false),
     m_radius(0.0f),
     m_buildingId(-1),
@@ -632,7 +632,7 @@ void Entity::RenderShadow( Vector3 const &_pos, float _size )
 
 Entity *Entity::NewEntity( int _troopType )
 {
-    Entity *entity = NULL;
+    Entity *entity = nullptr;
 
     switch(_troopType)
     {

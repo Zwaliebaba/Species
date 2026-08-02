@@ -184,7 +184,7 @@ class SoundSystem
     void TriggerBuildingEvent(Building* _building, const char* _eventName);
     void TriggerOtherEvent(WorldObject* _other, const char* _eventName, int _type);
 
-    void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in NULL to stop every event.
+    void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in nullptr to stop every event.
     // Full event name required, eg "Darwinian SeenThreat"
 
     void StopAllDSPEffects();

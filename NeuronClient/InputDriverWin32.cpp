@@ -48,7 +48,7 @@ enum MouseControl {
 signed char g_keyDeltas[KEY_MAX];
 signed char g_keys[KEY_MAX];
 
-W32InputDriver *g_win32InputDriver = NULL;
+W32InputDriver *g_win32InputDriver = nullptr;
 
 W32InputDriver::W32InputDriver()
 {
@@ -205,7 +205,7 @@ bool W32InputDriver::getFirstActiveInput( InputSpec &spec, bool instant )
 	// Check for pressed keys
 	for ( unsigned i = 0; i < KEY_TILDE; ++i ) {
 		if ( 1 == g_keyDeltas[ i ] && // key was pressed
-		     strstr( getKeyNames()[ i ], " " ) == NULL ) { // Key is bindable
+		     strstr( getKeyNames()[ i ], " " ) == nullptr ) { // Key is bindable
 			spec.handler_id = KEY_DRIVER;
 			spec.control_id = i;
 			if ( instant )

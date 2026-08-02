@@ -74,7 +74,7 @@ Entity *InsertionSquad::GetPointMan()
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 /*Entity *InsertionSquad::GetFirstValidUnit()
@@ -91,7 +91,7 @@ Entity *InsertionSquad::GetPointMan()
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 */
 
@@ -217,7 +217,7 @@ void InsertionSquad::Attack( Vector3 pos, bool withGrenade )
 	if (withGrenade)
 	{
         float nearest = 999999.9f;
-        Squadie *nearestEnt = NULL;
+        Squadie *nearestEnt = nullptr;
 
         //
         // Find the entity nearest to the target that has a grenade
@@ -522,7 +522,7 @@ bool Squadie::Advance(Unit *_theUnit)
         }
     }
 
-	if( !m_onGround ) AdvanceInAir(NULL);
+	if( !m_onGround ) AdvanceInAir(nullptr);
 
     m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
 

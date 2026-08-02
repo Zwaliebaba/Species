@@ -259,7 +259,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
   }
 
   BinaryReader* reader = g_app->m_resource->GetBinaryReader(fullFilname);
-  ASSERT_TEXT(reader != NULL, "Failed to get resource %s", fullFilname);
+  ASSERT_TEXT(reader != nullptr, "Failed to get resource %s", fullFilname);
   m_landscapeColour = new BitmapRGBA(reader, "bmp");
   delete reader;
 
@@ -365,7 +365,7 @@ void LandscapeRenderer::RenderMainSlow()
   }
 
   if (m_renderMode == RenderModeVertexBufferObject)
-    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, NULL);
+    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, nullptr);
 
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
@@ -444,7 +444,7 @@ void LandscapeRenderer::RenderOverlaySlow()
   switch (m_renderMode)
   {
   case RenderModeVertexBufferObject:
-    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, NULL);
+    gglBindBufferARB(GL_ARRAY_BUFFER_ARB, nullptr);
     break;
   }
 

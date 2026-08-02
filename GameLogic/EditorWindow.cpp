@@ -93,7 +93,7 @@ public:
 
 MainEditWindow::MainEditWindow( char const *name )
 :	SpeciesWindow(name),
-	m_currentEditWindow(NULL)
+	m_currentEditWindow(nullptr)
 {
 }
 

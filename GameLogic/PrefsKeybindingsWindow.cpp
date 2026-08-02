@@ -50,7 +50,7 @@ static ControlName s_controls[] = {
 	ControlIconsTaskManagerDisplay, true,  "control_event_iconstaskmanagerdisplay",
 	ControlIconsTaskManagerEndTask, true,  "control_event_iconstaskmanagerendtask",
 
-	ControlNull,                    false, NULL
+	ControlNull,                    false, nullptr
 };
 
 
@@ -88,7 +88,7 @@ class ApplyKeybindingsButton : public SpeciesButton
 		PrefsManager prefsMan( InputPrefs::GetUserPrefsPath() );
 		prefsMan.Clear();
 
-		for ( unsigned i = 0; s_controls[ i ].name != NULL; ++i )
+		for ( unsigned i = 0; s_controls[ i ].name != nullptr; ++i )
 		{
 			g_inputManager->getControlString( s_controls[ i ].type, key );
 			val = parent->m_bindings[ i ]->pref;

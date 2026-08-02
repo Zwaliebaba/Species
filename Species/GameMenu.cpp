@@ -170,7 +170,7 @@ public:
         /*if( g_app->m_multiwinia )
         {
             delete g_app->m_multiwinia;
-            g_app->m_multiwinia = NULL;
+            g_app->m_multiwinia = nullptr;
         }*/
     }
 };
@@ -296,7 +296,7 @@ void GameMenu::CreateMenu()
     /*if( g_app->m_multiwinia )
     {
         delete g_app->m_multiwinia;
-        g_app->m_multiwinia = NULL;
+        g_app->m_multiwinia = nullptr;
     }*/
 
     g_app->m_gameMode = App::GameModeNone;

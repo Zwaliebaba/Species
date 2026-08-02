@@ -47,7 +47,7 @@ template <class T>
 Array2D<T>::Array2D()
 	: m_numColumns(0),
 	m_numRows(0),
-	m_data(NULL)
+	m_data(nullptr)
 {}
 
 
@@ -65,7 +65,7 @@ template <class T>
 Array2D<T>::~Array2D()
 {
 	delete[] m_data;
-	m_data = NULL;
+	m_data = nullptr;
 }
 
 

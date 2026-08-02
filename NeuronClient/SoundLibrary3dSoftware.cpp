@@ -26,7 +26,7 @@ public:
 
 	SoundLibFilterSoftware()
 	:	m_chainIndex(-1),
-		m_userFilter(NULL)
+		m_userFilter(nullptr)
 	{
 	}
 };
@@ -79,7 +79,7 @@ SoftwareChannel::SoftwareChannel()
 
 	for (int i = 0; i < SoundLibrary3dSoftware::NUM_FILTERS; ++i)
 	{
-		m_dspFX[i].m_userFilter = NULL;
+		m_dspFX[i].m_userFilter = nullptr;
 	}
 }
 
@@ -100,7 +100,7 @@ void SoundLib3dSoftwareCallbackWrapper(StereoSample *_buf, unsigned int _numSamp
 
 SoundLibrary3dSoftware::SoundLibrary3dSoftware()
 :   SoundLibrary3d(),
-	m_channels(NULL),
+	m_channels(nullptr),
 	m_listenerFront(1,0,0),
 	m_listenerUp(0,1,0)
 {
@@ -115,12 +115,12 @@ SoundLibrary3dSoftware::SoundLibrary3dSoftware()
 
 SoundLibrary3dSoftware::~SoundLibrary3dSoftware()
 {
-	g_soundLibrary2d->SetCallback(NULL);
+	g_soundLibrary2d->SetCallback(nullptr);
 
-	delete [] m_channels;		m_channels = NULL;
+	delete [] m_channels;		m_channels = nullptr;
 	m_numChannels = 0;
-	delete [] m_left;			m_left = NULL;
-	delete [] m_right;			m_right = NULL;
+	delete [] m_left;			m_left = nullptr;
+	delete [] m_right;			m_right = nullptr;
 }
 
 
@@ -210,7 +210,7 @@ void SoundLibrary3dSoftware::ApplyDspFX(float _duration)
 		{
 			for( int j = 0; j < NUM_FILTERS; ++j )
 		    {
-				if (m_channels[i].m_dspFX[j].m_userFilter == NULL) continue;
+				if (m_channels[i].m_dspFX[j].m_userFilter == nullptr) continue;
 
 				unsigned int samplesNeeded;
 				if (m_channels[i].m_freq < m_sampleRate)
@@ -574,7 +574,7 @@ void SoundLibrary3dSoftware::DisableDspFX( int _channel )
 		if (filter->m_chainIndex != -1)
 		{
 			filter->m_chainIndex = -1;
-			delete filter->m_userFilter; filter->m_userFilter = NULL;
+			delete filter->m_userFilter; filter->m_userFilter = nullptr;
 		}
 	}
 }

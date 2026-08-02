@@ -34,7 +34,7 @@ GunTurret::GunTurret()
     m_retargetTimer(0.0f),
     m_fireTimer(0.0f),
     m_nextBarrel(0),
-    m_turret(NULL),
+    m_turret(nullptr),
     m_ownershipTimer(0.0f),
     m_health(60.0f),
     m_targetCreated(false),

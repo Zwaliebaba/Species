@@ -63,7 +63,7 @@ public:
                     {
                         g_deletingCachedSampleHandle = true;
                         delete instance->m_cachedSampleHandle;
-                        instance->m_cachedSampleHandle = NULL;
+                        instance->m_cachedSampleHandle = nullptr;
                         g_deletingCachedSampleHandle = false;
                         instance->OpenStream(false);
                     }
@@ -75,7 +75,7 @@ public:
             {
                 g_deletingCachedSampleHandle = true;
                 delete g_app->m_soundSystem->m_music->m_cachedSampleHandle;
-                g_app->m_soundSystem->m_music->m_cachedSampleHandle = NULL;
+                g_app->m_soundSystem->m_music->m_cachedSampleHandle = nullptr;
                 g_deletingCachedSampleHandle = false;
                 g_app->m_soundSystem->m_music->OpenStream(false);
             }

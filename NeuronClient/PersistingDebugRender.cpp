@@ -31,7 +31,7 @@ PersistRenderItem *PersistingDebugRenderer::FindItem(char const *_label)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 

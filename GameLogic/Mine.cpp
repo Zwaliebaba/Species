@@ -36,15 +36,15 @@
 // Class MineBuilding
 // ****************************************************************************
 
-Shape *MineBuilding::s_wheelShape = NULL;
+Shape *MineBuilding::s_wheelShape = nullptr;
 
-Shape *MineBuilding::s_cartShape = NULL;
-ShapeMarker *MineBuilding::s_cartMarker1 = NULL;
-ShapeMarker *MineBuilding::s_cartMarker2 = NULL;
-ShapeMarker *MineBuilding::s_cartContents[] = { NULL, NULL, NULL };
+Shape *MineBuilding::s_cartShape = nullptr;
+ShapeMarker *MineBuilding::s_cartMarker1 = nullptr;
+ShapeMarker *MineBuilding::s_cartMarker2 = nullptr;
+ShapeMarker *MineBuilding::s_cartContents[] = { nullptr, nullptr, nullptr };
 
-Shape *MineBuilding::s_polygon1 = NULL;
-Shape *MineBuilding::s_primitive1 = NULL;
+Shape *MineBuilding::s_polygon1 = nullptr;
+Shape *MineBuilding::s_primitive1 = nullptr;
 
 float MineBuilding::s_refineryPopulation = 0.0f;
 float MineBuilding::s_refineryRecalculateTimer = 0.0f;
@@ -53,8 +53,8 @@ float MineBuilding::s_refineryRecalculateTimer = 0.0f;
 MineBuilding::MineBuilding()
 :   Building(),
     m_trackLink(-1),
-    m_trackMarker1(NULL),
-    m_trackMarker2(NULL),
+    m_trackMarker1(nullptr),
+    m_trackMarker2(nullptr),
     m_previousMineSpeed(0.0f),
     m_wheelRotate(0.0f)
 {
@@ -429,7 +429,7 @@ float MineBuilding::RefinerySpeed()
         // If not a refinery, look for a construction yard
         // If not, look for a fuel generator
 
-        Building *driver = NULL;
+        Building *driver = nullptr;
 
         int numFuelGenerators = 0;
         float fuelGeneratorFactor = 0.0f;
@@ -469,7 +469,7 @@ float MineBuilding::RefinerySpeed()
             int mineLocationId = g_app->m_globalWorld->GetLocationId("mine");
             s_refineryPopulation = 0.0f;
 
-            GlobalBuilding *globalRefinery = NULL;
+            GlobalBuilding *globalRefinery = nullptr;
             for( int i = 0; i < g_app->m_globalWorld->m_buildings.Size(); ++i )
             {
                 if( g_app->m_globalWorld->m_buildings.ValidIndex(i) )
@@ -840,10 +840,10 @@ void TrackEnd::Write( FileWriter *_out )
 
 Refinery::Refinery()
 :   MineBuilding(),
-    m_wheel1(NULL),
-    m_wheel2(NULL),
-    m_wheel3(NULL),
-    m_counter1(NULL)
+    m_wheel1(nullptr),
+    m_wheel2(nullptr),
+    m_wheel3(nullptr),
+    m_counter1(nullptr)
 {
     m_type = TypeRefinery;
     SetShape( g_app->m_resource->GetShape( "Refinery.shp" ) );
@@ -981,8 +981,8 @@ void Refinery::Render( float _predictionTime )
 
 Mine::Mine()
 :   MineBuilding(),
-    m_wheel1(NULL),
-    m_wheel2(NULL)
+    m_wheel1(nullptr),
+    m_wheel2(nullptr)
 {
     m_type = TypeMine;
     SetShape( g_app->m_resource->GetShape( "Mine.shp" ) );

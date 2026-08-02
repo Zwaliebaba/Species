@@ -11,9 +11,9 @@ EclButton::EclButton ()
     m_y(0),
     m_w(0),
     m_h(0),
-    m_caption(NULL),
-    m_tooltip(NULL),
-    m_parent(NULL)
+    m_caption(nullptr),
+    m_tooltip(nullptr),
+    m_parent(nullptr)
 {
 	strcpy ( m_name, "New Button" );
 	SetTooltip ( " " );

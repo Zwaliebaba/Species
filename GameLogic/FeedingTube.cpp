@@ -89,7 +89,7 @@ Vector3 FeedingTube::GetDishFront( float _predictionTime )
 
 Vector3 FeedingTube::GetForwardsClippingDir( float _predictionTime, FeedingTube *_sender )
 {
-	if (_sender == NULL) {
+	if (_sender == nullptr) {
 		return GetDishFront( _predictionTime );
 	}
 

@@ -24,7 +24,7 @@ BlueprintBuilding::BlueprintBuilding()
     m_buildingLink(-1),
     m_infected(0.0f),
     m_segment(0),
-    m_marker(NULL)
+    m_marker(nullptr)
 {
     m_vel.Zero();
 }

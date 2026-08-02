@@ -29,8 +29,8 @@
 
 Triffid::Triffid()
 :   Building(),
-    m_launchPoint(NULL),
-    m_stem(NULL),
+    m_launchPoint(nullptr),
+    m_stem(nullptr),
     m_timerSync(0.0f),
     m_pitch( 0.6f ),
     m_force( 250.0f ),
@@ -232,7 +232,7 @@ void Triffid::RenderAlphas( float _predictionTime )
             while( true )
             {
                 glVertex3fv( egg.m_pos.GetData() );
-                egg.Advance( NULL );
+                egg.Advance( nullptr );
                 glVertex3fv( egg.m_pos.GetData() );
 
                 if( egg.m_vel.Mag() < 20.0f ) break;

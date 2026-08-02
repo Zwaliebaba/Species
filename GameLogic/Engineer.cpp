@@ -96,7 +96,7 @@ bool Engineer::SearchForSpirits()
 {
     if( m_spirits.Size() < GetMaxSpirits() )
     {
-        Spirit *found = NULL;
+        Spirit *found = nullptr;
         int spiritId = -1;
         float closest = 999999.9f;
 
@@ -560,7 +560,7 @@ bool Engineer::AdvanceToWaypoint()
 
 bool Engineer::AdvanceToSpirit()
 {
-    Spirit *s = NULL;
+    Spirit *s = nullptr;
     if( g_app->m_location->m_spirits.ValidIndex(m_spiritId) )
     {
         s = g_app->m_location->m_spirits.GetPointer(m_spiritId);

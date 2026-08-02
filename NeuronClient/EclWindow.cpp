@@ -134,7 +134,7 @@ EclButton *EclWindow::GetButton ( char const *_name )
             return button;
     }
     
-    return NULL;
+    return nullptr;
 
 }
 
@@ -153,7 +153,7 @@ EclButton *EclWindow::GetButton ( int _x, int _y )
 
     }
     
-    return NULL;
+    return nullptr;
 
 }
 

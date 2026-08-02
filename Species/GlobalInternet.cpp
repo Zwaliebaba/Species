@@ -46,7 +46,7 @@ void GlobalInternetNode::AddLink(int _id)
 GlobalInternet::GlobalInternet()
 :   m_links(0),
 	m_numLinks(0),
-	m_nodes(NULL),
+	m_nodes(nullptr),
 	m_numNodes(0),
     m_nearestNodeToCentre(-1),
     m_nearestDistance(FLT_MAX)

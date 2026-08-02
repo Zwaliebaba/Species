@@ -64,7 +64,7 @@ void BuyNowWindow::Render(bool _hasFocus)
 	const char *line[] = {
 		LANGUAGEPHRASE("dialog_buynow1"),
 		LANGUAGEPHRASE("dialog_buynow2"),
-		NULL
+		nullptr
 	};
 
 	for (int i = 0; line[i]; i++)

@@ -46,7 +46,7 @@ public:
 
 public:
 	CamAnimNode()
-	:	m_mountName(NULL),
+	:	m_mountName(nullptr),
 		m_transitionMode(CamAnimNode::TransitionMove),
 		m_duration(1.0f)
 	{
@@ -54,7 +54,7 @@ public:
 
 	~CamAnimNode()
 	{
-		free(m_mountName); m_mountName = NULL;
+		free(m_mountName); m_mountName = nullptr;
 	}
 
 	static int GetTransitModeId(char const *_word);

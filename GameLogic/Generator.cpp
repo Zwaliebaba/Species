@@ -35,7 +35,7 @@
 PowerBuilding::PowerBuilding()
 :   Building(),
     m_powerLink(-1),
-    m_powerLocation(NULL)
+    m_powerLocation(nullptr)
 {
 }
 
@@ -398,7 +398,7 @@ bool PylonStart::Advance()
     bool generatorOnline = false;
 
     int generatorLocationId = g_app->m_globalWorld->GetLocationId("generator");
-    GlobalBuilding *globalRefinery = NULL;
+    GlobalBuilding *globalRefinery = nullptr;
     for( int i = 0; i < g_app->m_globalWorld->m_buildings.Size(); ++i )
     {
         if( g_app->m_globalWorld->m_buildings.ValidIndex(i) )

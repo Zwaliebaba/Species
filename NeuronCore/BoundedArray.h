@@ -43,7 +43,7 @@ public:
 template <class T>
 BoundedArray<T>::BoundedArray()
 	: m_numElements(0),
-	m_data(NULL)
+	m_data(nullptr)
 {}
 
 

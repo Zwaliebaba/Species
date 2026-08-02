@@ -68,7 +68,7 @@ bool StartSequence::Advance()
     if( GetHighResTime() > m_startTime && !started )
     {
         started = true;
-        g_app->m_soundSystem->TriggerOtherEvent( NULL, "StartSequence", SoundSourceBlueprint::TypeMusic );
+        g_app->m_soundSystem->TriggerOtherEvent( nullptr, "StartSequence", SoundSourceBlueprint::TypeMusic );
 	    g_app->m_camera->SetDebugMode(Camera::DebugModeAuto);
         g_app->m_camera->RequestMode(Camera::ModeSphereWorldIntro);
     }

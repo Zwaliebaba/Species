@@ -150,11 +150,11 @@ void Team::SelectUnit(int _unitId, int _entityId, int _buildingId )
 
     if( _unitId == -1 && _entityId == -1 && _buildingId == -1 )
     {
-        g_app->m_soundSystem->TriggerOtherEvent( NULL, "TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface );
+        g_app->m_soundSystem->TriggerOtherEvent( nullptr, "TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface );
     }
     else
     {
-        g_app->m_soundSystem->TriggerOtherEvent( NULL, "TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface );
+        g_app->m_soundSystem->TriggerOtherEvent( nullptr, "TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface );
     }
 
 //    if( m_teamId == g_app->m_globalWorld->m_myTeamId )
@@ -178,7 +178,7 @@ Unit *Team::GetMyUnit()
 {
     if( m_currentUnitId == -1 || !m_units.ValidIndex(m_currentUnitId))
     {
-        return NULL;
+        return nullptr;
     }
     else if( m_units.ValidIndex( m_currentUnitId ) )
     {
@@ -186,7 +186,7 @@ Unit *Team::GetMyUnit()
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -218,7 +218,7 @@ Entity *Team::RayHitEntity(Vector3 const &_rayStart, Vector3 const &_rayEnd)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -226,7 +226,7 @@ Entity *Team::GetMyEntity()
 {
     if( m_currentEntityId == -1 )
     {
-        return NULL;
+        return nullptr;
     }
     else if( m_others.ValidIndex( m_currentEntityId ) )
     {
@@ -234,7 +234,7 @@ Entity *Team::GetMyEntity()
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -242,7 +242,7 @@ Entity *Team::GetMyEntity()
 Unit *Team::NewUnit(int _troopType, int _numEntities, int *_unitId, Vector3 const &_pos)
 {
     *_unitId = m_units.GetNextFree();
-    Unit *unit = NULL;
+    Unit *unit = nullptr;
 
 	if (_troopType == Entity::TypeInsertionSquadie)
 	{
@@ -284,7 +284,7 @@ Entity *Team::NewEntity(int _troopType, int _unitId, int *_index)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 int Team::NumEntities( int _troopType)
@@ -380,7 +380,7 @@ void Team::Advance(int _slice)
 
                     char const *entityName = Entity::GetTypeName( ent->m_type );
                     START_PROFILE( g_app->m_profiler, entityName );
-                    bool amIdead = ent->Advance(NULL);
+                    bool amIdead = ent->Advance(nullptr);
                     END_PROFILE( g_app->m_profiler, entityName );
 
 #ifdef PROFILER_ENABLED

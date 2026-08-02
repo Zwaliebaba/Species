@@ -22,8 +22,8 @@
 
 #include "Centipede.h"
 
-Shape *Centipede::s_shapeBody = NULL;
-Shape *Centipede::s_shapeHead = NULL;
+Shape *Centipede::s_shapeBody = nullptr;
+Shape *Centipede::s_shapeHead = nullptr;
 
 
 Centipede::Centipede()
@@ -57,7 +57,7 @@ void Centipede::Begin()
         // Link every centipede in this unit into one long centipede
 
         Team *myTeam = &g_app->m_location->m_teams[ m_id.GetTeamId() ];
-        Unit *myUnit = NULL;
+        Unit *myUnit = nullptr;
         if( myTeam->m_units.ValidIndex(m_id.GetUnitId()) )
         {
             myUnit = myTeam->m_units[ m_id.GetUnitId() ];
@@ -68,7 +68,7 @@ void Centipede::Begin()
             float size = 0.2f * pow(1.1f, myUnit->m_entities.Size() );
             size = min( size, 10.0f );
 
-            Centipede *prev = NULL;
+            Centipede *prev = nullptr;
 
             for( int i = 0; i < myUnit->m_entities.Size(); ++i )
             {
@@ -497,7 +497,7 @@ bool Centipede::SearchForSpirits()
     if( size > CENTIPEDE_MAXSIZE ) return false;
 
     START_PROFILE(g_app->m_profiler, "SearchSpirits");
-    Spirit *found = NULL;
+    Spirit *found = nullptr;
     float nearest = 9999.9f;
 
     for( int i = 0; i < g_app->m_location->m_spirits.Size(); ++i )

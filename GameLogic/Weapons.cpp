@@ -38,7 +38,7 @@
 // ****************************************************************************
 
 ThrowableWeapon::ThrowableWeapon( int _type, Vector3 const &_startPos, Vector3 const &_front, float _force )
-:   m_shape(NULL),
+:   m_shape(nullptr),
     m_force(1.0f),
     m_numFlashes(0)
 {
@@ -689,7 +689,7 @@ Shockwave::Shockwave( int _teamId, float _size )
 :   m_teamId(_teamId),
     m_size(_size),
     m_life(_size),
-    m_shape(NULL)
+    m_shape(nullptr)
 {
 //    m_shape = g_app->m_resource->GetShape( "shockwave.shp" );
     m_type = EffectShockwave;

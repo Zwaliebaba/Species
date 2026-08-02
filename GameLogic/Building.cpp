@@ -67,8 +67,8 @@
 
 
 
-Shape *Building::s_controlPad = NULL;
-ShapeMarker *Building::s_controlPadStatus = NULL;
+Shape *Building::s_controlPad = nullptr;
+ShapeMarker *Building::s_controlPadStatus = nullptr;
 
 
 
@@ -76,7 +76,7 @@ Building::Building()
 :   m_front(1,0,0),
     m_radius(13.0f),
 	m_timeOfDeath(-1.0f),
-	m_shape(NULL),
+	m_shape(nullptr),
 	m_dynamic(false),
 	m_isGlobal(false),
 	m_destroyed(false)
@@ -743,12 +743,12 @@ Building *Building::CreateBuilding( char *_name )
     }
 
     //DEBUG_ASSERT(false);
-	return NULL;
+	return nullptr;
 }
 
 Building *Building::CreateBuilding( int _type )
 {
-    Building *building = NULL;
+    Building *building = nullptr;
 
     switch( _type )
     {
@@ -906,7 +906,7 @@ char const *Building::GetTypeName( int _type )
     else
     {
         DEBUG_ASSERT(false);
-        return NULL;
+        return nullptr;
     }
 }
 

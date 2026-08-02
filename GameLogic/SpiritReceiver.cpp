@@ -31,7 +31,7 @@
 ReceiverBuilding::ReceiverBuilding()
 :   Building(),
     m_spiritLink(-1),
-    m_spiritLocation(NULL)
+    m_spiritLocation(nullptr)
 {
 }
 
@@ -578,9 +578,9 @@ bool ReceiverSpiritSpawner::Advance()
 
 SpiritReceiver::SpiritReceiver()
 :   ReceiverBuilding(),
-    m_headMarker(NULL),
-    m_headShape(NULL),
-    m_spiritLink(NULL)
+    m_headMarker(nullptr),
+    m_headShape(nullptr),
+    m_spiritLink(nullptr)
 {
     m_type = TypeSpiritReceiver;
     SetShape( g_app->m_resource->GetShape( "SpiritReceiver.shp" ) );

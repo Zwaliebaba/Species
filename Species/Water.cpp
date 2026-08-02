@@ -34,13 +34,13 @@ float const shoreNoiseFactor = 0.25f;
 // ****************************************************************************
 
 Water::Water()
-:	m_waterDepths(NULL),
-	m_shoreNoise(NULL),
-	m_waterDepthMap(NULL),
-	m_waveTableX(NULL),
-	m_waveTableZ(NULL),
+:	m_waterDepths(nullptr),
+	m_shoreNoise(nullptr),
+	m_waterDepthMap(nullptr),
+	m_waveTableX(nullptr),
+	m_waveTableZ(nullptr),
 	m_renderWaterEffect(0),
-	m_colourTable(NULL)
+	m_colourTable(nullptr)
 {
     if( !g_app->m_editing )
     {
@@ -100,11 +100,11 @@ Water::~Water()
 {
 
 	m_renderVerts.Empty();
-	delete [] m_waterDepths;	m_waterDepths = NULL;
-	delete [] m_shoreNoise;		m_shoreNoise = NULL;
-	delete [] m_colourTable;	m_colourTable = NULL;
-	delete [] m_waveTableX;		m_waveTableX = NULL;
-	delete [] m_waveTableZ;		m_waveTableZ = NULL;
+	delete [] m_waterDepths;	m_waterDepths = nullptr;
+	delete [] m_shoreNoise;		m_shoreNoise = nullptr;
+	delete [] m_colourTable;	m_colourTable = nullptr;
+	delete [] m_waveTableX;		m_waveTableX = nullptr;
+	delete [] m_waveTableZ;		m_waveTableZ = nullptr;
 }
 
 void Water::GenerateLightMap()
@@ -207,7 +207,7 @@ void Water::GenerateLightMap()
         }
     }
 
-    if( g_app->m_resource->GetBitmap(LIGHTMAP_TEXTURE_NAME) != NULL )
+    if( g_app->m_resource->GetBitmap(LIGHTMAP_TEXTURE_NAME) != nullptr )
     {
         g_app->m_resource->DeleteBitmap(LIGHTMAP_TEXTURE_NAME);
 	}
@@ -392,7 +392,7 @@ void Water::BuildTriangleStrips()
 		m_shoreNoise[i] = whiteness;
 	}
 
-	delete m_waterDepthMap; m_waterDepthMap = NULL;
+	delete m_waterDepthMap; m_waterDepthMap = nullptr;
 }
 
 void Water::RenderFlatWaterTiles(

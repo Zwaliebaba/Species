@@ -65,7 +65,7 @@ public:
                 newBuilding->m_id.SetUniqueId( g_app->m_globalWorld->GenerateBuildingId() );
                 g_app->m_location->m_levelFile->m_buildings.PutData( newBuilding );
 
-                speciesSeedRandom(time(NULL));
+                speciesSeedRandom(time(nullptr));
                 Tree *newTree = (Tree *) newBuilding;
                 newTree->m_pos = _pos;
                 newTree->m_seed = (int) frand(99999);
@@ -112,8 +112,8 @@ void TreeWindow::Create()
     clone->SetShortProperties( LANGUAGEPHRASE("editor_clonesimilar"), 10, y+=h, m_w - 20 );
     RegisterButton( clone );
 
-    CreateColourControl( LANGUAGEPHRASE("editor_branchcolour"), &tree->m_branchColour, y+=h, NULL, 10, m_w - 7 );
-    CreateColourControl( LANGUAGEPHRASE("editor_leafcolour"), &tree->m_leafColour, y+=h, NULL, 10, m_w - 7 );
+    CreateColourControl( LANGUAGEPHRASE("editor_branchcolour"), &tree->m_branchColour, y+=h, nullptr, 10, m_w - 7 );
+    CreateColourControl( LANGUAGEPHRASE("editor_leafcolour"), &tree->m_leafColour, y+=h, nullptr, 10, m_w - 7 );
 
     CreateValueControl( LANGUAGEPHRASE("editor_height"),        InputField::TypeFloat, &tree->m_height, y+=h, 1.0f, 1.0f, 1000.0f );
     CreateValueControl( LANGUAGEPHRASE("editor_budsize"),       InputField::TypeFloat, &tree->m_budsize, y+=h, 0.05f, 0.0f, 50.0f, generate );

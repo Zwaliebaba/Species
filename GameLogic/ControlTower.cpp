@@ -27,7 +27,7 @@
 #include "ControlTower.h"
 #include "TrunkPort.h"
 
-Shape *ControlTower::s_dishShape = NULL;
+Shape *ControlTower::s_dishShape = nullptr;
 
 
 ControlTower::ControlTower()

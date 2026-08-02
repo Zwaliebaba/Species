@@ -116,7 +116,7 @@ void TaskManagerInterface::RunDefaultObjective ( GlobalEventCondition *_cond )
 
         case GlobalEventCondition::ResearchOwned:
         {
-            Building *building = NULL;
+            Building *building = nullptr;
             for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
             {
                 if( g_app->m_location->m_buildings.ValidIndex(i) )

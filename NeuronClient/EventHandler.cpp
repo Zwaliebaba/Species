@@ -3,4 +3,4 @@
 #include "EventHandler.h"
 
 
-EventHandler * g_eventHandler = NULL;
+EventHandler * g_eventHandler = nullptr;

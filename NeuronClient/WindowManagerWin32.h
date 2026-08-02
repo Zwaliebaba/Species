@@ -9,9 +9,9 @@ public:
 	HGLRC		m_hRC;
 
 	WindowManagerWin32()
-	:	m_hWnd(NULL),
-		m_hDC(NULL),
-		m_hRC(NULL)
+	:	m_hWnd(nullptr),
+		m_hDC(nullptr),
+		m_hRC(nullptr)
 	{
 	}
 };

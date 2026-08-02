@@ -29,8 +29,8 @@ ResearchItem::ResearchItem()
     m_researchType(-1),
     m_inLibrary(false),
     m_reprogrammed(100.0f),
-    m_end1(NULL),
-    m_end2(NULL),
+    m_end1(nullptr),
+    m_end2(nullptr),
     m_level(1)
 {
     m_type = TypeResearchItem;

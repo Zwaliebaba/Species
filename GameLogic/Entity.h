@@ -65,7 +65,7 @@ public:
     Vector3             m_front;
     Vector3				m_angVel;
 
-    Shape               *m_shape;                   // Might be NULL
+    Shape               *m_shape;                   // Might be nullptr
     Vector3             m_centrePos;
     float               m_radius;                   // Can be Zero, which means its a sprite
 

@@ -19,7 +19,7 @@ Bridge::Bridge()
 :   Teleport(),
     m_nextBridgeId(-1),
     m_status(0.0f),
-    m_signal(NULL),
+    m_signal(nullptr),
     m_beingOperated(false)
 {
     m_type = Building::TypeBridge;

@@ -23,7 +23,7 @@
 
 DspHandle::DspHandle()
 :   m_type(-1),
-    m_parent(NULL)
+    m_parent(nullptr)
 {
 }
 
@@ -58,7 +58,7 @@ void DspHandle::Advance()
     {
         m_parent->UpdateParameter( m_params[i] );
         int dataType;
-        g_app->m_soundSystem->m_filterBlueprints[ m_type ]->GetParameter( i, NULL, NULL, NULL, &dataType );
+        g_app->m_soundSystem->m_filterBlueprints[ m_type ]->GetParameter( i, nullptr, nullptr, nullptr, &dataType );
         switch( dataType )
         {
             case 0 :        *((float *) &params[i]) = (float) m_params[i].GetOutput();        break;
@@ -127,15 +127,15 @@ SoundInstance::SoundInstance()
     m_channelIndex(-1),
     m_loopType(SinglePlay),
     m_sourceType(Sample),
-	m_cachedSampleHandle(NULL),
+	m_cachedSampleHandle(nullptr),
     m_minDistance(100.0f),
     m_calculatedPriority(128.0f),
     m_channelVolume(0.0f),
-    m_parent(NULL),
+    m_parent(nullptr),
     m_adsrTimer(0.0f),
     m_adsrState(StateAttack),
     m_loopDelayTimer(0.0f),
-    m_eventName(NULL),
+    m_eventName(nullptr),
     m_restartOccured(true),
     m_restartAttempts(0)
 {
@@ -159,7 +159,7 @@ SoundInstance::SoundInstance()
 SoundInstance::~SoundInstance()
 {
 	g_deletingCachedSampleHandle = true;
-	delete m_cachedSampleHandle;	m_cachedSampleHandle = NULL;
+	delete m_cachedSampleHandle;	m_cachedSampleHandle = nullptr;
 	g_deletingCachedSampleHandle = false;
 
 	m_dspFX.EmptyAndDelete();
@@ -178,7 +178,7 @@ void SoundInstance::SetSoundName( char const *_name )
 
 void SoundInstance::SetEventName( char const *_entityName, char const *_eventName )
 {
-	DEBUG_ASSERT(m_eventName == NULL);
+	DEBUG_ASSERT(m_eventName == nullptr);
     DEBUG_ASSERT(_entityName && _eventName);
 	DEBUG_ASSERT(g_app->m_soundSystem);
 
@@ -202,7 +202,7 @@ char const *SoundInstance::GetPositionTypeName( int _type )
         return types[_type];
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -218,7 +218,7 @@ char const *SoundInstance::GetInstanceTypeName( int _type )
         return types[_type];
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -234,7 +234,7 @@ char const *SoundInstance::GetLoopTypeName( int _type )
         return types[ _type ];
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -249,7 +249,7 @@ char const *SoundInstance::GetSourceTypeName( int _type )
         return types[ _type ];
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -339,7 +339,7 @@ void SoundInstance::PropagateBlueprints()
         {
             StopPlaying();
 			g_deletingCachedSampleHandle = true;
-            delete m_cachedSampleHandle;	m_cachedSampleHandle = NULL;
+            delete m_cachedSampleHandle;	m_cachedSampleHandle = nullptr;
 			g_deletingCachedSampleHandle = false;
         }
 
@@ -514,7 +514,7 @@ void SoundInstance::OpenStream( bool _keepCurrentStream )
 
 	g_deletingCachedSampleHandle = true;
 	delete m_cachedSampleHandle;
-    m_cachedSampleHandle = NULL;
+    m_cachedSampleHandle = nullptr;
 	g_deletingCachedSampleHandle = false;
 
 	char *sampleName = m_soundName;
@@ -957,9 +957,9 @@ void SoundInstance::CalculatePerceivedVolume()
 
 WorldObject *SoundInstance::GetAttachedObject()
 {
-    if( m_positionType != Type3DAttachedToObject ) return NULL;
+    if( m_positionType != Type3DAttachedToObject ) return nullptr;
 
-    WorldObject *obj = NULL;
+    WorldObject *obj = nullptr;
 
     if( g_app->m_locationId != -1 )
     {

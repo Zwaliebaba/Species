@@ -35,7 +35,7 @@ public:
 
 public:
     FileDialog( char const *name, char const *parent,
-                char const *path=NULL, char const *filter=NULL,
+                char const *path=nullptr, char const *filter=nullptr,
                 bool allowMultiSelect=false );
     ~FileDialog();
 

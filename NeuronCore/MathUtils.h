@@ -96,10 +96,10 @@ float CalcTriArea(Vector2 const &t1, Vector2 const &t2, Vector2 const &t3);
 bool IsPointInTriangle(Vector2 const &pos, Vector2 const &t1, Vector2 const &t2, Vector2 const &t3);
 float PointSegDist2D(Vector2 const &p,	// Point
 				     Vector2 const &l0, Vector2 const &l1, // Line seg
-				     Vector2 *result=NULL);
+				     Vector2 *result=nullptr);
 bool SegRayIntersection2D(Vector2 const &_lineStart, Vector2 const &_lineEnd,
 						  Vector2 const &_rayStart, Vector2 const &_rayDir,
-                          Vector2 *_result = NULL);
+                          Vector2 *_result = nullptr);
 
 // *********************
 // 3D Intersection Tests
@@ -107,25 +107,25 @@ bool SegRayIntersection2D(Vector2 const &_lineStart, Vector2 const &_lineEnd,
 
 float RayRayDist(Vector3 const &a, Vector3 const &aDir,
 				 Vector3 const &b, Vector3 const &bDir,
-				 Vector3 *posOnA=NULL, Vector3 *posOnB=NULL);
+				 Vector3 *posOnA=nullptr, Vector3 *posOnB=nullptr);
 
 float RaySegDist(Vector3 const &pointOnLine, Vector3 const &lineDir,
 				 Vector3 const &segStart, Vector3 const &segEnd,
-				 Vector3 *posOnRay=NULL, Vector3 *posInSeg=NULL);
+				 Vector3 *posOnRay=nullptr, Vector3 *posInSeg=nullptr);
 
 bool RayTriIntersection         (Vector3 const &orig, Vector3 const &dir,
 						         Vector3 const &vert0, Vector3 const &vert1, Vector3 const &vert2,
-						         float _rayLen=1e10, Vector3 *result=NULL);
+						         float _rayLen=1e10, Vector3 *result=nullptr);
 
 int RayPlaneIntersection(Vector3 const &pOnLine, Vector3 const &lineDir,
-						 Plane const &plane, Vector3 *intersectionPoint=NULL);
+						 Plane const &plane, Vector3 *intersectionPoint=nullptr);
 //bool RayPlaneIntersection       (Vector3 const &rayStart, Vector3 const &rayDir,
 //                                  Vector3 const &planePos, Vector3 const &planeNormal,
-//						         float _rayLen=1e10, Vector3 *pos=NULL );
+//						         float _rayLen=1e10, Vector3 *pos=nullptr );
 
 bool RaySphereIntersection      ( Vector3 const &rayStart, Vector3 const &rayDir,
 	                              Vector3 const &spherePos, float sphereRadius,
-			                      float _rayLen=1e10, Vector3 *pos=NULL, Vector3 *normal=NULL );
+			                      float _rayLen=1e10, Vector3 *pos=nullptr, Vector3 *normal=nullptr );
 
 bool SphereSphereIntersection   ( Vector3 const &_sphere1Pos, float _sphere1Radius,
                                   Vector3 const &_sphere2Pos, float _sphere2Radius );

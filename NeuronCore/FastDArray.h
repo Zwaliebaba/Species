@@ -69,7 +69,7 @@ FastDArray <T>::FastDArray()
 	: DArray <T>()
 {
 	numused = 0;
-	freelist = NULL;
+	freelist = nullptr;
 	firstfree = -1;
 }
 
@@ -79,7 +79,7 @@ FastDArray <T>::FastDArray(int newstepsize)
 	: DArray<T>(newstepsize)
 {
 	numused = 0;
-	freelist = NULL;
+	freelist = nullptr;
 	firstfree = -1;
 }
 
@@ -277,7 +277,7 @@ template <class T>
 void FastDArray <T>::EmptyAndDelete()
 {
 	delete[] this->freelist;
-	this->freelist = NULL;
+	this->freelist = nullptr;
 
 	this->firstfree = -1;
 	this->numused = 0;
@@ -289,7 +289,7 @@ template <class T>
 void FastDArray <T>::Empty()
 {
 	delete[] this->freelist;
-	this->freelist = NULL;
+	this->freelist = nullptr;
 
 	this->firstfree = -1;
 	this->numused = 0;

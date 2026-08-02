@@ -10,7 +10,7 @@ NetRetCode NetStartThread(NetThreadFunc functionPtr)
 	NetRetCode retVal = NetOk;
 	DWORD dwID = 0;
 	
-	if (CreateThread(NULL, NULL, functionPtr, NULL, NULL, &dwID) == NULL)
+	if (CreateThread(nullptr, nullptr, functionPtr, nullptr, nullptr, &dwID) == nullptr)
 	{
 		NetDebugOut("Thread creation failed");
 		retVal = NetFailed;

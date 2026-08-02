@@ -162,11 +162,11 @@ FileDialog::FileDialog( char const *name, char const *parent,
                         char const *path, char const *filter,
                         bool allowMultiSelect )
 :   SpeciesWindow( name ),
-    m_files(NULL),
-    m_path(NULL),
-    m_filter(NULL),
-    m_parent(NULL),
-    m_scrollBar(NULL),
+    m_files(nullptr),
+    m_path(nullptr),
+    m_filter(nullptr),
+    m_parent(nullptr),
+    m_scrollBar(nullptr),
     m_allowMultiSelect(allowMultiSelect)
 {
     SetFilter( filter ? filter : "*" );
@@ -187,7 +187,7 @@ FileDialog::~FileDialog()
     {
         m_files->EmptyAndDelete();
         delete m_files;
-        m_files = NULL;
+        m_files = nullptr;
     }
 
     m_selected.Empty();
@@ -269,7 +269,7 @@ void FileDialog::RefreshFileList()
     {
         m_files->EmptyAndDelete();
         delete m_files;
-        m_files = NULL;
+        m_files = nullptr;
     }
 
     m_selected.Empty();

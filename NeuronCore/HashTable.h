@@ -39,7 +39,7 @@ public:
 	int				GetIndex	(char const *_key) const;			// Returns -1 if key isn't present
 
 	int				PutData		(char const *_key, T const &_data); // Returns slot used
-	T				GetData		(char const *_key, T const &_default = NULL) const;
+	T				GetData		(char const *_key, T const &_default = nullptr) const;
 	T				GetData		(unsigned int _index) const;
 	T *				GetPointer	(char const *_key) const;
 	T *				GetPointer  (unsigned int _index) const;
@@ -138,7 +138,7 @@ void HashTable<T>::Grow()
 
 	m_numCollisions = 0;
 
-	// Set all m_keys' pointers to NULL
+	// Set all m_keys' pointers to nullptr
 	memset(m_keys, 0, sizeof(char*) * m_size);
 	memset(m_data, 0, sizeof(T) * m_size);
 
@@ -166,7 +166,7 @@ unsigned int HashTable<T>::GetInsertPos(char const* _key) const
 
 	// Test if the target slot is empty, if not increment until we
 	// find an empty one
-	while (m_keys[index] != NULL)
+	while (m_keys[index] != nullptr)
 	{
 		DEBUG_ASSERT(stricmp(m_keys[index], _key) != 0);
 		index++;
@@ -185,7 +185,7 @@ unsigned int HashTable<T>::GetInsertPos(char const* _key) const
 
 template <class T>
 HashTable<T>::HashTable()
-	: m_keys(NULL),
+	: m_keys(nullptr),
 	m_size(4),
 	m_numCollisions(0)
 {
@@ -194,7 +194,7 @@ HashTable<T>::HashTable()
 	m_keys = new char* [m_size];
 	m_data = new T[m_size];
 
-	// Set all m_keys' pointers to NULL
+	// Set all m_keys' pointers to nullptr
 	memset(m_keys, 0, sizeof(char*) * m_size);
 	memset(m_data, 0, sizeof(T) * m_size);
 }
@@ -242,7 +242,7 @@ int HashTable<T>::GetIndex(char const* _key) const
 {
 	unsigned int index = HashFunc(_key);		// At last profile, was taking an avrg of 550 cycles
 
-	if (m_keys[index] == NULL)
+	if (m_keys[index] == nullptr)
 	{
 		return -1;
 	}
@@ -252,7 +252,7 @@ int HashTable<T>::GetIndex(char const* _key) const
 		index++;
 		index &= m_mask;
 
-		if (m_keys[index] == NULL)
+		if (m_keys[index] == nullptr)
 		{
 			return -1;
 		}
@@ -278,7 +278,7 @@ int HashTable<T>::PutData(char const* _key, T const& _data)
 	// Do the main insert
 
 	unsigned int index = GetInsertPos(_key);
-	DEBUG_ASSERT(m_keys[index] == NULL);
+	DEBUG_ASSERT(m_keys[index] == nullptr);
 	m_keys[index] = strdup(_key);
 	m_data[index] = _data;
 	m_slotsFree--;
@@ -316,7 +316,7 @@ T* HashTable<T>::GetPointer(char const* _key) const
 		return &m_data[index];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -345,7 +345,7 @@ void HashTable<T>::RemoveData(unsigned int _index)
 	// Remove data
 
 	delete[] m_keys[_index];
-	m_keys[_index] = NULL;
+	m_keys[_index] = nullptr;
 	m_slotsFree++;
 }
 
@@ -353,7 +353,7 @@ void HashTable<T>::RemoveData(unsigned int _index)
 template <class T>
 bool HashTable<T>::ValidIndex(unsigned int _x) const
 {
-	return m_keys[_x] != NULL;
+	return m_keys[_x] != nullptr;
 }
 
 

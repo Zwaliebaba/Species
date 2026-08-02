@@ -142,7 +142,7 @@ int SortingHashTable<T>::PutData(const char* _key, const T& _data)
   // Do the main insert
 
   unsigned int index = this->GetInsertPos(_key);
-  DEBUG_ASSERT(this->m_keys[index] == NULL);
+  DEBUG_ASSERT(this->m_keys[index] == nullptr);
   this->m_keys[index] = strdup(_key);
   this->m_data[index] = _data;
   this->m_slotsFree--;
@@ -182,7 +182,7 @@ void SortingHashTable<T>::RemoveData(unsigned int _index)
   // Remove data
 
   delete[] this->m_keys[_index];
-  this->m_keys[_index] = NULL;
+  this->m_keys[_index] = nullptr;
   ++this->m_slotsFree;
 
   //

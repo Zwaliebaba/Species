@@ -14,7 +14,7 @@ class SoundStreamDecoder;
 class CachedSample
 {
 protected:
-	SoundStreamDecoder *m_soundStreamDecoder;	// NULL once sample has been read fully once
+	SoundStreamDecoder *m_soundStreamDecoder;	// nullptr once sample has been read fully once
 	signed short	*m_rawSampleData;
 	unsigned int	m_amountCached;				// Zero at first, ranging up to m_numSamples once sample has been read fully
 

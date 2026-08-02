@@ -49,7 +49,7 @@ public:
 
 	// Everything else
     Camera              *m_camera;
-	Server              *m_server;                  // Server process, can be NULL if client
+	Server              *m_server;                  // Server process, can be nullptr if client
     ClientToServer      *m_clientToServer;          // Clients connection to Server
     Renderer            *m_renderer;
 	LocationInput		*m_locationInput;
