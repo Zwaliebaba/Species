@@ -10,11 +10,11 @@
 #include "CameraAnimWindow.h"
 #include "InputField.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 #ifdef LOCATION_EDITOR
@@ -30,12 +30,12 @@ public:
     void MouseUp()
     {
         CameraMount *mount = new CameraMount();
-		mount->m_pos = g_app->m_camera->GetPos();
-		mount->m_front = g_app->m_camera->GetFront();
-		mount->m_up = g_app->m_camera->GetUp();
+		mount->m_pos = g_camera->GetPos();
+		mount->m_front = g_camera->GetFront();
+		mount->m_up = g_camera->GetUp();
 		sprintf(mount->m_name, "blah%d", speciesRandom());
 
-        g_app->m_location->m_levelFile->m_cameraMounts.PutDataAtEnd( mount );
+        g_location->m_levelFile->m_cameraMounts.PutDataAtEnd( mount );
 
         EclWindow *parent = m_parent;
         parent->Remove();
@@ -53,13 +53,13 @@ public:
 
 	void MouseUp()
 	{
-		for (int i = 0; i < g_app->m_location->m_levelFile->m_cameraMounts.Size(); ++i)
+		for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
 		{
-			CameraMount *mount = g_app->m_location->m_levelFile->m_cameraMounts[i];
+			CameraMount *mount = g_location->m_levelFile->m_cameraMounts[i];
 			if (stricmp(mount->m_name, m_mountName) == 0)
 			{
-				g_app->m_camera->SetTarget(mount->m_pos, mount->m_front, mount->m_up);
-				g_app->m_camera->CutToTarget();
+				g_camera->SetTarget(mount->m_pos, mount->m_front, mount->m_up);
+				g_camera->CutToTarget();
 				return;
 			}
 		}
@@ -78,12 +78,12 @@ public:
 
 	void MouseUp()
 	{
-		for (int i = 0; i < g_app->m_location->m_levelFile->m_cameraMounts.Size(); ++i)
+		for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
 		{
-			CameraMount *mount = g_app->m_location->m_levelFile->m_cameraMounts[i];
+			CameraMount *mount = g_location->m_levelFile->m_cameraMounts[i];
 			if (stricmp(mount->m_name, m_mountName) == 0)
 			{
-				g_app->m_location->m_levelFile->m_cameraMounts.RemoveData(i);
+				g_location->m_levelFile->m_cameraMounts.RemoveData(i);
 				delete mount;
 
 				EclWindow *parent = m_parent;
@@ -108,14 +108,14 @@ public:
 
 	void MouseUp()
 	{
-		for (int i = 0; i < g_app->m_location->m_levelFile->m_cameraMounts.Size(); ++i)
+		for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
 		{
-			CameraMount *mount = g_app->m_location->m_levelFile->m_cameraMounts[i];
+			CameraMount *mount = g_location->m_levelFile->m_cameraMounts[i];
 			if (stricmp(mount->m_name, m_mountName) == 0)
 			{
-				mount->m_pos = g_app->m_camera->GetPos();
-				mount->m_front = g_app->m_camera->GetFront();
-				mount->m_up = g_app->m_camera->GetUp();
+				mount->m_pos = g_camera->GetPos();
+				mount->m_front = g_camera->GetFront();
+				mount->m_up = g_camera->GetUp();
 
 				return;
 			}
@@ -141,7 +141,7 @@ CameraMountEditWindow::~CameraMountEditWindow()
 {
 	EclRemoveWindow(LANGUAGEPHRASE("editor_cameraanims"));
 	EclRemoveWindow(LANGUAGEPHRASE("editor_cameraanim"));
-	g_app->m_locationEditor->RequestMode(LocationEditor::ModeNone);
+	g_locationEditor->RequestMode(LocationEditor::ModeNone);
 }
 
 
@@ -158,9 +158,9 @@ void CameraMountEditWindow::Create()
 
 	height += 10;
 
-	for (int i = 0; i < g_app->m_location->m_levelFile->m_cameraMounts.Size(); ++i)
+	for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
 	{
-		CameraMount *mount = g_app->m_location->m_levelFile->m_cameraMounts.GetData(i);
+		CameraMount *mount = g_location->m_levelFile->m_cameraMounts.GetData(i);
 
 		char buttonName[64];
 

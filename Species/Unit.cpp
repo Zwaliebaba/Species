@@ -22,6 +22,7 @@
 
 #include "WorldObject.h"
 #include "LaserTrooper.h"
+#include "WorldPointers.h"
 
 Unit::Unit(int troopType, int teamId, int unitId, int numEntities, Vector3 const &_pos)
 :   m_troopType(troopType),
@@ -46,7 +47,7 @@ Unit::Unit(int troopType, int teamId, int unitId, int numEntities, Vector3 const
 
 Unit::~Unit()
 {
-	Team *myTeam = &g_app->m_location->m_teams[m_teamId];
+	Team *myTeam = &g_location->m_teams[m_teamId];
 	if (myTeam->m_currentUnitId == m_unitId)
 	{
 		myTeam->m_currentUnitId = -1;
@@ -81,7 +82,7 @@ void Unit::RemoveEntity( int _index, float _posX, float _posZ )
 
 		WorldObjectId myId( m_teamId, m_unitId, _index, entity->m_id.GetUniqueId() );
 
-		g_app->m_location->m_entityGrid->RemoveObject( myId, _posX, _posZ, entity->m_radius );
+		g_location->m_entityGrid->RemoveObject( myId, _posX, _posZ, entity->m_radius );
 
 		m_entities.MarkNotUsed( _index );
         delete entity;
@@ -114,7 +115,7 @@ void Unit::AdvanceEntities(int _slice)
                 else
                 {
 					WorldObjectId myId( m_teamId, m_unitId, i, s->m_id.GetUniqueId() );
-                    g_app->m_location->m_entityGrid->UpdateObject( myId, oldPos.x, oldPos.z, s->m_pos.x, s->m_pos.z, s->m_radius );
+                    g_location->m_entityGrid->UpdateObject( myId, oldPos.x, oldPos.z, s->m_pos.x, s->m_pos.z, s->m_radius );
                 }
             }
         }
@@ -124,7 +125,7 @@ void Unit::AdvanceEntities(int _slice)
 
 bool Unit::IsInView()
 {
-    return( g_app->m_camera->SphereInViewFrustum( m_centrePos, m_radius ) );
+    return( g_camera->SphereInViewFrustum( m_centrePos, m_radius ) );
 }
 
 
@@ -213,7 +214,7 @@ bool Unit::Advance( int _slice )
                     float amountToMove = leadDistance;
                     if( amountToMove > distance ) amountToMove = distance;
                     pos += desiredDirection * amountToMove;
-                    pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z );
+                    pos.y = g_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z );
                     pos = l->PushFromObstructions( pos );
                     //pos = l->PushFromEachOther( pos );
 
@@ -281,7 +282,7 @@ void Unit::Attack( Vector3 pos, bool _withGrenade )
 
         if( nearestEnt )
         {
-            g_app->m_location->ThrowWeapon( nearestEnt->m_pos, pos, WorldObject::EffectThrowableGrenade, m_teamId );
+            g_location->ThrowWeapon( nearestEnt->m_pos, pos, WorldObject::EffectThrowableGrenade, m_teamId );
         }
 	}
 
@@ -487,7 +488,7 @@ void Unit::RecalculateOffsets()
 void Unit::FollowRoute()
 {
 	DEBUG_ASSERT(m_routeId != -1);
-	Route *route = g_app->m_location->m_levelFile->GetRoute(m_routeId);
+	Route *route = g_location->m_levelFile->GetRoute(m_routeId);
 	DEBUG_ASSERT(route);
 
 	if (m_routeWayPointId == -1)

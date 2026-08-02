@@ -26,6 +26,7 @@
 #include "GameTime.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -61,7 +62,7 @@ Vector3 PowerBuilding::GetPowerLocation()
 
 bool PowerBuilding::IsInView()
 {
-    Building *powerLink = g_app->m_location->GetBuilding( m_powerLink);
+    Building *powerLink = g_location->GetBuilding( m_powerLink);
 
     if( powerLink )
     {
@@ -69,7 +70,7 @@ bool PowerBuilding::IsInView()
         float radius = ( powerLink->m_centrePos - m_centrePos ).Mag() / 2.0f;
         radius += m_radius;
 
-        return( g_app->m_camera->SphereInViewFrustum( midPoint, radius ) );
+        return( g_camera->SphereInViewFrustum( midPoint, radius ) );
     }
     else
     {
@@ -89,7 +90,7 @@ void PowerBuilding::RenderAlphas ( float _predictionTime )
 {
     Building::RenderAlphas( _predictionTime );
 
-    Building *powerLink = g_app->m_location->GetBuilding( m_powerLink );
+    Building *powerLink = g_location->GetBuilding( m_powerLink );
     if( powerLink )
     {
         //
@@ -99,11 +100,11 @@ void PowerBuilding::RenderAlphas ( float _predictionTime )
         Vector3 ourPos = GetPowerLocation();
         Vector3 theirPos = powerBuilding->GetPowerLocation();
 
-        Vector3 camToOurPos = g_app->m_camera->GetPos() - ourPos;
+        Vector3 camToOurPos = g_camera->GetPos() - ourPos;
         Vector3 ourPosRight = camToOurPos ^ ( theirPos - ourPos );
         ourPosRight.SetLength( 2.0f );
 
-        Vector3 camToTheirPos = g_app->m_camera->GetPos() - theirPos;
+        Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
         Vector3 theirPosRight = camToTheirPos ^ ( theirPos - ourPos );
         theirPosRight.SetLength( 2.0f );
 
@@ -133,8 +134,8 @@ void PowerBuilding::RenderAlphas ( float _predictionTime )
 
         float surgeSize = 25.0f;
         glColor4f( 0.5f, 0.5f, 1.0f, 1.0f );
-        Vector3 camUp = g_app->m_camera->GetUp() * surgeSize;
-        Vector3 camRight = g_app->m_camera->GetRight() * surgeSize;
+        Vector3 camUp = g_camera->GetUp() * surgeSize;
+        Vector3 camRight = g_camera->GetRight() * surgeSize;
         glBegin( GL_QUADS );
         for( int i = 0; i < m_surges.Size(); ++i )
         {
@@ -169,7 +170,7 @@ bool PowerBuilding::Advance()
             m_surges.RemoveData(i);
             --i;
 
-            Building *powerLink = g_app->m_location->GetBuilding( m_powerLink );
+            Building *powerLink = g_location->GetBuilding( m_powerLink );
             if( powerLink )
             {
                 PowerBuilding *powerBuilding = (PowerBuilding *) powerLink;
@@ -287,11 +288,11 @@ bool Generator::Advance()
         // then returns to the level.  The tower is captured and cannot be changed, but
         // the m_enabled state of this building has been lost.
 
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 if( building && building->m_type == TypeControlTower )
                 {
                     ControlTower *tower = (ControlTower *) building;
@@ -317,7 +318,7 @@ bool Generator::Advance()
 
         if( m_throughput > 6.5f )
         {
-            GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
             gb->m_online = true;
         }
     }
@@ -397,13 +398,13 @@ bool PylonStart::Advance()
 
     bool generatorOnline = false;
 
-    int generatorLocationId = g_app->m_globalWorld->GetLocationId("generator");
+    int generatorLocationId = g_globalWorld->GetLocationId("generator");
     GlobalBuilding *globalRefinery = nullptr;
-    for( int i = 0; i < g_app->m_globalWorld->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_globalWorld->m_buildings.Size(); ++i )
     {
-        if( g_app->m_globalWorld->m_buildings.ValidIndex(i) )
+        if( g_globalWorld->m_buildings.ValidIndex(i) )
         {
-            GlobalBuilding *gb = g_app->m_globalWorld->m_buildings[i];
+            GlobalBuilding *gb = g_globalWorld->m_buildings[i];
             if( gb && gb->m_locationId == generatorLocationId &&
                 gb->m_type == TypeGenerator && gb->m_online )
             {
@@ -417,7 +418,7 @@ bool PylonStart::Advance()
     {
         //
         // Is our required building online yet?
-        GlobalBuilding *globalBuilding = g_app->m_globalWorld->GetBuilding( m_reqBuildingId, g_app->m_locationId );
+        GlobalBuilding *globalBuilding = g_globalWorld->GetBuilding( m_reqBuildingId, g_app->m_locationId );
         if( globalBuilding && globalBuilding->m_online )
         {
             if( syncfrand() > 0.7f )
@@ -438,7 +439,7 @@ void PylonStart::RenderAlphas( float _predictionTime )
 #ifdef DEBUG_RENDER_ENABLED
     if( g_app->m_editing )
     {
-        Building *req = g_app->m_location->GetBuilding( m_reqBuildingId );
+        Building *req = g_location->GetBuilding( m_reqBuildingId );
         if( req )
         {
             RenderArrow( m_pos+Vector3(0,50,0),
@@ -480,7 +481,7 @@ PylonEnd::PylonEnd()
 
 void PylonEnd::TriggerSurge( float _initValue )
 {
-    Building *building = g_app->m_location->GetBuilding( m_powerLink );
+    Building *building = g_location->GetBuilding( m_powerLink );
 
     if( building && building->m_type == Building::TypeYard )
     {
@@ -534,7 +535,7 @@ SolarPanel::SolarPanel()
 
 void SolarPanel::Initialise( Building *_template )
 {
-    _template->m_up = g_app->m_location->m_landscape.m_normalMap->GetValue( _template->m_pos.x, _template->m_pos.z );
+    _template->m_up = g_location->m_landscape.m_normalMap->GetValue( _template->m_pos.x, _template->m_pos.z );
     Vector3 right = Vector3( 1, 0, 0 );
     _template->m_front = right ^ _template->m_up;
 
@@ -587,8 +588,8 @@ void SolarPanel::RenderPorts()
 
         float size = 6.0f;
 
-        Vector3 camR = g_app->m_camera->GetRight() * size;
-        Vector3 camU = g_app->m_camera->GetUp() * size;
+        Vector3 camR = g_camera->GetRight() * size;
+        Vector3 camU = g_camera->GetUp() * size;
 
         Vector3 statusPos = worldMat.pos;
 
@@ -615,7 +616,7 @@ void SolarPanel::Render( float _predictionTime )
 {
     if( g_app->m_editing )
     {
-        m_up = g_app->m_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
+        m_up = g_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
         Vector3 right( 1, 0, 0 );
         m_front = right ^ m_up;
     }

@@ -16,6 +16,7 @@
 #include "UserProfileWindow.h"
 #include "Win32EventHandler.h"
 #include "WindowManager.h"
+#include "WorldPointers.h"
 
 class WebsiteButton;
 
@@ -39,7 +40,7 @@ class SkipPrologueButton : public SpeciesButton
       EclRemoveWindow(w->m_name);
     }
 
-    g_app->m_script->Skip();
+    g_script->Skip();
     g_app->LoadCampaign();
   }
 };
@@ -55,7 +56,7 @@ class PlayPrologueButton : public SpeciesButton
       EclRemoveWindow(w->m_name);
     }
 
-    g_app->m_script->Skip();
+    g_script->Skip();
     g_app->LoadPrologue();
   }
 };
@@ -148,8 +149,8 @@ class KeybindingsOptionsButton : public SpeciesButton
 MainMenuWindow::MainMenuWindow()
   : SpeciesWindow(LANGUAGEPHRASE("dialog_mainmenu"))
 {
-  int screenW = g_app->m_renderer->ScreenW();
-  int screenH = g_app->m_renderer->ScreenH();
+  int screenW = g_renderer->ScreenW();
+  int screenH = g_renderer->ScreenH();
 
   SetMenuSize(220, 260);
   SetPosition(screenW / 2.0f - m_w / 2.0f, screenH / 2.0f - m_h / 2.0f);
@@ -164,8 +165,8 @@ void MainMenuWindow::Render(bool _hasFocus) { SpeciesWindow::Render(_hasFocus); 
 OptionsMenuWindow::OptionsMenuWindow()
   : SpeciesWindow(LANGUAGEPHRASE("dialog_options"))
 {
-  int screenW = g_app->m_renderer->ScreenW();
-  int screenH = g_app->m_renderer->ScreenH();
+  int screenW = g_renderer->ScreenW();
+  int screenH = g_renderer->ScreenH();
 
   SetMenuSize(240, 230);
   //    SetPosition( screenW/2.0f - m_w/2.0f,
@@ -259,9 +260,9 @@ class WebsiteButton : public SpeciesButton
         g_prefsManager->SetInt("ScreenHeight", 600);
 
         g_windowManager->DestroyWin();
-        delete g_app->m_renderer;
-        g_app->m_renderer = new Renderer();
-        g_app->m_renderer->Initialise();
+        delete g_renderer;
+        g_renderer = new Renderer();
+        g_renderer->Initialise();
         getW32EventHandler()->ResetWindowHandle();
         g_resource->FlushOpenGlState();
         g_resource->RegenerateOpenGlState();
@@ -270,7 +271,7 @@ class WebsiteButton : public SpeciesButton
 
         EclInitialise(800, 600);
 
-        m_parent->SetPosition(g_app->m_renderer->ScreenW() / 2 - m_parent->m_w / 2, g_app->m_renderer->ScreenH() / 2 - m_parent->m_h / 2);
+        m_parent->SetPosition(g_renderer->ScreenW() / 2 - m_parent->m_w / 2, g_renderer->ScreenH() / 2 - m_parent->m_h / 2);
       }
       g_windowManager->OpenWebsite(m_website);
     }
@@ -279,8 +280,8 @@ class WebsiteButton : public SpeciesButton
 LocationWindow::LocationWindow()
   : SpeciesWindow(LANGUAGEPHRASE("dialog_locationmenu"))
 {
-  int screenW = g_app->m_renderer->ScreenW();
-  int screenH = g_app->m_renderer->ScreenH();
+  int screenW = g_renderer->ScreenW();
+  int screenH = g_renderer->ScreenH();
 
   SetMenuSize(200, 220);
   SetPosition(screenW / 2.0f - m_w / 2.0f, screenH / 2.0f - m_h / 2.0f);
@@ -299,7 +300,7 @@ void LocationWindow::Create()
 
   int gap = border;
 
-  GlobalLocation* loc = g_app->m_globalWorld->GetLocation(g_app->m_locationId);
+  GlobalLocation* loc = g_globalWorld->GetLocation(g_app->m_locationId);
 
   if (g_app->HasBoughtGame())
   {

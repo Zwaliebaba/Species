@@ -2,14 +2,14 @@
 
 #include "3dSprite.h"
 
-#include "App.h"
 #include "Camera.h"
+#include "WorldPointers.h"
 
 
 void Render3DSprite(Vector3 const &_pos, float _width, float _height, int _textureId)
 {
-	Vector3 camUp = g_app->m_camera->GetUp();
-	Vector3 camRight = (camUp ^ g_app->m_camera->GetFront()) * (_width * 0.5f);
+	Vector3 camUp = g_camera->GetUp();
+	Vector3 camRight = (camUp ^ g_camera->GetFront()) * (_width * 0.5f);
 	camUp *= _height;
 
 	Vector3 bottomLeft(_pos - camRight);

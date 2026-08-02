@@ -32,6 +32,7 @@
 #include "TextRenderer.h"
 #include "Unit.h"
 #include "Vector2.h"
+#include "WorldPointers.h"
 
 // ============================================================================
 
@@ -109,8 +110,8 @@ void TaskManagerInterfaceIcons::AdvanceTerminate()
 {
   if (g_inputManager->controlEvent(ControlIconsTaskManagerEndTask))
   {
-    g_app->m_taskManager->TerminateTask(g_app->m_taskManager->m_currentTaskId);
-    g_app->m_taskManager->m_currentTaskId = -1;
+    g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
+    g_taskManager->m_currentTaskId = -1;
   }
 }
 
@@ -118,13 +119,13 @@ void TaskManagerInterfaceIcons::HideTaskManager()
 {
   //
   // Put the mouse to the middle of the screen
-  float midX = g_app->m_renderer->ScreenW() / 2.0f;
-  float midY = g_app->m_renderer->ScreenH() / 2.0f;
+  float midX = g_renderer->ScreenW() / 2.0f;
+  float midY = g_renderer->ScreenH() / 2.0f;
   g_target->SetMousePos(midX, midY);
-  g_app->m_camera->Advance();
+  g_camera->Advance();
 
-  if (g_app->m_taskManager->m_tasks.Size() > 0)
-    g_app->m_taskManager->SelectTask(g_app->m_taskManager->m_currentTaskId);
+  if (g_taskManager->m_tasks.Size() > 0)
+    g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
 
   m_screenY = 0.0f;
   m_desiredScreenY = 0.0f;
@@ -146,14 +147,14 @@ void TaskManagerInterfaceIcons::Advance()
   {
     // We were running a default objective description (trunk port, research item)
     // So shut it down now
-    g_app->m_camera->RequestMode(Camera::ModeFreeMovement);
+    g_camera->RequestMode(Camera::ModeFreeMovement);
     m_viewingDefaultObjective = false;
   }
 
   bool inCutscene = false;
-  if (g_app->m_script->IsRunningScript() && g_app->m_script->m_permitEscape)
+  if (g_script->IsRunningScript() && g_script->m_permitEscape)
     inCutscene = true;
-  if (g_app->m_camera->IsInMode(Camera::ModeBuildingFocus))
+  if (g_camera->IsInMode(Camera::ModeBuildingFocus))
     inCutscene = true;
 
   if (inCutscene)
@@ -235,7 +236,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenEdges()
         m_desiredScreenY = -1.0f;
         scrollRequested = true;
       }
-      if (g_target->Y() > g_app->m_renderer->ScreenH() - screenBorder)
+      if (g_target->Y() > g_renderer->ScreenH() - screenBorder)
       {
         m_screenId = ScreenObjectives;
         m_desiredScreenY = 1.0f;
@@ -259,7 +260,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenEdges()
   case ScreenResearch:
     if (scrollPermitted)
     {
-      if (g_target->Y() > g_app->m_renderer->ScreenH() - screenBorder)
+      if (g_target->Y() > g_renderer->ScreenH() - screenBorder)
       {
         m_screenId = ScreenTaskManager;
         m_desiredScreenY = 0.0f;
@@ -288,7 +289,7 @@ void TaskManagerInterfaceIcons::SetupRenderMatrices(int _screenId)
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  float screenRatio = static_cast<float>(g_app->m_renderer->ScreenW()) / static_cast<float>(g_app->m_renderer->ScreenH());
+  float screenRatio = static_cast<float>(g_renderer->ScreenW()) / static_cast<float>(g_renderer->ScreenH());
   m_screenH = 600.0f;
   m_screenW = m_screenH * screenRatio;
 
@@ -322,18 +323,18 @@ void TaskManagerInterfaceIcons::SetupRenderMatrices(int _screenId)
 
 void TaskManagerInterfaceIcons::ConvertMousePosition(float& _x, float& _y)
 {
-  float fractionX = _x / static_cast<float>(g_app->m_renderer->ScreenW());
-  float fractionY = _y / static_cast<float>(g_app->m_renderer->ScreenH());
+  float fractionX = _x / static_cast<float>(g_renderer->ScreenW());
+  float fractionY = _y / static_cast<float>(g_renderer->ScreenH());
 
   _x = m_screenW * fractionX;
   _y = m_screenH * fractionY;
 }
 
-void TaskManagerInterfaceIcons::RestoreRenderMatrices() { g_app->m_renderer->SetupMatricesFor2D(); }
+void TaskManagerInterfaceIcons::RestoreRenderMatrices() { g_renderer->SetupMatricesFor2D(); }
 
 void TaskManagerInterfaceIcons::Render()
 {
-  if (g_app->m_editing || !g_app->m_location || EclGetWindows()->Size())
+  if (g_app->m_editing || !g_location || EclGetWindows()->Size())
     return;
 
   START_PROFILE(g_app->m_profiler, "Render Taskman");
@@ -577,13 +578,13 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
   {
     m_currentScreenZone = -1;
     WorldObjectId id;
-    bool somethingHighlighted = g_app->m_locationInput->GetObjectUnderMouse(id, g_app->m_globalWorld->m_myTeamId);
+    bool somethingHighlighted = g_app->m_locationInput->GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
     if (somethingHighlighted)
     {
       int taskIndex = -1;
-      for (int i = 0; i < g_app->m_taskManager->m_tasks.Size(); ++i)
+      for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
       {
-        if (g_app->m_taskManager->m_tasks[i]->m_objId == id)
+        if (g_taskManager->m_tasks[i]->m_objId == id)
         {
           taskIndex = i;
           break;
@@ -620,9 +621,9 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     ScreenZone* currentZone = m_screenZones[m_currentScreenZone];
     if (currentZone)
     {
-      if (stricmp(currentZone->m_name, "SelectTask") == 0 && g_app->m_taskManager->m_tasks.ValidIndex(currentZone->m_data))
+      if (stricmp(currentZone->m_name, "SelectTask") == 0 && g_taskManager->m_tasks.ValidIndex(currentZone->m_data))
       {
-        Task* task = g_app->m_taskManager->m_tasks[currentZone->m_data];
+        Task* task = g_taskManager->m_tasks[currentZone->m_data];
         m_highlightedTaskId = task->m_id;
       }
     }
@@ -666,16 +667,16 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
     //
     // Prevent creation of new tasks if we're placing one
 
-    Task* task = g_app->m_taskManager->GetCurrentTask();
+    Task* task = g_taskManager->GetCurrentTask();
     if (task && task->m_state == Task::StateStarted && task->m_type != GlobalResearch::TypeOfficer)
     {
       SetCurrentMessage(MessageFailure, -1, 2.5f);
       return;
     }
 
-    if (g_app->m_globalWorld->m_research->HasResearch(_data))
+    if (g_globalWorld->m_research->HasResearch(_data))
     {
-      g_app->m_clientToServer->RequestRunProgram(g_app->m_globalWorld->m_myTeamId, _data);
+      g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
       g_app->m_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
         HideTaskManager();
@@ -689,11 +690,11 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
 
   if (stricmp(_name, "SelectTask") == 0)
   {
-    if (g_app->m_taskManager->m_tasks.ValidIndex(_data))
+    if (g_taskManager->m_tasks.ValidIndex(_data))
     {
-      Task* nextTask = g_app->m_taskManager->m_tasks[_data];
-      g_app->m_taskManager->m_currentTaskId = nextTask->m_id;
-      g_app->m_taskManager->SelectTask(g_app->m_taskManager->m_currentTaskId);
+      Task* nextTask = g_taskManager->m_tasks[_data];
+      g_taskManager->m_currentTaskId = nextTask->m_id;
+      g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
       g_app->m_soundSystem->TriggerOtherEvent(nullptr, "SelectTask", SoundSourceBlueprint::TypeInterface);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
         HideTaskManager();
@@ -706,9 +707,9 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
   if (stricmp(_name, "DeleteTask") == 0)
   {
     if (_data == -1)
-      g_app->m_taskManager->TerminateTask(g_app->m_taskManager->m_currentTaskId);
+      g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
     else
-      g_app->m_taskManager->TerminateTask(_data);
+      g_taskManager->TerminateTask(_data);
     g_app->m_soundSystem->TriggerOtherEvent(nullptr, "DeleteTask", SoundSourceBlueprint::TypeInterface);
   }
 
@@ -717,9 +718,9 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
 
   if (stricmp(_name, "SelectWeapon") == 0)
   {
-    if (g_app->m_globalWorld->m_research->HasResearch(_data))
+    if (g_globalWorld->m_research->HasResearch(_data))
     {
-      g_app->m_clientToServer->RequestRunProgram(g_app->m_globalWorld->m_myTeamId, _data);
+      g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
       g_app->m_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
       g_app->m_soundSystem->TriggerOtherEvent(nullptr, "GestureSuccess", SoundSourceBlueprint::TypeGesture);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
@@ -788,7 +789,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
   // Research
 
   if (stricmp(_name, "Research") == 0)
-    g_app->m_globalWorld->m_research->SetCurrentResearch(_data);
+    g_globalWorld->m_research->SetCurrentResearch(_data);
 
   //
   // Objectives
@@ -803,13 +804,13 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
 
     GlobalEventCondition* gec = nullptr;
     if (primary)
-      gec = g_app->m_location->m_levelFile->m_primaryObjectives[objectiveId];
+      gec = g_location->m_levelFile->m_primaryObjectives[objectiveId];
     else
-      gec = g_app->m_location->m_levelFile->m_secondaryObjectives[objectiveId];
+      gec = g_location->m_levelFile->m_secondaryObjectives[objectiveId];
     DEBUG_ASSERT(gec);
 
     if (gec->m_cutScene)
-      g_app->m_script->RunScript(gec->m_cutScene);
+      g_script->RunScript(gec->m_cutScene);
     else
       RunDefaultObjective(gec);
     HideTaskManager();
@@ -1027,7 +1028,7 @@ void TaskManagerInterfaceIcons::RenderMessages()
     {
       if (m_currentMessageType == MessageResearchUpgrade)
       {
-        int researchLevel = g_app->m_globalWorld->m_research->CurrentLevel(m_currentTaskType);
+        int researchLevel = g_globalWorld->m_research->CurrentLevel(m_currentTaskType);
         sprintf(fullMessage, "%s: %s v%d.0", message, taskName, researchLevel);
       }
       else
@@ -1064,12 +1065,12 @@ void TaskManagerInterfaceIcons::RenderMessages()
 
 void TaskManagerInterfaceIcons::RenderTargetAreas()
 {
-  Task* task = g_app->m_taskManager->GetCurrentTask();
+  Task* task = g_taskManager->GetCurrentTask();
 
   if (task && task->m_type != GlobalResearch::TypeOfficer && task->m_state == Task::StateStarted)
   {
-    LList<TaskTargetArea>* targetAreas = g_app->m_taskManager->GetTargetArea(task->m_id);
-    RGBAColour* colour = &g_app->m_location->GetMyTeam()->m_colour;
+    LList<TaskTargetArea>* targetAreas = g_taskManager->GetTargetArea(task->m_id);
+    RGBAColour* colour = &g_location->GetMyTeam()->m_colour;
 
     for (int i = 0; i < targetAreas->Size(); ++i)
     {
@@ -1081,12 +1082,12 @@ void TaskManagerInterfaceIcons::RenderTargetAreas()
       Vector3 dif(tta->m_radius * sinf(angle), 0.0f, tta->m_radius * cosf(angle));
 
       Vector3 pos = tta->m_centre + dif;
-      pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
-      g_app->m_particleSystem->CreateParticle(pos, g_zeroVector, Particle::TypeMuzzleFlash, 60.0f);
+      pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
+      g_particleSystem->CreateParticle(pos, g_zeroVector, Particle::TypeMuzzleFlash, 60.0f);
 
       pos = tta->m_centre - dif;
-      pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
-      g_app->m_particleSystem->CreateParticle(pos, g_zeroVector, Particle::TypeMuzzleFlash, 60.0f);
+      pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
+      g_particleSystem->CreateParticle(pos, g_zeroVector, Particle::TypeMuzzleFlash, 60.0f);
     }
 
     delete targetAreas;
@@ -1201,7 +1202,7 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
   int numAvailable = 0;
   for (int i = 0; i < numRunnableTasks; ++i)
   {
-    if (g_app->m_globalWorld->m_research->HasResearch(runnableTaskType[i]))
+    if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
       numAvailable++;
   }
 
@@ -1277,7 +1278,7 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
   for (int i = 0; i < numRunnableTasks; ++i)
   {
     int taskType = runnableTaskType[i];
-    if (g_app->m_globalWorld->m_research->HasResearch(taskType))
+    if (g_globalWorld->m_research->HasResearch(taskType))
     {
       char tooltipId[128];
       sprintf(tooltipId, "newcontrols_create_%s", GlobalResearch::GetTypeName(taskType), i + 1);
@@ -1401,7 +1402,7 @@ void TaskManagerInterfaceIcons::RenderTitleBar()
 
 void TaskManagerInterfaceIcons::RenderRunningTasks()
 {
-  int numSlots = g_app->m_taskManager->Capacity();
+  int numSlots = g_taskManager->Capacity();
 
   static float s_iconSize = 45;
   static float s_iconX = 40;
@@ -1470,11 +1471,11 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
   //
   // Render our running tasks
 
-  int numTasks = g_app->m_taskManager->m_tasks.Size();
+  int numTasks = g_taskManager->m_tasks.Size();
 
   for (int i = 0; i < numTasks; ++i)
   {
-    Task* task = g_app->m_taskManager->m_tasks[i];
+    Task* task = g_taskManager->m_tasks[i];
     char bmpFilename[256];
     sprintf(bmpFilename, "Icons/Icon%s.bmp", Task::GetTaskName(task->m_type));
     unsigned int texId = g_app->m_resource->GetTexture(bmpFilename);
@@ -1501,7 +1502,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       glBindTexture(GL_TEXTURE_2D, texId);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-      if (task->m_id == g_app->m_taskManager->m_currentTaskId)
+      if (task->m_id == g_taskManager->m_currentTaskId)
         glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
       else
         glColor4f(1.0f, 1.0f, 1.0f, iconAlpha * 0.3f);
@@ -1522,7 +1523,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
       if (task->m_type == GlobalResearch::TypeEngineer)
       {
-        auto engineer = static_cast<Engineer*>(g_app->m_location->GetEntitySafe(task->m_objId, Entity::TypeEngineer));
+        auto engineer = static_cast<Engineer*>(g_location->GetEntitySafe(task->m_objId, Entity::TypeEngineer));
         if (engineer)
         {
           char* state = engineer->GetCurrentAction();
@@ -1541,7 +1542,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       }
       else if (task->m_type == GlobalResearch::TypeSquad)
       {
-        auto squad = static_cast<InsertionSquad*>(g_app->m_location->GetUnit(task->m_objId));
+        auto squad = static_cast<InsertionSquad*>(g_location->GetUnit(task->m_objId));
         if (squad)
         {
           int numSquaddies = squad->NumAliveEntities();
@@ -1562,8 +1563,8 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       // Render compass if we are an object
 
       Vector3 taskWorldPos;
-      Unit* unit = g_app->m_location->GetUnit(task->m_objId);
-      Entity* entity = g_app->m_location->GetEntity(task->m_objId);
+      Unit* unit = g_location->GetUnit(task->m_objId);
+      Entity* entity = g_location->GetEntity(task->m_objId);
       if (unit)
         taskWorldPos = unit->m_centrePos;
       if (entity)
@@ -1572,21 +1573,21 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
       if (taskWorldPos != g_zeroVector)
       {
-        RenderCompass(iconCentre.x, iconCentre.y, taskWorldPos, task->m_id == g_app->m_taskManager->m_currentTaskId, compassSize);
+        RenderCompass(iconCentre.x, iconCentre.y, taskWorldPos, task->m_id == g_taskManager->m_currentTaskId, compassSize);
       }
 
-      if (task->m_state != Task::StateStarted && m_visible && task->m_id == g_app->m_taskManager->m_currentTaskId)
+      if (task->m_state != Task::StateStarted && m_visible && task->m_id == g_taskManager->m_currentTaskId)
       {
         if (task->m_type == GlobalResearch::TypeSquad)
         {
           LList<int> availableWeapons;
-          if (g_app->m_globalWorld->m_research->HasResearch(GlobalResearch::TypeGrenade))
+          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeGrenade))
             availableWeapons.PutData(GlobalResearch::TypeGrenade);
-          if (g_app->m_globalWorld->m_research->HasResearch(GlobalResearch::TypeRocket))
+          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeRocket))
             availableWeapons.PutData(GlobalResearch::TypeRocket);
-          if (g_app->m_globalWorld->m_research->HasResearch(GlobalResearch::TypeAirStrike))
+          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeAirStrike))
             availableWeapons.PutData(GlobalResearch::TypeAirStrike);
-          if (g_app->m_globalWorld->m_research->HasResearch(GlobalResearch::TypeController))
+          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeController))
             availableWeapons.PutData(GlobalResearch::TypeController);
 
           auto squad = static_cast<InsertionSquad*>(unit);
@@ -1718,21 +1719,21 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
 void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, const Vector3& _worldPos, bool _selected, float _size)
 {
-  g_app->m_renderer->SetupMatricesFor3D();
-  float screenH = g_app->m_renderer->ScreenH();
-  float screenW = g_app->m_renderer->ScreenW();
+  g_renderer->SetupMatricesFor3D();
+  float screenH = g_renderer->ScreenH();
+  float screenW = g_renderer->ScreenW();
 
   //
   // Project worldPos into screen co-ordinates
   // Is it on screen or not?
 
   float screenX, screenY;
-  g_app->m_camera->Get2DScreenPos(_worldPos, &screenX, &screenY);
+  g_camera->Get2DScreenPos(_worldPos, &screenX, &screenY);
   screenY = screenH - screenY;
 
-  Vector3 toCam = g_app->m_camera->GetPos() - _worldPos;
-  float angle = toCam * g_app->m_camera->GetFront();
-  Vector3 rotationVector = toCam ^ g_app->m_camera->GetFront();
+  Vector3 toCam = g_camera->GetPos() - _worldPos;
+  float angle = toCam * g_camera->GetFront();
+  Vector3 rotationVector = toCam ^ g_camera->GetFront();
 
   Vector2 compassVector;
 
@@ -1749,12 +1750,12 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
   {
     // _pos is offscreen
     Vector3 rayStart, rayDir;
-    g_app->m_camera->GetClickRay(_screenX * screenW / m_screenW, _screenY * screenH / m_screenH, &rayStart, &rayDir);
+    g_camera->GetClickRay(_screenX * screenW / m_screenW, _screenY * screenH / m_screenH, &rayStart, &rayDir);
     Vector3 camPos = rayStart + rayDir * 1000;
     Vector3 camToTarget = (_worldPos - camPos).SetLength(100);
 
     float posX, posY;
-    g_app->m_camera->Get2DScreenPos(camPos + camToTarget, &posX, &posY);
+    g_camera->Get2DScreenPos(camPos + camToTarget, &posX, &posY);
     posY = screenH - posY;
     posX *= (m_screenW / screenW);
     posY *= (m_screenH / screenH);
@@ -1775,7 +1776,7 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
   glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/Compass.bmp", true, false));
   glEnable(GL_TEXTURE_2D);
 
-  g_app->m_renderer->SetupMatricesFor2D();
+  g_renderer->SetupMatricesFor2D();
   SetupRenderMatrices(ScreenTaskManager);
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
@@ -1885,9 +1886,9 @@ void TaskManagerInterfaceIcons::RenderObjectives()
   {
     LList<GlobalEventCondition*>* objectives = nullptr;
     if (o == 0)
-      objectives = &g_app->m_location->m_levelFile->m_primaryObjectives;
+      objectives = &g_location->m_levelFile->m_primaryObjectives;
     else
-      objectives = &g_app->m_location->m_levelFile->m_secondaryObjectives;
+      objectives = &g_location->m_levelFile->m_secondaryObjectives;
 
     int numObjectives = objectives->Size();
     if (numObjectives == 0)
@@ -1990,7 +1991,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
 
       if (condition->m_type == GlobalEventCondition::BuildingOnline)
       {
-        Building* building = g_app->m_location->GetBuilding(condition->m_id);
+        Building* building = g_location->GetBuilding(condition->m_id);
         if (building)
         {
           const char* objectiveCounter = building->GetObjectiveCounter();
@@ -2045,7 +2046,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
   g_gameFont.SetRenderOutline(false);
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
   g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_research"));
-  //g_gameFont.DrawText2DCentre( m_screenW/2.0f, 80, 20, "ResearchPoints : %d", g_app->m_globalWorld->m_research->m_researchPoints );
+  //g_gameFont.DrawText2DCentre( m_screenW/2.0f, 80, 20, "ResearchPoints : %d", g_globalWorld->m_research->m_researchPoints );
 
   float mouseX = g_target->X();
   float mouseY = g_target->Y();
@@ -2054,7 +2055,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
   int numItemsResearched = 0;
   for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
   {
-    if (g_app->m_globalWorld->m_research->HasResearch(i))
+    if (g_globalWorld->m_research->HasResearch(i))
       ++numItemsResearched;
   }
 
@@ -2131,7 +2132,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
 
   for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
   {
-    if (g_app->m_globalWorld->m_research->HasResearch(i))
+    if (g_globalWorld->m_research->HasResearch(i))
     {
       float iconX = 50;
       float gapSize = 3;
@@ -2140,7 +2141,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
       //
       // Render selection boxes
 
-      if (g_app->m_globalWorld->m_research->m_currentResearch == i)
+      if (g_globalWorld->m_research->m_currentResearch == i)
       {
         glColor4f(0.05f, 0.05f, 0.5f, 0.4f);
         glBegin(GL_QUADS);
@@ -2221,8 +2222,8 @@ void TaskManagerInterfaceIcons::RenderResearch()
       //
       // Render research progress
 
-      int researchLevel = g_app->m_globalWorld->m_research->CurrentLevel(i);
-      int researchProgress = g_app->m_globalWorld->m_research->CurrentProgress(i);
+      int researchLevel = g_globalWorld->m_research->CurrentLevel(i);
+      int researchProgress = g_globalWorld->m_research->CurrentProgress(i);
 
       g_gameFont.SetRenderOutline(true);
       glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
@@ -2244,7 +2245,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
 
       for (int level = 1; level < 4; ++level)
       {
-        int requiredProgress = g_app->m_globalWorld->m_research->RequiredProgress(level);
+        int requiredProgress = g_globalWorld->m_research->RequiredProgress(level);
 
         float shadowOffset = 2.0f;
         glColor4f(0.0f, 0.0f, 0.0f, 0.5f);
@@ -2270,7 +2271,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
           glVertex2i(boxX, boxY + boxH);
           glEnd();
           float alpha = 1.0f;
-          if (g_app->m_globalWorld->m_research->m_currentResearch == i)
+          if (g_globalWorld->m_research->m_currentResearch == i)
             alpha = fabs(sinf(g_gameTime * 2));
           glColor4f(0.9f, 0.9f, 1.0f, alpha);
           glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -2310,7 +2311,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
           glTexCoord2i(0, 1);
           glVertex2i(boxX, boxY + boxH);
           glEnd();
-          if (g_app->m_globalWorld->m_research->m_currentResearch == i)
+          if (g_globalWorld->m_research->m_currentResearch == i)
           {
             float alpha = fabs(sinf(g_gameTime * 2));
             glColor4f(0.9f, 0.9f, 1.0f, alpha);
@@ -2407,7 +2408,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
   int numAvailable = 0;
   for (int i = 0; i < numRunnableTasks; ++i)
   {
-    if (g_app->m_globalWorld->m_research->HasResearch(runnableTaskType[i]))
+    if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
       numAvailable++;
   }
 
@@ -2441,7 +2442,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
         m_currentQuickUnit--;
         if (m_currentQuickUnit < 0)
           m_currentQuickUnit = numRunnableTasks - 1;
-        if (g_app->m_globalWorld->m_research->HasResearch(runnableTaskType[m_currentQuickUnit]))
+        if (g_globalWorld->m_research->HasResearch(runnableTaskType[m_currentQuickUnit]))
           break;
       }
 
@@ -2459,7 +2460,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
         m_currentQuickUnit++;
         if (m_currentQuickUnit >= numRunnableTasks)
           m_currentQuickUnit = 0;
-        if (g_app->m_globalWorld->m_research->HasResearch(runnableTaskType[m_currentQuickUnit]))
+        if (g_globalWorld->m_research->HasResearch(runnableTaskType[m_currentQuickUnit]))
           break;
       }
 
@@ -2474,7 +2475,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
     {
       int taskId = GetQuickUnitTask(2 - m_quickUnitDirection);
       if (taskId != -1)
-        g_app->m_taskManagerInterface->SetCurrentMessage(MessageSuccess, taskId, 3.0f);
+        g_taskManagerInterface->SetCurrentMessage(MessageSuccess, taskId, 3.0f);
     }
 
     if (g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitCreate))
@@ -2482,7 +2483,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
       int taskId = GetQuickUnitTask();
       if (taskId != -1)
       {
-        g_app->m_clientToServer->RequestRunProgram(g_app->m_location->GetMyTeam()->m_teamId, taskId);
+        g_app->m_clientToServer->RequestRunProgram(g_location->GetMyTeam()->m_teamId, taskId);
         g_app->m_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
         DestroyQuickUnitInterface();
       }
@@ -2508,8 +2509,8 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
 
   float iconSize = 110;
   float iconGap = 10;
-  float iconX = (g_app->m_renderer->ScreenW() / 2.0f);
-  float iconY = g_app->m_renderer->ScreenH() - iconSize;
+  float iconX = (g_renderer->ScreenW() / 2.0f);
+  float iconY = g_renderer->ScreenH() - iconSize;
   float iconAlpha = 0.9f;
 
   Vector2 iconCentre(iconX, iconY);
@@ -2577,15 +2578,15 @@ int TaskManagerInterfaceIcons::GetQuickUnitTask(int _position)
 
 bool TaskManagerInterfaceIcons::AdviseCreateControlHelpBlue()
 {
-  return m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayPressed) && g_app->
-    m_taskManager->CapacityUsed() < g_app->m_taskManager->Capacity();
+  return m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayPressed) &&
+         g_taskManager->CapacityUsed() < g_taskManager->Capacity();
 }
 
 bool TaskManagerInterfaceIcons::AdviseCreateControlHelpGreen()
 {
   ScreenZone* screenZone = nullptr;
 
-  return m_currentScreenZone != -1 && g_app->m_taskManager->CapacityUsed() < g_app->m_taskManager->Capacity() && (screenZone = m_screenZones
+  return m_currentScreenZone != -1 && g_taskManager->CapacityUsed() < g_taskManager->Capacity() && (screenZone = m_screenZones
     [m_currentScreenZone]) && strcmp(screenZone->m_name, "NewTask") == 0;
 }
 
@@ -2617,7 +2618,7 @@ void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
   int numAvailable = 0;
   for (int i = 0; i < numRunnableTasks; ++i)
   {
-    if (g_app->m_globalWorld->m_research->HasResearch(runnableTaskType[i]))
+    if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
       numAvailable++;
   }
 
@@ -2625,7 +2626,7 @@ void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
   {
     for (int i = 0; i < numRunnableTasks; ++i)
     {
-      if (g_app->m_globalWorld->m_research->HasResearch(runnableTaskType[i]))
+      if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
       {
         bool buttonFound = false;
         for (int j = 0; j < m_quickUnitButtons.Size(); ++j)
@@ -2652,7 +2653,7 @@ void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
   m_quickUnitVisible = true;
   if (m_currentQuickUnit == -1)
     m_currentQuickUnit = 0;
-  g_app->m_location->GetMyTeam()->SelectUnit(-1, -1, -1);
+  g_location->GetMyTeam()->SelectUnit(-1, -1, -1);
 }
 
 void TaskManagerInterfaceIcons::DestroyQuickUnitInterface()
@@ -2674,15 +2675,15 @@ QuickUnitButton::QuickUnitButton()
 {
   float iconSize = 100.0f;
   float iconGap = 10.0f;
-  float iconX = (g_app->m_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
-  float iconY = g_app->m_renderer->ScreenH() - iconSize - iconGap;
+  float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
+  float iconY = g_renderer->ScreenH() - iconSize - iconGap;
 
   static Vector2 buttonPositions[5] = {
     Vector2(iconX - iconSize * 2 - iconGap * 2, iconY), Vector2(iconX - iconSize - iconGap, iconY), Vector2(iconX, iconY),
     Vector2(iconX + iconSize + iconGap, iconY), Vector2(iconX + iconSize * 2 + iconGap * 2, iconY)
   };
 
-  auto tm = static_cast<TaskManagerInterfaceIcons*>(g_app->m_taskManagerInterface);
+  auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
   m_positionId = tm->m_quickUnitButtons.Size();
   if (m_positionId == 0 || m_positionId == 4)
     m_alpha = 0.0f;
@@ -2693,7 +2694,7 @@ QuickUnitButton::QuickUnitButton()
 
 void QuickUnitButton::Advance()
 {
-  auto tm = static_cast<TaskManagerInterfaceIcons*>(g_app->m_taskManagerInterface);
+  auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
   int direction = tm->m_quickUnitDirection;
 
   if (direction == 0)
@@ -2701,8 +2702,8 @@ void QuickUnitButton::Advance()
 
   float iconSize = 100.0f;
   float iconGap = 10.0f;
-  float iconX = (g_app->m_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
-  float iconY = g_app->m_renderer->ScreenH() - iconSize - iconGap;
+  float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
+  float iconY = g_renderer->ScreenH() - iconSize - iconGap;
 
   static Vector2 buttonPositions[5] = {
     Vector2(iconX - iconSize * 2 - iconGap * 2, iconY), Vector2(iconX - iconSize - iconGap, iconY), Vector2(iconX, iconY),
@@ -2756,8 +2757,8 @@ void QuickUnitButton::Render()
 
   float iconSize = 100.0f;
   float iconGap = 10.0f;
-  float iconX = (g_app->m_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
-  float iconY = g_app->m_renderer->ScreenH() - iconSize - iconGap;
+  float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
+  float iconY = g_renderer->ScreenH() - iconSize - iconGap;
   float iconAlpha = m_alpha;
   float shadowOffset = 0;
   float shadowSize = iconSize + 10;

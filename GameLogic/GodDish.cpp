@@ -8,7 +8,6 @@
 #include "ResearchItem.h"
 #include "Darwinian.h"
 
-#include "App.h"
 #include "ProtocolLimits.h"
 #include "GlobalWorld.h"
 #include "Location.h"
@@ -17,7 +16,7 @@
 #include "GameTime.h"
 
 #include "SoundSystem.h"
-
+#include "WorldPointers.h"
 
 
 GodDish::GodDish()
@@ -71,8 +70,8 @@ void GodDish::RenderAlphas( float _predictionTime )
 {
     Building::RenderAlphas( _predictionTime );
 
-    Vector3 camUp = g_app->m_camera->GetUp();
-    Vector3 camRight = g_app->m_camera->GetRight();
+    Vector3 camUp = g_camera->GetUp();
+    Vector3 camRight = g_camera->GetRight();
 
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
@@ -160,7 +159,7 @@ void GodDish::Activate()
     //
     // Make all green darwinians watch us
 
-    Team *team = &g_app->m_location->m_teams[0];
+    Team *team = &g_location->m_teams[0];
 
     for( int i = 0; i < team->m_others.Size(); ++i )
     {
@@ -194,13 +193,13 @@ void GodDish::DeActivate()
 void GodDish::SpawnSpam( bool _isResearch )
 {
     Spam spamTemplate;
-    int buildingId = g_app->m_globalWorld->GenerateBuildingId();
+    int buildingId = g_globalWorld->GenerateBuildingId();
     spamTemplate.m_id.SetUniqueId( buildingId );
     spamTemplate.m_id.SetUnitId( UNIT_BUILDINGS );
 
     Spam *spam = (Spam *) CreateBuilding( TypeSpam );
     spam->Initialise( &spamTemplate );
-    g_app->m_location->m_buildings.PutData( spam );
+    g_location->m_buildings.PutData( spam );
 
     spam->SendFromHeaven();
     if( _isResearch ) spam->SetAsResearch();
@@ -213,11 +212,11 @@ void GodDish::SpawnSpam( bool _isResearch )
 
 void GodDish::TriggerSpam()
 {
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *b = g_app->m_location->m_buildings[i];
+            Building *b = g_location->m_buildings[i];
             if( b && b->m_type == TypeSpam )
             {
                 Spam *spam = (Spam *) b;

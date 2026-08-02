@@ -17,7 +17,7 @@
 #include "GameTime.h"
 #include "ParticleSystem.h"
 #include "GlobalWorld.h"
-
+#include "WorldPointers.h"
 
 
 SafeArea::SafeArea()
@@ -50,21 +50,21 @@ bool SafeArea::Advance()
     //
     // Is the world awake yet ?
 
-    if( !g_app->m_location ) return false;
-    if( !g_app->m_location->m_teams ) return false;
-    if( g_app->m_location->m_teams[ m_id.GetTeamId() ].m_teamType == Team::TeamTypeUnused ) return false;
+    if( !g_location ) return false;
+    if( !g_location->m_teams ) return false;
+    if( g_location->m_teams[ m_id.GetTeamId() ].m_teamType == Team::TeamTypeUnused ) return false;
 
 
     if( GetHighResTime() > m_recountTimer )
     {
         int numFound;
-        WorldObjectId *ids = g_app->m_location->m_entityGrid->GetFriends( m_pos.x, m_pos.z, m_size, &numFound, m_id.GetTeamId() );
+        WorldObjectId *ids = g_location->m_entityGrid->GetFriends( m_pos.x, m_pos.z, m_size, &numFound, m_id.GetTeamId() );
         m_entitiesCounted = 0;
 
         for( int i = 0; i < numFound; ++i )
         {
             WorldObjectId id = ids[i];
-            Entity *entity = g_app->m_location->GetEntity( id );
+            Entity *entity = g_location->GetEntity( id );
             if( entity &&
                 entity->m_type == m_entityTypeRequired &&
                 !entity->m_dead )
@@ -78,11 +78,11 @@ bool SafeArea::Advance()
         if( (m_id.GetTeamId() == 1 && m_entitiesCounted <= m_entitiesRequired) ||
             (m_id.GetTeamId() != 1 && m_entitiesCounted >= m_entitiesRequired) )
         {
-            GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
             if( gb && !gb->m_online )
             {
                 gb->m_online = true;
-                g_app->m_globalWorld->EvaluateEvents();
+                g_globalWorld->EvaluateEvents();
             }
         }
 
@@ -100,7 +100,7 @@ void SafeArea::Render( float predictionTime )
 
         if( m_id.GetTeamId() != 255 )
         {
-            colour = g_app->m_location->m_teams[ m_id.GetTeamId() ].m_colour;
+            colour = g_location->m_teams[ m_id.GetTeamId() ].m_colour;
         }
         colour.a = 255;
 
@@ -118,7 +118,7 @@ void SafeArea::Render( float predictionTime )
             float xDiff = m_size * sinf(angle);
             float zDiff = m_size * cosf(angle);
             Vector3 pos = m_pos + Vector3(xDiff,5,zDiff);
-	        pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
+	        pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
             if( pos.y < 2 ) pos.y = 2;
             glVertex3fv( pos.GetData() );
             angle += 2.0f * M_PI / (float) numSteps;
@@ -132,12 +132,12 @@ void SafeArea::Render( float predictionTime )
         Vector3 dif( m_size * sinf(angle), 0.0f, m_size * cosf(angle) );
 
         Vector3 pos = m_pos + dif;
-        pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z ) + 5.0f;
-        g_app->m_particleSystem->CreateParticle( pos, g_upVector*2 + dif/30, Particle::TypeMuzzleFlash, 100.0f );
+        pos.y = g_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z ) + 5.0f;
+        g_particleSystem->CreateParticle( pos, g_upVector*2 + dif/30, Particle::TypeMuzzleFlash, 100.0f );
 
         pos = m_pos - dif;
-        pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z ) + 5.0f;
-        g_app->m_particleSystem->CreateParticle( pos, g_upVector*2 - dif/30, Particle::TypeMuzzleFlash, 100.0f );
+        pos.y = g_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z ) + 5.0f;
+        g_particleSystem->CreateParticle( pos, g_upVector*2 - dif/30, Particle::TypeMuzzleFlash, 100.0f );
 */
     }
 

@@ -29,7 +29,6 @@
 #include "GenericHub.h"
 #include "Switch.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "GlobalWorld.h"
 #include "LocationEditor.h"
@@ -37,7 +36,7 @@
 #include "Renderer.h"
 #include "Location.h"
 #include "Team.h"
-
+#include "WorldPointers.h"
 
 
 #ifdef LOCATION_EDITOR
@@ -58,12 +57,12 @@ public:
 
     void MouseUp()
     {
-        g_app->m_locationEditor->m_tool = m_toolType;
+        g_locationEditor->m_tool = m_toolType;
     }
 
 	void Render(int realX, int realY, bool highlighted, bool clicked)
 	{
-		if(g_app->m_locationEditor->m_tool == m_toolType)
+		if(g_locationEditor->m_tool == m_toolType)
 		{
 			SpeciesButton::Render(realX, realY, highlighted, true);
 		}
@@ -74,7 +73,7 @@ public:
 
         if(m_toolType == LocationEditor::ToolLink)
         {
-            Building *b = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
+            Building *b = g_location->GetBuilding(g_locationEditor->m_selectionId);
             g_editorFont.DrawText2DRight( realX + m_w - 10, realY + 10, 14, "%d", b->GetBuildingLink() );
         }
 	}
@@ -101,10 +100,10 @@ public:
         }
         else
         {
-            g_app->m_location->m_levelFile->RemoveBuilding( g_app->m_locationEditor->m_selectionId );
+            g_location->m_levelFile->RemoveBuilding( g_locationEditor->m_selectionId );
     	    EclRemoveWindow(LANGUAGEPHRASE("editor_buildingid"));
-            g_app->m_locationEditor->m_tool = LocationEditor::ToolNone;
-            g_app->m_locationEditor->m_selectionId = -1;
+            g_locationEditor->m_tool = LocationEditor::ToolNone;
+            g_locationEditor->m_selectionId = -1;
         }
     }
 };
@@ -126,7 +125,7 @@ public:
 
     void MouseUp()
     {
-        Building *b = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
+        Building *b = g_location->GetBuilding(g_locationEditor->m_selectionId);
         if( b )
         {
             b->m_id.SetTeamId( m_teamId );
@@ -135,7 +134,7 @@ public:
 
     void Render( int realX, int realY, bool highlighted, bool clicked)
     {
-        Building *b = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
+        Building *b = g_location->GetBuilding(g_locationEditor->m_selectionId);
         if( b )
         {
             if( b->m_id.GetTeamId() == m_teamId )
@@ -154,7 +153,7 @@ public:
         }
         else
         {
-            RGBAColour col = g_app->m_location->m_teams[ m_teamId ].m_colour;
+            RGBAColour col = g_location->m_teams[ m_teamId ].m_colour;
             glColor3ubv( col.GetData() );
         }
 
@@ -178,7 +177,7 @@ public:
     void Render( int realX, int realY, bool highlighted, bool clicked )
     {
         SpeciesButton::Render( realX, realY, highlighted, clicked );
-        Building *b = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
+        Building *b = g_location->GetBuilding(g_locationEditor->m_selectionId);
         if( b )
         {
             g_editorFont.DrawText2DRight( realX + m_w - 10, realY+10, DEF_FONT_SIZE, "%d", b->m_isGlobal );
@@ -187,7 +186,7 @@ public:
 
     void MouseUp()
     {
-        Building *b = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
+        Building *b = g_location->GetBuilding(g_locationEditor->m_selectionId);
         if( b )
         {
             b->m_isGlobal = !b->m_isGlobal;
@@ -206,20 +205,20 @@ class CloneBuildingButton : public SpeciesButton
     {
 	    Vector3 rayStart;
 	    Vector3 rayDir;
-	    g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2,
-									 g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	    g_camera->GetClickRay(g_renderer->ScreenW()/2,
+									 g_renderer->ScreenH()/2, &rayStart, &rayDir);
         Vector3 _pos;
-        g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+        g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
-        Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
+        Building *building = g_location->GetBuilding(g_locationEditor->m_selectionId);
         DEBUG_ASSERT(building);
 
         Building *newBuilding = Building::CreateBuilding( building->m_type );
         newBuilding->Initialise( building );
         newBuilding->SetDetail( g_prefsManager->GetInt( "RenderBuildingDetail", 1 ) );
-        newBuilding->m_id.SetUniqueId( g_app->m_globalWorld->GenerateBuildingId() );
+        newBuilding->m_id.SetUniqueId( g_globalWorld->GenerateBuildingId() );
         newBuilding->m_pos = _pos;
-        g_app->m_location->m_levelFile->m_buildings.PutData( newBuilding );
+        g_location->m_levelFile->m_buildings.PutData( newBuilding );
     }
 };
 
@@ -236,14 +235,14 @@ BuildingEditWindow::BuildingEditWindow( char const *name )
 
 BuildingEditWindow::~BuildingEditWindow()
 {
-	g_app->m_locationEditor->m_selectionId = -1;
+	g_locationEditor->m_selectionId = -1;
 }
 
 void BuildingEditWindow::Create()
 {
 	SpeciesWindow::Create();
 
-	Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
+	Building *building = g_location->GetBuilding(g_locationEditor->m_selectionId);
 	DEBUG_ASSERT(building);
 
 	int buttonPitch = 18;
@@ -428,7 +427,7 @@ void BuildingEditWindow::Create()
             int m_buildingId;
             void MouseUp()
             {
-                SpawnBuilding *building = (SpawnBuilding *) g_app->m_location->GetBuilding( m_buildingId );
+                SpawnBuilding *building = (SpawnBuilding *) g_location->GetBuilding( m_buildingId );
                 building->ClearLinks();
             }
         };
@@ -507,7 +506,7 @@ void BuildingEditWindow::Render( bool hasFocus )
 {
     SpeciesWindow::Render( hasFocus );
 
-	Building *building = g_app->m_location->GetBuilding(g_app->m_locationEditor->m_selectionId);
+	Building *building = g_location->GetBuilding(g_locationEditor->m_selectionId);
 	DEBUG_ASSERT(building);
 
     g_editorFont.SetRenderShadow(true);
@@ -529,18 +528,18 @@ public:
     {
 	    Vector3 rayStart;
 	    Vector3 rayDir;
-	    g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2,
-									 g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	    g_camera->GetClickRay(g_renderer->ScreenW()/2,
+									 g_renderer->ScreenH()/2, &rayStart, &rayDir);
         Vector3 _pos;
-        g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+        g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
         BuildingsCreateWindow *bcw = (BuildingsCreateWindow *) m_parent;
         Building *building = Building::CreateBuilding( bcw->m_buildingType );
         if( building )
         {
             building->m_pos = _pos;
-            building->m_id.SetUniqueId( g_app->m_globalWorld->GenerateBuildingId() );
-            g_app->m_location->m_levelFile->m_buildings.PutData( building );
+            building->m_id.SetUniqueId( g_globalWorld->GenerateBuildingId() );
+            g_location->m_levelFile->m_buildings.PutData( building );
         }
     }
 };
@@ -559,7 +558,7 @@ BuildingsCreateWindow::BuildingsCreateWindow( char const *_name )
 
 BuildingsCreateWindow::~BuildingsCreateWindow()
 {
-	g_app->m_locationEditor->RequestMode(LocationEditor::ModeNone);
+	g_locationEditor->RequestMode(LocationEditor::ModeNone);
 	EclRemoveWindow(LANGUAGEPHRASE("editor_buildingid"));
 }
 

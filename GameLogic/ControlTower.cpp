@@ -26,6 +26,7 @@
 
 #include "ControlTower.h"
 #include "TrunkPort.h"
+#include "WorldPointers.h"
 
 Shape *ControlTower::s_dishShape = nullptr;
 
@@ -76,7 +77,7 @@ bool ControlTower::Advance()
 
     if( m_dishMatrix == Matrix34() )
     {
-        Building *targetBuilding = g_app->m_location->GetBuilding( m_controlBuildingId );
+        Building *targetBuilding = g_location->GetBuilding( m_controlBuildingId );
         if( targetBuilding)
         {
             Matrix34 mat(m_front, g_upVector, m_pos);
@@ -107,7 +108,7 @@ bool ControlTower::Advance()
 
     if( m_checkTargetTimer <= 0.0f )
     {
-        Building *building = g_app->m_location->GetBuilding( m_controlBuildingId );
+        Building *building = g_location->GetBuilding( m_controlBuildingId );
         if( building &&
             building->m_type == TypeTrunkPort &&
             m_id.GetTeamId() != 2 )
@@ -134,7 +135,7 @@ bool ControlTower::Advance()
             Matrix34 worldMat = m_console[i]->GetWorldMatrix(rootMat);
             Vector3 particleVel = worldMat.pos - m_pos;
             particleVel += Vector3( sfrand() * 10.0f, sfrand() * 5.0f, sfrand() * 10.0f );
-            g_app->m_particleSystem->CreateParticle( worldMat.pos, particleVel, Particle::TypeBlueSpark );
+            g_particleSystem->CreateParticle( worldMat.pos, particleVel, Particle::TypeBlueSpark );
         }
     }
 
@@ -188,7 +189,7 @@ bool ControlTower::Reprogram( int _teamId )
         if( m_ownership <= 0.0f )
         {
             m_id.SetTeamId( _teamId );
-            Building *targetBuilding = g_app->m_location->GetBuilding( m_controlBuildingId );
+            Building *targetBuilding = g_location->GetBuilding( m_controlBuildingId );
             if( targetBuilding && targetBuilding->m_id.GetTeamId() != m_id.GetTeamId() )
             {
                 targetBuilding->SetTeamId( m_id.GetTeamId() );
@@ -203,7 +204,7 @@ bool ControlTower::Reprogram( int _teamId )
             m_ownership += 0.1f;
             if( m_ownership > 100.0f ) m_ownership = 100.0f;
 
-            Building *targetBuilding = g_app->m_location->GetBuilding( m_controlBuildingId );
+            Building *targetBuilding = g_location->GetBuilding( m_controlBuildingId );
             if( targetBuilding )
             {
                 targetBuilding->Reprogram( m_ownership );
@@ -214,13 +215,13 @@ bool ControlTower::Reprogram( int _teamId )
 			        //g_app->m_sepulveda->Say("building_captured");
                     targetBuilding->ReprogramComplete();
                     SetTeamId( _teamId );
-				    g_app->m_globalWorld->m_research->GiveResearchPoints( GLOBALRESEARCH_POINTS_CONTROLTOWER );
+				    g_globalWorld->m_research->GiveResearchPoints( GLOBALRESEARCH_POINTS_CONTROLTOWER );
 
-                    GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+                    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
                     if( gb )
                     {
                         gb->m_online = true;
-                        g_app->m_globalWorld->EvaluateEvents();
+                        g_globalWorld->EvaluateEvents();
                     }
 
 
@@ -264,8 +265,8 @@ bool ControlTower::IsInView()
     // Check against the tall thin control line to heaven
 
     Vector3 towerPos = m_pos;
-    towerPos.y = g_app->m_camera->GetPos().y;
-    return g_app->m_camera->PosInViewFrustum( towerPos );
+    towerPos.y = g_camera->GetPos().y;
+    return g_camera->PosInViewFrustum( towerPos );
 }
 
 
@@ -288,14 +289,14 @@ void ControlTower::RenderAlphas ( float _predictionTime )
         s_lastRecalculation = (int) GetHighResTime();
 
         float nearest = 99999.9f;
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 if( building && building->m_type == TypeControlTower )
                 {
-                    float camDist = (building->m_pos - g_app->m_camera->GetPos()).Mag();
+                    float camDist = (building->m_pos - g_camera->GetPos()).Mag();
                     if( camDist < nearest ) nearest = camDist;
                 }
             }
@@ -324,8 +325,8 @@ void ControlTower::RenderAlphas ( float _predictionTime )
     Matrix34 worldMat = m_lightPos->GetWorldMatrix(rootMat);
 	Vector3 lightPos = worldMat.pos;
 
-    Vector3 camR = g_app->m_camera->GetRight();
-    Vector3 camU = g_app->m_camera->GetUp();
+    Vector3 camR = g_camera->GetRight();
+    Vector3 camU = g_camera->GetUp();
 
     RGBAColour colour;
     if( m_id.GetTeamId() == 255 )
@@ -334,7 +335,7 @@ void ControlTower::RenderAlphas ( float _predictionTime )
 	}
 	else
 	{
-		colour = g_app->m_location->m_teams[ m_id.GetTeamId() ].m_colour;
+		colour = g_location->m_teams[ m_id.GetTeamId() ].m_colour;
 	}
 
 
@@ -356,7 +357,7 @@ void ControlTower::RenderAlphas ( float _predictionTime )
 	    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 
-        float w = (lightPos  - g_app->m_camera->GetPos()).Mag() * 0.002f;
+        float w = (lightPos  - g_camera->GetPos()).Mag() * 0.002f;
         w = max( 0.5f, w );
 
         for( int i = 0; i < 10; ++i )

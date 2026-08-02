@@ -13,12 +13,12 @@
 #include "EntityLeg.h"
 #include "Tripod.h"
 
-#include "App.h"
 #include "EntityGrid.h"
 #include "Explosion.h"
 #include "Location.h"
 #include "GameTime.h"
 #include "Renderer.h"
+#include "WorldPointers.h"
 
 
 #define FOOT_MOVE_THRESHOLD	1.0f	// Lower means feet are lifted when less distant from their ideal pos, and thus smaller steps are taken
@@ -210,14 +210,14 @@ WorldObjectId Tripod::FindEntityToAttack()
 	WorldObjectId id;
 
 	int numFound;
-	WorldObjectId *enemies = g_app->m_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z,
+	WorldObjectId *enemies = g_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z,
 																	ATTACK_SEARCH_RADIUS, &numFound, m_id.GetTeamId());
 
 	int nearest = -1;
 	float nearestDistSqrd = FLT_MAX;
 	for (int i = 0; i < numFound; ++i)
 	{
-		Entity *entity = g_app->m_location->GetEntity(enemies[i]);
+		Entity *entity = g_location->GetEntity(enemies[i]);
 		float deltaX = entity->m_pos.x - m_pos.x;
 		float deltaY = entity->m_pos.z - m_pos.z;
 		float distSqrd = deltaX * deltaX + deltaY * deltaY;
@@ -244,7 +244,7 @@ Vector2 Tripod::ChooseDestination()
 	START_PROFILE(g_profiler, "ChooseDest");
 
 	int numFound;
-	WorldObjectId *enemies = g_app->m_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z,
+	WorldObjectId *enemies = g_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z,
 																	NAVIGATION_SEARCH_RADIUS, &numFound, m_id.GetTeamId());
 	Vector2 pos;
 
@@ -257,7 +257,7 @@ Vector2 Tripod::ChooseDestination()
 	else
 	{
 		int i = syncrand() % numFound;
-		Entity *targetEnemy = g_app->m_location->GetEntity(enemies[i]);
+		Entity *targetEnemy = g_location->GetEntity(enemies[i]);
 		pos = targetEnemy->m_pos;
 		pos.x += syncsfrand(100.0f);
 		pos.y += syncsfrand(100.0f);
@@ -364,7 +364,7 @@ void Tripod::AdvanceWalk()
 			WorldObjectId targetId = FindEntityToAttack();
 			if (targetId.IsValid())
 			{
-				Entity *target = g_app->m_location->GetEntity(targetId);
+				Entity *target = g_location->GetEntity(targetId);
 				m_attackTarget = target->m_pos;
 				m_mode = ModePreAttack;
 				m_modeStartTime = g_gameTime;
@@ -425,7 +425,7 @@ void Tripod::AdvancePreAttack()
 	m_targetHoverHeight = ATTACK_HOVER_HEIGHT;
 
 	// See if we have achieved a full crouch yet
-	float height = m_pos.y - g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+	float height = m_pos.y - g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 	if (height < ATTACK_HOVER_HEIGHT + 0.5f)
 	{
 		m_mode = ModeAttacking;
@@ -478,9 +478,9 @@ void Tripod::AdvanceAttack()
 			Vector3 pos = m_pos + right;
 			toEnemy.x += syncsfrand(0.1f);
 			toEnemy.z += syncsfrand(0.1f);
-			g_app->m_location->FireLaser(pos + toEnemy * 5.0f, toEnemy * speed, m_id.GetTeamId());
+			g_location->FireLaser(pos + toEnemy * 5.0f, toEnemy * speed, m_id.GetTeamId());
 			pos = m_pos - right;
-			g_app->m_location->FireLaser(pos + toEnemy * 5.0f, toEnemy * speed, m_id.GetTeamId());
+			g_location->FireLaser(pos + toEnemy * 5.0f, toEnemy * speed, m_id.GetTeamId());
 		}
 	}
 
@@ -493,7 +493,7 @@ void Tripod::AdvancePostAttack()
 	m_targetHoverHeight = STATIONARY_HOVER_HEIGHT;
 
 	// Check if we have achieved full walking height yet
-	float height = m_pos.y - g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+	float height = m_pos.y - g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 	if (height > STATIONARY_HOVER_HEIGHT - 0.5f)
 	{
 		m_mode = ModeWalking;
@@ -547,7 +547,7 @@ bool Tripod::Advance(Unit *_unit)
 	// Adjust body height
 
 	{
-		float targetHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+		float targetHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 		targetHeight += m_targetHoverHeight;
 		float factor1 = 1.0f * SERVER_ADVANCE_PERIOD;
 		float factor2 = 1.0f - factor1;
@@ -573,7 +573,7 @@ bool Tripod::Advance(Unit *_unit)
 	//
 	// Detect death
 
-	if (m_pos.y < g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z))
+	if (m_pos.y < g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z))
 	{
 		Matrix34 mat(m_front, m_up, m_pos);
 		g_explosionManager.AddExplosion(m_shape, mat);
@@ -588,7 +588,7 @@ void Tripod::Render(float _predictionTime)
 {
     glDisable( GL_TEXTURE_2D );
 
-	g_app->m_renderer->SetObjectLighting();
+	g_renderer->SetObjectLighting();
 
 
 	//
@@ -596,7 +596,7 @@ void Tripod::Render(float _predictionTime)
 
 	Vector3 predictedMovement = _predictionTime * m_vel;
 	Vector3 predictedPos = m_pos + predictedMovement;
-//	predictedPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) +
+//	predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) +
 //					 m_targetHoverHeight;
 
 	Matrix34 mat(m_front, m_up, predictedPos);
@@ -613,5 +613,5 @@ void Tripod::Render(float _predictionTime)
 
 //	m_s->Render();
 
-	g_app->m_renderer->UnsetObjectLighting();
+	g_renderer->UnsetObjectLighting();
 }

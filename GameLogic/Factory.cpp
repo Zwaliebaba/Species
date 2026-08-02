@@ -17,6 +17,7 @@
 
 #include "Factory.h"
 #include "InsertionSquad.h"
+#include "WorldPointers.h"
 
 
 Factory::Factory()
@@ -103,7 +104,7 @@ void Factory::RequestUnit( unsigned char _troopType, int _numToCreate )
 	if( _troopType < Entity::TypeEngineer ||
         _troopType == Entity::TypeInsertionSquadie)
     {
-        Team *team          = &g_app->m_location->m_teams[m_id.GetTeamId()];
+        Team *team          = &g_location->m_teams[m_id.GetTeamId()];
         Unit *unit          = team->NewUnit( _troopType, _numToCreate, &m_unitId, m_pos );
         unit->SetWayPoint(m_pos + m_front * 30.0f);
     }
@@ -156,7 +157,7 @@ void Factory::AdvanceStateCreating()
                          5.0f + syncsfrand(1.0f) );
 
             m_spiritStore.RemoveSpirits( 1 );
-            g_app->m_location->SpawnEntities( pos, m_id.GetTeamId(), m_unitId, m_troopType, 1, vel, 0.0f );
+            g_location->SpawnEntities( pos, m_id.GetTeamId(), m_unitId, m_troopType, 1, vel, 0.0f );
 
             ++numActuallyCreated;
         }

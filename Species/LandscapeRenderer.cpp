@@ -20,6 +20,7 @@
 #include "Location.h"	// For SetupFog
 #include "Renderer.h"
 #include "LevelFile.h"
+#include "WorldPointers.h"
 
 #define MAIN_DISPLAY_LIST_NAME "LandscapeMain"
 #define OVERLAY_DISPLAY_LIST_NAME "LandscapeOverlay"
@@ -240,7 +241,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
   : m_vertexBuffer(0)
 {
   char fullFilname[256];
-  sprintf(fullFilname, "Terrain/%s", g_app->m_location->m_levelFile->m_landscapeColourFilename);
+  sprintf(fullFilname, "Terrain/%s", g_location->m_levelFile->m_landscapeColourFilename);
 
   if (Location::ChristmasModEnabled() == 1)
     strcpy(fullFilname, "Terrain/LandscapeIcecaps.bmp");
@@ -471,7 +472,7 @@ void LandscapeRenderer::Render()
   if (m_verts.Size() <= 0)
     return;
 
-  g_app->m_location->SetupFog();
+  g_location->SetupFog();
   glEnable(GL_FOG);
 
   START_PROFILE(g_app->m_profiler, "Render Landscape Main");

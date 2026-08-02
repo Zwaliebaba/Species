@@ -9,8 +9,8 @@
 
 #include "StaticShape.h"
 
-#include "App.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 StaticShape::StaticShape()
@@ -36,7 +36,7 @@ void StaticShape::Initialise( Building *_template )
 
 void StaticShape::SetDetail( int _detail )
 {
-    m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
     if( m_shape )
     {

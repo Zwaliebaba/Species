@@ -7,10 +7,10 @@
 
 #include "Egg.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "Location.h"
 #include "Team.h"
+#include "WorldPointers.h"
 
 
 Egg::Egg()
@@ -54,15 +54,15 @@ void Egg::Render( float predictionTime )
     glDisable       ( GL_CULL_FACE );
 
     RGBAColour colour;
-    if( m_id.GetTeamId() >= 0 ) colour = g_app->m_location->m_teams[ m_id.GetTeamId() ].m_colour;
+    if( m_id.GetTeamId() >= 0 ) colour = g_location->m_teams[ m_id.GetTeamId() ].m_colour;
     float alpha = m_stats[StatHealth] / EntityBlueprint::GetStat( Entity::TypeEgg, StatHealth );
     if( alpha < 0.1f ) alpha = 0.1f;
     glColor4ub   ( 255, 255, 255, 255 * alpha );
 
     Vector3 pos = m_pos + m_vel * predictionTime;
     pos.y += 3.0f;
-    Vector3 up = g_app->m_camera->GetUp();
-    Vector3 right = g_app->m_camera->GetRight();
+    Vector3 up = g_camera->GetUp();
+    Vector3 right = g_camera->GetRight();
     float size = 4.0f;
 
     //
@@ -121,7 +121,7 @@ void Egg::Render( float predictionTime )
         float predictedHealth = m_stats[StatHealth];
         if( m_onGround ) predictedHealth -= 40.0f * predictionTime;
         else             predictedHealth -= 20.0f * predictionTime;
-        float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z );
+        float landHeight = g_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z );
 
         size *= 0.5f;
 
@@ -180,9 +180,9 @@ void Egg::Render( float predictionTime )
 
 bool Egg::Advance( Unit *_unit )
 {
-    if( g_app->m_location->m_spirits.ValidIndex( m_spiritId ) )
+    if( g_location->m_spirits.ValidIndex( m_spiritId ) )
     {
-        Spirit *spirit = g_app->m_location->m_spirits.GetPointer(m_spiritId);
+        Spirit *spirit = g_location->m_spirits.GetPointer(m_spiritId);
         spirit->m_pos = m_pos+Vector3(0,3,0);
     }
 
@@ -194,8 +194,8 @@ bool Egg::Advance( Unit *_unit )
 
             if( m_timer >= 15.0f )
             {
-                g_app->m_location->m_spirits.MarkNotUsed( m_spiritId );
-                g_app->m_location->SpawnEntities( m_pos, m_id.GetTeamId(), -1, Entity::TypeVirii, 4, g_zeroVector, 0.0f, 200.0f );
+                g_location->m_spirits.MarkNotUsed( m_spiritId );
+                g_location->SpawnEntities( m_pos, m_id.GetTeamId(), -1, Entity::TypeVirii, 4, g_zeroVector, 0.0f, 200.0f );
                 return true;
             }
         }
@@ -214,7 +214,7 @@ bool Egg::Advance( Unit *_unit )
 
     if( m_onGround )
     {
-        float groundLevel = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+        float groundLevel = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
         if( m_pos.y < groundLevel )
         {
             m_pos.y = groundLevel;
@@ -227,9 +227,9 @@ bool Egg::Advance( Unit *_unit )
 
     if( m_dead )
     {
-        if( g_app->m_location->m_spirits.ValidIndex( m_spiritId ) )
+        if( g_location->m_spirits.ValidIndex( m_spiritId ) )
         {
-            Spirit *spirit = g_app->m_location->m_spirits.GetPointer(m_spiritId);
+            Spirit *spirit = g_location->m_spirits.GetPointer(m_spiritId);
             spirit->EggDestroyed();
             m_spiritId = -1;
         }
@@ -254,10 +254,10 @@ bool Egg::Advance( Unit *_unit )
 
 void Egg::Fertilise( int spiritId )
 {
-    if( g_app->m_location->m_spirits.ValidIndex( spiritId ) )
+    if( g_location->m_spirits.ValidIndex( spiritId ) )
     {
         m_spiritId = spiritId;
-        Spirit *spirit = g_app->m_location->m_spirits.GetPointer(m_spiritId);
+        Spirit *spirit = g_location->m_spirits.GetPointer(m_spiritId);
         spirit->InEgg();
         m_state = StateFertilised;
         m_timer = 0.0f;

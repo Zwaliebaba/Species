@@ -8,6 +8,7 @@
 
 #include "App.h"
 #include "Renderer.h"
+#include "WorldPointers.h"
 
 
 class YesButton : public SpeciesButton
@@ -44,8 +45,8 @@ SaveOnQuitWindow::SaveOnQuitWindow( char const *_name )
 {
 	m_w = 200;
 	m_h = 100;
-	m_x = g_app->m_renderer->ScreenW()/2 - m_w/2;
-	m_y = g_app->m_renderer->ScreenH()/2 - m_h/2;
+	m_x = g_renderer->ScreenW()/2 - m_w/2;
+	m_y = g_renderer->ScreenH()/2 - m_h/2;
 }
 
 

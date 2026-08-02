@@ -26,6 +26,7 @@
 #include "TextRenderer.h"
 #include "TextStreamReaders.h"
 #include "UserInput.h"
+#include "WorldPointers.h"
 
 // Overlays GameData/DefaultPreferences.txt onto the built-in defaults, and is
 // installed on PrefsManager before the first one is constructed. It runs only
@@ -61,23 +62,14 @@ App* g_app = nullptr;
 #define GAMEDATAFILE "Game.txt"
 
 App::App()
-  : m_userInput(nullptr),
-    m_resource(nullptr),
+  : m_resource(nullptr),
     m_soundSystem(nullptr),
-    m_particleSystem(nullptr),
     m_langTable(nullptr),
     m_profiler(nullptr),
-    m_globalWorld(nullptr),
-    m_location(nullptr),
     m_locationId(-1),
-    m_camera(nullptr),
     m_server(nullptr),
     m_clientToServer(nullptr),
-    m_renderer(nullptr),
     m_locationInput(nullptr),
-    m_locationEditor(nullptr),
-    m_taskManager(nullptr),
-    m_script(nullptr),
     m_startSequence(nullptr),
     m_attractMode(nullptr),
     m_controlHelpSystem(nullptr),
@@ -118,8 +110,8 @@ App::App()
   Profiler::SetRenderSyncHook(&ProfilerRenderSync);
 #endif
 
-  m_renderer = new Renderer();
-  m_renderer->Initialise();
+  g_renderer = new Renderer();
+  g_renderer->Initialise();
 
   // Make sure that resources are now available - either the .dat files
   // or the data directory must exist
@@ -135,11 +127,11 @@ App::App()
   g_soundSystem = m_soundSystem;
   m_clientToServer = new ClientToServer();
   g_clientToServer = m_clientToServer;
-  m_userInput = new UserInput();
-  //    m_location          = new Location();
+  g_userInput = new UserInput();
+  //    g_location          = new Location();
   //    m_locationInput		= new LocationInput();
 
-  m_camera = new Camera();
+  g_camera = new Camera();
   m_gameMenu = new GameMenu();
 
   strcpy(m_gameDataFile, "Game.txt");
@@ -164,15 +156,15 @@ App::App()
 
   SetProfileName(g_prefsManager->GetString("UserProfile", "none"));
 
-  m_particleSystem = new ParticleSystem();
-  m_taskManager = new TaskManager();
-  m_script = new Script();
+  g_particleSystem = new ParticleSystem();
+  g_taskManager = new TaskManager();
+  g_script = new Script();
 #ifdef ATTRACTMODE_ENABLED
   m_attractMode = new AttractMode();
 #endif
   m_controlHelpSystem = new ControlHelpSystem();
 
-  m_taskManagerInterface = new TaskManagerInterfaceIcons();
+  g_taskManagerInterface = new TaskManagerInterfaceIcons();
 
   m_soundSystem->Initialise();
 
@@ -188,22 +180,22 @@ App::App()
 
 App::~App()
 {
-  SAFE_DELETE(m_globalWorld);
+  SAFE_DELETE(g_globalWorld);
   SAFE_DELETE(m_langTable);
-  SAFE_DELETE(m_taskManagerInterface);
+  SAFE_DELETE(g_taskManagerInterface);
   SAFE_DELETE(m_controlHelpSystem);
 #ifdef ATTRACTMODE_ENABLED
   SAFE_DELETE(m_attractMode);
 #endif
-  SAFE_DELETE(m_script);
-  SAFE_DELETE(m_taskManager);
-  SAFE_DELETE(m_particleSystem);
-  SAFE_DELETE(m_camera);
-  SAFE_DELETE(m_userInput);
+  SAFE_DELETE(g_script);
+  SAFE_DELETE(g_taskManager);
+  SAFE_DELETE(g_particleSystem);
+  SAFE_DELETE(g_camera);
+  SAFE_DELETE(g_userInput);
   SAFE_DELETE(m_clientToServer);
   SAFE_DELETE(m_soundSystem);
   SAFE_DELETE(m_gameCursor);
-  SAFE_DELETE(m_renderer);
+  SAFE_DELETE(g_renderer);
 #ifdef PROFILER_ENABLED
   SAFE_DELETE(m_profiler);
 #endif
@@ -330,36 +322,36 @@ bool App::LoadProfile()
     // Cheat username that opens all locations
     // aimed at beta testers who've completed the game already
 
-    if (m_globalWorld)
+    if (g_globalWorld)
     {
-      delete m_globalWorld;
-      m_globalWorld = nullptr;
+      delete g_globalWorld;
+      g_globalWorld = nullptr;
     }
 
-    m_globalWorld = new GlobalWorld();
-    m_globalWorld->LoadGame("GameUnlockAll.txt");
-    for (int i = 0; i < m_globalWorld->m_buildings.Size(); ++i)
+    g_globalWorld = new GlobalWorld();
+    g_globalWorld->LoadGame("GameUnlockAll.txt");
+    for (int i = 0; i < g_globalWorld->m_buildings.Size(); ++i)
     {
-      GlobalBuilding* building = m_globalWorld->m_buildings[i];
+      GlobalBuilding* building = g_globalWorld->m_buildings[i];
       if (building && building->m_type == Building::TypeTrunkPort)
         building->m_online = true;
     }
-    for (int i = 0; i < m_globalWorld->m_locations.Size(); ++i)
+    for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
     {
-      GlobalLocation* loc = m_globalWorld->m_locations[i];
+      GlobalLocation* loc = g_globalWorld->m_locations[i];
       loc->m_available = true;
     }
   }
   else
   {
-    if (m_globalWorld)
+    if (g_globalWorld)
     {
-      delete m_globalWorld;
-      m_globalWorld = nullptr;
+      delete g_globalWorld;
+      g_globalWorld = nullptr;
     }
 
-    m_globalWorld = new GlobalWorld();
-    m_globalWorld->LoadGame(m_gameDataFile);
+    g_globalWorld = new GlobalWorld();
+    g_globalWorld->LoadGame(m_gameDataFile);
   }
 
   return true;
@@ -379,8 +371,8 @@ void App::LoadPrologue()
   strcpy(m_gameDataFile, "game_demo2.txt");
   LoadProfile();
 
-  m_requestedLocationId = m_globalWorld->GetLocationId("launchpad");
-  GlobalLocation* gloc = m_globalWorld->GetLocation(m_requestedLocationId);
+  m_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
+  GlobalLocation* gloc = g_globalWorld->GetLocation(m_requestedLocationId);
   strcpy(m_requestedMap, gloc->m_mapFilename);
   strcpy(m_requestedMission, gloc->m_missionFilename);
 

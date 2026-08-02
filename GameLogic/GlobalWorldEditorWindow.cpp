@@ -9,6 +9,7 @@
 #include "App.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
+#include "WorldPointers.h"
 
 
 static char s_locationName[256] = "NewLevel";
@@ -20,12 +21,12 @@ public:
     int m_mode;
     void MouseUp()
     {
-        g_app->m_globalWorld->m_editorMode = m_mode;
+        g_globalWorld->m_editorMode = m_mode;
     }
 
     void Render( int realX, int realY, bool highlighted, bool clicked )
     {
-        if( g_app->m_globalWorld->m_editorMode == m_mode )
+        if( g_globalWorld->m_editorMode == m_mode )
         {
             SpeciesButton::Render( realX, realY, true, clicked );
         }
@@ -78,13 +79,13 @@ class NewLocationButton : public SpeciesButton
         strcpy( loc->m_name, s_locationName );
         loc->m_available = true;
         loc->m_pos.Set( -96.25, -274.02, 75.16 );
-        g_app->m_globalWorld->AddLocation( loc );
+        g_globalWorld->AddLocation( loc );
 
         //
         // Save game.txt and locations.txt
 
-        g_app->m_globalWorld->SaveGame( "Game.txt" );
-        g_app->m_globalWorld->SaveLocations( "Locations.txt" );
+        g_globalWorld->SaveGame( "Game.txt" );
+        g_globalWorld->SaveLocations( "Locations.txt" );
     }
 };
 
@@ -111,7 +112,7 @@ class SaveLocationsButton : public SpeciesButton
         //
         // It's ok to save
 
-        g_app->m_globalWorld->SaveLocations( "Locations.txt" );
+        g_globalWorld->SaveLocations( "Locations.txt" );
     }
 };
 
@@ -160,7 +161,7 @@ void GlobalWorldEditorWindow::Create()
 void GlobalWorldEditorWindow::Update()
 {
     if( !g_app->m_editing ||
-        g_app->m_location )
+        g_location )
     {
         EclRemoveWindow( m_name );
     }

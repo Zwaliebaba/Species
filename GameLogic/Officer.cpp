@@ -14,7 +14,6 @@
 #include "Officer.h"
 #include "Teleport.h"
 
-#include "App.h"
 #include "Location.h"
 #include "Team.h"
 #include "Renderer.h"
@@ -27,6 +26,7 @@
 #include "GlobalWorld.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
 
 
 Officer::Officer()
@@ -56,7 +56,7 @@ Officer::~Officer()
 {
     if( m_id.GetTeamId() != 255 )
     {
-        Team *team = &g_app->m_location->m_teams[ m_id.GetTeamId() ];
+        Team *team = &g_location->m_teams[ m_id.GetTeamId() ];
         team->UnRegisterSpecial( m_id );
     }
 }
@@ -75,7 +75,7 @@ void Officer::Begin()
 
     if( m_id.GetTeamId() != 255 )
     {
-        Team *team = &g_app->m_location->m_teams[ m_id.GetTeamId() ];
+        Team *team = &g_location->m_teams[ m_id.GetTeamId() ];
         team->RegisterSpecial( m_id );
     }
 }
@@ -91,7 +91,7 @@ void Officer::ChangeHealth( int amount )
         for( int i = 0; i < shieldLoss/10.0f; ++i )
         {
             Vector3 vel( syncsfrand(40.0f), 0.0f, syncsfrand(40.0f) );
-            g_app->m_location->SpawnSpirit( m_pos, vel, 0, WorldObjectId() );
+            g_location->SpawnSpirit( m_pos, vel, 0, WorldObjectId() );
         }
         m_shield -= shieldLoss/10.0f;
         amount += shieldLoss;
@@ -138,20 +138,20 @@ void Officer::RenderSpirit( Vector3 const &_pos )
     glDisable( GL_TEXTURE_2D );
 
     glBegin( GL_QUADS );
-        glVertex3fv( (pos - g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (pos + g_app->m_camera->GetRight()*size).GetData() );
-        glVertex3fv( (pos + g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (pos - g_app->m_camera->GetRight()*size).GetData() );
+        glVertex3fv( (pos - g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (pos + g_camera->GetRight()*size).GetData() );
+        glVertex3fv( (pos + g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (pos - g_camera->GetRight()*size).GetData() );
     glEnd();
 
     size = spiritOuterSize;
     glColor4ub(100, 250, 100, outerAlpha );
 
     glBegin( GL_QUADS );
-        glVertex3fv( (pos - g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (pos + g_app->m_camera->GetRight()*size).GetData() );
-        glVertex3fv( (pos + g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (pos - g_app->m_camera->GetRight()*size).GetData() );
+        glVertex3fv( (pos - g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (pos + g_camera->GetRight()*size).GetData() );
+        glVertex3fv( (pos + g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (pos - g_camera->GetRight()*size).GetData() );
     glEnd();
 
     size = spiritGlowSize;
@@ -160,10 +160,10 @@ void Officer::RenderSpirit( Vector3 const &_pos )
     glEnable( GL_TEXTURE_2D );
     glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
     glBegin( GL_QUADS );
-        glTexCoord2i(0,0);      glVertex3fv( (pos - g_app->m_camera->GetUp()*size).GetData() );
-        glTexCoord2i(1,0);      glVertex3fv( (pos + g_app->m_camera->GetRight()*size).GetData() );
-        glTexCoord2i(1,1);      glVertex3fv( (pos + g_app->m_camera->GetUp()*size).GetData() );
-        glTexCoord2i(0,1);      glVertex3fv( (pos - g_app->m_camera->GetRight()*size).GetData() );
+        glTexCoord2i(0,0);      glVertex3fv( (pos - g_camera->GetUp()*size).GetData() );
+        glTexCoord2i(1,0);      glVertex3fv( (pos + g_camera->GetRight()*size).GetData() );
+        glTexCoord2i(1,1);      glVertex3fv( (pos + g_camera->GetUp()*size).GetData() );
+        glTexCoord2i(0,1);      glVertex3fv( (pos - g_camera->GetRight()*size).GetData() );
     glEnd();
     glDisable( GL_TEXTURE_2D );
 }
@@ -243,7 +243,7 @@ bool Officer::RenderPixelEffect( float _predictionTime )
     Vector3 predictedPos = m_pos + m_vel * _predictionTime;
     if( m_onGround && m_inWater==-1 )
     {
-        predictedPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
+        predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
     }
     Vector3 entityUp = g_upVector;
     Vector3 entityRight(m_front ^ entityUp);
@@ -269,7 +269,7 @@ bool Officer::RenderPixelEffect( float _predictionTime )
     //
     // Render our shape
 
-    g_app->m_renderer->SetObjectLighting();
+    g_renderer->SetObjectLighting();
     glDisable       (GL_TEXTURE_2D);
     glShadeModel    (GL_SMOOTH);
 
@@ -278,10 +278,10 @@ bool Officer::RenderPixelEffect( float _predictionTime )
     glShadeModel    (GL_FLAT);
     glEnable        (GL_TEXTURE_2D);
     glBlendFunc     ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-    g_app->m_renderer->UnsetObjectLighting();
+    g_renderer->UnsetObjectLighting();
 
 
-    g_app->m_renderer->MarkUsedCells(m_shape, mat);
+    g_renderer->MarkUsedCells(m_shape, mat);
 
     return true;
 }
@@ -336,8 +336,8 @@ bool Officer::AdvanceToTargetPosition()
         // Slow us down if we're going up hill
         // Speed up if going down hill
 
-        float currentHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( oldPos.x, oldPos.z );
-        float nextHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( newPos.x, newPos.z );
+        float currentHeight = g_location->m_landscape.m_heightMap->GetValue( oldPos.x, oldPos.z );
+        float nextHeight = g_location->m_landscape.m_heightMap->GetValue( newPos.x, newPos.z );
         float factor = 1.0f - (currentHeight - nextHeight) / -3.0f;
         if( factor < 0.1f ) factor = 0.1f;
         if( factor > 2.0f ) factor = 2.0f;
@@ -378,7 +378,7 @@ bool Officer::SearchForRandomPosition()
                                    cosf(angle) * distance );
 
     m_wayPoint = PushFromObstructions( m_wayPoint );
-    m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
+    m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
 
     return true;
 }
@@ -387,7 +387,7 @@ bool Officer::SearchForRandomPosition()
 void Officer::Absorb()
 {
     int numFound;
-    WorldObjectId *ids = g_app->m_location->m_entityGrid->GetFriends( m_pos.x, m_pos.z, OFFICER_ABSORBRANGE, &numFound, m_id.GetTeamId() );
+    WorldObjectId *ids = g_location->m_entityGrid->GetFriends( m_pos.x, m_pos.z, OFFICER_ABSORBRANGE, &numFound, m_id.GetTeamId() );
 
     WorldObjectId nearestId;
     float nearestDistance = 99999.9f;
@@ -395,7 +395,7 @@ void Officer::Absorb()
     for( int i = 0; i < numFound; ++i )
     {
         WorldObjectId id = ids[i];
-        Entity *entity = g_app->m_location->GetEntity( id );
+        Entity *entity = g_location->GetEntity( id );
         if( entity && entity->m_type == Entity::TypeDarwinian && !entity->m_dead )
         {
             float distance = ( entity->m_pos - m_pos ).Mag();
@@ -412,10 +412,10 @@ void Officer::Absorb()
         m_absorbTimer -= SERVER_ADVANCE_PERIOD;
         if( m_absorbTimer < 0.0f )
         {
-            Entity *entity = g_app->m_location->GetEntity( nearestId );
+            Entity *entity = g_location->GetEntity( nearestId );
 
-            g_app->m_location->m_entityGrid->RemoveObject( nearestId, entity->m_pos.x, entity->m_pos.z, entity->m_radius );
-            g_app->m_location->m_teams[nearestId.GetTeamId()].m_others.MarkNotUsed( nearestId.GetIndex() );
+            g_location->m_entityGrid->RemoveObject( nearestId, entity->m_pos.x, entity->m_pos.z, entity->m_radius );
+            g_location->m_teams[nearestId.GetTeamId()].m_others.MarkNotUsed( nearestId.GetIndex() );
             ++m_shield;
             m_absorbTimer = 1.0f;
         }
@@ -429,7 +429,7 @@ bool Officer::Advance( Unit *_unit )
     bool amIDead = Entity::Advance(_unit);
     if( m_inWater != -1.0f ) AdvanceInWater(_unit);
 
-    if( m_onGround && !m_dead ) m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+    if( m_onGround && !m_dead ) m_pos.y = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
 
 
     //
@@ -462,7 +462,7 @@ bool Officer::Advance( Unit *_unit )
             OfficerOrders *orders = new OfficerOrders();
             orders->m_pos = m_pos + Vector3(0,2,0);
             orders->m_wayPoint = m_orderPosition;
-            int index = g_app->m_location->m_effects.PutData( orders );
+            int index = g_location->m_effects.PutData( orders );
             orders->m_id.Set( m_id.GetTeamId(), UNIT_EFFECTS, index, -1 );
             orders->m_id.GenerateUniqueId();
         }
@@ -479,15 +479,15 @@ bool Officer::Advance( Unit *_unit )
 
     if( m_shield > 0 )
     {
-        WorldObjectId id = g_app->m_location->m_entityGrid->GetBestEnemy( m_pos.x, m_pos.z, 0.0f, OFFICER_ATTACKRANGE, m_id.GetTeamId() );
+        WorldObjectId id = g_location->m_entityGrid->GetBestEnemy( m_pos.x, m_pos.z, 0.0f, OFFICER_ATTACKRANGE, m_id.GetTeamId() );
         if( id.IsValid() )
         {
-            Entity *entity = g_app->m_location->GetEntity( id );
+            Entity *entity = g_location->GetEntity( id );
             entity->ChangeHealth( -10 );
             m_shield --;
 
             Vector3 themToUs = m_pos - entity->m_pos;
-            g_app->m_location->SpawnSpirit( m_pos, themToUs, 0, WorldObjectId() );
+            g_location->SpawnSpirit( m_pos, themToUs, 0, WorldObjectId() );
         }
     }
 
@@ -502,7 +502,7 @@ bool Officer::Advance( Unit *_unit )
         if( teleportId != -1 )
         {
             m_ordersBuildingId = teleportId;
-            Teleport *teleport = (Teleport *) g_app->m_location->GetBuilding( teleportId );
+            Teleport *teleport = (Teleport *) g_location->GetBuilding( teleportId );
             Vector3 exitPos, exitFront;
             bool exitFound = teleport->GetExit( exitPos, exitFront );
             if( exitFound ) m_wayPoint = exitPos + exitFront * 30.0f;
@@ -523,11 +523,11 @@ void Officer::SetWaypoint( Vector3 const &_wayPoint )
         //
         // If we clicked near a teleport, tell the officer to go into it
         m_wayPointTeleportId = -1;
-        LList<int> *nearbyBuildings = g_app->m_location->m_obstructionGrid->GetBuildings( _wayPoint.x, _wayPoint.z );
+        LList<int> *nearbyBuildings = g_location->m_obstructionGrid->GetBuildings( _wayPoint.x, _wayPoint.z );
         for( int i = 0; i < nearbyBuildings->Size(); ++i )
         {
             int buildingId = nearbyBuildings->GetData(i);
-            Building *building = g_app->m_location->GetBuilding( buildingId );
+            Building *building = g_location->GetBuilding( buildingId );
             if( building->m_type == Building::TypeRadarDish ||
                 building->m_type == Building::TypeBridge )
             {
@@ -570,7 +570,7 @@ void Officer::SetOrders( Vector3 const &_orders )
 {
     static float lastOrderSet = 0.0f;
 
-    if( !g_app->m_location->IsWalkable( m_pos, _orders ) )
+    if( !g_location->IsWalkable( m_pos, _orders ) )
     {
     }
     else
@@ -590,11 +590,11 @@ void Officer::SetOrders( Vector3 const &_orders )
             bool foundTeleport = false;
 
             m_ordersBuildingId = -1;
-            LList<int> *nearbyBuildings = g_app->m_location->m_obstructionGrid->GetBuildings( m_orderPosition.x, m_orderPosition.z );
+            LList<int> *nearbyBuildings = g_location->m_obstructionGrid->GetBuildings( m_orderPosition.x, m_orderPosition.z );
             for( int i = 0; i < nearbyBuildings->Size(); ++i )
             {
                 int buildingId = nearbyBuildings->GetData(i);
-                Building *building = g_app->m_location->GetBuilding( buildingId );
+                Building *building = g_location->GetBuilding( buildingId );
                 if( building->m_type == Building::TypeRadarDish ||
                     building->m_type == Building::TypeBridge )
                 {
@@ -633,8 +633,8 @@ void Officer::SetOrders( Vector3 const &_orders )
                 {
                     if( orders.m_arrivedTimer < 0.0f )
                     {
-                        g_app->m_particleSystem->CreateParticle( orders.m_pos, g_zeroVector, Particle::TypeMuzzleFlash, 50.0f );
-                        g_app->m_particleSystem->CreateParticle( orders.m_pos, g_zeroVector, Particle::TypeMuzzleFlash, 40.0f );
+                        g_particleSystem->CreateParticle( orders.m_pos, g_zeroVector, Particle::TypeMuzzleFlash, 50.0f );
+                        g_particleSystem->CreateParticle( orders.m_pos, g_zeroVector, Particle::TypeMuzzleFlash, 40.0f );
                     }
                     if( orders.Advance() ) break;
                 }
@@ -646,7 +646,7 @@ void Officer::SetOrders( Vector3 const &_orders )
         else
         {
             float timeNow = GetHighResTime();
-            int researchLevel = g_app->m_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeOfficer );
+            int researchLevel = g_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeOfficer );
 
             if( timeNow > lastOrderSet + 0.3f )
             {
@@ -705,7 +705,7 @@ void Officer::SetNextMode()
     static float lastOrderSet = 0.0f;
 
     float timeNow = GetHighResTime();
-    int researchLevel = g_app->m_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeOfficer );
+    int researchLevel = g_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeOfficer );
 
     if( timeNow > lastOrderSet + 0.3f )
     {
@@ -762,7 +762,7 @@ void Officer::SetPreviousMode()
     static float lastOrderSet = 0.0f;
 
     float timeNow = GetHighResTime();
-    int researchLevel = g_app->m_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeOfficer );
+    int researchLevel = g_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeOfficer );
 
     if( timeNow > lastOrderSet + 0.3f )
     {
@@ -859,12 +859,12 @@ bool OfficerOrders::Advance()
         Vector3 oldPos = m_pos;
         m_pos += m_vel * SERVER_ADVANCE_PERIOD;
 
-        float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+        float landHeight = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
         m_pos.y = landHeight + 2.0f;
 
         m_vel = ( m_pos - oldPos ) / SERVER_ADVANCE_PERIOD;
 
-        g_app->m_particleSystem->CreateParticle( oldPos, g_zeroVector, Particle::TypeMuzzleFlash, 30.0f );
+        g_particleSystem->CreateParticle( oldPos, g_zeroVector, Particle::TypeMuzzleFlash, 30.0f );
 
         if( m_vel.Mag() * SERVER_ADVANCE_PERIOD > distance ) m_arrivedTimer = 0.0f;
         if( distance < 3.0f ) m_arrivedTimer = 0.0f;
@@ -889,8 +889,8 @@ void OfficerOrders::Render( float _time )
         size *= fraction;
     }
 
-    Vector3 camUp = g_app->m_camera->GetUp() * size;
-    Vector3 camRight = g_app->m_camera->GetRight() * size;
+    Vector3 camUp = g_camera->GetUp() * size;
+    Vector3 camRight = g_camera->GetRight() * size;
 
     glColor4f( 1.0f, 0.3f, 1.0f, alpha );
 

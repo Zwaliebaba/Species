@@ -7,9 +7,9 @@
 #include "InputField.h"
 #include "LightsWindow.h"
 
-#include "App.h"
 #include "LocationEditor.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 #ifdef LOCATION_EDITOR
@@ -30,18 +30,18 @@ public:
 	{
 		if (m_lightNum == -1)
 		{
-			g_app->m_locationEditor->m_tool = LocationEditor::ToolNone;
+			g_locationEditor->m_tool = LocationEditor::ToolNone;
 		}
 		else
 		{
-			g_app->m_locationEditor->m_tool = LocationEditor::ToolRotate;
+			g_locationEditor->m_tool = LocationEditor::ToolRotate;
 		}
-		g_app->m_locationEditor->m_selectionId = m_lightNum;
+		g_locationEditor->m_selectionId = m_lightNum;
 	}
 
 	void Render(int realX, int realY, bool highlighted, bool clicked)
 	{
-		if (g_app->m_locationEditor->m_selectionId == m_lightNum)
+		if (g_locationEditor->m_selectionId == m_lightNum)
 		{
 			SpeciesButton::Render(realX, realY, highlighted, true);
 		}
@@ -63,7 +63,7 @@ public:
 
     void MouseUp()
     {
-        Light *light = g_app->m_location->m_lights[m_lightNum];
+        Light *light = g_location->m_lights[m_lightNum];
         light->m_colour[0] *= m_change;
         light->m_colour[1] *= m_change;
         light->m_colour[2] *= m_change;
@@ -76,7 +76,7 @@ class NewLightButton : public SpeciesButton
     void MouseUp()
     {
         Light *light = new Light();
-        g_app->m_location->m_lights.PutData( light );
+        g_location->m_lights.PutData( light );
 
         EclWindow *parent = m_parent;
         parent->Remove();
@@ -97,7 +97,7 @@ LightsEditWindow::LightsEditWindow( char const *name )
 
 LightsEditWindow::~LightsEditWindow()
 {
-	g_app->m_locationEditor->RequestMode(LocationEditor::ModeNone);
+	g_locationEditor->RequestMode(LocationEditor::ModeNone);
 }
 
 
@@ -121,11 +121,11 @@ void LightsEditWindow::Create()
 
     height += 6;
 
-    for (int i = 0; i < g_app->m_location->m_lights.Size(); i++)
+    for (int i = 0; i < g_location->m_lights.Size(); i++)
 	{
 		button = new LightButton(i);
 
-        Light *light = g_app->m_location->m_lights.GetData(i);
+        Light *light = g_location->m_lights.GetData(i);
 		sprintf(buttonName, "%s %d", LANGUAGEPHRASE("editor_selectlight"), i);
 		button->SetShortProperties(buttonName, 10, height += pitch, m_w - 20);
 		RegisterButton(button);

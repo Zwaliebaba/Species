@@ -13,6 +13,7 @@
 #include "GlobalInternet.h"
 #include "GlobalWorld.h"
 #include "Main.h"
+#include "WorldPointers.h"
 
 
 #define DISPLAY_LIST_NAME_LINKS "GlobalInternetLinks"
@@ -305,7 +306,7 @@ void GlobalInternet::Render()
 
     RenderPackets();
 
-    g_app->m_globalWorld->SetupFog();
+    g_globalWorld->SetupFog();
     glDisable( GL_FOG );
 
     glPopMatrix ();
@@ -380,8 +381,8 @@ void GlobalInternet::RenderPackets()
     // Advance / render all packets
 
     float packetSize = 30.0f;
-    Vector3 camRight = g_app->m_camera->GetRight() * packetSize;
-    Vector3 camUp = g_app->m_camera->GetUp() * packetSize;
+    Vector3 camRight = g_camera->GetRight() * packetSize;
+    Vector3 camUp = g_camera->GetUp() * packetSize;
     float posChange = g_advanceTime;
 
     glColor4f( 0.25f, 0.25f, 0.5f, 0.8f );

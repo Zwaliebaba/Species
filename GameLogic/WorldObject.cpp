@@ -6,10 +6,10 @@
 #include "Debug.h"
 #include "MathUtils.h"
 
-#include "App.h"
 #include "Location.h"
 #include "WorldObject.h"
 #include "GameTime.h"
+#include "WorldPointers.h"
 
 
 #define COEF_OF_RESTITUTION	0.85f
@@ -132,9 +132,9 @@ void WorldObject::BounceOffLandscape()
 	Vector3 lastPos = m_pos;// - m_vel * g_advanceTime;
 	Vector3 impactPos = (m_pos + lastPos) * 0.5f;
 	m_pos = impactPos;
-	m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+	m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
-    Vector3 normal = g_app->m_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+    Vector3 normal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
     Vector3 incomingVel = m_vel * -1.0f;
     float dotProd = normal * incomingVel;
     m_vel = 2.0f * dotProd * normal - incomingVel;

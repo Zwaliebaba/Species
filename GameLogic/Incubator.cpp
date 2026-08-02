@@ -5,13 +5,13 @@
 #include "Resource.h"
 #include "Shape.h"
 #include "TextStreamReaders.h"
-#include "App.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "ParticleSystem.h"
 #include "Camera.h"
 #include "SoundSystem.h"
 #include "Incubator.h"
+#include "WorldPointers.h"
 
 Incubator::Incubator()
   : Building(),
@@ -129,7 +129,7 @@ void Incubator::SpawnEntity()
   if (teamId == 2)
     teamId = 0; // Green rather than yellow
 
-  g_app->m_location->SpawnEntities(exit.pos, teamId, -1, m_troopType, 1, exit.f, 0.0f);
+  g_location->SpawnEntities(exit.pos, teamId, -1, m_troopType, 1, exit.f, 0.0f);
 
   //
   // Remove a spirit
@@ -157,8 +157,8 @@ void Incubator::SpawnEntity()
   for (int i = 0; i < numFlashes; ++i)
   {
     Vector3 vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
-    g_app->m_particleSystem->CreateParticle(exit.pos, vel, Particle::TypeControlFlash);
-    //g_app->m_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
+    g_particleSystem->CreateParticle(exit.pos, vel, Particle::TypeControlFlash);
+    //g_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
   }
 
   //
@@ -261,7 +261,7 @@ void Incubator::RenderAlphas(float _predictionTime)
     Vector3 toPos = entrances[ii->m_entrance];
 
     Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
-    Vector3 camToMidPoint = g_app->m_camera->GetPos() - midPoint;
+    Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
     Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
 
     rightAngle *= 1.5f;

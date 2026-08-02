@@ -5,7 +5,6 @@
 #include "MathUtils.h"
 #include "Shape.h"
 
-#include "App.h"
 #include "Location.h"
 #include "ParticleSystem.h"
 #include "Renderer.h"
@@ -13,7 +12,7 @@
 #include "Unit.h"
 
 #include "Lander.h"
-
+#include "WorldPointers.h"
 
 
 Lander::Lander()
@@ -36,7 +35,7 @@ bool Lander::Advance( Unit *_unit )
         bool amIDead = AdvanceDead( _unit );
         if( amIDead )
 		{
-            g_app->m_location->Bang( m_pos, 30.0f, 50.0f );
+            g_location->Bang( m_pos, 30.0f, 50.0f );
 			return true;
 		}
     }
@@ -47,8 +46,8 @@ bool Lander::Advance( Unit *_unit )
         case StateLanded:               return AdvanceLanded();                 break;
     }
 
-    float worldSizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float worldSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float worldSizeX = g_location->m_landscape.GetWorldSizeX();
+    float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
     if( m_pos.x < 0.0f ) m_pos.x = 0.0f;
     if( m_pos.z < 0.0f ) m_pos.z = 0.0f;
     if( m_pos.x >= worldSizeX ) m_pos.x = worldSizeX;
@@ -59,7 +58,7 @@ bool Lander::Advance( Unit *_unit )
 
 void Lander::ChangeHealth( int amount )
 {
-    g_app->m_particleSystem->CreateParticle( m_pos, g_zeroVector, Particle::TypeMuzzleFlash );
+    g_particleSystem->CreateParticle( m_pos, g_zeroVector, Particle::TypeMuzzleFlash );
 }
 
 bool Lander::AdvanceSailing()
@@ -67,7 +66,7 @@ bool Lander::AdvanceSailing()
     m_vel = m_front * m_stats[StatSpeed];
     m_pos += m_vel * SERVER_ADVANCE_PERIOD;
 
-    float groundLevel = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+    float groundLevel = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
     m_pos.y = groundLevel;
     if( m_pos.y < 0.0f ) m_pos.y = 0.0f;
 
@@ -89,8 +88,8 @@ bool Lander::AdvanceLanded()
     {
         int unitId;
         int numToSpawn = syncfrand(2.0f) + 2.0f;
-        Unit *unit = g_app->m_location->m_teams[0].NewUnit( Entity::TypeLaserTroop, numToSpawn, &unitId, m_pos );
-        g_app->m_location->SpawnEntities( m_pos, m_id.GetTeamId(), unitId, Entity::TypeLaserTroop, numToSpawn, g_zeroVector, 0 );
+        Unit *unit = g_location->m_teams[0].NewUnit( Entity::TypeLaserTroop, numToSpawn, &unitId, m_pos );
+        g_location->SpawnEntities( m_pos, m_id.GetTeamId(), unitId, Entity::TypeLaserTroop, numToSpawn, g_zeroVector, 0 );
 
         Vector3 offset( 0.0f, 0.0f, syncsfrand(200.0f) );
         unit->SetWayPoint( m_pos + m_front * 750.0f + offset );
@@ -108,7 +107,7 @@ void Lander::Render( float predictionTime, int teamId )
 
     Vector3 predictedPos = m_pos + m_vel * predictionTime;
 
-    Vector3 entityUp = g_app->m_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
+    Vector3 entityUp = g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
     Vector3 entityFront = m_front;
     entityFront.Normalise();
     Vector3 entityRight = entityFront ^ entityUp;
@@ -116,7 +115,7 @@ void Lander::Render( float predictionTime, int teamId )
 
     if( !m_dead )
     {
-        RGBAColour colour = g_app->m_location->m_teams[ teamId ].m_colour;
+        RGBAColour colour = g_location->m_teams[ teamId ].m_colour;
 
         if( m_reloading > 0.0f )
         {
@@ -129,7 +128,7 @@ void Lander::Render( float predictionTime, int teamId )
         //
         // 3d Shape
 
-		g_app->m_renderer->SetObjectLighting();
+		g_renderer->SetObjectLighting();
 
         glEnable        (GL_CULL_FACE);
         glDisable       (GL_TEXTURE_2D);
@@ -142,7 +141,7 @@ void Lander::Render( float predictionTime, int teamId )
         glEnable        (GL_BLEND);
         glDisable       (GL_COLOR_MATERIAL);
         glEnable        (GL_TEXTURE_2D);
-		g_app->m_renderer->UnsetObjectLighting();
+		g_renderer->UnsetObjectLighting();
         glEnable        (GL_CULL_FACE);
 
     }

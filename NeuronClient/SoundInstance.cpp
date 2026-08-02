@@ -16,6 +16,7 @@
 #include "App.h"
 #include "Camera.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 // ============================================================================
@@ -772,7 +773,7 @@ void SoundInstance::ForceParameter( SoundParameter &_param, float value )
         case SoundParameter::LinkedToHeightAboveGround:
         {
             float landHeight = 0.0f;
-            if( g_app->m_location ) landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+            if( g_location ) landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
             m_pos.y = landHeight + value;
             break;
         }
@@ -795,10 +796,10 @@ void SoundInstance::ForceParameter( SoundParameter &_param, float value )
 
         case SoundParameter::LinkedToCameraDistance:
         {
-            if( g_app->m_camera )
+            if( g_camera )
             {
-                m_pos = g_app->m_camera->GetPos() +
-                        g_app->m_camera->GetFront() * value;
+                m_pos = g_camera->GetPos() +
+                        g_camera->GetFront() * value;
             }
             break;
         }
@@ -818,8 +819,8 @@ bool SoundInstance::UpdateParameter ( SoundParameter &_param )
     Vector3 vel = m_vel;
     if( m_positionType == Type2D )
     {
-        pos = g_app->m_camera->GetPos();
-        vel = g_app->m_camera->GetVel();
+        pos = g_camera->GetPos();
+        vel = g_camera->GetVel();
     }
 
     if( _param.m_type == SoundParameter::TypeLinked )
@@ -829,7 +830,7 @@ bool SoundInstance::UpdateParameter ( SoundParameter &_param )
             case SoundParameter::LinkedToHeightAboveGround:
             {
                 float landHeight = 0.0f;
-                if( g_app->m_location ) landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
+                if( g_location ) landHeight = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
                 _param.Recalculate( pos.y - landHeight );
                 break;
             }
@@ -853,9 +854,9 @@ bool SoundInstance::UpdateParameter ( SoundParameter &_param )
             case SoundParameter::LinkedToCameraDistance:
             {
                 float camDist = 0.0f;
-                if( g_app->m_camera )
+                if( g_camera )
                 {
-                    camDist = (g_app->m_camera->GetPos() - pos).Mag();
+                    camDist = (g_camera->GetPos() - pos).Mag();
                 }
                 _param.Recalculate( camDist );
             }
@@ -930,7 +931,7 @@ void SoundInstance::CalculatePerceivedVolume()
     }
     else
     {
-        float distance = ( m_pos - g_app->m_camera->GetPos() ).Mag();
+        float distance = ( m_pos - g_camera->GetPos() ).Mag();
         float distanceFactor = 1.0f;
         if( distance > m_minDistance )
         {
@@ -968,7 +969,7 @@ WorldObject *SoundInstance::GetAttachedObject()
 
         bool recalculateAttachedObject = false;
 
-        if( !g_app->m_location->GetWorldObject( m_objId ) ) recalculateAttachedObject = true;
+        if( !g_location->GetWorldObject( m_objId ) ) recalculateAttachedObject = true;
         if( m_instanceType == MonophonicNearest ) recalculateAttachedObject = true;
         if( m_instanceType == MonophonicRandom && m_restartOccured ) recalculateAttachedObject = true;
 
@@ -980,7 +981,7 @@ WorldObject *SoundInstance::GetAttachedObject()
             for( int i = 0; i < m_objIds.Size(); ++i )
             {
                 WorldObjectId *id = m_objIds[i];
-                WorldObject *obj = g_app->m_location->GetWorldObject( *id );
+                WorldObject *obj = g_location->GetWorldObject( *id );
                 if( !obj )
                 {
                     m_objIds.RemoveData(i);
@@ -1016,8 +1017,8 @@ WorldObject *SoundInstance::GetAttachedObject()
                         for( int i = 0; i < m_objIds.Size(); ++i )
                         {
                             WorldObjectId *id = m_objIds[i];
-                            WorldObject *obj = g_app->m_location->GetWorldObject( *id );
-                            float distance = ( g_app->m_camera->GetPos() - obj->m_pos ).MagSquared();
+                            WorldObject *obj = g_location->GetWorldObject( *id );
+                            float distance = ( g_camera->GetPos() - obj->m_pos ).MagSquared();
                             if( distance < nearest )
                             {
                                 nearest = distance;
@@ -1030,7 +1031,7 @@ WorldObject *SoundInstance::GetAttachedObject()
             }
         }
 
-        obj = g_app->m_location->GetWorldObject( m_objId );
+        obj = g_location->GetWorldObject( m_objId );
     }
 
     return obj;

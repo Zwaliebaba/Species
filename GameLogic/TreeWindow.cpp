@@ -10,7 +10,6 @@
 
 #include "Tree.h"
 
-#include "App.h"
 #include "Location.h"
 #include "LocationEditor.h"
 #include "InputField.h"
@@ -18,6 +17,7 @@
 #include "Renderer.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
+#include "WorldPointers.h"
 
 
 #ifdef LOCATION_EDITOR
@@ -36,7 +36,7 @@ public:
     void MouseUp()
     {
         TreeWindow *tw = (TreeWindow *) m_parent;
-        Building *building = g_app->m_location->GetBuilding( tw->m_selectionId );
+        Building *building = g_location->GetBuilding( tw->m_selectionId );
         DEBUG_ASSERT( building && building->m_type == Building::TypeTree );
         Tree *tree = (Tree *) building;
 
@@ -54,16 +54,16 @@ public:
             case TypeClone:
 	            Vector3 rayStart;
 	            Vector3 rayDir;
-	            g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2,
-									         g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	            g_camera->GetClickRay(g_renderer->ScreenW()/2,
+									         g_renderer->ScreenH()/2, &rayStart, &rayDir);
                 Vector3 _pos;
-                g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+                g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
                 Building *newBuilding = Building::CreateBuilding( Building::TypeTree );
                 newBuilding->Initialise( building );
                 newBuilding->SetDetail( g_prefsManager->GetInt( "RenderBuildingDetail", 1 ) );
-                newBuilding->m_id.SetUniqueId( g_app->m_globalWorld->GenerateBuildingId() );
-                g_app->m_location->m_levelFile->m_buildings.PutData( newBuilding );
+                newBuilding->m_id.SetUniqueId( g_globalWorld->GenerateBuildingId() );
+                g_location->m_levelFile->m_buildings.PutData( newBuilding );
 
                 speciesSeedRandom(time(nullptr));
                 Tree *newTree = (Tree *) newBuilding;
@@ -89,8 +89,8 @@ void TreeWindow::Create()
 {
     SpeciesWindow::Create();
 
-    m_selectionId = g_app->m_locationEditor->m_selectionId;
-    Building *building = g_app->m_location->GetBuilding( m_selectionId );
+    m_selectionId = g_locationEditor->m_selectionId;
+    Building *building = g_location->GetBuilding( m_selectionId );
     DEBUG_ASSERT( building && building->m_type == Building::TypeTree );
     Tree *tree = (Tree *) building;
 
@@ -126,19 +126,19 @@ void TreeWindow::Create()
 
 void TreeWindow::Update()
 {
-    if( !g_app->m_locationEditor )
+    if( !g_locationEditor )
     {
         EclRemoveWindow( m_name );
 		return;
     }
 
-    if( g_app->m_locationEditor->m_selectionId != m_selectionId )
+    if( g_locationEditor->m_selectionId != m_selectionId )
     {
         EclRemoveWindow( m_name );
 		return;
     }
 
-    Building *building = g_app->m_location->GetBuilding( m_selectionId );
+    Building *building = g_location->GetBuilding( m_selectionId );
     if( !building || building->m_type != Building::TypeTree )
     {
         EclRemoveWindow( m_name );

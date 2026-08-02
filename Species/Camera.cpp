@@ -40,6 +40,7 @@
 
 #include "Teleport.h"
 #include "InsertionSquad.h"
+#include "WorldPointers.h"
 
 #define MIN_GROUND_CLEARANCE	10.0f	// Minimum height relative to land
 #define MIN_HEIGHT				10.0f	// Height above sea level (which is y=0)
@@ -61,9 +62,9 @@ void Camera::AdvanceDebugMode()
   float advanceTime = g_advanceTime;
   Vector3 right = m_front ^ m_up;
 
-  float speedSideways = g_app->m_globalWorld->GetSize() / 30.0f;
+  float speedSideways = g_globalWorld->GetSize() / 30.0f;
   if (g_app->m_locationId != -1)
-    speedSideways = g_app->m_location->m_landscape.GetWorldSizeX() / 30.0f;
+    speedSideways = g_location->m_landscape.GetWorldSizeX() / 30.0f;
   float speedVertical = speedSideways;
   float speedForwards = speedSideways;
 
@@ -145,18 +146,18 @@ void Camera::AdvanceSphereWorldMode()
 
   m_targetFov = 100.0f;
 
-  const int screenH = g_app->m_renderer->ScreenH();
-  const int screenW = g_app->m_renderer->ScreenW();
+  const int screenH = g_renderer->ScreenH();
+  const int screenW = g_renderer->ScreenW();
 
   auto focusPos = Vector3(0, m_height * -400, 0);
 
   // Set up viewing matrices
   glPushMatrix();
-  SetupProjectionMatrix(g_app->m_renderer->GetNearPlane(), g_app->m_renderer->GetFarPlane());
+  SetupProjectionMatrix(g_renderer->GetNearPlane(), g_renderer->GetFarPlane());
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
+  Vector3 mousePos3D = g_userInput->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -165,8 +166,8 @@ void Camera::AdvanceSphereWorldMode()
   if (g_inputManager->controlEvent(ControlCameraMove, details))
   {
     g_target->SetMousePos(g_target->X() + details.x, g_target->Y() + details.y);
-    g_app->m_userInput->RecalcMousePos3d();
-    mousePos3D = g_app->m_userInput->GetMousePos3d();
+    g_userInput->RecalcMousePos3d();
+    mousePos3D = g_userInput->GetMousePos3d();
     Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
     oldMouseY = screenH - oldMouseY;
   }
@@ -243,8 +244,8 @@ void Camera::AdvanceSphereWorldScriptedMode()
 
   m_height = 50.0f;
 
-  const int screenH = g_app->m_renderer->ScreenH();
-  const int screenW = g_app->m_renderer->ScreenW();
+  const int screenH = g_renderer->ScreenH();
+  const int screenW = g_renderer->ScreenW();
 
   auto focusPos = Vector3(0, m_height * -400, 0);
   focusPos.x += sinf(g_gameTime * 0.5f) * 4000.0f;
@@ -253,11 +254,11 @@ void Camera::AdvanceSphereWorldScriptedMode()
 
   // Set up viewing matrices
   glPushMatrix();
-  SetupProjectionMatrix(g_app->m_renderer->GetNearPlane(), g_app->m_renderer->GetFarPlane());
+  SetupProjectionMatrix(g_renderer->GetNearPlane(), g_renderer->GetFarPlane());
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
+  Vector3 mousePos3D = g_userInput->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -519,7 +520,7 @@ void Camera::AdvanceSphereWorldFocusMode()
 // height. If there is no blockage FLT_MAX is returned.
 float Camera::DistanceToBlockage(const Vector3& _dir, const float _maxDist)
 {
-  if (!g_app->m_location)
+  if (!g_location)
     return FLT_MAX;
 
   constexpr unsigned int numSteps = 40;
@@ -528,7 +529,7 @@ float Camera::DistanceToBlockage(const Vector3& _dir, const float _maxDist)
   {
     float x = m_pos.x + _dir.x * distStep * static_cast<float>(i);
     float z = m_pos.z + _dir.z * distStep * static_cast<float>(i);
-    float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(x, z);
+    float landHeight = g_location->m_landscape.m_heightMap->GetValue(x, z);
     if (landHeight + MIN_GROUND_CLEARANCE > m_height)
       return static_cast<float>(i) * distStep;
   }
@@ -544,7 +545,7 @@ void Camera::AdvanceFreeMovementMode()
   WorldObjectId selection;
   if (m_entityTrack && GetEntityToTrack(selection))
   {
-    Entity* entity = g_app->m_location->GetEntity(selection);
+    Entity* entity = g_location->GetEntity(selection);
     if (entity->m_type == Entity::TypeInsertionSquadie)
     {
       RequestEntityTrackMode(selection);
@@ -553,23 +554,23 @@ void Camera::AdvanceFreeMovementMode()
     m_objectId = WorldObjectId();
   }
 
-  int screenW = g_app->m_renderer->ScreenW();
-  int screenH = g_app->m_renderer->ScreenH();
+  int screenW = g_renderer->ScreenW();
+  int screenH = g_renderer->ScreenH();
   InputManager* im = g_inputManager;
 
   // Set up viewing matrices
   glPushMatrix();
-  SetupProjectionMatrix(g_app->m_renderer->GetNearPlane(), g_app->m_renderer->GetFarPlane());
+  SetupProjectionMatrix(g_renderer->GetNearPlane(), g_renderer->GetFarPlane());
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
+  Vector3 mousePos3D = g_userInput->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
 
   // Allow quake keys to move us
-  if (!g_app->m_taskManagerInterface->m_visible)
+  if (!g_taskManagerInterface->m_visible)
   {
     float moveRate = 250.0f;
     Vector3 accelForward = m_front;
@@ -642,17 +643,17 @@ void Camera::AdvanceFreeMovementMode()
 
     // Make sure we haven't set the height too low
     constexpr float hitDownRadius = 10.0f;
-    float landheight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
-    float landHeight2 = g_app->m_location->m_landscape.m_heightMap->GetValue(m_targetPos.x - hitDownRadius, m_targetPos.z - hitDownRadius);
+    float landheight = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
+    float landHeight2 = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x - hitDownRadius, m_targetPos.z - hitDownRadius);
     if (landHeight2 > landheight)
       landheight = landHeight2;
-    landHeight2 = g_app->m_location->m_landscape.m_heightMap->GetValue(m_targetPos.x + hitDownRadius, m_targetPos.z - hitDownRadius);
+    landHeight2 = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x + hitDownRadius, m_targetPos.z - hitDownRadius);
     if (landHeight2 > landheight)
       landheight = landHeight2;
-    landHeight2 = g_app->m_location->m_landscape.m_heightMap->GetValue(m_targetPos.x - hitDownRadius, m_targetPos.z + hitDownRadius);
+    landHeight2 = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x - hitDownRadius, m_targetPos.z + hitDownRadius);
     if (landHeight2 > landheight)
       landheight = landHeight2;
-    landHeight2 = g_app->m_location->m_landscape.m_heightMap->GetValue(m_targetPos.x + hitDownRadius, m_targetPos.z + hitDownRadius);
+    landHeight2 = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x + hitDownRadius, m_targetPos.z + hitDownRadius);
     if (landHeight2 > landheight)
       landheight = landHeight2;
 
@@ -680,7 +681,7 @@ void Camera::AdvanceFreeMovementMode()
     // Update camera orientation
     bool chatLog = false;
 
-    if (!g_app->m_taskManagerInterface->m_visible && !chatLog)
+    if (!g_taskManagerInterface->m_visible && !chatLog)
     {
       if (mousePos3D.MagSquared() > 1.0f)
       {
@@ -794,7 +795,7 @@ void Camera::AdvanceBuildingFocusMode()
   Vector3 right = m_up ^ m_front;
   m_up = right ^ m_front;
 
-  float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+  float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   if (m_pos.y < landHeight + 10.0f)
     m_pos.y = landHeight + 10.0f;
 }
@@ -803,10 +804,10 @@ void Camera::AdvanceBuildingFocusMode()
 // by the player, and if so, return true and fill in the object id.
 bool Camera::GetEntityToTrack(WorldObjectId& selection)
 {
-  if (!g_app->m_location)
+  if (!g_location)
     return false;
 
-  Team* team = g_app->m_location->GetMyTeam();
+  Team* team = g_location->GetMyTeam();
 
   if (!team)
     return false;
@@ -817,7 +818,7 @@ bool Camera::GetEntityToTrack(WorldObjectId& selection)
     return true;
   }
 
-  Task* currentTask = g_app->m_taskManager->GetCurrentTask();
+  Task* currentTask = g_taskManager->GetCurrentTask();
   // if the task has just been ended or killed, it isnt valid
   if (currentTask && currentTask->m_state == Task::StateStopping)
     return false;
@@ -932,7 +933,7 @@ bool Camera::AdvanceManualRotateCamera(Vector3& cameraTarget)
 
     int rotSpeed = 100;
 
-    int halfWidth = g_app->m_renderer->ScreenW() / 2;
+    int halfWidth = g_renderer->ScreenW() / 2;
     int deltaX = g_target->X() - halfWidth;
     if (g_inputManager->controlEvent(ControlCameraRotateLeft))
       deltaX = rotSpeed;
@@ -944,7 +945,7 @@ bool Camera::AdvanceManualRotateCamera(Vector3& cameraTarget)
 
     // Disable vertical camera adjustment, for now
 
-    int halfHeight = g_app->m_renderer->ScreenH() / 2;
+    int halfHeight = g_renderer->ScreenH() / 2;
     int deltaY = g_target->Y() - halfHeight;
     float rotRight = static_cast<float>(deltaY) * -0.01f;
 
@@ -1073,7 +1074,7 @@ bool Camera::AdvanceCanSeeUnits(Vector3& targetCamera)
 bool Camera::AdvanceNotTooLow(Vector3& targetCamera)
 {
   // Code to check if the camera is not too low of the ground
-  float cameraHeight = m_pos.y - g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+  float cameraHeight = m_pos.y - g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
   if (m_pos.y < MIN_HEIGHT || cameraHeight < MIN_TRACKING_HEIGHT * m_heightMultiplier)
   {
@@ -1120,7 +1121,7 @@ void Camera::RotateTowardsEntity(Entity* entity)
 
 void Camera::AdvanceEntityTrackMode()
 {
-  if (g_app->m_taskManagerInterface->m_visible)
+  if (g_taskManagerInterface->m_visible)
     return;
 
   UpdateEntityTrackingMode();
@@ -1132,10 +1133,10 @@ void Camera::AdvanceEntityTrackMode()
   int halfHeight = 0;
   int halfWidth = 0;
 
-  if (!g_app->m_location || !m_entityTrack)
+  if (!g_location || !m_entityTrack)
     goto finishMode;
 
-  entity = g_app->m_location->GetEntity(m_objectId);
+  entity = g_location->GetEntity(m_objectId);
   if (!entity || entity->m_dead)
   {
     WorldObjectId id;
@@ -1143,11 +1144,11 @@ void Camera::AdvanceEntityTrackMode()
     m_objectId = id;
   }
 
-  entity = g_app->m_location->GetEntity(m_objectId);
+  entity = g_location->GetEntity(m_objectId);
   if (!entity || entity->m_dead)
     goto finishMode;
 
-  currentTask = g_app->m_taskManager->GetCurrentTask();
+  currentTask = g_taskManager->GetCurrentTask();
   if (currentTask && currentTask->m_state != Task::StateRunning)
     goto finishMode;
 
@@ -1165,8 +1166,8 @@ void Camera::AdvanceEntityTrackMode()
   AdvanceAutomaticTracking();
 
   // Ensure that the target cursor remains in the centre of the screen
-  halfHeight = g_app->m_renderer->ScreenH() / 2;
-  halfWidth = g_app->m_renderer->ScreenW() / 2;
+  halfHeight = g_renderer->ScreenH() / 2;
+  halfWidth = g_renderer->ScreenW() / 2;
   g_target->SetMousePos(halfWidth, halfHeight);
 
   return;
@@ -1199,7 +1200,7 @@ void Camera::GetHighestTangentPoint(const Vector3& _from, const Vector3& _to, fl
     z += deltaZ;
     distanceTravelled += distStep;
 
-    float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(x, z);
+    float landHeight = g_location->m_landscape.m_heightMap->GetValue(x, z);
 
     float gradient = (landHeight - _from.y) / distanceTravelled;
 
@@ -1224,7 +1225,7 @@ void Camera::GetHighestPoint(const Vector3& _from, const Vector3& _to, float _ma
   {
     float x = _from.x + dir.x * distStep * static_cast<float>(i);
     float z = _from.z + dir.z * distStep * static_cast<float>(i);
-    float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(x, z);
+    float landHeight = g_location->m_landscape.m_heightMap->GetValue(x, z);
     if (landHeight > maxHeight)
     {
       maxHeight = landHeight;
@@ -1239,7 +1240,7 @@ void Camera::GetHighestPoint(const Vector3& _from, const Vector3& _to, float _ma
 // height. If there is no blockage FLT_MAX is returned.
 float Camera::DirectDistanceToBlockage(const Vector3& _from, const Vector3& _to, const float _maxDist)
 {
-  if (!g_app->m_location)
+  if (!g_location)
     return FLT_MAX;
 
   constexpr unsigned int numSteps = 40;
@@ -1261,7 +1262,7 @@ float Camera::DirectDistanceToBlockage(const Vector3& _from, const Vector3& _to,
     y += deltaY;
     z += deltaZ;
 
-    float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(x, z);
+    float landHeight = g_location->m_landscape.m_heightMap->GetValue(x, z);
 
     if (landHeight > y)
       return static_cast<float>(i) * distStep;
@@ -1273,22 +1274,22 @@ float Camera::DirectDistanceToBlockage(const Vector3& _from, const Vector3& _to,
 // Expects m_targetPos to have been set
 void Camera::AdvanceRadarAimMode()
 {
-  const int screenH = g_app->m_renderer->ScreenH();
-  const int screenW = g_app->m_renderer->ScreenW();
+  const int screenH = g_renderer->ScreenH();
+  const int screenW = g_renderer->ScreenW();
 
   Vector3 groundPos = m_targetPos;
-  groundPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(groundPos.x, groundPos.z);
+  groundPos.y = g_location->m_landscape.m_heightMap->GetValue(groundPos.x, groundPos.z);
 
   Vector3 focusPos = groundPos;
   focusPos.y += m_height;
 
   // Set up viewing matrices
   glPushMatrix();
-  SetupProjectionMatrix(g_app->m_renderer->GetNearPlane(), g_app->m_renderer->GetFarPlane());
+  SetupProjectionMatrix(g_renderer->GetNearPlane(), g_renderer->GetFarPlane());
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
+  Vector3 mousePos3D = g_userInput->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -1362,12 +1363,12 @@ void Camera::AdvanceRadarAimMode()
 
 void Camera::AdvanceTurretAimMode()
 {
-  const int screenH = g_app->m_renderer->ScreenH();
-  const int screenW = g_app->m_renderer->ScreenW();
+  const int screenH = g_renderer->ScreenH();
+  const int screenW = g_renderer->ScreenW();
 
   Vector3 groundPos = m_targetPos;
   groundPos.y += 20.0f;
-  float minY = g_app->m_location->m_landscape.m_heightMap->GetValue(groundPos.x, groundPos.z);
+  float minY = g_location->m_landscape.m_heightMap->GetValue(groundPos.x, groundPos.z);
 
   groundPos -= m_front * m_height;
   //groundPos.y = max( groundPos.y, minY );
@@ -1380,11 +1381,11 @@ void Camera::AdvanceTurretAimMode()
 
   // Set up viewing matrices
   glPushMatrix();
-  SetupProjectionMatrix(g_app->m_renderer->GetNearPlane(), g_app->m_renderer->GetFarPlane());
+  SetupProjectionMatrix(g_renderer->GetNearPlane(), g_renderer->GetFarPlane());
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_app->m_userInput->GetMousePos3d();
+  Vector3 mousePos3D = g_userInput->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -1471,7 +1472,7 @@ void Camera::AdvanceFirstPersonMode()
     if (GetHighResTime() > lastFire)
     {
       Vector3 from = m_pos + GetRight() * -2.0f + GetUp() * -3.0f;
-      g_app->m_location->FireLaser(from, m_front * 200.0f, 3);
+      g_location->FireLaser(from, m_front * 200.0f, 3);
       lastFire = GetHighResTime() + 0.1f;
     }
   }
@@ -1512,7 +1513,7 @@ void Camera::AdvanceFirstPersonMode()
   m_up = m_up * mat;
   m_front = m_front * mat;
 
-  float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+  float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   m_pos.y = landHeight + 3.0f;
 }
 
@@ -1565,7 +1566,7 @@ void Camera::AdvanceMoveToTargetMode()
 
 void Camera::AdvanceEntityFollowMode()
 {
-  auto obj = g_app->m_location->GetEntity(m_objectId);
+  auto obj = g_location->GetEntity(m_objectId);
   if (!obj)
   {
     RequestMode(ModeFreeMovement);
@@ -1575,8 +1576,8 @@ void Camera::AdvanceEntityFollowMode()
   //
   // Get X and Y mouse move
 
-  int halfHeight = g_app->m_renderer->ScreenH() / 2;
-  int halfWidth = g_app->m_renderer->ScreenW() / 2;
+  int halfHeight = g_renderer->ScreenH() / 2;
+  int halfWidth = g_renderer->ScreenW() / 2;
   int deltaX = g_target->X() - halfWidth;
   int deltaY = g_target->Y() - halfHeight;
   g_target->SetMousePos(halfWidth, halfHeight);
@@ -1639,8 +1640,8 @@ Camera::Camera()
     m_skipDirectionCalculation(false)
 {
   m_cosFov = cos(m_fov / 180.0f * M_PI);
-  m_pos = Vector3(1000.0f, //g_app->m_location->m_landscape.GetWorldSizeX() / 2.0f,
-                  500.0f, 1000.0f); //g_app->m_location->m_landscape.GetWorldSizeZ() / 2.0f);
+  m_pos = Vector3(1000.0f, //g_location->m_landscape.GetWorldSizeX() / 2.0f,
+                  500.0f, 1000.0f); //g_location->m_landscape.GetWorldSizeZ() / 2.0f);
 
   m_minX = -1e6;
   m_maxX = 1e6;
@@ -1670,8 +1671,8 @@ void Camera::SetupProjectionMatrix(float _nearPlane, float _farPlane)
 
   ClampInPlace(m_fov, 1, 180);
 
-  g_app->m_renderer->SetNearAndFar(_nearPlane, _farPlane);
-  g_app->m_renderer->SetupProjMatrixFor3D();
+  g_renderer->SetNearAndFar(_nearPlane, _farPlane);
+  g_renderer->SetupProjMatrixFor3D();
 
   float fovRadians = m_fov * M_PI / 180.0f;
   m_cosFov = cosf(fovRadians);
@@ -1679,9 +1680,9 @@ void Camera::SetupProjectionMatrix(float _nearPlane, float _farPlane)
   // m_fov is actually the vertical fov. We need a fov covering
   // the long diagonal of the screen for visibility checking.
 
-  float screenW = g_app->m_renderer->ScreenW();
+  float screenW = g_renderer->ScreenW();
   float screenWHalf = screenW / 2.0;
-  float screenH = g_app->m_renderer->ScreenH();
+  float screenH = g_renderer->ScreenH();
   float screenHHalf = screenH / 2.0;
 
   // Distance from camera to top-centre and bottom-centre of screen
@@ -1746,7 +1747,7 @@ Building* Camera::GetBestBuildingInView()
     // We are moving too fast to be focussing on a building
     s_buildingId = -1;
   }
-  else if (!g_app->m_location)
+  else if (!g_location)
   {
     // We aren't in a location
     s_buildingId = -1;
@@ -1757,16 +1758,16 @@ Building* Camera::GetBestBuildingInView()
     {
       Vector3 rayStart;
       Vector3 rayDir;
-      GetClickRay(g_app->m_renderer->ScreenW() / 2, g_app->m_renderer->ScreenH() / 2, &rayStart, &rayDir);
+      GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
 
       float nearest = 200.0f;
       s_buildingId = -1;
 
-      for (int i = 0; i < g_app->m_location->m_buildings.Size(); ++i)
+      for (int i = 0; i < g_location->m_buildings.Size(); ++i)
       {
-        if (g_app->m_location->m_buildings.ValidIndex(i))
+        if (g_location->m_buildings.ValidIndex(i))
         {
-          Building* building = g_app->m_location->m_buildings[i];
+          Building* building = g_location->m_buildings[i];
           if (building->DoesRayHit(rayStart, rayDir))
           {
             float distance = (building->m_pos - m_pos).Mag();
@@ -1783,13 +1784,13 @@ Building* Camera::GetBestBuildingInView()
     }
   }
 
-  return g_app->m_location->GetBuilding(s_buildingId);
+  return g_location->GetBuilding(s_buildingId);
 }
 
 void Camera::AdvanceComponentZoom()
 {
   // No zoom inside the task manager
-  if (g_app->m_taskManagerInterface->m_visible || IsInMode(ModeEntityTrack))
+  if (g_taskManagerInterface->m_visible || IsInMode(ModeEntityTrack))
     return;
 
   float change = 30.0f;
@@ -1854,9 +1855,9 @@ void Camera::AdvanceComponentMouseWheelHeight()
     }
   }
 
-  if (g_app->m_location)
+  if (g_location)
   {
-    float landheight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    float landheight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     if (landheight < MIN_HEIGHT)
       landheight = MIN_HEIGHT;
     float altitude = m_height - landheight;
@@ -2057,7 +2058,7 @@ void Camera::Advance()
   float dot = m_front * m_up;
   DEBUG_ASSERT(NearlyEquals(dot, 0.0f));
 
-  g_app->m_userInput->RecalcMousePos3d();
+  g_userInput->RecalcMousePos3d();
 
   m_framesInThisMode++;
 
@@ -2078,8 +2079,8 @@ void Camera::SetNextDebugMode()
 void Camera::RequestMode(int _mode)
 {
   DEBUG_ASSERT(_mode >= 0 && _mode < ModeNumModes);
-  int screenW = g_app->m_renderer->ScreenW();
-  int screenH = g_app->m_renderer->ScreenH();
+  int screenW = g_renderer->ScreenW();
+  int screenH = g_renderer->ScreenH();
 
   //m_targetFov = 60.0f;
   m_framesInThisMode = 0;
@@ -2148,7 +2149,7 @@ void Camera::RequestEntityTrackMode(const WorldObjectId& _id)
   m_cameraTarget = m_pos;
 
   // Snap the camera to the look at the unit
-  Entity* entity = g_app->m_location->GetEntity(_id);
+  Entity* entity = g_location->GetEntity(_id);
   if (entity)
     m_targetPos = entity->m_pos;
 }
@@ -2164,7 +2165,7 @@ bool Camera::IsMoving() { return m_mode == ModeMoveToTarget; }
 
 bool Camera::IsInteractive()
 {
-  //if( g_app->m_script->IsRunningScript() ) return false;
+  //if( g_script->IsRunningScript() ) return false;
 
   return (m_mode == ModeSphereWorld || m_mode == ModeFreeMovement || m_mode == ModeRadarAim || m_mode == ModeTurretAim || m_mode ==
     ModeEntityTrack);
@@ -2191,9 +2192,9 @@ bool Camera::SetTarget(const char* _mountName)
     return true;
   }
 
-  for (int i = 0; i < g_app->m_location->m_levelFile->m_cameraMounts.Size(); ++i)
+  for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
   {
-    CameraMount* mount = g_app->m_location->m_levelFile->m_cameraMounts[i];
+    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
     if (stricmp(mount->m_name, _mountName) == 0)
     {
       SetTarget(mount->m_pos, mount->m_front, mount->m_up);

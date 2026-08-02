@@ -16,7 +16,7 @@
 #include "ControlBindings.h"
 
 #include "TargetCursor.h"
-
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -551,7 +551,7 @@ int SpeciesWindow::GetMenuSize( int _value )
 	{
 		//int h = m_originalH;
 		//float scale = float(m_h)/float(h);
-		int screenH = g_app->m_renderer->ScreenH();
+		int screenH = g_renderer->ScreenH();
 		float scale = 0.96f * (float(screenH)/460.0f);
 
 		return _value * scale;
@@ -566,7 +566,7 @@ void SpeciesWindow::SetMenuSize(int _w, int _h)
 {
 	if( g_app->m_largeMenus )
 	{
-		int screenH = g_app->m_renderer->ScreenH();
+		int screenH = g_renderer->ScreenH();
 
 		float ratio = 0.96f * (float(screenH)/460.0f);
 
@@ -639,7 +639,7 @@ void GameExitButton::MouseUp()
 {
 	g_app->m_requestQuit = true;
     //g_app->m_atMainMenu = true;
-    //g_app->m_renderer->StartFadeOut();
+    //g_renderer->StartFadeOut();
 }
 
 

@@ -20,6 +20,7 @@
 #include "GlobalWorld.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -164,11 +165,11 @@ bool DynamicHub::Advance()
         // the m_enabled state of this building has been lost.
 
         bool towerFound = false;
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 if( building && building->m_type == TypeControlTower )
                 {
                     ControlTower *tower = (ControlTower *) building;
@@ -212,20 +213,20 @@ bool DynamicHub::Advance()
         {
             if( m_enabled )
             {
-                GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+                GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
                 if( gb && !gb->m_online )
                 {
                     gb->m_online = true;
-                    g_app->m_globalWorld->EvaluateEvents();
+                    g_globalWorld->EvaluateEvents();
                 }
             }
-            else if( !g_app->m_location->MissionComplete() )
+            else if( !g_location->MissionComplete() )
             {
-                GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+                GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
                 if( gb && gb->m_online )
                 {
                     gb->m_online = false;
-                    g_app->m_globalWorld->EvaluateEvents();
+                    g_globalWorld->EvaluateEvents();
                 }
             }
         }
@@ -353,7 +354,7 @@ bool DynamicNode::Advance()
             {
                 if( friendly )
                 {
-                    DynamicHub *hub = (DynamicHub *)g_app->m_location->GetBuilding( m_buildingLink );
+                    DynamicHub *hub = (DynamicHub *)g_location->GetBuilding( m_buildingLink );
                     if( hub && hub->m_type == Building::TypeDynamicHub )
                     {
                         m_operating = true;
@@ -367,7 +368,7 @@ bool DynamicNode::Advance()
     {
         if( GetNumPortsOccupied() < GetNumPorts() )
         {
-            DynamicHub *hub = (DynamicHub *)g_app->m_location->GetBuilding( m_buildingLink );
+            DynamicHub *hub = (DynamicHub *)g_location->GetBuilding( m_buildingLink );
             if( hub && hub->m_type == Building::TypeDynamicHub )
             {
                 m_operating = false;
@@ -382,7 +383,7 @@ bool DynamicNode::Advance()
                 if( m_scoreTimer <= 0.0f )
                 {
                     m_scoreTimer = 1.0f;
-                    DynamicHub *hub = (DynamicHub *)g_app->m_location->GetBuilding( m_buildingLink );
+                    DynamicHub *hub = (DynamicHub *)g_location->GetBuilding( m_buildingLink );
                     if( hub && hub->m_type == Building::TypeDynamicHub )
                     {
                         int scoreMod = 1;
@@ -414,7 +415,7 @@ void DynamicNode::Render( float _predictionTime )
 {
     if( g_app->m_editing )
     {
-        m_up = g_app->m_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
+        m_up = g_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
         Vector3 right( 1, 0, 0 );
         m_front = right ^ m_up;
     }
@@ -442,7 +443,7 @@ void DynamicNode::ReprogramComplete()
 {
     if( GetNumPorts() == 0 )
     {
-        DynamicHub *hub = (DynamicHub *)g_app->m_location->GetBuilding( m_buildingLink );
+        DynamicHub *hub = (DynamicHub *)g_location->GetBuilding( m_buildingLink );
         if( hub && hub->m_type == Building::TypeDynamicHub )
         {
             m_operating = true;

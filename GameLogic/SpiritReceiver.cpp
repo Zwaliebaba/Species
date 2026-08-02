@@ -22,6 +22,7 @@
 #include "Renderer.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -58,14 +59,14 @@ Vector3 ReceiverBuilding::GetSpiritLocation()
 
 bool ReceiverBuilding::IsInView()
 {
-    Building *spiritLink = g_app->m_location->GetBuilding( m_spiritLink);
+    Building *spiritLink = g_location->GetBuilding( m_spiritLink);
 
     if( spiritLink )
     {
         Vector3 midPoint = ( spiritLink->m_centrePos + m_centrePos ) / 2.0f;
         float radius = ( spiritLink->m_centrePos - m_centrePos ).Mag() / 2.0f;
         radius += m_radius;
-        return( g_app->m_camera->SphereInViewFrustum( midPoint, radius ) );
+        return( g_camera->SphereInViewFrustum( midPoint, radius ) );
     }
     else
     {
@@ -96,7 +97,7 @@ void ReceiverBuilding::RenderAlphas ( float _predictionTime )
 
     _predictionTime -= 0.1f;
 
-    Building *spiritLink = g_app->m_location->GetBuilding( m_spiritLink );
+    Building *spiritLink = g_location->GetBuilding( m_spiritLink );
 
     int buildingDetail = g_prefsManager->GetInt( "RenderBuildingDetail", 1 );
 
@@ -110,10 +111,10 @@ void ReceiverBuilding::RenderAlphas ( float _predictionTime )
         Vector3 ourPos = GetSpiritLocation();
         Vector3 theirPos = receiverBuilding->GetSpiritLocation();
 
-        Vector3 camToOurPos = g_app->m_camera->GetPos() - ourPos;
+        Vector3 camToOurPos = g_camera->GetPos() - ourPos;
         Vector3 ourPosRight = camToOurPos ^ ( theirPos - ourPos );
 
-        Vector3 camToTheirPos = g_app->m_camera->GetPos() - theirPos;
+        Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
         Vector3 theirPosRight = camToTheirPos ^ ( theirPos - ourPos );
 
         glDisable   ( GL_CULL_FACE );
@@ -176,7 +177,7 @@ bool ReceiverBuilding::Advance()
             m_spirits.RemoveData(i);
             --i;
 
-            Building *spiritLink = g_app->m_location->GetBuilding( m_spiritLink );
+            Building *spiritLink = g_location->GetBuilding( m_spiritLink );
             if( spiritLink )
             {
                 ReceiverBuilding *receiverBuilding = (ReceiverBuilding *) spiritLink;
@@ -221,15 +222,15 @@ SpiritProcessor *ReceiverBuilding::GetSpiritProcessor()
 {
     static int processorId = -1;
 
-    SpiritProcessor *processor = (SpiritProcessor *) g_app->m_location->GetBuilding( processorId );
+    SpiritProcessor *processor = (SpiritProcessor *) g_location->GetBuilding( processorId );
 
     if( !processor || processor->m_type != Building::TypeSpiritProcessor )
     {
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 if( building->m_type == TypeSpiritProcessor )
                 {
                     processor = (SpiritProcessor *) building;
@@ -259,9 +260,9 @@ void ReceiverBuilding::BeginRenderUnprocessedSpirits()
         glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Glow.bmp" ) );
     }
 
-	s_nearPlaneStart = g_app->m_renderer->GetNearPlane();
-	g_app->m_camera->SetupProjectionMatrix(s_nearPlaneStart * 1.1f,
-							 			   g_app->m_renderer->GetFarPlane());
+	s_nearPlaneStart = g_renderer->GetNearPlane();
+	g_camera->SetupProjectionMatrix(s_nearPlaneStart * 1.1f,
+							 			   g_renderer->GetFarPlane());
 
 }
 
@@ -269,8 +270,8 @@ void ReceiverBuilding::BeginRenderUnprocessedSpirits()
 void ReceiverBuilding::RenderUnprocessedSpirit( Vector3 const &_pos, float _life )
 {
     Vector3 position = _pos;
-    Vector3 camUp = g_app->m_camera->GetUp();
-    Vector3 camRight = g_app->m_camera->GetRight();
+    Vector3 camUp = g_camera->GetUp();
+    Vector3 camRight = g_camera->GetRight();
     float scale = 2.0f * _life;
     float alphaValue = _life;
 
@@ -316,8 +317,8 @@ void ReceiverBuilding::RenderUnprocessedSpirit( Vector3 const &_pos, float _life
 void ReceiverBuilding::RenderUnprocessedSpirit_basic( Vector3 const &_pos, float _life )
 {
 	Vector3 position = _pos;
-	Vector3 camUp = g_app->m_camera->GetUp();
-	Vector3 camRight = g_app->m_camera->GetRight();
+	Vector3 camUp = g_camera->GetUp();
+	Vector3 camRight = g_camera->GetRight();
 	float scale = 2.0f * _life;
 	float alphaValue = _life;
 
@@ -345,8 +346,8 @@ void ReceiverBuilding::RenderUnprocessedSpirit_basic( Vector3 const &_pos, float
 void ReceiverBuilding::RenderUnprocessedSpirit_detail( Vector3 const &_pos, float _life )
 {
 	Vector3 position = _pos;
-	Vector3 camUp = g_app->m_camera->GetUp();
-	Vector3 camRight = g_app->m_camera->GetRight();
+	Vector3 camUp = g_camera->GetUp();
+	Vector3 camRight = g_camera->GetRight();
 	float scale = 2.0f * _life;
 	float alphaValue = _life;
 
@@ -360,8 +361,8 @@ void ReceiverBuilding::RenderUnprocessedSpirit_detail( Vector3 const &_pos, floa
 
 void ReceiverBuilding::EndRenderUnprocessedSpirits()
 {
-	g_app->m_camera->SetupProjectionMatrix(s_nearPlaneStart,
-								 		   g_app->m_renderer->GetFarPlane());
+	g_camera->SetupProjectionMatrix(s_nearPlaneStart,
+								 		   g_renderer->GetFarPlane());
 
     glDisable   ( GL_TEXTURE_2D );
     glDepthMask ( true );
@@ -396,8 +397,8 @@ void SpiritProcessor::Initialise( Building *_building )
 
     for( int i = 0; i < 150; ++i )
     {
-        float sizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-        float sizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+        float sizeX = g_location->m_landscape.GetWorldSizeX();
+        float sizeZ = g_location->m_landscape.GetWorldSizeZ();
         float posY = syncfrand(1000.0f);
         Vector3 spawnPos = Vector3( syncfrand(sizeX), posY, syncfrand(sizeZ) ) ;
 
@@ -455,7 +456,7 @@ bool SpiritProcessor::Advance()
 
     if( m_throughput > 50.0f )
     {
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         gb->m_online = true;
     }
 
@@ -484,8 +485,8 @@ bool SpiritProcessor::Advance()
     {
         m_spawnSync = 0.2f;
 
-        float sizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-        float sizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+        float sizeX = g_location->m_landscape.GetWorldSizeX();
+        float sizeZ = g_location->m_landscape.GetWorldSizeZ();
         float posY = 700.0f + syncfrand(300.0f);
         Vector3 spawnPos = Vector3( syncfrand(sizeX), posY, syncfrand(sizeZ) ) ;
         UnprocessedSpirit *spirit = new UnprocessedSpirit();
@@ -600,7 +601,7 @@ SpiritReceiver::SpiritReceiver()
 
 void SpiritReceiver::Initialise( Building *_template )
 {
-    _template->m_up = g_app->m_location->m_landscape.m_normalMap->GetValue( _template->m_pos.x, _template->m_pos.z );
+    _template->m_up = g_location->m_landscape.m_normalMap->GetValue( _template->m_pos.x, _template->m_pos.z );
     Vector3 right = Vector3( 1, 0, 0 );
     _template->m_front = right ^ _template->m_up;
 
@@ -660,7 +661,7 @@ void SpiritReceiver::Render( float _predictionTime )
 {
     if( g_app->m_editing )
     {
-        m_up = g_app->m_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
+        m_up = g_location->m_landscape.m_normalMap->GetValue( m_pos.x, m_pos.z );
         Vector3 right( 1, 0, 0 );
         m_front = right ^ m_up;
     }
@@ -708,8 +709,8 @@ void SpiritReceiver::RenderPorts()
         // Render the status light
 
         float size = 6.0f;
-        Vector3 camR = g_app->m_camera->GetRight() * size;
-        Vector3 camU = g_app->m_camera->GetUp() * size;
+        Vector3 camR = g_camera->GetRight() * size;
+        Vector3 camU = g_camera->GetUp() * size;
 
         Vector3 statusPos = worldMat.pos;
 
@@ -785,7 +786,7 @@ bool UnprocessedSpirit::Advance()
     {
         case StateUnprocessedFalling:
         {
-            float heightAboveGround = m_pos.y - g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+            float heightAboveGround = m_pos.y - g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
             if( heightAboveGround > 15.0f )
             {
                 float fractionAboveGround = heightAboveGround / 100.0f;
@@ -819,8 +820,8 @@ bool UnprocessedSpirit::Advance()
 
     m_pos += m_vel * SERVER_ADVANCE_PERIOD;
     m_pos += m_hover * SERVER_ADVANCE_PERIOD;
-    float worldSizeX = g_app->m_location->m_landscape.GetWorldSizeX();
-    float worldSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ();
+    float worldSizeX = g_location->m_landscape.GetWorldSizeX();
+    float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
     if( m_pos.x < 0.0f ) m_pos.x = 0.0f;
     if( m_pos.z < 0.0f ) m_pos.z = 0.0f;
     if( m_pos.x >= worldSizeX ) m_pos.x = worldSizeX;

@@ -20,7 +20,7 @@
 #include "SoundSystem.h"
 
 #include "RadarDish.h"
-
+#include "WorldPointers.h"
 
 
 RadarDish::RadarDish()
@@ -80,10 +80,10 @@ bool RadarDish::Advance ()
     // if we saved a target dish previously
     if( m_newlyCreated )
     {
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb )
         {
-            Building *targetBuilding = g_app->m_location->GetBuilding( gb->m_link );
+            Building *targetBuilding = g_location->GetBuilding( gb->m_link );
             if( targetBuilding && targetBuilding->m_type == TypeRadarDish )
             {
                 RadarDish *dish = (RadarDish *) targetBuilding;
@@ -163,13 +163,13 @@ bool RadarDish::Advance ()
 
     bool previouslyAligned = ( m_receiverId != -1 );
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
 		// Skip empty slots
-        if( !g_app->m_location->m_buildings.ValidIndex(i) ) continue;
+        if( !g_location->m_buildings.ValidIndex(i) ) continue;
 
 		// Filter out non radar dish buildings
-		Building *building = g_app->m_location->m_buildings.GetData(i);
+		Building *building = g_location->m_buildings.GetData(i);
         if( building->m_type != TypeRadarDish ) continue;
 
 		// Don't compare against ourself
@@ -185,7 +185,7 @@ bool RadarDish::Advance ()
 			float dotProd = dishFront * theirFront;
 			if (dotProd < 0.0f)
 			{
-				if (g_app->m_location->IsVisible( dishPos, otherDish->GetDishPos(0.0f)))
+				if (g_location->IsVisible( dishPos, otherDish->GetDishPos(0.0f)))
 				{
 					float newRange = (otherDish->GetDishPos(0.0f) - dishPos).Mag();
 					if( newRange < m_range )
@@ -208,7 +208,7 @@ bool RadarDish::Advance ()
         g_soundSystem->StopAllSounds( m_id, "RadarDish ConnectionEstablished" );
         g_soundSystem->TriggerBuildingEvent( this, "ConnectionLost" );
 
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb ) gb->m_link = -1;
     }
 
@@ -216,7 +216,7 @@ bool RadarDish::Advance ()
     {
         g_soundSystem->TriggerBuildingEvent( this, "ConnectionEstablished" );
 
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb ) gb->m_link = m_receiverId;
     }
 
@@ -236,7 +236,7 @@ Vector3 RadarDish::GetDishFront( float _predictionTime )
 {
     if( m_receiverId != -1 )
     {
-        RadarDish *receiver = (RadarDish *) g_app->m_location->GetBuilding( m_receiverId );
+        RadarDish *receiver = (RadarDish *) g_location->GetBuilding( m_receiverId );
         if( receiver )
         {
             Vector3 ourDishPos = GetDishPos( _predictionTime );
@@ -336,7 +336,7 @@ void RadarDish::RenderSignal( float _predictionTime, float _radius, float _alpha
     double eqn1[4]      = { dishFront.x, dishFront.y, dishFront.z, -1.0f };
     glClipPlane         (GL_CLIP_PLANE0, eqn1 );
 
-    RadarDish *receiver = (RadarDish *) g_app->m_location->GetBuilding( m_receiverId );
+    RadarDish *receiver = (RadarDish *) g_location->GetBuilding( m_receiverId );
     Vector3 receiverPos = receiver->GetDishPos( _predictionTime );
     Vector3 receiverFront = receiver->GetDishFront( _predictionTime );
     glTranslatef        ( -startPos.x, -startPos.y, -startPos.z );
@@ -445,7 +445,7 @@ Vector3 RadarDish::GetEndPoint()
 
 bool RadarDish::GetExit( Vector3 &_pos, Vector3 &_front )
 {
-    RadarDish *receiver = (RadarDish *) g_app->m_location->GetBuilding( m_receiverId );
+    RadarDish *receiver = (RadarDish *) g_location->GetBuilding( m_receiverId );
     if( receiver )
     {
         Matrix34 rootMat(receiver->m_front, g_upVector, receiver->m_pos);
@@ -474,7 +474,7 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
 
     if( _entity->m_id.GetUnitId() != -1 )
     {
-        Unit *unit = g_app->m_location->GetUnit( _entity->m_id );
+        Unit *unit = g_location->GetUnit( _entity->m_id );
         unit->UpdateEntityPosition( _entity->m_pos, _entity->m_radius );
     }
 
@@ -487,7 +487,7 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
         _entity->m_enabled = true;
         _entity->m_vel += Vector3(syncsfrand(10.0f), syncfrand(10.0f), syncsfrand(10.0f) );
 
-        g_app->m_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
+        g_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
         return true;
     }
     else if( distTravelled >= m_range )
@@ -501,7 +501,7 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
         _entity->m_onGround = true;
         _entity->m_vel.Zero();
 
-        g_app->m_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
+        g_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
 
         g_soundSystem->TriggerEntityEvent( _entity, "ExitTeleport" );
         return true;

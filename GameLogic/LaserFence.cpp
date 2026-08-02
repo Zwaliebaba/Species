@@ -27,6 +27,7 @@
 
 #include "Building.h"
 #include "LaserFence.h"
+#include "WorldPointers.h"
 
 LaserFence::LaserFence()
 :   Building(),
@@ -75,7 +76,7 @@ void LaserFence::Spark()
     Vector3 sparkPos = m_pos;
     sparkPos.y += frand( m_scale*50.0f );
 
-    LaserFence *nextFence = (LaserFence *) g_app->m_location->GetBuilding( m_nextLaserFenceId );
+    LaserFence *nextFence = (LaserFence *) g_location->GetBuilding( m_nextLaserFenceId );
 
     int numSparks = 5.0f + frand(5.0f);
     for( int i = 0; i < numSparks; ++i )
@@ -87,7 +88,7 @@ void LaserFence::Spark()
         particleVel.SetLength( 40.0f+frand(20.0f) );
         particleVel += Vector3( frand() * 20.0f, sfrand() * 20.0f, sfrand() * 20.0f );
         float size = 25.0f + frand(25.0f);
-        g_app->m_particleSystem->CreateParticle( sparkPos, particleVel, Particle::TypeSpark, size );
+        g_particleSystem->CreateParticle( sparkPos, particleVel, Particle::TypeSpark, size );
     }
 
     g_soundSystem->TriggerBuildingEvent( this, "Spark" );
@@ -98,7 +99,7 @@ bool LaserFence::Advance ()
 {
     if( !m_radiusSet )
     {
-        Building *building = g_app->m_location->GetBuilding( m_nextLaserFenceId );
+        Building *building = g_location->GetBuilding( m_nextLaserFenceId );
         if( building )
         {
             m_centrePos = ( building->m_pos + m_pos ) / 2.0f;
@@ -123,7 +124,7 @@ bool LaserFence::Advance ()
             m_status += LASERFENCE_RAISESPEED * SERVER_ADVANCE_PERIOD;
             if( m_status >= 0.5f && m_nextLaserFenceId != -1 && !m_nextToggled )
             {
-                LaserFence *nextFence = (LaserFence *) g_app->m_location->GetBuilding( m_nextLaserFenceId );
+                LaserFence *nextFence = (LaserFence *) g_location->GetBuilding( m_nextLaserFenceId );
                 if( nextFence )
 				{
 					nextFence->Enable();
@@ -136,7 +137,7 @@ bool LaserFence::Advance ()
                 m_mode = ModeEnabled;
                 if( m_nextLaserFenceId == -1)
                 {
-                    g_app->m_location->m_obstructionGrid->CalculateAll();
+                    g_location->m_obstructionGrid->CalculateAll();
                 }
             }
             break;
@@ -144,7 +145,7 @@ bool LaserFence::Advance ()
         case ModeDisabling:
             if( m_status <= 0.5f && m_nextLaserFenceId != -1 && !m_nextToggled)
             {
-                LaserFence *nextFence = (LaserFence *) g_app->m_location->GetBuilding( m_nextLaserFenceId );
+                LaserFence *nextFence = (LaserFence *) g_location->GetBuilding( m_nextLaserFenceId );
                 if( nextFence )
 				{
 					nextFence->Disable();
@@ -158,7 +159,7 @@ bool LaserFence::Advance ()
                 m_mode = ModeDisabled;
                 if( m_nextLaserFenceId == -1)
                 {
-                    g_app->m_location->m_obstructionGrid->CalculateAll();
+                    g_location->m_obstructionGrid->CalculateAll();
                 }
             }
             break;
@@ -170,7 +171,7 @@ bool LaserFence::Advance ()
                 m_status = 1.0f;
                 if( m_nextLaserFenceId == -1)
                 {
-                    g_app->m_location->m_obstructionGrid->CalculateAll();
+                    g_location->m_obstructionGrid->CalculateAll();
                 }
             }
             break;
@@ -249,7 +250,7 @@ void LaserFence::RenderAlphas( float predictionTime )
 
         if( m_nextLaserFenceId != -1 )
         {
-            Building *nextFence = g_app->m_location->GetBuilding( m_nextLaserFenceId );
+            Building *nextFence = g_location->GetBuilding( m_nextLaserFenceId );
             if( !nextFence || nextFence->m_type != Building::TypeLaserFence )
             {
                 m_nextLaserFenceId = -1;
@@ -271,7 +272,7 @@ void LaserFence::RenderAlphas( float predictionTime )
             }
             else
             {
-                RGBAColour *colour = &g_app->m_location->m_teams[ m_id.GetTeamId() ].m_colour;
+                RGBAColour *colour = &g_location->m_teams[ m_id.GetTeamId() ].m_colour;
                 glColor4ub( colour->r, colour->g, colour->b, alpha );
             }
 
@@ -406,7 +407,7 @@ void LaserFence::Enable()
 
 	if( m_mode == ModeNeverOn )
 	{
-		LaserFence *nextFence = (LaserFence *) g_app->m_location->GetBuilding( m_nextLaserFenceId );
+		LaserFence *nextFence = (LaserFence *) g_location->GetBuilding( m_nextLaserFenceId );
 		if( nextFence ) nextFence->Toggle();
 	}
 
@@ -424,7 +425,7 @@ void LaserFence::Disable ()
 
 	if( m_mode == ModeNeverOn )
 	{
-		LaserFence *nextFence = (LaserFence *) g_app->m_location->GetBuilding( m_nextLaserFenceId );
+		LaserFence *nextFence = (LaserFence *) g_location->GetBuilding( m_nextLaserFenceId );
 		if( nextFence ) nextFence->Toggle();
 	}
 
@@ -554,7 +555,7 @@ bool LaserFence::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
 
     if( m_nextLaserFenceId != -1 && m_status > 0.0f )
     {
-        Building *nextFence = g_app->m_location->GetBuilding( m_nextLaserFenceId );
+        Building *nextFence = g_location->GetBuilding( m_nextLaserFenceId );
         float maxHeight = GetFenceFullHeight();
         float fenceHeight = maxHeight * m_status;
         Vector3 pos1 = m_pos - Vector3(0,fenceHeight/3,0);

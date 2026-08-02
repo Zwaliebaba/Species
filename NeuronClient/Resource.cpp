@@ -10,9 +10,9 @@
 #include "TextStreamReaders.h"
 #include "Preferences.h"
 #include "SoundStreamDecoder.h"
-#include "App.h"
 #include "Location.h"
 #include "Renderer.h"
+#include "WorldPointers.h"
 
 Resource* g_resource = nullptr;
 
@@ -298,8 +298,8 @@ void Resource::FlushOpenGlState()
   // Forget all the texture handles
   m_textures.Empty();
 
-  if (g_app->m_location)
-    g_app->m_location->FlushOpenGlState();
+  if (g_location)
+    g_location->FlushOpenGlState();
 }
 
 void Resource::RegenerateOpenGlState()
@@ -318,11 +318,11 @@ void Resource::RegenerateOpenGlState()
   }
 
   // Tell the renderer (for the pixel effect texture)
-  g_app->m_renderer->BuildOpenGlState();
+  g_renderer->BuildOpenGlState();
 
   // Tell the location
-  if (g_app->m_location)
-    g_app->m_location->RegenerateOpenGlState();
+  if (g_location)
+    g_location->RegenerateOpenGlState();
 }
 
 char* Resource::GenerateName()

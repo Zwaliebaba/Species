@@ -14,6 +14,7 @@
 
 #include "App.h"
 #include "Renderer.h"
+#include "WorldPointers.h"
 
 
 #define SOUND_LIBRARY       "SoundLibrary"
@@ -130,8 +131,8 @@ PrefsSoundWindow::PrefsSoundWindow()
 :   SpeciesWindow( LANGUAGEPHRASE("dialog_soundoptions") )
 {
     SetMenuSize( 532, 390 );
-    SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
-                 g_app->m_renderer->ScreenH()/2 - m_h/2 );
+    SetPosition( g_renderer->ScreenW()/2 - m_w/2,
+                 g_renderer->ScreenH()/2 - m_h/2 );
 
     m_mixFreq       = g_prefsManager->GetInt( SOUND_MIXFREQ, 22050 );
     m_numChannels   = g_prefsManager->GetInt( SOUND_CHANNELS, 16 );

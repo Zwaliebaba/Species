@@ -20,6 +20,7 @@
 #include "GlobalWorld.h"
 #include "GlobalInternet.h"
 #include "Renderer.h"
+#include "WorldPointers.h"
 
 // *************************
 // Button Classes
@@ -276,7 +277,7 @@ void GameMenu::Render()
 
 void GameMenu::CreateMenu()
 {
-    g_app->m_renderer->StartFadeIn(0.25f);
+    g_renderer->StartFadeIn(0.25f);
     // close all currently open windows
     LList<EclWindow *> *windows = EclGetWindows();
 	while (windows->Size() > 0) {
@@ -288,10 +289,10 @@ void GameMenu::CreateMenu()
     EclRegisterWindow( new GameMenuWindow() );
 
     // set the camera to a position with a good view of the internet
-    g_app->m_camera->RequestMode(Camera::ModeMainMenu);
-    g_app->m_camera->SetDebugMode(Camera::DebugModeNever);
-    g_app->m_camera->SetTarget(Vector3(-900000, 3000000, 397000), Vector3(0,0.5f,-1));
-    g_app->m_camera->CutToTarget();
+    g_camera->RequestMode(Camera::ModeMainMenu);
+    g_camera->SetDebugMode(Camera::DebugModeNever);
+    g_camera->SetTarget(Vector3(-900000, 3000000, 397000), Vector3(0,0.5f,-1));
+    g_camera->CutToTarget();
 
     /*if( g_app->m_multiwinia )
     {
@@ -308,7 +309,7 @@ void GameMenu::DestroyMenu()
 {
     m_menuCreated = false;
     EclRemoveWindow("GameMenu");
-    g_app->m_renderer->StartFadeOut();
+    g_renderer->StartFadeOut();
 }
 /*
 void GameMenu::CreateMapList()
@@ -360,8 +361,8 @@ GameMenuWindow::GameMenuWindow()
     m_currentPage(-1),
     m_newPage(PageSpecies)
 {
-    int w = g_app->m_renderer->ScreenW();
-    int h = g_app->m_renderer->ScreenH();
+    int w = g_renderer->ScreenW();
+    int h = g_renderer->ScreenH();
     SetPosition( 5, 5 );
     SetSize( w - 10, h - 10 );
     m_resizable = false;
@@ -379,8 +380,8 @@ void GameMenuWindow::Update()
     {
         SetupNewPage( m_newPage );
 
-        int w = g_app->m_renderer->ScreenW();
-        int h = g_app->m_renderer->ScreenH();
+        int w = g_renderer->ScreenW();
+        int h = g_renderer->ScreenH();
         SetPosition( 5, 5 );
         SetSize( w - 10, h - 10 );
     }
@@ -392,8 +393,8 @@ void GameMenuWindow::Render( bool _hasFocus )
     // render nothing but the buttons
     EclWindow::Render( _hasFocus );
 
-    int w = g_app->m_renderer->ScreenW();
-    int h = g_app->m_renderer->ScreenH();
+    int w = g_renderer->ScreenW();
+    int h = g_renderer->ScreenH();
 
     glColor4f( 1.0f, 1.0f, 1.0f, 0.0f );
     g_gameFont.SetRenderOutline(true);
@@ -467,8 +468,8 @@ void GameMenuWindow::SetupSpeciesPage()
 
 void GameMenuWindow::GetDefaultPositions(int *_x, int *_y, int *_gap)
 {
-    float w = g_app->m_renderer->ScreenW();
-    float h = g_app->m_renderer->ScreenH();
+    float w = g_renderer->ScreenW();
+    float h = g_renderer->ScreenH();
 
     *_x = (w / 2) - 150;
     switch( m_newPage )

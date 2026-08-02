@@ -22,6 +22,7 @@
 #include "TaskManagerInterface.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
 
 
 ResearchItem::ResearchItem()
@@ -56,7 +57,7 @@ void ResearchItem::Initialise ( Building *_template )
 
 void ResearchItem::SetDetail( int _detail )
 {
-    m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     m_pos.y += 20.0f;
 
     Matrix34 mat( m_front, m_up, m_pos );
@@ -70,7 +71,7 @@ bool ResearchItem::Advance()
     if( m_vel.Mag() > 1.0f )
     {
         m_pos += m_vel * SERVER_ADVANCE_PERIOD;
-        m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+        m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
         m_vel *= ( 1.0f - SERVER_ADVANCE_PERIOD * 0.5f );
 
         Matrix34 mat( m_front, g_upVector, m_pos );
@@ -82,8 +83,8 @@ bool ResearchItem::Advance()
     }
 
     if( m_researchType > -1 &&
-        g_app->m_globalWorld->m_research->HasResearch( m_researchType ) &&
-        g_app->m_globalWorld->m_research->CurrentLevel( m_researchType ) >= m_level )
+        g_globalWorld->m_research->HasResearch( m_researchType ) &&
+        g_globalWorld->m_research->CurrentLevel( m_researchType ) >= m_level )
     {
         return true;
     }
@@ -94,20 +95,20 @@ bool ResearchItem::Advance()
         Matrix34 mat( m_front, m_up, m_pos );
         g_explosionManager.AddExplosion( m_shape, mat, 1.0f );
 
-        int existingLevel = g_app->m_globalWorld->m_research->CurrentLevel( m_researchType );
+        int existingLevel = g_globalWorld->m_research->CurrentLevel( m_researchType );
 
-        g_app->m_globalWorld->m_research->AddResearch( m_researchType );
-        g_app->m_globalWorld->m_research->m_researchLevel[ m_researchType ] = m_level;
+        g_globalWorld->m_research->AddResearch( m_researchType );
+        g_globalWorld->m_research->m_researchLevel[ m_researchType ] = m_level;
 
         g_soundSystem->TriggerBuildingEvent( this, "AquireResearch" );
 
         if( existingLevel == 0 )
         {
-            g_app->m_taskManagerInterface->SetCurrentMessage( TaskManagerInterface::MessageResearch, m_researchType, 4.0f );
+            g_taskManagerInterface->SetCurrentMessage( TaskManagerInterface::MessageResearch, m_researchType, 4.0f );
         }
         else
         {
-            g_app->m_taskManagerInterface->SetCurrentMessage( TaskManagerInterface::MessageResearchUpgrade, m_researchType, 4.0f );
+            g_taskManagerInterface->SetCurrentMessage( TaskManagerInterface::MessageResearchUpgrade, m_researchType, 4.0f );
         }
 
         return true;
@@ -169,8 +170,8 @@ void ResearchItem::RenderAlphas( float _predictionTime )
 {
     Building::RenderAlphas( _predictionTime );
 
-    Vector3 camUp = g_app->m_camera->GetUp();
-    Vector3 camRight = g_app->m_camera->GetRight();
+    Vector3 camUp = g_camera->GetUp();
+    Vector3 camRight = g_camera->GetRight();
 
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
@@ -295,7 +296,7 @@ bool ResearchItem::RenderPixelEffect(float _predictionTime)
 {
 //	Matrix34 mat(m_front, m_up, m_pos);
 //	m_shape->Render(0.0f, mat);
-//	g_app->m_renderer->MarkUsedCells(m_shape, mat);
+//	g_renderer->MarkUsedCells(m_shape, mat);
     return false;
 }
 
@@ -353,7 +354,7 @@ bool ResearchItem::IsInView()
 {
     if( Building::IsInView() ) return true;
 
-    if( g_app->m_camera->PosInViewFrustum( m_pos+Vector3(0,g_app->m_camera->GetPos().y,0) ))
+    if( g_camera->PosInViewFrustum( m_pos+Vector3(0,g_camera->GetPos().y,0) ))
     {
         return true;
     }

@@ -1,16 +1,16 @@
 #include "pch.h"
 
-#include "App.h"
 #include "Renderer.h"
 #include "ReallyQuitWindow.h"
+#include "WorldPointers.h"
 
 ReallyQuitWindow::ReallyQuitWindow()
 	:   SpeciesWindow(REALLYQUIT_WINDOWNAME)
 {
 	m_w = 160;
 	m_h = 90;
-	m_x = g_app->m_renderer->ScreenW()/2 - m_w/2;
-	m_y = g_app->m_renderer->ScreenH()/2 - m_h/2;
+	m_x = g_renderer->ScreenW()/2 - m_w/2;
+	m_y = g_renderer->ScreenH()/2 - m_h/2;
 }
 
 void ReallyQuitWindow::Create()

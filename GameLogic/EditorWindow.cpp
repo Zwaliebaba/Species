@@ -19,10 +19,10 @@
 #include "LaserFence.h"
 #include "PowerStation.h"
 
-#include "App.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 #ifdef LOCATION_EDITOR
 
@@ -64,17 +64,17 @@ public:
             }
 #endif
 
-            g_app->m_location->m_levelFile->Save();
+            g_location->m_levelFile->Save();
 
 			return;
 		}
 
-		g_app->m_locationEditor->RequestMode(m_type);
+		g_locationEditor->RequestMode(m_type);
     }
 
 	void Render(int realX, int realY, bool highlighted, bool clicked)
 	{
-		LocationEditor *editor = g_app->m_locationEditor;
+		LocationEditor *editor = g_locationEditor;
 		if (editor->GetMode() == m_type)
 		{
 			BorderlessButton::Render(realX, realY, highlighted, true);

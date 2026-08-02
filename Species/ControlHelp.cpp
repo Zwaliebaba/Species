@@ -33,6 +33,7 @@
 #include "InsertionSquad.h"
 
 #include <vector>
+#include "WorldPointers.h"
 
 
 // HelpIcon ------------------
@@ -161,7 +162,7 @@ void HelpIcon::Render( const Vector2 &_setPosition, float _alpha )
 	//	iconGap *= 2.0f;
 	//	iconSize *= 1.5f;
 	//	shadowSize *= 1.5f;
-	//	iconCentre.x -= (g_app->m_renderer->ScreenW() - iconCentre.x ) * 0.5;
+	//	iconCentre.x -= (g_renderer->ScreenW() - iconCentre.x ) * 0.5;
 	//	iconCentre.y += iconGap;
 	//}
 
@@ -445,14 +446,14 @@ void ControlHelpSystem::Advance()
 
 static bool RunningProgram()
 {
-	Task *currentTask = g_app->m_taskManager->GetCurrentTask();
+	Task *currentTask = g_taskManager->GetCurrentTask();
     // if the task has just been ended or killed, it isnt valid
 	return currentTask && currentTask->m_state != Task::StateStopping;
 }
 
 static bool PlacingOfficerProgram()
 {
-	Task *currentTask = g_app->m_taskManager->GetCurrentTask();
+	Task *currentTask = g_taskManager->GetCurrentTask();
 	return currentTask && currentTask->m_state == Task::StateStarted &&
 		    currentTask->m_type == GlobalResearch::TypeOfficer;
 }
@@ -461,8 +462,8 @@ static Unit *GetSelectedUnit()
 {
 	Team *team = nullptr;
 
-	if (g_app->m_location &&
-	    (team = g_app->m_location->GetMyTeam()))
+	if (g_location &&
+	    (team = g_location->GetMyTeam()))
 		return team->GetMyUnit();
 	else
 		return nullptr;
@@ -474,10 +475,10 @@ static bool SquaddieSelected()
 	Task *currentTask = nullptr;
 
 	return
-		g_app->m_camera->IsInMode( Camera::ModeEntityTrack ) &&
+		g_camera->IsInMode( Camera::ModeEntityTrack ) &&
 		(unit = GetSelectedUnit()) &&
 		unit->m_troopType == Entity::TypeInsertionSquadie &&
-		(currentTask = g_app->m_taskManager->GetCurrentTask()) &&
+		(currentTask = g_taskManager->GetCurrentTask()) &&
 		currentTask->m_state == Task::StateRunning;
 }
 
@@ -490,7 +491,7 @@ static bool WeaponSelected( int _type )
 		(squad = (InsertionSquad *) GetSelectedUnit()) &&
 		squad->m_troopType == Entity::TypeInsertionSquadie &&
 		_type == squad->m_weaponType &&
-		g_app->m_globalWorld->m_research->HasResearch( _type );
+		g_globalWorld->m_research->HasResearch( _type );
 }
 
 static bool OfficerOrArmourSelected()
@@ -499,8 +500,8 @@ static bool OfficerOrArmourSelected()
 	Entity *entity = nullptr;
 
 	return
-		g_app->m_location &&
-		(team = g_app->m_location->GetMyTeam()) &&
+		g_location &&
+		(team = g_location->GetMyTeam()) &&
 		(entity = team->GetMyEntity()) &&
 		(entity->m_type == Entity::TypeOfficer ||
 		 entity->m_type == Entity::TypeArmour);
@@ -512,8 +513,8 @@ static bool OfficerSelected()
 	Entity *entity = nullptr;
 
 	return
-		g_app->m_location &&
-		(team = g_app->m_location->GetMyTeam()) &&
+		g_location &&
+		(team = g_location->GetMyTeam()) &&
 		(entity = team->GetMyEntity()) &&
 		(entity->m_type == Entity::TypeOfficer);
 }
@@ -524,8 +525,8 @@ static bool ArmourSelected()
 	Entity *entity = nullptr;
 
 	return
-		g_app->m_location &&
-		(team = g_app->m_location->GetMyTeam()) &&
+		g_location &&
+		(team = g_location->GetMyTeam()) &&
 		(entity = team->GetMyEntity()) &&
 		(entity->m_type == Entity::TypeArmour);
 }
@@ -534,19 +535,19 @@ static bool ArmourSelected()
 static bool HasMoreThanOneSecondaryWeapon()
 {
 	int numSecondaryWeapons =
-		g_app->m_globalWorld->m_research->HasResearch( GlobalResearch::TypeGrenade ) +
-		g_app->m_globalWorld->m_research->HasResearch( GlobalResearch::TypeAirStrike ) +
-		g_app->m_globalWorld->m_research->HasResearch( GlobalResearch::TypeRocket );
+		g_globalWorld->m_research->HasResearch( GlobalResearch::TypeGrenade ) +
+		g_globalWorld->m_research->HasResearch( GlobalResearch::TypeAirStrike ) +
+		g_globalWorld->m_research->HasResearch( GlobalResearch::TypeRocket );
 
 	return numSecondaryWeapons > 1;
 }
 
 static bool UnitSelected()
 {
-	if( !g_app->m_location )
+	if( !g_location )
 		return false;
 
-    Team *team = g_app->m_location->GetMyTeam();
+    Team *team = g_location->GetMyTeam();
 
 	if( !team )
 		return false;
@@ -554,7 +555,7 @@ static bool UnitSelected()
     if( team->GetMyEntity() )
 		return true;
 
-    Task *currentTask = g_app->m_taskManager->GetCurrentTask();
+    Task *currentTask = g_taskManager->GetCurrentTask();
     // if the task has just been ended or killed, it isnt valid
     if (currentTask && currentTask->m_state == Task::StateStopping )
         return false;
@@ -568,7 +569,7 @@ static bool UnitSelected()
 
 static bool CanSwitchUnit()
 {
-	return (g_app->m_taskManager->CapacityUsed() > 1);
+	return (g_taskManager->CapacityUsed() > 1);
 
 	// The predicate below is true whenever the left button would
 	// switch to a task (which includes when you have only one unit)
@@ -576,18 +577,18 @@ static bool CanSwitchUnit()
 	// we've decided to simplify the predicate -- we should only
 	// display the help if there is more than one task.
 
-	//return (g_app->m_taskManager->m_currentTaskId == -1 &&
-	//		g_app->m_taskManager->CapacityUsed() > 0) ||
-	//		g_app->m_taskManager->CapacityUsed() > 1;
+	//return (g_taskManager->m_currentTaskId == -1 &&
+	//		g_taskManager->CapacityUsed() > 0) ||
+	//		g_taskManager->CapacityUsed() > 1;
 }
 
 static bool BuildingSelected()
 {
-    Team *team = g_app->m_location->GetMyTeam();
+    Team *team = g_location->GetMyTeam();
 
     if( team && team->m_currentBuildingId != -1 )
     {
-        Building *building = g_app->m_location->GetBuilding( team->m_currentBuildingId );
+        Building *building = g_location->GetBuilding( team->m_currentBuildingId );
         if( building )
 			return true;
     }
@@ -597,11 +598,11 @@ static bool BuildingSelected()
 
 static bool RadarDishSelected()
 {
-    Team *team = g_app->m_location->GetMyTeam();
+    Team *team = g_location->GetMyTeam();
 
     if( team && team->m_currentBuildingId != -1 )
     {
-        Building *building = g_app->m_location->GetBuilding( team->m_currentBuildingId );
+        Building *building = g_location->GetBuilding( team->m_currentBuildingId );
 		if( building && building->m_type == Building::TypeRadarDish)
 			return true;
     }
@@ -619,132 +620,132 @@ bool ControlHelpSystem::CheckCondition( int _condition )
 		case CondTaskManagerCreateBlue:
 			// Always tell the user that the it is possible to create a unit
 			// (even if full up) (so long as you're not in the task manager)
-			return !g_app->m_taskManagerInterface->m_visible ||
-					g_app->m_taskManagerInterface->AdviseCreateControlHelpBlue();
+			return !g_taskManagerInterface->m_visible ||
+					g_taskManagerInterface->AdviseCreateControlHelpBlue();
 
 		case CondTaskManagerCloseBlue:
 			// Too cluttered to have two close buttons
-			return false; // g_app->m_taskManagerInterface->AdviseCloseControlHelp();
+			return false; // g_taskManagerInterface->AdviseCloseControlHelp();
 
 		case CondTaskManagerCloseRed:
-			return g_app->m_taskManagerInterface->m_visible;
+			return g_taskManagerInterface->m_visible;
 
 		case CondDeselectUnit:
 			return UnitSelected() || BuildingSelected();
 
 		case CondSelectUnit:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 				   g_app->m_gameCursor->AdviseHighlightingSomething();
 
 		case CondTaskManagerCreateGreen:
-			return g_app->m_taskManagerInterface->m_visible &&
-				   g_app->m_taskManagerInterface->AdviseCreateControlHelpGreen();
+			return g_taskManagerInterface->m_visible &&
+				   g_taskManagerInterface->AdviseCreateControlHelpGreen();
 
 		case CondMoveUnit:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 				   g_app->m_gameCursor->AdviseMoveableEntitySelected();
 
 		case CondTaskManagerSelect:
-			return g_app->m_taskManagerInterface->m_visible &&
-				   g_app->m_taskManagerInterface->AdviseOverSelectableZone();
+			return g_taskManagerInterface->m_visible &&
+				   g_taskManagerInterface->AdviseOverSelectableZone();
 
 		case CondPlaceUnit:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 				   g_app->m_gameCursor->AdvisePlacementOpportunity();
 
 		case CondPromoteOfficer:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 				   g_app->m_gameCursor->AdviseHighlightingSomething() &&
 				   PlacingOfficerProgram();
 
 		case CondMoveCameraOrUnit:
-			return !g_app->m_taskManagerInterface->m_visible &&
-				   (g_app->m_camera->IsInMode( Camera::ModeFreeMovement ) ||
-				    g_app->m_camera->IsInMode( Camera::ModeEntityTrack ));
+			return !g_taskManagerInterface->m_visible &&
+				   (g_camera->IsInMode( Camera::ModeFreeMovement ) ||
+				    g_camera->IsInMode( Camera::ModeEntityTrack ));
 
 		case CondCameraAim:
-			return !g_app->m_taskManagerInterface->m_visible &&
-				   g_app->m_camera->IsInMode( Camera::ModeFreeMovement );
+			return !g_taskManagerInterface->m_visible &&
+				   g_camera->IsInMode( Camera::ModeFreeMovement );
 
 		case CondSquaddieFire:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 					SquaddieSelected();
 
 		case CondChangeWeapon:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 					SquaddieSelected() &&
 					HasMoreThanOneSecondaryWeapon();
 
 		case CondChangeOrders:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 					OfficerOrArmourSelected();
 
 		case CondCameraUp:
-			return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !g_app->m_taskManagerInterface->m_visible;
+			return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !g_taskManagerInterface->m_visible;
 
 		case CondCameraDown:
-			return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !g_app->m_taskManagerInterface->m_visible;
+			return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !g_taskManagerInterface->m_visible;
 
 		case CondZoom:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 				   // RadarDishSelected() &&
-				   g_app->m_camera->IsInMode( Camera::ModeRadarAim );
+				   g_camera->IsInMode( Camera::ModeRadarAim );
 
 		case CondFireGrenades:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 				   g_inputManager->controlEvent( ControlUnitPrimaryFireDirected ) &&
 				   SquaddieSelected() &&
 				   WeaponSelected( GlobalResearch::TypeGrenade );
 
 		case CondFireRocket:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 				   g_inputManager->controlEvent( ControlUnitPrimaryFireDirected ) &&
 				   SquaddieSelected() &&
 				   WeaponSelected( GlobalResearch::TypeRocket );
 
 		case CondFireAirstrike:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 				   g_inputManager->controlEvent( ControlUnitPrimaryFireDirected ) &&
 				   SquaddieSelected() &&
 				   WeaponSelected( GlobalResearch::TypeAirStrike );
 
 		case CondOfficerSetGoto:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 					OfficerSelected();
 
 		case CondOfficerSetFollow:
 		{
 			WorldObjectId idUnderMouse;
 			bool officerHighlighted = false;
-            if( g_app->m_locationInput->GetObjectUnderMouse( idUnderMouse, g_app->m_globalWorld->m_myTeamId ) )
+            if( g_app->m_locationInput->GetObjectUnderMouse( idUnderMouse, g_globalWorld->m_myTeamId ) )
 			{
-				Entity *e = g_app->m_location->GetEntity( idUnderMouse );
+				Entity *e = g_location->GetEntity( idUnderMouse );
 				if( e && e->m_type == Entity::TypeOfficer ) officerHighlighted = true;
 			}
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 					OfficerSelected() &&
 					officerHighlighted;
 		}
 
 		case CondArmourSetTurret:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 					ArmourSelected();
 
 		case CondSwitchPrevUnit:
 		case CondSwitchNextUnit:
-			return !g_app->m_taskManagerInterface->m_visible &&
+			return !g_taskManagerInterface->m_visible &&
 					CanSwitchUnit();
 
         case CondRadarAim:
-            return !g_app->m_taskManagerInterface->m_visible &&
+            return !g_taskManagerInterface->m_visible &&
                 RadarDishSelected();
 
 		case CondSkipCutscene:
 		{
 			bool inCutscene = false;
-			if( g_app->m_script->IsRunningScript() &&
-				g_app->m_script->m_permitEscape ) inCutscene = true;
-			if( g_app->m_camera->IsInMode( Camera::ModeBuildingFocus ) ) inCutscene = true;
+			if( g_script->IsRunningScript() &&
+				g_script->m_permitEscape ) inCutscene = true;
+			if( g_camera->IsInMode( Camera::ModeBuildingFocus ) ) inCutscene = true;
 			return inCutscene;
 		}
 
@@ -808,13 +809,13 @@ void ControlHelpSystem::Render()
 		return;
 	}
 
-	Vector2 setPosition( g_app->m_renderer->ScreenW() - 200, 50 );
+	Vector2 setPosition( g_renderer->ScreenW() - 200, 50 );
 	g_gameFont.BeginText2D();
 
 	bool inCutscene = false;
-	if( g_app->m_script->IsRunningScript() &&
-		g_app->m_script->m_permitEscape ) inCutscene = true;
-	if( g_app->m_camera->IsInMode( Camera::ModeBuildingFocus ) ) inCutscene = true;
+	if( g_script->IsRunningScript() &&
+		g_script->m_permitEscape ) inCutscene = true;
+	if( g_camera->IsInMode( Camera::ModeBuildingFocus ) ) inCutscene = true;
 
 	if( inCutscene )
 	{
@@ -825,7 +826,7 @@ void ControlHelpSystem::Render()
 		return;
 	}
 
-	if (g_app->m_taskManagerInterface->m_visible)
+	if (g_taskManagerInterface->m_visible)
 		setPosition.x -= 100;
 
 	for (int i = 0; i < MaxSets; i++)

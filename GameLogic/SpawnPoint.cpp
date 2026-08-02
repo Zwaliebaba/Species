@@ -22,6 +22,7 @@
 
 #include "SpawnPoint.h"
 #include "Darwinian.h"
+#include "WorldPointers.h"
 
 
 SpawnBuilding::SpawnBuilding()
@@ -71,7 +72,7 @@ bool SpawnBuilding::IsInView()
             for( int i = 0; i < m_links.Size(); ++i )
             {
                 SpawnBuildingLink *link = m_links[i];
-                SpawnBuilding *building = (SpawnBuilding *) g_app->m_location->GetBuilding( link->m_targetBuildingId );
+                SpawnBuilding *building = (SpawnBuilding *) g_location->GetBuilding( link->m_targetBuildingId );
                 if( building )
                 {
                     m_visibilityMidpoint += building->m_centrePos;
@@ -86,7 +87,7 @@ bool SpawnBuilding::IsInView()
             for( int i = 0; i < m_links.Size(); ++i )
             {
                 SpawnBuildingLink *link = m_links[i];
-                SpawnBuilding *building = (SpawnBuilding *) g_app->m_location->GetBuilding( link->m_targetBuildingId );
+                SpawnBuilding *building = (SpawnBuilding *) g_location->GetBuilding( link->m_targetBuildingId );
                 if( building )
                 {
                     float distance = ( building->m_centrePos - m_visibilityMidpoint ).Mag();
@@ -99,7 +100,7 @@ bool SpawnBuilding::IsInView()
 
     // Determine visibility
 
-    return g_app->m_camera->SphereInViewFrustum( m_visibilityMidpoint, m_visibilityRadius );
+    return g_camera->SphereInViewFrustum( m_visibilityMidpoint, m_visibilityRadius );
 
 }
 
@@ -117,20 +118,20 @@ void SpawnBuilding::RenderSpirit( Vector3 const &_pos )
     glColor4ub(150, 50, 25, innerAlpha );
 
     glBegin( GL_QUADS );
-        glVertex3fv( (pos - g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (pos + g_app->m_camera->GetRight()*size).GetData() );
-        glVertex3fv( (pos + g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (pos - g_app->m_camera->GetRight()*size).GetData() );
+        glVertex3fv( (pos - g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (pos + g_camera->GetRight()*size).GetData() );
+        glVertex3fv( (pos + g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (pos - g_camera->GetRight()*size).GetData() );
     glEnd();
 
     size = spiritOuterSize;
     glColor4ub(150, 50, 25, outerAlpha );
 
     glBegin( GL_QUADS );
-        glVertex3fv( (pos - g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (pos + g_app->m_camera->GetRight()*size).GetData() );
-        glVertex3fv( (pos + g_app->m_camera->GetUp()*size).GetData() );
-        glVertex3fv( (pos - g_app->m_camera->GetRight()*size).GetData() );
+        glVertex3fv( (pos - g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (pos + g_camera->GetRight()*size).GetData() );
+        glVertex3fv( (pos + g_camera->GetUp()*size).GetData() );
+        glVertex3fv( (pos - g_camera->GetRight()*size).GetData() );
     glEnd();
 }
 
@@ -144,15 +145,15 @@ void SpawnBuilding::RenderAlphas( float _predictionTime )
     for( int i = 0; i < m_links.Size(); ++i )
     {
         SpawnBuildingLink *link = m_links[i];
-        SpawnBuilding *building = (SpawnBuilding *) g_app->m_location->GetBuilding( link->m_targetBuildingId );
+        SpawnBuilding *building = (SpawnBuilding *) g_location->GetBuilding( link->m_targetBuildingId );
         if( building )
         {
             Vector3 theirPos = building->GetSpiritLink();
 
-            Vector3 camToOurPos = g_app->m_camera->GetPos() - ourPos;
+            Vector3 camToOurPos = g_camera->GetPos() - ourPos;
             Vector3 ourPosRight = camToOurPos ^ ( theirPos - ourPos );
 
-            Vector3 camToTheirPos = g_app->m_camera->GetPos() - theirPos;
+            Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
             Vector3 theirPosRight = camToTheirPos ^ ( theirPos - ourPos );
 
             glDisable   ( GL_CULL_FACE );
@@ -235,7 +236,7 @@ LList<int> *SpawnBuilding::ExploreLinks()
         SpawnBuildingLink *link = m_links[i];
         link->m_targets.Empty();
 
-        SpawnBuilding *target = (SpawnBuilding *) g_app->m_location->GetBuilding( link->m_targetBuildingId );
+        SpawnBuilding *target = (SpawnBuilding *) g_location->GetBuilding( link->m_targetBuildingId );
         if( target )
         {
             LList<int> *availableLinks = target->ExploreLinks();
@@ -311,7 +312,7 @@ bool SpawnBuilding::Advance()
             {
                 link->m_spirits.RemoveData(j);
                 --j;
-                SpawnBuilding *building = (SpawnBuilding *) g_app->m_location->GetBuilding( link->m_targetBuildingId );
+                SpawnBuilding *building = (SpawnBuilding *) g_location->GetBuilding( link->m_targetBuildingId );
                 if( building ) building->TriggerSpirit( spirit );
             }
         }
@@ -380,7 +381,7 @@ MasterSpawnPoint::MasterSpawnPoint()
 
 MasterSpawnPoint *MasterSpawnPoint::GetMasterSpawnPoint()
 {
-    Building *building = g_app->m_location->GetBuilding( s_masterSpawnPointId );
+    Building *building = g_location->GetBuilding( s_masterSpawnPointId );
     if( building && building->m_type == TypeSpawnPointMaster )
     {
         return (MasterSpawnPoint *) building;
@@ -420,11 +421,11 @@ bool MasterSpawnPoint::Advance()
 
     if( m_isGlobal )
     {
-        for( int i = 0; i < g_app->m_location->m_spirits.Size(); ++i )
+        for( int i = 0; i < g_location->m_spirits.Size(); ++i )
         {
-            if( g_app->m_location->m_spirits.ValidIndex(i) )
+            if( g_location->m_spirits.ValidIndex(i) )
             {
-                Spirit *s = g_app->m_location->m_spirits.GetPointer(i);
+                Spirit *s = g_location->m_spirits.GetPointer(i);
                 if( s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating )
                 {
                     s->SkipStage();
@@ -436,12 +437,12 @@ bool MasterSpawnPoint::Advance()
     //
     // Have the red guys been wiped out?
 
-    if( g_app->m_location->m_teams[1].m_teamType != Team::TeamTypeUnused )
+    if( g_location->m_teams[1].m_teamType != Team::TeamTypeUnused )
     {
-        int numRed = g_app->m_location->m_teams[1].m_others.NumUsed();
+        int numRed = g_location->m_teams[1].m_others.NumUsed();
         if( numRed < 10 )
         {
-            GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
             if( gb ) gb->m_online = true;
         }
     }
@@ -473,9 +474,9 @@ char const *MasterSpawnPoint::GetObjectiveCounter()
 {
     static char result[256];
 
-    if( g_app->m_location->m_teams[1].m_teamType != Team::TeamTypeUnused )
+    if( g_location->m_teams[1].m_teamType != Team::TeamTypeUnused )
     {
-        int numRed = g_app->m_location->m_teams[1].m_others.NumUsed();
+        int numRed = g_location->m_teams[1].m_others.NumUsed();
         sprintf( result, "%s : %d", LANGUAGEPHRASE("objective_redpopulation"), numRed );
     }
     else
@@ -516,11 +517,11 @@ bool SpawnPoint::PopulationLocked()
     {
         m_populationLock = -2;
 
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 if( building && building->m_type == TypeSpawnPopulationLock )
                 {
                     SpawnPopulationLock *lock = (SpawnPopulationLock *) building;
@@ -541,7 +542,7 @@ bool SpawnPoint::PopulationLocked()
 
     if( m_populationLock > 0 )
     {
-        SpawnPopulationLock *lock = (SpawnPopulationLock *) g_app->m_location->GetBuilding( m_populationLock );
+        SpawnPopulationLock *lock = (SpawnPopulationLock *) g_location->GetBuilding( m_populationLock );
         if( lock && m_id.GetTeamId() != 255 &&
             lock->m_teamCount[ m_id.GetTeamId() ] >= lock->m_maxPopulation )
         {
@@ -609,7 +610,7 @@ void SpawnPoint::TriggerSpirit( SpawnBuildingSpirit *_spirit )
         {
             Matrix34 mat( m_front, m_up, m_pos );
             Matrix34 doorMat = m_doorMarker->GetWorldMatrix(mat);
-            g_app->m_location->SpawnEntities( doorMat.pos, m_id.GetTeamId(), -1, Entity::TypeDarwinian, 1, g_zeroVector, 0.0f );
+            g_location->SpawnEntities( doorMat.pos, m_id.GetTeamId(), -1, Entity::TypeDarwinian, 1, g_zeroVector, 0.0f );
         }
 
         delete _spirit;
@@ -684,8 +685,8 @@ void SpawnPoint::RenderAlphas( float _predictionTime )
 {
     SpawnBuilding::RenderAlphas( _predictionTime );
 
-    Vector3 camUp = g_app->m_camera->GetUp();
-    Vector3 camRight = g_app->m_camera->GetRight();
+    Vector3 camUp = g_camera->GetUp();
+    Vector3 camRight = g_camera->GetRight();
 
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
@@ -751,11 +752,11 @@ void SpawnPoint::RenderPorts()
         // Render the status light
 
         float size = 6.0f;
-        Vector3 camR = g_app->m_camera->GetRight() * size;
-        Vector3 camU = g_app->m_camera->GetUp() * size;
+        Vector3 camR = g_camera->GetRight() * size;
+        Vector3 camU = g_camera->GetUp() * size;
 
         Vector3 statusPos = s_controlPadStatus->GetWorldMatrix( mat ).pos;
-        statusPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
+        statusPos.y = g_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
         statusPos.y += 5.0f;
 
         WorldObjectId occupantId = GetPortOccupant(i);
@@ -765,7 +766,7 @@ void SpawnPoint::RenderPorts()
         }
         else
         {
-            RGBAColour teamColour = g_app->m_location->m_teams[occupantId.GetTeamId()].m_colour;
+            RGBAColour teamColour = g_location->m_teams[occupantId.GetTeamId()].m_colour;
             glColor4ubv( teamColour.GetData() );
         }
 
@@ -833,11 +834,11 @@ bool SpawnPopulationLock::Advance()
 
         int totalOverpopulation = 0;
 
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 if( building && building->m_type == TypeSpawnPopulationLock )
                 {
                     SpawnPopulationLock *lock = (SpawnPopulationLock *) building;
@@ -873,7 +874,7 @@ bool SpawnPopulationLock::Advance()
         potentialTeamId < NUM_TEAMS )
     {
         m_recountTeamId = potentialTeamId;
-        m_teamCount[potentialTeamId] = g_app->m_location->m_entityGrid->GetNumFriends( m_pos.x, m_pos.z, m_searchRadius, m_recountTeamId );
+        m_teamCount[potentialTeamId] = g_location->m_entityGrid->GetNumFriends( m_pos.x, m_pos.z, m_searchRadius, m_recountTeamId );
     }
 
     return Building::Advance();
@@ -911,8 +912,8 @@ void SpawnPopulationLock::RenderAlphas( float _predictionTime )
 
 #ifdef LOCATION_EDITOR
         if( g_app->m_editing &&
-            g_app->m_locationEditor->m_mode == LocationEditor::ModeBuilding &&
-            g_app->m_locationEditor->m_selectionId == m_id.GetUniqueId() )
+            g_locationEditor->m_mode == LocationEditor::ModeBuilding &&
+            g_locationEditor->m_selectionId == m_id.GetUniqueId() )
         {
             RenderSphere( m_pos, m_searchRadius, RGBAColour(255,255,255,100) );
         }

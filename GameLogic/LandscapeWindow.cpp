@@ -11,12 +11,12 @@
 #include "InputField.h"
 #include "LandscapeWindow.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Renderer.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 #ifdef LOCATION_EDITOR
@@ -37,8 +37,8 @@ public:
 	{
 		if (stricmp(m_name, LANGUAGEPHRASE("editor_generate")) == 0)
 		{
-			LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-			g_app->m_location->m_landscape.Init(def);
+			LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+			g_location->m_landscape.Init(def);
 		}
 		else if (stricmp(m_name, LANGUAGEPHRASE("editor_randomise")) == 0)
 		{
@@ -48,26 +48,26 @@ public:
 			{
 				randomSeed->Refresh();
 			}
-			LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-			g_app->m_location->m_landscape.Init(def);
+			LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+			g_location->m_landscape.Init(def);
 		}
         else if( stricmp(m_name, LANGUAGEPHRASE("editor_delete")) == 0 )
         {
             int tileId = ((LandscapeTileEditWindow *) m_parent)->m_tileId;
-            g_app->m_location->m_landscape.DeleteTile( tileId );
+            g_location->m_landscape.DeleteTile( tileId );
             EclRemoveWindow( m_parent->m_name );
         }
         else if( stricmp(m_name, LANGUAGEPHRASE("editor_clone")) == 0 )
         {
             Vector3 rayStart;
 	        Vector3 rayDir;
-	        g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2, g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	        g_camera->GetClickRay(g_renderer->ScreenW()/2, g_renderer->ScreenH()/2, &rayStart, &rayDir);
             Vector3 _pos;
-            g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+            g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
-            LandscapeDef *landscapeDef = &(g_app->m_location->m_levelFile->m_landscape);
+            LandscapeDef *landscapeDef = &(g_location->m_levelFile->m_landscape);
     	    LandscapeTile *tile = new LandscapeTile();
-    	    g_app->m_location->m_levelFile->m_landscape.m_tiles.PutDataAtEnd(tile);
+    	    g_location->m_levelFile->m_landscape.m_tiles.PutDataAtEnd(tile);
             tile->m_size = m_def->m_size;
             tile->m_posX = _pos.x - tile->m_size/2;
             tile->m_posY = m_def->m_posY;
@@ -79,8 +79,8 @@ public:
             tile->m_lowlandSmoothingFactor = m_def->m_lowlandSmoothingFactor;
             tile->m_generationMethod = m_def->m_generationMethod;
 
-		    LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-            g_app->m_location->m_landscape.Init(def);
+		    LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+            g_location->m_landscape.Init(def);
 
         }
         else if( stricmp(m_name, LANGUAGEPHRASE("editor_guidegrid")) == 0 )
@@ -108,7 +108,7 @@ LandscapeTileEditWindow::LandscapeTileEditWindow( char *name, int tileId )
 
 LandscapeTileEditWindow::~LandscapeTileEditWindow()
 {
-    g_app->m_locationEditor->m_selectionId = -1;
+    g_locationEditor->m_selectionId = -1;
 }
 
 
@@ -116,8 +116,8 @@ void LandscapeTileEditWindow::Create()
 {
 	SpeciesWindow::Create();
 
-	m_tileDef = g_app->m_location->m_levelFile->m_landscape.m_tiles.GetData(m_tileId);
-	Landscape *land = &g_app->m_location->m_landscape;
+	m_tileDef = g_location->m_levelFile->m_landscape.m_tiles.GetData(m_tileId);
+	Landscape *land = &g_location->m_landscape;
 
 	int height = 5;
 	int pitch = 17;
@@ -178,8 +178,8 @@ public:
 
 	void MouseUp()
 	{
-		g_app->m_location->m_levelFile->m_landscape.m_flattenAreas.RemoveData(m_areaId);
-		g_app->m_locationEditor->m_selectionId = -1;
+		g_location->m_levelFile->m_landscape.m_flattenAreas.RemoveData(m_areaId);
+		g_locationEditor->m_selectionId = -1;
         EclRemoveWindow( m_parent->m_name );
 	}
 };
@@ -198,7 +198,7 @@ LandscapeFlattenAreaEditWindow::LandscapeFlattenAreaEditWindow(char const *_name
 
 LandscapeFlattenAreaEditWindow::~LandscapeFlattenAreaEditWindow()
 {
-    g_app->m_locationEditor->m_selectionId = -1;
+    g_locationEditor->m_selectionId = -1;
 }
 
 
@@ -206,7 +206,7 @@ void LandscapeFlattenAreaEditWindow::Create()
 {
 	SpeciesWindow::Create();
 
-	m_areaDef = g_app->m_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_areaId);
+	m_areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_areaId);
 
 	int height = 5;
 	int pitch = 17;
@@ -238,13 +238,13 @@ public:
     {
 	    Vector3 rayStart;
 	    Vector3 rayDir;
-	    g_app->m_camera->GetClickRay(g_app->m_renderer->ScreenW()/2, g_app->m_renderer->ScreenH()/2, &rayStart, &rayDir);
+	    g_camera->GetClickRay(g_renderer->ScreenW()/2, g_renderer->ScreenH()/2, &rayStart, &rayDir);
         Vector3 _pos;
-        g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+        g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
-        LandscapeDef *landscapeDef = &(g_app->m_location->m_levelFile->m_landscape);
+        LandscapeDef *landscapeDef = &(g_location->m_levelFile->m_landscape);
     	LandscapeTile *tile = new LandscapeTile();
-    	g_app->m_location->m_levelFile->m_landscape.m_tiles.PutDataAtEnd(tile);
+    	g_location->m_levelFile->m_landscape.m_tiles.PutDataAtEnd(tile);
         tile->m_size = 384;
         tile->m_posX = _pos.x - tile->m_size/2;
         tile->m_posY = 0.0f;
@@ -255,8 +255,8 @@ public:
         //tile->m_lowlandSmoothingFactor = 1.0f;
         // Moved to LandscapeTile constructor
 
-		LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-        g_app->m_location->m_landscape.Init(def);
+		LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+        g_location->m_landscape.Init(def);
     }
 };
 
@@ -270,21 +270,21 @@ class NewFlattenAreaButton : public SpeciesButton
 public:
     void MouseUp()
     {
-		int const screenH = g_app->m_renderer->ScreenH();
-		int const screenW = g_app->m_renderer->ScreenW();
+		int const screenH = g_renderer->ScreenH();
+		int const screenW = g_renderer->ScreenW();
 	    Vector3 rayStart;
 	    Vector3 rayDir;
-	    g_app->m_camera->GetClickRay(screenW/2, screenH/2, &rayStart, &rayDir);
+	    g_camera->GetClickRay(screenW/2, screenH/2, &rayStart, &rayDir);
         Vector3 _pos;
-        g_app->m_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
+        g_location->m_landscape.RayHit( rayStart, rayDir, &_pos );
 
-        LandscapeDef *landscapeDef = &(g_app->m_location->m_levelFile->m_landscape);
+        LandscapeDef *landscapeDef = &(g_location->m_levelFile->m_landscape);
     	LandscapeFlattenArea *def = new LandscapeFlattenArea();
-    	g_app->m_location->m_levelFile->m_landscape.m_flattenAreas.PutDataAtEnd(def);
+    	g_location->m_levelFile->m_landscape.m_flattenAreas.PutDataAtEnd(def);
         def->m_centre = _pos;
         def->m_size = 40.0f;
 
-        g_app->m_location->m_landscape.Init(landscapeDef);
+        g_location->m_landscape.Init(landscapeDef);
     }
 };
 
@@ -302,7 +302,7 @@ public:
         //
         // Landscape and tiles
 
-        LevelFile *levelFile = g_app->m_location->m_levelFile;
+        LevelFile *levelFile = g_location->m_levelFile;
 
         for( int i = 0; i < levelFile->m_landscape.m_tiles.Size(); ++i )
         {
@@ -315,7 +315,7 @@ public:
         levelFile->m_landscape.m_worldSizeX *= m_scaleFactor;
         levelFile->m_landscape.m_worldSizeZ *= m_scaleFactor;
 
-    	g_app->m_location->m_landscape.Init(&levelFile->m_landscape);
+    	g_location->m_landscape.Init(&levelFile->m_landscape);
 
         //
         // Buildings
@@ -363,7 +363,7 @@ LandscapeEditWindow::LandscapeEditWindow( char const *name )
 
 LandscapeEditWindow::~LandscapeEditWindow()
 {
-	g_app->m_locationEditor->RequestMode(LocationEditor::ModeNone);
+	g_locationEditor->RequestMode(LocationEditor::ModeNone);
 	EclRemoveWindow(LANGUAGEPHRASE("editor_landscapetile"));
     EclRemoveWindow(LANGUAGEPHRASE("editor_guidegrid"));
 }
@@ -407,7 +407,7 @@ void LandscapeEditWindow::Create()
 #define INTGR InputField::TypeInt
 #define Y height += pitch
 
-	LandscapeDef *landDef = &g_app->m_location->m_levelFile->m_landscape;
+	LandscapeDef *landDef = &g_location->m_levelFile->m_landscape;
     CreateValueControl( LANGUAGEPHRASE("editor_outsideheight"), FLOAT, &landDef->m_outsideHeight,	Y, 1.0f,	-100,	100,	gen );
     CreateValueControl( LANGUAGEPHRASE("editor_cellsize"),		FLOAT, &landDef->m_cellSize,		Y, 1,		1.0f,	100.0f,	gen );
     CreateValueControl( LANGUAGEPHRASE("editor_worldsizex"),	INTGR, &landDef->m_worldSizeX,		Y, 10,		1,		1e6,	gen );
@@ -417,7 +417,7 @@ void LandscapeEditWindow::Create()
 #undef INTGR
 #undef Y
 
-    CreateValueControl( LANGUAGEPHRASE("editor_movebuildings"), InputField::TypeInt, &g_app->m_locationEditor->m_moveBuildingsWithLandscape,
+    CreateValueControl( LANGUAGEPHRASE("editor_movebuildings"), InputField::TypeInt, &g_locationEditor->m_moveBuildingsWithLandscape,
                         height+=pitch, 1, 0, 1 );
 }
 
@@ -435,8 +435,8 @@ public:
         {
             LandscapeGuideGridWindow *parent = (LandscapeGuideGridWindow *) m_parent;
 	        parent->m_tileDef->GuideGridSetPower(parent->m_guideGridPower);
-			LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-            g_app->m_location->m_landscape.Init(def);
+			LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+            g_location->m_landscape.Init(def);
 
             parent->Remove();
             parent->Create();
@@ -729,7 +729,7 @@ LandscapeGuideGridWindow::~LandscapeGuideGridWindow()
 
 void LandscapeGuideGridWindow::Create()
 {
-	m_tileDef = g_app->m_location->m_levelFile->m_landscape.m_tiles.GetData(m_tileId);
+	m_tileDef = g_location->m_levelFile->m_landscape.m_tiles.GetData(m_tileId);
     m_guideGridPower = m_tileDef->GuideGridGetPower();
 
     int gridW = m_w - 80;

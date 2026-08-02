@@ -64,7 +64,7 @@
 #include "Switch.h"
 #include "GenericHub.h"
 #include "FeedingTube.h"
-
+#include "WorldPointers.h"
 
 
 Shape *Building::s_controlPad = nullptr;
@@ -99,7 +99,7 @@ void Building::Initialise( Building *_template )
 {
     m_id        = _template->m_id;
     m_pos       = _template->m_pos;
-    m_pos.y     = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    m_pos.y     = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     m_front     = _template->m_front;
 	m_up        = _template->m_up;
     m_dynamic   = _template->m_dynamic;
@@ -121,7 +121,7 @@ void Building::Initialise( Building *_template )
         m_radius = 13.0f;
     }
 
-    GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_requestedLocationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_requestedLocationId );
     if( gb ) m_id.SetTeamId( gb->m_teamId );
 
     g_soundSystem->TriggerBuildingEvent( this, "Create" );
@@ -130,7 +130,7 @@ void Building::Initialise( Building *_template )
 
 void Building::SetDetail( int _detail )
 {
-    m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
     if( m_shape )
     {
@@ -208,7 +208,7 @@ void Building::SetShapePorts( ShapeFragment *_fragment )
             port->m_marker = marker;
             port->m_mat = marker->GetWorldMatrix(buildingMat);
             port->m_mat.pos = PushFromBuilding( port->m_mat.pos, 5.0f );
-            port->m_mat.pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( port->m_mat.pos.x, port->m_mat.pos.z );
+            port->m_mat.pos.y = g_location->m_landscape.m_heightMap->GetValue( port->m_mat.pos.x, port->m_mat.pos.z );
 
             for( int t = 0; t < NUM_TEAMS; ++t )
             {
@@ -241,13 +241,13 @@ void Building::ReprogramComplete()
 {
     g_soundSystem->TriggerBuildingEvent( this, "ReprogramComplete" );
 
-    GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
     if( gb )
     {
         gb->m_online = !gb->m_online;
     }
 
-    g_app->m_globalWorld->EvaluateEvents();
+    g_globalWorld->EvaluateEvents();
 }
 
 
@@ -255,7 +255,7 @@ void Building::SetTeamId( int _teamId )
 {
     m_id.SetTeamId( _teamId );
 
-    GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
     if( gb ) gb->m_teamId = _teamId;
 
     g_soundSystem->TriggerBuildingEvent( this, "ChangeTeam" );
@@ -288,7 +288,7 @@ Vector3 Building::PushFromBuilding( Vector3 const &pos, float _radius )
 
 bool Building::IsInView()
 {
-    return( g_app->m_camera->SphereInViewFrustum( m_centrePos, m_radius ) );
+    return( g_camera->SphereInViewFrustum( m_centrePos, m_radius ) );
 }
 
 
@@ -350,8 +350,8 @@ void Building::RenderLights()
 	            Vector3 lightPos = worldMat.pos;
 
                 float signalSize = 6.0f;
-                Vector3 camR = g_app->m_camera->GetRight();
-                Vector3 camU = g_app->m_camera->GetUp();
+                Vector3 camR = g_camera->GetRight();
+                Vector3 camU = g_camera->GetUp();
 
                 if( m_id.GetTeamId() == 255 )
 	            {
@@ -359,7 +359,7 @@ void Building::RenderLights()
 	            }
 	            else
 	            {
-		            glColor3ubv( g_app->m_location->m_teams[ m_id.GetTeamId() ].m_colour.GetData() );
+		            glColor3ubv( g_location->m_teams[ m_id.GetTeamId() ].m_colour.GetData() );
 	            }
 
                 glEnable        ( GL_TEXTURE_2D );
@@ -407,13 +407,13 @@ void Building::EvaluatePorts()
         // Look for a valid Darwinian near the port
 
         int numFound;
-        if( g_app->m_location->m_entityGrid )
+        if( g_location->m_entityGrid )
         {
-            WorldObjectId *ids = g_app->m_location->m_entityGrid->GetNeighbours( port->m_mat.pos.x, port->m_mat.pos.z, 5.0f, &numFound );
+            WorldObjectId *ids = g_location->m_entityGrid->GetNeighbours( port->m_mat.pos.x, port->m_mat.pos.z, 5.0f, &numFound );
             for( int i = 0; i < numFound; ++i )
             {
                 WorldObjectId id = ids[i];
-                Entity *entity = g_app->m_location->GetEntity( id );
+                Entity *entity = g_location->GetEntity( id );
                 if( entity && entity->m_type == Entity::TypeDarwinian )
                 {
                     Darwinian *darwinian = (Darwinian *) entity;
@@ -461,15 +461,15 @@ void Building::RenderPorts()
         //
         // Render the port shape
 
-        portPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( portPos.x, portPos.z ) + 0.5f;
+        portPos.y = g_location->m_landscape.m_heightMap->GetValue( portPos.x, portPos.z ) + 0.5f;
         Vector3 portUp = g_upVector;
         Matrix34 mat( portFront, portUp, portPos );
 
         if( buildingDetail < 3 )
         {
-            g_app->m_renderer->SetObjectLighting();
+            g_renderer->SetObjectLighting();
             s_controlPad->Render( 0.0f, mat );
-            g_app->m_renderer->UnsetObjectLighting();
+            g_renderer->UnsetObjectLighting();
         }
 
 
@@ -478,8 +478,8 @@ void Building::RenderPorts()
 
         float size = 6.0f;
 
-        Vector3 camR = g_app->m_camera->GetRight() * size;
-        Vector3 camU = g_app->m_camera->GetUp() * size;
+        Vector3 camR = g_camera->GetRight() * size;
+        Vector3 camU = g_camera->GetUp() * size;
 
         Vector3 statusPos = s_controlPadStatus->GetWorldMatrix( mat ).pos;
 
@@ -531,7 +531,7 @@ void Building::RenderLink()
     int buildingId = GetBuildingLink();
     if( buildingId != -1 )
     {
-        Building *linkBuilding = g_app->m_location->GetBuilding( buildingId );
+        Building *linkBuilding = g_location->GetBuilding( buildingId );
         if( linkBuilding )
         {
 			Vector3 start = m_pos;
@@ -558,7 +558,7 @@ void Building::Destroy( float _intensity )
 	{
 		g_explosionManager.AddExplosion( m_shape, mat );
 	}
-	g_app->m_location->Bang( m_pos, _intensity, _intensity/4.0f );
+	g_location->Bang( m_pos, _intensity, _intensity/4.0f );
 
     g_soundSystem->TriggerBuildingEvent( this, "Explode" );
 
@@ -568,7 +568,7 @@ void Building::Destroy( float _intensity )
 		vel.x += syncsfrand(100.0f);
 		vel.y += syncsfrand(100.0f);
 		vel.z += syncsfrand(100.0f);
-		g_app->m_particleSystem->CreateParticle(m_pos, vel, Particle::TypeExplosionCore, 100.0f);
+		g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeExplosionCore, 100.0f);
 	}
 }
 

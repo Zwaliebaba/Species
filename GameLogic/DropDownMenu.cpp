@@ -4,10 +4,10 @@
 
 #include <string.h>
 
-#include "App.h"
 #include "Renderer.h"
 
 #include "DropDownMenu.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -236,7 +236,7 @@ void DropDownMenu::CreateMenu()
     window->SetPosition( m_parent->m_x + m_x + m_w, m_parent->m_y + m_y );
     EclRegisterWindow( window );
 
-    int screenH = g_app->m_renderer->ScreenH();
+    int screenH = g_renderer->ScreenH();
     int numColumnsRequired = 1 + ( m_h * m_options.Size() ) / (screenH * 0.8f);
     int numPerColumn =  ceil( (float) m_options.Size() / (float) numColumnsRequired );
 

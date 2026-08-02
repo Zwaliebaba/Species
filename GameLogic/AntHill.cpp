@@ -22,6 +22,7 @@
 #include "SpawnPoint.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
 
 
 AntHill::AntHill()
@@ -86,7 +87,7 @@ void AntHill::Damage ( float _damage )
                 Vector3 vel = ( pos - m_pos );
                 vel.SetLength( syncfrand(50.0f) );
 
-                g_app->m_location->SpawnSpirit( pos, vel, m_id.GetTeamId(), WorldObjectId() );
+                g_location->SpawnSpirit( pos, vel, m_id.GetTeamId(), WorldObjectId() );
             }
 
             g_soundSystem->TriggerBuildingEvent( this, "Explode" );
@@ -128,11 +129,11 @@ bool AntHill::TargettedEntity( WorldObjectId _id )
 
 bool AntHill::SearchForSpirits( Vector3 &_pos )
 {
-    for( int i = 0; i < g_app->m_location->m_spirits.Size(); ++i )
+    for( int i = 0; i < g_location->m_spirits.Size(); ++i )
     {
-        if( g_app->m_location->m_spirits.ValidIndex(i) )
+        if( g_location->m_spirits.ValidIndex(i) )
         {
-            Spirit *s = g_app->m_location->m_spirits.GetPointer(i);
+            Spirit *s = g_location->m_spirits.GetPointer(i);
             float theDist = ( s->m_pos - m_pos ).Mag();
 
             if( theDist <= ANTHILL_SEARCHRANGE &&
@@ -153,12 +154,12 @@ bool AntHill::SearchForSpirits( Vector3 &_pos )
 bool AntHill::SearchForDarwinians( Vector3 &_pos, WorldObjectId &_id )
 {
     int numFound;
-    WorldObjectId *ids = g_app->m_location->m_entityGrid->GetEnemies( m_pos.x, m_pos.z, ANTHILL_SEARCHRANGE, &numFound, m_id.GetTeamId() );
+    WorldObjectId *ids = g_location->m_entityGrid->GetEnemies( m_pos.x, m_pos.z, ANTHILL_SEARCHRANGE, &numFound, m_id.GetTeamId() );
 
     for( int i = 0; i < numFound; ++i )
     {
         WorldObjectId id = ids[i];
-        Entity *entity = g_app->m_location->GetEntity( id );
+        Entity *entity = g_location->GetEntity( id );
         if( entity && entity->m_type == Entity::TypeDarwinian )
         {
             Darwinian *darwinian = (Darwinian *) entity;
@@ -182,12 +183,12 @@ bool AntHill::SearchForDarwinians( Vector3 &_pos, WorldObjectId &_id )
 bool AntHill::SearchForEnemies( Vector3 &_pos, WorldObjectId &_id )
 {
     int numFound;
-    WorldObjectId *ids = g_app->m_location->m_entityGrid->GetEnemies( m_pos.x, m_pos.z, ANTHILL_SEARCHRANGE, &numFound, m_id.GetTeamId() );
+    WorldObjectId *ids = g_location->m_entityGrid->GetEnemies( m_pos.x, m_pos.z, ANTHILL_SEARCHRANGE, &numFound, m_id.GetTeamId() );
 
     for( int i = 0; i < numFound; ++i )
     {
         WorldObjectId id = ids[i];
-        Entity *entity = g_app->m_location->GetEntity( id );
+        Entity *entity = g_location->GetEntity( id );
 
         float theDist = ( entity->m_pos - m_pos ).Mag();
 
@@ -211,7 +212,7 @@ bool AntHill::SearchForScoutArea ( Vector3 &_pos )
 	float theta = syncfrand(M_PI * 2);
     scoutPos.x += radius * sinf(theta);
 	scoutPos.z += radius * cosf(theta);
-    scoutPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( scoutPos.x, scoutPos.z );
+    scoutPos.y = g_location->m_landscape.m_heightMap->GetValue( scoutPos.x, scoutPos.z );
 
     if( scoutPos.y > 0 )
     {
@@ -233,11 +234,11 @@ bool AntHill::PopulationLocked()
     {
         m_populationLock = -2;
 
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 if( building && building->m_type == TypeSpawnPopulationLock )
                 {
                     SpawnPopulationLock *lock = (SpawnPopulationLock *) building;
@@ -258,7 +259,7 @@ bool AntHill::PopulationLocked()
 
     if( m_populationLock > 0 )
     {
-        SpawnPopulationLock *lock = (SpawnPopulationLock *) g_app->m_location->GetBuilding( m_populationLock );
+        SpawnPopulationLock *lock = (SpawnPopulationLock *) g_location->GetBuilding( m_populationLock );
         if( lock && m_id.GetTeamId() != 255 &&
             lock->m_teamCount[ m_id.GetTeamId() ] >= lock->m_maxPopulation )
         {
@@ -278,9 +279,9 @@ bool AntHill::Advance()
     //
     // Is the world awake yet ?
 
-    if( !g_app->m_location ) return false;
-    if( !g_app->m_location->m_teams ) return false;
-    if( g_app->m_location->m_teams[ m_id.GetTeamId() ].m_teamType != Team::TeamTypeCPU ) return false;
+    if( !g_location ) return false;
+    if( !g_location->m_teams ) return false;
+    if( g_location->m_teams[ m_id.GetTeamId() ].m_teamType != Team::TeamTypeCPU ) return false;
 
 
     bool popLocked = PopulationLocked();
@@ -322,19 +323,19 @@ bool AntHill::Advance()
         m_numAntsInside > 0 )
     {
 
-        Unit *unit = g_app->m_location->GetUnit( WorldObjectId( m_id.GetTeamId(), m_unitId, -1, -1 ) );
+        Unit *unit = g_location->GetUnit( WorldObjectId( m_id.GetTeamId(), m_unitId, -1, -1 ) );
         if( !unit )
         {
-            unit = g_app->m_location->m_teams[m_id.GetTeamId()].NewUnit( Entity::TypeArmyAnt, m_numAntsInside, &m_unitId, m_pos );
+            unit = g_location->m_teams[m_id.GetTeamId()].NewUnit( Entity::TypeArmyAnt, m_numAntsInside, &m_unitId, m_pos );
         }
 
         int chosenIndex = syncrand() % m_objectives.Size();
         AntObjective *objective = m_objectives[chosenIndex];
         Vector3 spawnPos = m_pos;
-        spawnPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( spawnPos.x, spawnPos.z );
+        spawnPos.y = g_location->m_landscape.m_heightMap->GetValue( spawnPos.x, spawnPos.z );
 
-        WorldObjectId spawnedId = g_app->m_location->SpawnEntities( spawnPos, m_id.GetTeamId(), m_unitId, Entity::TypeArmyAnt, 1, g_zeroVector, 10.0f );
-        ArmyAnt *ant = (ArmyAnt *) g_app->m_location->GetEntity( spawnedId );
+        WorldObjectId spawnedId = g_location->SpawnEntities( spawnPos, m_id.GetTeamId(), m_unitId, Entity::TypeArmyAnt, 1, g_zeroVector, 10.0f );
+        ArmyAnt *ant = (ArmyAnt *) g_location->GetEntity( spawnedId );
 
         ant->m_buildingId = m_id.GetUniqueId();
         ant->m_front = ( ant->m_pos - m_pos ).Normalise();
@@ -346,7 +347,7 @@ bool AntHill::Advance()
     	ant->m_wayPoint.x += radius * sinf(theta);
 	    ant->m_wayPoint.z += radius * cosf(theta);
         ant->m_wayPoint = ant->PushFromObstructions( ant->m_wayPoint );
-        ant->m_wayPoint.y = g_app->m_location->m_landscape.m_heightMap->GetValue( ant->m_wayPoint.x, ant->m_wayPoint.z );
+        ant->m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue( ant->m_wayPoint.x, ant->m_wayPoint.z );
 
         m_numAntsInside--;
 

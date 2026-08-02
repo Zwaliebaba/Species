@@ -19,6 +19,7 @@
 #include "SpawnPoint.h"
 #include "Darwinian.h"
 #include "BlueprintStore.h"
+#include "WorldPointers.h"
 
 
 AI::AI()
@@ -47,11 +48,11 @@ void AI::Begin()
 
     float startTime = GetHighResTime();
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeAITarget )
             {
                 AITarget *aiTarget = (AITarget *) building;
@@ -66,18 +67,18 @@ void AI::Begin()
     // eg if link A -> B exists, and link B -> C exists, then don't allow
     // link A -> C unless it is much shorter distance
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeAITarget )
             {
                 AITarget *a = (AITarget *) building;
                 for( int n = 0; n < a->m_neighbours.Size(); ++n )
                 {
                     int cId = a->m_neighbours[n];
-                    AITarget *c = (AITarget *) g_app->m_location->GetBuilding(cId);
+                    AITarget *c = (AITarget *) g_location->GetBuilding(cId);
                     DEBUG_ASSERT( c && c->m_type == Building::TypeAITarget );
                     float distanceAtoC = a->IsNearTo( cId );
 
@@ -86,7 +87,7 @@ void AI::Begin()
                         if( x != n )
                         {
                             int bId = a->m_neighbours[x];
-                            AITarget *b = (AITarget *) g_app->m_location->GetBuilding( bId );
+                            AITarget *b = (AITarget *) g_location->GetBuilding( bId );
                             DEBUG_ASSERT( b && b->m_type == Building::TypeAITarget );
                             float distanceAtoB = a->IsNearTo( bId );
                             float distanceBtoC = b->IsNearTo( cId );
@@ -112,7 +113,7 @@ void AI::Begin()
 
 int AI::FindTargetBuilding( int _fromTargetId, int _fromTeamId )
 {
-    AITarget *fromBuilding = (AITarget *) g_app->m_location->GetBuilding(_fromTargetId);
+    AITarget *fromBuilding = (AITarget *) g_location->GetBuilding(_fromTargetId);
     DEBUG_ASSERT( fromBuilding && fromBuilding->m_type == Building::TypeAITarget );
 
 
@@ -143,7 +144,7 @@ int AI::FindTargetBuilding( int _fromTargetId, int _fromTeamId )
         for( int i = 0; i < fromBuilding->m_neighbours.Size(); ++i )
         {
             int toBuildingId = fromBuilding->m_neighbours[i];
-            AITarget *target = (AITarget *) g_app->m_location->GetBuilding(toBuildingId);
+            AITarget *target = (AITarget *) g_location->GetBuilding(toBuildingId);
             DEBUG_ASSERT( target && target->m_type == Building::TypeAITarget );
 
             float thisPriority = target->m_priority[_fromTeamId];
@@ -164,18 +165,18 @@ int AI::FindNearestTarget( Vector3 const &_fromPos )
     float nearest = FLT_MAX;
     int id = -1;
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeAITarget )
             {
                 AITarget *target = (AITarget *) building;
                 float distance = ( target->m_pos - _fromPos ).Mag();
                 if( distance < nearest )
                 {
-                    if( g_app->m_location->IsWalkable( _fromPos, target->m_pos, true ) )
+                    if( g_location->IsWalkable( _fromPos, target->m_pos, true ) )
                     {
                         id = building->m_id.GetUniqueId();
                         nearest = distance;
@@ -195,7 +196,7 @@ bool AI::Advance( Unit *_unit )
     // Try to get Darwinians to stay near AI Targets
     // We can't do this for every darwinian every frame, so just do it for some
 
-    Team *team = &g_app->m_location->m_teams[m_id.GetTeamId()];
+    Team *team = &g_location->m_teams[m_id.GetTeamId()];
     int numRemaining = team->m_others.Size() * 0.02f;
     numRemaining = max( numRemaining, 1 );
 
@@ -212,7 +213,7 @@ bool AI::Advance( Unit *_unit )
                     darwinian->m_state == Darwinian::StateWorshipSpirit ||
                     darwinian->m_state == Darwinian::StateWatchingSpectacle )
                 {
-                    Building *nearestTarget = g_app->m_location->GetBuilding( FindNearestTarget(darwinian->m_pos) );
+                    Building *nearestTarget = g_location->GetBuilding( FindNearestTarget(darwinian->m_pos) );
                     if( nearestTarget )
                     {
                         float distance = ( nearestTarget->m_pos - darwinian->m_pos ).Mag();
@@ -224,7 +225,7 @@ bool AI::Advance( Unit *_unit )
 	                        float theta = syncfrand(M_PI * 2);
                             targetPos.x += radius * sinf(theta);
 	                        targetPos.z += radius * cosf(theta);
-                            targetPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(targetPos.x, targetPos.z);
+                            targetPos.y = g_location->m_landscape.m_heightMap->GetValue(targetPos.x, targetPos.z);
                             darwinian->GiveOrders( targetPos );
                         }
                     }
@@ -248,11 +249,11 @@ bool AI::Advance( Unit *_unit )
     // Look for buildings that are well defended
 
     LList<int> m_wellDefendedIds;
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeAITarget &&
                 building->m_id.GetTeamId() == m_id.GetTeamId() )
             {
@@ -277,14 +278,14 @@ bool AI::Advance( Unit *_unit )
     for( int i = 0; i < m_wellDefendedIds.Size(); ++i )
     {
         int buildingIndex = m_wellDefendedIds[i];
-        AITarget *target = (AITarget *) g_app->m_location->m_buildings[ buildingIndex ];
+        AITarget *target = (AITarget *) g_location->m_buildings[ buildingIndex ];
         int numFriends = target->m_friendCount[ m_id.GetTeamId() ];
         int numIdle = target->m_idleCount[ m_id.GetTeamId() ];
 
         int targetBuildingId = FindTargetBuilding( target->m_id.GetUniqueId(), m_id.GetTeamId() );
         if( targetBuildingId != -1 )
         {
-            AITarget *targetBuilding = (AITarget *) g_app->m_location->GetBuilding( targetBuildingId );
+            AITarget *targetBuilding = (AITarget *) g_location->GetBuilding( targetBuildingId );
             int enemyCount = targetBuilding->m_enemyCount[ m_id.GetTeamId() ];
             float sendChance = 1.5f * (float) enemyCount / (float) numIdle;
             sendChance = max( sendChance, 0.6f );
@@ -296,14 +297,14 @@ bool AI::Advance( Unit *_unit )
 	        float theta = syncfrand(M_PI * 2);
             targetPos.x += radius * sinf(theta);
 	        targetPos.z += radius * cosf(theta);
-            targetPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(targetPos.x, targetPos.z);
+            targetPos.y = g_location->m_landscape.m_heightMap->GetValue(targetPos.x, targetPos.z);
 
             int numFound;
-            WorldObjectId *ids = g_app->m_location->m_entityGrid->GetFriends( target->m_pos.x, target->m_pos.z, 150.0f, &numFound, m_id.GetTeamId() );
+            WorldObjectId *ids = g_location->m_entityGrid->GetFriends( target->m_pos.x, target->m_pos.z, 150.0f, &numFound, m_id.GetTeamId() );
             for( int j = 0; j < numFound; ++j )
             {
                 WorldObjectId id = ids[j];
-                Darwinian *darwinian = (Darwinian *) g_app->m_location->GetEntitySafe( id, TypeDarwinian );
+                Darwinian *darwinian = (Darwinian *) g_location->GetEntitySafe( id, TypeDarwinian );
                 if( darwinian && syncfrand(1.0f) < sendChance &&
                     (darwinian->m_state == Darwinian::StateIdle ||
                      darwinian->m_state == Darwinian::StateWorshipSpirit ||
@@ -326,14 +327,14 @@ void AI::Render( float _predictionTime )
 {
     if( g_app->m_editing )
     {
-        RGBAColour teamCol = g_app->m_location->m_teams[m_id.GetTeamId()].m_colour;
+        RGBAColour teamCol = g_location->m_teams[m_id.GetTeamId()].m_colour;
 
         Vector3 pos = m_pos;
         pos.y = 400.0f;
         RenderSphere( pos, 20.0f, teamCol );
 
-        int numGreen = g_app->m_location->m_teams[0].m_others.NumUsed();
-        int numRed = g_app->m_location->m_teams[1].m_others.NumUsed();
+        int numGreen = g_location->m_teams[0].m_others.NumUsed();
+        int numRed = g_location->m_teams[1].m_others.NumUsed();
 
         glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
         g_editorFont.DrawText3DCentre( pos-Vector3(0,30,0), 25, "Green : %d", numGreen );
@@ -366,16 +367,16 @@ void AITarget::RecalculateNeighbours()
 {
     m_neighbours.Empty();
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeAITarget &&
                 building != this )
             {
                 float distance = ( building->m_pos - m_pos ).Mag();
-                bool isWalkable = g_app->m_location->IsWalkable( m_pos, building->m_pos, true );
+                bool isWalkable = g_location->IsWalkable( m_pos, building->m_pos, true );
                 if( distance <= AITARGET_LINKRANGE && isWalkable )
                 {
                     m_neighbours.PutData( building->m_id.GetUniqueId() );
@@ -393,16 +394,16 @@ void AITarget::RecountTeams()
     memset( m_idleCount, 0, NUM_TEAMS*sizeof(int) );
 
     int numFound;
-    WorldObjectId *ids = g_app->m_location->m_entityGrid->GetNeighbours( m_pos.x, m_pos.z, 100.0f, &numFound );
+    WorldObjectId *ids = g_location->m_entityGrid->GetNeighbours( m_pos.x, m_pos.z, 100.0f, &numFound );
     for( int j = 0; j < numFound; ++j )
     {
         WorldObjectId id = ids[j];
-        Entity *entity = g_app->m_location->GetEntity( id );
+        Entity *entity = g_location->GetEntity( id );
         if( entity )
         {
             for( int t = 0; t < NUM_TEAMS; ++t )
             {
-                if( g_app->m_location->IsFriend( id.GetTeamId(), t ) )
+                if( g_location->IsFriend( id.GetTeamId(), t ) )
                     ++m_friendCount[t];
                 else
                     ++m_enemyCount[t];
@@ -455,7 +456,7 @@ float AITarget::IsNearTo( int _aiTargetId )
         int thisBuildingId = m_neighbours[i];
         if( thisBuildingId == _aiTargetId )
         {
-            Building *building = g_app->m_location->GetBuilding(thisBuildingId);
+            Building *building = g_location->GetBuilding(thisBuildingId);
             if( building && building->m_type == TypeAITarget )
             {
                 return (m_pos - building->m_pos).Mag();
@@ -496,7 +497,7 @@ void AITarget::RecalculatePriority()
             // Owned by nobody, so grab it quick
             m_priority[t] = 0.9f;
         }
-        else if( !g_app->m_location->IsFriend( m_id.GetTeamId(), t ) )
+        else if( !g_location->IsFriend( m_id.GetTeamId(), t ) )
         {
             // Owned by the enemy
             m_priority[t] = 0.8f;
@@ -521,7 +522,7 @@ void AITarget::RecalculatePriority()
                 for( int i = 0; i < m_neighbours.Size(); ++i )
                 {
                     int neighbourId = m_neighbours[i];
-                    AITarget *target = (AITarget *) g_app->m_location->GetBuilding(neighbourId);
+                    AITarget *target = (AITarget *) g_location->GetBuilding(neighbourId);
                     if( target && target->m_type == TypeAITarget )
                     {
                         prioritySum += target->m_priority[t];
@@ -551,7 +552,7 @@ void AITarget::Render( float _predictionTime )
     //for( int t = 0; t < NUM_TEAMS; ++t )
 //    {
 //        int t = 1;
-//        Team *team = &g_app->m_location->m_teams[t];
+//        Team *team = &g_location->m_teams[t];
 //        if( team->m_teamType != Team::TeamTypeUnused )
 //        {
 //            glColor3ubv( team->m_colour.GetData() );
@@ -575,7 +576,7 @@ void AITarget::RenderAlphas( float _predictionTime )
         for( int i = 0; i < m_neighbours.Size(); ++i )
         {
             int buildingId = m_neighbours[i];
-            Building *building = g_app->m_location->GetBuilding( buildingId );
+            Building *building = g_location->GetBuilding( buildingId );
             if( building && building->m_type == TypeAITarget )
             {
                 glBegin( GL_LINES );
@@ -585,7 +586,7 @@ void AITarget::RenderAlphas( float _predictionTime )
                 }
                 else
                 {
-                    RGBAColour col = g_app->m_location->m_teams[ m_id.GetTeamId() ].m_colour;
+                    RGBAColour col = g_location->m_teams[ m_id.GetTeamId() ].m_colour;
                     glColor4ub( col.r, col.g, col.b, 255 );
                 }
 
@@ -597,7 +598,7 @@ void AITarget::RenderAlphas( float _predictionTime )
                 }
                 else
                 {
-                    RGBAColour col = g_app->m_location->m_teams[ building->m_id.GetTeamId() ].m_colour;
+                    RGBAColour col = g_location->m_teams[ building->m_id.GetTeamId() ].m_colour;
                     glColor4ub( col.r, col.g, col.b, 255 );
                 }
 
@@ -612,8 +613,8 @@ void AITarget::RenderAlphas( float _predictionTime )
 
 #ifdef LOCATION_EDITOR
     if( g_app->m_editing &&
-        g_app->m_locationEditor->m_mode == LocationEditor::ModeBuilding &&
-        g_app->m_locationEditor->m_selectionId == m_id.GetUniqueId() )
+        g_locationEditor->m_mode == LocationEditor::ModeBuilding &&
+        g_locationEditor->m_selectionId == m_id.GetUniqueId() )
     {
         glDisable( GL_CULL_FACE );
         RenderSphere( m_pos, AITARGET_LINKRANGE, RGBAColour(255,100,100,255) );
@@ -681,11 +682,11 @@ bool AISpawnPoint::PopulationLocked()
     {
         m_populationLock = -2;
 
-        for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_location->m_buildings.Size(); ++i )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(i) )
+            if( g_location->m_buildings.ValidIndex(i) )
             {
-                Building *building = g_app->m_location->m_buildings[i];
+                Building *building = g_location->m_buildings[i];
                 if( building && building->m_type == TypeSpawnPopulationLock )
                 {
                     SpawnPopulationLock *lock = (SpawnPopulationLock *) building;
@@ -706,7 +707,7 @@ bool AISpawnPoint::PopulationLocked()
 
     if( m_populationLock > 0 )
     {
-        SpawnPopulationLock *lock = (SpawnPopulationLock *) g_app->m_location->GetBuilding( m_populationLock );
+        SpawnPopulationLock *lock = (SpawnPopulationLock *) g_location->GetBuilding( m_populationLock );
         if( lock && m_id.GetTeamId() != 255 &&
             lock->m_teamCount[ m_id.GetTeamId() ] >= lock->m_maxPopulation )
         {
@@ -727,7 +728,7 @@ bool AISpawnPoint::Advance()
 
     if( !m_online )
     {
-        Building *building = g_app->m_location->GetBuilding( m_activatorId );
+        Building *building = g_location->GetBuilding( m_activatorId );
         if( building && building->m_type == TypeBlueprintStore )
         {
             BlueprintStore *bpStore = (BlueprintStore *) building;
@@ -748,7 +749,7 @@ bool AISpawnPoint::Advance()
         }
         else
         {
-            GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_activatorId, g_app->m_locationId );
+            GlobalBuilding *gb = g_globalWorld->GetBuilding( m_activatorId, g_app->m_locationId );
             if( !gb ) m_online = true;
             if( gb && gb->m_online ) m_online = true;
         }
@@ -757,7 +758,7 @@ bool AISpawnPoint::Advance()
     bool greenVictory = false;
     if( m_online )
     {
-        LList <GlobalEventCondition *> *objectivesList = &g_app->m_location->m_levelFile->m_primaryObjectives;
+        LList <GlobalEventCondition *> *objectivesList = &g_location->m_levelFile->m_primaryObjectives;
         greenVictory = true;
 	    for (int i = 0; i < objectivesList->Size(); ++i)
 	    {
@@ -791,7 +792,7 @@ bool AISpawnPoint::Advance()
 
         if( m_timer <= 0.0f )
         {
-            g_app->m_location->SpawnEntities( m_pos, m_id.GetTeamId(), -1, m_entityType, 1, g_zeroVector, 20.0f, 100.0f, m_routeId );
+            g_location->SpawnEntities( m_pos, m_id.GetTeamId(), -1, m_entityType, 1, g_zeroVector, 20.0f, 100.0f, m_routeId );
             ++m_numSpawned;
 
             if( m_numSpawned >= m_count )
@@ -812,7 +813,7 @@ void AISpawnPoint::RenderAlphas( float _predictionTime )
     {
         RGBAColour colour;
         if( m_id.GetTeamId() == 255 ) colour.Set( 100, 100, 100, 255 );
-        else colour = g_app->m_location->m_teams[m_id.GetTeamId()].m_colour;
+        else colour = g_location->m_teams[m_id.GetTeamId()].m_colour;
 
         RenderSphere( m_pos, 10.0f, colour );
 

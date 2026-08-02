@@ -13,6 +13,7 @@
 #include "Location.h"
 #include "LevelFile.h"
 #include "Water.h"
+#include "WorldPointers.h"
 
 #define GRAPHICS_LANDDETAIL         "RenderLandscapeDetail"
 #define GRAPHICS_WATERDETAIL        "RenderWaterDetail"
@@ -27,7 +28,7 @@ class ApplyGraphicsButton : public SpeciesButton
 public:
     void MouseUp()
     {
-        if( g_app->m_location )
+        if( g_location )
         {
             PrefsGraphicsWindow *parent = (PrefsGraphicsWindow *)m_parent;
 
@@ -38,17 +39,17 @@ public:
             g_prefsManager->SetInt( GRAPHICS_ENTITYDETAIL, parent->m_entityDetail );
             g_prefsManager->SetInt( GRAPHICS_CLOUDDETAIL, parent->m_cloudDetail );
 
-        	LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-			g_app->m_location->m_landscape.Init(def);
+        	LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+			g_location->m_landscape.Init(def);
 
-            delete g_app->m_location->m_water;
-            g_app->m_location->m_water = new Water();
+            delete g_location->m_water;
+            g_location->m_water = new Water();
 
-            for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+            for( int i = 0; i < g_location->m_buildings.Size(); ++i )
             {
-                if( g_app->m_location->m_buildings.ValidIndex(i) )
+                if( g_location->m_buildings.ValidIndex(i) )
                 {
-                    Building *building = g_app->m_location->m_buildings[i];
+                    Building *building = g_location->m_buildings[i];
                     building->SetDetail( parent->m_buildingDetail );
                 }
             }
@@ -63,8 +64,8 @@ PrefsGraphicsWindow::PrefsGraphicsWindow()
 :   SpeciesWindow(LANGUAGEPHRASE("dialog_graphicsoptions"))
 {
     SetMenuSize( 360, 300 );
-    SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
-                 g_app->m_renderer->ScreenH()/2 - m_h/2 );
+    SetPosition( g_renderer->ScreenW()/2 - m_w/2,
+                 g_renderer->ScreenH()/2 - m_h/2 );
 
     m_landscapeDetail   = g_prefsManager->GetInt( GRAPHICS_LANDDETAIL, 1 );
     m_waterDetail       = g_prefsManager->GetInt( GRAPHICS_WATERDETAIL, 1 );
@@ -226,7 +227,7 @@ void PrefsGraphicsWindow::Render( bool _hasFocus )
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_pixeleffect") );
 
     char fpsCaption[64];
-    sprintf( fpsCaption, "%d FPS", g_app->m_renderer->m_fps );
+    sprintf( fpsCaption, "%d FPS", g_renderer->m_fps );
     g_editorFont.DrawText2DCentre( m_x+m_w/2, m_y + m_h - GetMenuSize(60), GetMenuSize(20), fpsCaption );
 
 }

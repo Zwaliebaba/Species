@@ -27,6 +27,7 @@
 #include "Location.h"
 
 #include "Entity.h"
+#include "WorldPointers.h"
 
 SoundSystem* g_soundSystem = nullptr;
 
@@ -1421,12 +1422,12 @@ void SoundSystem::Advance()
 
     START_PROFILE(g_profiler, "UpdateListener");
 
-    Vector3 camUp = g_app->m_camera->GetUp();
+    Vector3 camUp = g_camera->GetUp();
     if (g_prefsManager->GetInt("SoundSwapStereo", 0) == 0)
       camUp *= -1.0f;
 
-    Vector3 camVel = g_app->m_camera->GetVel() * 0.2f;
-    g_soundLibrary3d->SetListenerPosition(g_app->m_camera->GetPos(), g_app->m_camera->GetFront(), camUp, camVel);
+    Vector3 camVel = g_camera->GetVel() * 0.2f;
+    g_soundLibrary3d->SetListenerPosition(g_camera->GetPos(), g_camera->GetFront(), camUp, camVel);
 
     END_PROFILE(g_profiler, "UpdateListener");
 
@@ -1659,16 +1660,16 @@ void SoundSystem::Advance()
 
         START_PROFILE(g_profiler, "UpdateListener" );
 
-        Vector3 camUp = g_app->m_camera->GetUp();
+        Vector3 camUp = g_camera->GetUp();
         if( g_prefsManager->GetInt("SoundSwapStereo",0) == 1 )
         {
             camUp.y *= -1.0f;
         }
 
-        g_soundLibrary3d->SetListenerPosition( g_app->m_camera->GetPos(),
-                                            g_app->m_camera->GetFront(),
+        g_soundLibrary3d->SetListenerPosition( g_camera->GetPos(),
+                                            g_camera->GetFront(),
                                             camUp,
-                                            g_app->m_camera->GetVel() );
+                                            g_camera->GetVel() );
 
         END_PROFILE(g_profiler, "UpdateListener" );
 

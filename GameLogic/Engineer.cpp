@@ -14,7 +14,6 @@
 #include "Input.h"
 #include "InputTypes.h"
 
-#include "App.h"
 #include "Explosion.h"
 #include "ProtocolLimits.h"
 #include "GlobalWorld.h"
@@ -32,7 +31,7 @@
 #include "Engineer.h"
 #include "Bridge.h"
 #include "ResearchItem.h"
-
+#include "WorldPointers.h"
 
 
 Engineer::Engineer()
@@ -78,7 +77,7 @@ int Engineer::GetNumSpirits()
 
 int Engineer::GetMaxSpirits()
 {
-    int engineerLevel = g_app->m_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeEngineer );
+    int engineerLevel = g_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeEngineer );
     switch( engineerLevel )
     {
         case 0 :        return 0;
@@ -100,11 +99,11 @@ bool Engineer::SearchForSpirits()
         int spiritId = -1;
         float closest = 999999.9f;
 
-        for( int i = 0; i < g_app->m_location->m_spirits.Size(); ++i )
+        for( int i = 0; i < g_location->m_spirits.Size(); ++i )
         {
-            if( g_app->m_location->m_spirits.ValidIndex(i) )
+            if( g_location->m_spirits.ValidIndex(i) )
             {
-                Spirit *s = g_app->m_location->m_spirits.GetPointer(i);
+                Spirit *s = g_location->m_spirits.GetPointer(i);
                 float theDist = ( s->m_pos - m_pos ).Mag();
 
                 if( theDist <= ENGINEER_SEARCHRANGE &&
@@ -136,11 +135,11 @@ bool Engineer::SearchForControlTowers()
     int buildingIndex = -1;
     float closest = 99999.9f;
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeControlTower )
             {
                 ControlTower *ct = (ControlTower *) building;
@@ -162,7 +161,7 @@ bool Engineer::SearchForControlTowers()
 
     if( buildingIndex != -1 )
     {
-        Building *building = g_app->m_location->m_buildings[buildingIndex];
+        Building *building = g_location->m_buildings[buildingIndex];
         m_buildingId = building->m_id.GetUniqueId();
         m_state = StateToControlTower;
         return true;
@@ -177,11 +176,11 @@ bool Engineer::SearchForBridges()
     int buildingIndex = -1;
     float closest = 99999.9f;
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeBridge)
             {
                 Bridge *bridge = (Bridge *) building;
@@ -201,7 +200,7 @@ bool Engineer::SearchForBridges()
 
     if( buildingIndex != -1 )
     {
-        Building *building = g_app->m_location->m_buildings[buildingIndex];
+        Building *building = g_location->m_buildings[buildingIndex];
         m_buildingId = building->m_id.GetUniqueId();
         m_state = StateToBridge;
         return true;
@@ -216,11 +215,11 @@ bool Engineer::SearchForResearchItems()
     float closest = 99999.9f;
     int buildingIndex = -1;
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeResearchItem)
             {
                 ResearchItem *item = (ResearchItem *) building;
@@ -238,11 +237,11 @@ bool Engineer::SearchForResearchItems()
 
     if( buildingIndex != -1 )
     {
-        Building *building = g_app->m_location->m_buildings[buildingIndex];
+        Building *building = g_location->m_buildings[buildingIndex];
         m_buildingId = building->m_id.GetUniqueId();
         Vector3 usToThem = ( building->m_pos - m_pos ).SetLength( 35.0f );
         m_targetPos = building->m_pos - usToThem;
-        m_targetPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_targetPos.x, m_targetPos.z );
+        m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue( m_targetPos.x, m_targetPos.z );
         m_targetPos.y += m_hoverHeight;
         m_state = StateToResearchItem;
         return true;
@@ -276,7 +275,7 @@ void Engineer::ChangeHealth( int amount )
         else
         {
             m_stats[StatHealth] += amount;
-            g_app->m_particleSystem->CreateParticle( m_pos, g_zeroVector, Particle::TypeMuzzleFlash );
+            g_particleSystem->CreateParticle( m_pos, g_zeroVector, Particle::TypeMuzzleFlash );
         }
 
         int healthBandAfter = int( m_stats[StatHealth] / 50.0f );
@@ -322,9 +321,9 @@ bool Engineer::Advance( Unit *_unit )
         while( m_spirits.Size() > 0 )
         {
             int spiritId = m_spirits[0];
-            if( g_app->m_location->m_spirits.ValidIndex(spiritId) )
+            if( g_location->m_spirits.ValidIndex(spiritId) )
             {
-                Spirit *s = g_app->m_location->m_spirits.GetPointer(spiritId);
+                Spirit *s = g_location->m_spirits.GetPointer(spiritId);
                 s->CollectorDrops();
                 m_spirits.RemoveData(0);
             }
@@ -333,7 +332,7 @@ bool Engineer::Advance( Unit *_unit )
         // If I was reprogramming something, stop now
         if( m_state == StateReprogramming )
         {
-            Building *building = g_app->m_location->GetBuilding( m_buildingId );
+            Building *building = g_location->GetBuilding( m_buildingId );
             ControlTower *ct = (ControlTower *) building;
             if( ct )
             {
@@ -353,7 +352,7 @@ bool Engineer::Advance( Unit *_unit )
         // If I was operating a bridge, stop now
         if( m_state == StateOperatingBridge )
         {
-            Bridge *bridge = (Bridge *) g_app->m_location->GetBuilding( m_buildingId );
+            Bridge *bridge = (Bridge *) g_location->GetBuilding( m_buildingId );
             if( bridge && bridge->m_type == Building::TypeBridge )
             {
                 bridge->EndOperation();
@@ -381,9 +380,9 @@ bool Engineer::Advance( Unit *_unit )
     for( int i = 0; i < m_spirits.Size(); ++i )
     {
         int spiritId = m_spirits[i];
-        if( g_app->m_location->m_spirits.ValidIndex(spiritId) )
+        if( g_location->m_spirits.ValidIndex(spiritId) )
         {
-            Spirit *s = g_app->m_location->m_spirits.GetPointer(spiritId);
+            Spirit *s = g_location->m_spirits.GetPointer(spiritId);
             if( s && s->m_state == Spirit::StateAttached )
             {
                 if( m_positionHistory.ValidIndex(i+1) )
@@ -399,7 +398,7 @@ bool Engineer::Advance( Unit *_unit )
     //
     // Look to see if we've been pulled away by the player
 
-    Building *building = g_app->m_location->GetBuilding( m_buildingId );
+    Building *building = g_location->GetBuilding( m_buildingId );
     if( building && building->m_type == Building::TypeControlTower &&
         m_positionId != -1 && m_state != StateReprogramming )
     {
@@ -432,7 +431,7 @@ bool Engineer::Advance( Unit *_unit )
     //
     // If we own a bridge, check to make sure we are still in range of it
 
-    Bridge *bridge = (Bridge *) g_app->m_location->GetBuilding( m_bridgeId );
+    Bridge *bridge = (Bridge *) g_location->GetBuilding( m_bridgeId );
     if( bridge && bridge->m_type == Building::TypeBridge )
     {
         float range = ( bridge->m_pos - m_pos ).Mag();
@@ -472,7 +471,7 @@ bool Engineer::AdvanceToTargetPos()
         newPos = m_pos + moved;
 
         m_pos = newPos;
-        float targetHeight = max(g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z),
+        float targetHeight = max(g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z),
                                  0.0f ) + m_hoverHeight;
         m_pos.y = targetHeight;
         m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
@@ -561,9 +560,9 @@ bool Engineer::AdvanceToWaypoint()
 bool Engineer::AdvanceToSpirit()
 {
     Spirit *s = nullptr;
-    if( g_app->m_location->m_spirits.ValidIndex(m_spiritId) )
+    if( g_location->m_spirits.ValidIndex(m_spiritId) )
     {
-        s = g_app->m_location->m_spirits.GetPointer(m_spiritId);
+        s = g_location->m_spirits.GetPointer(m_spiritId);
     }
 
     if( !s ||
@@ -592,9 +591,9 @@ bool Engineer::AdvanceToSpirit()
 
 void Engineer::CollectSpirit( int _spiritId )
 {
-    if( g_app->m_location->m_spirits.ValidIndex(_spiritId) )
+    if( g_location->m_spirits.ValidIndex(_spiritId) )
     {
-        Spirit *spirit = g_app->m_location->m_spirits.GetPointer(_spiritId);
+        Spirit *spirit = g_location->m_spirits.GetPointer(_spiritId);
 
         spirit->CollectorArrives();
         m_spirits.PutData( _spiritId );
@@ -610,13 +609,13 @@ bool Engineer::SearchForIncubator()
     float nearest = 99999.9f;
     bool found = false;
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building->m_type == Building::TypeIncubator &&
-                g_app->m_location->IsFriend( building->m_id.GetTeamId(), m_id.GetTeamId() ) )
+                g_location->IsFriend( building->m_id.GetTeamId(), m_id.GetTeamId() ) )
             {
                 float distance = ( building->m_pos - m_pos ).Mag();
                 int population = ((Incubator *)building)->NumSpiritsInside();
@@ -638,12 +637,12 @@ bool Engineer::SearchForIncubator()
 
 bool Engineer::AdvanceToIncubator()
 {
-    Incubator *incubator = (Incubator *) g_app->m_location->GetBuilding( m_buildingId );
+    Incubator *incubator = (Incubator *) g_location->GetBuilding( m_buildingId );
 
     if( !incubator )
     {
         bool found = SearchForIncubator();
-        incubator = (Incubator *) g_app->m_location->GetBuilding( m_buildingId );
+        incubator = (Incubator *) g_location->GetBuilding( m_buildingId );
         if( !incubator )
         {
             // We can't find a friendly incubator, so go into holding pattern
@@ -661,11 +660,11 @@ bool Engineer::AdvanceToIncubator()
 
         // Arrived at our incubator, drop spirit off here one at a time
         int spiritId = m_spirits[0];
-        if( g_app->m_location->m_spirits.ValidIndex(spiritId) )
+        if( g_location->m_spirits.ValidIndex(spiritId) )
         {
-            Spirit *s = g_app->m_location->m_spirits.GetPointer( spiritId );
+            Spirit *s = g_location->m_spirits.GetPointer( spiritId );
             incubator->AddSpirit( s );
-            g_app->m_location->m_spirits.MarkNotUsed( spiritId );
+            g_location->m_spirits.MarkNotUsed( spiritId );
             m_spirits.RemoveData(0);
         }
 
@@ -682,7 +681,7 @@ bool Engineer::AdvanceToIncubator()
 
 bool Engineer::AdvanceToControlTower ()
 {
-    Building *building = g_app->m_location->GetBuilding( m_buildingId );
+    Building *building = g_location->GetBuilding( m_buildingId );
     if( !building )
     {
         m_state = StateIdle;
@@ -729,7 +728,7 @@ bool Engineer::AdvanceResearching()
     //
     // Make sure our research item is still available
 
-    ResearchItem *item = (ResearchItem *) g_app->m_location->GetBuilding( m_buildingId );
+    ResearchItem *item = (ResearchItem *) g_location->GetBuilding( m_buildingId );
     if( !item ||
         item->m_type != Building::TypeResearchItem ||
         !item->NeedsReprogram() )
@@ -771,7 +770,7 @@ bool Engineer::AdvanceResearching()
     {
         Vector3 particleVel = m_pos - toPos;
         particleVel += Vector3( sfrand() * 15.0f, frand() * 10.0f, sfrand() * 15.0f );
-        g_app->m_particleSystem->CreateParticle( toPos, particleVel, Particle::TypeBlueSpark );
+        g_particleSystem->CreateParticle( toPos, particleVel, Particle::TypeBlueSpark );
     }
 
 
@@ -800,7 +799,7 @@ bool Engineer::AdvanceResearching()
 
 bool Engineer::AdvanceReprogramming()
 {
-    Building *building = g_app->m_location->GetBuilding( m_buildingId );
+    Building *building = g_location->GetBuilding( m_buildingId );
 
     if( !building )
     {
@@ -854,7 +853,7 @@ bool Engineer::AdvanceReprogramming()
 
 void Engineer::BeginBridge( Vector3 _to )
 {
-    int engineerLevel = g_app->m_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeEngineer );
+    int engineerLevel = g_globalWorld->m_research->CurrentLevel( GlobalResearch::TypeEngineer );
     if( engineerLevel < 5 ) return;
 
     //
@@ -878,12 +877,12 @@ void Engineer::BeginBridge( Vector3 _to )
     for( int i = numComponents; i >= 0; --i )
     {
         Bridge *component = (Bridge *) Building::CreateBuilding( Building::TypeBridge );
-        g_app->m_location->m_buildings.PutData(component);
-        component->m_id.SetUniqueId( g_app->m_globalWorld->GenerateBuildingId() );
+        g_location->m_buildings.PutData(component);
+        component->m_id.SetUniqueId( g_globalWorld->GenerateBuildingId() );
         component->m_nextBridgeId = linkBuildingId;
         component->m_pos = m_wayPoint + componentSpan * (float) i;
         component->m_pos += Vector3( syncsfrand(15.0f),0.0f,syncsfrand(15.0f) );
-        component->m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( component->m_pos.x, component->m_pos.z );
+        component->m_pos.y = g_location->m_landscape.m_heightMap->GetValue( component->m_pos.x, component->m_pos.z );
         component->m_front = ( _to - m_wayPoint ).Normalise();
         if( i < numComponents && i > 0 )
         {
@@ -911,19 +910,19 @@ void Engineer::BeginBridge( Vector3 _to )
         if( i == 0 ) m_bridgeId = component->m_id.GetUniqueId();
     }
 
-    g_app->m_location->m_obstructionGrid->CalculateAll();
+    g_location->m_obstructionGrid->CalculateAll();
 }
 
 
 void Engineer::EndBridge()
 {
-    Bridge *bridge = (Bridge *) g_app->m_location->GetBuilding( m_bridgeId );
+    Bridge *bridge = (Bridge *) g_location->GetBuilding( m_bridgeId );
 
     while( bridge )
     {
         bridge->m_status = -1.0f;
         int nextBuildingId = bridge->m_nextBridgeId;
-        bridge = (Bridge *) g_app->m_location->GetBuilding( nextBuildingId );
+        bridge = (Bridge *) g_location->GetBuilding( nextBuildingId );
     }
 
     m_bridgeId = -1;
@@ -932,7 +931,7 @@ void Engineer::EndBridge()
 
 bool Engineer::AdvanceToBridge()
 {
-    Building *building = g_app->m_location->GetBuilding( m_buildingId );
+    Building *building = g_location->GetBuilding( m_buildingId );
     if( building && building->m_type == Building::TypeBridge )
     {
         Bridge *bridge = (Bridge *) building;
@@ -964,7 +963,7 @@ bool Engineer::AdvanceToBridge()
 
 bool Engineer::AdvanceOperatingBridge ()
 {
-    Building *building = g_app->m_location->GetBuilding( m_buildingId );
+    Building *building = g_location->GetBuilding( m_buildingId );
     if( building && building->m_type == Building::TypeBridge )
     {
         Vector3 front;
@@ -986,7 +985,7 @@ bool Engineer::AdvanceToResearchItem()
     //
     // Make sure our research item is still available
 
-    ResearchItem *item = (ResearchItem *) g_app->m_location->GetBuilding( m_buildingId );
+    ResearchItem *item = (ResearchItem *) g_location->GetBuilding( m_buildingId );
     if( !item || !item->NeedsReprogram() )
     {
         m_buildingId = -1;
@@ -1011,7 +1010,7 @@ void Engineer::RenderShape( float predictionTime )
     Vector3 predictedPos = m_pos + m_vel * predictionTime;
     if( m_onGround )
     {
-        predictedPos.y = max(g_app->m_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z ),
+        predictedPos.y = max(g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z ),
                              0.0f /*sea level*/) + m_hoverHeight;
     }
 
@@ -1022,7 +1021,7 @@ void Engineer::RenderShape( float predictionTime )
     Vector3 entityRight = entityFront ^ entityUp;
     entityUp = entityRight ^ entityFront;
 
-	g_app->m_renderer->SetObjectLighting();
+	g_renderer->SetObjectLighting();
 
     glEnable        (GL_CULL_FACE);
     glDisable       (GL_TEXTURE_2D);
@@ -1039,10 +1038,10 @@ void Engineer::RenderShape( float predictionTime )
     glEnable        (GL_BLEND);
     glDisable       (GL_COLOR_MATERIAL);
     glEnable        (GL_TEXTURE_2D);
-	g_app->m_renderer->UnsetObjectLighting();
+	g_renderer->UnsetObjectLighting();
     glEnable        (GL_CULL_FACE);
 
-    g_app->m_renderer->MarkUsedCells(m_shape, mat);
+    g_renderer->MarkUsedCells(m_shape, mat);
 
 }
 
@@ -1055,7 +1054,7 @@ void Engineer::Render( float predictionTime )
     Vector3 predictedPos = m_pos + m_vel * predictionTime;
     if( m_onGround )
     {
-        predictedPos.y = max(g_app->m_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z ),
+        predictedPos.y = max(g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z ),
                              0.0f /*sea level*/) + m_hoverHeight;
     }
 
@@ -1079,7 +1078,7 @@ void Engineer::Render( float predictionTime )
         Vector3 fromPos = m_pos;
         Vector3 toPos;
 
-        Building *building = g_app->m_location->GetBuilding( m_buildingId );
+        Building *building = g_location->GetBuilding( m_buildingId );
         if( building )
         {
             if( building->m_type == Building::TypeControlTower )
@@ -1106,7 +1105,7 @@ void Engineer::Render( float predictionTime )
 
 
             Vector3 midPoint        = fromPos + (toPos - fromPos)/2.0f;
-            Vector3 camToMidPoint   = g_app->m_camera->GetPos() - midPoint;
+            Vector3 camToMidPoint   = g_camera->GetPos() - midPoint;
             Vector3 rightAngle      = (camToMidPoint ^ ( midPoint - toPos )).Normalise();
 
             rightAngle *= 0.5f;

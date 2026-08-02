@@ -38,7 +38,7 @@
 #include "Team.h"
 #include "Unit.h"
 #include "TaskManager.h"
-
+#include "WorldPointers.h"
 
 
 //*****************************************************************************
@@ -738,8 +738,8 @@ void LevelFile::ParsePrimaryObjectives(TextReader *_in)
 			case GlobalEventCondition::BuildingOffline:
 			case GlobalEventCondition::BuildingOnline:
 			{
-				//condition->m_locationId = g_app->m_globalWorld->GetLocationIdFromMapFilename( m_mapFilename );
-                condition->m_locationId = g_app->m_globalWorld->GetLocationId( _in->GetNextToken() );
+				//condition->m_locationId = g_globalWorld->GetLocationIdFromMapFilename( m_mapFilename );
+                condition->m_locationId = g_globalWorld->GetLocationId( _in->GetNextToken() );
 				condition->m_id = atoi( _in->GetNextToken() );
                 DEBUG_ASSERT( condition->m_locationId != -1 );
 				break;
@@ -819,12 +819,12 @@ void LevelFile::GenerateAutomaticObjectives()
 
 		if (!found)
 		{
-            int locationId = g_app->m_globalWorld->GetLocationIdFromMapFilename(m_mapFilename);
+            int locationId = g_globalWorld->GetLocationIdFromMapFilename(m_mapFilename);
 
 			if (building->m_type == Building::TypeResearchItem)
 			{
 				ResearchItem *item = (ResearchItem*) GetBuilding(building->m_id.GetUniqueId());
-                int currentLevel = g_app->m_globalWorld->m_research->CurrentLevel( item->m_researchType );
+                int currentLevel = g_globalWorld->m_research->CurrentLevel( item->m_researchType );
                 if( currentLevel == 0 /*|| currentLevel < item->m_level*/ )
                 {
                     // NOTE : We SHOULD really allow objectives to be created when the current research level
@@ -841,7 +841,7 @@ void LevelFile::GenerateAutomaticObjectives()
 			}
 			else if (building->m_type == Building::TypeTrunkPort )
 			{
-                GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( building->m_id.GetUniqueId(), locationId );
+                GlobalBuilding *gb = g_globalWorld->GetBuilding( building->m_id.GetUniqueId(), locationId );
                 if( gb && !gb->m_online )
                 {
                     //
@@ -897,11 +897,11 @@ void LevelFile::WriteLights(FileWriter *_out)
 	_out->printf( "\t# x      y      z        r      g      b\n");
 	_out->printf( "\t# =========================================\n");
 
-    if( g_app->m_location )
+    if( g_location )
     {
-	    for (int i = 0; i < g_app->m_location->m_lights.Size(); ++i)
+	    for (int i = 0; i < g_location->m_lights.Size(); ++i)
 	    {
-		    Light *light = g_app->m_location->m_lights.GetData(i);
+		    Light *light = g_location->m_lights.GetData(i);
 		    _out->printf( "\t%6.2f %6.2f %6.2f   %6.2f %6.2f %6.2f\n",
 				    light->m_front[0], light->m_front[1], light->m_front[2],
 				    light->m_colour[0], light->m_colour[1], light->m_colour[2]);
@@ -1314,7 +1314,7 @@ void LevelFile::GenerateInstantUnits()
 
     for( int t = 0; t < NUM_TEAMS; ++t )
     {
-        Team *team = &g_app->m_location->m_teams[t];
+        Team *team = &g_location->m_teams[t];
         if( team->m_teamType == Team::TeamTypeCPU )
         {
             for( int u = 0; u < team->m_units.Size(); ++u )
@@ -1364,7 +1364,7 @@ void LevelFile::GenerateInstantUnits()
 
     for( int t = 0; t < NUM_TEAMS; ++t )
     {
-        Team *team = &g_app->m_location->m_teams[t];
+        Team *team = &g_location->m_teams[t];
         if( team->m_teamType == Team::TeamTypeCPU )
         {
             for( int i = 0; i < team->m_others.Size(); ++i )
@@ -1435,9 +1435,9 @@ void LevelFile::GenerateInstantUnits()
                     else if( entity->m_type == Entity::TypeArmour )
                     {
                         bool taskControlled = false;
-                        for( int i = 0; i < g_app->m_taskManager->m_tasks.Size(); ++i )
+                        for( int i = 0; i < g_taskManager->m_tasks.Size(); ++i )
                         {
-                            Task *task = g_app->m_taskManager->m_tasks[i];
+                            Task *task = g_taskManager->m_tasks[i];
                             if( task->m_type == GlobalResearch::TypeArmour &&
                                 task->m_objId == entity->m_id )
                             {
@@ -1473,11 +1473,11 @@ void LevelFile::GenerateInstantUnits()
     //
     // Record all entities in transit in a Radar Dish beam
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building && building->m_type == Building::TypeRadarDish )
             {
                 RadarDish *dish = (RadarDish *) building;
@@ -1487,7 +1487,7 @@ void LevelFile::GenerateInstantUnits()
                 for( int e = 0; e < dish->m_inTransit.Size(); ++e )
                 {
                     WorldObjectId id = *dish->m_inTransit.GetPointer(e);
-                    Entity *entity = g_app->m_location->GetEntity( id );
+                    Entity *entity = g_location->GetEntity( id );
 
 					if( entity == nullptr )
 						continue;
@@ -1499,7 +1499,7 @@ void LevelFile::GenerateInstantUnits()
 						// position of the squaddies so that they are not dunked in the water when revived
 						entity->m_pos.x = exitPos.x;
 						entity->m_pos.z = exitPos.z;
-						entity->m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(entity->m_pos.x, entity->m_pos.z) + 0.1f;
+						entity->m_pos.y = g_location->m_landscape.m_heightMap->GetValue(entity->m_pos.x, entity->m_pos.z) + 0.1f;
 					}
                     else
                     {
@@ -1538,7 +1538,7 @@ void LevelFile::GenerateDynamicBuildings()
         Building *building = m_buildings[i];
         if( building && building->m_dynamic )
         {
-            Building *locBuilding = g_app->m_location->GetBuilding( building->m_id.GetUniqueId() );
+            Building *locBuilding = g_location->GetBuilding( building->m_id.GetUniqueId() );
             if( !locBuilding )
             {
                 m_buildings.RemoveData(i);
@@ -1590,11 +1590,11 @@ void LevelFile::GenerateDynamicBuildings()
     //
     // Search for new dynamic buildings on the level
 
-    for( int i = 0; i < g_app->m_location->m_buildings.Size(); ++i )
+    for( int i = 0; i < g_location->m_buildings.Size(); ++i )
     {
-        if( g_app->m_location->m_buildings.ValidIndex(i) )
+        if( g_location->m_buildings.ValidIndex(i) )
         {
-            Building *building = g_app->m_location->m_buildings[i];
+            Building *building = g_location->m_buildings[i];
             if( building && building->m_dynamic )
             {
                 Building *levelFileBuilding = GetBuilding( building->m_id.GetUniqueId() );
@@ -1651,7 +1651,7 @@ void LevelFile::WriteRunningPrograms(FileWriter *_out)
 {
     if( !g_app->m_editing )
     {
-        Team *team = g_app->m_location->GetMyTeam();
+        Team *team = g_location->GetMyTeam();
 
 	    _out->printf( "\nRunningPrograms_StartDefinition\n");
 	    //_out->printf( "\t# x      y       z      size\n");
@@ -1662,14 +1662,14 @@ void LevelFile::WriteRunningPrograms(FileWriter *_out)
         // Engineer     count   state   numSpirits  waypointX waypointZ    (positionX positionZ health)
         // Squaddie     count   state   weaponType  waypointX waypointZ    (positionX positionZ health)
 
-        for( int t = 0; t < g_app->m_taskManager->m_tasks.Size(); ++t )
+        for( int t = 0; t < g_taskManager->m_tasks.Size(); ++t )
         {
-            Task *task = g_app->m_taskManager->m_tasks[t];
+            Task *task = g_taskManager->m_tasks[t];
             if( task->m_state == Task::StateRunning )
             {
                 if( task->m_type == GlobalResearch::TypeEngineer )
                 {
-                    Engineer *engineer = (Engineer *) g_app->m_location->GetEntitySafe( task->m_objId, Entity::TypeEngineer );
+                    Engineer *engineer = (Engineer *) g_location->GetEntitySafe( task->m_objId, Entity::TypeEngineer );
                     if( engineer )
                     {
                         _out->printf( "\t%-15s %6d %6d %6d %8.2f %8.2f %8.2f %8.2f %d\n",
@@ -1685,7 +1685,7 @@ void LevelFile::WriteRunningPrograms(FileWriter *_out)
 
                 if( task->m_type == GlobalResearch::TypeSquad )
                 {
-                    InsertionSquad *squad = (InsertionSquad *) g_app->m_location->GetUnit( task->m_objId );
+                    InsertionSquad *squad = (InsertionSquad *) g_location->GetUnit( task->m_objId );
                     if( squad && squad->m_troopType == Entity::TypeInsertionSquadie )
                     {
                         _out->printf( "\t%-15s %6d %6d %6d %8.2f %8.2f",

@@ -17,6 +17,7 @@
 #include "GameTime.h"
 #include "Team.h"
 #include "GlobalWorld.h"
+#include "WorldPointers.h"
 
 
 BlueprintBuilding::BlueprintBuilding()
@@ -48,7 +49,7 @@ void BlueprintBuilding::Initialise( Building *_template )
 
 bool BlueprintBuilding::Advance()
 {
-    BlueprintBuilding *blueprintBuilding = (BlueprintBuilding *) g_app->m_location->GetBuilding( m_buildingLink );
+    BlueprintBuilding *blueprintBuilding = (BlueprintBuilding *) g_location->GetBuilding( m_buildingLink );
     if( blueprintBuilding )
     {
         if( m_infected > 80.0f ) blueprintBuilding->SendBlueprint( m_segment, true );
@@ -78,14 +79,14 @@ Matrix34 BlueprintBuilding::GetMarker( float _predictionTime )
 
 bool BlueprintBuilding::IsInView()
 {
-    Building *link = g_app->m_location->GetBuilding( m_buildingLink );
+    Building *link = g_location->GetBuilding( m_buildingLink );
 
     if( link )
     {
         Vector3 midPoint = ( link->m_centrePos + m_centrePos ) / 2.0f;
         float radius = ( link->m_centrePos - m_centrePos ).Mag();
         radius += m_radius;
-        return( g_app->m_camera->SphereInViewFrustum( midPoint, radius ) );
+        return( g_camera->SphereInViewFrustum( midPoint, radius ) );
     }
     else
     {
@@ -106,7 +107,7 @@ void BlueprintBuilding::RenderAlphas( float _predictionTime )
 {
     Building::RenderAlphas( _predictionTime );
 
-    BlueprintBuilding *link = (BlueprintBuilding *) g_app->m_location->GetBuilding( m_buildingLink );
+    BlueprintBuilding *link = (BlueprintBuilding *) g_location->GetBuilding( m_buildingLink );
     if( link )
     {
         float infected = m_infected / 100.0f;
@@ -124,7 +125,7 @@ void BlueprintBuilding::RenderAlphas( float _predictionTime )
         Vector3 ourPos = GetMarker(_predictionTime).pos;
         Vector3 theirPos = link->GetMarker(_predictionTime).pos;
 
-        Vector3 rightAngle = ( g_app->m_camera->GetPos() - ourPos ) ^ ( theirPos - ourPos );
+        Vector3 rightAngle = ( g_camera->GetPos() - ourPos ) ^ ( theirPos - ourPos );
         rightAngle.SetLength( 20.0f );
 
         glDisable( GL_CULL_FACE );
@@ -302,7 +303,7 @@ bool BlueprintStore::Advance()
 
     if( totallyClean )
     {
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb ) gb->m_online = true;
     }
 
@@ -623,11 +624,11 @@ void BlueprintConsole::RenderPorts()
         // Render the status light
 
         float size = 6.0f;
-        Vector3 camR = g_app->m_camera->GetRight() * size;
-        Vector3 camU = g_app->m_camera->GetUp() * size;
+        Vector3 camR = g_camera->GetRight() * size;
+        Vector3 camU = g_camera->GetUp() * size;
 
         Vector3 statusPos = s_controlPadStatus->GetWorldMatrix( mat ).pos;
-        statusPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
+        statusPos.y = g_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
         statusPos.y += 5.0f;
 
         WorldObjectId occupantId = GetPortOccupant(i);
@@ -637,7 +638,7 @@ void BlueprintConsole::RenderPorts()
         }
         else
         {
-            RGBAColour teamColour = g_app->m_location->m_teams[occupantId.GetTeamId()].m_colour;
+            RGBAColour teamColour = g_location->m_teams[occupantId.GetTeamId()].m_colour;
             glColor4ubv( teamColour.GetData() );
         }
 

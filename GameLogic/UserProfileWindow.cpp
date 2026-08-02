@@ -10,7 +10,7 @@
 #include "App.h"
 #include "InputField.h"
 #include "Renderer.h"
-
+#include "WorldPointers.h"
 
 
 class LoadUserProfileButton : public SpeciesButton
@@ -62,8 +62,8 @@ void UserProfileWindow::Create()
 
     int windowH = 150 + numProfiles * 30;
     SetMenuSize( 300, windowH);
-	SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
-                 g_app->m_renderer->ScreenH()/2 - m_h/2 );
+	SetPosition( g_renderer->ScreenW()/2 - m_w/2,
+                 g_renderer->ScreenH()/2 - m_h/2 );
 
     SpeciesWindow::Create();
 
@@ -151,8 +151,8 @@ NewUserProfileWindow::NewUserProfileWindow()
 void NewUserProfileWindow::Create()
 {
     SetMenuSize( 300, 110 );
-	SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
-                 g_app->m_renderer->ScreenH()/2 - m_h/2 );
+	SetPosition( g_renderer->ScreenW()/2 - m_w/2,
+                 g_renderer->ScreenH()/2 - m_h/2 );
 
     SpeciesWindow::Create();
 

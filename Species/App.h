@@ -34,28 +34,18 @@ class App
 {
 public:
 	// Library Code Objects
-    UserInput           *m_userInput;
     Resource            *m_resource;
     SoundSystem         *m_soundSystem;
-	ParticleSystem		*m_particleSystem;
 	LangTable			*m_langTable;
     Profiler            *m_profiler;
 
 	// Things that are the world
-    GlobalWorld         *m_globalWorld;
-    Location            *m_location;
 	int					m_locationId;
 
 	// Everything else
-    Camera              *m_camera;
 	Server              *m_server;                  // Server process, can be nullptr if client
     ClientToServer      *m_clientToServer;          // Clients connection to Server
-    Renderer            *m_renderer;
 	LocationInput		*m_locationInput;
-	LocationEditor		*m_locationEditor;
-    TaskManager         *m_taskManager;
-    TaskManagerInterface *m_taskManagerInterface;
-    Script              *m_script;
     GameCursor          *m_gameCursor;
     StartSequence       *m_startSequence;
 	AttractMode			*m_attractMode;

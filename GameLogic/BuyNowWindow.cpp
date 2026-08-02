@@ -9,6 +9,7 @@
 #include "BuyNowWindow.h"
 #include "Preferences.h"
 #include "PreferenceNames.h"
+#include "WorldPointers.h"
 
 
 class BuyNowButton : public SpeciesButton
@@ -24,8 +25,8 @@ class BuyNowButton : public SpeciesButton
 BuyNowWindow::BuyNowWindow()
 : SpeciesWindow( LANGUAGEPHRASE("dialog_buydarwinia" ) )
 {
-    int screenW = g_app->m_renderer->ScreenW();
-    int screenH = g_app->m_renderer->ScreenH();
+    int screenW = g_renderer->ScreenW();
+    int screenH = g_renderer->ScreenH();
 
     SetSize( 370, 150 );
     SetPosition( screenW/2.0f - m_w/2.0f,

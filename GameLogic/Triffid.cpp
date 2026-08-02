@@ -25,6 +25,7 @@
 #include "LocationEditor.h"
 #include "EntityGrid.h"
 #include "Unit.h"
+#include "WorldPointers.h"
 
 
 Triffid::Triffid()
@@ -216,8 +217,8 @@ void Triffid::RenderAlphas( float _predictionTime )
         // Render our trigger location
 
 #ifdef LOCATION_EDITOR
-        if( g_app->m_locationEditor->m_mode == LocationEditor::ModeBuilding &&
-            g_app->m_locationEditor->m_selectionId == m_id.GetUniqueId() )
+        if( g_locationEditor->m_mode == LocationEditor::ModeBuilding &&
+            g_locationEditor->m_selectionId == m_id.GetUniqueId() )
         {
             Vector3 velocity = headMat.f;
             velocity.SetLength( m_force * m_size );
@@ -251,7 +252,7 @@ void Triffid::RenderAlphas( float _predictionTime )
                     float angle = 2.0f * M_PI * (float)i / (float) numSteps;
                     Vector3 thisPos = triggerPos + Vector3( sinf(angle)*m_triggerRadius, 0.0f,
                                                             cosf(angle)*m_triggerRadius );
-                    thisPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( thisPos.x, thisPos.z );
+                    thisPos.y = g_location->m_landscape.m_heightMap->GetValue( thisPos.x, thisPos.z );
                     thisPos.y += 10.0f;
                     glVertex3fv( thisPos.GetData() );
                 }
@@ -310,8 +311,8 @@ void Triffid::Launch()
     Vector3 velocity = launchMat.f;
     velocity.SetLength( m_force * m_size * ( 1.0f + syncsfrand(0.2f) ) );
 
-    WorldObjectId wobjId = g_app->m_location->SpawnEntities( launchMat.pos, m_id.GetTeamId(), -1, Entity::TypeTriffidEgg, 1, velocity, 0.0f );
-    TriffidEgg *triffidEgg = (TriffidEgg *) g_app->m_location->GetEntitySafe( wobjId, Entity::TypeTriffidEgg );
+    WorldObjectId wobjId = g_location->SpawnEntities( launchMat.pos, m_id.GetTeamId(), -1, Entity::TypeTriffidEgg, 1, velocity, 0.0f );
+    TriffidEgg *triffidEgg = (TriffidEgg *) g_location->GetEntitySafe( wobjId, Entity::TypeTriffidEgg );
     if( triffidEgg )
     {
         triffidEgg->m_spawnType = spawnType;
@@ -341,7 +342,7 @@ void Triffid::Initialise( Building *_template )
     m_triggerLocation.z = triffid->m_triggerLocation.z;
     m_triggerRadius = triffid->m_triggerRadius;
 
-    m_triggerLocation.y = g_app->m_location->m_landscape.m_heightMap->GetValue( m_triggerLocation.x, m_triggerLocation.z );
+    m_triggerLocation.y = g_location->m_landscape.m_heightMap->GetValue( m_triggerLocation.x, m_triggerLocation.z );
 
     memcpy( m_spawn, triffid->m_spawn, NumSpawnTypes*sizeof(bool) );
 
@@ -364,16 +365,16 @@ bool Triffid::Advance()
                               sfrand(10.0f*m_size),
                               sfrand(10.0f*m_size) );
         float fireSize = 100.0f + sfrand(100.0f*m_size);
-        g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
+        g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
 
         fireSpawn = m_pos + Vector3( sfrand(10.0f*m_size),
                                      sfrand(10.0f*m_size),
                                      sfrand(10.0f*m_size) );
-        g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
+        g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
 
         if( frand(100.0f) < 10.0f )
         {
-            g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeExplosionDebris );
+            g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeExplosionDebris );
         }
 
         m_size -= 0.006f;
@@ -400,7 +401,7 @@ bool Triffid::Advance()
     {
         START_PROFILE( g_profiler, "CheckTrigger" );
         Vector3 triggerPos = m_pos + m_triggerLocation;
-        bool enemiesFound = g_app->m_location->m_entityGrid->AreEnemiesPresent( triggerPos.x, triggerPos.z, m_triggerRadius, m_id.GetTeamId() );
+        bool enemiesFound = g_location->m_entityGrid->AreEnemiesPresent( triggerPos.x, triggerPos.z, m_triggerRadius, m_id.GetTeamId() );
         m_triggered = enemiesFound;
         m_triggerTimer = GetHighResTime() + 5.0f;
         END_PROFILE( g_profiler, "CheckTrigger" );
@@ -564,23 +565,23 @@ void TriffidEgg::Spawn()
         case Triffid::SpawnVirii:
         {
             int numVirii = 5 + syncrand() % 5;
-            g_app->m_location->SpawnEntities( m_pos, teamId, -1, TypeVirii, numVirii, g_zeroVector, 0.0f, 100.0f );
+            g_location->SpawnEntities( m_pos, teamId, -1, TypeVirii, numVirii, g_zeroVector, 0.0f, 100.0f );
             break;
         }
 
         case Triffid::SpawnCentipede:
         {
             int size = 5 + syncrand() % 5;
-            Team *team = &g_app->m_location->m_teams[ m_id.GetTeamId() ];
+            Team *team = &g_location->m_teams[ m_id.GetTeamId() ];
             int unitId;
             Unit *unit = team->NewUnit( TypeCentipede, size, &unitId, m_pos );
-            g_app->m_location->SpawnEntities( m_pos, teamId, unitId, TypeCentipede, size, g_zeroVector, 0.0f, 200.0f );
+            g_location->SpawnEntities( m_pos, teamId, unitId, TypeCentipede, size, g_zeroVector, 0.0f, 200.0f );
             break;
         }
 
         case Triffid::SpawnSpider:
         {
-            WorldObjectId id = g_app->m_location->SpawnEntities( m_pos, teamId, -1, TypeSpider, 1, g_zeroVector, 0.0f, 150.0f );
+            WorldObjectId id = g_location->SpawnEntities( m_pos, teamId, -1, TypeSpider, 1, g_zeroVector, 0.0f, 150.0f );
             break;
         }
 
@@ -591,7 +592,7 @@ void TriffidEgg::Spawn()
             {
                 Vector3 vel(syncsfrand(), 0.0f, syncsfrand() );
                 vel.SetLength( 20.0f + syncfrand(20.0f) );
-                g_app->m_location->SpawnSpirit( m_pos, vel, teamId, WorldObjectId() );
+                g_location->SpawnSpirit( m_pos, vel, teamId, WorldObjectId() );
             }
             break;
         }
@@ -603,7 +604,7 @@ void TriffidEgg::Spawn()
             {
                 Vector3 vel = g_upVector + Vector3(syncsfrand(), 0.0f, syncsfrand() );
                 vel.SetLength( 20.0f + syncfrand(20.0f) );
-                g_app->m_location->SpawnEntities( m_pos, teamId, -1, TypeEgg, 1, vel, 0.0f, 0.0f );
+                g_location->SpawnEntities( m_pos, teamId, -1, TypeEgg, 1, vel, 0.0f, 0.0f );
             }
             break;
         }
@@ -615,8 +616,8 @@ void TriffidEgg::Spawn()
             {
                 Vector3 vel(syncsfrand(), 0.5f + syncfrand(), syncsfrand() );
                 vel.SetLength( 75.0f + syncfrand(50.0f) );
-                WorldObjectId id = g_app->m_location->SpawnEntities( m_pos, teamId, -1, TypeTriffidEgg, 1, vel, 0.0f, 0.0f );
-                TriffidEgg *egg = (TriffidEgg *) g_app->m_location->GetEntitySafe( id, TypeTriffidEgg );
+                WorldObjectId id = g_location->SpawnEntities( m_pos, teamId, -1, TypeTriffidEgg, 1, vel, 0.0f, 0.0f );
+                TriffidEgg *egg = (TriffidEgg *) g_location->GetEntitySafe( id, TypeTriffidEgg );
                 if( egg ) egg->m_spawnType = syncrand() % (Triffid::NumSpawnTypes-1);
                 // The NumSpawnTypes-1 prevents Darwinians from coming out
             }
@@ -630,8 +631,8 @@ void TriffidEgg::Spawn()
             {
                 Vector3 vel = g_upVector + Vector3(syncsfrand(), 0.0f, syncsfrand() );
                 vel.SetLength( 10.0f + syncfrand(20.0f) );
-                WorldObjectId id = g_app->m_location->SpawnEntities( m_pos, teamId, -1, TypeDarwinian, 1, vel, 0.0f, 0.0f );
-                Entity *entity = g_app->m_location->GetEntity( id );
+                WorldObjectId id = g_location->SpawnEntities( m_pos, teamId, -1, TypeDarwinian, 1, vel, 0.0f, 0.0f );
+                Entity *entity = g_location->GetEntity( id );
                 entity->m_front.y = 0.0f;
                 entity->m_front.Normalise();
                 entity->m_onGround = false;
@@ -657,7 +658,7 @@ bool TriffidEgg::Advance( Unit *_unit )
     m_up.Normalise();
     m_front.Normalise();
 
-    float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+    float landHeight = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
     if( m_pos.y < landHeight + 3.0f )
     {
         BounceOffLandscape();
@@ -725,12 +726,12 @@ void TriffidEgg::Render( float _predictionTime )
     transform.r *= size;
 
     glEnable( GL_NORMALIZE );
-    g_app->m_renderer->SetObjectLighting();
+    g_renderer->SetObjectLighting();
     m_shape->Render( _predictionTime, transform );
-    g_app->m_renderer->UnsetObjectLighting();
+    g_renderer->UnsetObjectLighting();
     glDisable( GL_NORMALIZE );
 
-    g_app->m_renderer->MarkUsedCells( m_shape, transform );
+    g_renderer->MarkUsedCells( m_shape, transform );
 
     //
     // Render our shadow

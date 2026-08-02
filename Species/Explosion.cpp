@@ -11,6 +11,7 @@
 #include "Globals.h"
 #include "Main.h"
 #include "Renderer.h"
+#include "WorldPointers.h"
 
 
 //#define EXPLOSION_LIFETIME		50.0f
@@ -325,7 +326,7 @@ void ExplosionManager::Render()
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexEnvf       (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 
-		g_app->m_renderer->SetObjectLighting();
+		g_renderer->SetObjectLighting();
 
 		glEnable        (GL_COLOR_MATERIAL);
 		glDisable       (GL_CULL_FACE);
@@ -340,7 +341,7 @@ void ExplosionManager::Render()
 		glDisable       (GL_BLEND );
 		glEnable        (GL_CULL_FACE);
 		glDisable       (GL_COLOR_MATERIAL);
-		g_app->m_renderer->UnsetObjectLighting();
+		g_renderer->UnsetObjectLighting();
 
 		glTexEnvf       (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		glDisable       (GL_TEXTURE_2D );

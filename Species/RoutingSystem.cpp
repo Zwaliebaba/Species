@@ -12,6 +12,7 @@
 #include "Location.h"
 
 #include "RadarDish.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -43,7 +44,7 @@ Vector3 WayPoint::GetPos()
 
 	if (m_type == TypeGroundPos)
 	{
-		Landscape *land = &g_app->m_location->m_landscape;
+		Landscape *land = &g_location->m_landscape;
 		rv.y = land->m_heightMap->GetValue(rv.x, rv.z);
 		if (rv.y < 0.0f)
 		{
@@ -53,7 +54,7 @@ Vector3 WayPoint::GetPos()
 	}
 	else if (m_type == TypeBuilding)
 	{
-		Building *building = g_app->m_location->GetBuilding(m_buildingId);
+		Building *building = g_location->GetBuilding(m_buildingId);
         if( building )
         {
             DEBUG_ASSERT( building->m_type == Building::TypeRadarDish ||
@@ -176,7 +177,7 @@ int	Route::GetIdOfNearestEdge(Vector3 const &_pos, float *_dist)
 
 void Route::Render()
 {
-    if( !g_app->m_location ) return;
+    if( !g_location ) return;
 
 #ifdef DEBUG_RENDER_ENABLED
     Vector3 lastPos;

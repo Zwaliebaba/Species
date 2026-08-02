@@ -16,6 +16,7 @@
 #include "EntityGrid.h"
 #include "Location.h"
 #include "Team.h"
+#include "WorldPointers.h"
 
 
 #define END_OF_LIST -100000
@@ -185,8 +186,8 @@ EntityGrid::EntityGrid(float _cellSizeX, float _cellSizeZ)
     m_cellSizeXRecip = 1.0f / _cellSizeX;
     m_cellSizeZRecip = 1.0f / _cellSizeZ;
 
-    m_numCellsX = int(g_app->m_location->m_landscape.GetWorldSizeX() / _cellSizeX) + 1;
-    m_numCellsZ = int(g_app->m_location->m_landscape.GetWorldSizeZ() / _cellSizeZ) + 1;
+    m_numCellsX = int(g_location->m_landscape.GetWorldSizeX() / _cellSizeX) + 1;
+    m_numCellsZ = int(g_location->m_landscape.GetWorldSizeZ() / _cellSizeZ) + 1;
 
 //	SetNewReportingThreshold(13);
     EnsureMaxNeighbours( 100 );
@@ -372,7 +373,7 @@ WorldObjectId *EntityGrid::GetEnemies(float _worldX, float _worldZ, float _range
 
     for( int i = 0; i < NUM_TEAMS; ++i )
     {
-        include[i] = !g_app->m_location->IsFriend(i, _myTeam);
+        include[i] = !g_location->IsFriend(i, _myTeam);
     }
 
     return GetNeighbours( _worldX, _worldZ, _range, _numFound, include );
@@ -395,7 +396,7 @@ WorldObjectId EntityGrid::GetBestEnemy(float _worldX, float _worldZ,
     for( int i = 0; i < numFound; ++i )
     {
         WorldObjectId id = ids[i];
-        Entity *entity = g_app->m_location->GetEntity( id );
+        Entity *entity = g_location->GetEntity( id );
         float deltaX = entity->m_pos.x - _worldX;
         float deltaZ = entity->m_pos.z - _worldZ;
 		float distanceSqrd = deltaX * deltaX + deltaZ * deltaZ;
@@ -420,7 +421,7 @@ WorldObjectId *EntityGrid::GetFriends(float _worldX, float _worldZ, float _range
 
     for( int i = 0; i < NUM_TEAMS; ++i )
     {
-        include[i] = g_app->m_location->IsFriend(i, _myTeam);
+        include[i] = g_location->IsFriend(i, _myTeam);
     }
 
     return GetNeighbours( _worldX, _worldZ, _range, _numFound, include );
@@ -487,7 +488,7 @@ WorldObjectId *EntityGrid::GetNeighbours(float _worldX, float _worldZ, float _ra
                         }
                         if( added ) continue;
 
-                        Entity *obj = g_app->m_location->GetEntity( objId );
+                        Entity *obj = g_location->GetEntity( objId );
                         if( !obj )
                         {
                             LogEntityGridError( objId, Vector3(x*m_cellSizeX, 0.0f, z*m_cellSizeZ), 1 );
@@ -581,7 +582,7 @@ int EntityGrid::GetNumFriends(float _worldX, float _worldZ, float _range, unsign
     bool includeTeam[NUM_TEAMS];
     for( int i = 0; i < NUM_TEAMS; ++i )
     {
-        includeTeam[i] = g_app->m_location->IsFriend( i, _myTeam );
+        includeTeam[i] = g_location->IsFriend( i, _myTeam );
     }
 
     return GetNumNeighbours( _worldX, _worldZ, _range, includeTeam );
@@ -593,7 +594,7 @@ int EntityGrid::GetNumEnemies(float _worldX, float _worldZ, float _range, unsign
     bool includeTeam[NUM_TEAMS];
     for( int i = 0; i < NUM_TEAMS; ++i )
     {
-        includeTeam[i] = !g_app->m_location->IsFriend( i, _myTeam );
+        includeTeam[i] = !g_location->IsFriend( i, _myTeam );
     }
 
     return GetNumNeighbours( _worldX, _worldZ, _range, includeTeam );
@@ -642,7 +643,7 @@ bool EntityGrid::AreEnemiesPresent(float _worldX, float _worldZ, float _range, u
     bool includeTeam[NUM_TEAMS];
     for( int i = 0; i < NUM_TEAMS; ++i )
     {
-        includeTeam[i] = !g_app->m_location->IsFriend( i, _myTeam );
+        includeTeam[i] = !g_location->IsFriend( i, _myTeam );
     }
 
     return AreNeighboursPresent( _worldX, _worldZ, _range, includeTeam );
@@ -654,7 +655,7 @@ bool EntityGrid::AreFriendsPresent(float _worldX, float _worldZ, float _range, u
     bool includeTeam[NUM_TEAMS];
     for( int i = 0; i < NUM_TEAMS; ++i )
     {
-        includeTeam[i] = g_app->m_location->IsFriend( i, _myTeam );
+        includeTeam[i] = g_location->IsFriend( i, _myTeam );
     }
 
     return AreNeighboursPresent( _worldX, _worldZ, _range, includeTeam );
@@ -668,15 +669,15 @@ void EntityGrid::Render ()
 
     int x, z;
 
-    float cellSizeX = g_app->m_location->m_landscape.GetWorldSizeX() / (float) m_numCellsX;
-    float cellSizeZ = g_app->m_location->m_landscape.GetWorldSizeZ() / (float) m_numCellsZ;
+    float cellSizeX = g_location->m_landscape.GetWorldSizeX() / (float) m_numCellsX;
+    float cellSizeZ = g_location->m_landscape.GetWorldSizeZ() / (float) m_numCellsZ;
 
     glDisable( GL_CULL_FACE );
     glEnable( GL_BLEND );
 
     for ( x = 0; x < m_numCellsX; ++x )
     {
-        float worldX = ((float) x / (float) m_numCellsX) * g_app->m_location->m_landscape.GetWorldSizeX();
+        float worldX = ((float) x / (float) m_numCellsX) * g_location->m_landscape.GetWorldSizeX();
         for ( z = 0; z < m_numCellsZ; ++z )
         {
             for( int t = 0; t < NUM_TEAMS; ++t )
@@ -686,12 +687,12 @@ void EntityGrid::Render ()
 
                 if (numEntities > 0)
                 {
-                     float worldZ = ((float) z / (float) m_numCellsZ) * g_app->m_location->m_landscape.GetWorldSizeZ();
-                     float worldY = g_app->m_location->m_landscape.m_heightMap->GetValue( worldX, worldZ ) + 10.0f;
+                     float worldZ = ((float) z / (float) m_numCellsZ) * g_location->m_landscape.GetWorldSizeZ();
+                     float worldY = g_location->m_landscape.m_heightMap->GetValue( worldX, worldZ ) + 10.0f;
                      worldY = 100.0f + t * 30.0f;
 
                      float alpha = 128;
-                     RGBAColour col = g_app->m_location->m_teams[t].m_colour;
+                     RGBAColour col = g_location->m_teams[t].m_colour;
                      glColor4ub(col.r, col.g, col.b, alpha);
 
                      glBegin(GL_QUADS);

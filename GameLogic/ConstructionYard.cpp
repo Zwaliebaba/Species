@@ -19,6 +19,7 @@
 #include "Camera.h"
 #include "Renderer.h"
 #include "Team.h"
+#include "WorldPointers.h"
 
 
 ConstructionYard::ConstructionYard()
@@ -62,11 +63,11 @@ bool ConstructionYard::Advance()
         m_numSurges > 0 &&
         m_numPrimitives > 0 )
     {
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb && !gb->m_online )
         {
             gb->m_online = true;
-            g_app->m_globalWorld->EvaluateEvents();
+            g_globalWorld->EvaluateEvents();
         }
     }
 
@@ -97,8 +98,8 @@ bool ConstructionYard::Advance()
 
                 Matrix34 mat( m_front, g_upVector, m_pos );
                 Matrix34 prim = m_primitives[5]->GetWorldMatrix( mat );
-                WorldObjectId objId = g_app->m_location->SpawnEntities( prim.pos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0.0f );
-                Entity *entity = g_app->m_location->GetEntity( objId );
+                WorldObjectId objId = g_location->SpawnEntities( prim.pos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0.0f );
+                Entity *entity = g_location->GetEntity( objId );
                 Armour *armour = (Armour *) entity;
                 armour->m_front.Set( 0, 0, 1 );
                 armour->m_vel.Zero();
@@ -186,8 +187,8 @@ void ConstructionYard::RenderAlphas( float _predictionTime )
 {
     Building::RenderAlphas( _predictionTime );
 
-    Vector3 camUp = g_app->m_camera->GetUp();
-    Vector3 camRight = g_app->m_camera->GetRight();
+    Vector3 camUp = g_camera->GetUp();
+    Vector3 camRight = g_camera->GetRight();
 
     glDepthMask     ( false );
     glEnable        ( GL_BLEND );
@@ -330,13 +331,13 @@ void ConstructionYard::RenderAlphas( float _predictionTime )
 
 bool ConstructionYard::IsPopulationLocked()
 {
-    Team *team = g_app->m_location->GetMyTeam();
+    Team *team = g_location->GetMyTeam();
 
     int numArmour = 0;
     for( int i = 0; i < team->m_specials.Size(); ++i )
     {
         WorldObjectId id = *team->m_specials.GetPointer(i);
-        Entity *entity = g_app->m_location->GetEntity(id);
+        Entity *entity = g_location->GetEntity(id);
         if( entity && entity->m_type == Entity::TypeArmour )
         {
             ++numArmour;
@@ -407,8 +408,8 @@ void DisplayScreen::RenderAlphas( float _predictionTime )
     //
     // Render black blob
 
-    Vector3 camRight = g_app->m_camera->GetRight();
-    Vector3 camUp = g_app->m_camera->GetUp();
+    Vector3 camRight = g_camera->GetRight();
+    Vector3 camUp = g_camera->GetUp();
     float size = 70.0f;
     glColor4f( 0.4f, 0.3f, 0.4f, 0.0f );
     glEnable( GL_TEXTURE_2D );
@@ -438,7 +439,7 @@ void DisplayScreen::RenderAlphas( float _predictionTime )
         Matrix34 rayMat = m_rays[i]->GetWorldMatrix(buildingMat);
 
         Vector3 rayToArmour = (rayMat.pos - targetPos).Normalise();
-        Vector3 right = ( g_app->m_camera->GetPos() - rayMat.pos ) ^ rayToArmour;
+        Vector3 right = ( g_camera->GetPos() - rayMat.pos ) ^ rayToArmour;
         right.Normalise();
 
         glBegin( GL_QUADS );
@@ -463,11 +464,11 @@ void DisplayScreen::RenderAlphas( float _predictionTime )
     glBlendFunc( GL_ZERO, GL_SRC_COLOR );
     m_armour->Render( _predictionTime, armourMat );
 
-    //g_app->m_renderer->SetObjectLighting();
+    //g_renderer->SetObjectLighting();
     //glBlendFunc( GL_SRC_ALPHA, GL_ONE );
     //m_armour->Render( _predictionTime, armourMat );
 
-    g_app->m_renderer->UnsetObjectLighting();
+    g_renderer->UnsetObjectLighting();
 
     glDisable( GL_NORMALIZE );
 

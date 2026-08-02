@@ -21,6 +21,7 @@
 #include "ParticleSystem.h"
 #include "Location.h"
 #include "GameTime.h"
+#include "WorldPointers.h"
 
 Tree::Tree()
 :   Building(),
@@ -104,7 +105,7 @@ bool Tree::Advance()
                                   sfrand(actualHeight*1.0f) );
             float fireSize = actualHeight*2.0f;
             fireSize *= (1.0f + sfrand(0.5f) );
-            g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
+            g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
         }
 
         if( frand(100.0f) < 10.0f )
@@ -113,7 +114,7 @@ bool Tree::Advance()
             fireSpawn += Vector3( sfrand(actualHeight*0.75f),
                                   sfrand(actualHeight*0.75f),
                                   sfrand(actualHeight*0.75f) );
-            g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeExplosionDebris );
+            g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeExplosionDebris );
         }
 
         //
@@ -131,11 +132,11 @@ bool Tree::Advance()
         Vector3 hitCentre = m_pos + m_hitcheckCentre*actualHeight;
         float hitRadius = m_hitcheckRadius * actualHeight;
 
-        for( int b = 0; b < g_app->m_location->m_buildings.Size(); ++b )
+        for( int b = 0; b < g_location->m_buildings.Size(); ++b )
         {
-            if( g_app->m_location->m_buildings.ValidIndex(b) )
+            if( g_location->m_buildings.ValidIndex(b) )
             {
-                Building *building = g_app->m_location->m_buildings[b];
+                Building *building = g_location->m_buildings[b];
                 if( building != this &&
                     building->m_type == TypeTree )
                 {
@@ -184,7 +185,7 @@ bool Tree::Advance()
 			fireSpawn += Vector3( sfrand(actualHeight*1.0f),
 								  sfrand(actualHeight*0.25f),
 								  sfrand(actualHeight*1.0f) );
-			g_app->m_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeLeaf, -1.0f, RGBAColour (m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2] ) );
+			g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeLeaf, -1.0f, RGBAColour (m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2] ) );
 		}
 	}
 

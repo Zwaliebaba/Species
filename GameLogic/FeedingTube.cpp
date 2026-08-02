@@ -17,7 +17,7 @@
 #include "GameTime.h"
 
 #include "FeedingTube.h"
-
+#include "WorldPointers.h"
 
 
 FeedingTube::FeedingTube()
@@ -46,7 +46,7 @@ bool FeedingTube::Advance ()
     Matrix34 worldMat = m_focusMarker->GetWorldMatrix(rootMat);
 	Vector3 dishPos = worldMat.pos;
 
-    FeedingTube *ft = (FeedingTube *)g_app->m_location->GetBuilding( m_receiverId );
+    FeedingTube *ft = (FeedingTube *)g_location->GetBuilding( m_receiverId );
     if( ft &&
         ft->m_type == Building::TypeFeedingTube )
     {
@@ -73,7 +73,7 @@ Vector3 FeedingTube::GetDishFront( float _predictionTime )
 {
     if( m_receiverId != -1 )
     {
-        FeedingTube *receiver = (FeedingTube *) g_app->m_location->GetBuilding( m_receiverId );
+        FeedingTube *receiver = (FeedingTube *) g_location->GetBuilding( m_receiverId );
         if( receiver )
         {
             Vector3 ourDishPos = GetDishPos( _predictionTime );
@@ -142,7 +142,7 @@ void FeedingTube::RenderSignal( float _predictionTime, float _radius, float _alp
 {
 	START_PROFILE(g_profiler, "Signal");
 
-    FeedingTube *receiver = (FeedingTube *) g_app->m_location->GetBuilding( m_receiverId );
+    FeedingTube *receiver = (FeedingTube *) g_location->GetBuilding( m_receiverId );
     if( !receiver ) return;
 
     Vector3 startPos = GetStartPoint();
@@ -315,7 +315,7 @@ int  FeedingTube::GetBuildingLink()
 
 void FeedingTube::SetBuildingLink(int _buildingId)
 {
-    Building *b = g_app->m_location->GetBuilding( _buildingId );
+    Building *b = g_location->GetBuilding( _buildingId );
     if( b &&
         b->m_type == Building::TypeFeedingTube )
     {
@@ -351,7 +351,7 @@ bool FeedingTube::IsInView()
     float radius = ( startPoint - endPoint ).Mag() / 2.0f;
     radius += m_radius;
 
-    if( g_app->m_camera->SphereInViewFrustum( midPoint, radius ) )
+    if( g_camera->SphereInViewFrustum( midPoint, radius ) )
     {
         return true;
     }

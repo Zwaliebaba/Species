@@ -14,6 +14,7 @@
 #include "Main.h"
 #include "ParticleSystem.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -112,7 +113,7 @@ bool Particle::Advance()
 			// copies of the bits of p that we need
 			Vector3 pos = m_pos;
 			Vector3 vel = m_vel / 5.0f;
-            g_app->m_particleSystem->CreateParticle( pos, vel, Particle::TypeRocketTrail, m_size/2.0f );
+            g_particleSystem->CreateParticle( pos, vel, Particle::TypeRocketTrail, m_size/2.0f );
             particleCreated = true;
         }
     }
@@ -128,15 +129,15 @@ bool Particle::Advance()
             m_typeId == TypeBlueSpark ||
 			m_typeId == TypeLeaf )
         {
-            float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+            float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
             if( m_pos.y <= landHeight )
             {
 	            Vector3 lastPos = m_pos;// - m_vel * g_advanceTime;
 	            Vector3 impactPos = (m_pos + lastPos) * 0.5f;
 	            m_pos = impactPos;
-	            m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+	            m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
-                Vector3 normal = g_app->m_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+                Vector3 normal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
                 float dotProd = normal * m_vel;
                 m_vel -= normal * 2.0f * dotProd * 0.7f;
             }
@@ -167,8 +168,8 @@ void Particle::Render(float _predictionTime)
 
     Vector3 predictedPos = m_pos + _predictionTime * m_vel;
     float size = m_size/16.0f;
-	Vector3 up(g_app->m_camera->GetUp() * size);
-	Vector3 right(g_app->m_camera->GetRight() * size);
+	Vector3 up(g_camera->GetUp() * size);
+	Vector3 right(g_camera->GetRight() * size);
 
     if( m_typeId == TypeMissileTrail )
     {

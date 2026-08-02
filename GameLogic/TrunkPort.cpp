@@ -16,6 +16,7 @@
 #include "App.h"
 #include "GlobalWorld.h"
 #include "GameTime.h"
+#include "WorldPointers.h"
 
 
 TrunkPort::TrunkPort()
@@ -83,7 +84,7 @@ void TrunkPort::SetDetail( int _detail )
 
 bool TrunkPort::Advance()
 {
-    GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+    GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
     if( gb && gb->m_online && m_openTimer == 0.0f)
     {
         m_openTimer = GetHighResTime();
@@ -107,7 +108,7 @@ void TrunkPort::Render( float predictionTime )
 
     char caption[256];
 
-    char *locationName = g_app->m_globalWorld->GetLocationNameTranslated( m_targetLocationId );
+    char *locationName = g_globalWorld->GetLocationNameTranslated( m_targetLocationId );
     if( locationName )
     {
         strcpy( caption, locationName );
@@ -282,15 +283,15 @@ void TrunkPort::RenderAlphas( float predictionTime )
 
 void TrunkPort::ReprogramComplete()
 {
-    GlobalLocation *location = g_app->m_globalWorld->GetLocation( m_targetLocationId );
+    GlobalLocation *location = g_globalWorld->GetLocation( m_targetLocationId );
     if( location )
     {
         location->m_available = true;
 
         // Look for a "receiver" trunk port and set that to the same state
-        for( int i = 0; i < g_app->m_globalWorld->m_buildings.Size(); ++i )
+        for( int i = 0; i < g_globalWorld->m_buildings.Size(); ++i )
         {
-            GlobalBuilding *building = g_app->m_globalWorld->m_buildings[i];
+            GlobalBuilding *building = g_globalWorld->m_buildings[i];
             if( building->m_type == Building::TypeTrunkPort &&
                 building->m_locationId == m_targetLocationId &&
                 building->m_link == g_app->m_locationId )

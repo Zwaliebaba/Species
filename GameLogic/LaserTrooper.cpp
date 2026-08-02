@@ -2,7 +2,6 @@
 #include "DebugRender.h"
 #include "MathUtils.h"
 
-#include "App.h"
 #include "Location.h"
 #include "Team.h"
 #include "Unit.h"
@@ -11,6 +10,7 @@
 
 #include "LaserTrooper.h"
 #include "Resource.h"
+#include "WorldPointers.h"
 
 
 // *** Advance
@@ -19,7 +19,7 @@
 bool LaserTrooper::Advance(Unit *_unit)
 {
     Vector3 oldPos = m_pos;
-    bool aiControlled = (g_app->m_location->m_teams[ m_teamId ].m_teamType == Team::TeamTypeAI);
+    bool aiControlled = (g_location->m_teams[ m_teamId ].m_teamType == Team::TeamTypeAI);
 
     if( aiControlled )
     {
@@ -36,7 +36,7 @@ bool LaserTrooper::Advance(Unit *_unit)
         targetPos.y = 0.0f;
         Vector3 offset = _unit->GetOffset(Unit::FormationRectangle, m_formationIndex );
         targetPos += offset;
-        targetPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( targetPos.x, targetPos.z );
+        targetPos.y = g_location->m_landscape.m_heightMap->GetValue( targetPos.x, targetPos.z );
         targetPos = PushFromObstructions( targetPos );
         //targetPos = PushFromEachOther( targetPos );
 
@@ -67,9 +67,9 @@ bool LaserTrooper::Advance(Unit *_unit)
                 // Speed up if going down hill
 
                 Vector3 nextPos = m_pos + m_vel * SERVER_ADVANCE_PERIOD;
-                nextPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
-                float currentHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
-                float nextHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( nextPos.x, nextPos.z );
+                nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
+                float currentHeight = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+                float nextHeight = g_location->m_landscape.m_heightMap->GetValue( nextPos.x, nextPos.z );
                 float factor = 1.0f - (currentHeight - nextHeight) / -3.0f;
                 if( factor < 0.01f ) factor = 0.01f;
                 if( factor > 2.0f ) factor = 2.0f;
@@ -80,7 +80,7 @@ bool LaserTrooper::Advance(Unit *_unit)
 					m_vel.SetLength(distance / SERVER_ADVANCE_PERIOD);
 				}
 				m_pos += m_vel * SERVER_ADVANCE_PERIOD;
-				m_pos.y = g_app->m_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 0.1f;
+				m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 0.1f;
 
                 if( targetVector.Mag() < 1.0f )
                 {
@@ -98,12 +98,12 @@ bool LaserTrooper::Advance(Unit *_unit)
 			}
 			else // otherwise we are standing on the spot
 			{
-				Team *team = &g_app->m_location->m_teams[m_teamId];
+				Team *team = &g_location->m_teams[m_teamId];
 
 				// Does this entity belong to the currently selectedUnit
 				if (m_unitId == team->m_currentUnitId)
 				{
-					Vector3 toMouse = g_app->m_userInput->GetMousePos3d() - m_pos;
+					Vector3 toMouse = g_userInput->GetMousePos3d() - m_pos;
 					toMouse.HorizontalAndNormalise();
 					m_angVel = (toMouse ^ m_front) * 4.0f;
 				}
@@ -218,12 +218,12 @@ void LaserTrooper::Render( float predictionTime, int teamId )
     Vector3 predictedPos = m_pos + m_vel * predictionTime;
     if( m_onGround && m_inWater==-1 )
     {
-        predictedPos.y = g_app->m_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
+        predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
     }
 
     float size = 2.0f;
 
-    Vector3 entityUp = g_app->m_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
+    Vector3 entityUp = g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
 //	float wobble = m_wobble;
 //    if( !m_onGround ) wobble = 0.0f;
 //	if ( m_vel.Mag() > 0.01f )
@@ -256,7 +256,7 @@ void LaserTrooper::Render( float predictionTime, int teamId )
 
     if( !m_dead )
     {
-        RGBAColour colour = g_app->m_location->m_teams[ teamId ].m_colour;
+        RGBAColour colour = g_location->m_teams[ teamId ].m_colour;
 
         if( m_reloading > 0.0f )
         {
@@ -293,10 +293,10 @@ void LaserTrooper::Render( float predictionTime, int teamId )
             Vector3 pos4 = pos1 + Vector3( 0.0f, 0.0f, size * 2.0f );
             Vector3 pos3 = pos2 + Vector3( 0.0f, 0.0f, size * 2.0f );
 
-            pos1.y = 0.2f + g_app->m_location->m_landscape.m_heightMap->GetValue( pos1.x, pos1.z );
-            pos2.y = 0.2f + g_app->m_location->m_landscape.m_heightMap->GetValue( pos2.x, pos2.z );
-            pos3.y = 0.2f + g_app->m_location->m_landscape.m_heightMap->GetValue( pos3.x, pos3.z );
-            pos4.y = 0.2f + g_app->m_location->m_landscape.m_heightMap->GetValue( pos4.x, pos4.z );
+            pos1.y = 0.2f + g_location->m_landscape.m_heightMap->GetValue( pos1.x, pos1.z );
+            pos2.y = 0.2f + g_location->m_landscape.m_heightMap->GetValue( pos2.x, pos2.z );
+            pos3.y = 0.2f + g_location->m_landscape.m_heightMap->GetValue( pos3.x, pos3.z );
+            pos4.y = 0.2f + g_location->m_landscape.m_heightMap->GetValue( pos4.x, pos4.z );
 
             glLineWidth( 1.0f );
             glBegin( GL_QUADS );
@@ -311,7 +311,7 @@ void LaserTrooper::Render( float predictionTime, int teamId )
         //
         // Draw a line through us if we are side-on with the camera
 
-		float alpha = 1.0f - fabsf(g_app->m_camera->GetFront() * m_front);
+		float alpha = 1.0f - fabsf(g_camera->GetFront() * m_front);
         if( alpha > 0.5f )
         {
             //colour.a = 255;
@@ -346,7 +346,7 @@ void LaserTrooper::Render( float predictionTime, int teamId )
         float predictedHealth = m_stats[StatHealth];
         if( m_onGround ) predictedHealth -= 40 * predictionTime;
         else             predictedHealth -= 20 * predictionTime;
-        float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
+        float landHeight = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
 
         for( int i = 0; i < 3; ++i )
         {

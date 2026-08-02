@@ -8,8 +8,8 @@
 
 #include "MessageDialog.h"
 
-#include "App.h"
 #include "Renderer.h"
+#include "WorldPointers.h"
 
 
 //*****************************************************************************
@@ -70,8 +70,8 @@ MessageDialog::MessageDialog(char const *_name, char const *_message)
 	m_h = 65 + m_numLines * DEF_FONT_SIZE;
 	m_h = max(m_h, 85);
 	SetMenuSize( m_w, m_h );
-	m_x = g_app->m_renderer->ScreenW()/2 - m_w/2;
-	m_y = g_app->m_renderer->ScreenH()/2 - m_h/2;
+	m_x = g_renderer->ScreenW()/2 - m_w/2;
+	m_y = g_renderer->ScreenH()/2 - m_h/2;
 }
 
 

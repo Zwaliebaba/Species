@@ -21,6 +21,7 @@
 #include "WorldObject.h"
 
 #include "ServerUpdates.h"
+#include "WorldPointers.h"
 
 // The switch below is the inherited body verbatim — same cases, same order, same
 // conditions. It is reachable from the client's advance loop, so changing what it
@@ -37,7 +38,7 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
     switch (update->m_type)
     {
     case NetworkUpdate::Alive:
-      g_app->m_location->UpdateTeam(update->m_teamId, update->m_teamControls);
+      g_location->UpdateTeam(update->m_teamId, update->m_teamControls);
       break;
 
     case NetworkUpdate::Pause:
@@ -45,13 +46,13 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
       break;
 
     case NetworkUpdate::SelectUnit:
-      g_app->m_location->m_teams[update->m_teamId].SelectUnit(update->m_unitId, update->m_entityId, update->m_buildingId);
-      g_app->m_taskManager->SelectTask(WorldObjectId(update->m_teamId, update->m_unitId, update->m_entityId, -1));
+      g_location->m_teams[update->m_teamId].SelectUnit(update->m_unitId, update->m_entityId, update->m_buildingId);
+      g_taskManager->SelectTask(WorldObjectId(update->m_teamId, update->m_unitId, update->m_entityId, -1));
       break;
 
     case NetworkUpdate::CreateUnit:
     {
-      Building* building = g_app->m_location->GetBuilding(update->m_buildingId);
+      Building* building = g_location->GetBuilding(update->m_buildingId);
       if (building && building->m_type == Building::TypeFactory)
       {
         Factory* factory = (Factory*)building;
@@ -63,8 +64,8 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
         int unitId;
         // The returned Unit* was assigned to an unused local in the original.
         // Dropping the variable keeps the call and its side effects.
-        g_app->m_location->m_teams[update->m_teamId].NewUnit(update->m_entityType, update->m_numTroops, &unitId, update->GetWorldPos());
-        g_app->m_location->SpawnEntities(update->GetWorldPos(), update->m_teamId, unitId, update->m_entityType, update->m_numTroops, g_zeroVector,
+        g_location->m_teams[update->m_teamId].NewUnit(update->m_entityType, update->m_numTroops, &unitId, update->GetWorldPos());
+        g_location->SpawnEntities(update->GetWorldPos(), update->m_teamId, unitId, update->m_entityType, update->m_numTroops, g_zeroVector,
                                          update->m_numTroops * 2);
       }
       break;
@@ -72,7 +73,7 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
 
     case NetworkUpdate::AimBuilding:
     {
-      Building* building = g_app->m_location->GetBuilding(update->m_buildingId);
+      Building* building = g_location->GetBuilding(update->m_buildingId);
       if (building && building->m_id.GetTeamId() == update->m_teamId && building->m_type == Building::TypeRadarDish)
       {
         RadarDish* radarDish = (RadarDish*)building;
@@ -83,7 +84,7 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
 
     case NetworkUpdate::ToggleLaserFence:
     {
-      Building* building = g_app->m_location->GetBuilding(update->m_buildingId);
+      Building* building = g_location->GetBuilding(update->m_buildingId);
       if (building && building->m_type == Building::TypeLaserFence)
       {
         LaserFence* laserfence = (LaserFence*)building;
@@ -94,14 +95,14 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
 
     case NetworkUpdate::RunProgram:
     {
-      g_app->m_taskManager->RunTask(update->m_program);
+      g_taskManager->RunTask(update->m_program);
       break;
     }
 
     case NetworkUpdate::TargetProgram:
     {
       int programId = update->m_program;
-      g_app->m_taskManager->TargetTask(programId, update->GetWorldPos());
+      g_taskManager->TargetTask(programId, update->GetWorldPos());
     }
     }
   }

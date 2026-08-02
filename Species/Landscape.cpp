@@ -25,6 +25,7 @@
 #include "Renderer.h"
 #include "Location.h"
 #include "Water.h"
+#include "WorldPointers.h"
 
 
 // ****************************************************************************
@@ -448,10 +449,10 @@ void Landscape::GenerateHeightMap(LandscapeDef *_def)
 
 void Landscape::DeleteTile( int tileId )
 {
-    LandscapeTile *tile = g_app->m_location->m_levelFile->m_landscape.m_tiles[ tileId ];
+    LandscapeTile *tile = g_location->m_levelFile->m_landscape.m_tiles[ tileId ];
     delete tile;
-    g_app->m_location->m_levelFile->m_landscape.m_tiles.RemoveData( tileId );
-	LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
+    g_location->m_levelFile->m_landscape.m_tiles.RemoveData( tileId );
+	LandscapeDef *def = &g_location->m_levelFile->m_landscape;
     Init(def);
 }
 
@@ -587,9 +588,9 @@ void Landscape::Init(LandscapeDef *_def, bool _justMakeTheHeightMap)
     GenerateNormals();
     BuildOpenGlState();
 
-	if( g_app->m_location->m_water )
+	if( g_location->m_water )
 	{
-	    g_app->m_location->m_water->GenerateLightMap();
+	    g_location->m_water->GenerateLightMap();
 	}
 
     _def->m_cellSize = oldCellSize;

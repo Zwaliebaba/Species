@@ -13,6 +13,7 @@
 #include "Location.h"
 #include "LevelFile.h"
 #include "Water.h"
+#include "WorldPointers.h"
 
 class ApplyOtherButton : public SpeciesButton
 {
@@ -50,13 +51,13 @@ class ApplyOtherButton : public SpeciesButton
             g_prefsManager->SetInt( OTHER_CHRISTMASENABLED, parent->m_christmas );
         }
 
-        if( g_app->m_location )
+        if( g_location )
         {
-            LandscapeDef *def = &g_app->m_location->m_levelFile->m_landscape;
-		    g_app->m_location->m_landscape.Init(def);
+            LandscapeDef *def = &g_location->m_levelFile->m_landscape;
+		    g_location->m_landscape.Init(def);
 
-            delete g_app->m_location->m_water;
-            g_app->m_location->m_water = new Water();
+            delete g_location->m_water;
+            g_location->m_water = new Water();
         }
 
 		bool removeWindows = false;
@@ -108,8 +109,8 @@ PrefsOtherWindow::PrefsOtherWindow()
 {
     SetMenuSize( 468, 350 );
 
-    SetPosition( g_app->m_renderer->ScreenW()/2 - m_w/2,
-                 g_app->m_renderer->ScreenH()/2 - m_h/2 );
+    SetPosition( g_renderer->ScreenW()/2 - m_w/2,
+                 g_renderer->ScreenH()/2 - m_h/2 );
 
     m_helpEnabled = g_prefsManager->GetInt( OTHER_HELPENABLED, 1 );
 	m_controlHelpEnabled = g_prefsManager->GetInt( OTHER_CONTROLHELPENABLED, 1 );

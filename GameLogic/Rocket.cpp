@@ -30,6 +30,7 @@
 #include "TaskManagerInterface.h"
 
 #include "SoundSystem.h"
+#include "WorldPointers.h"
 
 
 Shape *FuelBuilding::s_fuelPipe = nullptr;
@@ -85,7 +86,7 @@ void FuelBuilding::ProvideFuel( float _level )
 
 FuelBuilding *FuelBuilding::GetLinkedBuilding()
 {
-    Building *building = g_app->m_location->GetBuilding( m_fuelLink );
+    Building *building = g_location->GetBuilding( m_fuelLink );
     if( building )
     {
         if( building->m_type == TypeFuelGenerator ||
@@ -127,7 +128,7 @@ bool FuelBuilding::IsInView()
         float radius = ( theirPipePos - ourPipePos ).Mag() / 2.0f;;
         radius += m_radius;
 
-        return( g_app->m_camera->SphereInViewFrustum( midPoint, radius ) );
+        return( g_camera->SphereInViewFrustum( midPoint, radius ) );
     }
     else
     {
@@ -172,7 +173,7 @@ void FuelBuilding::RenderAlphas( float _predictionTime )
             Vector3 endPos = fuelBuilding->GetFuelPosition();
 
             Vector3 midPos = ( startPos + endPos ) / 2.0f;
-            Vector3 rightAngle = ( g_app->m_camera->GetPos() - midPos ) ^ ( startPos - endPos );
+            Vector3 rightAngle = ( g_camera->GetPos() - midPos ) ^ ( startPos - endPos );
             rightAngle.SetLength( 25.0f );
 
             glBindTexture       ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Fuel.bmp" ) );
@@ -188,9 +189,9 @@ void FuelBuilding::RenderAlphas( float _predictionTime )
 
             glColor4f( 1.0f, 0.4f, 0.1f, 0.4f * m_currentLevel );
 
-	        float nearPlaneStart = g_app->m_renderer->GetNearPlane();
-	        g_app->m_camera->SetupProjectionMatrix(nearPlaneStart * 1.2f,
-							 			           g_app->m_renderer->GetFarPlane());
+	        float nearPlaneStart = g_renderer->GetNearPlane();
+	        g_camera->SetupProjectionMatrix(nearPlaneStart * 1.2f,
+							 			           g_renderer->GetFarPlane());
 
             int buildingDetail = g_prefsManager->GetInt( "RenderBuildingDetail" );
             float maxLoops = 4 - buildingDetail;
@@ -208,8 +209,8 @@ void FuelBuilding::RenderAlphas( float _predictionTime )
                 rightAngle *= 0.7f;
             }
 
-	        g_app->m_camera->SetupProjectionMatrix(nearPlaneStart,
-								 		           g_app->m_renderer->GetFarPlane());
+	        g_camera->SetupProjectionMatrix(nearPlaneStart,
+								 		           g_renderer->GetFarPlane());
 
             glEnable( GL_DEPTH_TEST );
             glDisable( GL_TEXTURE_2D );
@@ -305,7 +306,7 @@ bool FuelGenerator::Advance()
 
     if( m_surges > 8 )
     {
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         if( gb ) gb->m_online = true;
     }
 
@@ -338,7 +339,7 @@ bool FuelGenerator::Advance()
             Vector3 particlePos = m_pumpTip->GetWorldMatrix(mat).pos;
             float size = 150.0f + frand(150.0f);
 
-            g_app->m_particleSystem->CreateParticle( particlePos, pumpVel, Particle::TypeDarwinianFire, size );
+            g_particleSystem->CreateParticle( particlePos, pumpVel, Particle::TypeDarwinianFire, size );
         }
     }
 
@@ -472,7 +473,7 @@ FuelStation::FuelStation()
 
 bool FuelStation::IsLoading()
 {
-    Building *building = g_app->m_location->GetBuilding( m_fuelLink );
+    Building *building = g_location->GetBuilding( m_fuelLink );
     if( building && building->m_type == TypeEscapeRocket )
     {
         EscapeRocket *rocket = (EscapeRocket *) building;
@@ -488,7 +489,7 @@ bool FuelStation::IsLoading()
 
 bool FuelStation::Advance()
 {
-    Building *building = g_app->m_location->GetBuilding( m_fuelLink );
+    Building *building = g_location->GetBuilding( m_fuelLink );
     if( building && building->m_type == TypeEscapeRocket )
     {
         EscapeRocket *rocket = (EscapeRocket *) building;
@@ -498,7 +499,7 @@ bool FuelStation::Advance()
             //
             // Find a random Darwinian and make him board
 
-            Team *team = &g_app->m_location->m_teams[0];
+            Team *team = &g_location->m_teams[0];
             int numOthers = team->m_others.Size();
             if( numOthers > 0 )
             {
@@ -535,7 +536,7 @@ Vector3 FuelStation::GetEntrance()
 
 bool FuelStation::BoardRocket( WorldObjectId _id )
 {
-    Building *building = g_app->m_location->GetBuilding( m_fuelLink );
+    Building *building = g_location->GetBuilding( m_fuelLink );
     if( building && building->m_type == TypeEscapeRocket )
     {
         EscapeRocket *rocket = (EscapeRocket *) building;
@@ -543,7 +544,7 @@ bool FuelStation::BoardRocket( WorldObjectId _id )
 
         if( result )
         {
-            Entity *entity = g_app->m_location->GetEntity( _id );
+            Entity *entity = g_location->GetEntity( _id );
             Vector3 entityPos = entity ? entity->m_pos : g_zeroVector;
             entityPos.y += 2;
 
@@ -551,7 +552,7 @@ bool FuelStation::BoardRocket( WorldObjectId _id )
             for( int i = 0; i < numFlashes; ++i )
             {
                 Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );
-                g_app->m_particleSystem->CreateParticle( entityPos, vel, Particle::TypeControlFlash );
+                g_particleSystem->CreateParticle( entityPos, vel, Particle::TypeControlFlash );
             }
 
             g_soundSystem->TriggerBuildingEvent( this, "LoadPassenger" );
@@ -587,7 +588,7 @@ void FuelStation::RenderAlphas( float _predictionTime )
     //
     // Render countdown
 
-    Building *building = g_app->m_location->GetBuilding( m_fuelLink );
+    Building *building = g_location->GetBuilding( m_fuelLink );
     if( building && building->m_type == TypeEscapeRocket )
     {
         EscapeRocket *rocket = (EscapeRocket *) building;
@@ -689,7 +690,7 @@ void FuelStation::RenderAlphas( float _predictionTime )
             Vector3 theirPos = m_pos + Vector3(0,200,0);
             theirPos += screenFront * 30.0f;
 
-            Vector3 camToTheirPos = g_app->m_camera->GetPos() - theirPos;
+            Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
             Vector3 lineTheirPos = camToTheirPos ^ ( ourPos - theirPos );
             lineTheirPos.SetLength( m_radius * 0.5f );
 
@@ -1000,12 +1001,12 @@ void EscapeRocket::AdvanceIgnition()
         if( m_spawnCompleted )
         {
             m_countdown = 10.0f;
-            g_app->m_taskManagerInterface->SetVisible( false );
-            if( g_app->m_script->IsRunningScript() )
+            g_taskManagerInterface->SetVisible( false );
+            if( g_script->IsRunningScript() )
             {
-                g_app->m_script->Skip();
+                g_script->Skip();
             }
-			g_app->m_script->RunScript( "LaunchpadVictory.txt");
+			g_script->RunScript( "LaunchpadVictory.txt");
         }
     }
 }
@@ -1020,11 +1021,11 @@ void EscapeRocket::AdvanceReady()
     {
         if( m_countdown > 100.0f && m_countdown < 110.0f )
         {
-            Building *spawnBuilding = g_app->m_location->GetBuilding( m_spawnBuildingId );
+            Building *spawnBuilding = g_location->GetBuilding( m_spawnBuildingId );
             if( spawnBuilding )
             {
                 Vector3 spawnPos = spawnBuilding->m_pos + spawnBuilding->m_front * 40.0f;
-                g_app->m_location->SpawnEntities( spawnPos, 1, -1, Entity::TypeDarwinian, 1, g_zeroVector, 40.0f );
+                g_location->SpawnEntities( spawnPos, 1, -1, Entity::TypeDarwinian, 1, g_zeroVector, 40.0f );
             }
         }
     }
@@ -1054,7 +1055,7 @@ void EscapeRocket::AdvanceCountdown()
     {
         m_state = StateFlight;
 
-        GlobalBuilding *gb = g_app->m_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
+        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_app->m_locationId );
         //if( gb ) gb->m_online = true;
     }
 }
@@ -1062,7 +1063,7 @@ void EscapeRocket::AdvanceCountdown()
 
 void EscapeRocket::AdvanceFlight()
 {
-    float landHeight = g_app->m_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
+    float landHeight = g_location->m_landscape.m_heightMap->GetValue( m_pos.x, m_pos.z );
     float thrust = sqrtf(m_pos.y - landHeight) * 2;
     thrust = max( thrust, 0.1f );
 
@@ -1101,8 +1102,8 @@ void EscapeRocket::AdvanceExploding()
         vel.RotateAround( windowMat.u * angle );
         vel.SetLength( 10.0f + syncfrand(30.0f) );
 
-        WorldObjectId id = g_app->m_location->SpawnEntities( windowMat.pos, 0, -1, Entity::TypeDarwinian, 1, vel, 0.0f );
-        Darwinian *darwinian = (Darwinian *) g_app->m_location->GetEntity( id );
+        WorldObjectId id = g_location->SpawnEntities( windowMat.pos, 0, -1, Entity::TypeDarwinian, 1, vel, 0.0f );
+        Darwinian *darwinian = (Darwinian *) g_location->GetEntity( id );
         darwinian->m_onGround = false;
         darwinian->SetFire();
     }
@@ -1132,8 +1133,8 @@ void EscapeRocket::AdvanceExploding()
         Vector3 smokeVel = vel;
         float smokeSize = fireSize;
 
-        if( m_fuel > 0.0f ) g_app->m_particleSystem->CreateParticle( windowMat.pos, vel, Particle::TypeFire, fireSize );
-        g_app->m_particleSystem->CreateParticle( windowMat.pos, smokeVel, Particle::TypeMissileTrail, smokeSize );
+        if( m_fuel > 0.0f ) g_particleSystem->CreateParticle( windowMat.pos, vel, Particle::TypeFire, fireSize );
+        g_particleSystem->CreateParticle( windowMat.pos, smokeVel, Particle::TypeMissileTrail, smokeSize );
     }
 
 
@@ -1153,7 +1154,7 @@ void EscapeRocket::SetupSpectacle()
     {
         for( int t = 0; t < NUM_TEAMS; ++t )
         {
-            Team *team = &g_app->m_location->m_teams[t];
+            Team *team = &g_location->m_teams[t];
             for( int i = 0; i < team->m_others.Size(); ++i )
             {
                 if( team->m_others.ValidIndex(i) )
@@ -1199,7 +1200,7 @@ void EscapeRocket::SetupAttackers()
 {
     if( !m_spawnCompleted && syncfrand() < 0.2f )
     {
-        Team *team = &g_app->m_location->m_teams[1];
+        Team *team = &g_location->m_teams[1];
         int numOthers = team->m_others.Size();
         if( numOthers > 0 )
         {
@@ -1265,7 +1266,7 @@ bool EscapeRocket::Advance()
         m_cameraShake -= SERVER_ADVANCE_PERIOD;
 
         float actualShake = m_cameraShake/5.0f;
-        g_app->m_camera->CreateCameraShake( actualShake );
+        g_camera->CreateCameraShake( actualShake );
     }
 
 
@@ -1288,11 +1289,11 @@ bool EscapeRocket::Advance()
             {
                 vel.x *= 0.75f;
                 vel.z *= 0.75f;
-                g_app->m_particleSystem->CreateParticle( pos, vel, Particle::TypeMissileTrail, size );
+                g_particleSystem->CreateParticle( pos, vel, Particle::TypeMissileTrail, size );
             }
             else
             {
-                g_app->m_particleSystem->CreateParticle( pos, vel, Particle::TypeMissileFire, size );
+                g_particleSystem->CreateParticle( pos, vel, Particle::TypeMissileFire, size );
             }
         }
     }
@@ -1306,7 +1307,7 @@ bool EscapeRocket::SafeToLaunch()
     Vector3 testPos = m_pos + Vector3(330,0,50);
     float testRadius = 100.0f;
 
-    int numEnemies = g_app->m_location->m_entityGrid->GetNumEnemies( testPos.x, testPos.z, testRadius, 0 );
+    int numEnemies = g_location->m_entityGrid->GetNumEnemies( testPos.x, testPos.z, testRadius, 0 );
 
     return( numEnemies < 2 );
 }
@@ -1328,7 +1329,7 @@ void EscapeRocket::RenderAlphas( float _predictionTime )
 
     if( g_app->m_editing )
     {
-        Building *spawnBuilding = g_app->m_location->GetBuilding( m_spawnBuildingId );
+        Building *spawnBuilding = g_location->GetBuilding( m_spawnBuildingId );
         if( spawnBuilding )
         {
             RenderArrow( m_pos, spawnBuilding->m_pos, 1.0f );
@@ -1362,8 +1363,8 @@ void EscapeRocket::RenderAlphas( float _predictionTime )
 
     if( alpha > 0.0f )
     {
-        Vector3 camUp = g_app->m_camera->GetUp();
-        Vector3 camRight = g_app->m_camera->GetRight() * 0.75f;
+        Vector3 camUp = g_camera->GetUp();
+        Vector3 camRight = g_camera->GetRight() * 0.75f;
 
         glDepthMask     ( false );
         glEnable        ( GL_BLEND );

@@ -6,8 +6,8 @@
 #include "Library.h"
 #include "ResearchItem.h"
 
-#include "App.h"
 #include "Location.h"
+#include "WorldPointers.h"
 
 
 Library::Library()
@@ -25,7 +25,7 @@ bool Library::Advance()
     for( int i = 0; i < GlobalResearch::NumResearchItems; ++i )
     {
         if( !m_scrollSpawned[i] &&
-            g_app->m_globalWorld->m_research->HasResearch(i) )
+            g_globalWorld->m_research->HasResearch(i) )
         {
             char markerName[256];
             sprintf( markerName, "MarkerResearch%02d", i+1 );
@@ -39,8 +39,8 @@ bool Library::Advance()
             item->m_researchType = i;
             item->m_inLibrary = true;
             item->m_pos = scrollPos.pos;
-            item->m_id.SetUniqueId( g_app->m_globalWorld->GenerateBuildingId() );
-            g_app->m_location->m_buildings.PutData( item );
+            item->m_id.SetUniqueId( g_globalWorld->GenerateBuildingId() );
+            g_location->m_buildings.PutData( item );
 
             m_scrollSpawned[i] = true;
         }

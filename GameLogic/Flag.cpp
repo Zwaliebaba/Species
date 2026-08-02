@@ -4,9 +4,9 @@
 
 #include "Flag.h"
 
-#include "App.h"
 #include "GameTime.h"
 #include "Camera.h"
+#include "WorldPointers.h"
 
 
 Flag::Flag()
@@ -110,7 +110,7 @@ void Flag::Render()
     glDisable       ( GL_CULL_FACE );
     glDisable       ( GL_TEXTURE_2D );
 
-    Vector3 right = m_up ^ ( g_app->m_camera->GetFront() );
+    Vector3 right = m_up ^ ( g_camera->GetFront() );
     right.SetLength( 0.2f );
 
     glBegin( GL_QUADS );
