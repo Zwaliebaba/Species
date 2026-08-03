@@ -905,11 +905,20 @@ tasks:
       file.
 
       THE RUNTIME-WIDTH FORMAT NEEDED A DECISION, not a translation. `%*s`
-      and `%-*s` become {:>{}} and {:<{}}, but printf reads a NEGATIVE dynamic
-      width as the "-" flag plus its absolute value, and std::format throws on
-      one. The left-aligned width is `24 - _indent`, so it goes negative for a
-      profiler tree deeper than 24. It is clamped at zero, which differs from
-      printf only past that depth and only in whitespace, in a debug overlay.
+      and `%-*s` become {:>{}} and {:<{}}. The left-aligned width is
+      `24 - _indent`, and _indent is UNSIGNED — so for a profiler tree deeper
+      than 24 that expression does not go negative, it WRAPS to about four
+      billion, and the printf it replaces was handed that as a field width. It
+      is a guarded subtraction now, which makes "pad the name out to column 24"
+      true at every depth.
+
+      THIS COST A RED BUILD, and the mistake is worth recording because it is
+      the one language-hygiene T8 exists to teach. The first version wrote
+      `std::max(0, 24 - _indent)` — int against unsigned int, which does not
+      deduce, C2672. T8's whole audit was finding the twelve mixed-type
+      comparisons the old macro allowed, and the very next task reintroduced a
+      thirteenth. Check the operand types before writing std::min or std::max,
+      including the ones you write yourself.
 
       The acceptance grep matched prose again — a comment explaining what the
       old code did named the banned function. Third task to hit it after

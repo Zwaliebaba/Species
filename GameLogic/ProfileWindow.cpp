@@ -119,13 +119,16 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
       lastColumn *= 1000.0f;
 
       // %*s and %-*s take their width from an argument; std::format spells that
-      // {:>{}} and {:<{}}. The left-aligned width is clamped at zero because a
-      // negative dynamic width throws in std::format, where printf read it as
-      // the "-" flag it already had. That only differs for _indent above 24,
-      // which is whitespace in a debug overlay.
-      const std::string caption =
-        std::format("{:>{}}{:<{}}:{:5} x{:4.2f} = {:4.0f} {:4.2f}", icon, _indent + 1, child->m_name, std::max(0, 24 - _indent),
-                    child->m_lastNumCalls, time / (float)child->m_lastNumCalls, time, lastColumn);
+      // {:>{}} and {:<{}}.
+      //
+      // _indent is UNSIGNED, so `24 - _indent` does not go negative for a
+      // profiler tree deeper than 24 — it wraps to about four billion, and the
+      // printf this replaces was handed that as a field width. Writing the
+      // subtraction as a guarded expression is what makes the intent — "pad the
+      // name out to column 24" — true at every depth.
+      const unsigned int nameWidth = _indent < 24 ? 24 - _indent : 0;
+      const std::string caption = std::format("{:>{}}{:<{}}:{:5} x{:4.2f} = {:4.0f} {:4.2f}", icon, _indent + 1, child->m_name, nameWidth,
+                                              child->m_lastNumCalls, time / (float)child->m_lastNumCalls, time, lastColumn);
       int brightness = (time / largestTime) * 150.0f + 105.0f;
       if (brightness < 105)
         brightness = 105;
