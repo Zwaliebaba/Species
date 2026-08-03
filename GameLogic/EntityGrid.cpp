@@ -70,17 +70,13 @@ EntityGridCell::~EntityGridCell()
 // *** OutputContents
 void EntityGridCell::OutputContents()
 {
-  char buffer[256];
-  sprintf(buffer, "Grid Cell: ");
-  int i;
-  for (i = 0; i < m_arraySize; i++)
-  {
-    char buf2[128];
-    sprintf(buf2, "%d ", m_usageLists[i]);
-    strcat(buffer, buf2);
-  }
-  strcat(buffer, "\n");
-  DebugTrace(buffer);
+  // The char[256] this built into overflowed silently once the grid had more
+  // than about eighty cells, which every real level does.
+  std::string buffer = "Grid Cell: ";
+  for (int i = 0; i < m_arraySize; i++)
+    buffer += std::format("{} ", m_usageLists[i]);
+  buffer += "\n";
+  DebugTrace("%s", buffer.c_str());
 }
 
 

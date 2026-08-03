@@ -32,6 +32,13 @@
 #include "AppState.h"
 
 
+void GameCursor::SetArrowFilenames(std::string_view _mainFilename)
+{
+  m_selectionArrowFilename = _mainFilename;
+  m_selectionArrowShadowFilename = std::format("shadow_{}", m_selectionArrowFilename);
+}
+
+
 GameCursor::GameCursor()
   : m_selectionArrowBoost(0.0f),
     m_highlightingSomething(false),
@@ -74,18 +81,17 @@ GameCursor::GameCursor()
   //
   // Load selection arrow graphic
 
-  sprintf(m_selectionArrowFilename, "Icons/SelectionArrow.bmp");
+  SetArrowFilenames("Icons/SelectionArrow.bmp");
 
-  BinaryReader* binReader = g_resource->GetBinaryReader(m_selectionArrowFilename);
-  ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", m_selectionArrowFilename);
+  BinaryReader* binReader = g_resource->GetBinaryReader(m_selectionArrowFilename.c_str());
+  ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", m_selectionArrowFilename.c_str());
   BitmapRGBA bmp(binReader, "bmp");
   SAFE_DELETE(binReader);
 
-  g_resource->AddBitmap(m_selectionArrowFilename, bmp);
+  g_resource->AddBitmap(m_selectionArrowFilename.c_str(), bmp);
 
-  sprintf(m_selectionArrowShadowFilename, "shadow_%s", m_selectionArrowFilename);
   bmp.ApplyBlurFilter(10.0f);
-  g_resource->AddBitmap(m_selectionArrowShadowFilename, bmp);
+  g_resource->AddBitmap(m_selectionArrowShadowFilename.c_str(), bmp);
 }
 
 GameCursor::~GameCursor()
@@ -647,7 +653,7 @@ void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _scr
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowShadowFilename));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowShadowFilename.c_str()));
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
@@ -662,7 +668,7 @@ void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _scr
 
   glColor4f(1.0f, 1.0f, 0.3f, _alpha);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowFilename));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowFilename.c_str()));
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
@@ -966,9 +972,9 @@ MouseCursor::MouseCursor(char const* _filename)
     m_animating(false),
     m_shadowed(true)
 {
-  char fullFilename[512];
-  sprintf(fullFilename, "%s", _filename);
-  m_mainFilename = strdup(fullFilename);
+  // Still strdup, because the destructor still free()s these two —
+  // ownership/T3 is what makes them std::string.
+  m_mainFilename = strdup(_filename);
 
   BinaryReader* binReader = g_resource->GetBinaryReader(m_mainFilename);
   ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", _filename);
@@ -977,8 +983,7 @@ MouseCursor::MouseCursor(char const* _filename)
 
   g_resource->AddBitmap(m_mainFilename, bmp);
 
-  sprintf(fullFilename, "shadow_%s", _filename);
-  m_shadowFilename = strdup(fullFilename);
+  m_shadowFilename = strdup(std::format("shadow_{}", _filename).c_str());
   bmp.ApplyBlurFilter(10.0f);
   g_resource->AddBitmap(m_shadowFilename, bmp);
 

@@ -216,8 +216,8 @@ public:
 
         if( g_app->m_gameMenu->m_maps[parent->m_gameType].ValidIndex(parent->m_requestedMapId ) )
         {
-            strcpy( g_requestedMap, g_app->m_gameMenu->m_maps[parent->m_gameType][parent->m_requestedMapId] );
-            strcpy( g_requestedMission, "null" );
+            g_requestedMap = g_app->m_gameMenu->m_maps[parent->m_gameType][parent->m_requestedMapId];
+            g_requestedMission = "null";
         }
 
         g_requestToggleEditing = false;
@@ -308,9 +308,8 @@ void GameMenu::CreateMapList()
 
     for( int i = 0; i < static_cast<int>(levels->size()); ++i )
     {
-        char filename[512];
-        sprintf( filename, "Levels/%s", (*levels)[i] );
-        TextReader *file = g_resource->GetTextReader( filename );
+        const std::string filename = std::format("Levels/{}", (*levels)[i]);
+        TextReader *file = g_resource->GetTextReader( filename.c_str() );
         if( file && file->IsOpen() )
         {
             while( file->ReadLine() )

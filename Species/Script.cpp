@@ -173,15 +173,15 @@ void Script::RunCommand_EnterLocation(char* _name)
   GlobalLocation* loc = g_globalWorld->GetLocation(g_requestedLocationId);
   DEBUG_ASSERT(loc);
 
-  strcpy(g_requestedMission, loc->m_missionFilename);
-  strcpy(g_requestedMap, loc->m_mapFilename);
+  g_requestedMission = loc->m_missionFilename;
+  g_requestedMap = loc->m_mapFilename;
 }
 
 void Script::RunCommand_ExitLocation()
 {
   g_requestedLocationId = -1;
-  g_requestedMission[0] = '\0';
-  g_requestedMap[0] = '\0';
+  g_requestedMission.clear();
+  g_requestedMap.clear();
 
   m_requestedLocationId = g_requestedLocationId;
 }
@@ -358,7 +358,7 @@ void Script::RunCommand_PurityControl()
   // Delete the save game
 
   char saveDir[256];
-  sprintf(saveDir, "users/%s/", g_userProfileName);
+  sprintf(saveDir, "users/%s/", g_userProfileName.c_str());
   // Neither the names nor the vector are freed. The exit(0) below is why that
   // has never mattered.
   std::vector<char*>* allFiles = ListDirectory(saveDir, "*.*");

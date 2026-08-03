@@ -38,13 +38,16 @@ extern bool g_atMainMenu;
 extern bool g_requestToggleEditing;
 extern Neuron::Server* g_server;
 extern ControlHelpAccess* g_controlHelpSystem;
-extern char g_userProfileName[256];
+extern std::string g_userProfileName;
 
 // The level the next load will bring up, written by the global world, the
-// script and the menus and read by Main's load path. Character arrays like
-// g_userProfileName above, for the same reason: every writer uses strcpy.
-extern char g_requestedMission[256];
-extern char g_requestedMap[256];
+// script and the menus and read by Main's load path.
+//
+// All three were char[256] and every write into them was an unbounded copy —
+// from a profile name the user types, or a mission and map name read out of
+// GameData — so a long enough name overran a global. strings-modernised/T7.
+extern std::string g_requestedMission;
+extern std::string g_requestedMap;
 
 // Set by the pause key and read by the world advance and the renderer.
 extern bool g_paused;

@@ -855,8 +855,8 @@ void Initialise()
     if (gloc)
     {
       g_requestedLocationId = requestedLocationId;
-      strcpy(g_requestedMap, gloc->m_mapFilename);
-      strcpy(g_requestedMission, gloc->m_missionFilename);
+      g_requestedMap = gloc->m_mapFilename;
+      g_requestedMission = gloc->m_missionFilename;
     }
   }
 
@@ -918,7 +918,7 @@ void EnterLocation()
 
   g_location = new Location();
   g_app->m_locationInput = new LocationInput();
-  g_location->Init(g_requestedMission, g_requestedMap);
+  g_location->Init(g_requestedMission.c_str(), g_requestedMap.c_str());
   g_locationId = g_requestedLocationId;
 
   TheCamera()->UpdateEntityTrackingMode();
@@ -967,8 +967,8 @@ void EnterGlobalWorld()
     //g_atMainMenu = true;
     g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
     GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
-    strcpy(g_requestedMap, gloc->m_mapFilename);
-    strcpy(g_requestedMission, gloc->m_missionFilename);
+    g_requestedMap = gloc->m_mapFilename;
+    g_requestedMission = gloc->m_missionFilename;
   }
 
   // Put the camera in a sensible place

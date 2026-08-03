@@ -60,15 +60,10 @@ Water::Water()
 
       // Load colour information from a bitmap
       {
-        char fullFilename[256];
-        sprintf(fullFilename, "Terrain/%s", g_location->m_levelFile->m_wavesColourFilename);
+        std::string fullFilename = Location::ChristmasModEnabled() == 1 ? std::string("Terrain/WavesEarth.bmp")
+                                                                        : std::format("Terrain/{}", g_location->m_levelFile->m_wavesColourFilename);
 
-        if (Location::ChristmasModEnabled() == 1)
-        {
-          strcpy(fullFilename, "Terrain/WavesEarth.bmp");
-        }
-
-        BinaryReader* in = g_resource->GetBinaryReader(fullFilename);
+        BinaryReader* in = g_resource->GetBinaryReader(fullFilename.c_str());
         BitmapRGBA bmp(in, "bmp");
         m_colourTable = new RGBAColour[bmp.m_width];
         m_numColours = bmp.m_width;
@@ -462,16 +457,11 @@ void Water::RenderFlatWater()
     glColor4ub(255, 255, 255, 255);
   }
 
-  char waterFilename[256];
-  sprintf(waterFilename, "Terrain/%s", g_location->m_levelFile->m_waterColourFilename);
-
-  if (Location::ChristmasModEnabled() == 1)
-  {
-    strcpy(waterFilename, "Terrain/WaterIcecaps.bmp");
-  }
+  const std::string waterFilename = Location::ChristmasModEnabled() == 1 ? std::string("Terrain/WaterIcecaps.bmp")
+                                                                         : std::format("Terrain/{}", g_location->m_levelFile->m_waterColourFilename);
 
   gglActiveTextureARB(GL_TEXTURE0_ARB);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(waterFilename, true, true));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(waterFilename.c_str(), true, true));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);

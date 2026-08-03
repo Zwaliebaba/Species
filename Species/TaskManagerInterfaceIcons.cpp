@@ -65,10 +65,10 @@ TaskManagerInterfaceIcons::TaskManagerInterfaceIcons()
 
   for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
   {
-    char iconFilename[256];
-    sprintf(iconFilename, "Icons/Icon%s.bmp", GlobalResearch::GetTypeName(i));
-    if (g_resource->DoesTextureExist(iconFilename))
-      unsigned int texId = g_resource->GetTexture(iconFilename, true, false);
+    std::string iconFilename;
+    iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(i));
+    if (g_resource->DoesTextureExist(iconFilename.c_str()))
+      unsigned int texId = g_resource->GetTexture(iconFilename.c_str(), true, false);
   }
 
   g_resource->GetTexture("Textures/InterfaceGrey.bmp", true, false);
@@ -924,16 +924,15 @@ void TaskManagerInterfaceIcons::RenderTooltip()
     float timeRequired = strlen(zone->m_toolTip) / 50.0f;
     float timeSoFar = GetHighResTime() - m_screenZoneTimer;
 
-    char clippedTooltip[1024];
-    strcpy(clippedTooltip, zone->m_toolTip);
+    std::string clippedTooltip(zone->m_toolTip);
     if (timeSoFar < timeRequired)
     {
       float fraction = timeSoFar / timeRequired;
-      clippedTooltip[static_cast<int>(strlen(clippedTooltip) * fraction)] = '\x0';
+      clippedTooltip.resize(static_cast<size_t>(clippedTooltip.size() * fraction));
     }
 
-    g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip);
-    g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip);
+    g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
+    g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
 
     if (g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD)
     {
@@ -961,12 +960,12 @@ void TaskManagerInterfaceIcons::RenderTooltip()
 
       if (selectedShortcut)
       {
-        char caption[256];
+        std::string caption;
 
-        sprintf(caption, "Keyboard shortcut : %s", selectedShortcut->noun().c_str());
+        caption = std::format("Keyboard shortcut : {}", selectedShortcut->noun().c_str());
 
-        g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption);
-        g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption);
+        g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
+        g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
       }
     }
   }
@@ -1000,15 +999,15 @@ void TaskManagerInterfaceIcons::RenderMessages()
     //
     // Lookup message portion
 
-    char currentMessageStringId[256];
-    sprintf(currentMessageStringId, "taskmanager_msg%d", m_currentMessageType);
-    if (!ISLANGUAGEPHRASE(currentMessageStringId))
+    std::string currentMessageStringId;
+    currentMessageStringId = std::format("taskmanager_msg{}", m_currentMessageType);
+    if (!ISLANGUAGEPHRASE(currentMessageStringId.c_str()))
     {
       m_currentMessageType = -1;
       return;
     }
 
-    const char* message = LANGUAGEPHRASE(currentMessageStringId);
+    const char* message = LANGUAGEPHRASE(currentMessageStringId.c_str());
 
     //
     // Lookup task name
@@ -1025,19 +1024,19 @@ void TaskManagerInterfaceIcons::RenderMessages()
     //
     // Build string
 
-    char fullMessage[256];
+    std::string fullMessage;
     if (taskName)
     {
       if (m_currentMessageType == MessageResearchUpgrade)
       {
         int researchLevel = g_globalWorld->m_research->CurrentLevel(m_currentTaskType);
-        sprintf(fullMessage, "%s: %s v%d.0", message, taskName, researchLevel);
+        fullMessage = std::format("{}: {} v{}.0", message, taskName, researchLevel);
       }
       else
-        sprintf(fullMessage, "%s: %s", message, taskName);
+        fullMessage = std::format("{}: {}", message, taskName);
     }
     else
-      sprintf(fullMessage, "%s", message);
+      fullMessage = std::format("{}", message);
 
     //
     // Render string
@@ -1057,11 +1056,11 @@ void TaskManagerInterfaceIcons::RenderMessages()
 
     g_gameFont.SetRenderOutline(true);
     glColor4f(outlineAlpha, outlineAlpha, outlineAlpha, 0.0f);
-    g_gameFont.DrawText2DCentre(m_screenW / 2.0f, 370.0f, size, fullMessage);
+    g_gameFont.DrawText2DCentre(m_screenW / 2.0f, 370.0f, size, fullMessage.c_str());
 
     g_gameFont.SetRenderOutline(false);
     glColor4f(1.0f, 1.0f, 1.0f, alpha);
-    g_gameFont.DrawText2DCentre(m_screenW / 2.0f, 370.0f, size, fullMessage);
+    g_gameFont.DrawText2DCentre(m_screenW / 2.0f, 370.0f, size, fullMessage.c_str());
   }
 }
 
@@ -1284,10 +1283,10 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
     int taskType = runnableTaskType[i];
     if (g_globalWorld->m_research->HasResearch(taskType))
     {
-      char tooltipId[128];
-      sprintf(tooltipId, "newcontrols_create_%s", GlobalResearch::GetTypeName(taskType));
+      std::string tooltipId;
+      tooltipId = std::format("newcontrols_create_{}", GlobalResearch::GetTypeName(taskType));
 
-      auto zone = new ScreenZone("NewTask", LANGUAGEPHRASE(tooltipId), x + 5, y - h / 3, w - 10, h, taskType);
+      auto zone = new ScreenZone("NewTask", LANGUAGEPHRASE(tooltipId.c_str()), x + 5, y - h / 3, w - 10, h, taskType);
       zone->m_scrollZone = 1;
       m_newScreenZones.push_back(zone);
 
@@ -1332,9 +1331,9 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
       //
       // Render the task symbol
 
-      char iconFilename[256];
-      sprintf(iconFilename, "Icons/Icon%s.bmp", GlobalResearch::GetTypeName(taskType));
-      unsigned int texId = g_resource->GetTexture(iconFilename);
+      std::string iconFilename;
+      iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(taskType));
+      unsigned int texId = g_resource->GetTexture(iconFilename.c_str());
       if (texId != -1)
       {
         glEnable(GL_TEXTURE_2D);
@@ -1480,19 +1479,19 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
   for (int i = 0; i < numTasks; ++i)
   {
     Task* task = g_taskManager->m_tasks[i];
-    char bmpFilename[256];
-    sprintf(bmpFilename, "Icons/Icon%s.bmp", Task::GetTaskName(task->m_type));
-    unsigned int texId = g_resource->GetTexture(bmpFilename);
+    std::string bmpFilename;
+    bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(task->m_type));
+    unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
 
     //
     // Create clickable zone over the task
 
-    char captionId[256];
-    sprintf(captionId, "newcontrols_select_%s", Task::GetTaskName(task->m_type));
+    std::string captionId;
+    captionId = std::format("newcontrols_select_{}", Task::GetTaskName(task->m_type));
     if (task->m_state == Task::StateStarted)
-      sprintf(captionId, "newcontrols_place_%s", Task::GetTaskName(task->m_type));
+      captionId = std::format("newcontrols_place_{}", Task::GetTaskName(task->m_type));
 
-    auto zone = new ScreenZone("SelectTask", LANGUAGEPHRASE(captionId), iconX - iconSize / 2, iconY - iconSize / 2, iconSize, iconSize, i);
+    auto zone = new ScreenZone("SelectTask", LANGUAGEPHRASE(captionId.c_str()), iconX - iconSize / 2, iconY - iconSize / 2, iconSize, iconSize, i);
     m_newScreenZones.push_back(zone);
     zone->m_scrollZone = 2;
 
@@ -1612,8 +1611,8 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
           for (int i = 0; i < static_cast<int>(availableWeapons.size()); ++i)
           {
             int weaponType = availableWeapons[i];
-            sprintf(bmpFilename, "Icons/Icon%s.bmp", Task::GetTaskName(weaponType));
-            texId = g_resource->GetTexture(bmpFilename);
+            bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(weaponType));
+            texId = g_resource->GetTexture(bmpFilename.c_str());
 
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
             glColor4f(0.9f, 0.9f, 0.9f, 0.0f);
@@ -1647,10 +1646,10 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
             glVertex2f(weaponX - weaponSize / 2, weaponY + weaponSize / 2);
             glEnd();
 
-            char captionId[256];
-            sprintf(captionId, "newcontrols_select_%s", Task::GetTaskName(weaponType));
-            auto zone = new ScreenZone("SelectWeapon", LANGUAGEPHRASE(captionId), weaponX - weaponSize / 2, weaponY - weaponSize / 2, weaponSize,
-                                       weaponSize, weaponType);
+            std::string captionId;
+            captionId = std::format("newcontrols_select_{}", Task::GetTaskName(weaponType));
+            auto zone = new ScreenZone("SelectWeapon", LANGUAGEPHRASE(captionId.c_str()), weaponX - weaponSize / 2, weaponY - weaponSize / 2,
+                                       weaponSize, weaponSize, weaponType);
             m_newScreenZones.push_back(zone);
             zone->m_scrollZone = 3;
 
@@ -1708,11 +1707,11 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glDisable(GL_TEXTURE_2D);
 
-      char captionId[256];
-      sprintf(captionId, "newcontrols_delete_%s", Task::GetTaskName(task->m_type));
+      std::string captionId;
+      captionId = std::format("newcontrols_delete_{}", Task::GetTaskName(task->m_type));
 
-      auto zone = new ScreenZone("DeleteTask", LANGUAGEPHRASE(captionId), deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f, deleteSize,
-                                 deleteSize, task->m_id);
+      auto zone = new ScreenZone("DeleteTask", LANGUAGEPHRASE(captionId.c_str()), deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f,
+                                 deleteSize, deleteSize, task->m_id);
       m_newScreenZones.push_back(zone);
     }
 
@@ -2163,9 +2162,9 @@ void TaskManagerInterfaceIcons::RenderResearch()
         glEnd();
       }
 
-      char tooltipId[256];
-      sprintf(tooltipId, "newcontrols_research_%s", GlobalResearch::GetTypeName(i));
-      auto zone = new ScreenZone("Research", LANGUAGEPHRASE(tooltipId), 40, -m_screenH + iconY, m_screenW - 160, iconSize, i);
+      std::string tooltipId;
+      tooltipId = std::format("newcontrols_research_{}", GlobalResearch::GetTypeName(i));
+      auto zone = new ScreenZone("Research", LANGUAGEPHRASE(tooltipId.c_str()), 40, -m_screenH + iconY, m_screenW - 160, iconSize, i);
       zone->m_scrollZone = 1;
       m_newScreenZones.push_back(zone);
 
@@ -2196,9 +2195,9 @@ void TaskManagerInterfaceIcons::RenderResearch()
       //
       // Render the task symbol
 
-      char iconFilename[256];
-      sprintf(iconFilename, "Icons/Icon%s.bmp", GlobalResearch::GetTypeName(i));
-      unsigned int texId = g_resource->GetTexture(iconFilename);
+      std::string iconFilename;
+      iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(i));
+      unsigned int texId = g_resource->GetTexture(iconFilename.c_str());
       if (texId != -1)
       {
         glEnable(GL_TEXTURE_2D);
@@ -2524,11 +2523,11 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
   for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
     m_quickUnitButtons[i]->Render();
 
-  char shadowFileName[256];
-  sprintf(shadowFileName, "shadow_icons/MouseSelection.bmp");
+  std::string shadowFileName;
+  shadowFileName = std::format("shadow_icons/MouseSelection.bmp");
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(shadowFileName));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(shadowFileName.c_str()));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glDepthMask(false);
   glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
@@ -2543,9 +2542,9 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
   glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
   glEnd();
 
-  char bmpFilename[256];
-  sprintf(bmpFilename, "Icons/MouseSelection.bmp");
-  unsigned int texId = g_resource->GetTexture(bmpFilename);
+  std::string bmpFilename;
+  bmpFilename = std::format("Icons/MouseSelection.bmp");
+  unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, texId);
@@ -2780,12 +2779,12 @@ void QuickUnitButton::Render()
   glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
   glEnd();
 
-  char bmpFilename[256];
+  std::string bmpFilename;
   if (m_taskId == -1)
-    sprintf(bmpFilename, "Icons/IconNoTask.bmp");
+    bmpFilename = std::format("Icons/IconNoTask.bmp");
   else
-    sprintf(bmpFilename, "Icons/Icon%s.bmp", Task::GetTaskName(m_taskId));
-  unsigned int texId = g_resource->GetTexture(bmpFilename);
+    bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(m_taskId));
+  unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, texId);

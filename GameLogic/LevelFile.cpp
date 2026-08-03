@@ -85,7 +85,7 @@ void LevelFile::ParseMissionFile(char const* _filename)
   if (!g_editing)
   {
     // Try to load a save game first
-    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName.c_str(), _filename);
     if (DoesFileExist(fullFilename))
       in = new TextFileReader(fullFilename);
   }
@@ -1185,7 +1185,7 @@ void LevelFile::SaveMissionFile(char const* _filename)
 
   if (!g_editing)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName.c_str(), _filename);
 #ifdef TARGET_DEBUG
     out = new FileWriter(fullFilename, false);
 #else

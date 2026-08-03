@@ -31,8 +31,12 @@ class GameCursor : public GameCursorAccess
     MouseCursor* m_cursorMissile;
     MouseCursor* m_cursorTurretTarget;
 
-    char m_selectionArrowFilename[256];
-    char m_selectionArrowShadowFilename[256];
+    std::string m_selectionArrowFilename;
+    std::string m_selectionArrowShadowFilename;
+
+    // The shadow name is always "shadow_" + the main one, and keeping the two
+    // in step by hand is what the pair of formatted writes here used to do.
+    void SetArrowFilenames(std::string_view _mainFilename);
     float m_selectionArrowBoost;
 
     bool m_highlightingSomething;

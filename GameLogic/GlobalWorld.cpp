@@ -1230,8 +1230,8 @@ void GlobalWorld::Advance()
         {
           GlobalLocation* loc = GetLocation(locId);
           g_requestedLocationId = locId;
-          strcpy(g_requestedMission, loc->m_missionFilename);
-          strcpy(g_requestedMap, loc->m_mapFilename);
+          g_requestedMission = loc->m_missionFilename;
+          g_requestedMap = loc->m_mapFilename;
         }
       }
     }
@@ -1321,8 +1321,8 @@ void GlobalWorld::Advance()
     {
       GlobalLocation* loc = GetLocation(m_locationRequested);
       g_requestedLocationId = m_locationRequested;
-      strcpy(g_requestedMission, loc->m_missionFilename);
-      strcpy(g_requestedMap, loc->m_mapFilename);
+      g_requestedMission = loc->m_missionFilename;
+      g_requestedMap = loc->m_mapFilename;
 
       m_locationRequested = -1;
     }
@@ -1630,7 +1630,7 @@ void GlobalWorld::LoadGame(const char* _filename)
 
   if (!g_editing)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName.c_str(), _filename);
     if (DoesFileExist(fullFilename))
       in = new TextFileReader(fullFilename);
   }
@@ -1728,9 +1728,9 @@ void GlobalWorld::SaveGame(const char* _filename)
   FileWriter* out = nullptr;
   char fullFilename[256];
 
-  if (!g_editing && stricmp(g_userProfileName, "none") != 0)
+  if (!g_editing && stricmp(g_userProfileName.c_str(), "none") != 0)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName.c_str(), _filename);
 #ifdef TARGET_DEBUG
     out = new FileWriter(fullFilename, false);
 #else

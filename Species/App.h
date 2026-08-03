@@ -55,12 +55,10 @@ public:
 	// Requested state flags
 
     bool                m_levelReset;
-    char                m_gameDataFile[256];
+    std::string m_gameDataFile;
 
 
-
-
-public:
+  public:
     App ();
 	~App();
 

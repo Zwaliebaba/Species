@@ -352,7 +352,35 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    notes: |
+      DONE 2026-08-03. Seven files, 55 sites.
+
+      THREE GLOBALS CHANGED TYPE, which reaches past this task's file list:
+      g_userProfileName, g_requestedMission and g_requestedMap were char[256] in
+      AppState.h and every write into them was an unbounded copy — from a
+      profile name the user types, or a mission and map name read out of
+      GameData. Callers in Script.cpp, GlobalWorld.cpp, LevelFile.cpp,
+      UserProfileWindow.cpp and Renderer.cpp took .c_str(); their own sprintf
+      calls belong to T5 and T6 and were left alone.
+
+      App::GetPreferencesPath cached a `new char[]` behind a function static and
+      never freed it. It is a static std::string now, still built once, still
+      returning const char* because callers hold the pointer.
+
+      EntityGrid::DebugTrace built its output in a char[256] with strcat in a
+      loop over every grid cell — a silent overflow on any grid bigger than
+      about eighty cells, which is every real level.
+
+      A CONVERSION SCRIPT ATE THE SEMICOLONS and it is worth recording how that
+      was caught, because the file still had zero grep hits and passed all six
+      checks. The regex matched `sprintf(...);` including the terminator and the
+      replacement did not put it back, so fifteen statements ran into the ones
+      after them. What found it was reading the generated lines rather than
+      trusting the counts — `iconFilename = std::format(...) if (...)` on one
+      line is obvious once looked at. The bracket-balance check added after the
+      container sweep did NOT catch it: brackets stayed balanced. Semicolon
+      count is now part of that check for the same reason.
+    status: done
 
   - id: T8
     title: Convert the level and profile file writers byte-identically
