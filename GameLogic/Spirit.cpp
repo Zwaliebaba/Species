@@ -85,12 +85,21 @@ bool Spirit::Advance()
     {
     case StateBirth:
     {
-      m_hover.y = max(m_hover.y, 0.0f + syncfrand(0.5f));
+      // Written out rather than std::max because the max macro evaluated its
+      // second argument twice, and that argument draws from the synchronised
+      // random stream: when m_hover.y does not win the comparison, syncfrand()
+      // is called a SECOND time and its second result is what lands in
+      // m_hover.y — which is not the maximum of anything. Collapsing this to
+      // one call would change both the draw count and the value, and the
+      // speciesRandom()/syncrand() call sequence is network identity
+      // (CODING_STANDARDS.md#determinism). Preserved exactly; see
+      // language-hygiene T8's notes for the finding.
+      m_hover.y = (m_hover.y > 0.0f + syncfrand(0.5f)) ? m_hover.y : (0.0f + syncfrand(0.5f));
       float heightAboveGround = m_pos.y - g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
       if (heightAboveGround > 10.0f)
       {
         float fractionAboveGround = heightAboveGround / 100.0f;
-        fractionAboveGround = min(fractionAboveGround, 1.0f);
+        fractionAboveGround = std::min(fractionAboveGround, 1.0f);
         m_hover.y = (-10.0f - syncfrand(10.0f)) * fractionAboveGround;
       }
       else if (m_timeSync <= 0.0f)
@@ -115,7 +124,8 @@ bool Spirit::Advance()
       break;
 
     case StateDeath:
-      m_hover.y = max(m_hover.y, 2.0f + syncfrand(2.0f));
+      // Same double evaluation of the synchronised stream as StateBirth above.
+      m_hover.y = (m_hover.y > 2.0f + syncfrand(2.0f)) ? m_hover.y : (2.0f + syncfrand(2.0f));
       if (m_timeSync <= 0.0f)
       {
         // We are now dead
@@ -206,7 +216,7 @@ void Spirit::PushFromBuildings()
       m_vel += hitVector * 0.1f;
       m_vel.y = 0.0f;
       float speed = m_vel.Mag();
-      speed = min(speed, 10.0f);
+      speed = std::min(speed, 10.0f);
       m_vel.SetLength(speed);
     }
   }

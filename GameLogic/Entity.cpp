@@ -600,10 +600,10 @@ void Entity::RenderShadow(Vector3 const& _pos, float _size)
   posC.y = g_location->m_landscape.m_heightMap->GetValue(posC.x, posC.z) + 0.9f;
   posD.y = g_location->m_landscape.m_heightMap->GetValue(posD.x, posD.z) + 0.9f;
 
-  posA.y = max(posA.y, 1.0f);
-  posB.y = max(posB.y, 1.0f);
-  posC.y = max(posC.y, 1.0f);
-  posD.y = max(posD.y, 1.0f);
+  posA.y = std::max(posA.y, 1.0f);
+  posB.y = std::max(posB.y, 1.0f);
+  posC.y = std::max(posC.y, 1.0f);
+  posD.y = std::max(posD.y, 1.0f);
 
   if (posA.y > _pos.y && posB.y > _pos.y && posC.y > _pos.y && posD.y > _pos.y)
   {

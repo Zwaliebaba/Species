@@ -53,8 +53,8 @@ bool Snow::Advance()
     if( heightAboveGround > -10.0f )
     {
         float fractionAboveGround = heightAboveGround / 100.0f;
-        fractionAboveGround = min( fractionAboveGround, 1.0f );
-        fractionAboveGround = max( fractionAboveGround, 0.2f );
+        fractionAboveGround = std::min(fractionAboveGround, 1.0f);
+        fractionAboveGround = std::max(fractionAboveGround, 0.2f);
         m_hover.y = (-20.0f - syncfrand(20.0f)) * fractionAboveGround;
     }
     else
@@ -81,7 +81,7 @@ float Snow::GetLife()
 {
     float timePassed = GetHighResTime() - m_timeSync;
     float life = timePassed / 10.0f;
-    life = min( life, 1.0f );
+    life = std::min(life, 1.0f);
     return life;
 }
 

@@ -329,5 +329,80 @@ tasks:
 
       parallel_safe false: 51 files, and the include-order sensitivity means a
       half-landed version is worse than either end state.
-    status: in_progress
+
+      DONE 2026-08-03. 216 grep matches at b0bde71, which resolve to 202 call
+      sites: 2 were the macro definitions and 12 are inside commented-out code
+      or prose, left alone. 188 converted mechanically, 12 needed an explicit
+      type, 2 were preserved verbatim. 50 files.
+
+      THE FINDING THAT MATTERS, and it is not a formatting one. Spirit.cpp
+      wrote `max(m_hover.y, 0.0f + syncfrand(0.5f))` in StateBirth and the same
+      shape with syncfrand(2.0f) in StateDeath. The macro evaluates its second
+      argument TWICE — once in the comparison, once to produce the result — so
+      when m_hover.y loses the comparison, syncfrand() is called a second time
+      and THAT second draw is what lands in m_hover.y. Two consequences:
+      the expression does not compute a maximum (the value stored can be lower
+      than m_hover.y), and the number of draws from the synchronised stream
+      depends on the comparison. syncrand() is the deterministic lockstep RNG,
+      and CODING_STANDARDS.md#determinism names its call sequence as network
+      identity.
+
+      Both sites are preserved EXACTLY, written out as the conditional the
+      macro expanded to, with the reason in a comment at the call site.
+      Collapsing them to std::max would have been a one-character-looking
+      change that altered the RNG sequence — the precise failure this plan's
+      determinism paragraph warns about, found in the wild rather than
+      theorised. Whether the double draw is intended is an owner question and
+      a behaviour change either way; it is deliberately NOT decided here.
+
+      TWELVE MIXED-TYPE SITES, which is the other thing a sweep would have got
+      wrong. The macro's conditional operator applies the usual arithmetic
+      conversions, so `max(pos.x, 20)` compiled and returned a float;
+      std::max cannot deduce from (float, int) and fails. Each was rewritten to
+      the type the conditional operator produced, not to the type that looked
+      tidy: Rocket's maxLoops and m_surges are floats compared against integer
+      literals, Centipede's newHealth likewise, Armour's and Engineer's speed
+      clamps compare a float against an `unsigned char` stat, Camera's
+      forwardSpeed against 1000/2000, Location's pos.x/pos.z against 20, and
+      `int numDebris = max(1, <float>)` needed a static_cast<int> around a
+      float std::max to keep the same truncation.
+
+      ONE OF THEM IS A DIFFERENT NUMBER IF WRITTEN NAIVELY.
+      Camera::AdvanceMoveToTargetMode clamps a DOUBLE against the literal 0.2f.
+      The macro promoted 0.2f to double — 0.20000000298023224 — and writing
+      std::max(x, 0.2) would substitute 0.2000000000000000111. It is
+      static_cast<double>(0.2f), with the arithmetic in a comment, because the
+      acceptance criterion is "no change to any computed value" and this is
+      exactly the kind of change that hides inside a tidy-up.
+
+      DOUBLE EVALUATION ELSEWHERE, all benign and all now single: four
+      heightmap GetValue lookups (Engineer x3, Water), Spam's landHeight, and
+      SoundLibrary3dDSound's GetMaxChannels. Same values, one call instead of
+      two. Species/Script.cpp's `max(m_waitUntil, GetHighResTime() + _time)`
+      read the CLOCK twice and used the second reading; it reads once now,
+      which is a real behaviour change of sub-microsecond size on a real-time
+      script wait, not on anything the simulation sees.
+
+      TWELVE MATCHES LEFT, all in commented-out code: InvertMatrix's two prose
+      comments, four commented-out assignments (SoulDestroyer, Armour, Camera,
+      GameMenu), and six inside the /* ... */ block that spans GameCursor.cpp
+      772-953. That block is why SELECTION_ARROWS_MAX_ALPHA and BOOST_FADE_RATE
+      are used in that file and defined nowhere in the tree — worth knowing
+      before someone greps for them. Rewriting dead comments is noise, so they
+      were left; none is a call site.
+
+      MessageDialog.cpp needed a whole-file reformat first, in its own commit.
+      It is tab-indented legacy and two converted lines sit in one hunk with
+      untouched lines between them, so the changed-lines format check
+      reformatted those too and each --fix pass dragged in the next adjacent
+      line. It was the only one of the fifty that did.
+
+      NOT COMPILED HERE. This was done on Linux; the six Python checks pass and
+      nothing else was run. Every mixed-type site is a compile error if the
+      analysis is wrong, which makes CI's x64 Debug build the real verification
+      — and a green build is still not evidence that the game runs. The two
+      Spirit.cpp sites are argued from the code and are not covered by any
+      test; the Garden smoke test would not catch a changed RNG sequence in
+      single player either.
+    status: done
 

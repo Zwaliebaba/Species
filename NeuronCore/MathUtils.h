@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <stdlib.h>
 
 #include "Random.h"
@@ -21,13 +22,11 @@ inline float syncsfrand( float range = 1.0f ) { return (syncfrand() - 0.5f) * ra
 #define M_PI 3.1415926535897932384626f
 #endif
 
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
+// There were function-style min and max macros here. NeuronCore.h sets NOMINMAX
+// to keep the Windows pair out and this header put an equivalent pair straight
+// back, so std::min and std::max did not compile anywhere this header is
+// reachable — which, from NeuronCore.h, is every translation unit in the tree.
+// Use std::min and std::max. See language-hygiene T8.
 
 #define sign(a)				((a) < 0 ? -1 : 1)
 #define signf(a)			((a) < 0.0f ? -1.0f : 1.0f)

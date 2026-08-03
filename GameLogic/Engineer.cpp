@@ -272,8 +272,8 @@ void Engineer::ChangeHealth(int amount)
     int healthBandAfter = int(m_stats[StatHealth] / 50.0f);
 
     float fractionDead = 1.0f - m_stats[StatHealth] / (float)EntityBlueprint::GetStat(TypeEngineer, StatHealth);
-    fractionDead = max(fractionDead, 0.0f);
-    fractionDead = min(fractionDead, 1.0f);
+    fractionDead = std::max(fractionDead, 0.0f);
+    fractionDead = std::min(fractionDead, 1.0f);
 
     if (fractionDead == 1.0f || healthBandAfter < healthBandBefore)
     {
@@ -469,7 +469,7 @@ bool Engineer::AdvanceToTargetPos()
     actualDir.Normalise();
 
     float desiredSpeed = distance.Mag();
-    desiredSpeed = min(desiredSpeed, m_stats[StatSpeed]);
+    desiredSpeed = std::min(desiredSpeed, static_cast<float>(m_stats[StatSpeed]));
     if (m_state == StateIdle)
       desiredSpeed *= 0.25f;
 
@@ -482,7 +482,7 @@ bool Engineer::AdvanceToTargetPos()
     newPos = m_pos + moved;
 
     m_pos = newPos;
-    float targetHeight = max(g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z), 0.0f) + m_hoverHeight;
+    float targetHeight = std::max(g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z), 0.0f) + m_hoverHeight;
     m_pos.y = targetHeight;
     m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
     m_front = m_vel;
@@ -1015,7 +1015,7 @@ void Engineer::RenderShape(float predictionTime)
   Vector3 predictedPos = m_pos + m_vel * predictionTime;
   if (m_onGround)
   {
-    predictedPos.y = max(g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z), 0.0f /*sea level*/) + m_hoverHeight;
+    predictedPos.y = std::max(g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z), 0.0f /*sea level*/) + m_hoverHeight;
   }
 
   Vector3 entityUp = g_upVector;
@@ -1057,7 +1057,7 @@ void Engineer::Render(float predictionTime)
   Vector3 predictedPos = m_pos + m_vel * predictionTime;
   if (m_onGround)
   {
-    predictedPos.y = max(g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z), 0.0f /*sea level*/) + m_hoverHeight;
+    predictedPos.y = std::max(g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z), 0.0f /*sea level*/) + m_hoverHeight;
   }
 
 

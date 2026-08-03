@@ -426,8 +426,8 @@ void Camera::AdvanceSphereWorldOutroMode()
   float distance = targetFront.Mag();
 
   float forwardSpeed = sqrtf(m_pos.Mag()) * 4;
-  forwardSpeed = max(forwardSpeed, 1000);
-  forwardSpeed = min(forwardSpeed, 2000);
+  forwardSpeed = std::max(forwardSpeed, 1000.0f);
+  forwardSpeed = std::min(forwardSpeed, 2000.0f);
 
   targetFront.Normalise();
 
@@ -491,7 +491,7 @@ void Camera::AdvanceSphereWorldFocusMode()
   // then eventually reach full speed
   float timeSinceBegin = GetHighResTime() - m_trackTimer;
   float moveFactor = timeSinceBegin * 0.2f;
-  moveFactor = min(moveFactor, 1.0f);
+  moveFactor = std::min(moveFactor, 1.0f);
 
   float factor1 = moveFactor * 0.5f * g_advanceTime;
   float factor2 = 1.0f - factor1;
@@ -767,14 +767,14 @@ void Camera::AdvanceBuildingFocusMode()
   // then eventually reach full speed
   float timeSinceBegin = GetHighResTime() - m_trackTimer;
   float moveFactor = timeSinceBegin * 1.0f;
-  moveFactor = min(moveFactor, 1.0f);
+  moveFactor = std::min(moveFactor, 1.0f);
 
   if (timeSinceBegin < 2.0f)
   {
     // Make the camera lift up when first moving towards a building
     float distance = (m_pos - realTargetPos).Mag();
     realTargetPos.y += distance * 0.75f * (2.0f - timeSinceBegin);
-    realTargetPos.y = min(realTargetPos.y, 1000.0f);
+    realTargetPos.y = std::min(realTargetPos.y, 1000.0f);
   }
 
   float factor1 = moveFactor * 0.5f * g_advanceTime;
@@ -990,8 +990,8 @@ bool Camera::AdvanceManualCameraHeight(Vector3& cameraTarget)
       TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
-    m_heightMultiplier = min(2.0f, m_heightMultiplier);
-    m_heightMultiplier = max(m_heightMultiplier, 0.25f);
+    m_heightMultiplier = std::min(2.0f, m_heightMultiplier);
+    m_heightMultiplier = std::max(m_heightMultiplier, 0.25f);
 
     if (camDown)
     {
@@ -1520,7 +1520,11 @@ void Camera::AdvanceFirstPersonMode()
 void Camera::AdvanceMoveToTargetMode()
 {
   double currentTimeFraction = (g_gameTime - m_startTime) / m_moveDuration;
-  currentTimeFraction = max(currentTimeFraction, 0.2f);
+  // static_cast rather than 0.2, because the two are different numbers: the max
+  // macro promoted 0.2f to double through the conditional operator, giving
+  // 0.20000000298023224, and the double literal 0.2 is 0.2000000000000000111.
+  // Writing 0.2 here would be a changed computed value dressed up as a tidy-up.
+  currentTimeFraction = std::max(currentTimeFraction, static_cast<double>(0.2f));
 
   // Pos
   Vector3 direction = m_targetPos - m_startPos;
@@ -1662,7 +1666,7 @@ Camera::Camera()
   m_controlVector = right;
 }
 
-void Camera::CreateCameraShake(float _intensity) { m_cameraShake = max(m_cameraShake, _intensity); }
+void Camera::CreateCameraShake(float _intensity) { m_cameraShake = std::max(m_cameraShake, _intensity); }
 
 void Camera::SetupProjectionMatrix(float _nearPlane, float _farPlane)
 {
@@ -1864,7 +1868,7 @@ void Camera::AdvanceComponentMouseWheelHeight()
     m_height += delta * 2.0f * sqrtf(fabsf(altitude));
 
     if (m_mode == ModeTurretAim)
-      m_height = max(m_height, MIN_GROUND_CLEARANCE);
+      m_height = std::max(m_height, MIN_GROUND_CLEARANCE);
     else
     {
       if (landheight + MIN_GROUND_CLEARANCE > m_height)

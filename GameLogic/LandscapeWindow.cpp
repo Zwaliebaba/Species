@@ -715,7 +715,7 @@ void LandscapeGuideGridWindow::Create()
   int gridW = m_w - 80;
   int gridH = m_h - 80;
 
-  int biggerSize = min(gridW, gridH);
+  int biggerSize = std::min(gridW, gridH);
   if (m_guideGridPower > 0)
   {
     m_pixelSizePerSample = biggerSize / m_tileDef->m_guideGrid->GetNumColumns();

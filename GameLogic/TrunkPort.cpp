@@ -122,7 +122,7 @@ void TrunkPort::Render( float predictionTime )
     START_PROFILE( g_profiler, "RenderDestination" );
 
     float fontSize = 70.0f / strlen(caption);
-    fontSize = min( fontSize, 10.0f );
+    fontSize = std::min(fontSize, 10.0f);
 
     Matrix34 portMat( m_front, g_upVector, m_pos );
 

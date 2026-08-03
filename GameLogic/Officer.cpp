@@ -86,7 +86,7 @@ void Officer::ChangeHealth(int amount)
 
   if (amount < 0 && m_shield > 0)
   {
-    int shieldLoss = min(m_shield * 10, -amount);
+    int shieldLoss = std::min(m_shield * 10, -amount);
     for (int i = 0; i < shieldLoss / 10.0f; ++i)
     {
       Vector3 vel(syncsfrand(40.0f), 0.0f, syncsfrand(40.0f));
@@ -899,8 +899,8 @@ bool OfficerOrders::Advance()
   {
     float speed = m_vel.Mag();
     speed *= 1.1f;
-    speed = max(speed, 30.0f);
-    speed = min(speed, 150.0f);
+    speed = std::max(speed, 30.0f);
+    speed = std::min(speed, 150.0f);
 
     Vector3 toWaypoint = (m_wayPoint - m_pos);
     toWaypoint.y = 0.0f;
@@ -937,8 +937,8 @@ void OfficerOrders::Render(float _time)
   if (m_arrivedTimer >= 0.0f)
   {
     float fraction = 1.0f - (m_arrivedTimer + _time);
-    fraction = max(fraction, 0.0f);
-    fraction = min(fraction, 1.0f);
+    fraction = std::max(fraction, 0.0f);
+    fraction = std::min(fraction, 1.0f);
     // alpha = 0.7f * fraction;
     size *= fraction;
   }

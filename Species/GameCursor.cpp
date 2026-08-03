@@ -252,7 +252,7 @@ void GameCursor::CreateMarker(Vector3 const& _pos)
 }
 
 
-void GameCursor::BoostSelectionArrows(float _seconds) { m_selectionArrowBoost = max(m_selectionArrowBoost, _seconds); }
+void GameCursor::BoostSelectionArrows(float _seconds) { m_selectionArrowBoost = std::max(m_selectionArrowBoost, _seconds); }
 
 
 void GameCursor::RenderMarkers()
@@ -287,7 +287,7 @@ void GameCursor::Render()
   int screenX = g_target->X();
   int screenY = g_target->Y();
   Vector3 mousePos = TheUserInput()->GetMousePos3d();
-  mousePos.y = max(1.0f, mousePos.y);
+  mousePos.y = std::max(1.0f, mousePos.y);
 
   bool cursorRendered = false;
   bool chatLog = false;
@@ -724,11 +724,11 @@ void GameCursor::RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos)
     m_selectionArrowBoost -= g_advanceTime * 0.4f;
 
     float distanceOut = 1000 / sqrtf(camDist);
-    float alpha = min(m_selectionArrowBoost, 0.9f);
+    float alpha = std::min(m_selectionArrowBoost, 0.9f);
 
     if (camDist > 200.0f)
     {
-      alpha = max(min((camDist - 200.0f) / 200.0f, 0.9f), alpha);
+      alpha = std::max(std::min((camDist - 200.0f) / 200.0f, 0.9f), alpha);
     }
     g_renderer->SetupMatricesFor2D();
     RenderSelectionArrow(screenX, screenY - distanceOut, 0, -1, triSize, alpha);

@@ -151,8 +151,8 @@ void Spider::ChangeHealth(int _amount)
     Entity::ChangeHealth(_amount);
 
     float fractionDead = 1.0f - (float)m_stats[StatHealth] / (float)EntityBlueprint::GetStat(TypeSpider, StatHealth);
-    fractionDead = max(fractionDead, 0.0f);
-    fractionDead = min(fractionDead, 1.0f);
+    fractionDead = std::max(fractionDead, 0.0f);
+    fractionDead = std::min(fractionDead, 1.0f);
     Matrix34 transform(m_front, m_up, m_pos);
     g_explosionManager.AddExplosion(m_shape, transform, fractionDead);
   }
@@ -542,7 +542,7 @@ bool Spider::AdvancePouncing()
       push.y = push.Mag() * 4.0f;
 
       float pushLength = fraction * 30.0f;
-      pushLength = min(20.0f, pushLength);
+      pushLength = std::min(20.0f, pushLength);
       push.SetLength(pushLength);
 
       entity->m_vel += push;

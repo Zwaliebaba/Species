@@ -1043,8 +1043,8 @@ void TaskManagerInterfaceIcons::RenderMessages()
 
     float timeRemaining = m_messageTimer - GetHighResTime();
     float alpha = timeRemaining * 0.5f;
-    alpha = min(alpha, 1.0f);
-    alpha = max(alpha, 0.0f);
+    alpha = std::min(alpha, 1.0f);
+    alpha = std::max(alpha, 0.0f);
     float size = 40.0f;
     if (timeRemaining < 2.0f)
     {
@@ -2131,7 +2131,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
 
   float iconY = textY - 20;
   float totalSize = (boxH - 20) / static_cast<float>(numItemsResearched);
-  totalSize = min(totalSize, 50.0f);
+  totalSize = std::min(totalSize, 50.0f);
 
   for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
   {
@@ -2730,12 +2730,12 @@ void QuickUnitButton::Advance()
     else if (nextPos == 1 && direction == 1)
     {
       m_alpha += 0.09f;
-      m_alpha = min(m_alpha, 0.9f);
+      m_alpha = std::min(m_alpha, 0.9f);
     }
     else if (nextPos == 3 && direction == -1)
     {
       m_alpha += 0.09f;
-      m_alpha = min(m_alpha, 0.9f);
+      m_alpha = std::min(m_alpha, 0.9f);
     }
 
     m_x += direction * 10;

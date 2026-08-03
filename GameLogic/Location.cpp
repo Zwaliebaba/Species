@@ -361,10 +361,10 @@ Vector3 Location::FindValidSpawnPosition(Vector3 const& _pos, float _spread)
   // Failed to find a valid pos
 
   Vector3 pos = _pos;
-  pos.x = max(pos.x, 20);
-  pos.z = max(pos.z, 20);
-  pos.x = min(pos.x, m_landscape.GetWorldSizeX() - 20);
-  pos.z = min(pos.z, m_landscape.GetWorldSizeZ() - 20);
+  pos.x = std::max(pos.x, 20.0f);
+  pos.z = std::max(pos.z, 20.0f);
+  pos.x = std::min(pos.x, m_landscape.GetWorldSizeX() - 20);
+  pos.z = std::min(pos.z, m_landscape.GetWorldSizeZ() - 20);
 
   return pos;
 }
@@ -1973,7 +1973,7 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
     g_particleSystem->CreateParticle(_pos + g_upVector * _range * 0.3f, vel, Particle::TypeExplosionCore, size);
   }
 
-  int numDebris = max(1, _range * _damage * 0.005f);
+  int numDebris = static_cast<int>(std::max(1.0f, _range * _damage * 0.005f));
   for (int p = 0; p < numDebris; ++p)
   {
     Vector3 vel(syncsfrand(30.0f), 20.0f + syncfrand(20.0f), syncsfrand(30.0f));
@@ -1997,7 +1997,7 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
     float fraction = (_range * 2.0f - distance) / _range * 2.0f;
     // fraction *= (1.0f + syncfrand(0.3f));
     // fraction *= 1.5f;
-    fraction = min(1.0f, fraction);
+    fraction = std::min(1.0f, fraction);
 
     entity->ChangeHealth(_damage * fraction * -1.0f);
 
@@ -2053,8 +2053,8 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
       {
         // float fraction = (_range*3.0f - dist) / _range*3.0f;
         float fraction = 1.0f - dist / maxBuildingRange;
-        fraction = max(0.0f, fraction);
-        fraction = min(1.0f, fraction);
+        fraction = std::max(0.0f, fraction);
+        fraction = std::min(1.0f, fraction);
         building->Damage(_damage * fraction * -1.0f);
       }
     }

@@ -92,7 +92,7 @@ void GodDish::RenderAlphas( float _predictionTime )
     // Calculate alpha value
 
     float alpha = m_timer * 0.1f;
-    alpha = min( alpha, 1.0f );
+    alpha = std::min(alpha, 1.0f);
 
     //
     // Central glow effect
@@ -105,7 +105,7 @@ void GodDish::RenderAlphas( float _predictionTime )
         pos.z += cosf(timeIndex+i) * i * 1.7f;
 
         float size = 20.0f * sinf(timeIndex+i*13);
-        size = max( size, 5.0f );
+        size = std::max(size, 5.0f);
 
         glColor4f( 0.6f, 0.2f, 0.1f, alpha);
         glBegin( GL_QUADS );

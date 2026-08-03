@@ -162,8 +162,8 @@ int GetNumSlicesToAdvance()
     numSlicesToAdvance -= 10;
 
   //DEBUG_ASSERT( numSlicesToAdvance >= 0 );
-  numSlicesToAdvance = max(numSlicesToAdvance, 0);
-  numSlicesToAdvance = min(numSlicesToAdvance, 10);
+  numSlicesToAdvance = std::max(numSlicesToAdvance, 0);
+  numSlicesToAdvance = std::min(numSlicesToAdvance, 10);
 
   return numSlicesToAdvance;
 }

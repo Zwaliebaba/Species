@@ -78,8 +78,8 @@ Matrix34 Triffid::GetHead()
     _pos += Vector3(sinf(timer / 1.3f) * 4, sinf(timer / 1.5f), sinf(timer / 1.2f) * 3);
 
     float justFiredFraction = (m_timerSync - GetHighResTime()) / m_reloadTime;
-    justFiredFraction = min(justFiredFraction, 1.0f);
-    justFiredFraction = max(justFiredFraction, 0.0f);
+    justFiredFraction = std::min(justFiredFraction, 1.0f);
+    justFiredFraction = std::max(justFiredFraction, 0.0f);
     justFiredFraction = pow(justFiredFraction, 5);
 
     _pos -= _front * justFiredFraction * 10.0f;
@@ -708,8 +708,8 @@ void TriffidEgg::Render(float _predictionTime)
   //
   // Make our size pulsate a little
   float age = (m_timerSync - GetHighResTime()) / m_life;
-  age = max(age, 0.0f);
-  age = min(age, 1.0f);
+  age = std::max(age, 0.0f);
+  age = std::min(age, 1.0f);
   float size = m_size + fabs(sinf(g_gameTime * 2.0f)) * (1.0f - age) * 0.4f;
 
   predictedPos.y -= size;

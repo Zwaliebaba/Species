@@ -63,9 +63,9 @@ MessageDialog::MessageDialog(char const* _name, char const* _message)
   }
 
   m_w = g_editorFont.GetTextWidth(longestLine) + 10;
-  m_w = max(m_w, 100);
+  m_w = std::max(m_w, 100);
   m_h = 65 + m_numLines * DEF_FONT_SIZE;
-  m_h = max(m_h, 85);
+  m_h = std::max(m_h, 85);
   SetMenuSize(m_w, m_h);
   m_x = g_renderer->ScreenW() / 2 - m_w / 2;
   m_y = g_renderer->ScreenH() / 2 - m_h / 2;

@@ -431,7 +431,7 @@ void Building::EvaluatePorts()
       else
       {
         port->m_counter[t] -= 4;
-        port->m_counter[t] = max(port->m_counter[t], 0);
+        port->m_counter[t] = std::max(port->m_counter[t], 0);
       }
     }
   }
@@ -664,7 +664,7 @@ void Building::OperatePort(int _portId, int _teamId)
   {
     BuildingPort* port = m_ports[_portId];
     port->m_counter[_teamId]++;
-    port->m_counter[_teamId] = min(port->m_counter[_teamId], 50);
+    port->m_counter[_teamId] = std::min(port->m_counter[_teamId], 50);
   }
 }
 

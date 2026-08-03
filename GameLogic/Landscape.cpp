@@ -879,13 +879,13 @@ bool Landscape::RayHitCell(int x0, int z0, Vector3 const& _rayStart, Vector3 con
     float height10 = m_heightMap->GetData(x0 + 1, z0);
     float height11 = m_heightMap->GetData(x0 + 1, z0 + 1);
 
-    float maxHeightOfCube = max(height00, height01);
-    maxHeightOfCube = max(height10, maxHeightOfCube);
-    maxHeightOfCube = max(height11, maxHeightOfCube);
+    float maxHeightOfCube = std::max(height00, height01);
+    maxHeightOfCube = std::max(height10, maxHeightOfCube);
+    maxHeightOfCube = std::max(height11, maxHeightOfCube);
 
-    float minHeightOfCube = min(height00, height01);
-    minHeightOfCube = min(height10, minHeightOfCube);
-    minHeightOfCube = min(height11, minHeightOfCube);
+    float minHeightOfCube = std::min(height00, height01);
+    minHeightOfCube = std::min(height10, minHeightOfCube);
+    minHeightOfCube = std::min(height11, minHeightOfCube);
 
     float worldXForX0 = m_heightMap->GetRealX(x0);
     float lambdaWhenRayCrossesX0 = (worldXForX0 - _rayStart.x) / _rayDir.x;
@@ -899,13 +899,13 @@ bool Landscape::RayHitCell(int x0, int z0, Vector3 const& _rayStart, Vector3 con
     float worldZForZ1 = m_heightMap->GetRealY(z0 + 1);
     float lambdaWhenRayCrossesZ1 = (worldZForZ1 - _rayStart.z) / _rayDir.z;
 
-    float maxLambda = max(lambdaWhenRayCrossesX0, lambdaWhenRayCrossesX1);
-    maxLambda = max(lambdaWhenRayCrossesZ0, maxLambda);
-    maxLambda = max(lambdaWhenRayCrossesZ1, maxLambda);
+    float maxLambda = std::max(lambdaWhenRayCrossesX0, lambdaWhenRayCrossesX1);
+    maxLambda = std::max(lambdaWhenRayCrossesZ0, maxLambda);
+    maxLambda = std::max(lambdaWhenRayCrossesZ1, maxLambda);
 
-    float minLambda = min(lambdaWhenRayCrossesX0, lambdaWhenRayCrossesX1);
-    minLambda = min(lambdaWhenRayCrossesZ0, minLambda);
-    minLambda = min(lambdaWhenRayCrossesZ1, minLambda);
+    float minLambda = std::min(lambdaWhenRayCrossesX0, lambdaWhenRayCrossesX1);
+    minLambda = std::min(lambdaWhenRayCrossesZ0, minLambda);
+    minLambda = std::min(lambdaWhenRayCrossesZ1, minLambda);
 
     float heightAtMinLambda = _rayStart.y + minLambda * _rayDir.y;
     float heightAtMaxLambda = _rayStart.y + maxLambda * _rayDir.y;

@@ -214,7 +214,7 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
   }
   if (m_numSurges > 0)
   {
-    targetAlpha = max(targetAlpha, 0.2f);
+    targetAlpha = std::max(targetAlpha, 0.2f);
   }
 
   float factor1 = g_advanceTime;
@@ -233,7 +233,7 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
     pos.z += cosf(timeIndex + i) * i * 1.7f;
 
     float size = 30.0f * sinf(timeIndex + i * 13);
-    size = max(size, 5.0f);
+    size = std::max(size, 5.0f);
 
     glColor4f(0.6f, 0.2f, 0.1f, m_alpha);
     // glColor4f( 0.5f, 0.6f, 0.8f, m_alpha );

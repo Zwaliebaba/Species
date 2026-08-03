@@ -193,7 +193,7 @@ void ResearchItem::RenderAlphas(float _predictionTime)
     pos.z += cosf(timeIndex + i) * i * 0.3f;
 
     float size = 5.0f + sinf(timeIndex + i * 10) * 7.0f;
-    size = max(size, 2.0f);
+    size = std::max(size, 2.0f);
 
     // glColor4f( 0.6f, 0.2f, 0.1f, alpha);
     glColor4f(0.1f, 0.2f, 0.8f, alpha);
