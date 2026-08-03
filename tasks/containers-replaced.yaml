@@ -876,9 +876,14 @@ tasks:
 
       Evidence: the five checks, SliceWiringTests for the wiring the arithmetic
       tests cannot see, and GenerateSyncValue read line by line to confirm it
-      still walks Size() with ValidIndex in index order. The Garden smoke test
-      is still owed and is the real evidence for this one — request an owner
-      run.
+      still walks Size() with ValidIndex in index order.
+
+      GARDEN RUN AT 586c072: the owner launched, loaded The Garden and played
+      with no assert — steps 1, 2, 5, 6 and 7, which is what this task needed.
+      Step 5 is the slice loop and step 7 is GenerateSyncValue, so the two
+      things the conversion could have broken were exercised. The spawn counts
+      (steps 3 and 4) were not checked; those belong to rename-darwinian/T4 and
+      it stays blocked.
     status: done
 
   - id: T13

@@ -262,11 +262,20 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**Last run: all seven steps pass, as of the layering-inversion branch
+**Last full run: all seven steps pass, as of the layering-inversion branch
 (2026-08-02), after the `g_app` seam moved the world subsystems, the frame
 clock and App's state out of the executable.** Reported by the project owner,
 not observed by the agent that wrote this line — if only some steps were
 checked, correct this rather than leaving it overstated.
+
+**Partial run at `586c072` (2026-08-03), after containers-replaced T12
+converted the world's slot containers off `DArray` and the entity rename
+landed.** The owner launched, loaded The Garden and played without an assert —
+steps 1, 2, 5, 6 and 7. **Steps 3 and 4, the spawn counts, were not checked**,
+so this is not a full pass and does not close `rename-darwinian/T4`. That
+distinction is worth keeping: the counts are the only step that catches a
+string-resolved reference the rename missed, because a name that fails to
+resolve produces a smaller group rather than a crash.
 
 That run is the reason those changes were merged: CI proved they compile and
 the unit suite passes, and neither says anything about whether the game still
