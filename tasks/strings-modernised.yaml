@@ -390,7 +390,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    notes: >
+    notes: |
       Split out of T2 on 2026-08-02, on the same evidence that split
       containers-replaced T18: the task looked NeuronCore-local and is not.
       Server::ReceiveLetter takes `char* fromIP`, so making IpToString return
@@ -404,4 +404,30 @@ tasks:
       from IpToString and never reads it. Deleting it is the right call during
       this conversion; it is called out here so it is a decision rather than a
       surprise.
-    status: todo
+
+      DONE 2026-08-03. Both signatures return std::string now, and the static
+      char[16] behind ConvertIntToIP is gone.
+
+      THE DEAD SITE THE SCOPING NOTE PREDICTED WAS THERE, and so was a second
+      one it did not. ClientToServer::ListenCallback filled a local char[16]
+      from IpToString and never read it — deleted. ClientToServer::GetOurIP_String
+      has NO CALLERS ANYWHERE: it cached a `new char[16]` behind a function
+      static and leaked it, and nothing has asked for it. Deleted rather than
+      converted, which is the right answer for dead code found during a
+      conversion — converting it would have meant maintaining it.
+
+      ConvertIntToIP's masks are reproduced character for character rather than
+      tidied. `_ip & 0xff000000` is UNSIGNED, because 0xff000000 does not fit in
+      an int, which is what makes the shift logical and the top octet of a
+      negative packed address come out as 255. A "tidying" static_cast was
+      drafted and then removed: it was a no-op, and leaving it in would have
+      implied the original was wrong. Two tests were added for exactly this —
+      one on -1, one proving the result survives a second call.
+
+      NetworkUpdate::SetClientIp took char* and takes std::string_view now,
+      which lets Server::ReceiveLetter take one too and removes the last
+      caller-supplied buffer on this path. m_clientIp itself stays a char[16]
+      for the reason recorded in NetworkUpdate.cpp: ServerToClientLetter
+      memcpy()s whole NetworkUpdate structs, so the type has to stay trivially
+      copyable. That is ownership/T2's problem, not this one's.
+    status: done

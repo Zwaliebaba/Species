@@ -57,7 +57,7 @@ namespace Neuron
 
       std::unique_ptr<NetworkUpdate> GetNextLetter();
 
-      void ReceiveLetter(std::unique_ptr<NetworkUpdate> update, char* fromIP);
+      void ReceiveLetter(std::unique_ptr<NetworkUpdate> update, std::string_view fromIP);
       void SendLetter(std::unique_ptr<ServerToClientLetter> letter);
 
       int GetClientId(char* _ip);

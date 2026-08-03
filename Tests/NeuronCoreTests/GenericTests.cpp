@@ -24,6 +24,26 @@ namespace NeuronCoreTests
         Assert::AreEqual(-1, ConvertIPToInt("255.255.255.255"));
       }
 
-      TEST_METHOD(ConvertIntToIpReversesConvertIpToInt) { Assert::AreEqual("192.168.0.1", ConvertIntToIP(ConvertIPToInt("192.168.0.1"))); }
+      TEST_METHOD(ConvertIntToIpReversesConvertIpToInt) { Assert::AreEqual(std::string("192.168.0.1"), ConvertIntToIP(ConvertIPToInt("192.168.0.1"))); }
+
+      // The top octet is the one that could regress: 0xff000000 does not fit in
+      // an int, so the mask is unsigned and the shift is logical. An arithmetic
+      // shift here would sign-extend and print something other than 255.
+      TEST_METHOD(ConvertIntToIpFormatsTheTopOctetOfANegativePackedAddress)
+      {
+        Assert::AreEqual(std::string("255.255.255.255"), ConvertIntToIP(-1));
+      }
+
+      TEST_METHOD(ConvertIntToIpReturnsAValueNotAStaticBuffer)
+      {
+        // The old implementation returned a pointer into a function-local
+        // static char[16], so these two would have been the same address with
+        // the same contents. Holding one result across a second call is now
+        // safe, which is the point of the signature change.
+        const std::string first = ConvertIntToIP(ConvertIPToInt("1.2.3.4"));
+        const std::string second = ConvertIntToIP(ConvertIPToInt("5.6.7.8"));
+        Assert::AreEqual(std::string("1.2.3.4"), first);
+        Assert::AreEqual(std::string("5.6.7.8"), second);
+      }
   };
 } // namespace NeuronCoreTests

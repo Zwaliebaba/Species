@@ -117,7 +117,7 @@ void NetworkUpdate::SetType( UpdateType _type )
     m_type = _type;
 }
 
-void NetworkUpdate::SetClientIp( char *ip )
+void NetworkUpdate::SetClientIp(std::string_view ip)
 {
   // m_clientIp stays a char[16] and this stays a copy into it. T1's audit
   // found that ServerToClientLetter memcpy()s whole NetworkUpdate structs,
@@ -134,13 +134,12 @@ void NetworkUpdate::SetClientIp( char *ip )
   // `std::min(` becomes `std::(...)(` and MSVC reports C2589. NOMINMAX
   // suppresses the Windows pair; nothing suppresses ours. See
   // tasks/language-hygiene.yaml T8.
-  const std::string_view source(ip ? ip : "");
-  size_t length = source.size();
+  size_t length = ip.size();
   if (length > sizeof(m_clientIp) - 1)
   {
     length = sizeof(m_clientIp) - 1;
   }
-  std::memcpy(m_clientIp, source.data(), length);
+  std::memcpy(m_clientIp, ip.data(), length);
   m_clientIp[length] = '\0';
 }
 

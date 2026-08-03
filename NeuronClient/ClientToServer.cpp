@@ -37,10 +37,6 @@ static NetCallBackRetType ListenCallback(NetUdpPacket *udpdata)
 {
     if (udpdata)
     {
-        NetIpAddress *fromAddr = &udpdata->m_clientAddress;
-        char newip[16];
-		IpToString(fromAddr->sin_addr, newip);
-
         ServerToClientLetter *letter = new ServerToClientLetter(udpdata->m_data, udpdata->m_length);
         s_client->ReceiveLetter(letter);
         //        SET_PROFILE(m_profiler,  "#Client Receive", udpdata->getLength() );
@@ -192,20 +188,6 @@ int ClientToServer::GetOurIP_Int()
 //			return *((int*)hostEnt->h_addr_list[0]);
 //	}
 //	return ConvertIPToInt( "127.0.0.1" );
-}
-
-
-char *ClientToServer::GetOurIP_String()
-{
-    static char *result = nullptr;
-
-    if( !result )
-    {
-        result = new char[16];
-        strcpy( result, ConvertIntToIP( GetOurIP_Int() ) );
-    }
-
-    return result;
 }
 
 

@@ -46,13 +46,11 @@ namespace Neuron
     if (udpdata)
     {
       NetIpAddress* fromAddr = &udpdata->m_clientAddress;
-      char newip[16];
-      IpToString(fromAddr->sin_addr, newip);
 
       if (s_server)
       {
         auto letter = std::make_unique<NetworkUpdate>(udpdata->m_data);
-        s_server->ReceiveLetter(std::move(letter), newip);
+        s_server->ReceiveLetter(std::move(letter), IpToString(fromAddr->sin_addr));
         //            SET_PROFILE(m_profiler,  "#Server Receive", (double) udpdata->getLength() );
       }
 
@@ -253,7 +251,7 @@ namespace Neuron
     return letter;
   }
 
-  void Server::ReceiveLetter(std::unique_ptr<NetworkUpdate> update, char* fromIP)
+  void Server::ReceiveLetter(std::unique_ptr<NetworkUpdate> update, std::string_view fromIP)
   {
     update->SetClientIp(fromIP);
 

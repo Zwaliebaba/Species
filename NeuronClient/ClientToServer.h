@@ -46,7 +46,6 @@ class ClientToServer
     ~ClientToServer();
 
     int GetOurIP_Int();
-    char* GetOurIP_String();
 
     // Releases the head of the inbox only when it is the letter the caller is
     // next expecting. The caller owns that counter — it tracks how far the

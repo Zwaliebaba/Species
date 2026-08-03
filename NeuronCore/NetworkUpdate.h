@@ -71,7 +71,7 @@ public:
     NetworkUpdate( char *_byteStream );
 
     void SetType            ( UpdateType _type );
-    void SetClientIp        ( char *ip );
+    void SetClientIp(std::string_view ip);
     void SetTeamType        ( unsigned char _teamType );
 	void SetDesiredTeamId   ( signed char _desiredTeamId );
     void SetWorldPos        ( Vector3 const &_pos );

@@ -5,38 +5,34 @@
 #include "Generic.h"
 
 
-void IpToString(struct in_addr in, char *newip)
+std::string IpToString(struct in_addr in)
 {
-        sprintf ( newip, "%u.%u.%u.%u", in.S_un.S_un_b.s_b1,
-                                        in.S_un.S_un_b.s_b2,
-                                        in.S_un.S_un_b.s_b3,
-                                        in.S_un.S_un_b.s_b4 );
+  return std::format("{}.{}.{}.{}", in.S_un.S_un_b.s_b1, in.S_un.S_un_b.s_b2, in.S_un.S_un_b.s_b3, in.S_un.S_un_b.s_b4);
 }
 
 int ConvertIPToInt(const char* _ip)
 {
   ASSERT_TEXT(strlen(_ip) < 17, "IP address too long");
-  char ipCopy[17];
-  strcpy(ipCopy, _ip);
-  int ipLen = strlen(ipCopy);
 
-  for (int i = 0; i < ipLen; ++i)
-  {
-    if (ipCopy[i] == '.')
-      ipCopy[i] = '\n';
-  }
+  // The octet separators become newlines so one sscanf reads all four. The
+  // copy exists because the input is const; it was a fixed char[17] guarded by
+  // the assert above, which is the same bound the assert already states.
+  std::string ipCopy(_ip);
+  std::ranges::replace(ipCopy, '.', '\n');
 
   int part1, part2, part3, part4;
-  sscanf(ipCopy, "%d %d %d %d", &part1, &part2, &part3, &part4);
+  sscanf(ipCopy.c_str(), "%d %d %d %d", &part1, &part2, &part3, &part4);
 
   int result = ((part4 & 0xff) << 24) + ((part3 & 0xff) << 16) + ((part2 & 0xff) << 8) + (part1 & 0xff);
   return result;
 }
 
-char* ConvertIntToIP(const int _ip)
+std::string ConvertIntToIP(const int _ip)
 {
-  static char result[16];
-  sprintf(result, "%d.%d.%d.%d", (_ip & 0x000000ff), (_ip & 0x0000ff00) >> 8, (_ip & 0x00ff0000) >> 16, (_ip & 0xff000000) >> 24);
-
-  return result;
+  // The masks are reproduced exactly. 0xff000000 does not fit in an int, so it
+  // is an unsigned literal, which makes `_ip & 0xff000000` unsigned and its
+  // shift logical rather than arithmetic — that is what makes the top octet of
+  // a negative packed address come out as 255 instead of a sign-extended mess.
+  // Pinned by ConvertIpToIntHandlesTheAllOnesBroadcast.
+  return std::format("{}.{}.{}.{}", (_ip & 0x000000ff), (_ip & 0x0000ff00) >> 8, (_ip & 0x00ff0000) >> 16, (_ip & 0xff000000) >> 24);
 }
