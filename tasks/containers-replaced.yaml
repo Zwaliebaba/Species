@@ -829,7 +829,57 @@ tasks:
       bound sequences are identical. That proves equivalence rather than
       arguing it. It dies with SliceDArray at T16, which is why the individual
       properties are pinned separately as well.
-    status: todo
+
+      DONE 2026-08-03. Landed in seven commits, three of them whole-file
+      reformats of tab-indented headers kept separate so the conversion diffs
+      stay readable (LevelFile.h, GlobalWorld.h, Unit.h + Team.h).
+
+      LevelFile's twelve lists and GlobalWorld's six carry no slot identity —
+      they hold level-file and saved-game contents in insertion order — so
+      those are plain std::vector. The nine slot containers are FastSlotMap,
+      the freelist flavour, because LowestFirst would hand out different
+      indices for the same spawn sequence and those indices go on the wire.
+
+      THREE PLACES WERE RELYING ON LList RETURNING NULLPTR OUT OF RANGE, which
+      std::vector does not, and only one of the three announced itself. The
+      editor holds ids across frames and deleting an entry does not renumber
+      the ones after it, so LevelFile grew GetCameraAnim and GetInstantUnit,
+      both nullptr out of range, keeping the four call sites that already
+      tested their result honest. LocationEditor::RenderModeCameraMount read
+      m_nodes[0] BEFORE the loop that would have skipped an empty animation and
+      was correct only because GetData answered nullptr; it tests the list now.
+      Camera::PlayAnimation dereferenced its argument immediately and the
+      editor's preview button can hand it a stale id's nullptr.
+
+      That is the same class of defect as the EclWindow crash from T7 — a
+      subscript standing in for a bounds test — and it is worth naming that the
+      grep which found the T7 instances would NOT have found these. They are
+      not `while (x[0])`; they are a subscript whose index arrives from a
+      member set in another frame. The only thing that finds those is reading
+      the provenance of every index at every converted call site, which is what
+      this task did and why it took seven commits rather than two.
+
+      A SECOND SEARCH HABIT, after the ObstructionGrid one above. Removing an
+      include is not a local edit: 53 files include GlobalWorld.h and any of
+      them could have been reaching LList.h or FastDArray.h through it. That
+      was settled with a reachability pass over all six projects rather than by
+      trying the build — honouring /Yu, so nothing textually before pch.h
+      counts, and stripping comments, because a first draft of the same script
+      reported two false positives from the word LList inside a comment and
+      from a header whose own include sat above its pch line.
+
+      ON THE ACCEPTANCE GREP ITSELF: it is `grep -lwE`, so it matches PROSE.
+      Three comments explaining what the legacy container used to do had to be
+      reworded to say "the legacy list" rather than name the type. Worth
+      knowing before writing the next migration note, and worth remembering
+      when T15 runs the same grep tree-wide.
+
+      Evidence: the five checks, SliceWiringTests for the wiring the arithmetic
+      tests cannot see, and GenerateSyncValue read line by line to confirm it
+      still walks Size() with ValidIndex in index order. The Garden smoke test
+      is still owed and is the real evidence for this one — request an owner
+      run.
+    status: done
 
   - id: T13
     title: Convert the Species app, task-manager and effects containers
