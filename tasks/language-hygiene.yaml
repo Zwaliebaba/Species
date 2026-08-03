@@ -143,28 +143,126 @@ tasks:
     status: todo
 
   - id: T4
-    title: Convert the input-system enums to enum class
+    title: Convert InputMode and InputParserState to enum class
     intent: >
-      ControlType, InputType, InputMode, InputCondition and InputParserState
-      thread through the whole driver stack but never cross the wire —
-      NetworkUpdate carries sequenced intent, not raw input codes. Converting
-      them hardens the input layer's type boundaries. ControlTypes.h is
-      generated-table-adjacent (ControlTypes.inc); the conversion keeps the
-      table mechanism working.
+      The two input-system enums that are only ever used as themselves. Neither
+      crosses the wire, neither is a bit field, and neither has an int typedef
+      standing in for it — which is what separates them from the other three
+      the old T4 tried to carry (see T9). Converting them hardens the driver
+      stack's type boundaries without touching the parts of it that treat an
+      enum as an integer.
     project: NeuronClient
     depends_on: []
     files:
-      - NeuronClient/ControlTypes.h
       - NeuronClient/InputTypes.h
       - NeuronClient/InputDriver.h
+      - NeuronClient/LanguageTable.h
+      - NeuronClient/LanguageTable.cpp
+      - NeuronClient/Input.cpp
+      - NeuronClient/SepulvedaStrings.cpp
+      - NeuronClient/InputDriverSimple.cpp
+      - NeuronClient/InputDriverPipe.cpp
+      - NeuronClient/InputDriverPrefs.cpp
+      - NeuronClient/InputDriverInvert.cpp
+      - NeuronClient/InputDriverValue.cpp
+      - NeuronClient/InputDriverChord.cpp
+      - NeuronClient/InputDriverConjoin.cpp
+      - NeuronClient/InputDriverAlias.cpp
+      - Species/Main.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/ControlHelp.cpp
+      - Species/Renderer.cpp
     acceptance:
-      - The five enums are enum class; every use site compiles without C-style casts back to int except at documented table boundaries
-      - grep -E "^\s*enum\s+[A-Za-z]" over NeuronClient headers returns nothing
+      - InputMode and InputParserState are enum class with an explicit underlying type
+      - No use site casts either of them back to int
+      - grep -cEow "INPUT_MODE_[A-Z_]*|STATE_[A-Z_]*" over the six projects is unchanged at 119, and every one is qualified
     verify:
       - python3 tools/check_layering.py
+      - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     status: todo
+    notes: |
+      RE-SCOPED 2026-08-03, before starting, on a measurement the original task
+      did not have. It listed three files and five enums. The five enums have
+      795 use sites across 39 files, and three of them cannot be converted the
+      way this task describes — those three are now T9.
+
+      What stayed here, with counts at fdf9421: INPUT_MODE_* 47 sites in 14
+      files, STATE_* 72 sites in 19 files. Larger than "three files" but
+      mechanical: both are plain sequential enums used only as themselves, so
+      the conversion is qualification plus an underlying type.
+
+      The file list above is the measured one and includes Species/, which the
+      original did not mention at all — INPUT_MODE_ reaches Main.cpp (7),
+      TaskManagerInterfaceIcons.cpp (8) and three more files up there.
+
+      The old acceptance line "grep -E for a plain enum over NeuronClient
+      headers returns nothing" is dropped, because it was never this task's to
+      satisfy: CameraAccess.h declares `enum Mode`, and language-hygiene T5
+      owns it. A criterion a task cannot meet by doing its own work is a
+      criterion that gets ignored or gets the wrong thing done to satisfy it.
+
+  - id: T9
+    title: Convert the enums that int typedefs stand in for
+    intent: >
+      ControlType, InputType and InputCondition are the three the old T4 could
+      not have carried. Each has an `int` typedef used interchangeably with it
+      across the driver API — controltype_t, inputtype_t and condition_t — so
+      making the enum strong means deciding what those typedefs become, and
+      that is an API change to ControlBindings and InputDriver rather than a
+      keyword swap. InputType is additionally a BIT FIELD, so enum class costs
+      it the operators it is built on.
+    project: NeuronClient
+    depends_on: [T4]
+    files:
+      - NeuronClient/ControlTypes.h
+      - NeuronClient/InputTypes.h
+      - NeuronClient/InputSpec.h
+      - NeuronClient/InputDriver.h
+      - NeuronClient/ControlBindings.h
+      - NeuronClient/ControlBindings.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+      - NeuronClient/InputDriverWin32.cpp
+    acceptance:
+      - The three enums are enum class with an explicit underlying type
+      - controltype_t, inputtype_t and condition_t either name the enum type or are gone; no signature takes a bare int where an enumerator is meant
+      - InputType's bitwise operators are defined on the enum class rather than reached through a cast, and INPUT_TYPE_1D still implies ANALOG
+      - The 421 Control* and 216 INPUT_TYPE_* use sites compile without a C-style cast, except at the ControlTypes.inc table boundary, which is listed in notes
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - Owner runs the Garden smoke test — every step needs input to work at all
+    parallel_safe: false
+    status: todo
+    notes: |
+      Split out of T4 on 2026-08-03, measured at fdf9421 before either was
+      started. The three things that make this its own task, none of which the
+      original T4 mentions:
+
+      (1) THE INT TYPEDEFS. InputSpec.h has `typedef int inputtype_t` and
+      `typedef int condition_t`, ControlTypes.h has `typedef int
+      controltype_t`, and 46 sites use them where the enum is meant —
+      ControlBindings::getControlID RETURNS controltype_t, operator[] and bind
+      TAKE it. Converting the enum without deciding what these become leaves an
+      implicit conversion the enum class was supposed to remove.
+
+      (2) INPUT_TYPE_* IS A BIT FIELD, which the enumerator values say out
+      loud: FAIL 0, BOOL 1, ANALOG 2, 1D 6, 2D 10, ANY 15 — 1D and 2D both
+      carry ANALOG's bit, and ControlBindings.cpp:52-53 tests and ORs them.
+      enum class has no bitwise operators, so this needs them defined or it
+      needs to stay a plain enum with a documented reason. That is a design
+      decision, not a conversion.
+
+      (3) AN INTEGER LOOP OVER THE RANGE. Input.cpp:293 runs
+      `for (controltype_t i = 0; i < NumControlTypes; ++i)`. NeuronHelper.h's
+      ENUM_HELPER is what this plan's T5 points at for exactly this case.
+
+      Also worth knowing before starting: ControlTypes.h builds its enumerators
+      by including ControlTypes.inc through a DEF_CONTROL_TYPE macro, so the
+      enumerator list is generated and the table in ControlTypes.cpp is keyed
+      to it positionally. The two must not drift.
 
   - id: T5
     title: Convert the game-side enums to enum class
