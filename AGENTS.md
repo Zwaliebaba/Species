@@ -77,13 +77,13 @@ there; all thirteen of its tasks are complete.
 
 What that does *not* mean: the game client runs, the world server exists, or
 cross-architecture play works. It means the foundation no longer depends on the
-things above it, so a server can be built without dragging a renderer in. The
-next phase starts above it: every one of the 628 remaining violations points
-into `Species` (624 of them) or `GameLogic` (4).
+things above it, so a server can be built without dragging a renderer in.
 
-Deliberately *not* the exit criterion: the full 628-entry allowlist (the
-`GameLogic` → `Species` cluster is 584 of them and blocks nothing here), and the
-client running. Both matter; neither gates the world server.
+Deliberately *not* the exit criterion: the rest of the allowlist, and the client
+running. Both matter; neither gates the world server. The allowlist stood at 628
+when this phase ended and is at 4 now — `tasks/layering-inversion.yaml` is the
+plan working it down, and its T12 is the one that takes it to zero and deletes
+the file.
 
 > **Note:** the game runs again as of `7ee8c00`. That is recorded here because
 > this file is where it gets recorded — see *What working looks like*. It does
@@ -141,24 +141,25 @@ NeuronCore                   no dependencies
       Server   (exe)         -> GameLogic, NeuronServer, NeuronCore
 ```
 
-**Includes may only ever point downward.** The tree does not obey this yet: 326
+**Includes may only ever point downward.** The tree very nearly obeys this: four
 upward includes are recorded in `tools/layering_allowlist.txt`, inherited from
 Darwinia's single-binary layout — down from 628 as `tasks/layering-inversion.yaml`
 works through them.
 
 | From | Into | Count |
 |---|---|---|
-| GameLogic | Species | ~290 |
-| NeuronClient | Species | ~32 |
 | NeuronClient | GameLogic | 4 |
 
-Re-derive rather than trusting the split: `python3 tools/check_layering.py`
-prints the total, and clustering the allowlist on the target header gives the
-rest. What is already gone is `App.h` — no file below `Species` includes it —
-along with the frame clock, `Globals.h` and `Renderer.h`.
+Re-derive rather than trusting the table: `python3 tools/check_layering.py`
+prints the total and the file names them. What is already gone is `App.h` — no
+file below `Species` includes it — along with the frame clock, `Globals.h`,
+`Renderer.h`, `Camera.h` and the whole world model, which lives in `GameLogic`
+now rather than being reached up into.
 
-**`NeuronCore` has no upward includes left.** Every remaining violation is in
-`NeuronClient` or `GameLogic` reaching into `Species`.
+**`NeuronCore` has no upward includes left, and neither does `GameLogic`.** All
+four survivors are `NeuronClient` reaching `GameLogic`: `Resource.cpp` and
+`SoundInstance.cpp` asking the world four questions (T16), and `SoundSystem.cpp`
+whose event API is written in `Entity` and `Building` (T17).
 
 The check fails on any violation **not** already in that file. The allowlist may
 only ever shrink. If your change needs a new upward include, the design is wrong:
@@ -407,7 +408,7 @@ Real, currently true, and worth knowing before you trip over them:
   - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
     runner is a preview image that roughly doubles wall clock, and ARM64 is built
     constantly at the desk anyway. Deliberate, not an oversight.
-- **Seven upward includes remain, down from 628.** `NeuronCore` is standalone,
+- **Four upward includes remain, down from 628.** `NeuronCore` is standalone,
   reaches upward nowhere, and `NeuronCore.vcxproj` lists no include directories
   at all, so a new upward include there fails to compile rather than quietly
   working. `App.h` is now in the same position for the layers below it: the
@@ -419,9 +420,11 @@ Real, currently true, and worth knowing before you trip over them:
   interface header in `NeuronClient`, and the world model — `Location`,
   `GlobalWorld`, `Team`, `Unit`, the grids, the routing system and the
   landscape — now lives in `GameLogic` rather than being reached up into.
-  What is left is three `GameLogic` files reaching `Species` and four
-  `NeuronClient` files reaching `GameLogic`; `tools/layering_allowlist.txt`
-  names them, and `tasks/layering-inversion.yaml` owns the rest.
+  What is left is four includes in three `NeuronClient` files reaching
+  `GameLogic`: `Resource.cpp` and `SoundInstance.cpp` want four answers from
+  the world, and `SoundSystem.cpp` has an event API written in `Entity` and
+  `Building`. `tools/layering_allowlist.txt` names them; `layering-inversion`
+  T16 and T17 own them.
 - **Release is not built by anyone.** Three template leftovers — missing include
   paths, a precompiled header nothing created, and `Species` linking Release as a
   console app when `WinMain` is its entry point — are all fixed, and

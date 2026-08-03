@@ -9,9 +9,6 @@
 #
 # Regenerate with: python3 tools/check_layering.py --update
 
-GameLogic/MainMenus.cpp -> Renderer.h
-GameLogic/PrefsKeybindingsWindow.cpp -> TaskManagerInterfaceIcons.h
-GameLogic/PrefsScreenWindow.cpp -> Renderer.h
 NeuronClient/Resource.cpp -> Location.h
 NeuronClient/SoundInstance.cpp -> Location.h
 NeuronClient/SoundSystem.cpp -> Entity.h

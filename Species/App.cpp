@@ -167,6 +167,14 @@ App::App()
   bool profileLoaded = LoadProfile();
 }
 
+// The two factories AppCommands declares. GameLogic's preferences windows
+// rebuild these objects when a setting changes and cannot name the concrete
+// types; this is where `new` happens on their behalf.
+RendererAccess* App::CreateRenderer() { return new Renderer(); }
+
+TaskManagerInterfaceAccess* App::CreateTaskManagerInterface() { return new TaskManagerInterfaceIcons(); }
+
+
 App::~App()
 {
   SAFE_DELETE(g_globalWorld);

@@ -66,6 +66,9 @@ public:
 	~App();
 
 
+  RendererAccess* CreateRenderer() override;
+  TaskManagerInterfaceAccess* CreateTaskManagerInterface() override;
+
   void SetProfileName(char const* _profileName) override;
   bool LoadProfile() override;
 

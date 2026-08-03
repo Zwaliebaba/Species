@@ -15,8 +15,8 @@
 #include "DropDownMenu.h"
 
 #include "GameTime.h"
-#include "TaskManagerInterfaceIcons.h"
 #include "WorldPointers.h"
+#include "AppCommands.h"
 
 using namespace std;
 
@@ -139,7 +139,7 @@ class ApplyKeybindingsButton : public SpeciesButton
       g_prefsManager->SetInt(CONTROL_METHOD, parent->m_controlMethod);
 
       delete g_taskManagerInterface;
-      g_taskManagerInterface = new TaskManagerInterfaceIcons();
+      g_taskManagerInterface = g_appCommands->CreateTaskManagerInterface();
 
 
       /*W32EventHandler *w = getW32EventHandler();

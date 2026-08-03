@@ -984,13 +984,14 @@ tasks:
       outright. If a residue survives T10, this task does not paper over it
       — the residue becomes new tasks appended to this plan, and this one
       stays open until the file is genuinely empty.
-    depends_on: [T9, T10, T11, T13, T15]
+    depends_on: [T9, T10, T11, T13, T15, T16, T17]
     files:
       - tools/layering_allowlist.txt
       - AGENTS.md
     acceptance:
       - tools/layering_allowlist.txt contains zero entries
-      - check_layering.py passes with the empty allowlist; AGENTS.md's layering section records the milestone
+      - check_layering.py passes with the empty allowlist, and the allowlist file and its --update mode are deleted rather than left empty
+      - AGENTS.md's layering section records the milestone
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_task_dag.py
@@ -998,6 +999,157 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
     status: todo
+    notes: >
+      628 -> 7 by the end of T15, and 7 -> 4 here. The three that went were all
+      the same shape and all soluble on the spot: MainMenus.cpp and
+      PrefsScreenWindow.cpp said `new Renderer()`, PrefsKeybindingsWindow.cpp
+      said `new TaskManagerInterfaceIcons()`. Every OTHER thing those three
+      files do to those objects already went through RendererAccess and
+      TaskManagerInterfaceAccess — construction was the whole residue, and
+      construction is precisely what a pure-virtual seam cannot express. So
+      AppCommands grew two factories, CreateRenderer and
+      CreateTaskManagerInterface, and App implements them with the one `new`
+      each. Neither factory installs what it returns: the three call sites
+      differ in what they do between destroying the old object and installing
+      the new one — one destroys a window in between, another builds a renderer
+      only to throw it away — so a Recreate() owning the whole sequence would
+      have had to guess which ordering it was being asked for.
+
+      THE FOUR THAT REMAIN are all NeuronClient reaching GameLogic, and they
+      are two different problems rather than four instances of one. They are
+      T16 and T17, appended to this plan as the intent above requires, and this
+      task now depends on both:
+
+        Resource.cpp -> Location.h      2 sites, GL state       T16
+        SoundInstance.cpp -> Location.h 2 sites, world queries   T16
+        SoundSystem.cpp -> Entity.h     the event API           T17
+        SoundSystem.cpp -> Location.h   ditto, transitively     T17
+
+      A WARNING FOR WHOEVER RUNS T17. SoundSystem.cpp's Location.h include
+      looks dead — nothing in the file names Location. It is not: Location.h is
+      what supplies Building.h and WorldObject.h, which TriggerBuildingEvent
+      and TriggerOtherEvent dereference. Deleting the include on the strength
+      of a grep for `Location` breaks the build. The same trap cost a red CI
+      run once already in this branch, on BTree.h in this very file.
+
+      A CHECK THIS TASK ADDED, worth keeping: for every .cpp, is each `g_*` it
+      names declared in a header it can actually reach, honouring /Yu so that
+      includes before pch.h do not count? Run tree-wide after T15 it found
+      exactly one answer, TaskManager.cpp's g_inputManager, which is what CI
+      had just gone red on. Every check written before it looked at the files
+      that changed; this one asks the question the compiler asks.
+
+  - id: T16
+    title: Give Resource and SoundInstance a narrow world seam
+    intent: >
+      Four call sites in two NeuronClient files are the only reason
+      NeuronClient includes Location.h. Resource tells the world to drop and
+      rebuild its OpenGL state; SoundInstance asks the ground height under a
+      sound and whether a sound's attached object still exists. All four are
+      questions the world can answer through an interface — none of them
+      constructs anything or touches a data member that has to stay a data
+      member.
+    project: NeuronClient
+    depends_on: [T15]
+    files:
+      - NeuronClient/Resource.cpp
+      - NeuronClient/SoundInstance.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - tools/layering_allowlist.txt
+    acceptance:
+      - Neither Resource.cpp nor SoundInstance.cpp includes a GameLogic header, and both allowlist entries are gone
+      - The seam does not retype g_location; see the notes for why
+      - Whatever installs the seam cannot leave a dangling pointer across a level reload, and a test proves it
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+    notes: >
+      THE OBVIOUS ANSWER IS WRONG, and it is worth saying so before someone
+      spends a day on it. The pattern T9 and T10 used — retype the global to
+      an *Access interface, add TheX() in the layer above — does not scale to
+      Location. Measured 2026-08-03: 1289 `g_location->` sites across 106
+      files, and the top of the distribution is data members, not calls:
+      m_landscape 329, m_buildings 123, m_levelFile 97, m_teams 89,
+      m_spirits 81, m_entityGrid 65. A pure-virtual class cannot expose a data
+      member, so every one of those would have to become an accessor call.
+      That is not a seam, it is a rewrite of the world's API, and it would be
+      undertaken for the benefit of four call sites.
+
+      The four, exactly:
+        Resource.cpp:318   g_location->FlushOpenGlState()
+        Resource.cpp:336   g_location->RegenerateOpenGlState()
+        SoundInstance.cpp:766  g_location->m_landscape.m_heightMap->GetValue(x, z)
+        SoundInstance.cpp:958  g_location->GetWorldObject(m_objId)
+
+      The last two want narrowing as they cross: a GroundHeight(x, z) and a
+      WorldObjectExists(id) say what the caller means, and neither leaks a
+      GameLogic type through the signature. Note both callers already
+      null-check, so the seam being absent must stay legal.
+
+      Lifetime is the part to get right. Whatever pointer carries this seam is
+      installed by Location and must survive a level reload, where Main.cpp
+      replaces the world. A destructor that clears unconditionally will null
+      the seam if the new Location is constructed before the old one is
+      destroyed; clear only if the departing object is the one installed.
+
+  - id: T17
+    title: Take GameLogic types out of the sound system's event API
+    intent: >
+      SoundSystem is a NeuronClient subsystem whose public API is written in
+      GameLogic's vocabulary: TriggerEntityEvent takes an Entity*,
+      TriggerBuildingEvent a Building*, TriggerOtherEvent a WorldObject*, and
+      the blueprint loader indexes its tables with Entity::NumEntityTypes and
+      resolves names through Entity::GetTypeId. That is the last upward
+      include in the tree and the only one that is a genuine design fault
+      rather than a leftover.
+    project: NeuronClient
+    depends_on: [T15]
+    files:
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundSystem.cpp
+      - GameLogic/Entity.h
+      - GameLogic/Entity.cpp
+      - tools/layering_allowlist.txt
+    acceptance:
+      - SoundSystem.cpp includes no GameLogic header and both allowlist entries are gone
+      - The three Trigger*Event overloads take only types NeuronClient owns
+      - The sound blueprint files parse byte-identically — the entity type names in them are content, not code
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+      - The Garden smoke test, owner-run — every entity sound goes through this
+    parallel_safe: false
+    status: todo
+    notes: >
+      Measured 2026-08-03. Two halves, and the second is the awkward one.
+
+      The signatures. All three bodies use the same four things off the object
+      they are handed — m_id, m_type, m_pos and (for entities) m_vel — and
+      nothing else. So the overloads can take those directly and the GameLogic
+      types leave the header. The cost is at the call sites: about 75
+      `g_soundSystem->TriggerEntityEvent(this, "X")` across 17 GameLogic files
+      become four arguments instead of one. Mechanical, but every one of them
+      is a diff line, and RadarDish.cpp passes an `_entity` rather than `this`.
+
+      The type registry is the real question. SoundSystem sizes
+      m_entityBlueprints with Entity::NumEntityTypes, maps blueprint-file names
+      to indices with Entity::GetTypeId, and writes them back out with
+      Entity::GetTypeName. That is a name-to-id table with no behaviour, and it
+      is game content: the sound blueprint files on disk contain those names.
+      Moving the table down to NeuronClient makes the include go away and puts
+      the roster of Darwinian, Officer, Squad and the rest in the engine layer,
+      which is the wrong place for it. Handing SoundSystem the table at startup
+      instead — GameLogic registers the names it owns — keeps the knowledge
+      where it belongs and is the option to cost first.
+
+      Whichever way it goes, the blueprint files must parse the same
+      afterwards. They name entity types as strings and the mapping to indices
+      is what the acceptance calls content rather than code.
 
   - id: T14
     title: Replace App's remaining scalar state with accessors

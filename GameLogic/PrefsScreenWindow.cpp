@@ -11,11 +11,11 @@
 #include "DropDownMenu.h"
 #include "MessageDialog.h"
 
-#include "Renderer.h"
 
 #include "Win32EventHandler.h"
 #include "WindowManagerWin32.h"
 #include "WorldPointers.h"
+#include "AppCommands.h"
 
 #define HAVE_REFRESH_RATES
 
@@ -130,7 +130,7 @@ void RestartWindowManagerAndRenderer()
     int oldH = g_prefsManager->GetInt("ScreenHeight");
     g_prefsManager->SetInt("ScreenWidth", 640);
     g_prefsManager->SetInt("ScreenHeight", 480);
-    g_renderer = new Renderer();
+    g_renderer = g_appCommands->CreateRenderer();
     g_renderer->Initialise();
     g_windowManager->DestroyWin();
     delete g_renderer;
@@ -140,7 +140,7 @@ void RestartWindowManagerAndRenderer()
   }
 
   // start new window
-  g_renderer = new Renderer();
+  g_renderer = g_appCommands->CreateRenderer();
   g_renderer->Initialise();
   g_resource->FlushOpenGlState();
   g_resource->RegenerateOpenGlState();

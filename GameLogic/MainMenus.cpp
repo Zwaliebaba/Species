@@ -8,7 +8,6 @@
 #include "PrefsOtherWindow.h"
 #include "PrefsScreenWindow.h"
 #include "PrefsSoundWindow.h"
-#include "Renderer.h"
 #include "Resource.h"
 #include "TextRenderer.h"
 #include "UserProfileWindow.h"
@@ -261,7 +260,7 @@ class WebsiteButton : public SpeciesButton
 
         g_windowManager->DestroyWin();
         delete g_renderer;
-        g_renderer = new Renderer();
+        g_renderer = g_appCommands->CreateRenderer();
         g_renderer->Initialise();
         getW32EventHandler()->ResetWindowHandle();
         g_resource->FlushOpenGlState();
