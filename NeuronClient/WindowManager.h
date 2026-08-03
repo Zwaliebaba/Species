@@ -15,16 +15,16 @@ class WindowManagerWin32;
 
 class Resolution
 {
-public:
-	int			m_width;
-	int			m_height;
-  std::vector<int> m_refreshRates;
+  public:
+    int m_width;
+    int m_height;
+    std::vector<int> m_refreshRates;
 
-  Resolution(int _width, int _height)
-    : m_width(_width),
-      m_height(_height)
-  {
-  }
+    Resolution(int _width, int _height)
+      : m_width(_width),
+        m_height(_height)
+    {
+    }
 };
 
 
@@ -34,73 +34,72 @@ public:
 
 class WindowManager
 {
-public:
-  std::vector<Resolution*> m_resolutions;
-  WindowManagerWin32* m_win32Specific;
-  bool m_mousePointerVisible;
-  bool m_invertY; // Whether the Y coordinate needs to be inverted or not.
+  public:
+    std::vector<Resolution*> m_resolutions;
+    WindowManagerWin32* m_win32Specific;
+    bool m_mousePointerVisible;
+    bool m_invertY; // Whether the Y coordinate needs to be inverted or not.
 
-protected:
-	int			m_screenW;	// Cached values. Use Renderer::ScreenW() if you
-	int			m_screenH;	// want a value to inspect.
-    bool        m_windowed; //
-	bool        m_mouseCaptured;
-	bool		m_waitVRT;
+  protected:
+    int m_screenW;   // Cached values. Use Renderer::ScreenW() if you
+    int m_screenH;   // want a value to inspect.
+    bool m_windowed; //
+    bool m_mouseCaptured;
+    bool m_waitVRT;
 
-	int			m_mouseOffsetX;
-	int			m_mouseOffsetY;
+    int m_mouseOffsetX;
+    int m_mouseOffsetY;
 
-	int			m_borderWidth;
-	int			m_titleHeight;
+    int m_borderWidth;
+    int m_titleHeight;
 
-    int         m_desktopScreenW;           // Original starting values
-    int         m_desktopScreenH;           // Original starting values
-    int         m_desktopColourDepth;       // Original starting values
-    int         m_desktopRefresh;           // Original starting values
+    int m_desktopScreenW;     // Original starting values
+    int m_desktopScreenH;     // Original starting values
+    int m_desktopColourDepth; // Original starting values
+    int m_desktopRefresh;     // Original starting values
 
-	void ListAllDisplayModes();
-	bool EnableOpenGL(int _colourDepth, int _zDepth);
-	void DisableOpenGL();
+    void ListAllDisplayModes();
+    bool EnableOpenGL(int _colourDepth, int _zDepth);
+    void DisableOpenGL();
 
-public:
-	WindowManager();
-	~WindowManager();
+  public:
+    WindowManager();
+    ~WindowManager();
 
-	int GetResolutionId(int _width, int _height); // Returns -1 if resolution doesn't exist
-    Resolution *GetResolution( int _id );
+    int GetResolutionId(int _width, int _height); // Returns -1 if resolution doesn't exist
+    Resolution* GetResolution(int _id);
 
-	bool CreateWin(int _width, int _height,		                // Set _colourDepth, _refreshRate and/or
-		           bool _windowed, int _colourDepth,		    // _zDepth to -1 to get default values
-		           int _refreshRate, int _zDepth,
-				   bool _waitVRT);
+    bool CreateWin(int _width, int _height,          // Set _colourDepth, _refreshRate and/or
+                   bool _windowed, int _colourDepth, // _zDepth to -1 to get default values
+                   int _refreshRate, int _zDepth, bool _waitVRT);
 
-	void DestroyWin();
-	void Flip();
-	void NastyPollForMessages();
-	void NastySetMousePos(int x, int y);
-	void NastyMoveMouse(int x, int y);
+    void DestroyWin();
+    void Flip();
+    void NastyPollForMessages();
+    void NastySetMousePos(int x, int y);
+    void NastyMoveMouse(int x, int y);
 
-	void EnsureMouseCaptured();
-	void EnsureMouseUncaptured();
+    void EnsureMouseCaptured();
+    void EnsureMouseUncaptured();
 
-	void CaptureMouse();
-	void UncaptureMouse();
+    void CaptureMouse();
+    void UncaptureMouse();
 
-	void HideMousePointer();
-	void UnhideMousePointer();
+    void HideMousePointer();
+    void UnhideMousePointer();
 
     bool Windowed();
-	bool Captured();
-	bool MouseVisible();
+    bool Captured();
+    bool MouseVisible();
 
     void SaveDesktop();
     void RestoreDesktop();
 
-	void WindowMoved();
+    void WindowMoved();
 
-    void SuggestDefaultRes( int *_width, int *_height, int *_refresh, int *_depth );
+    void SuggestDefaultRes(int* _width, int* _height, int* _refresh, int* _depth);
 
-    static void OpenWebsite( char const *_url );
+    static void OpenWebsite(char const* _url);
 };
 
 
@@ -117,6 +116,4 @@ public:
 // T18.
 void SetWin32InstanceHandle(HINSTANCE _hInstance);
 
-extern WindowManager *g_windowManager;
-
-
+extern WindowManager* g_windowManager;

@@ -68,7 +68,7 @@ void Engineer::SetWaypoint(Vector3 const& _wayPoint)
 }
 
 
-int Engineer::GetNumSpirits() { return m_spirits.Size(); }
+int Engineer::GetNumSpirits() { return static_cast<int>(m_spirits.size()); }
 
 
 int Engineer::GetMaxSpirits()
@@ -94,17 +94,17 @@ int Engineer::GetMaxSpirits()
 
 bool Engineer::SearchForSpirits()
 {
-  if (m_spirits.Size() < GetMaxSpirits())
+  if (static_cast<int>(m_spirits.size()) < GetMaxSpirits())
   {
     Spirit* found = nullptr;
     int spiritId = -1;
     float closest = 999999.9f;
 
-    for (int i = 0; i < g_location->m_spirits.Size(); ++i)
+    for (int i = 0; i < g_location->static_cast<int>(m_spirits.size()); ++i)
     {
-      if (g_location->m_spirits.ValidIndex(i))
+      if (g_location->ValidIndex(m_spirits, i))
       {
-        Spirit* s = g_location->m_spirits.GetPointer(i);
+        Spirit* s = g_location->& m_spirits[i];
         float theDist = (s->m_pos - m_pos).Mag();
 
         if (theDist <= ENGINEER_SEARCHRANGE && theDist < closest && (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
@@ -329,14 +329,14 @@ bool Engineer::Advance(Unit* _unit)
   if (amIDead)
   {
     // Drop all my spirits
-    while (m_spirits.Size() > 0)
+    while (static_cast<int>(m_spirits.size()) > 0)
     {
       int spiritId = m_spirits[0];
-      if (g_location->m_spirits.ValidIndex(spiritId))
+      if (g_location->ValidIndex(m_spirits, spiritId))
       {
-        Spirit* s = g_location->m_spirits.GetPointer(spiritId);
+        Spirit* s = g_location->& m_spirits[spiritId];
         s->CollectorDrops();
-        m_spirits.RemoveData(0);
+        m_spirits.erase(m_spirits.begin() + 0);
       }
     }
 
@@ -376,12 +376,12 @@ bool Engineer::Advance(Unit* _unit)
   //
   // Update position history
 
-  m_positionHistory.PutDataAtStart(new Vector3(m_pos));
+  m_positionHistory.insert(m_positionHistory.begin(), new Vector3(m_pos));
   int maxSpirits = GetMaxSpirits();
-  while (m_positionHistory.ValidIndex(maxSpirits + 1))
+  while (ValidIndex(m_positionHistory, maxSpirits + 1))
   {
     Vector3* position = m_positionHistory[maxSpirits + 1];
-    m_positionHistory.RemoveData(maxSpirits + 1);
+    m_positionHistory.erase(m_positionHistory.begin() + maxSpirits + 1);
     delete position;
   }
 
@@ -389,15 +389,15 @@ bool Engineer::Advance(Unit* _unit)
   //
   // Update spirits
 
-  for (int i = 0; i < m_spirits.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_spirits.size()); ++i)
   {
     int spiritId = m_spirits[i];
-    if (g_location->m_spirits.ValidIndex(spiritId))
+    if (g_location->ValidIndex(m_spirits, spiritId))
     {
-      Spirit* s = g_location->m_spirits.GetPointer(spiritId);
+      Spirit* s = g_location->& m_spirits[spiritId];
       if (s && s->m_state == Spirit::StateAttached)
       {
-        if (m_positionHistory.ValidIndex(i + 1))
+        if (ValidIndex(m_positionHistory, i + 1))
         {
           s->m_pos = *m_positionHistory[i + 1];
           s->m_vel = (*m_positionHistory[i] - *m_positionHistory[i + 1]) / SERVER_ADVANCE_PERIOD;
@@ -534,7 +534,7 @@ bool Engineer::AdvanceIdle()
   //
   // Nothing to do...do we have some spirits that need dropping off?
 
-  if (m_spirits.Size() > 0)
+  if (static_cast<int>(m_spirits.size()) > 0)
   {
     m_buildingId = -1; // Force the engineer to re-evaluate which is the nearest incubator
     bool incubatorFound = SearchForIncubator();
@@ -574,9 +574,9 @@ bool Engineer::AdvanceToWaypoint()
 bool Engineer::AdvanceToSpirit()
 {
   Spirit* s = nullptr;
-  if (g_location->m_spirits.ValidIndex(m_spiritId))
+  if (g_location->ValidIndex(m_spirits, m_spiritId))
   {
-    s = g_location->m_spirits.GetPointer(m_spiritId);
+    s = g_location->& m_spirits[m_spiritId];
   }
 
   if (!s || s->m_state == Spirit::StateDeath || s->m_state == Spirit::StateAttached)
@@ -603,12 +603,12 @@ bool Engineer::AdvanceToSpirit()
 
 void Engineer::CollectSpirit(int _spiritId)
 {
-  if (g_location->m_spirits.ValidIndex(_spiritId))
+  if (g_location->ValidIndex(m_spirits, _spiritId))
   {
-    Spirit* spirit = g_location->m_spirits.GetPointer(_spiritId);
+    Spirit* spirit = g_location->& m_spirits[_spiritId];
 
     spirit->CollectorArrives();
-    m_spirits.PutData(_spiritId);
+    m_spirits.push_back(_spiritId);
   }
 }
 
@@ -670,15 +670,15 @@ bool Engineer::AdvanceToIncubator()
 
     // Arrived at our incubator, drop spirit off here one at a time
     int spiritId = m_spirits[0];
-    if (g_location->m_spirits.ValidIndex(spiritId))
+    if (g_location->ValidIndex(m_spirits, spiritId))
     {
-      Spirit* s = g_location->m_spirits.GetPointer(spiritId);
+      Spirit* s = g_location->& m_spirits[spiritId];
       incubator->AddSpirit(s);
       g_location->m_spirits.MarkNotUsed(spiritId);
-      m_spirits.RemoveData(0);
+      m_spirits.erase(m_spirits.begin() + 0);
     }
 
-    if (m_spirits.Size() == 0)
+    if (static_cast<int>(m_spirits.size()) == 0)
     {
       // Return to spirit field
       m_state = StateToWaypoint;

@@ -53,7 +53,7 @@ InsertionSquad::InsertionSquad(int teamId, int unitId, int numEntities, Vector3 
 }
 
 
-InsertionSquad::~InsertionSquad() { m_positionHistory.EmptyAndDelete(); }
+InsertionSquad::~InsertionSquad() { EmptyAndDelete(m_positionHistory); }
 
 
 Entity* InsertionSquad::GetPointMan()
@@ -108,7 +108,7 @@ void InsertionSquad::SetWayPoint(Vector3 const& _pos)
   {
     newWayPoint = new HistoricWayPoint(_pos);
   }
-  m_positionHistory.PutDataAtStart(newWayPoint);
+  m_positionHistory.insert(m_positionHistory.begin(), newWayPoint);
 
 
   // If this squad is using a Controller, update the Route
@@ -116,7 +116,7 @@ void InsertionSquad::SetWayPoint(Vector3 const& _pos)
   Task* controller = g_taskManager->GetTask(m_controllerId);
   if (controller)
   {
-    Vector3 lastAddedPos = controller->m_route->m_wayPoints[controller->m_route->m_wayPoints.Size() - 1]->GetPos();
+    Vector3 lastAddedPos = controller->m_route->m_wayPoints[static_cast<int>(controller->m_route->m_wayPoints.size()) - 1]->GetPos();
     float distance = (lastAddedPos - newWayPoint->m_pos).Mag();
     if (distance > 20.0f)
     {
@@ -175,7 +175,7 @@ Vector3 InsertionSquad::GetTargetPos(float _distFromPointMan)
   Vector3 lineEnd = pointMan->m_pos;
 
   int i = 0;
-  while (i < m_positionHistory.Size() && _distFromPointMan > 0.0f)
+  while (i < static_cast<int>(m_positionHistory.size()) && _distFromPointMan > 0.0f)
   {
     Vector3 lineStart = lineEnd;
     lineEnd = m_positionHistory[i]->m_pos;

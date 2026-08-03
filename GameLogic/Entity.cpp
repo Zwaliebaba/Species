@@ -780,7 +780,7 @@ void Entity::FollowRoute()
     m_routeWayPointId = 0;
   }
 
-  WayPoint* waypoint = route->m_wayPoints.GetData(m_routeWayPointId);
+  WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId];
   SetWaypoint(waypoint->GetPos());
   Vector3 targetVect = waypoint->GetPos() - m_pos;
 
@@ -789,7 +789,7 @@ void Entity::FollowRoute()
   if (waypoint->m_type != WayPoint::TypeBuilding && targetVect.Mag() < m_routeTriggerDistance)
   {
     m_routeWayPointId++;
-    if (m_routeWayPointId >= route->m_wayPoints.Size())
+    if (m_routeWayPointId >= static_cast<int>(route->m_wayPoints.size()))
     {
       m_routeWayPointId = -1;
       m_routeId = -1;

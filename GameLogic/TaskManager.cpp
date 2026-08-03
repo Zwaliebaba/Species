@@ -338,9 +338,9 @@ void Task::SwitchTo()
 
   case GlobalResearch::TypeController:
   {
-    for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
     {
-      Task* task = g_taskManager->m_tasks.GetData(i);
+      Task* task = g_taskManager->m_tasks[i];
       if (task->m_type == GlobalResearch::TypeSquad && task->m_objId == m_objId)
       {
         g_taskManager->SelectTask(task->m_id);
@@ -421,7 +421,7 @@ bool TaskManager::RunTask(Task* _task)
   {
     _task->m_id = m_nextTaskId;
     ++m_nextTaskId;
-    m_tasks.PutDataAtEnd(_task);
+    m_tasks.push_back(_task);
     _task->Start();
     m_currentTaskId = _task->m_id;
 
@@ -524,7 +524,7 @@ bool TaskManager::RegisterTask(Task* _task)
   {
     _task->m_id = m_nextTaskId;
     ++m_nextTaskId;
-    m_tasks.PutDataAtEnd(_task);
+    m_tasks.push_back(_task);
     return true;
   }
 
@@ -534,13 +534,13 @@ bool TaskManager::RegisterTask(Task* _task)
 
 bool TaskManager::TerminateTask(int _id)
 {
-  for (int i = 0; i < m_tasks.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
     Task* task = m_tasks[i];
     if (task->m_id == _id)
     {
       g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageShutdown, task->m_type, 3.0f);
-      m_tasks.RemoveData(i);
+      m_tasks.erase(m_tasks.begin() + i);
       task->Stop();
       delete task;
 
@@ -565,7 +565,7 @@ int TaskManager::Capacity()
 }
 
 
-int TaskManager::CapacityUsed() { return m_tasks.Size(); }
+int TaskManager::CapacityUsed() { return static_cast<int>(m_tasks.size()); }
 
 
 int TaskManager::MapGestureToTask(int _gestureId)
@@ -610,7 +610,7 @@ void TaskManager::AdvanceTasks()
   //
   // Advance all other tasks
 
-  for (int i = 0; i < m_tasks.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
     Task* task = m_tasks[i];
     bool amIDone = task->Advance();
@@ -623,7 +623,7 @@ void TaskManager::AdvanceTasks()
         g_location->m_teams[teamId].SelectUnit(-1, -1, -1);
       }
 
-      m_tasks.RemoveData(i);
+      m_tasks.erase(m_tasks.begin() + i);
       --i;
       delete task;
     }
@@ -633,7 +633,7 @@ void TaskManager::AdvanceTasks()
 
 void TaskManager::StopAllTasks()
 {
-  m_tasks.EmptyAndDelete();
+  EmptyAndDelete(m_tasks);
   m_currentTaskId = -1;
 }
 
@@ -652,7 +652,7 @@ void TaskManager::SelectTask(int _id)
   if (m_currentTaskId != -1)
   {
     int currentIndex = -1;
-    for (int i = 0; i < m_tasks.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
     {
       Task* task = m_tasks[i];
       if (task->m_id == m_currentTaskId)
@@ -665,8 +665,8 @@ void TaskManager::SelectTask(int _id)
     ASSERT_TEXT(currentIndex != -1, "Error in TaskManager::SelectTask. Tried to select a task that doesn't exist.");
 
     Task* task = m_tasks[currentIndex];
-    // m_tasks.RemoveData(currentIndex);
-    // m_tasks.PutDataAtStart( task );
+    // m_tasks.erase(m_tasks.begin() + currentIndex);
+    // m_tasks.insert(m_tasks.begin(),  task );
     task->SwitchTo();
 
     g_gameCursor->BoostSelectionArrows(2.0f);
@@ -676,7 +676,7 @@ void TaskManager::SelectTask(int _id)
 
 void TaskManager::SelectTask(WorldObjectId _id)
 {
-  for (int i = 0; i < m_tasks.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
     Task* task = m_tasks[i];
     if (task->m_objId.GetTeamId() == _id.GetTeamId() && task->m_objId.GetUnitId() == _id.GetUnitId() && task->m_objId.GetIndex() == _id.GetIndex())
@@ -693,7 +693,7 @@ Task* TaskManager::GetCurrentTask() { return GetTask(m_currentTaskId); }
 
 Task* TaskManager::GetTask(int _id)
 {
-  for (int i = 0; i < m_tasks.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
     Task* task = m_tasks[i];
     if (task->m_id == _id)
@@ -708,7 +708,7 @@ Task* TaskManager::GetTask(int _id)
 
 Task* TaskManager::GetTask(WorldObjectId _id)
 {
-  for (int i = 0; i < m_tasks.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
     Task* task = m_tasks[i];
     if (task->m_objId == _id)

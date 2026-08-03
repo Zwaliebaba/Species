@@ -11,27 +11,26 @@
 
 class WayPoint
 {
-protected:
-	Vector3				m_pos;
+  protected:
+    Vector3 m_pos;
 
-public:
-	enum
-	{
-		Type3DPos,
-		TypeGroundPos,
-		TypeBuilding
-	};
+  public:
+    enum
+    {
+      Type3DPos,
+      TypeGroundPos,
+      TypeBuilding
+    };
 
-	int					m_type;
-	int					m_buildingId;
+    int m_type;
+    int m_buildingId;
 
-	WayPoint			(int _type, Vector3 const &_pos);
-	~WayPoint			();
+    WayPoint(int _type, Vector3 const& _pos);
+    ~WayPoint();
 
-	Vector3				GetPos();
-	void				SetPos(Vector3 const &_pos);
+    Vector3 GetPos();
+    void SetPos(Vector3 const& _pos);
 };
-
 
 
 // ****************************************************************************
@@ -40,21 +39,19 @@ public:
 
 class Route
 {
-public:
-	int			m_id;
-	LList       <WayPoint *>m_wayPoints;
+  public:
+    int m_id;
+    LList<WayPoint*> m_wayPoints;
 
-	Route		(int _id);
-	~Route		();
+    Route(int _id);
+    ~Route();
 
-    void        AddWayPoint             (Vector3 const &_pos);
-    void        AddWayPoint             (int _buildingId);
-    WayPoint    *GetWayPoint            (int _id);
+    void AddWayPoint(Vector3 const& _pos);
+    void AddWayPoint(int _buildingId);
+    WayPoint* GetWayPoint(int _id);
 
-	int			GetIdOfNearestWayPoint  (Vector3 const &_pos);
-	int			GetIdOfNearestEdge      (Vector3 const &_pos, float *_dist);
+    int GetIdOfNearestWayPoint(Vector3 const& _pos);
+    int GetIdOfNearestEdge(Vector3 const& _pos, float* _dist);
 
-    void        Render();
+    void Render();
 };
-
-

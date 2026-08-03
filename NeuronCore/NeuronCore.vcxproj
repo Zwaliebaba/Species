@@ -65,6 +65,7 @@
     <ClInclude Include="LookupTable.h" />
     <ClInclude Include="SliceWalker.h" />
     <ClInclude Include="SlotMap.h" />
+    <ClInclude Include="VectorUtils.h" />
     <ClInclude Include="MathUtils.h" />
     <ClInclude Include="Matrix33.h" />
     <ClInclude Include="Matrix34.h" />

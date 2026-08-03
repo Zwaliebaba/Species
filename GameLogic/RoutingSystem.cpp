@@ -82,13 +82,13 @@ Route::Route(int _id)
 
 
 // *** Destructor
-Route::~Route() { m_wayPoints.EmptyAndDelete(); }
+Route::~Route() { EmptyAndDelete(m_wayPoints); }
 
 
 void Route::AddWayPoint(Vector3 const& _pos)
 {
   WayPoint* wayPoint = new WayPoint(WayPoint::Type3DPos, _pos);
-  m_wayPoints.PutDataAtEnd(wayPoint);
+  m_wayPoints.push_back(wayPoint);
 }
 
 
@@ -96,13 +96,13 @@ void Route::AddWayPoint(int _buildingId)
 {
   WayPoint* wayPoint = new WayPoint(WayPoint::TypeBuilding, g_zeroVector);
   wayPoint->m_buildingId = _buildingId;
-  m_wayPoints.PutDataAtEnd(wayPoint);
+  m_wayPoints.push_back(wayPoint);
 }
 
 
 WayPoint* Route::GetWayPoint(int _id)
 {
-  if (m_wayPoints.ValidIndex(_id))
+  if (ValidIndex(m_wayPoints, _id))
   {
     WayPoint* wayPoint = m_wayPoints[_id];
     return wayPoint;
@@ -117,10 +117,10 @@ int Route::GetIdOfNearestWayPoint(Vector3 const& _pos)
   int idOfNearest = -1;
   float distToNearestSqrd = FLT_MAX;
 
-  int size = m_wayPoints.Size();
+  int size = static_cast<int>(m_wayPoints.size());
   for (int i = 0; i < size; ++i)
   {
-    WayPoint* wp = m_wayPoints.GetData(i);
+    WayPoint* wp = m_wayPoints[i];
     Vector3 delta = _pos - wp->GetPos();
     float distSqrd = delta.MagSquared();
     if (distSqrd < distToNearestSqrd)
@@ -141,14 +141,14 @@ int Route::GetIdOfNearestEdge(Vector3 const& _pos, float* _dist)
   float distToNearest = FLT_MAX;
 
   Vector2 pos(_pos.x, _pos.z);
-  WayPoint* wp = m_wayPoints.GetData(0);
+  WayPoint* wp = m_wayPoints[0];
   Vector3 newPos = wp->GetPos();
   Vector2 oldPos(newPos.x, newPos.z);
 
-  int size = m_wayPoints.Size();
+  int size = static_cast<int>(m_wayPoints.size());
   for (int i = 1; i < size; ++i)
   {
-    wp = m_wayPoints.GetData(i);
+    wp = m_wayPoints[i];
     newPos = wp->GetPos();
     Vector2 temp(newPos.x, newPos.z);
     float dist = PointSegDist2D(pos, oldPos, temp);
@@ -175,7 +175,7 @@ void Route::Render()
 
   glDisable(GL_DEPTH_TEST);
 
-  for (int i = 0; i < m_wayPoints.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_wayPoints.size()); ++i)
   {
     WayPoint* wayPoint = m_wayPoints[i];
     Vector3 thisPos = wayPoint->GetPos();

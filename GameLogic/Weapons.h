@@ -13,29 +13,29 @@ class Shape;
 
 class ThrowableWeapon : public WorldObject
 {
-protected:
-    Shape   *m_shape;
-    float   m_birthTime;
-    float   m_force;
+  protected:
+    Shape* m_shape;
+    float m_birthTime;
+    float m_force;
 
     Vector3 m_front;
     Vector3 m_up;
 
-    int     m_numFlashes;
+    int m_numFlashes;
 
     RGBAColour m_colour;
 
-    void TriggerSoundEvent( char const *_event );
+    void TriggerSoundEvent(char const* _event);
 
-public:
-    ThrowableWeapon( int _type, Vector3 const &_startPos, Vector3 const &_front, float _force );
+  public:
+    ThrowableWeapon(int _type, Vector3 const& _startPos, Vector3 const& _front, float _force);
 
-    void Initialise ();
-    bool Advance    ();
-    void Render     ( float _predictionTime );
+    void Initialise();
+    bool Advance();
+    void Render(float _predictionTime);
 
-	static float GetMaxForce( int _researchLevel );
-	static float GetApproxMaxRange( float _maxForce );
+    static float GetMaxForce(int _researchLevel);
+    static float GetApproxMaxRange(float _maxForce);
 };
 
 
@@ -45,13 +45,13 @@ public:
 
 class Grenade : public ThrowableWeapon
 {
-public:
-    float   m_life;
-    float   m_power;
+  public:
+    float m_life;
+    float m_power;
 
-public:
-    Grenade( Vector3 const &_startPos, Vector3 const &_front, float _force );
-    bool Advance    ();
+  public:
+    Grenade(Vector3 const& _startPos, Vector3 const& _front, float _force);
+    bool Advance();
 };
 
 
@@ -61,12 +61,12 @@ public:
 
 class AirStrikeMarker : public ThrowableWeapon
 {
-public:
-    WorldObjectId    m_airstrikeUnit;
+  public:
+    WorldObjectId m_airstrikeUnit;
 
-public:
-    AirStrikeMarker( Vector3 const &_startPos, Vector3 const &_front, float _force );
-    bool Advance    ();
+  public:
+    AirStrikeMarker(Vector3 const& _startPos, Vector3 const& _front, float _force);
+    bool Advance();
 };
 
 
@@ -76,9 +76,9 @@ public:
 
 class ControllerGrenade : public ThrowableWeapon
 {
-public:
-    ControllerGrenade( Vector3 const &_startPos, Vector3 const &_front, float _force );
-    bool Advance    ();
+  public:
+    ControllerGrenade(Vector3 const& _startPos, Vector3 const& _front, float _force);
+    bool Advance();
 };
 
 
@@ -88,23 +88,22 @@ public:
 
 class Rocket : public WorldObject
 {
-public:
+  public:
     unsigned char m_fromTeamId;
 
-    Shape   *m_shape;
-    float    m_timer;
+    Shape* m_shape;
+    float m_timer;
 
-public:
+  public:
     Vector3 m_target;
 
     Rocket() {}
     Rocket(Vector3 _startPos, Vector3 _targetPos);
 
-    void Initialise ();
-    bool Advance    ();
-    void Render     ( float predictionTime );
+    void Initialise();
+    bool Advance();
+    void Render(float predictionTime);
 };
-
 
 
 // ****************************************************************************
@@ -113,22 +112,21 @@ public:
 
 class Laser : public WorldObject
 {
-public:
+  public:
     unsigned char m_fromTeamId;
 
-protected:
-    float   m_life;
-    bool    m_harmless;                 // becomes true after hitting someone
-    bool    m_bounced;
+  protected:
+    float m_life;
+    bool m_harmless; // becomes true after hitting someone
+    bool m_bounced;
 
-public:
+  public:
     Laser() {}
 
     void Initialise(float _lifeTime);
     bool Advance();
-    void Render( float predictionTime );
+    void Render(float predictionTime);
 };
-
 
 
 // ****************************************************************************
@@ -137,14 +135,14 @@ public:
 
 class TurretShell : public WorldObject
 {
-protected:
-    float   m_life;
+  protected:
+    float m_life;
 
-public:
+  public:
     TurretShell(float _life);
 
     bool Advance();
-    void Render( float predictionTime );
+    void Render(float predictionTime);
 };
 
 
@@ -154,19 +152,18 @@ public:
 
 class Shockwave : public WorldObject
 {
-public:
-    Shape   *m_shape;
-    int     m_teamId;
-    float   m_size;
-    float   m_life;
+  public:
+    Shape* m_shape;
+    int m_teamId;
+    float m_size;
+    float m_life;
 
-public:
-    Shockwave( int _teamId, float _size );
+  public:
+    Shockwave(int _teamId, float _size);
 
     bool Advance();
-    void Render( float predictionTime );
+    void Render(float predictionTime);
 };
-
 
 
 // ****************************************************************************
@@ -175,19 +172,18 @@ public:
 
 class MuzzleFlash : public WorldObject
 {
-public:
+  public:
     Vector3 m_front;
-    float   m_size;
-    float   m_life;
+    float m_size;
+    float m_life;
 
-public:
+  public:
     MuzzleFlash();
-    MuzzleFlash( Vector3 const &_pos, Vector3 const &_front, float _size, float _life );
+    MuzzleFlash(Vector3 const& _pos, Vector3 const& _front, float _size, float _life);
 
     bool Advance();
-    void Render( float _predictionTime );
+    void Render(float _predictionTime);
 };
-
 
 
 // ****************************************************************************
@@ -196,25 +192,24 @@ public:
 
 class Missile : public WorldObject
 {
-protected:
-    float           m_life;
-    LList           <Vector3> m_history;
-    Shape           *m_shape;
-    ShapeMarker     *m_booster;
-    MuzzleFlash     m_fire;
+  protected:
+    float m_life;
+    LList<Vector3> m_history;
+    Shape* m_shape;
+    ShapeMarker* m_booster;
+    MuzzleFlash m_fire;
 
-public:
-    WorldObjectId   m_tankId;                   // Who fired me
-    Vector3         m_front;
-    Vector3         m_up;
-    Vector3         m_target;
+  public:
+    WorldObjectId m_tankId; // Who fired me
+    Vector3 m_front;
+    Vector3 m_up;
+    Vector3 m_target;
 
-public:
+  public:
     Missile();
 
     bool Advance();
-    bool AdvanceToTargetPosition( Vector3 const &_pos );
+    bool AdvanceToTargetPosition(Vector3 const& _pos);
     void Explode();
-    void Render( float _predictionTime );
+    void Render(float _predictionTime);
 };
-

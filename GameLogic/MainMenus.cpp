@@ -21,124 +21,124 @@ class WebsiteButton;
 
 class SkipPrologueWindowButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_skipprologue")))
-      EclRegisterWindow(new SkipPrologueWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_skipprologue")))
+        EclRegisterWindow(new SkipPrologueWindow(), m_parent);
+    }
 };
 
 class SkipPrologueButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    std::vector<EclWindow*>* windows = EclGetWindows();
-    while (windows->size() > 0)
+    void MouseUp() override
     {
-      EclWindow* w = (*windows)[0];
-      EclRemoveWindow(w->m_name);
-    }
+      std::vector<EclWindow*>* windows = EclGetWindows();
+      while (windows->size() > 0)
+      {
+        EclWindow* w = (*windows)[0];
+        EclRemoveWindow(w->m_name);
+      }
 
-    g_script->Skip();
-    g_appCommands->LoadCampaign();
-  }
+      g_script->Skip();
+      g_appCommands->LoadCampaign();
+    }
 };
 
 class PlayPrologueButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    std::vector<EclWindow*>* windows = EclGetWindows();
-    while (windows->size() > 0)
+    void MouseUp() override
     {
-      EclWindow* w = (*windows)[0];
-      EclRemoveWindow(w->m_name);
-    }
+      std::vector<EclWindow*>* windows = EclGetWindows();
+      while (windows->size() > 0)
+      {
+        EclWindow* w = (*windows)[0];
+        EclRemoveWindow(w->m_name);
+      }
 
-    g_script->Skip();
-    g_appCommands->LoadPrologue();
-  }
+      g_script->Skip();
+      g_appCommands->LoadPrologue();
+    }
 };
 
 class PlayPrologueWindowButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialogue_playprologue")))
-      EclRegisterWindow(new PlayPrologueWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialogue_playprologue")))
+        EclRegisterWindow(new PlayPrologueWindow(), m_parent);
+    }
 };
 
 class AboutSpeciesButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("about_darwinia")))
-      EclRegisterWindow(new AboutSpeciesWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("about_darwinia")))
+        EclRegisterWindow(new AboutSpeciesWindow(), m_parent);
+    }
 };
 
 class MainMenuUserProfileButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_profile")))
-      EclRegisterWindow(new UserProfileWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_profile")))
+        EclRegisterWindow(new UserProfileWindow(), m_parent);
+    }
 };
 
 class OptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_options")))
-      EclRegisterWindow(new OptionsMenuWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_options")))
+        EclRegisterWindow(new OptionsMenuWindow(), m_parent);
+    }
 };
 
 class ScreenOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
-      EclRegisterWindow(new PrefsScreenWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
+        EclRegisterWindow(new PrefsScreenWindow(), m_parent);
+    }
 };
 
 class GraphicsOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
-      EclRegisterWindow(new PrefsGraphicsWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
+        EclRegisterWindow(new PrefsGraphicsWindow(), m_parent);
+    }
 };
 
 class SoundOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
-      EclRegisterWindow(new PrefsSoundWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
+        EclRegisterWindow(new PrefsSoundWindow(), m_parent);
+    }
 };
 
 class OtherOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_otheroptions")))
-      EclRegisterWindow(new PrefsOtherWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_otheroptions")))
+        EclRegisterWindow(new PrefsOtherWindow(), m_parent);
+    }
 };
 
 class KeybindingsOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_inputoptions")))
-      EclRegisterWindow(new PrefsKeybindingsWindow, m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_inputoptions")))
+        EclRegisterWindow(new PrefsKeybindingsWindow, m_parent);
+    }
 };
 
 // ****************************************************************************
@@ -230,17 +230,17 @@ void OptionsMenuWindow::Create()
 
 class ResetLevelButton : public SpeciesButton
 {
-  void MouseUp() override { EclRegisterWindow(new ResetLocationWindow(), m_parent); }
+    void MouseUp() override { EclRegisterWindow(new ResetLocationWindow(), m_parent); }
 };
 
 class ExitLevelButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    EclRemoveWindow(m_parent->m_name);
+    void MouseUp() override
+    {
+      EclRemoveWindow(m_parent->m_name);
 
-    g_requestedLocationId = -1;
-  }
+      g_requestedLocationId = -1;
+    }
 };
 
 class WebsiteButton : public SpeciesButton
@@ -393,15 +393,18 @@ void LocationWindow::Create()
 
 class ResetLocationButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    EclRemoveWindow(m_parent->m_name);
-    EclRemoveWindow(LANGUAGEPHRASE("dialog_locationmenu"));
-  }
+    void MouseUp() override
+    {
+      EclRemoveWindow(m_parent->m_name);
+      EclRemoveWindow(LANGUAGEPHRASE("dialog_locationmenu"));
+    }
 };
 
 ResetLocationWindow::ResetLocationWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("dialog_resetlocation")) { SetMenuSize(300, 200); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_resetlocation"))
+{
+  SetMenuSize(300, 200);
+}
 
 void ResetLocationWindow::Create()
 {
@@ -414,7 +417,7 @@ void ResetLocationWindow::Create()
   int buttonW = m_w / 2 - border * 2;
   int h = buttonH + border;
 
-  //int y = m_h - 30;
+  // int y = m_h - 30;
 
   auto box = new InvertedBox();
   box->SetProperties("invert", border, y + border, m_w - 20, m_h - 2 * h);
@@ -512,7 +515,10 @@ void MainMenuWindow::Create()
 }
 
 AboutSpeciesWindow::AboutSpeciesWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("about_darwinia")) { SetMenuSize(350, 250); }
+  : SpeciesWindow(LANGUAGEPHRASE("about_darwinia"))
+{
+  SetMenuSize(350, 250);
+}
 
 void AboutSpeciesWindow::Create()
 {
@@ -573,7 +579,10 @@ void AboutSpeciesWindow::Render(bool _hasFocus)
 }
 
 SkipPrologueWindow::SkipPrologueWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("dialog_skipprologue")) { SetMenuSize(360, 350); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_skipprologue"))
+{
+  SetMenuSize(360, 350);
+}
 
 void SkipPrologueWindow::Create()
 {
@@ -648,7 +657,10 @@ void SkipPrologueWindow::Render(bool _hasFocus)
 };
 
 PlayPrologueWindow::PlayPrologueWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("dialog_playprologue")) { SetMenuSize(350, 350); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_playprologue"))
+{
+  SetMenuSize(350, 350);
+}
 
 void PlayPrologueWindow::Create()
 {

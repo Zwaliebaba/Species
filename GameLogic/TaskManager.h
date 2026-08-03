@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LList.h"
 #include "Entity.h"
 #include "WorldObject.h"
 
@@ -73,7 +72,7 @@ class TaskTargetArea
 class TaskManager
 {
   public:
-    LList<Task*> m_tasks;
+    std::vector<Task*> m_tasks;
 
     int m_nextTaskId;
     int m_currentTaskId;

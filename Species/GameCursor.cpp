@@ -242,7 +242,7 @@ void GameCursor::CreateMarker(Vector3 const& _pos)
   marker->m_up = landNormal;
   marker->m_startTime = GetHighResTime();
 
-  m_markers.PutData(marker);
+  m_markers.push_back(marker);
 }
 
 
@@ -251,13 +251,13 @@ void GameCursor::BoostSelectionArrows(float _seconds) { m_selectionArrowBoost = 
 
 void GameCursor::RenderMarkers()
 {
-  for (int i = 0; i < m_markers.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_markers.size()); ++i)
   {
     MouseCursorMarker* marker = m_markers[i];
     float timeSync = GetHighResTime() - marker->m_startTime;
     if (timeSync > 0.5f)
     {
-      m_markers.RemoveData(i);
+      m_markers.erase(m_markers.begin() + i);
       delete marker;
       --i;
     }

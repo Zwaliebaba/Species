@@ -1034,7 +1034,7 @@ bool Missile::Advance()
     return true;
   }
 
-  m_history.PutData(m_pos);
+  m_history.push_back(m_pos);
 
   //
   // Create smoke trail

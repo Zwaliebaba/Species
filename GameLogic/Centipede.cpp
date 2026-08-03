@@ -184,7 +184,7 @@ bool Centipede::Advance(Unit* _unit)
     {
       if (centipede->m_linked)
         recordPositionHistory = true;
-      m_linked = centipede->m_linked && (m_positionHistory.Size() >= 2);
+      m_linked = centipede->m_linked && (static_cast<int>(m_positionHistory.size()) >= 2);
       Vector3 trailPos, trailVel;
       int numSteps = 1;
       if (centipede->m_id.GetIndex() > m_id.GetIndex())
@@ -570,26 +570,26 @@ bool Centipede::SearchForRandomPosition()
 
 void Centipede::RecordHistoryPosition()
 {
-  m_positionHistory.PutDataAtStart(m_pos);
+  m_positionHistory.insert(m_positionHistory.begin(), m_pos);
 
   int maxHistorys = 3;
 
-  for (int i = maxHistorys; i < m_positionHistory.Size(); ++i)
+  for (int i = maxHistorys; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
-    m_positionHistory.RemoveData(i);
+    m_positionHistory.erase(m_positionHistory.begin() + i);
   }
 }
 
 
 bool Centipede::GetTrailPosition(Vector3& _pos, Vector3& _vel, int _numSteps)
 {
-  if (m_positionHistory.Size() < 3)
+  if (static_cast<int>(m_positionHistory.size()) < 3)
     return false;
 
   float timeSinceAdvance = g_gameTime - m_lastAdvance;
 
-  Vector3 pos1 = *m_positionHistory.GetPointer(_numSteps + 1);
-  Vector3 pos2 = *m_positionHistory.GetPointer(_numSteps);
+  Vector3 pos1 = *&m_positionHistory[_numSteps + 1];
+  Vector3 pos2 = *&m_positionHistory[_numSteps];
   _pos = pos1 + (pos2 - pos1) * (1.0f - m_size);
   _vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
 

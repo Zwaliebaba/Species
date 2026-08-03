@@ -155,7 +155,7 @@ void ReceiverBuilding::RenderAlphas(float _predictionTime)
     // Render any surges
 
     BeginRenderUnprocessedSpirits();
-    for (int i = 0; i < m_spirits.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(m_spirits.size()); ++i)
     {
       float thisSpirit = m_spirits[i];
       thisSpirit += _predictionTime * 0.8f;
@@ -172,13 +172,13 @@ void ReceiverBuilding::RenderAlphas(float _predictionTime)
 
 bool ReceiverBuilding::Advance()
 {
-  for (int i = 0; i < m_spirits.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_spirits.size()); ++i)
   {
-    float* thisSpirit = m_spirits.GetPointer(i);
+    float* thisSpirit = &m_spirits[i];
     *thisSpirit += SERVER_ADVANCE_PERIOD * 0.8f;
     if (*thisSpirit >= 1.0f)
     {
-      m_spirits.RemoveData(i);
+      m_spirits.erase(m_spirits.begin() + i);
       --i;
 
       Building* spiritLink = g_location->GetBuilding(m_spiritLink);
@@ -194,7 +194,7 @@ bool ReceiverBuilding::Advance()
 
 void ReceiverBuilding::TriggerSpirit(float _initValue)
 {
-  m_spirits.PutDataAtStart(_initValue);
+  m_spirits.insert(m_spirits.begin(), _initValue);
   g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "TriggerSpirit");
 }
 
@@ -439,7 +439,7 @@ void SpiritProcessor::Initialise(Building* _building)
 
     UnprocessedSpirit* spirit = new UnprocessedSpirit();
     spirit->m_pos = spawnPos;
-    m_floatingSpirits.PutData(spirit);
+    m_floatingSpirits.push_back(spirit);
   }
 }
 
@@ -496,13 +496,13 @@ bool SpiritProcessor::Advance()
   //
   // Advance all unprocessed spirits
 
-  for (int i = 0; i < m_floatingSpirits.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_floatingSpirits.size()); ++i)
   {
     UnprocessedSpirit* spirit = m_floatingSpirits[i];
     bool finished = spirit->Advance();
     if (finished)
     {
-      m_floatingSpirits.RemoveData(i);
+      m_floatingSpirits.erase(m_floatingSpirits.begin() + i);
       delete spirit;
       --i;
     }
@@ -523,7 +523,7 @@ bool SpiritProcessor::Advance()
     Vector3 spawnPos = Vector3(syncfrand(sizeX), posY, syncfrand(sizeZ));
     UnprocessedSpirit* spirit = new UnprocessedSpirit();
     spirit->m_pos = spawnPos;
-    m_floatingSpirits.PutData(spirit);
+    m_floatingSpirits.push_back(spirit);
   }
 
   return ReceiverBuilding::Advance();
@@ -550,7 +550,7 @@ void SpiritProcessor::RenderAlphas(float _predictionTime)
 
   _predictionTime -= SERVER_ADVANCE_PERIOD;
 
-  for (int i = 0; i < m_floatingSpirits.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_floatingSpirits.size()); ++i)
   {
     UnprocessedSpirit* spirit = m_floatingSpirits[i];
     Vector3 pos = spirit->m_pos;
@@ -647,7 +647,7 @@ bool SpiritReceiver::Advance()
   SpiritProcessor* processor = GetSpiritProcessor();
   if (processor && fractionOccupied > 0.0f)
   {
-    for (int i = 0; i < processor->m_floatingSpirits.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(processor->m_floatingSpirits.size()); ++i)
     {
       UnprocessedSpirit* spirit = processor->m_floatingSpirits[i];
       if (spirit->m_state == UnprocessedSpirit::StateUnprocessedFloating)
@@ -665,7 +665,7 @@ bool SpiritReceiver::Advance()
 
         if (distance < 10.0f)
         {
-          processor->m_floatingSpirits.RemoveData(i);
+          processor->m_floatingSpirits.erase(processor->m_floatingSpirits.begin() + i);
           delete spirit;
           --i;
           TriggerSpirit(0.0f);

@@ -479,14 +479,14 @@ void Unit::FollowRoute()
     m_routeWayPointId = 0;
   }
 
-  WayPoint* waypoint = route->m_wayPoints.GetData(m_routeWayPointId);
+  WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId];
   m_wayPoint = waypoint->GetPos();
   Vector3 targetVect = m_wayPoint - m_centrePos;
 
   if (waypoint->m_type != WayPoint::TypeBuilding && targetVect.Mag() < 10.0f)
   {
     m_routeWayPointId++;
-    if (m_routeWayPointId >= route->m_wayPoints.Size())
+    if (m_routeWayPointId >= static_cast<int>(route->m_wayPoints.size()))
     {
       m_routeWayPointId = -1;
       m_routeId = -1;

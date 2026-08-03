@@ -137,7 +137,7 @@ void Building::SetDetail(int _detail)
     m_centrePos = m_shape->CalculateCentre(mat);
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 
-    m_ports.EmptyAndDelete();
+    EmptyAndDelete(m_ports);
     SetShapePorts(m_shape->m_rootFragment);
   }
   else
@@ -171,7 +171,7 @@ void Building::SetShapeLights(ShapeFragment* _fragment)
     ShapeMarker* marker = _fragment->m_childMarkers[i];
     if (strstr(marker->m_name, "MarkerLight"))
     {
-      m_lights.PutData(marker);
+      m_lights.push_back(marker);
     }
   }
 
@@ -212,7 +212,7 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
         port->m_counter[t] = 0;
       }
 
-      m_ports.PutData(port);
+      m_ports.push_back(port);
     }
   }
 
@@ -327,11 +327,11 @@ void Building::RenderAlphas(float predictionTime)
 
 void Building::RenderLights()
 {
-  if (m_id.GetTeamId() != 255 && m_lights.Size() > 0)
+  if (m_id.GetTeamId() != 255 && static_cast<int>(m_lights.size()) > 0)
   {
     if ((g_clientToServer->m_lastValidSequenceIdFromServer % 10) / 2 == m_id.GetTeamId() || g_editing)
     {
-      for (int i = 0; i < m_lights.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_lights.size()); ++i)
       {
         ShapeMarker* marker = m_lights[i];
         Matrix34 rootMat(m_front, m_up, m_pos);
@@ -617,7 +617,7 @@ int Building::GetBuildingLink() { return -1; }
 void Building::SetBuildingLink(int _buildingId) {}
 
 
-int Building::GetNumPorts() { return m_ports.Size(); }
+int Building::GetNumPorts() { return static_cast<int>(m_ports.size()); }
 
 
 int Building::GetNumPortsOccupied()
@@ -634,7 +634,7 @@ int Building::GetNumPortsOccupied()
 
 WorldObjectId Building::GetPortOccupant(int _portId)
 {
-  if (m_ports.ValidIndex(_portId))
+  if (ValidIndex(m_ports, _portId))
   {
     BuildingPort* port = m_ports[_portId];
     return port->m_occupant;
@@ -646,7 +646,7 @@ WorldObjectId Building::GetPortOccupant(int _portId)
 
 bool Building::GetPortPosition(int _portId, Vector3& _pos, Vector3& _front)
 {
-  if (m_ports.ValidIndex(_portId))
+  if (ValidIndex(m_ports, _portId))
   {
     BuildingPort* port = m_ports[_portId];
     _pos = port->m_mat.pos;
@@ -660,7 +660,7 @@ bool Building::GetPortPosition(int _portId, Vector3& _pos, Vector3& _front)
 
 void Building::OperatePort(int _portId, int _teamId)
 {
-  if (m_ports.ValidIndex(_portId))
+  if (ValidIndex(m_ports, _portId))
   {
     BuildingPort* port = m_ports[_portId];
     port->m_counter[_teamId]++;
@@ -671,7 +671,7 @@ void Building::OperatePort(int _portId, int _teamId)
 
 int Building::GetPortOperatorCount(int _portId, int _teamId)
 {
-  if (m_ports.ValidIndex(_portId))
+  if (ValidIndex(m_ports, _portId))
   {
     BuildingPort* port = m_ports[_portId];
     return port->m_counter[_teamId];

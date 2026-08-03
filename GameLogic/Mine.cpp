@@ -90,7 +90,7 @@ void MineBuilding::Initialise(Building* _template)
 
     MineCart* mineCart = new MineCart();
     mineCart->m_progress = cart;
-    m_carts.PutData(mineCart);
+    m_carts.push_back(mineCart);
   }
 }
 
@@ -202,7 +202,7 @@ void MineBuilding::Render(float _predictionTime)
 {
   _predictionTime -= 0.1f;
 
-  for (int i = 0; i < m_carts.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_carts.size()); ++i)
   {
     MineCart* thisCart = m_carts[i];
     RenderCart(thisCart, _predictionTime);
@@ -332,7 +332,7 @@ bool MineBuilding::Advance()
 
   if (mineSpeed > 0.0f)
   {
-    for (int i = m_carts.Size() - 1; i >= 0; --i)
+    for (int i = static_cast<int>(m_carts.size()) - 1; i >= 0; --i)
     {
       MineCart* thisCart = m_carts[i];
       thisCart->m_progress += mineSpeed * SERVER_ADVANCE_PERIOD;
@@ -340,7 +340,7 @@ bool MineBuilding::Advance()
       if (thisCart->m_progress >= 1.0f)
       {
         float remainder = thisCart->m_progress - 1.0f;
-        m_carts.RemoveData(i);
+        m_carts.erase(m_carts.begin() + i);
         --i;
 
         Building* trackLink = g_location->GetBuilding(m_trackLink);
@@ -373,7 +373,7 @@ void MineBuilding::ListSoundEvents(std::vector<const char*>* _list)
 void MineBuilding::TriggerCart(MineCart* _cart, float _initValue)
 {
   _cart->m_progress = _initValue;
-  m_carts.PutDataAtStart(_cart);
+  m_carts.insert(m_carts.begin(), _cart);
 }
 
 
@@ -546,10 +546,10 @@ void TrackJunction::Initialise(Building* _template)
   MineBuilding::Initialise(_template);
 
   TrackJunction* trackJunction = (TrackJunction*)_template;
-  for (int i = 0; i < trackJunction->m_trackLinks.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(trackJunction->m_trackLinks.size()); ++i)
   {
     int trackLink = trackJunction->m_trackLinks[i];
-    m_trackLinks.PutData(trackLink);
+    m_trackLinks.push_back(trackLink);
   }
 }
 
@@ -560,7 +560,7 @@ void TrackJunction::Render(float _predictionTime) { Building::Render(_prediction
 void TrackJunction::RenderLink()
 {
 #ifdef DEBUG_RENDER_ENABLED
-  for (int i = 0; i < m_trackLinks.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_trackLinks.size()); ++i)
   {
     int buildingId = m_trackLinks[i];
     if (buildingId != -1)
@@ -582,9 +582,9 @@ void TrackJunction::RenderLink()
 
 void TrackJunction::TriggerCart(MineCart* _cart, float _initValue)
 {
-  if (m_trackLinks.Size() > 0)
+  if (static_cast<int>(m_trackLinks.size()) > 0)
   {
-    int chosenLink = syncrand() % m_trackLinks.Size();
+    int chosenLink = syncrand() % static_cast<int>(m_trackLinks.size());
     int buildingId = m_trackLinks[chosenLink];
     Building* linkBuilding = g_location->GetBuilding(buildingId);
     if (linkBuilding)
@@ -596,7 +596,7 @@ void TrackJunction::TriggerCart(MineCart* _cart, float _initValue)
 }
 
 
-void TrackJunction::SetBuildingLink(int _buildingId) { m_trackLinks.PutData(_buildingId); }
+void TrackJunction::SetBuildingLink(int _buildingId) { m_trackLinks.push_back(_buildingId); }
 
 
 void TrackJunction::Read(TextReader* _in, bool _dynamic)
@@ -606,7 +606,7 @@ void TrackJunction::Read(TextReader* _in, bool _dynamic)
   while (_in->TokenAvailable())
   {
     int trackLink = atoi(_in->GetNextToken());
-    m_trackLinks.PutData(trackLink);
+    m_trackLinks.push_back(trackLink);
   }
 }
 
@@ -615,7 +615,7 @@ void TrackJunction::Write(FileWriter* _out)
 {
   MineBuilding::Write(_out);
 
-  for (int i = 0; i < m_trackLinks.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_trackLinks.size()); ++i)
   {
     _out->printf("%-4d", m_trackLinks[i]);
   }
@@ -653,7 +653,7 @@ bool TrackStart::Advance()
 
   if (globalBuilding && globalBuilding->m_online)
   {
-    for (int i = 0; i < m_carts.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(m_carts.size()); ++i)
     {
       MineCart* cart = m_carts[i];
 
@@ -755,7 +755,7 @@ bool TrackEnd::Advance()
 
   if (online)
   {
-    for (int i = 0; i < m_carts.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(m_carts.size()); ++i)
     {
       MineCart* cart = m_carts[i];
 

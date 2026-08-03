@@ -425,12 +425,12 @@ void GameMenuWindow::SetupMainPage()
   SpeciesModeButton* dmb = new SpeciesModeButton("Darwinia");
   dmb->SetShortProperties("darwinia", x, y, w, h);
   RegisterButton(dmb);
-  m_buttonOrder.PutData(dmb);
+  m_buttonOrder.push_back(dmb);
 
   QuitButton* quit = new QuitButton();
   quit->SetShortProperties("quit", x, y += gap, w, h);
   RegisterButton(quit);
-  m_buttonOrder.PutData(quit);
+  m_buttonOrder.push_back(quit);
 }
 
 void GameMenuWindow::SetupSpeciesPage()
@@ -444,18 +444,18 @@ void GameMenuWindow::SetupSpeciesPage()
   PrologueButton* pb = new PrologueButton("Prologue");
   pb->SetShortProperties("prologue", x, y, w, h);
   RegisterButton(pb);
-  m_buttonOrder.PutData(pb);
+  m_buttonOrder.push_back(pb);
 
   //    CampaignButton *cb = new CampaignButton( "Icons/menu_campaign.bmp" );
   CampaignButton* cb = new CampaignButton("Campaign");
   cb->SetShortProperties("campaign", x, y += gap, w, h);
   RegisterButton(cb);
-  m_buttonOrder.PutData(cb);
+  m_buttonOrder.push_back(cb);
 
   QuitButton* quit = new QuitButton();
   quit->SetShortProperties("quit", x, y += gap, w, h);
   RegisterButton(quit);
-  m_buttonOrder.PutData(quit);
+  m_buttonOrder.push_back(quit);
 }
 
 void GameMenuWindow::GetDefaultPositions(int* _x, int* _y, int* _gap)

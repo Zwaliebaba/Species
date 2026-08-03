@@ -576,11 +576,11 @@ void SpamInfection::AdvanceAttackingSpirit()
 
 bool SpamInfection::AdvanceToTargetPosition()
 {
-  m_positionHistory.PutDataAtStart(m_pos);
+  m_positionHistory.insert(m_positionHistory.begin(), m_pos);
   int maxLength = SPAMINFECTION_TAILLENGTH;
-  for (int i = maxLength; i < m_positionHistory.Size(); ++i)
+  for (int i = maxLength; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
-    m_positionHistory.RemoveData(i);
+    m_positionHistory.erase(m_positionHistory.begin() + i);
   }
 
   Vector3 targetVel = (m_targetPos - m_pos).SetLength(200.0f);
@@ -625,7 +625,7 @@ void SpamInfection::Render(float _time)
   // glDepthMask( false );
   int maxLength = SPAMINFECTION_TAILLENGTH * (m_life / SPAMINFECTION_LIFE);
   maxLength = max(maxLength, 2);
-  maxLength = min(maxLength, m_positionHistory.Size());
+  maxLength = min(maxLength, static_cast<int>(m_positionHistory.size()));
 
   Vector3 camPos = g_camera->GetPos();
   int numRepeats = 4;
@@ -642,8 +642,8 @@ void SpamInfection::Render(float _time)
       float alpha = 1.0f - i / (float)maxLength;
       alpha *= 0.75f;
       glColor4f(1.0f, 0.1f, 0.1f, alpha);
-      Vector3 thisPos = *m_positionHistory.GetPointer(i);
-      Vector3 lastPos = *m_positionHistory.GetPointer(i - 1);
+      Vector3 thisPos = *&m_positionHistory[i];
+      Vector3 lastPos = *&m_positionHistory[i - 1];
       Vector3 rightAngle = (thisPos - lastPos) ^ (camPos - thisPos);
       rightAngle.SetLength(size);
       glBegin(GL_QUADS);
@@ -657,10 +657,10 @@ void SpamInfection::Render(float _time)
       glVertex3fv((lastPos - rightAngle).GetData());
       glEnd();
     }
-    if (m_positionHistory.Size() > 0)
+    if (static_cast<int>(m_positionHistory.size()) > 0)
     {
       glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-      Vector3 lastPos = *m_positionHistory.GetPointer(0);
+      Vector3 lastPos = *&m_positionHistory[0];
       Vector3 thisPos = predictedPos;
       Vector3 rightAngle = (thisPos - lastPos) ^ (camPos - thisPos);
       rightAngle.SetLength(size);

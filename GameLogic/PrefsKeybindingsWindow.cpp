@@ -276,7 +276,7 @@ void PrefsKeybindingsWindow::Create()
   controlMethod->RegisterInt(&m_controlMethod);
   controlMethod->m_fontSize = GetMenuSize(11);
   RegisterButton(controlMethod);
-  m_buttonOrder.PutData(controlMethod);
+  m_buttonOrder.push_back(controlMethod);
 
   InvertedBox* box = new InvertedBox();
   unsigned num_controls = 0;
@@ -300,7 +300,7 @@ void PrefsKeybindingsWindow::Create()
     char const* keyName = m_bindings[i]->noun.c_str();
     strcpy(but->m_caption, keyName);
     RegisterButton(but);
-    m_buttonOrder.PutData(but);
+    m_buttonOrder.push_back(but);
   }
 
   y = m_h - (h + 5);
@@ -310,7 +310,7 @@ void PrefsKeybindingsWindow::Create()
   restore->m_fontSize = fontSize;
   restore->m_centered = true;
   RegisterButton(restore);
-  m_buttonOrder.PutData(restore);
+  m_buttonOrder.push_back(restore);
 
   int buttonW2 = m_w / 2 - border * 2;
 
@@ -319,14 +319,14 @@ void PrefsKeybindingsWindow::Create()
   cancel->m_fontSize = fontSize;
   cancel->m_centered = true;
   RegisterButton(cancel);
-  m_buttonOrder.PutData(cancel);
+  m_buttonOrder.push_back(cancel);
 
   ApplyKeybindingsButton* apply = new ApplyKeybindingsButton();
   apply->SetShortProperties(LANGUAGEPHRASE("dialog_apply"), m_w - buttonW2 - border, y, buttonW2, buttonH);
   apply->m_fontSize = fontSize;
   apply->m_centered = true;
   RegisterButton(apply);
-  m_buttonOrder.PutData(apply);
+  m_buttonOrder.push_back(apply);
 }
 
 
@@ -338,7 +338,7 @@ void PrefsKeybindingsWindow::Remove()
     delete button;
     m_buttons.erase(m_buttons.begin() + (0));
   }
-  m_buttonOrder.Empty();
+  m_buttonOrder.clear();
   m_currentButton = 0;
 }
 

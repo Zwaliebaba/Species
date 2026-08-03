@@ -78,32 +78,32 @@ TaskManagerInterfaceIcons::TaskManagerInterfaceIcons()
   //
   // Create keyboard shortcuts
 
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("NewTask", GlobalResearch::TypeSquad, ControlIconsTaskManagerNewSquad));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("NewTask", GlobalResearch::TypeEngineer, ControlIconsTaskManagerNewEngineer));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("NewTask", GlobalResearch::TypeOfficer, ControlIconsTaskManagerNewOfficer));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("NewTask", GlobalResearch::TypeArmour, ControlIconsTaskManagerNewArmour));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeSquad, ControlIconsTaskManagerNewSquad));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeEngineer, ControlIconsTaskManagerNewEngineer));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeOfficer, ControlIconsTaskManagerNewOfficer));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeArmour, ControlIconsTaskManagerNewArmour));
 
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeGrenade, ControlIconsTaskManagerSelectGrenade));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeRocket, ControlIconsTaskManagerSelectRocket));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeAirStrike, ControlIconsTaskManagerSelectAirStrike));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeController, ControlIconsTaskManagerSelectController));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeGrenade, ControlIconsTaskManagerSelectGrenade));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeRocket, ControlIconsTaskManagerSelectRocket));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeAirStrike, ControlIconsTaskManagerSelectAirStrike));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeController, ControlIconsTaskManagerSelectController));
 
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 0, ControlTaskManagerSelectTask1));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 1, ControlTaskManagerSelectTask2));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 2, ControlTaskManagerSelectTask3));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 3, ControlTaskManagerSelectTask4));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 4, ControlTaskManagerSelectTask5));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 5, ControlTaskManagerSelectTask6));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 6, ControlTaskManagerSelectTask7));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 7, ControlTaskManagerSelectTask8));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 8, ControlTaskManagerSelectTask9));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 0, ControlTaskManagerSelectTask1));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 1, ControlTaskManagerSelectTask2));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 2, ControlTaskManagerSelectTask3));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 3, ControlTaskManagerSelectTask4));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 4, ControlTaskManagerSelectTask5));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 5, ControlTaskManagerSelectTask6));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 6, ControlTaskManagerSelectTask7));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 7, ControlTaskManagerSelectTask8));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 8, ControlTaskManagerSelectTask9));
 
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("DeleteTask", -1, ControlTaskManagerEndTask));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("DeleteTask", -1, ControlTaskManagerEndTask));
 
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("ScreenUp", -1, ControlUnitCycleLeft));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("ScreenDown", -1, ControlUnitCycleRight));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("ScreenUp", -1, ControlCameraForwards));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("ScreenDown", -1, ControlCameraBackwards));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlUnitCycleLeft));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlUnitCycleRight));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlCameraForwards));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlCameraBackwards));
 }
 
 void TaskManagerInterfaceIcons::AdvanceTerminate()
@@ -124,7 +124,7 @@ void TaskManagerInterfaceIcons::HideTaskManager()
   g_target->SetMousePos(midX, midY);
   TheCamera()->Advance();
 
-  if (g_taskManager->m_tasks.Size() > 0)
+  if (static_cast<int>(g_taskManager->m_tasks.size()) > 0)
     g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
 
   m_screenY = 0.0f;
@@ -426,14 +426,14 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
   // Copy the newly generated screenzone list over
   // Remove the old set of screen zones
 
-  m_screenZones.EmptyAndDelete();
-  while (m_newScreenZones.Size() > 0)
+  EmptyAndDelete(m_screenZones);
+  while (static_cast<int>(m_newScreenZones.size()) > 0)
   {
     ScreenZone* zone = m_newScreenZones[0];
-    m_screenZones.PutData(zone);
-    m_newScreenZones.RemoveData(0);
+    m_screenZones.push_back(zone);
+    m_newScreenZones.erase(m_newScreenZones.begin() + 0);
     if (m_currentScreenZone == -1 && zone->m_scrollZone == m_currentScrollZone)
-      m_currentScreenZone = m_screenZones.Size() - 1;
+      m_currentScreenZone = static_cast<int>(m_screenZones.size()) - 1;
   }
 
   //
@@ -443,7 +443,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
 
   if (m_visible)
   {
-    for (int i = 0; i < m_screenZones.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
     {
       ScreenZone* zone = m_screenZones[i];
       if (ScreenZoneHighlighted(zone))
@@ -461,7 +461,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
 
     if (g_inputManager->controlEvent(ControlMenuDown) && m_currentScrollZone != 3)
     {
-      int numZones = m_screenZones.Size();
+      int numZones = static_cast<int>(m_screenZones.size());
       int zonesRemaining = numZones;
       g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
       while (zonesRemaining)
@@ -469,14 +469,14 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
         m_currentScreenZone = (m_currentScreenZone + 1) % numZones;
         zonesRemaining--;
 
-        if (m_screenZones.ValidIndex(m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
+        if (ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
           break;
       }
     }
 
     if (g_inputManager->controlEvent(ControlMenuUp) && m_currentScrollZone != 3)
     {
-      int numZones = m_screenZones.Size();
+      int numZones = static_cast<int>(m_screenZones.size());
       int zonesRemaining = numZones;
       g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
       while (zonesRemaining)
@@ -484,7 +484,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
         m_currentScreenZone = (m_currentScreenZone + numZones - 1) % numZones;
         zonesRemaining--;
 
-        if (m_screenZones.ValidIndex(m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
+        if (ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
           break;
       }
     }
@@ -511,8 +511,8 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
               break;
             }
 
-            if ((m_screenZones.ValidIndex(m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
-                m_screenZones.Size() == 0)
+            if ((ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
+                static_cast<int>(m_screenZones.size()) == 0)
               break;
           }
         }
@@ -533,15 +533,15 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
           while (true)
           {
             m_currentScreenZone++;
-            if (m_currentScreenZone >= m_screenZones.Size())
+            if (m_currentScreenZone >= static_cast<int>(m_screenZones.size()))
             {
               m_currentScrollZone = 1;
               changeScrollZone = true;
               break;
             }
 
-            if ((m_screenZones.ValidIndex(m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
-                m_screenZones.Size() == 0)
+            if ((ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
+                static_cast<int>(m_screenZones.size()) == 0)
               break;
           }
         }
@@ -551,7 +551,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     if (changeScrollZone)
     {
       m_currentScreenZone = -1;
-      for (int i = 0; i < m_screenZones.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
       {
         if (m_screenZones[i]->m_scrollZone == m_currentScrollZone)
         {
@@ -582,7 +582,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     if (somethingHighlighted)
     {
       int taskIndex = -1;
-      for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
       {
         if (g_taskManager->m_tasks[i]->m_objId == id)
         {
@@ -593,7 +593,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
 
       if (taskIndex != -1)
       {
-        for (int i = 0; i < m_screenZones.Size(); ++i)
+        for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
         {
           ScreenZone* zone = m_screenZones[i];
           if (stricmp(zone->m_name, "SelectTask") == 0 && zone->m_data == taskIndex)
@@ -621,7 +621,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     ScreenZone* currentZone = m_screenZones[m_currentScreenZone];
     if (currentZone)
     {
-      if (stricmp(currentZone->m_name, "SelectTask") == 0 && g_taskManager->m_tasks.ValidIndex(currentZone->m_data))
+      if (stricmp(currentZone->m_name, "SelectTask") == 0 && ValidIndex(g_taskManager->m_tasks, currentZone->m_data))
       {
         Task* task = g_taskManager->m_tasks[currentZone->m_data];
         m_highlightedTaskId = task->m_id;
@@ -646,7 +646,7 @@ bool TaskManagerInterfaceIcons::ButtonHeldAndReleased() { return ButtonHeld() &&
 
 void TaskManagerInterfaceIcons::AdvanceKeyboardShortcuts()
 {
-  for (int i = 0; i < m_keyboardShortcuts.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
   {
     KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
     if ((*shortcut)())
@@ -687,7 +687,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
 
   if (stricmp(_name, "SelectTask") == 0)
   {
-    if (g_taskManager->m_tasks.ValidIndex(_data))
+    if (ValidIndex(g_taskManager->m_tasks, _data))
     {
       Task* nextTask = g_taskManager->m_tasks[_data];
       g_taskManager->m_currentTaskId = nextTask->m_id;
@@ -833,7 +833,7 @@ bool TaskManagerInterfaceIcons::ScreenZoneHighlighted(ScreenZone* _zone)
 void TaskManagerInterfaceIcons::RenderScreenZones()
 {
   /*
-      for( int i = 0; i < m_screenZones.Size(); ++i )
+      for( int i = 0; i < static_cast<int>(m_screenZones.size()); ++i )
       {
           ScreenZone *zone = m_screenZones[i];
 
@@ -856,7 +856,7 @@ void TaskManagerInterfaceIcons::RenderScreenZones()
 
   */
 
-  if (m_screenZones.ValidIndex(m_currentScreenZone))
+  if (ValidIndex(m_screenZones, m_currentScreenZone))
   {
     ScreenZone* zone = m_screenZones[m_currentScreenZone];
 
@@ -914,7 +914,7 @@ void TaskManagerInterfaceIcons::RenderTooltip()
   g_gameFont.SetRenderShadow(true);
   glColor4ub(255, 255, 150, 30);
 
-  if (m_screenZones.ValidIndex(m_currentScreenZone))
+  if (ValidIndex(m_screenZones, m_currentScreenZone))
   {
     ScreenZone* zone = m_screenZones[m_currentScreenZone];
 
@@ -942,7 +942,7 @@ void TaskManagerInterfaceIcons::RenderTooltip()
 
       KeyboardShortcut* selectedShortcut = nullptr;
 
-      for (int i = 0; i < m_keyboardShortcuts.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
       {
         KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
         if (stricmp(shortcut->name(), zone->m_name) == 0 && shortcut->data() == zone->m_data)
@@ -1193,8 +1193,8 @@ void TaskManagerInterfaceIcons::RenderTaskManager()
     auto zoneLeft = new ScreenZone("ScreenUp", LANGUAGEPHRASE("newcontrols_showresearch"), m_screenW - 60, 10, 40, 20, -1);
     auto zoneRight = new ScreenZone("ScreenDown", LANGUAGEPHRASE("newcontrols_showobjectives"), m_screenW - 60, m_screenH - 50, 40, 20, -1);
 
-    m_newScreenZones.PutData(zoneLeft);
-    m_newScreenZones.PutData(zoneRight);
+    m_newScreenZones.push_back(zoneLeft);
+    m_newScreenZones.push_back(zoneRight);
   }
 }
 
@@ -1289,7 +1289,7 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
 
       auto zone = new ScreenZone("NewTask", LANGUAGEPHRASE(tooltipId), x + 5, y - h / 3, w - 10, h, taskType);
       zone->m_scrollZone = 1;
-      m_newScreenZones.PutData(zone);
+      m_newScreenZones.push_back(zone);
 
       //
       // Render task name and F-key shortcut
@@ -1475,7 +1475,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
   //
   // Render our running tasks
 
-  int numTasks = g_taskManager->m_tasks.Size();
+  int numTasks = static_cast<int>(g_taskManager->m_tasks.size());
 
   for (int i = 0; i < numTasks; ++i)
   {
@@ -1493,7 +1493,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       sprintf(captionId, "newcontrols_place_%s", Task::GetTaskName(task->m_type));
 
     auto zone = new ScreenZone("SelectTask", LANGUAGEPHRASE(captionId), iconX - iconSize / 2, iconY - iconSize / 2, iconSize, iconSize, i);
-    m_newScreenZones.PutData(zone);
+    m_newScreenZones.push_back(zone);
     zone->m_scrollZone = 2;
 
     bool invisible = (task->m_state == Task::StateStarted && fmod(g_gameTime, 1.0) < 0.4);
@@ -1651,7 +1651,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
             sprintf(captionId, "newcontrols_select_%s", Task::GetTaskName(weaponType));
             auto zone = new ScreenZone("SelectWeapon", LANGUAGEPHRASE(captionId), weaponX - weaponSize / 2, weaponY - weaponSize / 2, weaponSize,
                                        weaponSize, weaponType);
-            m_newScreenZones.PutData(zone);
+            m_newScreenZones.push_back(zone);
             zone->m_scrollZone = 3;
 
             weaponX += weaponSize;
@@ -1713,7 +1713,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
       auto zone = new ScreenZone("DeleteTask", LANGUAGEPHRASE(captionId), deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f, deleteSize,
                                  deleteSize, task->m_id);
-      m_newScreenZones.PutData(zone);
+      m_newScreenZones.push_back(zone);
     }
 
     iconY += iconSize;
@@ -1965,7 +1965,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
       auto zone = new ScreenZone("Objective", LANGUAGEPHRASE("help_explainobjective"), boxX + 10, m_screenH + textY - textH / 2, boxW - 20,
                                  textH * 1.5f, objectiveId);
       zone->m_scrollZone = 1;
-      m_newScreenZones.PutData(zone);
+      m_newScreenZones.push_back(zone);
 
       GlobalEventCondition* condition = (*objectives)[i];
       bool completed = condition->Evaluate();
@@ -2033,7 +2033,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
 
     auto zoneLeft = new ScreenZone("ScreenUp", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, m_screenH + 10, 40, 20, -1);
 
-    m_newScreenZones.PutData(zoneLeft);
+    m_newScreenZones.push_back(zoneLeft);
   }
 }
 
@@ -2167,7 +2167,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
       sprintf(tooltipId, "newcontrols_research_%s", GlobalResearch::GetTypeName(i));
       auto zone = new ScreenZone("Research", LANGUAGEPHRASE(tooltipId), 40, -m_screenH + iconY, m_screenW - 160, iconSize, i);
       zone->m_scrollZone = 1;
-      m_newScreenZones.PutData(zone);
+      m_newScreenZones.push_back(zone);
 
       //
       // Render the shadow
@@ -2382,7 +2382,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
 
     auto zoneRight = new ScreenZone("ScreenDown", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, -50, 40, 20, -1);
     zoneRight->m_scrollZone = -1;
-    m_newScreenZones.PutData(zoneRight);
+    m_newScreenZones.push_back(zoneRight);
   }
 }
 
@@ -2420,7 +2420,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
     return;
   }
 
-  for (int i = 0; i < m_quickUnitButtons.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
     m_quickUnitButtons[i]->Advance();
 
   bool showUnitName = false;
@@ -2448,7 +2448,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
           break;
       }
 
-      for (int i = 0; i < m_quickUnitButtons.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
         m_quickUnitButtons[i]->m_movable = true;
       m_quickUnitDirection = -1;
       showUnitName = true;
@@ -2466,7 +2466,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
           break;
       }
 
-      for (int i = 0; i < m_quickUnitButtons.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
         m_quickUnitButtons[i]->m_movable = true;
       m_quickUnitDirection = 1;
       showUnitName = true;
@@ -2494,7 +2494,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
   else if (m_quickUnitDirection != 0)
   {
     bool stop = true;
-    for (int i = 0; i < m_quickUnitButtons.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
     {
       if (m_quickUnitButtons[i]->m_movable)
         stop = false;
@@ -2521,7 +2521,7 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
   float shadowSize = iconSize;
   // float totalWidth = (numSlots-1) * ( iconSize + iconGap );   */
 
-  for (int i = 0; i < m_quickUnitButtons.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
     m_quickUnitButtons[i]->Render();
 
   char shadowFileName[256];
@@ -2570,7 +2570,7 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
 
 int TaskManagerInterfaceIcons::GetQuickUnitTask(int _position)
 {
-  for (int i = 0; i < m_quickUnitButtons.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
   {
     if (m_quickUnitButtons[i]->m_positionId == _position)
       return m_quickUnitButtons[i]->m_taskId;
@@ -2622,14 +2622,14 @@ void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
       numAvailable++;
   }
 
-  while (m_quickUnitButtons.Size() < 5)
+  while (static_cast<int>(m_quickUnitButtons.size()) < 5)
   {
     for (int i = 0; i < numRunnableTasks; ++i)
     {
       if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
       {
         bool buttonFound = false;
-        for (int j = 0; j < m_quickUnitButtons.Size(); ++j)
+        for (int j = 0; j < static_cast<int>(m_quickUnitButtons.size()); ++j)
         {
           if (m_quickUnitButtons[j]->m_taskId == runnableTaskType[i])
           {
@@ -2638,15 +2638,16 @@ void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
           }
         }
 
-        if (!buttonFound || (buttonFound && m_quickUnitButtons.Size() >= numAvailable && m_quickUnitButtons.Size() < 5))
+        if (!buttonFound ||
+            (buttonFound && static_cast<int>(m_quickUnitButtons.size()) >= numAvailable && static_cast<int>(m_quickUnitButtons.size()) < 5))
         {
           auto button = new QuickUnitButton();
           button->m_taskId = runnableTaskType[i];
-          m_quickUnitButtons.PutData(button);
+          m_quickUnitButtons.push_back(button);
         }
       }
 
-      if (m_quickUnitButtons.Size() == 5)
+      if (static_cast<int>(m_quickUnitButtons.size()) == 5)
         break;
     }
   }
@@ -2658,7 +2659,7 @@ void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
 
 void TaskManagerInterfaceIcons::DestroyQuickUnitInterface()
 {
-  m_quickUnitButtons.EmptyAndDelete();
+  EmptyAndDelete(m_quickUnitButtons);
   m_quickUnitVisible = false;
   m_currentQuickUnit = -1;
   m_quickUnitDirection = 0;
@@ -2683,7 +2684,7 @@ QuickUnitButton::QuickUnitButton()
                                        Vector2(iconX + iconSize * 2 + iconGap * 2, iconY)};
 
   auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
-  m_positionId = tm->m_quickUnitButtons.Size();
+  m_positionId = static_cast<int>(tm->m_quickUnitButtons.size());
   if (m_positionId == 0 || m_positionId == 4)
     m_alpha = 0.0f;
 

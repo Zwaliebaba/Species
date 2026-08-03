@@ -158,17 +158,17 @@ void TaskManagerInterface::AdvanceTab()
     if (g_inputManager->controlEvent(ControlUnitCycleRight) || gesturesCycle)
     {
       changeTask = true;
-      for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
       {
-        if (g_taskManager->m_tasks.ValidIndex(i))
+        if (ValidIndex(g_taskManager->m_tasks, i))
         {
           if (g_taskManager->m_tasks[i]->m_id == g_taskManager->m_currentTaskId)
           {
-            if (g_taskManager->m_tasks.ValidIndex(i + 1))
+            if (ValidIndex(g_taskManager->m_tasks, i + 1))
             {
               index = i + 1;
             }
-            else if (g_taskManager->m_tasks.ValidIndex(0))
+            else if (ValidIndex(g_taskManager->m_tasks, 0))
             {
               index = 0;
             }
@@ -181,19 +181,19 @@ void TaskManagerInterface::AdvanceTab()
     if (g_inputManager->controlEvent(ControlUnitCycleLeft))
     {
       changeTask = true;
-      for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
       {
-        if (g_taskManager->m_tasks.ValidIndex(i))
+        if (ValidIndex(g_taskManager->m_tasks, i))
         {
           if (g_taskManager->m_tasks[i]->m_id == g_taskManager->m_currentTaskId)
           {
-            if (g_taskManager->m_tasks.ValidIndex(i - 1))
+            if (ValidIndex(g_taskManager->m_tasks, i - 1))
             {
               index = i - 1;
             }
-            else if (g_taskManager->m_tasks.ValidIndex(g_taskManager->m_tasks.Size() - 1))
+            else if (g_taskManager->m_tasks.ValidIndex(static_cast<int>(g_taskManager->m_tasks.size()) - 1))
             {
-              index = g_taskManager->m_tasks.Size() - 1;
+              index = static_cast<int>(g_taskManager->m_tasks.size()) - 1;
             }
             break;
           }
@@ -203,12 +203,12 @@ void TaskManagerInterface::AdvanceTab()
 
     if (changeTask)
     {
-      if (index == -1 && g_taskManager->m_tasks.ValidIndex(0))
+      if (index == -1 && ValidIndex(g_taskManager->m_tasks, 0))
       {
         index = 0;
       }
 
-      if (g_taskManager->m_tasks.ValidIndex(index))
+      if (ValidIndex(g_taskManager->m_tasks, index))
       {
         if (g_taskManager->m_tasks[index]->m_type == GlobalResearch::TypeSquad)
         {

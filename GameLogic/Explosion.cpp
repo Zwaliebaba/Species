@@ -244,7 +244,7 @@ ExplosionManager g_explosionManager;
 ExplosionManager::ExplosionManager() {}
 
 
-ExplosionManager::~ExplosionManager() { m_explosions.EmptyAndDelete(); }
+ExplosionManager::~ExplosionManager() { EmptyAndDelete(m_explosions); }
 
 
 void ExplosionManager::AddExplosion(ShapeFragment* _frag, Matrix34 const& _transform, bool _recurse, float _fraction)
@@ -257,7 +257,7 @@ void ExplosionManager::AddExplosion(ShapeFragment* _frag, Matrix34 const& _trans
   if (_frag->m_numTriangles > 0)
   {
     Explosion* explosion = new Explosion(_frag, _transform, _fraction);
-    m_explosions.PutData(explosion);
+    m_explosions.push_back(explosion);
   }
 
   if (_recurse)
@@ -280,19 +280,19 @@ void ExplosionManager::AddExplosion(Shape* _shape, Matrix34 const& _transform, f
 }
 
 
-void ExplosionManager::Reset() { m_explosions.EmptyAndDelete(); }
+void ExplosionManager::Reset() { EmptyAndDelete(m_explosions); }
 
 
 void ExplosionManager::Advance()
 {
   START_PROFILE(g_profiler, "Advance Explosions");
 
-  for (unsigned int i = 0; i < m_explosions.Size(); ++i)
+  for (unsigned int i = 0; i < static_cast<int>(m_explosions.size()); ++i)
   {
     if (m_explosions[i]->Advance())
     {
       Explosion* explosion = m_explosions[i];
-      m_explosions.RemoveData(i);
+      m_explosions.erase(m_explosions.begin() + i);
       delete explosion;
       --i;
     }
@@ -306,7 +306,7 @@ void ExplosionManager::Render()
 {
   START_PROFILE(g_profiler, "Render Explosions");
 
-  int numExplosions = m_explosions.Size();
+  int numExplosions = static_cast<int>(m_explosions.size());
 
   if (numExplosions > 0)
   {

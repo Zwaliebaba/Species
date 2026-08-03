@@ -70,12 +70,12 @@ using namespace Neuron;
 #define TARGET_DEBUG
 
 #define SPECIES_VERSION "1.5.11"
-#define SPECIES_EXE_VERSION 1,5,11,0
+#define SPECIES_EXE_VERSION 1, 5, 11, 0
 #define STR_SPECIES_EXE_VERSION "1, 5, 11, 0\0"
 
 #define DEBUG_RENDER_ENABLED
 
-//#define USE_CRASHREPORTING
+// #define USE_CRASHREPORTING
 
 #ifndef _OPENMP
 #define PROFILER_ENABLED
@@ -98,13 +98,13 @@ using namespace Neuron;
 #include <stdio.h>
 #include <math.h>
 
-#pragma warning( disable : 4244 4305 4800 4018 )
+#pragma warning(disable : 4244 4305 4800 4018)
 
 // Defines that will enable you to double click on a #pragma message
 // in the Visual Studio output window.
-#define MESSAGE_LINENUMBERTOSTRING(linenumber)	#linenumber
-#define MESSAGE_LINENUMBER(linenumber)			MESSAGE_LINENUMBERTOSTRING(linenumber)
-#define MESSAGE(x) message (__FILE__ "(" MESSAGE_LINENUMBER(__LINE__) "): "x)
+#define MESSAGE_LINENUMBERTOSTRING(linenumber) #linenumber
+#define MESSAGE_LINENUMBER(linenumber) MESSAGE_LINENUMBERTOSTRING(linenumber)
+#define MESSAGE(x) message(__FILE__ "(" MESSAGE_LINENUMBER(__LINE__) "): " x)
 
 #include <crtdbg.h>
 
@@ -129,7 +129,7 @@ using namespace Neuron;
 #define SPECIES_PLATFORM "win32"
 
 #define WIN32_LEAN_AND_MEAN
-#define _WIN32_WINDOWS 0x0500	// for IsDebuggerPresent
+#define _WIN32_WINDOWS 0x0500 // for IsDebuggerPresent
 #include "windows.h"
 
 #define HAVE_DSOUND
@@ -137,7 +137,26 @@ using namespace Neuron;
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#define SAFE_FREE(x) {free(x);x=nullptr;}
-#define SAFE_DELETE(x) {delete x;x=nullptr;}
-#define SAFE_DELETE_ARRAY(x) {delete[] x;x=nullptr;}
-#define SAFE_RELEASE(x) {if(x){(x)->Release();x=nullptr;}}
+#define SAFE_FREE(x) \
+  {                  \
+    free(x);         \
+    x = nullptr;     \
+  }
+#define SAFE_DELETE(x) \
+  {                    \
+    delete x;          \
+    x = nullptr;       \
+  }
+#define SAFE_DELETE_ARRAY(x) \
+  {                          \
+    delete[] x;              \
+    x = nullptr;             \
+  }
+#define SAFE_RELEASE(x) \
+  {                     \
+    if (x)              \
+    {                   \
+      (x)->Release();   \
+      x = nullptr;      \
+    }                   \
+  }

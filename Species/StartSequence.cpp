@@ -58,7 +58,7 @@ void StartSequence::RegisterCaption(char* _caption, float _x, float _y, float _s
   caption->m_startTime = _startTime;
   caption->m_endTime = _endTime;
 
-  m_captions.PutData(caption);
+  m_captions.push_back(caption);
 }
 
 
@@ -149,7 +149,7 @@ void StartSequence::Render()
   bool cursorFlash = false;
   float cursorSize = 0.0f;
 
-  for (int i = 0; i < m_captions.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_captions.size()); ++i)
   {
     StartSequenceCaption* caption = m_captions[i];
     if (timeNow >= caption->m_startTime && timeNow <= caption->m_endTime)

@@ -7,47 +7,47 @@
 #include "Entity.h"
 
 
-#define ENGINEER_RETARGETTIMER          1.0f                    // Re-search area for viable targets every x seconds
-#define ENGINEER_SEARCHRANGE            200.0f                  // Range around which to search for viable targets
+#define ENGINEER_RETARGETTIMER 1.0f // Re-search area for viable targets every x seconds
+#define ENGINEER_SEARCHRANGE 200.0f // Range around which to search for viable targets
 
 
 class Engineer : public Entity
 {
-public:
+  public:
     enum
     {
-        StateIdle,                          // Hover around aimlessly
-        StateToWaypoint,                    // Travelling to user waypoint
-        StateToSpirit,                      // Travelling to spirit
-        StateToIncubator,                   // Travelling to factory with spirit
-        StateToControlTower,                // Travelling to control tower
-        StateReprogramming,                 // Reprogramming control tower
-        StateToBridge,                      // Travelling to bridge
-        StateOperatingBridge,               // Holding a bridge open
-        StateToResearchItem,                // Travelling to research item
-        StateResearching                    // Reprogramming a research item
+      StateIdle,            // Hover around aimlessly
+      StateToWaypoint,      // Travelling to user waypoint
+      StateToSpirit,        // Travelling to spirit
+      StateToIncubator,     // Travelling to factory with spirit
+      StateToControlTower,  // Travelling to control tower
+      StateReprogramming,   // Reprogramming control tower
+      StateToBridge,        // Travelling to bridge
+      StateOperatingBridge, // Holding a bridge open
+      StateToResearchItem,  // Travelling to research item
+      StateResearching      // Reprogramming a research item
     };
 
-    int         m_state;
-    Vector3     m_wayPoint;                             // User specified waypoint
+    int m_state;
+    Vector3 m_wayPoint; // User specified waypoint
 
-protected:
-    float       m_hoverHeight;
-    float       m_idleRotateRate;
+  protected:
+    float m_hoverHeight;
+    float m_idleRotateRate;
 
-    Vector3     m_targetPos;                            // Our internal target position
-    Vector3     m_targetFront;                          // and orientation
+    Vector3 m_targetPos;   // Our internal target position
+    Vector3 m_targetFront; // and orientation
 
-    float       m_retargetTimer;
-    LList       <int> m_spirits;                        // Collector only, Spirits already collected
-    int         m_spiritId;                             // Collector only, current target spirit
+    float m_retargetTimer;
+    LList<int> m_spirits; // Collector only, Spirits already collected
+    int m_spiritId;       // Collector only, current target spirit
 
-    int         m_positionId;                           // Position on the building we are working on
-    int         m_bridgeId;                             // Building ID of a bridge we own
+    int m_positionId; // Position on the building we are working on
+    int m_bridgeId;   // Building ID of a bridge we own
 
-    LList       <Vector3 *> m_positionHistory;
+    LList<Vector3*> m_positionHistory;
 
-protected:
+  protected:
     bool SearchForRandomPosition();
     bool SearchForSpirits();
     bool SearchForControlTowers();
@@ -55,41 +55,39 @@ protected:
     bool SearchForResearchItems();
     bool SearchForIncubator();
 
-    bool AdvanceIdle            ();
-    bool AdvanceToWaypoint      ();
-    bool AdvanceToSpirit        ();
-    bool AdvanceToIncubator     ();
-    bool AdvanceToControlTower  ();
-    bool AdvanceReprogramming   ();
-    bool AdvanceToBridge        ();
-    bool AdvanceOperatingBridge ();
-    bool AdvanceToResearchItem  ();
-    bool AdvanceResearching     ();
-    bool AdvanceToTargetPos     ();                         // returns have-I-Arrived?
+    bool AdvanceIdle();
+    bool AdvanceToWaypoint();
+    bool AdvanceToSpirit();
+    bool AdvanceToIncubator();
+    bool AdvanceToControlTower();
+    bool AdvanceReprogramming();
+    bool AdvanceToBridge();
+    bool AdvanceOperatingBridge();
+    bool AdvanceToResearchItem();
+    bool AdvanceResearching();
+    bool AdvanceToTargetPos(); // returns have-I-Arrived?
 
-public:
+  public:
     Engineer();
 
-    void Begin                  ();
-    bool Advance                ( Unit *_unit );
+    void Begin();
+    bool Advance(Unit* _unit);
 
-    void BeginBridge            ( Vector3 _to );
-    void EndBridge              ();
+    void BeginBridge(Vector3 _to);
+    void EndBridge();
 
-    void SetWaypoint            ( Vector3 const &_wayPoint );
-    void ChangeHealth           ( int amount );
+    void SetWaypoint(Vector3 const& _wayPoint);
+    void ChangeHealth(int amount);
 
-    int  GetNumSpirits          ();
-    int  GetMaxSpirits          ();
-    void CollectSpirit          ( int _spiritId );
+    int GetNumSpirits();
+    int GetMaxSpirits();
+    void CollectSpirit(int _spiritId);
 
-    void Render                 ( float predictionTime );
-    void RenderShape            ( float predictionTime );
-    bool RenderPixelEffect      ( float predictionTime );
+    void Render(float predictionTime);
+    void RenderShape(float predictionTime);
+    bool RenderPixelEffect(float predictionTime);
 
-    char *GetCurrentAction      ();
+    char* GetCurrentAction();
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };
-
-

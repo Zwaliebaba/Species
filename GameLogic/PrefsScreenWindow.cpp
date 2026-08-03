@@ -302,12 +302,12 @@ int fontSize = GetMenuSize(13);*/
   colourDepth->m_fontSize = fontSize;
   RegisterButton(colourDepth);
 
-  m_buttonOrder.PutData(screenRes);
-  m_buttonOrder.PutData(windowed);
+  m_buttonOrder.push_back(screenRes);
+  m_buttonOrder.push_back(windowed);
   if (windowed->GetSelectionValue() == 0)
   {
-    m_buttonOrder.PutData(refresh);
-    m_buttonOrder.PutData(colourDepth);
+    m_buttonOrder.push_back(refresh);
+    m_buttonOrder.push_back(colourDepth);
   }
 
   DropDownMenu* zDepth = new DropDownMenu();
@@ -317,7 +317,7 @@ int fontSize = GetMenuSize(13);*/
   zDepth->RegisterInt(&m_zDepth);
   zDepth->m_fontSize = fontSize;
   RegisterButton(zDepth);
-  m_buttonOrder.PutData(zDepth);
+  m_buttonOrder.push_back(zDepth);
 
   y = m_h - h;
 
@@ -326,14 +326,14 @@ int fontSize = GetMenuSize(13);*/
   cancel->m_fontSize = fontSize;
   cancel->m_centered = true;
   RegisterButton(cancel);
-  m_buttonOrder.PutData(cancel);
+  m_buttonOrder.push_back(cancel);
 
   SetScreenButton* apply = new SetScreenButton();
   apply->SetShortProperties(LANGUAGEPHRASE("dialog_apply"), m_w - buttonW2 - border, y, buttonW2, buttonH);
   apply->m_fontSize = fontSize;
   apply->m_centered = true;
   RegisterButton(apply);
-  m_buttonOrder.PutData(apply);
+  m_buttonOrder.push_back(apply);
 }
 
 

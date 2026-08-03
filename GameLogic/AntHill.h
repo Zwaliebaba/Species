@@ -5,7 +5,7 @@
 
 #include "Building.h"
 
-#define ANTHILL_SEARCHRANGE     400.0f
+#define ANTHILL_SEARCHRANGE 400.0f
 
 
 class FileWriter;
@@ -13,56 +13,53 @@ class FileWriter;
 
 struct AntObjective
 {
-    Vector3         m_pos;
-    WorldObjectId   m_targetId;
-    int             m_numToSend;
+    Vector3 m_pos;
+    WorldObjectId m_targetId;
+    int m_numToSend;
 };
 
 
 class AntHill : public Building
 {
-protected:
-    LList<AntObjective *> m_objectives;
+  protected:
+    LList<AntObjective*> m_objectives;
 
-    float   m_objectiveTimer;
-    float   m_spawnTimer;
-    float   m_eggConvertTimer;
-    int     m_health;
-    int     m_unitId;
-    int     m_populationLock;
-    bool    m_renderDamaged;
+    float m_objectiveTimer;
+    float m_spawnTimer;
+    float m_eggConvertTimer;
+    int m_health;
+    int m_unitId;
+    int m_populationLock;
+    bool m_renderDamaged;
 
-protected:
-    bool SearchingArea          ( Vector3  _pos );
-    bool TargettedEntity        ( WorldObjectId _id );
+  protected:
+    bool SearchingArea(Vector3 _pos);
+    bool TargettedEntity(WorldObjectId _id);
 
-    bool SearchForSpirits       ( Vector3 &_pos );
-    bool SearchForCitizens    ( Vector3 &_pos, WorldObjectId &_id );
-    bool SearchForEnemies       ( Vector3 &_pos, WorldObjectId &_id );
+    bool SearchForSpirits(Vector3& _pos);
+    bool SearchForCitizens(Vector3& _pos, WorldObjectId& _id);
+    bool SearchForEnemies(Vector3& _pos, WorldObjectId& _id);
 
-    bool SearchForScoutArea     ( Vector3 &_pos );
+    bool SearchForScoutArea(Vector3& _pos);
 
     bool PopulationLocked();
 
-public:
+  public:
     int m_numAntsInside;
     int m_numSpiritsInside;
 
-public:
+  public:
     AntHill();
 
-    void Initialise( Building *_template );
+    void Initialise(Building* _template);
 
     bool Advance();
-    void Render ( float _predictionTime );
-    void Damage ( float _damage );
-	void Destroy( float _intensity );
+    void Render(float _predictionTime);
+    void Damage(float _damage);
+    void Destroy(float _intensity);
 
-    void Read   ( TextReader *_in, bool _dynamic );
-    void Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };
-
-
-

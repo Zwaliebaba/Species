@@ -164,9 +164,9 @@ void UserInput::Render()
   //    glLineWidth ( 5.0f );
   //    glBegin     ( GL_LINE_STRIP );
 
-  //    for( int i = 0; i < m_mousePosHistory.Size(); ++i )
+  //    for( int i = 0; i < static_cast<int>(m_mousePosHistory.size()); ++i )
   //    {
-  //        float alpha = 1.0f - ((float) i / (float) m_mousePosHistory.Size());
+  //        float alpha = 1.0f - ((float) i / (float) static_cast<int>(m_mousePosHistory.size()));
   //        alpha *= 0.5f;
   //        glColor4f( 1.0f, 1.0f, 0.0f, alpha );
   //        Vector3 *thisPos = m_mousePosHistory[i];

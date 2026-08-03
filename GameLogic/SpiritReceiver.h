@@ -15,41 +15,40 @@ class UnprocessedSpirit;
 
 class ReceiverBuilding : public Building
 {
-protected:
-    int             m_spiritLink;
-    ShapeMarker     *m_spiritLocation;
+  protected:
+    int m_spiritLink;
+    ShapeMarker* m_spiritLocation;
 
-    LList           <float> m_spirits;
+    LList<float> m_spirits;
 
-public:
+  public:
     ReceiverBuilding();
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
-    void Render         ( float _predictionTime );
-    void RenderAlphas   ( float _predictionTime );
+    void Initialise(Building* _template);
+    bool Advance();
+    void Render(float _predictionTime);
+    void RenderAlphas(float _predictionTime);
 
-    bool            IsInView            ();
-    virtual Vector3 GetSpiritLocation   ();
-    virtual void    TriggerSpirit       ( float _initValue );
+    bool IsInView();
+    virtual Vector3 GetSpiritLocation();
+    virtual void TriggerSpirit(float _initValue);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
-    static SpiritProcessor *GetSpiritProcessor();
+    static SpiritProcessor* GetSpiritProcessor();
 
     static void BeginRenderUnprocessedSpirits();
-    static void RenderUnprocessedSpirit( Vector3 const &_pos, float _life=1.0f ); // gl friendly
-	static void RenderUnprocessedSpirit_basic( Vector3 const &_pos, float _life=1.0f ); // dx friendly
-	static void RenderUnprocessedSpirit_detail( Vector3 const &_pos, float _life=1.0f ); // dx friendly
+    static void RenderUnprocessedSpirit(Vector3 const& _pos, float _life = 1.0f);        // gl friendly
+    static void RenderUnprocessedSpirit_basic(Vector3 const& _pos, float _life = 1.0f);  // dx friendly
+    static void RenderUnprocessedSpirit_detail(Vector3 const& _pos, float _life = 1.0f); // dx friendly
     static void EndRenderUnprocessedSpirits();
 
-    void Read   ( TextReader *_in, bool _dynamic );
-    void Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 
-    int  GetBuildingLink();
-    void SetBuildingLink( int _buildingId );
+    int GetBuildingLink();
+    void SetBuildingLink(int _buildingId);
 };
-
 
 
 // ****************************************************************************
@@ -58,29 +57,28 @@ public:
 
 class SpiritProcessor : public ReceiverBuilding
 {
-protected:
-    float   m_timerSync;
-    int     m_numThisSecond;
-    float   m_spawnSync;
-    float   m_throughput;
+  protected:
+    float m_timerSync;
+    int m_numThisSecond;
+    float m_spawnSync;
+    float m_throughput;
 
-public:
-    LList   <UnprocessedSpirit *> m_floatingSpirits;
+  public:
+    LList<UnprocessedSpirit*> m_floatingSpirits;
 
-public:
+  public:
     SpiritProcessor();
 
-    void TriggerSpirit ( float _initValue );
+    void TriggerSpirit(float _initValue);
 
-    char const *GetObjectiveCounter();
+    char const* GetObjectiveCounter();
 
-    void Initialise( Building *_building );
+    void Initialise(Building* _building);
     bool Advance();
     bool IsInView();
-    void Render( float _predictionTime );
-    void RenderAlphas( float _predictionTime );
+    void Render(float _predictionTime);
+    void RenderAlphas(float _predictionTime);
 };
-
 
 
 // ****************************************************************************
@@ -89,7 +87,7 @@ public:
 
 class ReceiverLink : public ReceiverBuilding
 {
-public:
+  public:
     ReceiverLink();
     bool Advance();
 };
@@ -101,7 +99,7 @@ public:
 
 class ReceiverSpiritSpawner : public ReceiverBuilding
 {
-public:
+  public:
     ReceiverSpiritSpawner();
     bool Advance();
 };
@@ -115,23 +113,22 @@ public:
 
 class SpiritReceiver : public ReceiverBuilding
 {
-protected:
-    ShapeMarker *m_headMarker;
-    Shape       *m_headShape;
-    ShapeMarker *m_spiritLink;
-    ShapeMarker *m_statusMarkers[SPIRITRECEIVER_NUMSTATUSMARKERS];
+  protected:
+    ShapeMarker* m_headMarker;
+    Shape* m_headShape;
+    ShapeMarker* m_spiritLink;
+    ShapeMarker* m_statusMarkers[SPIRITRECEIVER_NUMSTATUSMARKERS];
 
-public:
+  public:
     SpiritReceiver();
 
     Vector3 GetSpiritLocation();
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
-    void Render         ( float _predictionTime );
-    void RenderPorts    ();
-    void RenderAlphas   ( float _predictionTime );
-
+    void Initialise(Building* _template);
+    bool Advance();
+    void Render(float _predictionTime);
+    void RenderPorts();
+    void RenderAlphas(float _predictionTime);
 };
 
 
@@ -141,27 +138,26 @@ public:
 
 class UnprocessedSpirit : public WorldObject
 {
-protected:
-    float       m_timeSync;
-    float       m_positionOffset;                       // Used to make them float around a bit
-    float       m_xaxisRate;
-    float       m_yaxisRate;
-    float       m_zaxisRate;
+  protected:
+    float m_timeSync;
+    float m_positionOffset; // Used to make them float around a bit
+    float m_xaxisRate;
+    float m_yaxisRate;
+    float m_zaxisRate;
 
-public:
-    Vector3     m_hover;
+  public:
+    Vector3 m_hover;
     enum
     {
-        StateUnprocessedFalling,
-        StateUnprocessedFloating,
-        StateUnprocessedDeath
+      StateUnprocessedFalling,
+      StateUnprocessedFloating,
+      StateUnprocessedDeath
     };
-    int         m_state;
+    int m_state;
 
-public:
+  public:
     UnprocessedSpirit();
 
     bool Advance();
-    float GetLife();                        // Returns 0.0f-1.0f (0.0f=dead, 1.0f=alive)
+    float GetLife(); // Returns 0.0f-1.0f (0.0f=dead, 1.0f=alive)
 };
-

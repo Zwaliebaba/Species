@@ -7,58 +7,58 @@
 
 class AI : public Entity
 {
-protected:
-    int FindTargetBuilding( int _fromTargetId, int _fromTeamId );
-    int FindNearestTarget( Vector3 const &_fromPos );
+  protected:
+    int FindTargetBuilding(int _fromTargetId, int _fromTeamId);
+    int FindNearestTarget(Vector3 const& _fromPos);
 
     float m_timer;
 
-public:
+  public:
     AI();
 
     void Begin();
-    bool Advance( Unit *_unit );
-    void ChangeHealth( int _amount );
+    bool Advance(Unit* _unit);
+    void ChangeHealth(int _amount);
 
-    void Render( float _predictionTime );
+    void Render(float _predictionTime);
 };
 
 
 // ============================================================================
 
 
-#define AITARGET_LINKRANGE      600.0f
+#define AITARGET_LINKRANGE 600.0f
 
 
 class AITarget : public Building
 {
-protected:
-    float           m_teamCountTimer;
+  protected:
+    float m_teamCountTimer;
 
-public:
-    LList<int>      m_neighbours;                               // Building IDs of nearby AITargets
+  public:
+    LList<int> m_neighbours; // Building IDs of nearby AITargets
 
-    int             m_friendCount   [NUM_TEAMS];
-    int             m_enemyCount    [NUM_TEAMS];
-    int             m_idleCount     [NUM_TEAMS];
-    float           m_priority      [NUM_TEAMS];
+    int m_friendCount[NUM_TEAMS];
+    int m_enemyCount[NUM_TEAMS];
+    int m_idleCount[NUM_TEAMS];
+    float m_priority[NUM_TEAMS];
 
-public:
+  public:
     AITarget();
 
-    bool    Advance ();
-    void    Render          ( float _predictionTime );
-    void    RenderAlphas    ( float _predictionTime );
+    bool Advance();
+    void Render(float _predictionTime);
+    void RenderAlphas(float _predictionTime);
 
-    void    RecalculateNeighbours();
-    void    RecountTeams();
-    void    RecalculateOwnership();
-    void    RecalculatePriority();
+    void RecalculateNeighbours();
+    void RecountTeams();
+    void RecalculateOwnership();
+    void RecalculatePriority();
 
-    float   IsNearTo        ( int _aiTargetId );                            // returns distance or -1
+    float IsNearTo(int _aiTargetId); // returns distance or -1
 
-    bool DoesSphereHit          (Vector3 const &_pos, float _radius);
-    bool DoesShapeHit           (Shape *_shape, Matrix34 _transform);
+    bool DoesSphereHit(Vector3 const& _pos, float _radius);
+    bool DoesShapeHit(Shape* _shape, Matrix34 _transform);
 };
 
 
@@ -67,37 +67,35 @@ public:
 
 class AISpawnPoint : public Building
 {
-protected:
-    float   m_timer;                // Master timer between spawns
-    bool    m_online;
-    int     m_numSpawned;           // Number spawned this batch
-    int     m_populationLock;       // Building ID (if found), -1 = not yet searched, -2 = nothing found
+  protected:
+    float m_timer; // Master timer between spawns
+    bool m_online;
+    int m_numSpawned;     // Number spawned this batch
+    int m_populationLock; // Building ID (if found), -1 = not yet searched, -2 = nothing found
 
-    bool    PopulationLocked();
+    bool PopulationLocked();
 
-public:
-    int     m_entityType;
-    int     m_count;
-    int     m_period;
-    int     m_activatorId;          // Building ID
-    int     m_spawnLimit;           // limits the number of times this building can spawn
-	int		m_routeId;				// Route path that spawned units should follow
+  public:
+    int m_entityType;
+    int m_count;
+    int m_period;
+    int m_activatorId; // Building ID
+    int m_spawnLimit;  // limits the number of times this building can spawn
+    int m_routeId;     // Route path that spawned units should follow
 
-public:
+  public:
     AISpawnPoint();
 
-    void    Initialise      ( Building *_template );
-    bool    Advance         ();
-    void    RenderAlphas    ( float _predictionTime );
+    void Initialise(Building* _template);
+    bool Advance();
+    void RenderAlphas(float _predictionTime);
 
-    void Read   ( TextReader *_in, bool _dynamic );
-    void Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 
-    int  GetBuildingLink();
-    void SetBuildingLink( int _buildingId );
+    int GetBuildingLink();
+    void SetBuildingLink(int _buildingId);
 
-    bool DoesSphereHit      (Vector3 const &_pos, float _radius);
-    bool DoesShapeHit       (Shape *_shape, Matrix34 _transform);
+    bool DoesSphereHit(Vector3 const& _pos, float _radius);
+    bool DoesShapeHit(Shape* _shape, Matrix34 _transform);
 };
-
-

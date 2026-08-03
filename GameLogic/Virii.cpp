@@ -136,7 +136,7 @@ Virii::Virii()
 }
 
 
-Virii::~Virii() { m_positionHistory.EmptyAndDelete(); }
+Virii::~Virii() { EmptyAndDelete(m_positionHistory); }
 
 bool Virii::Advance(Unit* _unit)
 {
@@ -225,7 +225,7 @@ bool Virii::Advance(Unit* _unit)
     //		}
   }
 
-  if (m_positionHistory.Size() > 0)
+  if (static_cast<int>(m_positionHistory.size()) > 0)
   {
     bool recorded = false;
 
@@ -275,7 +275,7 @@ void Virii::RecordHistoryPosition(bool _required)
 
   Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
   Vector3 prevPos;
-  if (m_positionHistory.Size() > 0)
+  if (static_cast<int>(m_positionHistory.size()) > 0)
     prevPos = m_positionHistory[0]->m_pos;
 
   ViriiHistory* history = new ViriiHistory();
@@ -285,7 +285,7 @@ void Virii::RecordHistoryPosition(bool _required)
   history->m_distance = 0.0f;
   history->m_required = _required;
 
-  if (m_positionHistory.Size() > 0)
+  if (static_cast<int>(m_positionHistory.size()) > 0)
   {
     history->m_distance = (m_pos - m_positionHistory[0]->m_pos).Mag();
     history->m_glowDiff = (m_pos - m_positionHistory[0]->m_pos);
@@ -293,13 +293,13 @@ void Virii::RecordHistoryPosition(bool _required)
   }
 
 
-  m_positionHistory.PutDataAtStart(history);
+  m_positionHistory.insert(m_positionHistory.begin(), history);
 
   float totalDistance = 0.0f;
   int removeFrom = -1;
   int entityDetail = g_prefsManager->GetInt("RenderEntityDetail", 1);
   float tailLength = 175.0f; // - (entityDetail-1) * 50.0f;
-  for (int i = 0; i < m_positionHistory.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
     ViriiHistory* history = m_positionHistory[i];
     totalDistance += history->m_distance;
@@ -313,10 +313,10 @@ void Virii::RecordHistoryPosition(bool _required)
 
   if (removeFrom != -1)
   {
-    while (m_positionHistory.ValidIndex(removeFrom))
+    while (ValidIndex(m_positionHistory, removeFrom))
     {
       ViriiHistory* history = m_positionHistory[removeFrom];
-      m_positionHistory.RemoveData(removeFrom);
+      m_positionHistory.erase(m_positionHistory.begin() + removeFrom);
       delete history;
     }
   }
@@ -812,7 +812,7 @@ Vector3 Virii::AdvanceDeadPositionVector(int _index, Vector3 const& _pos, float 
 
 bool Virii::AdvanceDead()
 {
-  for (int i = 0; i < m_positionHistory.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
     Vector3* thisPos = &m_positionHistory[i]->m_pos;
     *thisPos = AdvanceDeadPositionVector(i, *thisPos, SERVER_ADVANCE_PERIOD);
@@ -826,7 +826,7 @@ bool Virii::IsInView()
   Vector3 centrePos = m_pos;
   float radiusSqd = 0.0f;
 
-  for (int i = 0; i < m_positionHistory.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
     Vector3 pos = m_positionHistory[i]->m_pos;
     float distance = (pos - centrePos).MagSquared();
@@ -882,7 +882,7 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
   prevPos.m_pos = predictedPos;
   prevPos.m_right = -m_front ^ landNormal;
   Vector3 firstPos;
-  if (m_positionHistory.Size() > 0)
+  if (static_cast<int>(m_positionHistory.size()) > 0)
     firstPos = m_positionHistory[0]->m_pos;
   prevPos.m_distance = (predictedPos - firstPos).Mag();
   prevPos.m_glowDiff = (predictedPos - firstPos).SetLength(10.0f);
@@ -898,7 +898,7 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
   float wormTexYpos = 0.0f;
   float skippedDistance = 0.0f;
 
-  int lastIndex = m_positionHistory.Size();
+  int lastIndex = static_cast<int>(m_positionHistory.size());
   if (_detail > 1)
   {
     int amountToChop = _detail - 1;
@@ -999,7 +999,7 @@ void Virii::RenderLowDetail( float predictionTime, int teamId )
     prevPos.m_pos = predictedPos;
     prevPos.m_right = -m_front ^ landNormal;
     Vector3 firstPos;
-    if( m_positionHistory.Size() > 0 ) firstPos = m_positionHistory[0]->m_pos;
+    if( static_cast<int>(m_positionHistory.size()) > 0 ) firstPos = m_positionHistory[0]->m_pos;
     prevPos.m_distance = ( predictedPos - firstPos ).Mag();
 
     float width = 3.0f;
@@ -1009,7 +1009,7 @@ void Virii::RenderLowDetail( float predictionTime, int teamId )
 
     glBegin         ( GL_QUADS );
 
-    for( int i = 0; i < m_positionHistory.Size(); i += 1 )
+    for( int i = 0; i < static_cast<int>(m_positionHistory.size()); i += 1 )
     {
         ViriiHistory *history = m_positionHistory[i];
         Vector3 pos = history->m_pos;
@@ -1065,7 +1065,7 @@ void Virii::RenderGlow ( float predictionTime, int teamId )
     prevPos.m_pos = predictedPos;
     prevPos.m_right = -m_front ^ landNormal;
     Vector3 firstPos;
-    if( m_positionHistory.Size() > 0 ) firstPos = m_positionHistory[0]->m_pos;
+    if( static_cast<int>(m_positionHistory.size()) > 0 ) firstPos = m_positionHistory[0]->m_pos;
     prevPos.m_distance = ( predictedPos - firstPos ).Mag();
 
     float width = 12.0f;
@@ -1074,7 +1074,7 @@ void Virii::RenderGlow ( float predictionTime, int teamId )
 
     glBegin         ( GL_QUADS );
 
-    for( int i = 0; i < m_positionHistory.Size(); i += 1 )
+    for( int i = 0; i < static_cast<int>(m_positionHistory.size()); i += 1 )
     {
         ViriiHistory *history = m_positionHistory[i];
         Vector3 pos = history->m_pos;

@@ -51,9 +51,9 @@ bool Teleport::Advance()
   //
   // Advance people who are in transit
 
-  for (int i = 0; i < m_inTransit.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_inTransit.size()); ++i)
   {
-    WorldObjectId* id = m_inTransit.GetPointer(i);
+    WorldObjectId* id = &m_inTransit[i];
     WorldObject* obj = g_location->GetEntity(*id);
     Entity* ent = (Entity*)obj;
     if (ent)
@@ -61,13 +61,13 @@ bool Teleport::Advance()
       bool removeMe = UpdateEntityInTransit(ent);
       if (removeMe)
       {
-        m_inTransit.RemoveData(i);
+        m_inTransit.erase(m_inTransit.begin() + i);
         --i;
       }
     }
     else
     {
-      m_inTransit.RemoveData(i);
+      m_inTransit.erase(m_inTransit.begin() + i);
       --i;
     }
   }
@@ -125,9 +125,9 @@ void Teleport::RenderAlphas(float predictionTime)
   glDisable(GL_CULL_FACE);
   glDepthMask(false);
 
-  for (int i = 0; i < m_inTransit.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_inTransit.size()); ++i)
   {
-    WorldObjectId* id = m_inTransit.GetPointer(i);
+    WorldObjectId* id = &m_inTransit[i];
     WorldObject* obj = g_location->GetEntity(*id);
     if (obj)
     {
@@ -242,12 +242,12 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
           if (oldUnit->m_troopType == Entity::TypeInsertionSquadie)
           {
             // Shut down the old task
-            for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
+            for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
             {
               Task* task = g_taskManager->m_tasks[i];
               if (task->m_type == GlobalResearch::TypeSquad && task->m_objId == WorldObjectId(oldUnit->m_teamId, oldUnit->m_unitId, -1, -1))
               {
-                g_taskManager->m_tasks.RemoveData(i);
+                g_taskManager->m_tasks.erase(g_taskManager->m_tasks.begin() + i);
                 delete task;
                 break;
               }
@@ -320,7 +320,7 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
     UpdateEntityInTransit(entity);
 
     WorldObjectId newId(entity->m_id);
-    m_inTransit.PutData(newId);
+    m_inTransit.push_back(newId);
     m_timeSync = m_sendPeriod;
   }
 }

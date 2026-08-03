@@ -141,7 +141,7 @@ void PowerBuilding::RenderAlphas(float _predictionTime)
     Vector3 camUp = g_camera->GetUp() * surgeSize;
     Vector3 camRight = g_camera->GetRight() * surgeSize;
     glBegin(GL_QUADS);
-    for (int i = 0; i < m_surges.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(m_surges.size()); ++i)
     {
       float thisSurge = m_surges[i];
       thisSurge += _predictionTime * 2;
@@ -171,13 +171,13 @@ void PowerBuilding::RenderAlphas(float _predictionTime)
 
 bool PowerBuilding::Advance()
 {
-  for (int i = 0; i < m_surges.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_surges.size()); ++i)
   {
-    float* thisSurge = m_surges.GetPointer(i);
+    float* thisSurge = &m_surges[i];
     *thisSurge += SERVER_ADVANCE_PERIOD * 2;
     if (*thisSurge >= 1.0f)
     {
-      m_surges.RemoveData(i);
+      m_surges.erase(m_surges.begin() + i);
       --i;
 
       Building* powerLink = g_location->GetBuilding(m_powerLink);
@@ -193,7 +193,7 @@ bool PowerBuilding::Advance()
 
 void PowerBuilding::TriggerSurge(float _initValue)
 {
-  m_surges.PutDataAtStart(_initValue);
+  m_surges.insert(m_surges.begin(), _initValue);
 
   g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "TriggerSurge");
 }
@@ -280,7 +280,7 @@ bool Generator::Advance()
 {
   if (!m_enabled)
   {
-    m_surges.Empty();
+    m_surges.clear();
     m_throughput = 0.0f;
     m_numThisSecond = 0;
 

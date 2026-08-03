@@ -691,7 +691,7 @@ void LevelFile::ParseRoute(TextReader* _in, int _id)
     {
       wp->m_buildingId = buildingId;
     }
-    r->m_wayPoints.PutDataAtEnd(wp);
+    r->m_wayPoints.push_back(wp);
   }
 
   m_routes.push_back(r);
@@ -1032,9 +1032,9 @@ void LevelFile::WriteRoutes(FileWriter* _out)
   {
     _out->printf("\tRoute %d\n", r->m_id);
 
-    for (int j = 0; j < r->m_wayPoints.Size(); ++j)
+    for (int j = 0; j < static_cast<int>(r->m_wayPoints.size()); ++j)
     {
-      WayPoint* wp = r->m_wayPoints.GetData(j);
+      WayPoint* wp = r->m_wayPoints[j];
       Vector3 pos = wp->GetPos();
       if (wp->m_type == WayPoint::Type3DPos)
       {
@@ -1453,7 +1453,7 @@ void LevelFile::GenerateInstantUnits()
           else if (entity->m_type == Entity::TypeArmour)
           {
             bool taskControlled = false;
-            for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
+            for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
             {
               Task* task = g_taskManager->m_tasks[i];
               if (task->m_type == GlobalResearch::TypeArmour && task->m_objId == entity->m_id)
@@ -1501,9 +1501,9 @@ void LevelFile::GenerateInstantUnits()
         Vector3 exitPos, exitFront;
         dish->GetExit(exitPos, exitFront);
 
-        for (int e = 0; e < dish->m_inTransit.Size(); ++e)
+        for (int e = 0; e < static_cast<int>(dish->m_inTransit.size()); ++e)
         {
-          WorldObjectId id = *dish->m_inTransit.GetPointer(e);
+          WorldObjectId id = *&dish->m_inTransit[e];
           Entity* entity = g_location->GetEntity(id);
 
           if (entity == nullptr)
@@ -1679,7 +1679,7 @@ void LevelFile::WriteRunningPrograms(FileWriter* _out)
     // Engineer     count   state   numSpirits  waypointX waypointZ    (positionX positionZ health)
     // Squaddie     count   state   weaponType  waypointX waypointZ    (positionX positionZ health)
 
-    for (int t = 0; t < g_taskManager->m_tasks.Size(); ++t)
+    for (int t = 0; t < static_cast<int>(g_taskManager->m_tasks.size()); ++t)
     {
       Task* task = g_taskManager->m_tasks[t];
       if (task->m_state == Task::StateRunning)

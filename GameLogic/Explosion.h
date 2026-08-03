@@ -15,12 +15,12 @@
 // rotation multiplied on to it every frame.
 class Tumbler
 {
-public:
-	Matrix33	m_rotMat;
-	Vector3		m_angVel;
+  public:
+    Matrix33 m_rotMat;
+    Vector3 m_angVel;
 
-	Tumbler();
-	void Advance();
+    Tumbler();
+    void Advance();
 };
 
 
@@ -30,14 +30,14 @@ public:
 
 class ExplodingTri
 {
-public:
-	Vector3		m_vel;
-	Vector3		m_pos;
-	Vector3		m_v1, m_v2, m_v3;
-	Vector3		m_norm;
-	Tumbler		*m_tumbler;
-	float		m_timeToDie;
-	RGBAColour	m_colour;
+  public:
+    Vector3 m_vel;
+    Vector3 m_pos;
+    Vector3 m_v1, m_v2, m_v3;
+    Vector3 m_norm;
+    Tumbler* m_tumbler;
+    float m_timeToDie;
+    RGBAColour m_colour;
 };
 
 
@@ -47,21 +47,21 @@ public:
 
 class Explosion
 {
-protected:
-	Tumbler		 *m_tumblers;
-	unsigned int m_numTumblers;
-	ExplodingTri *m_tris;
-	unsigned int m_numTris;
-	float		 m_timeToDie;
+  protected:
+    Tumbler* m_tumblers;
+    unsigned int m_numTumblers;
+    ExplodingTri* m_tris;
+    unsigned int m_numTris;
+    float m_timeToDie;
 
-public:
-	Explosion(ShapeFragment *_frag, Matrix34 const &_transform, float _fraction);
-	~Explosion();
+  public:
+    Explosion(ShapeFragment* _frag, Matrix34 const& _transform, float _fraction);
+    ~Explosion();
 
-	bool Advance();	// Returns true if the explosion has finished
-	void Render();
+    bool Advance(); // Returns true if the explosion has finished
+    void Render();
 
-	Vector3 GetCenter() const;
+    Vector3 GetCenter() const;
 };
 
 
@@ -71,24 +71,22 @@ public:
 
 class ExplosionManager
 {
-protected:
-	LList <Explosion *> m_explosions;
+  protected:
+    LList<Explosion*> m_explosions;
 
-public:
-	ExplosionManager();
-	~ExplosionManager();
+  public:
+    ExplosionManager();
+    ~ExplosionManager();
 
-	void AddExplosion(ShapeFragment *_frag, Matrix34 const &_transform, bool _recurse, float _fraction);
-	void AddExplosion(Shape *_shape, Matrix34 const &_transform, float _fraction=1.0f);
-	void Reset();
+    void AddExplosion(ShapeFragment* _frag, Matrix34 const& _transform, bool _recurse, float _fraction);
+    void AddExplosion(Shape* _shape, Matrix34 const& _transform, float _fraction = 1.0f);
+    void Reset();
 
-	void Advance();
-	void Render();
+    void Advance();
+    void Render();
 
-	const LList <Explosion *> &GetExplosionList() {return m_explosions;} // read access for DeformEffect
+    const LList<Explosion*>& GetExplosionList() { return m_explosions; } // read access for DeformEffect
 };
 
 
 extern ExplosionManager g_explosionManager;
-
-

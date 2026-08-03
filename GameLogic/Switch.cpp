@@ -412,11 +412,11 @@ void FenceSwitch::Switch()
 
 void FenceSwitch::RenderLights()
 {
-  if (m_id.GetTeamId() != 255 && m_lights.Size() > 0)
+  if (m_id.GetTeamId() != 255 && static_cast<int>(m_lights.size()) > 0)
   {
     if ((g_clientToServer->m_lastValidSequenceIdFromServer % 10) / 2 == m_id.GetTeamId() || g_editing)
     {
-      for (int i = 0; i < m_lights.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_lights.size()); ++i)
       {
         ShapeMarker* marker = m_lights[i];
         Matrix34 rootMat(m_front, m_up, m_pos);

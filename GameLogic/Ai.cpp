@@ -70,14 +70,14 @@ void AI::Begin()
       if (building->m_type == Building::TypeAITarget)
       {
         AITarget* a = (AITarget*)building;
-        for (int n = 0; n < a->m_neighbours.Size(); ++n)
+        for (int n = 0; n < static_cast<int>(a->m_neighbours.size()); ++n)
         {
           int cId = a->m_neighbours[n];
           AITarget* c = (AITarget*)g_location->GetBuilding(cId);
           DEBUG_ASSERT(c && c->m_type == Building::TypeAITarget);
           float distanceAtoC = a->IsNearTo(cId);
 
-          for (int x = 0; x < a->m_neighbours.Size(); ++x)
+          for (int x = 0; x < static_cast<int>(a->m_neighbours.size()); ++x)
           {
             if (x != n)
             {
@@ -88,7 +88,7 @@ void AI::Begin()
               float distanceBtoC = b->IsNearTo(cId);
               if (distanceBtoC > 0.0f && distanceAtoC > (distanceAtoB + distanceBtoC) * 0.8f)
               {
-                a->m_neighbours.RemoveData(n);
+                a->m_neighbours.erase(a->m_neighbours.begin() + n);
                 --n;
                 break;
               }
@@ -124,7 +124,7 @@ int AI::FindTargetBuilding(int _fromTargetId, int _fromTeamId)
 
   if (randomMovement)
   {
-    int numNeighbours = fromBuilding->m_neighbours.Size();
+    int numNeighbours = static_cast<int>(fromBuilding->m_neighbours.size());
     if (numNeighbours > 0)
     {
       int neighbourIndex = syncrand() % numNeighbours;
@@ -135,7 +135,7 @@ int AI::FindTargetBuilding(int _fromTargetId, int _fromTeamId)
   {
     float bestPriority = fromBuilding->m_priority[_fromTeamId];
 
-    for (int i = 0; i < fromBuilding->m_neighbours.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(fromBuilding->m_neighbours.size()); ++i)
     {
       int toBuildingId = fromBuilding->m_neighbours[i];
       AITarget* target = (AITarget*)g_location->GetBuilding(toBuildingId);
@@ -357,7 +357,7 @@ AITarget::AITarget()
 
 void AITarget::RecalculateNeighbours()
 {
-  m_neighbours.Empty();
+  m_neighbours.clear();
 
   for (int i = 0; i < g_location->m_buildings.Size(); ++i)
   {
@@ -370,7 +370,7 @@ void AITarget::RecalculateNeighbours()
         bool isWalkable = g_location->IsWalkable(m_pos, building->m_pos, true);
         if (distance <= AITARGET_LINKRANGE && isWalkable)
         {
-          m_neighbours.PutData(building->m_id.GetUniqueId());
+          m_neighbours.push_back(building->m_id.GetUniqueId());
         }
       }
     }
@@ -441,7 +441,7 @@ void AITarget::RecalculateOwnership()
 
 float AITarget::IsNearTo(int _aiTargetId)
 {
-  for (int i = 0; i < m_neighbours.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_neighbours.size()); ++i)
   {
     int thisBuildingId = m_neighbours[i];
     if (thisBuildingId == _aiTargetId)
@@ -509,7 +509,7 @@ void AITarget::RecalculatePriority()
       else
       {
         float prioritySum = 0.0f;
-        for (int i = 0; i < m_neighbours.Size(); ++i)
+        for (int i = 0; i < static_cast<int>(m_neighbours.size()); ++i)
         {
           int neighbourId = m_neighbours[i];
           AITarget* target = (AITarget*)g_location->GetBuilding(neighbourId);
@@ -518,12 +518,12 @@ void AITarget::RecalculatePriority()
             prioritySum += target->m_priority[t];
           }
         }
-        prioritySum /= (float)(m_neighbours.Size() + 1);
+        prioritySum /= (float)(static_cast<int>(m_neighbours.size()) + 1);
         m_priority[t] = prioritySum;
       }
     }
 
-    m_priority[t] += (float)m_neighbours.Size() * 0.01f;
+    m_priority[t] += (float)static_cast<int>(m_neighbours.size()) * 0.01f;
     m_priority[t] = min(m_priority[t], 1.0f);
   }
 }
@@ -563,7 +563,7 @@ void AITarget::RenderAlphas(float _predictionTime)
           glShadeModel( GL_SMOOTH );
           glEnable( GL_BLEND );
 
-          for( int i = 0; i < m_neighbours.Size(); ++i )
+          for( int i = 0; i < static_cast<int>(m_neighbours.size()); ++i )
           {
               int buildingId = m_neighbours[i];
               Building *building = g_location->GetBuilding( buildingId );

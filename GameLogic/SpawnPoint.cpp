@@ -32,7 +32,7 @@ SpawnBuilding::SpawnBuilding()
 
 SpawnBuilding::~SpawnBuilding()
 {
-  m_links.EmptyAndDelete();
+  EmptyAndDelete(m_links);
   // SAFE_DELETE(m_spiritLink); probably not necessary
 }
 
@@ -41,7 +41,7 @@ void SpawnBuilding::Initialise(Building* _template)
   Building::Initialise(_template);
 
   SpawnBuilding* spawn = (SpawnBuilding*)_template;
-  for (int i = 0; i < spawn->m_links.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(spawn->m_links.size()); ++i)
   {
     SpawnBuildingLink* link = spawn->m_links[i];
     SetBuildingLink(link->m_targetBuildingId);
@@ -53,7 +53,7 @@ bool SpawnBuilding::IsInView()
 {
   if (m_visibilityRadius == 0.0f || g_editing)
   {
-    if (m_links.Size() == 0)
+    if (static_cast<int>(m_links.size()) == 0)
     {
       m_visibilityRadius = m_radius;
       m_visibilityMidpoint = m_centrePos;
@@ -67,7 +67,7 @@ bool SpawnBuilding::IsInView()
 
       // Find mid point
 
-      for (int i = 0; i < m_links.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
       {
         SpawnBuildingLink* link = m_links[i];
         SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
@@ -82,7 +82,7 @@ bool SpawnBuilding::IsInView()
 
       // Find radius
 
-      for (int i = 0; i < m_links.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
       {
         SpawnBuildingLink* link = m_links[i];
         SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
@@ -139,7 +139,7 @@ void SpawnBuilding::RenderAlphas(float _predictionTime)
 
   int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail", 1);
 
-  for (int i = 0; i < m_links.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
     SpawnBuildingLink* link = m_links[i];
     SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
@@ -192,7 +192,7 @@ void SpawnBuilding::RenderAlphas(float _predictionTime)
       //
       // Render spirits in transit
 
-      for (int j = 0; j < link->m_spirits.Size(); ++j)
+      for (int j = 0; j < static_cast<int>(link->m_spirits.size()); ++j)
       {
         SpawnBuildingSpirit* spirit = link->m_spirits[j];
         float predictedProgress = spirit->m_currentProgress + _predictionTime;
@@ -213,11 +213,11 @@ void SpawnBuilding::SetBuildingLink(int _buildingId)
 {
   SpawnBuildingLink* link = new SpawnBuildingLink();
   link->m_targetBuildingId = _buildingId;
-  m_links.PutData(link);
+  m_links.push_back(link);
 }
 
 
-void SpawnBuilding::ClearLinks() { m_links.EmptyAndDelete(); }
+void SpawnBuilding::ClearLinks() { EmptyAndDelete(m_links); }
 
 
 std::vector<int>* SpawnBuilding::ExploreLinks()
@@ -229,10 +229,10 @@ std::vector<int>* SpawnBuilding::ExploreLinks()
     result->push_back(m_id.GetUniqueId());
   }
 
-  for (int i = 0; i < m_links.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
     SpawnBuildingLink* link = m_links[i];
-    link->m_targets.Empty();
+    link->m_targets.clear();
 
     SpawnBuilding* target = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
     if (target)
@@ -241,7 +241,7 @@ std::vector<int>* SpawnBuilding::ExploreLinks()
       for (int thisLink : *availableLinks)
       {
         result->push_back(thisLink);
-        link->m_targets.PutData(thisLink);
+        link->m_targets.push_back(thisLink);
       }
       delete availableLinks;
     }
@@ -269,15 +269,15 @@ void SpawnBuilding::TriggerSpirit(SpawnBuildingSpirit* _spirit)
 {
   int numAdds = 0;
 
-  for (int i = 0; i < m_links.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
     SpawnBuildingLink* link = m_links[i];
-    for (int j = 0; j < link->m_targets.Size(); ++j)
+    for (int j = 0; j < static_cast<int>(link->m_targets.size()); ++j)
     {
       int thisLink = link->m_targets[j];
       if (link->m_targets[j] == _spirit->m_targetBuildingId)
       {
-        link->m_spirits.PutData(_spirit);
+        link->m_spirits.push_back(_spirit);
         _spirit->m_currentProgress = 0.0f;
         ++numAdds;
       }
@@ -298,16 +298,16 @@ bool SpawnBuilding::Advance()
   //
   // Advance all spirits in transit
 
-  for (int i = 0; i < m_links.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
     SpawnBuildingLink* link = m_links[i];
-    for (int j = 0; j < link->m_spirits.Size(); ++j)
+    for (int j = 0; j < static_cast<int>(link->m_spirits.size()); ++j)
     {
       SpawnBuildingSpirit* spirit = link->m_spirits[j];
       spirit->m_currentProgress += SERVER_ADVANCE_PERIOD;
       if (spirit->m_currentProgress >= 1.0f)
       {
-        link->m_spirits.RemoveData(j);
+        link->m_spirits.erase(link->m_spirits.begin() + j);
         --j;
         SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
         if (building)
@@ -339,7 +339,7 @@ void SpawnBuilding::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  for (int i = 0; i < m_links.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
     SpawnBuildingLink* link = m_links[i];
     _out->printf("%-6d", link->m_targetBuildingId);
@@ -416,11 +416,11 @@ bool MasterSpawnPoint::Advance()
 
   if (m_isGlobal)
   {
-    for (int i = 0; i < g_location->m_spirits.Size(); ++i)
+    for (int i = 0; i < g_location->static_cast<int>(m_spirits.size()); ++i)
     {
-      if (g_location->m_spirits.ValidIndex(i))
+      if (g_location->ValidIndex(m_spirits, i))
       {
-        Spirit* s = g_location->m_spirits.GetPointer(i);
+        Spirit* s = g_location->& m_spirits[i];
         if (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating)
         {
           s->SkipStage();
