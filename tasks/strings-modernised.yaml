@@ -216,7 +216,56 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    notes: |
+      DONE 2026-08-03. Nine files, 56 sites. Four of them turned up defects the
+      conversion had to decide about rather than mechanically rewrite.
+
+      FILESYSUTILS' UB EDGES ARE DEFINED NOW, which the task allowed provided it
+      was not silent. GetFilenamePart and GetExtensionPart both read
+      `strrchr(path, sep) + 1` and then tested for null — the +1 happens first,
+      so a path with no separator produced 0x1 and the read that followed went
+      to address 1. A bare filename returns itself; a name with no dot returns
+      EMPTY rather than null, because every caller passes the result straight to
+      stricmp or a BitmapRGBA constructor without checking. Three tests cover
+      the edges and the existing tests, including the null-directory one, pass
+      unchanged.
+
+      STILL OWED, deliberately: all four helpers return a pointer into one
+      shared static, so only one result is valid at a time. That is the hazard
+      T10 removed from ConvertIntToIP, and fixing it means returning by value —
+      five callers and a test that asserts null. Its own task, not a rider on
+      this one.
+
+      THREE UNBOUNDED WRITES FOUND, none of them the point of the task.
+      LangTable::specific_key_exists filled a char[128] with a 123-byte bounded
+      copy and then wrote the mode suffix at key + strlen(_key) — the
+      UNtruncated length — so a long key wrote its suffix past the end, and the
+      truncation meant to prevent that made it worse by leaving the offset
+      outside the buffer. SoundSystem's three blueprint name copies were
+      unbounded into char[256]. PersistingDebugRender formatted into a char[512]
+      with no bound before truncating to 63.
+
+      A NULL DEREFERENCE THAT NEVER FIRED: DirectSoundData::m_hwDescription is a
+      char* left at nullptr and never allocated, and the enumeration callback
+      appended to it. It never crashed because nothing registers the callback
+      and nothing reads the field. It is a std::string now.
+
+      A DEAD-CODE BUG FIXED FOR FREE: folding PersistingDebugRender's four
+      duplicated bodies into one Record() showed that Sphere and Vector never
+      copied the label in, while FindItem looks items up BY label — so an item
+      recorded by either could never be found again and every call took a fresh
+      slot. Safe to fix because nothing calls any of the four; only Render() is
+      reached.
+
+      THE ACCEPTANCE GREP MATCHES PROSE, same as containers/T16's did. Three
+      comments explaining what the old code did had to be reworded so they did
+      not name the banned functions. Worth knowing before writing the next one.
+
+      std::min IS NOT AVAILABLE anywhere MathUtils.h is reachable — its
+      function-style macros turn `std::min(` into `std::(...)(`. Every clamp
+      here is written out, as NetworkUpdate::SetClientIp already was. See
+      language-hygiene/T8.
+    status: done
 
   - id: T5
     title: Convert GameLogic window and editor string handling

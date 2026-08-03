@@ -19,7 +19,9 @@
 // Class Misc Static Data
 //*****************************************************************************
 
-static char s_dxErrorMsg[512];
+// Formatted lazily by DSoundErrorString and SOUNDASSERT. Static because
+// DSoundErrorString returns a pointer into it.
+static std::string s_dxErrorText;
 
 // DXGetErrorString9/DXGetErrorDescription9 came from DXERR9.H in the retired
 // DirectX SDK, which no longer ships with the Windows SDK. FormatMessage gives
@@ -31,7 +33,8 @@ static char const* DSoundErrorString(HRESULT _hr)
   DWORD len = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, (DWORD)_hr, 0, buf, sizeof(buf), nullptr);
   if (len == 0)
   {
-    sprintf(buf, "HRESULT 0x%08lx", (unsigned long)_hr);
+    s_dxErrorText = std::format("HRESULT 0x{:08x}", static_cast<unsigned long>(_hr));
+    return s_dxErrorText.c_str();
   }
   else
   {
@@ -43,16 +46,18 @@ static char const* DSoundErrorString(HRESULT _hr)
   return buf;
 }
 
-#define SOUNDASSERT(x, y)                                                                                                      \
-  {                                                                                                                            \
-    if (x != DS_OK && x != S_FALSE)                                                                                            \
-    {                                                                                                                          \
-      sprintf(s_dxErrorMsg, "0x%08lx %s", (unsigned long)(x), DSoundErrorString(x));                                           \
-      char msg[512];                                                                                                           \
-      sprintf(msg, "DirectSound ERROR\n%s line %d\n\n%s\nError Code : 0x%08lx\n%s", __FILE__, __LINE__, y, (unsigned long)(x), \
-              DSoundErrorString(x));                                                                                           \
-      ASSERT_TEXT(false, msg);                                                                                                 \
-    }                                                                                                                          \
+// DSoundErrorString returns a pointer into s_dxErrorText, so the two calls the
+// old macro made could not both be live at once — the first was overwritten by
+// the second before either was read. One call, held in a local, fixes that.
+#define SOUNDASSERT(x, y)                                                                                                                 \
+  {                                                                                                                                       \
+    if (x != DS_OK && x != S_FALSE)                                                                                                       \
+    {                                                                                                                                     \
+      const std::string reason = DSoundErrorString(x);                                                                                    \
+      const std::string msg =                                                                                                             \
+        std::format("DirectSound ERROR\n{} line {}\n\n{}\nError Code : 0x{:08x}\n{}", __FILE__, __LINE__, y, (unsigned long)(x), reason); \
+      ASSERT_TEXT(false, "%s", msg.c_str());                                                                                              \
+    }                                                                                                                                     \
   }
 
 
@@ -82,7 +87,11 @@ class DirectSoundData
     IDirectSoundBuffer* m_primaryBuffer;
     DSCAPS m_caps; // Cached because some information requests don't require
                    // the value to be read, and some do, and its probably slow
-    static char* m_hwDescription;
+    // Accumulated by the enumeration callback below. It was a `char *` left at
+    // nullptr and never allocated, so the append that followed dereferenced
+    // null — the only reason that never fired is that nothing in the tree reads
+    // this and the callback is not registered anywhere.
+    static std::string m_hwDescription;
     static int m_hwNumDevices;
 
     DirectSoundData()
@@ -92,7 +101,7 @@ class DirectSoundData
     }
 };
 
-char* DirectSoundData::m_hwDescription = nullptr;
+std::string DirectSoundData::m_hwDescription;
 int DirectSoundData::m_hwNumDevices = 0;
 
 
@@ -426,9 +435,7 @@ BOOL CALLBACK DSEnumProc(LPGUID lpGUID, LPCTSTR lpszDesc, LPCTSTR lpszDrvName, L
 {
   if (lpGUID)
   {
-    char thisDriver[512];
-    sprintf(thisDriver, "%d : %s\n", DirectSoundData::m_hwNumDevices, lpszDesc);
-    strcat(DirectSoundData::m_hwDescription, thisDriver);
+    DirectSoundData::m_hwDescription += std::format("{} : {}\n", DirectSoundData::m_hwNumDevices, lpszDesc);
     DirectSoundData::m_hwNumDevices++;
   }
   return true;

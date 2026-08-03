@@ -6,6 +6,7 @@
 #include "FileWriter.h"
 #include "Resource.h"
 #include "Shape.h"
+#include "StringUtils.h"
 #include "TextRenderer.h"
 #include "TextStreamReaders.h"
 #include "Preferences.h"
@@ -109,10 +110,9 @@ int Resource::GetTexture(const char* _name, bool _mipMapping, bool _masked)
   // If we still didn't find it, try to load it from a file on the disk
   if (theTexture == -1)
   {
-    char fullPath[512];
-    sprintf(fullPath, "%s", _name);
-    strlwr(fullPath);
-    BinaryReader* reader = GetBinaryReader(fullPath);
+    std::string fullPath(_name);
+    StrToLower(fullPath.data());
+    BinaryReader* reader = GetBinaryReader(fullPath.c_str());
 
     if (reader)
     {
@@ -129,9 +129,7 @@ int Resource::GetTexture(const char* _name, bool _mipMapping, bool _masked)
 
   if (theTexture == -1)
   {
-    char errorString[512];
-    sprintf(errorString, "Failed to load texture %s", _name);
-    ASSERT_TEXT(false, errorString);
+    ASSERT_TEXT(false, "Failed to load texture %s", _name);
   }
 
   return theTexture;
@@ -150,10 +148,9 @@ bool Resource::DoesTextureExist(const char* _name)
     return true;
 
   // If we still didn't find it, try to load it from a file on the disk
-  char fullPath[512];
-  sprintf(fullPath, "%s", _name);
-  strlwr(fullPath);
-  BinaryReader* reader = GetBinaryReader(fullPath);
+  std::string fullPath(_name);
+  StrToLower(fullPath.data());
+  BinaryReader* reader = GetBinaryReader(fullPath.c_str());
   if (reader)
     return true;
 
@@ -188,13 +185,12 @@ Shape* Resource::GetShape(const char* _name)
 
 Shape* Resource::GetShapeCopy(const char* _name, bool _animating)
 {
-  char fullPath[512];
   Shape* theShape = nullptr;
 
-  sprintf(fullPath, "Shapes/%s", _name);
-  strlwr(fullPath);
-  if (DoesFileExist(fullPath))
-    theShape = new Shape(fullPath, _animating);
+  std::string fullPath = std::format("Shapes/{}", _name);
+  StrToLower(fullPath.data());
+  if (DoesFileExist(fullPath.c_str()))
+    theShape = new Shape(fullPath.c_str(), _animating);
 
   ASSERT_TEXT(theShape, "Couldn't create shape file %s", _name);
   return theShape;
@@ -202,9 +198,8 @@ Shape* Resource::GetShapeCopy(const char* _name, bool _animating)
 
 SoundStreamDecoder* Resource::GetSoundStreamDecoder(const char* _filename)
 {
-  char buf[256];
-  sprintf(buf, "%s.wav", _filename);
-  BinaryReader* binReader = GetBinaryReader(buf);
+  const std::string wavName = std::format("{}.wav", _filename);
+  BinaryReader* binReader = GetBinaryReader(wavName.c_str());
 
   if (!binReader || !binReader->IsOpen())
     return nullptr;
