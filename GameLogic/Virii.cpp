@@ -656,7 +656,7 @@ WorldObjectId Virii::FindNearbyEgg(Vector3 const& _pos)
   //
   // Build a list of candidates within range
 
-  LList<WorldObjectId> eggIds;
+  std::vector<WorldObjectId> eggIds;
 
   for (int i = 0; i < numFound; ++i)
   {
@@ -665,7 +665,7 @@ WorldObjectId Virii::FindNearbyEgg(Vector3 const& _pos)
 
     if (egg && egg->m_state == Egg::StateDormant && egg->m_onGround)
     {
-      eggIds.PutData(id);
+      eggIds.push_back(id);
     }
   }
 
@@ -673,10 +673,10 @@ WorldObjectId Virii::FindNearbyEgg(Vector3 const& _pos)
   //
   // Chose one randomly
 
-  if (eggIds.Size() > 0)
+  if (!eggIds.empty())
   {
-    int chosenIndex = syncfrand(eggIds.Size());
-    WorldObjectId* eggId = eggIds.GetPointer(chosenIndex);
+    int chosenIndex = syncfrand(static_cast<int>(eggIds.size()));
+    WorldObjectId* eggId = &eggIds[chosenIndex];
     return *eggId;
   }
   else

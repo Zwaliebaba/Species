@@ -220,13 +220,13 @@ void SpawnBuilding::SetBuildingLink(int _buildingId)
 void SpawnBuilding::ClearLinks() { m_links.EmptyAndDelete(); }
 
 
-LList<int>* SpawnBuilding::ExploreLinks()
+std::vector<int>* SpawnBuilding::ExploreLinks()
 {
-  LList<int>* result = new LList<int>();
+  auto result = new std::vector<int>();
 
   if (m_type == TypeSpawnPoint)
   {
-    result->PutData(m_id.GetUniqueId());
+    result->push_back(m_id.GetUniqueId());
   }
 
   for (int i = 0; i < m_links.Size(); ++i)
@@ -237,11 +237,10 @@ LList<int>* SpawnBuilding::ExploreLinks()
     SpawnBuilding* target = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
     if (target)
     {
-      LList<int>* availableLinks = target->ExploreLinks();
-      for (int j = 0; j < availableLinks->Size(); ++j)
+      std::vector<int>* availableLinks = target->ExploreLinks();
+      for (int thisLink : *availableLinks)
       {
-        int thisLink = availableLinks->GetData(j);
-        result->PutData(thisLink);
+        result->push_back(thisLink);
         link->m_targets.PutData(thisLink);
       }
       delete availableLinks;

@@ -19,7 +19,7 @@
 #include "InsertionSquad.h"
 #include "WorldPointers.h"
 
-LList<TeleportMap> Teleport::m_teleportMap;
+std::vector<TeleportMap> Teleport::m_teleportMap;
 
 
 // *** Constructor
@@ -77,14 +77,14 @@ bool Teleport::Advance()
   // If a unit no longer exists, remove it from our teleport map
   // to prevent confusion (since unit ids are re-used)
 
-  for (int i = 0; i < m_teleportMap.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_teleportMap.size()); ++i)
   {
-    TeleportMap* map = m_teleportMap.GetPointer(i);
+    TeleportMap* map = &m_teleportMap[i];
     WorldObjectId unitId(map->m_teamId, map->m_fromUnitId, -1, -1);
     Unit* unit = g_location->GetUnit(unitId);
     if (!unit)
     {
-      m_teleportMap.RemoveData(i);
+      m_teleportMap.erase(m_teleportMap.begin() + i);
       --i;
     }
   }
@@ -203,9 +203,9 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
         // Look for the new unit that i'm going to
 
         int newUnitId = -1;
-        for (int i = 0; i < m_teleportMap.Size(); ++i)
+        for (int i = 0; i < static_cast<int>(m_teleportMap.size()); ++i)
         {
-          TeleportMap* map = m_teleportMap.GetPointer(i);
+          TeleportMap* map = &m_teleportMap[i];
           if (map->m_teamId == _id.GetTeamId() && map->m_fromUnitId == _id.GetUnitId())
           {
             newUnitId = map->m_toUnitId;
@@ -292,7 +292,7 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
           map.m_teamId = entity->m_id.GetTeamId();
           map.m_fromUnitId = oldUnit->m_unitId;
           map.m_toUnitId = newUnit->m_unitId;
-          m_teleportMap.PutDataAtStart(map);
+          m_teleportMap.insert(m_teleportMap.begin(), map);
         }
 
         DEBUG_ASSERT(newUnit);

@@ -35,11 +35,11 @@ void AirstrikeUnit::Begin()
     float landSizeX = g_location->m_landscape.GetWorldSizeX();
     float landSizeZ = g_location->m_landscape.GetWorldSizeZ();
 
-    DArray<Vector3> startPositions;
-    startPositions.PutData( Vector3(inset,startHeight,inset) );
-    startPositions.PutData( Vector3(inset,startHeight,landSizeZ-inset) );
-    startPositions.PutData( Vector3(landSizeX-inset,startHeight,landSizeZ-inset) );
-    startPositions.PutData( Vector3(landSizeX-inset,startHeight,inset) );
+    std::vector<Vector3> startPositions;
+    startPositions.push_back(Vector3(inset, startHeight, inset));
+    startPositions.push_back(Vector3(inset, startHeight, landSizeZ - inset));
+    startPositions.push_back(Vector3(landSizeX - inset, startHeight, landSizeZ - inset));
+    startPositions.push_back(Vector3(landSizeX - inset, startHeight, inset));
 
     int enterIndex = -1;
     int exitIndex = -1;
@@ -48,7 +48,7 @@ void AirstrikeUnit::Begin()
     //
     // Choose the nearest corner as the exit position
 
-    for( int i = 0; i < startPositions.Size(); ++i )
+    for (int i = 0; i < static_cast<int>(startPositions.size()); ++i)
     {
         Vector3 thisPos = startPositions[i];
         float thisDist = ( thisPos - m_attackPosition ).Mag();
@@ -63,7 +63,7 @@ void AirstrikeUnit::Begin()
     // Choose the next nearest corner as the entry position
 
     nearest = 99999.9f;
-    for( int i = 0; i < startPositions.Size(); ++i )
+    for (int i = 0; i < static_cast<int>(startPositions.size()); ++i)
     {
         if( i != exitIndex )
         {

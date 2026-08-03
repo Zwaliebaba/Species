@@ -17,9 +17,9 @@
 
 namespace
 {
-  // LList::ValidIndex, spelled out. Worth keeping rather than dropping: every
+  // the legacy list's ValidIndex, spelled out. Worth keeping rather than dropping: every
   // index below arrives from the scroll bar or from a stale selection, so
-  // these really are range tests and not redundant assertions. LList::GetData
+  // these really are range tests and not redundant assertions. the legacy list's GetData
   // also returned a null T() out of range, which std::vector will not do.
   bool ValidIndex(const std::vector<char*>* _files, int _index) { return _index >= 0 && _index < static_cast<int>(_files->size()); }
 } // namespace
@@ -36,7 +36,7 @@ class FileOKButton : public SpeciesButton
     {
       FileDialog* fd = (FileDialog*)m_parent;
 
-      for (int i = 0; i < fd->m_selected.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(fd->m_selected.size()); ++i)
       {
         int index = fd->m_selected[i];
         DEBUG_ASSERT(ValidIndex(fd->m_files, index));
@@ -139,15 +139,15 @@ class SelectedButton : public SpeciesButton
     void Render(int realX, int realY, bool highlighted, bool clicked)
     {
       FileDialog* fd = (FileDialog*)m_parent;
-      if (fd->m_selected.Size() > 1)
+      if (static_cast<int>(fd->m_selected.size()) > 1)
       {
         SetCaption(LANGUAGEPHRASE("dialog_multiplefiles"));
       }
-      else if (fd->m_selected.Size() == 1)
+      else if (static_cast<int>(fd->m_selected.size()) == 1)
       {
         int index = fd->m_selected[0];
         // RefreshFileList empties m_selected, so this index should be live.
-        // The guard is what LList::GetData used to do for free.
+        // The guard is what the legacy list's GetData used to do for free.
         char* filename = ValidIndex(fd->m_files, index) ? (*fd->m_files)[index] : nullptr;
         SetCaption(filename);
       }
@@ -191,7 +191,7 @@ FileDialog::~FileDialog()
   if (m_files)
   {
     // ListResources hands back names allocated with `new char[]`.
-    // LList::EmptyAndDelete used plain `delete`, which was the wrong form;
+    // the legacy list's EmptyAndDelete used plain `delete`, which was the wrong form;
     // writing the loop out makes the right one visible.
     for (char* file : *m_files)
       delete[] file;
@@ -199,7 +199,7 @@ FileDialog::~FileDialog()
     m_files = nullptr;
   }
 
-  m_selected.Empty();
+  m_selected.clear();
 
   delete m_scrollBar;
 }
@@ -281,7 +281,7 @@ void FileDialog::RefreshFileList()
     m_files = nullptr;
   }
 
-  m_selected.Empty();
+  m_selected.clear();
 
   m_files = g_resource->ListResources(m_path, m_filter, false);
 
@@ -294,24 +294,24 @@ void FileDialog::FileClicked(int index)
 
   if (!m_allowMultiSelect || !ctrlKey)
   {
-    m_selected.Empty();
+    m_selected.clear();
   }
 
   int alreadySelected = IsFileSelected(index);
   if (alreadySelected != -1 && m_allowMultiSelect)
   {
-    m_selected.RemoveData(alreadySelected);
+    m_selected.erase(m_selected.begin() + alreadySelected);
   }
   else
   {
-    m_selected.PutData(index);
+    m_selected.push_back(index);
   }
 }
 
 
 int FileDialog::IsFileSelected(int index)
 {
-  for (int i = 0; i < m_selected.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_selected.size()); ++i)
   {
     if (m_selected[i] == index)
     {

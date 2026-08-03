@@ -242,7 +242,7 @@ bool AI::Advance(Unit* _unit)
   //
   // Look for buildings that are well defended
 
-  LList<int> m_wellDefendedIds;
+  std::vector<int> m_wellDefendedIds;
   for (int i = 0; i < g_location->m_buildings.Size(); ++i)
   {
     if (g_location->m_buildings.ValidIndex(i))
@@ -257,7 +257,7 @@ bool AI::Advance(Unit* _unit)
 
         if (idleCount > 30 && enemyCount < friendCount * 0.33f)
         {
-          m_wellDefendedIds.PutData(i);
+          m_wellDefendedIds.push_back(i);
         }
       }
     }
@@ -268,7 +268,7 @@ bool AI::Advance(Unit* _unit)
   // For each well defended building, choose a valid nearby target
   // and send some troops to it
 
-  for (int i = 0; i < m_wellDefendedIds.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_wellDefendedIds.size()); ++i)
   {
     int buildingIndex = m_wellDefendedIds[i];
     AITarget* target = (AITarget*)g_location->m_buildings[buildingIndex];

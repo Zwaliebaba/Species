@@ -241,7 +241,7 @@ void InsertionSquad::Attack(Vector3 pos, bool withGrenade)
   //
   // Build a list of squadies that can attack now
 
-  LList<int> canAttack;
+  std::vector<int> canAttack;
   for (int i = 0; i < m_entities.Size(); ++i)
   {
     if (m_entities.ValidIndex(i))
@@ -249,32 +249,32 @@ void InsertionSquad::Attack(Vector3 pos, bool withGrenade)
       Squadie* ent = (Squadie*)m_entities[i];
       if (ent->m_enabled && !ent->m_dead && ent->m_reloading == 0.0f)
       {
-        canAttack.PutData(i);
+        canAttack.push_back(i);
       }
     }
   }
 
 
-  if (canAttack.Size() > 0)
+  if (!canAttack.empty())
   {
     //
     // Decide the maximum number of entities
     // that can attack now without pauses appearing in fire rate
 
     float reloadTime = EntityBlueprint::GetStat(m_troopType, Entity::StatRate);
-    float timeToWait = (float)reloadTime / (float)canAttack.Size();
+    float timeToWait = (float)reloadTime / (float)static_cast<int>(canAttack.size());
     m_attackAccumulator += ((float)SERVER_ADVANCE_PERIOD / timeToWait);
 
 
     //
     // Pick guys randomly to attack
 
-    while (canAttack.Size() > 0 && m_attackAccumulator >= 1.0f)
+    while (!canAttack.empty() && m_attackAccumulator >= 1.0f)
     {
       m_attackAccumulator -= 1.0f;
-      int randomIndex = syncfrand(canAttack.Size());
+      int randomIndex = syncfrand(static_cast<int>(canAttack.size()));
       int entityIndex = canAttack[randomIndex];
-      canAttack.RemoveData(randomIndex);
+      canAttack.erase(canAttack.begin() + randomIndex);
       Entity* ent = m_entities[entityIndex];
       ent->Attack(pos);
     }

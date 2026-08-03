@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "Entity.h"
-#include "FastDArray.h"
+#include "SlotMap.h"
 
 #define SOULDESTROYER_MINSEARCHRANGE       200.0f
 #define SOULDESTROYER_MAXSEARCHRANGE       300.0f
@@ -21,8 +21,8 @@ protected:
     Vector3         m_targetPos;
     Vector3         m_up;
     WorldObjectId   m_targetEntity;
-    LList<Vector3>  m_positionHistory;
-    FastDArray      <float> m_spirits;
+    std::vector<Vector3> m_positionHistory;
+    FastSlotMap<float> m_spirits;
 
     float           m_retargetTimer;
     float           m_panic;

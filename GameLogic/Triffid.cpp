@@ -284,20 +284,20 @@ void Triffid::Launch()
   //
   // Determine what sort of egg to launch
 
-  LList<int> possibleSpawns;
+  std::vector<int> possibleSpawns;
   for (int i = 0; i < NumSpawnTypes; ++i)
   {
     if (m_spawn[i])
-      possibleSpawns.PutData(i);
+      possibleSpawns.push_back(i);
   }
 
-  if (possibleSpawns.Size() == 0)
+  if (possibleSpawns.empty())
   {
     // Can't spawn anything
     return;
   }
 
-  int spawnIndex = syncrand() % possibleSpawns.Size();
+  int spawnIndex = syncrand() % static_cast<int>(possibleSpawns.size());
   int spawnType = possibleSpawns[spawnIndex];
 
 

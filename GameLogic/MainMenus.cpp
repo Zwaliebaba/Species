@@ -639,7 +639,7 @@ void SkipPrologueWindow::Render(bool _hasFocus)
 
   // Element 0 is the one allocation the whole list points into, so this one
   // delete[] releases every line. It was a plain `delete` over a `new char[]`,
-  // and the emptiness check is not redundant: LList::GetData answered an
+  // and the emptiness check is not redundant: the legacy list's GetData answered an
   // out-of-range read with a null, so `delete wrapped->GetData(0)` was harmless
   // on an empty list where std::vector would be undefined behaviour.
   if (!wrapped->empty())
@@ -714,7 +714,7 @@ void PlayPrologueWindow::Render(bool _hasFocus)
 
   // Element 0 is the one allocation the whole list points into, so this one
   // delete[] releases every line. It was a plain `delete` over a `new char[]`,
-  // and the emptiness check is not redundant: LList::GetData answered an
+  // and the emptiness check is not redundant: the legacy list's GetData answered an
   // out-of-range read with a null, so `delete wrapped->GetData(0)` was harmless
   // on an empty list where std::vector would be undefined behaviour.
   if (!wrapped->empty())

@@ -20,7 +20,7 @@ protected:
 
     float       m_timeSync;
     float       m_sendPeriod;                                   // Minimum time between sends
-    static      LList<TeleportMap> m_teleportMap;               // Maps units going in onto units comingout
+    static std::vector<TeleportMap> m_teleportMap;              // Maps units going in onto units comingout
 
     ShapeMarker *m_entrance;
 

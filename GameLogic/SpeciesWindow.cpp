@@ -321,7 +321,7 @@ SpeciesWindow::SpeciesWindow( char const *name )
 SpeciesWindow::~SpeciesWindow()
 {
   std::vector<EclWindow*>* windows = EclGetWindows();
-  // The emptiness check is not redundant. LList::GetData returned a null T()
+  // The emptiness check is not redundant. the legacy list's GetData returned a null T()
   // for an out-of-range read — LListTests pins that as
   // OutOfRangeReadsReturnZero — so this `if` was doing double duty as a
   // bounds check. std::vector would be undefined behaviour on an empty list.

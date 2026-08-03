@@ -1219,7 +1219,7 @@ bool Citizen::SearchForArmour()
   //
   // Build a list of nearby armour
 
-  LList<WorldObjectId> m_armour;
+  std::vector<WorldObjectId> m_armour;
 
   Team* team = g_location->GetMyTeam();
 
@@ -1235,7 +1235,7 @@ bool Citizen::SearchForArmour()
         float range = (armour->m_pos - m_pos).Mag();
         if (range <= CITIZEN_SEARCHRANGE_ARMOUR && armour->IsLoading())
         {
-          m_armour.PutData(id);
+          m_armour.push_back(id);
         }
       }
     }
@@ -1244,15 +1244,15 @@ bool Citizen::SearchForArmour()
   //
   // Select armour randomly
 
-  if (m_armour.Size() > 0)
+  if (!m_armour.empty())
   {
-    int chosenIndex = rand() % m_armour.Size();
-    m_armourId = *m_armour.GetPointer(chosenIndex);
+    int chosenIndex = rand() % static_cast<int>(m_armour.size());
+    m_armourId = *&m_armour[chosenIndex];
     m_state = StateApproachingArmour;
   }
 
   END_PROFILE(g_profiler, "SearchArmour");
-  return (m_armour.Size() > 0);
+  return (!m_armour.empty());
 }
 
 
@@ -1295,7 +1295,7 @@ bool Citizen::SearchForOfficers()
 
   if (team)
   {
-    LList<WorldObjectId> officers;
+    std::vector<WorldObjectId> officers;
     float nearest = 99999.9f;
     WorldObjectId nearestId;
 
@@ -1309,7 +1309,7 @@ bool Citizen::SearchForOfficers()
         float distance = (officer->m_pos - m_pos).Mag();
         if (distance < CITIZEN_SEARCHRANGE_OFFICERS && officer->m_orders == Officer::OrderGoto)
         {
-          officers.PutData(id);
+          officers.push_back(id);
         }
         else if (officer->m_orders == Officer::OrderFollow && distance > 50.0f && distance < nearest)
         {
@@ -1323,10 +1323,10 @@ bool Citizen::SearchForOfficers()
     //
     // Select a GOTO officer randomly
 
-    if (officers.Size() > 0)
+    if (!officers.empty())
     {
-      int chosenOfficer = syncrand() % officers.Size();
-      WorldObjectId officerId = *officers.GetPointer(chosenOfficer);
+      int chosenOfficer = syncrand() % static_cast<int>(officers.size());
+      WorldObjectId officerId = *&officers[chosenOfficer];
       Officer* officer = (Officer*)g_location->GetEntitySafe(officerId, TypeOfficer);
       DEBUG_ASSERT(officer);
 
@@ -1359,7 +1359,7 @@ bool Citizen::SearchForOfficers()
     // If there aren't any officers nearby, look for officers
     // with the FOLLOW order set and head for them
 
-    if (officers.Size() == 0 && nearestId.IsValid())
+    if (officers.empty() && nearestId.IsValid())
     {
       m_officerId = nearestId;
       Officer* officer = (Officer*)g_location->GetEntitySafe(m_officerId, TypeOfficer);
@@ -1684,7 +1684,7 @@ bool Citizen::SearchForPorts()
   //
   // Build a list of available buildings
 
-  LList<int> availableBuildings;
+  std::vector<int> availableBuildings;
 
   for (int i = 0; i < g_location->m_buildings.Size(); ++i)
   {
@@ -1697,13 +1697,13 @@ bool Citizen::SearchForPorts()
       {
         if (building->GetNumPortsOccupied() < building->GetNumPorts())
         {
-          availableBuildings.PutData(building->m_id.GetUniqueId());
+          availableBuildings.push_back(building->m_id.GetUniqueId());
         }
       }
     }
   }
 
-  if (availableBuildings.Size() == 0)
+  if (availableBuildings.empty())
   {
     END_PROFILE(g_profiler, "SearchPorts");
     return false;
@@ -1713,7 +1713,7 @@ bool Citizen::SearchForPorts()
   //
   // Select a random building
 
-  int chosenBuildingIndex = syncrand() % availableBuildings.Size();
+  int chosenBuildingIndex = syncrand() % static_cast<int>(availableBuildings.size());
   Building* chosenBuilding = g_location->GetBuilding(availableBuildings[chosenBuildingIndex]);
   DEBUG_ASSERT(chosenBuilding);
 
@@ -1721,12 +1721,12 @@ bool Citizen::SearchForPorts()
   //
   // Build a list of available ports;
 
-  LList<int> availablePorts;
+  std::vector<int> availablePorts;
   for (int p = 0; p < chosenBuilding->GetNumPorts(); ++p)
   {
     if (!chosenBuilding->GetPortOccupant(p).IsValid() && chosenBuilding->GetPortOperatorCount(p, m_id.GetTeamId()) < 20)
     {
-      availablePorts.PutData(p);
+      availablePorts.push_back(p);
     }
   }
 
@@ -1734,13 +1734,13 @@ bool Citizen::SearchForPorts()
   //
   // Select a random port
 
-  if (availablePorts.Size() == 0)
+  if (availablePorts.empty())
   {
     END_PROFILE(g_profiler, "SearchPorts");
     return false;
   }
 
-  int randomSelection = syncrand() % availablePorts.Size();
+  int randomSelection = syncrand() % static_cast<int>(availablePorts.size());
   m_buildingId = chosenBuilding->m_id.GetUniqueId();
   m_portId = availablePorts[randomSelection];
   m_state = StateApproachingPort;

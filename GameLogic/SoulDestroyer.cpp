@@ -85,19 +85,19 @@ void SoulDestroyer::ChangeHealth(int _amount)
     if (m_dead)
     {
       // We just died
-      for (int i = 1; i < m_positionHistory.Size(); i += 1)
+      for (int i = 1; i < static_cast<int>(m_positionHistory.size()); i += 1)
       {
-        Vector3 pos1 = *m_positionHistory.GetPointer(i);
-        Vector3 pos2 = *m_positionHistory.GetPointer(i - 1);
+        Vector3 pos1 = *&m_positionHistory[i];
+        Vector3 pos2 = *&m_positionHistory[i - 1];
 
         Vector3 pos = pos1 + (pos2 - pos1);
         Vector3 front = (pos2 - pos1).Normalise();
         Vector3 right = front ^ g_upVector;
         Vector3 up = right ^ front;
 
-        float scale = 1.0f - ((float)i / (float)m_positionHistory.Size());
+        float scale = 1.0f - ((float)i / (float)static_cast<int>(m_positionHistory.size()));
         scale *= 1.5f;
-        if (i == m_positionHistory.Size() - 1)
+        if (i == static_cast<int>(m_positionHistory.size()) - 1)
           scale = 0.8f;
         scale = max(scale, 0.5f);
 
@@ -342,27 +342,27 @@ void SoulDestroyer::RecordHistoryPosition()
 {
   Matrix34 mat(m_front, m_up, m_pos);
   Vector3 tailPos = s_tailMarker->GetWorldMatrix(mat).pos;
-  m_positionHistory.PutDataAtStart(tailPos);
+  m_positionHistory.insert(m_positionHistory.begin(), tailPos);
 
   // int maxHistorys = 11;
   int maxHistorys = m_roamRange / 30.0f;
   maxHistorys = max(9, maxHistorys);
   maxHistorys = min(25, maxHistorys);
 
-  for (int i = maxHistorys; i < m_positionHistory.Size(); ++i)
+  for (int i = maxHistorys; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
-    m_positionHistory.RemoveData(i);
+    m_positionHistory.erase(m_positionHistory.begin() + i);
   }
 }
 
 
 bool SoulDestroyer::GetTrailPosition(Vector3& _pos, Vector3& _vel)
 {
-  if (m_positionHistory.Size() < 2)
+  if (static_cast<int>(m_positionHistory.size()) < 2)
     return false;
 
-  Vector3 pos1 = *m_positionHistory.GetPointer(1);
-  Vector3 pos2 = *m_positionHistory.GetPointer(0);
+  Vector3 pos1 = *&m_positionHistory[1];
+  Vector3 pos2 = *&m_positionHistory[0];
 
   _pos = pos1 + (pos2 - pos1);
   _vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
@@ -443,10 +443,10 @@ void SoulDestroyer::RenderShapes(float _predictionTime)
   s_shapeHead->Render(_predictionTime, mat);
 
 
-  for (int i = 1; i < m_positionHistory.Size(); i += 1)
+  for (int i = 1; i < static_cast<int>(m_positionHistory.size()); i += 1)
   {
-    Vector3 pos1 = *m_positionHistory.GetPointer(i);
-    Vector3 pos2 = *m_positionHistory.GetPointer(i - 1);
+    Vector3 pos1 = *&m_positionHistory[i];
+    Vector3 pos2 = *&m_positionHistory[i - 1];
 
     Vector3 pos = pos1 + (pos2 - pos1);
     Vector3 front = (pos2 - pos1).Normalise();
@@ -455,9 +455,9 @@ void SoulDestroyer::RenderShapes(float _predictionTime)
     Vector3 vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
     pos += vel * _predictionTime;
 
-    float scale = 1.0f - ((float)i / (float)m_positionHistory.Size());
+    float scale = 1.0f - ((float)i / (float)static_cast<int>(m_positionHistory.size()));
     scale *= 1.5f;
-    if (i == m_positionHistory.Size() - 1)
+    if (i == static_cast<int>(m_positionHistory.size()) - 1)
       scale = 0.8f;
     scale = max(scale, 0.5f);
 
@@ -486,10 +486,10 @@ void SoulDestroyer::RenderShapesForPixelEffect(float _predictionTime)
 
   g_renderer->MarkUsedCells(s_shapeHead, mat);
 
-  for (int i = 1; i < m_positionHistory.Size(); i += 1)
+  for (int i = 1; i < static_cast<int>(m_positionHistory.size()); i += 1)
   {
-    Vector3 pos1 = *m_positionHistory.GetPointer(i);
-    Vector3 pos2 = *m_positionHistory.GetPointer(i - 1);
+    Vector3 pos1 = *&m_positionHistory[i];
+    Vector3 pos2 = *&m_positionHistory[i - 1];
 
     Vector3 pos = pos1 + (pos2 - pos1);
     Vector3 front = (pos2 - pos1).Normalise();
@@ -498,9 +498,9 @@ void SoulDestroyer::RenderShapesForPixelEffect(float _predictionTime)
     Vector3 vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
     pos += vel * _predictionTime;
 
-    float scale = 1.0f - ((float)i / (float)m_positionHistory.Size());
+    float scale = 1.0f - ((float)i / (float)static_cast<int>(m_positionHistory.size()));
     scale *= 1.5f;
-    if (i == m_positionHistory.Size() - 1)
+    if (i == static_cast<int>(m_positionHistory.size()) - 1)
       scale = 0.8f;
     scale = max(scale, 0.5f);
 
@@ -544,18 +544,18 @@ void SoulDestroyer::Render(float _predictionTime)
     BeginRenderShadow();
     RenderShadow(predictedPos, 50.0f);
 
-    for (int i = 1; i < m_positionHistory.Size(); i += 1)
+    for (int i = 1; i < static_cast<int>(m_positionHistory.size()); i += 1)
     {
-      Vector3 pos1 = *m_positionHistory.GetPointer(i);
-      Vector3 pos2 = *m_positionHistory.GetPointer(i - 1);
+      Vector3 pos1 = *&m_positionHistory[i];
+      Vector3 pos2 = *&m_positionHistory[i - 1];
 
       Vector3 pos = pos1 + (pos2 - pos1);
       Vector3 vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
       pos += vel * _predictionTime;
 
-      float scale = 1.0f - ((float)i / (float)m_positionHistory.Size());
+      float scale = 1.0f - ((float)i / (float)static_cast<int>(m_positionHistory.size()));
       scale *= 1.5f;
-      if (i == m_positionHistory.Size() - 1)
+      if (i == static_cast<int>(m_positionHistory.size()) - 1)
         scale = 0.8f;
       scale = max(scale, 0.5f);
 

@@ -346,7 +346,7 @@ void Centipede::EatSpirits()
   if (size > CENTIPEDE_MAXSIZE)
     return;
 
-  LList<int> m_eaten;
+  std::vector<int> m_eaten;
 
   //
   // Find all spirits that we could potentially eat
@@ -363,7 +363,7 @@ void Centipede::EatSpirits()
         theVector.y = 0.0f;
         if (theVector.Mag() < CENTIPEDE_SPIRITEATRANGE)
         {
-          m_eaten.PutData(i);
+          m_eaten.push_back(i);
         }
       }
     }
@@ -375,7 +375,7 @@ void Centipede::EatSpirits()
 
   float eatChance = m_size / 2.0f;
 
-  for (int i = 0; i < m_eaten.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_eaten.size()); ++i)
   {
     if (syncfrand(1.0f) < eatChance)
     {

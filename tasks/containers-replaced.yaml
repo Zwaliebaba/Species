@@ -594,7 +594,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    notes: >
+    notes: |
       Evidence for this task: the T1/T2/T3 pinned template tests, unchanged
       call-site structure, and the Garden smoke test (steps 3-5 and 7 cover
       exactly this code). Split into per-entity commits within the task if the
@@ -614,7 +614,38 @@ tasks:
       why the block is gone and the first entry reads Citizen.cpp. Running the
       rename first kept it a pure rename with an accurate inventory, and keeps
       this conversion off files that were about to move.
-    status: todo
+
+      DONE 2026-08-03. Small in the end — most of these files were already
+      clear, and what remained was seven local lists and three members.
+
+      EVERY LOCAL HERE FEEDS A SYNCHRONISED RANDOM DRAW. Citizen's
+      availableBuildings and availablePorts, Triffid's possibleSpawns, Virii's
+      eggIds and InsertionSquad's canAttack are each built by a scan and then
+      indexed with syncrand() % size or syncfrand(size). So the conversion had
+      exactly one requirement — that the vector hold the same elements in the
+      same order as the list did — and insertion-ordered push_back gives that
+      by construction. No scan predicate changed and the draw sites are the
+      same expression with size() in place of Size().
+
+      SoulDestroyer's m_positionHistory keeps a quirk DELIBERATELY. Its
+      truncation loop is `for (i = maxHistorys; i < Size(); ++i) RemoveData(i)`,
+      which removes every OTHER element past the limit: erasing at i shifts the
+      tail down, then ++i steps over the element that moved into place.
+      erase(begin() + i) behaves identically, so the quirk survives. It runs
+      every frame and converges, and the history length feeds rendering, so it
+      was left exactly as found rather than "fixed" inside a container
+      conversion.
+
+      Six unrelated classes each declare their own m_positionHistory with
+      different element types — SoulDestroyer, Centipede, Spam, Virii, Engineer
+      and InsertionSquad. Only SoulDestroyer's is in this task's file list.
+      Converting by member name across the tree would have been wrong.
+
+      SpiritStore and Incubator took FastSlotMap, and both called the zero-arg
+      FastDArray::GetPointer(), which reserved the next free slot and returned a
+      pointer into it. SlotMap has no such overload; both spell out
+      GetPointer(GetNextFree()) now.
+    status: done
 
   - id: T10
     title: Convert the GameLogic building and AI containers
@@ -659,10 +690,26 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    notes: >
+    notes: |
       Same link-wall caveat as T9. Large touch set — land as several commits
       grouped by building family, one task.
-    status: todo
+
+      DONE 2026-08-03. Five sites, one of which needed thought.
+
+      SpawnBuilding::ExploreLinks returns an owning list by raw pointer and
+      recurses into itself, so the return type had to change in SpawnPoint.h as
+      well. The inner loop became a range-for over the recursive result while
+      link->m_targets stayed an LList — mixing the two in one loop body is fine
+      and beats converting a member this task does not own.
+
+      Teleport::m_teleportMap is a static member declared in Teleport.h, which
+      is not in this task's file list, but its definition line is in
+      Teleport.cpp, which is. The header had to change too or the two would
+      disagree on the type. T15 would have converted it regardless.
+
+      Airstrike's startPositions was a DArray used as a plain four-element
+      append-and-index array, with no holes and no slot identity.
+    status: done
 
   - id: T11
     title: Convert the GameLogic window and menu containers
@@ -687,9 +734,10 @@ tasks:
       - GameLogic/CameraAnimWindow.cpp
       - GameLogic/ResearchItem.cpp
     acceptance:
-      - grep -lwE "LList|DArray|InputSpecList|AutoVector" on the listed files returns nothing
+      - grep -lwE "LList|DArray|AutoVector" on the listed files returns nothing
+      - "InputSpecList is deliberately NOT in that grep: T14 already converted it from auto_vector to std::vector<std::unique_ptr<const InputSpec>>, so it is the modern type, live in 15 NeuronClient files"
       - Menu and list display order is by-construction unchanged
-    notes: >
+    notes: |
       DEPENDENCIES CORRECTED 2026-08-02, after surveying what these files
       actually hold. The original `depends_on: [T1, T7]` was derived from a
       grep count and is wrong: most of the remaining LList in these files is
@@ -718,11 +766,34 @@ tasks:
       T14 is named as a depends_on rather than blocked_by because it is in
       this same plan. T6 likewise. T6 is the keystone: it clears four of the
       seven rows above.
+
+      DONE 2026-08-03. Two real conversions, and one correction to this task's
+      own acceptance criterion.
+
+      THE ACCEPTANCE GREP NAMED InputSpecList AND THAT IS NOW WRONG. T14
+      converted it from auto_vector to
+      std::vector<std::unique_ptr<const InputSpec>>, so it is the MODERN type,
+      live in fifteen NeuronClient files, and PrefsKeybindingsWindow.h names it
+      in a legitimate cross-reference comment. Left in the grep, this task could
+      only pass by deleting a good typedef or by mangling a correct comment. The
+      token is removed and the reason recorded in the criteria themselves.
+
+      That is the second acceptance-grep defect found in this plan. T13's
+      pattern misses SliceDArray, because -w treats it as one word so it never
+      matches DArray. The general rule worth carrying: these greps are
+      word-based and run over PROSE AS WELL AS CODE, so a pattern listing base
+      names does not catch derived ones, and an explanatory comment naming a
+      legacy type fails the criterion just as a declaration would.
+
+      The rest was ordinary. FileDialog's m_selected and PrefsGraphicsWindow's
+      profiler element list are display state with no identity, and three
+      comments that named the legacy type by hand were reworded so the grep
+      stops matching prose.
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
 
   - id: T12
     title: Convert the Species world-core containers

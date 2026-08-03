@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "FastDArray.h"
+#include "SlotMap.h"
 #include "Building.h"
 #include "Spirit.h"
 
@@ -20,7 +20,7 @@ struct IncubatorIncoming
 class Incubator : public Building
 {
   protected:
-    FastDArray<Spirit> m_spirits;
+    FastSlotMap<Spirit> m_spirits;
     ShapeMarker* m_spiritCentre;
     ShapeMarker* m_exit;
     ShapeMarker* m_dock;
@@ -29,7 +29,7 @@ class Incubator : public Building
     int m_troopType;
     float m_timer;
 
-    LList<IncubatorIncoming*> m_incoming;
+    std::vector<IncubatorIncoming*> m_incoming;
 
   public:
     int m_numStartingSpirits;

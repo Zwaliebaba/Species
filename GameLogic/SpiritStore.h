@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FastDArray.h"
+#include "SlotMap.h"
 #include "Vector3.h"
 
 #include "Spirit.h"
@@ -15,7 +15,7 @@ public:
     float       m_sizeZ;
 
 protected:
-    FastDArray  <Spirit> m_spirits;
+  FastSlotMap<Spirit> m_spirits;
 
 public:
     SpiritStore     ();

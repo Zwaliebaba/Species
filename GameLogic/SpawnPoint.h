@@ -50,7 +50,7 @@ public:
     void            SetBuildingLink ( int _buildingId );
     void            ClearLinks      ();
 
-    LList<int>     *ExploreLinks    ();                     // Returns a list of all SpawnBuildings accessable
+    std::vector<int>* ExploreLinks(); // Returns a list of all SpawnBuildings accessable
 
     void Read   ( TextReader *_in, bool _dynamic );
     void Write  ( FileWriter *_out );

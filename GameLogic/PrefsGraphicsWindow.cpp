@@ -178,14 +178,14 @@ void PrefsGraphicsWindow::Create()
 }
 
 
-void RenderCPUUsage( LList<char *> *elements, int x, int y )
+void RenderCPUUsage(std::vector<char*>* elements, int x, int y)
 {
 #ifdef PROFILER_ENABLED
     float totalOccup = 0.0f;
-    for( int i = 0; i < elements->Size(); ++i )
+    for (char* elementName : *elements)
     {
       const auto& children = g_profiler->m_rootElement->m_children;
-      const auto found = children.find(elements->GetData(i));
+      const auto found = children.find(elementName);
       ProfiledElement* element = (found == children.end()) ? nullptr : found->second.get();
       if (element && element->m_lastNumCalls > 0)
       {
@@ -217,7 +217,7 @@ void PrefsGraphicsWindow::Render( bool _hasFocus )
     int x = m_x + 20;
     int y = m_y + GetClientRectY1() + border;
     int size = GetMenuSize(13);
-    LList<char *> elements;
+    std::vector<char*> elements;
 
     g_editorFont.DrawText2D( x, y+=border, size, LANGUAGEPHRASE("dialog_landscapedetail") );
     g_editorFont.DrawText2D( x, y+=h, size, LANGUAGEPHRASE("dialog_waterdetail") );
