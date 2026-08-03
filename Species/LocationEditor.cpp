@@ -984,7 +984,7 @@ void LocationEditor::RenderModeCameraMount()
   {
     CameraAnimation* anim = (*list)[i];
     // An animation with no nodes draws nothing. The loop below already skipped
-    // it by never running, but only because LList::GetData(0) answered an empty
+    // it by never running, but only because the legacy list's GetData(0) answered an empty
     // list with nullptr rather than reading off the front of it.
     if (anim->m_nodes.empty())
       continue;

@@ -389,34 +389,34 @@ void LocationInput::AdvanceTeamControl()
         {
           InsertionSquad* squad = (InsertionSquad*)unit;
           int currentWeapon = -1;
-          LList<int> weaponList;
+          std::vector<int> weaponList;
           if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeGrenade))
           {
             if (squad->m_weaponType == GlobalResearch::TypeGrenade)
-              currentWeapon = weaponList.Size();
-            weaponList.PutData(GlobalResearch::TypeGrenade);
+              currentWeapon = static_cast<int>(weaponList.size());
+            weaponList.push_back(GlobalResearch::TypeGrenade);
           }
           if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeRocket))
           {
             if (squad->m_weaponType == GlobalResearch::TypeRocket)
-              currentWeapon = weaponList.Size();
-            weaponList.PutData(GlobalResearch::TypeRocket);
+              currentWeapon = static_cast<int>(weaponList.size());
+            weaponList.push_back(GlobalResearch::TypeRocket);
           }
 
           if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeAirStrike))
           {
             if (squad->m_weaponType == GlobalResearch::TypeAirStrike)
-              currentWeapon = weaponList.Size();
-            weaponList.PutData(GlobalResearch::TypeAirStrike);
+              currentWeapon = static_cast<int>(weaponList.size());
+            weaponList.push_back(GlobalResearch::TypeAirStrike);
           }
           if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeController))
           {
             if (squad->m_weaponType == GlobalResearch::TypeController)
-              currentWeapon = weaponList.Size();
-            weaponList.PutData(GlobalResearch::TypeController);
+              currentWeapon = static_cast<int>(weaponList.size());
+            weaponList.push_back(GlobalResearch::TypeController);
           }
 
-          if (weaponList.Size() > 1)
+          if (static_cast<int>(weaponList.size()) > 1)
           {
             int oldWeapon = currentWeapon;
             if (g_inputManager->controlEvent(ControlWeaponCycleLeft))
@@ -424,14 +424,14 @@ void LocationInput::AdvanceTeamControl()
               currentWeapon--;
               if (currentWeapon < 0)
               {
-                currentWeapon = weaponList.Size() - 1;
+                currentWeapon = static_cast<int>(weaponList.size()) - 1;
               }
             }
 
             if (g_inputManager->controlEvent(ControlWeaponCycleRight))
             {
               currentWeapon++;
-              if (currentWeapon >= weaponList.Size())
+              if (currentWeapon >= static_cast<int>(weaponList.size()))
               {
                 currentWeapon = 0;
               }

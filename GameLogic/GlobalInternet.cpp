@@ -132,7 +132,7 @@ void GlobalInternet::GenerateInternet()
     GlobalInternetNode* node = &m_nodes[i];
     if (node->m_numLinks == 1)
     {
-      m_leafs.PutData(i);
+      m_leafs.push_back(i);
     }
   }
 
@@ -155,7 +155,7 @@ void GlobalInternet::GenerateInternet()
   DebugTrace("Global Internet time to generate : %.2fms\n", timeTaken * 1000.0);
   DebugTrace("Global Internet number of nodes  : %d\n", m_numNodes);
   DebugTrace("Global Internet number of links  : %d\n", m_numLinks);
-  DebugTrace("Global Internet number of leafs  : %d\n", m_leafs.Size());
+  DebugTrace("Global Internet number of leafs  : %d\n", static_cast<int>(m_leafs.size()));
 #endif
 }
 
@@ -166,8 +166,8 @@ void GlobalInternet::DeleteInternet()
   m_numNodes = 0;
   delete[] m_links;
   m_numLinks = 0;
-  m_leafs.Empty();
-  m_bursts.Empty();
+  m_leafs.clear();
+  m_bursts.clear();
 
   g_resource->DeleteDisplayList(DISPLAY_LIST_NAME_LINKS);
   g_resource->DeleteDisplayList(DISPLAY_LIST_NAME_NODES);
@@ -334,11 +334,11 @@ void GlobalInternet::TriggerPacket(unsigned short _nodeId, unsigned short _fromL
       GlobalInternetLink* newLink = &m_links[newNode->m_links[newLinkIndex]];
       if (newLink->m_from == _nodeId)
       {
-        newLink->m_packets.PutData(1.0f);
+        newLink->m_packets.push_back(1.0f);
       }
       else
       {
-        newLink->m_packets.PutData(-1.0f);
+        newLink->m_packets.push_back(-1.0f);
       }
       break;
     }
@@ -353,17 +353,17 @@ void GlobalInternet::RenderPackets()
 
   if (frand(100.0f) < 11.0f)
   {
-    int leafIndex = frand(m_leafs.Size());
+    int leafIndex = frand(static_cast<int>(m_leafs.size()));
     GlobalInternetNode* node = &m_nodes[m_leafs[leafIndex]];
     node->m_burst = 4.0f;
-    m_bursts.PutData(m_leafs[leafIndex]);
+    m_bursts.push_back(m_leafs[leafIndex]);
   }
 
 
   //
   // Deal with data bursts
 
-  for (int i = 0; i < m_bursts.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_bursts.size()); ++i)
   {
     GlobalInternetNode* node = &m_nodes[m_bursts[i]];
     node->m_burst -= g_advanceTime;
@@ -373,7 +373,7 @@ void GlobalInternet::RenderPackets()
     }
     else
     {
-      m_bursts.RemoveData(i);
+      m_bursts.erase(m_bursts.begin() + i);
       --i;
     }
   }
@@ -399,9 +399,9 @@ void GlobalInternet::RenderPackets()
   for (int i = 0; i < m_numLinks; ++i)
   {
     GlobalInternetLink* link = &m_links[i];
-    for (int j = 0; j < link->m_packets.Size(); ++j)
+    for (int j = 0; j < static_cast<int>(link->m_packets.size()); ++j)
     {
-      float* thisPacket = link->m_packets.GetPointer(j);
+      float* thisPacket = &link->m_packets[j];
       float packetVal = *thisPacket;
       if (*thisPacket > 0.0f)
       {
@@ -410,7 +410,7 @@ void GlobalInternet::RenderPackets()
         {
           *thisPacket = 0.01f;
           TriggerPacket(link->m_to, i);
-          link->m_packets.RemoveData(j);
+          link->m_packets.erase(link->m_packets.begin() + j);
           --j;
         }
       }
@@ -421,7 +421,7 @@ void GlobalInternet::RenderPackets()
         {
           *thisPacket = -0.01f;
           TriggerPacket(link->m_from, i);
-          link->m_packets.RemoveData(j);
+          link->m_packets.erase(link->m_packets.begin() + j);
           --j;
         }
       }

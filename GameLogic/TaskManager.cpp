@@ -764,12 +764,12 @@ bool TaskManager::IsValidTargetArea(int _id, Vector3 const& _pos)
     }
     else
     {
-      LList<TaskTargetArea>* targetAreas = GetTargetArea(_id);
+      std::vector<TaskTargetArea>* targetAreas = GetTargetArea(_id);
       bool success = false;
 
-      for (int i = 0; i < targetAreas->Size(); ++i)
+      for (int i = 0; i < static_cast<int>(targetAreas->size()); ++i)
       {
-        TaskTargetArea* targetArea = targetAreas->GetPointer(i);
+        TaskTargetArea* targetArea = &(*targetAreas)[i];
         if ((_pos - targetArea->m_centre).Mag() <= targetArea->m_radius)
         {
           success = true;
@@ -790,9 +790,9 @@ bool TaskManager::IsValidTargetArea(int _id, Vector3 const& _pos)
 }
 
 
-LList<TaskTargetArea>* TaskManager::GetTargetArea(int _id)
+std::vector<TaskTargetArea>* TaskManager::GetTargetArea(int _id)
 {
-  LList<TaskTargetArea>* result = new LList<TaskTargetArea>();
+  auto result = new std::vector<TaskTargetArea>();
 
   Task* task = GetTask(_id);
   if (task)
@@ -812,7 +812,7 @@ LList<TaskTargetArea>* TaskManager::GetTargetArea(int _id)
             tta.m_centre = building->m_pos;
             tta.m_radius = 120.0f;
             tta.m_stationary = true;
-            result->PutData(tta);
+            result->push_back(tta);
           }
         }
       }
@@ -833,7 +833,7 @@ LList<TaskTargetArea>* TaskManager::GetTargetArea(int _id)
             tta.m_centre = unit->m_centrePos;
             tta.m_radius = 100.0f;
             tta.m_stationary = false;
-            result->PutData(tta);
+            result->push_back(tta);
           }
         }
       }
@@ -852,7 +852,7 @@ LList<TaskTargetArea>* TaskManager::GetTargetArea(int _id)
             tta.m_centre = building->m_pos;
             tta.m_radius = 75.0f;
             tta.m_stationary = true;
-            result->PutData(tta);
+            result->push_back(tta);
           }
         }
       }
@@ -863,7 +863,7 @@ LList<TaskTargetArea>* TaskManager::GetTargetArea(int _id)
       TaskTargetArea tta;
       tta.m_centre.Set(0, 0, 0);
       tta.m_radius = 99999.9f;
-      result->PutData(tta);
+      result->push_back(tta);
       break;
     }
     }

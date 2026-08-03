@@ -304,12 +304,12 @@ void GameMenu::DestroyMenu()
 /*
 void GameMenu::CreateMapList()
 {
-    LList<char *> *levels = g_resource->ListResources( "Levels/", "mp_*", false );
+    std::vector<char *> *levels = g_resource->ListResources( "Levels/", "mp_*", false );
 
-    for( int i = 0; i < levels->Size(); ++i )
+    for( int i = 0; i < static_cast<int>(levels->size()); ++i )
     {
         char filename[512];
-        sprintf( filename, "Levels/%s", levels->GetData(i) );
+        sprintf( filename, "Levels/%s", (*levels)[i] );
         TextReader *file = g_resource->GetTextReader( filename );
         if( file && file->IsOpen() )
         {

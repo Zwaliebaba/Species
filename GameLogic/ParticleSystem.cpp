@@ -298,7 +298,7 @@ ParticleSystem::ParticleSystem()
 {
   m_particles.SetSize(1500);
   m_particles.SetStepSize(200);
-  m_particles.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+  m_particlesWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
 
   Particle::SetupParticles();
 }
@@ -307,7 +307,7 @@ ParticleSystem::ParticleSystem()
 // *** CreateParticle
 void ParticleSystem::CreateParticle(Vector3 const& _pos, Vector3 const& _vel, int _typeId, float _size, RGBAColour col)
 {
-  Particle* aParticle = m_particles.GetPointer();
+  Particle* aParticle = m_particles.GetPointer(m_particles.GetNextFree());
   aParticle->Initialise(_pos, _vel, _typeId, _size);
   if (col != 0)
   {
@@ -322,7 +322,7 @@ void ParticleSystem::Advance(int _slice)
   START_PROFILE(g_profiler, "Advance Particles");
 
   int lower, upper;
-  m_particles.GetNextSliceBounds(_slice, &lower, &upper);
+  m_particlesWalker.GetNextSliceBounds(_slice, m_particles.Size(), &lower, &upper);
   for (int i = lower; i <= upper; ++i)
   {
     if (m_particles.ValidIndex(i))
@@ -355,7 +355,7 @@ void ParticleSystem::Render()
 
 
   // Render all the particles that are up-to-date with server advances
-  int lastUpdated = m_particles.GetLastUpdated();
+  int lastUpdated = m_particlesWalker.GetLastUpdated();
   int size = m_particles.Size();
 
   for (int i = 0; i < size; i++)
@@ -387,4 +387,8 @@ void ParticleSystem::Render()
 
 
 // *** Empty
-void ParticleSystem::Empty() { m_particles.Empty(); }
+void ParticleSystem::Empty()
+{
+  m_particles.Empty();
+  m_particlesWalker.Reset();
+}

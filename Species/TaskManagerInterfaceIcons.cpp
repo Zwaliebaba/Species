@@ -86,8 +86,7 @@ TaskManagerInterfaceIcons::TaskManagerInterfaceIcons()
   m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeGrenade, ControlIconsTaskManagerSelectGrenade));
   m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeRocket, ControlIconsTaskManagerSelectRocket));
   m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeAirStrike, ControlIconsTaskManagerSelectAirStrike));
-  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeController,
-                                                   ControlIconsTaskManagerSelectController));
+  m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeController, ControlIconsTaskManagerSelectController));
 
   m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 0, ControlTaskManagerSelectTask1));
   m_keyboardShortcuts.PutData(new KeyboardShortcut("SelectTask", 1, ControlTaskManagerSelectTask2));
@@ -165,8 +164,8 @@ void TaskManagerInterfaceIcons::Advance()
     return;
   }
 
-  if (!m_visible && (g_inputManager->controlEvent(ControlIconsTaskManagerDisplay) || g_inputManager->controlEvent(
-    ControlIconsTaskManagerDisplayDown)))
+  if (!m_visible &&
+      (g_inputManager->controlEvent(ControlIconsTaskManagerDisplay) || g_inputManager->controlEvent(ControlIconsTaskManagerDisplayDown)))
   {
     // Tab key just pressed
     // Pop up the task manager
@@ -400,7 +399,7 @@ void TaskManagerInterfaceIcons::Render()
   if (!m_visible)
     RenderRunningTasks();
   RestoreRenderMatrices();
-  //RenderQuickUnit();
+  // RenderQuickUnit();
 
   //
   // Render a mouse cursor if we are visible
@@ -512,8 +511,8 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
               break;
             }
 
-            if ((m_screenZones.ValidIndex(m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
-              || m_screenZones.Size() == 0)
+            if ((m_screenZones.ValidIndex(m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
+                m_screenZones.Size() == 0)
               break;
           }
         }
@@ -541,8 +540,8 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
               break;
             }
 
-            if ((m_screenZones.ValidIndex(m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
-              || m_screenZones.Size() == 0)
+            if ((m_screenZones.ValidIndex(m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
+                m_screenZones.Size() == 0)
               break;
           }
         }
@@ -601,7 +600,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
           {
             if (g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD)
             {
-              //m_currentScreenZone = i;
+              // m_currentScreenZone = i;
             }
             found = true;
             highlightOnly = true;
@@ -611,7 +610,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     }
   }
 
-  //if( !found ) m_currentScreenZone = -1;
+  // if( !found ) m_currentScreenZone = -1;
 
   //
   // Are we highlighting a task?
@@ -643,10 +642,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
 
 bool TaskManagerInterfaceIcons::ButtonHeld() { return GetHighResTime() - m_taskManagerDownTime > 0.5; }
 
-bool TaskManagerInterfaceIcons::ButtonHeldAndReleased()
-{
-  return ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayUp);
-}
+bool TaskManagerInterfaceIcons::ButtonHeldAndReleased() { return ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayUp); }
 
 void TaskManagerInterfaceIcons::AdvanceKeyboardShortcuts()
 {
@@ -840,16 +836,16 @@ void TaskManagerInterfaceIcons::RenderScreenZones()
       for( int i = 0; i < m_screenZones.Size(); ++i )
       {
           ScreenZone *zone = m_screenZones[i];
-  
+
           float hX = zone->m_x;
           float hY = zone->m_y;
           float hW = zone->m_w;
           float hH = zone->m_h;
-  
+
           hX -= m_screenY * m_screenW;
-  
+
           glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-  
+
           glBegin( GL_LINE_LOOP );
               glVertex2f( hX, hY );
               glVertex2f( hX+hW, hY );
@@ -857,7 +853,7 @@ void TaskManagerInterfaceIcons::RenderScreenZones()
               glVertex2f( hX, hY+hH );
           glEnd();
       }
-  
+
   */
 
   if (m_screenZones.ValidIndex(m_currentScreenZone))
@@ -872,7 +868,7 @@ void TaskManagerInterfaceIcons::RenderScreenZones()
     float hW = zone->m_w + overSpill * 2;
     float hH = zone->m_h + overSpill * 2;
 
-    //hX -= m_screenY * m_screenW;
+    // hX -= m_screenY * m_screenW;
     hY -= m_screenY * m_screenH;
 
     glColor4f(0.05f, 0.05f, 0.5f, 0.3f);
@@ -1053,7 +1049,7 @@ void TaskManagerInterfaceIcons::RenderMessages()
     float size = 40.0f;
     if (timeRemaining < 2.0f)
     {
-      //size = sqrtf( 2.7f - timeRemaining ) * 30.0f;
+      // size = sqrtf( 2.7f - timeRemaining ) * 30.0f;
       size += sqrtf(2.0f - timeRemaining) * 15.0f;
     }
 
@@ -1082,7 +1078,9 @@ void TaskManagerInterfaceIcons::RenderTargetAreas()
     {
       TaskTargetArea* tta = targetAreas->GetPointer(i);
 
-      if (tta->m_stationary) {}
+      if (tta->m_stationary)
+      {
+      }
 
       float angle = g_gameTime * 3.0f;
       Vector3 dif(tta->m_radius * sinf(angle), 0.0f, tta->m_radius * cosf(angle));
@@ -1098,7 +1096,9 @@ void TaskManagerInterfaceIcons::RenderTargetAreas()
 
     delete targetAreas;
   }
-  else {}
+  else
+  {
+  }
 }
 
 static void RenderIcon(const char* _foreground, const char* _background, int _x, int _y, float _iconSize, unsigned _alpha)
@@ -1201,9 +1201,7 @@ void TaskManagerInterfaceIcons::RenderTaskManager()
 void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
 {
   int numRunnableTasks = 4;
-  int runnableTaskType[] = {
-    GlobalResearch::TypeSquad, GlobalResearch::TypeEngineer, GlobalResearch::TypeOfficer, GlobalResearch::TypeArmour
-  };
+  int runnableTaskType[] = {GlobalResearch::TypeSquad, GlobalResearch::TypeEngineer, GlobalResearch::TypeOfficer, GlobalResearch::TypeArmour};
 
   int numAvailable = 0;
   for (int i = 0; i < numRunnableTasks; ++i)
@@ -1212,10 +1210,10 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
       numAvailable++;
   }
 
-  //float w = 200;
-  //float h = 36;
-  //float x = (m_screenW-80)/2 - w/2;
-  //float y = 350;
+  // float w = 200;
+  // float h = 36;
+  // float x = (m_screenW-80)/2 - w/2;
+  // float y = 350;
 
   float w = 200;
   float h = 46;
@@ -1651,8 +1649,8 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
             char captionId[256];
             sprintf(captionId, "newcontrols_select_%s", Task::GetTaskName(weaponType));
-            auto zone = new ScreenZone("SelectWeapon", LANGUAGEPHRASE(captionId), weaponX - weaponSize / 2, weaponY - weaponSize / 2,
-                                       weaponSize, weaponSize, weaponType);
+            auto zone = new ScreenZone("SelectWeapon", LANGUAGEPHRASE(captionId), weaponX - weaponSize / 2, weaponY - weaponSize / 2, weaponSize,
+                                       weaponSize, weaponType);
             m_newScreenZones.PutData(zone);
             zone->m_scrollZone = 3;
 
@@ -1713,8 +1711,8 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       char captionId[256];
       sprintf(captionId, "newcontrols_delete_%s", Task::GetTaskName(task->m_type));
 
-      auto zone = new ScreenZone("DeleteTask", LANGUAGEPHRASE(captionId), deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f,
-                                 deleteSize, deleteSize, task->m_id);
+      auto zone = new ScreenZone("DeleteTask", LANGUAGEPHRASE(captionId), deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f, deleteSize,
+                                 deleteSize, task->m_id);
       m_newScreenZones.PutData(zone);
     }
 
@@ -2052,7 +2050,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
   g_gameFont.SetRenderOutline(false);
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
   g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_research"));
-  //g_gameFont.DrawText2DCentre( m_screenW/2.0f, 80, 20, "ResearchPoints : %d", g_globalWorld->m_research->m_researchPoints );
+  // g_gameFont.DrawText2DCentre( m_screenW/2.0f, 80, 20, "ResearchPoints : %d", g_globalWorld->m_research->m_researchPoints );
 
   float mouseX = g_target->X();
   float mouseY = g_target->Y();
@@ -2407,9 +2405,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
     return;
 
   int numRunnableTasks = 4;
-  int runnableTaskType[] = {
-    GlobalResearch::TypeSquad, GlobalResearch::TypeEngineer, GlobalResearch::TypeOfficer, GlobalResearch::TypeArmour
-  };
+  int runnableTaskType[] = {GlobalResearch::TypeSquad, GlobalResearch::TypeEngineer, GlobalResearch::TypeOfficer, GlobalResearch::TypeArmour};
 
   int numAvailable = 0;
   for (int i = 0; i < numRunnableTasks; ++i)
@@ -2435,11 +2431,11 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
     g_inputManager->controlEvent(ControlTargetMove, targetDetails);
     g_inputManager->controlEvent(ControlCameraMove, cameraDetails);
 
-    bool right = (g_inputManager->controlEvent(ControlUnitCycleLeft) || cameraDetails.x < -10 || targetDetails.x < -10 || g_inputManager->
-      controlEvent(ControlIconsTaskManagerQuickUnitLeft));
+    bool right = (g_inputManager->controlEvent(ControlUnitCycleLeft) || cameraDetails.x < -10 || targetDetails.x < -10 ||
+                  g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitLeft));
 
-    bool left = (g_inputManager->controlEvent(ControlUnitCycleRight) || cameraDetails.x > 10 || targetDetails.x > 10 || g_inputManager->
-      controlEvent(ControlIconsTaskManagerQuickUnitRight));
+    bool left = (g_inputManager->controlEvent(ControlUnitCycleRight) || cameraDetails.x > 10 || targetDetails.x > 10 ||
+                 g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitRight));
 
     if (left)
     {
@@ -2523,7 +2519,7 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
 
   float shadowOffset = 0;
   float shadowSize = iconSize;
-  //float totalWidth = (numSlots-1) * ( iconSize + iconGap );   */
+  // float totalWidth = (numSlots-1) * ( iconSize + iconGap );   */
 
   for (int i = 0; i < m_quickUnitButtons.Size(); ++i)
     m_quickUnitButtons[i]->Render();
@@ -2592,8 +2588,8 @@ bool TaskManagerInterfaceIcons::AdviseCreateControlHelpGreen()
 {
   ScreenZone* screenZone = nullptr;
 
-  return m_currentScreenZone != -1 && g_taskManager->CapacityUsed() < g_taskManager->Capacity() && (screenZone = m_screenZones
-    [m_currentScreenZone]) && strcmp(screenZone->m_name, "NewTask") == 0;
+  return m_currentScreenZone != -1 && g_taskManager->CapacityUsed() < g_taskManager->Capacity() &&
+         (screenZone = m_screenZones[m_currentScreenZone]) && strcmp(screenZone->m_name, "NewTask") == 0;
 }
 
 bool TaskManagerInterfaceIcons::AdviseOverSelectableZone()
@@ -2617,9 +2613,7 @@ bool TaskManagerInterfaceIcons::AdviseCloseControlHelp()
 void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
 {
   int numRunnableTasks = 4;
-  int runnableTaskType[] = {
-    GlobalResearch::TypeOfficer, GlobalResearch::TypeEngineer, GlobalResearch::TypeSquad, GlobalResearch::TypeArmour
-  };
+  int runnableTaskType[] = {GlobalResearch::TypeOfficer, GlobalResearch::TypeEngineer, GlobalResearch::TypeSquad, GlobalResearch::TypeArmour};
 
   int numAvailable = 0;
   for (int i = 0; i < numRunnableTasks; ++i)
@@ -2684,10 +2678,9 @@ QuickUnitButton::QuickUnitButton()
   float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
   float iconY = g_renderer->ScreenH() - iconSize - iconGap;
 
-  static Vector2 buttonPositions[5] = {
-    Vector2(iconX - iconSize * 2 - iconGap * 2, iconY), Vector2(iconX - iconSize - iconGap, iconY), Vector2(iconX, iconY),
-    Vector2(iconX + iconSize + iconGap, iconY), Vector2(iconX + iconSize * 2 + iconGap * 2, iconY)
-  };
+  static Vector2 buttonPositions[5] = {Vector2(iconX - iconSize * 2 - iconGap * 2, iconY), Vector2(iconX - iconSize - iconGap, iconY),
+                                       Vector2(iconX, iconY), Vector2(iconX + iconSize + iconGap, iconY),
+                                       Vector2(iconX + iconSize * 2 + iconGap * 2, iconY)};
 
   auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
   m_positionId = tm->m_quickUnitButtons.Size();
@@ -2711,10 +2704,9 @@ void QuickUnitButton::Advance()
   float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
   float iconY = g_renderer->ScreenH() - iconSize - iconGap;
 
-  static Vector2 buttonPositions[5] = {
-    Vector2(iconX - iconSize * 2 - iconGap * 2, iconY), Vector2(iconX - iconSize - iconGap, iconY), Vector2(iconX, iconY),
-    Vector2(iconX + iconSize + iconGap, iconY), Vector2(iconX + iconSize * 2 + iconGap * 2, iconY)
-  };
+  static Vector2 buttonPositions[5] = {Vector2(iconX - iconSize * 2 - iconGap * 2, iconY), Vector2(iconX - iconSize - iconGap, iconY),
+                                       Vector2(iconX, iconY), Vector2(iconX + iconSize + iconGap, iconY),
+                                       Vector2(iconX + iconSize * 2 + iconGap * 2, iconY)};
 
   if (direction != 0 && m_movable)
   {
@@ -2759,7 +2751,7 @@ void QuickUnitButton::Advance()
 
 void QuickUnitButton::Render()
 {
-  //if( m_positionId == 0 || m_positionId == 4 ) return;
+  // if( m_positionId == 0 || m_positionId == 4 ) return;
 
   float iconSize = 100.0f;
   float iconGap = 10.0f;

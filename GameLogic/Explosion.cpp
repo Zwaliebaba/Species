@@ -1,7 +1,6 @@
 #include "pch.h"
 
 
-#include "FastDArray.h"
 #include "MathUtils.h"
 #include "Profiler.h"
 #include "Resource.h"
@@ -65,7 +64,7 @@ Explosion::Explosion(ShapeFragment* _frag, Matrix34 const& _transform, float _fr
 
   m_timeToDie = g_gameTime + EXPLOSION_LIFETIME;
 
-  FastDArray<ExplodingTri> triangles;
+  std::vector<ExplodingTri> triangles;
 
   Matrix34 totalTransform = _frag->m_transform * _transform;
   Vector3 transformedFragCentre = totalTransform * _frag->m_centre;
@@ -121,14 +120,14 @@ Explosion::Explosion(ShapeFragment* _frag, Matrix34 const& _transform, float _fr
     // tri.m_timeToDie = frand(EXPLOSION_LIFETIME - minFragLife) + g_gameTime + minFragLife;
     tri.m_timeToDie = g_gameTime + EXPLOSION_LIFETIME;
 
-    triangles.PutData(tri);
+    triangles.push_back(tri);
   }
 
-  m_numTris = triangles.Size();
+  m_numTris = static_cast<int>(triangles.size());
   if (m_numTris > 0)
   {
     m_tris = new ExplodingTri[m_numTris];
-    memcpy(m_tris, triangles.GetPointer(0), sizeof(ExplodingTri) * m_numTris);
+    memcpy(m_tris, triangles.data(), sizeof(ExplodingTri) * m_numTris);
   }
 }
 
