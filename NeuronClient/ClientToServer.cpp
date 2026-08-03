@@ -33,23 +33,22 @@ ClientToServer* g_clientToServer = nullptr;
 // g_clientToServer; it is set in the constructor.
 static ClientToServer* s_client = nullptr;
 
-static NetCallBackRetType ListenCallback(NetUdpPacket *udpdata)
+static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 {
-    if (udpdata)
-    {
-        ServerToClientLetter *letter = new ServerToClientLetter(udpdata->m_data, udpdata->m_length);
-        s_client->ReceiveLetter(letter);
-        //        SET_PROFILE(m_profiler,  "#Client Receive", udpdata->getLength() );
+  if (udpdata)
+  {
+    ServerToClientLetter* letter = new ServerToClientLetter(udpdata->m_data, udpdata->m_length);
+    s_client->ReceiveLetter(letter);
+    //        SET_PROFILE(m_profiler,  "#Client Receive", udpdata->getLength() );
 
-        delete udpdata;
-    }
+    delete udpdata;
+  }
 
-    return 0;
-
+  return 0;
 }
 
 
-static NetCallBackRetType ListenThread(void *ignored)
+static NetCallBackRetType ListenThread(void* ignored)
 {
   s_client->m_receiveSocket = new NetSocketListener(4001);
   NetRetCode retCode = s_client->m_receiveSocket->StartListening(ListenCallback);
@@ -109,360 +108,357 @@ ClientToServer::~ClientToServer()
 
 void ClientToServer::AdvanceSender()
 {
-    int bytesSentThisFrame = 0;
-    m_outboxMutex->Lock();
+  int bytesSentThisFrame = 0;
+  m_outboxMutex->Lock();
 
-    while (!m_outbox.empty())
+  while (!m_outbox.empty())
+  {
+    NetworkUpdate* letter = m_outbox[0];
+    DEBUG_ASSERT(letter);
+
     {
-      NetworkUpdate* letter = m_outbox[0];
-      DEBUG_ASSERT(letter);
-
-      {
-        int letterSize = 0;
-        char* byteStream = letter->GetByteStream(&letterSize);
-        NetSocket* socket = m_sendSocket;
-        socket->WriteData(byteStream, letterSize);
-        bytesSentThisFrame += letterSize;
-        delete letter;
-      }
-
-      m_outbox.erase(m_outbox.begin());
+      int letterSize = 0;
+      char* byteStream = letter->GetByteStream(&letterSize);
+      NetSocket* socket = m_sendSocket;
+      socket->WriteData(byteStream, letterSize);
+      bytesSentThisFrame += letterSize;
+      delete letter;
     }
-    m_outboxMutex->Unlock();
 
-    if( bytesSentThisFrame > 0 )
-    {
-      //        SET_PROFILE(m_profiler,  "#Client Send", bytesSentThisFrame );
-    }
+    m_outbox.erase(m_outbox.begin());
+  }
+  m_outboxMutex->Unlock();
+
+  if (bytesSentThisFrame > 0)
+  {
+    //        SET_PROFILE(m_profiler,  "#Client Send", bytesSentThisFrame );
+  }
 }
 
 
-void ClientToServer::Advance()
-{
-	AdvanceSender();
-}
+void ClientToServer::Advance() { AdvanceSender(); }
 
 
 int ClientToServer::GetOurIP_Int()
 {
-	// We're not doing networking for now
-	static int s_localIP = ConvertIPToInt( "127.0.0.1" );
-	return s_localIP;
+  // We're not doing networking for now
+  static int s_localIP = ConvertIPToInt("127.0.0.1");
+  return s_localIP;
 
-// Notes by John
-// =============
-//
-// The commented code below has the following problems
-//
-// - it doesn't always return the same IP (sometimes 127.0.0.1
-//   and sometimes the real ip). This means that the remote packet
-//   detection code in ProcessServerLetters in main.cpp
-//   can incorrectly classify a TeamAssignment message as Remote
-//   when it should be local.
-//
-// - on many machines the hostname has nothing to do with IP address. I
-//   believe the correct thing to do is open a TCP connection to the
-//   server and ask the server what it thinks your IP address is
-//   (see getpeername). This will work even if the client is behind a NAT.
-//
-// - h_addr_list[0] is in network byte order. Treating it directly
-//   as an int leads to endianness problems. ConvertIntToIP and ConvertIPToInt
-//   assume that the least significant byte of the integer
-//   corresponds to the A of the ip address A.B.C.D. The problem is that
-//   a direct cast from h_addr_list[0] to an integer means that the least
-//   significant byte be different on big endian machines (Macintosh). The effect
-//   of this is that the IP comes out in reverse order on the Mac.
-//		See functions ntohl and hton for possible solutions.
-//
-// - Constant parsing of IP strings and generation again seems wasteful. I think
-//   that IPs should be represented as a class, with various different constructors.
-//	 The private data should be 4 unsigned chars. With this strategy you could
-//   even support IPv6 (if that actually happens before the year 3000).
+  // Notes by John
+  // =============
+  //
+  // The commented code below has the following problems
+  //
+  // - it doesn't always return the same IP (sometimes 127.0.0.1
+  //   and sometimes the real ip). This means that the remote packet
+  //   detection code in ProcessServerLetters in main.cpp
+  //   can incorrectly classify a TeamAssignment message as Remote
+  //   when it should be local.
+  //
+  // - on many machines the hostname has nothing to do with IP address. I
+  //   believe the correct thing to do is open a TCP connection to the
+  //   server and ask the server what it thinks your IP address is
+  //   (see getpeername). This will work even if the client is behind a NAT.
+  //
+  // - h_addr_list[0] is in network byte order. Treating it directly
+  //   as an int leads to endianness problems. ConvertIntToIP and ConvertIPToInt
+  //   assume that the least significant byte of the integer
+  //   corresponds to the A of the ip address A.B.C.D. The problem is that
+  //   a direct cast from h_addr_list[0] to an integer means that the least
+  //   significant byte be different on big endian machines (Macintosh). The effect
+  //   of this is that the IP comes out in reverse order on the Mac.
+  //		See functions ntohl and hton for possible solutions.
+  //
+  // - Constant parsing of IP strings and generation again seems wasteful. I think
+  //   that IPs should be represented as a class, with various different constructors.
+  //	 The private data should be 4 unsigned chars. With this strategy you could
+  //   even support IPv6 (if that actually happens before the year 3000).
 
-//	char hostName[256];
-//
-//	int errorCode = gethostname( hostName, sizeof(hostName) );
-//	if (errorCode == 0) {
-//		struct hostent *hostEnt = gethostbyname(hostName);
-//		if (hostEnt && hostEnt->h_addr_list[0])
-//			return *((int*)hostEnt->h_addr_list[0]);
-//	}
-//	return ConvertIPToInt( "127.0.0.1" );
+  //	char hostName[256];
+  //
+  //	int errorCode = gethostname( hostName, sizeof(hostName) );
+  //	if (errorCode == 0) {
+  //		struct hostent *hostEnt = gethostbyname(hostName);
+  //		if (hostEnt && hostEnt->h_addr_list[0])
+  //			return *((int*)hostEnt->h_addr_list[0]);
+  //	}
+  //	return ConvertIPToInt( "127.0.0.1" );
 }
 
 
 int ClientToServer::GetNextLetterSeqID()
 {
-    int result = -1;
+  int result = -1;
 
-    m_inboxMutex->Lock();
-    if (!m_inbox.empty())
-    {
-        result = m_inbox[0]->GetSequenceId();
-    }
-    m_inboxMutex->Unlock();
+  m_inboxMutex->Lock();
+  if (!m_inbox.empty())
+  {
+    result = m_inbox[0]->GetSequenceId();
+  }
+  m_inboxMutex->Unlock();
 
-    return result;
+  return result;
 }
 
 
 ServerToClientLetter* ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
 {
-    m_inboxMutex->Lock();
-    ServerToClientLetter *letter = nullptr;
+  m_inboxMutex->Lock();
+  ServerToClientLetter* letter = nullptr;
 
-    if (!m_inbox.empty())
+  if (!m_inbox.empty())
+  {
+    letter = m_inbox[0];
+    if (letter->GetSequenceId() == _lastProcessedSequenceId + 1)
     {
-        letter = m_inbox[0];
-        if (letter->GetSequenceId() == _lastProcessedSequenceId + 1)
-        {
-          m_inbox.erase(m_inbox.begin());
-        }
-        else
-        {
-            letter = nullptr;
-        }
+      m_inbox.erase(m_inbox.begin());
     }
+    else
+    {
+      letter = nullptr;
+    }
+  }
 
-    m_inboxMutex->Unlock();
+  m_inboxMutex->Unlock();
 
-    return letter;
+  return letter;
 }
 
 
-void ClientToServer::ReceiveLetter( ServerToClientLetter *letter )
+void ClientToServer::ReceiveLetter(ServerToClientLetter* letter)
 {
-    //
-    // Simulate network packet loss
+  //
+  // Simulate network packet loss
 
 #ifdef _DEBUG
-    if( g_inputManager->controlEvent( ControlDebugDropPacket ) )
-    {
-        delete letter;
-        return;
-    }
+  if (g_inputManager->controlEvent(ControlDebugDropPacket))
+  {
+    delete letter;
+    return;
+  }
 #endif
 
-    //
-    // Check for duplicates
+  //
+  // Check for duplicates
 
-    if( letter->GetSequenceId() <= m_lastValidSequenceIdFromServer )
-    {
-        delete letter;
-        return;
-    }
+  if (letter->GetSequenceId() <= m_lastValidSequenceIdFromServer)
+  {
+    delete letter;
+    return;
+  }
 
-    //
-    // Work out our start time
+  //
+  // Work out our start time
 
-    double newStartTime = GetHighResTime() - (float) letter->GetSequenceId() * SERVER_ADVANCE_PERIOD;
-    if (newStartTime < m_startTime)
-    {
-      m_startTime = newStartTime;
+  double newStartTime = GetHighResTime() - (float)letter->GetSequenceId() * SERVER_ADVANCE_PERIOD;
+  if (newStartTime < m_startTime)
+  {
+    m_startTime = newStartTime;
 #ifdef _DEBUG
-      // DebugTrace( "Start Time set to %f\n", (float) m_startTime );
+    // DebugTrace( "Start Time set to %f\n", (float) m_startTime );
 #endif
-    }
-//#ifdef _DEBUG
-    else if (newStartTime > m_startTime + 0.1f)
+  }
+  // #ifdef _DEBUG
+  else if (newStartTime > m_startTime + 0.1f)
+  {
+    m_startTime = newStartTime;
+    //        DebugTrace( "Start Time set to %f\n", (float) m_startTime );
+  }
+  // #endif
+
+  //
+  // Do a sorted insert of the letter into the inbox
+
+  m_inboxMutex->Lock();
+  int i;
+  bool inserted = false;
+  for (i = static_cast<int>(m_inbox.size()) - 1; i >= 0; --i)
+  {
+    ServerToClientLetter* thisLetter = m_inbox[i];
+    if (letter->GetSequenceId() > thisLetter->GetSequenceId())
     {
-      m_startTime = newStartTime;
-      //        DebugTrace( "Start Time set to %f\n", (float) m_startTime );
+      m_inbox.insert(m_inbox.begin() + (i + 1), letter);
+      inserted = true;
+      break;
     }
-//#endif
-
-    //
-    // Do a sorted insert of the letter into the inbox
-
-    m_inboxMutex->Lock();
-    int i;
-    bool inserted = false;
-    for (i = static_cast<int>(m_inbox.size()) - 1; i >= 0; --i)
+    else if (letter->GetSequenceId() == thisLetter->GetSequenceId())
     {
-        ServerToClientLetter *thisLetter = m_inbox[i];
-        if( letter->GetSequenceId() > thisLetter->GetSequenceId() )
-        {
-          m_inbox.insert(m_inbox.begin() + (i + 1), letter);
-          inserted = true;
-          break;
-        }
-        else if( letter->GetSequenceId() == thisLetter->GetSequenceId() )
-        {
-            // Throw this letter away, it's a duplicate
-            delete letter;
-            inserted = true;
-            break;
-        }
+      // Throw this letter away, it's a duplicate
+      delete letter;
+      inserted = true;
+      break;
     }
-    if( !inserted )
+  }
+  if (!inserted)
+  {
+    m_inbox.insert(m_inbox.begin(), letter);
+  }
+
+
+  //
+  // Recalculate our last Known Sequence Id
+
+  for (i = 0; i < static_cast<int>(m_inbox.size()); ++i)
+  {
+    ServerToClientLetter* thisLetter = m_inbox[i];
+    if (thisLetter->GetSequenceId() > m_lastValidSequenceIdFromServer + 1)
     {
-      m_inbox.insert(m_inbox.begin(), letter);
+      break;
     }
+    m_lastValidSequenceIdFromServer = thisLetter->GetSequenceId();
+  }
 
-
-    //
-    // Recalculate our last Known Sequence Id
-
-    for (i = 0; i < static_cast<int>(m_inbox.size()); ++i)
-    {
-        ServerToClientLetter *thisLetter = m_inbox[i];
-        if( thisLetter->GetSequenceId() > m_lastValidSequenceIdFromServer+1 )
-        {
-            break;
-        }
-        m_lastValidSequenceIdFromServer = thisLetter->GetSequenceId();
-    }
-
-    m_inboxMutex->Unlock();
+  m_inboxMutex->Unlock();
 }
 
 
-void ClientToServer::SendLetter( NetworkUpdate *letter )
+void ClientToServer::SendLetter(NetworkUpdate* letter)
 {
-    letter->SetLastSequenceId( m_lastValidSequenceIdFromServer );
+  letter->SetLastSequenceId(m_lastValidSequenceIdFromServer);
 
-    m_outboxMutex->Lock();
-    m_outbox.push_back(letter);
-    m_outboxMutex->Unlock();
+  m_outboxMutex->Lock();
+  m_outbox.push_back(letter);
+  m_outboxMutex->Unlock();
 }
 
 
 void ClientToServer::ClientJoin()
 {
-    DebugTrace( "CLIENT : Attempting connection...\n" );
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::ClientJoin );
-    SendLetter( letter );
+  DebugTrace("CLIENT : Attempting connection...\n");
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::ClientJoin);
+  SendLetter(letter);
 }
 
 
 void ClientToServer::ClientLeave()
 {
-    DebugTrace( "CLIENT : Sending disconnect...\n" );
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::ClientLeave );
-    SendLetter( letter );
+  DebugTrace("CLIENT : Sending disconnect...\n");
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::ClientLeave);
+  SendLetter(letter);
 
-    // Only the endpoint's own counter is reset here. The caller resets the one
-    // that tracks how far the simulation has advanced, because that is its.
-    m_lastValidSequenceIdFromServer = -1;
+  // Only the endpoint's own counter is reset here. The caller resets the one
+  // that tracks how far the simulation has advanced, because that is its.
+  m_lastValidSequenceIdFromServer = -1;
 }
 
 
 void ClientToServer::RequestTeam(int _teamType, int _desiredId)
 {
-    DebugTrace( "CLIENT : Requesting Team...\n" );
+  DebugTrace("CLIENT : Requesting Team...\n");
 
-    NetworkUpdate *letter = new NetworkUpdate();
-	letter->SetDesiredTeamId(_desiredId);
-    letter->SetType( NetworkUpdate::RequestTeam );
-    letter->SetTeamType( _teamType );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetDesiredTeamId(_desiredId);
+  letter->SetType(NetworkUpdate::RequestTeam);
+  letter->SetTeamType(_teamType);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::SendIAmAlive( unsigned char _teamId, TeamControls const &_teamControls )
+void ClientToServer::SendIAmAlive(unsigned char _teamId, TeamControls const& _teamControls)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::Alive );
-    letter->SetTeamId( _teamId );
-    letter->SetWorldPos( _teamControls.m_mousePos );
-    letter->SetTeamControls( _teamControls );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::Alive);
+  letter->SetTeamId(_teamId);
+  letter->SetWorldPos(_teamControls.m_mousePos);
+  letter->SetTeamControls(_teamControls);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::SendSyncronisation( int _lastProcessedId, unsigned char _sync )
+void ClientToServer::SendSyncronisation(int _lastProcessedId, unsigned char _sync)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::Syncronise );
-    letter->SetLastProcessedId( _lastProcessedId );
-    letter->SetSync( _sync );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::Syncronise);
+  letter->SetLastProcessedId(_lastProcessedId);
+  letter->SetSync(_sync);
+  SendLetter(letter);
 }
 
 
 void ClientToServer::RequestPause()
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::Pause );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::Pause);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::RequestSelectUnit( unsigned char _teamId, int _unitId, int _entityId, int _buildingId )
+void ClientToServer::RequestSelectUnit(unsigned char _teamId, int _unitId, int _entityId, int _buildingId)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::SelectUnit );
-    letter->SetTeamId( _teamId );
-    letter->SetUnitId( _unitId );
-    letter->SetEntityId( _entityId );
-    letter->SetBuildingID( _buildingId );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::SelectUnit);
+  letter->SetTeamId(_teamId);
+  letter->SetUnitId(_unitId);
+  letter->SetEntityId(_entityId);
+  letter->SetBuildingID(_buildingId);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::RequestCreateUnit( unsigned char _teamId, unsigned char _troopType, int _numToCreate, int _buildingId )
+void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, int _buildingId)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::CreateUnit );
-    letter->SetTeamId( _teamId );
-    letter->SetEntityType( _troopType );
-    letter->SetNumTroops( _numToCreate );
-    letter->SetBuildingID( _buildingId );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::CreateUnit);
+  letter->SetTeamId(_teamId);
+  letter->SetEntityType(_troopType);
+  letter->SetNumTroops(_numToCreate);
+  letter->SetBuildingID(_buildingId);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::RequestCreateUnit( unsigned char _teamId, unsigned char _troopType, int _numToCreate, Vector3 const &_pos )
+void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, Vector3 const& _pos)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::CreateUnit );
-    letter->SetTeamId( _teamId );
-    letter->SetEntityType( _troopType );
-    letter->SetNumTroops( _numToCreate );
-    letter->SetBuildingID( -1 );
-    letter->SetWorldPos( _pos );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::CreateUnit);
+  letter->SetTeamId(_teamId);
+  letter->SetEntityType(_troopType);
+  letter->SetNumTroops(_numToCreate);
+  letter->SetBuildingID(-1);
+  letter->SetWorldPos(_pos);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::RequestAimBuilding( unsigned char _teamId, int _buildingId, Vector3 const &_pos )
+void ClientToServer::RequestAimBuilding(unsigned char _teamId, int _buildingId, Vector3 const& _pos)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::AimBuilding );
-    letter->SetTeamId( _teamId );
-    letter->SetBuildingID( _buildingId );
-    letter->SetWorldPos( _pos );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::AimBuilding);
+  letter->SetTeamId(_teamId);
+  letter->SetBuildingID(_buildingId);
+  letter->SetWorldPos(_pos);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::RequestToggleFence( int _buildingId )
+void ClientToServer::RequestToggleFence(int _buildingId)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::ToggleLaserFence );
-    letter->SetBuildingID( _buildingId );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::ToggleLaserFence);
+  letter->SetBuildingID(_buildingId);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::RequestRunProgram( unsigned char _teamId, unsigned char _program )
+void ClientToServer::RequestRunProgram(unsigned char _teamId, unsigned char _program)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::RunProgram );
-    letter->SetTeamId( _teamId );
-    letter->SetProgram( _program );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::RunProgram);
+  letter->SetTeamId(_teamId);
+  letter->SetProgram(_program);
+  SendLetter(letter);
 }
 
 
-void ClientToServer::RequestTargetProgram( unsigned char _teamId, unsigned char _program, Vector3 const &_pos )
+void ClientToServer::RequestTargetProgram(unsigned char _teamId, unsigned char _program, Vector3 const& _pos)
 {
-    NetworkUpdate *letter = new NetworkUpdate();
-    letter->SetType( NetworkUpdate::TargetProgram );
-    letter->SetTeamId( _teamId );
-    letter->SetProgram( _program );
-    letter->SetWorldPos( _pos );
-    SendLetter( letter );
+  NetworkUpdate* letter = new NetworkUpdate();
+  letter->SetType(NetworkUpdate::TargetProgram);
+  letter->SetTeamId(_teamId);
+  letter->SetProgram(_program);
+  letter->SetWorldPos(_pos);
+  SendLetter(letter);
 }
