@@ -268,6 +268,15 @@ tasks:
       the third failure:
       grep -rnE '\b(int|bool|unsigned|short|char)\s+\w*\s*=\s*EnumName::'
 
+      AND A FOURTH, which is not interop at all but the same failure to
+      enumerate a shape: an enumerator reached through the ENCLOSING CLASS,
+      `TaskManagerInterface::TMTerminate`. A qualification pass keyed on
+      "enumerator not preceded by ::" skips those by construction, because they
+      are preceded by ::. It needs a second pass for `Class::Enumerator` ->
+      `Class::Enum::Enumerator`. FootState hit this and was handled; TMControl
+      hit it and was not, in a different file. The check that closes it:
+      grep -rnE '\w+::(Enumerator1|Enumerator2)' | grep -v 'EnumName::'
+
 
       PARSE_SUCCESS in InputDriver.h is a use site, not a declaration, so the
       macro now reads `(InputParserState::STATE_DONE == (x))` — worth noting
