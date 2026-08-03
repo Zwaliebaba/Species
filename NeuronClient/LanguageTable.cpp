@@ -47,8 +47,7 @@ LangTable::LangTable(char const* _filename)
   m_notFound.m_string = (char*)malloc(NOT_FOUND_CAPACITY);
 
   m_phrasesKbd = nullptr;
-  m_phrasesXin = nullptr;
-  m_chunk = nullptr;
+  // The three owning members start empty on their own.
 
   // Open the required language file
   ParseLanguageFile(_filename);
@@ -57,24 +56,9 @@ LangTable::LangTable(char const* _filename)
 
 LangTable::~LangTable()
 {
-  for (const auto& [key, phrase] : m_phrasesRaw)
-    delete phrase;
-  m_phrasesRaw.clear();
-
-  delete m_phrasesKbd;
-  delete m_phrasesXin;
-  /*
-  if ( m_phrasesKbd ) {
-    m_phrasesKbd->Empty();
-    delete m_phrasesKbd;
-  }
-  if ( m_phrasesXin ) {
-    m_phrasesXin->Empty();
-    delete m_phrasesXin;
-  }
-  */
-  if (m_chunk)
-    delete[] m_chunk;
+  // All four members own what they hold, so the destructor has nothing left to
+  // do. The commented-out Empty()-then-delete block that used to sit here went
+  // with them: it described the legacy HashTable, not std::map.
 }
 
 
@@ -91,7 +75,7 @@ void LangTable::ParseLanguageFile(char const* _filename)
 
     char* key = in->GetNextToken();
 
-    LangPhrase* phrase = new LangPhrase;
+    auto phrase = std::make_unique<LangPhrase>();
     phrase->m_key = strdup(key);
 
     // Make sure the this key isn't already used. BTree::RemoveData dropped the
@@ -99,7 +83,6 @@ void LangTable::ParseLanguageFile(char const* _filename)
     // repeated a key leaked one LangPhrase per repeat; erasing here deletes it.
     if (const auto existing = m_phrasesRaw.find(key); existing != m_phrasesRaw.end())
     {
-      delete existing->second;
       m_phrasesRaw.erase(existing);
     }
 
@@ -130,7 +113,7 @@ void LangTable::ParseLanguageFile(char const* _filename)
       phrase->m_string[stringLength - 2] = '\x0';
     }
 
-    m_phrasesRaw[phrase->m_key] = phrase;
+    m_phrasesRaw[phrase->m_key] = std::move(phrase);
   }
 
   delete in;
@@ -246,28 +229,25 @@ void LangTable::RebuildTables()
 {
   std::ostrstream stream;
 
-  delete m_phrasesKbd;
-  delete m_phrasesXin;
 
-  m_phrasesKbd = new PhraseOffsets();
-  m_phrasesXin = new PhraseOffsets();
+  // Assigning frees the previous table at the same point the deletes did.
+  m_phrasesKbd = std::make_unique<PhraseOffsets>();
+  m_phrasesXin = std::make_unique<PhraseOffsets>();
 
-  RebuildTable(m_phrasesKbd, stream, INPUT_MODE_KEYBOARD);
-  RebuildTable(m_phrasesXin, stream, INPUT_MODE_GAMEPAD);
-  if (m_chunk)
-    delete[] m_chunk;
-  m_chunk = stream.str();
+  RebuildTable(m_phrasesKbd.get(), stream, INPUT_MODE_KEYBOARD);
+  RebuildTable(m_phrasesXin.get(), stream, INPUT_MODE_GAMEPAD);
+  m_chunk.reset(stream.str());
 
   if (DEBUG_PRINT_LANGTABLE)
   {
     std::ofstream dbg_out("langtable_debug.txt", std::ios::app);
     dbg_out << "********** KEYBOARD MODE STRINGS **********" << std::endl;
-    if (!printTable(m_phrasesKbd, m_chunk, dbg_out))
+    if (!printTable(m_phrasesKbd.get(), m_chunk.get(), dbg_out))
     {
       dbg_out << "KEYBOARD STRINGS NOT AVAILABLE." << std::endl;
     }
     dbg_out << std::endl << "********** GAMEPAD MODE STRINGS **********" << std::endl;
-    if (!printTable(m_phrasesXin, m_chunk, dbg_out))
+    if (!printTable(m_phrasesXin.get(), m_chunk.get(), dbg_out))
     {
       dbg_out << "KEYBOARD STRINGS NOT AVAILABLE." << std::endl;
     }
@@ -335,10 +315,10 @@ PhraseOffsets* LangTable::GetCurrentTable(InputMode _mood)
   switch (_mood)
   {
   case INPUT_MODE_KEYBOARD:
-    return m_phrasesKbd;
+    return m_phrasesKbd.get();
 
   case INPUT_MODE_GAMEPAD:
-    return m_phrasesXin;
+    return m_phrasesXin.get();
   }
   return nullptr;
 }
@@ -417,7 +397,7 @@ char* LangTable::LookupPhrase(char const* _key)
     // never rejected it, so an unknown key has always rendered as "". Keeping
     // that: the menus are full of keys that only exist in some languages.
     const auto entry = phrases->find(_key);
-    phrase = m_chunk + (entry == phrases->end() ? 0 : entry->second);
+    phrase = m_chunk.get() + (entry == phrases->end() ? 0 : entry->second);
   }
 
   return phrase;
@@ -463,14 +443,14 @@ char* LangTable::RawLookupPhrase(char const* _key, InputMode _mood)
       }
       const auto suffixed = m_phrasesRaw.find(key.c_str());
       if (suffixed != m_phrasesRaw.end())
-        phrase = suffixed->second;
+        phrase = suffixed->second.get();
     }
 
     if (!phrase)
     {
       const auto plain = m_phrasesRaw.find(_key);
       if (plain != m_phrasesRaw.end())
-        phrase = plain->second;
+        phrase = plain->second.get();
     }
 
     if (!phrase)
@@ -546,7 +526,7 @@ std::vector<LangPhrase*>* LangTable::GetPhraseList()
   auto phrases = new std::vector<LangPhrase*>();
   phrases->reserve(m_phrasesRaw.size());
   for (const auto& [key, phrase] : m_phrasesRaw)
-    phrases->push_back(phrase);
+    phrases->push_back(phrase.get());
   return phrases;
 }
 

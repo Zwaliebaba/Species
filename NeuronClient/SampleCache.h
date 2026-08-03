@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <string>
 #include <unordered_map>
 
@@ -82,7 +84,7 @@ struct CaseInsensitiveEqual
 class CachedSampleManager
 {
   protected:
-    std::unordered_map<std::string, CachedSample*, CaseInsensitiveHash, CaseInsensitiveEqual> m_cache;
+    std::unordered_map<std::string, std::unique_ptr<CachedSample>, CaseInsensitiveHash, CaseInsensitiveEqual> m_cache;
 
   public:
     ~CachedSampleManager();

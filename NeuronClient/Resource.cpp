@@ -26,6 +26,15 @@ namespace
     const auto entry = _map.find(_key);
     return entry == _map.end() ? _default : entry->second;
   }
+
+  // The same shape for the two maps that own their values. It cannot be Lookup:
+  // that returns mapped_type by value, and a unique_ptr will not copy. The miss
+  // value is always nullptr here, so it is not a parameter.
+  template <typename Map> auto LookupOwned(const Map& _map, const char* _key) -> typename Map::mapped_type::pointer
+  {
+    const auto entry = _map.find(_key);
+    return entry == _map.end() ? nullptr : entry->second.get();
+  }
 } // namespace
 
 Resource::Resource()
@@ -38,12 +47,9 @@ Resource::~Resource()
 {
   FlushOpenGlState();
 
-  for (const auto& [name, bitmap] : m_bitmaps)
-    delete bitmap;
+  // Both maps own their values; clear() is kept so they still empty here,
+  // after FlushOpenGlState, rather than at the member destructors.
   m_bitmaps.clear();
-
-  for (const auto& [name, shape] : m_shapes)
-    delete shape;
   m_shapes.clear();
 }
 
@@ -52,8 +58,7 @@ void Resource::AddBitmap(const char* _name, const BitmapRGBA& _bmp, bool _mipMap
   // Only insert if a bitmap with no other bitmap is already using that name
   if (!m_bitmaps.contains(_name))
   {
-    auto bmpCopy = new BitmapRGBA(_bmp);
-    m_bitmaps[_name] = bmpCopy;
+    m_bitmaps[_name] = std::make_unique<BitmapRGBA>(_bmp);
   }
 }
 
@@ -62,12 +67,11 @@ void Resource::DeleteBitmap(const char* _name)
   const auto entry = m_bitmaps.find(_name);
   if (entry != m_bitmaps.end())
   {
-    delete entry->second;
     m_bitmaps.erase(entry);
   }
 }
 
-const BitmapRGBA* Resource::GetBitmap(const char* _name) { return Lookup(m_bitmaps, _name, nullptr); }
+const BitmapRGBA* Resource::GetBitmap(const char* _name) { return LookupOwned(m_bitmaps, _name); }
 
 TextReader* Resource::GetTextReader(const std::string& _filename) { return GetTextReader(_filename.c_str()); }
 
@@ -97,7 +101,7 @@ int Resource::GetTexture(const char* _name, bool _mipMapping, bool _masked)
   // If the texture wasn't there, then look in our bitmap store
   if (theTexture == -1)
   {
-    BitmapRGBA* bmp = Lookup(m_bitmaps, _name, nullptr);
+    BitmapRGBA* bmp = LookupOwned(m_bitmaps, _name);
     if (bmp)
     {
       if (_masked)
@@ -143,7 +147,7 @@ bool Resource::DoesTextureExist(const char* _name)
     return true;
 
   // If the texture wasn't there, then look in our bitmap store
-  BitmapRGBA* bmp = Lookup(m_bitmaps, _name, nullptr);
+  BitmapRGBA* bmp = LookupOwned(m_bitmaps, _name);
   if (bmp)
     return true;
 
@@ -170,14 +174,17 @@ void Resource::DeleteTexture(const char* _name)
 
 Shape* Resource::GetShape(const char* _name)
 {
-  Shape* theShape = Lookup(m_shapes, _name, nullptr);
+  Shape* theShape = LookupOwned(m_shapes, _name);
 
   // If we haven't loaded the shape before, or _makeNew is true, then
   // try to load it from the disk
   if (!theShape)
   {
-    theShape = GetShapeCopy(_name, false);
-    m_shapes[_name] = theShape;
+    // GetShapeCopy hands back a shape it does not keep; the map takes it and
+    // theShape stays as the observer this function returns.
+    std::unique_ptr<Shape> owned(GetShapeCopy(_name, false));
+    theShape = owned.get();
+    m_shapes[_name] = std::move(owned);
   }
 
   return theShape;
