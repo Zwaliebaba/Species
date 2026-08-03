@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "InputDriver.h"
 #include "InputSpecList.h"
 
@@ -12,7 +15,7 @@ class ChordInputDriver : public InputDriver
 {
   private:
     // List of lists of InputSpec
-    auto_vector<InputSpecList> m_specs;
+    std::vector<std::unique_ptr<InputSpecList>> m_specs;
     std::string& lastError;
 
   public:

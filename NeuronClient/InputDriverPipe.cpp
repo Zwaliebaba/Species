@@ -28,6 +28,11 @@ PipeInputDriver::PipeInputDriver()
 }
 
 
+// InputFilterWithArgs is complete here and nowhere the header can see, which is
+// the whole reason this is not defaulted in the class.
+PipeInputDriver::~PipeInputDriver() = default;
+
+
 InputParserState PipeInputDriver::parseInputSpec(ostringstream& stream, InputSpecList& speclist)
 {
   if (stream.str() == "")

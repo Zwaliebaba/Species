@@ -85,7 +85,11 @@ int InputFilterWithDelta::getDelta(InputFilterSpec const& spec, InputDetails& de
 
 void InputFilterWithDelta::ageDetails()
 {
-  m_details.swap(m_oldDetails); // auto_vector has no assignment operator
+  // A swap rather than an assignment: the old details buffer is reused as the
+  // next frame's, so nothing is allocated or freed here. The vector would
+  // move-assign now, where auto_vector could not, but that would drop the
+  // buffer this needs to keep.
+  m_details.swap(m_oldDetails);
 }
 
 

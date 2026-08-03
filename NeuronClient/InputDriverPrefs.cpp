@@ -7,7 +7,7 @@
 
 using namespace std;
 
-typedef auto_vector<string>::iterator KeyIt;
+typedef std::vector<std::unique_ptr<string>>::iterator KeyIt;
 
 
 enum

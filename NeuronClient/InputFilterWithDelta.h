@@ -1,6 +1,8 @@
 #pragma once
 
-#include "AutoVector.h"
+#include <memory>
+#include <vector>
+
 #include "InputFilterSpec.h"
 #include "InputFilter.h"
 
@@ -8,9 +10,9 @@
 class InputFilterWithDelta : public InputFilter
 {
   private:
-    auto_vector<const InputFilterSpec> m_specs;
-    auto_vector<InputDetails> m_oldDetails;
-    auto_vector<InputDetails> m_details;
+    std::vector<std::unique_ptr<const InputFilterSpec>> m_specs;
+    std::vector<std::unique_ptr<InputDetails>> m_oldDetails;
+    std::vector<std::unique_ptr<InputDetails>> m_details;
 
   protected:
     void registerDeltaID(InputFilterSpec& spec);

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <sstream>
+#include <vector>
 
-#include "AutoVector.h"
 #include "InputDriver.h"
 #include "InputSpecList.h"
 
@@ -17,7 +18,7 @@ class PipeInputDriver : public InputDriver
 {
   private:
     // List of lists of InputSpec
-    auto_vector<InputFilterWithArgs> m_specs;
+    std::vector<std::unique_ptr<InputFilterWithArgs>> m_specs;
     std::string& lastError;
 
     // Parse an individual spec which is part of the left hand side of the
@@ -26,6 +27,12 @@ class PipeInputDriver : public InputDriver
 
   public:
     PipeInputDriver();
+
+    // Out of line on purpose. m_specs holds unique_ptr to a type that is only
+    // forward-declared here, and unique_ptr's deleter needs the complete type
+    // at the point of destruction. Defining this in the .cpp, below the struct,
+    // is what supplies it.
+    ~PipeInputDriver();
 
     // Return STATE_DONE if we managed to parse these tokens, and put the parsed information
     // into spec. Anything else means we failed.

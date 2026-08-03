@@ -1,9 +1,7 @@
 #pragma once
 
-#include "AutoVector.h"
 #include "InputDriver.h"
-
-typedef auto_vector<const InputSpec> InputSpecList;
+#include "InputSpecList.h"
 
 
 // Enables boolean input specifications to be negated with "not" or "!"

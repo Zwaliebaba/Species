@@ -590,7 +590,7 @@ tasks:
       ResearchItem) use LList and DArray for UI lists. Frame-rate code, no
       simulation state — the low-risk half of GameLogic.
     project: GameLogic
-    depends_on: [T1, T6, T7, T12, T23]
+    depends_on: [T1, T6, T7, T12, T14, T23]
     files:
       - GameLogic/SpeciesWindow.cpp
       - GameLogic/MainMenus.cpp
@@ -613,13 +613,18 @@ tasks:
       grep count and is wrong: most of the remaining LList in these files is
       not theirs to convert. It arrives through other tasks' APIs.
 
-        MainMenus.cpp          WordWrapText() returns LList<char*>*    -> T6
-        PrefsOtherWindow.cpp   ListResources() returns LList<char*>*   -> T6
-        UserProfileWindow.cpp  ListSubDirectoryNames()                 -> T6
-        FileDialog.h           m_files holds a ListDirectory result    -> T6
-        PrefsKeybindingsWindow auto_vector<InputDescription>           -> T14
-        ResearchItem.h/.cpp    ListSoundEvents(LList<char const*>*)    -> T23
+        MainMenus.cpp          WordWrapText() returns LList<char*>*    -> T24 done
+        PrefsOtherWindow.cpp   ListResources() returns LList<char*>*   -> T6  DONE
+        UserProfileWindow.cpp  ListSubDirectoryNames()                 -> T6  DONE
+        FileDialog.h           m_files holds a ListDirectory result    -> T6  DONE
+        PrefsKeybindingsWindow auto_vector<InputDescription>           -> T14 DONE
+        ResearchItem.h/.cpp    ListSoundEvents(LList<char const*>*)    -> T23 DONE
         CameraAnimWindow.cpp   LevelFile::m_cameraAnimations           -> T12
+
+      Status 2026-08-03: T6, T14 and T23 have landed, so five of those seven
+      rows are cleared. MainMenus.cpp's WordWrapText moved to T24 when
+      LanguageTable was split out of T6, and T12 is still held by
+      layering-inversion/T15. Those two are what T11 is now waiting for.
 
       Only four members are genuinely this task's: SpeciesWindow's
       m_buttonOrder, PrefsOtherWindow's m_languages, DropDownMenu's m_options
@@ -760,14 +765,23 @@ tasks:
     files:
       - NeuronClient/InputSpecList.h
       - NeuronClient/InputTypes.h
+      - NeuronClient/InputDriver.h
       - NeuronClient/InputDriverPrefs.h
+      - NeuronClient/InputDriverPrefs.cpp
       - NeuronClient/InputDriverInvert.h
       - NeuronClient/InputDriverPipe.h
+      - NeuronClient/InputDriverPipe.cpp
       - NeuronClient/InputDriverConjoin.h
+      - NeuronClient/InputDriverChord.h
       - NeuronClient/InputFilterManager.h
+      - NeuronClient/InputFilterManager.cpp
       - NeuronClient/InputFilterWithDelta.h
+      - NeuronClient/InputFilterWithDelta.cpp
+      - NeuronClient/ControlBindings.cpp
+      - GameLogic/PrefsKeybindingsWindow.h
     acceptance:
-      - grep -lwE "LList|InputSpecList|AutoVector" on the driver headers returns nothing, or InputSpecList is a std-backed alias
+      - grep -lwE "LList|AutoVector|auto_vector" on the driver headers returns nothing; InputSpecList is a std-backed alias
+      - Every container that owned its elements still owns them, with the ownership in the element type rather than in the container's destructor
       - The driver stack composes exactly as before (same resolution order)
     verify:
       - python3 tools/check_layering.py
@@ -780,7 +794,69 @@ tasks:
       AutoVector.h, and no acceptance criterion in the plan mentioned it — so
       this task and T11 between them now own retiring it. AutoVector.h carries
       a third-party notice listed in LICENSE; see T16 for what happens to that.
-    status: todo
+
+      Done 2026-08-03, with the owner's decision to convert straight to
+      std::vector<std::unique_ptr<T>> rather than take two passes. auto_vector
+      OWNS its elements — its destructor deletes them — so a swap to
+      std::vector<T*> would have turned every driver teardown into a leak, and
+      the only honest one-pass target is unique_ptr. That makes this a stage 3
+      and stage 5 conversion at once; ownership/T3 should expect the input
+      driver stack already done.
+
+      The file list above was widened from 8 to 16. The original named only the
+      headers that mention auto_vector by name, which is not the same set as the
+      files the conversion has to touch.
+
+      PrefsKeybindingsWindow.h is in the list even though T11 owns the file. Its
+      InputDescList typedef is an auto_vector, and auto_vector cannot be retired
+      one user at a time. T11 has the rest of that file.
+
+      Three things the conversion forced into the open.
+
+      InputDriver had no virtual destructor, and InputManager deletes its
+      drivers through an InputDriver*. No derived destructor has ever run: every
+      driver's spec list leaked at shutdown, and W32InputDriver's destructor —
+      which unhooks it from the Win32 event handler — has been dead code since
+      it was written. That is fixed here, because without it the unique_ptr
+      conversion is decoration: the destructor that would free the elements is
+      never called. Note that this makes ~W32InputDriver run for the first time.
+
+      auto_vector's one-argument constructor RESERVES capacity and leaves the
+      vector empty. std::vector's creates that many null elements. There was one
+      caller, InputFilterManager::filter, and it appends in a loop afterwards —
+      so a literal translation would have handed the filter a list that was half
+      null pointers. Converted to reserve(), and the trap is recorded in
+      InputTypes.h beside the typedef.
+
+      PipeInputDriver holds unique_ptr to an incomplete type, which unique_ptr
+      static_asserts against at the point of destruction. Its destructor is now
+      declared in the header and defaulted in the .cpp below the struct. Worth
+      knowing WHY this compiled before: auto_vector's clear() called delete on
+      the incomplete type, which is undefined behaviour that MSVC accepts with a
+      warning and no destructor call — so it silently leaked the InputSpecList
+      inside every InputFilterWithArgs. It never showed up because
+      PipeInputDriver is never registered: Species/Main.cpp adds Conjoin, Chord,
+      Invert, Idle, W32, Prefs, Value and Alias, and no Pipe. The whole driver
+      is unreachable.
+
+      Two bugs found and deliberately NOT fixed, because they change input
+      behaviour rather than ownership and belong to whoever owns the input
+      system, not to a container task:
+
+      (1) PrefsInputDriver::keyPosition returns m_keys.size() after appending,
+      where every other driver returns size() - 1. The caller stores that in
+      spec.control_id, and getInput rejects it with
+      `control_id < m_keys.size()`. A `pref` input specification that adds a new
+      key can therefore never fire.
+
+      (2) InputFilterWithDelta::Advance assigns currDetails.y = details.x and
+      currDetails.x = details.y. The axes are swapped. Nothing reaches it today
+      — the only InputFilterWithDelta subclass is DirectionInputFilter, whose
+      filter() returns false unconditionally and whose calcDetails is empty.
+
+      AutoVector.h now has no users. T16's remaining work on it is the file
+      itself, its two NeuronCore.vcxproj entries and the LICENSE row.
+    status: done
 
   - id: T19
     title: Characterise the preferences file format before converting it

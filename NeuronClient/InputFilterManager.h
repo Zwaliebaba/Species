@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "AutoVector.h"
 #include "InputFilter.h"
 #include "InputFilterSpec.h"
 #include "InputSpecList.h"

@@ -2,7 +2,7 @@
 
 #include <string>
 #include <memory>
-#include "AutoVector.h"
+#include <vector>
 
 
 enum InputType
@@ -23,7 +23,10 @@ struct InputDetails
     int y;          // Only meaningful if type is INPUT_TYPE_2D
 };
 
-typedef auto_vector<const InputDetails> InputDetailsList;
+// Owning — see InputSpecList.h. Note for anyone constructing one: auto_vector's
+// one-argument constructor RESERVED that many slots and left the vector empty.
+// std::vector's creates that many null elements instead. Call reserve().
+typedef std::vector<std::unique_ptr<const InputDetails>> InputDetailsList;
 typedef std::unique_ptr<InputDetails> InputDetailsPtr;
 
 class InputDescription

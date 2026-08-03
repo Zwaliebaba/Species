@@ -97,8 +97,9 @@ bool ControlBindings::bind(int type, InputSpec const& spec, bool replace)
     std::unique_ptr<const InputSpec> specCopy(new InputSpec(spec));
     if (replace && bindings[type].size() > 0)
     {
-      bindings[type].erase(0);
-      bindings[type].insert(0, std::move(specCopy));
+      // Was erase(0) then insert(0, ...) — auto_vector's erase deleted the
+      // element it dropped, and assigning a unique_ptr does the same.
+      bindings[type][0] = std::move(specCopy);
     }
     else
       bindings[type].push_back(std::move(specCopy));

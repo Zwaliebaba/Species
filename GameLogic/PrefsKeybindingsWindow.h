@@ -1,12 +1,15 @@
 #pragma once
 
 
-#include "AutoVector.h"
+#include <memory>
+#include <vector>
+
 #include "Input.h"
 #include "SpeciesWindow.h"
 
 
-typedef auto_vector<InputDescription> InputDescList;
+// Owning — see NeuronClient/InputSpecList.h.
+typedef std::vector<std::unique_ptr<InputDescription>> InputDescList;
 
 
 class PrefsKeybindingsWindow : public SpeciesWindow

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <vector>
 
-#include "AutoVector.h"
 #include "InputDriver.h"
 
 
@@ -11,7 +12,7 @@ class PrefsInputDriver : public InputDriver
   private:
     // List of preference keys we use, not ordered since we want to preserve
     // positions despite additions
-    auto_vector<std::string> m_keys;
+    std::vector<std::unique_ptr<std::string>> m_keys;
 
     // Searches for a key in m_keys. Adds one if it has to.
     int keyPosition(std::string const& key);

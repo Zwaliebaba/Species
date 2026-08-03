@@ -55,7 +55,11 @@ bool InputFilterManager::parseFilterSpecTokens(InputSpecTokens const& tokens, In
 
 bool InputFilterManager::filter(InputSpecList const& inSpecs, InputFilterSpec const& filterSpec, InputDetails& outDetails)
 {
-  InputDetailsList detailsList(inSpecs.size());
+  // reserve, not a sized construction. auto_vector's one-argument constructor
+  // reserved capacity and left the vector empty; std::vector's would create
+  // that many null elements, and the loop below appends to them.
+  InputDetailsList detailsList;
+  detailsList.reserve(inSpecs.size());
   for (unsigned i = 0; i < inSpecs.size(); ++i)
   {
     InputDetails details;

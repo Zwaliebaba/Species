@@ -63,6 +63,12 @@ class InputDriver
     void setName(std::string const& name);
 
   public:
+    // InputManager owns its drivers and deletes them through an InputDriver*.
+    // Without this, none of the derived destructors ever ran: every driver's
+    // spec list leaked at shutdown, and W32InputDriver's destructor — which
+    // unhooks it from the Win32 event handler — was dead code the whole time.
+    virtual ~InputDriver() = default;
+
     // Return STATE_DONE if we managed to parse these tokens, and put the parsed information
     // into spec. Anything else means we failed.
     virtual InputParserState parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec) = 0;
