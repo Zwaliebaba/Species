@@ -416,11 +416,11 @@ bool MasterSpawnPoint::Advance()
 
   if (m_isGlobal)
   {
-    for (int i = 0; i < g_location->static_cast<int>(m_spirits.size()); ++i)
+    for (int i = 0; i < g_location->m_spirits.Size(); ++i)
     {
-      if (g_location->ValidIndex(m_spirits, i))
+      if (g_location->m_spirits.ValidIndex(i))
       {
-        Spirit* s = g_location->& m_spirits[i];
+        Spirit* s = g_location->m_spirits.GetPointer(i);
         if (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating)
         {
           s->SkipStage();

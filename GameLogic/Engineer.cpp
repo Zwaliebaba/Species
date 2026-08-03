@@ -100,11 +100,11 @@ bool Engineer::SearchForSpirits()
     int spiritId = -1;
     float closest = 999999.9f;
 
-    for (int i = 0; i < g_location->static_cast<int>(m_spirits.size()); ++i)
+    for (int i = 0; i < g_location->m_spirits.Size(); ++i)
     {
-      if (g_location->ValidIndex(m_spirits, i))
+      if (g_location->m_spirits.ValidIndex(i))
       {
-        Spirit* s = g_location->& m_spirits[i];
+        Spirit* s = g_location->m_spirits.GetPointer(i);
         float theDist = (s->m_pos - m_pos).Mag();
 
         if (theDist <= ENGINEER_SEARCHRANGE && theDist < closest && (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
@@ -332,9 +332,9 @@ bool Engineer::Advance(Unit* _unit)
     while (static_cast<int>(m_spirits.size()) > 0)
     {
       int spiritId = m_spirits[0];
-      if (g_location->ValidIndex(m_spirits, spiritId))
+      if (g_location->m_spirits.ValidIndex(spiritId))
       {
-        Spirit* s = g_location->& m_spirits[spiritId];
+        Spirit* s = g_location->m_spirits.GetPointer(spiritId);
         s->CollectorDrops();
         m_spirits.erase(m_spirits.begin() + 0);
       }
@@ -392,9 +392,9 @@ bool Engineer::Advance(Unit* _unit)
   for (int i = 0; i < static_cast<int>(m_spirits.size()); ++i)
   {
     int spiritId = m_spirits[i];
-    if (g_location->ValidIndex(m_spirits, spiritId))
+    if (g_location->m_spirits.ValidIndex(spiritId))
     {
-      Spirit* s = g_location->& m_spirits[spiritId];
+      Spirit* s = g_location->m_spirits.GetPointer(spiritId);
       if (s && s->m_state == Spirit::StateAttached)
       {
         if (ValidIndex(m_positionHistory, i + 1))
@@ -574,9 +574,9 @@ bool Engineer::AdvanceToWaypoint()
 bool Engineer::AdvanceToSpirit()
 {
   Spirit* s = nullptr;
-  if (g_location->ValidIndex(m_spirits, m_spiritId))
+  if (g_location->m_spirits.ValidIndex(m_spiritId))
   {
-    s = g_location->& m_spirits[m_spiritId];
+    s = g_location->m_spirits.GetPointer(m_spiritId);
   }
 
   if (!s || s->m_state == Spirit::StateDeath || s->m_state == Spirit::StateAttached)
@@ -603,9 +603,9 @@ bool Engineer::AdvanceToSpirit()
 
 void Engineer::CollectSpirit(int _spiritId)
 {
-  if (g_location->ValidIndex(m_spirits, _spiritId))
+  if (g_location->m_spirits.ValidIndex(_spiritId))
   {
-    Spirit* spirit = g_location->& m_spirits[_spiritId];
+    Spirit* spirit = g_location->m_spirits.GetPointer(_spiritId);
 
     spirit->CollectorArrives();
     m_spirits.push_back(_spiritId);
@@ -670,9 +670,9 @@ bool Engineer::AdvanceToIncubator()
 
     // Arrived at our incubator, drop spirit off here one at a time
     int spiritId = m_spirits[0];
-    if (g_location->ValidIndex(m_spirits, spiritId))
+    if (g_location->m_spirits.ValidIndex(spiritId))
     {
-      Spirit* s = g_location->& m_spirits[spiritId];
+      Spirit* s = g_location->m_spirits.GetPointer(spiritId);
       incubator->AddSpirit(s);
       g_location->m_spirits.MarkNotUsed(spiritId);
       m_spirits.erase(m_spirits.begin() + 0);
