@@ -19,24 +19,23 @@ class GlobalInternet;
 
 class GlobalLocation
 {
-public:
-    int     m_id;
+  public:
+    int m_id;
     Vector3 m_pos;
-    bool    m_available;            // Is it connected on the transit system
+    bool m_available; // Is it connected on the transit system
 
-    char    m_name[256];
-    char    m_mapFilename[256];
-    char    m_missionFilename[256];
-    bool    m_missionCompleted;
+    char m_name[256];
+    char m_mapFilename[256];
+    char m_missionFilename[256];
+    bool m_missionCompleted;
 
-    int     m_numSpirits;           // Number of spirits that have died
+    int m_numSpirits; // Number of spirits that have died
 
-public:
+  public:
     GlobalLocation();
 
-    void    AddSpirits( int _count=1 );
+    void AddSpirits(int _count = 1);
 };
-
 
 
 // ****************************************************************************
@@ -45,20 +44,19 @@ public:
 
 class GlobalBuilding
 {
-public:
-    int     m_id;
-    int     m_teamId;
-    int     m_locationId;
+  public:
+    int m_id;
+    int m_teamId;
+    int m_locationId;
     Vector3 m_pos;
-    int     m_type;
-    bool    m_online;
-    int     m_link;
-    Shape   *m_shape;
+    int m_type;
+    bool m_online;
+    int m_link;
+    Shape* m_shape;
 
-public:
+  public:
     GlobalBuilding();
 };
-
 
 
 // ****************************************************************************
@@ -67,147 +65,145 @@ public:
 
 class GlobalEventCondition
 {
-public:
+  public:
     enum
     {
-        AlwaysTrue,			// 0
-        BuildingOnline,		// 1
-        BuildingOffline,	// 2
-        ResearchOwned,		// 3
-        NotInLocation,		// 4
-		DebugKey,			// 5
-		NeverTrue,			// 6
-        NumConditions                                       // Remember to update GetTypeName
+      AlwaysTrue,      // 0
+      BuildingOnline,  // 1
+      BuildingOffline, // 2
+      ResearchOwned,   // 3
+      NotInLocation,   // 4
+      DebugKey,        // 5
+      NeverTrue,       // 6
+      NumConditions    // Remember to update GetTypeName
     };
-    int     m_type;
-    int     m_id;
-	int		m_locationId;
-    char    *m_stringId;                                    // Brief description
-    char    *m_cutScene;                                    // Filename of cutscene to run
+    int m_type;
+    int m_id;
+    int m_locationId;
+    char* m_stringId; // Brief description
+    char* m_cutScene; // Filename of cutscene to run
 
-public:
+  public:
     GlobalEventCondition();
-	GlobalEventCondition(const GlobalEventCondition &_other);
-	~GlobalEventCondition();
+    GlobalEventCondition(const GlobalEventCondition& _other);
+    ~GlobalEventCondition();
 
-    bool    Evaluate    ();
+    bool Evaluate();
 
-    void    SetStringId ( char const *_stringId );
-    void    SetCutScene ( char *_cutScene );
+    void SetStringId(char const* _stringId);
+    void SetCutScene(char* _cutScene);
 
-    void    Save        ( FileWriter *_out );
+    void Save(FileWriter* _out);
 
-    static char const *GetTypeName( int _type );
-	static int  GetType(char const *_typeName);
+    static char const* GetTypeName(int _type);
+    static int GetType(char const* _typeName);
 };
 
 
 class GlobalEventAction
 {
-public:
+  public:
     enum
     {
-        SetMission,
-        RunScript,
-        MakeAvailable,
-        NumActionTypes
+      SetMission,
+      RunScript,
+      MakeAvailable,
+      NumActionTypes
     };
-    int     m_type;
-    int     m_locationId;
-    char    m_filename[256];
+    int m_type;
+    int m_locationId;
+    char m_filename[256];
 
-public:
+  public:
     GlobalEventAction();
 
-    void    Read        ( TextReader *_in );
-    void    Write       ( FileWriter *_file );
-    void    Execute     ();
+    void Read(TextReader* _in);
+    void Write(FileWriter* _file);
+    void Execute();
 
-    static char const *GetTypeName( int _type );
+    static char const* GetTypeName(int _type);
 };
 
 
 class GlobalEvent
 {
-public:
-    LList   <GlobalEventCondition *>    m_conditions;
-    LList   <GlobalEventAction *>       m_actions;
+  public:
+    LList<GlobalEventCondition*> m_conditions;
+    LList<GlobalEventAction*> m_actions;
 
-public:
-	GlobalEvent();
-	GlobalEvent(GlobalEvent &_other);	// Copy constructor only used by TestHarness
+  public:
+    GlobalEvent();
+    GlobalEvent(GlobalEvent& _other); // Copy constructor only used by TestHarness
 
-    void    Read        ( TextReader *_in );
-    void    Write       ( FileWriter *_file );
-    bool    Evaluate    ();
-    bool    Execute     ();                                 // Returns true when all done
+    void Read(TextReader* _in);
+    void Write(FileWriter* _file);
+    bool Evaluate();
+    bool Execute(); // Returns true when all done
 
-    void    MakeAlwaysTrue();
+    void MakeAlwaysTrue();
 };
-
 
 
 // ****************************************************************************
 // Class GlobalResearch
 // ****************************************************************************
 
-#define GLOBALRESEARCH_TIMEPERPOINT             10
-#define GLOBALRESEARCH_POINTS_CONTROLTOWER      22
+#define GLOBALRESEARCH_TIMEPERPOINT 10
+#define GLOBALRESEARCH_POINTS_CONTROLTOWER 22
 
 class GlobalResearch
 {
-public:
+  public:
     enum
     {
-        TypeCitizen,
-        TypeOfficer,
-        TypeSquad,
-        TypeLaser,
-        TypeGrenade,
-        TypeRocket,
-        TypeController,
-        TypeAirStrike,
-        TypeArmour,
-        TypeTaskManager,
-        TypeEngineer,
-        NumResearchItems
+      TypeCitizen,
+      TypeOfficer,
+      TypeSquad,
+      TypeLaser,
+      TypeGrenade,
+      TypeRocket,
+      TypeController,
+      TypeAirStrike,
+      TypeArmour,
+      TypeTaskManager,
+      TypeEngineer,
+      NumResearchItems
     };
 
-    int     m_researchLevel     [NumResearchItems];
-    int     m_researchProgress  [NumResearchItems];
-    int     m_currentResearch;
-    int     m_researchPoints;
-    float   m_researchTimer;
+    int m_researchLevel[NumResearchItems];
+    int m_researchProgress[NumResearchItems];
+    int m_currentResearch;
+    int m_researchPoints;
+    float m_researchTimer;
 
-public:
+  public:
     GlobalResearch();
 
-    bool    HasResearch         ( int _type );
-    int     CurrentProgress     ( int _type );
-    int     CurrentLevel        ( int _type );
+    bool HasResearch(int _type);
+    int CurrentProgress(int _type);
+    int CurrentLevel(int _type);
 
-    void    AddResearch         ( int _type );
-    void    SetCurrentProgress  ( int _type, int _progress );
+    void AddResearch(int _type);
+    void SetCurrentProgress(int _type, int _progress);
 
-    void    IncreaseProgress    ( int _amount );
-    void    DecreaseProgress    ( int _amount );
-    int     RequiredProgress    ( int _level );             // Progress required to reach this level
+    void IncreaseProgress(int _amount);
+    void DecreaseProgress(int _amount);
+    int RequiredProgress(int _level); // Progress required to reach this level
 
-    void    EvaluateLevel       ( int _type );
+    void EvaluateLevel(int _type);
 
-    void    SetCurrentResearch  ( int _type );
-    void    GiveResearchPoints  ( int _numPoints );
-    void    AdvanceResearch     ();
+    void SetCurrentResearch(int _type);
+    void GiveResearchPoints(int _numPoints);
+    void AdvanceResearch();
 
-    void    Write               ( FileWriter *_out );
-    void    Read                ( TextReader *_in );
+    void Write(FileWriter* _out);
+    void Read(TextReader* _in);
 
-    static char const *GetTypeName    ( int _type );
-    static int   GetType        ( char *_name );
+    static char const* GetTypeName(int _type);
+    static int GetType(char* _name);
 
-    static char const *GetTypeNameTranslated ( int _type );
+    static char const* GetTypeNameTranslated(int _type);
 };
-
 
 
 // ****************************************************************************
@@ -216,25 +212,25 @@ public:
 
 class SphereWorld
 {
-public:
-    Shape           *m_shapeOuter;
-    Shape           *m_shapeMiddle;
-    Shape           *m_shapeInner;
+  public:
+    Shape* m_shapeOuter;
+    Shape* m_shapeMiddle;
+    Shape* m_shapeInner;
 
-    int             m_numLocations;
-    LList<float>    *m_spirits;    // An array with one LList<float> per location
+    int m_numLocations;
+    LList<float>* m_spirits; // An array with one LList<float> per location
 
-public:
+  public:
     SphereWorld();
 
-    void            AddLocation             ( int _locationId );
+    void AddLocation(int _locationId);
 
-    void            Render                  ();
-    void            RenderWorldShape        ();
-    void            RenderIslands           ();
-    void            RenderTrunkLinks        ();
-    void            RenderHeaven            ();
-    void            RenderSpirits           ();
+    void Render();
+    void RenderWorldShape();
+    void RenderIslands();
+    void RenderTrunkLinks();
+    void RenderHeaven();
+    void RenderSpirits();
 };
 
 
@@ -244,75 +240,73 @@ public:
 
 class GlobalWorld
 {
-public:
-    GlobalInternet                          *m_globalInternet;
-    SphereWorld                             *m_sphereWorld;
-    GlobalResearch                          *m_research;
+  public:
+    GlobalInternet* m_globalInternet;
+    SphereWorld* m_sphereWorld;
+    GlobalResearch* m_research;
 
-    LList			<GlobalLocation *>		m_locations;
-    LList			<GlobalBuilding *>		m_buildings;
-    LList           <GlobalEvent *>         m_events;
-    int										m_myTeamId;
+    LList<GlobalLocation*> m_locations;
+    LList<GlobalBuilding*> m_buildings;
+    LList<GlobalEvent*> m_events;
+    int m_myTeamId;
 
-    int                                     m_editorMode;
-    int                                     m_editorSelectionId;
+    int m_editorMode;
+    int m_editorSelectionId;
 
-protected:
-    void			WriteLocations			(FileWriter *_out);
-    void			WriteBuildings			(FileWriter *_out);
-    void            WriteEvents             (FileWriter *_out);
-    void            WriteTutorial           (FileWriter *_out);
+  protected:
+    void WriteLocations(FileWriter* _out);
+    void WriteBuildings(FileWriter* _out);
+    void WriteEvents(FileWriter* _out);
+    void WriteTutorial(FileWriter* _out);
 
-    void			ParseLocations			(TextReader *_in);
-    void			ParseBuildings			(TextReader *_in);
-    void            ParseEvents             (TextReader *_in);
-    void            ParseTutorial           (TextReader *_in);
+    void ParseLocations(TextReader* _in);
+    void ParseBuildings(TextReader* _in);
+    void ParseEvents(TextReader* _in);
+    void ParseTutorial(TextReader* _in);
 
-	void			AddLevelBuildingToGlobalBuildings   (Building *_building, int _locId);
+    void AddLevelBuildingToGlobalBuildings(Building* _building, int _locId);
 
-    int				m_nextLocationId;
-    int				m_nextBuildingId;
+    int m_nextLocationId;
+    int m_nextBuildingId;
 
-	int				m_locationRequested;	// Stores the location a user has clicked on while we fade out. -1 means no request yet.
+    int m_locationRequested; // Stores the location a user has clicked on while we fade out. -1 means no request yet.
 
-public:
+  public:
     GlobalWorld();
-	GlobalWorld(GlobalWorld &); // Copy constructor only used in TestHarness
+    GlobalWorld(GlobalWorld&); // Copy constructor only used in TestHarness
     ~GlobalWorld();
 
-	void			Advance					();
-	void			Render					();
+    void Advance();
+    void Render();
 
-	int				LocationHit				(Vector3 const &_pos, Vector3 const &_dir, float locationRadius = 5000.0f);
+    int LocationHit(Vector3 const& _pos, Vector3 const& _dir, float locationRadius = 5000.0f);
 
-    void			AddLocation				(GlobalLocation *location);
-    void			AddBuilding				(GlobalBuilding *building);
+    void AddLocation(GlobalLocation* location);
+    void AddBuilding(GlobalBuilding* building);
 
-    GlobalLocation *GetLocation				        ( int _id );
-    GlobalLocation *GetLocation                     ( char const *_name );
-    GlobalLocation *GetHighlightedLocation          ();                         // ie whats under the mouse
-    int             GetLocationId                   ( char const *_name );
-	int				GetLocationIdFromMapFilename    ( char const *_mapFilename);
-    char           *GetLocationName                 ( int _id );
-    char           *GetLocationNameTranslated       ( int _id );
-    Vector3         GetLocationPosition             ( int _id );
+    GlobalLocation* GetLocation(int _id);
+    GlobalLocation* GetLocation(char const* _name);
+    GlobalLocation* GetHighlightedLocation(); // ie whats under the mouse
+    int GetLocationId(char const* _name);
+    int GetLocationIdFromMapFilename(char const* _mapFilename);
+    char* GetLocationName(int _id);
+    char* GetLocationNameTranslated(int _id);
+    Vector3 GetLocationPosition(int _id);
 
-    GlobalBuilding *GetBuilding				(int _id, int _locationId);
-    int				GenerateBuildingId		();
+    GlobalBuilding* GetBuilding(int _id, int _locationId);
+    int GenerateBuildingId();
 
-    bool            EvaluateEvents          ();	                        // Returns true if an event was triggered
-    void            TransferSpirits         (int _locationId);
+    bool EvaluateEvents(); // Returns true if an event was triggered
+    void TransferSpirits(int _locationId);
 
-    void			LoadGame				(char const *_filename);
-    void			SaveGame				(char const *_filename);
+    void LoadGame(char const* _filename);
+    void SaveGame(char const* _filename);
 
-    void            LoadLocations           (char const *_filename);
-    void            SaveLocations           (char const *_filename);
+    void LoadLocations(char const* _filename);
+    void SaveLocations(char const* _filename);
 
-	void			SetupLights				();
-	void			SetupFog				();
+    void SetupLights();
+    void SetupFog();
 
-	float			GetSize					();
+    float GetSize();
 };
-
-
