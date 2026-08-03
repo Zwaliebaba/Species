@@ -41,7 +41,7 @@
 #include "WorldPointers.h"
 #include "AppState.h"
 
-#define USE_PIXEL_EFFECT_GRID_OPTIMISATION	1
+#define USE_PIXEL_EFFECT_GRID_OPTIMISATION 1
 
 Renderer::Renderer()
   : m_fps(60),
@@ -55,7 +55,9 @@ Renderer::Renderer()
     m_fadedness(0.0f),
     m_fadeRate(0.0f),
     m_fadeDelay(0.0f),
-    m_pixelSize(256) {}
+    m_pixelSize(256)
+{
+}
 
 void Renderer::Initialise()
 {
@@ -81,9 +83,12 @@ void Renderer::Initialise()
   if (!success)
   {
     char caption[512];
-    sprintf(caption, "Failed to set requested screen resolution of\n"
-            "%d x %d, %d bit colour, %s\n\n" "Restored to safety settings of\n" "640 x 480, 16 bit colour, windowed", m_screenW, m_screenH,
-            colourDepth, windowed ? "windowed" : "fullscreen");
+    sprintf(caption,
+            "Failed to set requested screen resolution of\n"
+            "%d x %d, %d bit colour, %s\n\n"
+            "Restored to safety settings of\n"
+            "640 x 480, 16 bit colour, windowed",
+            m_screenW, m_screenH, colourDepth, windowed ? "windowed" : "fullscreen");
     auto owned = std::make_unique<MessageDialog>("Error", caption);
     MessageDialog* dialog = owned.get();
     EclRegisterWindow(std::move(owned));
@@ -378,16 +383,16 @@ void Renderer::RenderFrame(bool withFlip)
     {
       if (renderPixelShaderPref > 0)
       {
-          PreRenderPixelEffect();
+        PreRenderPixelEffect();
 
-          START_PROFILE(g_profiler, "Render Clear");
-          glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-          END_PROFILE(g_profiler, "Render Clear");
-          g_location->Render();
+        START_PROFILE(g_profiler, "Render Clear");
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        END_PROFILE(g_profiler, "Render Clear");
+        g_location->Render();
 
-          ApplyPixelEffect();
+        ApplyPixelEffect();
 
-          SetupMatricesFor3D();
+        SetupMatricesFor3D();
       }
       else
         g_location->Render();
@@ -411,8 +416,9 @@ void Renderer::RenderFrame(bool withFlip)
 
   //	RenderFlatTexture();
 
-  //if (m_renderingPoster == PosterMakerInactive)
-  {}
+  // if (m_renderingPoster == PosterMakerInactive)
+  {
+  }
 
   g_editorFont.BeginText2D();
 
@@ -468,8 +474,7 @@ void Renderer::RenderFrame(bool withFlip)
 
     if (g_locationId != -1)
     {
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : %d",
-                              g_location->m_landscape.m_renderer->m_numTriangles);
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : %d", g_location->m_landscape.m_renderer->m_numTriangles);
       g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : %s", g_requestedMission.c_str());
       g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : %s", g_requestedMap.c_str());
     }
@@ -743,7 +748,7 @@ void Renderer::CheckOpenGLState() const
   DEBUG_ASSERT(!glIsEnabled(GL_FOG));
   DEBUG_ASSERT(GetGLStateFloat(GL_FOG_DENSITY) == 1.0f);
   DEBUG_ASSERT(GetGLStateFloat(GL_FOG_END) >= 4000.0f);
-  //DEBUG_ASSERT(GetGLStateFloat(GL_FOG_START) >= 1000.0f);
+  // DEBUG_ASSERT(GetGLStateFloat(GL_FOG_START) >= 1000.0f);
   glGetFloatv(GL_FOG_COLOR, resultsf);
   //	DEBUG_ASSERT(fabsf(resultsf[0] - g_location->m_backgroundColour.r/255.0f) < 0.001f);
   //	DEBUG_ASSERT(fabsf(resultsf[1] - g_location->m_backgroundColour.g/255.0f) < 0.001f);
@@ -907,19 +912,19 @@ void Renderer::PreRenderPixelEffect()
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
   glDisable(GL_TEXTURE_2D); // *
   glEnable(GL_BLEND);
-  //glDisable( GL_BLEND ); // *
+  // glDisable( GL_BLEND ); // *
   glDisable(GL_CULL_FACE); // *
-  //glBegin( GL_QUADS );
-  //    glTexCoord2f( 0.0f, 1.0f );     glVertex2f( 0, m_screenH-upSpeed );
-  //    glTexCoord2f( 1.0f, 1.0f );     glVertex2f( m_pixelSize, m_screenH-upSpeed);
-  //    glTexCoord2f( 1.0f, 0.0f );     glVertex2f( m_pixelSize, m_screenH - m_pixelSize -upSpeed );
-  //    glTexCoord2f( 0.0f, 0.0f );     glVertex2f( 0, m_screenH - m_pixelSize - upSpeed);
-  //glEnd();
+  // glBegin( GL_QUADS );
+  //     glTexCoord2f( 0.0f, 1.0f );     glVertex2f( 0, m_screenH-upSpeed );
+  //     glTexCoord2f( 1.0f, 1.0f );     glVertex2f( m_pixelSize, m_screenH-upSpeed);
+  //     glTexCoord2f( 1.0f, 0.0f );     glVertex2f( m_pixelSize, m_screenH - m_pixelSize -upSpeed );
+  //     glTexCoord2f( 0.0f, 0.0f );     glVertex2f( 0, m_screenH - m_pixelSize - upSpeed);
+  // glEnd();
   g_editorFont.EndText2D();
   glEnable(GL_TEXTURE_2D); // *
   END_PROFILE(g_profiler, "blend old");
 
-  //glDisable           (GL_TEXTURE_2D);
+  // glDisable           (GL_TEXTURE_2D);
 
   //
   // Draw all pixelated objects to the screen
@@ -1046,14 +1051,14 @@ void Renderer::PreRenderPixelEffect()
   //
   // Update pixel size
 
-  //if      ( nearest < 30 )        m_pixelSize = 128;
-  //else if ( nearest < 200 )       m_pixelSize = 256;
-  //else                            m_pixelSize = 512;
+  // if      ( nearest < 30 )        m_pixelSize = 128;
+  // else if ( nearest < 200 )       m_pixelSize = 256;
+  // else                            m_pixelSize = 512;
 
   END_PROFILE(g_profiler, "Pixel Pre-render");
 }
 
-#define d3dOneMinus( _x ) _x
+#define d3dOneMinus(_x) _x
 
 void Renderer::PaintPixels()
 {
@@ -1113,38 +1118,46 @@ void Renderer::PaintPixels()
   }
   glEnd();
 #else
-  glBegin(GL_QUADS); glTexCoord2i(0, 0); glVertex2i(0, 0); glTexCoord2i(1, 0); glVertex2i(m_screenW, 0); glTexCoord2i(1, 1);
-  glVertex2i(m_screenW, m_screenH); glTexCoord2i(0, 1); glVertex2i(0, m_screenH); glEnd();
+  glBegin(GL_QUADS);
+  glTexCoord2i(0, 0);
+  glVertex2i(0, 0);
+  glTexCoord2i(1, 0);
+  glVertex2i(m_screenW, 0);
+  glTexCoord2i(1, 1);
+  glVertex2i(m_screenW, m_screenH);
+  glTexCoord2i(0, 1);
+  glVertex2i(0, m_screenH);
+  glEnd();
 #endif
 }
 
 void Renderer::ApplyPixelEffect()
 {
-  //SetupMatricesFor2D	();
-  //glDisable			(GL_DEPTH_TEST);
-  //glDisable           (GL_CULL_FACE);
-  //glEnable            (GL_BLEND);
+  // SetupMatricesFor2D	();
+  // glDisable			(GL_DEPTH_TEST);
+  // glDisable           (GL_CULL_FACE);
+  // glEnable            (GL_BLEND);
 
-  //glEnable            (GL_TEXTURE_2D);
-  //glBindTexture       (GL_TEXTURE_2D, m_pixelEffectTexId );
-  //glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-  //glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+  // glEnable            (GL_TEXTURE_2D);
+  // glBindTexture       (GL_TEXTURE_2D, m_pixelEffectTexId );
+  // glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+  // glTexParameteri	    (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
 
-  //glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+  // glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 
-  //glBegin( GL_QUADS );
-  //    glBegin( GL_QUADS );
-  //    glTexCoord2i(0,0);          glVertex2i( 0, 0 );
-  //    glTexCoord2i(1,0);          glVertex2i( m_screenW/4, 0 );
-  //    glTexCoord2i(1,1);          glVertex2i( m_screenW/4, m_screenH/4 );
-  //    glTexCoord2i(0,1);          glVertex2i( 0, m_screenH/4 );
-  //    glEnd();
-  //glEnd();
+  // glBegin( GL_QUADS );
+  //     glBegin( GL_QUADS );
+  //     glTexCoord2i(0,0);          glVertex2i( 0, 0 );
+  //     glTexCoord2i(1,0);          glVertex2i( m_screenW/4, 0 );
+  //     glTexCoord2i(1,1);          glVertex2i( m_screenW/4, m_screenH/4 );
+  //     glTexCoord2i(0,1);          glVertex2i( 0, m_screenH/4 );
+  //     glEnd();
+  // glEnd();
 
-  //glDisable           (GL_TEXTURE_2D);
-  //glEnable            (GL_DEPTH_TEST);
+  // glDisable           (GL_TEXTURE_2D);
+  // glEnable            (GL_DEPTH_TEST);
 
-  //return;
+  // return;
 
   START_PROFILE(g_profiler, "Pixel Apply");
 
@@ -1159,7 +1172,8 @@ void Renderer::ApplyPixelEffect()
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 #else
-  SetupMatricesFor2D(); glDisable(GL_DEPTH_TEST);
+  SetupMatricesFor2D();
+  glDisable(GL_DEPTH_TEST);
 #endif
 
   // Render debug information showing which cells are "dirty"
@@ -1213,7 +1227,7 @@ void Renderer::ApplyPixelEffect()
   glDisable(GL_TEXTURE_2D);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  glEnable(GL_DEPTH_TEST); //FIXME
+  glEnable(GL_DEPTH_TEST); // FIXME
   glDepthMask(true);
   glEnable(GL_CULL_FACE);
   glDisable(GL_BLEND);
@@ -1235,8 +1249,7 @@ void Renderer::ApplyPixelEffect()
         const float dist = m_pixelEffectGrid[x][blah];
         if (dist < 1e9)
         {
-          g_editorFont.DrawText2DCentre(static_cast<float>(x) * scaleX + offsetX, static_cast<float>(y) * scaleY + offsetY, 12, "%.0f",
-                                        dist);
+          g_editorFont.DrawText2DCentre(static_cast<float>(x) * scaleX + offsetX, static_cast<float>(y) * scaleY + offsetY, 12, "%.0f", dist);
         }
       }
     }

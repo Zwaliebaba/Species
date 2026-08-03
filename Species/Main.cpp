@@ -85,7 +85,7 @@ void UpdateAdvanceTime()
     int demoFrameRate = g_prefsManager->GetInt("DemoFrameRate", 25);
     g_advanceTime = 1.0f / static_cast<float>(demoFrameRate);
     IncrementFakeTime(1.0f / static_cast<double>(demoFrameRate));
-    //g_gameTime += g_advanceTime;
+    // g_gameTime += g_advanceTime;
     g_gameTime = GetHighResTime();
     g_predictionTime = static_cast<float>(g_gameTime - g_lastServerAdvance) - 0.07f;
   }
@@ -100,7 +100,7 @@ void UpdateAdvanceTime()
     float prevPredictionTime = g_predictionTime;
     g_predictionTime = static_cast<float>(realTime - g_lastServerAdvance) - 0.07f;
 
-    //DebugTrace( "Change = %6.3f\n", g_predictionTime - prevPredictionTime );
+    // DebugTrace( "Change = %6.3f\n", g_predictionTime - prevPredictionTime );
   }
 }
 
@@ -153,7 +153,7 @@ int GetNumSlicesToAdvance()
     numSlicesPending -= 10;
 
   float timeSinceStartOfAdvance = g_gameTime - g_lastServerAdvance;
-  //int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
+  // int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
 
   int numSlicesToAdvance = timeSinceStartOfAdvance * 100;
   if (g_sliceNum != -1)
@@ -161,7 +161,7 @@ int GetNumSlicesToAdvance()
   if (g_sliceNum == -1)
     numSlicesToAdvance -= 10;
 
-  //DEBUG_ASSERT( numSlicesToAdvance >= 0 );
+  // DEBUG_ASSERT( numSlicesToAdvance >= 0 );
   numSlicesToAdvance = std::max(numSlicesToAdvance, 0);
   numSlicesToAdvance = std::min(numSlicesToAdvance, 10);
 
@@ -178,7 +178,7 @@ bool ProcessServerLetters(ServerToClientLetter* letter)
     return true;
 
   case ServerToClientLetter::LetterType::GoodbyeClient:
-    //g_location->RemoveTeam( letter->m_teamId );
+    // g_location->RemoveTeam( letter->m_teamId );
     return true;
 
   case ServerToClientLetter::LetterType::TeamAssign:
@@ -470,8 +470,7 @@ void LocationGameLoop()
             WorldObjectId idUnderMouse;
             bool objectUnderMouse = g_app->m_locationInput->GetObjectUnderMouse(idUnderMouse, g_globalWorld->m_myTeamId);
 
-            bool isCurrentEntity = (objectUnderMouse && idUnderMouse.GetUnitId() == -1 && idUnderMouse.GetIndex() == team->
-              m_currentEntityId);
+            bool isCurrentEntity = (objectUnderMouse && idUnderMouse.GetUnitId() == -1 && idUnderMouse.GetIndex() == team->m_currentEntityId);
             bool isCurrentUnit = (objectUnderMouse && idUnderMouse.GetUnitId() != -1 && idUnderMouse.GetUnitId() == team->m_currentUnitId);
 
             entityUnderMouse = (objectUnderMouse && idUnderMouse.GetUnitId() != UNIT_BUILDINGS && !isCurrentEntity && !isCurrentUnit);
@@ -500,7 +499,7 @@ void LocationGameLoop()
 
       g_app->m_clientToServer->Advance();
 
-      //UpdateTargetFrameRate(g_sliceNum);
+      // UpdateTargetFrameRate(g_sliceNum);
 
       int slicesToAdvance = GetNumSlicesToAdvance();
 
@@ -517,10 +516,10 @@ void LocationGameLoop()
           if (letter)
           {
             DEBUG_ASSERT(letter->GetSequenceId() == g_lastProcessedSequenceId + 1);
-            //g_app->m_clientToServer->m_lastServerLetterReceivedTime = GetHighResTime();
+            // g_app->m_clientToServer->m_lastServerLetterReceivedTime = GetHighResTime();
 
-            //DebugTrace( "CLIENT : Processed update %d\n", letter->GetSequenceId() );
-            //g_app->m_clientToServer->m_lastKnownSequenceIdFromServer = letter->GetSequenceId();
+            // DebugTrace( "CLIENT : Processed update %d\n", letter->GetSequenceId() );
+            // g_app->m_clientToServer->m_lastKnownSequenceIdFromServer = letter->GetSequenceId();
             bool handled = ProcessServerLetters(letter.get());
             if (handled == false)
               ProcessServerUpdates(letter.get());
@@ -580,7 +579,10 @@ void LocationGameLoop()
       TheControlHelp()->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
-      if (g_app->m_attractMode->m_running) { g_app->m_attractMode->Advance(); }
+      if (g_app->m_attractMode->m_running)
+      {
+        g_app->m_attractMode->Advance();
+      }
 #endif // ATTRACTMODE_ENABLED
 
       // DELETEME: for debug purposes only
@@ -844,7 +846,7 @@ void Initialise()
   InitialiseInputManager();
 
   g_target = new TargetCursor();
-  //if( g_prefsManager->GetInt("ControlMethod")==0 ) getW32EventHandler()->BindAltTab();
+  // if( g_prefsManager->GetInt("ControlMethod")==0 ) getW32EventHandler()->BindAltTab();
   EntityBlueprint::Initialise();
   g_windowManager->HideMousePointer();
 
@@ -878,7 +880,6 @@ void Finalise()
 
   delete g_resource;
   delete g_windowManager;
-
 }
 
 void RunBootLoaders()
@@ -969,7 +970,7 @@ void EnterGlobalWorld()
   if (g_gameMode == GameModePrologue && !TheScript()->IsRunningScript())
   {
     // the only time you should see the world in prologue is during the cutscene
-    //g_atMainMenu = true;
+    // g_atMainMenu = true;
     g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
     GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
     g_requestedMap = gloc->m_mapFilename;

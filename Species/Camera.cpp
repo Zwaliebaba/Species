@@ -42,10 +42,10 @@
 #include "WorldPointers.h"
 #include "AppState.h"
 
-#define MIN_GROUND_CLEARANCE	10.0f	// Minimum height relative to land
-#define MIN_HEIGHT				10.0f	// Height above sea level (which is y=0)
-#define MAX_HEIGHT				5000.0f // Height above sea level (which is y=0)
-#define MIN_TRACKING_HEIGHT     200.0f  // Minimum height of the camera when tracking an entity
+#define MIN_GROUND_CLEARANCE 10.0f // Minimum height relative to land
+#define MIN_HEIGHT 10.0f           // Height above sea level (which is y=0)
+#define MAX_HEIGHT 5000.0f         // Height above sea level (which is y=0)
+#define MIN_TRACKING_HEIGHT 200.0f // Minimum height of the camera when tracking an entity
 
 // ***************
 // Private Methods
@@ -611,7 +611,9 @@ void Camera::AdvanceFreeMovementMode()
       }
     }
 
-    if (keyForward || keyBackward || keyLeft || keyRight) {}
+    if (keyForward || keyBackward || keyLeft || keyRight)
+    {
+    }
 
     //		if (m_pos.x < m_minX)	m_targetPos.x -= (m_pos.x - m_minX);
     //		if (m_pos.x > m_maxX)	m_targetPos.x -= (m_pos.x - m_maxX);
@@ -926,8 +928,8 @@ void Camera::UpdateControlVector()
 
 bool Camera::AdvanceManualRotateCamera(Vector3& cameraTarget)
 {
-  if ((g_inputManager->controlEvent(ControlCameraRotateLeft) || g_inputManager->controlEvent(ControlCameraRotateRight)) && !g_inputManager->
-    controlEvent(ControlUnitPrimaryFireDirected))
+  if ((g_inputManager->controlEvent(ControlCameraRotateLeft) || g_inputManager->controlEvent(ControlCameraRotateRight)) &&
+      !g_inputManager->controlEvent(ControlUnitPrimaryFireDirected))
   {
     m_trackHeight = 0.0f;
 
@@ -1356,7 +1358,7 @@ void Camera::AdvanceRadarAimMode()
     newMouseY = screenH - 1;
 
   // Apply the mouse cursor movement
-  //alleg    position_mouse(newMouseX, newMouseY);
+  // alleg    position_mouse(newMouseX, newMouseY);
   g_target->SetMousePos(newMouseX, newMouseY);
   glPopMatrix();
 }
@@ -1371,10 +1373,10 @@ void Camera::AdvanceTurretAimMode()
   float minY = g_location->m_landscape.m_heightMap->GetValue(groundPos.x, groundPos.z);
 
   groundPos -= m_front * m_height;
-  //groundPos.y = max( groundPos.y, minY );
+  // groundPos.y = max( groundPos.y, minY );
 
-  //groundPos.y = ;
-  //groundPos.y -= 10.0f;
+  // groundPos.y = ;
+  // groundPos.y -= 10.0f;
 
   Vector3 focusPos = groundPos;
   focusPos.y += m_height;
@@ -1452,7 +1454,7 @@ void Camera::AdvanceTurretAimMode()
     newMouseY = screenH - 1;
 
   // Apply the mouse cursor movement
-  //alleg    position_mouse(newMouseX, newMouseY);
+  // alleg    position_mouse(newMouseX, newMouseY);
   g_target->SetMousePos(newMouseX, newMouseY);
   glPopMatrix();
 }
@@ -1559,13 +1561,13 @@ void Camera::AdvanceMoveToTargetMode()
 
   m_front.Normalise();
   m_up = g_upVector;
-  //Vector3 right = m_front ^ m_up;
-  //right.Normalise();
-  //m_up = right ^ m_front;
-  //m_up.Normalise();
+  // Vector3 right = m_front ^ m_up;
+  // right.Normalise();
+  // m_up = right ^ m_front;
+  // m_up.Normalise();
 
-  //float dot = m_front * m_up;
-  //dot *= 1.0f;
+  // float dot = m_front * m_up;
+  // dot *= 1.0f;
 }
 
 void Camera::AdvanceEntityFollowMode()
@@ -1644,15 +1646,15 @@ Camera::Camera()
     m_skipDirectionCalculation(false)
 {
   m_cosFov = cos(m_fov / 180.0f * M_PI);
-  m_pos = Vector3(1000.0f, //g_location->m_landscape.GetWorldSizeX() / 2.0f,
-                  500.0f, 1000.0f); //g_location->m_landscape.GetWorldSizeZ() / 2.0f);
+  m_pos = Vector3(1000.0f,          // g_location->m_landscape.GetWorldSizeX() / 2.0f,
+                  500.0f, 1000.0f); // g_location->m_landscape.GetWorldSizeZ() / 2.0f);
 
   m_minX = -1e6;
   m_maxX = 1e6;
   m_minZ = -1e6;
   m_maxZ = 1e6;
 
-  //m_front = Vector3(0, -0.7f, 1);
+  // m_front = Vector3(0, -0.7f, 1);
   m_front.Set(0, -0.5f, -1);
   m_front.Normalise();
 
@@ -1670,8 +1672,8 @@ void Camera::CreateCameraShake(float _intensity) { m_cameraShake = std::max(m_ca
 
 void Camera::SetupProjectionMatrix(float _nearPlane, float _farPlane)
 {
-  //DEBUG_ASSERT(m_fov > 0.0f);
-  //DEBUG_ASSERT(m_fov < 180.0f);
+  // DEBUG_ASSERT(m_fov > 0.0f);
+  // DEBUG_ASSERT(m_fov < 180.0f);
 
   ClampInPlace(m_fov, 1, 180);
 
@@ -1883,9 +1885,8 @@ void Camera::AdvanceComponentMouseWheelHeight()
     m_height += delta * (m_height * 0.1f + 5.0f);
     if (m_height < 0.0f)
       m_height = 0.1f;
-    else
-      if (m_height > 1000.0f)
-        m_height = 1000.0f;
+    else if (m_height > 1000.0f)
+      m_height = 1000.0f;
   }
 }
 
@@ -1939,7 +1940,7 @@ void Camera::AdvanceMainMenuMode()
   float factor2 = 1.0f - factor1;
 
   Vector3 targetFront(0, 0, 0);
-  //Vector3 targetFront(50000, 50000, 50000);
+  // Vector3 targetFront(50000, 50000, 50000);
   m_front = m_front * factor2 + targetFront * factor1;
   m_up.Set(0.0f, -1.0f, 0.0f);
   Vector3 right = m_up ^ m_front;
@@ -2086,7 +2087,7 @@ void Camera::RequestMode(int _mode)
   int screenW = g_renderer->ScreenW();
   int screenH = g_renderer->ScreenH();
 
-  //m_targetFov = 60.0f;
+  // m_targetFov = 60.0f;
   m_framesInThisMode = 0;
   m_mode = _mode;
 
@@ -2171,8 +2172,7 @@ bool Camera::IsInteractive()
 {
   // if( TheScript()->IsRunningScript() ) return false;
 
-  return (m_mode == ModeSphereWorld || m_mode == ModeFreeMovement || m_mode == ModeRadarAim || m_mode == ModeTurretAim || m_mode ==
-    ModeEntityTrack);
+  return (m_mode == ModeSphereWorld || m_mode == ModeFreeMovement || m_mode == ModeRadarAim || m_mode == ModeTurretAim || m_mode == ModeEntityTrack);
 }
 
 bool Camera::IsInMode(int _mode) { return (m_mode == _mode); }
@@ -2254,8 +2254,8 @@ void Camera::GetClickRay(int _x, int _y, Vector3* _rayStart, Vector3* _rayDir)
   glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
   int realY = viewport[3] - _y - 1;
 
-  if ((mvMatrix[0] + mvMatrix[1] + mvMatrix[2] == 0) || (mvMatrix[5] + mvMatrix[6] + mvMatrix[7] == 0) || (mvMatrix[9] + mvMatrix[10] +
-    mvMatrix[11] == 0))
+  if ((mvMatrix[0] + mvMatrix[1] + mvMatrix[2] == 0) || (mvMatrix[5] + mvMatrix[6] + mvMatrix[7] == 0) ||
+      (mvMatrix[9] + mvMatrix[10] + mvMatrix[11] == 0))
   {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
