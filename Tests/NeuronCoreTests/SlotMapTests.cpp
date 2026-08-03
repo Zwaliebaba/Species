@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include <memory>
+
 #include "SlotMap.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -169,6 +171,56 @@ namespace NeuronCoreTests
           ++seen;
         }
         Assert::AreEqual(2, seen);
+      }
+
+      // Stage 5 needs a SlotMap that can own. The copying PutData overloads
+      // cannot bind a move-only type, so without these a caller converting an
+      // owning SlotMap<T*> to unique_ptr has nowhere to go.
+      TEST_METHOD(AMoveOnlyValueCanBeStoredAndRetrieved)
+      {
+        Neuron::SlotMap<std::unique_ptr<int>> map;
+
+        const int first = map.PutData(std::make_unique<int>(11));
+        const int second = map.PutData(std::make_unique<int>(22));
+
+        Assert::AreEqual(0, first);
+        Assert::AreEqual(1, second);
+        Assert::AreEqual(11, *map[0]);
+        Assert::AreEqual(22, *map[1]);
+        Assert::AreEqual(2, map.NumUsed());
+      }
+
+      // The slot chosen must not depend on how the value arrives. TakeFreeSlot
+      // decides that, and this pins that the move overload did not quietly get
+      // its own path — the sequence here is the same one
+      // LowestFirstFillsTheLowestFreeSlot asserts for copied values.
+      TEST_METHOD(MovingAValueInChoosesTheSameSlotAsCopyingWould)
+      {
+        Neuron::SlotMap<std::unique_ptr<int>> map;
+
+        map.PutData(std::make_unique<int>(1));
+        const int reused = map.PutData(std::make_unique<int>(2));
+        map.PutData(std::make_unique<int>(3));
+        map.MarkNotUsed(reused);
+
+        Assert::AreEqual(reused, map.PutData(std::make_unique<int>(4)));
+        Assert::AreEqual(4, *map[reused]);
+      }
+
+      // Owning slots free their contents when the map does, with no
+      // EmptyAndDelete in sight — that method does not compile for a
+      // unique_ptr element and is not needed.
+      TEST_METHOD(AMoveOnlyValueIsFreedWhenItsSlotIsReused)
+      {
+        Neuron::SlotMap<std::unique_ptr<Probe>> map;
+        Probe::sm_destroyed = 0;
+
+        const int slot = map.PutData(std::make_unique<Probe>());
+        Assert::AreEqual(0, Probe::sm_destroyed);
+
+        map.PutData(std::make_unique<Probe>(), slot);
+
+        Assert::AreEqual(1, Probe::sm_destroyed, L"overwriting a slot must free what it held");
       }
 
       TEST_METHOD(EmptyAndDeleteDeletesThePointees)

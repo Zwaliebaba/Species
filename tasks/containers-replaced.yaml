@@ -938,3 +938,43 @@ tasks:
       render code with no test reach; evidence is the build, review against
       T2's pinned freelist sequence, and the Garden smoke test.
     status: todo
+
+  - id: T22
+    title: Let SlotMap hold move-only values
+    intent: >
+      SlotMap::PutData takes const T&, so a SlotMap cannot hold a
+      std::unique_ptr — and that makes it a dead end for migration stage 5.
+      Every ownership task downstream of a SlotMap migration hits the same
+      wall: the container is converted, the pointers inside it still are not,
+      and there is nowhere to go. Move overloads fix that without touching how
+      a slot is chosen, which is the part that is wire identity.
+    project: NeuronCore
+    depends_on: [T3]
+    files:
+      - NeuronCore/SlotMap.h
+      - Tests/NeuronCoreTests/SlotMapTests.cpp
+    acceptance:
+      - A SlotMap<std::unique_ptr<T>> compiles, stores and retrieves values
+      - Moving a value in picks the same slot copying would — the pinned LowestFirst sequence is reproduced through the move overload
+      - Overwriting an occupied slot frees what it held, with no EmptyAndDelete involved
+      - The existing SlotMap and DArray pinned sequences pass unchanged
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Found by ownership T2 on 2026-08-02, one step into it: converting
+      Server::m_clients from SlotMap<ServerToClient*> to unique_ptr does not
+      compile, because PutData cannot bind a move-only type. Written as its
+      own node rather than folded in, because it is a capability every later
+      ownership task needs — T4 and T5 there both convert SlotMaps — and
+      because SlotMap is the one container whose behaviour is network
+      identity, so a change to it earns its own tests.
+
+      The overloads deliberately do not touch TakeFreeSlot. Which slot a value
+      lands in is decided before the value is looked at, so an arriving rvalue
+      cannot change it; the second test pins that rather than trusting it.
+    status: in_progress
+

@@ -60,6 +60,26 @@ namespace Neuron
         Occupy(_index);
       }
 
+      // The move overloads exist so a SlotMap can hold std::unique_ptr, which
+      // is what migration stage 5 needs of it: without them a caller
+      // converting an owning SlotMap<T*> has nowhere to go, because the
+      // copying overloads above cannot bind a move-only type. Which slot is
+      // chosen is unchanged — TakeFreeSlot decides that, and it does not know
+      // or care how the value arrives.
+      int PutData(T&& _value)
+      {
+        const int freeSlot = TakeFreeSlot();
+        m_slots[freeSlot] = std::move(_value);
+        return freeSlot;
+      }
+
+      void PutData(T&& _value, int _index)
+      {
+        DEBUG_ASSERT(_index >= 0 && _index < Size());
+        m_slots[_index] = std::move(_value);
+        Occupy(_index);
+      }
+
       // Reserves and returns the next slot the flavour would assign, leaving
       // its value untouched. FastDArray called this GetNextFree.
       int GetNextFree() { return TakeFreeSlot(); }
@@ -171,7 +191,8 @@ namespace Neuron
 
       // Transitional, for callers migrating off the legacy containers while
       // they still hold raw owning pointers; ownership conversion is
-      // migration stage 5.
+      // migration stage 5. A SlotMap of unique_ptr does not need this and
+      // will not compile it — the static_assert below is the diagnostic.
       void EmptyAndDelete()
       {
         static_assert(std::is_pointer_v<T>, "EmptyAndDelete only makes sense for pointer elements");
