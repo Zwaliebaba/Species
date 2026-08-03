@@ -806,6 +806,8 @@ tasks:
       - NeuronCore/Profiler.h
       - NeuronCore/Profiler.cpp
       - GameLogic/ProfileWindow.cpp
+      - GameLogic/PrefsGraphicsWindow.cpp
+      - GameLogic/PrefsSoundWindow.cpp
     acceptance:
       - grep -lwE "HashTable|SortingHashTable" on the three files returns nothing
       - Child iteration stays case-insensitive alphabetical — the comparator uses stricmp, matching SortingHashTable::FindPrevKey and HashFunc's key uppercasing

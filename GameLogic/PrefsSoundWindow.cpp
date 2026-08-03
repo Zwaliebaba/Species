@@ -284,7 +284,9 @@ void PrefsSoundWindow::Render( bool _hasFocus )
 //    g_editorFont.DrawText2DCentre( m_x + m_w/2, m_y + m_h - 70, 12, "%d channels allocated", numChannels );
 
 #ifdef PROFILER_ENABLED
-    ProfiledElement *element = g_profiler->m_rootElement->m_children.GetData( "Advance SoundSystem" );
+    const auto& children = g_profiler->m_rootElement->m_children;
+    const auto found = children.find("Advance SoundSystem");
+    ProfiledElement* element = (found == children.end()) ? nullptr : found->second;
     if( element->m_lastNumCalls > 0 )
     {
         float occup = element->m_lastTotalTime * 100;

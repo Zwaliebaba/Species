@@ -184,12 +184,14 @@ void RenderCPUUsage( LList<char *> *elements, int x, int y )
     float totalOccup = 0.0f;
     for( int i = 0; i < elements->Size(); ++i )
     {
-        ProfiledElement *element = g_profiler->m_rootElement->m_children.GetData( elements->GetData(i) );
-        if( element && element->m_lastNumCalls > 0 )
-        {
-            float occup = element->m_lastTotalTime * 100;
-            totalOccup += occup;
-        }
+      const auto& children = g_profiler->m_rootElement->m_children;
+      const auto found = children.find(elements->GetData(i));
+      ProfiledElement* element = (found == children.end()) ? nullptr : found->second;
+      if (element && element->m_lastNumCalls > 0)
+      {
+        float occup = element->m_lastTotalTime * 100;
+        totalOccup += occup;
+      }
     }
 
     if( totalOccup > 0.0f )

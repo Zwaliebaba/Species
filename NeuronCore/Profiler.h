@@ -13,7 +13,6 @@
 // m_historyNumSeconds — so it is preserved rather than simplified away.
 struct ProfileNameLess
 {
-    using is_transparent = void;
     bool operator()(const std::string& _a, const std::string& _b) const { return stricmp(_a.c_str(), _b.c_str()) < 0; }
 };
 
