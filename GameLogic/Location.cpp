@@ -7,7 +7,6 @@
 #include <time.h>
 #include <float.h>
 
-#include "BoundedArray.h"
 #include "Debug.h"
 #include "HiResTime.h"
 #include "Input.h"
@@ -73,10 +72,10 @@ Location::Location()
     m_teams(nullptr),
     m_christmasTimer(-99.9f)
 {
-  m_spirits.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
-  m_lasers.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
-  m_effects.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
-  m_buildings.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+  m_spiritsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+  m_lasersWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+  m_effectsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+  m_buildingsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
 
   m_spirits.SetSize(100);
 
@@ -177,11 +176,16 @@ void Location::Empty()
 {
   m_landscape.Empty();
 
-  m_lights.Empty();    // LList <Light *>
-  m_buildings.Empty(); // LList <Building *>
-  m_spirits.Empty();   // FastDArray <Spirit>
+  m_lights.Empty();
+  m_buildings.Empty();
+  m_spirits.Empty();
   m_lasers.Empty();
   m_effects.Empty();
+
+  m_buildingsWalker.Reset();
+  m_spiritsWalker.Reset();
+  m_lasersWalker.Reset();
+  m_effectsWalker.Reset();
 
   delete m_levelFile;
   m_levelFile = nullptr;
@@ -662,7 +666,7 @@ void Location::AdvanceWeapons(int _slice)
 {
   START_PROFILE(g_profiler, "Advance Lasers");
   int startIndex, endIndex;
-  m_lasers.GetNextSliceBounds(_slice, &startIndex, &endIndex);
+  m_lasersWalker.GetNextSliceBounds(_slice, m_lasers.Size(), &startIndex, &endIndex);
   for (int i = startIndex; i <= endIndex; ++i)
   {
     if (m_lasers.ValidIndex(i))
@@ -679,7 +683,7 @@ void Location::AdvanceWeapons(int _slice)
 
 
   START_PROFILE(g_profiler, "Advance Effects");
-  m_effects.GetNextSliceBounds(_slice, &startIndex, &endIndex);
+  m_effectsWalker.GetNextSliceBounds(_slice, m_effects.Size(), &startIndex, &endIndex);
   for (int i = startIndex; i <= endIndex; ++i)
   {
     if (m_effects.ValidIndex(i))
@@ -704,7 +708,7 @@ void Location::AdvanceBuildings(int _slice)
   bool obstructionGridChanged = false;
 
   int startIndex, endIndex;
-  m_buildings.GetNextSliceBounds(_slice, &startIndex, &endIndex);
+  m_buildingsWalker.GetNextSliceBounds(_slice, m_buildings.Size(), &startIndex, &endIndex);
   for (int i = startIndex; i <= endIndex; ++i)
   {
     if (m_buildings.ValidIndex(i))
@@ -784,7 +788,7 @@ void Location::AdvanceSpirits(int _slice)
   START_PROFILE(g_profiler, "Advance Spirits");
 
   int startIndex, endIndex;
-  m_spirits.GetNextSliceBounds(_slice, &startIndex, &endIndex);
+  m_spiritsWalker.GetNextSliceBounds(_slice, m_spirits.Size(), &startIndex, &endIndex);
   for (int i = startIndex; i <= endIndex; ++i)
   {
     if (m_spirits.ValidIndex(i))
@@ -978,7 +982,7 @@ void Location::RenderSpirits()
     {
       Spirit* r = m_spirits.GetPointer(i);
 
-      if (i > m_spirits.GetLastUpdated())
+      if (i > m_spiritsWalker.GetLastUpdated())
       {
         r->Render(timeSinceAdvance + 0.1f);
       }
@@ -1114,7 +1118,7 @@ void Location::RenderBuildings()
       if (building->IsInView())
       {
         START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
-        if (i > m_buildings.GetLastUpdated())
+        if (i > m_buildingsWalker.GetLastUpdated())
         {
           building->Render(timeSinceAdvance + SERVER_ADVANCE_PERIOD);
         }
@@ -1198,7 +1202,7 @@ void Location::RenderBuildingAlphas()
         {
           START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
 
-          if (i > m_buildings.GetLastUpdated())
+          if (i > m_buildingsWalker.GetLastUpdated())
           {
             building->RenderAlphas(timeSinceAdvance + SERVER_ADVANCE_PERIOD);
           }
@@ -1232,7 +1236,7 @@ void Location::RenderBuildingAlphas()
 
     START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
 
-    if (buildingIndex > m_buildings.GetLastUpdated())
+    if (buildingIndex > m_buildingsWalker.GetLastUpdated())
     {
       building->RenderAlphas(timeSinceAdvance + SERVER_ADVANCE_PERIOD);
     }
@@ -1295,7 +1299,7 @@ void Location::RenderWeapons()
     {
       WorldObject* w = m_effects[i];
 
-      if (i > m_effects.GetLastUpdated())
+      if (i > m_effectsWalker.GetLastUpdated())
       {
         w->Render(timeSinceAdvance + SERVER_ADVANCE_PERIOD);
       }
@@ -1326,7 +1330,7 @@ void Location::RenderWeapons()
     {
       Laser* l = m_lasers.GetPointer(i);
 
-      if (i > m_lasers.GetLastUpdated())
+      if (i > m_lasersWalker.GetLastUpdated())
       {
         l->Render(timeSinceAdvance + SERVER_ADVANCE_PERIOD);
       }
@@ -1922,7 +1926,10 @@ void Location::FireLaser(Vector3 const& _pos, Vector3 const& _vel, unsigned char
     break;
   }
 
-  Laser* l = m_lasers.GetPointer();
+  // FastDArray::GetPointer() with no argument reserved the next free slot and
+  // handed back a pointer into it. SlotMap makes the two steps visible, which
+  // is the point: which slot a laser lands in is network-visible state.
+  Laser* l = m_lasers.GetPointer(m_lasers.GetNextFree());
   l->m_pos = _pos;
   l->m_vel = _vel;
   l->m_fromTeamId = _teamId;

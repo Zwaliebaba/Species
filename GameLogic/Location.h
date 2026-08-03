@@ -2,8 +2,8 @@
 
 #include <float.h>
 
-#include "FastDArray.h"
-#include "SliceDArray.h"
+#include "SliceWalker.h"
+#include "SlotMap.h"
 #include "Vector3.h"
 
 #include "Landscape.h"
@@ -81,11 +81,21 @@ class Location : public LocationAccess
 
     float m_christmasTimer;
 
-    FastDArray<Light*> m_lights;
-    SliceDArray<Building*> m_buildings;
-    SliceDArray<Spirit> m_spirits;
-    SliceDArray<Laser> m_lasers;
-    SliceDArray<WorldObject*> m_effects;
+    FastSlotMap<Light*> m_lights;
+    FastSlotMap<Building*> m_buildings;
+    FastSlotMap<Spirit> m_spirits;
+    FastSlotMap<Laser> m_lasers;
+    FastSlotMap<WorldObject*> m_effects;
+
+    // One walker per sliced container — the bookkeeping the legacy sliced
+    // array carried as a base class. m_lights is not advanced in slices and so
+    // has none. Empty() resets all four alongside the containers they walk:
+    // emptying a container out from under a walk is what the legacy Empty did,
+    // and the walk has to begin at slice 0 again.
+    SliceWalker m_buildingsWalker;
+    SliceWalker m_spiritsWalker;
+    SliceWalker m_lasersWalker;
+    SliceWalker m_effectsWalker;
 
   public:
     Location();

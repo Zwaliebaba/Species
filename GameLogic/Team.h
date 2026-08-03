@@ -1,7 +1,7 @@
 #pragma once
 
-#include "FastDArray.h"
-#include "SliceDArray.h"
+#include "SliceWalker.h"
+#include "SlotMap.h"
 #include "RgbColour.h"
 #include "TeamControls.h"
 
@@ -30,9 +30,15 @@ class Team
     int m_teamId;
     int m_teamType;
 
-    FastDArray<Unit*> m_units;
-    SliceDArray<Entity*> m_others;
-    LList<WorldObjectId> m_specials; // Officers and tanks for quick lookup
+    FastSlotMap<Unit*> m_units;
+    FastSlotMap<Entity*> m_others;
+
+    // The slice bookkeeping m_others used to inherit from the legacy sliced
+    // array. Public for the same reason Unit's is: Renderer reads
+    // GetLastUpdated to decide which entities need a frame of extrapolation.
+    SliceWalker m_othersWalker;
+
+    std::vector<WorldObjectId> m_specials; // Officers and tanks for quick lookup
 
     RGBAColour m_colour;
 

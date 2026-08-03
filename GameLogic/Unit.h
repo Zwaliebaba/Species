@@ -1,6 +1,7 @@
 #pragma once
 
-#include "SliceDArray.h"
+#include "SliceWalker.h"
+#include "SlotMap.h"
 #include "Vector3.h"
 
 #include "Entity.h"
@@ -17,7 +18,14 @@ class Unit
     int m_teamId;
     int m_unitId;
     int m_troopType;
-    SliceDArray<Entity*> m_entities;
+    FastSlotMap<Entity*> m_entities;
+
+    // The slice bookkeeping the legacy sliced array carried as a base class.
+    // It is a sibling now, so the container is a plain slot map and the
+    // scheduling policy belongs to whoever advances it. Public because
+    // Renderer reads GetLastUpdated to decide which entities need a frame of
+    // extrapolation, exactly as it did through the container.
+    SliceWalker m_entitiesWalker;
 
     Vector3 m_centrePos;
     Vector3 m_vel;

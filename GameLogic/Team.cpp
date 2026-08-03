@@ -50,7 +50,7 @@ Team::Team()
     m_currentEntityId(-1),
     m_currentBuildingId(-1)
 {
-  m_others.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+  m_othersWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
   m_others.SetStepSize(100);
   m_units.SetStepSize(5);
 }
@@ -100,17 +100,16 @@ void Team::Initialise(int _teamId)
 void Team::SetTeamType(int _teamType) { m_teamType = _teamType; }
 
 
-void Team::RegisterSpecial(WorldObjectId _id) { m_specials.PutData(_id); }
+void Team::RegisterSpecial(WorldObjectId _id) { m_specials.push_back(_id); }
 
 
 void Team::UnRegisterSpecial(WorldObjectId _id)
 {
-  for (int i = 0; i < m_specials.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_specials.size()); ++i)
   {
-    WorldObjectId id = *m_specials.GetPointer(i);
-    if (id == _id)
+    if (m_specials[i] == _id)
     {
-      m_specials.RemoveData(i);
+      m_specials.erase(m_specials.begin() + i);
       break;
     }
   }
@@ -355,7 +354,7 @@ void Team::Advance(int _slice)
   {
     START_PROFILE(g_profiler, "Advance Others");
     int startIndex, endIndex;
-    m_others.GetNextSliceBounds(_slice, &startIndex, &endIndex);
+    m_othersWalker.GetNextSliceBounds(_slice, m_others.Size(), &startIndex, &endIndex);
 
     for (int i = startIndex; i <= endIndex; i++)
     {
@@ -470,7 +469,7 @@ void Team::RenderVirii(float _predictionTime)
   if (m_others.Size() == 0)
     return;
 
-  int lastUpdated = m_others.GetLastUpdated();
+  int lastUpdated = m_othersWalker.GetLastUpdated();
 
   float nearPlaneStart = g_renderer->GetNearPlane();
   g_camera->SetupProjectionMatrix(nearPlaneStart * 1.05f, g_renderer->GetFarPlane());
@@ -547,7 +546,7 @@ void Team::RenderCitizens(float _predictionTime)
   if (m_others.Size() == 0)
     return;
 
-  int lastUpdated = m_others.GetLastUpdated();
+  int lastUpdated = m_othersWalker.GetLastUpdated();
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Citizen.bmp"));
@@ -607,7 +606,7 @@ void Team::RenderCitizens(float _predictionTime)
 
 void Team::RenderOthers(float _predictionTime)
 {
-  int lastUpdated = m_others.GetLastUpdated();
+  int lastUpdated = m_othersWalker.GetLastUpdated();
 
   for (int i = 0; i <= lastUpdated; i++)
   {

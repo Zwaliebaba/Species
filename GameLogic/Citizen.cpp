@@ -1225,9 +1225,9 @@ bool Citizen::SearchForArmour()
 
   if (team)
   {
-    for (int i = 0; i < team->m_specials.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(team->m_specials.size()); ++i)
     {
-      WorldObjectId id = *team->m_specials.GetPointer(i);
+      WorldObjectId id = team->m_specials[i];
       Entity* entity = g_location->GetEntity(id);
       if (entity && !entity->m_dead && entity->m_type == Entity::TypeArmour)
       {
@@ -1299,9 +1299,9 @@ bool Citizen::SearchForOfficers()
     float nearest = 99999.9f;
     WorldObjectId nearestId;
 
-    for (int i = 0; i < team->m_specials.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(team->m_specials.size()); ++i)
     {
-      WorldObjectId id = *team->m_specials.GetPointer(i);
+      WorldObjectId id = team->m_specials[i];
       Entity* entity = g_location->GetEntity(id);
       if (entity && !entity->m_dead && entity->m_type == Entity::TypeOfficer)
       {

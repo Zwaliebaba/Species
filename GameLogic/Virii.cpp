@@ -86,7 +86,7 @@ void ViriiUnit::Render(float _predictionTime)
   //
   // Render all the entities that are up-to-date with server advances
 
-  int lastUpdated = m_entities.GetLastUpdated();
+  int lastUpdated = m_entitiesWalker.GetLastUpdated();
   for (int i = 0; i <= lastUpdated; i++)
   {
     if (m_entities.ValidIndex(i))

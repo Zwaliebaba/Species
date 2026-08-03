@@ -22,6 +22,7 @@
     <ClCompile Include="EntityGridTests.cpp" />
     <ClCompile Include="LinkStubs.cpp" />
     <ClCompile Include="RoutingSystemTests.cpp" />
+    <ClCompile Include="SliceWiringTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

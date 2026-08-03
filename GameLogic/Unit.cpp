@@ -39,7 +39,7 @@ Unit::Unit(int troopType, int teamId, int unitId, int numEntities, Vector3 const
     m_targetDir(1, 0, 0),
     m_attackAccumulator(0.0f)
 {
-  m_entities.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+  m_entitiesWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
   m_entities.SetStepSize(100);
   m_entities.SetSize(numEntities);
 }
@@ -86,7 +86,7 @@ void Unit::RemoveEntity(int _index, float _posX, float _posZ)
 void Unit::AdvanceEntities(int _slice)
 {
   int startIndex, endIndex;
-  m_entities.GetNextSliceBounds(_slice, &startIndex, &endIndex);
+  m_entitiesWalker.GetNextSliceBounds(_slice, m_entities.Size(), &startIndex, &endIndex);
 
   for (int i = startIndex; i <= endIndex; i++)
   {
@@ -123,7 +123,7 @@ bool Unit::IsInView() { return (g_camera->SphereInViewFrustum(m_centrePos, m_rad
 void Unit::Render(float _predictionTime)
 {
   // Render all the entities that are up-to-date with server advances
-  int lastUpdated = m_entities.GetLastUpdated();
+  int lastUpdated = m_entitiesWalker.GetLastUpdated();
   for (int i = 0; i <= lastUpdated; i++)
   {
     if (m_entities.ValidIndex(i))
@@ -281,7 +281,7 @@ void Unit::Attack(Vector3 pos, bool _withGrenade)
   //
   // Build a list of entities that can attack now
 
-  LList<int> canAttack;
+  std::vector<int> canAttack;
   for (int i = 0; i < m_entities.Size(); ++i)
   {
     if (m_entities.ValidIndex(i))
@@ -289,13 +289,13 @@ void Unit::Attack(Vector3 pos, bool _withGrenade)
       Entity* ent = m_entities[i];
       if (ent->m_enabled && !ent->m_dead && ent->m_reloading == 0.0f)
       {
-        canAttack.PutData(i);
+        canAttack.push_back(i);
       }
     }
   }
 
 
-  if (canAttack.Size() > 0)
+  if (!canAttack.empty())
   {
     //
     // Decide the maximum number of entities
@@ -309,12 +309,12 @@ void Unit::Attack(Vector3 pos, bool _withGrenade)
     //
     // Pick guys randomly to attack
 
-    while (canAttack.Size() > 0 && m_attackAccumulator >= 1.0f)
+    while (!canAttack.empty() && m_attackAccumulator >= 1.0f)
     {
       m_attackAccumulator -= 1.0f;
-      int randomIndex = syncfrand(canAttack.Size());
+      int randomIndex = syncfrand(static_cast<int>(canAttack.size()));
       int entityIndex = canAttack[randomIndex];
-      canAttack.RemoveData(randomIndex);
+      canAttack.erase(canAttack.begin() + randomIndex);
       Entity* ent = m_entities[entityIndex];
       ent->Attack(pos);
     }

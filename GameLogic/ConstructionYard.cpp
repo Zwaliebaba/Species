@@ -346,9 +346,9 @@ bool ConstructionYard::IsPopulationLocked()
   Team* team = g_location->GetMyTeam();
 
   int numArmour = 0;
-  for (int i = 0; i < team->m_specials.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(team->m_specials.size()); ++i)
   {
-    WorldObjectId id = *team->m_specials.GetPointer(i);
+    WorldObjectId id = team->m_specials[i];
     Entity* entity = g_location->GetEntity(id);
     if (entity && entity->m_type == Entity::TypeArmour)
     {

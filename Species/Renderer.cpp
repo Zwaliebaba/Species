@@ -953,7 +953,7 @@ void Renderer::PreRenderPixelEffect()
                   {
                     Entity* entity = unit->m_entities[j];
                     bool rendered = false;
-                    if (j <= unit->m_entities.GetLastUpdated())
+                    if (j <= unit->m_entitiesWalker.GetLastUpdated())
                       rendered = entity->RenderPixelEffect(g_predictionTime);
                     else
                       rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
@@ -982,7 +982,7 @@ void Renderer::PreRenderPixelEffect()
             if (distance < cutoff)
             {
               bool rendered = false;
-              if (i <= g_location->m_teams[t].m_others.GetLastUpdated())
+              if (i <= g_location->m_teams[t].m_othersWalker.GetLastUpdated())
                 rendered = entity->RenderPixelEffect(g_predictionTime);
               else
                 rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
