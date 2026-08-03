@@ -214,7 +214,7 @@ class CloneBuildingButton : public SpeciesButton
       newBuilding->SetDetail(g_prefsManager->GetInt("RenderBuildingDetail", 1));
       newBuilding->m_id.SetUniqueId(g_globalWorld->GenerateBuildingId());
       newBuilding->m_pos = _pos;
-      g_location->m_levelFile->m_buildings.PutData(newBuilding);
+      g_location->m_levelFile->m_buildings.push_back(newBuilding);
     }
 };
 
@@ -529,7 +529,7 @@ class NewBuildingButton : public SpeciesButton
       {
         building->m_pos = _pos;
         building->m_id.SetUniqueId(g_globalWorld->GenerateBuildingId());
-        g_location->m_levelFile->m_buildings.PutData(building);
+        g_location->m_levelFile->m_buildings.push_back(building);
       }
     }
 };

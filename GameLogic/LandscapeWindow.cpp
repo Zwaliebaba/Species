@@ -314,9 +314,8 @@ class ScaleLandscapeButton : public SpeciesButton
       //
       // Buildings
 
-      for (int i = 0; i < levelFile->m_buildings.Size(); ++i)
+      for (Building* building : levelFile->m_buildings)
       {
-        Building* building = levelFile->m_buildings[i];
         building->m_pos.x *= m_scaleFactor;
         building->m_pos.z *= m_scaleFactor;
       }
@@ -324,7 +323,7 @@ class ScaleLandscapeButton : public SpeciesButton
       //
       // Instant units
 
-      for (int i = 0; i < levelFile->m_instantUnits.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(levelFile->m_instantUnits.size()); ++i)
       {
         InstantUnit* unit = levelFile->m_instantUnits[i];
         unit->m_posX *= m_scaleFactor;

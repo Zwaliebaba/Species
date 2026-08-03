@@ -1902,7 +1902,7 @@ void Camera::AdvanceAnim()
     }
 
     m_animCurrentNode++;
-    if (m_animCurrentNode < m_anim->m_nodes.Size())
+    if (m_animCurrentNode < static_cast<int>(m_anim->m_nodes.size()))
     {
       node = m_anim->m_nodes[m_animCurrentNode];
       SetTarget(node->m_mountName);
@@ -2277,7 +2277,9 @@ void Camera::SetBounds(float _minX, float _maxX, float _minZ, float _maxZ)
 
 void Camera::PlayAnimation(CameraAnimation* _anim)
 {
-  if (_anim->m_nodes.Size() == 0)
+  // The editor's preview button can hand over a null animation: the id it
+  // holds is not renumbered when another animation is deleted.
+  if (!_anim || _anim->m_nodes.empty())
     return;
 
   m_anim = _anim;

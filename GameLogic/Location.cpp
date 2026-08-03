@@ -152,9 +152,8 @@ void Location::Init(char const* _missionFilename, char const* _mapFilename)
   }
   else
   {
-    for (int i = 0; i < m_levelFile->m_buildings.Size(); i++)
+    for (Building* building : m_levelFile->m_buildings)
     {
-      Building* building = m_levelFile->m_buildings.GetData(i);
       building->m_pos.y = m_landscape.m_heightMap->GetValue(building->m_pos.x, building->m_pos.z);
     }
   }
@@ -223,9 +222,8 @@ void Location::InitLandscape() { m_landscape.Init(&m_levelFile->m_landscape); }
 
 void Location::InitLights()
 {
-  for (int i = 0; i < m_levelFile->m_lights.Size(); i++)
+  for (Light* levelLight : m_levelFile->m_lights)
   {
-    Light* levelLight = m_levelFile->m_lights.GetData(i);
     Light* light = new Light();
     light->SetColour(levelLight->m_colour);
     light->SetFront(levelLight->m_front);
@@ -236,9 +234,8 @@ void Location::InitLights()
 
 void Location::InitBuildings()
 {
-  for (int i = 0; i < m_levelFile->m_buildings.Size(); i++)
+  for (Building* building : m_levelFile->m_buildings)
   {
-    Building* building = m_levelFile->m_buildings.GetData(i);
     Building* existing = g_location->GetBuilding(building->m_id.GetUniqueId());
     if (existing)
     {
@@ -1373,9 +1370,9 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
   }
 
   // Create instant units that belong to this team
-  for (int i = 0; i < m_levelFile->m_instantUnits.Size(); i++)
+  for (int i = 0; i < static_cast<int>(m_levelFile->m_instantUnits.size()); i++)
   {
-    InstantUnit* iu = m_levelFile->m_instantUnits.GetData(i);
+    InstantUnit* iu = m_levelFile->m_instantUnits[i];
     if (team->m_teamId != iu->m_teamId)
       continue;
 

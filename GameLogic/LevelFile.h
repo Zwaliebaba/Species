@@ -65,10 +65,15 @@ class CamAnimNode
 class CameraAnimation
 {
   public:
-    LList<CamAnimNode*> m_nodes;
+    std::vector<CamAnimNode*> m_nodes;
     char m_name[CAMERA_ANIM_MAX_NAME_LEN + 1];
 
-    ~CameraAnimation() { m_nodes.EmptyAndDelete(); }
+    ~CameraAnimation()
+    {
+      for (CamAnimNode* node : m_nodes)
+        delete node;
+      m_nodes.clear();
+    }
 };
 
 
@@ -208,10 +213,10 @@ class LevelFile
     char m_waterColourFilename[MAX_FILENAME_LEN];
 
     std::vector<CameraMount*> m_cameraMounts;
-    LList<CameraAnimation*> m_cameraAnimations;
-    LList<Building*> m_buildings;
-    LList<InstantUnit*> m_instantUnits;
-    LList<Light*> m_lights;
+    std::vector<CameraAnimation*> m_cameraAnimations;
+    std::vector<Building*> m_buildings;
+    std::vector<InstantUnit*> m_instantUnits;
+    std::vector<Light*> m_lights;
     std::vector<Route*> m_routes;
     std::vector<RunningProgram*> m_runningPrograms;
     std::vector<GlobalEventCondition*> m_primaryObjectives;
@@ -233,6 +238,20 @@ class LevelFile
     Building* GetBuilding(int _id);
     CameraMount* GetCameraMount(char const* _name);
     int GetCameraAnimId(char const* _name);
+
+    // Returns nullptr when _id is out of range. The editor holds animation ids
+    // across frames — LocationEditor::m_selectionId and
+    // CameraAnimSecondaryEditWindow::m_animId — and deleting an animation from
+    // the main window does not renumber them, so a held id can outlive the
+    // entry it names. LList::GetData answered that with nullptr; std::vector
+    // would not, so the check lives here rather than at each call site.
+    CameraAnimation* GetCameraAnim(int _id);
+
+    // Also nullptr out of range, and here the null is load-bearing rather than
+    // defensive: the instant-unit team buttons render every frame the editor
+    // window is up and pass LocationEditor::m_selectionId straight in, which is
+    // -1 whenever nothing is selected. Both already test the result.
+    InstantUnit* GetInstantUnit(int _id);
     void RemoveBuilding(int _id);
     int GenerateNewRouteId();
     Route* GetRoute(int _id);
