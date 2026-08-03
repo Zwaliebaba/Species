@@ -2,7 +2,6 @@
 
 
 #include "2dSurfaceMap.h"
-#include "FastDArray.h"
 #include "RgbColour.h"
 #include "TextureUv.h"
 #include "Vector3.h"
@@ -60,11 +59,11 @@ class LandscapeRenderer
     float m_highest;
     int m_renderMode;
 
-    FastDArray<LandVertex> m_verts;
+    std::vector<LandVertex> m_verts;
 
     unsigned int m_vertexBuffer;
 
-    FastDArray<LandTriangleStrip*> m_strips;
+    std::vector<LandTriangleStrip*> m_strips;
 
     void BuildVertArrayAndTriStrip(SurfaceMap2D<float>* _heightMap);
     void BuildNormArray();

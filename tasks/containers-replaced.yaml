@@ -1039,14 +1039,54 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    notes: >
+    notes: |
       blocked_by layering-inversion/T15 for Explosion and ParticleSystem, which
       that task moves into GameLogic; the rest of this list stays in Species.
       The acceptance grep gained 2dArray and 2dSurfaceMap: Water.cpp and
       LandscapeRenderer use them, and T16 deletes both headers, so leaving them
       out of every acceptance criterion in the plan let T16 delete a header
       still in use.
-    status: todo
+
+      DONE 2026-08-03. Two corrections to this task's own acceptance grep, and
+      they pull in opposite directions.
+
+      IT MISSED SliceDArray. The pattern listed DArray, and -w treats
+      SliceDArray as a single word, so it never matched. ParticleSystem holds
+      the last SliceDArray in the tree and this task could have passed with it
+      untouched — which would then have blocked T16 from deleting the header,
+      with nothing saying why. Added to the pattern; ParticleSystem now takes a
+      FastSlotMap and a sibling SliceWalker like the six in T12, and Empty()
+      resets the walker as the legacy Empty did for itself.
+
+      IT WRONGLY LISTED 2dArray AND 2dSurfaceMap. The note above says these were
+      added so T16 could not delete a header still in use, which was the right
+      instinct aimed at the wrong target. THERE IS NO STD 2D GRID, and T12's
+      intent already settled the direction: "grids stay row-major fixed arrays
+      (std::array/vector-backed 2d wrappers)". Array2D and SurfaceMap2D are not
+      legacy containers to be replaced, they are the wrappers that decision
+      calls for. So Array2D is std::vector-backed now, its layout unchanged —
+      one contiguous row-major block indexed y * columns + x, which is what the
+      landscape height map and the obstruction grid depend on — and both headers
+      stay. T16's list must not delete them.
+
+      That change fixes a real nondeterminism, incidentally. new T[] left cells
+      holding whatever was on the heap, and Array2D answers m_outsideValue only
+      OUTSIDE its bounds — an in-bounds cell read before it was written returned
+      garbage that could differ between two clients running the same
+      simulation. resize value-initialises, so it is zero on both.
+
+      The rest was ordinary. Water's and LandscapeRenderer's vertex buffers are
+      append-only with no MarkNotUsed anywhere, so NumUsed() and Size() were
+      always equal and std::vector is exact; they feed glVertexPointer, so the
+      contiguity vector guarantees is what they actually needed. SetStepDouble
+      and the SetSize(NumUsed()) shrink-to-fit calls simply go away. Explosion's
+      triangle list is a local built by appends. ControlHelp.h had three legacy
+      includes and used none of them.
+
+      GameMenu's list sits inside a commented-out function whose API T6 already
+      changed; the dead code was made consistent rather than left naming a type
+      that no longer exists.
+    status: done
 
   - id: T14
     title: Convert the input-driver stack off InputSpecList and legacy arrays
@@ -1335,6 +1375,18 @@ tasks:
       - LICENSE
       - Tests/NeuronCoreTests/LListTests.cpp
       - Tests/NeuronCoreTests/DArrayTests.cpp
+    notes: |
+      SCOPE CORRECTED 2026-08-03 by T13. 2dArray.h and 2dSurfaceMap.h ARE NOT
+      ON THE DELETION LIST. There is no std 2D grid, and T12's intent already
+      chose to keep row-major fixed arrays behind vector-backed wrappers —
+      which is exactly what Array2D and SurfaceMap2D are, now that Array2D
+      holds a std::vector instead of a new[] block. The landscape height map,
+      the obstruction grid, Water and LandscapeRenderer all still use them, and
+      they are not legacy containers to be retired. Deleting them would mean
+      writing the same wrapper again under a different name.
+
+      The acceptance below says "the ten container headers"; it is eight now.
+      Anything that still says ten is counting these two.
     acceptance:
       - The ten container headers no longer exist on disk or in any .vcxproj
       - LICENSE no longer lists AutoVector.h; the MathUtils.cpp and TriTri.cpp notices are untouched

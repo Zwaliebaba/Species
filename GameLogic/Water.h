@@ -13,7 +13,6 @@
 // change the colouring - whiter waves near the shore.
 
 
-#include "FastDArray.h"
 #include "RgbColour.h"
 #include "2dSurfaceMap.h"
 #include "Vector3.h"
@@ -50,8 +49,8 @@ class Water
 {
   protected:
     // Render data - referenced directly by OpenGL
-    FastDArray<WaterVertex> m_renderVerts;
-    FastDArray<WaterTriangleStrip*> m_strips;
+    std::vector<WaterVertex> m_renderVerts;
+    std::vector<WaterTriangleStrip*> m_strips;
 
     // Extra
     float* m_waterDepths; // 1-to-1 mapping with verts. 1.0 is deepest, 0.0 is shallowest

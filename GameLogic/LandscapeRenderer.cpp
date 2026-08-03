@@ -33,8 +33,6 @@ void LandscapeRenderer::BuildVertArrayAndTriStrip(SurfaceMap2D<float>* _heightMa
 
   const int rows = _heightMap->GetNumColumns();
   const int cols = _heightMap->GetNumRows();
-
-  m_verts.SetStepDouble();
   auto strip = new LandTriangleStrip();
   strip->m_firstVertIndex = 0;
   int degen = 0;
@@ -65,20 +63,20 @@ void LandscapeRenderer::BuildVertArrayAndTriStrip(SurfaceMap2D<float>* _heightMa
           vertex2.m_pos.y = -10.0f;
         if (degen == 1)
         {
-          m_verts.PutData(vertex1);
-          m_verts.PutData(vertex1);
+          m_verts.push_back(vertex1);
+          m_verts.push_back(vertex1);
         }
         degen = 2;
-        m_verts.PutData(vertex1);
-        m_verts.PutData(vertex2);
+        m_verts.push_back(vertex1);
+        m_verts.push_back(vertex2);
       }
       else
       {
         // No, quad is entirely below water, add degenerated joint.
         if (degen == 2)
         {
-          m_verts.PutData(vertex2);
-          m_verts.PutData(vertex2);
+          m_verts.push_back(vertex2);
+          m_verts.push_back(vertex2);
           degen = 1;
         }
       }
@@ -86,20 +84,20 @@ void LandscapeRenderer::BuildVertArrayAndTriStrip(SurfaceMap2D<float>* _heightMa
   }
 
   // end strip
-  strip->m_numVerts = m_verts.NumUsed();
-  m_strips.PutData(strip);
+  strip->m_numVerts = static_cast<int>(m_verts.size());
+  m_strips.push_back(strip);
   m_numTriangles = strip->m_numVerts - 2;
 }
 
 void LandscapeRenderer::BuildNormArray()
 {
-  if (m_verts.Size() <= 0)
+  if (static_cast<int>(m_verts.size()) <= 0)
     return;
 
   int nextNormId = 0;
 
   // Go through all the strips...
-  for (int i = 0; i < m_strips.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_strips.size()); ++i)
   {
     LandTriangleStrip* strip = m_strips[i];
 
@@ -132,13 +130,13 @@ void LandscapeRenderer::BuildNormArray()
     }
   }
 
-  int vertIndex = m_verts.NumUsed();
+  int vertIndex = static_cast<int>(m_verts.size());
   DEBUG_ASSERT(nextNormId == vertIndex);
 }
 
 void LandscapeRenderer::BuildUVArray(SurfaceMap2D<float>* _heightMap)
 {
-  if (m_verts.Size() <= 0)
+  if (static_cast<int>(m_verts.size()) <= 0)
     return;
 
   int nextUVId = 0;
@@ -146,7 +144,7 @@ void LandscapeRenderer::BuildUVArray(SurfaceMap2D<float>* _heightMap)
   float factorX = 1.0f / _heightMap->m_cellSizeX;
   float factorZ = 1.0f / _heightMap->m_cellSizeY;
 
-  for (int i = 0; i < m_strips.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_strips.size()); ++i)
   {
     LandTriangleStrip* strip = m_strips[i];
 
@@ -160,7 +158,7 @@ void LandscapeRenderer::BuildUVArray(SurfaceMap2D<float>* _heightMap)
     }
   }
 
-  DEBUG_ASSERT(nextUVId == m_verts.NumUsed());
+  DEBUG_ASSERT(nextUVId == static_cast<int>(m_verts.size()));
 }
 
 // _gradient=1 means flat, _gradient=0 means vertical
@@ -195,12 +193,12 @@ void LandscapeRenderer::GetLandscapeColour(float _height, float _gradient, unsig
 
 void LandscapeRenderer::BuildColourArray()
 {
-  if (m_verts.Size() <= 0)
+  if (static_cast<int>(m_verts.size()) <= 0)
     return;
 
   int nextColId = 0;
 
-  for (int i = 0; i < m_strips.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_strips.size()); ++i)
   {
     LandTriangleStrip* strip = m_strips[i];
 
@@ -223,7 +221,7 @@ void LandscapeRenderer::BuildColourArray()
     }
   }
 
-  DEBUG_ASSERT(nextColId == m_verts.NumUsed());
+  DEBUG_ASSERT(nextColId == static_cast<int>(m_verts.size()));
 }
 
 //*****************************************************************************
@@ -273,7 +271,7 @@ LandscapeRenderer::~LandscapeRenderer()
     g_resource->DeleteDisplayList(OVERLAY_DISPLAY_LIST_NAME);
   }
 
-  m_verts.Empty();
+  m_verts.clear();
 }
 
 void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D<float>* _heightMap)
@@ -283,7 +281,7 @@ void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D<float>* _heightMap)
   BuildColourArray();
   BuildUVArray(_heightMap);
 
-  if (m_verts.NumUsed() <= 0)
+  if (static_cast<int>(m_verts.size()) <= 0)
     return;
 
   switch (m_renderMode)
@@ -292,7 +290,7 @@ void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D<float>* _heightMap)
     DEBUG_ASSERT(!m_vertexBuffer);
     gglGenBuffersARB(1, &m_vertexBuffer);
     gglBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertexBuffer);
-    gglBufferDataARB(GL_ARRAY_BUFFER_ARB, m_verts.Size() * sizeof(LandVertex), m_verts.GetPointer(0), GL_STATIC_DRAW_ARB);
+    gglBufferDataARB(GL_ARRAY_BUFFER_ARB, static_cast<int>(m_verts.size()) * sizeof(LandVertex), m_verts.GetPointer(0), GL_STATIC_DRAW_ARB);
     gglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
     break;
 
@@ -349,14 +347,14 @@ void LandscapeRenderer::RenderMainSlow()
 
   default:
   {
-    auto vertData = (char*)m_verts.GetPointer(0);
+    auto vertData = (char*)m_verts.data();
     glVertexPointer(3, GL_FLOAT, sizeof(LandVertex), vertData + m_posOffset);
     glNormalPointer(GL_FLOAT, sizeof(LandVertex), vertData + m_normOffset);
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(LandVertex), vertData + m_colOffset);
   }
   }
 
-  for (int z = 0; z < m_strips.Size(); ++z)
+  for (int z = 0; z < static_cast<int>(m_strips.size()); ++z)
   {
     LandTriangleStrip* strip = m_strips[z];
     glDrawArrays(GL_TRIANGLE_STRIP, strip->m_firstVertIndex, strip->m_numVerts);
@@ -423,7 +421,7 @@ void LandscapeRenderer::RenderOverlaySlow()
 
   default:
   {
-    auto vertData = (char*)m_verts.GetPointer(0);
+    auto vertData = (char*)m_verts.data();
     glVertexPointer(3, GL_FLOAT, sizeof(LandVertex), vertData + m_posOffset);
     glNormalPointer(GL_FLOAT, sizeof(LandVertex), vertData + m_normOffset);
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(LandVertex), vertData + m_colOffset);
@@ -432,7 +430,7 @@ void LandscapeRenderer::RenderOverlaySlow()
   break;
   }
 
-  for (int z = 0; z < m_strips.Size(); ++z)
+  for (int z = 0; z < static_cast<int>(m_strips.size()); ++z)
   {
     LandTriangleStrip* strip = m_strips[z];
 
@@ -466,7 +464,7 @@ void LandscapeRenderer::RenderOverlaySlow()
 
 void LandscapeRenderer::Render()
 {
-  if (m_verts.Size() <= 0)
+  if (static_cast<int>(m_verts.size()) <= 0)
     return;
 
   g_location->SetupFog();
