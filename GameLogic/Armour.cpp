@@ -385,7 +385,7 @@ void Armour::AddPassenger()
 {
   ++m_numPassengers;
 
-  g_soundSystem->TriggerEntityEvent(this, "LoadDarwinian");
+  g_soundSystem->TriggerEntityEvent(this, "LoadCitizen");
 }
 
 void Armour::RemovePassenger()
@@ -393,7 +393,7 @@ void Armour::RemovePassenger()
   --m_numPassengers;
   m_previousUnloadTimer = GetHighResTime();
 
-  g_soundSystem->TriggerEntityEvent(this, "UnloadDarwinian");
+  g_soundSystem->TriggerEntityEvent(this, "UnloadCitizen");
 }
 
 void Armour::GetEntrance(Vector3& _exitPos, Vector3& _exitDir)
@@ -408,8 +408,8 @@ void Armour::ListSoundEvents(std::vector<const char*>* _list)
 {
   Entity::ListSoundEvents(_list);
 
-  _list->push_back("LoadDarwinian");
-  _list->push_back("UnloadDarwinian");
+  _list->push_back("LoadCitizen");
+  _list->push_back("UnloadCitizen");
 }
 
 /*

@@ -11,7 +11,7 @@ ENTITY LaserTroop
 		FREQUENCY          PARAMETER TypeRangedRandom      0.93     1.03     0.00  UpdateConstantly
 	END
 	EVENT Die                 
-		SOUNDNAME          darwiniandie
+		SOUNDNAME          citizendie
 		SOURCETYPE         1
 		POSITIONTYPE       1
 		INSTANCETYPE       0
@@ -492,9 +492,9 @@ END
 
 
 # =========================================================
-ENTITY Darwinian
+ENTITY Citizen
 	EVENT Die                 
-		SOUNDNAME          darwiniandie
+		SOUNDNAME          citizendie
 		SOURCETYPE         1
 		POSITIONTYPE       1
 		INSTANCETYPE       0
@@ -509,7 +509,7 @@ ENTITY Darwinian
 		END
 	END
 	EVENT LoseHealth          
-		SOUNDNAME          darwinianlosehealth
+		SOUNDNAME          citizenlosehealth
 		SOURCETYPE         1
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -525,7 +525,7 @@ ENTITY Darwinian
 		END
 	END
 	EVENT Create              
-		SOUNDNAME          darwiniancreate
+		SOUNDNAME          citizencreate
 		SOURCETYPE         1
 		POSITIONTYPE       2
 		INSTANCETYPE       1
@@ -582,7 +582,7 @@ ENTITY Darwinian
 		FREQUENCY          PARAMETER TypeRangedRandom      0.99     1.15     0.00  UpdateOncePerLoop
 	END
 	EVENT LoseHealth          
-		SOUNDNAME          darwinianlosehealth
+		SOUNDNAME          citizenlosehealth
 		SOURCETYPE         1
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -592,7 +592,7 @@ ENTITY Darwinian
 		FREQUENCY          PARAMETER TypeFixedValue        0.91  UpdateConstantly
 	END
 	EVENT Die                 
-		SOUNDNAME          darwiniandie
+		SOUNDNAME          citizendie
 		SOURCETYPE         1
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -689,7 +689,7 @@ ENTITY Officer
 		VOLUME             PARAMETER TypeFixedValue        9.23  UpdateConstantly
 	END
 	EVENT LoseHealth          
-		SOUNDNAME          darwinianlosehealth
+		SOUNDNAME          citizenlosehealth
 		SOURCETYPE         1
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -698,7 +698,7 @@ ENTITY Officer
 		VOLUME             PARAMETER TypeFixedValue        9.71  UpdateConstantly
 	END
 	EVENT Die                 
-		SOUNDNAME          darwiniandie
+		SOUNDNAME          citizendie
 		SOURCETYPE         1
 		POSITIONTYPE       2
 		INSTANCETYPE       0
@@ -2443,7 +2443,7 @@ END
 
 
 # =========================================================
-SAMPLEGROUP darwiniandie
+SAMPLEGROUP citizendie
 	SAMPLE  DarwinDeath
 	SAMPLE  DarwinDeath2
 	SAMPLE  DarwinDeath3
@@ -2456,7 +2456,7 @@ END
 
 
 # =========================================================
-SAMPLEGROUP darwinianlosehealth
+SAMPLEGROUP citizenlosehealth
 	SAMPLE  DarwinLoseHealth10
 	SAMPLE  DarwinLoseHealth11
 	SAMPLE  DarwinLoseHealth12
@@ -2489,7 +2489,7 @@ END
 
 
 # =========================================================
-SAMPLEGROUP darwiniancreate
+SAMPLEGROUP citizencreate
 	SAMPLE  DarwinCreate
 	SAMPLE  DarwinCreate2
 	SAMPLE  DarwinCreate3
@@ -3332,9 +3332,9 @@ END
 
 # =========================================================
 SAMPLEGROUP darwinseethreatattack
-	SAMPLE  DarwinianThreatAttack2
-	SAMPLE  DarwinianThreatAttack
-	SAMPLE  DarwinianThreatAttack3
+	SAMPLE  CitizenThreatAttack2
+	SAMPLE  CitizenThreatAttack
+	SAMPLE  CitizenThreatAttack3
 END
 
 
@@ -3384,16 +3384,16 @@ END
 
 # =========================================================
 SAMPLEGROUP darwinrunaway
-	SAMPLE  DarwinianThreatRun
-	SAMPLE  DarwinianThreatRun2
-	SAMPLE  DarwinianThreatRun3
-	SAMPLE  DarwinianThreatRun4
-	SAMPLE  DarwinianThreatRun5
-	SAMPLE  DarwinianThreatRun6
-	SAMPLE  DarwinianThreatRun7
-	SAMPLE  DarwinianThreatRun9
-	SAMPLE  DarwinianThreatRun8
-	SAMPLE  DarwinianThreatRun10
+	SAMPLE  CitizenThreatRun
+	SAMPLE  CitizenThreatRun2
+	SAMPLE  CitizenThreatRun3
+	SAMPLE  CitizenThreatRun4
+	SAMPLE  CitizenThreatRun5
+	SAMPLE  CitizenThreatRun6
+	SAMPLE  CitizenThreatRun7
+	SAMPLE  CitizenThreatRun9
+	SAMPLE  CitizenThreatRun8
+	SAMPLE  CitizenThreatRun10
 END
 
 

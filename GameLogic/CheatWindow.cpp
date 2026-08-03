@@ -74,7 +74,7 @@ class KillAllEnemiesButton : public SpeciesButton
 };
 
 
-class SpawnDarwiniansButton : public SpeciesButton
+class SpawnCitizensButton : public SpeciesButton
 {
   public:
     int m_teamId;
@@ -89,7 +89,7 @@ class SpawnDarwiniansButton : public SpeciesButton
         Vector3 _pos;
         g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
-        g_location->SpawnEntities(_pos, m_teamId, -1, Entity::TypeDarwinian, 20, g_zeroVector, 30);
+        g_location->SpawnEntities(_pos, m_teamId, -1, Entity::TypeCitizen, 20, g_zeroVector, 30);
       }
     }
 };
@@ -268,7 +268,7 @@ class SpawnPortsButton : public SpeciesButton
             Vector3 portPos, portFront;
             building->GetPortPosition(p, portPos, portFront);
 
-            g_location->SpawnEntities(portPos, 0, -1, Entity::TypeDarwinian, 3, g_zeroVector, 30.0f);
+            g_location->SpawnEntities(portPos, 0, -1, Entity::TypeCitizen, 3, g_zeroVector, 30.0f);
           }
         }
       }
@@ -293,15 +293,15 @@ void CheatWindow::Create()
   killAllEnemies->SetShortProperties("Kill All Enemies", 10, y, m_w - 20);
   RegisterButton(killAllEnemies);
 
-  SpawnDarwiniansButton* spawnDarwiniansGreen = new SpawnDarwiniansButton();
-  spawnDarwiniansGreen->SetShortProperties("Spawn Green", 10, y += 20, (m_w - 25) / 2);
-  spawnDarwiniansGreen->m_teamId = 0;
-  RegisterButton(spawnDarwiniansGreen);
+  SpawnCitizensButton* spawnCitizensGreen = new SpawnCitizensButton();
+  spawnCitizensGreen->SetShortProperties("Spawn Green", 10, y += 20, (m_w - 25) / 2);
+  spawnCitizensGreen->m_teamId = 0;
+  RegisterButton(spawnCitizensGreen);
 
-  SpawnDarwiniansButton* spawnDarwiniansRed = new SpawnDarwiniansButton();
-  spawnDarwiniansRed->SetShortProperties("Spawn Red", spawnDarwiniansGreen->m_x + spawnDarwiniansGreen->m_w + 5, y, (m_w - 25) / 2);
-  spawnDarwiniansRed->m_teamId = 1;
-  RegisterButton(spawnDarwiniansRed);
+  SpawnCitizensButton* spawnCitizensRed = new SpawnCitizensButton();
+  spawnCitizensRed->SetShortProperties("Spawn Red", spawnCitizensGreen->m_x + spawnCitizensGreen->m_w + 5, y, (m_w - 25) / 2);
+  spawnCitizensRed->m_teamId = 1;
+  RegisterButton(spawnCitizensRed);
 
   SpawnTankButton* spawnTankButton = new SpawnTankButton();
   spawnTankButton->SetShortProperties("Spawn Armour", 10, y += 20, m_w - 20);

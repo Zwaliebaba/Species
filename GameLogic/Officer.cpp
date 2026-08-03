@@ -40,7 +40,7 @@ Officer::Officer()
   m_state = StateIdle;
   m_orders = OrderNone;
 
-  m_shape = g_resource->GetShape("Darwinian.shp");
+  m_shape = g_resource->GetShape("Citizen.shp");
   ASSERT_TEXT(m_shape, "Shape not found : officer.shp");
 
   m_flagMarker = m_shape->m_rootFragment->LookupMarker("MarkerFlag");
@@ -407,7 +407,7 @@ void Officer::Absorb()
   {
     WorldObjectId id = ids[i];
     Entity* entity = g_location->GetEntity(id);
-    if (entity && entity->m_type == Entity::TypeDarwinian && !entity->m_dead)
+    if (entity && entity->m_type == Entity::TypeCitizen && !entity->m_dead)
     {
       float distance = (entity->m_pos - m_pos).Mag();
       if (distance < nearestDistance)
@@ -489,7 +489,7 @@ bool Officer::Advance(Unit* _unit)
   }
 
   //
-  // If we are absorbing, look around for Darwinians
+  // If we are absorbing, look around for Citizens
 
   if (m_absorb)
     Absorb();

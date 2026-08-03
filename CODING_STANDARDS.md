@@ -61,33 +61,38 @@ is a migration task, not something to do opportunistically.
 `DARWINIA_*` macros (30), and the `About*` pair that sat on top of them — landed
 via `tasks/rename-scaffolding.yaml`, CI-verified.
 
-**No Darwinia-named identifier derived from the game remains.** 372 occurrences
-across 27 spellings are left, and every one falls into a group that is frozen for
-a stated reason:
+**The entity rename is done too.** `Darwinian` → `Citizen` landed via
+`tasks/rename-darwinian.yaml` T3: the class and its file, `TypeCitizen` and every
+identifier derived from it, 37 `GameData/` filenames, the level-file entity
+strings, the `Sounds.txt` groups and the entity-derived language keys, all in one
+commit. What remains named after the old game is **branding only**:
 
 | Group | Occurrences | Why it is frozen |
 |---|---|---|
-| Named in `GameData/` — `Darwinian`, `Darwinians`, `dialog_leavedarwinia` and the other language keys | 241 | Level files and language tables resolve these by string at runtime. Renaming breaks content loading, silently. |
-| Entity-derived identifiers — `TypeDarwinian`, `FindDarwinian`, `numDarwinians`, `RenderDarwinians` | 101 | Code-only, so the filename test passes — but they name the same concept. See below. |
-| Game-name **strings**, not identifiers — the `"DARWINIA"` title text, `"~/.darwinia"` and `"Application Support/Darwinia"` user-data paths, the `"Darwinia"` Win32 window class | 30 | Not a refactor. The title text is a branding decision, and changing the data paths orphans every existing save. |
+| Game-name **strings**, not identifiers — the `"DARWINIA"` title text, the `"Darwinia"` Win32 window class, the store and website URLs | 24 in code | Not a refactor. It is a branding decision and the owner's to make. |
+| The four branding language keys — `dialog_leavedarwinia`, `dialog_buydarwinia`, `about_darwinia`, `darwinia_vistaedition` | 5 in English.txt | Same decision; they name the game, not an entity. |
+| Localised prose in the five non-English language files — `Darwinianer`, `Darwiniani`, `darwinianos` and the rest | 523 lines | Deliberately deferred by the owner. The KEYS were renamed so lookups resolve; machine-translating prose nobody has reviewed would trade an invisible staleness for a visible text bug. |
 
-> Counting note: `grep -rl Darwinia GameData/` matches files containing
-> *Darwinian*, which inflates the first group. Use `grep -rlw` for whole-word
-> matching when re-deriving these figures.
+> Counting note: `grep -rl Darwinia GameData/` matched files containing
+> *Darwinian* and inflated these figures while the entity was still called that.
+> That particular trap is gone, but use `grep -rlw` for whole-word matching when
+> re-deriving any of these.
 
-**Code-only is necessary but not sufficient.** `TypeDarwinian` appears nowhere in
-`GameData/`, so the filename test passes — yet `Entity::GetTypeId` matches
-level-file strings against a `typeNames[]` table whose entry is the literal
-`"Darwinian"`:
+**Code-only is necessary but not sufficient**, and the rename that just landed is
+the worked example. `TypeDarwinian` appeared nowhere in `GameData/`, so the
+filename test passed — yet `Entity::GetTypeId` matches level-file strings against
+a `typeNames[]` table whose entry was the literal `"Darwinian"`:
 
 ```
 MissionGardenLiberate.txt:   Darwinian   0   598.8   1202.4   30 …
 Entity.cpp typeNames[]:      "Darwinian"
 ```
 
-Renaming the enum without the string would leave a `TypeCitizen` that loads
+Renaming the enum without the string would have left a `TypeCitizen` that loads
 `"Darwinian"` — technically working, conceptually half-converted. Anything
 derived from an entity name moves with that entity, in one task, or not at all.
+That is why T3 was a single commit across code, assets and content rather than a
+sequence of tidy ones.
 
 So the test is two questions, both of which must pass:
 
@@ -114,26 +119,25 @@ follow it.
 The same problem hits the layering allowlist, which is keyed on filename — see
 `python3 tools/check_layering.py --rename OLD NEW`.
 
-**Domain names — leave them alone.** `Darwinian` (140 occurrences) and anything
-else naming an entity, building or program. These names are load-bearing in
-content:
+**Domain names — leave them alone.** `Citizen` and anything else naming an
+entity, building or program. The name changed; the rule did not, and these names
+are still load-bearing in content:
 
 ```
-GameData/Shapes/Darwinian.shp        GameData/Sprites/Darwinian.bmp
-GameData/Icons/IconDarwinian.bmp     GameData/Sounds/LaserHitDarwinian1..19.wav
-GameData/Sounds/DarwinianThreat*.wav GameData/Levels/MissionGardenLiberate.txt
+GameData/Shapes/Citizen.shp          GameData/Sprites/Citizen.bmp
+GameData/Icons/IconCitizen.bmp       GameData/Sounds/LaserHitCitizen1..19.wav
+GameData/Sounds/CitizenThreat*.wav   GameData/Levels/MissionGardenLiberate.txt
 ```
 
-Level files name entity types as **strings** (`Darwinian 0 598.8 1202.4 30 …`),
-and shapes, sprites and sounds are resolved by filename at runtime. A rename that
+Level files name entity types as **strings** (`Citizen 0 598.8 1202.4 30 …`), and
+shapes, sprites and sounds are resolved by filename at runtime. A rename that
 misses one fails silently at load rather than at compile time.
 
-That rename was gated on the game running again, which it now does — so the
-Garden smoke test can finally catch a missed reference, and the task is
-unblocked rather than done. It remains one deliberate task covering code, assets
-and content together, and nobody has written it. Until someone does: **do not
-rename `Darwinian`, and do not rename anything whose name appears in
-`GameData/`.**
+`Darwinian` → `Citizen` was done exactly that way: one commit, gated on the game
+running so the Garden smoke test could catch a missed reference, and verified by
+the owner running it. **Renaming `Citizen`, or anything else whose name appears
+in `GameData/`, needs the same treatment** — a plan, one commit, and an
+owner-run smoke test. It is not something to do opportunistically.
 Check before you assume:
 
 ```bash

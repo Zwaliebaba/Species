@@ -267,7 +267,7 @@ entityname_sporegenerator              Générateur de spores
 entityname_centipede                   Centipède
 entityname_spaceinvader                Invader
 entityname_spider                      Araignée
-entityname_darwinian                   Darwinien
+entityname_citizen                   Darwinien
 entityname_officer                     Officier
 entityname_armyant                     Fourmi
 entityname_armour                      Blindé
@@ -364,7 +364,7 @@ objective_throughput                   débit
 # Research messages
 # ================================================
 
-researchname_darwinian                 Darwiniens
+researchname_citizen                 Darwiniens
 researchname_squad                     Escouade
 researchname_engineer                  Ingénieur
 researchname_laser                     Laser
@@ -424,11 +424,11 @@ research_taskmanager                   Je vais travailler à l'amélioration du ge
 research_taskmanager_v3                J'ai apporté quelques améliorations au gestionnaire de programmes. Vous pouvez maintenant faire fonctionner quatre programmes simultanément.
 research_taskmanager_v4                J'ai amélioré le gestionnaire de programmes. Vous pouvez à présent faire fonctionner cinq programmes en même temps.
 
-research_darwinian                     Je vais essayer d'améliorer le programme de base des Darwiniens. J'espère pouvoir leur fournir des moyens de se défendre seuls.
-# research_darwinian_v1              Unused
-# research_darwinian_v2              Unused
-research_darwinian_v3                  J'ai amélioré les Darwiniens et ils peuvent maintenant se servir de lasers. Ceci devrait leur permettre de se défendre contre les attaques du virus.
-research_darwinian_v4                  Les Darwiniens peuvent à présent lancer des grenades. C'est une perspective qui fait un peu peur, mais ils devraient maintenant avoir une chance contre des ennemis plus puissants.
+research_citizen                     Je vais essayer d'améliorer le programme de base des Darwiniens. J'espère pouvoir leur fournir des moyens de se défendre seuls.
+# research_citizen_v1              Unused
+# research_citizen_v2              Unused
+research_citizen_v3                  J'ai amélioré les Darwiniens et ils peuvent maintenant se servir de lasers. Ceci devrait leur permettre de se défendre contre les attaques du virus.
+research_citizen_v4                  Les Darwiniens peuvent à présent lancer des grenades. C'est une perspective qui fait un peu peur, mais ils devraient maintenant avoir une chance contre des ennemis plus puissants.
 
 research_engineer                      Je vais travailler à l'amélioration des ingénieurs. Je pense pouvoir augmenter le nombre d'esprits qu'ils pourront transporter.
 # research_engineer_v1               Unused
@@ -769,7 +769,7 @@ newcontrols_showresearch               Afficher l'écran de recherches
 newcontrols_showtaskmanager            Afficher l'écran de gestionnaire de programmes
 newcontrols_showobjectives             Afficher l'écran des objectifs
 
-newcontrols_research_darwinian         Améliorer le programme Darwiniens (les équiper de meilleures armes)
+newcontrols_research_citizen         Améliorer le programme Darwiniens (les équiper de meilleures armes)
 newcontrols_research_officer           Améliorer le programme Officier (l'équiper davantage d'ordres)
 newcontrols_research_squad             Améliorer le programme Escouade (augmenter le nombre d'unités)
 newcontrols_research_laser             Améliorer le programme Laser (améliorer la portée)
@@ -1541,7 +1541,7 @@ spawnname_spawnspider                  Apparition d'araignées
 spawnname_spawnspirits                 Apparition d'esprits
 spawnname_spawneggs                    Apparition d'œufs
 spawnname_spawntriffideggs             Apparition d'œufs de trifides
-spawnname_spawndarwinians              Apparition de Darwiniens
+spawnname_spawncitizens              Apparition de Darwiniens
 
 
 # =================================================

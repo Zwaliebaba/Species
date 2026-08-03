@@ -33,7 +33,7 @@
 #include "Virii.h"
 #include "Airstrike.h"
 #include "WorldObject.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -457,11 +457,11 @@ void Team::Render()
 
 
   //
-  // Render Darwinians
+  // Render Citizens
 
-  START_PROFILE(g_profiler, "Render Darwinians");
-  RenderDarwinians(timeSinceAdvance);
-  END_PROFILE(g_profiler, "Render Darwinians");
+  START_PROFILE(g_profiler, "Render Citizens");
+  RenderCitizens(timeSinceAdvance);
+  END_PROFILE(g_profiler, "Render Citizens");
 }
 
 
@@ -542,7 +542,7 @@ void Team::RenderVirii(float _predictionTime)
 }
 
 
-void Team::RenderDarwinians(float _predictionTime)
+void Team::RenderCitizens(float _predictionTime)
 {
   if (m_others.Size() == 0)
     return;
@@ -550,7 +550,7 @@ void Team::RenderDarwinians(float _predictionTime)
   int lastUpdated = m_others.GetLastUpdated();
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Darwinian.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Citizen.bmp"));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glEnable(GL_BLEND);
@@ -574,23 +574,23 @@ void Team::RenderDarwinians(float _predictionTime)
     if (m_others.ValidIndex(i))
     {
       Entity* entity = m_others.GetData(i);
-      if (entity->m_type == Entity::TypeDarwinian)
+      if (entity->m_type == Entity::TypeCitizen)
       {
-        Darwinian* darwinian = (Darwinian*)entity;
-        if (darwinian->IsInView())
+        Citizen* citizen = (Citizen*)entity;
+        if (citizen->IsInView())
         {
-          float camDistSqd = (darwinian->m_pos - g_camera->GetPos()).MagSquared();
+          float camDistSqd = (citizen->m_pos - g_camera->GetPos()).MagSquared();
           float highDetail = 1.0f - (camDistSqd / highDetailDistanceSqd);
           highDetail = max(highDetail, 0.0f);
           highDetail = min(highDetail, 1.0f);
 
           if (i <= lastUpdated)
           {
-            darwinian->Render(_predictionTime, highDetail);
+            citizen->Render(_predictionTime, highDetail);
           }
           else
           {
-            darwinian->Render(_predictionTime + SERVER_ADVANCE_PERIOD, highDetail);
+            citizen->Render(_predictionTime + SERVER_ADVANCE_PERIOD, highDetail);
           }
         }
       }
@@ -614,7 +614,7 @@ void Team::RenderOthers(float _predictionTime)
     if (m_others.ValidIndex(i))
     {
       Entity* entity = m_others.GetData(i);
-      if (entity->m_type != Entity::TypeVirii && entity->m_type != Entity::TypeDarwinian && entity->IsInView())
+      if (entity->m_type != Entity::TypeVirii && entity->m_type != Entity::TypeCitizen && entity->IsInView())
       {
         START_PROFILE(g_profiler, Entity::GetTypeName(entity->m_type));
         entity->Render(_predictionTime);
@@ -630,7 +630,7 @@ void Team::RenderOthers(float _predictionTime)
     if (m_others.ValidIndex(i))
     {
       Entity* entity = m_others.GetData(i);
-      if (entity->m_type != Entity::TypeVirii && entity->m_type != Entity::TypeDarwinian && entity->IsInView())
+      if (entity->m_type != Entity::TypeVirii && entity->m_type != Entity::TypeCitizen && entity->IsInView())
       {
         START_PROFILE(g_profiler, Entity::GetTypeName(entity->m_type));
         entity->Render(_predictionTime);

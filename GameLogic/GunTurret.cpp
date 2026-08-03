@@ -20,7 +20,7 @@
 #include "Explosion.h"
 
 #include "GunTurret.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "Ai.h"
 
 #include "SoundSystem.h"
@@ -233,7 +233,7 @@ bool GunTurret::Advance()
 
   //
   // Create an AI target on top of us,
-  // to get Darwinians to fight hard for control
+  // to get Citizens to fight hard for control
 
   if (!m_aiTargetCreated)
   {
@@ -247,7 +247,7 @@ bool GunTurret::Advance()
   }
 
   //
-  // Create a GunTurret target that darwinians can run from
+  // Create a GunTurret target that citizens can run from
 
   if (!m_targetCreated)
   {

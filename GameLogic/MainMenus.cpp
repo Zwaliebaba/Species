@@ -536,7 +536,7 @@ void AboutSpeciesWindow::Render(bool _hasFocus)
   SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Darwinian.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Citizen.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);

@@ -65,7 +65,7 @@ public:
 
     void Render             ();
     void RenderVirii        (float _predictionTime);
-    void RenderDarwinians   (float _predictionTime);
+    void RenderCitizens   (float _predictionTime);
     void RenderOthers       (float _predictionTime);
 };
 

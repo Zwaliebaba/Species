@@ -23,8 +23,8 @@ Buildings_StartDefinition
 	# Type              id      x       z       tm      rx      rz      isGlobal
 	# ==========================================================================
 	ResearchItem        101     2534.33 1998.19 1       -0.19   -0.23   0       AirStrike      1
-	ScriptTrigger       100     1914.35 2408.80 0       1.00    0.00    0       89     67.60  pixelmines_yardport Darwinian
-	ScriptTrigger       99      1430.11 1004.93 0       1.00    0.00    0       -1     79.70  MineMineHelp.txt Darwinian
+	ScriptTrigger       100     1914.35 2408.80 0       1.00    0.00    0       89     67.60  pixelmines_yardport Citizen
+	ScriptTrigger       99      1430.11 1004.93 0       1.00    0.00    0       -1     79.70  MineMineHelp.txt Citizen
 	Incubator           97      833.43  473.72  1       0.07    1.00    1            0
 	Incubator           108     1192.72 2329.05 1       -0.13   -0.99   1            0
 	Incubator           12      602.96  1141.27 1       1.00    0.00    1            0

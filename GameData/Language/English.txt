@@ -213,16 +213,16 @@ help_engineer_summon_2_icons_xin       Select one of the starting areas, now hig
 help_engineer_use_kbd                  Engineers will automatically do anything nearby that needs doing, such as collecting dead spirits or reprogramming buildings.  Just Left Click to move them near a task.
 help_engineer_use_xin                  Engineers will automatically do anything nearby that needs doing, such as collecting dead spirits or reprogramming buildings.  Just move them near a task.
 
-help_officer_create_kbd                You can use ordinary Darwinians to order other Darwinians around, by promoting them to officers.  Draw this gesture for Officer and click on a Darwinian.
-help_officer_create_xin                You can use ordinary Darwinians to order other Darwinians around, by promoting them to officers.  Draw this gesture for Officer and select a Darwinian.
-help_officer_create_icons_kbd          You can use ordinary Darwinians to order other Darwinians around, by promoting them to officers.  Bring up the Task Manager and click on the Officer icon, then click on a Darwinian.
-help_officer_create_icons_xin          You can use ordinary Darwinians to order other Darwinians around, by promoting them to officers.  Bring up the Task Manager and select the Officer icon, then select a Darwinian.
-help_officer_create_2_kbd              Click on a Darwinian to promote him to an Officer.  Or press CTRL-C to terminate the Officer program.
-help_officer_create_2_xin              Select a Darwinian to promote him to an Officer.  Or terminate the Officer program.
-help_officer_create_2_icons_kbd        Click on a Darwinian to promote him to an Officer.  Or press [KEYICONSTASKMANAGERENDTASK] to terminate the Officer program.
-help_officer_create_2_icons_xin        Select a Darwinian to promote him to an Officer.  Or terminate the Officer program.
-help_officer_use_kbd                   You can move an officer by Left Clicking.  Right click on the landscape to set GOTO Orders for other Darwinians to follow.  Right click near the Officer to cancel his orders.
-help_officer_use_1mb_kbd               You can move an officer by clicking.  Click and hold on the landscape to set GOTO Orders for other Darwinians to follow.  Click and hold near the Officer to cancel his orders.
+help_officer_create_kbd                You can use ordinary Citizens to order other Citizens around, by promoting them to officers.  Draw this gesture for Officer and click on a Citizen.
+help_officer_create_xin                You can use ordinary Citizens to order other Citizens around, by promoting them to officers.  Draw this gesture for Officer and select a Citizen.
+help_officer_create_icons_kbd          You can use ordinary Citizens to order other Citizens around, by promoting them to officers.  Bring up the Task Manager and click on the Officer icon, then click on a Citizen.
+help_officer_create_icons_xin          You can use ordinary Citizens to order other Citizens around, by promoting them to officers.  Bring up the Task Manager and select the Officer icon, then select a Citizen.
+help_officer_create_2_kbd              Click on a Citizen to promote him to an Officer.  Or press CTRL-C to terminate the Officer program.
+help_officer_create_2_xin              Select a Citizen to promote him to an Officer.  Or terminate the Officer program.
+help_officer_create_2_icons_kbd        Click on a Citizen to promote him to an Officer.  Or press [KEYICONSTASKMANAGERENDTASK] to terminate the Officer program.
+help_officer_create_2_icons_xin        Select a Citizen to promote him to an Officer.  Or terminate the Officer program.
+help_officer_use_kbd                   You can move an officer by Left Clicking.  Right click on the landscape to set GOTO Orders for other Citizens to follow.  Right click near the Officer to cancel his orders.
+help_officer_use_1mb_kbd               You can move an officer by clicking.  Click and hold on the landscape to set GOTO Orders for other Citizens to follow.  Click and hold near the Officer to cancel his orders.
 help_officer_toggle_kbd                To toggle through all available orders, Right Click near the officer.
 help_officer_toggle_1mb_kbd            To toggle through all available orders, Click and hold near the officer.
 
@@ -232,22 +232,22 @@ help_showobjectives_icons_kbd          To see a list of objectives, hold [KEYICO
 help_showobjectives_icons_xin          To see a list of objectives, open the Task Manager, then scroll down.
 help_armour_summon_kbd                 Click inside one of the starting areas, now Highlighted, to create your Armour.  Armour can only be created near Trunk Ports that you control.
 help_armour_summon_xin                 Select one of the starting areas, now Highlighted, to create your Armour.  Armour can only be created near Trunk Ports that you control.
-help_armour_use_kbd                    Left Click to move your Armour.  Right Click near the armour to toggle loading and unloading of Darwinians.  Right Click on the landscape to deploy your Armour as a Battle Cannon.
-help_armour_use_1mb_kbd                Left Click to move your Armour.  Click and hold the mouse button near the armour to toggle loading and unloading of Darwinians.  Click and hold the mouse button on the landscape to deploy your Armour as a Battle Cannon.
+help_armour_use_kbd                    Left Click to move your Armour.  Right Click near the armour to toggle loading and unloading of Citizens.  Right Click on the landscape to deploy your Armour as a Battle Cannon.
+help_armour_use_1mb_kbd                Left Click to move your Armour.  Click and hold the mouse button near the armour to toggle loading and unloading of Citizens.  Click and hold the mouse button on the landscape to deploy your Armour as a Battle Cannon.
 
 help_radardish_1_kbd                   This Radar Dish can be used to beam people to other Radar Dishes.  Click on it to control it.
 help_radardish_1_xin                   This Radar Dish can be used to beam people to other Radar Dishes.  Select it to control it.
 help_radardish_2_kbd                   To aim the Radar Dish simply point and click on the Radar Dish you wish to travel to.  The receiving Radar Dish must be facing you.  Press [KEYUNITDESELECT] to deselect the Radar Dish.
 help_radardish_2_xin                   To aim the Radar Dish simply point and select the Radar Dish you wish to travel to.  The receiving Radar Dish must be facing you.
-help_incubator                         This building is an Incubator.  You can use Engineers to carry spirits here, which will then be reborn into more Darwinians.
+help_incubator                         This building is an Incubator.  You can use Engineers to carry spirits here, which will then be reborn into more Citizens.
 help_trunkport                         This is a Trunk Port.  It acts as a stargate, connecting different locations within Darwinia together.
-help_refinery                          This is the main Refinery.  It powers the entire mining rig on these islands.  To bring it online you will need to safely escort some Darwinians up here.
-help_mine                              This building is a Mine.  It will extract raw polygons from the hillside and dump them into the carts passing through.  It needs several Darwinians to operate.
+help_refinery                          This is the main Refinery.  It powers the entire mining rig on these islands.  To bring it online you will need to safely escort some Citizens up here.
+help_mine                              This building is a Mine.  It will extract raw polygons from the hillside and dump them into the carts passing through.  It needs several Citizens to operate.
 help_anthill                           Euurgh, disgusting!  This area is infested with Ants!  This appears to be one of their nests.  A few well placed grenades should do the trick.
 help_controltower                      This is a Control Tower.  Send one of your engineers to reprogram it, and you'll be able to make use of the building it's connected to.
 help_researchitem                      You've found some of my research!  Excellent.  Create some Engineers nearby and they will download the research into my system.  Hopefully it will be something useful.
-help_gunturret_1_kbd                   This Battle Cannon needs Darwinians operating it before it can be used.  They will automatically shoot at any nearby enemies.  Alternatively you can click on it to control it yourself.
-help_gunturret_1_xin                   This Battle Cannon needs Darwinians operating it before it can be used.  They will automatically shoot at any nearby enemies.  Alternatively you can select it to control it yourself.
+help_gunturret_1_kbd                   This Battle Cannon needs Citizens operating it before it can be used.  They will automatically shoot at any nearby enemies.  Alternatively you can click on it to control it yourself.
+help_gunturret_1_xin                   This Battle Cannon needs Citizens operating it before it can be used.  They will automatically shoot at any nearby enemies.  Alternatively you can select it to control it yourself.
 help_gunturret_2_kbd                   This Battle Cannon will track your cursor.  Right Click to fire.  Press [KEYUNITDESELECT] to deselect.
 help_gunturret_2_1mb_kbd               This Battle Cannon will track your cursor.  Click and hold to fire.  Press [KEYUNITDESELECT] to deselect.
 
@@ -275,7 +275,7 @@ entityname_sporegenerator              SporeGenerator
 entityname_centipede                   Centipede
 entityname_spaceinvader                SpaceInvader
 entityname_spider                      Spider
-entityname_darwinian                   Darwinian
+entityname_citizen                   Citizen
 entityname_officer                     Officer
 entityname_armyant                     ArmyAnt
 entityname_armour                      Armour
@@ -332,7 +332,7 @@ task_manager_full_icons_xin            You cannot run any more programs.
 task_manager_targetfirst_kbd           You can't create any more programs until you've placed your existing one.  Click inside one of the starting areas to place it.
 task_manager_targetfirst_xin           You can't create any more programs until you've placed your existing one.  Select one of the starting areas to place it.
 task_manager_needsquadfirst            You need to create a squad first before you can set their weapon type.
-officer_notwalkable                    I'm afraid the Darwinians aren't clever enough to find their way along that route.  They need to see where they are going.
+officer_notwalkable                    I'm afraid the Citizens aren't clever enough to find their way along that route.  They need to see where they are going.
 armour_cantconvert                     The ground there is too steep...you can only set up a Battle Cannon on flat ground.
 
 objective_capture_trunk                Enable Trunk Port
@@ -372,7 +372,7 @@ objective_throughput                   throughput
 # Research messages
 # ================================================
 
-researchname_darwinian                 Darwinians
+researchname_citizen                 Citizens
 researchname_squad                     Squad
 researchname_engineer                  Engineer
 researchname_laser                     Laser
@@ -432,11 +432,11 @@ research_taskmanager                   I'll work on upgrading the Task Manager f
 research_taskmanager_v3                I've made some changes to the Task Manager.  You can now run up to four programs simultaneously.
 research_taskmanager_v4                I've upgraded the Task Manager.  Now you can run five programs at once.  This is already pushing the system to its limits, so I don't think I can improve it anymore.
 
-research_darwinian                     I'll try to improve the basic Darwinian code template.  Hopefully I should be able to give them some decent weapons to defend themselves.
-# research_darwinian_v1              Unused
-# research_darwinian_v2              Unused
-research_darwinian_v3                  I've upgraded the Darwinians so they can use Lasers!  This should help them defend against the Viral attack.
-research_darwinian_v4                  I've given the Darwinians Grenades.  It's a bit scary, but they should have a chance against stronger foes now.  I've done all I can here.
+research_citizen                     I'll try to improve the basic Citizen code template.  Hopefully I should be able to give them some decent weapons to defend themselves.
+# research_citizen_v1              Unused
+# research_citizen_v2              Unused
+research_citizen_v3                  I've upgraded the Citizens so they can use Lasers!  This should help them defend against the Viral attack.
+research_citizen_v4                  I've given the Citizens Grenades.  It's a bit scary, but they should have a chance against stronger foes now.  I've done all I can here.
 
 research_engineer                      I'll work on improving the Engineers.  I think I can increase the number of spirits they can carry.
 # research_engineer_v1               Unused
@@ -446,19 +446,19 @@ research_engineer_v4                   I've increased the spirit capacity of you
 
 research_armour                        I'll do some more work on the Armour program.  I think I can improve the capacity of the Armour, and maybe the range of the Battle Cannon.
 # research_armour_v1                 Unused
-research_armour_v2                     I've upgraded the Armour program.  You can now fit 20 Darwinians inside.  I've also increased the range of the Battle Cannon.
-research_armour_v3                     The Armour program has been upgraded again.  You can now fit 30 Darwinians inside.  And I've increased the range of the Battle Cannon to more than twice its original spec.
-research_armour_v4                     I've increased the capacity of the Armour program to 40 Darwinians.  And the Battle Cannon is now at its maximum range.  I've done all I can here.
+research_armour_v2                     I've upgraded the Armour program.  You can now fit 20 Citizens inside.  I've also increased the range of the Battle Cannon.
+research_armour_v3                     The Armour program has been upgraded again.  You can now fit 30 Citizens inside.  And I've increased the range of the Battle Cannon to more than twice its original spec.
+research_armour_v4                     I've increased the capacity of the Armour program to 40 Citizens.  And the Battle Cannon is now at its maximum range.  I've done all I can here.
 
-research_officer                       I will get to work improving the Officer program.  I should be able to give him some useful Orders which we can use to influence the Darwinians.
+research_officer                       I will get to work improving the Officer program.  I should be able to give him some useful Orders which we can use to influence the Citizens.
 # research_officer_v1                Unused
 # research_officer_v2                Unused
 research_officer_v3_kbd                I've upgraded the Officer program so they can now issue a FOLLOW order as well as the existing GOTO order.  Right click near an officer to toggle his orders.
 research_officer_v3_xin                I've upgraded the Officer program so they can now issue a FOLLOW order as well as the existing GOTO order.
 research_officer_v3_1mb_kbd            I've upgraded the Officer program so they can now issue a FOLLOW order as well as the existing GOTO order.  Click and hold near an officer to toggle his orders.
-research_officer_v4_kbd                I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Darwinians into a protective shield, which will keep the Officer safe in dangerous areas.  Right click near an officer to toggle his orders.
-research_officer_v4_xin                I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Darwinians into a protective shield, which will keep the Officer safe in dangerous areas.
-research_officer_v4_1mb_kbd            I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Darwinians into a protective shield, which will keep the Officer safe in dangerous areas.  Click and hold near an officer to toggle his orders.
+research_officer_v4_kbd                I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Citizens into a protective shield, which will keep the Officer safe in dangerous areas.  Right click near an officer to toggle his orders.
+research_officer_v4_xin                I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Citizens into a protective shield, which will keep the Officer safe in dangerous areas.
+research_officer_v4_1mb_kbd            I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Citizens into a protective shield, which will keep the Officer safe in dangerous areas.  Click and hold near an officer to toggle his orders.
 
 research_explanation_1                 I'm going to keep working on the programs you are using for a while...the Squads, Engineers etc.
 research_explanation_2                 Most of them are still in very early stages of beta testing and I think I can improve all of them quite a bit with some work.
@@ -481,14 +481,14 @@ tutorial_intro_5                       Unfortunately we're currently under attac
 tutorial_intro_6                       This location is called the Pixel Mines.  Raw Polygons are mined from the Quarries in the distance and are refined into Primitives in this building.
 tutorial_intro_7                       Essentially this entire location produces the raw materials we need to build things in Darwinia.
 tutorial_intro_8                       Unfortunately it's all offline right now due to the viral infection.  I want you to help me fix that.
-tutorial_intro_9                       We're going to need to wipe out the Viral infection, and rebuild the population of the native Darwinians.
+tutorial_intro_9                       We're going to need to wipe out the Viral infection, and rebuild the population of the native Citizens.
 tutorial_intro_10                      But let's start with the basics.
 
 tutorial_1_kbd                         Firstly let's get to grips with the camera.Use the [KEYCAMERAFORWARDS],[KEYCAMERALEFT],[KEYCAMERABACKWARDS],[KEYCAMERARIGHT] keys to move the camera around.
 tutorial_1_xin                         Firstly let's get to grips with the camera. Use the left stick to move the camera around.
 tutorial_2_kbd                         To change the camera's height, scroll your middle mouse button up and down.  Or you can press [KEYCAMERAUP] and [KEYCAMERADOWN].
 tutorial_3                             Good stuff.  Now the first thing I want you to do is to destroy these evil Red Virii.
-tutorial_3b                            We will then harvest the Souls from their dead bodies and convert them into some perky new Darwinians.
+tutorial_3b                            We will then harvest the Souls from their dead bodies and convert them into some perky new Citizens.
 tutorial_4                             In order to destroy those Virii, we will need to create an armed offensive unit called a SQUAD.
 tutorial_4b_kbd                        To create things in Darwinia you draw gestures in the Task Manager.  Hold the [KEYGESTURESTASKMANAGERDISPLAY] key to bring up the Task Manager.
 tutorial_4b_xin                        To create things in Darwinia you draw gestures in the Task Manager.
@@ -504,17 +504,17 @@ tutorial_11                            Looks like you've got the hang of it.  Ta
 tutorial_12                            Fantastic, you've destroyed half of them already.
 tutorial_13                            You're very nearly done.  Just a few more Virii remain.
 
-tutorial_20                            This building is an Incubator.  Its purpose is to convert the Souls of dead creatures into fresh new Darwinians.
-tutorial_20b                           Unfortunately it's currently offline, due to the red viral Infection.  We need to use it to start creating Darwinians.
+tutorial_20                            This building is an Incubator.  Its purpose is to convert the Souls of dead creatures into fresh new Citizens.
+tutorial_20b                           Unfortunately it's currently offline, due to the red viral Infection.  We need to use it to start creating Citizens.
 tutorial_20c                           To bring the building online we will need to use an ENGINEER.
 tutorial_21_kbd                        To summon an ENGINEER, hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager and draw this gesture.
 tutorial_21_xin                        To summon an ENGINEER, open the Task Manager and draw this gesture.
 tutorial_22                            Engineers can be placed in starting points, or near Squads.  Place your Engineer and move him near the Incubator.
 tutorial_23                            The first thing the Engineer will do is to reprogram the Incubator and remove the Viral infection, using the nearby Control Tower.
 tutorial_24                            The Engineer will now collect up the Souls left behind by the dead Virii and carry them to the Incubator.
-tutorial_24b                           All creatures in Darwinia have a Soul.  The Souls used to belong to the Darwinians before the Virus corrupted them.
-tutorial_24c                           Using Engineers and Incubators, we can gradually harvest the evil Virus Souls and convert them back into native Darwinians.
-tutorial_25                            The first Darwinians have been reborn!  This is fantastic news.
+tutorial_24b                           All creatures in Darwinia have a Soul.  The Souls used to belong to the Citizens before the Virus corrupted them.
+tutorial_24c                           Using Engineers and Incubators, we can gradually harvest the evil Virus Souls and convert them back into native Citizens.
+tutorial_25                            The first Citizens have been reborn!  This is fantastic news.
 tutorial_26                            These guys used to own the planet, before the Virus invaded.  And it's these guys that we're going to help to recapture the world.
 
 tutorial_28_kbd                        Hold [KEYGESTURESTASKMANAGERDISPLAY] and draw this gesture to create another SQUAD.
@@ -523,26 +523,26 @@ tutorial_29                            You can now start your SQUAD closer to th
 
 tutorial_30                            Ok, next task.
 tutorial_31                            There are more evil creatures in this direction, including a rather nasty Centipede.
-tutorial_31b                           I want you to wipe them out with Squads, then harvest their spirits into Darwinians.
+tutorial_31b                           I want you to wipe them out with Squads, then harvest their spirits into Citizens.
 tutorial_32                            Now take your Squad and attack the Viral infection that I just showed you.
 tutorial_33                            Excellent work.  I'm very impressed.
 tutorial_33b                           We now want to use an Engineer to reprogram this Incubator, and to collect up the nearby Souls.
 tutorial_34_kbd                        Now move the Engineer near to the new Incubator so he can begin Reprogramming it.  Just Left Click to move an Engineer.
 tutorial_34_xin                        Now move the Engineer near to the new Incubator so he can begin Reprogramming it.
-tutorial_35                            That Engineer will now pick up the nearby Souls and place them in the Incubator, creating more Darwinians.
-tutorial_35b                           Let me show you how to move the existing Darwinians around.
-tutorial_35c                           Darwinians can't be directly controlled, but we can issue orders to them using an Officer.
+tutorial_35                            That Engineer will now pick up the nearby Souls and place them in the Incubator, creating more Citizens.
+tutorial_35b                           Let me show you how to move the existing Citizens around.
+tutorial_35c                           Citizens can't be directly controlled, but we can issue orders to them using an Officer.
 tutorial_351                           To create an Officer, draw this gesture.
-tutorial_36_kbd                        Click on an existing Darwinian to promote him to an Officer.
-tutorial_36_xin                        Select an existing Darwinian to promote him to an Officer.
-tutorial_37                            The most useful function if Officers is that they can order Darwinians around.
-tutorial_37_kbd                        Officers can be moved around by Left Clicking.  But they're most useful function is that they can order Darwinians around.
-tutorial_37b_kbd                       You can right click somewhere on the ground to order all the nearby Darwinians to walk there.
+tutorial_36_kbd                        Click on an existing Citizen to promote him to an Officer.
+tutorial_36_xin                        Select an existing Citizen to promote him to an Officer.
+tutorial_37                            The most useful function if Officers is that they can order Citizens around.
+tutorial_37_kbd                        Officers can be moved around by Left Clicking.  But they're most useful function is that they can order Citizens around.
+tutorial_37b_kbd                       You can right click somewhere on the ground to order all the nearby Citizens to walk there.
 tutorial_38                            The ultimate objective here is to get this Refinery online so we can start producing some Primitives.
-tutorial_38b                           The Refinery needs Darwinians at its base in order to operate.
-tutorial_38c                           However the Darwinians can't currently defend themselves, so you'll need to clear the area out first using Squads.
-tutorial_38d                           Once you've done that, use Officers to order the Darwinians up to the Refinery and they will begin operating it.
-tutorial_38e                           Don't forget to use Engineers to collect up the Souls of dead Virii and Darwinians.
+tutorial_38b                           The Refinery needs Citizens at its base in order to operate.
+tutorial_38c                           However the Citizens can't currently defend themselves, so you'll need to clear the area out first using Squads.
+tutorial_38d                           Once you've done that, use Officers to order the Citizens up to the Refinery and they will begin operating it.
+tutorial_38e                           Don't forget to use Engineers to collect up the Souls of dead Virii and Citizens.
 tutorial_39_kbd                        If you get stuck at any time, you can press [KEYSEPULVEDAHELP] and I'll try to help you. Good luck!
 
 tutorial_40                            You have a Squad running already, but you aren't currently controlling it because it isn't the selected unit.
@@ -572,10 +572,10 @@ pixelmines_objective2                  Enable Yard Trunk Port
 pixelmines_intro_1                     This entire location is one giant mining facility, unfortunately now overrun by this damn Virus.
 pixelmines_refinery_1                  This building at the centre of the facility is the Refinery.  It converts mined Polygons into Primitives which can be used later to build things.
 pixelmines_refinery_1b                 It also drives the motor system that moves the carts around the track.
-pixelmines_refinery_2                  This Refinery needs Darwinians at its control pads or else it's useless.  You'll need to safely escort some Darwinians up here to get the facility moving.
+pixelmines_refinery_2                  This Refinery needs Citizens at its control pads or else it's useless.  You'll need to safely escort some Citizens up here to get the facility moving.
 pixelmines_mines_1                     There are four underground mines built into the side of the landscape.  Each one pulls raw Polygons from the mountainside.
-pixelmines_mines_1b                    Generations of Darwinian miners have worked these quarries and it's starting to show its toll on the hillside.
-pixelmines_mines_2                     The Darwinians will extract the Polygons from deep inside the quarry and dump them into the mining carts as they move past, on their way to the Refinery.
+pixelmines_mines_1b                    Generations of Citizen miners have worked these quarries and it's starting to show its toll on the hillside.
+pixelmines_mines_2                     The Citizens will extract the Polygons from deep inside the quarry and dump them into the mining carts as they move past, on their way to the Refinery.
 pixelmines_mines_3                     We'll need to mine at least 20 Primitives to be able to build anything substantial.
 
 pixelmines_yardport_1                  Once the Primitives have been refined, they need to be transported to the Construction Yard where they can be used to build things.
@@ -777,7 +777,7 @@ newcontrols_showresearch               Show research screen
 newcontrols_showtaskmanager            Show task manager screen
 newcontrols_showobjectives             Show objectives screen
 
-newcontrols_research_darwinian         Research the Darwinian program (equips them with better weapons)
+newcontrols_research_citizen         Research the Citizen program (equips them with better weapons)
 newcontrols_research_officer           Research the Officer program (equips them with more order types)
 newcontrols_research_squad             Research the Squad program (improves number of squaddies)
 newcontrols_research_laser             Research the Laser program (increases the range)
@@ -803,52 +803,52 @@ launchpad_objective0                   Launch Rocket
 launchpad_primary_1                    There are three Fuel Pumps on this map.
 launchpad_primary_2                    Their function is to extract raw minerals from the sea bed, and process it into liquid fuel the Rocket can use in its engines.
 launchpad_primary_4                    The Fuel Pumps are powered by Solar Panels nearby.
-launchpad_primary_5                    These Solar panels require Darwinians at their base in order to operate.
-launchpad_primary_6                    Clear out the Viral infection around the Solar panels, then escort some Darwinians to them using Officers.
+launchpad_primary_5                    These Solar panels require Citizens at their base in order to operate.
+launchpad_primary_6                    Clear out the Viral infection around the Solar panels, then escort some Citizens to them using Officers.
 launchpad_primary_7                    Once operational the Solar Panels will power the Fuel Pump, which will in-turn push liquid fuel into the Rocket.
 
-launchpad_primary_rocket_1             Our primary aim is to help the Darwinians launch their Rocket.
+launchpad_primary_rocket_1             Our primary aim is to help the Citizens launch their Rocket.
 launchpad_primary_rocket_2             In order to do that we will first need to refuel it.
 launchpad_primary_rocket_3             The fuel is generated by the 3 highlighted Fuel Pumps, which push the fuel direct into the Rocket's fuel tanks.
-launchpad_primary_rocket_4             Bring those Fuel Pumps online by manning the solar panels around the map with Darwinians.
+launchpad_primary_rocket_4             Bring those Fuel Pumps online by manning the solar panels around the map with Citizens.
 launchpad_primary_rocket_5             Once the Rocket is fully refuelled we will be able to attempt another launch.
 
 launchpad_intro_1                      Greetings visitor, and welcome to Darwinia!
 launchpad_intro_2                      My name is Dr Sepulveda and I'm the creator of this digital world.
-launchpad_intro_3                      You've come at a great time.  The native Darwinians have been busy.
+launchpad_intro_3                      You've come at a great time.  The native Citizens have been busy.
 launchpad_intro_4                      Since the end of the Great War they've taken it upon themselves to build a rocket.
-launchpad_intro_5                      The Darwinians are a totally digital lifeform, running inside a very large supercomputer.
+launchpad_intro_5                      The Citizens are a totally digital lifeform, running inside a very large supercomputer.
 launchpad_intro_6                      Each generation is more ambitious than the last.  They all want to be the first into their new rocket.
 launchpad_intro_7                      They're incredibly curious little fellows!
-launchpad_intro_8                      I'm not sure what the Darwinians ultimately wish to achieve here.
+launchpad_intro_8                      I'm not sure what the Citizens ultimately wish to achieve here.
 launchpad_intro_9                      But this is clearly their most ambitious project yet.
 launchpad_intro_9b                     They've been growing and improving for thousands of generations and have their very own culture and beliefs.
 launchpad_intro_9c                     This rocket is the culmination of all their dreams and ambitions, and it's taken them an incredibly long time to get this far.
 launchpad_intro_10                     My God, we're under attack!
-launchpad_intro_11                     The Red Darwinians are attacking!
+launchpad_intro_11                     The Red Citizens are attacking!
 launchpad_intro_12                     My God, they're trying to destroy the Rocket!
-launchpad_intro_13                     This is insane, they'll cause an explosion that will wipe out all the Darwinians inside!
+launchpad_intro_13                     This is insane, they'll cause an explosion that will wipe out all the Citizens inside!
 launchpad_intro_14                     My God.
 launchpad_intro_15                     I can't believe this is happening.
 
 launchpad_middemo_1                    Darwinia wasn't always like this.
 launchpad_middemo_2                    I can still remember a time before the Virus came, before the great war that almost destroyed this world.
-launchpad_middemo_3                    The Darwinians fought so hard, and came so far, and I really did think we'd cleared the system of the infection.
-launchpad_middemo_4                    But it seems now that every time I turn my back, there's another outbreak somewhere and more Darwinians are killed.
-launchpad_middemo_5                    The control the Darwinians now have over their world is amazing.
-launchpad_middemo_6                    The Launchpad is one of many locations in Darwinia, but it's the first the Darwinians have built entirely on their own.
+launchpad_middemo_3                    The Citizens fought so hard, and came so far, and I really did think we'd cleared the system of the infection.
+launchpad_middemo_4                    But it seems now that every time I turn my back, there's another outbreak somewhere and more Citizens are killed.
+launchpad_middemo_5                    The control the Citizens now have over their world is amazing.
+launchpad_middemo_6                    The Launchpad is one of many locations in Darwinia, but it's the first the Citizens have built entirely on their own.
 launchpad_middemo_8                    Look at what they've achieved!
 launchpad_middemo_9                    The renderer you're looking at didn't know what to do outside the confines of the world...it used to be just a blank space.
-launchpad_middemo_10                   But the Darwinians knew there was more.  They manipulated the rendering subsystem until they could see beyond their world.
+launchpad_middemo_10                   But the Citizens knew there was more.  They manipulated the rendering subsystem until they could see beyond their world.
 launchpad_middemo_11                   Those star systems are other mainframes and servers on the Internet, all connected in a giant world wide web.
 launchpad_middemo_12                   I realise now that their intention is to explore the millions of computer systems they can now see around them.
 launchpad_middemo_13                   The Great Rocket project will be their finest achievement, and it will open their horizons to every computer system in the world.
 launchpad_middemo_14                   And if it wasn't for this Virus, they'd already be out there.
 
-# launchpad_middemo_5                As bleak as the Great War was for the Darwinians, it made them grow and learn at an astonishing rate.
-# launchpad_middemo_6                Forced to fight for their lives or face extinction, the Darwinians came further in those few intensely violent days than the entire decade of evolution beforehand.
+# launchpad_middemo_5                As bleak as the Great War was for the Citizens, it made them grow and learn at an astonishing rate.
+# launchpad_middemo_6                Forced to fight for their lives or face extinction, the Citizens came further in those few intensely violent days than the entire decade of evolution beforehand.
 
-launchpad_tutorial_1                   Right, we're going to have to help the Darwinians.
+launchpad_tutorial_1                   Right, we're going to have to help the Citizens.
 launchpad_tutorial_2_kbd               Firstly let's get to grips with the camera.  Use the [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] and [KEYCAMERARIGHT] keys to move the camera around.
 launchpad_tutorial_2_xin               Firstly let's get to grips with the camera.  Use the left stick to move the camera.
 launchpad_tutorial_3                   To change the camera's height, press up or down on the D-Pad.
@@ -901,45 +901,45 @@ launchpad_tutorial_defend_1            Be careful, there are more Virii nearby.
 launchpad_tutorial_defend_2            Defend yourself!
 
 launchpad_tutorial_40                  This building is an Incubator.  It's a very important building in Darwinia.
-launchpad_tutorial_41                  We can use it to convert the souls of those creatures you've just killed into Darwinians.
+launchpad_tutorial_41                  We can use it to convert the souls of those creatures you've just killed into Citizens.
 launchpad_tutorial_42                  But just like the Radar Dish, the first thing we need to do is reprogram it to remove the viral infection.
 launchpad_tutorial_43_kbd              Create an Engineer near the Incubator to reprogram it.  Just hold [KEYICONSTASKMANAGERDISPLAY] and click on the Engineer button.  Or you can press [KEYICONSTASKMANAGERNEWENGINEER].
 launchpad_tutorial_43_xin              Create an Engineer near the Incubator to reprogram it.  Just open the Task Manager and select the Engineer button.
 launchpad_tutorial_44                  Now that the Incubator is online, you will see the Engineer harvesting souls.
-launchpad_tutorial_45                  All creatures in this world have a soul - regardless if they are a friendly Darwinian or an evil Virus.
+launchpad_tutorial_45                  All creatures in this world have a soul - regardless if they are a friendly Citizen or an evil Virus.
 launchpad_tutorial_46                  Engineers can pick up the souls of dead creatures and deposit them into Incubator buildings for rebirth.
-launchpad_tutorial_47                  The Incubators will convert the souls one at a time into new Darwinians.
-launchpad_tutorial_48                  This is how we fight the virus - we destroy their evil red forms, harvest their souls, and convert them into friendly Darwinians.
-launchpad_tutorial_49                  Good work - the first Darwinians have been born.
+launchpad_tutorial_47                  The Incubators will convert the souls one at a time into new Citizens.
+launchpad_tutorial_48                  This is how we fight the virus - we destroy their evil red forms, harvest their souls, and convert them into friendly Citizens.
+launchpad_tutorial_49                  Good work - the first Citizens have been born.
 launchpad_tutorial_50                  As I was saying earlier, they're an incredibly curious lot, and I made a point of designing them with their own sense of free will.
 launchpad_tutorial_51                  We can't directly control them like we do with the Squaddies and Engineers.
 launchpad_tutorial_52                  But they will listen to their own - we can influence them using Officers.
 launchpad_tutorial_53                  The Officer research is up ahead.  Wipe out the Virus around it, and capture the research using an Engineer.
-launchpad_tutorial_54                  Ok to fill you in on the plan, what I'm trying to do is to refuel the Rocket so the Darwinians can have another go at launching it.
-launchpad_tutorial_54b                 Eventually we're going to have to face those evil Red Darwinians around the rocket, but before we can do that we need to refuel it.
+launchpad_tutorial_54                  Ok to fill you in on the plan, what I'm trying to do is to refuel the Rocket so the Citizens can have another go at launching it.
+launchpad_tutorial_54b                 Eventually we're going to have to face those evil Red Citizens around the rocket, but before we can do that we need to refuel it.
 launchpad_tutorial_55                  Most of the rocket fuel was burnt away in the previous attack and we need to resupply it.
 launchpad_tutorial_56                  The rocket fuel is generated by three Fuel Pumps dotted around the main island.  Here's one of them.
 launchpad_tutorial_57                  Their job is to extract raw fuel from the sea bed and refine it into Rocket fuel, which is then pumped into the rocket's fuel tanks.
 launchpad_tutorial_58                  Unfortunately all three Fuel Pumps are offline, and need power in order to operate.
 launchpad_tutorial_59                  That power is generated by these Solar Panels.
-launchpad_tutorial_60                  In order to make these Solar Panels work we need to escort some Darwinians to each of them.
-launchpad_tutorial_61                  And the piece of Research you've just picked up will do just that - it will allow us to guide the Darwinians around using Officers.
+launchpad_tutorial_60                  In order to make these Solar Panels work we need to escort some Citizens to each of them.
+launchpad_tutorial_61                  And the piece of Research you've just picked up will do just that - it will allow us to guide the Citizens around using Officers.
 launchpad_tutorial_62_kbd              Hold [KEYICONSTASKMANAGERDISPLAY] and click on the button to create an Officer.  Or you can press [KEYICONSTASKMANAGERNEWOFFICER].
 launchpad_tutorial_62_xin              Open the Task Manager and select the button to create an Officer.
-launchpad_tutorial_63_kbd              Now we need to select a Darwinian to promote to be our Officer.  Click on any of these Darwinians to promote them.
-launchpad_tutorial_63_xin              Now we need to select a Darwinian to promote to be our Officer.  Highlight one of the Darwinians and press A to promote them.
-launchpad_tutorial_64_kbd              We can now influence the other Darwinians around us. Right click on the Officer to put him into FOLLOW mode.
-launchpad_tutorial_64_xin              We can now influence the other Darwinians around us. Highlight the Officer and pull the right trigger to put him into FOLLOW mode.
-launchpad_tutorial_65                  Those Darwinians would now follow the Officer wherever he went.  In this case, we've gathered together all the Darwinians nearby.
+launchpad_tutorial_63_kbd              Now we need to select a Citizen to promote to be our Officer.  Click on any of these Citizens to promote them.
+launchpad_tutorial_63_xin              Now we need to select a Citizen to promote to be our Officer.  Highlight one of the Citizens and press A to promote them.
+launchpad_tutorial_64_kbd              We can now influence the other Citizens around us. Right click on the Officer to put him into FOLLOW mode.
+launchpad_tutorial_64_xin              We can now influence the other Citizens around us. Highlight the Officer and pull the right trigger to put him into FOLLOW mode.
+launchpad_tutorial_65                  Those Citizens would now follow the Officer wherever he went.  In this case, we've gathered together all the Citizens nearby.
 launchpad_tutorial_66_kbd              Right click near the Solar Panels to put the Officer into GOTO mode.
 launchpad_tutorial_66_xin              Move your cursor near the Solar Panels and pull the right trigger to put the Officer into GOTO mode.
-launchpad_tutorial_67                  The Officer is ordering all the nearby Darwinians to march to that spot.
+launchpad_tutorial_67                  The Officer is ordering all the nearby Citizens to march to that spot.
 launchpad_tutorial_68                  You can have as many Officers as you need.  Now use Officers to occupy the control panels around the base of each of the three Solar Panels.
 launchpad_tutorial_69                  Excellent work.  The first batch of Solar Panels are up and running.
-launchpad_tutorial_70                  So long as they have Darwinians operating them they will continue to generate power for as long as we need it.
+launchpad_tutorial_70                  So long as they have Citizens operating them they will continue to generate power for as long as we need it.
 launchpad_tutorial_71                  The first Fuel Pump is now receiving that power and has begun extracting raw fuel from the ocean bed.
 launchpad_tutorial_72                  There's a whole digital ecosystem under the ocean that has been running for over a decade, so there's no shortage of minerals that we can use as fuel.
-launchpad_tutorial_73                  Of course, I didn't realise this - the Darwinians came up with the idea of mining the ocean beds for fuel.
+launchpad_tutorial_73                  Of course, I didn't realise this - the Citizens came up with the idea of mining the ocean beds for fuel.
 launchpad_tutorial_74                  You can see the first of the Rocket Fuel being pumped into the rocket's fuel tanks now.
 launchpad_tutorial_75                  Anyway.
 launchpad_tutorial_76                  There are still two more Fuel Pumps that need powering up, so we'd better get on with it.
@@ -952,26 +952,26 @@ launchpad_reprogram_2_xin              You can then select the Radar Dish by pre
 launchpad_reprogram_3_kbd              When you are done, deselect the dish by pressing [KEYUNITDESELECT].
 launchpad_reprogram_3_xin              When you are done, deselect the dish by pressing B.
 
-launchpad_dgupgrade_1                  You've found some of my Research into Darwinian weaponry!
-launchpad_dgupgrade_2                  This research item will equip our green Darwinians with the same grenades your Squaddies are using.
-launchpad_dgupgrade_3                  Our Darwinians will stand a much better chance against those evil Red Virii now that they have Grenades.
+launchpad_dgupgrade_1                  You've found some of my Research into Citizen weaponry!
+launchpad_dgupgrade_2                  This research item will equip our green Citizens with the same grenades your Squaddies are using.
+launchpad_dgupgrade_3                  Our Citizens will stand a much better chance against those evil Red Virii now that they have Grenades.
 
 launchpad_finalintro_1                 This island is heavily infected with the Virus.
 launchpad_finalintro_2                 Remember to capture the nearby Incubator with an Engineer, and harvest the souls of the dead as you kill them.
-launchpad_finalintro_3                 Don't be afraid to use the newly born Darwinians as fighters, by ordering them to attack the enemy with your Officers.
+launchpad_finalintro_3                 Don't be afraid to use the newly born Citizens as fighters, by ordering them to attack the enemy with your Officers.
 
 launchpad_finalisland_1                The three Fuel Pumps are now operating perfectly, and the Rocket is being refuelled.  Well done.
-launchpad_finalisland_2                We now face the final hurdle.  We must attack and destroy the evil red Darwinians that occupy the launch pad.
+launchpad_finalisland_2                We now face the final hurdle.  We must attack and destroy the evil red Citizens that occupy the launch pad.
 launchpad_finalisland_3                Those buildings they are clustered around are called Spawn Points.  You'll need to take control of them from the Red Army.
-launchpad_finalisland_4                You can think of these buildings as Incubators running on automatic - they will spawn new Darwinians endlessly, until a certain population is reached.
-launchpad_finalisland_5                Currently they are controlled by the Red Darwinians, so the newly spawned Darwinians will also be Red.
-launchpad_finalisland_6                Once you capture the first of these Spawn Points you will start receiving new Green Darwinians immediately.
-launchpad_finalisland_7                In order to capture the first Spawn Point you will need to bring friendly Green Darwinians through this Radar Dish link.
-launchpad_finalisland_8                The Red Darwinians will attack you as soon as you take the first Spawn Point from them, so be careful.
+launchpad_finalisland_4                You can think of these buildings as Incubators running on automatic - they will spawn new Citizens endlessly, until a certain population is reached.
+launchpad_finalisland_5                Currently they are controlled by the Red Citizens, so the newly spawned Citizens will also be Red.
+launchpad_finalisland_6                Once you capture the first of these Spawn Points you will start receiving new Green Citizens immediately.
+launchpad_finalisland_7                In order to capture the first Spawn Point you will need to bring friendly Green Citizens through this Radar Dish link.
+launchpad_finalisland_8                The Red Citizens will attack you as soon as you take the first Spawn Point from them, so be careful.
 launchpad_finalisland_9                And good luck!
 
 launchpad_reprogram2_1                 Align this Radar dish to the centre island.
-launchpad_reprogram2_2                 You can then guide Darwinians through the link using an Officer.
+launchpad_reprogram2_2                 You can then guide Citizens through the link using an Officer.
 
 launchpad_success_1                    We've done it!
 launchpad_success_2                    I want to thank you, from the bottom of my heart.
@@ -1018,7 +1018,7 @@ garden_foundscroll_2                   Unfortunately almost all of my research w
 garden_foundscroll_3                   It will be extremely helpful to me if you could use Engineers to download each research item when you find them.  I'm extremely busy right now trying to stop this damn Virus, and I don't have time to sort it out myself.
 
 garden_souls_1                         You may have noticed those Virii leaving little red things behind when you killed them.  Those are digital DNA...digital souls, if you'll excuse the term.
-garden_souls_2                         Every living creature in Darwinia has its own digital soul.  Originally they were intended for the Darwinians, but the Virus has swallowed most of them up by now.
+garden_souls_2                         Every living creature in Darwinia has its own digital soul.  Originally they were intended for the Citizens, but the Virus has swallowed most of them up by now.
 garden_opentrunkport_1                 Before we can sort this out, we need to get out of this location.  What I need you to do here is to open up this Trunk Port for me.
 garden_opentrunkport_2                 It's got a standard Control Tower nearby, so you can send in one of your Engineers to reprogram it and then we'll be able to use it.
 
@@ -1036,49 +1036,49 @@ gardenfinished_3                       I need you to help me open up some more o
 # Containment field
 # ================================================
 
-containment_primary_1                  We need to start rebuilding the Darwinian population.  The Incubators are the key.
+containment_primary_1                  We need to start rebuilding the Citizen population.  The Incubators are the key.
 containment_primary_2                  Clear the viral infection outside the shielded area, then use Engineers to collect the souls of the dead Virii and carry them to the Incubators.
-containment_primary_3                  There are three Incubators dotted around this location, and they will rebirth the collected enemy souls into Darwinians.
-containment_primary_4                  Promote some of the Darwinians to Officers, and use them to escort the remaining Darwinians safely back to the inside of the shielded area.
-containment_primary_5                  I want you to rescue at least 150 Darwinians in this manner, just to be on the safe side.  The Darwinians will be safe inside the shielded area, for now.
+containment_primary_3                  There are three Incubators dotted around this location, and they will rebirth the collected enemy souls into Citizens.
+containment_primary_4                  Promote some of the Citizens to Officers, and use them to escort the remaining Citizens safely back to the inside of the shielded area.
+containment_primary_5                  I want you to rescue at least 150 Citizens in this manner, just to be on the safe side.  The Citizens will be safe inside the shielded area, for now.
 
 containment_intro1                     When the viral outbreak occurred, I had a lot of trouble getting it under control.
 containment_intro1b                    I had no choice but to shut down the Trunk Port gate system that connects each location in Darwinia.
 containment_intro2                     This is the only place where I was able to hold my ground against the Virus.  The double shield of this location acts as a fantastic barrier.
 containment_intro3                     I've highlighted the three disabled Trunk Ports on this island, and you'll need to open all of them.
 containment_intro3b                    Once opened, the Trunk Ports will give us access to a number of important locations for later.
-containment_rescuedw1                  But really, this is the important bit.  These guys are the Darwinians.
+containment_rescuedw1                  But really, this is the important bit.  These guys are the Citizens.
 containment_rescuedw1b                 I've spent the better part of the last decade nurturing these fellows, and I'm very proud of them indeed.
 containment_rescuedw2                  If the virus had its way, they'd all be dead already.  But I've managed to save a few of them.
-containment_rescuedw2b                 There have been over ten-thousand generations of Darwinians, and the loss in AI research alone would be unthinkable.
-containment_rescuedw3                  They're an astonishing act of creation.  Each and every Darwinian has his own digital soul which occupies his body during life, and returns to the Central Repository after death.
+containment_rescuedw2b                 There have been over ten-thousand generations of Citizens, and the loss in AI research alone would be unthinkable.
+containment_rescuedw3                  They're an astonishing act of creation.  Each and every Citizen has his own digital soul which occupies his body during life, and returns to the Central Repository after death.
 containment_rescuedw4                  You'll need to help me rebuild their numbers.  I'll help you out as you go.  For now, start clearing out the viral infection outside the shielded area.
 
 containment_incubator_1                The incubator is running!  This is excellent.  The Engineers will pick up all the souls of the dead creatures nearby, and drop them into this building.
-containment_incubator_2                Those souls will then be converted back into Darwinians, one at a time.  This is how we will rebuild the Darwinian population.
-containment_incubator_3                Unfortunately, I designed the system so that the Darwinians have their own free will - which means we can't directly control them like you do with the Squad.
+containment_incubator_2                Those souls will then be converted back into Citizens, one at a time.  This is how we will rebuild the Citizen population.
+containment_incubator_3                Unfortunately, I designed the system so that the Citizens have their own free will - which means we can't directly control them like you do with the Squad.
 containment_incubator_4                But there are ways we can influence them indirectly.  Carry on clearing up the infection and harvesting the spirits...I'll get back to you.
 
-containment_officer_1                  Oh fantastic, you've found my code for the Officer program.  This handy little program will enable you to promote individual Darwinians to Officers, and use those Officers to order the other Darwinians around.
-containment_officer_2_kbd              To create an Officer, draw this gesture then click on a Darwinian you wish to Promote.
-containment_officer_2_xin              To create an Officer, draw this gesture then select a Darwinian you wish to Promote.
-containment_officer_2_icons_kbd        To create an Officer, bring up the Task Manager and click on the Officer icon.  Then click on a Darwinian you wish to Promote.
-containment_officer_2_icons_xin        To create an Officer, bring up the Task Manager and select the Officer icon.  Then select a Darwinian you wish to Promote.
-containment_officer_3                  The Darwinians that you've birthed so far aren't safe...I want you to move them under the tree inside the shielded area (highlighted), using the Officer program.
+containment_officer_1                  Oh fantastic, you've found my code for the Officer program.  This handy little program will enable you to promote individual Citizens to Officers, and use those Officers to order the other Citizens around.
+containment_officer_2_kbd              To create an Officer, draw this gesture then click on a Citizen you wish to Promote.
+containment_officer_2_xin              To create an Officer, draw this gesture then select a Citizen you wish to Promote.
+containment_officer_2_icons_kbd        To create an Officer, bring up the Task Manager and click on the Officer icon.  Then click on a Citizen you wish to Promote.
+containment_officer_2_icons_xin        To create an Officer, bring up the Task Manager and select the Officer icon.  Then select a Citizen you wish to Promote.
+containment_officer_3                  The Citizens that you've birthed so far aren't safe...I want you to move them under the tree inside the shielded area (highlighted), using the Officer program.
 
-containment_rescuedws_1                Good work, looks like some of the Darwinians have reached the safe area.  But it's not enough.  If we're going to get Darwinia back online, we'll need quite a few more.
-containment_rescuedws_2                I think we should aim to get around 150 Darwinians into the safe area.  Clear out the infection on the neighbouring islands, harvest the souls, and escort the Darwinians safely back until you have enough.
+containment_rescuedws_1                Good work, looks like some of the Citizens have reached the safe area.  But it's not enough.  If we're going to get Darwinia back online, we'll need quite a few more.
+containment_rescuedws_2                I think we should aim to get around 150 Citizens into the safe area.  Clear out the infection on the neighbouring islands, harvest the souls, and escort the Citizens safely back until you have enough.
 
-containment_objective_2                Rescue 150 Darwinians
+containment_objective_2                Rescue 150 Citizens
 
-containment_finished_1                 I think that's plenty of Darwinians in the safe area now.
+containment_finished_1                 I think that's plenty of Citizens in the safe area now.
 
 
 # ================================================
 # Cutscene after containment
 # ================================================
 
-containmentend_1                       I've been working on a design for a Weapons Platform that the Darwinians can use to fight the Virus.
+containmentend_1                       I've been working on a design for a Weapons Platform that the Citizens can use to fight the Virus.
 containmentend_1b                      There's still a lot of work to do, but we can manufacture these weapons within Darwinia.
 containmentend_2                       Darwinia already has a solid engineering system for building things, but like everything else, it's offline.
 containmentend_2b                      The system is built over three locations - the Mine, the Generator, and the Yard.
@@ -1087,8 +1087,8 @@ containmentend_3                       Let me show you the Mines first.
 containmentend_mine1                   This entire location is one giant mining facility, unfortunately now overrun by this damn Virus.
 containmentend_mine1b                  Raw Polygons are ripped out of the hillside and dumped onto the passing mine carts.
 containmentend_mine2                   Those Polygons then pass through this Refinery which converts them into Primitives.
-containmentend_mine3                   I designed this world to be owned and operated entirely by the Darwinians.  All these buildings need Darwinians at their controls in order to function.
-containmentend_mine3b                  Entire generations of Darwinian miners have worked these quarries before the Virus arrived.
+containmentend_mine3                   I designed this world to be owned and operated entirely by the Citizens.  All these buildings need Citizens at their controls in order to function.
+containmentend_mine3b                  Entire generations of Citizen miners have worked these quarries before the Virus arrived.
 containmentend_mine4                   Anyway,
 containmentend_mine5                   Once the Primitives have been refined, they need to be transported to the Construction Yard where we can make some use of them.
 
@@ -1097,7 +1097,7 @@ containmentend_5b                      The Yard also requires Energy, which come
 
 containmentend_generator1              This is the Generator.  Here the Energy that drives Darwinia is produced and regulated.
 containmentend_generator1b             The Solar Panels dotted around this location harness the energy radiated out by the Soul Repository at the centre of Darwinia.
-containmentend_generator2              Like most buildings in Darwinia, these Solar Panels require Darwinians at their control pads in order to operate.
+containmentend_generator2              Like most buildings in Darwinia, these Solar Panels require Citizens at their control pads in order to operate.
 containmentend_generator3              This building is Darwinia's Primary Power Generator.
 containmentend_generator3b             It modulates the power from the Solar Panels into a Regulated Energy Stream that we can use.
 containmentend_generator4              That Energy Stream then passes through the Trunk Port to the Construction Yard.
@@ -1134,7 +1134,7 @@ generator_objective1                   Generate 65 Gq/s Energy
 
 generator_primary_1                    This building is Darwinia's primary power Generator.  It supplies power to every location and every building in this world.
 generator_primary_2                    We're going to start building things we can use as weapons against the invasion, and for that we're going to need a lot more Energy.
-generator_panels_1                     There are three groups of Solar Panels dotted around the landscape.  Like most of the buildings in this world, they require Darwinians manning them in order to operate.
+generator_panels_1                     There are three groups of Solar Panels dotted around the landscape.  Like most of the buildings in this world, they require Citizens manning them in order to operate.
 generator_panels_2                     Once they're online, they will harness the energy radiated out from the Soul Repository at the centre of Darwinia.
 generator_panels_3                     That energy is then transferred through pylons to the primary Generator, where it is modulated into a form that can be used by buildings all around the world.
 generator_panels_4                     We'll need to achieve a power output of at least 65 Gigaquads per second in order to do anything substantial.
@@ -1160,13 +1160,13 @@ yard_objective_2                       Begin Armour Production
 yard_objective_3                       Destroy Ant Infection
 
 yard_intro_1                           This is the Construction Yard.  From here I was able to boot-strap the production of virtually every building in Darwinia.
-yard_intro_2                           The Darwinians sometimes use the Yard to build things of their own when they think I'm not looking.  I would show you if I had the time.
+yard_intro_2                           The Citizens sometimes use the Yard to build things of their own when they think I'm not looking.  I would show you if I had the time.
 yard_intro_3                           But that will all have to wait.
 yard_genport_1                         If you remember, we couldn't open the Trunk Port connection from the Generator.
 yard_genport_2                         You'll need to open the connection from this end to allow the Regulated Energy Stream to pass through.
 yard_intro_4                           This Construction Yard drives the mine carts.  The refined Primitives from the Mine will come through once the carts are moving.
 yard_intro_5                           The Yard will take the refined Primitives and the Regulated Energy Stream, and will start producing our weapons platforms, which I've called Armour.
-yard_intro_6                           What I've designed is sort of an armoured troop carrier that can be converted into a Battle Cannon, that either you or the Darwinians can operate.
+yard_intro_6                           What I've designed is sort of an armoured troop carrier that can be converted into a Battle Cannon, that either you or the Citizens can operate.
 yard_safearea_1                        Once the Yard is online and producing Armour, wipe out the Ant infestation around this area and open up the Trunk Ports.
 yard_safearea_2                        This is a jumping off point to the heavily infected areas of Darwinia, so it needs to be completely cleared.
 yard_intro_7                           Once we have these new weapons, we'll stand a very good chance against the core infection.  Good luck.
@@ -1188,13 +1188,13 @@ yard_finished_2                        The Armour will have to travel through th
 # Biosphere Alpha (hostage rescue)
 # ================================================
 
-biospherealpha_objective               Rescue 100 Darwinians
+biospherealpha_objective               Rescue 100 Citizens
 
-biospherealpha_primary1                A large number of Darwinians are trapped here and need to be rescued.
-biospherealpha_primary2                They've no way to reach safety on their own, and right now we need every Darwinian we can get.
-biospherealpha_primary3                Open up the Radar Dish links and escort the Darwinians through them onto the main island.
+biospherealpha_primary1                A large number of Citizens are trapped here and need to be rescued.
+biospherealpha_primary2                They've no way to reach safety on their own, and right now we need every Citizen we can get.
+biospherealpha_primary3                Open up the Radar Dish links and escort the Citizens through them onto the main island.
 biospherealpha_primary4                You'll have to fight your way through some fairly heavy viral infection.
-biospherealpha_primary5                This is the ultimate target area.  Once the Darwinians reach here they'll be safe.  I want you to get at least 100 into this area.
+biospherealpha_primary5                This is the ultimate target area.  Once the Citizens reach here they'll be safe.  I want you to get at least 100 into this area.
 
 
 # ================================================
@@ -1203,29 +1203,29 @@ biospherealpha_primary5                This is the ultimate target area.  Once t
 
 yardend_1                              It's an unfortunate fact that the areas of Darwinia that used to be heavily populated are now the most heavily infected.
 yardend_1b                             Those are the areas we must now visit.
-yardend_2                              We need to make a concerted effort to rebuild the Darwinian population to its former strength, and wipe out the Viral Infection once and for all.
-yardend_3                              The Soul Repository at the centre of Darwinia is the key to the Evolution and Rebirth system for the Darwinians.
+yardend_2                              We need to make a concerted effort to rebuild the Citizen population to its former strength, and wipe out the Viral Infection once and for all.
+yardend_3                              The Soul Repository at the centre of Darwinia is the key to the Evolution and Rebirth system for the Citizens.
 yardend_3b                             The Souls of all the dead creatures eventually rise up and merge into the Repository, adding their experiences and wisdom to the group.
-yardend_4                              The Souls are slowly ordered based on how successful they were in life, and are sent back down to the Receiver location, to be eventually reborn into new Darwinians.
+yardend_4                              The Souls are slowly ordered based on how successful they were in life, and are sent back down to the Receiver location, to be eventually reborn into new Citizens.
 
 yardend_5                              Here at the Receiver location, those Souls that were most successful in their previous lives slowly float down to the surface for another chance.
 yardend_6                              The buildings you see dotted around the landscape are designed to collect up the falling Souls and send them to the Biosphere.
-yardend_7                              For the Darwinians, this is the most sacred and holy site in all of the world.
-yardend_7b                             It is something of a ritual for Darwinians to journey here on a pilgrimage early in the lives, to help with the rebirthing process.
-yardend_8                              Through this method, each generation of Darwinian comes of age by helping the next generation into the world.
+yardend_7                              For the Citizens, this is the most sacred and holy site in all of the world.
+yardend_7b                             It is something of a ritual for Citizens to journey here on a pilgrimage early in the lives, to help with the rebirthing process.
+yardend_8                              Through this method, each generation of Citizen comes of age by helping the next generation into the world.
 
 yardend_9                              When a Soul has spent a certain amount of time in the central Repository, it loses a great deal of its former structure.
 yardend_9b                             In essence, a Soul forgets what it was like to exist on the surface.
-yardend_10                             These Souls need processing before they can re-enter the world as Darwinians.  Part of this Reprocessing occurs at the Pattern Buffer.
+yardend_10                             These Souls need processing before they can re-enter the world as Citizens.  Part of this Reprocessing occurs at the Pattern Buffer.
 
-yardend_11                             The Pattern Buffer contains the Master Blueprint for a Darwinian.
+yardend_11                             The Pattern Buffer contains the Master Blueprint for a Citizen.
 yardend_12                             This chunk of data is the raw digital Pattern that prepares an Unprocessed Soul to be birthed into the world.
-yardend_13                             The Pattern is able to change as time passes, and represents the combined knowledge and abilities of every Darwinian that has ever lived.
+yardend_13                             The Pattern is able to change as time passes, and represents the combined knowledge and abilities of every Citizen that has ever lived.
 
 yardend_14                             So the Receiver collects up the Unprocessed Souls that fall from the Repository.
 yardend_15                             The Pattern Buffer stores the Master Blueprint for preparing an Unprocessed Soul.
-yardend_16                             The Pattern and the Unprocessed Souls are sent through the Trunk Port system to the Biosphere, where they are birthed into Darwinians.
-yardend_17                             Your task now is to re-enable these systems, and rebuild the Darwinian population.  Good luck.
+yardend_16                             The Pattern and the Unprocessed Souls are sent through the Trunk Port system to the Biosphere, where they are birthed into Citizens.
+yardend_17                             Your task now is to re-enable these systems, and rebuild the Citizen population.  Good luck.
 
 
 # ================================================
@@ -1235,13 +1235,13 @@ yardend_17                             Your task now is to re-enable these syste
 receiver_objective1                    Collect 50 Souls per minute
 receiver_objective2                    Enable Biosphere Trunk Port
 
-receiver_primary_1                     Each of those collectors requires Darwinians at its base to operate, which means you'll have to clear out the viral infection first.
+receiver_primary_1                     Each of those collectors requires Citizens at its base to operate, which means you'll have to clear out the viral infection first.
 receiver_primary_2                     The grid then transports those Unprocessed Souls here.  This building brings together all the Unprocessed Souls from the grid and feeds them down a single line.
-receiver_primary_3                     We will need to achieve a throughput of at least 50 Unprocessed Souls a minute to stand a chance of rebuilding the bulk of the Darwinian population.
-receiver_primary_4                     Those Unprocessed Souls are then transported to the Biosphere, where they are processed and birthed into new Darwinians.
+receiver_primary_3                     We will need to achieve a throughput of at least 50 Unprocessed Souls a minute to stand a chance of rebuilding the bulk of the Citizen population.
+receiver_primary_4                     Those Unprocessed Souls are then transported to the Biosphere, where they are processed and birthed into new Citizens.
 
 receiver_trunk_1                       Once the Souls have been collected by the Spirit Receivers, they need to be transported to Darwinia's primary Biosphere.
-receiver_trunk_2                       There they will be processed and birthed into new Darwinians.  Open this Trunk Port to allow the Souls to be transmitted.
+receiver_trunk_2                       There they will be processed and birthed into new Citizens.  Open this Trunk Port to allow the Souls to be transmitted.
 
 
 # ================================================
@@ -1252,8 +1252,8 @@ patternbuffer_objective1               Clear Pattern Infection
 patternbuffer_objective2               Enable Biosphere Trunk Port
 
 patternbuffer_primary_1                Unfortunately, the viral infection has spread to the Master Blueprint, and we need to clear it up.
-patternbuffer_primary_2                There are four Pattern Loaders dotted around the location.  Each one must be occupied by Darwinians.
-patternbuffer_primary_3                The Pattern Loaders are a safety step that I'm glad I thought of.  They will analyse and copy the Pattern in the Darwinians occupying the building.
+patternbuffer_primary_2                There are four Pattern Loaders dotted around the location.  Each one must be occupied by Citizens.
+patternbuffer_primary_3                The Pattern Loaders are a safety step that I'm glad I thought of.  They will analyse and copy the Pattern in the Citizens occupying the building.
 patternbuffer_primary_4                That Pattern will then be beamed into the Master Blueprint by the hovering satellite dishes, overwriting the infection.
 patternbuffer_primary_5                You'll need to occupy at least three of the Pattern Loaders to overwhelm the corruption in the Master Pattern.
 
@@ -1262,15 +1262,15 @@ patternbuffer_trunk_2                  That's strange, this Trunk Port has alrea
 
 patternbuffer_redarmy_1                What on Earth...
 patternbuffer_redarmy_2                How did they get here?
-patternbuffer_redarmy_3                Be careful, it looks like we've got some corrupted Darwinians transporting to the location, and they don't look friendly.
+patternbuffer_redarmy_3                Be careful, it looks like we've got some corrupted Citizens transporting to the location, and they don't look friendly.
 
 
 # ================================================
 # Cutscene after Receiver and Pattern Buffer
 # ================================================
 
-prebiosphere_1                         Those evil Darwinians that we saw at the Pattern Buffer definitely came from the Biosphere.
-prebiosphere_2                         It looks like the Virus infected some of the birthing equipment, and the corrupted Pattern caused Red Darwinians to be born instead of Green.
+prebiosphere_1                         Those evil Citizens that we saw at the Pattern Buffer definitely came from the Biosphere.
+prebiosphere_2                         It looks like the Virus infected some of the birthing equipment, and the corrupted Pattern caused Red Citizens to be born instead of Green.
 prebiosphere_3                         This is an unexpected development.  It's going to make recapturing the Biosphere a lot harder.
 
 
@@ -1280,15 +1280,15 @@ prebiosphere_3                         This is an unexpected development.  It's 
 
 biosphere_objective1                   Wipe out Red Army
 
-biosphere_primary_1                    This is it, the birthplace of the Darwinian civilisation.  Every Darwinian that has ever lived was originally born here.
-biosphere_primary_2                    If we can capture this Biosphere, we'll have the Darwinian population back to its former numbers in no time.
-biosphere_primary_3                    The Darwinians are born from Spawn Points that are dotted all around the local islands.  Like all buildings in Darwinia, these Spawn Points need Darwinians to operate.
-biosphere_primary_4                    In order to prevent chronic overpopulation, there are limits to how many Darwinians can be Spawned on each island.
+biosphere_primary_1                    This is it, the birthplace of the Citizen civilisation.  Every Citizen that has ever lived was originally born here.
+biosphere_primary_2                    If we can capture this Biosphere, we'll have the Citizen population back to its former numbers in no time.
+biosphere_primary_3                    The Citizens are born from Spawn Points that are dotted all around the local islands.  Like all buildings in Darwinia, these Spawn Points need Citizens to operate.
+biosphere_primary_4                    In order to prevent chronic overpopulation, there are limits to how many Citizens can be Spawned on each island.
 biosphere_primary_5                    This is the Master Spawn Point, and it is responsible for controlling the global birth rate.  It controls and synchronises every other Spawn Point around it.
 biosphere_primary_6                    It takes the Unprocessed Spirits from the Receiver Location, and processes them using the code signal from the Pattern Buffer.
 biosphere_primary_7                    It then sends out those newly processed Spirits to the Spawn Points that need them.
-biosphere_primary_8                    Unfortunately, the Viral corruption to the Pattern has resulted in this whole location being filled with Evil Darwinians.
-biosphere_primary_9                    You'll have to build up your Green Darwinian Army and take them on directly for control of the Spawn Points.
+biosphere_primary_8                    Unfortunately, the Viral corruption to the Pattern has resulted in this whole location being filled with Evil Citizens.
+biosphere_primary_9                    You'll have to build up your Green Citizen Army and take them on directly for control of the Spawn Points.
 biosphere_primary_10                   This is going to be a tough battle, but hopefully a decisive one.  This is one of the last locations that is still heavily infected.  Good luck.
 
 biosphere_reddead_1                    It looks like we've pretty much wiped out the Red Army.
@@ -1296,9 +1296,9 @@ biosphere_reddead_1                    It looks like we've pretty much wiped out
 biosphere_end_1                        I've figured it out!  I've figured out how this whole thing happened.
 biosphere_end_2                        Come down to the Temple...I'll show you.  And I know how to stop it once and for all.
 
-rockhead_1                             The Darwinian's saw a picture of me once.  They didn't stop celebrating for days.  For just a few seconds, my ridiculous face was projected onto the sky all over Darwinia.
+rockhead_1                             The Citizen's saw a picture of me once.  They didn't stop celebrating for days.  For just a few seconds, my ridiculous face was projected onto the sky all over Darwinia.
 rockhead_2                             I was working on the code for rendering the sky, and the texture data was accidentally overwritten with a live image from my Webcam, similar to what you see on your screen when I'm talking to you.
-rockhead_3                             Ever since that day, the Darwinians have been hijacking the Construction Yard when I'm not looking and using it to build these rock faces, which they then transport all over the world.
+rockhead_3                             Ever since that day, the Citizens have been hijacking the Construction Yard when I'm not looking and using it to build these rock faces, which they then transport all over the world.
 rockhead_4                             It made me realise what an enormous responsibility I have as their Creator.
 
 
@@ -1306,7 +1306,7 @@ rockhead_4                             It made me realise what an enormous respo
 # Temple
 # ================================================
 
-temple_intro_1                         Long ago, the Darwinians began work on a temple.  It was their dream, I think, to somehow begin communicating with me.
+temple_intro_1                         Long ago, the Citizens began work on a temple.  It was their dream, I think, to somehow begin communicating with me.
 temple_intro_2                         It never occurred to me that one day they might actually succeed.
 temple_intro_3                         It's really quite ingenious.  They found a way to align one of the Trunk Ports with what they believed was Heaven...the Soul Repository at the centre of Darwinia.
 temple_intro_4                         Thinking they were talking to God, they'd managed to open up a data stream and began downloading files from my computer.
@@ -1318,7 +1318,7 @@ temple_intro_9                         Next they downloaded all of my emails.  T
 temple_intro_10                        Fearing what would happen next, I shut down the Link.  But it was too late.
 temple_intro_11                        Amongst the emails were a couple of Spam Mails, infected with a particularly nasty strain of Internet Virus.
 temple_intro_13                        I couldn't quite believe it was happening.
-temple_intro_14                        The Virus warped the Darwinians into the destructive creatures we've been fighting all this time.
+temple_intro_14                        The Virus warped the Citizens into the destructive creatures we've been fighting all this time.
 temple_intro_15                        Then they turned on the survivors.
 temple_intro_16                        They replicated themselves at such a terrifying rate.  They'd taken over most of the system before I could contain them.
 temple_intro_17                        In all honesty I had my finger on the Global Reset button.  I really did think my life's work had been ruined.
@@ -1349,7 +1349,7 @@ intro_2                                DARWINIA
 intro_3                                Connecting to Darwin Research Associates Project Server...
 intro_4                                Data stream established.
 intro_5                                Welcome to the Internet's first Digital Theme Park.
-intro_6                                Please try not to harm or scare the native Darwinians.
+intro_6                                Please try not to harm or scare the native Citizens.
 intro_7                                Warning : Errors detected in data stream.
 intro_8                                On behalf of Dr Sepulveda and the team, we hope you enjoy your visit.
 intro_9                                Warning : Errors detected in data stream.
@@ -1364,16 +1364,16 @@ intro_bootloader                       Show First Time Intro
 # Outro
 # =================================================
 
-outro_biosphere_1                      I don't think the Darwinians will ever truly forget what has happened.
+outro_biosphere_1                      I don't think the Citizens will ever truly forget what has happened.
 outro_biosphere_1b                     In fact, I think this will turn out to be a defining moment in their history.
 outro_biosphere_2                      They're much more ambitious now, bolder and stronger and smarter than they ever were.  But their innocence has been lost.
 outro_biosphere_2b                     The battle at the Biosphere is without doubt the darkest chapter yet in Darwinia's history.
-outro_biosphere_3                      The horrific loss of life in such a short period of time, and the very concept of Darwinians fighting and killing their own kin, makes it particularly potent for me.
+outro_biosphere_3                      The horrific loss of life in such a short period of time, and the very concept of Citizens fighting and killing their own kin, makes it particularly potent for me.
 
-outro_receiver_1                       Of all those who died, the Darwinians who fell under the Soul Destroyers will linger most in the survivors' memories.
+outro_receiver_1                       Of all those who died, the Citizens who fell under the Soul Destroyers will linger most in the survivors' memories.
 outro_receiver_2                       Their Souls are irretrievably lost, with no possible hope of afterlife or rebirth awaiting them.
 outro_receiver_3                       Their broken spirits will continue to haunt the places where they fell, until the end of the world.
-outro_receiver_4                       Because of this, the Darwinians now understand, for the first time I think, what it truly means for one of their kind to die.
+outro_receiver_4                       Because of this, the Citizens now understand, for the first time I think, what it truly means for one of their kind to die.
 
 outro_containment_1                    It is my dream that Darwinia will continue to evolve and grow, long after I am gone.
 outro_containment_1b                   I started the Darwin Digital Life project over a decade ago, and I've worked on it every single day in virtual isolation for all this time...
@@ -1386,9 +1386,9 @@ outro_10                               I'm transferring permissions to the World
 outro_11                               I'm also transferring a new user profile to your system, which I've called AccessAllAreas.  You can load it from the Profiles menu.  It will give you full access to all the locations you've visited in Darwinia.
 
 outro_1                                When I think of the number of stories and legends that must have been created since this outbreak occurred, well, it scares me.
-outro_2                                I'm afraid the Darwinians have a very long memory.  They still tell mournful stories of the island that was lost in the Server crash last year.
-outro_3                                I don't know what effect this war will have on the Darwinians.  And I don't know what they'll want to do next.
-outro_4                                But I do know that our actions here will live on through tale and folklore, for generations of Darwinians to come.
+outro_2                                I'm afraid the Citizens have a very long memory.  They still tell mournful stories of the island that was lost in the Server crash last year.
+outro_3                                I don't know what effect this war will have on the Citizens.  And I don't know what they'll want to do next.
+outro_4                                But I do know that our actions here will live on through tale and folklore, for generations of Citizens to come.
 
 
 # =================================================
@@ -1548,7 +1548,7 @@ spawnname_spawnspider                  SpawnSpider
 spawnname_spawnspirits                 SpawnSpirits
 spawnname_spawneggs                    SpawnEggs
 spawnname_spawntriffideggs             SpawnTriffidEggs
-spawnname_spawndarwinians              SpawnDarwinians
+spawnname_spawncitizens              SpawnCitizens
 
 
 # =================================================
@@ -1637,7 +1637,7 @@ bootloader_credits_21                  Starring
 bootloader_credits_22                  Peter Hutchison
 bootloader_credits_23                  as Dr Sepulveda
 bootloader_credits_24                  and Maddie the cat
-bootloader_credits_25                  as the voice of the Darwinians
+bootloader_credits_25                  as the voice of the Citizens
 bootloader_credits_26                  Additional shapes
 bootloader_credits_27                  Michelle Jones
 bootloader_credits_28                  Kelvin Liew
@@ -1664,18 +1664,18 @@ bootloader_fodder_3                    SENSIBLE SOFTWARE
 
 bootloader_life                        GAME OF LIFE
 bootloader_life_1                      These complex behaviour patterns emerge from a very
-bootloader_life_2                      simple set of basic rules, that all darwinians in the colony obey.
+bootloader_life_2                      simple set of basic rules, that all citizens in the colony obey.
 bootloader_life_3                      These rules are based on the well known 'Game Of Life' designed by John Conway.
-bootloader_life_4                      - Three darwinians clustered around an empty cell will birth a new darwinian in that cell
-bootloader_life_5                      - A darwinian in a cell with 2 or 3 neighbours will live a happy and sociable life
-bootloader_life_6                      - A darwinian in a cell with just 1 neighbour or no neighbours will die a lonely soul
-bootloader_life_7                      - A darwinian with 4 neighbours or more will die of starvation
-bootloader_life_8                      - (added) A darwinian has a maximum life of 50 years
-bootloader_life_9                      The Darwinians will live many happy and prosperous years under this simple system.
+bootloader_life_4                      - Three citizens clustered around an empty cell will birth a new citizen in that cell
+bootloader_life_5                      - A citizen in a cell with 2 or 3 neighbours will live a happy and sociable life
+bootloader_life_6                      - A citizen in a cell with just 1 neighbour or no neighbours will die a lonely soul
+bootloader_life_7                      - A citizen with 4 neighbours or more will die of starvation
+bootloader_life_8                      - (added) A citizen has a maximum life of 50 years
+bootloader_life_9                      The Citizens will live many happy and prosperous years under this simple system.
 bootloader_life_10                     The final rule governing age is unique to Darwinia, and even though the colony may live
 bootloader_life_11                     for many hundreds of years, this cruel addition is the touch of doom,
 bootloader_life_12                     guaranteeing the eventual extinction of the entire tribe.
-bootloader_life_13                     It was agreed by all on the Darwin Digital Life project that the Darwinians
+bootloader_life_13                     It was agreed by all on the Darwin Digital Life project that the Citizens
 bootloader_life_14                     must be taught the concept of their own mortality at the earliest possible opportunity.
 bootloader_life_15                     Press g to regenerate
 bootloader_life_16a                    Music by Paul Slocum

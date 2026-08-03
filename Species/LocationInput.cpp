@@ -81,14 +81,14 @@ bool LocationInput::GetObjectUnderMouse(WorldObjectId& _id, int _teamId)
   WorldObjectId entId = g_location->GetEntityId(rayStart, rayDir, _teamId, &entDist);
 
   //
-  // Look for Darwinians if we are running an officer program
+  // Look for Citizens if we are running an officer program
   if (!entId.IsValid())
   {
     Task* task = g_taskManager->GetCurrentTask();
     if (task && task->m_state == Task::StateStarted && task->m_type == GlobalResearch::TypeOfficer)
     {
       Vector3 mousePos = TheUserInput()->GetMousePos3d();
-      entId = Task::FindDarwinian(mousePos);
+      entId = Task::FindCitizen(mousePos);
       entDist = 0.0f;
     }
   }

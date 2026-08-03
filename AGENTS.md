@@ -261,7 +261,7 @@ Launch, start a new profile, enter The Garden, and check:
 |---|---|---|
 | 1 | The executable starts and the main menu renders | `GameData` staging and resolution work |
 | 2 | The location loads without an assert | Landscape, level file and building parsing |
-| 3 | **50 Darwinians** spawn on team 0 — two groups of 30 and 20 | Entity creation from `InstantUnits` |
+| 3 | **50 Citizens** spawn on team 0 — two groups of 30 and 20 | Entity creation from `InstantUnits` |
 | 4 | **179 Virii** spawn on team 1 across eight groups | Multi-team spawning |
 | 5 | Both move under their own behaviour for 30s with no assert | `Location::Advance`, the slice loop, entity AI |
 | 6 | The Task Manager opens and lists available programs | Eclipse UI and `GlobalResearch` |

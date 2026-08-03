@@ -26,7 +26,7 @@ public:
         SpawnSpirits,
         SpawnEggs,
         SpawnTriffidEggs,
-        SpawnDarwinians,
+        SpawnCitizens,
         NumSpawnTypes
     };
 

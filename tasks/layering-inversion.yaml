@@ -1143,7 +1143,7 @@ tasks:
       Entity::GetTypeName. That is a name-to-id table with no behaviour, and it
       is game content: the sound blueprint files on disk contain those names.
       Moving the table down to NeuronClient makes the include go away and puts
-      the roster of Darwinian, Officer, Squad and the rest in the engine layer,
+      the roster of Citizen, Officer, Squad and the rest in the engine layer,
       which is the wrong place for it. Handing SoundSystem the table at startup
       instead — GameLogic registers the names it owns — keeps the knowledge
       where it belongs and is the option to cost first.

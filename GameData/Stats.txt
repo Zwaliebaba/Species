@@ -23,7 +23,7 @@ Tripod              155     20      1
 Centipede           255     80      1
 SpaceInvader        255     40      1
 Spider				150		50		1
-Darwinian			50		20		3
+Citizen			50		20		3
 Officer             255     30      3
 ArmyAnt             20      25      0
 Armour              255     60      5

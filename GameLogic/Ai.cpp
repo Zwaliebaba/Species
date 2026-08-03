@@ -15,7 +15,7 @@
 
 #include "Ai.h"
 #include "SpawnPoint.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "BlueprintStore.h"
 #include "WorldPointers.h"
 #include "AppState.h"
@@ -113,10 +113,10 @@ int AI::FindTargetBuilding(int _fromTargetId, int _fromTeamId)
 
   // Note by Chris
   // Although it makes sense to always head for the highest priority target,
-  // in practice it makes the Darwinians cluster exclusively at crucial nodes, which is boring.
+  // in practice it makes the Citizens cluster exclusively at crucial nodes, which is boring.
   // Introduce some randomness.
-  // Make Darwinians move randomly some of the time.
-  // Another note : Don't do this on the Rocket demo, as it makes the Red darwinians look stupid
+  // Make Citizens move randomly some of the time.
+  // Another note : Don't do this on the Rocket demo, as it makes the Red citizens look stupid
   // when they walk away from the fight during a cutscene
 
   int id = -1;
@@ -187,8 +187,8 @@ int AI::FindNearestTarget(Vector3 const& _fromPos)
 bool AI::Advance(Unit* _unit)
 {
   //
-  // Try to get Darwinians to stay near AI Targets
-  // We can't do this for every darwinian every frame, so just do it for some
+  // Try to get Citizens to stay near AI Targets
+  // We can't do this for every citizen every frame, so just do it for some
 
   Team* team = &g_location->m_teams[m_id.GetTeamId()];
   int numRemaining = team->m_others.Size() * 0.02f;
@@ -200,16 +200,16 @@ bool AI::Advance(Unit* _unit)
     if (team->m_others.ValidIndex(index))
     {
       Entity* entity = team->m_others[index];
-      if (entity && entity->m_type == TypeDarwinian)
+      if (entity && entity->m_type == TypeCitizen)
       {
-        Darwinian* darwinian = (Darwinian*)entity;
-        if (darwinian->m_state == Darwinian::StateIdle || darwinian->m_state == Darwinian::StateWorshipSpirit ||
-            darwinian->m_state == Darwinian::StateWatchingSpectacle)
+        Citizen* citizen = (Citizen*)entity;
+        if (citizen->m_state == Citizen::StateIdle || citizen->m_state == Citizen::StateWorshipSpirit ||
+            citizen->m_state == Citizen::StateWatchingSpectacle)
         {
-          Building* nearestTarget = g_location->GetBuilding(FindNearestTarget(darwinian->m_pos));
+          Building* nearestTarget = g_location->GetBuilding(FindNearestTarget(citizen->m_pos));
           if (nearestTarget)
           {
-            float distance = (nearestTarget->m_pos - darwinian->m_pos).Mag();
+            float distance = (nearestTarget->m_pos - citizen->m_pos).Mag();
             if (distance > 70.0f)
             {
               Vector3 targetPos = nearestTarget->m_pos;
@@ -219,7 +219,7 @@ bool AI::Advance(Unit* _unit)
               targetPos.x += radius * sinf(theta);
               targetPos.z += radius * cosf(theta);
               targetPos.y = g_location->m_landscape.m_heightMap->GetValue(targetPos.x, targetPos.z);
-              darwinian->GiveOrders(targetPos);
+              citizen->GiveOrders(targetPos);
             }
           }
         }
@@ -297,12 +297,12 @@ bool AI::Advance(Unit* _unit)
       for (int j = 0; j < numFound; ++j)
       {
         WorldObjectId id = ids[j];
-        Darwinian* darwinian = (Darwinian*)g_location->GetEntitySafe(id, TypeDarwinian);
-        if (darwinian && syncfrand(1.0f) < sendChance &&
-            (darwinian->m_state == Darwinian::StateIdle || darwinian->m_state == Darwinian::StateWorshipSpirit ||
-             darwinian->m_state == Darwinian::StateWatchingSpectacle))
+        Citizen* citizen = (Citizen*)g_location->GetEntitySafe(id, TypeCitizen);
+        if (citizen && syncfrand(1.0f) < sendChance &&
+            (citizen->m_state == Citizen::StateIdle || citizen->m_state == Citizen::StateWorshipSpirit ||
+             citizen->m_state == Citizen::StateWatchingSpectacle))
         {
-          darwinian->GiveOrders(targetPos);
+          citizen->GiveOrders(targetPos);
         }
       }
 
@@ -400,11 +400,11 @@ void AITarget::RecountTeams()
           ++m_enemyCount[t];
       }
 
-      if (entity->m_type == Entity::TypeDarwinian)
+      if (entity->m_type == Entity::TypeCitizen)
       {
-        Darwinian* darwinian = (Darwinian*)entity;
-        if (darwinian->m_state == Darwinian::StateIdle || darwinian->m_state == Darwinian::StateWorshipSpirit ||
-            darwinian->m_state == Darwinian::StateWatchingSpectacle)
+        Citizen* citizen = (Citizen*)entity;
+        if (citizen->m_state == Citizen::StateIdle || citizen->m_state == Citizen::StateWorshipSpirit ||
+            citizen->m_state == Citizen::StateWatchingSpectacle)
         {
           m_idleCount[id.GetTeamId()]++;
         }
@@ -621,7 +621,7 @@ bool AITarget::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return false; 
 
 AISpawnPoint::AISpawnPoint()
   : Building(),
-    m_entityType(Entity::TypeDarwinian),
+    m_entityType(Entity::TypeCitizen),
     m_count(20),
     m_period(60),
     m_timer(0.0f),

@@ -267,7 +267,7 @@ entityname_sporegenerator              GeneradorDeEsporas
 entityname_centipede                   Ciempiés
 entityname_spaceinvader                InvasorEspacial
 entityname_spider                      Araña
-entityname_darwinian                   Darwiniano
+entityname_citizen                   Darwiniano
 entityname_officer                     Oficial
 entityname_armyant                     HormigaLegionaria
 entityname_armour                      Blindado
@@ -364,7 +364,7 @@ objective_throughput                   rendimiento
 # Research messages
 # ================================================
 
-researchname_darwinian                 Darwinianos
+researchname_citizen                 Darwinianos
 researchname_squad                     Escuadra
 researchname_engineer                  Ingeniero
 researchname_laser                     Láser
@@ -424,11 +424,11 @@ research_taskmanager                   Trabajaré en mejorar para ti el Administr
 research_taskmanager_v3                He realizado algunas modificaciones en el Administrador de Tareas y ahora puedes ejecutar simultáneamente hasta cuatro programas.
 research_taskmanager_v4                He mejorado el Administrador de tareas y ahora puedes ejecutar hasta cinco programas al mismo tiempo, lo que está llevando el sistema al límite. Así que no creo que pueda mejorarlo más.
 
-research_darwinian                     Intentaré mejorar la plantilla del código del darwiniano básico. Con un poco de suerte debería poder darles unas armas adecuadas con las que poder defenderse.
-# research_darwinian_v1              Unused
-# research_darwinian_v2              Unused
-research_darwinian_v3                  ¡He mejorado los darwinianos para que puedan utilizar Láseres! Esto debería ayudarles a defenderse del Ataque vírico.
-research_darwinian_v4                  Les he dado Granadas a los darwinianos. Da un poco de miedo, pero ahora deberían tener más posibilidades cuando se enfrenten a enemigos más fuertes que ellos. Ya he hecho todo lo que se puede hacer en este campo.
+research_citizen                     Intentaré mejorar la plantilla del código del darwiniano básico. Con un poco de suerte debería poder darles unas armas adecuadas con las que poder defenderse.
+# research_citizen_v1              Unused
+# research_citizen_v2              Unused
+research_citizen_v3                  ¡He mejorado los darwinianos para que puedan utilizar Láseres! Esto debería ayudarles a defenderse del Ataque vírico.
+research_citizen_v4                  Les he dado Granadas a los darwinianos. Da un poco de miedo, pero ahora deberían tener más posibilidades cuando se enfrenten a enemigos más fuertes que ellos. Ya he hecho todo lo que se puede hacer en este campo.
 
 research_engineer                      Trabajaré en mejorar a los Ingenieros. Creo que puedo aumentar el número de espíritus que pueden llevar.
 # research_engineer_v1               Unused
@@ -769,7 +769,7 @@ newcontrols_showresearch               Mostrar pantalla de investigación
 newcontrols_showtaskmanager            Mostrar pantalla del administrador de tareas
 newcontrols_showobjectives             Mostrar pantalla de objetivos
 
-newcontrols_research_darwinian         Investigar el programa Darwiniano (proporciona un mejor armamento)
+newcontrols_research_citizen         Investigar el programa Darwiniano (proporciona un mejor armamento)
 newcontrols_research_officer           Investigar el programa Oficial (proporciona más tipos de órdenes)
 newcontrols_research_squad             Investigar el programa Escuadra (aumenta el número de soldados)
 newcontrols_research_laser             Investigar el programa Láser (aumenta el alcance)
@@ -1540,7 +1540,7 @@ spawnname_spawnspider                  GenerarArañas
 spawnname_spawnspirits                 GenerarEspíritus
 spawnname_spawneggs                    GenerarHuevos
 spawnname_spawntriffideggs             GenerarHuevosDeTrífido
-spawnname_spawndarwinians              GenerarDarwinianos
+spawnname_spawncitizens              GenerarDarwinianos
 
 
 # =================================================

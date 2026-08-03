@@ -23,7 +23,7 @@ Buildings_EndDefinition
 
 
 Research_StartDefinition
-	Research Darwinian      0       4
+	Research Citizen      0       4
     Research Squad          0       3
 	Research Engineer       0       3
     Research Laser          0       3

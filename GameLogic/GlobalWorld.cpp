@@ -618,7 +618,7 @@ void GlobalResearch::Read(TextReader* _in)
 const char* GlobalResearch::GetTypeName(int _type)
 {
   const char* names[] = {
-    "Darwinian", "Officer", "Squad", "Laser", "Grenade", "Rocket", "Controller", "AirStrike", "Armour", "TaskManager", "Engineer"
+    "Citizen", "Officer", "Squad", "Laser", "Grenade", "Rocket", "Controller", "AirStrike", "Armour", "TaskManager", "Engineer"
   };
 
   DEBUG_ASSERT(_type >= 0 && _type < NumResearchItems);

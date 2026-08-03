@@ -5,17 +5,17 @@
 
 #include "Entity.h"
 
-#define DARWINIAN_SEARCHRANGE_OFFICERS      75.0f
-#define DARWINIAN_SEARCHRANGE_ARMOUR        200.0f
-#define DARWINIAN_SEARCHRANGE_SPIRITS       50.0f
-#define DARWINIAN_SEARCHRANGE_THREATS       90.0f
-#define DARWINIAN_SEARCHRANGE_GRENADES      60.0f
-#define DARWINIAN_SEARCHRANGE_TURRETS       90.0f
-#define DARWINIAN_SEARCHRANGE_PORTS         100.0f
+#define CITIZEN_SEARCHRANGE_OFFICERS      75.0f
+#define CITIZEN_SEARCHRANGE_ARMOUR        200.0f
+#define CITIZEN_SEARCHRANGE_SPIRITS       50.0f
+#define CITIZEN_SEARCHRANGE_THREATS       90.0f
+#define CITIZEN_SEARCHRANGE_GRENADES      60.0f
+#define CITIZEN_SEARCHRANGE_TURRETS       90.0f
+#define CITIZEN_SEARCHRANGE_PORTS         100.0f
 
-#define DARWINIAN_FEARRANGE                 200.0f
+#define CITIZEN_FEARRANGE                 200.0f
 
-class Darwinian : public Entity
+class Citizen : public Entity
 {
 public:
     enum
@@ -98,7 +98,7 @@ protected:
     bool        AdvanceToTargetPosition();
 
 public:
-    Darwinian();
+    Citizen();
 
     void Begin                  ();
     bool Advance                ( Unit *_unit );

@@ -159,7 +159,7 @@ class GlobalResearch
 public:
     enum
     {
-        TypeDarwinian,
+        TypeCitizen,
         TypeOfficer,
         TypeSquad,
         TypeLaser,

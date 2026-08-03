@@ -37,7 +37,7 @@ protected:
     bool TargettedEntity        ( WorldObjectId _id );
 
     bool SearchForSpirits       ( Vector3 &_pos );
-    bool SearchForDarwinians    ( Vector3 &_pos, WorldObjectId &_id );
+    bool SearchForCitizens    ( Vector3 &_pos, WorldObjectId &_id );
     bool SearchForEnemies       ( Vector3 &_pos, WorldObjectId &_id );
 
     bool SearchForScoutArea     ( Vector3 &_pos );

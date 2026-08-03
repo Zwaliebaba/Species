@@ -38,7 +38,7 @@
 #include "Centipede.h"
 #include "Airstrike.h"
 #include "Spider.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "Officer.h"
 #include "ArmyAnt.h"
 #include "Armour.h"
@@ -664,8 +664,8 @@ Entity* Entity::NewEntity(int _troopType)
   case Entity::TypeSpider:
     entity = new Spider();
     break;
-  case Entity::TypeDarwinian:
-    entity = new Darwinian();
+  case Entity::TypeCitizen:
+    entity = new Citizen();
     break;
   case Entity::TypeOfficer:
     entity = new Officer();
@@ -712,8 +712,8 @@ int Entity::GetTypeId(char const* _typeName)
 char const* Entity::GetTypeName(int _troopType)
 {
   static char const* typeNames[NumEntityTypes] = {
-    "InvalidType",  "LaserTroop", "Engineer",  "Virii",   "Squadie", "Egg",    "SporeGenerator", "Lander",     "Tripod", "Centipede",
-    "SpaceInvader", "Spider",     "Darwinian", "Officer", "ArmyAnt", "Armour", "SoulDestroyer",  "TriffidEgg", "AI"};
+    "InvalidType",  "LaserTroop", "Engineer", "Virii",   "Squadie", "Egg",    "SporeGenerator", "Lander",     "Tripod", "Centipede",
+    "SpaceInvader", "Spider",     "Citizen",  "Officer", "ArmyAnt", "Armour", "SoulDestroyer",  "TriffidEgg", "AI"};
 
   DEBUG_ASSERT(_troopType >= 0 && _troopType < NumEntityTypes);
   return typeNames[_troopType];

@@ -35,7 +35,7 @@
 
 #include "InsertionSquad.h"
 #include "Officer.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "ResearchItem.h"
 #include "TrunkPort.h"
 #include "Engineer.h"
@@ -163,8 +163,8 @@ WorldObjectId Task::Promote(WorldObjectId _id)
   }
 
 
-  Darwinian* darwinian = (Darwinian*)entity;
-  darwinian->m_promoted = true;
+  Citizen* citizen = (Citizen*)entity;
+  citizen->m_promoted = true;
 
 
   return spawnedId;
@@ -182,9 +182,9 @@ WorldObjectId Task::Demote(WorldObjectId _id)
 
 
   //
-  // Spawn a Darwinian
+  // Spawn a Citizen
 
-  WorldObjectId spawnedId = g_location->SpawnEntities(entity->m_pos, teamId, -1, Entity::TypeDarwinian, 1, entity->m_vel, 0);
+  WorldObjectId spawnedId = g_location->SpawnEntities(entity->m_pos, teamId, -1, Entity::TypeCitizen, 1, entity->m_vel, 0);
 
 
   //
@@ -202,7 +202,7 @@ WorldObjectId Task::Demote(WorldObjectId _id)
 }
 
 
-WorldObjectId Task::FindDarwinian(Vector3 const& _pos)
+WorldObjectId Task::FindCitizen(Vector3 const& _pos)
 {
   int teamId = g_globalWorld->m_myTeamId;
 
@@ -215,7 +215,7 @@ WorldObjectId Task::FindDarwinian(Vector3 const& _pos)
   {
     WorldObjectId id = ids[i];
     Entity* entity = g_location->GetEntity(id);
-    if (entity && entity->m_type == Entity::TypeDarwinian)
+    if (entity && entity->m_type == Entity::TypeCitizen)
     {
       float distance = (entity->m_pos - _pos).MagSquared();
       if (distance < nearest)
@@ -245,12 +245,12 @@ void Task::TargetOfficer(Vector3 const& _pos)
 
 
   //
-  // Find the nearest friendly Darwinian to upgrade to an Officer
+  // Find the nearest friendly Citizen to upgrade to an Officer
   // If we found someone, promote them
   // Then shutdown this task
   // Then select them
 
-  WorldObjectId nearestId = FindDarwinian(_pos);
+  WorldObjectId nearestId = FindCitizen(_pos);
 
   if (nearestId.IsValid())
   {
@@ -749,18 +749,18 @@ bool TaskManager::IsValidTargetArea(int _id, Vector3 const& _pos)
     {
       int numFound;
       WorldObjectId* ids = g_location->m_entityGrid->GetFriends(_pos.x, _pos.z, 10.0f, &numFound, g_globalWorld->m_myTeamId);
-      bool foundDarwinian = false;
+      bool foundCitizen = false;
       for (int i = 0; i < numFound; ++i)
       {
         WorldObjectId id = ids[i];
         Entity* ent = g_location->GetEntity(id);
-        if (ent && ent->m_type == Entity::TypeDarwinian)
+        if (ent && ent->m_type == Entity::TypeCitizen)
         {
-          foundDarwinian = true;
+          foundCitizen = true;
           break;
         }
       }
-      return foundDarwinian;
+      return foundCitizen;
     }
     else
     {

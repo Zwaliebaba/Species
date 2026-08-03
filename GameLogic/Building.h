@@ -97,7 +97,7 @@ public:
 
     Shape		*m_shape;
     LList       <ShapeMarker *> m_lights;               // Ownership lights
-    LList       <BuildingPort *> m_ports;               // Require Darwinians in them to operate
+    LList       <BuildingPort *> m_ports;               // Require Citizens in them to operate
 
     static Shape        *s_controlPad;
     static ShapeMarker  *s_controlPadStatus;

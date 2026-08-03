@@ -111,7 +111,7 @@ headless server impossible again.
 
 ### GameLogic
 
-The bulk of the inherited code, ~48k lines. Entities (`Darwinian`, `Engineer`,
+The bulk of the inherited code, ~48k lines. Entities (`Citizen`, `Engineer`,
 `Officer`, `Armour`, `Spider`, `Centipede`, `SoulDestroyer`, …), buildings
 (`Factory`, `Generator`, `RadarDish`, `GunTurret`, `LaserFence`, `Teleport`, …),
 `Ai`, `Weapons`, and the in-game windows built on Eclipse.
@@ -226,7 +226,7 @@ If a type name means nothing to you — `Spirit`, `TrunkPort`, `Incubator` —
 | Wire protocol | `NeuronCore/NetworkUpdate.h`, `ServerToClientLetter.h` |
 | Server tick and client registry | `NeuronCore/Server.cpp` |
 | Client-side netcode | `NeuronCore/ClientToServer.cpp` |
-| Entity behaviour | `GameLogic/Entity.cpp`, `GameLogic/Darwinian.cpp` |
+| Entity behaviour | `GameLogic/Entity.cpp`, `GameLogic/Citizen.cpp` |
 | Building behaviour | `GameLogic/Building.cpp` |
 | Rendering entry | `Species/Renderer.cpp`, `GameLogic/LandscapeRenderer.cpp` |
 | UI toolkit | `NeuronClient/Eclipse.cpp`, `EclWindow.cpp` |

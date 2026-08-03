@@ -13,7 +13,7 @@
 #include "LanguageTable.h"
 
 #include "SpiritReceiver.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 
 #include "Location.h"
 #include "GlobalWorld.h"

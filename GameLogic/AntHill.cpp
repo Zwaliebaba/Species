@@ -17,7 +17,7 @@
 
 #include "AntHill.h"
 #include "ArmyAnt.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "SpawnPoint.h"
 
 #include "SoundSystem.h"
@@ -151,7 +151,7 @@ bool AntHill::SearchForSpirits( Vector3 &_pos )
 }
 
 
-bool AntHill::SearchForDarwinians( Vector3 &_pos, WorldObjectId &_id )
+bool AntHill::SearchForCitizens( Vector3 &_pos, WorldObjectId &_id )
 {
     int numFound;
     WorldObjectId *ids = g_location->m_entityGrid->GetEnemies( m_pos.x, m_pos.z, ANTHILL_SEARCHRANGE, &numFound, m_id.GetTeamId() );
@@ -160,13 +160,13 @@ bool AntHill::SearchForDarwinians( Vector3 &_pos, WorldObjectId &_id )
     {
         WorldObjectId id = ids[i];
         Entity *entity = g_location->GetEntity( id );
-        if( entity && entity->m_type == Entity::TypeDarwinian )
+        if( entity && entity->m_type == Entity::TypeCitizen )
         {
-            Darwinian *darwinian = (Darwinian *) entity;
+            Citizen *citizen = (Citizen *) entity;
             float theDist = ( entity->m_pos - m_pos ).Mag();
 
             if( theDist <= ANTHILL_SEARCHRANGE &&
-                darwinian->m_state != Darwinian::StateCapturedByAnt &&
+                citizen->m_state != Citizen::StateCapturedByAnt &&
                 !TargettedEntity( entity->m_id ) )
             {
                 _pos = entity->m_pos;
@@ -295,7 +295,7 @@ bool AntHill::Advance()
         WorldObjectId targetId;
         bool targetFound = false;
 
-        if( !targetFound )      targetFound = SearchForDarwinians   ( targetPos, targetId );
+        if( !targetFound )      targetFound = SearchForCitizens   ( targetPos, targetId );
         if( !targetFound )      targetFound = SearchForEnemies      ( targetPos, targetId );
         if( !targetFound )      targetFound = SearchForSpirits      ( targetPos );
         if( !targetFound )      targetFound = SearchForScoutArea    ( targetPos );

@@ -13,7 +13,7 @@
 #include "Weapons.h"
 #include "InsertionSquad.h"
 #include "Airstrike.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "Armour.h"
 
 
@@ -334,10 +334,10 @@ bool ControllerGrenade::Advance()
         {
           WorldObjectId id = ids[i];
           Entity* entity = g_location->GetEntity(id);
-          if (entity && entity->m_type == Entity::TypeDarwinian)
+          if (entity && entity->m_type == Entity::TypeCitizen)
           {
-            Darwinian* darwinian = (Darwinian*)entity;
-            darwinian->TakeControl(squad->m_controllerId);
+            Citizen* citizen = (Citizen*)entity;
+            citizen->TakeControl(squad->m_controllerId);
           }
         }
       }
@@ -744,11 +744,11 @@ bool Shockwave::Advance()
         ent->m_vel += push;
         ent->m_onGround = false;
       }
-      if (ent->m_type == Entity::TypeDarwinian)
+      if (ent->m_type == Entity::TypeCitizen)
       {
         if (syncfrand() < 0.1f)
         {
-          ((Darwinian*)ent)->SetFire();
+          ((Citizen*)ent)->SetFire();
         }
         else
         {

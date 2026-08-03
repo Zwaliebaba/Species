@@ -474,8 +474,8 @@ void Triffid::Write(FileWriter* _out)
 
 char const* Triffid::GetSpawnName(int _spawnType)
 {
-  static char const* names[NumSpawnTypes] = {"SpawnVirii", "SpawnCentipedes",  "SpawnSpider",    "SpawnSpirits",
-                                             "SpawnEggs",  "SpawnTriffidEggs", "SpawnDarwinians"};
+  static char const* names[NumSpawnTypes] = {"SpawnVirii", "SpawnCentipedes",  "SpawnSpider",  "SpawnSpirits",
+                                             "SpawnEggs",  "SpawnTriffidEggs", "SpawnCitizens"};
 
   return names[_spawnType];
 }
@@ -608,19 +608,19 @@ void TriffidEgg::Spawn()
       TriffidEgg* egg = (TriffidEgg*)g_location->GetEntitySafe(id, TypeTriffidEgg);
       if (egg)
         egg->m_spawnType = syncrand() % (Triffid::NumSpawnTypes - 1);
-      // The NumSpawnTypes-1 prevents Darwinians from coming out
+      // The NumSpawnTypes-1 prevents Citizens from coming out
     }
     break;
   }
 
-  case Triffid::SpawnDarwinians:
+  case Triffid::SpawnCitizens:
   {
-    int numDarwinians = 10 + syncrand() % 10;
-    for (int i = 0; i < numDarwinians; ++i)
+    int numCitizens = 10 + syncrand() % 10;
+    for (int i = 0; i < numCitizens; ++i)
     {
       Vector3 vel = g_upVector + Vector3(syncsfrand(), 0.0f, syncsfrand());
       vel.SetLength(10.0f + syncfrand(20.0f));
-      WorldObjectId id = g_location->SpawnEntities(m_pos, teamId, -1, TypeDarwinian, 1, vel, 0.0f, 0.0f);
+      WorldObjectId id = g_location->SpawnEntities(m_pos, teamId, -1, TypeCitizen, 1, vel, 0.0f, 0.0f);
       Entity* entity = g_location->GetEntity(id);
       entity->m_front.y = 0.0f;
       entity->m_front.Normalise();

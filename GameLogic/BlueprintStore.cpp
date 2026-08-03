@@ -9,7 +9,7 @@
 #include "LanguageTable.h"
 
 #include "BlueprintStore.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 
 #include "Location.h"
 #include "GameTime.h"
@@ -384,7 +384,7 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
     glDisable( GL_CULL_FACE );
     glEnable( GL_BLEND );
     glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/Darwinian.bmp" ) );
+    glBindTexture( GL_TEXTURE_2D, g_resource->GetTexture( "Sprites/Citizen.bmp" ) );
     glDepthMask( false );
 
     int numSteps = sqrt(BLUEPRINTSTORE_NUMSEGMENTS);
@@ -428,10 +428,10 @@ void BlueprintStore::RenderAlphas(float _predictionTime)
   GetDisplay(screenPos, screenRight, screenUp, screenSize);
 
   //
-  // Render main darwinian
+  // Render main citizen
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Darwinian.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Citizen.bmp"));
   glDisable(GL_CULL_FACE);
   glEnable(GL_BLEND);
   glDepthMask(false);

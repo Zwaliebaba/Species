@@ -6,7 +6,7 @@
 #include "GodDish.h"
 #include "Spam.h"
 #include "ResearchItem.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 
 #include "ProtocolLimits.h"
 #include "GlobalWorld.h"
@@ -156,7 +156,7 @@ void GodDish::Activate()
 
 
     //
-    // Make all green darwinians watch us
+    // Make all green citizens watch us
 
     Team *team = &g_location->m_teams[0];
 
@@ -165,11 +165,11 @@ void GodDish::Activate()
         if( team->m_others.ValidIndex(i) )
         {
             Entity *entity = team->m_others[i];
-            if( entity && entity->m_type == Entity::TypeDarwinian )
+            if( entity && entity->m_type == Entity::TypeCitizen )
             {
-                Darwinian *darwinian = (Darwinian *) entity;
-                darwinian->WatchSpectacle( m_id.GetUniqueId() );
-                darwinian->CastShadow( m_id.GetUniqueId() );
+                Citizen *citizen = (Citizen *) entity;
+                citizen->WatchSpectacle( m_id.GetUniqueId() );
+                citizen->CastShadow( m_id.GetUniqueId() );
             }
         }
     }

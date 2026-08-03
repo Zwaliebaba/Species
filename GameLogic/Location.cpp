@@ -48,7 +48,7 @@
 #include "LaserTrooper.h"
 #include "Officer.h"
 #include "Armour.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "Snow.h"
 #include "Tree.h"
 #include "InsertionSquad.h"
@@ -1376,11 +1376,11 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
       }
     }
 
-    if (iu->m_type == Entity::TypeDarwinian && iu->m_number == 1 && iu->m_state == Darwinian::StateFollowingOrders)
+    if (iu->m_type == Entity::TypeCitizen && iu->m_number == 1 && iu->m_state == Citizen::StateFollowingOrders)
     {
-      Darwinian* darwinian = (Darwinian*)g_location->GetEntitySafe(spawnedId, Entity::TypeDarwinian);
-      if (darwinian)
-        darwinian->GiveOrders(targetPos);
+      Citizen* citizen = (Citizen*)g_location->GetEntitySafe(spawnedId, Entity::TypeCitizen);
+      if (citizen)
+        citizen->GiveOrders(targetPos);
     }
     if (iu->m_type == Entity::TypeOfficer)
     {

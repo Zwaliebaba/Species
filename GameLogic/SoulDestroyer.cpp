@@ -196,7 +196,7 @@ void SoulDestroyer::Attack(Vector3 const& _pos)
         killed = true;
     }
 
-    if (killed && entity->m_type == TypeDarwinian)
+    if (killed && entity->m_type == TypeCitizen)
     {
       // Eat the spirit
       int spiritIndex = g_location->GetSpirit(id);
@@ -268,7 +268,7 @@ bool SoulDestroyer::SearchForTargetEnemy()
 {
   if (m_routeId != -1)
   {
-    // dont attack darwinians if on a pre-set route
+    // dont attack citizens if on a pre-set route
     return false;
   }
   // If we are too close to the ground, we MUST take off

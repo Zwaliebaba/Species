@@ -288,13 +288,13 @@ void Script::RunCommand_GameOver()
 
 void Script::RunCommand_ResetResearch()
 {
-  m_darwinianResearchLevel = g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian];
-  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian] = 1;
+  m_citizenResearchLevel = g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen];
+  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen] = 1;
 }
 
 void Script::RunCommand_RestoreResearch()
 {
-  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian] = m_darwinianResearchLevel;
+  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen] = m_citizenResearchLevel;
 }
 
 GodDish* GetGodDish()

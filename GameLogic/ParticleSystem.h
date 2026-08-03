@@ -47,7 +47,7 @@ public:
         TypeBrass,
         TypeMissileTrail,
         TypeMissileFire,
-        TypeDarwinianFire,
+        TypeCitizenFire,
 		TypeLeaf,
 		TypeNumTypes
 	};

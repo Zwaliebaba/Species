@@ -26,7 +26,7 @@ SafeArea::SafeArea()
     m_entitiesRequired(0),
     m_recountTimer(0.0f),
     m_entitiesCounted(0),
-    m_entityTypeRequired(Entity::TypeDarwinian)
+    m_entityTypeRequired(Entity::TypeCitizen)
 {
     m_type = TypeSafeArea;
 }

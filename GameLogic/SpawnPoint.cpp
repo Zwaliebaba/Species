@@ -18,7 +18,7 @@
 #include "GameTime.h"
 
 #include "SpawnPoint.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -602,7 +602,7 @@ void SpawnPoint::TriggerSpirit(SpawnBuildingSpirit* _spirit)
     {
       Matrix34 mat(m_front, m_up, m_pos);
       Matrix34 doorMat = m_doorMarker->GetWorldMatrix(mat);
-      g_location->SpawnEntities(doorMat.pos, m_id.GetTeamId(), -1, Entity::TypeDarwinian, 1, g_zeroVector, 0.0f);
+      g_location->SpawnEntities(doorMat.pos, m_id.GetTeamId(), -1, Entity::TypeCitizen, 1, g_zeroVector, 0.0f);
     }
 
     delete _spirit;
@@ -639,9 +639,9 @@ bool SpawnPoint::Advance()
 
 
   //
-  // Time to request more spirits for our Darwinians?
+  // Time to request more spirits for our Citizens?
 
-  START_PROFILE(g_profiler, "SpawnDarwinians");
+  START_PROFILE(g_profiler, "SpawnCitizens");
   if (m_id.GetTeamId() != 255 && !PopulationLocked())
   {
     m_spawnTimer -= SERVER_ADVANCE_PERIOD;
@@ -662,7 +662,7 @@ bool SpawnPoint::Advance()
         m_spawnTimer -= 0.5 * (g_difficultyLevel / 10.0);
     }
   }
-  END_PROFILE(g_profiler, "SpawnDarwinians");
+  END_PROFILE(g_profiler, "SpawnCitizens");
 
   return SpawnBuilding::Advance();
 }
@@ -824,7 +824,7 @@ bool SpawnPopulationLock::Advance()
   //
   // Every once in a while, have a look at the global over-population rate
   // And reduce all local maxPopulations accordingly
-  // This only really applies to Green darwinians, as the player can arrange
+  // This only really applies to Green citizens, as the player can arrange
   // it so an unlimited army gathers on a single island
 
   if (GetHighResTime() > s_overpopulationTimer)

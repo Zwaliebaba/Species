@@ -37,7 +37,7 @@
 
 #include "InsertionSquad.h"
 #include "Officer.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "ResearchItem.h"
 #include "TrunkPort.h"
 #include "Engineer.h"

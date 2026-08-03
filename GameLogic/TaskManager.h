@@ -46,7 +46,7 @@ public:
 
     WorldObjectId        Promote         ( WorldObjectId _id );
     static WorldObjectId Demote          ( WorldObjectId _id );
-    static WorldObjectId FindDarwinian   ( Vector3 const &_pos );
+    static WorldObjectId FindCitizen   ( Vector3 const &_pos );
 
     static char const *GetTaskName            ( int _type );
     static char const *GetTaskNameTranslated  ( int _type );

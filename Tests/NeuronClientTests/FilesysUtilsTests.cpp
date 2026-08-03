@@ -87,7 +87,7 @@ namespace NeuronClientTests
   TEST_CLASS(FilesysUtilsTests)
   {
     public:
-      TEST_METHOD(GetDirectoryPartKeepsTheTrailingSlash) { Assert::AreEqual("Shapes/", GetDirectoryPart("Shapes/darwinian.shp")); }
+      TEST_METHOD(GetDirectoryPartKeepsTheTrailingSlash) { Assert::AreEqual("Shapes/", GetDirectoryPart("Shapes/citizen.shp")); }
 
       TEST_METHOD(GetDirectoryPartStopsAtTheLastSlash) { Assert::AreEqual("Sounds/Effects/", GetDirectoryPart("Sounds/Effects/laser.wav")); }
 
@@ -95,11 +95,11 @@ namespace NeuronClientTests
 
       TEST_METHOD(GetFilenamePartDropsEveryDirectory) { Assert::AreEqual("laser.wav", GetFilenamePart("Sounds/Effects/laser.wav")); }
 
-      TEST_METHOD(GetExtensionPartExcludesTheDot) { Assert::AreEqual("shp", GetExtensionPart("Shapes/darwinian.shp")); }
+      TEST_METHOD(GetExtensionPartExcludesTheDot) { Assert::AreEqual("shp", GetExtensionPart("Shapes/citizen.shp")); }
 
-      TEST_METHOD(RemoveExtensionKeepsTheDirectory) { Assert::AreEqual("Shapes/darwinian", RemoveExtension("Shapes/darwinian.shp")); }
+      TEST_METHOD(RemoveExtensionKeepsTheDirectory) { Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen.shp")); }
 
-      TEST_METHOD(RemoveExtensionLeavesAnExtensionlessNameAlone) { Assert::AreEqual("Shapes/darwinian", RemoveExtension("Shapes/darwinian")); }
+      TEST_METHOD(RemoveExtensionLeavesAnExtensionlessNameAlone) { Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen")); }
 
       TEST_METHOD(RemoveExtensionStripsOnlyTheLastExtension) { Assert::AreEqual("archive.tar", RemoveExtension("archive.tar.gz")); }
   };

@@ -21,7 +21,7 @@
 
 #include "SoundSystem.h"
 
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "Officer.h"
 #include "Teleport.h"
 #include "ArmyAnt.h"
@@ -32,7 +32,7 @@
 #include "Rocket.h"
 #include "WorldPointers.h"
 
-Darwinian::Darwinian()
+Citizen::Citizen()
   : Entity(),
     m_state(StateIdle),
     m_retargetTimer(0.0f),
@@ -47,16 +47,16 @@ Darwinian::Darwinian()
     m_promoted(false),
     m_scared(true),
     m_shadowBuildingId(-1),
-    m_threatRange(DARWINIAN_SEARCHRANGE_THREATS),
+    m_threatRange(CITIZEN_SEARCHRANGE_THREATS),
     m_grenadeTimer(0.0f),
     m_officerTimer(0.0f)
 {
-  SetType(TypeDarwinian);
+  SetType(TypeCitizen);
   m_grenadeTimer = syncfrand(5.0f);
 }
 
 
-void Darwinian::Begin()
+void Citizen::Begin()
 {
   Entity::Begin();
   m_onGround = true;
@@ -66,7 +66,7 @@ void Darwinian::Begin()
 }
 
 
-void Darwinian::ChangeHealth(int _amount)
+void Citizen::ChangeHealth(int _amount)
 {
   if (m_state == StateInsideArmour)
   {
@@ -85,7 +85,7 @@ void Darwinian::ChangeHealth(int _amount)
 }
 
 
-bool Darwinian::SearchForNewTask()
+bool Citizen::SearchForNewTask()
 {
   //
   //            switch( m_state )                   // Deliberate fall through here - check all states above our priority
@@ -163,7 +163,7 @@ bool Darwinian::SearchForNewTask()
 }
 
 
-bool Darwinian::Advance(Unit* _unit)
+bool Citizen::Advance(Unit* _unit)
 {
   if (m_promoted)
   {
@@ -269,7 +269,7 @@ bool Darwinian::Advance(Unit* _unit)
 }
 
 
-bool Darwinian::AdvanceIdle()
+bool Citizen::AdvanceIdle()
 {
   if (m_onGround)
   {
@@ -280,7 +280,7 @@ bool Darwinian::AdvanceIdle()
 }
 
 
-bool Darwinian::AdvanceWatchingSpectacle()
+bool Citizen::AdvanceWatchingSpectacle()
 {
   Building* building = g_location->GetBuilding(m_buildingId);
   if (!building || (building->m_type != Building::TypeGodDish && building->m_type != Building::TypeEscapeRocket))
@@ -348,17 +348,17 @@ bool Darwinian::AdvanceWatchingSpectacle()
 }
 
 
-void Darwinian::WatchSpectacle(int _buildingId)
+void Citizen::WatchSpectacle(int _buildingId)
 {
   m_buildingId = _buildingId;
   m_state = StateWatchingSpectacle;
 }
 
 
-void Darwinian::CastShadow(int _buildingId) { m_shadowBuildingId = _buildingId; }
+void Citizen::CastShadow(int _buildingId) { m_shadowBuildingId = _buildingId; }
 
 
-bool Darwinian::AdvanceApproachingArmour()
+bool Citizen::AdvanceApproachingArmour()
 {
   //
   // Is our armour still alive / within range / open
@@ -375,7 +375,7 @@ bool Darwinian::AdvanceApproachingArmour()
   armour->GetEntrance(exitPos, exitDir);
 
   float distance = (exitPos - m_pos).Mag();
-  if (distance > DARWINIAN_SEARCHRANGE_ARMOUR)
+  if (distance > CITIZEN_SEARCHRANGE_ARMOUR)
   {
     m_state = StateIdle;
     m_armourId.SetInvalid();
@@ -400,7 +400,7 @@ bool Darwinian::AdvanceApproachingArmour()
 }
 
 
-bool Darwinian::AdvanceInsideArmour()
+bool Citizen::AdvanceInsideArmour()
 {
   //
   // Is our armour still alive
@@ -457,7 +457,7 @@ bool Darwinian::AdvanceInsideArmour()
 }
 
 
-bool Darwinian::AdvanceCapturedByAnt()
+bool Citizen::AdvanceCapturedByAnt()
 {
   ArmyAnt* ant = (ArmyAnt*)g_location->GetEntity(m_threatId);
   if (!ant || ant->m_dead)
@@ -477,7 +477,7 @@ bool Darwinian::AdvanceCapturedByAnt()
 }
 
 
-bool Darwinian::AdvanceCombat()
+bool Citizen::AdvanceCombat()
 {
   START_PROFILE(g_profiler, "AdvanceCombat");
 
@@ -492,7 +492,7 @@ bool Darwinian::AdvanceCombat()
   {
     m_state = StateIdle;
     m_retargetTimer = 0.0;
-    g_soundSystem->StopAllSounds(m_id, "Darwinian SeenThreat");
+    g_soundSystem->StopAllSounds(m_id, "Citizen SeenThreat");
     END_PROFILE(g_profiler, "AdvanceCombat");
     return false;
   }
@@ -505,21 +505,21 @@ bool Darwinian::AdvanceCombat()
   if (!isEntity && threat && threat->m_type == EffectGunTurretTarget)
   {
     float distance = (threat->m_pos - m_pos).Mag();
-    if (distance > DARWINIAN_SEARCHRANGE_TURRETS)
+    if (distance > CITIZEN_SEARCHRANGE_TURRETS)
     {
       m_state = StateIdle;
       m_retargetTimer = 0.0;
-      g_soundSystem->StopAllSounds(m_id, "Darwinian SeenThreat");
+      g_soundSystem->StopAllSounds(m_id, "Citizen SeenThreat");
       END_PROFILE(g_profiler, "AdvanceCombat");
       return false;
     }
   }
 
   //
-  // Move away from our threat if we're an ordinary Darwinian
-  // Move towards our threat if we're a Soldier Darwinian
+  // Move away from our threat if we're an ordinary Citizen
+  // Move towards our threat if we're a Soldier Citizen
 
-  bool soldier = m_id.GetTeamId() == 1 || g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeDarwinian) > 2;
+  bool soldier = m_id.GetTeamId() == 1 || g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeCitizen) > 2;
 
   if (soldier && !m_scared)
   {
@@ -538,7 +538,7 @@ bool Darwinian::AdvanceCombat()
                 m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
     */
     float distance = (m_pos - threat->m_pos).Mag();
-    if (distance < DARWINIAN_FEARRANGE / 2.0f)
+    if (distance < CITIZEN_FEARRANGE / 2.0f)
     {
       Vector3 moveAwayVector = (m_pos - threat->m_pos).Normalise() * 30.0f;
       float angle = syncsfrand(M_PI * 0.5f);
@@ -562,7 +562,7 @@ bool Darwinian::AdvanceCombat()
   else
   {
     float distance = (m_pos - threat->m_pos).Mag();
-    if (distance > DARWINIAN_FEARRANGE)
+    if (distance > CITIZEN_FEARRANGE)
     {
       m_scared = false;
       m_threatId.SetInvalid();
@@ -594,9 +594,9 @@ bool Darwinian::AdvanceCombat()
     // ie lots of enemies near our target, and not many friends
     // Or if the enemy is the sort that responds well to grenades
     // NEVER throw grenades if there are people from team 2 nearby (ie the player's squad, officers, engineers)
-    // NEVER throw grenades if the target area is too steep - Darwinians just can't fucking aim on cliffs
+    // NEVER throw grenades if the target area is too steep - Citizens just can't fucking aim on cliffs
 
-    bool hasGrenade = m_id.GetTeamId() == 1 || g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeDarwinian) > 3;
+    bool hasGrenade = m_id.GetTeamId() == 1 || g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeCitizen) > 3;
     if (hasGrenade)
     {
       START_PROFILE(g_profiler, "ThrowGrenade");
@@ -651,7 +651,7 @@ bool Darwinian::AdvanceCombat()
 }
 
 
-bool Darwinian::AdvanceWorshipSpirit()
+bool Citizen::AdvanceWorshipSpirit()
 {
   START_PROFILE(g_profiler, "AdvanceWorship");
 
@@ -748,7 +748,7 @@ bool Darwinian::AdvanceWorshipSpirit()
 }
 
 
-bool Darwinian::AdvanceApproachingPort()
+bool Citizen::AdvanceApproachingPort()
 {
   //
   // Check the port is still available
@@ -787,7 +787,7 @@ bool Darwinian::AdvanceApproachingPort()
 }
 
 
-bool Darwinian::AdvanceOperatingPort()
+bool Citizen::AdvanceOperatingPort()
 {
   //
   // Check the port is still available
@@ -809,7 +809,7 @@ bool Darwinian::AdvanceOperatingPort()
 }
 
 
-bool Darwinian::AdvanceUnderControl()
+bool Citizen::AdvanceUnderControl()
 {
   //
   // Try to lookup our controller
@@ -828,7 +828,7 @@ bool Darwinian::AdvanceUnderControl()
       Vector3 vel(sfrand(5.0f), frand(15.0f), sfrand(5.0f));
       g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeControlFlash);
     }
-    g_soundSystem->StopAllSounds(m_id, "Darwinian TakenControl");
+    g_soundSystem->StopAllSounds(m_id, "Citizen TakenControl");
     g_soundSystem->TriggerEntityEvent(this, "EscapedControl");
     return false;
   }
@@ -902,7 +902,7 @@ bool Darwinian::AdvanceUnderControl()
 }
 
 
-bool Darwinian::AdvanceFollowingOrders()
+bool Citizen::AdvanceFollowingOrders()
 {
   bool arrived = AdvanceToTargetPosition();
 
@@ -961,7 +961,7 @@ bool Darwinian::AdvanceFollowingOrders()
 }
 
 
-bool Darwinian::AdvanceFollowingOfficer()
+bool Citizen::AdvanceFollowingOfficer()
 {
   //
   // Look up our officer
@@ -1085,14 +1085,14 @@ bool Darwinian::AdvanceFollowingOfficer()
 }
 
 
-void Darwinian::BoardRocket(int _buildingId)
+void Citizen::BoardRocket(int _buildingId)
 {
   m_state = StateBoardingRocket;
   m_buildingId = _buildingId;
 }
 
 
-bool Darwinian::AdvanceBoardingRocket()
+bool Citizen::AdvanceBoardingRocket()
 {
   //
   // Find our building
@@ -1105,7 +1105,7 @@ bool Darwinian::AdvanceBoardingRocket()
   }
 
   //
-  // Make sure we are still loading Darwinians
+  // Make sure we are still loading Citizens
 
   FuelStation* station = (FuelStation*)building;
   if (!station->IsLoading())
@@ -1133,14 +1133,14 @@ bool Darwinian::AdvanceBoardingRocket()
 }
 
 
-void Darwinian::AttackBuilding(int _buildingId)
+void Citizen::AttackBuilding(int _buildingId)
 {
   m_state = StateAttackingBuilding;
   m_buildingId = _buildingId;
 }
 
 
-bool Darwinian::AdvanceAttackingBuilding()
+bool Citizen::AdvanceAttackingBuilding()
 {
   //
   // Find our building
@@ -1178,7 +1178,7 @@ bool Darwinian::AdvanceAttackingBuilding()
 }
 
 
-bool Darwinian::SearchForRandomPosition()
+bool Citizen::SearchForRandomPosition()
 {
   START_PROFILE(g_profiler, "SearchRandomPos");
 
@@ -1204,10 +1204,10 @@ bool Darwinian::SearchForRandomPosition()
 }
 
 
-bool Darwinian::SearchForArmour()
+bool Citizen::SearchForArmour()
 {
   //
-  // Red Darwinians don't respond to armour
+  // Red Citizens don't respond to armour
 
   if (m_id.GetTeamId() == 1)
     return false;
@@ -1232,7 +1232,7 @@ bool Darwinian::SearchForArmour()
       {
         Armour* armour = (Armour*)entity;
         float range = (armour->m_pos - m_pos).Mag();
-        if (range <= DARWINIAN_SEARCHRANGE_ARMOUR && armour->IsLoading())
+        if (range <= CITIZEN_SEARCHRANGE_ARMOUR && armour->IsLoading())
         {
           m_armour.PutData(id);
         }
@@ -1255,10 +1255,10 @@ bool Darwinian::SearchForArmour()
 }
 
 
-bool Darwinian::SearchForOfficers()
+bool Citizen::SearchForOfficers()
 {
   //
-  // Red Darwinians don't respond to officers
+  // Red Citizens don't respond to officers
 
   if (m_id.GetTeamId() == 1)
     return false;
@@ -1306,7 +1306,7 @@ bool Darwinian::SearchForOfficers()
       {
         Officer* officer = (Officer*)entity;
         float distance = (officer->m_pos - m_pos).Mag();
-        if (distance < DARWINIAN_SEARCHRANGE_OFFICERS && officer->m_orders == Officer::OrderGoto)
+        if (distance < CITIZEN_SEARCHRANGE_OFFICERS && officer->m_orders == Officer::OrderGoto)
         {
           officers.PutData(id);
         }
@@ -1386,7 +1386,7 @@ bool Darwinian::SearchForOfficers()
 }
 
 
-void Darwinian::GiveOrders(Vector3 const& _targetPos)
+void Citizen::GiveOrders(Vector3 const& _targetPos)
 {
   m_orders = _targetPos;
   m_ordersBuildingId = -1;
@@ -1440,9 +1440,9 @@ void Darwinian::GiveOrders(Vector3 const& _targetPos)
 }
 
 
-bool Darwinian::SearchForSpirits()
+bool Citizen::SearchForSpirits()
 {
-  // Red darwinians don't worship spirits
+  // Red citizens don't worship spirits
   if (m_id.GetTeamId() == 1)
     return false;
 
@@ -1450,7 +1450,7 @@ bool Darwinian::SearchForSpirits()
 
   Spirit* found = nullptr;
   int spiritId = -1;
-  float closest = DARWINIAN_SEARCHRANGE_SPIRITS;
+  float closest = CITIZEN_SEARCHRANGE_SPIRITS;
 
   if (syncrand() % 5 == 0)
   {
@@ -1482,7 +1482,7 @@ bool Darwinian::SearchForSpirits()
 }
 
 
-bool Darwinian::SearchForThreats()
+bool Citizen::SearchForThreats()
 {
   START_PROFILE(g_profiler, "SearchThreats");
 
@@ -1490,7 +1490,7 @@ bool Darwinian::SearchForThreats()
   // Allow our threat range to creep back up to the max
 
   float threatRangeChange = SERVER_ADVANCE_PERIOD;
-  m_threatRange = (DARWINIAN_SEARCHRANGE_THREATS * threatRangeChange) + (m_threatRange * (1.0f - threatRangeChange));
+  m_threatRange = (CITIZEN_SEARCHRANGE_THREATS * threatRangeChange) + (m_threatRange * (1.0f - threatRangeChange));
 
 
   //
@@ -1515,7 +1515,7 @@ bool Darwinian::SearchForThreats()
   WorldObjectId threatId;
   bool throwableWeaponFound = false;
 
-  float maxGrenadeRangeSqd = pow(DARWINIAN_SEARCHRANGE_GRENADES, 2);
+  float maxGrenadeRangeSqd = pow(CITIZEN_SEARCHRANGE_GRENADES, 2);
 
   for (int i = 0; i < g_location->m_effects.Size(); ++i)
   {
@@ -1603,7 +1603,7 @@ bool Darwinian::SearchForThreats()
   {
     WorldObjectId id = ids[i];
     Entity* entity = g_location->GetEntity(id);
-    bool onFire = entity->m_type == TypeDarwinian && ((Darwinian*)entity)->IsOnFire();
+    bool onFire = entity->m_type == TypeCitizen && ((Citizen*)entity)->IsOnFire();
 
     if (!entity->m_dead && !onFire && entity->m_type != TypeEgg)
     {
@@ -1627,7 +1627,7 @@ bool Darwinian::SearchForThreats()
   if (entity && !entity->m_dead)
   {
     m_state = StateCombat;
-    bool soldier = m_id.GetTeamId() == 1 || g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeDarwinian) > 2;
+    bool soldier = m_id.GetTeamId() == 1 || g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeCitizen) > 2;
 
     if (!soldier)
       m_scared = true;
@@ -1669,7 +1669,7 @@ bool Darwinian::SearchForThreats()
   {
     // There are no nearby threats
     m_threatId.SetInvalid();
-    g_soundSystem->StopAllSounds(m_id, "Darwinian SeenThreat");
+    g_soundSystem->StopAllSounds(m_id, "Citizen SeenThreat");
 
     END_PROFILE(g_profiler, "SearchThreats");
     return false;
@@ -1677,7 +1677,7 @@ bool Darwinian::SearchForThreats()
 }
 
 
-bool Darwinian::SearchForPorts()
+bool Citizen::SearchForPorts()
 {
   START_PROFILE(g_profiler, "SearchPorts");
 
@@ -1693,7 +1693,7 @@ bool Darwinian::SearchForPorts()
       Building* building = g_location->m_buildings[i];
       float distanceToBuilding = (building->m_pos - m_pos).Mag();
       distanceToBuilding -= building->m_radius;
-      if (distanceToBuilding < DARWINIAN_SEARCHRANGE_PORTS)
+      if (distanceToBuilding < CITIZEN_SEARCHRANGE_PORTS)
       {
         if (building->GetNumPortsOccupied() < building->GetNumPorts())
         {
@@ -1754,7 +1754,7 @@ bool Darwinian::SearchForPorts()
 }
 
 
-bool Darwinian::BeginVictoryDance()
+bool Citizen::BeginVictoryDance()
 {
   if (m_onGround && m_id.GetTeamId() == 0 && syncfrand(5.0f) < 1.0f && m_pos.y > 10.0f)
   {
@@ -1786,7 +1786,7 @@ bool Darwinian::BeginVictoryDance()
 }
 
 
-bool Darwinian::AdvanceToTargetPosition()
+bool Citizen::AdvanceToTargetPosition()
 {
   START_PROFILE(g_profiler, "AdvanceToTargetPos");
 
@@ -1869,7 +1869,7 @@ bool Darwinian::AdvanceToTargetPosition()
 }
 
 
-Vector3 Darwinian::PushFromObstructions(Vector3 const& pos, bool killem)
+Vector3 Citizen::PushFromObstructions(Vector3 const& pos, bool killem)
 {
   Vector3 result = pos;
   if (m_onGround)
@@ -1988,7 +1988,7 @@ Vector3 Darwinian::PushFromObstructions(Vector3 const& pos, bool killem)
 }
 
 
-void Darwinian::TakeControl(int _controllerId)
+void Citizen::TakeControl(int _controllerId)
 {
   Task* controller = g_taskManager->GetTask(_controllerId);
   if (controller)
@@ -2014,17 +2014,17 @@ void Darwinian::TakeControl(int _controllerId)
 }
 
 
-void Darwinian::AntCapture(WorldObjectId _antId)
+void Citizen::AntCapture(WorldObjectId _antId)
 {
   m_threatId = _antId;
   m_state = StateCapturedByAnt;
 }
 
 
-bool Darwinian::IsInView() { return g_camera->PosInViewFrustum(m_pos); }
+bool Citizen::IsInView() { return g_camera->PosInViewFrustum(m_pos); }
 
 
-bool Darwinian::AdvanceOnFire()
+bool Citizen::AdvanceOnFire()
 {
   m_wayPoint = m_pos;
   m_wayPoint += Vector3(syncsfrand(100.0f), 0.0f, syncsfrand(100.0f));
@@ -2040,7 +2040,7 @@ bool Darwinian::AdvanceOnFire()
     // fireSpawn -= m_vel * 0.1f;
     float fireSize = 20 + syncfrand(30.0f);
     Vector3 fireVel = m_vel * 0.3f + g_upVector * (3 + syncfrand(3));
-    int particleType = Particle::TypeDarwinianFire;
+    int particleType = Particle::TypeCitizenFire;
     if (i > 4)
       particleType = Particle::TypeMissileTrail;
     g_particleSystem->CreateParticle(fireSpawn, fireVel, particleType, fireSize);
@@ -2063,13 +2063,13 @@ bool Darwinian::AdvanceOnFire()
 }
 
 
-void Darwinian::SetFire() { m_state = StateOnFire; }
+void Citizen::SetFire() { m_state = StateOnFire; }
 
 
-bool Darwinian::IsOnFire() { return (m_state == StateOnFire); }
+bool Citizen::IsOnFire() { return (m_state == StateOnFire); }
 
 
-void Darwinian::Render(float _predictionTime, float _highDetail)
+void Citizen::Render(float _predictionTime, float _highDetail)
 {
   if (!m_enabled)
     return;
@@ -2301,7 +2301,7 @@ void Darwinian::Render(float _predictionTime, float _highDetail)
         {
           Vector3 length = (predictedPos - building->m_pos).SetLength(size * 10);
 
-          // Shadow behind the Darwinian (green dudes only)
+          // Shadow behind the Citizen (green dudes only)
           if (m_id.GetTeamId() == 0)
           {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2383,7 +2383,7 @@ void Darwinian::Render(float _predictionTime, float _highDetail)
       glTexCoord2i(0, 0);
       glVertex3fv((predictedPos - entityRight).GetData());
       glEnd();
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Darwinian.bmp"));
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Citizen.bmp"));
     }
   }
 
@@ -2480,7 +2480,7 @@ void Darwinian::Render(float _predictionTime, float _highDetail)
 }
 
 
-void Darwinian::ListSoundEvents(std::vector<const char*>* _list)
+void Citizen::ListSoundEvents(std::vector<const char*>* _list)
 {
   Entity::ListSoundEvents(_list);
 

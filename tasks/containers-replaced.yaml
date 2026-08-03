@@ -476,7 +476,7 @@ tasks:
   - id: T9
     title: Convert the GameLogic entity containers
     intent: >
-      The entity classes (Darwinian, Engineer, Officer, Armour, Spider,
+      The entity classes (Citizen, Engineer, Officer, Armour, Spider,
       Centipede, SoulDestroyer, Virii, Spirit, SpiritStore, InsertionSquad,
       Entity, Incubator) hold simulation state in LList and FastDArray.
       Every list here feeds Location::Advance and the sync value; traversal
@@ -485,9 +485,8 @@ tasks:
       SlotMap, never an unordered container.
     project: GameLogic
     depends_on: [T1, T3]
-    blocked_by: [rename-darwinian/T3]
     files:
-      - GameLogic/Darwinian.cpp
+      - GameLogic/Citizen.cpp
       - GameLogic/Engineer.cpp
       - GameLogic/Officer.cpp
       - GameLogic/Armour.cpp
@@ -526,12 +525,12 @@ tasks:
       coverage for something this task converts, use it rather than falling
       back on the smoke test.
 
-      blocked_by rename-darwinian/T3: that plan renames Darwinian.cpp to
-      Citizen.cpp and rewrites Entity.cpp's typeNames[] table, both of which
-      this task's file list names. Running the rename first keeps it a pure
-      rename with an accurate inventory, and keeps this conversion off files
-      that are about to move. Update this task's `files` to the post-rename
-      names when it starts — rename-darwinian T3 does that rewrite.
+      The rename this task was blocked on HAS LANDED. rename-darwinian
+      T3 renamed Darwinian.cpp to Citizen.cpp and rewrote Entity.cpp's
+      typeNames[] table, and it rewrote the file list above to match — which is
+      why the block is gone and the first entry reads Citizen.cpp. Running the
+      rename first kept it a pure rename with an accurate inventory, and keeps
+      this conversion off files that were about to move.
     status: todo
 
   - id: T10

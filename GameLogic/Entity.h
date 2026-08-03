@@ -33,7 +33,7 @@ public:
         TypeCentipede,
         TypeSpaceInvader,
 		TypeSpider,
-        TypeDarwinian,
+        TypeCitizen,
         TypeOfficer,
         TypeArmyAnt,
         TypeArmour,

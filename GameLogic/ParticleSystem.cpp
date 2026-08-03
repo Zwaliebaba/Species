@@ -273,12 +273,12 @@ void Particle::SetupParticles()
   m_types[TypeMissileFire].m_colour1.Set(150, 50, 50);
   m_types[TypeMissileFire].m_colour2.Set(150, 120, 50);
 
-  m_types[TypeDarwinianFire].m_life = 1.0f;
-  m_types[TypeDarwinianFire].m_size = 25.0f;
-  m_types[TypeDarwinianFire].m_gravity = -10.0f;
-  m_types[TypeDarwinianFire].m_friction = 0.0f;
-  m_types[TypeDarwinianFire].m_colour1.Set(150, 50, 50);
-  m_types[TypeDarwinianFire].m_colour2.Set(150, 120, 50);
+  m_types[TypeCitizenFire].m_life = 1.0f;
+  m_types[TypeCitizenFire].m_size = 25.0f;
+  m_types[TypeCitizenFire].m_gravity = -10.0f;
+  m_types[TypeCitizenFire].m_friction = 0.0f;
+  m_types[TypeCitizenFire].m_colour1.Set(150, 50, 50);
+  m_types[TypeCitizenFire].m_colour2.Set(150, 120, 50);
 
   m_types[TypeLeaf].m_life = 60.0f;
   m_types[TypeLeaf].m_size = 25.0f;

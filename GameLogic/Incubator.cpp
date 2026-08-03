@@ -15,7 +15,7 @@
 Incubator::Incubator()
   : Building(),
     m_spiritCentre(nullptr),
-    m_troopType(Entity::TypeDarwinian),
+    m_troopType(Entity::TypeCitizen),
     m_timer(INCUBATOR_PROCESSTIME),
     m_numStartingSpirits(0)
 {

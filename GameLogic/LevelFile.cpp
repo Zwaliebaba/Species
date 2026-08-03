@@ -14,7 +14,7 @@
 #include "PrefsOtherWindow.h"
 
 #include "ResearchItem.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "Officer.h"
 #include "AntHill.h"
 #include "Incubator.h"
@@ -1390,17 +1390,17 @@ void LevelFile::GenerateInstantUnits()
             unit->m_routeId = entity->m_routeId;
             unit->m_routeWaypointId = entity->m_routeWayPointId;
 
-            if (entity->m_type == Entity::TypeDarwinian)
+            if (entity->m_type == Entity::TypeCitizen)
             {
-              Darwinian* darwinian = (Darwinian*)entity;
-              unit->m_posX = darwinian->m_pos.x;
-              unit->m_posZ = darwinian->m_pos.z;
-              unit->m_waypointX = darwinian->m_wayPoint.x;
-              unit->m_waypointZ = darwinian->m_wayPoint.z;
-              unit->m_spread = 0.0f; // Darwinians should be placed exactly where they were when the game was saved
-              if (darwinian->m_state == Darwinian::StateFollowingOrders)
+              Citizen* citizen = (Citizen*)entity;
+              unit->m_posX = citizen->m_pos.x;
+              unit->m_posZ = citizen->m_pos.z;
+              unit->m_waypointX = citizen->m_wayPoint.x;
+              unit->m_waypointZ = citizen->m_wayPoint.z;
+              unit->m_spread = 0.0f; // Citizens should be placed exactly where they were when the game was saved
+              if (citizen->m_state == Citizen::StateFollowingOrders)
               {
-                unit->m_state = Darwinian::StateFollowingOrders;
+                unit->m_state = Citizen::StateFollowingOrders;
               }
             }
 

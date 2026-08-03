@@ -44,7 +44,7 @@
 #include "ConstructionYard.h"
 #include "UpgradePort.h"
 #include "Incubator.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "AntHill.h"
 #include "SafeArea.h"
 #include "Triffid.h"
@@ -396,7 +396,7 @@ void Building::EvaluatePorts()
     port->m_occupant.SetInvalid();
 
     //
-    // Look for a valid Darwinian near the port
+    // Look for a valid Citizen near the port
 
     int numFound;
     if (g_location->m_entityGrid)
@@ -406,10 +406,10 @@ void Building::EvaluatePorts()
       {
         WorldObjectId id = ids[i];
         Entity* entity = g_location->GetEntity(id);
-        if (entity && entity->m_type == Entity::TypeDarwinian)
+        if (entity && entity->m_type == Entity::TypeCitizen)
         {
-          Darwinian* darwinian = (Darwinian*)entity;
-          if (darwinian->m_state == Darwinian::StateOperatingPort)
+          Citizen* citizen = (Citizen*)entity;
+          if (citizen->m_state == Citizen::StateOperatingPort)
           {
             port->m_occupant = id;
             break;

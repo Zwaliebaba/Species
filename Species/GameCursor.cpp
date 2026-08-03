@@ -221,7 +221,7 @@ bool GameCursor::GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& 
       _id = id;
       _pos = entity->m_pos + entity->m_vel * g_predictionTime + entity->m_centrePos;
       _radius = entity->m_radius * 1.5f;
-      if (entity->m_type == Entity::TypeDarwinian)
+      if (entity->m_type == Entity::TypeCitizen)
         _radius = entity->m_radius * 2.0f;
       found = true;
     }

@@ -14,7 +14,7 @@
 #endif
 
 #include "Rocket.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 
 #include "Location.h"
 #include "Team.h"
@@ -327,7 +327,7 @@ bool FuelGenerator::Advance()
       Vector3 particlePos = m_pumpTip->GetWorldMatrix(mat).pos;
       float size = 150.0f + frand(150.0f);
 
-      g_particleSystem->CreateParticle(particlePos, pumpVel, Particle::TypeDarwinianFire, size);
+      g_particleSystem->CreateParticle(particlePos, pumpVel, Particle::TypeCitizenFire, size);
     }
   }
 
@@ -483,7 +483,7 @@ bool FuelStation::Advance()
     if (rocket->m_state == EscapeRocket::StateLoading && rocket->SafeToLaunch())
     {
       //
-      // Find a random Darwinian and make him board
+      // Find a random Citizen and make him board
 
       Team* team = &g_location->m_teams[0];
       int numOthers = team->m_others.Size();
@@ -493,13 +493,13 @@ bool FuelStation::Advance()
         if (team->m_others.ValidIndex(randomIndex))
         {
           Entity* entity = team->m_others[randomIndex];
-          if (entity && entity->m_type == Entity::TypeDarwinian)
+          if (entity && entity->m_type == Entity::TypeCitizen)
           {
-            Darwinian* darwinian = (Darwinian*)entity;
+            Citizen* citizen = (Citizen*)entity;
             float distance = (entity->m_pos - m_pos).Mag();
-            if (distance < 300.0f && (darwinian->m_state == Darwinian::StateIdle || darwinian->m_state == Darwinian::StateWorshipSpirit))
+            if (distance < 300.0f && (citizen->m_state == Citizen::StateIdle || citizen->m_state == Citizen::StateWorshipSpirit))
             {
-              darwinian->BoardRocket(m_id.GetUniqueId());
+              citizen->BoardRocket(m_id.GetUniqueId());
             }
           }
         }
@@ -996,7 +996,7 @@ void EscapeRocket::AdvanceIgnition()
 void EscapeRocket::AdvanceReady()
 {
   //
-  // Spawn attacking Darwinians
+  // Spawn attacking Citizens
 
   if (!m_spawnCompleted)
   {
@@ -1006,7 +1006,7 @@ void EscapeRocket::AdvanceReady()
       if (spawnBuilding)
       {
         Vector3 spawnPos = spawnBuilding->m_pos + spawnBuilding->m_front * 40.0f;
-        g_location->SpawnEntities(spawnPos, 1, -1, Entity::TypeDarwinian, 1, g_zeroVector, 40.0f);
+        g_location->SpawnEntities(spawnPos, 1, -1, Entity::TypeCitizen, 1, g_zeroVector, 40.0f);
       }
     }
   }
@@ -1083,10 +1083,10 @@ void EscapeRocket::AdvanceExploding()
     vel.RotateAround(windowMat.u * angle);
     vel.SetLength(10.0f + syncfrand(30.0f));
 
-    WorldObjectId id = g_location->SpawnEntities(windowMat.pos, 0, -1, Entity::TypeDarwinian, 1, vel, 0.0f);
-    Darwinian* darwinian = (Darwinian*)g_location->GetEntity(id);
-    darwinian->m_onGround = false;
-    darwinian->SetFire();
+    WorldObjectId id = g_location->SpawnEntities(windowMat.pos, 0, -1, Entity::TypeCitizen, 1, vel, 0.0f);
+    Citizen* citizen = (Citizen*)g_location->GetEntity(id);
+    citizen->m_onGround = false;
+    citizen->SetFire();
   }
 
 
@@ -1142,14 +1142,14 @@ void EscapeRocket::SetupSpectacle()
         if (team->m_others.ValidIndex(i))
         {
           Entity* entity = team->m_others[i];
-          if (entity && entity->m_type == Entity::TypeDarwinian)
+          if (entity && entity->m_type == Entity::TypeCitizen)
           {
-            Darwinian* darwinian = (Darwinian*)entity;
-            // if( m_state == StateReady ) darwinian->CastShadow( m_id.GetUniqueId() );
+            Citizen* citizen = (Citizen*)entity;
+            // if( m_state == StateReady ) citizen->CastShadow( m_id.GetUniqueId() );
             //  Causes too much of a slow down, and doesn't add much visually to the scene
-            if (t == 0 && darwinian->m_state == Darwinian::StateIdle && (syncrand() % 10) < 2)
+            if (t == 0 && citizen->m_state == Citizen::StateIdle && (syncrand() % 10) < 2)
             {
-              darwinian->WatchSpectacle(m_id.GetUniqueId());
+              citizen->WatchSpectacle(m_id.GetUniqueId());
             }
           }
         }
@@ -1182,13 +1182,13 @@ void EscapeRocket::SetupAttackers()
       if (team->m_others.ValidIndex(randomIndex))
       {
         Entity* entity = team->m_others[randomIndex];
-        if (entity && entity->m_type == Entity::TypeDarwinian)
+        if (entity && entity->m_type == Entity::TypeCitizen)
         {
-          Darwinian* darwinian = (Darwinian*)entity;
-          float range = (darwinian->m_pos - m_pos).Mag();
+          Citizen* citizen = (Citizen*)entity;
+          float range = (citizen->m_pos - m_pos).Mag();
           if (range < 350.0f)
           {
-            darwinian->AttackBuilding(m_id.GetUniqueId());
+            citizen->AttackBuilding(m_id.GetUniqueId());
           }
         }
       }

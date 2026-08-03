@@ -492,11 +492,11 @@ void SpamInfection::AdvanceAttackingEntity()
   {
     if (m_targetId.GetTeamId() == 0)
     {
-      // Green darwinian
-      int darwinianResearch = g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeDarwinian);
-      if (darwinianResearch > 2 && syncfrand(10.0f) < 5.0f)
+      // Green citizen
+      int citizenResearch = g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeCitizen);
+      if (citizenResearch > 2 && syncfrand(10.0f) < 5.0f)
       {
-        g_location->SpawnEntities(target->m_pos, 1, -1, Entity::TypeDarwinian, 1, target->m_vel, 0.0f);
+        g_location->SpawnEntities(target->m_pos, 1, -1, Entity::TypeCitizen, 1, target->m_vel, 0.0f);
         g_location->m_entityGrid->RemoveObject(m_targetId, target->m_pos.x, target->m_pos.z, target->m_radius);
         g_location->m_teams[0].m_others.MarkNotUsed(m_targetId.GetIndex());
         delete target;

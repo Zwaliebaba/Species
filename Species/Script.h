@@ -40,8 +40,8 @@ public:
         OpGiveResearch,
         OpSetMission,
         OpGameOver,
-        OpResetResearch,                        // Currently only affects darwinians
-        OpRestoreResearch,                      // Currently only affects darwinians
+        OpResetResearch,                        // Currently only affects citizens
+        OpRestoreResearch,                      // Currently only affects citizens
         OpRunCredits,
         OpSetCutsceneMode,
         OpGodDishActivate,
@@ -67,7 +67,7 @@ public:
     bool        m_waitForPlayerNotBusy;
 
     int         m_requestedLocationId;
-    int         m_darwinianResearchLevel;
+    int         m_citizenResearchLevel;
 
     int         m_rocketId;
     int         m_rocketState;
