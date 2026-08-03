@@ -86,10 +86,10 @@ static void AdjustWindowPositions(int _newWidth, int _newHeight, int _oldWidth, 
     // Resolution has changed, adjust the window positions accordingly
     EclInitialise(_newWidth, _newHeight);
 
-    std::vector<EclWindow*>* windows = EclGetWindows();
+    std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
     for (int i = 0; i < windows->size(); i++)
     {
-      EclWindow* w = (*windows)[i];
+      EclWindow* w = (*windows)[i].get();
 
       // We attempt to keep the centre of the window in the same place
 

@@ -4,12 +4,12 @@
 
 // ============================================================================
 
-static std::vector<EclWindow*> windows;
+static std::vector<std::unique_ptr<EclWindow>> windows;
 
 static void (*clearDraw)(int, int, int, int) = nullptr;
 static void (*tooltipCallback)(EclWindow*, EclButton*) = nullptr;
 
-static std::vector<DirtyRect*> dirtyrects;
+static std::vector<std::unique_ptr<DirtyRect>> dirtyrects;
 
 static int buttonDownMouseX = 0;
 static int buttonDownMouseY = 0;
@@ -304,7 +304,7 @@ void EclRender()
     {
       for (int i = 0; i < dirtyrects.size(); ++i)
       {
-        DirtyRect* dr = dirtyrects[i];
+        DirtyRect* dr = dirtyrects[i].get();
         clearDraw(dr->m_x, dr->m_y, dr->m_width, dr->m_height);
       }
     }
@@ -314,7 +314,7 @@ void EclRender()
 
     for (int i = windows.size() - 1; i >= 0; --i)
     {
-      EclWindow* window = windows[i];
+      EclWindow* window = windows[i].get();
       if (window->m_dirty)
       {
         bool hasFocus = (windowFocus == window->m_name);
@@ -332,7 +332,7 @@ void EclUpdate()
 
   for (int i = 0; i < windows.size(); ++i)
   {
-    EclWindow* window = windows[i];
+    EclWindow* window = windows[i].get();
     window->Update();
   }
 }
@@ -340,17 +340,9 @@ void EclUpdate()
 void EclShutdown()
 {
   {
-    for (auto* item : windows)
-    {
-      delete item;
-    }
     windows.clear();
   };
   {
-    for (auto* item : dirtyrects)
-    {
-      delete item;
-    }
     dirtyrects.clear();
   };
 }
@@ -407,7 +399,11 @@ void EclRegisterWindow(EclWindow* window, EclWindow* parent)
   }
 
   window->MakeAllOnScreen();
-  windows.insert(windows.begin(), window);
+  // The raw parameter IS the ownership transfer, and it is adopted here rather
+  // than at 43 call sites. Making the parameter a unique_ptr is the right end
+  // state and is recorded as a follow-up on ownership T3 — 24 of those sites
+  // pass an inline `new`, the other 19 hand over a configured local.
+  windows.insert(windows.begin(), std::unique_ptr<EclWindow>(window));
   window->Create();
   EclDirtyWindow(window);
 }
@@ -434,10 +430,12 @@ void EclRemoveWindow(char const* name)
   int index = EclGetWindowIndex(name);
   if (index != -1)
   {
-    EclWindow* window = windows[index];
+    std::unique_ptr<EclWindow> owned = std::move(windows[index]);
+    EclWindow* window = owned.get();
     EclDirtyRectangle(window->m_x, window->m_y, window->m_w, window->m_h);
     windows.erase(windows.begin() + (index));
-    delete window;
+    // Destroyed where the delete was, after the erase.
+    owned.reset();
 
     if (mouseDownWindow == name)
     {
@@ -492,9 +490,10 @@ void EclBringWindowToFront(char* name)
   int index = EclGetWindowIndex(name);
   if (index != -1)
   {
-    EclWindow* window = windows[index];
+    std::unique_ptr<EclWindow> owned = std::move(windows[index]);
+    EclWindow* window = owned.get();
     windows.erase(windows.begin() + (index));
-    windows.insert(windows.begin(), window);
+    windows.insert(windows.begin(), std::move(owned));
     EclDirtyWindow(window);
   }
   else
@@ -527,7 +526,7 @@ int EclGetWindowIndex(char const* name)
 {
   for (int i = 0; i < windows.size(); ++i)
   {
-    EclWindow* window = windows[i];
+    EclWindow* window = windows[i].get();
     if (strcmp(window->m_name, name) == 0)
       return i;
   }
@@ -544,7 +543,7 @@ EclWindow* EclGetWindow(char const* name)
   }
   else
   {
-    return windows[index];
+    return windows[index].get();
   }
 }
 
@@ -552,7 +551,7 @@ EclWindow* EclGetWindow(int x, int y)
 {
   for (int i = 0; i < windows.size(); ++i)
   {
-    EclWindow* window = windows[i];
+    EclWindow* window = windows[i].get();
     if (x >= window->m_x && x <= window->m_x + window->m_w && y >= window->m_y && y <= window->m_y + window->m_h)
     {
       return window;
@@ -594,7 +593,7 @@ void EclUnMaximise()
   EclDirtyRectangle(0, 0, screenW, screenH);
 }
 
-std::vector<EclWindow*>* EclGetWindows() { return &windows; }
+std::vector<std::unique_ptr<EclWindow>>* EclGetWindows() { return &windows; }
 
 int EclGetAccurateTime() { return GetTickCount(); }
 
@@ -629,12 +628,11 @@ void EclDirtyWindow(EclWindow* window)
 
 void EclDirtyRectangle(int x, int y, int w, int h)
 {
-  DirtyRect* dr = new DirtyRect(x, y, w, h);
-  dirtyrects.push_back(dr);
+  dirtyrects.push_back(std::make_unique<DirtyRect>(x, y, w, h));
 
   for (int i = 0; i < windows.size(); ++i)
   {
-    EclWindow* window = windows[i];
+    EclWindow* window = windows[i].get();
     if (EclRectangleOverlap(x, y, w, h, window->m_x, window->m_y, window->m_w, window->m_h))
       EclDirtyWindow(window);
   }
@@ -642,18 +640,16 @@ void EclDirtyRectangle(int x, int y, int w, int h)
 
 void EclResetDirtyRectangles()
 {
-  for (DirtyRect* rect : dirtyrects)
-    delete rect;
   dirtyrects.clear();
 
   for (int i = 0; i < windows.size(); ++i)
   {
-    EclWindow* window = windows[i];
+    EclWindow* window = windows[i].get();
     window->m_dirty = false;
   }
 }
 
-std::vector<DirtyRect*>* EclGetDirtyRects() { return &dirtyrects; }
+std::vector<std::unique_ptr<DirtyRect>>* EclGetDirtyRects() { return &dirtyrects; }
 
 bool EclRectangleOverlap(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2)
 {

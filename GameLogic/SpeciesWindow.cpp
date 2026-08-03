@@ -315,7 +315,7 @@ SpeciesWindow::SpeciesWindow(char const* name)
 
 SpeciesWindow::~SpeciesWindow()
 {
-  std::vector<EclWindow*>* windows = EclGetWindows();
+  std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
   // The emptiness check is not redundant. the legacy list's GetData returned a null T()
   // for an out-of-range read — LListTests pins that as
   // OutOfRangeReadsReturnZero — so this `if` was doing double duty as a
