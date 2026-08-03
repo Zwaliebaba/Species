@@ -10,7 +10,6 @@
 #include "CameraAnimWindow.h"
 #include "InputField.h"
 
-#include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"
 #include "WorldPointers.h"
@@ -148,7 +147,7 @@ CameraMountEditWindow::~CameraMountEditWindow()
 {
   EclRemoveWindow(LANGUAGEPHRASE("editor_cameraanims"));
   EclRemoveWindow(LANGUAGEPHRASE("editor_cameraanim"));
-  g_locationEditor->RequestMode(LocationEditor::ModeNone);
+  g_locationEditor->RequestMode(LocationEditorAccess::ModeNone);
 }
 
 

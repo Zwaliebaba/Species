@@ -657,7 +657,7 @@ void LocationEditorLoop()
 
     TheUserInput()->Advance();
     TheCamera()->Advance();
-    g_locationEditor->Advance();
+    TheLocationEditor()->Advance();
     g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
     g_app->m_profiler->Advance();

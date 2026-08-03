@@ -11,7 +11,6 @@
 #include "DropDownMenu.h"
 #include "InputField.h"
 
-#include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"
 #include "GameTime.h"
@@ -73,7 +72,7 @@ class SelectAnimButton : public SpeciesButton
 
       char* animName = m_name + strlen("select:");
       int animId = g_location->m_levelFile->GetCameraAnimId(animName);
-      g_locationEditor->m_selectionId = animId;
+      g_locationEditor->SetSelectionId(animId);
 
       //		EclWindow *secondaryWin = new CameraAnimSecondaryEditWindow(
       //										LANGUAGEPHRASE("editor_cameraanim"),
@@ -97,7 +96,7 @@ CameraAnimMainEditWindow::~CameraAnimMainEditWindow()
 {
   EclRemoveWindow(LANGUAGEPHRASE("editor_cameramounts"));
   EclRemoveWindow(LANGUAGEPHRASE("editor_cameraanim"));
-  g_locationEditor->RequestMode(LocationEditor::ModeNone);
+  g_locationEditor->RequestMode(LocationEditorAccess::ModeNone);
 }
 
 
@@ -275,7 +274,7 @@ CameraAnimSecondaryEditWindow::CameraAnimSecondaryEditWindow(char* name, int _an
 }
 
 
-CameraAnimSecondaryEditWindow::~CameraAnimSecondaryEditWindow() { g_locationEditor->m_selectionId = -1; }
+CameraAnimSecondaryEditWindow::~CameraAnimSecondaryEditWindow() { g_locationEditor->SetSelectionId(-1); }
 
 
 void CameraAnimSecondaryEditWindow::Create()

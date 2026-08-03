@@ -30,7 +30,6 @@
 #include "Switch.h"
 
 #include "GlobalWorld.h"
-#include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"
 #include "Team.h"
@@ -53,11 +52,11 @@ class ToolButton : public SpeciesButton
     {
     }
 
-    void MouseUp() { g_locationEditor->m_tool = m_toolType; }
+    void MouseUp() { g_locationEditor->SetTool(m_toolType); }
 
     void Render(int realX, int realY, bool highlighted, bool clicked)
     {
-      if (g_locationEditor->m_tool == m_toolType)
+      if (g_locationEditor->GetTool() == m_toolType)
       {
         SpeciesButton::Render(realX, realY, highlighted, true);
       }
@@ -66,9 +65,9 @@ class ToolButton : public SpeciesButton
         SpeciesButton::Render(realX, realY, highlighted, clicked);
       }
 
-      if (m_toolType == LocationEditor::ToolLink)
+      if (m_toolType == LocationEditorAccess::ToolLink)
       {
-        Building* b = g_location->GetBuilding(g_locationEditor->m_selectionId);
+        Building* b = g_location->GetBuilding(g_locationEditor->GetSelectionId());
         g_editorFont.DrawText2DRight(realX + m_w - 10, realY + 10, 14, "%d", b->GetBuildingLink());
       }
     }
@@ -97,10 +96,10 @@ class DeleteBuildingButton : public SpeciesButton
       }
       else
       {
-        g_location->m_levelFile->RemoveBuilding(g_locationEditor->m_selectionId);
+        g_location->m_levelFile->RemoveBuilding(g_locationEditor->GetSelectionId());
         EclRemoveWindow(LANGUAGEPHRASE("editor_buildingid"));
-        g_locationEditor->m_tool = LocationEditor::ToolNone;
-        g_locationEditor->m_selectionId = -1;
+        g_locationEditor->SetTool(LocationEditorAccess::ToolNone);
+        g_locationEditor->SetSelectionId(-1);
       }
     }
 };
@@ -123,7 +122,7 @@ class TeamButton : public SpeciesButton
 
     void MouseUp()
     {
-      Building* b = g_location->GetBuilding(g_locationEditor->m_selectionId);
+      Building* b = g_location->GetBuilding(g_locationEditor->GetSelectionId());
       if (b)
       {
         b->m_id.SetTeamId(m_teamId);
@@ -132,7 +131,7 @@ class TeamButton : public SpeciesButton
 
     void Render(int realX, int realY, bool highlighted, bool clicked)
     {
-      Building* b = g_location->GetBuilding(g_locationEditor->m_selectionId);
+      Building* b = g_location->GetBuilding(g_locationEditor->GetSelectionId());
       if (b)
       {
         if (b->m_id.GetTeamId() == m_teamId)
@@ -175,7 +174,7 @@ class IsGlobalButton : public SpeciesButton
     void Render(int realX, int realY, bool highlighted, bool clicked)
     {
       SpeciesButton::Render(realX, realY, highlighted, clicked);
-      Building* b = g_location->GetBuilding(g_locationEditor->m_selectionId);
+      Building* b = g_location->GetBuilding(g_locationEditor->GetSelectionId());
       if (b)
       {
         g_editorFont.DrawText2DRight(realX + m_w - 10, realY + 10, DEF_FONT_SIZE, "%d", b->m_isGlobal);
@@ -184,7 +183,7 @@ class IsGlobalButton : public SpeciesButton
 
     void MouseUp()
     {
-      Building* b = g_location->GetBuilding(g_locationEditor->m_selectionId);
+      Building* b = g_location->GetBuilding(g_locationEditor->GetSelectionId());
       if (b)
       {
         b->m_isGlobal = !b->m_isGlobal;
@@ -207,7 +206,7 @@ class CloneBuildingButton : public SpeciesButton
       Vector3 _pos;
       g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
-      Building* building = g_location->GetBuilding(g_locationEditor->m_selectionId);
+      Building* building = g_location->GetBuilding(g_locationEditor->GetSelectionId());
       DEBUG_ASSERT(building);
 
       Building* newBuilding = Building::CreateBuilding(building->m_type);
@@ -230,23 +229,23 @@ BuildingEditWindow::BuildingEditWindow(char const* name)
 }
 
 
-BuildingEditWindow::~BuildingEditWindow() { g_locationEditor->m_selectionId = -1; }
+BuildingEditWindow::~BuildingEditWindow() { g_locationEditor->SetSelectionId(-1); }
 
 void BuildingEditWindow::Create()
 {
   SpeciesWindow::Create();
 
-  Building* building = g_location->GetBuilding(g_locationEditor->m_selectionId);
+  Building* building = g_location->GetBuilding(g_locationEditor->GetSelectionId());
   DEBUG_ASSERT(building);
 
   int buttonPitch = 18;
   int y = 6;
 
-  ToolButton* mb = new ToolButton(LocationEditor::ToolMove);
+  ToolButton* mb = new ToolButton(LocationEditorAccess::ToolMove);
   mb->SetShortProperties(LANGUAGEPHRASE("editor_move"), 10, y += buttonPitch, m_w - 20);
   RegisterButton(mb);
 
-  ToolButton* rb = new ToolButton(LocationEditor::ToolRotate);
+  ToolButton* rb = new ToolButton(LocationEditorAccess::ToolRotate);
   rb->SetShortProperties(LANGUAGEPHRASE("editor_rotate"), 10, y += buttonPitch, m_w - 20);
   RegisterButton(rb);
 
@@ -258,7 +257,7 @@ void BuildingEditWindow::Create()
   db->SetShortProperties(LANGUAGEPHRASE("editor_delete"), 10, y += buttonPitch, m_w - 20);
   RegisterButton(db);
 
-  ToolButton* lb = new ToolButton(LocationEditor::ToolLink);
+  ToolButton* lb = new ToolButton(LocationEditorAccess::ToolLink);
   lb->SetShortProperties(LANGUAGEPHRASE("editor_link"), 10, y += buttonPitch, m_w - 20);
   RegisterButton(lb);
 
@@ -498,7 +497,7 @@ void BuildingEditWindow::Render(bool hasFocus)
 {
   SpeciesWindow::Render(hasFocus);
 
-  Building* building = g_location->GetBuilding(g_locationEditor->m_selectionId);
+  Building* building = g_location->GetBuilding(g_locationEditor->GetSelectionId());
   DEBUG_ASSERT(building);
 
   g_editorFont.SetRenderShadow(true);
@@ -549,7 +548,7 @@ BuildingsCreateWindow::BuildingsCreateWindow(char const* _name)
 
 BuildingsCreateWindow::~BuildingsCreateWindow()
 {
-  g_locationEditor->RequestMode(LocationEditor::ModeNone);
+  g_locationEditor->RequestMode(LocationEditorAccess::ModeNone);
   EclRemoveWindow(LANGUAGEPHRASE("editor_buildingid"));
 }
 

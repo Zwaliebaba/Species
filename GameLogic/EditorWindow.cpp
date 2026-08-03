@@ -19,7 +19,6 @@
 #include "LaserFence.h"
 #include "PowerStation.h"
 
-#include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"
 #include "WorldPointers.h"
@@ -35,7 +34,7 @@ class MainEditWindowButton : public BorderlessButton
   public:
     enum
     {
-      TypeSave = LocationEditor::ModeNumModes
+      TypeSave = LocationEditorAccess::ModeNumModes
     };
 
     int m_type;
@@ -102,27 +101,27 @@ void MainEditWindow::Create()
   int buttonYPitch = 18;
 
   MainEditWindowButton* button;
-  button = new MainEditWindowButton(LocationEditor::ModeLandTile);
+  button = new MainEditWindowButton(LocationEditorAccess::ModeLandTile);
   button->SetShortProperties(LANGUAGEPHRASE("editor_editlandtiles"), 7, y += buttonYPitch, m_w - 15);
   RegisterButton(button);
 
-  button = new MainEditWindowButton(LocationEditor::ModeLandFlat);
+  button = new MainEditWindowButton(LocationEditorAccess::ModeLandFlat);
   button->SetShortProperties(LANGUAGEPHRASE("editor_editflattenareas"), 7, y += buttonYPitch, m_w - 15);
   RegisterButton(button);
 
-  button = new MainEditWindowButton(LocationEditor::ModeLight);
+  button = new MainEditWindowButton(LocationEditorAccess::ModeLight);
   button->SetShortProperties(LANGUAGEPHRASE("editor_editlights"), 7, y += buttonYPitch, m_w - 15);
   RegisterButton(button);
 
-  button = new MainEditWindowButton(LocationEditor::ModeBuilding);
+  button = new MainEditWindowButton(LocationEditorAccess::ModeBuilding);
   button->SetShortProperties(LANGUAGEPHRASE("editor_editbuildings"), 7, y += buttonYPitch, m_w - 15);
   RegisterButton(button);
 
-  button = new MainEditWindowButton(LocationEditor::ModeInstantUnit);
+  button = new MainEditWindowButton(LocationEditorAccess::ModeInstantUnit);
   button->SetShortProperties(LANGUAGEPHRASE("editor_editinstantunits"), 7, y += buttonYPitch, m_w - 15);
   RegisterButton(button);
 
-  button = new MainEditWindowButton(LocationEditor::ModeCameraMount);
+  button = new MainEditWindowButton(LocationEditorAccess::ModeCameraMount);
   button->SetShortProperties(LANGUAGEPHRASE("editor_editcameramounts"), 7, y += buttonYPitch, m_w - 15);
   RegisterButton(button);
 

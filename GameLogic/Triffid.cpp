@@ -20,7 +20,6 @@
 #include "Team.h"
 #include "GameTime.h"
 #include "ParticleSystem.h"
-#include "LocationEditor.h"
 #include "EntityGrid.h"
 #include "Unit.h"
 #include "WorldPointers.h"
@@ -216,7 +215,7 @@ void Triffid::RenderAlphas(float _predictionTime)
     // Render our trigger location
 
 #ifdef LOCATION_EDITOR
-    if (g_locationEditor->m_mode == LocationEditor::ModeBuilding && g_locationEditor->m_selectionId == m_id.GetUniqueId())
+    if (g_locationEditor->GetMode() == LocationEditorAccess::ModeBuilding && g_locationEditor->GetSelectionId() == m_id.GetUniqueId())
     {
       Vector3 velocity = headMat.f;
       velocity.SetLength(m_force * m_size);

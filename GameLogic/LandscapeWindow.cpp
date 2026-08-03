@@ -11,7 +11,6 @@
 #include "InputField.h"
 #include "LandscapeWindow.h"
 
-#include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"
 #include "WorldPointers.h"
@@ -106,7 +105,7 @@ LandscapeTileEditWindow::LandscapeTileEditWindow(char* name, int tileId)
 }
 
 
-LandscapeTileEditWindow::~LandscapeTileEditWindow() { g_locationEditor->m_selectionId = -1; }
+LandscapeTileEditWindow::~LandscapeTileEditWindow() { g_locationEditor->SetSelectionId(-1); }
 
 
 void LandscapeTileEditWindow::Create()
@@ -179,7 +178,7 @@ class LandscapeFlattenAreaDeleteButton : public SpeciesButton
     void MouseUp()
     {
       g_location->m_levelFile->m_landscape.m_flattenAreas.RemoveData(m_areaId);
-      g_locationEditor->m_selectionId = -1;
+      g_locationEditor->SetSelectionId(-1);
       EclRemoveWindow(m_parent->m_name);
     }
 };
@@ -196,7 +195,7 @@ LandscapeFlattenAreaEditWindow::LandscapeFlattenAreaEditWindow(char const* _name
 }
 
 
-LandscapeFlattenAreaEditWindow::~LandscapeFlattenAreaEditWindow() { g_locationEditor->m_selectionId = -1; }
+LandscapeFlattenAreaEditWindow::~LandscapeFlattenAreaEditWindow() { g_locationEditor->SetSelectionId(-1); }
 
 
 void LandscapeFlattenAreaEditWindow::Create()
@@ -358,7 +357,7 @@ LandscapeEditWindow::LandscapeEditWindow(char const* name)
 
 LandscapeEditWindow::~LandscapeEditWindow()
 {
-  g_locationEditor->RequestMode(LocationEditor::ModeNone);
+  g_locationEditor->RequestMode(LocationEditorAccess::ModeNone);
   EclRemoveWindow(LANGUAGEPHRASE("editor_landscapetile"));
   EclRemoveWindow(LANGUAGEPHRASE("editor_guidegrid"));
 }
@@ -412,7 +411,7 @@ void LandscapeEditWindow::Create()
 #undef INTGR
 #undef Y
 
-  CreateValueControl(LANGUAGEPHRASE("editor_movebuildings"), InputField::TypeInt, &g_locationEditor->m_moveBuildingsWithLandscape, height += pitch, 1,
+  CreateValueControl(LANGUAGEPHRASE("editor_movebuildings"), InputField::TypeInt, &g_locationEditor->MoveBuildingsWithLandscape(), height += pitch, 1,
                      0, 1);
 }
 

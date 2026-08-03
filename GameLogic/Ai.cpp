@@ -11,7 +11,6 @@
 #include "Location.h"
 #include "EntityGrid.h"
 #include "LevelFile.h"
-#include "LocationEditor.h"
 #include "GlobalWorld.h"
 
 #include "Ai.h"
@@ -602,7 +601,7 @@ void AITarget::RenderAlphas(float _predictionTime)
 
 
 #ifdef LOCATION_EDITOR
-  if (g_editing && g_locationEditor->m_mode == LocationEditor::ModeBuilding && g_locationEditor->m_selectionId == m_id.GetUniqueId())
+  if (g_editing && g_locationEditor->GetMode() == LocationEditorAccess::ModeBuilding && g_locationEditor->GetSelectionId() == m_id.GetUniqueId())
   {
     glDisable(GL_CULL_FACE);
     RenderSphere(m_pos, AITARGET_LINKRANGE, RGBAColour(255, 100, 100, 255));

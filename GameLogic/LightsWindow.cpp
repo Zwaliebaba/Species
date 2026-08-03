@@ -7,7 +7,6 @@
 #include "InputField.h"
 #include "LightsWindow.h"
 
-#include "LocationEditor.h"
 #include "Location.h"
 #include "WorldPointers.h"
 
@@ -33,18 +32,18 @@ class LightButton : public SpeciesButton
     {
       if (m_lightNum == -1)
       {
-        g_locationEditor->m_tool = LocationEditor::ToolNone;
+        g_locationEditor->SetTool(LocationEditorAccess::ToolNone);
       }
       else
       {
-        g_locationEditor->m_tool = LocationEditor::ToolRotate;
+        g_locationEditor->SetTool(LocationEditorAccess::ToolRotate);
       }
-      g_locationEditor->m_selectionId = m_lightNum;
+      g_locationEditor->SetSelectionId(m_lightNum);
     }
 
     void Render(int realX, int realY, bool highlighted, bool clicked)
     {
-      if (g_locationEditor->m_selectionId == m_lightNum)
+      if (g_locationEditor->GetSelectionId() == m_lightNum)
       {
         SpeciesButton::Render(realX, realY, highlighted, true);
       }
@@ -101,7 +100,7 @@ LightsEditWindow::LightsEditWindow(char const* name)
 }
 
 
-LightsEditWindow::~LightsEditWindow() { g_locationEditor->RequestMode(LocationEditor::ModeNone); }
+LightsEditWindow::~LightsEditWindow() { g_locationEditor->RequestMode(LocationEditorAccess::ModeNone); }
 
 
 void LightsEditWindow::Create()

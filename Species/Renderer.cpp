@@ -365,7 +365,7 @@ void Renderer::RenderFrame(bool withFlip)
 #ifdef LOCATION_EDITOR
       SetupMatricesFor3D();
       g_location->Render();
-      g_locationEditor->Render();
+      TheLocationEditor()->Render();
 #endif // LOCATION_EDITOR
     }
     else

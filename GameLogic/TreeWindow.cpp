@@ -11,7 +11,6 @@
 #include "Tree.h"
 
 #include "Location.h"
-#include "LocationEditor.h"
 #include "InputField.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
@@ -84,7 +83,7 @@ void TreeWindow::Create()
 {
   SpeciesWindow::Create();
 
-  m_selectionId = g_locationEditor->m_selectionId;
+  m_selectionId = g_locationEditor->GetSelectionId();
   Building* building = g_location->GetBuilding(m_selectionId);
   DEBUG_ASSERT(building && building->m_type == Building::TypeTree);
   Tree* tree = (Tree*)building;
@@ -127,7 +126,7 @@ void TreeWindow::Update()
     return;
   }
 
-  if (g_locationEditor->m_selectionId != m_selectionId)
+  if (g_locationEditor->GetSelectionId() != m_selectionId)
   {
     EclRemoveWindow(m_name);
     return;

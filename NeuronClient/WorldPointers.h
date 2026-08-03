@@ -2,6 +2,7 @@
 
 #include "CameraAccess.h"
 #include "RendererAccess.h"
+#include "LocationEditorAccess.h"
 #include "ScriptAccess.h"
 #include "TaskManagerInterfaceAccess.h"
 #include "UserInputAccess.h"
@@ -21,7 +22,6 @@
 class Location;
 class GlobalWorld;
 class ParticleSystem;
-class LocationEditor;
 class TaskManager;
 
 extern Location* g_location;
@@ -29,7 +29,7 @@ extern GlobalWorld* g_globalWorld;
 extern CameraAccess* g_camera;
 extern RendererAccess* g_renderer;
 extern ParticleSystem* g_particleSystem;
-extern LocationEditor* g_locationEditor;
+extern LocationEditorAccess* g_locationEditor;
 extern TaskManager* g_taskManager;
 extern TaskManagerInterfaceAccess* g_taskManagerInterface;
 extern ScriptAccess* g_script;

@@ -726,8 +726,9 @@ tasks:
       - NeuronClient/NeuronClient.vcxproj.filters
       - tools/layering_allowlist.txt
     acceptance:
-      - Re-measured allowlist contains no entry naming any long-tail header
+      - Re-measured allowlist contains no entry naming any long-tail header, EXCEPT the eight that need T15 first — TaskManager.h, Water.h and TaskManagerInterfaceIcons.h; see notes for why they cannot be resolved before the simulation cluster moves
       - Every fix was a move or inversion — no entry was added at any point
+      - No fix satisfies check_layering by turning an include dependency into a link dependency
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
@@ -809,9 +810,48 @@ tasks:
       call site was checked against the interface signature before the sweep,
       and Species goes through the accessor everywhere.
 
-      What is left after this: LocationEditor.h (11), TaskManager.h (5), and
-      the three construction-site entries (Water.h x2,
-      TaskManagerInterfaceIcons.h x1) that no interface can fix.
+      Then LocationEditorAccess, the largest remaining cluster at 11 entries.
+      Mode and Tool move into the interface; m_selectionId, m_tool, m_mode and
+      m_moveBuildingsWithLandscape were reached as FIELDS through the pointer,
+      which a base class cannot offer, so the interface has accessors and the
+      eleven callers use them. The fields are unchanged and Species still uses
+      them directly. GetMode already existed and is non-const, so the interface
+      matches that rather than adding a const overload beside it. Allowlist
+      266 -> 255.
+
+      An interface was chosen over the intent's "move the windows UP into
+      Species" because eight of the eleven are editor windows but three
+      (Ai.cpp, SpawnPoint.cpp, Triffid.cpp) are simulation code that reads the
+      selection to draw editor handles. Moving eight files needs four project
+      file edits and still leaves the other three, so one seam does the whole
+      cluster for less churn.
+
+      THE REST OF THIS TASK CANNOT BE DONE BEFORE T15, and that is a defect in
+      the plan's ordering rather than a judgement call. T15 depends_on T10, so
+      as written the two deadlock. What is left:
+
+        TaskManager.h  5  The callers do not just call TaskManager — they hold
+                          Task*, read m_route/m_type/m_state/m_objId/m_id, and
+                          Teleport.cpp does `new Task()` and `delete task`. So
+                          Task's DEFINITION has to be visible below Species, and
+                          Task's implementation reaches g_location, g_globalWorld
+                          and g_app. Moving only the declaration to GameLogic
+                          would satisfy check_layering, which inspects includes,
+                          while leaving GameLogic linking against symbols
+                          compiled into Species — passing the check without
+                          fixing the layering. Not done deliberately.
+        Water.h        2  `g_location->m_water = new Water()` in two prefs
+        TaskManagerInterfaceIcons.h 1  `g_taskManagerInterface = new
+                          TaskManagerInterfaceIcons()` in a third.
+                          CONSTRUCTION of a Species type. A pure-virtual seam
+                          cannot help: the caller needs the concrete type to
+                          call new. Exposing a factory declared low and defined
+                          high has the same link-inversion problem as Task.
+
+      All three bottom out in the same place: they need Location, Team, Unit and
+      the task system to live in GameLogic, which is exactly what T15 does. The
+      fix is to let T15 absorb them. T10's acceptance has been narrowed to the
+      entries that are resolvable without it, and these eight are named in T15.
 
   - id: T11
     title: Shrink LinkStubs and land the first real GameLogic behaviour tests
@@ -1022,6 +1062,17 @@ tasks:
       it; its LandscapeRenderer member stays above, so the class splits or
       keeps a forward-declared pointer. Expect several commits inside the
       one task: move, then fix includes, then update both project files.
+
+      T10 HANDS THIS TASK EIGHT MORE ENTRIES, found while running it:
+      TaskManager.h (5), Water.h (2) and TaskManagerInterfaceIcons.h (1).
+      They cannot be resolved before this move, because the callers need either
+      Task's definition (whose implementation reaches g_location, g_globalWorld
+      and g_app) or the concrete Species type to call `new` on. A pure-virtual
+      seam cannot express construction, and declaring the symbol low while
+      defining it high would satisfy check_layering — an include check — while
+      leaving GameLogic linked against Species. Once Location, Team, Unit and
+      the task system live here, all eight become ordinary same-project
+      includes. Expect to clear them as part of this task's include fix-up.
 
       This task is now a gate for three other plans, not just this one.
       containers-replaced T12 and T13 are blocked_by it, and the reason is

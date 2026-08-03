@@ -11,7 +11,6 @@
 
 #include "LevelFile.h"
 #include "Location.h"
-#include "LocationEditor.h"
 #include "Team.h"
 
 #include "Entity.h"
@@ -33,7 +32,7 @@ class EditButton : public SpeciesButton
     {
       if (stricmp(m_name, LANGUAGEPHRASE("editor_move")) == 0)
       {
-        g_locationEditor->m_tool = LocationEditor::ToolMove;
+        g_locationEditor->SetTool(LocationEditorAccess::ToolMove);
       }
     }
 };
@@ -56,7 +55,7 @@ class TeamButton1 : public SpeciesButton
 
     void MouseUp()
     {
-      InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
+      InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->GetSelectionId());
       if (iu)
       {
         iu->m_teamId = m_teamId;
@@ -65,7 +64,7 @@ class TeamButton1 : public SpeciesButton
 
     void Render(int realX, int realY, bool highlighted, bool clicked)
     {
-      InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
+      InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->GetSelectionId());
       if (iu)
       {
         if (iu->m_teamId == m_teamId)
@@ -120,13 +119,13 @@ class DeleteInstantUnitButton : public SpeciesButton
       }
       else
       {
-        InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
+        InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->GetSelectionId());
         delete iu;
 
-        g_location->m_levelFile->m_instantUnits.RemoveData(g_locationEditor->m_selectionId);
+        g_location->m_levelFile->m_instantUnits.RemoveData(g_locationEditor->GetSelectionId());
         EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
-        g_locationEditor->m_tool = LocationEditor::ToolNone;
-        g_locationEditor->m_selectionId = -1;
+        g_locationEditor->SetTool(LocationEditorAccess::ToolNone);
+        g_locationEditor->SetSelectionId(-1);
       }
     }
 };
@@ -142,7 +141,7 @@ InstantUnitEditWindow::InstantUnitEditWindow(char const* name)
 }
 
 
-InstantUnitEditWindow::~InstantUnitEditWindow() { g_locationEditor->m_selectionId = -1; }
+InstantUnitEditWindow::~InstantUnitEditWindow() { g_locationEditor->SetSelectionId(-1); }
 
 
 void InstantUnitEditWindow::Create()
@@ -174,7 +173,7 @@ void InstantUnitEditWindow::Create()
 
   y += 7;
 
-  InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
+  InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->GetSelectionId());
   CreateValueControl(LANGUAGEPHRASE("editor_numentities"), InputField::TypeInt, &iu->m_number, y += buttonPitch, 1, 1, 1000);
   CreateValueControl(LANGUAGEPHRASE("editor_spread"), InputField::TypeFloat, &iu->m_spread, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
   CreateValueControl(LANGUAGEPHRASE("editor_inunit"), InputField::TypeChar, &iu->m_inAUnit, y += buttonPitch, 1, 0, 1);
@@ -198,7 +197,7 @@ class CreateButton : public SpeciesButton
       {
         if (stricmp(m_name, Entity::GetTypeNameTranslated(i)) == 0)
         {
-          g_locationEditor->m_tool = LocationEditor::ToolMove;
+          g_locationEditor->SetTool(LocationEditorAccess::ToolMove);
 
           // Where did we click?
           Vector3 rayStart, rayDir, hitPos;
@@ -220,7 +219,7 @@ class CreateButton : public SpeciesButton
           iu->m_teamId = 0;
           iu->m_type = i;
           iu->m_inAUnit = false;
-          g_locationEditor->m_selectionId = g_location->m_levelFile->m_instantUnits.Size();
+          g_locationEditor->SetSelectionId(g_location->m_levelFile->m_instantUnits.Size());
           g_location->m_levelFile->m_instantUnits.PutData(iu);
 
           // Create an edit window for the new instant unit
@@ -250,7 +249,7 @@ InstantUnitCreateWindow::InstantUnitCreateWindow(char const* name)
 
 InstantUnitCreateWindow::~InstantUnitCreateWindow()
 {
-  g_locationEditor->RequestMode(LocationEditor::ModeNone);
+  g_locationEditor->RequestMode(LocationEditorAccess::ModeNone);
   EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
 }
 

@@ -14,7 +14,6 @@
 #include "Location.h"
 #include "EntityGrid.h"
 #include "Team.h"
-#include "LocationEditor.h"
 #include "GlobalWorld.h"
 #include "GameTime.h"
 
@@ -908,7 +907,7 @@ void SpawnPopulationLock::RenderAlphas(float _predictionTime)
     }
 
 #ifdef LOCATION_EDITOR
-    if (g_editing && g_locationEditor->m_mode == LocationEditor::ModeBuilding && g_locationEditor->m_selectionId == m_id.GetUniqueId())
+    if (g_editing && g_locationEditor->GetMode() == LocationEditorAccess::ModeBuilding && g_locationEditor->GetSelectionId() == m_id.GetUniqueId())
     {
       RenderSphere(m_pos, m_searchRadius, RGBAColour(255, 255, 255, 100));
     }

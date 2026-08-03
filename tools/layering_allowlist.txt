@@ -13,7 +13,6 @@ GameLogic/Ai.cpp -> EntityGrid.h
 GameLogic/Ai.cpp -> GlobalWorld.h
 GameLogic/Ai.cpp -> LevelFile.h
 GameLogic/Ai.cpp -> Location.h
-GameLogic/Ai.cpp -> LocationEditor.h
 GameLogic/Ai.cpp -> Team.h
 GameLogic/Airstrike.cpp -> Explosion.h
 GameLogic/Airstrike.cpp -> Location.h
@@ -48,14 +47,11 @@ GameLogic/Building.cpp -> Team.h
 GameLogic/BuildingsWindow.cpp -> GlobalWorld.h
 GameLogic/BuildingsWindow.cpp -> LevelFile.h
 GameLogic/BuildingsWindow.cpp -> Location.h
-GameLogic/BuildingsWindow.cpp -> LocationEditor.h
 GameLogic/BuildingsWindow.cpp -> Team.h
 GameLogic/CameraAnimWindow.cpp -> LevelFile.h
 GameLogic/CameraAnimWindow.cpp -> Location.h
-GameLogic/CameraAnimWindow.cpp -> LocationEditor.h
 GameLogic/CameraMountWindow.cpp -> LevelFile.h
 GameLogic/CameraMountWindow.cpp -> Location.h
-GameLogic/CameraMountWindow.cpp -> LocationEditor.h
 GameLogic/Cave.cpp -> EntityGrid.h
 GameLogic/Cave.cpp -> Explosion.h
 GameLogic/Cave.cpp -> Location.h
@@ -90,7 +86,6 @@ GameLogic/Darwinian.cpp -> Team.h
 GameLogic/Darwinian.cpp -> Unit.h
 GameLogic/EditorWindow.cpp -> LevelFile.h
 GameLogic/EditorWindow.cpp -> Location.h
-GameLogic/EditorWindow.cpp -> LocationEditor.h
 GameLogic/Egg.cpp -> Location.h
 GameLogic/Egg.cpp -> Team.h
 GameLogic/Engineer.cpp -> Explosion.h
@@ -137,7 +132,6 @@ GameLogic/InsertionSquad.cpp -> Team.h
 GameLogic/InsertionSquad.h -> Unit.h
 GameLogic/InstantUnitWindow.cpp -> LevelFile.h
 GameLogic/InstantUnitWindow.cpp -> Location.h
-GameLogic/InstantUnitWindow.cpp -> LocationEditor.h
 GameLogic/InstantUnitWindow.cpp -> Team.h
 GameLogic/Lander.cpp -> Location.h
 GameLogic/Lander.cpp -> ParticleSystem.h
@@ -145,7 +139,6 @@ GameLogic/Lander.cpp -> Team.h
 GameLogic/Lander.cpp -> Unit.h
 GameLogic/LandscapeWindow.cpp -> LevelFile.h
 GameLogic/LandscapeWindow.cpp -> Location.h
-GameLogic/LandscapeWindow.cpp -> LocationEditor.h
 GameLogic/LaserFence.cpp -> Location.h
 GameLogic/LaserFence.cpp -> ObstructionGrid.h
 GameLogic/LaserFence.cpp -> ParticleSystem.h
@@ -156,7 +149,6 @@ GameLogic/LaserTrooper.cpp -> Unit.h
 GameLogic/Library.cpp -> Location.h
 GameLogic/Library.h -> GlobalWorld.h
 GameLogic/LightsWindow.cpp -> Location.h
-GameLogic/LightsWindow.cpp -> LocationEditor.h
 GameLogic/MainMenus.cpp -> GlobalWorld.h
 GameLogic/MainMenus.cpp -> Renderer.h
 GameLogic/Mine.cpp -> GlobalWorld.h
@@ -213,7 +205,6 @@ GameLogic/Spam.cpp -> Team.h
 GameLogic/SpawnPoint.cpp -> EntityGrid.h
 GameLogic/SpawnPoint.cpp -> GlobalWorld.h
 GameLogic/SpawnPoint.cpp -> Location.h
-GameLogic/SpawnPoint.cpp -> LocationEditor.h
 GameLogic/SpawnPoint.cpp -> Team.h
 GameLogic/Spider.cpp -> EntityGrid.h
 GameLogic/Spider.cpp -> Explosion.h
@@ -242,11 +233,9 @@ GameLogic/Tree.cpp -> ParticleSystem.h
 GameLogic/TreeWindow.cpp -> GlobalWorld.h
 GameLogic/TreeWindow.cpp -> LevelFile.h
 GameLogic/TreeWindow.cpp -> Location.h
-GameLogic/TreeWindow.cpp -> LocationEditor.h
 GameLogic/Triffid.cpp -> EntityGrid.h
 GameLogic/Triffid.cpp -> Explosion.h
 GameLogic/Triffid.cpp -> Location.h
-GameLogic/Triffid.cpp -> LocationEditor.h
 GameLogic/Triffid.cpp -> ParticleSystem.h
 GameLogic/Triffid.cpp -> Team.h
 GameLogic/Triffid.cpp -> Unit.h
