@@ -193,7 +193,37 @@ tasks:
       Nothing outside NeuronServer touches these members; ServerTests reads
       m_clients.NumUsed() and m_teams.NumUsed(), both of which survive the
       conversion unchanged.
-    status: in_progress
+
+      LANDED 2026-08-02, CI green at edbc8f6 and re-verified since. 56
+      insertions against 67 deletions — the net-negative shape T1 predicted.
+
+      Both surveyed hazards were handled as planned. RemoveClient resets the
+      slot before MarkNotUsed, so the record dies where `delete sToC` used to
+      rather than lingering until the slot is reused. The outbox leak is
+      fixed: the delete used to sit INSIDE the valid-client branch, so a
+      letter addressed to a client that disconnected first was erased and
+      never freed; the letter is now moved out and erased before the send and
+      destroyed when the scope ends either way. That is a behaviour change and
+      a deliberate one.
+
+      The three signatures now carry ownership rather than leaving it to a
+      comment: GetNextLetter returns unique_ptr, ReceiveLetter and SendLetter
+      take it. m_history is the sole owner of every letter ever sent.
+
+      ONE CI ROUND LOST, and to a wider version of T1's lesson.
+      letter->AddUpdate(incoming) stopped compiling once `incoming` became a
+      unique_ptr. AddUpdate COPIES — "Make sure we COPY the update", new plus
+      memcpy — so .get() was right and a move would have been actively wrong.
+      I had enumerated every use of every MEMBER whose type changed and not
+      done the same for the LOCAL whose type I also changed. Enumerate every
+      use of anything whose type changes, member or not.
+
+      EVIDENCE IS THIN AND SHOULD BE READ THAT WAY. ServerTests asserts a new
+      Server starts empty; CI runs Server.exe --ticks 20 with no client
+      attached. Neither exercises join, disconnect or send, which is exactly
+      where both hazards live. They are argued from the code, not tested. A
+      two-client smoke test is what would actually prove them.
+    status: done
 
   - id: T3
     title: Adopt unique_ptr across NeuronClient subsystems
