@@ -573,7 +573,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: >
       Split out of T3 on 2026-08-03, measured at the point Eclipse's containers
       converted: 43 call sites, 24 passing an inline `new` and 19 handing over a
