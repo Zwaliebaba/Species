@@ -374,7 +374,7 @@ char const* EclGenerateUniqueWindowName(char const* name)
 
   int index = 1;
   uniqueName = name;
-  while (EclGetWindow(uniqueName.c_str().c_str()))
+  while (EclGetWindow(uniqueName.c_str()))
   {
     ++index;
     uniqueName = std::format("{}{}", name, index);
@@ -519,7 +519,7 @@ bool EclMouseInButton(EclWindow* window, EclButton* button)
 
 bool EclIsTextEditing()
 {
-  EclWindow* currentWindow = EclGetWindow(windowFocus.c_str().c_str());
+  EclWindow* currentWindow = EclGetWindow(windowFocus.c_str());
   return (currentWindow && strcmp(currentWindow->m_currentTextEdit, "None") != 0);
 }
 
@@ -582,7 +582,7 @@ void EclMaximiseWindow(char const* name)
 
 void EclUnMaximise()
 {
-  EclWindow* w = EclGetWindow(maximisedWindow.c_str().c_str());
+  EclWindow* w = EclGetWindow(maximisedWindow.c_str());
   maximisedWindow = "None";
 
   if (w)
