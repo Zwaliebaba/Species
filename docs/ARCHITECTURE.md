@@ -228,6 +228,6 @@ If a type name means nothing to you — `Spirit`, `TrunkPort`, `Incubator` —
 | Client-side netcode | `NeuronCore/ClientToServer.cpp` |
 | Entity behaviour | `GameLogic/Entity.cpp`, `GameLogic/Darwinian.cpp` |
 | Building behaviour | `GameLogic/Building.cpp` |
-| Rendering entry | `Species/Renderer.cpp`, `Species/LandscapeRenderer.cpp` |
+| Rendering entry | `Species/Renderer.cpp`, `GameLogic/LandscapeRenderer.cpp` |
 | UI toolkit | `NeuronClient/Eclipse.cpp`, `EclWindow.cpp` |
-| Content loading | `NeuronClient/Resource.cpp`, `Species/LevelFile.cpp` |
+| Content loading | `NeuronClient/Resource.cpp`, `GameLogic/LevelFile.cpp` |

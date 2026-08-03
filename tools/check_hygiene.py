@@ -186,10 +186,71 @@ def count_matches(lines: list[str], rule: Rule) -> int:
     return total
 
 
+_MOVES: dict[str, dict[str, Path]] = {}
+
+
+def moves(base: str) -> dict[str, Path]:
+    """destination -> source, for every file this change appears to have moved.
+
+    Without this a `git mv` reads as a brand new file: the base content is
+    empty, so every occurrence of every rule counts as one this change
+    introduced. layering-inversion T15 moved 32 files at once and the check
+    reported 33 findings against code it had not touched a character of. The
+    honest alternative would have been 33 `hygiene-ok` markers on lines that
+    are not exceptions to anything, which is precisely how a ratchet stops
+    meaning what it says.
+
+    Two sources, because git's own answer is not enough on its own. Git pairs
+    a delete with an add by content similarity, and a whole-file clang-format
+    reformat rewrites every line: T15 moved Species/EntityGrid.cpp unchanged
+    and git scored it 16% similar to its base version, because a reformat
+    commit sat in between. Lowering --find-renames far enough to catch that
+    would pair unrelated files across the tree.
+
+    So a delete and an add sharing a basename are treated as a move when the
+    basename is unambiguous — exactly one of each. That is what a directory
+    move looks like, it is immune to any amount of rewriting, and the failure
+    it can produce is bounded: at worst a genuinely new file is compared
+    against an unrelated namesake that vanished in the same change, and the
+    ratchet reads a wrong-but-nonzero baseline rather than an empty one.
+    """
+    if base in _MOVES:
+        return _MOVES[base]
+
+    status = git("diff", "--name-status", "--find-renames", base, "--", "*.cpp", "*.h", "*.inc")
+    found: dict[str, Path] = {}
+    added: dict[str, list[str]] = {}
+    deleted: dict[str, list[str]] = {}
+    for line in status.splitlines():
+        fields = line.split("\t")
+        if fields[0].startswith("R") and len(fields) == 3:
+            found[fields[2]] = Path(fields[1])
+        elif fields[0] == "A" and len(fields) == 2:
+            added.setdefault(Path(fields[1]).name, []).append(fields[1])
+        elif fields[0] == "D" and len(fields) == 2:
+            deleted.setdefault(Path(fields[1]).name, []).append(fields[1])
+
+    for name, destinations in added.items():
+        sources = deleted.get(name, [])
+        if len(destinations) == 1 and len(sources) == 1:
+            found.setdefault(destinations[0], Path(sources[0]))
+
+    _MOVES[base] = found
+    return found
+
+
 def base_lines(base: str, path: Path) -> list[str]:
-    """The file as of `base`, or empty for a file that did not exist there."""
+    """The file as of `base`, following a rename, or empty for a genuinely new file."""
     try:
         return git("show", f"{base}:{path.as_posix()}").splitlines()
+    except subprocess.CalledProcessError:
+        pass
+
+    source = moves(base).get(path.as_posix())
+    if source is None:
+        return []
+    try:
+        return git("show", f"{base}:{source.as_posix()}").splitlines()
     except subprocess.CalledProcessError:
         return []
 

@@ -282,7 +282,7 @@ tasks:
       - GameLogic/PrefsOtherWindow.cpp
       - GameLogic/UserProfileWindow.cpp
       - Species/GameMenu.cpp
-      - Species/GlobalWorld.cpp
+      - GameLogic/GlobalWorld.cpp
       - Species/Script.cpp
       - Tests/NeuronClientTests/FilesysUtilsTests.cpp
     acceptance:
@@ -381,7 +381,7 @@ tasks:
       - Species/Main.cpp
       - Species/TaskManagerInterfaceIcons.cpp
       - Species/LocationInput.cpp
-      - Species/GlobalWorld.cpp
+      - GameLogic/GlobalWorld.cpp
     acceptance:
       - grep -lw LList on the six files returns nothing
       - Draw order and event-dispatch order are by-construction identical (insertion-ordered vector)
@@ -439,8 +439,8 @@ tasks:
       - GameLogic/NetworkWindow.cpp
       - GameLogic/Building.cpp
       - Species/Renderer.cpp
-      - Species/Explosion.cpp
-      - Species/GlobalWorld.cpp
+      - GameLogic/Explosion.cpp
+      - GameLogic/GlobalWorld.cpp
     acceptance:
       - grep -lwE "LList|DArray" on the four files returns nothing
       - Letter-processing order in ClientToServer is by-construction unchanged
@@ -459,8 +459,8 @@ tasks:
 
       SCOPE GREW FROM FOUR FILES TO NINE, unavoidably. Shape's m_childFragments
       and m_childMarkers are public and read from GameLogic/Building.cpp,
-      GameLogic/NetworkWindow.cpp, Species/Renderer.cpp, Species/Explosion.cpp
-      and Species/GlobalWorld.cpp. Three belong to other tasks, but a member's
+      GameLogic/NetworkWindow.cpp, Species/Renderer.cpp, GameLogic/Explosion.cpp
+      and GameLogic/GlobalWorld.cpp. Three belong to other tasks, but a member's
       type cannot change in one file only. The edits there are confined to the
       Shape call sites and touch none of those files' own containers.
 
@@ -657,22 +657,22 @@ tasks:
     depends_on: [T1, T3, T4]
     blocked_by: [layering-inversion/T15]
     files:
-      - Species/Location.h
-      - Species/Location.cpp
-      - Species/GlobalWorld.h
-      - Species/GlobalWorld.cpp
-      - Species/Team.h
-      - Species/Team.cpp
-      - Species/Unit.h
-      - Species/Unit.cpp
-      - Species/LevelFile.h
-      - Species/LevelFile.cpp
-      - Species/EntityGrid.cpp
-      - Species/ObstructionGrid.h
-      - Species/ObstructionGrid.cpp
-      - Species/RoutingSystem.cpp
-      - Species/Landscape.h
-      - Species/Landscape.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/Team.h
+      - GameLogic/Team.cpp
+      - GameLogic/Unit.h
+      - GameLogic/Unit.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
+      - GameLogic/EntityGrid.cpp
+      - GameLogic/ObstructionGrid.h
+      - GameLogic/ObstructionGrid.cpp
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
     acceptance:
       - grep -lwE "LList|DArray|FastDArray|SliceDArray|BoundedArray" on the listed files returns nothing
       - Slot indices assigned to entities, units and buildings are by-construction identical (freelist-flavour SlotMap, pinned by T2/T3)
@@ -715,7 +715,7 @@ tasks:
     depends_on: [T1, T3, T12]
     blocked_by: [layering-inversion/T15]
     files:
-      - Species/TaskManager.cpp
+      - GameLogic/TaskManager.cpp
       - Species/TaskManagerInterface.cpp
       - Species/TaskManagerInterfaceIcons.cpp
       - Species/Main.cpp
@@ -727,15 +727,15 @@ tasks:
       - Species/ControlHelp.cpp
       - Species/Script.cpp
       - Species/StartSequence.cpp
-      - Species/GlobalInternet.h
-      - Species/GlobalInternet.cpp
+      - GameLogic/GlobalInternet.h
+      - GameLogic/GlobalInternet.cpp
       - Species/LocationEditor.cpp
-      - Species/Explosion.cpp
-      - Species/ParticleSystem.h
-      - Species/ParticleSystem.cpp
-      - Species/Water.h
-      - Species/Water.cpp
-      - Species/LandscapeRenderer.h
+      - GameLogic/Explosion.cpp
+      - GameLogic/ParticleSystem.h
+      - GameLogic/ParticleSystem.cpp
+      - GameLogic/Water.h
+      - GameLogic/Water.cpp
+      - GameLogic/LandscapeRenderer.h
     acceptance:
       - grep -lwE "LList|DArray|FastDArray|BoundedArray|2dArray|2dSurfaceMap" on the listed files returns nothing
       - Explosion and ParticleSystem keep slot indices and iteration order by-construction identical

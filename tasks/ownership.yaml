@@ -321,13 +321,13 @@ tasks:
       - strings-modernised/T7
       - strings-modernised/T8
     files:
-      - Species/LevelFile.cpp
-      - Species/LevelFile.h
-      - Species/Explosion.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/Explosion.cpp
       - Species/TaskManagerInterfaceIcons.cpp
-      - Species/GlobalWorld.cpp
-      - Species/RoutingSystem.cpp
-      - Species/TaskManager.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/TaskManager.cpp
       - Species/GameCursor.cpp
     acceptance:
       - grep -wE "EmptyAndDelete|SAFE_DELETE" over the listed files returns nothing

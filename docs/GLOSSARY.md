@@ -22,15 +22,15 @@ intent.
 
 | Term | Where | What it is |
 |---|---|---|
-| **GlobalWorld** | `Species/GlobalWorld.h` | The campaign-level model: which locations exist, what has been unlocked, research progress. Persists across missions. |
-| **GlobalLocation** | `Species/GlobalWorld.h:21` | A location as seen from the campaign map — name, position, whether it is available. |
-| **GlobalEventCondition** | `Species/GlobalWorld.h:69` | A trigger predicate used for mission objectives and unlocks. |
-| **Location** | `Species/Location.h` | One loaded, playable map: its teams, entities, buildings, lasers, effects, landscape, water. `Location::Advance` is the simulation tick. |
-| **LevelFile** | `Species/LevelFile.h` | The on-disk description a Location is built from — buildings, spawn points, camera mounts, scripts. |
-| **Team** | `Species/Team.h` | A faction within a Location. `TeamTypeLocalPlayer`, `TeamTypeRemotePlayer`, `TeamTypeCPU`, `TeamTypeUnused`. Owns `m_units`, `m_others`, and `m_specials` (officers and armour, kept for quick lookup). |
-| **Unit** | `Species/Unit.h` | A *formation* of entities of one `m_troopType`, moving together with a shared `m_centrePos`, waypoint and formation offset. Not every entity belongs to a unit. |
+| **GlobalWorld** | `GameLogic/GlobalWorld.h` | The campaign-level model: which locations exist, what has been unlocked, research progress. Persists across missions. |
+| **GlobalLocation** | `GameLogic/GlobalWorld.h:20` | A location as seen from the campaign map — name, position, whether it is available. |
+| **GlobalEventCondition** | `GameLogic/GlobalWorld.h:68` | A trigger predicate used for mission objectives and unlocks. |
+| **Location** | `GameLogic/Location.h` | One loaded, playable map: its teams, entities, buildings, lasers, effects, landscape, water. `Location::Advance` is the simulation tick. |
+| **LevelFile** | `GameLogic/LevelFile.h` | The on-disk description a Location is built from — buildings, spawn points, camera mounts, scripts. |
+| **Team** | `GameLogic/Team.h` | A faction within a Location. `TeamTypeLocalPlayer`, `TeamTypeRemotePlayer`, `TeamTypeCPU`, `TeamTypeUnused`. Owns `m_units`, `m_others`, and `m_specials` (officers and armour, kept for quick lookup). |
+| **Unit** | `GameLogic/Unit.h` | A *formation* of entities of one `m_troopType`, moving together with a shared `m_centrePos`, waypoint and formation offset. Not every entity belongs to a unit. |
 | **Entity** | `GameLogic/Entity.h` | One creature or vehicle. 19 types, listed below. |
-| **`m_others`** | `Species/Team.h:34` | A team's entities that are *not* in a unit — Darwinians, officers, armour. |
+| **`m_others`** | `GameLogic/Team.h:34` | A team's entities that are *not* in a unit — Darwinians, officers, armour. |
 | **WorldObject** | `GameLogic/WorldObject.h` | Base for anything with a position and velocity in the world: entities, buildings, lasers, effects, spirits. |
 | **WorldObjectId** | `GameLogic/WorldObject.h:18` | Identity of a world object: `m_teamId`, `m_unitId`, `m_index`, `m_uniqueId`. **`m_index` is a raw `DArray` slot and is serialised onto the wire** — see [determinism](../CODING_STANDARDS.md#determinism). |
 
@@ -142,12 +142,12 @@ The buildings that move Spirits around:
 
 | Term | Where | What it is |
 |---|---|---|
-| **Task Manager** | `Species/TaskManager.*` | The in-game interface for running **Programs**. Deliberately styled as an OS task manager — the fiction is that you are a user operating a computer. |
-| **Task** | `Species/TaskManager.h` | One running Program instance. States `StateIdle` ("not yet run"), `StateStarted` ("running, not yet targetted"), `StateRunning` ("targetted, running"), `StateStopping`. |
-| **Program** | `GlobalResearch` enum, `Species/GlobalWorld.h:165` | What the player can run: `Squad`, `Laser`, `Grenade`, `Rocket`, `Controller`, `AirStrike`, `Armour`, `TaskManager`, `Engineer`. Each has a research *level* and *progress*. |
+| **Task Manager** | `GameLogic/TaskManager.*` | The in-game interface for running **Programs**. Deliberately styled as an OS task manager — the fiction is that you are a user operating a computer. |
+| **Task** | `GameLogic/TaskManager.h` | One running Program instance. States `StateIdle` ("not yet run"), `StateStarted` ("running, not yet targetted"), `StateRunning` ("targetted, running"), `StateStopping`. |
+| **Program** | `GlobalResearch` enum, `GameLogic/GlobalWorld.h:160` | What the player can run: `Squad`, `Laser`, `Grenade`, `Rocket`, `Controller`, `AirStrike`, `Armour`, `TaskManager`, `Engineer`. Each has a research *level* and *progress*. |
 | **Controller** | `TypeController` | The program that promotes a Darwinian to Officer. `Task::Promote` / `Task::Demote`. |
 | **Research** | `GlobalResearch` | Levels and progress per program, advanced by collecting ResearchItems. |
-| **Route** | `Species/RoutingSystem.*` | A waypoint path. Units follow one via `m_routeId` / `m_routeWayPointId`; the Controller task builds one. |
+| **Route** | `GameLogic/RoutingSystem.*` | A waypoint path. Units follow one via `m_routeId` / `m_routeWayPointId`; the Controller task builds one. |
 | **Sepulveda** | `NeuronClient/SepulvedaStrings.cpp`, `SoundSystem.h:46` (`TypeSepulveda`) | The narrator voice. A distinct sound channel type, with its own string table. |
 | **Attract mode** | `Species/Attract.*` | The idle demo loop. |
 
@@ -159,12 +159,12 @@ The buildings that move Spirits around:
 |---|---|---|
 | **Neuron** | `NeuronCore/`, `NeuronClient/`, `NeuronServer/` | The engine layers, as distinct from the game. See [ARCHITECTURE.md](ARCHITECTURE.md). |
 | **Eclipse** | `NeuronClient/Eclipse.*`, `EclWindow.*`, `EclButton.*` | The immediate-mode-ish UI toolkit every in-game window derives from. `DarwiniaWindow` is the game's styled subclass. |
-| **DArray** | `NeuronClient/DArray.h` | Slot map: *"an entry's index never changes"*. A `shadow` array marks live slots. **Not a `std::vector`** — see [determinism](../CODING_STANDARDS.md#determinism). |
-| **LList** | `NeuronClient/LList.h` | Linked list. Often owns its elements (`EmptyAndDelete`). |
-| **SliceDArray**, **FastDArray** | `NeuronClient/` | `DArray` variants. `SliceDArray` supports advancing a subset per slice. |
-| **Slice** | `Species/Globals.h:5` | `NUM_SLICES_PER_FRAME` = 10. Heavy simulation is spread across 10 slices per frame; `g_sliceNum` is the current one. |
+| **DArray** | `NeuronCore/DArray.h` | Slot map: *"an entry's index never changes"*. A `shadow` array marks live slots. **Not a `std::vector`** — see [determinism](../CODING_STANDARDS.md#determinism). |
+| **LList** | `NeuronCore/LList.h` | Linked list. Often owns its elements (`EmptyAndDelete`). |
+| **SliceDArray**, **FastDArray** | `NeuronCore/` | `DArray` variants. `SliceDArray` supports advancing a subset per slice. |
+| **Slice** | `NeuronCore/Globals.h:13` | `NUM_SLICES_PER_FRAME` = 10. Heavy simulation is spread across 10 slices per frame; `g_sliceNum` is the current one. |
 | **Sequence id** | `NeuronCore/Server.h` | The server's monotonic tick counter. Every broadcast carries one; clients apply them in order. |
-| **Sync value** | `Species/Main.cpp:274` | One-byte checksum of all entity positions and velocities, compared across clients to detect desync. |
+| **Sync value** | `Species/Main.cpp:252` | One-byte checksum of all entity positions and velocities, compared across clients to detect desync. |
 | **Shape / `.shp`** | `NeuronClient/Shape.*`, `GameData/Shapes/` | The model format. `ShapeMarker` names an attachment point on a model — buildings use them for spirit entrances, docks and exits. |
 | **`speciesRandom()`** | `NeuronCore/Random.cpp` | The single global LCG the simulation shares. Its call sequence is load-bearing. |
 

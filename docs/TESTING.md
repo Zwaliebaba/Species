@@ -18,10 +18,10 @@ in [`BUILD.md`](BUILD.md) true.
 
 | Project | Covers | State |
 |---|---|---|
-| `Tests/NeuronCoreTests` | `NeuronCore` | Real coverage. IP conversion, the `speciesRandom` sequence, the `ByteStream` wire macros. |
+| `Tests/NeuronCoreTests` | `NeuronCore` | Real coverage. IP conversion, the `speciesRandom` sequence, the `ByteStream` wire macros, `WorldObjectId` identity, the containers. |
 | `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`. |
 | `Tests/NeuronServerTests` | `NeuronServer` | Wiring smoke test only — the layer is a stub with no behaviour yet. |
-| `Tests/GameLogicTests` | `GameLogic` | Real coverage of `WorldObjectId`, plus `LinkStubs.cpp`. See [What cannot be tested yet](#what-cannot-be-tested-yet). |
+| `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid` and `Route`. `LinkStubs.cpp` is empty and on its way out. |
 
 `Species` and `Server` have no test project. They are executables, and an `.exe`
 cannot be linked into a test DLL. Code in either that is worth testing is code
@@ -194,16 +194,21 @@ a test reaching into `Species` to build a fixture reads as diligence rather than
 as the layering violation it is. If a test cannot reach what it needs, that is
 the design telling you something about the code, not about the test.
 
-The test projects' include paths mirror the library under test, which means
-`Species` is on `NeuronCoreTests`' include path today. That is a consequence of
-`NeuronCore` still reaching upward, not permission. The checker is what decides.
+The test projects' include paths stop at the layer under test and the ones
+below it. `NeuronCoreTests` sees only `NeuronCore`; `NeuronClientTests` sees
+`NeuronCore` and `NeuronClient`; `GameLogicTests` sees those two and
+`GameLogic`. None of them can see `Species`. That is deliberate and it is
+recent — the paths used to include everything, because the libraries themselves
+reached upward and a test could not include a header without it. They no longer
+do, so a test that reaches up now fails to compile rather than waiting for the
+checker to notice.
 
 ---
 
 ## What cannot be tested yet
 
-`GameLogic` cannot be linked into a test DLL on its own. Pulling in one object
-file drags in whatever globals it happens to touch, and those globals live in the
+`GameLogic` used not to link into a test DLL at all. Pulling in one object file
+dragged in whatever globals it happened to touch, and those globals lived in the
 `Species` executable:
 
 ```
@@ -211,23 +216,28 @@ GameLogic.lib(WorldObject.obj) : error LNK2001:
     unresolved external symbol "class App * g_app"
 ```
 
-`Tests/GameLogicTests/LinkStubs.cpp` defines the minimum needed to link, so the
-parts of `GameLogic` that do not use those globals at runtime can be tested now
-instead of after the layering work lands. Every stub is null, so a test that
-actually reaches one crashes in that test rather than running against a fake
-world.
+That wall is down. `tasks/layering-inversion.yaml` T8 and T14 moved the
+subsystem pointers, the application state and the `App`-only actions into
+`NeuronClient`, and T15 moved the world model — `Location`, `Team`, `Unit`, the
+grids, the routing system, the landscape — out of `Species` and into
+`GameLogic`. `Tests/GameLogicTests/LinkStubs.cpp` is now empty, and
+`EntityGridTests.cpp` and `RoutingSystemTests.cpp` construct real simulation
+objects against a `Location` the test builds itself.
 
-**That file may only shrink.** Same rule as `tools/layering_allowlist.txt` and
-for the same reason: every entry is a dependency that should not exist, and
-adding one hides the problem rather than recording it. If a test needs a new
-stub, the honest options are to test something that does not reach upward, or to
-do the layering task that removes the reference. When migration stage 7
-(globals) lands, the file goes away.
+**`LinkStubs.cpp` may only shrink**, and it has reached zero. Same rule as
+`tools/layering_allowlist.txt` and for the same reason: every entry is a
+dependency that should not exist, and adding one hides the problem rather than
+recording it. If a test seems to need a stub, the honest options are to test
+something that does not reach upward, or to do the layering task that removes
+the reference. The file itself can go once nothing needs the reminder.
 
-The same wall is why `NeuronCore`'s `ClientToServer` has no tests: its header
-includes `Entity.h` and `WorldObject.h` from `GameLogic`, two of the thirty
-upward includes `tasks/neuroncore-layering.yaml` exists to remove. Coverage of
-the client-side netcode arrives with that plan, not before it.
+What is still out of reach is anything needing a *loaded* world. `EntityGrid`
+can be built and queried against an empty `Location`, but `GetNeighbours`
+resolves each id through `Location::GetEntity`, and a `TypeGroundPos` waypoint
+samples the landscape heightmap — both need a level file, a landscape and
+populated teams. A fixture that loads one is the next step, and it belongs with
+`tasks/containers-replaced.yaml` T12, which needs exactly that to prove slot
+identity survives the conversion.
 
 ---
 

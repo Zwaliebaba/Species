@@ -84,7 +84,11 @@
            project under test is what lets a test include any header that
            project can compile against; it does not widen what a test may
            legally include, which tools/check_layering.py enforces separately. -->
-      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronClient;$(SpeciesRoot)Species;$(SpeciesRoot)GameLogic</AdditionalIncludeDirectories>
+      <!-- The layer under test and nothing above it. NeuronCore reaches
+           upward nowhere, so a test that tries to must fail to compile;
+           leaving Species and GameLogic on the path would make that
+           possible again through the back door. -->
+      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

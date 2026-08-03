@@ -263,12 +263,12 @@ tasks:
     project: GameLogic
     depends_on: [T1, T8]
     files:
-      - Species/EntityGrid.h
-      - Species/EntityGrid.cpp
-      - Species/ObstructionGrid.h
-      - Species/ObstructionGrid.cpp
-      - Species/RoutingSystem.h
-      - Species/RoutingSystem.cpp
+      - GameLogic/EntityGrid.h
+      - GameLogic/EntityGrid.cpp
+      - GameLogic/ObstructionGrid.h
+      - GameLogic/ObstructionGrid.cpp
+      - GameLogic/RoutingSystem.h
+      - GameLogic/RoutingSystem.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -307,10 +307,10 @@ tasks:
     project: GameLogic
     depends_on: [T1, T8]
     files:
-      - Species/Team.h
-      - Species/Team.cpp
-      - Species/Unit.h
-      - Species/Unit.cpp
+      - GameLogic/Team.h
+      - GameLogic/Team.cpp
+      - GameLogic/Unit.h
+      - GameLogic/Unit.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -349,8 +349,8 @@ tasks:
     project: GameLogic
     depends_on: [T1, T8]
     files:
-      - Species/LevelFile.h
-      - Species/LevelFile.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -394,10 +394,10 @@ tasks:
     project: GameLogic
     depends_on: [T1, T8]
     files:
-      - Species/ParticleSystem.h
-      - Species/ParticleSystem.cpp
-      - Species/Explosion.h
-      - Species/Explosion.cpp
+      - GameLogic/ParticleSystem.h
+      - GameLogic/ParticleSystem.cpp
+      - GameLogic/Explosion.h
+      - GameLogic/Explosion.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -437,10 +437,10 @@ tasks:
     project: GameLogic
     depends_on: [T2, T3, T4, T5, T6]
     files:
-      - Species/Location.h
-      - Species/Location.cpp
-      - Species/GlobalWorld.h
-      - Species/GlobalWorld.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GlobalWorld.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -458,14 +458,14 @@ tasks:
     parallel_safe: false
     notes: >
       T1 finding that reshapes this task: Location.h and LevelFile.h both
-      include Species/Landscape.h, so Landscape moves (or splits) in the
+      include GameLogic/Landscape.h, so Landscape moves (or splits) in the
       same step or the 87 entries just get renamed instead of removed.
       Landscape is mixed — m_heightMap/RayHit/world-size queries are what
       GameLogic reaches (simulation), while m_renderer/BuildOpenGlState
       are presentation; expect to move the class and leave
       LandscapeRenderer above, mirroring how Location itself keeps its
       Render half working via GameLogic's legal downward reach into
-      NeuronClient. Add Species/Landscape.h and Species/Landscape.cpp to
+      NeuronClient. Add GameLogic/Landscape.h and GameLogic/Landscape.cpp to
       the touch set when starting.
     status: abandoned
     notes: >
@@ -715,7 +715,7 @@ tasks:
     files:
       - Species/LocationEditor.h
       - Species/UserInput.h
-      - Species/TaskManager.h
+      - GameLogic/TaskManager.h
       - Species/Script.h
       - Species/GameCursor.h
       - Species/TaskManagerInterface.h
@@ -883,6 +883,7 @@ tasks:
     files:
       - Tests/GameLogicTests/LinkStubs.cpp
       - Tests/GameLogicTests/EntityGridTests.cpp
+      - Tests/GameLogicTests/RoutingSystemTests.cpp
       - Tests/GameLogicTests/GameLogicTests.vcxproj
       - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
     acceptance:
@@ -893,7 +894,35 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      Landed with T15, because it could not land before it. The stub half was
+      already finished — T14 emptied LinkStubs.cpp outright, so "shrank to
+      stubs for not-yet-moved symbols only" is satisfied by there being none.
+      The test half had to wait: EntityGrid and Route lived in Species until
+      T15 moved them, and GameLogicTests had no test file at all — only
+      LinkStubs.cpp and pch.cpp. Writing them was part of proving T15's third
+      acceptance line rather than a follow-up to it.
+
+      Ten tests. EntityGridTests covers the spatial queries the intent names —
+      cell sizing against the landscape, add, remove, per-team filing, and the
+      team-255 sentinel — and RoutingSystemTests covers waypoint ordering,
+      which is the same determinism property from the other side: an entity's
+      m_routeWayPointId is a position in that LList, so anything that reorders
+      it moves every unit already walking.
+
+      The fixture is the interesting part and worth reusing. EntityGrid reads
+      g_location in its constructor, so the test installs one — and a
+      default-constructed Location is a legal empty world, because
+      Landscape::GetWorldSizeX returns 1e6 when no heightmap is loaded. That is
+      enough for construction and the cell arithmetic, and not enough for
+      anything that resolves an id: GetNeighbours goes through
+      Location::GetEntity, and a TypeGroundPos waypoint samples the heightmap.
+      A fixture that loads a real level is the next step and belongs with
+      containers-replaced T12.
+
+      LinkStubs.cpp still exists, empty, carrying the explanation of why the
+      wall was there. It can go whenever the reminder stops being useful.
 
   - id: T13
     title: Delete the stale upward includes
@@ -1035,38 +1064,38 @@ tasks:
     project: GameLogic
     depends_on: [T9, T10, T14]
     files:
-      - Species/Location.h
-      - Species/Location.cpp
-      - Species/GlobalWorld.h
-      - Species/GlobalWorld.cpp
-      - Species/Team.h
-      - Species/Team.cpp
-      - Species/Unit.h
-      - Species/Unit.cpp
-      - Species/LevelFile.h
-      - Species/LevelFile.cpp
-      - Species/EntityGrid.h
-      - Species/EntityGrid.cpp
-      - Species/ObstructionGrid.h
-      - Species/ObstructionGrid.cpp
-      - Species/RoutingSystem.h
-      - Species/RoutingSystem.cpp
-      - Species/ParticleSystem.h
-      - Species/ParticleSystem.cpp
-      - Species/Explosion.h
-      - Species/Explosion.cpp
-      - Species/Landscape.h
-      - Species/Landscape.cpp
-      - Species/Water.h
-      - Species/Water.cpp
-      - Species/Clouds.h
-      - Species/Clouds.cpp
-      - Species/LandscapeRenderer.h
-      - Species/LandscapeRenderer.cpp
-      - Species/GlobalInternet.h
-      - Species/GlobalInternet.cpp
-      - Species/TaskManager.h
-      - Species/TaskManager.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/Team.h
+      - GameLogic/Team.cpp
+      - GameLogic/Unit.h
+      - GameLogic/Unit.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
+      - GameLogic/EntityGrid.h
+      - GameLogic/EntityGrid.cpp
+      - GameLogic/ObstructionGrid.h
+      - GameLogic/ObstructionGrid.cpp
+      - GameLogic/RoutingSystem.h
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/ParticleSystem.h
+      - GameLogic/ParticleSystem.cpp
+      - GameLogic/Explosion.h
+      - GameLogic/Explosion.cpp
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
+      - GameLogic/Water.h
+      - GameLogic/Water.cpp
+      - GameLogic/Clouds.h
+      - GameLogic/Clouds.cpp
+      - GameLogic/LandscapeRenderer.h
+      - GameLogic/LandscapeRenderer.cpp
+      - GameLogic/GlobalInternet.h
+      - GameLogic/GlobalInternet.cpp
+      - GameLogic/TaskManager.h
+      - GameLogic/TaskManager.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -1232,11 +1261,50 @@ tasks:
       GlobalInternet.h; both become Species -> GameLogic after the move, which
       is downward and needs no allowlist entry.
 
-      WHAT THE MOVE ITSELF STILL NEEDS, none of it measurement any more:
-      git mv for 30 files, both project files rewritten, pch.h swapped in 15
-      .cpp files, the allowlist regenerated, the `files` lists in
-      containers-replaced T12/T13, ownership T5 and strings-modernised T8
-      rewritten to GameLogic/ paths, and the owner-run Garden smoke test.
+      THE MOVE IS DONE. 32 files by git mv, 64 project-file entries moved
+      across, and the allowlist went 255 -> 7 — verified by `comm -13` that it
+      gained nothing at any point, which is what the second acceptance line
+      asks. No pch.h edit was needed after all: Species/pch.h and
+      GameLogic/pch.h are byte-identical (`#include "NeuronClient.h"`), and
+      each resolves to its own directory first. 100 paths were rewritten
+      across five other plans' `files` lists.
+
+      What is left after it: three GameLogic .cpp files reaching Species
+      (MainMenus, PrefsKeybindingsWindow, PrefsScreenWindow — all UI, all
+      Renderer.h or TaskManagerInterfaceIcons.h) and four NeuronClient .cpp
+      files reaching GameLogic (Resource, SoundInstance, SoundSystem — all for
+      Location.h or Entity.h). Renderer.cpp -> LandscapeRenderer.h and
+      GameMenu.cpp -> GlobalInternet.h became downward, as predicted.
+
+      THE ACCEPTANCE'S TEST LINE WAS NOT FREE. GameLogicTests had no test file
+      at all — only LinkStubs.cpp and pch.cpp — so "can construct an EntityGrid
+      and a Route without LinkStubs" was unproven either way. It is proven now:
+      EntityGridTests.cpp and RoutingSystemTests.cpp, ten tests, constructing
+      real simulation objects against a Location the test builds itself.
+      Landscape::GetWorldSizeX returns 1e6 with no heightmap loaded, which is
+      what makes a default-constructed Location a usable empty world.
+
+      The test projects' include paths were tightened in the same commit, since
+      this is what made it possible: GameLogicTests no longer sees Species,
+      NeuronClientTests sees only NeuronCore and NeuronClient, NeuronCoreTests
+      only NeuronCore. Those paths were wide because the libraries reached
+      upward through their HEADERS; none does now, so an upward include from a
+      test fails to compile instead of waiting for check_layering.
+
+      check_hygiene.py needed a fix to survive this task, and the fix is worth
+      recording. A git mv reads as a brand new file, so every NULL and sprintf
+      in a moved file counted as one this change introduced — 33 findings
+      against code untouched by a character. Following git's own rename
+      detection fixed six of them and not the rest: git pairs by content
+      similarity, and the whole-file clang-format commit earlier in this branch
+      rewrote every line, so EntityGrid.cpp scored 16% similar to its own base
+      version. Lowering the threshold that far would pair unrelated files. It
+      now falls back to matching an unambiguous basename across the add and
+      delete sets, which is what a directory move looks like and is immune to
+      any amount of reformatting.
+
+      STILL OWED: the Garden smoke test, owner-run. This moves the world's
+      home, and nothing automated exercises a loaded level.
 
       T10 HANDS THIS TASK EIGHT MORE ENTRIES, found while running it:
       TaskManager.h (5), Water.h (2) and TaskManagerInterfaceIcons.h (1).
@@ -1260,4 +1328,4 @@ tasks:
       the acceptance list is the mechanical half of the same thing: 22 of
       these paths appear in other plans' `files` lists and are wrong the
       moment this lands.
-    status: todo
+    status: done

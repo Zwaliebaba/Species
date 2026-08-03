@@ -6,9 +6,9 @@ summary: >
   Migration stage 4 (CODING_STANDARDS.md): char*/char[N] buffers and the
   strcpy/strncpy/strcat/sprintf/snprintf family become std::string,
   std::string_view and std::format. Measured on b69c951 — re-measure:
-  ~345 call sites across 84 files. Hotspots: Species/GlobalWorld.cpp (22),
+  ~345 call sites across 84 files. Hotspots: GameLogic/GlobalWorld.cpp (22),
   Species/TaskManagerInterfaceIcons.cpp (21), NeuronClient/Eclipse.cpp (20),
-  Species/LevelFile.cpp (19), NeuronClient/LanguageTable.cpp (16),
+  GameLogic/LevelFile.cpp (19), NeuronClient/LanguageTable.cpp (16),
   Species/App.cpp (15), GameLogic/InputField.cpp (15).
 
   Two hard exclusions:
@@ -295,8 +295,8 @@ tasks:
       - Species/Main.cpp
       - Species/GameCursor.cpp
       - Species/GameMenu.cpp
-      - Species/EntityGrid.cpp
-      - Species/Water.cpp
+      - GameLogic/EntityGrid.cpp
+      - GameLogic/Water.cpp
     acceptance:
       - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the listed files returns 0
     verify:
@@ -319,8 +319,8 @@ tasks:
     depends_on: [T1, T7]
     blocked_by: [containers-replaced/T12, containers-replaced/T13, layering-inversion/T15]
     files:
-      - Species/GlobalWorld.cpp
-      - Species/LevelFile.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/LevelFile.cpp
       - Species/Script.cpp
     acceptance:
       - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the three files returns 0

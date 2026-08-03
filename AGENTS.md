@@ -407,18 +407,21 @@ Real, currently true, and worth knowing before you trip over them:
   - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
     runner is a preview image that roughly doubles wall clock, and ARM64 is built
     constantly at the desk anyway. Deliberate, not an oversight.
-- **`NeuronClient` and `GameLogic` still reach up into `Species`.** 326 upward
-  includes remain, down from 628. `NeuronCore` is standalone, reaches upward
-  nowhere, and `NeuronCore.vcxproj` lists no include directories at all, so a
-  new upward include there fails to compile rather than quietly working.
-  `App.h` is now in the same position for the layers below it: the subsystem
-  pointers live in `NeuronClient/WorldPointers.h`, the application state in
-  `AppState.h`, and the seven actions only `App` can perform behind the
-  `AppCommands` interface it installs at startup. `Renderer` is reached through
-  `RendererAccess`. What is left is `Location.h`, `Camera.h` and a long tail —
-  see `tasks/layering-inversion.yaml`, where the moves are deliberately
-  sequenced *after* the reaches they would otherwise turn into new allowlist
-  entries.
+- **Seven upward includes remain, down from 628.** `NeuronCore` is standalone,
+  reaches upward nowhere, and `NeuronCore.vcxproj` lists no include directories
+  at all, so a new upward include there fails to compile rather than quietly
+  working. `App.h` is now in the same position for the layers below it: the
+  subsystem pointers live in `NeuronClient/WorldPointers.h`, the application
+  state in `AppState.h`, and the seven actions only `App` can perform behind the
+  `AppCommands` interface it installs at startup. `Renderer`, `Camera`,
+  `Script`, `UserInput`, `TaskManagerInterface`, `ControlHelp`,
+  `LocationEditor` and `GameCursor` are each reached through an `*Access`
+  interface header in `NeuronClient`, and the world model — `Location`,
+  `GlobalWorld`, `Team`, `Unit`, the grids, the routing system and the
+  landscape — now lives in `GameLogic` rather than being reached up into.
+  What is left is three `GameLogic` files reaching `Species` and four
+  `NeuronClient` files reaching `GameLogic`; `tools/layering_allowlist.txt`
+  names them, and `tasks/layering-inversion.yaml` owns the rest.
 - **Release is not built by anyone.** Three template leftovers — missing include
   paths, a precompiled header nothing created, and `Species` linking Release as a
   console app when `WinMain` is its entry point — are all fixed, and
