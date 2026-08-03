@@ -32,11 +32,13 @@ static int maximiseOldY = 0;
 static int maximiseOldW = 0;
 static int maximiseOldH = 0;
 
-static char mouseDownWindow[SIZE_ECLWINDOW_NAME] = "None"; // Which window have I just clicked in
-static char windowFocus[SIZE_ECLWINDOW_NAME] = "None";     // Which window is at the front
-static char popupWindow[SIZE_ECLWINDOW_NAME] = "None";     // Current popup window
-static char maximisedWindow[SIZE_ECLWINDOW_NAME] = "None"; // Which window is maximised
-static char currentButton[SIZE_ECLBUTTON_NAME] = "None";   // Current highlighted button
+// "None" is a sentinel NAME, not an empty string: callers compare against the
+// literal, and EclGetWindow("None") is expected to miss. Kept as it was.
+static std::string mouseDownWindow = "None"; // Which window have I just clicked in
+static std::string windowFocus = "None";     // Which window is at the front
+static std::string popupWindow = "None";     // Current popup window
+static std::string maximisedWindow = "None"; // Which window is maximised
+static std::string currentButton = "None";   // Current highlighted button
 
 // ============================================================================
 
@@ -88,7 +90,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
       {
         if (strcmp(currentButton, button->m_name) != 0)
         {
-          strcpy(currentButton, button->m_name);
+          currentButton = button->m_name;
           EclDirtyWindow(currentWindow);
           tooltipTimer = EclGetAccurateTime() + 1000;
         }
@@ -105,7 +107,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
       {
         if (strcmp(currentButton, "None") != 0)
         {
-          strcpy(currentButton, "None");
+          currentButton = "None";
           EclDirtyWindow(currentWindow);
           if (tooltipCallback)
             tooltipCallback(nullptr, nullptr);
@@ -116,7 +118,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
     {
       if (strcmp(currentButton, "None") != 0)
       {
-        strcpy(currentButton, "None");
+        currentButton = "None";
         if (tooltipCallback)
           tooltipCallback(nullptr, nullptr);
       }
@@ -132,19 +134,19 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
     {
       if (strcmp(windowFocus, "None") != 0)
         EclDirtyWindow(windowFocus);
-      strcpy(windowFocus, currentWindow->m_name);
+      windowFocus = currentWindow->m_name;
       EclBringWindowToFront(currentWindow->m_name);
-      strcpy(mouseDownWindow, currentWindow->m_name);
+      mouseDownWindow = currentWindow->m_name;
 
       EclButton* button = currentWindow->GetButton(mouseX - currentWindow->m_x, mouseY - currentWindow->m_y);
       if (button)
       {
-        strcpy(currentButton, button->m_name);
+        currentButton = button->m_name;
         button->MouseDown();
       }
       else
       {
-        strcpy(currentButton, "None");
+        currentButton = "None";
         currentWindow->MouseEvent(true, false, false, true);
         if (currentWindow->m_movable)
         {
@@ -158,7 +160,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
       if (strcmp(windowFocus, "None") != 0)
       {
         EclDirtyWindow(windowFocus);
-        strcpy(windowFocus, "None");
+        windowFocus = "None";
       }
     }
 
@@ -222,7 +224,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
   }
   else if (!_lmb && lmb) // Left button up
   {
-    strcpy(mouseDownWindow, "None");
+    mouseDownWindow = "None";
     lmb = false;
 
     EclWindow* currentWindow = EclGetWindow(buttonDownMouseX, buttonDownMouseY);
@@ -353,7 +355,7 @@ void EclShutdown()
   };
 }
 
-char* EclGetCurrentButton() { return currentButton; }
+char const* EclGetCurrentButton() { return currentButton.c_str(); }
 
 char const* EclGetCurrentClickedButton()
 {
@@ -364,19 +366,21 @@ char const* EclGetCurrentClickedButton()
     return "None";
 }
 
-char* EclGenerateUniqueWindowName(char* name)
+char const* EclGenerateUniqueWindowName(char const* name)
 {
-  static char uniqueName[SIZE_ECLWINDOW_NAME];
+  // Static because the return type is a pointer and callers hold it long
+  // enough to register a window with it.
+  static std::string uniqueName;
 
   int index = 1;
-  strcpy(uniqueName, name);
-  while (EclGetWindow(uniqueName))
+  uniqueName = name;
+  while (EclGetWindow(uniqueName.c_str()))
   {
     ++index;
-    sprintf(uniqueName, "%s%d", name, index);
+    uniqueName = std::format("{}{}", name, index);
   }
 
-  return uniqueName;
+  return uniqueName.c_str();
 }
 
 void EclRegisterWindow(EclWindow* window, EclWindow* parent)
@@ -412,7 +416,7 @@ void EclRegisterPopup(EclWindow* window)
 {
   EclRemovePopup();
   // DebugAssert( window );
-  strcpy(popupWindow, window->m_name);
+  popupWindow = window->m_name;
   EclRegisterWindow(window);
 }
 
@@ -422,7 +426,7 @@ void EclRemovePopup()
   {
     EclRemoveWindow(popupWindow);
   }
-  strcpy(popupWindow, "None");
+  popupWindow = "None";
 }
 
 void EclRemoveWindow(char const* name)
@@ -437,12 +441,12 @@ void EclRemoveWindow(char const* name)
 
     if (strcmp(mouseDownWindow, name) == 0)
     {
-      strcpy(mouseDownWindow, "None");
+      mouseDownWindow = "None";
     }
 
     if (strcmp(windowFocus, name) == 0)
     {
-      strcpy(windowFocus, "None");
+      windowFocus = "None";
     }
   }
   else
@@ -564,9 +568,9 @@ void EclMaximiseWindow(char const* name)
   EclWindow* w = EclGetWindow(name);
   if (w)
   {
-    strcpy(maximisedWindow, name);
-    strcpy(mouseDownWindow, name);
-    strcpy(windowFocus, name);
+    maximisedWindow = name;
+    mouseDownWindow = name;
+    windowFocus = name;
     maximiseOldX = w->m_x;
     maximiseOldY = w->m_y;
     maximiseOldW = w->m_w;
@@ -579,7 +583,7 @@ void EclMaximiseWindow(char const* name)
 void EclUnMaximise()
 {
   EclWindow* w = EclGetWindow(maximisedWindow);
-  strcpy(maximisedWindow, "None");
+  maximisedWindow = "None";
 
   if (w)
   {
@@ -666,12 +670,12 @@ bool EclRectangleOverlap(int x1, int y1, int w1, int h1, int x2, int y2, int w2,
     return false;
 }
 
-char* EclGetCurrentFocus() { return windowFocus; }
+char const* EclGetCurrentFocus() { return windowFocus.c_str(); }
 
 void EclSetCurrentFocus(char* name)
 {
   if (strlen(name) < SIZE_ECLWINDOW_NAME)
   {
-    strcpy(windowFocus, name);
+    windowFocus = name;
   }
 }

@@ -23,14 +23,14 @@ TextReader::TextReader()
   strcpy(m_seperatorChars, DEFAULT_SEPERATOR_CHARS);
 }
 
-TextReader::~TextReader() { delete [] m_line; }
+TextReader::~TextReader() { delete[] m_line; }
 
 void TextReader::DoubleMaxLineLen()
 {
   ASSERT_TEXT(m_maxLineLen < 65536, "Text file contains line with more than 65536 characters");
-  auto newLine = new char [m_maxLineLen * 2 + 1];
+  auto newLine = new char[m_maxLineLen * 2 + 1];
   memcpy(newLine, m_line, m_maxLineLen + 1);
-  delete [] m_line;
+  delete[] m_line;
   m_line = newLine;
   m_maxLineLen *= 2;
 }
@@ -137,7 +137,10 @@ char* TextReader::GetNextToken()
 
   // Skip over initial separator characters
   int m_tokenStart = m_tokenIndex;
-  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars, m_line[m_tokenStart]) != nullptr) { m_tokenStart++; }
+  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars, m_line[m_tokenStart]) != nullptr)
+  {
+    m_tokenStart++;
+  }
 
   // Make sure that we haven't found an empty token
   if (m_line[m_tokenStart] == '\0')
@@ -171,7 +174,10 @@ char* TextReader::GetRestOfLine()
 
   // Skip over initial separator characters
   int m_tokenStart = m_tokenIndex;
-  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars, m_line[m_tokenStart]) != nullptr) { m_tokenStart++; }
+  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars, m_line[m_tokenStart]) != nullptr)
+  {
+    m_tokenStart++;
+  }
 
   return &m_line[m_tokenStart];
 }
@@ -249,7 +255,10 @@ TextDataReader::TextDataReader(const char* _data, unsigned int _dataSize, const 
   : TextReader(),
     m_data(_data),
     m_dataSize(_dataSize),
-    m_offset(0) { strncpy(m_filename, _filename, sizeof(m_filename) - 1); }
+    m_offset(0)
+{
+  strncpy(m_filename, _filename, sizeof(m_filename) - 1);
+}
 
 bool TextDataReader::IsOpen() { return true; }
 
@@ -277,7 +286,10 @@ bool TextDataReader::ReadLine()
 
   // Make sure the line buffer is big enough to accomodate our painful length
   unsigned int lineLen = eolOffset - m_offset + 1;
-  while (lineLen > m_maxLineLen) { DoubleMaxLineLen(); }
+  while (lineLen > m_maxLineLen)
+  {
+    DoubleMaxLineLen();
+  }
 
   // Copy from the data block into m_line
   memcpy(m_line, &m_data[m_offset], lineLen);

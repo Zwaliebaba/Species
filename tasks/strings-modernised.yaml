@@ -171,20 +171,121 @@ tasks:
     blocked_by: [containers-replaced/T7]
     files:
       - NeuronClient/Eclipse.cpp
-      - NeuronClient/EclWindow.cpp
-      - NeuronClient/EclButton.cpp
-      - NeuronClient/TextRenderer.cpp
       - NeuronClient/SepulvedaStrings.cpp
       - NeuronClient/TextStreamReaders.cpp
     acceptance:
-      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the six files returns 0
-      - No fixed char[N] buffer remains in their class declarations
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the three files returns 0
+      - Every fixed char[N] LOCAL and file static is gone; the widget members move in T11
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     status: todo
+    notes: |
+      SCOPE CORRECTED 2026-08-03, and the second acceptance line is what
+      changed. It read "no fixed char[N] buffer remains in their class
+      declarations", which sounds like a property of these six files and is not:
+      the buffers in question are EclButton::m_name and EclWindow::m_name, and
+      they have 115 references across NeuronClient, GameLogic and Species, 60 of
+      them C-string operations in files this task does not list.
+
+      That is the same shape as the split that produced T10 and
+      containers-replaced/T18: a task that looks layer-local because its file
+      list is, while the thing it actually has to change is reached from
+      everywhere. Measured before starting rather than discovered halfway
+      through, which is the only reason it is a split and not a third red build.
+
+      SPLIT AGAIN, same measurement, same day. TextRenderer.cpp's eight sites are
+      all inside the DrawText2D/DrawText3D family, which take `char *_text, ...`
+      and vsprintf into a stack buffer. Removing the vsprintf means making them
+      std::format templates, and those have 241 CALL SITES — 161 in GameLogic,
+      57 in Species, 8 here. That is T12.
+
+      This task is now the genuinely local half: Eclipse.cpp's five file statics
+      and its unique-name builder, SepulvedaStrings' key and phrase buffers, and
+      TextStreamReaders' separator array. Eclipse's statics are reached from
+      outside only through EclGetCurrentButton and EclGetCurrentFocus, which
+      have two callers between them.
+
+      EclWindow.cpp and EclButton.cpp left the list because every one of their
+      sites writes m_name, m_title or m_currentTextEdit — T11's members. There
+      was nothing local left in them to do.
+
+  - id: T12
+    title: Convert the TextRenderer variadic text API
+    intent: >
+      DrawText2D, DrawText2DCentre, DrawText2DRight and their 3D counterparts
+      take `char *_text, ...` and vsprintf into a fixed stack buffer. Making
+      them std::format templates removes the unbounded write and gets
+      compile-time format checking, but it is a signature change with 241 call
+      sites — 161 in GameLogic, 57 in Species, 8 in NeuronClient — so it is its
+      own task rather than four lines inside T3.
+    project: NeuronClient
+    depends_on: [T3]
+    files:
+      - NeuronClient/TextRenderer.h
+      - NeuronClient/TextRenderer.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over TextRenderer returns 0
+      - No variadic (...) entry point remains on TextRenderer
+      - Every call site compiles unchanged or is updated in the same commit; no format string is reinterpreted
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - Owner runs the Garden smoke test — every step renders text, so a broken format shows immediately
+    parallel_safe: false
+    status: todo
+    notes: |
+      Split out of T3 on 2026-08-03, on the measurement in T3's notes.
+
+      The trap here is not the template. It is that printf and std::format
+      disagree about what a bare `%` means and about argument types: a call
+      passing an int to %s compiles today and is undefined at runtime, while
+      std::format rejects it at compile time. That is an improvement, but it
+      means the 241 sites cannot be assumed to be correct — each one that fails
+      to compile is a latent bug being surfaced, not a conversion error, and
+      should be recorded as such rather than silently patched.
+
+  - id: T11
+    title: Convert the Eclipse widget name and caption members
+    intent: >
+      EclButton::m_name, EclWindow::m_name, m_title and m_currentTextEdit are
+      fixed char arrays that the whole UI compares, copies and formats with —
+      115 references, 60 of them C-string calls, spread across NeuronClient,
+      GameLogic and Species. Converting them is a UI-wide change and gets its
+      own task rather than riding along inside T3's six-file list.
+    project: NeuronClient
+    depends_on: [T3, T5]
+    files:
+      - NeuronClient/EclButton.h
+      - NeuronClient/EclButton.cpp
+      - NeuronClient/EclWindow.h
+      - NeuronClient/EclWindow.cpp
+      - NeuronClient/Eclipse.cpp
+      - NeuronClient/WindowManager.cpp
+    acceptance:
+      - EclButton and EclWindow declare no fixed char[N] member
+      - grep -rn "m_name" over the six projects shows no strcmp, stricmp, strcpy or strlen call on a widget name
+      - Menu and window lookup by name is by-construction unchanged; Eclipse matches names case-sensitively today and must continue to
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - Owner runs the Garden smoke test — step 6, the Task Manager, is the one this can break
+    parallel_safe: false
+    status: todo
+    notes: |
+      Split out of T3 on 2026-08-03. See T3's notes for the measurement.
+
+      The risky part is not the type change, it is that Eclipse looks windows
+      and buttons up BY NAME with strcmp, and a std::string comparison is
+      case-sensitive in the same way strcmp is but NOT in the same way stricmp
+      is. Both appear in the call sites, so each one has to be read rather than
+      swept — getting that wrong silently breaks a menu button rather than
+      failing to compile.
+
+      Depends on T5 as well as T3 because InputField writes into these fields
+      through a raw char*, and T5 is what converts InputField.
 
   - id: T4
     title: Convert NeuronClient sound, resource and filesystem string handling
