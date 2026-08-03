@@ -284,3 +284,50 @@ tasks:
       the new check on every push, which is the verification that matters for
       it.
     status: done
+
+  - id: T8
+    title: Retire the min and max macros that shadow the std functions
+    intent: >
+      NeuronCore/MathUtils.h defines function-style `min(a,b)` and `max(a,b)`
+      macros. NeuronCore.h sets NOMINMAX to keep the Windows pair out, and then
+      this header puts an equivalent pair back — so `std::min` and `std::max`
+      do not compile anywhere MathUtils.h is reachable, which from a NeuronCore
+      header is most of the tree. Every stage 3, 4 and 5 conversion wants those
+      functions; today each one has to write the comparison out by hand and
+      explain why. Replacing the macros with the std functions removes a
+      standing obstacle rather than a wart.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/MathUtils.h
+    acceptance:
+      - MathUtils.h defines no min or max macro; grep -nE "define[[:space:]]+(min|max)\b" over the six projects returns nothing
+      - The 216 bare min(/max( call sites across 51 files resolve to std::min/std::max, by include or by qualification, with no change to any computed value
+      - A file that previously failed on std::min now compiles — NetworkUpdate.cpp's SetClientIp is the worked example, and its hand-written comparison collapses back to std::min in the same commit
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    notes: >
+      Found on 2026-08-02 by strings-modernised T2, the hard way: one
+      std::min in NetworkUpdate.cpp failed CI with C2589, and it turned out to
+      be the only std::min or std::max anywhere in the tree. Nobody had tried
+      before, which is why a macro that shadows two of the most reachable
+      functions in the standard library had gone unnoticed.
+
+      Determinism: min and max on floats are the macro's `(a) < (b) ? ...`
+      versus std::min's `b < a ? b : a`. Those agree for every non-NaN input
+      and pick different arguments only on ties of equal value, so no computed
+      float changes — but the macros also double-evaluate their arguments, so
+      any call site passing an expression with a side effect (or an expensive
+      one) changes behaviour when it stops being evaluated twice. Audit for
+      that while converting; it is the one place this can bite.
+
+      MathUtils.cpp carries a third-party notice listed in LICENSE. MathUtils.h
+      does not, but check before editing rather than after.
+
+      parallel_safe false: 51 files, and the include-order sensitivity means a
+      half-landed version is worse than either end state.
+    status: todo
+

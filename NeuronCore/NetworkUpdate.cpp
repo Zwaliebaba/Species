@@ -129,8 +129,17 @@ void NetworkUpdate::SetClientIp( char *ip )
   // ran off the end of a 16-byte field for anything longer than a dotted
   // quad; today every caller passes an address the UDP layer produced, but
   // nothing in the signature said so.
+  // Written out rather than with std::min, which does not compile anywhere
+  // MathUtils.h is reachable: it defines function-style min and max macros, so
+  // `std::min(` becomes `std::(...)(` and MSVC reports C2589. NOMINMAX
+  // suppresses the Windows pair; nothing suppresses ours. See
+  // tasks/language-hygiene.yaml T8.
   const std::string_view source(ip ? ip : "");
-  const size_t length = std::min(source.size(), sizeof(m_clientIp) - 1);
+  size_t length = source.size();
+  if (length > sizeof(m_clientIp) - 1)
+  {
+    length = sizeof(m_clientIp) - 1;
+  }
   std::memcpy(m_clientIp, source.data(), length);
   m_clientIp[length] = '\0';
 }
