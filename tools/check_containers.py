@@ -14,9 +14,11 @@ type `m_tasks` is in a header the changed line never mentions.
 
 WHAT IT CANNOT DO. It matches on member NAME, not on a resolved expression
 type, so a name declared as a vector in one class and a SlotMap in another is
-ambiguous and is reported as such rather than guessed at. That is not
-hypothetical — m_spirits and m_lights are each both, and getting the receiver
-wrong there was itself one of the three failures.
+skipped and counted rather than guessed at. That is not hypothetical —
+m_buildings, m_spirits and m_lights are each both, and getting the receiver
+wrong on one of them was itself one of the three failures. An earlier draft
+reported them as "check the receiver by hand" and produced several hundred
+lines nobody would read, which is a worse failure than the blind spot.
 """
 
 from __future__ import annotations

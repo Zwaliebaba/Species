@@ -17,9 +17,7 @@ std::vector<char*>* ListDirectory(const char* _dir, const char* _filter, bool _f
   auto result = new std::vector<char*>();
 
   // Now add on all files found locally
-  char searchstring[256];
-  DEBUG_ASSERT(strlen(_dir) + strlen(_filter) < sizeof(searchstring) - 1);
-  sprintf(searchstring, "%s%s", _dir, _filter);
+  const std::string searchstring = std::string(_dir) + _filter;
 
   _finddata_t thisfile;
   // intptr_t, not long. _findfirst returns a 64-bit handle on x64 and long is
@@ -27,7 +25,7 @@ std::vector<char*>* ListDirectory(const char* _dir, const char* _filter, bool _f
   // _findnext below was reading through whatever the truncated value pointed
   // at. It survived in the game because the handles happened to fit; the tests
   // in Tests/NeuronClientTests/FilesysUtilsTests.cpp crashed on it immediately.
-  intptr_t fileindex = _findfirst(searchstring, &thisfile);
+  intptr_t fileindex = _findfirst(searchstring.c_str(), &thisfile);
 
   int exitmeplease = 0;
 
@@ -35,19 +33,11 @@ std::vector<char*>* ListDirectory(const char* _dir, const char* _filter, bool _f
   {
     if (strcmp(thisfile.name, ".") != 0 && strcmp(thisfile.name, "..") != 0 && !(thisfile.attrib & _A_SUBDIR))
     {
-      char* newname = nullptr;
-      if (_fullFilename)
-      {
-        int len = strlen(_dir) + strlen(thisfile.name);
-        newname = new char [len + 1];
-        sprintf(newname, "%s%s", _dir, thisfile.name);
-      }
-      else
-      {
-        int len = strlen(thisfile.name);
-        newname = new char [len + 1];
-        sprintf(newname, "%s", thisfile.name);
-      }
+      // Still `new char[]`, still the caller's to delete[] — the header says
+      // so and ownership/T3 is what changes it. Only the formatting moves here.
+      const std::string name = _fullFilename ? std::string(_dir) + thisfile.name : std::string(thisfile.name);
+      char* newname = new char[name.size() + 1];
+      std::memcpy(newname, name.c_str(), name.size() + 1);
 
       result->push_back(newname);
     }
@@ -100,45 +90,59 @@ bool DoesFileExist(const char* _fullPath)
   return false;
 }
 
-#define FILE_PATH_BUFFER_SIZE 256
-static char s_filePathBuffer[FILE_PATH_BUFFER_SIZE + 1];
+// All four of these return a pointer into this one buffer, so only one result
+// is valid at a time — holding two across a call is broken, and always was.
+// The storage is a std::string now rather than a char[257], which removes the
+// truncation at 256 characters and the copies that produced it, but NOT the
+// sharing. Fixing that means returning by value, which is a signature change
+// reaching five callers and the tests that assert a null return; it is noted
+// on tasks/strings-modernised.yaml T4 rather than smuggled in here.
+static std::string s_filePath;
 
 const char* GetDirectoryPart(const char* _fullFilePath)
 {
-  strncpy(s_filePathBuffer, _fullFilePath, FILE_PATH_BUFFER_SIZE);
+  const std::string_view path(_fullFilePath);
+  const size_t finalSlash = path.find_last_of('/');
+  if (finalSlash == std::string_view::npos)
+    return nullptr;
 
-  char* finalSlash = strrchr(s_filePathBuffer, '/');
-  if (finalSlash)
-  {
-    *(finalSlash + 1) = '\x0';
-    return s_filePathBuffer;
-  }
-
-  return nullptr;
+  // Inclusive of the slash — callers concatenate a filename straight onto it.
+  s_filePath = path.substr(0, finalSlash + 1);
+  return s_filePath.c_str();
 }
 
 const char* GetFilenamePart(const char* _fullFilePath)
 {
-  const char* filePart = strrchr(_fullFilePath, '/') + 1;
-  if (filePart)
-  {
-    strncpy(s_filePathBuffer, filePart, FILE_PATH_BUFFER_SIZE);
-    return s_filePathBuffer;
-  }
-  return nullptr;
+  // BEHAVIOUR DEFINED HERE, deliberately. This read `strrchr(path, '/') + 1`
+  // and then tested the result for null — but the +1 happens first, so a path
+  // with no slash produced 0x1, which is not null, and the copy that followed
+  // read from address 1. A bare filename now returns itself, which is what the
+  // name of the function promises. See tasks/strings-modernised.yaml T4.
+  const std::string_view path(_fullFilePath);
+  const size_t finalSlash = path.find_last_of('/');
+  s_filePath = finalSlash == std::string_view::npos ? path : path.substr(finalSlash + 1);
+  return s_filePath.c_str();
 }
 
-const char* GetExtensionPart(const char* _fullFilePath) { return strrchr(_fullFilePath, '.') + 1; }
+const char* GetExtensionPart(const char* _fullFilePath)
+{
+  // Same defect and the same fix: `strrchr(path, '.') + 1` handed back 0x1 for
+  // a name with no dot, and this one did not even test it. Returns empty now,
+  // NOT null — every caller passes the result straight to stricmp or a
+  // BitmapRGBA constructor without checking, so null would crash them where
+  // empty does not.
+  const std::string_view path(_fullFilePath);
+  const size_t finalDot = path.find_last_of('.');
+  s_filePath = finalDot == std::string_view::npos ? std::string_view() : path.substr(finalDot + 1);
+  return s_filePath.c_str();
+}
 
 const char* RemoveExtension(const char* _fullFileName)
 {
-  strcpy(s_filePathBuffer, _fullFileName);
-
-  char* dot = strrchr(s_filePathBuffer, '.');
-  if (dot)
-    *dot = '\x0';
-
-  return s_filePathBuffer;
+  const std::string_view name(_fullFileName);
+  const size_t finalDot = name.find_last_of('.');
+  s_filePath = finalDot == std::string_view::npos ? name : name.substr(0, finalDot);
+  return s_filePath.c_str();
 }
 
 bool CreateDirectory(const char* _directory)

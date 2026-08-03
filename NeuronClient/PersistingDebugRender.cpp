@@ -36,91 +36,42 @@ PersistRenderItem *PersistingDebugRenderer::FindItem(char const *_label)
 }
 
 
-void PersistingDebugRenderer::Square2d(float x, float y, float _size, unsigned int _life, char *_fmt, ...)
+PersistRenderItem& PersistingDebugRenderer::Record(unsigned int _type, unsigned int _life, std::string const& _label)
 {
-    char buf[512];
-    va_list ap;
-    va_start (ap, _fmt);
-    vsprintf(buf, _fmt, ap);
-	buf[63] = '\0';
+  // m_label is a char[64] and the label is truncated to fit it. The old code
+  // formatted into a char[512] with no bound, forced buf[63] to nul, and then
+  // did a bounded copy of 63 of those bytes — so it truncated twice and the
+  // first write was the unbounded one. Truncating once, here, is the whole
+  // change; FindItem still matches on the truncated text, exactly as before.
+  //
+  // Written out rather than with std::min, which does not compile anywhere
+  // MathUtils.h is reachable: it defines function-style min and max macros, so
+  // `std::min(` becomes `std::(...)(`. See tasks/language-hygiene.yaml T8.
+  const std::string_view label(_label);
+  size_t length = label.size();
+  if (length > sizeof(PersistRenderItem::m_label) - 1)
+  {
+    length = sizeof(PersistRenderItem::m_label) - 1;
+  }
+  const std::string truncated(label.substr(0, length));
 
-	PersistRenderItem *item = FindItem(buf);
-	if (!item)
-	{
+  PersistRenderItem* item = FindItem(truncated.c_str());
+  if (!item)
+  {
     item = m_items.GetPointer(m_items.GetNextFree());
   }
 
   item->m_life = _life;
-  item->m_vect1.x = x;
-  item->m_vect1.y = y;
-  item->m_size1 = _size;
-  item->m_type = TypeSquare2d;
+  item->m_type = _type;
 
-  strncpy(item->m_label, buf, sizeof(item->m_label) - 1);
-}
+  // Sphere and Vector did NOT copy the label in. That is preserved as a bug
+  // rather than a decision: FindItem looks the item up BY label, so an item
+  // recorded without one could never be found again and every call allocated a
+  // fresh slot until the map filled. Copying it for all four is the fix, and it
+  // is safe to make here because nothing calls any of them yet.
+  std::memcpy(item->m_label, truncated.c_str(), length + 1);
 
-
-void PersistingDebugRenderer::PointMarker(Vector3 const &_point, unsigned int _life, char *_fmt, ...)
-{
-    char buf[512];
-    va_list ap;
-    va_start (ap, _fmt);
-    vsprintf(buf, _fmt, ap);
-	buf[63] = '\0';
-
-	PersistRenderItem *item = FindItem(buf);
-	if (!item)
-	{
-    item = m_items.GetPointer(m_items.GetNextFree());
-  }
-
-  item->m_life = _life;
-  item->m_vect1 = _point;
-  item->m_type = TypePointMarker;
-
-  strncpy(item->m_label, buf, sizeof(item->m_label) - 1);
-}
-
-
-void PersistingDebugRenderer::Sphere(Vector3 const &_centre, float _radius, int _life, char *_fmt, ...)
-{
-    char buf[512];
-    va_list ap;
-    va_start (ap, _fmt);
-    vsprintf(buf, _fmt, ap);
-	buf[63] = '\0';
-
-	PersistRenderItem *item = FindItem(buf);
-	if (!item)
-	{
-    item = m_items.GetPointer(m_items.GetNextFree());
-  }
-
-  item->m_life = _life;
-  item->m_vect1 = _centre;
-  item->m_size1 = _radius;
-  item->m_type = TypeSphere;
-}
-
-
-void PersistingDebugRenderer::Vector(Vector3 const &_start, Vector3 const &_end, int _life, char *_fmt, ...)
-{
-    char buf[512];
-    va_list ap;
-    va_start (ap, _fmt);
-    vsprintf(buf, _fmt, ap);
-	buf[63] = '\0';
-
-	PersistRenderItem *item = FindItem(buf);
-	if (!item)
-	{
-    item = m_items.GetPointer(m_items.GetNextFree());
-  }
-
-  item->m_life = _life;
-  item->m_vect1 = _start;
-  item->m_vect2 = _end;
-  item->m_type = TypeVector;
+  return *item;
 }
 
 

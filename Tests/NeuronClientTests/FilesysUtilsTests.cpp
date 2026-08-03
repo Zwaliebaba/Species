@@ -79,11 +79,12 @@ namespace NeuronClientTests
   // a result must be consumed before the next call. The tests below hold at most
   // one result at a time for that reason, not by accident.
   //
-  // Deliberately not covered: paths with no '/' and paths with no '.'.
-  // GetFilenamePart and GetExtensionPart both add 1 to the result of strrchr
-  // before testing it, so those inputs are undefined behaviour today rather
-  // than a defined "returns nullptr". Pinning the current behaviour would make
-  // the eventual fix look like a regression; see the note in docs/TESTING.md.
+  // Paths with no '/' and paths with no '.' USED to be undefined behaviour and
+  // were deliberately left uncovered for that reason: GetFilenamePart and
+  // GetExtensionPart both added 1 to the result of strrchr before testing it,
+  // so a missing separator produced 0x1 rather than null and the read that
+  // followed went to address 1. strings-modernised/T4 defined them, so they
+  // are covered below — that is the fix the old note was waiting for.
   TEST_CLASS(FilesysUtilsTests)
   {
     public:
@@ -97,7 +98,34 @@ namespace NeuronClientTests
 
       TEST_METHOD(GetExtensionPartExcludesTheDot) { Assert::AreEqual("shp", GetExtensionPart("Shapes/citizen.shp")); }
 
-      TEST_METHOD(RemoveExtensionKeepsTheDirectory) { Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen.shp")); }
+      // The three edges strings-modernised/T4 defined. Each was undefined
+      // behaviour before it, so these pin a decision rather than a discovery.
+      TEST_METHOD(GetFilenamePartOfABareNameIsTheNameItself)
+      {
+        Assert::AreEqual("Locations.txt", GetFilenamePart("Locations.txt"));
+      }
+
+      TEST_METHOD(GetExtensionPartOfANameWithNoDotIsEmptyNotNull)
+      {
+        // Empty rather than null on purpose: every caller passes the result
+        // straight to stricmp or a BitmapRGBA constructor without checking it,
+        // so null would turn a missing extension into a crash.
+        const char* extension = GetExtensionPart("Shapes/citizen");
+        Assert::IsNotNull(extension);
+        Assert::AreEqual("", extension);
+      }
+
+      // NOT TESTED, deliberately: that the four helpers share one buffer, so
+      // the first result dies when the second call happens. A test for it would
+      // have to read the stale pointer, which is the undefined behaviour it
+      // claims to document — the assertion would be measuring whether the
+      // string happened to fit in its small-string buffer. The sharing is
+      // stated in FilesysUtils.cpp and the fix is recorded as owed on T4.
+
+      TEST_METHOD(RemoveExtensionKeepsTheDirectory)
+      {
+        Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen.shp"));
+      }
 
       TEST_METHOD(RemoveExtensionLeavesAnExtensionlessNameAlone) { Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen")); }
 
