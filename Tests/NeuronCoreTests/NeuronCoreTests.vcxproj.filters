@@ -11,6 +11,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="WorldObjectIdTests.cpp" />
     <ClCompile Include="ByteStreamTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

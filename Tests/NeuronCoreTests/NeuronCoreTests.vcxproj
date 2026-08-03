@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="WorldObjectIdTests.cpp" />
     <ClCompile Include="ByteStreamTests.cpp" />
     <ClCompile Include="DArrayTests.cpp" />
     <ClCompile Include="GenericTests.cpp" />

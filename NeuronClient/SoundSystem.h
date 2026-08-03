@@ -6,9 +6,10 @@
 #include "LList.h"
 #include "Vector3.h"
 #include "SoundInstance.h"
-#include "WorldObject.h"
+#include "WorldObjectId.h"
 
 class Entity;
+class WorldObject;
 class Building;
 class TextReader;
 class SoundInstance;

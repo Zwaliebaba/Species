@@ -1,8 +1,11 @@
 #pragma once
 
+#include "LList.h"
 #include "Vector3.h"
 #include "SoundParameter.h"
-#include "Entity.h"
+#include "WorldObjectId.h"
+
+class WorldObject;
 
 class SoundInstance;
 class SoundStreamDecoder;

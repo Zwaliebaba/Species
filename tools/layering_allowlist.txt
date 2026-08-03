@@ -277,9 +277,7 @@ GameLogic/Weapons.cpp -> Unit.h
 GameLogic/WorldObject.cpp -> Location.h
 NeuronClient/Resource.cpp -> Location.h
 NeuronClient/SoundInstance.cpp -> Location.h
-NeuronClient/SoundInstance.h -> Entity.h
 NeuronClient/SoundSystem.cpp -> Entity.h
 NeuronClient/SoundSystem.cpp -> Location.h
-NeuronClient/SoundSystem.h -> WorldObject.h
 NeuronClient/TargetCursor.cpp -> ControlHelp.h
 NeuronClient/TargetCursor.cpp -> TaskManagerInterface.h

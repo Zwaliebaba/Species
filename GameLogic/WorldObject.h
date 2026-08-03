@@ -2,55 +2,7 @@
 
 #include "RgbColour.h"
 #include "Vector3.h"
-
-
-// ****************************************************************************
-//  Class WorldObjectId
-// ****************************************************************************
-
-#define UNIT_BUILDINGS      -100
-#define UNIT_SPIRITS        -101
-#define UNIT_LASERS         -102
-#define UNIT_EFFECTS        -103
-
-
-class WorldObjectId
-{
-protected:
-    unsigned char   m_teamId;
-    int             m_unitId;
-    int             m_index;
-    int             m_uniqueId;
-
-protected:
-    static int      s_nextUniqueId;
-
-public:
-    WorldObjectId();
-    WorldObjectId( unsigned char _teamId, int _unitId, int _index, int _uniqueId );
-    void			Set( unsigned char _teamId, int _unitId, int _index, int _uniqueId );
-
-    void            SetInvalid();
-
-	void			SetTeamId   (unsigned char _teamId) { m_teamId = _teamId; }
-	void			SetUnitId   (int _unitId)			{ m_unitId = _unitId; }
-	void			SetIndex    (int _index)			{ m_index = _index; }
-	void			SetUniqueId (int _uniqueId)		    { m_uniqueId = _uniqueId; }
-    void            GenerateUniqueId                    ();
-
-	unsigned char   GetTeamId   () const				{ return m_teamId; }
-    int             GetUnitId   () const				{ return m_unitId; }
-    int             GetIndex    () const				{ return m_index; }
-    int             GetUniqueId () const				{ return m_uniqueId; }
-
-	bool            IsValid() const					    { return( m_teamId != 255 ||
-														          m_unitId != -1 ||
-														          m_index != -1 ); }
-
-	bool operator != (WorldObjectId const &w) const;
-	bool operator == (WorldObjectId const &w) const;
-    WorldObjectId const &operator = (WorldObjectId const &w);
-};
+#include "WorldObjectId.h"
 
 
 // ****************************************************************************

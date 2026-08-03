@@ -779,6 +779,22 @@ tasks:
       Species goes through TheScript() at every call site, not only where the
       interface is missing a member.
 
+      Then WorldObjectId moved from GameLogic/WorldObject.h into NeuronCore as
+      its own header and translation unit, which is the "move the declaration
+      down" fix rather than another seam. It is four scalars with no
+      dependencies, it goes onto the wire whole, and the only reason it sat in
+      GameLogic was that it shares a file with WorldObject. That clears
+      SoundInstance.h -> Entity.h and SoundSystem.h -> WorldObject.h; both
+      headers only ever needed the identity type, and WorldObject stays a
+      forward declaration in each. Its tests moved to NeuronCoreTests with it.
+
+      SoundSystem.cpp -> Entity.h stays, and is a different problem: the sound
+      system sizes its blueprint array by Entity::NumEntityTypes and looks up
+      Entity::GetTypeId. That is the entity type TABLE, not the identity type,
+      and moving it is a bigger question than this task.
+
+      Allowlist 274 -> 272.
+
   - id: T11
     title: Shrink LinkStubs and land the first real GameLogic behaviour tests
     intent: >

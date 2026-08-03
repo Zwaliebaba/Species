@@ -64,6 +64,7 @@
     <ClCompile Include="Vector2.cpp">
       <Filter>GameMath</Filter>
     </ClCompile>
+    <ClCompile Include="WorldObjectId.cpp" />
     <ClCompile Include="Vector3.cpp">
       <Filter>GameMath</Filter>
     </ClCompile>
@@ -137,6 +138,7 @@
     <ClInclude Include="Vector2.h">
       <Filter>GameMath</Filter>
     </ClInclude>
+    <ClInclude Include="WorldObjectId.h" />
     <ClInclude Include="Vector3.h">
       <Filter>GameMath</Filter>
     </ClInclude>

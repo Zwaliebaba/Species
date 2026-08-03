@@ -1,11 +1,11 @@
 #include "pch.h"
 
 #include "ByteStream.h"
-#include "WorldObject.h"
+#include "WorldObjectId.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace NeuronCoreTests
 {
   // WorldObjectId is network identity. The whole struct goes onto the wire
   // through WRITE_WORLDOBJECTID, and m_index is a raw DArray slot — which is why
@@ -108,4 +108,4 @@ namespace GameLogicTests
         Assert::IsTrue(received == id);
       }
   };
-} // namespace GameLogicTests
+} // namespace NeuronCoreTests

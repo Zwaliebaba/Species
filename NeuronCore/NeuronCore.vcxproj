@@ -29,6 +29,7 @@
     <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="Vector2.cpp" />
+    <ClCompile Include="WorldObjectId.cpp" />
     <ClCompile Include="Vector3.cpp" />
     <ClCompile Include="FileSys.cpp" />
     <ClCompile Include="GameTime.cpp" />
@@ -69,6 +70,7 @@
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="SliceDArray.h" />
     <ClInclude Include="Vector2.h" />
+    <ClInclude Include="WorldObjectId.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="ByteStream.h" />
     <ClInclude Include="Debug.h" />
