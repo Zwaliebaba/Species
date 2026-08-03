@@ -13,8 +13,12 @@
 class TextReader
 {
   protected:
-    char m_seperatorChars[16];
-    char m_filename[256];
+    // Was a char[16] filled by a 15-byte bounded copy, so a longer separator
+    // set was silently truncated rather than rejected.
+    std::string m_seperatorChars;
+    // Was a char[256] filled by a bounded copy, so a path longer than 255
+    // characters was silently truncated and the reader reported the wrong name.
+    std::string m_filename;
 
     int m_offsetIndex;
     int m_fileEncrypted; // -1 means we don't know yet. 0 means no. 1 means yes.

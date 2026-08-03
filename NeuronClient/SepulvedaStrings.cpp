@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "StringUtils.h"
+
 // Caption template parser for the Sepulveda help/tutorial strings.
 //
 // Language strings may contain markers that are expanded at lookup time:
@@ -84,13 +86,13 @@ bool buildPhrase(char const* _key, char* _dest, CaptionParserMode& _mode)
   bool done = false;
   if (_mode.writing)
   {
-    char key[MAX_FINAL_KEY_LENGTH];
-    strncpy(key, _key, MAX_FINAL_KEY_LENGTH - 1);
-    key[MAX_FINAL_KEY_LENGTH - 1] = '\0';
-    strlwr(key);
-    if (MOODYISLANGUAGEPHRASE(key, _mode.mood))
+    std::string key(_key);
+    if (key.size() > MAX_FINAL_KEY_LENGTH - 1)
+      key.resize(MAX_FINAL_KEY_LENGTH - 1);
+    StrToLower(key.data());
+    if (MOODYISLANGUAGEPHRASE(key.c_str(), _mode.mood))
     {
-      const char* definition = MOODYLANGUAGEPHRASE(key, _mode.mood);
+      const char* definition = MOODYLANGUAGEPHRASE(key.c_str(), _mode.mood);
       if (definition)
       {
         CaptionParserMode mode;
@@ -134,8 +136,17 @@ bool consumeMarker(char const* _baseString, char* _dest, CaptionParserMode& _mod
   {
     return true;
   }
-  strncpy(_dest, _baseString, SEPULVEDA_MAX_PHRASE_LENGTH - 1);
-  _dest[SEPULVEDA_MAX_PHRASE_LENGTH - 1] = '\0';
+  // _dest is the caller's buffer and stays one: every function in this file
+  // writes into it at _mode.outOffset, so it cannot become a std::string
+  // without changing all of them together.
+  const std::string_view source(_baseString);
+  size_t length = source.size();
+  if (length > SEPULVEDA_MAX_PHRASE_LENGTH - 1)
+  {
+    length = SEPULVEDA_MAX_PHRASE_LENGTH - 1;
+  }
+  std::memcpy(_dest, source.data(), length);
+  _dest[length] = '\0';
   return false;
 }
 
@@ -202,11 +213,9 @@ bool consumeKeyMarker(char const* _baseString, char* _dest, CaptionParserMode& _
       done = true;
     else if (_mode.writing && 0 < len && len < MAX_READ_KEY_LENGTH)
     {
-      char buf[MAX_READ_KEY_LENGTH];
-      strncpy(buf, in + 4, len);
-      buf[len] = '\0';
+      const std::string buf(in + 4, len);
 
-      controltype_t eventId = g_inputManager->getControlID(buf);
+      controltype_t eventId = g_inputManager->getControlID(buf.c_str());
       if (eventId >= 0)
       {
         // Lookup the key name for the binding
@@ -216,11 +225,12 @@ bool consumeKeyMarker(char const* _baseString, char* _dest, CaptionParserMode& _
           char const* keyName = desc.noun.c_str();
 
           // Is the caption long enough
-          if (_mode.outOffset + strlen(keyName) < SEPULVEDA_MAX_PHRASE_LENGTH - 1)
+          const size_t keyNameLength = strlen(keyName);
+          if (_mode.outOffset + keyNameLength < SEPULVEDA_MAX_PHRASE_LENGTH - 1)
           {
             // Write the key name into the caption
-            strcpy(_dest + _mode.outOffset, keyName);
-            _mode.outOffset += static_cast<int>(strlen(keyName));
+            std::memcpy(_dest + _mode.outOffset, keyName, keyNameLength + 1);
+            _mode.outOffset += static_cast<int>(keyNameLength);
             done = true;
           }
         }
@@ -245,23 +255,21 @@ bool consumeOtherMarker(char const* _baseString, char* _dest, CaptionParserMode&
     done = true;
   else if (0 < len && len < MAX_READ_KEY_LENGTH)
   {
-    char key[MAX_READ_KEY_LENGTH];
+    std::string key;
     CaptionParserMode mode(_mode);
 
     if (in[1] == ' ')
     {
       if (mode.outOffset < SEPULVEDA_MAX_PHRASE_LENGTH - 1)
         _dest[mode.outOffset++] = ' ';
-      strncpy(key, in + 2, len - 1);
-      key[len - 1] = '\0';
+      key.assign(in + 2, len - 1);
     }
     else
     {
-      strncpy(key, in + 1, len);
-      key[len] = '\0';
+      key.assign(in + 1, len);
     }
 
-    done = buildPhrase(key, _dest, mode);
+    done = buildPhrase(key.c_str(), _dest, mode);
     if (done)
       _mode = mode;
   }

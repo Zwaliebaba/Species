@@ -181,7 +181,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
       SCOPE CORRECTED 2026-08-03, and the second acceptance line is what
       changed. It read "no fixed char[N] buffer remains in their class
@@ -212,6 +212,25 @@ tasks:
       sites writes m_name, m_title or m_currentTextEdit — T11's members. There
       was nothing local left in them to do.
 
+
+      DONE 2026-08-03, after the two splits above. Three files, 32 sites.
+
+      Eclipse's five file statics hold the names of the focused window, the
+      moused-down window, the popup, the maximised window and the highlighted
+      button. All were char arrays copied into with an unbounded call from
+      EclWindow::m_name; a window whose name was longer than the array
+      overwrote the next static in the block, which is a silent corruption of
+      an adjacent name rather than a crash.
+
+      EclGenerateUniqueWindowName kept its static-storage return, because
+      callers hold the pointer long enough to register a window with it — but
+      it appends an index in a loop until the name is unique, and it built that
+      into a fixed buffer with no bound.
+
+      TextReader::m_filename and m_seperatorChars were both fixed arrays filled
+      by bounded copies, so both truncated silently: a reader given a path
+      longer than 255 characters reported the wrong name in its own assert
+      messages.
   - id: T12
     title: Convert the TextRenderer variadic text API
     intent: >

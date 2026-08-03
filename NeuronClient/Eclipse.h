@@ -54,13 +54,13 @@ void EclRegisterTooltipCallback(void (*_callback)(EclWindow*, EclButton*));
 void EclMaximiseWindow(char const* name);
 void EclUnMaximise();
 
-char* EclGetCurrentButton();
+char const* EclGetCurrentButton();
 char const* EclGetCurrentClickedButton();
 
-char* EclGetCurrentFocus();
+char const* EclGetCurrentFocus();
 void EclSetCurrentFocus(char* name);
 
-char* EclGenerateUniqueWindowName(char* name); // In static mem (don't delete!)
+char const* EclGenerateUniqueWindowName(char const* name); // In static mem (don't delete!)
 std::vector<EclWindow*>* EclGetWindows();
 
 // ============================================================================

@@ -20,7 +20,7 @@ TextReader::TextReader()
   m_filename[0] = '\0';
   m_line = new char[INITIAL_LINE_LEN + 1]; // Don't forget space for the null terminator
   m_line[0] = '\0';                        // ReadLine() may never run, or may hit EOF on its first call
-  strcpy(m_seperatorChars, DEFAULT_SEPERATOR_CHARS);
+  m_seperatorChars = DEFAULT_SEPERATOR_CHARS;
 }
 
 TextReader::~TextReader() { delete[] m_line; }
@@ -102,9 +102,9 @@ void TextReader::CleanLine()
   }
 }
 
-void TextReader::SetSeperatorChars(const char* _seperatorChars) { strncpy(m_seperatorChars, _seperatorChars, 15); }
+void TextReader::SetSeperatorChars(const char* _seperatorChars) { m_seperatorChars = _seperatorChars; }
 
-void TextReader::SetDefaultSeperatorChars() { strcpy(m_seperatorChars, DEFAULT_SEPERATOR_CHARS); }
+void TextReader::SetDefaultSeperatorChars() { m_seperatorChars = DEFAULT_SEPERATOR_CHARS; }
 
 bool TextReader::TokenAvailable()
 {
@@ -112,7 +112,7 @@ bool TextReader::TokenAvailable()
 
   while (m_line[i] != '\0')
   {
-    if (strchr(m_seperatorChars, m_line[i]) == nullptr)
+    if (strchr(m_seperatorChars.c_str(), m_line[i]) == nullptr)
       return true;
 
     ++i;
@@ -137,7 +137,7 @@ char* TextReader::GetNextToken()
 
   // Skip over initial separator characters
   int m_tokenStart = m_tokenIndex;
-  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars, m_line[m_tokenStart]) != nullptr)
+  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars.c_str(), m_line[m_tokenStart]) != nullptr)
   {
     m_tokenStart++;
   }
@@ -154,7 +154,7 @@ char* TextReader::GetNextToken()
   m_tokenIndex = m_tokenStart;
   while (m_line[m_tokenIndex] != '\0')
   {
-    if (strchr(m_seperatorChars, m_line[m_tokenIndex]) != nullptr)
+    if (strchr(m_seperatorChars.c_str(), m_line[m_tokenIndex]) != nullptr)
     {
       m_line[m_tokenIndex] = '\0';
       m_tokenIndex++;
@@ -174,7 +174,7 @@ char* TextReader::GetRestOfLine()
 
   // Skip over initial separator characters
   int m_tokenStart = m_tokenIndex;
-  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars, m_line[m_tokenStart]) != nullptr)
+  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars.c_str(), m_line[m_tokenStart]) != nullptr)
   {
     m_tokenStart++;
   }
@@ -189,14 +189,14 @@ char* TextReader::GetRestOfLine()
 TextFileReader::TextFileReader(const char* _filename)
   : TextReader()
 {
-  strncpy(m_filename, _filename, sizeof(m_filename) - 1);
+  m_filename = _filename;
   m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
 }
 
 TextFileReader::TextFileReader(const std::string& _filename)
   : TextReader()
 {
-  strncpy(m_filename, _filename.c_str(), sizeof(m_filename) - 1);
+  m_filename = _filename;
   m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
 }
 
@@ -257,7 +257,7 @@ TextDataReader::TextDataReader(const char* _data, unsigned int _dataSize, const 
     m_dataSize(_dataSize),
     m_offset(0)
 {
-  strncpy(m_filename, _filename, sizeof(m_filename) - 1);
+  m_filename = _filename;
 }
 
 bool TextDataReader::IsOpen() { return true; }
