@@ -13,5 +13,3 @@ typedef InputSpecList::const_iterator InputSpecIt;
 typedef std::unique_ptr<const InputSpec> InputSpecPtr;
 
 typedef std::unique_ptr<const InputSpecList> InputSpecListPtr;
-
-

@@ -11,18 +11,16 @@ typedef auto_vector<InputDescription> InputDescList;
 
 class PrefsKeybindingsWindow : public SpeciesWindow
 {
-public:
-	InputDescList m_bindings;
-	int m_numMouseButtons;
+  public:
+    InputDescList m_bindings;
+    int m_numMouseButtons;
     int m_controlMethod;
 
-public:
+  public:
     PrefsKeybindingsWindow();
 
     void Create();
     void Remove();
 
-    void Render( bool _hasFocus );
+    void Render(bool _hasFocus);
 };
-
-
