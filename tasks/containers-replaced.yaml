@@ -976,5 +976,10 @@ tasks:
       The overloads deliberately do not touch TakeFreeSlot. Which slot a value
       lands in is decided before the value is looked at, so an arriving rvalue
       cannot change it; the second test pins that rather than trusting it.
-    status: in_progress
+
+      LANDED 2026-08-02, CI green first try. Three tests added; the existing
+      SlotMap and DArray pinned sequences pass untouched, which is the point —
+      the move overloads are additive and the slot-choosing path is the same
+      code it always was.
+    status: done
 
