@@ -175,7 +175,22 @@ SoundInstance::~SoundInstance()
 void SoundInstance::SetSoundName(char const* _name)
 {
   if (_name)
-    strcpy(m_soundName, _name);
+  {
+    // m_soundName stays a char[256]: SoundEventBlueprint copies whole
+    // SoundInstance objects by value and the editor registers this field with
+    // an InputField that writes into it through a raw char*. Bounded now,
+    // where the old copy was not — a name longer than 255 characters ran off
+    // the end. Written out rather than with std::min, which does not compile
+    // anywhere MathUtils.h is reachable; see tasks/language-hygiene.yaml T8.
+    const std::string_view source(_name);
+    size_t length = source.size();
+    if (length > sizeof(m_soundName) - 1)
+    {
+      length = sizeof(m_soundName) - 1;
+    }
+    std::memcpy(m_soundName, source.data(), length);
+    m_soundName[length] = '\0';
+  }
 }
 
 
@@ -185,10 +200,11 @@ void SoundInstance::SetEventName(char const* _entityName, char const* _eventName
   DEBUG_ASSERT(_entityName && _eventName);
   DEBUG_ASSERT(g_soundSystem);
 
-  m_eventName = (char*)malloc(strlen(_entityName) + strlen(_eventName) + 2);
-  strcpy(m_eventName, _entityName);
-  strcat(m_eventName, " ");
-  strcat(m_eventName, _eventName);
+  // Still malloc, because the destructor still free()s it — ownership/T3 is
+  // what makes this a std::string. Only the assembly changes.
+  const std::string combined = std::format("{} {}", _entityName, _eventName);
+  m_eventName = (char*)malloc(combined.size() + 1);
+  std::memcpy(m_eventName, combined.c_str(), combined.size() + 1);
 }
 
 
@@ -322,7 +338,7 @@ void SoundInstance::PropagateBlueprints()
 
     if (strcmp(m_parent->m_soundName, m_soundName) != 0)
     {
-      strcpy(m_soundName, m_parent->m_soundName);
+      SetSoundName(m_parent->m_soundName);
       restartRequired = true;
     }
 
@@ -1039,27 +1055,24 @@ bool SoundInstance::ResolveAttachedObject()
 
 char* SoundInstance::GetDescriptor()
 {
-  static char descriptor[256];
-
   char const* looping = GetLoopTypeName(m_loopType);
   char const* inEditor = m_positionType == TypeInEditor ? " editor" : "       ";
 
-  char priority[32];
-  sprintf(priority, "%2.2f", m_calculatedPriority);
+  const std::string priority = std::format("{:.2f}", m_calculatedPriority);
+  const std::string volume = std::format("{:.1f}", m_channelVolume);
+  const std::string fx = m_dspFX.empty() ? std::string("   ") : std::format("fx{}", m_dspFX.size());
 
-  char volume[32];
-  sprintf(volume, "%2.1f", m_channelVolume);
+  // The widths are the ones the old format string used, so the sound-debug
+  // overlay still lines up column for column.
+  const std::string text = std::format("{:<18}  pri{:>5}  vol{:>4}   {}  {:<8}  {}", m_soundName, priority, volume, fx, looping, inEditor);
 
-  char fx[32];
-  if (static_cast<int>(m_dspFX.size()))
+  static char descriptor[256];
+  size_t length = text.size();
+  if (length > sizeof(descriptor) - 1)
   {
-    sprintf(fx, "fx%d", static_cast<int>(m_dspFX.size()));
+    length = sizeof(descriptor) - 1;
   }
-  else
-  {
-    sprintf(fx, "   ");
-  }
-
-  sprintf(descriptor, "%-18s  pri%5s  vol%4s   %s  %-8s  %s", m_soundName, priority, volume, fx, looping, inEditor);
+  std::memcpy(descriptor, text.c_str(), length);
+  descriptor[length] = '\0';
   return descriptor;
 }

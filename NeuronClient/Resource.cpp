@@ -29,7 +29,9 @@ namespace
 
 Resource::Resource()
   : m_nameSeed(1),
-    m_modName(nullptr) {}
+    m_modName(nullptr)
+{
+}
 
 Resource::~Resource()
 {
@@ -248,7 +250,10 @@ int Resource::WildCmp(const char* wild, const char* string)
     }
   }
 
-  while (*wild == '*') { wild++; }
+  while (*wild == '*')
+  {
+    wild++;
+  }
   return !*wild;
 }
 
@@ -338,17 +343,14 @@ void Resource::RegenerateOpenGlState()
 char* Resource::GenerateName()
 {
   int digits = log10f(m_nameSeed) + 1;
-  auto name = new char [digits + 1];
+  auto name = new char[digits + 1];
   itoa(m_nameSeed, name, 10);
   m_nameSeed++;
 
   return name;
 }
 
-FileWriter* Resource::GetFileWriter(const char* _filename, bool _encrypt)
-{
-    return new FileWriter(_filename, _encrypt);
-  }
+FileWriter* Resource::GetFileWriter(const char* _filename, bool _encrypt) { return new FileWriter(_filename, _encrypt); }
 
 
 // Finds all the filenames in the specified directory that match the specified

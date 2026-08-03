@@ -44,7 +44,7 @@ LangTable::LangTable(char const* _filename)
   // Create the "not found" Phrase that will be returned when
   // the LookupPhrase is called with an unknown key
   m_notFound.m_key = nullptr;
-  m_notFound.m_string = (char*)malloc(256);
+  m_notFound.m_string = (char*)malloc(NOT_FOUND_CAPACITY);
 
   m_phrasesKbd = nullptr;
   m_phrasesXin = nullptr;
@@ -168,6 +168,22 @@ bool wrong_suffix(const char* key, InputMode _mood)
 }
 
 
+// The not-found phrase is a malloc'd buffer the lookups write into and then
+// hand out as a char*, so it cannot become a std::string without changing what
+// LookupPhrase returns — ownership/T3's job. Bounded here, which the old
+// formatted writes into it were not.
+void LangTable::SetNotFoundText(std::string_view _text)
+{
+  size_t length = _text.size();
+  if (length > NOT_FOUND_CAPACITY - 1)
+  {
+    length = NOT_FOUND_CAPACITY - 1;
+  }
+  std::memcpy(m_notFound.m_string, _text.data(), length);
+  m_notFound.m_string[length] = '\0';
+}
+
+
 bool chomp_mode_suffix(char* key)
 {
   if (is_suffix(key, "_kbd") || is_suffix(key, "_xin"))
@@ -183,24 +199,25 @@ bool LangTable::specific_key_exists(const char* _key, InputMode _mood)
 {
   if (_key && _mood)
   {
-    char key[128];
-    int len = strlen(_key);
-    strncpy(key, _key, 123);
-    key[123] = '\0';
-
+    // This was a char[128] filled by a 123-byte bounded copy, after which the
+    // suffix was written at key + strlen(_key) — the UNtruncated length. A key
+    // of 130 characters therefore wrote its suffix past the end of the buffer,
+    // and the truncation that was supposed to prevent it made the overflow
+    // worse rather than better by leaving len pointing outside.
+    std::string key(_key);
     switch (_mood)
     {
     case INPUT_MODE_KEYBOARD:
-      strcpy(key + len, "_kbd");
+      key += "_kbd";
       break;
     case INPUT_MODE_GAMEPAD:
-      strcpy(key + len, "_xin");
+      key += "_xin";
       break;
     default:
       return false;
     }
 
-    return RawDoesPhraseExist(key, _mood);
+    return RawDoesPhraseExist(key.c_str(), _mood);
   }
   else
     return false;
@@ -272,13 +289,15 @@ void LangTable::RebuildTable(PhraseOffsets* _phrases, std::ostrstream& stream, I
   {
     if (strncmp(phrase->m_key, "part_", 5) != 0)
     {
-      char key[1024];
-      strcpy(key, phrase->m_key);
+      // chomp_mode_suffix writes into this, so it is a mutable copy on
+      // purpose. The char[1024] it used to be was one unbounded copy away from
+      // an overflow on any key longer than that.
+      std::string key(phrase->m_key);
 
       if (!wrong_suffix(phrase->m_key, _mood))
       {
         // Make sure this is the most specific string, or ignore it
-        if (chomp_mode_suffix(key) || !specific_key_exists(key, _mood))
+        if (chomp_mode_suffix(key.data()) || !specific_key_exists(key.c_str(), _mood))
         {
           int currPos = stream.tellp();
           buildCaption(phrase->m_string, theString, _mood);
@@ -350,20 +369,17 @@ bool LangTable::RawDoesPhraseExist(char const* _key, InputMode _mood)
     }
     else
     {
-      int len = strlen(_key);
-      char* key = new char[len + 5];
-      strcpy(key, _key);
+      std::string key(_key);
       switch (_mood)
       {
       case INPUT_MODE_KEYBOARD:
-        strcpy(key + len, "_kbd");
+        key += "_kbd";
         break;
       case INPUT_MODE_GAMEPAD:
-        strcpy(key + len, "_xin");
+        key += "_xin";
         break;
       }
-      ans = RawDoesPhraseExist(key);
-      delete[] key;
+      ans = RawDoesPhraseExist(key.c_str());
     }
   }
   return ans;
@@ -390,7 +406,7 @@ char* LangTable::LookupPhrase(char const* _key)
 
   if (!_key || !phrases || !m_chunk)
   {
-    sprintf(m_notFound.m_string, "ERROR (null)");
+    SetNotFoundText("ERROR (null)");
     phrase = m_notFound.m_string;
   }
   else
@@ -412,7 +428,7 @@ char* LangTable::RawLookupPhrase(char const* _key)
 {
   if (!g_inputManager)
   {
-    sprintf(m_notFound.m_string, "ERROR (null)");
+    SetNotFoundText("ERROR (null)");
     return m_notFound.m_string;
   }
   else
@@ -428,29 +444,26 @@ char* LangTable::RawLookupPhrase(char const* _key, InputMode _mood)
 
   if (!_key)
   {
-    sprintf(m_notFound.m_string, "ERROR (null)");
+    SetNotFoundText("ERROR (null)");
     phrase = &m_notFound;
   }
   else
   {
     if (!phrase)
     {
-      int len = strlen(_key);
-      char* key = new char[len + 5];
-      strcpy(key, _key);
+      std::string key(_key);
       switch (_mood)
       {
       case INPUT_MODE_KEYBOARD:
-        strcpy(key + len, "_kbd");
+        key += "_kbd";
         break;
       case INPUT_MODE_GAMEPAD:
-        strcpy(key + len, "_xin");
+        key += "_xin";
         break;
       }
-      const auto suffixed = m_phrasesRaw.find(key);
+      const auto suffixed = m_phrasesRaw.find(key.c_str());
       if (suffixed != m_phrasesRaw.end())
         phrase = suffixed->second;
-      delete[] key;
     }
 
     if (!phrase)
@@ -462,7 +475,9 @@ char* LangTable::RawLookupPhrase(char const* _key, InputMode _mood)
 
     if (!phrase)
     {
-      // sprintf( m_notFound.m_string, "ERROR (%s)", _key );
+      // Historically this reported ERROR (<key>); it reports nothing now, which
+      // is why a missing phrase renders as empty rather than as a visible
+      // marker. Left as found — changing it is a UI decision, not a string one.
       *(m_notFound.m_string) = '\0';
       phrase = &m_notFound;
     }
@@ -554,8 +569,12 @@ std::vector<char*>* WordWrapText(const char* _string, float _lineWidth, float _f
   // (All connected together but seperated by 0)
   // And add a newline on at the end (to make sure a newline will be found)
 
-  char* newstring = new char[strlen(_string) + 2];
-  sprintf(newstring, "%s\n", _string);
+  // The trailing newline guarantees the scan below finds a final line break.
+  // Still `new char[]` because the pointers handed out below point into it and
+  // the caller frees it; ownership/T3 is what changes that.
+  const std::string terminated = std::format("{}\n", _string);
+  char* newstring = new char[terminated.size() + 1];
+  std::memcpy(newstring, terminated.c_str(), terminated.size() + 1);
 
   // Build a linked list of pointers into this new string
   // Each pointer representing another line

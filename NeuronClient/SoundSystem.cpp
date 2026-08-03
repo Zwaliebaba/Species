@@ -195,7 +195,27 @@ char* DspBlueprint::GetParameter(int _param, float* _min, float* _max, float* _d
 // Class SampleGroup
 //*****************************************************************************
 
-void SampleGroup::SetName(const char* _name) { strcpy(m_name, _name); }
+namespace
+{
+  // The blueprint name fields are char[256] and stay that way for now: the
+  // editor registers them with an InputField that writes through a raw char*,
+  // and that is strings-modernised/T5's to change. What this fixes is that the
+  // copies into them were unbounded — a name longer than 255 characters ran
+  // off the end of the struct.
+  template <size_t N> void SetName(char (&_dest)[N], std::string_view _source)
+  {
+    size_t length = _source.size();
+    if (length > N - 1)
+    {
+      length = N - 1;
+    }
+    std::memcpy(_dest, _source.data(), length);
+    _dest[length] = '\0';
+  }
+} // namespace
+
+
+void SampleGroup::SetName(const char* _name) { SetName(m_name, _name); }
 
 void SampleGroup::AddSample(const char* _sample)
 {
@@ -478,7 +498,7 @@ void SoundSystem::LoadEffects()
 
     auto bp = new DspBlueprint();
     m_filterBlueprints.PutData(bp);
-    strcpy(bp->m_name, in->GetNextToken());
+    SetName(bp->m_name, in->GetNextToken());
 
     in->ReadLine();
     char* param = in->GetNextToken();
@@ -487,7 +507,7 @@ void SoundSystem::LoadEffects()
       auto sb = new DspParameterBlueprint();
       bp->m_params.PutData(sb);
 
-      strcpy(sb->m_name, param);
+      SetName(sb->m_name, param);
       sb->m_min = atof(in->GetNextToken());
       sb->m_max = atof(in->GetNextToken());
       sb->m_default = atof(in->GetNextToken());
@@ -525,7 +545,7 @@ void SoundSystem::LoadBlueprints()
   TextReader* in = g_resource->GetTextReader("Sounds.txt");
   ASSERT_TEXT(in && in->IsOpen(), "Couldn't open sounds.txt");
 
-  char objectName[128];
+  std::string objectName;
 
   while (in->ReadLine())
   {
@@ -538,7 +558,7 @@ void SoundSystem::LoadBlueprints()
 
     if (stricmp(group, "ENTITY") == 0)
     {
-      strncpy(objectName, type, 127);
+      objectName = type;
       int entityType = g_worldTypeNames->EntityTypeId(type);
       DEBUG_ASSERT(entityType >= 0 && entityType < g_worldTypeNames->NumEntityTypes());
       DEBUG_ASSERT(!m_entityBlueprints.ValidIndex(entityType));
@@ -549,7 +569,7 @@ void SoundSystem::LoadBlueprints()
     }
     else if (stricmp(group, "BUILDING") == 0)
     {
-      strncpy(objectName, type, 127);
+      objectName = type;
       int buildingType = g_worldTypeNames->BuildingTypeId(type);
       DEBUG_ASSERT(buildingType >= 0 && buildingType < g_worldTypeNames->NumBuildingTypes());
       DEBUG_ASSERT(!m_buildingBlueprints.ValidIndex(buildingType));
@@ -560,7 +580,7 @@ void SoundSystem::LoadBlueprints()
     }
     else if (stricmp(group, "OTHER") == 0)
     {
-      strncpy(objectName, type, 127);
+      objectName = type;
       int otherType = SoundSourceBlueprint::GetSoundSoundType(type);
       DEBUG_ASSERT(otherType >= 0 && otherType < SoundSourceBlueprint::NumOtherSoundSources);
       DEBUG_ASSERT(!m_otherBlueprints.ValidIndex(otherType));
@@ -571,7 +591,7 @@ void SoundSystem::LoadBlueprints()
     }
     else if (stricmp(group, "SAMPLEGROUP") == 0)
     {
-      strncpy(objectName, "sample group", 127);
+      objectName = "sample group";
       SampleGroup* sampleGroup = NewSampleGroup(type);
       ParseSampleGroup(in, sampleGroup);
     }
@@ -586,7 +606,7 @@ void SoundSystem::LoadBlueprints()
           if (stricmp(word, "END") == 0)
             break;
           DEBUG_ASSERT(stricmp(word, "EVENT") == 0);
-          ParseSoundEvent(in, ssb, objectName);
+          ParseSoundEvent(in, ssb, objectName.c_str());
         }
       }
     }
@@ -1932,10 +1952,9 @@ const char* SoundSystem::IsSoundSourceOK(const char* _soundName)
     return g_soundSourceErrors[SoundSourceFilenameHasSpace];
   }
 
-  char fullPath[256] = "Sounds/";
-  strcat(fullPath, _soundName);
+  const std::string fullPath = std::format("Sounds/{}", _soundName);
 
-  SoundStreamDecoder* sound = g_resource->GetSoundStreamDecoder(fullPath);
+  SoundStreamDecoder* sound = g_resource->GetSoundStreamDecoder(fullPath.c_str());
   if (!sound)
   {
     // File does not exist
@@ -2101,9 +2120,8 @@ SampleGroup* SoundSystem::NewSampleGroup(const char* _name)
   int i = 1;
   while (true)
   {
-    char nameCandidate[256];
-    sprintf(nameCandidate, "newsamplegroup%d", i);
-    if (!GetSampleGroup(nameCandidate))
+    const std::string nameCandidate = std::format("newsamplegroup{}", i);
+    if (!GetSampleGroup(nameCandidate.c_str()))
     {
       group->SetName(nameCandidate);
       return group;

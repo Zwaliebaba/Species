@@ -39,7 +39,10 @@ typedef std::map<std::string, int, LangKeyLess> PhraseOffsets;
 class LangTable
 {
   private:
+    static constexpr size_t NOT_FOUND_CAPACITY = 256;
     LangPhrase m_notFound;
+
+    void SetNotFoundText(std::string_view _text);
     // Owning: the destructor deletes every phrase. Ordered rather than hashed,
     // and the order is observable — see GetPhraseList and the note in
     // tasks/containers-replaced.yaml T24.
