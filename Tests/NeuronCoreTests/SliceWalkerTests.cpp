@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "SliceDArray.h"
+#include "SliceWalker.h"
 #include "SlotMap.h"
 
 #include <string>
@@ -31,18 +32,17 @@ namespace NeuronCoreTests
       return bounds;
     }
 
-    std::vector<std::pair<int, int>> WalkSlotMap(int _size, int _slices)
+    std::vector<std::pair<int, int>> WalkWithWalker(int _size, int _slices)
     {
-      Neuron::SliceSlotMap<int> slots;
-      slots.SetTotalNumSlices(_slices);
-      slots.SetSize(_size);
+      Neuron::SliceWalker walker;
+      walker.SetTotalNumSlices(_slices);
 
       std::vector<std::pair<int, int>> bounds;
       for (int slice = 0; slice < _slices; ++slice)
       {
         int lower = 0;
         int upper = 0;
-        slots.GetNextSliceBounds(slice, &lower, &upper);
+        walker.GetNextSliceBounds(slice, _size, &lower, &upper);
         bounds.emplace_back(lower, upper);
       }
       return bounds;
@@ -58,16 +58,18 @@ namespace NeuronCoreTests
   } // namespace
 
   // The slice walk decides which entities advance on which frame, so it is
-  // simulation behaviour rather than container plumbing. containers-replaced
-  // T12 replaces SliceDArray with Neuron::SliceSlotMap across the world core,
-  // and nothing pinned SliceDArray before this file existed.
+  // simulation behaviour rather than container plumbing — which is exactly why
+  // containers-replaced T12 takes it OUT of the container. SliceDArray carried
+  // it as a base class; Neuron::SliceWalker is a free-standing object the
+  // caller owns beside a plain SlotMap. Nothing pinned SliceDArray before this
+  // file existed.
   //
   // The first test is the one that matters: it runs both containers over the
   // same sizes and asserts the sequences are identical, so the conversion is
   // proven equivalent rather than argued to be. The rest pin the individual
   // properties that make the arithmetic surprising, because once SliceDArray
   // is deleted the differential test goes with it and only those remain.
-  TEST_CLASS(SliceSlotMapTests)
+  TEST_CLASS(SliceWalkerTests)
   {
     public:
       TEST_METHOD(SliceBoundsMatchSliceDArrayExactly)
@@ -78,9 +80,9 @@ namespace NeuronCoreTests
         for (int size : {100, 25, 3, 0, 1, 10, 11, 999})
         {
           const auto legacy = WalkLegacy(size, SLICES);
-          const auto slots = WalkSlotMap(size, SLICES);
-          Assert::IsTrue(legacy == slots,
-                         (L"size " + std::to_wstring(size) + L": legacy " + Describe(legacy) + L"vs slotmap " + Describe(slots)).c_str());
+          const auto walker = WalkWithWalker(size, SLICES);
+          Assert::IsTrue(legacy == walker,
+                         (L"size " + std::to_wstring(size) + L": SliceDArray " + Describe(legacy) + L"vs SliceWalker " + Describe(walker)).c_str());
         }
       }
 
@@ -88,7 +90,7 @@ namespace NeuronCoreTests
       {
         // Each slice starts one past the previous slice's last index. A caller
         // looping lower..upper inclusive therefore visits each index once.
-        const auto bounds = WalkSlotMap(100, SLICES);
+        const auto bounds = WalkWithWalker(100, SLICES);
         for (size_t i = 1; i < bounds.size(); ++i)
           Assert::AreEqual(bounds[i - 1].second + 1, bounds[i].first);
       }
@@ -98,7 +100,7 @@ namespace NeuronCoreTests
         // upper = lower + numPerSlice, and the bounds are inclusive, so a
         // slice covers numPerSlice + 1 indices. That is why the walk outruns
         // the container.
-        const auto bounds = WalkSlotMap(100, SLICES);
+        const auto bounds = WalkWithWalker(100, SLICES);
         Assert::AreEqual(0, bounds[0].first);
         Assert::AreEqual(10, bounds[0].second); // int(100/10.0) = 10, inclusive => 11 indices
       }
@@ -109,7 +111,7 @@ namespace NeuronCoreTests
         // last index, and the final slice asks for [27, 24]. Callers guard
         // every index with ValidIndex, which is what makes this harmless — and
         // is why the bounds must not be "fixed" into an even division.
-        const auto bounds = WalkSlotMap(25, SLICES);
+        const auto bounds = WalkWithWalker(25, SLICES);
         Assert::AreEqual(27, bounds[SLICES - 1].first);
         Assert::AreEqual(24, bounds[SLICES - 1].second);
         Assert::IsTrue(bounds[SLICES - 1].first > bounds[SLICES - 1].second);
@@ -117,65 +119,38 @@ namespace NeuronCoreTests
 
       TEST_METHOD(BoundsDivideCapacityNotTheLiveCount)
       {
-        // Freed slots still count. Two maps with the same capacity and
-        // different occupancy walk identically, so compacting a container
-        // would move entities between frames.
-        Neuron::SliceSlotMap<int> allFree;
-        allFree.SetTotalNumSlices(SLICES);
-        allFree.SetSize(100);
-
-        Neuron::SliceSlotMap<int> halfUsed;
-        halfUsed.SetTotalNumSlices(SLICES);
-        halfUsed.SetSize(100);
+        // The walker is handed a capacity, never a live count, and separating
+        // it from the container is what makes that impossible to get wrong: a
+        // caller passing NumUsed() instead of Size() would move entities
+        // between frames, and now that is a visible argument rather than a
+        // hidden base-class choice.
+        Neuron::SlotMap<int> slots;
+        slots.SetSize(100);
         for (int i = 0; i < 100; i += 2)
-          halfUsed.MarkUsed(i);
+          slots.MarkUsed(i);
 
-        Assert::AreEqual(allFree.Size(), halfUsed.Size());
-        Assert::AreNotEqual(allFree.NumUsed(), halfUsed.NumUsed());
+        Assert::AreEqual(100, slots.Size());
+        Assert::AreEqual(50, slots.NumUsed());
 
-        for (int slice = 0; slice < SLICES; ++slice)
-        {
-          int freeLower = 0, freeUpper = 0, usedLower = 0, usedUpper = 0;
-          allFree.GetNextSliceBounds(slice, &freeLower, &freeUpper);
-          halfUsed.GetNextSliceBounds(slice, &usedLower, &usedUpper);
-          Assert::AreEqual(freeLower, usedLower);
-          Assert::AreEqual(freeUpper, usedUpper);
-        }
+        Assert::IsTrue(WalkWithWalker(slots.Size(), SLICES) == WalkLegacy(100, SLICES), L"capacity drives the walk, whatever the occupancy");
       }
 
-      TEST_METHOD(EmptyRestartsTheWalk)
+      TEST_METHOD(ResetRestartsTheWalk)
       {
-        Neuron::SliceSlotMap<int> slots;
-        slots.SetTotalNumSlices(SLICES);
-        slots.SetSize(100);
+        Neuron::SliceWalker walker;
+        walker.SetTotalNumSlices(SLICES);
 
         int lower = 0, upper = 0;
-        slots.GetNextSliceBounds(0, &lower, &upper);
-        slots.GetNextSliceBounds(1, &lower, &upper);
+        walker.GetNextSliceBounds(0, 100, &lower, &upper);
+        walker.GetNextSliceBounds(1, 100, &lower, &upper);
 
-        slots.Empty();
-        Assert::AreEqual(0, slots.Size());
+        walker.Reset();
 
         // Slice 0 again rather than slice 2, which the ordering assert would
         // otherwise reject.
-        slots.SetSize(100);
-        slots.GetNextSliceBounds(0, &lower, &upper);
+        walker.GetNextSliceBounds(0, 100, &lower, &upper);
         Assert::AreEqual(0, lower);
         Assert::AreEqual(10, upper);
-      }
-
-      TEST_METHOD(SlotAssignmentKeepsTheFastDArrayFlavour)
-      {
-        // SliceDArray derived from FastDArray, so the slice variant defaults
-        // to MostRecentFirst reuse. A WorldObjectId's m_index is one of these
-        // numbers, so the flavour is network identity.
-        Neuron::SliceSlotMap<int> slots;
-        Assert::AreEqual(0, slots.PutData(10));
-        Assert::AreEqual(1, slots.PutData(11));
-        Assert::AreEqual(2, slots.PutData(12));
-
-        slots.MarkNotUsed(1);
-        Assert::AreEqual(1, slots.PutData(13), L"the most recently freed slot must come back first");
       }
   };
 } // namespace NeuronCoreTests

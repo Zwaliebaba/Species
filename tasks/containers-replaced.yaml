@@ -756,9 +756,42 @@ tasks:
       nothing pinned it either — DArrayTests covers DArray and FastDArray and
       never mentions slices.
 
-      So step one is Neuron::SliceSlotMap, and its arithmetic is reproduced
-      character for character rather than tidied, because it decides WHICH
-      ENTITY ADVANCES ON WHICH FRAME. Three properties are surprising enough to
+      THE OWNER ASKED WHETHER SLICING IS NEEDED AT ALL — "the only reason
+      there is a SliceDArray is to split render and updates in batches, and we
+      are not multi-threading". Measured, the premise is wrong but the
+      conclusion is half right, and the difference matters.
+
+      Slicing is not batching. Ten slices are exactly ONE SERVER TICK.
+      Main.cpp leaves g_sliceNum at -1 while it waits for the next letter from
+      the server, then sends the sync value, sets it to 0 and advances ten
+      slices. GetNumSlicesToAdvance budgets by elapsed TIME and clamps to
+      [0, 10]; the counter only wraps after the last slice, so a slow frame
+      DEFERS slices rather than dropping them. It exists so a 60fps renderer
+      can interleave with a 10Hz lockstep simulation instead of stalling for a
+      whole tick every 100ms — which is just as necessary single-threaded.
+
+      Could the ten loops collapse into one? Every entry does advance exactly
+      once per tick, in index order, so at first glance yes. But the bounds are
+      recomputed from a LIVE Size() and entities spawn and die during Advance,
+      so a container that grows mid-sweep partitions differently than a single
+      `for i < Size()` loop evaluated as it goes. That is a simulation
+      difference on a lockstep protocol with a cross-client sync value, so it
+      is not a refactor and does not belong inside a container conversion. If
+      it is wanted, it is its own task with its own smoke test.
+
+      WHAT THE QUESTION DID FIX is where the bookkeeping lives. SliceDArray
+      carried it as a BASE CLASS, so every container wanting stable indices
+      also inherited a scheduling policy. It is Neuron::SliceWalker now — a
+      free-standing object the caller owns beside a plain SlotMap, taking the
+      capacity as an argument. Seven call sites, and the containers become
+      ordinary std::vector-backed SlotMaps, which is what the owner was after.
+
+      It also removes a whole class of mistake: passing NumUsed() instead of
+      Size() would move entities between frames, and that is now a visible
+      argument rather than a hidden base-class choice.
+
+      The arithmetic itself is reproduced character for character rather than
+      tidied, because it decides WHICH ENTITY ADVANCES ON WHICH FRAME. Three properties are surprising enough to
       be worth naming, and all three are now tests:
 
         Each non-final slice spans numPerSlice + 1 indices, not numPerSlice —
@@ -777,8 +810,8 @@ tasks:
         upper + 1. An earlier draft of the header comment claimed they overlap
         by one; they do not, and the test says so.
 
-      The strongest evidence is differential: SliceSlotMapTests walks a
-      SliceDArray and a SliceSlotMap over the same eight sizes and asserts the
+      The strongest evidence is differential: SliceWalkerTests walks a
+      SliceDArray and a SliceWalker over the same eight sizes and asserts the
       bound sequences are identical. That proves equivalence rather than
       arguing it. It dies with SliceDArray at T16, which is why the individual
       properties are pinned separately as well.

@@ -63,6 +63,7 @@
     <ClInclude Include="HiResTime.h" />
     <ClInclude Include="LList.h" />
     <ClInclude Include="LookupTable.h" />
+    <ClInclude Include="SliceWalker.h" />
     <ClInclude Include="SlotMap.h" />
     <ClInclude Include="MathUtils.h" />
     <ClInclude Include="Matrix33.h" />
