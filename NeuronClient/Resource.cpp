@@ -10,7 +10,6 @@
 #include "TextStreamReaders.h"
 #include "Preferences.h"
 #include "SoundStreamDecoder.h"
-#include "Location.h"
 #include "WorldPointers.h"
 
 Resource* g_resource = nullptr;
@@ -314,8 +313,8 @@ void Resource::FlushOpenGlState()
   // Forget all the texture handles
   m_textures.clear();
 
-  if (g_location)
-    g_location->FlushOpenGlState();
+  if (g_locationAccess)
+    g_locationAccess->FlushOpenGlState();
 }
 
 void Resource::RegenerateOpenGlState()
@@ -332,8 +331,8 @@ void Resource::RegenerateOpenGlState()
   g_renderer->BuildOpenGlState();
 
   // Tell the location
-  if (g_location)
-    g_location->RegenerateOpenGlState();
+  if (g_locationAccess)
+    g_locationAccess->RegenerateOpenGlState();
 }
 
 char* Resource::GenerateName()

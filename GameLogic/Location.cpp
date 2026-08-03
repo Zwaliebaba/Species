@@ -85,11 +85,51 @@ Location::Location()
   m_spirits.SetStepSize(100);
   m_lasers.SetStepSize(100);
   m_effects.SetSize(100);
+
+  // Install the seam the layers below GameLogic reach the world through. Doing
+  // it here rather than at the assignment sites is what keeps it honest: there
+  // is exactly one place a Location comes into existence, and exactly one place
+  // it stops.
+  g_locationAccess = this;
 }
 
 
 // *** Destructor
-Location::~Location() { Empty(); }
+Location::~Location()
+{
+  // Only if we are the world still installed. Main.cpp destroys the old world
+  // before building the new one, so this is normally an unconditional clear —
+  // but a caller that built the replacement first would otherwise null a
+  // pointer to the live world on the way out.
+  if (g_locationAccess == this)
+    g_locationAccess = nullptr;
+
+  Empty();
+}
+
+
+float Location::GroundHeight(float _worldX, float _worldZ)
+{
+  if (!m_landscape.m_heightMap)
+    return 0.0f;
+  return m_landscape.m_heightMap->GetValue(_worldX, _worldZ);
+}
+
+
+bool Location::WorldObjectExists(WorldObjectId const& _id) { return GetWorldObject(_id) != nullptr; }
+
+
+bool Location::GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* _vel)
+{
+  WorldObject* object = GetWorldObject(_id);
+  if (!object)
+    return false;
+
+  // A building is heard from its centre. Everything else from where it is.
+  *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : object->m_pos;
+  *_vel = object->m_vel;
+  return true;
+}
 
 
 void Location::Init(char const* _missionFilename, char const* _mapFilename)

@@ -5,6 +5,7 @@
 // App creates and destroys these; Main.cpp swaps the location and the editor
 // per level. Null until startup builds them.
 Location* g_location = nullptr;
+LocationAccess* g_locationAccess = nullptr;
 GlobalWorld* g_globalWorld = nullptr;
 CameraAccess* g_camera = nullptr;
 RendererAccess* g_renderer = nullptr;

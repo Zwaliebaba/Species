@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <stdlib.h> // malloc/free below; arrived via Location.h until T16 dropped it
 #include "BinaryStreamReaders.h"
 #include "Debug.h"
 #include "HiResTime.h"
@@ -13,7 +15,6 @@
 #include "SoundStreamDecoder.h"
 #include "SoundLibrary3d.h"
 
-#include "Location.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -718,8 +719,8 @@ bool SoundInstance::Update3DPosition()
 
   case Type3DAttachedToObject:
   {
-    WorldObject* obj = GetAttachedObject();
-    if (!obj)
+    Vector3 pos, vel;
+    if (!ResolveAttachedObject() || !g_locationAccess->GetSoundSource(m_objId, &pos, &vel))
     {
       m_positionType = Type3DStationary;
       m_vel = g_zeroVector;
@@ -728,13 +729,11 @@ bool SoundInstance::Update3DPosition()
       return false;
     }
 
-    m_pos = obj->m_pos;
-    m_vel = obj->m_vel;
-
-    if (obj->m_id.GetUnitId() == UNIT_BUILDINGS)
-    {
-      m_pos = ((Building*)obj)->m_centrePos;
-    }
+    // The building-centre rule that used to be a cast to Building* here is
+    // inside GetSoundSource now — it is the world's knowledge, not the sound
+    // system's.
+    m_pos = pos;
+    m_vel = vel;
 
     g_soundLibrary3d->SetChannelPosition(m_channelIndex, m_pos, m_vel);
     return false;
@@ -762,8 +761,8 @@ void SoundInstance::ForceParameter(SoundParameter& _param, float value)
   case SoundParameter::LinkedToHeightAboveGround:
   {
     float landHeight = 0.0f;
-    if (g_location)
-      landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    if (g_locationAccess)
+      landHeight = g_locationAccess->GroundHeight(m_pos.x, m_pos.z);
     m_pos.y = landHeight + value;
     break;
   }
@@ -818,8 +817,8 @@ bool SoundInstance::UpdateParameter(SoundParameter& _param)
     case SoundParameter::LinkedToHeightAboveGround:
     {
       float landHeight = 0.0f;
-      if (g_location)
-        landHeight = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
+      if (g_locationAccess)
+        landHeight = g_locationAccess->GroundHeight(pos.x, pos.z);
       _param.Recalculate(pos.y - landHeight);
       break;
     }
@@ -941,21 +940,26 @@ void SoundInstance::CalculatePerceivedVolume()
 }
 
 
-WorldObject* SoundInstance::GetAttachedObject()
+// Selects which of m_objIds this sound is currently attached to, and reports
+// whether that selection names a live object.
+//
+// It used to return the WorldObject* itself, which is what dragged GameLogic's
+// Location.h into NeuronClient. Two of its three callers only ever tested the
+// result for null; the third wanted position and velocity, and gets them from
+// LocationAccess::GetSoundSource instead.
+bool SoundInstance::ResolveAttachedObject()
 {
   if (m_positionType != Type3DAttachedToObject)
-    return nullptr;
+    return false;
 
-  WorldObject* obj = nullptr;
-
-  if (g_locationId != -1)
+  if (g_locationId != -1 && g_locationAccess)
   {
     //
     // We are linked to one or more world objects
 
     bool recalculateAttachedObject = false;
 
-    if (!g_location->GetWorldObject(m_objId))
+    if (!g_locationAccess->WorldObjectExists(m_objId))
       recalculateAttachedObject = true;
     if (m_instanceType == MonophonicNearest)
       recalculateAttachedObject = true;
@@ -970,8 +974,7 @@ WorldObject* SoundInstance::GetAttachedObject()
       for (int i = 0; i < m_objIds.Size(); ++i)
       {
         WorldObjectId* id = m_objIds[i];
-        WorldObject* obj = g_location->GetWorldObject(*id);
-        if (!obj)
+        if (!g_locationAccess->WorldObjectExists(*id))
         {
           m_objIds.RemoveData(i);
           delete id;
@@ -1006,8 +1009,11 @@ WorldObject* SoundInstance::GetAttachedObject()
           for (int i = 0; i < m_objIds.Size(); ++i)
           {
             WorldObjectId* id = m_objIds[i];
-            WorldObject* obj = g_location->GetWorldObject(*id);
-            float distance = (g_camera->GetPos() - obj->m_pos).MagSquared();
+            Vector3 pos, vel;
+            // The pruning above removed every dead id, so this resolves.
+            if (!g_locationAccess->GetSoundSource(*id, &pos, &vel))
+              continue;
+            float distance = (g_camera->GetPos() - pos).MagSquared();
             if (distance < nearest)
             {
               nearest = distance;
@@ -1020,10 +1026,10 @@ WorldObject* SoundInstance::GetAttachedObject()
       }
     }
 
-    obj = g_location->GetWorldObject(m_objId);
+    return g_locationAccess->WorldObjectExists(m_objId);
   }
 
-  return obj;
+  return false;
 }
 
 

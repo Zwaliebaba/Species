@@ -111,3 +111,67 @@ namespace GameLogicTests
       }
   };
 } // namespace GameLogicTests
+
+namespace GameLogicTests
+{
+  // The seam the layers below GameLogic reach the world through
+  // (tasks/layering-inversion.yaml T16). Location installs itself in its
+  // constructor and removes itself in its destructor, so the pointer cannot go
+  // stale the way one maintained by assignment sites would.
+  //
+  // The destructor's `only if it is me` guard is what these assert. Main.cpp
+  // destroys the old world before building the new one, which an unconditional
+  // clear would also survive — but a caller that built the replacement first
+  // would have the old world's destructor null a pointer to the live one, and
+  // the four call sites on the other side would silently stop working.
+  TEST_CLASS(LocationAccessSeamTests)
+  {
+    public:
+      TEST_METHOD(AWorldInstallsAndUninstallsItself)
+      {
+        Assert::IsNull(g_locationAccess);
+        {
+          Location location;
+          Assert::IsTrue(g_locationAccess == &location);
+        }
+        Assert::IsNull(g_locationAccess);
+      }
+
+      TEST_METHOD(DestroyingTheOldWorldAfterTheNewOneKeepsTheSeam)
+      {
+        auto* first = new Location();
+        Assert::IsTrue(g_locationAccess == first);
+
+        auto* second = new Location(); // replacement built before the old one dies
+        Assert::IsTrue(g_locationAccess == second);
+
+        delete first; // must not clear a pointer to the live world
+        Assert::IsTrue(g_locationAccess == second);
+
+        delete second;
+        Assert::IsNull(g_locationAccess);
+      }
+
+      TEST_METHOD(AnUnloadedWorldReportsZeroGroundHeight)
+      {
+        // SoundInstance asks this for every ground-linked sound. Before the
+        // seam it read m_landscape.m_heightMap->GetValue directly, which is a
+        // null dereference on a Location that has not loaded a level.
+        Location location;
+        Assert::AreEqual(0.0f, location.GroundHeight(100.0f, 100.0f), 0.0001f);
+      }
+
+      TEST_METHOD(AnUnknownIdHasNoSoundSource)
+      {
+        Location location;
+
+        Vector3 pos(1.0f, 2.0f, 3.0f);
+        Vector3 vel(4.0f, 5.0f, 6.0f);
+        Assert::IsFalse(location.GetSoundSource(WorldObjectId(1, 0, 7, 42), &pos, &vel));
+
+        // Documented contract: the outputs are untouched when it returns false.
+        Assert::AreEqual(1.0f, pos.x, 0.0001f);
+        Assert::AreEqual(4.0f, vel.x, 0.0001f);
+      }
+  };
+} // namespace GameLogicTests

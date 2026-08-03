@@ -1053,10 +1053,16 @@ tasks:
     project: NeuronClient
     depends_on: [T15]
     files:
+      - NeuronClient/LocationAccess.h
       - NeuronClient/Resource.cpp
+      - NeuronClient/SoundInstance.h
       - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/WorldPointers.h
+      - NeuronClient/WorldPointers.cpp
       - GameLogic/Location.h
       - GameLogic/Location.cpp
+      - Tests/GameLogicTests/EntityGridTests.cpp
       - tools/layering_allowlist.txt
     acceptance:
       - Neither Resource.cpp nor SoundInstance.cpp includes a GameLogic header, and both allowlist entries are gone
@@ -1067,7 +1073,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
     notes: >
       THE OBVIOUS ANSWER IS WRONG, and it is worth saying so before someone
       spends a day on it. The pattern T9 and T10 used — retype the global to
@@ -1096,6 +1102,45 @@ tasks:
       replaces the world. A destructor that clears unconditionally will null
       the seam if the new Location is constructed before the old one is
       destroyed; clear only if the departing object is the one installed.
+
+      DONE — but "the four, exactly" above was WRONG, and the way it was wrong
+      is the lesson. That list came from
+      `grep -noE 'g_location->[A-Za-z_]+' | sort -u -t: -k2`, and `sort -u`
+      COLLAPSES REPEATS: SoundInstance reaches the world at eight sites, not
+      two. Worse, the count was never the real measure. GetAttachedObject()
+      RETURNS a WorldObject*, and its caller reads obj->m_pos, obj->m_vel and
+      casts to Building* for m_centrePos — so GameLogic types crossed the
+      boundary through a function signature, which no count of `g_location->`
+      would ever have shown. Measure what crosses, not how often something is
+      named.
+
+      What landed. NeuronClient/LocationAccess.h carries five members —
+      FlushOpenGlState, RegenerateOpenGlState, GroundHeight, WorldObjectExists
+      and GetSoundSource — and g_locationAccess sits beside the other globals in
+      WorldPointers.h. Location derives from it and installs itself in its
+      constructor.
+
+      Two things were narrowed on the way across rather than forwarded:
+
+        GroundHeight(x, z) replaces g_location->m_landscape.m_heightMap->
+        GetValue(x, z), a three-deep member chain into two GameLogic classes.
+        It returns 0 when no landscape is loaded instead of dereferencing a
+        null heightmap, which the old chain did not check.
+
+        GetSoundSource(id, &pos, &vel) replaces GetAttachedObject() returning
+        a WorldObject*. The building-centre rule — a building is heard from
+        m_centrePos, everything else from m_pos — moved with it, because that
+        is the world's knowledge about its own objects and the sound system had
+        no business casting to Building* to find it out.
+
+      GetAttachedObject is now ResolveAttachedObject returning bool. Two of its
+      three callers only ever tested the result against null, so they lost
+      nothing; the third gets position and velocity from the seam.
+
+      SoundInstance.cpp also had to gain <stdlib.h>. It calls malloc and free,
+      and had been getting them through the Location.h chain — the same
+      transitive-loss trap this plan has now hit four times, caught here by
+      diffing reachable headers before and after rather than by CI.
 
   - id: T17
     title: Take GameLogic types out of the sound system's event API

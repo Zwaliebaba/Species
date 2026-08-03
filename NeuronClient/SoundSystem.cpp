@@ -1309,7 +1309,7 @@ void SoundSystem::Advance()
           instance->m_restartAttempts--;
         if (instance->m_restartAttempts < 0)
           ShutdownSound(instance);
-        else if (instance->m_positionType == SoundInstance::Type3DAttachedToObject && !instance->GetAttachedObject())
+        else if (instance->m_positionType == SoundInstance::Type3DAttachedToObject && !instance->ResolveAttachedObject())
           ShutdownSound(instance);
         else
         {
@@ -1621,7 +1621,7 @@ void SoundSystem::Advance()
                 instance->RecalculatePriority();
 
                 if( instance->m_positionType == SoundInstance::Type3DAttachedToObject &&
-                    !instance->GetAttachedObject() )
+                    !instance->ResolveAttachedObject() )
                 {
                     ShutdownSound( instance );
                 }

@@ -11,6 +11,7 @@
 #include "WorldObject.h"
 #include "Weapons.h"
 #include "Spirit.h"
+#include "LocationAccess.h"
 
 
 class ServerToClientLetter;
@@ -34,7 +35,7 @@ class TeamControls;
 //  Class Location
 // ****************************************************************************
 
-class Location
+class Location : public LocationAccess
 {
   protected:
     int m_lastSliceProcessed;
@@ -147,6 +148,10 @@ class Location
 
     void WaterReflect(); // inverts direction of all lights
 
-    void FlushOpenGlState();
-    void RegenerateOpenGlState();
+    void FlushOpenGlState() override;
+    void RegenerateOpenGlState() override;
+
+    float GroundHeight(float _worldX, float _worldZ) override;
+    bool WorldObjectExists(WorldObjectId const& _id) override;
+    bool GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* _vel) override;
 };

@@ -174,7 +174,7 @@ public:
 
     void    PropagateBlueprints ();                                             // Call this to update all looping sounds
 
-    WorldObject *GetAttachedObject  ();
+    bool ResolveAttachedObject();
 
     static char const *GetPositionTypeName    ( int _type );
     static char const *GetInstanceTypeName    ( int _type );
