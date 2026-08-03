@@ -2,7 +2,7 @@
 
 #ifdef DEBUG_RENDER_ENABLED
 
-#include "FastDArray.h"
+#include "SlotMap.h"
 #include "Vector3.h"
 
 
@@ -37,9 +37,9 @@ protected:
 		TypeNumTypes
 	};
 
-	FastDArray<PersistRenderItem> m_items;
+  Neuron::SlotMap<PersistRenderItem, Neuron::SlotReuse::MostRecentFirst> m_items;
 
-	PersistRenderItem *FindItem(char const *_label);
+  PersistRenderItem* FindItem(char const* _label);
 
 public:
 	PersistingDebugRenderer();

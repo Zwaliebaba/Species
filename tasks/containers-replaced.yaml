@@ -937,7 +937,7 @@ tasks:
       different job from the std:: substitution T18 turned out to be. Debug
       render code with no test reach; evidence is the build, review against
       T2's pinned freelist sequence, and the Garden smoke test.
-    status: todo
+    status: in_progress
 
   - id: T22
     title: Let SlotMap hold move-only values

@@ -21,17 +21,18 @@ PersistingDebugRenderer::PersistingDebugRenderer()
 
 PersistRenderItem *PersistingDebugRenderer::FindItem(char const *_label)
 {
-	for (unsigned int i = 0; i < m_items.Size(); ++i)
-	{
-		if (!m_items.ValidIndex(i)) continue;
+  for (int i = 0; i < m_items.Size(); ++i)
+  {
+    if (!m_items.ValidIndex(i))
+      continue;
 
-		if (strnicmp(_label, m_items[i].m_label, sizeof(m_items[i].m_label) - 1) == 0)
-		{
-			return &m_items[i];
-		}
-	}
+    if (strnicmp(_label, m_items[i].m_label, sizeof(m_items[i].m_label) - 1) == 0)
+    {
+      return &m_items[i];
+    }
+  }
 
-	return nullptr;
+  return nullptr;
 }
 
 
@@ -46,16 +47,16 @@ void PersistingDebugRenderer::Square2d(float x, float y, float _size, unsigned i
 	PersistRenderItem *item = FindItem(buf);
 	if (!item)
 	{
-		item = m_items.GetPointer();
-	}
+    item = m_items.GetPointer(m_items.GetNextFree());
+  }
 
-	item->m_life = _life;
-	item->m_vect1.x = x;
-	item->m_vect1.y = y;
-	item->m_size1 = _size;
-	item->m_type = TypeSquare2d;
+  item->m_life = _life;
+  item->m_vect1.x = x;
+  item->m_vect1.y = y;
+  item->m_size1 = _size;
+  item->m_type = TypeSquare2d;
 
-	strncpy(item->m_label, buf, sizeof(item->m_label) - 1);
+  strncpy(item->m_label, buf, sizeof(item->m_label) - 1);
 }
 
 
@@ -70,14 +71,14 @@ void PersistingDebugRenderer::PointMarker(Vector3 const &_point, unsigned int _l
 	PersistRenderItem *item = FindItem(buf);
 	if (!item)
 	{
-		item = m_items.GetPointer();
-	}
+    item = m_items.GetPointer(m_items.GetNextFree());
+  }
 
-	item->m_life = _life;
-	item->m_vect1 = _point;
-	item->m_type = TypePointMarker;
+  item->m_life = _life;
+  item->m_vect1 = _point;
+  item->m_type = TypePointMarker;
 
-	strncpy(item->m_label, buf, sizeof(item->m_label) - 1);
+  strncpy(item->m_label, buf, sizeof(item->m_label) - 1);
 }
 
 
@@ -92,13 +93,13 @@ void PersistingDebugRenderer::Sphere(Vector3 const &_centre, float _radius, int 
 	PersistRenderItem *item = FindItem(buf);
 	if (!item)
 	{
-		item = m_items.GetPointer();
-	}
+    item = m_items.GetPointer(m_items.GetNextFree());
+  }
 
-	item->m_life = _life;
-	item->m_vect1 = _centre;
-	item->m_size1 = _radius;
-	item->m_type = TypeSphere;
+  item->m_life = _life;
+  item->m_vect1 = _centre;
+  item->m_size1 = _radius;
+  item->m_type = TypeSphere;
 }
 
 
@@ -113,52 +114,53 @@ void PersistingDebugRenderer::Vector(Vector3 const &_start, Vector3 const &_end,
 	PersistRenderItem *item = FindItem(buf);
 	if (!item)
 	{
-		item = m_items.GetPointer();
-	}
+    item = m_items.GetPointer(m_items.GetNextFree());
+  }
 
-	item->m_life = _life;
-	item->m_vect1 = _start;
-	item->m_vect2 = _end;
-	item->m_type = TypeVector;
+  item->m_life = _life;
+  item->m_vect1 = _start;
+  item->m_vect2 = _end;
+  item->m_type = TypeVector;
 }
 
 
 void PersistingDebugRenderer::Render()
 {
-	for (unsigned int i = 0; i < m_items.Size(); ++i)
-	{
-		if (!m_items.ValidIndex(i)) continue;
+  for (int i = 0; i < m_items.Size(); ++i)
+  {
+    if (!m_items.ValidIndex(i))
+      continue;
 
-		PersistRenderItem *item = &m_items[i];
+    PersistRenderItem* item = &m_items[i];
 
-		switch (item->m_type)
-		{
-			case TypeSquare2d:
-				RenderSquare2d(item->m_vect1.x, item->m_vect1.y, item->m_size1);
-				break;
-			case TypePointMarker:
-				RenderPointMarker(item->m_vect1, item->m_label);
-				break;
-			case TypeSphere:
-				RenderSphere(item->m_vect1, item->m_size1);
-				break;
-			case TypeVector:
-				RenderArrow(item->m_vect1, item->m_vect2, 2.0f);
-				break;
-		}
+    switch (item->m_type)
+    {
+    case TypeSquare2d:
+      RenderSquare2d(item->m_vect1.x, item->m_vect1.y, item->m_size1);
+      break;
+    case TypePointMarker:
+      RenderPointMarker(item->m_vect1, item->m_label);
+      break;
+    case TypeSphere:
+      RenderSphere(item->m_vect1, item->m_size1);
+      break;
+    case TypeVector:
+      RenderArrow(item->m_vect1, item->m_vect2, 2.0f);
+      break;
+    }
 
-		if (item->m_life > 0)
-		{
-			if (item->m_life == 1)
-			{
-				m_items.MarkNotUsed(i);
-			}
-			else
-			{
-				item->m_life--;
-			}
-		}
-	}
+    if (item->m_life > 0)
+    {
+      if (item->m_life == 1)
+      {
+        m_items.MarkNotUsed(i);
+      }
+      else
+      {
+        item->m_life--;
+      }
+    }
+  }
 }
 
 
