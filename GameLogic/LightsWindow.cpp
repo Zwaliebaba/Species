@@ -19,54 +19,60 @@
 // Class LightButton
 // ****************************************************************************
 
-class LightButton: public SpeciesButton
+class LightButton : public SpeciesButton
 {
-public:
-	int m_lightNum;
+  public:
+    int m_lightNum;
 
-	LightButton(int num): m_lightNum(num) {}
+    LightButton(int num)
+      : m_lightNum(num)
+    {
+    }
 
-	void MouseUp()
-	{
-		if (m_lightNum == -1)
-		{
-			g_locationEditor->m_tool = LocationEditor::ToolNone;
-		}
-		else
-		{
-			g_locationEditor->m_tool = LocationEditor::ToolRotate;
-		}
-		g_locationEditor->m_selectionId = m_lightNum;
-	}
+    void MouseUp()
+    {
+      if (m_lightNum == -1)
+      {
+        g_locationEditor->m_tool = LocationEditor::ToolNone;
+      }
+      else
+      {
+        g_locationEditor->m_tool = LocationEditor::ToolRotate;
+      }
+      g_locationEditor->m_selectionId = m_lightNum;
+    }
 
-	void Render(int realX, int realY, bool highlighted, bool clicked)
-	{
-		if (g_locationEditor->m_selectionId == m_lightNum)
-		{
-			SpeciesButton::Render(realX, realY, highlighted, true);
-		}
-		else
-		{
-			SpeciesButton::Render(realX, realY, highlighted, clicked);
-		}
-	}
+    void Render(int realX, int realY, bool highlighted, bool clicked)
+    {
+      if (g_locationEditor->m_selectionId == m_lightNum)
+      {
+        SpeciesButton::Render(realX, realY, highlighted, true);
+      }
+      else
+      {
+        SpeciesButton::Render(realX, realY, highlighted, clicked);
+      }
+    }
 };
 
 
 class LightGammaButton : public SpeciesButton
 {
-public:
+  public:
     int m_lightNum;
     float m_change;
 
-    LightGammaButton(int num): m_lightNum(num) {}
+    LightGammaButton(int num)
+      : m_lightNum(num)
+    {
+    }
 
     void MouseUp()
     {
-        Light *light = g_location->m_lights[m_lightNum];
-        light->m_colour[0] *= m_change;
-        light->m_colour[1] *= m_change;
-        light->m_colour[2] *= m_change;
+      Light* light = g_location->m_lights[m_lightNum];
+      light->m_colour[0] *= m_change;
+      light->m_colour[1] *= m_change;
+      light->m_colour[2] *= m_change;
     }
 };
 
@@ -75,12 +81,12 @@ class NewLightButton : public SpeciesButton
 {
     void MouseUp()
     {
-        Light *light = new Light();
-        g_location->m_lights.PutData( light );
+      Light* light = new Light();
+      g_location->m_lights.PutData(light);
 
-        EclWindow *parent = m_parent;
-        parent->Remove();
-        parent->Create();
+      EclWindow* parent = m_parent;
+      parent->Remove();
+      parent->Create();
     }
 };
 
@@ -89,79 +95,76 @@ class NewLightButton : public SpeciesButton
 // Class LightsEditWindow
 // ****************************************************************************
 
-LightsEditWindow::LightsEditWindow( char const *name )
-:	SpeciesWindow(name)
+LightsEditWindow::LightsEditWindow(char const* name)
+  : SpeciesWindow(name)
 {
 }
 
 
-LightsEditWindow::~LightsEditWindow()
-{
-	g_locationEditor->RequestMode(LocationEditor::ModeNone);
-}
+LightsEditWindow::~LightsEditWindow() { g_locationEditor->RequestMode(LocationEditor::ModeNone); }
 
 
 void LightsEditWindow::Create()
 {
-	SpeciesWindow::Create();
+  SpeciesWindow::Create();
 
-	int height = 5;
-	int pitch = 17;
-	int buttonWidth = m_w - 50;
+  int height = 5;
+  int pitch = 17;
+  int buttonWidth = m_w - 50;
 
-    NewLightButton *newLight = new NewLightButton();
-    newLight->SetShortProperties( LANGUAGEPHRASE("editor_newlight"), 10, height += pitch, m_w - 20 );
-    RegisterButton( newLight );
+  NewLightButton* newLight = new NewLightButton();
+  newLight->SetShortProperties(LANGUAGEPHRASE("editor_newlight"), 10, height += pitch, m_w - 20);
+  RegisterButton(newLight);
 
-	LightButton *button = new LightButton(-1);
-	char buttonName[64];
-	sprintf(buttonName, LANGUAGEPHRASE("editor_deselectlights") );
-	button->SetShortProperties(buttonName, 10, height += pitch, m_w - 20);
-	RegisterButton(button);
+  LightButton* button = new LightButton(-1);
+  char buttonName[64];
+  sprintf(buttonName, LANGUAGEPHRASE("editor_deselectlights"));
+  button->SetShortProperties(buttonName, 10, height += pitch, m_w - 20);
+  RegisterButton(button);
+
+  height += 6;
+
+  for (int i = 0; i < g_location->m_lights.Size(); i++)
+  {
+    button = new LightButton(i);
+
+    Light* light = g_location->m_lights.GetData(i);
+    sprintf(buttonName, "%s %d", LANGUAGEPHRASE("editor_selectlight"), i);
+    button->SetShortProperties(buttonName, 10, height += pitch, m_w - 20);
+    RegisterButton(button);
+
+    height += pitch;
+
+    LabelButton* label = new LabelButton();
+    label->SetShortProperties(LANGUAGEPHRASE("editor_adjustbrightness"), 10, height, m_w - 50);
+    RegisterButton(label);
+
+    LightGammaButton* gammaDown = new LightGammaButton(i);
+    sprintf(buttonName, "down %d", i);
+    gammaDown->SetShortProperties(buttonName, m_w - 42, height, 15);
+    gammaDown->SetCaption("<");
+    gammaDown->m_change = 0.9f;
+    RegisterButton(gammaDown);
+
+    LightGammaButton* gammaUp = new LightGammaButton(i);
+    sprintf(buttonName, "up %d", i);
+    gammaUp->SetShortProperties(buttonName, m_w - 25, height, 15);
+    gammaUp->SetCaption(">");
+    gammaUp->m_change = 1.1f;
+    RegisterButton(gammaUp);
+
+    sprintf(buttonName, "Y%d", i);
+    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_front[1]), height += pitch, 0.01f, -20, 20, nullptr);
+
+    sprintf(buttonName, "R%d", i);
+    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[0]), height += pitch, 0.02f, 0, 5, nullptr);
+    sprintf(buttonName, "G%d", i);
+    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[1]), height += pitch, 0.02f, 0, 5, nullptr);
+    sprintf(buttonName, "B%d", i);
+    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[2]), height += pitch, 0.02f, 0, 5, nullptr);
 
     height += 6;
-
-    for (int i = 0; i < g_location->m_lights.Size(); i++)
-	{
-		button = new LightButton(i);
-
-        Light *light = g_location->m_lights.GetData(i);
-		sprintf(buttonName, "%s %d", LANGUAGEPHRASE("editor_selectlight"), i);
-		button->SetShortProperties(buttonName, 10, height += pitch, m_w - 20);
-		RegisterButton(button);
-
-        height += pitch;
-
-        LabelButton *label = new LabelButton();
-        label->SetShortProperties( LANGUAGEPHRASE("editor_adjustbrightness"), 10, height, m_w - 50 );
-        RegisterButton( label );
-
-        LightGammaButton *gammaDown = new LightGammaButton(i);
-        sprintf(buttonName, "down %d", i);
-        gammaDown->SetShortProperties( buttonName, m_w - 42, height, 15 );
-        gammaDown->SetCaption( "<" );
-        gammaDown->m_change = 0.9f;
-        RegisterButton( gammaDown );
-
-        LightGammaButton *gammaUp = new LightGammaButton(i);
-        sprintf(buttonName, "up %d", i );
-        gammaUp->SetShortProperties( buttonName, m_w - 25, height, 15 );
-        gammaUp->SetCaption( ">" );
-        gammaUp->m_change = 1.1f;
-        RegisterButton( gammaUp );
-
- 		sprintf(buttonName, "Y%d", i);
-		CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_front[1]), height += pitch, 0.01f, -20, 20, nullptr );
-
-		sprintf(buttonName, "R%d", i);
-		CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[0]), height += pitch, 0.02f, 0, 5, nullptr );
- 		sprintf(buttonName, "G%d", i);
-		CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[1]), height += pitch, 0.02f, 0, 5, nullptr );
- 		sprintf(buttonName, "B%d", i);
-		CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[2]), height += pitch, 0.02f, 0, 5, nullptr );
-
-		height += 6;
-	}
+  }
 }
 
 

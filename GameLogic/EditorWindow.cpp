@@ -32,58 +32,56 @@
 
 class MainEditWindowButton : public BorderlessButton
 {
-public:
-	enum
-	{
-		TypeSave = LocationEditor::ModeNumModes
-	};
+  public:
+    enum
+    {
+      TypeSave = LocationEditor::ModeNumModes
+    };
 
-	int m_type;
+    int m_type;
 
-	MainEditWindowButton(int type)
-	:	m_type(type)
-	{
-	}
+    MainEditWindowButton(int type)
+      : m_type(type)
+    {
+    }
 
     void MouseUp()
     {
-		if (m_type == TypeSave)
-		{
-            //
-            // If a MOD hasn't been set, don't allow this to happen
-            // as it will try to save into darwinia/data/levels, which is clearly wrong
-            // for the end user (but allow it for us)
+      if (m_type == TypeSave)
+      {
+        //
+        // If a MOD hasn't been set, don't allow this to happen
+        // as it will try to save into darwinia/data/levels, which is clearly wrong
+        // for the end user (but allow it for us)
 
 #ifndef TARGET_DEBUG
-            if( !g_resource->IsModLoaded() )
-            {
-                EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_savelocationsfail1" ),
-                                                      LANGUAGEPHRASE( "dialog_savelocationsfail2" ) ),
-                                                      m_parent );
-                return;
-            }
+        if (!g_resource->IsModLoaded())
+        {
+          EclRegisterWindow(new MessageDialog(LANGUAGEPHRASE("dialog_savelocationsfail1"), LANGUAGEPHRASE("dialog_savelocationsfail2")), m_parent);
+          return;
+        }
 #endif
 
-            g_location->m_levelFile->Save();
+        g_location->m_levelFile->Save();
 
-			return;
-		}
+        return;
+      }
 
-		g_locationEditor->RequestMode(m_type);
+      g_locationEditor->RequestMode(m_type);
     }
 
-	void Render(int realX, int realY, bool highlighted, bool clicked)
-	{
-		LocationEditor *editor = g_locationEditor;
-		if (editor->GetMode() == m_type)
-		{
-			BorderlessButton::Render(realX, realY, highlighted, true);
-		}
-		else
-		{
-			BorderlessButton::Render(realX, realY, highlighted, clicked);
-		}
-	}
+    void Render(int realX, int realY, bool highlighted, bool clicked)
+    {
+      LocationEditor* editor = g_locationEditor;
+      if (editor->GetMode() == m_type)
+      {
+        BorderlessButton::Render(realX, realY, highlighted, true);
+      }
+      else
+      {
+        BorderlessButton::Render(realX, realY, highlighted, clicked);
+      }
+    }
 };
 
 
@@ -91,48 +89,48 @@ public:
 // Class MainEditWindow
 // ****************************************************************************
 
-MainEditWindow::MainEditWindow( char const *name )
-:	SpeciesWindow(name),
-	m_currentEditWindow(nullptr)
+MainEditWindow::MainEditWindow(char const* name)
+  : SpeciesWindow(name),
+    m_currentEditWindow(nullptr)
 {
 }
 
 
 void MainEditWindow::Create()
 {
-	int y = 3;
-	int buttonYPitch = 18;
+  int y = 3;
+  int buttonYPitch = 18;
 
-	MainEditWindowButton *button;
-	button = new MainEditWindowButton(LocationEditor::ModeLandTile);
-	button->SetShortProperties(LANGUAGEPHRASE("editor_editlandtiles"), 7, y += buttonYPitch, m_w - 15 );
-	RegisterButton(button);
+  MainEditWindowButton* button;
+  button = new MainEditWindowButton(LocationEditor::ModeLandTile);
+  button->SetShortProperties(LANGUAGEPHRASE("editor_editlandtiles"), 7, y += buttonYPitch, m_w - 15);
+  RegisterButton(button);
 
-	button = new MainEditWindowButton(LocationEditor::ModeLandFlat);
-	button->SetShortProperties(LANGUAGEPHRASE("editor_editflattenareas"), 7, y += buttonYPitch, m_w - 15 );
-	RegisterButton(button);
+  button = new MainEditWindowButton(LocationEditor::ModeLandFlat);
+  button->SetShortProperties(LANGUAGEPHRASE("editor_editflattenareas"), 7, y += buttonYPitch, m_w - 15);
+  RegisterButton(button);
 
-    button = new MainEditWindowButton(LocationEditor::ModeLight);
-	button->SetShortProperties(LANGUAGEPHRASE("editor_editlights"), 7, y += buttonYPitch, m_w - 15 );
-	RegisterButton(button);
+  button = new MainEditWindowButton(LocationEditor::ModeLight);
+  button->SetShortProperties(LANGUAGEPHRASE("editor_editlights"), 7, y += buttonYPitch, m_w - 15);
+  RegisterButton(button);
 
-    button = new MainEditWindowButton(LocationEditor::ModeBuilding);
-    button->SetShortProperties(LANGUAGEPHRASE("editor_editbuildings"), 7, y += buttonYPitch, m_w - 15 );
-    RegisterButton(button);
+  button = new MainEditWindowButton(LocationEditor::ModeBuilding);
+  button->SetShortProperties(LANGUAGEPHRASE("editor_editbuildings"), 7, y += buttonYPitch, m_w - 15);
+  RegisterButton(button);
 
-    button = new MainEditWindowButton(LocationEditor::ModeInstantUnit);
-    button->SetShortProperties(LANGUAGEPHRASE("editor_editinstantunits"), 7, y += buttonYPitch, m_w - 15 );
-    RegisterButton(button);
+  button = new MainEditWindowButton(LocationEditor::ModeInstantUnit);
+  button->SetShortProperties(LANGUAGEPHRASE("editor_editinstantunits"), 7, y += buttonYPitch, m_w - 15);
+  RegisterButton(button);
 
-    button = new MainEditWindowButton(LocationEditor::ModeCameraMount);
-    button->SetShortProperties(LANGUAGEPHRASE("editor_editcameramounts"), 7, y += buttonYPitch, m_w - 15 );
-    RegisterButton(button);
+  button = new MainEditWindowButton(LocationEditor::ModeCameraMount);
+  button->SetShortProperties(LANGUAGEPHRASE("editor_editcameramounts"), 7, y += buttonYPitch, m_w - 15);
+  RegisterButton(button);
 
-	y += 6;
+  y += 6;
 
-	button = new MainEditWindowButton(MainEditWindowButton::TypeSave);
-	button->SetShortProperties(LANGUAGEPHRASE("editor_save"), 7, y += buttonYPitch, m_w - 15);
-	RegisterButton(button);
+  button = new MainEditWindowButton(MainEditWindowButton::TypeSave);
+  button->SetShortProperties(LANGUAGEPHRASE("editor_save"), 7, y += buttonYPitch, m_w - 15);
+  RegisterButton(button);
 }
 
-#endif //LOCATION_EDITOR
+#endif // LOCATION_EDITOR
