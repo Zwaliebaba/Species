@@ -2,6 +2,7 @@
 
 #include "EntityGrid.h"
 #include "Location.h"
+#include "Team.h"
 #include "WorldObjectId.h"
 #include "WorldPointers.h"
 
@@ -164,6 +165,15 @@ namespace GameLogicTests
       TEST_METHOD(AnUnknownIdHasNoSoundSource)
       {
         Location location;
+
+        // Teams have to exist before an id can be looked up at all.
+        // Location::GetEntity reads m_teams[teamId].m_teamType with no null
+        // check, and m_teams stays null until Init() loads a level — so a
+        // default-constructed Location answers GroundHeight (which this task
+        // guarded) but crashes on any id query. Team's constructor marks each
+        // one TeamTypeUnused, which is what makes the lookup below return
+        // cleanly rather than walking an empty unit list.
+        location.m_teams = new Team[NUM_TEAMS];
 
         Vector3 pos(1.0f, 2.0f, 3.0f);
         Vector3 vel(4.0f, 5.0f, 6.0f);

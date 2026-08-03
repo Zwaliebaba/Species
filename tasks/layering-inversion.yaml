@@ -1137,6 +1137,22 @@ tasks:
       three callers only ever tested the result against null, so they lost
       nothing; the third gets position and velocity from the seam.
 
+      A LANDMINE THIS TASK FOUND AND DID NOT DEFUSE, recorded for whoever
+      writes the loaded-world fixture. Location::GetEntity reads
+      m_teams[teamId].m_teamType with no null check, and m_teams stays null
+      until Init() loads a level. So a default-constructed Location answers
+      GroundHeight — this task guarded that one — and CRASHES on any id query,
+      which is every path through GetWorldObject. The test that asks for an
+      unknown id therefore allocates Team[NUM_TEAMS] first; Team's constructor
+      marks each TeamTypeUnused, which makes the lookup return cleanly.
+
+      Adding `if (!m_teams) return nullptr;` to GetEntity would make every
+      Location safe to query, and was deliberately NOT done: it is simulation
+      code with 83 call sites, changed for the convenience of a test, and the
+      production path always has teams. If a later task builds a real level
+      fixture the question goes away; if instead more tests start reaching
+      GetWorldObject on bare Locations, revisit it then.
+
       SoundInstance.cpp also had to gain <stdlib.h>. It calls malloc and free,
       and had been getting them through the Location.h chain — the same
       transitive-loss trap this plan has now hit four times, caught here by
