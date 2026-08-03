@@ -194,6 +194,30 @@ do not use them in new code.
 **Strings.** `std::string` / `std::wstring` to own, `std::string_view` /
 `std::wstring_view` to borrow. Not `char*`. Not fixed `char[N]` buffers.
 
+Which of the two, for a parameter or a return, is decided by ONE question:
+does anything downstream need a null terminator? `string_view` does not carry
+one — `.data()` is not guaranteed terminated — and this tree hands strings to
+`fopen`, `strcmp`, `strchr`, `_findfirst` and the OpenGL and resource lookups
+constantly.
+
+| The function… | Takes / returns |
+|---|---|
+| reads the characters — compares, copies, parses | `std::string_view` |
+| forwards them to a C API that needs a terminator | `char const*` or `std::string const&` |
+| returns something that must outlive the call | `std::string`, by value |
+| returns a borrow of storage it owns | `std::string_view`, once that lifetime is provable |
+
+Two mistakes this prevents, both of which happened here. Taking `string_view`
+and then building a `std::string` inside the function to get a terminator is
+worse than taking `char const*` — it hides an allocation the caller cannot see.
+And RETURNING a `string_view` to a shared buffer preserves the dangling-pointer
+bug it looks like it fixes: `ConvertIntToIP` handed back a pointer into a
+function-local `static char[16]`, and only returning an owning `std::string`
+made a second call safe.
+
+A `char const*` parameter that only ever gets compared is a `string_view` that
+has not been converted yet, not a considered choice.
+
 **Formatting.** `std::format` and `std::vformat`. Not `sprintf`, `snprintf` or
 `printf`-family varargs.
 

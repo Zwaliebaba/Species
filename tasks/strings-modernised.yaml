@@ -266,6 +266,43 @@ tasks:
       to compile is a latent bug being surfaced, not a conversion error, and
       should be recorded as such rather than silently patched.
 
+  - id: T13
+    title: Narrow the read-only char const* parameters to string_view
+    intent: >
+      A `char const*` parameter that is only ever compared or copied is a
+      `string_view` that has not been converted yet. The Eclipse window
+      functions (EclGetWindow, EclSetWindowPosition, EclSetWindowSize,
+      EclRemoveWindow, EclDirtyWindow) and SoundSystem::ParseSoundEvent are the
+      known set: none forwards its argument to a C API, so none needs the null
+      terminator that is the only reason to keep char const*. Narrowing them
+      also removes the .c_str() that every std::string caller currently writes.
+    project: NeuronClient
+    depends_on: [T11, T12]
+    files:
+      - NeuronClient/Eclipse.h
+      - NeuronClient/Eclipse.cpp
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundSystem.cpp
+    acceptance:
+      - No listed function takes char const* for a parameter it only compares or copies
+      - No call site passes .c_str() to one of them
+      - The rule in CODING_STANDARDS.md, Strings, is what decides each case
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+    notes: |
+      Raised 2026-08-03 by the project owner, mid-conversion, and the criticism
+      was fair: T3 and T7 widened several of these to char const* while fixing a
+      red build, which was the smallest change that compiled rather than the
+      right one. Recorded rather than done on the spot because these are T11's
+      and T12's files and a third concurrent edit to them would collide.
+
+      NOT a blanket sweep. string_view is wrong wherever the argument reaches
+      fopen, strcmp, strchr, _findfirst or a resource lookup, because it
+      carries no null terminator — see the table in CODING_STANDARDS.md. The
+      four files above are the ones measured to be free of that.
+
   - id: T11
     title: Convert the Eclipse widget name and caption members
     intent: >
