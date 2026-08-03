@@ -374,7 +374,11 @@ void Server::Advance()
       }
     }
     else if (incoming->m_teamId != 255)
-      letter->AddUpdate(incoming);
+      // .get(), not a move: AddUpdate copies the struct into the letter's own
+      // storage ("Make sure we COPY the update" — new + memcpy), so ownership
+      // stays here. The reassignment at the bottom of this loop frees it,
+      // which is what `delete incoming` used to do.
+      letter->AddUpdate(incoming.get());
 
     int clientId = GetClientId(incoming->m_clientIp);
     if (clientId != -1)
