@@ -64,21 +64,22 @@ class Resource
 
     // *** Files ***
     TextReader* GetTextReader(const std::string& _filename); // Caller must delete the TextReader when done
-    TextReader* GetTextReader(const char* _filename); // Caller must delete the TextReader when done
-    BinaryReader* GetBinaryReader(const char* _filename); // Caller must delete the BinaryReader when done
+    TextReader* GetTextReader(const char* _filename);        // Caller must delete the TextReader when done
+    BinaryReader* GetBinaryReader(const char* _filename);    // Caller must delete the BinaryReader when done
     FileWriter* GetFileWriter(const char* _filename, bool _encrypt);
 
     // *** Shapes ****
     Shape* GetShape(const char* _name);
-    // Never produces an animatable shape because the one shape is shared between all people who call this function with the same shape name. If you want an animatable shape, call GetShapeCopy
+    // Never produces an animatable shape because the one shape is shared between all people who call this function with the same shape name. If you
+    // want an animatable shape, call GetShapeCopy
     Shape* GetShapeCopy(const char* _name, bool _animating);
 
     // *** Normal resources ***
     SoundStreamDecoder* GetSoundStreamDecoder(const char* _filename); // Caller must delete the decoder when done
 
     // *** Display lists ***
-    int CreateDisplayList(const char* _name); // Adds _name to the hashtable and calls glGenLists
-    int GetDisplayList(const char* _name); // Returns -1 if _name doesn't exist
+    int CreateDisplayList(const char* _name);  // Adds _name to the hashtable and calls glGenLists
+    int GetDisplayList(const char* _name);     // Returns -1 if _name doesn't exist
     void DeleteDisplayList(const char* _name); // Removes _name from the hashtable and calls glDeleteLists
 
     void FlushOpenGlState();
