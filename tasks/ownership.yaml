@@ -263,7 +263,7 @@ tasks:
     notes: >
       After each file's containers-replaced task (T5, T6, T7, T8 there).
       Split into per-subsystem commits.
-    status: todo
+    status: in_progress
 
   - id: T4
     title: Adopt unique_ptr in GameLogic
