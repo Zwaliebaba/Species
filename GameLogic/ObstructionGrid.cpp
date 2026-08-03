@@ -150,7 +150,7 @@ void ObstructionGrid::Render()
       float w = m_cells.m_cellSizeX;
       float h = m_cells.m_cellSizeY;
 
-      int numBuildings = GetBuildings(worldX, worldZ)->Size();
+      int numBuildings = static_cast<int>(GetBuildings(worldX, worldZ)->size());
       glColor4f(1.0f, 1.0f, 1.0f, numBuildings / 3.0f);
 
       glBegin(GL_QUADS);

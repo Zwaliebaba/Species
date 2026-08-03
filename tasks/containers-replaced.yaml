@@ -747,6 +747,20 @@ tasks:
       IN PROGRESS. Measured 2026-08-03: 16 files, and the containers are
       2 FastDArray, 6 SliceDArray and about 20 LList.
 
+      A CI RED ON THE FIRST CONVERSION, AND THE CAUSE IS A SEARCH HABIT WORTH
+      NAMING. ObstructionGrid's list is reached two ways: the member
+      m_buildings, and the accessor GetBuildings that hands it out. The
+      call-site survey was `grep -rn GetBuildings | grep -v ObstructionGrid` —
+      the filter was there to skip the DEFINITION and it also hid a CALL in the
+      same file, ObstructionGrid::Render doing GetBuildings(x, z)->Size(). One
+      error, one line, and it built cleanly everywhere else.
+
+      The rule that follows: when a container is reached through an accessor,
+      search for the accessor with NO path filter, and search for the legacy
+      operation names (Size, PutData, GetData, Empty, ValidIndex, RemoveData)
+      as well as the member name. A filter that excludes the file you are
+      converting is exactly backwards — that file is the most likely caller.
+
       THE PLAN DID NOT NOTICE THAT SliceDArray HAS NO REPLACEMENT. T1-T4 built
       SlotMap in two flavours to cover DArray and FastDArray, and the intent
       above says "freelist-flavour SlotMap for every FastDArray" as though that
