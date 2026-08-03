@@ -231,7 +231,7 @@ bool HandleCommonConditions()
   if (!curWindowHasFocus)
   {
     TheUserInput()->Advance();
-    g_app->m_soundSystem->Advance();
+    g_soundSystem->Advance();
 
     // Render twice to avoid double buffering artefacts
     TheRenderer()->Render();
@@ -360,7 +360,7 @@ void LocationGameLoop()
   g_sliceNum = -1;
 
   TheRenderer()->StartFadeIn(0.6f);
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterLocation", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->TriggerOtherEvent(nullptr, "EnterLocation", SoundSourceBlueprint::TypeAmbience);
 
   //
   // Main loop
@@ -431,7 +431,7 @@ void LocationGameLoop()
 
     if (iAmAClient)
     {
-      START_PROFILE(g_app->m_profiler, "Client Main Loop");
+      START_PROFILE(g_profiler, "Client Main Loop");
 
       //
       // Send Client input to Server
@@ -502,7 +502,7 @@ void LocationGameLoop()
 
       int slicesToAdvance = GetNumSlicesToAdvance();
 
-      END_PROFILE(g_app->m_profiler, "Client Main Loop");
+      END_PROFILE(g_profiler, "Client Main Loop");
 
       // Do our heavy weight physics
       for (int i = 0; i < slicesToAdvance; ++i)
@@ -553,7 +553,7 @@ void LocationGameLoop()
       UpdateAdvanceTime();
       lastRenderTime = GetHighResTime();
 #ifdef PROFILER_ENABLED
-      g_app->m_profiler->Advance();
+      g_profiler->Advance();
 #endif // PROFILER_ENABLED
 
       TheUserInput()->Advance();
@@ -571,7 +571,7 @@ void LocationGameLoop()
       TheTaskManagerInterface()->Advance();
       TheScript()->Advance();
       g_explosionManager.Advance();
-      g_app->m_soundSystem->Advance();
+      g_soundSystem->Advance();
       TheControlHelp()->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
@@ -584,12 +584,12 @@ void LocationGameLoop()
       TheRenderer()->Render();
 
       if (g_renderer->Fps() < 15)
-        g_app->m_soundSystem->Advance();
+        g_soundSystem->Advance();
     }
   }
 
-  g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterLocation");
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "ExitLocation", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterLocation");
+  g_soundSystem->TriggerOtherEvent(nullptr, "ExitLocation", SoundSourceBlueprint::TypeAmbience);
 
   g_explosionManager.Reset();
 
@@ -658,9 +658,9 @@ void LocationEditorLoop()
     TheUserInput()->Advance();
     TheCamera()->Advance();
     TheLocationEditor()->Advance();
-    g_app->m_soundSystem->Advance();
+    g_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
-    g_app->m_profiler->Advance();
+    g_profiler->Advance();
 #endif
 
     TheRenderer()->Render();
@@ -684,7 +684,7 @@ void GlobalWorldGameLoop()
 {
   TheRenderer()->StartFadeIn(0.25f);
 
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->TriggerOtherEvent(nullptr, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
 
   while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
@@ -716,13 +716,13 @@ void GlobalWorldGameLoop()
     g_globalWorld->Advance();
     TheUserInput()->Advance();
     TheCamera()->Advance();
-    g_app->m_soundSystem->Advance();
+    g_soundSystem->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
     g_app->m_attractMode->Advance();
 #endif
 #ifdef PROFILER_ENABLED
-    g_app->m_profiler->Advance();
+    g_profiler->Advance();
 #endif // PROFILER_ENABLED
 
     g_globalWorld->EvaluateEvents();
@@ -736,7 +736,7 @@ void GlobalWorldGameLoop()
     g_requestToggleEditing = false;
   }
 
-  g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
+  g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
 }
 
 // *** GlobalWorldEditorLoop
@@ -768,9 +768,9 @@ void GlobalWorldEditorLoop()
     g_globalWorld->Advance();
     TheUserInput()->Advance();
     TheCamera()->Advance();
-    g_app->m_soundSystem->Advance();
+    g_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
-    g_app->m_profiler->Advance();
+    g_profiler->Advance();
 #endif // PROFILER_ENABLED
 
     TheRenderer()->Render();
@@ -796,7 +796,7 @@ void InitialiseInputManager()
   g_inputManager->addDriver(new AliasInputDriver());
   {
     // Read Darwinia default input preferences file
-    TextReader* inputPrefsReader = g_app->m_resource->GetTextReader(InputPrefs::GetSystemPrefsPath());
+    TextReader* inputPrefsReader = g_resource->GetTextReader(InputPrefs::GetSystemPrefsPath());
     if (inputPrefsReader)
     {
       ASSERT_TEXT(inputPrefsReader->IsOpen(), "Couldn't open input preferences file: %s\n", InputPrefs::GetSystemPrefsPath());
@@ -805,7 +805,7 @@ void InitialiseInputManager()
     }
 
     // Override defaults with keyboard specific file, if applicable
-    TextReader* localeInputPrefsReader = g_app->m_resource->GetTextReader(InputPrefs::GetLocalePrefsPath());
+    TextReader* localeInputPrefsReader = g_resource->GetTextReader(InputPrefs::GetLocalePrefsPath());
     if (localeInputPrefsReader)
     {
       if (localeInputPrefsReader->IsOpen())
@@ -870,7 +870,7 @@ void Finalise()
   delete g_soundLibrary2d;
   g_soundLibrary2d = nullptr;
 
-  delete g_app->m_resource;
+  delete g_resource;
   delete g_windowManager;
 
 }
@@ -909,7 +909,7 @@ void EnterLocation()
     if (iAmAServer)
     {
       g_server = new Server();
-      g_server->Initialise(g_app->m_profiler);
+      g_server->Initialise(g_profiler);
     }
 
     g_app->m_clientToServer->ClientJoin();
@@ -990,7 +990,7 @@ void MainMenuLoop()
     TheRenderer()->Render();
     TheUserInput()->Advance();
     TheCamera()->Advance();
-    g_app->m_soundSystem->Advance();
+    g_soundSystem->Advance();
     HandleCommonConditions();
 
     if (!g_app->m_gameMenu->m_menuCreated)

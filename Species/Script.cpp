@@ -223,15 +223,15 @@ void Script::RunCommand_TriggerSound(const char* _event)
   char eventName[256];
   sprintf(eventName, "Music %s", _event);
 
-  if (g_app->m_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName) == 0)
-    g_app->m_soundSystem->TriggerOtherEvent(nullptr, _event, SoundSourceBlueprint::TypeMusic);
+  if (g_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName) == 0)
+    g_soundSystem->TriggerOtherEvent(nullptr, _event, SoundSourceBlueprint::TypeMusic);
 }
 
 void Script::RunCommand_StopSound(const char* _event)
 {
   char eventName[256];
   sprintf(eventName, "Music %s", _event);
-  g_app->m_soundSystem->StopAllSounds(WorldObjectId(), eventName);
+  g_soundSystem->StopAllSounds(WorldObjectId(), eventName);
 }
 
 void Script::RunCommand_DemoGesture(const char* _name) {}
@@ -283,7 +283,7 @@ void Script::RunCommand_GameOver()
   //
   // Kill global world ambiences
 
-  g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
+  g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
 }
 
 void Script::RunCommand_ResetResearch()
@@ -378,7 +378,7 @@ void Script::RunCommand_PurityControl()
 void Script::RunCommand_ShowDarwinLogo()
 {
   TheRenderer()->m_renderDarwinLogo = GetHighResTime();
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "ShowLogo", SoundSourceBlueprint::TypeInterface);
+  g_soundSystem->TriggerOtherEvent(nullptr, "ShowLogo", SoundSourceBlueprint::TypeInterface);
 }
 
 void Script::RunCommand_ShowDemoEndSequence() {}
@@ -417,7 +417,7 @@ void Script::RunScript(const char* _filename)
     // Run a script, speficied by filename
     char fullFilename[256] = "Scripts/";
     strcat(fullFilename, _filename);
-    m_in = g_app->m_resource->GetTextReader(fullFilename);
+    m_in = g_resource->GetTextReader(fullFilename);
     DEBUG_ASSERT(m_in);
   }
   else
@@ -451,7 +451,7 @@ bool Script::Skip()
     // Quick exit the entire cutscene
     delete m_in;
     m_in = nullptr;
-    g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Music");
+    g_soundSystem->StopAllSounds(WorldObjectId(), "Music");
     m_permitEscape = false;
     if (g_location)
       TheCamera()->RequestMode(Camera::ModeFreeMovement);

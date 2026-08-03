@@ -251,7 +251,7 @@ void PrefsManager::CreateDefaultValues()
 
   // Override the defaults above with stuff from a default preferences file.
   // The host installs the reader — see SetDefaultsProvider. This used to read
-  // GameData/DefaultPreferences.txt through g_app->m_resource directly, which
+  // GameData/DefaultPreferences.txt through g_resource directly, which
   // is what kept a settings store dependent on the application object and the
   // renderer's resource loader.
   if (sm_defaultsProvider)

@@ -16,7 +16,6 @@
 
 #include "ClientToServer.h"
 
-#include "App.h"
 #include "GameCursor.h"
 #include "GlobalWorld.h"
 #include "Location.h"

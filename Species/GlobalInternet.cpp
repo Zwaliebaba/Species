@@ -8,7 +8,6 @@
 #include "Profiler.h"
 #include "Debug.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "GlobalInternet.h"
 #include "GlobalWorld.h"
@@ -171,14 +170,14 @@ void GlobalInternet::DeleteInternet()
   m_leafs.Empty();
   m_bursts.Empty();
 
-  g_app->m_resource->DeleteDisplayList(DISPLAY_LIST_NAME_LINKS);
-  g_app->m_resource->DeleteDisplayList(DISPLAY_LIST_NAME_NODES);
+  g_resource->DeleteDisplayList(DISPLAY_LIST_NAME_LINKS);
+  g_resource->DeleteDisplayList(DISPLAY_LIST_NAME_NODES);
 }
 
 
 void GlobalInternet::Render()
 {
-  START_PROFILE(g_app->m_profiler, "Internet");
+  START_PROFILE(g_profiler, "Internet");
 
   /*static*/ float scale = 1000.0f;
 
@@ -213,16 +212,16 @@ void GlobalInternet::Render()
   glEnable(GL_TEXTURE_2D);
 
 
-  int linksId = g_app->m_resource->GetDisplayList(DISPLAY_LIST_NAME_LINKS);
+  int linksId = g_resource->GetDisplayList(DISPLAY_LIST_NAME_LINKS);
   if (linksId >= 0)
   {
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/LaserFence2.bmp"));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence2.bmp"));
 
     glCallList(linksId);
   }
   else
   {
-    linksId = g_app->m_resource->CreateDisplayList(DISPLAY_LIST_NAME_LINKS);
+    linksId = g_resource->CreateDisplayList(DISPLAY_LIST_NAME_LINKS);
     glNewList(linksId, GL_COMPILE);
 
     glColor4f(0.25f, 0.25f, 0.5f, 0.8f);
@@ -261,16 +260,16 @@ void GlobalInternet::Render()
   }
 
 
-  int nodesId = g_app->m_resource->GetDisplayList(DISPLAY_LIST_NAME_NODES);
+  int nodesId = g_resource->GetDisplayList(DISPLAY_LIST_NAME_NODES);
   if (nodesId >= 0)
   {
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Glow.bmp"));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Glow.bmp"));
 
     glCallList(nodesId);
   }
   else
   {
-    nodesId = g_app->m_resource->CreateDisplayList(DISPLAY_LIST_NAME_NODES);
+    nodesId = g_resource->CreateDisplayList(DISPLAY_LIST_NAME_NODES);
     glNewList(nodesId, GL_COMPILE);
 
     glColor4f(0.8f, 0.8f, 1.0f, 0.6f);
@@ -315,7 +314,7 @@ void GlobalInternet::Render()
 
   glPopMatrix();
 
-  END_PROFILE(g_app->m_profiler, "Internet");
+  END_PROFILE(g_profiler, "Internet");
 }
 
 
@@ -395,7 +394,7 @@ void GlobalInternet::RenderPackets()
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Starburst.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Starburst.bmp"));
   glDepthMask(false);
 
   for (int i = 0; i < m_numLinks; ++i)

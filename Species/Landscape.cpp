@@ -16,7 +16,6 @@
 #include "Vector2.h"
 #include "Vector3.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "GlobalWorld.h"
 #include "Landscape.h"

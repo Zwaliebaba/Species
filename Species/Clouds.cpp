@@ -7,7 +7,6 @@
 #include "Preferences.h"
 #include "Profiler.h"
 
-#include "App.h"
 #include "Globals.h"
 #include "Clouds.h"
 #include "Location.h"
@@ -30,17 +29,17 @@ void Clouds::Advance()
 
 void Clouds::Render(float _predictionTime)
 {
-  START_PROFILE(g_app->m_profiler, "RenderSky");
+  START_PROFILE(g_profiler, "RenderSky");
   RenderSky();
-  END_PROFILE(g_app->m_profiler, "RenderSky");
+  END_PROFILE(g_profiler, "RenderSky");
 
-  START_PROFILE(g_app->m_profiler, "RenderBlobby");
+  START_PROFILE(g_profiler, "RenderBlobby");
   RenderBlobby(_predictionTime);
-  END_PROFILE(g_app->m_profiler, "RenderBlobby");
+  END_PROFILE(g_profiler, "RenderBlobby");
 
-  START_PROFILE(g_app->m_profiler, "RenderFlat");
+  START_PROFILE(g_profiler, "RenderFlat");
   RenderFlat(_predictionTime);
-  END_PROFILE(g_app->m_profiler, "RenderFlat");
+  END_PROFILE(g_profiler, "RenderFlat");
 }
 
 
@@ -103,7 +102,7 @@ void Clouds::RenderFlat(float _predictionTime)
   Vector3 offset = m_offset + m_vel * _predictionTime;
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Clouds.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Clouds.bmp"));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -162,7 +161,7 @@ void Clouds::RenderBlobby(float _predictionTime)
   int cloudDetail = g_prefsManager->GetInt("RenderCloudDetail", 1);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Clouds.bmp", false));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Clouds.bmp", false));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -237,7 +236,7 @@ void Clouds::RenderSky()
   glColor4f(0.5, 0.5, 1.0, 0.3);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Laser.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
 
   glBegin(GL_QUADS);
   for (int x = xStart; x < xEnd; x += gridSize)

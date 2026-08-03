@@ -12,7 +12,6 @@
 #include "MainMenus.h"
 
 #include "StartSequence.h"
-#include "App.h"
 #include "Camera.h"
 #include "UserInput.h"
 #include "Renderer.h"
@@ -69,7 +68,7 @@ bool StartSequence::Advance()
   if (GetHighResTime() > m_startTime && !started)
   {
     started = true;
-    g_app->m_soundSystem->TriggerOtherEvent(nullptr, "StartSequence", SoundSourceBlueprint::TypeMusic);
+    g_soundSystem->TriggerOtherEvent(nullptr, "StartSequence", SoundSourceBlueprint::TypeMusic);
     TheCamera()->SetDebugMode(Camera::DebugModeAuto);
     TheCamera()->RequestMode(Camera::ModeSphereWorldIntro);
   }
@@ -85,15 +84,15 @@ bool StartSequence::Advance()
 
   if (g_inputManager->controlEvent(ControlSkipMessage) || g_requestQuit || (GetHighResTime() - m_startTime) > 90)
   {
-    g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Music StartSequence");
+    g_soundSystem->StopAllSounds(WorldObjectId(), "Music StartSequence");
     return true;
   }
 
   TheUserInput()->Advance();
   TheCamera()->Advance();
-  g_app->m_soundSystem->Advance();
+  g_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
-  g_app->m_profiler->Advance();
+  g_profiler->Advance();
 #endif // PROFILER_ENABLED
 
   TheRenderer()->Render();

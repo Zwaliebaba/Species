@@ -259,7 +259,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
     }
   }
 
-  BinaryReader* reader = g_app->m_resource->GetBinaryReader(fullFilname);
+  BinaryReader* reader = g_resource->GetBinaryReader(fullFilname);
   ASSERT_TEXT(reader != nullptr, "Failed to get resource %s", fullFilname);
   m_landscapeColour = new BitmapRGBA(reader, "bmp");
   delete reader;
@@ -271,8 +271,8 @@ LandscapeRenderer::~LandscapeRenderer()
 {
   if (m_renderMode == RenderModeDisplayList)
   {
-    g_app->m_resource->DeleteDisplayList(MAIN_DISPLAY_LIST_NAME);
-    g_app->m_resource->DeleteDisplayList(OVERLAY_DISPLAY_LIST_NAME);
+    g_resource->DeleteDisplayList(MAIN_DISPLAY_LIST_NAME);
+    g_resource->DeleteDisplayList(OVERLAY_DISPLAY_LIST_NAME);
   }
 
   m_verts.Empty();
@@ -301,13 +301,13 @@ void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D<float>* _heightMap)
 
   case RenderModeDisplayList:
     // Generate main display list
-    int id = g_app->m_resource->CreateDisplayList(MAIN_DISPLAY_LIST_NAME);
+    int id = g_resource->CreateDisplayList(MAIN_DISPLAY_LIST_NAME);
     glNewList(id, GL_COMPILE);
     RenderMainSlow();
     glEndList();
 
     // Generate overlay display list
-    id = g_app->m_resource->CreateDisplayList(OVERLAY_DISPLAY_LIST_NAME);
+    id = g_resource->CreateDisplayList(OVERLAY_DISPLAY_LIST_NAME);
     glNewList(id, GL_COMPILE);
     RenderOverlaySlow();
     glEndList();
@@ -390,7 +390,7 @@ void LandscapeRenderer::RenderOverlaySlow()
   else
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
 
-  int outlineTextureId = g_app->m_resource->GetTexture("Textures/TriangleOutline.bmp", true, false);
+  int outlineTextureId = g_resource->GetTexture("Textures/TriangleOutline.bmp", true, false);
   glBindTexture(GL_TEXTURE_2D, outlineTextureId);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -475,13 +475,13 @@ void LandscapeRenderer::Render()
   g_location->SetupFog();
   glEnable(GL_FOG);
 
-  START_PROFILE(g_app->m_profiler, "Render Landscape Main");
+  START_PROFILE(g_profiler, "Render Landscape Main");
 
   switch (m_renderMode)
   {
   case RenderModeDisplayList:
   {
-    int id = g_app->m_resource->GetDisplayList(MAIN_DISPLAY_LIST_NAME);
+    int id = g_resource->GetDisplayList(MAIN_DISPLAY_LIST_NAME);
     DEBUG_ASSERT(id != -1);
     glCallList(id);
   }
@@ -491,17 +491,17 @@ void LandscapeRenderer::Render()
     RenderMainSlow();
     break;
   }
-  END_PROFILE(g_app->m_profiler, "Render Landscape Main");
+  END_PROFILE(g_profiler, "Render Landscape Main");
 
   int landscapeDetail = g_prefsManager->GetInt("RenderLandscapeDetail", 1);
   if (landscapeDetail < 4)
   {
-    START_PROFILE(g_app->m_profiler, "Render Landscape Overlay");
+    START_PROFILE(g_profiler, "Render Landscape Overlay");
     switch (m_renderMode)
     {
     case RenderModeDisplayList:
     {
-      int id = g_app->m_resource->GetDisplayList(OVERLAY_DISPLAY_LIST_NAME);
+      int id = g_resource->GetDisplayList(OVERLAY_DISPLAY_LIST_NAME);
       DEBUG_ASSERT(id != -1);
       glCallList(id);
     }
@@ -510,7 +510,7 @@ void LandscapeRenderer::Render()
     default:
       RenderOverlaySlow();
     }
-    END_PROFILE(g_app->m_profiler, "Render Landscape Overlay");
+    END_PROFILE(g_profiler, "Render Landscape Overlay");
   }
 
   glDisable(GL_FOG);

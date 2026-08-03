@@ -12,7 +12,6 @@
 
 #include "Entity.h"
 
-#include "App.h"
 #include "EntityGrid.h"
 #include "Location.h"
 #include "Team.h"

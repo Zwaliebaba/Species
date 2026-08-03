@@ -10,7 +10,6 @@
 #include "HiResTime.h"
 #include "Profiler.h"
 
-#include "App.h"
 #include "EntityGrid.h"
 #include "LevelFile.h"
 #include "Location.h"
@@ -99,9 +98,9 @@ void Unit::AdvanceEntities(int _slice)
       {
         Vector3 oldPos(s->m_pos);
 
-        START_PROFILE(g_app->m_profiler, Entity::GetTypeName(s->m_type));
+        START_PROFILE(g_profiler, Entity::GetTypeName(s->m_type));
         bool amIdead = s->Advance(this);
-        END_PROFILE(g_app->m_profiler, Entity::GetTypeName(s->m_type));
+        END_PROFILE(g_profiler, Entity::GetTypeName(s->m_type));
 
         if (amIdead)
         {

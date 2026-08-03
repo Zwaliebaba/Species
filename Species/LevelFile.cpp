@@ -94,7 +94,7 @@ void LevelFile::ParseMissionFile(char const* _filename)
   if (!in)
   {
     sprintf(fullFilename, "Levels/%s", _filename);
-    in = g_app->m_resource->GetTextReader(fullFilename);
+    in = g_resource->GetTextReader(fullFilename);
   }
 
   ASSERT_TEXT(in && in->IsOpen(), "Invalid level specified");
@@ -156,7 +156,7 @@ void LevelFile::ParseMapFile(char const* _levelFilename)
 {
   char fullFilename[256];
   sprintf(fullFilename, "Levels/%s", _levelFilename);
-  TextReader* in = g_app->m_resource->GetTextReader(fullFilename);
+  TextReader* in = g_resource->GetTextReader(fullFilename);
   ASSERT_TEXT(in && in->IsOpen(), "Invalid map file specified (%s)", _levelFilename);
 
   while (in->ReadLine())
@@ -1164,7 +1164,7 @@ void LevelFile::SaveMapFile(char const* _filename)
   char fullFilename[256];
   sprintf(fullFilename, "Levels/%s", _filename);
 
-  FileWriter* out = g_app->m_resource->GetFileWriter(fullFilename, false);
+  FileWriter* out = g_resource->GetFileWriter(fullFilename, false);
   WriteLandscapeData(out);
   WriteLandscapeTiles(out);
   WriteLandFlattenAreas(out);
@@ -1192,7 +1192,7 @@ void LevelFile::SaveMissionFile(char const* _filename)
   if (!out)
   {
     sprintf(fullFilename, "Levels/%s", _filename);
-    out = g_app->m_resource->GetFileWriter(fullFilename, false);
+    out = g_resource->GetFileWriter(fullFilename, false);
   }
 
   WriteDifficulty(out);

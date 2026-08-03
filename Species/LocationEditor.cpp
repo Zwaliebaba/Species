@@ -26,7 +26,6 @@
 #include "Building.h"
 #include "WorldObject.h" // For class Light
 
-#include "App.h"
 #include "Camera.h"
 #include "Landscape.h"
 #include "Location.h"
@@ -123,7 +122,7 @@ int LocationEditor::DoesRayHitInstantUnit(Vector3 const& rayStart, Vector3 const
 
 int LocationEditor::DoesRayHitCameraMount(Vector3 const& rayStart, Vector3 const& rayDir)
 {
-  Shape* camShape = g_app->m_resource->GetShape("Camera.shp");
+  Shape* camShape = g_resource->GetShape("Camera.shp");
   Vector3 centre = camShape->CalculateCentre(g_identityMatrix34);
   float radius = camShape->CalculateRadius(g_identityMatrix34, centre);
 
@@ -1062,7 +1061,7 @@ void LocationEditor::Render()
 
   {
     g_renderer->SetObjectLighting();
-    Shape* camShape = g_app->m_resource->GetShape("Camera.shp");
+    Shape* camShape = g_resource->GetShape("Camera.shp");
     Matrix34 mat;
 
     for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)

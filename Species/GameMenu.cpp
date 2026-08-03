@@ -70,7 +70,7 @@ void GameMenuButton::Render(int realX, int realY, bool highlighted, bool clicked
 
 
   /*glEnable        ( GL_TEXTURE_2D );
-  glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( m_iconName ) );
+  glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( m_iconName ) );
   glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
   //glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
   //glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
@@ -304,13 +304,13 @@ void GameMenu::DestroyMenu()
 /*
 void GameMenu::CreateMapList()
 {
-    LList<char *> *levels = g_app->m_resource->ListResources( "Levels/", "mp_*", false );
+    LList<char *> *levels = g_resource->ListResources( "Levels/", "mp_*", false );
 
     for( int i = 0; i < levels->Size(); ++i )
     {
         char filename[512];
         sprintf( filename, "Levels/%s", levels->GetData(i) );
-        TextReader *file = g_app->m_resource->GetTextReader( filename );
+        TextReader *file = g_resource->GetTextReader( filename );
         if( file && file->IsOpen() )
         {
             while( file->ReadLine() )

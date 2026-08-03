@@ -39,10 +39,10 @@
 // settings store in NeuronCore has no business knowing that exists.
 static void ApplyShippedPreferenceDefaults(PrefsManager& _prefs)
 {
-  if (!g_app || !g_app->m_resource)
+  if (!g_app || !g_resource)
     return;
 
-  TextReader* reader = g_app->m_resource->GetTextReader("DefaultPreferences.txt");
+  TextReader* reader = g_resource->GetTextReader("DefaultPreferences.txt");
   if (reader && reader->IsOpen())
   {
     while (reader->ReadLine())
@@ -233,11 +233,11 @@ void App::SetLanguage(const char* _language, bool _test)
   // Load the MOD language file if it exists
 
   sprintf(langFilename, "strings_%s.txt", _language);
-  TextReader* modLangFile = g_app->m_resource->GetTextReader(langFilename);
+  TextReader* modLangFile = g_resource->GetTextReader(langFilename);
   if (!modLangFile)
   {
     sprintf(langFilename, "strings_default.txt");
-    modLangFile = g_app->m_resource->GetTextReader(langFilename);
+    modLangFile = g_resource->GetTextReader(langFilename);
   }
 
   if (modLangFile)
@@ -251,12 +251,12 @@ void App::SetLanguage(const char* _language, bool _test)
 
   char fontFilename[256];
   sprintf(fontFilename, "Textures/SpeccyFont%s.bmp", _language);
-  if (!g_app->m_resource->DoesTextureExist(fontFilename))
+  if (!g_resource->DoesTextureExist(fontFilename))
     sprintf(fontFilename, "Textures/SpeccyFontNormal.bmp");
   g_gameFont.Initialise(fontFilename);
 
   sprintf(fontFilename, "Textures/EditorFont%s.bmp", _language);
-  if (!g_app->m_resource->DoesTextureExist(fontFilename))
+  if (!g_resource->DoesTextureExist(fontFilename))
     sprintf(fontFilename, "Textures/EditorFontNormal.bmp");
   g_editorFont.Initialise(fontFilename);
 

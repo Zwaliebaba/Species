@@ -60,7 +60,10 @@ GlobalBuilding::GlobalBuilding()
     m_type(Building::TypeTrunkPort),
     m_online(false),
     m_link(-1),
-    m_shape(nullptr) { m_shape = g_app->m_resource->GetShape("TrunkPort.shp"); }
+    m_shape(nullptr)
+{
+  m_shape = g_resource->GetShape("TrunkPort.shp");
+}
 
 // ****************************************************************************
 // Class GlobalEventCondition
@@ -677,9 +680,9 @@ SphereWorld::SphereWorld()
     m_numLocations(0),
     m_spirits(nullptr)
 {
-  m_shapeOuter = g_app->m_resource->GetShape("GlobalWorldOuter.shp");
-  m_shapeMiddle = g_app->m_resource->GetShape("GlobalWorldMiddle.shp");
-  m_shapeInner = g_app->m_resource->GetShape("GlobalWorldInner.shp");
+  m_shapeOuter = g_resource->GetShape("GlobalWorldOuter.shp");
+  m_shapeMiddle = g_resource->GetShape("GlobalWorldMiddle.shp");
+  m_shapeInner = g_resource->GetShape("GlobalWorldInner.shp");
 }
 
 void SphereWorld::AddLocation(int _locationId)
@@ -757,7 +760,7 @@ void SphereWorld::Render()
 
 void SphereWorld::RenderSpirits()
 {
-  START_PROFILE(g_app->m_profiler, "Spirits");
+  START_PROFILE(g_profiler, "Spirits");
 
   //
   // Advance all spirits
@@ -807,7 +810,7 @@ void SphereWorld::RenderSpirits()
   glDepthMask(false);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Glow.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Glow.bmp"));
 
   Vector3 camRight = TheCamera()->GetRight();
   Vector3 camUp = TheCamera()->GetUp();
@@ -885,12 +888,12 @@ void SphereWorld::RenderSpirits()
   glDisable(GL_BLEND);
   glEnable(GL_CULL_FACE);
 
-  END_PROFILE(g_app->m_profiler, "Spirits");
+  END_PROFILE(g_profiler, "Spirits");
 }
 
 void SphereWorld::RenderWorldShape()
 {
-  START_PROFILE(g_app->m_profiler, "Shape");
+  START_PROFILE(g_profiler, "Shape");
 
   g_globalWorld->SetupLights();
 
@@ -934,7 +937,7 @@ void SphereWorld::RenderWorldShape()
   glDisable(GL_LIGHT0);
   glDisable(GL_LIGHT1);
 
-  END_PROFILE(g_app->m_profiler, "Shape");
+  END_PROFILE(g_profiler, "Shape");
 }
 
 void SphereWorld::RenderTrunkLinks()
@@ -992,7 +995,7 @@ void SphereWorld::RenderTrunkLinks()
 
 void SphereWorld::RenderHeaven()
 {
-  START_PROFILE(g_app->m_profiler, "Heaven");
+  START_PROFILE(g_profiler, "Heaven");
 
   g_globalWorld->SetupLights();
 
@@ -1009,7 +1012,7 @@ void SphereWorld::RenderHeaven()
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Glow.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Glow.bmp"));
 
   for (int i = 0; i < 50; ++i)
   {
@@ -1037,7 +1040,7 @@ void SphereWorld::RenderHeaven()
   // Render god rays going down
 
   /*
-      glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( "Textures/GodRay.bmp" ) );
+      glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/GodRay.bmp" ) );
 
     for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
     {
@@ -1075,7 +1078,7 @@ void SphereWorld::RenderHeaven()
   glDisable(GL_BLEND);
   glDepthMask(true);
 
-  END_PROFILE(g_app->m_profiler, "Heaven");
+  END_PROFILE(g_profiler, "Heaven");
 }
 
 void SphereWorld::RenderIslands()
@@ -1086,7 +1089,7 @@ void SphereWorld::RenderIslands()
   //
   // Render the islands
 
-  START_PROFILE(g_app->m_profiler, "Islands");
+  START_PROFILE(g_profiler, "Islands");
 
   glMatrixMode(GL_MODELVIEW);
 
@@ -1103,7 +1106,7 @@ void SphereWorld::RenderIslands()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glEnable(GL_BLEND);
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Starburst.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Starburst.bmp"));
 
   for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
   {
@@ -1185,7 +1188,7 @@ void SphereWorld::RenderIslands()
     }
   }
 
-  END_PROFILE(g_app->m_profiler, "Islands");
+  END_PROFILE(g_profiler, "Islands");
 }
 
 // ****************************************************************************
@@ -1360,7 +1363,7 @@ void GlobalWorld::Advance()
 
 void GlobalWorld::Render()
 {
-  START_PROFILE(g_app->m_profiler, "Render Global World");
+  START_PROFILE(g_profiler, "Render Global World");
 
   if (!g_editing)
     m_globalInternet->Render();
@@ -1368,7 +1371,7 @@ void GlobalWorld::Render()
   m_sphereWorld->Render();
   CHECK_OPENGL_STATE();
 
-  END_PROFILE(g_app->m_profiler, "Render Global World");
+  END_PROFILE(g_profiler, "Render Global World");
 }
 
 // Returns the ID of the location the line intersects. Returns -1 if line
@@ -1674,7 +1677,7 @@ void GlobalWorld::LoadGame(const char* _filename)
   }
 
   if (!in)
-    in = g_app->m_resource->GetTextReader(_filename);
+    in = g_resource->GetTextReader(_filename);
 
   if (in)
   {
@@ -1726,7 +1729,7 @@ void GlobalWorld::LoadGame(const char* _filename)
 
     char filter[256];
     sprintf(filter, "Mission%s*.txt", GetLocationName(loc->m_id));
-    std::vector<char*>* missionFileNames = g_app->m_resource->ListResources("Levels/", filter, false);
+    std::vector<char*>* missionFileNames = g_resource->ListResources("Levels/", filter, false);
     for (const char* missionFileName : *missionFileNames)
     {
       LevelFile levFile(missionFileName, loc->m_mapFilename);
@@ -1785,7 +1788,7 @@ void GlobalWorld::SaveGame(const char* _filename)
   }
 
   if (!out)
-    out = g_app->m_resource->GetFileWriter(_filename, false);
+    out = g_resource->GetFileWriter(_filename, false);
 
   WriteLocations(out);
   WriteBuildings(out);
@@ -1819,7 +1822,7 @@ void GlobalWorld::ParseTutorial(TextReader* _in)
 
 void GlobalWorld::LoadLocations(const char* _filename)
 {
-  TextReader* in = g_app->m_resource->GetTextReader(_filename);
+  TextReader* in = g_resource->GetTextReader(_filename);
 
   while (in->ReadLine())
   {
@@ -1841,7 +1844,7 @@ void GlobalWorld::LoadLocations(const char* _filename)
 
 void GlobalWorld::SaveLocations(const char* _filename)
 {
-  FileWriter* out = g_app->m_resource->GetFileWriter(_filename, false);
+  FileWriter* out = g_resource->GetFileWriter(_filename, false);
 
   out->printf("# ================================\n");
   out->printf("# id   x        y        z\n");

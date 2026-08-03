@@ -22,7 +22,6 @@
 
 #include "ClientToServer.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
@@ -1945,7 +1944,7 @@ void Camera::AdvanceMainMenuMode()
 
 void Camera::Advance()
 {
-  START_PROFILE(g_app->m_profiler, "Advance Camera");
+  START_PROFILE(g_profiler, "Advance Camera");
 
   if (m_anim)
     AdvanceAnim();
@@ -2063,7 +2062,7 @@ void Camera::Advance()
 
   m_framesInThisMode++;
 
-  END_PROFILE(g_app->m_profiler, "Advance Camera");
+  END_PROFILE(g_profiler, "Advance Camera");
 }
 
 int Camera::GetDebugMode() { return m_debugMode; }

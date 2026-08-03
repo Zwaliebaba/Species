@@ -127,7 +127,7 @@ void Renderer::RenderFlatTexture()
 {
   glColor3ubv(g_colourWhite.GetData());
   glEnable(GL_TEXTURE_2D);
-  int textureId = g_app->m_resource->GetTexture("Textures/privatedemo.bmp", true, true);
+  int textureId = g_resource->GetTexture("Textures/privatedemo.bmp", true, true);
   if (textureId == -1)
     return;
   glBindTexture(GL_TEXTURE_2D, textureId);
@@ -194,7 +194,7 @@ void Renderer::RenderLogo()
   glColor4ub(255, 255, 255, 255);
   glEnable(GL_TEXTURE_2D);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  int textureId = g_app->m_resource->GetTexture("Textures/privatedemo.bmp", true, false);
+  int textureId = g_resource->GetTexture("Textures/privatedemo.bmp", true, false);
   if (textureId == -1)
     return;
   glBindTexture(GL_TEXTURE_2D, textureId);
@@ -226,13 +226,13 @@ void Renderer::RenderLogo()
 void Renderer::Render()
 {
 #ifdef PROFILER_ENABLED
-  g_app->m_profiler->RenderStarted();
+  g_profiler->RenderStarted();
 #endif
 
   RenderFrame();
 
 #ifdef PROFILER_ENABLED
-  g_app->m_profiler->RenderEnded();
+  g_profiler->RenderEnded();
 #endif // PROFILER_ENABLED
 }
 
@@ -347,14 +347,14 @@ void Renderer::RenderFrame(bool withFlip)
   FPSMeterAdvance();
   SetupMatricesFor3D();
 
-  START_PROFILE(g_app->m_profiler, "Render Clear");
+  START_PROFILE(g_profiler, "Render Clear");
   RGBAColour* col = &g_app->m_backgroundColour;
   if (g_location)
     glClearColor(col->r / 255.0f, col->g / 255.0f, col->b / 255.0f, col->a / 255.0f);
   else
     glClearColor(0.05f, 0.0f, 0.05f, 0.1f);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-  END_PROFILE(g_app->m_profiler, "Render Clear");
+  END_PROFILE(g_profiler, "Render Clear");
 
   bool deformStarted = false;
 
@@ -379,9 +379,9 @@ void Renderer::RenderFrame(bool withFlip)
       {
           PreRenderPixelEffect();
 
-          START_PROFILE(g_app->m_profiler, "Render Clear");
+          START_PROFILE(g_profiler, "Render Clear");
           glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-          END_PROFILE(g_app->m_profiler, "Render Clear");
+          END_PROFILE(g_profiler, "Render Clear");
           g_location->Render();
 
           ApplyPixelEffect();
@@ -498,7 +498,7 @@ void Renderer::RenderFrame(bool withFlip)
 
   if (m_renderDarwinLogo >= 0.0f)
   {
-    int textureId = g_app->m_resource->GetTexture("Icons/DarwinResearchAssociates.bmp");
+    int textureId = g_resource->GetTexture("Icons/DarwinResearchAssociates.bmp");
 
     glBindTexture(GL_TEXTURE_2D, textureId);
     glEnable(GL_TEXTURE_2D);
@@ -576,12 +576,12 @@ void Renderer::RenderFrame(bool withFlip)
   if (!g_eventHandler->WindowHasFocus() || g_app->m_paused)
     RenderPaused();
 
-  START_PROFILE(g_app->m_profiler, "GL Flip");
+  START_PROFILE(g_profiler, "GL Flip");
 
   if (withFlip)
     g_windowManager->Flip();
 
-  END_PROFILE(g_app->m_profiler, "GL Flip");
+  END_PROFILE(g_profiler, "GL Flip");
 
   CHECK_OPENGL_STATE();
 }
@@ -874,7 +874,7 @@ void Renderer::UnsetObjectLighting() const
 
 void Renderer::PreRenderPixelEffect()
 {
-  START_PROFILE(g_app->m_profiler, "Pixel Pre-render");
+  START_PROFILE(g_profiler, "Pixel Pre-render");
 
   UpdateTotalMatrix();
 
@@ -893,7 +893,7 @@ void Renderer::PreRenderPixelEffect()
   //
   // Blend our old glow texture into place
 
-  START_PROFILE(g_app->m_profiler, "blend old");
+  START_PROFILE(g_profiler, "blend old");
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, m_pixelEffectTexId);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -920,7 +920,7 @@ void Renderer::PreRenderPixelEffect()
   //glEnd();
   g_editorFont.EndText2D();
   glEnable(GL_TEXTURE_2D); // *
-  END_PROFILE(g_app->m_profiler, "blend old");
+  END_PROFILE(g_profiler, "blend old");
 
   //glDisable           (GL_TEXTURE_2D);
 
@@ -928,7 +928,7 @@ void Renderer::PreRenderPixelEffect()
   // Draw all pixelated objects to the screen
   // Find the nearest pixelated object and update m_pixelSize at the end
 
-  START_PROFILE(g_app->m_profiler, "Draw pixelated");
+  START_PROFILE(g_profiler, "Draw pixelated");
   glViewport(0, 0, m_pixelSize, m_pixelSize);
   float nearest = 99999.9f;
 
@@ -1022,13 +1022,13 @@ void Renderer::PreRenderPixelEffect()
     }
   }
 
-  END_PROFILE(g_app->m_profiler, "Draw pixelated");
+  END_PROFILE(g_profiler, "Draw pixelated");
   glViewport(0, 0, m_screenW, m_screenH);
 
   //
   // Copy the screen to a texture
 
-  START_PROFILE(g_app->m_profiler, "Gen new texture");
+  START_PROFILE(g_profiler, "Gen new texture");
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, m_pixelEffectTexId);
 
@@ -1041,7 +1041,7 @@ void Renderer::PreRenderPixelEffect()
   glDisable(GL_TEXTURE_2D);
   glDisable(GL_BLEND);
   glEnable(GL_CULL_FACE);
-  END_PROFILE(g_app->m_profiler, "Gen new texture");
+  END_PROFILE(g_profiler, "Gen new texture");
 
   glDepthMask(true);
 
@@ -1054,7 +1054,7 @@ void Renderer::PreRenderPixelEffect()
   //else if ( nearest < 200 )       m_pixelSize = 256;
   //else                            m_pixelSize = 512;
 
-  END_PROFILE(g_app->m_profiler, "Pixel Pre-render");
+  END_PROFILE(g_profiler, "Pixel Pre-render");
 }
 
 #define d3dOneMinus( _x ) _x
@@ -1150,7 +1150,7 @@ void Renderer::ApplyPixelEffect()
 
   //return;
 
-  START_PROFILE(g_app->m_profiler, "Pixel Apply");
+  START_PROFILE(g_profiler, "Pixel Apply");
 
   CHECK_OPENGL_STATE();
 
@@ -1180,40 +1180,40 @@ void Renderer::ApplyPixelEffect()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
   // Additive blocky
-  START_PROFILE(g_app->m_profiler, "pass 1");
+  START_PROFILE(g_profiler, "pass 1");
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
   PaintPixels();
-  END_PROFILE(g_app->m_profiler, "pass 1");
+  END_PROFILE(g_profiler, "pass 1");
 
   // Subtractive smooth
-  START_PROFILE(g_app->m_profiler, "pass 2");
+  START_PROFILE(g_profiler, "pass 2");
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
   PaintPixels();
-  END_PROFILE(g_app->m_profiler, "pass 2");
+  END_PROFILE(g_profiler, "pass 2");
 
   // Subtractive smooth
-  START_PROFILE(g_app->m_profiler, "pass 3");
+  START_PROFILE(g_profiler, "pass 3");
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glColor4f(1.0f, 1.0f, 1.0f, 0.2f);
   PaintPixels();
-  END_PROFILE(g_app->m_profiler, "pass 3");
+  END_PROFILE(g_profiler, "pass 3");
 
   // Additive smooth
-  START_PROFILE(g_app->m_profiler, "pass 4");
+  START_PROFILE(g_profiler, "pass 4");
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
   PaintPixels();
-  END_PROFILE(g_app->m_profiler, "pass 4");
+  END_PROFILE(g_profiler, "pass 4");
 
   glDisable(GL_TEXTURE_2D);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1250,7 +1250,7 @@ void Renderer::ApplyPixelEffect()
 
   CHECK_OPENGL_STATE();
 
-  END_PROFILE(g_app->m_profiler, "Pixel Apply");
+  END_PROFILE(g_profiler, "Pixel Apply");
 }
 
 void Renderer::UpdateTotalMatrix()
@@ -1389,7 +1389,7 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
 
 void Renderer::MarkUsedCells(const Shape* _shape, const Matrix34& _transform)
 {
-  START_PROFILE(g_app->m_profiler, "MarkUsedCells");
+  START_PROFILE(g_profiler, "MarkUsedCells");
   MarkUsedCells(_shape->m_rootFragment, _transform);
-  END_PROFILE(g_app->m_profiler, "MarkUsedCells");
+  END_PROFILE(g_profiler, "MarkUsedCells");
 }

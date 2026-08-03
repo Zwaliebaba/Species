@@ -1080,6 +1080,47 @@ tasks:
       keeps a forward-declared pointer. Expect several commits inside the
       one task: move, then fix includes, then update both project files.
 
+      THE INTENT'S CENTRAL CLAIM IS FALSE AS MEASURED 2026-08-03. "Running
+      after T14, T9 and T10 means these files reach nothing above GameLogic by
+      the time they move, so the operation only ever removes entries" — the 22
+      moving files include fifteen Species headers that are NOT moving, so the
+      move as described would ADD roughly fifty allowlist entries, which the
+      second acceptance line forbids. The measurement, before any prep:
+
+        App.h 10 files, Camera.h 6, Main.h 5, Renderer.h 5, TaskManager.h 3,
+        UserInput.h 3, Globals.h 3, Script.h 2, GameCursor.h 2,
+        TaskManagerInterface.h 2, Water.h 2, ControlHelp.h 1, Clouds.h 1,
+        GlobalInternet.h 1, LandscapeRenderer.h 1.
+
+      This task therefore has a PREP PHASE before any git mv. What it consists
+      of, measured rather than guessed:
+
+      (a) g_app. 124 uses in the moving cluster, 310 tree-wide. Most are
+      aliases: App assigns g_resource = m_resource, g_profiler = m_profiler and
+      g_soundSystem = m_soundSystem at startup, so `g_app->m_profiler` and
+      `g_profiler` are the same object. DONE — all 310 substituted, and 14
+      files dropped App.h outright. Includers went 32 -> 19. What is left of
+      g_app in the cluster is m_gameCursor, m_backgroundColour,
+      m_requestedMission, m_requestedMap, m_paused, GetProfileDirectory,
+      HasBoughtGame and UpdateDifficultyFromPreferences; the last three already
+      have homes in AppCommands, and the state ones belong in AppState.h beside
+      the globals T14 put there.
+
+      (b) The TheX() accessors, and this one is SELF-INFLICTED. T9 routed every
+      Species call site through TheCamera() rather than g_camera, to dodge the
+      SetTarget overload problem, and T10 did the same for the other five
+      seams. For files that stay in Species that is right. For the 22 files
+      moving to GameLogic it is exactly backwards: they must use g_camera and
+      the interface. About 60 call sites in the cluster need reverting, and
+      they are nearly all on members the interfaces already carry. Two are
+      not — Camera::Get2DScreenPos (7 uses) and Renderer::IsFadeComplete (1) —
+      and those two members should join their interfaces.
+
+      (c) The rest: Main.h, Globals.h, Water.h, Clouds.h, GlobalInternet.h,
+      LandscapeRenderer.h, GameCursor.h and TaskManager.h. Not yet measured
+      member by member. LandscapeRenderer is already called out in the notes
+      below; Water and Clouds are Location members that may move with it.
+
       T10 HANDS THIS TASK EIGHT MORE ENTRIES, found while running it:
       TaskManager.h (5), Water.h (2) and TaskManagerInterfaceIcons.h (1).
       They cannot be resolved before this move, because the callers need either

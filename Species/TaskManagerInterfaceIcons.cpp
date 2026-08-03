@@ -67,13 +67,13 @@ TaskManagerInterfaceIcons::TaskManagerInterfaceIcons()
   {
     char iconFilename[256];
     sprintf(iconFilename, "Icons/Icon%s.bmp", GlobalResearch::GetTypeName(i));
-    if (g_app->m_resource->DoesTextureExist(iconFilename))
-      unsigned int texId = g_app->m_resource->GetTexture(iconFilename, true, false);
+    if (g_resource->DoesTextureExist(iconFilename))
+      unsigned int texId = g_resource->GetTexture(iconFilename, true, false);
   }
 
-  g_app->m_resource->GetTexture("Textures/InterfaceGrey.bmp", true, false);
-  g_app->m_resource->GetTexture("Textures/InterfaceRed.bmp", true, false);
-  g_app->m_resource->GetTexture("Icons/IconShadow.bmp", true, false);
+  g_resource->GetTexture("Textures/InterfaceGrey.bmp", true, false);
+  g_resource->GetTexture("Textures/InterfaceRed.bmp", true, false);
+  g_resource->GetTexture("Icons/IconShadow.bmp", true, false);
 
   //
   // Create keyboard shortcuts
@@ -133,7 +133,7 @@ void TaskManagerInterfaceIcons::HideTaskManager()
   m_screenId = ScreenTaskManager;
   SetVisible(false);
 
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "Hide", SoundSourceBlueprint::TypeInterface);
+  g_soundSystem->TriggerOtherEvent(nullptr, "Hide", SoundSourceBlueprint::TypeInterface);
 }
 
 void TaskManagerInterfaceIcons::Advance()
@@ -177,7 +177,7 @@ void TaskManagerInterfaceIcons::Advance()
 
     SetVisible();
 
-    g_app->m_soundSystem->TriggerOtherEvent(nullptr, "Show", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent(nullptr, "Show", SoundSourceBlueprint::TypeInterface);
 
     if (g_inputManager->controlEvent(ControlIconsTaskManagerDisplayDown))
     {
@@ -272,7 +272,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenEdges()
   }
 
   if (scrollRequested)
-    g_app->m_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
 }
 
 void TaskManagerInterfaceIcons::SetupRenderMatrices(int _screenId)
@@ -338,7 +338,7 @@ void TaskManagerInterfaceIcons::Render()
   if (g_editing || !g_location || EclGetWindows()->size())
     return;
 
-  START_PROFILE(g_app->m_profiler, "Render Taskman");
+  START_PROFILE(g_profiler, "Render Taskman");
 
   glEnable(GL_BLEND);
   glDisable(GL_CULL_FACE);
@@ -370,7 +370,7 @@ void TaskManagerInterfaceIcons::Render()
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/InterfaceDivider.bmp"));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceDivider.bmp"));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -418,7 +418,7 @@ void TaskManagerInterfaceIcons::Render()
   glEnable(GL_CULL_FACE);
   glDisable(GL_BLEND);
 
-  END_PROFILE(g_app->m_profiler, "Render Taskman");
+  END_PROFILE(g_profiler, "Render Taskman");
 }
 
 void TaskManagerInterfaceIcons::AdvanceScreenZones()
@@ -454,7 +454,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
           m_currentMouseScreenZone = i;
           m_currentScreenZone = i;
           m_screenZoneTimer = GetHighResTime();
-          g_app->m_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+          g_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
         }
         found = true;
       }
@@ -464,7 +464,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     {
       int numZones = m_screenZones.Size();
       int zonesRemaining = numZones;
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
       while (zonesRemaining)
       {
         m_currentScreenZone = (m_currentScreenZone + 1) % numZones;
@@ -479,7 +479,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     {
       int numZones = m_screenZones.Size();
       int zonesRemaining = numZones;
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
       while (zonesRemaining)
       {
         m_currentScreenZone = (m_currentScreenZone + numZones - 1) % numZones;
@@ -559,7 +559,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
           m_currentMouseScreenZone = i;
           m_currentScreenZone = i;
           m_screenZoneTimer = GetHighResTime();
-          g_app->m_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+          g_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
           break;
         }
       }
@@ -678,7 +678,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
     if (g_globalWorld->m_research->HasResearch(_data))
     {
       g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
+      g_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
@@ -696,7 +696,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
       Task* nextTask = g_taskManager->m_tasks[_data];
       g_taskManager->m_currentTaskId = nextTask->m_id;
       g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "SelectTask", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent(nullptr, "SelectTask", SoundSourceBlueprint::TypeInterface);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
@@ -711,7 +711,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
       g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
     else
       g_taskManager->TerminateTask(_data);
-    g_app->m_soundSystem->TriggerOtherEvent(nullptr, "DeleteTask", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent(nullptr, "DeleteTask", SoundSourceBlueprint::TypeInterface);
   }
 
   //
@@ -722,8 +722,8 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
     if (g_globalWorld->m_research->HasResearch(_data))
     {
       g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "GestureSuccess", SoundSourceBlueprint::TypeGesture);
+      g_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
+      g_soundSystem->TriggerOtherEvent(nullptr, "GestureSuccess", SoundSourceBlueprint::TypeGesture);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
@@ -754,7 +754,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
         break;
       }
 
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
     }
 
     if (stricmp(_name, "ScreenUp") == 0)
@@ -880,7 +880,7 @@ void TaskManagerInterfaceIcons::RenderScreenZones()
     glEnd();
 
     glColor4f(1.0f, 1.0f, 0.3f, 1.0f);
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/MouseSelection.bmp"));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/MouseSelection.bmp"));
     glEnable(GL_TEXTURE_2D);
 
     glBegin(GL_QUADS);
@@ -1100,7 +1100,7 @@ static void RenderIcon(const char* _foreground, const char* _background, int _x,
 {
   // Render the shadow
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(_background));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(_background));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glDepthMask(false);
   glColor4ub(_alpha, _alpha, _alpha, 0.0f);
@@ -1118,7 +1118,7 @@ static void RenderIcon(const char* _foreground, const char* _background, int _x,
 
   // Render the icon
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(_foreground));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(_foreground));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
   glColor4ub(255, 255, 255, _alpha);
@@ -1244,7 +1244,7 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
   // Background box
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/InterfaceRed.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceRed.bmp"));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -1302,7 +1302,7 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
       // Render the shadow
 
       glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/IconShadow.bmp"));
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
       glDepthMask(false);
       glColor4f(0.5f, 0.5f, 0.5f, 0.0f);
@@ -1331,7 +1331,7 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
 
       char iconFilename[256];
       sprintf(iconFilename, "Icons/Icon%s.bmp", GlobalResearch::GetTypeName(taskType));
-      unsigned int texId = g_app->m_resource->GetTexture(iconFilename);
+      unsigned int texId = g_resource->GetTexture(iconFilename);
       if (texId != -1)
       {
         glEnable(GL_TEXTURE_2D);
@@ -1372,7 +1372,7 @@ void TaskManagerInterfaceIcons::RenderTitleBar()
 
   glColor4f(0.5f, 0.5f, 1.0f, 0.7f);
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/InterfaceGrey.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceGrey.bmp"));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -1439,7 +1439,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
   // Render shadows for available task slots
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/IconShadow.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glDepthMask(false);
   glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
@@ -1479,7 +1479,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
     Task* task = g_taskManager->m_tasks[i];
     char bmpFilename[256];
     sprintf(bmpFilename, "Icons/Icon%s.bmp", Task::GetTaskName(task->m_type));
-    unsigned int texId = g_app->m_resource->GetTexture(bmpFilename);
+    unsigned int texId = g_resource->GetTexture(bmpFilename);
 
     //
     // Create clickable zone over the task
@@ -1610,11 +1610,11 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
           {
             int weaponType = availableWeapons[i];
             sprintf(bmpFilename, "Icons/Icon%s.bmp", Task::GetTaskName(weaponType));
-            texId = g_app->m_resource->GetTexture(bmpFilename);
+            texId = g_resource->GetTexture(bmpFilename);
 
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
             glColor4f(0.9f, 0.9f, 0.9f, 0.0f);
-            glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/IconShadow.bmp"));
+            glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
             glBegin(GL_QUADS);
             glTexCoord2i(0, 1);
             glVertex2f(weaponX - weaponSize / 2, weaponY - weaponSize / 2);
@@ -1671,7 +1671,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       float deleteSize = iconSize * 0.4f;
 
       glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/IconShadow.bmp"));
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
       glDepthMask(false);
       glColor4f(0.9f, 0.9f, 0.9f, 0.0f);
@@ -1687,7 +1687,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       glVertex2f(deleteX - deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
       glEnd();
 
-      glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/IconDelete.bmp"));
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconDelete.bmp"));
       glBlendFunc(GL_SRC_ALPHA, GL_ONE);
       glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -1774,7 +1774,7 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
   compassRight.x = compassRight.y;
   compassRight.y = temp * -1.0f;
 
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/Compass.bmp", true, false));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/Compass.bmp", true, false));
   glEnable(GL_TEXTURE_2D);
 
   g_renderer->SetupMatricesFor2D();
@@ -1924,7 +1924,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
     // Background box
 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/InterfaceRed.bmp"));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceRed.bmp"));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -2094,7 +2094,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
   // Background box
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/InterfaceRed.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceRed.bmp"));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -2170,7 +2170,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
       // Render the shadow
 
       glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/IconShadow.bmp"));
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
       glDepthMask(false);
       glColor4f(0.5f, 0.5f, 0.5f, 0.0f);
@@ -2195,7 +2195,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
 
       char iconFilename[256];
       sprintf(iconFilename, "Icons/Icon%s.bmp", GlobalResearch::GetTypeName(i));
-      unsigned int texId = g_app->m_resource->GetTexture(iconFilename);
+      unsigned int texId = g_resource->GetTexture(iconFilename);
       if (texId != -1)
       {
         glEnable(GL_TEXTURE_2D);
@@ -2238,7 +2238,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
       float boxH = iconSize * 0.4f;
       float boxScale = 0.85f;
 
-      glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/InterfaceGrey.bmp"));
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceGrey.bmp"));
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -2451,7 +2451,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
         m_quickUnitButtons[i]->m_movable = true;
       m_quickUnitDirection = -1;
       showUnitName = true;
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
     }
 
     if (right)
@@ -2469,7 +2469,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
         m_quickUnitButtons[i]->m_movable = true;
       m_quickUnitDirection = 1;
       showUnitName = true;
-      g_app->m_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
     }
 
     if (showUnitName)
@@ -2485,7 +2485,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
       if (taskId != -1)
       {
         g_app->m_clientToServer->RequestRunProgram(g_location->GetMyTeam()->m_teamId, taskId);
-        g_app->m_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
+        g_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
         DestroyQuickUnitInterface();
       }
     }
@@ -2527,7 +2527,7 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
   sprintf(shadowFileName, "shadow_icons/MouseSelection.bmp");
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(shadowFileName));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(shadowFileName));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glDepthMask(false);
   glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
@@ -2544,7 +2544,7 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
 
   char bmpFilename[256];
   sprintf(bmpFilename, "Icons/MouseSelection.bmp");
-  unsigned int texId = g_app->m_resource->GetTexture(bmpFilename);
+  unsigned int texId = g_resource->GetTexture(bmpFilename);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, texId);
@@ -2767,7 +2767,7 @@ void QuickUnitButton::Render()
   auto iconCentre = Vector2(m_x, m_y);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Icons/IconShadow.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glDepthMask(false);
   glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
@@ -2787,7 +2787,7 @@ void QuickUnitButton::Render()
     sprintf(bmpFilename, "Icons/IconNoTask.bmp");
   else
     sprintf(bmpFilename, "Icons/Icon%s.bmp", Task::GetTaskName(m_taskId));
-  unsigned int texId = g_app->m_resource->GetTexture(bmpFilename);
+  unsigned int texId = g_resource->GetTexture(bmpFilename);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, texId);

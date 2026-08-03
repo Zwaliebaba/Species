@@ -76,16 +76,16 @@ GameCursor::GameCursor()
 
   sprintf(m_selectionArrowFilename, "Icons/SelectionArrow.bmp");
 
-  BinaryReader* binReader = g_app->m_resource->GetBinaryReader(m_selectionArrowFilename);
+  BinaryReader* binReader = g_resource->GetBinaryReader(m_selectionArrowFilename);
   ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", m_selectionArrowFilename);
   BitmapRGBA bmp(binReader, "bmp");
   SAFE_DELETE(binReader);
 
-  g_app->m_resource->AddBitmap(m_selectionArrowFilename, bmp);
+  g_resource->AddBitmap(m_selectionArrowFilename, bmp);
 
   sprintf(m_selectionArrowShadowFilename, "shadow_%s", m_selectionArrowFilename);
   bmp.ApplyBlurFilter(10.0f);
-  g_app->m_resource->AddBitmap(m_selectionArrowShadowFilename, bmp);
+  g_resource->AddBitmap(m_selectionArrowShadowFilename, bmp);
 }
 
 GameCursor::~GameCursor()
@@ -273,7 +273,7 @@ void GameCursor::RenderMarkers()
 
 void GameCursor::Render()
 {
-  START_PROFILE(g_app->m_profiler, "Render GameCursor");
+  START_PROFILE(g_profiler, "Render GameCursor");
 
   float nearPlaneStart = g_renderer->GetNearPlane();
   TheCamera()->SetupProjectionMatrix(nearPlaneStart * 1.05f, g_renderer->GetFarPlane());
@@ -506,7 +506,7 @@ void GameCursor::Render()
 
   TheCamera()->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
 
-  END_PROFILE(g_app->m_profiler, "Render GameCursor");
+  END_PROFILE(g_profiler, "Render GameCursor");
 }
 
 
@@ -647,7 +647,7 @@ void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _scr
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(m_selectionArrowShadowFilename));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowShadowFilename));
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
@@ -662,7 +662,7 @@ void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _scr
 
   glColor4f(1.0f, 1.0f, 0.3f, _alpha);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(m_selectionArrowFilename));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowFilename));
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
@@ -910,7 +910,7 @@ void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
         glEnable        ( GL_BLEND );
         glDisable       ( GL_CULL_FACE );
     //	glEnable		( GL_TEXTURE_2D );
-    //	glBindTexture	( GL_TEXTURE_2D, g_app->m_resource->GetTexture("selection_arrow") );
+    //	glBindTexture	( GL_TEXTURE_2D, g_resource->GetTexture("selection_arrow") );
 
       // Do subtractive pass
       {
@@ -970,17 +970,17 @@ MouseCursor::MouseCursor(char const* _filename)
   sprintf(fullFilename, "%s", _filename);
   m_mainFilename = strdup(fullFilename);
 
-  BinaryReader* binReader = g_app->m_resource->GetBinaryReader(m_mainFilename);
+  BinaryReader* binReader = g_resource->GetBinaryReader(m_mainFilename);
   ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", _filename);
   BitmapRGBA bmp(binReader, "bmp");
   SAFE_DELETE(binReader);
 
-  g_app->m_resource->AddBitmap(m_mainFilename, bmp);
+  g_resource->AddBitmap(m_mainFilename, bmp);
 
   sprintf(fullFilename, "shadow_%s", _filename);
   m_shadowFilename = strdup(fullFilename);
   bmp.ApplyBlurFilter(10.0f);
-  g_app->m_resource->AddBitmap(m_shadowFilename, bmp);
+  g_resource->AddBitmap(m_shadowFilename, bmp);
 
   m_colour.Set(255, 255, 255, 255);
 }
@@ -1036,7 +1036,7 @@ void MouseCursor::Render(float _x, float _y)
 
   if (m_shadowed)
   {
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(m_shadowFilename));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
     glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
     glBegin(GL_QUADS);
@@ -1052,7 +1052,7 @@ void MouseCursor::Render(float _x, float _y)
   }
 
   glColor4ubv(m_colour.GetData());
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(m_mainFilename));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_mainFilename));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
@@ -1097,7 +1097,7 @@ void MouseCursor::Render3D(Vector3 const& _pos, Vector3 const& _front, Vector3 c
 
   if (m_shadowed)
   {
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(m_shadowFilename));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
     glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
 
@@ -1114,7 +1114,7 @@ void MouseCursor::Render3D(Vector3 const& _pos, Vector3 const& _front, Vector3 c
   }
 
   glColor4ubv(m_colour.GetData());
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(m_mainFilename));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_mainFilename));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
   glBegin(GL_QUADS);

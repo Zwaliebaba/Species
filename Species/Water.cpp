@@ -71,7 +71,7 @@ Water::Water()
           strcpy(fullFilename, "Terrain/WavesEarth.bmp");
         }
 
-        BinaryReader* in = g_app->m_resource->GetBinaryReader(fullFilename);
+        BinaryReader* in = g_resource->GetBinaryReader(fullFilename);
         BitmapRGBA bmp(in, "bmp");
         m_colourTable = new RGBAColour[bmp.m_width];
         m_numColours = bmp.m_width;
@@ -213,17 +213,17 @@ void Water::GenerateLightMap()
     }
   }
 
-  if (g_app->m_resource->GetBitmap(LIGHTMAP_TEXTURE_NAME) != nullptr)
+  if (g_resource->GetBitmap(LIGHTMAP_TEXTURE_NAME) != nullptr)
   {
-    g_app->m_resource->DeleteBitmap(LIGHTMAP_TEXTURE_NAME);
+    g_resource->DeleteBitmap(LIGHTMAP_TEXTURE_NAME);
   }
 
-  if (g_app->m_resource->DoesTextureExist(LIGHTMAP_TEXTURE_NAME))
+  if (g_resource->DoesTextureExist(LIGHTMAP_TEXTURE_NAME))
   {
-    g_app->m_resource->DeleteTexture(LIGHTMAP_TEXTURE_NAME);
+    g_resource->DeleteTexture(LIGHTMAP_TEXTURE_NAME);
   }
 
-  g_app->m_resource->AddBitmap(LIGHTMAP_TEXTURE_NAME, finalImage);
+  g_resource->AddBitmap(LIGHTMAP_TEXTURE_NAME, finalImage);
 
 
   //
@@ -479,7 +479,7 @@ void Water::RenderFlatWater()
   }
 
   gglActiveTextureARB(GL_TEXTURE0_ARB);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(waterFilename, true, true));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(waterFilename, true, true));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -490,7 +490,7 @@ void Water::RenderFlatWater()
 
   // JAK HACK (DISABLED)
   gglActiveTextureARB(GL_TEXTURE1_ARB);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(LIGHTMAP_TEXTURE_NAME));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(LIGHTMAP_TEXTURE_NAME));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
@@ -670,10 +670,10 @@ void Water::Render()
   m_renderWaterEffect = g_prefsManager->GetInt("RenderPixelShader", 2) == 1;
   if (g_editing)
   {
-    START_PROFILE(g_app->m_profiler, "Render Water");
+    START_PROFILE(g_profiler, "Render Water");
 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/TriangleOutline.bmp", true, false));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/TriangleOutline.bmp", true, false));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -708,23 +708,23 @@ void Water::Render()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-    END_PROFILE(g_app->m_profiler, "Render Water");
+    END_PROFILE(g_profiler, "Render Water");
   }
   else
   {
     if (g_prefsManager->GetInt("RenderWaterDetail") > 0)
     {
       // Advance();
-      START_PROFILE(g_app->m_profiler, "Render Water");
+      START_PROFILE(g_profiler, "Render Water");
       RenderFlatWater();
       RenderDynamicWater();
-      END_PROFILE(g_app->m_profiler, "Render Water");
+      END_PROFILE(g_profiler, "Render Water");
     }
     else
     {
-      START_PROFILE(g_app->m_profiler, "Render Water");
+      START_PROFILE(g_profiler, "Render Water");
       RenderFlatWater();
-      END_PROFILE(g_app->m_profiler, "Render Water");
+      END_PROFILE(g_profiler, "Render Water");
     }
   }
 
@@ -736,8 +736,8 @@ void Water::Advance()
 {
   if (!g_editing && g_prefsManager->GetInt("RenderWaterDetail") > 0)
   {
-    START_PROFILE(g_app->m_profiler, "Advance Water");
+    START_PROFILE(g_profiler, "Advance Water");
     UpdateDynamicWater();
-    END_PROFILE(g_app->m_profiler, "Advance Water");
+    END_PROFILE(g_profiler, "Advance Water");
   }
 }

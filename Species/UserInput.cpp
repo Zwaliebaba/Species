@@ -78,7 +78,7 @@ void UserInput::AdvanceMenus()
 // *** Advance
 void UserInput::Advance()
 {
-  START_PROFILE(g_app->m_profiler, "Advance UserInput");
+  START_PROFILE(g_profiler, "Advance UserInput");
 
   g_inputManager->Advance();
 
@@ -121,14 +121,14 @@ void UserInput::Advance()
   // #endif // PROFILER_ENABLED
 
 
-  END_PROFILE(g_app->m_profiler, "Advance UserInput");
+  END_PROFILE(g_profiler, "Advance UserInput");
 }
 
 
 // *** Render
 void UserInput::Render()
 {
-  START_PROFILE(g_app->m_profiler, "Render UserInput");
+  START_PROFILE(g_profiler, "Render UserInput");
 
   //
   // Render 2D overlays
@@ -178,7 +178,7 @@ void UserInput::Render()
   //    glDisable   ( GL_LINE_SMOOTH );
   //    glDisable   ( GL_BLEND );
 
-  END_PROFILE(g_app->m_profiler, "Render UserInput");
+  END_PROFILE(g_profiler, "Render UserInput");
 }
 
 

@@ -6,7 +6,6 @@
 #include "Profiler.h"
 #include "Resource.h"
 
-#include "App.h"
 #include "Explosion.h"
 #include "Globals.h"
 #include "Main.h"
@@ -288,7 +287,7 @@ void ExplosionManager::Reset() { m_explosions.EmptyAndDelete(); }
 
 void ExplosionManager::Advance()
 {
-  START_PROFILE(g_app->m_profiler, "Advance Explosions");
+  START_PROFILE(g_profiler, "Advance Explosions");
 
   for (unsigned int i = 0; i < m_explosions.Size(); ++i)
   {
@@ -301,13 +300,13 @@ void ExplosionManager::Advance()
     }
   }
 
-  END_PROFILE(g_app->m_profiler, "Advance Explosions");
+  END_PROFILE(g_profiler, "Advance Explosions");
 }
 
 
 void ExplosionManager::Render()
 {
-  START_PROFILE(g_app->m_profiler, "Render Explosions");
+  START_PROFILE(g_profiler, "Render Explosions");
 
   int numExplosions = m_explosions.Size();
 
@@ -316,7 +315,7 @@ void ExplosionManager::Render()
     CHECK_OPENGL_STATE();
 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/ShapeWireframe.bmp"));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/ShapeWireframe.bmp"));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
@@ -342,5 +341,5 @@ void ExplosionManager::Render()
     glDisable(GL_TEXTURE_2D);
   }
 
-  END_PROFILE(g_app->m_profiler, "Render Explosions");
+  END_PROFILE(g_profiler, "Render Explosions");
 }

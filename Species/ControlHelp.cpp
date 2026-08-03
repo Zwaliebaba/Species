@@ -175,7 +175,7 @@ void HelpIcon::Render(const Vector2& _setPosition, float _alpha)
 
   // Render the shadow
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture(m_shadowFilename));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glDepthMask(false);
   glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
@@ -191,7 +191,7 @@ void HelpIcon::Render(const Vector2& _setPosition, float _alpha)
   glVertex2f(iconCentre.x - shadowX + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
   glEnd();
 
-  unsigned int texId = g_app->m_resource->GetTexture(m_filename);
+  unsigned int texId = g_resource->GetTexture(m_filename);
 
   // Render the icon
   glEnable(GL_TEXTURE_2D);

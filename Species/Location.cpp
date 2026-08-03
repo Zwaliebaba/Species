@@ -584,7 +584,7 @@ bool Location::IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evalua
     return false;
   }
 
-  START_PROFILE(g_app->m_profiler, "QueryWalkable");
+  START_PROFILE(g_profiler, "QueryWalkable");
 
   float stepSize = 50.0f;
   float totalDistance = (_from - _to).Mag();
@@ -604,7 +604,7 @@ bool Location::IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evalua
 
     if (distanceUnderWater >= 100.0f)
     {
-      END_PROFILE(g_app->m_profiler, "QueryWalkable");
+      END_PROFILE(g_profiler, "QueryWalkable");
       return false;
     }
 
@@ -613,7 +613,7 @@ bool Location::IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evalua
       float gradient = (position.y - oldPosition.y) / stepSize;
       if (gradient > 2.3f)
       {
-        END_PROFILE(g_app->m_profiler, "QueryWalkable");
+        END_PROFILE(g_profiler, "QueryWalkable");
         return false;
       }
     }
@@ -621,7 +621,7 @@ bool Location::IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evalua
     position += diff;
   }
 
-  END_PROFILE(g_app->m_profiler, "QueryWalkable");
+  END_PROFILE(g_profiler, "QueryWalkable");
 
   return true;
 }
@@ -629,7 +629,7 @@ bool Location::IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evalua
 
 void Location::AdvanceWeapons(int _slice)
 {
-  START_PROFILE(g_app->m_profiler, "Advance Lasers");
+  START_PROFILE(g_profiler, "Advance Lasers");
   int startIndex, endIndex;
   m_lasers.GetNextSliceBounds(_slice, &startIndex, &endIndex);
   for (int i = startIndex; i <= endIndex; ++i)
@@ -644,10 +644,10 @@ void Location::AdvanceWeapons(int _slice)
       }
     }
   }
-  END_PROFILE(g_app->m_profiler, "Advance Lasers");
+  END_PROFILE(g_profiler, "Advance Lasers");
 
 
-  START_PROFILE(g_app->m_profiler, "Advance Effects");
+  START_PROFILE(g_profiler, "Advance Effects");
   m_effects.GetNextSliceBounds(_slice, &startIndex, &endIndex);
   for (int i = startIndex; i <= endIndex; ++i)
   {
@@ -662,14 +662,14 @@ void Location::AdvanceWeapons(int _slice)
       }
     }
   }
-  END_PROFILE(g_app->m_profiler, "Advance Effects");
+  END_PROFILE(g_profiler, "Advance Effects");
 }
 
 
 // *** AdvanceBuildings
 void Location::AdvanceBuildings(int _slice)
 {
-  START_PROFILE(g_app->m_profiler, "Advance Buildings");
+  START_PROFILE(g_profiler, "Advance Buildings");
   bool obstructionGridChanged = false;
 
   int startIndex, endIndex;
@@ -680,9 +680,9 @@ void Location::AdvanceBuildings(int _slice)
     {
       Building* building = m_buildings.GetData(i);
 
-      START_PROFILE(g_app->m_profiler, Building::GetTypeName(building->m_type));
+      START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
       bool removeBuilding = building->Advance();
-      END_PROFILE(g_app->m_profiler, Building::GetTypeName(building->m_type));
+      END_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
 
       if (removeBuilding)
       {
@@ -698,14 +698,14 @@ void Location::AdvanceBuildings(int _slice)
     g_location->m_obstructionGrid->CalculateAll();
   }
 
-  END_PROFILE(g_app->m_profiler, "Advance Buildings");
+  END_PROFILE(g_profiler, "Advance Buildings");
 }
 /*
 void Location::AdvanceBuildings( int _slice )
 {
     if( _slice == 5 )
     {
-        START_PROFILE(g_app->m_profiler, "Advance Buildings");
+        START_PROFILE(g_profiler, "Advance Buildings");
         bool obstructionGridChanged = false;
 
         for( int i = 0; i < m_buildings.Size(); ++i )
@@ -714,9 +714,9 @@ void Location::AdvanceBuildings( int _slice )
             {
                 Building *building = m_buildings.GetData(i);
 
-                START_PROFILE( g_app->m_profiler, Building::GetTypeName( building->m_type ) );
+                START_PROFILE( g_profiler, Building::GetTypeName( building->m_type ) );
                 bool removeBuilding = building->Advance();
-                END_PROFILE( g_app->m_profiler, Building::GetTypeName( building->m_type ) );
+                END_PROFILE( g_profiler, Building::GetTypeName( building->m_type ) );
 
                 if( removeBuilding )
                 {
@@ -732,7 +732,7 @@ void Location::AdvanceBuildings( int _slice )
             g_location->m_obstructionGrid->CalculateAll();
         }
 
-        END_PROFILE(g_app->m_profiler, "Advance Buildings");
+        END_PROFILE(g_profiler, "Advance Buildings");
     }
 }*/
 
@@ -750,7 +750,7 @@ void Location::AdvanceTeams(int _slice)
 // *** AdvanceSpirits
 void Location::AdvanceSpirits(int _slice)
 {
-  START_PROFILE(g_app->m_profiler, "Advance Spirits");
+  START_PROFILE(g_profiler, "Advance Spirits");
 
   int startIndex, endIndex;
   m_spirits.GetNextSliceBounds(_slice, &startIndex, &endIndex);
@@ -767,7 +767,7 @@ void Location::AdvanceSpirits(int _slice)
     }
   }
 
-  END_PROFILE(g_app->m_profiler, "Advance Spirits");
+  END_PROFILE(g_profiler, "Advance Spirits");
 }
 
 
@@ -776,9 +776,9 @@ void Location::AdvanceClouds(int _slice)
 {
   if (_slice == 3)
   {
-    START_PROFILE(g_app->m_profiler, "Advance Clouds");
+    START_PROFILE(g_profiler, "Advance Clouds");
     m_clouds->Advance();
-    END_PROFILE(g_app->m_profiler, "Advance Clouds");
+    END_PROFILE(g_profiler, "Advance Clouds");
   }
 }
 
@@ -936,7 +936,7 @@ void Location::RenderTeams()
 // *** Render Spirits
 void Location::RenderSpirits()
 {
-  START_PROFILE(g_app->m_profiler, "Render Spirits");
+  START_PROFILE(g_profiler, "Render Spirits");
 
   glDisable(GL_CULL_FACE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -968,7 +968,7 @@ void Location::RenderSpirits()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_CULL_FACE);
 
-  END_PROFILE(g_app->m_profiler, "Render Spirits");
+  END_PROFILE(g_profiler, "Render Spirits");
 }
 
 
@@ -1044,7 +1044,7 @@ void Location::Render(bool renderWaterAndClouds)
 // *** Render Buildings
 void Location::RenderBuildings()
 {
-  START_PROFILE(g_app->m_profiler, "Render Buildings");
+  START_PROFILE(g_profiler, "Render Buildings");
   float timeSinceAdvance = g_predictionTime;
 
   SetupFog();
@@ -1100,7 +1100,7 @@ void Location::RenderBuildings()
       Building* building = m_buildings.GetData(i);
       if (building->IsInView())
       {
-        START_PROFILE(g_app->m_profiler, Building::GetTypeName(building->m_type));
+        START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
         if (i > m_buildings.GetLastUpdated())
         {
           building->Render(timeSinceAdvance + SERVER_ADVANCE_PERIOD);
@@ -1109,7 +1109,7 @@ void Location::RenderBuildings()
         {
           building->Render(timeSinceAdvance);
         }
-        END_PROFILE(g_app->m_profiler, Building::GetTypeName(building->m_type));
+        END_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
       }
     }
   }
@@ -1118,7 +1118,7 @@ void Location::RenderBuildings()
   g_renderer->SetObjectLighting();
   g_renderer->UnsetObjectLighting();
 
-  END_PROFILE(g_app->m_profiler, "Render Buildings");
+  END_PROFILE(g_profiler, "Render Buildings");
 
   CHECK_OPENGL_STATE();
 }
@@ -1148,7 +1148,7 @@ int DepthSortedBuildingCompare(const void* elem1, const void* elem2)
 // *** Render Building Alphas
 void Location::RenderBuildingAlphas()
 {
-  START_PROFILE(g_app->m_profiler, "Render Building Alphas");
+  START_PROFILE(g_profiler, "Render Building Alphas");
   float timeSinceAdvance = g_predictionTime;
 
   //
@@ -1185,7 +1185,7 @@ void Location::RenderBuildingAlphas()
         }
         else
         {
-          START_PROFILE(g_app->m_profiler, Building::GetTypeName(building->m_type));
+          START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
 
           if (i > m_buildings.GetLastUpdated())
           {
@@ -1196,7 +1196,7 @@ void Location::RenderBuildingAlphas()
             building->RenderAlphas(timeSinceAdvance);
           }
 
-          END_PROFILE(g_app->m_profiler, Building::GetTypeName(building->m_type));
+          END_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
         }
       }
     }
@@ -1206,9 +1206,9 @@ void Location::RenderBuildingAlphas()
   //
   // Sort the buildings that require sorting
 
-  START_PROFILE(g_app->m_profiler, "Depth Sort");
+  START_PROFILE(g_profiler, "Depth Sort");
   qsort(s_sortedBuildings, s_nextSortedBuilding, sizeof(DepthSortedBuilding), DepthSortedBuildingCompare);
-  END_PROFILE(g_app->m_profiler, "Depth Sort");
+  END_PROFILE(g_profiler, "Depth Sort");
 
 
   //
@@ -1219,7 +1219,7 @@ void Location::RenderBuildingAlphas()
     int buildingIndex = s_sortedBuildings[i].m_buildingIndex;
     Building* building = m_buildings.GetData(buildingIndex);
 
-    START_PROFILE(g_app->m_profiler, Building::GetTypeName(building->m_type));
+    START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
 
     if (buildingIndex > m_buildings.GetLastUpdated())
     {
@@ -1230,20 +1230,20 @@ void Location::RenderBuildingAlphas()
       building->RenderAlphas(timeSinceAdvance);
     }
 
-    END_PROFILE(g_app->m_profiler, Building::GetTypeName(building->m_type));
+    END_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
   }
 
 
   glDisable(GL_FOG);
 
-  END_PROFILE(g_app->m_profiler, "Render Building Alphas");
+  END_PROFILE(g_profiler, "Render Building Alphas");
 }
 
 
 // *** Render Clouds
 void Location::RenderClouds()
 {
-  START_PROFILE(g_app->m_profiler, "Render Clouds");
+  START_PROFILE(g_profiler, "Render Clouds");
 
   if (m_clouds)
   {
@@ -1258,14 +1258,14 @@ void Location::RenderClouds()
     }
   }
 
-  END_PROFILE(g_app->m_profiler, "Render Clouds");
+  END_PROFILE(g_profiler, "Render Clouds");
 }
 
 
 // *** Render Effects
 void Location::RenderWeapons()
 {
-  START_PROFILE(g_app->m_profiler, "Render Weapons");
+  START_PROFILE(g_profiler, "Render Weapons");
 
   float timeSinceAdvance = g_predictionTime;
 
@@ -1303,7 +1303,7 @@ void Location::RenderWeapons()
   glEnable(GL_LINE_SMOOTH);
   glDisable(GL_CULL_FACE);
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Laser.bmp", false));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp", false));
 
 
   float nearPlaneStart = g_renderer->GetNearPlane();
@@ -1335,7 +1335,7 @@ void Location::RenderWeapons()
 
   TheCamera()->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
 
-  END_PROFILE(g_app->m_profiler, "Render Weapons");
+  END_PROFILE(g_profiler, "Render Weapons");
 }
 
 

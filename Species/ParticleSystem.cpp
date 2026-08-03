@@ -9,7 +9,6 @@
 #include "Profiler.h"
 #include "Resource.h"
 
-#include "App.h"
 #include "Camera.h"
 #include "Main.h"
 #include "ParticleSystem.h"
@@ -320,7 +319,7 @@ void ParticleSystem::CreateParticle(Vector3 const& _pos, Vector3 const& _vel, in
 // *** Advance
 void ParticleSystem::Advance(int _slice)
 {
-  START_PROFILE(g_app->m_profiler, "Advance Particles");
+  START_PROFILE(g_profiler, "Advance Particles");
 
   int lower, upper;
   m_particles.GetNextSliceBounds(_slice, &lower, &upper);
@@ -336,21 +335,21 @@ void ParticleSystem::Advance(int _slice)
     }
   }
 
-  END_PROFILE(g_app->m_profiler, "Advance Particles");
+  END_PROFILE(g_profiler, "Advance Particles");
 }
 
 
 // *** Render
 void ParticleSystem::Render()
 {
-  START_PROFILE(g_app->m_profiler, "Render Particles");
+  START_PROFILE(g_profiler, "Render Particles");
 
   glDisable(GL_CULL_FACE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
   glEnable(GL_BLEND);
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Textures/Particle.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Particle.bmp"));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glDepthMask(false);
 
@@ -383,7 +382,7 @@ void ParticleSystem::Render()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_CULL_FACE);
 
-  END_PROFILE(g_app->m_profiler, "Render Particles");
+  END_PROFILE(g_profiler, "Render Particles");
 }
 
 

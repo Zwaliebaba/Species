@@ -6,7 +6,6 @@
 #include "Vector2.h"
 #include "DebugRender.h"
 
-#include "App.h"
 #include "Landscape.h"
 #include "RoutingSystem.h"
 #include "Location.h"

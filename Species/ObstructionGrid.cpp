@@ -4,7 +4,6 @@
 #include "Debug.h"
 #include "Vector2.h"
 
-#include "App.h"
 #include "Location.h"
 #include "ObstructionGrid.h"
 

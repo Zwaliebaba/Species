@@ -69,9 +69,9 @@ void Team::Initialise(int _teamId)
   //
   // Generate the ViriiFull bmp
 
-  if (!g_app->m_resource->DoesTextureExist("Sprites/viriifull.bmp"))
+  if (!g_resource->DoesTextureExist("Sprites/viriifull.bmp"))
   {
-    BinaryReader* reader = g_app->m_resource->GetBinaryReader("Sprites/Virii.bmp");
+    BinaryReader* reader = g_resource->GetBinaryReader("Sprites/Virii.bmp");
     BitmapRGBA little(reader, "bmp");
     delete reader;
     BitmapRGBA big(32 + 128, 512);
@@ -92,12 +92,12 @@ void Team::Initialise(int _teamId)
       }
     }
 
-    reader = g_app->m_resource->GetBinaryReader("Textures/Glow.bmp");
+    reader = g_resource->GetBinaryReader("Textures/Glow.bmp");
     BitmapRGBA glow(reader, "bmp");
     delete reader;
     big.Blit(0, 0, 128, 128, &glow, 32, 0, 128, 128, true);
 
-    g_app->m_resource->AddBitmap("Sprites/viriifull.bmp", big, true);
+    g_resource->AddBitmap("Sprites/viriifull.bmp", big, true);
   }
 }
 
@@ -144,11 +144,11 @@ void Team::SelectUnit(int _unitId, int _entityId, int _buildingId)
 
   if (_unitId == -1 && _entityId == -1 && _buildingId == -1)
   {
-    g_app->m_soundSystem->TriggerOtherEvent(nullptr, "TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent(nullptr, "TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface);
   }
   else
   {
-    g_app->m_soundSystem->TriggerOtherEvent(nullptr, "TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent(nullptr, "TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface);
   }
 
   //    if( m_teamId == g_globalWorld->m_myTeamId )
@@ -321,7 +321,7 @@ void Team::Advance(int _slice)
 
   if (m_teamType > TeamTypeUnused)
   {
-    START_PROFILE(g_app->m_profiler, "Advance Unit Entities");
+    START_PROFILE(g_profiler, "Advance Unit Entities");
     for (int unit = 0; unit < m_units.Size(); ++unit)
     {
       if (m_units.ValidIndex(unit))
@@ -330,11 +330,11 @@ void Team::Advance(int _slice)
         theUnit->AdvanceEntities(_slice);
       }
     }
-    END_PROFILE(g_app->m_profiler, "Advance Unit Entities");
+    END_PROFILE(g_profiler, "Advance Unit Entities");
 
     if (_slice == 0)
     {
-      START_PROFILE(g_app->m_profiler, "Advance Units");
+      START_PROFILE(g_profiler, "Advance Units");
       for (int unit = 0; unit < m_units.Size(); ++unit)
       {
         if (m_units.ValidIndex(unit))
@@ -348,7 +348,7 @@ void Team::Advance(int _slice)
           }
         }
       }
-      END_PROFILE(g_app->m_profiler, "Advance Units");
+      END_PROFILE(g_profiler, "Advance Units");
     }
   }
 
@@ -358,7 +358,7 @@ void Team::Advance(int _slice)
 
   if (m_teamType > TeamTypeUnused)
   {
-    START_PROFILE(g_app->m_profiler, "Advance Others");
+    START_PROFILE(g_profiler, "Advance Others");
     int startIndex, endIndex;
     m_others.GetNextSliceBounds(_slice, &startIndex, &endIndex);
 
@@ -373,12 +373,12 @@ void Team::Advance(int _slice)
           WorldObjectId myId(m_teamId, -1, i, ent->m_id.GetUniqueId());
 
           char const* entityName = Entity::GetTypeName(ent->m_type);
-          START_PROFILE(g_app->m_profiler, entityName);
+          START_PROFILE(g_profiler, entityName);
           bool amIdead = ent->Advance(nullptr);
-          END_PROFILE(g_app->m_profiler, entityName);
+          END_PROFILE(g_profiler, entityName);
 
 #ifdef PROFILER_ENABLED
-          DEBUG_ASSERT(strcmp(g_app->m_profiler->m_currentElement->m_name, "Advance Others") == 0);
+          DEBUG_ASSERT(strcmp(g_profiler->m_currentElement->m_name, "Advance Others") == 0);
 #endif
 
           if (amIdead)
@@ -399,7 +399,7 @@ void Team::Advance(int _slice)
       }
     }
 
-    END_PROFILE(g_app->m_profiler, "Advance Others");
+    END_PROFILE(g_profiler, "Advance Others");
   }
 }
 
@@ -408,7 +408,7 @@ void Team::Render()
   //
   // Render Units
 
-  START_PROFILE(g_app->m_profiler, "Render Units");
+  START_PROFILE(g_profiler, "Render Units");
 
   float timeSinceAdvance = g_predictionTime;
 
@@ -426,9 +426,9 @@ void Team::Render()
       Unit* unit = m_units[i];
       if (unit->IsInView())
       {
-        START_PROFILE(g_app->m_profiler, Entity::GetTypeName(unit->m_troopType));
+        START_PROFILE(g_profiler, Entity::GetTypeName(unit->m_troopType));
         unit->Render(timeSinceAdvance);
-        END_PROFILE(g_app->m_profiler, Entity::GetTypeName(unit->m_troopType));
+        END_PROFILE(g_profiler, Entity::GetTypeName(unit->m_troopType));
       }
     }
   }
@@ -439,16 +439,16 @@ void Team::Render()
   glDisable(GL_TEXTURE_2D);
   glAlphaFunc(GL_GREATER, 0.01f);
 
-  END_PROFILE(g_app->m_profiler, "Render Units");
+  END_PROFILE(g_profiler, "Render Units");
 
 
   //
   // Render Others
 
   CHECK_OPENGL_STATE();
-  START_PROFILE(g_app->m_profiler, "Render Others");
+  START_PROFILE(g_profiler, "Render Others");
   RenderOthers(timeSinceAdvance);
-  END_PROFILE(g_app->m_profiler, "Render Others");
+  END_PROFILE(g_profiler, "Render Others");
   CHECK_OPENGL_STATE();
 
 
@@ -458,9 +458,9 @@ void Team::Render()
   CHECK_OPENGL_STATE();
   if (m_teamId == 1 && m_teamType == TeamTypeCPU)
   {
-    START_PROFILE(g_app->m_profiler, "Render Virii");
+    START_PROFILE(g_profiler, "Render Virii");
     RenderVirii(timeSinceAdvance);
-    END_PROFILE(g_app->m_profiler, "Render Virii");
+    END_PROFILE(g_profiler, "Render Virii");
   }
   CHECK_OPENGL_STATE();
 
@@ -469,9 +469,9 @@ void Team::Render()
   // Render Darwinians
 
   CHECK_OPENGL_STATE();
-  START_PROFILE(g_app->m_profiler, "Render Darwinians");
+  START_PROFILE(g_profiler, "Render Darwinians");
   RenderDarwinians(timeSinceAdvance);
-  END_PROFILE(g_app->m_profiler, "Render Darwinians");
+  END_PROFILE(g_profiler, "Render Darwinians");
   CHECK_OPENGL_STATE();
 }
 
@@ -490,7 +490,7 @@ void Team::RenderVirii(float _predictionTime)
   // Render Red Virii shapes
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Sprites/viriifull.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/viriifull.bmp"));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
@@ -561,7 +561,7 @@ void Team::RenderDarwinians(float _predictionTime)
   int lastUpdated = m_others.GetLastUpdated();
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_app->m_resource->GetTexture("Sprites/Darwinian.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Darwinian.bmp"));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glEnable(GL_BLEND);
@@ -627,9 +627,9 @@ void Team::RenderOthers(float _predictionTime)
       Entity* entity = m_others.GetData(i);
       if (entity->m_type != Entity::TypeVirii && entity->m_type != Entity::TypeDarwinian && entity->IsInView())
       {
-        START_PROFILE(g_app->m_profiler, Entity::GetTypeName(entity->m_type));
+        START_PROFILE(g_profiler, Entity::GetTypeName(entity->m_type));
         entity->Render(_predictionTime);
-        END_PROFILE(g_app->m_profiler, Entity::GetTypeName(entity->m_type));
+        END_PROFILE(g_profiler, Entity::GetTypeName(entity->m_type));
       }
     }
   }
@@ -643,9 +643,9 @@ void Team::RenderOthers(float _predictionTime)
       Entity* entity = m_others.GetData(i);
       if (entity->m_type != Entity::TypeVirii && entity->m_type != Entity::TypeDarwinian && entity->IsInView())
       {
-        START_PROFILE(g_app->m_profiler, Entity::GetTypeName(entity->m_type));
+        START_PROFILE(g_profiler, Entity::GetTypeName(entity->m_type));
         entity->Render(_predictionTime);
-        END_PROFILE(g_app->m_profiler, Entity::GetTypeName(entity->m_type));
+        END_PROFILE(g_profiler, Entity::GetTypeName(entity->m_type));
       }
     }
   }
