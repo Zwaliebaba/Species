@@ -96,7 +96,7 @@ tasks:
     title: Convert NeuronCore string handling
     intent: >
       The foundation goes first and sets the pattern: Preferences.cpp (10
-      calls), Generic.cpp and the stragglers a re-measure finds. Preferences
+      calls) plus the NeuronCore stragglers a re-measure finds. Preferences
       writes the preferences file, so its output format is pinned by a test
       before conversion — the file must round-trip byte-identically.
     project: NeuronCore
@@ -104,13 +104,12 @@ tasks:
     blocked_by: [containers-replaced/T18]
     files:
       - NeuronCore/Preferences.cpp
-      - NeuronCore/Preferences.h
-      - NeuronCore/Generic.cpp
-      - NeuronCore/Generic.h
-      - Tests/NeuronCoreTests/PreferencesTests.cpp
+      - NeuronCore/NetworkUpdate.cpp
+      - NeuronCore/NeuronCore.h
     acceptance:
-      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over NeuronCore returns 0 outside the legacy container headers
-      - A test pins the preferences-file output format and passes on both sides of the conversion
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over NeuronCore returns 0 outside the legacy container headers and Generic.cpp, which T10 owns
+      - The preferences-file format tests from containers-replaced T19 pass unchanged, with no edit to PreferencesTests.cpp in the same commit
+      - NetworkUpdate stays trivially copyable and m_clientIp stays a char[16], per T1's audit
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_format.py
@@ -302,7 +301,7 @@ tasks:
       Re-measure after T2-T8 and convert every remaining call site the
       grouped tasks missed, ending stage 4 with a tree-wide zero outside
       whatever T1 listed as legitimately fixed-format.
-    depends_on: [T2, T3, T4, T5, T6, T7, T8]
+    depends_on: [T2, T3, T4, T5, T6, T7, T8, T10]
     files:
       - NeuronClient/SoundLibrary2d.cpp
       - GameLogic/EntityLeg.cpp
@@ -318,4 +317,50 @@ tasks:
     notes: >
       The files listed are a placeholder guess at the tail — the task IS the
       re-measure; expect the real list to differ and update it when starting.
+    status: todo
+
+  - id: T10
+    title: Convert the IP string helpers and the callers their signatures reach
+    intent: >
+      Generic.cpp's three call sites are the last C string handling in
+      NeuronCore, and they are not self-contained. IpToString writes into a
+      caller-supplied buffer and ConvertIntToIP returns a pointer to a
+      function-local `static char[16]` — both are signature changes, and the
+      callers are in NeuronClient and NeuronServer. Returning std::string from
+      each fixes a real hazard as well as the formatting: the static buffer is
+      neither reentrant nor safe to hold across a second call.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/Generic.cpp
+      - NeuronCore/Generic.h
+      - NeuronClient/ClientToServer.cpp
+      - NeuronServer/Server.cpp
+      - NeuronServer/Server.h
+      - Tests/NeuronCoreTests/GenericTests.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over NeuronCore returns 0 outside the legacy container headers
+      - ConvertIntToIP returns a value rather than a pointer into a static buffer
+      - The four existing GenericTests pass, adjusted only where the return type changed
+      - Server.exe --ticks 20 still advances the sequence id
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Split out of T2 on 2026-08-02, on the same evidence that split
+      containers-replaced T18: the task looked NeuronCore-local and is not.
+      Server::ReceiveLetter takes `char* fromIP`, so making IpToString return
+      a std::string forces that signature to const char* or string_view, which
+      puts NeuronServer/Server.h and Server.cpp in the touch set — and both are
+      already claimed by containers-replaced T4 and ownership T2. Land this
+      when none of those is in flight.
+
+      One dead site found while scoping and deliberately left for whoever does
+      the work: NeuronClient/ClientToServer.cpp fills a local `char newip[16]`
+      from IpToString and never reads it. Deleting it is the right call during
+      this conversion; it is called out here so it is a decision rather than a
+      surprise.
     status: todo

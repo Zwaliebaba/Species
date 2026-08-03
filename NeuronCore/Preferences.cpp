@@ -220,7 +220,6 @@ int GetDefaultGraphicsDetail()
 
 void PrefsManager::CreateDefaultValues()
 {
-	char line[1024];
 
     AddLine( "ServerAddress = 127.0.0.1" );
     AddLine( "IAmAServer = 1" );
@@ -233,19 +232,16 @@ void PrefsManager::CreateDefaultValues()
 
     AddLine( "\n" );
 
-	sprintf( line, "SoundLibrary = %s", GetDefaultSoundLibrary() );
-	AddLine( line );
+    AddLine(std::format("SoundLibrary = {}", GetDefaultSoundLibrary()).c_str());
 
     AddLine( "SoundMixFreq = 22050" );
     AddLine( "SoundMasterVolume = 255" );
-	sprintf( line, "SoundChannels = %d", GetDefaultSoundChannels() );
-	AddLine( line );
+    AddLine(std::format("SoundChannels = {}", GetDefaultSoundChannels()).c_str());
     AddLine( "SoundHW3D = 0" );
     AddLine( "SoundSwapStereo = 0" );
     AddLine( "SoundMemoryUsage = 1" );
     AddLine( "SoundBufferSize = 512" ); // Must be a power of 2 for Linux
-	sprintf( line, "SoundDSP = %d", GetDefaultSoundDSP() );
-	AddLine( line );
+    AddLine(std::format("SoundDSP = {}", GetDefaultSoundDSP()).c_str());
 
     AddLine( "\n" );
 
@@ -254,19 +250,13 @@ void PrefsManager::CreateDefaultValues()
 
     AddLine( "\n" );
 
-    sprintf( line, "RenderLandscapeDetail = %d", GetDefaultGraphicsDetail() );
-	AddLine( line );
-    sprintf( line, "RenderWaterDetail = %d", GetDefaultGraphicsDetail() );
-	AddLine( line );
-    sprintf( line, "RenderBuildingDetail = %d", GetDefaultGraphicsDetail() );
-	AddLine( line );
-    sprintf( line, "RenderEntityDetail = %d", GetDefaultGraphicsDetail() );
-	AddLine( line );
-    sprintf( line, "RenderCloudDetail = %d", GetDefaultGraphicsDetail() );
-	AddLine( line );
+    AddLine(std::format("RenderLandscapeDetail = {}", GetDefaultGraphicsDetail()).c_str());
+    AddLine(std::format("RenderWaterDetail = {}", GetDefaultGraphicsDetail()).c_str());
+    AddLine(std::format("RenderBuildingDetail = {}", GetDefaultGraphicsDetail()).c_str());
+    AddLine(std::format("RenderEntityDetail = {}", GetDefaultGraphicsDetail()).c_str());
+    AddLine(std::format("RenderCloudDetail = {}", GetDefaultGraphicsDetail()).c_str());
 
-	sprintf( line, "RenderPixelShader = %d", GetDefaultPixelShader() );
-    AddLine( line );
+    AddLine(std::format("RenderPixelShader = {}", GetDefaultPixelShader()).c_str());
 
     AddLine( "\n" );
 
@@ -407,12 +397,10 @@ void PrefsManager::Save()
       if (!keyEnd)
         keyEnd = c;
 
-      char key[128];
-      int keyLen = static_cast<int>(keyEnd - keyStart);
-      if (keyLen > static_cast<int>(sizeof(key)) - 1)
-        keyLen = static_cast<int>(sizeof(key)) - 1;
-      strncpy(key, keyStart, keyLen);
-      key[keyLen] = '\0';
+      // std::string, so no 128-byte buffer and no truncation clamp: a key
+      // longer than the old limit now looks itself up instead of being cut
+      // short and missing.
+      const std::string key(keyStart, keyEnd - keyStart);
 
       // A template line naming a key the manager no longer holds is not a
       // reason to dereference slot -1. Echo the line instead of losing it.

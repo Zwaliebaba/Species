@@ -107,7 +107,13 @@ using namespace Neuron;
 #define MESSAGE(x) message (__FILE__ "(" MESSAGE_LINENUMBER(__LINE__) "): "x)
 
 #include <crtdbg.h>
-#define snprintf _snprintf
+
+// A compatibility #define mapping C99's bounded formatting function onto the
+// old MSVC underscore-prefixed variant used to sit here, for a compiler that
+// predates the standard one by two decades. Nothing in the tree called it, so
+// it was dead — and worse than dead: the underscore variant does not
+// null-terminate on truncation, so the first person to write a standard call
+// would have got silently different behaviour from the one they read about.
 
 // Visual studio 2005 insists that we use the underscored versions
 #include <string.h>
