@@ -1028,6 +1028,26 @@ void RunTheGame()
   }
 }
 
+// The process entry point.
+//
+// It used to be in NeuronClient/WindowManager.cpp, where it called AppMain()
+// below — a static library reaching up into the executable that links it.
+// check_layering never saw it, because an include check cannot: NeuronClient
+// DECLARED AppMain in its own header rather than including a Species one. The
+// linker sees it, and said so the moment a test DLL pulled WindowManager.obj
+// in without a game executable to satisfy it.
+int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _cmdLine, int _iCmdShow)
+{
+  SetWin32InstanceHandle(_hInstance);
+
+  g_windowManager = new WindowManager();
+
+  AppMain();
+
+  return WM_QUIT;
+}
+
+
 // Main Function
 void AppMain()
 {

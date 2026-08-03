@@ -387,13 +387,4 @@ void WindowManager::OpenWebsite(const char* _url)
   ShellExecute(nullptr, "open", _url, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _cmdLine, int _iCmdShow)
-{
-  g_hInstance = _hInstance;
-
-  g_windowManager = new WindowManager();
-
-  AppMain();
-
-  return WM_QUIT;
-}
+void SetWin32InstanceHandle(HINSTANCE _hInstance) { g_hInstance = _hInstance; }

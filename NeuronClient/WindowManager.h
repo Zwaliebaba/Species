@@ -104,7 +104,18 @@ public:
 };
 
 
-void AppMain();
+// Records the HINSTANCE the process was started with, for the window class
+// registration and CreateWindowEx below.
+//
+// This exists because WinMain does NOT. It used to live in WindowManager.cpp,
+// which put an executable's entry point inside a static library and — worse —
+// made NeuronClient call AppMain(), a symbol Species defines. That is an upward
+// dependency at LINK time, which check_layering cannot see because it reads
+// includes. It stayed invisible until GameLogicTests grew tests whose object
+// graph reached WindowManager.obj, and the test DLL failed to link against an
+// AppMain that only the game executable has. See tasks/layering-inversion.yaml
+// T18.
+void SetWin32InstanceHandle(HINSTANCE _hInstance);
 
 extern WindowManager *g_windowManager;
 

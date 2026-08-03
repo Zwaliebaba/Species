@@ -984,13 +984,14 @@ tasks:
       outright. If a residue survives T10, this task does not paper over it
       — the residue becomes new tasks appended to this plan, and this one
       stays open until the file is genuinely empty.
-    depends_on: [T9, T10, T11, T13, T15, T16, T17]
+    depends_on: [T9, T10, T11, T13, T15, T16, T17, T18]
     files:
       - tools/layering_allowlist.txt
       - AGENTS.md
     acceptance:
       - tools/layering_allowlist.txt contains zero entries
       - check_layering.py passes with the empty allowlist, and the allowlist file and its --update mode are deleted rather than left empty
+      - No symbol declared in a NeuronCore, NeuronClient or GameLogic header is defined only in Species — check_layering reads includes and cannot see a link-time reach; see T18
       - AGENTS.md's layering section records the milestone
     verify:
       - python3 tools/check_layering.py
@@ -1481,3 +1482,54 @@ tasks:
       these paths appear in other plans' `files` lists and are wrong the
       moment this lands.
     status: done
+
+  - id: T18
+    title: Move WinMain out of NeuronClient and into the executable it starts
+    intent: >
+      NeuronClient/WindowManager.cpp defined WinMain and called AppMain(),
+      which only Species defines. A static library containing an executable's
+      entry point is wrong on its own; one that calls up into the executable
+      linking it is an upward dependency that check_layering cannot see,
+      because check_layering reads includes and NeuronClient DECLARED AppMain
+      in its own header rather than including a Species one.
+    project: NeuronClient
+    depends_on: [T11]
+    files:
+      - NeuronClient/WindowManager.h
+      - NeuronClient/WindowManager.cpp
+      - Species/Main.cpp
+    acceptance:
+      - WinMain lives in Species and NeuronClient declares no symbol Species defines
+      - The game still starts — the HINSTANCE capture that WinMain performed still happens before any window is created
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+      - The Garden smoke test, owner-run — this is the process entry point
+    parallel_safe: false
+    status: done
+    notes: >
+      FOUND BY T11'S TESTS, which is the point of them. GameLogicTests had
+      never linked an object graph large enough to reach WindowManager.obj; the
+      moment EntityGridTests constructed a Location it did, and the test DLL
+      failed to link:
+
+        NeuronClient.lib(WindowManager.obj) : error LNK2019: unresolved
+        external symbol "void __cdecl AppMain(void)" referenced in
+        function WinMain [Tests\GameLogicTests\GameLogicTests.vcxproj]
+
+      This had been true for the whole of this plan and every check passed
+      throughout, because every check reads includes. T15's own acceptance
+      names the hazard — "declaring the symbol low while defining it high would
+      satisfy check_layering while leaving the lower layer linked against the
+      higher" — and this was an instance of exactly that, sitting in the tree
+      the entire time nobody could link enough of it to notice.
+
+      The fix is small: WinMain moves to Species/Main.cpp beside the AppMain it
+      calls, and the HINSTANCE it captured reaches WindowManager's file-local
+      g_hInstance through a one-line SetWin32InstanceHandle. NeuronClient no
+      longer names AppMain at all.
+
+      A scan for the general case — every free function and extern declared in
+      a NeuronCore, NeuronClient or GameLogic header, checked for a definition
+      in those projects and then in Species — finds nothing else. T12 carries
+      it as an acceptance line so the milestone means what it says.
