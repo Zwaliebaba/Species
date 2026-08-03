@@ -160,6 +160,7 @@ tasks:
       - NeuronCore/ServerToClientLetter.cpp
       - NeuronServer/Server.h
       - NeuronServer/Server.cpp
+      - Species/ServerUpdates.cpp
       - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
       - Tests/NeuronServerTests/ServerTests.cpp
     acceptance:
@@ -171,7 +172,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T5
     title: Convert the sound subsystem containers
