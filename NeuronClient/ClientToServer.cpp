@@ -37,8 +37,7 @@ static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 {
   if (udpdata)
   {
-    ServerToClientLetter* letter = new ServerToClientLetter(udpdata->m_data, udpdata->m_length);
-    s_client->ReceiveLetter(letter);
+    s_client->ReceiveLetter(std::make_unique<ServerToClientLetter>(udpdata->m_data, udpdata->m_length));
     //        SET_PROFILE(m_profiler,  "#Client Receive", udpdata->getLength() );
 
     delete udpdata;
@@ -50,7 +49,7 @@ static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 
 static NetCallBackRetType ListenThread(void* ignored)
 {
-  s_client->m_receiveSocket = new NetSocketListener(4001);
+  s_client->m_receiveSocket = std::make_unique<NetSocketListener>(4001);
   NetRetCode retCode = s_client->m_receiveSocket->StartListening(ListenCallback);
   DEBUG_ASSERT(retCode == NetOk);
   return 0;
@@ -64,19 +63,19 @@ ClientToServer::ClientToServer()
   m_lastValidSequenceIdFromServer = -1;
   m_startTime = DBL_MAX; // Same initial value g_startTime carried in Main.cpp
 
-  m_inboxMutex = new NetMutex();
-  m_outboxMutex = new NetMutex();
+  m_inboxMutex = std::make_unique<NetMutex>();
+  m_outboxMutex = std::make_unique<NetMutex>();
 
-  m_netLib = new NetLib();
+  m_netLib = std::make_unique<NetLib>();
   m_netLib->Initialise();
 
-  m_sendSocket = new NetSocket();
+  m_sendSocket = std::make_unique<NetSocket>();
   char const* serverAddress = g_prefsManager->GetString("ServerAddress");
   m_sendSocket->Connect(serverAddress, 4000);
 
   // Null it before the listen thread starts: the thread's first act is to store
   // its listener here, and this write used to be able to land on top of that.
-  m_receiveSocket = nullptr;
+  m_receiveSocket.reset();
 
   NetStartThread(ListenThread);
 }
@@ -88,21 +87,18 @@ ClientToServer::~ClientToServer()
   {
   }
 
-  for (auto* letter : m_inbox)
-  {
-    delete letter;
-  }
+  // Reset explicitly, in the order the SAFE_DELETEs ran. Members are destroyed
+  // in reverse declaration order, which would take the two sockets down BEFORE
+  // NetLib — the opposite of what this did. Whether NetLib outliving its
+  // sockets matters is not established, so it is preserved rather than
+  // reasoned about.
   m_inbox.clear();
-  for (auto* update : m_outbox)
-  {
-    delete update;
-  }
   m_outbox.clear();
-  SAFE_DELETE(m_inboxMutex);
-  SAFE_DELETE(m_outboxMutex);
-  SAFE_DELETE(m_netLib);
-  SAFE_DELETE(m_sendSocket);
-  SAFE_DELETE(m_receiveSocket);
+  m_inboxMutex.reset();
+  m_outboxMutex.reset();
+  m_netLib.reset();
+  m_sendSocket.reset();
+  m_receiveSocket.reset();
 }
 
 
@@ -113,16 +109,19 @@ void ClientToServer::AdvanceSender()
 
   while (!m_outbox.empty())
   {
-    NetworkUpdate* letter = m_outbox[0];
+    std::unique_ptr<NetworkUpdate> letter = std::move(m_outbox[0]);
     DEBUG_ASSERT(letter);
 
     {
       int letterSize = 0;
       char* byteStream = letter->GetByteStream(&letterSize);
-      NetSocket* socket = m_sendSocket;
+      NetSocket* socket = m_sendSocket.get();
       socket->WriteData(byteStream, letterSize);
       bytesSentThisFrame += letterSize;
-      delete letter;
+      // reset() rather than letting the scope end it: the old code deleted
+      // here, before the erase, and this plan's rule is that ownership moves
+      // without the moment of destruction moving with it.
+      letter.reset();
     }
 
     m_outbox.erase(m_outbox.begin());
@@ -202,21 +201,17 @@ int ClientToServer::GetNextLetterSeqID()
 }
 
 
-ServerToClientLetter* ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
+std::unique_ptr<ServerToClientLetter> ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
 {
   m_inboxMutex->Lock();
-  ServerToClientLetter* letter = nullptr;
+  std::unique_ptr<ServerToClientLetter> letter;
 
   if (!m_inbox.empty())
   {
-    letter = m_inbox[0];
-    if (letter->GetSequenceId() == _lastProcessedSequenceId + 1)
+    if (m_inbox[0]->GetSequenceId() == _lastProcessedSequenceId + 1)
     {
+      letter = std::move(m_inbox[0]);
       m_inbox.erase(m_inbox.begin());
-    }
-    else
-    {
-      letter = nullptr;
     }
   }
 
@@ -226,7 +221,7 @@ ServerToClientLetter* ClientToServer::GetNextLetter(int _lastProcessedSequenceId
 }
 
 
-void ClientToServer::ReceiveLetter(ServerToClientLetter* letter)
+void ClientToServer::ReceiveLetter(std::unique_ptr<ServerToClientLetter> letter)
 {
   //
   // Simulate network packet loss
@@ -234,7 +229,6 @@ void ClientToServer::ReceiveLetter(ServerToClientLetter* letter)
 #ifdef _DEBUG
   if (g_inputManager->controlEvent(ControlDebugDropPacket))
   {
-    delete letter;
     return;
   }
 #endif
@@ -244,7 +238,6 @@ void ClientToServer::ReceiveLetter(ServerToClientLetter* letter)
 
   if (letter->GetSequenceId() <= m_lastValidSequenceIdFromServer)
   {
-    delete letter;
     return;
   }
 
@@ -275,24 +268,24 @@ void ClientToServer::ReceiveLetter(ServerToClientLetter* letter)
   bool inserted = false;
   for (i = static_cast<int>(m_inbox.size()) - 1; i >= 0; --i)
   {
-    ServerToClientLetter* thisLetter = m_inbox[i];
+    ServerToClientLetter* thisLetter = m_inbox[i].get();
     if (letter->GetSequenceId() > thisLetter->GetSequenceId())
     {
-      m_inbox.insert(m_inbox.begin() + (i + 1), letter);
+      m_inbox.insert(m_inbox.begin() + (i + 1), std::move(letter));
       inserted = true;
       break;
     }
     else if (letter->GetSequenceId() == thisLetter->GetSequenceId())
     {
       // Throw this letter away, it's a duplicate
-      delete letter;
+      letter.reset();
       inserted = true;
       break;
     }
   }
   if (!inserted)
   {
-    m_inbox.insert(m_inbox.begin(), letter);
+    m_inbox.insert(m_inbox.begin(), std::move(letter));
   }
 
 
@@ -301,7 +294,7 @@ void ClientToServer::ReceiveLetter(ServerToClientLetter* letter)
 
   for (i = 0; i < static_cast<int>(m_inbox.size()); ++i)
   {
-    ServerToClientLetter* thisLetter = m_inbox[i];
+    ServerToClientLetter* thisLetter = m_inbox[i].get();
     if (thisLetter->GetSequenceId() > m_lastValidSequenceIdFromServer + 1)
     {
       break;
@@ -313,12 +306,12 @@ void ClientToServer::ReceiveLetter(ServerToClientLetter* letter)
 }
 
 
-void ClientToServer::SendLetter(NetworkUpdate* letter)
+void ClientToServer::SendLetter(std::unique_ptr<NetworkUpdate> letter)
 {
   letter->SetLastSequenceId(m_lastValidSequenceIdFromServer);
 
   m_outboxMutex->Lock();
-  m_outbox.push_back(letter);
+  m_outbox.push_back(std::move(letter));
   m_outboxMutex->Unlock();
 }
 
@@ -326,18 +319,18 @@ void ClientToServer::SendLetter(NetworkUpdate* letter)
 void ClientToServer::ClientJoin()
 {
   DebugTrace("CLIENT : Attempting connection...\n");
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::ClientJoin);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::ClientLeave()
 {
   DebugTrace("CLIENT : Sending disconnect...\n");
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::ClientLeave);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 
   // Only the endpoint's own counter is reset here. The caller resets the one
   // that tracks how far the simulation has advanced, because that is its.
@@ -349,116 +342,116 @@ void ClientToServer::RequestTeam(int _teamType, int _desiredId)
 {
   DebugTrace("CLIENT : Requesting Team...\n");
 
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetDesiredTeamId(_desiredId);
   letter->SetType(NetworkUpdate::RequestTeam);
   letter->SetTeamType(_teamType);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::SendIAmAlive(unsigned char _teamId, TeamControls const& _teamControls)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::Alive);
   letter->SetTeamId(_teamId);
   letter->SetWorldPos(_teamControls.m_mousePos);
   letter->SetTeamControls(_teamControls);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::SendSyncronisation(int _lastProcessedId, unsigned char _sync)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::Syncronise);
   letter->SetLastProcessedId(_lastProcessedId);
   letter->SetSync(_sync);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::RequestPause()
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::Pause);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::RequestSelectUnit(unsigned char _teamId, int _unitId, int _entityId, int _buildingId)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::SelectUnit);
   letter->SetTeamId(_teamId);
   letter->SetUnitId(_unitId);
   letter->SetEntityId(_entityId);
   letter->SetBuildingID(_buildingId);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, int _buildingId)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::CreateUnit);
   letter->SetTeamId(_teamId);
   letter->SetEntityType(_troopType);
   letter->SetNumTroops(_numToCreate);
   letter->SetBuildingID(_buildingId);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, Vector3 const& _pos)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::CreateUnit);
   letter->SetTeamId(_teamId);
   letter->SetEntityType(_troopType);
   letter->SetNumTroops(_numToCreate);
   letter->SetBuildingID(-1);
   letter->SetWorldPos(_pos);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::RequestAimBuilding(unsigned char _teamId, int _buildingId, Vector3 const& _pos)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::AimBuilding);
   letter->SetTeamId(_teamId);
   letter->SetBuildingID(_buildingId);
   letter->SetWorldPos(_pos);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::RequestToggleFence(int _buildingId)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::ToggleLaserFence);
   letter->SetBuildingID(_buildingId);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::RequestRunProgram(unsigned char _teamId, unsigned char _program)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::RunProgram);
   letter->SetTeamId(_teamId);
   letter->SetProgram(_program);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 
 void ClientToServer::RequestTargetProgram(unsigned char _teamId, unsigned char _program, Vector3 const& _pos)
 {
-  NetworkUpdate* letter = new NetworkUpdate();
+  auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::TargetProgram);
   letter->SetTeamId(_teamId);
   letter->SetProgram(_program);
   letter->SetWorldPos(_pos);
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }

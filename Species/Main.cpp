@@ -511,7 +511,7 @@ void LocationGameLoop()
         if (g_sliceNum == -1)
         {
           // Read latest update from Server
-          ServerToClientLetter* letter = g_app->m_clientToServer->GetNextLetter(g_lastProcessedSequenceId);
+          std::unique_ptr<ServerToClientLetter> letter = g_app->m_clientToServer->GetNextLetter(g_lastProcessedSequenceId);
 
           if (letter)
           {
@@ -520,15 +520,18 @@ void LocationGameLoop()
 
             //DebugTrace( "CLIENT : Processed update %d\n", letter->GetSequenceId() );
             //g_app->m_clientToServer->m_lastKnownSequenceIdFromServer = letter->GetSequenceId();
-            bool handled = ProcessServerLetters(letter);
+            bool handled = ProcessServerLetters(letter.get());
             if (handled == false)
-              ProcessServerUpdates(letter);
+              ProcessServerUpdates(letter.get());
 
             g_sliceNum = 0;
             heavyWeightAdvanceStartTime = timeNow;
             g_lastServerAdvance = static_cast<float>(letter->GetSequenceId()) * SERVER_ADVANCE_PERIOD + g_app->m_clientToServer->m_startTime;
             g_lastProcessedSequenceId = letter->GetSequenceId();
-            delete letter;
+            // reset() at the point the delete was, not at the end of the block:
+            // GenerateSyncValue() runs after it and the letter must already be
+            // gone when it does, exactly as before.
+            letter.reset();
 
             unsigned char sync = GenerateSyncValue();
             g_app->m_clientToServer->SendSyncronisation(g_lastProcessedSequenceId, sync);

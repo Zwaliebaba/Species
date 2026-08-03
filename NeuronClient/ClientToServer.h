@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "TeamControls.h"
@@ -22,18 +23,18 @@ class NetworkUpdate;
 class ClientToServer
 {
   private:
-    NetLib* m_netLib;
+    std::unique_ptr<NetLib> m_netLib;
 
     void AdvanceSender();
 
   public:
-    NetSocket* m_sendSocket;
-    NetSocketListener* m_receiveSocket;
+    std::unique_ptr<NetSocket> m_sendSocket;
+    std::unique_ptr<NetSocketListener> m_receiveSocket;
 
-    NetMutex* m_inboxMutex;
-    NetMutex* m_outboxMutex;
-    std::vector<ServerToClientLetter*> m_inbox;
-    std::vector<NetworkUpdate*> m_outbox;
+    std::unique_ptr<NetMutex> m_inboxMutex;
+    std::unique_ptr<NetMutex> m_outboxMutex;
+    std::vector<std::unique_ptr<ServerToClientLetter>> m_inbox;
+    std::vector<std::unique_ptr<NetworkUpdate>> m_outbox;
 
     int m_lastValidSequenceIdFromServer; // eg if we have 11,12,13,15,18 then this is 13
     // When the client believes server sequence 0 happened, derived from the sequence id of every letter
@@ -50,13 +51,14 @@ class ClientToServer
     // Releases the head of the inbox only when it is the letter the caller is
     // next expecting. The caller owns that counter — it tracks how far the
     // simulation has advanced, not how far the socket has.
-    ServerToClientLetter* GetNextLetter(int _lastProcessedSequenceId);
+    std::unique_ptr<ServerToClientLetter> GetNextLetter(int _lastProcessedSequenceId);
     int GetNextLetterSeqID();
 
     void Advance();
 
-    void ReceiveLetter(ServerToClientLetter* letter);
-    void SendLetter(NetworkUpdate* letter);
+    // Both take ownership, which the signature now says rather than a comment.
+    void ReceiveLetter(std::unique_ptr<ServerToClientLetter> letter);
+    void SendLetter(std::unique_ptr<NetworkUpdate> letter);
 
     void ClientJoin();
     void ClientLeave();
