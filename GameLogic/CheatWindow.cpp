@@ -166,20 +166,16 @@ class EnableGeneratorAndMineButton : public SpeciesButton
       int generatorLocationId = g_globalWorld->GetLocationId("generator");
       int mineLocationId = g_globalWorld->GetLocationId("mine");
 
-      for (int i = 0; i < g_globalWorld->m_buildings.Size(); ++i)
+      for (GlobalBuilding* gb : g_globalWorld->m_buildings)
       {
-        if (g_globalWorld->m_buildings.ValidIndex(i))
+        if (gb && gb->m_locationId == generatorLocationId && gb->m_type == Building::TypeGenerator)
         {
-          GlobalBuilding* gb = g_globalWorld->m_buildings[i];
-          if (gb && gb->m_locationId == generatorLocationId && gb->m_type == Building::TypeGenerator)
-          {
-            gb->m_online = true;
-          }
+          gb->m_online = true;
+        }
 
-          if (gb && gb->m_locationId == mineLocationId && gb->m_type == Building::TypeRefinery)
-          {
-            gb->m_online = true;
-          }
+        if (gb && gb->m_locationId == mineLocationId && gb->m_type == Building::TypeRefinery)
+        {
+          gb->m_online = true;
         }
       }
 
@@ -195,20 +191,16 @@ class EnableReceiverAndBufferButton : public SpeciesButton
       int receiverLocationId = g_globalWorld->GetLocationId("receiver");
       int bufferLocationId = g_globalWorld->GetLocationId("PatternBuffer");
 
-      for (int i = 0; i < g_globalWorld->m_buildings.Size(); ++i)
+      for (GlobalBuilding* gb : g_globalWorld->m_buildings)
       {
-        if (g_globalWorld->m_buildings.ValidIndex(i))
+        if (gb && gb->m_locationId == receiverLocationId && gb->m_type == Building::TypeSpiritProcessor)
         {
-          GlobalBuilding* gb = g_globalWorld->m_buildings[i];
-          if (gb && gb->m_locationId == receiverLocationId && gb->m_type == Building::TypeSpiritProcessor)
-          {
-            gb->m_online = true;
-          }
+          gb->m_online = true;
+        }
 
-          if (gb && gb->m_locationId == bufferLocationId && gb->m_type == Building::TypeBlueprintStore)
-          {
-            gb->m_online = true;
-          }
+        if (gb && gb->m_locationId == bufferLocationId && gb->m_type == Building::TypeBlueprintStore)
+        {
+          gb->m_online = true;
         }
       }
 
@@ -221,9 +213,8 @@ class OpenAllLocationsButton : public SpeciesButton
 {
     void MouseUp()
     {
-      for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
+      for (GlobalLocation* loc : g_globalWorld->m_locations)
       {
-        GlobalLocation* loc = g_globalWorld->m_locations[i];
         loc->m_available = true;
       }
     }

@@ -397,16 +397,12 @@ bool PylonStart::Advance()
 
   int generatorLocationId = g_globalWorld->GetLocationId("generator");
   GlobalBuilding* globalRefinery = nullptr;
-  for (int i = 0; i < g_globalWorld->m_buildings.Size(); ++i)
+  for (GlobalBuilding* gb : g_globalWorld->m_buildings)
   {
-    if (g_globalWorld->m_buildings.ValidIndex(i))
+    if (gb && gb->m_locationId == generatorLocationId && gb->m_type == TypeGenerator && gb->m_online)
     {
-      GlobalBuilding* gb = g_globalWorld->m_buildings[i];
-      if (gb && gb->m_locationId == generatorLocationId && gb->m_type == TypeGenerator && gb->m_online)
-      {
-        generatorOnline = true;
-        break;
-      }
+      generatorOnline = true;
+      break;
     }
   }
 

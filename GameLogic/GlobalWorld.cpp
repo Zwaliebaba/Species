@@ -282,16 +282,14 @@ GlobalEvent::GlobalEvent() {}
 
 GlobalEvent::GlobalEvent(GlobalEvent& _other)
 {
-  for (int i = 0; i < _other.m_conditions.Size(); ++i)
+  for (GlobalEventCondition* condition : _other.m_conditions)
   {
-    auto newCond = new GlobalEventCondition(*(_other.m_conditions.GetData(i)));
-    m_conditions.PutDataAtEnd(newCond);
+    m_conditions.push_back(new GlobalEventCondition(*condition));
   }
 
-  for (int i = 0; i < _other.m_actions.Size(); ++i)
+  for (GlobalEventAction* action : _other.m_actions)
   {
-    auto newAction = new GlobalEventAction(*(_other.m_actions.GetData(i)));
-    m_actions.PutDataAtEnd(newAction);
+    m_actions.push_back(new GlobalEventAction(*action));
   }
 }
 
@@ -299,9 +297,8 @@ bool GlobalEvent::Evaluate()
 {
   bool success = true;
 
-  for (int i = 0; i < m_conditions.Size(); ++i)
+  for (GlobalEventCondition* condition : m_conditions)
   {
-    GlobalEventCondition* condition = m_conditions[i];
     if (!condition->Evaluate())
     {
       success = false;
@@ -314,15 +311,15 @@ bool GlobalEvent::Evaluate()
 
 bool GlobalEvent::Execute()
 {
-  if (m_actions.Size() == 0)
+  if (m_actions.empty())
     return true;
 
   GlobalEventAction* action = m_actions[0];
-  m_actions.RemoveData(0);
+  m_actions.erase(m_actions.begin());
   action->Execute();
   delete action;
 
-  if (m_actions.Size() == 0)
+  if (m_actions.empty())
     return true;
 
   return false;
@@ -330,14 +327,16 @@ bool GlobalEvent::Execute()
 
 void GlobalEvent::MakeAlwaysTrue()
 {
-  if (m_conditions.Size() == 1 && m_conditions[0]->m_type == GlobalEventCondition::AlwaysTrue)
+  if (m_conditions.size() == 1 && m_conditions[0]->m_type == GlobalEventCondition::AlwaysTrue)
     return;
 
-  m_conditions.EmptyAndDelete();
+  for (GlobalEventCondition* condition : m_conditions)
+    delete condition;
+  m_conditions.clear();
 
   auto cond = new GlobalEventCondition();
   cond->m_type = GlobalEventCondition::AlwaysTrue;
-  m_conditions.PutData(cond);
+  m_conditions.push_back(cond);
 }
 
 void GlobalEvent::Read(TextReader* _in)
@@ -376,7 +375,7 @@ void GlobalEvent::Read(TextReader* _in)
       break;
     }
 
-    m_conditions.PutData(condition);
+    m_conditions.push_back(condition);
   }
 
   //
@@ -393,7 +392,7 @@ void GlobalEvent::Read(TextReader* _in)
 
       auto action = new GlobalEventAction;
       action->Read(_in);
-      m_actions.PutData(action);
+      m_actions.push_back(action);
     }
   }
 }
@@ -402,17 +401,15 @@ void GlobalEvent::Write(FileWriter* _out)
 {
   _out->printf("\tEvent ");
 
-  for (int i = 0; i < m_conditions.Size(); ++i)
+  for (GlobalEventCondition* gec : m_conditions)
   {
-    GlobalEventCondition* gec = m_conditions[i];
     gec->Save(_out);
   }
 
   _out->printf("\n");
 
-  for (int i = 0; i < m_actions.Size(); ++i)
+  for (GlobalEventAction* gea : m_actions)
   {
-    GlobalEventAction* gea = m_actions[i];
     gea->Write(_out);
   }
 
@@ -671,9 +668,7 @@ void ColourShapeFragment(ShapeFragment* _frag, const RGBAColour& _colour)
 SphereWorld::SphereWorld()
   : m_shapeOuter(nullptr),
     m_shapeMiddle(nullptr),
-    m_shapeInner(nullptr),
-    m_numLocations(0),
-    m_spirits(nullptr)
+    m_shapeInner(nullptr)
 {
   m_shapeOuter = g_resource->GetShape("GlobalWorldOuter.shp");
   m_shapeMiddle = g_resource->GetShape("GlobalWorldMiddle.shp");
@@ -683,49 +678,28 @@ SphereWorld::SphereWorld()
 void SphereWorld::AddLocation(int _locationId)
 {
   // Initialise the sphere world to
-  if (_locationId < m_numLocations)
+  if (_locationId < static_cast<int>(m_spirits.size()))
     return;
 
-  int oldNumLocations = m_numLocations;
-  m_numLocations = _locationId + 1;
-  auto newSpirits = new LList<float>[m_numLocations];
+  const int oldNumLocations = static_cast<int>(m_spirits.size());
+  m_spirits.resize(_locationId + 1);
 
-  // Initialise the spirits for the new worlds.
-  for (int locationId = 0; locationId < m_numLocations; ++locationId)
+  // Initialise the spirits for the new worlds. resize kept the existing lists,
+  // so only the ones past the old end need filling.
+  for (int locationId = oldNumLocations; locationId < static_cast<int>(m_spirits.size()); ++locationId)
   {
-    if (locationId < oldNumLocations)
+    // Generate some new spirits
+    GlobalLocation* loc = g_globalWorld->GetLocation(locationId);
+    if (loc)
     {
-      // Copy across the old spirits
-      newSpirits[locationId] = m_spirits[locationId];
-    }
-    else
-    {
-      // Generate some new spirits
-      GlobalLocation* loc = g_globalWorld->GetLocation(locationId);
-      if (loc)
+      const int numSpirits = stricmp(loc->m_name, "Receiver") == 0 ? 60 : 10;
+      for (int i = 0; i < numSpirits; ++i)
       {
-        if (stricmp(loc->m_name, "Receiver") == 0)
-        {
-          for (int i = 0; i < 60; ++i)
-          {
-            float value = frand();
-            newSpirits[locationId].PutData(value);
-          }
-        }
-        else
-        {
-          for (int i = 0; i < 10; ++i)
-          {
-            float value = frand();
-            newSpirits[locationId].PutData(value);
-          }
-        }
+        float value = frand();
+        m_spirits[locationId].push_back(value);
       }
     }
   }
-
-  delete [] m_spirits;
-  m_spirits = newSpirits;
 }
 
 void SphereWorld::Render()
@@ -759,7 +733,7 @@ void SphereWorld::RenderSpirits()
   //
   // Advance all spirits
 
-  for (int locationId = 0; locationId < m_numLocations; ++locationId)
+  for (int locationId = 0; locationId < static_cast<int>(m_spirits.size()); ++locationId)
   {
     GlobalLocation* location = g_globalWorld->GetLocation(locationId);
     if (location)
@@ -767,19 +741,19 @@ void SphereWorld::RenderSpirits()
       bool isReceiver = (stricmp(location->m_name, "Receiver") == 0);
 
       if (isReceiver && frand(30) < 1.0f)
-        m_spirits[locationId].PutDataAtStart(0.0f);
+        m_spirits[locationId].insert(m_spirits[locationId].begin(), 0.0f);
       else if (!isReceiver && frand(300) < 1.0f)
-        m_spirits[locationId].PutDataAtStart(1.0f);
+        m_spirits[locationId].insert(m_spirits[locationId].begin(), 1.0f);
 
       if (location->m_numSpirits > 0 && frand(20) < 1.0f)
       {
-        m_spirits[locationId].PutDataAtStart(1.0f);
+        m_spirits[locationId].insert(m_spirits[locationId].begin(), 1.0f);
         location->m_numSpirits--;
       }
 
-      for (int i = 0; i < m_spirits[locationId].Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_spirits[locationId].size()); ++i)
       {
-        float* thisSpirit = m_spirits[locationId].GetPointer(i);
+        float* thisSpirit = &m_spirits[locationId][i];
 
         if (isReceiver)
           *thisSpirit += g_advanceTime * 0.02f;
@@ -788,7 +762,7 @@ void SphereWorld::RenderSpirits()
 
         if (*thisSpirit >= 1.0f || *thisSpirit <= 0.0f)
         {
-          m_spirits[locationId].RemoveData(i);
+          m_spirits[locationId].erase(m_spirits[locationId].begin() + i);
           --i;
         }
       }
@@ -809,14 +783,14 @@ void SphereWorld::RenderSpirits()
   Vector3 camRight = g_camera->GetRight();
   Vector3 camUp = g_camera->GetUp();
 
-  for (int locationId = 0; locationId < m_numLocations; ++locationId)
+  for (int locationId = 0; locationId < static_cast<int>(m_spirits.size()); ++locationId)
   {
     GlobalLocation* location = g_globalWorld->GetLocation(locationId);
     if (location)
     {
-      for (int i = 0; i < m_spirits[locationId].Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_spirits[locationId].size()); ++i)
       {
-        float* thisSpirit = m_spirits[locationId].GetPointer(i);
+        float* thisSpirit = &m_spirits[locationId][i];
 
         Vector3 fromPos = g_globalWorld->GetLocationPosition(locationId);
 
@@ -946,9 +920,8 @@ void SphereWorld::RenderTrunkLinks()
 
   glBegin(GL_QUADS);
 
-  for (int i = 0; i < g_globalWorld->m_buildings.Size(); ++i)
+  for (GlobalBuilding* building : g_globalWorld->m_buildings)
   {
-    GlobalBuilding* building = g_globalWorld->m_buildings[i];
     if (building->m_type == Building::TypeTrunkPort && building->m_link != -1)
     {
       GlobalLocation* fromLoc = g_globalWorld->GetLocation(building->m_locationId);
@@ -1102,9 +1075,8 @@ void SphereWorld::RenderIslands()
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Starburst.bmp"));
 
-  for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
+  for (GlobalLocation* loc : g_globalWorld->m_locations)
   {
-    GlobalLocation* loc = g_globalWorld->m_locations.GetData(i);
     if (loc->m_available || g_editing)
     {
       Vector3 islandPos = g_globalWorld->GetLocationPosition(loc->m_id);
@@ -1140,9 +1112,8 @@ void SphereWorld::RenderIslands()
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-  for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
+  for (GlobalLocation* loc : g_globalWorld->m_locations)
   {
-    GlobalLocation* loc = g_globalWorld->m_locations.GetData(i);
     if (loc->m_available || g_editing)
     {
       Vector3 islandPos = g_globalWorld->GetLocationPosition(loc->m_id);
@@ -1212,28 +1183,31 @@ GlobalWorld::GlobalWorld(GlobalWorld& _other)
 {
   m_research = new GlobalResearch();
 
-  for (int i = 0; i < _other.m_locations.Size(); ++i)
+  for (GlobalLocation* location : _other.m_locations)
   {
-    auto newLoc = new GlobalLocation(*(_other.m_locations[i]));
-    m_locations.PutDataAtEnd(newLoc);
+    m_locations.push_back(new GlobalLocation(*location));
   }
-  for (int i = 0; i < _other.m_buildings.Size(); ++i)
+  for (GlobalBuilding* building : _other.m_buildings)
   {
-    auto newBuilding = new GlobalBuilding(*(_other.m_buildings[i]));
-    m_buildings.PutDataAtEnd(newBuilding);
+    m_buildings.push_back(new GlobalBuilding(*building));
   }
-  for (int i = 0; i < _other.m_events.Size(); ++i)
+  for (GlobalEvent* event : _other.m_events)
   {
-    auto newEvent = new GlobalEvent(*(_other.m_events[i]));
-    m_events.PutDataAtEnd(newEvent);
+    m_events.push_back(new GlobalEvent(*event));
   }
 }
 
 GlobalWorld::~GlobalWorld()
 {
-  m_locations.EmptyAndDelete();
-  m_buildings.EmptyAndDelete();
-  m_events.EmptyAndDelete();
+  for (GlobalLocation* location : m_locations)
+    delete location;
+  m_locations.clear();
+  for (GlobalBuilding* building : m_buildings)
+    delete building;
+  m_buildings.clear();
+  for (GlobalEvent* event : m_events)
+    delete event;
+  m_events.clear();
 
   delete m_globalInternet;
   delete m_sphereWorld;
@@ -1372,9 +1346,8 @@ int GlobalWorld::LocationHit(const Vector3& _pos, const Vector3& _dir, float loc
 {
   //float locationRadius = 5000.0f;
 
-  for (int i = 0; i < m_locations.Size(); ++i)
+  for (GlobalLocation* gl : m_locations)
   {
-    GlobalLocation* gl = m_locations[i];
     Vector3 locPos = GetLocationPosition(gl->m_id);
 
     bool hit = RaySphereIntersection(_pos, _dir, locPos, locationRadius);
@@ -1387,9 +1360,8 @@ int GlobalWorld::LocationHit(const Vector3& _pos, const Vector3& _dir, float loc
 
 GlobalLocation* GlobalWorld::GetLocation(int _id)
 {
-  for (int i = 0; i < m_locations.Size(); ++i)
+  for (GlobalLocation* loc : m_locations)
   {
-    GlobalLocation* loc = m_locations[i];
     if (loc->m_id == _id)
       return loc;
   }
@@ -1426,9 +1398,8 @@ GlobalLocation* GlobalWorld::GetLocation(const char* _name)
 
 int GlobalWorld::GetLocationId(const char* _name)
 {
-  for (int i = 0; i < m_locations.Size(); ++i)
+  for (GlobalLocation* loc : m_locations)
   {
-    GlobalLocation* loc = m_locations[i];
     DEBUG_ASSERT(loc);
     if (stricmp(loc->m_name, _name) == 0)
       return loc->m_id;
@@ -1482,9 +1453,8 @@ GlobalBuilding* GlobalWorld::GetBuilding(int _id, int _locationId)
   if (_id == -1 || _locationId == -1)
     return nullptr;
 
-  for (int i = 0; i < m_buildings.Size(); ++i)
+  for (GlobalBuilding* buil : m_buildings)
   {
-    GlobalBuilding* buil = m_buildings[i];
     if (buil->m_id == _id && buil->m_locationId == _locationId)
       return buil;
   }
@@ -1502,7 +1472,7 @@ void GlobalWorld::AddLocation(GlobalLocation* location)
   else if (location->m_id >= m_nextLocationId)
     m_nextLocationId = location->m_id + 1;
 
-  m_locations.PutData(location);
+  m_locations.push_back(location);
   m_sphereWorld->AddLocation(location->m_id);
 }
 
@@ -1516,7 +1486,7 @@ void GlobalWorld::AddBuilding(GlobalBuilding* building)
   else if (building->m_id >= m_nextBuildingId)
     m_nextBuildingId = building->m_id + 1;
 
-  m_buildings.PutData(building);
+  m_buildings.push_back(building);
 }
 
 void GlobalWorld::WriteLocations(FileWriter* _out)
@@ -1525,9 +1495,8 @@ void GlobalWorld::WriteLocations(FileWriter* _out)
   _out->printf("\t# Id  Avail                   mapFile                    missionFile\n");
   _out->printf("\t# ==================================================================\n");
 
-  for (int i = 0; i < m_locations.Size(); ++i)
+  for (GlobalLocation* location : m_locations)
   {
-    GlobalLocation* location = m_locations[i];
     _out->printf("\t%4d %4d %30s %40s\n", location->m_id, static_cast<int>(location->m_available), location->m_mapFilename,
                  location->m_missionFilename);
   }
@@ -1541,9 +1510,8 @@ void GlobalWorld::WriteBuildings(FileWriter* _out)
   _out->printf("\t# Id  teamId  locId   type   link  online\n");
   _out->printf("\t# =======================================\n");
 
-  for (int i = 0; i < m_buildings.Size(); ++i)
+  for (GlobalBuilding* building : m_buildings)
   {
-    GlobalBuilding* building = m_buildings[i];
     _out->printf("\t%4d %4d %6d %6d %6d %6d\n", building->m_id, building->m_teamId, building->m_locationId, building->m_type,
                  building->m_link, building->m_online);
   }
@@ -1555,9 +1523,8 @@ void GlobalWorld::WriteEvents(FileWriter* _out)
 {
   _out->printf("Events_StartDefinition\n");
 
-  for (int i = 0; i < m_events.Size(); ++i)
+  for (GlobalEvent* ge : m_events)
   {
-    GlobalEvent* ge = m_events[i];
     ge->Write(_out);
   }
 
@@ -1631,7 +1598,7 @@ void GlobalWorld::ParseEvents(TextReader* _in)
 
     auto event = new GlobalEvent();
     event->Read(_in);
-    m_events.PutData(event);
+    m_events.push_back(event);
   }
 }
 
@@ -1647,7 +1614,7 @@ void GlobalWorld::AddLevelBuildingToGlobalBuildings(Building* _building, int _lo
       gb->m_locationId = _locId;
       gb->m_id = _building->m_id.GetUniqueId();
       gb->m_teamId = _building->m_id.GetTeamId();
-      m_buildings.PutData(gb);
+      m_buildings.push_back(gb);
 
       if (_building->m_type == Building::TypeTrunkPort)
         gb->m_link = static_cast<TrunkPort*>(_building)->m_targetLocationId;
@@ -1703,13 +1670,8 @@ void GlobalWorld::LoadGame(const char* _filename)
   //
   // Load all map files into memory
 
-  for (int i = 0; i < m_locations.Size(); i++)
+  for (GlobalLocation* loc : m_locations)
   {
-    if (!m_locations.ValidIndex(i))
-      continue;
-
-    // Get the next location
-    GlobalLocation* loc = m_locations.GetData(i);
 
     // Load all the level files for the location
     LevelFile levFile("null", loc->m_mapFilename);
@@ -1839,9 +1801,8 @@ void GlobalWorld::SaveLocations(const char* _filename)
   out->printf("# id   x        y        z\n");
   out->printf("# ================================\n\n");
 
-  for (int i = 0; i < m_locations.Size(); ++i)
+  for (GlobalLocation* loc : m_locations)
   {
-    GlobalLocation* loc = m_locations[i];
     out->printf("%-6d %-8.2f %-8.2f %-8.2f\n", loc->m_id, loc->m_pos.x, loc->m_pos.y, loc->m_pos.z);
   }
 
@@ -1870,7 +1831,7 @@ bool GlobalWorld::EvaluateEvents()
   if (g_script && g_script->IsRunningScript())
     return true;
 
-  for (int i = 0; i < m_events.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_events.size()); ++i)
   {
     GlobalEvent* event = m_events[i];
 
@@ -1880,7 +1841,7 @@ bool GlobalWorld::EvaluateEvents()
       bool amIDone = event->Execute();
       if (amIDone)
       {
-        m_events.RemoveData(i);
+        m_events.erase(m_events.begin() + i);
         delete event;
         --i;
       }
@@ -1908,7 +1869,8 @@ void GlobalWorld::TransferSpirits(int _locationId)
   float position = 1.0f;
   for (int i = 0; i < spiritCount; ++i)
   {
-    m_sphereWorld->m_spirits[_locationId].PutDataAtStart(position);
+    std::vector<float>& spirits = m_sphereWorld->m_spirits[_locationId];
+    spirits.insert(spirits.begin(), position);
     position -= frand(0.04f);
   }
 }

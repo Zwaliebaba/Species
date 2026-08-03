@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdlib.h>
-#include "LList.h"
 #include "WorldObject.h"
 #include "Landscape.h"
 
@@ -243,8 +242,9 @@ class LevelFile
     // across frames — LocationEditor::m_selectionId and
     // CameraAnimSecondaryEditWindow::m_animId — and deleting an animation from
     // the main window does not renumber them, so a held id can outlive the
-    // entry it names. LList::GetData answered that with nullptr; std::vector
-    // would not, so the check lives here rather than at each call site.
+    // entry it names. The legacy list's GetData answered that with nullptr;
+    // std::vector would not, so the check lives here rather than at each call
+    // site.
     CameraAnimation* GetCameraAnim(int _id);
 
     // Also nullptr out of range, and here the null is load-bearing rather than

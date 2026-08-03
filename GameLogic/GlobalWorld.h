@@ -1,7 +1,5 @@
 #pragma once
 
-#include "LList.h"
-#include "FastDArray.h"
 #include "SphereRenderer.h"
 #include "Matrix34.h"
 
@@ -128,8 +126,8 @@ class GlobalEventAction
 class GlobalEvent
 {
   public:
-    LList<GlobalEventCondition*> m_conditions;
-    LList<GlobalEventAction*> m_actions;
+    std::vector<GlobalEventCondition*> m_conditions;
+    std::vector<GlobalEventAction*> m_actions;
 
   public:
     GlobalEvent();
@@ -217,8 +215,11 @@ class SphereWorld
     Shape* m_shapeMiddle;
     Shape* m_shapeInner;
 
-    int m_numLocations;
-    LList<float>* m_spirits; // An array with one LList<float> per location
+    // One list of in-flight spirit positions per location, indexed by location
+    // id. This was a hand-grown array of lists: AddLocation allocated a bigger
+    // block, copied the old lists across and deleted the old block, with
+    // m_numLocations tracking the length by hand. resize does all of that.
+    std::vector<std::vector<float>> m_spirits;
 
   public:
     SphereWorld();
@@ -245,9 +246,9 @@ class GlobalWorld
     SphereWorld* m_sphereWorld;
     GlobalResearch* m_research;
 
-    LList<GlobalLocation*> m_locations;
-    LList<GlobalBuilding*> m_buildings;
-    LList<GlobalEvent*> m_events;
+    std::vector<GlobalLocation*> m_locations;
+    std::vector<GlobalBuilding*> m_buildings;
+    std::vector<GlobalEvent*> m_events;
     int m_myTeamId;
 
     int m_editorMode;

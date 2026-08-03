@@ -474,16 +474,12 @@ float MineBuilding::RefinerySpeed()
       s_refineryPopulation = 0.0f;
 
       GlobalBuilding* globalRefinery = nullptr;
-      for (int i = 0; i < g_globalWorld->m_buildings.Size(); ++i)
+      for (GlobalBuilding* gb : g_globalWorld->m_buildings)
       {
-        if (g_globalWorld->m_buildings.ValidIndex(i))
+        if (gb && gb->m_locationId == mineLocationId && gb->m_type == TypeRefinery && gb->m_online)
         {
-          GlobalBuilding* gb = g_globalWorld->m_buildings[i];
-          if (gb && gb->m_locationId == mineLocationId && gb->m_type == TypeRefinery && gb->m_online)
-          {
-            s_refineryPopulation = 1.0f;
-            break;
-          }
+          s_refineryPopulation = 1.0f;
+          break;
         }
       }
     }

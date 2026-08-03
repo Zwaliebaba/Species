@@ -27,7 +27,7 @@ public:
 
     void CalculateAll();
 
-    // Const because the cells are: callers only ever read the ids. The LList
+    // Const because the cells are: callers only ever read the ids. The legacy list
     // version cast the const away with a C-style cast to hand out a mutable
     // pointer nothing wanted.
     std::vector<int> const* GetBuildings(float _locationX, float _locationZ) const;
