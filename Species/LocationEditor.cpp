@@ -882,8 +882,6 @@ void LocationEditor::RenderModeLandTile()
       glEnd();
     }
   }
-
-  CHECK_OPENGL_STATE();
 }
 
 
@@ -926,8 +924,6 @@ void LocationEditor::RenderModeLandFlat()
 
     RenderCube(centre, s, y + 20, s, RGBAColour(128, 255, 128, 255));
   }
-
-  CHECK_OPENGL_STATE();
 }
 
 
@@ -973,8 +969,6 @@ void LocationEditor::RenderModeBuilding()
       glDisable(GL_LINE_SMOOTH);
       glEnable(GL_DEPTH_TEST);
     }
-
-    CHECK_OPENGL_STATE();
   }
 }
 
@@ -1154,9 +1148,6 @@ void LocationEditor::Render()
   glVertex2i(g_renderer->ScreenW() / 2 + 30, g_renderer->ScreenH() / 2);
   glEnd();
   g_renderer->SetupMatricesFor3D();
-
-
-  CHECK_OPENGL_STATE();
 }
 
 #endif

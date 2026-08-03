@@ -1197,7 +1197,21 @@ tasks:
 
       Two more App members went with them: m_negativeRenderer to AppState.h
       (the RenderNegative preference, read by the landscape and water
-      renderers) and Renderer::CheckOpenGLState onto RendererAccess.
+      renderers).
+
+      CHECK_OPENGL_STATE went the other way — deleted, along with all 35 of its
+      call sites. The prep broke the build on it, because it is a MACRO from
+      Renderer.h and every check written so far looked at type names and
+      globals, never macros. Moving it into RendererAccess.h was the first
+      instinct and the wrong one: `#define CHECK_OPENGL_STATE()` has an EMPTY
+      body, and Renderer::CheckOpenGLState begins with `return;`, so the
+      facility is disabled twice over and 35 call sites expand to nothing.
+      Putting an empty macro in a NeuronClient header beside a real
+      CheckOpenGLState method would have read as if it did something.
+
+      Renderer::CheckOpenGLState itself is kept and now has no callers. Its
+      eighty unreachable lines are the only written statement of the renderer's
+      GL-state contract, and deleting them would delete that.
 
       The cluster's Species includes are now: TaskManager.h, in three files,
       and nothing else. That one resolves BY the move, per the T10 handover

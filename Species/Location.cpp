@@ -915,15 +915,11 @@ void Location::RenderParticles() {}
 // *** Render Teams
 void Location::RenderTeams()
 {
-  CHECK_OPENGL_STATE();
-
   for (int i = 0; i < NUM_TEAMS; ++i)
   {
     Team* team = &m_teams[i];
     team->Render();
   }
-
-  CHECK_OPENGL_STATE();
 }
 
 
@@ -989,12 +985,9 @@ void Location::Render(bool renderWaterAndClouds)
       glVertex2f(0, 0);
     glEnd();
   } // necessary for correct reflection. why???
-  CHECK_OPENGL_STATE();
   RenderLandscape();
-  CHECK_OPENGL_STATE();
   if (renderWaterAndClouds)
     RenderWater();
-  CHECK_OPENGL_STATE();
 
   // don't reflect buildings, teams etc.
   //  makes nearly no difference on GPU bound setups (22 -> 23fps on athlon_x2_3600 + x300)
@@ -1002,12 +995,10 @@ void Location::Render(bool renderWaterAndClouds)
   // if( !renderWaterAndClouds ) return;
 
   RenderBuildings();
-  CHECK_OPENGL_STATE();
 
   if (!g_editing && m_teams)
   {
     RenderTeams();
-    CHECK_OPENGL_STATE();
   }
 
   // if( m_entityGrid ) m_entityGrid->Render();
@@ -1017,21 +1008,13 @@ void Location::Render(bool renderWaterAndClouds)
   // Render all alpha'd objects
 
   RenderBuildingAlphas();
-  CHECK_OPENGL_STATE();
 
   if (!g_editing)
   {
-    CHECK_OPENGL_STATE();
     RenderParticles();
-    CHECK_OPENGL_STATE();
     RenderWeapons();
-    CHECK_OPENGL_STATE();
     RenderSpirits();
-    CHECK_OPENGL_STATE();
   }
-
-
-  CHECK_OPENGL_STATE();
 }
 
 
@@ -1113,8 +1096,6 @@ void Location::RenderBuildings()
   g_renderer->UnsetObjectLighting();
 
   END_PROFILE(g_profiler, "Render Buildings");
-
-  CHECK_OPENGL_STATE();
 }
 
 

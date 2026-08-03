@@ -440,34 +440,28 @@ void Team::Render()
   //
   // Render Others
 
-  CHECK_OPENGL_STATE();
   START_PROFILE(g_profiler, "Render Others");
   RenderOthers(timeSinceAdvance);
   END_PROFILE(g_profiler, "Render Others");
-  CHECK_OPENGL_STATE();
 
 
   //
   // Render Virii
 
-  CHECK_OPENGL_STATE();
   if (m_teamId == 1 && m_teamType == TeamTypeCPU)
   {
     START_PROFILE(g_profiler, "Render Virii");
     RenderVirii(timeSinceAdvance);
     END_PROFILE(g_profiler, "Render Virii");
   }
-  CHECK_OPENGL_STATE();
 
 
   //
   // Render Darwinians
 
-  CHECK_OPENGL_STATE();
   START_PROFILE(g_profiler, "Render Darwinians");
   RenderDarwinians(timeSinceAdvance);
   END_PROFILE(g_profiler, "Render Darwinians");
-  CHECK_OPENGL_STATE();
 }
 
 

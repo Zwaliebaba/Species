@@ -750,7 +750,6 @@ void SphereWorld::Render()
   }
 
   glEnable(GL_CULL_FACE); // CRASH WORKAROUND - FIX AND DELETE ASAP
-  CHECK_OPENGL_STATE();
 }
 
 void SphereWorld::RenderSpirits()
@@ -1362,9 +1361,7 @@ void GlobalWorld::Render()
 
   if (!g_editing)
     m_globalInternet->Render();
-  CHECK_OPENGL_STATE();
   m_sphereWorld->Render();
-  CHECK_OPENGL_STATE();
 
   END_PROFILE(g_profiler, "Render Global World");
 }

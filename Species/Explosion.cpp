@@ -311,8 +311,6 @@ void ExplosionManager::Render()
 
   if (numExplosions > 0)
   {
-    CHECK_OPENGL_STATE();
-
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/ShapeWireframe.bmp"));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

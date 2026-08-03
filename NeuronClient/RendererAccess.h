@@ -47,10 +47,6 @@ class RendererAccess
     // Read by the world code that waits for a fade before switching level.
     virtual bool IsFadeComplete() const = 0;
 
-    // A debug assertion that the GL state stack is balanced, called from the
-    // water renderer, which moves down in T15.
-    virtual void CheckOpenGLState() const = 0;
-
     // Read by the debug overlay in GameLogic; owned by Renderer.
     virtual int Fps() const = 0;
     virtual bool DisplayFps() const = 0;

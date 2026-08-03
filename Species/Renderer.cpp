@@ -395,7 +395,6 @@ void Renderer::RenderFrame(bool withFlip)
       g_globalWorld->Render();
   }
 
-  CHECK_OPENGL_STATE();
   TheControlHelp()->Render();
   g_explosionManager.Render();
   g_particleSystem->Render();
@@ -408,7 +407,6 @@ void Renderer::RenderFrame(bool withFlip)
 #ifdef DEBUG_RENDER_ENABLED
   g_debugRenderer.Render();
 #endif
-  CHECK_OPENGL_STATE();
 
   //	RenderFlatTexture();
 
@@ -582,8 +580,6 @@ void Renderer::RenderFrame(bool withFlip)
     g_windowManager->Flip();
 
   END_PROFILE(g_profiler, "GL Flip");
-
-  CHECK_OPENGL_STATE();
 }
 
 int Renderer::ScreenW() const { return m_screenW; }
@@ -1045,7 +1041,6 @@ void Renderer::PreRenderPixelEffect()
 
   glDepthMask(true);
 
-  CHECK_OPENGL_STATE();
 
   //
   // Update pixel size
@@ -1152,7 +1147,6 @@ void Renderer::ApplyPixelEffect()
 
   START_PROFILE(g_profiler, "Pixel Apply");
 
-  CHECK_OPENGL_STATE();
 
   glEnable(GL_BLEND);
   glDisable(GL_CULL_FACE);
@@ -1248,7 +1242,6 @@ void Renderer::ApplyPixelEffect()
     g_editorFont.EndText2D();
   }
 
-  CHECK_OPENGL_STATE();
 
   END_PROFILE(g_profiler, "Pixel Apply");
 }
