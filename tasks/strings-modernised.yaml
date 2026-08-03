@@ -488,7 +488,9 @@ tasks:
       The CAST IS THE HAZARD. CreateValueControl takes void*, so passing a
       char[256] where a std::string* is now expected still COMPILES and corrupts
       memory at runtime. All seven call sites were updated, but the compiler will
-      not catch the eighth.- id: T6
+      not catch the eighth.
+
+  - id: T6
     title: Convert GameLogic simulation-side string handling
     intent: >
       ScriptTrigger (9), Rocket, GenericHub, Switch and the remaining
