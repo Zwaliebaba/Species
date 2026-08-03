@@ -734,7 +734,7 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
       IN PROGRESS. The long tail is not one shape of problem, so it is being
       landed in verified slices rather than one sweep. Allowlist 279 -> 274 so
@@ -825,6 +825,23 @@ tasks:
       selection to draw editor handles. Moving eight files needs four project
       file edits and still leaves the other three, so one seam does the whole
       cluster for less churn.
+
+      It went red once, on two things worth knowing before the next seam.
+
+      EditorWindow.cpp held `LocationEditor* editor = g_locationEditor;` — the
+      same shape as the `Camera* cam = g_camera;` locals that produced T9's
+      first red build. The lesson had been written down and the check had not:
+      there is now a scan for the CONCRETE type of every seam appearing
+      anywhere below Species, which finds it in one pass and reports the two
+      Renderer construction sites as its only legitimate hits.
+
+      LandscapeWindow.cpp took the ADDRESS of m_moveBuildingsWithLandscape and
+      bound it to an editor value control that writes through the pointer. An
+      accessor returning by value cannot stand in for that, and a blanket
+      field-to-accessor rewrite produces `&f()` — an address of a temporary.
+      The interface exposes MoveBuildingsWithLandscapeField() returning int*
+      instead. Any field-to-accessor conversion needs a pass for address-of
+      before the rewrite, not after.
 
       THE REST OF THIS TASK CANNOT BE DONE BEFORE T15, and that is a defect in
       the plan's ordering rather than a judgement call. T15 depends_on T10, so

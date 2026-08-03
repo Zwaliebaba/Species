@@ -411,8 +411,8 @@ void LandscapeEditWindow::Create()
 #undef INTGR
 #undef Y
 
-  CreateValueControl(LANGUAGEPHRASE("editor_movebuildings"), InputField::TypeInt, &g_locationEditor->MoveBuildingsWithLandscape(), height += pitch, 1,
-                     0, 1);
+  CreateValueControl(LANGUAGEPHRASE("editor_movebuildings"), InputField::TypeInt, g_locationEditor->MoveBuildingsWithLandscapeField(),
+                     height += pitch, 1, 0, 1);
 }
 
 

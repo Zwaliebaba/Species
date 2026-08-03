@@ -58,5 +58,8 @@ class LocationEditorAccess
     virtual int GetTool() const = 0;
     virtual void SetTool(int _tool) = 0;
 
-    virtual int MoveBuildingsWithLandscape() const = 0;
+    // A POINTER, because its one caller binds it to an editor value control
+    // that writes through the address. An accessor returning by value cannot
+    // stand in for taking the address of a field.
+    virtual int* MoveBuildingsWithLandscapeField() = 0;
 };

@@ -71,7 +71,7 @@ class MainEditWindowButton : public BorderlessButton
 
     void Render(int realX, int realY, bool highlighted, bool clicked)
     {
-      LocationEditor* editor = g_locationEditor;
+      LocationEditorAccess* editor = g_locationEditor;
       if (editor->GetMode() == m_type)
       {
         BorderlessButton::Render(realX, realY, highlighted, true);

@@ -72,7 +72,7 @@ class LocationEditor : public LocationEditorAccess
     void SetSelectionId(int _id) { m_selectionId = _id; }
     int GetTool() const { return m_tool; }
     void SetTool(int _tool) { m_tool = _tool; }
-    int MoveBuildingsWithLandscape() const { return m_moveBuildingsWithLandscape; }
+    int* MoveBuildingsWithLandscapeField() { return &m_moveBuildingsWithLandscape; }
 
     void Advance();
     void Render();
