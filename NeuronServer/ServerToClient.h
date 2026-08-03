@@ -4,24 +4,24 @@
 #pragma once
 
 
+// NeuronCore, still at global scope until namespace-migration T2 reaches it.
 class NetSocket;
 
 
-class ServerToClient
+namespace Neuron
 {
-private:
-    char		m_ip[16];
-    NetSocket	*m_socket;
+  class ServerToClient
+  {
+    private:
+      char m_ip[16];
+      NetSocket* m_socket;
 
-public:
-  ServerToClient(char* _ip);
+    public:
+      ServerToClient(char* _ip);
 
-  char* GetIP();
-  NetSocket* GetSocket();
+      char* GetIP();
+      NetSocket* GetSocket();
 
-  int m_lastKnownSequenceId;
-};
-
-
-
-
+      int m_lastKnownSequenceId;
+  };
+} // namespace Neuron

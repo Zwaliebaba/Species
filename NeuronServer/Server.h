@@ -5,59 +5,67 @@
 
 #include "SlotMap.h"
 
+// NeuronCore types. They are still at global scope — namespace-migration works
+// bottom-up and T2 has not reached NeuronClient or the rest of the core yet — so
+// they are declared OUT here rather than inside the namespace, where they would
+// name different types entirely.
 class NetLib;
 class NetMutex;
 class NetSocketListner;
-class ServerToClient;
 class ServerToClientLetter;
 class NetworkUpdate;
+class Profiler;
 
-class ServerTeam
+namespace Neuron
 {
-  public:
-    int m_clientId;
+  class ServerToClient;
 
-    ServerTeam(int _clientId);
-};
+  class ServerTeam
+  {
+    public:
+      int m_clientId;
 
-class Server
-{
-  NetLib* m_netLib;
-  class Profiler* m_profiler;
+      ServerTeam(int _clientId);
+  };
 
-  std::vector<std::unique_ptr<ServerToClientLetter>> m_history;
+  class Server
+  {
+      NetLib* m_netLib;
+      Profiler* m_profiler;
 
-public:
-  int m_sequenceId;
+      std::vector<std::unique_ptr<ServerToClientLetter>> m_history;
 
-  Neuron::SlotMap<std::unique_ptr<ServerToClient>> m_clients;
-  Neuron::SlotMap<std::unique_ptr<ServerTeam>> m_teams;
+    public:
+      int m_sequenceId;
 
-  NetMutex* m_inboxMutex;
-  NetMutex* m_outboxMutex;
-  std::vector<std::unique_ptr<NetworkUpdate>> m_inbox;
-  std::vector<std::unique_ptr<ServerToClientLetter>> m_outbox;
+      Neuron::SlotMap<std::unique_ptr<ServerToClient>> m_clients;
+      Neuron::SlotMap<std::unique_ptr<ServerTeam>> m_teams;
 
-  Neuron::SlotMap<unsigned char> m_sync; // Synchronisation values for each sequenceId
+      NetMutex* m_inboxMutex;
+      NetMutex* m_outboxMutex;
+      std::vector<std::unique_ptr<NetworkUpdate>> m_inbox;
+      std::vector<std::unique_ptr<ServerToClientLetter>> m_outbox;
 
-  Server();
-  ~Server();
+      Neuron::SlotMap<unsigned char> m_sync; // Synchronisation values for each sequenceId
 
-  // Handed its profiler rather than reaching for it through the application
-  // object. Networking is always real UDP; there is no in-process shortcut.
-  void Initialise(class Profiler* _profiler);
+      Server();
+      ~Server();
 
-  std::unique_ptr<NetworkUpdate> GetNextLetter();
+      // Handed its profiler rather than reaching for it through the application
+      // object. Networking is always real UDP; there is no in-process shortcut.
+      void Initialise(Profiler* _profiler);
 
-  void ReceiveLetter(std::unique_ptr<NetworkUpdate> update, char* fromIP);
-  void SendLetter(std::unique_ptr<ServerToClientLetter> letter);
+      std::unique_ptr<NetworkUpdate> GetNextLetter();
 
-  int GetClientId(char* _ip);
-  void RegisterNewClient(char* _ip);
-  void RemoveClient(char* _ip);
-  void RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId);
+      void ReceiveLetter(std::unique_ptr<NetworkUpdate> update, char* fromIP);
+      void SendLetter(std::unique_ptr<ServerToClientLetter> letter);
 
-  void AdvanceSender();
-  void Advance();
-};
+      int GetClientId(char* _ip);
+      void RegisterNewClient(char* _ip);
+      void RemoveClient(char* _ip);
+      void RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId);
 
+      void AdvanceSender();
+      void Advance();
+  };
+} // namespace Neuron

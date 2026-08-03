@@ -13,7 +13,10 @@
 //
 // The game-mode enum comes with them: it was an anonymous enum inside App, so
 // comparing g_gameMode against it would otherwise still drag App.h down here.
-class Server;
+namespace Neuron
+{
+  class Server;
+}
 
 enum
 {
@@ -33,7 +36,7 @@ extern int g_requestedLocationId;
 extern int g_gameMode;
 extern bool g_atMainMenu;
 extern bool g_requestToggleEditing;
-extern Server* g_server;
+extern Neuron::Server* g_server;
 extern ControlHelpAccess* g_controlHelpSystem;
 extern char g_userProfileName[256];
 

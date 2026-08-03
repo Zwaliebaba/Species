@@ -7,7 +7,6 @@
 
 class Camera;
 class Location;
-class Server;
 class ClientToServer;
 class Renderer;
 class UserInput;

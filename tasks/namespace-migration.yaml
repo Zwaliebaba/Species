@@ -96,8 +96,13 @@ tasks:
       - containers-replaced/T4
       - ownership/T2
     files:
-      - NeuronServer
-      - Server
+      - NeuronServer/Server.h
+      - NeuronServer/Server.cpp
+      - NeuronServer/ServerToClient.h
+      - NeuronServer/ServerToClient.cpp
+      - NeuronClient/AppState.h
+      - NeuronClient/AppState.cpp
+      - Species/App.h
     acceptance:
       - Every type defined in NeuronServer lives in namespace Neuron
       - Server.exe --ticks 20 still advances the sequence id
@@ -105,7 +110,44 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
+    notes: >
+      Server, ServerTeam and ServerToClient are in namespace Neuron. No caller
+      needed qualifying: NeuronCore.h ends with `using namespace Neuron;` and
+      every pch includes it, which is the same thing that has kept SlotMap,
+      FileSys and the Debug helpers reachable since they were converted.
+
+      TWO TRAPS, both of which would have compiled into something wrong rather
+      than failing loudly, and neither of which the plan's summary anticipates.
+
+      Server.h forward-declares six NeuronCore types. NeuronCore is only
+      PARTLY in the namespace — Debug, FileSys, LookupTable, NeuronHelper and
+      SlotMap are, the networking types are not — so those declarations had to
+      stay OUTSIDE the wrapper. Inside it they would have declared
+      Neuron::NetLib and friends: new types, never defined, and the error would
+      have come out at link time pointing somewhere else entirely. Any task
+      here that wraps a project sitting on top of a half-converted one has the
+      same problem, and T2 wraps the biggest of them.
+
+      Server.h also wrote `class Profiler* m_profiler;` and
+      `void Initialise(class Profiler*)`. An elaborated type specifier DECLARES
+      the type if it is not already visible, so inside the namespace both would
+      have quietly become Neuron::Profiler. They are a plain `Profiler*` now
+      against a forward declaration outside. Worth grepping for
+      `\(class |, class |^\s*class \w+\*` before wrapping anything.
+
+      Two forward declarations of Server outside the project had to follow it.
+      NeuronClient/AppState.h holds `extern Server* g_server` — a NeuronClient
+      header naming a NeuronServer type, which check_layering does not see
+      because a forward declaration includes nothing. It is Neuron::Server now.
+      Species/App.h had one too and it was DEAD: Server appears nowhere in
+      App.h or App.cpp, so it was deleted rather than qualified.
+
+      The diff is mostly whitespace. .clang-format sets NamespaceIndentation:
+      All, so wrapping a file reindents every line in it. That is inherent to
+      the change rather than incidental churn, so it is not split out the way a
+      standalone reformat would be — there is nothing to reformat until the
+      wrapper exists.
 
   - id: T4
     title: Bring GameLogic into the game namespace
