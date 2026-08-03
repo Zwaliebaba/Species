@@ -12,5 +12,5 @@ ParticleSystem* g_particleSystem = nullptr;
 LocationEditor* g_locationEditor = nullptr;
 TaskManager* g_taskManager = nullptr;
 TaskManagerInterface* g_taskManagerInterface = nullptr;
-Script* g_script = nullptr;
+ScriptAccess* g_script = nullptr;
 UserInput* g_userInput = nullptr;

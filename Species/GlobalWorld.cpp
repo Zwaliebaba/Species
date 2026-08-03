@@ -261,7 +261,7 @@ void GlobalEventAction::Execute()
     }
   case RunScript:
     {
-      g_script->RunScript(m_filename);
+      TheScript()->RunScript(m_filename);
       break;
     }
   case MakeAvailable:
@@ -1301,7 +1301,7 @@ void GlobalWorld::Advance()
         GlobalLocation* loc = GetLocation(locId);
         if (strcmp(loc->m_missionFilename, "null") != 0 && loc->m_available)
         {
-          if (!g_script->IsRunningScript())
+          if (!TheScript()->IsRunningScript())
           {
             if (!g_app->HasBoughtGame())
             {
@@ -1875,7 +1875,7 @@ int GlobalWorld::GenerateBuildingId()
 // Returns true if actions remain to be completed
 bool GlobalWorld::EvaluateEvents()
 {
-  if (g_script && g_script->IsRunningScript())
+  if (g_script && TheScript()->IsRunningScript())
     return true;
 
   for (int i = 0; i < m_events.Size(); ++i)

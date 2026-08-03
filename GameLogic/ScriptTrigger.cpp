@@ -11,7 +11,6 @@
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "EntityGrid.h"
-#include "Script.h"
 #include "Team.h"
 #include "WorldPointers.h"
 #include "AppState.h"

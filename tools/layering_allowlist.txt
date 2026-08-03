@@ -161,7 +161,6 @@ GameLogic/LightsWindow.cpp -> Location.h
 GameLogic/LightsWindow.cpp -> LocationEditor.h
 GameLogic/MainMenus.cpp -> GlobalWorld.h
 GameLogic/MainMenus.cpp -> Renderer.h
-GameLogic/MainMenus.cpp -> Script.h
 GameLogic/Mine.cpp -> GlobalWorld.h
 GameLogic/Mine.cpp -> Location.h
 GameLogic/Officer.cpp -> EntityGrid.h
@@ -193,7 +192,6 @@ GameLogic/Rocket.cpp -> Explosion.h
 GameLogic/Rocket.cpp -> GlobalWorld.h
 GameLogic/Rocket.cpp -> Location.h
 GameLogic/Rocket.cpp -> ParticleSystem.h
-GameLogic/Rocket.cpp -> Script.h
 GameLogic/Rocket.cpp -> TaskManagerInterface.h
 GameLogic/Rocket.cpp -> Team.h
 GameLogic/SafeArea.cpp -> EntityGrid.h
@@ -203,7 +201,6 @@ GameLogic/SafeArea.cpp -> ParticleSystem.h
 GameLogic/SafeArea.cpp -> Team.h
 GameLogic/ScriptTrigger.cpp -> EntityGrid.h
 GameLogic/ScriptTrigger.cpp -> Location.h
-GameLogic/ScriptTrigger.cpp -> Script.h
 GameLogic/ScriptTrigger.cpp -> Team.h
 GameLogic/Snow.cpp -> Location.h
 GameLogic/SoulDestroyer.cpp -> EntityGrid.h
@@ -238,7 +235,6 @@ GameLogic/SporeGenerator.cpp -> Location.h
 GameLogic/StaticShape.cpp -> Location.h
 GameLogic/Switch.cpp -> GlobalWorld.h
 GameLogic/Switch.cpp -> Location.h
-GameLogic/Switch.cpp -> Script.h
 GameLogic/Teleport.cpp -> GlobalWorld.h
 GameLogic/Teleport.cpp -> Location.h
 GameLogic/Teleport.cpp -> RoutingSystem.h
@@ -284,7 +280,6 @@ NeuronClient/SoundInstance.cpp -> Location.h
 NeuronClient/SoundInstance.h -> Entity.h
 NeuronClient/SoundSystem.cpp -> Entity.h
 NeuronClient/SoundSystem.cpp -> Location.h
-NeuronClient/SoundSystem.cpp -> SaveOnQuitWindow.h
 NeuronClient/SoundSystem.h -> WorldObject.h
 NeuronClient/TargetCursor.cpp -> ControlHelp.h
 NeuronClient/TargetCursor.cpp -> TaskManagerInterface.h

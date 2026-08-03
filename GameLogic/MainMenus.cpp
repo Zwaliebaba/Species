@@ -10,7 +10,6 @@
 #include "PrefsSoundWindow.h"
 #include "Renderer.h"
 #include "Resource.h"
-#include "Script.h"
 #include "TextRenderer.h"
 #include "UserProfileWindow.h"
 #include "Win32EventHandler.h"

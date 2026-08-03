@@ -153,7 +153,7 @@ void TaskManagerInterfaceIcons::Advance()
   }
 
   bool inCutscene = false;
-  if (g_script->IsRunningScript() && g_script->m_permitEscape)
+  if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
     inCutscene = true;
   if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
     inCutscene = true;
@@ -811,7 +811,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
     DEBUG_ASSERT(gec);
 
     if (gec->m_cutScene)
-      g_script->RunScript(gec->m_cutScene);
+      TheScript()->RunScript(gec->m_cutScene);
     else
       RunDefaultObjective(gec);
     HideTaskManager();

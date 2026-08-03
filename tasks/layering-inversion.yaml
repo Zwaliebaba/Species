@@ -668,6 +668,35 @@ tasks:
       here changes drawing logic — the change is an include, a pointer type and
       an enum's home — but the acceptance asks for it and no automated test in
       this repository covers rendering.
+
+      IT TOOK THREE RED BUILDS, and the three are worth writing down because
+      they are one mistake in three costumes. Each time the local checks passed
+      and the compiler disagreed, and each time the reason was that I reasoned
+      about which files SHOULD be affected and checked those, instead of
+      checking the whole tree for the property I needed.
+
+      (1) `Camera* cam = g_camera;` in TextRenderer, DebugRender, Renderer and
+      LocationEditor. The grep I used to hunt stray Camera references excluded
+      every line containing "g_camera" — which is the exact shape of the broken
+      lines.
+
+      (2) ObstructionGrid.h declares an LList member without including LList.h
+      and had been fed by whatever the translation unit included first;
+      removing Camera.h from Spirit.cpp took that away. I had found this header
+      while planning and filed it as pre-existing and unrelated. Pre-existing
+      was right. Unrelated was wrong: any include removal anywhere can expose
+      one. Four headers were in that state and all four are fixed.
+
+      (3) Camera has three SetTarget overloads and CameraAccess declares one,
+      so Species calls passing one or two arguments stopped compiling. I noted
+      this hazard while designing the interface and then checked the single
+      call site below Species rather than the 119 above it.
+
+      The general lesson, for whoever runs T10 and T15: an interface extraction
+      changes what a name means in every translation unit that sees it, so the
+      check has to be tree-wide and property-based — "no file anywhere uses a
+      member outside the interface", "no header uses a type it cannot reach" —
+      and never a list of files you expect to be affected.
     status: done
 
   - id: T10
@@ -690,6 +719,11 @@ tasks:
       - Species/Script.h
       - Species/GameCursor.h
       - Species/TaskManagerInterface.h
+      - NeuronClient/ScriptAccess.h
+      - NeuronClient/WorldPointers.h
+      - NeuronClient/WorldPointers.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
       - tools/layering_allowlist.txt
     acceptance:
       - Re-measured allowlist contains no entry naming any long-tail header
@@ -699,7 +733,51 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
+    notes: >
+      IN PROGRESS. The long tail is not one shape of problem, so it is being
+      landed in verified slices rather than one sweep. Allowlist 279 -> 274 so
+      far. Measured breakdown of what is left, with what each caller actually
+      touches — take this rather than re-deriving it:
+
+        LocationEditor.h  11  RequestMode, m_mode, m_selectionId, m_tool,
+                              m_moveBuildingsWithLandscape, Mode/Tool enums.
+                              EIGHT of the eleven are editor windows that exist
+                              only to drive Species editor state, so the
+                              intent's "may move UP into Species" applies to
+                              them; Ai.cpp, SpawnPoint.cpp and Triffid.cpp are
+                              simulation and need a seam or an accessor.
+        TaskManager.h      5  GetTask, GetCurrentTask, RegisterTask,
+                              SelectTask, m_tasks, m_verifyTargetting.
+        TaskManagerInterface.h 3  SetCurrentMessage, SetVisible, m_visible,
+                              plus the Message enum.
+        UserInput.h        2  GetMousePos3d, and nothing else.
+        Water.h            2  `g_location->m_water = new Water()` in two prefs
+                              windows — CONSTRUCTION, not use, so an interface
+                              does not help; the construction has to move.
+        TaskManagerInterfaceIcons.h 1  same shape: `new
+                              TaskManagerInterfaceIcons()` in a prefs window.
+        ControlHelp.h      1  RecordCondUsed plus a Cond enumerator.
+        Entity.h           2  SoundInstance.h holds WorldObjectId members;
+                              SoundSystem.cpp uses Entity's static type table.
+        WorldObject.h      1  SoundSystem.h's API takes WorldObjectId and
+                              WorldObject*.
+
+      The Entity/WorldObject three are the interesting ones: what NeuronClient
+      actually needs is WorldObjectId, a 16-byte identity value type that has
+      no GameLogic dependencies and is already pinned by NeuronCoreTests.
+      Splitting it out of GameLogic/WorldObject.h into NeuronCore would clear
+      all three and is the "move the declaration down" fix the intent describes.
+
+      Renderer.h's two remaining entries are NOT this task's: MainMenus.cpp and
+      PrefsScreenWindow.cpp CONSTRUCT a Renderer, which RendererAccess.h says
+      explicitly still requires Renderer.h. Same shape as Water above.
+
+      DONE SO FAR: Script.h (4 entries) behind NeuronClient/ScriptAccess.h, and
+      a dead SaveOnQuitWindow.h include in SoundSystem.cpp. Script's seam
+      follows Camera's, including the rule Camera's three red builds produced:
+      Species goes through TheScript() at every call site, not only where the
+      interface is missing a member.
 
   - id: T11
     title: Shrink LinkStubs and land the first real GameLogic behaviour tests

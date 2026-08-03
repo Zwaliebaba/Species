@@ -22,7 +22,6 @@
 #include "ParticleSystem.h"
 #include "Explosion.h"
 #include "GlobalWorld.h"
-#include "Script.h"
 #include "EntityGrid.h"
 #include "TaskManagerInterface.h"
 

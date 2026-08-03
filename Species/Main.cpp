@@ -388,7 +388,9 @@ void LocationGameLoop()
     g_inputManager->PollForEvents();
     if (g_inputManager->controlEvent(ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
-      if (g_script && g_script->IsRunningScript()) {}
+      if (g_script && TheScript()->IsRunningScript())
+      {
+      }
       else
       {
         if (WindowsOnScreen())
@@ -567,7 +569,7 @@ void LocationGameLoop()
       g_app->m_locationInput->Advance();
       g_taskManager->Advance();
       g_taskManagerInterface->Advance();
-      g_script->Advance();
+      TheScript()->Advance();
       g_explosionManager.Advance();
       g_app->m_soundSystem->Advance();
       g_controlHelpSystem->Advance();
@@ -712,7 +714,7 @@ void GlobalWorldGameLoop()
     UpdateAdvanceTime();
     double timeNow = GetHighResTime();
 
-    g_script->Advance();
+    TheScript()->Advance();
     g_globalWorld->Advance();
     g_userInput->Advance();
     TheCamera()->Advance();
@@ -960,7 +962,7 @@ void EnterLocation()
 
 void EnterGlobalWorld()
 {
-  if (g_gameMode == GameModePrologue && !g_script->IsRunningScript())
+  if (g_gameMode == GameModePrologue && !TheScript()->IsRunningScript())
   {
     // the only time you should see the world in prologue is during the cutscene
     //g_atMainMenu = true;

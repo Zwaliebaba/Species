@@ -2,6 +2,7 @@
 
 #include "CameraAccess.h"
 #include "RendererAccess.h"
+#include "ScriptAccess.h"
 
 // The running game's subsystems, reachable from every layer.
 //
@@ -21,7 +22,6 @@ class ParticleSystem;
 class LocationEditor;
 class TaskManager;
 class TaskManagerInterface;
-class Script;
 class UserInput;
 
 extern Location* g_location;
@@ -32,5 +32,5 @@ extern ParticleSystem* g_particleSystem;
 extern LocationEditor* g_locationEditor;
 extern TaskManager* g_taskManager;
 extern TaskManagerInterface* g_taskManagerInterface;
-extern Script* g_script;
+extern ScriptAccess* g_script;
 extern UserInput* g_userInput;

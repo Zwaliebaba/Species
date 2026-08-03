@@ -176,6 +176,7 @@
     <ClInclude Include="WindowManager.h" />
     <ClInclude Include="AppCommands.h" />
 <ClInclude Include="CameraAccess.h" />
+<ClInclude Include="ScriptAccess.h" />
 <ClInclude Include="RendererAccess.h" />
     <ClInclude Include="AppState.h" />
     <ClInclude Include="WorldPointers.h" />

@@ -2166,7 +2166,7 @@ bool Camera::IsMoving() { return m_mode == ModeMoveToTarget; }
 
 bool Camera::IsInteractive()
 {
-  //if( g_script->IsRunningScript() ) return false;
+  // if( TheScript()->IsRunningScript() ) return false;
 
   return (m_mode == ModeSphereWorld || m_mode == ModeFreeMovement || m_mode == ModeRadarAim || m_mode == ModeTurretAim || m_mode ==
     ModeEntityTrack);

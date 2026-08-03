@@ -714,7 +714,7 @@ bool ControlHelpSystem::CheckCondition(int _condition)
   case CondSkipCutscene:
   {
     bool inCutscene = false;
-    if (g_script->IsRunningScript() && g_script->m_permitEscape)
+    if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
       inCutscene = true;
     if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
       inCutscene = true;
@@ -782,7 +782,7 @@ void ControlHelpSystem::Render()
   g_gameFont.BeginText2D();
 
   bool inCutscene = false;
-  if (g_script->IsRunningScript() && g_script->m_permitEscape)
+  if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
     inCutscene = true;
   if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
     inCutscene = true;

@@ -12,7 +12,6 @@
 #include "WindowManager.h"
 #include "LanguageTable.h"
 
-#include "SaveOnQuitWindow.h"
 
 #include "SampleCache.h"
 #include "SoundLibrary2d.h" // FIXME

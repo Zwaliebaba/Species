@@ -14,7 +14,6 @@
 
 #include "Location.h"
 #include "GlobalWorld.h"
-#include "Script.h"
 
 #include "Building.h"
 #include "LaserFence.h"

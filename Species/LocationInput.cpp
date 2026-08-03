@@ -248,7 +248,7 @@ void LocationInput::AdvanceNoSelection()
 void LocationInput::AdvanceTeamControl()
 {
   bool inCutscene = false;
-  if (g_script->IsRunningScript() && g_script->m_permitEscape)
+  if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
     inCutscene = true;
   if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
     inCutscene = true;

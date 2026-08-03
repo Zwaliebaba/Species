@@ -800,7 +800,7 @@ void Location::DoMissionCompleteActions()
 
 
   //    if( !TheCamera()->IsInteractive() ||
-  //        g_script->IsRunningScript() )
+  //        TheScript()->IsRunningScript() )
   //    {
   //        return;
   //    }
