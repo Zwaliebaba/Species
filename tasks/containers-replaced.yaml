@@ -344,7 +344,29 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    notes: >
+      LANDED 2026-08-02, CI green.
+
+      The inbox is the part with semantics: letters are kept sorted by
+      sequence id, so PutDataAtIndex(letter, i+1) and PutDataAtStart became
+      insert() at exactly those positions. Getting that wrong reorders the
+      letters the client applies to the simulation.
+
+      SCOPE GREW FROM FOUR FILES TO NINE, unavoidably. Shape's m_childFragments
+      and m_childMarkers are public and read from GameLogic/Building.cpp,
+      GameLogic/NetworkWindow.cpp, Species/Renderer.cpp, Species/Explosion.cpp
+      and Species/GlobalWorld.cpp. Three belong to other tasks, but a member's
+      type cannot change in one file only. The edits there are confined to the
+      Shape call sites and touch none of those files' own containers.
+
+      Ownership stays raw — three EmptyAndDelete calls became delete loops;
+      ownership T3 covers these files.
+
+      One mechanical trap for the next bulk rewrite: a regex over
+      `m_childFragments.Size()` rewrote `_frag->m_childFragments.Size()` as
+      `_frag->static_cast<int>(...)`, in seven places across four files. Put
+      the receiver in the pattern, not just the member.
+    status: done
 
   - id: T9
     title: Convert the GameLogic entity containers
@@ -969,7 +991,13 @@ tasks:
       different job from the std:: substitution T18 turned out to be. Debug
       render code with no test reach; evidence is the build, review against
       T2's pinned freelist sequence, and the Garden smoke test.
-    status: in_progress
+
+      LANDED 2026-08-02, CI green. FastDArray::GetPointer() with no argument
+      was shorthand for GetPointer(GetNextFree()); SlotMap keeps the
+      reservation explicit at the call site, which is T3's narrow-seam design
+      rather than an omission. Loop counters follow SlotMap::Size(), which
+      returns int where FastDArray's returned unsigned.
+    status: done
 
   - id: T22
     title: Let SlotMap hold move-only values
