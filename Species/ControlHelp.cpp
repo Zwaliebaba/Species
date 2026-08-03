@@ -42,797 +42,766 @@
 
 class HelpIcon
 {
-public:
-    HelpIcon( const char *_filename, const char *_shadowFilename, const Vector2 &_setRelativePos );
+  public:
+    HelpIcon(const char* _filename, const char* _shadowFilename, const Vector2& _setRelativePos);
 
-	void AddTextPosition( int _relx, int _rely );
+    void AddTextPosition(int _relx, int _rely);
 
-	bool Enabled() const;
-	bool Enabled( float &_iconAlpha ) const;
+    bool Enabled() const;
+    bool Enabled(float& _iconAlpha) const;
 
-	void Clear();
-	void Set( int index, const char *_helpText, float _alpha );
+    void Clear();
+    void Set(int index, const char* _helpText, float _alpha);
 
-    void Render( const Vector2 &_setPosition, float _alpha );
+    void Render(const Vector2& _setPosition, float _alpha);
 
-private:
+  private:
     char m_filename[256], m_shadowFilename[256];
     Vector2 m_setRelativePos;
 
-	struct PosText {
-		Vector2 m_pos;
-		const char * m_text;
-		float m_alpha;
-	};
+    struct PosText
+    {
+        Vector2 m_pos;
+        const char* m_text;
+        float m_alpha;
+    };
 
-	std::vector<PosText> m_texts, m_lastTexts;
+    std::vector<PosText> m_texts, m_lastTexts;
 
-	double m_lastHelpTextChangeTime;
+    double m_lastHelpTextChangeTime;
 };
 
-void HelpIcon::AddTextPosition( int _relx, int _rely )
+void HelpIcon::AddTextPosition(int _relx, int _rely)
 {
-	PosText t;
+  PosText t;
 
-	t.m_pos.x = _relx;
-	t.m_pos.y = _rely;
-	t.m_text = nullptr;
-	t.m_alpha = 1.0f;
+  t.m_pos.x = _relx;
+  t.m_pos.y = _rely;
+  t.m_text = nullptr;
+  t.m_alpha = 1.0f;
 
-	m_texts.push_back( t );
+  m_texts.push_back(t);
 }
 
-HelpIcon::HelpIcon( const char *_filename, const char *_shadowFilename, const Vector2 &_setRelativePos )
-:  m_setRelativePos( _setRelativePos )
+HelpIcon::HelpIcon(const char* _filename, const char* _shadowFilename, const Vector2& _setRelativePos)
+  : m_setRelativePos(_setRelativePos)
 {
-	strcpy( m_filename, _filename );
-	strcpy(m_shadowFilename, _shadowFilename);
+  strcpy(m_filename, _filename);
+  strcpy(m_shadowFilename, _shadowFilename);
 }
 
-inline
-bool HelpIcon::Enabled() const
+inline bool HelpIcon::Enabled() const
 {
-	float iconAlpha;
-	return Enabled( iconAlpha );
+  float iconAlpha;
+  return Enabled(iconAlpha);
 }
 
-bool HelpIcon::Enabled( float &_iconAlpha ) const
+bool HelpIcon::Enabled(float& _iconAlpha) const
 {
-	bool enabled = false;
+  bool enabled = false;
 
-	_iconAlpha = 0.3f;
+  _iconAlpha = 0.3f;
 
-	for (int i = 0; i < m_texts.size(); i++) {
-		if (m_texts[i].m_text) {
-			enabled = true;
-			if (m_texts[i].m_alpha > _iconAlpha)
-				_iconAlpha = m_texts[i].m_alpha;
-		}
-	}
+  for (int i = 0; i < m_texts.size(); i++)
+  {
+    if (m_texts[i].m_text)
+    {
+      enabled = true;
+      if (m_texts[i].m_alpha > _iconAlpha)
+        _iconAlpha = m_texts[i].m_alpha;
+    }
+  }
 
-	return enabled;
+  return enabled;
 }
 
 void HelpIcon::Clear()
 {
-	m_lastTexts = m_texts;
+  m_lastTexts = m_texts;
 
-	for (int i = 0; i < m_texts.size(); i++)
-		m_texts[i].m_text = nullptr;
+  for (int i = 0; i < m_texts.size(); i++)
+    m_texts[i].m_text = nullptr;
 }
 
-void HelpIcon::Set( int _index, const char *_helpText, float _alpha )
+void HelpIcon::Set(int _index, const char* _helpText, float _alpha)
 {
-	DEBUG_ASSERT( _helpText != nullptr );
+  DEBUG_ASSERT(_helpText != nullptr);
 
-	m_texts[_index].m_text = _helpText;
-	m_texts[_index].m_alpha = _alpha;
+  m_texts[_index].m_text = _helpText;
+  m_texts[_index].m_alpha = _alpha;
 
-	if (m_texts[_index].m_text != m_lastTexts[_index].m_text)
-		m_lastHelpTextChangeTime = g_gameTime;
+  if (m_texts[_index].m_text != m_lastTexts[_index].m_text)
+    m_lastHelpTextChangeTime = g_gameTime;
 }
 
 
-void HelpIcon::Render( const Vector2 &_setPosition, float _alpha )
+void HelpIcon::Render(const Vector2& _setPosition, float _alpha)
 {
-    float iconSize = 50.0f;
-    float iconGap = 10.0f;
+  float iconSize = 50.0f;
+  float iconGap = 10.0f;
 
-	float iconAlpha;
-    float shadowOffset = 0;
-    float shadowSize = iconSize;
+  float iconAlpha;
+  float shadowOffset = 0;
+  float shadowSize = iconSize;
 
-	const bool enabled = Enabled( iconAlpha );
+  const bool enabled = Enabled(iconAlpha);
 
-	if (enabled) {
-		// Check to see whether we should blink
-		double elapsedTime = g_gameTime - m_lastHelpTextChangeTime;
-		if (elapsedTime < 1.5) {
-			iconAlpha = 0.75 * iconAlpha + 0.25 * iconAlpha * sinf( 8 * elapsedTime );
-		}
-	}
+  if (enabled)
+  {
+    // Check to see whether we should blink
+    double elapsedTime = g_gameTime - m_lastHelpTextChangeTime;
+    if (elapsedTime < 1.5)
+    {
+      iconAlpha = 0.75 * iconAlpha + 0.25 * iconAlpha * sinf(8 * elapsedTime);
+    }
+  }
 
-	iconAlpha *= _alpha;
+  iconAlpha *= _alpha;
 
-	Vector2 position = _setPosition + m_setRelativePos;
+  Vector2 position = _setPosition + m_setRelativePos;
 
-	Vector2 iconCentre = Vector2(position.x, position.y);
+  Vector2 iconCentre = Vector2(position.x, position.y);
 
-	//if( g_largeMenus )
-	//{
-	//	iconGap *= 2.0f;
-	//	iconSize *= 1.5f;
-	//	shadowSize *= 1.5f;
-	//	iconCentre.x -= (g_renderer->ScreenW() - iconCentre.x ) * 0.5;
-	//	iconCentre.y += iconGap;
-	//}
+  // if( g_largeMenus )
+  //{
+  //	iconGap *= 2.0f;
+  //	iconSize *= 1.5f;
+  //	shadowSize *= 1.5f;
+  //	iconCentre.x -= (g_renderer->ScreenW() - iconCentre.x ) * 0.5;
+  //	iconCentre.y += iconGap;
+  // }
 
-    float shadowX = shadowSize/2;
+  float shadowX = shadowSize / 2;
 
-	// Render the shadow
-    glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, g_app->m_resource->GetTexture( m_shadowFilename ) );
-    glBlendFunc     ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR );
-    glDepthMask     ( false );
-    glColor4f       ( iconAlpha, iconAlpha, iconAlpha, 0.0f );
+  // Render the shadow
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+  glDepthMask(false);
+  glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
 
-    glBegin( GL_QUADS );
-        glTexCoord2i( 0, 1 );           glVertex2f( iconCentre.x - shadowX + shadowOffset, iconCentre.y - shadowSize/2 + shadowOffset );
-        glTexCoord2i( 1, 1 );           glVertex2f( iconCentre.x + shadowX + shadowOffset, iconCentre.y - shadowSize/2 + shadowOffset );
-        glTexCoord2i( 1, 0 );           glVertex2f( iconCentre.x + shadowX + shadowOffset, iconCentre.y + shadowSize/2 + shadowOffset );
-        glTexCoord2i( 0, 0 );           glVertex2f( iconCentre.x - shadowX + shadowOffset, iconCentre.y + shadowSize/2 + shadowOffset );
-    glEnd();
+  glBegin(GL_QUADS);
+  glTexCoord2i(0, 1);
+  glVertex2f(iconCentre.x - shadowX + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
+  glTexCoord2i(1, 1);
+  glVertex2f(iconCentre.x + shadowX + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
+  glTexCoord2i(1, 0);
+  glVertex2f(iconCentre.x + shadowX + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
+  glTexCoord2i(0, 0);
+  glVertex2f(iconCentre.x - shadowX + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
+  glEnd();
 
-    unsigned int texId = g_app->m_resource->GetTexture( m_filename );
+  unsigned int texId = g_resource->GetTexture(m_filename);
 
-	// Render the icon
-    glEnable        ( GL_TEXTURE_2D );
-    glBindTexture   ( GL_TEXTURE_2D, texId );
-    glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
+  // Render the icon
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, texId);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-    glColor4f   ( 1.0f, 1.0f, 1.0f, iconAlpha );
+  glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
 
-    float x = iconSize/2;
+  float x = iconSize / 2;
 
-    glBegin( GL_QUADS );
-        glTexCoord2i( 0, 1 );           glVertex2f( iconCentre.x - x, iconCentre.y - iconSize/2 );
-        glTexCoord2i( 1, 1 );           glVertex2f( iconCentre.x + x, iconCentre.y - iconSize/2 );
-        glTexCoord2i( 1, 0 );           glVertex2f( iconCentre.x + x, iconCentre.y + iconSize/2 );
-        glTexCoord2i( 0, 0 );           glVertex2f( iconCentre.x - x, iconCentre.y + iconSize/2 );
-    glEnd();
+  glBegin(GL_QUADS);
+  glTexCoord2i(0, 1);
+  glVertex2f(iconCentre.x - x, iconCentre.y - iconSize / 2);
+  glTexCoord2i(1, 1);
+  glVertex2f(iconCentre.x + x, iconCentre.y - iconSize / 2);
+  glTexCoord2i(1, 0);
+  glVertex2f(iconCentre.x + x, iconCentre.y + iconSize / 2);
+  glTexCoord2i(0, 0);
+  glVertex2f(iconCentre.x - x, iconCentre.y + iconSize / 2);
+  glEnd();
 
-    glBlendFunc     ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-    glDisable       ( GL_TEXTURE_2D );
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glDisable(GL_TEXTURE_2D);
 
-	// Render the associated text
+  // Render the associated text
 
-	if (enabled) {
-		for (int i = 0; i < m_texts.size(); i++) {
-			const char *text = m_texts[i].m_text;
-			const Vector2 &pos = m_texts[i].m_pos;
+  if (enabled)
+  {
+    for (int i = 0; i < m_texts.size(); i++)
+    {
+      const char* text = m_texts[i].m_text;
+      const Vector2& pos = m_texts[i].m_pos;
 
-			if (text == nullptr)
-				continue;
+      if (text == nullptr)
+        continue;
 
-			float fontSize = 12.0f;
-			//if( g_largeMenus )
-			//{
-			//	fontSize *= 1.5f;
-			//}
+      float fontSize = 12.0f;
+      // if( g_largeMenus )
+      //{
+      //	fontSize *= 1.5f;
+      // }
 
-			Vector2 textCentrePos(
-				iconCentre.x + (shadowSize / 2 + iconGap) * pos.x,
-				iconCentre.y + (shadowSize / 2 + iconGap) * pos.y);
+      Vector2 textCentrePos(iconCentre.x + (shadowSize / 2 + iconGap) * pos.x, iconCentre.y + (shadowSize / 2 + iconGap) * pos.y);
 
-			g_gameFont.SetRenderOutline(true);
-			glColor4f(1.0f,1.0f,1.0f,0.0f);
-			g_gameFont.DrawText2DJustified( textCentrePos.x, textCentrePos.y, fontSize, pos.x, "%s", text );
+      g_gameFont.SetRenderOutline(true);
+      glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
+      g_gameFont.DrawText2DJustified(textCentrePos.x, textCentrePos.y, fontSize, pos.x, "%s", text);
 
-			g_gameFont.SetRenderOutline(false);
-			glColor4f(1.0f,1.0f,1.0f,iconAlpha);
-			g_gameFont.DrawText2DJustified( textCentrePos.x, textCentrePos.y, fontSize, pos.x, "%s", text );
-		}
-	}
+      g_gameFont.SetRenderOutline(false);
+      glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
+      g_gameFont.DrawText2DJustified(textCentrePos.x, textCentrePos.y, fontSize, pos.x, "%s", text);
+    }
+  }
 }
 
 //  HelpIconSet ------------------
 //	(This class groups sets of icons together)
 
-class HelpIconSet {
-public:
-	HelpIconSet( int _height );
+class HelpIconSet
+{
+  public:
+    HelpIconSet(int _height);
 
-	void AddIcon( HelpIcon *_icon );
-	void Render( Vector2 &_setPosition );
+    void AddIcon(HelpIcon* _icon);
+    void Render(Vector2& _setPosition);
 
-private:
-	std::vector<HelpIcon *> m_icons;
-	int m_height;
-	double m_beginFadeOutTime, m_beginFadeInTime;
-	bool m_lastEnabled;
+  private:
+    std::vector<HelpIcon*> m_icons;
+    int m_height;
+    double m_beginFadeOutTime, m_beginFadeInTime;
+    bool m_lastEnabled;
 };
 
-HelpIconSet::HelpIconSet( int _height )
-:	m_height( _height ),
-	m_beginFadeOutTime( 0.0 ),
-	m_beginFadeInTime( 0.0 ),
-	m_lastEnabled( false )
+HelpIconSet::HelpIconSet(int _height)
+  : m_height(_height),
+    m_beginFadeOutTime(0.0),
+    m_beginFadeInTime(0.0),
+    m_lastEnabled(false)
 {
 }
 
-void HelpIconSet::AddIcon( HelpIcon *_icon )
+void HelpIconSet::AddIcon(HelpIcon* _icon) { m_icons.push_back(_icon); }
+
+void HelpIconSet::Render(Vector2& _setPosition)
 {
-	m_icons.push_back( _icon );
-}
+  // Are any of the icons enabled?
+  bool atLeastOneEnabled = false;
 
-void HelpIconSet::Render( Vector2 &_setPosition )
-{
-	// Are any of the icons enabled?
-	bool atLeastOneEnabled = false;
+  float iconAlpha;
 
-	float iconAlpha;
+  for (int i = 0; i < m_icons.size(); i++)
+    if (m_icons[i]->Enabled(iconAlpha))
+    {
+      atLeastOneEnabled = true;
+      break;
+    }
 
-	for (int i = 0; i < m_icons.size(); i++)
-		if (m_icons[i]->Enabled( iconAlpha )) {
-			atLeastOneEnabled = true;
-			break;
-		}
+  if (!atLeastOneEnabled && m_lastEnabled)
+    m_beginFadeOutTime = g_gameTime;
 
-	if (!atLeastOneEnabled && m_lastEnabled)
-		m_beginFadeOutTime = g_gameTime;
+  else if (atLeastOneEnabled && !m_lastEnabled)
+    m_beginFadeInTime = g_gameTime;
 
-	else if (atLeastOneEnabled && !m_lastEnabled)
-		m_beginFadeInTime = g_gameTime;
+  float alpha;
+  const float fadeDuration = 1.0f;
 
-	float alpha;
-	const float fadeDuration = 1.0f;
+  if (m_beginFadeOutTime > 0.0f)
+  {
+    alpha = 1.0 - (g_gameTime - m_beginFadeOutTime) / fadeDuration;
+    if (alpha < 0.0)
+    {
+      m_beginFadeOutTime = 0.0f;
+      alpha = 0.0f;
+    }
+  }
+  else if (m_beginFadeInTime > 0.0f)
+  {
+    alpha = (g_gameTime - m_beginFadeInTime) / fadeDuration;
+    if (alpha > 1.0f)
+    {
+      m_beginFadeInTime = 0.0f;
+      alpha = 1.0f;
+    }
+  }
+  else
+  {
+    alpha = atLeastOneEnabled ? 1.0f : 0.0f;
+  }
 
-	if (m_beginFadeOutTime > 0.0f) {
-		alpha = 1.0 - (g_gameTime - m_beginFadeOutTime) / fadeDuration;
-		if (alpha < 0.0) {
-			m_beginFadeOutTime = 0.0f;
-			alpha = 0.0f;
-		}
-	}
-	else if (m_beginFadeInTime > 0.0f) {
-		alpha = (g_gameTime - m_beginFadeInTime) / fadeDuration;
-		if (alpha > 1.0f) {
-			m_beginFadeInTime = 0.0f;
-			alpha = 1.0f;
-		}
-	}
-	else {
-		alpha = atLeastOneEnabled ? 1.0f : 0.0f;
-	}
+  // If none enabled, we don't render the entire set
+  if (alpha > 0.0f)
+  {
+    // Render
+    for (int i = 0; i < m_icons.size(); i++)
+      m_icons[i]->Render(_setPosition, alpha);
+  }
 
-	// If none enabled, we don't render the entire set
-	if (alpha > 0.0f) {
-		// Render
-		for (int i = 0; i < m_icons.size(); i++)
-			m_icons[i]->Render( _setPosition, alpha );
-	}
-
-	// Adjust the y value
-	_setPosition.y += m_height;
-	m_lastEnabled = atLeastOneEnabled;
+  // Adjust the y value
+  _setPosition.y += m_height;
+  m_lastEnabled = atLeastOneEnabled;
 }
 
 ControlHelpSystem::ControlHelpSystem()
 {
-	InitialiseIcons();
-	InitialiseConditions();
+  InitialiseIcons();
+  InitialiseConditions();
 }
 
 void ControlHelpSystem::InitialiseIcons()
 {
-	int set = -1;
-	// Set up the icons
+  int set = -1;
+  // Set up the icons
 
-	m_icons[A] = new HelpIcon("Icons/ButtonA.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(50, 100));
-	m_icons[A]->AddTextPosition( 0, 1 );
+  m_icons[A] = new HelpIcon("Icons/ButtonA.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(50, 100));
+  m_icons[A]->AddTextPosition(0, 1);
 
-	m_icons[B] = new HelpIcon("Icons/ButtonB.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(100, 50));
-	m_icons[B]->AddTextPosition( 1, 0 );
+  m_icons[B] = new HelpIcon("Icons/ButtonB.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(100, 50));
+  m_icons[B]->AddTextPosition(1, 0);
 
-	m_icons[X] = new HelpIcon("Icons/ButtonX.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(0, 50));
-	m_icons[X]->AddTextPosition( -1, 0 );
+  m_icons[X] = new HelpIcon("Icons/ButtonX.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(0, 50));
+  m_icons[X]->AddTextPosition(-1, 0);
 
-	m_icons[Y] = new HelpIcon("Icons/ButtonY.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(50, 0));
-	m_icons[Y]->AddTextPosition( 0, -1 );
+  m_icons[Y] = new HelpIcon("Icons/ButtonY.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(50, 0));
+  m_icons[Y]->AddTextPosition(0, -1);
 
-	m_icons[DPAD] = new HelpIcon("Icons/ButtonDpad.bmp", "Icons/ButtonControlShadow.bmp", Vector2(50, 0));
-	m_icons[DPAD]->AddTextPosition( 1, 0 );
-	m_icons[DPAD]->AddTextPosition( 0, -1 );
-	m_icons[DPAD]->AddTextPosition( 0, 1 );
+  m_icons[DPAD] = new HelpIcon("Icons/ButtonDpad.bmp", "Icons/ButtonControlShadow.bmp", Vector2(50, 0));
+  m_icons[DPAD]->AddTextPosition(1, 0);
+  m_icons[DPAD]->AddTextPosition(0, -1);
+  m_icons[DPAD]->AddTextPosition(0, 1);
 
-	const int hsep = 25;
+  const int hsep = 25;
 
-	m_icons[LB] = new HelpIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", Vector2(-hsep + 25, 0));
-	m_icons[LB]->AddTextPosition( -1, 0 );
+  m_icons[LB] = new HelpIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", Vector2(-hsep + 25, 0));
+  m_icons[LB]->AddTextPosition(-1, 0);
 
-	m_icons[RB] = new HelpIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", Vector2(+hsep + 75, 0));
-	m_icons[RB]->AddTextPosition( 1, 0 );
+  m_icons[RB] = new HelpIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", Vector2(+hsep + 75, 0));
+  m_icons[RB]->AddTextPosition(1, 0);
 
-	const int vsep = -25;
-	const int yoffset = -25;
+  const int vsep = -25;
+  const int yoffset = -25;
 
-	m_icons[LA] = new HelpIcon("Icons/ButtonLa.bmp", "Icons/ButtonControlShadow.bmp", Vector2(-hsep + 50, yoffset + -vsep + 0));
-	m_icons[LA]->AddTextPosition( 1, 0 );
+  m_icons[LA] = new HelpIcon("Icons/ButtonLa.bmp", "Icons/ButtonControlShadow.bmp", Vector2(-hsep + 50, yoffset + -vsep + 0));
+  m_icons[LA]->AddTextPosition(1, 0);
 
-	m_icons[LT] = new HelpIcon("Icons/ButtonLt.bmp", "Icons/ButtonTriggerShadow.bmp", Vector2(-hsep + 0, yoffset + -vsep + 0));
-	m_icons[LT]->AddTextPosition( 0, 1 );
+  m_icons[LT] = new HelpIcon("Icons/ButtonLt.bmp", "Icons/ButtonTriggerShadow.bmp", Vector2(-hsep + 0, yoffset + -vsep + 0));
+  m_icons[LT]->AddTextPosition(0, 1);
 
-	m_icons[RA] = new HelpIcon("Icons/ButtonRa.bmp", "Icons/ButtonControlShadow.bmp", Vector2(+hsep + 50, yoffset + +vsep + 100));
-	m_icons[RA]->AddTextPosition( -1, 0 );
+  m_icons[RA] = new HelpIcon("Icons/ButtonRa.bmp", "Icons/ButtonControlShadow.bmp", Vector2(+hsep + 50, yoffset + +vsep + 100));
+  m_icons[RA]->AddTextPosition(-1, 0);
 
-	m_icons[RT] = new HelpIcon("Icons/ButtonRt.bmp", "Icons/ButtonTriggerShadow.bmp", Vector2(+hsep + 100, yoffset + +vsep + 100));
-	m_icons[RT]->AddTextPosition( 0, 1 );
+  m_icons[RT] = new HelpIcon("Icons/ButtonRt.bmp", "Icons/ButtonTriggerShadow.bmp", Vector2(+hsep + 100, yoffset + +vsep + 100));
+  m_icons[RT]->AddTextPosition(0, 1);
 
-	m_sets[++set] = new HelpIconSet( 175 );
-	m_sets[set]->AddIcon( m_icons[A] );
-	m_sets[set]->AddIcon( m_icons[B] );
-	m_sets[set]->AddIcon( m_icons[X] );
-	m_sets[set]->AddIcon( m_icons[Y] );
+  m_sets[++set] = new HelpIconSet(175);
+  m_sets[set]->AddIcon(m_icons[A]);
+  m_sets[set]->AddIcon(m_icons[B]);
+  m_sets[set]->AddIcon(m_icons[X]);
+  m_sets[set]->AddIcon(m_icons[Y]);
 
-	m_sets[++set] = new HelpIconSet( 75 );
-	m_sets[set]->AddIcon( m_icons[LB] );
-	m_sets[set]->AddIcon( m_icons[RB] );
+  m_sets[++set] = new HelpIconSet(75);
+  m_sets[set]->AddIcon(m_icons[LB]);
+  m_sets[set]->AddIcon(m_icons[RB]);
 
-	m_sets[++set] = new HelpIconSet( 150 );
-	m_sets[set]->AddIcon( m_icons[LA] );
-	m_sets[set]->AddIcon( m_icons[RA] );
-	// m_sets[++set] = new HelpIconSet( 150 );
-	m_sets[set]->AddIcon( m_icons[LT] );
-	m_sets[set]->AddIcon( m_icons[RT] );
+  m_sets[++set] = new HelpIconSet(150);
+  m_sets[set]->AddIcon(m_icons[LA]);
+  m_sets[set]->AddIcon(m_icons[RA]);
+  // m_sets[++set] = new HelpIconSet( 150 );
+  m_sets[set]->AddIcon(m_icons[LT]);
+  m_sets[set]->AddIcon(m_icons[RT]);
 
-	m_sets[++set] = new HelpIconSet( 75 );
-	m_sets[set]->AddIcon( m_icons[DPAD] );
+  m_sets[++set] = new HelpIconSet(75);
+  m_sets[set]->AddIcon(m_icons[DPAD]);
 
 
-	DEBUG_ASSERT( set < MaxSets );
+  DEBUG_ASSERT(set < MaxSets);
 }
 
 void ControlHelpSystem::InitialiseConditions()
 {
-	m_conditionIconMap[CondDestroyUnit]				= TextIndicator(Y, 0, "gc_destroy");
-	m_conditionIconMap[CondTaskManagerCreateBlue]	= TextIndicator(X, 0, "gc_create");
-	m_conditionIconMap[CondTaskManagerCloseBlue]	= TextIndicator(X, 0, "gc_close");
-	m_conditionIconMap[CondTaskManagerCloseRed]		= TextIndicator(B, 0, "gc_close");
-	m_conditionIconMap[CondDeselectUnit]			= TextIndicator(B, 0, "gc_deselect");
-	m_conditionIconMap[CondSelectUnit]				= TextIndicator(A, 0, "gc_select");
-	m_conditionIconMap[CondTaskManagerSelect]		= TextIndicator(A, 0, "gc_select");
-	m_conditionIconMap[CondTaskManagerCreateGreen]	= TextIndicator(A, 0, "gc_create");
-	m_conditionIconMap[CondPlaceUnit]				= TextIndicator(A, 0, "gc_place");
-	m_conditionIconMap[CondMoveUnit]				= TextIndicator(A, 0, "gc_move" );
-	m_conditionIconMap[CondPromoteOfficer]			= TextIndicator(A, 0, "gc_promote" );
-	m_conditionIconMap[CondMoveCameraOrUnit]		= TextIndicator(LA, 0, "gc_move", 2.0f, 3.0f, 9.0f, 0.3f );
-	m_conditionIconMap[CondCameraAim]				= TextIndicator(RA, 0, "gc_aim", 2.0f, 3.0f, 9.0f, 0.3f );
-	m_conditionIconMap[CondSquaddieFire]			= TextIndicator(RA, 0, "gc_fire", 2.0f, 3.0f, 9.0f );
-	m_conditionIconMap[CondChangeWeapon]			= TextIndicator(DPAD, 0, "gc_changeweapon", 1.0f, 2.0f, 8.0f, 0.3f  );
-	m_conditionIconMap[CondChangeOrders]			= TextIndicator(DPAD, 0, "gc_changeorders" );
-	m_conditionIconMap[CondCameraUp]				= TextIndicator(DPAD, 1, "gc_cameraup", 1.0f, 2.0f, 3.0f, 0.3f );
-	m_conditionIconMap[CondCameraDown]				= TextIndicator(DPAD, 2, "gc_cameradown", 1.0f, 2.0f, 3.0f, 0.3f   );
-	m_conditionIconMap[CondZoom]					= TextIndicator(LT, 0, "gc_zoom" );
-	m_conditionIconMap[CondFireGrenades]			= TextIndicator(RT, 0, "gc_grenade", 1.0f, 2.0f, 8.0f, 0.3f );
-	m_conditionIconMap[CondFireRocket]				= TextIndicator(RT, 0, "gc_rocket", 1.0f, 2.0f, 8.0f, 0.3f  );
-	m_conditionIconMap[CondFireAirstrike]			= TextIndicator(RT, 0, "gc_airstrike", 1.0f, 2.0f, 8.0f, 0.3f  );
-	m_conditionIconMap[CondOfficerSetGoto]			= TextIndicator(RT, 0, "gc_setgoto" );
-	m_conditionIconMap[CondArmourSetTurret]			= TextIndicator(RT, 0, "gc_setturret" );
-	m_conditionIconMap[CondSwitchPrevUnit]			= TextIndicator(LB, 0, "gc_prev" );
-	m_conditionIconMap[CondSwitchNextUnit]			= TextIndicator(RB, 0, "gc_next" );
-    m_conditionIconMap[CondRadarAim]                = TextIndicator(A, 0, "control_help_radar" );
-	m_conditionIconMap[CondSkipCutscene]			= TextIndicator(B, 0, "gc_skip" );
-	m_conditionIconMap[CondOfficerSetFollow]        = TextIndicator(RT, 0, "gc_setfollow");
+  m_conditionIconMap[CondDestroyUnit] = TextIndicator(Y, 0, "gc_destroy");
+  m_conditionIconMap[CondTaskManagerCreateBlue] = TextIndicator(X, 0, "gc_create");
+  m_conditionIconMap[CondTaskManagerCloseBlue] = TextIndicator(X, 0, "gc_close");
+  m_conditionIconMap[CondTaskManagerCloseRed] = TextIndicator(B, 0, "gc_close");
+  m_conditionIconMap[CondDeselectUnit] = TextIndicator(B, 0, "gc_deselect");
+  m_conditionIconMap[CondSelectUnit] = TextIndicator(A, 0, "gc_select");
+  m_conditionIconMap[CondTaskManagerSelect] = TextIndicator(A, 0, "gc_select");
+  m_conditionIconMap[CondTaskManagerCreateGreen] = TextIndicator(A, 0, "gc_create");
+  m_conditionIconMap[CondPlaceUnit] = TextIndicator(A, 0, "gc_place");
+  m_conditionIconMap[CondMoveUnit] = TextIndicator(A, 0, "gc_move");
+  m_conditionIconMap[CondPromoteOfficer] = TextIndicator(A, 0, "gc_promote");
+  m_conditionIconMap[CondMoveCameraOrUnit] = TextIndicator(LA, 0, "gc_move", 2.0f, 3.0f, 9.0f, 0.3f);
+  m_conditionIconMap[CondCameraAim] = TextIndicator(RA, 0, "gc_aim", 2.0f, 3.0f, 9.0f, 0.3f);
+  m_conditionIconMap[CondSquaddieFire] = TextIndicator(RA, 0, "gc_fire", 2.0f, 3.0f, 9.0f);
+  m_conditionIconMap[CondChangeWeapon] = TextIndicator(DPAD, 0, "gc_changeweapon", 1.0f, 2.0f, 8.0f, 0.3f);
+  m_conditionIconMap[CondChangeOrders] = TextIndicator(DPAD, 0, "gc_changeorders");
+  m_conditionIconMap[CondCameraUp] = TextIndicator(DPAD, 1, "gc_cameraup", 1.0f, 2.0f, 3.0f, 0.3f);
+  m_conditionIconMap[CondCameraDown] = TextIndicator(DPAD, 2, "gc_cameradown", 1.0f, 2.0f, 3.0f, 0.3f);
+  m_conditionIconMap[CondZoom] = TextIndicator(LT, 0, "gc_zoom");
+  m_conditionIconMap[CondFireGrenades] = TextIndicator(RT, 0, "gc_grenade", 1.0f, 2.0f, 8.0f, 0.3f);
+  m_conditionIconMap[CondFireRocket] = TextIndicator(RT, 0, "gc_rocket", 1.0f, 2.0f, 8.0f, 0.3f);
+  m_conditionIconMap[CondFireAirstrike] = TextIndicator(RT, 0, "gc_airstrike", 1.0f, 2.0f, 8.0f, 0.3f);
+  m_conditionIconMap[CondOfficerSetGoto] = TextIndicator(RT, 0, "gc_setgoto");
+  m_conditionIconMap[CondArmourSetTurret] = TextIndicator(RT, 0, "gc_setturret");
+  m_conditionIconMap[CondSwitchPrevUnit] = TextIndicator(LB, 0, "gc_prev");
+  m_conditionIconMap[CondSwitchNextUnit] = TextIndicator(RB, 0, "gc_next");
+  m_conditionIconMap[CondRadarAim] = TextIndicator(A, 0, "control_help_radar");
+  m_conditionIconMap[CondSkipCutscene] = TextIndicator(B, 0, "gc_skip");
+  m_conditionIconMap[CondOfficerSetFollow] = TextIndicator(RT, 0, "gc_setfollow");
 }
 
 
 void ControlHelpSystem::Advance()
 {
-	if (g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
-		return;
+  if (g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
+    return;
 
-	// Clear all helpIcons
-	for (int i = 0; i < MaxIcons; i++)
-		m_icons[i]->Clear();
+  // Clear all helpIcons
+  for (int i = 0; i < MaxIcons; i++)
+    m_icons[i]->Clear();
 
-	// Decay the usage on the conditions
-	for (int i = 0; i < MaxConditions; i++)
-		DecayCond(i);
+  // Decay the usage on the conditions
+  for (int i = 0; i < MaxConditions; i++)
+    DecayCond(i);
 
-	// Check conditions
-	for (int i = 0; i < MaxConditions; i++)
-		if (CheckCondition(i))
-			SetCondIcon(i);
+  // Check conditions
+  for (int i = 0; i < MaxConditions; i++)
+    if (CheckCondition(i))
+      SetCondIcon(i);
 }
 
 static bool RunningProgram()
 {
-	Task *currentTask = g_taskManager->GetCurrentTask();
-    // if the task has just been ended or killed, it isnt valid
-	return currentTask && currentTask->m_state != Task::StateStopping;
+  Task* currentTask = g_taskManager->GetCurrentTask();
+  // if the task has just been ended or killed, it isnt valid
+  return currentTask && currentTask->m_state != Task::StateStopping;
 }
 
 static bool PlacingOfficerProgram()
 {
-	Task *currentTask = g_taskManager->GetCurrentTask();
-	return currentTask && currentTask->m_state == Task::StateStarted &&
-		    currentTask->m_type == GlobalResearch::TypeOfficer;
+  Task* currentTask = g_taskManager->GetCurrentTask();
+  return currentTask && currentTask->m_state == Task::StateStarted && currentTask->m_type == GlobalResearch::TypeOfficer;
 }
 
-static Unit *GetSelectedUnit()
+static Unit* GetSelectedUnit()
 {
-	Team *team = nullptr;
+  Team* team = nullptr;
 
-	if (g_location &&
-	    (team = g_location->GetMyTeam()))
-		return team->GetMyUnit();
-	else
-		return nullptr;
+  if (g_location && (team = g_location->GetMyTeam()))
+    return team->GetMyUnit();
+  else
+    return nullptr;
 }
 
 static bool SquaddieSelected()
 {
-	Unit *unit = nullptr;
-	Task *currentTask = nullptr;
+  Unit* unit = nullptr;
+  Task* currentTask = nullptr;
 
-	return
-		g_camera->IsInMode( Camera::ModeEntityTrack ) &&
-		(unit = GetSelectedUnit()) &&
-		unit->m_troopType == Entity::TypeInsertionSquadie &&
-		(currentTask = g_taskManager->GetCurrentTask()) &&
-		currentTask->m_state == Task::StateRunning;
+  return TheCamera()->IsInMode(Camera::ModeEntityTrack) && (unit = GetSelectedUnit()) && unit->m_troopType == Entity::TypeInsertionSquadie &&
+         (currentTask = g_taskManager->GetCurrentTask()) && currentTask->m_state == Task::StateRunning;
 }
 
 
-static bool WeaponSelected( int _type )
+static bool WeaponSelected(int _type)
 {
-    InsertionSquad *squad = nullptr;
+  InsertionSquad* squad = nullptr;
 
-	return
-		(squad = (InsertionSquad *) GetSelectedUnit()) &&
-		squad->m_troopType == Entity::TypeInsertionSquadie &&
-		_type == squad->m_weaponType &&
-		g_globalWorld->m_research->HasResearch( _type );
+  return (squad = (InsertionSquad*)GetSelectedUnit()) && squad->m_troopType == Entity::TypeInsertionSquadie && _type == squad->m_weaponType &&
+         g_globalWorld->m_research->HasResearch(_type);
 }
 
 static bool OfficerOrArmourSelected()
 {
-	Team *team = nullptr;
-	Entity *entity = nullptr;
+  Team* team = nullptr;
+  Entity* entity = nullptr;
 
-	return
-		g_location &&
-		(team = g_location->GetMyTeam()) &&
-		(entity = team->GetMyEntity()) &&
-		(entity->m_type == Entity::TypeOfficer ||
-		 entity->m_type == Entity::TypeArmour);
+  return g_location && (team = g_location->GetMyTeam()) && (entity = team->GetMyEntity()) &&
+         (entity->m_type == Entity::TypeOfficer || entity->m_type == Entity::TypeArmour);
 }
 
 static bool OfficerSelected()
 {
-	Team *team = nullptr;
-	Entity *entity = nullptr;
+  Team* team = nullptr;
+  Entity* entity = nullptr;
 
-	return
-		g_location &&
-		(team = g_location->GetMyTeam()) &&
-		(entity = team->GetMyEntity()) &&
-		(entity->m_type == Entity::TypeOfficer);
+  return g_location && (team = g_location->GetMyTeam()) && (entity = team->GetMyEntity()) && (entity->m_type == Entity::TypeOfficer);
 }
 
 static bool ArmourSelected()
 {
-	Team *team = nullptr;
-	Entity *entity = nullptr;
+  Team* team = nullptr;
+  Entity* entity = nullptr;
 
-	return
-		g_location &&
-		(team = g_location->GetMyTeam()) &&
-		(entity = team->GetMyEntity()) &&
-		(entity->m_type == Entity::TypeArmour);
+  return g_location && (team = g_location->GetMyTeam()) && (entity = team->GetMyEntity()) && (entity->m_type == Entity::TypeArmour);
 }
 
 
 static bool HasMoreThanOneSecondaryWeapon()
 {
-	int numSecondaryWeapons =
-		g_globalWorld->m_research->HasResearch( GlobalResearch::TypeGrenade ) +
-		g_globalWorld->m_research->HasResearch( GlobalResearch::TypeAirStrike ) +
-		g_globalWorld->m_research->HasResearch( GlobalResearch::TypeRocket );
+  int numSecondaryWeapons = g_globalWorld->m_research->HasResearch(GlobalResearch::TypeGrenade) +
+                            g_globalWorld->m_research->HasResearch(GlobalResearch::TypeAirStrike) +
+                            g_globalWorld->m_research->HasResearch(GlobalResearch::TypeRocket);
 
-	return numSecondaryWeapons > 1;
+  return numSecondaryWeapons > 1;
 }
 
 static bool UnitSelected()
 {
-	if( !g_location )
-		return false;
+  if (!g_location)
+    return false;
 
-    Team *team = g_location->GetMyTeam();
+  Team* team = g_location->GetMyTeam();
 
-	if( !team )
-		return false;
+  if (!team)
+    return false;
 
-    if( team->GetMyEntity() )
-		return true;
+  if (team->GetMyEntity())
+    return true;
 
-    Task *currentTask = g_taskManager->GetCurrentTask();
-    // if the task has just been ended or killed, it isnt valid
-    if (currentTask && currentTask->m_state == Task::StateStopping )
-        return false;
+  Task* currentTask = g_taskManager->GetCurrentTask();
+  // if the task has just been ended or killed, it isnt valid
+  if (currentTask && currentTask->m_state == Task::StateStopping)
+    return false;
 
-    if( !currentTask )
-        return false;
+  if (!currentTask)
+    return false;
 
-	Unit *unit = team->GetMyUnit();
-	return unit != nullptr;
+  Unit* unit = team->GetMyUnit();
+  return unit != nullptr;
 }
 
 static bool CanSwitchUnit()
 {
-	return (g_taskManager->CapacityUsed() > 1);
+  return (g_taskManager->CapacityUsed() > 1);
 
-	// The predicate below is true whenever the left button would
-	// switch to a task (which includes when you have only one unit)
-	// however, in order to try and keep screen clutter to a minimum
-	// we've decided to simplify the predicate -- we should only
-	// display the help if there is more than one task.
+  // The predicate below is true whenever the left button would
+  // switch to a task (which includes when you have only one unit)
+  // however, in order to try and keep screen clutter to a minimum
+  // we've decided to simplify the predicate -- we should only
+  // display the help if there is more than one task.
 
-	//return (g_taskManager->m_currentTaskId == -1 &&
-	//		g_taskManager->CapacityUsed() > 0) ||
-	//		g_taskManager->CapacityUsed() > 1;
+  // return (g_taskManager->m_currentTaskId == -1 &&
+  //		g_taskManager->CapacityUsed() > 0) ||
+  //		g_taskManager->CapacityUsed() > 1;
 }
 
 static bool BuildingSelected()
 {
-    Team *team = g_location->GetMyTeam();
+  Team* team = g_location->GetMyTeam();
 
-    if( team && team->m_currentBuildingId != -1 )
-    {
-        Building *building = g_location->GetBuilding( team->m_currentBuildingId );
-        if( building )
-			return true;
-    }
+  if (team && team->m_currentBuildingId != -1)
+  {
+    Building* building = g_location->GetBuilding(team->m_currentBuildingId);
+    if (building)
+      return true;
+  }
 
-	return false;
+  return false;
 }
 
 static bool RadarDishSelected()
 {
-    Team *team = g_location->GetMyTeam();
+  Team* team = g_location->GetMyTeam();
 
-    if( team && team->m_currentBuildingId != -1 )
+  if (team && team->m_currentBuildingId != -1)
+  {
+    Building* building = g_location->GetBuilding(team->m_currentBuildingId);
+    if (building && building->m_type == Building::TypeRadarDish)
+      return true;
+  }
+
+  return false;
+}
+
+
+bool ControlHelpSystem::CheckCondition(int _condition)
+{
+  switch (_condition)
+  {
+  case CondDestroyUnit:
+    return RunningProgram() || UnitSelected();
+
+  case CondTaskManagerCreateBlue:
+    // Always tell the user that the it is possible to create a unit
+    // (even if full up) (so long as you're not in the task manager)
+    return !TheTaskManagerInterface()->m_visible || TheTaskManagerInterface()->AdviseCreateControlHelpBlue();
+
+  case CondTaskManagerCloseBlue:
+    // Too cluttered to have two close buttons
+    return false; // TheTaskManagerInterface()->AdviseCloseControlHelp();
+
+  case CondTaskManagerCloseRed:
+    return TheTaskManagerInterface()->m_visible;
+
+  case CondDeselectUnit:
+    return UnitSelected() || BuildingSelected();
+
+  case CondSelectUnit:
+    return !TheTaskManagerInterface()->m_visible && g_gameCursor->AdviseHighlightingSomething();
+
+  case CondTaskManagerCreateGreen:
+    return TheTaskManagerInterface()->m_visible && TheTaskManagerInterface()->AdviseCreateControlHelpGreen();
+
+  case CondMoveUnit:
+    return !TheTaskManagerInterface()->m_visible && g_gameCursor->AdviseMoveableEntitySelected();
+
+  case CondTaskManagerSelect:
+    return TheTaskManagerInterface()->m_visible && TheTaskManagerInterface()->AdviseOverSelectableZone();
+
+  case CondPlaceUnit:
+    return !TheTaskManagerInterface()->m_visible && g_gameCursor->AdvisePlacementOpportunity();
+
+  case CondPromoteOfficer:
+    return !TheTaskManagerInterface()->m_visible && g_gameCursor->AdviseHighlightingSomething() && PlacingOfficerProgram();
+
+  case CondMoveCameraOrUnit:
+    return !TheTaskManagerInterface()->m_visible &&
+           (TheCamera()->IsInMode(Camera::ModeFreeMovement) || TheCamera()->IsInMode(Camera::ModeEntityTrack));
+
+  case CondCameraAim:
+    return !TheTaskManagerInterface()->m_visible && TheCamera()->IsInMode(Camera::ModeFreeMovement);
+
+  case CondSquaddieFire:
+    return !TheTaskManagerInterface()->m_visible && SquaddieSelected();
+
+  case CondChangeWeapon:
+    return !TheTaskManagerInterface()->m_visible && SquaddieSelected() && HasMoreThanOneSecondaryWeapon();
+
+  case CondChangeOrders:
+    return !TheTaskManagerInterface()->m_visible && OfficerOrArmourSelected();
+
+  case CondCameraUp:
+    return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !TheTaskManagerInterface()->m_visible;
+
+  case CondCameraDown:
+    return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !TheTaskManagerInterface()->m_visible;
+
+  case CondZoom:
+    return !TheTaskManagerInterface()->m_visible &&
+           // RadarDishSelected() &&
+           TheCamera()->IsInMode(Camera::ModeRadarAim);
+
+  case CondFireGrenades:
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+           WeaponSelected(GlobalResearch::TypeGrenade);
+
+  case CondFireRocket:
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+           WeaponSelected(GlobalResearch::TypeRocket);
+
+  case CondFireAirstrike:
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+           WeaponSelected(GlobalResearch::TypeAirStrike);
+
+  case CondOfficerSetGoto:
+    return !TheTaskManagerInterface()->m_visible && OfficerSelected();
+
+  case CondOfficerSetFollow:
+  {
+    WorldObjectId idUnderMouse;
+    bool officerHighlighted = false;
+    if (g_app->m_locationInput->GetObjectUnderMouse(idUnderMouse, g_globalWorld->m_myTeamId))
     {
-        Building *building = g_location->GetBuilding( team->m_currentBuildingId );
-		if( building && building->m_type == Building::TypeRadarDish)
-			return true;
+      Entity* e = g_location->GetEntity(idUnderMouse);
+      if (e && e->m_type == Entity::TypeOfficer)
+        officerHighlighted = true;
     }
+    return !TheTaskManagerInterface()->m_visible && OfficerSelected() && officerHighlighted;
+  }
 
-	return false;
+  case CondArmourSetTurret:
+    return !TheTaskManagerInterface()->m_visible && ArmourSelected();
+
+  case CondSwitchPrevUnit:
+  case CondSwitchNextUnit:
+    return !TheTaskManagerInterface()->m_visible && CanSwitchUnit();
+
+  case CondRadarAim:
+    return !TheTaskManagerInterface()->m_visible && RadarDishSelected();
+
+  case CondSkipCutscene:
+  {
+    bool inCutscene = false;
+    if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
+      inCutscene = true;
+    if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
+      inCutscene = true;
+    return inCutscene;
+  }
+
+
+  default:
+    DEBUG_ASSERT(false);
+    return false;
+  }
 }
 
-
-bool ControlHelpSystem::CheckCondition( int _condition )
+void ControlHelpSystem::DecayCond(int _cond)
 {
-	switch (_condition) {
-		case CondDestroyUnit:
-			return RunningProgram() || UnitSelected();
-
-		case CondTaskManagerCreateBlue:
-			// Always tell the user that the it is possible to create a unit
-			// (even if full up) (so long as you're not in the task manager)
-			return !g_taskManagerInterface->m_visible ||
-					g_taskManagerInterface->AdviseCreateControlHelpBlue();
-
-		case CondTaskManagerCloseBlue:
-			// Too cluttered to have two close buttons
-			return false; // g_taskManagerInterface->AdviseCloseControlHelp();
-
-		case CondTaskManagerCloseRed:
-			return g_taskManagerInterface->m_visible;
-
-		case CondDeselectUnit:
-			return UnitSelected() || BuildingSelected();
-
-		case CondSelectUnit:
-			return !g_taskManagerInterface->m_visible &&
-				   g_app->m_gameCursor->AdviseHighlightingSomething();
-
-		case CondTaskManagerCreateGreen:
-			return g_taskManagerInterface->m_visible &&
-				   g_taskManagerInterface->AdviseCreateControlHelpGreen();
-
-		case CondMoveUnit:
-			return !g_taskManagerInterface->m_visible &&
-				   g_app->m_gameCursor->AdviseMoveableEntitySelected();
-
-		case CondTaskManagerSelect:
-			return g_taskManagerInterface->m_visible &&
-				   g_taskManagerInterface->AdviseOverSelectableZone();
-
-		case CondPlaceUnit:
-			return !g_taskManagerInterface->m_visible &&
-				   g_app->m_gameCursor->AdvisePlacementOpportunity();
-
-		case CondPromoteOfficer:
-			return !g_taskManagerInterface->m_visible &&
-				   g_app->m_gameCursor->AdviseHighlightingSomething() &&
-				   PlacingOfficerProgram();
-
-		case CondMoveCameraOrUnit:
-			return !g_taskManagerInterface->m_visible &&
-				   (g_camera->IsInMode( Camera::ModeFreeMovement ) ||
-				    g_camera->IsInMode( Camera::ModeEntityTrack ));
-
-		case CondCameraAim:
-			return !g_taskManagerInterface->m_visible &&
-				   g_camera->IsInMode( Camera::ModeFreeMovement );
-
-		case CondSquaddieFire:
-			return !g_taskManagerInterface->m_visible &&
-					SquaddieSelected();
-
-		case CondChangeWeapon:
-			return !g_taskManagerInterface->m_visible &&
-					SquaddieSelected() &&
-					HasMoreThanOneSecondaryWeapon();
-
-		case CondChangeOrders:
-			return !g_taskManagerInterface->m_visible &&
-					OfficerOrArmourSelected();
-
-		case CondCameraUp:
-			return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !g_taskManagerInterface->m_visible;
-
-		case CondCameraDown:
-			return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !g_taskManagerInterface->m_visible;
-
-		case CondZoom:
-			return !g_taskManagerInterface->m_visible &&
-				   // RadarDishSelected() &&
-				   g_camera->IsInMode( Camera::ModeRadarAim );
-
-		case CondFireGrenades:
-			return !g_taskManagerInterface->m_visible &&
-				   g_inputManager->controlEvent( ControlUnitPrimaryFireDirected ) &&
-				   SquaddieSelected() &&
-				   WeaponSelected( GlobalResearch::TypeGrenade );
-
-		case CondFireRocket:
-			return !g_taskManagerInterface->m_visible &&
-				   g_inputManager->controlEvent( ControlUnitPrimaryFireDirected ) &&
-				   SquaddieSelected() &&
-				   WeaponSelected( GlobalResearch::TypeRocket );
-
-		case CondFireAirstrike:
-			return !g_taskManagerInterface->m_visible &&
-				   g_inputManager->controlEvent( ControlUnitPrimaryFireDirected ) &&
-				   SquaddieSelected() &&
-				   WeaponSelected( GlobalResearch::TypeAirStrike );
-
-		case CondOfficerSetGoto:
-			return !g_taskManagerInterface->m_visible &&
-					OfficerSelected();
-
-		case CondOfficerSetFollow:
-		{
-			WorldObjectId idUnderMouse;
-			bool officerHighlighted = false;
-            if( g_app->m_locationInput->GetObjectUnderMouse( idUnderMouse, g_globalWorld->m_myTeamId ) )
-			{
-				Entity *e = g_location->GetEntity( idUnderMouse );
-				if( e && e->m_type == Entity::TypeOfficer ) officerHighlighted = true;
-			}
-			return !g_taskManagerInterface->m_visible &&
-					OfficerSelected() &&
-					officerHighlighted;
-		}
-
-		case CondArmourSetTurret:
-			return !g_taskManagerInterface->m_visible &&
-					ArmourSelected();
-
-		case CondSwitchPrevUnit:
-		case CondSwitchNextUnit:
-			return !g_taskManagerInterface->m_visible &&
-					CanSwitchUnit();
-
-        case CondRadarAim:
-            return !g_taskManagerInterface->m_visible &&
-                RadarDishSelected();
-
-		case CondSkipCutscene:
-		{
-			bool inCutscene = false;
-			if( g_script->IsRunningScript() &&
-				g_script->m_permitEscape ) inCutscene = true;
-			if( g_camera->IsInMode( Camera::ModeBuildingFocus ) ) inCutscene = true;
-			return inCutscene;
-		}
-
-
-		default:
-			DEBUG_ASSERT( false );
-			return false;
-	}
+  TextIndicator& ti = m_conditionIconMap[_cond];
+  ti.m_timeUsed -= ti.m_decayRate * g_advanceTime;
+  if (ti.m_timeUsed < 0)
+    ti.m_timeUsed = 0;
 }
 
-void ControlHelpSystem::DecayCond( int _cond )
+void ControlHelpSystem::RecordCondUsed(int _cond)
 {
-	TextIndicator &ti = m_conditionIconMap[_cond];
-	ti.m_timeUsed -= ti.m_decayRate * g_advanceTime;
-	if (ti.m_timeUsed < 0)
-		ti.m_timeUsed = 0;
+  TextIndicator& ti = m_conditionIconMap[_cond];
+  ti.m_timeUsed += 2 * g_advanceTime;
+
+  if (ti.m_maxUsage != 0.0f)
+  {
+    if (ti.m_timeUsed > ti.m_maxUsage)
+      ti.m_timeUsed = ti.m_maxUsage;
+  }
 }
 
-void ControlHelpSystem::RecordCondUsed( int _cond )
+void ControlHelpSystem::SetCondIcon(int _cond)
 {
-	TextIndicator &ti = m_conditionIconMap[_cond];
-	ti.m_timeUsed += 2 * g_advanceTime;
+  const TextIndicator& ti = m_conditionIconMap[_cond];
 
-	if (ti.m_maxUsage != 0.0f)
-	{
-		if (ti.m_timeUsed > ti.m_maxUsage)
-			ti.m_timeUsed = ti.m_maxUsage;
-	}
+  float alpha = 1.0f;
+
+  if (ti.m_minTime != 0.0f && ti.m_maxTime != 0.0f)
+  {
+    if (ti.m_timeUsed < ti.m_minTime)
+      alpha = 1.0f;
+    else
+      alpha = (ti.m_maxTime - ti.m_timeUsed) / (ti.m_maxTime - ti.m_minTime);
+
+    if (alpha < 0.0f)
+      return;
+  }
+
+  m_icons[ti.m_icon]->Set(ti.m_text, LANGUAGEPHRASE(ti.m_langPhrase), alpha);
 }
 
-void ControlHelpSystem::SetCondIcon( int _cond )
-{
-	const TextIndicator &ti = m_conditionIconMap[_cond];
-
-	float alpha = 1.0f;
-
-	if (ti.m_minTime != 0.0f && ti.m_maxTime != 0.0f) {
-		if (ti.m_timeUsed < ti.m_minTime)
-			alpha = 1.0f;
-		else
-			alpha = (ti.m_maxTime - ti.m_timeUsed ) / (ti.m_maxTime - ti.m_minTime);
-
-		if (alpha < 0.0f)
-			return;
-	}
-
-	m_icons[ti.m_icon]->Set(ti.m_text, LANGUAGEPHRASE( ti.m_langPhrase ), alpha);
-}
-
-void ControlHelpSystem::Shutdown()
-{
-}
+void ControlHelpSystem::Shutdown() {}
 
 void ControlHelpSystem::Render()
 {
-	// Don't render if not in location
-	if (g_locationId == -1 ||
-		g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD ||
-		!g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
-	{
-		return;
-	}
+  // Don't render if not in location
+  if (g_locationId == -1 || g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD || !g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
+  {
+    return;
+  }
 
-	Vector2 setPosition( g_renderer->ScreenW() - 200, 50 );
-	g_gameFont.BeginText2D();
+  Vector2 setPosition(g_renderer->ScreenW() - 200, 50);
+  g_gameFont.BeginText2D();
 
-	bool inCutscene = false;
-	if( g_script->IsRunningScript() &&
-		g_script->m_permitEscape ) inCutscene = true;
-	if( g_camera->IsInMode( Camera::ModeBuildingFocus ) ) inCutscene = true;
+  bool inCutscene = false;
+  if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
+    inCutscene = true;
+  if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
+    inCutscene = true;
 
-	if( inCutscene )
-	{
-		float alpha;
-		m_icons[B]->Enabled( alpha );
-		m_icons[B]->Render( setPosition, alpha );
-        g_gameFont.EndText2D();
-		return;
-	}
-
-	if (g_taskManagerInterface->m_visible)
-		setPosition.x -= 100;
-
-	for (int i = 0; i < MaxSets; i++)
-		m_sets[i]->Render( setPosition );
-
+  if (inCutscene)
+  {
+    float alpha;
+    m_icons[B]->Enabled(alpha);
+    m_icons[B]->Render(setPosition, alpha);
     g_gameFont.EndText2D();
-}
+    return;
+  }
 
+  if (TheTaskManagerInterface()->m_visible)
+    setPosition.x -= 100;
+
+  for (int i = 0; i < MaxSets; i++)
+    m_sets[i]->Render(setPosition);
+
+  g_gameFont.EndText2D();
+}

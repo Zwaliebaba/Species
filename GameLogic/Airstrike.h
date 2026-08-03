@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Unit.h"
 
 
@@ -52,8 +54,7 @@ public:
     void ChangeHealth   ( int _amount );
     void Render         ( float _predictionTime );
 
-    void    ListSoundEvents	( LList<char const *> *_list );
-
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

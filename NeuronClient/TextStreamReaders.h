@@ -12,35 +12,39 @@
 // I recommend either TextFileReader or TextDataReader.
 class TextReader
 {
-protected:
-	char			m_seperatorChars[16];
-	char			m_filename[256];
+  protected:
+    // Was a char[16] filled by a 15-byte bounded copy, so a longer separator
+    // set was silently truncated rather than rejected.
+    std::string m_seperatorChars;
+    // Was a char[256] filled by a bounded copy, so a path longer than 255
+    // characters was silently truncated and the reader reported the wrong name.
+    std::string m_filename;
 
-	int			m_offsetIndex;
-	int			m_fileEncrypted;	// -1 means we don't know yet. 0 means no. 1 means yes.
+    int m_offsetIndex;
+    int m_fileEncrypted; // -1 means we don't know yet. 0 means no. 1 means yes.
 
-	void		DoubleMaxLineLen();
-	void		CleanLine();			// Decrypt, strip comments and scan for conflict markers
+    void DoubleMaxLineLen();
+    void CleanLine(); // Decrypt, strip comments and scan for conflict markers
 
-public:
-	int				m_tokenIndex;
-	char			*m_line;
-	unsigned int	m_maxLineLen;		// Doesn't include '\0' - m_line points to an array one byte larger than this
-	unsigned int	m_lineNum;
+  public:
+    int m_tokenIndex;
+    char* m_line;
+    unsigned int m_maxLineLen; // Doesn't include '\0' - m_line points to an array one byte larger than this
+    unsigned int m_lineNum;
 
-	TextReader		();
-	virtual ~TextReader();
+    TextReader();
+    virtual ~TextReader();
 
-    virtual bool IsOpen         () = 0;
-	virtual bool ReadLine		() = 0;	// Returns false on EOF, true otherwise
-	bool		 TokenAvailable	();
-	char		 *GetNextToken	();
-    char		 *GetRestOfLine ();
+    virtual bool IsOpen() = 0;
+    virtual bool ReadLine() = 0; // Returns false on EOF, true otherwise
+    bool TokenAvailable();
+    char* GetNextToken();
+    char* GetRestOfLine();
 
-	char const	*GetFilename	();
+    char const* GetFilename();
 
-	void SetSeperatorChars		(char const *_seperatorChars);
-	void SetDefaultSeperatorChars();
+    void SetSeperatorChars(char const* _seperatorChars);
+    void SetDefaultSeperatorChars();
 };
 
 
@@ -48,18 +52,18 @@ public:
 // Class TextFileReader
 //*****************************************************************************
 
-class TextFileReader: public TextReader
+class TextFileReader : public TextReader
 {
-protected:
-	FILE			*m_file;
+  protected:
+    FILE* m_file;
 
-public:
-	TextFileReader				(char const *_filename);
-	TextFileReader				(std::string const &_filename);
-	~TextFileReader				();
+  public:
+    TextFileReader(char const* _filename);
+    TextFileReader(std::string const& _filename);
+    ~TextFileReader();
 
-    bool IsOpen                 ();
-	bool ReadLine				();
+    bool IsOpen();
+    bool ReadLine();
 };
 
 
@@ -67,18 +71,16 @@ public:
 // Class TextDataReader
 //*****************************************************************************
 
-class TextDataReader: public TextReader
+class TextDataReader : public TextReader
 {
-protected:
-	char const			*m_data;
-	unsigned int		m_dataSize;
-	unsigned int		m_offset;
+  protected:
+    char const* m_data;
+    unsigned int m_dataSize;
+    unsigned int m_offset;
 
-public:
-	TextDataReader				(char const *_data, unsigned int _dataSize, char const *_filename);
+  public:
+    TextDataReader(char const* _data, unsigned int _dataSize, char const* _filename);
 
-    bool IsOpen                 ();
-	bool ReadLine				();
+    bool IsOpen();
+    bool ReadLine();
 };
-
-

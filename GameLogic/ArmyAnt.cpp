@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "Matrix34.h"
 #include "Shape.h"
@@ -17,7 +18,7 @@
 
 #include "ArmyAnt.h"
 #include "AntHill.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 #include "WorldPointers.h"
 
 
@@ -164,7 +165,7 @@ bool ArmyAnt::AdvanceScoutArea()
         Entity *targetEntity = g_location->GetEntity( m_targetId );
         if( targetEntity )
         {
-            if( targetEntity->m_type == Entity::TypeDarwinian )
+            if( targetEntity->m_type == Entity::TypeCitizen )
             {
                 m_orders = CollectEntity;
             }
@@ -232,8 +233,8 @@ bool ArmyAnt::AdvanceCollectEntity()
     //
     // Make sure he is still capturable
 
-    Darwinian *targetDarwinian = (Darwinian *) targetEntity;
-    if( targetDarwinian->m_state == Darwinian::StateCapturedByAnt )
+    Citizen *targetCitizen = (Citizen *) targetEntity;
+    if( targetCitizen->m_state == Citizen::StateCapturedByAnt )
     {
         m_targetId.SetInvalid();
         m_targetFound = false;
@@ -249,7 +250,7 @@ bool ArmyAnt::AdvanceCollectEntity()
     bool arrived = AdvanceToTargetPosition();
     if( arrived )
     {
-        targetDarwinian->AntCapture( m_id );
+        targetCitizen->AntCapture( m_id );
         OrderReturnToBase();
     }
 
@@ -294,7 +295,7 @@ bool ArmyAnt::AdvanceAttackEnemy()
                                                                syncsfrand(15.0f) ),
 															   Particle::TypeMuzzleFlash );
         }
-        g_soundSystem->TriggerEntityEvent( this, "Attack" );
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
     }
 
     return false;
@@ -334,14 +335,14 @@ bool ArmyAnt::AdvanceReturnToBase()
                 }
             }
 
-            // Any Darwinians being carried are now killed
+            // Any Citizens being carried are now killed
             Entity *entity = g_location->GetEntity( m_targetId );
-            if( entity && entity->m_type == Entity::TypeDarwinian )
+            if( entity && entity->m_type == Entity::TypeCitizen )
             {
-                Darwinian *darwinian = (Darwinian *) entity;
-                if( darwinian->m_state == Darwinian::StateCapturedByAnt )
+                Citizen *citizen = (Citizen *) entity;
+                if( citizen->m_state == Citizen::StateCapturedByAnt )
                 {
-                    darwinian->ChangeHealth( darwinian->m_stats[Entity::StatHealth] * -2 );
+                    citizen->ChangeHealth( citizen->m_stats[Entity::StatHealth] * -2 );
                 }
             }
         }
@@ -438,7 +439,7 @@ bool ArmyAnt::SearchForEnemies()
     WorldObjectId enemyId = g_location->m_entityGrid->GetBestEnemy( m_pos.x, m_pos.z, 0.0f, ARMYANT_SEARCHRANGE, m_id.GetTeamId() );
     Entity *enemy = g_location->GetEntity( enemyId );
 
-    if( enemy && !enemy->m_dead && enemy->m_type != Entity::TypeDarwinian )
+    if( enemy && !enemy->m_dead && enemy->m_type != Entity::TypeCitizen )
     {
         m_targetId = enemyId;
         m_orders = AttackEnemy;

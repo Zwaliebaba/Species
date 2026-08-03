@@ -3,8 +3,6 @@
 #include "RendererAccess.h"
 #include "WorldPointers.h"
 
-#define CHECK_OPENGL_STATE()
-
 #define PIXEL_EFFECT_GRID_RES	16
 
 class Shape;
@@ -73,6 +71,9 @@ class Renderer : public RendererAccess
     float GetFarPlane() const override;
     void SetNearAndFar(float _nearPlane, float _farPlane);
 
+    // Disabled: the body returns immediately. Kept because those eighty lines
+    // are the only written statement of the renderer's GL-state contract, and
+    // deleting them would delete that. Nothing calls it.
     void CheckOpenGLState() const;
     void SetOpenGLState() const;
 
@@ -94,7 +95,7 @@ class Renderer : public RendererAccess
     void MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform) override;
     void MarkUsedCells(const Shape* _shape, const Matrix34& _transform) override;
 
-    bool IsFadeComplete() const;
+    bool IsFadeComplete() const override;
     void StartFadeOut() override;
     void StartFadeIn(float _delay);
 };

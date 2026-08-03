@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 
@@ -13,33 +15,32 @@ class FileWriter;
 
 class PowerBuilding : public Building
 {
-protected:
-    int             m_powerLink;
-    ShapeMarker     *m_powerLocation;
+  protected:
+    int m_powerLink;
+    ShapeMarker* m_powerLocation;
 
-    LList           <float> m_surges;
+    std::vector<float> m_surges;
 
-public:
+  public:
     PowerBuilding();
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
-    void Render         ( float _predictionTime );
-    void RenderAlphas   ( float _predictionTime );
+    void Initialise(Building* _template);
+    bool Advance();
+    void Render(float _predictionTime);
+    void RenderAlphas(float _predictionTime);
 
-    bool IsInView       ();
+    bool IsInView();
     Vector3 GetPowerLocation();
-    virtual void TriggerSurge ( float _initValue );
+    virtual void TriggerSurge(float _initValue);
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
-    void Read   ( TextReader *_in, bool _dynamic );
-    void Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 
-    int  GetBuildingLink();
-    void SetBuildingLink( int _buildingId );
+    int GetBuildingLink();
+    void SetBuildingLink(int _buildingId);
 };
-
 
 
 // ****************************************************************************
@@ -48,31 +49,30 @@ public:
 
 class Generator : public PowerBuilding
 {
-protected:
-    ShapeMarker *m_counter;
+  protected:
+    ShapeMarker* m_counter;
 
-    float   m_timerSync;
-    int     m_numThisSecond;
-    bool    m_enabled;
+    float m_timerSync;
+    int m_numThisSecond;
+    bool m_enabled;
 
-public:
-    float   m_throughput;
+  public:
+    float m_throughput;
 
-public:
+  public:
     Generator();
 
-    void TriggerSurge ( float _initValue );
+    void TriggerSurge(float _initValue);
 
     void ReprogramComplete();
 
-    char const *GetObjectiveCounter();
+    char const* GetObjectiveCounter();
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     bool Advance();
-    void Render( float _predictionTime );
+    void Render(float _predictionTime);
 };
-
 
 
 // ****************************************************************************
@@ -81,7 +81,7 @@ public:
 
 class Pylon : public PowerBuilding
 {
-public:
+  public:
     Pylon();
     bool Advance();
 };
@@ -93,18 +93,18 @@ public:
 
 class PylonStart : public PowerBuilding
 {
-public:
+  public:
     int m_reqBuildingId;
 
-public:
+  public:
     PylonStart();
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
-    void RenderAlphas   ( float _predictionTime );
+    void Initialise(Building* _template);
+    bool Advance();
+    void RenderAlphas(float _predictionTime);
 
-    void Read   ( TextReader *_in, bool _dynamic );
-    void Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 };
 
 
@@ -114,11 +114,11 @@ public:
 
 class PylonEnd : public PowerBuilding
 {
-public:
+  public:
     PylonEnd();
 
-    void TriggerSurge   ( float _initValue );
-    void RenderAlphas   ( float _predictionTime );
+    void TriggerSurge(float _initValue);
+    void RenderAlphas(float _predictionTime);
 };
 
 
@@ -131,22 +131,21 @@ public:
 
 class SolarPanel : public PowerBuilding
 {
-protected:
-    ShapeMarker *m_glowMarker   [SOLARPANEL_NUMGLOWS];
-    ShapeMarker *m_statusMarkers[SOLARPANEL_NUMSTATUSMARKERS];
+  protected:
+    ShapeMarker* m_glowMarker[SOLARPANEL_NUMGLOWS];
+    ShapeMarker* m_statusMarkers[SOLARPANEL_NUMSTATUSMARKERS];
 
     bool m_operating;
 
-public:
+  public:
     SolarPanel();
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
+    void Initialise(Building* _template);
+    bool Advance();
 
-    void Render         ( float _predictionTime );
-    void RenderPorts    ();
-    void RenderAlphas   ( float _predictionTime );
+    void Render(float _predictionTime);
+    void RenderPorts();
+    void RenderAlphas(float _predictionTime);
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
-

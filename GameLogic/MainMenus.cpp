@@ -8,9 +8,7 @@
 #include "PrefsOtherWindow.h"
 #include "PrefsScreenWindow.h"
 #include "PrefsSoundWindow.h"
-#include "Renderer.h"
 #include "Resource.h"
-#include "Script.h"
 #include "TextRenderer.h"
 #include "UserProfileWindow.h"
 #include "Win32EventHandler.h"
@@ -23,124 +21,124 @@ class WebsiteButton;
 
 class SkipPrologueWindowButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_skipprologue")))
-      EclRegisterWindow(new SkipPrologueWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_skipprologue")))
+        EclRegisterWindow(new SkipPrologueWindow(), m_parent);
+    }
 };
 
 class SkipPrologueButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    LList<EclWindow*>* windows = EclGetWindows();
-    while (windows->Size() > 0)
+    void MouseUp() override
     {
-      EclWindow* w = windows->GetData(0);
-      EclRemoveWindow(w->m_name);
-    }
+      std::vector<EclWindow*>* windows = EclGetWindows();
+      while (windows->size() > 0)
+      {
+        EclWindow* w = (*windows)[0];
+        EclRemoveWindow(w->m_name);
+      }
 
-    g_script->Skip();
-    g_appCommands->LoadCampaign();
-  }
+      g_script->Skip();
+      g_appCommands->LoadCampaign();
+    }
 };
 
 class PlayPrologueButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    LList<EclWindow*>* windows = EclGetWindows();
-    while (windows->Size() > 0)
+    void MouseUp() override
     {
-      EclWindow* w = windows->GetData(0);
-      EclRemoveWindow(w->m_name);
-    }
+      std::vector<EclWindow*>* windows = EclGetWindows();
+      while (windows->size() > 0)
+      {
+        EclWindow* w = (*windows)[0];
+        EclRemoveWindow(w->m_name);
+      }
 
-    g_script->Skip();
-    g_appCommands->LoadPrologue();
-  }
+      g_script->Skip();
+      g_appCommands->LoadPrologue();
+    }
 };
 
 class PlayPrologueWindowButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialogue_playprologue")))
-      EclRegisterWindow(new PlayPrologueWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialogue_playprologue")))
+        EclRegisterWindow(new PlayPrologueWindow(), m_parent);
+    }
 };
 
 class AboutSpeciesButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("about_darwinia")))
-      EclRegisterWindow(new AboutSpeciesWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("about_darwinia")))
+        EclRegisterWindow(new AboutSpeciesWindow(), m_parent);
+    }
 };
 
 class MainMenuUserProfileButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_profile")))
-      EclRegisterWindow(new UserProfileWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_profile")))
+        EclRegisterWindow(new UserProfileWindow(), m_parent);
+    }
 };
 
 class OptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_options")))
-      EclRegisterWindow(new OptionsMenuWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_options")))
+        EclRegisterWindow(new OptionsMenuWindow(), m_parent);
+    }
 };
 
 class ScreenOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
-      EclRegisterWindow(new PrefsScreenWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
+        EclRegisterWindow(new PrefsScreenWindow(), m_parent);
+    }
 };
 
 class GraphicsOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
-      EclRegisterWindow(new PrefsGraphicsWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
+        EclRegisterWindow(new PrefsGraphicsWindow(), m_parent);
+    }
 };
 
 class SoundOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
-      EclRegisterWindow(new PrefsSoundWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
+        EclRegisterWindow(new PrefsSoundWindow(), m_parent);
+    }
 };
 
 class OtherOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_otheroptions")))
-      EclRegisterWindow(new PrefsOtherWindow(), m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_otheroptions")))
+        EclRegisterWindow(new PrefsOtherWindow(), m_parent);
+    }
 };
 
 class KeybindingsOptionsButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    if (!EclGetWindow(LANGUAGEPHRASE("dialog_inputoptions")))
-      EclRegisterWindow(new PrefsKeybindingsWindow, m_parent);
-  }
+    void MouseUp() override
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_inputoptions")))
+        EclRegisterWindow(new PrefsKeybindingsWindow, m_parent);
+    }
 };
 
 // ****************************************************************************
@@ -190,59 +188,59 @@ void OptionsMenuWindow::Create()
   screen->m_fontSize = fontSize;
   screen->m_centered = true;
   RegisterButton(screen);
-  m_buttonOrder.PutData(screen);
+  m_buttonOrder.push_back(screen);
 
   auto graphics = new GraphicsOptionsButton();
   graphics->SetShortProperties(LANGUAGEPHRASE("dialog_graphicsoptions"), border, y += h, buttonW, buttonH);
   graphics->m_fontSize = fontSize;
   graphics->m_centered = true;
   RegisterButton(graphics);
-  m_buttonOrder.PutData(graphics);
+  m_buttonOrder.push_back(graphics);
 
   auto sound = new SoundOptionsButton();
   sound->SetShortProperties(LANGUAGEPHRASE("dialog_soundoptions"), border, y += h, buttonW, buttonH);
   sound->m_fontSize = fontSize;
   sound->m_centered = true;
   RegisterButton(sound);
-  m_buttonOrder.PutData(sound);
+  m_buttonOrder.push_back(sound);
 
   auto keys = new KeybindingsOptionsButton();
   keys->SetShortProperties(LANGUAGEPHRASE("dialog_inputoptions"), border, y += h, buttonW, buttonH);
   keys->m_fontSize = fontSize;
   keys->m_centered = true;
   RegisterButton(keys);
-  m_buttonOrder.PutData(keys);
+  m_buttonOrder.push_back(keys);
 
   auto other = new OtherOptionsButton();
   other->SetShortProperties(LANGUAGEPHRASE("dialog_otheroptions"), border, y += h, buttonW, buttonH);
   other->m_fontSize = fontSize;
   other->m_centered = true;
   RegisterButton(other);
-  m_buttonOrder.PutData(other);
+  m_buttonOrder.push_back(other);
 
   auto close = new CloseButton();
   close->SetShortProperties(LANGUAGEPHRASE("dialog_close"), border, m_h - h, buttonW, buttonH);
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 // ============================================================================
 
 class ResetLevelButton : public SpeciesButton
 {
-  void MouseUp() override { EclRegisterWindow(new ResetLocationWindow(), m_parent); }
+    void MouseUp() override { EclRegisterWindow(new ResetLocationWindow(), m_parent); }
 };
 
 class ExitLevelButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    EclRemoveWindow(m_parent->m_name);
+    void MouseUp() override
+    {
+      EclRemoveWindow(m_parent->m_name);
 
-    g_requestedLocationId = -1;
-  }
+      g_requestedLocationId = -1;
+    }
 };
 
 class WebsiteButton : public SpeciesButton
@@ -262,7 +260,7 @@ class WebsiteButton : public SpeciesButton
 
         g_windowManager->DestroyWin();
         delete g_renderer;
-        g_renderer = new Renderer();
+        g_renderer = g_appCommands->CreateRenderer();
         g_renderer->Initialise();
         getW32EventHandler()->ResetWindowHandle();
         g_resource->FlushOpenGlState();
@@ -314,7 +312,7 @@ void LocationWindow::Create()
       reset->m_fontSize = fontSize;
       reset->m_centered = true;
       RegisterButton(reset);
-      m_buttonOrder.PutData(reset);
+      m_buttonOrder.push_back(reset);
       gap = h;
     }
 
@@ -325,7 +323,7 @@ void LocationWindow::Create()
       exit->m_fontSize = fontSize;
       exit->m_centered = true;
       RegisterButton(exit);
-      m_buttonOrder.PutData(exit);
+      m_buttonOrder.push_back(exit);
     }
     else
     {
@@ -334,7 +332,7 @@ void LocationWindow::Create()
       exitLevel->m_fontSize = fontSize;
       exitLevel->m_centered = true;
       RegisterButton(exitLevel);
-      m_buttonOrder.PutData(exitLevel);
+      m_buttonOrder.push_back(exitLevel);
     }
   }
   else
@@ -346,7 +344,7 @@ void LocationWindow::Create()
     reset->m_fontSize = fontSize;
     reset->m_centered = true;
     RegisterButton(reset);
-    m_buttonOrder.PutData(reset);
+    m_buttonOrder.push_back(reset);
 
     auto buy = new WebsiteButton();
     buy->SetShortProperties(LANGUAGEPHRASE("dialog_buyonline"), border, y += h, buttonW, buttonH);
@@ -356,14 +354,14 @@ void LocationWindow::Create()
     strcpy(buy->m_website, "http://store.introversion.co.uk");
 
     RegisterButton(buy);
-    m_buttonOrder.PutData(buy);
+    m_buttonOrder.push_back(buy);
 
     auto exitLevel = new ExitLevelButton();
     exitLevel->SetShortProperties(LANGUAGEPHRASE("dialog_leavedarwinia"), border, y += h, buttonW, buttonH);
     exitLevel->m_fontSize = fontSize;
     exitLevel->m_centered = true;
     RegisterButton(exitLevel);
-    m_buttonOrder.PutData(exitLevel);
+    m_buttonOrder.push_back(exitLevel);
   }
 
   auto options = new OptionsButton();
@@ -371,7 +369,7 @@ void LocationWindow::Create()
   options->m_fontSize = fontSize;
   options->m_centered = true;
   RegisterButton(options);
-  m_buttonOrder.PutData(options);
+  m_buttonOrder.push_back(options);
 
   if (g_appCommands->HasBoughtGame() && g_gameMode == GameModePrologue)
   {
@@ -380,7 +378,7 @@ void LocationWindow::Create()
     skip->m_fontSize = fontSize;
     skip->m_centered = true;
     RegisterButton(skip);
-    m_buttonOrder.PutData(skip);
+    m_buttonOrder.push_back(skip);
   }
 
   auto close = new CloseButton();
@@ -388,22 +386,25 @@ void LocationWindow::Create()
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 // ============================================================================
 
 class ResetLocationButton : public SpeciesButton
 {
-  void MouseUp() override
-  {
-    EclRemoveWindow(m_parent->m_name);
-    EclRemoveWindow(LANGUAGEPHRASE("dialog_locationmenu"));
-  }
+    void MouseUp() override
+    {
+      EclRemoveWindow(m_parent->m_name);
+      EclRemoveWindow(LANGUAGEPHRASE("dialog_locationmenu"));
+    }
 };
 
 ResetLocationWindow::ResetLocationWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("dialog_resetlocation")) { SetMenuSize(300, 200); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_resetlocation"))
+{
+  SetMenuSize(300, 200);
+}
 
 void ResetLocationWindow::Create()
 {
@@ -416,7 +417,7 @@ void ResetLocationWindow::Create()
   int buttonW = m_w / 2 - border * 2;
   int h = buttonH + border;
 
-  //int y = m_h - 30;
+  // int y = m_h - 30;
 
   auto box = new InvertedBox();
   box->SetProperties("invert", border, y + border, m_w - 20, m_h - 2 * h);
@@ -427,14 +428,14 @@ void ResetLocationWindow::Create()
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 
   auto reset = new ResetLocationButton();
   reset->SetShortProperties(LANGUAGEPHRASE("dialog_yes"), m_w - buttonW - border, m_h - h, buttonW, buttonH);
   reset->m_fontSize = fontSize;
   reset->m_centered = true;
   RegisterButton(reset);
-  m_buttonOrder.PutData(reset);
+  m_buttonOrder.push_back(reset);
 }
 
 void ResetLocationWindow::Render(bool _hasFocus)
@@ -474,14 +475,14 @@ void MainMenuWindow::Create()
   profile->m_fontSize = fontSize;
   profile->m_centered = true;
   RegisterButton(profile);
-  m_buttonOrder.PutData(profile);
+  m_buttonOrder.push_back(profile);
 
   auto options = new OptionsButton();
   options->SetShortProperties(LANGUAGEPHRASE("dialog_options"), border, y += h, buttonW, buttonH);
   options->m_fontSize = fontSize;
   options->m_centered = true;
   RegisterButton(options);
-  m_buttonOrder.PutData(options);
+  m_buttonOrder.push_back(options);
 
   auto website = new WebsiteButton();
   website->SetShortProperties(LANGUAGEPHRASE("dialog_visitwebsite"), border, y += h, buttonW, buttonH);
@@ -489,32 +490,35 @@ void MainMenuWindow::Create()
   website->m_centered = true;
   strcpy(website->m_website, "http://www.darwinia.co.uk");
   RegisterButton(website);
-  m_buttonOrder.PutData(website);
+  m_buttonOrder.push_back(website);
 
   auto play = new PlayPrologueWindowButton();
   play->SetShortProperties(LANGUAGEPHRASE("dialog_playprologue"), border, y += h, buttonW, buttonH);
   play->m_fontSize = fontSize;
   play->m_centered = true;
   RegisterButton(play);
-  m_buttonOrder.PutData(play);
+  m_buttonOrder.push_back(play);
 
   auto exit = new GameExitButton();
   exit->SetShortProperties(LANGUAGEPHRASE("dialog_leavedarwinia"), border, y += h, buttonW, buttonH);
   exit->m_fontSize = fontSize;
   exit->m_centered = true;
   RegisterButton(exit);
-  m_buttonOrder.PutData(exit);
+  m_buttonOrder.push_back(exit);
 
   auto close = new CloseButton();
   close->SetShortProperties(LANGUAGEPHRASE("dialog_close"), border, m_h - h, buttonW, buttonH);
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 AboutSpeciesWindow::AboutSpeciesWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("about_darwinia")) { SetMenuSize(350, 250); }
+  : SpeciesWindow(LANGUAGEPHRASE("about_darwinia"))
+{
+  SetMenuSize(350, 250);
+}
 
 void AboutSpeciesWindow::Create()
 {
@@ -530,7 +534,7 @@ void AboutSpeciesWindow::Create()
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 void AboutSpeciesWindow::Render(bool _hasFocus)
@@ -538,7 +542,7 @@ void AboutSpeciesWindow::Render(bool _hasFocus)
   SpeciesWindow::Render(_hasFocus);
 
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Darwinian.bmp"));
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Sprites/Citizen.bmp"));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -575,7 +579,10 @@ void AboutSpeciesWindow::Render(bool _hasFocus)
 }
 
 SkipPrologueWindow::SkipPrologueWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("dialog_skipprologue")) { SetMenuSize(360, 350); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_skipprologue"))
+{
+  SetMenuSize(360, 350);
+}
 
 void SkipPrologueWindow::Create()
 {
@@ -591,14 +598,14 @@ void SkipPrologueWindow::Create()
   skip->m_fontSize = fontSize;
   skip->m_centered = true;
   RegisterButton(skip);
-  m_buttonOrder.PutData(skip);
+  m_buttonOrder.push_back(skip);
 
   auto close = new CloseButton();
   close->SetShortProperties(LANGUAGEPHRASE("dialog_close"), border * 2 + buttonW, m_h - h, buttonW, buttonH);
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 void SkipPrologueWindow::Render(bool _hasFocus)
@@ -635,15 +642,25 @@ void SkipPrologueWindow::Render(bool _hasFocus)
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-  LList<char*>* wrapped = WordWrapText(LANGUAGEPHRASE("dialog_skip1"), m_w * 1.70f, fontSize, true);
-  for (int i = 0; i < wrapped->Size(); ++i)
-    g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, wrapped->GetData(i));
-  delete wrapped->GetData(0);
+  std::vector<char*>* wrapped = WordWrapText(LANGUAGEPHRASE("dialog_skip1"), m_w * 1.70f, fontSize, true);
+  for (char* line : *wrapped)
+    g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, line);
+
+  // Element 0 is the one allocation the whole list points into, so this one
+  // delete[] releases every line. It was a plain `delete` over a `new char[]`,
+  // and the emptiness check is not redundant: the legacy list's GetData answered an
+  // out-of-range read with a null, so `delete wrapped->GetData(0)` was harmless
+  // on an empty list where std::vector would be undefined behaviour.
+  if (!wrapped->empty())
+    delete[] (*wrapped)[0];
   delete wrapped;
 };
 
 PlayPrologueWindow::PlayPrologueWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("dialog_playprologue")) { SetMenuSize(350, 350); }
+  : SpeciesWindow(LANGUAGEPHRASE("dialog_playprologue"))
+{
+  SetMenuSize(350, 350);
+}
 
 void PlayPrologueWindow::Create()
 {
@@ -659,14 +676,14 @@ void PlayPrologueWindow::Create()
   play->m_fontSize = fontSize;
   play->m_centered = true;
   RegisterButton(play);
-  m_buttonOrder.PutData(play);
+  m_buttonOrder.push_back(play);
 
   auto close = new CloseButton();
   close->SetShortProperties(LANGUAGEPHRASE("dialog_close"), border * 2 + buttonW, m_h - h, buttonW, buttonH);
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 void PlayPrologueWindow::Render(bool _hasFocus)
@@ -703,9 +720,16 @@ void PlayPrologueWindow::Render(bool _hasFocus)
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-  LList<char*>* wrapped = WordWrapText(LANGUAGEPHRASE("dialog_prologue1"), m_w * 1.70f, fontSize, true);
-  for (int i = 0; i < wrapped->Size(); ++i)
-    g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, wrapped->GetData(i));
-  delete wrapped->GetData(0);
+  std::vector<char*>* wrapped = WordWrapText(LANGUAGEPHRASE("dialog_prologue1"), m_w * 1.70f, fontSize, true);
+  for (char* line : *wrapped)
+    g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, line);
+
+  // Element 0 is the one allocation the whole list points into, so this one
+  // delete[] releases every line. It was a plain `delete` over a `new char[]`,
+  // and the emptiness check is not redundant: the legacy list's GetData answered an
+  // out-of-range read with a null, so `delete wrapped->GetData(0)` was harmless
+  // on an empty list where std::vector would be undefined behaviour.
+  if (!wrapped->empty())
+    delete[] (*wrapped)[0];
   delete wrapped;
 };

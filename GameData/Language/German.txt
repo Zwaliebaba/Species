@@ -267,7 +267,7 @@ entityname_sporegenerator              Sporengenerator
 entityname_centipede                   Tausendfüßler
 entityname_spaceinvader                Space-Invader
 entityname_spider                      Spinne
-entityname_darwinian                   Darwinianer
+entityname_citizen                   Darwinianer
 entityname_officer                     Offizier
 entityname_armyant                     Armee-Ameise
 entityname_armour                      Panzer
@@ -364,7 +364,7 @@ objective_throughput                   Durchsatz
 # Research messages
 # ================================================
 
-researchname_darwinian                 Darwinianer
+researchname_citizen                 Darwinianer
 researchname_squad                     Trupp
 researchname_engineer                  Ingenieur
 researchname_laser                     Laser
@@ -424,11 +424,11 @@ research_taskmanager                   Ich werde versuchen, den Task Manager für
 research_taskmanager_v3                Ich habe einige Verbesserungen am Task Manager vorgenommen. Du kannst jetzt bis zu vier Programme gleichzeitig fahren.
 research_taskmanager_v4                Ich habe den Task Manager aufgerüstet. Jetzt kannst du fünf Programme aufs Mal fahren. Damit stoßen wir an die Grenzen des Programms, eine weitere Verbesserung wird nicht möglich sein.
 
-research_darwinian                     Ich will versuchen, das Grundmodell der Darwinianer zu verbessern. Es müsste mir gelingen, sie mit ein paar anständigen Waffen auszustaffieren, damit sie sich verteidigen können.
-# research_darwinian_v1              Unused
-# research_darwinian_v2              Unused
-research_darwinian_v3                  Ich habe die Darwinianer aufgerüstet, damit sie Laser verwenden können. Damit sollten sie sich gegen Virenangriffe schützen können.
-research_darwinian_v4                  Ich habe die Darwinianer mit Granaten ausgerüstet. Das macht ein bisschen Angst, aber so sollten sie eine Chance gegen stärkere Feinde haben. Ich hab alles getan, was ich konnte.
+research_citizen                     Ich will versuchen, das Grundmodell der Darwinianer zu verbessern. Es müsste mir gelingen, sie mit ein paar anständigen Waffen auszustaffieren, damit sie sich verteidigen können.
+# research_citizen_v1              Unused
+# research_citizen_v2              Unused
+research_citizen_v3                  Ich habe die Darwinianer aufgerüstet, damit sie Laser verwenden können. Damit sollten sie sich gegen Virenangriffe schützen können.
+research_citizen_v4                  Ich habe die Darwinianer mit Granaten ausgerüstet. Das macht ein bisschen Angst, aber so sollten sie eine Chance gegen stärkere Feinde haben. Ich hab alles getan, was ich konnte.
 
 research_engineer                      Ich werde versuchen, die Ingenieure zu verbessern. Es wäre doch schön, sie könnten mehr Seelen tragen.
 # research_engineer_v1               Unused
@@ -769,7 +769,7 @@ newcontrols_showresearch               Forschungsseite anzeigen
 newcontrols_showtaskmanager            Task Manager-Seite anzeigen
 newcontrols_showobjectives             Ziele-Seite anzeigen
 
-newcontrols_research_darwinian         Darwinianer-Programm ausbauen (bessere Waffenausstattung)
+newcontrols_research_citizen         Darwinianer-Programm ausbauen (bessere Waffenausstattung)
 newcontrols_research_officer           Offiziers-Programm ausbauen (zusätzliche Befehle)
 newcontrols_research_squad             Trupp-Programm ausbauen (größere Trupps)
 newcontrols_research_laser             Laser-Programm ausbauen (größere Reichweite)
@@ -1540,7 +1540,7 @@ spawnname_spawnspider                  Spinnen-Brüter
 spawnname_spawnspirits                 Seelen-Brüter
 spawnname_spawneggs                    Eier-Brüter
 spawnname_spawntriffideggs             Triff-Eier-Brüter
-spawnname_spawndarwinians              Darwinier-Brüter
+spawnname_spawncitizens              Darwinier-Brüter
 
 
 # =================================================

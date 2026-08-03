@@ -57,9 +57,9 @@ void Script::RunCommand_CamCut(const char* _mountName)
   if (!g_location)
     return;
 
-  bool mountFound = g_camera->SetTarget(_mountName);
+  bool mountFound = TheCamera()->SetTarget(_mountName);
   DEBUG_ASSERT(mountFound);
-  g_camera->CutToTarget();
+  TheCamera()->CutToTarget();
 }
 
 void Script::RunCommand_CamMove(const char* _mountName, float _duration)
@@ -67,11 +67,11 @@ void Script::RunCommand_CamMove(const char* _mountName, float _duration)
   if (!g_location)
     return;
 
-  if (g_camera->SetTarget(_mountName))
+  if (TheCamera()->SetTarget(_mountName))
   {
-    g_camera->SetMoveDuration(_duration);
+    TheCamera()->SetMoveDuration(_duration);
 
-    g_camera->RequestMode(Camera::ModeMoveToTarget);
+    TheCamera()->RequestMode(Camera::ModeMoveToTarget);
   }
 }
 
@@ -83,15 +83,17 @@ void Script::RunCommand_CamAnim(const char* _animName)
   int animId = g_location->m_levelFile->GetCameraAnimId(_animName);
   ASSERT_TEXT(animId != -1, "Invalid camera animation requested %s", _animName);
   CameraAnimation* camAnim = g_location->m_levelFile->m_cameraAnimations[animId];
-  g_camera->PlayAnimation(camAnim);
+  // animId came from GetCameraAnimId, which returns a loop index into this
+  // same list or -1, and the assert above rules out -1.
+  TheCamera()->PlayAnimation(camAnim);
 }
 
 void Script::RunCommand_CamFov(float _fov, bool _immediate)
 {
   if (_immediate)
-    g_camera->SetFOV(_fov);
+    TheCamera()->SetFOV(_fov);
   else
-    g_camera->SetTargetFOV(_fov);
+    TheCamera()->SetTargetFOV(_fov);
 }
 
 void Script::RunCommand_CamBuildingFocus(int _buildingId, float _range, float _height)
@@ -102,7 +104,7 @@ void Script::RunCommand_CamBuildingFocus(int _buildingId, float _range, float _h
   Building* building = g_location->GetBuilding(_buildingId);
 
   if (building)
-    g_camera->RequestBuildingFocusMode(building, _range, _height);
+    TheCamera()->RequestBuildingFocusMode(building, _range, _height);
   else
     DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
 }
@@ -116,15 +118,15 @@ void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float
 
   if (building)
   {
-    g_camera->SetTarget(building->m_centrePos, _range, _height);
-    g_camera->SetMoveDuration(_duration);
-    g_camera->RequestMode(Camera::ModeMoveToTarget);
+    TheCamera()->SetTarget(building->m_centrePos, _range, _height);
+    TheCamera()->SetMoveDuration(_duration);
+    TheCamera()->RequestMode(Camera::ModeMoveToTarget);
   }
   else
     DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
 }
 
-void Script::RunCommand_CamGlobalWorldFocus() { g_camera->RequestSphereFocusMode(); }
+void Script::RunCommand_CamGlobalWorldFocus() { TheCamera()->RequestSphereFocusMode(); }
 
 void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
 {
@@ -144,22 +146,22 @@ void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
     targetPos = g_globalWorld->GetLocationPosition(locationId);
   }
 
-  if (!g_camera->IsInMode(Camera::ModeSphereWorldScripted))
-    g_camera->RequestMode(Camera::ModeSphereWorldScripted);
+  if (!TheCamera()->IsInMode(Camera::ModeSphereWorldScripted))
+    TheCamera()->RequestMode(Camera::ModeSphereWorldScripted);
 
-  g_camera->SetTargetFOV(_fov);
-  g_camera->SetTarget(targetPos, Vector3(0, 0, 1), g_upVector);
+  TheCamera()->SetTargetFOV(_fov);
+  TheCamera()->SetTarget(targetPos, Vector3(0, 0, 1), g_upVector);
 }
 
 void Script::RunCommand_CamReset()
 {
-  if (g_camera->IsAnimPlaying())
-    g_camera->StopAnimation();
+  if (TheCamera()->IsAnimPlaying())
+    TheCamera()->StopAnimation();
 
   if (g_location)
-    g_camera->RequestMode(Camera::ModeFreeMovement);
+    TheCamera()->RequestMode(Camera::ModeFreeMovement);
   else
-    g_camera->RequestMode(Camera::ModeSphereWorld);
+    TheCamera()->RequestMode(Camera::ModeSphereWorld);
 }
 
 void Script::RunCommand_EnterLocation(char* _name)
@@ -171,15 +173,15 @@ void Script::RunCommand_EnterLocation(char* _name)
   GlobalLocation* loc = g_globalWorld->GetLocation(g_requestedLocationId);
   DEBUG_ASSERT(loc);
 
-  strcpy(g_app->m_requestedMission, loc->m_missionFilename);
-  strcpy(g_app->m_requestedMap, loc->m_mapFilename);
+  g_requestedMission = loc->m_missionFilename;
+  g_requestedMap = loc->m_mapFilename;
 }
 
 void Script::RunCommand_ExitLocation()
 {
   g_requestedLocationId = -1;
-  g_app->m_requestedMission[0] = '\0';
-  g_app->m_requestedMap[0] = '\0';
+  g_requestedMission.clear();
+  g_requestedMap.clear();
 
   m_requestedLocationId = g_requestedLocationId;
 }
@@ -223,15 +225,15 @@ void Script::RunCommand_TriggerSound(const char* _event)
   char eventName[256];
   sprintf(eventName, "Music %s", _event);
 
-  if (g_app->m_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName) == 0)
-    g_app->m_soundSystem->TriggerOtherEvent(nullptr, _event, SoundSourceBlueprint::TypeMusic);
+  if (g_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName) == 0)
+    g_soundSystem->TriggerOtherEvent(_event, SoundSourceBlueprint::TypeMusic);
 }
 
 void Script::RunCommand_StopSound(const char* _event)
 {
   char eventName[256];
   sprintf(eventName, "Music %s", _event);
-  g_app->m_soundSystem->StopAllSounds(WorldObjectId(), eventName);
+  g_soundSystem->StopAllSounds(WorldObjectId(), eventName);
 }
 
 void Script::RunCommand_DemoGesture(const char* _name) {}
@@ -243,22 +245,22 @@ void Script::RunCommand_GiveResearch(const char* _name)
     g_prefsManager->SetInt("ModSystemEnabled", 1);
     g_prefsManager->Save();
 
-    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, 999, 4.0f);
+    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 999, 4.0f);
   }
   else if (stricmp(_name, "accessallareas") == 0)
   {
     char folderName[512];
-    sprintf(folderName, "%susers/", g_app->GetProfileDirectory());
+    sprintf(folderName, "%susers/", g_appCommands->ProfileDirectory());
     bool success = CreateDirectory(folderName);
     if (!success)
       DebugTrace("failed to create folder %s\n", folderName);
 
-    sprintf(folderName, "%susers/AccessAllAreas/", g_app->GetProfileDirectory());
+    sprintf(folderName, "%susers/AccessAllAreas/", g_appCommands->ProfileDirectory());
     success = CreateDirectory(folderName);
     if (!success)
       DebugTrace("failed to create folder %s\n", folderName);
 
-    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
+    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
   }
   else
   {
@@ -266,7 +268,7 @@ void Script::RunCommand_GiveResearch(const char* _name)
     if (researchType != -1)
     {
       g_globalWorld->m_research->AddResearch(researchType);
-      g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, researchType, 4.0f);
+      TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, researchType, 4.0f);
     }
   }
 }
@@ -278,23 +280,23 @@ void Script::RunCommand_GameOver()
   //
   // Go into the outro camera mode
 
-  g_camera->RequestMode(Camera::ModeSphereWorldOutro);
+  TheCamera()->RequestMode(Camera::ModeSphereWorldOutro);
 
   //
   // Kill global world ambiences
 
-  g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
+  g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
 }
 
 void Script::RunCommand_ResetResearch()
 {
-  m_darwinianResearchLevel = g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian];
-  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian] = 1;
+  m_citizenResearchLevel = g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen];
+  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen] = 1;
 }
 
 void Script::RunCommand_RestoreResearch()
 {
-  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeDarwinian] = m_darwinianResearchLevel;
+  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen] = m_citizenResearchLevel;
 }
 
 GodDish* GetGodDish()
@@ -356,14 +358,13 @@ void Script::RunCommand_PurityControl()
   // Delete the save game
 
   char saveDir[256];
-  sprintf(saveDir, "users/%s/", g_userProfileName);
-  LList<char*>* allFiles = ListDirectory(saveDir, "*.*");
+  sprintf(saveDir, "users/%s/", g_userProfileName.c_str());
+  // Neither the names nor the vector are freed. The exit(0) below is why that
+  // has never mattered.
+  std::vector<char*>* allFiles = ListDirectory(saveDir, "*.*");
 
-  for (int i = 0; i < allFiles->Size(); ++i)
-  {
-    char* filename = allFiles->GetData(i);
+  for (const char* filename : *allFiles)
     DeleteThisFile(filename);
-  }
 
   //
   // Open up our store website
@@ -379,7 +380,7 @@ void Script::RunCommand_PurityControl()
 void Script::RunCommand_ShowDarwinLogo()
 {
   TheRenderer()->m_renderDarwinLogo = GetHighResTime();
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "ShowLogo", SoundSourceBlueprint::TypeInterface);
+  g_soundSystem->TriggerOtherEvent("ShowLogo", SoundSourceBlueprint::TypeInterface);
 }
 
 void Script::RunCommand_ShowDemoEndSequence() {}
@@ -418,7 +419,7 @@ void Script::RunScript(const char* _filename)
     // Run a script, speficied by filename
     char fullFilename[256] = "Scripts/";
     strcat(fullFilename, _filename);
-    m_in = g_app->m_resource->GetTextReader(fullFilename);
+    m_in = g_resource->GetTextReader(fullFilename);
     DEBUG_ASSERT(m_in);
   }
   else
@@ -452,12 +453,12 @@ bool Script::Skip()
     // Quick exit the entire cutscene
     delete m_in;
     m_in = nullptr;
-    g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Music");
+    g_soundSystem->StopAllSounds(WorldObjectId(), "Music");
     m_permitEscape = false;
     if (g_location)
-      g_camera->RequestMode(Camera::ModeFreeMovement);
+      TheCamera()->RequestMode(Camera::ModeFreeMovement);
     else
-      g_camera->RequestMode(Camera::ModeSphereWorld);
+      TheCamera()->RequestMode(Camera::ModeSphereWorld);
     return true;
   }
 
@@ -471,13 +472,13 @@ void Script::Advance()
       return;
 
   if (m_permitEscape)
-    g_taskManagerInterface->SetVisible(false);
+    TheTaskManagerInterface()->SetVisible(false);
 
   if (m_waitForFade && !TheRenderer()->IsFadeComplete())
     return;
   if (m_waitUntil > g_gameTime)
     return;
-  if (m_waitForCamera && g_camera->IsAnimPlaying())
+  if (m_waitForCamera && TheCamera()->IsAnimPlaying())
     return;
 
   if (m_waitForRocket)

@@ -10,66 +10,60 @@
 
 #pragma once
 
-#define SIZE_ECLWINDOW_NAME     256
-#define SIZE_ECLWINDOW_TITLE    256
+#include <vector>
 
-#include "LList.h"
+#define SIZE_ECLWINDOW_NAME 256
+#define SIZE_ECLWINDOW_TITLE 256
+
 
 class EclButton;
 
 
 class EclWindow
 {
+  public:
+    int m_x;
+    int m_y;
+    int m_w;
+    int m_h;
 
-public:
+    char m_name[SIZE_ECLWINDOW_NAME];
+    char m_title[SIZE_ECLWINDOW_TITLE];
 
-    int         m_x;
-    int         m_y;
-    int         m_w;
-    int         m_h;
+    bool m_movable;
+    bool m_resizable;
+    bool m_dirty;
 
-    char        m_name  [SIZE_ECLWINDOW_NAME];
-    char        m_title [SIZE_ECLWINDOW_TITLE];
+    std::vector<EclButton*> m_buttons;
 
-    bool        m_movable;
-    bool        m_resizable;
-    bool        m_dirty;
+  public:
+    char m_currentTextEdit[SIZE_ECLWINDOW_NAME];
 
-    LList       <EclButton *> m_buttons;
+  public:
+    EclWindow(char const* _name);
+    virtual ~EclWindow();
 
-public:
+    void SetName(char const* _name);
+    void SetTitle(char const* _title);
+    void SetPosition(int _x, int _y);
+    void SetSize(int _w, int _h);
+    void SetMovable(bool _movable);
+    void MakeAllOnScreen();
 
-    char        m_currentTextEdit[SIZE_ECLWINDOW_NAME];
+    void RegisterButton(EclButton* button);
+    void RemoveButton(char const* _name);
 
-public:
+    void BeginTextEdit(char* _name);
+    void EndTextEdit();
 
-    EclWindow( char const *_name );
-    virtual ~EclWindow  ();
+    virtual EclButton* GetButton(char const* _name);
+    virtual EclButton* GetButton(int _x, int _y);
 
-    void SetName                    ( char const *_name );
-    void SetTitle                   ( char const *_title );
-    void SetPosition                ( int _x, int _y );
-    void SetSize                    ( int _w, int _h );
-    void SetMovable                 ( bool _movable );
-	void MakeAllOnScreen			();
+    virtual void Create();
+    virtual void Remove();
+    virtual void Update();
+    virtual void Render(bool hasFocus);
 
-    void RegisterButton             ( EclButton *button );
-    void RemoveButton               ( char const *_name );
-
-    void BeginTextEdit              ( char *_name );
-    void EndTextEdit                ();
-
-    virtual EclButton   *GetButton  ( char const *_name );
-    virtual EclButton   *GetButton  ( int _x, int _y );                             
-
-    virtual void Create ();
-    virtual void Remove ();
-    virtual void Update ();
-    virtual void Render ( bool hasFocus );
-
-    virtual void Keypress   ( int keyCode, bool shift, bool ctrl, bool alt );
-    virtual void MouseEvent ( bool lmb, bool rmb, bool up, bool down );
-
+    virtual void Keypress(int keyCode, bool shift, bool ctrl, bool alt);
+    virtual void MouseEvent(bool lmb, bool rmb, bool up, bool down);
 };
-
-

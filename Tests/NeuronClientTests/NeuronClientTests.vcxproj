@@ -77,7 +77,11 @@
            what lets a test include any header that project can compile against;
            it does not widen what a test may legally include, which
            tools/check_layering.py enforces separately. -->
-      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronClient;$(SpeciesRoot)GameLogic;$(SpeciesRoot)Species</AdditionalIncludeDirectories>
+      <!-- The layer under test and the one below it. No NeuronClient
+           header reaches GameLogic or Species — the four upward includes
+           left are all in .cpp files this project does not compile — so
+           neither is on the path. -->
+      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronClient</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <!-- NeuronClient.lib is the renderer and sound layer, so anything the

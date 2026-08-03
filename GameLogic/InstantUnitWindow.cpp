@@ -9,10 +9,8 @@
 #include "InputField.h"
 #include "InstantUnitWindow.h"
 
-#include "Camera.h"
 #include "LevelFile.h"
 #include "Location.h"
-#include "LocationEditor.h"
 #include "Team.h"
 
 #include "Entity.h"
@@ -25,18 +23,18 @@
 // Class EditButton
 // ****************************************************************************
 
-class EditButton: public SpeciesButton
+class EditButton : public SpeciesButton
 {
-public:
-	EditButton() {}
+  public:
+    EditButton() {}
 
-	void MouseUp()
-	{
-		if (stricmp(m_name, LANGUAGEPHRASE("editor_move")) == 0)
-		{
-			g_locationEditor->m_tool = LocationEditor::ToolMove;
-		}
-	}
+    void MouseUp()
+    {
+      if (stricmp(m_name, LANGUAGEPHRASE("editor_move")) == 0)
+      {
+        g_locationEditor->SetTool(LocationEditorAccess::ToolMove);
+      }
+    }
 };
 
 
@@ -46,54 +44,55 @@ public:
 
 class TeamButton1 : public SpeciesButton
 {
-public:
+  public:
     int m_teamId;
-    TeamButton1( int _teamId )
-        :   m_teamId(_teamId)
+    TeamButton1(int _teamId)
+      : m_teamId(_teamId)
     {
-        if( m_teamId == -1 ) m_teamId = -1;
+      if (m_teamId == -1)
+        m_teamId = -1;
     }
 
     void MouseUp()
     {
-		InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
-        if( iu )
-        {
-            iu->m_teamId = m_teamId;
-        }
+      InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(g_locationEditor->GetSelectionId());
+      if (iu)
+      {
+        iu->m_teamId = m_teamId;
+      }
     }
 
-    void Render( int realX, int realY, bool highlighted, bool clicked)
+    void Render(int realX, int realY, bool highlighted, bool clicked)
     {
-		InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
-        if( iu )
+      InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(g_locationEditor->GetSelectionId());
+      if (iu)
+      {
+        if (iu->m_teamId == m_teamId)
         {
-            if( iu->m_teamId == m_teamId )
-            {
-                SpeciesButton::Render( realX, realY, true, clicked );
-            }
-            else
-            {
-                SpeciesButton::Render( realX, realY, highlighted, clicked );
-            }
-        }
-
-        if( m_teamId == 255 )
-        {
-            glColor3ub( 100, 100, 100 );
+          SpeciesButton::Render(realX, realY, true, clicked);
         }
         else
         {
-            RGBAColour col = g_location->m_teams[ m_teamId ].m_colour;
-            glColor3ubv( col.GetData() );
+          SpeciesButton::Render(realX, realY, highlighted, clicked);
         }
+      }
 
-        glBegin( GL_QUADS );
-            glVertex2i( realX + 30, realY + 4 );
-            glVertex2i( realX + 40, realY + 4 );
-            glVertex2i( realX + 40, realY + 12 );
-            glVertex2i( realX + 30, realY + 12 );
-        glEnd();
+      if (m_teamId == 255)
+      {
+        glColor3ub(100, 100, 100);
+      }
+      else
+      {
+        RGBAColour col = g_location->m_teams[m_teamId].m_colour;
+        glColor3ubv(col.GetData());
+      }
+
+      glBegin(GL_QUADS);
+      glVertex2i(realX + 30, realY + 4);
+      glVertex2i(realX + 40, realY + 4);
+      glVertex2i(realX + 40, realY + 12);
+      glVertex2i(realX + 30, realY + 12);
+      glEnd();
     }
 };
 
@@ -104,85 +103,85 @@ public:
 
 class DeleteInstantUnitButton : public SpeciesButton
 {
-public:
+  public:
     bool m_safetyCatch;
     DeleteInstantUnitButton()
-        : m_safetyCatch(true){}
+      : m_safetyCatch(true)
+    {
+    }
 
     void MouseUp()
     {
-        if( m_safetyCatch )
+      if (m_safetyCatch)
+      {
+        SetCaption(LANGUAGEPHRASE("editor_deletenow"));
+        m_safetyCatch = false;
+      }
+      else
+      {
+        std::vector<InstantUnit*>& units = g_location->m_levelFile->m_instantUnits;
+        const int selectionId = g_locationEditor->GetSelectionId();
+        if (selectionId >= 0 && selectionId < static_cast<int>(units.size()))
         {
-            SetCaption(LANGUAGEPHRASE("editor_deletenow") );
-            m_safetyCatch = false;
+          delete units[selectionId];
+          units.erase(units.begin() + selectionId);
         }
-        else
-        {
-			InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->m_selectionId);
-			delete iu;
-
-            g_location->m_levelFile->m_instantUnits.RemoveData(g_locationEditor->m_selectionId);
-    	    EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
-            g_locationEditor->m_tool = LocationEditor::ToolNone;
-            g_locationEditor->m_selectionId = -1;
-        }
+        EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
+        g_locationEditor->SetTool(LocationEditorAccess::ToolNone);
+        g_locationEditor->SetSelectionId(-1);
+      }
     }
 };
-
 
 
 // ****************************************************************************
 // Class InstantUnitEditWindow
 // ****************************************************************************
 
-InstantUnitEditWindow::InstantUnitEditWindow( char const *name )
-:	SpeciesWindow(name)
+InstantUnitEditWindow::InstantUnitEditWindow(char const* name)
+  : SpeciesWindow(name)
 {
 }
 
 
-InstantUnitEditWindow::~InstantUnitEditWindow()
-{
-	g_locationEditor->m_selectionId = -1;
-}
+InstantUnitEditWindow::~InstantUnitEditWindow() { g_locationEditor->SetSelectionId(-1); }
 
 
 void InstantUnitEditWindow::Create()
 {
-	SpeciesWindow::Create();
+  SpeciesWindow::Create();
 
-	int y = 4;
-	int buttonPitch = 18;
+  int y = 4;
+  int buttonPitch = 18;
 
-    EditButton *mb = new EditButton();
-	mb->SetShortProperties(LANGUAGEPHRASE("editor_move"), 10, y+=buttonPitch, m_w-20);
-	RegisterButton(mb);
+  EditButton* mb = new EditButton();
+  mb->SetShortProperties(LANGUAGEPHRASE("editor_move"), 10, y += buttonPitch, m_w - 20);
+  RegisterButton(mb);
 
-    DeleteInstantUnitButton *db = new DeleteInstantUnitButton();
-    db->SetShortProperties(LANGUAGEPHRASE("editor_delete"), 10, y+=buttonPitch, m_w-20);
-    RegisterButton(db);
+  DeleteInstantUnitButton* db = new DeleteInstantUnitButton();
+  db->SetShortProperties(LANGUAGEPHRASE("editor_delete"), 10, y += buttonPitch, m_w - 20);
+  RegisterButton(db);
 
-	y += buttonPitch;
+  y += buttonPitch;
 
-    for( int i = 0; i < 3; ++i )
-    {
-        char name[64];
-        int w = m_w/3 - 8;
-        sprintf( name, "T%d", i);
-        TeamButton1 *tb = new TeamButton1(i);
-        tb->SetShortProperties(name, 10 + (i*w) + (i*2), y, w);
-        RegisterButton(tb);
-    }
+  for (int i = 0; i < 3; ++i)
+  {
+    char name[64];
+    int w = m_w / 3 - 8;
+    sprintf(name, "T%d", i);
+    TeamButton1* tb = new TeamButton1(i);
+    tb->SetShortProperties(name, 10 + (i * w) + (i * 2), y, w);
+    RegisterButton(tb);
+  }
 
-	y += 7;
+  y += 7;
 
-	InstantUnit *iu = g_location->m_levelFile->m_instantUnits.GetData(
-						g_locationEditor->m_selectionId);
-    CreateValueControl( LANGUAGEPHRASE("editor_numentities"), InputField::TypeInt, &iu->m_number, y+=buttonPitch, 1, 1, 1000 );
-    CreateValueControl( LANGUAGEPHRASE("editor_spread"), InputField::TypeFloat, &iu->m_spread, y+=buttonPitch, 1.0f, 0.0f, 1000.0f );
-    CreateValueControl( LANGUAGEPHRASE("editor_inunit"), InputField::TypeChar, &iu->m_inAUnit, y+=buttonPitch, 1,0,1 );
+  InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(g_locationEditor->GetSelectionId());
+  CreateValueControl(LANGUAGEPHRASE("editor_numentities"), InputField::TypeInt, &iu->m_number, y += buttonPitch, 1, 1, 1000);
+  CreateValueControl(LANGUAGEPHRASE("editor_spread"), InputField::TypeFloat, &iu->m_spread, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
+  CreateValueControl(LANGUAGEPHRASE("editor_inunit"), InputField::TypeChar, &iu->m_inAUnit, y += buttonPitch, 1, 0, 1);
 
-	y += 7;
+  y += 7;
 }
 
 
@@ -190,56 +189,54 @@ void InstantUnitEditWindow::Create()
 // Class CreateButton
 // ****************************************************************************
 
-class CreateButton: public SpeciesButton
+class CreateButton : public SpeciesButton
 {
-public:
-	CreateButton() {}
+  public:
+    CreateButton() {}
 
-	void MouseUp()
-	{
-		for (int i = 0; i < Entity::NumEntityTypes; ++i)
-		{
-			if (stricmp(m_name, Entity::GetTypeNameTranslated(i)) == 0)
-			{
-				g_locationEditor->m_tool = LocationEditor::ToolMove;
+    void MouseUp()
+    {
+      for (int i = 0; i < Entity::NumEntityTypes; ++i)
+      {
+        if (stricmp(m_name, Entity::GetTypeNameTranslated(i)) == 0)
+        {
+          g_locationEditor->SetTool(LocationEditorAccess::ToolMove);
 
-				// Where did we click?
-				Vector3 rayStart, rayDir, hitPos;
-	            g_camera->GetClickRay(g_renderer->ScreenW()/2,
-                                             g_renderer->ScreenH()/2,
-                                             &rayStart, &rayDir);
-                g_location->m_landscape.RayHit( rayStart, rayDir, &hitPos );
+          // Where did we click?
+          Vector3 rayStart, rayDir, hitPos;
+          g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
+          g_location->m_landscape.RayHit(rayStart, rayDir, &hitPos);
 
-				// Make sure that any old edit window is removed
-				EclWindow *ew = EclGetWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
-				if (ew)
-				{
-					EclRemoveWindow(ew->m_name);
-				}
+          // Make sure that any old edit window is removed
+          EclWindow* ew = EclGetWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
+          if (ew)
+          {
+            EclRemoveWindow(ew->m_name);
+          }
 
-				// Create the new instant unit
-				InstantUnit *iu = new InstantUnit();
-				iu->m_number = 40;
-				iu->m_posX = hitPos.x;
-				iu->m_posZ = hitPos.z;
-				iu->m_teamId = 0;
-				iu->m_type = i;
-                iu->m_inAUnit = false;
-				g_locationEditor->m_selectionId = g_location->m_levelFile->m_instantUnits.Size();
-				g_location->m_levelFile->m_instantUnits.PutData(iu);
+          // Create the new instant unit
+          InstantUnit* iu = new InstantUnit();
+          iu->m_number = 40;
+          iu->m_posX = hitPos.x;
+          iu->m_posZ = hitPos.z;
+          iu->m_teamId = 0;
+          iu->m_type = i;
+          iu->m_inAUnit = false;
+          g_locationEditor->SetSelectionId(static_cast<int>(g_location->m_levelFile->m_instantUnits.size()));
+          g_location->m_levelFile->m_instantUnits.push_back(iu);
 
-				// Create an edit window for the new instant unit
-				EclWindow *cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
-				DEBUG_ASSERT(cw);
-				ew = new InstantUnitEditWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
-				ew->m_w = cw->m_w;
-				ew->m_h = 160;
-				ew->m_x = cw->m_x;
-				EclRegisterWindow(ew);
-				ew->m_y = cw->m_y - ew->m_h - 10;
-			}
-		}
-	}
+          // Create an edit window for the new instant unit
+          EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
+          DEBUG_ASSERT(cw);
+          ew = new InstantUnitEditWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
+          ew->m_w = cw->m_w;
+          ew->m_h = 160;
+          ew->m_x = cw->m_x;
+          EclRegisterWindow(ew);
+          ew->m_y = cw->m_y - ew->m_h - 10;
+        }
+      }
+    }
 };
 
 
@@ -247,45 +244,44 @@ public:
 // Class InstantUnitCreateWindow
 // ****************************************************************************
 
-InstantUnitCreateWindow::InstantUnitCreateWindow( char const *name )
-:	SpeciesWindow(name)
+InstantUnitCreateWindow::InstantUnitCreateWindow(char const* name)
+  : SpeciesWindow(name)
 {
 }
 
 
 InstantUnitCreateWindow::~InstantUnitCreateWindow()
 {
-	g_locationEditor->RequestMode(LocationEditor::ModeNone);
-	EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
+  g_locationEditor->RequestMode(LocationEditorAccess::ModeNone);
+  EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
 }
 
 
 void InstantUnitCreateWindow::Create()
 {
-	SpeciesWindow::Create();
+  SpeciesWindow::Create();
 
-	int y = 3;
-	int const buttonYPitch = 18;
-	char const *lowerLimit = " ";
-	char const *best;
+  int y = 3;
+  int const buttonYPitch = 18;
+  char const* lowerLimit = " ";
+  char const* best;
 
-	for (int i = 0; i < Entity::NumEntityTypes; ++i)
-	{
-		best = "~~~~"; // All reasonable strings come before this when alphabetically sorted
-		for (int j = 0; j < Entity::NumEntityTypes; ++j)
-		{
-			char const *typeName = Entity::GetTypeNameTranslated(j);
-			if (stricmp(typeName, lowerLimit) > 0 &&
-				stricmp(typeName, best) < 0)
-			{
-				best = typeName;
-			}
-		}
-		lowerLimit = best;
-		CreateButton *button = new CreateButton();
-		button->SetShortProperties(best, 10, y += buttonYPitch, m_w - 20);
-		RegisterButton(button);
-	}
+  for (int i = 0; i < Entity::NumEntityTypes; ++i)
+  {
+    best = "~~~~"; // All reasonable strings come before this when alphabetically sorted
+    for (int j = 0; j < Entity::NumEntityTypes; ++j)
+    {
+      char const* typeName = Entity::GetTypeNameTranslated(j);
+      if (stricmp(typeName, lowerLimit) > 0 && stricmp(typeName, best) < 0)
+      {
+        best = typeName;
+      }
+    }
+    lowerLimit = best;
+    CreateButton* button = new CreateButton();
+    button->SetShortProperties(best, 10, y += buttonYPitch, m_w - 20);
+    RegisterButton(button);
+  }
 }
 
 #endif // LOCATION_EDITOR

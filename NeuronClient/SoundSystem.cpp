@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <stdlib.h> // atof/atoi/qsort below; arrived via Location.h until T17 dropped it
 #include "Debug.h"
 #include "FilesysUtils.h"
 #include "FileWriter.h"
@@ -11,10 +13,9 @@
 #include "WindowManager.h"
 #include "LanguageTable.h"
 
-#include "SaveOnQuitWindow.h"
 
 #include "SampleCache.h"
-#include "SoundLibrary2d.h"	// FIXME
+#include "SoundLibrary2d.h" // FIXME
 #include "SoundLibrary3d.h"
 #include "SoundSystem.h"
 #include "SoundStreamDecoder.h"
@@ -22,16 +23,14 @@
 #include "SoundLibrary3dSoftware.h"
 
 #include "GameTime.h"
-#include "Camera.h"
-#include "Location.h"
 
-#include "Entity.h"
 #include "WorldPointers.h"
+#include "WorldTypeNames.h"
 #include "AppState.h"
 
 SoundSystem* g_soundSystem = nullptr;
 
-#define SOUNDSYSTEM_UPDATEPERIOD    0.05f
+#define SOUNDSYSTEM_UPDATEPERIOD 0.05f
 
 //*****************************************************************************
 // Class SoundEventBlueprint
@@ -39,13 +38,15 @@ SoundSystem* g_soundSystem = nullptr;
 
 SoundEventBlueprint::SoundEventBlueprint()
   : m_eventName(nullptr),
-    m_instance(nullptr) {}
+    m_instance(nullptr)
+{
+}
 
 void SoundEventBlueprint::SetEventName(const char* _name)
 {
   if (m_eventName)
   {
-    delete [] m_eventName;
+    delete[] m_eventName;
     m_eventName = nullptr;
   }
 
@@ -75,94 +76,94 @@ const char* SoundSourceBlueprint::GetSoundSourceName(int _type)
   return names[_type];
 }
 
-void SoundSourceBlueprint::ListSoundEvents(int _type, LList<const char*>* _list)
+void SoundSourceBlueprint::ListSoundEvents(int _type, std::vector<const char*>* _list)
 {
   switch (_type)
   {
   case TypeLaser:
-    _list->PutData("Create");
-    _list->PutData("Richochet");
-    _list->PutData("HitGround");
-    _list->PutData("HitEntity");
-    _list->PutData("HitBuilding");
+    _list->push_back("Create");
+    _list->push_back("Richochet");
+    _list->push_back("HitGround");
+    _list->push_back("HitEntity");
+    _list->push_back("HitBuilding");
     break;
 
   case TypeGrenade:
-    _list->PutData("Create");
-    _list->PutData("Bounce");
-    _list->PutData("Flash");
-    _list->PutData("Explode");
-    _list->PutData("ExplodeController");
+    _list->push_back("Create");
+    _list->push_back("Bounce");
+    _list->push_back("Flash");
+    _list->push_back("Explode");
+    _list->push_back("ExplodeController");
     break;
 
   case TypeRocket:
-    _list->PutData("Create");
-    _list->PutData("Explode");
+    _list->push_back("Create");
+    _list->push_back("Explode");
     break;
 
   case TypeAirstrikeBomb:
-    _list->PutData("Create");
-    _list->PutData("Bounce");
-    _list->PutData("Flash");
-    _list->PutData("Explode");
+    _list->push_back("Create");
+    _list->push_back("Bounce");
+    _list->push_back("Flash");
+    _list->push_back("Explode");
     break;
 
   case TypeSpirit:
-    _list->PutData("Create");
-    _list->PutData("PickedUp");
-    _list->PutData("Dropped");
-    _list->PutData("PlacedIntoEgg");
-    _list->PutData("EggDestroyed");
-    _list->PutData("BeginAscent");
+    _list->push_back("Create");
+    _list->push_back("PickedUp");
+    _list->push_back("Dropped");
+    _list->push_back("PlacedIntoEgg");
+    _list->push_back("EggDestroyed");
+    _list->push_back("BeginAscent");
     break;
 
   case TypeSepulveda:
-    _list->PutData("Appear");
-    _list->PutData("Disappear");
-    _list->PutData("TextAppear");
+    _list->push_back("Appear");
+    _list->push_back("Disappear");
+    _list->push_back("TextAppear");
     break;
 
   case TypeGesture:
-    _list->PutData("GestureBegin");
-    _list->PutData("GestureEnd");
-    _list->PutData("GestureSuccess");
-    _list->PutData("GestureFail");
+    _list->push_back("GestureBegin");
+    _list->push_back("GestureEnd");
+    _list->push_back("GestureSuccess");
+    _list->push_back("GestureFail");
     break;
 
   case TypeAmbience:
-    _list->PutData("EnterLocation");
-    _list->PutData("ExitLocation");
-    _list->PutData("EnterGlobalWorld");
+    _list->push_back("EnterLocation");
+    _list->push_back("ExitLocation");
+    _list->push_back("EnterGlobalWorld");
     break;
 
   case TypeMusic:
-    _list->PutData("Cutscene1");
-    _list->PutData("Cutscene2");
-    _list->PutData("Cutscene3");
-    _list->PutData("Cutscene4");
-    _list->PutData("Cutscene5");
-    _list->PutData("LoaderRaytrace");
-    _list->PutData("LoaderSoul");
-    _list->PutData("LoaderFodder");
-    _list->PutData("LoaderSpeccy");
-    _list->PutData("LoaderMatrix");
-    _list->PutData("LoaderGameOfLife");
-    _list->PutData("StartSequence");
-    _list->PutData("EndSequence");
-    _list->PutData("Credits");
-    _list->PutData("Demo2Intro");
-    _list->PutData("Demo2Mid");
+    _list->push_back("Cutscene1");
+    _list->push_back("Cutscene2");
+    _list->push_back("Cutscene3");
+    _list->push_back("Cutscene4");
+    _list->push_back("Cutscene5");
+    _list->push_back("LoaderRaytrace");
+    _list->push_back("LoaderSoul");
+    _list->push_back("LoaderFodder");
+    _list->push_back("LoaderSpeccy");
+    _list->push_back("LoaderMatrix");
+    _list->push_back("LoaderGameOfLife");
+    _list->push_back("StartSequence");
+    _list->push_back("EndSequence");
+    _list->push_back("Credits");
+    _list->push_back("Demo2Intro");
+    _list->push_back("Demo2Mid");
     break;
 
   case TypeInterface:
-    _list->PutData("Show");
-    _list->PutData("Hide");
-    _list->PutData("Slide");
-    //_list->PutData( "TaskManagerSelectTask" );
-    //_list->PutData( "TaskManagerDeselectTask" );
-    _list->PutData("DeleteTask");
-    _list->PutData("MouseOverIcon");
-    _list->PutData("ShowLogo");
+    _list->push_back("Show");
+    _list->push_back("Hide");
+    _list->push_back("Slide");
+    //_list->push_back( "TaskManagerSelectTask" );
+    //_list->push_back( "TaskManagerDeselectTask" );
+    _list->push_back("DeleteTask");
+    _list->push_back("MouseOverIcon");
+    _list->push_back("ShowLogo");
     break;
   }
 }
@@ -194,15 +195,43 @@ char* DspBlueprint::GetParameter(int _param, float* _min, float* _max, float* _d
 // Class SampleGroup
 //*****************************************************************************
 
-void SampleGroup::SetName(const char* _name) { strcpy(m_name, _name); }
+namespace
+{
+  // The blueprint name fields are char[256] and stay that way for now: the
+  // editor registers them with an InputField that writes through a raw char*,
+  // and that is strings-modernised/T5's to change. What this fixes is that the
+  // copies into them were unbounded — a name longer than 255 characters ran
+  // off the end of the struct.
+  template <size_t N> void CopyName(char (&_dest)[N], std::string_view _source)
+  {
+    size_t length = _source.size();
+    if (length > N - 1)
+    {
+      length = N - 1;
+    }
+    std::memcpy(_dest, _source.data(), length);
+    _dest[length] = '\0';
+  }
+} // namespace
+
+
+void SampleGroup::SetName(const char* _name) { CopyName(m_name, _name); }
 
 void SampleGroup::AddSample(const char* _sample)
 {
   char* sampleCopy = NewStr(_sample);
-  m_samples.PutData(sampleCopy);
+  m_samples.push_back(sampleCopy);
 }
 
-SampleGroup::~SampleGroup() { m_samples.EmptyAndDeleteArray(); }
+SampleGroup::~SampleGroup()
+{
+  // delete[], not free: AddSample allocates through NewStr, which is new char[].
+  // The legacy call was EmptyAndDeleteArray, whose whole reason to exist was
+  // being the delete[] flavour of EmptyAndDelete.
+  for (char* sample : m_samples)
+    delete[] sample;
+  m_samples.clear();
+}
 
 //*****************************************************************************
 // Class SoundSystem
@@ -231,7 +260,7 @@ SoundSystem::~SoundSystem()
   delete m_eventProfiler;
   delete m_mainProfiler;
 #endif
-  delete [] m_channels;
+  delete[] m_channels;
 
   m_sounds.EmptyAndDelete();
   m_entityBlueprints.EmptyAndDelete();
@@ -261,7 +290,7 @@ void SoundSystem::RestartSoundLibrary()
 
   if (m_channels)
   {
-    delete [] m_channels;
+    delete[] m_channels;
     delete g_soundLibrary3d;
     delete g_soundLibrary2d;
     g_soundLibrary2d = nullptr;
@@ -305,12 +334,11 @@ void SoundSystem::StopAllDSPEffects()
     if (m_sounds.ValidIndex(i))
     {
       SoundInstance* instance = m_sounds[i];
-      while (instance->m_dspFX.ValidIndex(0))
-      {
-        DspHandle* handle = instance->m_dspFX[0];
-        instance->m_dspFX.RemoveData(0);
+      // Was `while (ValidIndex(0))` — a subscript standing in for an
+      // emptiness test, which the legacy list answered and std::vector does not.
+      for (DspHandle* handle : instance->m_dspFX)
         delete handle;
-      }
+      instance->m_dspFX.clear();
     }
   }
 }
@@ -466,11 +494,11 @@ void SoundSystem::LoadEffects()
     if (!in->TokenAvailable())
       continue;
     char* effect = in->GetNextToken();
-    DEBUG_ASSERT(stricmp( effect, "EFFECT" ) == 0);
+    DEBUG_ASSERT(stricmp(effect, "EFFECT") == 0);
 
     auto bp = new DspBlueprint();
     m_filterBlueprints.PutData(bp);
-    strcpy(bp->m_name, in->GetNextToken());
+    CopyName(bp->m_name, in->GetNextToken());
 
     in->ReadLine();
     char* param = in->GetNextToken();
@@ -479,7 +507,7 @@ void SoundSystem::LoadEffects()
       auto sb = new DspParameterBlueprint();
       bp->m_params.PutData(sb);
 
-      strcpy(sb->m_name, param);
+      CopyName(sb->m_name, param);
       sb->m_min = atof(in->GetNextToken());
       sb->m_max = atof(in->GetNextToken());
       sb->m_default = atof(in->GetNextToken());
@@ -503,14 +531,21 @@ bool SoundSystem::AreBlueprintsModified()
 
 void SoundSystem::LoadBlueprints()
 {
-  m_entityBlueprints.SetSize(Entity::NumEntityTypes);
-  m_buildingBlueprints.SetSize(Building::NumBuildingTypes);
+  // No roster means no game attached — a sound system in a test DLL, or one
+  // built before App installed GameLogic's. There is nothing to index the
+  // blueprint tables by, so there are no blueprints to load. Silence is the
+  // right answer here, not a crash.
+  if (!g_worldTypeNames)
+    return;
+
+  m_entityBlueprints.SetSize(g_worldTypeNames->NumEntityTypes());
+  m_buildingBlueprints.SetSize(g_worldTypeNames->NumBuildingTypes());
   m_otherBlueprints.SetSize(SoundSourceBlueprint::NumOtherSoundSources);
 
   TextReader* in = g_resource->GetTextReader("Sounds.txt");
   ASSERT_TEXT(in && in->IsOpen(), "Couldn't open sounds.txt");
 
-  char objectName[128];
+  std::string objectName;
 
   while (in->ReadLine())
   {
@@ -523,10 +558,10 @@ void SoundSystem::LoadBlueprints()
 
     if (stricmp(group, "ENTITY") == 0)
     {
-      strncpy(objectName, type, 127);
-      int entityType = Entity::GetTypeId(type);
-      DEBUG_ASSERT(entityType >= 0 && entityType < Entity::NumEntityTypes);
-      DEBUG_ASSERT(!m_entityBlueprints.ValidIndex( entityType ));
+      objectName = type;
+      int entityType = g_worldTypeNames->EntityTypeId(type);
+      DEBUG_ASSERT(entityType >= 0 && entityType < g_worldTypeNames->NumEntityTypes());
+      DEBUG_ASSERT(!m_entityBlueprints.ValidIndex(entityType));
 
       ssb = new SoundSourceBlueprint();
       m_entityBlueprints.PutData(ssb, entityType);
@@ -534,10 +569,10 @@ void SoundSystem::LoadBlueprints()
     }
     else if (stricmp(group, "BUILDING") == 0)
     {
-      strncpy(objectName, type, 127);
-      int buildingType = Building::GetTypeId(type);
-      DEBUG_ASSERT(buildingType >= 0 && buildingType < Building::NumBuildingTypes);
-      DEBUG_ASSERT(!m_buildingBlueprints.ValidIndex( buildingType ));
+      objectName = type;
+      int buildingType = g_worldTypeNames->BuildingTypeId(type);
+      DEBUG_ASSERT(buildingType >= 0 && buildingType < g_worldTypeNames->NumBuildingTypes());
+      DEBUG_ASSERT(!m_buildingBlueprints.ValidIndex(buildingType));
 
       ssb = new SoundSourceBlueprint();
       m_buildingBlueprints.PutData(ssb, buildingType);
@@ -545,10 +580,10 @@ void SoundSystem::LoadBlueprints()
     }
     else if (stricmp(group, "OTHER") == 0)
     {
-      strncpy(objectName, type, 127);
+      objectName = type;
       int otherType = SoundSourceBlueprint::GetSoundSoundType(type);
       DEBUG_ASSERT(otherType >= 0 && otherType < SoundSourceBlueprint::NumOtherSoundSources);
-      DEBUG_ASSERT(!m_otherBlueprints.ValidIndex( otherType ));
+      DEBUG_ASSERT(!m_otherBlueprints.ValidIndex(otherType));
 
       ssb = new SoundSourceBlueprint();
       m_otherBlueprints.PutData(ssb, otherType);
@@ -556,7 +591,7 @@ void SoundSystem::LoadBlueprints()
     }
     else if (stricmp(group, "SAMPLEGROUP") == 0)
     {
-      strncpy(objectName, "sample group", 127);
+      objectName = "sample group";
       SampleGroup* sampleGroup = NewSampleGroup(type);
       ParseSampleGroup(in, sampleGroup);
     }
@@ -570,8 +605,8 @@ void SoundSystem::LoadBlueprints()
           char* word = in->GetNextToken();
           if (stricmp(word, "END") == 0)
             break;
-          DEBUG_ASSERT(stricmp( word, "EVENT" ) == 0);
-          ParseSoundEvent(in, ssb, objectName);
+          DEBUG_ASSERT(stricmp(word, "EVENT") == 0);
+          ParseSoundEvent(in, ssb, objectName.c_str());
         }
       }
     }
@@ -581,12 +616,12 @@ void SoundSystem::LoadBlueprints()
   // Verify the data we just loaded - make sure all the samples exist, are
   // in the right format etc.
 
-  //LoadtimeVerify();
+  // LoadtimeVerify();
 
   //
   // Fill in the non-specified sound sources with blanks
 
-  for (int i = 0; i < Entity::NumEntityTypes; ++i)
+  for (int i = 0; i < g_worldTypeNames->NumEntityTypes(); ++i)
   {
     if (!m_entityBlueprints.ValidIndex(i))
     {
@@ -595,7 +630,7 @@ void SoundSystem::LoadBlueprints()
     }
   }
 
-  for (int i = 0; i < Building::NumBuildingTypes; ++i)
+  for (int i = 0; i < g_worldTypeNames->NumBuildingTypes(); ++i)
   {
     if (!m_buildingBlueprints.ValidIndex(i))
     {
@@ -630,12 +665,12 @@ void SoundSystem::SaveBlueprints(const char* _filename)
     DEBUG_ASSERT(m_entityBlueprints.ValidIndex(i));
     SoundSourceBlueprint* ssb = m_entityBlueprints[i];
 
-    if (ssb->m_events.Size() > 0)
+    if (static_cast<int>(ssb->m_events.size()) > 0)
     {
       file->printf("# =========================================================\n");
-      file->printf("ENTITY %s\n", Entity::GetTypeName(i));
+      file->printf("ENTITY %s\n", g_worldTypeNames->EntityTypeName(i));
 
-      for (int j = 0; j < ssb->m_events.Size(); ++j)
+      for (int j = 0; j < static_cast<int>(ssb->m_events.size()); ++j)
       {
         SoundEventBlueprint* seb = ssb->m_events[j];
         WriteSoundEvent(file, seb);
@@ -650,12 +685,12 @@ void SoundSystem::SaveBlueprints(const char* _filename)
     DEBUG_ASSERT(m_buildingBlueprints.ValidIndex(i));
     SoundSourceBlueprint* ssb = m_buildingBlueprints[i];
 
-    if (ssb->m_events.Size() > 0)
+    if (static_cast<int>(ssb->m_events.size()) > 0)
     {
       file->printf("# =========================================================\n");
-      file->printf("BUILDING %s\n", Building::GetTypeName(i));
+      file->printf("BUILDING %s\n", g_worldTypeNames->BuildingTypeName(i));
 
-      for (int j = 0; j < ssb->m_events.Size(); ++j)
+      for (int j = 0; j < static_cast<int>(ssb->m_events.size()); ++j)
       {
         SoundEventBlueprint* seb = ssb->m_events[j];
         WriteSoundEvent(file, seb);
@@ -670,12 +705,12 @@ void SoundSystem::SaveBlueprints(const char* _filename)
     DEBUG_ASSERT(m_otherBlueprints.ValidIndex(i));
     SoundSourceBlueprint* ssb = m_otherBlueprints[i];
 
-    if (ssb->m_events.Size() > 0)
+    if (static_cast<int>(ssb->m_events.size()) > 0)
     {
       file->printf("# =========================================================\n");
       file->printf("OTHER %s\n", SoundSourceBlueprint::GetSoundSourceName(i));
 
-      for (int j = 0; j < ssb->m_events.Size(); ++j)
+      for (int j = 0; j < static_cast<int>(ssb->m_events.size()); ++j)
       {
         SoundEventBlueprint* seb = ssb->m_events[j];
         WriteSoundEvent(file, seb);
@@ -762,7 +797,7 @@ void SoundSystem::ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source
     fieldName = _in->GetNextToken();
   }
 
-  _source->m_events.PutData(seb);
+  _source->m_events.push_back(seb);
 }
 
 void SoundSystem::ParseSoundEffect(TextReader* _in, SoundEventBlueprint* _blueprint)
@@ -795,7 +830,7 @@ void SoundSystem::ParseSoundEffect(TextReader* _in, SoundEventBlueprint* _bluepr
     effect->m_params[paramIndex].Read(_in);
     ++paramIndex;
   }
-  _blueprint->m_instance->m_dspFX.PutData(effect);
+  _blueprint->m_instance->m_dspFX.push_back(effect);
 }
 
 void SoundSystem::ParseSampleGroup(TextReader* _in, SampleGroup* _group)
@@ -819,11 +854,15 @@ void SoundSystem::WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event
   DEBUG_ASSERT(_event);
   DEBUG_ASSERT(_event->m_instance);
 
-  _file->printf(
-    "\tEVENT %-20s\n" "\t\tSOUNDNAME          %s\n" "\t\tSOURCETYPE         %d\n" "\t\tPOSITIONTYPE       %d\n"
-    "\t\tINSTANCETYPE       %d\n" "\t\tLOOPTYPE           %d\n" "\t\tMINDISTANCE        %2.2f\n", _event->m_eventName,
-    _event->m_instance->m_soundName, _event->m_instance->m_sourceType, _event->m_instance->m_positionType,
-    _event->m_instance->m_instanceType, _event->m_instance->m_loopType, _event->m_instance->m_minDistance);
+  _file->printf("\tEVENT %-20s\n"
+                "\t\tSOUNDNAME          %s\n"
+                "\t\tSOURCETYPE         %d\n"
+                "\t\tPOSITIONTYPE       %d\n"
+                "\t\tINSTANCETYPE       %d\n"
+                "\t\tLOOPTYPE           %d\n"
+                "\t\tMINDISTANCE        %2.2f\n",
+                _event->m_eventName, _event->m_instance->m_soundName, _event->m_instance->m_sourceType, _event->m_instance->m_positionType,
+                _event->m_instance->m_instanceType, _event->m_instance->m_loopType, _event->m_instance->m_minDistance);
 
   _event->m_instance->m_volume.Write(_file, "VOLUME", 2);
 
@@ -838,7 +877,7 @@ void SoundSystem::WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event
   if (!_event->m_instance->m_loopDelay.IsFixedValue(0.0f))
     _event->m_instance->m_loopDelay.Write(_file, "LOOPDELAY", 2);
 
-  for (int i = 0; i < _event->m_instance->m_dspFX.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(_event->m_instance->m_dspFX.size()); ++i)
   {
     DspHandle* effect = _event->m_instance->m_dspFX[i];
     DspBlueprint* blueprint = m_filterBlueprints[effect->m_type];
@@ -863,7 +902,7 @@ void SoundSystem::WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event
 
 void SoundSystem::WriteSampleGroup(FileWriter* _file, SampleGroup* _group)
 {
-  for (int i = 0; i < _group->m_samples.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(_group->m_samples.size()); ++i)
   {
     char* sample = _group->m_samples[i];
     _file->printf("\tSAMPLE  %s\n", sample);
@@ -885,10 +924,10 @@ bool SoundSystem::InitialiseSound(SoundInstance* _instance)
         SoundInstance* thisInstance = m_sounds[i];
         if (thisInstance->m_instanceType != SoundInstance::Polyphonic && stricmp(thisInstance->m_eventName, _instance->m_eventName) == 0)
         {
-          for (int j = 0; j < _instance->m_objIds.Size(); ++j)
+          for (int j = 0; j < static_cast<int>(_instance->m_objIds.size()); ++j)
           {
             WorldObjectId* id = _instance->m_objIds[j];
-            thisInstance->m_objIds.PutData(new WorldObjectId(*id));
+            thisInstance->m_objIds.push_back(new WorldObjectId(*id));
           }
           createNewSound = false;
           break;
@@ -901,7 +940,7 @@ bool SoundSystem::InitialiseSound(SoundInstance* _instance)
   {
     _instance->m_id.m_index = m_sounds.PutData(_instance);
     _instance->m_id.m_uniqueId = SoundInstanceId::GenerateUniqueId();
-    _instance->m_restartAttempts = 3; //int( 1.0f + (float) _instance->m_volume.GetOutput() / 5.0f );
+    _instance->m_restartAttempts = 3; // int( 1.0f + (float) _instance->m_volume.GetOutput() / 5.0f );
     return true;
   }
   return false;
@@ -964,18 +1003,18 @@ SoundInstance* SoundSystem::GetSoundInstance(SoundInstanceId id)
   return nullptr;
 }
 
-void SoundSystem::TriggerEntityEvent(Entity* _entity, const char* _eventName)
+void SoundSystem::TriggerEntityEvent(SoundSource const& _source, const char* _eventName)
 {
   if (!m_channels)
     return;
 
   START_PROFILE(m_mainProfiler, "TriggerEntityEvent");
-  WorldObjectId objId(_entity->m_id);
+  WorldObjectId objId(_source.m_id);
 
-  if (m_entityBlueprints.ValidIndex(_entity->m_type))
+  if (m_entityBlueprints.ValidIndex(_source.m_type))
   {
-    SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[_entity->m_type];
-    for (int i = 0; i < sourceBlueprint->m_events.Size(); ++i)
+    SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[_source.m_type];
+    for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
       if (stricmp(seb->m_eventName, _eventName) == 0)
@@ -983,9 +1022,9 @@ void SoundSystem::TriggerEntityEvent(Entity* _entity, const char* _eventName)
         DEBUG_ASSERT(seb->m_instance);
         auto instance = new SoundInstance();
         instance->Copy(seb->m_instance);
-        instance->m_objIds.PutData(new WorldObjectId(objId));
-        instance->m_pos = _entity->m_pos;
-        instance->m_vel = _entity->m_vel;
+        instance->m_objIds.push_back(new WorldObjectId(objId));
+        instance->m_pos = _source.m_pos;
+        instance->m_vel = _source.m_vel;
         bool success = InitialiseSound(instance);
         if (!success)
           ShutdownSound(instance);
@@ -996,16 +1035,16 @@ void SoundSystem::TriggerEntityEvent(Entity* _entity, const char* _eventName)
   END_PROFILE(m_mainProfiler, "TriggerEntityEvent");
 }
 
-void SoundSystem::TriggerBuildingEvent(Building* _building, const char* _eventName)
+void SoundSystem::TriggerBuildingEvent(SoundSource const& _source, const char* _eventName)
 {
   if (!m_channels)
     return;
 
   START_PROFILE(m_mainProfiler, "TriggerBuildingEvent");
-  if (m_buildingBlueprints.ValidIndex(_building->m_type))
+  if (m_buildingBlueprints.ValidIndex(_source.m_type))
   {
-    SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[_building->m_type];
-    for (int i = 0; i < sourceBlueprint->m_events.Size(); ++i)
+    SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[_source.m_type];
+    for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
       if (stricmp(seb->m_eventName, _eventName) == 0)
@@ -1013,8 +1052,8 @@ void SoundSystem::TriggerBuildingEvent(Building* _building, const char* _eventNa
         DEBUG_ASSERT(seb->m_instance);
         auto instance = new SoundInstance();
         instance->Copy(seb->m_instance);
-        instance->m_objIds.PutData(new WorldObjectId(_building->m_id));
-        instance->m_pos = _building->m_pos;
+        instance->m_objIds.push_back(new WorldObjectId(_source.m_id));
+        instance->m_pos = _source.m_pos;
         bool success = InitialiseSound(instance);
         if (!success)
           ShutdownSound(instance);
@@ -1025,7 +1064,20 @@ void SoundSystem::TriggerBuildingEvent(Building* _building, const char* _eventNa
   END_PROFILE(m_mainProfiler, "TriggerBuildingEvent");
 }
 
-void SoundSystem::TriggerOtherEvent(WorldObject* _other, const char* _eventName, int _type)
+// The unattached form. Kept as a separate overload rather than a null
+// SoundSource*: 30 of the 47 call sites pass nothing, and `TriggerOtherEvent(
+// "GestureSuccess", TypeGesture)` says what they mean better than a nullptr
+// first argument did.
+void SoundSystem::TriggerOtherEvent(const char* _eventName, int _type)
+{
+  TriggerOtherEvent(static_cast<SoundSource const*>(nullptr), _eventName, _type);
+}
+
+
+void SoundSystem::TriggerOtherEvent(SoundSource const& _source, const char* _eventName, int _type) { TriggerOtherEvent(&_source, _eventName, _type); }
+
+
+void SoundSystem::TriggerOtherEvent(SoundSource const* _other, const char* _eventName, int _type)
 {
   if (!m_channels)
     return;
@@ -1040,7 +1092,7 @@ void SoundSystem::TriggerOtherEvent(WorldObject* _other, const char* _eventName,
   {
     // Search for the event blueprint matching _eventName
     SoundSourceBlueprint* sourceBlueprint = m_otherBlueprints[_type];
-    for (int i = 0; i < sourceBlueprint->m_events.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
       if (stricmp(seb->m_eventName, _eventName) == 0)
@@ -1051,7 +1103,7 @@ void SoundSystem::TriggerOtherEvent(WorldObject* _other, const char* _eventName,
         instance->Copy(seb->m_instance);
         if (_type == musicType)
         {
-          //if( m_music && stricmp( m_music->m_eventName+6, _eventName ) == 0 )
+          // if( m_music && stricmp( m_music->m_eventName+6, _eventName ) == 0 )
           if (m_music && stricmp(m_music->m_soundName, seb->m_instance->m_soundName) == 0)
           {
             // The music is already playing
@@ -1068,7 +1120,7 @@ void SoundSystem::TriggerOtherEvent(WorldObject* _other, const char* _eventName,
           if (_other)
           {
             instance->m_pos = _other->m_pos;
-            instance->m_objIds.PutData(new WorldObjectId(_other->m_id));
+            instance->m_objIds.push_back(new WorldObjectId(_other->m_id));
           }
           bool success = InitialiseSound(instance);
           if (!success)
@@ -1089,10 +1141,10 @@ void SoundSystem::TriggerDuplicateSound(SoundInstance* _instance)
   newInstance->m_pos = _instance->m_pos;
   newInstance->m_vel = _instance->m_vel;
 
-  for (int i = 0; i < _instance->m_objIds.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(_instance->m_objIds.size()); ++i)
   {
     WorldObjectId* id = _instance->m_objIds[i];
-    newInstance->m_objIds.PutData(new WorldObjectId(*id));
+    newInstance->m_objIds.push_back(new WorldObjectId(*id));
   }
 
   bool success = InitialiseSound(newInstance);
@@ -1281,9 +1333,12 @@ void SoundSystem::Advance()
     static SoundInstanceId* sortedIds = nullptr;
     if (m_sounds.NumUsed() > sortedArraySize)
     {
-      delete [] sortedIds;
+      delete[] sortedIds;
       sortedIds = nullptr;
-      while (sortedArraySize < m_sounds.NumUsed()) { sortedArraySize *= 2; }
+      while (sortedArraySize < m_sounds.NumUsed())
+      {
+        sortedArraySize *= 2;
+      }
     }
     if (!sortedIds)
       sortedIds = new SoundInstanceId[sortedArraySize];
@@ -1301,7 +1356,7 @@ void SoundSystem::Advance()
           instance->m_restartAttempts--;
         if (instance->m_restartAttempts < 0)
           ShutdownSound(instance);
-        else if (instance->m_positionType == SoundInstance::Type3DAttachedToObject && !instance->GetAttachedObject())
+        else if (instance->m_positionType == SoundInstance::Type3DAttachedToObject && !instance->ResolveAttachedObject())
           ShutdownSound(instance);
         else
         {
@@ -1326,7 +1381,10 @@ void SoundSystem::Advance()
     // Second pass : Recalculate all Sound Priorities starting with the nearest sounds
     // Reduce priorities as more of the same sounds are played
 
-    BTree<float> existingInstances;
+    // Keyed on m_eventName, never iterated — only looked up, inserted and
+    // decayed — so an unordered map is a faithful replacement here. Nothing
+    // downstream depends on the order these were visited in.
+    std::unordered_map<std::string, float> existingInstances;
 
     //
     // Also look out for the highest priority new sound to swap in
@@ -1344,14 +1402,14 @@ void SoundSystem::Advance()
 
       instance->m_calculatedPriority = instance->m_perceivedVolume;
 
-      BTree<float>* existingInstance = existingInstances.LookupTree(instance->m_eventName);
-      if (existingInstance)
+      auto existingInstance = existingInstances.find(instance->m_eventName);
+      if (existingInstance != existingInstances.end())
       {
-        instance->m_calculatedPriority *= existingInstance->data;
-        existingInstance->data *= 0.75f;
+        instance->m_calculatedPriority *= existingInstance->second;
+        existingInstance->second *= 0.75f;
       }
       else
-        existingInstances.PutData(instance->m_eventName, 0.75f);
+        existingInstances.emplace(instance->m_eventName, 0.75f);
 
       if (!instance->IsPlaying() && instance->m_calculatedPriority > highestInstancePriority)
       {
@@ -1446,13 +1504,13 @@ void SoundSystem::Advance()
 void SoundSystem::Advance()
 {
 
-	if (g_requestQuit && !m_quitWithoutSave)
-	{
-		if (AreBlueprintsModified())
-		{
-			g_requestQuit = false;
-		}
-	}
+  if (g_requestQuit && !m_quitWithoutSave)
+  {
+    if (AreBlueprintsModified())
+    {
+      g_requestQuit = false;
+    }
+  }
 
     if( !m_channels ) return;
 
@@ -1487,7 +1545,7 @@ void SoundSystem::Advance()
         int maxChannelChanges = 1;
         int numChannelChanges = 0;
 
-        LList<int> newRequests;                                 // Indexes of the channels
+        std::vector<int> newRequests;                           // Indexes of the channels
 
         for( int i = 0; i < m_numChannels; ++i )
         {
@@ -1497,7 +1555,7 @@ void SoundSystem::Advance()
             if( requestedSound )
             {
                 bool inserted = false;
-                for( int x = 0; x < newRequests.Size(); ++x )
+                for( int x = 0; x < static_cast<int>(newRequests.size()); ++x )
                 {
                     if( x > maxChannelChanges ) break;
                     int channelIndex = newRequests[x];
@@ -1506,14 +1564,14 @@ void SoundSystem::Advance()
                     DEBUG_ASSERT( thisRequestedSound );
                     if( requestedSound->m_calculatedPriority > thisRequestedSound->m_calculatedPriority )
                     {
-                        newRequests.PutDataAtIndex( i, x );
+                        newRequests.insert( newRequests.begin() + x, i );
                         inserted = true;
                         break;
                     }
                 }
-                if( !inserted && newRequests.Size() < maxChannelChanges )
+                if( !inserted && static_cast<int>(newRequests.size()) < maxChannelChanges )
                 {
-                    newRequests.PutDataAtEnd( i );
+                    newRequests.push_back( i );
                 }
             }
         }
@@ -1526,11 +1584,11 @@ void SoundSystem::Advance()
 
         START_PROFILE(g_profiler,  "StartNewSound" );
 
-        while( newRequests.Size() > 0 &&
+        while( !newRequests.empty() &&
                numChannelChanges < maxChannelChanges )
         {
             int channelIndex = newRequests[0];
-            newRequests.RemoveData(0);
+            newRequests.erase( newRequests.begin() );
 
             SoundChannel *channel = &m_channels[channelIndex];
             SoundInstance *currentSound = GetSoundInstance( channel->m_currentSound );
@@ -1613,7 +1671,7 @@ void SoundSystem::Advance()
                 instance->RecalculatePriority();
 
                 if( instance->m_positionType == SoundInstance::Type3DAttachedToObject &&
-                    !instance->GetAttachedObject() )
+                    !instance->ResolveAttachedObject() )
                 {
                     ShutdownSound( instance );
                 }
@@ -1702,7 +1760,7 @@ void SoundSystem::RuntimeVerify()
           SoundInstance *currentSound = GetSoundInstance( id1 );
           DEBUG_ASSERT( !currentSound ||
                        !(currentSound->IsPlaying() && currentSound->m_channelIndex == -1) );
-  
+
           if( currentSound )
           {
               for( int j = 0; j < m_numChannels; ++j )
@@ -1748,7 +1806,7 @@ void SoundSystem::LoadtimeVerify()
       continue;
 
     SampleGroup* sg = m_sampleGroups[i];
-    int size = sg->m_samples.Size();
+    int size = static_cast<int>(sg->m_samples.size());
     for (int j = 0; j < size; ++j)
     {
       char* soundName = sg->m_samples[j];
@@ -1771,7 +1829,7 @@ void SoundSystem::LoadtimeVerify()
       continue;
 
     SoundSourceBlueprint* ssb = m_entityBlueprints[i];
-    int size = ssb->m_events.Size();
+    int size = static_cast<int>(ssb->m_events.size());
 
     for (int j = 0; j < size; ++j)
     {
@@ -1782,7 +1840,7 @@ void SoundSystem::LoadtimeVerify()
         const char* err = IsSoundSourceOK(si->m_soundName);
         if (err != nullptr)
         {
-          fprintf(soundErrors, "%s: %s In entity %s, event %s\n", err, si->m_soundName, Entity::GetTypeName(i), seb->m_eventName);
+          fprintf(soundErrors, "%s: %s In entity %s, event %s\n", err, si->m_soundName, g_worldTypeNames->EntityTypeName(i), seb->m_eventName);
           errorFound = true;
         }
       }
@@ -1792,8 +1850,10 @@ void SoundSystem::LoadtimeVerify()
         SampleGroup* sg = GetSampleGroup(si->m_soundName);
         if (!sg)
         {
-          fprintf(soundErrors, "Sound Group %s does not exist. " "Referenced by entity %s, event %s\n", si->m_soundName,
-                  Entity::GetTypeName(i), seb->m_eventName);
+          fprintf(soundErrors,
+                  "Sound Group %s does not exist. "
+                  "Referenced by entity %s, event %s\n",
+                  si->m_soundName, g_worldTypeNames->EntityTypeName(i), seb->m_eventName);
           errorFound = true;
         }
       }
@@ -1807,7 +1867,7 @@ void SoundSystem::LoadtimeVerify()
       continue;
 
     SoundSourceBlueprint* ssb = m_buildingBlueprints[i];
-    int size = ssb->m_events.Size();
+    int size = static_cast<int>(ssb->m_events.size());
 
     for (int j = 0; j < size; ++j)
     {
@@ -1818,7 +1878,7 @@ void SoundSystem::LoadtimeVerify()
         const char* err = IsSoundSourceOK(si->m_soundName);
         if (err != nullptr)
         {
-          fprintf(soundErrors, "%s: %s In building %s, event %s\n", err, si->m_soundName, Building::GetTypeName(i), seb->m_eventName);
+          fprintf(soundErrors, "%s: %s In building %s, event %s\n", err, si->m_soundName, g_worldTypeNames->BuildingTypeName(i), seb->m_eventName);
           errorFound = true;
         }
       }
@@ -1828,8 +1888,10 @@ void SoundSystem::LoadtimeVerify()
         SampleGroup* sg = GetSampleGroup(si->m_soundName);
         if (!sg)
         {
-          fprintf(soundErrors, "Sound Group %s does not exist. " "Referenced by building %s, event %s\n", si->m_soundName,
-                  Building::GetTypeName(i), seb->m_eventName);
+          fprintf(soundErrors,
+                  "Sound Group %s does not exist. "
+                  "Referenced by building %s, event %s\n",
+                  si->m_soundName, g_worldTypeNames->BuildingTypeName(i), seb->m_eventName);
           errorFound = true;
         }
       }
@@ -1843,7 +1905,7 @@ void SoundSystem::LoadtimeVerify()
       continue;
 
     SoundSourceBlueprint* ssb = m_otherBlueprints[i];
-    int size = ssb->m_events.Size();
+    int size = static_cast<int>(ssb->m_events.size());
 
     for (int j = 0; j < size; ++j)
     {
@@ -1864,8 +1926,10 @@ void SoundSystem::LoadtimeVerify()
         SampleGroup* sg = GetSampleGroup(si->m_soundName);
         if (!sg)
         {
-          fprintf(soundErrors, "Sound Group %s does not exist. " "Referenced by \"others\" %s, event %s\n", si->m_soundName,
-                  ssb->GetSoundSourceName(i), seb->m_eventName);
+          fprintf(soundErrors,
+                  "Sound Group %s does not exist. "
+                  "Referenced by \"others\" %s, event %s\n",
+                  si->m_soundName, ssb->GetSoundSourceName(i), seb->m_eventName);
           errorFound = true;
         }
       }
@@ -1876,9 +1940,8 @@ void SoundSystem::LoadtimeVerify()
   ASSERT_TEXT(!errorFound, "Errors found in sounds.txt : refer to sounderrors.txt for details");
 }
 
-static const char* g_soundSourceErrors[SoundSystem::SoundSourceNumErrors] = {
-  nullptr, "Sound sample not mono", "Sound sample does not exist", "Sound sample name contains spaces"
-};
+static const char* g_soundSourceErrors[SoundSystem::SoundSourceNumErrors] = {nullptr, "Sound sample not mono", "Sound sample does not exist",
+                                                                             "Sound sample name contains spaces"};
 
 const char* SoundSystem::IsSoundSourceOK(const char* _soundName)
 {
@@ -1889,10 +1952,9 @@ const char* SoundSystem::IsSoundSourceOK(const char* _soundName)
     return g_soundSourceErrors[SoundSourceFilenameHasSpace];
   }
 
-  char fullPath[256] = "Sounds/";
-  strcat(fullPath, _soundName);
+  const std::string fullPath = std::format("Sounds/{}", _soundName);
 
-  SoundStreamDecoder* sound = g_resource->GetSoundStreamDecoder(fullPath);
+  SoundStreamDecoder* sound = g_resource->GetSoundStreamDecoder(fullPath.c_str());
   if (!sound)
   {
     // File does not exist
@@ -1921,7 +1983,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
     if (m_entityBlueprints.ValidIndex(i))
     {
       SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[i];
-      for (int j = 0; j < sourceBlueprint->m_events.Size(); ++j)
+      for (int j = 0; j < static_cast<int>(sourceBlueprint->m_events.size()); ++j)
       {
         SoundEventBlueprint* eventBlueprint = sourceBlueprint->m_events[j];
         if (eventBlueprint->m_instance)
@@ -1934,7 +1996,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
             SampleGroup* group = GetSampleGroup(instance->m_soundName);
             if (group)
             {
-              for (int k = 0; k < group->m_samples.Size(); ++k)
+              for (int k = 0; k < static_cast<int>(group->m_samples.size()); ++k)
               {
                 char* thisSample = group->m_samples[k];
                 if (stricmp(thisSample, _soundName) == 0)
@@ -1955,7 +2017,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
     if (m_buildingBlueprints.ValidIndex(i))
     {
       SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[i];
-      for (int j = 0; j < sourceBlueprint->m_events.Size(); ++j)
+      for (int j = 0; j < static_cast<int>(sourceBlueprint->m_events.size()); ++j)
       {
         SoundEventBlueprint* eventBlueprint = sourceBlueprint->m_events[j];
         if (eventBlueprint->m_instance)
@@ -1968,7 +2030,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
             SampleGroup* group = GetSampleGroup(instance->m_soundName);
             if (group)
             {
-              for (int k = 0; k < group->m_samples.Size(); ++k)
+              for (int k = 0; k < static_cast<int>(group->m_samples.size()); ++k)
               {
                 char* thisSample = group->m_samples[k];
                 if (stricmp(thisSample, _soundName) == 0)
@@ -1989,7 +2051,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
     if (m_otherBlueprints.ValidIndex(i))
     {
       SoundSourceBlueprint* sourceBlueprint = m_otherBlueprints[i];
-      for (int j = 0; j < sourceBlueprint->m_events.Size(); ++j)
+      for (int j = 0; j < static_cast<int>(sourceBlueprint->m_events.size()); ++j)
       {
         SoundEventBlueprint* eventBlueprint = sourceBlueprint->m_events[j];
         if (eventBlueprint->m_instance)
@@ -2002,7 +2064,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
             SampleGroup* group = GetSampleGroup(instance->m_soundName);
             if (group)
             {
-              for (int k = 0; k < group->m_samples.Size(); ++k)
+              for (int k = 0; k < static_cast<int>(group->m_samples.size()); ++k)
               {
                 char* thisSample = group->m_samples[k];
                 if (stricmp(thisSample, _soundName) == 0)
@@ -2058,11 +2120,10 @@ SampleGroup* SoundSystem::NewSampleGroup(const char* _name)
   int i = 1;
   while (true)
   {
-    char nameCandidate[256];
-    sprintf(nameCandidate, "newsamplegroup%d", i);
-    if (!GetSampleGroup(nameCandidate))
+    const std::string nameCandidate = std::format("newsamplegroup{}", i);
+    if (!GetSampleGroup(nameCandidate.c_str()))
     {
-      group->SetName(nameCandidate);
+      group->SetName(nameCandidate.c_str());
       return group;
     }
     ++i;
@@ -2093,11 +2154,11 @@ bool SoundSystem::RenameSampleGroup(const char* _oldName, const char* _newName)
       if (m_entityBlueprints.ValidIndex(i))
       {
         SoundSourceBlueprint* blueprint = m_entityBlueprints[i];
-        for (int j = 0; j < blueprint->m_events.Size(); ++j)
+        for (int j = 0; j < static_cast<int>(blueprint->m_events.size()); ++j)
         {
           SoundEventBlueprint* eventBlueprint = blueprint->m_events[j];
-          if (eventBlueprint->m_instance && eventBlueprint->m_instance->m_sourceType > SoundInstance::Sample && strcmp(
-            eventBlueprint->m_instance->m_soundName, _oldName) == 0)
+          if (eventBlueprint->m_instance && eventBlueprint->m_instance->m_sourceType > SoundInstance::Sample &&
+              strcmp(eventBlueprint->m_instance->m_soundName, _oldName) == 0)
             eventBlueprint->m_instance->SetSoundName(_newName);
         }
       }
@@ -2111,11 +2172,11 @@ bool SoundSystem::RenameSampleGroup(const char* _oldName, const char* _newName)
       if (m_buildingBlueprints.ValidIndex(i))
       {
         SoundSourceBlueprint* blueprint = m_buildingBlueprints[i];
-        for (int j = 0; j < blueprint->m_events.Size(); ++j)
+        for (int j = 0; j < static_cast<int>(blueprint->m_events.size()); ++j)
         {
           SoundEventBlueprint* eventBlueprint = blueprint->m_events[j];
-          if (eventBlueprint->m_instance && eventBlueprint->m_instance->m_sourceType > SoundInstance::Sample && strcmp(
-            eventBlueprint->m_instance->m_soundName, _oldName) == 0)
+          if (eventBlueprint->m_instance && eventBlueprint->m_instance->m_sourceType > SoundInstance::Sample &&
+              strcmp(eventBlueprint->m_instance->m_soundName, _oldName) == 0)
             eventBlueprint->m_instance->SetSoundName(_newName);
         }
       }
@@ -2129,11 +2190,11 @@ bool SoundSystem::RenameSampleGroup(const char* _oldName, const char* _newName)
       if (m_otherBlueprints.ValidIndex(i))
       {
         SoundSourceBlueprint* blueprint = m_otherBlueprints[i];
-        for (int j = 0; j < blueprint->m_events.Size(); ++j)
+        for (int j = 0; j < static_cast<int>(blueprint->m_events.size()); ++j)
         {
           SoundEventBlueprint* eventBlueprint = blueprint->m_events[j];
-          if (eventBlueprint->m_instance && eventBlueprint->m_instance->m_sourceType > SoundInstance::Sample && strcmp(
-            eventBlueprint->m_instance->m_soundName, _oldName) == 0)
+          if (eventBlueprint->m_instance && eventBlueprint->m_instance->m_sourceType > SoundInstance::Sample &&
+              strcmp(eventBlueprint->m_instance->m_soundName, _oldName) == 0)
             eventBlueprint->m_instance->SetSoundName(_newName);
         }
       }

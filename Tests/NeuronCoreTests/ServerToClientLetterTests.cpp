@@ -134,7 +134,7 @@ namespace NeuronCoreTests
 
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::Update), static_cast<int>(received.m_type));
         Assert::AreEqual(42, received.GetSequenceId());
-        Assert::AreEqual(1, received.m_updates.Size());
+        Assert::AreEqual(1, static_cast<int>(received.m_updates.size()));
         Assert::AreEqual(static_cast<unsigned char>(3), received.m_updates[0]->m_teamId);
         Assert::AreEqual(77, received.m_updates[0]->m_unitId);
       }
@@ -154,7 +154,7 @@ namespace NeuronCoreTests
         ServerToClientLetter received(stream, length);
 
         Assert::AreEqual(101, received.GetSequenceId());
-        Assert::AreEqual(0, received.m_updates.Size());
+        Assert::AreEqual(0, static_cast<int>(received.m_updates.size()));
       }
 
       TEST_METHOD(TheCopyConstructorDeepCopiesEveryUpdate)
@@ -175,7 +175,7 @@ namespace NeuronCoreTests
 
         Assert::AreEqual(original.GetSequenceId(), copy.GetSequenceId());
         Assert::AreEqual(original.GetClientId(), copy.GetClientId());
-        Assert::AreEqual(original.m_updates.Size(), copy.m_updates.Size());
+        Assert::AreEqual(original.m_updates.size(), copy.m_updates.size());
 
         Assert::IsTrue(original.m_updates[0] != copy.m_updates[0], L"the copy must own its own updates, not share pointers");
         Assert::AreEqual(55, copy.m_updates[0]->m_unitId);

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Globals.h"
 
 #include <float.h>
 

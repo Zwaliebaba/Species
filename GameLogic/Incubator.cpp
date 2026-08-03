@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
 #include "Profiler.h"
@@ -8,7 +9,6 @@
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "ParticleSystem.h"
-#include "Camera.h"
 #include "SoundSystem.h"
 #include "Incubator.h"
 #include "WorldPointers.h"
@@ -16,7 +16,7 @@
 Incubator::Incubator()
   : Building(),
     m_spiritCentre(nullptr),
-    m_troopType(Entity::TypeDarwinian),
+    m_troopType(Entity::TypeCitizen),
     m_timer(INCUBATOR_PROCESSTIME),
     m_numStartingSpirits(0)
 {
@@ -55,7 +55,7 @@ void Incubator::Initialise(Building* _template)
 
   for (int i = 0; i < m_numStartingSpirits; ++i)
   {
-    Spirit* s = m_spirits.GetPointer();
+    Spirit* s = m_spirits.GetPointer(m_spirits.GetNextFree());
     s->m_pos = spiritCentre + Vector3(sfrand(20.0f), sfrand(20.0f), sfrand(20.0f));
     s->m_teamId = m_id.GetTeamId();
     s->Begin();
@@ -103,13 +103,13 @@ bool Incubator::Advance()
   //
   // Reduce incoming and outgoing logs
 
-  for (int i = 0; i < m_incoming.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_incoming.size()); ++i)
   {
     IncubatorIncoming* ii = m_incoming[i];
     ii->m_alpha -= SERVER_ADVANCE_PERIOD;
     if (ii->m_alpha <= 0.0f)
     {
-      m_incoming.RemoveData(i);
+      m_incoming.erase(m_incoming.begin() + i);
       delete ii;
       --i;
     }
@@ -151,7 +151,7 @@ void Incubator::SpawnEntity()
   ii->m_pos = spiritPos;
   ii->m_entrance = 2;
   ii->m_alpha = 1.0f;
-  m_incoming.PutData(ii);
+  m_incoming.push_back(ii);
 
   int numFlashes = 4 + speciesRandom() % 4;
   for (int i = 0; i < numFlashes; ++i)
@@ -164,7 +164,7 @@ void Incubator::SpawnEntity()
   //
   // Sound effect
 
-  g_soundSystem->TriggerBuildingEvent(this, "SpawnEntity");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "SpawnEntity");
 }
 
 void Incubator::AddSpirit(Spirit* _spirit)
@@ -172,7 +172,7 @@ void Incubator::AddSpirit(Spirit* _spirit)
   Matrix34 mat(m_front, g_upVector, m_pos);
   Vector3 spiritCentre = m_spiritCentre->GetWorldMatrix(mat).pos;
 
-  Spirit* s = m_spirits.GetPointer();
+  Spirit* s = m_spirits.GetPointer(m_spirits.GetNextFree());
   s->m_pos = spiritCentre + Vector3(sfrand(20.0f), sfrand(20.0f), sfrand(20.0f));
   s->m_teamId = _spirit->m_teamId;
   s->m_state = Spirit::StateInStore;
@@ -181,9 +181,9 @@ void Incubator::AddSpirit(Spirit* _spirit)
   ii->m_pos = s->m_pos;
   ii->m_entrance = syncrand() % 2;
   ii->m_alpha = 1.0f;
-  m_incoming.PutData(ii);
+  m_incoming.push_back(ii);
 
-  g_soundSystem->TriggerBuildingEvent(this, "AddSpirit");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "AddSpirit");
 }
 
 void Incubator::GetDockPoint(Vector3& _pos, Vector3& _front)
@@ -254,7 +254,7 @@ void Incubator::RenderAlphas(float _predictionTime)
   entrances[1] = m_spiritEntrance[1]->GetWorldMatrix(mat).pos;
   entrances[2] = m_spiritEntrance[2]->GetWorldMatrix(mat).pos;
 
-  for (int i = 0; i < m_incoming.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_incoming.size()); ++i)
   {
     IncubatorIncoming* ii = m_incoming[i];
     Vector3 fromPos = ii->m_pos;
@@ -287,10 +287,10 @@ void Incubator::RenderAlphas(float _predictionTime)
   glEnable(GL_CULL_FACE);
 }
 
-void Incubator::ListSoundEvents(LList<const char*>* _list)
+void Incubator::ListSoundEvents(std::vector<const char*>* _list)
 {
   Building::ListSoundEvents(_list);
 
-  _list->PutData("AddSpirit");
-  _list->PutData("SpawnEntity");
+  _list->push_back("AddSpirit");
+  _list->push_back("SpawnEntity");
 }

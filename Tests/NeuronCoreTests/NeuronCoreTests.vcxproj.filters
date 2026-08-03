@@ -11,22 +11,20 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="WorldObjectIdTests.cpp" />
     <ClCompile Include="ByteStreamTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DArrayTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GenericTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LListTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LookupTableTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NetworkUpdateTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PreferencesTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ServerToClientLetterTests.cpp">
@@ -36,6 +34,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RandomTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SliceWalkerTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SlotMapTests.cpp">

@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <algorithm>
 #include "Win32EventHandler.h"
 #include "Debug.h"
 #include "WindowManager.h"
@@ -118,7 +120,7 @@ void WindowManager::DisableOpenGL()
 // Returns an index into the list of already registered resolutions
 int WindowManager::GetResolutionId(int _width, int _height)
 {
-  for (int i = 0; i < m_resolutions.Size(); ++i)
+  for (int i = 0; i < m_resolutions.size(); ++i)
   {
     Resolution* res = m_resolutions[i];
     if (res->m_width == _width && res->m_height == _height)
@@ -141,13 +143,13 @@ void WindowManager::ListAllDisplayModes()
       if (resId == -1)
       {
         res = new Resolution(devMode.dmPelsWidth, devMode.dmPelsHeight);
-        m_resolutions.PutDataAtEnd(res);
+        m_resolutions.push_back(res);
       }
       else
         res = m_resolutions[resId];
 
-      if (res->m_refreshRates.FindData(devMode.dmDisplayFrequency) == -1)
-        res->m_refreshRates.PutDataAtEnd(devMode.dmDisplayFrequency);
+      if (std::find(res->m_refreshRates.begin(), res->m_refreshRates.end(), devMode.dmDisplayFrequency) == res->m_refreshRates.end())
+        res->m_refreshRates.push_back(devMode.dmDisplayFrequency);
     }
     ++i;
   }
@@ -155,7 +157,7 @@ void WindowManager::ListAllDisplayModes()
 
 Resolution* WindowManager::GetResolution(int _id)
 {
-  if (m_resolutions.ValidIndex(_id))
+  if ((_id >= 0 && _id < static_cast<int>(m_resolutions.size())))
     return m_resolutions[_id];
 
   return nullptr;
@@ -385,13 +387,4 @@ void WindowManager::OpenWebsite(const char* _url)
   ShellExecute(nullptr, "open", _url, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _cmdLine, int _iCmdShow)
-{
-  g_hInstance = _hInstance;
-
-  g_windowManager = new WindowManager();
-
-  AppMain();
-
-  return WM_QUIT;
-}
+void SetWin32InstanceHandle(HINSTANCE _hInstance) { g_hInstance = _hInstance; }

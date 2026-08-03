@@ -123,6 +123,15 @@ tasks:
       - NeuronCore/NetLib.h
       - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
       - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+    notes: >
+      File overlap without an ordering: containers-replaced T4 also touches
+      ServerToClientLetter.h/.cpp and the letter tests. Neither task has to
+      precede the other — this one changes enumerator types at the
+      serialisation boundary, that one changes the container behind the
+      updates — but they must not run concurrently. Whichever starts second
+      rebases. There is deliberately no blocked_by edge here: a collision is
+      not an ordering, and inventing one would serialise two tasks that are
+      genuinely independent.
     acceptance:
       - Each enumerator's numeric value is asserted by a test that passes on both sides of the conversion
       - The three enums are enum class with an explicit underlying type
@@ -166,6 +175,9 @@ tasks:
       pin it first like T3). ENUM_HELPER from NeuronHelper.h where iteration
       is needed.
     depends_on: [T3]
+    blocked_by:
+      - layering-inversion/T9
+      - layering-inversion/T10
     files:
       - GameLogic/EntityLeg.h
       - Species/TaskManagerInterface.h
@@ -173,6 +185,16 @@ tasks:
     acceptance:
       - grep -rE "^\s*enum\s+[A-Za-z]" over all six projects' headers returns nothing
       - notes records the serialisation check for each enum
+    notes: >
+      blocked_by layering-inversion T9 and T10: Camera.h is what T9's
+      remaining half reshapes (Renderer's half already landed), and
+      TaskManagerInterface.h is on T10's list. Converting an enum inside a
+      header that is about to be split behind an interface means doing it
+      twice.
+
+      Re-measured 2026-08-02 at 11aee84: 12 plain enums in headers, not 11,
+      and `enum class` appears once in the tree. Re-derive the list when
+      starting — the twelfth is not identified here.
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
@@ -225,4 +247,87 @@ tasks:
       - python3 tools/check_hygiene.py
       - python3 tools/check_task_dag.py
     parallel_safe: true
+    notes: >
+      Landed 2026-08-02. tools/check_hygiene.py enforces four rules on changed
+      lines only, the same contract as check_format.py and for the same reason:
+      a whole-file rule would fail most of the tree, because stages 4 and 5 have
+      not run, and a check that has to be switched off to get work done is not a
+      check. `--all` scans whole files as a diagnostic and is explicitly not a
+      gate.
+
+      Acceptance evidence, all run on Linux: a synthetic file exercising every
+      rule reports exactly eight findings and exits 1, while `enum class`,
+      `enum struct`, a comment naming NULL and sprintf, and a string literal
+      containing both are all correctly ignored. Four diff scenarios were run
+      against real history — untracked file inside a checked root (flagged),
+      untracked file outside one (ignored), a committed file diffed against
+      HEAD~1 (flagged), and one line inserted into NeuronCore/Preferences.cpp,
+      a legacy file already full of violations, which reported that line and
+      nothing else. The clean tree exits 0.
+
+      Two design decisions worth keeping. String literals and comments are
+      blanked before matching, because the first false positive on a comment
+      is what teaches people to suppress the tool reflexively —
+      layering-inversion T13 recorded the mirror-image failure, where a
+      substring search for g_app matched "dialog_apply". And the escape hatch
+      is a `hygiene-ok` marker rather than a config file, so an exception is
+      visible on the line it applies to; T1's two typedef'd-integer NULLs in
+      ControlTypes.cpp and InputDriver.cpp are what it exists for, though
+      neither carries the marker yet since neither line has been touched
+      since.
+
+      Known limitation, accepted: strip_noise is single-line, so a banned token
+      inside a multi-line block comment still matches. `hygiene-ok` covers it.
+
+      Not verified here: nothing in this task compiles, so the msbuild and
+      vstest lines other tasks carry do not apply. CI's static-checks job runs
+      the new check on every push, which is the verification that matters for
+      it.
+    status: done
+
+  - id: T8
+    title: Retire the min and max macros that shadow the std functions
+    intent: >
+      NeuronCore/MathUtils.h defines function-style `min(a,b)` and `max(a,b)`
+      macros. NeuronCore.h sets NOMINMAX to keep the Windows pair out, and then
+      this header puts an equivalent pair back — so `std::min` and `std::max`
+      do not compile anywhere MathUtils.h is reachable, which from a NeuronCore
+      header is most of the tree. Every stage 3, 4 and 5 conversion wants those
+      functions; today each one has to write the comparison out by hand and
+      explain why. Replacing the macros with the std functions removes a
+      standing obstacle rather than a wart.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/MathUtils.h
+    acceptance:
+      - MathUtils.h defines no min or max macro; grep -nE "define[[:space:]]+(min|max)\b" over the six projects returns nothing
+      - The 216 bare min(/max( call sites across 51 files resolve to std::min/std::max, by include or by qualification, with no change to any computed value
+      - A file that previously failed on std::min now compiles — NetworkUpdate.cpp's SetClientIp is the worked example, and its hand-written comparison collapses back to std::min in the same commit
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    notes: >
+      Found on 2026-08-02 by strings-modernised T2, the hard way: one
+      std::min in NetworkUpdate.cpp failed CI with C2589, and it turned out to
+      be the only std::min or std::max anywhere in the tree. Nobody had tried
+      before, which is why a macro that shadows two of the most reachable
+      functions in the standard library had gone unnoticed.
+
+      Determinism: min and max on floats are the macro's `(a) < (b) ? ...`
+      versus std::min's `b < a ? b : a`. Those agree for every non-NaN input
+      and pick different arguments only on ties of equal value, so no computed
+      float changes — but the macros also double-evaluate their arguments, so
+      any call site passing an expression with a side effect (or an expensive
+      one) changes behaviour when it stops being evaluated twice. Audit for
+      that while converting; it is the one place this can bite.
+
+      MathUtils.cpp carries a third-party notice listed in LICENSE. MathUtils.h
+      does not, but check before editing rather than after.
+
+      parallel_safe false: 51 files, and the include-order sensitivity means a
+      half-landed version is worse than either end state.
     status: todo
+

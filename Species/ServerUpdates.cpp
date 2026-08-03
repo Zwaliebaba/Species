@@ -31,7 +31,7 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
 {
   DEBUG_ASSERT(_letter->m_type == ServerToClientLetter::Update);
 
-  for (int i = 0; i < _letter->m_updates.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(_letter->m_updates.size()); ++i)
   {
     NetworkUpdate* update = _letter->m_updates[i];
 
@@ -42,7 +42,7 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
       break;
 
     case NetworkUpdate::Pause:
-      g_app->m_paused = !g_app->m_paused;
+      g_paused = !g_paused;
       break;
 
     case NetworkUpdate::SelectUnit:

@@ -20,6 +20,7 @@
 #include "Script.h"
 #include "SoundStreamDecoder.h"
 #include "SoundSystem.h"
+#include "WorldTypeRoster.h"
 #include "SystemInfo.h"
 #include "TaskManager.h"
 #include "TaskManagerInterfaceIcons.h"
@@ -39,10 +40,10 @@
 // settings store in NeuronCore has no business knowing that exists.
 static void ApplyShippedPreferenceDefaults(PrefsManager& _prefs)
 {
-  if (!g_app || !g_app->m_resource)
+  if (!g_app || !g_resource)
     return;
 
-  TextReader* reader = g_app->m_resource->GetTextReader("DefaultPreferences.txt");
+  TextReader* reader = g_resource->GetTextReader("DefaultPreferences.txt");
   if (reader && reader->IsOpen())
   {
     while (reader->ReadLine())
@@ -72,8 +73,6 @@ App::App()
     m_startSequence(nullptr),
     m_attractMode(nullptr),
     m_gameMenu(nullptr),
-    m_negativeRenderer(false),
-    m_paused(false),
     m_levelReset(false)
 {
   g_app = this;
@@ -87,11 +86,11 @@ App::App()
   PrefsManager::SetDefaultsProvider(&ApplyShippedPreferenceDefaults);
   g_prefsManager = new PrefsManager(GetPreferencesPath());
 
-  m_negativeRenderer = g_prefsManager->GetInt("RenderNegative", 0) ? true : false;
-  if (m_negativeRenderer)
-    m_backgroundColour.Set(255, 255, 255, 255);
+  g_negativeRenderer = g_prefsManager->GetInt("RenderNegative", 0) ? true : false;
+  if (g_negativeRenderer)
+    g_backgroundColour.Set(255, 255, 255, 255);
   else
-    m_backgroundColour.Set(0, 0, 0, 0);
+    g_backgroundColour.Set(0, 0, 0, 0);
 
   UpdateDifficultyFromPreferences();
 
@@ -113,7 +112,11 @@ App::App()
 
   int textureId = m_resource->GetTexture("Textures/EditorFontNormal.bmp");
 
-  m_gameCursor = new GameCursor();
+  // Before the sound system exists, and well before Initialise() reads a
+  // blueprint that has to resolve an entity or building type name.
+  InstallWorldTypeRoster();
+
+  g_gameCursor = new GameCursor();
   m_soundSystem = new SoundSystem();
   g_soundSystem = m_soundSystem;
   m_clientToServer = new ClientToServer();
@@ -125,7 +128,7 @@ App::App()
   g_camera = new Camera();
   m_gameMenu = new GameMenu();
 
-  strcpy(m_gameDataFile, "Game.txt");
+  m_gameDataFile = "Game.txt";
 
   //
   // Determine default language if possible
@@ -134,9 +137,8 @@ App::App()
   if (stricmp(language, "unknown") == 0)
   {
     char* defaultLang = g_systemInfo->m_localeInfo.m_language;
-    char langFilename[512];
-    sprintf(langFilename, "Language/%s.txt", defaultLang);
-    if (DoesFileExist(langFilename))
+    const std::string langFilename = std::format("Language/{}.txt", defaultLang);
+    if (DoesFileExist(langFilename.c_str()))
       g_prefsManager->SetString("TextLanguage", defaultLang);
     else
       g_prefsManager->SetString("TextLanguage", "English");
@@ -169,6 +171,14 @@ App::App()
   bool profileLoaded = LoadProfile();
 }
 
+// The two factories AppCommands declares. GameLogic's preferences windows
+// rebuild these objects when a setting changes and cannot name the concrete
+// types; this is where `new` happens on their behalf.
+RendererAccess* App::CreateRenderer() { return new Renderer(); }
+
+TaskManagerInterfaceAccess* App::CreateTaskManagerInterface() { return new TaskManagerInterfaceIcons(); }
+
+
 App::~App()
 {
   SAFE_DELETE(g_globalWorld);
@@ -185,7 +195,7 @@ App::~App()
   SAFE_DELETE(g_userInput);
   SAFE_DELETE(m_clientToServer);
   SAFE_DELETE(m_soundSystem);
-  SAFE_DELETE(m_gameCursor);
+  SAFE_DELETE(g_gameCursor);
   SAFE_DELETE(g_renderer);
 #ifdef PROFILER_ENABLED
   SAFE_DELETE(m_profiler);
@@ -196,11 +206,11 @@ App::~App()
 
 void App::SetProfileName(const char* _profileName)
 {
-  strcpy(g_userProfileName, _profileName);
+  g_userProfileName = _profileName;
 
   if (stricmp(_profileName, "AttractMode") != 0)
   {
-    g_prefsManager->SetString("UserProfile", g_userProfileName);
+    g_prefsManager->SetString("UserProfile", g_userProfileName.c_str());
     g_prefsManager->Save();
   }
 }
@@ -220,10 +230,9 @@ void App::SetLanguage(const char* _language, bool _test)
   //
   // Load the language text file
 
-  char langFilename[256];
-  sprintf(langFilename, "Language/%s.txt", _language);
+  std::string langFilename = std::format("Language/{}.txt", _language);
 
-  m_langTable = new LangTable(langFilename);
+  m_langTable = new LangTable(langFilename.c_str());
   g_langTable = m_langTable;
 
   if (_test)
@@ -232,33 +241,32 @@ void App::SetLanguage(const char* _language, bool _test)
   //
   // Load the MOD language file if it exists
 
-  sprintf(langFilename, "strings_%s.txt", _language);
-  TextReader* modLangFile = g_app->m_resource->GetTextReader(langFilename);
+  langFilename = std::format("strings_{}.txt", _language);
+  TextReader* modLangFile = g_resource->GetTextReader(langFilename.c_str());
   if (!modLangFile)
   {
-    sprintf(langFilename, "strings_default.txt");
-    modLangFile = g_app->m_resource->GetTextReader(langFilename);
+    langFilename = "strings_default.txt";
+    modLangFile = g_resource->GetTextReader(langFilename.c_str());
   }
 
   if (modLangFile)
   {
     delete modLangFile;
-    m_langTable->ParseLanguageFile(langFilename);
+    m_langTable->ParseLanguageFile(langFilename.c_str());
   }
 
   //
   // Load localised fonts if they exist
 
-  char fontFilename[256];
-  sprintf(fontFilename, "Textures/SpeccyFont%s.bmp", _language);
-  if (!g_app->m_resource->DoesTextureExist(fontFilename))
-    sprintf(fontFilename, "Textures/SpeccyFontNormal.bmp");
-  g_gameFont.Initialise(fontFilename);
+  std::string fontFilename = std::format("Textures/SpeccyFont{}.bmp", _language);
+  if (!g_resource->DoesTextureExist(fontFilename.c_str()))
+    fontFilename = "Textures/SpeccyFontNormal.bmp";
+  g_gameFont.Initialise(fontFilename.c_str());
 
-  sprintf(fontFilename, "Textures/EditorFont%s.bmp", _language);
-  if (!g_app->m_resource->DoesTextureExist(fontFilename))
-    sprintf(fontFilename, "Textures/EditorFontNormal.bmp");
-  g_editorFont.Initialise(fontFilename);
+  fontFilename = std::format("Textures/EditorFont{}.bmp", _language);
+  if (!g_resource->DoesTextureExist(fontFilename.c_str()))
+    fontFilename = "Textures/EditorFontNormal.bmp";
+  g_editorFont.Initialise(fontFilename.c_str());
 
   if (g_inputManager)
     m_langTable->RebuildTables();
@@ -286,16 +294,15 @@ const char* App::GetProfileDirectory()
 const char* App::GetPreferencesPath()
 {
   // good leak #1
-  static char* path = nullptr;
+  // Built once and cached: the return type is const char* and callers hold it.
+  static std::string path;
 
-  if (path == nullptr)
+  if (path.empty())
   {
-    const char* profileDir = GetProfileDirectory();
-    path = new char[strlen(profileDir) + 32];
-    sprintf(path, "%spreferences.txt", profileDir);
+    path = std::format("{}preferences.txt", GetProfileDirectory());
   }
 
-  return path;
+  return path.c_str();
 }
 
 const char* App::GetScreenshotDirectory()
@@ -305,9 +312,10 @@ const char* App::GetScreenshotDirectory()
 
 bool App::LoadProfile()
 {
-  DebugTrace("Loading profile %s\n", g_userProfileName);
+  DebugTrace("Loading profile %s\n", g_userProfileName.c_str());
 
-  if ((stricmp(g_userProfileName, "AccessAllAreas") == 0 || stricmp(g_userProfileName, "AttractMode") == 0) && g_gameMode != GameModePrologue)
+  if ((stricmp(g_userProfileName.c_str(), "AccessAllAreas") == 0 || stricmp(g_userProfileName.c_str(), "AttractMode") == 0) &&
+      g_gameMode != GameModePrologue)
   {
     // Cheat username that opens all locations
     // aimed at beta testers who've completed the game already
@@ -320,15 +328,13 @@ bool App::LoadProfile()
 
     g_globalWorld = new GlobalWorld();
     g_globalWorld->LoadGame("GameUnlockAll.txt");
-    for (int i = 0; i < g_globalWorld->m_buildings.Size(); ++i)
+    for (GlobalBuilding* building : g_globalWorld->m_buildings)
     {
-      GlobalBuilding* building = g_globalWorld->m_buildings[i];
       if (building && building->m_type == Building::TypeTrunkPort)
         building->m_online = true;
     }
-    for (int i = 0; i < g_globalWorld->m_locations.Size(); ++i)
+    for (GlobalLocation* loc : g_globalWorld->m_locations)
     {
-      GlobalLocation* loc = g_globalWorld->m_locations[i];
       loc->m_available = true;
     }
   }
@@ -341,7 +347,7 @@ bool App::LoadProfile()
     }
 
     g_globalWorld = new GlobalWorld();
-    g_globalWorld->LoadGame(m_gameDataFile);
+    g_globalWorld->LoadGame(m_gameDataFile.c_str());
   }
 
   return true;
@@ -358,13 +364,13 @@ void App::LoadPrologue()
 
   m_soundSystem->StopAllSounds(WorldObjectId(), "Music");
 
-  strcpy(m_gameDataFile, "game_demo2.txt");
+  m_gameDataFile = "game_demo2.txt";
   LoadProfile();
 
   g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
   GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
-  strcpy(m_requestedMap, gloc->m_mapFilename);
-  strcpy(m_requestedMission, gloc->m_missionFilename);
+  g_requestedMap = gloc->m_mapFilename;
+  g_requestedMission = gloc->m_missionFilename;
 
   g_atMainMenu = false;
 
@@ -379,7 +385,7 @@ void App::LoadCampaign()
 
   // g_atMainMenu = false;
 
-  strcpy(m_gameDataFile, "Game.txt");
+  m_gameDataFile = "Game.txt";
   LoadProfile();
   g_gameMode = GameModeCampaign;
   g_requestedLocationId = -1;

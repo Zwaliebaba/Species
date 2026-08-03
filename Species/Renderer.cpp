@@ -127,7 +127,7 @@ void Renderer::RenderFlatTexture()
 {
   glColor3ubv(g_colourWhite.GetData());
   glEnable(GL_TEXTURE_2D);
-  int textureId = g_app->m_resource->GetTexture("Textures/privatedemo.bmp", true, true);
+  int textureId = g_resource->GetTexture("Textures/privatedemo.bmp", true, true);
   if (textureId == -1)
     return;
   glBindTexture(GL_TEXTURE_2D, textureId);
@@ -137,9 +137,9 @@ void Renderer::RenderFlatTexture()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
   float size = m_nearPlane * 0.3f;
-  Vector3 up = g_camera->GetUp() * 1.0f * size;
-  Vector3 right = g_camera->GetRight() * 1.0f * size;
-  Vector3 pos = g_camera->GetPos() + g_camera->GetFront() * m_nearPlane * 1.01f;
+  Vector3 up = TheCamera()->GetUp() * 1.0f * size;
+  Vector3 right = TheCamera()->GetRight() * 1.0f * size;
+  Vector3 pos = TheCamera()->GetPos() + TheCamera()->GetFront() * m_nearPlane * 1.01f;
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -194,7 +194,7 @@ void Renderer::RenderLogo()
   glColor4ub(255, 255, 255, 255);
   glEnable(GL_TEXTURE_2D);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  int textureId = g_app->m_resource->GetTexture("Textures/privatedemo.bmp", true, false);
+  int textureId = g_resource->GetTexture("Textures/privatedemo.bmp", true, false);
   if (textureId == -1)
     return;
   glBindTexture(GL_TEXTURE_2D, textureId);
@@ -226,13 +226,13 @@ void Renderer::RenderLogo()
 void Renderer::Render()
 {
 #ifdef PROFILER_ENABLED
-  g_app->m_profiler->RenderStarted();
+  g_profiler->RenderStarted();
 #endif
 
   RenderFrame();
 
 #ifdef PROFILER_ENABLED
-  g_app->m_profiler->RenderEnded();
+  g_profiler->RenderEnded();
 #endif // PROFILER_ENABLED
 }
 
@@ -347,14 +347,14 @@ void Renderer::RenderFrame(bool withFlip)
   FPSMeterAdvance();
   SetupMatricesFor3D();
 
-  START_PROFILE(g_app->m_profiler, "Render Clear");
-  RGBAColour* col = &g_app->m_backgroundColour;
+  START_PROFILE(g_profiler, "Render Clear");
+  RGBAColour* col = &g_backgroundColour;
   if (g_location)
     glClearColor(col->r / 255.0f, col->g / 255.0f, col->b / 255.0f, col->a / 255.0f);
   else
     glClearColor(0.05f, 0.0f, 0.05f, 0.1f);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-  END_PROFILE(g_app->m_profiler, "Render Clear");
+  END_PROFILE(g_profiler, "Render Clear");
 
   bool deformStarted = false;
 
@@ -365,7 +365,7 @@ void Renderer::RenderFrame(bool withFlip)
 #ifdef LOCATION_EDITOR
       SetupMatricesFor3D();
       g_location->Render();
-      g_locationEditor->Render();
+      TheLocationEditor()->Render();
 #endif // LOCATION_EDITOR
     }
     else
@@ -379,9 +379,9 @@ void Renderer::RenderFrame(bool withFlip)
       {
           PreRenderPixelEffect();
 
-          START_PROFILE(g_app->m_profiler, "Render Clear");
+          START_PROFILE(g_profiler, "Render Clear");
           glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-          END_PROFILE(g_app->m_profiler, "Render Clear");
+          END_PROFILE(g_profiler, "Render Clear");
           g_location->Render();
 
           ApplyPixelEffect();
@@ -395,20 +395,18 @@ void Renderer::RenderFrame(bool withFlip)
       g_globalWorld->Render();
   }
 
-  CHECK_OPENGL_STATE();
-  g_controlHelpSystem->Render();
+  TheControlHelp()->Render();
   g_explosionManager.Render();
   g_particleSystem->Render();
 
-  g_userInput->Render();
-  g_app->m_gameCursor->Render();
-  g_taskManagerInterface->Render();
-  g_camera->Render();
+  TheUserInput()->Render();
+  g_gameCursor->Render();
+  TheTaskManagerInterface()->Render();
+  TheCamera()->Render();
 
 #ifdef DEBUG_RENDER_ENABLED
   g_debugRenderer.Render();
 #endif
-  CHECK_OPENGL_STATE();
 
   //	RenderFlatTexture();
 
@@ -432,7 +430,7 @@ void Renderer::RenderFrame(bool withFlip)
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     g_editorFont.DrawText2D(12, 10, DEF_FONT_SIZE, "FPS: %d", m_fps);
     //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "TFPS: %2.0f", g_targetFrameRate);
-    //		Vector3 const camPos = g_camera->GetPos();
+    //		Vector3 const camPos = TheCamera()->GetPos();
     //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "cam: %.1f, %.1f, %.1f", camPos.x, camPos.y, camPos.z);
   }
 
@@ -471,8 +469,8 @@ void Renderer::RenderFrame(bool withFlip)
     {
       g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : %d",
                               g_location->m_landscape.m_renderer->m_numTriangles);
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : %s", g_app->m_requestedMission);
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : %s", g_app->m_requestedMap);
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : %s", g_requestedMission.c_str());
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : %s", g_requestedMap.c_str());
     }
   }
 
@@ -498,7 +496,7 @@ void Renderer::RenderFrame(bool withFlip)
 
   if (m_renderDarwinLogo >= 0.0f)
   {
-    int textureId = g_app->m_resource->GetTexture("Icons/DarwinResearchAssociates.bmp");
+    int textureId = g_resource->GetTexture("Icons/DarwinResearchAssociates.bmp");
 
     glBindTexture(GL_TEXTURE_2D, textureId);
     glEnable(GL_TEXTURE_2D);
@@ -573,17 +571,15 @@ void Renderer::RenderFrame(bool withFlip)
 
   g_editorFont.EndText2D();
 
-  if (!g_eventHandler->WindowHasFocus() || g_app->m_paused)
+  if (!g_eventHandler->WindowHasFocus() || g_paused)
     RenderPaused();
 
-  START_PROFILE(g_app->m_profiler, "GL Flip");
+  START_PROFILE(g_profiler, "GL Flip");
 
   if (withFlip)
     g_windowManager->Flip();
 
-  END_PROFILE(g_app->m_profiler, "GL Flip");
-
-  CHECK_OPENGL_STATE();
+  END_PROFILE(g_profiler, "GL Flip");
 }
 
 int Renderer::ScreenW() const { return m_screenW; }
@@ -595,13 +591,13 @@ void Renderer::SetupProjMatrixFor3D() const
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  gluPerspective(g_camera->GetFov(), static_cast<float>(m_screenW) / static_cast<float>(m_screenH), // Aspect ratio
+  gluPerspective(TheCamera()->GetFov(), static_cast<float>(m_screenW) / static_cast<float>(m_screenH), // Aspect ratio
                  m_nearPlane, m_farPlane);
 }
 
 void Renderer::SetupMatricesFor3D() const
 {
-  Camera* camera = g_camera;
+  Camera* camera = TheCamera();
 
   SetupProjMatrixFor3D();
   camera->SetupModelviewMatrix();
@@ -874,7 +870,7 @@ void Renderer::UnsetObjectLighting() const
 
 void Renderer::PreRenderPixelEffect()
 {
-  START_PROFILE(g_app->m_profiler, "Pixel Pre-render");
+  START_PROFILE(g_profiler, "Pixel Pre-render");
 
   UpdateTotalMatrix();
 
@@ -893,7 +889,7 @@ void Renderer::PreRenderPixelEffect()
   //
   // Blend our old glow texture into place
 
-  START_PROFILE(g_app->m_profiler, "blend old");
+  START_PROFILE(g_profiler, "blend old");
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, m_pixelEffectTexId);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -920,7 +916,7 @@ void Renderer::PreRenderPixelEffect()
   //glEnd();
   g_editorFont.EndText2D();
   glEnable(GL_TEXTURE_2D); // *
-  END_PROFILE(g_app->m_profiler, "blend old");
+  END_PROFILE(g_profiler, "blend old");
 
   //glDisable           (GL_TEXTURE_2D);
 
@@ -928,12 +924,12 @@ void Renderer::PreRenderPixelEffect()
   // Draw all pixelated objects to the screen
   // Find the nearest pixelated object and update m_pixelSize at the end
 
-  START_PROFILE(g_app->m_profiler, "Draw pixelated");
+  START_PROFILE(g_profiler, "Draw pixelated");
   glViewport(0, 0, m_pixelSize, m_pixelSize);
   float nearest = 99999.9f;
 
   float cutoff = 1000.0f;
-  Vector3 camPos = g_camera->GetPos();
+  Vector3 camPos = TheCamera()->GetPos();
 
   for (int t = 0; t < NUM_TEAMS; ++t)
   {
@@ -957,13 +953,13 @@ void Renderer::PreRenderPixelEffect()
                   {
                     Entity* entity = unit->m_entities[j];
                     bool rendered = false;
-                    if (j <= unit->m_entities.GetLastUpdated())
+                    if (j <= unit->m_entitiesWalker.GetLastUpdated())
                       rendered = entity->RenderPixelEffect(g_predictionTime);
                     else
                       rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
                     if (rendered)
                     {
-                      float distance = (entity->m_pos - g_camera->GetPos()).Mag();
+                      float distance = (entity->m_pos - TheCamera()->GetPos()).Mag();
                       if (distance < nearest)
                         nearest = distance;
                     }
@@ -986,13 +982,13 @@ void Renderer::PreRenderPixelEffect()
             if (distance < cutoff)
             {
               bool rendered = false;
-              if (i <= g_location->m_teams[t].m_others.GetLastUpdated())
+              if (i <= g_location->m_teams[t].m_othersWalker.GetLastUpdated())
                 rendered = entity->RenderPixelEffect(g_predictionTime);
               else
                 rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
               if (rendered)
               {
-                float distance = (entity->m_pos - g_camera->GetPos()).Mag();
+                float distance = (entity->m_pos - TheCamera()->GetPos()).Mag();
                 if (distance < nearest)
                   nearest = distance;
               }
@@ -1014,7 +1010,7 @@ void Renderer::PreRenderPixelEffect()
         bool rendered = building->RenderPixelEffect(g_predictionTime);
         if (rendered)
         {
-          float distance = (building->m_pos - g_camera->GetPos()).Mag();
+          float distance = (building->m_pos - TheCamera()->GetPos()).Mag();
           if (distance < nearest)
             nearest = distance;
         }
@@ -1022,13 +1018,13 @@ void Renderer::PreRenderPixelEffect()
     }
   }
 
-  END_PROFILE(g_app->m_profiler, "Draw pixelated");
+  END_PROFILE(g_profiler, "Draw pixelated");
   glViewport(0, 0, m_screenW, m_screenH);
 
   //
   // Copy the screen to a texture
 
-  START_PROFILE(g_app->m_profiler, "Gen new texture");
+  START_PROFILE(g_profiler, "Gen new texture");
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, m_pixelEffectTexId);
 
@@ -1041,11 +1037,10 @@ void Renderer::PreRenderPixelEffect()
   glDisable(GL_TEXTURE_2D);
   glDisable(GL_BLEND);
   glEnable(GL_CULL_FACE);
-  END_PROFILE(g_app->m_profiler, "Gen new texture");
+  END_PROFILE(g_profiler, "Gen new texture");
 
   glDepthMask(true);
 
-  CHECK_OPENGL_STATE();
 
   //
   // Update pixel size
@@ -1054,7 +1049,7 @@ void Renderer::PreRenderPixelEffect()
   //else if ( nearest < 200 )       m_pixelSize = 256;
   //else                            m_pixelSize = 512;
 
-  END_PROFILE(g_app->m_profiler, "Pixel Pre-render");
+  END_PROFILE(g_profiler, "Pixel Pre-render");
 }
 
 #define d3dOneMinus( _x ) _x
@@ -1063,8 +1058,8 @@ void Renderer::PaintPixels()
 {
 #if USE_PIXEL_EFFECT_GRID_OPTIMISATION
   const double aspectRatio = static_cast<double>(m_screenW) / static_cast<double>(m_screenH);
-  double zoomCorrection = 0.000037 * static_cast<double>(g_camera->GetFov());
-  double scale = (0.017 + zoomCorrection) * static_cast<double>(g_camera->GetFov());
+  double zoomCorrection = 0.000037 * static_cast<double>(TheCamera()->GetFov());
+  double scale = (0.017 + zoomCorrection) * static_cast<double>(TheCamera()->GetFov());
 
   const double step = scale * aspectRatio / static_cast<double>(PIXEL_EFFECT_GRID_RES);
   const double xOffset = scale * (-0.5 * aspectRatio);
@@ -1150,9 +1145,8 @@ void Renderer::ApplyPixelEffect()
 
   //return;
 
-  START_PROFILE(g_app->m_profiler, "Pixel Apply");
+  START_PROFILE(g_profiler, "Pixel Apply");
 
-  CHECK_OPENGL_STATE();
 
   glEnable(GL_BLEND);
   glDisable(GL_CULL_FACE);
@@ -1180,40 +1174,40 @@ void Renderer::ApplyPixelEffect()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
   // Additive blocky
-  START_PROFILE(g_app->m_profiler, "pass 1");
+  START_PROFILE(g_profiler, "pass 1");
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
   PaintPixels();
-  END_PROFILE(g_app->m_profiler, "pass 1");
+  END_PROFILE(g_profiler, "pass 1");
 
   // Subtractive smooth
-  START_PROFILE(g_app->m_profiler, "pass 2");
+  START_PROFILE(g_profiler, "pass 2");
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
   PaintPixels();
-  END_PROFILE(g_app->m_profiler, "pass 2");
+  END_PROFILE(g_profiler, "pass 2");
 
   // Subtractive smooth
-  START_PROFILE(g_app->m_profiler, "pass 3");
+  START_PROFILE(g_profiler, "pass 3");
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glColor4f(1.0f, 1.0f, 1.0f, 0.2f);
   PaintPixels();
-  END_PROFILE(g_app->m_profiler, "pass 3");
+  END_PROFILE(g_profiler, "pass 3");
 
   // Additive smooth
-  START_PROFILE(g_app->m_profiler, "pass 4");
+  START_PROFILE(g_profiler, "pass 4");
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
   PaintPixels();
-  END_PROFILE(g_app->m_profiler, "pass 4");
+  END_PROFILE(g_profiler, "pass 4");
 
   glDisable(GL_TEXTURE_2D);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1248,9 +1242,8 @@ void Renderer::ApplyPixelEffect()
     g_editorFont.EndText2D();
   }
 
-  CHECK_OPENGL_STATE();
 
-  END_PROFILE(g_app->m_profiler, "Pixel Apply");
+  END_PROFILE(g_profiler, "Pixel Apply");
 }
 
 void Renderer::UpdateTotalMatrix()
@@ -1331,7 +1324,7 @@ const double* Renderer::GetTotalMatrix() { return m_totalMatrix; }
 void Renderer::RasteriseSphere(const Vector3& _pos, float _radius)
 {
   const float screenToGridFactor = static_cast<float>(PIXEL_EFFECT_GRID_RES) / static_cast<float>(m_screenW);
-  Camera* cam = g_camera;
+  Camera* cam = TheCamera();
   Vector3 centre;
   Vector3 topLeft;
   Vector3 bottomRight;
@@ -1370,7 +1363,7 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
 
   // Return early if this shape fragment isn't on the screen
   {
-    if (!g_camera->SphereInViewFrustum(worldPos, _frag->m_radius))
+    if (!TheCamera()->SphereInViewFrustum(worldPos, _frag->m_radius))
       return;
   }
 
@@ -1378,10 +1371,10 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
     RasteriseSphere(worldPos, _frag->m_radius);
 
   // Recurse into all child fragments
-  int numChildren = _frag->m_childFragments.Size();
+  int numChildren = static_cast<int>(_frag->m_childFragments.size());
   for (int i = 0; i < numChildren; ++i)
   {
-    const ShapeFragment* child = _frag->m_childFragments.GetData(i);
+    const ShapeFragment* child = _frag->m_childFragments[i];
     MarkUsedCells(child, total);
   }
 #endif // USE_PIXEL_EFFECT_GRID_OPTIMISATION
@@ -1389,7 +1382,7 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
 
 void Renderer::MarkUsedCells(const Shape* _shape, const Matrix34& _transform)
 {
-  START_PROFILE(g_app->m_profiler, "MarkUsedCells");
+  START_PROFILE(g_profiler, "MarkUsedCells");
   MarkUsedCells(_shape->m_rootFragment, _transform);
-  END_PROFILE(g_app->m_profiler, "MarkUsedCells");
+  END_PROFILE(g_profiler, "MarkUsedCells");
 }

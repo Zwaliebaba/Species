@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Globals.h"
 #include "Main.h"
 #include "App.h"
 #include "Camera.h"
@@ -193,14 +194,14 @@ bool ProcessServerLetters(ServerToClientLetter* letter)
   }
 }
 
-bool WindowsOnScreen() { return EclGetWindows()->Size() > 0; }
+bool WindowsOnScreen() { return EclGetWindows()->size() > 0; }
 
 void RemoveAllWindows()
 {
-  LList<EclWindow*>* windows = EclGetWindows();
-  while (windows->Size() > 0)
+  std::vector<EclWindow*>* windows = EclGetWindows();
+  while (windows->size() > 0)
   {
-    EclWindow* w = windows->GetData(0);
+    EclWindow* w = (*windows)[0];
     EclRemoveWindow(w->m_name);
   }
 }
@@ -230,8 +231,8 @@ bool HandleCommonConditions()
 
   if (!curWindowHasFocus)
   {
-    g_userInput->Advance();
-    g_app->m_soundSystem->Advance();
+    TheUserInput()->Advance();
+    g_soundSystem->Advance();
 
     // Render twice to avoid double buffering artefacts
     TheRenderer()->Render();
@@ -360,7 +361,7 @@ void LocationGameLoop()
   g_sliceNum = -1;
 
   TheRenderer()->StartFadeIn(0.6f);
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterLocation", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->TriggerOtherEvent("EnterLocation", SoundSourceBlueprint::TypeAmbience);
 
   //
   // Main loop
@@ -380,7 +381,7 @@ void LocationGameLoop()
     {
       if (TheRenderer()->IsFadeComplete())
       {
-        g_controlHelpSystem->Shutdown();
+        TheControlHelp()->Shutdown();
         break;
       }
     }
@@ -388,20 +389,22 @@ void LocationGameLoop()
     g_inputManager->PollForEvents();
     if (g_inputManager->controlEvent(ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
-      if (g_script && g_script->IsRunningScript()) {}
+      if (g_script && TheScript()->IsRunningScript())
+      {
+      }
       else
       {
         if (WindowsOnScreen())
           RemoveAllWindows();
-        else if (g_taskManagerInterface->m_visible)
-          g_taskManagerInterface->m_visible = false;
+        else if (TheTaskManagerInterface()->m_visible)
+          TheTaskManagerInterface()->m_visible = false;
         else
         {
-          g_camera->SetDebugMode(Camera::DebugModeAuto);
+          TheCamera()->SetDebugMode(Camera::DebugModeAuto);
           EclRegisterWindow(new LocationWindow());
         }
       }
-      g_userInput->Advance();
+      TheUserInput()->Advance();
     }
 
     if (HandleCommonConditions())
@@ -429,7 +432,7 @@ void LocationGameLoop()
 
     if (iAmAClient)
     {
-      START_PROFILE(g_app->m_profiler, "Client Main Loop");
+      START_PROFILE(g_profiler, "Client Main Loop");
 
       //
       // Send Client input to Server
@@ -482,7 +485,7 @@ void LocationGameLoop()
           }
         }
 
-        if (g_taskManagerInterface->m_visible || EclGetWindows()->Size() != 0 || chatLog || entityUnderMouse)
+        if (TheTaskManagerInterface()->m_visible || EclGetWindows()->size() != 0 || chatLog || entityUnderMouse)
           teamControls.ClearFlags();
 
         g_app->m_clientToServer->SendIAmAlive(g_globalWorld->m_myTeamId, teamControls);
@@ -500,7 +503,7 @@ void LocationGameLoop()
 
       int slicesToAdvance = GetNumSlicesToAdvance();
 
-      END_PROFILE(g_app->m_profiler, "Client Main Loop");
+      END_PROFILE(g_profiler, "Client Main Loop");
 
       // Do our heavy weight physics
       for (int i = 0; i < slicesToAdvance; ++i)
@@ -551,10 +554,10 @@ void LocationGameLoop()
       UpdateAdvanceTime();
       lastRenderTime = GetHighResTime();
 #ifdef PROFILER_ENABLED
-      g_app->m_profiler->Advance();
+      g_profiler->Advance();
 #endif // PROFILER_ENABLED
 
-      g_userInput->Advance();
+      TheUserInput()->Advance();
 
       // Check Task Manager
       SwitchTaskManagerForX360Controller();
@@ -563,14 +566,14 @@ void LocationGameLoop()
       // using something like OpenMP
       g_location->m_water->Advance();
       g_soundLibrary2d->TopupBuffer();
-      g_camera->Advance();
+      TheCamera()->Advance();
       g_app->m_locationInput->Advance();
       g_taskManager->Advance();
-      g_taskManagerInterface->Advance();
-      g_script->Advance();
+      TheTaskManagerInterface()->Advance();
+      TheScript()->Advance();
       g_explosionManager.Advance();
-      g_app->m_soundSystem->Advance();
-      g_controlHelpSystem->Advance();
+      g_soundSystem->Advance();
+      TheControlHelp()->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
       if (g_app->m_attractMode->m_running) { g_app->m_attractMode->Advance(); }
@@ -582,12 +585,12 @@ void LocationGameLoop()
       TheRenderer()->Render();
 
       if (g_renderer->Fps() < 15)
-        g_app->m_soundSystem->Advance();
+        g_soundSystem->Advance();
     }
   }
 
-  g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterLocation");
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "ExitLocation", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterLocation");
+  g_soundSystem->TriggerOtherEvent("ExitLocation", SoundSourceBlueprint::TypeAmbience);
 
   g_explosionManager.Reset();
 
@@ -624,8 +627,7 @@ void SwitchTaskManagerForX360Controller()
 {
   static int oldControlType = INPUT_MODE_KEYBOARD;
 
-  if (oldControlType != INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && !g_taskManagerInterface->
-    m_visible)
+  if (oldControlType != INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && !TheTaskManagerInterface()->m_visible)
   {
     // user has just switched to the game pad
     if (g_prefsManager->GetInt("ControlMethod") == 0)
@@ -635,8 +637,7 @@ void SwitchTaskManagerForX360Controller()
     }
     oldControlType = INPUT_MODE_GAMEPAD;
   }
-  else if (oldControlType == INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && !g_taskManagerInterface->
-    m_visible)
+  else if (oldControlType == INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && !TheTaskManagerInterface()->m_visible)
     oldControlType = g_inputManager->getInputMode();
 }
 
@@ -655,12 +656,12 @@ void LocationEditorLoop()
     UpdateAdvanceTime();
     double timeNow = GetHighResTime();
 
-    g_userInput->Advance();
-    g_camera->Advance();
-    g_locationEditor->Advance();
-    g_app->m_soundSystem->Advance();
+    TheUserInput()->Advance();
+    TheCamera()->Advance();
+    TheLocationEditor()->Advance();
+    g_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
-    g_app->m_profiler->Advance();
+    g_profiler->Advance();
 #endif
 
     TheRenderer()->Render();
@@ -684,7 +685,7 @@ void GlobalWorldGameLoop()
 {
   TheRenderer()->StartFadeIn(0.25f);
 
-  g_app->m_soundSystem->TriggerOtherEvent(nullptr, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->TriggerOtherEvent("EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
 
   while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
@@ -699,10 +700,10 @@ void GlobalWorldGameLoop()
         RemoveAllWindows();
       else
       {
-        g_camera->SetDebugMode(Camera::DebugModeAuto);
+        TheCamera()->SetDebugMode(Camera::DebugModeAuto);
         EclRegisterWindow(new MainMenuWindow());
       }
-      g_userInput->Advance();
+      TheUserInput()->Advance();
     }
 
     if (HandleCommonConditions())
@@ -712,17 +713,17 @@ void GlobalWorldGameLoop()
     UpdateAdvanceTime();
     double timeNow = GetHighResTime();
 
-    g_script->Advance();
+    TheScript()->Advance();
     g_globalWorld->Advance();
-    g_userInput->Advance();
-    g_camera->Advance();
-    g_app->m_soundSystem->Advance();
+    TheUserInput()->Advance();
+    TheCamera()->Advance();
+    g_soundSystem->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
     g_app->m_attractMode->Advance();
 #endif
 #ifdef PROFILER_ENABLED
-    g_app->m_profiler->Advance();
+    g_profiler->Advance();
 #endif // PROFILER_ENABLED
 
     g_globalWorld->EvaluateEvents();
@@ -736,13 +737,13 @@ void GlobalWorldGameLoop()
     g_requestToggleEditing = false;
   }
 
-  g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
+  g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
 }
 
 // *** GlobalWorldEditorLoop
 void GlobalWorldEditorLoop()
 {
-  g_camera->SetDebugMode(Camera::DebugModeAlways);
+  TheCamera()->SetDebugMode(Camera::DebugModeAlways);
 
   auto gweWindow = new GlobalWorldEditorWindow();
   EclRegisterWindow(gweWindow);
@@ -766,11 +767,11 @@ void GlobalWorldEditorLoop()
     double timeNow = GetHighResTime();
 
     g_globalWorld->Advance();
-    g_userInput->Advance();
-    g_camera->Advance();
-    g_app->m_soundSystem->Advance();
+    TheUserInput()->Advance();
+    TheCamera()->Advance();
+    g_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
-    g_app->m_profiler->Advance();
+    g_profiler->Advance();
 #endif // PROFILER_ENABLED
 
     TheRenderer()->Render();
@@ -796,7 +797,7 @@ void InitialiseInputManager()
   g_inputManager->addDriver(new AliasInputDriver());
   {
     // Read Darwinia default input preferences file
-    TextReader* inputPrefsReader = g_app->m_resource->GetTextReader(InputPrefs::GetSystemPrefsPath());
+    TextReader* inputPrefsReader = g_resource->GetTextReader(InputPrefs::GetSystemPrefsPath());
     if (inputPrefsReader)
     {
       ASSERT_TEXT(inputPrefsReader->IsOpen(), "Couldn't open input preferences file: %s\n", InputPrefs::GetSystemPrefsPath());
@@ -805,7 +806,7 @@ void InitialiseInputManager()
     }
 
     // Override defaults with keyboard specific file, if applicable
-    TextReader* localeInputPrefsReader = g_app->m_resource->GetTextReader(InputPrefs::GetLocalePrefsPath());
+    TextReader* localeInputPrefsReader = g_resource->GetTextReader(InputPrefs::GetLocalePrefsPath());
     if (localeInputPrefsReader)
     {
       if (localeInputPrefsReader->IsOpen())
@@ -846,7 +847,7 @@ void Initialise()
   // Start on a specific level if the prefs file tells us to
 
   const char* startMap = g_prefsManager->GetString("StartMap");
-  if (startMap && g_app->HasBoughtGame())
+  if (startMap && g_appCommands->HasBoughtGame())
   {
     int requestedLocationId = g_globalWorld->GetLocationId(startMap);
     GlobalLocation* gloc = g_globalWorld->GetLocation(requestedLocationId);
@@ -854,8 +855,8 @@ void Initialise()
     if (gloc)
     {
       g_requestedLocationId = requestedLocationId;
-      strcpy(g_app->m_requestedMap, gloc->m_mapFilename);
-      strcpy(g_app->m_requestedMission, gloc->m_missionFilename);
+      g_requestedMap = gloc->m_mapFilename;
+      g_requestedMission = gloc->m_missionFilename;
     }
   }
 
@@ -870,14 +871,14 @@ void Finalise()
   delete g_soundLibrary2d;
   g_soundLibrary2d = nullptr;
 
-  delete g_app->m_resource;
+  delete g_resource;
   delete g_windowManager;
 
 }
 
 void RunBootLoaders()
 {
-  if (g_app->HasBoughtGame() && g_prefsManager->GetInt("CurrentGameMode", 1) == 1)
+  if (g_appCommands->HasBoughtGame() && g_prefsManager->GetInt("CurrentGameMode", 1) == 1)
   {
     const char* loaderName = g_prefsManager->GetString("BootLoader", "none");
 
@@ -893,8 +894,8 @@ void RunBootLoaders()
     delete g_app->m_startSequence;
     g_app->m_startSequence = nullptr;
 
-    g_camera->SetTarget(Vector3(1000, 500, 1000), Vector3(0, -0.5f, -1));
-    g_camera->CutToTarget();
+    TheCamera()->SetTarget(Vector3(1000, 500, 1000), Vector3(0, -0.5f, -1));
+    TheCamera()->CutToTarget();
 
     g_inputManager->Advance(); // clears g_keyDeltas[KEY_ESC]
     g_inputManager->Advance();
@@ -909,7 +910,7 @@ void EnterLocation()
     if (iAmAServer)
     {
       g_server = new Server();
-      g_server->Initialise(g_app->m_profiler);
+      g_server->Initialise(g_profiler);
     }
 
     g_app->m_clientToServer->ClientJoin();
@@ -917,10 +918,10 @@ void EnterLocation()
 
   g_location = new Location();
   g_app->m_locationInput = new LocationInput();
-  g_location->Init(g_app->m_requestedMission, g_app->m_requestedMap);
+  g_location->Init(g_requestedMission.c_str(), g_requestedMap.c_str());
   g_locationId = g_requestedLocationId;
 
-  g_camera->UpdateEntityTrackingMode();
+  TheCamera()->UpdateEntityTrackingMode();
 
   if (!g_editing)
   {
@@ -935,24 +936,24 @@ void EnterLocation()
   constexpr float borderSize = 200.0f;
   float minX = -borderSize;
   float maxX = g_location->m_landscape.GetWorldSizeX() + borderSize;
-  g_camera->SetBounds(minX, maxX, minX, maxX);
-  g_camera->SetTarget(Vector3(maxX, 1000, maxX), Vector3(-1, -0.7, -1)); // Incase start doesn't exist
-  g_camera->SetTarget("start");
-  g_camera->CutToTarget();
+  TheCamera()->SetBounds(minX, maxX, minX, maxX);
+  TheCamera()->SetTarget(Vector3(maxX, 1000, maxX), Vector3(-1, -0.7, -1)); // Incase start doesn't exist
+  TheCamera()->SetTarget("start");
+  TheCamera()->CutToTarget();
 
   if (g_editing)
   {
 #ifdef LOCATION_EDITOR
     g_locationEditor = new LocationEditor();
-    g_camera->SetDebugMode(Camera::DebugModeAlways);
+    TheCamera()->SetDebugMode(Camera::DebugModeAlways);
 
     LocationEditorLoop();
 #endif // LOCATION_EDITOR
   }
   else
   {
-    g_camera->SetDebugMode(Camera::DebugModeAuto);
-    g_camera->RequestMode(Camera::ModeFreeMovement);
+    TheCamera()->SetDebugMode(Camera::DebugModeAuto);
+    TheCamera()->RequestMode(Camera::ModeFreeMovement);
 
     LocationGameLoop();
   }
@@ -960,20 +961,20 @@ void EnterLocation()
 
 void EnterGlobalWorld()
 {
-  if (g_gameMode == GameModePrologue && !g_script->IsRunningScript())
+  if (g_gameMode == GameModePrologue && !TheScript()->IsRunningScript())
   {
     // the only time you should see the world in prologue is during the cutscene
     //g_atMainMenu = true;
     g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
     GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
-    strcpy(g_app->m_requestedMap, gloc->m_mapFilename);
-    strcpy(g_app->m_requestedMission, gloc->m_missionFilename);
+    g_requestedMap = gloc->m_mapFilename;
+    g_requestedMission = gloc->m_missionFilename;
   }
 
   // Put the camera in a sensible place
-  g_camera->SetDebugMode(Camera::DebugModeAuto);
-  g_camera->RequestMode(Camera::ModeSphereWorld);
-  g_camera->SetHeight(50.0f);
+  TheCamera()->SetDebugMode(Camera::DebugModeAuto);
+  TheCamera()->RequestMode(Camera::ModeSphereWorld);
+  TheCamera()->SetHeight(50.0f);
 
   if (g_editing)
     GlobalWorldEditorLoop();
@@ -983,14 +984,14 @@ void EnterGlobalWorld()
 
 void MainMenuLoop()
 {
-  g_camera->RequestMode(Camera::ModeMainMenu);
+  TheCamera()->RequestMode(Camera::ModeMainMenu);
   while (g_atMainMenu)
   {
     UpdateAdvanceTime();
     TheRenderer()->Render();
-    g_userInput->Advance();
-    g_camera->Advance();
-    g_app->m_soundSystem->Advance();
+    TheUserInput()->Advance();
+    TheCamera()->Advance();
+    g_soundSystem->Advance();
     HandleCommonConditions();
 
     if (!g_app->m_gameMenu->m_menuCreated)
@@ -1026,6 +1027,26 @@ void RunTheGame()
     g_inputManager->Advance();
   }
 }
+
+// The process entry point.
+//
+// It used to be in NeuronClient/WindowManager.cpp, where it called AppMain()
+// below — a static library reaching up into the executable that links it.
+// check_layering never saw it, because an include check cannot: NeuronClient
+// DECLARED AppMain in its own header rather than including a Species one. The
+// linker sees it, and said so the moment a test DLL pulled WindowManager.obj
+// in without a game executable to satisfy it.
+int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _cmdLine, int _iCmdShow)
+{
+  SetWin32InstanceHandle(_hInstance);
+
+  g_windowManager = new WindowManager();
+
+  AppMain();
+
+  return WM_QUIT;
+}
+
 
 // Main Function
 void AppMain()

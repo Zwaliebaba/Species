@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "Matrix34.h"
 #include "Shape.h"
@@ -73,7 +74,7 @@ void Armour::ChangeHealth(int _amount)
   if (!m_dead)
   {
     if (_amount < 0)
-      g_soundSystem->TriggerEntityEvent(this, "LoseHealth");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LoseHealth");
 
     int oldHealth = m_stats[StatHealth];
     int newHealth = oldHealth + _amount;
@@ -94,7 +95,7 @@ void Armour::ChangeHealth(int _amount)
     if (newHealth == 0)
     {
       m_dead = true;
-      g_soundSystem->TriggerEntityEvent(this, "Die");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Die");
     }
   }
 }
@@ -385,7 +386,7 @@ void Armour::AddPassenger()
 {
   ++m_numPassengers;
 
-  g_soundSystem->TriggerEntityEvent(this, "LoadDarwinian");
+  g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LoadCitizen");
 }
 
 void Armour::RemovePassenger()
@@ -393,7 +394,7 @@ void Armour::RemovePassenger()
   --m_numPassengers;
   m_previousUnloadTimer = GetHighResTime();
 
-  g_soundSystem->TriggerEntityEvent(this, "UnloadDarwinian");
+  g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "UnloadCitizen");
 }
 
 void Armour::GetEntrance(Vector3& _exitPos, Vector3& _exitDir)
@@ -404,12 +405,12 @@ void Armour::GetEntrance(Vector3& _exitPos, Vector3& _exitDir)
   _exitDir = entranceMat.f;
 }
 
-void Armour::ListSoundEvents(LList<const char*>* _list)
+void Armour::ListSoundEvents(std::vector<const char*>* _list)
 {
   Entity::ListSoundEvents(_list);
 
-  _list->PutData("LoadDarwinian");
-  _list->PutData("UnloadDarwinian");
+  _list->push_back("LoadCitizen");
+  _list->push_back("UnloadCitizen");
 }
 
 /*

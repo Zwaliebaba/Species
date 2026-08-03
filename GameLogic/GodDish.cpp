@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "MathUtils.h"
 #include "Preferences.h"
@@ -6,13 +7,12 @@
 #include "GodDish.h"
 #include "Spam.h"
 #include "ResearchItem.h"
-#include "Darwinian.h"
+#include "Citizen.h"
 
 #include "ProtocolLimits.h"
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "Team.h"
-#include "Camera.h"
 #include "GameTime.h"
 
 #include "SoundSystem.h"
@@ -157,7 +157,7 @@ void GodDish::Activate()
 
 
     //
-    // Make all green darwinians watch us
+    // Make all green citizens watch us
 
     Team *team = &g_location->m_teams[0];
 
@@ -166,17 +166,17 @@ void GodDish::Activate()
         if( team->m_others.ValidIndex(i) )
         {
             Entity *entity = team->m_others[i];
-            if( entity && entity->m_type == Entity::TypeDarwinian )
+            if( entity && entity->m_type == Entity::TypeCitizen )
             {
-                Darwinian *darwinian = (Darwinian *) entity;
-                darwinian->WatchSpectacle( m_id.GetUniqueId() );
-                darwinian->CastShadow( m_id.GetUniqueId() );
+                Citizen *citizen = (Citizen *) entity;
+                citizen->WatchSpectacle( m_id.GetUniqueId() );
+                citizen->CastShadow( m_id.GetUniqueId() );
             }
         }
     }
 
 
-    g_soundSystem->TriggerBuildingEvent( this, "ConnectToGod" );
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ConnectToGod");
 }
 
 
@@ -186,7 +186,7 @@ void GodDish::DeActivate()
 
 
     g_soundSystem->StopAllSounds( m_id, "GodDish ConnectToGod" );
-    g_soundSystem->TriggerBuildingEvent( this, "DisconnectFromGod" );
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "DisconnectFromGod");
 }
 
 
@@ -227,11 +227,11 @@ void GodDish::TriggerSpam()
 }
 
 
-void GodDish::ListSoundEvents( LList<char const *> *_list )
+void GodDish::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "ConnectToGod" );
-    _list->PutData( "DisconnectFromGod" );
+    _list->push_back("ConnectToGod");
+    _list->push_back("DisconnectFromGod");
 }
 

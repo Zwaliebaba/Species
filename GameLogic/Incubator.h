@@ -1,6 +1,8 @@
 #pragma once
 
-#include "FastDArray.h"
+#include <vector>
+
+#include "SlotMap.h"
 #include "Building.h"
 #include "Spirit.h"
 
@@ -18,7 +20,7 @@ struct IncubatorIncoming
 class Incubator : public Building
 {
   protected:
-    FastDArray<Spirit> m_spirits;
+    FastSlotMap<Spirit> m_spirits;
     ShapeMarker* m_spiritCentre;
     ShapeMarker* m_exit;
     ShapeMarker* m_dock;
@@ -27,7 +29,7 @@ class Incubator : public Building
     int m_troopType;
     float m_timer;
 
-    LList<IncubatorIncoming*> m_incoming;
+    std::vector<IncubatorIncoming*> m_incoming;
 
   public:
     int m_numStartingSpirits;
@@ -51,6 +53,6 @@ class Incubator : public Building
 
     void GetDockPoint(Vector3& _pos, Vector3& _front);
 
-    void ListSoundEvents(LList<const char*>* _list) override;
+    void ListSoundEvents(std::vector<const char*>* _list) override;
 };
 

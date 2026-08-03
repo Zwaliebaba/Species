@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 
@@ -66,7 +68,7 @@ public:
     void Render         ( float _predictionTime );
     void RenderAlphas   ( float _predictionTime );
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     char const *GetObjectiveCounter();
 };
@@ -82,7 +84,7 @@ public:
 
     bool Advance();
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 
@@ -106,7 +108,7 @@ public:
     bool IsLoading();
     bool BoardRocket( WorldObjectId id );
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     bool PerformDepthSort( Vector3 &_centrePos );
 };
@@ -185,7 +187,7 @@ public:
 
     char const *GetObjectiveCounter();
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     static int GetStateId( char *_state );
 };

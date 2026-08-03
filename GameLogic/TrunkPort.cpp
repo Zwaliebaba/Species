@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "Debug.h"
 #include "FileWriter.h"
@@ -88,7 +89,7 @@ bool TrunkPort::Advance()
     if( gb && gb->m_online && m_openTimer == 0.0f)
     {
         m_openTimer = GetHighResTime();
-        g_soundSystem->TriggerBuildingEvent( this, "PowerUp" );
+        g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PowerUp");
     }
 
     return Building::Advance();
@@ -289,9 +290,8 @@ void TrunkPort::ReprogramComplete()
         location->m_available = true;
 
         // Look for a "receiver" trunk port and set that to the same state
-        for( int i = 0; i < g_globalWorld->m_buildings.Size(); ++i )
+        for (GlobalBuilding* building : g_globalWorld->m_buildings)
         {
-            GlobalBuilding *building = g_globalWorld->m_buildings[i];
             if( building->m_type == Building::TypeTrunkPort &&
                 building->m_locationId == m_targetLocationId &&
                 building->m_link == g_locationId )
@@ -305,11 +305,11 @@ void TrunkPort::ReprogramComplete()
 }
 
 
-void TrunkPort::ListSoundEvents( LList<char const *> *_list )
+void TrunkPort::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "PowerUp" );
+    _list->push_back("PowerUp");
 }
 
 

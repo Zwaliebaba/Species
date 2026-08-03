@@ -9,11 +9,12 @@ only shows structure, this says what the structure is rather than guessing at
 intent.
 
 > **These names are inherited from Darwinia and are not all settled.** The UI
-> scaffolding has been renamed (`DarwiniaWindow` → `SpeciesWindow` and friends);
-> **every domain name below is frozen.** `Darwinian` appears in 45 `GameData`
-> files and as a literal string in level files, and names derived from it —
-> `TypeDarwinian`, `numDarwinians` — move with it or not at all. The full policy
-> is in
+> scaffolding has been renamed (`DarwiniaWindow` → `SpeciesWindow` and friends),
+> and so has the entity the game was named for — `Darwinian` is now **Citizen**,
+> code and content together. **Every domain name below is frozen** on the same
+> terms: `Citizen` appears in 37 `GameData` filenames and as a literal string in
+> level files, and names derived from it — `TypeCitizen`, `numCitizens` — move
+> with it or not at all. The full policy is in
 > [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia).
 
 ---
@@ -22,17 +23,17 @@ intent.
 
 | Term | Where | What it is |
 |---|---|---|
-| **GlobalWorld** | `Species/GlobalWorld.h` | The campaign-level model: which locations exist, what has been unlocked, research progress. Persists across missions. |
-| **GlobalLocation** | `Species/GlobalWorld.h:21` | A location as seen from the campaign map — name, position, whether it is available. |
-| **GlobalEventCondition** | `Species/GlobalWorld.h:69` | A trigger predicate used for mission objectives and unlocks. |
-| **Location** | `Species/Location.h` | One loaded, playable map: its teams, entities, buildings, lasers, effects, landscape, water. `Location::Advance` is the simulation tick. |
-| **LevelFile** | `Species/LevelFile.h` | The on-disk description a Location is built from — buildings, spawn points, camera mounts, scripts. |
-| **Team** | `Species/Team.h` | A faction within a Location. `TeamTypeLocalPlayer`, `TeamTypeRemotePlayer`, `TeamTypeCPU`, `TeamTypeUnused`. Owns `m_units`, `m_others`, and `m_specials` (officers and armour, kept for quick lookup). |
-| **Unit** | `Species/Unit.h` | A *formation* of entities of one `m_troopType`, moving together with a shared `m_centrePos`, waypoint and formation offset. Not every entity belongs to a unit. |
+| **GlobalWorld** | `GameLogic/GlobalWorld.h` | The campaign-level model: which locations exist, what has been unlocked, research progress. Persists across missions. |
+| **GlobalLocation** | `GameLogic/GlobalWorld.h:20` | A location as seen from the campaign map — name, position, whether it is available. |
+| **GlobalEventCondition** | `GameLogic/GlobalWorld.h:68` | A trigger predicate used for mission objectives and unlocks. |
+| **Location** | `GameLogic/Location.h` | One loaded, playable map: its teams, entities, buildings, lasers, effects, landscape, water. `Location::Advance` is the simulation tick. |
+| **LevelFile** | `GameLogic/LevelFile.h` | The on-disk description a Location is built from — buildings, spawn points, camera mounts, scripts. |
+| **Team** | `GameLogic/Team.h` | A faction within a Location. `TeamTypeLocalPlayer`, `TeamTypeRemotePlayer`, `TeamTypeCPU`, `TeamTypeUnused`. Owns `m_units`, `m_others`, and `m_specials` (officers and armour, kept for quick lookup). |
+| **Unit** | `GameLogic/Unit.h` | A *formation* of entities of one `m_troopType`, moving together with a shared `m_centrePos`, waypoint and formation offset. Not every entity belongs to a unit. |
 | **Entity** | `GameLogic/Entity.h` | One creature or vehicle. 19 types, listed below. |
-| **`m_others`** | `Species/Team.h:34` | A team's entities that are *not* in a unit — Darwinians, officers, armour. |
+| **`m_others`** | `GameLogic/Team.h:34` | A team's entities that are *not* in a unit — Citizens, officers, armour. |
 | **WorldObject** | `GameLogic/WorldObject.h` | Base for anything with a position and velocity in the world: entities, buildings, lasers, effects, spirits. |
-| **WorldObjectId** | `GameLogic/WorldObject.h:18` | Identity of a world object: `m_teamId`, `m_unitId`, `m_index`, `m_uniqueId`. **`m_index` is a raw `DArray` slot and is serialised onto the wire** — see [determinism](../CODING_STANDARDS.md#determinism). |
+| **WorldObjectId** | `GameLogic/WorldObject.h:18` | Identity of a world object: `m_teamId`, `m_unitId`, `m_index`, `m_uniqueId`. **`m_index` is a raw `SlotMap` slot and is serialised onto the wire** — see [determinism](../CODING_STANDARDS.md#determinism). |
 
 ---
 
@@ -44,10 +45,10 @@ The 19 values of the entity type enum (`GameLogic/Entity.h:23`).
 
 | Entity | File | Notes |
 |---|---|---|
-| **Darwinian** | `Darwinian.*` | The green population the game is named for. Not directly commanded — they are led, promoted, and herded. 14 states including `StateWorshipSpirit`, `StateOperatingPort`, `StateInsideArmour`, `StateCapturedByAnt`, `StateOnFire`. |
+| **Citizen** | `Citizen.*` | The green population, called `Darwinian` until `tasks/rename-darwinian.yaml` T3. Not directly commanded — they are led, promoted, and herded. 14 states including `StateWorshipSpirit`, `StateOperatingPort`, `StateInsideArmour`, `StateCapturedByAnt`, `StateOnFire`. |
 | **Engineer** | `Engineer.*` | Collects Spirits and delivers them; the player's manipulator of the spirit economy. |
-| **Officer** | `Officer.*` | A promoted Darwinian that issues standing orders to nearby Darwinians. Orders are `OrderNone`, `OrderGoto`, `OrderFollow` (`Officer.h:24`). |
-| **Armour** | `Armour.*` | A troop transport Darwinians board (`StateApproachingArmour` → `StateInsideArmour`). |
+| **Officer** | `Officer.*` | A promoted Citizen that issues standing orders to nearby Citizens. Orders are `OrderNone`, `OrderGoto`, `OrderFollow` (`Officer.h:24`). |
+| **Armour** | `Armour.*` | A troop transport Citizens board (`StateApproachingArmour` → `StateInsideArmour`). |
 | **InsertionSquadie** | `InsertionSquad.*` | The directly-controlled squad summoned by the Squad program. |
 | **LaserTroop** | `LaserTrooper.*` | Basic armed unit type. |
 | **AI** | `Ai.*` | Entity type driving CPU teams. |
@@ -65,7 +66,7 @@ building types.
 | **Spider** | `Spider.*` | Leaping attacker. Uses `EntityLeg` for procedural legs. |
 | **SporeGenerator** | `SporeGenerator.*` | Spawns spores/eggs. |
 | **TriffidEgg** | `Triffid.*` | Projectile-laid egg from the Triffid building. |
-| **ArmyAnt** | `ArmyAnt.*` | Captures Darwinians (`StateCapturedByAnt`). Spawned from an AntHill. |
+| **ArmyAnt** | `ArmyAnt.*` | Captures Citizens (`StateCapturedByAnt`). Spawned from an AntHill. |
 | **Tripod**, **SpaceInvader**, **Lander** | `Tripod.*`, … | Additional hostile types. |
 
 ### Other
@@ -121,16 +122,16 @@ The buildings that move Spirits around:
 | **Factory**, **ConstructionYard** (`TypeYard`) | Produce entities. |
 | **Generator**, **PowerStation**, **SolarPanel**, **FuelGenerator** | Power generation. |
 | **Refinery**, **Mine**, **TrackLink/Junction/Start/End** | Resource processing and the ore track network. |
-| **TrunkPort** | Inter-location connection — how Darwinians and control move between maps. |
-| **Teleport** | Intra-location movement. Officers can direct Darwinians into one (`Officer::m_wayPointTeleportId`). |
+| **TrunkPort** | Inter-location connection — how Citizens and control move between maps. |
+| **Teleport** | Intra-location movement. Officers can direct Citizens into one (`Officer::m_wayPointTeleportId`). |
 | **RadarDish** | Aimed by the player (`NetworkUpdate::AimBuilding`); links locations. |
 | **ControlTower** | Captured to take control of a structure. |
 | **GunTurret** | Player-aimable defensive turret. |
 | **LaserFence** | Toggleable barrier (`NetworkUpdate::ToggleLaserFence`). |
 | **ResearchItem** | Picked up to unlock or advance a program. |
 | **Library**, **BlueprintStore**, **BlueprintConsole**, **BlueprintRelay** | The blueprint/research chain. |
-| **UpgradePort**, **PrimaryUpgradePort** | Operated by Darwinians (`StateOperatingPort`). |
-| **SafeArea** | A zone objective — hold it with enough Darwinians. |
+| **UpgradePort**, **PrimaryUpgradePort** | Operated by Citizens (`StateOperatingPort`). |
+| **SafeArea** | A zone objective — hold it with enough Citizens. |
 | **AntHill**, **Triffid**, **Spam**, **GodDish** | Hostile structures. |
 | **ScriptTrigger** | Fires a script when entered. |
 | **StaticShape**, **Tree**, **Wall**, **Bridge**, **Pylon** | Scenery and terrain structures. |
@@ -142,12 +143,12 @@ The buildings that move Spirits around:
 
 | Term | Where | What it is |
 |---|---|---|
-| **Task Manager** | `Species/TaskManager.*` | The in-game interface for running **Programs**. Deliberately styled as an OS task manager — the fiction is that you are a user operating a computer. |
-| **Task** | `Species/TaskManager.h` | One running Program instance. States `StateIdle` ("not yet run"), `StateStarted` ("running, not yet targetted"), `StateRunning` ("targetted, running"), `StateStopping`. |
-| **Program** | `GlobalResearch` enum, `Species/GlobalWorld.h:165` | What the player can run: `Squad`, `Laser`, `Grenade`, `Rocket`, `Controller`, `AirStrike`, `Armour`, `TaskManager`, `Engineer`. Each has a research *level* and *progress*. |
-| **Controller** | `TypeController` | The program that promotes a Darwinian to Officer. `Task::Promote` / `Task::Demote`. |
+| **Task Manager** | `GameLogic/TaskManager.*` | The in-game interface for running **Programs**. Deliberately styled as an OS task manager — the fiction is that you are a user operating a computer. |
+| **Task** | `GameLogic/TaskManager.h` | One running Program instance. States `StateIdle` ("not yet run"), `StateStarted` ("running, not yet targetted"), `StateRunning` ("targetted, running"), `StateStopping`. |
+| **Program** | `GlobalResearch` enum, `GameLogic/GlobalWorld.h:160` | What the player can run: `Squad`, `Laser`, `Grenade`, `Rocket`, `Controller`, `AirStrike`, `Armour`, `TaskManager`, `Engineer`. Each has a research *level* and *progress*. |
+| **Controller** | `TypeController` | The program that promotes a Citizen to Officer. `Task::Promote` / `Task::Demote`. |
 | **Research** | `GlobalResearch` | Levels and progress per program, advanced by collecting ResearchItems. |
-| **Route** | `Species/RoutingSystem.*` | A waypoint path. Units follow one via `m_routeId` / `m_routeWayPointId`; the Controller task builds one. |
+| **Route** | `GameLogic/RoutingSystem.*` | A waypoint path. Units follow one via `m_routeId` / `m_routeWayPointId`; the Controller task builds one. |
 | **Sepulveda** | `NeuronClient/SepulvedaStrings.cpp`, `SoundSystem.h:46` (`TypeSepulveda`) | The narrator voice. A distinct sound channel type, with its own string table. |
 | **Attract mode** | `Species/Attract.*` | The idle demo loop. |
 
@@ -159,12 +160,12 @@ The buildings that move Spirits around:
 |---|---|---|
 | **Neuron** | `NeuronCore/`, `NeuronClient/`, `NeuronServer/` | The engine layers, as distinct from the game. See [ARCHITECTURE.md](ARCHITECTURE.md). |
 | **Eclipse** | `NeuronClient/Eclipse.*`, `EclWindow.*`, `EclButton.*` | The immediate-mode-ish UI toolkit every in-game window derives from. `DarwiniaWindow` is the game's styled subclass. |
-| **DArray** | `NeuronClient/DArray.h` | Slot map: *"an entry's index never changes"*. A `shadow` array marks live slots. **Not a `std::vector`** — see [determinism](../CODING_STANDARDS.md#determinism). |
-| **LList** | `NeuronClient/LList.h` | Linked list. Often owns its elements (`EmptyAndDelete`). |
-| **SliceDArray**, **FastDArray** | `NeuronClient/` | `DArray` variants. `SliceDArray` supports advancing a subset per slice. |
-| **Slice** | `Species/Globals.h:5` | `NUM_SLICES_PER_FRAME` = 10. Heavy simulation is spread across 10 slices per frame; `g_sliceNum` is the current one. |
+| **SlotMap** | `NeuronCore/SlotMap.h` | Storage with stable indices: *"an entry's index never changes"*. An occupancy mask marks live slots. **Not a `std::vector`** — see [determinism](../CODING_STANDARDS.md#determinism). Two flavours, because the legacy templates assigned different indices after a removal: `SlotMap` scans lowest-first (was `DArray`), `FastSlotMap` pops a freelist (was `FastDArray`). |
+| **SliceWalker** | `NeuronCore/SliceWalker.h` | Hands out the index range to advance this slice. Ten slices are one server tick. Was a base class on `SliceDArray`; a sibling of the container now. |
+| **Legacy containers** | *deleted* | `LList`, `DArray`, `FastDArray`, `SliceDArray`, `BTree`, `HashTable`, `SortingHashTable`, `BoundedArray` and `AutoVector` were removed by containers-replaced/T16. `LList` was a linked list that often owned its elements (`EmptyAndDelete`); if you meet the name in a comment or an old commit, that is what it was. |
+| **Slice** | `NeuronCore/Globals.h:13` | `NUM_SLICES_PER_FRAME` = 10. Heavy simulation is spread across 10 slices per frame; `g_sliceNum` is the current one. |
 | **Sequence id** | `NeuronCore/Server.h` | The server's monotonic tick counter. Every broadcast carries one; clients apply them in order. |
-| **Sync value** | `Species/Main.cpp:274` | One-byte checksum of all entity positions and velocities, compared across clients to detect desync. |
+| **Sync value** | `Species/Main.cpp:252` | One-byte checksum of all entity positions and velocities, compared across clients to detect desync. |
 | **Shape / `.shp`** | `NeuronClient/Shape.*`, `GameData/Shapes/` | The model format. `ShapeMarker` names an attachment point on a model — buildings use them for spirit entrances, docks and exits. |
 | **`speciesRandom()`** | `NeuronCore/Random.cpp` | The single global LCG the simulation shares. Its call sequence is load-bearing. |
 
@@ -173,8 +174,9 @@ The buildings that move Spirits around:
 ## A note on naming
 
 Several terms here describe mechanics whose names will change as the project
-moves away from Darwinia — `Darwinian` most obviously. This glossary describes
-the code **as it is**.
+moves away from Darwinia. The biggest of them already has: the entity is a
+`Citizen` now, not a `Darwinian`. This glossary describes the code **as it is**,
+so when the next one moves, this file moves with it.
 
 Renaming is governed by
 [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia). The

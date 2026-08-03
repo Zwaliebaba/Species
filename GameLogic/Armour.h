@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Entity.h"
 #include "Flag.h"
 
@@ -63,7 +65,7 @@ public:
 
     int Capacity();
 
-    void ListSoundEvents    ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     void GetEntrance( Vector3 &_exitPos, Vector3 &_exitDir );
 };

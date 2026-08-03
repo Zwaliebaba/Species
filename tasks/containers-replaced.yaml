@@ -39,8 +39,19 @@ summary: >
 
   Cross-plan ordering: a file finishes its task here before its
   strings-modernised task, which finishes before its ownership task
-  (stage 3 -> 4 -> 5 per file, CODING_STANDARDS.md). Tasks in different
-  plans that list the same file must not run concurrently — check `files`.
+  (stage 3 -> 4 -> 5 per file, CODING_STANDARDS.md). That ordering is no
+  longer prose — the downstream tasks carry `blocked_by` edges naming the
+  task here that gates them (docs/TASK_DAG.md, "Ordering across plans"),
+  so `--next` will not offer a stage-4 or stage-5 task before its stage-3
+  task lands. Tasks in different plans that list the same file must still
+  not run concurrently even where no ordering exists — check `files`.
+
+  Re-measured 2026-08-02 at 11aee84, and the headline is that stage 3 has
+  not started: LList 126 files (GameLogic 82, Species 26, NeuronClient 16,
+  NeuronCore 2, NeuronServer 1), DArray 14, FastDArray 17 — all within one
+  file of the b69c951 figures. T3's SlotMap and T17's LookupTable exist and
+  are tested; they have zero callers. The foundation is built and no
+  production code has moved onto it.
 
 tasks:
   - id: T1
@@ -149,6 +160,7 @@ tasks:
       - NeuronCore/ServerToClientLetter.cpp
       - NeuronServer/Server.h
       - NeuronServer/Server.cpp
+      - Species/ServerUpdates.cpp
       - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
       - Tests/NeuronServerTests/ServerTests.cpp
     acceptance:
@@ -160,7 +172,40 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    notes: >
+      LANDED 2026-08-02, CI green first try, including Server.exe --ticks 20.
+      SlotMap's first production caller: T3 built it and T2 pinned it four
+      tasks earlier and nothing had used it until now.
+
+      FLAVOUR IS THE DECISION, and the next migration should copy the
+      reasoning rather than the answer. These were DArray, so they take the
+      default LowestFirst. Client and team registry indices ARE identity — a
+      letter carries m_clientId as an index into m_clients — so the freelist
+      flavour would hand the same join sequence different identities after a
+      disconnect. Check which legacy template a member was, not which one
+      looks tidier.
+
+      SlotMap was a drop-in for every DArray call site: PutData, PutData at an
+      index, ValidIndex, Size, SetSize, NumUsed, MarkNotUsed, EmptyAndDelete
+      and indexing all carried over untouched, so the diff for those three
+      members is confined to their declarations. That is worth knowing before
+      T9, T10 and T12, which are the same substitution at twenty times the
+      scale: budget the effort for the LList members, not the DArray ones.
+
+      The LList members are ordinary queues — PutDataAtEnd is push_back,
+      RemoveData(0) is erase(begin()), ValidIndex is a written-out bounds
+      check — and they still hold raw owning pointers, so three EmptyAndDelete
+      calls became explicit delete loops. ownership T2 covers these files.
+
+      Scope corrected BEFORE converting rather than by CI: Species/
+      ServerUpdates.cpp walks a letter's m_updates and was not in the file
+      list. Enumerating every use of every member first cost a minute; the
+      three conversions before this one each lost a CI round to skipping it.
+
+      One honest caveat on "tests pass unchanged": every assertion is
+      unchanged, but ServerToClientLetterTests needed .Size() -> .size() with
+      a cast, because Assert::AreEqual(int, size_t) does not compile.
+    status: done
 
   - id: T5
     title: Convert the sound subsystem containers
@@ -187,10 +232,76 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    notes: >
-      Not characterisable ahead of time — sound needs a device. Relies on T1/T2
-      template tests, the build, and audible behaviour in the smoke test.
-    status: todo
+    notes: |
+      SURVEYED 2026-08-02 and NOT started. Two findings change what this task
+      is, and one of them is bigger than this plan.
+
+      THIS TASK'S PREMISE IS WRONG. The intent says sound is "frame-rate code,
+      not simulation state, so std::vector and std::unordered_map are
+      legitimate here". SoundInstance.cpp calls speciesRandom() twice — line
+      533 picks a sample, line 1009 picks an object id — so the sound
+      subsystem draws from the DETERMINISTIC SIMULATION RANDOM STREAM. Any
+      conversion here that changes how many times those lines execute changes
+      the sequence every other consumer of speciesRandom() sees. The
+      acceptance criterion "no speciesRandom() call is added or removed" is
+      therefore load-bearing rather than a formality, and unordered containers
+      anywhere that decides whether those lines run are not safe. See the
+      hazard recorded in AGENTS.md, which is a much larger problem than this
+      task.
+
+      SCOPE: ListSoundEvents is not part of these six files. It is a virtual
+      taking LList<char const*>* implemented across 64 files — every entity
+      and building type — so SoundSystem.h cannot lose its LList reference,
+      and this task cannot meet its own grep acceptance, without a tree-wide
+      interface change. Split out as T23.
+
+      The rest is ordinary: m_events, m_samples, m_objIds and m_dspFX are
+      vectors; m_sounds is a SlotMap MostRecentFirst (FastDArray); m_params
+      and the three blueprint arrays are SlotMap LowestFirst (DArray); m_cache
+      is keyed AND index-iterated, so std::map rather than a hash. Note
+      SampleGroup's destructor calls EmptyAndDeleteArray — delete[], not
+      delete — so m_samples holds new char[] and its replacement loop must
+      too.
+
+      DONE 2026-08-03. The two warnings above were both real and both landed as
+      written.
+
+      The delete[] one caught a live mistake: the first draft of SampleGroup's
+      replacement loop called free(), which is undefined behaviour on a NewStr
+      pointer. Reading this note is not what caught it — checking what NewStr
+      actually allocates with did — but the note named the right hazard.
+
+      speciesRandom is called twice in SoundInstance.cpp before and after, at
+      the same two decision points, reached under the same conditions. The
+      sample count feeding line 533 is still m_samples' size, and the object
+      count feeding line 1009 is still m_objIds' size after the same pruning
+      pass, so the draw sequence is unchanged.
+
+      DEVIATION FROM THE SURVEY, stated so it is not mistaken for an oversight.
+      The note above says m_cache "is keyed AND index-iterated, so std::map
+      rather than a hash". It is unordered_map here. The index iteration is
+      real but there are only two of them and both are ORDER-INDEPENDENT: the
+      destructor deletes every entry, and GetMemoryUsage sums every entry.
+      Neither observes sequence, so ordering buys nothing and costs a lookup on
+      the sample-loading path. If a third iteration ever appears that does care
+      about order, this is the note that says so.
+
+      What the survey did NOT predict is that HashTable is CASE-INSENSITIVE —
+      it hashes with the case bit masked (& 0xDF) and compares with stricmp.
+      std::unordered_map is not, and std::map would not have been either, so
+      taking the survey's advice verbatim would have carried the same defect:
+      two spellings of a sample name each getting an entry, the file decoded
+      and held twice rather than shared. Silent — no crash, no assert, just
+      double memory. It carries an explicit CaseInsensitiveHash and
+      CaseInsensitiveEqual pair now.
+
+      Third instance of the subscript-as-emptiness-test found:
+      `while (instance->m_dspFX.ValidIndex(0))` in SoundSystem. Same defect
+      class as the EclWindow crash from T7.
+
+      The headers and SampleCache.cpp were tab-indented, so they were
+      reformatted whole-file in a separate commit first.
+    status: done
 
   - id: T6
     title: Convert the resource and language containers
@@ -204,19 +315,81 @@ tasks:
     files:
       - NeuronClient/Resource.h
       - NeuronClient/Resource.cpp
-      - NeuronClient/LanguageTable.h
-      - NeuronClient/LanguageTable.cpp
+      - NeuronClient/FilesysUtils.h
       - NeuronClient/FilesysUtils.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/UserProfileWindow.cpp
+      - Species/GameMenu.cpp
+      - GameLogic/GlobalWorld.cpp
+      - Species/Script.cpp
       - Tests/NeuronClientTests/FilesysUtilsTests.cpp
     acceptance:
-      - grep -lwE "LList|DArray|BTree|HashTable|SortingHashTable" on the five source files returns nothing
-      - Existing FilesysUtils tests pass unchanged; new tests cover the converted filename-listing behaviour
+      - grep -lwE "LList|DArray|BTree|HashTable|SortingHashTable" on Resource.h/.cpp and FilesysUtils.h/.cpp returns nothing
+      - Existing FilesysUtils tests pass unchanged
+      - No caller starts or stops freeing the returned strings. The FORM of the free is corrected where the loop had to be written out by hand — see notes
     verify:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      Two things the plan did not anticipate, both settled here.
+
+      The third acceptance line originally said the wrong frees were to be
+      preserved. That was written before anyone had looked at how the names are
+      allocated. ListDirectory allocates each name with `new char[]`;
+      LList::EmptyAndDelete frees with plain `delete`. While the free was hidden
+      inside a container method that mismatch was a latent bug nobody could see.
+      Converting to std::vector means writing the loop out by hand, and
+      preserving the old behaviour would have meant typing `delete file;` over a
+      `new char[]` deliberately. So the form was corrected to delete[] in
+      FileDialog (two sites), PrefsOtherWindow and GlobalWorld — which already
+      used EmptyAndDeleteArray and so is unchanged in substance. PrefsOtherWindow
+      also never freed the vector itself; that `delete fileList` is now there.
+      Nobody's ownership changed: every caller that freed still frees, and the
+      two that never freed (Script, which calls exit(0) three lines later, and
+      UserProfileWindow, which hands each name to a button) still do not.
+
+      The hash tables were case-insensitive — HashFunc masked the case bit off
+      and lookups compared with stricmp — so Resource.h's four maps carry a
+      ResourceNameLess comparator built on stricmp. Without it GetTexture would
+      miss on a name whose case differs from the one it was cached under, which
+      is exactly what happens: it stores under the caller's spelling and loads
+      through a strlwr'd path.
+
+      Found and fixed while converting: FlushOpenGlState passed the hash table's
+      slot index to glDeleteTextures rather than the texture name held in that
+      slot, so on a context loss it deleted whichever textures happened to have
+      low numeric names and leaked the real ones. There is no index to get wrong
+      now. The `#if 1 // Try to catch crash on shutdown bug` around that loop
+      suggests someone was already hunting a symptom of it, but that is a guess.
+
+      Deleted: OrderedInsert in Resource.cpp, a file-scope function with no
+      declaration in any header and no caller in the tree. It also skipped the
+      last element of the list it was inserting into.
+
+      Resource.h dropped its LList/BTree/HashTable/FastDArray includes. Around 47
+      translation units use LList without including it, which made that look like
+      a tree-wide sweep; resolving the include graph properly showed every one of
+      them still reaches LList.h another way, so nothing needed a new include.
+      Four headers (FeedingTube.h, GameCursor.h, ObstructionGrid.h,
+      StartSequence.h) are not self-contained, but they were already not
+      self-contained and do not include Resource.h.
+
+      The new tests earned their keep on their first CI run, by crashing. Both
+      listing functions stored _findfirst's handle in a `long`; on x64 that
+      handle is 64 bits and long is 32, so _findnext was reading through a
+      truncated value. The game never tripped it because the handles it got
+      happened to fit in 32 bits — which is exactly the kind of bug that waits
+      for a customer. Both are intptr_t now, and both call _findclose, which
+      neither did.
+
+      LanguageTable was in this task's original scope and is now T24 — its BTree
+      of phrases is fed by WordWrapText, which puts interior pointers from a
+      single `new char[]` buffer into its list, and untangling that is a task on
+      its own.
 
   - id: T7
     title: Convert the Eclipse UI toolkit and window-manager containers
@@ -234,6 +407,20 @@ tasks:
       - NeuronClient/EclWindow.h
       - NeuronClient/WindowManager.cpp
       - NeuronClient/WindowManager.h
+      - NeuronClient/TargetCursor.cpp
+      - GameLogic/MainMenus.cpp
+      - GameLogic/PrefsScreenWindow.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/PrefsKeybindingsWindow.cpp
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/CameraAnimWindow.cpp
+      - Species/Camera.cpp
+      - Species/GameMenu.cpp
+      - Species/GameCursor.cpp
+      - Species/Main.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/LocationInput.cpp
+      - GameLogic/GlobalWorld.cpp
     acceptance:
       - grep -lw LList on the six files returns nothing
       - Draw order and event-dispatch order are by-construction identical (insertion-ordered vector)
@@ -242,7 +429,80 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    notes: >
+      LANDED 2026-08-02, CI green after one round.
+
+      ONE REAL TRAP. GameLogic/SpeciesWindow.cpp had `if
+      (windows->GetData(0))`. LList::GetData returns a null T() for an
+      out-of-range read — LListTests pins that as OutOfRangeReadsReturnZero —
+      so that `if` was doubling as a bounds check on an empty window list, and
+      std::vector would have been undefined behaviour. The emptiness check is
+      now explicit.
+
+      THAT PARAGRAPH USED TO END "All eight other GetData(0) sites sit inside
+      `while (size() > 0)` loops and were already guarded; they were checked
+      one by one, not assumed." IT WAS WRONG, and the owner found it by running
+      the game on 2026-08-03: opening a window with no buttons asserted in
+      EclWindow's destructor.
+
+      Two of those sites were not inside a guarded loop — they WERE the loop
+      condition. `while (m_buttons.GetData(0))` in EclWindow::~EclWindow and
+      `while (dirtyrects.GetData(0))` in EclResetDirtyRectangles became
+      `while (m_buttons[0])`, which subscripts an empty vector before testing
+      anything. The trap this task had already identified and written up is
+      exactly the trap it then walked into twice more in the same commit.
+
+      The lesson is not "check more carefully". It is that a claim of the form
+      "I checked each one" is worth nothing in a plan file a week later, and
+      the same sweep produced a follow-up commit for two OTHER errors before
+      this. Four defects from one batch rewrite, three of them found by
+      something other than the author's own audit.
+
+      SO IT IS A CHECK NOW. tools/check_hygiene.py gained a rule for
+      `while (container[...])` — the shape is meaningless on a std::vector and
+      was only ever legal because LList returned nullptr out of range. Zero
+      instances tree-wide after the fix, so it starts as a real ratchet rather
+      than a backlog.
+
+      THE REST OF THE SWEEP WAS AUDITED PROPERLY THIS TIME, on 2026-08-03,
+      after the crash. Every std::vector this branch introduced (34 of them,
+      taken from the diff rather than from memory), every subscript on one, and
+      whether an enclosing loop or an explicit guard bounds the index:
+
+        The two above were the only defects. Everything else that came from
+        LList is guarded — `while (!m_outbox.empty())` in ClientToServer,
+        `while (m_buttons.size())` in three window classes, `index != -1` in
+        Eclipse's three window lookups, explicit range checks in
+        WindowManager::GetResolution and Server's history replay.
+
+        The auto_vector conversions (T14) changed nothing: auto_vector's
+        operator[] forwarded straight to std::vector::operator[] with no bounds
+        check of its own, so `m_specs[spec.control_id]` and its siblings carry
+        exactly the risk they always did. Pre-existing, not introduced.
+
+        Several containers that look converted are not — m_cameraAnimations,
+        m_instantUnits, m_dspFX and Team::m_units are still LList or
+        FastDArray, so their unguarded-looking subscripts are still
+        bounds-safe. Worth knowing before converting them.
+
+      SCOPE 6 FILES -> 20. EclGetWindows returns the list itself and fourteen
+      files call it. An accessor that hands out a container is the same
+      "a type cannot change in one file only" problem as a public member, one
+      level up — worth checking for before estimating any of the remaining
+      conversions.
+
+      Order is preserved by construction: PutDataAtStart is insert(begin()),
+      which is the z-order, newest window on top.
+
+      THE MECHANICAL LESSON, which cost a CI round. Rewriting `.Size()` to
+      `.size()` rather than wrapping it in a cast avoids the receiver-capture
+      bug (T8's `_frag->static_cast<int>(...)`) — but FindData and ValidIndex
+      DO wrap, and reintroduced it as `res->static_cast<int>(...)`. Separately,
+      four m_buttons.GetData(i) calls were not rewritten at all even though
+      .Size() on the adjacent line was, and the script's "converted" log line
+      hid it. The reliable check is not a better regex: it is grepping every
+      touched file for the legacy API AFTER the rewrite and BEFORE the push.
+    status: done
 
   - id: T8
     title: Convert Shape and ClientToServer containers
@@ -259,6 +519,11 @@ tasks:
       - NeuronClient/Shape.h
       - NeuronClient/ClientToServer.cpp
       - NeuronClient/ClientToServer.h
+      - GameLogic/NetworkWindow.cpp
+      - GameLogic/Building.cpp
+      - Species/Renderer.cpp
+      - GameLogic/Explosion.cpp
+      - GameLogic/GlobalWorld.cpp
     acceptance:
       - grep -lwE "LList|DArray" on the four files returns nothing
       - Letter-processing order in ClientToServer is by-construction unchanged
@@ -267,12 +532,34 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    notes: >
+      LANDED 2026-08-02, CI green.
+
+      The inbox is the part with semantics: letters are kept sorted by
+      sequence id, so PutDataAtIndex(letter, i+1) and PutDataAtStart became
+      insert() at exactly those positions. Getting that wrong reorders the
+      letters the client applies to the simulation.
+
+      SCOPE GREW FROM FOUR FILES TO NINE, unavoidably. Shape's m_childFragments
+      and m_childMarkers are public and read from GameLogic/Building.cpp,
+      GameLogic/NetworkWindow.cpp, Species/Renderer.cpp, GameLogic/Explosion.cpp
+      and GameLogic/GlobalWorld.cpp. Three belong to other tasks, but a member's
+      type cannot change in one file only. The edits there are confined to the
+      Shape call sites and touch none of those files' own containers.
+
+      Ownership stays raw — three EmptyAndDelete calls became delete loops;
+      ownership T3 covers these files.
+
+      One mechanical trap for the next bulk rewrite: a regex over
+      `m_childFragments.Size()` rewrote `_frag->m_childFragments.Size()` as
+      `_frag->static_cast<int>(...)`, in seven places across four files. Put
+      the receiver in the pattern, not just the member.
+    status: done
 
   - id: T9
     title: Convert the GameLogic entity containers
     intent: >
-      The entity classes (Darwinian, Engineer, Officer, Armour, Spider,
+      The entity classes (Citizen, Engineer, Officer, Armour, Spider,
       Centipede, SoulDestroyer, Virii, Spirit, SpiritStore, InsertionSquad,
       Entity, Incubator) hold simulation state in LList and FastDArray.
       Every list here feeds Location::Advance and the sync value; traversal
@@ -282,7 +569,7 @@ tasks:
     project: GameLogic
     depends_on: [T1, T3]
     files:
-      - GameLogic/Darwinian.cpp
+      - GameLogic/Citizen.cpp
       - GameLogic/Engineer.cpp
       - GameLogic/Officer.cpp
       - GameLogic/Armour.cpp
@@ -307,13 +594,58 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    notes: >
-      Behind the LinkStubs link wall — entity behaviour is not unit-testable
-      yet. Evidence is the T1/T2/T3 pinned template tests, unchanged call-site
-      structure, and the Garden smoke test (steps 3-5 and 7 cover exactly this
-      code). Split into per-entity commits within the task if the diff grows
-      past reviewable.
-    status: todo
+    notes: |
+      Evidence for this task: the T1/T2/T3 pinned template tests, unchanged
+      call-site structure, and the Garden smoke test (steps 3-5 and 7 cover
+      exactly this code). Split into per-entity commits within the task if the
+      diff grows past reviewable.
+
+      Two things changed the caveat that used to sit here. The LinkStubs link
+      wall is GONE — layering-inversion T14 emptied it, so GameLogic links
+      into a test DLL on its own and entity behaviour is unit-testable in
+      principle. What is missing is tests, not the ability to write them:
+      layering-inversion T11 lands the first ones, and where it has landed
+      coverage for something this task converts, use it rather than falling
+      back on the smoke test.
+
+      The rename this task was blocked on HAS LANDED. rename-darwinian
+      T3 renamed Darwinian.cpp to Citizen.cpp and rewrote Entity.cpp's
+      typeNames[] table, and it rewrote the file list above to match — which is
+      why the block is gone and the first entry reads Citizen.cpp. Running the
+      rename first kept it a pure rename with an accurate inventory, and keeps
+      this conversion off files that were about to move.
+
+      DONE 2026-08-03. Small in the end — most of these files were already
+      clear, and what remained was seven local lists and three members.
+
+      EVERY LOCAL HERE FEEDS A SYNCHRONISED RANDOM DRAW. Citizen's
+      availableBuildings and availablePorts, Triffid's possibleSpawns, Virii's
+      eggIds and InsertionSquad's canAttack are each built by a scan and then
+      indexed with syncrand() % size or syncfrand(size). So the conversion had
+      exactly one requirement — that the vector hold the same elements in the
+      same order as the list did — and insertion-ordered push_back gives that
+      by construction. No scan predicate changed and the draw sites are the
+      same expression with size() in place of Size().
+
+      SoulDestroyer's m_positionHistory keeps a quirk DELIBERATELY. Its
+      truncation loop is `for (i = maxHistorys; i < Size(); ++i) RemoveData(i)`,
+      which removes every OTHER element past the limit: erasing at i shifts the
+      tail down, then ++i steps over the element that moved into place.
+      erase(begin() + i) behaves identically, so the quirk survives. It runs
+      every frame and converges, and the history length feeds rendering, so it
+      was left exactly as found rather than "fixed" inside a container
+      conversion.
+
+      Six unrelated classes each declare their own m_positionHistory with
+      different element types — SoulDestroyer, Centipede, Spam, Virii, Engineer
+      and InsertionSquad. Only SoulDestroyer's is in this task's file list.
+      Converting by member name across the tree would have been wrong.
+
+      SpiritStore and Incubator took FastSlotMap, and both called the zero-arg
+      FastDArray::GetPointer(), which reserved the next free slot and returned a
+      pointer into it. SlotMap has no such overload; both spell out
+      GetPointer(GetNextFree()) now.
+    status: done
 
   - id: T10
     title: Convert the GameLogic building and AI containers
@@ -358,10 +690,26 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    notes: >
+    notes: |
       Same link-wall caveat as T9. Large touch set — land as several commits
       grouped by building family, one task.
-    status: todo
+
+      DONE 2026-08-03. Five sites, one of which needed thought.
+
+      SpawnBuilding::ExploreLinks returns an owning list by raw pointer and
+      recurses into itself, so the return type had to change in SpawnPoint.h as
+      well. The inner loop became a range-for over the recursive result while
+      link->m_targets stayed an LList — mixing the two in one loop body is fine
+      and beats converting a member this task does not own.
+
+      Teleport::m_teleportMap is a static member declared in Teleport.h, which
+      is not in this task's file list, but its definition line is in
+      Teleport.cpp, which is. The header had to change too or the two would
+      disagree on the type. T15 would have converted it regardless.
+
+      Airstrike's startPositions was a DArray used as a plain four-element
+      append-and-index array, with no holes and no slot identity.
+    status: done
 
   - id: T11
     title: Convert the GameLogic window and menu containers
@@ -371,7 +719,7 @@ tasks:
       ResearchItem) use LList and DArray for UI lists. Frame-rate code, no
       simulation state — the low-risk half of GameLogic.
     project: GameLogic
-    depends_on: [T1, T7]
+    depends_on: [T1, T6, T7, T12, T14, T23]
     files:
       - GameLogic/SpeciesWindow.cpp
       - GameLogic/MainMenus.cpp
@@ -386,13 +734,66 @@ tasks:
       - GameLogic/CameraAnimWindow.cpp
       - GameLogic/ResearchItem.cpp
     acceptance:
-      - grep -lwE "LList|DArray|InputSpecList" on the listed files returns nothing
+      - grep -lwE "LList|DArray|AutoVector" on the listed files returns nothing
+      - "InputSpecList is deliberately NOT in that grep: T14 already converted it from auto_vector to std::vector<std::unique_ptr<const InputSpec>>, so it is the modern type, live in 15 NeuronClient files"
       - Menu and list display order is by-construction unchanged
+    notes: |
+      DEPENDENCIES CORRECTED 2026-08-02, after surveying what these files
+      actually hold. The original `depends_on: [T1, T7]` was derived from a
+      grep count and is wrong: most of the remaining LList in these files is
+      not theirs to convert. It arrives through other tasks' APIs.
+
+        MainMenus.cpp          WordWrapText() returns LList<char*>*    -> T24 done
+        PrefsOtherWindow.cpp   ListResources() returns LList<char*>*   -> T6  DONE
+        UserProfileWindow.cpp  ListSubDirectoryNames()                 -> T6  DONE
+        FileDialog.h           m_files holds a ListDirectory result    -> T6  DONE
+        PrefsKeybindingsWindow auto_vector<InputDescription>           -> T14 DONE
+        ResearchItem.h/.cpp    ListSoundEvents(LList<char const*>*)    -> T23 DONE
+        CameraAnimWindow.cpp   LevelFile::m_cameraAnimations           -> T12
+
+      Status 2026-08-03: T6, T14 and T23 have landed, so five of those seven
+      rows are cleared. MainMenus.cpp's WordWrapText moved to T24 when
+      LanguageTable was split out of T6, and T12 is still held by
+      layering-inversion/T15. Those two are what T11 is now waiting for.
+
+      Only four members are genuinely this task's: SpeciesWindow's
+      m_buttonOrder, PrefsOtherWindow's m_languages, DropDownMenu's m_options
+      and FileDialog's m_selected, plus a local in PrefsGraphicsWindow. Doing
+      those alone leaves every listed file still matching the acceptance grep,
+      so the task would sit in_progress indefinitely — which is why the edges
+      are recorded instead.
+
+      T14 is named as a depends_on rather than blocked_by because it is in
+      this same plan. T6 likewise. T6 is the keystone: it clears four of the
+      seven rows above.
+
+      DONE 2026-08-03. Two real conversions, and one correction to this task's
+      own acceptance criterion.
+
+      THE ACCEPTANCE GREP NAMED InputSpecList AND THAT IS NOW WRONG. T14
+      converted it from auto_vector to
+      std::vector<std::unique_ptr<const InputSpec>>, so it is the MODERN type,
+      live in fifteen NeuronClient files, and PrefsKeybindingsWindow.h names it
+      in a legitimate cross-reference comment. Left in the grep, this task could
+      only pass by deleting a good typedef or by mangling a correct comment. The
+      token is removed and the reason recorded in the criteria themselves.
+
+      That is the second acceptance-grep defect found in this plan. T13's
+      pattern misses SliceDArray, because -w treats it as one word so it never
+      matches DArray. The general rule worth carrying: these greps are
+      word-based and run over PROSE AS WELL AS CODE, so a pattern listing base
+      names does not catch derived ones, and an explanatory comment naming a
+      legacy type fails the criterion just as a declaration would.
+
+      The rest was ordinary. FileDialog's m_selected and PrefsGraphicsWindow's
+      profiler element list are display state with no identity, and three
+      comments that named the legacy type by hand were reworded so the grep
+      stops matching prose.
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
 
   - id: T12
     title: Convert the Species world-core containers
@@ -407,23 +808,24 @@ tasks:
       unordered.
     project: Species
     depends_on: [T1, T3, T4]
+    blocked_by: [layering-inversion/T15]
     files:
-      - Species/Location.h
-      - Species/Location.cpp
-      - Species/GlobalWorld.h
-      - Species/GlobalWorld.cpp
-      - Species/Team.h
-      - Species/Team.cpp
-      - Species/Unit.h
-      - Species/Unit.cpp
-      - Species/LevelFile.h
-      - Species/LevelFile.cpp
-      - Species/EntityGrid.cpp
-      - Species/ObstructionGrid.h
-      - Species/ObstructionGrid.cpp
-      - Species/RoutingSystem.cpp
-      - Species/Landscape.h
-      - Species/Landscape.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/Team.h
+      - GameLogic/Team.cpp
+      - GameLogic/Unit.h
+      - GameLogic/Unit.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
+      - GameLogic/EntityGrid.cpp
+      - GameLogic/ObstructionGrid.h
+      - GameLogic/ObstructionGrid.cpp
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
     acceptance:
       - grep -lwE "LList|DArray|FastDArray|SliceDArray|BoundedArray" on the listed files returns nothing
       - Slot indices assigned to entities, units and buildings are by-construction identical (freelist-flavour SlotMap, pinned by T2/T3)
@@ -435,11 +837,164 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     notes: >
-      Species has no test project (exe). Evidence is the pinned SlotMap tests,
-      review against the determinism rules, and the full Garden smoke test —
-      request an owner run after this lands. Consider landing Location last
-      within the task, after the smaller files prove the pattern.
-    status: todo
+      blocked_by layering-inversion/T15, and this is the most consequential
+      ordering decision in the plan. T15 moves every file listed here out of
+      Species and into GameLogic. Two reasons it goes first: the paths above
+      are wrong the moment it lands (T15 rewrites this list as part of its own
+      acceptance), and — the real reason — Species is an exe with no test
+      project, so this task, the most determinism-critical in the tree,
+      would otherwise run against code no unit test can reach. After T15 the
+      same code sits in GameLogic, where GameLogicTests can construct it.
+      Doing the riskiest conversion in the tree where it can be tested is
+      worth waiting for.
+
+      Evidence once it runs: the pinned SlotMap tests, whatever
+      layering-inversion T11 has covered by then, review against the
+      determinism rules, and the full Garden smoke test — request an owner run
+      after this lands. Consider landing Location last within the task, after
+      the smaller files prove the pattern.
+
+      IN PROGRESS. Measured 2026-08-03: 16 files, and the containers are
+      2 FastDArray, 6 SliceDArray and about 20 LList.
+
+      A CI RED ON THE FIRST CONVERSION, AND THE CAUSE IS A SEARCH HABIT WORTH
+      NAMING. ObstructionGrid's list is reached two ways: the member
+      m_buildings, and the accessor GetBuildings that hands it out. The
+      call-site survey was `grep -rn GetBuildings | grep -v ObstructionGrid` —
+      the filter was there to skip the DEFINITION and it also hid a CALL in the
+      same file, ObstructionGrid::Render doing GetBuildings(x, z)->Size(). One
+      error, one line, and it built cleanly everywhere else.
+
+      The rule that follows: when a container is reached through an accessor,
+      search for the accessor with NO path filter, and search for the legacy
+      operation names (Size, PutData, GetData, Empty, ValidIndex, RemoveData)
+      as well as the member name. A filter that excludes the file you are
+      converting is exactly backwards — that file is the most likely caller.
+
+      THE PLAN DID NOT NOTICE THAT SliceDArray HAS NO REPLACEMENT. T1-T4 built
+      SlotMap in two flavours to cover DArray and FastDArray, and the intent
+      above says "freelist-flavour SlotMap for every FastDArray" as though that
+      were the whole job. But six of the eight slot containers here are
+      SliceDArray, which derives from FastDArray and adds the slice bookkeeping
+      that drives the ten-slice advance loop. Nothing in NeuronCore had it, and
+      nothing pinned it either — DArrayTests covers DArray and FastDArray and
+      never mentions slices.
+
+      THE OWNER ASKED WHETHER SLICING IS NEEDED AT ALL — "the only reason
+      there is a SliceDArray is to split render and updates in batches, and we
+      are not multi-threading". Measured, the premise is wrong but the
+      conclusion is half right, and the difference matters.
+
+      Slicing is not batching. Ten slices are exactly ONE SERVER TICK.
+      Main.cpp leaves g_sliceNum at -1 while it waits for the next letter from
+      the server, then sends the sync value, sets it to 0 and advances ten
+      slices. GetNumSlicesToAdvance budgets by elapsed TIME and clamps to
+      [0, 10]; the counter only wraps after the last slice, so a slow frame
+      DEFERS slices rather than dropping them. It exists so a 60fps renderer
+      can interleave with a 10Hz lockstep simulation instead of stalling for a
+      whole tick every 100ms — which is just as necessary single-threaded.
+
+      Could the ten loops collapse into one? Every entry does advance exactly
+      once per tick, in index order, so at first glance yes. But the bounds are
+      recomputed from a LIVE Size() and entities spawn and die during Advance,
+      so a container that grows mid-sweep partitions differently than a single
+      `for i < Size()` loop evaluated as it goes. That is a simulation
+      difference on a lockstep protocol with a cross-client sync value, so it
+      is not a refactor and does not belong inside a container conversion. If
+      it is wanted, it is its own task with its own smoke test.
+
+      WHAT THE QUESTION DID FIX is where the bookkeeping lives. SliceDArray
+      carried it as a BASE CLASS, so every container wanting stable indices
+      also inherited a scheduling policy. It is Neuron::SliceWalker now — a
+      free-standing object the caller owns beside a plain SlotMap, taking the
+      capacity as an argument. Seven call sites, and the containers become
+      ordinary std::vector-backed SlotMaps, which is what the owner was after.
+
+      It also removes a whole class of mistake: passing NumUsed() instead of
+      Size() would move entities between frames, and that is now a visible
+      argument rather than a hidden base-class choice.
+
+      The arithmetic itself is reproduced character for character rather than
+      tidied, because it decides WHICH ENTITY ADVANCES ON WHICH FRAME. Three properties are surprising enough to
+      be worth naming, and all three are now tests:
+
+        Each non-final slice spans numPerSlice + 1 indices, not numPerSlice —
+        the bounds are inclusive and upper = lower + numPerSlice. So ten slices
+        cover more than Size(), the walk outruns the container, and the final
+        slice is frequently empty or inverted: at Size 25 it asks for [27, 24].
+        Callers guard every index with ValidIndex, which is what makes that
+        harmless and why it must not be "fixed" into an even division.
+
+        numPerSlice divides Size(), the capacity including holes, not
+        NumUsed(). Two containers with the same capacity and different
+        occupancy walk identically, so compacting one would move entities
+        between frames.
+
+        Slices partition without overlap or gap — lower is the previous
+        upper + 1. An earlier draft of the header comment claimed they overlap
+        by one; they do not, and the test says so.
+
+      The strongest evidence is differential: SliceWalkerTests walks a
+      SliceDArray and a SliceWalker over the same eight sizes and asserts the
+      bound sequences are identical. That proves equivalence rather than
+      arguing it. It dies with SliceDArray at T16, which is why the individual
+      properties are pinned separately as well.
+
+      DONE 2026-08-03. Landed in seven commits, three of them whole-file
+      reformats of tab-indented headers kept separate so the conversion diffs
+      stay readable (LevelFile.h, GlobalWorld.h, Unit.h + Team.h).
+
+      LevelFile's twelve lists and GlobalWorld's six carry no slot identity —
+      they hold level-file and saved-game contents in insertion order — so
+      those are plain std::vector. The nine slot containers are FastSlotMap,
+      the freelist flavour, because LowestFirst would hand out different
+      indices for the same spawn sequence and those indices go on the wire.
+
+      THREE PLACES WERE RELYING ON LList RETURNING NULLPTR OUT OF RANGE, which
+      std::vector does not, and only one of the three announced itself. The
+      editor holds ids across frames and deleting an entry does not renumber
+      the ones after it, so LevelFile grew GetCameraAnim and GetInstantUnit,
+      both nullptr out of range, keeping the four call sites that already
+      tested their result honest. LocationEditor::RenderModeCameraMount read
+      m_nodes[0] BEFORE the loop that would have skipped an empty animation and
+      was correct only because GetData answered nullptr; it tests the list now.
+      Camera::PlayAnimation dereferenced its argument immediately and the
+      editor's preview button can hand it a stale id's nullptr.
+
+      That is the same class of defect as the EclWindow crash from T7 — a
+      subscript standing in for a bounds test — and it is worth naming that the
+      grep which found the T7 instances would NOT have found these. They are
+      not `while (x[0])`; they are a subscript whose index arrives from a
+      member set in another frame. The only thing that finds those is reading
+      the provenance of every index at every converted call site, which is what
+      this task did and why it took seven commits rather than two.
+
+      A SECOND SEARCH HABIT, after the ObstructionGrid one above. Removing an
+      include is not a local edit: 53 files include GlobalWorld.h and any of
+      them could have been reaching LList.h or FastDArray.h through it. That
+      was settled with a reachability pass over all six projects rather than by
+      trying the build — honouring /Yu, so nothing textually before pch.h
+      counts, and stripping comments, because a first draft of the same script
+      reported two false positives from the word LList inside a comment and
+      from a header whose own include sat above its pch line.
+
+      ON THE ACCEPTANCE GREP ITSELF: it is `grep -lwE`, so it matches PROSE.
+      Three comments explaining what the legacy container used to do had to be
+      reworded to say "the legacy list" rather than name the type. Worth
+      knowing before writing the next migration note, and worth remembering
+      when T15 runs the same grep tree-wide.
+
+      Evidence: the five checks, SliceWiringTests for the wiring the arithmetic
+      tests cannot see, and GenerateSyncValue read line by line to confirm it
+      still walks Size() with ValidIndex in index order.
+
+      GARDEN RUN AT 586c072: the owner launched, loaded The Garden and played
+      with no assert — steps 1, 2, 5, 6 and 7, which is what this task needed.
+      Step 5 is the slice loop and step 7 is GenerateSyncValue, so the two
+      things the conversion could have broken were exercised. The spawn counts
+      (steps 3 and 4) were not checked; those belong to rename-darwinian/T4 and
+      it stays blocked.
+    status: done
 
   - id: T13
     title: Convert the Species app, task-manager and effects containers
@@ -452,8 +1007,9 @@ tasks:
       rules; the rest is frame-rate UI and editor state.
     project: Species
     depends_on: [T1, T3, T12]
+    blocked_by: [layering-inversion/T15]
     files:
-      - Species/TaskManager.cpp
+      - GameLogic/TaskManager.cpp
       - Species/TaskManagerInterface.cpp
       - Species/TaskManagerInterfaceIcons.cpp
       - Species/Main.cpp
@@ -465,23 +1021,72 @@ tasks:
       - Species/ControlHelp.cpp
       - Species/Script.cpp
       - Species/StartSequence.cpp
-      - Species/GlobalInternet.h
-      - Species/GlobalInternet.cpp
+      - GameLogic/GlobalInternet.h
+      - GameLogic/GlobalInternet.cpp
       - Species/LocationEditor.cpp
-      - Species/Explosion.cpp
-      - Species/ParticleSystem.h
-      - Species/ParticleSystem.cpp
-      - Species/Water.h
-      - Species/Water.cpp
-      - Species/LandscapeRenderer.h
+      - GameLogic/Explosion.cpp
+      - GameLogic/ParticleSystem.h
+      - GameLogic/ParticleSystem.cpp
+      - GameLogic/Water.h
+      - GameLogic/Water.cpp
+      - GameLogic/LandscapeRenderer.h
     acceptance:
-      - grep -lwE "LList|DArray|FastDArray|BoundedArray" on the listed files returns nothing
+      - grep -lwE "LList|DArray|FastDArray|SliceDArray|BoundedArray" on the listed files returns nothing
+      - "2dArray and 2dSurfaceMap are deliberately NOT in that grep — see notes. Array2D and SurfaceMap2D are kept as vector-backed row-major wrappers, because there is no std 2D grid and the plan intent for T12 already says grids stay row-major fixed arrays"
+      - "SliceDArray IS in that grep now: -w treats it as one word, so the old pattern listing DArray never matched it, and ParticleSystem would have passed with it still in place"
       - Explosion and ParticleSystem keep slot indices and iteration order by-construction identical
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    notes: |
+      blocked_by layering-inversion/T15 for Explosion and ParticleSystem, which
+      that task moves into GameLogic; the rest of this list stays in Species.
+      The acceptance grep gained 2dArray and 2dSurfaceMap: Water.cpp and
+      LandscapeRenderer use them, and T16 deletes both headers, so leaving them
+      out of every acceptance criterion in the plan let T16 delete a header
+      still in use.
+
+      DONE 2026-08-03. Two corrections to this task's own acceptance grep, and
+      they pull in opposite directions.
+
+      IT MISSED SliceDArray. The pattern listed DArray, and -w treats
+      SliceDArray as a single word, so it never matched. ParticleSystem holds
+      the last SliceDArray in the tree and this task could have passed with it
+      untouched — which would then have blocked T16 from deleting the header,
+      with nothing saying why. Added to the pattern; ParticleSystem now takes a
+      FastSlotMap and a sibling SliceWalker like the six in T12, and Empty()
+      resets the walker as the legacy Empty did for itself.
+
+      IT WRONGLY LISTED 2dArray AND 2dSurfaceMap. The note above says these were
+      added so T16 could not delete a header still in use, which was the right
+      instinct aimed at the wrong target. THERE IS NO STD 2D GRID, and T12's
+      intent already settled the direction: "grids stay row-major fixed arrays
+      (std::array/vector-backed 2d wrappers)". Array2D and SurfaceMap2D are not
+      legacy containers to be replaced, they are the wrappers that decision
+      calls for. So Array2D is std::vector-backed now, its layout unchanged —
+      one contiguous row-major block indexed y * columns + x, which is what the
+      landscape height map and the obstruction grid depend on — and both headers
+      stay. T16's list must not delete them.
+
+      That change fixes a real nondeterminism, incidentally. new T[] left cells
+      holding whatever was on the heap, and Array2D answers m_outsideValue only
+      OUTSIDE its bounds — an in-bounds cell read before it was written returned
+      garbage that could differ between two clients running the same
+      simulation. resize value-initialises, so it is zero on both.
+
+      The rest was ordinary. Water's and LandscapeRenderer's vertex buffers are
+      append-only with no MarkNotUsed anywhere, so NumUsed() and Size() were
+      always equal and std::vector is exact; they feed glVertexPointer, so the
+      contiguity vector guarantees is what they actually needed. SetStepDouble
+      and the SetSize(NumUsed()) shrink-to-fit calls simply go away. Explosion's
+      triangle list is a local built by appends. ControlHelp.h had three legacy
+      includes and used none of them.
+
+      GameMenu's list sits inside a commented-out function whose API T6 already
+      changed; the dead code was made consistent rather than left naming a type
+      that no longer exists.
+    status: done
 
   - id: T14
     title: Convert the input-driver stack off InputSpecList and legacy arrays
@@ -496,46 +1101,297 @@ tasks:
     files:
       - NeuronClient/InputSpecList.h
       - NeuronClient/InputTypes.h
+      - NeuronClient/InputDriver.h
       - NeuronClient/InputDriverPrefs.h
+      - NeuronClient/InputDriverPrefs.cpp
       - NeuronClient/InputDriverInvert.h
       - NeuronClient/InputDriverPipe.h
+      - NeuronClient/InputDriverPipe.cpp
       - NeuronClient/InputDriverConjoin.h
+      - NeuronClient/InputDriverChord.h
       - NeuronClient/InputFilterManager.h
+      - NeuronClient/InputFilterManager.cpp
       - NeuronClient/InputFilterWithDelta.h
+      - NeuronClient/InputFilterWithDelta.cpp
+      - NeuronClient/ControlBindings.cpp
+      - GameLogic/PrefsKeybindingsWindow.h
     acceptance:
-      - grep -lwE "LList|InputSpecList" on the driver headers returns nothing, or InputSpecList is a std-backed alias
+      - grep -lwE "LList|AutoVector|auto_vector" on the driver headers returns nothing; InputSpecList is a std-backed alias
+      - Every container that owned its elements still owns them, with the ownership in the element type rather than in the container's destructor
       - The driver stack composes exactly as before (same resolution order)
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    notes: >
+      AutoVector is in the acceptance grep because eight of its nine users in
+      the tree are exactly this task's file list (the ninth is
+      GameLogic/PrefsKeybindingsWindow.h, which T11 covers). T16 deletes
+      AutoVector.h, and no acceptance criterion in the plan mentioned it — so
+      this task and T11 between them now own retiring it. AutoVector.h carries
+      a third-party notice listed in LICENSE; see T16 for what happens to that.
 
-  - id: T15
-    title: Convert the remaining scattered container users
+      Done 2026-08-03, with the owner's decision to convert straight to
+      std::vector<std::unique_ptr<T>> rather than take two passes. auto_vector
+      OWNS its elements — its destructor deletes them — so a swap to
+      std::vector<T*> would have turned every driver teardown into a leak, and
+      the only honest one-pass target is unique_ptr. That makes this a stage 3
+      and stage 5 conversion at once; ownership/T3 should expect the input
+      driver stack already done.
+
+      The file list above was widened from 8 to 16. The original named only the
+      headers that mention auto_vector by name, which is not the same set as the
+      files the conversion has to touch.
+
+      PrefsKeybindingsWindow.h is in the list even though T11 owns the file. Its
+      InputDescList typedef is an auto_vector, and auto_vector cannot be retired
+      one user at a time. T11 has the rest of that file.
+
+      Three things the conversion forced into the open.
+
+      InputDriver had no virtual destructor, and InputManager deletes its
+      drivers through an InputDriver*. No derived destructor has ever run: every
+      driver's spec list leaked at shutdown, and W32InputDriver's destructor —
+      which unhooks it from the Win32 event handler — has been dead code since
+      it was written. That is fixed here, because without it the unique_ptr
+      conversion is decoration: the destructor that would free the elements is
+      never called. Note that this makes ~W32InputDriver run for the first time.
+
+      auto_vector's one-argument constructor RESERVES capacity and leaves the
+      vector empty. std::vector's creates that many null elements. There was one
+      caller, InputFilterManager::filter, and it appends in a loop afterwards —
+      so a literal translation would have handed the filter a list that was half
+      null pointers. Converted to reserve(), and the trap is recorded in
+      InputTypes.h beside the typedef.
+
+      PipeInputDriver holds unique_ptr to an incomplete type, which unique_ptr
+      static_asserts against at the point of destruction. Its destructor is now
+      declared in the header and defaulted in the .cpp below the struct. Worth
+      knowing WHY this compiled before: auto_vector's clear() called delete on
+      the incomplete type, which is undefined behaviour that MSVC accepts with a
+      warning and no destructor call — so it silently leaked the InputSpecList
+      inside every InputFilterWithArgs. It never showed up because
+      PipeInputDriver is never registered: Species/Main.cpp adds Conjoin, Chord,
+      Invert, Idle, W32, Prefs, Value and Alias, and no Pipe. The whole driver
+      is unreachable.
+
+      Two bugs found and deliberately NOT fixed, because they change input
+      behaviour rather than ownership and belong to whoever owns the input
+      system, not to a container task:
+
+      (1) PrefsInputDriver::keyPosition returns m_keys.size() after appending,
+      where every other driver returns size() - 1. The caller stores that in
+      spec.control_id, and getInput rejects it with
+      `control_id < m_keys.size()`. A `pref` input specification that adds a new
+      key can therefore never fire.
+
+      (2) InputFilterWithDelta::Advance assigns currDetails.y = details.x and
+      currDetails.x = details.y. The axes are swapped. Nothing reaches it today
+      — the only InputFilterWithDelta subclass is DirectionInputFilter, whose
+      filter() returns false unconditionally and whose calcDetails is empty.
+
+      AutoVector.h now has no users. T16's remaining work on it is the file
+      itself, its two NeuronCore.vcxproj entries and the LICENSE row.
+    status: done
+
+  - id: T19
+    title: Characterise the preferences file format before converting it
     intent: >
-      The long tail found by re-measuring after T4-T14: Preferences.h
-      (FastDArray), Profiler.h (HashTable), PersistingDebugRender.h,
-      2dSurfaceMap.h, and whatever the sweep-up grep still finds. Ends with
-      zero users of every legacy container outside the container headers
-      themselves.
-    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]
+      PrefsManager is the first thing T18 converts and the only one of its
+      files with user-visible output: the preferences file is hand-edited, so
+      its content is a format rather than an implementation detail. Nothing
+      pinned it. This is the characterisation node docs/TASK_DAG.md describes
+      — test first, its own commit, still passing after the conversion — and
+      it gates both T18 (containers) and strings-modernised T2, which rewrites
+      the same writer.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - Tests/NeuronCoreTests/PreferencesTests.cpp
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj.filters
+    acceptance:
+      - Tests pin the three-way type guess including the dotted-quad case, the wrong-type-returns-default rule, and the constructor's ControlMethod fallback
+      - Tests pin that Save preserves comments, blank lines and template order, formats floats with %.2f, and is a fixed point on a second save
+      - The tests write only into a temporary directory and never read GameData/ in place
+      - python3 tools/check_project_files.py passes (the four-edit rule)
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Landed 2026-08-02 across two commits, CI green at 35a8422: 21 tests,
+      suite 82 -> 103.
+
+      The first push was RED, and that is the finding. Four tests failed;
+      three were access violations in shipped code, at exactly the call sites
+      the tests were written to describe, and one was my own wrong
+      expectation. They are fixed in the follow-up commit, which is a bug-fix
+      commit and carries no conversion:
+
+      (1) SetFloat/SetInt on a key the loaded file did not contain built a
+      PrefsItem whose m_str was never initialised, and ~PrefsItem free()s it
+      unconditionally — crash on destruction, every time. Reachable on the
+      upgrade path: new setting shipped, old preferences file, key absent.
+
+      (2) Save() recorded the LAST non-alphanumeric before '=' instead of the
+      first, so "SoundChannels    =    32" produced the key
+      "SoundChannels   " with trailing spaces. GetIndex missed and
+      GetData(-1) indexed out of bounds. Column-aligning a preferences file
+      took the game down on the next save.
+
+      (3) The same scan left keyEnd indeterminate for "Key=value" with no
+      space. Found by reading before the first push and reported then.
+
+      Plus three hardenings in the same function: no end-of-string guard on
+      the scan, no clamp on the 128-byte key buffer, and comment lines passed
+      to fprintf as the FORMAT STRING, so "# volume is 50% of maximum" read
+      arguments nobody passed.
+
+      Behaviour for well-formed input is unchanged and checkable rather than
+      asserted: for "Key = value" the old and new scans stop at the same
+      character, so keyStart and keyEnd are identical.
+
+      Findings that shape the conversions downstream, beyond the crashes:
+
+      The type guess counts dots — one is a float, more than one falls back
+      to string. That is the only reason "ServerAddress = 127.0.0.1"
+      survives a round trip instead of parsing as 127. A parser tidied into
+      strtof/strtol without the dot-counting rule breaks every multiplayer
+      address on disk and looks like a cleanup in review.
+
+      %.2f resolves a true tie half-to-even: 0.125 writes as "0.12", not
+      "0.13". std::format rounds the same way, so strings-modernised T2 is
+      safe converting it 1:1 — but a manual rounding step would not be.
+
+      Save is not a byte-identical rewrite of its input. Comments, blank
+      lines and order survive exactly; value lines are regenerated, so
+      spacing around '=' is normalised. A conversion can only be checked
+      against a previously saved file, never against the original.
+
+      The appended new-key block is emitted by walking m_items, a HashTable,
+      so its internal order is unreproducible by any std:: container. T18's
+      acceptance criterion was corrected to match; the test asserts presence
+      and explicitly not order.
+
+      One tooling change was needed to land it: check_hygiene.py reported a
+      strncpy this change never wrote, because clang-format reindented it.
+      It now ignores lines that existed in the base revision and only moved.
+    status: done
+
+  - id: T18
+    title: Convert PrefsManager off the hand-rolled containers
+    intent: >
+      Preferences is a leaf that nothing else in this plan touches, and after
+      T19 it is the best-covered file in the tree. It was sitting inside T15,
+      behind all thirteen of T4-T14, which parked ownership T1 — the cheapest
+      stage-5 conversion available — behind the entire container effort for no
+      reason. Split out so it can run in the first wave.
+    project: NeuronCore
+    depends_on: [T1, T3, T19]
     files:
       - NeuronCore/Preferences.h
       - NeuronCore/Preferences.cpp
-      - NeuronCore/Profiler.h
-      - NeuronCore/Profiler.cpp
-      - NeuronClient/PersistingDebugRender.h
-      - NeuronClient/PersistingDebugRender.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|FastDArray|BTree|HashTable|SortingHashTable" on both files returns nothing
+      - Every test T19 landed passes unchanged, with no edit to PreferencesTests.cpp in the same commit
+      - Template lines in a saved preferences file keep their exact positions; the order of the appended new-key block is explicitly not preserved, per T19's finding
+      - The existing NeuronCore suite passes unchanged
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Split out of T15 on 2026-08-02 with the owner. Gates ownership/T1 and
+      strings-modernised/T2 and T4, which name it in blocked_by. Profiler's
+      HashTable is a name-keyed cache with no simulation state, so
+      std::unordered_map is legitimate there; Preferences' m_fileText is
+      ordered output and becomes a vector.
+
+      The acceptance criterion about item order was CORRECTED after T19
+      characterised the writer, and the correction is the reason T19 exists.
+      "Preferences' item order is unchanged" is not achievable as written:
+      Save() emits keys the loaded file did not contain by walking m_items
+      from slot 0 to Size(), and m_items is a HashTable, so that order is a
+      function of the key text, the insertion sequence and where the table
+      last doubled. No std:: container reproduces it and neither would a
+      different hash. What is achievable, and what T19 pins, is that template
+      lines keep their exact positions and no key is lost.
+    status: done
+
+  - id: T15
+    title: Sweep up the remaining scattered container users
+    intent: >
+      Whatever the grouped tasks missed, found by re-measuring after T4-T14
+      and T18: 2dSurfaceMap.h and anything else still standing. This task IS
+      the re-measure — the file list below is what is known today, not a
+      prediction. Ends with zero users of every legacy container outside the
+      container headers themselves.
+    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T18, T20, T21]
+    files:
       - NeuronClient/2dSurfaceMap.h
     acceptance:
-      - grep -rlwE "LList|DArray|FastDArray|SliceDArray|BTree|HashTable|SortingHashTable|BoundedArray" over the six projects matches only the container headers themselves
+      - grep -rlwE "LList|DArray|FastDArray|SliceDArray|BTree|HashTable|SortingHashTable|BoundedArray|2dArray|2dSurfaceMap|AutoVector" over the six projects matches only the container headers themselves
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    notes: |
+      The acceptance grep gained 2dArray, 2dSurfaceMap and AutoVector. It did
+      not name them before, while T16 deleted all three headers — so every
+      task in the plan could pass its own criteria with 15 users still
+      compiling against headers about to be removed. This is the gate that
+      catches that, which is why it is the tree-wide one.
+
+      DONE 2026-08-03. 34 member declarations and 497 call sites across
+      NeuronClient, GameLogic and Species, plus fifteen headers whose only
+      remaining reference was an include they no longer used.
+
+      TWO SHIMS RATHER THAN 68 AND 13 HAND JUDGEMENTS, in NeuronCore/VectorUtils.h.
+
+      ValidIndex(vector, i) exists because of the EclWindow crash. Inherited
+      code uses a subscript where it means "is there an element here", and some
+      of it as a LOOP CONDITION — Engineer and Virii both ran
+      `while (m_positionHistory.ValidIndex(n))`, and TaskManagerInterface used
+      ValidIndex(0) as an emptiness test. Hand-translating 68 of those is how
+      the next one gets missed. The free function keeps every site provably
+      identical to what the list did. It is a RANGE test only; SlotMap's
+      member ValidIndex additionally tests occupancy and the two must not be
+      swapped.
+
+      EmptyAndDelete(vector) is transitional in exactly the way
+      SlotMap::EmptyAndDelete is, and disappears when ownership/T3-T6 make
+      these elements unique_ptr.
+
+      A THIRD ALLOCATOR MISMATCH, and this one was a live defect rather than a
+      risk introduced by the conversion. PrefsOtherWindow's m_languages holds
+      strdup results, and the legacy EmptyAndDelete called delete on them —
+      undefined behaviour on a malloc'd pointer. It survived because the block
+      is never reused, not because it was right. That is three now: the
+      FileDialog delete/delete[] mismatch found earlier, T5's free-on-new[]
+      caught in draft, and this one. The rule is the same each time — when
+      replacing a container that OWNED its elements, go and read what allocated
+      them.
+
+      m_spirits and m_lights each name several different members across the
+      tree, some already converted to SlotMap and some still lists, so the
+      call-site pass had to be receiver-aware: a bare m_spirits inside Engineer
+      is this task's vector, while g_location->m_spirits is a slot map that
+      keeps its own API.
+
+      Thirty-nine of the touched files were tab-indented and needed a
+      whole-file reformat commit first. That is the standing tax on this
+      codebase and it is worth budgeting for.
+
+      NOT DONE HERE: LListTests.cpp, DArrayTests.cpp and SliceWalkerTests.cpp
+      still name the legacy templates, because they are the characterisation
+      tests FOR those templates. T16 retires them in the same commit that
+      deletes the headers.
+    status: done
 
   - id: T16
     title: Delete the legacy container headers
@@ -564,6 +1420,52 @@ tasks:
       - LICENSE
       - Tests/NeuronCoreTests/LListTests.cpp
       - Tests/NeuronCoreTests/DArrayTests.cpp
+    notes: |
+      SCOPE CORRECTED 2026-08-03 by T13. 2dArray.h and 2dSurfaceMap.h ARE NOT
+      ON THE DELETION LIST. There is no std 2D grid, and T12's intent already
+      chose to keep row-major fixed arrays behind vector-backed wrappers —
+      which is exactly what Array2D and SurfaceMap2D are, now that Array2D
+      holds a std::vector instead of a new[] block. The landscape height map,
+      the obstruction grid, Water and LandscapeRenderer all still use them, and
+      they are not legacy containers to be retired. Deleting them would mean
+      writing the same wrapper again under a different name.
+
+      The acceptance below says "the ten container headers"; it is eight now.
+      Anything that still says ten is counting these two.
+
+      DONE 2026-08-03. NINE headers, not ten — 2dArray.h stays, for the reason
+      recorded above, so the acceptance line saying "ten" is counting a file
+      that was never going to leave.
+
+      THE DIFFERENTIAL TEST HAD TO DIE AND ITS EVIDENCE DID NOT.
+      SliceWalkerTests proved the walker equivalent by constructing a real
+      SliceDArray and comparing bound sequences over eight sizes — the
+      strongest evidence in this plan, and it could not outlive the template it
+      compared against. Rather than lose it, the sequences it was asserting
+      against were captured verbatim into a GOLDEN table in the same file, so
+      the test still asserts the same thing about the same eight sizes. Those
+      numbers decide which entity advances on which frame; they are not
+      cosmetic and must not be regenerated from the current implementation if
+      the test ever fails.
+
+      LListTests and DArrayTests are retired, as planned — they characterise
+      templates that no longer exist. SlotMapTests, SliceWalkerTests and
+      SliceWiringTests remain and are what covers this ground now.
+
+      THE LICENCE POINT IS WORTH STATING PRECISELY because it is easy to get
+      backwards. AutoVector.h's grant was conditional on the copyright notice
+      not being removed. Deleting the whole file, notice included, is not
+      shipping their code stripped of its terms — keeping the code and dropping
+      the header would have been. LICENSE's table describes what the repository
+      contains, so the row is removed and replaced with a paragraph recording
+      what happened and why; CODING_STANDARDS.md carried the same claim and now
+      says the same thing.
+
+      docs/GLOSSARY.md described DArray, LList and SliceDArray as live types
+      and said WorldObjectId::m_index is "a raw DArray slot". That is the one
+      sentence in the docs most likely to be read by someone about to touch
+      network identity, so it now names SlotMap, with both flavours and why
+      they differ.
     acceptance:
       - The ten container headers no longer exist on disk or in any .vcxproj
       - LICENSE no longer lists AutoVector.h; the MathUtils.cpp and TriTri.cpp notices are untouched
@@ -575,7 +1477,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
 
   - id: T17
     title: Add Neuron::LookupTable, the no-iteration hashed lookup
@@ -608,3 +1510,306 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     status: done
+
+  - id: T20
+    title: Convert the profiler and its window off SortingHashTable
+    intent: >
+      ProfiledElement::m_children is a SortingHashTable, which is a HashTable
+      that also walks its keys in alphabetical order. std::map with a
+      case-insensitive comparator reproduces both halves exactly — but the
+      ordered walk is driven from GameLogic/ProfileWindow.cpp through
+      StartOrderedWalk/GetNextOrderedIndex/NumUsed, so the window converts in
+      the same commit or the profiler cannot move at all.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/Profiler.h
+      - NeuronCore/Profiler.cpp
+      - GameLogic/ProfileWindow.cpp
+      - GameLogic/PrefsGraphicsWindow.cpp
+      - GameLogic/PrefsSoundWindow.cpp
+    acceptance:
+      - grep -lwE "HashTable|SortingHashTable" on the three files returns nothing
+      - Child iteration stays case-insensitive alphabetical — the comparator uses stricmp, matching SortingHashTable::FindPrevKey and HashFunc's key uppercasing
+      - GetMaxChildTime divides by the same element's m_historyNumSeconds as before, which is the alphabetically first child and therefore order-dependent
+      - The profile window lists the same entries in the same order (owner-observable; there is no test project reach here)
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Split out of T18 on 2026-08-02 after it turned out not to be a leaf.
+      T18's premise was that Preferences, Profiler and PersistingDebugRender
+      were self-contained; Profiler is not. ProfileWindow.cpp reaches
+      m_children directly at six sites, so the conversion crosses from
+      NeuronCore into GameLogic and is a different size and shape of task.
+
+      Ordering is observable twice over, which is why the comparator matters:
+      the window displays children in walk order, and GetMaxChildTime returns
+      `rv / m_children[first]->m_historyNumSeconds` — the divisor is whichever
+      child sorts first. Two latent oddities found while reading, neither
+      fixed here and neither a crash: that divisor looks arbitrary rather than
+      intentional, and GetMaxChildTime declares a `child` local it never uses.
+      Decide deliberately when converting; do not silently "tidy" the divisor,
+      because it changes a displayed number.
+
+      LANDED 2026-08-02, CI green at e830155.
+
+      Scope grew twice. ProfileWindow.cpp was known from the split; CI then
+      found PrefsGraphicsWindow.cpp and PrefsSoundWindow.cpp, both calling
+      m_children.GetData(key). Both were in the grep run while scoping this
+      task and were read as "probably their own members" without opening the
+      files. The lesson is narrow and worth keeping: the grep was right, the
+      skim of it was not.
+
+      Behaviour preserved deliberately in three places. The comparator uses
+      stricmp so the walk order is unchanged. GetMaxChildTime keeps dividing
+      by the FIRST child's m_historyNumSeconds — it reads like an oversight,
+      but it is a number on screen. Its `float val` narrowing from a double is
+      kept so near-ties resolve the same way. And GetData returned nullptr for
+      an absent key, so the two window call sites use find rather than
+      operator[], which would have inserted.
+
+      DEFECT FOUND, NOT FIXED: PrefsSoundWindow.cpp dereferences the lookup
+      result with no null check, where PrefsGraphicsWindow.cpp checks. If
+      "Advance SoundSystem" has not been profiled yet that is a null
+      dereference in the sound preferences window. Pre-existing, preserved
+      exactly by this conversion, and left for a commit that is allowed to
+      change behaviour.
+
+      Dead code removed while converting: an unused `child` local in
+      GetMaxChildTime, and `int tableSize = root->m_children.Size();` in
+      ProfileWindow::Render, assigned and never read.
+
+      GameLogic/ProfileWindow.cpp was whole-file formatted in its own commit
+      first (23ca526). The changed-lines format check does not converge on
+      that file — fifteen passes took a 15-line edit to 141 changed lines and
+      it was still growing, flattening an untouched hand-indented GL block on
+      the way. After the format, the conversion diff was 14 lines and
+      converged in one pass.
+
+      No test reaches any of this. Evidence is the build, the reading above,
+      and an owner's eye on the profile window.
+    status: done
+
+  - id: T21
+    title: Convert PersistingDebugRender to Neuron::SlotMap
+    intent: >
+      m_items is a FastDArray used for exactly what it is — SetSize, a
+      GetPointer() that reserves a free slot, MarkNotUsed to release one, and
+      index iteration that skips holes. That is a slot map, not a vector, so
+      this is a T3 SlotMap migration rather than a std:: substitution. It is
+      genuinely a leaf: m_items is protected and only its own .cpp touches it.
+    project: NeuronClient
+    depends_on: [T3]
+    files:
+      - NeuronClient/PersistingDebugRender.h
+      - NeuronClient/PersistingDebugRender.cpp
+    acceptance:
+      - grep -lwE "FastDArray|DArray" on both files returns nothing
+      - Render() still visits live items in index order and releases a slot in the same frame as before
+      - Slot reuse order is the freelist flavour, matching FastDArray as pinned by T2
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      Split out of T18 on 2026-08-02. Not because it is coupled — it is the
+      one file of the three that really is a leaf — but because the container
+      it needs is SlotMap rather than a standard one, which makes it a
+      different job from the std:: substitution T18 turned out to be. Debug
+      render code with no test reach; evidence is the build, review against
+      T2's pinned freelist sequence, and the Garden smoke test.
+
+      LANDED 2026-08-02, CI green. FastDArray::GetPointer() with no argument
+      was shorthand for GetPointer(GetNextFree()); SlotMap keeps the
+      reservation explicit at the call site, which is T3's narrow-seam design
+      rather than an omission. Loop counters follow SlotMap::Size(), which
+      returns int where FastDArray's returned unsigned.
+    status: done
+
+  - id: T22
+    title: Let SlotMap hold move-only values
+    intent: >
+      SlotMap::PutData takes const T&, so a SlotMap cannot hold a
+      std::unique_ptr — and that makes it a dead end for migration stage 5.
+      Every ownership task downstream of a SlotMap migration hits the same
+      wall: the container is converted, the pointers inside it still are not,
+      and there is nowhere to go. Move overloads fix that without touching how
+      a slot is chosen, which is the part that is wire identity.
+    project: NeuronCore
+    depends_on: [T3]
+    files:
+      - NeuronCore/SlotMap.h
+      - Tests/NeuronCoreTests/SlotMapTests.cpp
+    acceptance:
+      - A SlotMap<std::unique_ptr<T>> compiles, stores and retrieves values
+      - Moving a value in picks the same slot copying would — the pinned LowestFirst sequence is reproduced through the move overload
+      - Overwriting an occupied slot frees what it held, with no EmptyAndDelete involved
+      - The existing SlotMap and DArray pinned sequences pass unchanged
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Found by ownership T2 on 2026-08-02, one step into it: converting
+      Server::m_clients from SlotMap<ServerToClient*> to unique_ptr does not
+      compile, because PutData cannot bind a move-only type. Written as its
+      own node rather than folded in, because it is a capability every later
+      ownership task needs — T4 and T5 there both convert SlotMaps — and
+      because SlotMap is the one container whose behaviour is network
+      identity, so a change to it earns its own tests.
+
+      The overloads deliberately do not touch TakeFreeSlot. Which slot a value
+      lands in is decided before the value is looked at, so an arriving rvalue
+      cannot change it; the second test pins that rather than trusting it.
+
+      LANDED 2026-08-02, CI green first try. Three tests added; the existing
+      SlotMap and DArray pinned sequences pass untouched, which is the point —
+      the move overloads are additive and the slot-choosing path is the same
+      code it always was.
+    status: done
+
+  - id: T23
+    title: Convert the ListSoundEvents interface off LList
+    intent: >
+      ListSoundEvents(LList<char const*>* _list) is implemented by every
+      entity and building type — 64 files carry the signature. It is the last
+      thing keeping LList in SoundSystem.h, so T5 cannot meet its grep
+      acceptance while it stands, and T16 cannot delete LList.h. Purely
+      mechanical: the parameter becomes std::vector<const char*>* and the
+      bodies push_back instead of PutData.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundSystem.cpp
+    acceptance:
+      - No declaration or definition of ListSoundEvents mentions LList; grep -rn "ListSoundEvents" shows a std::vector parameter everywhere
+      - Every override still appends the same event names in the same order
+      - grep -rlw LList over GameLogic and Species drops by the number of files whose only LList use was this signature
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    notes: >
+      Split out of T5 on 2026-08-02 after measuring the ripple: `grep -rlw
+      ListSoundEvents` returns 64 files. The files list above names only the
+      declaration site because the other 63 are overrides in files owned by
+      T9, T10, T11 and T13 — this task edits one signature in each of them and
+      nothing else, which is why it is parallel_safe false rather than
+      folded into those tasks.
+
+      Mechanical, but not small, and worth doing in one commit so the
+      signature never disagrees with itself.
+
+      Done 2026-08-03. 64 files, 147 PutData calls. LList in GameLogic and
+      Species fell from 104 files to 62 — this one signature accounted for 42 of
+      them, which is why T5 and T16 were stuck behind it.
+
+      Two things worth knowing for whoever picks up T5. The signature was spelled
+      two ways, `LList<char const *>` and `LList<const char*>`; both are now
+      `std::vector<const char*>*`, because a derived class that spells an
+      override's parameter differently from its base still overrides, and a
+      derived class that gets the TYPE wrong silently overloads instead — with
+      64 copies of one signature, having them all identical is worth the extra
+      churn.
+
+      And: nothing in the tree calls the collector. Every one of the 116
+      mentions is either a declaration, a definition, or a base-class chain from
+      inside another ListSoundEvents. Whatever consumed these lists — a sound
+      editor, most likely — is not in this repository. The interface is dead
+      weight, kept faithfully. T5 should decide whether it stays.
+    status: done
+
+  - id: T24
+    title: Convert the language table off BTree and HashTable
+    intent: >
+      LangTable holds its phrases in a BTree keyed by phrase name and two
+      HashTables of keyboard and controller indices, and hands out
+      DArray<LangPhrase*> through GetPhraseList and LList<char*> through
+      WordWrapText. BTree is an ordered map, so std::map replaces it directly
+      and ConvertToDArray becomes building a vector — but that is a different
+      data structure question from Resource's name-keyed caches, and a
+      different subsystem, which is why it is not T6.
+    project: NeuronClient
+    depends_on: [T1, T3]
+    files:
+      - NeuronClient/LanguageTable.h
+      - NeuronClient/LanguageTable.cpp
+      - GameLogic/MainMenus.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|BTree|HashTable" on LanguageTable.h/.cpp returns nothing
+      - Lookups still ignore case, as BTree's stricmp ordering and HashTable's case-masked hash both did
+      - Phrase ITERATION order changes, deliberately, from BTree pre-order to sorted — see notes, the second acceptance line as originally written was based on a wrong reading of BTree
+      - WordWrapText's callers still read the same lines in the same order
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      Split out of T6 on 2026-08-02. Two hazards for whoever takes it.
+
+      ConvertToDArray is called five times and its result order is observable
+      — BTree is ordered by key, so the replacement must be std::map and not
+      an unordered container, or the phrase list reorders.
+
+      WordWrapText is worse than it looks: it allocates ONE buffer with
+      `new char[strlen(_string) + 2]` and then puts INTERIOR POINTERS into
+      that buffer into the returned list. Freeing the list's elements
+      individually would be catastrophic, and no caller does — MainMenus reads
+      the lines and drops the list, leaking the single buffer. Converting the
+      container must not change that, and anyone tempted to make the list own
+      its strings has to fix the allocation first.
+
+      Done 2026-08-03. Both hazards above were half wrong, and the corrections
+      are the useful part of this entry.
+
+      THE ORDER. The acceptance line said BTree walked its keys in order and
+      std::map must match. BTree is ordered, but ConvertToDArray is not an
+      in-order walk — RecursiveConvertToDArray emits the node, then the left
+      subtree, then the right. That is PRE-order, so the sequence was a
+      function of the tree's shape, which is a function of the order the
+      language file happened to list its keys. It was never sorted and was
+      never stable against an edit to the file. std::map iteration is sorted,
+      case-insensitively, so the order DID change — into something
+      reproducible. What that order reaches: GetPhraseList (no callers),
+      TestAgainstEnglish's error report, and RebuildTable, where it decides the
+      byte offsets inside m_chunk. None of those is a lookup, and lookups are
+      by key, so nothing observable to a player moved.
+
+      WORDWRAPTEXT. The interior-pointer hazard is real, but the claim that
+      MainMenus leaks the buffer is not: both call sites do
+      `delete wrapped->GetData(0)`, and element 0 IS the single allocation. It
+      was the wrong FORM — a plain `delete` over a `new char[]` — and it is
+      delete[] now. The contract is written out above the declaration in
+      LanguageTable.h, because nothing said it anywhere before. The emptiness
+      guard added at both sites is not redundant: LList::GetData answered an
+      out-of-range read with a null, so the old code was harmless on an empty
+      list where std::vector would be undefined behaviour. Same trap as T7's
+      SpeciesWindow.cpp.
+
+      Two smaller things. ParseLanguageFile called BTree::RemoveData for a
+      repeated key, which dropped the node without deleting the phrase it held
+      — one leaked LangPhrase per repeated key in a language file. Erasing the
+      map entry deletes it. And RebuildTable uses try_emplace rather than
+      operator[], because HashTable::PutData kept the first value written for a
+      key and lookups never reached a later duplicate; operator[] would have
+      flipped that to last-wins.
+
+      LangKeyLess is the THIRD copy of a three-line stricmp comparator, after
+      Resource.h and Profiler.h. Left local deliberately — hoisting it into
+      NeuronCore means a new header, two vcxproj edits and touching two
+      completed tasks' files for three lines. A fourth copy should trigger it.
+
+      GetPhraseList has no caller anywhere in the repository, like
+      ListSoundEvents before it. Converted rather than deleted, and recorded.
+    status: done
+

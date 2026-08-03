@@ -9,6 +9,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="TaskManager.cpp" />
+    <ClCompile Include="GlobalInternet.cpp" />
+    <ClCompile Include="LandscapeRenderer.cpp" />
+    <ClCompile Include="Clouds.cpp" />
+    <ClCompile Include="Water.cpp" />
+    <ClCompile Include="Landscape.cpp" />
+    <ClCompile Include="Explosion.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="RoutingSystem.cpp" />
+    <ClCompile Include="ObstructionGrid.cpp" />
+    <ClCompile Include="EntityGrid.cpp" />
+    <ClCompile Include="LevelFile.cpp" />
+    <ClCompile Include="Unit.cpp" />
+    <ClCompile Include="Team.cpp" />
+    <ClCompile Include="GlobalWorld.cpp" />
+    <ClCompile Include="Location.cpp" />
     <ClCompile Include="Ai.cpp">
       <Filter>Game Objects</Filter>
     </ClCompile>
@@ -45,7 +61,8 @@
     <ClCompile Include="ControlTower.cpp">
       <Filter>Game Objects</Filter>
     </ClCompile>
-    <ClCompile Include="Darwinian.cpp">
+    <ClCompile Include="WorldTypeRoster.cpp" />
+    <ClCompile Include="Citizen.cpp">
       <Filter>Game Objects</Filter>
     </ClCompile>
     <ClCompile Include="Egg.cpp">
@@ -279,6 +296,22 @@
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="TaskManager.h" />
+    <ClInclude Include="GlobalInternet.h" />
+    <ClInclude Include="LandscapeRenderer.h" />
+    <ClInclude Include="Clouds.h" />
+    <ClInclude Include="Water.h" />
+    <ClInclude Include="Landscape.h" />
+    <ClInclude Include="Explosion.h" />
+    <ClInclude Include="ParticleSystem.h" />
+    <ClInclude Include="RoutingSystem.h" />
+    <ClInclude Include="ObstructionGrid.h" />
+    <ClInclude Include="EntityGrid.h" />
+    <ClInclude Include="LevelFile.h" />
+    <ClInclude Include="Unit.h" />
+    <ClInclude Include="Team.h" />
+    <ClInclude Include="GlobalWorld.h" />
+    <ClInclude Include="Location.h" />
     <ClInclude Include="Ai.h">
       <Filter>Game Objects</Filter>
     </ClInclude>
@@ -315,7 +348,9 @@
     <ClInclude Include="ControlTower.h">
       <Filter>Game Objects</Filter>
     </ClInclude>
-    <ClInclude Include="Darwinian.h">
+    <ClInclude Include="SoundSources.h" />
+    <ClInclude Include="WorldTypeRoster.h" />
+    <ClInclude Include="Citizen.h">
       <Filter>Game Objects</Filter>
     </ClInclude>
     <ClInclude Include="Egg.h">

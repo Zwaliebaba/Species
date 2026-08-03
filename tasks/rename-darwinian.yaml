@@ -28,6 +28,26 @@ summary: >
   opportunistically. Nothing else in any plan may rename Darwinian or any
   GameData-coupled name.
 
+  TWO OWNER DECISIONS, 2026-08-02, which together unblock T3.
+
+  Localisation: rename the entity-derived language KEYS and their ENGLISH
+  values only. The ~1087 prose lines in the other language files keep their
+  localised derivations (Darwinianer, Darwiniens, Darwiniani, darwinianos)
+  for now — T3 lists them in notes as known-stale text rather than
+  machine-translating forms nobody has reviewed. Wrong translated prose is
+  a visible in-game text bug; stale prose under a correct key is not, and
+  it stays findable with the same grep. The four branding keys stay frozen
+  regardless.
+
+  Position in the effort: this lands BEFORE the container and string
+  conversions reach the entity files — containers-replaced T9 is
+  blocked_by T3 for exactly that reason. Two grounds. T2's inventory was
+  derived at 4840da3 and every task that moves or rewrites those files
+  degrades it, and a rename that shares a window with a conversion produces
+  a diff where a missed string and a botched container swap are
+  indistinguishable. Running it alone means the owner smoke test that
+  follows tests one thing.
+
 tasks:
   - id: T1
     title: Owner decides the replacement name
@@ -155,8 +175,8 @@ tasks:
       allowlist count is untouched.
     depends_on: [T1, T2]
     files:
-      - GameLogic/Darwinian.cpp
-      - GameLogic/Darwinian.h
+      - GameLogic/Citizen.cpp
+      - GameLogic/Citizen.h
       - GameLogic/Entity.cpp
       - GameData/Levels
       - GameData/Shapes
@@ -166,9 +186,12 @@ tasks:
       - GameData/Language
       - tools/layering_allowlist.txt
     acceptance:
-      - grep -rlw Darwinian over code and GameData/ returns nothing outside the branding/save-path exclusions listed by T2
+      - grep -rlw Darwinian over code and GameData/ returns nothing outside the branding exclusions listed by T2 and the non-English prose values the owner deferred
       - Entity.cpp's typeNames[] entry, the class, the level files and every asset filename agree on the new name
+      - The 8 entity-derived language keys are renamed and their English values updated; non-English prose values are left as-is and listed in notes as known-stale
       - The commit carries Rename trailers and the allowlist entry count is unchanged
+      - containers-replaced T9's `files` list names GameLogic/Citizen.cpp, not Darwinian.cpp, and check_task_dag.py passes
+      - CODING_STANDARDS.md, GLOSSARY.md, ARCHITECTURE.md and AGENTS.md's smoke-test row are updated per T2's doc list, including the stale save-path row T2 found
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
@@ -180,7 +203,81 @@ tasks:
       parallel_safe false and then some: nothing else may be in flight in
       ANY plan while this lands — it touches entity code, content and the
       allowlist at once.
-    status: todo
+
+      The localisation question T2 raised is settled — keys plus English
+      only, see the plan summary. That was the last thing holding this task,
+      which is why it is todo rather than blocked. Record the deferred
+      non-English prose in notes when it lands, with the grep that finds it,
+      so the follow-up is a lookup rather than a re-survey.
+
+      GameLogic/Citizen.cpp is named by containers-replaced T9, which is
+      blocked_by this task. Rewriting that file list is in the acceptance
+      criteria above, not an afterthought — T9 cannot resolve its own touch
+      set until this decides what the file is called.
+
+      LANDED. Darwinian -> Citizen, darwinian -> citizen, DARWINIAN -> CITIZEN,
+      in one commit: 72 files rewritten, 39 renamed by git mv (Citizen.cpp and
+      .h plus 37 GameData assets), and both project files followed.
+
+      THE ALLOWLIST STEP TURNED OUT TO BE UNNECESSARY, which is worth recording
+      because T2 measured it carefully. T2 found 14 entries keyed on
+      GameLogic/Darwinian.cpp and specified exactly one --rename invocation.
+      By the time this ran there were none: layering-inversion T9, T10, T14 and
+      T15 had removed every one of them, and the allowlist is down to 4 entries
+      tree-wide, none of them this file. The acceptance line "the allowlist
+      entry count is unchanged" holds trivially. This is what running the
+      layering plan first bought.
+
+      WHAT WAS VERIFIED, beyond the checks:
+
+        Both anchors agree - Entity.cpp typeNames[] slot 12 and
+        GlobalResearch names[] slot 0 both read "Citizen".
+        The Garden rows read Citizen 0 598.8 1202.4 30 and Citizen 0 1252.7
+        1353.9 20 - the 30 and 20 the smoke test counts as 50.
+        All 900 SAMPLE references in Sounds.txt resolve to a wav that exists.
+        The 21 that do not resolve are the same 21 orphans T2 found
+        (LaserHitCitizen1..19, CrateRewradCitizens1..2) - nothing loads them,
+        and they were orphans before this ran.
+        All 7 constructed language keys resolve in English.txt:
+        entityname_citizen, researchname_citizen, research_citizen{,_v3,_v4},
+        newcontrols_research_citizen, spawnname_spawncitizens. Present in every
+        language file; Russian has 6, lacking newcontrols_ as it always did.
+        Shapes/Citizen.shp, Sprites/Citizen.bmp and Icons/IconCitizen.bmp all
+        exist under their new names.
+
+      THE FORMAT CHECK NEEDED THE TRAILERS AND THEN SOME. Three --rename
+      declarations cover the mechanical lines. What they do NOT cover, correctly,
+      is alignment: "Citizen" is two characters shorter than "Darwinian", so
+      clang-format rewraps the aligned string tables in Entity.cpp and
+      Triffid.cpp. Those columns ARE this change's doing, so they were formatted
+      rather than declared away.
+
+      DEFERRED, and findable with `grep -ril darwinian GameData/Language/`:
+      523 prose lines across five files keep their localised derivations -
+      German 168, Italian 174, Spanish 178, French 2, Russian 1. The KEYS were
+      renamed in all six files so every lookup resolves; only the values are
+      stale. The owner deferred these rather than machine-translate forms nobody
+      has reviewed.
+
+      ONE OF THOSE 523 IS NOT PROSE AND THE OWNER MAY WANT IT.
+      GameData/Language/Russian.txt:965 reads
+
+        spawnname_spawncitizens   SpawnDarwinians
+
+      The key renamed; the value is the untranslated ENGLISH string, so a
+      Russian player sees an entity name that exists nowhere else in the build.
+      Changing it needs no linguistic judgement — it is the same identifier-like
+      string, not a translation. It was left alone because the owner's rule says
+      non-English values are untouched, and a gated task is the wrong place to
+      start interpreting. Two lines in French.txt (840, 841) are the same shape
+      but commented out, so they are invisible either way.
+
+      NOT TOUCHED, as specified: the DARWINIA title text, the Darwinia Win32
+      window class, the store and website URLs, the four branding language keys,
+      and GameData/Textures/ProgramDarwinia.bmp. The save-path row of
+      CODING_STANDARDS' frozen table that T2 flagged as stale is gone — it
+      described paths App::GetProfileDirectory no longer returns.
+    status: done
 
   - id: T4
     title: Owner runs the full Garden smoke test against the rename
@@ -198,7 +295,18 @@ tasks:
       - All seven Garden smoke-test steps pass on the renamed build, owner-reported
       - AGENTS.md records the run with the commit hash
     status: blocked
-    notes: >
+    notes: |
       Blocked on owner execution — agents in this environment cannot launch
       the Windows client. This is the gate the whole plan exists for; T3
       landing without T4 passing is not done.
+
+      PARTIAL RUN 2026-08-03 at 586c072, recorded in AGENTS.md: launch, load,
+      30s of play, Task Manager and no sync assert all pass. The two steps this
+      task actually needs — 50 Citizens in groups of 30 and 20, 179 Virii
+      across eight groups — were not checked, so it stays blocked.
+
+      Why those two and not the others: a reference the rename missed is a
+      string that no longer resolves, and an unresolved spawn name produces a
+      SMALLER GROUP rather than a crash. Every other step would pass with a
+      spawn silently missing. Reading the two counts is the whole test, and it
+      is about a minute of the run.

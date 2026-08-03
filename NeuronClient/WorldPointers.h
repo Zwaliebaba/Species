@@ -1,6 +1,14 @@
 #pragma once
 
+#include "CameraAccess.h"
 #include "RendererAccess.h"
+#include "GameCursorAccess.h"
+#include "LocationAccess.h"
+#include "WorldTypeNames.h"
+#include "LocationEditorAccess.h"
+#include "ScriptAccess.h"
+#include "TaskManagerInterfaceAccess.h"
+#include "UserInputAccess.h"
 
 // The running game's subsystems, reachable from every layer.
 //
@@ -16,21 +24,17 @@
 // before. See tasks/layering-inversion.yaml T8.
 class Location;
 class GlobalWorld;
-class Camera;
 class ParticleSystem;
-class LocationEditor;
 class TaskManager;
-class TaskManagerInterface;
-class Script;
-class UserInput;
 
 extern Location* g_location;
 extern GlobalWorld* g_globalWorld;
-extern Camera* g_camera;
+extern CameraAccess* g_camera;
 extern RendererAccess* g_renderer;
 extern ParticleSystem* g_particleSystem;
-extern LocationEditor* g_locationEditor;
+extern LocationEditorAccess* g_locationEditor;
+extern GameCursorAccess* g_gameCursor;
 extern TaskManager* g_taskManager;
-extern TaskManagerInterface* g_taskManagerInterface;
-extern Script* g_script;
-extern UserInput* g_userInput;
+extern TaskManagerInterfaceAccess* g_taskManagerInterface;
+extern ScriptAccess* g_script;
+extern UserInputAccess* g_userInput;

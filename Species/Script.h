@@ -1,10 +1,13 @@
 #pragma once
 
+#include "ScriptAccess.h"
+#include "WorldPointers.h"
+
 class TextReader;
 class LevelFile;
 
 
-class Script
+class Script : public ScriptAccess
 {
 public:
 	// If you modify this remember to update g_opCodeNames in script.cpp
@@ -37,8 +40,8 @@ public:
         OpGiveResearch,
         OpSetMission,
         OpGameOver,
-        OpResetResearch,                        // Currently only affects darwinians
-        OpRestoreResearch,                      // Currently only affects darwinians
+        OpResetResearch,                        // Currently only affects citizens
+        OpRestoreResearch,                      // Currently only affects citizens
         OpRunCredits,
         OpSetCutsceneMode,
         OpGodDishActivate,
@@ -64,7 +67,7 @@ public:
     bool        m_waitForPlayerNotBusy;
 
     int         m_requestedLocationId;
-    int         m_darwinianResearchLevel;
+    int         m_citizenResearchLevel;
 
     int         m_rocketId;
     int         m_rocketState;
@@ -143,4 +146,8 @@ public:
 };
 
 
-
+// g_script is a ScriptAccess* so the layers below Species need only the
+// interface. Species reaches the whole class through here, at every call site,
+// for the reason spelled out in ScriptAccess.h. The cast is safe because App is
+// the only thing that ever assigns g_script, and it assigns a Script.
+inline Script* TheScript() { return static_cast<Script*>(g_script); }

@@ -7,7 +7,6 @@
 
 class Camera;
 class Location;
-class Server;
 class ClientToServer;
 class Renderer;
 class UserInput;
@@ -46,31 +45,26 @@ public:
 	// Everything else
     ClientToServer      *m_clientToServer;          // Clients connection to Server
 	LocationInput		*m_locationInput;
-    GameCursor          *m_gameCursor;
     StartSequence       *m_startSequence;
 	AttractMode			*m_attractMode;
     GameMenu            *m_gameMenu;
 
-    bool                m_negativeRenderer;
 
 	// State flags
-    bool                m_paused;
 
 	// Requested state flags
 
-    char                m_requestedMission[256];
-    char                m_requestedMap[256];
     bool                m_levelReset;
-    char                m_gameDataFile[256];
-
-	RGBAColour			m_backgroundColour;
+    std::string m_gameDataFile;
 
 
-
-public:
+  public:
     App ();
 	~App();
 
+
+  RendererAccess* CreateRenderer() override;
+  TaskManagerInterfaceAccess* CreateTaskManagerInterface() override;
 
   void SetProfileName(char const* _profileName) override;
   bool LoadProfile() override;
@@ -87,7 +81,7 @@ public:
   static const char* GetPreferencesPath();
   static const char* GetScreenshotDirectory();
 
-  void UpdateDifficultyFromPreferences();
+  void UpdateDifficultyFromPreferences() override;
 };
 
 extern App *g_app;

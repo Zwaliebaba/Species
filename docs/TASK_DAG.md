@@ -77,13 +77,15 @@ tasks:                               # required. non-empty list
     intent: >                        # required. WHY, not how. One or two sentences.
       What changes about the system once this is done, and why that matters.
     project: NeuronCore              # optional. which layer this touches
-    depends_on: []                   # optional. list of task ids. default []
+    depends_on: []                   # optional. task ids in THIS plan. default []
+    blocked_by:                      # optional. tasks in ANOTHER plan, plan/Tn
+      - containers-replaced/T4       # see "Ordering across plans" below
     files:                           # optional but strongly encouraged
       - NeuronCore/Server.cpp        # the expected touch set; used to spot
       - NeuronCore/Server.h          # collisions between concurrent tasks
     acceptance:                      # required. non-empty. observable outcomes
       - Server.cpp no longer includes App.h or Globals.h
-      - tools/check_layering.py reports 2 fewer allowlisted violations
+      - Neither NeuronCore.vcxproj nor Server.cpp names a project above NeuronCore
       - NeuronCoreTests covers the extracted seam
     verify:                          # optional. commands that prove acceptance
       - python3 tools/check_layering.py
@@ -108,6 +110,55 @@ tasks:                               # required. non-empty list
 
 The validator enforces that a task is only `in_progress` or `done` when all of its
 dependencies are `done` or `abandoned`.
+
+---
+
+## Ordering across plans
+
+`depends_on` names tasks **inside one plan**. That is deliberate — a wave is a
+statement about a single plan, and a plan should be readable on its own.
+
+But real orderings do cross plan files. The modernisation stages
+(`CODING_STANDARDS.md`) run **per file**: a file finishes stage 3 before it
+starts stage 4, before stage 5 — and those three stages live in
+`containers-replaced.yaml`, `strings-modernised.yaml` and `ownership.yaml`.
+Nothing in a single plan's graph can see that. Left in prose, it is an ordering
+`--next` actively contradicts: it will offer a stage-5 task on a file whose
+stage-3 task has not started.
+
+`blocked_by` states it:
+
+```yaml
+  - id: T1
+    title: Adopt unique_ptr in NeuronCore (Preferences, Profiler)
+    blocked_by:
+      - containers-replaced/T18      # stage 3 for these files
+      - strings-modernised/T2        # stage 4 for these files
+```
+
+Each entry is `plan/Tn`, and the validator checks that the plan and the task both
+exist, that the reference points **outside** its own plan (use `depends_on`
+otherwise), and that no cycle forms once both edge kinds are taken together.
+
+It gates readiness and status exactly like `depends_on`: a task with an unmet
+blocker cannot be `in_progress` or `done`, and `--next` will not offer it. What
+it does *not* do is change wave numbering, because waves are per plan. `--next`
+lists such tasks separately instead of hiding them:
+
+```
+ownership: held by another plan
+  T1  Adopt unique_ptr in NeuronCore (Preferences, Profiler)
+      waits on containers-replaced/T18, strings-modernised/T2
+```
+
+**Use it for real ordering, not for narrative.** The test is the same as for
+`depends_on`: if the second task could technically start before the first
+finishes, do not add the edge. The two cases that earn one are per-file stage
+order, and a task that moves files another plan names by path.
+
+`blocked_by` is not a substitute for checking `files`. Two tasks in different
+plans that list the same file still collide even with no ordering between them —
+grep the other plans for your touch set before you start.
 
 ---
 
@@ -204,10 +255,16 @@ files — which is the usual case, since test files are named for what they cove
 Both will touch that project's `.vcxproj` and `.vcxproj.filters` though, so list
 those in `files` and expect to resolve a small merge there.
 
+Waves are computed from `depends_on` alone. A task held by a `blocked_by` keeps
+its wave number and is annotated `waits on …`, because its position in *this*
+plan has not changed — only its start time has.
+
 Two caveats the tool cannot check for you:
 
 - Tasks in the same wave that list overlapping `files` will conflict. Serialise
   them with an edge, or work them in separate worktrees and merge deliberately.
+  The same is true of tasks in *different* plans that list the same file; see
+  [Ordering across plans](#ordering-across-plans).
 - A task marked `parallel_safe: false` needs the tree to itself — a
   repo-wide reformat, a toolset bump. Run it alone.
 

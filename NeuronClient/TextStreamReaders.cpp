@@ -20,17 +20,17 @@ TextReader::TextReader()
   m_filename[0] = '\0';
   m_line = new char[INITIAL_LINE_LEN + 1]; // Don't forget space for the null terminator
   m_line[0] = '\0';                        // ReadLine() may never run, or may hit EOF on its first call
-  strcpy(m_seperatorChars, DEFAULT_SEPERATOR_CHARS);
+  m_seperatorChars = DEFAULT_SEPERATOR_CHARS;
 }
 
-TextReader::~TextReader() { delete [] m_line; }
+TextReader::~TextReader() { delete[] m_line; }
 
 void TextReader::DoubleMaxLineLen()
 {
   ASSERT_TEXT(m_maxLineLen < 65536, "Text file contains line with more than 65536 characters");
-  auto newLine = new char [m_maxLineLen * 2 + 1];
+  auto newLine = new char[m_maxLineLen * 2 + 1];
   memcpy(newLine, m_line, m_maxLineLen + 1);
-  delete [] m_line;
+  delete[] m_line;
   m_line = newLine;
   m_maxLineLen *= 2;
 }
@@ -102,9 +102,9 @@ void TextReader::CleanLine()
   }
 }
 
-void TextReader::SetSeperatorChars(const char* _seperatorChars) { strncpy(m_seperatorChars, _seperatorChars, 15); }
+void TextReader::SetSeperatorChars(const char* _seperatorChars) { m_seperatorChars = _seperatorChars; }
 
-void TextReader::SetDefaultSeperatorChars() { strcpy(m_seperatorChars, DEFAULT_SEPERATOR_CHARS); }
+void TextReader::SetDefaultSeperatorChars() { m_seperatorChars = DEFAULT_SEPERATOR_CHARS; }
 
 bool TextReader::TokenAvailable()
 {
@@ -112,7 +112,7 @@ bool TextReader::TokenAvailable()
 
   while (m_line[i] != '\0')
   {
-    if (strchr(m_seperatorChars, m_line[i]) == nullptr)
+    if (strchr(m_seperatorChars.c_str(), m_line[i]) == nullptr)
       return true;
 
     ++i;
@@ -121,7 +121,7 @@ bool TextReader::TokenAvailable()
   return false;
 }
 
-const char* TextReader::GetFilename() { return m_filename; }
+const char* TextReader::GetFilename() { return m_filename.c_str(); }
 
 // Returns the next token on the current line. Strips all separator
 // characters from the start and end of the token, so "blah, wibble:7"
@@ -137,7 +137,10 @@ char* TextReader::GetNextToken()
 
   // Skip over initial separator characters
   int m_tokenStart = m_tokenIndex;
-  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars, m_line[m_tokenStart]) != nullptr) { m_tokenStart++; }
+  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars.c_str(), m_line[m_tokenStart]) != nullptr)
+  {
+    m_tokenStart++;
+  }
 
   // Make sure that we haven't found an empty token
   if (m_line[m_tokenStart] == '\0')
@@ -151,7 +154,7 @@ char* TextReader::GetNextToken()
   m_tokenIndex = m_tokenStart;
   while (m_line[m_tokenIndex] != '\0')
   {
-    if (strchr(m_seperatorChars, m_line[m_tokenIndex]) != nullptr)
+    if (strchr(m_seperatorChars.c_str(), m_line[m_tokenIndex]) != nullptr)
     {
       m_line[m_tokenIndex] = '\0';
       m_tokenIndex++;
@@ -171,7 +174,10 @@ char* TextReader::GetRestOfLine()
 
   // Skip over initial separator characters
   int m_tokenStart = m_tokenIndex;
-  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars, m_line[m_tokenStart]) != nullptr) { m_tokenStart++; }
+  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars.c_str(), m_line[m_tokenStart]) != nullptr)
+  {
+    m_tokenStart++;
+  }
 
   return &m_line[m_tokenStart];
 }
@@ -183,14 +189,14 @@ char* TextReader::GetRestOfLine()
 TextFileReader::TextFileReader(const char* _filename)
   : TextReader()
 {
-  strncpy(m_filename, _filename, sizeof(m_filename) - 1);
+  m_filename = _filename;
   m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
 }
 
 TextFileReader::TextFileReader(const std::string& _filename)
   : TextReader()
 {
-  strncpy(m_filename, _filename.c_str(), sizeof(m_filename) - 1);
+  m_filename = _filename;
   m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
 }
 
@@ -249,7 +255,10 @@ TextDataReader::TextDataReader(const char* _data, unsigned int _dataSize, const 
   : TextReader(),
     m_data(_data),
     m_dataSize(_dataSize),
-    m_offset(0) { strncpy(m_filename, _filename, sizeof(m_filename) - 1); }
+    m_offset(0)
+{
+  m_filename = _filename;
+}
 
 bool TextDataReader::IsOpen() { return true; }
 
@@ -277,7 +286,10 @@ bool TextDataReader::ReadLine()
 
   // Make sure the line buffer is big enough to accomodate our painful length
   unsigned int lineLen = eolOffset - m_offset + 1;
-  while (lineLen > m_maxLineLen) { DoubleMaxLineLen(); }
+  while (lineLen > m_maxLineLen)
+  {
+    DoubleMaxLineLen();
+  }
 
   // Copy from the data block into m_line
   memcpy(m_line, &m_data[m_offset], lineLen);

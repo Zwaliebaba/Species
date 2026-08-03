@@ -34,7 +34,6 @@ ProfiledElement::ProfiledElement(const char* _name, ProfiledElement* _parent)
 ProfiledElement::~ProfiledElement()
 {
   free(m_name);
-  m_children.EmptyAndDelete();
 }
 
 // *** Start
@@ -66,10 +65,9 @@ void ProfiledElement::Advance()
   m_historyNumSeconds += 1.0;
   m_historyNumCalls += m_lastNumCalls;
 
-  for (int i = 0; i < m_children.Size(); ++i)
+  for (auto& entry : m_children)
   {
-    if (m_children.ValidIndex(i))
-      m_children[i]->Advance();
+    entry.second->Advance();
   }
 }
 
@@ -82,33 +80,33 @@ void ProfiledElement::ResetHistory()
   m_longest = DBL_MIN;
   m_shortest = DBL_MAX;
 
-  for (unsigned int i = 0; i < m_children.Size(); ++i)
+  for (auto& entry : m_children)
   {
-    if (m_children.ValidIndex(i))
-      m_children[i]->ResetHistory();
+    entry.second->ResetHistory();
   }
 }
 
 double ProfiledElement::GetMaxChildTime()
 {
-  double rv = 0.0;
-
-  short first = m_children.StartOrderedWalk();
-  if (first == -1)
+  if (m_children.empty())
     return 0.0;
 
-  short i = first;
-  while (i != -1)
+  double rv = 0.0;
+  for (const auto& entry : m_children)
   {
-    float val = m_children[i]->m_historyTotalTime;
-    ProfiledElement* child = m_children[i];
+    // Deliberately float, not double: m_historyTotalTime is a double and the
+    // narrowing is what the comparison below has always seen. Widening it here
+    // would change which child wins a near-tie.
+    const float val = entry.second->m_historyTotalTime;
     if (val > rv)
       rv = val;
-
-    i = m_children.GetNextOrderedIndex();
   }
 
-  return rv / m_children[first]->m_historyNumSeconds;
+  // The divisor is the FIRST child's history length, not the winner's, which
+  // is why the ordering has to be preserved exactly. It reads like an
+  // oversight; it is left alone because changing it changes a number the
+  // profile window puts on screen.
+  return rv / m_children.begin()->second->m_historyNumSeconds;
 }
 
 // ****************************************************************************
@@ -123,14 +121,14 @@ Profiler::Profiler()
     m_currentElement(nullptr),
     m_doGlFinish(false)
 {
-  m_rootElement = new ProfiledElement("Root", nullptr);
+  m_rootElement = std::make_unique<ProfiledElement>("Root", nullptr);
   m_rootElement->m_isExpanded = true;
-  m_currentElement = m_rootElement;
+  m_currentElement = m_rootElement.get();
   m_endOfSecond = GetHighResTime() + 1.0f;
 }
 
 // *** Destructor
-Profiler::~Profiler() { delete m_rootElement; }
+Profiler::~Profiler() = default;
 
 // *** Advance
 void Profiler::Advance()
@@ -165,11 +163,16 @@ void Profiler::StartProfile(const char* _name)
 {
   MAIN_THREAD_ONLY;
 
-  ProfiledElement* pe = m_currentElement->m_children.GetData(_name);
+  auto& children = m_currentElement->m_children;
+  const auto entry = children.find(_name);
+  ProfiledElement* pe = (entry == children.end()) ? nullptr : entry->second.get();
   if (!pe)
   {
-    pe = new ProfiledElement(_name, m_currentElement);
-    m_currentElement->m_children.PutData(_name, pe);
+    // The observer is taken before the owner moves into the map, because
+    // everything below this point works through pe.
+    auto created = std::make_unique<ProfiledElement>(_name, m_currentElement);
+    pe = created.get();
+    children[_name] = std::move(created);
   }
 
   ASSERT_TEXT(m_rootElement->m_isExpanded, "Profiler root element has been un-expanded");
@@ -199,7 +202,7 @@ void Profiler::EndProfile(const char* _name)
     if (m_doGlFinish && m_insideRenderSection && sm_renderSync)
       sm_renderSync();
 
-    DEBUG_ASSERT(m_currentElement != m_rootElement);
+    DEBUG_ASSERT(m_currentElement != m_rootElement.get());
     DEBUG_ASSERT(stricmp(_name, m_currentElement->m_name) == 0);
 
     m_currentElement->End();

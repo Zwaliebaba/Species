@@ -1,6 +1,7 @@
 #pragma once
 
-#include "LList.h"
+#include <vector>
+
 #include "TeamControls.h"
 #include "Vector3.h"
 
@@ -20,21 +21,21 @@ class NetworkUpdate;
 
 class ClientToServer
 {
-private:
-	NetLib				*m_netLib;
+  private:
+    NetLib* m_netLib;
 
-  void AdvanceSender();
+    void AdvanceSender();
 
-public:
-    NetSocket           *m_sendSocket;
-    NetSocketListener   *m_receiveSocket;
+  public:
+    NetSocket* m_sendSocket;
+    NetSocketListener* m_receiveSocket;
 
-    NetMutex            *m_inboxMutex;
-    NetMutex            *m_outboxMutex;
-    LList               <ServerToClientLetter *> m_inbox;
-    LList               <NetworkUpdate *> m_outbox;
+    NetMutex* m_inboxMutex;
+    NetMutex* m_outboxMutex;
+    std::vector<ServerToClientLetter*> m_inbox;
+    std::vector<NetworkUpdate*> m_outbox;
 
-    int                 m_lastValidSequenceIdFromServer;    // eg if we have 11,12,13,15,18 then this is 13
+    int m_lastValidSequenceIdFromServer; // eg if we have 11,12,13,15,18 then this is 13
     // When the client believes server sequence 0 happened, derived from the sequence id of every letter
     // that arrives. This was the g_startTime global in Species/Main.h, which only this class ever wrote.
     // Written on the listen thread and read on the main thread, unsynchronised — as it always was.
@@ -45,7 +46,6 @@ public:
     ~ClientToServer();
 
     int GetOurIP_Int();
-    char* GetOurIP_String();
 
     // Releases the head of the inbox only when it is the letter the caller is
     // next expecting. The caller owns that counter — it tracks how far the

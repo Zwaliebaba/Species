@@ -252,7 +252,7 @@ tasks:
       g_app->m_userInput, g_inputManager and the control-help system. That is
       client input-gathering and cannot live in the foundation, so the class is
       split: the struct, constructor, GetFlags, SetFlags, Clear and ClearFlags in
-      NeuronCore; Advance() defined in Species/Team.cpp with the declaration
+      NeuronCore; Advance() defined in GameLogic/Team.cpp with the declaration
       annotated to say why. CI found this, not review.
 
       No new id types were needed. If the protocol later wants stronger typing

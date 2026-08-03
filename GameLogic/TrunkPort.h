@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 #define TRUNKPORT_HEIGHTMAP_MAXSIZE 16
@@ -31,7 +33,7 @@ public:
 
     void ReprogramComplete();
 
-    void ListSoundEvents    ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     void Read   ( TextReader *_in, bool _dynamic );
     void Write  ( FileWriter *_out );

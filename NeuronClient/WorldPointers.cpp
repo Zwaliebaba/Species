@@ -5,12 +5,15 @@
 // App creates and destroys these; Main.cpp swaps the location and the editor
 // per level. Null until startup builds them.
 Location* g_location = nullptr;
+LocationAccess* g_locationAccess = nullptr;
+WorldTypeNames* g_worldTypeNames = nullptr;
 GlobalWorld* g_globalWorld = nullptr;
-Camera* g_camera = nullptr;
+CameraAccess* g_camera = nullptr;
 RendererAccess* g_renderer = nullptr;
 ParticleSystem* g_particleSystem = nullptr;
-LocationEditor* g_locationEditor = nullptr;
+LocationEditorAccess* g_locationEditor = nullptr;
+GameCursorAccess* g_gameCursor = nullptr;
 TaskManager* g_taskManager = nullptr;
-TaskManagerInterface* g_taskManagerInterface = nullptr;
-Script* g_script = nullptr;
-UserInput* g_userInput = nullptr;
+TaskManagerInterfaceAccess* g_taskManagerInterface = nullptr;
+ScriptAccess* g_script = nullptr;
+UserInputAccess* g_userInput = nullptr;

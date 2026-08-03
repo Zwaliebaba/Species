@@ -41,138 +41,127 @@
 
 
 // *** AdvanceTeleportControl
-void LocationInput::AdvanceRadarDishControl(Building *_building)
+void LocationInput::AdvanceRadarDishControl(Building* _building)
 {
-	if( g_inputManager->controlEvent( ControlUnitSetTarget ) )
-    {
-        Vector3 rayStart;
-        Vector3 rayDir;
-        g_camera->GetClickRay(g_target->X(), g_target->Y(),
-									 &rayStart, &rayDir);
+  if (g_inputManager->controlEvent(ControlUnitSetTarget))
+  {
+    Vector3 rayStart;
+    Vector3 rayDir;
+    TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
-        int buildId = g_location->GetBuildingId(rayStart, rayDir, 255);
-        Building *building = g_location->GetBuilding( buildId );
-        if( building &&
-            building->m_type == Building::TypeRadarDish &&
-            building != _building )
-        {
-            RadarDish *dish = (RadarDish *) building;
-            g_app->m_clientToServer->RequestAimBuilding( g_globalWorld->m_myTeamId,
-                                                         _building->m_id.GetUniqueId(),
-                                                         dish->GetStartPoint() );
-        }
-        else
-        {
-            g_app->m_clientToServer->RequestAimBuilding( g_globalWorld->m_myTeamId,
-													     _building->m_id.GetUniqueId(),
-													     g_userInput->GetMousePos3d() );
-        }
+    int buildId = g_location->GetBuildingId(rayStart, rayDir, 255);
+    Building* building = g_location->GetBuilding(buildId);
+    if (building && building->m_type == Building::TypeRadarDish && building != _building)
+    {
+      RadarDish* dish = (RadarDish*)building;
+      g_app->m_clientToServer->RequestAimBuilding(g_globalWorld->m_myTeamId, _building->m_id.GetUniqueId(), dish->GetStartPoint());
     }
+    else
+    {
+      g_app->m_clientToServer->RequestAimBuilding(g_globalWorld->m_myTeamId, _building->m_id.GetUniqueId(), TheUserInput()->GetMousePos3d());
+    }
+  }
 }
 
 
 // *** GetObjectUnderMouse
-bool LocationInput::GetObjectUnderMouse( WorldObjectId &_id, int _teamId )
+bool LocationInput::GetObjectUnderMouse(WorldObjectId& _id, int _teamId)
 {
-    Vector3 rayStart;
-    Vector3 rayDir;
-    g_camera->GetClickRay( g_target->X(), g_target->Y(),
-								  &rayStart, &rayDir );
+  Vector3 rayStart;
+  Vector3 rayDir;
+  TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
-    // Find any objects the ray intersects
- 	float buildDist = FLT_MAX;
-	float unitDist = FLT_MAX;
-	float entDist = FLT_MAX;
+  // Find any objects the ray intersects
+  float buildDist = FLT_MAX;
+  float unitDist = FLT_MAX;
+  float entDist = FLT_MAX;
 
-    int buildId = g_location->GetBuildingId(rayStart, rayDir, _teamId, FLT_MAX, &buildDist );
-	int unitId = g_location->GetUnitId( rayStart, rayDir, _teamId, &unitDist );
-    WorldObjectId entId = g_location->GetEntityId( rayStart, rayDir, _teamId, &entDist );
+  int buildId = g_location->GetBuildingId(rayStart, rayDir, _teamId, FLT_MAX, &buildDist);
+  int unitId = g_location->GetUnitId(rayStart, rayDir, _teamId, &unitDist);
+  WorldObjectId entId = g_location->GetEntityId(rayStart, rayDir, _teamId, &entDist);
 
-    //
-    // Look for Darwinians if we are running an officer program
-    if( !entId.IsValid() )
+  //
+  // Look for Citizens if we are running an officer program
+  if (!entId.IsValid())
+  {
+    Task* task = g_taskManager->GetCurrentTask();
+    if (task && task->m_state == Task::StateStarted && task->m_type == GlobalResearch::TypeOfficer)
     {
-	    Task *task = g_taskManager->GetCurrentTask();
-        if( task &&
-            task->m_state == Task::StateStarted &&
-            task->m_type == GlobalResearch::TypeOfficer )
-        {
-            Vector3 mousePos = g_userInput->GetMousePos3d();
-            entId = Task::FindDarwinian( mousePos );
-            entDist = 0.0f;
-        }
+      Vector3 mousePos = TheUserInput()->GetMousePos3d();
+      entId = Task::FindCitizen(mousePos);
+      entDist = 0.0f;
     }
+  }
 
-    //
-    // Now find which object is nearest
+  //
+  // Now find which object is nearest
 
-    if( entId.IsValid() && entDist < unitDist && entDist < buildDist )
-    {
-        // Entity is nearest
-        _id = entId;
-        return true;
-    }
+  if (entId.IsValid() && entDist < unitDist && entDist < buildDist)
+  {
+    // Entity is nearest
+    _id = entId;
+    return true;
+  }
 
-    if( unitId != -1 && unitDist < entDist && unitDist < buildDist )
-    {
-        // Unit is nearest
-        _id.Set( g_globalWorld->m_myTeamId, unitId, -1, -1 );
-        return true;
-    }
+  if (unitId != -1 && unitDist < entDist && unitDist < buildDist)
+  {
+    // Unit is nearest
+    _id.Set(g_globalWorld->m_myTeamId, unitId, -1, -1);
+    return true;
+  }
 
-    if( buildId != -1 && buildDist < entDist && buildDist < unitDist )
-    {
-        // Building is nearest
-        _id.Set( g_globalWorld->m_myTeamId, UNIT_BUILDINGS, -1, buildId );
-        return true;
-    }
+  if (buildId != -1 && buildDist < entDist && buildDist < unitDist)
+  {
+    // Building is nearest
+    _id.Set(g_globalWorld->m_myTeamId, UNIT_BUILDINGS, -1, buildId);
+    return true;
+  }
 
-    return false;
+  return false;
 }
 
 
 // *** AdvanceNoSelection
 void LocationInput::AdvanceNoSelection()
 {
-	if (g_inputManager->controlEvent( ControlSelectLocation ) &&
-        !g_taskManagerInterface->m_visible )
+  if (g_inputManager->controlEvent(ControlSelectLocation) && !TheTaskManagerInterface()->m_visible)
+  {
+    WorldObjectId id;
+    bool objectFound = GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
+
+    if (id.IsValid())
     {
-        WorldObjectId id;
-        bool objectFound = GetObjectUnderMouse( id, g_globalWorld->m_myTeamId );
+      if (id.GetUnitId() == UNIT_BUILDINGS)
+      {
+        Task* currentTask = g_taskManager->GetCurrentTask();
 
-        if( id.IsValid() )
+        if (!currentTask)
         {
-            if( id.GetUnitId() == UNIT_BUILDINGS )
-            {
-                Task *currentTask = g_taskManager->GetCurrentTask();
+          Building* building = g_location->GetBuilding(id.GetUniqueId());
 
-                if( !currentTask )
-                {
-        		    Building *building = g_location->GetBuilding(id.GetUniqueId());
-
-                    if( building->m_type == Building::TypeRadarDish )
-                    {
-                        g_app->m_clientToServer->RequestSelectUnit( id.GetTeamId(), -1, -1, id.GetUniqueId() );
-                        g_camera->RequestRadarAimMode( building );
-                    }
-                    else if( building->m_type == Building::TypeGunTurret )
-                    {
-                        g_app->m_clientToServer->RequestSelectUnit( id.GetTeamId(), -1, -1, id.GetUniqueId() );
-                        g_camera->RequestTurretAimMode( building );
-                    }
-                    else if( building->m_type == Building::TypeFenceSwitch )
-                    {
-                        FenceSwitch *fs = (FenceSwitch *)building;
-                        fs->Switch();
-                    }
-                }
-			}
-			else
-			{
-                g_app->m_clientToServer->RequestSelectUnit( id.GetTeamId(), id.GetUnitId(), id.GetIndex(), -1 );
-			}
+          if (building->m_type == Building::TypeRadarDish)
+          {
+            g_app->m_clientToServer->RequestSelectUnit(id.GetTeamId(), -1, -1, id.GetUniqueId());
+            TheCamera()->RequestRadarAimMode(building);
+          }
+          else if (building->m_type == Building::TypeGunTurret)
+          {
+            g_app->m_clientToServer->RequestSelectUnit(id.GetTeamId(), -1, -1, id.GetUniqueId());
+            TheCamera()->RequestTurretAimMode(building);
+          }
+          else if (building->m_type == Building::TypeFenceSwitch)
+          {
+            FenceSwitch* fs = (FenceSwitch*)building;
+            fs->Switch();
+          }
         }
-	}
+      }
+      else
+      {
+        g_app->m_clientToServer->RequestSelectUnit(id.GetTeamId(), id.GetUnitId(), id.GetIndex(), -1);
+      }
+    }
+  }
 }
 
 
@@ -183,314 +172,310 @@ void LocationInput::AdvanceNoSelection()
     {
         Vector3 rayStart;
         Vector3 rayDir;
-        g_camera->GetClickRay(g_inputManager->m_mouseX, g_inputManager->m_mouseY,
-									 &rayStart, &rayDir);
+        TheCamera()->GetClickRay(g_inputManager->m_mouseX, g_inputManager->m_mouseY,
+                   &rayStart, &rayDir);
 
         // Find any objects the ray intersects
         int buildId = g_location->GetBuildingId(rayStart, rayDir, g_globalWorld->m_myTeamId);
-		int unitId = g_location->GetUnitId( rayStart, rayDir, g_globalWorld->m_myTeamId );
+    int unitId = g_location->GetUnitId( rayStart, rayDir, g_globalWorld->m_myTeamId );
         WorldObjectId entId = g_location->GetEntityId( rayStart, rayDir, g_globalWorld->m_myTeamId );
 
-		// Now find which object is nearest
-		Team *team = g_location->GetMyTeam();
-		float buildDist = FLT_MAX;
-		float unitDist = FLT_MAX;
-		float entDist = FLT_MAX;
-		if (buildId != -1) buildDist = (rayStart - g_location->GetBuilding(buildId)->m_pos).Mag();
-		if (unitId != -1) unitDist = (rayStart - team->m_units.GetData(unitId)->m_centrePos).Mag();
-		if (entId.IsValid())  entDist = (rayStart - g_location->GetEntity(entId)->m_pos).Mag();
+    // Now find which object is nearest
+    Team *team = g_location->GetMyTeam();
+    float buildDist = FLT_MAX;
+    float unitDist = FLT_MAX;
+    float entDist = FLT_MAX;
+    if (buildId != -1) buildDist = (rayStart - g_location->GetBuilding(buildId)->m_pos).Mag();
+    if (unitId != -1) unitDist = (rayStart - team->m_units.GetData(unitId)->m_centrePos).Mag();
+    if (entId.IsValid())  entDist = (rayStart - g_location->GetEntity(entId)->m_pos).Mag();
 
-		if (buildId != -1 || unitId != -1 || entId.IsValid() )
-		{
-			g_inputManager->m_lmbClicked = false;
-		}
+    if (buildId != -1 || unitId != -1 || entId.IsValid() )
+    {
+      g_inputManager->m_lmbClicked = false;
+    }
 
         if( buildDist < unitDist )
         {
-			if (buildDist < entDist)
-			{
-				// Building is nearest
-				Building *building = g_location->GetBuilding(buildId);
+      if (buildDist < entDist)
+      {
+        // Building is nearest
+        Building *building = g_location->GetBuilding(buildId);
 
                 if( building->m_type == Building::TypeFactory )
                 {
-                    g_camera->RequestBuildingFocusMode( building );
-                    g_userInput->m_stretchyIcons->RequestMenu( StretchyIcons::MenuMicroUnit );
-                    g_userInput->m_stretchyIcons->Enable();
+                    TheCamera()->RequestBuildingFocusMode( building );
+                    TheUserInput()->m_stretchyIcons->RequestMenu( StretchyIcons::MenuMicroUnit );
+                    TheUserInput()->m_stretchyIcons->Enable();
                     g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, -1, -1, building->m_id.GetUniqueId() );
                 }
                 else if( building->m_type == Building::TypeRadarDish )
                 {
-                    g_camera->RequestRadarAimMode( building );
+                    TheCamera()->RequestRadarAimMode( building );
                     g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, -1, -1, building->m_id.GetUniqueId() );
                 }
-				else if(building->m_type == Building::TypePowerstation)
-				{
-                    g_camera->RequestBuildingFocusMode( building );
-                    g_userInput->m_stretchyIcons->RequestMenu( StretchyIcons::MenuPowerstation );
-                    g_userInput->m_stretchyIcons->Enable();
+        else if(building->m_type == Building::TypePowerstation)
+        {
+                    TheCamera()->RequestBuildingFocusMode( building );
+                    TheUserInput()->m_stretchyIcons->RequestMenu( StretchyIcons::MenuPowerstation );
+                    TheUserInput()->m_stretchyIcons->Enable();
                     g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, -1, -1, building->m_id.GetUniqueId() );
-				}
-			}
-			else
-			{
-				// Entity is nearest
+        }
+      }
+      else
+      {
+        // Entity is nearest
                 g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, -1, entId.GetIndex(), -1 );
-			}
+      }
         }
         else
         {
             if (entDist < unitDist)
             {
-				// Entity is nearest
+        // Entity is nearest
                 g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, -1, entId.GetIndex(), -1 );
             }
-			else
-			{
-				// Unit is nearest
-				g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, unitId, -1, -1 );
-			}
+      else
+      {
+        // Unit is nearest
+        g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, unitId, -1, -1 );
+      }
         }
-	}
+  }
 }*/
-
 
 
 // *** AdvanceTeamControl
 void LocationInput::AdvanceTeamControl()
 {
-	bool inCutscene = false;
-	if( g_script->IsRunningScript() &&
-		g_script->m_permitEscape ) inCutscene = true;
-	if( g_camera->IsInMode( Camera::ModeBuildingFocus ) ) inCutscene = true;
+  bool inCutscene = false;
+  if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
+    inCutscene = true;
+  if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
+    inCutscene = true;
 
-	if( inCutscene ) return;
+  if (inCutscene)
+    return;
 
 
-	Task *task = g_taskManager->GetCurrentTask();
-	bool taskStarted = task && task->m_state == Task::StateStarted;
+  Task* task = g_taskManager->GetCurrentTask();
+  bool taskStarted = task && task->m_state == Task::StateStarted;
 
-    //
-    // Have we clicked to select something?
+  //
+  // Have we clicked to select something?
 
-    if ( g_inputManager->controlEvent( ControlUnitSetTarget ) && // TODO: Really?
-        //!g_inputManager->m_rmb &&
-        !g_taskManagerInterface->m_visible &&
-		!taskStarted)
+  if (g_inputManager->controlEvent(ControlUnitSetTarget) && // TODO: Really?
+                                                            //! g_inputManager->m_rmb &&
+      !TheTaskManagerInterface()->m_visible && !taskStarted)
+  {
+    WorldObjectId id;
+    bool objectUnderMouse = GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
+    if (id.IsValid() && id.GetUnitId() != 255 && id.GetUnitId() != UNIT_BUILDINGS)
     {
-        WorldObjectId id;
-        bool objectUnderMouse = GetObjectUnderMouse( id, g_globalWorld->m_myTeamId );
-        if( id.IsValid() && id.GetUnitId() != 255 && id.GetUnitId() != UNIT_BUILDINGS )
-        {
-            g_app->m_clientToServer->RequestSelectUnit( id.GetTeamId(), id.GetUnitId(), id.GetIndex(), -1 );
-            return;
-        }
+      g_app->m_clientToServer->RequestSelectUnit(id.GetTeamId(), id.GetUnitId(), id.GetIndex(), -1);
+      return;
     }
+  }
 
 
-	Team *team = g_location->GetMyTeam();
+  Team* team = g_location->GetMyTeam();
 
-    // Space key should deselect current unit or building
-    bool objectSelected = team->m_currentUnitId != -1 ||
-                          team->m_currentEntityId != -1 ||
-                          team->m_currentBuildingId != -1;
+  // Space key should deselect current unit or building
+  bool objectSelected = team->m_currentUnitId != -1 || team->m_currentEntityId != -1 || team->m_currentBuildingId != -1;
 
-    if ( g_inputManager->controlEvent( ControlUnitDeselect ) )
+  if (g_inputManager->controlEvent(ControlUnitDeselect))
+  {
+    if (objectSelected)
     {
-        if( objectSelected )
-        {
-            g_app->m_clientToServer->RequestSelectUnit( team->m_teamId, -1, -1, -1 );
-            g_camera->RequestMode(Camera::ModeFreeMovement);
-            g_taskManager->m_currentTaskId = -1;
+      g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
+      TheCamera()->RequestMode(Camera::ModeFreeMovement);
+      g_taskManager->m_currentTaskId = -1;
 
-            if( team->m_currentUnitId != -1 )
-            {
-            }
-            else if( team->m_currentEntityId != -1 )
-            {
-            }
-        }
+      if (team->m_currentUnitId != -1)
+      {
+      }
+      else if (team->m_currentEntityId != -1)
+      {
+      }
     }
+  }
 
-    if( taskStarted && !g_taskManagerInterface->m_visible )
+  if (taskStarted && !TheTaskManagerInterface()->m_visible)
+  {
+    if (g_inputManager->controlEvent(ControlUnitCreate))
     {
-        if( g_inputManager->controlEvent( ControlUnitCreate ) )
-        {
-            Vector3 mousePos = g_userInput->GetMousePos3d();
-            g_app->m_clientToServer->RequestTargetProgram( g_globalWorld->m_myTeamId,
-                                                           g_taskManager->m_currentTaskId,
-                                                           mousePos );
-        }
+      Vector3 mousePos = TheUserInput()->GetMousePos3d();
+      g_app->m_clientToServer->RequestTargetProgram(g_globalWorld->m_myTeamId, g_taskManager->m_currentTaskId, mousePos);
     }
+  }
 
 
-	if( team->m_currentUnitId == -1 )
+  if (team->m_currentUnitId == -1)
+  {
+    if (team->m_currentEntityId == -1)
     {
-        if( team->m_currentEntityId == -1 )
-	    {
-		    if (team->m_currentBuildingId == -1)
-            {
-			    AdvanceNoSelection();
-            }
-		    else
-		    {
-			    Building *building = g_location->GetBuilding(team->m_currentBuildingId);
-			    if (!building)
-                {
-                    team->m_currentBuildingId = -1;
-                }
-                else if (building->m_type == Building::TypeRadarDish)
-			    {
-				    AdvanceRadarDishControl(building);
-			    }
-                else if( building->m_type == Building::TypeGunTurret)
-                {
-					if( g_taskManagerInterface->ControlEvent( TaskManagerInterface::TMTerminate ) )
-                    {
-                        // Player pressed CTRL-C, so terminate this turret
-                        g_app->m_clientToServer->RequestSelectUnit( team->m_teamId, -1, -1, -1 );
-                        g_camera->RequestMode(Camera::ModeFreeMovement);
-                        building->Damage( -100 );
-                    }
-                }
-		    }
-        }
-        else
+      if (team->m_currentBuildingId == -1)
+      {
+        AdvanceNoSelection();
+      }
+      else
+      {
+        Building* building = g_location->GetBuilding(team->m_currentBuildingId);
+        if (!building)
         {
-            Entity *ent = team->GetMyEntity();
-            if( !ent )
-            {
-                team->m_currentEntityId = -1;
-            }
-            else if( ent->m_type == Entity::TypeOfficer )
-            {
-                if( g_taskManagerInterface->ControlEvent( TaskManagerInterface::TMTerminate ) )
-                {
-                    // Player pressed CTRL-C, so demote this officer
-                    g_app->m_clientToServer->RequestSelectUnit( team->m_teamId, -1, -1, -1 );
-                    g_camera->RequestMode(Camera::ModeFreeMovement);
-                    ent->ChangeHealth( -999 );
-                }
-
-                Officer *officer = (Officer *)ent;
-                if( g_inputManager->controlEvent( ControlWeaponCycleLeft ) )
-                {
-                    officer->SetPreviousMode();
-                }
-                else if( g_inputManager->controlEvent( ControlWeaponCycleRight ) )
-                {
-                    officer->SetNextMode();
-                }
-            }
-            else if( ent->m_type == Entity::TypeArmour )
-            {
-                if( g_inputManager->controlEvent( ControlWeaponCycleLeft ) ||
-                    g_inputManager->controlEvent( ControlWeaponCycleRight ) )
-                {
-                    Armour *armour = (Armour *)ent;
-                    armour->SetDirectOrders();
-                }
-            }
+          team->m_currentBuildingId = -1;
         }
+        else if (building->m_type == Building::TypeRadarDish)
+        {
+          AdvanceRadarDishControl(building);
+        }
+        else if (building->m_type == Building::TypeGunTurret)
+        {
+          if (TheTaskManagerInterface()->ControlEvent(TaskManagerInterface::TMTerminate))
+          {
+            // Player pressed CTRL-C, so terminate this turret
+            g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
+            TheCamera()->RequestMode(Camera::ModeFreeMovement);
+            building->Damage(-100);
+          }
+        }
+      }
     }
-	else
-	{
-		// Controlling a unit
-        if( team->m_units.ValidIndex(team->m_currentUnitId) )
+    else
+    {
+      Entity* ent = team->GetMyEntity();
+      if (!ent)
+      {
+        team->m_currentEntityId = -1;
+      }
+      else if (ent->m_type == Entity::TypeOfficer)
+      {
+        if (TheTaskManagerInterface()->ControlEvent(TaskManagerInterface::TMTerminate))
         {
-		    Unit *unit = team->m_units.GetData(team->m_currentUnitId);
-            if( unit->m_troopType == Entity::TypeInsertionSquadie )
-            {
-                if( !g_taskManagerInterface->m_visible )
-                    {
-                    InsertionSquad *squad = (InsertionSquad *)unit;
-                    int currentWeapon = -1;
-                    LList<int> weaponList;
-                    if( g_globalWorld->m_research->HasResearch( GlobalResearch::TypeGrenade ) )
-                    {
-                        if( squad->m_weaponType == GlobalResearch::TypeGrenade ) currentWeapon = weaponList.Size();
-                        weaponList.PutData( GlobalResearch::TypeGrenade );
-                    }
-                    if( g_globalWorld->m_research->HasResearch( GlobalResearch::TypeRocket ) )
-                    {
-                        if( squad->m_weaponType == GlobalResearch::TypeRocket ) currentWeapon = weaponList.Size();
-                        weaponList.PutData( GlobalResearch::TypeRocket );
-                    }
-
-                    if( g_globalWorld->m_research->HasResearch( GlobalResearch::TypeAirStrike ) )
-                    {
-                        if( squad->m_weaponType == GlobalResearch::TypeAirStrike ) currentWeapon = weaponList.Size();
-                        weaponList.PutData( GlobalResearch::TypeAirStrike );
-                    }
-                    if( g_globalWorld->m_research->HasResearch( GlobalResearch::TypeController ) )
-                    {
-                        if( squad->m_weaponType == GlobalResearch::TypeController ) currentWeapon = weaponList.Size();
-                        weaponList.PutData( GlobalResearch::TypeController );
-                    }
-
-                    if( weaponList.Size() > 1 )
-                    {
-                        int oldWeapon = currentWeapon;
-                        if( g_inputManager->controlEvent( ControlWeaponCycleLeft ) )
-                        {
-                            currentWeapon--;
-                            if( currentWeapon < 0 )
-                            {
-                                currentWeapon = weaponList.Size() - 1;
-                            }
-                        }
-
-                        if( g_inputManager->controlEvent( ControlWeaponCycleRight ) )
-                        {
-                            currentWeapon++;
-                            if( currentWeapon >= weaponList.Size() )
-                            {
-                                currentWeapon = 0;
-                            }
-                        }
-
-                        if( oldWeapon != currentWeapon )
-                        {
-                            g_app->m_clientToServer->RequestRunProgram( squad->m_teamId, weaponList[currentWeapon] );
-                            g_app->m_soundSystem->TriggerOtherEvent( nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture );
-                            g_app->m_soundSystem->TriggerOtherEvent( nullptr, "GestureSuccess", SoundSourceBlueprint::TypeGesture );
-                        }
-                    }
-                }
-            }
+          // Player pressed CTRL-C, so demote this officer
+          g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
+          TheCamera()->RequestMode(Camera::ModeFreeMovement);
+          ent->ChangeHealth(-999);
         }
-        else
+
+        Officer* officer = (Officer*)ent;
+        if (g_inputManager->controlEvent(ControlWeaponCycleLeft))
         {
-			g_app->m_clientToServer->RequestSelectUnit( team->m_teamId, -1, -1, -1 );
-			g_camera->RequestMode(Camera::ModeFreeMovement);
-		}
-	}
+          officer->SetPreviousMode();
+        }
+        else if (g_inputManager->controlEvent(ControlWeaponCycleRight))
+        {
+          officer->SetNextMode();
+        }
+      }
+      else if (ent->m_type == Entity::TypeArmour)
+      {
+        if (g_inputManager->controlEvent(ControlWeaponCycleLeft) || g_inputManager->controlEvent(ControlWeaponCycleRight))
+        {
+          Armour* armour = (Armour*)ent;
+          armour->SetDirectOrders();
+        }
+      }
+    }
+  }
+  else
+  {
+    // Controlling a unit
+    if (team->m_units.ValidIndex(team->m_currentUnitId))
+    {
+      Unit* unit = team->m_units.GetData(team->m_currentUnitId);
+      if (unit->m_troopType == Entity::TypeInsertionSquadie)
+      {
+        if (!TheTaskManagerInterface()->m_visible)
+        {
+          InsertionSquad* squad = (InsertionSquad*)unit;
+          int currentWeapon = -1;
+          std::vector<int> weaponList;
+          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeGrenade))
+          {
+            if (squad->m_weaponType == GlobalResearch::TypeGrenade)
+              currentWeapon = static_cast<int>(weaponList.size());
+            weaponList.push_back(GlobalResearch::TypeGrenade);
+          }
+          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeRocket))
+          {
+            if (squad->m_weaponType == GlobalResearch::TypeRocket)
+              currentWeapon = static_cast<int>(weaponList.size());
+            weaponList.push_back(GlobalResearch::TypeRocket);
+          }
+
+          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeAirStrike))
+          {
+            if (squad->m_weaponType == GlobalResearch::TypeAirStrike)
+              currentWeapon = static_cast<int>(weaponList.size());
+            weaponList.push_back(GlobalResearch::TypeAirStrike);
+          }
+          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeController))
+          {
+            if (squad->m_weaponType == GlobalResearch::TypeController)
+              currentWeapon = static_cast<int>(weaponList.size());
+            weaponList.push_back(GlobalResearch::TypeController);
+          }
+
+          if (static_cast<int>(weaponList.size()) > 1)
+          {
+            int oldWeapon = currentWeapon;
+            if (g_inputManager->controlEvent(ControlWeaponCycleLeft))
+            {
+              currentWeapon--;
+              if (currentWeapon < 0)
+              {
+                currentWeapon = static_cast<int>(weaponList.size()) - 1;
+              }
+            }
+
+            if (g_inputManager->controlEvent(ControlWeaponCycleRight))
+            {
+              currentWeapon++;
+              if (currentWeapon >= static_cast<int>(weaponList.size()))
+              {
+                currentWeapon = 0;
+              }
+            }
+
+            if (oldWeapon != currentWeapon)
+            {
+              g_app->m_clientToServer->RequestRunProgram(squad->m_teamId, weaponList[currentWeapon]);
+              g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
+              g_soundSystem->TriggerOtherEvent("GestureSuccess", SoundSourceBlueprint::TypeGesture);
+            }
+          }
+        }
+      }
+    }
+    else
+    {
+      g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
+      TheCamera()->RequestMode(Camera::ModeFreeMovement);
+    }
+  }
 }
 
 
 void LocationInput::Advance()
 {
-	bool chatLog = false;
+  bool chatLog = false;
 
-    if( g_globalWorld->m_myTeamId != 255 &&
-        EclGetWindows()->Size() == 0 &&
-        !chatLog )
-    {
-        AdvanceTeamControl();
-    }
+  if (g_globalWorld->m_myTeamId != 255 && EclGetWindows()->size() == 0 && !chatLog)
+  {
+    AdvanceTeamControl();
+  }
 }
 
 
 void LocationInput::Render()
 {
-    g_editorFont.BeginText2D();
-	if (g_location->GetMyTeam())
-	{
-        glColor4ubv(g_location->GetMyTeam()->m_colour.GetData());
-//		glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-		g_editorFont.DrawText2D( 12, 19, DEF_FONT_SIZE,
-			"You are TEAM %d", (int)g_globalWorld->m_myTeamId );
-	}
+  g_editorFont.BeginText2D();
+  if (g_location->GetMyTeam())
+  {
+    glColor4ubv(g_location->GetMyTeam()->m_colour.GetData());
+    //		glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+    g_editorFont.DrawText2D(12, 19, DEF_FONT_SIZE, "You are TEAM %d", (int)g_globalWorld->m_myTeamId);
+  }
 
-    g_editorFont.EndText2D();
+  g_editorFont.EndText2D();
 }

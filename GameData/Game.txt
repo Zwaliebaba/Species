@@ -1,17 +1,17 @@
 Locations_StartDefinition
 	# Id    Avail   mapFile                      	missionFile
 	# ==========================================================================
-	   1    0       MapSandbox.txt              	null
+	   1    1       MapSandbox.txt              	MissionSandboxTutorial.txt
 	   2	1		MapGarden.txt				 	MissionGardenLiberate.txt
-	   3	0		MapContainment.txt             null
-       4    0       MapGenerator.txt               null
-       5    0       MapMine.txt                    null
-       6    0       MapYard.txt                    null
-	   7	0		MapEscort.txt			        MissionEscortEscort.txt
-       8    0       MapPatternBuffer.txt          null
-	   9	0		MapBiosphere.txt			    null
-       10   0       MapReceiver.txt                null
-       11   0       MapTemple.txt                  null
+	   3	1		MapContainment.txt             MissionContainmentEnable.txt
+       4    1       MapGenerator.txt               MissionGeneratorEnable.txt
+       5    1       MapMine.txt                    MissionMineEnable.txt
+       6    1       MapYard.txt                    MissionYardEnable.txt
+	   7	1		MapEscort.txt			        MissionEscortEscort.txt
+       8    1       MapPatternBuffer.txt          MissionPatternBufferRecapture.txt
+	   9	1		MapBiosphere.txt			    MissionBiosphereRecapture.txt
+       10   1       MapReceiver.txt                MissionReceiverRecapture.txt
+       11   1       MapTemple.txt                  MissionTempleCutscene.txt
 Locations_EndDefinition
 
 
@@ -23,44 +23,26 @@ Buildings_EndDefinition
 
 
 Research_StartDefinition
-	Research Darwinian      0       2
-    Research Squad          0       1
-	Research Engineer       0       1
-    Research Laser          0       1
-	Research Grenade		0		0
-	Research Rocket			0		0
-	Research AirStrike		0		0
+	Research Citizen      0       4
+    Research Squad          0       3
+	Research Engineer       0       3
+    Research Laser          0       3
+	Research Grenade		0		3
+	Research Rocket			0		3
+	Research AirStrike		0		3
 	Research Controller		0		0
-	Research Officer		0		0
-    Research Armour         0       0
-    Research TaskManager    0       2
+	Research Officer		0		3
+    Research Armour         0       2
+    Research TaskManager    0       4
     CurrentResearch         Squad
 Research_EndDefinition
 
 
 Events_StartDefinition
 
-    # ======
-    # Garden
-    # ======
-    
-    Event BuildingOnline:garden,8 ResearchOwned:grenade
-        Action RunScript Music1.txt
-        End
-
-    Event NotInLocation BuildingOnline:garden,8 ResearchOwned:grenade        
-        Action SetMission containment MissionContainmentEnable.txt
-        Action RunScript gardenfinished        
-        End
-    
-
     # ===========
     # Containment
     # ===========
-
-    Event ResearchOwned:officer
-        Action RunScript ContainmentOfficer.txt
-        End
 
     Event BuildingOnline:containment,85
         Action RunScript containment_finished
@@ -95,10 +77,6 @@ Events_StartDefinition
     # Yard
     # ====
 
-    Event BuildingOnline:yard,5
-        Action RunScript yard_progress
-        End
-
     Event BuildingOnline:yard,4
         Action RunScript yard_progressarmour
         End
@@ -118,10 +96,6 @@ Events_StartDefinition
     # ===========================
     # Receiver and Pattern Buffer
     # ===========================
-
-    Event BuildingOnline:PatternBuffer,1 BuildingOnline:receiver,1
-        Action RunScript Music5.txt
-        End
 
     Event NotInLocation BuildingOnline:PatternBuffer,1 BuildingOnline:receiver,1
         Action SetMission biosphere MissionBiosphereRecapture.txt

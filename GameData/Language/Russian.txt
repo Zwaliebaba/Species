@@ -62,7 +62,7 @@ entityname_sporegenerator	СПОРОГЕНЕРАТОР
 entityname_centipede	МНОГОНОЖКА
 entityname_spaceinvader	ЗАХВАТЧИК
 entityname_spider	ПАУК
-entityname_darwinian	ДАРВИНИАНЕЦ
+entityname_citizen	ДАРВИНИАНЕЦ
 entityname_officer	ОФИЦЕР
 entityname_armyant	МУРАВЕЙ
 entityname_armour	БРОНЯ
@@ -124,7 +124,7 @@ sepulveda_pressreturnXmore  	(нажми ввод - %d еще)
 # ================================================	
 # Research messages	
 # ================================================	
-researchname_darwinian      	Дарвинианцы
+researchname_citizen      	Дарвинианцы
 researchname_squad          	Отряд
 researchname_engineer       	Инженер
 researchname_laser          	Лазер
@@ -171,9 +171,9 @@ research_taskmanager	Теперь я буду работать над улучшением программы "Менеджер з
 research_taskmanager_v3	Я произвел некоторые изменения в менеджере задач. Теперь ты можешь выполнять до четырех задач одновременно.
 research_taskmanager_v4	Я улучшил менеджер задач. Теперь ты можешь выполнять пять задач одновременно. Но это предельная возможность системы.
 
-research_darwinian	Я попробую улучшить "Шаблон дарвинианца". Надеюсь, я смогу дать им подходящее оружие для защиты.
-research_darwinian_v3	Я улучшил дарвинианцев - теперь они могу стрелять лазерами! Это должно помочь им в борьбе с вирусными атаками.
-research_darwinian_v4	Я дал дарвинианцам гранаты. Это немного устрашающе, но теперь у них есть шанс устоять против более сильных врагов. Я сделал все, что мог.
+research_citizen	Я попробую улучшить "Шаблон дарвинианца". Надеюсь, я смогу дать им подходящее оружие для защиты.
+research_citizen_v3	Я улучшил дарвинианцев - теперь они могу стрелять лазерами! Это должно помочь им в борьбе с вирусными атаками.
+research_citizen_v4	Я дал дарвинианцам гранаты. Это немного устрашающе, но теперь у них есть шанс устоять против более сильных врагов. Я сделал все, что мог.
 
 research_engineer	Сейчас я работаю над программой "Инженер". Думаю, я смогу увеличить количество душ, которых могут переносить инженеры.
 research_engineer_v2	Я увеличил количество душ, которых может переносить инженер, до 15.
@@ -962,7 +962,7 @@ spawnname_spawnspider       SpawnSpider
 spawnname_spawnspirits      SpawnSpirits
 spawnname_spawneggs         SpawnEggs
 spawnname_spawntriffideggs  SpawnTriffidEggs
-spawnname_spawndarwinians   SpawnDarwinians
+spawnname_spawncitizens   SpawnDarwinians
 
 
 # =================================================

@@ -1,9 +1,11 @@
 #pragma once
 
+#include <vector>
+
 #include "Unit.h"
 #include "Shape.h"
 
-#define GAP_BETWEEN_MEN	10.0f
+#define GAP_BETWEEN_MEN 10.0f
 
 //*****************************************************************************
 // Class HistoricWayPoint
@@ -33,12 +35,12 @@ class HistoricWayPoint
 class InsertionSquad : public Unit
 {
   protected:
-    LList<HistoricWayPoint*> m_positionHistory; // A list of all the places the user has clicked. Most recent first
+    std::vector<HistoricWayPoint*> m_positionHistory; // A list of all the places the user has clicked. Most recent first
 
   public:
-    int m_weaponType; // Indexes into GlobalResearch
+    int m_weaponType;   // Indexes into GlobalResearch
     int m_controllerId; // Task ID of controller if this squad is running one
-    int m_teleportId; // Id of teleport build we wish to enter, or -1
+    int m_teleportId;   // Id of teleport build we wish to enter, or -1
 
     InsertionSquad(int teamId, int _unitId, int numEntities, const Vector3& _pos);
     ~InsertionSquad() override;
@@ -87,10 +89,9 @@ class Squadie : public Entity
     bool HasSecondaryWeapon();
     void FireSecondaryWeapon(const Vector3& _pos);
 
-    void ListSoundEvents(LList<const char*>* _list) override;
+    void ListSoundEvents(std::vector<const char*>* _list) override;
 
     Vector3 GetCameraFocusPoint() override;
 
     Vector3 GetSecondaryWeaponTarget();
 };
-

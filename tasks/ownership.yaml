@@ -10,11 +10,27 @@ summary: >
   GameCursor.cpp, App.cpp use it), and EmptyAndDelete callers in 23 files
   outside the container headers.
 
+  Re-measured 2026-08-02 at 11aee84: 815 `new` and 246 `delete` in .cpp
+  files (the `new` figure is a raw token count and includes comments), 35
+  SAFE_DELETE occurrences across five callers plus the NeuronCore.h
+  definition, and EmptyAndDelete in 26 files outside the container headers.
+  The b69c951 figures above stand; nothing in stage 5 has been converted.
+
   Stage 5 depends on stage 3 PER FILE: most ownership currently lives
   inside LList/DArray (EmptyAndDelete), so a file's containers-replaced
-  task lands before its task here. That ordering is cross-plan and cannot
-  be an edge — every task below restates it in notes, and same-file tasks
-  in different plans never run concurrently.
+  task lands before its task here — and its strings-modernised task in
+  between, per the stage order. That ordering IS now an edge: `blocked_by`
+  (docs/TASK_DAG.md, "Ordering across plans") names the specific upstream
+  task per file, and the validator refuses to let a task here go
+  in_progress or done while one is outstanding.
+
+  This matters more here than in any other plan. Before those edges
+  existed, `check_task_dag.py --next` reported all five of T1-T5 as ready
+  to start, on files whose stage-3 conversion had not begun — an agent
+  following the documented execution loop would have picked one up and
+  rewritten ownership that still lived inside an LList. Every task below
+  has no depends_on and is genuinely a graph root; the ordering was
+  entirely in prose, and --next does not read prose.
 
   Determinism note: converting owner-ship changes WHERE deletion happens in
   the source but must not change WHEN objects die relative to the
@@ -34,11 +50,18 @@ tasks:
       same program points.
     project: NeuronCore
     depends_on: []
+    blocked_by:
+      - containers-replaced/T18
+      - containers-replaced/T20
+      - strings-modernised/T2
     files:
       - NeuronCore/Preferences.cpp
       - NeuronCore/Preferences.h
       - NeuronCore/Profiler.cpp
       - NeuronCore/Profiler.h
+      - GameLogic/ProfileWindow.cpp
+      - GameLogic/PrefsGraphicsWindow.cpp
+      - GameLogic/PrefsSoundWindow.cpp
     acceptance:
       - grep -wE "EmptyAndDelete|SAFE_DELETE" over the four files returns nothing
       - No raw owning `new` remains in the four files; observers stay raw
@@ -49,9 +72,57 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     notes: >
-      Runs after these files' containers-replaced task (T15 there) — cross-plan
-      ordering, restated per the summary.
-    status: todo
+      The blocked_by names containers-replaced T18 and T20, not T15. These
+      files used to sit inside T15, which depends on all thirteen of T4-T14 —
+      so this task, the cheapest and best-covered ownership conversion in the
+      tree, was parked behind the whole of stage 3 for no reason. The split
+      (owner decision, 2026-08-02) was made precisely so it could run early.
+
+      Two edges rather than one because the split itself split again: T18
+      landed Preferences, and Profiler turned out not to be a leaf — its
+      SortingHashTable is walked from GameLogic/ProfileWindow.cpp — so it
+      became T20. Preferences' half of this task is therefore reachable well
+      before Profiler's; if the wait becomes the obstacle, splitting this
+      task along the same line is the obvious move rather than starting it
+      half-blocked.
+
+      LANDED 2026-08-02, CI green. m_items and m_children became maps of
+      unique_ptr and Profiler::m_rootElement a unique_ptr; the 21 preferences
+      tests pass unchanged and this conversion did not touch them.
+
+      THE SHAPE TO EXPECT, for T2-T6. The diff is net negative: 42 insertions
+      against 56 deletions. PrefsManager::DeleteItems and ProfiledElement's
+      child-deleting destructor both disappeared outright, because a map of
+      unique_ptr already does that. A stage-5 conversion that GROWS its files
+      is doing something other than moving ownership into the type system —
+      treat that as a signal to stop and look.
+
+      WHAT STAYS RAW, which is most of the judgement in this task.
+      ProfiledElement::m_parent is not converted: a child does not own its
+      parent, and a unique_ptr there builds a cycle that never frees.
+      Profiler::m_currentElement is a cursor. The three GameLogic windows hold
+      observers and say .get(). "Observers stay raw" in the acceptance list is
+      the whole discipline, not a caveat.
+
+      TWO ORDERING HAZARDS the code now states. AddLine move-assigns over the
+      map node, and that frees whatever it displaces, so the key is copied out
+      before the owner moves — `m_items[item->m_key] = std::move(item)` reads
+      fine and is a trap. StartProfile takes its observer from the unique_ptr
+      before moving it into the map, because everything after works through
+      the observer.
+
+      PROCESS NOTE worth more than the conversion. CI rejected this twice, both
+      times for the same reason: changing a member's type makes the blast
+      radius EVERY mention of that member, and I converted the mentions I had
+      noticed. The reliable method is mechanical — grep the member name across
+      all six projects, read every hit, convert what needs it — and it takes a
+      minute. containers-replaced T20 lost a round to exactly this too.
+
+      Evidence is asymmetric and the notes should say so: Preferences is
+      covered by T19's tests, the profiler half has no test reach at all. If
+      the Garden smoke test is run against this branch, open the profile
+      window.
+    status: done
 
   - id: T2
     title: Adopt unique_ptr in NeuronServer
@@ -62,6 +133,9 @@ tasks:
       best-covered ownership conversion in the tree.
     project: NeuronServer
     depends_on: []
+    blocked_by:
+      - containers-replaced/T4
+      - containers-replaced/T22
     files:
       - NeuronServer/Server.cpp
       - NeuronServer/Server.h
@@ -76,8 +150,80 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     notes: >
-      After containers-replaced T4 for these files (cross-plan).
-    status: todo
+      Surveyed 2026-08-02 and deliberately NOT started: the survey turned up
+      two lifetime hazards and one pre-existing leak, in code whose only
+      coverage is "a new Server starts empty" plus CI's 20-tick run with no
+      client attached. A mistake here is a use-after-free in the authoritative
+      host, so the analysis is written down and the conversion left for a pass
+      that can give it full attention.
+
+      The containers are already converted (containers-replaced T4 and T22).
+      What remains: m_clients and m_teams become SlotMap<unique_ptr>, and
+      m_history, m_inbox and m_outbox become vectors of unique_ptr. m_sync
+      holds values and needs nothing.
+
+      HAZARD 1 — MarkNotUsed does not destroy. It clears the occupancy bit and
+      nothing else, so a SlotMap<unique_ptr> keeps the object alive until the
+      slot is reused or the map dies. RemoveClient currently does
+      `m_clients.MarkNotUsed(clientId); delete sToC;` — the object dies THERE.
+      Preserving that means resetting the slot's unique_ptr explicitly, before
+      MarkNotUsed while operator[] is still valid. Getting this wrong does not
+      crash; it silently keeps disconnected clients alive, which is exactly
+      the "changes WHEN objects die" failure this plan's summary warns about.
+
+      HAZARD 2 — the outbox send path deletes conditionally. SendLetters does
+      `letter = m_outbox.front(); if (m_clients.ValidIndex(...)) { ...send...;
+      delete letter; } m_outbox.erase(begin());`. The delete is INSIDE the
+      valid-client branch, so a letter addressed to a client that disconnected
+      before it was sent is erased and leaked — a real pre-existing leak on a
+      reachable path. Converting to unique_ptr fixes it by construction
+      (moving the letter out of the vector and letting scope end it), which
+      is a behaviour change, however desirable. Call it out in the commit
+      rather than letting it ride along silently, and drop the explicit
+      delete or the result is a double free.
+
+      UNRELATED DEFECT, found while surveying, not this task's business:
+      ListenThread contains `auto m_listener = new NetSocketListener(4000);`.
+      That is a LOCAL with a member's name prefix, and it is never deleted.
+      The leak is once per process and probably harmless if StartListening
+      blocks — but whether it blocks is the thing to establish before anyone
+      "fixes" it into a stack object, because if it returns immediately a
+      stack object would destroy the listener and kill inbound connections.
+
+      Nothing outside NeuronServer touches these members; ServerTests reads
+      m_clients.NumUsed() and m_teams.NumUsed(), both of which survive the
+      conversion unchanged.
+
+      LANDED 2026-08-02, CI green at edbc8f6 and re-verified since. 56
+      insertions against 67 deletions — the net-negative shape T1 predicted.
+
+      Both surveyed hazards were handled as planned. RemoveClient resets the
+      slot before MarkNotUsed, so the record dies where `delete sToC` used to
+      rather than lingering until the slot is reused. The outbox leak is
+      fixed: the delete used to sit INSIDE the valid-client branch, so a
+      letter addressed to a client that disconnected first was erased and
+      never freed; the letter is now moved out and erased before the send and
+      destroyed when the scope ends either way. That is a behaviour change and
+      a deliberate one.
+
+      The three signatures now carry ownership rather than leaving it to a
+      comment: GetNextLetter returns unique_ptr, ReceiveLetter and SendLetter
+      take it. m_history is the sole owner of every letter ever sent.
+
+      ONE CI ROUND LOST, and to a wider version of T1's lesson.
+      letter->AddUpdate(incoming) stopped compiling once `incoming` became a
+      unique_ptr. AddUpdate COPIES — "Make sure we COPY the update", new plus
+      memcpy — so .get() was right and a move would have been actively wrong.
+      I had enumerated every use of every MEMBER whose type changed and not
+      done the same for the LOCAL whose type I also changed. Enumerate every
+      use of anything whose type changes, member or not.
+
+      EVIDENCE IS THIN AND SHOULD BE READ THAT WAY. ServerTests asserts a new
+      Server starts empty; CI runs Server.exe --ticks 20 with no client
+      attached. Neither exercises join, disconnect or send, which is exactly
+      where both hazards live. They are argued from the code, not tested. A
+      two-client smoke test is what would actually prove them.
+    status: done
 
   - id: T3
     title: Adopt unique_ptr across NeuronClient subsystems
@@ -90,6 +236,13 @@ tasks:
       container is preserved.
     project: NeuronClient
     depends_on: []
+    blocked_by:
+      - containers-replaced/T5
+      - containers-replaced/T6
+      - containers-replaced/T7
+      - containers-replaced/T8
+      - strings-modernised/T3
+      - strings-modernised/T4
     files:
       - NeuronClient/ClientToServer.cpp
       - NeuronClient/Shape.cpp
@@ -123,6 +276,12 @@ tasks:
       network identity.
     project: GameLogic
     depends_on: []
+    blocked_by:
+      - containers-replaced/T9
+      - containers-replaced/T10
+      - containers-replaced/T11
+      - strings-modernised/T5
+      - strings-modernised/T6
     files:
       - GameLogic/SpawnPoint.cpp
       - GameLogic/FileDialog.cpp
@@ -139,9 +298,12 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     notes: >
-      After these files' containers-replaced tasks (T9, T10, T11 there).
-      Behind the LinkStubs wall — evidence is review plus the Garden smoke
-      test.
+      The LinkStubs wall this note used to cite is gone — layering-inversion
+      T14 emptied the file, so GameLogic links into a test DLL on its own and
+      these conversions can be covered by real tests. Prefer whatever
+      layering-inversion T11 has landed by then over review-plus-smoke-test;
+      fall back on review and the Garden smoke test only where no coverage
+      exists yet, and say which in the commit.
     status: todo
 
   - id: T5
@@ -153,14 +315,19 @@ tasks:
       GenerateSyncValue), so its object lifetimes stay tick-identical.
     project: Species
     depends_on: []
+    blocked_by:
+      - containers-replaced/T12
+      - containers-replaced/T13
+      - strings-modernised/T7
+      - strings-modernised/T8
     files:
-      - Species/LevelFile.cpp
-      - Species/LevelFile.h
-      - Species/Explosion.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/Explosion.cpp
       - Species/TaskManagerInterfaceIcons.cpp
-      - Species/GlobalWorld.cpp
-      - Species/RoutingSystem.cpp
-      - Species/TaskManager.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/TaskManager.cpp
       - Species/GameCursor.cpp
     acceptance:
       - grep -wE "EmptyAndDelete|SAFE_DELETE" over the listed files returns nothing
@@ -169,7 +336,10 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     notes: >
-      After these files' containers-replaced tasks (T12, T13 there).
+      Paths shown pre-move. layering-inversion T15 relocates LevelFile,
+      Explosion, GlobalWorld and RoutingSystem into GameLogic and rewrites
+      this list as part of its own acceptance; containers-replaced T12 and
+      T13, which gate this task, already wait on that move.
     status: todo
 
   - id: T6
@@ -184,6 +354,8 @@ tasks:
       teardown.
     project: Species
     depends_on: [T1, T2, T3, T4, T5]
+    blocked_by:
+      - strings-modernised/T7
     files:
       - Species/App.cpp
       - Species/App.h

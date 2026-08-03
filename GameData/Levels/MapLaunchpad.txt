@@ -123,7 +123,7 @@ Buildings_StartDefinition
 	SpawnPopulationLock 126     1707.19 2048.86 1       1.00    0.00    0       435.16   100   
 	SpawnPopulationLock 127     1450.76 1774.88 1       1.00    0.00    0       435.16   100   
 	ResearchItem        129     1100.37 2725.96 1       -0.65   0.42    0       Grenade      2
-	ResearchItem        130     2477.13 712.26  1       0.65    -0.42   0       Darwinian      4
+	ResearchItem        130     2477.13 712.26  1       0.65    -0.42   0       Citizen      4
 	SolarPanel          24      791.52  484.54  1       0.00    0.99    0       26      
 	SolarPanel          26      785.49  651.21  1       0.00    0.99    0       27      
 	Pylon               27      977.93  787.75  1       0.22    -0.98   0       28      

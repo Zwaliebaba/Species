@@ -5,6 +5,13 @@ A plan is a set of tasks plus the edges between them. The graph must be acyclic,
 every dependency must resolve, and status must be consistent with the edges — a
 task cannot be done while something it depends on is not.
 
+Edges come in two kinds. `depends_on` names tasks in the same plan and shapes the
+waves. `blocked_by` names tasks in *another* plan, in `plan/Tn` form: the
+modernisation stages run per file across separate plan files, so "this file
+finishes stage 3 before it starts stage 5" is an ordering the waves cannot see.
+Both kinds gate readiness and status identically; only `depends_on` affects wave
+numbering, because a wave is a statement about one plan.
+
 The point of the format is that an agent can compute what to do next instead of
 being told. `--next` lists tasks whose dependencies are all satisfied; `--waves`
 shows which tasks may run concurrently.
@@ -35,6 +42,7 @@ REQUIRED_PLAN_KEYS = {"plan", "title", "tasks"}
 REQUIRED_TASK_KEYS = {"id", "title", "intent", "acceptance", "status"}
 OPTIONAL_TASK_KEYS = {
     "depends_on",
+    "blocked_by",
     "project",
     "files",
     "verify",
@@ -109,6 +117,116 @@ def validate_tasks(tasks: list) -> dict[str, dict]:
     return by_id
 
 
+def load_registry(paths: list[Path]) -> dict[str, dict[str, dict]]:
+    """Map plan name -> tasks, across every plan, so blocked_by can resolve.
+
+    Plans that do not parse are skipped silently here; their own process() call
+    reports the error. A blocked_by pointing into an unparseable plan then fails
+    as unresolvable, which is the right answer either way.
+    """
+    registry: dict[str, dict[str, dict]] = {}
+    for path in paths:
+        try:
+            plan = load_plan(path)
+            registry[plan["plan"]] = validate_tasks(plan["tasks"])
+        except (PlanError, yaml.YAMLError, OSError):
+            continue
+    return registry
+
+
+def parse_blocker(reference: str, task_id: str) -> tuple[str, str]:
+    if not isinstance(reference, str) or reference.count("/") != 1:
+        raise PlanError(
+            f"task {task_id}: blocked_by entry '{reference}' must have the form 'plan/Tn'"
+        )
+    plan_name, blocker_id = reference.split("/")
+    if not plan_name or not blocker_id:
+        raise PlanError(
+            f"task {task_id}: blocked_by entry '{reference}' must have the form 'plan/Tn'"
+        )
+    return plan_name, blocker_id
+
+
+def validate_blockers(
+    plan_name: str, by_id: dict[str, dict], registry: dict[str, dict[str, dict]]
+) -> None:
+    """Every blocked_by must resolve, and must point outside its own plan."""
+    for task_id, task in by_id.items():
+        for reference in task.get("blocked_by") or []:
+            other_plan, blocker_id = parse_blocker(reference, task_id)
+            if other_plan == plan_name:
+                raise PlanError(
+                    f"task {task_id}: blocked_by '{reference}' names its own plan — "
+                    "use depends_on for edges within a plan"
+                )
+            if other_plan not in registry:
+                raise PlanError(
+                    f"task {task_id}: blocked_by '{reference}' names unknown plan '{other_plan}'"
+                )
+            if blocker_id not in registry[other_plan]:
+                raise PlanError(
+                    f"task {task_id}: blocked_by '{reference}' names unknown task "
+                    f"'{blocker_id}' in plan '{other_plan}'"
+                )
+
+
+def unmet_blockers(
+    task: dict, registry: dict[str, dict[str, dict]]
+) -> list[str]:
+    """The blocked_by references that are not yet satisfied. Empty means clear."""
+    unmet = []
+    for reference in task.get("blocked_by") or []:
+        other_plan, blocker_id = reference.split("/")
+        blocker = registry.get(other_plan, {}).get(blocker_id)
+        if blocker is None or blocker["status"] not in SATISFIED:
+            unmet.append(reference)
+    return unmet
+
+
+def find_cross_plan_cycle(registry: dict[str, dict[str, dict]]) -> list[str] | None:
+    """Detect a cycle over depends_on and blocked_by combined.
+
+    Neither edge kind can cycle on its own — depends_on is checked per plan and
+    blocked_by only ever leaves a plan — but the union of the two can, and a
+    cycle there deadlocks every agent that consults --next.
+    """
+    edges: dict[str, list[str]] = {}
+    for plan_name, by_id in registry.items():
+        for task_id, task in by_id.items():
+            node = f"{plan_name}/{task_id}"
+            targets = [f"{plan_name}/{d}" for d in task.get("depends_on") or []]
+            targets += [str(b) for b in task.get("blocked_by") or []]
+            # A self-edge is a malformed blocked_by, not a cycle; validate_blockers
+            # says so far more usefully than a one-node trail would.
+            edges[node] = [t for t in targets if t != node]
+
+    WHITE, GREY, BLACK = 0, 1, 2
+    colour = {node: WHITE for node in edges}
+
+    def walk(node: str, trail: list[str]) -> list[str] | None:
+        colour[node] = GREY
+        trail.append(node)
+        for target in edges.get(node, []):
+            if target not in colour:
+                continue
+            if colour[target] == GREY:
+                return trail[trail.index(target) :] + [target]
+            if colour[target] == WHITE:
+                found = walk(target, trail)
+                if found:
+                    return found
+        trail.pop()
+        colour[node] = BLACK
+        return None
+
+    for node in sorted(edges):
+        if colour[node] == WHITE:
+            found = walk(node, [])
+            if found:
+                return found
+    return None
+
+
 def topological_waves(by_id: dict[str, dict]) -> list[list[str]]:
     """Group tasks into waves; every task in a wave may run concurrently.
 
@@ -134,7 +252,9 @@ def topological_waves(by_id: dict[str, dict]) -> list[list[str]]:
     return waves
 
 
-def validate_status_consistency(by_id: dict[str, dict]) -> list[str]:
+def validate_status_consistency(
+    by_id: dict[str, dict], registry: dict[str, dict[str, dict]]
+) -> list[str]:
     problems = []
     for task_id, task in by_id.items():
         if task["status"] not in {"done", "in_progress"}:
@@ -145,16 +265,39 @@ def validate_status_consistency(by_id: dict[str, dict]) -> list[str]:
                     f"task {task_id} is '{task['status']}' but depends on {dependency}, "
                     f"which is '{by_id[dependency]['status']}'"
                 )
+        for reference in unmet_blockers(task, registry):
+            other_plan, blocker_id = reference.split("/")
+            blocker = registry.get(other_plan, {}).get(blocker_id)
+            state = blocker["status"] if blocker else "unresolvable"
+            problems.append(
+                f"task {task_id} is '{task['status']}' but is blocked_by {reference}, "
+                f"which is '{state}'"
+            )
     return problems
 
 
-def ready_tasks(by_id: dict[str, dict]) -> list[str]:
-    return sorted(
-        task_id
-        for task_id, task in by_id.items()
-        if task["status"] == "todo"
-        and all(by_id[d]["status"] in SATISFIED for d in task.get("depends_on") or [])
-    )
+def ready_tasks(
+    by_id: dict[str, dict], registry: dict[str, dict[str, dict]]
+) -> tuple[list[str], list[tuple[str, list[str]]]]:
+    """Split todo tasks into those that may start and those held cross-plan.
+
+    A task whose only obstacle is a blocked_by is reported separately rather than
+    dropped: "not yet, and here is what it waits on" is more useful to an agent
+    than silence, and it is how the stage 3 -> 4 -> 5 ordering becomes visible.
+    """
+    ready, waiting = [], []
+    for task_id in sorted(by_id):
+        task = by_id[task_id]
+        if task["status"] != "todo":
+            continue
+        if any(by_id[d]["status"] not in SATISFIED for d in task.get("depends_on") or []):
+            continue
+        unmet = unmet_blockers(task, registry)
+        if unmet:
+            waiting.append((task_id, unmet))
+        else:
+            ready.append(task_id)
+    return ready, waiting
 
 
 def to_mermaid(plan: dict, by_id: dict[str, dict]) -> str:
@@ -184,16 +327,19 @@ def to_mermaid(plan: dict, by_id: dict[str, dict]) -> str:
     return "\n".join(lines)
 
 
-def process(path: Path, args: argparse.Namespace) -> bool:
+def process(
+    path: Path, args: argparse.Namespace, registry: dict[str, dict[str, dict]]
+) -> bool:
     try:
         plan = load_plan(path)
         by_id = validate_tasks(plan["tasks"])
+        validate_blockers(plan["plan"], by_id, registry)
         waves = topological_waves(by_id)
     except (PlanError, yaml.YAMLError) as error:
         print(f"{display(path)}: {error}")
         return False
 
-    problems = validate_status_consistency(by_id)
+    problems = validate_status_consistency(by_id, registry)
     if problems:
         print(f"{display(path)}: inconsistent status:")
         for problem in problems:
@@ -210,18 +356,25 @@ def process(path: Path, args: argparse.Namespace) -> bool:
             print(f"\n  wave {index} ({len(wave)} task(s), may run concurrently):")
             for task_id in wave:
                 task = by_id[task_id]
-                print(f"    [{task['status']:11s}] {task_id}  {task['title']}")
+                unmet = unmet_blockers(task, registry)
+                held = f"   waits on {', '.join(unmet)}" if unmet else ""
+                print(f"    [{task['status']:11s}] {task_id}  {task['title']}{held}")
         return True
 
     if args.next:
-        ready = ready_tasks(by_id)
-        if not ready:
+        ready, waiting = ready_tasks(by_id, registry)
+        if ready:
+            print(f"{plan['plan']}: ready to start")
+            for task_id in ready:
+                print(f"  {task_id}  {by_id[task_id]['title']}")
+        else:
             unfinished = [t for t, v in by_id.items() if v["status"] not in SATISFIED]
             print("no task is ready" + (" — plan complete" if not unfinished else ""))
-            return True
-        print(f"{plan['plan']}: ready to start")
-        for task_id in ready:
-            print(f"  {task_id}  {by_id[task_id]['title']}")
+        if waiting:
+            print(f"{plan['plan']}: held by another plan")
+            for task_id, unmet in waiting:
+                print(f"  {task_id}  {by_id[task_id]['title']}")
+                print(f"      waits on {', '.join(unmet)}")
         return True
 
     done = sum(1 for t in by_id.values() if t["status"] in SATISFIED)
@@ -245,7 +398,17 @@ def main() -> int:
         print("no task plans found under tasks/")
         return 0
 
-    return 0 if all([process(path, args) for path in paths]) else 1
+    # blocked_by resolves against every plan in the tree, not just the ones named
+    # on the command line, so validating one file still checks its cross-plan
+    # edges.
+    registry = load_registry(sorted(set(list(TASKS_DIR.glob("*.yaml")) + list(paths))))
+
+    cycle = find_cross_plan_cycle(registry)
+    if cycle:
+        print("dependency cycle across plans: " + " -> ".join(cycle))
+        return 1
+
+    return 0 if all([process(path, args, registry) for path in paths]) else 1
 
 
 if __name__ == "__main__":

@@ -55,11 +55,11 @@ InstantUnits_StartDefinition
 	Virii            1  2881.9  3113.4     40    1      -1   200.0     0.0     0.0
 	SporeGenerator   1  3041.9  2988.0      3    0      -1   200.0     0.0     0.0
 	Spider           1  2946.2  2970.8      4    0      -1   200.0     0.0     0.0
-	Darwinian        0  3229.6  1443.9     40    0      -1   106.2     0.0     0.0
-	Darwinian        1  2741.0  1712.0    100    0      -1    87.3     0.0     0.0
-	Darwinian        0   705.7   807.4    100    0      -1   115.9     0.0     0.0
-	Darwinian        1   753.6  1247.4    100    0      -1   111.2     0.0     0.0
-	Darwinian        1  1141.9  1145.8    100    0      -1    85.1     0.0     0.0
+	Citizen        0  3229.6  1443.9     40    0      -1   106.2     0.0     0.0
+	Citizen        1  2741.0  1712.0    100    0      -1    87.3     0.0     0.0
+	Citizen        0   705.7   807.4    100    0      -1   115.9     0.0     0.0
+	Citizen        1   753.6  1247.4    100    0      -1   111.2     0.0     0.0
+	Citizen        1  1141.9  1145.8    100    0      -1    85.1     0.0     0.0
 InstantUnits_EndDefinition
 
 PrimaryObjectives_StartDefinition

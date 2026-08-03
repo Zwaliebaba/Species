@@ -62,8 +62,8 @@ than after.
 This phase ends when **`NeuronCore` and `NeuronServer` link into a headless
 server that ticks without `NeuronClient`.** Concretely, all four of:
 
-1. `tools/layering_allowlist.txt` contains no entry beginning `NeuronCore/`.
-   **Met** — zero, down from 30.
+1. No upward include out of `NeuronCore`. **Met** — zero, down from 30, and
+   `tools/check_layering.py` now rejects any upward include tree-wide.
 2. `NeuronCore.vcxproj` lists no other project in `AdditionalIncludeDirectories`.
    **Met** — it lists none at all.
 3. `Server.exe` links without `NeuronClient.lib` and advances sequence ids with
@@ -77,13 +77,12 @@ there; all thirteen of its tasks are complete.
 
 What that does *not* mean: the game client runs, the world server exists, or
 cross-architecture play works. It means the foundation no longer depends on the
-things above it, so a server can be built without dragging a renderer in. The
-next phase starts above it: every one of the 628 remaining violations points
-into `Species` (624 of them) or `GameLogic` (4).
+things above it, so a server can be built without dragging a renderer in.
 
-Deliberately *not* the exit criterion: the full 628-entry allowlist (the
-`GameLogic` → `Species` cluster is 584 of them and blocks nothing here), and the
-client running. Both matter; neither gates the world server.
+Deliberately *not* the exit criterion: the rest of the tree's upward includes,
+and the client running. Both matter; neither gated the world server. The
+allowlist stood at 628 when this phase ended and is **gone** —
+`tasks/layering-inversion.yaml` took it to zero and deleted it.
 
 > **Note:** the game runs again as of `7ee8c00`. That is recorded here because
 > this file is where it gets recorded — see *What working looks like*. It does
@@ -141,29 +140,23 @@ NeuronCore                   no dependencies
       Server   (exe)         -> GameLogic, NeuronServer, NeuronCore
 ```
 
-**Includes may only ever point downward.** The tree does not obey this yet: 326
-upward includes are recorded in `tools/layering_allowlist.txt`, inherited from
-Darwinia's single-binary layout — down from 628 as `tasks/layering-inversion.yaml`
-works through them.
+**Includes may only ever point downward, and the tree obeys this.** Zero upward
+includes, down from the 628 inherited from Darwinia's single-binary layout.
+`tasks/layering-inversion.yaml` removed them over eighteen tasks and deleted the
+allowlist on the way out.
 
-| From | Into | Count |
-|---|---|---|
-| GameLogic | Species | ~290 |
-| NeuronClient | Species | ~32 |
-| NeuronClient | GameLogic | 4 |
+What went, and how: `App.h` — no file below `Species` includes it — the frame
+clock, `Globals.h`, and then the subsystems behind `*Access` interfaces
+(`Renderer`, `Camera`, `Script`, `UserInput`, `TaskManagerInterface`,
+`ControlHelp`, `LocationEditor`, `GameCursor`, and the loaded world itself).
+The world model — `Location`, `GlobalWorld`, `Team`, `Unit`, the grids, the
+routing system, the landscape — moved down into `GameLogic` rather than being
+reached up into.
 
-Re-derive rather than trusting the split: `python3 tools/check_layering.py`
-prints the total, and clustering the allowlist on the target header gives the
-rest. What is already gone is `App.h` — no file below `Species` includes it —
-along with the frame clock, `Globals.h` and `Renderer.h`.
-
-**`NeuronCore` has no upward includes left.** Every remaining violation is in
-`NeuronClient` or `GameLogic` reaching into `Species`.
-
-The check fails on any violation **not** already in that file. The allowlist may
-only ever shrink. If your change needs a new upward include, the design is wrong:
-move the shared declaration down into a layer both sides can see, or invert the
-dependency behind an interface.
+**The check is strict and has no escape hatch.** If your change needs an upward
+include, the design is wrong: move the shared declaration down into a layer both
+sides can see, or invert the dependency behind an interface. Do not recreate the
+allowlist.
 
 `tasks/neuroncore-layering.yaml` is the plan that eliminated the `NeuronCore`
 entries. Twelve of its thirteen tasks are done; only T10 is left, which drops the
@@ -186,17 +179,38 @@ troubleshooting — is in [`docs/BUILD.md`](docs/BUILD.md).
 
 ## Before you push
 
-Run all four. CI runs the same four and will fail on anything you skip.
+Run all five. CI runs the same five and will fail on anything you skip.
 
 ```bash
 python3 tools/check_project_files.py   # .vcxproj matches the files on disk
 python3 tools/check_layering.py        # no new upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
+python3 tools/check_containers.py      # no legacy container call left on a vector
 python3 tools/check_format.py          # changed lines match .clang-format
+python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
+                                       # _included guards, strcpy or plain enum
 ```
+
+`check_containers.py` exists because three CI failures in a row were the same
+mistake: a call site a container sweep did not reach, still asking a
+`std::vector` for `Size()` or `ValidIndex()`. Those are compile errors, so CI
+caught every one — after a full Windows build, which is the slowest possible
+way to learn it. The check builds a tree-wide member-name-to-type map, which is
+why it is a separate tool rather than a `check_hygiene` rule. It resolves by
+member NAME, so a name that is a vector in one class and a slot map in another
+is skipped and counted rather than guessed at; `m_buildings`, `m_spirits` and
+`m_lights` are the three it currently loses.
 
 `python3 tools/check_format.py --fix` applies the formatting rather than
 reporting it.
+
+The last two share a contract worth understanding before one surprises you: they
+judge **the lines your change writes**, not the file you wrote them in. A legacy
+file with two hundred `sprintf`s stays legal until its conversion task; add one
+more and only that line is reported. It is a ratchet, so it only ever turns one
+way. A genuine exception is marked `hygiene-ok` in a comment on the line, with a
+reason — there are two in the tree today, and both are explained in
+`tasks/language-hygiene.yaml` T1.
 
 Then build **and run the tests**. A change that has not been compiled is not
 finished; a change with new behaviour and no test is not finished either.
@@ -250,7 +264,7 @@ Launch, start a new profile, enter The Garden, and check:
 |---|---|---|
 | 1 | The executable starts and the main menu renders | `GameData` staging and resolution work |
 | 2 | The location loads without an assert | Landscape, level file and building parsing |
-| 3 | **50 Darwinians** spawn on team 0 — two groups of 30 and 20 | Entity creation from `InstantUnits` |
+| 3 | **50 Citizens** spawn on team 0 — two groups of 30 and 20 | Entity creation from `InstantUnits` |
 | 4 | **179 Virii** spawn on team 1 across eight groups | Multi-team spawning |
 | 5 | Both move under their own behaviour for 30s with no assert | `Location::Advance`, the slice loop, entity AI |
 | 6 | The Task Manager opens and lists available programs | Eclipse UI and `GlobalResearch` |
@@ -259,11 +273,20 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**Last run: all seven steps pass, as of the layering-inversion branch
+**Last full run: all seven steps pass, as of the layering-inversion branch
 (2026-08-02), after the `g_app` seam moved the world subsystems, the frame
 clock and App's state out of the executable.** Reported by the project owner,
 not observed by the agent that wrote this line — if only some steps were
 checked, correct this rather than leaving it overstated.
+
+**Partial run at `586c072` (2026-08-03), after containers-replaced T12
+converted the world's slot containers off `DArray` and the entity rename
+landed.** The owner launched, loaded The Garden and played without an assert —
+steps 1, 2, 5, 6 and 7. **Steps 3 and 4, the spawn counts, were not checked**,
+so this is not a full pass and does not close `rename-darwinian/T4`. That
+distinction is worth keeping: the counts are the only step that catches a
+string-resolved reference the rename missed, because a name that fails to
+resolve produces a smaller group rather than a crash.
 
 That run is the reason those changes were merged: CI proved they compile and
 the unit suite passes, and neither says anything about whether the game still
@@ -290,6 +313,13 @@ Set a task to `in_progress` and commit that *before* starting it, so a concurren
 agent does not pick up the same node. Set it to `done` only when every `verify`
 command passes, and commit the plan update with the code.
 
+`--next` also reports tasks it will *not* offer yet, under "held by another
+plan". Those carry a `blocked_by` edge into a different plan file — the
+modernisation stages run per file across three separate plans, so "this file
+finishes stage 3 before it starts stage 5" is an ordering no single plan's graph
+can see. Trust it: before those edges existed, `--next` offered every
+`tasks/ownership.yaml` task on files whose stage-3 conversion had not begun.
+
 The full standard — schema, status semantics, how to write acceptance criteria,
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
@@ -306,18 +336,21 @@ depends on the file you are in, not on your preference. See
 file, fix the bug. Converting the file is valuable but it is a separate task with
 its own plan entry — mixing the two produces a diff nobody can review.
 
-**Never add to the layering allowlist.** It exists to shrink. The one
-exception is a file rename, which orphans its entries and makes unchanged
-violations look new — rewrite those with
-`python3 tools/check_layering.py --rename OLD NEW`, which cannot invent
-entries and leaves the count untouched.
+**Never reintroduce the layering allowlist.** It went from 628 entries to
+zero and was deleted. An upward include is now a build-stopping error with no
+way to record an exception, which is the point — `tasks/layering-inversion.yaml`
+has eighteen worked examples of removing one properly. The same check also
+catches a symbol declared in a library header and defined only in an executable,
+which is the same reach with the linker doing the work instead of the
+preprocessor.
 
 **Do not change what the simulation computes.** Multiplayer is deterministic
 lockstep with a runtime checksum, so iteration order, floating-point arithmetic
 order, container choice and the `speciesRandom()` call sequence are all
 load-bearing. A refactor that looks purely cosmetic can desync the game while
-every build stays green. `DArray` in particular is a slot map whose indices are
-network identity — it is not a `std::vector`. Read
+every build stays green. `SlotMap` in particular has indices that are network
+identity — it is not a `std::vector`, and `FastSlotMap` and `SlotMap` assign
+different ones after a removal. Read
 [`CODING_STANDARDS.md`](CODING_STANDARDS.md#determinism) before touching anything
 reachable from `Location::Advance`.
 
@@ -354,6 +387,26 @@ Real, currently true, and worth knowing before you trip over them:
   working looks like*. CI builds and runs the unit suite; it does not launch the
   client, and neither does any agent working on Linux. A change that compiles and
   passes 37 tests can still break the game on the first frame.
+- **The sound system draws from the simulation's random stream.**
+  `NeuronClient/SoundInstance.cpp` calls `speciesRandom()` twice — line 533 to
+  pick a sample from a group, line 1009 to pick an object id. That is the
+  deterministic lockstep RNG, the same sequence `Location::Advance` consumes,
+  and `CODING_STANDARDS.md#determinism` names the `speciesRandom()` call
+  sequence as load-bearing.
+  - The consequence is worse than it first reads. Whether those lines execute
+    depends on the sound path: how many object ids an instance holds, whether a
+    sample group is populated, whether the instance is playing at all. Two
+    clients that differ in sound configuration — or that fail to load the same
+    samples — draw a different NUMBER of values from the shared stream, and
+    every subsequent `speciesRandom()` in the simulation returns something
+    different on one machine than the other. That is a desync, and nothing in
+    the build or the test suite would show it.
+  - **Not investigated, not reproduced, and not fixed** — found by reading
+    while scoping `containers-replaced` T5 on 2026-08-02. It may already be
+    benign for reasons the code does not state (if these paths run identically
+    on every client regardless of settings, it costs nothing). Establishing
+    which is true is worth doing before multiplayer is trusted, and it is a
+    determinism question rather than a modernisation one.
 - **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
   MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
   Deterministic lockstep requires bit-identical results, and nobody has verified
@@ -370,18 +423,25 @@ Real, currently true, and worth knowing before you trip over them:
   - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
     runner is a preview image that roughly doubles wall clock, and ARM64 is built
     constantly at the desk anyway. Deliberate, not an oversight.
-- **`NeuronClient` and `GameLogic` still reach up into `Species`.** 326 upward
-  includes remain, down from 628. `NeuronCore` is standalone, reaches upward
-  nowhere, and `NeuronCore.vcxproj` lists no include directories at all, so a
-  new upward include there fails to compile rather than quietly working.
-  `App.h` is now in the same position for the layers below it: the subsystem
-  pointers live in `NeuronClient/WorldPointers.h`, the application state in
-  `AppState.h`, and the seven actions only `App` can perform behind the
-  `AppCommands` interface it installs at startup. `Renderer` is reached through
-  `RendererAccess`. What is left is `Location.h`, `Camera.h` and a long tail —
-  see `tasks/layering-inversion.yaml`, where the moves are deliberately
-  sequenced *after* the reaches they would otherwise turn into new allowlist
-  entries.
+- **No upward includes remain, down from 628.** `tasks/layering-inversion.yaml`
+  is complete and `tools/layering_allowlist.txt` is **deleted** — not emptied,
+  deleted, so nobody can reopen it by adding a line. `NeuronCore` also lists no
+  include directories at all in its `.vcxproj`, so an upward include there fails
+  to compile rather than quietly working. `App.h` is now in the same position for the layers below it: the
+  subsystem pointers live in `NeuronClient/WorldPointers.h`, the application
+  state in `AppState.h`, and the seven actions only `App` can perform behind the
+  `AppCommands` interface it installs at startup. `Renderer`, `Camera`,
+  `Script`, `UserInput`, `TaskManagerInterface`, `ControlHelp`,
+  `LocationEditor` and `GameCursor` are each reached through an `*Access`
+  interface header in `NeuronClient`, and the world model — `Location`,
+  `GlobalWorld`, `Team`, `Unit`, the grids, the routing system and the
+  landscape — now lives in `GameLogic` rather than being reached up into.
+  `check_layering.py` also reports any free function or extern variable a
+  library header declares that only an executable defines — an upward reach the
+  linker resolves and an include check cannot see. The tree carried one for
+  years: `WindowManager.h` declared `AppMain()` and `Species` defined it (T18).
+  Class members are exempt, because a pure-virtual declared low and overridden
+  high is dependency inversion, which is how most of the 628 were removed.
 - **Release is not built by anyone.** Three template leftovers — missing include
   paths, a precompiled header nothing created, and `Species` linking Release as a
   console app when `WinMain` is its entry point — are all fixed, and
@@ -396,14 +456,25 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, 82 tests, covering IP conversion,
+- **The test suite is thin.** Four projects, 103 tests, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
-  `Server` starts in, and the legacy containers plus their `Neuron::SlotMap`
-  replacement. That is the encoding, identity and protocol layer and almost
-  nothing else — no entity behaviour, no rendering, no level loading, and
-  nothing at all that would notice the game failing to start.
+  `Server` starts in, the legacy containers plus their `Neuron::SlotMap`
+  replacement, and the preferences file format. That is the encoding, identity
+  and protocol layer and almost nothing else — no entity behaviour, no
+  rendering, no level loading, and nothing at all that would notice the game
+  failing to start.
+  - The preferences tests are worth the paragraph they cost, as an argument for
+    writing more of them. They were added as characterisation before a
+    conversion (`containers-replaced` T19) and the first CI run was red: three
+    of the four failures were **access violations in shipped code**, not test
+    bugs. `SetInt` on a key an existing preferences file did not contain
+    crashed on shutdown; column-aligning that file with more than one space
+    before `=` crashed the next save. Both are ordinary things for a user to
+    do, both had been there since the file was inherited, and neither was
+    findable by reading. 21 tests over one 575-line file found them in an
+    afternoon.
   **`Tests/GameLogicTests/LinkStubs.cpp` is now empty**: `GameLogic` no longer
   names a symbol the executable owns, so it links into a test DLL on its own.
   Entity and building behaviour is finally testable — nobody has written those

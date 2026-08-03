@@ -6,48 +6,68 @@
 #include "FileWriter.h"
 #include "Resource.h"
 #include "Shape.h"
+#include "StringUtils.h"
 #include "TextRenderer.h"
 #include "TextStreamReaders.h"
 #include "Preferences.h"
 #include "SoundStreamDecoder.h"
-#include "Location.h"
 #include "WorldPointers.h"
 
 Resource* g_resource = nullptr;
 
+namespace
+{
+  // HashTable::GetData took the value to return for a missing key. std::map has
+  // no such overload, and several call sites here lean on the miss value rather
+  // than testing membership — -1 for a texture or display list, nullptr for a
+  // bitmap or shape — so the shape of those calls is worth keeping.
+  template <typename Map> typename Map::mapped_type Lookup(const Map& _map, const char* _key, typename Map::mapped_type _default)
+  {
+    const auto entry = _map.find(_key);
+    return entry == _map.end() ? _default : entry->second;
+  }
+} // namespace
+
 Resource::Resource()
   : m_nameSeed(1),
-    m_modName(nullptr) {}
+    m_modName(nullptr)
+{
+}
 
 Resource::~Resource()
 {
   FlushOpenGlState();
-  m_bitmaps.EmptyAndDelete();
-  m_shapes.EmptyAndDelete();
+
+  for (const auto& [name, bitmap] : m_bitmaps)
+    delete bitmap;
+  m_bitmaps.clear();
+
+  for (const auto& [name, shape] : m_shapes)
+    delete shape;
+  m_shapes.clear();
 }
 
 void Resource::AddBitmap(const char* _name, const BitmapRGBA& _bmp, bool _mipMapping)
 {
   // Only insert if a bitmap with no other bitmap is already using that name
-  if (m_bitmaps.GetIndex(_name) == -1)
+  if (!m_bitmaps.contains(_name))
   {
     auto bmpCopy = new BitmapRGBA(_bmp);
-    m_bitmaps.PutData(_name, bmpCopy);
+    m_bitmaps[_name] = bmpCopy;
   }
 }
 
 void Resource::DeleteBitmap(const char* _name)
 {
-  int index = m_bitmaps.GetIndex(_name);
-  if (index >= 0)
+  const auto entry = m_bitmaps.find(_name);
+  if (entry != m_bitmaps.end())
   {
-    BitmapRGBA* bmp = m_bitmaps.GetData(index);
-    delete bmp;
-    m_bitmaps.RemoveData(index);
+    delete entry->second;
+    m_bitmaps.erase(entry);
   }
 }
 
-const BitmapRGBA* Resource::GetBitmap(const char* _name) { return m_bitmaps.GetData(_name); }
+const BitmapRGBA* Resource::GetBitmap(const char* _name) { return Lookup(m_bitmaps, _name, nullptr); }
 
 TextReader* Resource::GetTextReader(const std::string& _filename) { return GetTextReader(_filename.c_str()); }
 
@@ -71,48 +91,45 @@ BinaryReader* Resource::GetBinaryReader(const char* _filename)
 
 int Resource::GetTexture(const char* _name, bool _mipMapping, bool _masked)
 {
-  // First lookup this name in the BTree of existing textures
-  int theTexture = m_textures.GetData(_name, -1);
+  // First lookup this name in the table of existing textures
+  int theTexture = Lookup(m_textures, _name, -1);
 
   // If the texture wasn't there, then look in our bitmap store
   if (theTexture == -1)
   {
-    BitmapRGBA* bmp = m_bitmaps.GetData(_name);
+    BitmapRGBA* bmp = Lookup(m_bitmaps, _name, nullptr);
     if (bmp)
     {
       if (_masked)
         bmp->ConvertPinkToTransparent();
       theTexture = bmp->ConvertToTexture(_mipMapping);
-      m_textures.PutData(_name, theTexture);
+      m_textures[_name] = theTexture;
     }
   }
 
   // If we still didn't find it, try to load it from a file on the disk
   if (theTexture == -1)
   {
-    char fullPath[512];
-    sprintf(fullPath, "%s", _name);
-    strlwr(fullPath);
-    BinaryReader* reader = GetBinaryReader(fullPath);
+    std::string fullPath(_name);
+    StrToLower(fullPath.data());
+    BinaryReader* reader = GetBinaryReader(fullPath.c_str());
 
     if (reader)
     {
-      const char* extension = GetExtensionPart(fullPath);
+      const char* extension = GetExtensionPart(fullPath.c_str());
       BitmapRGBA bmp(reader, extension);
       delete reader;
 
       if (_masked)
         bmp.ConvertPinkToTransparent();
       theTexture = bmp.ConvertToTexture(_mipMapping);
-      m_textures.PutData(_name, theTexture);
+      m_textures[_name] = theTexture;
     }
   }
 
   if (theTexture == -1)
   {
-    char errorString[512];
-    sprintf(errorString, "Failed to load texture %s", _name);
-    ASSERT_TEXT(false, errorString);
+    ASSERT_TEXT(false, "Failed to load texture %s", _name);
   }
 
   return theTexture;
@@ -120,21 +137,20 @@ int Resource::GetTexture(const char* _name, bool _mipMapping, bool _masked)
 
 bool Resource::DoesTextureExist(const char* _name)
 {
-  // First lookup this name in the BTree of existing textures
-  int theTexture = m_textures.GetData(_name, -1);
+  // First lookup this name in the table of existing textures
+  int theTexture = Lookup(m_textures, _name, -1);
   if (theTexture != -1)
     return true;
 
   // If the texture wasn't there, then look in our bitmap store
-  BitmapRGBA* bmp = m_bitmaps.GetData(_name);
+  BitmapRGBA* bmp = Lookup(m_bitmaps, _name, nullptr);
   if (bmp)
     return true;
 
   // If we still didn't find it, try to load it from a file on the disk
-  char fullPath[512];
-  sprintf(fullPath, "%s", _name);
-  strlwr(fullPath);
-  BinaryReader* reader = GetBinaryReader(fullPath);
+  std::string fullPath(_name);
+  StrToLower(fullPath.data());
+  BinaryReader* reader = GetBinaryReader(fullPath.c_str());
   if (reader)
     return true;
 
@@ -143,25 +159,25 @@ bool Resource::DoesTextureExist(const char* _name)
 
 void Resource::DeleteTexture(const char* _name)
 {
-  int id = m_textures.GetData(_name);
-  if (id > 0)
+  const auto entry = m_textures.find(_name);
+  if (entry != m_textures.end() && entry->second > 0)
   {
-    unsigned int id2 = id;
-    glDeleteTextures(1, &id2);
-    m_textures.RemoveData(_name);
+    unsigned int id = entry->second;
+    glDeleteTextures(1, &id);
+    m_textures.erase(entry);
   }
 }
 
 Shape* Resource::GetShape(const char* _name)
 {
-  Shape* theShape = m_shapes.GetData(_name);
+  Shape* theShape = Lookup(m_shapes, _name, nullptr);
 
   // If we haven't loaded the shape before, or _makeNew is true, then
   // try to load it from the disk
   if (!theShape)
   {
     theShape = GetShapeCopy(_name, false);
-    m_shapes.PutData(_name, theShape);
+    m_shapes[_name] = theShape;
   }
 
   return theShape;
@@ -169,13 +185,12 @@ Shape* Resource::GetShape(const char* _name)
 
 Shape* Resource::GetShapeCopy(const char* _name, bool _animating)
 {
-  char fullPath[512];
   Shape* theShape = nullptr;
 
-  sprintf(fullPath, "Shapes/%s", _name);
-  strlwr(fullPath);
-  if (DoesFileExist(fullPath))
-    theShape = new Shape(fullPath, _animating);
+  std::string fullPath = std::format("Shapes/{}", _name);
+  StrToLower(fullPath.data());
+  if (DoesFileExist(fullPath.c_str()))
+    theShape = new Shape(fullPath.c_str(), _animating);
 
   ASSERT_TEXT(theShape, "Couldn't create shape file %s", _name);
   return theShape;
@@ -183,9 +198,8 @@ Shape* Resource::GetShapeCopy(const char* _name, bool _animating)
 
 SoundStreamDecoder* Resource::GetSoundStreamDecoder(const char* _filename)
 {
-  char buf[256];
-  sprintf(buf, "%s.wav", _filename);
-  BinaryReader* binReader = GetBinaryReader(buf);
+  const std::string wavName = std::format("{}.wav", _filename);
+  BinaryReader* binReader = GetBinaryReader(wavName.c_str());
 
   if (!binReader || !binReader->IsOpen())
     return nullptr;
@@ -231,7 +245,10 @@ int Resource::WildCmp(const char* wild, const char* string)
     }
   }
 
-  while (*wild == '*') { wild++; }
+  while (*wild == '*')
+  {
+    wild++;
+  }
   return !*wild;
 }
 
@@ -241,7 +258,7 @@ int Resource::CreateDisplayList(const char* _name)
   DEBUG_ASSERT(_name && strlen(_name) < 20);
 
   unsigned int id = glGenLists(1);
-  m_displayLists.PutData(_name, id);
+  m_displayLists[_name] = id;
 
   return id;
 }
@@ -251,7 +268,7 @@ int Resource::GetDisplayList(const char* _name)
   // Make sure name isn't nullptr and isn't too long
   DEBUG_ASSERT(_name && strlen(_name) < 20);
 
-  return m_displayLists.GetData(_name, -1);
+  return Lookup(m_displayLists, _name, -1);
 }
 
 void Resource::DeleteDisplayList(const char* _name)
@@ -262,11 +279,11 @@ void Resource::DeleteDisplayList(const char* _name)
   // Make sure name isn't too long
   DEBUG_ASSERT(strlen(_name) < 20);
 
-  int id = m_displayLists.GetData(_name, -1);
-  if (id >= 0)
+  const auto entry = m_displayLists.find(_name);
+  if (entry != m_displayLists.end() && entry->second >= 0)
   {
-    glDeleteLists(id, 1);
-    m_displayLists.RemoveData(_name);
+    glDeleteLists(entry->second, 1);
+    m_displayLists.erase(entry);
   }
 }
 
@@ -274,31 +291,30 @@ void Resource::FlushOpenGlState()
 {
 #if 1 // Try to catch crash on shutdown bug
   // Tell OpenGL to delete the display lists
-  for (int i = 0; i < m_displayLists.Size(); ++i)
-  {
-    if (m_displayLists.ValidIndex(i))
-      glDeleteLists(m_displayLists[i], 1);
-  }
+  for (const auto& [name, displayList] : m_displayLists)
+    glDeleteLists(displayList, 1);
 
-  // Tell OpenGL to delete the textures
-  for (int i = 0; i < m_textures.Size(); ++i)
+  // Tell OpenGL to delete the textures. This used to pass the loop counter —
+  // the hash table's slot index — to glDeleteTextures rather than the texture
+  // name stored in that slot, so it deleted whichever textures happened to have
+  // low numeric names and left the real ones alive. There is no index to get
+  // wrong now. The "crash on shutdown bug" the #if above is hunting is a
+  // plausible consequence, but that is a guess, not a diagnosis.
+  for (const auto& [name, texture] : m_textures)
   {
-    if (m_textures.ValidIndex(i))
-    {
-      unsigned int id = i;
-      glDeleteTextures(1, &id);
-    }
+    unsigned int id = texture;
+    glDeleteTextures(1, &id);
   }
 #endif
 
   // Forget all the display lists
-  m_displayLists.Empty();
+  m_displayLists.clear();
 
   // Forget all the texture handles
-  m_textures.Empty();
+  m_textures.clear();
 
-  if (g_location)
-    g_location->FlushOpenGlState();
+  if (g_locationAccess)
+    g_locationAccess->FlushOpenGlState();
 }
 
 void Resource::RegenerateOpenGlState()
@@ -308,73 +324,38 @@ void Resource::RegenerateOpenGlState()
   g_gameFont.BuildOpenGlState();
 
   // Tell all the shapes to generate a new display list
-  for (int i = 0; i < m_shapes.Size(); ++i)
-  {
-    if (!m_shapes.ValidIndex(i))
-      continue;
-
-    m_shapes[i]->BuildDisplayList();
-  }
+  for (const auto& [name, shape] : m_shapes)
+    shape->BuildDisplayList();
 
   // Tell the renderer (for the pixel effect texture)
   g_renderer->BuildOpenGlState();
 
   // Tell the location
-  if (g_location)
-    g_location->RegenerateOpenGlState();
+  if (g_locationAccess)
+    g_locationAccess->RegenerateOpenGlState();
 }
 
 char* Resource::GenerateName()
 {
   int digits = log10f(m_nameSeed) + 1;
-  auto name = new char [digits + 1];
+  auto name = new char[digits + 1];
   itoa(m_nameSeed, name, 10);
   m_nameSeed++;
 
   return name;
 }
 
-FileWriter* Resource::GetFileWriter(const char* _filename, bool _encrypt)
-{
-    return new FileWriter(_filename, _encrypt);
-  }
+FileWriter* Resource::GetFileWriter(const char* _filename, bool _encrypt) { return new FileWriter(_filename, _encrypt); }
 
-
-// The string is copied and entered into llist
-// in correct alphabetical order.
-// The string wont be added if it is already present.
-void OrderedInsert(LList<char*>* _llist, char* _newString)
-{
-  bool added = false;
-
-  for (int i = 0; i < _llist->Size() - 1; ++i)
-  {
-    char* thisString = _llist->GetData(i);
-    if (strcmp(_newString, thisString) == 0)
-    {
-      // String duplicate
-      return;
-    }
-    if (strcmp(_newString, thisString) < 0)
-    {
-      _llist->PutDataAtIndex(strdup(_newString), i);
-      added = true;
-      break;
-    }
-  }
-
-  if (!added)
-    _llist->PutDataAtEnd(strdup(_newString));
-}
 
 // Finds all the filenames in the specified directory that match the specified
 // filter. Directory should be like "textures" or "Textures/".
 // Filter can be nullptr or "" or "*.bmp" or "map_*" or "map_*.txt"
 // Set _longResults to true if you want results like "Textures/blah.bmp"
 // or false for "blah.bmp"
-LList<char*>* Resource::ListResources(const char* _dir, const char* _filter, bool _longResults /* = true */)
+std::vector<char*>* Resource::ListResources(const char* _dir, const char* _filter, bool _longResults /* = true */)
 {
-  LList<char*>* results = nullptr;
+  std::vector<char*>* results = nullptr;
 
   //
   // List the base data directory

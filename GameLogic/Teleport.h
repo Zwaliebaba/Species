@@ -16,44 +16,39 @@ struct TeleportMap
 
 class Teleport : public Building
 {
-protected:
+  protected:
+    float m_timeSync;
+    float m_sendPeriod;                            // Minimum time between sends
+    static std::vector<TeleportMap> m_teleportMap; // Maps units going in onto units comingout
 
-    float       m_timeSync;
-    float       m_sendPeriod;                                   // Minimum time between sends
-    static      LList<TeleportMap> m_teleportMap;               // Maps units going in onto units comingout
+    ShapeMarker* m_entrance;
 
-    ShapeMarker *m_entrance;
+  protected:
+    void RenderSpirit(Vector3 const& _pos, int _teamId);
 
-protected:
+  public:
+    std::vector<WorldObjectId> m_inTransit; // Entities on the move
 
-    void RenderSpirit   ( Vector3 const &_pos, int _teamId );
-
-public:
-    LList <WorldObjectId> m_inTransit;                         // Entities on the move
-
-public:
+  public:
     Teleport();
 
-    void SetShape       ( Shape *_shape );
+    void SetShape(Shape* _shape);
 
-    bool Advance        ();
-    void RenderAlphas   ( float predictionTime );
+    bool Advance();
+    void RenderAlphas(float predictionTime);
 
-    void EnterTeleport  ( WorldObjectId _id, bool _relay=false );      // Relay=true means i've entered directly from another teleport
+    void EnterTeleport(WorldObjectId _id, bool _relay = false); // Relay=true means i've entered directly from another teleport
 
-    bool IsInView       ();
+    bool IsInView();
 
-    virtual bool        Connected();
-    virtual bool        ReadyToSend ();
+    virtual bool Connected();
+    virtual bool ReadyToSend();
 
-    virtual bool        GetEntrance ( Vector3 &_pos, Vector3 &_front );
-    virtual bool        GetExit     ( Vector3 &_pos, Vector3 &_front );
+    virtual bool GetEntrance(Vector3& _pos, Vector3& _front);
+    virtual bool GetExit(Vector3& _pos, Vector3& _front);
 
-    virtual Vector3     GetStartPoint();
-    virtual Vector3     GetEndPoint();
+    virtual Vector3 GetStartPoint();
+    virtual Vector3 GetEndPoint();
 
-    virtual bool        UpdateEntityInTransit( Entity *_entity );      // Returns true (remove me) or false (still inside)
-
+    virtual bool UpdateEntityInTransit(Entity* _entity); // Returns true (remove me) or false (still inside)
 };
-
-

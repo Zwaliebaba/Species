@@ -19,11 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="EntityGridTests.cpp" />
     <ClCompile Include="LinkStubs.cpp" />
+    <ClCompile Include="RoutingSystemTests.cpp" />
+    <ClCompile Include="SliceWiringTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="WorldObjectIdTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -77,12 +79,15 @@
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup>
     <ClCompile>
-      <!-- GameLogic's own include path, plus GameLogic itself. Species is on it
-           because 586 of GameLogic's includes still reach up into the client
-           executable; that is the largest violation cluster in the tree, and it
-           is what limits how much of this layer can be linked into a test DLL
-           at all. See docs/TESTING.md. -->
-      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronClient;$(SpeciesRoot)Species;$(SpeciesRoot)GameLogic</AdditionalIncludeDirectories>
+      <!-- GameLogic's own include path, plus GameLogic itself. Species used to
+           be on it too, because GameLogic's headers reached up into the client
+           executable and a test could not include one without it. No GameLogic
+           header does any more — layering-inversion T15 moved the world model
+           down and the three violations left are all in .cpp files, which this
+           project does not compile — so the path stops at GameLogic, and an
+           upward include from a test now fails to compile rather than quietly
+           working. Same rule NeuronCore.vcxproj has had all along. -->
+      <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronClient;$(SpeciesRoot)GameLogic</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;dsound.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>

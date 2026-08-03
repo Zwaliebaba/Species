@@ -81,6 +81,22 @@ summary: >
   needs the owner), no netcode or renderer redesign, no behaviour change
   anywhere.
 
+  RE-MEASURED 2026-08-02 at 11aee84 (`python3 tools/check_layering.py`,
+  then clustering the allowlist on target header). 326 entries remain,
+  down from 628 — GameLogic -> Species 311, NeuronClient -> * 15. By
+  target: Location.h 69, Camera.h 47, Team.h 33, GlobalWorld.h 33,
+  EntityGrid.h 26, ParticleSystem.h 21, Explosion.h 19, Unit.h 17,
+  LevelFile.h 13, LocationEditor.h 11, ObstructionGrid.h 9, TaskManager.h
+  5, Script.h 4, RoutingSystem.h 4, TaskManagerInterface.h 3, Renderer.h 2,
+  UserInput.h 2, Water.h 2, Entity.h 2, WorldObject.h 1.
+
+  Two things that table tells you and the task statuses did not. Renderer
+  is effectively finished — 57 -> 2 — because T9's Renderer half landed at
+  a543e5a without the task recording it; T9 is now a Camera-only task. And
+  what remains is overwhelmingly T15's cluster: Location, Team, GlobalWorld,
+  EntityGrid, ParticleSystem, Explosion, Unit, LevelFile, ObstructionGrid
+  and RoutingSystem account for 244 of the 326.
+
 tasks:
   - id: T1
     title: Catalogue what each upward-included Species header is used for
@@ -247,12 +263,12 @@ tasks:
     project: GameLogic
     depends_on: [T1, T8]
     files:
-      - Species/EntityGrid.h
-      - Species/EntityGrid.cpp
-      - Species/ObstructionGrid.h
-      - Species/ObstructionGrid.cpp
-      - Species/RoutingSystem.h
-      - Species/RoutingSystem.cpp
+      - GameLogic/EntityGrid.h
+      - GameLogic/EntityGrid.cpp
+      - GameLogic/ObstructionGrid.h
+      - GameLogic/ObstructionGrid.cpp
+      - GameLogic/RoutingSystem.h
+      - GameLogic/RoutingSystem.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -291,10 +307,10 @@ tasks:
     project: GameLogic
     depends_on: [T1, T8]
     files:
-      - Species/Team.h
-      - Species/Team.cpp
-      - Species/Unit.h
-      - Species/Unit.cpp
+      - GameLogic/Team.h
+      - GameLogic/Team.cpp
+      - GameLogic/Unit.h
+      - GameLogic/Unit.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -333,8 +349,8 @@ tasks:
     project: GameLogic
     depends_on: [T1, T8]
     files:
-      - Species/LevelFile.h
-      - Species/LevelFile.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -378,10 +394,10 @@ tasks:
     project: GameLogic
     depends_on: [T1, T8]
     files:
-      - Species/ParticleSystem.h
-      - Species/ParticleSystem.cpp
-      - Species/Explosion.h
-      - Species/Explosion.cpp
+      - GameLogic/ParticleSystem.h
+      - GameLogic/ParticleSystem.cpp
+      - GameLogic/Explosion.h
+      - GameLogic/Explosion.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -421,10 +437,10 @@ tasks:
     project: GameLogic
     depends_on: [T2, T3, T4, T5, T6]
     files:
-      - Species/Location.h
-      - Species/Location.cpp
-      - Species/GlobalWorld.h
-      - Species/GlobalWorld.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GlobalWorld.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -442,14 +458,14 @@ tasks:
     parallel_safe: false
     notes: >
       T1 finding that reshapes this task: Location.h and LevelFile.h both
-      include Species/Landscape.h, so Landscape moves (or splits) in the
+      include GameLogic/Landscape.h, so Landscape moves (or splits) in the
       same step or the 87 entries just get renamed instead of removed.
       Landscape is mixed — m_heightMap/RayHit/world-size queries are what
       GameLogic reaches (simulation), while m_renderer/BuildOpenGlState
       are presentation; expect to move the class and leave
       LandscapeRenderer above, mirroring how Location itself keeps its
       Render half working via GameLogic's legal downward reach into
-      NeuronClient. Add Species/Landscape.h and Species/Landscape.cpp to
+      NeuronClient. Add GameLogic/Landscape.h and GameLogic/Landscape.cpp to
       the touch set when starting.
     status: abandoned
     notes: >
@@ -572,6 +588,10 @@ tasks:
     project: NeuronClient
     depends_on: [T8]
     files:
+      - NeuronClient/CameraAccess.h
+      - NeuronClient/RendererAccess.h
+      - NeuronClient/WorldPointers.h
+      - NeuronClient/WorldPointers.cpp
       - Species/Camera.h
       - Species/Camera.cpp
       - Species/Renderer.h
@@ -590,6 +610,17 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
     notes: >
+      HALF LANDED 2026-08-02 at a543e5a — recorded here late, which is the
+      first thing to know before picking this up. Renderer is done: it sits
+      behind NeuronClient/RendererAccess.h and its allowlist targets went 57
+      -> 2 (`grep -c Renderer.h tools/layering_allowlist.txt`). AGENTS.md
+      already says so; this task did not, so the work looked unstarted.
+
+      WHAT IS LEFT IS CAMERA, 47 entries — 41 from GameLogic, 6 from
+      NeuronClient. Re-measure with
+      `grep Camera.h tools/layering_allowlist.txt | cut -d/ -f1 | sort | uniq -c`
+      before starting, and do not re-derive the Renderer half.
+
       T1 settled the open choice: Camera is interface-extraction ONLY —
       Camera.h includes GameLogic's Entity.h and WorldObject.h for its
       tracking members, so moving it down would invert the violation. The
@@ -599,7 +630,74 @@ tasks:
       works; its render face is six methods plus ScreenW/H. GetClickRay
       and the mode/animation setters are editor/window-only and can stay
       behind Species.
-    status: todo
+
+      CAMERA HALF LANDED 2026-08-03. The allowlist went 326 -> 279 entries and
+      no entry names Camera.h. The seam is NeuronClient/CameraAccess.h, built
+      the same way as RendererAccess.h: g_camera in WorldPointers.h is a
+      CameraAccess*, so dereferencing it needs only the interface, and
+      Species-side code that needs the concrete type goes through a new
+      TheCamera() that mirrors TheRenderer().
+
+      The surface was MEASURED rather than taken from T1's list —
+      `grep -rhoE "g_camera->[A-Za-z_]+" GameLogic NeuronClient` finds exactly
+      twenty members. T1's proposed face was too small: it left out
+      GetControlVector, IsInteractive, IsInMode, RequestMode, the debug-mode
+      pair, PlayAnimation/StopAnimation, SetTarget/CutToTarget and GetClickRay.
+      GetClickRay in particular was written off as editor-only, which is true,
+      but the five editor windows that call it live in GameLogic, so leaving it
+      out would have kept five allowlist entries and missed the acceptance.
+
+      Camera::Mode moved into CameraAccess rather than being duplicated. Because
+      Camera derives from CameraAccess, `Camera::ModeFreeMovement` still
+      resolves through the base, so no Species-side spelling had to change; the
+      five call sites below Species now say CameraAccess::Mode... instead. The
+      enum is still unscoped and carries a hygiene-ok marker: Camera stores
+      m_mode as an int and indexes a string table with it, so converting it is
+      language-hygiene T5's job, not this seam's.
+
+      Camera gains a vtable it did not have. That is a per-call indirection on
+      GetUp and GetRight, which entity render bodies call 61 and 58 times across
+      the tree — the same cost RendererAccess already accepted for lighting and
+      culling. Rendering only; nothing in the simulation path.
+
+      Fifty-one of the touched files needed a whole-file clang-format commit
+      first (100fe2a) because they are tab-indented and the changed-lines check
+      does not converge on them.
+
+      STILL OPEN: the owner-run rendering smoke test in the acceptance. Nothing
+      here changes drawing logic — the change is an include, a pointer type and
+      an enum's home — but the acceptance asks for it and no automated test in
+      this repository covers rendering.
+
+      IT TOOK THREE RED BUILDS, and the three are worth writing down because
+      they are one mistake in three costumes. Each time the local checks passed
+      and the compiler disagreed, and each time the reason was that I reasoned
+      about which files SHOULD be affected and checked those, instead of
+      checking the whole tree for the property I needed.
+
+      (1) `Camera* cam = g_camera;` in TextRenderer, DebugRender, Renderer and
+      LocationEditor. The grep I used to hunt stray Camera references excluded
+      every line containing "g_camera" — which is the exact shape of the broken
+      lines.
+
+      (2) ObstructionGrid.h declares an LList member without including LList.h
+      and had been fed by whatever the translation unit included first;
+      removing Camera.h from Spirit.cpp took that away. I had found this header
+      while planning and filed it as pre-existing and unrelated. Pre-existing
+      was right. Unrelated was wrong: any include removal anywhere can expose
+      one. Four headers were in that state and all four are fixed.
+
+      (3) Camera has three SetTarget overloads and CameraAccess declares one,
+      so Species calls passing one or two arguments stopped compiling. I noted
+      this hazard while designing the interface and then checked the single
+      call site below Species rather than the 119 above it.
+
+      The general lesson, for whoever runs T10 and T15: an interface extraction
+      changes what a name means in every translation unit that sees it, so the
+      check has to be tree-wide and property-based — "no file anywhere uses a
+      member outside the interface", "no header uses a type it cannot reach" —
+      and never a list of files you expect to be affected.
+    status: done
 
   - id: T10
     title: Clear the long-tail upward includes
@@ -617,20 +715,160 @@ tasks:
     files:
       - Species/LocationEditor.h
       - Species/UserInput.h
-      - Species/TaskManager.h
+      - GameLogic/TaskManager.h
       - Species/Script.h
       - Species/GameCursor.h
       - Species/TaskManagerInterface.h
+      - NeuronClient/ScriptAccess.h
+      - NeuronClient/WorldPointers.h
+      - NeuronClient/WorldPointers.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
       - tools/layering_allowlist.txt
     acceptance:
-      - Re-measured allowlist contains no entry naming any long-tail header
+      - Re-measured allowlist contains no entry naming any long-tail header, EXCEPT the eight that need T15 first — TaskManager.h, Water.h and TaskManagerInterfaceIcons.h; see notes for why they cannot be resolved before the simulation cluster moves
       - Every fix was a move or inversion — no entry was added at any point
+      - No fix satisfies check_layering by turning an include dependency into a link dependency
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      IN PROGRESS. The long tail is not one shape of problem, so it is being
+      landed in verified slices rather than one sweep. Allowlist 279 -> 274 so
+      far. Measured breakdown of what is left, with what each caller actually
+      touches — take this rather than re-deriving it:
+
+        LocationEditor.h  11  RequestMode, m_mode, m_selectionId, m_tool,
+                              m_moveBuildingsWithLandscape, Mode/Tool enums.
+                              EIGHT of the eleven are editor windows that exist
+                              only to drive Species editor state, so the
+                              intent's "may move UP into Species" applies to
+                              them; Ai.cpp, SpawnPoint.cpp and Triffid.cpp are
+                              simulation and need a seam or an accessor.
+        TaskManager.h      5  GetTask, GetCurrentTask, RegisterTask,
+                              SelectTask, m_tasks, m_verifyTargetting.
+        TaskManagerInterface.h 3  SetCurrentMessage, SetVisible, m_visible,
+                              plus the Message enum.
+        UserInput.h        2  GetMousePos3d, and nothing else.
+        Water.h            2  `g_location->m_water = new Water()` in two prefs
+                              windows — CONSTRUCTION, not use, so an interface
+                              does not help; the construction has to move.
+        TaskManagerInterfaceIcons.h 1  same shape: `new
+                              TaskManagerInterfaceIcons()` in a prefs window.
+        ControlHelp.h      1  RecordCondUsed plus a Cond enumerator.
+        Entity.h           2  SoundInstance.h holds WorldObjectId members;
+                              SoundSystem.cpp uses Entity's static type table.
+        WorldObject.h      1  SoundSystem.h's API takes WorldObjectId and
+                              WorldObject*.
+
+      The Entity/WorldObject three are the interesting ones: what NeuronClient
+      actually needs is WorldObjectId, a 16-byte identity value type that has
+      no GameLogic dependencies and is already pinned by NeuronCoreTests.
+      Splitting it out of GameLogic/WorldObject.h into NeuronCore would clear
+      all three and is the "move the declaration down" fix the intent describes.
+
+      Renderer.h's two remaining entries are NOT this task's: MainMenus.cpp and
+      PrefsScreenWindow.cpp CONSTRUCT a Renderer, which RendererAccess.h says
+      explicitly still requires Renderer.h. Same shape as Water above.
+
+      DONE SO FAR: Script.h (4 entries) behind NeuronClient/ScriptAccess.h, and
+      a dead SaveOnQuitWindow.h include in SoundSystem.cpp. Script's seam
+      follows Camera's, including the rule Camera's three red builds produced:
+      Species goes through TheScript() at every call site, not only where the
+      interface is missing a member.
+
+      Then WorldObjectId moved from GameLogic/WorldObject.h into NeuronCore as
+      its own header and translation unit, which is the "move the declaration
+      down" fix rather than another seam. It is four scalars with no
+      dependencies, it goes onto the wire whole, and the only reason it sat in
+      GameLogic was that it shares a file with WorldObject. That clears
+      SoundInstance.h -> Entity.h and SoundSystem.h -> WorldObject.h; both
+      headers only ever needed the identity type, and WorldObject stays a
+      forward declaration in each. Its tests moved to NeuronCoreTests with it.
+
+      SoundSystem.cpp -> Entity.h stays, and is a different problem: the sound
+      system sizes its blueprint array by Entity::NumEntityTypes and looks up
+      Entity::GetTypeId. That is the entity type TABLE, not the identity type,
+      and moving it is a bigger question than this task.
+
+      Allowlist 274 -> 272.
+
+      Then three more seams in one slice, all following Camera's shape:
+      UserInputAccess (GetMousePos3d, the only member anything below Species
+      calls), TaskManagerInterfaceAccess (SetCurrentMessage, SetVisible, and
+      IsVisible standing in for the m_visible field a base class cannot offer)
+      and ControlHelpAccess (RecordCondUsed plus the Cond enum, moved rather
+      than duplicated so ControlHelpSystem::CondCameraAim still resolves in
+      Species through inheritance). Allowlist 272 -> 266.
+
+      Two of those interfaces deliberately drop a default argument that the
+      concrete class keeps — TaskManagerInterface::SetVisible defaults _visible
+      to true. Camera's third red build was exactly this, so every below-Species
+      call site was checked against the interface signature before the sweep,
+      and Species goes through the accessor everywhere.
+
+      Then LocationEditorAccess, the largest remaining cluster at 11 entries.
+      Mode and Tool move into the interface; m_selectionId, m_tool, m_mode and
+      m_moveBuildingsWithLandscape were reached as FIELDS through the pointer,
+      which a base class cannot offer, so the interface has accessors and the
+      eleven callers use them. The fields are unchanged and Species still uses
+      them directly. GetMode already existed and is non-const, so the interface
+      matches that rather than adding a const overload beside it. Allowlist
+      266 -> 255.
+
+      An interface was chosen over the intent's "move the windows UP into
+      Species" because eight of the eleven are editor windows but three
+      (Ai.cpp, SpawnPoint.cpp, Triffid.cpp) are simulation code that reads the
+      selection to draw editor handles. Moving eight files needs four project
+      file edits and still leaves the other three, so one seam does the whole
+      cluster for less churn.
+
+      It went red once, on two things worth knowing before the next seam.
+
+      EditorWindow.cpp held `LocationEditor* editor = g_locationEditor;` — the
+      same shape as the `Camera* cam = g_camera;` locals that produced T9's
+      first red build. The lesson had been written down and the check had not:
+      there is now a scan for the CONCRETE type of every seam appearing
+      anywhere below Species, which finds it in one pass and reports the two
+      Renderer construction sites as its only legitimate hits.
+
+      LandscapeWindow.cpp took the ADDRESS of m_moveBuildingsWithLandscape and
+      bound it to an editor value control that writes through the pointer. An
+      accessor returning by value cannot stand in for that, and a blanket
+      field-to-accessor rewrite produces `&f()` — an address of a temporary.
+      The interface exposes MoveBuildingsWithLandscapeField() returning int*
+      instead. Any field-to-accessor conversion needs a pass for address-of
+      before the rewrite, not after.
+
+      THE REST OF THIS TASK CANNOT BE DONE BEFORE T15, and that is a defect in
+      the plan's ordering rather than a judgement call. T15 depends_on T10, so
+      as written the two deadlock. What is left:
+
+        TaskManager.h  5  The callers do not just call TaskManager — they hold
+                          Task*, read m_route/m_type/m_state/m_objId/m_id, and
+                          Teleport.cpp does `new Task()` and `delete task`. So
+                          Task's DEFINITION has to be visible below Species, and
+                          Task's implementation reaches g_location, g_globalWorld
+                          and g_app. Moving only the declaration to GameLogic
+                          would satisfy check_layering, which inspects includes,
+                          while leaving GameLogic linking against symbols
+                          compiled into Species — passing the check without
+                          fixing the layering. Not done deliberately.
+        Water.h        2  `g_location->m_water = new Water()` in two prefs
+        TaskManagerInterfaceIcons.h 1  `g_taskManagerInterface = new
+                          TaskManagerInterfaceIcons()` in a third.
+                          CONSTRUCTION of a Species type. A pure-virtual seam
+                          cannot help: the caller needs the concrete type to
+                          call new. Exposing a factory declared low and defined
+                          high has the same link-inversion problem as Task.
+
+      All three bottom out in the same place: they need Location, Team, Unit and
+      the task system to live in GameLogic, which is exactly what T15 does. The
+      fix is to let T15 absorb them. T10's acceptance has been narrowed to the
+      entries that are resolvable without it, and these eight are named in T15.
 
   - id: T11
     title: Shrink LinkStubs and land the first real GameLogic behaviour tests
@@ -645,6 +883,7 @@ tasks:
     files:
       - Tests/GameLogicTests/LinkStubs.cpp
       - Tests/GameLogicTests/EntityGridTests.cpp
+      - Tests/GameLogicTests/RoutingSystemTests.cpp
       - Tests/GameLogicTests/GameLogicTests.vcxproj
       - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
     acceptance:
@@ -655,7 +894,35 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      Landed with T15, because it could not land before it. The stub half was
+      already finished — T14 emptied LinkStubs.cpp outright, so "shrank to
+      stubs for not-yet-moved symbols only" is satisfied by there being none.
+      The test half had to wait: EntityGrid and Route lived in Species until
+      T15 moved them, and GameLogicTests had no test file at all — only
+      LinkStubs.cpp and pch.cpp. Writing them was part of proving T15's third
+      acceptance line rather than a follow-up to it.
+
+      Ten tests. EntityGridTests covers the spatial queries the intent names —
+      cell sizing against the landscape, add, remove, per-team filing, and the
+      team-255 sentinel — and RoutingSystemTests covers waypoint ordering,
+      which is the same determinism property from the other side: an entity's
+      m_routeWayPointId is a position in that LList, so anything that reorders
+      it moves every unit already walking.
+
+      The fixture is the interesting part and worth reusing. EntityGrid reads
+      g_location in its constructor, so the test installs one — and a
+      default-constructed Location is a legal empty world, because
+      Landscape::GetWorldSizeX returns 1e6 when no heightmap is loaded. That is
+      enough for construction and the cell arithmetic, and not enough for
+      anything that resolves an id: GetNeighbours goes through
+      Location::GetEntity, and a TypeGroundPos waypoint samples the heightmap.
+      A fixture that loads a real level is the next step and belongs with
+      containers-replaced T12.
+
+      LinkStubs.cpp still exists, empty, carrying the explanation of why the
+      wall was there. It can go whenever the reminder stops being useful.
 
   - id: T13
     title: Delete the stale upward includes
@@ -717,20 +984,324 @@ tasks:
       outright. If a residue survives T10, this task does not paper over it
       — the residue becomes new tasks appended to this plan, and this one
       stays open until the file is genuinely empty.
-    depends_on: [T9, T10, T11, T13, T15]
+    depends_on: [T9, T10, T11, T13, T15, T16, T17, T18]
     files:
+      - tools/check_layering.py
       - tools/layering_allowlist.txt
       - AGENTS.md
+      - CODING_STANDARDS.md
+      - docs/ARCHITECTURE.md
+      - docs/TESTING.md
+      - docs/TASK_DAG.md
+      - .github/pull_request_template.md
     acceptance:
       - tools/layering_allowlist.txt contains zero entries
-      - check_layering.py passes with the empty allowlist; AGENTS.md's layering section records the milestone
+      - check_layering.py passes with the empty allowlist, and the allowlist file and its --update mode are deleted rather than left empty
+      - No symbol declared in a NeuronCore, NeuronClient or GameLogic header is defined only in Species — check_layering reads includes and cannot see a link-time reach; see T18
+      - AGENTS.md's layering section records the milestone
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_task_dag.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
+    notes: >
+      628 -> 7 by the end of T15, and 7 -> 4 here. The three that went were all
+      the same shape and all soluble on the spot: MainMenus.cpp and
+      PrefsScreenWindow.cpp said `new Renderer()`, PrefsKeybindingsWindow.cpp
+      said `new TaskManagerInterfaceIcons()`. Every OTHER thing those three
+      files do to those objects already went through RendererAccess and
+      TaskManagerInterfaceAccess — construction was the whole residue, and
+      construction is precisely what a pure-virtual seam cannot express. So
+      AppCommands grew two factories, CreateRenderer and
+      CreateTaskManagerInterface, and App implements them with the one `new`
+      each. Neither factory installs what it returns: the three call sites
+      differ in what they do between destroying the old object and installing
+      the new one — one destroys a window in between, another builds a renderer
+      only to throw it away — so a Recreate() owning the whole sequence would
+      have had to guess which ordering it was being asked for.
+
+      THE FOUR THAT REMAIN are all NeuronClient reaching GameLogic, and they
+      are two different problems rather than four instances of one. They are
+      T16 and T17, appended to this plan as the intent above requires, and this
+      task now depends on both:
+
+        Resource.cpp -> Location.h      2 sites, GL state       T16
+        SoundInstance.cpp -> Location.h 2 sites, world queries   T16
+        SoundSystem.cpp -> Entity.h     the event API           T17
+        SoundSystem.cpp -> Location.h   ditto, transitively     T17
+
+      A WARNING FOR WHOEVER RUNS T17. SoundSystem.cpp's Location.h include
+      looks dead — nothing in the file names Location. It is not: Location.h is
+      what supplies Building.h and WorldObject.h, which TriggerBuildingEvent
+      and TriggerOtherEvent dereference. Deleting the include on the strength
+      of a grep for `Location` breaks the build. The same trap cost a red CI
+      run once already in this branch, on BTree.h in this very file.
+
+      A CHECK THIS TASK ADDED, worth keeping: for every .cpp, is each `g_*` it
+      names declared in a header it can actually reach, honouring /Yu so that
+      includes before pch.h do not count? Run tree-wide after T15 it found
+      exactly one answer, TaskManager.cpp's g_inputManager, which is what CI
+      had just gone red on. Every check written before it looked at the files
+      that changed; this one asks the question the compiler asks.
+
+      CLOSED. 628 -> 0, and tools/layering_allowlist.txt is DELETED rather than
+      left empty. That is the whole point of the last step: an empty file is an
+      invitation to add a line, and the entire value of reaching zero is that
+      there is now no way to record an exception. check_layering.py lost
+      --update, --prune, --rename, load_allowlist and write_allowlist with it —
+      about eighty lines of machinery whose only purpose was managing a debt
+      that no longer exists.
+
+      THE LINK-DIRECTION CHECK IS NOW PART OF THE TOOL, not a claim in this
+      file. T18 found a symbol declared in NeuronClient's own header and defined
+      only in Species, which every include-based check in the world calls clean
+      while the linker resolves it upward. Asserting once that no others exist
+      would have been worth nothing a month from now, so check_layering.py
+      reports any free function or extern variable a library header declares
+      that only an executable defines.
+
+      Class members are exempt and that exemption is the delicate part. A
+      pure-virtual method declared low and overridden high is dependency
+      INVERSION — the call goes through a vtable the lower layer owns — and it
+      is how most of the 628 were removed: AppCommands::CreateRenderer is
+      declared in NeuronClient and defined only in Species/App.cpp, and must
+      not be flagged. The check strips class and struct bodies with a brace
+      counter before looking for declarations, which leaves 93 namespace-scope
+      declarations to check rather than every method in the tree.
+
+      Both halves were tested against the bug they exist for. Re-adding
+      `void AppMain();` to WindowManager.h makes the tool report AppMain and
+      exit 1; removing it makes it pass. CreateRenderer is confirmed present in
+      the executable-defined set and absent from the namespace-scope declared
+      set, so the inversion pattern is exempt for the right reason rather than
+      by accident.
+
+  - id: T16
+    title: Give Resource and SoundInstance a narrow world seam
+    intent: >
+      Four call sites in two NeuronClient files are the only reason
+      NeuronClient includes Location.h. Resource tells the world to drop and
+      rebuild its OpenGL state; SoundInstance asks the ground height under a
+      sound and whether a sound's attached object still exists. All four are
+      questions the world can answer through an interface — none of them
+      constructs anything or touches a data member that has to stay a data
+      member.
+    project: NeuronClient
+    depends_on: [T15]
+    files:
+      - NeuronClient/LocationAccess.h
+      - NeuronClient/Resource.cpp
+      - NeuronClient/SoundInstance.h
+      - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/WorldPointers.h
+      - NeuronClient/WorldPointers.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - Tests/GameLogicTests/EntityGridTests.cpp
+      - tools/layering_allowlist.txt
+    acceptance:
+      - Neither Resource.cpp nor SoundInstance.cpp includes a GameLogic header, and both allowlist entries are gone
+      - The seam does not retype g_location; see the notes for why
+      - Whatever installs the seam cannot leave a dangling pointer across a level reload, and a test proves it
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: done
+    notes: >
+      THE OBVIOUS ANSWER IS WRONG, and it is worth saying so before someone
+      spends a day on it. The pattern T9 and T10 used — retype the global to
+      an *Access interface, add TheX() in the layer above — does not scale to
+      Location. Measured 2026-08-03: 1289 `g_location->` sites across 106
+      files, and the top of the distribution is data members, not calls:
+      m_landscape 329, m_buildings 123, m_levelFile 97, m_teams 89,
+      m_spirits 81, m_entityGrid 65. A pure-virtual class cannot expose a data
+      member, so every one of those would have to become an accessor call.
+      That is not a seam, it is a rewrite of the world's API, and it would be
+      undertaken for the benefit of four call sites.
+
+      The four, exactly:
+        Resource.cpp:318   g_location->FlushOpenGlState()
+        Resource.cpp:336   g_location->RegenerateOpenGlState()
+        SoundInstance.cpp:766  g_location->m_landscape.m_heightMap->GetValue(x, z)
+        SoundInstance.cpp:958  g_location->GetWorldObject(m_objId)
+
+      The last two want narrowing as they cross: a GroundHeight(x, z) and a
+      WorldObjectExists(id) say what the caller means, and neither leaks a
+      GameLogic type through the signature. Note both callers already
+      null-check, so the seam being absent must stay legal.
+
+      Lifetime is the part to get right. Whatever pointer carries this seam is
+      installed by Location and must survive a level reload, where Main.cpp
+      replaces the world. A destructor that clears unconditionally will null
+      the seam if the new Location is constructed before the old one is
+      destroyed; clear only if the departing object is the one installed.
+
+      DONE — but "the four, exactly" above was WRONG, and the way it was wrong
+      is the lesson. That list came from
+      `grep -noE 'g_location->[A-Za-z_]+' | sort -u -t: -k2`, and `sort -u`
+      COLLAPSES REPEATS: SoundInstance reaches the world at eight sites, not
+      two. Worse, the count was never the real measure. GetAttachedObject()
+      RETURNS a WorldObject*, and its caller reads obj->m_pos, obj->m_vel and
+      casts to Building* for m_centrePos — so GameLogic types crossed the
+      boundary through a function signature, which no count of `g_location->`
+      would ever have shown. Measure what crosses, not how often something is
+      named.
+
+      What landed. NeuronClient/LocationAccess.h carries five members —
+      FlushOpenGlState, RegenerateOpenGlState, GroundHeight, WorldObjectExists
+      and GetSoundSource — and g_locationAccess sits beside the other globals in
+      WorldPointers.h. Location derives from it and installs itself in its
+      constructor.
+
+      Two things were narrowed on the way across rather than forwarded:
+
+        GroundHeight(x, z) replaces g_location->m_landscape.m_heightMap->
+        GetValue(x, z), a three-deep member chain into two GameLogic classes.
+        It returns 0 when no landscape is loaded instead of dereferencing a
+        null heightmap, which the old chain did not check.
+
+        GetSoundSource(id, &pos, &vel) replaces GetAttachedObject() returning
+        a WorldObject*. The building-centre rule — a building is heard from
+        m_centrePos, everything else from m_pos — moved with it, because that
+        is the world's knowledge about its own objects and the sound system had
+        no business casting to Building* to find it out.
+
+      GetAttachedObject is now ResolveAttachedObject returning bool. Two of its
+      three callers only ever tested the result against null, so they lost
+      nothing; the third gets position and velocity from the seam.
+
+      A LANDMINE THIS TASK FOUND AND DID NOT DEFUSE, recorded for whoever
+      writes the loaded-world fixture. Location::GetEntity reads
+      m_teams[teamId].m_teamType with no null check, and m_teams stays null
+      until Init() loads a level. So a default-constructed Location answers
+      GroundHeight — this task guarded that one — and CRASHES on any id query,
+      which is every path through GetWorldObject. The test that asks for an
+      unknown id therefore allocates Team[NUM_TEAMS] first; Team's constructor
+      marks each TeamTypeUnused, which makes the lookup return cleanly.
+
+      Adding `if (!m_teams) return nullptr;` to GetEntity would make every
+      Location safe to query, and was deliberately NOT done: it is simulation
+      code with 83 call sites, changed for the convenience of a test, and the
+      production path always has teams. If a later task builds a real level
+      fixture the question goes away; if instead more tests start reaching
+      GetWorldObject on bare Locations, revisit it then.
+
+      SoundInstance.cpp also had to gain <stdlib.h>. It calls malloc and free,
+      and had been getting them through the Location.h chain — the same
+      transitive-loss trap this plan has now hit four times, caught here by
+      diffing reachable headers before and after rather than by CI.
+
+  - id: T17
+    title: Take GameLogic types out of the sound system's event API
+    intent: >
+      SoundSystem is a NeuronClient subsystem whose public API is written in
+      GameLogic's vocabulary: TriggerEntityEvent takes an Entity*,
+      TriggerBuildingEvent a Building*, TriggerOtherEvent a WorldObject*, and
+      the blueprint loader indexes its tables with Entity::NumEntityTypes and
+      resolves names through Entity::GetTypeId. That is the last upward
+      include in the tree and the only one that is a genuine design fault
+      rather than a leftover.
+    project: NeuronClient
+    depends_on: [T15]
+    files:
+      - NeuronClient/SoundSource.h
+      - NeuronClient/WorldTypeNames.h
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/WorldPointers.h
+      - NeuronClient/WorldPointers.cpp
+      - GameLogic/SoundSources.h
+      - GameLogic/WorldTypeRoster.h
+      - GameLogic/WorldTypeRoster.cpp
+      - Species/App.cpp
+      - tools/layering_allowlist.txt
+    acceptance:
+      - SoundSystem.cpp includes no GameLogic header and both allowlist entries are gone
+      - The three Trigger*Event overloads take only types NeuronClient owns
+      - The sound blueprint files parse byte-identically — the entity type names in them are content, not code
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+      - The Garden smoke test, owner-run — every entity sound goes through this
+    parallel_safe: false
+    status: done
+    notes: >
+      Measured 2026-08-03. Two halves, and the second is the awkward one.
+
+      The signatures. All three bodies use the same four things off the object
+      they are handed — m_id, m_type, m_pos and (for entities) m_vel — and
+      nothing else. So the overloads can take those directly and the GameLogic
+      types leave the header. The cost is at the call sites: about 75
+      `g_soundSystem->TriggerEntityEvent(this, "X")` across 17 GameLogic files
+      become four arguments instead of one. Mechanical, but every one of them
+      is a diff line, and RadarDish.cpp passes an `_entity` rather than `this`.
+
+      The type registry is the real question. SoundSystem sizes
+      m_entityBlueprints with Entity::NumEntityTypes, maps blueprint-file names
+      to indices with Entity::GetTypeId, and writes them back out with
+      Entity::GetTypeName. That is a name-to-id table with no behaviour, and it
+      is game content: the sound blueprint files on disk contain those names.
+      Moving the table down to NeuronClient makes the include go away and puts
+      the roster of Citizen, Officer, Squad and the rest in the engine layer,
+      which is the wrong place for it. Handing SoundSystem the table at startup
+      instead — GameLogic registers the names it owns — keeps the knowledge
+      where it belongs and is the option to cost first.
+
+      Whichever way it goes, the blueprint files must parse the same
+      afterwards. They name entity types as strings and the mapping to indices
+      is what the acceptance calls content rather than code.
+
+      DONE, and it took the allowlist to ZERO. Both halves went the way the
+      notes above guessed, and the signature half was cheaper than feared.
+
+      The signatures. SoundSource in NeuronClient carries the four fields —
+      m_id, m_type, m_pos, m_vel — that all three bodies read off whatever they
+      were handed, and the three methods take one. GameLogic/SoundSources.h
+      converts a live object with SoundSourceOf().
+
+      ONE conversion function, not three overloads for Entity, Building and
+      WorldObject, because all four fields are WorldObject members and neither
+      subclass adds any. That was not obvious from the call sites and is the
+      kind of thing worth checking before writing the overload set: the three
+      would have been identical bodies.
+
+      165 call sites across 41 files, rewritten by script and then audited by a
+      second script that re-parsed every Trigger*Event call and checked its
+      argument count and shape. That audit earned its keep. Running two regexes
+      in sequence over the same text let the second match the FIRST one's
+      output: `TriggerOtherEvent(nullptr, _event, TypeMusic)` became
+      `TriggerOtherEvent(SoundSourceOf(_event), TypeMusic)` in Script.cpp, and
+      the identical bug inside SoundSystem.cpp turned the new delegating
+      overload into infinite recursion. Both compile. Neither was caught by any
+      of the five checks — only by looking at what the rewrite produced.
+
+      TriggerOtherEvent gained an unattached overload rather than keeping a
+      nullable first argument: 30 of its 47 call sites passed nullptr, and
+      TriggerOtherEvent("GestureSuccess", TypeGesture) says what they mean.
+
+      The type registry went the way the note recommended — GameLogic keeps the
+      roster and the dependency inverts. NeuronClient declares WorldTypeNames,
+      GameLogic implements it over the existing Entity:: and Building:: statics
+      (nothing is duplicated; those remain the single definition of what the
+      types are called), and App installs it before SoundSystem::Initialise
+      reads a blueprint. LoadBlueprints returns early when no roster is
+      installed, which is the correct behaviour for a sound system with no game
+      attached rather than a crash — and it is what lets a test DLL link one.
+
+      InstallWorldTypeRoster is an explicit call, not a static initialiser.
+      GameLogic is a static library, and a translation unit nothing else
+      references is not guaranteed to be linked in at all: a self-installing
+      object would have worked until the linker decided it was unused.
+
+      SoundSystem.cpp gained <stdlib.h>. It calls atof, atoi and qsort and had
+      been getting them through the Location.h chain — the fifth time this plan
+      has hit that trap, and the second time in two tasks.
 
   - id: T14
     title: Replace App's remaining scalar state with accessors
@@ -797,28 +1368,38 @@ tasks:
     project: GameLogic
     depends_on: [T9, T10, T14]
     files:
-      - Species/Location.h
-      - Species/Location.cpp
-      - Species/GlobalWorld.h
-      - Species/GlobalWorld.cpp
-      - Species/Team.h
-      - Species/Team.cpp
-      - Species/Unit.h
-      - Species/Unit.cpp
-      - Species/LevelFile.h
-      - Species/LevelFile.cpp
-      - Species/EntityGrid.h
-      - Species/EntityGrid.cpp
-      - Species/ObstructionGrid.h
-      - Species/ObstructionGrid.cpp
-      - Species/RoutingSystem.h
-      - Species/RoutingSystem.cpp
-      - Species/ParticleSystem.h
-      - Species/ParticleSystem.cpp
-      - Species/Explosion.h
-      - Species/Explosion.cpp
-      - Species/Landscape.h
-      - Species/Landscape.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/Team.h
+      - GameLogic/Team.cpp
+      - GameLogic/Unit.h
+      - GameLogic/Unit.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
+      - GameLogic/EntityGrid.h
+      - GameLogic/EntityGrid.cpp
+      - GameLogic/ObstructionGrid.h
+      - GameLogic/ObstructionGrid.cpp
+      - GameLogic/RoutingSystem.h
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/ParticleSystem.h
+      - GameLogic/ParticleSystem.cpp
+      - GameLogic/Explosion.h
+      - GameLogic/Explosion.cpp
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
+      - GameLogic/Water.h
+      - GameLogic/Water.cpp
+      - GameLogic/Clouds.h
+      - GameLogic/Clouds.cpp
+      - GameLogic/LandscapeRenderer.h
+      - GameLogic/LandscapeRenderer.cpp
+      - GameLogic/GlobalInternet.h
+      - GameLogic/GlobalInternet.cpp
+      - GameLogic/TaskManager.h
+      - GameLogic/TaskManager.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -829,6 +1410,7 @@ tasks:
       - The allowlist shrank and gained no entry at any point
       - GameLogicTests can construct an EntityGrid and a Route without LinkStubs
       - The Garden smoke test passes, owner-run — this moves the world's home
+      - The `files` lists naming these paths in other plans are rewritten to GameLogic/ in the same commit — containers-replaced T12 and T13, ownership T5, strings-modernised T8 — and check_task_dag.py still passes
     verify:
       - python3 tools/check_layering.py
       - python3 tools/check_project_files.py
@@ -840,4 +1422,265 @@ tasks:
       it; its LandscapeRenderer member stays above, so the class splits or
       keeps a forward-declared pointer. Expect several commits inside the
       one task: move, then fix includes, then update both project files.
-    status: todo
+
+      THE INTENT'S CENTRAL CLAIM IS FALSE AS MEASURED 2026-08-03. "Running
+      after T14, T9 and T10 means these files reach nothing above GameLogic by
+      the time they move, so the operation only ever removes entries" — the 22
+      moving files include fifteen Species headers that are NOT moving, so the
+      move as described would ADD roughly fifty allowlist entries, which the
+      second acceptance line forbids. The measurement, before any prep:
+
+        App.h 10 files, Camera.h 6, Main.h 5, Renderer.h 5, TaskManager.h 3,
+        UserInput.h 3, Globals.h 3, Script.h 2, GameCursor.h 2,
+        TaskManagerInterface.h 2, Water.h 2, ControlHelp.h 1, Clouds.h 1,
+        GlobalInternet.h 1, LandscapeRenderer.h 1.
+
+      This task therefore has a PREP PHASE before any git mv. What it consists
+      of, measured rather than guessed:
+
+      (a) g_app. 124 uses in the moving cluster, 310 tree-wide. Most are
+      aliases: App assigns g_resource = m_resource, g_profiler = m_profiler and
+      g_soundSystem = m_soundSystem at startup, so `g_app->m_profiler` and
+      `g_profiler` are the same object. DONE — all 310 substituted, and 14
+      files dropped App.h outright. Includers went 32 -> 19. What is left of
+      g_app in the cluster is m_gameCursor, m_backgroundColour,
+      m_requestedMission, m_requestedMap, m_paused, GetProfileDirectory,
+      HasBoughtGame and UpdateDifficultyFromPreferences; the last three already
+      have homes in AppCommands, and the state ones belong in AppState.h beside
+      the globals T14 put there.
+
+      (b) The TheX() accessors, and this one is SELF-INFLICTED. T9 routed every
+      Species call site through TheCamera() rather than g_camera, to dodge the
+      SetTarget overload problem, and T10 did the same for the other five
+      seams. For files that stay in Species that is right. For the 22 files
+      moving to GameLogic it is exactly backwards: they must use g_camera and
+      the interface. About 60 call sites in the cluster need reverting, and
+      they are nearly all on members the interfaces already carry. Two are
+      not — Camera::Get2DScreenPos (7 uses) and Renderer::IsFadeComplete (1) —
+      and those two members should join their interfaces.
+
+      (b) IS DONE. 59 call sites in the cluster are back on the interface, and
+      the two members they needed that no interface carried —
+      Camera::Get2DScreenPos and Renderer::IsFadeComplete — have joined
+      CameraAccess and RendererAccess. Fourteen concrete-header includes went
+      with them.
+
+      (c) The rest, now measured member by member rather than guessed. Three
+      were mechanical and are DONE:
+
+        Main.h (5)      An eight-line shim: it includes NeuronCore's GameTime.h
+                        and declares AppMain(). Nothing in the cluster calls
+                        AppMain, so those five now include GameTime.h directly.
+        Camera.h (4)    Only for the Camera::ModeX enumerators, which live on
+                        CameraAccess since T9. Retargeted; the includes went.
+        TaskManagerInterface.h (2)  Same, for MessageX.
+        Globals.h       MOVED to NeuronCore. Three simulation constants with no
+                        dependencies beyond ProtocolLimits, and GameLogic was
+                        already reaching GRAVITY through it — Tripod.cpp got it
+                        via Location.h, which this task's own include cleanup
+                        promptly broke. Now everyone includes it downward, and
+                        six files that had been relying on that chain say so.
+
+      Cluster Species includes: 15 headers and about 50 sites at the start of
+      the prep, 6 headers and 15 sites now, of which 11 are pch.h — mechanical
+      at move time, since GameLogic has its own.
+
+      A RULE FOR ANY SCRIPT THAT ADDS AN INCLUDE, learned by going red on it.
+      Every .cpp here is built with MSVC's /Yu, so the compiler DISCARDS
+      everything textually before `#include "pch.h"`. A script that inserts at
+      the first #include line puts the new include in the dead zone, where it
+      compiles to nothing and no include-graph analysis notices — the line is
+      right there in the file. Six files were added this way and Tripod.cpp is
+      the one that failed, because it was the only one that needed the symbol
+      immediately. Insert AFTER pch.h, and check for includes preceding it.
+
+      App.h AND GameCursor.h ARE DONE. m_requestedMission, m_requestedMap,
+      m_paused and m_backgroundColour moved into AppState.h beside T14's
+      globals — moved, not mirrored, so App no longer declares them.
+      HasBoughtGame, GetProfileDirectory and UpdateDifficultyFromPreferences go
+      through g_appCommands, the last of them newly added to that interface.
+      GameCursor got the same treatment as the other subsystems: a
+      GameCursorAccess in NeuronClient carrying the seven methods anything
+      actually calls, g_gameCursor as the ONLY storage, and App's m_gameCursor
+      gone. No TheGameCursor() was needed — every caller in the tree uses one
+      of the seven, so the interface is the whole used API.
+
+      WHAT IS ACTUALLY LEFT — 8 includes across 4 files:
+
+        TaskManager.h (3)  The item T10 handed over. Needs Task's definition
+                        below Species, which needs Task's implementation to
+                        stop reaching g_location — i.e. it resolves as part of
+                        this move, not before it. Location, LevelFile, Team.
+        Water.h (2)     `g_location->m_water`, from Location and Landscape.
+                        Water is a Location MEMBER and a Species file, so the
+                        cleanest answer is that Water joins the moving set.
+        Clouds.h (1)    `m_clouds = new Clouds()` in Location. Same shape as
+                        Water: a Location member that should move with it.
+        LandscapeRenderer.h (1)  `m_renderer = new LandscapeRenderer(...)` in
+                        Landscape.cpp. The one the notes below already flag:
+                        the renderer stays above, so Landscape splits or keeps
+                        a forward-declared pointer and constructs it elsewhere.
+        GlobalInternet.h (1)  One site in GlobalWorld.cpp, not yet looked at.
+
+      THE PREP IS DONE. Water, Clouds, LandscapeRenderer and GlobalInternet
+      joined the moving set rather than being seamed, which is the right answer
+      for all four: each is a MEMBER of a class that is already moving
+      (Location's water and clouds, Landscape's renderer, GlobalWorld's
+      internet), each has a header that depends only on NeuronCore, and each
+      was reached by construction — `new Water()` — which no pure-virtual seam
+      can express. The moving set is 15 classes, 30 files.
+
+      Two more App members went with them: m_negativeRenderer to AppState.h
+      (the RenderNegative preference, read by the landscape and water
+      renderers).
+
+      CHECK_OPENGL_STATE went the other way — deleted, along with all 35 of its
+      call sites. The prep broke the build on it, because it is a MACRO from
+      Renderer.h and every check written so far looked at type names and
+      globals, never macros. Moving it into RendererAccess.h was the first
+      instinct and the wrong one: `#define CHECK_OPENGL_STATE()` has an EMPTY
+      body, and Renderer::CheckOpenGLState begins with `return;`, so the
+      facility is disabled twice over and 35 call sites expand to nothing.
+      Putting an empty macro in a NeuronClient header beside a real
+      CheckOpenGLState method would have read as if it did something.
+
+      Renderer::CheckOpenGLState itself is kept and now has no callers. Its
+      eighty unreachable lines are the only written statement of the renderer's
+      GL-state contract, and deleting them would delete that.
+
+      TaskManager joined the moving set too, which is how the T10 handover
+      actually resolves. Leaving it behind would have ADDED three allowlist
+      entries at the moment of the move — Location, LevelFile and Team
+      including it from GameLogic — and this task's own acceptance forbids
+      gaining an entry at any point. Its .cpp needed the same prep as the rest
+      and one more interface member, Camera::RequestEntityTrackMode; its
+      LocationInput.h include turned out to be dead. TaskManagerInterface, the
+      UI half, stays in Species, which is the right split.
+
+      The moving set is 16 classes, 32 files, and depends on NOTHING in Species
+      but pch.h. Everything else is pch.h, which is mechanical at move time because
+      GameLogic has its own.
+
+      Renderer.cpp includes LandscapeRenderer.h and GameMenu.cpp includes
+      GlobalInternet.h; both become Species -> GameLogic after the move, which
+      is downward and needs no allowlist entry.
+
+      THE MOVE IS DONE. 32 files by git mv, 64 project-file entries moved
+      across, and the allowlist went 255 -> 7 — verified by `comm -13` that it
+      gained nothing at any point, which is what the second acceptance line
+      asks. No pch.h edit was needed after all: Species/pch.h and
+      GameLogic/pch.h are byte-identical (`#include "NeuronClient.h"`), and
+      each resolves to its own directory first. 100 paths were rewritten
+      across five other plans' `files` lists.
+
+      What is left after it: three GameLogic .cpp files reaching Species
+      (MainMenus, PrefsKeybindingsWindow, PrefsScreenWindow — all UI, all
+      Renderer.h or TaskManagerInterfaceIcons.h) and four NeuronClient .cpp
+      files reaching GameLogic (Resource, SoundInstance, SoundSystem — all for
+      Location.h or Entity.h). Renderer.cpp -> LandscapeRenderer.h and
+      GameMenu.cpp -> GlobalInternet.h became downward, as predicted.
+
+      THE ACCEPTANCE'S TEST LINE WAS NOT FREE. GameLogicTests had no test file
+      at all — only LinkStubs.cpp and pch.cpp — so "can construct an EntityGrid
+      and a Route without LinkStubs" was unproven either way. It is proven now:
+      EntityGridTests.cpp and RoutingSystemTests.cpp, ten tests, constructing
+      real simulation objects against a Location the test builds itself.
+      Landscape::GetWorldSizeX returns 1e6 with no heightmap loaded, which is
+      what makes a default-constructed Location a usable empty world.
+
+      The test projects' include paths were tightened in the same commit, since
+      this is what made it possible: GameLogicTests no longer sees Species,
+      NeuronClientTests sees only NeuronCore and NeuronClient, NeuronCoreTests
+      only NeuronCore. Those paths were wide because the libraries reached
+      upward through their HEADERS; none does now, so an upward include from a
+      test fails to compile instead of waiting for check_layering.
+
+      check_hygiene.py needed a fix to survive this task, and the fix is worth
+      recording. A git mv reads as a brand new file, so every NULL and sprintf
+      in a moved file counted as one this change introduced — 33 findings
+      against code untouched by a character. Following git's own rename
+      detection fixed six of them and not the rest: git pairs by content
+      similarity, and the whole-file clang-format commit earlier in this branch
+      rewrote every line, so EntityGrid.cpp scored 16% similar to its own base
+      version. Lowering the threshold that far would pair unrelated files. It
+      now falls back to matching an unambiguous basename across the add and
+      delete sets, which is what a directory move looks like and is immune to
+      any amount of reformatting.
+
+      STILL OWED: the Garden smoke test, owner-run. This moves the world's
+      home, and nothing automated exercises a loaded level.
+
+      T10 HANDS THIS TASK EIGHT MORE ENTRIES, found while running it:
+      TaskManager.h (5), Water.h (2) and TaskManagerInterfaceIcons.h (1).
+      They cannot be resolved before this move, because the callers need either
+      Task's definition (whose implementation reaches g_location, g_globalWorld
+      and g_app) or the concrete Species type to call `new` on. A pure-virtual
+      seam cannot express construction, and declaring the symbol low while
+      defining it high would satisfy check_layering — an include check — while
+      leaving GameLogic linked against Species. Once Location, Team, Unit and
+      the task system live here, all eight become ordinary same-project
+      includes. Expect to clear them as part of this task's include fix-up.
+
+      This task is now a gate for three other plans, not just this one.
+      containers-replaced T12 and T13 are blocked_by it, and the reason is
+      worth stating because it is the single most consequential sequencing
+      call in the modernisation effort: T12 is the most determinism-critical
+      conversion in the tree (FastDArray slots ARE WorldObjectId identity),
+      and while these files live in Species — an exe, no test project — no
+      unit test can reach them. Moving them here first puts that conversion
+      somewhere GameLogicTests can construct the objects. The path rewrite in
+      the acceptance list is the mechanical half of the same thing: 22 of
+      these paths appear in other plans' `files` lists and are wrong the
+      moment this lands.
+    status: done
+
+  - id: T18
+    title: Move WinMain out of NeuronClient and into the executable it starts
+    intent: >
+      NeuronClient/WindowManager.cpp defined WinMain and called AppMain(),
+      which only Species defines. A static library containing an executable's
+      entry point is wrong on its own; one that calls up into the executable
+      linking it is an upward dependency that check_layering cannot see,
+      because check_layering reads includes and NeuronClient DECLARED AppMain
+      in its own header rather than including a Species one.
+    project: NeuronClient
+    depends_on: [T11]
+    files:
+      - NeuronClient/WindowManager.h
+      - NeuronClient/WindowManager.cpp
+      - Species/Main.cpp
+    acceptance:
+      - WinMain lives in Species and NeuronClient declares no symbol Species defines
+      - The game still starts — the HINSTANCE capture that WinMain performed still happens before any window is created
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+      - The Garden smoke test, owner-run — this is the process entry point
+    parallel_safe: false
+    status: done
+    notes: >
+      FOUND BY T11'S TESTS, which is the point of them. GameLogicTests had
+      never linked an object graph large enough to reach WindowManager.obj; the
+      moment EntityGridTests constructed a Location it did, and the test DLL
+      failed to link:
+
+        NeuronClient.lib(WindowManager.obj) : error LNK2019: unresolved
+        external symbol "void __cdecl AppMain(void)" referenced in
+        function WinMain [Tests\GameLogicTests\GameLogicTests.vcxproj]
+
+      This had been true for the whole of this plan and every check passed
+      throughout, because every check reads includes. T15's own acceptance
+      names the hazard — "declaring the symbol low while defining it high would
+      satisfy check_layering while leaving the lower layer linked against the
+      higher" — and this was an instance of exactly that, sitting in the tree
+      the entire time nobody could link enough of it to notice.
+
+      The fix is small: WinMain moves to Species/Main.cpp beside the AppMain it
+      calls, and the HINSTANCE it captured reaches WindowManager's file-local
+      g_hInstance through a one-line SetWin32InstanceHandle. NeuronClient no
+      longer names AppMain at all.
+
+      A scan for the general case — every free function and extern declared in
+      a NeuronCore, NeuronClient or GameLogic header, checked for a definition
+      in those projects and then in Species — finds nothing else. T12 carries
+      it as an acceptance line so the milestone means what it says.

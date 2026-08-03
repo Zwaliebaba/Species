@@ -13,64 +13,61 @@
 // Class DropDownOptionData
 // ****************************************************************************
 
-DropDownOptionData::DropDownOptionData(const char *_word, int _value)
-	: m_word(NewStr(_word)), m_value(_value)
+DropDownOptionData::DropDownOptionData(const char* _word, int _value)
+  : m_word(NewStr(_word)),
+    m_value(_value)
 {
 }
 
-DropDownOptionData::~DropDownOptionData()
-{
-	delete [] m_word;
-}
+DropDownOptionData::~DropDownOptionData() { delete[] m_word; }
 
 
 // ****************************************************************************
 // Class DropDownWindow
 // ****************************************************************************
 
-DropDownWindow *DropDownWindow::s_window = nullptr;
+DropDownWindow* DropDownWindow::s_window = nullptr;
 
-DropDownWindow::DropDownWindow( char *_name, char *_parentName )
-:   SpeciesWindow(_name)
+DropDownWindow::DropDownWindow(char* _name, char* _parentName)
+  : SpeciesWindow(_name)
 {
-    strcpy( m_parentName, _parentName );
+  strcpy(m_parentName, _parentName);
 }
 
 
 void DropDownWindow::Update()
 {
-    SpeciesWindow::Update();
+  SpeciesWindow::Update();
 
-    EclWindow *parent = EclGetWindow( m_parentName );
-    if( !parent )
-    {
-        RemoveDropDownWindow();
-    }
+  EclWindow* parent = EclGetWindow(m_parentName);
+  if (!parent)
+  {
+    RemoveDropDownWindow();
+  }
 }
 
 
-DropDownWindow *DropDownWindow::CreateDropDownWindow( char *_name, char *_parentName )
+DropDownWindow* DropDownWindow::CreateDropDownWindow(char* _name, char* _parentName)
 {
-    if( s_window )
-    {
-        EclRemoveWindow( s_window->m_name );
-        s_window = nullptr;
-    }
+  if (s_window)
+  {
+    EclRemoveWindow(s_window->m_name);
+    s_window = nullptr;
+  }
 
-    s_window = new DropDownWindow( _name, _parentName );
-    return s_window;
+  s_window = new DropDownWindow(_name, _parentName);
+  return s_window;
 }
 
 
 void DropDownWindow::RemoveDropDownWindow()
 {
-    if( s_window )
-    {
-        EclRemoveWindow( s_window->m_name );
-        s_window = nullptr;
-    }
+  if (s_window)
+  {
+    EclRemoveWindow(s_window->m_name);
+    s_window = nullptr;
+  }
 }
-
 
 
 // ****************************************************************************
@@ -79,224 +76,217 @@ void DropDownWindow::RemoveDropDownWindow()
 
 
 DropDownMenu::DropDownMenu(bool _sortItems)
-:   SpeciesButton(),
+  : SpeciesButton(),
     m_currentOption(-1),
     m_int(nullptr),
-	m_sortItems(_sortItems),
-	m_nextValue(0)
+    m_sortItems(_sortItems),
+    m_nextValue(0)
 {
 }
 
 
-DropDownMenu::~DropDownMenu()
-{
-    Empty();
-}
+DropDownMenu::~DropDownMenu() { Empty(); }
 
 
 void DropDownMenu::Empty()
 {
-    m_options.EmptyAndDelete();
-	m_nextValue = 0;
+  EmptyAndDelete(m_options);
+  m_nextValue = 0;
 
-    SelectOption( -1 );
+  SelectOption(-1);
 }
 
 
-void DropDownMenu::AddOption( char const *_word, int _value )
+void DropDownMenu::AddOption(char const* _word, int _value)
 {
-	if (_value == INT_MIN)
-	{
-		_value = m_nextValue;
-		m_nextValue++;
-	}
+  if (_value == INT_MIN)
+  {
+    _value = m_nextValue;
+    m_nextValue++;
+  }
 
-	DropDownOptionData *option = new DropDownOptionData( _word, _value );
+  DropDownOptionData* option = new DropDownOptionData(_word, _value);
 
-	if (m_sortItems)
-	{
-		int size = m_options.Size();
-		int i;
-		for (i = 0; i < size; ++i)
-		{
-			if (stricmp(_word, m_options[i]->m_word) < 0)
-			{
-				break;
-			}
-		}
-		m_options.PutDataAtIndex(option, i);
-	}
-	else
-	{
-	    m_options.PutDataAtEnd(option);
-	}
-}
-
-
-void DropDownMenu::SelectOption( int _value )
-{
-	m_currentOption = FindValue(_value);
-
-    if( m_currentOption < 0 || m_currentOption >= m_options.Size() )
+  if (m_sortItems)
+  {
+    int size = static_cast<int>(m_options.size());
+    int i;
+    for (i = 0; i < size; ++i)
     {
-        SetCaption( m_name );
+      if (stricmp(_word, m_options[i]->m_word) < 0)
+      {
+        break;
+      }
     }
-    else
-    {
-        SetCaption( m_options[m_currentOption]->m_word );
-    }
-
-    if( m_int && _value != -1 ) *m_int = _value;
+    m_options.insert(m_options.begin() + i, option);
+  }
+  else
+  {
+    m_options.push_back(option);
+  }
 }
 
 
-bool DropDownMenu::SelectOption2(char const *_option)
+void DropDownMenu::SelectOption(int _value)
 {
-	for (int i = 0; i < m_options.Size(); ++i)
-	{
-		char *itemName = m_options[i]->m_word;
-		if (stricmp(itemName, _option) == 0)
-		{
-			SelectOption(m_options[i]->m_value);
-			return true;
-		}
-	}
+  m_currentOption = FindValue(_value);
 
-	return false;
+  if (m_currentOption < 0 || m_currentOption >= static_cast<int>(m_options.size()))
+  {
+    SetCaption(m_name);
+  }
+  else
+  {
+    SetCaption(m_options[m_currentOption]->m_word);
+  }
+
+  if (m_int && _value != -1)
+    *m_int = _value;
+}
+
+
+bool DropDownMenu::SelectOption2(char const* _option)
+{
+  for (int i = 0; i < static_cast<int>(m_options.size()); ++i)
+  {
+    char* itemName = m_options[i]->m_word;
+    if (stricmp(itemName, _option) == 0)
+    {
+      SelectOption(m_options[i]->m_value);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 
 int DropDownMenu::GetSelectionValue()
 {
-	if (m_currentOption >= 0 && m_currentOption < m_options.Size())
-	{
-		return m_options[m_currentOption]->m_value;
-	}
+  if (m_currentOption >= 0 && m_currentOption < static_cast<int>(m_options.size()))
+  {
+    return m_options[m_currentOption]->m_value;
+  }
 
-	return -1;
+  return -1;
 }
 
 
-char const *DropDownMenu::GetSelectionName()
+char const* DropDownMenu::GetSelectionName()
 {
-	if (m_currentOption < 0 || m_currentOption > m_options.Size())
-	{
-		return nullptr;
-	}
-	return m_options[m_currentOption]->m_word;
+  if (m_currentOption < 0 || m_currentOption > static_cast<int>(m_options.size()))
+  {
+    return nullptr;
+  }
+  return m_options[m_currentOption]->m_word;
 }
 
 
-void DropDownMenu::RegisterInt( int *_int )
+void DropDownMenu::RegisterInt(int* _int)
 {
-    m_int = _int;
+  m_int = _int;
 
-    SelectOption( *m_int );
+  SelectOption(*m_int);
 }
 
 
 int DropDownMenu::FindValue(int _value)
 {
-	for (int i = 0; i < m_options.Size(); ++i)
-	{
-		if (m_options[i]->m_value == _value)
-		{
-			return i;
-		}
-	}
+  for (int i = 0; i < static_cast<int>(m_options.size()); ++i)
+  {
+    if (m_options[i]->m_value == _value)
+    {
+      return i;
+    }
+  }
 
-	return -1;
+  return -1;
 }
 
 
-void DropDownMenu::Render( int realX, int realY, bool highlighted, bool clicked )
+void DropDownMenu::Render(int realX, int realY, bool highlighted, bool clicked)
 {
-    if( IsMenuVisible() )
-    {
-        SpeciesButton::Render( realX, realY, true, clicked );
-    }
-    else
-    {
-        SpeciesButton::Render( realX, realY, highlighted, clicked );
-    }
+  if (IsMenuVisible())
+  {
+    SpeciesButton::Render(realX, realY, true, clicked);
+  }
+  else
+  {
+    SpeciesButton::Render(realX, realY, highlighted, clicked);
+  }
 
-    glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-    glBegin( GL_TRIANGLES );
-        glVertex2i( realX + m_w - 12, realY + 5 );
-        glVertex2i( realX + m_w - 3, realY + 5 );
-        glVertex2i( realX + m_w - 7, realY + 9 );
-    glEnd();
+  glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+  glBegin(GL_TRIANGLES);
+  glVertex2i(realX + m_w - 12, realY + 5);
+  glVertex2i(realX + m_w - 3, realY + 5);
+  glVertex2i(realX + m_w - 7, realY + 9);
+  glEnd();
 }
 
 
 void DropDownMenu::CreateMenu()
 {
-    DropDownWindow *window = DropDownWindow::CreateDropDownWindow(m_name, m_parent->m_name);
-    window->SetPosition( m_parent->m_x + m_x + m_w, m_parent->m_y + m_y );
-    EclRegisterWindow( window );
+  DropDownWindow* window = DropDownWindow::CreateDropDownWindow(m_name, m_parent->m_name);
+  window->SetPosition(m_parent->m_x + m_x + m_w, m_parent->m_y + m_y);
+  EclRegisterWindow(window);
 
-    int screenH = g_renderer->ScreenH();
-    int numColumnsRequired = 1 + ( m_h * m_options.Size() ) / (screenH * 0.8f);
-    int numPerColumn =  ceil( (float) m_options.Size() / (float) numColumnsRequired );
+  int screenH = g_renderer->ScreenH();
+  int numColumnsRequired = 1 + (m_h * static_cast<int>(m_options.size())) / (screenH * 0.8f);
+  int numPerColumn = ceil((float)static_cast<int>(m_options.size()) / (float)numColumnsRequired);
 
-    int index = 0;
+  int index = 0;
 
-    for( int col = 0; col < numColumnsRequired; ++col )
+  for (int col = 0; col < numColumnsRequired; ++col)
+  {
+    for (int i = 0; i < numPerColumn; ++i)
     {
-        for( int i = 0; i < numPerColumn; ++i )
-        {
-            if( index >= m_options.Size() ) break;
+      if (index >= static_cast<int>(m_options.size()))
+        break;
 
-            char *thisOption = m_options[index]->m_word;
-            char thisName[64];
-            sprintf( thisName, "%s %d", m_name, index );
+      char* thisOption = m_options[index]->m_word;
+      char thisName[64];
+      sprintf(thisName, "%s %d", m_name, index);
 
-            int w = m_w - 4;
+      int w = m_w - 4;
 
-            DropDownMenuOption *menuOption = new DropDownMenuOption();
-            menuOption->SetProperties( thisName, col*m_w+2, (i+1)*m_h, w, m_h, thisOption );
-            menuOption->SetParentMenu( m_parent, this, m_options[index]->m_value );
-            window->RegisterButton( menuOption );
-			window->m_buttonOrder.PutData( menuOption );
-			if( GetSelectionValue() == m_options[index]->m_value )
-			{
-				window->m_currentButton = index;
-			}
+      DropDownMenuOption* menuOption = new DropDownMenuOption();
+      menuOption->SetProperties(thisName, col * m_w + 2, (i + 1) * m_h, w, m_h, thisOption);
+      menuOption->SetParentMenu(m_parent, this, m_options[index]->m_value);
+      window->RegisterButton(menuOption);
+      window->m_buttonOrder.push_back(menuOption);
+      if (GetSelectionValue() == m_options[index]->m_value)
+      {
+        window->m_currentButton = index;
+      }
 
-            ++index;
-        }
+      ++index;
     }
+  }
 
-    window->SetSize( m_w*numColumnsRequired, (numPerColumn+1) * m_h );
+  window->SetSize(m_w * numColumnsRequired, (numPerColumn + 1) * m_h);
 }
 
 
-void DropDownMenu::RemoveMenu()
-{
-    DropDownWindow::RemoveDropDownWindow();
-}
+void DropDownMenu::RemoveMenu() { DropDownWindow::RemoveDropDownWindow(); }
 
 
 void DropDownMenu::MouseUp()
 {
-	if (m_disabled)
-		return;
+  if (m_disabled)
+    return;
 
-    if( IsMenuVisible() )
-    {
-        RemoveMenu();
-    }
-    else
-    {
-        CreateMenu();
-    }
+  if (IsMenuVisible())
+  {
+    RemoveMenu();
+  }
+  else
+  {
+    CreateMenu();
+  }
 }
 
 
-bool DropDownMenu::IsMenuVisible()
-{
-    return( EclGetWindow( m_name ) != nullptr );
-}
+bool DropDownMenu::IsMenuVisible() { return (EclGetWindow(m_name) != nullptr); }
 
 
 //*****************************************************************************
@@ -304,7 +294,7 @@ bool DropDownMenu::IsMenuVisible()
 //*****************************************************************************
 
 DropDownMenuOption::DropDownMenuOption()
-:   BorderlessButton(),
+  : BorderlessButton(),
     m_parentWindowName(nullptr),
     m_parentMenuName(nullptr),
     m_value(-1)
@@ -313,67 +303,67 @@ DropDownMenuOption::DropDownMenuOption()
 
 DropDownMenuOption::~DropDownMenuOption()
 {
-	delete [] m_parentWindowName;
-	delete [] m_parentMenuName;
+  delete[] m_parentWindowName;
+  delete[] m_parentMenuName;
 }
 
-void DropDownMenuOption::SetParentMenu( EclWindow *_window, DropDownMenu *_menu, int _value )
+void DropDownMenuOption::SetParentMenu(EclWindow* _window, DropDownMenu* _menu, int _value)
 {
-    if( m_parentWindowName )
-    {
-        delete [] m_parentWindowName;
-        m_parentWindowName = nullptr;
-    }
-    m_parentWindowName = NewStr( _window->m_name );
+  if (m_parentWindowName)
+  {
+    delete[] m_parentWindowName;
+    m_parentWindowName = nullptr;
+  }
+  m_parentWindowName = NewStr(_window->m_name);
 
-    if( m_parentMenuName )
-    {
-        delete [] m_parentMenuName;
-        m_parentMenuName = nullptr;
-    }
-    m_parentMenuName = NewStr( _menu->m_name );
+  if (m_parentMenuName)
+  {
+    delete[] m_parentMenuName;
+    m_parentMenuName = nullptr;
+  }
+  m_parentMenuName = NewStr(_menu->m_name);
 
-//    m_menuIndex = _index;
-	m_value = _value;
+  //    m_menuIndex = _index;
+  m_value = _value;
 }
 
 
-void DropDownMenuOption::Render( int realX, int realY, bool highlighted, bool clicked )
+void DropDownMenuOption::Render(int realX, int realY, bool highlighted, bool clicked)
 {
-    //BorderlessButton::Render( realX, realY, highlighted, clicked );
-    //return;
+  // BorderlessButton::Render( realX, realY, highlighted, clicked );
+  // return;
 
-    SpeciesWindow *window = (SpeciesWindow *)EclGetWindow( m_parentWindowName );
-    if( window )
+  SpeciesWindow* window = (SpeciesWindow*)EclGetWindow(m_parentWindowName);
+  if (window)
+  {
+    EclButton* button = window->GetButton(m_parentMenuName);
+    if (button)
     {
-        EclButton *button = window->GetButton( m_parentMenuName );
-        if( button )
-        {
-            DropDownMenu *menu = (DropDownMenu *) button;
-			if( window->m_buttonOrder[window->m_currentButton] == this )
-            {
-                BorderlessButton::Render( realX, realY, highlighted, true );
-            }
-            else
-            {
-                BorderlessButton::Render( realX, realY, highlighted, clicked);
-            }
-        }
+      DropDownMenu* menu = (DropDownMenu*)button;
+      if (window->m_buttonOrder[window->m_currentButton] == this)
+      {
+        BorderlessButton::Render(realX, realY, highlighted, true);
+      }
+      else
+      {
+        BorderlessButton::Render(realX, realY, highlighted, clicked);
+      }
     }
+  }
 }
 
 
 void DropDownMenuOption::MouseUp()
 {
-    EclWindow *window = EclGetWindow( m_parentWindowName );
-    if( window )
+  EclWindow* window = EclGetWindow(m_parentWindowName);
+  if (window)
+  {
+    EclButton* button = window->GetButton(m_parentMenuName);
+    if (button)
     {
-        EclButton *button = window->GetButton( m_parentMenuName );
-        if( button )
-        {
-            DropDownMenu *menu = (DropDownMenu *) button;
-            menu->SelectOption( m_value );
-            menu->RemoveMenu();
-        }
+      DropDownMenu* menu = (DropDownMenu*)button;
+      menu->SelectOption(m_value);
+      menu->RemoveMenu();
     }
+  }
 }

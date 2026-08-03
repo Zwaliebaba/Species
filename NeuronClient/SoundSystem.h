@@ -1,13 +1,13 @@
 #pragma once
 
-#include "FastDArray.h"
-#include "LList.h"
+#include <vector>
+
+#include "SlotMap.h"
 #include "Vector3.h"
 #include "SoundInstance.h"
-#include "WorldObject.h"
+#include "SoundSource.h"
+#include "WorldObjectId.h"
 
-class Entity;
-class Building;
 class TextReader;
 class SoundInstance;
 class Profiler;
@@ -50,11 +50,11 @@ class SoundSourceBlueprint
       NumOtherSoundSources
     };
 
-    LList<SoundEventBlueprint*> m_events;
+    std::vector<SoundEventBlueprint*> m_events;
 
     static int GetSoundSoundType(const char* _name);
     static const char* GetSoundSourceName(int _type);
-    static void ListSoundEvents(int _type, LList<const char*>* _list);
+    static void ListSoundEvents(int _type, std::vector<const char*>* _list);
 };
 
 //*****************************************************************************
@@ -79,7 +79,7 @@ class DspBlueprint
 {
   public:
     char m_name[256];
-    DArray<DspParameterBlueprint*> m_params;
+    SlotMap<DspParameterBlueprint*> m_params;
 
     char* GetParameter(int _param, float* _min = nullptr, float* _max = nullptr, float* _default = nullptr, int* _dataType = nullptr);
 };
@@ -92,7 +92,7 @@ class SampleGroup
 {
   public:
     char m_name[256];
-    LList<char*> m_samples;
+    std::vector<char*> m_samples;
 
     ~SampleGroup();
     void SetName(const char* _name);
@@ -125,19 +125,19 @@ class SoundSystem
     Vector3 m_editorPos;
     SoundInstanceId m_editorInstanceId;
 
-    FastDArray<SoundInstance*> m_sounds; // All the sounds that want to play
-    SoundInstance* m_music; // There can only be one piece of music at a time
+    FastSlotMap<SoundInstance*> m_sounds; // All the sounds that want to play
+    SoundInstance* m_music;               // There can only be one piece of music at a time
     SoundInstance* m_requestedMusic;
 
     SoundInstanceId* m_channels;
     int m_numChannels;
 
-    DArray<SoundSourceBlueprint*> m_entityBlueprints; // Indexed on Entity::m_type
-    DArray<SoundSourceBlueprint*> m_buildingBlueprints; // Indexed on Building::m_type
-    DArray<SoundSourceBlueprint*> m_otherBlueprints; // Indexed on SoundSourceBlueprint
-    DArray<DspBlueprint*> m_filterBlueprints; // Indexed on SoundLibrary3d::FX types
+    SlotMap<SoundSourceBlueprint*> m_entityBlueprints;   // Indexed on Entity::m_type
+    SlotMap<SoundSourceBlueprint*> m_buildingBlueprints; // Indexed on Building::m_type
+    SlotMap<SoundSourceBlueprint*> m_otherBlueprints;    // Indexed on SoundSourceBlueprint
+    SlotMap<DspBlueprint*> m_filterBlueprints;           // Indexed on SoundLibrary3d::FX types
 
-    DArray<SampleGroup*> m_sampleGroups;
+    SlotMap<SampleGroup*> m_sampleGroups;
 
   protected:
     void ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, const char* _entityName);
@@ -169,7 +169,7 @@ class SoundSystem
     void Advance();
 
     bool InitialiseSound(SoundInstance* _instance); // Sets up sound, adds to instance list
-    void ShutdownSound(SoundInstance* _instance); // Stops / deletes sound + removes refs
+    void ShutdownSound(SoundInstance* _instance);   // Stops / deletes sound + removes refs
 
     int IsSoundPlaying(SoundInstanceId _id);
     int NumInstancesPlaying(WorldObjectId _id, const char* _eventName);
@@ -179,20 +179,34 @@ class SoundSystem
     int NumChannelsUsed();
     int NumSoundsDiscarded();
 
-    void TriggerEntityEvent(Entity* _entity, const char* _eventName);
-    void TriggerBuildingEvent(Building* _building, const char* _eventName);
-    void TriggerOtherEvent(WorldObject* _other, const char* _eventName, int _type);
+    // These took an Entity*, a Building* and a WorldObject* until
+    // tasks/layering-inversion.yaml T17. Each body read the same four fields
+    // off whatever it was handed, so SoundSource carries those instead and no
+    // GameLogic type appears in this header. GameLogic/SoundSources.h fills one
+    // from a live object.
+    void TriggerEntityEvent(SoundSource const& _source, const char* _eventName);
+    void TriggerBuildingEvent(SoundSource const& _source, const char* _eventName);
 
+    // A sound with no object behind it — gestures, music, the interface.
+    void TriggerOtherEvent(const char* _eventName, int _type);
+    void TriggerOtherEvent(SoundSource const& _source, const char* _eventName, int _type);
+
+  private:
+    // Both public forms land here. Nullable because the blueprint machinery
+    // treats an unattached sound as one with no position of its own.
+    void TriggerOtherEvent(SoundSource const* _source, const char* _eventName, int _type);
+
+  public:
     void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in nullptr to stop every event.
-    // Full event name required, eg "Darwinian SeenThreat"
+    // Full event name required, eg "Citizen SeenThreat"
 
     void StopAllDSPEffects();
 
     void TriggerDuplicateSound(SoundInstance* _instance);
 
     void PropagateBlueprints(); // Call this to update all looping sounds
-    void RuntimeVerify(); // Verifies that the sound system has screwed it's own datastructures
-    void LoadtimeVerify(); // Verifies that the data load from sounds.txt is OK
+    void RuntimeVerify();       // Verifies that the sound system has screwed it's own datastructures
+    void LoadtimeVerify();      // Verifies that the data load from sounds.txt is OK
     const char* IsSoundSourceOK(const char* _soundName);
     // Tests that file names and file formats are OK, returns an error code from the SoundSource enum
     bool IsSampleUsed(const char* _soundName); // Looks to see if that sound name is used in any blueprints

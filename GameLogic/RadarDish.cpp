@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <math.h>
 
@@ -150,7 +151,7 @@ bool RadarDish::Advance ()
     if( m_movementSoundsPlaying && m_horizontallyAligned && m_dish->m_angVel.Mag() < 0.05f )
     {
         g_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
-        g_soundSystem->TriggerBuildingEvent( this, "EndRotation" );
+        g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "EndRotation");
         m_movementSoundsPlaying = false;
     }
 
@@ -206,7 +207,7 @@ bool RadarDish::Advance ()
         m_signal = 0.0f;
         m_receiverId = -1;
         g_soundSystem->StopAllSounds( m_id, "RadarDish ConnectionEstablished" );
-        g_soundSystem->TriggerBuildingEvent( this, "ConnectionLost" );
+        g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ConnectionLost");
 
         GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
         if( gb ) gb->m_link = -1;
@@ -214,10 +215,11 @@ bool RadarDish::Advance ()
 
     if( !previouslyAligned && found )
     {
-        g_soundSystem->TriggerBuildingEvent( this, "ConnectionEstablished" );
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ConnectionEstablished");
 
-        GlobalBuilding *gb = g_globalWorld->GetBuilding( m_id.GetUniqueId(), g_locationId );
-        if( gb ) gb->m_link = m_receiverId;
+      GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
+      if (gb)
+        gb->m_link = m_receiverId;
     }
 
     return Teleport::Advance();
@@ -263,7 +265,7 @@ void RadarDish::Aim( Vector3 _worldPos )
         g_soundSystem->StopAllSounds( m_id, "RadarDish BeginRotation" );
     }
 
-    g_soundSystem->TriggerBuildingEvent( this, "BeginRotation" );
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "BeginRotation");
     m_movementSoundsPlaying = true;
 }
 
@@ -503,7 +505,7 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
 
         g_location->m_entityGrid->AddObject( id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius );
 
-        g_soundSystem->TriggerEntityEvent( _entity, "ExitTeleport" );
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(_entity), "ExitTeleport");
         return true;
     }
 
@@ -511,14 +513,14 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
 }
 
 
-void RadarDish::ListSoundEvents ( LList<char const *> *_list )
+void RadarDish::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "BeginRotation" );
-    _list->PutData( "EndRotation" );
-    _list->PutData( "ConnectionEstablished" );
-    _list->PutData( "ConnectionLost" );
+    _list->push_back("BeginRotation");
+    _list->push_back("EndRotation");
+    _list->push_back("ConnectionEstablished");
+    _list->push_back("ConnectionLost");
 }
 
 

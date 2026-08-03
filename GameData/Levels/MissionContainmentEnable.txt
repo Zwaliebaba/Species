@@ -16,8 +16,8 @@ Buildings_StartDefinition
 	# ==========================================================================
 	ScriptTrigger       1       3115.03 2354.18 1       1.00    0.00    0       -1     35.63  ContainmentIntro.txt always
 	ScriptTrigger       81      3052.90 2140.77 1       1.00    0.00    0       -1     65.33  NewScript never
-	ScriptTrigger       74      727.27  2051.74 0       1.00    0.00    0       82     65.51  containment_incubator Darwinian
-	ScriptTrigger       75      2233.89 2492.66 0       1.00    0.00    0       69     115.45 containment_rescuedws Darwinian
+	ScriptTrigger       74      727.27  2051.74 0       1.00    0.00    0       82     65.51  containment_incubator Citizen
+	ScriptTrigger       75      2233.89 2492.66 0       1.00    0.00    0       69     115.45 containment_rescuedws Citizen
 	Incubator           82      726.01  1993.54 1       0.10    1.00    1            0
 	Incubator           83      3017.62 1001.54 1       0.81    0.58    1            0
 	Incubator           84      3827.17 4152.99 1       -0.11   -0.99   1            0
@@ -44,7 +44,7 @@ InstantUnits_StartDefinition
 	Centipede        1  2959.6   725.2     10    1      -1   200.0     0.0     0.0
 	Centipede        1  2680.0   766.4     10    1      -1   200.0     0.0     0.0
 	SporeGenerator   1  3246.5  1106.6      1    0      -1   200.0     0.0     0.0
-	Darwinian        0  3065.7  2156.7     30    0      -1   137.1     0.0     0.0
+	Citizen        0  3065.7  2156.7     30    0      -1   137.1     0.0     0.0
 InstantUnits_EndDefinition
 
 PrimaryObjectives_StartDefinition

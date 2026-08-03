@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Debug.h"
-//#include "Input.h"
+// #include "Input.h"
 #include "TextRenderer.h"
 #include "Preferences.h"
 #include "WindowManager.h"
@@ -16,7 +16,6 @@
 #include "UserProfileWindow.h"
 #include "ReallyQuitWindow.h"
 
-#include "Camera.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -27,92 +26,77 @@
 #ifdef PROFILER_ENABLED
 class ProfileButton : public SpeciesButton
 {
-public:
-	void MouseUp()
-    {
-		DebugKeyBindings::ProfileButton();
-    }
+  public:
+    void MouseUp() { DebugKeyBindings::ProfileButton(); }
 };
 #endif // PROFILER_ENABLED
 
 
-class NetworkButton: public SpeciesButton
+class NetworkButton : public SpeciesButton
 {
-public:
-    void MouseUp()
-    {
-		DebugKeyBindings::NetworkButton();
-    }
+  public:
+    void MouseUp() { DebugKeyBindings::NetworkButton(); }
 };
 
 
 #ifdef LOCATION_EDITOR
 class EditorButton : public SpeciesButton
 {
-public:
-    void MouseUp()
-    {
-		DebugKeyBindings::EditorButton();
-    }
+  public:
+    void MouseUp() { DebugKeyBindings::EditorButton(); }
 };
 #endif // LOCATION_EDITOR
 
 
-class DebugCameraButton: public SpeciesButton
+class DebugCameraButton : public SpeciesButton
 {
-public:
-	void MouseUp()
-	{
-		DebugKeyBindings::DebugCameraButton();
-	}
+  public:
+    void MouseUp() { DebugKeyBindings::DebugCameraButton(); }
 };
 
 
-class FPSButton: public SpeciesButton
+class FPSButton : public SpeciesButton
 {
-public:
-	void MouseUp()
-	{
-		DebugKeyBindings::FPSButton();
-	}
+  public:
+    void MouseUp() { DebugKeyBindings::FPSButton(); }
 };
 
 
-class PrefsScreenButton: public SpeciesButton
+class PrefsScreenButton : public SpeciesButton
 {
-public:
-	void MouseUp()
-	{
-		if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
-		{
-			EclRegisterWindow(new PrefsScreenWindow());
-		}
-	}
+  public:
+    void MouseUp()
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
+      {
+        EclRegisterWindow(new PrefsScreenWindow());
+      }
+    }
 };
 
 
-class PrefsGfxDetailButton: public SpeciesButton
+class PrefsGfxDetailButton : public SpeciesButton
 {
-public:
-	void MouseUp()
-	{
-		if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
-		{
-			EclRegisterWindow(new PrefsGraphicsWindow());
-		}
+  public:
+    void MouseUp()
+    {
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
+      {
+        EclRegisterWindow(new PrefsGraphicsWindow());
+      }
     }
 };
 
 
 class PrefsSoundButton : public SpeciesButton
 {
-public:
+  public:
     void MouseUp()
     {
-        if(!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
-        {
-            EclRegisterWindow(new PrefsSoundWindow());
-        }
+      if (!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
+      {
+        EclRegisterWindow(new PrefsSoundWindow());
+      }
     };
 };
 
@@ -120,11 +104,8 @@ public:
 #ifdef CHEATMENU_ENABLED
 class CheatButton : public SpeciesButton
 {
-public:
-    void MouseUp()
-    {
-        DebugKeyBindings::CheatButton();
-    }
+  public:
+    void MouseUp() { DebugKeyBindings::CheatButton(); }
 };
 #endif
 
@@ -133,100 +114,96 @@ public:
 // Class DebugMenu
 // ****************************************************************************
 
-DebugMenu::DebugMenu( char *name )
-:   SpeciesWindow( name )
+DebugMenu::DebugMenu(char* name)
+  : SpeciesWindow(name)
 {
-	m_x = 10;
-	m_y = 20;
-	m_w = 170;
-	m_h = 75;
+  m_x = 10;
+  m_y = 20;
+  m_w = 170;
+  m_h = 75;
 }
 
 
-void DebugMenu::Advance()
-{
-}
+void DebugMenu::Advance() {}
 
 
 void DebugMenu::Create()
 {
-	SpeciesWindow::Create();
+  SpeciesWindow::Create();
 
-    int pitch = 18;
-	int y = 5;
+  int pitch = 18;
+  int y = 5;
 
-	SpeciesButton *button;
+  SpeciesButton* button;
 
 #ifdef PROFILER_ENABLED
-	button = new ProfileButton();
-    button->SetShortProperties( "Profile (F6)", 10, y += pitch, m_w - 20 );
-    RegisterButton( button );
+  button = new ProfileButton();
+  button->SetShortProperties("Profile (F6)", 10, y += pitch, m_w - 20);
+  RegisterButton(button);
 #endif // PROFILER_ENABLED
 
-    button = new NetworkButton();
-    button->SetShortProperties( "Network Stats", 10, y += pitch, m_w - 20 );
-    RegisterButton( button );
+  button = new NetworkButton();
+  button->SetShortProperties("Network Stats", 10, y += pitch, m_w - 20);
+  RegisterButton(button);
 
-	button = new FPSButton();
-	button->SetShortProperties("Display FPS (F5)", 10, y += pitch, m_w - 20 );
-	RegisterButton( button );
+  button = new FPSButton();
+  button->SetShortProperties("Display FPS (F5)", 10, y += pitch, m_w - 20);
+  RegisterButton(button);
 
-	y += pitch / 2.0f;
+  y += pitch / 2.0f;
 
-	y += pitch / 2.0f;
+  y += pitch / 2.0f;
 
-	button = new DebugCameraButton();
-	button->SetShortProperties("Dbg Cam (F2)", 10, y += pitch, m_w - 20 );
-	RegisterButton( button );
+  button = new DebugCameraButton();
+  button->SetShortProperties("Dbg Cam (F2)", 10, y += pitch, m_w - 20);
+  RegisterButton(button);
 
-	y += pitch / 2.0f;
+  y += pitch / 2.0f;
 
-    bool modsEnabled = g_prefsManager->GetInt( "ModSystemEnabled", 0 ) != 0;
+  bool modsEnabled = g_prefsManager->GetInt("ModSystemEnabled", 0) != 0;
 
 #ifdef LOCATION_EDITOR
-    if( modsEnabled )
-    {
-        button = new EditorButton();
-	    button->SetShortProperties("Toggle Editor (F3)", 10, y += pitch, m_w - 20);
-	    RegisterButton(button);
-    }
+  if (modsEnabled)
+  {
+    button = new EditorButton();
+    button->SetShortProperties("Toggle Editor (F3)", 10, y += pitch, m_w - 20);
+    RegisterButton(button);
+  }
 #endif // LOCATION_EDITOR
 
 #ifdef CHEATMENU_ENABLED
-    button = new CheatButton();
-    button->SetShortProperties("Cheat Menu (F4)", 10, y += pitch, m_w - 20 );
-    RegisterButton( button );
+  button = new CheatButton();
+  button->SetShortProperties("Cheat Menu (F4)", 10, y += pitch, m_w - 20);
+  RegisterButton(button);
 #endif
 
 
-	y += pitch / 2.0f;
-
-
+  y += pitch / 2.0f;
 }
 
 
 void DebugMenu::Render(bool hasFocus)
 {
-	Advance();
+  Advance();
 
-	SpeciesWindow::Render(hasFocus);
+  SpeciesWindow::Render(hasFocus);
 
-	EclButton *camDbgButton = GetButton("Dbg Cam (F2)");
-	DEBUG_ASSERT(camDbgButton);
-	int y = m_y + camDbgButton->m_y + 11;
+  EclButton* camDbgButton = GetButton("Dbg Cam (F2)");
+  DEBUG_ASSERT(camDbgButton);
+  int y = m_y + camDbgButton->m_y + 11;
 
-	switch (g_camera->GetDebugMode())
-	{
-		case Camera::DebugModeAlways:
-			g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Always");
-			break;
-		case Camera::DebugModeAuto:
-			g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Auto");
-			break;
-		case Camera::DebugModeNever:
-			g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Never");
-			break;
-	}
+  switch (g_camera->GetDebugMode())
+  {
+  case CameraAccess::DebugModeAlways:
+    g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Always");
+    break;
+  case CameraAccess::DebugModeAuto:
+    g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Auto");
+    break;
+  case CameraAccess::DebugModeNever:
+    g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Never");
+    break;
+  }
 }
 
 
@@ -236,59 +213,53 @@ void DebugMenu::Render(bool hasFocus)
 
 void DebugKeyBindings::DebugMenu()
 {
-	char *debugMenuWindowName = LANGUAGEPHRASE("dialog_toolsmenu");
-	if (EclGetWindow(debugMenuWindowName))
-		EclRemoveWindow(debugMenuWindowName);
-	else
-		EclRegisterWindow(new ::DebugMenu(debugMenuWindowName));
+  char* debugMenuWindowName = LANGUAGEPHRASE("dialog_toolsmenu");
+  if (EclGetWindow(debugMenuWindowName))
+    EclRemoveWindow(debugMenuWindowName);
+  else
+    EclRegisterWindow(new ::DebugMenu(debugMenuWindowName));
 }
 
 #ifdef PROFILER_ENABLED
 void DebugKeyBindings::ProfileButton()
 {
-    if( EclGetWindow("Profiler") )
-	{
-		EclRemoveWindow("Profiler");
-	}
-	else
-    {
-        ProfileWindow *pw = new ProfileWindow("Profiler");
-        pw->m_w = 570;
-        pw->m_h = 450;
-        pw->m_x = g_renderer->ScreenW() - pw->m_w - 20;
-        pw->m_y = 30;
-        EclRegisterWindow(pw);
-    }
+  if (EclGetWindow("Profiler"))
+  {
+    EclRemoveWindow("Profiler");
+  }
+  else
+  {
+    ProfileWindow* pw = new ProfileWindow("Profiler");
+    pw->m_w = 570;
+    pw->m_h = 450;
+    pw->m_x = g_renderer->ScreenW() - pw->m_w - 20;
+    pw->m_y = 30;
+    EclRegisterWindow(pw);
+  }
 }
 #endif
 
 
 void DebugKeyBindings::NetworkButton()
 {
-    if (!EclGetWindow("Network Stats") )
-    {
-        NetworkWindow *nw = new NetworkWindow("Network Stats");
-        nw->m_w = 200;
-        nw->m_h = 200;
-        nw->m_x = 10;
-        nw->m_y = g_renderer->ScreenH() - nw->m_h;
-        EclRegisterWindow(nw);
-    }
+  if (!EclGetWindow("Network Stats"))
+  {
+    NetworkWindow* nw = new NetworkWindow("Network Stats");
+    nw->m_w = 200;
+    nw->m_h = 200;
+    nw->m_x = 10;
+    nw->m_y = g_renderer->ScreenH() - nw->m_h;
+    EclRegisterWindow(nw);
+  }
 }
 
 
 #ifdef LOCATION_EDITOR
-void DebugKeyBindings::EditorButton()
-{
-	g_requestToggleEditing = true;
-}
+void DebugKeyBindings::EditorButton() { g_requestToggleEditing = true; }
 #endif // LOCATION_EDITOR
 
 
-void DebugKeyBindings::DebugCameraButton()
-{
-	g_camera->SetNextDebugMode();
-}
+void DebugKeyBindings::DebugCameraButton() { g_camera->SetNextDebugMode(); }
 
 void DebugKeyBindings::FPSButton() { g_renderer->SetDisplayFps(!g_renderer->DisplayFps()); }
 
@@ -296,28 +267,28 @@ void DebugKeyBindings::FPSButton() { g_renderer->SetDisplayFps(!g_renderer->Disp
 #ifdef CHEATMENU_ENABLED
 void DebugKeyBindings::CheatButton()
 {
-    if( !EclGetWindow("Cheat Window") )
-    {
-        CheatWindow *window = new CheatWindow("Cheat Window" );
-        window->m_w = 200;
-        window->m_h = 200;
-        window->m_x = 250;
-        window->m_y = 50;
-        EclRegisterWindow( window );
-    }
+  if (!EclGetWindow("Cheat Window"))
+  {
+    CheatWindow* window = new CheatWindow("Cheat Window");
+    window->m_w = 200;
+    window->m_h = 200;
+    window->m_x = 250;
+    window->m_y = 50;
+    EclRegisterWindow(window);
+  }
 }
 #endif
 
 
 void DebugKeyBindings::ReallyQuitButton()
 {
-	// Bring up a really quit window
-	if (!EclGetWindow(REALLYQUIT_WINDOWNAME))
-		EclRegisterWindow( new ReallyQuitWindow() );
+  // Bring up a really quit window
+  if (!EclGetWindow(REALLYQUIT_WINDOWNAME))
+    EclRegisterWindow(new ReallyQuitWindow());
 }
 
 void DebugKeyBindings::ToggleFullscreenButton()
 {
-	bool switchingToWindowed;
-	SetWindowed(!g_windowManager->Windowed(), true, switchingToWindowed);
+  bool switchingToWindowed;
+  SetWindowed(!g_windowManager->Windowed(), true, switchingToWindowed);
 }

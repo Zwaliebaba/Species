@@ -1,7 +1,10 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Entity.h"
+#include "SlotMap.h"
 
 #define SOULDESTROYER_MINSEARCHRANGE       200.0f
 #define SOULDESTROYER_MAXSEARCHRANGE       300.0f
@@ -18,8 +21,8 @@ protected:
     Vector3         m_targetPos;
     Vector3         m_up;
     WorldObjectId   m_targetEntity;
-    LList<Vector3>  m_positionHistory;
-    FastDArray      <float> m_spirits;
+    std::vector<Vector3> m_positionHistory;
+    FastSlotMap<float> m_spirits;
 
     float           m_retargetTimer;
     float           m_panic;
@@ -56,9 +59,9 @@ public:
 
     void Attack             ( Vector3 const &_pos );
 
-    void ListSoundEvents    ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
-	void SetWaypoint( Vector3 const _waypoint );
+    void SetWaypoint(Vector3 const _waypoint);
 };
 
 

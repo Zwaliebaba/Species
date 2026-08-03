@@ -25,8 +25,8 @@ Buildings_EndDefinition
 InstantUnits_StartDefinition
 	# Type         team    x       z   count  inUnit state   spread  waypointX waypointZ
 	# ==================================================================================
-	Darwinian        0  3124.8  2968.2    100    0      -1   159.2     0.0     0.0
-	Darwinian        0  3362.6  1266.2    100    0      -1   132.9     0.0     0.0
+	Citizen        0  3124.8  2968.2    100    0      -1   159.2     0.0     0.0
+	Citizen        0  3362.6  1266.2    100    0      -1   132.9     0.0     0.0
 	Virii            1  2425.2  1249.8     50    1      -1   207.0     0.0     0.0
 	Virii            1  2207.4  1671.5     70    1      -1   313.8     0.0     0.0
 	SporeGenerator   1  2257.5  1519.2      3    0      -1   325.7     0.0     0.0

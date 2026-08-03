@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 
@@ -29,6 +31,6 @@ public:
 
     void TriggerSpam();
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 

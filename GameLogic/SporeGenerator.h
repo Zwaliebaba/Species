@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Entity.h"
 
 #define SPOREGENERATOR_NUMTAILS 4
@@ -48,7 +50,7 @@ public:
     void Render             ( float _predictionTime );
     bool RenderPixelEffect  ( float _predictionTime );
 
-    void ListSoundEvents    ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

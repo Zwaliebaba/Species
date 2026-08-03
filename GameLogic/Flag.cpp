@@ -5,7 +5,6 @@
 #include "Flag.h"
 
 #include "GameTime.h"
-#include "Camera.h"
 #include "WorldPointers.h"
 
 

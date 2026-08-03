@@ -126,13 +126,11 @@ int SpiritStore::NumSpirits ()
 
 void SpiritStore::AddSpirit ( Spirit *_spirit )
 {
-    Spirit *target = m_spirits.GetPointer();
-    *target = *_spirit;
-    target->m_pos = m_pos + Vector3(syncsfrand(m_sizeX*1.5f),
-                                    syncsfrand(m_sizeY*1.5f),
-                                    syncsfrand(m_sizeZ*1.5f) );
-    target->m_state = Spirit::StateInStore;
-    target->m_numNearbyEggs = 0;
+  Spirit* target = m_spirits.GetPointer(m_spirits.GetNextFree());
+  *target = *_spirit;
+  target->m_pos = m_pos + Vector3(syncsfrand(m_sizeX * 1.5f), syncsfrand(m_sizeY * 1.5f), syncsfrand(m_sizeZ * 1.5f));
+  target->m_state = Spirit::StateInStore;
+  target->m_numNearbyEggs = 0;
 }
 
 void SpiritStore::RemoveSpirits ( int _quantity )

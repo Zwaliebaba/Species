@@ -26,8 +26,8 @@ InstantUnits_StartDefinition
 	Virii            1   915.3   396.4     40    1      -1    92.7     0.0     0.0
 	Virii            1   888.6   555.8     40    1      -1   114.5     0.0     0.0
 	Virii            1   710.6  1568.4     40    1      -1   146.7     0.0     0.0
-	Darwinian        0   598.8  1202.4     30    0      -1   143.7     0.0     0.0
-	Darwinian        0  1252.7  1353.9     20    0      -1   104.8     0.0     0.0
+	Citizen        0   598.8  1202.4     30    0      -1   143.7     0.0     0.0
+	Citizen        0  1252.7  1353.9     20    0      -1   104.8     0.0     0.0
 InstantUnits_EndDefinition
 
 PrimaryObjectives_StartDefinition

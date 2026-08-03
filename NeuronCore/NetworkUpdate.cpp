@@ -117,9 +117,30 @@ void NetworkUpdate::SetType( UpdateType _type )
     m_type = _type;
 }
 
-void NetworkUpdate::SetClientIp( char *ip )
+void NetworkUpdate::SetClientIp(std::string_view ip)
 {
-    strcpy( m_clientIp, ip );
+  // m_clientIp stays a char[16] and this stays a copy into it. T1's audit
+  // found that ServerToClientLetter memcpy()s whole NetworkUpdate structs,
+  // so the type has to remain trivially copyable — converting the field to
+  // std::string is only legal together with turning those memcpys into
+  // assignments, which is not this task.
+  //
+  // What does change is that the copy is bounded. The old unbounded copy
+  // ran off the end of a 16-byte field for anything longer than a dotted
+  // quad; today every caller passes an address the UDP layer produced, but
+  // nothing in the signature said so.
+  // Written out rather than with std::min, which does not compile anywhere
+  // MathUtils.h is reachable: it defines function-style min and max macros, so
+  // `std::min(` becomes `std::(...)(` and MSVC reports C2589. NOMINMAX
+  // suppresses the Windows pair; nothing suppresses ours. See
+  // tasks/language-hygiene.yaml T8.
+  size_t length = ip.size();
+  if (length > sizeof(m_clientIp) - 1)
+  {
+    length = sizeof(m_clientIp) - 1;
+  }
+  std::memcpy(m_clientIp, ip.data(), length);
+  m_clientIp[length] = '\0';
 }
 
 void NetworkUpdate::SetTeamType( unsigned char _teamType )

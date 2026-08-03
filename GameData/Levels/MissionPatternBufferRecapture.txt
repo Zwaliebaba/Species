@@ -12,7 +12,7 @@ CameraAnimations_EndDefinition
 Buildings_StartDefinition
 	# Type              id      x       z       tm      rx      rz      isGlobal
 	# ==========================================================================
-	ScriptTrigger       69      884.18  1595.95 1       1.00    0.00    0       -1     100.00 patternbuffer_redarmy Darwinian
+	ScriptTrigger       69      884.18  1595.95 1       1.00    0.00    0       -1     100.00 patternbuffer_redarmy Citizen
 	Triffid             0       2590.84 1625.89 1       0.62    -0.78   0       1.00   1.33   186.27 0.28   40.06  1 151.94   -385.29  171.78 1 0 1 1 0 1 0 
 	Triffid             4       3144.99 975.97  1       0.36    0.93    0       1.00   0.84   175.14 0.39   60.00  1 22.45    537.68   184.90 1 1 1 1 1 1 0 
 	Incubator           13      757.48  1664.18 1       1.00    0.00    1            0

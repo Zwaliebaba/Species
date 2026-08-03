@@ -267,7 +267,7 @@ entityname_sporegenerator              Generatore di spore
 entityname_centipede                   Centipede
 entityname_spaceinvader                Invasore
 entityname_spider                      Ragno
-entityname_darwinian                   Darwiniano
+entityname_citizen                   Darwiniano
 entityname_officer                     Ufficiale
 entityname_armyant                     Esercito di formiche
 entityname_armour                      Mezzo corazzato
@@ -364,7 +364,7 @@ objective_throughput                   produttività
 # Research messages
 # ================================================
 
-researchname_darwinian                 Darwiniani
+researchname_citizen                 Darwiniani
 researchname_squad                     Plotone
 researchname_engineer                  Ingegnere
 researchname_laser                     Laser
@@ -424,11 +424,11 @@ research_taskmanager                   Lavorerò per migliorare il Riquadro attiv
 research_taskmanager_v3                Ho apportato alcune modifiche al Riquadro attività. Ora puoi eseguire fino a quattro programmi contemporaneamente.
 research_taskmanager_v4                Ho potenziato il Riquadro attività: ora puoi eseguire fino a cinque programmi alla volta. Il sistema ha raggiunto i limiti delle sue potenzialità: non credo di poterlo migliorare ulteriormente.
 
-research_darwinian                     Proverò a migliorare il programma base dei Darwiniani. Dovrei essere in grado di assegnare loro delle armi utili per difendersi.
-# research_darwinian_v1              Unused
-# research_darwinian_v2              Unused
-research_darwinian_v3                  Ho potenziato i Darwiniani, così ora possono usare i laser! Questo dovrebbe aiutarli a difendersi dagli attacchi virali.
-research_darwinian_v4                  Ho dotato i Darwiniani di granate: questa prospettiva fa un po' paura, ma devono avere la possibilità di difendersi contro nemici più forti. Ho fatto tutto ciò che potevo con loro.
+research_citizen                     Proverò a migliorare il programma base dei Darwiniani. Dovrei essere in grado di assegnare loro delle armi utili per difendersi.
+# research_citizen_v1              Unused
+# research_citizen_v2              Unused
+research_citizen_v3                  Ho potenziato i Darwiniani, così ora possono usare i laser! Questo dovrebbe aiutarli a difendersi dagli attacchi virali.
+research_citizen_v4                  Ho dotato i Darwiniani di granate: questa prospettiva fa un po' paura, ma devono avere la possibilità di difendersi contro nemici più forti. Ho fatto tutto ciò che potevo con loro.
 
 research_engineer                      Lavorerò per migliorare gli ingegneri. Penso di poter aumentare il numero di anime trasportabili.
 # research_engineer_v1               Unused
@@ -769,7 +769,7 @@ newcontrols_showresearch               Mostra ricerca
 newcontrols_showtaskmanager            Mostra Riquadro attività
 newcontrols_showobjectives             Mostra obiettivi
 
-newcontrols_research_darwinian         Ricerca il programma dei Darwiniani (equipaggiali con armi migliori)
+newcontrols_research_citizen         Ricerca il programma dei Darwiniani (equipaggiali con armi migliori)
 newcontrols_research_officer           Ricerca il programma degli ufficiali (fornisci una varietà di ordini maggiore)
 newcontrols_research_squad             Ricerca il programma dei plotoni (aumenta il numero dei soldati)
 newcontrols_research_laser             Ricerca il programma dei laser (accrescine la portata)
@@ -1541,7 +1541,7 @@ spawnname_spawnspider                  Genera ragno
 spawnname_spawnspirits                 Genera anime
 spawnname_spawneggs                    Genera uova
 spawnname_spawntriffideggs             Genera uova di trifido
-spawnname_spawndarwinians              Genera Darwiniani
+spawnname_spawncitizens              Genera Darwiniani
 
 
 # =================================================
