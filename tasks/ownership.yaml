@@ -260,9 +260,83 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    notes: >
+    notes: |
       After each file's containers-replaced task (T5, T6, T7, T8 there).
       Split into per-subsystem commits.
+
+      TWO OF FIVE SUBSYSTEMS LANDED 2026-08-03, as separate commits, each
+      preceded by a whole-file reformat commit because both files are legacy
+      formatted and the changed-lines check otherwise creeps into their
+      neighbours one --fix pass at a time.
+
+      ClientToServer. The five SAFE_DELETEd members, both letter queues, and the
+      three signatures that move letters across the thread boundary —
+      GetNextLetter returns unique_ptr, ReceiveLetter and SendLetter take one,
+      mirroring what T2 did for NeuronServer. 61 insertions against 68
+      deletions, the net-negative shape T1 predicted.
+
+      Two destruction points had to be pinned rather than left to scope, which
+      is this plan's rule in practice rather than in the summary. AdvanceSender
+      deleted the letter BEFORE erasing it from the outbox; Main.cpp deleted it
+      BEFORE calling GenerateSyncValue(). Both reset() at those points. Letting
+      either fall out of scope would have moved the destruction later — the
+      "changes WHEN objects die" failure this plan opens by warning about.
+
+      The destructor keeps an explicit body. Members destroy in reverse
+      declaration order, which takes both sockets down BEFORE NetLib; the
+      SAFE_DELETEs did the opposite. Preserved rather than reasoned about,
+      because whether NetLib may outlive its sockets is not established.
+
+      Shape. m_rootFragment, m_childFragments and m_childMarkers own through
+      unique_ptr; ShapeMarker::m_parents becomes a vector of observers, which is
+      what it always was.
+
+      A REAL DEFECT WENT WITH IT: m_parents was `new ShapeFragment*[m_depth]`
+      released with SAFE_DELETE — plain delete on an array, undefined behaviour,
+      and exactly the mismatch VectorUtils.h's EmptyAndDelete comment warns
+      about. The commented-out "should we?" delete loop above it is answered in
+      the header now.
+
+      The load path is the subtle part and is worth reading before touching it
+      again: the hierarchy loop reads allFrags[j]->m_name for every j after
+      earlier iterations have handed ownership to the tree, so ownership lives
+      in a second array and the loop reads through plain observers. Reading
+      through the owning slot would follow a moved-from unique_ptr.
+
+      ~ShapeFragment keeps explicit clear() calls so children still die before
+      the display list, and fragments still before markers. Both destructors
+      reach GL.
+
+      THE THREE THAT REMAIN, measured at 3cc7a9d rather than guessed, because
+      the sizes are not what this task's intent implies:
+
+        Eclipse is the BIGGEST, not the smallest. Its two file-static vectors
+        are handed out whole by EclGetWindows(), which returns
+        std::vector<EclWindow*>* and has 19 callers outside Eclipse.cpp across
+        GameLogic and Species. Converting the element type changes that public
+        signature and every one of them. EclGetDirtyRects() has none, so
+        dirtyrects is free. Consider whether EclGetWindows should hand out
+        observers rather than the container.
+
+        The sound trio is the most CONTAINED, which is the opposite of what
+        "sound and GL destructors have side effects" suggests. Of the six
+        containers SoundSystem::EmptyAndDeletes, four have zero reach outside
+        SoundSystem.cpp; m_sounds is read by GameLogic/PrefsSoundWindow.cpp and
+        m_filterBlueprints by SoundInstance.cpp. They are SlotMap<T*> and
+        FastSlotMap<T*>, so the conversion is SlotMap<unique_ptr<T>> and the
+        hazard is the one T2 hit in NeuronServer: MarkNotUsed clears the
+        occupancy bit and does NOT destroy, so a slot must be reset explicitly
+        while operator[] is still valid or objects outlive their removal.
+
+        Resource and LanguageTable are cache maps whose values are deleted in a
+        loop (Resource.cpp:42,46,65; LanguageTable.cpp:61,64,65,69,73). The
+        LanguageTable pair is the one to read first: m_phrasesKbd and
+        m_phrasesXin are deleted in three places, two of them conditional
+        reassignments, so the ownership is genuinely unclear from the code.
+
+      Not compiled here — CI's x64 Debug build is what checks both landed
+      subsystems, and neither is reachable from the Garden smoke test except
+      through Shape, which every building renders.
     status: in_progress
 
   - id: T4
