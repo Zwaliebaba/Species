@@ -58,6 +58,7 @@
     <ClInclude Include="BoundedArray.h" />
     <ClInclude Include="DArray.h" />
     <ClInclude Include="FastDArray.h" />
+    <ClInclude Include="Globals.h" />
     <ClInclude Include="HashTable.h" />
     <ClInclude Include="HiResTime.h" />
     <ClInclude Include="LList.h" />

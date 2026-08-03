@@ -82,6 +82,11 @@ class CameraAccess
 
     virtual void SetupProjectionMatrix(float _nearPlane, float _farPlane) = 0;
 
+    // World point to screen point. Used by entity render code to place labels
+    // and health bars, so it moves with the cluster in
+    // tasks/layering-inversion.yaml T15.
+    virtual void Get2DScreenPos(Vector3 const& _vector, float* _screenX, float* _screenY) = 0;
+
     virtual void CreateCameraShake(float _intensity) = 0;
 
     virtual bool IsInteractive() = 0;

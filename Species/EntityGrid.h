@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Globals.h"
+#include "ProtocolLimits.h"
 
 
 class EntityGridCell;

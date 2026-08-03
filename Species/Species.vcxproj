@@ -159,7 +159,6 @@
     <ClInclude Include="Explosion.h" />
     <ClInclude Include="GameCursor.h" />
     <ClInclude Include="GameMenu.h" />
-    <ClInclude Include="Globals.h" />
     <ClInclude Include="GlobalInternet.h" />
     <ClInclude Include="GlobalWorld.h" />
     <ClInclude Include="Landscape.h" />

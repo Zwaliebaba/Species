@@ -154,6 +154,7 @@
     <ClInclude Include="FastDArray.h">
       <Filter>Legacy Containers</Filter>
     </ClInclude>
+    <ClInclude Include="Globals.h" />
     <ClInclude Include="HashTable.h">
       <Filter>Legacy Containers</Filter>
     </ClInclude>

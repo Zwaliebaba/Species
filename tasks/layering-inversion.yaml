@@ -1116,10 +1116,48 @@ tasks:
       not — Camera::Get2DScreenPos (7 uses) and Renderer::IsFadeComplete (1) —
       and those two members should join their interfaces.
 
-      (c) The rest: Main.h, Globals.h, Water.h, Clouds.h, GlobalInternet.h,
-      LandscapeRenderer.h, GameCursor.h and TaskManager.h. Not yet measured
-      member by member. LandscapeRenderer is already called out in the notes
-      below; Water and Clouds are Location members that may move with it.
+      (b) IS DONE. 59 call sites in the cluster are back on the interface, and
+      the two members they needed that no interface carried —
+      Camera::Get2DScreenPos and Renderer::IsFadeComplete — have joined
+      CameraAccess and RendererAccess. Fourteen concrete-header includes went
+      with them.
+
+      (c) The rest, now measured member by member rather than guessed. Three
+      were mechanical and are DONE:
+
+        Main.h (5)      An eight-line shim: it includes NeuronCore's GameTime.h
+                        and declares AppMain(). Nothing in the cluster calls
+                        AppMain, so those five now include GameTime.h directly.
+        Camera.h (4)    Only for the Camera::ModeX enumerators, which live on
+                        CameraAccess since T9. Retargeted; the includes went.
+        TaskManagerInterface.h (2)  Same, for MessageX.
+        Globals.h       MOVED to NeuronCore. Three simulation constants with no
+                        dependencies beyond ProtocolLimits, and GameLogic was
+                        already reaching GRAVITY through it — Tripod.cpp got it
+                        via Location.h, which this task's own include cleanup
+                        promptly broke. Now everyone includes it downward, and
+                        six files that had been relying on that chain say so.
+
+      Cluster Species includes: 15 headers and about 50 sites at the start of
+      the prep, 6 headers and 15 sites now, of which 11 are pch.h — mechanical
+      at move time, since GameLogic has its own.
+
+      WHAT IS ACTUALLY LEFT:
+
+        App.h (4)       m_gameCursor, m_backgroundColour, m_requestedMission,
+                        m_requestedMap, m_paused. The state belongs in
+                        AppState.h beside T14's globals; m_gameCursor needs a
+                        seam or a global of its own.
+        TaskManager.h (3)  The item T10 handed over. Needs Task's definition
+                        below Species, which needs Task's implementation to
+                        stop reaching g_location — i.e. it resolves as part of
+                        this move, not before it.
+        Water.h (2)     `g_location->m_water`. Water is a Location member and a
+                        Species file; either it joins the moving set or Location
+                        exposes it differently.
+        GameCursor.h (2)   With App.h's m_gameCursor above.
+        LandscapeRenderer.h (1), GlobalInternet.h (1), Clouds.h (1)  One site
+                        each, not yet looked at.
 
       T10 HANDS THIS TASK EIGHT MORE ENTRIES, found while running it:
       TaskManager.h (5), Water.h (2) and TaskManagerInterfaceIcons.h (1).

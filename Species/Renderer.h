@@ -94,7 +94,7 @@ class Renderer : public RendererAccess
     void MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform) override;
     void MarkUsedCells(const Shape* _shape, const Matrix34& _transform) override;
 
-    bool IsFadeComplete() const;
+    bool IsFadeComplete() const override;
     void StartFadeOut() override;
     void StartFadeIn(float _delay);
 };

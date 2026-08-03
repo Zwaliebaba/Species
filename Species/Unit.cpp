@@ -1,3 +1,4 @@
+#include "Globals.h"
 #include "pch.h"
 
 #include <math.h>
@@ -17,7 +18,6 @@
 #include "SoundSystem.h"
 #include "Team.h"
 #include "Unit.h"
-#include "Camera.h"
 
 #include "WorldObject.h"
 #include "LaserTrooper.h"
@@ -117,7 +117,7 @@ void Unit::AdvanceEntities(int _slice)
 }
 
 
-bool Unit::IsInView() { return (TheCamera()->SphereInViewFrustum(m_centrePos, m_radius)); }
+bool Unit::IsInView() { return (g_camera->SphereInViewFrustum(m_centrePos, m_radius)); }
 
 
 void Unit::Render(float _predictionTime)

@@ -8,8 +8,7 @@
 
 #include "Explosion.h"
 #include "Globals.h"
-#include "Main.h"
-#include "Renderer.h"
+#include "GameTime.h"
 #include "WorldPointers.h"
 
 

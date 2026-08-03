@@ -1,3 +1,4 @@
+#include "Globals.h"
 #include "pch.h"
 
 
@@ -9,8 +10,7 @@
 #include "Profiler.h"
 #include "Resource.h"
 
-#include "Camera.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ParticleSystem.h"
 #include "Location.h"
 #include "WorldPointers.h"
@@ -162,8 +162,8 @@ void Particle::Render(float _predictionTime)
 
   Vector3 predictedPos = m_pos + _predictionTime * m_vel;
   float size = m_size / 16.0f;
-  Vector3 up(TheCamera()->GetUp() * size);
-  Vector3 right(TheCamera()->GetRight() * size);
+  Vector3 up(g_camera->GetUp() * size);
+  Vector3 right(g_camera->GetRight() * size);
 
   if (m_typeId == TypeMissileTrail)
   {

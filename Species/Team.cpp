@@ -1,3 +1,4 @@
+#include "Globals.h"
 #include "pch.h"
 
 #include <math.h>
@@ -19,18 +20,14 @@
 #include "SoundSystem.h"
 
 #include "App.h"
-#include "Camera.h"
 #include "Location.h"
 #include "GlobalWorld.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "EntityGrid.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "Unit.h"
-#include "UserInput.h"
 #include "GameCursor.h"
 #include "TaskManager.h"
-#include "ControlHelp.h"
 
 #include "Engineer.h"
 #include "Entity.h"
@@ -157,12 +154,12 @@ void Team::SelectUnit(int _unitId, int _entityId, int _buildingId)
   //        if( m_units.ValidIndex(_unitId) )
   //        {
   //            Unit *unit = m_units[_unitId];
-  //            worldpos = unit->m_centrePos - TheCamera()->GetFront() * 200.0f;
+  //            worldpos = unit->m_centrePos - g_camera->GetFront() * 200.0f;
   //        }
   //        else if( m_others.ValidIndex(_entityId) )
   //        {
   //            Entity *entity = m_others[_entityId];
-  //            worldpos = entity->m_pos - TheCamera()->GetFront() * 200.0f;
+  //            worldpos = entity->m_pos - g_camera->GetFront() * 200.0f;
   //        }
   //    }
 }
@@ -484,7 +481,7 @@ void Team::RenderVirii(float _predictionTime)
   int lastUpdated = m_others.GetLastUpdated();
 
   float nearPlaneStart = g_renderer->GetNearPlane();
-  TheCamera()->SetupProjectionMatrix(nearPlaneStart * 1.05f, g_renderer->GetFarPlane());
+  g_camera->SetupProjectionMatrix(nearPlaneStart * 1.05f, g_renderer->GetFarPlane());
 
   //
   // Render Red Virii shapes
@@ -512,7 +509,7 @@ void Team::RenderVirii(float _predictionTime)
         Virii* virii = (Virii*)entity;
         if (virii->IsInView())
         {
-          float rangeToCam = (virii->m_pos - TheCamera()->GetPos()).Mag();
+          float rangeToCam = (virii->m_pos - g_camera->GetPos()).Mag();
           int viriiDetail = 1;
           if (entityDetail == 1 && rangeToCam > 1000.0f)
             viriiDetail = 2;
@@ -549,7 +546,7 @@ void Team::RenderVirii(float _predictionTime)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-  TheCamera()->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
+  g_camera->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
 }
 
 
@@ -590,7 +587,7 @@ void Team::RenderDarwinians(float _predictionTime)
         Darwinian* darwinian = (Darwinian*)entity;
         if (darwinian->IsInView())
         {
-          float camDistSqd = (darwinian->m_pos - TheCamera()->GetPos()).MagSquared();
+          float camDistSqd = (darwinian->m_pos - g_camera->GetPos()).MagSquared();
           float highDetail = 1.0f - (camDistSqd / highDetailDistanceSqd);
           highDetail = max(highDetail, 0.0f);
           highDetail = min(highDetail, 1.0f);
@@ -663,17 +660,17 @@ void Team::RenderOthers(float _predictionTime)
 // has no place in the foundation.
 void TeamControls::Advance()
 {
-  if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
+  if (g_camera->IsInMode(CameraAccess::ModeBuildingFocus))
     return;
 
-  m_mousePos = TheUserInput()->GetMousePos3d();
+  m_mousePos = g_userInput->GetMousePos3d();
 
   m_primaryFireTarget |= g_inputManager->controlEvent(ControlUnitPrimaryFireTarget);
   m_secondaryFireTarget |= g_inputManager->controlEvent(ControlUnitSecondaryFireTarget);
   m_primaryFireDirected |= g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && !g_inputManager->controlEvent(ControlCameraRotate);
   m_secondaryFireDirected |=
     g_inputManager->controlEvent(ControlUnitSecondaryFireDirected) /* && g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected ) */;
-  m_cameraEntityTracking |= TheCamera()->IsInMode(Camera::ModeEntityTrack);
+  m_cameraEntityTracking |= g_camera->IsInMode(CameraAccess::ModeEntityTrack);
   m_unitMove |= g_inputManager->controlEvent(ControlUnitSetTarget) && !m_secondaryFireTarget;
   m_unitSecondaryMode |= g_inputManager->controlEvent(ControlUnitStartSecondaryFireDirected);
   m_endSetTarget |= g_inputManager->controlEvent(ControlUnitEndSetTarget);
@@ -681,7 +678,7 @@ void TeamControls::Advance()
   InputDetails details;
   if (g_inputManager->controlEvent(ControlUnitMove, details))
   {
-    Vector3 right = TheCamera()->GetControlVector();
+    Vector3 right = g_camera->GetControlVector();
     Vector3 front = g_upVector ^ -right;
 
     Vector3 waypoint = right * -details.x;
@@ -691,7 +688,7 @@ void TeamControls::Advance()
     m_directUnitMoveDx = waypoint.x;
     m_directUnitMoveDy = waypoint.z;
 
-    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondMoveCameraOrUnit);
   }
 
   if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details) && !g_inputManager->controlEvent(ControlCameraRotate))
@@ -700,13 +697,13 @@ void TeamControls::Advance()
     m_directUnitFireDx = details.x;
     m_directUnitFireDy = details.y;
 
-    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondSquaddieFire);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondSquaddieFire);
   }
 
   if (m_secondaryFireDirected)
   {
-    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondFireAirstrike);
-    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondFireGrenades);
-    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondFireRocket);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondFireAirstrike);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondFireGrenades);
+    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondFireRocket);
   }
 }

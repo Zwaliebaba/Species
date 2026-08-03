@@ -44,6 +44,9 @@ class RendererAccess
 
     virtual void StartFadeOut() = 0;
 
+    // Read by the world code that waits for a fade before switching level.
+    virtual bool IsFadeComplete() const = 0;
+
     // Read by the debug overlay in GameLogic; owned by Renderer.
     virtual int Fps() const = 0;
     virtual bool DisplayFps() const = 0;

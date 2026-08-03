@@ -1,3 +1,4 @@
+#include "Globals.h"
 #include "pch.h"
 #include "Main.h"
 #include "App.h"

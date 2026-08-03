@@ -16,12 +16,10 @@
 #include "Vector2.h"
 #include "Vector3.h"
 
-#include "Camera.h"
 #include "GlobalWorld.h"
 #include "Landscape.h"
 #include "LandscapeRenderer.h"
 #include "LevelFile.h"
-#include "Renderer.h"
 #include "Location.h"
 #include "Water.h"
 #include "WorldPointers.h"

@@ -1,3 +1,4 @@
+#include "Globals.h"
 #include "pch.h"
 
 #include <stdlib.h>
@@ -25,25 +26,20 @@
 #include "ClientToServer.h"
 
 #include "App.h"
-#include "Camera.h"
 #include "Clouds.h"
 #include "EntityGrid.h"
 #include "GlobalWorld.h"
 #include "Landscape.h"
 #include "LevelFile.h"
 #include "Location.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "ObstructionGrid.h"
 #include "ParticleSystem.h"
-#include "Renderer.h"
 #include "Team.h"
 #include "Unit.h"
-#include "UserInput.h"
 #include "Water.h"
 #include "GameCursor.h"
-#include "Script.h"
 #include "TaskManager.h"
-#include "TaskManagerInterface.h"
 
 #include "Weapons.h"
 #include "Factory.h"
@@ -796,11 +792,11 @@ void Location::DoMissionCompleteActions()
   // gloc->m_missionAvailable = false;
   // strcpy(gloc->m_missionFilename, "null");
 
-  TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageObjectivesComplete, -1, 5.0f);
+  g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageObjectivesComplete, -1, 5.0f);
 
 
-  //    if( !TheCamera()->IsInteractive() ||
-  //        TheScript()->IsRunningScript() )
+  //    if( !g_camera->IsInteractive() ||
+  //        g_script->IsRunningScript() )
   //    {
   //        return;
   //    }
@@ -1177,7 +1173,7 @@ void Location::RenderBuildingAlphas()
         Vector3 centrePos;
         if (building->PerformDepthSort(centrePos))
         {
-          float distance = (centrePos - TheCamera()->GetPos()).MagSquared();
+          float distance = (centrePos - g_camera->GetPos()).MagSquared();
           s_sortedBuildings[s_nextSortedBuilding].m_buildingIndex = i;
           s_sortedBuildings[s_nextSortedBuilding].m_distance = distance;
           s_nextSortedBuilding++;
@@ -1307,7 +1303,7 @@ void Location::RenderWeapons()
 
 
   float nearPlaneStart = g_renderer->GetNearPlane();
-  TheCamera()->SetupProjectionMatrix(nearPlaneStart * 1.2f, g_renderer->GetFarPlane());
+  g_camera->SetupProjectionMatrix(nearPlaneStart * 1.2f, g_renderer->GetFarPlane());
 
   for (int i = 0; i < m_lasers.Size(); ++i)
   {
@@ -1333,7 +1329,7 @@ void Location::RenderWeapons()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glDisable(GL_LINE_SMOOTH);
 
-  TheCamera()->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
+  g_camera->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
 
   END_PROFILE(g_profiler, "Render Weapons");
 }
@@ -1355,7 +1351,7 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
     DebugTrace("CLIENT : Assigned team %d\n", _teamId);
     g_globalWorld->m_myTeamId = _teamId;
     //		g_target->SetMousePos(g_renderer->ScreenW(), g_renderer->ScreenH());
-    //		TheCamera()->RequestMode(Camera::ModeFreeMovement);
+    //		g_camera->RequestMode(CameraAccess::ModeFreeMovement);
   }
 
   // Create instant units that belong to this team
@@ -1646,8 +1642,8 @@ int Location::GetUnitId(Vector3 const& startRay, Vector3 const& direction, unsig
             if (entityHit && !entity->m_dead)
             {
               float centrePosX, centrePosY, rayHitX, rayHitY;
-              TheCamera()->Get2DScreenPos(spherePos, &centrePosX, &centrePosY);
-              TheCamera()->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
+              g_camera->Get2DScreenPos(spherePos, &centrePosX, &centrePosY);
+              g_camera->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
 
               float rangeSqd = pow(centrePosX - rayHitX, 2) + pow(centrePosY - rayHitY, 2);
               if (rangeSqd < closestRangeSqd)
@@ -1694,8 +1690,8 @@ WorldObjectId Location::GetEntityId(Vector3 const& startRay, Vector3 const& dire
         if (rayHit)
         {
           float centrePosX, centrePosY, rayHitX, rayHitY;
-          TheCamera()->Get2DScreenPos(spherePos, &centrePosX, &centrePosY);
-          TheCamera()->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
+          g_camera->Get2DScreenPos(spherePos, &centrePosX, &centrePosY);
+          g_camera->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
 
           float rangeSqd = pow(centrePosX - rayHitX, 2) + pow(centrePosY - rayHitY, 2);
           if (rangeSqd < closestRangeSqd)
@@ -1749,8 +1745,8 @@ int Location::GetBuildingId(Vector3 const& rayStart, Vector3 const& rayDir, unsi
         if (rayHit)
         {
           float centrePosX, centrePosY, rayHitX, rayHitY;
-          TheCamera()->Get2DScreenPos(building->m_centrePos, &centrePosX, &centrePosY);
-          TheCamera()->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
+          g_camera->Get2DScreenPos(building->m_centrePos, &centrePosX, &centrePosY);
+          g_camera->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
 
           float rangeSqd = pow(centrePosX - rayHitX, 2) + pow(centrePosY - rayHitY, 2);
           if (rangeSqd < closestRangeSqd)
@@ -2009,8 +2005,8 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
   // Is visible?
 
   Vector3 tmp;
-  bool isVisible = !m_landscape.RayHit(TheCamera()->GetPos(), _pos - TheCamera()->GetPos(), &tmp) ||
-                   (tmp - TheCamera()->GetPos()).Mag() > (_pos - TheCamera()->GetPos()).Mag() - 0.3f;
+  bool isVisible = !m_landscape.RayHit(g_camera->GetPos(), _pos - g_camera->GetPos(), &tmp) ||
+                   (tmp - g_camera->GetPos()).Mag() > (_pos - g_camera->GetPos()).Mag() - 0.3f;
 
   //
   // Shockwave

@@ -6,7 +6,6 @@
 #include "SliceDArray.h"
 #include "Vector3.h"
 
-#include "Globals.h"
 #include "Landscape.h"
 #include "Building.h"
 #include "WorldObject.h"

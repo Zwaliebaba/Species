@@ -15,17 +15,12 @@
 #include "Vector3.h"
 #include "Eclipse.h"
 #include "App.h"
-#include "Camera.h"
 #include "GlobalInternet.h"
 #include "GlobalWorld.h"
 #include "Landscape.h"
 #include "LevelFile.h"
 #include "Location.h"
-#include "Main.h"
-#include "Renderer.h"
-#include "Script.h"
-#include "UserInput.h"
-#include "TaskManagerInterface.h"
+#include "GameTime.h"
 #include "Building.h"
 #include "TrunkPort.h"
 #include "BuyNowWindow.h"
@@ -264,7 +259,7 @@ void GlobalEventAction::Execute()
     }
   case RunScript:
     {
-      TheScript()->RunScript(m_filename);
+      g_script->RunScript(m_filename);
       break;
     }
   case MakeAvailable:
@@ -501,7 +496,7 @@ void GlobalResearch::EvaluateLevel(int _type)
       {
         // This action should only go off if a player UPGRADES an existing research item
         // Not if he finds a new one
-        TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearchUpgrade, _type, 4.0f);
+        g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageResearchUpgrade, _type, 4.0f);
       }
     }
   }
@@ -812,8 +807,8 @@ void SphereWorld::RenderSpirits()
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Glow.bmp"));
 
-  Vector3 camRight = TheCamera()->GetRight();
-  Vector3 camUp = TheCamera()->GetUp();
+  Vector3 camRight = g_camera->GetRight();
+  Vector3 camUp = g_camera->GetUp();
 
   for (int locationId = 0; locationId < m_numLocations; ++locationId)
   {
@@ -974,7 +969,7 @@ void SphereWorld::RenderTrunkLinks()
         //toPos *= 120.0f;
 
         Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
-        Vector3 camToMidPoint = TheCamera()->GetPos() - midPoint;
+        Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
         Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
 
         rightAngle *= 200.0f;
@@ -1005,8 +1000,8 @@ void SphereWorld::RenderHeaven()
   glPushMatrix();
   glScalef(120.0f, 120.0f, 120.0f);
 
-  Vector3 camUp = TheCamera()->GetUp();
-  Vector3 camRight = TheCamera()->GetRight();
+  Vector3 camUp = g_camera->GetUp();
+  Vector3 camRight = g_camera->GetRight();
 
   glDepthMask(false);
   glEnable(GL_BLEND);
@@ -1056,7 +1051,7 @@ void SphereWorld::RenderHeaven()
               godRayPos.y += sinf( g_gameTime + i + j/2 ) * 1000;
               godRayPos.z += cosf( g_gameTime + i + j/2 ) * 1000;
 
-              Vector3 camToCentre = TheCamera()->GetPos() - centrePos;
+              Vector3 camToCentre = g_camera->GetPos() - centrePos;
               Vector3 lineToCentre = camToCentre ^ ( centrePos - godRayPos );
               lineToCentre.Normalise();
 
@@ -1083,7 +1078,7 @@ void SphereWorld::RenderHeaven()
 
 void SphereWorld::RenderIslands()
 {
-  if (TheCamera()->IsInMode(Camera::ModeSphereWorldIntro) || TheCamera()->IsInMode(Camera::ModeSphereWorldOutro))
+  if (g_camera->IsInMode(CameraAccess::ModeSphereWorldIntro) || g_camera->IsInMode(CameraAccess::ModeSphereWorldOutro))
     return;
 
   //
@@ -1094,10 +1089,10 @@ void SphereWorld::RenderIslands()
   glMatrixMode(GL_MODELVIEW);
 
   Vector3 rayStart, rayDir;
-  TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+  g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
-  Vector3 camRight = TheCamera()->GetRight();
-  Vector3 camUp = TheCamera()->GetUp();
+  Vector3 camRight = g_camera->GetRight();
+  Vector3 camUp = g_camera->GetUp();
 
   //    glColor4f       ( 1.0f, 1.0f, 1.0f, 1.0f );
   glColor4f(0.6f, 0.2f, 0.1f, 1.0f);
@@ -1155,7 +1150,7 @@ void SphereWorld::RenderIslands()
       char* islandName = strdup(g_globalWorld->GetLocationNameTranslated(loc->m_id));
       strupr(islandName);
 
-      float size = 5.0f * sqrtf((TheCamera()->GetPos() - islandPos).Mag());
+      float size = 5.0f * sqrtf((g_camera->GetPos() - islandPos).Mag());
       size = 1000.0f;
 
       g_gameFont.SetRenderShadow(true);
@@ -1256,7 +1251,7 @@ void GlobalWorld::Advance()
       if (g_inputManager->controlEvent(ControlSelectLocation))
       {
         Vector3 rayStart, rayDir;
-        TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+        g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
         int locId = LocationHit(rayStart, rayDir);
         if (locId != -1)
         {
@@ -1273,7 +1268,7 @@ void GlobalWorld::Advance()
       if (g_inputManager->controlEvent(ControlSelectLocation))
       {
         Vector3 rayStart, rayDir;
-        TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+        g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
         m_editorSelectionId = LocationHit(rayStart, rayDir);
       }
       else if (g_inputManager->controlEvent(ControlLocationDragActive))
@@ -1281,7 +1276,7 @@ void GlobalWorld::Advance()
         GlobalLocation* loc = GetLocation(m_editorSelectionId);
         if (loc)
         {
-          Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+          Vector3 mousePos3D = g_userInput->GetMousePos3d();
           loc->m_pos = mousePos3D / 120.0f;
         }
       }
@@ -1297,14 +1292,14 @@ void GlobalWorld::Advance()
     if (g_inputManager->controlEvent(ControlSelectLocation) && m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
       Vector3 rayStart, rayDir;
-      TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
       int locId = LocationHit(rayStart, rayDir);
       if (locId != -1)
       {
         GlobalLocation* loc = GetLocation(locId);
         if (strcmp(loc->m_missionFilename, "null") != 0 && loc->m_available)
         {
-          if (!TheScript()->IsRunningScript())
+          if (!g_script->IsRunningScript())
           {
             if (!g_app->HasBoughtGame())
             {
@@ -1330,14 +1325,14 @@ void GlobalWorld::Advance()
     else if (m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
       Vector3 rayStart, rayDir;
-      TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
       int locId = LocationHit(rayStart, rayDir, 10000.0f);
       if (locId != -1)
       {
         // We're close to a location, but not there, so drag the pointer towards it
         GlobalLocation* loc = GetLocation(locId);
         float locX, locY;
-        TheCamera()->Get2DScreenPos(loc->m_pos, &locX, &locY);
+        g_camera->Get2DScreenPos(loc->m_pos, &locX, &locY);
         locY = g_renderer->ScreenH() - locY;
         int movX = static_cast<int>(locX - g_target->X());
         int movY = static_cast<int>(locY - g_target->Y());
@@ -1349,7 +1344,7 @@ void GlobalWorld::Advance()
     }
 
     // Has the fade out finished?
-    if (m_locationRequested != -1 && TheRenderer()->IsFadeComplete())
+    if (m_locationRequested != -1 && g_renderer->IsFadeComplete())
     {
       GlobalLocation* loc = GetLocation(m_locationRequested);
       g_requestedLocationId = m_locationRequested;
@@ -1411,7 +1406,7 @@ GlobalLocation* GlobalWorld::GetHighlightedLocation()
   int screenY = g_target->Y();
 
   Vector3 rayStart, rayDir;
-  TheCamera()->GetClickRay(screenX, screenY, &rayStart, &rayDir);
+  g_camera->GetClickRay(screenX, screenY, &rayStart, &rayDir);
   int locId = g_globalWorld->LocationHit(rayStart, rayDir);
 
   GlobalLocation* loc = GetLocation(locId);
@@ -1878,7 +1873,7 @@ int GlobalWorld::GenerateBuildingId()
 // Returns true if actions remain to be completed
 bool GlobalWorld::EvaluateEvents()
 {
-  if (g_script && TheScript()->IsRunningScript())
+  if (g_script && g_script->IsRunningScript())
     return true;
 
   for (int i = 0; i < m_events.Size(); ++i)

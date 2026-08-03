@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include "ProtocolLimits.h"
 #include "Entity.h"
 
 

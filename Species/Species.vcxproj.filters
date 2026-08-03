@@ -47,7 +47,6 @@
     <ClInclude Include="GameCursor.h" />
     <ClInclude Include="GlobalInternet.h" />
     <ClInclude Include="GlobalWorld.h" />
-    <ClInclude Include="Globals.h" />
     <ClInclude Include="Landscape.h" />
     <ClInclude Include="LandscapeRenderer.h" />
     <ClInclude Include="LevelFile.h" />
