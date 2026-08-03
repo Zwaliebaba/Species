@@ -454,7 +454,7 @@ void EclRemoveWindow(char const* name)
   }
 }
 
-void EclSetWindowPosition(char* name, int x, int y)
+void EclSetWindowPosition(char const* name, int x, int y)
 {
   EclWindow* window = EclGetWindow(name);
   if (window)
@@ -469,7 +469,7 @@ void EclSetWindowPosition(char* name, int x, int y)
   }
 }
 
-void EclSetWindowSize(char* name, int w, int h)
+void EclSetWindowSize(char const* name, int w, int h)
 {
   EclWindow* window = EclGetWindow(name);
   if (window)

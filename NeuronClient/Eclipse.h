@@ -38,8 +38,8 @@ void EclRegisterPopup(EclWindow* window);
 void EclRemovePopup();
 
 void EclBringWindowToFront(char* name);
-void EclSetWindowPosition(char* name, int x, int y);
-void EclSetWindowSize(char* name, int w, int h);
+void EclSetWindowPosition(char const* name, int x, int y);
+void EclSetWindowSize(char const* name, int w, int h);
 
 int EclGetWindowIndex(char const* name); // -1 = failure
 EclWindow* EclGetWindow(char const* name);
