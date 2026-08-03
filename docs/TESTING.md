@@ -65,11 +65,18 @@ rather than converting blind.
 - Rendering output, sound output, or anything needing a GL context or a window.
 - Third-party or OS behaviour. `strrchr` works.
 - Bugs, unless you are fixing them. Pinning current-but-wrong behaviour makes the
-  eventual fix look like a regression. `NeuronClient/FilesysUtils.cpp`
-  `GetFilenamePart` and `GetExtensionPart` both add 1 to the result of `strrchr`
-  before testing it for null, so a path with no separator is undefined behaviour
-  rather than a defined "returns nullptr" — the tests deliberately do not cover
-  those inputs, and say so at the point they stop.
+  eventual fix look like a regression.
+
+  The example this rule was written from has since been resolved, and how it
+  resolved is the point. `NeuronClient/FilesysUtils.cpp`'s `GetFilenamePart` and
+  `GetExtensionPart` both added 1 to the result of `strrchr` before testing it
+  for null, so a path with no separator was undefined behaviour rather than a
+  defined "returns nullptr". The tests deliberately did not cover those inputs.
+  `strings-modernised/T4` then DEFINED the behaviour — a bare filename returns
+  itself, a name with no dot returns empty — and added the tests in the same
+  commit. That is the sequence: leave it uncovered while it is undefined, define
+  it deliberately, then pin the decision. Not: pin the undefined behaviour and
+  discover later that the fix reads as a regression.
 
 ---
 

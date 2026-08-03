@@ -454,23 +454,22 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: todo
     notes: |
-      STARTED AND STASHED 2026-08-03, uncommitted, with the tree left green.
-      `git stash list` — "strings T5 work-in-progress". What is done and what is
-      not is worth reading before picking it up, because the half-done state
-      does not compile and that is inherent to the change rather than a mistake.
+      ATTEMPTED AND DELIBERATELY DISCARDED 2026-08-03. No code survives; this
+      note is the deliverable. Do not go looking for a stash or a side branch —
+      the owner's call was to redo the task later against a corrected plan
+      rather than resurrect a half-finished diff against the old one.
 
-      DONE: InputField itself. m_buf is a std::string, m_string is a
-      std::string*, RegisterString takes std::string*, and SpeciesWindow's
-      CreateValueControl casts the void* to std::string* for TypeString. The
-      seven members that get registered are converted too — CameraMount::m_name,
-      CameraAnimation::m_name, ScriptTrigger::m_scriptFilename,
-      GenericHub::m_shapeName, StaticShape::m_shapeName, FenceSwitch::m_script,
-      and the two editor statics s_profileName and s_locationName.
-
-      NOT DONE: roughly 68 call sites that read those seven members — level-file
-      Write functions, name comparisons, resource lookups.
+      WHAT THE ATTEMPT ESTABLISHED. Converting InputField cannot be done alone.
+      It writes into its registered target through a raw pointer, so making
+      m_string a std::string* forces SEVEN members to convert in the same
+      commit — CameraMount::m_name, CameraAnimation::m_name,
+      ScriptTrigger::m_scriptFilename, GenericHub::m_shapeName,
+      StaticShape::m_shapeName, FenceSwitch::m_script, and the editor statics
+      s_profileName and s_locationName. There is no intermediate state that
+      compiles. The attempt got that far and left about 68 call sites reading
+      those members — level-file writers, name comparisons, resource lookups.
 
       THE SHAPE OF THIS TASK IS NOT WHAT THE FILE LIST SAYS, and that is the
       thing to know. InputField writes into its target through a raw pointer, so
@@ -485,10 +484,14 @@ tasks:
       picks this up should either merge them or give them an explicit order with
       the level-file byte-identity check owned by whichever lands last.
 
-      The CAST IS THE HAZARD. CreateValueControl takes void*, so passing a
-      char[256] where a std::string* is now expected still COMPILES and corrupts
-      memory at runtime. All seven call sites were updated, but the compiler will
-      not catch the eighth.
+      THE CAST IS THE HAZARD, and it is the single most important line here.
+      CreateValueControl takes void*, so passing a char[256] where a
+      std::string* is expected still COMPILES and corrupts memory at runtime.
+      There are seven TypeString call sites today; the compiler will not catch
+      an eighth, and it will not catch one added later either. Whoever does this
+      should consider replacing the void* with an overload set before
+      converting anything, so that the compiler is on their side for the rest
+      of the change.
 
   - id: T6
     title: Convert GameLogic simulation-side string handling

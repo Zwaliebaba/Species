@@ -94,10 +94,10 @@ Presentation and platform services for a graphical client.
   every in-game window derives from.
 - **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,
   sockets and sequence ids. Moved up out of `NeuronCore` by T8.
-- **Utilities that do not belong here:** none left. The containers (`LList`,
-  `DArray`, `BTree`, `FastDArray`, `HashTable`), the maths types (`Vector3`,
+- **Utilities that do not belong here:** none left. The maths types (`Vector3`,
   `Matrix33/34`, `MathUtils`), `HiResTime`, `Profiler` and `Preferences` have all
-  moved down into `NeuronCore`.
+  moved down into `NeuronCore`. The inherited containers moved down too and have
+  since been deleted outright — see `SlotMap` below.
 
 ### NeuronServer
 
@@ -162,9 +162,10 @@ lockstep**, not client-server authority in the modern sense.
 **This makes bit-identical simulation a hard requirement, not a nicety.**
 `GenerateSyncValue()` sums entity positions and velocities in container index
 order, so iteration order, container identity, floating-point arithmetic order
-and the `speciesRandom()` call sequence are all load-bearing. `DArray` indices
+and the `speciesRandom()` call sequence are all load-bearing. `SlotMap` indices
 are part of object identity on the wire (`WorldObjectId::m_index` is serialised
-verbatim). The constraints this puts on ordinary refactoring are spelled out in
+verbatim), and the flavour matters: `FastSlotMap` pops a freelist and `SlotMap`
+scans lowest-first, so they hand out different indices after a removal. The constraints this puts on ordinary refactoring are spelled out in
 [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#determinism) — read that before
 changing anything reachable from `Location::Advance`.
 

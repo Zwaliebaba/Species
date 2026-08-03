@@ -348,8 +348,9 @@ preprocessor.
 lockstep with a runtime checksum, so iteration order, floating-point arithmetic
 order, container choice and the `speciesRandom()` call sequence are all
 load-bearing. A refactor that looks purely cosmetic can desync the game while
-every build stays green. `DArray` in particular is a slot map whose indices are
-network identity — it is not a `std::vector`. Read
+every build stays green. `SlotMap` in particular has indices that are network
+identity — it is not a `std::vector`, and `FastSlotMap` and `SlotMap` assign
+different ones after a removal. Read
 [`CODING_STANDARDS.md`](CODING_STANDARDS.md#determinism) before touching anything
 reachable from `Location::Advance`.
 
