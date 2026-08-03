@@ -361,7 +361,7 @@ void LocationGameLoop()
   g_sliceNum = -1;
 
   TheRenderer()->StartFadeIn(0.6f);
-  g_soundSystem->TriggerOtherEvent(nullptr, "EnterLocation", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->TriggerOtherEvent("EnterLocation", SoundSourceBlueprint::TypeAmbience);
 
   //
   // Main loop
@@ -590,7 +590,7 @@ void LocationGameLoop()
   }
 
   g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterLocation");
-  g_soundSystem->TriggerOtherEvent(nullptr, "ExitLocation", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->TriggerOtherEvent("ExitLocation", SoundSourceBlueprint::TypeAmbience);
 
   g_explosionManager.Reset();
 
@@ -685,7 +685,7 @@ void GlobalWorldGameLoop()
 {
   TheRenderer()->StartFadeIn(0.25f);
 
-  g_soundSystem->TriggerOtherEvent(nullptr, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
+  g_soundSystem->TriggerOtherEvent("EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience);
 
   while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {

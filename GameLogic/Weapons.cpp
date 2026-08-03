@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <math.h>
 
@@ -65,11 +66,11 @@ void ThrowableWeapon::TriggerSoundEvent(char const* _event)
   case EffectThrowableGrenade:
   case EffectThrowableAirstrikeMarker:
   case EffectThrowableControllerGrenade:
-    g_soundSystem->TriggerOtherEvent(this, _event, SoundSourceBlueprint::TypeGrenade);
+    g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), _event, SoundSourceBlueprint::TypeGrenade);
     break;
 
   case EffectThrowableAirstrikeBomb:
-    g_soundSystem->TriggerOtherEvent(this, _event, SoundSourceBlueprint::TypeAirstrikeBomb);
+    g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), _event, SoundSourceBlueprint::TypeAirstrikeBomb);
     break;
   }
 }
@@ -311,7 +312,7 @@ bool ControllerGrenade::Advance()
 
   if (GetHighResTime() > m_birthTime + 3.0f)
   {
-    g_soundSystem->TriggerOtherEvent(this, "ExplodeController", SoundSourceBlueprint::TypeGrenade);
+    g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "ExplodeController", SoundSourceBlueprint::TypeGrenade);
 
     int numFlashes = 5 + speciesRandom() % 5;
     for (int i = 0; i < numFlashes; ++i)
@@ -368,7 +369,7 @@ Rocket::Rocket(Vector3 _startPos, Vector3 _targetPos)
 }
 
 
-void Rocket::Initialise() { g_soundSystem->TriggerOtherEvent(this, "Create", SoundSourceBlueprint::TypeRocket); }
+void Rocket::Initialise() { g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "Create", SoundSourceBlueprint::TypeRocket); }
 
 
 bool Rocket::Advance()
@@ -425,7 +426,7 @@ bool Rocket::Advance()
   {
     g_location->Bang(m_pos, 15.0f, 25.0f);
     g_soundSystem->StopAllSounds(m_id, "Rocket Create");
-    g_soundSystem->TriggerOtherEvent(this, "Explode", SoundSourceBlueprint::TypeRocket);
+    g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "Explode", SoundSourceBlueprint::TypeRocket);
     return true;
   }
 
@@ -436,7 +437,7 @@ bool Rocket::Advance()
   if (g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) >= m_pos.y)
   {
     g_location->Bang(m_pos, 15.0f, 25.0f);
-    g_soundSystem->TriggerOtherEvent(this, "Explode", SoundSourceBlueprint::TypeRocket);
+    g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "Explode", SoundSourceBlueprint::TypeRocket);
     return true;
   }
 
@@ -453,7 +454,7 @@ bool Rocket::Advance()
     if (building->DoesSphereHit(m_pos, 3.0f))
     {
       g_location->Bang(m_pos, 15.0f, 25.0f);
-      g_soundSystem->TriggerOtherEvent(this, "Explode", SoundSourceBlueprint::TypeRocket);
+      g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "Explode", SoundSourceBlueprint::TypeRocket);
       return true;
     }
   }
@@ -511,7 +512,7 @@ void Laser::Initialise(float _lifeTime)
   m_harmless = false;
   m_bounced = false;
 
-  g_soundSystem->TriggerOtherEvent(this, "Create", SoundSourceBlueprint::TypeLaser);
+  g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "Create", SoundSourceBlueprint::TypeLaser);
 }
 
 
@@ -558,7 +559,7 @@ bool Laser::Advance()
       distanceRemaining.SetLength(distanceTotal - distanceTravelled);
 
       m_pos += distanceRemaining;
-      g_soundSystem->TriggerOtherEvent(this, "Richochet", SoundSourceBlueprint::TypeLaser);
+      g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "Richochet", SoundSourceBlueprint::TypeLaser);
 
       m_bounced = true;
     }
@@ -589,7 +590,7 @@ bool Laser::Advance()
         vel.y += sfrand(10.0f);
         vel.z += sfrand(10.0f);
         g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeRocketTrail);
-        g_soundSystem->TriggerOtherEvent(this, "HitBuilding", SoundSourceBlueprint::TypeLaser);
+        g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "HitBuilding", SoundSourceBlueprint::TypeLaser);
         return true;
       }
     }
@@ -614,7 +615,7 @@ bool Laser::Advance()
 
         if (PointSegDist2D(Vector2(entity->m_pos), Vector2(rayStart), Vector2(rayEnd)) < 10.0f)
         {
-          g_soundSystem->TriggerOtherEvent(this, "HitEntity", SoundSourceBlueprint::TypeLaser);
+          g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "HitEntity", SoundSourceBlueprint::TypeLaser);
           if (entity->m_type == Entity::TypeSpider || entity->m_type == Entity::TypeSporeGenerator || entity->m_type == Entity::TypeEngineer ||
               entity->m_type == Entity::TypeTriffidEgg || entity->m_type == Entity::TypeSoulDestroyer || entity->m_type == Entity::TypeArmour)
           {

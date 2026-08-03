@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "DebugRender.h"
 #include "MathUtils.h"
@@ -829,7 +830,7 @@ bool Citizen::AdvanceUnderControl()
       g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeControlFlash);
     }
     g_soundSystem->StopAllSounds(m_id, "Citizen TakenControl");
-    g_soundSystem->TriggerEntityEvent(this, "EscapedControl");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EscapedControl");
     return false;
   }
 
@@ -1345,7 +1346,7 @@ bool Citizen::SearchForOfficers()
         m_wayPoint = PushFromObstructions(m_wayPoint, false);
         m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue(m_wayPoint.x, m_wayPoint.z);
 
-        g_soundSystem->TriggerEntityEvent(this, "GivenOrders");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "GivenOrders");
 
         m_state = StateFollowingOrders;
         END_PROFILE(g_profiler, "SearchOfficers");
@@ -1434,7 +1435,7 @@ void Citizen::GiveOrders(Vector3 const& _targetPos)
   m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue(m_wayPoint.x, m_wayPoint.z);
   m_wayPoint = PushFromObstructions(m_wayPoint);
 
-  g_soundSystem->TriggerEntityEvent(this, "GivenOrders");
+  g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "GivenOrders");
 
   m_state = StateFollowingOrders;
 }
@@ -1546,7 +1547,7 @@ bool Citizen::SearchForThreats()
     m_scared = true;
     if (m_threatId != threatId)
     {
-      g_soundSystem->TriggerEntityEvent(this, "SeenThreatRunAway");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SeenThreatRunAway");
       m_threatId = threatId;
     }
     END_PROFILE(g_profiler, "SearchThreats");
@@ -1646,11 +1647,11 @@ bool Citizen::SearchForThreats()
     {
       if (m_scared)
       {
-        g_soundSystem->TriggerEntityEvent(this, "SeenThreatRunAway");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SeenThreatRunAway");
       }
       else
       {
-        g_soundSystem->TriggerEntityEvent(this, "SeenThreatAttack");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SeenThreatAttack");
       }
       m_threatId = threatId;
     }
@@ -1777,7 +1778,7 @@ bool Citizen::BeginVictoryDance()
       // jump!
       m_vel.y += 15.0f + syncfrand(15.0f);
       m_onGround = false;
-      g_soundSystem->TriggerEntityEvent(this, "VictoryJump");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "VictoryJump");
       return true;
     }
   }
@@ -2009,7 +2010,7 @@ void Citizen::TakeControl(int _controllerId)
       g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeControlFlash);
     }
 
-    g_soundSystem->TriggerEntityEvent(this, "TakenControl");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "TakenControl");
   }
 }
 
@@ -2048,7 +2049,7 @@ bool Citizen::AdvanceOnFire()
 
   if (syncrand() % 50 == 0)
   {
-    g_soundSystem->TriggerEntityEvent(this, "OnFire");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "OnFire");
   }
 
   if (!m_dead && syncfrand(10) < 2 && m_onGround)

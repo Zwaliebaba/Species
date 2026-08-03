@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -150,14 +151,14 @@ void Entity::ChangeHealth(int amount)
   {
     if (amount < 0)
     {
-      g_soundSystem->TriggerEntityEvent(this, "LoseHealth");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LoseHealth");
     }
 
     if (m_stats[StatHealth] + amount <= 0)
     {
       m_stats[StatHealth] = 100;
       m_dead = true;
-      g_soundSystem->TriggerEntityEvent(this, "Die");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Die");
       g_location->SpawnSpirit(m_pos, m_vel * 0.5f, m_id.GetTeamId(), m_id);
     }
     else if (m_stats[StatHealth] + amount > 255)
@@ -185,7 +186,7 @@ void Entity::Attack(Vector3 const& pos)
     m_reloading = m_stats[StatRate];
     m_justFired = true;
 
-    g_soundSystem->TriggerEntityEvent(this, "Attack");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
   }
 }
 
@@ -238,7 +239,7 @@ int Entity::EnterTeleports(int _requiredId)
       {
         WorldObjectId id(m_id);
         radarDish->EnterTeleport(id);
-        g_soundSystem->TriggerEntityEvent(this, "EnterTeleport");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EnterTeleport");
         return buildingId;
       }
     }
@@ -253,7 +254,7 @@ int Entity::EnterTeleports(int _requiredId)
         {
           WorldObjectId id(m_id);
           bridge->EnterTeleport(id);
-          g_soundSystem->TriggerEntityEvent(this, "EnterTeleport");
+          g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EnterTeleport");
           return buildingId;
         }
       }
@@ -333,7 +334,7 @@ void Entity::AdvanceInWater(Unit* _unit)
 
 void Entity::Begin()
 {
-  g_soundSystem->TriggerEntityEvent(this, "Create");
+  g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Create");
 
   if (m_shape)
   {

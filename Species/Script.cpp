@@ -224,7 +224,7 @@ void Script::RunCommand_TriggerSound(const char* _event)
   sprintf(eventName, "Music %s", _event);
 
   if (g_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName) == 0)
-    g_soundSystem->TriggerOtherEvent(nullptr, _event, SoundSourceBlueprint::TypeMusic);
+    g_soundSystem->TriggerOtherEvent(_event, SoundSourceBlueprint::TypeMusic);
 }
 
 void Script::RunCommand_StopSound(const char* _event)
@@ -378,7 +378,7 @@ void Script::RunCommand_PurityControl()
 void Script::RunCommand_ShowDarwinLogo()
 {
   TheRenderer()->m_renderDarwinLogo = GetHighResTime();
-  g_soundSystem->TriggerOtherEvent(nullptr, "ShowLogo", SoundSourceBlueprint::TypeInterface);
+  g_soundSystem->TriggerOtherEvent("ShowLogo", SoundSourceBlueprint::TypeInterface);
 }
 
 void Script::RunCommand_ShowDemoEndSequence() {}

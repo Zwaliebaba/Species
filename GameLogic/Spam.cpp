@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "DebugRender.h"
 #include "TextRenderer.h"
 #include "Resource.h"
@@ -81,7 +82,7 @@ void Spam::Damage(float _damage)
     GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
     if (gb)
       gb->m_online = true;
-    g_soundSystem->TriggerBuildingEvent(this, "Explode");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Explode");
   }
 }
 
@@ -246,7 +247,7 @@ void Spam::SpawnInfection()
     infection->m_id.GenerateUniqueId();
   }
 
-  g_soundSystem->TriggerBuildingEvent(this, "Attack");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Attack");
 }
 
 
@@ -347,7 +348,7 @@ void Spam::SetAsResearch()
   m_research = true;
   m_activated = false;
 
-  g_soundSystem->TriggerBuildingEvent(this, "CreateResearch");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "CreateResearch");
 }
 
 

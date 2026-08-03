@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "Debug.h"
 #include "FileWriter.h"
@@ -194,7 +195,7 @@ void PowerBuilding::TriggerSurge(float _initValue)
 {
   m_surges.PutDataAtStart(_initValue);
 
-  g_soundSystem->TriggerBuildingEvent(this, "TriggerSurge");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "TriggerSurge");
 }
 
 
@@ -263,7 +264,7 @@ char const* Generator::GetObjectiveCounter()
 void Generator::ReprogramComplete()
 {
   m_enabled = true;
-  g_soundSystem->TriggerBuildingEvent(this, "Enable");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Enable");
 }
 
 
@@ -548,7 +549,7 @@ bool SolarPanel::Advance()
   if (fractionOccupied > 0.6f)
   {
     if (!m_operating)
-      g_soundSystem->TriggerBuildingEvent(this, "Operate");
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Operate");
     m_operating = true;
   }
 

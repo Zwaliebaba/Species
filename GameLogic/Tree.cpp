@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "DebugRender.h"
 #include "FileWriter.h"
@@ -160,7 +161,7 @@ bool Tree::Advance()
         if( m_burnSoundPlaying )
         {
             g_soundSystem->StopAllSounds( m_id, "Tree Burn" );
-            g_soundSystem->TriggerBuildingEvent( this, "Create" );
+            g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Create");
             m_burnSoundPlaying = false;
         }
 
@@ -384,7 +385,7 @@ void Tree::Damage( float _damage )
             if( !m_burnSoundPlaying )
             {
                 g_soundSystem->StopAllSounds( m_id, "Tree Create" );
-                g_soundSystem->TriggerBuildingEvent( this, "Burn" );
+                g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Burn");
                 m_burnSoundPlaying = true;
             }
         }

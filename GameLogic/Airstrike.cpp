@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "DebugRender.h"
 #include "Shape.h"
@@ -231,7 +232,7 @@ bool SpaceInvader::Advance( Unit *_unit )
             int index = g_location->m_effects.PutData( weapon );
             weapon->m_id.Set( m_id.GetTeamId(), UNIT_EFFECTS, index, -1 );
             weapon->m_id.GenerateUniqueId();
-            g_soundSystem->TriggerEntityEvent( this, "DropGrenade" );
+            g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "DropGrenade");
             m_armed = false;
         }
     }

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "Matrix34.h"
 #include "Shape.h"
@@ -143,7 +144,7 @@ void Centipede::Panic(float _time)
 {
   if (m_panic <= 0.0f)
   {
-    g_soundSystem->TriggerEntityEvent(this, "Panic");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Panic");
   }
 
   m_panic = max(_time, m_panic);
@@ -322,7 +323,7 @@ void Centipede::Attack(Vector3 const& _pos)
     float distance = pushVector.Mag();
     if (distance < m_radius)
     {
-      g_soundSystem->TriggerEntityEvent(this, "Attack");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
 
       pushVector.SetLength(m_radius - distance);
 
@@ -430,7 +431,7 @@ void Centipede::EatSpirits()
       centipede->Begin();
 
       g_location->m_entityGrid->AddObject(centipede->m_id, centipede->m_pos.x, centipede->m_pos.z, centipede->m_radius);
-      g_soundSystem->TriggerEntityEvent(this, "Grow");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Grow");
 
       tail = centipede;
       m_numSpiritsEaten -= CENTIPEDE_NUMSPIRITSTOREGROW;
@@ -491,7 +492,7 @@ bool Centipede::SearchForTargetEnemy()
   if (targetId.IsValid())
   {
     m_targetEntity = targetId;
-    g_soundSystem->TriggerEntityEvent(this, "EnemySighted");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EnemySighted");
     return true;
   }
   else

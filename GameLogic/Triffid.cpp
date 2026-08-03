@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "FileWriter.h"
 #include "Resource.h"
@@ -273,7 +274,7 @@ void Triffid::Damage(float _damage)
 
   if (m_damage <= 0.0f && !dead)
   {
-    g_soundSystem->TriggerBuildingEvent(this, "Burn");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Burn");
   }
 }
 
@@ -318,7 +319,7 @@ void Triffid::Launch()
     triffidEgg->m_roamRange = m_triggerRadius;
   }
 
-  g_soundSystem->TriggerBuildingEvent(this, "LaunchEgg");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "LaunchEgg");
 }
 
 
@@ -658,7 +659,7 @@ bool TriffidEgg::Advance(Unit* _unit)
       m_pos.y = landHeight + 3.0f;
     if (m_force > 0.1f)
     {
-      g_soundSystem->TriggerEntityEvent(this, "Bounce");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Bounce");
     }
   }
 
@@ -681,7 +682,7 @@ bool TriffidEgg::Advance(Unit* _unit)
     Matrix34 transform(m_front, m_up, m_pos);
     g_explosionManager.AddExplosion(m_shape, transform);
     Spawn();
-    g_soundSystem->TriggerEntityEvent(this, "BurstOpen");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "BurstOpen");
     return true;
   }
 

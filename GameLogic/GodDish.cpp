@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "MathUtils.h"
 #include "Preferences.h"
@@ -175,7 +176,7 @@ void GodDish::Activate()
     }
 
 
-    g_soundSystem->TriggerBuildingEvent( this, "ConnectToGod" );
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ConnectToGod");
 }
 
 
@@ -185,7 +186,7 @@ void GodDish::DeActivate()
 
 
     g_soundSystem->StopAllSounds( m_id, "GodDish ConnectToGod" );
-    g_soundSystem->TriggerBuildingEvent( this, "DisconnectFromGod" );
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "DisconnectFromGod");
 }
 
 

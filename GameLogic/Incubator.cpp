@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
 #include "Profiler.h"
@@ -163,7 +164,7 @@ void Incubator::SpawnEntity()
   //
   // Sound effect
 
-  g_soundSystem->TriggerBuildingEvent(this, "SpawnEntity");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "SpawnEntity");
 }
 
 void Incubator::AddSpirit(Spirit* _spirit)
@@ -182,7 +183,7 @@ void Incubator::AddSpirit(Spirit* _spirit)
   ii->m_alpha = 1.0f;
   m_incoming.PutData(ii);
 
-  g_soundSystem->TriggerBuildingEvent(this, "AddSpirit");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "AddSpirit");
 }
 
 void Incubator::GetDockPoint(Vector3& _pos, Vector3& _front)

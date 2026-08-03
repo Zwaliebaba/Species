@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "TextStreamReaders.h"
 #include "Shape.h"
@@ -325,7 +326,7 @@ bool MineBuilding::Advance()
   float mineSpeed = RefinerySpeed();
   if (m_previousMineSpeed <= 0.1f && mineSpeed > 0.1f)
   {
-    g_soundSystem->TriggerBuildingEvent(this, "CogTurn");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "CogTurn");
   }
   m_previousMineSpeed = mineSpeed;
 

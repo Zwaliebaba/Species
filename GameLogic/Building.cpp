@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <math.h>
 
@@ -122,7 +123,7 @@ void Building::Initialise(Building* _template)
   if (gb)
     m_id.SetTeamId(gb->m_teamId);
 
-  g_soundSystem->TriggerBuildingEvent(this, "Create");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Create");
 }
 
 
@@ -232,7 +233,7 @@ void Building::Reprogram(float _complete) {}
 
 void Building::ReprogramComplete()
 {
-  g_soundSystem->TriggerBuildingEvent(this, "ReprogramComplete");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ReprogramComplete");
 
   GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
   if (gb)
@@ -252,7 +253,7 @@ void Building::SetTeamId(int _teamId)
   if (gb)
     gb->m_teamId = _teamId;
 
-  g_soundSystem->TriggerBuildingEvent(this, "ChangeTeam");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ChangeTeam");
 }
 
 
@@ -542,7 +543,7 @@ void Building::RenderLink()
 #endif
 }
 
-void Building::Damage(float _damage) { g_soundSystem->TriggerBuildingEvent(this, "Damage"); }
+void Building::Damage(float _damage) { g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Damage"); }
 
 void Building::Destroy(float _intensity)
 {
@@ -555,7 +556,7 @@ void Building::Destroy(float _intensity)
   }
   g_location->Bang(m_pos, _intensity, _intensity / 4.0f);
 
-  g_soundSystem->TriggerBuildingEvent(this, "Explode");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Explode");
 
   for (int i = 0; i < (int)(_intensity / 4.0f); ++i)
   {

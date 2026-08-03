@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <float.h>
 
@@ -291,7 +292,7 @@ void Spider::UpdateLegs()
     //		}
 
     if (footPlanted)
-      g_soundSystem->TriggerEntityEvent(this, "FootFall");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "FootFall");
   }
 
   m_delayBetweenLifts = m_parameters[stage].m_delayBetweenLifts;
@@ -490,8 +491,8 @@ bool Spider::AdvanceAttack()
         m_legs[i]->m_foot.m_targetPos = m_legs[i]->m_foot.m_pos + forwards;
       }
 
-      g_soundSystem->TriggerEntityEvent(this, "Attack");
-      g_soundSystem->TriggerEntityEvent(this, "Pounce");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Pounce");
     }
   }
 
@@ -518,7 +519,7 @@ bool Spider::AdvancePouncing()
       m_legs[i]->m_foot.m_state = EntityFoot::OnGround;
     }
 
-    g_soundSystem->TriggerEntityEvent(this, "PounceLand");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "PounceLand");
 
     // Squash people
     float squashRange = 40.0f;
@@ -668,7 +669,7 @@ bool Spider::AdvanceEggLaying()
 
     g_location->SpawnEntities(eggLayMat.pos, m_id.GetTeamId(), -1, TypeEgg, 1, g_zeroVector, 0.0f);
 
-    g_soundSystem->TriggerEntityEvent(this, "LayEgg");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LayEgg");
 
     m_spiritId = -1;
     m_state = StateIdle;

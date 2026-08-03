@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "Matrix34.h"
 #include "Shape.h"
@@ -182,7 +183,7 @@ void SoulDestroyer::Attack(Vector3 const& _pos)
     float distance = pushVector.Mag();
     if (distance < SOULDESTROYER_DAMAGERANGE)
     {
-      g_soundSystem->TriggerEntityEvent(this, "Attack");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
 
       pushVector.SetLength(SOULDESTROYER_DAMAGERANGE - distance);
 
@@ -235,7 +236,7 @@ void SoulDestroyer::Panic(float _time)
 {
   if (m_panic <= 0.0f)
   {
-    g_soundSystem->TriggerEntityEvent(this, "Panic");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Panic");
   }
 
   m_panic = max(_time, m_panic);
@@ -294,7 +295,7 @@ bool SoulDestroyer::SearchForTargetEnemy()
   if (targetId.IsValid())
   {
     m_targetEntity = targetId;
-    g_soundSystem->TriggerEntityEvent(this, "EnemySighted");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EnemySighted");
     return true;
   }
   else

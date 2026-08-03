@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "Debug.h"
 #include "FileWriter.h"
@@ -140,7 +141,7 @@ void DynamicHub::Initialise( Building *_template )
 void DynamicHub::ReprogramComplete()
 {
     m_reprogrammed = true;
-    g_soundSystem->TriggerBuildingEvent( this, "Enable" );
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Enable");
 }
 
 

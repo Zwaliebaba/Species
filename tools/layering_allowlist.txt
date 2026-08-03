@@ -9,5 +9,4 @@
 #
 # Regenerate with: python3 tools/check_layering.py --update
 
-NeuronClient/SoundSystem.cpp -> Entity.h
-NeuronClient/SoundSystem.cpp -> Location.h
+

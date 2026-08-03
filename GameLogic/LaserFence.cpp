@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <math.h>
 
@@ -91,7 +92,7 @@ void LaserFence::Spark()
         g_particleSystem->CreateParticle( sparkPos, particleVel, Particle::TypeSpark, size );
     }
 
-    g_soundSystem->TriggerBuildingEvent( this, "Spark" );
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Spark");
 }
 
 
@@ -492,10 +493,7 @@ void LaserFence::SetBuildingLink( int _buildingId )
 }
 
 
-void LaserFence::Electrocute( Vector3 const &_pos )
-{
-    g_soundSystem->TriggerBuildingEvent( this, "Electrocute" );
-}
+void LaserFence::Electrocute(Vector3 const& _pos) { g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Electrocute"); }
 
 
 bool LaserFence::DoesSphereHit(Vector3 const &_pos, float _radius)

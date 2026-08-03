@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "FileWriter.h"
 #include "Resource.h"
@@ -96,7 +97,7 @@ bool ResearchItem::Advance()
     g_globalWorld->m_research->AddResearch(m_researchType);
     g_globalWorld->m_research->m_researchLevel[m_researchType] = m_level;
 
-    g_soundSystem->TriggerBuildingEvent(this, "AquireResearch");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "AquireResearch");
 
     if (existingLevel == 0)
     {

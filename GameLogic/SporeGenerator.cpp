@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <math.h>
 
@@ -273,7 +274,7 @@ bool SporeGenerator::AdvanceEggLaying()
       Matrix34 mat(m_front, g_upVector, m_pos);
       Matrix34 eggLayMat = m_eggMarker->GetWorldMatrix(mat);
       g_location->SpawnEntities(eggLayMat.pos, m_id.GetTeamId(), -1, TypeEgg, 1, m_vel, 0.0f);
-      g_soundSystem->TriggerEntityEvent(this, "LayEgg");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LayEgg");
     }
   }
 

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "FileWriter.h"
 #include "TextStreamReaders.h"
@@ -337,11 +338,11 @@ bool FuelGenerator::Advance()
 
   if (previousPumpPos >= 0.1f && m_previousPumpPos < 0.1f)
   {
-    g_soundSystem->TriggerBuildingEvent(this, "PumpUp");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpUp");
   }
   else if (previousPumpPos <= 0.9f && m_previousPumpPos > 0.9f)
   {
-    g_soundSystem->TriggerBuildingEvent(this, "PumpDown");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpDown");
   }
 
   return FuelBuilding::Advance();
@@ -423,7 +424,7 @@ bool FuelPipe::Advance()
 
   if (m_currentLevel > 0.2f && numInstances == 0)
   {
-    g_soundSystem->TriggerBuildingEvent(this, "PumpFuel");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpFuel");
   }
   else if (m_currentLevel <= 0.2f && numInstances > 0)
   {
@@ -539,7 +540,7 @@ bool FuelStation::BoardRocket(WorldObjectId _id)
         g_particleSystem->CreateParticle(entityPos, vel, Particle::TypeControlFlash);
       }
 
-      g_soundSystem->TriggerBuildingEvent(this, "LoadPassenger");
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "LoadPassenger");
     }
 
     return result;
@@ -824,7 +825,7 @@ void EscapeRocket::SetupSounds()
 
   if (requiredSoundName && numInstances == 0)
   {
-    g_soundSystem->TriggerBuildingEvent(this, requiredSoundName);
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), requiredSoundName);
   }
 
 
@@ -837,7 +838,7 @@ void EscapeRocket::SetupSounds()
   {
     if (numEngineInstances == 0)
     {
-      g_soundSystem->TriggerBuildingEvent(this, "EngineBurn");
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "EngineBurn");
     }
   }
   else
@@ -1208,7 +1209,7 @@ void EscapeRocket::Damage(float _damage)
     if (m_damage > 100.0f)
     {
       m_state = StateExploding;
-      g_soundSystem->TriggerBuildingEvent(this, "Explode");
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Explode");
     }
   }
 }

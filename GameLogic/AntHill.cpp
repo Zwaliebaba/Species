@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "DebugRender.h"
 #include "FileWriter.h"
@@ -67,7 +68,7 @@ void AntHill::Damage ( float _damage )
         {
             Matrix34 mat( m_front, g_upVector, m_pos );
             g_explosionManager.AddExplosion( m_shape, mat, 1.0f - (float)m_health/100.0f );
-            g_soundSystem->TriggerBuildingEvent( this, "Damage" );
+            g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Damage");
         }
 
         if( m_health <= 0 )
@@ -90,7 +91,7 @@ void AntHill::Damage ( float _damage )
                 g_location->SpawnSpirit( pos, vel, m_id.GetTeamId(), WorldObjectId() );
             }
 
-            g_soundSystem->TriggerBuildingEvent( this, "Explode" );
+            g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Explode");
             m_health = 0;
         }
     }

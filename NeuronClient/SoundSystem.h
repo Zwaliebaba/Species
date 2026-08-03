@@ -6,11 +6,9 @@
 #include "LList.h"
 #include "Vector3.h"
 #include "SoundInstance.h"
+#include "SoundSource.h"
 #include "WorldObjectId.h"
 
-class Entity;
-class WorldObject;
-class Building;
 class TextReader;
 class SoundInstance;
 class Profiler;
@@ -182,10 +180,24 @@ class SoundSystem
     int NumChannelsUsed();
     int NumSoundsDiscarded();
 
-    void TriggerEntityEvent(Entity* _entity, const char* _eventName);
-    void TriggerBuildingEvent(Building* _building, const char* _eventName);
-    void TriggerOtherEvent(WorldObject* _other, const char* _eventName, int _type);
+    // These took an Entity*, a Building* and a WorldObject* until
+    // tasks/layering-inversion.yaml T17. Each body read the same four fields
+    // off whatever it was handed, so SoundSource carries those instead and no
+    // GameLogic type appears in this header. GameLogic/SoundSources.h fills one
+    // from a live object.
+    void TriggerEntityEvent(SoundSource const& _source, const char* _eventName);
+    void TriggerBuildingEvent(SoundSource const& _source, const char* _eventName);
 
+    // A sound with no object behind it — gestures, music, the interface.
+    void TriggerOtherEvent(const char* _eventName, int _type);
+    void TriggerOtherEvent(SoundSource const& _source, const char* _eventName, int _type);
+
+  private:
+    // Both public forms land here. Nullable because the blueprint machinery
+    // treats an unattached sound as one with no position of its own.
+    void TriggerOtherEvent(SoundSource const* _source, const char* _eventName, int _type);
+
+  public:
     void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in nullptr to stop every event.
     // Full event name required, eg "Citizen SeenThreat"
 

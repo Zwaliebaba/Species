@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <math.h>
 
@@ -208,7 +209,7 @@ bool ControlTower::Reprogram(int _teamId)
 
         if (m_ownership == 100.0f)
         {
-          g_soundSystem->TriggerBuildingEvent(this, "ReprogramComplete");
+          g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ReprogramComplete");
           // g_app->m_sepulveda->Say("building_captured");
           targetBuilding->ReprogramComplete();
           SetTeamId(_teamId);

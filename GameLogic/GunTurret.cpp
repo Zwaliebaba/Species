@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <math.h>
 
@@ -126,7 +127,7 @@ bool GunTurret::SearchForTargets()
 
   if (entity && m_targetId != previousTarget)
   {
-    g_soundSystem->TriggerBuildingEvent(this, "TargetSighted");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "TargetSighted");
   }
 
   return (m_targetId.IsValid());
@@ -221,7 +222,7 @@ void GunTurret::PrimaryFire()
 
   if (fired)
   {
-    g_soundSystem->TriggerBuildingEvent(this, "FireShell");
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "FireShell");
   }
 }
 

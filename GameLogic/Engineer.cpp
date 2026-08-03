@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include <math.h>
 
@@ -249,14 +250,14 @@ void Engineer::ChangeHealth(int amount)
 
     if (amount < 0)
     {
-      g_soundSystem->TriggerEntityEvent(this, "LoseHealth");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LoseHealth");
     }
 
     if (m_stats[StatHealth] + amount < 0)
     {
       m_stats[StatHealth] = 0;
       m_dead = true;
-      g_soundSystem->TriggerEntityEvent(this, "Die");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Die");
     }
     else if (m_stats[StatHealth] + amount > 255)
     {
@@ -348,7 +349,7 @@ bool Engineer::Advance(Unit* _unit)
       {
         ct->EndReprogram(m_positionId);
         g_soundSystem->StopAllSounds(m_id, "Engineer BeginReprogramming");
-        g_soundSystem->TriggerEntityEvent(this, "EndReprogramming");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EndReprogramming");
       }
     }
 
@@ -356,7 +357,7 @@ bool Engineer::Advance(Unit* _unit)
     if (m_state == StateResearching)
     {
       g_soundSystem->StopAllSounds(m_id, "Engineer BeginReprogramming");
-      g_soundSystem->TriggerEntityEvent(this, "EndReprogramming");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EndReprogramming");
     }
 
     // If I was operating a bridge, stop now
@@ -418,7 +419,7 @@ bool Engineer::Advance(Unit* _unit)
     ct->EndReprogram(m_positionId);
     m_positionId = -1;
     g_soundSystem->StopAllSounds(m_id, "Engineer BeginReprogramming");
-    g_soundSystem->TriggerEntityEvent(this, "EndReprogramming");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EndReprogramming");
   }
 
   if (building && building->m_type == Building::TypeBridge && m_state != StateOperatingBridge)
@@ -432,7 +433,7 @@ bool Engineer::Advance(Unit* _unit)
   {
     // We've been moved away from researching a research item
     g_soundSystem->StopAllSounds(m_id, "Engineer BeginReprogramming");
-    // g_soundSystem->TriggerEntityEvent( this, "EndReprogramming" );
+    // g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EndReprogramming" );
   }
 
 
@@ -718,7 +719,7 @@ bool Engineer::AdvanceToControlTower()
     {
       m_positionId = positionId;
       ct->BeginReprogram(m_positionId);
-      g_soundSystem->TriggerEntityEvent(this, "BeginReprogramming");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "BeginReprogramming");
       m_state = StateReprogramming;
     }
   }
@@ -755,7 +756,7 @@ bool Engineer::AdvanceResearching()
   if (amIDone)
   {
     g_soundSystem->StopAllSounds(m_id, "Engineer BeginReprogramming");
-    g_soundSystem->TriggerEntityEvent(this, "ReprogrammingComplete");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "ReprogrammingComplete");
     m_buildingId = -1;
     m_state = StateIdle;
     return false;
@@ -808,7 +809,7 @@ bool Engineer::AdvanceReprogramming()
   if (!building)
   {
     m_state = StateIdle;
-    g_soundSystem->TriggerEntityEvent(this, "EndReprogramming");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "EndReprogramming");
     return false;
   }
 
@@ -820,7 +821,7 @@ bool Engineer::AdvanceReprogramming()
     if (finished)
     {
       g_soundSystem->StopAllSounds(m_id, "Engineer BeginReprogramming");
-      g_soundSystem->TriggerEntityEvent(this, "ReprogrammingComplete");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "ReprogrammingComplete");
       ct->EndReprogram(m_positionId);
       m_buildingId = -1;
       m_positionId = -1;
@@ -1001,7 +1002,7 @@ bool Engineer::AdvanceToResearchItem()
   bool arrived = AdvanceToTargetPos();
   if (arrived)
   {
-    g_soundSystem->TriggerEntityEvent(this, "BeginReprogramming");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "BeginReprogramming");
     m_state = StateResearching;
   }
 

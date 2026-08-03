@@ -4,6 +4,7 @@
 #include "RendererAccess.h"
 #include "GameCursorAccess.h"
 #include "LocationAccess.h"
+#include "WorldTypeNames.h"
 #include "LocationEditorAccess.h"
 #include "ScriptAccess.h"
 #include "TaskManagerInterfaceAccess.h"

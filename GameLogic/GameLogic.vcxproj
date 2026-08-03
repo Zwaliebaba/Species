@@ -52,7 +52,8 @@
     <ClCompile Include="CheatWindow.cpp" />
     <ClCompile Include="ConstructionYard.cpp" />
     <ClCompile Include="ControlTower.cpp" />
-    <ClCompile Include="Citizen.cpp" />
+    <ClCompile Include="WorldTypeRoster.cpp" />
+<ClCompile Include="Citizen.cpp" />
     <ClCompile Include="SpeciesWindow.cpp" />
     <ClCompile Include="DebugMenu.cpp" />
     <ClCompile Include="DropDownMenu.cpp" />
@@ -162,7 +163,9 @@
     <ClInclude Include="CheatWindow.h" />
     <ClInclude Include="ConstructionYard.h" />
     <ClInclude Include="ControlTower.h" />
-    <ClInclude Include="Citizen.h" />
+    <ClInclude Include="SoundSources.h" />
+<ClInclude Include="WorldTypeRoster.h" />
+<ClInclude Include="Citizen.h" />
     <ClInclude Include="SpeciesWindow.h" />
     <ClInclude Include="DebugMenu.h" />
     <ClInclude Include="DropDownMenu.h" />

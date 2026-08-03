@@ -20,6 +20,7 @@
 #include "Script.h"
 #include "SoundStreamDecoder.h"
 #include "SoundSystem.h"
+#include "WorldTypeRoster.h"
 #include "SystemInfo.h"
 #include "TaskManager.h"
 #include "TaskManagerInterfaceIcons.h"
@@ -110,6 +111,10 @@ App::App()
   delete ssd;
 
   int textureId = m_resource->GetTexture("Textures/EditorFontNormal.bmp");
+
+  // Before the sound system exists, and well before Initialise() reads a
+  // blueprint that has to resolve an entity or building type name.
+  InstallWorldTypeRoster();
 
   g_gameCursor = new GameCursor();
   m_soundSystem = new SoundSystem();

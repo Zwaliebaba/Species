@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "Matrix34.h"
 #include "Shape.h"
@@ -294,7 +295,7 @@ bool ArmyAnt::AdvanceAttackEnemy()
                                                                syncsfrand(15.0f) ),
 															   Particle::TypeMuzzleFlash );
         }
-        g_soundSystem->TriggerEntityEvent( this, "Attack" );
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
     }
 
     return false;

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "Debug.h"
 #include "FileWriter.h"
@@ -88,7 +89,7 @@ bool TrunkPort::Advance()
     if( gb && gb->m_online && m_openTimer == 0.0f)
     {
         m_openTimer = GetHighResTime();
-        g_soundSystem->TriggerBuildingEvent( this, "PowerUp" );
+        g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PowerUp");
     }
 
     return Building::Advance();

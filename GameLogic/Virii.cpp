@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 
 #include "BinaryStreamReaders.h"
 #include "Bitmap.h"
@@ -445,7 +446,7 @@ bool Virii::AdvanceAttacking()
     {
       g_particleSystem->CreateParticle(m_pos, Vector3(syncsfrand(15.0f), syncsfrand(15.0f) + 15.0f, syncsfrand(15.0f)), Particle::TypeMuzzleFlash);
     }
-    g_soundSystem->TriggerEntityEvent(this, "Attack");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
     SearchForEnemies();
   }
 
@@ -736,7 +737,7 @@ bool Virii::SearchForIdleDirection()
     m_wayPoint = nextPos;
     m_state = StateIdle;
     RecordHistoryPosition(true);
-    g_soundSystem->TriggerEntityEvent(this, "ChangeDirection");
+    g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "ChangeDirection");
     END_PROFILE(g_profiler, "SearchForIdleDir");
     return true;
   }
@@ -760,7 +761,7 @@ bool Virii::SearchForIdleDirection()
         m_wayPoint = nextPos;
         m_state = StateIdle;
         RecordHistoryPosition(true);
-        g_soundSystem->TriggerEntityEvent(this, "ChangeDirection");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "ChangeDirection");
         END_PROFILE(g_profiler, "SearchForIdleDir");
         return true;
       }

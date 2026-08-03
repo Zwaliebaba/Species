@@ -139,11 +139,11 @@ void Team::SelectUnit(int _unitId, int _entityId, int _buildingId)
 
   if (_unitId == -1 && _entityId == -1 && _buildingId == -1)
   {
-    g_soundSystem->TriggerOtherEvent(nullptr, "TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent("TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface);
   }
   else
   {
-    g_soundSystem->TriggerOtherEvent(nullptr, "TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent("TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface);
   }
 
   //    if( m_teamId == g_globalWorld->m_myTeamId )

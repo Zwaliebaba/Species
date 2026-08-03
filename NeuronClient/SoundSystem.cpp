@@ -1,5 +1,7 @@
 #include "pch.h"
-#include "BTree.h" // BTree<float> in AdvanceSoundEvents; used to arrive via LanguageTable.h
+
+#include <stdlib.h> // atof/atoi/qsort below; arrived via Location.h until T17 dropped it
+#include "BTree.h"  // BTree<float> in AdvanceSoundEvents; used to arrive via LanguageTable.h
 #include "Debug.h"
 #include "FilesysUtils.h"
 #include "FileWriter.h"
@@ -22,10 +24,9 @@
 #include "SoundLibrary3dSoftware.h"
 
 #include "GameTime.h"
-#include "Location.h"
 
-#include "Entity.h"
 #include "WorldPointers.h"
+#include "WorldTypeNames.h"
 #include "AppState.h"
 
 SoundSystem* g_soundSystem = nullptr;
@@ -504,8 +505,15 @@ bool SoundSystem::AreBlueprintsModified()
 
 void SoundSystem::LoadBlueprints()
 {
-  m_entityBlueprints.SetSize(Entity::NumEntityTypes);
-  m_buildingBlueprints.SetSize(Building::NumBuildingTypes);
+  // No roster means no game attached — a sound system in a test DLL, or one
+  // built before App installed GameLogic's. There is nothing to index the
+  // blueprint tables by, so there are no blueprints to load. Silence is the
+  // right answer here, not a crash.
+  if (!g_worldTypeNames)
+    return;
+
+  m_entityBlueprints.SetSize(g_worldTypeNames->NumEntityTypes());
+  m_buildingBlueprints.SetSize(g_worldTypeNames->NumBuildingTypes());
   m_otherBlueprints.SetSize(SoundSourceBlueprint::NumOtherSoundSources);
 
   TextReader* in = g_resource->GetTextReader("Sounds.txt");
@@ -525,8 +533,8 @@ void SoundSystem::LoadBlueprints()
     if (stricmp(group, "ENTITY") == 0)
     {
       strncpy(objectName, type, 127);
-      int entityType = Entity::GetTypeId(type);
-      DEBUG_ASSERT(entityType >= 0 && entityType < Entity::NumEntityTypes);
+      int entityType = g_worldTypeNames->EntityTypeId(type);
+      DEBUG_ASSERT(entityType >= 0 && entityType < g_worldTypeNames->NumEntityTypes());
       DEBUG_ASSERT(!m_entityBlueprints.ValidIndex(entityType));
 
       ssb = new SoundSourceBlueprint();
@@ -536,8 +544,8 @@ void SoundSystem::LoadBlueprints()
     else if (stricmp(group, "BUILDING") == 0)
     {
       strncpy(objectName, type, 127);
-      int buildingType = Building::GetTypeId(type);
-      DEBUG_ASSERT(buildingType >= 0 && buildingType < Building::NumBuildingTypes);
+      int buildingType = g_worldTypeNames->BuildingTypeId(type);
+      DEBUG_ASSERT(buildingType >= 0 && buildingType < g_worldTypeNames->NumBuildingTypes());
       DEBUG_ASSERT(!m_buildingBlueprints.ValidIndex(buildingType));
 
       ssb = new SoundSourceBlueprint();
@@ -587,7 +595,7 @@ void SoundSystem::LoadBlueprints()
   //
   // Fill in the non-specified sound sources with blanks
 
-  for (int i = 0; i < Entity::NumEntityTypes; ++i)
+  for (int i = 0; i < g_worldTypeNames->NumEntityTypes(); ++i)
   {
     if (!m_entityBlueprints.ValidIndex(i))
     {
@@ -596,7 +604,7 @@ void SoundSystem::LoadBlueprints()
     }
   }
 
-  for (int i = 0; i < Building::NumBuildingTypes; ++i)
+  for (int i = 0; i < g_worldTypeNames->NumBuildingTypes(); ++i)
   {
     if (!m_buildingBlueprints.ValidIndex(i))
     {
@@ -634,7 +642,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
     if (ssb->m_events.Size() > 0)
     {
       file->printf("# =========================================================\n");
-      file->printf("ENTITY %s\n", Entity::GetTypeName(i));
+      file->printf("ENTITY %s\n", g_worldTypeNames->EntityTypeName(i));
 
       for (int j = 0; j < ssb->m_events.Size(); ++j)
       {
@@ -654,7 +662,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
     if (ssb->m_events.Size() > 0)
     {
       file->printf("# =========================================================\n");
-      file->printf("BUILDING %s\n", Building::GetTypeName(i));
+      file->printf("BUILDING %s\n", g_worldTypeNames->BuildingTypeName(i));
 
       for (int j = 0; j < ssb->m_events.Size(); ++j)
       {
@@ -969,17 +977,17 @@ SoundInstance* SoundSystem::GetSoundInstance(SoundInstanceId id)
   return nullptr;
 }
 
-void SoundSystem::TriggerEntityEvent(Entity* _entity, const char* _eventName)
+void SoundSystem::TriggerEntityEvent(SoundSource const& _source, const char* _eventName)
 {
   if (!m_channels)
     return;
 
   START_PROFILE(m_mainProfiler, "TriggerEntityEvent");
-  WorldObjectId objId(_entity->m_id);
+  WorldObjectId objId(_source.m_id);
 
-  if (m_entityBlueprints.ValidIndex(_entity->m_type))
+  if (m_entityBlueprints.ValidIndex(_source.m_type))
   {
-    SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[_entity->m_type];
+    SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[_source.m_type];
     for (int i = 0; i < sourceBlueprint->m_events.Size(); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
@@ -989,8 +997,8 @@ void SoundSystem::TriggerEntityEvent(Entity* _entity, const char* _eventName)
         auto instance = new SoundInstance();
         instance->Copy(seb->m_instance);
         instance->m_objIds.PutData(new WorldObjectId(objId));
-        instance->m_pos = _entity->m_pos;
-        instance->m_vel = _entity->m_vel;
+        instance->m_pos = _source.m_pos;
+        instance->m_vel = _source.m_vel;
         bool success = InitialiseSound(instance);
         if (!success)
           ShutdownSound(instance);
@@ -1001,15 +1009,15 @@ void SoundSystem::TriggerEntityEvent(Entity* _entity, const char* _eventName)
   END_PROFILE(m_mainProfiler, "TriggerEntityEvent");
 }
 
-void SoundSystem::TriggerBuildingEvent(Building* _building, const char* _eventName)
+void SoundSystem::TriggerBuildingEvent(SoundSource const& _source, const char* _eventName)
 {
   if (!m_channels)
     return;
 
   START_PROFILE(m_mainProfiler, "TriggerBuildingEvent");
-  if (m_buildingBlueprints.ValidIndex(_building->m_type))
+  if (m_buildingBlueprints.ValidIndex(_source.m_type))
   {
-    SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[_building->m_type];
+    SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[_source.m_type];
     for (int i = 0; i < sourceBlueprint->m_events.Size(); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
@@ -1018,8 +1026,8 @@ void SoundSystem::TriggerBuildingEvent(Building* _building, const char* _eventNa
         DEBUG_ASSERT(seb->m_instance);
         auto instance = new SoundInstance();
         instance->Copy(seb->m_instance);
-        instance->m_objIds.PutData(new WorldObjectId(_building->m_id));
-        instance->m_pos = _building->m_pos;
+        instance->m_objIds.PutData(new WorldObjectId(_source.m_id));
+        instance->m_pos = _source.m_pos;
         bool success = InitialiseSound(instance);
         if (!success)
           ShutdownSound(instance);
@@ -1030,7 +1038,20 @@ void SoundSystem::TriggerBuildingEvent(Building* _building, const char* _eventNa
   END_PROFILE(m_mainProfiler, "TriggerBuildingEvent");
 }
 
-void SoundSystem::TriggerOtherEvent(WorldObject* _other, const char* _eventName, int _type)
+// The unattached form. Kept as a separate overload rather than a null
+// SoundSource*: 30 of the 47 call sites pass nothing, and `TriggerOtherEvent(
+// "GestureSuccess", TypeGesture)` says what they mean better than a nullptr
+// first argument did.
+void SoundSystem::TriggerOtherEvent(const char* _eventName, int _type)
+{
+  TriggerOtherEvent(static_cast<SoundSource const*>(nullptr), _eventName, _type);
+}
+
+
+void SoundSystem::TriggerOtherEvent(SoundSource const& _source, const char* _eventName, int _type) { TriggerOtherEvent(&_source, _eventName, _type); }
+
+
+void SoundSystem::TriggerOtherEvent(SoundSource const* _other, const char* _eventName, int _type)
 {
   if (!m_channels)
     return;
@@ -1790,7 +1811,7 @@ void SoundSystem::LoadtimeVerify()
         const char* err = IsSoundSourceOK(si->m_soundName);
         if (err != nullptr)
         {
-          fprintf(soundErrors, "%s: %s In entity %s, event %s\n", err, si->m_soundName, Entity::GetTypeName(i), seb->m_eventName);
+          fprintf(soundErrors, "%s: %s In entity %s, event %s\n", err, si->m_soundName, g_worldTypeNames->EntityTypeName(i), seb->m_eventName);
           errorFound = true;
         }
       }
@@ -1803,7 +1824,7 @@ void SoundSystem::LoadtimeVerify()
           fprintf(soundErrors,
                   "Sound Group %s does not exist. "
                   "Referenced by entity %s, event %s\n",
-                  si->m_soundName, Entity::GetTypeName(i), seb->m_eventName);
+                  si->m_soundName, g_worldTypeNames->EntityTypeName(i), seb->m_eventName);
           errorFound = true;
         }
       }
@@ -1828,7 +1849,7 @@ void SoundSystem::LoadtimeVerify()
         const char* err = IsSoundSourceOK(si->m_soundName);
         if (err != nullptr)
         {
-          fprintf(soundErrors, "%s: %s In building %s, event %s\n", err, si->m_soundName, Building::GetTypeName(i), seb->m_eventName);
+          fprintf(soundErrors, "%s: %s In building %s, event %s\n", err, si->m_soundName, g_worldTypeNames->BuildingTypeName(i), seb->m_eventName);
           errorFound = true;
         }
       }
@@ -1841,7 +1862,7 @@ void SoundSystem::LoadtimeVerify()
           fprintf(soundErrors,
                   "Sound Group %s does not exist. "
                   "Referenced by building %s, event %s\n",
-                  si->m_soundName, Building::GetTypeName(i), seb->m_eventName);
+                  si->m_soundName, g_worldTypeNames->BuildingTypeName(i), seb->m_eventName);
           errorFound = true;
         }
       }

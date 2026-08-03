@@ -61,6 +61,7 @@
     <ClCompile Include="ControlTower.cpp">
       <Filter>Game Objects</Filter>
     </ClCompile>
+    <ClCompile Include="WorldTypeRoster.cpp" />
     <ClCompile Include="Citizen.cpp">
       <Filter>Game Objects</Filter>
     </ClCompile>
@@ -347,6 +348,8 @@
     <ClInclude Include="ControlTower.h">
       <Filter>Game Objects</Filter>
     </ClInclude>
+    <ClInclude Include="SoundSources.h" />
+    <ClInclude Include="WorldTypeRoster.h" />
     <ClInclude Include="Citizen.h">
       <Filter>Game Objects</Filter>
     </ClInclude>

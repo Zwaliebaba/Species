@@ -1155,10 +1155,16 @@ tasks:
     project: NeuronClient
     depends_on: [T15]
     files:
+      - NeuronClient/SoundSource.h
+      - NeuronClient/WorldTypeNames.h
       - NeuronClient/SoundSystem.h
       - NeuronClient/SoundSystem.cpp
-      - GameLogic/Entity.h
-      - GameLogic/Entity.cpp
+      - NeuronClient/WorldPointers.h
+      - NeuronClient/WorldPointers.cpp
+      - GameLogic/SoundSources.h
+      - GameLogic/WorldTypeRoster.h
+      - GameLogic/WorldTypeRoster.cpp
+      - Species/App.cpp
       - tools/layering_allowlist.txt
     acceptance:
       - SoundSystem.cpp includes no GameLogic header and both allowlist entries are gone
@@ -1170,7 +1176,7 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
       - The Garden smoke test, owner-run — every entity sound goes through this
     parallel_safe: false
-    status: todo
+    status: done
     notes: >
       Measured 2026-08-03. Two halves, and the second is the awkward one.
 
@@ -1196,6 +1202,52 @@ tasks:
       Whichever way it goes, the blueprint files must parse the same
       afterwards. They name entity types as strings and the mapping to indices
       is what the acceptance calls content rather than code.
+
+      DONE, and it took the allowlist to ZERO. Both halves went the way the
+      notes above guessed, and the signature half was cheaper than feared.
+
+      The signatures. SoundSource in NeuronClient carries the four fields —
+      m_id, m_type, m_pos, m_vel — that all three bodies read off whatever they
+      were handed, and the three methods take one. GameLogic/SoundSources.h
+      converts a live object with SoundSourceOf().
+
+      ONE conversion function, not three overloads for Entity, Building and
+      WorldObject, because all four fields are WorldObject members and neither
+      subclass adds any. That was not obvious from the call sites and is the
+      kind of thing worth checking before writing the overload set: the three
+      would have been identical bodies.
+
+      165 call sites across 41 files, rewritten by script and then audited by a
+      second script that re-parsed every Trigger*Event call and checked its
+      argument count and shape. That audit earned its keep. Running two regexes
+      in sequence over the same text let the second match the FIRST one's
+      output: `TriggerOtherEvent(nullptr, _event, TypeMusic)` became
+      `TriggerOtherEvent(SoundSourceOf(_event), TypeMusic)` in Script.cpp, and
+      the identical bug inside SoundSystem.cpp turned the new delegating
+      overload into infinite recursion. Both compile. Neither was caught by any
+      of the five checks — only by looking at what the rewrite produced.
+
+      TriggerOtherEvent gained an unattached overload rather than keeping a
+      nullable first argument: 30 of its 47 call sites passed nullptr, and
+      TriggerOtherEvent("GestureSuccess", TypeGesture) says what they mean.
+
+      The type registry went the way the note recommended — GameLogic keeps the
+      roster and the dependency inverts. NeuronClient declares WorldTypeNames,
+      GameLogic implements it over the existing Entity:: and Building:: statics
+      (nothing is duplicated; those remain the single definition of what the
+      types are called), and App installs it before SoundSystem::Initialise
+      reads a blueprint. LoadBlueprints returns early when no roster is
+      installed, which is the correct behaviour for a sound system with no game
+      attached rather than a crash — and it is what lets a test DLL link one.
+
+      InstallWorldTypeRoster is an explicit call, not a static initialiser.
+      GameLogic is a static library, and a translation unit nothing else
+      references is not guaranteed to be linked in at all: a self-installing
+      object would have worked until the linker decided it was unused.
+
+      SoundSystem.cpp gained <stdlib.h>. It calls atof, atoi and qsort and had
+      been getting them through the Location.h chain — the fifth time this plan
+      has hit that trap, and the second time in two tasks.
 
   - id: T14
     title: Replace App's remaining scalar state with accessors

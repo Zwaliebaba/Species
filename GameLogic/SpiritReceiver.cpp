@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Debug.h"
 #include "FileWriter.h"
 #include "HiResTime.h"
@@ -194,7 +195,7 @@ bool ReceiverBuilding::Advance()
 void ReceiverBuilding::TriggerSpirit(float _initValue)
 {
   m_spirits.PutDataAtStart(_initValue);
-  g_soundSystem->TriggerBuildingEvent(this, "TriggerSpirit");
+  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "TriggerSpirit");
 }
 
 void ReceiverBuilding::Read(TextReader* _in, bool _dynamic)

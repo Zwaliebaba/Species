@@ -179,6 +179,8 @@
 <ClInclude Include="ControlHelpAccess.h" />
 <ClInclude Include="TaskManagerInterfaceAccess.h" />
 <ClInclude Include="UserInputAccess.h" />
+<ClInclude Include="SoundSource.h" />
+<ClInclude Include="WorldTypeNames.h" />
 <ClInclude Include="LocationAccess.h" />
 <ClInclude Include="LocationEditorAccess.h" />
 <ClInclude Include="GameCursorAccess.h" />

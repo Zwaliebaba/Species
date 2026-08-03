@@ -133,7 +133,7 @@ void TaskManagerInterfaceIcons::HideTaskManager()
   m_screenId = ScreenTaskManager;
   SetVisible(false);
 
-  g_soundSystem->TriggerOtherEvent(nullptr, "Hide", SoundSourceBlueprint::TypeInterface);
+  g_soundSystem->TriggerOtherEvent("Hide", SoundSourceBlueprint::TypeInterface);
 }
 
 void TaskManagerInterfaceIcons::Advance()
@@ -177,7 +177,7 @@ void TaskManagerInterfaceIcons::Advance()
 
     SetVisible();
 
-    g_soundSystem->TriggerOtherEvent(nullptr, "Show", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent("Show", SoundSourceBlueprint::TypeInterface);
 
     if (g_inputManager->controlEvent(ControlIconsTaskManagerDisplayDown))
     {
@@ -272,7 +272,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenEdges()
   }
 
   if (scrollRequested)
-    g_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
 }
 
 void TaskManagerInterfaceIcons::SetupRenderMatrices(int _screenId)
@@ -454,7 +454,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
           m_currentMouseScreenZone = i;
           m_currentScreenZone = i;
           m_screenZoneTimer = GetHighResTime();
-          g_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+          g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
         }
         found = true;
       }
@@ -464,7 +464,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     {
       int numZones = m_screenZones.Size();
       int zonesRemaining = numZones;
-      g_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
       while (zonesRemaining)
       {
         m_currentScreenZone = (m_currentScreenZone + 1) % numZones;
@@ -479,7 +479,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     {
       int numZones = m_screenZones.Size();
       int zonesRemaining = numZones;
-      g_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
       while (zonesRemaining)
       {
         m_currentScreenZone = (m_currentScreenZone + numZones - 1) % numZones;
@@ -559,7 +559,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
           m_currentMouseScreenZone = i;
           m_currentScreenZone = i;
           m_screenZoneTimer = GetHighResTime();
-          g_soundSystem->TriggerOtherEvent(nullptr, "MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+          g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
           break;
         }
       }
@@ -678,7 +678,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
     if (g_globalWorld->m_research->HasResearch(_data))
     {
       g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
-      g_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
+      g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
@@ -696,7 +696,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
       Task* nextTask = g_taskManager->m_tasks[_data];
       g_taskManager->m_currentTaskId = nextTask->m_id;
       g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
-      g_soundSystem->TriggerOtherEvent(nullptr, "SelectTask", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent("SelectTask", SoundSourceBlueprint::TypeInterface);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
@@ -711,7 +711,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
       g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
     else
       g_taskManager->TerminateTask(_data);
-    g_soundSystem->TriggerOtherEvent(nullptr, "DeleteTask", SoundSourceBlueprint::TypeInterface);
+    g_soundSystem->TriggerOtherEvent("DeleteTask", SoundSourceBlueprint::TypeInterface);
   }
 
   //
@@ -722,8 +722,8 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
     if (g_globalWorld->m_research->HasResearch(_data))
     {
       g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
-      g_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
-      g_soundSystem->TriggerOtherEvent(nullptr, "GestureSuccess", SoundSourceBlueprint::TypeGesture);
+      g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
+      g_soundSystem->TriggerOtherEvent("GestureSuccess", SoundSourceBlueprint::TypeGesture);
       if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
@@ -754,7 +754,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
         break;
       }
 
-      g_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
     }
 
     if (stricmp(_name, "ScreenUp") == 0)
@@ -2451,7 +2451,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
         m_quickUnitButtons[i]->m_movable = true;
       m_quickUnitDirection = -1;
       showUnitName = true;
-      g_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
     }
 
     if (right)
@@ -2469,7 +2469,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
         m_quickUnitButtons[i]->m_movable = true;
       m_quickUnitDirection = 1;
       showUnitName = true;
-      g_soundSystem->TriggerOtherEvent(nullptr, "Slide", SoundSourceBlueprint::TypeInterface);
+      g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
     }
 
     if (showUnitName)
@@ -2485,7 +2485,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
       if (taskId != -1)
       {
         g_app->m_clientToServer->RequestRunProgram(g_location->GetMyTeam()->m_teamId, taskId);
-        g_soundSystem->TriggerOtherEvent(nullptr, "GestureBegin", SoundSourceBlueprint::TypeGesture);
+        g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
         DestroyQuickUnitInterface();
       }
     }

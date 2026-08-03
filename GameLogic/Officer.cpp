@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SoundSources.h"
 #include "Resource.h"
 #include "Shape.h"
 #include "MathUtils.h"
@@ -662,7 +663,7 @@ void Officer::SetOrders(Vector3 const& _orders)
         }
 
         CancelOrderSounds();
-        g_soundSystem->TriggerEntityEvent(this, "SetOrderGoto");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderGoto");
       }
     }
     else
@@ -714,16 +715,16 @@ void Officer::SetOrders(Vector3 const& _orders)
         switch (m_orders)
         {
         case OrderNone:
-          g_soundSystem->TriggerEntityEvent(this, "SetOrderNone");
+          g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderNone");
           break;
         case OrderGoto:
-          g_soundSystem->TriggerEntityEvent(this, "SetOrderGoto");
+          g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderGoto");
           break;
         case OrderFollow:
           if (m_absorb)
-            g_soundSystem->TriggerEntityEvent(this, "SetOrderAbsorb");
+            g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderAbsorb");
           else
-            g_soundSystem->TriggerEntityEvent(this, "SetOrderFollow");
+            g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderFollow");
           break;
         }
 
@@ -784,16 +785,16 @@ void Officer::SetNextMode()
     switch (m_orders)
     {
     case OrderNone:
-      g_soundSystem->TriggerEntityEvent(this, "SetOrderNone");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderNone");
       break;
     case OrderGoto:
-      g_soundSystem->TriggerEntityEvent(this, "SetOrderGoto");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderGoto");
       break;
     case OrderFollow:
       if (m_absorb)
-        g_soundSystem->TriggerEntityEvent(this, "SetOrderAbsorb");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderAbsorb");
       else
-        g_soundSystem->TriggerEntityEvent(this, "SetOrderFollow");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderFollow");
       break;
     }
 
@@ -852,16 +853,16 @@ void Officer::SetPreviousMode()
     switch (m_orders)
     {
     case OrderNone:
-      g_soundSystem->TriggerEntityEvent(this, "SetOrderNone");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderNone");
       break;
     case OrderGoto:
-      g_soundSystem->TriggerEntityEvent(this, "SetOrderGoto");
+      g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderGoto");
       break;
     case OrderFollow:
       if (m_absorb)
-        g_soundSystem->TriggerEntityEvent(this, "SetOrderAbsorb");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderAbsorb");
       else
-        g_soundSystem->TriggerEntityEvent(this, "SetOrderFollow");
+        g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "SetOrderFollow");
       break;
     }
 
