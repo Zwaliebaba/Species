@@ -30,7 +30,7 @@ class LoadUserProfileButton : public SpeciesButton
 class NewProfileWindowButton : public SpeciesButton
 {
   public:
-    void MouseUp() { EclRegisterWindow(new NewUserProfileWindow(), m_parent); }
+    void MouseUp() { EclRegisterWindow(std::make_unique<NewUserProfileWindow>(), m_parent); }
 };
 
 

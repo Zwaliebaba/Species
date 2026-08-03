@@ -84,8 +84,9 @@ void Renderer::Initialise()
     sprintf(caption, "Failed to set requested screen resolution of\n"
             "%d x %d, %d bit colour, %s\n\n" "Restored to safety settings of\n" "640 x 480, 16 bit colour, windowed", m_screenW, m_screenH,
             colourDepth, windowed ? "windowed" : "fullscreen");
-    auto dialog = new MessageDialog("Error", caption);
-    EclRegisterWindow(dialog);
+    auto owned = std::make_unique<MessageDialog>("Error", caption);
+    MessageDialog* dialog = owned.get();
+    EclRegisterWindow(std::move(owned));
     dialog->m_x = 100;
     dialog->m_y = 100;
 

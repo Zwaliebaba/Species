@@ -24,7 +24,7 @@ class SkipPrologueWindowButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_skipprologue")))
-        EclRegisterWindow(new SkipPrologueWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<SkipPrologueWindow>(), m_parent);
     }
 };
 
@@ -65,7 +65,7 @@ class PlayPrologueWindowButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialogue_playprologue")))
-        EclRegisterWindow(new PlayPrologueWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PlayPrologueWindow>(), m_parent);
     }
 };
 
@@ -74,7 +74,7 @@ class AboutSpeciesButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("about_darwinia")))
-        EclRegisterWindow(new AboutSpeciesWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<AboutSpeciesWindow>(), m_parent);
     }
 };
 
@@ -83,7 +83,7 @@ class MainMenuUserProfileButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_profile")))
-        EclRegisterWindow(new UserProfileWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<UserProfileWindow>(), m_parent);
     }
 };
 
@@ -92,7 +92,7 @@ class OptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_options")))
-        EclRegisterWindow(new OptionsMenuWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<OptionsMenuWindow>(), m_parent);
     }
 };
 
@@ -101,7 +101,7 @@ class ScreenOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
-        EclRegisterWindow(new PrefsScreenWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PrefsScreenWindow>(), m_parent);
     }
 };
 
@@ -110,7 +110,7 @@ class GraphicsOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
-        EclRegisterWindow(new PrefsGraphicsWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PrefsGraphicsWindow>(), m_parent);
     }
 };
 
@@ -119,7 +119,7 @@ class SoundOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
-        EclRegisterWindow(new PrefsSoundWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PrefsSoundWindow>(), m_parent);
     }
 };
 
@@ -128,7 +128,7 @@ class OtherOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_otheroptions")))
-        EclRegisterWindow(new PrefsOtherWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PrefsOtherWindow>(), m_parent);
     }
 };
 
@@ -137,7 +137,7 @@ class KeybindingsOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_inputoptions")))
-        EclRegisterWindow(new PrefsKeybindingsWindow, m_parent);
+        EclRegisterWindow(std::make_unique<PrefsKeybindingsWindow>(), m_parent);
     }
 };
 
@@ -230,7 +230,7 @@ void OptionsMenuWindow::Create()
 
 class ResetLevelButton : public SpeciesButton
 {
-    void MouseUp() override { EclRegisterWindow(new ResetLocationWindow(), m_parent); }
+    void MouseUp() override { EclRegisterWindow(std::make_unique<ResetLocationWindow>(), m_parent); }
 };
 
 class ExitLevelButton : public SpeciesButton

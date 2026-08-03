@@ -226,9 +226,12 @@ void DropDownMenu::Render(int realX, int realY, bool highlighted, bool clicked)
 
 void DropDownMenu::CreateMenu()
 {
+  // CreateDropDownWindow allocates and stores an OBSERVER in its static
+  // s_window, which is nulled when the window is removed. Eclipse owns it from
+  // here; the static keeps watching, exactly as before.
   DropDownWindow* window = DropDownWindow::CreateDropDownWindow(m_name, m_parent->m_name);
   window->SetPosition(m_parent->m_x + m_x + m_w, m_parent->m_y + m_y);
-  EclRegisterWindow(window);
+  EclRegisterWindow(std::unique_ptr<EclWindow>(window));
 
   int screenH = g_renderer->ScreenH();
   int numColumnsRequired = 1 + (m_h * static_cast<int>(m_options.size())) / (screenH * 0.8f);

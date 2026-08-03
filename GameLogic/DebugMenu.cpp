@@ -69,7 +69,7 @@ class PrefsScreenButton : public SpeciesButton
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
       {
-        EclRegisterWindow(new PrefsScreenWindow());
+        EclRegisterWindow(std::make_unique<PrefsScreenWindow>());
       }
     }
 };
@@ -82,7 +82,7 @@ class PrefsGfxDetailButton : public SpeciesButton
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
       {
-        EclRegisterWindow(new PrefsGraphicsWindow());
+        EclRegisterWindow(std::make_unique<PrefsGraphicsWindow>());
       }
     }
 };
@@ -95,7 +95,7 @@ class PrefsSoundButton : public SpeciesButton
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
       {
-        EclRegisterWindow(new PrefsSoundWindow());
+        EclRegisterWindow(std::make_unique<PrefsSoundWindow>());
       }
     };
 };
@@ -217,7 +217,7 @@ void DebugKeyBindings::DebugMenu()
   if (EclGetWindow(debugMenuWindowName))
     EclRemoveWindow(debugMenuWindowName);
   else
-    EclRegisterWindow(new ::DebugMenu(debugMenuWindowName));
+    EclRegisterWindow(std::make_unique<::DebugMenu>(debugMenuWindowName));
 }
 
 #ifdef PROFILER_ENABLED
@@ -229,12 +229,13 @@ void DebugKeyBindings::ProfileButton()
   }
   else
   {
-    ProfileWindow* pw = new ProfileWindow("Profiler");
+    auto ownedPw = std::make_unique<ProfileWindow>("Profiler");
+    ProfileWindow* pw = ownedPw.get();
     pw->m_w = 570;
     pw->m_h = 450;
     pw->m_x = g_renderer->ScreenW() - pw->m_w - 20;
     pw->m_y = 30;
-    EclRegisterWindow(pw);
+    EclRegisterWindow(std::move(ownedPw));
   }
 }
 #endif
@@ -244,12 +245,13 @@ void DebugKeyBindings::NetworkButton()
 {
   if (!EclGetWindow("Network Stats"))
   {
-    NetworkWindow* nw = new NetworkWindow("Network Stats");
+    auto ownedNw = std::make_unique<NetworkWindow>("Network Stats");
+    NetworkWindow* nw = ownedNw.get();
     nw->m_w = 200;
     nw->m_h = 200;
     nw->m_x = 10;
     nw->m_y = g_renderer->ScreenH() - nw->m_h;
-    EclRegisterWindow(nw);
+    EclRegisterWindow(std::move(ownedNw));
   }
 }
 
@@ -269,12 +271,13 @@ void DebugKeyBindings::CheatButton()
 {
   if (!EclGetWindow("Cheat Window"))
   {
-    CheatWindow* window = new CheatWindow("Cheat Window");
+    auto owned = std::make_unique<CheatWindow>("Cheat Window");
+    CheatWindow* window = owned.get();
     window->m_w = 200;
     window->m_h = 200;
     window->m_x = 250;
     window->m_y = 50;
-    EclRegisterWindow(window);
+    EclRegisterWindow(std::move(owned));
   }
 }
 #endif
@@ -284,7 +287,7 @@ void DebugKeyBindings::ReallyQuitButton()
 {
   // Bring up a really quit window
   if (!EclGetWindow(REALLYQUIT_WINDOWNAME))
-    EclRegisterWindow(new ReallyQuitWindow());
+    EclRegisterWindow(std::make_unique<ReallyQuitWindow>());
 }
 
 void DebugKeyBindings::ToggleFullscreenButton()

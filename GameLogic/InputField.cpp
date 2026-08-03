@@ -392,11 +392,12 @@ void ColourWidget::Render( int realX, int realY, bool highlighted, bool clicked 
 
 void ColourWidget::MouseUp()
 {
-    ColourWindow *cw = new ColourWindow( LANGUAGEPHRASE("editor_coloureditor") );
-    cw->SetSize( 200, 100 );
-    cw->SetValue( m_value );
-    cw->SetCallback( m_callback );
-    EclRegisterWindow( cw, m_parent );
+  auto owned = std::make_unique<ColourWindow>(LANGUAGEPHRASE("editor_coloureditor"));
+  ColourWindow* cw = owned.get();
+  cw->SetSize(200, 100);
+  cw->SetValue(m_value);
+  cw->SetCallback(m_callback);
+  EclRegisterWindow(std::move(owned), m_parent);
 }
 
 

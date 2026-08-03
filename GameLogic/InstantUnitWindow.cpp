@@ -228,12 +228,15 @@ class CreateButton : public SpeciesButton
           // Create an edit window for the new instant unit
           EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
           DEBUG_ASSERT(cw);
-          ew = new InstantUnitEditWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
-          ew->m_w = cw->m_w;
-          ew->m_h = 160;
-          ew->m_x = cw->m_x;
-          EclRegisterWindow(ew);
-          ew->m_y = cw->m_y - ew->m_h - 10;
+          // Not `ew` — that name is already an EclWindow* in this scope, holding
+          // the old edit window this block just removed.
+          auto owned = std::make_unique<InstantUnitEditWindow>(LANGUAGEPHRASE("editor_instantuniteditor"));
+          InstantUnitEditWindow* editWindow = owned.get();
+          editWindow->m_w = cw->m_w;
+          editWindow->m_h = 160;
+          editWindow->m_x = cw->m_x;
+          EclRegisterWindow(std::move(owned));
+          editWindow->m_y = cw->m_y - editWindow->m_h - 10;
         }
       }
     }

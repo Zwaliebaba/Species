@@ -34,9 +34,10 @@ void EclShutdown();
 // Window management
 
 
-void EclRegisterWindow(EclWindow* window, EclWindow* parent = nullptr);
+// Both take ownership. The window list holds it from here on.
+void EclRegisterWindow(std::unique_ptr<EclWindow> window, EclWindow* parent = nullptr);
 void EclRemoveWindow(char const* name);
-void EclRegisterPopup(EclWindow* window);
+void EclRegisterPopup(std::unique_ptr<EclWindow> window);
 void EclRemovePopup();
 
 void EclBringWindowToFront(char* name);

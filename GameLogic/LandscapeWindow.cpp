@@ -85,10 +85,11 @@ class LandscapeTileButton : public SpeciesButton
       else if (stricmp(m_name, LANGUAGEPHRASE("editor_guidegrid")) == 0)
       {
         int tileId = ((LandscapeTileEditWindow*)m_parent)->m_tileId;
-        LandscapeGuideGridWindow* guide = new LandscapeGuideGridWindow(LANGUAGEPHRASE("editor_guidegrid"), tileId);
+        auto owned = std::make_unique<LandscapeGuideGridWindow>(LANGUAGEPHRASE("editor_guidegrid"), tileId);
+        LandscapeGuideGridWindow* guide = owned.get();
         guide->SetSize(300, 300);
         guide->SetPosition(m_parent->m_x + m_parent->m_w + 10, m_parent->m_y);
-        EclRegisterWindow(guide, m_parent);
+        EclRegisterWindow(std::move(owned), m_parent);
       }
     }
 };

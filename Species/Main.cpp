@@ -214,8 +214,9 @@ bool HandleCommonConditions()
   static bool controllerPlugged = true;
   if (controllerPlugged && g_inputManager->controlEvent(ControlControllerUnplugged))
   {
-    auto dialog = new MessageDialog(LANGUAGEPHRASE("dialog_unplugged1"), LANGUAGEPHRASE("dialog_unplugged2"));
-    EclRegisterWindow(dialog);
+    auto owned = std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_unplugged1"), LANGUAGEPHRASE("dialog_unplugged2"));
+    MessageDialog* dialog = owned.get();
+    EclRegisterWindow(std::move(owned));
     controllerPlugged = false;
   }
 
@@ -401,7 +402,7 @@ void LocationGameLoop()
         else
         {
           TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-          EclRegisterWindow(new LocationWindow());
+          EclRegisterWindow(std::make_unique<LocationWindow>());
         }
       }
       TheUserInput()->Advance();
@@ -704,7 +705,7 @@ void GlobalWorldGameLoop()
       else
       {
         TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-        EclRegisterWindow(new MainMenuWindow());
+        EclRegisterWindow(std::make_unique<MainMenuWindow>());
       }
       TheUserInput()->Advance();
     }
@@ -748,8 +749,9 @@ void GlobalWorldEditorLoop()
 {
   TheCamera()->SetDebugMode(Camera::DebugModeAlways);
 
-  auto gweWindow = new GlobalWorldEditorWindow();
-  EclRegisterWindow(gweWindow);
+  auto ownedGwe = std::make_unique<GlobalWorldEditorWindow>();
+  GlobalWorldEditorWindow* gweWindow = ownedGwe.get();
+  EclRegisterWindow(std::move(ownedGwe));
 
   while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {

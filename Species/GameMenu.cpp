@@ -276,7 +276,7 @@ void GameMenu::CreateMenu()
   }
 
   // create the actual menu window
-  EclRegisterWindow(new GameMenuWindow());
+  EclRegisterWindow(std::make_unique<GameMenuWindow>());
 
   // set the camera to a position with a good view of the internet
   TheCamera()->RequestMode(Camera::ModeMainMenu);

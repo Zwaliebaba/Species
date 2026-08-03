@@ -375,8 +375,12 @@ char const* EclGenerateUniqueWindowName(char const* name)
   return uniqueName.c_str();
 }
 
-void EclRegisterWindow(EclWindow* window, EclWindow* parent)
+void EclRegisterWindow(std::unique_ptr<EclWindow> owned, EclWindow* parent)
 {
+  // The observer is taken before the owner moves into the list, because the
+  // rest of this function — and EclDirtyWindow after it — works through it.
+  EclWindow* window = owned.get();
+
   //    DebugAssert( window );
 
   if (EclGetWindow(window->m_name))
@@ -399,21 +403,17 @@ void EclRegisterWindow(EclWindow* window, EclWindow* parent)
   }
 
   window->MakeAllOnScreen();
-  // The raw parameter IS the ownership transfer, and it is adopted here rather
-  // than at 43 call sites. Making the parameter a unique_ptr is the right end
-  // state and is recorded as a follow-up on ownership T3 — 24 of those sites
-  // pass an inline `new`, the other 19 hand over a configured local.
-  windows.insert(windows.begin(), std::unique_ptr<EclWindow>(window));
+  windows.insert(windows.begin(), std::move(owned));
   window->Create();
   EclDirtyWindow(window);
 }
 
-void EclRegisterPopup(EclWindow* window)
+void EclRegisterPopup(std::unique_ptr<EclWindow> window)
 {
   EclRemovePopup();
   // DebugAssert( window );
   popupWindow = window->m_name;
-  EclRegisterWindow(window);
+  EclRegisterWindow(std::move(window));
 }
 
 void EclRemovePopup()

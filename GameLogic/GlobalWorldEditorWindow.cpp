@@ -50,10 +50,9 @@ class NewLocationButton : public SpeciesButton
 #ifndef TARGET_DEBUG
         if( !g_resource->IsModLoaded() )
         {
-            EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_newlocationfail1" ),
-                                                  LANGUAGEPHRASE( "dialog_newlocationfail2" ) ),
-                                                  m_parent );
-            return;
+          EclRegisterWindow(std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_newlocationfail1"), LANGUAGEPHRASE("dialog_newlocationfail2")),
+                            m_parent);
+          return;
         }
 #endif
 
@@ -102,10 +101,9 @@ class SaveLocationsButton : public SpeciesButton
 #ifndef TARGET_DEBUG
         if( !g_resource->IsModLoaded() )
         {
-            EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_savelocationsfail1" ),
-                                                  LANGUAGEPHRASE( "dialog_savelocationsfail2" ) ),
-                                                  m_parent );
-            return;
+          EclRegisterWindow(std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_savelocationsfail1"), LANGUAGEPHRASE("dialog_savelocationsfail2")),
+                            m_parent);
+          return;
         }
 #endif
 

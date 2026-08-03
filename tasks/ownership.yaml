@@ -573,7 +573,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: >
       Split out of T3 on 2026-08-03, measured at the point Eclipse's containers
       converted: 43 call sites, 24 passing an inline `new` and 19 handing over a
@@ -582,3 +582,21 @@ tasks:
       anything else touching it between construction and registration changes
       with it. That is the same enumerate-every-use discipline T1 and T2 each
       lost a CI round to.
+
+      DONE 2026-08-03. Both signatures take std::unique_ptr<EclWindow>; 43 call
+      sites across 14 files. The 24 inline ones were the regex the notes
+      predicted. The 19 locals each became make_unique plus an observer, because
+      most of them configure the window after registering it.
+
+      TWO SITES ADOPT AT THE CALL rather than owning from construction, and both
+      are right rather than lazy. LocationEditor's mode switch assigns `window`
+      through several branches before one registration, and DropDownMenu takes
+      its window from a factory that keeps a static observer — s_window, nulled
+      when the window is removed. In both, `std::unique_ptr<EclWindow>(window)`
+      at the registration is where ownership genuinely begins.
+
+      ONE NAME COLLISION, caught by reading rather than by the compiler:
+      InstantUnitWindow already had an `EclWindow* ew` in scope, holding the old
+      edit window the block had just removed, so the new observer could not be
+      called `ew` too. It is `editWindow`.
+

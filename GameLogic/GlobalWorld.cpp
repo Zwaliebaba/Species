@@ -1280,7 +1280,7 @@ void GlobalWorld::Advance()
               if (!(strcmp(loc->m_mapFilename, "MapGarden.txt") == 0 || strcmp(loc->m_mapFilename, "MapContainment.txt") == 0))
               {
                 // Buy me URL
-                EclRegisterWindow(new BuyNowWindow);
+                EclRegisterWindow(std::make_unique<BuyNowWindow>());
 
                 // Bar Location
                 return;
