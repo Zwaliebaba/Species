@@ -109,13 +109,13 @@ void TreeWindow::Create()
   CreateColourControl(LANGUAGEPHRASE("editor_branchcolour"), &tree->m_branchColour, y += h, nullptr, 10, m_w - 7);
   CreateColourControl(LANGUAGEPHRASE("editor_leafcolour"), &tree->m_leafColour, y += h, nullptr, 10, m_w - 7);
 
-  CreateValueControl(LANGUAGEPHRASE("editor_height"), InputField::TypeFloat, &tree->m_height, y += h, 1.0f, 1.0f, 1000.0f);
-  CreateValueControl(LANGUAGEPHRASE("editor_budsize"), InputField::TypeFloat, &tree->m_budsize, y += h, 0.05f, 0.0f, 50.0f, generate);
-  CreateValueControl(LANGUAGEPHRASE("editor_pushup"), InputField::TypeFloat, &tree->m_pushUp, y += h, 0.01f, 0.0f, 5.0f, generate);
-  CreateValueControl(LANGUAGEPHRASE("editor_pushout"), InputField::TypeFloat, &tree->m_pushOut, y += h, 0.01f, 0.0f, 5.0f, generate);
-  CreateValueControl(LANGUAGEPHRASE("editor_iterations"), InputField::TypeInt, &tree->m_iterations, y += h, 1, 1, 10, generate);
-  CreateValueControl(LANGUAGEPHRASE("editor_seed"), InputField::TypeInt, &tree->m_seed, y += h, 1, 0, 99999, generate);
-  CreateValueControl(LANGUAGEPHRASE("editor_leafdrop"), InputField::TypeInt, &tree->m_leafDropRate, y += h, 1, 0, 50);
+  CreateValueControl(LANGUAGEPHRASE("editor_height"), &tree->m_height, y += h, 1.0f, 1.0f, 1000.0f);
+  CreateValueControl(LANGUAGEPHRASE("editor_budsize"), &tree->m_budsize, y += h, 0.05f, 0.0f, 50.0f, generate);
+  CreateValueControl(LANGUAGEPHRASE("editor_pushup"), &tree->m_pushUp, y += h, 0.01f, 0.0f, 5.0f, generate);
+  CreateValueControl(LANGUAGEPHRASE("editor_pushout"), &tree->m_pushOut, y += h, 0.01f, 0.0f, 5.0f, generate);
+  CreateValueControl(LANGUAGEPHRASE("editor_iterations"), &tree->m_iterations, y += h, 1, 1, 10, generate);
+  CreateValueControl(LANGUAGEPHRASE("editor_seed"), &tree->m_seed, y += h, 1, 0, 99999, generate);
+  CreateValueControl(LANGUAGEPHRASE("editor_leafdrop"), &tree->m_leafDropRate, y += h, 1, 0, 50);
 }
 
 void TreeWindow::Update()

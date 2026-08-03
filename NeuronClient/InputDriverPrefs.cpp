@@ -26,12 +26,12 @@ PrefsInputDriver::PrefsInputDriver()
 
 InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
 {
-  InputParserState state = STATE_WANT_DRIVER;
+  InputParserState state = InputParserState::STATE_WANT_DRIVER;
   int idx = 0;
   if ((idx >= tokens.length()) || (tokens[idx++] != "pref"))
     return state;
 
-  state = STATE_WANT_CONTROL;
+  state = InputParserState::STATE_WANT_CONTROL;
   if (idx >= tokens.length())
     return state;
 
@@ -48,9 +48,9 @@ InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const
   if ('!' == key[0])
   {
     if ('!' == key[1])
-      return STATE_WANT_COND;
+      return InputParserState::STATE_WANT_COND;
     if (COND_FALSE == spec.condition)
-      return STATE_WANT_COND;
+      return InputParserState::STATE_WANT_COND;
     spec.condition = COND_FALSE;
     key = key.substr(1, key.length() - 1);
   }
@@ -61,7 +61,7 @@ InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const
 
   spec.type = INPUT_TYPE_BOOL;
 
-  return (idx < tokens.length()) ? STATE_OVERSTEP : STATE_DONE;
+  return (idx < tokens.length()) ? InputParserState::STATE_OVERSTEP : InputParserState::STATE_DONE;
 }
 
 
@@ -100,7 +100,14 @@ static string errors[] = {"An unknown error occurred.",
                           "There was no parsing error."};
 
 
-const std::string& PrefsInputDriver::getLastParseError(InputParserState state) { return errors[state]; }
+// PRE-EXISTING AND PRESERVED: this table has NINE strings and
+// InputParserState has TEN enumerators, so errors[STATE_DONE] reads one past
+// the end, and every message from STATE_WANT_OPTIONAL on is off by one —
+// STATE_WANT_OPTIONAL gets BAD_EXTRA's text, and so on. The cast below makes
+// the indexing explicit; it does not change which string comes back. Surfaced
+// by language-hygiene T4, which had to look at the indexing to compile it.
+// Fixing it is a behaviour change and is recorded on that task, not done here.
+const std::string& PrefsInputDriver::getLastParseError(InputParserState state) { return errors[static_cast<size_t>(state)]; }
 
 
 bool PrefsInputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc)

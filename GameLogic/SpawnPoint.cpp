@@ -90,7 +90,7 @@ bool SpawnBuilding::IsInView()
         {
           float distance = (building->m_centrePos - m_visibilityMidpoint).Mag();
           distance += building->m_radius / 2.0f;
-          m_visibilityRadius = max(m_visibilityRadius, distance);
+          m_visibilityRadius = std::max(m_visibilityRadius, distance);
         }
       }
     }
@@ -703,7 +703,7 @@ void SpawnPoint::RenderAlphas(float _predictionTime)
     pos.z += cosf(timeIndex + i) * i * 0.7f;
 
     float size = 10.0f + sinf(timeIndex + i * 10) * 10.0f;
-    size = max(size, 5.0f);
+    size = std::max(size, 5.0f);
 
     glColor4f(0.6f, 0.2f, 0.1f, alpha);
 
@@ -853,7 +853,7 @@ bool SpawnPopulationLock::Advance()
 
 
   m_maxPopulation = m_originalMaxPopulation - s_overpopulation;
-  m_maxPopulation = max(m_maxPopulation, 0);
+  m_maxPopulation = std::max(m_maxPopulation, 0);
 
 
   //

@@ -63,8 +63,8 @@ void SporeGenerator::ChangeHealth(int _amount)
     Entity::ChangeHealth(_amount);
 
     float fractionDead = 1.0f - (float)m_stats[StatHealth] / (float)EntityBlueprint::GetStat(TypeSporeGenerator, StatHealth);
-    fractionDead = max(fractionDead, 0.0f);
-    fractionDead = min(fractionDead, 1.0f);
+    fractionDead = std::max(fractionDead, 0.0f);
+    fractionDead = std::min(fractionDead, 1.0f);
     if (m_dead)
       fractionDead = 1.0f;
 

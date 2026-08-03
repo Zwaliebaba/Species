@@ -21,10 +21,12 @@ EclButton::EclButton ()
 
 EclButton::~EclButton ()
 {
-
-	if ( m_caption ) delete m_caption;	
-	if ( m_tooltip ) delete m_tooltip;
-
+  // delete[], not delete. Both are allocated with new char[] in SetCaption and
+  // SetTooltip, and both of those release with delete[] correctly — only the
+  // destructor had the mismatched form. Freeing an array with plain delete is
+  // undefined behaviour that nothing diagnoses.
+  delete[] m_caption;
+  delete[] m_tooltip;
 }
 
 void EclButton::SetProperties ( char const *_name, int _x, int _y, int _w, int _h,

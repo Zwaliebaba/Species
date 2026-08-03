@@ -231,7 +231,7 @@ void StartSequence::Render()
     glColor4f(0.5, 0.5, 1.0, 0.5);
 
     float percentDrawn = 1.0f - (timeNow - 50.0f) / 10.0f;
-    percentDrawn = max(percentDrawn, 0.0f);
+    percentDrawn = std::max(percentDrawn, 0.0f);
     xEnd -= (8000 + 4000 * r * percentDrawn);
     zEnd -= (8000 + 4000 * r * percentDrawn);
 

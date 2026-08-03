@@ -21,7 +21,7 @@ namespace Neuron
 
     m_socket = new NetSocket();
     NetRetCode retCode = m_socket->Connect(_ip, 4001);
-    DEBUG_ASSERT(retCode == NetOk);
+    DEBUG_ASSERT(retCode == NetRetCode::NetOk);
 
     m_lastKnownSequenceId = -1;
   }

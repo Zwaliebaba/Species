@@ -445,7 +445,7 @@ void ControlHelpSystem::InitialiseConditions()
 
 void ControlHelpSystem::Advance()
 {
-  if (g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
+  if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
     return;
 
   // Clear all helpIcons
@@ -774,7 +774,7 @@ void ControlHelpSystem::Shutdown() {}
 void ControlHelpSystem::Render()
 {
   // Don't render if not in location
-  if (g_locationId == -1 || g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD || !g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
+  if (g_locationId == -1 || g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD || !g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1))
   {
     return;
   }

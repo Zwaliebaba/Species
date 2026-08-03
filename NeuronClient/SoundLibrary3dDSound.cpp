@@ -337,7 +337,7 @@ void SoundLibrary3dDirectSound::Initialise(int _mixFreq, int _numChannels, bool 
 
   m_sampleRate = _mixFreq;
   m_hw3dDesired = _hw3d;
-  m_numChannels = min(_numChannels, GetMaxChannels()) - 1; // Reserve one channel for the music
+  m_numChannels = std::min(_numChannels, GetMaxChannels()) - 1; // Reserve one channel for the music
   m_musicChannelId = -1;
 
 

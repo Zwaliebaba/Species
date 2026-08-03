@@ -315,7 +315,7 @@ SpeciesWindow::SpeciesWindow(char const* name)
 
 SpeciesWindow::~SpeciesWindow()
 {
-  std::vector<EclWindow*>* windows = EclGetWindows();
+  std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
   // The emptiness check is not redundant. the legacy list's GetData returned a null T()
   // for an out-of-range read — LListTests pins that as
   // OutOfRangeReadsReturnZero — so this `if` was doing double duty as a
@@ -327,8 +327,8 @@ SpeciesWindow::~SpeciesWindow()
 }
 
 
-void SpeciesWindow::CreateValueControl(char const* name, int dataType, void* value, int y, float change, float _lowBound, float _highBound,
-                                       SpeciesButton* callback, int x, int w)
+InputField* SpeciesWindow::CreateInputField(char const* name, int y, float _lowBound, float _highBound, SpeciesButton* callback, int x, int w,
+                                            bool isTextField)
 {
   if (x == -1)
     x = 10;
@@ -337,53 +337,91 @@ void SpeciesWindow::CreateValueControl(char const* name, int dataType, void* val
 
   InputField* input = new InputField();
 
-  if (dataType == InputField::TypeString)
-  {
-    input->SetShortProperties((char*)name, x, y, w, GetMenuSize(15));
-  }
-  else
-  {
-    input->SetShortProperties((char*)name, x, y, w - 37, GetMenuSize(15));
-  }
+  // A text field spans the full width; a value field leaves 37 pixels for the
+  // two scroller buttons. That is the whole of what the old dataType switch
+  // decided here.
+  input->SetShortProperties((char*)name, x, y, isTextField ? w : w - 37, GetMenuSize(15));
 
   input->m_lowBound = _lowBound;
   input->m_highBound = _highBound;
   input->SetCallback(callback);
-  switch (dataType)
-  {
-  case InputField::TypeChar:
-    input->RegisterChar((unsigned char*)value);
-    break;
-  case InputField::TypeInt:
-    input->RegisterInt((int*)value);
-    break;
-  case InputField::TypeFloat:
-    input->RegisterFloat((float*)value);
-    break;
-  case InputField::TypeString:
-    input->RegisterString((char*)value);
-    break;
-  }
+  return input;
+}
+
+void SpeciesWindow::CreateValueScrollers(char const* name, InputField* input, int y, float change)
+{
+  char nameLeft[64];
+  sprintf(nameLeft, "%s left", name);
+  InputScroller* left = new InputScroller();
+  left->SetProperties(nameLeft, input->m_x + input->m_w + 5, y, 15, 15, "<", "Value left");
+  left->m_inputField = input;
+  left->m_change = -change;
+  RegisterButton(left);
+
+  char nameRight[64];
+  sprintf(nameRight, "%s right", name);
+  InputScroller* right = new InputScroller();
+  right->SetProperties(nameRight, input->m_x + input->m_w + 22, y, 15, 15, ">", "Value right");
+  right->m_inputField = input;
+  right->m_change = change;
+  RegisterButton(right);
+}
+
+// The registration order below — properties, bounds, callback, Register<type>,
+// RegisterButton, then the scrollers — is the order the single tagged function
+// used. m_buttons order is render and tab order, so it is preserved exactly.
+
+void SpeciesWindow::CreateValueControl(char const* name, unsigned char* value, int y, float change, float _lowBound, float _highBound,
+                                       SpeciesButton* callback, int x, int w)
+{
+  InputField* input = CreateInputField(name, y, _lowBound, _highBound, callback, x, w, false);
+  input->RegisterChar(value);
   RegisterButton(input);
+  CreateValueScrollers(name, input, y, change);
+}
 
-  if (dataType != InputField::TypeString)
-  {
-    char nameLeft[64];
-    sprintf(nameLeft, "%s left", name);
-    InputScroller* left = new InputScroller();
-    left->SetProperties(nameLeft, input->m_x + input->m_w + 5, y, 15, 15, "<", "Value left");
-    left->m_inputField = input;
-    left->m_change = -change;
-    RegisterButton(left);
+void SpeciesWindow::CreateValueControl(char const* name, bool* value, int y, float change, float _lowBound, float _highBound, SpeciesButton* callback,
+                                       int x, int w)
+{
+  InputField* input = CreateInputField(name, y, _lowBound, _highBound, callback, x, w, false);
 
-    char nameRight[64];
-    sprintf(nameRight, "%s right", name);
-    InputScroller* right = new InputScroller();
-    right->SetProperties(nameRight, input->m_x + input->m_w + 22, y, 15, 15, ">", "Value right");
-    right->m_inputField = input;
-    right->m_change = change;
-    RegisterButton(right);
-  }
+  // Byte-for-byte what the void* version did with these four call sites: the
+  // pointer arrived as void* and was cast to unsigned char*. Every one of them
+  // passes bounds of 0 to 1, so the only values written are 0 and 1 and the
+  // bool stays valid. Kept rather than corrected because correcting it means
+  // deciding what an editor field for a bool should be, and that is a change to
+  // the editor rather than to the type of this parameter.
+  input->RegisterChar(reinterpret_cast<unsigned char*>(value));
+  RegisterButton(input);
+  CreateValueScrollers(name, input, y, change);
+}
+
+void SpeciesWindow::CreateValueControl(char const* name, int* value, int y, float change, float _lowBound, float _highBound, SpeciesButton* callback,
+                                       int x, int w)
+{
+  InputField* input = CreateInputField(name, y, _lowBound, _highBound, callback, x, w, false);
+  input->RegisterInt(value);
+  RegisterButton(input);
+  CreateValueScrollers(name, input, y, change);
+}
+
+void SpeciesWindow::CreateValueControl(char const* name, float* value, int y, float change, float _lowBound, float _highBound,
+                                       SpeciesButton* callback, int x, int w)
+{
+  InputField* input = CreateInputField(name, y, _lowBound, _highBound, callback, x, w, false);
+  input->RegisterFloat(value);
+  RegisterButton(input);
+  CreateValueScrollers(name, input, y, change);
+}
+
+void SpeciesWindow::CreateValueControl(char const* name, char* value, int y, float change, float _lowBound, float _highBound, SpeciesButton* callback,
+                                       int x, int w)
+{
+  // change is unused for a text field, as it was before: the old function
+  // created no scrollers for TypeString and change fed only those.
+  InputField* input = CreateInputField(name, y, _lowBound, _highBound, callback, x, w, true);
+  input->RegisterString(value);
+  RegisterButton(input);
 }
 
 void SpeciesWindow::RemoveValueControl(char* name)
@@ -593,13 +631,13 @@ void SpeciesWindow::Update()
     {
       m_buttonChangedThisUpdate = true;
       m_currentButton++;
-      m_currentButton = min(m_currentButton, static_cast<int>(m_buttonOrder.size()) - 1);
+      m_currentButton = std::min(m_currentButton, static_cast<int>(m_buttonOrder.size()) - 1);
     }
     if (g_inputManager->controlEvent(ControlMenuUp))
     {
       m_buttonChangedThisUpdate = true;
       m_currentButton--;
-      m_currentButton = max(0, m_currentButton);
+      m_currentButton = std::max(0, m_currentButton);
     }
 
     if (g_inputManager->controlEvent(ControlMenuActivate))

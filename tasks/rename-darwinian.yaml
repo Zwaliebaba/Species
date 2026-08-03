@@ -294,7 +294,7 @@ tasks:
     acceptance:
       - All seven Garden smoke-test steps pass on the renamed build, owner-reported
       - AGENTS.md records the run with the commit hash
-    status: blocked
+    status: done
     notes: |
       Blocked on owner execution — agents in this environment cannot launch
       the Windows client. This is the gate the whole plan exists for; T3
@@ -310,3 +310,23 @@ tasks:
       SMALLER GROUP rather than a crash. Every other step would pass with a
       spawn silently missing. Reading the two counts is the whole test, and it
       is about a minute of the run.
+
+      PASSED 2026-08-03. The owner ran the smoke test and reported all seven
+      steps correct, including the two spawn counts this task exists for. The
+      plan is closed.
+
+      Recorded against b0bde71, which was the tip of the default branch when
+      the owner reported it and the last commit carrying code — everything
+      after it on this branch is documentation and plan files. The agent
+      writing this line did not observe the run and cannot launch a Windows
+      client; if the build tested was not b0bde71, correct the hash here and in
+      AGENTS.md rather than leaving it approximate.
+
+      WHAT THIS DOES AND DOES NOT ESTABLISH. It establishes that no
+      string-resolved reference was missed on the Garden path: both anchors
+      resolve, the 30/20 and eight-group spawns are intact, and the sounds and
+      language keys behind them load. It does not cover the nine other mission
+      files T2's inventory lists, the orphaned assets, or the 523 stale
+      localised prose lines the owner deferred — those are findable with
+      `grep -ril darwinian GameData/Language/` and are a text bug, not a
+      resolution failure.

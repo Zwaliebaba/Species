@@ -51,7 +51,7 @@ Water::Water()
 
     if (detail > 0)
     {
-      float worldSize = max(g_location->m_landscape.GetWorldSizeX(), g_location->m_landscape.GetWorldSizeZ());
+      float worldSize = std::max(g_location->m_landscape.GetWorldSizeX(), g_location->m_landscape.GetWorldSizeZ());
       worldSize /= 100.0f;
 
       m_cellSize = (float)detail * worldSize;

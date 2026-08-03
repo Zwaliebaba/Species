@@ -34,10 +34,10 @@ void ObstructionGrid::CalculateBuildingArea(int _buildingId)
     int buildingCellZ = m_cells.GetMapIndexY(building->m_centrePos.z);
     int range = ceil(building->m_radius / m_cells.m_cellSizeX);
 
-    int minX = max(buildingCellX - range, 0);
-    int minZ = max(buildingCellZ - range, 0);
-    int maxX = min(buildingCellX + range, (int)m_cells.GetNumRows());
-    int maxZ = min(buildingCellZ + range, (int)m_cells.GetNumColumns());
+    int minX = std::max(buildingCellX - range, 0);
+    int minZ = std::max(buildingCellZ - range, 0);
+    int maxX = std::min(buildingCellX + range, (int)m_cells.GetNumRows());
+    int maxZ = std::min(buildingCellZ + range, (int)m_cells.GetNumColumns());
 
     for (int x = minX; x <= maxX; ++x)
     {

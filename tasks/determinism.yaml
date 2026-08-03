@@ -1,0 +1,159 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: determinism
+title: Deliberate changes to what the simulation computes, each gated on a smoke test
+summary: >
+  Every other plan under tasks/ is refactoring, held to AGENTS.md's standing
+  rule that a change must not alter what the simulation computes. This plan is
+  where that rule is broken on purpose: a change here is a behaviour change,
+  which is why each one lands alone, in its own commit, and is verified by an
+  owner-run Garden smoke test rather than by a green build.
+
+  Nothing here may ride along inside a conversion. A modernisation diff and a
+  deliberate behaviour change in the same commit produce a review in which
+  neither can be judged, and a smoke test afterwards that is testing two things
+  at once.
+
+  SCOPE NOTE, because the plan name overpromises: this is not a determinism
+  audit. AGENTS.md's Known issues carries two larger questions that are
+  deliberately NOT tasks here, because neither has been investigated far enough
+  to be planned:
+
+    SoundInstance.cpp draws from the synchronised stream on paths whose
+    execution depends on CLIENT-LOCAL sound configuration. That is a real
+    desync risk and a different class of problem from T1 below — read the
+    distinction in T1's notes before assuming they are the same bug.
+
+    Cross-architecture float agreement between an ARM64 and an x64 client has
+    never been tested.
+
+  Add a task here only when the change is understood well enough to state what
+  it alters. Otherwise it is an investigation, and investigations belong in
+  Known issues until they produce an answer.
+
+tasks:
+  - id: T1
+    title: Collapse the Spirit hover clamp to a single synchronised draw
+    intent: >
+      Spirit::Advance clamps m_hover.y in StateBirth and StateDeath through
+      what used to be the max macro, which evaluated its second argument twice.
+      That argument calls syncfrand(), so when m_hover.y loses the comparison a
+      SECOND value is drawn and stored — the expression does not compute a
+      maximum, and it consumes an extra value from the synchronised stream
+      roughly half the time. Writing it as std::max makes it mean what it says
+      and draws once. That is a change to what the simulation computes, which
+      is why it is here and not in language-hygiene.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/Spirit.cpp
+    acceptance:
+      - Both sites read std::max(m_hover.y, ...) with exactly one syncfrand call each
+      - The written-out conditional and the comment explaining why it was preserved are both gone
+      - The two clamp statements hold two syncfrand calls between them, not four
+      - The commit message states plainly that the RNG sequence changes from this point in the tick, and that a client with this change desyncs against one without
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: done
+    notes: |
+      Found 2026-08-03 by language-hygiene T8, which preserved both sites
+      exactly rather than decide this. The current code in the tree is the
+      macro's expansion written out by hand, with a comment saying why —
+      deliberately, so that nobody "simplifies" it back into std::max without
+      knowing what that does.
+
+      THIS IS NOT A DESYNC RISK, and the distinction matters because the shape
+      of the bug invites the opposite conclusion. The number of draws depends on
+      `m_hover.y > 0.0f + syncfrand(0.5f)`, and m_hover.y is
+      sinf(m_positionOffset) * m_yaxisRate — pure simulation state. Every client
+      whose simulation is in sync evaluates the same comparison, takes the same
+      branch and draws the same number of values. It is self-consistently
+      deterministic.
+
+      Contrast SoundInstance.cpp, which AGENTS.md lists beside it: there the
+      draw count depends on client-local sound configuration, so two clients
+      that differ in what samples loaded consume different numbers of values.
+      That one is a genuine desync. This one is not, and the two should not be
+      fixed together or described in the same sentence.
+
+      WHY FIX IT AT ALL, then. Three reasons, in order of weight: it is a trap —
+      `(a > b) ? a : b` over a call with a side effect is exactly what the next
+      tree-wide sweep will collapse without noticing; m_hover.y feeds m_pos
+      (Spirit.cpp:146) which feeds GenerateSyncValue, so this is simulation
+      state rather than a rendering offset; and it wastes a draw.
+
+      WHAT CHANGES, stated so the smoke test knows what it is looking at. Every
+      syncrand() after the first affected Spirit in a tick returns a different
+      value, so the simulation evolves differently from the frame this lands.
+      Nothing degrades — there is no correct sequence being lost — but it is not
+      the same game state it would otherwise have been.
+
+      The visible effect is expected to be nil. The clamp's intent survives
+      either way: the result lands in [0, 0.5) for birth and [2, 4) for death
+      whichever branch is taken, which is why this has gone unnoticed since the
+      code was inherited.
+
+      WHAT IT COSTS, measured rather than assumed: no replay or recorded-input
+      system exists to pin the sequence (the "playback" hits in the tree are
+      camera animation), nothing persisted stores RNG state — level files hold
+      positions — and the wire format is unaffected. The only real cost is that
+      a client with this change desyncs against one without, and there is no
+      shipped build and no multiplayer in use. That cost only grows with time,
+      which is the argument for doing it sooner.
+
+      parallel_safe false, and more strictly than the flag can express: nothing
+      else touching simulation code may land between this and T2, or the smoke
+      test is testing two things.
+
+      OWNER DECIDED 2026-08-03: fix it, over leaving it permanently or deferring
+      until multiplayer is tested. The argument that carried it was that the diff
+      gets no cheaper and the branch is at its most verifiable now.
+
+      DONE. Both sites are `std::max(m_hover.y, ...)` with one syncfrand each;
+      the written-out conditionals and their explanatory comments are gone.
+      syncfrand occurrences in the file go from 10 to 7 — the two clamps drop
+      from four calls to two, and a comment naming the function went with them.
+
+      THE ACCEPTANCE LINE I WROTE HERE WAS WRONG and is corrected above. It said
+      `grep -c` would fall from 6 to 4; grep -c counts LINES, the file had 8 of
+      them, and one of those was a comment mentioning the function. Countable
+      acceptance is only worth having if the count is measured rather than
+      guessed at when the task is written. Worth remembering when writing the
+      next one.
+
+      T2 is the gate. This is a change to what the simulation computes and
+      nothing that runs in CI can see it.
+
+  - id: T2
+    title: Owner runs the Garden smoke test against the changed stream
+    intent: >
+      A green build says nothing about a changed RNG sequence, and neither does
+      the unit suite — nothing in Tests/ reaches Spirit or Location::Advance.
+      The smoke test is the only evidence available that the simulation still
+      behaves, and T1 is not done without it.
+    depends_on: [T1]
+    files:
+      - AGENTS.md
+    acceptance:
+      - All seven Garden smoke-test steps pass on the changed build, owner-reported
+      - AGENTS.md records the run with the commit hash, per "What working looks like"
+    status: blocked
+    notes: |
+      Blocked on owner execution — agents in this environment cannot launch a
+      Windows client, and no check that runs here can substitute. Same gate and
+      the same reason as rename-darwinian T4.
+
+      WHICH STEPS CARRY THE WEIGHT, which is different from the rename's answer.
+      There the spawn counts were the whole test, because a missed string
+      produces a smaller group. Here the counts prove nothing — the rename is
+      long landed and spirits are not spawned from InstantUnits. What matters is
+      step 5, thirty seconds of play with no assert, and step 7, the sync
+      assert in single player: together they show the simulation is still
+      self-consistent after the stream shifted. Step 2 covers the load path.
+
+      If a step does fail, it localises well. Spirits are visible in The Garden
+      and their hover is the only thing this changes, so "spirits behave" and
+      "nothing asserts" are the two observations worth writing down.

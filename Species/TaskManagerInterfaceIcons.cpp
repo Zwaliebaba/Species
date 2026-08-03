@@ -598,7 +598,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
           ScreenZone* zone = m_screenZones[i];
           if (stricmp(zone->m_name, "SelectTask") == 0 && zone->m_data == taskIndex)
           {
-            if (g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD)
+            if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
             {
               // m_currentScreenZone = i;
             }
@@ -675,7 +675,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
     {
       g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
       g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
-      if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
+      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
     else
@@ -693,7 +693,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
       g_taskManager->m_currentTaskId = nextTask->m_id;
       g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
       g_soundSystem->TriggerOtherEvent("SelectTask", SoundSourceBlueprint::TypeInterface);
-      if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
+      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
   }
@@ -720,7 +720,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
       g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
       g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
       g_soundSystem->TriggerOtherEvent("GestureSuccess", SoundSourceBlueprint::TypeGesture);
-      if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
+      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
         HideTaskManager();
     }
     else
@@ -934,7 +934,7 @@ void TaskManagerInterfaceIcons::RenderTooltip()
     g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
     g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
 
-    if (g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD)
+    if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
     {
       //
       // Render keyboard shortcut
@@ -1043,8 +1043,8 @@ void TaskManagerInterfaceIcons::RenderMessages()
 
     float timeRemaining = m_messageTimer - GetHighResTime();
     float alpha = timeRemaining * 0.5f;
-    alpha = min(alpha, 1.0f);
-    alpha = max(alpha, 0.0f);
+    alpha = std::min(alpha, 1.0f);
+    alpha = std::max(alpha, 0.0f);
     float size = 40.0f;
     if (timeRemaining < 2.0f)
     {
@@ -1165,7 +1165,7 @@ void TaskManagerInterfaceIcons::RenderTaskManager()
 
   if (fabs(m_screenY) < 0.1f)
   {
-    bool render360Controls = g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
+    bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
 
     unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
 
@@ -2013,7 +2013,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
 
   if (m_screenY > 0.9f)
   {
-    bool render360Controls = g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
+    bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
 
     unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
 
@@ -2131,7 +2131,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
 
   float iconY = textY - 20;
   float totalSize = (boxH - 20) / static_cast<float>(numItemsResearched);
-  totalSize = min(totalSize, 50.0f);
+  totalSize = std::min(totalSize, 50.0f);
 
   for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
   {
@@ -2362,7 +2362,7 @@ void TaskManagerInterfaceIcons::RenderResearch()
 
   if (m_screenY < 0.1f)
   {
-    bool render360Controls = g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
+    bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
 
     unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
 
@@ -2389,9 +2389,9 @@ bool TaskManagerInterfaceIcons::ControlEvent(TMControl _type)
 {
   switch (_type)
   {
-  case TMTerminate:
+  case TMControl::TMTerminate:
     return g_inputManager->controlEvent(ControlIconsTaskManagerEndTask);
-  case TMDisplay:
+  case TMControl::TMDisplay:
     return g_inputManager->controlEvent(ControlIconsTaskManagerDisplay);
   default:
     return false;
@@ -2730,12 +2730,12 @@ void QuickUnitButton::Advance()
     else if (nextPos == 1 && direction == 1)
     {
       m_alpha += 0.09f;
-      m_alpha = min(m_alpha, 0.9f);
+      m_alpha = std::min(m_alpha, 0.9f);
     }
     else if (nextPos == 3 && direction == -1)
     {
       m_alpha += 0.09f;
-      m_alpha = min(m_alpha, 0.9f);
+      m_alpha = std::min(m_alpha, 0.9f);
     }
 
     m_x += direction * 10;

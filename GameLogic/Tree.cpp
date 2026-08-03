@@ -75,7 +75,7 @@ void Tree::SetDetail( int _detail )
     int oldIterations = m_iterations;
     if( _detail == 0 ) m_iterations = 0;
     else m_iterations -= ( _detail - 1 );
-    m_iterations = max( m_iterations, 3 );
+    m_iterations = std::max(m_iterations, 3);
 
     Generate();
 
@@ -251,7 +251,7 @@ void Tree::Generate()
     {
         int alpha = m_leafColourArray[3];
         alpha *= pow( 1.3f, treeDetail );
-        alpha = min( alpha, 255 );
+        alpha = std::min(alpha, 255);
         m_leafColourArray[3] = alpha;
     }
 

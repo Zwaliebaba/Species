@@ -104,22 +104,23 @@ void CachedSampleHandle::Restart() { m_nextSampleIndex = 0; }
 
 CachedSampleManager::~CachedSampleManager()
 {
-  for (auto const& entry : m_cache)
-  {
-    delete entry.second;
-  }
+  // The map owns its samples now, so ~unordered_map is the whole destructor.
 }
 
 
 CachedSampleHandle* CachedSampleManager::GetSample(char const* _sampleName)
 {
   auto existing = m_cache.find(_sampleName);
-  CachedSample* cachedSample = existing == m_cache.end() ? nullptr : existing->second;
+  CachedSample* cachedSample = existing == m_cache.end() ? nullptr : existing->second.get();
 
   if (!cachedSample)
   {
-    cachedSample = new CachedSample(_sampleName);
-    m_cache.emplace(_sampleName, cachedSample);
+    // The observer is taken before the owner moves into the map, because
+    // everything below works through it. Same shape as ownership T1's
+    // StartProfile.
+    auto owned = std::make_unique<CachedSample>(_sampleName);
+    cachedSample = owned.get();
+    m_cache.emplace(_sampleName, std::move(owned));
   }
 
   CachedSampleHandle* rv = new CachedSampleHandle(cachedSample);
@@ -127,14 +128,7 @@ CachedSampleHandle* CachedSampleManager::GetSample(char const* _sampleName)
 }
 
 
-void CachedSampleManager::EmptyCache()
-{
-  for (auto const& entry : m_cache)
-  {
-    delete entry.second;
-  }
-  m_cache.clear();
-}
+void CachedSampleManager::EmptyCache() { m_cache.clear(); }
 
 
 int CachedSampleManager::GetMemoryUsage()
@@ -143,7 +137,7 @@ int CachedSampleManager::GetMemoryUsage()
 
   for (auto const& entry : m_cache)
   {
-    CachedSample* sample = entry.second;
+    const CachedSample* sample = entry.second.get();
     int sampleSize = sizeof(signed short) * sample->m_numChannels * sample->m_numSamples;
     memoryUsage += sampleSize;
   }

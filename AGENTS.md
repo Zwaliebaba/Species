@@ -159,8 +159,8 @@ sides can see, or invert the dependency behind an interface. Do not recreate the
 allowlist.
 
 `tasks/neuroncore-layering.yaml` is the plan that eliminated the `NeuronCore`
-entries. Twelve of its thirteen tasks are done; only T10 is left, which drops the
-upward include paths from `NeuronCore.vcxproj` and makes `Server.exe` tick.
+entries. All thirteen of its tasks are done — including T10, which dropped the
+upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 
 ---
 
@@ -190,6 +190,11 @@ python3 tools/check_format.py          # changed lines match .clang-format
 python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum
 ```
+
+`NeuronCore/MathUtils.h` no longer defines `min` and `max` macros, so
+`std::min` and `std::max` compile everywhere now — they did not, anywhere that
+header was reachable, until `language-hygiene` T8. If you find a hand-written
+comparison with a comment apologising for it, that is why, and it can go.
 
 `check_containers.py` exists because three CI failures in a row were the same
 mistake: a call site a container sweep did not reach, still asking a
@@ -273,24 +278,27 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**Last full run: all seven steps pass, as of the layering-inversion branch
-(2026-08-02), after the `g_app` seam moved the world subsystems, the frame
-clock and App's state out of the executable.** Reported by the project owner,
-not observed by the agent that wrote this line — if only some steps were
-checked, correct this rather than leaving it overstated.
+**Last full run: all seven steps pass at `b0bde71` (2026-08-03), on the
+renamed build — the whole of stage 3, the `Darwinian`→`Citizen` rename and
+six of the stage-4 string conversions.** Reported by the project owner, not
+observed by the agent that wrote this line. This is the run
+`rename-darwinian/T4` was waiting for, and it closes that plan: the spawn
+counts are what catch a string-resolved reference the rename missed, because
+a name that fails to resolve produces a smaller group rather than a crash.
 
-**Partial run at `586c072` (2026-08-03), after containers-replaced T12
-converted the world's slot containers off `DArray` and the entity rename
-landed.** The owner launched, loaded The Garden and played without an assert —
-steps 1, 2, 5, 6 and 7. **Steps 3 and 4, the spawn counts, were not checked**,
-so this is not a full pass and does not close `rename-darwinian/T4`. That
-distinction is worth keeping: the counts are the only step that catches a
-string-resolved reference the rename missed, because a name that fails to
-resolve produces a smaller group rather than a crash.
+Earlier runs, kept because the sequence is the evidence:
 
-That run is the reason those changes were merged: CI proved they compile and
-the unit suite passes, and neither says anything about whether the game still
-starts, spawns and advances.
+- **All seven steps, on the layering-inversion branch (2026-08-02)**, after
+  the `g_app` seam moved the world subsystems, the frame clock and App's state
+  out of the executable.
+- **Partial run at `586c072` (2026-08-03)**, after containers-replaced T12
+  converted the world's slot containers off `DArray` and the entity rename
+  landed — steps 1, 2, 5, 6 and 7 only. Steps 3 and 4 went unchecked, which is
+  why it did not close `rename-darwinian/T4` and the run at `b0bde71` did.
+
+Those runs are the reason the changes under them were merged: CI proved they
+compile and the unit suite passes, and neither says anything about whether the
+game still starts, spawns and advances.
 
 **Record what you find here.** The value is in it being current, not
 aspirational. If a step starts failing, say which one: that is the difference
@@ -323,6 +331,13 @@ can see. Trust it: before those edges existed, `--next` offered every
 The full standard — schema, status semantics, how to write acceptance criteria,
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
+
+**If you are picking the modernisation back up, start at
+[`tasks/_restart.md`](tasks/_restart.md).** Six plans are complete and four are
+open with nineteen tasks between them; that file has the re-measured counts, the
+order to restart in, and the critical path — nine of the nineteen are behind
+`strings-modernised/T5` alone. It is a reading order, not a plan file; the plans
+are still the plan.
 
 ---
 
@@ -407,6 +422,24 @@ Real, currently true, and worth knowing before you trip over them:
     on every client regardless of settings, it costs nothing). Establishing
     which is true is worth doing before multiplayer is trusted, and it is a
     determinism question rather than a modernisation one.
+- **`Spirit.cpp`'s hover clamp drew twice from the synchronised stream, and no
+  longer does.** `Spirit::Advance` clamped `m_hover.y` through what used to be
+  the `max` macro, which evaluated its second argument twice — and that argument
+  calls `syncfrand()`. When `m_hover.y` lost the comparison a second value was
+  drawn and stored, so the expression did not compute a maximum and consumed an
+  extra value from the stream about half the time. `language-hygiene` T8
+  preserved it exactly; `determinism.yaml` T1 fixed it on the owner's decision
+  (2026-08-03) and both sites are `std::max` with one draw.
+  - **It was never a desync risk**, and the distinction is worth keeping because
+    the shape invites the opposite conclusion. The branch depended on
+    `m_hover.y`, which is simulation state, so every in-sync client drew the same
+    number of values. `SoundInstance` above is the dangerous one: its draw count
+    varies with *client-local* sound configuration.
+  - **The RNG sequence changed**, so the simulation evolves differently from the
+    frame this landed. Nothing degrades — there was no correct sequence being
+    lost — but a client carrying this change desyncs against one without it.
+    `determinism.yaml` T2 is the owner-run smoke test that confirms it, and is
+    still open.
 - **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
   MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
   Deterministic lockstep requires bit-identical results, and nobody has verified
@@ -456,7 +489,7 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, 103 tests, covering IP conversion,
+- **The test suite is thin.** Four projects, 124 tests, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new

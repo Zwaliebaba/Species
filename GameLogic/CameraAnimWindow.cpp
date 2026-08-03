@@ -328,7 +328,7 @@ void CameraAnimSecondaryEditWindow::AddButtons()
       sprintf(modeBut->m_name, "mode:%s", node->m_mountName);
       RegisterButton(modeBut);
 
-      CreateValueControl(node->m_mountName, InputField::TypeFloat, &node->m_duration, height, 0.5f, 0.1f, 100.0f, nullptr, x, 90);
+      CreateValueControl(node->m_mountName, &node->m_duration, height, 0.5f, 0.1f, 100.0f, nullptr, x, 90);
       EclButton* b = GetButton(node->m_mountName);
       sprintf(b->m_name, "duration:%s", node->m_mountName);
       b->m_caption[0] = '\0';

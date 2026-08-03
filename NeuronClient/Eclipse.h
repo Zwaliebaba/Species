@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <vector>
 
 #include "EclWindow.h"
@@ -32,9 +34,10 @@ void EclShutdown();
 // Window management
 
 
-void EclRegisterWindow(EclWindow* window, EclWindow* parent = nullptr);
+// Both take ownership. The window list holds it from here on.
+void EclRegisterWindow(std::unique_ptr<EclWindow> window, EclWindow* parent = nullptr);
 void EclRemoveWindow(char const* name);
-void EclRegisterPopup(EclWindow* window);
+void EclRegisterPopup(std::unique_ptr<EclWindow> window);
 void EclRemovePopup();
 
 void EclBringWindowToFront(char* name);
@@ -61,7 +64,7 @@ char const* EclGetCurrentFocus();
 void EclSetCurrentFocus(char* name);
 
 char const* EclGenerateUniqueWindowName(char const* name); // In static mem (don't delete!)
-std::vector<EclWindow*>* EclGetWindows();
+std::vector<std::unique_ptr<EclWindow>>* EclGetWindows();
 
 // ============================================================================
 // Dirty rectangles
@@ -88,7 +91,7 @@ bool EclRectangleOverlap(int x1, int y1, int w1, int h1, int x2, int y2, int w2,
 
 void EclResetDirtyRectangles();
 
-std::vector<DirtyRect*>* EclGetDirtyRects();
+std::vector<std::unique_ptr<DirtyRect>>* EclGetDirtyRects();
 
 
 // ============================================================================

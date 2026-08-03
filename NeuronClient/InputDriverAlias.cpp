@@ -6,73 +6,71 @@
 using std::string;
 
 
-AliasInputDriver::AliasInputDriver()
+AliasInputDriver::AliasInputDriver() { setName("Alias"); }
+
+
+InputParserState AliasInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
 {
-	setName( "Alias" );
+  InputParserState state = InputParserState::STATE_WANT_DRIVER;
+  int idx = 0;
+  if ((idx >= tokens.length()) || (tokens[idx++] != "alias"))
+    return state;
+
+  state = InputParserState::STATE_WANT_CONTROL;
+  if (idx >= tokens.length())
+    return state;
+
+  spec.control_id = g_inputManager->getControlID(tokens[idx++]);
+  if (spec.control_id < 0)
+  {
+    return state;
+  }
+
+  spec.type = INPUT_TYPE_BOOL;
+
+  return (idx < tokens.length()) ? InputParserState::STATE_OVERSTEP : InputParserState::STATE_DONE;
 }
 
 
-InputParserState AliasInputDriver::parseInputSpecification( InputSpecTokens const &tokens,
-                                                            InputSpec &spec )
+bool AliasInputDriver::getInput(InputSpec const& spec, InputDetails& details)
 {
-	InputParserState state = STATE_WANT_DRIVER;
-	int idx = 0;
-	if ( ( idx >= tokens.length() ) ||
-	     ( tokens[idx++] != "alias" ) ) return state;
-
-	state = STATE_WANT_CONTROL;
-	if ( idx >= tokens.length() ) return state;
-
-	spec.control_id = g_inputManager->getControlID( tokens[idx++] );
-	if ( spec.control_id < 0 ) {
-		return state;
-	}
-
-	spec.type = INPUT_TYPE_BOOL;
-
-	return ( idx < tokens.length() ) ? STATE_OVERSTEP : STATE_DONE;
+  if (0 <= spec.control_id && spec.control_id < NumControlTypes)
+    return g_inputManager->controlEvent(static_cast<ControlType>(spec.control_id), details);
+  else
+    return false; // We should never get here!
 }
 
 
-bool AliasInputDriver::getInput( InputSpec const &spec, InputDetails &details )
-{
-	if ( 0 <= spec.control_id && spec.control_id < NumControlTypes )
-		return g_inputManager->controlEvent( static_cast<ControlType>(spec.control_id), details );
-	else
-		return false; // We should never get here!
-}
-
-
-void AliasInputDriver::Advance()
-{
-}
+void AliasInputDriver::Advance() {}
 
 
 // In the same order as enum InputParserState (see inputdriver.h)
-static string errors[] = {
-	"An unknown error occurred.",
-	"The driver type was not recognised.",
-	"The control alias was not recognised.",
-	"",
-	"",
-	"",
-	"There are too many tokens in the input description.",
-	"",
-	"There was no parsing error."
-};
+static string errors[] = {"An unknown error occurred.",
+                          "The driver type was not recognised.",
+                          "The control alias was not recognised.",
+                          "",
+                          "",
+                          "",
+                          "There are too many tokens in the input description.",
+                          "",
+                          "There was no parsing error."};
 
-const string &AliasInputDriver::getLastParseError( InputParserState state )
+// PRE-EXISTING AND PRESERVED: this table has NINE strings and
+// InputParserState has TEN enumerators, so errors[STATE_DONE] reads one past
+// the end, and every message from STATE_WANT_OPTIONAL on is off by one —
+// STATE_WANT_OPTIONAL gets BAD_EXTRA's text, and so on. The cast below makes
+// the indexing explicit; it does not change which string comes back. Surfaced
+// by language-hygiene T4, which had to look at the indexing to compile it.
+// Fixing it is a behaviour change and is recorded on that task, not done here.
+const string& AliasInputDriver::getLastParseError(InputParserState state) { return errors[static_cast<size_t>(state)]; }
+
+
+bool AliasInputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc)
 {
-	return errors[ state ];
-}
-
-
-bool AliasInputDriver::getInputDescription( InputSpec const &spec, InputDescription &desc )
-{
-	// TODO: This isn't quite right.
-	// May break translations.
-	if ( 0 <= spec.control_id && spec.control_id < NumControlTypes )
-		return g_inputManager->getBoundInputDescription( static_cast<ControlType>(spec.control_id), desc );
-	else
-		return false; // We should never get here!
+  // TODO: This isn't quite right.
+  // May break translations.
+  if (0 <= spec.control_id && spec.control_id < NumControlTypes)
+    return g_inputManager->getBoundInputDescription(static_cast<ControlType>(spec.control_id), desc);
+  else
+    return false; // We should never get here!
 }

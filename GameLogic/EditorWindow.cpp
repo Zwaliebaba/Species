@@ -56,7 +56,8 @@ class MainEditWindowButton : public BorderlessButton
 #ifndef TARGET_DEBUG
         if (!g_resource->IsModLoaded())
         {
-          EclRegisterWindow(new MessageDialog(LANGUAGEPHRASE("dialog_savelocationsfail1"), LANGUAGEPHRASE("dialog_savelocationsfail2")), m_parent);
+          EclRegisterWindow(std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_savelocationsfail1"), LANGUAGEPHRASE("dialog_savelocationsfail2")),
+                            m_parent);
           return;
         }
 #endif

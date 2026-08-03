@@ -151,8 +151,8 @@ void Spider::ChangeHealth(int _amount)
     Entity::ChangeHealth(_amount);
 
     float fractionDead = 1.0f - (float)m_stats[StatHealth] / (float)EntityBlueprint::GetStat(TypeSpider, StatHealth);
-    fractionDead = max(fractionDead, 0.0f);
-    fractionDead = min(fractionDead, 1.0f);
+    fractionDead = std::max(fractionDead, 0.0f);
+    fractionDead = std::min(fractionDead, 1.0f);
     Matrix34 transform(m_front, m_up, m_pos);
     g_explosionManager.AddExplosion(m_shape, transform, fractionDead);
   }
@@ -169,7 +169,7 @@ int Spider::CalcWhichFootToMove()
 
   for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
   {
-    if (m_legs[i]->m_foot.m_state == EntityFoot::OnGround)
+    if (m_legs[i]->m_foot.m_state == EntityFoot::FootState::OnGround)
     {
       float score = m_legs[i]->CalcFootsDesireToMove(m_targetHoverHeight);
       if (score > FOOT_EMERGENCY_THRESHOLD)
@@ -485,7 +485,7 @@ bool Spider::AdvanceAttack()
       Vector3 forwards = (m_pounceTarget - m_pos);
       for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
       {
-        m_legs[i]->m_foot.m_state = EntityFoot::Pouncing;
+        m_legs[i]->m_foot.m_state = EntityFoot::FootState::Pouncing;
         m_legs[i]->m_foot.m_bodyToFoot = m_pos - m_legs[i]->m_foot.m_pos;
         m_legs[i]->m_foot.m_lastGroundPos = m_legs[i]->m_foot.m_pos;
         m_legs[i]->m_foot.m_targetPos = m_legs[i]->m_foot.m_pos + forwards;
@@ -516,7 +516,7 @@ bool Spider::AdvancePouncing()
 
     for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
     {
-      m_legs[i]->m_foot.m_state = EntityFoot::OnGround;
+      m_legs[i]->m_foot.m_state = EntityFoot::FootState::OnGround;
     }
 
     g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "PounceLand");
@@ -542,7 +542,7 @@ bool Spider::AdvancePouncing()
       push.y = push.Mag() * 4.0f;
 
       float pushLength = fraction * 30.0f;
-      pushLength = min(20.0f, pushLength);
+      pushLength = std::min(20.0f, pushLength);
       push.SetLength(pushLength);
 
       entity->m_vel += push;

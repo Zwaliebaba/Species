@@ -85,7 +85,7 @@ void UpdateAdvanceTime()
     int demoFrameRate = g_prefsManager->GetInt("DemoFrameRate", 25);
     g_advanceTime = 1.0f / static_cast<float>(demoFrameRate);
     IncrementFakeTime(1.0f / static_cast<double>(demoFrameRate));
-    //g_gameTime += g_advanceTime;
+    // g_gameTime += g_advanceTime;
     g_gameTime = GetHighResTime();
     g_predictionTime = static_cast<float>(g_gameTime - g_lastServerAdvance) - 0.07f;
   }
@@ -100,7 +100,7 @@ void UpdateAdvanceTime()
     float prevPredictionTime = g_predictionTime;
     g_predictionTime = static_cast<float>(realTime - g_lastServerAdvance) - 0.07f;
 
-    //DebugTrace( "Change = %6.3f\n", g_predictionTime - prevPredictionTime );
+    // DebugTrace( "Change = %6.3f\n", g_predictionTime - prevPredictionTime );
   }
 }
 
@@ -153,7 +153,7 @@ int GetNumSlicesToAdvance()
     numSlicesPending -= 10;
 
   float timeSinceStartOfAdvance = g_gameTime - g_lastServerAdvance;
-  //int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
+  // int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
 
   int numSlicesToAdvance = timeSinceStartOfAdvance * 100;
   if (g_sliceNum != -1)
@@ -161,9 +161,9 @@ int GetNumSlicesToAdvance()
   if (g_sliceNum == -1)
     numSlicesToAdvance -= 10;
 
-  //DEBUG_ASSERT( numSlicesToAdvance >= 0 );
-  numSlicesToAdvance = max(numSlicesToAdvance, 0);
-  numSlicesToAdvance = min(numSlicesToAdvance, 10);
+  // DEBUG_ASSERT( numSlicesToAdvance >= 0 );
+  numSlicesToAdvance = std::max(numSlicesToAdvance, 0);
+  numSlicesToAdvance = std::min(numSlicesToAdvance, 10);
 
   return numSlicesToAdvance;
 }
@@ -172,16 +172,16 @@ bool ProcessServerLetters(ServerToClientLetter* letter)
 {
   switch (letter->m_type)
   {
-  case ServerToClientLetter::HelloClient:
+  case ServerToClientLetter::LetterType::HelloClient:
     if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
       DebugTrace("CLIENT : Received HelloClient from Server\n");
     return true;
 
-  case ServerToClientLetter::GoodbyeClient:
-    //g_location->RemoveTeam( letter->m_teamId );
+  case ServerToClientLetter::LetterType::GoodbyeClient:
+    // g_location->RemoveTeam( letter->m_teamId );
     return true;
 
-  case ServerToClientLetter::TeamAssign:
+  case ServerToClientLetter::LetterType::TeamAssign:
 
     if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
       g_location->InitialiseTeam(letter->m_teamId, letter->m_teamType);
@@ -198,10 +198,10 @@ bool WindowsOnScreen() { return EclGetWindows()->size() > 0; }
 
 void RemoveAllWindows()
 {
-  std::vector<EclWindow*>* windows = EclGetWindows();
+  std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
   while (windows->size() > 0)
   {
-    EclWindow* w = (*windows)[0];
+    EclWindow* w = (*windows)[0].get();
     EclRemoveWindow(w->m_name);
   }
 }
@@ -214,8 +214,9 @@ bool HandleCommonConditions()
   static bool controllerPlugged = true;
   if (controllerPlugged && g_inputManager->controlEvent(ControlControllerUnplugged))
   {
-    auto dialog = new MessageDialog(LANGUAGEPHRASE("dialog_unplugged1"), LANGUAGEPHRASE("dialog_unplugged2"));
-    EclRegisterWindow(dialog);
+    auto owned = std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_unplugged1"), LANGUAGEPHRASE("dialog_unplugged2"));
+    MessageDialog* dialog = owned.get();
+    EclRegisterWindow(std::move(owned));
     controllerPlugged = false;
   }
 
@@ -226,7 +227,7 @@ bool HandleCommonConditions()
   }
 
   // Pretend we're not focused
-  if (!controllerPlugged && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
+  if (!controllerPlugged && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
     curWindowHasFocus = false;
 
   if (!curWindowHasFocus)
@@ -401,7 +402,7 @@ void LocationGameLoop()
         else
         {
           TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-          EclRegisterWindow(new LocationWindow());
+          EclRegisterWindow(std::make_unique<LocationWindow>());
         }
       }
       TheUserInput()->Advance();
@@ -452,9 +453,9 @@ void LocationGameLoop()
             checkMouse = true;
 
           bool orderGiven = false;
-          if (g_inputManager->getInputMode() == INPUT_MODE_KEYBOARD && teamControls.m_primaryFireTarget)
+          if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_KEYBOARD && teamControls.m_primaryFireTarget)
             orderGiven = true;
-          if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && teamControls.m_secondaryFireDirected)
+          if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && teamControls.m_secondaryFireDirected)
             orderGiven = true;
 
           if (team->GetMyEntity() && team->GetMyEntity()->m_type == Entity::TypeOfficer && orderGiven)
@@ -469,8 +470,7 @@ void LocationGameLoop()
             WorldObjectId idUnderMouse;
             bool objectUnderMouse = g_app->m_locationInput->GetObjectUnderMouse(idUnderMouse, g_globalWorld->m_myTeamId);
 
-            bool isCurrentEntity = (objectUnderMouse && idUnderMouse.GetUnitId() == -1 && idUnderMouse.GetIndex() == team->
-              m_currentEntityId);
+            bool isCurrentEntity = (objectUnderMouse && idUnderMouse.GetUnitId() == -1 && idUnderMouse.GetIndex() == team->m_currentEntityId);
             bool isCurrentUnit = (objectUnderMouse && idUnderMouse.GetUnitId() != -1 && idUnderMouse.GetUnitId() == team->m_currentUnitId);
 
             entityUnderMouse = (objectUnderMouse && idUnderMouse.GetUnitId() != UNIT_BUILDINGS && !isCurrentEntity && !isCurrentUnit);
@@ -499,7 +499,7 @@ void LocationGameLoop()
 
       g_app->m_clientToServer->Advance();
 
-      //UpdateTargetFrameRate(g_sliceNum);
+      // UpdateTargetFrameRate(g_sliceNum);
 
       int slicesToAdvance = GetNumSlicesToAdvance();
 
@@ -511,24 +511,27 @@ void LocationGameLoop()
         if (g_sliceNum == -1)
         {
           // Read latest update from Server
-          ServerToClientLetter* letter = g_app->m_clientToServer->GetNextLetter(g_lastProcessedSequenceId);
+          std::unique_ptr<ServerToClientLetter> letter = g_app->m_clientToServer->GetNextLetter(g_lastProcessedSequenceId);
 
           if (letter)
           {
             DEBUG_ASSERT(letter->GetSequenceId() == g_lastProcessedSequenceId + 1);
-            //g_app->m_clientToServer->m_lastServerLetterReceivedTime = GetHighResTime();
+            // g_app->m_clientToServer->m_lastServerLetterReceivedTime = GetHighResTime();
 
-            //DebugTrace( "CLIENT : Processed update %d\n", letter->GetSequenceId() );
-            //g_app->m_clientToServer->m_lastKnownSequenceIdFromServer = letter->GetSequenceId();
-            bool handled = ProcessServerLetters(letter);
+            // DebugTrace( "CLIENT : Processed update %d\n", letter->GetSequenceId() );
+            // g_app->m_clientToServer->m_lastKnownSequenceIdFromServer = letter->GetSequenceId();
+            bool handled = ProcessServerLetters(letter.get());
             if (handled == false)
-              ProcessServerUpdates(letter);
+              ProcessServerUpdates(letter.get());
 
             g_sliceNum = 0;
             heavyWeightAdvanceStartTime = timeNow;
             g_lastServerAdvance = static_cast<float>(letter->GetSequenceId()) * SERVER_ADVANCE_PERIOD + g_app->m_clientToServer->m_startTime;
             g_lastProcessedSequenceId = letter->GetSequenceId();
-            delete letter;
+            // reset() at the point the delete was, not at the end of the block:
+            // GenerateSyncValue() runs after it and the letter must already be
+            // gone when it does, exactly as before.
+            letter.reset();
 
             unsigned char sync = GenerateSyncValue();
             g_app->m_clientToServer->SendSyncronisation(g_lastProcessedSequenceId, sync);
@@ -576,7 +579,10 @@ void LocationGameLoop()
       TheControlHelp()->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
-      if (g_app->m_attractMode->m_running) { g_app->m_attractMode->Advance(); }
+      if (g_app->m_attractMode->m_running)
+      {
+        g_app->m_attractMode->Advance();
+      }
 #endif // ATTRACTMODE_ENABLED
 
       // DELETEME: for debug purposes only
@@ -625,9 +631,12 @@ void LocationGameLoop()
 
 void SwitchTaskManagerForX360Controller()
 {
-  static int oldControlType = INPUT_MODE_KEYBOARD;
+  // Typed, not int. It holds an InputMode and is only ever compared against
+  // one; `int` was the pre-scoped-enum spelling.
+  static InputMode oldControlType = InputMode::INPUT_MODE_KEYBOARD;
 
-  if (oldControlType != INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && !TheTaskManagerInterface()->m_visible)
+  if (oldControlType != InputMode::INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD &&
+      !TheTaskManagerInterface()->m_visible)
   {
     // user has just switched to the game pad
     if (g_prefsManager->GetInt("ControlMethod") == 0)
@@ -635,9 +644,10 @@ void SwitchTaskManagerForX360Controller()
       delete g_taskManagerInterface;
       g_taskManagerInterface = new TaskManagerInterfaceIcons();
     }
-    oldControlType = INPUT_MODE_GAMEPAD;
+    oldControlType = InputMode::INPUT_MODE_GAMEPAD;
   }
-  else if (oldControlType == INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && !TheTaskManagerInterface()->m_visible)
+  else if (oldControlType == InputMode::INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD &&
+           !TheTaskManagerInterface()->m_visible)
     oldControlType = g_inputManager->getInputMode();
 }
 
@@ -701,7 +711,7 @@ void GlobalWorldGameLoop()
       else
       {
         TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-        EclRegisterWindow(new MainMenuWindow());
+        EclRegisterWindow(std::make_unique<MainMenuWindow>());
       }
       TheUserInput()->Advance();
     }
@@ -745,8 +755,9 @@ void GlobalWorldEditorLoop()
 {
   TheCamera()->SetDebugMode(Camera::DebugModeAlways);
 
-  auto gweWindow = new GlobalWorldEditorWindow();
-  EclRegisterWindow(gweWindow);
+  auto ownedGwe = std::make_unique<GlobalWorldEditorWindow>();
+  GlobalWorldEditorWindow* gweWindow = ownedGwe.get();
+  EclRegisterWindow(std::move(ownedGwe));
 
   while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
@@ -839,7 +850,7 @@ void Initialise()
   InitialiseInputManager();
 
   g_target = new TargetCursor();
-  //if( g_prefsManager->GetInt("ControlMethod")==0 ) getW32EventHandler()->BindAltTab();
+  // if( g_prefsManager->GetInt("ControlMethod")==0 ) getW32EventHandler()->BindAltTab();
   EntityBlueprint::Initialise();
   g_windowManager->HideMousePointer();
 
@@ -873,7 +884,6 @@ void Finalise()
 
   delete g_resource;
   delete g_windowManager;
-
 }
 
 void RunBootLoaders()
@@ -964,7 +974,7 @@ void EnterGlobalWorld()
   if (g_gameMode == GameModePrologue && !TheScript()->IsRunningScript())
   {
     // the only time you should see the world in prologue is during the cutscene
-    //g_atMainMenu = true;
+    // g_atMainMenu = true;
     g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
     GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
     g_requestedMap = gloc->m_mapFilename;

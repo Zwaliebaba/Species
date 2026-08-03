@@ -42,10 +42,10 @@
 #include "WorldPointers.h"
 #include "AppState.h"
 
-#define MIN_GROUND_CLEARANCE	10.0f	// Minimum height relative to land
-#define MIN_HEIGHT				10.0f	// Height above sea level (which is y=0)
-#define MAX_HEIGHT				5000.0f // Height above sea level (which is y=0)
-#define MIN_TRACKING_HEIGHT     200.0f  // Minimum height of the camera when tracking an entity
+#define MIN_GROUND_CLEARANCE 10.0f // Minimum height relative to land
+#define MIN_HEIGHT 10.0f           // Height above sea level (which is y=0)
+#define MAX_HEIGHT 5000.0f         // Height above sea level (which is y=0)
+#define MIN_TRACKING_HEIGHT 200.0f // Minimum height of the camera when tracking an entity
 
 // ***************
 // Private Methods
@@ -426,8 +426,8 @@ void Camera::AdvanceSphereWorldOutroMode()
   float distance = targetFront.Mag();
 
   float forwardSpeed = sqrtf(m_pos.Mag()) * 4;
-  forwardSpeed = max(forwardSpeed, 1000);
-  forwardSpeed = min(forwardSpeed, 2000);
+  forwardSpeed = std::max(forwardSpeed, 1000.0f);
+  forwardSpeed = std::min(forwardSpeed, 2000.0f);
 
   targetFront.Normalise();
 
@@ -491,7 +491,7 @@ void Camera::AdvanceSphereWorldFocusMode()
   // then eventually reach full speed
   float timeSinceBegin = GetHighResTime() - m_trackTimer;
   float moveFactor = timeSinceBegin * 0.2f;
-  moveFactor = min(moveFactor, 1.0f);
+  moveFactor = std::min(moveFactor, 1.0f);
 
   float factor1 = moveFactor * 0.5f * g_advanceTime;
   float factor2 = 1.0f - factor1;
@@ -611,7 +611,9 @@ void Camera::AdvanceFreeMovementMode()
       }
     }
 
-    if (keyForward || keyBackward || keyLeft || keyRight) {}
+    if (keyForward || keyBackward || keyLeft || keyRight)
+    {
+    }
 
     //		if (m_pos.x < m_minX)	m_targetPos.x -= (m_pos.x - m_minX);
     //		if (m_pos.x > m_maxX)	m_targetPos.x -= (m_pos.x - m_maxX);
@@ -767,14 +769,14 @@ void Camera::AdvanceBuildingFocusMode()
   // then eventually reach full speed
   float timeSinceBegin = GetHighResTime() - m_trackTimer;
   float moveFactor = timeSinceBegin * 1.0f;
-  moveFactor = min(moveFactor, 1.0f);
+  moveFactor = std::min(moveFactor, 1.0f);
 
   if (timeSinceBegin < 2.0f)
   {
     // Make the camera lift up when first moving towards a building
     float distance = (m_pos - realTargetPos).Mag();
     realTargetPos.y += distance * 0.75f * (2.0f - timeSinceBegin);
-    realTargetPos.y = min(realTargetPos.y, 1000.0f);
+    realTargetPos.y = std::min(realTargetPos.y, 1000.0f);
   }
 
   float factor1 = moveFactor * 0.5f * g_advanceTime;
@@ -926,8 +928,8 @@ void Camera::UpdateControlVector()
 
 bool Camera::AdvanceManualRotateCamera(Vector3& cameraTarget)
 {
-  if ((g_inputManager->controlEvent(ControlCameraRotateLeft) || g_inputManager->controlEvent(ControlCameraRotateRight)) && !g_inputManager->
-    controlEvent(ControlUnitPrimaryFireDirected))
+  if ((g_inputManager->controlEvent(ControlCameraRotateLeft) || g_inputManager->controlEvent(ControlCameraRotateRight)) &&
+      !g_inputManager->controlEvent(ControlUnitPrimaryFireDirected))
   {
     m_trackHeight = 0.0f;
 
@@ -990,8 +992,8 @@ bool Camera::AdvanceManualCameraHeight(Vector3& cameraTarget)
       TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
-    m_heightMultiplier = min(2.0f, m_heightMultiplier);
-    m_heightMultiplier = max(m_heightMultiplier, 0.25f);
+    m_heightMultiplier = std::min(2.0f, m_heightMultiplier);
+    m_heightMultiplier = std::max(m_heightMultiplier, 0.25f);
 
     if (camDown)
     {
@@ -1356,7 +1358,7 @@ void Camera::AdvanceRadarAimMode()
     newMouseY = screenH - 1;
 
   // Apply the mouse cursor movement
-  //alleg    position_mouse(newMouseX, newMouseY);
+  // alleg    position_mouse(newMouseX, newMouseY);
   g_target->SetMousePos(newMouseX, newMouseY);
   glPopMatrix();
 }
@@ -1371,10 +1373,10 @@ void Camera::AdvanceTurretAimMode()
   float minY = g_location->m_landscape.m_heightMap->GetValue(groundPos.x, groundPos.z);
 
   groundPos -= m_front * m_height;
-  //groundPos.y = max( groundPos.y, minY );
+  // groundPos.y = max( groundPos.y, minY );
 
-  //groundPos.y = ;
-  //groundPos.y -= 10.0f;
+  // groundPos.y = ;
+  // groundPos.y -= 10.0f;
 
   Vector3 focusPos = groundPos;
   focusPos.y += m_height;
@@ -1452,7 +1454,7 @@ void Camera::AdvanceTurretAimMode()
     newMouseY = screenH - 1;
 
   // Apply the mouse cursor movement
-  //alleg    position_mouse(newMouseX, newMouseY);
+  // alleg    position_mouse(newMouseX, newMouseY);
   g_target->SetMousePos(newMouseX, newMouseY);
   glPopMatrix();
 }
@@ -1520,7 +1522,11 @@ void Camera::AdvanceFirstPersonMode()
 void Camera::AdvanceMoveToTargetMode()
 {
   double currentTimeFraction = (g_gameTime - m_startTime) / m_moveDuration;
-  currentTimeFraction = max(currentTimeFraction, 0.2f);
+  // static_cast rather than 0.2, because the two are different numbers: the max
+  // macro promoted 0.2f to double through the conditional operator, giving
+  // 0.20000000298023224, and the double literal 0.2 is 0.2000000000000000111.
+  // Writing 0.2 here would be a changed computed value dressed up as a tidy-up.
+  currentTimeFraction = std::max(currentTimeFraction, static_cast<double>(0.2f));
 
   // Pos
   Vector3 direction = m_targetPos - m_startPos;
@@ -1555,13 +1561,13 @@ void Camera::AdvanceMoveToTargetMode()
 
   m_front.Normalise();
   m_up = g_upVector;
-  //Vector3 right = m_front ^ m_up;
-  //right.Normalise();
-  //m_up = right ^ m_front;
-  //m_up.Normalise();
+  // Vector3 right = m_front ^ m_up;
+  // right.Normalise();
+  // m_up = right ^ m_front;
+  // m_up.Normalise();
 
-  //float dot = m_front * m_up;
-  //dot *= 1.0f;
+  // float dot = m_front * m_up;
+  // dot *= 1.0f;
 }
 
 void Camera::AdvanceEntityFollowMode()
@@ -1640,15 +1646,15 @@ Camera::Camera()
     m_skipDirectionCalculation(false)
 {
   m_cosFov = cos(m_fov / 180.0f * M_PI);
-  m_pos = Vector3(1000.0f, //g_location->m_landscape.GetWorldSizeX() / 2.0f,
-                  500.0f, 1000.0f); //g_location->m_landscape.GetWorldSizeZ() / 2.0f);
+  m_pos = Vector3(1000.0f,          // g_location->m_landscape.GetWorldSizeX() / 2.0f,
+                  500.0f, 1000.0f); // g_location->m_landscape.GetWorldSizeZ() / 2.0f);
 
   m_minX = -1e6;
   m_maxX = 1e6;
   m_minZ = -1e6;
   m_maxZ = 1e6;
 
-  //m_front = Vector3(0, -0.7f, 1);
+  // m_front = Vector3(0, -0.7f, 1);
   m_front.Set(0, -0.5f, -1);
   m_front.Normalise();
 
@@ -1662,12 +1668,12 @@ Camera::Camera()
   m_controlVector = right;
 }
 
-void Camera::CreateCameraShake(float _intensity) { m_cameraShake = max(m_cameraShake, _intensity); }
+void Camera::CreateCameraShake(float _intensity) { m_cameraShake = std::max(m_cameraShake, _intensity); }
 
 void Camera::SetupProjectionMatrix(float _nearPlane, float _farPlane)
 {
-  //DEBUG_ASSERT(m_fov > 0.0f);
-  //DEBUG_ASSERT(m_fov < 180.0f);
+  // DEBUG_ASSERT(m_fov > 0.0f);
+  // DEBUG_ASSERT(m_fov < 180.0f);
 
   ClampInPlace(m_fov, 1, 180);
 
@@ -1864,7 +1870,7 @@ void Camera::AdvanceComponentMouseWheelHeight()
     m_height += delta * 2.0f * sqrtf(fabsf(altitude));
 
     if (m_mode == ModeTurretAim)
-      m_height = max(m_height, MIN_GROUND_CLEARANCE);
+      m_height = std::max(m_height, MIN_GROUND_CLEARANCE);
     else
     {
       if (landheight + MIN_GROUND_CLEARANCE > m_height)
@@ -1879,9 +1885,8 @@ void Camera::AdvanceComponentMouseWheelHeight()
     m_height += delta * (m_height * 0.1f + 5.0f);
     if (m_height < 0.0f)
       m_height = 0.1f;
-    else
-      if (m_height > 1000.0f)
-        m_height = 1000.0f;
+    else if (m_height > 1000.0f)
+      m_height = 1000.0f;
   }
 }
 
@@ -1935,7 +1940,7 @@ void Camera::AdvanceMainMenuMode()
   float factor2 = 1.0f - factor1;
 
   Vector3 targetFront(0, 0, 0);
-  //Vector3 targetFront(50000, 50000, 50000);
+  // Vector3 targetFront(50000, 50000, 50000);
   m_front = m_front * factor2 + targetFront * factor1;
   m_up.Set(0.0f, -1.0f, 0.0f);
   Vector3 right = m_up ^ m_front;
@@ -2082,7 +2087,7 @@ void Camera::RequestMode(int _mode)
   int screenW = g_renderer->ScreenW();
   int screenH = g_renderer->ScreenH();
 
-  //m_targetFov = 60.0f;
+  // m_targetFov = 60.0f;
   m_framesInThisMode = 0;
   m_mode = _mode;
 
@@ -2167,8 +2172,7 @@ bool Camera::IsInteractive()
 {
   // if( TheScript()->IsRunningScript() ) return false;
 
-  return (m_mode == ModeSphereWorld || m_mode == ModeFreeMovement || m_mode == ModeRadarAim || m_mode == ModeTurretAim || m_mode ==
-    ModeEntityTrack);
+  return (m_mode == ModeSphereWorld || m_mode == ModeFreeMovement || m_mode == ModeRadarAim || m_mode == ModeTurretAim || m_mode == ModeEntityTrack);
 }
 
 bool Camera::IsInMode(int _mode) { return (m_mode == _mode); }
@@ -2250,8 +2254,8 @@ void Camera::GetClickRay(int _x, int _y, Vector3* _rayStart, Vector3* _rayDir)
   glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
   int realY = viewport[3] - _y - 1;
 
-  if ((mvMatrix[0] + mvMatrix[1] + mvMatrix[2] == 0) || (mvMatrix[5] + mvMatrix[6] + mvMatrix[7] == 0) || (mvMatrix[9] + mvMatrix[10] +
-    mvMatrix[11] == 0))
+  if ((mvMatrix[0] + mvMatrix[1] + mvMatrix[2] == 0) || (mvMatrix[5] + mvMatrix[6] + mvMatrix[7] == 0) ||
+      (mvMatrix[9] + mvMatrix[10] + mvMatrix[11] == 0))
   {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -2357,7 +2361,7 @@ void Camera::UpdateEntityTrackingMode()
     if (camTracking != 1 && camTracking != 2)
     {
       // do automatic option detection
-      if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
+      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
         camTracking = 2;
     }
     SwitchEntityTracking(camTracking == 2);

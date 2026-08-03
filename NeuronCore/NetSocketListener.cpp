@@ -13,7 +13,7 @@ NetSocketListener::NetSocketListener(unsigned short port)
 {
   m_sockfd = NET_INVALID_SOCKET;
   m_port = port;
-	m_listening = 0;
+  m_listening = 0;
 }
 
 
@@ -31,13 +31,13 @@ NetSocketListener::~NetSocketListener()
 
 NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
 {
-	NetRetCode ret = NetOk;
-	int bindAttempts = 0;
-	NetIpAddress servaddr;
-	NetIpAddress clientaddr;
+  NetRetCode ret = NetRetCode::NetOk;
+  int bindAttempts = 0;
+  NetIpAddress servaddr;
+  NetIpAddress clientaddr;
 
-	memset(&servaddr, 0, sizeof(servaddr));
-	memset(&clientaddr, 0, sizeof(clientaddr));
+  memset(&servaddr, 0, sizeof(servaddr));
+  memset(&clientaddr, 0, sizeof(clientaddr));
 
   // INVALID_SOCKET is ~0, not 0, so the old !m_sockfd test let a failed
   // socket() through and bound against an invalid handle.
@@ -45,49 +45,47 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
   if (m_sockfd == NET_INVALID_SOCKET)
   {
     NetDebugOut("Could not create listen socket: %d", NetGetLastError());
-    return NetFailed;
-	}
-	
-	NetSocketHandle client = 0;
-	unsigned int addrlen = sizeof(clientaddr);
-	
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(m_port);
-	
-	// Make sure incoming arguments make sense
-	if (functionPointer == (NetCallBack)nullptr)
-	{
-		return NetBadArgs;
-	}
-	
-	// Signal that we should be listening
-	m_listening = 1;
-	
-	// Bind socket to port
-	while ((bind(m_sockfd, (sockaddr *)&servaddr, sizeof(servaddr)) == -1) &&
-		   m_listening)
-	{
-		if ((bindAttempts++ == 10) || (!NetIsAddrInUse))
-		{
-			return NetFailed;
-		}
-		else
-		{
-			NetDebugOut("Cannot bind to port");
-			NetSleep(bindAttempts * 1000);
-		}
-	}
-	
-	int datasize = 0;
-	char buf[MAX_PACKET_SIZE];
-	NetSocketLenType cliLen = sizeof(clientaddr);
-	
-	while (m_listening)
-	{
-		memset(buf, 0, MAX_PACKET_SIZE * sizeof(char));
-		datasize = recvfrom(m_sockfd, buf, MAX_PACKET_SIZE, 0,
-							(struct sockaddr *)&clientaddr, &cliLen);
+    return NetRetCode::NetFailed;
+  }
+
+  NetSocketHandle client = 0;
+  unsigned int addrlen = sizeof(clientaddr);
+
+  servaddr.sin_family = AF_INET;
+  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  servaddr.sin_port = htons(m_port);
+
+  // Make sure incoming arguments make sense
+  if (functionPointer == (NetCallBack) nullptr)
+  {
+    return NetRetCode::NetBadArgs;
+  }
+
+  // Signal that we should be listening
+  m_listening = 1;
+
+  // Bind socket to port
+  while ((bind(m_sockfd, (sockaddr*)&servaddr, sizeof(servaddr)) == -1) && m_listening)
+  {
+    if ((bindAttempts++ == 10) || (!NetIsAddrInUse))
+    {
+      return NetRetCode::NetFailed;
+    }
+    else
+    {
+      NetDebugOut("Cannot bind to port");
+      NetSleep(bindAttempts * 1000);
+    }
+  }
+
+  int datasize = 0;
+  char buf[MAX_PACKET_SIZE];
+  NetSocketLenType cliLen = sizeof(clientaddr);
+
+  while (m_listening)
+  {
+    memset(buf, 0, MAX_PACKET_SIZE * sizeof(char));
+    datasize = recvfrom(m_sockfd, buf, MAX_PACKET_SIZE, 0, (struct sockaddr*)&clientaddr, &cliLen);
 
     // StopListening shuts the socket down to break us out of the recvfrom
     // above, so test before doing anything with what it returned.
@@ -106,24 +104,24 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
         continue;
 
       NetDebugOut("Listener receive failed: %d", err);
-      return NetFailed;
+      return NetRetCode::NetFailed;
     }
 
     // Call function pointer with datagram data (type is NetUdpPacket) -
-		// the function pointed to must free NetUdpPacket passed in
-		(*functionPointer)(new NetUdpPacket(client, &clientaddr, buf, datasize));
-	}
-	
-	return ret;
+    // the function pointed to must free NetUdpPacket passed in
+    (*functionPointer)(new NetUdpPacket(client, &clientaddr, buf, datasize));
+  }
+
+  return ret;
 }
 
-   
+
 void NetSocketListener::StopListening()
 {
-	m_listening = 0;
-	NetSleep(250);
+  m_listening = 0;
+  NetSleep(250);
   if (m_sockfd != NET_INVALID_SOCKET)
   {
-		shutdown(m_sockfd, 0);
-	}
+    shutdown(m_sockfd, 0);
+  }
 }

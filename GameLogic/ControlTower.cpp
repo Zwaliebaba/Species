@@ -358,7 +358,7 @@ void ControlTower::RenderAlphas(float _predictionTime)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
     float w = (lightPos - g_camera->GetPos()).Mag() * 0.002f;
-    w = max(0.5f, w);
+    w = std::max(0.5f, w);
 
     for (int i = 0; i < 10; ++i)
     {

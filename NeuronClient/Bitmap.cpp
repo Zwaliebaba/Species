@@ -389,8 +389,8 @@ void BitmapRGBA::Initialise(const char* _filename)
 {
   BinaryFileReader in(_filename);
 
-  const char* extension = GetExtensionPart(_filename);
-  DEBUG_ASSERT(stricmp(extension, "bmp") == 0);
+  const std::string extension = GetExtensionPart(_filename);
+  DEBUG_ASSERT(stricmp(extension.c_str(), "bmp") == 0);
   LoadBmp(&in);
 }
 

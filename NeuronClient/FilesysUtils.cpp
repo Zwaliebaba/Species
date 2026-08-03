@@ -90,28 +90,29 @@ bool DoesFileExist(const char* _fullPath)
   return false;
 }
 
-// All four of these return a pointer into this one buffer, so only one result
-// is valid at a time — holding two across a call is broken, and always was.
-// The storage is a std::string now rather than a char[257], which removes the
-// truncation at 256 characters and the copies that produced it, but NOT the
-// sharing. Fixing that means returning by value, which is a signature change
-// reaching five callers and the tests that assert a null return; it is noted
-// on tasks/strings-modernised.yaml T4 rather than smuggled in here.
-static std::string s_filePath;
+// All four return by value. They used to hand back a pointer into one shared
+// static, so only one result was valid at a time and holding two across a call
+// was broken — the same hazard tasks/strings-modernised.yaml T10 removed from
+// ConvertIntToIP. T4 converted the bodies and recorded the signatures as owed;
+// T16 is that debt.
+//
+// "No directory" and "no extension" are both the empty string rather than null.
+// GetExtensionPart already worked that way (T4 chose it, because every caller
+// feeds the result straight to stricmp or a BitmapRGBA constructor without
+// checking) and GetDirectoryPart now matches it.
 
-const char* GetDirectoryPart(const char* _fullFilePath)
+std::string GetDirectoryPart(const char* _fullFilePath)
 {
   const std::string_view path(_fullFilePath);
   const size_t finalSlash = path.find_last_of('/');
   if (finalSlash == std::string_view::npos)
-    return nullptr;
+    return {};
 
   // Inclusive of the slash — callers concatenate a filename straight onto it.
-  s_filePath = path.substr(0, finalSlash + 1);
-  return s_filePath.c_str();
+  return std::string(path.substr(0, finalSlash + 1));
 }
 
-const char* GetFilenamePart(const char* _fullFilePath)
+std::string GetFilenamePart(const char* _fullFilePath)
 {
   // BEHAVIOUR DEFINED HERE, deliberately. This read `strrchr(path, '/') + 1`
   // and then tested the result for null — but the +1 happens first, so a path
@@ -120,29 +121,24 @@ const char* GetFilenamePart(const char* _fullFilePath)
   // name of the function promises. See tasks/strings-modernised.yaml T4.
   const std::string_view path(_fullFilePath);
   const size_t finalSlash = path.find_last_of('/');
-  s_filePath = finalSlash == std::string_view::npos ? path : path.substr(finalSlash + 1);
-  return s_filePath.c_str();
+  return std::string(finalSlash == std::string_view::npos ? path : path.substr(finalSlash + 1));
 }
 
-const char* GetExtensionPart(const char* _fullFilePath)
+std::string GetExtensionPart(const char* _fullFilePath)
 {
   // Same defect and the same fix: `strrchr(path, '.') + 1` handed back 0x1 for
-  // a name with no dot, and this one did not even test it. Returns empty now,
-  // NOT null — every caller passes the result straight to stricmp or a
-  // BitmapRGBA constructor without checking, so null would crash them where
-  // empty does not.
+  // a name with no dot, and this one did not even test it. Returns empty, NOT
+  // null, for the reason above the first function.
   const std::string_view path(_fullFilePath);
   const size_t finalDot = path.find_last_of('.');
-  s_filePath = finalDot == std::string_view::npos ? std::string_view() : path.substr(finalDot + 1);
-  return s_filePath.c_str();
+  return std::string(finalDot == std::string_view::npos ? std::string_view() : path.substr(finalDot + 1));
 }
 
-const char* RemoveExtension(const char* _fullFileName)
+std::string RemoveExtension(const char* _fullFileName)
 {
   const std::string_view name(_fullFileName);
   const size_t finalDot = name.find_last_of('.');
-  s_filePath = finalDot == std::string_view::npos ? name : name.substr(0, finalDot);
-  return s_filePath.c_str();
+  return std::string(finalDot == std::string_view::npos ? name : name.substr(0, finalDot));
 }
 
 bool CreateDirectory(const char* _directory)

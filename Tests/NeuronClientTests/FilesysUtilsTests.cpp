@@ -75,9 +75,9 @@ namespace NeuronClientTests
   // NeuronClient that can be tested without a window, a GL context or GameData
   // on disk.
   //
-  // Every one of them returns a pointer into a single shared static buffer, so
-  // a result must be consumed before the next call. The tests below hold at most
-  // one result at a time for that reason, not by accident.
+  // They return by value as of strings-modernised/T16, so a result outlives the
+  // next call and two can be held at once — TwoResultsAreValidAtTheSameTime is
+  // the case the old shared static could not support.
   //
   // Paths with no '/' and paths with no '.' USED to be undefined behaviour and
   // were deliberately left uncovered for that reason: GetFilenamePart and
@@ -88,21 +88,31 @@ namespace NeuronClientTests
   TEST_CLASS(FilesysUtilsTests)
   {
     public:
-      TEST_METHOD(GetDirectoryPartKeepsTheTrailingSlash) { Assert::AreEqual("Shapes/", GetDirectoryPart("Shapes/citizen.shp")); }
+      TEST_METHOD(GetDirectoryPartKeepsTheTrailingSlash) { Assert::AreEqual("Shapes/", GetDirectoryPart("Shapes/citizen.shp").c_str()); }
 
-      TEST_METHOD(GetDirectoryPartStopsAtTheLastSlash) { Assert::AreEqual("Sounds/Effects/", GetDirectoryPart("Sounds/Effects/laser.wav")); }
+      TEST_METHOD(GetDirectoryPartStopsAtTheLastSlash) { Assert::AreEqual("Sounds/Effects/", GetDirectoryPart("Sounds/Effects/laser.wav").c_str()); }
 
-      TEST_METHOD(GetDirectoryPartReturnsNullWhenThereIsNoDirectory) { Assert::IsNull(GetDirectoryPart("Locations.txt")); }
+      // WAS GetDirectoryPartReturnsNullWhenThereIsNoDirectory, and the change of
+      // name is the change of contract. A std::string return cannot be null, and
+      // the choice between empty and std::optional went to empty because
+      // GetExtensionPart already answers a missing part that way — see the test
+      // below it, and T4's reasoning for why null would crash the callers.
+      // GetDirectoryPart has no caller outside these tests, so nothing depended
+      // on the old null.
+      TEST_METHOD(GetDirectoryPartIsEmptyWhenThereIsNoDirectory)
+      {
+        Assert::IsTrue(GetDirectoryPart("Locations.txt").empty());
+      }
 
-      TEST_METHOD(GetFilenamePartDropsEveryDirectory) { Assert::AreEqual("laser.wav", GetFilenamePart("Sounds/Effects/laser.wav")); }
+      TEST_METHOD(GetFilenamePartDropsEveryDirectory) { Assert::AreEqual("laser.wav", GetFilenamePart("Sounds/Effects/laser.wav").c_str()); }
 
-      TEST_METHOD(GetExtensionPartExcludesTheDot) { Assert::AreEqual("shp", GetExtensionPart("Shapes/citizen.shp")); }
+      TEST_METHOD(GetExtensionPartExcludesTheDot) { Assert::AreEqual("shp", GetExtensionPart("Shapes/citizen.shp").c_str()); }
 
       // The three edges strings-modernised/T4 defined. Each was undefined
       // behaviour before it, so these pin a decision rather than a discovery.
       TEST_METHOD(GetFilenamePartOfABareNameIsTheNameItself)
       {
-        Assert::AreEqual("Locations.txt", GetFilenamePart("Locations.txt"));
+        Assert::AreEqual("Locations.txt", GetFilenamePart("Locations.txt").c_str());
       }
 
       TEST_METHOD(GetExtensionPartOfANameWithNoDotIsEmptyNotNull)
@@ -110,26 +120,30 @@ namespace NeuronClientTests
         // Empty rather than null on purpose: every caller passes the result
         // straight to stricmp or a BitmapRGBA constructor without checking it,
         // so null would turn a missing extension into a crash.
-        const char* extension = GetExtensionPart("Shapes/citizen");
-        Assert::IsNotNull(extension);
-        Assert::AreEqual("", extension);
+        const std::string extension = GetExtensionPart("Shapes/citizen");
+        Assert::IsTrue(extension.empty());
       }
 
-      // NOT TESTED, deliberately: that the four helpers share one buffer, so
-      // the first result dies when the second call happens. A test for it would
-      // have to read the stale pointer, which is the undefined behaviour it
-      // claims to document — the assertion would be measuring whether the
-      // string happened to fit in its small-string buffer. The sharing is
-      // stated in FilesysUtils.cpp and the fix is recorded as owed on T4.
-
-      TEST_METHOD(RemoveExtensionKeepsTheDirectory)
+      // The case the shared static made untestable. Under it, holding the first
+      // result across the second call read a buffer that had been overwritten,
+      // so a test could only measure whether the string happened to survive.
+      // By value, both are simply correct — which is the whole point of T16.
+      TEST_METHOD(TwoResultsAreValidAtTheSameTime)
       {
-        Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen.shp"));
+        const std::string directory = GetDirectoryPart("Sounds/Effects/laser.wav");
+        const std::string extension = GetExtensionPart("Sounds/Effects/laser.wav");
+        const std::string filename = GetFilenamePart("Sounds/Effects/laser.wav");
+
+        Assert::AreEqual("Sounds/Effects/", directory.c_str());
+        Assert::AreEqual("wav", extension.c_str());
+        Assert::AreEqual("laser.wav", filename.c_str());
       }
 
-      TEST_METHOD(RemoveExtensionLeavesAnExtensionlessNameAlone) { Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen")); }
+      TEST_METHOD(RemoveExtensionKeepsTheDirectory) { Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen.shp").c_str()); }
 
-      TEST_METHOD(RemoveExtensionStripsOnlyTheLastExtension) { Assert::AreEqual("archive.tar", RemoveExtension("archive.tar.gz")); }
+      TEST_METHOD(RemoveExtensionLeavesAnExtensionlessNameAlone) { Assert::AreEqual("Shapes/citizen", RemoveExtension("Shapes/citizen").c_str()); }
+
+      TEST_METHOD(RemoveExtensionStripsOnlyTheLastExtension) { Assert::AreEqual("archive.tar", RemoveExtension("archive.tar.gz").c_str()); }
   };
 
   // ListDirectory and ListSubDirectoryNames used to return an LList<char*>;

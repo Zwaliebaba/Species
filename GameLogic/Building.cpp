@@ -110,8 +110,8 @@ void Building::Initialise(Building* _template)
     m_centrePos = m_shape->CalculateCentre(mat);
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 
-    SetShapeLights(m_shape->m_rootFragment);
-    SetShapePorts(m_shape->m_rootFragment);
+    SetShapeLights(m_shape->m_rootFragment.get());
+    SetShapePorts(m_shape->m_rootFragment.get());
   }
   else
   {
@@ -138,7 +138,7 @@ void Building::SetDetail(int _detail)
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 
     EmptyAndDelete(m_ports);
-    SetShapePorts(m_shape->m_rootFragment);
+    SetShapePorts(m_shape->m_rootFragment.get());
   }
   else
   {
@@ -168,7 +168,7 @@ void Building::SetShapeLights(ShapeFragment* _fragment)
 
   for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
   {
-    ShapeMarker* marker = _fragment->m_childMarkers[i];
+    ShapeMarker* marker = _fragment->m_childMarkers[i].get();
     if (strstr(marker->m_name, "MarkerLight"))
     {
       m_lights.push_back(marker);
@@ -181,7 +181,7 @@ void Building::SetShapeLights(ShapeFragment* _fragment)
 
   for (i = 0; i < static_cast<int>(_fragment->m_childFragments.size()); ++i)
   {
-    ShapeFragment* fragment = _fragment->m_childFragments[i];
+    ShapeFragment* fragment = _fragment->m_childFragments[i].get();
     SetShapeLights(fragment);
   }
 }
@@ -198,7 +198,7 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
 
   for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
   {
-    ShapeMarker* marker = _fragment->m_childMarkers[i];
+    ShapeMarker* marker = _fragment->m_childMarkers[i].get();
     if (strstr(marker->m_name, "MarkerPort"))
     {
       BuildingPort* port = new BuildingPort();
@@ -222,7 +222,7 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
 
   for (i = 0; i < static_cast<int>(_fragment->m_childFragments.size()); ++i)
   {
-    ShapeFragment* fragment = _fragment->m_childFragments[i];
+    ShapeFragment* fragment = _fragment->m_childFragments[i].get();
     SetShapePorts(fragment);
   }
 }
@@ -431,7 +431,7 @@ void Building::EvaluatePorts()
       else
       {
         port->m_counter[t] -= 4;
-        port->m_counter[t] = max(port->m_counter[t], 0);
+        port->m_counter[t] = std::max(port->m_counter[t], 0);
       }
     }
   }
@@ -664,7 +664,7 @@ void Building::OperatePort(int _portId, int _teamId)
   {
     BuildingPort* port = m_ports[_portId];
     port->m_counter[_teamId]++;
-    port->m_counter[_teamId] = min(port->m_counter[_teamId], 50);
+    port->m_counter[_teamId] = std::min(port->m_counter[_teamId], 50);
   }
 }
 

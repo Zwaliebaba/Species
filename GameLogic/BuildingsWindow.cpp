@@ -273,9 +273,9 @@ void BuildingEditWindow::Create()
     RegisterButton(tb);
   }
 
-  CreateValueControl(LANGUAGEPHRASE("editor_dynamic"), InputField::TypeChar, &building->m_dynamic, y += buttonPitch, 1.0f, 0, 1);
+  CreateValueControl(LANGUAGEPHRASE("editor_dynamic"), &building->m_dynamic, y += buttonPitch, 1.0f, 0, 1);
 
-  CreateValueControl(LANGUAGEPHRASE("editor_isglobal"), InputField::TypeChar, &building->m_isGlobal, y += buttonPitch, 1.0f, 0, 1);
+  CreateValueControl(LANGUAGEPHRASE("editor_isglobal"), &building->m_isGlobal, y += buttonPitch, 1.0f, 0, 1);
 
   if (building->m_type == Building::TypeFactory)
   {
@@ -296,7 +296,7 @@ void BuildingEditWindow::Create()
   else if (building->m_type == Building::TypeLaserFence)
   {
     LaserFence* fence = (LaserFence*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_scale"), InputField::TypeFloat, &fence->m_scale, y += buttonPitch, 0.01f, 0.0f, 100.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_scale"), &fence->m_scale, y += buttonPitch, 0.01f, 0.0f, 100.0f);
 
     DropDownMenu* menu = new DropDownMenu(true);
     menu->SetShortProperties(LANGUAGEPHRASE("editor_mode"), 10, y += buttonPitch, m_w - 20);
@@ -311,13 +311,13 @@ void BuildingEditWindow::Create()
   else if (building->m_type == Building::TypeAntHill)
   {
     AntHill* antHill = (AntHill*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_numants"), InputField::TypeInt, &antHill->m_numAntsInside, y += buttonPitch, 1, 0, 1000);
+    CreateValueControl(LANGUAGEPHRASE("editor_numants"), &antHill->m_numAntsInside, y += buttonPitch, 1, 0, 1000);
   }
   else if (building->m_type == Building::TypeSafeArea)
   {
     SafeArea* safeArea = (SafeArea*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_size"), InputField::TypeFloat, &safeArea->m_size, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_capacity"), InputField::TypeInt, &safeArea->m_entitiesRequired, y += buttonPitch, 1, 0, 10000);
+    CreateValueControl(LANGUAGEPHRASE("editor_size"), &safeArea->m_size, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_capacity"), &safeArea->m_entitiesRequired, y += buttonPitch, 1, 0, 10000);
 
     DropDownMenu* menu = new DropDownMenu(true);
     menu->SetShortProperties(LANGUAGEPHRASE("editor_entitytype"), 10, y += buttonPitch, m_w - 20);
@@ -331,17 +331,17 @@ void BuildingEditWindow::Create()
   else if (building->m_type == Building::TypeTrackStart)
   {
     TrackStart* trackStart = (TrackStart*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_toggledby"), InputField::TypeInt, &trackStart->m_reqBuildingId, y += buttonPitch, 1.0f, -1.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_toggledby"), &trackStart->m_reqBuildingId, y += buttonPitch, 1.0f, -1.0f, 1000.0f);
   }
   else if (building->m_type == Building::TypeTrackEnd)
   {
     TrackEnd* trackEnd = (TrackEnd*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_toggledby"), InputField::TypeInt, &trackEnd->m_reqBuildingId, y += buttonPitch, 1.0f, -1.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_toggledby"), &trackEnd->m_reqBuildingId, y += buttonPitch, 1.0f, -1.0f, 1000.0f);
   }
   else if (building->m_type == Building::TypePylonStart)
   {
     PylonStart* pylonStart = (PylonStart*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_toggledby"), InputField::TypeInt, &pylonStart->m_reqBuildingId, y += buttonPitch, 1.0f, -1.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_toggledby"), &pylonStart->m_reqBuildingId, y += buttonPitch, 1.0f, -1.0f, 1000.0f);
   }
   else if (building->m_type == Building::TypeResearchItem)
   {
@@ -353,38 +353,36 @@ void BuildingEditWindow::Create()
     }
     menu->RegisterInt(&((ResearchItem*)building)->m_researchType);
     RegisterButton(menu);
-    CreateValueControl(LANGUAGEPHRASE("editor_level"), InputField::TypeInt, &((ResearchItem*)building)->m_level, y += buttonPitch, 1, 0, 4);
+    CreateValueControl(LANGUAGEPHRASE("editor_level"), &((ResearchItem*)building)->m_level, y += buttonPitch, 1, 0, 4);
   }
   else if (building->m_type == Building::TypeTriffid)
   {
     Triffid* triffid = (Triffid*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_size"), InputField::TypeFloat, &triffid->m_size, y += buttonPitch, 0.1f, 0.0f, 50.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_pitch"), InputField::TypeFloat, &triffid->m_pitch, y += buttonPitch, 0.1f, -M_PI, M_PI);
-    CreateValueControl(LANGUAGEPHRASE("editor_force"), InputField::TypeFloat, &triffid->m_force, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_variance"), InputField::TypeFloat, &triffid->m_variance, y += buttonPitch, 0.01f, 0.0f, M_PI);
-    CreateValueControl(LANGUAGEPHRASE("editor_reload"), InputField::TypeFloat, &triffid->m_reloadTime, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_size"), &triffid->m_size, y += buttonPitch, 0.1f, 0.0f, 50.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_pitch"), &triffid->m_pitch, y += buttonPitch, 0.1f, -M_PI, M_PI);
+    CreateValueControl(LANGUAGEPHRASE("editor_force"), &triffid->m_force, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_variance"), &triffid->m_variance, y += buttonPitch, 0.01f, 0.0f, M_PI);
+    CreateValueControl(LANGUAGEPHRASE("editor_reload"), &triffid->m_reloadTime, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
 
     for (int i = 0; i < Triffid::NumSpawnTypes; ++i)
     {
-      CreateValueControl(Triffid::GetSpawnNameTranslated(i), InputField::TypeChar, &triffid->m_spawn[i], y += buttonPitch, 1.0f, 0.0f, 1.0f);
+      CreateValueControl(Triffid::GetSpawnNameTranslated(i), &triffid->m_spawn[i], y += buttonPitch, 1.0f, 0.0f, 1.0f);
     }
 
-    CreateValueControl(LANGUAGEPHRASE("editor_usetrigger"), InputField::TypeChar, &triffid->m_useTrigger, y += buttonPitch, 1, 0, 1);
-    CreateValueControl(LANGUAGEPHRASE("editor_triggerX"), InputField::TypeFloat, &triffid->m_triggerLocation.x, y += buttonPitch, 1.0f, -10000.0f,
-                       10000.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_triggerZ"), InputField::TypeFloat, &triffid->m_triggerLocation.z, y += buttonPitch, 1.0f, -10000.0f,
-                       10000.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_triggerrad"), InputField::TypeFloat, &triffid->m_triggerRadius, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_usetrigger"), &triffid->m_useTrigger, y += buttonPitch, 1, 0, 1);
+    CreateValueControl(LANGUAGEPHRASE("editor_triggerX"), &triffid->m_triggerLocation.x, y += buttonPitch, 1.0f, -10000.0f, 10000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_triggerZ"), &triffid->m_triggerLocation.z, y += buttonPitch, 1.0f, -10000.0f, 10000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_triggerrad"), &triffid->m_triggerRadius, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
   }
   else if (building->m_type == Building::TypeBlueprintRelay)
   {
     BlueprintRelay* relay = (BlueprintRelay*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_altitude"), InputField::TypeFloat, &relay->m_altitude, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_altitude"), &relay->m_altitude, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
   }
   else if (building->m_type == Building::TypeBlueprintConsole)
   {
     BlueprintConsole* console = (BlueprintConsole*)building;
-    CreateValueControl(LANGUAGEPHRASE("editor_segment"), InputField::TypeInt, &console->m_segment, y += buttonPitch, 1, 0, 3);
+    CreateValueControl(LANGUAGEPHRASE("editor_segment"), &console->m_segment, y += buttonPitch, 1, 0, 3);
   }
   else if (building->m_type == Building::TypeAISpawnPoint)
   {
@@ -398,16 +396,16 @@ void BuildingEditWindow::Create()
     menu->RegisterInt(&spawn->m_entityType);
     RegisterButton(menu);
 
-    CreateValueControl(LANGUAGEPHRASE("editor_count"), InputField::TypeInt, &spawn->m_count, y += buttonPitch, 1, 0, 1000);
-    CreateValueControl(LANGUAGEPHRASE("editor_period"), InputField::TypeInt, &spawn->m_period, y += buttonPitch, 1, 0, 1000);
-    CreateValueControl(LANGUAGEPHRASE("editor_spawnlimit"), InputField::TypeInt, &spawn->m_spawnLimit, y += buttonPitch, 1, 0, 1000);
+    CreateValueControl(LANGUAGEPHRASE("editor_count"), &spawn->m_count, y += buttonPitch, 1, 0, 1000);
+    CreateValueControl(LANGUAGEPHRASE("editor_period"), &spawn->m_period, y += buttonPitch, 1, 0, 1000);
+    CreateValueControl(LANGUAGEPHRASE("editor_spawnlimit"), &spawn->m_spawnLimit, y += buttonPitch, 1, 0, 1000);
   }
   else if (building->m_type == Building::TypeSpawnPopulationLock)
   {
     SpawnPopulationLock* lock = (SpawnPopulationLock*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_searchradius"), InputField::TypeFloat, &lock->m_searchRadius, y += buttonPitch, 1.0f, 0.0f, 10000.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_maxpopulation"), InputField::TypeInt, &lock->m_maxPopulation, y += buttonPitch, 1, 0, 10000);
+    CreateValueControl(LANGUAGEPHRASE("editor_searchradius"), &lock->m_searchRadius, y += buttonPitch, 1.0f, 0.0f, 10000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_maxpopulation"), &lock->m_maxPopulation, y += buttonPitch, 1, 0, 10000);
   }
   else if (building->m_type == Building::TypeSpawnLink || building->m_type == Building::TypeSpawnPointMaster ||
            building->m_type == Building::TypeSpawnPoint)
@@ -432,8 +430,8 @@ void BuildingEditWindow::Create()
   {
     ScriptTrigger* trigger = (ScriptTrigger*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_range"), InputField::TypeFloat, &trigger->m_range, y += buttonPitch, 0.5f, 0.0f, 1000.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_script"), InputField::TypeString, trigger->m_scriptFilename, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_range"), &trigger->m_range, y += buttonPitch, 0.5f, 0.0f, 1000.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_script"), trigger->m_scriptFilename, y += buttonPitch, 0, 0, 0);
 
     DropDownMenu* menu = new DropDownMenu(true);
     menu->SetShortProperties(LANGUAGEPHRASE("editor_entitytype"), 10, y += buttonPitch, m_w - 20);
@@ -452,43 +450,42 @@ void BuildingEditWindow::Create()
   {
     StaticShape* staticShape = (StaticShape*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_scale"), InputField::TypeFloat, &staticShape->m_scale, y += buttonPitch, 0.1f, 0.0f, 100.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_shape"), InputField::TypeString, &staticShape->m_shapeName, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_scale"), &staticShape->m_scale, y += buttonPitch, 0.1f, 0.0f, 100.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_shape"), staticShape->m_shapeName, y += buttonPitch, 0, 0, 0);
   }
   else if (building->m_type == Building::TypeIncubator)
   {
-    CreateValueControl(LANGUAGEPHRASE("editor_spirits"), InputField::TypeInt, &((Incubator*)building)->m_numStartingSpirits, y += buttonPitch, 1, 0,
-                       1000);
+    CreateValueControl(LANGUAGEPHRASE("editor_spirits"), &((Incubator*)building)->m_numStartingSpirits, y += buttonPitch, 1, 0, 1000);
   }
   else if (building->m_type == Building::TypeEscapeRocket)
   {
     EscapeRocket* rocket = (EscapeRocket*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_fuel"), InputField::TypeFloat, &rocket->m_fuel, y += buttonPitch, 0.1f, 0.0f, 100.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_passengers"), InputField::TypeInt, &rocket->m_passengers, y += buttonPitch, 1, 0, 100);
-    CreateValueControl(LANGUAGEPHRASE("editor_spawnport"), InputField::TypeInt, &rocket->m_spawnBuildingId, y += buttonPitch, 1, 0, 9999);
+    CreateValueControl(LANGUAGEPHRASE("editor_fuel"), &rocket->m_fuel, y += buttonPitch, 0.1f, 0.0f, 100.0f);
+    CreateValueControl(LANGUAGEPHRASE("editor_passengers"), &rocket->m_passengers, y += buttonPitch, 1, 0, 100);
+    CreateValueControl(LANGUAGEPHRASE("editor_spawnport"), &rocket->m_spawnBuildingId, y += buttonPitch, 1, 0, 9999);
   }
   else if (building->m_type == Building::TypeDynamicHub)
   {
     DynamicHub* hub = (DynamicHub*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_shape"), InputField::TypeString, &hub->m_shapeName, y += buttonPitch, 0, 0, 0);
-    CreateValueControl(LANGUAGEPHRASE("editor_requiredscore"), InputField::TypeInt, &hub->m_requiredScore, y += buttonPitch, 1, 0, 100000);
-    CreateValueControl(LANGUAGEPHRASE("editor_minlinks"), InputField::TypeInt, &hub->m_minActiveLinks, y += buttonPitch, 1, 0, 100);
+    CreateValueControl(LANGUAGEPHRASE("editor_shape"), hub->m_shapeName, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_requiredscore"), &hub->m_requiredScore, y += buttonPitch, 1, 0, 100000);
+    CreateValueControl(LANGUAGEPHRASE("editor_minlinks"), &hub->m_minActiveLinks, y += buttonPitch, 1, 0, 100);
   }
   else if (building->m_type == Building::TypeDynamicNode)
   {
     DynamicNode* node = (DynamicNode*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_shape"), InputField::TypeString, &node->m_shapeName, y += buttonPitch, 0, 0, 0);
-    CreateValueControl(LANGUAGEPHRASE("editor_pointspersec"), InputField::TypeInt, &node->m_scoreValue, y += buttonPitch, 1, 0, 1000);
+    CreateValueControl(LANGUAGEPHRASE("editor_shape"), node->m_shapeName, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_pointspersec"), &node->m_scoreValue, y += buttonPitch, 1, 0, 1000);
   }
   else if (building->m_type == Building::TypeFenceSwitch)
   {
     FenceSwitch* fs = (FenceSwitch*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_switchonce"), InputField::TypeInt, &fs->m_lockable, y += buttonPitch, 0, 1, 0);
-    CreateValueControl(LANGUAGEPHRASE("editor_script"), InputField::TypeString, &fs->m_script, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_switchonce"), &fs->m_lockable, y += buttonPitch, 0, 1, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_script"), fs->m_script, y += buttonPitch, 0, 0, 0);
   }
 }
 

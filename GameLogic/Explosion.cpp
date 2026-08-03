@@ -266,7 +266,7 @@ void ExplosionManager::AddExplosion(ShapeFragment* _frag, Matrix34 const& _trans
 
     for (int i = 0; i < static_cast<int>(_frag->m_childFragments.size()); ++i)
     {
-      ShapeFragment* child = _frag->m_childFragments[i];
+      ShapeFragment* child = _frag->m_childFragments[i].get();
       AddExplosion(child, totalMatrix, true, _fraction);
     }
   }
@@ -276,7 +276,7 @@ void ExplosionManager::AddExplosion(ShapeFragment* _frag, Matrix34 const& _trans
 void ExplosionManager::AddExplosion(Shape* _shape, Matrix34 const& _transform, float _fraction)
 {
   if (_fraction > 0.0f)
-    AddExplosion(_shape->m_rootFragment, _transform, true, _fraction);
+    AddExplosion(_shape->m_rootFragment.get(), _transform, true, _fraction);
 }
 
 

@@ -132,6 +132,47 @@ tasks:
       rebases. There is deliberately no blocked_by edge here: a collision is
       not an ordering, and inventing one would serialise two tasks that are
       genuinely independent.
+
+      DONE 2026-08-03, in three commits: the pinning tests, a whole-file reformat
+      of the four tab-indented netcode files, then the conversion.
+
+      ONE OF THE THREE IS NOT A WIRE ENUM, and this task's intent says it is.
+      NetRetCode never reaches a byte stream — grep for it alongside WRITE_, READ_
+      or byteStream returns nothing. It is a return code from the socket layer.
+      So it is `enum class NetRetCode : int` (int because NetFailed is -1) with no
+      pinning test, and the header now says why it has none. UpdateType and
+      LetterType really are the protocol: both go out as WRITE_INT and come back
+      as READ_INT.
+
+      THE PINNING TESTS ARE THE POINT and they landed first, in their own commit,
+      so the conversion had to preserve the numbers rather than assert whatever it
+      produced. Nothing had pinned them before: the byte-layout tests fix the SIZE
+      of the type field, not the meaning of what is in it, so reordering the enum
+      was a protocol break that compiled, linked and passed every test.
+
+      Scoping the enums moved every enumerator: NetworkUpdate::ClientJoin is
+      NetworkUpdate::UpdateType::ClientJoin now, 49 sites, and the letter's five
+      are 21 more. NetRetCode's seven are 42. The switch labels inside the two
+      owning .cpp files needed the same treatment.
+
+      READ_INT CANNOT SIT INSIDE A FUNCTION-STYLE CAST, and that cost a red
+      build. The macro expands to `*((int*)_stream); _stream += sizeof(int);` —
+      TWO statements. A static_cast has to parenthesise its argument, which puts
+      a `;` inside the parentheses; the C cast it replaced worked only because
+      it binds to the first sub-expression and lets the pointer advance follow
+      it. The fix reads into an `int` first, which makes the macro's shape
+      visible rather than load-bearing. WRITE_INT takes a cast argument fine,
+      because the value lands in the macro's first statement.
+
+      That is a property of every READ_ macro in ByteStream.h, not just this
+      one. Anyone modernising a cast at a deserialisation site hits it.
+
+      TWO MISTAKES THE SCRIPT MADE, both caught before committing and both worth
+      expecting next time. It qualified the enumerator DECLARATIONS inside
+      NetLib.h — the one file where the enumerators appear unqualified in the
+      definition rather than at a use site — and it rewrote six comment lines in
+      NetSocket.h that merely mention the names. The first would not compile; the
+      second would have been prose churn in a task whose diff should be code.
     acceptance:
       - Each enumerator's numeric value is asserted by a test that passes on both sides of the conversion
       - The three enums are enum class with an explicit underlying type
@@ -140,31 +181,170 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
 
   - id: T4
-    title: Convert the input-system enums to enum class
+    title: Convert InputMode and InputParserState to enum class
     intent: >
-      ControlType, InputType, InputMode, InputCondition and InputParserState
-      thread through the whole driver stack but never cross the wire —
-      NetworkUpdate carries sequenced intent, not raw input codes. Converting
-      them hardens the input layer's type boundaries. ControlTypes.h is
-      generated-table-adjacent (ControlTypes.inc); the conversion keeps the
-      table mechanism working.
+      The two input-system enums that are only ever used as themselves. Neither
+      crosses the wire, neither is a bit field, and neither has an int typedef
+      standing in for it — which is what separates them from the other three
+      the old T4 tried to carry (see T9). Converting them hardens the driver
+      stack's type boundaries without touching the parts of it that treat an
+      enum as an integer.
     project: NeuronClient
     depends_on: []
     files:
-      - NeuronClient/ControlTypes.h
       - NeuronClient/InputTypes.h
       - NeuronClient/InputDriver.h
+      - NeuronClient/LanguageTable.h
+      - NeuronClient/LanguageTable.cpp
+      - NeuronClient/Input.cpp
+      - NeuronClient/SepulvedaStrings.cpp
+      - NeuronClient/InputDriverSimple.cpp
+      - NeuronClient/InputDriverPipe.cpp
+      - NeuronClient/InputDriverPrefs.cpp
+      - NeuronClient/InputDriverInvert.cpp
+      - NeuronClient/InputDriverValue.cpp
+      - NeuronClient/InputDriverChord.cpp
+      - NeuronClient/InputDriverConjoin.cpp
+      - NeuronClient/InputDriverAlias.cpp
+      - Species/Main.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/ControlHelp.cpp
+      - Species/Renderer.cpp
     acceptance:
-      - The five enums are enum class; every use site compiles without C-style casts back to int except at documented table boundaries
-      - grep -E "^\s*enum\s+[A-Za-z]" over NeuronClient headers returns nothing
+      - InputMode and InputParserState are enum class with an explicit underlying type
+      - No use site casts either of them back to int
+      - grep -cEow "INPUT_MODE_[A-Z_]*|STATE_[A-Z_]*" over the six projects is unchanged at 119, and every one is qualified
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: done
+    notes: |
+      RE-SCOPED 2026-08-03, before starting, on a measurement the original task
+      did not have. It listed three files and five enums. The five enums have
+      795 use sites across 39 files, and three of them cannot be converted the
+      way this task describes — those three are now T9.
+
+      What stayed here, with counts at fdf9421: INPUT_MODE_* 47 sites in 14
+      files, STATE_* 72 sites in 19 files. Larger than "three files" but
+      mechanical: both are plain sequential enums used only as themselves, so
+      the conversion is qualification plus an underlying type.
+
+      The file list above is the measured one and includes Species/, which the
+      original did not mention at all — INPUT_MODE_ reaches Main.cpp (7),
+      TaskManagerInterfaceIcons.cpp (8) and three more files up there.
+
+      The old acceptance line "grep -E for a plain enum over NeuronClient
+      headers returns nothing" is dropped, because it was never this task's to
+      satisfy: CameraAccess.h declares `enum Mode`, and language-hygiene T5
+      owns it. A criterion a task cannot meet by doing its own work is a
+      criterion that gets ignored or gets the wrong thing done to satisfy it.
+
+      DONE 2026-08-03. 119 sites across 22 files, plus a whole-file reformat of
+      the same 22 first. Both enums were confirmed free of integer interop
+      before starting — no comparison against a literal, no array indexing, no
+      arithmetic — which is what made them the safe half of the old T4.
+
+      Written with T3's two mistakes designed out rather than repeated: the
+      script leaves the enumerator DECLARATIONS bare, and skips comment lines
+      and any line containing a string literal. T3 had to be repaired for both.
+
+      THREE RED BUILDS ON THIS TASK, all the same root cause: I surveyed for
+      integer interop by grepping the NAMES of variables I expected to hold the
+      enum, and the interop was in shapes I had not listed. The three that got
+      through were `errors[state]` (subscripting), `if (_key && _mood)` (boolean
+      context, meaning "not INPUT_MODE_NONE" because that enumerator is 0), and
+      `static int oldControlType = InputMode::INPUT_MODE_KEYBOARD` in Main.cpp
+      (an int variable holding the enum).
+
+      The survey that works is by SHAPE, not by name. For any enum about to be
+      scoped, grep for: the enum used as a subscript, in a boolean or arithmetic
+      context, and any `int`/`bool` variable initialised from one of its
+      enumerators. The last of those is a one-line grep and would have caught
+      the third failure:
+      grep -rnE '\b(int|bool|unsigned|short|char)\s+\w*\s*=\s*EnumName::'
+
+      AND A FOURTH, which is not interop at all but the same failure to
+      enumerate a shape: an enumerator reached through the ENCLOSING CLASS,
+      `TaskManagerInterface::TMTerminate`. A qualification pass keyed on
+      "enumerator not preceded by ::" skips those by construction, because they
+      are preceded by ::. It needs a second pass for `Class::Enumerator` ->
+      `Class::Enum::Enumerator`. FootState hit this and was handled; TMControl
+      hit it and was not, in a different file. The check that closes it:
+      grep -rnE '\w+::(Enumerator1|Enumerator2)' | grep -v 'EnumName::'
+
+
+      PARSE_SUCCESS in InputDriver.h is a use site, not a declaration, so the
+      macro now reads `(InputParserState::STATE_DONE == (x))` — worth noting
+      because a macro body is the one place a scoped enumerator is easy to miss.
+
+  - id: T9
+    title: Convert the enums that int typedefs stand in for
+    intent: >
+      ControlType, InputType, InputCondition and — as of T5 — Camera::Mode are
+      the enums the old T4 could not have carried. Each has an `int` typedef used interchangeably with it
+      across the driver API — controltype_t, inputtype_t and condition_t — so
+      making the enum strong means deciding what those typedefs become, and
+      that is an API change to ControlBindings and InputDriver rather than a
+      keyword swap. InputType is additionally a BIT FIELD, so enum class costs
+      it the operators it is built on.
+    project: NeuronClient
+    depends_on: [T4]
+    files:
+      - NeuronClient/ControlTypes.h
+      - NeuronClient/InputTypes.h
+      - NeuronClient/InputSpec.h
+      - NeuronClient/InputDriver.h
+      - NeuronClient/ControlBindings.h
+      - NeuronClient/ControlBindings.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/CameraAccess.h
+      - Species/Camera.h
+      - Species/Camera.cpp
+    acceptance:
+      - The three enums are enum class with an explicit underlying type
+      - controltype_t, inputtype_t and condition_t either name the enum type or are gone; no signature takes a bare int where an enumerator is meant
+      - InputType's bitwise operators are defined on the enum class rather than reached through a cast, and INPUT_TYPE_1D still implies ANALOG
+      - The 421 Control* and 216 INPUT_TYPE_* use sites compile without a C-style cast, except at the ControlTypes.inc table boundary, which is listed in notes
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
-    parallel_safe: true
+      - Owner runs the Garden smoke test — every step needs input to work at all
+    parallel_safe: false
     status: todo
+    notes: |
+      Split out of T4 on 2026-08-03, measured at fdf9421 before either was
+      started. The three things that make this its own task, none of which the
+      original T4 mentions:
+
+      (1) THE INT TYPEDEFS. InputSpec.h has `typedef int inputtype_t` and
+      `typedef int condition_t`, ControlTypes.h has `typedef int
+      controltype_t`, and 46 sites use them where the enum is meant —
+      ControlBindings::getControlID RETURNS controltype_t, operator[] and bind
+      TAKE it. Converting the enum without deciding what these become leaves an
+      implicit conversion the enum class was supposed to remove.
+
+      (2) INPUT_TYPE_* IS A BIT FIELD, which the enumerator values say out
+      loud: FAIL 0, BOOL 1, ANALOG 2, 1D 6, 2D 10, ANY 15 — 1D and 2D both
+      carry ANALOG's bit, and ControlBindings.cpp:52-53 tests and ORs them.
+      enum class has no bitwise operators, so this needs them defined or it
+      needs to stay a plain enum with a documented reason. That is a design
+      decision, not a conversion.
+
+      (3) AN INTEGER LOOP OVER THE RANGE. Input.cpp:293 runs
+      `for (controltype_t i = 0; i < NumControlTypes; ++i)`. NeuronHelper.h's
+      ENUM_HELPER is what this plan's T5 points at for exactly this case.
+
+      Also worth knowing before starting: ControlTypes.h builds its enumerators
+      by including ControlTypes.inc through a DEF_CONTROL_TYPE macro, so the
+      enumerator list is generated and the table in ControlTypes.cpp is keyed
+      to it positionally. The two must not drift.
 
   - id: T5
     title: Convert the game-side enums to enum class
@@ -195,11 +375,42 @@ tasks:
       Re-measured 2026-08-02 at 11aee84: 12 plain enums in headers, not 11,
       and `enum class` appears once in the tree. Re-derive the list when
       starting — the twelfth is not identified here.
+
+      DONE 2026-08-03 for TWO of the three. FootState and TMControl are scoped;
+      Camera::Mode is NOT, and moved to T9.
+
+      CAMERA::MODE BELONGS WITH THE INT-TYPEDEF ENUMS. Camera stores
+      `int m_mode` and RequestMode takes `int _mode`, so scoping the enum breaks
+      every comparison and every call — it is the same shape as ControlType and
+      InputCondition, not a keyword swap. The comment above the enum in
+      CameraAccess.h said exactly this and I scoped it before reading it. Read
+      the comment above an enum before converting it; on this one the previous
+      agent had already done the analysis.
+
+      The serialisation check the acceptance asks for: none of the three reaches
+      a file or the wire, and nothing indexes an array with one. Camera.h's
+      "remember to update the static string table at the end of camera.cpp" is
+      STALE — that table does not exist; the only thing left there is a
+      commented-out switch.
+
+      TWO FINDINGS FROM THE CONVERSION, both preserved rather than fixed.
+
+      Tripod.cpp tested `!m_foot.m_state == EntityFoot::OnGround` twice. That
+      parses as `(!state) == OnGround`, and because OnGround is 0 it was
+      ACCIDENTALLY equivalent to `state != OnGround` — which is what it meant.
+      A scoped enum has no operator!, so the accident is written out as the
+      intent, with the same result.
+
+      The four input drivers index a nine-string error table with a ten-value
+      InputParserState, so errors[STATE_DONE] reads past the end and every
+      message from STATE_WANT_OPTIONAL on is off by one. Surfaced by T4, which
+      had to look at the indexing to compile it; recorded at all four sites and
+      not fixed, because changing which string the parser reports is a decision.
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
 
   - id: T6
     title: Delete the dead platform files
@@ -329,5 +540,80 @@ tasks:
 
       parallel_safe false: 51 files, and the include-order sensitivity means a
       half-landed version is worse than either end state.
-    status: todo
+
+      DONE 2026-08-03. 216 grep matches at b0bde71, which resolve to 202 call
+      sites: 2 were the macro definitions and 12 are inside commented-out code
+      or prose, left alone. 188 converted mechanically, 12 needed an explicit
+      type, 2 were preserved verbatim. 50 files.
+
+      THE FINDING THAT MATTERS, and it is not a formatting one. Spirit.cpp
+      wrote `max(m_hover.y, 0.0f + syncfrand(0.5f))` in StateBirth and the same
+      shape with syncfrand(2.0f) in StateDeath. The macro evaluates its second
+      argument TWICE — once in the comparison, once to produce the result — so
+      when m_hover.y loses the comparison, syncfrand() is called a second time
+      and THAT second draw is what lands in m_hover.y. Two consequences:
+      the expression does not compute a maximum (the value stored can be lower
+      than m_hover.y), and the number of draws from the synchronised stream
+      depends on the comparison. syncrand() is the deterministic lockstep RNG,
+      and CODING_STANDARDS.md#determinism names its call sequence as network
+      identity.
+
+      Both sites are preserved EXACTLY, written out as the conditional the
+      macro expanded to, with the reason in a comment at the call site.
+      Collapsing them to std::max would have been a one-character-looking
+      change that altered the RNG sequence — the precise failure this plan's
+      determinism paragraph warns about, found in the wild rather than
+      theorised. Whether the double draw is intended is an owner question and
+      a behaviour change either way; it is deliberately NOT decided here.
+
+      TWELVE MIXED-TYPE SITES, which is the other thing a sweep would have got
+      wrong. The macro's conditional operator applies the usual arithmetic
+      conversions, so `max(pos.x, 20)` compiled and returned a float;
+      std::max cannot deduce from (float, int) and fails. Each was rewritten to
+      the type the conditional operator produced, not to the type that looked
+      tidy: Rocket's maxLoops and m_surges are floats compared against integer
+      literals, Centipede's newHealth likewise, Armour's and Engineer's speed
+      clamps compare a float against an `unsigned char` stat, Camera's
+      forwardSpeed against 1000/2000, Location's pos.x/pos.z against 20, and
+      `int numDebris = max(1, <float>)` needed a static_cast<int> around a
+      float std::max to keep the same truncation.
+
+      ONE OF THEM IS A DIFFERENT NUMBER IF WRITTEN NAIVELY.
+      Camera::AdvanceMoveToTargetMode clamps a DOUBLE against the literal 0.2f.
+      The macro promoted 0.2f to double — 0.20000000298023224 — and writing
+      std::max(x, 0.2) would substitute 0.2000000000000000111. It is
+      static_cast<double>(0.2f), with the arithmetic in a comment, because the
+      acceptance criterion is "no change to any computed value" and this is
+      exactly the kind of change that hides inside a tidy-up.
+
+      DOUBLE EVALUATION ELSEWHERE, all benign and all now single: four
+      heightmap GetValue lookups (Engineer x3, Water), Spam's landHeight, and
+      SoundLibrary3dDSound's GetMaxChannels. Same values, one call instead of
+      two. Species/Script.cpp's `max(m_waitUntil, GetHighResTime() + _time)`
+      read the CLOCK twice and used the second reading; it reads once now,
+      which is a real behaviour change of sub-microsecond size on a real-time
+      script wait, not on anything the simulation sees.
+
+      TWELVE MATCHES LEFT, all in commented-out code: InvertMatrix's two prose
+      comments, four commented-out assignments (SoulDestroyer, Armour, Camera,
+      GameMenu), and six inside the /* ... */ block that spans GameCursor.cpp
+      772-953. That block is why SELECTION_ARROWS_MAX_ALPHA and BOOST_FADE_RATE
+      are used in that file and defined nowhere in the tree — worth knowing
+      before someone greps for them. Rewriting dead comments is noise, so they
+      were left; none is a call site.
+
+      MessageDialog.cpp needed a whole-file reformat first, in its own commit.
+      It is tab-indented legacy and two converted lines sit in one hunk with
+      untouched lines between them, so the changed-lines format check
+      reformatted those too and each --fix pass dragged in the next adjacent
+      line. It was the only one of the fifty that did.
+
+      NOT COMPILED HERE. This was done on Linux; the six Python checks pass and
+      nothing else was run. Every mixed-type site is a compile error if the
+      analysis is wrong, which makes CI's x64 Debug build the real verification
+      — and a green build is still not evidence that the game runs. The two
+      Spirit.cpp sites are argued from the code and are not covered by any
+      test; the Garden smoke test would not catch a changed RNG sequence in
+      single player either.
+    status: done
 

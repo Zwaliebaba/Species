@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include <stdio.h>
@@ -65,8 +66,12 @@ class ShapeMarker
     Matrix34 m_transform;
     char* m_name;
     char* m_parentName;
-    int m_depth;               // Number of levels in the shape fragment tree from root to self
-    ShapeFragment** m_parents; // An array with m_depth elements
+    int m_depth; // Number of levels in the shape fragment tree from root to self
+    // Observers into the fragment tree, which owns them — the commented-out
+    // "should we?" delete loop that used to sit in the destructor is answered
+    // here: no. It was a `new ShapeFragment*[m_depth]` released with plain
+    // `delete`, which is undefined behaviour; a vector removes both questions.
+    std::vector<ShapeFragment*> m_parents;
 
     ShapeMarker(char const* _name, char* _parentName, int _depth, Matrix34 const& _transform);
     ShapeMarker(TextReader* _in, char const* _name);
@@ -148,8 +153,10 @@ class ShapeFragment
     float m_mostPositiveY;
     float m_mostNegativeY;
 
-    std::vector<ShapeFragment*> m_childFragments;
-    std::vector<ShapeMarker*> m_childMarkers;
+    // The fragment tree owns its children. ShapeMarker::m_parents points back
+    // up into it and does not.
+    std::vector<std::unique_ptr<ShapeFragment>> m_childFragments;
+    std::vector<std::unique_ptr<ShapeMarker>> m_childMarkers;
 
     ShapeFragment(TextReader* _in, char const* _name);
     ShapeFragment(char const* _name, char const* _parentName);
@@ -196,7 +203,7 @@ class Shape
     char* m_displayListName;
 
   public:
-    ShapeFragment* m_rootFragment;
+    std::unique_ptr<ShapeFragment> m_rootFragment;
     char* m_name;
 
     Shape();

@@ -116,9 +116,9 @@ void LightsEditWindow::Create()
   RegisterButton(newLight);
 
   LightButton* button = new LightButton(-1);
-  char buttonName[64];
-  sprintf(buttonName, LANGUAGEPHRASE("editor_deselectlights"));
-  button->SetShortProperties(buttonName, 10, height += pitch, m_w - 20);
+  std::string buttonName;
+  buttonName = LANGUAGEPHRASE("editor_deselectlights");
+  button->SetShortProperties(buttonName.c_str(), 10, height += pitch, m_w - 20);
   RegisterButton(button);
 
   height += 6;
@@ -128,8 +128,8 @@ void LightsEditWindow::Create()
     button = new LightButton(i);
 
     Light* light = g_location->m_lights.GetData(i);
-    sprintf(buttonName, "%s %d", LANGUAGEPHRASE("editor_selectlight"), i);
-    button->SetShortProperties(buttonName, 10, height += pitch, m_w - 20);
+    buttonName = std::format("{} {}", LANGUAGEPHRASE("editor_selectlight"), i);
+    button->SetShortProperties(buttonName.c_str(), 10, height += pitch, m_w - 20);
     RegisterButton(button);
 
     height += pitch;
@@ -139,28 +139,28 @@ void LightsEditWindow::Create()
     RegisterButton(label);
 
     LightGammaButton* gammaDown = new LightGammaButton(i);
-    sprintf(buttonName, "down %d", i);
-    gammaDown->SetShortProperties(buttonName, m_w - 42, height, 15);
+    buttonName = std::format("down {}", i);
+    gammaDown->SetShortProperties(buttonName.c_str(), m_w - 42, height, 15);
     gammaDown->SetCaption("<");
     gammaDown->m_change = 0.9f;
     RegisterButton(gammaDown);
 
     LightGammaButton* gammaUp = new LightGammaButton(i);
-    sprintf(buttonName, "up %d", i);
-    gammaUp->SetShortProperties(buttonName, m_w - 25, height, 15);
+    buttonName = std::format("up {}", i);
+    gammaUp->SetShortProperties(buttonName.c_str(), m_w - 25, height, 15);
     gammaUp->SetCaption(">");
     gammaUp->m_change = 1.1f;
     RegisterButton(gammaUp);
 
-    sprintf(buttonName, "Y%d", i);
-    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_front[1]), height += pitch, 0.01f, -20, 20, nullptr);
+    buttonName = std::format("Y{}", i);
+    CreateValueControl(buttonName.c_str(), &(light->m_front[1]), height += pitch, 0.01f, -20, 20, nullptr);
 
-    sprintf(buttonName, "R%d", i);
-    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[0]), height += pitch, 0.02f, 0, 5, nullptr);
-    sprintf(buttonName, "G%d", i);
-    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[1]), height += pitch, 0.02f, 0, 5, nullptr);
-    sprintf(buttonName, "B%d", i);
-    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[2]), height += pitch, 0.02f, 0, 5, nullptr);
+    buttonName = std::format("R{}", i);
+    CreateValueControl(buttonName.c_str(), &(light->m_colour[0]), height += pitch, 0.02f, 0, 5, nullptr);
+    buttonName = std::format("G{}", i);
+    CreateValueControl(buttonName.c_str(), &(light->m_colour[1]), height += pitch, 0.02f, 0, 5, nullptr);
+    buttonName = std::format("B{}", i);
+    CreateValueControl(buttonName.c_str(), &(light->m_colour[2]), height += pitch, 0.02f, 0, 5, nullptr);
 
     height += 6;
   }

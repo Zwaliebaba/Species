@@ -51,12 +51,13 @@ LocationEditor::LocationEditor()
     m_mode(ModeNone),
     m_moveBuildingsWithLandscape(1)
 {
-  MainEditWindow* mainWin = new MainEditWindow(LANGUAGEPHRASE("editor_mainedit"));
+  auto ownedMain = std::make_unique<MainEditWindow>(LANGUAGEPHRASE("editor_mainedit"));
+  MainEditWindow* mainWin = ownedMain.get();
   mainWin->m_w = 150;
   mainWin->m_h = 140;
   mainWin->m_x = g_renderer->ScreenW();
   mainWin->m_y = 0;
-  EclRegisterWindow(mainWin);
+  EclRegisterWindow(std::move(ownedMain));
 }
 
 
@@ -233,7 +234,10 @@ void LocationEditor::CreateEditWindowForMode(int _mode)
   window->m_h = 100;
   window->m_x = 0;
   window->m_y = g_renderer->ScreenH() - window->m_h;
-  EclRegisterWindow(window);
+  // The switch above assigns `window` through several branches, so ownership is
+  // adopted here rather than at each `new`. mainWin keeps an observer, which is
+  // what m_currentEditWindow always was.
+  EclRegisterWindow(std::unique_ptr<EclWindow>(window));
 
   mainWin->m_currentEditWindow = window;
 }
@@ -321,11 +325,12 @@ void LocationEditor::AdvanceModeLandTile()
 
       EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_landscape"));
       DEBUG_ASSERT(cw);
-      LandscapeTileEditWindow* ew = new LandscapeTileEditWindow(LANGUAGEPHRASE("editor_landscapetile"), newSelectionId);
+      auto owned = std::make_unique<LandscapeTileEditWindow>(LANGUAGEPHRASE("editor_landscapetile"), newSelectionId);
+      LandscapeTileEditWindow* ew = owned.get();
       ew->m_w = cw->m_w;
       ew->m_h = 150;
       ew->m_x = cw->m_x;
-      EclRegisterWindow(ew);
+      EclRegisterWindow(std::move(owned));
       ew->m_y = cw->m_y - ew->m_h - 10;
     }
   }
@@ -402,11 +407,12 @@ void LocationEditor::AdvanceModeLandFlat()
 
       EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_landscape"));
       DEBUG_ASSERT(cw);
-      LandscapeFlattenAreaEditWindow* ew = new LandscapeFlattenAreaEditWindow("Flatten Area", newSelectionId);
+      auto owned = std::make_unique<LandscapeFlattenAreaEditWindow>("Flatten Area", newSelectionId);
+      LandscapeFlattenAreaEditWindow* ew = owned.get();
       ew->m_w = cw->m_w;
       ew->m_h = 100;
       ew->m_x = 0;
-      EclRegisterWindow(ew);
+      EclRegisterWindow(std::move(owned));
       ew->m_y = cw->m_y - ew->m_h - 10;
     }
   }
@@ -469,11 +475,12 @@ void LocationEditor::AdvanceModeBuilding()
       BuildingsCreateWindow* cw = (BuildingsCreateWindow*)EclGetWindow(LANGUAGEPHRASE("editor_buildings"));
       DEBUG_ASSERT(!ew);
       DEBUG_ASSERT(cw);
-      BuildingEditWindow* bew = new BuildingEditWindow(LANGUAGEPHRASE("editor_buildingid"));
+      auto ownedBew = std::make_unique<BuildingEditWindow>(LANGUAGEPHRASE("editor_buildingid"));
+      BuildingEditWindow* bew = ownedBew.get();
       bew->m_w = cw->m_w;
       bew->m_h = 140;
       bew->m_x = cw->m_x;
-      EclRegisterWindow(bew);
+      EclRegisterWindow(std::move(ownedBew));
       bew->m_y = cw->m_y - bew->m_h - 10;
       m_waitingForRelease = true;
 
@@ -481,12 +488,13 @@ void LocationEditor::AdvanceModeBuilding()
       Building* building = location->GetBuilding(m_selectionId);
       if (building->m_type == Building::TypeTree)
       {
-        TreeWindow* tw = new TreeWindow(LANGUAGEPHRASE("editor_treeditor"));
+        auto ownedTree = std::make_unique<TreeWindow>(LANGUAGEPHRASE("editor_treeditor"));
+        TreeWindow* tw = ownedTree.get();
         tw->m_w = cw->m_w;
         tw->m_h = 230;
         tw->m_y = bew->m_y - tw->m_h - 10;
         tw->m_x = bew->m_x;
-        EclRegisterWindow(tw);
+        EclRegisterWindow(std::move(ownedTree));
       }
     }
   }
@@ -565,11 +573,12 @@ void LocationEditor::AdvanceModeInstantUnit()
       m_selectionId = newSelectionId;
       EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
       DEBUG_ASSERT(cw);
-      InstantUnitEditWindow* ew = new InstantUnitEditWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
+      auto owned = std::make_unique<InstantUnitEditWindow>(LANGUAGEPHRASE("editor_instantuniteditor"));
+      InstantUnitEditWindow* ew = owned.get();
       ew->m_w = cw->m_w;
       ew->m_h = 160;
       ew->m_x = cw->m_x;
-      EclRegisterWindow(ew);
+      EclRegisterWindow(std::move(owned));
       ew->m_y = cw->m_y - ew->m_h - 10;
       m_waitingForRelease = true;
     }

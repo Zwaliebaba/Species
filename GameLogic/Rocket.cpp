@@ -75,8 +75,8 @@ void FuelBuilding::ProvideFuel(float _level)
 
   m_currentLevel = m_currentLevel * factor1 + _level * factor2;
 
-  m_currentLevel = min(m_currentLevel, 1.0f);
-  m_currentLevel = max(m_currentLevel, 0.0f);
+  m_currentLevel = std::min(m_currentLevel, 1.0f);
+  m_currentLevel = std::max(m_currentLevel, 0.0f);
 }
 
 
@@ -189,8 +189,8 @@ void FuelBuilding::RenderAlphas(float _predictionTime)
 
       int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail");
       float maxLoops = 4 - buildingDetail;
-      maxLoops = max(maxLoops, 1);
-      maxLoops = min(maxLoops, 3);
+      maxLoops = std::max(maxLoops, 1.0f);
+      maxLoops = std::min(maxLoops, 3.0f);
 
       for (int i = 0; i < maxLoops; ++i)
       {
@@ -289,8 +289,8 @@ bool FuelGenerator::Advance()
   // Advance surges
 
   m_surges -= SERVER_ADVANCE_PERIOD * 1.0f;
-  m_surges = min(m_surges, 10);
-  m_surges = max(m_surges, 0);
+  m_surges = std::min(m_surges, 10.0f);
+  m_surges = std::max(m_surges, 0.0f);
 
   if (m_surges > 8)
   {
@@ -922,7 +922,7 @@ void EscapeRocket::Refuel()
     float factor1 = m_currentLevel * SERVER_ADVANCE_PERIOD * 0.01f;
     float factor2 = 1.0f - factor1;
     m_fuel = m_fuel * factor2 + targetFuel * factor1;
-    m_fuel = min(m_fuel, 100.0f);
+    m_fuel = std::min(m_fuel, 100.0f);
     break;
   }
 
@@ -932,7 +932,7 @@ void EscapeRocket::Refuel()
     float factor1 = m_currentLevel * SERVER_ADVANCE_PERIOD * 0.1;
     float factor2 = 1.0f - factor1;
     m_fuel = m_fuel * factor2 + targetFuel * factor1;
-    m_fuel = min(m_fuel, 100.0f);
+    m_fuel = std::min(m_fuel, 100.0f);
     break;
   }
   };
@@ -1027,7 +1027,7 @@ void EscapeRocket::AdvanceReady()
 void EscapeRocket::AdvanceCountdown()
 {
   m_countdown -= SERVER_ADVANCE_PERIOD * 0.5f;
-  m_countdown = max(m_countdown, 0.0f);
+  m_countdown = std::max(m_countdown, 0.0f);
 
   SetupAttackers();
   SetupSpectacle();
@@ -1046,7 +1046,7 @@ void EscapeRocket::AdvanceFlight()
 {
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   float thrust = sqrtf(m_pos.y - landHeight) * 2;
-  thrust = max(thrust, 0.1f);
+  thrust = std::max(thrust, 0.1f);
 
   m_vel.Set(0, thrust, 0);
 
@@ -1065,7 +1065,7 @@ void EscapeRocket::AdvanceExploding()
   // Burn fuel
 
   m_fuel -= SERVER_ADVANCE_PERIOD * 10;
-  m_fuel = max(m_fuel, 0.0f);
+  m_fuel = std::max(m_fuel, 0.0f);
 
   //
   // Kill passengers
@@ -1343,8 +1343,8 @@ void EscapeRocket::RenderAlphas(float _predictionTime)
   // Calculate alpha value
 
   float alpha = m_fuel / 100.0f;
-  alpha = min(alpha, 1.0f);
-  alpha = max(alpha, 0.0f);
+  alpha = std::min(alpha, 1.0f);
+  alpha = std::max(alpha, 0.0f);
 
   if (alpha > 0.0f)
   {
@@ -1383,7 +1383,7 @@ void EscapeRocket::RenderAlphas(float _predictionTime)
       pos.z += cosf(timeIndex * 0.3 + i) * i * 3.7f;
 
       float size = 20.0f * sinf(timeIndex + i * 2);
-      size = max(size, 5.0f);
+      size = std::max(size, 5.0f);
 
       for (int j = 0; j < 2; ++j)
       {

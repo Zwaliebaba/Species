@@ -78,8 +78,8 @@ void Armour::ChangeHealth(int _amount)
 
     int oldHealth = m_stats[StatHealth];
     int newHealth = oldHealth + _amount;
-    newHealth = max(newHealth, 0);
-    newHealth = min(newHealth, 255);
+    newHealth = std::max(newHealth, 0);
+    newHealth = std::min(newHealth, 255);
     m_stats[StatHealth] = newHealth;
 
     int healthBandBefore = static_cast<int>(oldHealth / 20.0f);
@@ -149,19 +149,19 @@ void Armour::AdvanceToTargetPos()
   if (distance > 100.0f && angle < 1.0f)
   {
     m_speed += 10.0f * SERVER_ADVANCE_PERIOD;
-    m_speed = min(m_speed, m_stats[StatSpeed]);
+    m_speed = std::min(m_speed, static_cast<float>(m_stats[StatSpeed]));
   }
   else if (distance > 10.0f)
   {
     float targetSpeed = distance * 0.2f;
     m_speed = m_speed * 0.95f + targetSpeed * 0.05f;
-    m_speed = min(m_speed, m_stats[StatSpeed]);
-    m_speed = max(m_speed, 0.0f);
+    m_speed = std::min(m_speed, static_cast<float>(m_stats[StatSpeed]));
+    m_speed = std::max(m_speed, 0.0f);
   }
   else
   {
     m_speed -= 5.0f * SERVER_ADVANCE_PERIOD;
-    m_speed = max(m_speed, 0.0f);
+    m_speed = std::max(m_speed, 0.0f);
   }
 
   //
@@ -189,7 +189,7 @@ void Armour::AdvanceToTargetPos()
     float heightAboveGround = m_pos.y - landHeight;
     m_vel.y -= 5.0f;
     m_pos.y += m_vel.y * SERVER_ADVANCE_PERIOD;
-    m_pos.y = max(m_pos.y, landHeight);
+    m_pos.y = std::max(m_pos.y, landHeight);
 
     float factor = SERVER_ADVANCE_PERIOD * 0.5f;
     Vector3 landUp = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);

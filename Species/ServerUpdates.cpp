@@ -29,7 +29,7 @@
 
 void ProcessServerUpdates(ServerToClientLetter* _letter)
 {
-  DEBUG_ASSERT(_letter->m_type == ServerToClientLetter::Update);
+  DEBUG_ASSERT(_letter->m_type == ServerToClientLetter::LetterType::Update);
 
   for (int i = 0; i < static_cast<int>(_letter->m_updates.size()); ++i)
   {
@@ -37,20 +37,20 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
 
     switch (update->m_type)
     {
-    case NetworkUpdate::Alive:
+    case NetworkUpdate::UpdateType::Alive:
       g_location->UpdateTeam(update->m_teamId, update->m_teamControls);
       break;
 
-    case NetworkUpdate::Pause:
+    case NetworkUpdate::UpdateType::Pause:
       g_paused = !g_paused;
       break;
 
-    case NetworkUpdate::SelectUnit:
+    case NetworkUpdate::UpdateType::SelectUnit:
       g_location->m_teams[update->m_teamId].SelectUnit(update->m_unitId, update->m_entityId, update->m_buildingId);
       g_taskManager->SelectTask(WorldObjectId(update->m_teamId, update->m_unitId, update->m_entityId, -1));
       break;
 
-    case NetworkUpdate::CreateUnit:
+    case NetworkUpdate::UpdateType::CreateUnit:
     {
       Building* building = g_location->GetBuilding(update->m_buildingId);
       if (building && building->m_type == Building::TypeFactory)
@@ -71,7 +71,7 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
       break;
     }
 
-    case NetworkUpdate::AimBuilding:
+    case NetworkUpdate::UpdateType::AimBuilding:
     {
       Building* building = g_location->GetBuilding(update->m_buildingId);
       if (building && building->m_id.GetTeamId() == update->m_teamId && building->m_type == Building::TypeRadarDish)
@@ -82,7 +82,7 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
       break;
     }
 
-    case NetworkUpdate::ToggleLaserFence:
+    case NetworkUpdate::UpdateType::ToggleLaserFence:
     {
       Building* building = g_location->GetBuilding(update->m_buildingId);
       if (building && building->m_type == Building::TypeLaserFence)
@@ -93,13 +93,13 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
       break;
     }
 
-    case NetworkUpdate::RunProgram:
+    case NetworkUpdate::UpdateType::RunProgram:
     {
       g_taskManager->RunTask(update->m_program);
       break;
     }
 
-    case NetworkUpdate::TargetProgram:
+    case NetworkUpdate::UpdateType::TargetProgram:
     {
       int programId = update->m_program;
       g_taskManager->TargetTask(programId, update->GetWorldPos());

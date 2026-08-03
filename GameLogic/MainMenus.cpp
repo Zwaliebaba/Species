@@ -24,7 +24,7 @@ class SkipPrologueWindowButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_skipprologue")))
-        EclRegisterWindow(new SkipPrologueWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<SkipPrologueWindow>(), m_parent);
     }
 };
 
@@ -32,10 +32,10 @@ class SkipPrologueButton : public SpeciesButton
 {
     void MouseUp() override
     {
-      std::vector<EclWindow*>* windows = EclGetWindows();
+      std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
       while (windows->size() > 0)
       {
-        EclWindow* w = (*windows)[0];
+        EclWindow* w = (*windows)[0].get();
         EclRemoveWindow(w->m_name);
       }
 
@@ -48,10 +48,10 @@ class PlayPrologueButton : public SpeciesButton
 {
     void MouseUp() override
     {
-      std::vector<EclWindow*>* windows = EclGetWindows();
+      std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
       while (windows->size() > 0)
       {
-        EclWindow* w = (*windows)[0];
+        EclWindow* w = (*windows)[0].get();
         EclRemoveWindow(w->m_name);
       }
 
@@ -65,7 +65,7 @@ class PlayPrologueWindowButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialogue_playprologue")))
-        EclRegisterWindow(new PlayPrologueWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PlayPrologueWindow>(), m_parent);
     }
 };
 
@@ -74,7 +74,7 @@ class AboutSpeciesButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("about_darwinia")))
-        EclRegisterWindow(new AboutSpeciesWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<AboutSpeciesWindow>(), m_parent);
     }
 };
 
@@ -83,7 +83,7 @@ class MainMenuUserProfileButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_profile")))
-        EclRegisterWindow(new UserProfileWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<UserProfileWindow>(), m_parent);
     }
 };
 
@@ -92,7 +92,7 @@ class OptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_options")))
-        EclRegisterWindow(new OptionsMenuWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<OptionsMenuWindow>(), m_parent);
     }
 };
 
@@ -101,7 +101,7 @@ class ScreenOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_screenoptions")))
-        EclRegisterWindow(new PrefsScreenWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PrefsScreenWindow>(), m_parent);
     }
 };
 
@@ -110,7 +110,7 @@ class GraphicsOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_graphicsoptions")))
-        EclRegisterWindow(new PrefsGraphicsWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PrefsGraphicsWindow>(), m_parent);
     }
 };
 
@@ -119,7 +119,7 @@ class SoundOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_soundoptions")))
-        EclRegisterWindow(new PrefsSoundWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PrefsSoundWindow>(), m_parent);
     }
 };
 
@@ -128,7 +128,7 @@ class OtherOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_otheroptions")))
-        EclRegisterWindow(new PrefsOtherWindow(), m_parent);
+        EclRegisterWindow(std::make_unique<PrefsOtherWindow>(), m_parent);
     }
 };
 
@@ -137,7 +137,7 @@ class KeybindingsOptionsButton : public SpeciesButton
     void MouseUp() override
     {
       if (!EclGetWindow(LANGUAGEPHRASE("dialog_inputoptions")))
-        EclRegisterWindow(new PrefsKeybindingsWindow, m_parent);
+        EclRegisterWindow(std::make_unique<PrefsKeybindingsWindow>(), m_parent);
     }
 };
 
@@ -230,7 +230,7 @@ void OptionsMenuWindow::Create()
 
 class ResetLevelButton : public SpeciesButton
 {
-    void MouseUp() override { EclRegisterWindow(new ResetLocationWindow(), m_parent); }
+    void MouseUp() override { EclRegisterWindow(std::make_unique<ResetLocationWindow>(), m_parent); }
 };
 
 class ExitLevelButton : public SpeciesButton
@@ -246,7 +246,7 @@ class ExitLevelButton : public SpeciesButton
 class WebsiteButton : public SpeciesButton
 {
   public:
-    char m_website[256];
+    std::string m_website;
 
     void MouseUp() override
     {
@@ -272,7 +272,7 @@ class WebsiteButton : public SpeciesButton
 
         m_parent->SetPosition(g_renderer->ScreenW() / 2 - m_parent->m_w / 2, g_renderer->ScreenH() / 2 - m_parent->m_h / 2);
       }
-      g_windowManager->OpenWebsite(m_website);
+      g_windowManager->OpenWebsite(m_website.c_str());
     }
 };
 
@@ -351,7 +351,7 @@ void LocationWindow::Create()
     buy->m_fontSize = fontSize;
     buy->m_centered = true;
 
-    strcpy(buy->m_website, "http://store.introversion.co.uk");
+    buy->m_website = "http://store.introversion.co.uk";
 
     RegisterButton(buy);
     m_buttonOrder.push_back(buy);
@@ -488,7 +488,7 @@ void MainMenuWindow::Create()
   website->SetShortProperties(LANGUAGEPHRASE("dialog_visitwebsite"), border, y += h, buttonW, buttonH);
   website->m_fontSize = fontSize;
   website->m_centered = true;
-  strcpy(website->m_website, "http://www.darwinia.co.uk");
+  website->m_website = "http://www.darwinia.co.uk";
   RegisterButton(website);
   m_buttonOrder.push_back(website);
 
@@ -569,12 +569,11 @@ void AboutSpeciesWindow::Render(bool _hasFocus)
 
   float fontSize = GetMenuSize(13);
 
-  char about[512];
-  sprintf(about, "%s %s", LANGUAGEPHRASE("bootloader_credits_4"), LANGUAGEPHRASE("bootloader_credits_5"));
+  const std::string about = std::format("{} {}", LANGUAGEPHRASE("bootloader_credits_4"), LANGUAGEPHRASE("bootloader_credits_5"));
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
   g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, "Darwinia v1.5.4");
-  g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += 2 * h, fontSize, about);
+  g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += 2 * h, fontSize, about.c_str());
   g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, "http://www.introversion.co.uk");
 }
 

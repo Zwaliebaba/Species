@@ -580,8 +580,8 @@ void Team::RenderCitizens(float _predictionTime)
         {
           float camDistSqd = (citizen->m_pos - g_camera->GetPos()).MagSquared();
           float highDetail = 1.0f - (camDistSqd / highDetailDistanceSqd);
-          highDetail = max(highDetail, 0.0f);
-          highDetail = min(highDetail, 1.0f);
+          highDetail = std::max(highDetail, 0.0f);
+          highDetail = std::min(highDetail, 1.0f);
 
           if (i <= lastUpdated)
           {

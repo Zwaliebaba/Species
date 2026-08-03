@@ -50,10 +50,9 @@ class NewLocationButton : public SpeciesButton
 #ifndef TARGET_DEBUG
         if( !g_resource->IsModLoaded() )
         {
-            EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_newlocationfail1" ),
-                                                  LANGUAGEPHRASE( "dialog_newlocationfail2" ) ),
-                                                  m_parent );
-            return;
+          EclRegisterWindow(std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_newlocationfail1"), LANGUAGEPHRASE("dialog_newlocationfail2")),
+                            m_parent);
+          return;
         }
 #endif
 
@@ -102,10 +101,9 @@ class SaveLocationsButton : public SpeciesButton
 #ifndef TARGET_DEBUG
         if( !g_resource->IsModLoaded() )
         {
-            EclRegisterWindow( new MessageDialog( LANGUAGEPHRASE( "dialog_savelocationsfail1" ),
-                                                  LANGUAGEPHRASE( "dialog_savelocationsfail2" ) ),
-                                                  m_parent );
-            return;
+          EclRegisterWindow(std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_savelocationsfail1"), LANGUAGEPHRASE("dialog_savelocationsfail2")),
+                            m_parent);
+          return;
         }
 #endif
 
@@ -148,7 +146,7 @@ void GlobalWorldEditorWindow::Create()
     newLoc->SetShortProperties( LANGUAGEPHRASE("editor_createnewlocation"), 10, y += h, m_w - 20 );
     RegisterButton( newLoc );
 
-    CreateValueControl( LANGUAGEPHRASE("dialog_name"), InputField::TypeString, s_locationName, y +=h, 0, 0, 0, nullptr, 10, m_w-20 );
+    CreateValueControl(LANGUAGEPHRASE("dialog_name"), s_locationName, y += h, 0, 0, 0, nullptr, 10, m_w - 20);
 
     y += h;
 

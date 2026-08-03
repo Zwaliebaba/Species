@@ -263,11 +263,6 @@ SoundSystem::~SoundSystem()
   delete[] m_channels;
 
   m_sounds.EmptyAndDelete();
-  m_entityBlueprints.EmptyAndDelete();
-  m_buildingBlueprints.EmptyAndDelete();
-  m_otherBlueprints.EmptyAndDelete();
-  m_filterBlueprints.EmptyAndDelete();
-  m_sampleGroups.EmptyAndDelete();
 
   delete g_soundLibrary3d;
   delete g_soundLibrary2d;
@@ -496,8 +491,9 @@ void SoundSystem::LoadEffects()
     char* effect = in->GetNextToken();
     DEBUG_ASSERT(stricmp(effect, "EFFECT") == 0);
 
-    auto bp = new DspBlueprint();
-    m_filterBlueprints.PutData(bp);
+    auto owned = std::make_unique<DspBlueprint>();
+    DspBlueprint* bp = owned.get();
+    m_filterBlueprints.PutData(std::move(owned));
     CopyName(bp->m_name, in->GetNextToken());
 
     in->ReadLine();
@@ -563,8 +559,9 @@ void SoundSystem::LoadBlueprints()
       DEBUG_ASSERT(entityType >= 0 && entityType < g_worldTypeNames->NumEntityTypes());
       DEBUG_ASSERT(!m_entityBlueprints.ValidIndex(entityType));
 
-      ssb = new SoundSourceBlueprint();
-      m_entityBlueprints.PutData(ssb, entityType);
+      auto owned = std::make_unique<SoundSourceBlueprint>();
+      ssb = owned.get();
+      m_entityBlueprints.PutData(std::move(owned), entityType);
       event = true;
     }
     else if (stricmp(group, "BUILDING") == 0)
@@ -574,8 +571,9 @@ void SoundSystem::LoadBlueprints()
       DEBUG_ASSERT(buildingType >= 0 && buildingType < g_worldTypeNames->NumBuildingTypes());
       DEBUG_ASSERT(!m_buildingBlueprints.ValidIndex(buildingType));
 
-      ssb = new SoundSourceBlueprint();
-      m_buildingBlueprints.PutData(ssb, buildingType);
+      auto owned = std::make_unique<SoundSourceBlueprint>();
+      ssb = owned.get();
+      m_buildingBlueprints.PutData(std::move(owned), buildingType);
       event = true;
     }
     else if (stricmp(group, "OTHER") == 0)
@@ -585,8 +583,9 @@ void SoundSystem::LoadBlueprints()
       DEBUG_ASSERT(otherType >= 0 && otherType < SoundSourceBlueprint::NumOtherSoundSources);
       DEBUG_ASSERT(!m_otherBlueprints.ValidIndex(otherType));
 
-      ssb = new SoundSourceBlueprint();
-      m_otherBlueprints.PutData(ssb, otherType);
+      auto owned = std::make_unique<SoundSourceBlueprint>();
+      ssb = owned.get();
+      m_otherBlueprints.PutData(std::move(owned), otherType);
       event = true;
     }
     else if (stricmp(group, "SAMPLEGROUP") == 0)
@@ -625,8 +624,7 @@ void SoundSystem::LoadBlueprints()
   {
     if (!m_entityBlueprints.ValidIndex(i))
     {
-      auto ssb = new SoundSourceBlueprint();
-      m_entityBlueprints.PutData(ssb, i);
+      m_entityBlueprints.PutData(std::make_unique<SoundSourceBlueprint>(), i);
     }
   }
 
@@ -634,8 +632,7 @@ void SoundSystem::LoadBlueprints()
   {
     if (!m_buildingBlueprints.ValidIndex(i))
     {
-      auto ssb = new SoundSourceBlueprint();
-      m_buildingBlueprints.PutData(ssb, i);
+      m_buildingBlueprints.PutData(std::make_unique<SoundSourceBlueprint>(), i);
     }
   }
 
@@ -643,8 +640,7 @@ void SoundSystem::LoadBlueprints()
   {
     if (!m_otherBlueprints.ValidIndex(i))
     {
-      auto ssb = new SoundSourceBlueprint();
-      m_otherBlueprints.PutData(ssb, i);
+      m_otherBlueprints.PutData(std::make_unique<SoundSourceBlueprint>(), i);
     }
   }
 
@@ -663,7 +659,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
   for (int i = 0; i < m_entityBlueprints.Size(); ++i)
   {
     DEBUG_ASSERT(m_entityBlueprints.ValidIndex(i));
-    SoundSourceBlueprint* ssb = m_entityBlueprints[i];
+    SoundSourceBlueprint* ssb = m_entityBlueprints[i].get();
 
     if (static_cast<int>(ssb->m_events.size()) > 0)
     {
@@ -683,7 +679,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
   for (int i = 0; i < m_buildingBlueprints.Size(); ++i)
   {
     DEBUG_ASSERT(m_buildingBlueprints.ValidIndex(i));
-    SoundSourceBlueprint* ssb = m_buildingBlueprints[i];
+    SoundSourceBlueprint* ssb = m_buildingBlueprints[i].get();
 
     if (static_cast<int>(ssb->m_events.size()) > 0)
     {
@@ -703,7 +699,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
   for (int i = 0; i < m_otherBlueprints.Size(); ++i)
   {
     DEBUG_ASSERT(m_otherBlueprints.ValidIndex(i));
-    SoundSourceBlueprint* ssb = m_otherBlueprints[i];
+    SoundSourceBlueprint* ssb = m_otherBlueprints[i].get();
 
     if (static_cast<int>(ssb->m_events.size()) > 0)
     {
@@ -724,7 +720,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
   {
     if (m_sampleGroups.ValidIndex(i))
     {
-      SampleGroup* group = m_sampleGroups[i];
+      SampleGroup* group = m_sampleGroups[i].get();
 
       file->printf("# =========================================================\n");
       file->printf("SAMPLEGROUP %s\n", group->m_name);
@@ -756,8 +752,8 @@ void SoundSystem::ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source
     {
       char* soundName = _in->GetNextToken();
       StrToLower(soundName);
-      const char* extensionRemoved = RemoveExtension(soundName);
-      seb->m_instance->SetSoundName(extensionRemoved);
+      const std::string extensionRemoved = RemoveExtension(soundName);
+      seb->m_instance->SetSoundName(extensionRemoved.c_str());
     }
     else if (stricmp(fieldName, "SOURCETYPE") == 0)
       seb->m_instance->m_sourceType = atoi(_in->GetNextToken());
@@ -807,7 +803,7 @@ void SoundSystem::ParseSoundEffect(TextReader* _in, SoundEventBlueprint* _bluepr
 
   for (int i = 0; i < m_filterBlueprints.Size(); ++i)
   {
-    DspBlueprint* seb = m_filterBlueprints[i];
+    DspBlueprint* seb = m_filterBlueprints[i].get();
     if (stricmp(seb->m_name, effectName) == 0)
     {
       fxType = i;
@@ -844,8 +840,10 @@ void SoundSystem::ParseSampleGroup(TextReader* _in, SampleGroup* _group)
 
     char* sample = _in->GetNextToken();
     StrToLower(sample);
-    auto extensionRemoved = (char*)RemoveExtension(sample);
-    _group->AddSample(extensionRemoved);
+    // The (char*) cast this used to carry was noise: AddSample takes a
+    // const char* and always did.
+    const std::string extensionRemoved = RemoveExtension(sample);
+    _group->AddSample(extensionRemoved.c_str());
   }
 }
 
@@ -880,7 +878,7 @@ void SoundSystem::WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event
   for (int i = 0; i < static_cast<int>(_event->m_instance->m_dspFX.size()); ++i)
   {
     DspHandle* effect = _event->m_instance->m_dspFX[i];
-    DspBlueprint* blueprint = m_filterBlueprints[effect->m_type];
+    DspBlueprint* blueprint = m_filterBlueprints[effect->m_type].get();
 
     _file->printf("\t\tEFFECT             %s\n", blueprint->m_name);
     int paramIndex = 0;
@@ -1013,7 +1011,7 @@ void SoundSystem::TriggerEntityEvent(SoundSource const& _source, const char* _ev
 
   if (m_entityBlueprints.ValidIndex(_source.m_type))
   {
-    SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[_source.m_type];
+    SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[_source.m_type].get();
     for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
@@ -1043,7 +1041,7 @@ void SoundSystem::TriggerBuildingEvent(SoundSource const& _source, const char* _
   START_PROFILE(m_mainProfiler, "TriggerBuildingEvent");
   if (m_buildingBlueprints.ValidIndex(_source.m_type))
   {
-    SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[_source.m_type];
+    SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[_source.m_type].get();
     for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
@@ -1091,7 +1089,7 @@ void SoundSystem::TriggerOtherEvent(SoundSource const* _other, const char* _even
   if (m_otherBlueprints.ValidIndex(_type))
   {
     // Search for the event blueprint matching _eventName
-    SoundSourceBlueprint* sourceBlueprint = m_otherBlueprints[_type];
+    SoundSourceBlueprint* sourceBlueprint = m_otherBlueprints[_type].get();
     for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
@@ -1805,7 +1803,7 @@ void SoundSystem::LoadtimeVerify()
     if (!m_sampleGroups.ValidIndex(i))
       continue;
 
-    SampleGroup* sg = m_sampleGroups[i];
+    SampleGroup* sg = m_sampleGroups[i].get();
     int size = static_cast<int>(sg->m_samples.size());
     for (int j = 0; j < size; ++j)
     {
@@ -1828,7 +1826,7 @@ void SoundSystem::LoadtimeVerify()
     if (!m_entityBlueprints.ValidIndex(i))
       continue;
 
-    SoundSourceBlueprint* ssb = m_entityBlueprints[i];
+    SoundSourceBlueprint* ssb = m_entityBlueprints[i].get();
     int size = static_cast<int>(ssb->m_events.size());
 
     for (int j = 0; j < size; ++j)
@@ -1866,7 +1864,7 @@ void SoundSystem::LoadtimeVerify()
     if (!m_buildingBlueprints.ValidIndex(i))
       continue;
 
-    SoundSourceBlueprint* ssb = m_buildingBlueprints[i];
+    SoundSourceBlueprint* ssb = m_buildingBlueprints[i].get();
     int size = static_cast<int>(ssb->m_events.size());
 
     for (int j = 0; j < size; ++j)
@@ -1904,7 +1902,7 @@ void SoundSystem::LoadtimeVerify()
     if (!m_otherBlueprints.ValidIndex(i))
       continue;
 
-    SoundSourceBlueprint* ssb = m_otherBlueprints[i];
+    SoundSourceBlueprint* ssb = m_otherBlueprints[i].get();
     int size = static_cast<int>(ssb->m_events.size());
 
     for (int j = 0; j < size; ++j)
@@ -1982,7 +1980,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
   {
     if (m_entityBlueprints.ValidIndex(i))
     {
-      SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[i];
+      SoundSourceBlueprint* sourceBlueprint = m_entityBlueprints[i].get();
       for (int j = 0; j < static_cast<int>(sourceBlueprint->m_events.size()); ++j)
       {
         SoundEventBlueprint* eventBlueprint = sourceBlueprint->m_events[j];
@@ -2016,7 +2014,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
   {
     if (m_buildingBlueprints.ValidIndex(i))
     {
-      SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[i];
+      SoundSourceBlueprint* sourceBlueprint = m_buildingBlueprints[i].get();
       for (int j = 0; j < static_cast<int>(sourceBlueprint->m_events.size()); ++j)
       {
         SoundEventBlueprint* eventBlueprint = sourceBlueprint->m_events[j];
@@ -2050,7 +2048,7 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
   {
     if (m_otherBlueprints.ValidIndex(i))
     {
-      SoundSourceBlueprint* sourceBlueprint = m_otherBlueprints[i];
+      SoundSourceBlueprint* sourceBlueprint = m_otherBlueprints[i].get();
       for (int j = 0; j < static_cast<int>(sourceBlueprint->m_events.size()); ++j)
       {
         SoundEventBlueprint* eventBlueprint = sourceBlueprint->m_events[j];
@@ -2098,7 +2096,7 @@ SampleGroup* SoundSystem::GetSampleGroup(const char* _name)
   {
     if (m_sampleGroups.ValidIndex(i))
     {
-      SampleGroup* group = m_sampleGroups[i];
+      SampleGroup* group = m_sampleGroups[i].get();
       if (strcmp(group->m_name, _name) == 0)
         return group;
     }
@@ -2109,8 +2107,9 @@ SampleGroup* SoundSystem::GetSampleGroup(const char* _name)
 
 SampleGroup* SoundSystem::NewSampleGroup(const char* _name)
 {
-  auto group = new SampleGroup();
-  m_sampleGroups.PutData(group);
+  auto owned = std::make_unique<SampleGroup>();
+  SampleGroup* group = owned.get();
+  m_sampleGroups.PutData(std::move(owned));
 
   if (_name)
   {
@@ -2153,7 +2152,7 @@ bool SoundSystem::RenameSampleGroup(const char* _oldName, const char* _newName)
     {
       if (m_entityBlueprints.ValidIndex(i))
       {
-        SoundSourceBlueprint* blueprint = m_entityBlueprints[i];
+        SoundSourceBlueprint* blueprint = m_entityBlueprints[i].get();
         for (int j = 0; j < static_cast<int>(blueprint->m_events.size()); ++j)
         {
           SoundEventBlueprint* eventBlueprint = blueprint->m_events[j];
@@ -2171,7 +2170,7 @@ bool SoundSystem::RenameSampleGroup(const char* _oldName, const char* _newName)
     {
       if (m_buildingBlueprints.ValidIndex(i))
       {
-        SoundSourceBlueprint* blueprint = m_buildingBlueprints[i];
+        SoundSourceBlueprint* blueprint = m_buildingBlueprints[i].get();
         for (int j = 0; j < static_cast<int>(blueprint->m_events.size()); ++j)
         {
           SoundEventBlueprint* eventBlueprint = blueprint->m_events[j];
@@ -2189,7 +2188,7 @@ bool SoundSystem::RenameSampleGroup(const char* _oldName, const char* _newName)
     {
       if (m_otherBlueprints.ValidIndex(i))
       {
-        SoundSourceBlueprint* blueprint = m_otherBlueprints[i];
+        SoundSourceBlueprint* blueprint = m_otherBlueprints[i].get();
         for (int j = 0; j < static_cast<int>(blueprint->m_events.size()); ++j)
         {
           SoundEventBlueprint* eventBlueprint = blueprint->m_events[j];

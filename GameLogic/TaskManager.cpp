@@ -98,7 +98,7 @@ void Task::TargetSquad(Vector3 const& _pos)
   if (trackEntity == 0)
   {
     // work out if player is using control pad
-    if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
+    if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
       trackEntity = 2;
   }
 

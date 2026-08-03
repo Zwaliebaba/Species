@@ -392,11 +392,12 @@ void ColourWidget::Render( int realX, int realY, bool highlighted, bool clicked 
 
 void ColourWidget::MouseUp()
 {
-    ColourWindow *cw = new ColourWindow( LANGUAGEPHRASE("editor_coloureditor") );
-    cw->SetSize( 200, 100 );
-    cw->SetValue( m_value );
-    cw->SetCallback( m_callback );
-    EclRegisterWindow( cw, m_parent );
+  auto owned = std::make_unique<ColourWindow>(LANGUAGEPHRASE("editor_coloureditor"));
+  ColourWindow* cw = owned.get();
+  cw->SetSize(200, 100);
+  cw->SetValue(m_value);
+  cw->SetCallback(m_callback);
+  EclRegisterWindow(std::move(owned), m_parent);
 }
 
 
@@ -449,10 +450,10 @@ void ColourWindow::Create()
     unsigned char *b = ((unsigned char *) m_value)+2;
     unsigned char *a = ((unsigned char *) m_value)+3;
 
-    CreateValueControl( LANGUAGEPHRASE("editor_red"),   InputField::TypeChar, r, y,    1, 0, 255, m_callback, -1, m_w - 80 );
-    CreateValueControl( LANGUAGEPHRASE("editor_green"), InputField::TypeChar, g, y+=h, 1, 0, 255, m_callback, -1, m_w - 80 );
-    CreateValueControl( LANGUAGEPHRASE("editor_blue"),  InputField::TypeChar, b, y+=h, 1, 0, 255, m_callback, -1, m_w - 80 );
-    CreateValueControl( LANGUAGEPHRASE("editor_alpha"), InputField::TypeChar, a, y+=h, 1, 0, 255, m_callback, -1, m_w - 80 );
+    CreateValueControl(LANGUAGEPHRASE("editor_red"), r, y, 1, 0, 255, m_callback, -1, m_w - 80);
+    CreateValueControl(LANGUAGEPHRASE("editor_green"), g, y += h, 1, 0, 255, m_callback, -1, m_w - 80);
+    CreateValueControl(LANGUAGEPHRASE("editor_blue"), b, y += h, 1, 0, 255, m_callback, -1, m_w - 80);
+    CreateValueControl(LANGUAGEPHRASE("editor_alpha"), a, y += h, 1, 0, 255, m_callback, -1, m_w - 80);
 }
 
 

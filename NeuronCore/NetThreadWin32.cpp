@@ -7,13 +7,13 @@
 
 NetRetCode NetStartThread(NetThreadFunc functionPtr)
 {
-	NetRetCode retVal = NetOk;
-	DWORD dwID = 0;
+  NetRetCode retVal = NetRetCode::NetOk;
+  DWORD dwID = 0;
 
   if (CreateThread(nullptr, 0, functionPtr, nullptr, 0, &dwID) == nullptr)
   {
     NetDebugOut("Thread creation failed");
-    retVal = NetFailed;
+    retVal = NetRetCode::NetFailed;
   }
 
   return retVal;

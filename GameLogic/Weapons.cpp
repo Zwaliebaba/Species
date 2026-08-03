@@ -933,8 +933,8 @@ void MuzzleFlash::Render(float _predictionTime)
   glDepthMask(false);
 
   float alpha = predictedLife;
-  alpha = min(1.0f, alpha);
-  alpha = max(0.0f, alpha);
+  alpha = std::min(1.0f, alpha);
+  alpha = std::max(0.0f, alpha);
   glColor4f(1.0f, 1.0f, 1.0f, alpha);
 
   glBegin(GL_QUADS);

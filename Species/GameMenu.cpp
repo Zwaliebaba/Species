@@ -268,15 +268,15 @@ void GameMenu::CreateMenu()
 {
   TheRenderer()->StartFadeIn(0.25f);
   // close all currently open windows
-  std::vector<EclWindow*>* windows = EclGetWindows();
+  std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
   while (windows->size() > 0)
   {
-    EclWindow* w = (*windows)[0];
+    EclWindow* w = (*windows)[0].get();
     EclRemoveWindow(w->m_name);
   }
 
   // create the actual menu window
-  EclRegisterWindow(new GameMenuWindow());
+  EclRegisterWindow(std::make_unique<GameMenuWindow>());
 
   // set the camera to a position with a good view of the internet
   TheCamera()->RequestMode(Camera::ModeMainMenu);

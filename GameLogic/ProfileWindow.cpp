@@ -36,17 +36,23 @@ class ProfilerButton : public SpeciesButton
       {
         g_profiler->ResetHistory();
       }
+      // SetCaption, not a raw copy into the buffer. m_caption is a char*
+      // pointing at an allocation sized to the caption it was given, so writing
+      // into it directly only ever worked
+      // because "Min", "Avg" and "Max" are all three characters — a four-letter
+      // caption here would have overrun the heap block. SetCaption reallocates.
+      // The member itself stays a char*; that is strings-modernised T11's.
       else if (stricmp(m_caption, "Min") == 0)
       {
-        strcpy(m_caption, "Avg");
+        SetCaption("Avg");
       }
       else if (stricmp(m_caption, "Avg") == 0)
       {
-        strcpy(m_caption, "Max");
+        SetCaption("Max");
       }
       else if (stricmp(m_caption, "Max") == 0)
       {
-        strcpy(m_caption, "Min");
+        SetCaption("Min");
       }
     }
 };
@@ -72,7 +78,6 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
     return;
 
   int left = m_x + 10;
-  char caption[256];
   EclButton* minAvgMaxButton = GetButton("Avg");
   int minAvgMax = 0;
   if (stricmp(minAvgMaxButton->m_caption, "Avg") == 0)
@@ -113,8 +118,17 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
         lastColumn = child->m_longest;
       lastColumn *= 1000.0f;
 
-      sprintf(caption, "%*s%-*s:%5d x%4.2f = %4.0f %4.2f", _indent + 1, icon, 24 - _indent, child->m_name, child->m_lastNumCalls,
-              time / (float)child->m_lastNumCalls, time, lastColumn);
+      // %*s and %-*s take their width from an argument; std::format spells that
+      // {:>{}} and {:<{}}.
+      //
+      // _indent is UNSIGNED, so `24 - _indent` does not go negative for a
+      // profiler tree deeper than 24 — it wraps to about four billion, and the
+      // printf this replaces was handed that as a field width. Writing the
+      // subtraction as a guarded expression is what makes the intent — "pad the
+      // name out to column 24" — true at every depth.
+      const unsigned int nameWidth = _indent < 24 ? 24 - _indent : 0;
+      const std::string caption = std::format("{:>{}}{:<{}}:{:5} x{:4.2f} = {:4.0f} {:4.2f}", icon, _indent + 1, child->m_name, nameWidth,
+                                              child->m_lastNumCalls, time / (float)child->m_lastNumCalls, time, lastColumn);
       int brightness = (time / largestTime) * 150.0f + 105.0f;
       if (brightness < 105)
         brightness = 105;
@@ -134,7 +148,7 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
         }
       }
 
-      g_editorFont.DrawText2D(left, m_yPos += 12, DEF_FONT_SIZE, caption);
+      g_editorFont.DrawText2D(left, m_yPos += 12, DEF_FONT_SIZE, caption.c_str());
 
       int lineLeft = left + 360;
       int lineY = m_yPos - 6;

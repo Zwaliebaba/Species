@@ -330,7 +330,7 @@ void LocationInput::AdvanceTeamControl()
         }
         else if (building->m_type == Building::TypeGunTurret)
         {
-          if (TheTaskManagerInterface()->ControlEvent(TaskManagerInterface::TMTerminate))
+          if (TheTaskManagerInterface()->ControlEvent(TaskManagerInterface::TMControl::TMTerminate))
           {
             // Player pressed CTRL-C, so terminate this turret
             g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
@@ -349,7 +349,7 @@ void LocationInput::AdvanceTeamControl()
       }
       else if (ent->m_type == Entity::TypeOfficer)
       {
-        if (TheTaskManagerInterface()->ControlEvent(TaskManagerInterface::TMTerminate))
+        if (TheTaskManagerInterface()->ControlEvent(TaskManagerInterface::TMControl::TMTerminate))
         {
           // Player pressed CTRL-C, so demote this officer
           g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);

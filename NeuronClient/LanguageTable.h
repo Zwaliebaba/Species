@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "InputTypes.h"
 
 #include <map>
@@ -46,10 +48,12 @@ class LangTable
     // Owning: the destructor deletes every phrase. Ordered rather than hashed,
     // and the order is observable — see GetPhraseList and the note in
     // tasks/containers-replaced.yaml T24.
-    std::map<std::string, LangPhrase*, LangKeyLess> m_phrasesRaw;
-    PhraseOffsets* m_phrasesKbd;
-    PhraseOffsets* m_phrasesXin;
-    char* m_chunk;
+    std::map<std::string, std::unique_ptr<LangPhrase>, LangKeyLess> m_phrasesRaw;
+    std::unique_ptr<PhraseOffsets> m_phrasesKbd;
+    std::unique_ptr<PhraseOffsets> m_phrasesXin;
+    // ostrstream::str() hands back a frozen buffer the caller must delete[],
+    // which is what the array deleter does.
+    std::unique_ptr<char[]> m_chunk;
 
     bool specific_key_exists(const char* _key, InputMode _mood);
     bool RawDoesPhraseExist(char const* _key);

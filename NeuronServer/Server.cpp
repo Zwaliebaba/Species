@@ -142,7 +142,7 @@ namespace Neuron
     // Tell all clients about it
 
     auto letter = std::make_unique<ServerToClientLetter>();
-    letter->SetType(ServerToClientLetter::HelloClient);
+    letter->SetType(ServerToClientLetter::LetterType::HelloClient);
     letter->SetIp(ConvertIPToInt(_ip));
     SendLetter(std::move(letter));
   }
@@ -162,7 +162,7 @@ namespace Neuron
     // Tell all clients about it
 
     auto letter = std::make_unique<ServerToClientLetter>();
-    letter->SetType(ServerToClientLetter::GoodbyeClient);
+    letter->SetType(ServerToClientLetter::LetterType::GoodbyeClient);
     letter->SetIp(ConvertIPToInt(_ip));
     SendLetter(std::move(letter));
   }
@@ -188,7 +188,7 @@ namespace Neuron
       int teamId = m_teams.PutData(std::make_unique<ServerTeam>(clientId));
 
       auto letter = std::make_unique<ServerToClientLetter>();
-      letter->SetType(ServerToClientLetter::TeamAssign);
+      letter->SetType(ServerToClientLetter::LetterType::TeamAssign);
       letter->SetTeamId(teamId);
       letter->SetIp(ConvertIPToInt(_ip));
       letter->SetTeamType(_teamType);
@@ -225,7 +225,7 @@ namespace Neuron
             if( _teamType != Team::TeamTypeAI )
             {
                 ServerToClientLetter *letter = new ServerToClientLetter();
-                letter->SetType( ServerToClientLetter::TeamAssign );
+                letter->SetType( ServerToClientLetter::LetterType::TeamAssign );
                 letter->SetTeamId(teamId);
                 letter->SetIp( ConvertIPToInt( _ip ) );
                 letter->SetTeamType( _teamType );
@@ -314,13 +314,13 @@ namespace Neuron
     // Compile all incoming messages into a ServerToClientLetter
 
     auto letter = std::make_unique<ServerToClientLetter>();
-    letter->SetType(ServerToClientLetter::Update);
+    letter->SetType(ServerToClientLetter::LetterType::Update);
 
     std::unique_ptr<NetworkUpdate> incoming = GetNextLetter();
 
     while (incoming)
     {
-      if (incoming->m_type == NetworkUpdate::ClientJoin)
+      if (incoming->m_type == NetworkUpdate::UpdateType::ClientJoin)
       {
         if (GetClientId(incoming->m_clientIp) == -1)
         {
@@ -328,7 +328,7 @@ namespace Neuron
           RegisterNewClient(incoming->m_clientIp);
         }
       }
-      else if (incoming->m_type == NetworkUpdate::ClientLeave)
+      else if (incoming->m_type == NetworkUpdate::UpdateType::ClientLeave)
       {
         if (GetClientId(incoming->m_clientIp) != -1)
         {
@@ -336,7 +336,7 @@ namespace Neuron
           RemoveClient(incoming->m_clientIp);
         }
       }
-      else if (incoming->m_type == NetworkUpdate::RequestTeam)
+      else if (incoming->m_type == NetworkUpdate::UpdateType::RequestTeam)
       {
         if (GetClientId(incoming->m_clientIp) != -1)
         {
@@ -344,7 +344,7 @@ namespace Neuron
           RegisterNewTeam(incoming->m_clientIp, incoming->m_teamType, incoming->m_desiredTeamId);
         }
       }
-      else if (incoming->m_type == NetworkUpdate::Syncronise)
+      else if (incoming->m_type == NetworkUpdate::UpdateType::Syncronise)
       {
         int sequenceId = incoming->m_lastProcessedSeqId;
         unsigned char sync = incoming->m_sync;

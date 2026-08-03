@@ -168,8 +168,8 @@ void BlueprintBuilding::SendBlueprint(int _segment, bool _infected)
   else
     m_infected -= SERVER_ADVANCE_PERIOD * 10.0f;
 
-  m_infected = max(m_infected, 0.0f);
-  m_infected = min(m_infected, 100.0f);
+  m_infected = std::max(m_infected, 0.0f);
+  m_infected = std::min(m_infected, 100.0f);
 }
 
 
@@ -251,8 +251,8 @@ void BlueprintStore::SendBlueprint(int _segment, bool _infected)
   else
     oldValue -= SERVER_ADVANCE_PERIOD * 1.0f;
 
-  oldValue = max(oldValue, 0.0f);
-  oldValue = min(oldValue, 100.0f);
+  oldValue = std::max(oldValue, 0.0f);
+  oldValue = std::min(oldValue, 100.0f);
 
   m_segments[_segment] = oldValue;
 }
@@ -284,8 +284,8 @@ bool BlueprintStore::Advance()
       {
         float oldValue = m_segments[i];
         oldValue += SERVER_ADVANCE_PERIOD * infectionChange;
-        oldValue = max(oldValue, 0.0f);
-        oldValue = min(oldValue, 100.0f);
+        oldValue = std::max(oldValue, 0.0f);
+        oldValue = std::min(oldValue, 100.0f);
         m_segments[i] = oldValue;
       }
     }
