@@ -371,6 +371,26 @@ Real, currently true, and worth knowing before you trip over them:
   working looks like*. CI builds and runs the unit suite; it does not launch the
   client, and neither does any agent working on Linux. A change that compiles and
   passes 37 tests can still break the game on the first frame.
+- **The sound system draws from the simulation's random stream.**
+  `NeuronClient/SoundInstance.cpp` calls `speciesRandom()` twice — line 533 to
+  pick a sample from a group, line 1009 to pick an object id. That is the
+  deterministic lockstep RNG, the same sequence `Location::Advance` consumes,
+  and `CODING_STANDARDS.md#determinism` names the `speciesRandom()` call
+  sequence as load-bearing.
+  - The consequence is worse than it first reads. Whether those lines execute
+    depends on the sound path: how many object ids an instance holds, whether a
+    sample group is populated, whether the instance is playing at all. Two
+    clients that differ in sound configuration — or that fail to load the same
+    samples — draw a different NUMBER of values from the shared stream, and
+    every subsequent `speciesRandom()` in the simulation returns something
+    different on one machine than the other. That is a desync, and nothing in
+    the build or the test suite would show it.
+  - **Not investigated, not reproduced, and not fixed** — found by reading
+    while scoping `containers-replaced` T5 on 2026-08-02. It may already be
+    benign for reasons the code does not state (if these paths run identically
+    on every client regardless of settings, it costs nothing). Establishing
+    which is true is worth doing before multiplayer is trusted, and it is a
+    determinism question rather than a modernisation one.
 - **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
   MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
   Deterministic lockstep requires bit-identical results, and nobody has verified

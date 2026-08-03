@@ -233,8 +233,35 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     notes: >
-      Not characterisable ahead of time — sound needs a device. Relies on T1/T2
-      template tests, the build, and audible behaviour in the smoke test.
+      SURVEYED 2026-08-02 and NOT started. Two findings change what this task
+      is, and one of them is bigger than this plan.
+
+      THIS TASK'S PREMISE IS WRONG. The intent says sound is "frame-rate code,
+      not simulation state, so std::vector and std::unordered_map are
+      legitimate here". SoundInstance.cpp calls speciesRandom() twice — line
+      533 picks a sample, line 1009 picks an object id — so the sound
+      subsystem draws from the DETERMINISTIC SIMULATION RANDOM STREAM. Any
+      conversion here that changes how many times those lines execute changes
+      the sequence every other consumer of speciesRandom() sees. The
+      acceptance criterion "no speciesRandom() call is added or removed" is
+      therefore load-bearing rather than a formality, and unordered containers
+      anywhere that decides whether those lines run are not safe. See the
+      hazard recorded in AGENTS.md, which is a much larger problem than this
+      task.
+
+      SCOPE: ListSoundEvents is not part of these six files. It is a virtual
+      taking LList<char const*>* implemented across 64 files — every entity
+      and building type — so SoundSystem.h cannot lose its LList reference,
+      and this task cannot meet its own grep acceptance, without a tree-wide
+      interface change. Split out as T23.
+
+      The rest is ordinary: m_events, m_samples, m_objIds and m_dspFX are
+      vectors; m_sounds is a SlotMap MostRecentFirst (FastDArray); m_params
+      and the three blueprint arrays are SlotMap LowestFirst (DArray); m_cache
+      is keyed AND index-iterated, so std::map rather than a hash. Note
+      SampleGroup's destructor calls EmptyAndDeleteArray — delete[], not
+      delete — so m_samples holds new char[] and its replacement loop must
+      too.
     status: todo
 
   - id: T6
@@ -987,4 +1014,39 @@ tasks:
       the move overloads are additive and the slot-choosing path is the same
       code it always was.
     status: done
+
+  - id: T23
+    title: Convert the ListSoundEvents interface off LList
+    intent: >
+      ListSoundEvents(LList<char const*>* _list) is implemented by every
+      entity and building type — 64 files carry the signature. It is the last
+      thing keeping LList in SoundSystem.h, so T5 cannot meet its grep
+      acceptance while it stands, and T16 cannot delete LList.h. Purely
+      mechanical: the parameter becomes std::vector<const char*>* and the
+      bodies push_back instead of PutData.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundSystem.cpp
+    acceptance:
+      - No declaration or definition of ListSoundEvents mentions LList; grep -rn "ListSoundEvents" shows a std::vector parameter everywhere
+      - Every override still appends the same event names in the same order
+      - grep -rlw LList over GameLogic and Species drops by the number of files whose only LList use was this signature
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    notes: >
+      Split out of T5 on 2026-08-02 after measuring the ripple: `grep -rlw
+      ListSoundEvents` returns 64 files. The files list above names only the
+      declaration site because the other 63 are overrides in files owned by
+      T9, T10, T11 and T13 — this task edits one signature in each of them and
+      nothing else, which is why it is parallel_safe false rather than
+      folded into those tasks.
+
+      Mechanical, but not small, and worth doing in one commit so the
+      signature never disagrees with itself.
+    status: todo
 
