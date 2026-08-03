@@ -59,6 +59,9 @@ tasks:
       - NeuronCore/Preferences.h
       - NeuronCore/Profiler.cpp
       - NeuronCore/Profiler.h
+      - GameLogic/ProfileWindow.cpp
+      - GameLogic/PrefsGraphicsWindow.cpp
+      - GameLogic/PrefsSoundWindow.cpp
     acceptance:
       - grep -wE "EmptyAndDelete|SAFE_DELETE" over the four files returns nothing
       - No raw owning `new` remains in the four files; observers stay raw
@@ -82,7 +85,7 @@ tasks:
       before Profiler's; if the wait becomes the obstacle, splitting this
       task along the same line is the obvious move rather than starting it
       half-blocked.
-    status: todo
+    status: in_progress
 
   - id: T2
     title: Adopt unique_ptr in NeuronServer
