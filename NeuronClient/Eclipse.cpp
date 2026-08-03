@@ -82,13 +82,13 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
 
   if (!_lmb && !lmb && !_rmb && !rmb) // No buttons changed, mouse move only
   {
-    EclWindow* currentWindow = EclGetWindow(windowFocus);
+    EclWindow* currentWindow = EclGetWindow(windowFocus.c_str());
     if (currentWindow)
     {
       EclButton* button = currentWindow->GetButton(mouseX - currentWindow->m_x, mouseY - currentWindow->m_y);
       if (button)
       {
-        if (strcmp(currentButton, button->m_name) != 0)
+        if (currentButton != button->m_name)
         {
           currentButton = button->m_name;
           EclDirtyWindow(currentWindow);
@@ -105,7 +105,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
       }
       else
       {
-        if (strcmp(currentButton, "None") != 0)
+        if (currentButton != "None")
         {
           currentButton = "None";
           EclDirtyWindow(currentWindow);
@@ -116,7 +116,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
     }
     else
     {
-      if (strcmp(currentButton, "None") != 0)
+      if (currentButton != "None")
       {
         currentButton = "None";
         if (tooltipCallback)
@@ -132,8 +132,8 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
     EclWindow* currentWindow = EclGetWindow(mouseX, mouseY);
     if (currentWindow)
     {
-      if (strcmp(windowFocus, "None") != 0)
-        EclDirtyWindow(windowFocus);
+      if (windowFocus != "None")
+        EclDirtyWindow(windowFocus.c_str());
       windowFocus = currentWindow->m_name;
       EclBringWindowToFront(currentWindow->m_name);
       mouseDownWindow = currentWindow->m_name;
@@ -157,9 +157,9 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
     }
     else
     {
-      if (strcmp(windowFocus, "None") != 0)
+      if (windowFocus != "None")
       {
-        EclDirtyWindow(windowFocus);
+        EclDirtyWindow(windowFocus.c_str());
         windowFocus = "None";
       }
     }
@@ -171,9 +171,9 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
     buttonDownMouseX = mouseX;
     buttonDownMouseY = mouseY;
 
-    if (strcmp(mouseDownWindow, "None") != 0)
+    if (mouseDownWindow != "None")
     {
-      EclWindow* window = EclGetWindow(mouseDownWindow);
+      EclWindow* window = EclGetWindow(mouseDownWindow.c_str());
       EclButton* button = window->GetButton(mouseX - window->m_x, mouseY - window->m_y);
 
       if (button)
@@ -182,7 +182,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
       }
       else
       {
-        if (strcmp(currentButton, "None") == 0)
+        if (currentButton == "None")
         {
           int newWidth = window->m_w;
           int newHeight = window->m_h;
@@ -208,14 +208,14 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
                 newWidth = 60;
               if (newHeight < 40)
                 newHeight = 40;
-              EclSetWindowSize(mouseDownWindow, newWidth, newHeight);
+              EclSetWindowSize(mouseDownWindow.c_str(), newWidth, newHeight);
             }
           }
           else
           {
             if (window->m_movable)
             {
-              EclSetWindowPosition(mouseDownWindow, mouseX - mouseDownWindowX, mouseY - mouseDownWindowY);
+              EclSetWindowPosition(mouseDownWindow.c_str(), mouseX - mouseDownWindowX, mouseY - mouseDownWindowY);
             }
           }
         }
@@ -264,7 +264,7 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
 
 void EclUpdateKeyboard(int keyCode, bool shift, bool ctrl, bool alt)
 {
-  EclWindow* currentWindow = EclGetWindow(windowFocus);
+  EclWindow* currentWindow = EclGetWindow(windowFocus.c_str());
   if (currentWindow)
   {
     currentWindow->Keypress(keyCode, shift, ctrl, alt);
@@ -280,9 +280,9 @@ void EclRender()
   //
   // Render any maximised Window?
 
-  if (strcmp(maximisedWindow, "None") != 0)
+  if (maximisedWindow != "None")
   {
-    EclWindow* maximised = EclGetWindow(maximisedWindow);
+    EclWindow* maximised = EclGetWindow(maximisedWindow.c_str());
     if (maximised)
     {
       clearDraw(maximised->m_x, maximised->m_y, maximised->m_w, maximised->m_h);
@@ -317,7 +317,7 @@ void EclRender()
       EclWindow* window = windows[i];
       if (window->m_dirty)
       {
-        bool hasFocus = (strcmp(window->m_name, windowFocus) == 0);
+        bool hasFocus = (windowFocus == window->m_name);
         window->Render(hasFocus);
         // window->m_dirty = false;
       }
@@ -360,7 +360,7 @@ char const* EclGetCurrentButton() { return currentButton.c_str(); }
 char const* EclGetCurrentClickedButton()
 {
   if (lmb)
-    return currentButton;
+    return currentButton.c_str();
 
   else
     return "None";
@@ -374,7 +374,7 @@ char const* EclGenerateUniqueWindowName(char const* name)
 
   int index = 1;
   uniqueName = name;
-  while (EclGetWindow(uniqueName.c_str()))
+  while (EclGetWindow(uniqueName.c_str().c_str()))
   {
     ++index;
     uniqueName = std::format("{}{}", name, index);
@@ -422,9 +422,9 @@ void EclRegisterPopup(EclWindow* window)
 
 void EclRemovePopup()
 {
-  if (EclGetWindow(popupWindow))
+  if (EclGetWindow(popupWindow.c_str()))
   {
-    EclRemoveWindow(popupWindow);
+    EclRemoveWindow(popupWindow.c_str());
   }
   popupWindow = "None";
 }
@@ -439,12 +439,12 @@ void EclRemoveWindow(char const* name)
     windows.erase(windows.begin() + (index));
     delete window;
 
-    if (strcmp(mouseDownWindow, name) == 0)
+    if (mouseDownWindow == name)
     {
       mouseDownWindow = "None";
     }
 
-    if (strcmp(windowFocus, name) == 0)
+    if (windowFocus == name)
     {
       windowFocus = "None";
     }
@@ -519,7 +519,7 @@ bool EclMouseInButton(EclWindow* window, EclButton* button)
 
 bool EclIsTextEditing()
 {
-  EclWindow* currentWindow = EclGetWindow(windowFocus);
+  EclWindow* currentWindow = EclGetWindow(windowFocus.c_str().c_str());
   return (currentWindow && strcmp(currentWindow->m_currentTextEdit, "None") != 0);
 }
 
@@ -582,7 +582,7 @@ void EclMaximiseWindow(char const* name)
 
 void EclUnMaximise()
 {
-  EclWindow* w = EclGetWindow(maximisedWindow);
+  EclWindow* w = EclGetWindow(maximisedWindow.c_str().c_str());
   maximisedWindow = "None";
 
   if (w)

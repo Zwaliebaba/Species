@@ -309,7 +309,7 @@ void LangTable::RebuildTable(PhraseOffsets* _phrases, std::ostrstream& stream, I
       else
       {
         // Make sure this is the most specific string, or ignore it
-        if (chomp_mode_suffix(key) && !RawDoesPhraseExist(key, _mood) && !specific_key_exists(key, _mood))
+        if (chomp_mode_suffix(key.data()) && !RawDoesPhraseExist(key.c_str(), _mood) && !specific_key_exists(key.c_str(), _mood))
         {
           _phrases->try_emplace(key, 0); // Give me an empty string
         }

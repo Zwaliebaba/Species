@@ -121,7 +121,7 @@ bool TextReader::TokenAvailable()
   return false;
 }
 
-const char* TextReader::GetFilename() { return m_filename; }
+const char* TextReader::GetFilename() { return m_filename.c_str(); }
 
 // Returns the next token on the current line. Strips all separator
 // characters from the start and end of the token, so "blah, wibble:7"

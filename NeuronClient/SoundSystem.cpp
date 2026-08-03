@@ -202,7 +202,7 @@ namespace
   // and that is strings-modernised/T5's to change. What this fixes is that the
   // copies into them were unbounded — a name longer than 255 characters ran
   // off the end of the struct.
-  template <size_t N> void SetName(char (&_dest)[N], std::string_view _source)
+  template <size_t N> void CopyName(char (&_dest)[N], std::string_view _source)
   {
     size_t length = _source.size();
     if (length > N - 1)
@@ -215,7 +215,7 @@ namespace
 } // namespace
 
 
-void SampleGroup::SetName(const char* _name) { SetName(m_name, _name); }
+void SampleGroup::SetName(const char* _name) { CopyName(m_name, _name); }
 
 void SampleGroup::AddSample(const char* _sample)
 {
@@ -498,7 +498,7 @@ void SoundSystem::LoadEffects()
 
     auto bp = new DspBlueprint();
     m_filterBlueprints.PutData(bp);
-    SetName(bp->m_name, in->GetNextToken());
+    CopyName(bp->m_name, in->GetNextToken());
 
     in->ReadLine();
     char* param = in->GetNextToken();
@@ -507,7 +507,7 @@ void SoundSystem::LoadEffects()
       auto sb = new DspParameterBlueprint();
       bp->m_params.PutData(sb);
 
-      SetName(sb->m_name, param);
+      CopyName(sb->m_name, param);
       sb->m_min = atof(in->GetNextToken());
       sb->m_max = atof(in->GetNextToken());
       sb->m_default = atof(in->GetNextToken());
@@ -2123,7 +2123,7 @@ SampleGroup* SoundSystem::NewSampleGroup(const char* _name)
     const std::string nameCandidate = std::format("newsamplegroup{}", i);
     if (!GetSampleGroup(nameCandidate.c_str()))
     {
-      group->SetName(nameCandidate);
+      group->SetName(nameCandidate.c_str());
       return group;
     }
     ++i;
