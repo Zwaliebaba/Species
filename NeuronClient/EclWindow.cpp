@@ -113,7 +113,7 @@ void EclWindow::RemoveButton ( char const *_name )
 {
   for (int i = 0; i < m_buttons.size(); ++i)
   {
-    EclButton* button = m_buttons.GetData(i);
+    EclButton* button = m_buttons[i];
     if (strcmp(button->m_name, _name) == 0)
     {
       m_buttons.erase(m_buttons.begin() + (i));
@@ -126,7 +126,7 @@ EclButton *EclWindow::GetButton ( char const *_name )
 {
   for (int i = 0; i < m_buttons.size(); ++i)
   {
-    EclButton* button = m_buttons.GetData(i);
+    EclButton* button = m_buttons[i];
     if (strcmp(button->m_name, _name) == 0)
       return button;
   }
@@ -139,7 +139,7 @@ EclButton *EclWindow::GetButton ( int _x, int _y )
 {
   for (int i = 0; i < m_buttons.size(); ++i)
   {
-    EclButton* button = m_buttons.GetData(i);
+    EclButton* button = m_buttons[i];
 
     if (_x >= button->m_x && _x <= button->m_x + button->m_w && _y >= button->m_y && _y <= button->m_y + button->m_h)
     {
@@ -180,7 +180,7 @@ void EclWindow::Render ( bool hasFocus )
 {
   for (int i = m_buttons.size() - 1; i >= 0; --i)
   {
-    EclButton* button = m_buttons.GetData(i);
+    EclButton* button = m_buttons[i];
     bool highlighted = EclMouseInButton(this, button) || strcmp(m_currentTextEdit, button->m_name) == 0;
     bool clicked = (hasFocus && strcmp(EclGetCurrentClickedButton(), button->m_name) == 0);
     button->Render(m_x + button->m_x, m_y + button->m_y, highlighted, clicked);

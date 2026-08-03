@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <algorithm>
 #include "Win32EventHandler.h"
 #include "Debug.h"
 #include "WindowManager.h"
@@ -146,8 +148,7 @@ void WindowManager::ListAllDisplayModes()
       else
         res = m_resolutions[resId];
 
-      if (res->static_cast<int>(
-            std::distance(m_refreshRates.begin(), std::find(m_refreshRates.begin(), m_refreshRates.end(), devMode.dmDisplayFrequency))) == -1)
+      if (std::find(res->m_refreshRates.begin(), res->m_refreshRates.end(), devMode.dmDisplayFrequency) == res->m_refreshRates.end())
         res->m_refreshRates.push_back(devMode.dmDisplayFrequency);
     }
     ++i;
