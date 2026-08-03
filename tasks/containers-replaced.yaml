@@ -172,7 +172,40 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    notes: >
+      LANDED 2026-08-02, CI green first try, including Server.exe --ticks 20.
+      SlotMap's first production caller: T3 built it and T2 pinned it four
+      tasks earlier and nothing had used it until now.
+
+      FLAVOUR IS THE DECISION, and the next migration should copy the
+      reasoning rather than the answer. These were DArray, so they take the
+      default LowestFirst. Client and team registry indices ARE identity — a
+      letter carries m_clientId as an index into m_clients — so the freelist
+      flavour would hand the same join sequence different identities after a
+      disconnect. Check which legacy template a member was, not which one
+      looks tidier.
+
+      SlotMap was a drop-in for every DArray call site: PutData, PutData at an
+      index, ValidIndex, Size, SetSize, NumUsed, MarkNotUsed, EmptyAndDelete
+      and indexing all carried over untouched, so the diff for those three
+      members is confined to their declarations. That is worth knowing before
+      T9, T10 and T12, which are the same substitution at twenty times the
+      scale: budget the effort for the LList members, not the DArray ones.
+
+      The LList members are ordinary queues — PutDataAtEnd is push_back,
+      RemoveData(0) is erase(begin()), ValidIndex is a written-out bounds
+      check — and they still hold raw owning pointers, so three EmptyAndDelete
+      calls became explicit delete loops. ownership T2 covers these files.
+
+      Scope corrected BEFORE converting rather than by CI: Species/
+      ServerUpdates.cpp walks a letter's m_updates and was not in the file
+      list. Enumerating every use of every member first cost a minute; the
+      three conversions before this one each lost a CI round to skipping it.
+
+      One honest caveat on "tests pass unchanged": every assertion is
+      unchanged, but ServerToClientLetterTests needed .Size() -> .size() with
+      a cast, because Assert::AreEqual(int, size_t) does not compile.
+    status: done
 
   - id: T5
     title: Convert the sound subsystem containers
