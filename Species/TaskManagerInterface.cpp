@@ -191,7 +191,7 @@ void TaskManagerInterface::AdvanceTab()
             {
               index = i - 1;
             }
-            else if (g_taskManager->m_tasks.ValidIndex(static_cast<int>(g_taskManager->m_tasks.size()) - 1))
+            else if (ValidIndex(g_taskManager->m_tasks, static_cast<int>(g_taskManager->m_tasks.size()) - 1))
             {
               index = static_cast<int>(g_taskManager->m_tasks.size()) - 1;
             }

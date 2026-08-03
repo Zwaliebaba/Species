@@ -185,10 +185,21 @@ Run all five. CI runs the same five and will fail on anything you skip.
 python3 tools/check_project_files.py   # .vcxproj matches the files on disk
 python3 tools/check_layering.py        # no new upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
+python3 tools/check_containers.py      # no legacy container call left on a vector
 python3 tools/check_format.py          # changed lines match .clang-format
 python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum
 ```
+
+`check_containers.py` exists because three CI failures in a row were the same
+mistake: a call site a container sweep did not reach, still asking a
+`std::vector` for `Size()` or `ValidIndex()`. Those are compile errors, so CI
+caught every one — after a full Windows build, which is the slowest possible
+way to learn it. The check builds a tree-wide member-name-to-type map, which is
+why it is a separate tool rather than a `check_hygiene` rule. It resolves by
+member NAME, so a name that is a vector in one class and a slot map in another
+is skipped and counted rather than guessed at; `m_buildings`, `m_spirits` and
+`m_lights` are the three it currently loses.
 
 `python3 tools/check_format.py --fix` applies the formatting rather than
 reporting it.

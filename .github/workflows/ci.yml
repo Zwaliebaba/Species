@@ -51,6 +51,9 @@ jobs:
       - name: Task plans are valid DAGs
         run: python3 tools/check_task_dag.py
 
+      - name: No legacy container calls left on a std::vector
+        run: python3 tools/check_containers.py
+
       - name: Changed lines are formatted
         run: |
           python3 tools/check_format.py \

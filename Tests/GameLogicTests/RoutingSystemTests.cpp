@@ -27,7 +27,7 @@ namespace GameLogicTests
         route.AddWayPoint(Vector3(20.0f, 0.0f, 0.0f));
         route.AddWayPoint(Vector3(30.0f, 0.0f, 0.0f));
 
-        Assert::AreEqual(3, route.m_wayPoints.Size());
+        Assert::AreEqual(size_t(3), route.m_wayPoints.size());
         Assert::AreEqual(10.0f, route.GetWayPoint(0)->GetPos().x, 0.0001f);
         Assert::AreEqual(20.0f, route.GetWayPoint(1)->GetPos().x, 0.0001f);
         Assert::AreEqual(30.0f, route.GetWayPoint(2)->GetPos().x, 0.0001f);

@@ -144,7 +144,10 @@ namespace NeuronCoreTests
         Assert::AreEqual(100, slots.Size());
         Assert::AreEqual(50, slots.NumUsed());
 
-        Assert::IsTrue(WalkWithWalker(slots.Size(), SLICES) == WalkLegacy(100, SLICES), L"capacity drives the walk, whatever the occupancy");
+        // Half the slots are holes, and the walk is identical to the one a
+        // full container of the same capacity gets — GOLDEN[0] is size 100.
+        const std::vector<std::pair<int, int>> forCapacity100(std::begin(GOLDEN[0].m_bounds), std::end(GOLDEN[0].m_bounds));
+        Assert::IsTrue(WalkWithWalker(slots.Size(), SLICES) == forCapacity100, L"capacity drives the walk, whatever the occupancy");
       }
 
       TEST_METHOD(ResetRestartsTheWalk)
