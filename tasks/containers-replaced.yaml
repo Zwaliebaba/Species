@@ -328,7 +328,36 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    notes: >
+      LANDED 2026-08-02, CI green after one round.
+
+      ONE REAL TRAP. GameLogic/SpeciesWindow.cpp had `if
+      (windows->GetData(0))`. LList::GetData returns a null T() for an
+      out-of-range read — LListTests pins that as OutOfRangeReadsReturnZero —
+      so that `if` was doubling as a bounds check on an empty window list, and
+      std::vector would have been undefined behaviour. The emptiness check is
+      now explicit. All eight other GetData(0) sites sit inside
+      `while (size() > 0)` loops and were already guarded; they were checked
+      one by one, not assumed.
+
+      SCOPE 6 FILES -> 20. EclGetWindows returns the list itself and fourteen
+      files call it. An accessor that hands out a container is the same
+      "a type cannot change in one file only" problem as a public member, one
+      level up — worth checking for before estimating any of the remaining
+      conversions.
+
+      Order is preserved by construction: PutDataAtStart is insert(begin()),
+      which is the z-order, newest window on top.
+
+      THE MECHANICAL LESSON, which cost a CI round. Rewriting `.Size()` to
+      `.size()` rather than wrapping it in a cast avoids the receiver-capture
+      bug (T8's `_frag->static_cast<int>(...)`) — but FindData and ValidIndex
+      DO wrap, and reintroduced it as `res->static_cast<int>(...)`. Separately,
+      four m_buttons.GetData(i) calls were not rewritten at all even though
+      .Size() on the adjacent line was, and the script's "converted" log line
+      hid it. The reliable check is not a better regex: it is grepping every
+      touched file for the legacy API AFTER the rewrite and BEFORE the push.
+    status: done
 
   - id: T8
     title: Convert Shape and ClientToServer containers
@@ -499,7 +528,7 @@ tasks:
       ResearchItem) use LList and DArray for UI lists. Frame-rate code, no
       simulation state — the low-risk half of GameLogic.
     project: GameLogic
-    depends_on: [T1, T7]
+    depends_on: [T1, T6, T7, T12, T23]
     files:
       - GameLogic/SpeciesWindow.cpp
       - GameLogic/MainMenus.cpp
@@ -516,6 +545,30 @@ tasks:
     acceptance:
       - grep -lwE "LList|DArray|InputSpecList|AutoVector" on the listed files returns nothing
       - Menu and list display order is by-construction unchanged
+    notes: >
+      DEPENDENCIES CORRECTED 2026-08-02, after surveying what these files
+      actually hold. The original `depends_on: [T1, T7]` was derived from a
+      grep count and is wrong: most of the remaining LList in these files is
+      not theirs to convert. It arrives through other tasks' APIs.
+
+        MainMenus.cpp          WordWrapText() returns LList<char*>*    -> T6
+        PrefsOtherWindow.cpp   ListResources() returns LList<char*>*   -> T6
+        UserProfileWindow.cpp  ListSubDirectoryNames()                 -> T6
+        FileDialog.h           m_files holds a ListDirectory result    -> T6
+        PrefsKeybindingsWindow auto_vector<InputDescription>           -> T14
+        ResearchItem.h/.cpp    ListSoundEvents(LList<char const*>*)    -> T23
+        CameraAnimWindow.cpp   LevelFile::m_cameraAnimations           -> T12
+
+      Only four members are genuinely this task's: SpeciesWindow's
+      m_buttonOrder, PrefsOtherWindow's m_languages, DropDownMenu's m_options
+      and FileDialog's m_selected, plus a local in PrefsGraphicsWindow. Doing
+      those alone leaves every listed file still matching the acceptance grep,
+      so the task would sit in_progress indefinitely — which is why the edges
+      are recorded instead.
+
+      T14 is named as a depends_on rather than blocked_by because it is in
+      this same plan. T6 likewise. T6 is the keystone: it clears four of the
+      seven rows above.
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
