@@ -26,6 +26,12 @@ Four plans are open, with **19 tasks left** between them:
 | `language-hygiene` | 4 of 9 | Two sweeps landed; the enums and the min/max macros are left. |
 | `namespace-migration` | 3 of 5 | Sequenced last by design. |
 
+A fifth was added on 2026-08-03 and is not part of the modernisation:
+`determinism.yaml`, two tasks, where a change to what the simulation computes
+is the point rather than the thing being avoided. Its first entry came out of
+`language-hygiene` T8. Keep it separate from the counts above — a task there is
+not modernisation debt being paid down.
+
 It did not stop because something broke. The last four commits are notes,
 documentation and a scope correction — `80f4c92` *Record what T5 actually is,
 and leave it stashed rather than half-pushed*. Stage 4 ran into a task whose

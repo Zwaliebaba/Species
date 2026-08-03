@@ -417,6 +417,25 @@ Real, currently true, and worth knowing before you trip over them:
     on every client regardless of settings, it costs nothing). Establishing
     which is true is worth doing before multiplayer is trusted, and it is a
     determinism question rather than a modernisation one.
+- **`Spirit.cpp` deliberately contains a written-out conditional that looks like
+  it wants simplifying. Do not simplify it.** `Spirit::Advance` clamps
+  `m_hover.y` in `StateBirth` and `StateDeath` through what used to be the `max`
+  macro, which evaluated its second argument twice — and that argument calls
+  `syncfrand()`. So when `m_hover.y` loses the comparison, a second value is
+  drawn and stored: the expression does not compute a maximum, and it consumes
+  an extra value from the synchronised stream about half the time.
+  `language-hygiene` T8 preserved both sites exactly, as the conditional the
+  macro expanded to, with the reason at the call site. Collapsing them to
+  `std::max` changes the RNG sequence and therefore the simulation.
+  - **Unlike the `SoundInstance` entry above, this is not a desync risk.** The
+    branch depends on `m_hover.y`, which is `sinf(m_positionOffset) *
+    m_yaxisRate` — simulation state. Every in-sync client evaluates the same
+    comparison and draws the same number of values. The two findings look alike
+    and are not: `SoundInstance`'s draw count varies with *client-local* sound
+    configuration, which is what makes that one dangerous.
+  - Fixing it is queued as `tasks/determinism.yaml` T1, gated on an owner-run
+    smoke test, because it is a deliberate behaviour change rather than a
+    modernisation. Until that lands, the odd-looking code is the correct code.
 - **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
   MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
   Deterministic lockstep requires bit-identical results, and nobody has verified
