@@ -90,7 +90,7 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
 
   for (const auto& entry : _pe->m_children)
   {
-    ProfiledElement* child = entry.second;
+    ProfiledElement* child = entry.second.get();
 
     float time = float(child->m_lastTotalTime * 1000.0f);
     float avrgTime = 1000.0f * child->m_historyTotalTime / child->m_historyNumCalls;
@@ -178,7 +178,7 @@ void ProfileWindow::Render(bool hasFocus)
     g_editorFont.DrawText2D(m_x + 130, m_y + 28, DEF_FONT_SIZE, "No");
   }
 
-  ProfiledElement* root = g_profiler->m_rootElement;
+  ProfiledElement* root = g_profiler->m_rootElement.get();
 
   m_yPos = m_y + 42;
 

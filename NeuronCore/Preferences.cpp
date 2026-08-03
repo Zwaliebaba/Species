@@ -152,22 +152,10 @@ PrefsManager::PrefsManager(std::string const &_filename)
 }
 
 
-// The items are still raw owning pointers; making them values or unique_ptr is
-// stage 5, tasks/ownership.yaml T1, which runs after this file's stage 4.
-void PrefsManager::DeleteItems()
-{
-  for (auto& entry : m_items)
-  {
-    delete entry.second;
-  }
-  m_items.clear();
-}
-
-
 PrefsManager::~PrefsManager()
 {
 	free(m_filename);
-  DeleteItems();
+  m_items.clear();
   m_fileText.clear();
 }
 
@@ -284,7 +272,7 @@ void PrefsManager::Load(char const *_filename)
 {
 	if (!_filename) _filename = m_filename;
 
-  DeleteItems();
+  m_items.clear();
 
   // Try to read preferences if they exist
   FILE* in = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
@@ -411,7 +399,7 @@ void PrefsManager::Save()
         continue;
       }
 
-      SaveItem(out, entry->second);
+      SaveItem(out, entry->second.get());
     }
   }
 
@@ -421,7 +409,7 @@ void PrefsManager::Save()
   {
     if (!entry.second->m_hasBeenWritten)
     {
-      SaveItem(out, entry.second);
+      SaveItem(out, entry.second.get());
     }
   }
 
@@ -431,7 +419,7 @@ void PrefsManager::Save()
 
 void PrefsManager::Clear()
 {
-  DeleteItems();
+  m_items.clear();
   m_fileText.clear();
 }
 
@@ -441,7 +429,7 @@ float PrefsManager::GetFloat(char const *_key, float _default) const
   auto entry = m_items.find(_key);
   if (entry == m_items.end())
     return _default;
-  PrefsItem* item = entry->second;
+  PrefsItem* item = entry->second.get();
   if (item->m_type != PrefsItem::TypeFloat)
     return _default;
   return item->m_float;
@@ -453,7 +441,7 @@ int PrefsManager::GetInt(char const *_key, int _default) const
   auto entry = m_items.find(_key);
   if (entry == m_items.end())
     return _default;
-  PrefsItem* item = entry->second;
+  PrefsItem* item = entry->second.get();
   if (item->m_type != PrefsItem::TypeInt)
     return _default;
   return item->m_int;
@@ -465,7 +453,7 @@ char const *PrefsManager::GetString(char const *_key, char const *_default) cons
   auto entry = m_items.find(_key);
   if (entry == m_items.end())
     return _default;
-  PrefsItem* item = entry->second;
+  PrefsItem* item = entry->second.get();
   if (item->m_type != PrefsItem::TypeString)
     return _default;
   return item->m_str;
@@ -496,12 +484,12 @@ void PrefsManager::SetString(char const *_key, char const *_string)
 
   if (entry == m_items.end())
   {
-    PrefsItem* item = new PrefsItem(_key, _string);
-    m_items[item->m_key] = item;
+    auto item = std::make_unique<PrefsItem>(_key, _string);
+    m_items[item->m_key] = std::move(item);
   }
   else
   {
-    PrefsItem* item = entry->second;
+    PrefsItem* item = entry->second.get();
     DEBUG_ASSERT(item->m_type == PrefsItem::TypeString);
     char* newString = strdup(_string);
     free(item->m_str);
@@ -519,12 +507,12 @@ void PrefsManager::SetFloat(char const *_key, float _float)
 
   if (entry == m_items.end())
   {
-    PrefsItem* item = new PrefsItem(_key, _float);
-    m_items[item->m_key] = item;
+    auto item = std::make_unique<PrefsItem>(_key, _float);
+    m_items[item->m_key] = std::move(item);
   }
   else
   {
-    PrefsItem* item = entry->second;
+    PrefsItem* item = entry->second.get();
     DEBUG_ASSERT(item->m_type == PrefsItem::TypeFloat);
     item->m_float = _float;
   }
@@ -537,12 +525,12 @@ void PrefsManager::SetInt(char const *_key, int _int)
 
   if (entry == m_items.end())
   {
-    PrefsItem* item = new PrefsItem(_key, _int);
-    m_items[item->m_key] = item;
+    auto item = std::make_unique<PrefsItem>(_key, _int);
+    m_items[item->m_key] = std::move(item);
   }
   else
   {
-    PrefsItem* item = entry->second;
+    PrefsItem* item = entry->second.get();
     DEBUG_ASSERT(item->m_type == PrefsItem::TypeInt);
     item->m_int = _int;
   }
@@ -563,12 +551,11 @@ void PrefsManager::AddLine(char const*_line, bool _overwrite)
 		if (c)
 			*c = '\0';
 
-		PrefsItem *item = new PrefsItem(localCopy);
+    auto item = std::make_unique<PrefsItem>(localCopy);
 
     auto existing = m_items.find(item->m_key);
     if (_overwrite && existing != m_items.end())
     {
-      delete existing->second;
       m_items.erase(existing);
       saveLine = false;
     }
@@ -577,11 +564,11 @@ void PrefsManager::AddLine(char const*_line, bool _overwrite)
     // key was never inserted twice, so a duplicate was a precondition
     // violation rather than supported behaviour: debug tripped the
     // assert, release grew a second slot for the same key. Replacing is
-    // the honest reading of that contract, and deleting what it
-    // displaces closes the leak the assert used to stand in for.
-    PrefsItem*& slot = m_items[item->m_key];
-    delete slot;
-    slot = item;
+    // the honest reading of that contract; move-assigning over the node
+    // frees whatever it displaces, which is what closes the leak the
+    // assert used to stand in for.
+    const std::string key = item->m_key;
+    m_items[key] = std::move(item);
 
     free(localCopy);
   }

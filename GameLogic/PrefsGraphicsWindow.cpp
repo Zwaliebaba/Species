@@ -186,7 +186,7 @@ void RenderCPUUsage( LList<char *> *elements, int x, int y )
     {
       const auto& children = g_profiler->m_rootElement->m_children;
       const auto found = children.find(elements->GetData(i));
-      ProfiledElement* element = (found == children.end()) ? nullptr : found->second;
+      ProfiledElement* element = (found == children.end()) ? nullptr : found->second.get();
       if (element && element->m_lastNumCalls > 0)
       {
         float occup = element->m_lastTotalTime * 100;

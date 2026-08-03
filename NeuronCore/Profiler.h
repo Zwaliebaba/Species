@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 
 #ifdef PROFILER_ENABLED
@@ -45,7 +46,7 @@ class ProfiledElement
     double m_callStartTime;
     char* m_name;
 
-    std::map<std::string, ProfiledElement*, ProfileNameLess> m_children;
+    std::map<std::string, std::unique_ptr<ProfiledElement>, ProfileNameLess> m_children;
     ProfiledElement* m_parent;
 
     bool m_isExpanded; // Bit of data that a tree view display can use
@@ -82,7 +83,7 @@ class Profiler
     using RenderSyncHook = void (*)();
     static void SetRenderSyncHook(RenderSyncHook _hook);
     ProfiledElement* m_currentElement; // Stores the currently active profiled element
-    ProfiledElement* m_rootElement;
+    std::unique_ptr<ProfiledElement> m_rootElement;
     bool m_doGlFinish; // Only ever set by the debug profile window
 
   private:

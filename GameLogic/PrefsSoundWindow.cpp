@@ -286,7 +286,7 @@ void PrefsSoundWindow::Render( bool _hasFocus )
 #ifdef PROFILER_ENABLED
     const auto& children = g_profiler->m_rootElement->m_children;
     const auto found = children.find("Advance SoundSystem");
-    ProfiledElement* element = (found == children.end()) ? nullptr : found->second;
+    ProfiledElement* element = (found == children.end()) ? nullptr : found->second.get();
     if( element->m_lastNumCalls > 0 )
     {
         float occup = element->m_lastTotalTime * 100;

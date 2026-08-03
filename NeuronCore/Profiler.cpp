@@ -34,11 +34,6 @@ ProfiledElement::ProfiledElement(const char* _name, ProfiledElement* _parent)
 ProfiledElement::~ProfiledElement()
 {
   free(m_name);
-  for (auto& entry : m_children)
-  {
-    delete entry.second;
-  }
-  m_children.clear();
 }
 
 // *** Start
@@ -126,14 +121,14 @@ Profiler::Profiler()
     m_currentElement(nullptr),
     m_doGlFinish(false)
 {
-  m_rootElement = new ProfiledElement("Root", nullptr);
+  m_rootElement = std::make_unique<ProfiledElement>("Root", nullptr);
   m_rootElement->m_isExpanded = true;
-  m_currentElement = m_rootElement;
+  m_currentElement = m_rootElement.get();
   m_endOfSecond = GetHighResTime() + 1.0f;
 }
 
 // *** Destructor
-Profiler::~Profiler() { delete m_rootElement; }
+Profiler::~Profiler() = default;
 
 // *** Advance
 void Profiler::Advance()
@@ -170,11 +165,14 @@ void Profiler::StartProfile(const char* _name)
 
   auto& children = m_currentElement->m_children;
   const auto entry = children.find(_name);
-  ProfiledElement* pe = (entry == children.end()) ? nullptr : entry->second;
+  ProfiledElement* pe = (entry == children.end()) ? nullptr : entry->second.get();
   if (!pe)
   {
-    pe = new ProfiledElement(_name, m_currentElement);
-    children[_name] = pe;
+    // The observer is taken before the owner moves into the map, because
+    // everything below this point works through pe.
+    auto created = std::make_unique<ProfiledElement>(_name, m_currentElement);
+    pe = created.get();
+    children[_name] = std::move(created);
   }
 
   ASSERT_TEXT(m_rootElement->m_isExpanded, "Profiler root element has been un-expanded");
@@ -204,7 +202,7 @@ void Profiler::EndProfile(const char* _name)
     if (m_doGlFinish && m_insideRenderSection && sm_renderSync)
       sm_renderSync();
 
-    DEBUG_ASSERT(m_currentElement != m_rootElement);
+    DEBUG_ASSERT(m_currentElement != m_rootElement.get());
     DEBUG_ASSERT(stricmp(_name, m_currentElement->m_name) == 0);
 
     m_currentElement->End();

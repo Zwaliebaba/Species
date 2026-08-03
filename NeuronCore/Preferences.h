@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -61,13 +62,12 @@ class PrefsManager
     // that block stable across runs and machines instead; template lines keep
     // their own positions either way, which is what
     // Tests/NeuronCoreTests/PreferencesTests.cpp actually pins.
-    std::map<std::string, PrefsItem*> m_items;
+    std::map<std::string, std::unique_ptr<PrefsItem>> m_items;
     std::vector<std::string> m_fileText;
     char *m_filename;
 
 	bool IsLineEmpty(char const *_line);
 	void SaveItem(FILE *out, PrefsItem *_item);
-  void DeleteItems();
 
   void CreateDefaultValues();
 
