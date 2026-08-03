@@ -104,21 +104,22 @@ void CachedSampleHandle::Restart() { m_nextSampleIndex = 0; }
 
 CachedSampleManager::~CachedSampleManager()
 {
-  for (int i = 0; i < m_cache.Size(); ++i)
+  for (auto const& entry : m_cache)
   {
-    delete m_cache.GetData(i);
+    delete entry.second;
   }
 }
 
 
 CachedSampleHandle* CachedSampleManager::GetSample(char const* _sampleName)
 {
-  CachedSample* cachedSample = m_cache.GetData(_sampleName);
+  auto existing = m_cache.find(_sampleName);
+  CachedSample* cachedSample = existing == m_cache.end() ? nullptr : existing->second;
 
   if (!cachedSample)
   {
     cachedSample = new CachedSample(_sampleName);
-    m_cache.PutData(_sampleName, cachedSample);
+    m_cache.emplace(_sampleName, cachedSample);
   }
 
   CachedSampleHandle* rv = new CachedSampleHandle(cachedSample);
@@ -126,21 +127,25 @@ CachedSampleHandle* CachedSampleManager::GetSample(char const* _sampleName)
 }
 
 
-void CachedSampleManager::EmptyCache() { m_cache.EmptyAndDelete(); }
+void CachedSampleManager::EmptyCache()
+{
+  for (auto const& entry : m_cache)
+  {
+    delete entry.second;
+  }
+  m_cache.clear();
+}
 
 
 int CachedSampleManager::GetMemoryUsage()
 {
   int memoryUsage = 0;
 
-  for (int i = 0; i < m_cache.Size(); ++i)
+  for (auto const& entry : m_cache)
   {
-    if (m_cache.ValidIndex(i))
-    {
-      CachedSample* sample = m_cache.GetData(i);
-      int sampleSize = sizeof(signed short) * sample->m_numChannels * sample->m_numSamples;
-      memoryUsage += sampleSize;
-    }
+    CachedSample* sample = entry.second;
+    int sampleSize = sizeof(signed short) * sample->m_numChannels * sample->m_numSamples;
+    memoryUsage += sampleSize;
   }
 
   return memoryUsage;

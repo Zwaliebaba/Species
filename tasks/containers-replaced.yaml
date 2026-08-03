@@ -232,7 +232,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    notes: >
+    notes: |
       SURVEYED 2026-08-02 and NOT started. Two findings change what this task
       is, and one of them is bigger than this plan.
 
@@ -262,7 +262,46 @@ tasks:
       SampleGroup's destructor calls EmptyAndDeleteArray — delete[], not
       delete — so m_samples holds new char[] and its replacement loop must
       too.
-    status: todo
+
+      DONE 2026-08-03. The two warnings above were both real and both landed as
+      written.
+
+      The delete[] one caught a live mistake: the first draft of SampleGroup's
+      replacement loop called free(), which is undefined behaviour on a NewStr
+      pointer. Reading this note is not what caught it — checking what NewStr
+      actually allocates with did — but the note named the right hazard.
+
+      speciesRandom is called twice in SoundInstance.cpp before and after, at
+      the same two decision points, reached under the same conditions. The
+      sample count feeding line 533 is still m_samples' size, and the object
+      count feeding line 1009 is still m_objIds' size after the same pruning
+      pass, so the draw sequence is unchanged.
+
+      DEVIATION FROM THE SURVEY, stated so it is not mistaken for an oversight.
+      The note above says m_cache "is keyed AND index-iterated, so std::map
+      rather than a hash". It is unordered_map here. The index iteration is
+      real but there are only two of them and both are ORDER-INDEPENDENT: the
+      destructor deletes every entry, and GetMemoryUsage sums every entry.
+      Neither observes sequence, so ordering buys nothing and costs a lookup on
+      the sample-loading path. If a third iteration ever appears that does care
+      about order, this is the note that says so.
+
+      What the survey did NOT predict is that HashTable is CASE-INSENSITIVE —
+      it hashes with the case bit masked (& 0xDF) and compares with stricmp.
+      std::unordered_map is not, and std::map would not have been either, so
+      taking the survey's advice verbatim would have carried the same defect:
+      two spellings of a sample name each getting an entry, the file decoded
+      and held twice rather than shared. Silent — no crash, no assert, just
+      double memory. It carries an explicit CaseInsensitiveHash and
+      CaseInsensitiveEqual pair now.
+
+      Third instance of the subscript-as-emptiness-test found:
+      `while (instance->m_dspFX.ValidIndex(0))` in SoundSystem. Same defect
+      class as the EclWindow crash from T7.
+
+      The headers and SampleCache.cpp were tab-indented, so they were
+      reformatted whole-file in a separate commit first.
+    status: done
 
   - id: T6
     title: Convert the resource and language containers

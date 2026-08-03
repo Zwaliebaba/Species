@@ -2,8 +2,7 @@
 
 #include <vector>
 
-#include "FastDArray.h"
-#include "LList.h"
+#include "SlotMap.h"
 #include "Vector3.h"
 #include "SoundInstance.h"
 #include "SoundSource.h"
@@ -51,7 +50,7 @@ class SoundSourceBlueprint
       NumOtherSoundSources
     };
 
-    LList<SoundEventBlueprint*> m_events;
+    std::vector<SoundEventBlueprint*> m_events;
 
     static int GetSoundSoundType(const char* _name);
     static const char* GetSoundSourceName(int _type);
@@ -80,7 +79,7 @@ class DspBlueprint
 {
   public:
     char m_name[256];
-    DArray<DspParameterBlueprint*> m_params;
+    SlotMap<DspParameterBlueprint*> m_params;
 
     char* GetParameter(int _param, float* _min = nullptr, float* _max = nullptr, float* _default = nullptr, int* _dataType = nullptr);
 };
@@ -93,7 +92,7 @@ class SampleGroup
 {
   public:
     char m_name[256];
-    LList<char*> m_samples;
+    std::vector<char*> m_samples;
 
     ~SampleGroup();
     void SetName(const char* _name);
@@ -126,19 +125,19 @@ class SoundSystem
     Vector3 m_editorPos;
     SoundInstanceId m_editorInstanceId;
 
-    FastDArray<SoundInstance*> m_sounds; // All the sounds that want to play
-    SoundInstance* m_music;              // There can only be one piece of music at a time
+    FastSlotMap<SoundInstance*> m_sounds; // All the sounds that want to play
+    SoundInstance* m_music;               // There can only be one piece of music at a time
     SoundInstance* m_requestedMusic;
 
     SoundInstanceId* m_channels;
     int m_numChannels;
 
-    DArray<SoundSourceBlueprint*> m_entityBlueprints;   // Indexed on Entity::m_type
-    DArray<SoundSourceBlueprint*> m_buildingBlueprints; // Indexed on Building::m_type
-    DArray<SoundSourceBlueprint*> m_otherBlueprints;    // Indexed on SoundSourceBlueprint
-    DArray<DspBlueprint*> m_filterBlueprints;           // Indexed on SoundLibrary3d::FX types
+    SlotMap<SoundSourceBlueprint*> m_entityBlueprints;   // Indexed on Entity::m_type
+    SlotMap<SoundSourceBlueprint*> m_buildingBlueprints; // Indexed on Building::m_type
+    SlotMap<SoundSourceBlueprint*> m_otherBlueprints;    // Indexed on SoundSourceBlueprint
+    SlotMap<DspBlueprint*> m_filterBlueprints;           // Indexed on SoundLibrary3d::FX types
 
-    DArray<SampleGroup*> m_sampleGroups;
+    SlotMap<SampleGroup*> m_sampleGroups;
 
   protected:
     void ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, const char* _entityName);

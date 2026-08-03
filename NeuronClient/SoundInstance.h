@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LList.h"
 #include "Vector3.h"
 #include "SoundParameter.h"
 #include "WorldObjectId.h"
@@ -132,7 +131,7 @@ class SoundInstance
 
     Vector3 m_pos;
     Vector3 m_vel;
-    LList<WorldObjectId*> m_objIds;
+    std::vector<WorldObjectId*> m_objIds;
     WorldObjectId m_objId; // The selected objId from the list
 
     float m_calculatedPriority;
@@ -141,7 +140,7 @@ class SoundInstance
     CachedSampleHandle* m_cachedSampleHandle;
     SoundInstance* m_parent; // The blueprint from which I was copied
 
-    LList<DspHandle*> m_dspFX;
+    std::vector<DspHandle*> m_dspFX;
 
     char* m_eventName;
 

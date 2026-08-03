@@ -1,6 +1,7 @@
 #pragma once
 
-#include "HashTable.h"
+#include <string>
+#include <unordered_map>
 
 
 class SoundStreamDecoder;
@@ -53,10 +54,35 @@ class CachedSampleHandle
 // Class CachedSampleManager
 //*****************************************************************************
 
+// The legacy hash table hashed with the case bit masked off and compared with
+// stricmp, so the sample cache was CASE-INSENSITIVE. A plain std::unordered_map is not, and
+// the difference is silent: two spellings of one sample name would each get
+// their own entry, so the file would be decoded and held in memory twice rather
+// than shared. These keep the old behaviour explicit.
+struct CaseInsensitiveHash
+{
+    size_t operator()(std::string const& _key) const
+    {
+      size_t hash = 14695981039346656037ULL;
+      for (char c : _key)
+      {
+        hash ^= static_cast<size_t>(tolower(static_cast<unsigned char>(c)));
+        hash *= 1099511628211ULL;
+      }
+      return hash;
+    }
+};
+
+struct CaseInsensitiveEqual
+{
+    bool operator()(std::string const& _a, std::string const& _b) const { return stricmp(_a.c_str(), _b.c_str()) == 0; }
+};
+
+
 class CachedSampleManager
 {
   protected:
-    HashTable<CachedSample*> m_cache;
+    std::unordered_map<std::string, CachedSample*, CaseInsensitiveHash, CaseInsensitiveEqual> m_cache;
 
   public:
     ~CachedSampleManager();
