@@ -295,7 +295,18 @@ tasks:
       - All seven Garden smoke-test steps pass on the renamed build, owner-reported
       - AGENTS.md records the run with the commit hash
     status: blocked
-    notes: >
+    notes: |
       Blocked on owner execution — agents in this environment cannot launch
       the Windows client. This is the gate the whole plan exists for; T3
       landing without T4 passing is not done.
+
+      PARTIAL RUN 2026-08-03 at 586c072, recorded in AGENTS.md: launch, load,
+      30s of play, Task Manager and no sync assert all pass. The two steps this
+      task actually needs — 50 Citizens in groups of 30 and 20, 179 Virii
+      across eight groups — were not checked, so it stays blocked.
+
+      Why those two and not the others: a reference the rename missed is a
+      string that no longer resolves, and an unresolved spawn name produces a
+      SMALLER GROUP rather than a crash. Every other step would pass with a
+      spawn silently missing. Reading the two counts is the whole test, and it
+      is about a minute of the run.
