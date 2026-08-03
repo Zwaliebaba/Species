@@ -834,7 +834,45 @@ tasks:
       intentional, and GetMaxChildTime declares a `child` local it never uses.
       Decide deliberately when converting; do not silently "tidy" the divisor,
       because it changes a displayed number.
-    status: in_progress
+
+      LANDED 2026-08-02, CI green at e830155.
+
+      Scope grew twice. ProfileWindow.cpp was known from the split; CI then
+      found PrefsGraphicsWindow.cpp and PrefsSoundWindow.cpp, both calling
+      m_children.GetData(key). Both were in the grep run while scoping this
+      task and were read as "probably their own members" without opening the
+      files. The lesson is narrow and worth keeping: the grep was right, the
+      skim of it was not.
+
+      Behaviour preserved deliberately in three places. The comparator uses
+      stricmp so the walk order is unchanged. GetMaxChildTime keeps dividing
+      by the FIRST child's m_historyNumSeconds — it reads like an oversight,
+      but it is a number on screen. Its `float val` narrowing from a double is
+      kept so near-ties resolve the same way. And GetData returned nullptr for
+      an absent key, so the two window call sites use find rather than
+      operator[], which would have inserted.
+
+      DEFECT FOUND, NOT FIXED: PrefsSoundWindow.cpp dereferences the lookup
+      result with no null check, where PrefsGraphicsWindow.cpp checks. If
+      "Advance SoundSystem" has not been profiled yet that is a null
+      dereference in the sound preferences window. Pre-existing, preserved
+      exactly by this conversion, and left for a commit that is allowed to
+      change behaviour.
+
+      Dead code removed while converting: an unused `child` local in
+      GetMaxChildTime, and `int tableSize = root->m_children.Size();` in
+      ProfileWindow::Render, assigned and never read.
+
+      GameLogic/ProfileWindow.cpp was whole-file formatted in its own commit
+      first (23ca526). The changed-lines format check does not converge on
+      that file — fifteen passes took a 15-line edit to 141 changed lines and
+      it was still growing, flattening an untouched hand-indented GL block on
+      the way. After the format, the conversion diff was 14 lines and
+      converged in one pass.
+
+      No test reaches any of this. Evidence is the build, the reading above,
+      and an owner's eye on the profile window.
+    status: done
 
   - id: T21
     title: Convert PersistingDebugRender to Neuron::SlotMap
