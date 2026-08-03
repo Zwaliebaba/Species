@@ -3,6 +3,8 @@
 #include "MathUtils.h"
 #include "Vector2.h"
 #include "Debug.h"
+#include "Input.h"
+#include "InputTypes.h"
 #include "Resource.h"
 #include "Bitmap.h"
 #include "Profiler.h"
