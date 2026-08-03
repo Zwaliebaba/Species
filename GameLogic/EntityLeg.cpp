@@ -34,7 +34,7 @@ EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, 
   m_rootMarker = m_parent->m_shape->m_rootFragment->LookupMarker(_rootMarkerName);
   ASSERT_TEXT(m_rootMarker, "EntityLeg: Couldn't find root marker %s", _rootMarkerName);
 
-  m_foot.m_state = EntityFoot::OnGround;
+  m_foot.m_state = EntityFoot::FootState::OnGround;
 }
 
 Vector3 EntityLeg::GetLegRootPos()
@@ -122,7 +122,7 @@ void EntityLeg::LiftFoot(float _targetHoverHeight)
 {
   m_foot.m_targetPos = CalcDesiredFootPos(_targetHoverHeight);
   m_foot.m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_foot.m_targetPos.x, m_foot.m_targetPos.z);
-  m_foot.m_state = EntityFoot::Swinging;
+  m_foot.m_state = EntityFoot::FootState::Swinging;
   m_foot.m_leftGroundTimeStamp = g_gameTime;
   m_foot.m_lastGroundPos = m_foot.m_pos;
 }
@@ -130,7 +130,7 @@ void EntityLeg::LiftFoot(float _targetHoverHeight)
 void EntityLeg::PlantFoot()
 {
   m_foot.m_pos = m_foot.m_targetPos;
-  m_foot.m_state = EntityFoot::OnGround;
+  m_foot.m_state = EntityFoot::FootState::OnGround;
 }
 
 Vector3 EntityLeg::GetIdealSwingingFootPos(float _fractionComplete)
@@ -151,7 +151,7 @@ Vector3 EntityLeg::GetIdealSwingingFootPos(float _fractionComplete)
 // Returns true if the foot was planted this frame
 bool EntityLeg::Advance()
 {
-  if (m_foot.m_state == EntityFoot::Swinging)
+  if (m_foot.m_state == EntityFoot::FootState::Swinging)
   {
     float fractionComplete = RampUpAndDown(m_foot.m_leftGroundTimeStamp, m_legSwingDuration, g_gameTime);
     if (fractionComplete > 1.0f)
@@ -185,20 +185,20 @@ void EntityLeg::Render(float _predictionTime, const Vector3& _predictedMovement)
 
   switch (m_foot.m_state)
   {
-  case EntityFoot::OnGround:
+  case EntityFoot::FootState::OnGround:
     footPos = m_foot.m_pos;
     break;
 
-  case EntityFoot::Swinging:
-    {
-      float fractionComplete = RampUpAndDown(m_foot.m_leftGroundTimeStamp, m_legSwingDuration, g_gameTime);
-      footPos = GetIdealSwingingFootPos(fractionComplete);
-      break;
-    }
+  case EntityFoot::FootState::Swinging:
+  {
+    float fractionComplete = RampUpAndDown(m_foot.m_leftGroundTimeStamp, m_legSwingDuration, g_gameTime);
+    footPos = GetIdealSwingingFootPos(fractionComplete);
+    break;
+  }
 
-  case EntityFoot::Pouncing:
+  case EntityFoot::FootState::Pouncing:
     footPos = m_foot.m_pos + _predictedMovement;
-    //footPos = predictedPos - m_foot.m_bodyToFoot;
+    // footPos = predictedPos - m_foot.m_bodyToFoot;
     break;
   }
 
@@ -231,18 +231,18 @@ bool EntityLeg::RenderPixelEffect(float _predictionTime, const Vector3& _predict
 
   switch (m_foot.m_state)
   {
-  case EntityFoot::OnGround:
+  case EntityFoot::FootState::OnGround:
     footPos = m_foot.m_pos;
     break;
 
-  case EntityFoot::Swinging:
-    {
-      float fractionComplete = RampUpAndDown(m_foot.m_leftGroundTimeStamp, m_legSwingDuration, g_gameTime);
-      footPos = GetIdealSwingingFootPos(fractionComplete);
-      break;
-    }
+  case EntityFoot::FootState::Swinging:
+  {
+    float fractionComplete = RampUpAndDown(m_foot.m_leftGroundTimeStamp, m_legSwingDuration, g_gameTime);
+    footPos = GetIdealSwingingFootPos(fractionComplete);
+    break;
+  }
 
-  case EntityFoot::Pouncing:
+  case EntityFoot::FootState::Pouncing:
     footPos = m_foot.m_pos + _predictedMovement; // - m_foot.m_bodyToFoot;
     break;
   }

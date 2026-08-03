@@ -169,7 +169,7 @@ int Spider::CalcWhichFootToMove()
 
   for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
   {
-    if (m_legs[i]->m_foot.m_state == EntityFoot::OnGround)
+    if (m_legs[i]->m_foot.m_state == EntityFoot::FootState::OnGround)
     {
       float score = m_legs[i]->CalcFootsDesireToMove(m_targetHoverHeight);
       if (score > FOOT_EMERGENCY_THRESHOLD)
@@ -485,7 +485,7 @@ bool Spider::AdvanceAttack()
       Vector3 forwards = (m_pounceTarget - m_pos);
       for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
       {
-        m_legs[i]->m_foot.m_state = EntityFoot::Pouncing;
+        m_legs[i]->m_foot.m_state = EntityFoot::FootState::Pouncing;
         m_legs[i]->m_foot.m_bodyToFoot = m_pos - m_legs[i]->m_foot.m_pos;
         m_legs[i]->m_foot.m_lastGroundPos = m_legs[i]->m_foot.m_pos;
         m_legs[i]->m_foot.m_targetPos = m_legs[i]->m_foot.m_pos + forwards;
@@ -516,7 +516,7 @@ bool Spider::AdvancePouncing()
 
     for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
     {
-      m_legs[i]->m_foot.m_state = EntityFoot::OnGround;
+      m_legs[i]->m_foot.m_state = EntityFoot::FootState::OnGround;
     }
 
     g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "PounceLand");

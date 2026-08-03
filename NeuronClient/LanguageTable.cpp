@@ -180,7 +180,9 @@ bool chomp_mode_suffix(char* key)
 
 bool LangTable::specific_key_exists(const char* _key, InputMode _mood)
 {
-  if (_key && _mood)
+  // `_mood` was tested for truthiness, which meant "not INPUT_MODE_NONE"
+  // because that enumerator is 0. Scoping the enum makes the intent say itself.
+  if (_key && _mood != InputMode::INPUT_MODE_NONE)
   {
     // This was a char[128] filled by a 123-byte bounded copy, after which the
     // suffix was written at key + strlen(_key) — the UNtruncated length. A key

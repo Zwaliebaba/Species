@@ -125,13 +125,13 @@ void Tripod::ChangeHealth(int _amount)
 
 int Tripod::CalcWhichFootToMove()
 {
-	bool allOnGround = m_legs[0]->m_foot.m_state == EntityFoot::OnGround &&
-					   m_legs[1]->m_foot.m_state == EntityFoot::OnGround &&
-					   m_legs[2]->m_foot.m_state == EntityFoot::OnGround;
+  bool allOnGround = m_legs[0]->m_foot.m_state == EntityFoot::FootState::OnGround && m_legs[1]->m_foot.m_state == EntityFoot::FootState::OnGround &&
+                     m_legs[2]->m_foot.m_state == EntityFoot::FootState::OnGround;
 
-	if (!allOnGround) return -1;
+  if (!allOnGround)
+    return -1;
 
-	float bestScore = 0.0f;
+  float bestScore = 0.0f;
 	float bestFoot = -1;
 
 	for (int i = 0; i < 3; ++i)
@@ -159,17 +159,17 @@ void Tripod::DoFallForTwoLegs()
 	Vector3 footToFoot;
 	Vector3 pointBetweenFeet;
 	Vector3 pointUnderBody;
-	if (!m_legs[0]->m_foot.m_state == EntityFoot::OnGround)
-	{
-		footToFoot = (m_legs[1]->m_foot.m_pos - m_legs[2]->m_foot.m_pos);
+  if (!m_legs[0]->m_foot.m_state == EntityFoot::FootState::OnGround)
+  {
+    footToFoot = (m_legs[1]->m_foot.m_pos - m_legs[2]->m_foot.m_pos);
 		RayRayDist(m_legs[1]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
-	}
-	else if (!m_legs[1]->m_foot.m_state == EntityFoot::OnGround)
-	{
-		footToFoot = (m_legs[2]->m_foot.m_pos - m_legs[0]->m_foot.m_pos);
+  }
+  else if (!m_legs[1]->m_foot.m_state == EntityFoot::FootState::OnGround)
+  {
+    footToFoot = (m_legs[2]->m_foot.m_pos - m_legs[0]->m_foot.m_pos);
 		RayRayDist(m_legs[0]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
-	}
-	else
+  }
+  else
 	{
 		footToFoot = (m_legs[0]->m_foot.m_pos - m_legs[1]->m_foot.m_pos);
 		RayRayDist(m_legs[0]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
@@ -392,11 +392,10 @@ void Tripod::AdvanceWalk()
 
 	// Fall
 	{
-		bool allOnGround = m_legs[0]->m_foot.m_state == EntityFoot::OnGround &&
-						   m_legs[1]->m_foot.m_state == EntityFoot::OnGround &&
-						   m_legs[2]->m_foot.m_state == EntityFoot::OnGround;
-		if (!allOnGround)
-		{
+    bool allOnGround = m_legs[0]->m_foot.m_state == EntityFoot::FootState::OnGround && m_legs[1]->m_foot.m_state == EntityFoot::FootState::OnGround &&
+                       m_legs[2]->m_foot.m_state == EntityFoot::FootState::OnGround;
+    if (!allOnGround)
+    {
 			DoFallForTwoLegs();
 		}
 		else

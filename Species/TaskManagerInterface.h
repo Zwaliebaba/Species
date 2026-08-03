@@ -69,7 +69,8 @@ class TaskManagerInterface : public TaskManagerInterfaceAccess
     bool m_quickUnitVisible; // the quickunit creation is visible
 
 
-    enum TMControl
+    // Scoped. A parameter type on ControlEvent and nothing else.
+    enum class TMControl
     {
       TMTerminate,
       TMDisplay

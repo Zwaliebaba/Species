@@ -92,4 +92,11 @@ static string errors[] = {"An unknown error occurred.",
                           "There was no parsing error."};
 
 
-const std::string& ValueInputDriver::getLastParseError(InputParserState state) { return errors[state]; }
+// PRE-EXISTING AND PRESERVED: this table has NINE strings and
+// InputParserState has TEN enumerators, so errors[STATE_DONE] reads one past
+// the end, and every message from STATE_WANT_OPTIONAL on is off by one —
+// STATE_WANT_OPTIONAL gets BAD_EXTRA's text, and so on. The cast below makes
+// the indexing explicit; it does not change which string comes back. Surfaced
+// by language-hygiene T4, which had to look at the indexing to compile it.
+// Fixing it is a behaviour change and is recorded on that task, not done here.
+const std::string& ValueInputDriver::getLastParseError(InputParserState state) { return errors[static_cast<size_t>(state)]; }

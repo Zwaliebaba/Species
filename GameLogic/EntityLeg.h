@@ -15,15 +15,16 @@ class Shape;
 class EntityFoot
 {
 public:
-	enum FootState
-	{
-		OnGround,
-		Swinging,
-		Pouncing
-	};
+  // Scoped. Held in m_state and never serialised.
+  enum class FootState
+  {
+    OnGround,
+    Swinging,
+    Pouncing
+  };
 
-	Vector3			m_pos;
-	Vector3			m_targetPos;
+  Vector3 m_pos;
+  Vector3			m_targetPos;
 	FootState		m_state;
 	float			m_leftGroundTimeStamp;
 	Vector3			m_lastGroundPos;

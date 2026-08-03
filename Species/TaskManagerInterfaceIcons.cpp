@@ -2389,9 +2389,9 @@ bool TaskManagerInterfaceIcons::ControlEvent(TMControl _type)
 {
   switch (_type)
   {
-  case TMTerminate:
+  case TMControl::TMTerminate:
     return g_inputManager->controlEvent(ControlIconsTaskManagerEndTask);
-  case TMDisplay:
+  case TMControl::TMDisplay:
     return g_inputManager->controlEvent(ControlIconsTaskManagerDisplay);
   default:
     return false;
