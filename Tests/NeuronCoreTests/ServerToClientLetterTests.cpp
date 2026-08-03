@@ -224,5 +224,18 @@ namespace NeuronCoreTests
 
         Assert::IsTrue(length < SERVERTOCLIENTLETTER_BYTESTREAMSIZE);
       }
+
+      // Same reason as TheUpdateTypeValuesAreTheProtocol in NetworkUpdateTests:
+      // m_type goes out as WRITE_INT and comes back as READ_INT, so these five
+      // numbers are what a client and a server agree on. Five enumerators is a
+      // small enough set that inserting one in the middle looks harmless.
+      TEST_METHOD(TheLetterTypeValuesAreTheProtocol)
+      {
+        Assert::AreEqual(0, static_cast<int>(ServerToClientLetter::Invalid));
+        Assert::AreEqual(1, static_cast<int>(ServerToClientLetter::HelloClient));
+        Assert::AreEqual(2, static_cast<int>(ServerToClientLetter::GoodbyeClient));
+        Assert::AreEqual(3, static_cast<int>(ServerToClientLetter::TeamAssign));
+        Assert::AreEqual(4, static_cast<int>(ServerToClientLetter::Update));
+      }
   };
 } // namespace NeuronCoreTests

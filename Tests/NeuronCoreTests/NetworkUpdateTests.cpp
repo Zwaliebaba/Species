@@ -302,5 +302,32 @@ namespace NeuronCoreTests
         Assert::AreEqual(0x01FF, static_cast<int>(received.m_teamControls.GetFlags()));
         Assert::IsTrue(received.m_teamControls.m_endSetTarget == 1, L"m_endSetTarget is the bit that used to be dropped");
       }
+
+      // THE ENUMERATOR VALUES ARE THE PROTOCOL. NetworkUpdate writes m_type with
+      // WRITE_INT and reads it back with READ_INT, so a client and a server
+      // agree on what an update means only by agreeing on these numbers.
+      // Nothing else pins them: the byte-layout tests fix the SIZE of the field,
+      // not the meaning of what is in it. Reordering the enum or inserting an
+      // enumerator in the middle is a protocol break that would otherwise
+      // compile, link and pass every other test.
+      //
+      // Written before language-hygiene T3 converted the enum to enum class, so
+      // that the conversion had to keep these numbers rather than assert its own.
+      TEST_METHOD(TheUpdateTypeValuesAreTheProtocol)
+      {
+        Assert::AreEqual(0, static_cast<int>(NetworkUpdate::Invalid));
+        Assert::AreEqual(1, static_cast<int>(NetworkUpdate::ClientJoin));
+        Assert::AreEqual(2, static_cast<int>(NetworkUpdate::ClientLeave));
+        Assert::AreEqual(3, static_cast<int>(NetworkUpdate::RequestTeam));
+        Assert::AreEqual(4, static_cast<int>(NetworkUpdate::Alive));
+        Assert::AreEqual(5, static_cast<int>(NetworkUpdate::SelectUnit));
+        Assert::AreEqual(6, static_cast<int>(NetworkUpdate::CreateUnit));
+        Assert::AreEqual(7, static_cast<int>(NetworkUpdate::AimBuilding));
+        Assert::AreEqual(8, static_cast<int>(NetworkUpdate::ToggleLaserFence));
+        Assert::AreEqual(9, static_cast<int>(NetworkUpdate::RunProgram));
+        Assert::AreEqual(10, static_cast<int>(NetworkUpdate::TargetProgram));
+        Assert::AreEqual(11, static_cast<int>(NetworkUpdate::Pause));
+        Assert::AreEqual(12, static_cast<int>(NetworkUpdate::Syncronise));
+      }
   };
 } // namespace NeuronCoreTests
