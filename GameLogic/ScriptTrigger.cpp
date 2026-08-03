@@ -26,7 +26,7 @@ ScriptTrigger::ScriptTrigger()
 {
   m_type = TypeScriptTrigger;
 
-  sprintf(m_scriptFilename, "NewScript");
+  CopyInto(m_scriptFilename, "NewScript");
 }
 
 
@@ -35,7 +35,7 @@ void ScriptTrigger::Initialise(Building* _template)
   Building::Initialise(_template);
 
   ScriptTrigger* trigger = (ScriptTrigger*)_template;
-  strcpy(m_scriptFilename, trigger->m_scriptFilename);
+  CopyInto(m_scriptFilename, trigger->m_scriptFilename);
   m_range = trigger->m_range;
   m_entityType = trigger->m_entityType;
   m_linkId = trigger->m_linkId;
@@ -68,9 +68,8 @@ bool ScriptTrigger::Advance()
     }
     else if (m_triggered > 0)
     {
-      char nextPhrase[256];
-      sprintf(nextPhrase, "%s_%d", m_scriptFilename, m_triggered);
-      if (!ISLANGUAGEPHRASE_ANY(nextPhrase))
+      const std::string nextPhrase = std::format("{}_{}", m_scriptFilename, m_triggered);
+      if (!ISLANGUAGEPHRASE_ANY(nextPhrase.c_str()))
       {
         // We've run out of strings to say, so we are now done
         return true;
@@ -210,7 +209,7 @@ void ScriptTrigger::Read(TextReader* _in, bool _dynamic)
   m_linkId = atoi(_in->GetNextToken());
   m_range = atof(_in->GetNextToken());
 
-  strcpy(m_scriptFilename, _in->GetNextToken());
+  CopyInto(m_scriptFilename, _in->GetNextToken());
 
   char* entityType = _in->GetNextToken();
   if (stricmp(entityType, "always") == 0)
@@ -230,17 +229,17 @@ void ScriptTrigger::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  char entityType[64];
+  char const* entityType;
   if (m_entityType == SCRIPTRIGGER_RUNALWAYS)
-    sprintf(entityType, "always");
+    entityType = "always";
   else if (m_entityType == SCRIPTRIGGER_RUNNEVER)
-    sprintf(entityType, "never");
+    entityType = "never";
   else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
-    sprintf(entityType, "camenter");
+    entityType = "camenter";
   else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
-    sprintf(entityType, "camview");
+    entityType = "camview";
   else
-    sprintf(entityType, "%s", Entity::GetTypeName(m_entityType));
+    entityType = Entity::GetTypeName(m_entityType);
 
   _out->printf("%-6d %-6.2f %s %s", m_linkId, m_range, m_scriptFilename, entityType);
 }

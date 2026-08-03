@@ -32,7 +32,7 @@ DynamicBase::DynamicBase()
   : Building(),
     m_buildingLink(-1)
 {
-  strcpy(m_shapeName, "none");
+  CopyInto(m_shapeName, "none");
 }
 
 void DynamicBase::Initialise(Building* _template)
@@ -91,7 +91,7 @@ void DynamicBase::SetBuildingLink(int _buildingId)
 
 void DynamicBase::SetShapeName(char* _shapeName)
 {
-  strcpy(m_shapeName, _shapeName);
+  CopyInto(m_shapeName, _shapeName);
 
   if (strcmp(m_shapeName, "none") != 0)
   {
@@ -278,20 +278,20 @@ void DynamicHub::Write(FileWriter* _out)
 
 char const* DynamicHub::GetObjectiveCounter()
 {
-  static char result[256];
+  static std::string result;
 
   if (m_requiredScore > 0)
   {
     float current = m_currentScore;
     float required = m_requiredScore;
     float percentComplete = current / required * 100.0f;
-    sprintf(result, "percent complete: %.0f", percentComplete);
+    result = std::format("percent complete: {:.0f}", percentComplete);
   }
   else
   {
-    sprintf(result, "");
+    result.clear();
   }
-  return result;
+  return result.c_str();
 }
 
 int DynamicHub::PointsPerHub() { return m_requiredScore / m_minActiveLinks; }

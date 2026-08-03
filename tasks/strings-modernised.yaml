@@ -443,10 +443,27 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    notes: >
+    notes: |
       Behind the LinkStubs link wall; evidence is review plus the Garden
       smoke test.
-    status: todo
+
+      DONE 2026-08-03. Four files, 20 sites, no control flow or arithmetic
+      touched in any Advance path.
+
+      THE THREE char[256] MEMBERS STAYED FIXED — FenceSwitch::m_script,
+      GenericHub::m_shapeName and ScriptTrigger::m_scriptFilename. They cannot
+      become std::string yet: InputField registers them through a raw char* and
+      writes into them as the user types, and converting InputField is T5.
+      What changed is that every copy into them is bounded now, through
+      Neuron::CopyInto — the same shape as the helper T4 added inside
+      SoundSystem, promoted to VectorUtils.h because a second task needed it.
+      All three were unbounded before, filled straight from a level-file token.
+
+      ScriptTrigger::Write built its entity-type word into a char[64] with five
+      formatted writes where four of them were constant strings and the fifth
+      was a lookup. It is a const char* selected by the same if-chain, which is
+      what it should have been.
+    status: done
 
   - id: T7
     title: Convert Species app and interface string handling
