@@ -15,13 +15,7 @@
     <ClCompile Include="ByteStreamTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DArrayTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GenericTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LListTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LookupTableTests.cpp">

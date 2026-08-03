@@ -1432,6 +1432,40 @@ tasks:
 
       The acceptance below says "the ten container headers"; it is eight now.
       Anything that still says ten is counting these two.
+
+      DONE 2026-08-03. NINE headers, not ten — 2dArray.h stays, for the reason
+      recorded above, so the acceptance line saying "ten" is counting a file
+      that was never going to leave.
+
+      THE DIFFERENTIAL TEST HAD TO DIE AND ITS EVIDENCE DID NOT.
+      SliceWalkerTests proved the walker equivalent by constructing a real
+      SliceDArray and comparing bound sequences over eight sizes — the
+      strongest evidence in this plan, and it could not outlive the template it
+      compared against. Rather than lose it, the sequences it was asserting
+      against were captured verbatim into a GOLDEN table in the same file, so
+      the test still asserts the same thing about the same eight sizes. Those
+      numbers decide which entity advances on which frame; they are not
+      cosmetic and must not be regenerated from the current implementation if
+      the test ever fails.
+
+      LListTests and DArrayTests are retired, as planned — they characterise
+      templates that no longer exist. SlotMapTests, SliceWalkerTests and
+      SliceWiringTests remain and are what covers this ground now.
+
+      THE LICENCE POINT IS WORTH STATING PRECISELY because it is easy to get
+      backwards. AutoVector.h's grant was conditional on the copyright notice
+      not being removed. Deleting the whole file, notice included, is not
+      shipping their code stripped of its terms — keeping the code and dropping
+      the header would have been. LICENSE's table describes what the repository
+      contains, so the row is removed and replaced with a paragraph recording
+      what happened and why; CODING_STANDARDS.md carried the same claim and now
+      says the same thing.
+
+      docs/GLOSSARY.md described DArray, LList and SliceDArray as live types
+      and said WorldObjectId::m_index is "a raw DArray slot". That is the one
+      sentence in the docs most likely to be read by someone about to touch
+      network identity, so it now names SlotMap, with both flavours and why
+      they differ.
     acceptance:
       - The ten container headers no longer exist on disk or in any .vcxproj
       - LICENSE no longer lists AutoVector.h; the MathUtils.cpp and TriTri.cpp notices are untouched
@@ -1443,7 +1477,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
 
   - id: T17
     title: Add Neuron::LookupTable, the no-iteration hashed lookup

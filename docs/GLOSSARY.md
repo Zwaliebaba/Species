@@ -33,7 +33,7 @@ intent.
 | **Entity** | `GameLogic/Entity.h` | One creature or vehicle. 19 types, listed below. |
 | **`m_others`** | `GameLogic/Team.h:34` | A team's entities that are *not* in a unit — Citizens, officers, armour. |
 | **WorldObject** | `GameLogic/WorldObject.h` | Base for anything with a position and velocity in the world: entities, buildings, lasers, effects, spirits. |
-| **WorldObjectId** | `GameLogic/WorldObject.h:18` | Identity of a world object: `m_teamId`, `m_unitId`, `m_index`, `m_uniqueId`. **`m_index` is a raw `DArray` slot and is serialised onto the wire** — see [determinism](../CODING_STANDARDS.md#determinism). |
+| **WorldObjectId** | `GameLogic/WorldObject.h:18` | Identity of a world object: `m_teamId`, `m_unitId`, `m_index`, `m_uniqueId`. **`m_index` is a raw `SlotMap` slot and is serialised onto the wire** — see [determinism](../CODING_STANDARDS.md#determinism). |
 
 ---
 
@@ -160,9 +160,9 @@ The buildings that move Spirits around:
 |---|---|---|
 | **Neuron** | `NeuronCore/`, `NeuronClient/`, `NeuronServer/` | The engine layers, as distinct from the game. See [ARCHITECTURE.md](ARCHITECTURE.md). |
 | **Eclipse** | `NeuronClient/Eclipse.*`, `EclWindow.*`, `EclButton.*` | The immediate-mode-ish UI toolkit every in-game window derives from. `DarwiniaWindow` is the game's styled subclass. |
-| **DArray** | `NeuronCore/DArray.h` | Slot map: *"an entry's index never changes"*. A `shadow` array marks live slots. **Not a `std::vector`** — see [determinism](../CODING_STANDARDS.md#determinism). |
-| **LList** | `NeuronCore/LList.h` | Linked list. Often owns its elements (`EmptyAndDelete`). |
-| **SliceDArray**, **FastDArray** | `NeuronCore/` | `DArray` variants. `SliceDArray` supports advancing a subset per slice. |
+| **SlotMap** | `NeuronCore/SlotMap.h` | Storage with stable indices: *"an entry's index never changes"*. An occupancy mask marks live slots. **Not a `std::vector`** — see [determinism](../CODING_STANDARDS.md#determinism). Two flavours, because the legacy templates assigned different indices after a removal: `SlotMap` scans lowest-first (was `DArray`), `FastSlotMap` pops a freelist (was `FastDArray`). |
+| **SliceWalker** | `NeuronCore/SliceWalker.h` | Hands out the index range to advance this slice. Ten slices are one server tick. Was a base class on `SliceDArray`; a sibling of the container now. |
+| **Legacy containers** | *deleted* | `LList`, `DArray`, `FastDArray`, `SliceDArray`, `BTree`, `HashTable`, `SortingHashTable`, `BoundedArray` and `AutoVector` were removed by containers-replaced/T16. `LList` was a linked list that often owned its elements (`EmptyAndDelete`); if you meet the name in a comment or an old commit, that is what it was. |
 | **Slice** | `NeuronCore/Globals.h:13` | `NUM_SLICES_PER_FRAME` = 10. Heavy simulation is spread across 10 slices per frame; `g_sliceNum` is the current one. |
 | **Sequence id** | `NeuronCore/Server.h` | The server's monotonic tick counter. Every broadcast carries one; clients apply them in order. |
 | **Sync value** | `Species/Main.cpp:252` | One-byte checksum of all entity positions and velocities, compared across clients to detect desync. |

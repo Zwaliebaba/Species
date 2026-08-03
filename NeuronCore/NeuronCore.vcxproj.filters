@@ -10,9 +10,6 @@
     <Filter Include="GameMath">
       <UniqueIdentifier>{75733e07-9db7-431f-8332-5e463a7f438b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Legacy Containers">
-      <UniqueIdentifier>{7f288c1a-fe6a-44a2-a563-6c50be718807}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Random.cpp" />
@@ -75,7 +72,6 @@
   <ItemGroup>
     <ClInclude Include="Random.h" />
     <ClInclude Include="2dArray.h" />
-    <ClInclude Include="AutoVector.h" />
     <ClInclude Include="HiResTime.h" />
     <ClInclude Include="Preferences.h" />
     <ClInclude Include="Profiler.h" />
@@ -144,31 +140,7 @@
     <ClInclude Include="Vector3.h">
       <Filter>GameMath</Filter>
     </ClInclude>
-    <ClInclude Include="BoundedArray.h">
-      <Filter>Legacy Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="BTree.h">
-      <Filter>Legacy Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="DArray.h">
-      <Filter>Legacy Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="FastDArray.h">
-      <Filter>Legacy Containers</Filter>
-    </ClInclude>
     <ClInclude Include="Globals.h" />
-    <ClInclude Include="HashTable.h">
-      <Filter>Legacy Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="LList.h">
-      <Filter>Legacy Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="SliceDArray.h">
-      <Filter>Legacy Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="SortingHashTable.h">
-      <Filter>Legacy Containers</Filter>
-    </ClInclude>
     <ClInclude Include="ProtocolLimits.h">
       <Filter>Network</Filter>
     </ClInclude>

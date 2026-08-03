@@ -51,17 +51,9 @@
     <ClInclude Include="TeamControls.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="Random.h" />
-    <ClInclude Include="SortingHashTable.h" />
     <ClInclude Include="2dArray.h" />
-    <ClInclude Include="AutoVector.h" />
-    <ClInclude Include="BTree.h" />
-    <ClInclude Include="BoundedArray.h" />
-    <ClInclude Include="DArray.h" />
-    <ClInclude Include="FastDArray.h" />
     <ClInclude Include="Globals.h" />
-    <ClInclude Include="HashTable.h" />
     <ClInclude Include="HiResTime.h" />
-    <ClInclude Include="LList.h" />
     <ClInclude Include="LookupTable.h" />
     <ClInclude Include="SliceWalker.h" />
     <ClInclude Include="SlotMap.h" />
@@ -71,7 +63,6 @@
     <ClInclude Include="Matrix34.h" />
     <ClInclude Include="Preferences.h" />
     <ClInclude Include="Profiler.h" />
-    <ClInclude Include="SliceDArray.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="WorldObjectId.h" />
     <ClInclude Include="Vector3.h" />

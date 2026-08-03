@@ -1,6 +1,5 @@
 #include "pch.h"
 
-#include "SliceDArray.h"
 #include "SliceWalker.h"
 #include "SlotMap.h"
 
@@ -15,22 +14,37 @@ namespace NeuronCoreTests
   {
     constexpr int SLICES = 10; // NUM_SLICES_PER_FRAME, what the game uses
 
-    std::vector<std::pair<int, int>> WalkLegacy(int _size, int _slices)
+    // The sequences SliceDArray produced, recorded while it still existed.
+    //
+    // These were not written by hand. The differential test that used to live
+    // here constructed a real SliceDArray and asserted the walker matched it
+    // over these same eight sizes; when containers-replaced T16 deleted the
+    // template, the sequences it had been comparing against were captured
+    // verbatim so the proof survives the thing it was proving against. Change
+    // one of these numbers and you are changing which entity advances on which
+    // frame, which is a simulation difference on a lockstep protocol.
+    //
+    // The sizes cover every shape the arithmetic has: an exact multiple of the
+    // slice count, one that leaves a remainder, one smaller than the slice
+    // count, and empty. Note size 25 asking for [27, 24] and size 0 asking for
+    // [9, -1] — the walk outruns the container and the final slice inverts.
+    // That is correct and callers guard it with ValidIndex.
+    struct GoldenWalk
     {
-      SliceDArray<int> legacy;
-      legacy.SetTotalNumSlices(_slices);
-      legacy.SetSize(_size);
+        int m_size;
+        std::pair<int, int> m_bounds[SLICES];
+    };
 
-      std::vector<std::pair<int, int>> bounds;
-      for (int slice = 0; slice < _slices; ++slice)
-      {
-        int lower = 0;
-        int upper = 0;
-        legacy.GetNextSliceBounds(slice, &lower, &upper);
-        bounds.emplace_back(lower, upper);
-      }
-      return bounds;
-    }
+    constexpr GoldenWalk GOLDEN[] = {
+      {100, {{0, 10}, {11, 21}, {22, 32}, {33, 43}, {44, 54}, {55, 65}, {66, 76}, {77, 87}, {88, 98}, {99, 99}}},
+      {25, {{0, 2}, {3, 5}, {6, 8}, {9, 11}, {12, 14}, {15, 17}, {18, 20}, {21, 23}, {24, 26}, {27, 24}}},
+      {3, {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {9, 2}}},
+      {0, {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {9, -1}}},
+      {1, {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {9, 0}}},
+      {10, {{0, 1}, {2, 3}, {4, 5}, {6, 7}, {8, 9}, {10, 11}, {12, 13}, {14, 15}, {16, 17}, {18, 9}}},
+      {11, {{0, 1}, {2, 3}, {4, 5}, {6, 7}, {8, 9}, {10, 11}, {12, 13}, {14, 15}, {16, 17}, {18, 10}}},
+      {999, {{0, 99}, {100, 199}, {200, 299}, {300, 399}, {400, 499}, {500, 599}, {600, 699}, {700, 799}, {800, 899}, {900, 998}}},
+    };
 
     std::vector<std::pair<int, int>> WalkWithWalker(int _size, int _slices)
     {
@@ -59,30 +73,28 @@ namespace NeuronCoreTests
 
   // The slice walk decides which entities advance on which frame, so it is
   // simulation behaviour rather than container plumbing — which is exactly why
-  // containers-replaced T12 takes it OUT of the container. SliceDArray carried
-  // it as a base class; Neuron::SliceWalker is a free-standing object the
-  // caller owns beside a plain SlotMap. Nothing pinned SliceDArray before this
-  // file existed.
+  // containers-replaced T12 took it OUT of the container. The legacy sliced
+  // array carried it as a base class; Neuron::SliceWalker is a free-standing
+  // object the caller owns beside a plain SlotMap. Nothing pinned the legacy
+  // arithmetic before this file existed.
   //
-  // The first test is the one that matters: it runs both containers over the
-  // same sizes and asserts the sequences are identical, so the conversion is
-  // proven equivalent rather than argued to be. The rest pin the individual
-  // properties that make the arithmetic surprising, because once SliceDArray
-  // is deleted the differential test goes with it and only those remain.
+  // The first test is the one that matters: it walks the eight sizes and
+  // asserts the bounds still match what the legacy container produced. It used
+  // to construct a SliceDArray and compare live; T16 deleted the template, so
+  // the sequences it compared against are recorded above instead. The rest pin
+  // the individual properties that make the arithmetic surprising.
   TEST_CLASS(SliceWalkerTests)
   {
     public:
-      TEST_METHOD(SliceBoundsMatchSliceDArrayExactly)
+      TEST_METHOD(SliceBoundsStillMatchTheLegacyContainer)
       {
-        // Sizes chosen to hit every shape the arithmetic has: an exact
-        // multiple of the slice count, a size that leaves a remainder, one
-        // smaller than the slice count, and empty.
-        for (int size : {100, 25, 3, 0, 1, 10, 11, 999})
+        for (auto const& golden : GOLDEN)
         {
-          const auto legacy = WalkLegacy(size, SLICES);
-          const auto walker = WalkWithWalker(size, SLICES);
-          Assert::IsTrue(legacy == walker,
-                         (L"size " + std::to_wstring(size) + L": SliceDArray " + Describe(legacy) + L"vs SliceWalker " + Describe(walker)).c_str());
+          const auto walker = WalkWithWalker(golden.m_size, SLICES);
+          const std::vector<std::pair<int, int>> expected(std::begin(golden.m_bounds), std::end(golden.m_bounds));
+          Assert::IsTrue(
+            expected == walker,
+            (L"size " + std::to_wstring(golden.m_size) + L": expected " + Describe(expected) + L"but walked " + Describe(walker)).c_str());
         }
       }
 
