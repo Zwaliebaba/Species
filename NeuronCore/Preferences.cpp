@@ -9,7 +9,7 @@
 #include "Debug.h"
 #include "Preferences.h"
 
-PrefsManager *g_prefsManager = nullptr;
+PrefsManager* g_prefsManager = nullptr;
 
 static bool s_overwrite = false;
 
@@ -22,77 +22,83 @@ void PrefsManager::SetDefaultsProvider(DefaultsProvider _provider) { sm_defaults
 // ***************
 
 PrefsItem::PrefsItem()
-:   m_key(nullptr),
+  : m_key(nullptr),
     m_str(nullptr),
     m_int(0)
 {
 }
 
 
-PrefsItem::PrefsItem(char *_line)
-:	m_str(nullptr)
+PrefsItem::PrefsItem(char* _line)
+  : m_str(nullptr)
 {
-	// Get key
-	char *key = _line;
-	while (!isalnum(*key) && *key != '\0')		// Skip leading whitespace
-	{
-		key++;
-	}
-	char *c = key;
-	while (isalnum(*c))							// Find the end of the key word
-	{
-		c++;
-	}
-	*c = '\0';
-	m_key = strdup(key);
+  // Get key
+  char* key = _line;
+  while (!isalnum(*key) && *key != '\0') // Skip leading whitespace
+  {
+    key++;
+  }
+  char* c = key;
+  while (isalnum(*c)) // Find the end of the key word
+  {
+    c++;
+  }
+  *c = '\0';
+  m_key = strdup(key);
 
-	// Get value
-	char *value = c + 1;
-	while (isspace(*value) || *value == '=')
-	{
-		if (*value == '\0') break;
-		value++;
-	}
+  // Get value
+  char* value = c + 1;
+  while (isspace(*value) || *value == '=')
+  {
+    if (*value == '\0')
+      break;
+    value++;
+  }
 
-	// Is value a number?
-	if (value[0] == '-' || isdigit(value[0]))
-	{
-		// Guess that number is an int
-		m_type = TypeInt;
+  // Is value a number?
+  if (value[0] == '-' || isdigit(value[0]))
+  {
+    // Guess that number is an int
+    m_type = TypeInt;
 
-		// Verify that guess
-		c = value;
-        int numDots = 0;
-		while (*c != '\0')
-		{
-			if (*c == '.')
-			{
-                ++numDots;
-			}
-			++c;
-		}
-        if( numDots == 1 ) m_type = TypeFloat;
-        else if(  numDots > 1 ) m_type = TypeString;
+    // Verify that guess
+    c = value;
+    int numDots = 0;
+    while (*c != '\0')
+    {
+      if (*c == '.')
+      {
+        ++numDots;
+      }
+      ++c;
+    }
+    if (numDots == 1)
+      m_type = TypeFloat;
+    else if (numDots > 1)
+      m_type = TypeString;
 
 
-		// Convert string into a real number
-		if      (m_type == TypeFloat)	    m_float = atof(value);
-        else if (m_type == TypeString)      m_str = strdup(value);
-		else						        m_int = atoi(value);
-	}
-	else
-	{
-		m_type = TypeString;
-		m_str = strdup(value);
-	}
+    // Convert string into a real number
+    if (m_type == TypeFloat)
+      m_float = atof(value);
+    else if (m_type == TypeString)
+      m_str = strdup(value);
+    else
+      m_int = atoi(value);
+  }
+  else
+  {
+    m_type = TypeString;
+    m_str = strdup(value);
+  }
 }
 
 
-PrefsItem::PrefsItem(char const *_key, char const *_str)
-:	m_type(TypeString)
+PrefsItem::PrefsItem(char const* _key, char const* _str)
+  : m_type(TypeString)
 {
-	m_key = strdup(_key);
-	m_str = strdup(_str);
+  m_key = strdup(_key);
+  m_str = strdup(_str);
 }
 
 
@@ -106,7 +112,7 @@ PrefsItem::PrefsItem(char const* _key, float _float)
     m_str(nullptr),
     m_float(_float)
 {
-	m_key = strdup(_key);
+  m_key = strdup(_key);
 }
 
 
@@ -115,16 +121,16 @@ PrefsItem::PrefsItem(char const* _key, int _int)
     m_str(nullptr),
     m_int(_int)
 {
-	m_key = strdup(_key);
+  m_key = strdup(_key);
 }
 
 
 PrefsItem::~PrefsItem()
 {
-	free(m_key);
-	m_key = nullptr;
-	free(m_str);
-	m_str = nullptr;
+  free(m_key);
+  m_key = nullptr;
+  free(m_str);
+  m_str = nullptr;
 }
 
 
@@ -132,129 +138,116 @@ PrefsItem::~PrefsItem()
 // Class PrefsManager
 // ******************
 
-PrefsManager::PrefsManager(char const *_filename)
+PrefsManager::PrefsManager(char const* _filename)
 {
-    m_filename = strdup(_filename);
+  m_filename = strdup(_filename);
 
-	Load();
+  Load();
 
-    if( GetInt("ControlMethod") == -1 ) AddLine( "ControlMethod = 1" );
-
+  if (GetInt("ControlMethod") == -1)
+    AddLine("ControlMethod = 1");
 }
 
-PrefsManager::PrefsManager(std::string const &_filename)
+PrefsManager::PrefsManager(std::string const& _filename)
 {
-    m_filename = strdup(_filename.c_str());
+  m_filename = strdup(_filename.c_str());
 
-	Load();
+  Load();
 
-    if( GetInt("ControlMethod") == -1 ) AddLine( "ControlMethod = 1" );
+  if (GetInt("ControlMethod") == -1)
+    AddLine("ControlMethod = 1");
 }
 
 
 PrefsManager::~PrefsManager()
 {
-	free(m_filename);
+  free(m_filename);
   m_items.clear();
   m_fileText.clear();
 }
 
 
-bool PrefsManager::IsLineEmpty(char const *_line)
+bool PrefsManager::IsLineEmpty(char const* _line)
 {
-	while (_line[0] != '\0')
-	{
-		if (_line[0] == '#') return true;
-		if (isalnum(_line[0])) return false;
-		++_line;
-	}
+  while (_line[0] != '\0')
+  {
+    if (_line[0] == '#')
+      return true;
+    if (isalnum(_line[0]))
+      return false;
+    ++_line;
+  }
 
-	return true;
+  return true;
 }
 
-int GetDefaultHelpEnabled()
-{
-	return 1;
-}
+int GetDefaultHelpEnabled() { return 1; }
 
-const char *GetDefaultSoundLibrary()
+const char* GetDefaultSoundLibrary()
 {
 #ifdef HAVE_DSOUND
-    return "dsound";
+  return "dsound";
 #else
-	return "software";
+  return "software";
 #endif
 }
 
-int GetDefaultSoundDSP()
-{
-	return 1;
-}
+int GetDefaultSoundDSP() { return 1; }
 
-int GetDefaultSoundChannels()
-{
-	return 32;
-}
+int GetDefaultSoundChannels() { return 32; }
 
-int GetDefaultPixelShader()
-{
-	return 1;
-}
+int GetDefaultPixelShader() { return 1; }
 
-int GetDefaultGraphicsDetail()
-{
-	return 1;
-}
+int GetDefaultGraphicsDetail() { return 1; }
 
 void PrefsManager::CreateDefaultValues()
 {
+  AddLine("ServerAddress = 127.0.0.1");
+  AddLine("IAmAServer = 1");
 
-    AddLine( "ServerAddress = 127.0.0.1" );
-    AddLine( "IAmAServer = 1" );
+  AddLine("\n");
 
-    AddLine( "\n" );
+  AddLine("TextLanguage = unknown");
 
-    AddLine( "TextLanguage = unknown" );
+  AddLine("TextSpeed = 15");
 
-    AddLine( "TextSpeed = 15" );
+  AddLine("\n");
 
-    AddLine( "\n" );
+  AddLine(std::format("SoundLibrary = {}", GetDefaultSoundLibrary()).c_str());
 
-    AddLine(std::format("SoundLibrary = {}", GetDefaultSoundLibrary()).c_str());
+  AddLine("SoundMixFreq = 22050");
+  AddLine("SoundMasterVolume = 255");
+  AddLine(std::format("SoundChannels = {}", GetDefaultSoundChannels()).c_str());
+  AddLine("SoundHW3D = 0");
+  AddLine("SoundSwapStereo = 0");
+  AddLine("SoundMemoryUsage = 1");
+  AddLine("SoundBufferSize = 512"); // Must be a power of 2 for Linux
+  AddLine(std::format("SoundDSP = {}", GetDefaultSoundDSP()).c_str());
 
-    AddLine( "SoundMixFreq = 22050" );
-    AddLine( "SoundMasterVolume = 255" );
-    AddLine(std::format("SoundChannels = {}", GetDefaultSoundChannels()).c_str());
-    AddLine( "SoundHW3D = 0" );
-    AddLine( "SoundSwapStereo = 0" );
-    AddLine( "SoundMemoryUsage = 1" );
-    AddLine( "SoundBufferSize = 512" ); // Must be a power of 2 for Linux
-    AddLine(std::format("SoundDSP = {}", GetDefaultSoundDSP()).c_str());
+  AddLine("\n");
 
-    AddLine( "\n" );
+  AddLine("ScreenWindowed = 1");
+  AddLine("ScreenZDepth = 24");
 
-    AddLine( "ScreenWindowed = 1" );
-    AddLine( "ScreenZDepth = 24" );
+  AddLine("\n");
 
-    AddLine( "\n" );
+  AddLine(std::format("RenderLandscapeDetail = {}", GetDefaultGraphicsDetail()).c_str());
+  AddLine(std::format("RenderWaterDetail = {}", GetDefaultGraphicsDetail()).c_str());
+  AddLine(std::format("RenderBuildingDetail = {}", GetDefaultGraphicsDetail()).c_str());
+  AddLine(std::format("RenderEntityDetail = {}", GetDefaultGraphicsDetail()).c_str());
+  AddLine(std::format("RenderCloudDetail = {}", GetDefaultGraphicsDetail()).c_str());
 
-    AddLine(std::format("RenderLandscapeDetail = {}", GetDefaultGraphicsDetail()).c_str());
-    AddLine(std::format("RenderWaterDetail = {}", GetDefaultGraphicsDetail()).c_str());
-    AddLine(std::format("RenderBuildingDetail = {}", GetDefaultGraphicsDetail()).c_str());
-    AddLine(std::format("RenderEntityDetail = {}", GetDefaultGraphicsDetail()).c_str());
-    AddLine(std::format("RenderCloudDetail = {}", GetDefaultGraphicsDetail()).c_str());
+  AddLine(std::format("RenderPixelShader = {}", GetDefaultPixelShader()).c_str());
 
-    AddLine(std::format("RenderPixelShader = {}", GetDefaultPixelShader()).c_str());
+  AddLine("\n");
 
-    AddLine( "\n" );
+  AddLine("ControlMouseButtons = 3");
+  AddLine("ControlMethod = 1");
 
-    AddLine( "ControlMouseButtons = 3" );
-    AddLine( "ControlMethod = 1" );
-
-    AddLine( "BootLoader = firsttime" );
-    AddLine( "UserProfile = NewUser" );
-    AddLine( "RenderSpecialLighting = 0" );
-	AddLine( OTHER_DIFFICULTY " = 1" );
+  AddLine("BootLoader = firsttime");
+  AddLine("UserProfile = NewUser");
+  AddLine("RenderSpecialLighting = 0");
+  AddLine(OTHER_DIFFICULTY " = 1");
 
   // Override the defaults above with stuff from a default preferences file.
   // The host installs the reader — see SetDefaultsProvider. This used to read
@@ -268,9 +261,10 @@ void PrefsManager::CreateDefaultValues()
 }
 
 
-void PrefsManager::Load(char const *_filename)
+void PrefsManager::Load(char const* _filename)
 {
-	if (!_filename) _filename = m_filename;
+  if (!_filename)
+    _filename = m_filename;
 
   m_items.clear();
 
@@ -282,45 +276,45 @@ void PrefsManager::Load(char const *_filename)
     // Probably first time running the game
     CreateDefaultValues();
   }
-    else
+  else
+  {
+    char line[256];
+    while (fgets(line, 256, in) != nullptr)
     {
-	    char line[256];
-	    while (fgets(line, 256, in) != nullptr)
-	    {
-            AddLine( line );
-        }
-    	fclose(in);
+      AddLine(line);
     }
+    fclose(in);
+  }
 }
 
 
-void PrefsManager::SaveItem(FILE *out, PrefsItem *_item)
+void PrefsManager::SaveItem(FILE* out, PrefsItem* _item)
 {
-	switch (_item->m_type)
-	{
-		case PrefsItem::TypeFloat:
-			fprintf(out, "%s = %.2f\n", _item->m_key, _item->m_float);
-			break;
-		case PrefsItem::TypeInt:
-			fprintf(out, "%s = %d\n", _item->m_key, _item->m_int);
-			break;
-		case PrefsItem::TypeString:
-			fprintf(out, "%s = %s\n", _item->m_key, _item->m_str);
-			break;
-	}
-	_item->m_hasBeenWritten = true;
+  switch (_item->m_type)
+  {
+  case PrefsItem::TypeFloat:
+    fprintf(out, "%s = %.2f\n", _item->m_key, _item->m_float);
+    break;
+  case PrefsItem::TypeInt:
+    fprintf(out, "%s = %d\n", _item->m_key, _item->m_int);
+    break;
+  case PrefsItem::TypeString:
+    fprintf(out, "%s = %s\n", _item->m_key, _item->m_str);
+    break;
+  }
+  _item->m_hasBeenWritten = true;
 }
 
 
 void PrefsManager::Save()
 {
-	// We've got a copy of the plain text from the prefs file that we initially
-	// loaded in the variable m_fileText. We use that file as a template with
-	// which to create the new save file. Updated prefs items values are looked up
-	// as it their turn to be output comes around. When we've finished we then
-	// write out all the new prefs items because they didn't exist in m_fileText.
+  // We've got a copy of the plain text from the prefs file that we initially
+  // loaded in the variable m_fileText. We use that file as a template with
+  // which to create the new save file. Updated prefs items values are looked up
+  // as it their turn to be output comes around. When we've finished we then
+  // write out all the new prefs items because they didn't exist in m_fileText.
 
-	// First clear the "has been written" flags on all the items
+  // First clear the "has been written" flags on all the items
   for (auto& entry : m_items)
   {
     entry.second->m_hasBeenWritten = false;
@@ -424,7 +418,7 @@ void PrefsManager::Clear()
 }
 
 
-float PrefsManager::GetFloat(char const *_key, float _default) const
+float PrefsManager::GetFloat(char const* _key, float _default) const
 {
   auto entry = m_items.find(_key);
   if (entry == m_items.end())
@@ -436,7 +430,7 @@ float PrefsManager::GetFloat(char const *_key, float _default) const
 }
 
 
-int PrefsManager::GetInt(char const *_key, int _default) const
+int PrefsManager::GetInt(char const* _key, int _default) const
 {
   auto entry = m_items.find(_key);
   if (entry == m_items.end())
@@ -448,7 +442,7 @@ int PrefsManager::GetInt(char const *_key, int _default) const
 }
 
 
-char const *PrefsManager::GetString(char const *_key, char const *_default) const
+char const* PrefsManager::GetString(char const* _key, char const* _default) const
 {
   auto entry = m_items.find(_key);
   if (entry == m_items.end())
@@ -460,25 +454,25 @@ char const *PrefsManager::GetString(char const *_key, char const *_default) cons
 }
 
 
-//void PrefsManager::GetData(char const *_key, void *_data, int _length) const
+// void PrefsManager::GetData(char const *_key, void *_data, int _length) const
 //{
-//    unsigned char *data = (unsigned char *)_data;
-//    char *stringData = GetString(_key);
+//     unsigned char *data = (unsigned char *)_data;
+//     char *stringData = GetString(_key);
 //
-//    if( stringData )
-//    {
-//        DEBUG_ASSERT (_length * 2 == strlen(stringData));
+//     if( stringData )
+//     {
+//         DEBUG_ASSERT (_length * 2 == strlen(stringData));
 //
-//        for( int i = 0; i < _length; ++i )
-//        {
-//            data[i] = (stringData[i*2] - 'A') << 4;
-//            data[i] |= (stringData[i*2+1] - 'A');
-//        }
-//    }
-//}
+//         for( int i = 0; i < _length; ++i )
+//         {
+//             data[i] = (stringData[i*2] - 'A') << 4;
+//             data[i] |= (stringData[i*2+1] - 'A');
+//         }
+//     }
+// }
 
 
-void PrefsManager::SetString(char const *_key, char const *_string)
+void PrefsManager::SetString(char const* _key, char const* _string)
 {
   auto entry = m_items.find(_key);
 
@@ -501,7 +495,7 @@ void PrefsManager::SetString(char const *_key, char const *_string)
 }
 
 
-void PrefsManager::SetFloat(char const *_key, float _float)
+void PrefsManager::SetFloat(char const* _key, float _float)
 {
   auto entry = m_items.find(_key);
 
@@ -519,7 +513,7 @@ void PrefsManager::SetFloat(char const *_key, float _float)
 }
 
 
-void PrefsManager::SetInt(char const *_key, int _int)
+void PrefsManager::SetInt(char const* _key, int _int)
 {
   auto entry = m_items.find(_key);
 
@@ -537,19 +531,19 @@ void PrefsManager::SetInt(char const *_key, int _int)
 }
 
 
-void PrefsManager::AddLine(char const*_line, bool _overwrite)
+void PrefsManager::AddLine(char const* _line, bool _overwrite)
 {
-	if ( !_line )
-		return;
+  if (!_line)
+    return;
 
-	bool saveLine = true;
+  bool saveLine = true;
 
-	if (!IsLineEmpty(_line))				// Skip comment lines and blank lines
-	{
-		char *localCopy = strdup( _line );
-		char *c = strchr(localCopy, '\n');
-		if (c)
-			*c = '\0';
+  if (!IsLineEmpty(_line)) // Skip comment lines and blank lines
+  {
+    char* localCopy = strdup(_line);
+    char* c = strchr(localCopy, '\n');
+    if (c)
+      *c = '\0';
 
     auto item = std::make_unique<PrefsItem>(localCopy);
 
@@ -583,24 +577,24 @@ void PrefsManager::AddLine(char const*_line, bool _overwrite)
 }
 
 
-//void PrefsManager::AddData(char const *_key, void *_data, int _length)
+// void PrefsManager::AddData(char const *_key, void *_data, int _length)
 //{
-//    char *newString = new char[_length*2 + 1];
-//    unsigned char *data = (unsigned char *)_data;
+//     char *newString = new char[_length*2 + 1];
+//     unsigned char *data = (unsigned char *)_data;
 //	int i;
-//    for( i = 0; i < _length; ++i )
-//    {
-//        newString[i*2]      = 'A' + ((data[i] & 0xf0) >> 4);
-//        newString[i*2+1]    = 'A' + (data[i] & 0xf);
-//    }
+//     for( i = 0; i < _length; ++i )
+//     {
+//         newString[i*2]      = 'A' + ((data[i] & 0xf0) >> 4);
+//         newString[i*2+1]    = 'A' + (data[i] & 0xf);
+//     }
 //
-//    newString[i*2] = '\0';
+//     newString[i*2] = '\0';
 //
-//    PrefsItem *item = new PrefsItem();
-//    item->m_key = strdup(_key);
-//    item->m_str = newString;
-//    m_items.PutData(item->m_key, item);
-//}
+//     PrefsItem *item = new PrefsItem();
+//     item->m_key = strdup(_key);
+//     item->m_str = newString;
+//     m_items.PutData(item->m_key, item);
+// }
 
 
 bool PrefsManager::DoesKeyExist(char const* _key) { return m_items.contains(_key); }
