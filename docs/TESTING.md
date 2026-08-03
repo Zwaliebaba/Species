@@ -224,10 +224,10 @@ grids, the routing system, the landscape — out of `Species` and into
 `EntityGridTests.cpp` and `RoutingSystemTests.cpp` construct real simulation
 objects against a `Location` the test builds itself.
 
-**`LinkStubs.cpp` may only shrink**, and it has reached zero. Same rule as
-`tools/layering_allowlist.txt` and for the same reason: every entry is a
-dependency that should not exist, and adding one hides the problem rather than
-recording it. If a test seems to need a stub, the honest options are to test
+**`LinkStubs.cpp` may only shrink**, and it has reached zero — as did
+`tools/layering_allowlist.txt`, which was deleted outright when it did. Same
+rule and the same reason: every entry is a dependency that should not exist, and
+adding one hides the problem rather than recording it. If a test seems to need a stub, the honest options are to test
 something that does not reach upward, or to do the layering task that removes
 the reference. The file itself can go once nothing needs the reminder.
 

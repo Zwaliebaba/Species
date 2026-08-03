@@ -38,9 +38,10 @@ This describes the code as it exists. Where something is aspirational it says so
    └──────────────────┘                          └───────────────────┘
 ```
 
-Dependencies point downward only. `tools/check_layering.py` enforces it against
-`tools/layering_allowlist.txt`, which holds the inherited violations the
-migration has yet to remove.
+Dependencies point downward only, and do so today — `tools/check_layering.py`
+enforces it strictly, with no allowlist. It also rejects a symbol declared in a
+library header and defined only in an executable, which reaches upward through
+the linker rather than the preprocessor.
 
 Each static library carries a `Tests/<Name>Tests` project that sits directly
 above it and inherits its dependencies — a test may reach no further up than the

@@ -16,20 +16,31 @@ others on its include path and all includes are written as bare basenames
 (`#include "App.h"`), the owning project is resolved by looking the basename up
 against the files actually on disk.
 
-The tree still carries violations inherited from the original single-binary
-Darwinia layout. Those are recorded in tools/layering_allowlist.txt so the check
-fails only on *new* ones; the allowlist is expected to shrink to empty as the
-modernization proceeds, never to grow.
+**The check is strict.** Any upward include anywhere fails it. There is no
+allowlist and no way to record an exception — tools/layering_allowlist.txt held
+628 inherited violations when tasks/layering-inversion.yaml started and zero when
+it finished, and the file was deleted rather than left empty so that nobody can
+reopen it by adding a line. If a change needs an upward include, the change is
+wrong: move the shared declaration down into a layer both sides can see, or
+invert the dependency with an interface, as that plan did fifteen times.
 
-    python3 tools/check_layering.py             # fail on unlisted violations
-    python3 tools/check_layering.py --update    # rewrite the allowlist
-    python3 tools/check_layering.py --rename OLD NEW   # a file moved or was renamed
-    python3 tools/check_layering.py --prune            # drop entries that are now fixed
+    python3 tools/check_layering.py
 
-Renaming or moving a file makes its allowlisted entries stop matching, and the
-same violations then look brand new. `--rename` rewrites just those entries, so
-the change shows up in the diff as the rename it is rather than being absorbed
-silently by `--update`. It refuses to invent entries that did not already exist.
+INCLUDES ARE NOT THE ONLY WAY UP, which is the second half of this check and the
+more easily missed one. A lower layer can DECLARE a symbol in its own header and
+let the executable define it, and every include-based check in the world will
+call that clean while the linker quietly resolves upward. The tree contained one
+for years: NeuronClient/WindowManager.h declared `void AppMain();` and
+WindowManager.cpp called it from WinMain, with the definition in Species. It
+surfaced only when GameLogicTests grew an object graph big enough to pull that
+object file into a DLL with no executable attached. See layering-inversion T18.
+
+So this also reports any free function or extern variable that a NeuronCore,
+NeuronClient or GameLogic header declares and only an executable defines. Class
+members are exempt and deliberately so: a pure-virtual method declared low and
+overridden high is dependency INVERSION — the call goes through a vtable the
+lower layer owns — which is the pattern the plan used to remove these in the
+first place.
 """
 from __future__ import annotations
 
@@ -39,7 +50,6 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ALLOWLIST_PATH = Path(__file__).resolve().parent / "layering_allowlist.txt"
 
 # project -> projects it is allowed to include from (transitively closed below)
 DIRECT_DEPENDENCIES: dict[str, set[str]] = {
@@ -114,30 +124,87 @@ def build_header_index() -> dict[str, str]:
     return index
 
 
-def load_allowlist() -> set[str]:
-    if not ALLOWLIST_PATH.exists():
-        return set()
-    return {
-        line.strip()
-        for line in ALLOWLIST_PATH.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.startswith("#")
-    }
+# A class body, so it can be cut out. A member declared low and defined high is
+# dependency inversion through a vtable, not a link-time reach upward, and is
+# exactly the pattern that removed these violations — so only namespace-scope
+# declarations are interesting here.
+CLASS_HEAD_RE = re.compile(r"\b(?:class|struct)\s+\w+[^;{]*\{")
+
+# `void AppMain();` — a return type, a name, a parameter list, a semicolon.
+FUNCTION_DECL_RE = re.compile(r"^[A-Za-z_][\w:*&<>,\s]*?\b([A-Za-z_]\w*)\s*\([^;{)]*\)\s*;", re.M)
+# `void SoundSystem::Advance() {` or `void AppMain() {`
+FUNCTION_DEF_RE = re.compile(r"^[A-Za-z_][\w:*&<>,\s]*?\b([A-Za-z_]\w*)\s*\([^;{)]*\)\s*\{", re.M)
+EXTERN_DECL_RE = re.compile(r"^\s*extern\s+[\w:*&<>,\s]*?\b(\w+)\s*(?:\[[^\]]*\])?\s*;", re.M)
+# `App* g_app = nullptr;` / `int g_sliceNum;` at file scope
+VARIABLE_DEF_RE = re.compile(r"^[A-Za-z_][\w:*&<>,\s]*?\b(\w+)\s*(?:\[[^\]]*\])?\s*(?:=|;)", re.M)
+
+LIBRARIES = ("NeuronCore", "NeuronClient", "NeuronServer", "GameLogic")
+EXECUTABLES = ("Species", "Server")
 
 
-def write_allowlist(entries: set[str]) -> None:
-    header = (
-        "# Pre-existing layering violations, inherited from the original\n"
-        "# single-binary Darwinia layout. tools/check_layering.py fails on any\n"
-        "# violation that is NOT listed here.\n"
-        "#\n"
-        "# This file may only shrink. Adding a line means a new upward dependency\n"
-        "# was introduced, which is exactly what the check exists to prevent.\n"
-        "#\n"
-        "# Format: <including project>/<including file> -> <included header>\n"
-        "#\n"
-        "# Regenerate with: python3 tools/check_layering.py --update\n\n"
-    )
-    ALLOWLIST_PATH.write_text(header + "\n".join(sorted(entries)) + "\n", encoding="utf-8")
+def strip_comments(text: str) -> str:
+    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+    return re.sub(r"//.*$", "", text, flags=re.M)
+
+
+def strip_class_bodies(text: str) -> str:
+    """Remove every class and struct body, leaving namespace scope behind."""
+    out, index = [], 0
+    while True:
+        match = CLASS_HEAD_RE.search(text, index)
+        if not match:
+            out.append(text[index:])
+            return "".join(out)
+        out.append(text[index : match.start()])
+        depth, position = 1, match.end()
+        while depth and position < len(text):
+            if text[position] == "{":
+                depth += 1
+            elif text[position] == "}":
+                depth -= 1
+            position += 1
+        index = position
+
+
+def names_in(paths, pattern, transform=None) -> set[str]:
+    found: set[str] = set()
+    for path in paths:
+        text = strip_comments(path.read_text(encoding="utf-8", errors="replace"))
+        found |= set(pattern.findall(transform(text) if transform else text))
+    return found
+
+
+def sources(projects, suffix: str) -> list[Path]:
+    return [
+        path
+        for project in projects
+        for path in sorted((REPO_ROOT / PROJECT_DIRS[project]).iterdir())
+        if path.suffix == suffix
+    ]
+
+
+def find_link_violations() -> list[str]:
+    """Symbols a library header declares that only an executable defines.
+
+    An include check cannot see these. The library compiles, because the
+    declaration is right there in its own header; the executable links, because
+    it supplies the definition; and anything else that links the library — a
+    test DLL, a second executable — fails with an unresolved external on a
+    symbol it has no reason to know about.
+    """
+    headers = sources(LIBRARIES, ".h")
+    declared = names_in(headers, FUNCTION_DECL_RE, strip_class_bodies)
+    declared |= names_in(headers, EXTERN_DECL_RE, strip_class_bodies)
+
+    library_sources = sources(LIBRARIES, ".cpp")
+    defined_below = names_in(library_sources, FUNCTION_DEF_RE)
+    defined_below |= names_in(library_sources, VARIABLE_DEF_RE)
+
+    executable_sources = sources(EXECUTABLES, ".cpp")
+    defined_above = names_in(executable_sources, FUNCTION_DEF_RE)
+    defined_above |= names_in(executable_sources, VARIABLE_DEF_RE)
+
+    return sorted((declared & defined_above) - defined_below)
 
 
 def find_violations(header_index: dict[str, str]) -> list[str]:
@@ -158,83 +225,41 @@ def find_violations(header_index: dict[str, str]) -> list[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--update",
-        action="store_true",
-        help="rewrite the allowlist from the current tree instead of checking",
-    )
-    parser.add_argument(
-        "--prune",
-        action="store_true",
-        help="remove allowlist entries whose violations no longer exist; refuses to add any",
-    )
-    parser.add_argument(
-        "--rename",
-        nargs=2,
-        metavar=("OLD", "NEW"),
-        help="rewrite allowlist entries after a file was renamed or moved, "
-        "e.g. --rename GameLogic/Foo.cpp GameLogic/Bar.cpp",
-    )
-    args = parser.parse_args()
+    argparse.ArgumentParser(description=__doc__).parse_args()
 
-    if args.rename:
-        old_path, new_path = args.rename
-        allowlist = load_allowlist()
-        moved = {e for e in allowlist if e.split(" -> ")[0] == old_path}
-        if not moved:
-            print(f"no allowlist entries for '{old_path}' — nothing to rename")
-            return 1
-        allowlist -= moved
-        allowlist |= {e.replace(old_path, new_path, 1) for e in moved}
-        write_allowlist(allowlist)
-        print(f"renamed {len(moved)} entr(y/ies): {old_path} -> {new_path}")
-        return 0
+    failed = False
 
-    violations = set(find_violations(build_header_index()))
-
-    if args.prune:
-        allowlist = load_allowlist()
-        added = violations - allowlist
-        if added:
-            print("Refusing to prune: these violations are new, not fixed.\n")
-            for entry in sorted(added):
-                print(f"  {entry}")
-            print("\nPrune only shrinks. Resolve these first.")
-            return 1
-        removed = allowlist - violations
-        write_allowlist(allowlist & violations)
-        print(f"pruned {len(removed)} fixed entr(y/ies); {len(violations)} remain")
-        return 0
-
-    if args.update:
-        write_allowlist(violations)
-        print(f"wrote {len(violations)} entries to {ALLOWLIST_PATH.relative_to(REPO_ROOT)}")
-        return 0
-
-    allowlist = load_allowlist()
-
-    new = sorted(violations - allowlist)
-    if new:
-        print("New layering violations (an include reaching into a higher layer):\n")
-        for entry in new:
+    includes = sorted(find_violations(build_header_index()))
+    if includes:
+        failed = True
+        print("Layering violations — an include reaching into a higher layer:\n")
+        for entry in includes:
             print(f"  {entry}")
         print(
             "\nMove the shared declaration down into a layer both sides may see, or"
-            "\ninvert the dependency with an interface. Do not add these to"
-            f"\n{ALLOWLIST_PATH.relative_to(REPO_ROOT)} — that file may only shrink."
+            "\ninvert the dependency with an interface. There is no allowlist to add"
+            "\nthese to; see tasks/layering-inversion.yaml for fifteen worked examples."
         )
+
+    links = find_link_violations()
+    if links:
+        if failed:
+            print()
+        failed = True
+        print("Layering violations — declared in a library header, defined only in an executable:\n")
+        for name in links:
+            print(f"  {name}")
+        print(
+            "\nThe include graph looks clean and the linker does not: anything else that"
+            "\nlinks the library — a test DLL, the other executable — fails with an"
+            "\nunresolved external. Move the definition down, or invert the dependency"
+            "\nwith an interface the library owns. See layering-inversion T18."
+        )
+
+    if failed:
         return 1
 
-    fixed = sorted(allowlist - violations)
-    if fixed:
-        print("These allowlisted violations no longer exist. Please remove them:\n")
-        for entry in fixed:
-            print(f"  {entry}")
-        print("\n  python3 tools/check_layering.py --update")
-        return 1
-
-    print(f"Layering OK ({len(allowlist)} known violations still allowlisted).")
+    print("Layering OK — no upward include, and no symbol declared low and defined high.")
     return 0
 
 

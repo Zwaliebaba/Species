@@ -116,8 +116,9 @@ checked, so this cannot be used to sneak unformatted code past CI. If the file
 itself was renamed, `git mv` it so git records the rename and the check can
 follow it.
 
-The same problem hits the layering allowlist, which is keyed on filename — see
-`python3 tools/check_layering.py --rename OLD NEW`.
+The layering allowlist used to have the same problem — it was keyed on filename
+and a rename orphaned its entries. It no longer exists: `check_layering.py` is
+strict, so there is nothing left for a rename to disturb.
 
 **Domain names — leave them alone.** `Citizen` and anything else naming an
 entity, building or program. The name changed; the rule did not, and these names

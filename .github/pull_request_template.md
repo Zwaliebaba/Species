@@ -18,7 +18,7 @@
 ## Checks
 
 - [ ] `python3 tools/check_project_files.py`
-- [ ] `python3 tools/check_layering.py` — allowlist shrank or is unchanged, never grew
+- [ ] `python3 tools/check_layering.py` — no upward include, no symbol declared low and defined high
 - [ ] `python3 tools/check_task_dag.py`
 - [ ] `python3 tools/check_format.py`
 - [ ] Builds Debug and Release on at least one platform
