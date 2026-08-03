@@ -22,12 +22,8 @@ EclWindow::EclWindow( char const *_name )
 
 EclWindow::~EclWindow()
 {
-  while (m_buttons[0])
-  {
-    EclButton* button = m_buttons[0];
+  for (EclButton* button : m_buttons)
     delete button;
-    m_buttons.erase(m_buttons.begin() + (0));
-  }
   m_buttons.clear();
 }
 

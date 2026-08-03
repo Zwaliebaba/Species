@@ -25,6 +25,16 @@ why, and for what the approach cannot catch.
 reports hundreds of findings, because stages 4 and 5 have not run yet — that is
 the backlog those plans exist for, not a regression.
 
+One rule is not a modernisation ratchet but a conversion-bug ratchet, and it is
+here because this is the file that already knows how to count per-file
+occurrences. `while (list[0])` was a legal "is there a first element" test while
+these containers were `LList`, whose operator[] and GetData both return nullptr
+out of range. `std::vector::operator[]` is undefined there, and in a debug build
+it asserts. containers-replaced converted the Eclipse UI toolkit in one batch and
+got this wrong twice, in EclWindow's destructor and EclResetDirtyRectangles; both
+crashed on the first window with no buttons. Test the container — `while
+(!v.empty())` — or iterate it.
+
 Escape hatch: a line carrying the marker `hygiene-ok` in a comment is skipped.
 It exists for the genuine exceptions, which do occur — language-hygiene T1 found
 two `NULL`s that are typedef'd integers in hand-aligned table terminators
@@ -88,6 +98,12 @@ RULES = [
         "C string call",
         r"\b(?:strcpy|strncpy|strcat|sprintf|snprintf)\b",
         "use std::string / std::format — see tasks/strings-modernised.yaml",
+    ),
+    Rule(
+        "subscript as a loop condition",
+        r"^\s*while\s*\(\s*!?\s*[\w.>\-]+\[[^\]]*\]\s*\)",
+        "test the container, not element [0] — LList returned nullptr out of range and std::vector does not",
+        raw=True,
     ),
     Rule(
         "plain enum",

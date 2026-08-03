@@ -673,12 +673,9 @@ void EclDirtyRectangle ( int x, int y, int w, int h )
 
 void EclResetDirtyRectangles ()
 {
-  while (dirtyrects[0])
-  {
-    DirtyRect* dr = dirtyrects[0];
-    delete dr;
-    dirtyrects.erase(dirtyrects.begin() + (0));
-  }
+  for (DirtyRect* rect : dirtyrects)
+    delete rect;
+  dirtyrects.clear();
 
   for (int i = 0; i < windows.size(); ++i)
   {

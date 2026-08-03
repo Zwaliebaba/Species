@@ -398,9 +398,53 @@ tasks:
       out-of-range read — LListTests pins that as OutOfRangeReadsReturnZero —
       so that `if` was doubling as a bounds check on an empty window list, and
       std::vector would have been undefined behaviour. The emptiness check is
-      now explicit. All eight other GetData(0) sites sit inside
+      now explicit.
+
+      THAT PARAGRAPH USED TO END "All eight other GetData(0) sites sit inside
       `while (size() > 0)` loops and were already guarded; they were checked
-      one by one, not assumed.
+      one by one, not assumed." IT WAS WRONG, and the owner found it by running
+      the game on 2026-08-03: opening a window with no buttons asserted in
+      EclWindow's destructor.
+
+      Two of those sites were not inside a guarded loop — they WERE the loop
+      condition. `while (m_buttons.GetData(0))` in EclWindow::~EclWindow and
+      `while (dirtyrects.GetData(0))` in EclResetDirtyRectangles became
+      `while (m_buttons[0])`, which subscripts an empty vector before testing
+      anything. The trap this task had already identified and written up is
+      exactly the trap it then walked into twice more in the same commit.
+
+      The lesson is not "check more carefully". It is that a claim of the form
+      "I checked each one" is worth nothing in a plan file a week later, and
+      the same sweep produced a follow-up commit for two OTHER errors before
+      this. Four defects from one batch rewrite, three of them found by
+      something other than the author's own audit.
+
+      SO IT IS A CHECK NOW. tools/check_hygiene.py gained a rule for
+      `while (container[...])` — the shape is meaningless on a std::vector and
+      was only ever legal because LList returned nullptr out of range. Zero
+      instances tree-wide after the fix, so it starts as a real ratchet rather
+      than a backlog.
+
+      THE REST OF THE SWEEP WAS AUDITED PROPERLY THIS TIME, on 2026-08-03,
+      after the crash. Every std::vector this branch introduced (34 of them,
+      taken from the diff rather than from memory), every subscript on one, and
+      whether an enclosing loop or an explicit guard bounds the index:
+
+        The two above were the only defects. Everything else that came from
+        LList is guarded — `while (!m_outbox.empty())` in ClientToServer,
+        `while (m_buttons.size())` in three window classes, `index != -1` in
+        Eclipse's three window lookups, explicit range checks in
+        WindowManager::GetResolution and Server's history replay.
+
+        The auto_vector conversions (T14) changed nothing: auto_vector's
+        operator[] forwarded straight to std::vector::operator[] with no bounds
+        check of its own, so `m_specs[spec.control_id]` and its siblings carry
+        exactly the risk they always did. Pre-existing, not introduced.
+
+        Several containers that look converted are not — m_cameraAnimations,
+        m_instantUnits, m_dspFX and Team::m_units are still LList or
+        FastDArray, so their unguarded-looking subscripts are still
+        bounds-safe. Worth knowing before converting them.
 
       SCOPE 6 FILES -> 20. EclGetWindows returns the list itself and fourteen
       files call it. An accessor that hands out a container is the same
