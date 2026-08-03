@@ -82,6 +82,7 @@
            left are all in .cpp files this project does not compile — so
            neither is on the path. -->
       <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronClient</AdditionalIncludeDirectories>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <!-- NeuronClient.lib is the renderer and sound layer, so anything the

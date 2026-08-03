@@ -175,17 +175,17 @@
     <ClInclude Include="Win32EventProc.h" />
     <ClInclude Include="WindowManager.h" />
     <ClInclude Include="AppCommands.h" />
-<ClInclude Include="CameraAccess.h" />
-<ClInclude Include="ControlHelpAccess.h" />
-<ClInclude Include="TaskManagerInterfaceAccess.h" />
-<ClInclude Include="UserInputAccess.h" />
-<ClInclude Include="SoundSource.h" />
-<ClInclude Include="WorldTypeNames.h" />
-<ClInclude Include="LocationAccess.h" />
-<ClInclude Include="LocationEditorAccess.h" />
-<ClInclude Include="GameCursorAccess.h" />
-<ClInclude Include="ScriptAccess.h" />
-<ClInclude Include="RendererAccess.h" />
+    <ClInclude Include="CameraAccess.h" />
+    <ClInclude Include="ControlHelpAccess.h" />
+    <ClInclude Include="TaskManagerInterfaceAccess.h" />
+    <ClInclude Include="UserInputAccess.h" />
+    <ClInclude Include="SoundSource.h" />
+    <ClInclude Include="WorldTypeNames.h" />
+    <ClInclude Include="LocationAccess.h" />
+    <ClInclude Include="LocationEditorAccess.h" />
+    <ClInclude Include="GameCursorAccess.h" />
+    <ClInclude Include="ScriptAccess.h" />
+    <ClInclude Include="RendererAccess.h" />
     <ClInclude Include="AppState.h" />
     <ClInclude Include="WorldPointers.h" />
     <ClInclude Include="WindowManagerWin32.h" />
@@ -234,7 +234,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronClient;$(SpeciesRoot)GameLogic;$(SpeciesRoot)Species</AdditionalIncludeDirectories>
