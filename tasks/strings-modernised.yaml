@@ -871,7 +871,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Split out of T5 on 2026-08-03 in the restart. ScrollBar left the list in
       the same split and went to T11 — see T11's notes for why.
