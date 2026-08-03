@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include <stdio.h>
@@ -20,10 +21,13 @@ std::vector<char*>* ListSubDirectoryNames(char const* _dir);
 
 bool DoesFileExist(char const *_fullPath);
 
-char const *GetDirectoryPart    (char const *_fullFilePath);
-char const *GetFilenamePart     (char const *_fullFilePath);
-char const *GetExtensionPart    (char const *_fileFilePath);
-char const *RemoveExtension     (char const *_fullFileName);
+// By value: these used to return a pointer into one shared static, so two
+// results could not be held at once. An absent directory or extension is the
+// empty string, never null. See tasks/strings-modernised.yaml T16.
+std::string GetDirectoryPart(char const* _fullFilePath);
+std::string GetFilenamePart(char const* _fullFilePath);
+std::string GetExtensionPart(char const* _fullFilePath);
+std::string RemoveExtension(char const* _fullFileName);
 
 bool AreFilesIdentical          (char const *_name1, char const *_name2);
 

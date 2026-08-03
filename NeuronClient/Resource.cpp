@@ -116,8 +116,8 @@ int Resource::GetTexture(const char* _name, bool _mipMapping, bool _masked)
 
     if (reader)
     {
-      const char* extension = GetExtensionPart(fullPath.c_str());
-      BitmapRGBA bmp(reader, extension);
+      const std::string extension = GetExtensionPart(fullPath.c_str());
+      BitmapRGBA bmp(reader, extension.c_str());
       delete reader;
 
       if (_masked)

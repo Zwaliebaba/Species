@@ -45,8 +45,8 @@ void TextRenderer::Initialise(char const* _filename)
 void TextRenderer::BuildOpenGlState()
 {
   BinaryReader* reader = g_resource->GetBinaryReader(m_filename);
-  char const* extension = GetExtensionPart(m_filename);
-  BitmapRGBA bmp(reader, extension);
+  std::string const extension = GetExtensionPart(m_filename);
+  BitmapRGBA bmp(reader, extension.c_str());
   delete reader;
 
   m_bitmapWidth = bmp.m_width * 2;

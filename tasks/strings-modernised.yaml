@@ -862,7 +862,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
     notes: >
       Added 2026-08-03 in the restart. T4's notes end "STILL OWED,
       deliberately… five callers and a test that asserts null. Its own task,
@@ -876,6 +876,38 @@ tasks:
 
       This is the same hazard T10 removed from ConvertIntToIP. That conversion
       is the worked example.
+
+      DONE 2026-08-03. All four return std::string; the shared static is gone.
+
+      THE NULL RETURN WENT, and that was the decision this task existed to make.
+      GetDirectoryPart returned nullptr for a path with no directory and one
+      test asserted it. A std::string return cannot be null, so the choice was
+      empty or std::optional, and it went to empty because GetExtensionPart
+      already answers a missing part that way — T4 chose that, on the grounds
+      that every caller feeds the result straight to stricmp or a BitmapRGBA
+      constructor without checking. The test is renamed rather than deleted, so
+      the contract change is visible in the suite rather than only here.
+      GetDirectoryPart and GetFilenamePart have no callers outside the tests, so
+      nothing depended on the old null.
+
+      The case that could not be tested before now is:
+      TwoResultsAreValidAtTheSameTime holds a directory, an extension and a
+      filename from three calls at once. Under the shared static a test like
+      that could only measure whether the string happened to survive being
+      overwritten, which is why the old file recorded it as deliberately
+      uncovered.
+
+      ONE DEAD CAST REMOVED. SoundSystem's sample loop wrote
+      `auto extensionRemoved = (char*)RemoveExtension(sample)` and passed it to
+      AddSample, which takes a const char* and always has. The cast was casting
+      away const for nothing.
+
+      Five callers, all of which consumed the result immediately; none was
+      holding one across a second call, so no latent bug was fixed here — the
+      hazard was that the next caller to try would have been broken silently.
+
+      Not compiled here (Linux). The six Python checks pass; CI's x64 Debug
+      build and the 16 FilesysUtils tests are the verification.
 
   - id: T10
     title: Convert the IP string helpers and the callers their signatures reach

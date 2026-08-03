@@ -756,8 +756,8 @@ void SoundSystem::ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source
     {
       char* soundName = _in->GetNextToken();
       StrToLower(soundName);
-      const char* extensionRemoved = RemoveExtension(soundName);
-      seb->m_instance->SetSoundName(extensionRemoved);
+      const std::string extensionRemoved = RemoveExtension(soundName);
+      seb->m_instance->SetSoundName(extensionRemoved.c_str());
     }
     else if (stricmp(fieldName, "SOURCETYPE") == 0)
       seb->m_instance->m_sourceType = atoi(_in->GetNextToken());
@@ -844,8 +844,10 @@ void SoundSystem::ParseSampleGroup(TextReader* _in, SampleGroup* _group)
 
     char* sample = _in->GetNextToken();
     StrToLower(sample);
-    auto extensionRemoved = (char*)RemoveExtension(sample);
-    _group->AddSample(extensionRemoved);
+    // The (char*) cast this used to carry was noise: AddSample takes a
+    // const char* and always did.
+    const std::string extensionRemoved = RemoveExtension(sample);
+    _group->AddSample(extensionRemoved.c_str());
   }
 }
 
