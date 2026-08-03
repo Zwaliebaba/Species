@@ -290,7 +290,7 @@ void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D<float>* _heightMap)
     DEBUG_ASSERT(!m_vertexBuffer);
     gglGenBuffersARB(1, &m_vertexBuffer);
     gglBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertexBuffer);
-    gglBufferDataARB(GL_ARRAY_BUFFER_ARB, static_cast<int>(m_verts.size()) * sizeof(LandVertex), m_verts.GetPointer(0), GL_STATIC_DRAW_ARB);
+    gglBufferDataARB(GL_ARRAY_BUFFER_ARB, static_cast<int>(m_verts.size()) * sizeof(LandVertex), m_verts.data(), GL_STATIC_DRAW_ARB);
     gglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
     break;
 
