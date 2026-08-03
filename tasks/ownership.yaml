@@ -85,7 +85,44 @@ tasks:
       before Profiler's; if the wait becomes the obstacle, splitting this
       task along the same line is the obvious move rather than starting it
       half-blocked.
-    status: in_progress
+
+      LANDED 2026-08-02, CI green. m_items and m_children became maps of
+      unique_ptr and Profiler::m_rootElement a unique_ptr; the 21 preferences
+      tests pass unchanged and this conversion did not touch them.
+
+      THE SHAPE TO EXPECT, for T2-T6. The diff is net negative: 42 insertions
+      against 56 deletions. PrefsManager::DeleteItems and ProfiledElement's
+      child-deleting destructor both disappeared outright, because a map of
+      unique_ptr already does that. A stage-5 conversion that GROWS its files
+      is doing something other than moving ownership into the type system —
+      treat that as a signal to stop and look.
+
+      WHAT STAYS RAW, which is most of the judgement in this task.
+      ProfiledElement::m_parent is not converted: a child does not own its
+      parent, and a unique_ptr there builds a cycle that never frees.
+      Profiler::m_currentElement is a cursor. The three GameLogic windows hold
+      observers and say .get(). "Observers stay raw" in the acceptance list is
+      the whole discipline, not a caveat.
+
+      TWO ORDERING HAZARDS the code now states. AddLine move-assigns over the
+      map node, and that frees whatever it displaces, so the key is copied out
+      before the owner moves — `m_items[item->m_key] = std::move(item)` reads
+      fine and is a trap. StartProfile takes its observer from the unique_ptr
+      before moving it into the map, because everything after works through
+      the observer.
+
+      PROCESS NOTE worth more than the conversion. CI rejected this twice, both
+      times for the same reason: changing a member's type makes the blast
+      radius EVERY mention of that member, and I converted the mentions I had
+      noticed. The reliable method is mechanical — grep the member name across
+      all six projects, read every hit, convert what needs it — and it takes a
+      minute. containers-replaced T20 lost a round to exactly this too.
+
+      Evidence is asymmetric and the notes should say so: Preferences is
+      covered by T19's tests, the profiler half has no test reach at all. If
+      the Garden smoke test is run against this branch, open the profile
+      window.
+    status: done
 
   - id: T2
     title: Adopt unique_ptr in NeuronServer
