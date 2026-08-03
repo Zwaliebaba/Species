@@ -57,7 +57,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       Found 2026-08-03 by language-hygiene T8, which preserved both sites
       exactly rather than decide this. The current code in the tree is the
