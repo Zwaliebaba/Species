@@ -48,32 +48,33 @@
 // ============================================================================
 
 
-
-ScreenZone::ScreenZone( char const *_name, char const *_tooltip,
-                        float _x, float _y, float _w, float _h,
-                        int _data )
-:   m_x(_x),
+ScreenZone::ScreenZone(char const* _name, char const* _tooltip, float _x, float _y, float _w, float _h, int _data)
+  : m_x(_x),
     m_y(_y),
     m_w(_w),
     m_h(_h),
     m_data(_data),
     m_scrollZone(-1),
-	m_subZones(false)
+    m_subZones(false)
 {
-    ASSERT_TEXT( strlen(_name) < sizeof(m_name), "Button name too long : %s", _name );
-    ASSERT_TEXT( strlen(_tooltip) < sizeof(m_toolTip), "Tooltip too long : %s", _tooltip );
-    strcpy( m_name, _name );
-    strcpy( m_toolTip, _tooltip );
+  ASSERT_TEXT(strlen(_name) < sizeof(m_name), "Button name too long : %s", _name);
+  ASSERT_TEXT(strlen(_tooltip) < sizeof(m_toolTip), "Tooltip too long : %s", _tooltip);
+  strcpy(m_name, _name);
+  strcpy(m_toolTip, _tooltip);
 }
 
 
 // ============================================================================
 
-KeyboardShortcut::KeyboardShortcut( std::string _name, int _data, ControlType _controltype )
-: ControlEventFunctor( _controltype ), m_name( _name ), m_data( _data ) {}
+KeyboardShortcut::KeyboardShortcut(std::string _name, int _data, ControlType _controltype)
+  : ControlEventFunctor(_controltype),
+    m_name(_name),
+    m_data(_data)
+{
+}
 
 
-const char * KeyboardShortcut::name() { return m_name.c_str(); }
+const char* KeyboardShortcut::name() { return m_name.c_str(); }
 
 
 int KeyboardShortcut::data() { return m_data; }
@@ -83,7 +84,7 @@ int KeyboardShortcut::data() { return m_data; }
 
 
 TaskManagerInterface::TaskManagerInterface()
-:   m_visible(false),
+  : m_visible(false),
     m_highlightedTaskId(-1),
     m_lockTaskManager(false),
     m_quickUnitVisible(false)
@@ -91,143 +92,136 @@ TaskManagerInterface::TaskManagerInterface()
 }
 
 
-void TaskManagerInterface::SetCurrentMessage( int _messageType, int _taskType, float _timer )
+void TaskManagerInterface::SetCurrentMessage(int _messageType, int _taskType, float _timer)
 {
-    m_currentMessageType = _messageType;
-    m_currentTaskType = _taskType;
-    m_messageTimer = GetHighResTime() + _timer;
+  m_currentMessageType = _messageType;
+  m_currentTaskType = _taskType;
+  m_messageTimer = GetHighResTime() + _timer;
 }
 
 
-void TaskManagerInterface::RunDefaultObjective ( GlobalEventCondition *_cond )
+void TaskManagerInterface::RunDefaultObjective(GlobalEventCondition* _cond)
 {
-    switch( _cond->m_type )
+  switch (_cond->m_type)
+  {
+  case GlobalEventCondition::BuildingOnline:
+  case GlobalEventCondition::BuildingOffline:
+  {
+    Building* building = g_location->GetBuilding(_cond->m_id);
+    if (building)
     {
-        case GlobalEventCondition::BuildingOnline:
-        case GlobalEventCondition::BuildingOffline:
-        {
-            Building *building = g_location->GetBuilding( _cond->m_id );
-            if( building )
-            {
-                g_camera->RequestBuildingFocusMode( building, 250.0f, 75.0f );
-                m_viewingDefaultObjective = true;
-            }
-            break;
-        }
-
-        case GlobalEventCondition::ResearchOwned:
-        {
-            Building *building = nullptr;
-            for( int i = 0; i < g_location->m_buildings.Size(); ++i )
-            {
-                if( g_location->m_buildings.ValidIndex(i) )
-                {
-                    Building *thisBuilding = g_location->m_buildings[i];
-                    if( thisBuilding->m_type == Building::TypeResearchItem &&
-                        ((ResearchItem *) thisBuilding)->m_researchType == _cond->m_id )
-                    {
-                        building = thisBuilding;
-                        break;
-                    }
-                }
-            }
-
-            if( building )
-            {
-                g_camera->RequestBuildingFocusMode( building, 100.0f, 75.0f );
-                m_viewingDefaultObjective = true;
-            }
-            break;
-        }
+      g_camera->RequestBuildingFocusMode(building, 250.0f, 75.0f);
+      m_viewingDefaultObjective = true;
     }
+    break;
+  }
+
+  case GlobalEventCondition::ResearchOwned:
+  {
+    Building* building = nullptr;
+    for (int i = 0; i < g_location->m_buildings.Size(); ++i)
+    {
+      if (g_location->m_buildings.ValidIndex(i))
+      {
+        Building* thisBuilding = g_location->m_buildings[i];
+        if (thisBuilding->m_type == Building::TypeResearchItem && ((ResearchItem*)thisBuilding)->m_researchType == _cond->m_id)
+        {
+          building = thisBuilding;
+          break;
+        }
+      }
+    }
+
+    if (building)
+    {
+      g_camera->RequestBuildingFocusMode(building, 100.0f, 75.0f);
+      m_viewingDefaultObjective = true;
+    }
+    break;
+  }
+  }
 }
 
-void TaskManagerInterface::SetVisible( bool _visible )
-{
-	m_visible = _visible;
-}
+void TaskManagerInterface::SetVisible(bool _visible) { m_visible = _visible; }
 
 void TaskManagerInterface::AdvanceTab()
 {
-    if( !m_visible ||
-        g_inputManager->getInputMode() == INPUT_MODE_KEYBOARD )
+  if (!m_visible || g_inputManager->getInputMode() == INPUT_MODE_KEYBOARD)
+  {
+    int taskId = -1;
+    int index = -1;
+    bool changeTask = false;
+    bool gesturesCycle = false;
+    if (g_inputManager->controlEvent(ControlGesturesSwitchUnit) && g_prefsManager->GetInt("ControlMethod", 0) == 0)
     {
-        int taskId = -1;
-        int index = -1;
-        bool changeTask = false;
-        bool gesturesCycle = false;
-        if( g_inputManager->controlEvent( ControlGesturesSwitchUnit ) &&
-            g_prefsManager->GetInt( "ControlMethod", 0 ) == 0 )
-        {
-            gesturesCycle = true;
-        }
-        if(g_inputManager->controlEvent( ControlUnitCycleRight ) ||
-            gesturesCycle )
-        {
-            changeTask = true;
-            for( int i = 0; i < g_taskManager->m_tasks.Size(); ++i )
-            {
-                if( g_taskManager->m_tasks.ValidIndex(i) )
-                {
-                    if( g_taskManager->m_tasks[i]->m_id == g_taskManager->m_currentTaskId )
-                    {
-                        if( g_taskManager->m_tasks.ValidIndex(i+1) )
-                        {
-                            index = i+1;
-                        }
-                        else if( g_taskManager->m_tasks.ValidIndex(0) )
-                        {
-                            index = 0;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        if( g_inputManager->controlEvent( ControlUnitCycleLeft ) )
-        {
-            changeTask = true;
-            for( int i = 0; i < g_taskManager->m_tasks.Size(); ++i )
-            {
-                if( g_taskManager->m_tasks.ValidIndex(i) )
-                {
-                    if( g_taskManager->m_tasks[i]->m_id == g_taskManager->m_currentTaskId )
-                    {
-                        if( g_taskManager->m_tasks.ValidIndex(i-1) )
-                        {
-                            index = i-1;
-                        }
-                        else if( g_taskManager->m_tasks.ValidIndex(g_taskManager->m_tasks.Size() - 1) )
-                        {
-                            index = g_taskManager->m_tasks.Size() - 1;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        if( changeTask )
-        {
-            if( index == -1 && g_taskManager->m_tasks.ValidIndex(0) )
-            {
-                index = 0;
-            }
-
-            if( g_taskManager->m_tasks.ValidIndex(index) )
-            {
-                if( g_taskManager->m_tasks[index]->m_type == GlobalResearch::TypeSquad )
-                {
-                    g_camera->RequestEntityTrackMode( g_taskManager->m_tasks[index]->m_objId );
-                }
-                else
-                {
-                    g_camera->RequestMode( Camera::ModeFreeMovement );
-                }
-                taskId = g_taskManager->m_tasks[index]->m_id;
-                g_taskManager->SelectTask(taskId);
-            }
-        }
+      gesturesCycle = true;
     }
+    if (g_inputManager->controlEvent(ControlUnitCycleRight) || gesturesCycle)
+    {
+      changeTask = true;
+      for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
+      {
+        if (g_taskManager->m_tasks.ValidIndex(i))
+        {
+          if (g_taskManager->m_tasks[i]->m_id == g_taskManager->m_currentTaskId)
+          {
+            if (g_taskManager->m_tasks.ValidIndex(i + 1))
+            {
+              index = i + 1;
+            }
+            else if (g_taskManager->m_tasks.ValidIndex(0))
+            {
+              index = 0;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    if (g_inputManager->controlEvent(ControlUnitCycleLeft))
+    {
+      changeTask = true;
+      for (int i = 0; i < g_taskManager->m_tasks.Size(); ++i)
+      {
+        if (g_taskManager->m_tasks.ValidIndex(i))
+        {
+          if (g_taskManager->m_tasks[i]->m_id == g_taskManager->m_currentTaskId)
+          {
+            if (g_taskManager->m_tasks.ValidIndex(i - 1))
+            {
+              index = i - 1;
+            }
+            else if (g_taskManager->m_tasks.ValidIndex(g_taskManager->m_tasks.Size() - 1))
+            {
+              index = g_taskManager->m_tasks.Size() - 1;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    if (changeTask)
+    {
+      if (index == -1 && g_taskManager->m_tasks.ValidIndex(0))
+      {
+        index = 0;
+      }
+
+      if (g_taskManager->m_tasks.ValidIndex(index))
+      {
+        if (g_taskManager->m_tasks[index]->m_type == GlobalResearch::TypeSquad)
+        {
+          g_camera->RequestEntityTrackMode(g_taskManager->m_tasks[index]->m_objId);
+        }
+        else
+        {
+          g_camera->RequestMode(Camera::ModeFreeMovement);
+        }
+        taskId = g_taskManager->m_tasks[index]->m_id;
+        g_taskManager->SelectTask(taskId);
+      }
+    }
+  }
 }
