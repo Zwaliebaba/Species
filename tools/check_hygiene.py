@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject changed lines that reintroduce a legacy pattern a sweep already removed.
+"""Reject changes that increase a file's count of a legacy pattern a sweep removed.
 
 A sweep that is not enforced regrows. `tasks/language-hygiene.yaml` T1 and T2
 converted 578 `NULL`s and 223 `#ifndef _included_*` guards across the tree; the
@@ -7,12 +7,15 @@ strings and enum work is converging on the same kind of zero. Nothing stops the
 next change from writing one back, and nobody reviewing a 40-file diff will spot
 a single `sprintf`.
 
-The enforcement is deliberately the same shape as check_format.py: **changed
-lines only**. Most of the tree is unconverted Darwinia code, and a whole-file
-rule would fail every file that has not had its conversion task yet — so the
-check would have to be disabled to get any work done, which is the same as not
-having it. Checking what a change *writes* means the ratchet only ever turns one
-way, and an unconverted file stays legal until someone converts it.
+The enforcement is per file and per rule: a file may not come out of a change
+with more occurrences than it went in with. An absolute rule would fail nearly
+every file in the tree, because stages 4 and 5 have not run — so the check would
+have to be disabled to get any work done, which is the same as not having it. A
+ratchet leaves unconverted files legal until someone converts them, and makes
+regrowth impossible in the ones already done.
+
+Counting rather than judging line by line is deliberate; see rising_rules for
+why, and for what the approach cannot catch.
 
     python3 tools/check_hygiene.py                  # against origin/main
     python3 tools/check_hygiene.py --base HEAD~1
@@ -156,50 +159,73 @@ def is_checked(path: Path) -> bool:
     return bool(parts) and parts[0] in CHECKED_ROOTS
 
 
-def violations(path: Path, numbered: list[tuple[int, str]]) -> list[str]:
+def violations(path: Path, numbered: list[tuple[int, str]], rules: list[Rule]) -> list[str]:
+    """Report the changed lines matching `rules`, which have already been shown
+    to have risen for this file. Nothing is reported for a rule whose count held
+    steady, however many of its call sites the change happened to touch."""
     found = []
     for number, line in numbered:
         if EXEMPT_MARKER in line:
             continue
         stripped = strip_noise(line)
-        for rule in RULES:
+        for rule in rules:
             target = line if rule.raw else stripped
             if rule.regex.search(target):
                 found.append(f"{path}:{number}: {rule.name} — {rule.message}\n    {line.strip()}")
     return found
 
 
-def squeeze(line: str) -> str:
-    """The line with every run of whitespace removed, for identity comparison."""
-    return "".join(line.split())
+def count_matches(lines: list[str], rule: Rule) -> int:
+    """How many times `rule` fires across `lines`, ignoring exempted ones."""
+    total = 0
+    for line in lines:
+        if EXEMPT_MARKER in line:
+            continue
+        target = line if rule.raw else strip_noise(line)
+        total += len(rule.regex.findall(target))
+    return total
 
 
-def drop_reformatted_lines(
-    base: str, path: Path, numbered: list[tuple[int, str]]
-) -> list[tuple[int, str]]:
-    """Drop lines that already existed in `base` and only moved or reindented.
-
-    The same problem check_format.py solves with `--rename`, from the other side.
-    Editing one line of a tab-indented legacy file makes clang-format reindent its
-    neighbours, and those neighbours then arrive here looking newly authored —
-    a `strncpy` the change never wrote gets reported, and the honest fix is a
-    `hygiene-ok` marker that then hides the real call from the conversion task
-    that has to remove it. Judging what a change *authored* rather than what it
-    *moved* is the only version of this check that stays useful.
-
-    The hole this leaves, stated rather than hidden: a genuinely new line that is
-    character-for-character identical to one already in the same file is not
-    reported. It only exists in files that already contain the pattern — a
-    converted file has none for a new line to match — so the ratchet's actual
-    job, keeping converted files converted, is unaffected.
-    """
+def base_lines(base: str, path: Path) -> list[str]:
+    """The file as of `base`, or empty for a file that did not exist there."""
     try:
-        original = git("show", f"{base}:{path.as_posix()}").splitlines()
+        return git("show", f"{base}:{path.as_posix()}").splitlines()
     except subprocess.CalledProcessError:
-        return numbered  # new file: every line is genuinely authored here
+        return []
 
-    before = {squeeze(line) for line in original}
-    return [(number, line) for number, line in numbered if squeeze(line) not in before]
+
+def rising_rules(base: str, path: Path, current: list[str]) -> list[Rule]:
+    """The rules whose count in `path` went UP against `base`.
+
+    Counting per file rather than judging line by line is what makes this
+    survive reformatting, and the reason is not theoretical. clang-format
+    reflows: it reindents a changed line's neighbours, and it joins and splits
+    statements. A nine-line sprintf call collapsed into two lines is the same
+    call, but no line-based comparison can see that — it looks like a brand new
+    one. The first version of this check reported exactly that, and the only
+    way to silence it would have been a `hygiene-ok` marker that then hides a
+    real call from the conversion task obliged to remove it.
+
+    A count cannot be fooled by moving, reindenting, joining or splitting, and
+    it states the property the ratchet actually wants: a file may not come out
+    of a change with more of these than it went in with.
+
+    The hole this leaves, stated plainly because it is wider than it first
+    looks: a file whose count for a rule FALLS can absorb a new occurrence of
+    that same rule without tripping. Convert ten sprintf calls and write one
+    back, and the count still went down, so nothing is reported. That is only
+    reachable in a file being actively converted in the same commit — which is
+    the one moment a reviewer is already reading those lines — and the
+    alternative is a line-based rule that cries wolf every time clang-format
+    reflows a statement. A check that is wrong often enough to be suppressed
+    protects nothing.
+
+    It also reports the rule rather than the specific occurrence when a file
+    both adds and removes, for the same reason: it knows the count moved, not
+    which line is to blame.
+    """
+    original = base_lines(base, path)
+    return [rule for rule in RULES if count_matches(current, rule) > count_matches(original, rule)]
 
 
 def added_lines(base: str) -> dict[Path, list[tuple[int, str]]]:
@@ -260,10 +286,7 @@ def main() -> int:
             base = git("merge-base", "HEAD", args.base).strip()
         except subprocess.CalledProcessError:
             base = args.base
-        targets = {
-            path: drop_reformatted_lines(base, path, numbered)
-            for path, numbered in added_lines(base).items()
-        }
+        targets = added_lines(base)
 
     failures: list[str] = []
     checked = 0
@@ -272,7 +295,14 @@ def main() -> int:
         if args.all is None and not is_checked(path):
             continue
         checked += 1
-        failures.extend(violations(path, numbered))
+        if args.all is not None:
+            rules = RULES
+        else:
+            rules = rising_rules(base, path, [line for _, line in numbered] if not (REPO_ROOT / path).exists()
+                                 else (REPO_ROOT / path).read_text(encoding="utf-8", errors="replace").splitlines())
+            if not rules:
+                continue
+        failures.extend(violations(path, numbered, rules))
 
     if failures:
         print("Changed lines reintroduce patterns the modernisation removed:\n")
