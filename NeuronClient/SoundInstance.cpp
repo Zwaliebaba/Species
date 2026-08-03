@@ -160,11 +160,15 @@ SoundInstance::~SoundInstance()
   m_cachedSampleHandle = nullptr;
   g_deletingCachedSampleHandle = false;
 
-  m_dspFX.EmptyAndDelete();
+  for (DspHandle* effect : m_dspFX)
+    delete effect;
+  m_dspFX.clear();
 
   free(m_eventName);
 
-  m_objIds.EmptyAndDelete();
+  for (WorldObjectId* id : m_objIds)
+    delete id;
+  m_objIds.clear();
 }
 
 
@@ -275,13 +279,13 @@ void SoundInstance::Copy(SoundInstance* _copyMe)
 
   if (dspEnabled)
   {
-    for (int i = 0; i < _copyMe->m_dspFX.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(_copyMe->m_dspFX.size()); ++i)
     {
       DspHandle* effect = _copyMe->m_dspFX[i];
       DspHandle* copy = new DspHandle();
       copy->m_parent = this;
       copy->Copy(effect);
-      m_dspFX.PutData(copy);
+      m_dspFX.push_back(copy);
     }
   }
 
@@ -298,13 +302,13 @@ void SoundInstance::PropagateBlueprints()
 
     bool restartRequired = false;
 
-    if (m_parent->m_dspFX.Size() != m_dspFX.Size())
+    if (static_cast<int>(m_parent->m_dspFX.size()) != static_cast<int>(m_dspFX.size()))
     {
       restartRequired = true;
     }
     else
     {
-      for (int i = 0; i < m_parent->m_dspFX.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_parent->m_dspFX.size()); ++i)
       {
         DspHandle* newEffect = m_parent->m_dspFX[i];
         DspHandle* ourEffect = m_dspFX[i];
@@ -370,16 +374,16 @@ void SoundInstance::PropagateBlueprints()
     //
     // Make sure we have the same number of effects
 
-    while (m_parent->m_dspFX.Size() > m_dspFX.Size())
+    while (static_cast<int>(m_parent->m_dspFX.size()) > static_cast<int>(m_dspFX.size()))
     {
       DspHandle* newEffect = new DspHandle();
       newEffect->m_parent = this;
-      m_dspFX.PutData(newEffect);
+      m_dspFX.push_back(newEffect);
     }
-    while (m_dspFX.Size() > m_parent->m_dspFX.Size())
+    while (static_cast<int>(m_dspFX.size()) > static_cast<int>(m_parent->m_dspFX.size()))
     {
-      DspHandle* effect = m_dspFX.GetData(m_dspFX.Size() - 1);
-      m_dspFX.RemoveData(m_dspFX.Size() - 1);
+      DspHandle* effect = m_dspFX.back();
+      m_dspFX.pop_back();
       delete effect;
     }
 
@@ -387,9 +391,9 @@ void SoundInstance::PropagateBlueprints()
     //
     // Update Filters
 
-    for (int i = 0; i < m_parent->m_dspFX.Size(); ++i)
+    for (int i = 0; i < static_cast<int>(m_parent->m_dspFX.size()); ++i)
     {
-      DEBUG_ASSERT(m_dspFX.ValidIndex(i));
+      DEBUG_ASSERT(i < static_cast<int>(m_dspFX.size()));
       DspHandle* effect = m_parent->m_dspFX[i];
       DspHandle* copy = m_dspFX[i];
       copy->Copy(effect);
@@ -510,7 +514,7 @@ void SoundInstance::OpenStream(bool _keepCurrentStream)
   {
     SampleGroup* group = g_soundSystem->GetSampleGroup(m_soundName);
     ASSERT_TEXT(group, "Failed to find Sample Group %s", m_soundName);
-    int numSamples = group->m_samples.Size();
+    int numSamples = static_cast<int>(group->m_samples.size());
 
     int memoryUsage = g_prefsManager->GetInt("SoundMemoryUsage", 1);
     if (memoryUsage == 2)
@@ -641,7 +645,7 @@ bool SoundInstance::StartPlaying(int _channelIndex)
   int filterTypes[16];
   int numActiveFilters = 0;
 
-  for (int i = 0; i < m_dspFX.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_dspFX.size()); ++i)
   {
     DspHandle* effect = m_dspFX[i];
     effect->Initialise(this);
@@ -678,7 +682,7 @@ bool SoundInstance::Advance()
   //
   // Update Filters
 
-  for (int i = 0; i < m_dspFX.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_dspFX.size()); ++i)
   {
     DspHandle* effect = m_dspFX[i];
     effect->Advance();
@@ -863,7 +867,7 @@ void SoundInstance::StopPlaying()
 {
   if (IsPlaying())
   {
-    if (m_dspFX.Size() > 0)
+    if (static_cast<int>(m_dspFX.size()) > 0)
     {
       g_soundLibrary3d->DisableDspFX(m_channelIndex);
     }
@@ -971,12 +975,12 @@ bool SoundInstance::ResolveAttachedObject()
       //
       // Prune our objIds list of invalid EntityIds
 
-      for (int i = 0; i < m_objIds.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(m_objIds.size()); ++i)
       {
         WorldObjectId* id = m_objIds[i];
         if (!g_locationAccess->WorldObjectExists(*id))
         {
-          m_objIds.RemoveData(i);
+          m_objIds.erase(m_objIds.begin() + i);
           delete id;
           --i;
         }
@@ -986,7 +990,7 @@ bool SoundInstance::ResolveAttachedObject()
       //
       // Now select an object from our list depending on our instance type
 
-      if (m_objIds.Size() > 0)
+      if (static_cast<int>(m_objIds.size()) > 0)
       {
         switch (m_instanceType)
         {
@@ -998,7 +1002,7 @@ bool SoundInstance::ResolveAttachedObject()
 
         case MonophonicRandom:
         {
-          int index = speciesRandom() % m_objIds.Size();
+          int index = speciesRandom() % static_cast<int>(m_objIds.size());
           m_objId = *m_objIds[index];
           break;
         }
@@ -1006,7 +1010,7 @@ bool SoundInstance::ResolveAttachedObject()
         case MonophonicNearest:
         {
           float nearest = 99999.9f;
-          for (int i = 0; i < m_objIds.Size(); ++i)
+          for (int i = 0; i < static_cast<int>(m_objIds.size()); ++i)
           {
             WorldObjectId* id = m_objIds[i];
             Vector3 pos, vel;
@@ -1047,9 +1051,9 @@ char* SoundInstance::GetDescriptor()
   sprintf(volume, "%2.1f", m_channelVolume);
 
   char fx[32];
-  if (m_dspFX.Size())
+  if (static_cast<int>(m_dspFX.size()))
   {
-    sprintf(fx, "fx%d", m_dspFX.Size());
+    sprintf(fx, "fx%d", static_cast<int>(m_dspFX.size()));
   }
   else
   {

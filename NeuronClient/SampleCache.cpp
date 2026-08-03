@@ -13,93 +13,89 @@ bool g_deletingCachedSampleHandle = false;
 // Class CachedSample
 //*****************************************************************************
 
-CachedSample::CachedSample(char const *_sampleName)
-:	m_amountCached(0)
+CachedSample::CachedSample(char const* _sampleName)
+  : m_amountCached(0)
 {
-    char fullPath[512] = "Sounds/";
-	strcat(fullPath, _sampleName);
+  char fullPath[512] = "Sounds/";
+  strcat(fullPath, _sampleName);
 
-	m_soundStreamDecoder = g_resource->GetSoundStreamDecoder(fullPath);
-    ASSERT_TEXT( m_soundStreamDecoder, "Failed to open sound stream decoder : %s", fullPath );
+  m_soundStreamDecoder = g_resource->GetSoundStreamDecoder(fullPath);
+  ASSERT_TEXT(m_soundStreamDecoder, "Failed to open sound stream decoder : %s", fullPath);
 
-	m_numChannels = m_soundStreamDecoder->m_numChannels;
-	m_numSamples = m_soundStreamDecoder->m_numSamples;
-	m_freq = m_soundStreamDecoder->m_freq;
+  m_numChannels = m_soundStreamDecoder->m_numChannels;
+  m_numSamples = m_soundStreamDecoder->m_numSamples;
+  m_freq = m_soundStreamDecoder->m_freq;
 
-	m_rawSampleData = new signed short[m_numChannels * m_numSamples];
+  m_rawSampleData = new signed short[m_numChannels * m_numSamples];
 }
 
 
 CachedSample::~CachedSample()
 {
-	delete m_soundStreamDecoder; m_soundStreamDecoder = nullptr;
-	delete [] m_rawSampleData; m_rawSampleData = nullptr;
+  delete m_soundStreamDecoder;
+  m_soundStreamDecoder = nullptr;
+  delete[] m_rawSampleData;
+  m_rawSampleData = nullptr;
 }
 
 
-void CachedSample::Read(signed short *_data, unsigned int _startSample, unsigned int _numSamples)
+void CachedSample::Read(signed short* _data, unsigned int _startSample, unsigned int _numSamples)
 {
-	if (m_soundStreamDecoder)
-	{
-		int highestSampleRequested = _startSample + _numSamples - 1;
-		if (highestSampleRequested >= m_amountCached)
-		{
-			int amountToRead = highestSampleRequested - m_amountCached + 1;
-			unsigned int amountRead = m_soundStreamDecoder->Read(
-										&m_rawSampleData[m_amountCached],
-										amountToRead);
-			m_amountCached += amountRead;
-			DEBUG_ASSERT(m_amountCached <= m_numSamples);
-			if (m_amountCached == m_numSamples)
-			{
-				delete m_soundStreamDecoder; m_soundStreamDecoder = nullptr;
-			}
-		}
-	}
+  if (m_soundStreamDecoder)
+  {
+    int highestSampleRequested = _startSample + _numSamples - 1;
+    if (highestSampleRequested >= m_amountCached)
+    {
+      int amountToRead = highestSampleRequested - m_amountCached + 1;
+      unsigned int amountRead = m_soundStreamDecoder->Read(&m_rawSampleData[m_amountCached], amountToRead);
+      m_amountCached += amountRead;
+      DEBUG_ASSERT(m_amountCached <= m_numSamples);
+      if (m_amountCached == m_numSamples)
+      {
+        delete m_soundStreamDecoder;
+        m_soundStreamDecoder = nullptr;
+      }
+    }
+  }
 
-	memcpy(_data, &m_rawSampleData[_startSample], sizeof(signed short) * m_numChannels * _numSamples);
+  memcpy(_data, &m_rawSampleData[_startSample], sizeof(signed short) * m_numChannels * _numSamples);
 }
-
 
 
 //*****************************************************************************
 // Class CachedSampleHandle
 //*****************************************************************************
 
-CachedSampleHandle::CachedSampleHandle(CachedSample *_sample)
-:	m_nextSampleIndex(0),
-	m_cachedSample(_sample)
+CachedSampleHandle::CachedSampleHandle(CachedSample* _sample)
+  : m_nextSampleIndex(0),
+    m_cachedSample(_sample)
 {
 }
 
 
 CachedSampleHandle::~CachedSampleHandle()
 {
-	m_cachedSample = nullptr;
-	m_nextSampleIndex = 0xffffffff;
+  m_cachedSample = nullptr;
+  m_nextSampleIndex = 0xffffffff;
 }
 
 
-unsigned int CachedSampleHandle::Read(signed short *_data, unsigned int _numSamples)
+unsigned int CachedSampleHandle::Read(signed short* _data, unsigned int _numSamples)
 {
-	int samplesRemaining = m_cachedSample->m_numSamples - m_nextSampleIndex;
-	if (_numSamples > samplesRemaining)
-	{
-		_numSamples = samplesRemaining;
-	}
+  int samplesRemaining = m_cachedSample->m_numSamples - m_nextSampleIndex;
+  if (_numSamples > samplesRemaining)
+  {
+    _numSamples = samplesRemaining;
+  }
 
-	m_cachedSample->Read(_data, m_nextSampleIndex, _numSamples);
-	m_nextSampleIndex += _numSamples;
+  m_cachedSample->Read(_data, m_nextSampleIndex, _numSamples);
+  m_nextSampleIndex += _numSamples;
 
-	return _numSamples;
+  return _numSamples;
 }
 
 
-void CachedSampleHandle::Restart()
-{
-	m_nextSampleIndex = 0;
-}
-
+void CachedSampleHandle::Restart() { m_nextSampleIndex = 0; }
 
 
 //*****************************************************************************
@@ -108,48 +104,44 @@ void CachedSampleHandle::Restart()
 
 CachedSampleManager::~CachedSampleManager()
 {
-	for (int i = 0; i < m_cache.Size(); ++i)
-	{
-		delete m_cache.GetData(i);
-	}
+  for (int i = 0; i < m_cache.Size(); ++i)
+  {
+    delete m_cache.GetData(i);
+  }
 }
 
 
-CachedSampleHandle *CachedSampleManager::GetSample(char const *_sampleName)
+CachedSampleHandle* CachedSampleManager::GetSample(char const* _sampleName)
 {
-	CachedSample *cachedSample = m_cache.GetData(_sampleName);
+  CachedSample* cachedSample = m_cache.GetData(_sampleName);
 
-	if (!cachedSample)
-	{
-		cachedSample = new CachedSample(_sampleName);
-		m_cache.PutData(_sampleName, cachedSample);
-    }
+  if (!cachedSample)
+  {
+    cachedSample = new CachedSample(_sampleName);
+    m_cache.PutData(_sampleName, cachedSample);
+  }
 
-	CachedSampleHandle *rv = new CachedSampleHandle(cachedSample);
-	return rv;
+  CachedSampleHandle* rv = new CachedSampleHandle(cachedSample);
+  return rv;
 }
 
 
-void CachedSampleManager::EmptyCache()
-{
-    m_cache.EmptyAndDelete();
-}
+void CachedSampleManager::EmptyCache() { m_cache.EmptyAndDelete(); }
 
 
 int CachedSampleManager::GetMemoryUsage()
 {
-    int memoryUsage = 0;
+  int memoryUsage = 0;
 
-    for( int i = 0; i < m_cache.Size(); ++i )
+  for (int i = 0; i < m_cache.Size(); ++i)
+  {
+    if (m_cache.ValidIndex(i))
     {
-        if( m_cache.ValidIndex(i) )
-        {
-            CachedSample *sample = m_cache.GetData(i);
-            int sampleSize = sizeof(signed short) * sample->m_numChannels * sample->m_numSamples;
-            memoryUsage += sampleSize;
-        }
+      CachedSample* sample = m_cache.GetData(i);
+      int sampleSize = sizeof(signed short) * sample->m_numChannels * sample->m_numSamples;
+      memoryUsage += sampleSize;
     }
+  }
 
-    return memoryUsage;
+  return memoryUsage;
 }
-
