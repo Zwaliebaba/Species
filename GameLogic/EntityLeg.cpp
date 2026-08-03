@@ -210,7 +210,7 @@ void EntityLeg::Render(float _predictionTime, const Vector3& _predictedMovement)
     Matrix34 mat(front, up, footPos);
     m_shapeLower->Render(_predictionTime, mat);
 
-    //RenderArrow( kneePos, footPos, 1.0f );
+    // RenderArrow( kneePos, footPos, 1.0f );
   }
 
   {
@@ -219,7 +219,7 @@ void EntityLeg::Render(float _predictionTime, const Vector3& _predictedMovement)
     Matrix34 mat(front, up, kneePos);
     m_shapeUpper->Render(_predictionTime, mat);
 
-    //RenderArrow( rootPos, kneePos, 1.0f );
+    // RenderArrow( rootPos, kneePos, 1.0f );
   }
 }
 

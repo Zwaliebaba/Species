@@ -260,8 +260,8 @@ tasks:
   - id: T9
     title: Convert the enums that int typedefs stand in for
     intent: >
-      ControlType, InputType and InputCondition are the three the old T4 could
-      not have carried. Each has an `int` typedef used interchangeably with it
+      ControlType, InputType, InputCondition and — as of T5 — Camera::Mode are
+      the enums the old T4 could not have carried. Each has an `int` typedef used interchangeably with it
       across the driver API — controltype_t, inputtype_t and condition_t — so
       making the enum strong means deciding what those typedefs become, and
       that is an API change to ControlBindings and InputDriver rather than a
@@ -279,6 +279,9 @@ tasks:
       - NeuronClient/Input.h
       - NeuronClient/Input.cpp
       - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/CameraAccess.h
+      - Species/Camera.h
+      - Species/Camera.cpp
     acceptance:
       - The three enums are enum class with an explicit underlying type
       - controltype_t, inputtype_t and condition_t either name the enum type or are gone; no signature takes a bare int where an enumerator is meant
@@ -347,11 +350,42 @@ tasks:
       Re-measured 2026-08-02 at 11aee84: 12 plain enums in headers, not 11,
       and `enum class` appears once in the tree. Re-derive the list when
       starting — the twelfth is not identified here.
+
+      DONE 2026-08-03 for TWO of the three. FootState and TMControl are scoped;
+      Camera::Mode is NOT, and moved to T9.
+
+      CAMERA::MODE BELONGS WITH THE INT-TYPEDEF ENUMS. Camera stores
+      `int m_mode` and RequestMode takes `int _mode`, so scoping the enum breaks
+      every comparison and every call — it is the same shape as ControlType and
+      InputCondition, not a keyword swap. The comment above the enum in
+      CameraAccess.h said exactly this and I scoped it before reading it. Read
+      the comment above an enum before converting it; on this one the previous
+      agent had already done the analysis.
+
+      The serialisation check the acceptance asks for: none of the three reaches
+      a file or the wire, and nothing indexes an array with one. Camera.h's
+      "remember to update the static string table at the end of camera.cpp" is
+      STALE — that table does not exist; the only thing left there is a
+      commented-out switch.
+
+      TWO FINDINGS FROM THE CONVERSION, both preserved rather than fixed.
+
+      Tripod.cpp tested `!m_foot.m_state == EntityFoot::OnGround` twice. That
+      parses as `(!state) == OnGround`, and because OnGround is 0 it was
+      ACCIDENTALLY equivalent to `state != OnGround` — which is what it meant.
+      A scoped enum has no operator!, so the accident is written out as the
+      intent, with the same result.
+
+      The four input drivers index a nine-string error table with a ten-value
+      InputParserState, so errors[STATE_DONE] reads past the end and every
+      message from STATE_WANT_OPTIONAL on is off by one. Surfaced by T4, which
+      had to look at the indexing to compile it; recorded at all four sites and
+      not fixed, because changing which string the parser reports is a decision.
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
 
   - id: T6
     title: Delete the dead platform files
