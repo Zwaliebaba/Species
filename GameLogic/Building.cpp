@@ -168,7 +168,7 @@ void Building::SetShapeLights ( ShapeFragment *_fragment )
 
     int i;
 
-    for( i = 0; i < _fragment->m_childMarkers.Size(); ++i )
+    for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
     {
         ShapeMarker *marker = _fragment->m_childMarkers[i];
         if( strstr( marker->m_name, "MarkerLight" ) )
@@ -181,7 +181,7 @@ void Building::SetShapeLights ( ShapeFragment *_fragment )
     //
     // Recurse to all child fragments
 
-    for( i = 0; i < _fragment->m_childFragments.Size(); ++i )
+    for (i = 0; i < static_cast<int>(_fragment->m_childFragments.size()); ++i)
     {
         ShapeFragment *fragment = _fragment->m_childFragments[i];
         SetShapeLights( fragment );
@@ -198,7 +198,7 @@ void Building::SetShapePorts( ShapeFragment *_fragment )
 
     Matrix34 buildingMat( m_front, m_up, m_pos );
 
-    for( i = 0; i < _fragment->m_childMarkers.Size(); ++i )
+    for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
     {
         ShapeMarker *marker = _fragment->m_childMarkers[i];
         if( strstr( marker->m_name, "MarkerPort" ) )
@@ -223,7 +223,7 @@ void Building::SetShapePorts( ShapeFragment *_fragment )
     //
     // Recurse to all child fragments
 
-    for( i = 0; i < _fragment->m_childFragments.Size(); ++i )
+    for (i = 0; i < static_cast<int>(_fragment->m_childFragments.size()); ++i)
     {
         ShapeFragment *fragment = _fragment->m_childFragments[i];
         SetShapePorts( fragment );

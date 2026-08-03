@@ -1378,10 +1378,10 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
     RasteriseSphere(worldPos, _frag->m_radius);
 
   // Recurse into all child fragments
-  int numChildren = _frag->m_childFragments.Size();
+  int numChildren = static_cast<int>(_frag->m_childFragments.size());
   for (int i = 0; i < numChildren; ++i)
   {
-    const ShapeFragment* child = _frag->m_childFragments.GetData(i);
+    const ShapeFragment* child = _frag->m_childFragments[i];
     MarkUsedCells(child, total);
   }
 #endif // USE_PIXEL_EFFECT_GRID_OPTIMISATION

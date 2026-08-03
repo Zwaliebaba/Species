@@ -304,6 +304,11 @@ tasks:
       - NeuronClient/Shape.h
       - NeuronClient/ClientToServer.cpp
       - NeuronClient/ClientToServer.h
+      - GameLogic/NetworkWindow.cpp
+      - GameLogic/Building.cpp
+      - Species/Renderer.cpp
+      - Species/Explosion.cpp
+      - Species/GlobalWorld.cpp
     acceptance:
       - grep -lwE "LList|DArray" on the four files returns nothing
       - Letter-processing order in ClientToServer is by-construction unchanged
@@ -312,7 +317,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T9
     title: Convert the GameLogic entity containers

@@ -54,8 +54,7 @@ void NetworkWindow::Render( bool hasFocus )
     g_editorFont.DrawText2D( m_x + 10, m_y + 45, DEF_FONT_SIZE,
 		"CLIENT SeqID : %d", g_lastProcessedSequenceId );
 
-    g_editorFont.DrawText2D( m_x + 10, m_y + 80, DEF_FONT_SIZE,
-		"Inbox: %d", g_clientToServer->m_inbox.Size() );
+    g_editorFont.DrawText2D(m_x + 10, m_y + 80, DEF_FONT_SIZE, "Inbox: %d", static_cast<int>(g_clientToServer->m_inbox.size()));
 
     int nextSeqId = g_clientToServer->GetNextLetterSeqID();
     g_editorFont.DrawText2D( m_x + 10, m_y + 96, DEF_FONT_SIZE, "First Letter SeqID: %d", nextSeqId );

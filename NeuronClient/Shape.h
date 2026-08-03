@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <stdio.h>
 
 #include "LList.h"
@@ -146,39 +148,39 @@ public:
 	float			m_mostPositiveY;
 	float			m_mostNegativeY;
 
-	LList<ShapeFragment *>	m_childFragments;
-	LList<ShapeMarker *>	m_childMarkers;
+  std::vector<ShapeFragment*> m_childFragments;
+  std::vector<ShapeMarker*> m_childMarkers;
 
-    ShapeFragment				(TextReader *_in, char const *_name);
-    ShapeFragment				(char const *_name, char const *_parentName);
-    ~ShapeFragment				();
+  ShapeFragment(TextReader* _in, char const* _name);
+  ShapeFragment(char const* _name, char const* _parentName);
+  ~ShapeFragment();
 
-	void BuildDisplayList		();
+  void BuildDisplayList();
 
-	void RegisterPositions		(Vector3 *positions, unsigned int numPositions);
-    void RegisterNormals		(Vector3 *norms, unsigned int numNorms);
-    void RegisterColours		(RGBAColour *colours, unsigned int numColours);
-    void RegisterVertices		(VertexPosCol *verts, unsigned int numVerts);
-	void RegisterTriangles		(ShapeTriangle *tris, unsigned int numTris);
+  void RegisterPositions(Vector3* positions, unsigned int numPositions);
+  void RegisterNormals(Vector3* norms, unsigned int numNorms);
+  void RegisterColours(RGBAColour* colours, unsigned int numColours);
+  void RegisterVertices(VertexPosCol* verts, unsigned int numVerts);
+  void RegisterTriangles(ShapeTriangle* tris, unsigned int numTris);
 
-    void WriteToFile			(FILE *_out) const;
+  void WriteToFile(FILE* _out) const;
 
-	void Render					(float _predictionTime);// Uses display list
-	void RenderSlow				();						// Doesn't use display list
-	void RenderHitCheck			(Matrix34 const &_transform);
-	void RenderMarkers			(Matrix34 const &_transform);
+  void Render(float _predictionTime); // Uses display list
+  void RenderSlow();                  // Doesn't use display list
+  void RenderHitCheck(Matrix34 const& _transform);
+  void RenderMarkers(Matrix34 const& _transform);
 
-	ShapeFragment *LookupFragment(char const *_name);	// Recurses into child fragments
-	ShapeMarker   *LookupMarker  (char const *_name);	// Recurses into child fragments
+  ShapeFragment* LookupFragment(char const* _name); // Recurses into child fragments
+  ShapeMarker* LookupMarker(char const* _name);     // Recurses into child fragments
 
-    void CalculateCentre        ( Matrix34 const &_transform, Vector3 &_centre, int &_numFragments );       // Recursive
-    void CalculateRadius        ( Matrix34 const &_transform, Vector3 const &_centre, float &_radius );     // Recursive
+  void CalculateCentre(Matrix34 const& _transform, Vector3& _centre, int& _numFragments);   // Recursive
+  void CalculateRadius(Matrix34 const& _transform, Vector3 const& _centre, float& _radius); // Recursive
 
-	bool RayHit					(RayPackage *_package, Matrix34 const &_transform, bool _accurate = false);
-    bool SphereHit              (SpherePackage *_package, Matrix34 const &_transform, bool _accurate = false);
-    bool ShapeHit               (Shape *_shape, Matrix34 const &_theTransform,              // Transform of _shape
-                                                Matrix34 const &_ourTransform,              // Transform of this
-								 bool _accurate = false);
+  bool RayHit(RayPackage* _package, Matrix34 const& _transform, bool _accurate = false);
+  bool SphereHit(SpherePackage* _package, Matrix34 const& _transform, bool _accurate = false);
+  bool ShapeHit(Shape* _shape, Matrix34 const& _theTransform, // Transform of _shape
+                Matrix34 const& _ourTransform,                // Transform of this
+                bool _accurate = false);
 };
 
 

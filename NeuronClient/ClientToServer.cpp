@@ -89,15 +89,25 @@ ClientToServer::ClientToServer()
 
 ClientToServer::~ClientToServer()
 {
-    while( m_outbox.Size() > 0 ) {}
+  while (!m_outbox.empty())
+  {
+  }
 
-	m_inbox.EmptyAndDelete();
-	m_outbox.EmptyAndDelete();
-	SAFE_DELETE(m_inboxMutex);
-	SAFE_DELETE(m_outboxMutex);
-	SAFE_DELETE(m_netLib);
-	SAFE_DELETE(m_sendSocket);
-	SAFE_DELETE(m_receiveSocket);
+  for (auto* letter : m_inbox)
+  {
+    delete letter;
+  }
+  m_inbox.clear();
+  for (auto* update : m_outbox)
+  {
+    delete update;
+  }
+  m_outbox.clear();
+  SAFE_DELETE(m_inboxMutex);
+  SAFE_DELETE(m_outboxMutex);
+  SAFE_DELETE(m_netLib);
+  SAFE_DELETE(m_sendSocket);
+  SAFE_DELETE(m_receiveSocket);
 }
 
 
@@ -106,7 +116,7 @@ void ClientToServer::AdvanceSender()
     int bytesSentThisFrame = 0;
     m_outboxMutex->Lock();
 
-    while (m_outbox.Size())
+    while (!m_outbox.empty())
     {
       NetworkUpdate* letter = m_outbox[0];
       DEBUG_ASSERT(letter);
@@ -120,7 +130,7 @@ void ClientToServer::AdvanceSender()
         delete letter;
       }
 
-      m_outbox.RemoveData(0);
+      m_outbox.erase(m_outbox.begin());
     }
     m_outboxMutex->Unlock();
 
@@ -204,7 +214,7 @@ int ClientToServer::GetNextLetterSeqID()
     int result = -1;
 
     m_inboxMutex->Lock();
-    if( m_inbox.Size() > 0 )
+    if (!m_inbox.empty())
     {
         result = m_inbox[0]->GetSequenceId();
     }
@@ -219,12 +229,12 @@ ServerToClientLetter* ClientToServer::GetNextLetter(int _lastProcessedSequenceId
     m_inboxMutex->Lock();
     ServerToClientLetter *letter = nullptr;
 
-    if( m_inbox.Size() > 0 )
+    if (!m_inbox.empty())
     {
         letter = m_inbox[0];
         if (letter->GetSequenceId() == _lastProcessedSequenceId + 1)
         {
-            m_inbox.RemoveData(0);
+          m_inbox.erase(m_inbox.begin());
         }
         else
         {
@@ -285,14 +295,14 @@ void ClientToServer::ReceiveLetter( ServerToClientLetter *letter )
     m_inboxMutex->Lock();
     int i;
     bool inserted = false;
-    for( i = m_inbox.Size()-1; i >= 0; --i )
+    for (i = static_cast<int>(m_inbox.size()) - 1; i >= 0; --i)
     {
         ServerToClientLetter *thisLetter = m_inbox[i];
         if( letter->GetSequenceId() > thisLetter->GetSequenceId() )
         {
-            m_inbox.PutDataAtIndex( letter, i+1 );
-            inserted = true;
-            break;
+          m_inbox.insert(m_inbox.begin() + (i + 1), letter);
+          inserted = true;
+          break;
         }
         else if( letter->GetSequenceId() == thisLetter->GetSequenceId() )
         {
@@ -304,14 +314,14 @@ void ClientToServer::ReceiveLetter( ServerToClientLetter *letter )
     }
     if( !inserted )
     {
-        m_inbox.PutDataAtStart( letter );
+      m_inbox.insert(m_inbox.begin(), letter);
     }
 
 
     //
     // Recalculate our last Known Sequence Id
 
-    for( i = 0; i < m_inbox.Size(); ++i )
+    for (i = 0; i < static_cast<int>(m_inbox.size()); ++i)
     {
         ServerToClientLetter *thisLetter = m_inbox[i];
         if( thisLetter->GetSequenceId() > m_lastValidSequenceIdFromServer+1 )
@@ -330,7 +340,7 @@ void ClientToServer::SendLetter( NetworkUpdate *letter )
     letter->SetLastSequenceId( m_lastValidSequenceIdFromServer );
 
     m_outboxMutex->Lock();
-    m_outbox.PutDataAtEnd( letter );
+    m_outbox.push_back(letter);
     m_outboxMutex->Unlock();
 }
 

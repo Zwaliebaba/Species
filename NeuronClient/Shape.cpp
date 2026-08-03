@@ -342,8 +342,16 @@ ShapeFragment::~ShapeFragment()
     delete [] m_normals;		m_normals = nullptr;
     delete [] m_colours;		m_colours = nullptr;
     delete [] m_triangles;		m_triangles = nullptr;
-	m_childFragments.EmptyAndDelete();
-	m_childMarkers.EmptyAndDelete();
+    for (auto* fragment : m_childFragments)
+    {
+      delete fragment;
+    }
+    m_childFragments.clear();
+    for (auto* marker : m_childMarkers)
+    {
+      delete marker;
+    }
+    m_childMarkers.clear();
 #ifndef EXPORTER_BUILD
 	g_resource->DeleteDisplayList(m_displayListName);
 	delete [] m_displayListName;
@@ -423,16 +431,16 @@ void ShapeFragment::WriteToFile(FILE *_out) const
 	}
 
 	// Write out all the child fragments
-	for (i = 0; i < m_childFragments.Size(); ++i)
-	{
-		m_childFragments.GetData(i)->WriteToFile(_out);
-	}
+  for (i = 0; i < static_cast<int>(m_childFragments.size()); ++i)
+  {
+    m_childFragments[i]->WriteToFile(_out);
+  }
 
-	// Write out all the child markers
-	for (i = 0; i < m_childMarkers.Size(); ++i)
-	{
-		m_childMarkers.GetData(i)->WriteToFile(_out);
-	}
+  // Write out all the child markers
+  for (i = 0; i < static_cast<int>(m_childMarkers.size()); ++i)
+  {
+    m_childMarkers[i]->WriteToFile(_out);
+  }
 }
 
 
@@ -907,16 +915,16 @@ void ShapeFragment::Render(float _predictionTime)
 		RenderSlow();
 	}
 
-    int numChildren = m_childFragments.Size();
-	for (int i = 0; i < numChildren; ++i)
-	{
-    	m_childFragments.GetData(i)->Render(_predictionTime);
-	}
+  int numChildren = static_cast<int>(m_childFragments.size());
+  for (int i = 0; i < numChildren; ++i)
+  {
+    m_childFragments[i]->Render(_predictionTime);
+  }
 
-	if (!matrixIsIdentity)
-	{
-		glPopMatrix();
-	}
+  if (!matrixIsIdentity)
+  {
+    glPopMatrix();
+  }
 #endif
 }
 
@@ -986,17 +994,17 @@ ShapeFragment *ShapeFragment::LookupFragment(char const *_name)
 	{
 		return this;
 	}
-	int numChildFragments = m_childFragments.Size();
-	for (int i = 0; i < numChildFragments; ++i)
-	{
-		ShapeFragment *frag = m_childFragments.GetData(i)->LookupFragment(_name);
-		if (frag)
-		{
-			return frag;
-		}
-	}
+  int numChildFragments = static_cast<int>(m_childFragments.size());
+  for (int i = 0; i < numChildFragments; ++i)
+  {
+    ShapeFragment* frag = m_childFragments[i]->LookupFragment(_name);
+    if (frag)
+    {
+      return frag;
+    }
+  }
 
-	return nullptr;
+  return nullptr;
 }
 
 
@@ -1007,27 +1015,27 @@ ShapeMarker *ShapeFragment::LookupMarker(char const *_name)
 {
 	int i;
 
-	int numMarkers = m_childMarkers.Size();
-	for (i = 0; i < numMarkers; ++i)
-	{
-		ShapeMarker *marker = m_childMarkers.GetData(i);
-		if (stricmp(_name, marker->m_name) == 0)
-		{
-			return marker;
-		}
-	}
+  int numMarkers = static_cast<int>(m_childMarkers.size());
+  for (i = 0; i < numMarkers; ++i)
+  {
+    ShapeMarker* marker = m_childMarkers[i];
+    if (stricmp(_name, marker->m_name) == 0)
+    {
+      return marker;
+    }
+  }
 
-	int numChildFragments = m_childFragments.Size();
-	for (i = 0; i < numChildFragments; ++i)
-	{
-		ShapeMarker *marker = m_childFragments.GetData(i)->LookupMarker(_name);
-		if (marker)
-		{
-			return marker;
-		}
-	}
+  int numChildFragments = static_cast<int>(m_childFragments.size());
+  for (i = 0; i < numChildFragments; ++i)
+  {
+    ShapeMarker* marker = m_childFragments[i]->LookupMarker(_name);
+    if (marker)
+    {
+      return marker;
+    }
+  }
 
-	return nullptr;
+  return nullptr;
 }
 
 
@@ -1056,11 +1064,11 @@ void ShapeFragment::RenderHitCheck(Matrix34 const &_transform)
 		RenderSphere(centre, m_radius);
 	}
 
-    int numChildren = m_childFragments.Size();
-	for (int i = 0; i < numChildren; ++i)
-	{
-    	m_childFragments.GetData(i)->RenderHitCheck(totalMatrix);
-	}
+  int numChildren = static_cast<int>(m_childFragments.size());
+  for (int i = 0; i < numChildren; ++i)
+  {
+    m_childFragments[i]->RenderHitCheck(totalMatrix);
+  }
 #endif
 #endif
 }
@@ -1075,33 +1083,33 @@ void ShapeFragment::RenderMarkers(Matrix34 const &_rootTransform)
 
 	glDisable(GL_DEPTH_TEST);
 
-	int numMarkers = m_childMarkers.Size();
-	for (i = 0; i < numMarkers; ++i)
-	{
-		ShapeMarker *marker = m_childMarkers.GetData(i);
-		Matrix34 mat = marker->GetWorldMatrix(_rootTransform);
-		RenderArrow(mat.pos, mat.pos + mat.f * 20.0f, 2.0f);
-		RenderArrow(mat.pos, mat.pos + mat.u * 10.0f, 2.0f);
-//		glLineWidth(2.0f);
-//		glColor3f(1,0,0);
-//        glBegin(GL_LINES);
-//			glVertex3fv(mat.pos.GetData());
-//			glVertex3fv((mat.pos + mat.f * 20.0f).GetData());
-//		glEnd();
-//		glColor3f(0,1,0);
-//		glBegin(GL_LINES);
-//			glVertex3fv(mat.pos.GetData());
-//			glVertex3fv((mat.pos + mat.u * 10.0f).GetData());
-//		glEnd();
-	}
+  int numMarkers = static_cast<int>(m_childMarkers.size());
+  for (i = 0; i < numMarkers; ++i)
+  {
+    ShapeMarker* marker = m_childMarkers[i];
+    Matrix34 mat = marker->GetWorldMatrix(_rootTransform);
+    RenderArrow(mat.pos, mat.pos + mat.f * 20.0f, 2.0f);
+    RenderArrow(mat.pos, mat.pos + mat.u * 10.0f, 2.0f);
+    //		glLineWidth(2.0f);
+    //		glColor3f(1,0,0);
+    //        glBegin(GL_LINES);
+    //			glVertex3fv(mat.pos.GetData());
+    //			glVertex3fv((mat.pos + mat.f * 20.0f).GetData());
+    //		glEnd();
+    //		glColor3f(0,1,0);
+    //		glBegin(GL_LINES);
+    //			glVertex3fv(mat.pos.GetData());
+    //			glVertex3fv((mat.pos + mat.u * 10.0f).GetData());
+    //		glEnd();
+  }
 
-	glEnable(GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
 
-	int numChildren = m_childFragments.Size();
-	for (i = 0; i < numChildren; ++i)
-	{
-    	m_childFragments.GetData(i)->RenderMarkers(_rootTransform);
-	}
+  int numChildren = static_cast<int>(m_childFragments.size());
+  for (i = 0; i < numChildren; ++i)
+  {
+    m_childFragments[i]->RenderMarkers(_rootTransform);
+  }
 #endif
 #endif
 }
@@ -1155,16 +1163,16 @@ bool ShapeFragment::RayHit(RayPackage *_package, Matrix34 const &_transform, boo
 	}
 
 	// If we haven't found a hit then recurse into all child fragments
-	int numFragments = m_childFragments.Size();
-	for (int i = 0; i < numFragments; ++i)
-	{
-		ShapeFragment *frag = m_childFragments.GetData(i);
-//		if (frag->RayHit(&package, totalMatrix))
-		if (frag->RayHit(_package, totalMatrix, _accurate))
-		{
-			return true;
-		}
-	}
+  int numFragments = static_cast<int>(m_childFragments.size());
+  for (int i = 0; i < numFragments; ++i)
+  {
+    ShapeFragment* frag = m_childFragments[i];
+    //		if (frag->RayHit(&package, totalMatrix))
+    if (frag->RayHit(_package, totalMatrix, _accurate))
+    {
+      return true;
+    }
+  }
 
 #endif
 	return false;
@@ -1212,15 +1220,15 @@ bool ShapeFragment::SphereHit(SpherePackage *_package, Matrix34 const &_transfor
 	}
 
 	// If we haven't found a hit then recurse into all child fragments
-	int numFragments = m_childFragments.Size();
-	for (int i = 0; i < numFragments; ++i)
-	{
-		ShapeFragment *frag = m_childFragments.GetData(i);
-		if (frag->SphereHit(_package, totalMatrix, _accurate))
-		{
-			return true;
-		}
-	}
+  int numFragments = static_cast<int>(m_childFragments.size());
+  for (int i = 0; i < numFragments; ++i)
+  {
+    ShapeFragment* frag = m_childFragments[i];
+    if (frag->SphereHit(_package, totalMatrix, _accurate))
+    {
+      return true;
+    }
+  }
 
 #endif
     return false;
@@ -1248,15 +1256,15 @@ bool ShapeFragment::ShapeHit(Shape *_shape, Matrix34 const &_theTransform,
 	int i;
 
 	// If we haven't found a hit then recurse into all child fragments
-	int numFragments = m_childFragments.Size();
-	for (i = 0; i < numFragments; ++i)
-	{
-		ShapeFragment *frag = m_childFragments.GetData(i);
-		if (frag->ShapeHit(_shape, _theTransform, totalMatrix, _accurate))
-		{
-			return true;
-		}
-	}
+  int numFragments = static_cast<int>(m_childFragments.size());
+  for (i = 0; i < numFragments; ++i)
+  {
+    ShapeFragment* frag = m_childFragments[i];
+    if (frag->ShapeHit(_shape, _theTransform, totalMatrix, _accurate))
+    {
+      return true;
+    }
+  }
 
 #endif
     return false;
@@ -1271,11 +1279,11 @@ void ShapeFragment::CalculateCentre( Matrix34 const &_transform, Vector3 &_centr
     _centre += centre;
     _numFragments ++;
 
-	int numFragments = m_childFragments.Size();
-	for (int i = 0; i < numFragments; ++i)
-	{
-		ShapeFragment *frag = m_childFragments.GetData(i);
-        frag->CalculateCentre( totalMatrix, _centre, _numFragments );
+    int numFragments = static_cast<int>(m_childFragments.size());
+    for (int i = 0; i < numFragments; ++i)
+    {
+      ShapeFragment* frag = m_childFragments[i];
+      frag->CalculateCentre(totalMatrix, _centre, _numFragments);
     }
 }
 
@@ -1291,11 +1299,11 @@ void ShapeFragment::CalculateRadius( Matrix34 const &_transform, Vector3 const &
         _radius = distance + m_radius;
     }
 
-	int numFragments = m_childFragments.Size();
-	for (int i = 0; i < numFragments; ++i)
-	{
-		ShapeFragment *frag = m_childFragments.GetData(i);
-        frag->CalculateRadius ( totalMatrix, _centre, _radius );
+    int numFragments = static_cast<int>(m_childFragments.size());
+    for (int i = 0; i < numFragments; ++i)
+    {
+      ShapeFragment* frag = m_childFragments[i];
+      frag->CalculateRadius(totalMatrix, _centre, _radius);
     }
 }
 
@@ -1400,45 +1408,46 @@ void Shape::Load(TextReader *_in)
 	{
 		if (stricmp(allFrags[i]->m_parentName, "SceneRoot") == 0)
 		{
-			m_rootFragment->m_childFragments.PutData(allFrags[i]);
-		}
-		else
-		{
-			// find the ith fragment's parent
-			int j;
-			for (j = 0; j < currentFrag; ++j)
-			{
-				if (i == j)	continue;
-				DEBUG_ASSERT(stricmp(allFrags[i]->m_name, allFrags[j]->m_name) != 0);
-				if (stricmp(allFrags[i]->m_parentName, allFrags[j]->m_name) == 0)
-				{
-					allFrags[j]->m_childFragments.PutData(allFrags[i]);
-					break;
-				}
-			}
-			DEBUG_ASSERT(j < currentFrag);
-		}
-	}
+      m_rootFragment->m_childFragments.push_back(allFrags[i]);
+    }
+    else
+    {
+      // find the ith fragment's parent
+      int j;
+      for (j = 0; j < currentFrag; ++j)
+      {
+        if (i == j)
+          continue;
+        DEBUG_ASSERT(stricmp(allFrags[i]->m_name, allFrags[j]->m_name) != 0);
+        if (stricmp(allFrags[i]->m_parentName, allFrags[j]->m_name) == 0)
+        {
+          allFrags[j]->m_childFragments.push_back(allFrags[i]);
+          break;
+        }
+      }
+      DEBUG_ASSERT(j < currentFrag);
+    }
+  }
 
-	// Add the ShapeMarkers into the fragment tree
-	for (int i = 0; i < currentMarker; ++i)
-	{
-		ShapeFragment *parent = m_rootFragment->LookupFragment(allMarkers[i]->m_parentName);
-		DEBUG_ASSERT(parent);
-		parent->m_childMarkers.PutData(allMarkers[i]);
+  // Add the ShapeMarkers into the fragment tree
+  for (int i = 0; i < currentMarker; ++i)
+  {
+    ShapeFragment* parent = m_rootFragment->LookupFragment(allMarkers[i]->m_parentName);
+    DEBUG_ASSERT(parent);
+    parent->m_childMarkers.push_back(allMarkers[i]);
 
-		int depth = allMarkers[i]->m_depth - 1;
-		allMarkers[i]->m_parents[depth] = parent;
-		depth--;
-		while (stricmp(parent->m_name, "SceneRoot") != 0)
-		{
-			parent = m_rootFragment->LookupFragment(parent->m_parentName);
-			DEBUG_ASSERT(parent && depth >= 0);
-			allMarkers[i]->m_parents[depth] = parent;
-			depth--;
-		}
-		DEBUG_ASSERT(depth == -1);
-	}
+    int depth = allMarkers[i]->m_depth - 1;
+    allMarkers[i]->m_parents[depth] = parent;
+    depth--;
+    while (stricmp(parent->m_name, "SceneRoot") != 0)
+    {
+      parent = m_rootFragment->LookupFragment(parent->m_parentName);
+      DEBUG_ASSERT(parent && depth >= 0);
+      allMarkers[i]->m_parents[depth] = parent;
+      depth--;
+    }
+    DEBUG_ASSERT(depth == -1);
+  }
 }
 
 

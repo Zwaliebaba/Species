@@ -270,12 +270,12 @@ void ExplosionManager::AddExplosion(ShapeFragment *_frag,
 	{
 		Matrix34 totalMatrix = _frag->m_transform * _transform;
 
-		for (unsigned int i = 0; i < _frag->m_childFragments.Size(); ++i)
-		{
-			ShapeFragment *child = _frag->m_childFragments[i];
-			AddExplosion(child, totalMatrix, true, _fraction);
-		}
-	}
+    for (int i = 0; i < static_cast<int>(_frag->m_childFragments.size()); ++i)
+    {
+      ShapeFragment* child = _frag->m_childFragments[i];
+      AddExplosion(child, totalMatrix, true, _fraction);
+    }
+  }
 }
 
 

@@ -666,7 +666,7 @@ void ColourShapeFragment(ShapeFragment* _frag, const RGBAColour& _colour)
     vert->m_colId = 0;
   }
 
-  for (int i = 0; i < _frag->m_childFragments.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(_frag->m_childFragments.size()); ++i)
     ColourShapeFragment(_frag->m_childFragments[i], _colour);
 }
 
