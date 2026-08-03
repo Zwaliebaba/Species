@@ -263,7 +263,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       OWNER APPROVED 2026-08-03, having been asked specifically because of the
       licence. The Möller notice is not being stripped from surviving code — the
@@ -297,6 +297,10 @@ tasks:
       function with no callers cannot change what the game does at runtime.
       Note the check_format and check_hygiene lines report "0 changed files"
       because a pure deletion writes no new lines for them to judge.
+
+      CI RUN 357 GREEN at bb22630 — x64 Debug built and the suite passed with
+      TriTri.cpp out of NeuronClient.vcxproj. That is the build evidence this
+      task's verify list asked for and could not produce locally.
 
   # ------------------------------------------------------------------
   # Wave 2 — the geometry library
