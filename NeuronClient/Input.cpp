@@ -21,7 +21,7 @@ InputManager* g_inputManager = nullptr;
 InputManager::InputManager()
   : drivers(),
     m_idle(true),
-    m_inputMode(INPUT_MODE_KEYBOARD)
+    m_inputMode(InputMode::INPUT_MODE_KEYBOARD)
 {
 }
 
@@ -114,8 +114,8 @@ InputParserState InputManager::parseInputSpecString(string const& description, I
 
 InputParserState InputManager::parseInputSpecTokens(InputSpecTokens const& tokens, InputSpec& spec, string& err)
 {
-  InputParserState state = STATE_ERROR;
-  InputParserState curr = STATE_ERROR;
+  InputParserState state = InputParserState::STATE_ERROR;
+  InputParserState curr = InputParserState::STATE_ERROR;
   err = "";
   if (tokens.length() == 0)
     return state;
@@ -173,7 +173,7 @@ void InputManager::Advance()
   bindings.Advance();
 
   bool idleNext = true;
-  InputMode nextInputMode = INPUT_MODE_NONE;
+  InputMode nextInputMode = InputMode::INPUT_MODE_NONE;
 
   for (unsigned i = 0; i < drivers.size(); ++i)
   {
@@ -193,7 +193,7 @@ void InputManager::Advance()
   m_idle = idleNext;
 
   // Record the mode, if we know it, otherwise stick with last recorded
-  if (nextInputMode > INPUT_MODE_NONE)
+  if (nextInputMode > InputMode::INPUT_MODE_NONE)
     m_inputMode = nextInputMode;
 
   //	if ( g_inputFilterManager ) g_inputFilterManager->Advance();

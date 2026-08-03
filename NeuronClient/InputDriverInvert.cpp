@@ -43,7 +43,7 @@ InputParserState InvertInputDriver::parseInputSpecification(InputSpecTokens cons
   // derr << "Full: " << tokens << endl;
 
   if (tokens.length() < 1)
-    return STATE_ERROR;
+    return InputParserState::STATE_ERROR;
   if ((stricmp(tokens[0].c_str(), "not") == 0) || tokens[0] == "!")
   {
     std::unique_ptr<InputSpecTokens> newtokens = tokens(1, -1);
@@ -56,17 +56,17 @@ InputParserState InvertInputDriver::parseInputSpecification(InputSpecTokens cons
       {
         static string complexErr = "Complex input types cannot be negated.";
         lastError = complexErr;
-        return STATE_CONJ_ERROR; // This check may be too restrictive
+        return InputParserState::STATE_CONJ_ERROR; // This check may be too restrictive
       }
       m_specs.push_back(std::make_unique<const InputSpec>(invspec));
       spec.type = INPUT_TYPE_BOOL;
       spec.control_id = m_specs.size() - 1;
-      return STATE_DONE;
+      return InputParserState::STATE_DONE;
     }
     return state;
   }
   else
-    return STATE_ERROR;
+    return InputParserState::STATE_ERROR;
 }
 
 

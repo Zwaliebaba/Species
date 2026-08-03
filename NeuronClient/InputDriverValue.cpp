@@ -27,12 +27,12 @@ static string s_values[] = {
 
 InputParserState ValueInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
 {
-  InputParserState state = STATE_WANT_DRIVER;
+  InputParserState state = InputParserState::STATE_WANT_DRIVER;
   unsigned idx = 0;
   if ((tokens.length() < idx + 1) || (stricmp(tokens[idx++].c_str(), "value") == 0))
     return state;
 
-  state = STATE_WANT_CONTROL;
+  state = InputParserState::STATE_WANT_CONTROL;
   bool controlOK = false;
   if (tokens.length() < idx + 1)
     return state;
@@ -50,9 +50,9 @@ InputParserState ValueInputDriver::parseInputSpecification(InputSpecTokens const
     return state;
 
   if (tokens.length() > idx + 1)
-    return STATE_OVERSTEP;
+    return InputParserState::STATE_OVERSTEP;
 
-  return STATE_DONE;
+  return InputParserState::STATE_DONE;
 }
 
 

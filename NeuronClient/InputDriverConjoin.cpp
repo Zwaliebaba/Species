@@ -35,7 +35,7 @@ InputParserState ConjoinInputDriver::parseInputSpecification(InputSpecTokens con
     else
     {
       if (!hasParts && tokens.length() == i)
-        return STATE_ERROR; // Not a conjunction
+        return InputParserState::STATE_ERROR; // Not a conjunction
       hasParts = true;
       InputSpec partspec;
       partspec.type = INPUT_TYPE_BOOL;
@@ -48,7 +48,7 @@ InputParserState ConjoinInputDriver::parseInputSpecification(InputSpecTokens con
           {
             static string repError = "Too many complex inputs in conjunction.";
             lastError = repError;
-            return STATE_CONJ_ERROR;
+            return InputParserState::STATE_CONJ_ERROR;
           }
           else
           {
@@ -61,7 +61,7 @@ InputParserState ConjoinInputDriver::parseInputSpecification(InputSpecTokens con
       }
       else
       {
-        return STATE_CONJ_ERROR;
+        return InputParserState::STATE_CONJ_ERROR;
       }
     }
   }
@@ -69,7 +69,7 @@ InputParserState ConjoinInputDriver::parseInputSpecification(InputSpecTokens con
   // Parsing went OK. Save this.
   m_specs.push_back(std::move(speclist));
   spec.control_id = m_specs.size() - 1;
-  return STATE_DONE;
+  return InputParserState::STATE_DONE;
 }
 
 

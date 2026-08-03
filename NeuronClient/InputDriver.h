@@ -5,7 +5,7 @@
 #include "InputTypes.h"
 #include "InputSpec.h"
 
-#define PARSE_SUCCESS(x) (STATE_DONE == (x))
+#define PARSE_SUCCESS(x) (InputParserState::STATE_DONE == (x))
 
 
 // Specific drivers may or may not want to use this enum,
@@ -26,7 +26,8 @@ enum InputCondition
 };
 
 
-enum InputParserState
+// Scoped. Local to the driver parse loop; nothing outside compares it to an int.
+enum class InputParserState
 {
   STATE_ERROR,         // We can't parse this correctly, reason unknown
   STATE_WANT_DRIVER,   // About to read the driver (eg. "XInput")

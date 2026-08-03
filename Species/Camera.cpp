@@ -2361,7 +2361,7 @@ void Camera::UpdateEntityTrackingMode()
     if (camTracking != 1 && camTracking != 2)
     {
       // do automatic option detection
-      if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
+      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
         camTracking = 2;
     }
     SwitchEntityTracking(camTracking == 2);

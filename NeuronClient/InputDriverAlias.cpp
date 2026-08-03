@@ -11,12 +11,12 @@ AliasInputDriver::AliasInputDriver() { setName("Alias"); }
 
 InputParserState AliasInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
 {
-  InputParserState state = STATE_WANT_DRIVER;
+  InputParserState state = InputParserState::STATE_WANT_DRIVER;
   int idx = 0;
   if ((idx >= tokens.length()) || (tokens[idx++] != "alias"))
     return state;
 
-  state = STATE_WANT_CONTROL;
+  state = InputParserState::STATE_WANT_CONTROL;
   if (idx >= tokens.length())
     return state;
 
@@ -28,7 +28,7 @@ InputParserState AliasInputDriver::parseInputSpecification(InputSpecTokens const
 
   spec.type = INPUT_TYPE_BOOL;
 
-  return (idx < tokens.length()) ? STATE_OVERSTEP : STATE_DONE;
+  return (idx < tokens.length()) ? InputParserState::STATE_OVERSTEP : InputParserState::STATE_DONE;
 }
 
 

@@ -454,10 +454,10 @@ void Renderer::RenderFrame(bool withFlip)
     std::string inmode;
     switch (g_inputManager->getInputMode())
     {
-    case INPUT_MODE_KEYBOARD:
+    case InputMode::INPUT_MODE_KEYBOARD:
       inmode = "keyboard";
       break;
-    case INPUT_MODE_GAMEPAD:
+    case InputMode::INPUT_MODE_GAMEPAD:
       inmode = "gamepad";
       break;
     default:

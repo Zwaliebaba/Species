@@ -36,7 +36,7 @@ InputParserState ChordInputDriver::parseInputSpecification(InputSpecTokens const
     else
     {
       if (!hasParts && tokens.length() == i)
-        return STATE_ERROR; // Not a chord
+        return InputParserState::STATE_ERROR; // Not a chord
       hasParts = true;
       strings.push_back(s);
       s.clear(); // Ready for another spec
@@ -65,20 +65,20 @@ InputParserState ChordInputDriver::parseInputSpecification(InputSpecTokens const
       {
         static string repError = "Complex inputs are not allowed in chords.";
         lastError = repError;
-        return STATE_CONJ_ERROR;
+        return InputParserState::STATE_CONJ_ERROR;
       }
       speclist->push_back(InputSpecPtr(new InputSpec(partspec)));
     }
     else
     {
-      return STATE_CONJ_ERROR;
+      return InputParserState::STATE_CONJ_ERROR;
     }
   }
 
   // Parsing went OK. Save this.
   m_specs.push_back(std::move(speclist));
   spec.control_id = m_specs.size() - 1;
-  return STATE_DONE;
+  return InputParserState::STATE_DONE;
 }
 
 

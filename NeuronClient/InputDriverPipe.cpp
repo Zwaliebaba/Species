@@ -39,7 +39,7 @@ InputParserState PipeInputDriver::parseInputSpec(ostringstream& stream, InputSpe
   {
     static string emptyError = "An argument to the input converter is empty.";
     lastError = emptyError;
-    return STATE_CONJ_ERROR;
+    return InputParserState::STATE_CONJ_ERROR;
   }
 
   InputSpec spec;
@@ -51,7 +51,7 @@ InputParserState PipeInputDriver::parseInputSpec(ostringstream& stream, InputSpe
     return pState;
   }
   else
-    return STATE_CONJ_ERROR;
+    return InputParserState::STATE_CONJ_ERROR;
 }
 
 
@@ -73,7 +73,7 @@ InputParserState PipeInputDriver::parseInputSpecification(InputSpecTokens const&
 
   // Discard if there is no arrow
   if (0 >= arrowPos || arrowPos >= tokens.length())
-    return STATE_ERROR;
+    return InputParserState::STATE_ERROR;
 
   // Get everything up to arrow
   for (unsigned j = 0; j < arrowPos; ++j)
@@ -128,7 +128,7 @@ InputParserState PipeInputDriver::parseInputSpecification(InputSpecTokens const&
   {
     static string bracketError = "Unmatched square brackets.";
     lastError = bracketError;
-    return STATE_CONJ_ERROR;
+    return InputParserState::STATE_CONJ_ERROR;
   }
 
   // We're done with the left hand side. Now for the filter.
@@ -137,12 +137,12 @@ InputParserState PipeInputDriver::parseInputSpecification(InputSpecTokens const&
     s += " " + tokens[k];
 
   if (!g_inputFilterManager->parseFilterSpecString(s, filterWithArgs->filter, lastError))
-    return STATE_CONJ_ERROR;
+    return InputParserState::STATE_CONJ_ERROR;
 
   // Parsing went OK. Save this.
   m_specs.push_back(std::move(filterWithArgs));
   spec.control_id = m_specs.size() - 1;
-  return STATE_DONE;
+  return InputParserState::STATE_DONE;
 }
 
 

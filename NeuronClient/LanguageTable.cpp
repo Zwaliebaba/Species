@@ -139,10 +139,10 @@ bool wrong_suffix(const char* key, InputMode _mood)
   {
     switch (_mood)
     {
-    case INPUT_MODE_KEYBOARD:
+    case InputMode::INPUT_MODE_KEYBOARD:
       return is_suffix(key, "_xin");
       break;
-    case INPUT_MODE_GAMEPAD:
+    case InputMode::INPUT_MODE_GAMEPAD:
       return is_suffix(key, "_kbd");
       break;
     }
@@ -190,10 +190,10 @@ bool LangTable::specific_key_exists(const char* _key, InputMode _mood)
     std::string key(_key);
     switch (_mood)
     {
-    case INPUT_MODE_KEYBOARD:
+    case InputMode::INPUT_MODE_KEYBOARD:
       key += "_kbd";
       break;
-    case INPUT_MODE_GAMEPAD:
+    case InputMode::INPUT_MODE_GAMEPAD:
       key += "_xin";
       break;
     default:
@@ -234,8 +234,8 @@ void LangTable::RebuildTables()
   m_phrasesKbd = std::make_unique<PhraseOffsets>();
   m_phrasesXin = std::make_unique<PhraseOffsets>();
 
-  RebuildTable(m_phrasesKbd.get(), stream, INPUT_MODE_KEYBOARD);
-  RebuildTable(m_phrasesXin.get(), stream, INPUT_MODE_GAMEPAD);
+  RebuildTable(m_phrasesKbd.get(), stream, InputMode::INPUT_MODE_KEYBOARD);
+  RebuildTable(m_phrasesXin.get(), stream, InputMode::INPUT_MODE_GAMEPAD);
   m_chunk.reset(stream.str());
 
   if (DEBUG_PRINT_LANGTABLE)
@@ -314,10 +314,10 @@ PhraseOffsets* LangTable::GetCurrentTable(InputMode _mood)
 
   switch (_mood)
   {
-  case INPUT_MODE_KEYBOARD:
+  case InputMode::INPUT_MODE_KEYBOARD:
     return m_phrasesKbd.get();
 
-  case INPUT_MODE_GAMEPAD:
+  case InputMode::INPUT_MODE_GAMEPAD:
     return m_phrasesXin.get();
   }
   return nullptr;
@@ -352,10 +352,10 @@ bool LangTable::RawDoesPhraseExist(char const* _key, InputMode _mood)
       std::string key(_key);
       switch (_mood)
       {
-      case INPUT_MODE_KEYBOARD:
+      case InputMode::INPUT_MODE_KEYBOARD:
         key += "_kbd";
         break;
-      case INPUT_MODE_GAMEPAD:
+      case InputMode::INPUT_MODE_GAMEPAD:
         key += "_xin";
         break;
       }
@@ -434,10 +434,10 @@ char* LangTable::RawLookupPhrase(char const* _key, InputMode _mood)
       std::string key(_key);
       switch (_mood)
       {
-      case INPUT_MODE_KEYBOARD:
+      case InputMode::INPUT_MODE_KEYBOARD:
         key += "_kbd";
         break;
-      case INPUT_MODE_GAMEPAD:
+      case InputMode::INPUT_MODE_GAMEPAD:
         key += "_xin";
         break;
       }

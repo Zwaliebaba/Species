@@ -22,15 +22,15 @@ static string errors[] = {"An unknown error occurred.",
 
 InputParserState SimpleInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
 {
-  InputParserState state = STATE_WANT_DRIVER;
+  InputParserState state = InputParserState::STATE_WANT_DRIVER;
   for (int i = 0; i < tokens.length(); ++i)
   {
     if (!acceptToken(state, tokens[i], spec))
       break;
   }
 
-  if (STATE_WANT_OPTIONAL == state)
-    state = STATE_DONE;
+  if (InputParserState::STATE_WANT_OPTIONAL == state)
+    state = InputParserState::STATE_DONE;
 
   return state;
 
@@ -41,27 +41,27 @@ bool SimpleInputDriver::acceptToken(InputParserState& state, string const& token
 {
   switch (state)
   {
-  case STATE_WANT_DRIVER:
+  case InputParserState::STATE_WANT_DRIVER:
     if (acceptDriver(token))
     {
-      state = STATE_WANT_CONTROL;
+      state = InputParserState::STATE_WANT_CONTROL;
       return true;
     }
     else
       return false; // Don't continue parsing
 
-  case STATE_WANT_CONTROL:
+  case InputParserState::STATE_WANT_CONTROL:
     spec.control_id = getControlID(token);
     if (spec.control_id >= 0)
     {
       spec.type = getControlType(spec.control_id);
-      state = STATE_WANT_COND;
+      state = InputParserState::STATE_WANT_COND;
       return true;
     }
     else
       return false; // Don't continue parsing
 
-  case STATE_WANT_COND:
+  case InputParserState::STATE_WANT_COND:
     spec.condition = getConditionID(token, spec.type);
     if (spec.condition >= 0)
     {
@@ -71,21 +71,21 @@ bool SimpleInputDriver::acceptToken(InputParserState& state, string const& token
     else
       return false; // Don't continue parsing
 
-  case STATE_WANT_MODIFIER:
-  case STATE_WANT_OPTIONAL:
+  case InputParserState::STATE_WANT_MODIFIER:
+  case InputParserState::STATE_WANT_OPTIONAL:
     state = parseExtraToken(token, spec);
     return true;
 
-  case STATE_BAD_EXTRA:
+  case InputParserState::STATE_BAD_EXTRA:
     return false; // Don't continue parsing
 
-  case STATE_DONE:
-    state = STATE_OVERSTEP;
+  case InputParserState::STATE_DONE:
+    state = InputParserState::STATE_OVERSTEP;
     return false; // Don't continue parsing
 
   default:
-    state = STATE_ERROR; // We shouldn't be here
-    return false;        // Don't continue parsing
+    state = InputParserState::STATE_ERROR; // We shouldn't be here
+    return false;                          // Don't continue parsing
   }
 }
 
@@ -95,12 +95,12 @@ condition_t SimpleInputDriver::getConditionID(string const& name, inputtype_t& t
 
 InputParserState SimpleInputDriver::writeExtraSpecInfo(InputSpec& spec)
 {
-  return STATE_DONE; // No extra info to write. We're done.
+  return InputParserState::STATE_DONE; // No extra info to write. We're done.
 }
 
 InputParserState SimpleInputDriver::parseExtraToken(std::string const& token, InputSpec& spec)
 {
-  return STATE_BAD_EXTRA; // Got into STATE_WANT_MODIFIER with no handler.
+  return InputParserState::STATE_BAD_EXTRA; // Got into InputParserState::STATE_WANT_MODIFIER with no handler.
 }
 
 const string& SimpleInputDriver::getLastParseError(InputParserState state) { return errors[state]; }

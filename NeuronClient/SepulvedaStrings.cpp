@@ -37,7 +37,7 @@ struct CaptionParserMode
         writingStopDepth(0),
         inOffset(0),
         outOffset(0),
-        mood(INPUT_MODE_KEYBOARD)
+        mood(InputMode::INPUT_MODE_KEYBOARD)
     {
       if (g_inputManager)
         mood = g_inputManager->getInputMode();
@@ -162,7 +162,7 @@ bool consumeIfMarker(char const* _baseString, char* _dest, CaptionParserMode& _m
     {
       if (strnicmp(in + 8, "KEYBOARD]", 9) == 0)
       {
-        if (_mode.mood != INPUT_MODE_KEYBOARD)
+        if (_mode.mood != InputMode::INPUT_MODE_KEYBOARD)
         {
           _mode.writing = false;
           _mode.writingStopDepth = _mode.ifdepth;

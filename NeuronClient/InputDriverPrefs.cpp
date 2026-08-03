@@ -26,12 +26,12 @@ PrefsInputDriver::PrefsInputDriver()
 
 InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
 {
-  InputParserState state = STATE_WANT_DRIVER;
+  InputParserState state = InputParserState::STATE_WANT_DRIVER;
   int idx = 0;
   if ((idx >= tokens.length()) || (tokens[idx++] != "pref"))
     return state;
 
-  state = STATE_WANT_CONTROL;
+  state = InputParserState::STATE_WANT_CONTROL;
   if (idx >= tokens.length())
     return state;
 
@@ -48,9 +48,9 @@ InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const
   if ('!' == key[0])
   {
     if ('!' == key[1])
-      return STATE_WANT_COND;
+      return InputParserState::STATE_WANT_COND;
     if (COND_FALSE == spec.condition)
-      return STATE_WANT_COND;
+      return InputParserState::STATE_WANT_COND;
     spec.condition = COND_FALSE;
     key = key.substr(1, key.length() - 1);
   }
@@ -61,7 +61,7 @@ InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const
 
   spec.type = INPUT_TYPE_BOOL;
 
-  return (idx < tokens.length()) ? STATE_OVERSTEP : STATE_DONE;
+  return (idx < tokens.length()) ? InputParserState::STATE_OVERSTEP : InputParserState::STATE_DONE;
 }
 
 

@@ -227,7 +227,7 @@ bool HandleCommonConditions()
   }
 
   // Pretend we're not focused
-  if (!controllerPlugged && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD)
+  if (!controllerPlugged && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
     curWindowHasFocus = false;
 
   if (!curWindowHasFocus)
@@ -453,9 +453,9 @@ void LocationGameLoop()
             checkMouse = true;
 
           bool orderGiven = false;
-          if (g_inputManager->getInputMode() == INPUT_MODE_KEYBOARD && teamControls.m_primaryFireTarget)
+          if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_KEYBOARD && teamControls.m_primaryFireTarget)
             orderGiven = true;
-          if (g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && teamControls.m_secondaryFireDirected)
+          if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && teamControls.m_secondaryFireDirected)
             orderGiven = true;
 
           if (team->GetMyEntity() && team->GetMyEntity()->m_type == Entity::TypeOfficer && orderGiven)
@@ -631,9 +631,10 @@ void LocationGameLoop()
 
 void SwitchTaskManagerForX360Controller()
 {
-  static int oldControlType = INPUT_MODE_KEYBOARD;
+  static int oldControlType = InputMode::INPUT_MODE_KEYBOARD;
 
-  if (oldControlType != INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && !TheTaskManagerInterface()->m_visible)
+  if (oldControlType != InputMode::INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD &&
+      !TheTaskManagerInterface()->m_visible)
   {
     // user has just switched to the game pad
     if (g_prefsManager->GetInt("ControlMethod") == 0)
@@ -641,9 +642,10 @@ void SwitchTaskManagerForX360Controller()
       delete g_taskManagerInterface;
       g_taskManagerInterface = new TaskManagerInterfaceIcons();
     }
-    oldControlType = INPUT_MODE_GAMEPAD;
+    oldControlType = InputMode::INPUT_MODE_GAMEPAD;
   }
-  else if (oldControlType == INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && !TheTaskManagerInterface()->m_visible)
+  else if (oldControlType == InputMode::INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD &&
+           !TheTaskManagerInterface()->m_visible)
     oldControlType = g_inputManager->getInputMode();
 }
 

@@ -145,7 +145,7 @@ void TaskManagerInterface::SetVisible(bool _visible) { m_visible = _visible; }
 
 void TaskManagerInterface::AdvanceTab()
 {
-  if (!m_visible || g_inputManager->getInputMode() == INPUT_MODE_KEYBOARD)
+  if (!m_visible || g_inputManager->getInputMode() == InputMode::INPUT_MODE_KEYBOARD)
   {
     int taskId = -1;
     int index = -1;

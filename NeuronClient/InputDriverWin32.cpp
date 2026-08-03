@@ -194,7 +194,7 @@ bool W32InputDriver::isIdle()
 }
 
 
-InputMode W32InputDriver::getInputMode() { return INPUT_MODE_KEYBOARD; }
+InputMode W32InputDriver::getInputMode() { return InputMode::INPUT_MODE_KEYBOARD; }
 
 
 void W32InputDriver::SetMousePosNoVelocity(int _x, int _y)
@@ -430,7 +430,7 @@ control_id_t W32InputDriver::getControlID(string const& name)
 InputParserState W32InputDriver::writeExtraSpecInfo(InputSpec& spec)
 {
   spec.handler_id = lastAcceptedDriver;
-  return STATE_DONE;
+  return InputParserState::STATE_DONE;
 }
 
 

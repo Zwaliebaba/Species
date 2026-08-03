@@ -222,7 +222,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       RE-SCOPED 2026-08-03, before starting, on a measurement the original task
       did not have. It listed three files and five enums. The five enums have
@@ -243,6 +243,19 @@ tasks:
       satisfy: CameraAccess.h declares `enum Mode`, and language-hygiene T5
       owns it. A criterion a task cannot meet by doing its own work is a
       criterion that gets ignored or gets the wrong thing done to satisfy it.
+
+      DONE 2026-08-03. 119 sites across 22 files, plus a whole-file reformat of
+      the same 22 first. Both enums were confirmed free of integer interop
+      before starting — no comparison against a literal, no array indexing, no
+      arithmetic — which is what made them the safe half of the old T4.
+
+      Written with T3's two mistakes designed out rather than repeated: the
+      script leaves the enumerator DECLARATIONS bare, and skips comment lines
+      and any line containing a string literal. T3 had to be repaired for both.
+
+      PARSE_SUCCESS in InputDriver.h is a use site, not a declaration, so the
+      macro now reads `(InputParserState::STATE_DONE == (x))` — worth noting
+      because a macro body is the one place a scoped enumerator is easy to miss.
 
   - id: T9
     title: Convert the enums that int typedefs stand in for

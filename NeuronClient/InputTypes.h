@@ -50,7 +50,10 @@ class InputDescription
 };
 
 
-enum InputMode
+// Scoped. Only ever used as itself: no int typedef stands in for it and it is
+// not a bit field, which is what separates it from InputType — see
+// language-hygiene T9.
+enum class InputMode
 {
   INPUT_MODE_NONE,     // Describes a driver not associated with a specific input mode
   INPUT_MODE_KEYBOARD, // Describes a driver that accepts input from Keyboard or Mouse
