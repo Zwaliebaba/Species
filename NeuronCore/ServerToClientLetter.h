@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LList.h"
+#include <vector>
 #include "Vector3.h"
 #include "NetworkUpdate.h"
 
@@ -29,10 +29,10 @@ public:
     unsigned char m_teamType;
     int m_ip;                               // This tells you specifically which client gets the HelloClient or TeamAssign
 
-    LList<NetworkUpdate *> m_updates;
+    std::vector<NetworkUpdate*> m_updates;
 
-private:
-    int m_clientId;                 // An index into the server's DArray of ServerToClient objects
+  private:
+    int m_clientId; // An index into the server's slot map of ServerToClient objects
     int m_sequenceId;
 
 public:

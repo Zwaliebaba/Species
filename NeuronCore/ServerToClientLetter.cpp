@@ -35,12 +35,12 @@ ServerToClientLetter::ServerToClientLetter( ServerToClientLetter &copyMe )
 {
     //memcpy( m_updates, copyMe.m_updates, MAX_SERVER_TO_CLIENT_UPDATES*sizeof(NetworkUpdate) );
 
-    for( int i = 0; i < copyMe.m_updates.Size(); ++i )
+    for (int i = 0; i < static_cast<int>(copyMe.m_updates.size()); ++i)
     {
         NetworkUpdate *copyUpdate = copyMe.m_updates[i];
         NetworkUpdate *newUpdate = new NetworkUpdate();
         memcpy( newUpdate, copyUpdate, sizeof(NetworkUpdate) );
-        m_updates.PutData( newUpdate );
+        m_updates.push_back(newUpdate);
     }
 }
 
@@ -78,7 +78,7 @@ ServerToClientLetter::ServerToClientLetter(char *_byteStream, int _len)
         {
             NetworkUpdate *update = new NetworkUpdate();
             _byteStream += update->ReadByteStream( _byteStream );
-            m_updates.PutData( update );
+            m_updates.push_back(update);
         }
         break;
     }
@@ -145,7 +145,7 @@ void ServerToClientLetter::AddUpdate ( NetworkUpdate *_update )
     // Make sure we COPY the update
     NetworkUpdate *update = new NetworkUpdate();
     memcpy( update, _update, sizeof(NetworkUpdate) );
-    m_updates.PutData( update );
+    m_updates.push_back(update);
 }
 
 // *** GetByteStream
@@ -170,18 +170,18 @@ char *ServerToClientLetter::GetByteStream(int *_linearSize)
         break;
 
     case Update:
-        int numUpdates = m_updates.Size();
-		DEBUG_ASSERT(numUpdates >= 0);
-        WRITE_INT(byteStream, numUpdates);
+      int numUpdates = static_cast<int>(m_updates.size());
+      DEBUG_ASSERT(numUpdates >= 0);
+      WRITE_INT(byteStream, numUpdates);
 
-        for( int i = 0; i < numUpdates; ++i )
-        {
-            NetworkUpdate *update = m_updates[i];
-            int updateSize;
-            char *updateBytes = update->GetByteStream( &updateSize );
-            memcpy( byteStream, updateBytes, updateSize );
-            byteStream += updateSize;
-        }
+      for (int i = 0; i < numUpdates; ++i)
+      {
+        NetworkUpdate* update = m_updates[i];
+        int updateSize;
+        char* updateBytes = update->GetByteStream(&updateSize);
+        memcpy(byteStream, updateBytes, updateSize);
+        byteStream += updateSize;
+      }
         break;
     }
 

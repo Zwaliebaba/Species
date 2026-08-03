@@ -68,7 +68,11 @@ Server::Server()
 
 Server::~Server()
 {
-  m_history.EmptyAndDelete();
+  for (auto* letter : m_history)
+  {
+    delete letter;
+  }
+  m_history.clear();
   m_clients.EmptyAndDelete();
   m_teams.EmptyAndDelete();
 
@@ -79,14 +83,22 @@ Server::~Server()
   if (m_inboxMutex)
   {
     m_inboxMutex->Lock();
-    m_inbox.EmptyAndDelete();
+    for (auto* update : m_inbox)
+    {
+      delete update;
+    }
+    m_inbox.clear();
     m_inboxMutex->Unlock();
   }
 
   if (m_outboxMutex)
   {
     m_outboxMutex->Lock();
-    m_outbox.EmptyAndDelete();
+    for (auto* letter : m_outbox)
+    {
+      delete letter;
+    }
+    m_outbox.clear();
     m_outboxMutex->Unlock();
   }
 }
@@ -237,10 +249,10 @@ NetworkUpdate* Server::GetNextLetter()
   m_inboxMutex->Lock();
   NetworkUpdate* letter = nullptr;
 
-  if (m_inbox.Size() > 0)
+  if (!m_inbox.empty())
   {
-    letter = m_inbox[0];
-    m_inbox.RemoveData(0);
+    letter = m_inbox.front();
+    m_inbox.erase(m_inbox.begin());
   }
 
   m_inboxMutex->Unlock();
@@ -252,7 +264,7 @@ void Server::ReceiveLetter(NetworkUpdate* update, char* fromIP)
   update->SetClientIp(fromIP);
 
   m_inboxMutex->Lock();
-  m_inbox.PutDataAtEnd(update);
+  m_inbox.push_back(update);
   m_inboxMutex->Unlock();
 }
 
@@ -264,7 +276,7 @@ void Server::SendLetter(ServerToClientLetter* letter)
   letter->SetSequenceId(m_sequenceId);
   m_sequenceId++;
 
-  m_history.PutDataAtEnd(letter);
+  m_history.push_back(letter);
 }
 
 void Server::AdvanceSender()
@@ -272,9 +284,9 @@ void Server::AdvanceSender()
   int bytesSentThisFrame = 0;
   m_outboxMutex->Lock();
 
-  while (m_outbox.Size())
+  while (!m_outbox.empty())
   {
-    ServerToClientLetter* letter = m_outbox[0];
+    ServerToClientLetter* letter = m_outbox.front();
     DEBUG_ASSERT(letter);
 
     if (m_clients.ValidIndex(letter->GetClientId()))
@@ -291,7 +303,7 @@ void Server::AdvanceSender()
     }
 
     // The letter has now been sent so we can take it off the outbox list
-    m_outbox.RemoveData(0);
+    m_outbox.erase(m_outbox.begin());
   }
 
   m_outboxMutex->Unlock();
@@ -402,20 +414,20 @@ void Server::Advance()
     {
       ServerToClient* s2c = m_clients[i];
       int sendFrom = s2c->m_lastKnownSequenceId + 1;
-      int sendTo = m_history.Size();
+      int sendTo = static_cast<int>(m_history.size());
       if (sendTo - sendFrom > maxUpdates)
         sendTo = sendFrom + maxUpdates;
 
       for (int l = sendFrom; l < sendTo; ++l)
       {
-        if (m_history.ValidIndex(l))
+        if (l >= 0 && l < static_cast<int>(m_history.size()))
         {
           ServerToClientLetter* theLetter = m_history[l];
           auto letterCopy = new ServerToClientLetter(*theLetter);
           letterCopy->SetClientId(i);
 
           m_outboxMutex->Lock();
-          m_outbox.PutDataAtEnd(letterCopy);
+          m_outbox.push_back(letterCopy);
           m_outboxMutex->Unlock();
         }
       }

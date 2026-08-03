@@ -1,7 +1,8 @@
 #pragma once
 
-#include "LList.h"
-#include "DArray.h"
+#include <vector>
+
+#include "SlotMap.h"
 
 class NetLib;
 class NetMutex;
@@ -23,39 +24,39 @@ class Server
   NetLib* m_netLib;
   class Profiler* m_profiler;
 
-  LList<ServerToClientLetter*> m_history;
+  std::vector<ServerToClientLetter*> m_history;
 
-  public:
-    int m_sequenceId;
+public:
+  int m_sequenceId;
 
-    DArray<ServerToClient*> m_clients;
-    DArray<ServerTeam*> m_teams;
+  Neuron::SlotMap<ServerToClient*> m_clients;
+  Neuron::SlotMap<ServerTeam*> m_teams;
 
-    NetMutex* m_inboxMutex;
-    NetMutex* m_outboxMutex;
-    LList<NetworkUpdate*> m_inbox;
-    LList<ServerToClientLetter*> m_outbox;
+  NetMutex* m_inboxMutex;
+  NetMutex* m_outboxMutex;
+  std::vector<NetworkUpdate*> m_inbox;
+  std::vector<ServerToClientLetter*> m_outbox;
 
-    DArray<unsigned char> m_sync; // Synchronisation values for each sequenceId
+  Neuron::SlotMap<unsigned char> m_sync; // Synchronisation values for each sequenceId
 
-    Server();
-    ~Server();
+  Server();
+  ~Server();
 
-    // Handed its profiler rather than reaching for it through the application
-    // object. Networking is always real UDP; there is no in-process shortcut.
-    void Initialise(class Profiler* _profiler);
+  // Handed its profiler rather than reaching for it through the application
+  // object. Networking is always real UDP; there is no in-process shortcut.
+  void Initialise(class Profiler* _profiler);
 
-    NetworkUpdate* GetNextLetter();
+  NetworkUpdate* GetNextLetter();
 
-    void ReceiveLetter(NetworkUpdate* update, char* fromIP);
-    void SendLetter(ServerToClientLetter* letter);
+  void ReceiveLetter(NetworkUpdate* update, char* fromIP);
+  void SendLetter(ServerToClientLetter* letter);
 
-    int GetClientId(char* _ip);
-    void RegisterNewClient(char* _ip);
-    void RemoveClient(char* _ip);
-    void RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId);
+  int GetClientId(char* _ip);
+  void RegisterNewClient(char* _ip);
+  void RemoveClient(char* _ip);
+  void RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId);
 
-    void AdvanceSender();
-    void Advance();
+  void AdvanceSender();
+  void Advance();
 };
 
