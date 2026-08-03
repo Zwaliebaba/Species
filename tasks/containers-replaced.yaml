@@ -339,6 +339,14 @@ tasks:
       StartSequence.h) are not self-contained, but they were already not
       self-contained and do not include Resource.h.
 
+      The new tests earned their keep on their first CI run, by crashing. Both
+      listing functions stored _findfirst's handle in a `long`; on x64 that
+      handle is 64 bits and long is 32, so _findnext was reading through a
+      truncated value. The game never tripped it because the handles it got
+      happened to fit in 32 bits — which is exactly the kind of bug that waits
+      for a customer. Both are intptr_t now, and both call _findclose, which
+      neither did.
+
       LanguageTable was in this task's original scope and is now T24 — its BTree
       of phrases is fed by WordWrapText, which puts interior pointers from a
       single `new char[]` buffer into its list, and untangling that is a task on
@@ -1197,7 +1205,25 @@ tasks:
 
       Mechanical, but not small, and worth doing in one commit so the
       signature never disagrees with itself.
-    status: todo
+
+      Done 2026-08-03. 64 files, 147 PutData calls. LList in GameLogic and
+      Species fell from 104 files to 62 — this one signature accounted for 42 of
+      them, which is why T5 and T16 were stuck behind it.
+
+      Two things worth knowing for whoever picks up T5. The signature was spelled
+      two ways, `LList<char const *>` and `LList<const char*>`; both are now
+      `std::vector<const char*>*`, because a derived class that spells an
+      override's parameter differently from its base still overrides, and a
+      derived class that gets the TYPE wrong silently overloads instead — with
+      64 copies of one signature, having them all identical is worth the extra
+      churn.
+
+      And: nothing in the tree calls the collector. Every one of the 116
+      mentions is either a declaration, a definition, or a base-class chain from
+      inside another ListSoundEvents. Whatever consumed these lists — a sound
+      editor, most likely — is not in this repository. The interface is dead
+      weight, kept faithfully. T5 should decide whether it stays.
+    status: done
 
   - id: T24
     title: Convert the language table off BTree and HashTable

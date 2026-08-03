@@ -74,11 +74,11 @@ bool ReceiverBuilding::IsInView()
 }
 
 
-void ReceiverBuilding::ListSoundEvents( LList<char const *> *_list )
+void ReceiverBuilding::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "TriggerSpirit" );
+    _list->push_back("TriggerSpirit");
 }
 
 

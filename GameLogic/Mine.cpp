@@ -351,11 +351,11 @@ bool MineBuilding::Advance()
 }
 
 
-void MineBuilding::ListSoundEvents( LList<char const *> *_list )
+void MineBuilding::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "CogTurn" );
+    _list->push_back("CogTurn");
 }
 
 

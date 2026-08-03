@@ -272,11 +272,11 @@ void SpaceInvader::ChangeHealth( int _amount )
 }
 
 
-void SpaceInvader::ListSoundEvents( LList<char const *> *_list )
+void SpaceInvader::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "DropGrenade" );
+    _list->push_back("DropGrenade");
 }
 
 

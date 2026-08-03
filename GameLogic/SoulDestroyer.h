@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Entity.h"
 
 #define SOULDESTROYER_MINSEARCHRANGE       200.0f
@@ -56,9 +58,9 @@ public:
 
     void Attack             ( Vector3 const &_pos );
 
-    void ListSoundEvents    ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
-	void SetWaypoint( Vector3 const _waypoint );
+    void SetWaypoint(Vector3 const _waypoint);
 };
 
 

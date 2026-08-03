@@ -423,11 +423,11 @@ void AntHill::Render( float _predictionTime )
 }
 
 
-void AntHill::ListSoundEvents( LList<char const *> *_list )
+void AntHill::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "Explode" );
+    _list->push_back("Explode");
 }
 
 

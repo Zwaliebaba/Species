@@ -60,11 +60,11 @@ bool DynamicBase::Advance()
     return Building::Advance();
 }
 
-void DynamicBase::ListSoundEvents( LList<char const *> *_list )
+void DynamicBase::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "TriggerSurge" );
+    _list->push_back("TriggerSurge");
 }
 
 
@@ -144,11 +144,11 @@ void DynamicHub::ReprogramComplete()
 }
 
 
-void DynamicHub::ListSoundEvents( LList<char const *> *_list )
+void DynamicHub::ListSoundEvents(std::vector<const char*>* _list)
 {
     DynamicBase::ListSoundEvents( _list );
 
-    _list->PutData( "Enable" );
+    _list->push_back("Enable");
 }
 
 
@@ -432,11 +432,11 @@ void DynamicNode::RenderAlphas( float _predictionTime )
 }
 
 
-void DynamicNode::ListSoundEvents( LList<char const *> *_list )
+void DynamicNode::ListSoundEvents(std::vector<const char*>* _list)
 {
     DynamicBase::ListSoundEvents( _list );
 
-    _list->PutData( "Operate" );
+    _list->push_back("Operate");
 }
 
 void DynamicNode::ReprogramComplete()

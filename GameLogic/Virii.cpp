@@ -817,10 +817,10 @@ bool Virii::IsInView()
 }
 
 
-void Virii::ListSoundEvents( LList<char const *> *_list )
+void Virii::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
-    _list->PutData( "ChangeDirection" );
+    _list->push_back("ChangeDirection");
 }
 
 

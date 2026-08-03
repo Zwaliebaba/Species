@@ -750,16 +750,16 @@ void Squadie::FireSecondaryWeapon( Vector3 const &_pos )
 }
 
 
-void Squadie::ListSoundEvents( LList<char const *> *_list )
+void Squadie::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "FireLaser" );
-    _list->PutData( "ThrowGrenade" );
-    _list->PutData( "FireRocket" );
-    _list->PutData( "ThrowAirStrike" );
-    _list->PutData( "ThrowController" );
-    _list->PutData( "WeaponReturns" );
+    _list->push_back("FireLaser");
+    _list->push_back("ThrowGrenade");
+    _list->push_back("FireRocket");
+    _list->push_back("ThrowAirStrike");
+    _list->push_back("ThrowController");
+    _list->push_back("WeaponReturns");
 }
 
 Vector3 Squadie::GetCameraFocusPoint()

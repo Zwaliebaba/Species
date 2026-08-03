@@ -409,12 +409,12 @@ bool SoulDestroyer::AdvanceToTargetPosition()
 }
 
 
-void SoulDestroyer::ListSoundEvents( LList<char const *> *_list )
+void SoulDestroyer::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "EnemySighted" );
-    _list->PutData( "Panic" );
+    _list->push_back("EnemySighted");
+    _list->push_back("Panic");
 }
 
 

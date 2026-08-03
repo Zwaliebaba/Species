@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 
 class FeedingTube : public Building
 {
@@ -36,7 +37,7 @@ public:
 
     bool    DoesSphereHit   (Vector3 const &_pos, float _radius);
 
-    void    ListSoundEvents ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
     bool IsInView();
 };
 

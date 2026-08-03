@@ -485,10 +485,10 @@ bool SporeGenerator::RenderPixelEffect( float _predictionTime )
 }
 
 
-void SporeGenerator::ListSoundEvents( LList<char const *> *_list )
+void SporeGenerator::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "LayEgg" );
+    _list->push_back("LayEgg");
 }
 

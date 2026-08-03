@@ -1164,11 +1164,11 @@ char *Engineer::GetCurrentAction()
 }
 
 
-void Engineer::ListSoundEvents( LList<char const *> *_list )
+void Engineer::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "BeginReprogramming" );
-    _list->PutData( "EndReprogramming" );
-    _list->PutData( "ReprogrammingComplete" );
+    _list->push_back("BeginReprogramming");
+    _list->push_back("EndReprogramming");
+    _list->push_back("ReprogrammingComplete");
 }

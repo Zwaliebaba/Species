@@ -723,14 +723,14 @@ char const *Entity::GetTypeNameTranslated ( int _troopType )
 }
 
 
-void Entity::ListSoundEvents( LList<char const *> *_list )
+void Entity::ListSoundEvents(std::vector<const char*>* _list)
 {
-    _list->PutData( "Create" );
-    _list->PutData( "Attack" );
-    _list->PutData( "LoseHealth" );
-    _list->PutData( "EnterTeleport" );
-    _list->PutData( "ExitTeleport" );
-    _list->PutData( "Die" );
+  _list->push_back("Create");
+  _list->push_back("Attack");
+  _list->push_back("LoseHealth");
+  _list->push_back("EnterTeleport");
+  _list->push_back("ExitTeleport");
+  _list->push_back("Die");
 }
 
 

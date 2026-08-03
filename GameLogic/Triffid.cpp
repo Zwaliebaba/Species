@@ -510,12 +510,12 @@ char const *Triffid::GetSpawnNameTranslated( int _spawnType )
 }
 
 
-void Triffid::ListSoundEvents( LList<char const *> *_list )
+void Triffid::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "LaunchEgg" );
-    _list->PutData( "Burn" );
+    _list->push_back("LaunchEgg");
+    _list->push_back("Burn");
 }
 
 
@@ -749,10 +749,10 @@ bool TriffidEgg::RenderPixelEffect( float _predictionTime )
 }
 
 
-void TriffidEgg::ListSoundEvents( LList<char const *> *_list )
+void TriffidEgg::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "Bounce" );
-    _list->PutData( "BurstOpen" );
+    _list->push_back("Bounce");
+    _list->push_back("BurstOpen");
 }

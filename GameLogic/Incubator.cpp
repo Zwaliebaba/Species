@@ -287,10 +287,10 @@ void Incubator::RenderAlphas(float _predictionTime)
   glEnable(GL_CULL_FACE);
 }
 
-void Incubator::ListSoundEvents(LList<const char*>* _list)
+void Incubator::ListSoundEvents(std::vector<const char*>* _list)
 {
   Building::ListSoundEvents(_list);
 
-  _list->PutData("AddSpirit");
-  _list->PutData("SpawnEntity");
+  _list->push_back("AddSpirit");
+  _list->push_back("SpawnEntity");
 }

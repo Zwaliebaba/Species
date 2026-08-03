@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 #define SPAM_RELOADTIME             60.0f
@@ -30,7 +32,7 @@ public:
 
     bool Advance();
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     void SetAsResearch();
     void SendFromHeaven();

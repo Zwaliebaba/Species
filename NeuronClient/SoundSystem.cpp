@@ -75,94 +75,94 @@ const char* SoundSourceBlueprint::GetSoundSourceName(int _type)
   return names[_type];
 }
 
-void SoundSourceBlueprint::ListSoundEvents(int _type, LList<const char*>* _list)
+void SoundSourceBlueprint::ListSoundEvents(int _type, std::vector<const char*>* _list)
 {
   switch (_type)
   {
   case TypeLaser:
-    _list->PutData("Create");
-    _list->PutData("Richochet");
-    _list->PutData("HitGround");
-    _list->PutData("HitEntity");
-    _list->PutData("HitBuilding");
+    _list->push_back("Create");
+    _list->push_back("Richochet");
+    _list->push_back("HitGround");
+    _list->push_back("HitEntity");
+    _list->push_back("HitBuilding");
     break;
 
   case TypeGrenade:
-    _list->PutData("Create");
-    _list->PutData("Bounce");
-    _list->PutData("Flash");
-    _list->PutData("Explode");
-    _list->PutData("ExplodeController");
+    _list->push_back("Create");
+    _list->push_back("Bounce");
+    _list->push_back("Flash");
+    _list->push_back("Explode");
+    _list->push_back("ExplodeController");
     break;
 
   case TypeRocket:
-    _list->PutData("Create");
-    _list->PutData("Explode");
+    _list->push_back("Create");
+    _list->push_back("Explode");
     break;
 
   case TypeAirstrikeBomb:
-    _list->PutData("Create");
-    _list->PutData("Bounce");
-    _list->PutData("Flash");
-    _list->PutData("Explode");
+    _list->push_back("Create");
+    _list->push_back("Bounce");
+    _list->push_back("Flash");
+    _list->push_back("Explode");
     break;
 
   case TypeSpirit:
-    _list->PutData("Create");
-    _list->PutData("PickedUp");
-    _list->PutData("Dropped");
-    _list->PutData("PlacedIntoEgg");
-    _list->PutData("EggDestroyed");
-    _list->PutData("BeginAscent");
+    _list->push_back("Create");
+    _list->push_back("PickedUp");
+    _list->push_back("Dropped");
+    _list->push_back("PlacedIntoEgg");
+    _list->push_back("EggDestroyed");
+    _list->push_back("BeginAscent");
     break;
 
   case TypeSepulveda:
-    _list->PutData("Appear");
-    _list->PutData("Disappear");
-    _list->PutData("TextAppear");
+    _list->push_back("Appear");
+    _list->push_back("Disappear");
+    _list->push_back("TextAppear");
     break;
 
   case TypeGesture:
-    _list->PutData("GestureBegin");
-    _list->PutData("GestureEnd");
-    _list->PutData("GestureSuccess");
-    _list->PutData("GestureFail");
+    _list->push_back("GestureBegin");
+    _list->push_back("GestureEnd");
+    _list->push_back("GestureSuccess");
+    _list->push_back("GestureFail");
     break;
 
   case TypeAmbience:
-    _list->PutData("EnterLocation");
-    _list->PutData("ExitLocation");
-    _list->PutData("EnterGlobalWorld");
+    _list->push_back("EnterLocation");
+    _list->push_back("ExitLocation");
+    _list->push_back("EnterGlobalWorld");
     break;
 
   case TypeMusic:
-    _list->PutData("Cutscene1");
-    _list->PutData("Cutscene2");
-    _list->PutData("Cutscene3");
-    _list->PutData("Cutscene4");
-    _list->PutData("Cutscene5");
-    _list->PutData("LoaderRaytrace");
-    _list->PutData("LoaderSoul");
-    _list->PutData("LoaderFodder");
-    _list->PutData("LoaderSpeccy");
-    _list->PutData("LoaderMatrix");
-    _list->PutData("LoaderGameOfLife");
-    _list->PutData("StartSequence");
-    _list->PutData("EndSequence");
-    _list->PutData("Credits");
-    _list->PutData("Demo2Intro");
-    _list->PutData("Demo2Mid");
+    _list->push_back("Cutscene1");
+    _list->push_back("Cutscene2");
+    _list->push_back("Cutscene3");
+    _list->push_back("Cutscene4");
+    _list->push_back("Cutscene5");
+    _list->push_back("LoaderRaytrace");
+    _list->push_back("LoaderSoul");
+    _list->push_back("LoaderFodder");
+    _list->push_back("LoaderSpeccy");
+    _list->push_back("LoaderMatrix");
+    _list->push_back("LoaderGameOfLife");
+    _list->push_back("StartSequence");
+    _list->push_back("EndSequence");
+    _list->push_back("Credits");
+    _list->push_back("Demo2Intro");
+    _list->push_back("Demo2Mid");
     break;
 
   case TypeInterface:
-    _list->PutData("Show");
-    _list->PutData("Hide");
-    _list->PutData("Slide");
-    //_list->PutData( "TaskManagerSelectTask" );
-    //_list->PutData( "TaskManagerDeselectTask" );
-    _list->PutData("DeleteTask");
-    _list->PutData("MouseOverIcon");
-    _list->PutData("ShowLogo");
+    _list->push_back("Show");
+    _list->push_back("Hide");
+    _list->push_back("Slide");
+    //_list->push_back( "TaskManagerSelectTask" );
+    //_list->push_back( "TaskManagerDeselectTask" );
+    _list->push_back("DeleteTask");
+    _list->push_back("MouseOverIcon");
+    _list->push_back("ShowLogo");
     break;
   }
 }

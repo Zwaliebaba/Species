@@ -511,14 +511,14 @@ bool RadarDish::UpdateEntityInTransit( Entity *_entity )
 }
 
 
-void RadarDish::ListSoundEvents ( LList<char const *> *_list )
+void RadarDish::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "BeginRotation" );
-    _list->PutData( "EndRotation" );
-    _list->PutData( "ConnectionEstablished" );
-    _list->PutData( "ConnectionLost" );
+    _list->push_back("BeginRotation");
+    _list->push_back("EndRotation");
+    _list->push_back("ConnectionEstablished");
+    _list->push_back("ConnectionLost");
 }
 
 

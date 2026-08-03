@@ -97,11 +97,11 @@ void Spam::Destroy( float _intensity )
 	m_damage = 0.0f;
 }
 
-void Spam::ListSoundEvents( LList<char const *> *_list )
+void Spam::ListSoundEvents(std::vector<const char*>* _list)
 {
-    _list->PutData( "Attack" );
-    _list->PutData( "Explode" );
-    _list->PutData( "CreateResearch" );
+  _list->push_back("Attack");
+  _list->push_back("Explode");
+  _list->push_back("CreateResearch");
 }
 
 

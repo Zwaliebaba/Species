@@ -799,13 +799,13 @@ bool Spider::IsInView()
 }
 
 
-void Spider::ListSoundEvents(LList<char const *> *_list)
+void Spider::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "Pounce" );
-    _list->PutData( "PounceLand" );
-    _list->PutData( "FootFall" );
-    _list->PutData( "LayEgg" );
+    _list->push_back("Pounce");
+    _list->push_back("PounceLand");
+    _list->push_back("FootFall");
+    _list->push_back("LayEgg");
 }
 

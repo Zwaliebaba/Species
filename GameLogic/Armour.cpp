@@ -404,12 +404,12 @@ void Armour::GetEntrance(Vector3& _exitPos, Vector3& _exitDir)
   _exitDir = entranceMat.f;
 }
 
-void Armour::ListSoundEvents(LList<const char*>* _list)
+void Armour::ListSoundEvents(std::vector<const char*>* _list)
 {
   Entity::ListSoundEvents(_list);
 
-  _list->PutData("LoadDarwinian");
-  _list->PutData("UnloadDarwinian");
+  _list->push_back("LoadDarwinian");
+  _list->push_back("UnloadDarwinian");
 }
 
 /*

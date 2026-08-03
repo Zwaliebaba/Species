@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Entity.h"
 
 #define CENTIPEDE_MINSEARCHRANGE        75.0f
@@ -58,7 +60,7 @@ public:
 
     void Attack             ( Vector3 const &_pos );
 
-    void ListSoundEvents    ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

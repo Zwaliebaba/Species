@@ -545,14 +545,14 @@ void Officer::SetWaypoint( Vector3 const &_wayPoint )
 }
 
 
-void Officer::ListSoundEvents( LList<char const *> *_list )
+void Officer::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "SetOrderNone" );
-    _list->PutData( "SetOrderGoto" );
-    _list->PutData( "SetOrderFollow" );
-    _list->PutData( "SetOrderAbsorb" );
+    _list->push_back("SetOrderNone");
+    _list->push_back("SetOrderGoto");
+    _list->push_back("SetOrderFollow");
+    _list->push_back("SetOrderAbsorb");
 }
 
 

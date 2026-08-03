@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "FastDArray.h"
 #include "Building.h"
 #include "Spirit.h"
@@ -51,6 +53,6 @@ class Incubator : public Building
 
     void GetDockPoint(Vector3& _pos, Vector3& _front);
 
-    void ListSoundEvents(LList<const char*>* _list) override;
+    void ListSoundEvents(std::vector<const char*>* _list) override;
 };
 

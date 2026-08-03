@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Entity.h"
 #include "Unit.h"
 
@@ -87,7 +89,7 @@ public:
 
     void Render             ( float predictionTime, int teamId, int _detail );
 
-    void ListSoundEvents    ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

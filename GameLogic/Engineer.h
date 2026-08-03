@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "LList.h"
 
 #include "Entity.h"
@@ -87,7 +89,7 @@ public:
 
     char *GetCurrentAction      ();
 
-    void ListSoundEvents        ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

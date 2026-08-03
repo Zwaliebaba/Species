@@ -322,11 +322,11 @@ void ResearchItem::Write( FileWriter *_out )
 }
 
 
-void ResearchItem::ListSoundEvents( LList<char const *> *_list )
+void ResearchItem::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "AquireResearch" );
+    _list->push_back("AquireResearch");
 }
 
 

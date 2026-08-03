@@ -928,13 +928,13 @@ char const *Building::GetTypeNameTranslated( int _type )
 }
 
 
-void Building::ListSoundEvents( LList<char const *> *_list )
+void Building::ListSoundEvents(std::vector<const char*>* _list)
 {
-    _list->PutData( "Create" );
-    _list->PutData( "Reprogramming" );              // Remove me
-    _list->PutData( "ReprogramComplete" );
-    _list->PutData( "ChangeTeam" );
-    _list->PutData( "Damage" );
+  _list->push_back("Create");
+  _list->push_back("Reprogramming"); // Remove me
+  _list->push_back("ReprogramComplete");
+  _list->push_back("ChangeTeam");
+  _list->push_back("Damage");
 }
 
 

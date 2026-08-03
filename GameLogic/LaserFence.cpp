@@ -599,12 +599,12 @@ bool LaserFence::DoesShapeHit(Shape *_shape, Matrix34 _transform)
 }
 
 
-void LaserFence::ListSoundEvents(LList<char const *> *_list )
+void LaserFence::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "Spark" );
-    _list->PutData( "Electrocute" );
+    _list->push_back("Spark");
+    _list->push_back("Electrocute");
 }
 
 Vector3 LaserFence::GetTopPosition()

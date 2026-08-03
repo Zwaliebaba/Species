@@ -515,12 +515,12 @@ bool GunTurret::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
 }
 
 
-void GunTurret::ListSoundEvents( LList<char const *> *_list )
+void GunTurret::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "TargetSighted" );
-    _list->PutData( "FireShell" );
+    _list->push_back("TargetSighted");
+    _list->push_back("FireShell");
 }
 
 

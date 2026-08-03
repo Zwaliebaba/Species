@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 
@@ -26,7 +28,7 @@ public:
     bool Advance        ();
     void Render         ( float _predictionTime );
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     void Read           ( TextReader *_in, bool _dynamic );
     void Write          ( FileWriter *_out );
@@ -67,7 +69,7 @@ public:
     void ReprogramComplete  ();
     char const *GetObjectiveCounter();
 
-    void ListSoundEvents    ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     bool Advance            ();
     void Render             ( float _predictionTime );
@@ -109,7 +111,7 @@ public:
     void RenderPorts    ();
     void RenderAlphas   ( float _predictionTime );
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     void ReprogramComplete();
 

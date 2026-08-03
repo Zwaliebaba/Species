@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 class SpiritProcessor;
@@ -31,7 +33,7 @@ public:
     virtual Vector3 GetSpiritLocation   ();
     virtual void    TriggerSpirit       ( float _initValue );
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     static SpiritProcessor *GetSpiritProcessor();
 

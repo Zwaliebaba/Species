@@ -227,11 +227,11 @@ void GodDish::TriggerSpam()
 }
 
 
-void GodDish::ListSoundEvents( LList<char const *> *_list )
+void GodDish::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "ConnectToGod" );
-    _list->PutData( "DisconnectFromGod" );
+    _list->push_back("ConnectToGod");
+    _list->push_back("DisconnectFromGod");
 }
 

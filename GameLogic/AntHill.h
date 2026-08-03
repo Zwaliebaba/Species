@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 #define ANTHILL_SEARCHRANGE     400.0f
@@ -59,7 +61,7 @@ public:
     void Read   ( TextReader *_in, bool _dynamic );
     void Write  ( FileWriter *_out );
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

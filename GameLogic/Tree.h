@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 
@@ -60,7 +62,7 @@ public:
     bool DoesRayHit             (Vector3 const &_rayStart, Vector3 const &_rayDir,
                                  float _rayLen=1e10, Vector3 *_pos=nullptr, Vector3 *_norm=nullptr);        // pos/norm will not always be available
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     void Read           ( TextReader *_in, bool _dynamic );
     void Write          ( FileWriter *_out );

@@ -359,12 +359,12 @@ bool FuelGenerator::Advance()
 }
 
 
-void FuelGenerator::ListSoundEvents( LList<char const *> *_list )
+void FuelGenerator::ListSoundEvents(std::vector<const char*>* _list)
 {
     FuelBuilding::ListSoundEvents( _list );
 
-    _list->PutData( "PumpUp" );
-    _list->PutData( "PumpDown" );
+    _list->push_back("PumpUp");
+    _list->push_back("PumpDown");
 }
 
 
@@ -447,11 +447,11 @@ bool FuelPipe::Advance()
 }
 
 
-void FuelPipe::ListSoundEvents( LList<char const *> *_list )
+void FuelPipe::ListSoundEvents(std::vector<const char*>* _list)
 {
     FuelBuilding::ListSoundEvents( _list );
 
-    _list->PutData( "PumpFuel" );
+    _list->push_back("PumpFuel");
 }
 
 
@@ -564,11 +564,11 @@ bool FuelStation::BoardRocket( WorldObjectId _id )
 }
 
 
-void FuelStation::ListSoundEvents( LList<char const *> *_list )
+void FuelStation::ListSoundEvents(std::vector<const char*>* _list)
 {
     FuelBuilding::ListSoundEvents( _list );
 
-    _list->PutData( "LoadPassenger" );
+    _list->push_back("LoadPassenger");
 }
 
 
@@ -767,17 +767,17 @@ EscapeRocket::EscapeRocket()
 }
 
 
-void EscapeRocket::ListSoundEvents( LList<char const *> *_list )
+void EscapeRocket::ListSoundEvents(std::vector<const char*>* _list)
 {
     FuelBuilding::ListSoundEvents( _list );
 
-    _list->PutData( "Refueling" );
-    _list->PutData( "Happy" );
-    _list->PutData( "Unhappy" );
-    _list->PutData( "Flight" );
-    _list->PutData( "Malfunction" );
-    _list->PutData( "Explode" );
-    _list->PutData( "EngineBurn" );
+    _list->push_back("Refueling");
+    _list->push_back("Happy");
+    _list->push_back("Unhappy");
+    _list->push_back("Flight");
+    _list->push_back("Malfunction");
+    _list->push_back("Explode");
+    _list->push_back("EngineBurn");
 }
 
 

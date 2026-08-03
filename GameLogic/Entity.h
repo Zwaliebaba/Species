@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "LList.h"
 #include "TextureUv.h"
 
@@ -102,7 +104,7 @@ public:
 
     virtual void    DirectControl       ( TeamControls const& _teamControls );
 
-    virtual void    ListSoundEvents	( LList<char const *> *_list );
+    virtual void ListSoundEvents(std::vector<const char*>* _list);
 
     static void     BeginRenderShadow   ();
     static void     RenderShadow        ( Vector3 const &_pos, float _size );

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Building.h"
 
 #define GUNTURRET_RETARGETTIMER     3.0f
@@ -59,7 +61,7 @@ public:
     bool DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
                     float _rayLen, Vector3 *_pos, Vector3 *norm );
 
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

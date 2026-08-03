@@ -639,13 +639,13 @@ bool Centipede::AdvanceToTargetPosition()
 }
 
 
-void Centipede::ListSoundEvents( LList<char const *> *_list )
+void Centipede::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "Panic" );
-    _list->PutData( "EnemySighted" );
-    _list->PutData( "Grow" );
+    _list->push_back("Panic");
+    _list->push_back("EnemySighted");
+    _list->push_back("Grow");
 }
 
 

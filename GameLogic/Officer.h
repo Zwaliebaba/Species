@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Entity.h"
 #include "Flag.h"
 
@@ -76,7 +78,7 @@ public:
     void SetPreviousMode ();
 
     void CancelOrderSounds();
-    void ListSoundEvents( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     static char const *GetOrderType( int _orderType );
 };

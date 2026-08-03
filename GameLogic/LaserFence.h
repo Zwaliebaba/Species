@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <stdio.h>
 
 #include "Building.h"
@@ -73,7 +75,7 @@ public:
                                  float _rayLen=1e10, Vector3 *_pos=nullptr, Vector3 *_norm=nullptr);
     bool DoesShapeHit           (Shape *_shape, Matrix34 _transform);
 
-    void ListSoundEvents        (LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 
     Vector3 GetTopPosition();
 };

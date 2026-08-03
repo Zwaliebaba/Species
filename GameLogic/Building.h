@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Vector3.h"
 #include "Matrix34.h"
 #include "LList.h"
@@ -148,7 +150,7 @@ public:
     virtual bool DoesRayHit             (Vector3 const &_rayStart, Vector3 const &_rayDir,
                                         float _rayLen=1e10, Vector3 *_pos=nullptr, Vector3 *_norm=nullptr);        // pos/norm will not always be available
 
-    virtual void ListSoundEvents        ( LList<char const *> *_list );
+    virtual void ListSoundEvents(std::vector<const char*>* _list);
 
     virtual void Read   ( TextReader *_in, bool _dynamic );     // Use these to read/write additional building-specific
     virtual void Write  ( FileWriter *_out );					// data to the level files

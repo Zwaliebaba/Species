@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Unit.h"
 #include "Shape.h"
 
@@ -87,7 +89,7 @@ class Squadie : public Entity
     bool HasSecondaryWeapon();
     void FireSecondaryWeapon(const Vector3& _pos);
 
-    void ListSoundEvents(LList<const char*>* _list) override;
+    void ListSoundEvents(std::vector<const char*>* _list) override;
 
     Vector3 GetCameraFocusPoint() override;
 

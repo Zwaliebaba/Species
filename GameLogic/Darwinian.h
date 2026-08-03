@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Entity.h"
 
 #define DARWINIAN_SEARCHRANGE_OFFICERS      75.0f
@@ -116,7 +118,7 @@ public:
     void SetFire                ();
     bool IsOnFire               ();
 
-    void ListSoundEvents        ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

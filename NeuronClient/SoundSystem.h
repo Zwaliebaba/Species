@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "FastDArray.h"
 #include "LList.h"
 #include "Vector3.h"
@@ -54,7 +56,7 @@ class SoundSourceBlueprint
 
     static int GetSoundSoundType(const char* _name);
     static const char* GetSoundSourceName(int _type);
-    static void ListSoundEvents(int _type, LList<const char*>* _list);
+    static void ListSoundEvents(int _type, std::vector<const char*>* _list);
 };
 
 //*****************************************************************************

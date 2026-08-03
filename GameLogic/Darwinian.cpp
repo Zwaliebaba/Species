@@ -2440,17 +2440,17 @@ void Darwinian::Render( float _predictionTime, float _highDetail )
 }
 
 
-void Darwinian::ListSoundEvents( LList<char const *> *_list )
+void Darwinian::ListSoundEvents(std::vector<const char*>* _list)
 {
     Entity::ListSoundEvents( _list );
 
-    _list->PutData( "SeenThreatAttack" );
-    _list->PutData( "SeenThreatRunAway" );
-    _list->PutData( "TakenControl" );
-    _list->PutData( "EscapedControl" );
-    _list->PutData( "GivenOrders" );
-    _list->PutData( "VictoryJump" );
-    _list->PutData( "OnFire" );
+    _list->push_back("SeenThreatAttack");
+    _list->push_back("SeenThreatRunAway");
+    _list->push_back("TakenControl");
+    _list->push_back("EscapedControl");
+    _list->push_back("GivenOrders");
+    _list->push_back("VictoryJump");
+    _list->push_back("OnFire");
 }
 
 

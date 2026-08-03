@@ -305,11 +305,11 @@ void TrunkPort::ReprogramComplete()
 }
 
 
-void TrunkPort::ListSoundEvents( LList<char const *> *_list )
+void TrunkPort::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "PowerUp" );
+    _list->push_back("PowerUp");
 }
 
 

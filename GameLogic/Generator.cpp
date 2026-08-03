@@ -189,11 +189,11 @@ void PowerBuilding::TriggerSurge ( float _initValue )
 }
 
 
-void PowerBuilding::ListSoundEvents( LList<char const *> *_list )
+void PowerBuilding::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "TriggerSurge" );
+    _list->push_back("TriggerSurge");
 }
 
 
@@ -266,11 +266,11 @@ void Generator::ReprogramComplete()
 }
 
 
-void Generator::ListSoundEvents( LList<char const *> *_list )
+void Generator::ListSoundEvents(std::vector<const char*>* _list)
 {
     PowerBuilding::ListSoundEvents( _list );
 
-    _list->PutData( "Enable" );
+    _list->push_back("Enable");
 }
 
 
@@ -669,11 +669,11 @@ void SolarPanel::RenderAlphas( float _predictionTime )
 }
 
 
-void SolarPanel::ListSoundEvents( LList<char const *> *_list )
+void SolarPanel::ListSoundEvents(std::vector<const char*>* _list)
 {
     PowerBuilding::ListSoundEvents( _list );
 
-    _list->PutData( "Operate" );
+    _list->push_back("Operate");
 }
 
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 
 #include "Vector2.h"
 
@@ -93,7 +94,7 @@ public:
 	bool    RenderPixelEffect   (float _predictionTime);
 
     bool    IsInView            ();
-    void    ListSoundEvents     (LList<char const *> *_list);
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 

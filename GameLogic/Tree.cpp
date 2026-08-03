@@ -529,11 +529,11 @@ void Tree::RenderBranch( Vector3 _from, Vector3 _to, int _iterations,
 }
 
 
-void Tree::ListSoundEvents( LList<char const *> *_list )
+void Tree::ListSoundEvents(std::vector<const char*>* _list)
 {
     Building::ListSoundEvents( _list );
 
-    _list->PutData( "Burn" );
+    _list->push_back("Burn");
 }
 
 

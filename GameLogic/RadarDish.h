@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #define RADARDISH_TRANSPORTPERIOD    0.1f                        // Minimum wait time between sends
 #define RADARDISH_TRANSPORTSPEED     50.0f                       // Speed of in-transit entities (m/s)
 
@@ -58,7 +60,7 @@ public:
 
     bool    UpdateEntityInTransit( Entity *_entity );
 
-    void    ListSoundEvents ( LList<char const *> *_list );
+    void ListSoundEvents(std::vector<const char*>* _list);
 };
 
 
