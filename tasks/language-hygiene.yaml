@@ -155,6 +155,18 @@ tasks:
       are 21 more. NetRetCode's seven are 42. The switch labels inside the two
       owning .cpp files needed the same treatment.
 
+      READ_INT CANNOT SIT INSIDE A FUNCTION-STYLE CAST, and that cost a red
+      build. The macro expands to `*((int*)_stream); _stream += sizeof(int);` —
+      TWO statements. A static_cast has to parenthesise its argument, which puts
+      a `;` inside the parentheses; the C cast it replaced worked only because
+      it binds to the first sub-expression and lets the pointer advance follow
+      it. The fix reads into an `int` first, which makes the macro's shape
+      visible rather than load-bearing. WRITE_INT takes a cast argument fine,
+      because the value lands in the macro's first statement.
+
+      That is a property of every READ_ macro in ByteStream.h, not just this
+      one. Anyone modernising a cast at a deserialisation site hits it.
+
       TWO MISTAKES THE SCRIPT MADE, both caught before committing and both worth
       expecting next time. It qualified the enumerator DECLARATIONS inside
       NetLib.h — the one file where the enumerators appear unqualified in the

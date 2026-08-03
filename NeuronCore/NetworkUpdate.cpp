@@ -27,7 +27,15 @@ int NetworkUpdate::ReadByteStream(char* _byteStream)
 {
   char* byteStreamCopy = _byteStream;
 
-  m_type = static_cast<UpdateType>(READ_INT(_byteStream));
+  // Two lines, not one, and the reason is READ_INT: it expands to
+  // `*((int*)_stream); _stream += sizeof(int);` — TWO statements. A
+  // function-style cast has to parenthesise its argument, which puts a `;`
+  // inside the parentheses and does not compile. The C cast this replaces
+  // worked only because it binds to the first sub-expression and lets the
+  // pointer advance follow. Reading into an int first makes the macro's shape
+  // visible instead of load-bearing.
+  const int rawType = READ_INT(_byteStream);
+  m_type = static_cast<UpdateType>(rawType);
   m_lastSequenceId = READ_INT(_byteStream);
 
   switch (m_type)

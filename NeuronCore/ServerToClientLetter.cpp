@@ -53,7 +53,10 @@ ServerToClientLetter::ServerToClientLetter(char* _byteStream, int _len)
     m_teamType(0),
     m_ip(0)
 {
-  m_type = static_cast<LetterType>(READ_INT(_byteStream));
+  // See the note in NetworkUpdate.cpp: READ_INT is two statements, so it
+  // cannot sit inside a function-style cast.
+  const int rawType = READ_INT(_byteStream);
+  m_type = static_cast<LetterType>(rawType);
   m_sequenceId = READ_INT(_byteStream);
 
   switch (m_type)
