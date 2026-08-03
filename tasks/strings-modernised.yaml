@@ -116,7 +116,48 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    notes: >
+      Landed 2026-08-02, CI green at ec5e40b. NeuronCore's remaining
+      strcpy-family sites are BTree.h (a legacy container header the criterion
+      excludes, deleted by containers-replaced T16) and Generic.cpp, which T10
+      owns.
+
+      Preferences.cpp: nine sprintf-into-a-shared-char[1024] pairs in
+      CreateDefaultValues became std::format expressions and the scratch buffer
+      went with them; the tenth was Save()'s strncpy into a char[128] key
+      buffer, now a std::string built from the two pointers that already
+      bounded it. That removed the truncation clamp as well as the copy — a key
+      longer than 127 characters now looks itself up instead of being cut short
+      and missing.
+
+      NeuronCore.h: a compatibility #define mapping C99's bounded formatter
+      onto the old MSVC underscore variant, with zero callers. Dead, and worse
+      than dead — the underscore variant does not null-terminate on truncation.
+
+      NetworkUpdate::SetClientIp: bounded. The field stays char[16] because
+      T1's audit established ServerToClientLetter memcpy()s whole NetworkUpdate
+      structs. This is the fix T1 asked for in writing.
+
+      TWO FINDINGS THAT OUTLIVE THIS TASK.
+
+      Generic.cpp is not NeuronCore-local, which is why it became T10.
+      IpToString writes into a caller-supplied buffer, ConvertIntToIP returns a
+      pointer into a function-local static char[16], and Server::ReceiveLetter
+      takes `char* fromIP` — so converting them changes a NeuronServer
+      signature. The task scoping in this plan was done from grep counts rather
+      than from reading call sites, and that keeps producing tasks whose
+      "self-contained" premise fails on contact. Expect it; re-scope rather
+      than quietly widening a touch set.
+
+      std::min and std::max do not compile in this tree. NeuronCore.h sets
+      NOMINMAX and MathUtils.h then defines its own min/max macros, so
+      `std::min(` becomes `std::(...)(` and MSVC reports C2589. The one in
+      SetClientIp was the only std::min or std::max in all six projects, so
+      nobody had found out. SetClientIp writes the comparison by hand with a
+      pointer to language-hygiene T8, which carries the real fix — 216 call
+      sites across 51 files, and an audit rather than a sweep because the
+      macros double-evaluate their arguments.
+    status: done
 
   - id: T3
     title: Convert NeuronClient text and UI string handling
