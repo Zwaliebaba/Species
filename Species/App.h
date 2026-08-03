@@ -50,7 +50,6 @@ public:
 	AttractMode			*m_attractMode;
     GameMenu            *m_gameMenu;
 
-    bool                m_negativeRenderer;
 
 	// State flags
 

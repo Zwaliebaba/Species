@@ -18,3 +18,4 @@ char g_requestedMission[256] = "";
 char g_requestedMap[256] = "";
 bool g_paused = false;
 RGBAColour g_backgroundColour;
+bool g_negativeRenderer = false;

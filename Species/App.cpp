@@ -72,7 +72,6 @@ App::App()
     m_startSequence(nullptr),
     m_attractMode(nullptr),
     m_gameMenu(nullptr),
-    m_negativeRenderer(false),
     m_levelReset(false)
 {
   g_app = this;
@@ -86,8 +85,8 @@ App::App()
   PrefsManager::SetDefaultsProvider(&ApplyShippedPreferenceDefaults);
   g_prefsManager = new PrefsManager(GetPreferencesPath());
 
-  m_negativeRenderer = g_prefsManager->GetInt("RenderNegative", 0) ? true : false;
-  if (m_negativeRenderer)
+  g_negativeRenderer = g_prefsManager->GetInt("RenderNegative", 0) ? true : false;
+  if (g_negativeRenderer)
     g_backgroundColour.Set(255, 255, 255, 255);
   else
     g_backgroundColour.Set(0, 0, 0, 0);

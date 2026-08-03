@@ -1057,6 +1057,14 @@ tasks:
       - Species/Explosion.cpp
       - Species/Landscape.h
       - Species/Landscape.cpp
+      - Species/Water.h
+      - Species/Water.cpp
+      - Species/Clouds.h
+      - Species/Clouds.cpp
+      - Species/LandscapeRenderer.h
+      - Species/LandscapeRenderer.cpp
+      - Species/GlobalInternet.h
+      - Species/GlobalInternet.cpp
       - GameLogic/GameLogic.vcxproj
       - GameLogic/GameLogic.vcxproj.filters
       - Species/Species.vcxproj
@@ -1179,9 +1187,32 @@ tasks:
                         a forward-declared pointer and constructs it elsewhere.
         GlobalInternet.h (1)  One site in GlobalWorld.cpp, not yet looked at.
 
-      Three of those five — Water, Clouds and TaskManager — are resolved BY the
-      move rather than before it, so the remaining prep is LandscapeRenderer
-      and GlobalInternet, plus adding Water and Clouds to the moving set.
+      THE PREP IS DONE. Water, Clouds, LandscapeRenderer and GlobalInternet
+      joined the moving set rather than being seamed, which is the right answer
+      for all four: each is a MEMBER of a class that is already moving
+      (Location's water and clouds, Landscape's renderer, GlobalWorld's
+      internet), each has a header that depends only on NeuronCore, and each
+      was reached by construction — `new Water()` — which no pure-virtual seam
+      can express. The moving set is 15 classes, 30 files.
+
+      Two more App members went with them: m_negativeRenderer to AppState.h
+      (the RenderNegative preference, read by the landscape and water
+      renderers) and Renderer::CheckOpenGLState onto RendererAccess.
+
+      The cluster's Species includes are now: TaskManager.h, in three files,
+      and nothing else. That one resolves BY the move, per the T10 handover
+      above. Everything else is pch.h, which is mechanical at move time because
+      GameLogic has its own.
+
+      Renderer.cpp includes LandscapeRenderer.h and GameMenu.cpp includes
+      GlobalInternet.h; both become Species -> GameLogic after the move, which
+      is downward and needs no allowlist entry.
+
+      WHAT THE MOVE ITSELF STILL NEEDS, none of it measurement any more:
+      git mv for 30 files, both project files rewritten, pch.h swapped in 15
+      .cpp files, the allowlist regenerated, the `files` lists in
+      containers-replaced T12/T13, ownership T5 and strings-modernised T8
+      rewritten to GameLogic/ paths, and the owner-run Garden smoke test.
 
       T10 HANDS THIS TASK EIGHT MORE ENTRIES, found while running it:
       TaskManager.h (5), Water.h (2) and TaskManagerInterfaceIcons.h (1).

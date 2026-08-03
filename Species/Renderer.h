@@ -73,7 +73,7 @@ class Renderer : public RendererAccess
     float GetFarPlane() const override;
     void SetNearAndFar(float _nearPlane, float _farPlane);
 
-    void CheckOpenGLState() const;
+    void CheckOpenGLState() const override;
     void SetOpenGLState() const;
 
     void SetObjectLighting() const override;

@@ -49,3 +49,7 @@ extern bool g_paused;
 // The colour the frame is cleared to, and the fog colour the world derives
 // from it. Set once per level from the level file.
 extern RGBAColour g_backgroundColour;
+
+// The RenderNegative preference, read once at startup. The landscape and water
+// renderers invert their colours for it.
+extern bool g_negativeRenderer;

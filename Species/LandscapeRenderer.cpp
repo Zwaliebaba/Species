@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "AppState.h"
 
 #include <float.h>
 
@@ -14,11 +15,8 @@
 #include "TextureUv.h"
 #include "Vector3.h"
 
-#include "App.h"
-#include "Camera.h"
 #include "LandscapeRenderer.h"
 #include "Location.h"	// For SetupFog
-#include "Renderer.h"
 #include "LevelFile.h"
 #include "WorldPointers.h"
 
@@ -191,7 +189,7 @@ void LandscapeRenderer::GetLandscapeColour(float _height, float _gradient, unsig
 
   *_colour = m_landscapeColour->GetPixel(x, y);
 
-  if (g_app->m_negativeRenderer)
+  if (g_negativeRenderer)
     _colour->a = 0;
 }
 
@@ -330,7 +328,7 @@ void LandscapeRenderer::RenderMainSlow()
   glEnable(GL_COLOR_MATERIAL);
   glEnable(GL_LIGHTING);
 
-  if (g_app->m_negativeRenderer)
+  if (g_negativeRenderer)
   {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
@@ -385,7 +383,7 @@ void LandscapeRenderer::RenderOverlaySlow()
   glEnable(GL_TEXTURE_2D);
   glDepthMask(false);
 
-  if (!g_app->m_negativeRenderer)
+  if (!g_negativeRenderer)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   else
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);

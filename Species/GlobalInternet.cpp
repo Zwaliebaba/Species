@@ -8,10 +8,9 @@
 #include "Profiler.h"
 #include "Debug.h"
 
-#include "Camera.h"
 #include "GlobalInternet.h"
 #include "GlobalWorld.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "WorldPointers.h"
 
 
@@ -384,8 +383,8 @@ void GlobalInternet::RenderPackets()
   // Advance / render all packets
 
   float packetSize = 30.0f;
-  Vector3 camRight = TheCamera()->GetRight() * packetSize;
-  Vector3 camUp = TheCamera()->GetUp() * packetSize;
+  Vector3 camRight = g_camera->GetRight() * packetSize;
+  Vector3 camUp = g_camera->GetUp() * packetSize;
   float posChange = g_advanceTime;
 
   glColor4f(0.25f, 0.25f, 0.5f, 0.8f);

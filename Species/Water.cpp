@@ -15,10 +15,7 @@
 #include "RenderUtils.h"
 #include "Resource.h"
 
-#include "App.h"
-#include "Camera.h"
-#include "Main.h"
-#include "Renderer.h"
+#include "GameTime.h"
 #include "Water.h"
 #include "Location.h"
 #include "LevelFile.h"
@@ -59,7 +56,7 @@ Water::Water()
 
       m_cellSize = (float)detail * worldSize;
 
-      int alpha = (g_app->m_negativeRenderer ? 0 : 255);
+      int alpha = (g_negativeRenderer ? 0 : 255);
 
       // Load colour information from a bitmap
       {
@@ -459,7 +456,7 @@ void Water::RenderFlatWater()
   glDisable(GL_BLEND);
   glDepthMask(false);
 
-  if (g_app->m_negativeRenderer)
+  if (g_negativeRenderer)
   {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
@@ -729,7 +726,7 @@ void Water::Render()
   }
 
   g_location->SetupFog();
-  TheRenderer()->CheckOpenGLState();
+  g_renderer->CheckOpenGLState();
 }
 
 void Water::Advance()
