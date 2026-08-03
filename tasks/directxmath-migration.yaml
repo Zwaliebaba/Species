@@ -1,0 +1,1058 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: directxmath-migration
+title: Replace the hand-rolled math library with native DirectXMath
+summary: >
+  NeuronCore carries 2,718 lines of inherited math — Vector3, Vector2,
+  Matrix33, Matrix34, Plane and the geometry library in MathUtils — reached
+  from 207 files and 3,133 Vector3 occurrences. This plan deletes all of it and
+  moves the tree onto DirectX::XMFLOAT2/3, XMFLOAT4X4, XMVECTOR and XMMATRIX
+  directly, with DirectXCollision replacing the intersection tests that have an
+  equivalent there.
+
+  Native means native. There is no wrapper class at the end of this plan and no
+  free-function operator layer standing in for one: storage is the XMFLOAT
+  types, arithmetic is XMLoad / XMVector* / XMStore at the call site. T1 adds a
+  transitional conversion seam so the tree keeps compiling between tasks, and
+  T25 deletes it. If T25 does not land, this plan has failed however good the
+  intermediate state looks.
+
+  THIS PLAN DELIBERATELY CHANGES WHAT THE SIMULATION COMPUTES. DirectXMath's
+  lane arithmetic does not reproduce the current scalar arithmetic bit for bit,
+  so the sync value differs from the first converted entity onward. That is
+  sanctioned, on the same terms as determinism.yaml T1: the rule suspended is
+  "the new build matches the old build", NOT "every client in a session
+  agrees". Clients on the same build must still be bit-identical to each other.
+  A build carrying part of this plan desyncs against one carrying a different
+  part, so this is not a plan to land piecemeal into anything shipped.
+
+  OWNER DECISIONS, 2026-08-03, recorded so no executing agent reopens them:
+
+    1. Cross-architecture: ACCEPT AND DOCUMENT. No _XM_NO_INTRINSICS_, no
+       <FloatingPointModel>, no build-topology change. ARM64 (NEON) and x64
+       (SSE) will not agree, so mixed-architecture play moves from "unproven"
+       to "not supported" in AGENTS.md (T26). Within one architecture the
+       simulation stays deterministic, which is what the sync assert tests.
+    2. Matrices: XMFLOAT4X4 storage, ROW-VECTOR convention (v * M), which is
+       DirectXMath's own. See T1 — this is the decision most likely to be got
+       wrong silently, because the current code is inconsistent about it.
+    3. Normalise: NATIVE BEHAVIOUR. XMVector3Normalize's zero-length result
+       replaces the current (0,0,1) fallback everywhere. T1 carries the audit
+       of which call sites can actually see a zero-length input; a NaN reaching
+       m_pos shows up in the sync value and nowhere else, so the audit is not
+       optional.
+    4. TriTri.cpp: DELETED, with its LICENSE row (T4). It has no callers.
+
+  THE SURVEY'S BIGGEST FINDING, which reshaped this plan: most of the geometry
+  library is dead. Measured at 4eeafa6 with
+  `grep -rlw <fn> --include=*.cpp <projects>`, these have no caller anywhere
+  outside MathUtils.cpp's own internals — RaySegDist and TriTriIntersection
+  have none at all:
+
+    RaySegDist, TriTriIntersection                  zero callers
+    RayPlaneIntersection                            only RayRayDist
+    GetPlaneMatrix, ProjectPointOntoPlane,          only SphereTriangleIntersection
+    ConvertWorldSpaceIntoPlaneSpace,
+    ConvertPlaneSpaceIntoWorldSpace,
+    CalcTriArea, IsPointInTriangle
+    Plane (the whole class)                         only RayPlaneIntersection
+
+  So nine functions and one class are deleted rather than migrated (T4, T5,
+  T8), and TriTri.cpp goes with them. That is roughly a third of MathUtils.cpp
+  removed before a single call site is converted, and it is why the geometry
+  tasks come before the sweep rather than after.
+
+  WHAT DIRECTXCOLLISION DOES NOT COVER, established by reading rather than
+  assumed: RaySphereIntersection returns an intersection POINT and NORMAL
+  through out-parameters, and BoundingSphere::Intersects returns a bool and a
+  distance. The function therefore survives T6 as a free function whose body
+  becomes native — that is not a wrapper being preserved, it is a routine
+  DirectXCollision has no equivalent for. Same for RayRayDist, PointSegDist2D
+  and SegRayIntersection2D.
+
+  MEASURED AT 4eeafa6, 2026-08-03, on Linux, with
+  P="NeuronCore NeuronClient NeuronServer GameLogic Species Server Tests":
+
+    Vector3     3,133 occurrences, 207 files   grep -row Vector3 --include=*.cpp --include=*.h $P
+    Matrix34      489 occurrences,  79 files
+    Vector2       220 occurrences,  22 files
+    Matrix33      107 occurrences,  10 files
+    Plane          20 occurrences,   4 files
+    glVertex3fv/glNormal3fv fed from GetData()   46 files
+    ConvertToOpenGLFormat call sites              3   GameLogic/Tree.cpp, NeuronClient/Shape.cpp x2
+    GetOr / InverseMultiplyVector                 7   all in NeuronClient/Shape.cpp
+    math library size            2,718 lines,  16 files
+
+  Re-measure before citing any of these. They will have moved.
+
+  ORDERING AGAINST THE OTHER OPEN PLANS. strings-modernised, ownership,
+  language-hygiene and namespace-migration all touch files this plan touches.
+  This plan does not change strings, ownership or enums, so a file can be at
+  stage 4 or 5 and be converted here in either order — EXCEPT that both edit
+  the same lines and will conflict in the tree. Rule: this plan yields. If a
+  file is `in_progress` in another plan, skip it and come back. The one hard
+  edge is namespace-migration, which should not start on NeuronCore until T25
+  has deleted the headers it would otherwise move.
+
+tasks:
+
+  # ------------------------------------------------------------------
+  # Wave 1 — pin what must not move, and delete what nothing calls
+  # ------------------------------------------------------------------
+
+  - id: T1
+    title: Adopt DirectXMath, fix the conventions, and add the transitional seam
+    intent: >
+      Every later task depends on three things being decided once: which native
+      type each legacy type becomes, which multiplication convention the tree
+      uses, and how a converted file talks to an unconverted one. Deciding them
+      per task is how a 200-file migration ends up half transposed.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/NeuronMath.h
+      - NeuronCore/NeuronCore.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - NeuronCore/Vector2.h
+      - NeuronCore/Vector3.h
+      - NeuronCore/Matrix33.h
+      - NeuronCore/Matrix34.h
+      - Tests/NeuronCoreTests/NeuronMathTests.cpp
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj.filters
+    acceptance:
+      - NeuronMath.h includes <DirectXMath.h> and <DirectXCollision.h> and states the conventions in a comment block
+      - static_asserts pin sizeof and offsetof equality between each legacy type and its native counterpart, and fail to compile if either moves
+      - Vector3, Vector2, Matrix33 and Matrix34 each convert to and from their native counterpart, so a converted file compiles against an unconverted API
+      - The conventions comment names the row-vector decision explicitly and records that Matrix33 and Matrix34 disagree today
+      - NeuronCoreTests covers the seam round-trip and the zero-length normalise behaviour the tree is moving to
+      - No .vcxproj gains an include directory or a library reference
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+    notes: |
+      THE CONVENTION TRAP, found while surveying and the reason this task
+      exists at all. Matrix33 and Matrix34 use OPPOSITE conventions for
+      identically named members:
+
+        Matrix33::operator*(Vector3)  ->  dot(r,v), dot(u,v), dot(f,v)
+                                          r/u/f are ROWS
+        Matrix34::operator*(Vector3)  ->  v.x*r + v.y*u + v.z*f + pos
+                                          r/u/f are COLUMNS (basis vectors)
+
+      Each class is internally consistent — their InverseMultiplyVector
+      implementations are the matching transposes — but Matrix34::GetOr() hands
+      r, u and f straight into a Matrix33 constructor, so the rotation
+      transposes as it crosses that call. Both traps are confined to
+      NeuronClient/Shape.cpp (3 GetOr, 4 InverseMultiplyVector sites), which is
+      the only reason this is a footnote rather than a plan of its own. Fix the
+      reading there in T10 and state it in the conventions block.
+
+      SECOND TRAP, same shape. In BOTH classes `v * M` and `M * v` have
+      byte-identical bodies — the operand order is decorative today. Native
+      XMVector3Transform is v*M and means it. Any call site that wrote M*v
+      expecting the transpose is already getting the other one, so converting
+      it "correctly" would be a behaviour change; converting it to match
+      today's behaviour is what this plan wants. Read each transform site, do
+      not pattern-match the operand order.
+
+      THIRD: Matrix34 rotates with cos()/sin() — the DOUBLE overloads, cast
+      back to float — not cosf/sinf. Native XMMatrixRotation* is float
+      throughout. That difference is part of the sanctioned divergence, but
+      note it in the commit so the smoke test knows what moved.
+
+      THE SEAM is what keeps the tree compiling across ~20 conversion tasks.
+      Layouts are already identical (Vector3 is three floats, XMFLOAT3 is three
+      floats), so the conversion is free at runtime and the static_asserts
+      prove it rather than trusting it. The seam is a wrapper and it is
+      temporary; T25 deletes it and T25 is what makes this plan honest.
+
+      THE NORMALISE AUDIT belongs here because it is a decision, not a sweep.
+      Vector3::Normalise returns (0,0,1) for zero length; XMVector3Normalize
+      returns zero or QNaN. Owner chose native. Before the sweeps start, list
+      the call sites that can see a zero-length input — the candidates are
+      Matrix34::Normalise and the six Orient* functions (a degenerate basis),
+      HorizontalAndNormalise (which already divides by an unguarded sqrtf, so
+      it is no worse), and any direction computed from two entity positions
+      that may coincide. Put the list in this task's notes. A NaN in m_pos
+      surfaces only in the sync value, minutes later, in Debug.
+
+  - id: T2
+    title: Pin the wire bytes for world position and direction
+    intent: >
+      NetworkUpdate holds a Vector3 and writes it field by field. XMFLOAT3 has
+      the same layout so the packet should be unchanged, but "should be" is not
+      what a wire format is verified with, and this is the one thing in the
+      plan that would break other machines rather than just this build.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
+    acceptance:
+      - A test pins the exact bytes an Alive update writes, including all three position floats at their current offsets
+      - A test pins the bytes for m_direction on every update type that carries it
+      - The tests pass before any type changes and are untouched by T9
+    verify:
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+    notes: |
+      Characterisation before conversion, the documented exception to
+      tests-ship-with-the-change (docs/TESTING.md). NetworkUpdateTests already
+      exists; this extends it. If the bytes DO move in T9, that is a bug in T9,
+      not a test to update.
+
+  - id: T3
+    title: Pin the raw-memory assumptions three call sites make about Vector3
+    intent: >
+      Three places treat Vector3 as twelve bytes rather than as a class:
+      LandscapeRenderer's vertex-buffer offsets, TrunkPort's height-map memset,
+      and every glVertex3fv site taking &v.x. All three survive the migration
+      because XMFLOAT3 matches, but nothing states that today, so nothing
+      catches it if a future type choice does not.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/LandscapeRenderer.cpp
+      - GameLogic/TrunkPort.cpp
+    acceptance:
+      - Each of the three sites carries a static_assert on the size it assumes
+      - The asserts name what breaks if they fail, not just the number
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      LandscapeRenderer.cpp:232 derives m_normOffset, m_colOffset and m_uvOffset
+      from sizeof(Vector3); TrunkPort.cpp:47 memsets m_heightMapSize^2 *
+      sizeof(Vector3). Both are interleaved-vertex-buffer arithmetic handed to
+      OpenGL, so an error is a rendering corruption rather than a compile
+      failure.
+
+  - id: T4
+    title: Delete the geometry nothing calls, and TriTri.cpp with its licence row
+    intent: >
+      RaySegDist and TriTriIntersection have no callers anywhere in the tree.
+      Migrating them would be work spent on code that is already dead, and
+      TriTri.cpp is the one file in the repository whose third-party terms
+      LICENSE records as unresolved — deleting it improves the provenance
+      position AGENTS.md flags, rather than carrying it forward.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/MathUtils.h
+      - NeuronCore/MathUtils.cpp
+      - NeuronClient/TriTri.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - LICENSE
+    acceptance:
+      - RaySegDist and TriTriIntersection are gone from MathUtils.h and from the tree
+      - NeuronClient/TriTri.cpp is deleted and removed from the project file and its filters
+      - The LICENSE row for TriTri.cpp is removed and the Mersenne Twister and AutoVector rows are untouched
+      - grep -rw 'RaySegDist|TriTriIntersection' over the tree returns nothing
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      OWNER APPROVED 2026-08-03, having been asked specifically because of the
+      licence. The Möller notice is not being stripped from surviving code — the
+      code it covers is being removed entirely, which is the only clean way to
+      resolve an "all rights reserved, no explicit grant" file.
+
+      Worth recording: TriTriIntersection is DECLARED in NeuronCore/MathUtils.h
+      and DEFINED in NeuronClient/TriTri.cpp. That is a symbol declared low and
+      defined high — the exact pattern check_layering.py catches for
+      executables — and it slipped through because NeuronClient is a library.
+      It is worth asking whether that check should extend to libraries; not a
+      task here, but a finding for tools/.
+
+  # ------------------------------------------------------------------
+  # Wave 2 — the geometry library
+  # ------------------------------------------------------------------
+
+  - id: T5
+    title: Replace SphereTriangleIntersection with BoundingSphere, deleting six helpers
+    intent: >
+      SphereTriangleIntersection is the sole caller of GetPlaneMatrix,
+      ProjectPointOntoPlane, ConvertWorldSpaceIntoPlaneSpace,
+      ConvertPlaneSpaceIntoWorldSpace, CalcTriArea and IsPointInTriangle. One
+      DirectXCollision call replaces the whole subtree, which is about a third
+      of MathUtils.cpp.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/MathUtils.h
+      - NeuronCore/MathUtils.cpp
+      - Tests/NeuronCoreTests/NeuronMathTests.cpp
+    acceptance:
+      - SphereTriangleIntersection is implemented with DirectX::BoundingSphere::Intersects
+      - All six helper functions are gone from the header and the tree
+      - NeuronCoreTests covers the new contract, including a sphere touching an edge and a sphere containing the triangle
+      - The one caller, NeuronClient/Shape.cpp:1204, compiles unchanged
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+    notes: |
+      This is a DIFFERENT ALGORITHM, not a reimplementation — the current one
+      projects into plane space and does a triangle-area point test with a
+      1.0001f fudge factor; BoundingSphere::Intersects does not. Edge and
+      near-degenerate cases will answer differently. The one caller is Shape's
+      collision test, so the visible effect is which shape fragment a click or
+      a projectile registers against. State the new contract in the tests
+      rather than trying to reproduce the old one.
+
+  - id: T6
+    title: Rebuild the sphere intersection routines on native types
+    intent: >
+      RaySphereIntersection has fourteen caller files and returns an
+      intersection point and normal through out-parameters, which
+      BoundingSphere::Intersects does not provide. The routine stays; its body
+      becomes native and its callers keep their signature.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/MathUtils.h
+      - NeuronCore/MathUtils.cpp
+      - Tests/NeuronCoreTests/NeuronMathTests.cpp
+    acceptance:
+      - RaySphereIntersection and SphereSphereIntersection compute with XMVECTOR throughout, with no Vector3 arithmetic left in either body
+      - SphereSphereIntersection uses BoundingSphere::Intersects, which does cover it
+      - The out-parameter contract of RaySphereIntersection is unchanged and covered by tests
+      - No caller file is edited by this task
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+    notes: |
+      Fourteen caller files: Shape.cpp, GunTurret, ResearchItem, RadarDish,
+      Location, GlobalWorld, Tree, Entity, StaticShape, Building,
+      ScriptTrigger, UserInput, LocationEditor. They convert with their own
+      subsystem later; this task deliberately does not touch them, so the diff
+      stays reviewable and the signature change happens once, in T25's wake.
+
+  - id: T7
+    title: Replace RayTriIntersection with TriangleTests::Intersects
+    intent: >
+      Ray-triangle is the one intersection test with an exact DirectXCollision
+      equivalent including the distance out-parameter, so it is a true
+      replacement rather than a rewrite.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/MathUtils.h
+      - NeuronCore/MathUtils.cpp
+      - Tests/NeuronCoreTests/NeuronMathTests.cpp
+    acceptance:
+      - RayTriIntersection is implemented with DirectX::TriangleTests::Intersects
+      - The _rayLen cutoff and the result out-parameter behave as before, covered by tests
+      - The four caller files compile unchanged
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+    notes: |
+      Callers: NeuronClient/Shape.cpp, GameLogic/Landscape.cpp,
+      GameLogic/LaserFence.cpp. Backface behaviour differs between Möller's
+      formulation and TriangleTests — check whether Landscape depends on
+      hitting backfaces before assuming it does not.
+
+  - id: T8
+    title: Rebuild RayRayDist natively and delete the Plane class
+    intent: >
+      Plane exists to serve RayPlaneIntersection, which exists to serve
+      RayRayDist, which has three call sites in Tripod.cpp. Collapsing that
+      chain onto XMPlane* removes a class, a header pair and a function.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/MathUtils.h
+      - NeuronCore/MathUtils.cpp
+      - NeuronCore/Plane.h
+      - NeuronCore/Plane.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/NeuronMathTests.cpp
+    acceptance:
+      - RayRayDist computes with XMPlaneFromPointNormal and XMPlaneIntersectLine
+      - RayPlaneIntersection is gone, having had exactly one caller
+      - Plane.h and Plane.cpp are deleted and removed from the project file and filters
+      - NeuronCoreTests covers RayRayDist including the parallel-rays case the current code special-cases
+      - GameLogic/Tripod.cpp compiles unchanged
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T9
+    title: Move the wire types to XMFLOAT3
+    intent: >
+      NetworkUpdate, TeamControls and ServerToClientLetter are where the math
+      types meet the wire. Converting them first, with T2's byte pins already
+      in place, proves the layout claim the whole plan rests on before 200
+      files depend on it.
+    project: NeuronCore
+    depends_on: [T1, T2]
+    files:
+      - NeuronCore/NetworkUpdate.h
+      - NeuronCore/NetworkUpdate.cpp
+      - NeuronCore/NetworkUpdate.inc
+      - NeuronCore/TeamControls.h
+      - NeuronCore/ServerToClientLetter.h
+    acceptance:
+      - NetworkUpdate stores XMFLOAT3 for world position and direction
+      - T2's byte-pinning tests pass unmodified
+      - No Vector3 remains in any NeuronCore header outside the doomed math headers themselves
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  # ------------------------------------------------------------------
+  # Wave 3 — NeuronClient
+  # ------------------------------------------------------------------
+
+  - id: T10
+    title: Convert the client renderers, and fix Shape's transposed matrix reading
+    intent: >
+      Shape.cpp is where the Matrix33/Matrix34 convention disagreement is
+      actually observable — it holds every GetOr and InverseMultiplyVector site
+      in the tree. Converting it is also the point at which the transposed
+      reading has to be resolved rather than carried.
+    project: NeuronClient
+    depends_on: [T1, T5, T6, T7]
+    files:
+      - NeuronClient/Shape.h
+      - NeuronClient/Shape.cpp
+      - NeuronClient/3dSprite.h
+      - NeuronClient/3dSprite.cpp
+      - NeuronClient/SphereRenderer.h
+      - NeuronClient/SphereRenderer.cpp
+      - NeuronClient/DebugRender.h
+      - NeuronClient/DebugRender.cpp
+      - NeuronClient/PersistingDebugRender.h
+      - NeuronClient/TextRenderer.h
+      - NeuronClient/TextRenderer.cpp
+    acceptance:
+      - Shape.cpp holds no GetOr or InverseMultiplyVector call
+      - The matrix reading at each former GetOr site is stated in a comment as row-vector, matching T1's conventions block
+      - ConvertToOpenGLFormat's two call sites here take an XMFLOAT4X4 by value, not a pointer into a shared static buffer
+      - glVertex3fv and glNormal3fv sites pass &v.x on an XMFLOAT3
+      - No Vector3, Vector2, Matrix33 or Matrix34 identifier remains in these files
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      Matrix33::m_openGLFormat and Matrix34::m_openGLFormat are `static
+      float[16]` returned by pointer — a shared mutable buffer that is neither
+      reentrant nor thread-safe, and two of the three call sites in the tree
+      are here. Returning XMFLOAT4X4 by value fixes that as a side effect;
+      say so in the commit rather than leaving it as an unexplained signature
+      change. OpenGL wants column-major and DirectXMath stores row-major, so
+      the transpose happens in the store — one place, stated once.
+
+  - id: T11
+    title: Convert the sound subsystem's positional math
+    intent: >
+      The sound system carries positions and velocities for 3D audio and is
+      independent of everything else in this plan, so it converts on its own
+      and cannot break the simulation.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/SoundInstance.h
+      - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundSource.h
+      - NeuronClient/SoundLibrary3d.h
+      - NeuronClient/SoundLibrary3dDSound.h
+      - NeuronClient/SoundLibrary3dDSound.cpp
+      - NeuronClient/SoundLibrary3dSoftware.h
+      - NeuronClient/SoundLibrary3dSoftware.cpp
+    acceptance:
+      - No legacy math type remains in the sound files
+      - The two speciesRandom call sites in SoundInstance.cpp are untouched, and the diff shows it
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      SoundInstance.cpp draws from the synchronised RNG at lines 533 and 1009 —
+      AGENTS.md Known issues, an open desync question that is NOT this plan's
+      to fix. Do not touch those lines, do not "tidy" the surrounding
+      expressions, and do not let a conversion change how many times they run.
+
+  - id: T12
+    title: Convert the client-side interface headers
+    intent: >
+      The *Access headers and ClientToServer are the seam the layers below
+      reach the client through. Their signatures have to move to native types
+      before the files that implement and call them can drop the seam.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/CameraAccess.h
+      - NeuronClient/RendererAccess.h
+      - NeuronClient/LocationAccess.h
+      - NeuronClient/GameCursorAccess.h
+      - NeuronClient/UserInputAccess.h
+      - NeuronClient/ClientToServer.h
+      - NeuronClient/ClientToServer.cpp
+    acceptance:
+      - Every interface signature takes and returns native types
+      - Implementors and callers still compile through T1's seam, unedited
+      - python3 tools/check_layering.py still reports zero upward includes
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      This is the task the seam was built for. Because XMFLOAT3 and Vector3 are
+      layout-identical and T1 makes them convert implicitly, an interface can
+      change signature while every implementor and caller stays as it is —
+      which is what stops this plan needing one 200-file commit.
+
+  - id: T13
+    title: Owner runs the Garden smoke test on the converted engine layers
+    intent: >
+      NeuronCore and NeuronClient are the layers everything else stands on. If
+      the matrix convention or the normalise change is wrong, it is wrong here,
+      and finding that out after 140 GameLogic files have been converted on top
+      of it is the expensive version.
+    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12]
+    files:
+      - AGENTS.md
+    acceptance:
+      - All seven Garden smoke-test steps pass, owner-reported
+      - AGENTS.md records the run with its commit hash, per "What working looks like"
+    status: todo
+    notes: |
+      Blocked on owner execution — no agent here can launch a Windows client.
+      Same gate and the same reason as determinism.yaml T2.
+
+      WHICH STEPS CARRY THE WEIGHT: step 1 and step 2, because a wrong matrix
+      convention shows up as geometry rendering inside out or the location
+      failing to load, and step 5, because a NaN out of the normalise change
+      reaches m_pos and stops entities advancing. The spawn counts in steps 3
+      and 4 prove little here — nothing in this plan touches level parsing.
+
+  # ------------------------------------------------------------------
+  # Wave 4 — GameLogic, six groups, all parallel
+  # ------------------------------------------------------------------
+
+  - id: T14
+    title: Convert the entity core and the humanoid entities
+    intent: >
+      Entity, Unit and Team hold m_pos and m_vel — the fields GenerateSyncValue
+      sums — so this is the group where the sanctioned divergence actually
+      begins.
+    project: GameLogic
+    depends_on: [T13]
+    files:
+      - GameLogic/Entity.h
+      - GameLogic/Entity.cpp
+      - GameLogic/EntityLeg.h
+      - GameLogic/EntityLeg.cpp
+      - GameLogic/EntityGrid.cpp
+      - GameLogic/Unit.h
+      - GameLogic/Unit.cpp
+      - GameLogic/Team.h
+      - GameLogic/Team.cpp
+      - GameLogic/WorldObject.h
+      - GameLogic/WorldObject.cpp
+      - GameLogic/Citizen.h
+      - GameLogic/Citizen.cpp
+      - GameLogic/Engineer.h
+      - GameLogic/Engineer.cpp
+      - GameLogic/Officer.h
+      - GameLogic/Officer.cpp
+      - GameLogic/LaserTrooper.h
+      - GameLogic/LaserTrooper.cpp
+      - GameLogic/InsertionSquad.h
+      - GameLogic/InsertionSquad.cpp
+      - GameLogic/Ai.h
+      - GameLogic/Ai.cpp
+    acceptance:
+      - m_pos and m_vel are XMFLOAT3 on Entity and m_centrePos on Unit
+      - No legacy math type remains in these files
+      - No speciesRandom or syncfrand call is added, removed or made conditional, and the diff shows the count is unchanged
+      - Iteration order in every loop these files own is unchanged
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_containers.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+    notes: |
+      Read CODING_STANDARDS.md#determinism before starting. The float results
+      change by design here; the RNG call sequence and the iteration order must
+      not. Those are separate properties and only the first one is sanctioned.
+
+  - id: T15
+    title: Convert the creature entities
+    intent: >
+      The multi-segment and legged creatures carry the most per-entity math in
+      the tree — SoulDestroyer, Centipede and Tripod between them are a
+      quarter of GameLogic's math sites.
+    project: GameLogic
+    depends_on: [T13]
+    files:
+      - GameLogic/Virii.h
+      - GameLogic/Virii.cpp
+      - GameLogic/Armour.h
+      - GameLogic/Armour.cpp
+      - GameLogic/Spider.h
+      - GameLogic/Spider.cpp
+      - GameLogic/Tripod.h
+      - GameLogic/Tripod.cpp
+      - GameLogic/Centipede.h
+      - GameLogic/Centipede.cpp
+      - GameLogic/SoulDestroyer.h
+      - GameLogic/SoulDestroyer.cpp
+      - GameLogic/ArmyAnt.h
+      - GameLogic/ArmyAnt.cpp
+      - GameLogic/AntHill.h
+      - GameLogic/AntHill.cpp
+      - GameLogic/Egg.cpp
+      - GameLogic/Lander.cpp
+      - GameLogic/SporeGenerator.h
+      - GameLogic/SporeGenerator.cpp
+      - GameLogic/Triffid.h
+      - GameLogic/Triffid.cpp
+    acceptance:
+      - No legacy math type remains in these files
+      - Tripod's three RayRayDist call sites compile against T8's rebuilt routine
+      - The speciesRandom and syncfrand call count per file is unchanged
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T16
+    title: Convert the structural buildings
+    intent: >
+      Building is the base every structure derives from, so its m_pos and
+      m_front move once and the derived classes follow in the same diff.
+    project: GameLogic
+    depends_on: [T13]
+    files:
+      - GameLogic/Building.h
+      - GameLogic/Building.cpp
+      - GameLogic/StaticShape.h
+      - GameLogic/StaticShape.cpp
+      - GameLogic/ControlTower.h
+      - GameLogic/ControlTower.cpp
+      - GameLogic/ConstructionYard.h
+      - GameLogic/ConstructionYard.cpp
+      - GameLogic/Factory.cpp
+      - GameLogic/Generator.h
+      - GameLogic/Generator.cpp
+      - GameLogic/GunTurret.h
+      - GameLogic/GunTurret.cpp
+      - GameLogic/RadarDish.h
+      - GameLogic/RadarDish.cpp
+      - GameLogic/ResearchItem.h
+      - GameLogic/ResearchItem.cpp
+      - GameLogic/SpawnPoint.h
+      - GameLogic/SpawnPoint.cpp
+      - GameLogic/GenericHub.h
+      - GameLogic/GenericHub.cpp
+      - GameLogic/Library.cpp
+      - GameLogic/Wall.cpp
+      - GameLogic/Cave.cpp
+    acceptance:
+      - No legacy math type remains in these files
+      - The RaySphereIntersection call sites compile against T6 unchanged
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T17
+    title: Convert the functional buildings
+    intent: >
+      The second half of the building hierarchy — the ones with behaviour
+      rather than geometry — including TrunkPort, whose height map T3 pinned.
+    project: GameLogic
+    depends_on: [T13, T3]
+    files:
+      - GameLogic/TrunkPort.h
+      - GameLogic/TrunkPort.cpp
+      - GameLogic/Teleport.h
+      - GameLogic/Teleport.cpp
+      - GameLogic/Switch.h
+      - GameLogic/Switch.cpp
+      - GameLogic/Incubator.h
+      - GameLogic/Incubator.cpp
+      - GameLogic/FeedingTube.h
+      - GameLogic/FeedingTube.cpp
+      - GameLogic/LaserFence.h
+      - GameLogic/LaserFence.cpp
+      - GameLogic/Mine.h
+      - GameLogic/Mine.cpp
+      - GameLogic/SpiritReceiver.h
+      - GameLogic/SpiritReceiver.cpp
+      - GameLogic/SpiritStore.h
+      - GameLogic/SpiritStore.cpp
+      - GameLogic/GodDish.cpp
+      - GameLogic/Bridge.h
+      - GameLogic/Bridge.cpp
+      - GameLogic/SafeArea.h
+      - GameLogic/SafeArea.cpp
+      - GameLogic/Tree.h
+      - GameLogic/Tree.cpp
+      - GameLogic/ScriptTrigger.h
+      - GameLogic/ScriptTrigger.cpp
+    acceptance:
+      - No legacy math type remains in these files
+      - TrunkPort's height-map memset still passes T3's static_assert
+      - Tree.cpp's ConvertToOpenGLFormat call site takes an XMFLOAT4X4 by value
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T18
+    title: Convert the world, landscape and routing
+    intent: >
+      Location::Advance is the tick, the landscape is what everything stands
+      on, and RoutingSystem has unit tests — the only part of GameLogic this
+      plan touches that does.
+    project: GameLogic
+    depends_on: [T13]
+    files:
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
+      - GameLogic/LandscapeRenderer.h
+      - GameLogic/LandscapeRenderer.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/GlobalInternet.h
+      - GameLogic/GlobalInternet.cpp
+      - GameLogic/RoutingSystem.h
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/ObstructionGrid.cpp
+      - GameLogic/Water.h
+      - GameLogic/Water.cpp
+      - GameLogic/Clouds.h
+      - GameLogic/Clouds.cpp
+      - GameLogic/Snow.h
+      - GameLogic/Snow.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
+      - GameLogic/BlueprintStore.h
+      - GameLogic/BlueprintStore.cpp
+    acceptance:
+      - No legacy math type remains in these files
+      - LandscapeRenderer's vertex-buffer offsets still pass T3's static_asserts
+      - RoutingSystemTests passes unmodified
+      - Location::Advance's slice loop visits entities in the same order as before
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_containers.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+    notes: |
+      Landscape.cpp holds the SegRayIntersection2D and RayTriIntersection call
+      sites, so it depends on T7 having landed even though the edge is through
+      T13. LevelFile parses positions out of GameData text — the parse must
+      keep producing the same floats, which is a different question from the
+      arithmetic being allowed to diverge.
+
+  - id: T19
+    title: Convert weapons, effects and the task manager
+    intent: >
+      Weapons.cpp alone is the single densest math file in GameLogic, and the
+      effects carry the particle and explosion positions that GenerateSyncValue
+      sums alongside the entities.
+    project: GameLogic
+    depends_on: [T13]
+    files:
+      - GameLogic/Weapons.h
+      - GameLogic/Weapons.cpp
+      - GameLogic/Rocket.h
+      - GameLogic/Rocket.cpp
+      - GameLogic/Airstrike.h
+      - GameLogic/Airstrike.cpp
+      - GameLogic/Spam.h
+      - GameLogic/Spam.cpp
+      - GameLogic/Explosion.h
+      - GameLogic/Explosion.cpp
+      - GameLogic/ParticleSystem.h
+      - GameLogic/ParticleSystem.cpp
+      - GameLogic/Spirit.h
+      - GameLogic/Spirit.cpp
+      - GameLogic/Flag.h
+      - GameLogic/Flag.cpp
+      - GameLogic/TaskManager.h
+      - GameLogic/TaskManager.cpp
+    acceptance:
+      - No legacy math type remains in these files
+      - Spirit.cpp's syncfrand call count is unchanged at seven
+      - Weapons.cpp's PointSegDist2D call sites compile against the native routine
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      Spirit.cpp was changed by determinism.yaml T1 and its smoke test (T2
+      there) is still open. If that gate has not been run when this task
+      starts, this conversion lands a second unverified simulation change on
+      the same file. Check determinism.yaml before taking this task.
+
+  - id: T20
+    title: Convert the in-game windows
+    intent: >
+      The editor and debug windows are the only GameLogic math that never
+      reaches the simulation, so they convert last within the layer and carry
+      the least risk.
+    project: GameLogic
+    depends_on: [T13]
+    files:
+      - GameLogic/BuildingsWindow.cpp
+      - GameLogic/CheatWindow.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/TreeWindow.cpp
+    acceptance:
+      - No legacy math type remains in these files
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T21
+    title: Owner runs the Garden smoke test on the converted simulation
+    intent: >
+      This is the gate that matters most in the plan. Every float the
+      simulation computes has moved by now, and no check that runs in CI can
+      see any of it.
+    depends_on: [T14, T15, T16, T17, T18, T19, T20]
+    files:
+      - AGENTS.md
+    acceptance:
+      - All seven Garden smoke-test steps pass, owner-reported
+      - Step 5 is run for the full thirty seconds and step 7 is explicitly checked
+      - AGENTS.md records the run with its commit hash
+    status: todo
+    notes: |
+      Blocked on owner execution. All seven steps matter here, unlike T13:
+      steps 3 and 4 catch entity creation breaking, step 5 catches NaN
+      propagation stalling the advance, step 7 catches the simulation becoming
+      internally inconsistent rather than merely different from before.
+
+      If step 7 fails — the sync assert firing in SINGLE PLAYER — that is not
+      the sanctioned divergence. It means one client disagrees with itself
+      across frames, which points at uninitialised XMVECTOR lanes or a NaN, not
+      at SIMD arithmetic.
+
+  # ------------------------------------------------------------------
+  # Wave 5 — Species, the tests, and the deletion
+  # ------------------------------------------------------------------
+
+  - id: T22
+    title: Convert the renderer, camera and input
+    intent: >
+      The executable's presentation layer is where matrices are actually handed
+      to OpenGL, so it is the last place the row-major transpose decision has
+      to hold.
+    project: Species
+    depends_on: [T21]
+    files:
+      - Species/Renderer.h
+      - Species/Renderer.cpp
+      - Species/Camera.h
+      - Species/Camera.cpp
+      - Species/UserInput.h
+      - Species/UserInput.cpp
+      - Species/LocationInput.cpp
+      - Species/GameCursor.h
+      - Species/GameCursor.cpp
+      - Species/LocationEditor.h
+      - Species/LocationEditor.cpp
+      - Species/TaskManagerInterfaceIcons.h
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/3dSierpinskiGasket.h
+      - Species/3dSierpinskiGasket.cpp
+    acceptance:
+      - No legacy math type remains in these files
+      - Every matrix handed to OpenGL is transposed exactly once, at the store
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: T23
+    title: Convert the app, script and server-update code
+    intent: >
+      What is left in the executable — including GenerateSyncValue itself,
+      which accumulates the positions this whole plan changes.
+    project: Species
+    depends_on: [T21]
+    files:
+      - Species/Main.cpp
+      - Species/ServerUpdates.cpp
+      - Species/Script.cpp
+      - Species/StartSequence.cpp
+      - Species/GameMenu.cpp
+      - Species/ControlHelp.cpp
+      - Species/TaskManagerInterface.cpp
+    acceptance:
+      - No legacy math type remains in these files
+      - GenerateSyncValue accumulates in the same order over the same fields, with only the types changed
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      GenerateSyncValue is inside #ifdef TARGET_DEBUG. It is the only runtime
+      determinism check the game has, so it must keep summing the same fields
+      in the same order — the values it produces are allowed to change, the
+      traversal is not.
+
+  - id: T24
+    title: Convert the tests
+    intent: >
+      Three test files construct the legacy types directly. They cannot be left
+      behind or T25 will not compile.
+    project: Tests
+    depends_on: [T14, T18, T9]
+    files:
+      - Tests/GameLogicTests/EntityGridTests.cpp
+      - Tests/GameLogicTests/RoutingSystemTests.cpp
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
+    acceptance:
+      - No legacy math type remains in Tests/
+      - T2's byte pins are expressed on the native types and still assert the same bytes
+      - All 124 existing tests still pass, plus whatever T1 and T5-T8 added
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+
+  - id: T25
+    title: Delete the seam and the wrapper headers
+    intent: >
+      This is the task that makes the plan what it claims to be. Until the
+      headers are gone the tree has two math libraries and a conversion layer
+      between them, which is worse than either.
+    project: NeuronCore
+    depends_on: [T22, T23, T24]
+    files:
+      - NeuronCore/Vector2.h
+      - NeuronCore/Vector2.cpp
+      - NeuronCore/Vector3.h
+      - NeuronCore/Vector3.cpp
+      - NeuronCore/Matrix33.h
+      - NeuronCore/Matrix33.cpp
+      - NeuronCore/Matrix34.h
+      - NeuronCore/Matrix34.cpp
+      - NeuronCore/NeuronMath.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+    acceptance:
+      - All eight files are deleted from disk and from the project file and its filters
+      - NeuronMath.h retains the conventions block and the static_asserts, and holds no conversion operator
+      - grep -rwE 'Vector3|Vector2|Matrix33|Matrix34|Plane' over all projects returns nothing outside comments
+      - g_upVector, g_zeroVector and g_identityMatrix34 are gone or are native constants
+      - The tree builds and all tests pass
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+
+  - id: T26
+    title: Bring the documentation in line with what landed
+    intent: >
+      Four documents make claims this plan falsifies — the dependency claim,
+      the cross-architecture posture, the determinism rules and the build
+      description. Leaving them is how the next agent plans against a tree that
+      no longer exists.
+    depends_on: [T25]
+    files:
+      - AGENTS.md
+      - CODING_STANDARDS.md
+      - docs/BUILD.md
+      - docs/ARCHITECTURE.md
+    acceptance:
+      - AGENTS.md's "no third-party dependencies" claim is corrected to name DirectXMath as a Windows SDK header-only dependency
+      - AGENTS.md's cross-architecture bullet says mixed-architecture play is not supported, with the reason, rather than unproven
+      - CODING_STANDARDS.md#determinism describes the native math rules, including the ban on the *Est intrinsic family in simulation code
+      - docs/BUILD.md records the SDK requirement
+      - The repository map's NeuronCore line reflects the deleted files
+    verify:
+      - python3 tools/check_task_dag.py
+    parallel_safe: true
+    status: todo
+    notes: |
+      The *Est ban is the one new standing rule this plan creates.
+      XMVector3NormalizeEst, XMVectorReciprocalEst and the rest are explicitly
+      permitted to differ between implementations, which makes them a desync
+      between two clients on the same build — the one thing this plan is not
+      allowed to cause.
+
+  - id: T27
+    title: Owner runs the Garden smoke test on the wrapper-free tree
+    intent: >
+      The final state is not the state T21 verified: T25 deletes the seam,
+      which changes how every converted call site resolves its types. A clean
+      build is not evidence that it still runs.
+    depends_on: [T25]
+    files:
+      - AGENTS.md
+    acceptance:
+      - All seven Garden smoke-test steps pass on the wrapper-free build, owner-reported
+      - AGENTS.md records the run with its commit hash and notes that it is the post-migration baseline
+    status: todo
+    notes: |
+      Blocked on owner execution. This run is also the new baseline for the
+      simulation: from here the sync value is whatever native math produces,
+      and any future divergence is measured against this build rather than
+      against anything before it.
