@@ -697,7 +697,7 @@ tasks:
       last doubled. No std:: container reproduces it and neither would a
       different hash. What is achievable, and what T19 pins, is that template
       lines keep their exact positions and no key is lost.
-    status: todo
+    status: in_progress
 
   - id: T15
     title: Sweep up the remaining scattered container users
