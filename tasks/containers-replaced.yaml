@@ -832,7 +832,7 @@ tasks:
       intentional, and GetMaxChildTime declares a `child` local it never uses.
       Decide deliberately when converting; do not silently "tidy" the divisor,
       because it changes a displayed number.
-    status: todo
+    status: in_progress
 
   - id: T21
     title: Convert PersistingDebugRender to Neuron::SlotMap
