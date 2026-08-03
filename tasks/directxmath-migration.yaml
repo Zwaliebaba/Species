@@ -263,7 +263,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       OWNER APPROVED 2026-08-03, having been asked specifically because of the
       licence. The Möller notice is not being stripped from surviving code — the
