@@ -335,7 +335,7 @@ void TaskManagerInterfaceIcons::RestoreRenderMatrices() { g_renderer->SetupMatri
 
 void TaskManagerInterfaceIcons::Render()
 {
-  if (g_editing || !g_location || EclGetWindows()->Size())
+  if (g_editing || !g_location || EclGetWindows()->size())
     return;
 
   START_PROFILE(g_app->m_profiler, "Render Taskman");

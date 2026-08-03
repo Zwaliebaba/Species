@@ -118,7 +118,7 @@ void WindowManager::DisableOpenGL()
 // Returns an index into the list of already registered resolutions
 int WindowManager::GetResolutionId(int _width, int _height)
 {
-  for (int i = 0; i < m_resolutions.Size(); ++i)
+  for (int i = 0; i < m_resolutions.size(); ++i)
   {
     Resolution* res = m_resolutions[i];
     if (res->m_width == _width && res->m_height == _height)
@@ -141,13 +141,14 @@ void WindowManager::ListAllDisplayModes()
       if (resId == -1)
       {
         res = new Resolution(devMode.dmPelsWidth, devMode.dmPelsHeight);
-        m_resolutions.PutDataAtEnd(res);
+        m_resolutions.push_back(res);
       }
       else
         res = m_resolutions[resId];
 
-      if (res->m_refreshRates.FindData(devMode.dmDisplayFrequency) == -1)
-        res->m_refreshRates.PutDataAtEnd(devMode.dmDisplayFrequency);
+      if (res->static_cast<int>(
+            std::distance(m_refreshRates.begin(), std::find(m_refreshRates.begin(), m_refreshRates.end(), devMode.dmDisplayFrequency))) == -1)
+        res->m_refreshRates.push_back(devMode.dmDisplayFrequency);
     }
     ++i;
   }
@@ -155,7 +156,7 @@ void WindowManager::ListAllDisplayModes()
 
 Resolution* WindowManager::GetResolution(int _id)
 {
-  if (m_resolutions.ValidIndex(_id))
+  if ((_id >= 0 && _id < static_cast<int>(m_resolutions.size())))
     return m_resolutions[_id];
 
   return nullptr;

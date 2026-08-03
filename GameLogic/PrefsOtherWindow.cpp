@@ -92,12 +92,13 @@ class ApplyOtherButton : public SpeciesButton
 
 		if( removeWindows )
 		{
-			LList<EclWindow *> *windows = EclGetWindows();
-	        while (windows->Size() > 0) {
-		        EclWindow *w = windows->GetData(0);
-                EclRemoveWindow(w->m_name);
-	        }
-		}
+      std::vector<EclWindow*>* windows = EclGetWindows();
+      while (windows->size() > 0)
+      {
+        EclWindow* w = (*windows)[0];
+        EclRemoveWindow(w->m_name);
+      }
+    }
 
         g_prefsManager->Save();
     }

@@ -320,11 +320,15 @@ SpeciesWindow::SpeciesWindow( char const *name )
 
 SpeciesWindow::~SpeciesWindow()
 {
-	LList<EclWindow *> *windows = EclGetWindows();
-	if( windows->GetData(0) )
-	{
-		EclSetCurrentFocus( windows->GetData(0)->m_name );
-	}
+  std::vector<EclWindow*>* windows = EclGetWindows();
+  // The emptiness check is not redundant. LList::GetData returned a null T()
+  // for an out-of-range read — LListTests pins that as
+  // OutOfRangeReadsReturnZero — so this `if` was doing double duty as a
+  // bounds check. std::vector would be undefined behaviour on an empty list.
+  if (!windows->empty() && (*windows)[0])
+  {
+    EclSetCurrentFocus((*windows)[0]->m_name);
+  }
 }
 
 
@@ -414,11 +418,11 @@ void SpeciesWindow::Create()
 
 void SpeciesWindow::Remove()
 {
-    while( m_buttons.Size() > 0 )
-    {
-        EclButton *button = m_buttons.GetData(0);
-        RemoveButton( button->m_name );
-    }
+  while (m_buttons.size() > 0)
+  {
+    EclButton* button = m_buttons[0];
+    RemoveButton(button->m_name);
+  }
     m_buttonOrder.Empty();
     m_currentButton = 0;
 }

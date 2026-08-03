@@ -5,12 +5,12 @@
 
 // ============================================================================
 
-static LList <EclWindow *> windows;
+static std::vector<EclWindow*> windows;
 
 static void (*clearDraw) (int, int, int, int) = nullptr;
 static void (*tooltipCallback) (EclWindow *, EclButton *) = nullptr;
 
-static LList <DirtyRect *> dirtyrects;
+static std::vector<DirtyRect*> dirtyrects;
 
 static int buttonDownMouseX = 0;
 static int buttonDownMouseY = 0;
@@ -306,24 +306,25 @@ void EclRender ()
 
         if ( clearDraw )
         {
-            for( int i = 0; i < dirtyrects.Size(); ++i )
-            {
-                DirtyRect *dr = dirtyrects.GetData(i);
-                clearDraw ( dr->m_x, dr->m_y, dr->m_width, dr->m_height );
-            }
+          for (int i = 0; i < dirtyrects.size(); ++i)
+          {
+            DirtyRect* dr = dirtyrects[i];
+            clearDraw(dr->m_x, dr->m_y, dr->m_width, dr->m_height);
+          }
         }
 
         //
         // Draw all dirty buttons
 
-        for ( int i = windows.Size() - 1; i >= 0; --i )
+        for (int i = windows.size() - 1; i >= 0; --i)
         {
-            EclWindow *window = windows.GetData(i);
-            if ( window->m_dirty ) {
-                bool hasFocus = ( strcmp ( window->m_name, windowFocus ) == 0 );
-                window->Render( hasFocus );
-                //window->m_dirty = false;
-            }
+          EclWindow* window = windows[i];
+          if (window->m_dirty)
+          {
+            bool hasFocus = (strcmp(window->m_name, windowFocus) == 0);
+            window->Render(hasFocus);
+            // window->m_dirty = false;
+          }
         }
 
     }
@@ -336,18 +337,30 @@ void EclUpdate ()
     //
     // Update all windows
 
-    for ( int i = 0; i < windows.Size(); ++i )
+    for (int i = 0; i < windows.size(); ++i)
     {
-        EclWindow *window = windows.GetData(i);
-        window->Update();
+      EclWindow* window = windows[i];
+      window->Update();
     }
 
 }
 
 void EclShutdown ()
 {
-    windows.EmptyAndDelete();
-    dirtyrects.EmptyAndDelete();
+  {
+    for (auto* item : windows)
+    {
+      delete item;
+    }
+    windows.clear();
+  };
+  {
+    for (auto* item : dirtyrects)
+    {
+      delete item;
+    }
+    dirtyrects.clear();
+  };
 }
 
 char *EclGetCurrentButton ()
@@ -399,10 +412,9 @@ void EclRegisterWindow ( EclWindow *window, EclWindow *parent )
     }
 
 	window->MakeAllOnScreen();
-    windows.PutDataAtStart ( window );
-    window->Create();
-    EclDirtyWindow( window );
-
+  windows.insert(windows.begin(), window);
+  window->Create();
+  EclDirtyWindow(window);
 }
 
 void EclRegisterPopup ( EclWindow *window )
@@ -428,16 +440,15 @@ void EclRemoveWindow ( char const *name )
     int index = EclGetWindowIndex(name);
     if ( index != -1 )
     {
-    
-        EclWindow *window = windows.GetData(index);
-        EclDirtyRectangle ( window->m_x, window->m_y, window->m_w, window->m_h );
-        windows.RemoveData(index);
-        delete window;
+      EclWindow* window = windows[index];
+      EclDirtyRectangle(window->m_x, window->m_y, window->m_w, window->m_h);
+      windows.erase(windows.begin() + (index));
+      delete window;
 
-        if( strcmp( mouseDownWindow, name ) == 0 )
-        {
-            strcpy( mouseDownWindow, "None" );
-        }
+      if (strcmp(mouseDownWindow, name) == 0)
+      {
+        strcpy(mouseDownWindow, "None");
+      }
 
         if( strcmp( windowFocus, name ) == 0 )
         {
@@ -492,10 +503,10 @@ void EclBringWindowToFront ( char *name )
     int index = EclGetWindowIndex(name);
     if ( index != -1 )
     {
-        EclWindow *window = windows.GetData(index);
-        windows.RemoveData(index);
-        windows.PutDataAtStart(window);
-        EclDirtyWindow( window );
+      EclWindow* window = windows[index];
+      windows.erase(windows.begin() + (index));
+      windows.insert(windows.begin(), window);
+      EclDirtyWindow(window);
     }
     else
     {
@@ -529,12 +540,12 @@ bool EclIsTextEditing()
 
 int EclGetWindowIndex ( char const *name )
 {
-    for ( int i = 0; i < windows.Size(); ++i )
-    {
-        EclWindow *window = windows.GetData(i);
-        if ( strcmp ( window->m_name, name ) == 0 )
-            return i;
-    }
+  for (int i = 0; i < windows.size(); ++i)
+  {
+    EclWindow* window = windows[i];
+    if (strcmp(window->m_name, name) == 0)
+      return i;
+  }
 
     return -1;
 }
@@ -549,23 +560,21 @@ EclWindow *EclGetWindow ( char const *name )
     }
     else
     {
-        return windows.GetData(index);
+      return windows[index];
     }
 
 }
 
 EclWindow *EclGetWindow ( int x, int y )
 {
-
-    for ( int i = 0; i < windows.Size(); ++i )
+  for (int i = 0; i < windows.size(); ++i)
+  {
+    EclWindow* window = windows[i];
+    if (x >= window->m_x && x <= window->m_x + window->m_w && y >= window->m_y && y <= window->m_y + window->m_h)
     {
-        EclWindow *window = windows.GetData(i);
-        if ( x >= window->m_x && x <= window->m_x + window->m_w &&
-             y >= window->m_y && y <= window->m_y + window->m_h )
-        {
-            return window;
-        }
+      return window;
     }
+  }
 
     return nullptr;
 }
@@ -602,10 +611,7 @@ void EclUnMaximise ()
     EclDirtyRectangle( 0, 0, screenW, screenH );
 }
 
-LList <EclWindow *> *EclGetWindows ()
-{
-    return &windows;
-}
+std::vector<EclWindow*>* EclGetWindows() { return &windows; }
 
 int EclGetAccurateTime ()
 {
@@ -655,36 +661,33 @@ void EclDirtyWindow ( EclWindow *window )
 void EclDirtyRectangle ( int x, int y, int w, int h )
 {
     DirtyRect *dr = new DirtyRect(x, y, w, h);
-    dirtyrects.PutData( dr );
+    dirtyrects.push_back(dr);
 
-    for ( int i = 0; i < windows.Size(); ++i )
+    for (int i = 0; i < windows.size(); ++i)
     {
-        EclWindow *window = windows.GetData(i);
-        if ( EclRectangleOverlap( x, y, w, h, window->m_x, window->m_y, window->m_w, window->m_h ) )
-            EclDirtyWindow ( window );
+      EclWindow* window = windows[i];
+      if (EclRectangleOverlap(x, y, w, h, window->m_x, window->m_y, window->m_w, window->m_h))
+        EclDirtyWindow(window);
     }
 }
 
 void EclResetDirtyRectangles ()
 {
-    while ( dirtyrects.GetData(0) )
-    {
-        DirtyRect *dr = dirtyrects.GetData(0);
-        delete dr;
-        dirtyrects.RemoveData(0);
-    }    
+  while (dirtyrects[0])
+  {
+    DirtyRect* dr = dirtyrects[0];
+    delete dr;
+    dirtyrects.erase(dirtyrects.begin() + (0));
+  }
 
-    for( int i =0; i < windows.Size(); ++i )
-    {
-        EclWindow *window = windows.GetData(i);
-        window->m_dirty = false;
-    }
+  for (int i = 0; i < windows.size(); ++i)
+  {
+    EclWindow* window = windows[i];
+    window->m_dirty = false;
+  }
 }
 
-LList<DirtyRect *> *EclGetDirtyRects ()
-{
-    return &dirtyrects;
-}
+std::vector<DirtyRect*>* EclGetDirtyRects() { return &dirtyrects; }
 
 bool EclRectangleOverlap ( int x1, int y1, int w1, int h1,
 						   int x2, int y2, int w2, int h2 )

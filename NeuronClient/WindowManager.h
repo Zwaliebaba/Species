@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 
 #include "LList.h"
 
@@ -16,9 +18,13 @@ class Resolution
 public:
 	int			m_width;
 	int			m_height;
-	LList <int>	m_refreshRates;
+  std::vector<int> m_refreshRates;
 
-	Resolution(int _width, int _height): m_width(_width), m_height(_height) {}
+  Resolution(int _width, int _height)
+    : m_width(_width),
+      m_height(_height)
+  {
+  }
 };
 
 
@@ -29,10 +35,10 @@ public:
 class WindowManager
 {
 public:
-	LList		<Resolution *> m_resolutions;
-	WindowManagerWin32 *m_win32Specific;
-	bool		m_mousePointerVisible;
-	bool		m_invertY;	// Whether the Y coordinate needs to be inverted or not.
+  std::vector<Resolution*> m_resolutions;
+  WindowManagerWin32* m_win32Specific;
+  bool m_mousePointerVisible;
+  bool m_invertY; // Whether the Y coordinate needs to be inverted or not.
 
 protected:
 	int			m_screenW;	// Cached values. Use Renderer::ScreenW() if you

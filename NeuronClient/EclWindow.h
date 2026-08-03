@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <vector>
+
 #define SIZE_ECLWINDOW_NAME     256
 #define SIZE_ECLWINDOW_TITLE    256
 
@@ -35,10 +37,9 @@ public:
     bool        m_resizable;
     bool        m_dirty;
 
-    LList       <EclButton *> m_buttons;
+    std::vector<EclButton*> m_buttons;
 
-public:
-
+  public:
     char        m_currentTextEdit[SIZE_ECLWINDOW_NAME];
 
 public:

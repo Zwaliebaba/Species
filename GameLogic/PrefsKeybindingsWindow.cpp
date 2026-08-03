@@ -296,12 +296,12 @@ void PrefsKeybindingsWindow::Create()
 
 void PrefsKeybindingsWindow::Remove()
 {
-    while( m_buttons.Size() )
-    {
-        EclButton *button = m_buttons[0];
-        delete button;
-        m_buttons.RemoveData(0);
-    }
+  while (m_buttons.size())
+  {
+    EclButton* button = m_buttons[0];
+    delete button;
+    m_buttons.erase(m_buttons.begin() + (0));
+  }
     m_buttonOrder.Empty();
     m_currentButton = 0;
 }

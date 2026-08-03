@@ -22,15 +22,13 @@ EclWindow::EclWindow( char const *_name )
 
 EclWindow::~EclWindow()
 {
-    
-    while ( m_buttons.GetData(0) )
-    {
-        EclButton *button = m_buttons.GetData(0);
-        delete button;
-        m_buttons.RemoveData(0);
-    }
-    m_buttons.Empty();
-
+  while (m_buttons[0])
+  {
+    EclButton* button = m_buttons[0];
+    delete button;
+    m_buttons.erase(m_buttons.begin() + (0));
+  }
+  m_buttons.clear();
 }
 
 void EclWindow::SetName ( char const *_name )
@@ -100,59 +98,55 @@ void EclWindow::RegisterButton ( EclButton *button )
 {
     button->SetParent( this );
 
-    m_buttons.PutDataAtStart ( button );
-	
-	if (button->m_y + button->m_h + 10 > m_h)
-	{
-		SetSize(m_w, button->m_y + button->m_h + 10);
-		MakeAllOnScreen();
-	}
-    
-	EclDirtyWindow ( this );
+    m_buttons.insert(m_buttons.begin(), button);
+
+    if (button->m_y + button->m_h + 10 > m_h)
+    {
+      SetSize(m_w, button->m_y + button->m_h + 10);
+      MakeAllOnScreen();
+    }
+
+    EclDirtyWindow(this);
 }
 
 void EclWindow::RemoveButton ( char const *_name )
 {
-    for ( int i = 0; i < m_buttons.Size(); ++i )
+  for (int i = 0; i < m_buttons.size(); ++i)
+  {
+    EclButton* button = m_buttons.GetData(i);
+    if (strcmp(button->m_name, _name) == 0)
     {
-        EclButton *button = m_buttons.GetData (i);
-        if ( strcmp ( button->m_name, _name ) == 0 )
-        {
-            m_buttons.RemoveData(i);
-            delete button;
-        }
-    }            
+      m_buttons.erase(m_buttons.begin() + (i));
+      delete button;
+    }
+  }
 }
 
 EclButton *EclWindow::GetButton ( char const *_name )
 {
+  for (int i = 0; i < m_buttons.size(); ++i)
+  {
+    EclButton* button = m_buttons.GetData(i);
+    if (strcmp(button->m_name, _name) == 0)
+      return button;
+  }
 
-    for ( int i = 0; i < m_buttons.Size(); ++i )
-    {
-        EclButton *button = m_buttons.GetData (i);
-        if ( strcmp ( button->m_name, _name ) == 0 )
-            return button;
-    }
-    
     return nullptr;
 
 }
 
 EclButton *EclWindow::GetButton ( int _x, int _y )
 {
-    
-    for ( int i = 0; i < m_buttons.Size(); ++i )
-    {
-        EclButton *button = m_buttons.GetData (i);
-        
-        if ( _x >= button->m_x && _x <= button->m_x + button->m_w &&
-             _y >= button->m_y && _y <= button->m_y + button->m_h )
-        {
-            return button;
-        }
+  for (int i = 0; i < m_buttons.size(); ++i)
+  {
+    EclButton* button = m_buttons.GetData(i);
 
+    if (_x >= button->m_x && _x <= button->m_x + button->m_w && _y >= button->m_y && _y <= button->m_y + button->m_h)
+    {
+      return button;
     }
-    
+  }
+
     return nullptr;
 
 }
@@ -184,12 +178,12 @@ void EclWindow::MouseEvent ( bool lmb, bool rmb, bool up, bool down )
 
 void EclWindow::Render ( bool hasFocus )
 {
-    for ( int i = m_buttons.Size()-1; i >= 0; --i )
-    {
-        EclButton *button = m_buttons.GetData (i);
-        bool highlighted = EclMouseInButton( this, button ) || strcmp(m_currentTextEdit, button->m_name) == 0;
-        bool clicked = ( hasFocus && strcmp ( EclGetCurrentClickedButton(), button->m_name ) == 0 );
-        button->Render( m_x + button->m_x, m_y + button->m_y, highlighted, clicked );
-    }
+  for (int i = m_buttons.size() - 1; i >= 0; --i)
+  {
+    EclButton* button = m_buttons.GetData(i);
+    bool highlighted = EclMouseInButton(this, button) || strcmp(m_currentTextEdit, button->m_name) == 0;
+    bool clicked = (hasFocus && strcmp(EclGetCurrentClickedButton(), button->m_name) == 0);
+    button->Render(m_x + button->m_x, m_y + button->m_y, highlighted, clicked);
+  }
 }
 

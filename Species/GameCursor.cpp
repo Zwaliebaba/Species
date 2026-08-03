@@ -300,10 +300,10 @@ void GameCursor::Render()
 	glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 	glTexParameterf ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
-    if( g_editing || EclGetWindows()->Size() > 0 )
-    {
-        // Editing
-    }
+  if (g_editing || EclGetWindows()->size() > 0)
+  {
+    // Editing
+  }
     else if( chatLog )
     {
         // Reading Sepulveda's history

@@ -150,10 +150,10 @@ void CameraAnimMainEditWindow::AddButtons()
 
 void CameraAnimMainEditWindow::RemoveButtons()
 {
-	while (m_buttons.Size())
-	{
-		RemoveButton(m_buttons[0]->m_name);
-	}
+  while (m_buttons.size())
+  {
+    RemoveButton(m_buttons[0]->m_name);
+  }
 }
 
 
@@ -383,15 +383,15 @@ void CameraAnimSecondaryEditWindow::AddButtons()
 
 void CameraAnimSecondaryEditWindow::RemoveButtons()
 {
-	for (int i = 0; i < m_buttons.Size(); ++i)
-	{
-		EclButton *but = m_buttons[i];
-		if (stricmp(but->m_name, "Close") != 0)
-		{
-			RemoveButton(m_buttons[i]->m_name);
-			--i;
-		}
-	}
+  for (int i = 0; i < m_buttons.size(); ++i)
+  {
+    EclButton* but = m_buttons[i];
+    if (stricmp(but->m_name, "Close") != 0)
+    {
+      RemoveButton(m_buttons[i]->m_name);
+      --i;
+    }
+  }
 }
 
 

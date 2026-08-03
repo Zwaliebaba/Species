@@ -82,9 +82,9 @@ void Camera::AdvanceDebugMode()
     speedForwards /= 10.0f;
   }
 
-  //speedForwards *= 20.0f;
-  // TODO: Support mouse/joystick
-  //if( EclGetWindows()->Size() == 0 )
+  // speedForwards *= 20.0f;
+  //  TODO: Support mouse/joystick
+  // if( EclGetWindows()->size() == 0 )
   {
     static DPadMovement cam_slide(ControlCameraForwards, ControlCameraBackwards, ControlCameraLeft, ControlCameraRight, ControlCameraUp,
                                   ControlCameraDown, 1);
@@ -974,7 +974,7 @@ bool Camera::AdvanceManualCameraHeight(Vector3& cameraTarget)
 
   bool camDown = false;
 
-  if (EclGetWindows()->Size() == 0)
+  if (EclGetWindows()->size() == 0)
   {
     if (g_inputManager->controlEvent(ControlCameraUp))
     {
@@ -1841,7 +1841,7 @@ void Camera::AdvanceComponentMouseWheelHeight()
 {
   float delta = g_target->dZ();
 
-  if (EclGetWindows()->Size() == 0)
+  if (EclGetWindows()->size() == 0)
   {
     bool keyUp = g_inputManager->controlEvent(ControlCameraUp);
     bool keyDown = g_inputManager->controlEvent(ControlCameraDown);
@@ -1985,8 +1985,8 @@ void Camera::Advance()
   //
   // Pick an advancer
 
-  if (m_anim == nullptr && (m_debugMode == DebugModeAlways || (m_debugMode == DebugModeAuto && EclGetWindows()->Size() > 0) ||
-    m_framesInThisMode < 2))
+  if (m_anim == nullptr &&
+      (m_debugMode == DebugModeAlways || (m_debugMode == DebugModeAuto && EclGetWindows()->size() > 0) || m_framesInThisMode < 2))
   {
     g_windowManager->EnsureMouseUncaptured();
     AdvanceDebugMode();

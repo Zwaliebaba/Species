@@ -472,12 +472,10 @@ void LocationInput::Advance()
 {
 	bool chatLog = false;
 
-    if( g_globalWorld->m_myTeamId != 255 &&
-        EclGetWindows()->Size() == 0 &&
-        !chatLog )
-    {
-        AdvanceTeamControl();
-    }
+  if (g_globalWorld->m_myTeamId != 255 && EclGetWindows()->size() == 0 && !chatLog)
+  {
+    AdvanceTeamControl();
+  }
 }
 
 

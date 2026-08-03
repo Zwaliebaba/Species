@@ -36,13 +36,13 @@ class ScreenResDropDownMenu : public DropDownMenu
         Resolution *resolution = g_windowManager->GetResolution( _option );
         if( resolution )
         {
-            for( int i = 0; i < resolution->m_refreshRates.Size(); ++i )
-            {
-                int thisRate = resolution->m_refreshRates[i];
-                char caption[64];
-                sprintf( caption, "%d Hz", thisRate );
-                refresh->AddOption( caption, thisRate );
-            }
+          for (int i = 0; i < resolution->m_refreshRates.size(); ++i)
+          {
+            int thisRate = resolution->m_refreshRates[i];
+            char caption[64];
+            sprintf(caption, "%d Hz", thisRate);
+            refresh->AddOption(caption, thisRate);
+          }
             refresh->SelectOption( parent->m_refreshRate );
         }
     }
@@ -85,24 +85,25 @@ static void AdjustWindowPositions(int _newWidth, int _newHeight, int _oldWidth, 
 		// Resolution has changed, adjust the window positions accordingly
 		EclInitialise( _newWidth, _newHeight );
 
-		LList<EclWindow *> *windows = EclGetWindows();
-		for (int i = 0; i < windows->Size(); i++) {
-			EclWindow *w = windows->GetData(i);
+    std::vector<EclWindow*>* windows = EclGetWindows();
+    for (int i = 0; i < windows->size(); i++)
+    {
+      EclWindow* w = (*windows)[i];
 
-			// We attempt to keep the centre of the window in the same place
+      // We attempt to keep the centre of the window in the same place
 
-			double halfWidth = w->m_w / 2.0;
-			double halfHeight = w->m_h / 2.0;
+      double halfWidth = w->m_w / 2.0;
+      double halfHeight = w->m_h / 2.0;
 
-			double oldCentreX = w->m_x + halfWidth;
-			double oldCentreY = w->m_y + halfHeight;
+      double oldCentreX = w->m_x + halfWidth;
+      double oldCentreY = w->m_y + halfHeight;
 
-			double newCentreX = oldCentreX * _newWidth / _oldWidth;
-			double newCentreY = oldCentreY * _newHeight / _oldHeight;
+      double newCentreX = oldCentreX * _newWidth / _oldWidth;
+      double newCentreY = oldCentreY * _newHeight / _oldHeight;
 
-			w->SetPosition( int( newCentreX - halfWidth ), int( newCentreY - halfHeight ) );
-		}
-	}
+      w->SetPosition(int(newCentreX - halfWidth), int(newCentreY - halfHeight));
+    }
+  }
 }
 
 
@@ -264,7 +265,7 @@ void PrefsScreenWindow::Create()
 
     ScreenResDropDownMenu *screenRes = new ScreenResDropDownMenu();
     screenRes->SetShortProperties( LANGUAGEPHRASE("dialog_resolution"), x, y+=border, buttonW, buttonH );
-    for( int i = 0; i < g_windowManager->m_resolutions.Size(); ++i )
+    for (int i = 0; i < g_windowManager->m_resolutions.size(); ++i)
     {
         Resolution *resolution = g_windowManager->m_resolutions[i];
         char caption[64];

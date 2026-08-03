@@ -193,14 +193,14 @@ bool ProcessServerLetters(ServerToClientLetter* letter)
   }
 }
 
-bool WindowsOnScreen() { return EclGetWindows()->Size() > 0; }
+bool WindowsOnScreen() { return EclGetWindows()->size() > 0; }
 
 void RemoveAllWindows()
 {
-  LList<EclWindow*>* windows = EclGetWindows();
-  while (windows->Size() > 0)
+  std::vector<EclWindow*>* windows = EclGetWindows();
+  while (windows->size() > 0)
   {
-    EclWindow* w = windows->GetData(0);
+    EclWindow* w = (*windows)[0];
     EclRemoveWindow(w->m_name);
   }
 }
@@ -482,7 +482,7 @@ void LocationGameLoop()
           }
         }
 
-        if (g_taskManagerInterface->m_visible || EclGetWindows()->Size() != 0 || chatLog || entityUnderMouse)
+        if (g_taskManagerInterface->m_visible || EclGetWindows()->size() != 0 || chatLog || entityUnderMouse)
           teamControls.ClearFlags();
 
         g_app->m_clientToServer->SendIAmAlive(g_globalWorld->m_myTeamId, teamControls);

@@ -78,10 +78,7 @@ int TargetCursor::dZ() const {
 }
 
 
-bool secondaryInputEnabled() {
-	return ( EclGetWindows()->Size() == 0 ) &&
-		!g_taskManagerInterface->m_visible;
-}
+bool secondaryInputEnabled() { return (EclGetWindows()->size() == 0) && !g_taskManagerInterface->m_visible; }
 
 void TargetCursor::Advance() {
 	InputDetails details;

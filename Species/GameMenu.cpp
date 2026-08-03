@@ -280,10 +280,10 @@ void GameMenu::CreateMenu()
 {
   TheRenderer()->StartFadeIn(0.25f);
   // close all currently open windows
-  LList<EclWindow*>* windows = EclGetWindows();
-  while (windows->Size() > 0)
+  std::vector<EclWindow*>* windows = EclGetWindows();
+  while (windows->size() > 0)
   {
-    EclWindow* w = windows->GetData(0);
+    EclWindow* w = (*windows)[0];
     EclRemoveWindow(w->m_name);
   }
 

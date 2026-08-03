@@ -1291,7 +1291,7 @@ void GlobalWorld::Advance()
     bool chatLog = false;
 
     // Has the user clicked on a location?
-    if (g_inputManager->controlEvent(ControlSelectLocation) && m_locationRequested == -1 && EclGetWindows()->Size() == 0 && !chatLog)
+    if (g_inputManager->controlEvent(ControlSelectLocation) && m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
       Vector3 rayStart, rayDir;
       g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
@@ -1324,7 +1324,7 @@ void GlobalWorld::Advance()
       }
     }
     // Is the cursor attracted to a point?
-    else if (m_locationRequested == -1 && EclGetWindows()->Size() == 0 && !chatLog)
+    else if (m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
       Vector3 rayStart, rayDir;
       g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);

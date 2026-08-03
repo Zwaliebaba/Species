@@ -306,6 +306,20 @@ tasks:
       - NeuronClient/EclWindow.h
       - NeuronClient/WindowManager.cpp
       - NeuronClient/WindowManager.h
+      - NeuronClient/TargetCursor.cpp
+      - GameLogic/MainMenus.cpp
+      - GameLogic/PrefsScreenWindow.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/PrefsKeybindingsWindow.cpp
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/CameraAnimWindow.cpp
+      - Species/Camera.cpp
+      - Species/GameMenu.cpp
+      - Species/GameCursor.cpp
+      - Species/Main.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/LocationInput.cpp
+      - Species/GlobalWorld.cpp
     acceptance:
       - grep -lw LList on the six files returns nothing
       - Draw order and event-dispatch order are by-construction identical (insertion-ordered vector)
@@ -314,7 +328,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T8
     title: Convert Shape and ClientToServer containers

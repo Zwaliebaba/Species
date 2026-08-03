@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "EclWindow.h"
 #include "EclButton.h"
 
@@ -59,7 +61,7 @@ char *EclGetCurrentFocus             ();
 void EclSetCurrentFocus              ( char *name );
 
 char *EclGenerateUniqueWindowName( char *name );                                // In static mem (don't delete!)
-LList <EclWindow *> *EclGetWindows ();
+std::vector<EclWindow*>* EclGetWindows();
 
 // ============================================================================
 // Dirty rectangles
@@ -88,7 +90,7 @@ bool EclRectangleOverlap        ( int x1, int y1, int w1, int h1,
 
 void EclResetDirtyRectangles    ();
 
-LList<DirtyRect *> *EclGetDirtyRects ();
+std::vector<DirtyRect*>* EclGetDirtyRects();
 
 
 // ============================================================================
