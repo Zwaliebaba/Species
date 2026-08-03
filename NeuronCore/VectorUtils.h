@@ -47,4 +47,27 @@ namespace Neuron
       delete element;
     _vector.clear();
   }
+
+  // Copies into a fixed char array, truncating rather than overrunning.
+  //
+  // Transitional, like EmptyAndDelete above. It exists for fields that cannot
+  // become a std::string yet because something else still writes through a raw
+  // char* into them — InputField does exactly that for every editable name in
+  // the editor, and strings-modernised/T5 is what changes it. Until then the
+  // copies into those fields have to be bounded somehow, and one helper is
+  // better than the same six lines written out at each site.
+  //
+  // Not std::min in the length clamp: MathUtils.h defines function-style min
+  // and max macros, so `std::min(` becomes `std::(...)(` anywhere it is
+  // reachable. See tasks/language-hygiene.yaml T8.
+  template <size_t N> inline void CopyInto(char (&_dest)[N], std::string_view _source)
+  {
+    size_t length = _source.size();
+    if (length > N - 1)
+    {
+      length = N - 1;
+    }
+    std::memcpy(_dest, _source.data(), length);
+    _dest[length] = '\0';
+  }
 } // namespace Neuron

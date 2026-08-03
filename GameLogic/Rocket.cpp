@@ -397,9 +397,9 @@ void FuelGenerator::RenderAlphas(float _predictionTime)
 
 char const* FuelGenerator::GetObjectiveCounter()
 {
-  static char buffer[256];
-  sprintf(buffer, "%s %d%%", LANGUAGEPHRASE("objective_fuelpressure"), int(m_currentLevel * 100));
-  return buffer;
+  static std::string buffer;
+  buffer = std::format("{} {}%", LANGUAGEPHRASE("objective_fuelpressure"), int(m_currentLevel * 100));
+  return buffer.c_str();
 }
 
 
@@ -739,10 +739,9 @@ EscapeRocket::EscapeRocket()
 
   for (int i = 0; i < 3; ++i)
   {
-    char name[256];
-    sprintf(name, "MarkerWindow0%d", i + 1);
-    m_window[i] = m_shape->m_rootFragment->LookupMarker(name);
-    ASSERT_TEXT(m_window[i], "%s not found", name);
+    const std::string name = std::format("MarkerWindow0{}", i + 1);
+    m_window[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
+    ASSERT_TEXT(m_window[i], "%s not found", name.c_str());
   }
 }
 
@@ -799,16 +798,16 @@ void EscapeRocket::SetupSounds()
     break;
   }
 
-  char fullName[256];
+  std::string fullName;
   if (requiredSoundName)
-    sprintf(fullName, "EscapeRocket %s", requiredSoundName);
+    fullName = std::format("EscapeRocket {}", requiredSoundName);
 
 
   //
   // If we're not set up right, kill all sounds first
 
 
-  int numInstances = requiredSoundName ? g_soundSystem->NumInstances(m_id, fullName) : 0;
+  int numInstances = requiredSoundName ? g_soundSystem->NumInstances(m_id, fullName.c_str()) : 0;
 
   if (!requiredSoundName || numInstances == 0)
   {
@@ -864,9 +863,9 @@ void EscapeRocket::Initialise(Building* _template)
 
 char const* EscapeRocket::GetObjectiveCounter()
 {
-  static char buffer[256];
-  sprintf(buffer, "%s %d%%, %s %d%%", LANGUAGEPHRASE("objective_fuel"), (int)m_fuel, LANGUAGEPHRASE("objective_passengers"), (int)m_passengers);
-  return buffer;
+  static std::string buffer;
+  buffer = std::format("{} {}%, {} {}%", LANGUAGEPHRASE("objective_fuel"), (int)m_fuel, LANGUAGEPHRASE("objective_passengers"), (int)m_passengers);
+  return buffer.c_str();
 }
 
 

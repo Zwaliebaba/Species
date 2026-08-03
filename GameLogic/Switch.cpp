@@ -41,7 +41,7 @@ FenceSwitch::FenceSwitch()
 {
   m_type = Building::TypeFenceSwitch;
   SetShape(g_resource->GetShape("FenceSwitch.shp"));
-  strcpy(m_script, "none");
+  CopyInto(m_script, "none");
 }
 
 
@@ -55,7 +55,7 @@ void FenceSwitch::Initialise(Building* _template)
   m_switchValue = ((FenceSwitch*)_template)->m_switchValue;
   m_lockable = ((FenceSwitch*)_template)->m_lockable;
   m_locked = ((FenceSwitch*)_template)->m_locked;
-  strcpy(m_script, ((FenceSwitch*)_template)->m_script);
+  CopyInto(m_script, ((FenceSwitch*)_template)->m_script);
 }
 
 void FenceSwitch::SetDetail(int _detail)
@@ -327,7 +327,7 @@ void FenceSwitch::Read(TextReader* _in, bool _dynamic)
   m_linkedBuildingId2 = atoi(_in->GetNextToken());
   m_switchValue = atoi(_in->GetNextToken());
   m_lockable = atoi(_in->GetNextToken());
-  strcpy(m_script, _in->GetNextToken());
+  CopyInto(m_script, _in->GetNextToken());
   if (_in->TokenAvailable())
   {
     int locked = atoi(_in->GetNextToken());
