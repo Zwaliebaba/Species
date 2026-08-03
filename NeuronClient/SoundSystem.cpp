@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "BTree.h" // BTree<float> in AdvanceSoundEvents; used to arrive via LanguageTable.h
 #include "Debug.h"
 #include "FilesysUtils.h"
 #include "FileWriter.h"
