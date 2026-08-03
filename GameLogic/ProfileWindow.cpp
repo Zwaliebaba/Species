@@ -36,17 +36,23 @@ class ProfilerButton : public SpeciesButton
       {
         g_profiler->ResetHistory();
       }
+      // SetCaption, not a raw copy into the buffer. m_caption is a char*
+      // pointing at an allocation sized to the caption it was given, so writing
+      // into it directly only ever worked
+      // because "Min", "Avg" and "Max" are all three characters — a four-letter
+      // caption here would have overrun the heap block. SetCaption reallocates.
+      // The member itself stays a char*; that is strings-modernised T11's.
       else if (stricmp(m_caption, "Min") == 0)
       {
-        strcpy(m_caption, "Avg");
+        SetCaption("Avg");
       }
       else if (stricmp(m_caption, "Avg") == 0)
       {
-        strcpy(m_caption, "Max");
+        SetCaption("Max");
       }
       else if (stricmp(m_caption, "Max") == 0)
       {
-        strcpy(m_caption, "Min");
+        SetCaption("Min");
       }
     }
 };
@@ -72,7 +78,6 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
     return;
 
   int left = m_x + 10;
-  char caption[256];
   EclButton* minAvgMaxButton = GetButton("Avg");
   int minAvgMax = 0;
   if (stricmp(minAvgMaxButton->m_caption, "Avg") == 0)
@@ -113,8 +118,14 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
         lastColumn = child->m_longest;
       lastColumn *= 1000.0f;
 
-      sprintf(caption, "%*s%-*s:%5d x%4.2f = %4.0f %4.2f", _indent + 1, icon, 24 - _indent, child->m_name, child->m_lastNumCalls,
-              time / (float)child->m_lastNumCalls, time, lastColumn);
+      // %*s and %-*s take their width from an argument; std::format spells that
+      // {:>{}} and {:<{}}. The left-aligned width is clamped at zero because a
+      // negative dynamic width throws in std::format, where printf read it as
+      // the "-" flag it already had. That only differs for _indent above 24,
+      // which is whitespace in a debug overlay.
+      const std::string caption =
+        std::format("{:>{}}{:<{}}:{:5} x{:4.2f} = {:4.0f} {:4.2f}", icon, _indent + 1, child->m_name, std::max(0, 24 - _indent),
+                    child->m_lastNumCalls, time / (float)child->m_lastNumCalls, time, lastColumn);
       int brightness = (time / largestTime) * 150.0f + 105.0f;
       if (brightness < 105)
         brightness = 105;
@@ -134,7 +145,7 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
         }
       }
 
-      g_editorFont.DrawText2D(left, m_yPos += 12, DEF_FONT_SIZE, caption);
+      g_editorFont.DrawText2D(left, m_yPos += 12, DEF_FONT_SIZE, caption.c_str());
 
       int lineLeft = left + 360;
       int lineY = m_yPos - 6;

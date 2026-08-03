@@ -228,11 +228,10 @@ void PrefsOtherWindow::Create()
   language->SetShortProperties(LANGUAGEPHRASE("dialog_language"), x, y += h, buttonW, buttonH);
   for (int i = 0; i < static_cast<int>(m_languages.size()); ++i)
   {
-    char languageString[256];
-    sprintf(languageString, "language_%s", m_languages[i]);
-    if (ISLANGUAGEPHRASE(languageString))
+    const std::string languageString = std::format("language_{}", m_languages[i]);
+    if (ISLANGUAGEPHRASE(languageString.c_str()))
     {
-      language->AddOption(LANGUAGEPHRASE(languageString));
+      language->AddOption(LANGUAGEPHRASE(languageString.c_str()));
     }
     else
     {
@@ -247,24 +246,24 @@ void PrefsOtherWindow::Create()
   DropDownMenu* difficulty = new DropDownMenu();
   difficulty->SetShortProperties(LANGUAGEPHRASE("dialog_difficulty"), x, y += h, buttonW, buttonH);
 
+  std::string option;
   for (int i = 0; i < 10; i++)
   {
-    char option[32];
     switch (i)
     {
     case 0:
-      sprintf(option, "%d (%s)", i + 1, LANGUAGEPHRASE("dialog_standard_difficulty"));
+      option = std::format("{} ({})", i + 1, LANGUAGEPHRASE("dialog_standard_difficulty"));
       break;
 
     case 9:
-      sprintf(option, "%d (%s)", i + 1, LANGUAGEPHRASE("dialog_hard_difficulty"));
+      option = std::format("{} ({})", i + 1, LANGUAGEPHRASE("dialog_hard_difficulty"));
       break;
 
     default:
-      sprintf(option, "%d", i + 1);
+      option = std::format("{}", i + 1);
       break;
     }
-    difficulty->AddOption(option, i);
+    difficulty->AddOption(option.c_str(), i);
   }
   difficulty->RegisterInt(&m_difficulty);
   difficulty->SetDisabled(g_locationId != -1);

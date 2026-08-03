@@ -246,7 +246,7 @@ class ExitLevelButton : public SpeciesButton
 class WebsiteButton : public SpeciesButton
 {
   public:
-    char m_website[256];
+    std::string m_website;
 
     void MouseUp() override
     {
@@ -272,7 +272,7 @@ class WebsiteButton : public SpeciesButton
 
         m_parent->SetPosition(g_renderer->ScreenW() / 2 - m_parent->m_w / 2, g_renderer->ScreenH() / 2 - m_parent->m_h / 2);
       }
-      g_windowManager->OpenWebsite(m_website);
+      g_windowManager->OpenWebsite(m_website.c_str());
     }
 };
 
@@ -351,7 +351,7 @@ void LocationWindow::Create()
     buy->m_fontSize = fontSize;
     buy->m_centered = true;
 
-    strcpy(buy->m_website, "http://store.introversion.co.uk");
+    buy->m_website = "http://store.introversion.co.uk";
 
     RegisterButton(buy);
     m_buttonOrder.push_back(buy);
@@ -488,7 +488,7 @@ void MainMenuWindow::Create()
   website->SetShortProperties(LANGUAGEPHRASE("dialog_visitwebsite"), border, y += h, buttonW, buttonH);
   website->m_fontSize = fontSize;
   website->m_centered = true;
-  strcpy(website->m_website, "http://www.darwinia.co.uk");
+  website->m_website = "http://www.darwinia.co.uk";
   RegisterButton(website);
   m_buttonOrder.push_back(website);
 
@@ -569,12 +569,11 @@ void AboutSpeciesWindow::Render(bool _hasFocus)
 
   float fontSize = GetMenuSize(13);
 
-  char about[512];
-  sprintf(about, "%s %s", LANGUAGEPHRASE("bootloader_credits_4"), LANGUAGEPHRASE("bootloader_credits_5"));
+  const std::string about = std::format("{} {}", LANGUAGEPHRASE("bootloader_credits_4"), LANGUAGEPHRASE("bootloader_credits_5"));
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
   g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, "Darwinia v1.5.4");
-  g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += 2 * h, fontSize, about);
+  g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += 2 * h, fontSize, about.c_str());
   g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, "http://www.introversion.co.uk");
 }
 

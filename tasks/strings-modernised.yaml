@@ -871,7 +871,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       Split out of T5 on 2026-08-03 in the restart. ScrollBar left the list in
       the same split and went to T11 — see T11's notes for why.
@@ -887,6 +887,39 @@ tasks:
       T11 handles for Eclipse's. ProfileWindow:116 formats with `%*s%-*s`,
       runtime field widths, which std::format spells `{:{}}` — one of the few
       printf constructs that does not translate by eye.
+
+      DONE 2026-08-03. Four files, 19 sites, no reformat needed — all four were
+      already converted.
+
+      THE THREE PROFILEWINDOW SITES WERE NOT WHAT THE COUNT SUGGESTED. They
+      rotate a button's caption Min -> Avg -> Max by copying into
+      EclButton::m_caption, which is not a fixed array: it is a char* pointing
+      at `new char[strlen(caption) + 1]`, sized to whatever caption the button
+      was last given. Writing into it only ever worked because all three words
+      are three characters long. A four-letter caption there would have
+      overrun the heap block. They call SetCaption now, which reallocates. The
+      member stays a char* — that is T11's.
+
+      m_website was the same shape and simpler: a char[256] on a window class
+      local to MainMenus.cpp, so it is a std::string with no reach outside the
+      file.
+
+      THE RUNTIME-WIDTH FORMAT NEEDED A DECISION, not a translation. `%*s`
+      and `%-*s` become {:>{}} and {:<{}}, but printf reads a NEGATIVE dynamic
+      width as the "-" flag plus its absolute value, and std::format throws on
+      one. The left-aligned width is `24 - _indent`, so it goes negative for a
+      profiler tree deeper than 24. It is clamped at zero, which differs from
+      printf only past that depth and only in whitespace, in a debug overlay.
+
+      The acceptance grep matched prose again — a comment explaining what the
+      old code did named the banned function. Third task to hit it after
+      containers T16 and strings T4.
+
+      A DEFECT FOUND WHILE READING, fixed in its own commit rather than here:
+      ~EclButton freed m_caption and m_tooltip with plain `delete` when both
+      are `new char[]`. SetCaption and SetTooltip already used delete[]; only
+      the destructor had the mismatch. Same undefined behaviour ownership T3
+      found on ShapeMarker::m_parents.
 
   - id: T16
     title: Return the FilesysUtils path helpers by value
