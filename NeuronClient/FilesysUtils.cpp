@@ -22,7 +22,12 @@ std::vector<char*>* ListDirectory(const char* _dir, const char* _filter, bool _f
   sprintf(searchstring, "%s%s", _dir, _filter);
 
   _finddata_t thisfile;
-  long fileindex = _findfirst(searchstring, &thisfile);
+  // intptr_t, not long. _findfirst returns a 64-bit handle on x64 and long is
+  // 32 bits on Windows, so storing it here truncated the handle and the
+  // _findnext below was reading through whatever the truncated value pointed
+  // at. It survived in the game because the handles happened to fit; the tests
+  // in Tests/NeuronClientTests/FilesysUtilsTests.cpp crashed on it immediately.
+  intptr_t fileindex = _findfirst(searchstring, &thisfile);
 
   int exitmeplease = 0;
 
@@ -49,6 +54,10 @@ std::vector<char*>* ListDirectory(const char* _dir, const char* _filter, bool _f
 
     exitmeplease = _findnext(fileindex, &thisfile);
   }
+
+  if (fileindex != -1)
+    _findclose(fileindex);
+
   return result;
 }
 
@@ -57,7 +66,8 @@ std::vector<char*>* ListSubDirectoryNames(const char* _dir)
   auto result = new std::vector<char*>();
 
   _finddata_t thisfile;
-  long fileindex = _findfirst(_dir, &thisfile);
+  // See ListDirectory for why this is not a long.
+  intptr_t fileindex = _findfirst(_dir, &thisfile);
 
   int exitmeplease = 0;
 
@@ -71,6 +81,10 @@ std::vector<char*>* ListSubDirectoryNames(const char* _dir)
 
     exitmeplease = _findnext(fileindex, &thisfile);
   }
+
+  if (fileindex != -1)
+    _findclose(fileindex);
+
   return result;
 }
 
