@@ -25,7 +25,10 @@ const unsigned char EntityTypeInvalid = 0;
 class NetworkUpdate
 {
   public:
-    enum UpdateType
+    // enum class with an explicit int: these values go out as WRITE_INT and
+    // come back as READ_INT, so the underlying type is the wire's and the
+    // numbers are pinned by NetworkUpdateTests::TheUpdateTypeValuesAreTheProtocol.
+    enum class UpdateType : int
     {
       Invalid,          // Unused
       ClientJoin,       // New Client connects

@@ -19,7 +19,10 @@ void NetDebugOut(const char* fmt, ...);
 
 using NetIpAddress = struct sockaddr_in;
 
-enum NetRetCode
+// int rather than the default, because NetFailed is -1. This one does NOT cross
+// the wire — it is a return code — which is why it has no pinning test, unlike
+// NetworkUpdate::UpdateType and ServerToClientLetter::LetterType.
+enum class NetRetCode : int
 {
   NetFailed = -1,
   NetOk,

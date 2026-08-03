@@ -14,7 +14,7 @@ static char s_byteStream[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
 // *** Constructor
 ServerToClientLetter::ServerToClientLetter()
   : m_clientId(-1),
-    m_type(Invalid),
+    m_type(LetterType::Invalid),
     m_sequenceId(0),
     m_teamId(0),
     m_teamType(0),
@@ -47,29 +47,29 @@ ServerToClientLetter::ServerToClientLetter(ServerToClientLetter& copyMe)
 // *** Constructor
 ServerToClientLetter::ServerToClientLetter(char* _byteStream, int _len)
   : m_clientId(-1),
-    m_type(Invalid),
+    m_type(LetterType::Invalid),
     m_sequenceId(0),
     m_teamId(0),
     m_teamType(0),
     m_ip(0)
 {
-  m_type = (LetterType)READ_INT(_byteStream);
+  m_type = static_cast<LetterType>(READ_INT(_byteStream));
   m_sequenceId = READ_INT(_byteStream);
 
   switch (m_type)
   {
-  case HelloClient:
-  case GoodbyeClient:
+  case LetterType::HelloClient:
+  case LetterType::GoodbyeClient:
     m_ip = READ_INT(_byteStream);
     break;
 
-  case TeamAssign:
+  case LetterType::TeamAssign:
     m_teamId = READ_UNSIGNED_CHAR(_byteStream);
     m_teamType = READ_UNSIGNED_CHAR(_byteStream);
     m_ip = READ_INT(_byteStream);
     break;
 
-  case Update:
+  case LetterType::Update:
     int numUpdates = READ_INT(_byteStream);
     DEBUG_ASSERT(numUpdates >= 0);
 
@@ -127,23 +127,23 @@ char* ServerToClientLetter::GetByteStream(int* _linearSize)
 {
   char* byteStream = s_byteStream;
 
-  WRITE_INT(byteStream, m_type);
+  WRITE_INT(byteStream, static_cast<int>(m_type));
   WRITE_INT(byteStream, m_sequenceId);
 
   switch (m_type)
   {
-  case HelloClient:
-  case GoodbyeClient:
+  case LetterType::HelloClient:
+  case LetterType::GoodbyeClient:
     WRITE_INT(byteStream, m_ip);
     break;
 
-  case TeamAssign:
+  case LetterType::TeamAssign:
     WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
     WRITE_UNSIGNED_CHAR(byteStream, m_teamType);
     WRITE_INT(byteStream, m_ip);
     break;
 
-  case Update:
+  case LetterType::Update:
     int numUpdates = static_cast<int>(m_updates.size());
     DEBUG_ASSERT(numUpdates >= 0);
     WRITE_INT(byteStream, numUpdates);

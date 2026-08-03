@@ -32,14 +32,14 @@ NetSocket::~NetSocket()
 
 NetRetCode NetSocket::Flush()
 {
-  NetRetCode ret = NetOk;
+  NetRetCode ret = NetRetCode::NetOk;
   if (!m_stdiofd)
   {
     m_stdiofd = fdopen(m_sockfd, "w");
   }
   if ((m_stdiofd == (FILE*)0) || (fflush(m_stdiofd)))
   {
-    ret = NetFailed;
+    ret = NetRetCode::NetFailed;
   }
   return ret;
 }
@@ -50,7 +50,7 @@ unsigned long NetSocket::GetIpAddr() { return m_ipaddr; }
 
 NetRetCode NetSocket::CheckTimeout(unsigned int* timeout, unsigned int* timedout, int haveAllData)
 {
-  NetRetCode ret = NetOk;
+  NetRetCode ret = NetRetCode::NetOk;
   *timeout += m_polltime;
   if (*timeout >= m_timeout)
   {
@@ -62,17 +62,17 @@ NetRetCode NetSocket::CheckTimeout(unsigned int* timeout, unsigned int* timedout
     {
     // If we don't know if we have all the data, just return a time out
     case -1:
-      ret = NetTimedout;
+      ret = NetRetCode::NetTimedout;
       break;
 
     // If we know we don't have all the data, return a 'more data' value
     case 0:
-      ret = NetMoreData;
+      ret = NetRetCode::NetMoreData;
       break;
 
     // If we know we have all the data, return success
     case 1:
-      ret = NetOk;
+      ret = NetRetCode::NetOk;
       break;
     }
   }
@@ -83,7 +83,7 @@ NetRetCode NetSocket::CheckTimeout(unsigned int* timeout, unsigned int* timedout
 
 NetRetCode NetSocket::Connect(char const* host, unsigned short port)
 {
-  NetRetCode ret = NetFailed;
+  NetRetCode ret = NetRetCode::NetFailed;
 
   if (host && port)
   {
@@ -110,7 +110,7 @@ void NetSocket::Close()
 
 NetRetCode NetSocket::Connect()
 {
-  NetRetCode ret = NetOk;
+  NetRetCode ret = NetRetCode::NetOk;
   unsigned long timeout = 0;
   int err = 0;
   struct sockaddr_in* servaddr = &m_to;
@@ -123,7 +123,7 @@ NetRetCode NetSocket::Connect()
   if (m_sockfd == NET_INVALID_SOCKET)
   {
     NetDebugOut("Could not create socket: %d", NetGetLastError());
-    return NetFailed;
+    return NetRetCode::NetFailed;
   }
 
   memset(servaddr, 0, sizeof(struct sockaddr_in));
@@ -139,7 +139,7 @@ NetRetCode NetSocket::Connect()
   if (!pHostent)
   {
     NetDebugOut("Host address resolution failed for %s", m_hostname);
-    return NetFailed;
+    return NetRetCode::NetFailed;
   }
   else
   {
@@ -167,7 +167,7 @@ NetRetCode NetSocket::Connect()
       if (timeout > m_timeout)
       {
         NetDebugOut("Time out connecting to host");
-        ret = NetTimedout;
+        ret = NetRetCode::NetTimedout;
         break;
       }
     }
@@ -179,7 +179,7 @@ NetRetCode NetSocket::Connect()
     else
     {
       NetDebugOut("Connect to host failed: %d", err);
-      ret = NetFailed;
+      ret = NetRetCode::NetFailed;
       break;
     }
     NetSleep(100);
@@ -192,7 +192,7 @@ NetRetCode NetSocket::Connect()
 // Write method using select
 NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes)
 {
-  NetRetCode ret = NetOk;
+  NetRetCode ret = NetRetCode::NetOk;
   char* buf = (char*)bufAsVoid;
   int bytesLeft = bufLen;
   int bytesSent = 0;
@@ -209,7 +209,7 @@ NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes
   // loop against a handle that was never opened.
   if (m_sockfd == NET_INVALID_SOCKET)
   {
-    return NetFailed;
+    return NetRetCode::NetFailed;
   }
 
   while ((bytesLeft > 0) && (!timedout))
@@ -224,7 +224,7 @@ NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes
     {
     case NET_SOCKET_ERROR:
       NetDebugOut("WriteData select call failed");
-      return NetFailed;
+      return NetRetCode::NetFailed;
     case 0:
       if (numActualBytes)
       {
@@ -235,7 +235,7 @@ NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes
     default:
       if (!FD_ISSET(m_sockfd, &m_listener))
       {
-        return NetFailed;
+        return NetRetCode::NetFailed;
       }
 
       bytesSent = sendto(m_sockfd, (char*)buf, bytesLeft, 0, (struct sockaddr*)&m_to, sizeof(m_to));
@@ -244,7 +244,7 @@ NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes
       {
         bytesLeft = 0;
         shutdown(m_sockfd, NCSD_SEND);
-        ret = NetClientDisconnect;
+        ret = NetRetCode::NetClientDisconnect;
       }
       else if ((bytesSent > 0) || NetIsBlockingError(err))
       {
@@ -262,7 +262,7 @@ NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes
         NetDebugOut("WriteData write call failed");
         bytesLeft = 0;
         shutdown(m_sockfd, NCSD_SEND);
-        ret = NetFailed;
+        ret = NetRetCode::NetFailed;
       }
       break;
     }

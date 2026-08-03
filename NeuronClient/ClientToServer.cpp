@@ -51,7 +51,7 @@ static NetCallBackRetType ListenThread(void* ignored)
 {
   s_client->m_receiveSocket = std::make_unique<NetSocketListener>(4001);
   NetRetCode retCode = s_client->m_receiveSocket->StartListening(ListenCallback);
-  DEBUG_ASSERT(retCode == NetOk);
+  DEBUG_ASSERT(retCode == NetRetCode::NetOk);
   return 0;
 }
 
@@ -320,7 +320,7 @@ void ClientToServer::ClientJoin()
 {
   DebugTrace("CLIENT : Attempting connection...\n");
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::ClientJoin);
+  letter->SetType(NetworkUpdate::UpdateType::ClientJoin);
   SendLetter(std::move(letter));
 }
 
@@ -329,7 +329,7 @@ void ClientToServer::ClientLeave()
 {
   DebugTrace("CLIENT : Sending disconnect...\n");
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::ClientLeave);
+  letter->SetType(NetworkUpdate::UpdateType::ClientLeave);
   SendLetter(std::move(letter));
 
   // Only the endpoint's own counter is reset here. The caller resets the one
@@ -344,7 +344,7 @@ void ClientToServer::RequestTeam(int _teamType, int _desiredId)
 
   auto letter = std::make_unique<NetworkUpdate>();
   letter->SetDesiredTeamId(_desiredId);
-  letter->SetType(NetworkUpdate::RequestTeam);
+  letter->SetType(NetworkUpdate::UpdateType::RequestTeam);
   letter->SetTeamType(_teamType);
   SendLetter(std::move(letter));
 }
@@ -353,7 +353,7 @@ void ClientToServer::RequestTeam(int _teamType, int _desiredId)
 void ClientToServer::SendIAmAlive(unsigned char _teamId, TeamControls const& _teamControls)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::Alive);
+  letter->SetType(NetworkUpdate::UpdateType::Alive);
   letter->SetTeamId(_teamId);
   letter->SetWorldPos(_teamControls.m_mousePos);
   letter->SetTeamControls(_teamControls);
@@ -364,7 +364,7 @@ void ClientToServer::SendIAmAlive(unsigned char _teamId, TeamControls const& _te
 void ClientToServer::SendSyncronisation(int _lastProcessedId, unsigned char _sync)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::Syncronise);
+  letter->SetType(NetworkUpdate::UpdateType::Syncronise);
   letter->SetLastProcessedId(_lastProcessedId);
   letter->SetSync(_sync);
   SendLetter(std::move(letter));
@@ -374,7 +374,7 @@ void ClientToServer::SendSyncronisation(int _lastProcessedId, unsigned char _syn
 void ClientToServer::RequestPause()
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::Pause);
+  letter->SetType(NetworkUpdate::UpdateType::Pause);
   SendLetter(std::move(letter));
 }
 
@@ -382,7 +382,7 @@ void ClientToServer::RequestPause()
 void ClientToServer::RequestSelectUnit(unsigned char _teamId, int _unitId, int _entityId, int _buildingId)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::SelectUnit);
+  letter->SetType(NetworkUpdate::UpdateType::SelectUnit);
   letter->SetTeamId(_teamId);
   letter->SetUnitId(_unitId);
   letter->SetEntityId(_entityId);
@@ -394,7 +394,7 @@ void ClientToServer::RequestSelectUnit(unsigned char _teamId, int _unitId, int _
 void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, int _buildingId)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::CreateUnit);
+  letter->SetType(NetworkUpdate::UpdateType::CreateUnit);
   letter->SetTeamId(_teamId);
   letter->SetEntityType(_troopType);
   letter->SetNumTroops(_numToCreate);
@@ -406,7 +406,7 @@ void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _tro
 void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, Vector3 const& _pos)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::CreateUnit);
+  letter->SetType(NetworkUpdate::UpdateType::CreateUnit);
   letter->SetTeamId(_teamId);
   letter->SetEntityType(_troopType);
   letter->SetNumTroops(_numToCreate);
@@ -419,7 +419,7 @@ void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _tro
 void ClientToServer::RequestAimBuilding(unsigned char _teamId, int _buildingId, Vector3 const& _pos)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::AimBuilding);
+  letter->SetType(NetworkUpdate::UpdateType::AimBuilding);
   letter->SetTeamId(_teamId);
   letter->SetBuildingID(_buildingId);
   letter->SetWorldPos(_pos);
@@ -430,7 +430,7 @@ void ClientToServer::RequestAimBuilding(unsigned char _teamId, int _buildingId, 
 void ClientToServer::RequestToggleFence(int _buildingId)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::ToggleLaserFence);
+  letter->SetType(NetworkUpdate::UpdateType::ToggleLaserFence);
   letter->SetBuildingID(_buildingId);
   SendLetter(std::move(letter));
 }
@@ -439,7 +439,7 @@ void ClientToServer::RequestToggleFence(int _buildingId)
 void ClientToServer::RequestRunProgram(unsigned char _teamId, unsigned char _program)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::RunProgram);
+  letter->SetType(NetworkUpdate::UpdateType::RunProgram);
   letter->SetTeamId(_teamId);
   letter->SetProgram(_program);
   SendLetter(std::move(letter));
@@ -449,7 +449,7 @@ void ClientToServer::RequestRunProgram(unsigned char _teamId, unsigned char _pro
 void ClientToServer::RequestTargetProgram(unsigned char _teamId, unsigned char _program, Vector3 const& _pos)
 {
   auto letter = std::make_unique<NetworkUpdate>();
-  letter->SetType(NetworkUpdate::TargetProgram);
+  letter->SetType(NetworkUpdate::UpdateType::TargetProgram);
   letter->SetTeamId(_teamId);
   letter->SetProgram(_program);
   letter->SetWorldPos(_pos);

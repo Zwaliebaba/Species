@@ -32,7 +32,7 @@ namespace NeuronCoreTests
       static NetworkUpdate MakeSelectUnit(unsigned char _teamId, int _unitId)
       {
         NetworkUpdate update;
-        update.SetType(NetworkUpdate::SelectUnit);
+        update.SetType(NetworkUpdate::UpdateType::SelectUnit);
         update.SetLastSequenceId(0);
         update.SetTeamId(_teamId);
         update.SetUnitId(_unitId);
@@ -45,7 +45,7 @@ namespace NeuronCoreTests
       TEST_METHOD(TheHeaderIsATypeThenASequenceId)
       {
         ServerToClientLetter letter;
-        letter.SetType(ServerToClientLetter::HelloClient);
+        letter.SetType(ServerToClientLetter::LetterType::HelloClient);
         letter.SetSequenceId(0x21436587);
         letter.SetIp(0x0100007F);
 
@@ -56,7 +56,7 @@ namespace NeuronCoreTests
         const int sequenceId = READ_INT(read);
         const int ip = READ_INT(read);
 
-        Assert::AreEqual(static_cast<int>(ServerToClientLetter::HelloClient), type);
+        Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::HelloClient), type);
         Assert::AreEqual(0x21436587, sequenceId);
         Assert::AreEqual(0x0100007F, ip);
         Assert::AreEqual(12, length);
@@ -67,7 +67,7 @@ namespace NeuronCoreTests
         // The letter that tells one specific client which team it owns. The ip
         // is what picks the recipient out of the broadcast.
         ServerToClientLetter letter;
-        letter.SetType(ServerToClientLetter::TeamAssign);
+        letter.SetType(ServerToClientLetter::LetterType::TeamAssign);
         letter.SetSequenceId(5);
         letter.SetTeamId(2);
         letter.SetTeamType(1);
@@ -82,7 +82,7 @@ namespace NeuronCoreTests
         const unsigned char teamType = READ_UNSIGNED_CHAR(read);
         const int ip = READ_INT(read);
 
-        Assert::AreEqual(static_cast<int>(ServerToClientLetter::TeamAssign), type);
+        Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::TeamAssign), type);
         Assert::AreEqual(5, sequenceId);
         Assert::AreEqual(static_cast<unsigned char>(2), teamId);
         Assert::AreEqual(static_cast<unsigned char>(1), teamType);
@@ -95,7 +95,7 @@ namespace NeuronCoreTests
         // The count has to come first: the reader has no other way to know how
         // many NetworkUpdates follow, and they are variable width by type.
         ServerToClientLetter letter;
-        letter.SetType(ServerToClientLetter::Update);
+        letter.SetType(ServerToClientLetter::LetterType::Update);
         letter.SetSequenceId(9);
 
         NetworkUpdate first = MakeSelectUnit(1, 11);
@@ -110,7 +110,7 @@ namespace NeuronCoreTests
         const int sequenceId = READ_INT(read);
         const int numUpdates = READ_INT(read);
 
-        Assert::AreEqual(static_cast<int>(ServerToClientLetter::Update), type);
+        Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::Update), type);
         Assert::AreEqual(9, sequenceId);
         Assert::AreEqual(2, numUpdates);
 
@@ -121,7 +121,7 @@ namespace NeuronCoreTests
       TEST_METHOD(AnUpdateLetterSurvivesARoundTrip)
       {
         ServerToClientLetter sent;
-        sent.SetType(ServerToClientLetter::Update);
+        sent.SetType(ServerToClientLetter::LetterType::Update);
         sent.SetSequenceId(42);
 
         NetworkUpdate update = MakeSelectUnit(3, 77);
@@ -132,7 +132,7 @@ namespace NeuronCoreTests
 
         ServerToClientLetter received(stream, length);
 
-        Assert::AreEqual(static_cast<int>(ServerToClientLetter::Update), static_cast<int>(received.m_type));
+        Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::Update), static_cast<int>(received.m_type));
         Assert::AreEqual(42, received.GetSequenceId());
         Assert::AreEqual(1, static_cast<int>(received.m_updates.size()));
         Assert::AreEqual(static_cast<unsigned char>(3), received.m_updates[0]->m_teamId);
@@ -145,7 +145,7 @@ namespace NeuronCoreTests
         // happened, and that is what advances the sequence id for everyone. An
         // empty letter is the normal case on an idle server, not an edge case.
         ServerToClientLetter sent;
-        sent.SetType(ServerToClientLetter::Update);
+        sent.SetType(ServerToClientLetter::LetterType::Update);
         sent.SetSequenceId(101);
 
         int length = 0;
@@ -164,7 +164,7 @@ namespace NeuronCoreTests
         // letters the same NetworkUpdate pointers, and the first destructor to
         // run would leave the other pointing at freed memory.
         ServerToClientLetter original;
-        original.SetType(ServerToClientLetter::Update);
+        original.SetType(ServerToClientLetter::LetterType::Update);
         original.SetSequenceId(7);
         original.SetClientId(3);
 
@@ -187,7 +187,7 @@ namespace NeuronCoreTests
         // in history keeps its own. If the copy shared state, every client would
         // be sent whichever id was written last.
         ServerToClientLetter original;
-        original.SetType(ServerToClientLetter::Update);
+        original.SetType(ServerToClientLetter::LetterType::Update);
         original.SetSequenceId(7);
         original.SetClientId(1);
 
@@ -209,7 +209,7 @@ namespace NeuronCoreTests
         // the bound in Debug. A busy tick with every client sending is the case
         // that would overrun it, so it is worth checking in Release too.
         ServerToClientLetter letter;
-        letter.SetType(ServerToClientLetter::Update);
+        letter.SetType(ServerToClientLetter::LetterType::Update);
         letter.SetSequenceId(1);
 
         // 48 SelectUnits at 21 bytes each is 1008, plus a 12-byte header.
@@ -231,11 +231,11 @@ namespace NeuronCoreTests
       // small enough set that inserting one in the middle looks harmless.
       TEST_METHOD(TheLetterTypeValuesAreTheProtocol)
       {
-        Assert::AreEqual(0, static_cast<int>(ServerToClientLetter::Invalid));
-        Assert::AreEqual(1, static_cast<int>(ServerToClientLetter::HelloClient));
-        Assert::AreEqual(2, static_cast<int>(ServerToClientLetter::GoodbyeClient));
-        Assert::AreEqual(3, static_cast<int>(ServerToClientLetter::TeamAssign));
-        Assert::AreEqual(4, static_cast<int>(ServerToClientLetter::Update));
+        Assert::AreEqual(0, static_cast<int>(ServerToClientLetter::LetterType::Invalid));
+        Assert::AreEqual(1, static_cast<int>(ServerToClientLetter::LetterType::HelloClient));
+        Assert::AreEqual(2, static_cast<int>(ServerToClientLetter::LetterType::GoodbyeClient));
+        Assert::AreEqual(3, static_cast<int>(ServerToClientLetter::LetterType::TeamAssign));
+        Assert::AreEqual(4, static_cast<int>(ServerToClientLetter::LetterType::Update));
       }
   };
 } // namespace NeuronCoreTests

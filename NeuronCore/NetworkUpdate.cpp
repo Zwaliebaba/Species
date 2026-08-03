@@ -9,7 +9,7 @@
 
 
 NetworkUpdate::NetworkUpdate()
-  : m_type(Invalid),
+  : m_type(UpdateType::Invalid),
     m_lastSequenceId(-1),
     m_radius(0.0f),
     m_teamId(255),
@@ -27,22 +27,22 @@ int NetworkUpdate::ReadByteStream(char* _byteStream)
 {
   char* byteStreamCopy = _byteStream;
 
-  m_type = (UpdateType)READ_INT(_byteStream);
+  m_type = static_cast<UpdateType>(READ_INT(_byteStream));
   m_lastSequenceId = READ_INT(_byteStream);
 
   switch (m_type)
   {
-  case ClientJoin:
-  case ClientLeave:
+  case UpdateType::ClientJoin:
+  case UpdateType::ClientLeave:
     break;
 
-  case RequestTeam:
+  case UpdateType::RequestTeam:
     m_teamType = READ_UNSIGNED_CHAR(_byteStream);
     m_entityType = READ_UNSIGNED_CHAR(_byteStream);
     m_desiredTeamId = READ_SIGNED_CHAR(_byteStream);
     break;
 
-  case Alive:
+  case UpdateType::Alive:
     m_teamId = READ_UNSIGNED_CHAR(_byteStream);
     GetWorldPos().x = READ_FLOAT(_byteStream);
     GetWorldPos().y = READ_FLOAT(_byteStream);
@@ -54,19 +54,19 @@ int NetworkUpdate::ReadByteStream(char* _byteStream)
     m_sync = READ_UNSIGNED_CHAR(_byteStream);
     break;
 
-  case Syncronise:
+  case UpdateType::Syncronise:
     m_lastProcessedSeqId = READ_INT(_byteStream);
     m_sync = READ_UNSIGNED_CHAR(_byteStream);
     break;
 
-  case SelectUnit:
+  case UpdateType::SelectUnit:
     m_teamId = READ_UNSIGNED_CHAR(_byteStream);
     m_unitId = READ_INT(_byteStream);
     m_entityId = READ_INT(_byteStream);
     m_buildingId = READ_INT(_byteStream);
     break;
 
-  case CreateUnit:
+  case UpdateType::CreateUnit:
     m_teamId = READ_UNSIGNED_CHAR(_byteStream);
     m_entityType = READ_UNSIGNED_CHAR(_byteStream);
     m_numTroops = READ_INT(_byteStream);
@@ -76,7 +76,7 @@ int NetworkUpdate::ReadByteStream(char* _byteStream)
     GetWorldPos().z = READ_FLOAT(_byteStream);
     break;
 
-  case AimBuilding:
+  case UpdateType::AimBuilding:
     m_teamId = READ_UNSIGNED_CHAR(_byteStream);
     m_buildingId = READ_INT(_byteStream);
     GetWorldPos().x = READ_FLOAT(_byteStream);
@@ -84,16 +84,16 @@ int NetworkUpdate::ReadByteStream(char* _byteStream)
     GetWorldPos().z = READ_FLOAT(_byteStream);
     break;
 
-  case ToggleLaserFence:
+  case UpdateType::ToggleLaserFence:
     m_buildingId = READ_INT(_byteStream);
     break;
 
-  case RunProgram:
+  case UpdateType::RunProgram:
     m_teamId = READ_UNSIGNED_CHAR(_byteStream);
     m_program = READ_UNSIGNED_CHAR(_byteStream);
     break;
 
-  case TargetProgram:
+  case UpdateType::TargetProgram:
     m_teamId = READ_UNSIGNED_CHAR(_byteStream);
     m_program = READ_UNSIGNED_CHAR(_byteStream);
     GetWorldPos().x = READ_FLOAT(_byteStream);
@@ -101,7 +101,7 @@ int NetworkUpdate::ReadByteStream(char* _byteStream)
     GetWorldPos().z = READ_FLOAT(_byteStream);
     break;
 
-  case Invalid:
+  case UpdateType::Invalid:
     DEBUG_ASSERT(false);
   };
 
@@ -182,22 +182,22 @@ char* NetworkUpdate::GetByteStream(int* _linearSize)
 {
   char* byteStream = m_byteStream;
 
-  WRITE_INT(byteStream, m_type);
+  WRITE_INT(byteStream, static_cast<int>(m_type));
   WRITE_INT(byteStream, m_lastSequenceId);
 
   switch (m_type)
   {
-  case ClientJoin:
-  case ClientLeave:
+  case UpdateType::ClientJoin:
+  case UpdateType::ClientLeave:
     break;
 
-  case RequestTeam:
+  case UpdateType::RequestTeam:
     WRITE_UNSIGNED_CHAR(byteStream, m_teamType);
     WRITE_UNSIGNED_CHAR(byteStream, m_entityType);
     WRITE_SIGNED_CHAR(byteStream, m_desiredTeamId);
     break;
 
-  case Alive:
+  case UpdateType::Alive:
     WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
     WRITE_FLOAT(byteStream, GetWorldPos().x);
     WRITE_FLOAT(byteStream, GetWorldPos().y);
@@ -206,19 +206,19 @@ char* NetworkUpdate::GetByteStream(int* _linearSize)
     WRITE_UNSIGNED_CHAR(byteStream, m_sync);
     break;
 
-  case Syncronise:
+  case UpdateType::Syncronise:
     WRITE_INT(byteStream, m_lastProcessedSeqId);
     WRITE_UNSIGNED_CHAR(byteStream, m_sync);
     break;
 
-  case SelectUnit:
+  case UpdateType::SelectUnit:
     WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
     WRITE_INT(byteStream, m_unitId);
     WRITE_INT(byteStream, m_entityId);
     WRITE_INT(byteStream, m_buildingId);
     break;
 
-  case CreateUnit:
+  case UpdateType::CreateUnit:
     WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
     WRITE_UNSIGNED_CHAR(byteStream, m_entityType);
     WRITE_INT(byteStream, m_numTroops);
@@ -228,7 +228,7 @@ char* NetworkUpdate::GetByteStream(int* _linearSize)
     WRITE_FLOAT(byteStream, GetWorldPos().z);
     break;
 
-  case AimBuilding:
+  case UpdateType::AimBuilding:
     WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
     WRITE_INT(byteStream, m_buildingId);
     WRITE_FLOAT(byteStream, GetWorldPos().x);
@@ -236,16 +236,16 @@ char* NetworkUpdate::GetByteStream(int* _linearSize)
     WRITE_FLOAT(byteStream, GetWorldPos().z);
     break;
 
-  case ToggleLaserFence:
+  case UpdateType::ToggleLaserFence:
     WRITE_INT(byteStream, m_buildingId);
     break;
 
-  case RunProgram:
+  case UpdateType::RunProgram:
     WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
     WRITE_UNSIGNED_CHAR(byteStream, m_program);
     break;
 
-  case TargetProgram:
+  case UpdateType::TargetProgram:
     WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
     WRITE_UNSIGNED_CHAR(byteStream, m_program);
     WRITE_FLOAT(byteStream, GetWorldPos().x);
@@ -253,7 +253,7 @@ char* NetworkUpdate::GetByteStream(int* _linearSize)
     WRITE_FLOAT(byteStream, GetWorldPos().z);
     break;
 
-  case Invalid:
+  case UpdateType::Invalid:
     DEBUG_ASSERT(false);
   }
 

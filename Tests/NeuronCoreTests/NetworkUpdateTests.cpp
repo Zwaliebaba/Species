@@ -56,7 +56,7 @@ namespace NeuronCoreTests
         // Every type shares this prefix, so two builds that disagree about it
         // disagree about every packet.
         NetworkUpdate update;
-        update.SetType(NetworkUpdate::ClientJoin);
+        update.SetType(NetworkUpdate::UpdateType::ClientJoin);
         update.SetLastSequenceId(0x11223344);
 
         int length = 0;
@@ -65,7 +65,7 @@ namespace NeuronCoreTests
         const int type = READ_INT(read);
         const int sequenceId = READ_INT(read);
 
-        Assert::AreEqual(static_cast<int>(NetworkUpdate::ClientJoin), type);
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::ClientJoin), type);
         Assert::AreEqual(0x11223344, sequenceId);
         Assert::AreEqual(8, length);
       }
@@ -76,7 +76,7 @@ namespace NeuronCoreTests
         // m_buildingId are raw DArray slots — network identity rather than
         // opaque handles — so their order and width are load-bearing.
         NetworkUpdate update;
-        update.SetType(NetworkUpdate::SelectUnit);
+        update.SetType(NetworkUpdate::UpdateType::SelectUnit);
         update.SetLastSequenceId(-1);
         update.SetTeamId(2);
         update.SetUnitId(7);
@@ -93,7 +93,7 @@ namespace NeuronCoreTests
         const int entityId = READ_INT(read);
         const int buildingId = READ_INT(read);
 
-        Assert::AreEqual(static_cast<int>(NetworkUpdate::SelectUnit), type);
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::SelectUnit), type);
         Assert::AreEqual(-1, sequenceId);
         Assert::AreEqual(static_cast<unsigned char>(2), teamId);
         Assert::AreEqual(7, unitId);
@@ -107,7 +107,7 @@ namespace NeuronCoreTests
         // RequestCreateUnit has two overloads — one naming a factory, one naming
         // a position — and both go out as this single layout.
         NetworkUpdate update;
-        update.SetType(NetworkUpdate::CreateUnit);
+        update.SetType(NetworkUpdate::UpdateType::CreateUnit);
         update.SetLastSequenceId(4);
         update.SetTeamId(1);
         update.SetEntityType(3);
@@ -128,7 +128,7 @@ namespace NeuronCoreTests
         const float y = READ_FLOAT(read);
         const float z = READ_FLOAT(read);
 
-        Assert::AreEqual(static_cast<int>(NetworkUpdate::CreateUnit), type);
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::CreateUnit), type);
         Assert::AreEqual(4, sequenceId);
         Assert::AreEqual(static_cast<unsigned char>(1), teamId);
         Assert::AreEqual(static_cast<unsigned char>(3), entityType);
@@ -154,7 +154,7 @@ namespace NeuronCoreTests
         controls.m_cameraEntityTracking = 1;
 
         NetworkUpdate update;
-        update.SetType(NetworkUpdate::Alive);
+        update.SetType(NetworkUpdate::UpdateType::Alive);
         update.SetLastSequenceId(9);
         update.SetTeamId(0);
         update.SetWorldPos(controls.m_mousePos);
@@ -173,7 +173,7 @@ namespace NeuronCoreTests
         const unsigned short flags = READ_UNSIGNED_SHORT(read);
         const unsigned char sync = READ_UNSIGNED_CHAR(read);
 
-        Assert::AreEqual(static_cast<int>(NetworkUpdate::Alive), type);
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::Alive), type);
         Assert::AreEqual(9, sequenceId);
         Assert::AreEqual(static_cast<unsigned char>(0), teamId);
         Assert::AreEqual(-4.5f, x);
@@ -214,9 +214,12 @@ namespace NeuronCoreTests
         // than a protocol one, so it is worth checking every type the client can
         // send in both configurations.
         const NetworkUpdate::UpdateType clientTypes[] = {
-          NetworkUpdate::ClientJoin, NetworkUpdate::ClientLeave,   NetworkUpdate::RequestTeam, NetworkUpdate::Alive,
-          NetworkUpdate::SelectUnit, NetworkUpdate::CreateUnit,    NetworkUpdate::AimBuilding, NetworkUpdate::ToggleLaserFence,
-          NetworkUpdate::RunProgram, NetworkUpdate::TargetProgram, NetworkUpdate::Pause,       NetworkUpdate::Syncronise,
+          NetworkUpdate::UpdateType::ClientJoin,  NetworkUpdate::UpdateType::ClientLeave,
+          NetworkUpdate::UpdateType::RequestTeam, NetworkUpdate::UpdateType::Alive,
+          NetworkUpdate::UpdateType::SelectUnit,  NetworkUpdate::UpdateType::CreateUnit,
+          NetworkUpdate::UpdateType::AimBuilding, NetworkUpdate::UpdateType::ToggleLaserFence,
+          NetworkUpdate::UpdateType::RunProgram,  NetworkUpdate::UpdateType::TargetProgram,
+          NetworkUpdate::UpdateType::Pause,       NetworkUpdate::UpdateType::Syncronise,
         };
 
         for (const NetworkUpdate::UpdateType type : clientTypes)
@@ -238,7 +241,7 @@ namespace NeuronCoreTests
         // ReadByteStream is what the far end runs on the bytes GetByteStream
         // produced. The two have to stay in step field for field.
         NetworkUpdate sent;
-        sent.SetType(NetworkUpdate::TargetProgram);
+        sent.SetType(NetworkUpdate::UpdateType::TargetProgram);
         sent.SetLastSequenceId(77);
         sent.SetTeamId(3);
         sent.SetProgram(5);
@@ -249,7 +252,7 @@ namespace NeuronCoreTests
 
         NetworkUpdate received(stream);
 
-        Assert::AreEqual(static_cast<int>(NetworkUpdate::TargetProgram), static_cast<int>(received.m_type));
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::TargetProgram), static_cast<int>(received.m_type));
         Assert::AreEqual(77, received.m_lastSequenceId);
         Assert::AreEqual(static_cast<unsigned char>(3), received.m_teamId);
         Assert::AreEqual(static_cast<unsigned char>(5), received.m_program);
@@ -287,7 +290,7 @@ namespace NeuronCoreTests
         Assert::AreEqual(0x01FF, static_cast<int>(sentControls.GetFlags()), L"all nine flags should encode");
 
         NetworkUpdate sent;
-        sent.SetType(NetworkUpdate::Alive);
+        sent.SetType(NetworkUpdate::UpdateType::Alive);
         sent.SetLastSequenceId(3);
         sent.SetTeamId(1);
         sent.SetTeamControls(sentControls);
@@ -315,19 +318,19 @@ namespace NeuronCoreTests
       // that the conversion had to keep these numbers rather than assert its own.
       TEST_METHOD(TheUpdateTypeValuesAreTheProtocol)
       {
-        Assert::AreEqual(0, static_cast<int>(NetworkUpdate::Invalid));
-        Assert::AreEqual(1, static_cast<int>(NetworkUpdate::ClientJoin));
-        Assert::AreEqual(2, static_cast<int>(NetworkUpdate::ClientLeave));
-        Assert::AreEqual(3, static_cast<int>(NetworkUpdate::RequestTeam));
-        Assert::AreEqual(4, static_cast<int>(NetworkUpdate::Alive));
-        Assert::AreEqual(5, static_cast<int>(NetworkUpdate::SelectUnit));
-        Assert::AreEqual(6, static_cast<int>(NetworkUpdate::CreateUnit));
-        Assert::AreEqual(7, static_cast<int>(NetworkUpdate::AimBuilding));
-        Assert::AreEqual(8, static_cast<int>(NetworkUpdate::ToggleLaserFence));
-        Assert::AreEqual(9, static_cast<int>(NetworkUpdate::RunProgram));
-        Assert::AreEqual(10, static_cast<int>(NetworkUpdate::TargetProgram));
-        Assert::AreEqual(11, static_cast<int>(NetworkUpdate::Pause));
-        Assert::AreEqual(12, static_cast<int>(NetworkUpdate::Syncronise));
+        Assert::AreEqual(0, static_cast<int>(NetworkUpdate::UpdateType::Invalid));
+        Assert::AreEqual(1, static_cast<int>(NetworkUpdate::UpdateType::ClientJoin));
+        Assert::AreEqual(2, static_cast<int>(NetworkUpdate::UpdateType::ClientLeave));
+        Assert::AreEqual(3, static_cast<int>(NetworkUpdate::UpdateType::RequestTeam));
+        Assert::AreEqual(4, static_cast<int>(NetworkUpdate::UpdateType::Alive));
+        Assert::AreEqual(5, static_cast<int>(NetworkUpdate::UpdateType::SelectUnit));
+        Assert::AreEqual(6, static_cast<int>(NetworkUpdate::UpdateType::CreateUnit));
+        Assert::AreEqual(7, static_cast<int>(NetworkUpdate::UpdateType::AimBuilding));
+        Assert::AreEqual(8, static_cast<int>(NetworkUpdate::UpdateType::ToggleLaserFence));
+        Assert::AreEqual(9, static_cast<int>(NetworkUpdate::UpdateType::RunProgram));
+        Assert::AreEqual(10, static_cast<int>(NetworkUpdate::UpdateType::TargetProgram));
+        Assert::AreEqual(11, static_cast<int>(NetworkUpdate::UpdateType::Pause));
+        Assert::AreEqual(12, static_cast<int>(NetworkUpdate::UpdateType::Syncronise));
       }
   };
 } // namespace NeuronCoreTests

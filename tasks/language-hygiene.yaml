@@ -132,6 +132,35 @@ tasks:
       rebases. There is deliberately no blocked_by edge here: a collision is
       not an ordering, and inventing one would serialise two tasks that are
       genuinely independent.
+
+      DONE 2026-08-03, in three commits: the pinning tests, a whole-file reformat
+      of the four tab-indented netcode files, then the conversion.
+
+      ONE OF THE THREE IS NOT A WIRE ENUM, and this task's intent says it is.
+      NetRetCode never reaches a byte stream — grep for it alongside WRITE_, READ_
+      or byteStream returns nothing. It is a return code from the socket layer.
+      So it is `enum class NetRetCode : int` (int because NetFailed is -1) with no
+      pinning test, and the header now says why it has none. UpdateType and
+      LetterType really are the protocol: both go out as WRITE_INT and come back
+      as READ_INT.
+
+      THE PINNING TESTS ARE THE POINT and they landed first, in their own commit,
+      so the conversion had to preserve the numbers rather than assert whatever it
+      produced. Nothing had pinned them before: the byte-layout tests fix the SIZE
+      of the type field, not the meaning of what is in it, so reordering the enum
+      was a protocol break that compiled, linked and passed every test.
+
+      Scoping the enums moved every enumerator: NetworkUpdate::ClientJoin is
+      NetworkUpdate::UpdateType::ClientJoin now, 49 sites, and the letter's five
+      are 21 more. NetRetCode's seven are 42. The switch labels inside the two
+      owning .cpp files needed the same treatment.
+
+      TWO MISTAKES THE SCRIPT MADE, both caught before committing and both worth
+      expecting next time. It qualified the enumerator DECLARATIONS inside
+      NetLib.h — the one file where the enumerators appear unqualified in the
+      definition rather than at a use site — and it rewrote six comment lines in
+      NetSocket.h that merely mention the names. The first would not compile; the
+      second would have been prose churn in a task whose diff should be code.
     acceptance:
       - Each enumerator's numeric value is asserted by a test that passes on both sides of the conversion
       - The three enums are enum class with an explicit underlying type
@@ -140,7 +169,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
 
   - id: T4
     title: Convert InputMode and InputParserState to enum class

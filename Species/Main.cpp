@@ -172,16 +172,16 @@ bool ProcessServerLetters(ServerToClientLetter* letter)
 {
   switch (letter->m_type)
   {
-  case ServerToClientLetter::HelloClient:
+  case ServerToClientLetter::LetterType::HelloClient:
     if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
       DebugTrace("CLIENT : Received HelloClient from Server\n");
     return true;
 
-  case ServerToClientLetter::GoodbyeClient:
+  case ServerToClientLetter::LetterType::GoodbyeClient:
     //g_location->RemoveTeam( letter->m_teamId );
     return true;
 
-  case ServerToClientLetter::TeamAssign:
+  case ServerToClientLetter::LetterType::TeamAssign:
 
     if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
       g_location->InitialiseTeam(letter->m_teamId, letter->m_teamType);

@@ -31,7 +31,7 @@ NetSocketListener::~NetSocketListener()
 
 NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
 {
-  NetRetCode ret = NetOk;
+  NetRetCode ret = NetRetCode::NetOk;
   int bindAttempts = 0;
   NetIpAddress servaddr;
   NetIpAddress clientaddr;
@@ -45,7 +45,7 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
   if (m_sockfd == NET_INVALID_SOCKET)
   {
     NetDebugOut("Could not create listen socket: %d", NetGetLastError());
-    return NetFailed;
+    return NetRetCode::NetFailed;
   }
 
   NetSocketHandle client = 0;
@@ -58,7 +58,7 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
   // Make sure incoming arguments make sense
   if (functionPointer == (NetCallBack) nullptr)
   {
-    return NetBadArgs;
+    return NetRetCode::NetBadArgs;
   }
 
   // Signal that we should be listening
@@ -69,7 +69,7 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
   {
     if ((bindAttempts++ == 10) || (!NetIsAddrInUse))
     {
-      return NetFailed;
+      return NetRetCode::NetFailed;
     }
     else
     {
@@ -104,7 +104,7 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
         continue;
 
       NetDebugOut("Listener receive failed: %d", err);
-      return NetFailed;
+      return NetRetCode::NetFailed;
     }
 
     // Call function pointer with datagram data (type is NetUdpPacket) -

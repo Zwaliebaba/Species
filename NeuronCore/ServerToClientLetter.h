@@ -15,7 +15,9 @@
 class ServerToClientLetter
 {
   public:
-    enum LetterType
+    // Scoped and int-backed for the same reason as NetworkUpdate::UpdateType;
+    // the values are pinned by TheLetterTypeValuesAreTheProtocol.
+    enum class LetterType : int
     {
       Invalid,
       HelloClient,
