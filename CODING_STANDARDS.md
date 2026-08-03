@@ -248,6 +248,26 @@ only worth checking in Debug. `Neuron::Fatal` for unrecoverable states.
 **Enums.** `enum class`, with `ENUM_HELPER` from `NeuronHelper.h` when you need
 iteration or bitwise operators over it.
 
+Eight enums are scoped today; four are not, and they are not left for lack of
+effort. `ControlType`, `InputType` and `InputCondition` each have an `int`
+typedef used interchangeably with them across the driver API, and `Camera::Mode`
+is stored in an `int m_mode` — scoping any of them is an API change, tracked as
+`tasks/language-hygiene.yaml` T9.
+
+**Before you scope an enum, survey for integer interop by SHAPE, not by variable
+name.** Four red builds came from doing the latter. All four forms, with the
+grep that finds each:
+
+| Shape | Example | Find it with |
+|---|---|---|
+| Used as a subscript | `errors[state]` | `grep -nE '\[\s*\w*state\w*\s*\]'` |
+| Boolean context | `if (_key && _mood)` | read every use; a 0-valued enumerator makes this mean "not NONE" |
+| An `int` variable holding it | `static int old = Enum::Value;` | `grep -rnE '\b(int\|bool\|unsigned\|short\|char)\s+\w*\s*=\s*EnumName::'` |
+| Reached through the enclosing class | `Owner::Enumerator` | `grep -rnE '\w+::(Enumerator1\|Enumerator2)' \| grep -v 'EnumName::'` |
+
+The last one is the easiest to miss: a qualification pass keyed on "enumerator
+not preceded by `::`" skips those by construction.
+
 ---
 
 ## Determinism
@@ -486,7 +506,7 @@ ahead within a file.
 | 2 | **Maths down** | done | `Vector3`, `Matrix33/34`, `MathUtils` move into `NeuronCore` | The wire protocol serialises these; a headless server needs them without a renderer |
 | 3 | **Containers replaced** | done | `LList` → `std::vector`. **`DArray` → `Neuron::SlotMap`, never `std::vector`** — its indices are network identity, see [Determinism](#determinism). All ten legacy container headers are deleted | The stage most able to break lockstep silently. `SlotMap` ships in two flavours because the legacy templates assigned different indices after a removal: `FastSlotMap` pops a freelist (was `FastDArray`), plain `SlotMap` scans lowest-first (was `DArray`). Picking the wrong one changes network identity for the same spawn sequence |
 | 4 | **Strings** | in progress | `char*`, `char[N]`, `strcpy`, `sprintf` → `std::string`, `string_view`, `std::format` — which of the first two is decided by the table under [Strings](#strings) | The largest source of latent buffer bugs. Seven found so far were live defects rather than risks: three unbounded writes, a null dereference, a double-evaluated shared static, a `delete` on a `strdup` pointer, and two `strrchr(...) + 1` reads of address 1 |
-| 5 | **Ownership** | **todo** | raw `new`/`delete`, `SAFE_DELETE`, `EmptyAndDelete` → `unique_ptr` and values | Containers are standard now, so this is unblocked. The transitional `Neuron::EmptyAndDelete` and `Neuron::CopyInto` in `VectorUtils.h` exist for this stage to remove |
+| 5 | **Ownership** | **in progress** | raw `new`/`delete`, `SAFE_DELETE`, `EmptyAndDelete` → `unique_ptr` and values | Containers are standard now, so this is unblocked. The transitional `Neuron::EmptyAndDelete` and `Neuron::CopyInto` in `VectorUtils.h` exist for this stage to remove |
 | 6 | **Protocol types** | done | `Entity`, `Team`, `WorldObject` out of `NeuronCore`'s headers | Severs the last game dependency from the network layer |
 | 7 | **Globals** | done | `g_app` reached from inside `NeuronCore` → injected dependencies | The final blocker on a standalone server binary |
 | 8 | **Dead targets** | done | `TARGET_FULLGAME`, `TARGET_DEMOGAME`, `DARWINIA_*`, the unbuilt Linux/macOS branches in `NeuronCore.h` | Safe to do any time; deliberately last so it does not churn files mid-migration |
@@ -494,9 +514,10 @@ ahead within a file.
 Stages 1, 2 and 8 are tree-wide moves. Stages 3–7 proceed file by file, and a
 file at stage *n* is fully at stage *n* before it advances.
 
-Status re-measured on 2026-08-02, and re-measure rather than trusting it: stage 3
-has `LList` in 127 files, stage 4 has 324 `strcpy`/`sprintf` calls, stage 5 has 34
-`SAFE_DELETE` uses. Stages 1, 2, 6 and 7 landed with
+Status re-measured on 2026-08-03, and re-measure rather than trusting it: stage 3
+is finished and its headers are deleted; stage 4 has **161** `strcpy`-family calls
+across 49 files, down from 367 at the start of the restart; stage 5 has **32**
+`SAFE_DELETE`/`SAFE_FREE` occurrences and `EmptyAndDelete` in 13 files. Stages 1, 2, 6 and 7 landed with
 `tasks/neuroncore-layering.yaml`; stage 8 landed with `7ee8c00`. The only `g_app`
 left anywhere under `NeuronCore/` is a comment explaining what replaced it.
 

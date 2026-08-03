@@ -17,14 +17,15 @@ Six plans are complete: `neuroncore-layering`, `rename-scaffolding`,
 run at `b0bde71` — `rename-darwinian`. Stage 3 is done: the legacy container
 headers are deleted, not merely unused.
 
-Four plans are open, with **19 tasks left** between them:
+Four plans are open. Counts below are **as of the restart run on 2026-08-03**,
+after which seven tasks landed — see *What the restart actually did*:
 
 | Plan | Open | State |
 |---|---|---|
-| `strings-modernised` | 9 of 16 | Stage 4. Was mid-flight when work stopped. |
-| `ownership` | 6 of 9 | Stage 5. Two landed, the rest gated on stage 4. |
-| `language-hygiene` | 4 of 9 | Two sweeps landed; the enums and the min/max macros are left. |
-| `namespace-migration` | 3 of 5 | Sequenced last by design. |
+| `strings-modernised` | 6 of 16 | Stage 4. T5 is the critical path; five tasks sit behind it. |
+| `ownership` | 5 of 9 | Stage 5. T8 needs an ownership decision before it can start. |
+| `language-hygiene` | 1 of 9 | Only T9 — the four enums that `int` typedefs stand in for. |
+| `namespace-migration` | 3 of 5 | Sequenced last by design. Untouched. |
 
 A fifth was added on 2026-08-03 and is not part of the modernisation:
 `determinism.yaml`, two tasks, where a change to what the simulation computes
@@ -43,22 +44,53 @@ written down instead. That finding is the reason this file exists.
 Re-measured at `b0bde71` on Linux. Commands are the ones to re-run rather than
 trust; every one of these numbers will have moved by the time it matters.
 
-| Axis | At `11aee84` | Now | Command |
-|---|---|---|---|
-| `strcpy` family | 367 sites | **180**, 53 files | `grep -rEow 'strcpy\|strncpy\|strcat\|sprintf\|snprintf' <projects>` |
-| … by project | | GameLogic 152, Species 14, NeuronClient 13, NeuronServer 1, NeuronCore 0 | |
-| `NULL` | ~578 | **4** — two documented exceptions, a comment, a string literal | `grep -rw NULL <projects>` |
-| `#ifndef _included` guards | 223 | **0** | `grep -rl '#ifndef _included' <projects>` |
-| Plain `enum` in headers | 12 | **11** to convert (one is already `enum class`) | `grep -rE '^\s*enum\s+[A-Za-z]' --include='*.h'` |
-| Bare `min(`/`max(` | 216 | **216**, 52 files | `grep -rEo '(^\|[^:_A-Za-z0-9])(min\|max)\s*\(' <projects>` |
-| `EmptyAndDelete` | 26 files | **13** call-site files | `grep -rlw EmptyAndDelete <projects> --include='*.cpp'` |
-| `SAFE_DELETE`/`SAFE_FREE` | 35 | **38** across 6 files incl. the definition | `grep -rEow 'SAFE_DELETE\|SAFE_FREE' <projects>` |
-| Raw `new` / `delete` in `.cpp` | 815 / 246 | **805 / 287** (token counts, includes comments) | |
-| Files in `namespace Neuron` | — | **13** | `grep -rl 'namespace Neuron' <projects>` |
+| Axis | At `11aee84` | At `b0bde71` | Now (`main` merged) | Command |
+|---|---|---|---|---|
+| `strcpy` family | 367 | 180 | **161**, 49 files | `grep -rEow 'strcpy\|strncpy\|strcat\|sprintf\|snprintf' <projects>` |
+| `NULL` | ~578 | 4 | **4** — two documented exceptions, a comment, a string literal | `grep -rw NULL <projects>` |
+| `#ifndef _included` guards | 223 | 0 | **0** | `grep -rl '#ifndef _included' <projects>` |
+| Plain `enum` in headers | 12 | 11 to convert | **4 left**, 8 scoped | `grep -rE '^\s*enum\s+[A-Za-z]' --include='*.h'` |
+| Bare `min(`/`max(` | 216 | 216 | **12**, all in commented-out code | `grep -rEo '(^\|[^:_A-Za-z0-9])(min\|max)\s*\(' <projects>` |
+| `EmptyAndDelete` | 26 files | 13 | **13** call-site files | `grep -rlw EmptyAndDelete <projects> --include='*.cpp'` |
+| `SAFE_DELETE`/`SAFE_FREE` | 35 | 38 | **32** | `grep -rEow 'SAFE_DELETE\|SAFE_FREE' <projects>` |
+| Raw `new` / `delete` in `.cpp` | 815 / 246 | 805 / 287 | **731 / 264** | |
+| Tests | 103 | 103 | **124** | `grep -rc TEST_METHOD Tests/*/*.cpp` |
 
-Stage 4 is half done and stage 5 has barely started. The `new`/`delete` counts
-have not moved, which is expected: `ownership` T1 and T2 covered NeuronCore and
-NeuronServer, about 1% of the tree between them.
+Stage 4 is past half and stage 5 is genuinely under way — the `new`/`delete`
+counts moved for the first time, from 805/287 to 731/264, as `ownership` T3 and
+T9 converted six NeuronClient subsystems and the Eclipse registration API.
+
+## What the restart actually did
+
+Landed and CI-verified on `claude/migration-restart-plan-i69so0`:
+
+| Task | What |
+|---|---|
+| `language-hygiene` T8 | min/max macros retired — 202 sites, 50 files |
+| `language-hygiene` T3 | the three wire enums scoped |
+| `language-hygiene` T4 | InputMode and InputParserState scoped |
+| `language-hygiene` T5 | FootState and TMControl scoped; `Camera::Mode` reassigned to T9 |
+| `strings-modernised` T14 | `CreateValueControl`'s `void*` replaced by typed overloads |
+| `strings-modernised` T15 | four GameLogic windows |
+| `strings-modernised` T16 | FilesysUtils returns by value |
+| `ownership` T3 | unique_ptr across six NeuronClient subsystems |
+| `ownership` T9 | `EclRegisterWindow` takes ownership in its signature |
+
+Plus `tasks/determinism.yaml` (new), the `strings-modernised` re-scope, and
+`ownership` T8/T9 split out of T3.
+
+**Six defects surfaced that were nobody's task**, four fixed and two preserved
+as decisions for the owner: the `new[]`/`delete` mismatch on
+`ShapeMarker::m_parents` and again in `~EclButton` (fixed); four `bool` members
+registered as `TypeChar` and `Triffid::m_useTrigger` read a byte at a time
+(recorded); `ShutdownSound` marking a slot unused without checking it still
+holds the instance it was handed (recorded); and the input-driver error table
+that is one string short of its enum (recorded — see AGENTS.md *Known issues*).
+
+**The cost, stated plainly: four red builds**, all on the enum conversions, all
+from surveying integer interop by variable name instead of by shape.
+`CODING_STANDARDS.md` now carries the four shapes and the grep for each. T9 has
+four more enums and can hit all four.
 
 ---
 

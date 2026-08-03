@@ -191,6 +191,11 @@ python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum
 ```
 
+`NeuronCore/MathUtils.h` no longer defines `min` and `max` macros, so
+`std::min` and `std::max` compile everywhere now — they did not, anywhere that
+header was reachable, until `language-hygiene` T8. If you find a hand-written
+comparison with a comment apologising for it, that is why, and it can go.
+
 `check_containers.py` exists because three CI failures in a row were the same
 mistake: a call site a container sweep did not reach, still asking a
 `std::vector` for `Size()` or `ValidIndex()`. Those are compile errors, so CI
@@ -436,6 +441,16 @@ Real, currently true, and worth knowing before you trip over them:
   - Fixing it is queued as `tasks/determinism.yaml` T1, gated on an owner-run
     smoke test, because it is a deliberate behaviour change rather than a
     modernisation. Until that lands, the odd-looking code is the correct code.
+- **The input-driver error messages are off by one, and one read is out of
+  bounds.** `InputDriverAlias`, `InputDriverPrefs`, `InputDriverSimple` and
+  `InputDriverValue` each hold a static table of **nine** error strings and
+  index it with an `InputParserState`, which has **ten** enumerators. So
+  `errors[STATE_DONE]` reads one past the end of the array, and every message
+  from `STATE_WANT_OPTIONAL` onward returns the text belonging to the state
+  before it. Surfaced by `language-hygiene` T4, which had to make the indexing
+  explicit to compile; preserved rather than fixed, because changing which
+  string the parser reports is a behaviour decision. All four sites carry the
+  explanation.
 - **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
   MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
   Deterministic lockstep requires bit-identical results, and nobody has verified
@@ -485,7 +500,7 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, 103 tests, covering IP conversion,
+- **The test suite is thin.** Four projects, 124 tests, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
