@@ -50,14 +50,14 @@ tasks:
     acceptance:
       - Both sites read std::max(m_hover.y, ...) with exactly one syncfrand call each
       - The written-out conditional and the comment explaining why it was preserved are both gone
-      - grep -c "syncfrand" GameLogic/Spirit.cpp drops from 6 to 4
+      - The two clamp statements hold two syncfrand calls between them, not four
       - The commit message states plainly that the RNG sequence changes from this point in the tick, and that a client with this change desyncs against one without
     verify:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: |
       Found 2026-08-03 by language-hygiene T8, which preserved both sites
       exactly rather than decide this. The current code in the tree is the
@@ -107,6 +107,25 @@ tasks:
       parallel_safe false, and more strictly than the flag can express: nothing
       else touching simulation code may land between this and T2, or the smoke
       test is testing two things.
+
+      OWNER DECIDED 2026-08-03: fix it, over leaving it permanently or deferring
+      until multiplayer is tested. The argument that carried it was that the diff
+      gets no cheaper and the branch is at its most verifiable now.
+
+      DONE. Both sites are `std::max(m_hover.y, ...)` with one syncfrand each;
+      the written-out conditionals and their explanatory comments are gone.
+      syncfrand occurrences in the file go from 10 to 7 — the two clamps drop
+      from four calls to two, and a comment naming the function went with them.
+
+      THE ACCEPTANCE LINE I WROTE HERE WAS WRONG and is corrected above. It said
+      `grep -c` would fall from 6 to 4; grep -c counts LINES, the file had 8 of
+      them, and one of those was a comment mentioning the function. Countable
+      acceptance is only worth having if the count is measured rather than
+      guessed at when the task is written. Worth remembering when writing the
+      next one.
+
+      T2 is the gate. This is a change to what the simulation computes and
+      nothing that runs in CI can see it.
 
   - id: T2
     title: Owner runs the Garden smoke test against the changed stream

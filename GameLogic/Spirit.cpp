@@ -85,16 +85,7 @@ bool Spirit::Advance()
     {
     case StateBirth:
     {
-      // Written out rather than std::max because the max macro evaluated its
-      // second argument twice, and that argument draws from the synchronised
-      // random stream: when m_hover.y does not win the comparison, syncfrand()
-      // is called a SECOND time and its second result is what lands in
-      // m_hover.y — which is not the maximum of anything. Collapsing this to
-      // one call would change both the draw count and the value, and the
-      // speciesRandom()/syncrand() call sequence is network identity
-      // (CODING_STANDARDS.md#determinism). Preserved exactly; see
-      // language-hygiene T8's notes for the finding.
-      m_hover.y = (m_hover.y > 0.0f + syncfrand(0.5f)) ? m_hover.y : (0.0f + syncfrand(0.5f));
+      m_hover.y = std::max(m_hover.y, 0.0f + syncfrand(0.5f));
       float heightAboveGround = m_pos.y - g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
       if (heightAboveGround > 10.0f)
       {
@@ -124,8 +115,7 @@ bool Spirit::Advance()
       break;
 
     case StateDeath:
-      // Same double evaluation of the synchronised stream as StateBirth above.
-      m_hover.y = (m_hover.y > 2.0f + syncfrand(2.0f)) ? m_hover.y : (2.0f + syncfrand(2.0f));
+      m_hover.y = std::max(m_hover.y, 2.0f + syncfrand(2.0f));
       if (m_timeSync <= 0.0f)
       {
         // We are now dead
