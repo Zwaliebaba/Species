@@ -1282,7 +1282,7 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
     if (g_globalWorld->m_research->HasResearch(taskType))
     {
       char tooltipId[128];
-      sprintf(tooltipId, "newcontrols_create_%s", GlobalResearch::GetTypeName(taskType), i + 1);
+      sprintf(tooltipId, "newcontrols_create_%s", GlobalResearch::GetTypeName(taskType));
 
       auto zone = new ScreenZone("NewTask", LANGUAGEPHRASE(tooltipId), x + 5, y - h / 3, w - 10, h, taskType);
       zone->m_scrollZone = 1;
