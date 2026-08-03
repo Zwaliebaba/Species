@@ -582,7 +582,7 @@ void LevelFile::ParseLandFlattenAreas(TextReader* _in)
     }
 
     LandscapeFlattenArea* def = new LandscapeFlattenArea();
-    m_landscape.m_flattenAreas.PutDataAtEnd(def);
+    m_landscape.m_flattenAreas.push_back(def);
 
     def->m_centre.x = (float)atof(word);
 
@@ -694,7 +694,7 @@ void LevelFile::ParseRoute(TextReader* _in, int _id)
     r->m_wayPoints.PutDataAtEnd(wp);
   }
 
-  m_routes.PutDataAtEnd(r);
+  m_routes.push_back(r);
 }
 
 
@@ -776,7 +776,7 @@ void LevelFile::ParsePrimaryObjectives(TextReader* _in)
       condition->SetCutScene(cutScene);
     }
 
-    m_primaryObjectives.PutData(condition);
+    m_primaryObjectives.push_back(condition);
   }
 }
 
@@ -786,11 +786,11 @@ void LevelFile::GenerateAutomaticObjectives()
   //
   // Create a NeverTrue objective for cutscene mission files
 
-  if (m_primaryObjectives.Size() == 0)
+  if (m_primaryObjectives.empty())
   {
     GlobalEventCondition* objective = new GlobalEventCondition;
     objective->m_type = GlobalEventCondition::NeverTrue;
-    m_primaryObjectives.PutData(objective);
+    m_primaryObjectives.push_back(objective);
   }
 
   //
@@ -807,9 +807,8 @@ void LevelFile::GenerateAutomaticObjectives()
 
     // Make sure this building isn't already in the primary objectives list
     bool found = false;
-    for (int k = 0; k < m_primaryObjectives.Size(); ++k)
+    for (GlobalEventCondition* primaryObjective : m_primaryObjectives)
     {
-      GlobalEventCondition* primaryObjective = m_primaryObjectives.GetData(k);
       if (primaryObjective->m_id == building->m_id.GetUniqueId())
       {
         found = true;
@@ -843,7 +842,7 @@ void LevelFile::GenerateAutomaticObjectives()
           condition->m_type = GlobalEventCondition::ResearchOwned;
           condition->m_id = item->m_researchType;
           condition->SetStringId("objective_research");
-          m_secondaryObjectives.PutData(condition);
+          m_secondaryObjectives.push_back(condition);
         }
       }
       else if (building->m_type == Building::TypeTrunkPort)
@@ -871,7 +870,7 @@ void LevelFile::GenerateAutomaticObjectives()
             condition->m_type = GlobalEventCondition::BuildingOnline;
             condition->m_id = building->m_id.GetUniqueId();
             condition->SetStringId("objective_capture_trunk");
-            m_secondaryObjectives.PutData(condition);
+            m_secondaryObjectives.push_back(condition);
           }
         }
       }
@@ -1023,9 +1022,8 @@ void LevelFile::WriteLandFlattenAreas(FileWriter* _out)
   _out->printf("LandFlattenAreas_StartDefinition\n");
   _out->printf("\t# x      y       z      size\n");
   _out->printf("\t# ==========================\n");
-  for (int i = 0; i < m_landscape.m_flattenAreas.Size(); ++i)
+  for (LandscapeFlattenArea* area : m_landscape.m_flattenAreas)
   {
-    LandscapeFlattenArea* area = m_landscape.m_flattenAreas.GetData(i);
     _out->printf("\t%6.1f %6.1f %6.1f %6.1f\n", area->m_centre.x, area->m_centre.y, area->m_centre.z, area->m_size);
   }
   _out->printf("LandFlattenAreas_EndDefinition\n\n");
@@ -1035,13 +1033,8 @@ void LevelFile::WriteLandFlattenAreas(FileWriter* _out)
 void LevelFile::WriteRoutes(FileWriter* _out)
 {
   _out->printf("Routes_StartDefinition\n");
-  for (int i = 0; i < m_routes.Size(); ++i)
+  for (Route* r : m_routes)
   {
-    if (!m_routes.ValidIndex(i))
-      continue;
-
-    Route* r = m_routes.GetData(i);
-
     _out->printf("\tRoute %d\n", r->m_id);
 
     for (int j = 0; j < r->m_wayPoints.Size(); ++j)
@@ -1072,9 +1065,8 @@ void LevelFile::WritePrimaryObjectives(FileWriter* _out)
 {
   _out->printf("PrimaryObjectives_StartDefinition\n");
 
-  for (int i = 0; i < m_primaryObjectives.Size(); ++i)
+  for (GlobalEventCondition* gec : m_primaryObjectives)
   {
-    GlobalEventCondition* gec = m_primaryObjectives[i];
     //_out->printf( "\t%s:%d", gec->GetTypeName(gec->m_type), gec->m_id);
     _out->printf("\t");
     gec->Save(_out);
@@ -1135,10 +1127,18 @@ LevelFile::~LevelFile()
   m_buildings.EmptyAndDelete();
   m_instantUnits.EmptyAndDelete();
   m_lights.EmptyAndDelete();
-  m_routes.EmptyAndDelete();
-  m_runningPrograms.EmptyAndDelete();
-  m_primaryObjectives.EmptyAndDelete();
-  m_secondaryObjectives.EmptyAndDelete();
+  for (Route* route : m_routes)
+    delete route;
+  m_routes.clear();
+  for (RunningProgram* program : m_runningPrograms)
+    delete program;
+  m_runningPrograms.clear();
+  for (GlobalEventCondition* objective : m_primaryObjectives)
+    delete objective;
+  m_primaryObjectives.clear();
+  for (GlobalEventCondition* objective : m_secondaryObjectives)
+    delete objective;
+  m_secondaryObjectives.clear();
 }
 
 
@@ -1269,12 +1269,11 @@ void LevelFile::RemoveBuilding(int _id)
 
 int LevelFile::GenerateNewRouteId()
 {
-  for (int i = 0; i < m_routes.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_routes.size()); ++i)
   {
     bool idNotUsed = true;
-    for (int j = 0; j < m_routes.Size(); ++j)
+    for (Route* r : m_routes)
     {
-      Route* r = m_routes.GetData(j);
       if (i == r->m_id)
       {
         idNotUsed = false;
@@ -1288,16 +1287,14 @@ int LevelFile::GenerateNewRouteId()
     }
   }
 
-  return m_routes.Size();
+  return static_cast<int>(m_routes.size());
 }
 
 
 Route* LevelFile::GetRoute(int _id)
 {
-  int size = m_routes.Size();
-  for (int i = 0; i < size; ++i)
+  for (Route* route : m_routes)
   {
-    Route* route = m_routes.GetData(i);
     if (route->m_id == _id)
     {
       return route;
@@ -1643,7 +1640,7 @@ void LevelFile::ParseRunningPrograms(TextReader* _in)
       program->m_health[i] = atoi(_in->GetNextToken());
     }
 
-    m_runningPrograms.PutData(program);
+    m_runningPrograms.push_back(program);
   }
 }
 

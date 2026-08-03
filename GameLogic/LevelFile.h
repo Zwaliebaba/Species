@@ -118,7 +118,7 @@ class LandscapeDef
 {
   public:
     LList<LandscapeTile*> m_tiles;
-    LList<LandscapeFlattenArea*> m_flattenAreas;
+    std::vector<LandscapeFlattenArea*> m_flattenAreas;
     float m_cellSize;
     int m_worldSizeX;
     int m_worldSizeZ;
@@ -135,7 +135,9 @@ class LandscapeDef
     ~LandscapeDef()
     {
       m_tiles.EmptyAndDelete();
-      m_flattenAreas.EmptyAndDelete();
+      for (LandscapeFlattenArea* area : m_flattenAreas)
+        delete area;
+      m_flattenAreas.clear();
     }
 };
 
@@ -208,13 +210,13 @@ class LevelFile
     LList<Building*> m_buildings;
     LList<InstantUnit*> m_instantUnits;
     LList<Light*> m_lights;
-    LList<Route*> m_routes;
-    LList<RunningProgram*> m_runningPrograms;
-    LList<GlobalEventCondition*> m_primaryObjectives;
-    LList<GlobalEventCondition*> m_secondaryObjectives; // This data isn't stored in the map or mission files
-                                                        // directly, but is calculated at load time for your
-                                                        // convenience
-    int m_levelDifficulty;                              // The difficulty factor that this level represents.
+    std::vector<Route*> m_routes;
+    std::vector<RunningProgram*> m_runningPrograms;
+    std::vector<GlobalEventCondition*> m_primaryObjectives;
+    std::vector<GlobalEventCondition*> m_secondaryObjectives; // This data isn't stored in the map or mission files
+                                                              // directly, but is calculated at load time for your
+                                                              // convenience
+    int m_levelDifficulty;                                    // The difficulty factor that this level represents.
 
     LandscapeDef m_landscape;
 

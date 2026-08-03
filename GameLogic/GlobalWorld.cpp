@@ -1743,9 +1743,8 @@ void GlobalWorld::LoadGame(const char* _filename)
       }
 
       bool objectivesComplete = true;
-      for (int i = 0; i < levFile.m_primaryObjectives.Size(); ++i)
+      for (GlobalEventCondition* gec : levFile.m_primaryObjectives)
       {
-        GlobalEventCondition* gec = levFile.m_primaryObjectives[i];
         if (!gec->Evaluate())
         {
           objectivesComplete = false;

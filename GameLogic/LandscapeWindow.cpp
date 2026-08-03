@@ -177,7 +177,7 @@ class LandscapeFlattenAreaDeleteButton : public SpeciesButton
 
     void MouseUp()
     {
-      g_location->m_levelFile->m_landscape.m_flattenAreas.RemoveData(m_areaId);
+      g_location->m_levelFile->m_landscape.m_flattenAreas.erase(g_location->m_levelFile->m_landscape.m_flattenAreas.begin() + m_areaId);
       g_locationEditor->SetSelectionId(-1);
       EclRemoveWindow(m_parent->m_name);
     }
@@ -202,7 +202,7 @@ void LandscapeFlattenAreaEditWindow::Create()
 {
   SpeciesWindow::Create();
 
-  m_areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_areaId);
+  m_areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_areaId];
 
   int height = 5;
   int pitch = 17;
@@ -274,7 +274,7 @@ class NewFlattenAreaButton : public SpeciesButton
 
       LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
       LandscapeFlattenArea* def = new LandscapeFlattenArea();
-      g_location->m_levelFile->m_landscape.m_flattenAreas.PutDataAtEnd(def);
+      g_location->m_levelFile->m_landscape.m_flattenAreas.push_back(def);
       def->m_centre = _pos;
       def->m_size = 40.0f;
 

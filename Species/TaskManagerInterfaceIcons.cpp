@@ -803,11 +803,16 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
       objectiveId *= -1;
     objectiveId -= 10;
 
+    // The bounds check is explicit now and was not before. These were LLists,
+    // whose operator[] returns nullptr for an out-of-range read, so the assert
+    // below was doing double duty as a range check on an objectiveId derived
+    // from a screen-zone id. std::vector would have been undefined behaviour.
+    std::vector<GlobalEventCondition*> const& objectives =
+      primary ? g_location->m_levelFile->m_primaryObjectives : g_location->m_levelFile->m_secondaryObjectives;
+
     GlobalEventCondition* gec = nullptr;
-    if (primary)
-      gec = g_location->m_levelFile->m_primaryObjectives[objectiveId];
-    else
-      gec = g_location->m_levelFile->m_secondaryObjectives[objectiveId];
+    if (objectiveId >= 0 && objectiveId < static_cast<int>(objectives.size()))
+      gec = objectives[objectiveId];
     DEBUG_ASSERT(gec);
 
     if (gec->m_cutScene)
@@ -1885,13 +1890,13 @@ void TaskManagerInterfaceIcons::RenderObjectives()
 
   for (int o = 0; o < 2; ++o)
   {
-    LList<GlobalEventCondition*>* objectives = nullptr;
+    std::vector<GlobalEventCondition*>* objectives = nullptr;
     if (o == 0)
       objectives = &g_location->m_levelFile->m_primaryObjectives;
     else
       objectives = &g_location->m_levelFile->m_secondaryObjectives;
 
-    int numObjectives = objectives->Size();
+    int numObjectives = static_cast<int>(objectives->size());
     if (numObjectives == 0)
       continue;
 
@@ -1964,7 +1969,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
       zone->m_scrollZone = 1;
       m_newScreenZones.PutData(zone);
 
-      GlobalEventCondition* condition = objectives->GetData(i);
+      GlobalEventCondition* condition = (*objectives)[i];
       bool completed = condition->Evaluate();
 
       char* descriptor = LANGUAGEPHRASE(condition->m_stringId);

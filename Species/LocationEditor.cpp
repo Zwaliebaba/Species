@@ -169,12 +169,12 @@ int LocationEditor::IsPosInLandTile(Vector3 const& pos)
 
 int LocationEditor::IsPosInFlattenArea(Vector3 const& pos)
 {
-  LList<LandscapeFlattenArea*>* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
+  std::vector<LandscapeFlattenArea*>* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
   Landscape* land = &g_location->m_landscape;
 
-  for (int i = 0; i < areas->Size(); ++i)
+  for (int i = 0; i < static_cast<int>(areas->size()); ++i)
   {
-    LandscapeFlattenArea* area = areas->GetData(i);
+    LandscapeFlattenArea* area = (*areas)[i];
     float halfSize = area->m_size;
     float size = halfSize * 2.0f;
     float worldX = area->m_centre.x - halfSize;
@@ -431,7 +431,7 @@ void LocationEditor::AdvanceModeLandFlat()
       {
         // The user "grabs" the landscape at this position
         LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-        LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
+        LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId];
         m_landscapeGrabX = mousePos3D.x - areaDef->m_centre.x;
         m_landscapeGrabZ = mousePos3D.z - areaDef->m_centre.z;
       }
@@ -446,7 +446,7 @@ void LocationEditor::AdvanceModeLandFlat()
     else if (g_inputManager->controlEvent(ControlTileDrag))
     {
       // The user "drags" the flatten area around
-      LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
+      LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId];
       areaDef->m_centre.x = mousePos3D.x - m_landscapeGrabX;
       areaDef->m_centre.z = mousePos3D.z - m_landscapeGrabZ;
     }
@@ -891,13 +891,13 @@ void LocationEditor::RenderModeLandFlat()
   Landscape* land = &g_location->m_landscape;
 
   // Highlight any flatten area under our mouse cursor
-  LList<LandscapeFlattenArea*>* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
-  for (int i = 0; i < areas->Size(); ++i)
+  std::vector<LandscapeFlattenArea*>* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
+  for (int i = 0; i < static_cast<int>(areas->size()); ++i)
   {
     if (i == m_selectionId)
       continue;
 
-    LandscapeFlattenArea* area = areas->GetData(i);
+    LandscapeFlattenArea* area = (*areas)[i];
     float worldX = area->m_centre.x;
     float worldZ = area->m_centre.z;
     float sizeX = area->m_size;
@@ -915,7 +915,7 @@ void LocationEditor::RenderModeLandFlat()
   if (m_selectionId != -1)
   {
     LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-    LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas.GetData(m_selectionId);
+    LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId];
     float x = areaDef->m_centre.x;
     float y = areaDef->m_centre.y;
     float z = areaDef->m_centre.z;

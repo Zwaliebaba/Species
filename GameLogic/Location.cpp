@@ -850,11 +850,10 @@ bool Location::MissionComplete()
   if (m_missionComplete)
     return true;
 
-  LList<GlobalEventCondition*>* objectivesList = &m_levelFile->m_primaryObjectives;
+  std::vector<GlobalEventCondition*>* objectivesList = &m_levelFile->m_primaryObjectives;
 
-  for (int i = 0; i < objectivesList->Size(); ++i)
+  for (GlobalEventCondition* gec : *objectivesList)
   {
-    GlobalEventCondition* gec = objectivesList->GetData(i);
     if (!gec->Evaluate())
     {
       return false;
@@ -1448,10 +1447,8 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
 
   if (_teamType == Team::TeamTypeLocalPlayer)
   {
-    for (int i = 0; i < m_levelFile->m_runningPrograms.Size(); ++i)
+    for (RunningProgram* program : m_levelFile->m_runningPrograms)
     {
-      RunningProgram* program = m_levelFile->m_runningPrograms[i];
-
       if (program->m_type == Entity::TypeEngineer)
       {
         Vector3 pos(program->m_positionX[0], 0, program->m_positionZ[0]);

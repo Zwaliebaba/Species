@@ -420,10 +420,9 @@ void Landscape::GenerateHeightMap(LandscapeDef* _def)
 
   // Apply flatten areas
   {
-    LList<LandscapeFlattenArea*>* areasList = &_def->m_flattenAreas;
-    for (int i = 0; i < areasList->Size(); ++i)
+    for (LandscapeFlattenArea* area : _def->m_flattenAreas)
     {
-      FlattenArea(areasList->GetData(i));
+      FlattenArea(area);
     }
   }
 

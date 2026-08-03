@@ -1758,12 +1758,11 @@ bool Citizen::BeginVictoryDance()
 {
   if (m_onGround && m_id.GetTeamId() == 0 && syncfrand(5.0f) < 1.0f && m_pos.y > 10.0f)
   {
-    LList<GlobalEventCondition*>* objectivesList = &g_location->m_levelFile->m_primaryObjectives;
+    std::vector<GlobalEventCondition*>* objectivesList = &g_location->m_levelFile->m_primaryObjectives;
 
     bool victory = true;
-    for (int i = 0; i < objectivesList->Size(); ++i)
+    for (GlobalEventCondition* gec : *objectivesList)
     {
-      GlobalEventCondition* gec = objectivesList->GetData(i);
       if (!gec->Evaluate())
       {
         victory = false;
