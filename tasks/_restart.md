@@ -22,7 +22,7 @@ Four plans are open, with **19 tasks left** between them:
 | Plan | Open | State |
 |---|---|---|
 | `strings-modernised` | 9 of 16 | Stage 4. Was mid-flight when work stopped. |
-| `ownership` | 5 of 7 | Stage 5. Two landed, the rest gated on stage 4. |
+| `ownership` | 6 of 9 | Stage 5. Two landed, the rest gated on stage 4. |
 | `language-hygiene` | 4 of 9 | Two sweeps landed; the enums and the min/max macros are left. |
 | `namespace-migration` | 3 of 5 | Sequenced last by design. |
 
@@ -157,8 +157,13 @@ in this order:
 `strings/T16` and `strings/T14`. `language-hygiene/T4` was re-scoped before
 being started — it claimed three files and five enums, and the five have 795
 use sites across 39 files with three of them standing behind `int` typedefs, so
-those three are now `language-hygiene/T9`. `language-hygiene/T3` and
-`ownership/T3` are untouched.
+those three are now `language-hygiene/T9`. `language-hygiene/T3` is untouched.
+
+`ownership/T3` is complete — six files across five commits. It split twice on
+contact, which is now the plan's most-repeated finding rather than a surprise:
+`m_sounds` became `ownership/T8` because who owns a SoundInstance between `new`
+and InitialiseSound succeeding is a decision rather than a swap, and
+`EclRegisterWindow`'s raw parameter became `ownership/T9`, 43 call sites of it.
 
 `strings/T12` (the TextRenderer variadic API, 233 call sites) is also ready and
 is `parallel_safe: false`. Run it alone, after step 0 and either before or

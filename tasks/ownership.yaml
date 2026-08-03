@@ -334,10 +334,44 @@ tasks:
         m_phrasesXin are deleted in three places, two of them conditional
         reassignments, so the ownership is genuinely unclear from the code.
 
-      Not compiled here — CI's x64 Debug build is what checks both landed
-      subsystems, and neither is reachable from the Garden smoke test except
-      through Shape, which every building renders.
-    status: in_progress
+      ALL SIX FILES LANDED 2026-08-03, in five commits plus three whole-file
+      reformats. Eclipse's two vectors, the Resource bitmap and shape maps,
+      CachedSampleManager's sample map, LangTable's phrases, offset tables and
+      text chunk, and five of SoundSystem's six containers.
+
+      The survey above got Eclipse right and the sound trio wrong, which is
+      worth keeping as a record of what measurement does and does not tell you.
+      Eclipse was the biggest and its 19 external callers were the work, exactly
+      as predicted. The sound trio was measured as "most contained" on the reach
+      of its members — and that was true, and irrelevant: five of its six
+      containers converted mechanically, and the sixth is not a container
+      problem at all. Reach measures who can see a member. It says nothing about
+      whether the ownership is decidable.
+
+      TWO CARVE-OUTS, both now tasks rather than sentences.
+
+      m_sounds is ownership T8. ShutdownSound is called both with instances the
+      map holds and with instances it never accepted, because InitialiseSound
+      returns false when it folds a monophonic sound into an existing one and
+      the caller then shuts down the instance it still owns. Who owns an
+      instance between `new` and InitialiseSound succeeding is a decision, and
+      SoundInstance destructors stop audio channels.
+
+      EclRegisterWindow's raw parameter is ownership T9. It adopts at the
+      boundary today, with the transfer in a comment rather than the signature.
+      43 call sites: 24 pass an inline `new`, 19 hand over a configured local
+      whose type has to be read rather than swept.
+
+      Three destruction points are pinned rather than left to scope, and they
+      are the whole of the care this task needed: EclRemoveWindow destroys after
+      the erase, EclBringWindowToFront moves the owner while holding an
+      observer, and Resource keeps its two clear() calls so both maps still
+      empty after FlushOpenGlState.
+
+      Not compiled here — CI's x64 Debug build is what checks all six. The
+      Garden smoke test reaches this through Shape, which every building
+      renders, and through Eclipse, which step 6 exercises.
+    status: done
 
   - id: T4
     title: Adopt unique_ptr in GameLogic
@@ -461,3 +495,90 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
     status: todo
+
+  - id: T8
+    title: Decide who owns a SoundInstance, then convert m_sounds
+    intent: >
+      The sixth of SoundSystem's EmptyAndDelete containers, and the only one
+      MarkNotUsed touches. It is not an element-type swap: ShutdownSound is
+      called both with instances m_sounds holds and with instances it never
+      accepted, so making the map own requires deciding who holds an instance
+      between `new` and InitialiseSound succeeding. Sound destructors stop audio
+      channels, so getting it wrong is silent.
+    project: NeuronClient
+    depends_on: [T3]
+    files:
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundInstance.cpp
+      - GameLogic/PrefsSoundWindow.cpp
+    acceptance:
+      - grep -w EmptyAndDelete over SoundSystem.cpp returns nothing
+      - ShutdownSound has one contract, stated in the header, covering both the registered and unregistered cases
+      - Instances die at the same program points they do today, stated per call site in the commit
+      - Owner runs the Garden smoke test — sounds fire throughout it, and a lifetime mistake here is silent rather than a crash
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+    notes: |
+      Split out of T3 on 2026-08-03, after the other five containers converted
+      mechanically and this one would not.
+
+      THE SHAPE OF THE PROBLEM, so the next attempt starts from it rather than
+      finding it. Callers do:
+
+        auto instance = new SoundInstance();
+        ...configure...
+        if (!InitialiseSound(instance)) ShutdownSound(instance);
+
+      InitialiseSound returns false when the sound is monophonic and a matching
+      instance already exists — it folds the object ids into that one and the
+      new instance is never registered. So ShutdownSound serves two populations
+      and deletes unconditionally, while MarkNotUsed clears the occupancy bit
+      without destroying. That is hazard 1 from T2's NeuronServer survey, with a
+      second case T2 did not have.
+
+      A further trap: ShutdownSound tests ValidIndex(m_id.m_index) and does not
+      check that the slot still holds THIS instance. If an index has been
+      reused, today's code marks the wrong slot unused and deletes the argument
+      anyway. Adding the identity check is a behaviour change and probably a fix;
+      it should be a stated decision, not a side effect of the conversion.
+
+      m_music and m_requestedMusic are raw observers into the same instances and
+      have to be reasoned about with them.
+
+  - id: T9
+    title: Make EclRegisterWindow take ownership in its signature
+    intent: >
+      The Eclipse window list owns its windows as of T3, but the registration
+      functions still take a raw EclWindow* and adopt it, so the transfer is a
+      comment rather than a type. Closing that removes the last raw owning `new`
+      on the UI path and makes a double-registration or a stack-allocated window
+      a compile error.
+    project: NeuronClient
+    depends_on: [T3]
+    files:
+      - NeuronClient/Eclipse.h
+      - NeuronClient/Eclipse.cpp
+      - GameLogic
+      - Species
+    acceptance:
+      - EclRegisterWindow and EclRegisterPopup take std::unique_ptr<EclWindow>
+      - grep -rn "EclRegisterWindow(new \|EclRegisterPopup(new " over the six projects returns nothing
+      - No call site casts or releases to satisfy the signature
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+    notes: >
+      Split out of T3 on 2026-08-03, measured at the point Eclipse's containers
+      converted: 43 call sites, 24 passing an inline `new` and 19 handing over a
+      configured local. The 24 are a mechanical rewrite to make_unique. The 19
+      are not — each one's local has to be read, because its type changes and
+      anything else touching it between construction and registration changes
+      with it. That is the same enumerate-every-use discipline T1 and T2 each
+      lost a CI round to.
