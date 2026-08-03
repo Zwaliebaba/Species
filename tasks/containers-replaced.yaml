@@ -652,26 +652,20 @@ tasks:
     status: done
 
   - id: T18
-    title: Convert the leaf container users that gate other plans
+    title: Convert PrefsManager off the hand-rolled containers
     intent: >
-      Preferences (FastDArray), Profiler (HashTable) and PersistingDebugRender
-      are leaves: no other task in this plan touches them, and nothing about
-      them has to wait for the rest of stage 3. They were sitting inside T15,
+      Preferences is a leaf that nothing else in this plan touches, and after
+      T19 it is the best-covered file in the tree. It was sitting inside T15,
       behind all thirteen of T4-T14, which parked ownership T1 — the cheapest
-      and best-covered stage-5 conversion in the tree, under NeuronCore's
-      existing tests — behind the entire container effort for no reason.
-      Split out so it can run in the first wave.
+      stage-5 conversion available — behind the entire container effort for no
+      reason. Split out so it can run in the first wave.
     project: NeuronCore
     depends_on: [T1, T3, T19]
     files:
       - NeuronCore/Preferences.h
       - NeuronCore/Preferences.cpp
-      - NeuronCore/Profiler.h
-      - NeuronCore/Profiler.cpp
-      - NeuronClient/PersistingDebugRender.h
-      - NeuronClient/PersistingDebugRender.cpp
     acceptance:
-      - grep -lwE "LList|DArray|FastDArray|BTree|HashTable|SortingHashTable" on the six files returns nothing
+      - grep -lwE "LList|DArray|FastDArray|BTree|HashTable|SortingHashTable" on both files returns nothing
       - Every test T19 landed passes unchanged, with no edit to PreferencesTests.cpp in the same commit
       - Template lines in a saved preferences file keep their exact positions; the order of the appended new-key block is explicitly not preserved, per T19's finding
       - The existing NeuronCore suite passes unchanged
@@ -697,7 +691,7 @@ tasks:
       last doubled. No std:: container reproduces it and neither would a
       different hash. What is achievable, and what T19 pins, is that template
       lines keep their exact positions and no key is lost.
-    status: in_progress
+    status: done
 
   - id: T15
     title: Sweep up the remaining scattered container users
@@ -707,7 +701,7 @@ tasks:
       the re-measure — the file list below is what is known today, not a
       prediction. Ends with zero users of every legacy container outside the
       container headers themselves.
-    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T18]
+    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T18, T20, T21]
     files:
       - NeuronClient/2dSurfaceMap.h
     acceptance:
@@ -796,3 +790,77 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     status: done
+
+  - id: T20
+    title: Convert the profiler and its window off SortingHashTable
+    intent: >
+      ProfiledElement::m_children is a SortingHashTable, which is a HashTable
+      that also walks its keys in alphabetical order. std::map with a
+      case-insensitive comparator reproduces both halves exactly — but the
+      ordered walk is driven from GameLogic/ProfileWindow.cpp through
+      StartOrderedWalk/GetNextOrderedIndex/NumUsed, so the window converts in
+      the same commit or the profiler cannot move at all.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/Profiler.h
+      - NeuronCore/Profiler.cpp
+      - GameLogic/ProfileWindow.cpp
+    acceptance:
+      - grep -lwE "HashTable|SortingHashTable" on the three files returns nothing
+      - Child iteration stays case-insensitive alphabetical — the comparator uses stricmp, matching SortingHashTable::FindPrevKey and HashFunc's key uppercasing
+      - GetMaxChildTime divides by the same element's m_historyNumSeconds as before, which is the alphabetically first child and therefore order-dependent
+      - The profile window lists the same entries in the same order (owner-observable; there is no test project reach here)
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    notes: >
+      Split out of T18 on 2026-08-02 after it turned out not to be a leaf.
+      T18's premise was that Preferences, Profiler and PersistingDebugRender
+      were self-contained; Profiler is not. ProfileWindow.cpp reaches
+      m_children directly at six sites, so the conversion crosses from
+      NeuronCore into GameLogic and is a different size and shape of task.
+
+      Ordering is observable twice over, which is why the comparator matters:
+      the window displays children in walk order, and GetMaxChildTime returns
+      `rv / m_children[first]->m_historyNumSeconds` — the divisor is whichever
+      child sorts first. Two latent oddities found while reading, neither
+      fixed here and neither a crash: that divisor looks arbitrary rather than
+      intentional, and GetMaxChildTime declares a `child` local it never uses.
+      Decide deliberately when converting; do not silently "tidy" the divisor,
+      because it changes a displayed number.
+    status: todo
+
+  - id: T21
+    title: Convert PersistingDebugRender to Neuron::SlotMap
+    intent: >
+      m_items is a FastDArray used for exactly what it is — SetSize, a
+      GetPointer() that reserves a free slot, MarkNotUsed to release one, and
+      index iteration that skips holes. That is a slot map, not a vector, so
+      this is a T3 SlotMap migration rather than a std:: substitution. It is
+      genuinely a leaf: m_items is protected and only its own .cpp touches it.
+    project: NeuronClient
+    depends_on: [T3]
+    files:
+      - NeuronClient/PersistingDebugRender.h
+      - NeuronClient/PersistingDebugRender.cpp
+    acceptance:
+      - grep -lwE "FastDArray|DArray" on both files returns nothing
+      - Render() still visits live items in index order and releases a slot in the same frame as before
+      - Slot reuse order is the freelist flavour, matching FastDArray as pinned by T2
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      Split out of T18 on 2026-08-02. Not because it is coupled — it is the
+      one file of the three that really is a leaf — but because the container
+      it needs is SlotMap rather than a standard one, which makes it a
+      different job from the std:: substitution T18 turned out to be. Debug
+      render code with no test reach; evidence is the build, review against
+      T2's pinned freelist sequence, and the Garden smoke test.
+    status: todo

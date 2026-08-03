@@ -157,7 +157,7 @@ tasks:
       as its own noted follow-up, not silently.
     project: NeuronClient
     depends_on: [T1]
-    blocked_by: [containers-replaced/T5, containers-replaced/T6, containers-replaced/T18]
+    blocked_by: [containers-replaced/T5, containers-replaced/T6, containers-replaced/T21]
     files:
       - NeuronClient/SoundInstance.cpp
       - NeuronClient/SoundSystem.cpp

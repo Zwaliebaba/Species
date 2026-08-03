@@ -52,6 +52,7 @@ tasks:
     depends_on: []
     blocked_by:
       - containers-replaced/T18
+      - containers-replaced/T20
       - strings-modernised/T2
     files:
       - NeuronCore/Preferences.cpp
@@ -68,11 +69,19 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     notes: >
-      The blocked_by names containers-replaced/T18, not T15. These files used
-      to sit inside T15, which depends on all thirteen of T4-T14 — so this
-      task, the cheapest and best-covered ownership conversion in the tree,
-      was parked behind the whole of stage 3 for no reason. T18 split them
-      out (owner decision, 2026-08-02) precisely so this one can run early.
+      The blocked_by names containers-replaced T18 and T20, not T15. These
+      files used to sit inside T15, which depends on all thirteen of T4-T14 —
+      so this task, the cheapest and best-covered ownership conversion in the
+      tree, was parked behind the whole of stage 3 for no reason. The split
+      (owner decision, 2026-08-02) was made precisely so it could run early.
+
+      Two edges rather than one because the split itself split again: T18
+      landed Preferences, and Profiler turned out not to be a leaf — its
+      SortingHashTable is walked from GameLogic/ProfileWindow.cpp — so it
+      became T20. Preferences' half of this task is therefore reachable well
+      before Profiler's; if the wait becomes the obstacle, splitting this
+      task along the same line is the obvious move rather than starting it
+      half-blocked.
     status: todo
 
   - id: T2
