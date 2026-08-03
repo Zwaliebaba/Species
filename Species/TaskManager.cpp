@@ -16,23 +16,16 @@
 
 #include "ClientToServer.h"
 
-#include "App.h"
-#include "GameCursor.h"
 #include "GlobalWorld.h"
 #include "Location.h"
-#include "Renderer.h"
 #include "TaskManager.h"
-#include "TaskManagerInterface.h"
 #include "Team.h"
 #include "Unit.h"
 #include "LevelFile.h"
-#include "Main.h"
+#include "GameTime.h"
 #include "RoutingSystem.h"
 #include "EntityGrid.h"
 #include "ParticleSystem.h"
-#include "Camera.h"
-#include "Script.h"
-#include "LocationInput.h"
 
 #include "SoundSystem.h"
 
@@ -109,7 +102,7 @@ void Task::TargetSquad(Vector3 const& _pos)
 
   if (trackEntity == 2)
   {
-    TheCamera()->RequestEntityTrackMode(m_objId);
+    g_camera->RequestEntityTrackMode(m_objId);
   }
 }
 
@@ -262,7 +255,7 @@ void Task::TargetOfficer(Vector3 const& _pos)
     WorldObjectId id = Promote(nearestId);
     g_taskManager->TerminateTask(m_id);
     g_location->m_teams[id.GetTeamId()].SelectUnit(id.GetUnitId(), id.GetIndex(), -1);
-    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageSuccess, GlobalResearch::TypeOfficer, 2.5f);
+    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageSuccess, GlobalResearch::TypeOfficer, 2.5f);
 
     g_soundSystem->TriggerOtherEvent(nullptr, "GestureSuccess", SoundSourceBlueprint::TypeGesture);
   }
@@ -283,7 +276,7 @@ bool Task::Advance()
       {
         if (g_taskManager->m_currentTaskId == m_id)
         {
-          TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageShutdown, m_type, 3.0f);
+          g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageShutdown, m_type, 3.0f);
         }
         return true;
       }
@@ -298,7 +291,7 @@ bool Task::Advance()
       {
         if (g_taskManager->m_currentTaskId == m_id)
         {
-          TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageShutdown, m_type, 3.0f);
+          g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageShutdown, m_type, 3.0f);
         }
         return true;
       }
@@ -319,9 +312,9 @@ bool Task::Advance()
 
 void Task::SwitchTo()
 {
-  if (TheCamera()->IsInMode(Camera::ModeRadarAim) || TheCamera()->IsInMode(Camera::ModeTurretAim))
+  if (g_camera->IsInMode(CameraAccess::ModeRadarAim) || g_camera->IsInMode(CameraAccess::ModeTurretAim))
   {
-    TheCamera()->RequestMode(Camera::ModeFreeMovement);
+    g_camera->RequestMode(CameraAccess::ModeFreeMovement);
   }
 
   int teamId = g_globalWorld->m_myTeamId;
@@ -434,7 +427,7 @@ bool TaskManager::RunTask(Task* _task)
   }
   else
   {
-    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageFailure, -1, 2.5f);
+    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageFailure, -1, 2.5f);
   }
 
   return false;
@@ -484,7 +477,7 @@ bool TaskManager::RunTask(int _type)
           {
             squad->m_controllerId = controller->m_id;
             SelectTask(task->m_id);
-            TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageSuccess, _type, 2.5f);
+            g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageSuccess, _type, 2.5f);
           }
           return success;
         }
@@ -493,7 +486,7 @@ bool TaskManager::RunTask(int _type)
       }
     }
 
-    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageFailure, -1, 2.5f);
+    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageFailure, -1, 2.5f);
     return false;
   }
 
@@ -509,12 +502,12 @@ bool TaskManager::RunTask(int _type)
       {
         InsertionSquad* squad = (InsertionSquad*)unit;
         squad->SetWeaponType(_type);
-        TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageSuccess, _type, 2.5f);
+        g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageSuccess, _type, 2.5f);
         return true;
       }
     }
 
-    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageFailure, -1, 2.5f);
+    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageFailure, -1, 2.5f);
     return false;
   }
   }
@@ -544,7 +537,7 @@ bool TaskManager::TerminateTask(int _id)
     Task* task = m_tasks[i];
     if (task->m_id == _id)
     {
-      TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageShutdown, task->m_type, 3.0f);
+      g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageShutdown, task->m_type, 3.0f);
       m_tasks.RemoveData(i);
       task->Stop();
       delete task;
@@ -608,7 +601,7 @@ void TaskManager::AdvanceTasks()
   Task* currentTask = GetCurrentTask();
   if (currentTask && currentTask->m_state == Task::StateStarted)
   {
-    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageSuccess, currentTask->m_type, 2.5f);
+    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageSuccess, currentTask->m_type, 2.5f);
   }
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vector3.h"
+#include "WorldObjectId.h"
 
 class CameraAnimation;
 
@@ -92,6 +93,10 @@ class CameraAccess
     virtual bool IsInteractive() = 0;
     virtual bool IsInMode(int _mode) = 0;
     virtual void RequestMode(int _mode) = 0;
+
+    // Follow a particular object. Asked for by the task manager, which moves
+    // down in tasks/layering-inversion.yaml T15.
+    virtual void RequestEntityTrackMode(WorldObjectId const& _id) = 0;
 
     virtual int GetDebugMode() = 0;
     virtual void SetNextDebugMode() = 0;
