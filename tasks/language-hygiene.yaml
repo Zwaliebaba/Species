@@ -222,7 +222,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       RE-SCOPED 2026-08-03, before starting, on a measurement the original task
       did not have. It listed three files and five enums. The five enums have
