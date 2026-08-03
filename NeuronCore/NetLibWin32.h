@@ -16,7 +16,9 @@ typedef unsigned long (WINAPI *NetThreadFunc)(void *ptr);
 #define NetGetLastError() 			WSAGetLastError()
 #define NetSleep(a) 				Sleep(a)
 #define NetCloseSocket 				closesocket
-#define NetGetHostByName 			gethostbyname // Should eventually be getaddrinfo (?)
+// Provide a Win32 wrapper declaration for hostname resolution.
+// Implemented in NetLibWin32.cpp using getaddrinfo().
+HOSTENT* NetGetHostByName(const char* hostname);
 
 // ioctlsocket's third argument points at the flag value; it is not the value.
 // This used to be a macro passing the literal 1 as that pointer, so winsock

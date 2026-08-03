@@ -1,15 +1,12 @@
 // See header file for module description
 
 #include "pch.h"
-
 #include "NetSocket.h"
-
-#define fdopen _fdopen
 
 NetSocket::NetSocket()
 {
   m_sockfd = NET_INVALID_SOCKET;
-  m_stdiofd = (FILE*)0;
+  m_stdiofd = static_cast<FILE*>(nullptr);
   m_timeout = 10000;
   m_polltime = 100;
   m_port = 0;
@@ -18,7 +15,6 @@ NetSocket::NetSocket()
   memset(&m_listener, 0, sizeof(m_listener));
   memset(m_hostname, 0, MAX_HOSTNAME_LEN);
 }
-
 
 NetSocket::~NetSocket()
 {
@@ -29,24 +25,17 @@ NetSocket::~NetSocket()
   }
 }
 
-
 NetRetCode NetSocket::Flush()
 {
   NetRetCode ret = NetRetCode::NetOk;
   if (!m_stdiofd)
-  {
-    m_stdiofd = fdopen(m_sockfd, "w");
-  }
-  if ((m_stdiofd == (FILE*)0) || (fflush(m_stdiofd)))
-  {
+    m_stdiofd = _fdopen(m_sockfd, "w");
+  if ((m_stdiofd == static_cast<FILE*>(nullptr)) || (fflush(m_stdiofd)))
     ret = NetRetCode::NetFailed;
-  }
   return ret;
 }
 
-
 unsigned long NetSocket::GetIpAddr() { return m_ipaddr; }
-
 
 NetRetCode NetSocket::CheckTimeout(unsigned int* timeout, unsigned int* timedout, int haveAllData)
 {
@@ -80,8 +69,7 @@ NetRetCode NetSocket::CheckTimeout(unsigned int* timeout, unsigned int* timedout
   return ret;
 }
 
-
-NetRetCode NetSocket::Connect(char const* host, unsigned short port)
+NetRetCode NetSocket::Connect(const char* host, unsigned short port)
 {
   NetRetCode ret = NetRetCode::NetFailed;
 
@@ -97,7 +85,6 @@ NetRetCode NetSocket::Connect(char const* host, unsigned short port)
   return ret;
 }
 
-
 void NetSocket::Close()
 {
   if (m_sockfd != NET_INVALID_SOCKET)
@@ -106,7 +93,6 @@ void NetSocket::Close()
     m_sockfd = NET_INVALID_SOCKET;
   }
 }
-
 
 NetRetCode NetSocket::Connect()
 {
@@ -131,21 +117,13 @@ NetRetCode NetSocket::Connect()
   servaddr->sin_port = htons(m_port);
 
   // Resolve dotted IP address
-  /* Removed, didn't seem to work for addresses like 127.0.0.1 and 90.0.0.3 */
-  //   if (!ncValidInetAddr(ncGetInetAddr(m_hostname,&servaddr->sin_addr.s_addr)))
-  //   {
-  // Otherwise, resolve host name
   NetHostDetails* pHostent = NetGetHostByName(m_hostname);
   if (!pHostent)
   {
     NetDebugOut("Host address resolution failed for %s", m_hostname);
     return NetRetCode::NetFailed;
   }
-  else
-  {
-    servaddr->sin_addr.s_addr = *((unsigned long*)pHostent->h_addr_list[0]);
-  }
-  //   }
+  servaddr->sin_addr.s_addr = *((unsigned long*)pHostent->h_addr_list[0]);
 
   // Stash the IP address as an unsigned long in host byte order
   m_ipaddr = servaddr->sin_addr.s_addr;
@@ -154,7 +132,7 @@ NetRetCode NetSocket::Connect()
   NetSetSocketNonBlocking(m_sockfd);
 
   // Attempt the connect until we timeout
-  while (::connect(m_sockfd, (struct sockaddr*)servaddr, sizeof(*servaddr)) < 0)
+  while (connect(m_sockfd, (struct sockaddr*)servaddr, sizeof(*servaddr)) < 0)
   {
     // This used to test a stale zero, because err was initialised to 0 and
     // never read back from winsock, so every failure fell through to the
@@ -188,12 +166,11 @@ NetRetCode NetSocket::Connect()
   return ret;
 }
 
-
 // Write method using select
 NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes)
 {
   NetRetCode ret = NetRetCode::NetOk;
-  char* buf = (char*)bufAsVoid;
+  auto buf = static_cast<char*>(bufAsVoid);
   int bytesLeft = bufLen;
   int bytesSent = 0;
   int err = 0;
@@ -202,15 +179,13 @@ NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes
   int haveAllData = 0;
 
   struct timeval timeVal;
-  long timeoutSeconds = (long)((m_polltime * 1000) / 100000);
-  long timeoutUSeconds = (long)((m_polltime * 1000) % 100000);
+  long timeoutSeconds = static_cast<long>((m_polltime * 1000) / 100000);
+  long timeoutUSeconds = static_cast<long>((m_polltime * 1000) % 100000);
 
   // Callers ignore the return of Connect, so say no rather than spin a select
   // loop against a handle that was never opened.
   if (m_sockfd == NET_INVALID_SOCKET)
-  {
     return NetRetCode::NetFailed;
-  }
 
   while ((bytesLeft > 0) && (!timedout))
   {
@@ -220,25 +195,21 @@ NetRetCode NetSocket::WriteData(void* bufAsVoid, int bufLen, int* numActualBytes
     timeVal.tv_usec = timeoutUSeconds;
     haveAllData = -1;
 
-    switch (select(m_sockfd + 1, (fd_set*)0, &m_listener, (fd_set*)0, &timeVal))
+    switch (select(m_sockfd + 1, nullptr, &m_listener, nullptr, &timeVal))
     {
     case NET_SOCKET_ERROR:
       NetDebugOut("WriteData select call failed");
       return NetRetCode::NetFailed;
     case 0:
       if (numActualBytes)
-      {
         haveAllData = ((*numActualBytes == bufLen) ? 1 : 0);
-      }
       ret = CheckTimeout(&timeout, &timedout, haveAllData);
       continue;
     default:
       if (!FD_ISSET(m_sockfd, &m_listener))
-      {
         return NetRetCode::NetFailed;
-      }
 
-      bytesSent = sendto(m_sockfd, (char*)buf, bytesLeft, 0, (struct sockaddr*)&m_to, sizeof(m_to));
+      bytesSent = sendto(m_sockfd, buf, bytesLeft, 0, (struct sockaddr*)&m_to, sizeof(m_to));
       err = NetGetLastError();
       if (NetIsSocketError(bytesSent) && NetIsReset(err))
       {

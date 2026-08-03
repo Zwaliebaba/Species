@@ -77,6 +77,7 @@
            already matches the intended layering exactly — NeuronServer reaches
            down to NeuronCore and nowhere else. -->
       <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore;$(SpeciesRoot)NeuronServer</AdditionalIncludeDirectories>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpplatest</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

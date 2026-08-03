@@ -88,6 +88,7 @@
            leaving Species and GameLogic on the path would make that
            possible again through the back door. -->
       <AdditionalIncludeDirectories>$(SpeciesRoot)NeuronCore</AdditionalIncludeDirectories>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpplatest</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
