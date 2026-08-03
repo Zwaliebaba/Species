@@ -547,10 +547,9 @@ void Officer::SetWaypoint(Vector3 const& _wayPoint)
   //
   // If we clicked near a teleport, tell the officer to go into it
   m_wayPointTeleportId = -1;
-  LList<int>* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(_wayPoint.x, _wayPoint.z);
-  for (int i = 0; i < nearbyBuildings->Size(); ++i)
+  std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(_wayPoint.x, _wayPoint.z);
+  for (int buildingId : *nearbyBuildings)
   {
-    int buildingId = nearbyBuildings->GetData(i);
     Building* building = g_location->GetBuilding(buildingId);
     if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge)
     {
@@ -613,10 +612,9 @@ void Officer::SetOrders(Vector3 const& _orders)
       bool foundTeleport = false;
 
       m_ordersBuildingId = -1;
-      LList<int>* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(m_orderPosition.x, m_orderPosition.z);
-      for (int i = 0; i < nearbyBuildings->Size(); ++i)
+      std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(m_orderPosition.x, m_orderPosition.z);
+      for (int buildingId : *nearbyBuildings)
       {
-        int buildingId = nearbyBuildings->GetData(i);
         Building* building = g_location->GetBuilding(buildingId);
         if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge)
         {

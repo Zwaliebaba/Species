@@ -215,11 +215,10 @@ bool Entity::AdvanceDead(Unit* _unit)
 
 int Entity::EnterTeleports(int _requiredId)
 {
-  LList<int>* buildings = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
+  std::vector<int> const* buildings = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
 
-  for (int i = 0; i < buildings->Size(); ++i)
+  for (int buildingId : *buildings)
   {
-    int buildingId = buildings->GetData(i);
     if (_requiredId != -1 && _requiredId != buildingId)
     {
       // We are only permitted to enter building with id _requiredId
@@ -515,11 +514,10 @@ Vector3 Entity::PushFromObstructions(Vector3 const& pos, bool killem)
   //
   // Push from buildings
 
-  LList<int>* buildings = g_location->m_obstructionGrid->GetBuildings(result.x, result.z);
+  std::vector<int> const* buildings = g_location->m_obstructionGrid->GetBuildings(result.x, result.z);
 
-  for (int b = 0; b < buildings->Size(); ++b)
+  for (int buildingId : *buildings)
   {
-    int buildingId = buildings->GetData(b);
     Building* building = g_location->GetBuilding(buildingId);
     if (building)
     {

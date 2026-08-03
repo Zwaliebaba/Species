@@ -3,13 +3,13 @@
 
 #include "2dArray.h"
 #include "2dSurfaceMap.h"
-#include "LList.h"
+#include <vector>
 
 
 class ObstructionGridCell
 {
 public:
-    LList<int> m_buildings;
+  std::vector<int> m_buildings;
 };
 
 
@@ -27,7 +27,10 @@ public:
 
     void CalculateAll();
 
-    LList<int> *GetBuildings( float _locationX, float _locationZ );
+    // Const because the cells are: callers only ever read the ids. The LList
+    // version cast the const away with a C-style cast to hand out a mutable
+    // pointer nothing wanted.
+    std::vector<int> const* GetBuildings(float _locationX, float _locationZ) const;
 
     void Render();
 };

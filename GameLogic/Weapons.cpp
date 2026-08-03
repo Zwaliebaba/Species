@@ -445,11 +445,10 @@ bool Rocket::Advance()
   //
   // Have we hit any buildings?
 
-  LList<int>* buildings = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
+  std::vector<int> const* buildings = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
 
-  for (int b = 0; b < buildings->Size(); ++b)
+  for (int buildingId : *buildings)
   {
-    int buildingId = buildings->GetData(b);
     Building* building = g_location->GetBuilding(buildingId);
     if (building->DoesSphereHit(m_pos, 3.0f))
     {
@@ -579,10 +578,10 @@ bool Laser::Advance()
     Vector3 hitPos(0, 0, 0);
     Vector3 hitNorm(0, 0, 0);
 
-    LList<int>* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
-    for (int i = 0; i < nearbyBuildings->Size(); ++i)
+    std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
+    for (int buildingId : *nearbyBuildings)
     {
-      Building* building = g_location->GetBuilding(nearbyBuildings->GetData(i));
+      Building* building = g_location->GetBuilding(buildingId);
       if (building->DoesRayHit(m_pos, rayDir, (m_vel * SERVER_ADVANCE_PERIOD).Mag(), &hitPos, &hitNorm))
       {
         Vector3 vel(-m_vel / 15.0f);

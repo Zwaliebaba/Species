@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <algorithm>
 #include "HiResTime.h"
 #include "DebugRender.h"
 #include "Debug.h"
@@ -51,7 +53,7 @@ void ObstructionGrid::CalculateBuildingArea(int _buildingId)
 
         if (building->DoesSphereHit(cellPos, cellRadius))
         {
-          cell->m_buildings.PutData(_buildingId);
+          cell->m_buildings.push_back(_buildingId);
         }
       }
     }
@@ -77,18 +79,11 @@ void ObstructionGrid::CalculateBuildingArea(int _buildingId)
 
             ObstructionGridCell* cell = m_cells.GetPointer(cellX, cellY);
 
-            bool found = false;
-            for (int j = 0; j < cell->m_buildings.Size(); ++j)
-            {
-              if (cell->m_buildings[j] == building->m_id.GetUniqueId())
-              {
-                found = true;
-              }
-            }
+            const bool found = std::find(cell->m_buildings.begin(), cell->m_buildings.end(), building->m_id.GetUniqueId()) != cell->m_buildings.end();
 
             if (!found)
             {
-              cell->m_buildings.PutData(_buildingId);
+              cell->m_buildings.push_back(_buildingId);
             }
           }
         }
@@ -110,7 +105,7 @@ void ObstructionGrid::CalculateAll()
     for (int z = 0; z < m_cells.GetNumRows(); ++z)
     {
       ObstructionGridCell* cell = m_cells.GetPointer(x, z);
-      cell->m_buildings.Empty();
+      cell->m_buildings.clear();
     }
   }
 
@@ -131,9 +126,9 @@ void ObstructionGrid::CalculateAll()
 }
 
 
-LList<int>* ObstructionGrid::GetBuildings(float _locationX, float _locationZ)
+std::vector<int> const* ObstructionGrid::GetBuildings(float _locationX, float _locationZ) const
 {
-  return (LList<int>*)&m_cells.GetValueNearest(_locationX, _locationZ).m_buildings;
+  return &m_cells.GetValueNearest(_locationX, _locationZ).m_buildings;
 }
 
 

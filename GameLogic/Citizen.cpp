@@ -1399,10 +1399,9 @@ void Citizen::GiveOrders(Vector3 const& _targetPos)
 
   bool foundTeleport = false;
 
-  LList<int>* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(m_orders.x, m_orders.z);
-  for (int i = 0; i < nearbyBuildings->Size(); ++i)
+  std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(m_orders.x, m_orders.z);
+  for (int buildingId : *nearbyBuildings)
   {
-    int buildingId = nearbyBuildings->GetData(i);
     Building* building = g_location->GetBuilding(buildingId);
     if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge)
     {
@@ -1915,11 +1914,10 @@ Vector3 Citizen::PushFromObstructions(Vector3 const& pos, bool killem)
 
   START_PROFILE(g_profiler, "PushFromBuildings");
 
-  LList<int>* buildings = g_location->m_obstructionGrid->GetBuildings(result.x, result.z);
+  std::vector<int> const* buildings = g_location->m_obstructionGrid->GetBuildings(result.x, result.z);
 
-  for (int b = 0; b < buildings->Size(); ++b)
+  for (int buildingId : *buildings)
   {
-    int buildingId = buildings->GetData(b);
     Building* building = g_location->GetBuilding(buildingId);
     if (building)
     {

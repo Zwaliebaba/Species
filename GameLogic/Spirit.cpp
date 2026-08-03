@@ -192,13 +192,12 @@ bool Spirit::Advance()
 
 void Spirit::PushFromBuildings()
 {
-  LList<int>* obstructions = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
+  std::vector<int> const* obstructions = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
 
   bool hitFound = false;
 
-  for (int i = 0; i < obstructions->Size(); ++i)
+  for (int buildingId : *obstructions)
   {
-    int buildingId = obstructions->GetData(i);
     Building* building = g_location->GetBuilding(buildingId);
     if (building && building->DoesSphereHit(m_pos, 5.0f))
     {

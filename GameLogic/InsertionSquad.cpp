@@ -128,10 +128,9 @@ void InsertionSquad::SetWayPoint(Vector3 const& _pos)
   //
   // If we clicked near a teleport, tell the unit to go into it
   m_teleportId = -1;
-  LList<int>* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(_pos.x, _pos.z);
-  for (int i = 0; i < nearbyBuildings->Size(); ++i)
+  std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(_pos.x, _pos.z);
+  for (int buildingId : *nearbyBuildings)
   {
-    int buildingId = nearbyBuildings->GetData(i);
     Building* building = g_location->GetBuilding(buildingId);
     if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge)
     {
@@ -307,10 +306,9 @@ void InsertionSquad::DirectControl(TeamControls const& _teamControls)
     t.z += _teamControls.m_directUnitMoveDy;
     // t+= front * - _teamControls.m_directUnitMoveDy;
 
-    LList<int>* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(t.x, t.z);
-    for (int i = 0; i < nearbyBuildings->Size(); ++i)
+    std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(t.x, t.z);
+    for (int buildingId : *nearbyBuildings)
     {
-      int buildingId = nearbyBuildings->GetData(i);
       Building* building = g_location->GetBuilding(buildingId);
       if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge)
       {

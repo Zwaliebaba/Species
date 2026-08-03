@@ -1400,10 +1400,10 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
     // Is the waypoint in a Radar Dish?
 
     Vector3 targetPos(iu->m_waypointX, 0, iu->m_waypointZ);
-    LList<int>* buildingIds = m_obstructionGrid->GetBuildings(iu->m_waypointX, iu->m_waypointZ);
-    for (int i = 0; i < buildingIds->Size(); ++i)
+    std::vector<int> const* buildingIds = m_obstructionGrid->GetBuildings(iu->m_waypointX, iu->m_waypointZ);
+    for (int buildingId : *buildingIds)
     {
-      Building* building = GetBuilding(buildingIds->GetData(i));
+      Building* building = GetBuilding(buildingId);
       if (building && building->m_type == Building::TypeRadarDish)
       {
         Vector3 waypointToBuilding = (building->m_pos - targetPos);
