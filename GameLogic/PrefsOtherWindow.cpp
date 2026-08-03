@@ -150,15 +150,19 @@ void PrefsOtherWindow::ListAvailableLanguages()
 {
     m_languages.EmptyAndDelete();
 
-    LList<char *> *fileList = g_resource->ListResources( "Language/", "*.*", false );
-    for( int i = 0; i < fileList->Size(); ++i )
+    std::vector<char*>* fileList = g_resource->ListResources("Language/", "*.*", false);
+    for (char* lang : *fileList)
     {
-        char *lang = fileList->GetData(i);
         char *dot = strrchr( lang, '.' );
         if( dot ) *dot = '\x0';
         m_languages.PutData( strdup( lang ) );
     }
-    fileList->EmptyAndDelete();
+
+    // The names come from `new char[]`, so delete[]; the old EmptyAndDelete used
+    // plain `delete`. It also never freed the list itself, which leaked.
+    for (char* lang : *fileList)
+      delete[] lang;
+    delete fileList;
 }
 
 

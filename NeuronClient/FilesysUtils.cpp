@@ -8,13 +8,13 @@
 // Filter can be nullptr or "" or "*.bmp" or "Map*" or "Map*.txt"
 // Set FullFilename to true if you want results like "Textures/blah.bmp"
 // or false for "blah.bmp"
-LList<char*>* ListDirectory(const char* _dir, const char* _filter, bool _fullFilename)
+std::vector<char*>* ListDirectory(const char* _dir, const char* _filter, bool _fullFilename)
 {
   if (_filter == nullptr || _filter[0] == '\0')
     _filter = "*";
 
   // Create a DArray for our results
-  auto result = new LList<char*>();
+  auto result = new std::vector<char*>();
 
   // Now add on all files found locally
   char searchstring[256];
@@ -44,7 +44,7 @@ LList<char*>* ListDirectory(const char* _dir, const char* _filter, bool _fullFil
         sprintf(newname, "%s", thisfile.name);
       }
 
-      result->PutData(newname);
+      result->push_back(newname);
     }
 
     exitmeplease = _findnext(fileindex, &thisfile);
@@ -52,9 +52,9 @@ LList<char*>* ListDirectory(const char* _dir, const char* _filter, bool _fullFil
   return result;
 }
 
-LList<char*>* ListSubDirectoryNames(const char* _dir)
+std::vector<char*>* ListSubDirectoryNames(const char* _dir)
 {
-  auto result = new LList<char*>();
+  auto result = new std::vector<char*>();
 
   _finddata_t thisfile;
   long fileindex = _findfirst(_dir, &thisfile);
@@ -66,7 +66,7 @@ LList<char*>* ListSubDirectoryNames(const char* _dir)
     if (strcmp(thisfile.name, ".") != 0 && strcmp(thisfile.name, "..") != 0 && (thisfile.attrib & _A_SUBDIR))
     {
       char* newname = strdup(thisfile.name);
-      result->PutData(newname);
+      result->push_back(newname);
     }
 
     exitmeplease = _findnext(fileindex, &thisfile);

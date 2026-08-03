@@ -357,13 +357,12 @@ void Script::RunCommand_PurityControl()
 
   char saveDir[256];
   sprintf(saveDir, "users/%s/", g_userProfileName);
-  LList<char*>* allFiles = ListDirectory(saveDir, "*.*");
+  // Neither the names nor the vector are freed. The exit(0) below is why that
+  // has never mattered.
+  std::vector<char*>* allFiles = ListDirectory(saveDir, "*.*");
 
-  for (int i = 0; i < allFiles->Size(); ++i)
-  {
-    char* filename = allFiles->GetData(i);
+  for (const char* filename : *allFiles)
     DeleteThisFile(filename);
-  }
 
   //
   // Open up our store website

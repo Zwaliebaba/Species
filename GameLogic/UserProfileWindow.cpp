@@ -57,8 +57,8 @@ void UserProfileWindow::Create()
 {
     char profileDir[256];
     sprintf(profileDir, "%susers/*.*", g_appCommands->ProfileDirectory());
-    LList<char *> *profileList = ListSubDirectoryNames( profileDir );
-    int numProfiles = profileList->Size();
+    std::vector<char*>* profileList = ListSubDirectoryNames(profileDir);
+    int numProfiles = static_cast<int>(profileList->size());
 
     int windowH = 150 + numProfiles * 30;
     SetMenuSize( 300, windowH);
@@ -88,9 +88,8 @@ void UserProfileWindow::Create()
     //
     // Load existing profile button
 
-    for( int i = 0; i < profileList->Size(); ++i )
+    for (char* profileName : *profileList)
     {
-        char *profileName = profileList->GetData(i);
         char caption[256];
         sprintf( caption, "%s: '%s'", LANGUAGEPHRASE("dialog_loadprofile"), profileName );
         LoadUserProfileButton *button = new LoadUserProfileButton();
@@ -101,6 +100,10 @@ void UserProfileWindow::Create()
         RegisterButton( button );
         m_buttonOrder.PutData( button );
     }
+
+    // Only the list. Each name is now owned by the button that took it, and
+    // ListSubDirectoryNames strdup'd them, so whoever frees them must use
+    // free() rather than delete[].
     delete profileList;
 
 

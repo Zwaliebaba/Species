@@ -15,6 +15,16 @@
 #include "FileDialog.h"
 
 
+namespace
+{
+  // LList::ValidIndex, spelled out. Worth keeping rather than dropping: every
+  // index below arrives from the scroll bar or from a stale selection, so
+  // these really are range tests and not redundant assertions. LList::GetData
+  // also returned a null T() out of range, which std::vector will not do.
+  bool ValidIndex(const std::vector<char*>* _files, int _index) { return _index >= 0 && _index < static_cast<int>(_files->size()); }
+} // namespace
+
+
 //*****************************************************************************
 // Class FileOKButton
 //*****************************************************************************
@@ -29,8 +39,8 @@ class FileOKButton : public SpeciesButton
       for (int i = 0; i < fd->m_selected.Size(); ++i)
       {
         int index = fd->m_selected[i];
-        DEBUG_ASSERT(fd->m_files->ValidIndex(index));
-        char* filename = fd->m_files->GetData(index);
+        DEBUG_ASSERT(ValidIndex(fd->m_files, index));
+        char* filename = (*fd->m_files)[index];
         fd->FileSelected(filename);
       }
 
@@ -61,7 +71,7 @@ class FileButton : public EclButton
       FileDialog* fd = (FileDialog*)m_parent;
       int index = m_index + fd->m_scrollBar->m_currentValue;
 
-      if (fd->m_files && fd->m_files->ValidIndex(index))
+      if (fd->m_files && ValidIndex(fd->m_files, index))
       {
         fd->FileClicked(index);
       }
@@ -82,7 +92,7 @@ class FileButton : public EclButton
       FileDialog* fd = (FileDialog*)m_parent;
       int index = m_index + fd->m_scrollBar->m_currentValue;
 
-      if (fd->m_files && fd->m_files->ValidIndex(index))
+      if (fd->m_files && ValidIndex(fd->m_files, index))
       {
         if (fd->IsFileSelected(index) != -1)
         {
@@ -107,7 +117,7 @@ class FileButton : public EclButton
           glEnd();
         }
 
-        char* fileName = fd->m_files->GetData(index);
+        char* fileName = (*fd->m_files)[index];
         g_editorFont.DrawText2D(realX + 30, realY + 8, 11, fileName);
       }
     }
@@ -136,7 +146,9 @@ class SelectedButton : public SpeciesButton
       else if (fd->m_selected.Size() == 1)
       {
         int index = fd->m_selected[0];
-        char* filename = fd->m_files->GetData(index);
+        // RefreshFileList empties m_selected, so this index should be live.
+        // The guard is what LList::GetData used to do for free.
+        char* filename = ValidIndex(fd->m_files, index) ? (*fd->m_files)[index] : nullptr;
         SetCaption(filename);
       }
       else
@@ -178,7 +190,11 @@ FileDialog::~FileDialog()
 
   if (m_files)
   {
-    m_files->EmptyAndDelete();
+    // ListResources hands back names allocated with `new char[]`.
+    // LList::EmptyAndDelete used plain `delete`, which was the wrong form;
+    // writing the loop out makes the right one visible.
+    for (char* file : *m_files)
+      delete[] file;
     delete m_files;
     m_files = nullptr;
   }
@@ -216,7 +232,7 @@ void FileDialog::Create()
   ok->SetProperties(LANGUAGEPHRASE("dialog_ok"), m_w - 120, m_h - 30, 55, 20, LANGUAGEPHRASE("dialog_ok"));
   RegisterButton(ok);
 
-  m_scrollBar->Create("FileScroll", m_w - 20, 25, 15, numRows * 13, m_files->Size(), numRows);
+  m_scrollBar->Create("FileScroll", m_w - 20, 25, 15, numRows * 13, static_cast<int>(m_files->size()), numRows);
 }
 
 
@@ -258,7 +274,9 @@ void FileDialog::RefreshFileList()
 {
   if (m_files)
   {
-    m_files->EmptyAndDelete();
+    // delete[], not delete — see the destructor.
+    for (char* file : *m_files)
+      delete[] file;
     delete m_files;
     m_files = nullptr;
   }

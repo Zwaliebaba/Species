@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <vector>
 
 #include "DArray.h"
 #include "SpeciesWindow.h"
@@ -27,7 +28,9 @@ public:
 	bool    m_allowMultiSelect;
     bool	m_okPressed;
 
-    LList   <char *> *m_files;
+    // Owned. Holds names from Resource::ListResources, so each one is a
+    // `new char[]` and needs delete[].
+    std::vector<char*>* m_files;
     LList   <int>     m_selected;
 
     ScrollBar   *m_scrollBar;

@@ -1726,10 +1726,10 @@ void GlobalWorld::LoadGame(const char* _filename)
 
     char filter[256];
     sprintf(filter, "Mission%s*.txt", GetLocationName(loc->m_id));
-    LList<char*>* missionFileNames = g_app->m_resource->ListResources("Levels/", filter, false);
-    for (int j = 0; j < missionFileNames->Size(); ++j)
+    std::vector<char*>* missionFileNames = g_app->m_resource->ListResources("Levels/", filter, false);
+    for (const char* missionFileName : *missionFileNames)
     {
-      LevelFile levFile(missionFileNames->GetData(j), loc->m_mapFilename);
+      LevelFile levFile(missionFileName, loc->m_mapFilename);
 
       for (int b = 0; b < levFile.m_buildings.Size(); ++b)
       {
@@ -1761,7 +1761,8 @@ void GlobalWorld::LoadGame(const char* _filename)
       if (objectivesComplete)
         loc->m_missionCompleted = true;
     }
-    missionFileNames->EmptyAndDeleteArray();
+    for (char* missionFileName : *missionFileNames)
+      delete[] missionFileName;
     delete missionFileNames;
   }
 

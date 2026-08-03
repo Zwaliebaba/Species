@@ -1,16 +1,22 @@
 #pragma once
 
-#include <stdio.h>
+#include <vector>
 
-#include "LList.h"
+#include <stdio.h>
 
 
 //*****************************************************************************
 // Misc directory and filename functions
 //*****************************************************************************
 
-LList <char *> *ListDirectory           (char const *_dir, char const *_filter, bool fullFilename = true);
-LList <char *> *ListSubDirectoryNames   (char const *_dir);
+// Both return a vector the caller owns, holding strings the caller owns. The
+// two do NOT allocate their strings the same way and never have: ListDirectory
+// uses `new char[]`, so its results need delete[], while ListSubDirectoryNames
+// uses strdup, so its results need free(). Callers today disagree about which
+// (see tasks/containers-replaced.yaml T6) — read this line before writing a
+// clean-up loop.
+std::vector<char*>* ListDirectory(char const* _dir, char const* _filter, bool fullFilename = true);
+std::vector<char*>* ListSubDirectoryNames(char const* _dir);
 
 bool DoesFileExist(char const *_fullPath);
 

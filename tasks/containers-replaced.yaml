@@ -276,19 +276,73 @@ tasks:
     files:
       - NeuronClient/Resource.h
       - NeuronClient/Resource.cpp
-      - NeuronClient/LanguageTable.h
-      - NeuronClient/LanguageTable.cpp
+      - NeuronClient/FilesysUtils.h
       - NeuronClient/FilesysUtils.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/UserProfileWindow.cpp
+      - Species/GameMenu.cpp
+      - Species/GlobalWorld.cpp
+      - Species/Script.cpp
       - Tests/NeuronClientTests/FilesysUtilsTests.cpp
     acceptance:
-      - grep -lwE "LList|DArray|BTree|HashTable|SortingHashTable" on the five source files returns nothing
-      - Existing FilesysUtils tests pass unchanged; new tests cover the converted filename-listing behaviour
+      - grep -lwE "LList|DArray|BTree|HashTable|SortingHashTable" on Resource.h/.cpp and FilesysUtils.h/.cpp returns nothing
+      - Existing FilesysUtils tests pass unchanged
+      - No caller starts or stops freeing the returned strings. The FORM of the free is corrected where the loop had to be written out by hand — see notes
     verify:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
+    notes: >
+      Two things the plan did not anticipate, both settled here.
+
+      The third acceptance line originally said the wrong frees were to be
+      preserved. That was written before anyone had looked at how the names are
+      allocated. ListDirectory allocates each name with `new char[]`;
+      LList::EmptyAndDelete frees with plain `delete`. While the free was hidden
+      inside a container method that mismatch was a latent bug nobody could see.
+      Converting to std::vector means writing the loop out by hand, and
+      preserving the old behaviour would have meant typing `delete file;` over a
+      `new char[]` deliberately. So the form was corrected to delete[] in
+      FileDialog (two sites), PrefsOtherWindow and GlobalWorld — which already
+      used EmptyAndDeleteArray and so is unchanged in substance. PrefsOtherWindow
+      also never freed the vector itself; that `delete fileList` is now there.
+      Nobody's ownership changed: every caller that freed still frees, and the
+      two that never freed (Script, which calls exit(0) three lines later, and
+      UserProfileWindow, which hands each name to a button) still do not.
+
+      The hash tables were case-insensitive — HashFunc masked the case bit off
+      and lookups compared with stricmp — so Resource.h's four maps carry a
+      ResourceNameLess comparator built on stricmp. Without it GetTexture would
+      miss on a name whose case differs from the one it was cached under, which
+      is exactly what happens: it stores under the caller's spelling and loads
+      through a strlwr'd path.
+
+      Found and fixed while converting: FlushOpenGlState passed the hash table's
+      slot index to glDeleteTextures rather than the texture name held in that
+      slot, so on a context loss it deleted whichever textures happened to have
+      low numeric names and leaked the real ones. There is no index to get wrong
+      now. The `#if 1 // Try to catch crash on shutdown bug` around that loop
+      suggests someone was already hunting a symptom of it, but that is a guess.
+
+      Deleted: OrderedInsert in Resource.cpp, a file-scope function with no
+      declaration in any header and no caller in the tree. It also skipped the
+      last element of the list it was inserting into.
+
+      Resource.h dropped its LList/BTree/HashTable/FastDArray includes. Around 47
+      translation units use LList without including it, which made that look like
+      a tree-wide sweep; resolving the include graph properly showed every one of
+      them still reaches LList.h another way, so nothing needed a new include.
+      Four headers (FeedingTube.h, GameCursor.h, ObstructionGrid.h,
+      StartSequence.h) are not self-contained, but they were already not
+      self-contained and do not include Resource.h.
+
+      LanguageTable was in this task's original scope and is now T24 — its BTree
+      of phrases is fed by WordWrapText, which puts interior pointers from a
+      single `new char[]` buffer into its list, and untangling that is a task on
+      its own.
 
   - id: T7
     title: Convert the Eclipse UI toolkit and window-manager containers
@@ -1143,5 +1197,46 @@ tasks:
 
       Mechanical, but not small, and worth doing in one commit so the
       signature never disagrees with itself.
+    status: todo
+
+  - id: T24
+    title: Convert the language table off BTree and HashTable
+    intent: >
+      LangTable holds its phrases in a BTree keyed by phrase name and two
+      HashTables of keyboard and controller indices, and hands out
+      DArray<LangPhrase*> through GetPhraseList and LList<char*> through
+      WordWrapText. BTree is an ordered map, so std::map replaces it directly
+      and ConvertToDArray becomes building a vector — but that is a different
+      data structure question from Resource's name-keyed caches, and a
+      different subsystem, which is why it is not T6.
+    project: NeuronClient
+    depends_on: [T1, T3]
+    files:
+      - NeuronClient/LanguageTable.h
+      - NeuronClient/LanguageTable.cpp
+      - GameLogic/MainMenus.cpp
+    acceptance:
+      - grep -lwE "LList|DArray|BTree|HashTable" on LanguageTable.h/.cpp returns nothing
+      - Phrase lookup order is unchanged — BTree walked its keys in order and std::map must too, because ConvertToDArray's output order is what the phrase list and the localisation editor display
+      - WordWrapText's callers still read the same lines in the same order
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    notes: >
+      Split out of T6 on 2026-08-02. Two hazards for whoever takes it.
+
+      ConvertToDArray is called five times and its result order is observable
+      — BTree is ordered by key, so the replacement must be std::map and not
+      an unordered container, or the phrase list reorders.
+
+      WordWrapText is worse than it looks: it allocates ONE buffer with
+      `new char[strlen(_string) + 2]` and then puts INTERIOR POINTERS into
+      that buffer into the returned list. Freeing the list's elements
+      individually would be catastrophic, and no caller does — MainMenus reads
+      the lines and drops the list, leaking the single buffer. Converting the
+      container must not change that, and anyone tempted to make the list own
+      its strings has to fix the allocation first.
     status: todo
 
