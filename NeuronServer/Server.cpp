@@ -45,8 +45,8 @@ static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
 
     if (s_server)
     {
-      auto letter = new NetworkUpdate(udpdata->m_data);
-      s_server->ReceiveLetter(letter, newip);
+      auto letter = std::make_unique<NetworkUpdate>(udpdata->m_data);
+      s_server->ReceiveLetter(std::move(letter), newip);
       //            SET_PROFILE(m_profiler,  "#Server Receive", (double) udpdata->getLength() );
     }
 
@@ -68,13 +68,9 @@ Server::Server()
 
 Server::~Server()
 {
-  for (auto* letter : m_history)
-  {
-    delete letter;
-  }
   m_history.clear();
-  m_clients.EmptyAndDelete();
-  m_teams.EmptyAndDelete();
+  m_clients.Empty();
+  m_teams.Empty();
 
   // The mutexes are created by Initialise, not by the constructor, so a Server
   // that was built and never initialised used to null-dereference here. Species
@@ -83,10 +79,6 @@ Server::~Server()
   if (m_inboxMutex)
   {
     m_inboxMutex->Lock();
-    for (auto* update : m_inbox)
-    {
-      delete update;
-    }
     m_inbox.clear();
     m_inboxMutex->Unlock();
   }
@@ -94,10 +86,6 @@ Server::~Server()
   if (m_outboxMutex)
   {
     m_outboxMutex->Lock();
-    for (auto* letter : m_outbox)
-    {
-      delete letter;
-    }
     m_outbox.clear();
     m_outboxMutex->Unlock();
   }
@@ -145,32 +133,35 @@ int Server::GetClientId(char* _ip)
 void Server::RegisterNewClient(char* _ip)
 {
   DEBUG_ASSERT(GetClientId(_ip) == -1);
-  auto sToC = new ServerToClient(_ip);
-  m_clients.PutData(sToC);
+  m_clients.PutData(std::make_unique<ServerToClient>(_ip));
 
   //
   // Tell all clients about it
 
-  auto letter = new ServerToClientLetter();
+  auto letter = std::make_unique<ServerToClientLetter>();
   letter->SetType(ServerToClientLetter::HelloClient);
   letter->SetIp(ConvertIPToInt(_ip));
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 void Server::RemoveClient(char* _ip)
 {
   int clientId = GetClientId(_ip);
-  ServerToClient* sToC = m_clients[clientId];
+  // reset() before MarkNotUsed, and both are load-bearing. MarkNotUsed only
+  // clears the occupancy bit — it does not destroy — so without the reset the
+  // record would outlive the disconnect and linger until the slot was reused.
+  // The reset comes first because operator[] requires the slot to still be
+  // occupied. The record therefore dies exactly where `delete sToC` used to.
+  m_clients[clientId].reset();
   m_clients.MarkNotUsed(clientId);
-  delete sToC;
 
   //
   // Tell all clients about it
 
-  auto letter = new ServerToClientLetter();
+  auto letter = std::make_unique<ServerToClientLetter>();
   letter->SetType(ServerToClientLetter::GoodbyeClient);
   letter->SetIp(ConvertIPToInt(_ip));
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 }
 
 // *** RegisterNewTeam
@@ -183,24 +174,22 @@ void Server::RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId)
   {
     if (!m_teams.ValidIndex(_desiredTeamId))
     {
-      auto team = new ServerTeam(clientId);
       if (m_teams.Size() <= _desiredTeamId)
         m_teams.SetSize(_desiredTeamId + 1);
-      m_teams.PutData(team, _desiredTeamId);
+      m_teams.PutData(std::make_unique<ServerTeam>(clientId), _desiredTeamId);
     }
   }
   else
   {
     DEBUG_ASSERT(m_teams.NumUsed() < NUM_TEAMS);
-    auto team = new ServerTeam(clientId);
-    int teamId = m_teams.PutData(team);
+    int teamId = m_teams.PutData(std::make_unique<ServerTeam>(clientId));
 
-    auto letter = new ServerToClientLetter();
+    auto letter = std::make_unique<ServerToClientLetter>();
     letter->SetType(ServerToClientLetter::TeamAssign);
     letter->SetTeamId(teamId);
     letter->SetIp(ConvertIPToInt(_ip));
     letter->SetTeamType(_teamType);
-    SendLetter(letter);
+    SendLetter(std::move(letter));
   }
 
   /*
@@ -244,14 +233,14 @@ void Server::RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId)
       }*/
 }
 
-NetworkUpdate* Server::GetNextLetter()
+std::unique_ptr<NetworkUpdate> Server::GetNextLetter()
 {
   m_inboxMutex->Lock();
-  NetworkUpdate* letter = nullptr;
+  std::unique_ptr<NetworkUpdate> letter;
 
   if (!m_inbox.empty())
   {
-    letter = m_inbox.front();
+    letter = std::move(m_inbox.front());
     m_inbox.erase(m_inbox.begin());
   }
 
@@ -259,16 +248,16 @@ NetworkUpdate* Server::GetNextLetter()
   return letter;
 }
 
-void Server::ReceiveLetter(NetworkUpdate* update, char* fromIP)
+void Server::ReceiveLetter(std::unique_ptr<NetworkUpdate> update, char* fromIP)
 {
   update->SetClientIp(fromIP);
 
   m_inboxMutex->Lock();
-  m_inbox.push_back(update);
+  m_inbox.push_back(std::move(update));
   m_inboxMutex->Unlock();
 }
 
-void Server::SendLetter(ServerToClientLetter* letter)
+void Server::SendLetter(std::unique_ptr<ServerToClientLetter> letter)
 {
   //
   // Assign a sequence id
@@ -276,7 +265,7 @@ void Server::SendLetter(ServerToClientLetter* letter)
   letter->SetSequenceId(m_sequenceId);
   m_sequenceId++;
 
-  m_history.push_back(letter);
+  m_history.push_back(std::move(letter));
 }
 
 void Server::AdvanceSender()
@@ -286,24 +275,24 @@ void Server::AdvanceSender()
 
   while (!m_outbox.empty())
   {
-    ServerToClientLetter* letter = m_outbox.front();
+    // Taken off the outbox before the send rather than after, so the letter
+    // is destroyed when this scope ends whichever branch runs. It used to be
+    // deleted only INSIDE the valid-client branch, so a letter addressed to a
+    // client that disconnected before it was sent was dropped from the outbox
+    // and never freed. Fixing that is a behaviour change and a deliberate one.
+    std::unique_ptr<ServerToClientLetter> letter = std::move(m_outbox.front());
+    m_outbox.erase(m_outbox.begin());
     DEBUG_ASSERT(letter);
 
     if (m_clients.ValidIndex(letter->GetClientId()))
     {
-      {
-        int linearSize = 0;
-        ServerToClient* client = m_clients[letter->GetClientId()];
-        NetSocket* socket = client->GetSocket();
-        char* linearisedLetter = letter->GetByteStream(&linearSize);
-        socket->WriteData(linearisedLetter, linearSize);
-        bytesSentThisFrame += linearSize;
-        delete letter;
-      }
+      int linearSize = 0;
+      ServerToClient* client = m_clients[letter->GetClientId()].get();
+      NetSocket* socket = client->GetSocket();
+      char* linearisedLetter = letter->GetByteStream(&linearSize);
+      socket->WriteData(linearisedLetter, linearSize);
+      bytesSentThisFrame += linearSize;
     }
-
-    // The letter has now been sent so we can take it off the outbox list
-    m_outbox.erase(m_outbox.begin());
   }
 
   m_outboxMutex->Unlock();
@@ -321,10 +310,10 @@ void Server::Advance()
   //
   // Compile all incoming messages into a ServerToClientLetter
 
-  auto letter = new ServerToClientLetter();
+  auto letter = std::make_unique<ServerToClientLetter>();
   letter->SetType(ServerToClientLetter::Update);
 
-  NetworkUpdate* incoming = GetNextLetter();
+  std::unique_ptr<NetworkUpdate> incoming = GetNextLetter();
 
   while (incoming)
   {
@@ -390,16 +379,15 @@ void Server::Advance()
     int clientId = GetClientId(incoming->m_clientIp);
     if (clientId != -1)
     {
-      ServerToClient* sToc = m_clients[clientId];
+      ServerToClient* sToc = m_clients[clientId].get();
       if (incoming->m_lastSequenceId > sToc->m_lastKnownSequenceId)
         sToc->m_lastKnownSequenceId = incoming->m_lastSequenceId;
     }
 
-    delete incoming;
     incoming = GetNextLetter();
   }
 
-  SendLetter(letter);
+  SendLetter(std::move(letter));
 
   //
   // Update all clients depending on their state
@@ -412,7 +400,7 @@ void Server::Advance()
   {
     if (m_clients.ValidIndex(i))
     {
-      ServerToClient* s2c = m_clients[i];
+      ServerToClient* s2c = m_clients[i].get();
       int sendFrom = s2c->m_lastKnownSequenceId + 1;
       int sendTo = static_cast<int>(m_history.size());
       if (sendTo - sendFrom > maxUpdates)
@@ -422,12 +410,12 @@ void Server::Advance()
       {
         if (l >= 0 && l < static_cast<int>(m_history.size()))
         {
-          ServerToClientLetter* theLetter = m_history[l];
-          auto letterCopy = new ServerToClientLetter(*theLetter);
+          ServerToClientLetter* theLetter = m_history[l].get();
+          auto letterCopy = std::make_unique<ServerToClientLetter>(*theLetter);
           letterCopy->SetClientId(i);
 
           m_outboxMutex->Lock();
-          m_outbox.push_back(letterCopy);
+          m_outbox.push_back(std::move(letterCopy));
           m_outboxMutex->Unlock();
         }
       }
