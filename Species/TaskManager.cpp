@@ -674,7 +674,7 @@ void TaskManager::SelectTask(int _id)
     // m_tasks.PutDataAtStart( task );
     task->SwitchTo();
 
-    g_app->m_gameCursor->BoostSelectionArrows(2.0f);
+    g_gameCursor->BoostSelectionArrows(2.0f);
   }
 }
 

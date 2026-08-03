@@ -42,7 +42,7 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
       break;
 
     case NetworkUpdate::Pause:
-      g_app->m_paused = !g_app->m_paused;
+      g_paused = !g_paused;
       break;
 
     case NetworkUpdate::SelectUnit:

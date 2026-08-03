@@ -171,15 +171,15 @@ void Script::RunCommand_EnterLocation(char* _name)
   GlobalLocation* loc = g_globalWorld->GetLocation(g_requestedLocationId);
   DEBUG_ASSERT(loc);
 
-  strcpy(g_app->m_requestedMission, loc->m_missionFilename);
-  strcpy(g_app->m_requestedMap, loc->m_mapFilename);
+  strcpy(g_requestedMission, loc->m_missionFilename);
+  strcpy(g_requestedMap, loc->m_mapFilename);
 }
 
 void Script::RunCommand_ExitLocation()
 {
   g_requestedLocationId = -1;
-  g_app->m_requestedMission[0] = '\0';
-  g_app->m_requestedMap[0] = '\0';
+  g_requestedMission[0] = '\0';
+  g_requestedMap[0] = '\0';
 
   m_requestedLocationId = g_requestedLocationId;
 }
@@ -248,12 +248,12 @@ void Script::RunCommand_GiveResearch(const char* _name)
   else if (stricmp(_name, "accessallareas") == 0)
   {
     char folderName[512];
-    sprintf(folderName, "%susers/", g_app->GetProfileDirectory());
+    sprintf(folderName, "%susers/", g_appCommands->ProfileDirectory());
     bool success = CreateDirectory(folderName);
     if (!success)
       DebugTrace("failed to create folder %s\n", folderName);
 
-    sprintf(folderName, "%susers/AccessAllAreas/", g_app->GetProfileDirectory());
+    sprintf(folderName, "%susers/AccessAllAreas/", g_appCommands->ProfileDirectory());
     success = CreateDirectory(folderName);
     if (!success)
       DebugTrace("failed to create folder %s\n", folderName);

@@ -46,7 +46,6 @@ public:
 	// Everything else
     ClientToServer      *m_clientToServer;          // Clients connection to Server
 	LocationInput		*m_locationInput;
-    GameCursor          *m_gameCursor;
     StartSequence       *m_startSequence;
 	AttractMode			*m_attractMode;
     GameMenu            *m_gameMenu;
@@ -54,16 +53,12 @@ public:
     bool                m_negativeRenderer;
 
 	// State flags
-    bool                m_paused;
 
 	// Requested state flags
 
-    char                m_requestedMission[256];
-    char                m_requestedMap[256];
     bool                m_levelReset;
     char                m_gameDataFile[256];
 
-	RGBAColour			m_backgroundColour;
 
 
 
@@ -87,7 +82,7 @@ public:
   static const char* GetPreferencesPath();
   static const char* GetScreenshotDirectory();
 
-  void UpdateDifficultyFromPreferences();
+  void UpdateDifficultyFromPreferences() override;
 };
 
 extern App *g_app;

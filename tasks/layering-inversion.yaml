@@ -1151,22 +1151,37 @@ tasks:
       the one that failed, because it was the only one that needed the symbol
       immediately. Insert AFTER pch.h, and check for includes preceding it.
 
-      WHAT IS ACTUALLY LEFT:
+      App.h AND GameCursor.h ARE DONE. m_requestedMission, m_requestedMap,
+      m_paused and m_backgroundColour moved into AppState.h beside T14's
+      globals — moved, not mirrored, so App no longer declares them.
+      HasBoughtGame, GetProfileDirectory and UpdateDifficultyFromPreferences go
+      through g_appCommands, the last of them newly added to that interface.
+      GameCursor got the same treatment as the other subsystems: a
+      GameCursorAccess in NeuronClient carrying the seven methods anything
+      actually calls, g_gameCursor as the ONLY storage, and App's m_gameCursor
+      gone. No TheGameCursor() was needed — every caller in the tree uses one
+      of the seven, so the interface is the whole used API.
 
-        App.h (4)       m_gameCursor, m_backgroundColour, m_requestedMission,
-                        m_requestedMap, m_paused. The state belongs in
-                        AppState.h beside T14's globals; m_gameCursor needs a
-                        seam or a global of its own.
+      WHAT IS ACTUALLY LEFT — 8 includes across 4 files:
+
         TaskManager.h (3)  The item T10 handed over. Needs Task's definition
                         below Species, which needs Task's implementation to
                         stop reaching g_location — i.e. it resolves as part of
-                        this move, not before it.
-        Water.h (2)     `g_location->m_water`. Water is a Location member and a
-                        Species file; either it joins the moving set or Location
-                        exposes it differently.
-        GameCursor.h (2)   With App.h's m_gameCursor above.
-        LandscapeRenderer.h (1), GlobalInternet.h (1), Clouds.h (1)  One site
-                        each, not yet looked at.
+                        this move, not before it. Location, LevelFile, Team.
+        Water.h (2)     `g_location->m_water`, from Location and Landscape.
+                        Water is a Location MEMBER and a Species file, so the
+                        cleanest answer is that Water joins the moving set.
+        Clouds.h (1)    `m_clouds = new Clouds()` in Location. Same shape as
+                        Water: a Location member that should move with it.
+        LandscapeRenderer.h (1)  `m_renderer = new LandscapeRenderer(...)` in
+                        Landscape.cpp. The one the notes below already flag:
+                        the renderer stays above, so Landscape splits or keeps
+                        a forward-declared pointer and constructs it elsewhere.
+        GlobalInternet.h (1)  One site in GlobalWorld.cpp, not yet looked at.
+
+      Three of those five — Water, Clouds and TaskManager — are resolved BY the
+      move rather than before it, so the remaining prep is LandscapeRenderer
+      and GlobalInternet, plus adding Water and Clouds to the moving set.
 
       T10 HANDS THIS TASK EIGHT MORE ENTRIES, found while running it:
       TaskManager.h (5), Water.h (2) and TaskManagerInterfaceIcons.h (1).

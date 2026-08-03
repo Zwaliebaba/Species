@@ -10,6 +10,7 @@ CameraAccess* g_camera = nullptr;
 RendererAccess* g_renderer = nullptr;
 ParticleSystem* g_particleSystem = nullptr;
 LocationEditorAccess* g_locationEditor = nullptr;
+GameCursorAccess* g_gameCursor = nullptr;
 TaskManager* g_taskManager = nullptr;
 TaskManagerInterfaceAccess* g_taskManagerInterface = nullptr;
 ScriptAccess* g_script = nullptr;

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "AppCommands.h"
 #include "Debug.h"
 #include "LanguageTable.h"
 #include "FilesysUtils.h"
@@ -14,7 +15,6 @@
 #include "TextStreamReaders.h"
 #include "Vector3.h"
 #include "Eclipse.h"
-#include "App.h"
 #include "GlobalInternet.h"
 #include "GlobalWorld.h"
 #include "Landscape.h"
@@ -1257,8 +1257,8 @@ void GlobalWorld::Advance()
         {
           GlobalLocation* loc = GetLocation(locId);
           g_requestedLocationId = locId;
-          strcpy(g_app->m_requestedMission, loc->m_missionFilename);
-          strcpy(g_app->m_requestedMap, loc->m_mapFilename);
+          strcpy(g_requestedMission, loc->m_missionFilename);
+          strcpy(g_requestedMap, loc->m_mapFilename);
         }
       }
     }
@@ -1301,7 +1301,7 @@ void GlobalWorld::Advance()
         {
           if (!g_script->IsRunningScript())
           {
-            if (!g_app->HasBoughtGame())
+            if (!g_appCommands->HasBoughtGame())
             {
               // We're not registered, we should run a script to end
               if (!(strcmp(loc->m_mapFilename, "MapGarden.txt") == 0 || strcmp(loc->m_mapFilename, "MapContainment.txt") == 0))
@@ -1348,8 +1348,8 @@ void GlobalWorld::Advance()
     {
       GlobalLocation* loc = GetLocation(m_locationRequested);
       g_requestedLocationId = m_locationRequested;
-      strcpy(g_app->m_requestedMission, loc->m_missionFilename);
-      strcpy(g_app->m_requestedMap, loc->m_mapFilename);
+      strcpy(g_requestedMission, loc->m_missionFilename);
+      strcpy(g_requestedMap, loc->m_mapFilename);
 
       m_locationRequested = -1;
     }
@@ -1666,7 +1666,7 @@ void GlobalWorld::LoadGame(const char* _filename)
 
   if (!g_editing)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
     if (DoesFileExist(fullFilename))
       in = new TextFileReader(fullFilename);
   }
@@ -1774,7 +1774,7 @@ void GlobalWorld::SaveGame(const char* _filename)
 
   if (!g_editing && stricmp(g_userProfileName, "none") != 0)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
 #ifdef TARGET_DEBUG
     out = new FileWriter(fullFilename, false);
 #else

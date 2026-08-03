@@ -333,6 +333,7 @@
     <ClInclude Include="TaskManagerInterfaceAccess.h" />
     <ClInclude Include="UserInputAccess.h" />
     <ClInclude Include="LocationEditorAccess.h" />
+    <ClInclude Include="GameCursorAccess.h" />
     <ClInclude Include="ScriptAccess.h" />
     <ClInclude Include="RendererAccess.h" />
     <ClInclude Include="AppState.h" />

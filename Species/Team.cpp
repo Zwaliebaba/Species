@@ -19,14 +19,12 @@
 
 #include "SoundSystem.h"
 
-#include "App.h"
 #include "Location.h"
 #include "GlobalWorld.h"
 #include "GameTime.h"
 #include "EntityGrid.h"
 #include "Team.h"
 #include "Unit.h"
-#include "GameCursor.h"
 #include "TaskManager.h"
 
 #include "Engineer.h"
@@ -127,7 +125,7 @@ void Team::SelectUnit(int _unitId, int _entityId, int _buildingId)
 
   if (m_teamId == g_globalWorld->m_myTeamId)
   {
-    g_app->m_gameCursor->BoostSelectionArrows(2.0f);
+    g_gameCursor->BoostSelectionArrows(2.0f);
   }
 
   if (m_currentUnitId == -1 && m_currentBuildingId == -1 && m_others.ValidIndex(m_currentEntityId))

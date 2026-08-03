@@ -216,8 +216,8 @@ public:
 
         if( g_app->m_gameMenu->m_maps[parent->m_gameType].ValidIndex(parent->m_requestedMapId ) )
         {
-            strcpy( g_app->m_requestedMap, g_app->m_gameMenu->m_maps[parent->m_gameType][parent->m_requestedMapId] );
-            strcpy( g_app->m_requestedMission, "null" );
+            strcpy( g_requestedMap, g_app->m_gameMenu->m_maps[parent->m_gameType][parent->m_requestedMapId] );
+            strcpy( g_requestedMission, "null" );
         }
 
         g_requestToggleEditing = false;

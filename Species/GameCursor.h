@@ -8,6 +8,7 @@
  */
 
 
+#include "GameCursorAccess.h"
 #include "LList.h"
 #include "RgbColour.h"
 #include "WorldObject.h"
@@ -19,7 +20,7 @@ class MouseCursorMarker;
 // ============================================================================
 
 
-class GameCursor
+class GameCursor : public GameCursorAccess
 {
 protected:
     MouseCursor *m_cursorStandard;

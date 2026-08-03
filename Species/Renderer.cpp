@@ -348,7 +348,7 @@ void Renderer::RenderFrame(bool withFlip)
   SetupMatricesFor3D();
 
   START_PROFILE(g_profiler, "Render Clear");
-  RGBAColour* col = &g_app->m_backgroundColour;
+  RGBAColour* col = &g_backgroundColour;
   if (g_location)
     glClearColor(col->r / 255.0f, col->g / 255.0f, col->b / 255.0f, col->a / 255.0f);
   else
@@ -401,7 +401,7 @@ void Renderer::RenderFrame(bool withFlip)
   g_particleSystem->Render();
 
   TheUserInput()->Render();
-  g_app->m_gameCursor->Render();
+  g_gameCursor->Render();
   TheTaskManagerInterface()->Render();
   TheCamera()->Render();
 
@@ -471,8 +471,8 @@ void Renderer::RenderFrame(bool withFlip)
     {
       g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : %d",
                               g_location->m_landscape.m_renderer->m_numTriangles);
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : %s", g_app->m_requestedMission);
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : %s", g_app->m_requestedMap);
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : %s", g_requestedMission);
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : %s", g_requestedMap);
     }
   }
 
@@ -573,7 +573,7 @@ void Renderer::RenderFrame(bool withFlip)
 
   g_editorFont.EndText2D();
 
-  if (!g_eventHandler->WindowHasFocus() || g_app->m_paused)
+  if (!g_eventHandler->WindowHasFocus() || g_paused)
     RenderPaused();
 
   START_PROFILE(g_profiler, "GL Flip");

@@ -2,6 +2,7 @@
 
 #include "CameraAccess.h"
 #include "RendererAccess.h"
+#include "GameCursorAccess.h"
 #include "LocationEditorAccess.h"
 #include "ScriptAccess.h"
 #include "TaskManagerInterfaceAccess.h"
@@ -30,6 +31,7 @@ extern CameraAccess* g_camera;
 extern RendererAccess* g_renderer;
 extern ParticleSystem* g_particleSystem;
 extern LocationEditorAccess* g_locationEditor;
+extern GameCursorAccess* g_gameCursor;
 extern TaskManager* g_taskManager;
 extern TaskManagerInterfaceAccess* g_taskManagerInterface;
 extern ScriptAccess* g_script;

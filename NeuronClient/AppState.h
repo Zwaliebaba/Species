@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ControlHelpAccess.h"
+#include "RgbColour.h"
 
 // The application state the layers below Species read.
 //
@@ -35,3 +36,16 @@ extern bool g_requestToggleEditing;
 extern Server* g_server;
 extern ControlHelpAccess* g_controlHelpSystem;
 extern char g_userProfileName[256];
+
+// The level the next load will bring up, written by the global world, the
+// script and the menus and read by Main's load path. Character arrays like
+// g_userProfileName above, for the same reason: every writer uses strcpy.
+extern char g_requestedMission[256];
+extern char g_requestedMap[256];
+
+// Set by the pause key and read by the world advance and the renderer.
+extern bool g_paused;
+
+// The colour the frame is cleared to, and the fog colour the world derives
+// from it. Set once per level from the level file.
+extern RGBAColour g_backgroundColour;

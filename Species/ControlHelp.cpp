@@ -630,22 +630,22 @@ bool ControlHelpSystem::CheckCondition(int _condition)
     return UnitSelected() || BuildingSelected();
 
   case CondSelectUnit:
-    return !TheTaskManagerInterface()->m_visible && g_app->m_gameCursor->AdviseHighlightingSomething();
+    return !TheTaskManagerInterface()->m_visible && g_gameCursor->AdviseHighlightingSomething();
 
   case CondTaskManagerCreateGreen:
     return TheTaskManagerInterface()->m_visible && TheTaskManagerInterface()->AdviseCreateControlHelpGreen();
 
   case CondMoveUnit:
-    return !TheTaskManagerInterface()->m_visible && g_app->m_gameCursor->AdviseMoveableEntitySelected();
+    return !TheTaskManagerInterface()->m_visible && g_gameCursor->AdviseMoveableEntitySelected();
 
   case CondTaskManagerSelect:
     return TheTaskManagerInterface()->m_visible && TheTaskManagerInterface()->AdviseOverSelectableZone();
 
   case CondPlaceUnit:
-    return !TheTaskManagerInterface()->m_visible && g_app->m_gameCursor->AdvisePlacementOpportunity();
+    return !TheTaskManagerInterface()->m_visible && g_gameCursor->AdvisePlacementOpportunity();
 
   case CondPromoteOfficer:
-    return !TheTaskManagerInterface()->m_visible && g_app->m_gameCursor->AdviseHighlightingSomething() && PlacingOfficerProgram();
+    return !TheTaskManagerInterface()->m_visible && g_gameCursor->AdviseHighlightingSomething() && PlacingOfficerProgram();
 
   case CondMoveCameraOrUnit:
     return !TheTaskManagerInterface()->m_visible &&

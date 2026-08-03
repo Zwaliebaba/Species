@@ -410,7 +410,7 @@ void TaskManagerInterfaceIcons::Render()
   {
     float mouseX = g_target->X();
     float mouseY = g_target->Y();
-    g_app->m_gameCursor->RenderStandardCursor(mouseX, mouseY);
+    g_gameCursor->RenderStandardCursor(mouseX, mouseY);
   }
 
   g_gameFont.EndText2D();

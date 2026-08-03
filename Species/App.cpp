@@ -73,7 +73,6 @@ App::App()
     m_attractMode(nullptr),
     m_gameMenu(nullptr),
     m_negativeRenderer(false),
-    m_paused(false),
     m_levelReset(false)
 {
   g_app = this;
@@ -89,9 +88,9 @@ App::App()
 
   m_negativeRenderer = g_prefsManager->GetInt("RenderNegative", 0) ? true : false;
   if (m_negativeRenderer)
-    m_backgroundColour.Set(255, 255, 255, 255);
+    g_backgroundColour.Set(255, 255, 255, 255);
   else
-    m_backgroundColour.Set(0, 0, 0, 0);
+    g_backgroundColour.Set(0, 0, 0, 0);
 
   UpdateDifficultyFromPreferences();
 
@@ -113,7 +112,7 @@ App::App()
 
   int textureId = m_resource->GetTexture("Textures/EditorFontNormal.bmp");
 
-  m_gameCursor = new GameCursor();
+  g_gameCursor = new GameCursor();
   m_soundSystem = new SoundSystem();
   g_soundSystem = m_soundSystem;
   m_clientToServer = new ClientToServer();
@@ -185,7 +184,7 @@ App::~App()
   SAFE_DELETE(g_userInput);
   SAFE_DELETE(m_clientToServer);
   SAFE_DELETE(m_soundSystem);
-  SAFE_DELETE(m_gameCursor);
+  SAFE_DELETE(g_gameCursor);
   SAFE_DELETE(g_renderer);
 #ifdef PROFILER_ENABLED
   SAFE_DELETE(m_profiler);
@@ -363,8 +362,8 @@ void App::LoadPrologue()
 
   g_requestedLocationId = g_globalWorld->GetLocationId("launchpad");
   GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
-  strcpy(m_requestedMap, gloc->m_mapFilename);
-  strcpy(m_requestedMission, gloc->m_missionFilename);
+  strcpy(g_requestedMap, gloc->m_mapFilename);
+  strcpy(g_requestedMission, gloc->m_missionFilename);
 
   g_atMainMenu = false;
 

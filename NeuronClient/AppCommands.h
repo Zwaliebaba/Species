@@ -26,6 +26,10 @@ class AppCommands
     virtual void LoadPrologue() = 0;
     virtual void LoadCampaign() = 0;
 
+    // Re-reads the difficulty preference and pushes it into the world. Called
+    // from the level file loader, which moves to GameLogic in T15.
+    virtual void UpdateDifficultyFromPreferences() = 0;
+
     // Named differently from App's static GetProfileDirectory, which cannot be
     // virtual; the implementation forwards to it.
     virtual char const* ProfileDirectory() = 0;

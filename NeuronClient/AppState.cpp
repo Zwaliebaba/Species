@@ -14,3 +14,7 @@ bool g_requestToggleEditing = false;
 Server* g_server = nullptr;
 ControlHelpAccess* g_controlHelpSystem = nullptr;
 char g_userProfileName[256] = "";
+char g_requestedMission[256] = "";
+char g_requestedMap[256] = "";
+bool g_paused = false;
+RGBAColour g_backgroundColour;

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "AppCommands.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -29,7 +30,6 @@
 #include "LaserFence.h"
 #include "GenericHub.h"
 
-#include "App.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
 #include "Location.h"
@@ -85,7 +85,7 @@ void LevelFile::ParseMissionFile(char const* _filename)
   if (!g_editing)
   {
     // Try to load a save game first
-    sprintf(fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
     if (DoesFileExist(fullFilename))
       in = new TextFileReader(fullFilename);
   }
@@ -1116,7 +1116,7 @@ LevelFile::LevelFile(char const* _missionFilename, char const* _mapFilename)
   // is consistent with the preferences (it can become inconsistent
   // when a level is loaded that was saved with a different difficulty
   // level to what the preferences say).
-  g_app->UpdateDifficultyFromPreferences();
+  g_appCommands->UpdateDifficultyFromPreferences();
 
   if (stricmp(_missionFilename, "null") != 0)
   {
@@ -1180,7 +1180,7 @@ void LevelFile::SaveMissionFile(char const* _filename)
 
   if (!g_editing)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_app->GetProfileDirectory(), g_userProfileName, _filename);
+    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
 #ifdef TARGET_DEBUG
     out = new FileWriter(fullFilename, false);
 #else

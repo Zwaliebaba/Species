@@ -25,7 +25,6 @@
 #include "ServerToClientLetter.h"
 #include "ClientToServer.h"
 
-#include "App.h"
 #include "Clouds.h"
 #include "EntityGrid.h"
 #include "GlobalWorld.h"
@@ -38,7 +37,6 @@
 #include "Team.h"
 #include "Unit.h"
 #include "Water.h"
-#include "GameCursor.h"
 #include "TaskManager.h"
 
 #include "Weapons.h"
@@ -830,7 +828,7 @@ bool Location::MissionComplete()
 // *** Advance
 void Location::Advance(int _slice)
 {
-  if (g_app->m_paused)
+  if (g_paused)
     return;
 
   m_lastSliceProcessed = _slice;
@@ -1541,7 +1539,7 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
     }
 
     if (unitMoved && teamControls.m_endSetTarget)
-      g_app->m_gameCursor->CreateMarker(teamControls.m_mousePos);
+      g_gameCursor->CreateMarker(teamControls.m_mousePos);
 
     unitMoved = unitMove;
 
@@ -1563,7 +1561,7 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
     if (entity)
     {
       if (teamControls.m_endSetTarget)
-        g_app->m_gameCursor->CreateMarker(teamControls.m_mousePos);
+        g_gameCursor->CreateMarker(teamControls.m_mousePos);
 
       entity->DirectControl(teamControls);
       switch (entity->m_type)
@@ -2054,7 +2052,7 @@ void Location::CreateShockwave(Vector3 const& _pos, float _size, unsigned char _
 
 void Location::SetupFog()
 {
-  float fogCol[] = {g_app->m_backgroundColour.r / 255.0f, g_app->m_backgroundColour.g / 255.0f, g_app->m_backgroundColour.b / 255.0f, 0};
+  float fogCol[] = {g_backgroundColour.r / 255.0f, g_backgroundColour.g / 255.0f, g_backgroundColour.b / 255.0f, 0};
 
   glHint(GL_FOG_HINT, GL_DONT_CARE);
   glFogf(GL_FOG_DENSITY, 1.0f);
