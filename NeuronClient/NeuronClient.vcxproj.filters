@@ -152,7 +152,6 @@
     <ClCompile Include="SepulvedaStrings.cpp" />
     <ClCompile Include="TextStreamReaders.cpp" />
     <ClCompile Include="TextureUv.cpp" />
-    <ClCompile Include="TriTri.cpp" />
     <ClCompile Include="UserInfo.cpp" />
     <ClCompile Include="WindowManager.cpp" />
     <ClCompile Include="AppCommands.cpp" />

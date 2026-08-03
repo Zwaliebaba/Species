@@ -75,7 +75,6 @@ including when a file is moved or modernised — see `CODING_STANDARDS.md`.
 | File | Origin | Terms |
 |---|---|---|
 | `NeuronCore/MathUtils.cpp` (Mersenne Twister, MT19937) | Makoto Matsumoto and Takuji Nishimura, 1997–2002 | BSD 3-clause, reproduced in the file. Requires the copyright notice and disclaimer be retained in source and binary redistributions. |
-| `NeuronClient/TriTri.cpp` | Tomas Möller, 1997, *Journal of Graphics Tools* 2(2) | No explicit grant in the file. Terms unresolved — treat as all rights reserved. |
 
 `NeuronCore/AutoVector.h` (Reliable Software, 2003, relisoft.com) was listed
 here until containers-replaced/T16 deleted it. Its grant was conditional on the
@@ -83,6 +82,16 @@ copyright notice not being removed; the whole file went, notice included, so
 nothing of theirs is shipped stripped of its terms. The row is dropped rather
 than kept because this table describes what the repository contains, and an
 entry for a file that is not here would be inaccurate in the other direction.
+
+`NeuronClient/TriTri.cpp` (Tomas Möller, 1997) was listed here until
+directxmath-migration/T4 deleted it, and it went for the same reason
+`AutoVector.h` did rather than despite its terms. It carried no explicit grant,
+so this file recorded it as all rights reserved — the one piece of third-party
+code here whose position could not be made safe by complying with a condition,
+because there was no condition offered. Its only declaration had no callers
+anywhere in the tree, and `DirectX::TriangleTests::Intersects` covers what it
+did, so the whole file was removed, notice included. Deleting it is the
+resolution: nothing of Möller's is shipped now, under any terms.
 The history still has it, with the notice intact.
 
 `GameData/` contains game content — models, textures, sounds, level and script

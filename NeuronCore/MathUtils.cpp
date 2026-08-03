@@ -339,44 +339,6 @@ float RayRayDist(Vector3 const &a, Vector3 const &aDir,
 }
 
 
-// Returns the distance between an infinite 3D line and a 3D line segment.
-// Store the points of closest approach in posOnRay and posInSeg
-float RaySegDist(Vector3 const &pointOnLine, Vector3 const &lineDir,
-				 Vector3 const &segStart, Vector3 const &segEnd,
-				 Vector3 *posOnRay, Vector3 *posInSeg)
-{
-	Vector3 segDir = segEnd - segStart;
-
-	Vector3 temp1, temp2;
-	if (!posOnRay) posOnRay = &temp1;
-	if (!posInSeg) posInSeg = &temp2;
-
-	float dist = RayRayDist(pointOnLine, lineDir, segStart, segDir, posOnRay, posInSeg);
-
-	float t = 0.0f;
-
-	if (segDir.x > 0.0001f)
-	{
-		t = (posInSeg->x - segStart.x) / segDir.x;
-	}
-	else if (segDir.y > 0.0001f)
-	{
-		t = (posInSeg->y - segStart.y) / segDir.y;
-	}
-	else
-	{
-		t = (posInSeg->z - segStart.z) / segDir.z;
-	}
-
-	if(t > 0.0f && t < 1.0f)
-	{
-		return dist;
-	}
-
-	return dist * 100000.0f;
-}
-
-
 bool RayTriIntersection(Vector3 const &orig, Vector3 const &dir,
 						Vector3 const &vert0, Vector3 const &vert1, Vector3 const &vert2,
 						float _rayLen, Vector3 *_result)

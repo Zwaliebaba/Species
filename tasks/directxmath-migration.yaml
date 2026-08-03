@@ -277,6 +277,27 @@ tasks:
       It is worth asking whether that check should extend to libraries; not a
       task here, but a finding for tools/.
 
+      LANDED 2026-08-03. 426 lines deleted, 21 added: TriTri.cpp (367 lines)
+      and its two project-file entries, RaySegDist (38 lines), and the two
+      declarations. MathUtils.cpp goes from 614 to 576 lines and MathUtils.h
+      from 137 to 130.
+
+      THE LICENCE ROW IS NOT SIMPLY DROPPED. LICENSE keeps a paragraph
+      recording what went and why, in the shape containers-replaced/T16 set for
+      AutoVector.h — that table describes what the repository contains, so an
+      entry for an absent file would be wrong in the other direction, but a
+      silent removal would read as the notice having been stripped.
+      CODING_STANDARDS.md's "two files carry third-party terms" is now one.
+
+      VERIFICATION, HONESTLY. All six tools/ checks pass here. The msbuild and
+      vstest lines under verify were NOT run — this agent is on Linux with no
+      MSVC — so the build evidence is CI's x64 Debug run on the push, and this
+      task was not marked done until that came back green. Nothing here can
+      launch the client, and nothing in this task should need it: deleting a
+      function with no callers cannot change what the game does at runtime.
+      Note the check_format and check_hygiene lines report "0 changed files"
+      because a pure deletion writes no new lines for them to judge.
+
   # ------------------------------------------------------------------
   # Wave 2 — the geometry library
   # ------------------------------------------------------------------
