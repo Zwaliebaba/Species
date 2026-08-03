@@ -601,7 +601,7 @@ void Renderer::SetupProjMatrixFor3D() const
 
 void Renderer::SetupMatricesFor3D() const
 {
-  Camera* camera = g_camera;
+  Camera* camera = TheCamera();
 
   SetupProjMatrixFor3D();
   camera->SetupModelviewMatrix();
@@ -1331,7 +1331,7 @@ const double* Renderer::GetTotalMatrix() { return m_totalMatrix; }
 void Renderer::RasteriseSphere(const Vector3& _pos, float _radius)
 {
   const float screenToGridFactor = static_cast<float>(PIXEL_EFFECT_GRID_RES) / static_cast<float>(m_screenW);
-  Camera* cam = g_camera;
+  Camera* cam = TheCamera();
   Vector3 centre;
   Vector3 topLeft;
   Vector3 bottomRight;

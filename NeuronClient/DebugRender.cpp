@@ -238,7 +238,7 @@ void RenderVerticalCylinder(Vector3 const& _centreBase, Vector3 const& _vertical
 
 void RenderArrow(Vector3 const& start, Vector3 const& end, float width, RGBAColour const& _col /* =RGBAColour */)
 {
-  Camera* cam = g_camera;
+  CameraAccess* cam = g_camera;
   Vector3 midPoint = (start + end) * 0.5f;
   Vector3 midPointToCamera = cam->GetPos() - midPoint;
   float midPointToCameraDist = midPointToCamera.Mag();

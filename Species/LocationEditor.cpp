@@ -461,7 +461,7 @@ void LocationEditor::AdvanceModeBuilding()
   if (ew && EclMouseInWindow(ew))
     return;
 
-  Camera* cam = g_camera;
+  Camera* cam = TheCamera();
 
   // Find the ID of the building the user is clicking on
   int newSelectionId = -1;
@@ -560,7 +560,7 @@ void LocationEditor::AdvanceModeLight()
 
 void LocationEditor::AdvanceModeInstantUnit()
 {
-  Camera* cam = g_camera;
+  Camera* cam = TheCamera();
 
   int newSelectionId = -1;
   if (g_inputManager->controlEvent(ControlTileSelect)) // TODO: Should be something else?

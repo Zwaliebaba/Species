@@ -471,7 +471,7 @@ void TextRenderer::DrawText3DSimple(Vector3 const& _pos, float _size, char const
   // Store the GL state
   SaveGLFontDrawAttributes saveAttribs;
 
-  Camera* cam = g_camera;
+  CameraAccess* cam = g_camera;
   Vector3 pos(_pos);
   Vector3 vertSize = cam->GetUp() * _size;
   Vector3 horiSize = -cam->GetRight() * _size * HORIZONTAL_SIZE;
@@ -574,7 +574,7 @@ void TextRenderer::DrawText3D(Vector3 const& _pos, Vector3 const& _front, Vector
 
   SaveGLFontDrawAttributes saveAttribs;
 
-  Camera* cam = g_camera;
+  CameraAccess* cam = g_camera;
 
   Vector3 pos = _pos;
   Vector3 vertSize = _up * _size;
