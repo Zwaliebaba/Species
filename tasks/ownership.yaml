@@ -193,7 +193,7 @@ tasks:
       Nothing outside NeuronServer touches these members; ServerTests reads
       m_clients.NumUsed() and m_teams.NumUsed(), both of which survive the
       conversion unchanged.
-    status: todo
+    status: in_progress
 
   - id: T3
     title: Adopt unique_ptr across NeuronClient subsystems
