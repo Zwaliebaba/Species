@@ -40,6 +40,22 @@ summary: >
   headers too — but the direction is unambiguous: stage 4 has not started,
   and only T1's audit has landed.
 
+  Re-measured again 2026-08-03 at b0bde71, same command: 180 sites across 53
+  files (GameLogic 152, Species 14, NeuronClient 13, NeuronServer 1,
+  NeuronCore 0, Server 0). T2, T3, T4, T6, T7 and T10 took the tree from 367
+  to 180 in one day; NeuronCore is at zero and NeuronServer holds one
+  (ServerToClient.cpp:20, the per-connection record key T1's audit listed).
+  What is left is 84% GameLogic, and most of it sits behind T5.
+
+  RESTART, 2026-08-03. Work stopped at b0bde71 with T5 attempted and
+  discarded, and T5 gates almost everything downstream — see tasks/_restart.md
+  for the ordering across all four open plans. T5 was re-scoped here rather
+  than left as the note found it: it is the coupled InputField change and
+  nothing else, T14 puts the compiler on its side first, and T15 carries the
+  windows that were only ever grouped with it by project. T8 now depends on
+  T5, which is the explicit order T5's note asked whoever picked this up to
+  choose.
+
 tasks:
   - id: T1
     title: Audit and pin every serialised char buffer
@@ -320,8 +336,11 @@ tasks:
       - NeuronClient/EclWindow.cpp
       - NeuronClient/Eclipse.cpp
       - NeuronClient/WindowManager.cpp
+      - GameLogic/ScrollBar.h
+      - GameLogic/ScrollBar.cpp
     acceptance:
       - EclButton and EclWindow declare no fixed char[N] member
+      - ScrollBar::m_parentWindow and ScrollBar::m_name follow the same types, and its six button-name builders stop formatting into fixed buffers
       - grep -rn "m_name" over the six projects shows no strcmp, stricmp, strcpy or strlen call on a widget name
       - Menu and window lookup by name is by-construction unchanged; Eclipse matches names case-sensitively today and must continue to
     verify:
@@ -342,6 +361,14 @@ tasks:
 
       Depends on T5 as well as T3 because InputField writes into these fields
       through a raw char*, and T5 is what converts InputField.
+
+      GAINED SCROLLBAR IN THE 2026-08-03 RESTART, from the old T5's file list.
+      Its nine sites are all Eclipse names and nothing else: m_parentWindow is
+      strcpy'd from parent->m_name, m_name is an EclButton name, and the six
+      sprintfs build "<name> bar", "<name> up" and "<name> down" to look
+      buttons up with. Converting those while EclWindow::m_name is still a
+      char[N] means converting them twice, which is the same argument that put
+      EclWindow.cpp and EclButton.cpp here rather than in T3.
 
   - id: T4
     title: Convert NeuronClient sound, resource and filesystem string handling
@@ -425,37 +452,83 @@ tasks:
     status: done
 
   - id: T5
-    title: Convert GameLogic window and editor string handling
+    title: Convert InputField and the seven string targets it writes through
     intent: >
-      InputField (15), CameraAnimWindow (10), CameraMountWindow (9),
-      ScrollBar (9), LightsWindow (8), GlobalWorldEditorWindow, ProfileWindow,
-      PrefsOtherWindow, SpeciesWindow, MainMenus and the other Eclipse-derived
-      windows. UI-only; InputField is the one to read carefully since it
-      edits into a caller-owned buffer — the conversion makes that ownership
-      explicit without changing editing behaviour.
+      InputField edits into a caller-registered buffer through a raw char*, so
+      making its target a std::string forces every registered member to convert
+      in the same commit — CameraMount::m_name, CameraAnimation::m_name,
+      ScriptTrigger::m_scriptFilename, GenericHub::m_shapeName,
+      StaticShape::m_shapeName, FenceSwitch::m_script, and the two editor
+      statics s_profileName and s_locationName. There is no intermediate state
+      that compiles, which is what the discarded attempt established. This task
+      is that whole coupled change and nothing else; the windows that only
+      format text are T15, and the level-file writers that read these members
+      are T8, which now lands after it.
     project: GameLogic
-    depends_on: [T1, T3]
+    depends_on: [T1, T3, T14]
     blocked_by: [containers-replaced/T11]
     files:
       - GameLogic/InputField.cpp
       - GameLogic/InputField.h
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/SpeciesWindow.h
       - GameLogic/CameraAnimWindow.cpp
       - GameLogic/CameraMountWindow.cpp
-      - GameLogic/ScrollBar.cpp
-      - GameLogic/LightsWindow.cpp
+      - GameLogic/BuildingsWindow.cpp
+      - GameLogic/UserProfileWindow.cpp
+      - GameLogic/UserProfileWindow.h
       - GameLogic/GlobalWorldEditorWindow.cpp
-      - GameLogic/ProfileWindow.cpp
-      - GameLogic/PrefsOtherWindow.cpp
-      - GameLogic/SpeciesWindow.cpp
-      - GameLogic/MainMenus.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
+      - GameLogic/ScriptTrigger.h
+      - GameLogic/ScriptTrigger.cpp
+      - GameLogic/GenericHub.h
+      - GameLogic/GenericHub.cpp
+      - GameLogic/StaticShape.h
+      - GameLogic/StaticShape.cpp
+      - GameLogic/Switch.h
+      - GameLogic/Switch.cpp
+      - Species/Camera.h
+      - Species/Camera.cpp
+      - Species/LocationEditor.cpp
+      - Species/Script.cpp
     acceptance:
-      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the listed files returns 0
+      - All seven registered targets are std::string, and InputField holds a std::string* rather than a char*
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over InputField.cpp, SpeciesWindow.cpp, CameraAnimWindow.cpp, CameraMountWindow.cpp, BuildingsWindow.cpp, UserProfileWindow.cpp and GlobalWorldEditorWindow.cpp returns 0
+      - No registration passes a raw char buffer — T14's overload set makes that a compile error rather than a runtime corruption
+      - The sprintf sites in LevelFile.cpp and Script.cpp are untouched; this task only adjusts reads of the seven members there, and T8 converts them
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
-    parallel_safe: true
+      - Owner runs the Garden smoke test — step 6 exercises the windows that register these fields
+    parallel_safe: false
     status: todo
     notes: |
+      RE-SCOPED 2026-08-03 as part of the restart (tasks/_restart.md). The note
+      below is the discarded attempt's deliverable and is kept verbatim; what
+      changed is that its closing recommendation has been acted on rather than
+      left for the next reader.
+
+      The four numbered tasks it identified as one coupled change are now
+      ordered rather than merged: T14 (the typed overload set) -> T5 (this,
+      the coupled member conversion) -> T8 (the level-file writers, which own
+      the byte-identity proof because they land last) and T11 (the Eclipse
+      widget names, which already depended on this task). T15 carries the five
+      window files that were only ever in T5's list because they are in the
+      same project — none of them registers anything InputField writes into.
+
+      Ordered rather than merged because merging produces one diff spanning
+      GameLogic and Species with a byte-identity requirement inside it, and
+      "one reviewable change per task" is the rule that would break first.
+      LevelFile.cpp and Species/Script.cpp appear in both this file list and
+      T8's; that collision is real and the T5 -> T8 edge is what keeps the two
+      from running concurrently.
+
+      parallel_safe is false now, not true. The old value was written when the
+      task looked like eleven independent window files.
+
+
       ATTEMPTED AND DELIBERATELY DISCARDED 2026-08-03. No code survives; this
       note is the deliverable. Do not go looking for a stash or a side branch —
       the owner's call was to redo the task later against a corrected plan
@@ -604,7 +677,7 @@ tasks:
       unchanged. The riskiest strings task, deliberately last among the
       big ones.
     project: Species
-    depends_on: [T1, T7]
+    depends_on: [T1, T5, T7]
     blocked_by: [containers-replaced/T12, containers-replaced/T13, layering-inversion/T15]
     files:
       - GameLogic/GlobalWorld.cpp
@@ -617,11 +690,22 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    notes: >
+    notes: |
       Species is an exe, so the round-trip cannot be a unit test yet. If the
       layering-inversion plan has moved LevelFile into GameLogic by the time
       this runs, write the round-trip as a real test there instead — that is
       the better order if both plans are active.
+
+      layering-inversion T15 HAS moved them: LevelFile.cpp and GlobalWorld.cpp
+      are in GameLogic now, GameLogicTests/LinkStubs.cpp is empty, and the
+      round-trip is therefore a real test rather than a review argument. Write
+      it that way.
+
+      DEPENDS ON T5 as of 2026-08-03. Five of the seven members T5 converts are
+      written to level files by these two files, so this task cannot state
+      byte-identity for output it does not yet own the types of. Landing last
+      is also what makes the byte-identity proof meaningful: it covers T5's
+      change as well as its own.
     status: todo
 
   - id: T9
@@ -630,8 +714,9 @@ tasks:
       Re-measure after T2-T8 and convert every remaining call site the
       grouped tasks missed, ending stage 4 with a tree-wide zero outside
       whatever T1 listed as legitimately fixed-format.
-    depends_on: [T2, T3, T4, T5, T6, T7, T8, T10]
+    depends_on: [T2, T3, T4, T5, T6, T7, T8, T10, T11, T12, T13, T15]
     files:
+      - NeuronServer/ServerToClient.cpp
       - NeuronClient/SoundLibrary2d.cpp
       - GameLogic/EntityLeg.cpp
       - Species/StartSequence.cpp
@@ -646,7 +731,151 @@ tasks:
     notes: >
       The files listed are a placeholder guess at the tail — the task IS the
       re-measure; expect the real list to differ and update it when starting.
+      One entry is not a guess: NeuronServer/ServerToClient.cpp:20 strcpy()s
+      into m_ip[16], the per-connection record key T1's audit listed as never
+      serialised. It is the only site left outside NeuronClient, GameLogic and
+      Species. The depends_on list gained T11, T12, T13 and T15 in the
+      2026-08-03 restart; it named neither the widget-name tasks nor the
+      TextRenderer conversion before, so "the long tail" could have been
+      measured while three grouped tasks were still outstanding.
     status: todo
+
+  - id: T14
+    title: Replace CreateValueControl's void* with a typed overload set
+    intent: >
+      SpeciesWindow::CreateValueControl takes `int dataType, void* value` and
+      casts the pointer to whatever the tag says, so registering a char[256]
+      where a std::string* is expected compiles and corrupts memory at run
+      time. That is the single hazard standing in front of T5, and it is a
+      type-safety change with no string conversion in it — worth its own commit
+      precisely so that T5's diff is about strings and the compiler is checking
+      every registration by the time it starts.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/SpeciesWindow.h
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/InputField.h
+      - GameLogic/InputField.cpp
+      - GameLogic/BuildingsWindow.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/TreeWindow.cpp
+      - GameLogic/LightsWindow.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/CameraAnimWindow.cpp
+      - GameLogic/UserProfileWindow.cpp
+      - GameLogic/GlobalWorldEditorWindow.cpp
+    acceptance:
+      - No entry point on SpeciesWindow or InputField takes void* for a registered value
+      - All 84 CreateValueControl call sites compile without a cast at the call site
+      - A call registering the wrong type fails to compile — demonstrated on a scratch edit and recorded in notes, not left as an assertion
+      - No string type changes and no strcpy-family site removed; the grep counts over these files are the same before and after
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+    notes: |
+      Added 2026-08-03 in the restart, on T5's own recommendation: "whoever
+      does this should consider replacing the void* with an overload set
+      before converting anything, so that the compiler is on their side for
+      the rest of the change."
+
+      Measured at b0bde71: 84 CreateValueControl calls in eleven files —
+      BuildingsWindow 42, LandscapeWindow 19, TreeWindow 7, LightsWindow 4,
+      InputField 4, InstantUnitWindow 3, and one each in SpeciesWindow,
+      CameraAnimWindow, UserProfileWindow and GlobalWorldEditorWindow.
+
+      The seven TypeString sites are already inconsistent in a way that only a
+      void* parameter could hide: BuildingsWindow:436 passes
+      `trigger->m_scriptFilename` (an array, decaying to char*) and :456, :475,
+      :483, :491 pass `&staticShape->m_shapeName` (a char(*)[256]). Both reach
+      the same address so both work today, and neither would survive the member
+      becoming a std::string. Reading that pair is the fastest way to see why
+      this task exists.
+
+      parallel_safe false: eleven files, four of which T5 and T15 also list.
+
+  - id: T15
+    title: Convert the remaining GameLogic editor and menu windows
+    intent: >
+      LightsWindow (8), ProfileWindow (4), PrefsOtherWindow (4) and MainMenus
+      (3) format button names, captions and option labels into fixed buffers
+      and register nothing that InputField writes into. They were in the old
+      T5's list because they are Eclipse-derived windows in GameLogic, not
+      because they share its coupling — separating them lets the easy half land
+      without waiting on the hard one.
+    project: GameLogic
+    depends_on: [T1, T3, T14]
+    blocked_by: [containers-replaced/T11]
+    files:
+      - GameLogic/LightsWindow.cpp
+      - GameLogic/ProfileWindow.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/MainMenus.cpp
+    acceptance:
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the four files returns 0
+      - No fixed char[N] local remains in them
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      Split out of T5 on 2026-08-03 in the restart. ScrollBar left the list in
+      the same split and went to T11 — see T11's notes for why.
+
+      depends_on T14 is a file-collision edge, not a logical one:
+      LightsWindow.cpp is on both lists. docs/TASK_DAG.md sanctions an edge as
+      the fix for that, and T14 is small enough that serialising four files
+      behind it costs little.
+
+      Two sites are not local buffers and want reading before they are swept.
+      MainMenus:354 and :491 strcpy a URL into `m_website` on the buy-now and
+      website windows — another char member on a window class, in the shape
+      T11 handles for Eclipse's. ProfileWindow:116 formats with `%*s%-*s`,
+      runtime field widths, which std::format spells `{:{}}` — one of the few
+      printf constructs that does not translate by eye.
+
+  - id: T16
+    title: Return the FilesysUtils path helpers by value
+    intent: >
+      GetFilenamePart, GetExtensionPart, GetDirectoryPart and RemoveExtension
+      each return a pointer into one shared function-local static, so only one
+      result is valid at a time and holding two is a silent corruption. T4
+      converted their bodies and deliberately left the signatures; this is the
+      remainder it recorded as owed.
+    project: NeuronClient
+    depends_on: [T4]
+    files:
+      - NeuronClient/FilesysUtils.h
+      - NeuronClient/FilesysUtils.cpp
+      - Tests/NeuronClientTests/FilesysUtilsTests.cpp
+    acceptance:
+      - None of the four helpers returns a pointer into static storage
+      - A test holds two results at once and both are correct — the case the shared static could not support
+      - The existing FilesysUtils tests pass, adjusted only where the return type changed
+    verify:
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: true
+    status: todo
+    notes: >
+      Added 2026-08-03 in the restart. T4's notes end "STILL OWED,
+      deliberately… five callers and a test that asserts null. Its own task,
+      not a rider on this one" — this is that task, written down so it is a
+      node rather than a sentence in a completed task's notes. The test
+      asserting null is the thing to decide about: T4 established that a name
+      with no dot returns EMPTY rather than null because every caller feeds the
+      result straight to stricmp or a BitmapRGBA constructor, so returning
+      std::string by value is consistent with that and the null assertion is
+      what changes.
+
+      This is the same hazard T10 removed from ConvertIntToIP. That conversion
+      is the worked example.
 
   - id: T10
     title: Convert the IP string helpers and the callers their signatures reach

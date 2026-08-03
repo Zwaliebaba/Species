@@ -164,6 +164,7 @@ tasks:
       - containers-replaced/T11
       - strings-modernised/T5
       - strings-modernised/T6
+      - strings-modernised/T15
       - ownership/T4
     files:
       - GameLogic

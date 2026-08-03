@@ -159,8 +159,8 @@ sides can see, or invert the dependency behind an interface. Do not recreate the
 allowlist.
 
 `tasks/neuroncore-layering.yaml` is the plan that eliminated the `NeuronCore`
-entries. Twelve of its thirteen tasks are done; only T10 is left, which drops the
-upward include paths from `NeuronCore.vcxproj` and makes `Server.exe` tick.
+entries. All thirteen of its tasks are done — including T10, which dropped the
+upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 
 ---
 
@@ -323,6 +323,13 @@ can see. Trust it: before those edges existed, `--next` offered every
 The full standard — schema, status semantics, how to write acceptance criteria,
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
+
+**If you are picking the modernisation back up, start at
+[`tasks/_restart.md`](tasks/_restart.md).** Five plans are complete and four are
+open with twenty tasks between them; that file has the re-measured counts, the
+order to restart in, and the critical path — nine of the twenty are behind
+`strings-modernised/T5` alone. It is a reading order, not a plan file; the plans
+are still the plan.
 
 ---
 
