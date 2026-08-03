@@ -152,11 +152,23 @@ PrefsManager::PrefsManager(std::string const &_filename)
 }
 
 
+// The items are still raw owning pointers; making them values or unique_ptr is
+// stage 5, tasks/ownership.yaml T1, which runs after this file's stage 4.
+void PrefsManager::DeleteItems()
+{
+  for (auto& entry : m_items)
+  {
+    delete entry.second;
+  }
+  m_items.clear();
+}
+
+
 PrefsManager::~PrefsManager()
 {
 	free(m_filename);
-	m_items.EmptyAndDelete();
-	m_fileText.EmptyAndDelete();
+  DeleteItems();
+  m_fileText.clear();
 }
 
 
@@ -282,16 +294,16 @@ void PrefsManager::Load(char const *_filename)
 {
 	if (!_filename) _filename = m_filename;
 
-	m_items.EmptyAndDelete();
+  DeleteItems();
 
-    // Try to read preferences if they exist
-    FILE *in = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
+  // Try to read preferences if they exist
+  FILE* in = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
 
-    if( !in )
-    {
-        // Probably first time running the game
-        CreateDefaultValues();
-    }
+  if (!in)
+  {
+    // Probably first time running the game
+    CreateDefaultValues();
+  }
     else
     {
 	    char line[256];
@@ -331,29 +343,26 @@ void PrefsManager::Save()
 	// write out all the new prefs items because they didn't exist in m_fileText.
 
 	// First clear the "has been written" flags on all the items
-	for (int i = 0; i < m_items.Size(); ++i)
-	{
-		if (m_items.ValidIndex(i))
-		{
-			m_items[i]->m_hasBeenWritten = false;
-		}
-	}
+  for (auto& entry : m_items)
+  {
+    entry.second->m_hasBeenWritten = false;
+  }
 
-	// Now use m_fileText as a template to write most of the items
-	FILE *out = fopen(FileSys::GetFullPathA(m_filename).c_str(), "w");
+  // Now use m_fileText as a template to write most of the items
+  FILE* out = fopen(FileSys::GetFullPathA(m_filename).c_str(), "w");
 
-	// If we couldn't open the prefs file for writing then just silently fail -
-	// it's better than crashing.
-	if (!out)
-	{
-		return;
-	}
+  // If we couldn't open the prefs file for writing then just silently fail -
+  // it's better than crashing.
+  if (!out)
+  {
+    return;
+  }
 
-	for (int i = 0; i < m_fileText.Size(); ++i)
-	{
-		char const *line = m_fileText[i];
-		if (IsLineEmpty(line))
-		{
+  for (const std::string& text : m_fileText)
+  {
+    char const* line = text.c_str();
+    if (IsLineEmpty(line))
+    {
       // "%s", not line: comments are user-written, and one containing a
       // percent sign made this read arguments that were never passed.
       fprintf(out, "%s", line);
@@ -407,28 +416,24 @@ void PrefsManager::Save()
 
       // A template line naming a key the manager no longer holds is not a
       // reason to dereference slot -1. Echo the line instead of losing it.
-      int itemIndex = m_items.GetIndex(key);
-      if (itemIndex == -1)
+      auto entry = m_items.find(key);
+      if (entry == m_items.end())
       {
         fprintf(out, "%s", line);
         continue;
       }
 
-      PrefsItem* item = m_items.GetData(itemIndex);
-      SaveItem(out, item);
+      SaveItem(out, entry->second);
     }
   }
 
-  // Finally output any items that haven't already been written
-  for (int i = 0; i < m_items.Size(); ++i)
+  // Finally output any items that haven't already been written. In key order,
+  // where it used to be hash-slot order — see the note on m_items.
+  for (auto& entry : m_items)
   {
-    if (m_items.ValidIndex(i))
+    if (!entry.second->m_hasBeenWritten)
     {
-      PrefsItem* item = m_items.GetData(i);
-      if (!item->m_hasBeenWritten)
-      {
-        SaveItem(out, item);
-      }
+      SaveItem(out, entry.second);
     }
   }
 
@@ -438,38 +443,44 @@ void PrefsManager::Save()
 
 void PrefsManager::Clear()
 {
-	m_items.EmptyAndDelete();
-	m_fileText.EmptyAndDelete();
+  DeleteItems();
+  m_fileText.clear();
 }
 
 
 float PrefsManager::GetFloat(char const *_key, float _default) const
 {
-	int index = m_items.GetIndex(_key);
-	if (index == -1) return _default;
-	PrefsItem *item = m_items.GetData(index);
-	if (item->m_type != PrefsItem::TypeFloat) return _default;
-	return item->m_float;
+  auto entry = m_items.find(_key);
+  if (entry == m_items.end())
+    return _default;
+  PrefsItem* item = entry->second;
+  if (item->m_type != PrefsItem::TypeFloat)
+    return _default;
+  return item->m_float;
 }
 
 
 int PrefsManager::GetInt(char const *_key, int _default) const
 {
-	int index = m_items.GetIndex(_key);
-	if (index == -1) return _default;
-	PrefsItem *item = m_items.GetData(index);
-	if (item->m_type != PrefsItem::TypeInt) return _default;
-	return item->m_int;
+  auto entry = m_items.find(_key);
+  if (entry == m_items.end())
+    return _default;
+  PrefsItem* item = entry->second;
+  if (item->m_type != PrefsItem::TypeInt)
+    return _default;
+  return item->m_int;
 }
 
 
 char const *PrefsManager::GetString(char const *_key, char const *_default) const
 {
-	int index = m_items.GetIndex(_key);
-	if (index == -1) return _default;
-	PrefsItem *item = m_items.GetData(index);
-	if (item->m_type != PrefsItem::TypeString) return _default;
-	return item->m_str;
+  auto entry = m_items.find(_key);
+  if (entry == m_items.end())
+    return _default;
+  PrefsItem* item = entry->second;
+  if (item->m_type != PrefsItem::TypeString)
+    return _default;
+  return item->m_str;
 }
 
 
@@ -493,60 +504,60 @@ char const *PrefsManager::GetString(char const *_key, char const *_default) cons
 
 void PrefsManager::SetString(char const *_key, char const *_string)
 {
-	int index = m_items.GetIndex(_key);
+  auto entry = m_items.find(_key);
 
-	if (index == -1)
-	{
-		PrefsItem *item = new PrefsItem(_key, _string);
-		m_items.PutData(item->m_key, item);
-	}
-	else
-	{
-		PrefsItem *item = m_items.GetData(index);
-		DEBUG_ASSERT(item->m_type == PrefsItem::TypeString);
-		char *newString = strdup(_string);
-        free(item->m_str);
-        // Note by Chris:
-        // The incoming value of _string might also be item->m_str
-        // So it is essential to copy _string before freeing item->m_str
-		item->m_str = newString;
-	}
+  if (entry == m_items.end())
+  {
+    PrefsItem* item = new PrefsItem(_key, _string);
+    m_items[item->m_key] = item;
+  }
+  else
+  {
+    PrefsItem* item = entry->second;
+    DEBUG_ASSERT(item->m_type == PrefsItem::TypeString);
+    char* newString = strdup(_string);
+    free(item->m_str);
+    // Note by Chris:
+    // The incoming value of _string might also be item->m_str
+    // So it is essential to copy _string before freeing item->m_str
+    item->m_str = newString;
+  }
 }
 
 
 void PrefsManager::SetFloat(char const *_key, float _float)
 {
-	int index = m_items.GetIndex(_key);
+  auto entry = m_items.find(_key);
 
-	if (index == -1)
-	{
-		PrefsItem *item = new PrefsItem(_key, _float);
-		m_items.PutData(item->m_key, item);
-	}
-	else
-	{
-		PrefsItem *item = m_items.GetData(index);
-		DEBUG_ASSERT(item->m_type == PrefsItem::TypeFloat);
-		item->m_float = _float;
-	}
+  if (entry == m_items.end())
+  {
+    PrefsItem* item = new PrefsItem(_key, _float);
+    m_items[item->m_key] = item;
+  }
+  else
+  {
+    PrefsItem* item = entry->second;
+    DEBUG_ASSERT(item->m_type == PrefsItem::TypeFloat);
+    item->m_float = _float;
+  }
 }
 
 
 void PrefsManager::SetInt(char const *_key, int _int)
 {
-	int index = m_items.GetIndex(_key);
+  auto entry = m_items.find(_key);
 
-	if (index == -1)
-	{
-		PrefsItem *item = new PrefsItem(_key, _int);
-		m_items.PutData(item->m_key, item);
-	}
-	else
-	{
-		PrefsItem *item = m_items.GetData(index);
-		DEBUG_ASSERT(item->m_type == PrefsItem::TypeInt);
-		item->m_int = _int;
-	}
+  if (entry == m_items.end())
+  {
+    PrefsItem* item = new PrefsItem(_key, _int);
+    m_items[item->m_key] = item;
+  }
+  else
+  {
+    PrefsItem* item = entry->second;
+    DEBUG_ASSERT(item->m_type == PrefsItem::TypeInt);
+    item->m_int = _int;
+  }
 }
 
 
@@ -566,21 +577,34 @@ void PrefsManager::AddLine(char const*_line, bool _overwrite)
 
 		PrefsItem *item = new PrefsItem(localCopy);
 
-		int idx = m_items.GetIndex( item->m_key );
-		if ( _overwrite && idx >= 0 ) {
-			delete m_items.GetData( idx );
-			m_items.RemoveData( item->m_key );
-			saveLine = false;
-		}
+    auto existing = m_items.find(item->m_key);
+    if (_overwrite && existing != m_items.end())
+    {
+      delete existing->second;
+      m_items.erase(existing);
+      saveLine = false;
+    }
 
-		m_items.PutData(item->m_key, item);
-		free(localCopy);
-	}
+    // The hand-rolled table this replaced asserted in GetInsertPos that a
+    // key was never inserted twice, so a duplicate was a precondition
+    // violation rather than supported behaviour: debug tripped the
+    // assert, release grew a second slot for the same key. Replacing is
+    // the honest reading of that contract, and deleting what it
+    // displaces closes the leak the assert used to stand in for.
+    PrefsItem*& slot = m_items[item->m_key];
+    delete slot;
+    slot = item;
 
-	if ( saveLine ) {
-		char *lineCopy = strdup(_line);
-		m_fileText.PutData(lineCopy);
-	}
+    free(localCopy);
+  }
+
+  if (saveLine)
+  {
+    // std::string, so no strdup. The legacy array's EmptyAndDelete used
+    // `delete` on these malloc'd pointers, which was undefined behaviour
+    // every time the manager was destroyed.
+    m_fileText.emplace_back(_line);
+  }
 }
 
 
@@ -604,9 +628,4 @@ void PrefsManager::AddLine(char const*_line, bool _overwrite)
 //}
 
 
-bool PrefsManager::DoesKeyExist(char const *_key)
-{
-	int index = m_items.GetIndex(_key);
-
-	return index != -1;
-}
+bool PrefsManager::DoesKeyExist(char const* _key) { return m_items.contains(_key); }

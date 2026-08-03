@@ -1,9 +1,8 @@
 #pragma once
 
+#include <map>
 #include <string>
-
-#include "HashTable.h"
-#include "FastDArray.h"
+#include <vector>
 
 
 // ***************
@@ -55,14 +54,22 @@ class PrefsManager
   private:
     static DefaultsProvider sm_defaultsProvider;
 
-    HashTable<PrefsItem*> m_items;
-    FastDArray<char*> m_fileText;
+    // Ordered, not hashed. The hand-rolled table's slot order decided where keys
+    // absent from the loaded file landed in the saved one, and that order was a
+    // function of the key text and the table's growth history — unreproducible
+    // by any standard container, and pinned by nothing. Sorting by key makes
+    // that block stable across runs and machines instead; template lines keep
+    // their own positions either way, which is what
+    // Tests/NeuronCoreTests/PreferencesTests.cpp actually pins.
+    std::map<std::string, PrefsItem*> m_items;
+    std::vector<std::string> m_fileText;
     char *m_filename;
 
 	bool IsLineEmpty(char const *_line);
 	void SaveItem(FILE *out, PrefsItem *_item);
+  void DeleteItems();
 
-    void CreateDefaultValues();
+  void CreateDefaultValues();
 
 public:
 	PrefsManager(char const *_filename);
