@@ -1,5 +1,5 @@
-#include "Globals.h"
 #include "pch.h"
+#include "Globals.h"
 
 #include <math.h>
 

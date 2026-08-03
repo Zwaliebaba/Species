@@ -1142,6 +1142,15 @@ tasks:
       the prep, 6 headers and 15 sites now, of which 11 are pch.h — mechanical
       at move time, since GameLogic has its own.
 
+      A RULE FOR ANY SCRIPT THAT ADDS AN INCLUDE, learned by going red on it.
+      Every .cpp here is built with MSVC's /Yu, so the compiler DISCARDS
+      everything textually before `#include "pch.h"`. A script that inserts at
+      the first #include line puts the new include in the dead zone, where it
+      compiles to nothing and no include-graph analysis notices — the line is
+      right there in the file. Six files were added this way and Tripod.cpp is
+      the one that failed, because it was the only one that needed the symbol
+      immediately. Insert AFTER pch.h, and check for includes preceding it.
+
       WHAT IS ACTUALLY LEFT:
 
         App.h (4)       m_gameCursor, m_backgroundColour, m_requestedMission,
