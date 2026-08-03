@@ -15,7 +15,6 @@
 #include "TextRenderer.h"
 #include "LanguageTable.h"
 
-#include "Camera.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "Team.h"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CameraAccess.h"
 #include "RendererAccess.h"
 
 // The running game's subsystems, reachable from every layer.
@@ -16,7 +17,6 @@
 // before. See tasks/layering-inversion.yaml T8.
 class Location;
 class GlobalWorld;
-class Camera;
 class ParticleSystem;
 class LocationEditor;
 class TaskManager;
@@ -26,7 +26,7 @@ class UserInput;
 
 extern Location* g_location;
 extern GlobalWorld* g_globalWorld;
-extern Camera* g_camera;
+extern CameraAccess* g_camera;
 extern RendererAccess* g_renderer;
 extern ParticleSystem* g_particleSystem;
 extern LocationEditor* g_locationEditor;

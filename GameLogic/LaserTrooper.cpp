@@ -6,7 +6,6 @@
 #include "Team.h"
 #include "Unit.h"
 #include "UserInput.h"
-#include "Camera.h"
 
 #include "LaserTrooper.h"
 #include "Resource.h"

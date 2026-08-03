@@ -15,7 +15,6 @@
 #include "Input.h"
 #include "InputTypes.h"
 
-#include "Camera.h"
 #include "Explosion.h"
 #include "Location.h"
 #include "Team.h"
@@ -762,7 +761,7 @@ void Squadie::ListSoundEvents(std::vector<const char*>* _list)
 Vector3 Squadie::GetCameraFocusPoint()
 {
   if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected /* ControlUnitStartSecondaryFireDirected */) &&
-      g_camera->IsInMode(Camera::ModeEntityTrack))
+      g_camera->IsInMode(CameraAccess::ModeEntityTrack))
   {
     InputDetails details;
     g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details);

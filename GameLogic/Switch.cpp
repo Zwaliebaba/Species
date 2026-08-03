@@ -13,7 +13,6 @@
 #include "ClientToServer.h"
 
 #include "Location.h"
-#include "Camera.h"
 #include "GlobalWorld.h"
 #include "Script.h"
 

@@ -142,12 +142,12 @@ void LocationInput::AdvanceNoSelection()
           if (building->m_type == Building::TypeRadarDish)
           {
             g_app->m_clientToServer->RequestSelectUnit(id.GetTeamId(), -1, -1, id.GetUniqueId());
-            g_camera->RequestRadarAimMode(building);
+            TheCamera()->RequestRadarAimMode(building);
           }
           else if (building->m_type == Building::TypeGunTurret)
           {
             g_app->m_clientToServer->RequestSelectUnit(id.GetTeamId(), -1, -1, id.GetUniqueId());
-            g_camera->RequestTurretAimMode(building);
+            TheCamera()->RequestTurretAimMode(building);
           }
           else if (building->m_type == Building::TypeFenceSwitch)
           {
@@ -203,19 +203,19 @@ void LocationInput::AdvanceNoSelection()
 
                 if( building->m_type == Building::TypeFactory )
                 {
-                    g_camera->RequestBuildingFocusMode( building );
+                    TheCamera()->RequestBuildingFocusMode( building );
                     g_userInput->m_stretchyIcons->RequestMenu( StretchyIcons::MenuMicroUnit );
                     g_userInput->m_stretchyIcons->Enable();
                     g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, -1, -1, building->m_id.GetUniqueId() );
                 }
                 else if( building->m_type == Building::TypeRadarDish )
                 {
-                    g_camera->RequestRadarAimMode( building );
+                    TheCamera()->RequestRadarAimMode( building );
                     g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, -1, -1, building->m_id.GetUniqueId() );
                 }
         else if(building->m_type == Building::TypePowerstation)
         {
-                    g_camera->RequestBuildingFocusMode( building );
+                    TheCamera()->RequestBuildingFocusMode( building );
                     g_userInput->m_stretchyIcons->RequestMenu( StretchyIcons::MenuPowerstation );
                     g_userInput->m_stretchyIcons->Enable();
                     g_app->m_clientToServer->RequestSelectUnit( g_globalWorld->m_myTeamId, -1, -1, building->m_id.GetUniqueId() );

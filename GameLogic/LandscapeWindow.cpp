@@ -11,7 +11,6 @@
 #include "InputField.h"
 #include "LandscapeWindow.h"
 
-#include "Camera.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"

@@ -6,7 +6,7 @@
 // per level. Null until startup builds them.
 Location* g_location = nullptr;
 GlobalWorld* g_globalWorld = nullptr;
-Camera* g_camera = nullptr;
+CameraAccess* g_camera = nullptr;
 RendererAccess* g_renderer = nullptr;
 ParticleSystem* g_particleSystem = nullptr;
 LocationEditor* g_locationEditor = nullptr;

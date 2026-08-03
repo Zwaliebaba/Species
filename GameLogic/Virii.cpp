@@ -10,7 +10,6 @@
 #include "TextRenderer.h"
 #include "Preferences.h"
 
-#include "Camera.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "EntityGrid.h"

@@ -20,7 +20,6 @@
 #include "Switch.h"
 
 #include "Location.h"
-#include "Camera.h"
 #include "GlobalWorld.h"
 #include "GameTime.h"
 

@@ -7,7 +7,6 @@
 #include "MathUtils.h"
 #include "DebugRender.h"
 
-#include "Camera.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "Team.h"

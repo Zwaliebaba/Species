@@ -2,8 +2,10 @@
 
 #include "Vector3.h"
 
+#include "CameraAccess.h"
 #include "Entity.h"
 #include "WorldObject.h"
+#include "WorldPointers.h"
 
 
 class Building;
@@ -11,38 +13,12 @@ class Teleport;
 class CameraAnimation;
 
 
-class Camera
+// Mode and the debug-mode enumerators are inherited from CameraAccess rather
+// than declared here, so that code below Species can name a mode without this
+// header. `Camera::ModeFreeMovement` still resolves through the base, which is
+// why the Species-side spellings did not have to change.
+class Camera : public CameraAccess
 {
-  public:
-    enum Mode
-    {
-      ModeReplay = 0,
-      ModeSphereWorld = 1,
-      ModeFreeMovement = 2,  // Remember to update the static string table
-      ModeBuildingFocus = 3, // at the end of camera.cpp when you update this
-      ModeEntityTrack = 4,
-      ModeRadarAim = 5,
-      ModeFirstPerson = 6,
-      ModeMoveToTarget = 7,
-      ModeDoNothing = 8,
-      ModeEntityFollow = 9,
-      ModeTurretAim = 10,
-      ModeSphereWorldScripted = 11,
-      ModeSphereWorldIntro = 12,
-      ModeSphereWorldOutro = 13,
-      ModeSphereWorldFocus = 14,
-      ModeMainMenu = 15,
-      ModeNumModes
-    };
-
-    enum
-    {
-      DebugModeNever,
-      DebugModeAlways,
-      DebugModeAuto,
-      DebugModeNumStates
-    };
-
   protected:
     void AdvanceAnim();
 
@@ -209,3 +185,12 @@ class Camera
 
     void WaterReflect();
 };
+
+
+// g_camera is a CameraAccess* so the layers below Species need only the
+// interface. Species owns the concrete type and drives the camera, so it
+// reaches the rest of the API — Advance and Render, the request modes, the
+// bounds and FOV setters — through here. The cast is safe because App is the
+// only thing that ever assigns g_camera, and it assigns a Camera. Same shape
+// as TheRenderer() in Renderer.h.
+inline Camera* TheCamera() { return static_cast<Camera*>(g_camera); }

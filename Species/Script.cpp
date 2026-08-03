@@ -69,7 +69,7 @@ void Script::RunCommand_CamMove(const char* _mountName, float _duration)
 
   if (g_camera->SetTarget(_mountName))
   {
-    g_camera->SetMoveDuration(_duration);
+    TheCamera()->SetMoveDuration(_duration);
 
     g_camera->RequestMode(Camera::ModeMoveToTarget);
   }
@@ -89,9 +89,9 @@ void Script::RunCommand_CamAnim(const char* _animName)
 void Script::RunCommand_CamFov(float _fov, bool _immediate)
 {
   if (_immediate)
-    g_camera->SetFOV(_fov);
+    TheCamera()->SetFOV(_fov);
   else
-    g_camera->SetTargetFOV(_fov);
+    TheCamera()->SetTargetFOV(_fov);
 }
 
 void Script::RunCommand_CamBuildingFocus(int _buildingId, float _range, float _height)
@@ -102,7 +102,7 @@ void Script::RunCommand_CamBuildingFocus(int _buildingId, float _range, float _h
   Building* building = g_location->GetBuilding(_buildingId);
 
   if (building)
-    g_camera->RequestBuildingFocusMode(building, _range, _height);
+    TheCamera()->RequestBuildingFocusMode(building, _range, _height);
   else
     DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
 }
@@ -117,14 +117,14 @@ void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float
   if (building)
   {
     g_camera->SetTarget(building->m_centrePos, _range, _height);
-    g_camera->SetMoveDuration(_duration);
+    TheCamera()->SetMoveDuration(_duration);
     g_camera->RequestMode(Camera::ModeMoveToTarget);
   }
   else
     DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
 }
 
-void Script::RunCommand_CamGlobalWorldFocus() { g_camera->RequestSphereFocusMode(); }
+void Script::RunCommand_CamGlobalWorldFocus() { TheCamera()->RequestSphereFocusMode(); }
 
 void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
 {
@@ -147,13 +147,13 @@ void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
   if (!g_camera->IsInMode(Camera::ModeSphereWorldScripted))
     g_camera->RequestMode(Camera::ModeSphereWorldScripted);
 
-  g_camera->SetTargetFOV(_fov);
+  TheCamera()->SetTargetFOV(_fov);
   g_camera->SetTarget(targetPos, Vector3(0, 0, 1), g_upVector);
 }
 
 void Script::RunCommand_CamReset()
 {
-  if (g_camera->IsAnimPlaying())
+  if (TheCamera()->IsAnimPlaying())
     g_camera->StopAnimation();
 
   if (g_location)
@@ -476,7 +476,7 @@ void Script::Advance()
     return;
   if (m_waitUntil > g_gameTime)
     return;
-  if (m_waitForCamera && g_camera->IsAnimPlaying())
+  if (m_waitForCamera && TheCamera()->IsAnimPlaying())
     return;
 
   if (m_waitForRocket)

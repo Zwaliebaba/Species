@@ -6,7 +6,6 @@
 #include "Debug.h"
 #include "DebugRender.h"
 
-#include "Camera.h"
 #include "EntityGrid.h"
 #include "ObstructionGrid.h"
 #include "Location.h"

@@ -17,7 +17,6 @@
 #include "Darwinian.h"
 
 #include "Location.h"
-#include "Camera.h"
 #include "Team.h"
 #include "GameTime.h"
 #include "ParticleSystem.h"

@@ -17,7 +17,6 @@
 #include "Location.h"
 #include "Team.h"
 #include "GameTime.h"
-#include "Camera.h"
 #include "ParticleSystem.h"
 #include "Explosion.h"
 #include "ObstructionGrid.h"

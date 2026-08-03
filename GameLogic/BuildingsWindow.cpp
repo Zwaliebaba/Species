@@ -29,7 +29,6 @@
 #include "GenericHub.h"
 #include "Switch.h"
 
-#include "Camera.h"
 #include "GlobalWorld.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"

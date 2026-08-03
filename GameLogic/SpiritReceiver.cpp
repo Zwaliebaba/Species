@@ -16,7 +16,6 @@
 #include "Darwinian.h"
 
 #include "Location.h"
-#include "Camera.h"
 #include "GlobalWorld.h"
 
 #include "SoundSystem.h"

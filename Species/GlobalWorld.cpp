@@ -1334,7 +1334,7 @@ void GlobalWorld::Advance()
         // We're close to a location, but not there, so drag the pointer towards it
         GlobalLocation* loc = GetLocation(locId);
         float locX, locY;
-        g_camera->Get2DScreenPos(loc->m_pos, &locX, &locY);
+        TheCamera()->Get2DScreenPos(loc->m_pos, &locX, &locY);
         locY = g_renderer->ScreenH() - locY;
         int movX = static_cast<int>(locX - g_target->X());
         int movY = static_cast<int>(locY - g_target->Y());

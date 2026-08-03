@@ -12,7 +12,6 @@
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "Team.h"
-#include "Camera.h"
 #include "GameTime.h"
 
 #include "SoundSystem.h"

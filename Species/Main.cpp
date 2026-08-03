@@ -397,7 +397,7 @@ void LocationGameLoop()
           g_taskManagerInterface->m_visible = false;
         else
         {
-          g_camera->SetDebugMode(Camera::DebugModeAuto);
+          TheCamera()->SetDebugMode(Camera::DebugModeAuto);
           EclRegisterWindow(new LocationWindow());
         }
       }
@@ -563,7 +563,7 @@ void LocationGameLoop()
       // using something like OpenMP
       g_location->m_water->Advance();
       g_soundLibrary2d->TopupBuffer();
-      g_camera->Advance();
+      TheCamera()->Advance();
       g_app->m_locationInput->Advance();
       g_taskManager->Advance();
       g_taskManagerInterface->Advance();
@@ -656,7 +656,7 @@ void LocationEditorLoop()
     double timeNow = GetHighResTime();
 
     g_userInput->Advance();
-    g_camera->Advance();
+    TheCamera()->Advance();
     g_locationEditor->Advance();
     g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
@@ -699,7 +699,7 @@ void GlobalWorldGameLoop()
         RemoveAllWindows();
       else
       {
-        g_camera->SetDebugMode(Camera::DebugModeAuto);
+        TheCamera()->SetDebugMode(Camera::DebugModeAuto);
         EclRegisterWindow(new MainMenuWindow());
       }
       g_userInput->Advance();
@@ -715,7 +715,7 @@ void GlobalWorldGameLoop()
     g_script->Advance();
     g_globalWorld->Advance();
     g_userInput->Advance();
-    g_camera->Advance();
+    TheCamera()->Advance();
     g_app->m_soundSystem->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
@@ -742,7 +742,7 @@ void GlobalWorldGameLoop()
 // *** GlobalWorldEditorLoop
 void GlobalWorldEditorLoop()
 {
-  g_camera->SetDebugMode(Camera::DebugModeAlways);
+  TheCamera()->SetDebugMode(Camera::DebugModeAlways);
 
   auto gweWindow = new GlobalWorldEditorWindow();
   EclRegisterWindow(gweWindow);
@@ -767,7 +767,7 @@ void GlobalWorldEditorLoop()
 
     g_globalWorld->Advance();
     g_userInput->Advance();
-    g_camera->Advance();
+    TheCamera()->Advance();
     g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
     g_app->m_profiler->Advance();
@@ -920,7 +920,7 @@ void EnterLocation()
   g_location->Init(g_app->m_requestedMission, g_app->m_requestedMap);
   g_locationId = g_requestedLocationId;
 
-  g_camera->UpdateEntityTrackingMode();
+  TheCamera()->UpdateEntityTrackingMode();
 
   if (!g_editing)
   {
@@ -935,7 +935,7 @@ void EnterLocation()
   constexpr float borderSize = 200.0f;
   float minX = -borderSize;
   float maxX = g_location->m_landscape.GetWorldSizeX() + borderSize;
-  g_camera->SetBounds(minX, maxX, minX, maxX);
+  TheCamera()->SetBounds(minX, maxX, minX, maxX);
   g_camera->SetTarget(Vector3(maxX, 1000, maxX), Vector3(-1, -0.7, -1)); // Incase start doesn't exist
   g_camera->SetTarget("start");
   g_camera->CutToTarget();
@@ -944,14 +944,14 @@ void EnterLocation()
   {
 #ifdef LOCATION_EDITOR
     g_locationEditor = new LocationEditor();
-    g_camera->SetDebugMode(Camera::DebugModeAlways);
+    TheCamera()->SetDebugMode(Camera::DebugModeAlways);
 
     LocationEditorLoop();
 #endif // LOCATION_EDITOR
   }
   else
   {
-    g_camera->SetDebugMode(Camera::DebugModeAuto);
+    TheCamera()->SetDebugMode(Camera::DebugModeAuto);
     g_camera->RequestMode(Camera::ModeFreeMovement);
 
     LocationGameLoop();
@@ -971,9 +971,9 @@ void EnterGlobalWorld()
   }
 
   // Put the camera in a sensible place
-  g_camera->SetDebugMode(Camera::DebugModeAuto);
+  TheCamera()->SetDebugMode(Camera::DebugModeAuto);
   g_camera->RequestMode(Camera::ModeSphereWorld);
-  g_camera->SetHeight(50.0f);
+  TheCamera()->SetHeight(50.0f);
 
   if (g_editing)
     GlobalWorldEditorLoop();
@@ -989,7 +989,7 @@ void MainMenuLoop()
     UpdateAdvanceTime();
     TheRenderer()->Render();
     g_userInput->Advance();
-    g_camera->Advance();
+    TheCamera()->Advance();
     g_app->m_soundSystem->Advance();
     HandleCommonConditions();
 

@@ -110,7 +110,7 @@ void TaskManagerInterface::RunDefaultObjective(GlobalEventCondition* _cond)
     Building* building = g_location->GetBuilding(_cond->m_id);
     if (building)
     {
-      g_camera->RequestBuildingFocusMode(building, 250.0f, 75.0f);
+      TheCamera()->RequestBuildingFocusMode(building, 250.0f, 75.0f);
       m_viewingDefaultObjective = true;
     }
     break;
@@ -134,7 +134,7 @@ void TaskManagerInterface::RunDefaultObjective(GlobalEventCondition* _cond)
 
     if (building)
     {
-      g_camera->RequestBuildingFocusMode(building, 100.0f, 75.0f);
+      TheCamera()->RequestBuildingFocusMode(building, 100.0f, 75.0f);
       m_viewingDefaultObjective = true;
     }
     break;
@@ -213,7 +213,7 @@ void TaskManagerInterface::AdvanceTab()
       {
         if (g_taskManager->m_tasks[index]->m_type == GlobalResearch::TypeSquad)
         {
-          g_camera->RequestEntityTrackMode(g_taskManager->m_tasks[index]->m_objId);
+          TheCamera()->RequestEntityTrackMode(g_taskManager->m_tasks[index]->m_objId);
         }
         else
         {

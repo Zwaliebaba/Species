@@ -16,7 +16,6 @@
 #include "UserProfileWindow.h"
 #include "ReallyQuitWindow.h"
 
-#include "Camera.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -195,13 +194,13 @@ void DebugMenu::Render(bool hasFocus)
 
   switch (g_camera->GetDebugMode())
   {
-  case Camera::DebugModeAlways:
+  case CameraAccess::DebugModeAlways:
     g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Always");
     break;
-  case Camera::DebugModeAuto:
+  case CameraAccess::DebugModeAuto:
     g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Auto");
     break;
-  case Camera::DebugModeNever:
+  case CameraAccess::DebugModeNever:
     g_editorFont.DrawText2D(m_x + m_w - 47, y, 10, "Never");
     break;
   }

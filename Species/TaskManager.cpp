@@ -109,7 +109,7 @@ void Task::TargetSquad(Vector3 const& _pos)
 
   if (trackEntity == 2)
   {
-    g_camera->RequestEntityTrackMode(m_objId);
+    TheCamera()->RequestEntityTrackMode(m_objId);
   }
 }
 

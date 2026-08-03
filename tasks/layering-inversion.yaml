@@ -588,6 +588,10 @@ tasks:
     project: NeuronClient
     depends_on: [T8]
     files:
+      - NeuronClient/CameraAccess.h
+      - NeuronClient/RendererAccess.h
+      - NeuronClient/WorldPointers.h
+      - NeuronClient/WorldPointers.cpp
       - Species/Camera.h
       - Species/Camera.cpp
       - Species/Renderer.h
@@ -626,7 +630,45 @@ tasks:
       works; its render face is six methods plus ScreenW/H. GetClickRay
       and the mode/animation setters are editor/window-only and can stay
       behind Species.
-    status: todo
+
+      CAMERA HALF LANDED 2026-08-03. The allowlist went 326 -> 279 entries and
+      no entry names Camera.h. The seam is NeuronClient/CameraAccess.h, built
+      the same way as RendererAccess.h: g_camera in WorldPointers.h is a
+      CameraAccess*, so dereferencing it needs only the interface, and
+      Species-side code that needs the concrete type goes through a new
+      TheCamera() that mirrors TheRenderer().
+
+      The surface was MEASURED rather than taken from T1's list —
+      `grep -rhoE "g_camera->[A-Za-z_]+" GameLogic NeuronClient` finds exactly
+      twenty members. T1's proposed face was too small: it left out
+      GetControlVector, IsInteractive, IsInMode, RequestMode, the debug-mode
+      pair, PlayAnimation/StopAnimation, SetTarget/CutToTarget and GetClickRay.
+      GetClickRay in particular was written off as editor-only, which is true,
+      but the five editor windows that call it live in GameLogic, so leaving it
+      out would have kept five allowlist entries and missed the acceptance.
+
+      Camera::Mode moved into CameraAccess rather than being duplicated. Because
+      Camera derives from CameraAccess, `Camera::ModeFreeMovement` still
+      resolves through the base, so no Species-side spelling had to change; the
+      five call sites below Species now say CameraAccess::Mode... instead. The
+      enum is still unscoped and carries a hygiene-ok marker: Camera stores
+      m_mode as an int and indexes a string table with it, so converting it is
+      language-hygiene T5's job, not this seam's.
+
+      Camera gains a vtable it did not have. That is a per-call indirection on
+      GetUp and GetRight, which entity render bodies call 61 and 58 times across
+      the tree — the same cost RendererAccess already accepted for lighting and
+      culling. Rendering only; nothing in the simulation path.
+
+      Fifty-one of the touched files needed a whole-file clang-format commit
+      first (100fe2a) because they are tab-indented and the changed-lines check
+      does not converge on them.
+
+      STILL OPEN: the owner-run rendering smoke test in the acceptance. Nothing
+      here changes drawing logic — the change is an include, a pointer type and
+      an enum's home — but the acceptance asks for it and no automated test in
+      this repository covers rendering.
+    status: done
 
   - id: T10
     title: Clear the long-tail upward includes

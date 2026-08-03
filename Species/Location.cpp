@@ -1646,8 +1646,8 @@ int Location::GetUnitId(Vector3 const& startRay, Vector3 const& direction, unsig
             if (entityHit && !entity->m_dead)
             {
               float centrePosX, centrePosY, rayHitX, rayHitY;
-              g_camera->Get2DScreenPos(spherePos, &centrePosX, &centrePosY);
-              g_camera->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
+              TheCamera()->Get2DScreenPos(spherePos, &centrePosX, &centrePosY);
+              TheCamera()->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
 
               float rangeSqd = pow(centrePosX - rayHitX, 2) + pow(centrePosY - rayHitY, 2);
               if (rangeSqd < closestRangeSqd)
@@ -1694,8 +1694,8 @@ WorldObjectId Location::GetEntityId(Vector3 const& startRay, Vector3 const& dire
         if (rayHit)
         {
           float centrePosX, centrePosY, rayHitX, rayHitY;
-          g_camera->Get2DScreenPos(spherePos, &centrePosX, &centrePosY);
-          g_camera->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
+          TheCamera()->Get2DScreenPos(spherePos, &centrePosX, &centrePosY);
+          TheCamera()->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
 
           float rangeSqd = pow(centrePosX - rayHitX, 2) + pow(centrePosY - rayHitY, 2);
           if (rangeSqd < closestRangeSqd)
@@ -1749,8 +1749,8 @@ int Location::GetBuildingId(Vector3 const& rayStart, Vector3 const& rayDir, unsi
         if (rayHit)
         {
           float centrePosX, centrePosY, rayHitX, rayHitY;
-          g_camera->Get2DScreenPos(building->m_centrePos, &centrePosX, &centrePosY);
-          g_camera->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
+          TheCamera()->Get2DScreenPos(building->m_centrePos, &centrePosX, &centrePosY);
+          TheCamera()->Get2DScreenPos(hitPos, &rayHitX, &rayHitY);
 
           float rangeSqd = pow(centrePosX - rayHitX, 2) + pow(centrePosY - rayHitY, 2);
           if (rangeSqd < closestRangeSqd)

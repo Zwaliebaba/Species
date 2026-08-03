@@ -403,7 +403,7 @@ void Renderer::RenderFrame(bool withFlip)
   g_userInput->Render();
   g_app->m_gameCursor->Render();
   g_taskManagerInterface->Render();
-  g_camera->Render();
+  TheCamera()->Render();
 
 #ifdef DEBUG_RENDER_ENABLED
   g_debugRenderer.Render();
@@ -595,7 +595,7 @@ void Renderer::SetupProjMatrixFor3D() const
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  gluPerspective(g_camera->GetFov(), static_cast<float>(m_screenW) / static_cast<float>(m_screenH), // Aspect ratio
+  gluPerspective(TheCamera()->GetFov(), static_cast<float>(m_screenW) / static_cast<float>(m_screenH), // Aspect ratio
                  m_nearPlane, m_farPlane);
 }
 
@@ -1063,8 +1063,8 @@ void Renderer::PaintPixels()
 {
 #if USE_PIXEL_EFFECT_GRID_OPTIMISATION
   const double aspectRatio = static_cast<double>(m_screenW) / static_cast<double>(m_screenH);
-  double zoomCorrection = 0.000037 * static_cast<double>(g_camera->GetFov());
-  double scale = (0.017 + zoomCorrection) * static_cast<double>(g_camera->GetFov());
+  double zoomCorrection = 0.000037 * static_cast<double>(TheCamera()->GetFov());
+  double scale = (0.017 + zoomCorrection) * static_cast<double>(TheCamera()->GetFov());
 
   const double step = scale * aspectRatio / static_cast<double>(PIXEL_EFFECT_GRID_RES);
   const double xOffset = scale * (-0.5 * aspectRatio);

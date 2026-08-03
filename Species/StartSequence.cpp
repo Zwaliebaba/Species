@@ -70,7 +70,7 @@ bool StartSequence::Advance()
   {
     started = true;
     g_app->m_soundSystem->TriggerOtherEvent(nullptr, "StartSequence", SoundSourceBlueprint::TypeMusic);
-    g_camera->SetDebugMode(Camera::DebugModeAuto);
+    TheCamera()->SetDebugMode(Camera::DebugModeAuto);
     g_camera->RequestMode(Camera::ModeSphereWorldIntro);
   }
 
@@ -90,7 +90,7 @@ bool StartSequence::Advance()
   }
 
   g_userInput->Advance();
-  g_camera->Advance();
+  TheCamera()->Advance();
   g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
   g_app->m_profiler->Advance();

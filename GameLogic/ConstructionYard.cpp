@@ -15,7 +15,6 @@
 #include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Location.h"
-#include "Camera.h"
 #include "Team.h"
 #include "WorldPointers.h"
 #include "AppState.h"

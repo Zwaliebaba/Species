@@ -8,7 +8,6 @@
 #include "TextRenderer.h"
 #include "Debug.h"
 
-#include "Camera.h"
 #include "DebugRender.h"
 #include "WorldPointers.h"
 

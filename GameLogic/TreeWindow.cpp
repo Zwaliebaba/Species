@@ -13,7 +13,6 @@
 #include "Location.h"
 #include "LocationEditor.h"
 #include "InputField.h"
-#include "Camera.h"
 #include "GlobalWorld.h"
 #include "LevelFile.h"
 #include "WorldPointers.h"

@@ -17,7 +17,6 @@
 #include "Armour.h"
 
 
-#include "Camera.h"
 #include "EntityGrid.h"
 #include "ObstructionGrid.h"
 #include "Location.h"

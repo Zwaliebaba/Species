@@ -2,7 +2,6 @@
 
 #include "3dSprite.h"
 
-#include "Camera.h"
 #include "WorldPointers.h"
 
 

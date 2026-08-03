@@ -11,7 +11,6 @@
 #include "DropDownMenu.h"
 #include "InputField.h"
 
-#include "Camera.h"
 #include "LocationEditor.h"
 #include "LevelFile.h"
 #include "Location.h"

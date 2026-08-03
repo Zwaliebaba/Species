@@ -13,7 +13,6 @@
 #include "EntityGrid.h"
 #include "Script.h"
 #include "Team.h"
-#include "Camera.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 

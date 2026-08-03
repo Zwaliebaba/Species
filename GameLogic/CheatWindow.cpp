@@ -10,7 +10,6 @@
 #include "Location.h"
 #include "Unit.h"
 #include "Team.h"
-#include "Camera.h"
 #include "TaskManager.h"
 #include "WorldPointers.h"
 

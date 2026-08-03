@@ -20,7 +20,6 @@
 #include "Location.h"
 #include "ParticleSystem.h"
 #include "ObstructionGrid.h"
-#include "Camera.h"
 #include "GameTime.h"
 
 #include "SoundSystem.h"

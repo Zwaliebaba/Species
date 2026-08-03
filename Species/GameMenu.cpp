@@ -280,7 +280,7 @@ void GameMenu::CreateMenu()
 
   // set the camera to a position with a good view of the internet
   g_camera->RequestMode(Camera::ModeMainMenu);
-  g_camera->SetDebugMode(Camera::DebugModeNever);
+  TheCamera()->SetDebugMode(Camera::DebugModeNever);
   g_camera->SetTarget(Vector3(-900000, 3000000, 397000), Vector3(0, 0.5f, -1));
   g_camera->CutToTarget();
 

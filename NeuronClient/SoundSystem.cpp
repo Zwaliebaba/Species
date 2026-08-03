@@ -23,7 +23,6 @@
 #include "SoundLibrary3dSoftware.h"
 
 #include "GameTime.h"
-#include "Camera.h"
 #include "Location.h"
 
 #include "Entity.h"

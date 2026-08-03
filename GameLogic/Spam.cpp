@@ -16,7 +16,6 @@
 #include "ParticleSystem.h"
 #include "GlobalWorld.h"
 #include "GameTime.h"
-#include "Camera.h"
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"

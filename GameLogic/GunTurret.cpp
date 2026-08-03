@@ -15,7 +15,6 @@
 #include "Location.h"
 #include "Team.h"
 #include "EntityGrid.h"
-#include "Camera.h"
 #include "UserInput.h"
 #include "GameTime.h"
 #include "GlobalWorld.h"
@@ -288,7 +287,7 @@ bool GunTurret::Advance()
     {
       // Player has lost control of the building
       team->SelectUnit(-1, -1, -1);
-      g_camera->RequestMode(Camera::ModeFreeMovement);
+      g_camera->RequestMode(CameraAccess::ModeFreeMovement);
       return Building::Advance();
     }
     m_target = g_userInput->GetMousePos3d();

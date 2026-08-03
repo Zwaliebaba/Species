@@ -9,7 +9,6 @@
 #include "InputField.h"
 #include "InstantUnitWindow.h"
 
-#include "Camera.h"
 #include "LevelFile.h"
 #include "Location.h"
 #include "LocationEditor.h"

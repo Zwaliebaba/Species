@@ -8,7 +8,6 @@
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "ParticleSystem.h"
-#include "Camera.h"
 #include "SoundSystem.h"
 #include "Incubator.h"
 #include "WorldPointers.h"

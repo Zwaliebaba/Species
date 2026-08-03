@@ -7,7 +7,6 @@
 
 #include "Egg.h"
 
-#include "Camera.h"
 #include "Location.h"
 #include "Team.h"
 #include "WorldPointers.h"

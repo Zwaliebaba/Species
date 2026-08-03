@@ -13,7 +13,6 @@
 #include "SoundStreamDecoder.h"
 #include "SoundLibrary3d.h"
 
-#include "Camera.h"
 #include "Location.h"
 #include "WorldPointers.h"
 #include "AppState.h"

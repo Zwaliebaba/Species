@@ -11,7 +11,6 @@
 #include "Resource.h"
 #include "Vector3.h"
 
-#include "Camera.h"
 #include "TextRenderer.h"
 #include "WorldPointers.h"
 

@@ -19,7 +19,6 @@
 #include "InputTypes.h"
 #endif
 
-#include "Camera.h"
 #include "GlobalWorld.h"
 #include "Location.h"
 #include "GameTime.h"

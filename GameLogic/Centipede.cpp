@@ -7,7 +7,6 @@
 #include "TextRenderer.h"
 #include "Profiler.h"
 
-#include "Camera.h"
 #include "EntityGrid.h"
 #include "Explosion.h"
 #include "ProtocolLimits.h"

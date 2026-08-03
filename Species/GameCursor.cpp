@@ -347,7 +347,7 @@ void GameCursor::Render()
       {
         float camDist = (g_camera->GetPos() - highlightedWorldPos).Mag();
         float posX, posY;
-        g_camera->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
+        TheCamera()->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
         m_cursorSelection->SetSize(highlightedRadius * 100 / sqrt(camDist));
         m_cursorSelection->SetColour(RGBAColour(255, 255, 100, 255));
         m_cursorSelection->SetAnimation(false);
@@ -405,7 +405,7 @@ void GameCursor::Render()
         if (camDist > 100 || !somethingSelected || selectedId != highlightedId)
         {
           float posX, posY;
-          g_camera->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
+          TheCamera()->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
           m_cursorSelection->SetSize(highlightedRadius * 100 / sqrt(camDist));
           m_cursorSelection->SetColour(RGBAColour(255, 255, 100, 255));
           m_cursorSelection->SetAnimation(false);
@@ -443,7 +443,7 @@ void GameCursor::Render()
               Vector3 entrancePos, entranceFront;
               dish->GetEntrance(entrancePos, entranceFront);
               float posX, posY;
-              g_camera->Get2DScreenPos(entrancePos, &posX, &posY);
+              TheCamera()->Get2DScreenPos(entrancePos, &posX, &posY);
               g_renderer->SetupMatricesFor2D();
               m_cursorPlacement->SetSize(60.0f);
               m_cursorPlacement->SetAnimation(true);
@@ -704,7 +704,7 @@ void GameCursor::RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos)
   // Is the _pos on screen or not?
 
   float screenX, screenY;
-  g_camera->Get2DScreenPos(_pos, &screenX, &screenY);
+  TheCamera()->Get2DScreenPos(_pos, &screenX, &screenY);
   screenY = screenH - screenY;
 
   Vector3 toCam = g_camera->GetPos() - _pos;
@@ -744,7 +744,7 @@ void GameCursor::RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos)
     float camX = screenW / 2.0f;
     float camY = screenH / 2.0f;
     float posX, posY;
-    g_camera->Get2DScreenPos(camPos + camToTarget, &posX, &posY);
+    TheCamera()->Get2DScreenPos(camPos + camToTarget, &posX, &posY);
 
     Vector2 lineNormal(posX - camX, posY - camY);
     lineNormal.Normalise();
@@ -776,7 +776,7 @@ void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
     int screenH = g_renderer->ScreenH();
     int screenW = g_renderer->ScreenW();
     float screenX, screenY;
-    g_camera->Get2DScreenPos( _pos, &screenX, &screenY );
+    TheCamera()->Get2DScreenPos( _pos, &screenX, &screenY );
     screenY = screenH - screenY;
 
   // Calculate alpha
@@ -887,7 +887,7 @@ void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
         float camX = screenW / 2.0f;
         float camY = screenH / 2.0f;
         float posX, posY;
-        g_camera->Get2DScreenPos( camPos + camToTarget, &posX, &posY );
+        TheCamera()->Get2DScreenPos( camPos + camToTarget, &posX, &posY );
 
         Vector2 lineNormal( posX - camX, posY - camY );
         lineNormal.Normalise();

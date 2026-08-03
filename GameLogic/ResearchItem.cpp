@@ -14,7 +14,6 @@
 #include "Explosion.h"
 #include "GameTime.h"
 #include "GlobalWorld.h"
-#include "Camera.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
 #include "TaskManagerInterface.h"

@@ -123,7 +123,7 @@ void TaskManagerInterfaceIcons::HideTaskManager()
   float midX = g_renderer->ScreenW() / 2.0f;
   float midY = g_renderer->ScreenH() / 2.0f;
   g_target->SetMousePos(midX, midY);
-  g_camera->Advance();
+  TheCamera()->Advance();
 
   if (g_taskManager->m_tasks.Size() > 0)
     g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
@@ -1729,7 +1729,7 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
   // Is it on screen or not?
 
   float screenX, screenY;
-  g_camera->Get2DScreenPos(_worldPos, &screenX, &screenY);
+  TheCamera()->Get2DScreenPos(_worldPos, &screenX, &screenY);
   screenY = screenH - screenY;
 
   Vector3 toCam = g_camera->GetPos() - _worldPos;
@@ -1756,7 +1756,7 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
     Vector3 camToTarget = (_worldPos - camPos).SetLength(100);
 
     float posX, posY;
-    g_camera->Get2DScreenPos(camPos + camToTarget, &posX, &posY);
+    TheCamera()->Get2DScreenPos(camPos + camToTarget, &posX, &posY);
     posY = screenH - posY;
     posX *= (m_screenW / screenW);
     posY *= (m_screenH / screenH);

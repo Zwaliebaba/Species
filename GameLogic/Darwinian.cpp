@@ -9,7 +9,6 @@
 
 #include "Location.h"
 #include "Team.h"
-#include "Camera.h"
 #include "EntityGrid.h"
 #include "GameTime.h"
 #include "Unit.h"

@@ -11,7 +11,6 @@
 #include "Preferences.h"
 #include "LanguageTable.h"
 
-#include "Camera.h"
 #include "Location.h"
 #include "EntityGrid.h"
 #include "Team.h"

@@ -11,7 +11,6 @@
 #include "FileWriter.h"
 #include "TextStreamReaders.h"
 
-#include "Camera.h"
 #include "Location.h"
 #include "GameTime.h"
 

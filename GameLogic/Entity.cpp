@@ -14,7 +14,6 @@
 #include "TextStreamReaders.h"
 #include "LanguageTable.h"
 
-#include "Camera.h"
 #include "GameTime.h"
 #include "SoundSystem.h"
 #include "Unit.h"

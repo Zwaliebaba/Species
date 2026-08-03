@@ -7,7 +7,6 @@
 #include "WindowManager.h"
 
 #include "ControlHelp.h"
-#include "Camera.h"
 
 #include "Eclipse.h"
 #include "TaskManagerInterface.h"
@@ -83,7 +82,7 @@ void TargetCursor::Advance()
     m_screenCoords[AXIS_X] += m_velocity[AXIS_X];
     m_screenCoords[AXIS_Y] += m_velocity[AXIS_Y];
 
-    if (g_camera->IsInMode(Camera::ModeFreeMovement))
+    if (g_camera->IsInMode(CameraAccess::ModeFreeMovement))
       g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraAim);
   }
   else

@@ -14,7 +14,6 @@
 #include "Location.h"
 #include "GameTime.h"
 #include "Explosion.h"
-#include "Camera.h"
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
