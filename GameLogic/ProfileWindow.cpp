@@ -129,7 +129,7 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
         int y = g_target->Y();
         if (x > m_x && x < m_x + m_w && y > m_yPos + 5 && y < m_yPos + 17)
         {
-          ASSERT_TEXT(child != g_profiler->m_rootElement, "ProfileWindow::RenderElementProfile child==root");
+          ASSERT_TEXT(child != g_profiler->m_rootElement.get(), "ProfileWindow::RenderElementProfile child==root");
           child->m_isExpanded = !child->m_isExpanded;
         }
       }
