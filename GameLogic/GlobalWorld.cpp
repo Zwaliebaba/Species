@@ -662,7 +662,7 @@ void ColourShapeFragment(ShapeFragment* _frag, const RGBAColour& _colour)
   }
 
   for (int i = 0; i < static_cast<int>(_frag->m_childFragments.size()); ++i)
-    ColourShapeFragment(_frag->m_childFragments[i], _colour);
+    ColourShapeFragment(_frag->m_childFragments[i].get(), _colour);
 }
 
 SphereWorld::SphereWorld()

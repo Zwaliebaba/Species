@@ -28,8 +28,7 @@
 // This constructor is used in the export process. The m_parents array is never
 // populated in the exporter, so it is intentionally left blank
 ShapeMarker::ShapeMarker(char const* _name, char* _parentName, int _depth, Matrix34 const& _transform)
-  : m_parents(nullptr),
-    m_depth(_depth),
+  : m_depth(_depth),
     m_transform(_transform)
 {
   m_name = strdup(_name);
@@ -116,7 +115,7 @@ ShapeMarker::ShapeMarker(TextReader* _in, char const* _name)
 
   m_transform.Normalise();
 
-  m_parents = new ShapeFragment*[m_depth];
+  m_parents.assign(m_depth, nullptr);
 
   if (!m_name)
     m_name = strdup("unknown");
@@ -128,8 +127,8 @@ ShapeMarker::~ShapeMarker()
 {
   SAFE_FREE(m_parentName);
   SAFE_FREE(m_name);
-  // for(unsigned i=0;i<m_depth;i++) delete m_parents[i]; should we?
-  SAFE_DELETE(m_parents);
+  // m_parents needs no release: it observes fragments the tree owns. The
+  // question the old comment asked is answered in the header.
 }
 
 // *** GetWorldMatrix
@@ -352,15 +351,10 @@ ShapeFragment::~ShapeFragment()
   m_colours = nullptr;
   delete[] m_triangles;
   m_triangles = nullptr;
-  for (auto* fragment : m_childFragments)
-  {
-    delete fragment;
-  }
+  // clear() rather than leaving it to the member destructors, so the children
+  // still die here — before the display list below — and fragments still go
+  // before markers. Both destructors reach GL.
   m_childFragments.clear();
-  for (auto* marker : m_childMarkers)
-  {
-    delete marker;
-  }
   m_childMarkers.clear();
 #ifndef EXPORTER_BUILD
   g_resource->DeleteDisplayList(m_displayListName);
@@ -1024,7 +1018,7 @@ ShapeMarker* ShapeFragment::LookupMarker(char const* _name)
   int numMarkers = static_cast<int>(m_childMarkers.size());
   for (i = 0; i < numMarkers; ++i)
   {
-    ShapeMarker* marker = m_childMarkers[i];
+    ShapeMarker* marker = m_childMarkers[i].get();
     if (stricmp(_name, marker->m_name) == 0)
     {
       return marker;
@@ -1092,7 +1086,7 @@ void ShapeFragment::RenderMarkers(Matrix34 const& _rootTransform)
   int numMarkers = static_cast<int>(m_childMarkers.size());
   for (i = 0; i < numMarkers; ++i)
   {
-    ShapeMarker* marker = m_childMarkers[i];
+    ShapeMarker* marker = m_childMarkers[i].get();
     Matrix34 mat = marker->GetWorldMatrix(_rootTransform);
     RenderArrow(mat.pos, mat.pos + mat.f * 20.0f, 2.0f);
     RenderArrow(mat.pos, mat.pos + mat.u * 10.0f, 2.0f);
@@ -1167,7 +1161,7 @@ bool ShapeFragment::RayHit(RayPackage* _package, Matrix34 const& _transform, boo
   int numFragments = static_cast<int>(m_childFragments.size());
   for (int i = 0; i < numFragments; ++i)
   {
-    ShapeFragment* frag = m_childFragments[i];
+    ShapeFragment* frag = m_childFragments[i].get();
     //		if (frag->RayHit(&package, totalMatrix))
     if (frag->RayHit(_package, totalMatrix, _accurate))
     {
@@ -1219,7 +1213,7 @@ bool ShapeFragment::SphereHit(SpherePackage* _package, Matrix34 const& _transfor
   int numFragments = static_cast<int>(m_childFragments.size());
   for (int i = 0; i < numFragments; ++i)
   {
-    ShapeFragment* frag = m_childFragments[i];
+    ShapeFragment* frag = m_childFragments[i].get();
     if (frag->SphereHit(_package, totalMatrix, _accurate))
     {
       return true;
@@ -1254,7 +1248,7 @@ bool ShapeFragment::ShapeHit(Shape* _shape, Matrix34 const& _theTransform, Matri
   int numFragments = static_cast<int>(m_childFragments.size());
   for (i = 0; i < numFragments; ++i)
   {
-    ShapeFragment* frag = m_childFragments[i];
+    ShapeFragment* frag = m_childFragments[i].get();
     if (frag->ShapeHit(_shape, _theTransform, totalMatrix, _accurate))
     {
       return true;
@@ -1277,7 +1271,7 @@ void ShapeFragment::CalculateCentre(Matrix34 const& _transform, Vector3& _centre
   int numFragments = static_cast<int>(m_childFragments.size());
   for (int i = 0; i < numFragments; ++i)
   {
-    ShapeFragment* frag = m_childFragments[i];
+    ShapeFragment* frag = m_childFragments[i].get();
     frag->CalculateCentre(totalMatrix, _centre, _numFragments);
   }
 }
@@ -1297,7 +1291,7 @@ void ShapeFragment::CalculateRadius(Matrix34 const& _transform, Vector3 const& _
   int numFragments = static_cast<int>(m_childFragments.size());
   for (int i = 0; i < numFragments; ++i)
   {
-    ShapeFragment* frag = m_childFragments[i];
+    ShapeFragment* frag = m_childFragments[i].get();
     frag->CalculateRadius(totalMatrix, _centre, _radius);
   }
 }
@@ -1312,7 +1306,7 @@ Shape::Shape() {}
 
 Shape::Shape(char const* filename, bool _animating)
   : m_displayListName(nullptr),
-    m_rootFragment(nullptr),
+    m_rootFragment(),
     m_name(nullptr),
     m_animating(_animating)
 {
@@ -1326,7 +1320,7 @@ Shape::Shape(char const* filename, bool _animating)
 
 Shape::Shape(TextReader* in, bool _animating)
   : m_displayListName(nullptr),
-    m_rootFragment(nullptr),
+    m_rootFragment(),
     m_animating(_animating)
 {
   Load(in);
@@ -1336,7 +1330,7 @@ Shape::Shape(TextReader* in, bool _animating)
 
 Shape::~Shape()
 {
-  delete m_rootFragment;
+  m_rootFragment.reset();
   free(m_name);
 #ifndef EXPORTER_BUILD
   g_resource->DeleteDisplayList(m_displayListName);
@@ -1368,6 +1362,12 @@ void Shape::Load(TextReader* _in)
   int const maxMarkers = 100;
   int currentFrag = 0;
   int currentMarker = 0;
+  // Two arrays per kind on purpose. The hierarchy loop below reads
+  // allFrags[j]->m_name for every j AFTER earlier iterations have handed
+  // ownership to the tree, so the owning slot cannot be the one it reads
+  // through — a moved-from unique_ptr is null and the read would follow it.
+  std::unique_ptr<ShapeFragment> allFragsOwned[maxFrags];
+  std::unique_ptr<ShapeMarker> allMarkersOwned[maxMarkers];
   ShapeFragment* allFrags[maxFrags];
   ShapeMarker* allMarkers[maxMarkers];
 
@@ -1382,26 +1382,28 @@ void Shape::Load(TextReader* _in)
     {
       DEBUG_ASSERT(currentFrag < maxFrags);
       c = _in->GetNextToken();
-      allFrags[currentFrag] = new ShapeFragment(_in, c);
+      allFragsOwned[currentFrag] = std::make_unique<ShapeFragment>(_in, c);
+      allFrags[currentFrag] = allFragsOwned[currentFrag].get();
       currentFrag++;
     }
     else if (stricmp(c, "marker") == 0)
     {
       DEBUG_ASSERT(currentMarker < maxMarkers);
       c = _in->GetNextToken();
-      allMarkers[currentMarker] = new ShapeMarker(_in, c);
+      allMarkersOwned[currentMarker] = std::make_unique<ShapeMarker>(_in, c);
+      allMarkers[currentMarker] = allMarkersOwned[currentMarker].get();
       currentMarker++;
     }
   }
 
-  m_rootFragment = new ShapeFragment("SceneRoot", "");
+  m_rootFragment = std::make_unique<ShapeFragment>("SceneRoot", "");
 
   // We need to build the hierarchy of fragments from the flat array
   for (int i = 0; i < currentFrag; ++i)
   {
     if (stricmp(allFrags[i]->m_parentName, "SceneRoot") == 0)
     {
-      m_rootFragment->m_childFragments.push_back(allFrags[i]);
+      m_rootFragment->m_childFragments.push_back(std::move(allFragsOwned[i]));
     }
     else
     {
@@ -1414,7 +1416,7 @@ void Shape::Load(TextReader* _in)
         DEBUG_ASSERT(stricmp(allFrags[i]->m_name, allFrags[j]->m_name) != 0);
         if (stricmp(allFrags[i]->m_parentName, allFrags[j]->m_name) == 0)
         {
-          allFrags[j]->m_childFragments.push_back(allFrags[i]);
+          allFrags[j]->m_childFragments.push_back(std::move(allFragsOwned[i]));
           break;
         }
       }
@@ -1427,7 +1429,7 @@ void Shape::Load(TextReader* _in)
   {
     ShapeFragment* parent = m_rootFragment->LookupFragment(allMarkers[i]->m_parentName);
     DEBUG_ASSERT(parent);
-    parent->m_childMarkers.push_back(allMarkers[i]);
+    parent->m_childMarkers.push_back(std::move(allMarkersOwned[i]));
 
     int depth = allMarkers[i]->m_depth - 1;
     allMarkers[i]->m_parents[depth] = parent;

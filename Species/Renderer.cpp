@@ -1374,7 +1374,7 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
   int numChildren = static_cast<int>(_frag->m_childFragments.size());
   for (int i = 0; i < numChildren; ++i)
   {
-    const ShapeFragment* child = _frag->m_childFragments[i];
+    const ShapeFragment* child = _frag->m_childFragments[i].get();
     MarkUsedCells(child, total);
   }
 #endif // USE_PIXEL_EFFECT_GRID_OPTIMISATION
@@ -1383,6 +1383,6 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
 void Renderer::MarkUsedCells(const Shape* _shape, const Matrix34& _transform)
 {
   START_PROFILE(g_profiler, "MarkUsedCells");
-  MarkUsedCells(_shape->m_rootFragment, _transform);
+  MarkUsedCells(_shape->m_rootFragment.get(), _transform);
   END_PROFILE(g_profiler, "MarkUsedCells");
 }
