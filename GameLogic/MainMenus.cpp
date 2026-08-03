@@ -635,10 +635,17 @@ void SkipPrologueWindow::Render(bool _hasFocus)
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-  LList<char*>* wrapped = WordWrapText(LANGUAGEPHRASE("dialog_skip1"), m_w * 1.70f, fontSize, true);
-  for (int i = 0; i < wrapped->Size(); ++i)
-    g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, wrapped->GetData(i));
-  delete wrapped->GetData(0);
+  std::vector<char*>* wrapped = WordWrapText(LANGUAGEPHRASE("dialog_skip1"), m_w * 1.70f, fontSize, true);
+  for (char* line : *wrapped)
+    g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, line);
+
+  // Element 0 is the one allocation the whole list points into, so this one
+  // delete[] releases every line. It was a plain `delete` over a `new char[]`,
+  // and the emptiness check is not redundant: LList::GetData answered an
+  // out-of-range read with a null, so `delete wrapped->GetData(0)` was harmless
+  // on an empty list where std::vector would be undefined behaviour.
+  if (!wrapped->empty())
+    delete[] (*wrapped)[0];
   delete wrapped;
 };
 
@@ -703,9 +710,16 @@ void PlayPrologueWindow::Render(bool _hasFocus)
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-  LList<char*>* wrapped = WordWrapText(LANGUAGEPHRASE("dialog_prologue1"), m_w * 1.70f, fontSize, true);
-  for (int i = 0; i < wrapped->Size(); ++i)
-    g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, wrapped->GetData(i));
-  delete wrapped->GetData(0);
+  std::vector<char*>* wrapped = WordWrapText(LANGUAGEPHRASE("dialog_prologue1"), m_w * 1.70f, fontSize, true);
+  for (char* line : *wrapped)
+    g_gameFont.DrawText2DCentre(m_x + m_w / 2, y += h, fontSize, line);
+
+  // Element 0 is the one allocation the whole list points into, so this one
+  // delete[] releases every line. It was a plain `delete` over a `new char[]`,
+  // and the emptiness check is not redundant: LList::GetData answered an
+  // out-of-range read with a null, so `delete wrapped->GetData(0)` was harmless
+  // on an empty list where std::vector would be undefined behaviour.
+  if (!wrapped->empty())
+    delete[] (*wrapped)[0];
   delete wrapped;
 };

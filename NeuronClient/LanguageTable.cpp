@@ -57,9 +57,10 @@ LangTable::LangTable(char const* _filename)
 
 LangTable::~LangTable()
 {
-  DArray<LangPhrase*>* phrasesRaw = m_phrasesRaw.ConvertToDArray();
-  phrasesRaw->EmptyAndDelete();
-  delete phrasesRaw;
+  for (const auto& [key, phrase] : m_phrasesRaw)
+    delete phrase;
+  m_phrasesRaw.clear();
+
   delete m_phrasesKbd;
   delete m_phrasesXin;
   /*
@@ -93,10 +94,13 @@ void LangTable::ParseLanguageFile(char const* _filename)
     LangPhrase* phrase = new LangPhrase;
     phrase->m_key = strdup(key);
 
-    // Make sure the this key isn't already used
-    if (m_phrasesRaw.LookupTree(key))
+    // Make sure the this key isn't already used. BTree::RemoveData dropped the
+    // node without deleting the phrase it held, so a language file that
+    // repeated a key leaked one LangPhrase per repeat; erasing here deletes it.
+    if (const auto existing = m_phrasesRaw.find(key); existing != m_phrasesRaw.end())
     {
-      m_phrasesRaw.RemoveData(key);
+      delete existing->second;
+      m_phrasesRaw.erase(existing);
     }
 
     char* aString = in->GetRestOfLine();
@@ -126,7 +130,7 @@ void LangTable::ParseLanguageFile(char const* _filename)
       phrase->m_string[stringLength - 2] = '\x0';
     }
 
-    m_phrasesRaw.PutData(phrase->m_key, phrase);
+    m_phrasesRaw[phrase->m_key] = phrase;
   }
 
   delete in;
@@ -207,16 +211,13 @@ bool buildCaption(char const* _baseString, char* _dest, InputMode _mood); // see
 
 
 // Only used for debugging
-bool printTable(HashTable<int> const* keys, const char* table, std::ostream& out)
+bool printTable(PhraseOffsets const* keys, const char* table, std::ostream& out)
 {
   if (keys && table && out.good())
   {
-    for (int i = 0; i < keys->Size(); ++i)
+    for (const auto& [key, offset] : *keys)
     {
-      if (keys->ValidIndex(i))
-      {
-        out << keys->GetName(i) << '\t' << (table + keys->GetData(i)) << std::endl;
-      }
+      out << key << '\t' << (table + offset) << std::endl;
     }
     return true;
   }
@@ -231,8 +232,8 @@ void LangTable::RebuildTables()
   delete m_phrasesKbd;
   delete m_phrasesXin;
 
-  m_phrasesKbd = new HashTable<int>();
-  m_phrasesXin = new HashTable<int>();
+  m_phrasesKbd = new PhraseOffsets();
+  m_phrasesXin = new PhraseOffsets();
 
   RebuildTable(m_phrasesKbd, stream, INPUT_MODE_KEYBOARD);
   RebuildTable(m_phrasesXin, stream, INPUT_MODE_GAMEPAD);
@@ -257,57 +258,49 @@ void LangTable::RebuildTables()
   }
 }
 
-void LangTable::RebuildTable(HashTable<int>* _phrases, std::ostrstream& stream, InputMode _mood)
+void LangTable::RebuildTable(PhraseOffsets* _phrases, std::ostrstream& stream, InputMode _mood)
 {
   char theString[1024];
 
-  DArray<LangPhrase*>* ary = m_phrasesRaw.ConvertToDArray();
-
   stream << '\x0'; // This is our empty string
 
-  // DebugTrace(" There are %d keys to add\n", ary->Size() );
-
-  for (int i = 0; i < ary->Size(); ++i)
+  // try_emplace rather than operator[]: HashTable::PutData kept the FIRST value
+  // written for a key and a lookup never reached a later duplicate. The
+  // suffix-chomping below can produce the same key twice, and the guards that
+  // are supposed to prevent it are the thing most likely to have a hole in it.
+  for (const auto& [rawKey, phrase] : m_phrasesRaw)
   {
-    if (ary->ValidIndex(i))
+    if (strncmp(phrase->m_key, "part_", 5) != 0)
     {
-      LangPhrase const* phrase = ary->GetData(i);
-      if (strncmp(phrase->m_key, "part_", 5) != 0)
+      char key[1024];
+      strcpy(key, phrase->m_key);
+
+      if (!wrong_suffix(phrase->m_key, _mood))
       {
-        char key[1024];
-        strcpy(key, phrase->m_key);
-
-        if (!wrong_suffix(phrase->m_key, _mood))
+        // Make sure this is the most specific string, or ignore it
+        if (chomp_mode_suffix(key) || !specific_key_exists(key, _mood))
         {
-          // Make sure this is the most specific string, or ignore it
-          if (chomp_mode_suffix(key) || !specific_key_exists(key, _mood))
-          {
-            int currPos = stream.tellp();
-            buildCaption(phrase->m_string, theString, _mood);
-            stream << theString << '\x0';
+          int currPos = stream.tellp();
+          buildCaption(phrase->m_string, theString, _mood);
+          stream << theString << '\x0';
 
-            // DebugTrace("%d Adding key %d: %s -> %s\n", _mood, i, key, theString );
-            _phrases->PutData(key, currPos);
-          }
+          _phrases->try_emplace(key, currPos);
         }
-        else
+      }
+      else
+      {
+        // Make sure this is the most specific string, or ignore it
+        if (chomp_mode_suffix(key) && !RawDoesPhraseExist(key, _mood) && !specific_key_exists(key, _mood))
         {
-          // Make sure this is the most specific string, or ignore it
-          if (chomp_mode_suffix(key) && !RawDoesPhraseExist(key, _mood) && !specific_key_exists(key, _mood))
-          {
-            // DebugTrace("%d Adding key %d: %s -> 0\n", _mood, i, key );
-            _phrases->PutData(key, 0); // Give me an empty string
-          }
+          _phrases->try_emplace(key, 0); // Give me an empty string
         }
       }
     }
   }
-
-  delete ary;
 }
 
 
-HashTable<int>* LangTable::GetCurrentTable()
+PhraseOffsets* LangTable::GetCurrentTable()
 {
   if (g_inputManager)
     return GetCurrentTable(g_inputManager->getInputMode());
@@ -315,7 +308,7 @@ HashTable<int>* LangTable::GetCurrentTable()
 }
 
 
-HashTable<int>* LangTable::GetCurrentTable(InputMode _mood)
+PhraseOffsets* LangTable::GetCurrentTable(InputMode _mood)
 {
   if (!m_phrasesKbd || !m_phrasesXin)
     RebuildTables();
@@ -334,15 +327,14 @@ HashTable<int>* LangTable::GetCurrentTable(InputMode _mood)
 
 bool LangTable::DoesPhraseExist(char const* _key)
 {
-  HashTable<int>* phrases = GetCurrentTable();
+  PhraseOffsets* phrases = GetCurrentTable();
   if (!_key || !phrases)
   {
     return false;
   }
   else
   {
-    int phrase = phrases->GetData(_key, -1);
-    return (phrase != -1);
+    return phrases->contains(_key);
   }
 }
 
@@ -386,15 +378,14 @@ bool LangTable::RawDoesPhraseExist(char const* _key)
   }
   else
   {
-    LangPhrase const* phrase = m_phrasesRaw.GetData(_key);
-    return (phrase != nullptr);
+    return m_phrasesRaw.contains(_key);
   }
 }
 
 
 char* LangTable::LookupPhrase(char const* _key)
 {
-  HashTable<int>* phrases = GetCurrentTable();
+  PhraseOffsets* phrases = GetCurrentTable();
   char* phrase = nullptr;
 
   if (!_key || !phrases || !m_chunk)
@@ -404,16 +395,13 @@ char* LangTable::LookupPhrase(char const* _key)
   }
   else
   {
-    int offset = phrases->GetData(_key);
-    if (offset >= 0)
-      phrase = m_chunk + offset;
-
-    if (!phrase)
-    {
-      // sprintf( m_notFound.m_string, "ERROR (%s)", _key );
-      *(m_notFound.m_string) = '\0';
-      phrase = m_notFound.m_string;
-    }
+    // A miss reads offset 0, which is the empty string RebuildTable writes
+    // first, NOT the not-found phrase. HashTable::GetData returned a
+    // value-initialised int for an absent key and the `offset >= 0` test below
+    // never rejected it, so an unknown key has always rendered as "". Keeping
+    // that: the menus are full of keys that only exist in some languages.
+    const auto entry = phrases->find(_key);
+    phrase = m_chunk + (entry == phrases->end() ? 0 : entry->second);
   }
 
   return phrase;
@@ -459,13 +447,17 @@ char* LangTable::RawLookupPhrase(char const* _key, InputMode _mood)
         strcpy(key + len, "_xin");
         break;
       }
-      phrase = m_phrasesRaw.GetData(key);
+      const auto suffixed = m_phrasesRaw.find(key);
+      if (suffixed != m_phrasesRaw.end())
+        phrase = suffixed->second;
       delete[] key;
     }
 
     if (!phrase)
     {
-      phrase = m_phrasesRaw.GetData(_key);
+      const auto plain = m_phrasesRaw.find(_key);
+      if (plain != m_phrasesRaw.end())
+        phrase = plain->second;
     }
 
     if (!phrase)
@@ -497,51 +489,33 @@ void LangTable::TestAgainstEnglish()
   //
   // Look for strings in English that are not in this language
 
-  DArray<LangPhrase*>* englishPhrases = english->m_phrasesRaw.ConvertToDArray();
-
-  for (int i = 0; i < englishPhrases->Size(); ++i)
+  for (const auto& [key, phrase] : english->m_phrasesRaw)
   {
-    if (englishPhrases->ValidIndex(i))
+    if (!DoesPhraseExist(phrase->m_key))
     {
-      LangPhrase* phrase = englishPhrases->GetData(i);
-
-      if (!DoesPhraseExist(phrase->m_key))
+      fprintf(output, "ERROR : Failed to find translation for string ID '%s'\n", phrase->m_key);
+    }
+    else
+    {
+      char const* translatedPhrase = LookupPhrase(phrase->m_key);
+      if (strcmp(phrase->m_string, translatedPhrase) == 0)
       {
-        fprintf(output, "ERROR : Failed to find translation for string ID '%s'\n", phrase->m_key);
-      }
-      else
-      {
-        char const* translatedPhrase = LookupPhrase(phrase->m_key);
-        if (strcmp(phrase->m_string, translatedPhrase) == 0)
-        {
-          fprintf(output, "ERROR : String ID appears not to be translated : '%s'\n", phrase->m_key);
-        }
+        fprintf(output, "ERROR : String ID appears not to be translated : '%s'\n", phrase->m_key);
       }
     }
   }
-
-  delete englishPhrases;
 
 
   //
   // Look for phrases in this language that are not in English
 
-  DArray<LangPhrase*>* langPhrases = m_phrasesRaw.ConvertToDArray();
-
-  for (int i = 0; i < langPhrases->Size(); ++i)
+  for (const auto& [key, phrase] : m_phrasesRaw)
   {
-    if (langPhrases->ValidIndex(i))
+    if (!english->DoesPhraseExist(phrase->m_key))
     {
-      LangPhrase* phrase = langPhrases->GetData(i);
-
-      if (!english->DoesPhraseExist(phrase->m_key))
-      {
-        fprintf(output, "ERROR : Found new string ID not present in original English : '%s'\n", phrase->m_key);
-      }
+      fprintf(output, "ERROR : Found new string ID not present in original English : '%s'\n", phrase->m_key);
     }
   }
-
-  delete langPhrases;
 
 
   //
@@ -552,17 +526,20 @@ void LangTable::TestAgainstEnglish()
 }
 
 
-DArray<LangPhrase*>* LangTable::GetPhraseList()
+std::vector<LangPhrase*>* LangTable::GetPhraseList()
 {
-  DArray<LangPhrase*>* englishPhrases = m_phrasesRaw.ConvertToDArray();
-  return englishPhrases;
+  auto phrases = new std::vector<LangPhrase*>();
+  phrases->reserve(m_phrasesRaw.size());
+  for (const auto& [key, phrase] : m_phrasesRaw)
+    phrases->push_back(phrase);
+  return phrases;
 }
 
 
 // Goes through the string and divides it up into several
 // smaller strings, taking into account newline characters,
 // and the width of the text area.
-LList<char*>* WordWrapText(const char* _string, float _lineWidth, float _fontWidth, bool _wrapToWindow)
+std::vector<char*>* WordWrapText(const char* _string, float _lineWidth, float _fontWidth, bool _wrapToWindow)
 {
   if (!_string)
     return nullptr;
@@ -583,10 +560,10 @@ LList<char*>* WordWrapText(const char* _string, float _lineWidth, float _fontWid
   // Build a linked list of pointers into this new string
   // Each pointer representing another line
 
-  LList<char*>* llist = new LList<char*>();
+  auto lines = new std::vector<char*>();
 
   char* currentpos = newstring;
-  llist->PutData(currentpos);
+  lines->push_back(currentpos);
 
   while (true)
   {
@@ -610,7 +587,7 @@ LList<char*>* WordWrapText(const char* _string, float _lineWidth, float _fontWid
         *(currentpos - 1) = oldchar;
         currentpos = space + 1;
         *space = 0;
-        llist->PutData(currentpos);
+        lines->push_back(currentpos);
       }
       else
       {
@@ -624,14 +601,14 @@ LList<char*>* WordWrapText(const char* _string, float _lineWidth, float _fontWid
       // then continue from this position
       currentpos = nextnewline + 1;
       *nextnewline = 0;
-      llist->PutData(currentpos);
+      lines->push_back(currentpos);
     }
   }
 
   //
   // The very last line is always empty.
   // Remove it.
-  llist->RemoveData(llist->Size() - 1);
+  lines->pop_back();
 
-  return llist;
+  return lines;
 }

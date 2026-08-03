@@ -1319,7 +1319,8 @@ tasks:
       - GameLogic/MainMenus.cpp
     acceptance:
       - grep -lwE "LList|DArray|BTree|HashTable" on LanguageTable.h/.cpp returns nothing
-      - Phrase lookup order is unchanged — BTree walked its keys in order and std::map must too, because ConvertToDArray's output order is what the phrase list and the localisation editor display
+      - Lookups still ignore case, as BTree's stricmp ordering and HashTable's case-masked hash both did
+      - Phrase ITERATION order changes, deliberately, from BTree pre-order to sorted — see notes, the second acceptance line as originally written was based on a wrong reading of BTree
       - WordWrapText's callers still read the same lines in the same order
     verify:
       - python3 tools/check_layering.py
@@ -1340,5 +1341,48 @@ tasks:
       the lines and drops the list, leaking the single buffer. Converting the
       container must not change that, and anyone tempted to make the list own
       its strings has to fix the allocation first.
-    status: todo
+
+      Done 2026-08-03. Both hazards above were half wrong, and the corrections
+      are the useful part of this entry.
+
+      THE ORDER. The acceptance line said BTree walked its keys in order and
+      std::map must match. BTree is ordered, but ConvertToDArray is not an
+      in-order walk — RecursiveConvertToDArray emits the node, then the left
+      subtree, then the right. That is PRE-order, so the sequence was a
+      function of the tree's shape, which is a function of the order the
+      language file happened to list its keys. It was never sorted and was
+      never stable against an edit to the file. std::map iteration is sorted,
+      case-insensitively, so the order DID change — into something
+      reproducible. What that order reaches: GetPhraseList (no callers),
+      TestAgainstEnglish's error report, and RebuildTable, where it decides the
+      byte offsets inside m_chunk. None of those is a lookup, and lookups are
+      by key, so nothing observable to a player moved.
+
+      WORDWRAPTEXT. The interior-pointer hazard is real, but the claim that
+      MainMenus leaks the buffer is not: both call sites do
+      `delete wrapped->GetData(0)`, and element 0 IS the single allocation. It
+      was the wrong FORM — a plain `delete` over a `new char[]` — and it is
+      delete[] now. The contract is written out above the declaration in
+      LanguageTable.h, because nothing said it anywhere before. The emptiness
+      guard added at both sites is not redundant: LList::GetData answered an
+      out-of-range read with a null, so the old code was harmless on an empty
+      list where std::vector would be undefined behaviour. Same trap as T7's
+      SpeciesWindow.cpp.
+
+      Two smaller things. ParseLanguageFile called BTree::RemoveData for a
+      repeated key, which dropped the node without deleting the phrase it held
+      — one leaked LangPhrase per repeated key in a language file. Erasing the
+      map entry deletes it. And RebuildTable uses try_emplace rather than
+      operator[], because HashTable::PutData kept the first value written for a
+      key and lookups never reached a later duplicate; operator[] would have
+      flipped that to last-wins.
+
+      LangKeyLess is the THIRD copy of a three-line stricmp comparator, after
+      Resource.h and Profiler.h. Left local deliberately — hoisting it into
+      NeuronCore means a new header, two vcxproj edits and touching two
+      completed tasks' files for three lines. A fourth copy should trigger it.
+
+      GetPhraseList has no caller anywhere in the repository, like
+      ListSoundEvents before it. Converted rather than deleted, and recorded.
+    status: done
 
