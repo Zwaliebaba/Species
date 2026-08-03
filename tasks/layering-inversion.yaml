@@ -986,8 +986,14 @@ tasks:
       stays open until the file is genuinely empty.
     depends_on: [T9, T10, T11, T13, T15, T16, T17, T18]
     files:
+      - tools/check_layering.py
       - tools/layering_allowlist.txt
       - AGENTS.md
+      - CODING_STANDARDS.md
+      - docs/ARCHITECTURE.md
+      - docs/TESTING.md
+      - docs/TASK_DAG.md
+      - .github/pull_request_template.md
     acceptance:
       - tools/layering_allowlist.txt contains zero entries
       - check_layering.py passes with the empty allowlist, and the allowlist file and its --update mode are deleted rather than left empty
@@ -999,7 +1005,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
     notes: >
       628 -> 7 by the end of T15, and 7 -> 4 here. The three that went were all
       the same shape and all soluble on the spot: MainMenus.cpp and
@@ -1039,6 +1045,38 @@ tasks:
       exactly one answer, TaskManager.cpp's g_inputManager, which is what CI
       had just gone red on. Every check written before it looked at the files
       that changed; this one asks the question the compiler asks.
+
+      CLOSED. 628 -> 0, and tools/layering_allowlist.txt is DELETED rather than
+      left empty. That is the whole point of the last step: an empty file is an
+      invitation to add a line, and the entire value of reaching zero is that
+      there is now no way to record an exception. check_layering.py lost
+      --update, --prune, --rename, load_allowlist and write_allowlist with it —
+      about eighty lines of machinery whose only purpose was managing a debt
+      that no longer exists.
+
+      THE LINK-DIRECTION CHECK IS NOW PART OF THE TOOL, not a claim in this
+      file. T18 found a symbol declared in NeuronClient's own header and defined
+      only in Species, which every include-based check in the world calls clean
+      while the linker resolves it upward. Asserting once that no others exist
+      would have been worth nothing a month from now, so check_layering.py
+      reports any free function or extern variable a library header declares
+      that only an executable defines.
+
+      Class members are exempt and that exemption is the delicate part. A
+      pure-virtual method declared low and overridden high is dependency
+      INVERSION — the call goes through a vtable the lower layer owns — and it
+      is how most of the 628 were removed: AppCommands::CreateRenderer is
+      declared in NeuronClient and defined only in Species/App.cpp, and must
+      not be flagged. The check strips class and struct bodies with a brace
+      counter before looking for declarations, which leaves 93 namespace-scope
+      declarations to check rather than every method in the tree.
+
+      Both halves were tested against the bug they exist for. Re-adding
+      `void AppMain();` to WindowManager.h makes the tool report AppMain and
+      exit 1; removing it makes it pass. CreateRenderer is confirmed present in
+      the executable-defined set and absent from the namespace-scope declared
+      set, so the inversion pattern is exempt for the right reason rather than
+      by accident.
 
   - id: T16
     title: Give Resource and SoundInstance a narrow world seam

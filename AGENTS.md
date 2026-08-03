@@ -62,8 +62,8 @@ than after.
 This phase ends when **`NeuronCore` and `NeuronServer` link into a headless
 server that ticks without `NeuronClient`.** Concretely, all four of:
 
-1. `tools/layering_allowlist.txt` contains no entry beginning `NeuronCore/`.
-   **Met** — zero, down from 30.
+1. No upward include out of `NeuronCore`. **Met** — zero, down from 30, and
+   `tools/check_layering.py` now rejects any upward include tree-wide.
 2. `NeuronCore.vcxproj` lists no other project in `AdditionalIncludeDirectories`.
    **Met** — it lists none at all.
 3. `Server.exe` links without `NeuronClient.lib` and advances sequence ids with
@@ -79,11 +79,10 @@ What that does *not* mean: the game client runs, the world server exists, or
 cross-architecture play works. It means the foundation no longer depends on the
 things above it, so a server can be built without dragging a renderer in.
 
-Deliberately *not* the exit criterion: the rest of the allowlist, and the client
-running. Both matter; neither gates the world server. The allowlist stood at 628
-when this phase ended and is at 4 now — `tasks/layering-inversion.yaml` is the
-plan working it down, and its T12 is the one that takes it to zero and deletes
-the file.
+Deliberately *not* the exit criterion: the rest of the tree's upward includes,
+and the client running. Both matter; neither gated the world server. The
+allowlist stood at 628 when this phase ended and is **gone** —
+`tasks/layering-inversion.yaml` took it to zero and deleted it.
 
 > **Note:** the game runs again as of `7ee8c00`. That is recorded here because
 > this file is where it gets recorded — see *What working looks like*. It does
@@ -141,30 +140,23 @@ NeuronCore                   no dependencies
       Server   (exe)         -> GameLogic, NeuronServer, NeuronCore
 ```
 
-**Includes may only ever point downward.** The tree very nearly obeys this: four
-upward includes are recorded in `tools/layering_allowlist.txt`, inherited from
-Darwinia's single-binary layout — down from 628 as `tasks/layering-inversion.yaml`
-works through them.
+**Includes may only ever point downward, and the tree obeys this.** Zero upward
+includes, down from the 628 inherited from Darwinia's single-binary layout.
+`tasks/layering-inversion.yaml` removed them over eighteen tasks and deleted the
+allowlist on the way out.
 
-| From | Into | Count |
-|---|---|---|
-| NeuronClient | GameLogic | 4 |
+What went, and how: `App.h` — no file below `Species` includes it — the frame
+clock, `Globals.h`, and then the subsystems behind `*Access` interfaces
+(`Renderer`, `Camera`, `Script`, `UserInput`, `TaskManagerInterface`,
+`ControlHelp`, `LocationEditor`, `GameCursor`, and the loaded world itself).
+The world model — `Location`, `GlobalWorld`, `Team`, `Unit`, the grids, the
+routing system, the landscape — moved down into `GameLogic` rather than being
+reached up into.
 
-Re-derive rather than trusting the table: `python3 tools/check_layering.py`
-prints the total and the file names them. What is already gone is `App.h` — no
-file below `Species` includes it — along with the frame clock, `Globals.h`,
-`Renderer.h`, `Camera.h` and the whole world model, which lives in `GameLogic`
-now rather than being reached up into.
-
-**`NeuronCore` has no upward includes left, and neither does `GameLogic`.** All
-four survivors are `NeuronClient` reaching `GameLogic`: `Resource.cpp` and
-`SoundInstance.cpp` asking the world four questions (T16), and `SoundSystem.cpp`
-whose event API is written in `Entity` and `Building` (T17).
-
-The check fails on any violation **not** already in that file. The allowlist may
-only ever shrink. If your change needs a new upward include, the design is wrong:
-move the shared declaration down into a layer both sides can see, or invert the
-dependency behind an interface.
+**The check is strict and has no escape hatch.** If your change needs an upward
+include, the design is wrong: move the shared declaration down into a layer both
+sides can see, or invert the dependency behind an interface. Do not recreate the
+allowlist.
 
 `tasks/neuroncore-layering.yaml` is the plan that eliminated the `NeuronCore`
 entries. Twelve of its thirteen tasks are done; only T10 is left, which drops the
@@ -324,11 +316,13 @@ depends on the file you are in, not on your preference. See
 file, fix the bug. Converting the file is valuable but it is a separate task with
 its own plan entry — mixing the two produces a diff nobody can review.
 
-**Never add to the layering allowlist.** It exists to shrink. The one
-exception is a file rename, which orphans its entries and makes unchanged
-violations look new — rewrite those with
-`python3 tools/check_layering.py --rename OLD NEW`, which cannot invent
-entries and leaves the count untouched.
+**Never reintroduce the layering allowlist.** It went from 628 entries to
+zero and was deleted. An upward include is now a build-stopping error with no
+way to record an exception, which is the point — `tasks/layering-inversion.yaml`
+has eighteen worked examples of removing one properly. The same check also
+catches a symbol declared in a library header and defined only in an executable,
+which is the same reach with the linker doing the work instead of the
+preprocessor.
 
 **Do not change what the simulation computes.** Multiplayer is deterministic
 lockstep with a runtime checksum, so iteration order, floating-point arithmetic
@@ -408,10 +402,11 @@ Real, currently true, and worth knowing before you trip over them:
   - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
     runner is a preview image that roughly doubles wall clock, and ARM64 is built
     constantly at the desk anyway. Deliberate, not an oversight.
-- **Four upward includes remain, down from 628.** `NeuronCore` is standalone,
-  reaches upward nowhere, and `NeuronCore.vcxproj` lists no include directories
-  at all, so a new upward include there fails to compile rather than quietly
-  working. `App.h` is now in the same position for the layers below it: the
+- **No upward includes remain, down from 628.** `tasks/layering-inversion.yaml`
+  is complete and `tools/layering_allowlist.txt` is **deleted** — not emptied,
+  deleted, so nobody can reopen it by adding a line. `NeuronCore` also lists no
+  include directories at all in its `.vcxproj`, so an upward include there fails
+  to compile rather than quietly working. `App.h` is now in the same position for the layers below it: the
   subsystem pointers live in `NeuronClient/WorldPointers.h`, the application
   state in `AppState.h`, and the seven actions only `App` can perform behind the
   `AppCommands` interface it installs at startup. `Renderer`, `Camera`,
@@ -420,11 +415,12 @@ Real, currently true, and worth knowing before you trip over them:
   interface header in `NeuronClient`, and the world model — `Location`,
   `GlobalWorld`, `Team`, `Unit`, the grids, the routing system and the
   landscape — now lives in `GameLogic` rather than being reached up into.
-  What is left is four includes in three `NeuronClient` files reaching
-  `GameLogic`: `Resource.cpp` and `SoundInstance.cpp` want four answers from
-  the world, and `SoundSystem.cpp` has an event API written in `Entity` and
-  `Building`. `tools/layering_allowlist.txt` names them; `layering-inversion`
-  T16 and T17 own them.
+  `check_layering.py` also reports any free function or extern variable a
+  library header declares that only an executable defines — an upward reach the
+  linker resolves and an include check cannot see. The tree carried one for
+  years: `WindowManager.h` declared `AppMain()` and `Species` defined it (T18).
+  Class members are exempt, because a pure-virtual declared low and overridden
+  high is dependency inversion, which is how most of the 628 were removed.
 - **Release is not built by anyone.** Three template leftovers — missing include
   paths, a precompiled header nothing created, and `Species` linking Release as a
   console app when `WinMain` is its entry point — are all fixed, and

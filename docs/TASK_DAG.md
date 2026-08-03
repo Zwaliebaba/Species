@@ -85,7 +85,7 @@ tasks:                               # required. non-empty list
       - NeuronCore/Server.h          # collisions between concurrent tasks
     acceptance:                      # required. non-empty. observable outcomes
       - Server.cpp no longer includes App.h or Globals.h
-      - tools/check_layering.py reports 2 fewer allowlisted violations
+      - Neither NeuronCore.vcxproj nor Server.cpp names a project above NeuronCore
       - NeuronCoreTests covers the extracted seam
     verify:                          # optional. commands that prove acceptance
       - python3 tools/check_layering.py
