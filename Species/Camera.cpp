@@ -2192,7 +2192,7 @@ bool Camera::SetTarget(const char* _mountName)
     return true;
   }
 
-  for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
   {
     CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
     if (stricmp(mount->m_name, _mountName) == 0)

@@ -236,7 +236,7 @@ void LevelFile::ParseCameraMounts(TextReader* _in)
     cmnt->m_up.z = atof(word);
     cmnt->m_up.Normalise();
 
-    m_cameraMounts.PutData(cmnt);
+    m_cameraMounts.push_back(cmnt);
   }
 }
 
@@ -524,7 +524,7 @@ void LevelFile::ParseLandscapeTiles(TextReader* _in)
     }
 
     LandscapeTile* def = new LandscapeTile();
-    m_landscape.m_tiles.PutDataAtEnd(def);
+    m_landscape.m_tiles.push_back(def);
 
     def->m_posX = atoi(word);
 
@@ -922,9 +922,9 @@ void LevelFile::WriteCameraMounts(FileWriter* _out)
   _out->printf("\t# Name	          Pos                   Front          Up\n");
   _out->printf("\t# =========================================================================\n");
 
-  for (int i = 0; i < m_cameraMounts.Size(); i++)
+  for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); i++)
   {
-    CameraMount* cmnt = m_cameraMounts.GetData(i);
+    CameraMount* cmnt = m_cameraMounts[i];
     _out->printf("\t%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f\n", cmnt->m_name, cmnt->m_pos.x, cmnt->m_pos.y, cmnt->m_pos.z,
                  cmnt->m_front.x, cmnt->m_front.y, cmnt->m_front.z, cmnt->m_up.x, cmnt->m_up.y, cmnt->m_up.z);
   }
@@ -995,9 +995,9 @@ void LevelFile::WriteLandscapeTiles(FileWriter* _out)
   _out->printf("\t# x       y       z    size   dim  scale  height  method seed smooth  guideGrid\n");
   _out->printf("\t# =============================================================================\n");
 
-  for (int i = 0; i < m_landscape.m_tiles.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_landscape.m_tiles.size()); ++i)
   {
-    LandscapeTile* _def = m_landscape.m_tiles.GetData(i);
+    LandscapeTile* _def = m_landscape.m_tiles[i];
     _out->printf("\t%6d %6.2f %6d ", _def->m_posX, _def->m_posY, _def->m_posZ);
     _out->printf("%6d ", _def->m_size);
     _out->printf("%5.2f ", _def->m_fractalDimension);
@@ -1122,7 +1122,9 @@ LevelFile::LevelFile(char const* _missionFilename, char const* _mapFilename)
 
 LevelFile::~LevelFile()
 {
-  m_cameraMounts.EmptyAndDelete();
+  for (CameraMount* mount : m_cameraMounts)
+    delete mount;
+  m_cameraMounts.clear();
   m_cameraAnimations.EmptyAndDelete();
   m_buildings.EmptyAndDelete();
   m_instantUnits.EmptyAndDelete();
@@ -1223,9 +1225,9 @@ Building* LevelFile::GetBuilding(int _id)
 
 CameraMount* LevelFile::GetCameraMount(char const* _name)
 {
-  for (int i = 0; i < m_cameraMounts.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); ++i)
   {
-    CameraMount* mount = m_cameraMounts.GetData(i);
+    CameraMount* mount = m_cameraMounts[i];
     if (stricmp(mount->m_name, _name) == 0)
     {
       return mount;

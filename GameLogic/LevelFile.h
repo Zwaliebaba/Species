@@ -117,7 +117,7 @@ class LandscapeFlattenArea
 class LandscapeDef
 {
   public:
-    LList<LandscapeTile*> m_tiles;
+    std::vector<LandscapeTile*> m_tiles;
     std::vector<LandscapeFlattenArea*> m_flattenAreas;
     float m_cellSize;
     int m_worldSizeX;
@@ -134,7 +134,9 @@ class LandscapeDef
 
     ~LandscapeDef()
     {
-      m_tiles.EmptyAndDelete();
+      for (LandscapeTile* tile : m_tiles)
+        delete tile;
+      m_tiles.clear();
       for (LandscapeFlattenArea* area : m_flattenAreas)
         delete area;
       m_flattenAreas.clear();
@@ -205,7 +207,7 @@ class LevelFile
     char m_wavesColourFilename[MAX_FILENAME_LEN];
     char m_waterColourFilename[MAX_FILENAME_LEN];
 
-    LList<CameraMount*> m_cameraMounts;
+    std::vector<CameraMount*> m_cameraMounts;
     LList<CameraAnimation*> m_cameraAnimations;
     LList<Building*> m_buildings;
     LList<InstantUnit*> m_instantUnits;

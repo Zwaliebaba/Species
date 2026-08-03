@@ -33,7 +33,7 @@ class NewMountButton : public SpeciesButton
       mount->m_up = g_camera->GetUp();
       sprintf(mount->m_name, "blah%d", speciesRandom());
 
-      g_location->m_levelFile->m_cameraMounts.PutDataAtEnd(mount);
+      g_location->m_levelFile->m_cameraMounts.push_back(mount);
 
       EclWindow* parent = m_parent;
       parent->Remove();
@@ -54,7 +54,7 @@ class GotoMountButton : public SpeciesButton
 
     void MouseUp()
     {
-      for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
       {
         CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
         if (stricmp(mount->m_name, m_mountName) == 0)
@@ -82,12 +82,12 @@ class DeleteMountButton : public SpeciesButton
 
     void MouseUp()
     {
-      for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
       {
         CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
         if (stricmp(mount->m_name, m_mountName) == 0)
         {
-          g_location->m_levelFile->m_cameraMounts.RemoveData(i);
+          g_location->m_levelFile->m_cameraMounts.erase(g_location->m_levelFile->m_cameraMounts.begin() + i);
           delete mount;
 
           EclWindow* parent = m_parent;
@@ -115,7 +115,7 @@ class UpdateMountButton : public SpeciesButton
 
     void MouseUp()
     {
-      for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
       {
         CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
         if (stricmp(mount->m_name, m_mountName) == 0)
@@ -164,9 +164,9 @@ void CameraMountEditWindow::Create()
 
   height += 10;
 
-  for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
   {
-    CameraMount* mount = g_location->m_levelFile->m_cameraMounts.GetData(i);
+    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
 
     char buttonName[64];
 
