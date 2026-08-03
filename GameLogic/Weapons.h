@@ -194,7 +194,7 @@ class Missile : public WorldObject
 {
   protected:
     float m_life;
-    LList<Vector3> m_history;
+    std::vector<Vector3> m_history;
     Shape* m_shape;
     ShapeMarker* m_booster;
     MuzzleFlash m_fire;

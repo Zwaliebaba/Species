@@ -35,7 +35,7 @@ class HistoricWayPoint
 class InsertionSquad : public Unit
 {
   protected:
-    LList<HistoricWayPoint*> m_positionHistory; // A list of all the places the user has clicked. Most recent first
+    std::vector<HistoricWayPoint*> m_positionHistory; // A list of all the places the user has clicked. Most recent first
 
   public:
     int m_weaponType;   // Indexes into GlobalResearch

@@ -3,9 +3,6 @@
 #include <vector>
 
 
-#include "LList.h"
-
-
 class WindowManagerWin32;
 
 

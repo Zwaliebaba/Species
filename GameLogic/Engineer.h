@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "LList.h"
 
 #include "Entity.h"
 
@@ -39,13 +38,13 @@ class Engineer : public Entity
     Vector3 m_targetFront; // and orientation
 
     float m_retargetTimer;
-    LList<int> m_spirits; // Collector only, Spirits already collected
-    int m_spiritId;       // Collector only, current target spirit
+    std::vector<int> m_spirits; // Collector only, Spirits already collected
+    int m_spiritId;             // Collector only, current target spirit
 
     int m_positionId; // Position on the building we are working on
     int m_bridgeId;   // Building ID of a bridge we own
 
-    LList<Vector3*> m_positionHistory;
+    std::vector<Vector3*> m_positionHistory;
 
   protected:
     bool SearchForRandomPosition();

@@ -72,7 +72,7 @@ class Explosion
 class ExplosionManager
 {
   protected:
-    LList<Explosion*> m_explosions;
+    std::vector<Explosion*> m_explosions;
 
   public:
     ExplosionManager();
@@ -85,7 +85,7 @@ class ExplosionManager
     void Advance();
     void Render();
 
-    const LList<Explosion*>& GetExplosionList() { return m_explosions; } // read access for DeformEffect
+    const std::vector<Explosion*>& GetExplosionList() { return m_explosions; } // read access for DeformEffect
 };
 
 

@@ -188,42 +188,42 @@ void OptionsMenuWindow::Create()
   screen->m_fontSize = fontSize;
   screen->m_centered = true;
   RegisterButton(screen);
-  m_buttonOrder.PutData(screen);
+  m_buttonOrder.push_back(screen);
 
   auto graphics = new GraphicsOptionsButton();
   graphics->SetShortProperties(LANGUAGEPHRASE("dialog_graphicsoptions"), border, y += h, buttonW, buttonH);
   graphics->m_fontSize = fontSize;
   graphics->m_centered = true;
   RegisterButton(graphics);
-  m_buttonOrder.PutData(graphics);
+  m_buttonOrder.push_back(graphics);
 
   auto sound = new SoundOptionsButton();
   sound->SetShortProperties(LANGUAGEPHRASE("dialog_soundoptions"), border, y += h, buttonW, buttonH);
   sound->m_fontSize = fontSize;
   sound->m_centered = true;
   RegisterButton(sound);
-  m_buttonOrder.PutData(sound);
+  m_buttonOrder.push_back(sound);
 
   auto keys = new KeybindingsOptionsButton();
   keys->SetShortProperties(LANGUAGEPHRASE("dialog_inputoptions"), border, y += h, buttonW, buttonH);
   keys->m_fontSize = fontSize;
   keys->m_centered = true;
   RegisterButton(keys);
-  m_buttonOrder.PutData(keys);
+  m_buttonOrder.push_back(keys);
 
   auto other = new OtherOptionsButton();
   other->SetShortProperties(LANGUAGEPHRASE("dialog_otheroptions"), border, y += h, buttonW, buttonH);
   other->m_fontSize = fontSize;
   other->m_centered = true;
   RegisterButton(other);
-  m_buttonOrder.PutData(other);
+  m_buttonOrder.push_back(other);
 
   auto close = new CloseButton();
   close->SetShortProperties(LANGUAGEPHRASE("dialog_close"), border, m_h - h, buttonW, buttonH);
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 // ============================================================================
@@ -312,7 +312,7 @@ void LocationWindow::Create()
       reset->m_fontSize = fontSize;
       reset->m_centered = true;
       RegisterButton(reset);
-      m_buttonOrder.PutData(reset);
+      m_buttonOrder.push_back(reset);
       gap = h;
     }
 
@@ -323,7 +323,7 @@ void LocationWindow::Create()
       exit->m_fontSize = fontSize;
       exit->m_centered = true;
       RegisterButton(exit);
-      m_buttonOrder.PutData(exit);
+      m_buttonOrder.push_back(exit);
     }
     else
     {
@@ -332,7 +332,7 @@ void LocationWindow::Create()
       exitLevel->m_fontSize = fontSize;
       exitLevel->m_centered = true;
       RegisterButton(exitLevel);
-      m_buttonOrder.PutData(exitLevel);
+      m_buttonOrder.push_back(exitLevel);
     }
   }
   else
@@ -344,7 +344,7 @@ void LocationWindow::Create()
     reset->m_fontSize = fontSize;
     reset->m_centered = true;
     RegisterButton(reset);
-    m_buttonOrder.PutData(reset);
+    m_buttonOrder.push_back(reset);
 
     auto buy = new WebsiteButton();
     buy->SetShortProperties(LANGUAGEPHRASE("dialog_buyonline"), border, y += h, buttonW, buttonH);
@@ -354,14 +354,14 @@ void LocationWindow::Create()
     strcpy(buy->m_website, "http://store.introversion.co.uk");
 
     RegisterButton(buy);
-    m_buttonOrder.PutData(buy);
+    m_buttonOrder.push_back(buy);
 
     auto exitLevel = new ExitLevelButton();
     exitLevel->SetShortProperties(LANGUAGEPHRASE("dialog_leavedarwinia"), border, y += h, buttonW, buttonH);
     exitLevel->m_fontSize = fontSize;
     exitLevel->m_centered = true;
     RegisterButton(exitLevel);
-    m_buttonOrder.PutData(exitLevel);
+    m_buttonOrder.push_back(exitLevel);
   }
 
   auto options = new OptionsButton();
@@ -369,7 +369,7 @@ void LocationWindow::Create()
   options->m_fontSize = fontSize;
   options->m_centered = true;
   RegisterButton(options);
-  m_buttonOrder.PutData(options);
+  m_buttonOrder.push_back(options);
 
   if (g_appCommands->HasBoughtGame() && g_gameMode == GameModePrologue)
   {
@@ -378,7 +378,7 @@ void LocationWindow::Create()
     skip->m_fontSize = fontSize;
     skip->m_centered = true;
     RegisterButton(skip);
-    m_buttonOrder.PutData(skip);
+    m_buttonOrder.push_back(skip);
   }
 
   auto close = new CloseButton();
@@ -386,7 +386,7 @@ void LocationWindow::Create()
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 // ============================================================================
@@ -428,14 +428,14 @@ void ResetLocationWindow::Create()
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 
   auto reset = new ResetLocationButton();
   reset->SetShortProperties(LANGUAGEPHRASE("dialog_yes"), m_w - buttonW - border, m_h - h, buttonW, buttonH);
   reset->m_fontSize = fontSize;
   reset->m_centered = true;
   RegisterButton(reset);
-  m_buttonOrder.PutData(reset);
+  m_buttonOrder.push_back(reset);
 }
 
 void ResetLocationWindow::Render(bool _hasFocus)
@@ -475,14 +475,14 @@ void MainMenuWindow::Create()
   profile->m_fontSize = fontSize;
   profile->m_centered = true;
   RegisterButton(profile);
-  m_buttonOrder.PutData(profile);
+  m_buttonOrder.push_back(profile);
 
   auto options = new OptionsButton();
   options->SetShortProperties(LANGUAGEPHRASE("dialog_options"), border, y += h, buttonW, buttonH);
   options->m_fontSize = fontSize;
   options->m_centered = true;
   RegisterButton(options);
-  m_buttonOrder.PutData(options);
+  m_buttonOrder.push_back(options);
 
   auto website = new WebsiteButton();
   website->SetShortProperties(LANGUAGEPHRASE("dialog_visitwebsite"), border, y += h, buttonW, buttonH);
@@ -490,28 +490,28 @@ void MainMenuWindow::Create()
   website->m_centered = true;
   strcpy(website->m_website, "http://www.darwinia.co.uk");
   RegisterButton(website);
-  m_buttonOrder.PutData(website);
+  m_buttonOrder.push_back(website);
 
   auto play = new PlayPrologueWindowButton();
   play->SetShortProperties(LANGUAGEPHRASE("dialog_playprologue"), border, y += h, buttonW, buttonH);
   play->m_fontSize = fontSize;
   play->m_centered = true;
   RegisterButton(play);
-  m_buttonOrder.PutData(play);
+  m_buttonOrder.push_back(play);
 
   auto exit = new GameExitButton();
   exit->SetShortProperties(LANGUAGEPHRASE("dialog_leavedarwinia"), border, y += h, buttonW, buttonH);
   exit->m_fontSize = fontSize;
   exit->m_centered = true;
   RegisterButton(exit);
-  m_buttonOrder.PutData(exit);
+  m_buttonOrder.push_back(exit);
 
   auto close = new CloseButton();
   close->SetShortProperties(LANGUAGEPHRASE("dialog_close"), border, m_h - h, buttonW, buttonH);
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 AboutSpeciesWindow::AboutSpeciesWindow()
@@ -534,7 +534,7 @@ void AboutSpeciesWindow::Create()
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 void AboutSpeciesWindow::Render(bool _hasFocus)
@@ -598,14 +598,14 @@ void SkipPrologueWindow::Create()
   skip->m_fontSize = fontSize;
   skip->m_centered = true;
   RegisterButton(skip);
-  m_buttonOrder.PutData(skip);
+  m_buttonOrder.push_back(skip);
 
   auto close = new CloseButton();
   close->SetShortProperties(LANGUAGEPHRASE("dialog_close"), border * 2 + buttonW, m_h - h, buttonW, buttonH);
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 void SkipPrologueWindow::Render(bool _hasFocus)
@@ -676,14 +676,14 @@ void PlayPrologueWindow::Create()
   play->m_fontSize = fontSize;
   play->m_centered = true;
   RegisterButton(play);
-  m_buttonOrder.PutData(play);
+  m_buttonOrder.push_back(play);
 
   auto close = new CloseButton();
   close->SetShortProperties(LANGUAGEPHRASE("dialog_close"), border * 2 + buttonW, m_h - h, buttonW, buttonH);
   close->m_fontSize = fontSize;
   close->m_centered = true;
   RegisterButton(close);
-  m_buttonOrder.PutData(close);
+  m_buttonOrder.push_back(close);
 }
 
 void PlayPrologueWindow::Render(bool _hasFocus)

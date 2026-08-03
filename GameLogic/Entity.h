@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "LList.h"
 #include "TextureUv.h"
 
 #include "WorldObject.h"

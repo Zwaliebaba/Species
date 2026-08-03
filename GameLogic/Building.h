@@ -4,7 +4,6 @@
 
 #include "Vector3.h"
 #include "Matrix34.h"
-#include "LList.h"
 
 #include "Entity.h"
 #include "WorldObject.h"
@@ -96,8 +95,8 @@ class Building : public WorldObject
     bool m_destroyed; // Building has been destroyed using the script command DestroyBuilding, remove it next Advance
 
     Shape* m_shape;
-    LList<ShapeMarker*> m_lights; // Ownership lights
-    LList<BuildingPort*> m_ports; // Require Citizens in them to operate
+    std::vector<ShapeMarker*> m_lights; // Ownership lights
+    std::vector<BuildingPort*> m_ports; // Require Citizens in them to operate
 
     static Shape* s_controlPad;
     static ShapeMarker* s_controlPadStatus;

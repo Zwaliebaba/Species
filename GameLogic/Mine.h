@@ -23,7 +23,7 @@ class MineBuilding : public Building
     Matrix34 m_trackMatrix1;
     Matrix34 m_trackMatrix2;
 
-    LList<MineCart*> m_carts;
+    std::vector<MineCart*> m_carts;
 
     float m_previousMineSpeed;
     float m_wheelRotate;
@@ -100,7 +100,7 @@ class TrackLink : public MineBuilding
 class TrackJunction : public MineBuilding
 {
   public:
-    LList<int> m_trackLinks;
+    std::vector<int> m_trackLinks;
 
   public:
     TrackJunction();

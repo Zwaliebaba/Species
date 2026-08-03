@@ -36,7 +36,7 @@ class AITarget : public Building
     float m_teamCountTimer;
 
   public:
-    LList<int> m_neighbours; // Building IDs of nearby AITargets
+    std::vector<int> m_neighbours; // Building IDs of nearby AITargets
 
     int m_friendCount[NUM_TEAMS];
     int m_enemyCount[NUM_TEAMS];

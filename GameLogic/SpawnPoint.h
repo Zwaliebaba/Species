@@ -18,15 +18,15 @@ class SpawnBuildingLink
   public:
     int m_targetBuildingId; // Who I am directly linked to
 
-    LList<int> m_targets; // List of all SpawnPoint buildings reachable down this route
-    LList<SpawnBuildingSpirit*> m_spirits;
+    std::vector<int> m_targets; // List of all SpawnPoint buildings reachable down this route
+    std::vector<SpawnBuildingSpirit*> m_spirits;
 };
 
 
 class SpawnBuilding : public Building
 {
   protected:
-    LList<SpawnBuildingLink*> m_links;
+    std::vector<SpawnBuildingLink*> m_links;
     ShapeMarker* m_spiritLink;
 
     Vector3 m_visibilityMidpoint;

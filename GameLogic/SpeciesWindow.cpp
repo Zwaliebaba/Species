@@ -429,7 +429,7 @@ void SpeciesWindow::Remove()
     EclButton* button = m_buttons[0];
     RemoveButton(button->m_name);
   }
-  m_buttonOrder.Empty();
+  m_buttonOrder.clear();
   m_currentButton = 0;
 }
 
@@ -593,7 +593,7 @@ void SpeciesWindow::Update()
     {
       m_buttonChangedThisUpdate = true;
       m_currentButton++;
-      m_currentButton = min(m_currentButton, m_buttonOrder.Size() - 1);
+      m_currentButton = min(m_currentButton, static_cast<int>(m_buttonOrder.size()) - 1);
     }
     if (g_inputManager->controlEvent(ControlMenuUp))
     {
@@ -604,7 +604,7 @@ void SpeciesWindow::Update()
 
     if (g_inputManager->controlEvent(ControlMenuActivate))
     {
-      EclButton* b = m_buttonOrder.GetData(m_currentButton);
+      EclButton* b = m_buttonOrder[m_currentButton];
       if (b)
       {
         b->MouseUp();
@@ -620,7 +620,7 @@ void SpeciesWindow::Update()
 
 void SpeciesWindow::SetCurrentButton(EclButton* button)
 {
-  for (int i = 0; i < m_buttonOrder.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_buttonOrder.size()); ++i)
   {
     if (m_buttonOrder[i] == button)
     {

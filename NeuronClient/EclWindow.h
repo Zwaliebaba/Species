@@ -15,7 +15,6 @@
 #define SIZE_ECLWINDOW_NAME 256
 #define SIZE_ECLWINDOW_TITLE 256
 
-#include "LList.h"
 
 class EclButton;
 

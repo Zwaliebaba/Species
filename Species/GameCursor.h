@@ -9,7 +9,6 @@
 
 
 #include "GameCursorAccess.h"
-#include "LList.h"
 #include "RgbColour.h"
 #include "WorldObject.h"
 
@@ -49,7 +48,7 @@ class GameCursor : public GameCursorAccess
     void RenderMarkers();
     void FindScreenEdge(Vector2 const& _line, float* _posX, float* _posY);
 
-    LList<MouseCursorMarker*> m_markers;
+    std::vector<MouseCursorMarker*> m_markers;
 
   public:
   public:

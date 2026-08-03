@@ -71,7 +71,7 @@ class Virii : public Entity
     void RecordHistoryPosition(bool _required);   // if !_required this is simply to make it smoother
     Vector3 AdvanceDeadPositionVector(int _index, Vector3 const& _pos, float _time);
 
-    LList<ViriiHistory*> m_positionHistory;
+    std::vector<ViriiHistory*> m_positionHistory;
 
   public:
     Virii();

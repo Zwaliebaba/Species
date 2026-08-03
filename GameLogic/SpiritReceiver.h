@@ -19,7 +19,7 @@ class ReceiverBuilding : public Building
     int m_spiritLink;
     ShapeMarker* m_spiritLocation;
 
-    LList<float> m_spirits;
+    std::vector<float> m_spirits;
 
   public:
     ReceiverBuilding();
@@ -64,7 +64,7 @@ class SpiritProcessor : public ReceiverBuilding
     float m_throughput;
 
   public:
-    LList<UnprocessedSpirit*> m_floatingSpirits;
+    std::vector<UnprocessedSpirit*> m_floatingSpirits;
 
   public:
     SpiritProcessor();

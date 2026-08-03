@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include "LList.h"
 #include "Vector3.h"
 
 
@@ -41,7 +40,7 @@ class Route
 {
   public:
     int m_id;
-    LList<WayPoint*> m_wayPoints;
+    std::vector<WayPoint*> m_wayPoints;
 
     Route(int _id);
     ~Route();

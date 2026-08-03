@@ -107,7 +107,7 @@ void PrefsGraphicsWindow::Create()
   landDetail->RegisterInt(&m_landscapeDetail);
   landDetail->m_fontSize = fontSize;
   RegisterButton(landDetail);
-  m_buttonOrder.PutData(landDetail);
+  m_buttonOrder.push_back(landDetail);
 
   DropDownMenu* waterDetail = new DropDownMenu();
   waterDetail->SetShortProperties(LANGUAGEPHRASE("dialog_waterdetail"), x, y += h, buttonW, buttonH);
@@ -117,7 +117,7 @@ void PrefsGraphicsWindow::Create()
   waterDetail->RegisterInt(&m_waterDetail);
   waterDetail->m_fontSize = fontSize;
   RegisterButton(waterDetail);
-  m_buttonOrder.PutData(waterDetail);
+  m_buttonOrder.push_back(waterDetail);
 
   DropDownMenu* cloudDetail = new DropDownMenu();
   cloudDetail->SetShortProperties(LANGUAGEPHRASE("dialog_skydetail"), x, y += h, buttonW, buttonH);
@@ -127,7 +127,7 @@ void PrefsGraphicsWindow::Create()
   cloudDetail->RegisterInt(&m_cloudDetail);
   cloudDetail->m_fontSize = fontSize;
   RegisterButton(cloudDetail);
-  m_buttonOrder.PutData(cloudDetail);
+  m_buttonOrder.push_back(cloudDetail);
 
   DropDownMenu* buildingDetail = new DropDownMenu();
   buildingDetail->SetShortProperties(LANGUAGEPHRASE("dialog_buildingdetail"), x, y += h, buttonW, buttonH);
@@ -137,7 +137,7 @@ void PrefsGraphicsWindow::Create()
   buildingDetail->RegisterInt(&m_buildingDetail);
   buildingDetail->m_fontSize = fontSize;
   RegisterButton(buildingDetail);
-  m_buttonOrder.PutData(buildingDetail);
+  m_buttonOrder.push_back(buildingDetail);
 
   DropDownMenu* entityDetail = new DropDownMenu();
   entityDetail->SetShortProperties(LANGUAGEPHRASE("dialog_entitydetail"), x, y += h, buttonW, buttonH);
@@ -147,7 +147,7 @@ void PrefsGraphicsWindow::Create()
   entityDetail->RegisterInt(&m_entityDetail);
   entityDetail->m_fontSize = fontSize;
   RegisterButton(entityDetail);
-  m_buttonOrder.PutData(entityDetail);
+  m_buttonOrder.push_back(entityDetail);
 
   DropDownMenu* pixelRange = new DropDownMenu();
   pixelRange->SetShortProperties(LANGUAGEPHRASE("dialog_pixeleffect"), x, y += h, buttonW, buttonH);
@@ -157,7 +157,7 @@ void PrefsGraphicsWindow::Create()
   pixelRange->RegisterInt(&m_pixelEffectRange);
   pixelRange->m_fontSize = fontSize;
   RegisterButton(pixelRange);
-  m_buttonOrder.PutData(pixelRange);
+  m_buttonOrder.push_back(pixelRange);
 
 
   CloseButton* cancel = new CloseButton();
@@ -165,14 +165,14 @@ void PrefsGraphicsWindow::Create()
   cancel->m_fontSize = GetMenuSize(13);
   cancel->m_centered = true;
   RegisterButton(cancel);
-  m_buttonOrder.PutData(cancel);
+  m_buttonOrder.push_back(cancel);
 
   ApplyGraphicsButton* apply = new ApplyGraphicsButton();
   apply->SetShortProperties(LANGUAGEPHRASE("dialog_apply"), m_w - buttonW2 - border, m_h - h, buttonW2, buttonH);
   apply->m_fontSize = GetMenuSize(13);
   apply->m_centered = true;
   RegisterButton(apply);
-  m_buttonOrder.PutData(apply);
+  m_buttonOrder.push_back(apply);
 }
 
 

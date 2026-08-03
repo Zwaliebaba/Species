@@ -138,7 +138,7 @@ PrefsOtherWindow::PrefsOtherWindow()
 
   ListAvailableLanguages();
   m_language = -1;
-  for (int i = 0; i < m_languages.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_languages.size()); ++i)
   {
     if (stricmp(m_languages[i], g_prefsManager->GetString(OTHER_LANGUAGE)) == 0)
     {
@@ -150,7 +150,13 @@ PrefsOtherWindow::PrefsOtherWindow()
 
 void PrefsOtherWindow::ListAvailableLanguages()
 {
-  m_languages.EmptyAndDelete();
+  // free, not delete: these come from strdup below. The legacy
+  // EmptyAndDelete called delete on them, which is undefined behaviour on a
+  // malloc'd pointer — it happened to survive because the block is never
+  // reused, not because it was right.
+  for (char* language : m_languages)
+    free(language);
+  m_languages.clear();
 
   std::vector<char*>* fileList = g_resource->ListResources("Language/", "*.*", false);
   for (char* lang : *fileList)
@@ -158,7 +164,7 @@ void PrefsOtherWindow::ListAvailableLanguages()
     char* dot = strrchr(lang, '.');
     if (dot)
       *dot = '\x0';
-    m_languages.PutData(strdup(lang));
+    m_languages.push_back(strdup(lang));
   }
 
   // The names come from `new char[]`, so delete[]; the old EmptyAndDelete used
@@ -197,7 +203,7 @@ void PrefsOtherWindow::Create()
   helpEnabled->RegisterInt(&m_helpEnabled);
   helpEnabled->m_fontSize = fontSize;
   RegisterButton(helpEnabled);
-  m_buttonOrder.PutData(helpEnabled);
+  m_buttonOrder.push_back(helpEnabled);
 
   DropDownMenu* controlHelpEnabled = new DropDownMenu();
   controlHelpEnabled->SetShortProperties(LANGUAGEPHRASE("dialog_controlhelpsystem"), x, y += h, buttonW, buttonH);
@@ -206,7 +212,7 @@ void PrefsOtherWindow::Create()
   controlHelpEnabled->RegisterInt(&m_controlHelpEnabled);
   controlHelpEnabled->m_fontSize = fontSize;
   RegisterButton(controlHelpEnabled);
-  m_buttonOrder.PutData(controlHelpEnabled);
+  m_buttonOrder.push_back(controlHelpEnabled);
 
   DropDownMenu* bootLoader = new DropDownMenu();
   bootLoader->SetShortProperties(LANGUAGEPHRASE("dialog_bootloaders"), x, y += h, buttonW, buttonH);
@@ -216,11 +222,11 @@ void PrefsOtherWindow::Create()
   bootLoader->RegisterInt(&m_bootLoader);
   bootLoader->m_fontSize = fontSize;
   RegisterButton(bootLoader);
-  m_buttonOrder.PutData(bootLoader);
+  m_buttonOrder.push_back(bootLoader);
 
   DropDownMenu* language = new DropDownMenu();
   language->SetShortProperties(LANGUAGEPHRASE("dialog_language"), x, y += h, buttonW, buttonH);
-  for (int i = 0; i < m_languages.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_languages.size()); ++i)
   {
     char languageString[256];
     sprintf(languageString, "language_%s", m_languages[i]);
@@ -236,7 +242,7 @@ void PrefsOtherWindow::Create()
   language->RegisterInt(&m_language);
   language->m_fontSize = fontSize;
   RegisterButton(language);
-  m_buttonOrder.PutData(language);
+  m_buttonOrder.push_back(language);
 
   DropDownMenu* difficulty = new DropDownMenu();
   difficulty->SetShortProperties(LANGUAGEPHRASE("dialog_difficulty"), x, y += h, buttonW, buttonH);
@@ -264,7 +270,7 @@ void PrefsOtherWindow::Create()
   difficulty->SetDisabled(g_locationId != -1);
   difficulty->m_fontSize = fontSize;
   RegisterButton(difficulty);
-  m_buttonOrder.PutData(difficulty);
+  m_buttonOrder.push_back(difficulty);
 
   if (Location::ChristmasModEnabled())
   {
@@ -275,7 +281,7 @@ void PrefsOtherWindow::Create()
     christmas->RegisterInt(&m_christmas);
     christmas->m_fontSize = fontSize;
     RegisterButton(christmas);
-    m_buttonOrder.PutData(christmas);
+    m_buttonOrder.push_back(christmas);
 
     box->m_h = h * 8 + border * 2;
     SetMenuSize(390, 380);
@@ -289,7 +295,7 @@ void PrefsOtherWindow::Create()
   tenfoot->RegisterInt(&m_largeMenus);
   tenfoot->m_fontSize = fontSize;
   RegisterButton(tenfoot);
-  m_buttonOrder.PutData(tenfoot);
+  m_buttonOrder.push_back(tenfoot);
 
   DropDownMenu* autoCam = new DropDownMenu();
   autoCam->SetShortProperties(LANGUAGEPHRASE("dialog_autocam"), x, y += h, buttonW, buttonH);
@@ -299,7 +305,7 @@ void PrefsOtherWindow::Create()
   autoCam->RegisterInt(&m_automaticCamera);
   autoCam->m_fontSize = fontSize;
   RegisterButton(autoCam);
-  m_buttonOrder.PutData(autoCam);
+  m_buttonOrder.push_back(autoCam);
 
   y = m_h - h;
 
@@ -308,14 +314,14 @@ void PrefsOtherWindow::Create()
   cancel->m_fontSize = fontSize;
   cancel->m_centered = true;
   RegisterButton(cancel);
-  m_buttonOrder.PutData(cancel);
+  m_buttonOrder.push_back(cancel);
 
   ApplyOtherButton* apply = new ApplyOtherButton();
   apply->SetShortProperties(LANGUAGEPHRASE("dialog_apply"), m_w - buttonW - border, y, buttonW, buttonH);
   apply->m_fontSize = fontSize;
   apply->m_centered = true;
   RegisterButton(apply);
-  m_buttonOrder.PutData(apply);
+  m_buttonOrder.push_back(apply);
 }
 
 

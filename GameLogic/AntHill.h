@@ -22,7 +22,7 @@ struct AntObjective
 class AntHill : public Building
 {
   protected:
-    LList<AntObjective*> m_objectives;
+    std::vector<AntObjective*> m_objectives;
 
     float m_objectiveTimer;
     float m_spawnTimer;

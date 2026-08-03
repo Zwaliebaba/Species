@@ -94,7 +94,7 @@ void UserProfileWindow::Create()
     button->m_fontSize = GetMenuSize(11);
     button->m_centered = true;
     RegisterButton(button);
-    m_buttonOrder.PutData(button);
+    m_buttonOrder.push_back(button);
   }
 
   // Only the list. Each name is now owned by the button that took it, and
@@ -108,14 +108,14 @@ void UserProfileWindow::Create()
   newProfile->m_fontSize = GetMenuSize(13);
   newProfile->m_centered = true;
   RegisterButton(newProfile);
-  m_buttonOrder.PutData(newProfile);
+  m_buttonOrder.push_back(newProfile);
 
   CloseButton* cancel = new CloseButton();
   cancel->SetShortProperties(LANGUAGEPHRASE("dialog_close"), 10, m_h - GetMenuSize(30), m_w - 20, GetMenuSize(20));
   cancel->m_fontSize = GetMenuSize(13);
   cancel->m_centered = true;
   RegisterButton(cancel);
-  m_buttonOrder.PutData(cancel);
+  m_buttonOrder.push_back(cancel);
 }
 
 

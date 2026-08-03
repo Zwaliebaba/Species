@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LList.h"
 #include "Vector3.h"
 
 #include "UserInputAccess.h"
@@ -23,7 +22,7 @@ class UserInput : public UserInputAccess
     void AdvanceMouse();
     void AdvanceMenus();
 
-    LList<Vector3*> m_mousePosHistory;
+    std::vector<Vector3*> m_mousePosHistory;
 
   public:
     UserInput();

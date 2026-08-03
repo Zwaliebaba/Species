@@ -1,8 +1,6 @@
 
 #pragma once
 
-#include "LList.h"
-
 
 class StartSequenceCaption;
 
@@ -11,7 +9,7 @@ class StartSequence
 {
   protected:
     float m_startTime;
-    LList<StartSequenceCaption*> m_captions;
+    std::vector<StartSequenceCaption*> m_captions;
 
     void RegisterCaption(char* _caption, float _x, float _y, float _size, float _startTime, float _endTime);
 

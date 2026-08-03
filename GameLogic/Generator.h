@@ -19,7 +19,7 @@ class PowerBuilding : public Building
     int m_powerLink;
     ShapeMarker* m_powerLocation;
 
-    LList<float> m_surges;
+    std::vector<float> m_surges;
 
   public:
     PowerBuilding();

@@ -18,7 +18,7 @@ class SpeciesButton;
 class SpeciesWindow : public EclWindow
 {
   public:
-    LList<EclButton*> m_buttonOrder;
+    std::vector<EclButton*> m_buttonOrder;
     int m_currentButton;
     bool m_buttonChangedThisUpdate;
     bool m_skipUpdate;

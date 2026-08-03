@@ -178,7 +178,7 @@ int fontSize = GetMenuSize(13);*/
   soundLib->RegisterInt(&m_soundLib);
   soundLib->m_fontSize = fontSize;
   RegisterButton(soundLib);
-  m_buttonOrder.PutData(soundLib);
+  m_buttonOrder.push_back(soundLib);
 
   DropDownMenu* mixFreq = new DropDownMenu();
   mixFreq->SetShortProperties(LANGUAGEPHRASE("dialog_mixfrequency"), x, y += h, buttonW, buttonH);
@@ -188,7 +188,7 @@ int fontSize = GetMenuSize(13);*/
   mixFreq->RegisterInt(&m_mixFreq);
   mixFreq->m_fontSize = fontSize;
   RegisterButton(mixFreq);
-  m_buttonOrder.PutData(mixFreq);
+  m_buttonOrder.push_back(mixFreq);
 
   DropDownMenu* numChannels = new DropDownMenu();
   numChannels->SetShortProperties(LANGUAGEPHRASE("dialog_numchannels"), x, y += h, buttonW, buttonH);
@@ -199,7 +199,7 @@ int fontSize = GetMenuSize(13);*/
   numChannels->RegisterInt(&m_numChannels);
   numChannels->m_fontSize = fontSize;
   RegisterButton(numChannels);
-  m_buttonOrder.PutData(numChannels);
+  m_buttonOrder.push_back(numChannels);
 
   DropDownMenu* memoryUsage = new DropDownMenu();
   memoryUsage->SetShortProperties(LANGUAGEPHRASE("dialog_memoryusage"), x, y += h, buttonW, buttonH);
@@ -209,7 +209,7 @@ int fontSize = GetMenuSize(13);*/
   memoryUsage->RegisterInt(&m_memoryUsage);
   memoryUsage->m_fontSize = fontSize;
   RegisterButton(memoryUsage);
-  m_buttonOrder.PutData(memoryUsage);
+  m_buttonOrder.push_back(memoryUsage);
 
   DropDownMenu* swapStereo = new DropDownMenu();
   swapStereo->SetShortProperties(LANGUAGEPHRASE("dialog_swapstereo"), x, y += h, buttonW, buttonH);
@@ -218,7 +218,7 @@ int fontSize = GetMenuSize(13);*/
   swapStereo->RegisterInt(&m_swapStereo);
   swapStereo->m_fontSize = fontSize;
   RegisterButton(swapStereo);
-  m_buttonOrder.PutData(swapStereo);
+  m_buttonOrder.push_back(swapStereo);
 
   HW3DDropDownMenu* hw3d = new HW3DDropDownMenu();
   hw3d->SetShortProperties(LANGUAGEPHRASE("dialog_hw3dsound"), x, y += h, buttonW, buttonH);
@@ -227,7 +227,7 @@ int fontSize = GetMenuSize(13);*/
   hw3d->RegisterInt(&m_useHardware3D);
   hw3d->m_fontSize = fontSize;
   RegisterButton(hw3d);
-  m_buttonOrder.PutData(hw3d);
+  m_buttonOrder.push_back(hw3d);
 
   DropDownMenu* dspEffects = new DropDownMenu();
   dspEffects->SetShortProperties(LANGUAGEPHRASE("dialog_realtimeeffects"), x, y += h, buttonW, buttonH);
@@ -236,7 +236,7 @@ int fontSize = GetMenuSize(13);*/
   dspEffects->RegisterInt(&m_dspEffects);
   dspEffects->m_fontSize = fontSize;
   RegisterButton(dspEffects);
-  m_buttonOrder.PutData(dspEffects);
+  m_buttonOrder.push_back(dspEffects);
 
   y = m_h - h;
 
@@ -245,14 +245,14 @@ int fontSize = GetMenuSize(13);*/
   cancel->m_fontSize = fontSize;
   cancel->m_centered = true;
   RegisterButton(cancel);
-  m_buttonOrder.PutData(cancel);
+  m_buttonOrder.push_back(cancel);
 
   RestartSoundButton* apply = new RestartSoundButton();
   apply->SetShortProperties(LANGUAGEPHRASE("dialog_apply"), m_w - buttonW - border, y, buttonW, buttonH);
   apply->m_fontSize = fontSize;
   apply->m_centered = true;
   RegisterButton(apply);
-  m_buttonOrder.PutData(apply);
+  m_buttonOrder.push_back(apply);
 }
 
 

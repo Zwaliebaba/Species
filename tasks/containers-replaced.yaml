@@ -1340,13 +1340,58 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    notes: >
+    notes: |
       The acceptance grep gained 2dArray, 2dSurfaceMap and AutoVector. It did
       not name them before, while T16 deleted all three headers — so every
       task in the plan could pass its own criteria with 15 users still
       compiling against headers about to be removed. This is the gate that
       catches that, which is why it is the tree-wide one.
-    status: todo
+
+      DONE 2026-08-03. 34 member declarations and 497 call sites across
+      NeuronClient, GameLogic and Species, plus fifteen headers whose only
+      remaining reference was an include they no longer used.
+
+      TWO SHIMS RATHER THAN 68 AND 13 HAND JUDGEMENTS, in NeuronCore/VectorUtils.h.
+
+      ValidIndex(vector, i) exists because of the EclWindow crash. Inherited
+      code uses a subscript where it means "is there an element here", and some
+      of it as a LOOP CONDITION — Engineer and Virii both ran
+      `while (m_positionHistory.ValidIndex(n))`, and TaskManagerInterface used
+      ValidIndex(0) as an emptiness test. Hand-translating 68 of those is how
+      the next one gets missed. The free function keeps every site provably
+      identical to what the list did. It is a RANGE test only; SlotMap's
+      member ValidIndex additionally tests occupancy and the two must not be
+      swapped.
+
+      EmptyAndDelete(vector) is transitional in exactly the way
+      SlotMap::EmptyAndDelete is, and disappears when ownership/T3-T6 make
+      these elements unique_ptr.
+
+      A THIRD ALLOCATOR MISMATCH, and this one was a live defect rather than a
+      risk introduced by the conversion. PrefsOtherWindow's m_languages holds
+      strdup results, and the legacy EmptyAndDelete called delete on them —
+      undefined behaviour on a malloc'd pointer. It survived because the block
+      is never reused, not because it was right. That is three now: the
+      FileDialog delete/delete[] mismatch found earlier, T5's free-on-new[]
+      caught in draft, and this one. The rule is the same each time — when
+      replacing a container that OWNED its elements, go and read what allocated
+      them.
+
+      m_spirits and m_lights each name several different members across the
+      tree, some already converted to SlotMap and some still lists, so the
+      call-site pass had to be receiver-aware: a bare m_spirits inside Engineer
+      is this task's vector, while g_location->m_spirits is a slot map that
+      keeps its own API.
+
+      Thirty-nine of the touched files were tab-indented and needed a
+      whole-file reformat commit first. That is the standing tax on this
+      codebase and it is worth budgeting for.
+
+      NOT DONE HERE: LListTests.cpp, DArrayTests.cpp and SliceWalkerTests.cpp
+      still name the legacy templates, because they are the characterisation
+      tests FOR those templates. T16 retires them in the same commit that
+      deletes the headers.
+    status: done
 
   - id: T16
     title: Delete the legacy container headers

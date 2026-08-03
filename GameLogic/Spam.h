@@ -66,7 +66,7 @@ class SpamInfection : public WorldObject
     Vector3 m_targetPos;
     float m_life;
 
-    LList<Vector3> m_positionHistory;
+    std::vector<Vector3> m_positionHistory;
 
   protected:
     void AdvanceIdle();

@@ -27,7 +27,7 @@ class Teleport : public Building
     void RenderSpirit(Vector3 const& _pos, int _teamId);
 
   public:
-    LList<WorldObjectId> m_inTransit; // Entities on the move
+    std::vector<WorldObjectId> m_inTransit; // Entities on the move
 
   public:
     Teleport();

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LList.h"
 #include "Entity.h"
 #include "WorldObject.h"
 #include "TaskManagerInterface.h"
@@ -26,9 +25,9 @@ class TaskManagerInterfaceIcons : public TaskManagerInterface
 
     float m_chatLogY;
 
-    LList<ScreenZone*> m_screenZones;             // All clickable areas on-screen
-    LList<ScreenZone*> m_newScreenZones;          // New zones generated this frame
-    LList<KeyboardShortcut*> m_keyboardShortcuts; // Keyboard shortcuts to screenzones
+    std::vector<ScreenZone*> m_screenZones;             // All clickable areas on-screen
+    std::vector<ScreenZone*> m_newScreenZones;          // New zones generated this frame
+    std::vector<KeyboardShortcut*> m_keyboardShortcuts; // Keyboard shortcuts to screenzones
     int m_currentScreenZone;
     int m_currentMouseScreenZone;
     int m_currentScrollZone;
@@ -38,7 +37,7 @@ class TaskManagerInterfaceIcons : public TaskManagerInterface
   public:
     int m_currentQuickUnit;
     int m_quickUnitDirection;
-    LList<QuickUnitButton*> m_quickUnitButtons;
+    std::vector<QuickUnitButton*> m_quickUnitButtons;
 
   protected:
     void AdvanceScrolling();

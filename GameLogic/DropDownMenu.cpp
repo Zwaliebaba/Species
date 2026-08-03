@@ -90,7 +90,7 @@ DropDownMenu::~DropDownMenu() { Empty(); }
 
 void DropDownMenu::Empty()
 {
-  m_options.EmptyAndDelete();
+  EmptyAndDelete(m_options);
   m_nextValue = 0;
 
   SelectOption(-1);
@@ -109,7 +109,7 @@ void DropDownMenu::AddOption(char const* _word, int _value)
 
   if (m_sortItems)
   {
-    int size = m_options.Size();
+    int size = static_cast<int>(m_options.size());
     int i;
     for (i = 0; i < size; ++i)
     {
@@ -118,11 +118,11 @@ void DropDownMenu::AddOption(char const* _word, int _value)
         break;
       }
     }
-    m_options.PutDataAtIndex(option, i);
+    m_options.insert(m_options.begin() + i, option);
   }
   else
   {
-    m_options.PutDataAtEnd(option);
+    m_options.push_back(option);
   }
 }
 
@@ -131,7 +131,7 @@ void DropDownMenu::SelectOption(int _value)
 {
   m_currentOption = FindValue(_value);
 
-  if (m_currentOption < 0 || m_currentOption >= m_options.Size())
+  if (m_currentOption < 0 || m_currentOption >= static_cast<int>(m_options.size()))
   {
     SetCaption(m_name);
   }
@@ -147,7 +147,7 @@ void DropDownMenu::SelectOption(int _value)
 
 bool DropDownMenu::SelectOption2(char const* _option)
 {
-  for (int i = 0; i < m_options.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_options.size()); ++i)
   {
     char* itemName = m_options[i]->m_word;
     if (stricmp(itemName, _option) == 0)
@@ -163,7 +163,7 @@ bool DropDownMenu::SelectOption2(char const* _option)
 
 int DropDownMenu::GetSelectionValue()
 {
-  if (m_currentOption >= 0 && m_currentOption < m_options.Size())
+  if (m_currentOption >= 0 && m_currentOption < static_cast<int>(m_options.size()))
   {
     return m_options[m_currentOption]->m_value;
   }
@@ -174,7 +174,7 @@ int DropDownMenu::GetSelectionValue()
 
 char const* DropDownMenu::GetSelectionName()
 {
-  if (m_currentOption < 0 || m_currentOption > m_options.Size())
+  if (m_currentOption < 0 || m_currentOption > static_cast<int>(m_options.size()))
   {
     return nullptr;
   }
@@ -192,7 +192,7 @@ void DropDownMenu::RegisterInt(int* _int)
 
 int DropDownMenu::FindValue(int _value)
 {
-  for (int i = 0; i < m_options.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_options.size()); ++i)
   {
     if (m_options[i]->m_value == _value)
     {
@@ -231,8 +231,8 @@ void DropDownMenu::CreateMenu()
   EclRegisterWindow(window);
 
   int screenH = g_renderer->ScreenH();
-  int numColumnsRequired = 1 + (m_h * m_options.Size()) / (screenH * 0.8f);
-  int numPerColumn = ceil((float)m_options.Size() / (float)numColumnsRequired);
+  int numColumnsRequired = 1 + (m_h * static_cast<int>(m_options.size())) / (screenH * 0.8f);
+  int numPerColumn = ceil((float)static_cast<int>(m_options.size()) / (float)numColumnsRequired);
 
   int index = 0;
 
@@ -240,7 +240,7 @@ void DropDownMenu::CreateMenu()
   {
     for (int i = 0; i < numPerColumn; ++i)
     {
-      if (index >= m_options.Size())
+      if (index >= static_cast<int>(m_options.size()))
         break;
 
       char* thisOption = m_options[index]->m_word;
@@ -253,7 +253,7 @@ void DropDownMenu::CreateMenu()
       menuOption->SetProperties(thisName, col * m_w + 2, (i + 1) * m_h, w, m_h, thisOption);
       menuOption->SetParentMenu(m_parent, this, m_options[index]->m_value);
       window->RegisterButton(menuOption);
-      window->m_buttonOrder.PutData(menuOption);
+      window->m_buttonOrder.push_back(menuOption);
       if (GetSelectionValue() == m_options[index]->m_value)
       {
         window->m_currentButton = index;

@@ -105,7 +105,7 @@ void AntHill::Destroy(float _intensity)
 
 bool AntHill::SearchingArea(Vector3 _pos)
 {
-  for (int i = 0; i < m_objectives.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_objectives.size()); ++i)
   {
     AntObjective* obj = m_objectives[i];
     float distance = (obj->m_pos - _pos).Mag();
@@ -119,7 +119,7 @@ bool AntHill::SearchingArea(Vector3 _pos)
 
 bool AntHill::TargettedEntity(WorldObjectId _id)
 {
-  for (int i = 0; i < m_objectives.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_objectives.size()); ++i)
   {
     AntObjective* obj = m_objectives[i];
     if (obj->m_targetId == _id)
@@ -288,7 +288,7 @@ bool AntHill::Advance()
   //
   // Is it time to look for a new objective?
 
-  if (!popLocked && GetHighResTime() > m_objectiveTimer && m_objectives.Size() < 3)
+  if (!popLocked && GetHighResTime() > m_objectiveTimer && static_cast<int>(m_objectives.size()) < 3)
   {
     Vector3 targetPos;
     WorldObjectId targetId;
@@ -310,7 +310,7 @@ bool AntHill::Advance()
       objective->m_targetId = targetId;
 
       objective->m_numToSend = 5 + 5 * (g_difficultyLevel / 10.0);
-      m_objectives.PutData(objective);
+      m_objectives.push_back(objective);
     }
 
     m_objectiveTimer = GetHighResTime() + syncrand() % 5;
@@ -320,7 +320,7 @@ bool AntHill::Advance()
   //
   // Send out ants to our existing objectives
 
-  if (!popLocked && m_objectives.Size() > 0 && GetHighResTime() > m_spawnTimer && m_numAntsInside > 0)
+  if (!popLocked && static_cast<int>(m_objectives.size()) > 0 && GetHighResTime() > m_spawnTimer && m_numAntsInside > 0)
   {
     Unit* unit = g_location->GetUnit(WorldObjectId(m_id.GetTeamId(), m_unitId, -1, -1));
     if (!unit)
@@ -328,7 +328,7 @@ bool AntHill::Advance()
       unit = g_location->m_teams[m_id.GetTeamId()].NewUnit(Entity::TypeArmyAnt, m_numAntsInside, &m_unitId, m_pos);
     }
 
-    int chosenIndex = syncrand() % m_objectives.Size();
+    int chosenIndex = syncrand() % static_cast<int>(m_objectives.size());
     AntObjective* objective = m_objectives[chosenIndex];
     Vector3 spawnPos = m_pos;
     spawnPos.y = g_location->m_landscape.m_heightMap->GetValue(spawnPos.x, spawnPos.z);
@@ -353,7 +353,7 @@ bool AntHill::Advance()
     objective->m_numToSend--;
     if (objective->m_numToSend <= 0)
     {
-      m_objectives.RemoveData(chosenIndex);
+      m_objectives.erase(m_objectives.begin() + chosenIndex);
     }
 
     m_spawnTimer = GetHighResTime() + 0.2f - (0.2 * g_difficultyLevel / 10.0);
@@ -415,7 +415,7 @@ void AntHill::Render(float _predictionTime)
   // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,140,0), 20, "Health %d", m_health );
   // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,120,0), 20, "%d Ants Inside", m_numAntsInside );
   // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,100,0), 20, "%d Spirits Inside", m_numSpiritsInside );
-//    for( int i = 0; i < m_objectives.Size(); ++i )
+//    for( int i = 0; i < static_cast<int>(m_objectives.size()); ++i )
 //    {
 //        AntObjective *objective = m_objectives[i];
 //        RenderSphere( objective->m_pos, 5.0f );

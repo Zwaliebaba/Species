@@ -16,7 +16,7 @@ class PrefsOtherWindow : public SpeciesWindow
     int m_largeMenus;
     int m_automaticCamera;
 
-    LList<char*> m_languages;
+    std::vector<char*> m_languages;
 
   public:
     PrefsOtherWindow();

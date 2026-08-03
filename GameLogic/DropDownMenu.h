@@ -40,7 +40,7 @@ class DropDownWindow : public SpeciesWindow
 class DropDownMenu : public SpeciesButton
 {
   protected:
-    LList<DropDownOptionData*> m_options;
+    std::vector<DropDownOptionData*> m_options;
     int m_currentOption;
     int* m_int;
     bool m_sortItems;

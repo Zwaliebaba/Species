@@ -24,7 +24,7 @@ class Centipede : public Entity
     Vector3 m_targetPos;
     WorldObjectId m_targetEntity;
 
-    LList<Vector3> m_positionHistory;
+    std::vector<Vector3> m_positionHistory;
     bool m_linked;
     float m_panic;
     int m_numSpiritsEaten;
