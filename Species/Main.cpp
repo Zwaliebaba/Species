@@ -631,7 +631,9 @@ void LocationGameLoop()
 
 void SwitchTaskManagerForX360Controller()
 {
-  static int oldControlType = InputMode::INPUT_MODE_KEYBOARD;
+  // Typed, not int. It holds an InputMode and is only ever compared against
+  // one; `int` was the pre-scoped-enum spelling.
+  static InputMode oldControlType = InputMode::INPUT_MODE_KEYBOARD;
 
   if (oldControlType != InputMode::INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD &&
       !TheTaskManagerInterface()->m_visible)

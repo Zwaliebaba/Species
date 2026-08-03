@@ -253,6 +253,22 @@ tasks:
       script leaves the enumerator DECLARATIONS bare, and skips comment lines
       and any line containing a string literal. T3 had to be repaired for both.
 
+      THREE RED BUILDS ON THIS TASK, all the same root cause: I surveyed for
+      integer interop by grepping the NAMES of variables I expected to hold the
+      enum, and the interop was in shapes I had not listed. The three that got
+      through were `errors[state]` (subscripting), `if (_key && _mood)` (boolean
+      context, meaning "not INPUT_MODE_NONE" because that enumerator is 0), and
+      `static int oldControlType = InputMode::INPUT_MODE_KEYBOARD` in Main.cpp
+      (an int variable holding the enum).
+
+      The survey that works is by SHAPE, not by name. For any enum about to be
+      scoped, grep for: the enum used as a subscript, in a boolean or arithmetic
+      context, and any `int`/`bool` variable initialised from one of its
+      enumerators. The last of those is a one-line grep and would have caught
+      the third failure:
+      grep -rnE '\b(int|bool|unsigned|short|char)\s+\w*\s*=\s*EnumName::'
+
+
       PARSE_SUCCESS in InputDriver.h is a use site, not a declaration, so the
       macro now reads `(InputParserState::STATE_DONE == (x))` — worth noting
       because a macro body is the one place a scoped enumerator is easy to miss.
