@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <vector>
 
 #include "SlotMap.h"
@@ -132,12 +134,12 @@ class SoundSystem
     SoundInstanceId* m_channels;
     int m_numChannels;
 
-    SlotMap<SoundSourceBlueprint*> m_entityBlueprints;   // Indexed on Entity::m_type
-    SlotMap<SoundSourceBlueprint*> m_buildingBlueprints; // Indexed on Building::m_type
-    SlotMap<SoundSourceBlueprint*> m_otherBlueprints;    // Indexed on SoundSourceBlueprint
-    SlotMap<DspBlueprint*> m_filterBlueprints;           // Indexed on SoundLibrary3d::FX types
+    SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_entityBlueprints;   // Indexed on Entity::m_type
+    SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_buildingBlueprints; // Indexed on Building::m_type
+    SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_otherBlueprints;    // Indexed on SoundSourceBlueprint
+    SlotMap<std::unique_ptr<DspBlueprint>> m_filterBlueprints;           // Indexed on SoundLibrary3d::FX types
 
-    SlotMap<SampleGroup*> m_sampleGroups;
+    SlotMap<std::unique_ptr<SampleGroup>> m_sampleGroups;
 
   protected:
     void ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, const char* _entityName);
