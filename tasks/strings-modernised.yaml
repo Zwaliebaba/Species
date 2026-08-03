@@ -775,7 +775,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
       Added 2026-08-03 in the restart, on T5's own recommendation: "whoever
       does this should consider replacing the void* with an overload set
@@ -796,6 +796,55 @@ tasks:
       this task exists.
 
       parallel_safe false: eleven files, four of which T5 and T15 also list.
+
+      DONE 2026-08-03. Four public overloads — unsigned char*, bool*, int*,
+      float*, char* — plus two private helpers holding the shared body. No void*
+      anywhere. 82 call sites lost their type tag; the two remaining of the 84
+      were the declaration and the definition.
+
+      THE FOUR SITES THE SCOPING NOTE PREDICTED WERE THERE AND ARE FIXED.
+      BuildingsWindow passed `&staticShape->m_shapeName` — a char(*)[256], not a
+      char* — for the shape and script fields at :456, :475, :483 and :491. They
+      worked because the address of an array equals the address of its first
+      element and the void* erased the difference. The typed overload rejects
+      them, so the `&` is gone. That is the whole argument for this task in four
+      lines of diff.
+
+      FIVE MORE THE NOTE DID NOT PREDICT, all registrations of the wrong type.
+      Building::m_dynamic, Building::m_isGlobal, Triffid::m_spawn[i] and
+      InstantUnit::m_inAUnit are `bool`, registered as TypeChar and cast to
+      unsigned char*. Triffid::m_useTrigger is an `int`, also registered as
+      TypeChar — so the editor was reading and writing ONLY ITS LOW BYTE, which
+      works on a little-endian machine for a field bounded to 0..1 and is wrong
+      in every other sense.
+
+      The two were handled differently on purpose. m_useTrigger now takes the
+      int* overload, which reads and writes the whole int: for bounds of 0..1
+      that is the same value and the same level-file output, and it removes a
+      partial write. The four bools got their OWN overload that does exactly
+      what the void* did — reinterpret_cast to unsigned char* — because the
+      alternative is deciding what an editor control for a bool should look
+      like, and that is a change to the editor rather than to this parameter's
+      type. It is recorded here rather than fixed quietly.
+
+      The dead FLOAT and INTGR macros went with the tags: LandscapeWindow
+      defined them as aliases for the two enumerators and nothing else used
+      them.
+
+      Registration order is preserved exactly — properties, bounds, callback,
+      Register<type>, RegisterButton, then the scrollers — because m_buttons
+      order is render and tab order.
+
+      Acceptance held on the no-string-changes line: the strcpy-family counts
+      over SpeciesWindow.cpp (4), BuildingsWindow.cpp (1), LandscapeWindow.cpp
+      (0) and InputField.cpp (15) are the same before and after. The two
+      sprintfs that build the scroller names moved into CreateValueScrollers
+      unchanged; they belong to T5.
+
+      Not compiled here (Linux). Every one of the nine mismatches above is a
+      compile error now rather than a silent cast, which makes CI's x64 Debug
+      build the check that matters — and the Garden smoke test cannot reach any
+      of this, since all of it is the level editor.
 
   - id: T15
     title: Convert the remaining GameLogic editor and menu windows

@@ -141,20 +141,18 @@ void LandscapeTileEditWindow::Create()
 
   height += 6;
 
-#define FLOAT InputField::TypeFloat
-#define INTGR InputField::TypeInt
 #define Y height += pitch
   int celSz = floorf(land->m_heightMap->m_cellSizeX);
-  CreateValueControl(LANGUAGEPHRASE("editor_noiseperiod"), FLOAT, &m_tileDef->m_fractalDimension, Y, 0.01f, 0.0f, 10.0f, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_noisescale"), FLOAT, &m_tileDef->m_heightScale, Y, 0.02f, 0.0f, 10.0f, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_height"), FLOAT, &m_tileDef->m_desiredHeight, Y, 5.0f, 0.0f, 1000.0f, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_method"), INTGR, &m_tileDef->m_generationMethod, Y, 1, 0, 2, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_lowlandsmooth"), FLOAT, &m_tileDef->m_lowlandSmoothingFactor, Y, 0.02f, 0.0f, 3.0f, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_posX"), INTGR, &m_tileDef->m_posX, Y, celSz, -10000, 10000, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_posY"), FLOAT, &m_tileDef->m_posY, Y, 0.5f, -1000, 1000, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_posZ"), INTGR, &m_tileDef->m_posZ, Y, celSz, -10000, 10000, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_size"), INTGR, &m_tileDef->m_size, Y, 10, 0, 10000, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_seed"), INTGR, &m_tileDef->m_randomSeed, Y, 1, 0, 1e10, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_noiseperiod"), &m_tileDef->m_fractalDimension, Y, 0.01f, 0.0f, 10.0f, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_noisescale"), &m_tileDef->m_heightScale, Y, 0.02f, 0.0f, 10.0f, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_height"), &m_tileDef->m_desiredHeight, Y, 5.0f, 0.0f, 1000.0f, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_method"), &m_tileDef->m_generationMethod, Y, 1, 0, 2, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_lowlandsmooth"), &m_tileDef->m_lowlandSmoothingFactor, Y, 0.02f, 0.0f, 3.0f, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_posX"), &m_tileDef->m_posX, Y, celSz, -10000, 10000, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_posY"), &m_tileDef->m_posY, Y, 0.5f, -1000, 1000, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_posZ"), &m_tileDef->m_posZ, Y, celSz, -10000, 10000, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_size"), &m_tileDef->m_size, Y, 10, 0, 10000, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_seed"), &m_tileDef->m_randomSeed, Y, 1, 0, 1e10, gen);
 #undef FLOAT
 #undef INTGR
 #undef Y
@@ -212,8 +210,8 @@ void LandscapeFlattenAreaEditWindow::Create()
   gen->SetShortProperties(LANGUAGEPHRASE("editor_generate"), 10, height += pitch, m_w - 20);
   RegisterButton(gen);
 
-  CreateValueControl(LANGUAGEPHRASE("editor_size"), InputField::TypeFloat, &m_areaDef->m_size, height += pitch, 1, 0, 1000, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_height"), InputField::TypeFloat, &m_areaDef->m_centre.y, height += pitch, 1, -1000, 1000, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_size"), &m_areaDef->m_size, height += pitch, 1, 0, 1000, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_height"), &m_areaDef->m_centre.y, height += pitch, 1, -1000, 1000, gen);
 
   LandscapeFlattenAreaDeleteButton* del = new LandscapeFlattenAreaDeleteButton(m_areaId);
   del->SetShortProperties(LANGUAGEPHRASE("editor_delete"), 10, height += pitch, buttonWidth);
@@ -396,22 +394,19 @@ void LandscapeEditWindow::Create()
 
   height += 8;
 
-#define FLOAT InputField::TypeFloat
-#define INTGR InputField::TypeInt
 #define Y height += pitch
 
   LandscapeDef* landDef = &g_location->m_levelFile->m_landscape;
-  CreateValueControl(LANGUAGEPHRASE("editor_outsideheight"), FLOAT, &landDef->m_outsideHeight, Y, 1.0f, -100, 100, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_cellsize"), FLOAT, &landDef->m_cellSize, Y, 1, 1.0f, 100.0f, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_worldsizex"), INTGR, &landDef->m_worldSizeX, Y, 10, 1, 1e6, gen);
-  CreateValueControl(LANGUAGEPHRASE("editor_worldsizez"), INTGR, &landDef->m_worldSizeZ, Y, 10, 1, 1e6, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_outsideheight"), &landDef->m_outsideHeight, Y, 1.0f, -100, 100, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_cellsize"), &landDef->m_cellSize, Y, 1, 1.0f, 100.0f, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_worldsizex"), &landDef->m_worldSizeX, Y, 10, 1, 1e6, gen);
+  CreateValueControl(LANGUAGEPHRASE("editor_worldsizez"), &landDef->m_worldSizeZ, Y, 10, 1, 1e6, gen);
 
 #undef FLOAT
 #undef INTGR
 #undef Y
 
-  CreateValueControl(LANGUAGEPHRASE("editor_movebuildings"), InputField::TypeInt, g_locationEditor->MoveBuildingsWithLandscapeField(),
-                     height += pitch, 1, 0, 1);
+  CreateValueControl(LANGUAGEPHRASE("editor_movebuildings"), g_locationEditor->MoveBuildingsWithLandscapeField(), height += pitch, 1, 0, 1);
 }
 
 
@@ -729,8 +724,8 @@ void LandscapeGuideGridWindow::Create()
   generate->SetShortProperties(LANGUAGEPHRASE("editor_generate"), 10, 25, 75);
   RegisterButton(generate);
 
-  CreateValueControl(LANGUAGEPHRASE("editor_resolution"), InputField::TypeInt, &m_guideGridPower, 25, 1, 0, 5, generate, 100, 150);
-  CreateValueControl(LANGUAGEPHRASE("editor_toolsize"), InputField::TypeFloat, &m_toolSize, 45, 1, 1.0f, 40.0f, nullptr, 100, 150);
+  CreateValueControl(LANGUAGEPHRASE("editor_resolution"), &m_guideGridPower, 25, 1, 0, 5, generate, 100, 150);
+  CreateValueControl(LANGUAGEPHRASE("editor_toolsize"), &m_toolSize, 45, 1, 1.0f, 40.0f, nullptr, 100, 150);
 
 
   //

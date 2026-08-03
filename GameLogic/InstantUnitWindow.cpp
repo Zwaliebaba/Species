@@ -177,9 +177,9 @@ void InstantUnitEditWindow::Create()
   y += 7;
 
   InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(g_locationEditor->GetSelectionId());
-  CreateValueControl(LANGUAGEPHRASE("editor_numentities"), InputField::TypeInt, &iu->m_number, y += buttonPitch, 1, 1, 1000);
-  CreateValueControl(LANGUAGEPHRASE("editor_spread"), InputField::TypeFloat, &iu->m_spread, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
-  CreateValueControl(LANGUAGEPHRASE("editor_inunit"), InputField::TypeChar, &iu->m_inAUnit, y += buttonPitch, 1, 0, 1);
+  CreateValueControl(LANGUAGEPHRASE("editor_numentities"), &iu->m_number, y += buttonPitch, 1, 1, 1000);
+  CreateValueControl(LANGUAGEPHRASE("editor_spread"), &iu->m_spread, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
+  CreateValueControl(LANGUAGEPHRASE("editor_inunit"), &iu->m_inAUnit, y += buttonPitch, 1, 0, 1);
 
   y += 7;
 }

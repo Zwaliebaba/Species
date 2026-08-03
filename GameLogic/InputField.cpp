@@ -449,10 +449,10 @@ void ColourWindow::Create()
     unsigned char *b = ((unsigned char *) m_value)+2;
     unsigned char *a = ((unsigned char *) m_value)+3;
 
-    CreateValueControl( LANGUAGEPHRASE("editor_red"),   InputField::TypeChar, r, y,    1, 0, 255, m_callback, -1, m_w - 80 );
-    CreateValueControl( LANGUAGEPHRASE("editor_green"), InputField::TypeChar, g, y+=h, 1, 0, 255, m_callback, -1, m_w - 80 );
-    CreateValueControl( LANGUAGEPHRASE("editor_blue"),  InputField::TypeChar, b, y+=h, 1, 0, 255, m_callback, -1, m_w - 80 );
-    CreateValueControl( LANGUAGEPHRASE("editor_alpha"), InputField::TypeChar, a, y+=h, 1, 0, 255, m_callback, -1, m_w - 80 );
+    CreateValueControl(LANGUAGEPHRASE("editor_red"), r, y, 1, 0, 255, m_callback, -1, m_w - 80);
+    CreateValueControl(LANGUAGEPHRASE("editor_green"), g, y += h, 1, 0, 255, m_callback, -1, m_w - 80);
+    CreateValueControl(LANGUAGEPHRASE("editor_blue"), b, y += h, 1, 0, 255, m_callback, -1, m_w - 80);
+    CreateValueControl(LANGUAGEPHRASE("editor_alpha"), a, y += h, 1, 0, 255, m_callback, -1, m_w - 80);
 }
 
 

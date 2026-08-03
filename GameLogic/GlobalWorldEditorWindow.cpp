@@ -148,7 +148,7 @@ void GlobalWorldEditorWindow::Create()
     newLoc->SetShortProperties( LANGUAGEPHRASE("editor_createnewlocation"), 10, y += h, m_w - 20 );
     RegisterButton( newLoc );
 
-    CreateValueControl( LANGUAGEPHRASE("dialog_name"), InputField::TypeString, s_locationName, y +=h, 0, 0, 0, nullptr, 10, m_w-20 );
+    CreateValueControl(LANGUAGEPHRASE("dialog_name"), s_locationName, y += h, 0, 0, 0, nullptr, 10, m_w - 20);
 
     y += h;
 

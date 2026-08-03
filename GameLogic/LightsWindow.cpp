@@ -153,14 +153,14 @@ void LightsEditWindow::Create()
     RegisterButton(gammaUp);
 
     sprintf(buttonName, "Y%d", i);
-    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_front[1]), height += pitch, 0.01f, -20, 20, nullptr);
+    CreateValueControl(buttonName, &(light->m_front[1]), height += pitch, 0.01f, -20, 20, nullptr);
 
     sprintf(buttonName, "R%d", i);
-    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[0]), height += pitch, 0.02f, 0, 5, nullptr);
+    CreateValueControl(buttonName, &(light->m_colour[0]), height += pitch, 0.02f, 0, 5, nullptr);
     sprintf(buttonName, "G%d", i);
-    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[1]), height += pitch, 0.02f, 0, 5, nullptr);
+    CreateValueControl(buttonName, &(light->m_colour[1]), height += pitch, 0.02f, 0, 5, nullptr);
     sprintf(buttonName, "B%d", i);
-    CreateValueControl(buttonName, InputField::TypeFloat, &(light->m_colour[2]), height += pitch, 0.02f, 0, 5, nullptr);
+    CreateValueControl(buttonName, &(light->m_colour[2]), height += pitch, 0.02f, 0, 5, nullptr);
 
     height += 6;
   }
