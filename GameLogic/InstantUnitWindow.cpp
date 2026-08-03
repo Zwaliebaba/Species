@@ -55,7 +55,7 @@ class TeamButton1 : public SpeciesButton
 
     void MouseUp()
     {
-      InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->GetSelectionId());
+      InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(g_locationEditor->GetSelectionId());
       if (iu)
       {
         iu->m_teamId = m_teamId;
@@ -64,7 +64,7 @@ class TeamButton1 : public SpeciesButton
 
     void Render(int realX, int realY, bool highlighted, bool clicked)
     {
-      InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->GetSelectionId());
+      InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(g_locationEditor->GetSelectionId());
       if (iu)
       {
         if (iu->m_teamId == m_teamId)
@@ -119,10 +119,13 @@ class DeleteInstantUnitButton : public SpeciesButton
       }
       else
       {
-        InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->GetSelectionId());
-        delete iu;
-
-        g_location->m_levelFile->m_instantUnits.RemoveData(g_locationEditor->GetSelectionId());
+        std::vector<InstantUnit*>& units = g_location->m_levelFile->m_instantUnits;
+        const int selectionId = g_locationEditor->GetSelectionId();
+        if (selectionId >= 0 && selectionId < static_cast<int>(units.size()))
+        {
+          delete units[selectionId];
+          units.erase(units.begin() + selectionId);
+        }
         EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
         g_locationEditor->SetTool(LocationEditorAccess::ToolNone);
         g_locationEditor->SetSelectionId(-1);
@@ -173,7 +176,7 @@ void InstantUnitEditWindow::Create()
 
   y += 7;
 
-  InstantUnit* iu = g_location->m_levelFile->m_instantUnits.GetData(g_locationEditor->GetSelectionId());
+  InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(g_locationEditor->GetSelectionId());
   CreateValueControl(LANGUAGEPHRASE("editor_numentities"), InputField::TypeInt, &iu->m_number, y += buttonPitch, 1, 1, 1000);
   CreateValueControl(LANGUAGEPHRASE("editor_spread"), InputField::TypeFloat, &iu->m_spread, y += buttonPitch, 1.0f, 0.0f, 1000.0f);
   CreateValueControl(LANGUAGEPHRASE("editor_inunit"), InputField::TypeChar, &iu->m_inAUnit, y += buttonPitch, 1, 0, 1);
@@ -219,8 +222,8 @@ class CreateButton : public SpeciesButton
           iu->m_teamId = 0;
           iu->m_type = i;
           iu->m_inAUnit = false;
-          g_locationEditor->SetSelectionId(g_location->m_levelFile->m_instantUnits.Size());
-          g_location->m_levelFile->m_instantUnits.PutData(iu);
+          g_locationEditor->SetSelectionId(static_cast<int>(g_location->m_levelFile->m_instantUnits.size()));
+          g_location->m_levelFile->m_instantUnits.push_back(iu);
 
           // Create an edit window for the new instant unit
           EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));

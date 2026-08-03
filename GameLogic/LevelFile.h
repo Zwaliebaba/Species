@@ -65,10 +65,15 @@ class CamAnimNode
 class CameraAnimation
 {
   public:
-    LList<CamAnimNode*> m_nodes;
+    std::vector<CamAnimNode*> m_nodes;
     char m_name[CAMERA_ANIM_MAX_NAME_LEN + 1];
 
-    ~CameraAnimation() { m_nodes.EmptyAndDelete(); }
+    ~CameraAnimation()
+    {
+      for (CamAnimNode* node : m_nodes)
+        delete node;
+      m_nodes.clear();
+    }
 };
 
 
@@ -117,7 +122,7 @@ class LandscapeFlattenArea
 class LandscapeDef
 {
   public:
-    LList<LandscapeTile*> m_tiles;
+    std::vector<LandscapeTile*> m_tiles;
     std::vector<LandscapeFlattenArea*> m_flattenAreas;
     float m_cellSize;
     int m_worldSizeX;
@@ -134,7 +139,9 @@ class LandscapeDef
 
     ~LandscapeDef()
     {
-      m_tiles.EmptyAndDelete();
+      for (LandscapeTile* tile : m_tiles)
+        delete tile;
+      m_tiles.clear();
       for (LandscapeFlattenArea* area : m_flattenAreas)
         delete area;
       m_flattenAreas.clear();
@@ -205,11 +212,11 @@ class LevelFile
     char m_wavesColourFilename[MAX_FILENAME_LEN];
     char m_waterColourFilename[MAX_FILENAME_LEN];
 
-    LList<CameraMount*> m_cameraMounts;
-    LList<CameraAnimation*> m_cameraAnimations;
-    LList<Building*> m_buildings;
-    LList<InstantUnit*> m_instantUnits;
-    LList<Light*> m_lights;
+    std::vector<CameraMount*> m_cameraMounts;
+    std::vector<CameraAnimation*> m_cameraAnimations;
+    std::vector<Building*> m_buildings;
+    std::vector<InstantUnit*> m_instantUnits;
+    std::vector<Light*> m_lights;
     std::vector<Route*> m_routes;
     std::vector<RunningProgram*> m_runningPrograms;
     std::vector<GlobalEventCondition*> m_primaryObjectives;
@@ -231,6 +238,20 @@ class LevelFile
     Building* GetBuilding(int _id);
     CameraMount* GetCameraMount(char const* _name);
     int GetCameraAnimId(char const* _name);
+
+    // Returns nullptr when _id is out of range. The editor holds animation ids
+    // across frames — LocationEditor::m_selectionId and
+    // CameraAnimSecondaryEditWindow::m_animId — and deleting an animation from
+    // the main window does not renumber them, so a held id can outlive the
+    // entry it names. LList::GetData answered that with nullptr; std::vector
+    // would not, so the check lives here rather than at each call site.
+    CameraAnimation* GetCameraAnim(int _id);
+
+    // Also nullptr out of range, and here the null is load-bearing rather than
+    // defensive: the instant-unit team buttons render every frame the editor
+    // window is up and pass LocationEditor::m_selectionId straight in, which is
+    // -1 whenever nothing is selected. Both already test the result.
+    InstantUnit* GetInstantUnit(int _id);
     void RemoveBuilding(int _id);
     int GenerateNewRouteId();
     Route* GetRoute(int _id);

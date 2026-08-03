@@ -31,7 +31,7 @@ class NewAnimButton : public SpeciesButton
     {
       CameraAnimation* anim = new CameraAnimation;
       sprintf(anim->m_name, "CamAnim%d", speciesRandom() & 0x3ff);
-      g_location->m_levelFile->m_cameraAnimations.PutData(anim);
+      g_location->m_levelFile->m_cameraAnimations.push_back(anim);
 
       CameraAnimMainEditWindow* parent = (CameraAnimMainEditWindow*)m_parent;
       parent->RemoveButtons();
@@ -45,13 +45,13 @@ class DeleteAnimButton : public SpeciesButton
   public:
     void MouseUp()
     {
-      LList<CameraAnimation*>* anims = &g_location->m_levelFile->m_cameraAnimations;
-      for (int i = 0; i < anims->Size(); ++i)
+      std::vector<CameraAnimation*>* anims = &g_location->m_levelFile->m_cameraAnimations;
+      for (int i = 0; i < static_cast<int>(anims->size()); ++i)
       {
-        if (stricmp(anims->GetData(i)->m_name, m_name) == 0)
+        if (stricmp((*anims)[i]->m_name, m_name) == 0)
         {
-          delete anims->GetData(i);
-          anims->RemoveData(i);
+          delete (*anims)[i];
+          anims->erase(anims->begin() + i);
           break;
         }
       }
@@ -118,10 +118,8 @@ void CameraAnimMainEditWindow::AddButtons()
 
   height += 10;
 
-  for (int i = 0; i < g_location->m_levelFile->m_cameraAnimations.Size(); ++i)
+  for (CameraAnimation* anim : g_location->m_levelFile->m_cameraAnimations)
   {
-    CameraAnimation* anim = g_location->m_levelFile->m_cameraAnimations.GetData(i);
-
     char buttonName[64];
 
     sprintf(buttonName, "name:%s", anim->m_name);
@@ -192,13 +190,13 @@ class CamBeforeMountButton : public SpeciesButton
       CameraAnimSecondaryEditWindow* parent = (CameraAnimSecondaryEditWindow*)m_parent;
       if (parent->m_newNodeArmed)
       {
-        CameraAnimation* anim = g_location->m_levelFile->m_cameraAnimations[parent->m_animId];
+        CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(parent->m_animId);
         DEBUG_ASSERT(anim);
 
         CamAnimNode* node = new CamAnimNode;
         node->m_mountName = strdup(MAGIC_MOUNT_NAME_START_POS);
 
-        anim->m_nodes.PutData(node);
+        anim->m_nodes.push_back(node);
 
         parent->m_newNodeArmed = false;
         parent->RemoveButtons();
@@ -214,7 +212,7 @@ class StartPreviewButton : public SpeciesButton
     void MouseUp()
     {
       CameraAnimSecondaryEditWindow* parent = (CameraAnimSecondaryEditWindow*)m_parent;
-      CameraAnimation* anim = g_location->m_levelFile->m_cameraAnimations.GetData(parent->m_animId);
+      CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(parent->m_animId);
       g_camera->PlayAnimation(anim);
     }
 };
@@ -240,14 +238,15 @@ class DeleteNodeButton : public SpeciesButton
     void MouseUp()
     {
       CameraAnimSecondaryEditWindow* parent = (CameraAnimSecondaryEditWindow*)m_parent;
-      CameraAnimation* anim = g_location->m_levelFile->m_cameraAnimations.GetData(parent->m_animId);
+      CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(parent->m_animId);
+      DEBUG_ASSERT(anim);
 
       char* mountName = m_name + 7;
-      for (int i = 0; i < anim->m_nodes.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(anim->m_nodes.size()); ++i)
       {
         if (stricmp(anim->m_nodes[i]->m_mountName, mountName) == 0)
         {
-          anim->m_nodes.RemoveData(i);
+          anim->m_nodes.erase(anim->m_nodes.begin() + i);
           break;
         }
       }
@@ -308,12 +307,12 @@ void CameraAnimSecondaryEditWindow::AddButtons()
 
   int height = 49;
   int pitch = 17;
-  CameraAnimation* anim = g_location->m_levelFile->m_cameraAnimations.GetData(m_animId);
+  CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(m_animId);
   if (anim)
   {
-    for (int j = 0; j < anim->m_nodes.Size(); ++j)
+    for (int j = 0; j < static_cast<int>(anim->m_nodes.size()); ++j)
     {
-      CamAnimNode* node = anim->m_nodes.GetData(j);
+      CamAnimNode* node = anim->m_nodes[j];
 
       int x = 10;
 

@@ -1713,9 +1713,8 @@ void GlobalWorld::LoadGame(const char* _filename)
 
     // Load all the level files for the location
     LevelFile levFile("null", loc->m_mapFilename);
-    for (int b = 0; b < levFile.m_buildings.Size(); ++b)
+    for (Building* building : levFile.m_buildings)
     {
-      Building* building = levFile.m_buildings[b];
       AddLevelBuildingToGlobalBuildings(building, loc->m_id);
     }
 
@@ -1726,9 +1725,8 @@ void GlobalWorld::LoadGame(const char* _filename)
     {
       LevelFile levFile(missionFileName, loc->m_mapFilename);
 
-      for (int b = 0; b < levFile.m_buildings.Size(); ++b)
+      for (Building* building : levFile.m_buildings)
       {
-        Building* building = levFile.m_buildings[b];
         AddLevelBuildingToGlobalBuildings(building, loc->m_id);
 
         if (building->m_type == Building::TypeAntHill || building->m_type == Building::TypeTriffid || building->m_type ==

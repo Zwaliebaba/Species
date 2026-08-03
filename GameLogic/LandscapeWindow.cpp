@@ -67,7 +67,7 @@ class LandscapeTileButton : public SpeciesButton
 
         LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
         LandscapeTile* tile = new LandscapeTile();
-        g_location->m_levelFile->m_landscape.m_tiles.PutDataAtEnd(tile);
+        g_location->m_levelFile->m_landscape.m_tiles.push_back(tile);
         tile->m_size = m_def->m_size;
         tile->m_posX = _pos.x - tile->m_size / 2;
         tile->m_posY = m_def->m_posY;
@@ -112,7 +112,7 @@ void LandscapeTileEditWindow::Create()
 {
   SpeciesWindow::Create();
 
-  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles.GetData(m_tileId);
+  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_tileId];
   Landscape* land = &g_location->m_landscape;
 
   int height = 5;
@@ -238,7 +238,7 @@ class NewTileButton : public SpeciesButton
 
       LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
       LandscapeTile* tile = new LandscapeTile();
-      g_location->m_levelFile->m_landscape.m_tiles.PutDataAtEnd(tile);
+      g_location->m_levelFile->m_landscape.m_tiles.push_back(tile);
       tile->m_size = 384;
       tile->m_posX = _pos.x - tile->m_size / 2;
       tile->m_posY = 0.0f;
@@ -298,7 +298,7 @@ class ScaleLandscapeButton : public SpeciesButton
 
       LevelFile* levelFile = g_location->m_levelFile;
 
-      for (int i = 0; i < levelFile->m_landscape.m_tiles.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(levelFile->m_landscape.m_tiles.size()); ++i)
       {
         LandscapeTile* tile = levelFile->m_landscape.m_tiles[i];
         tile->m_posX *= m_scaleFactor;
@@ -314,9 +314,8 @@ class ScaleLandscapeButton : public SpeciesButton
       //
       // Buildings
 
-      for (int i = 0; i < levelFile->m_buildings.Size(); ++i)
+      for (Building* building : levelFile->m_buildings)
       {
-        Building* building = levelFile->m_buildings[i];
         building->m_pos.x *= m_scaleFactor;
         building->m_pos.z *= m_scaleFactor;
       }
@@ -324,7 +323,7 @@ class ScaleLandscapeButton : public SpeciesButton
       //
       // Instant units
 
-      for (int i = 0; i < levelFile->m_instantUnits.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(levelFile->m_instantUnits.size()); ++i)
       {
         InstantUnit* unit = levelFile->m_instantUnits[i];
         unit->m_posX *= m_scaleFactor;
@@ -335,7 +334,7 @@ class ScaleLandscapeButton : public SpeciesButton
       //
       // Cam mounts
 
-      for (int i = 0; i < levelFile->m_cameraMounts.Size(); ++i)
+      for (int i = 0; i < static_cast<int>(levelFile->m_cameraMounts.size()); ++i)
       {
         CameraMount* mount = levelFile->m_cameraMounts[i];
         mount->m_pos.x *= m_scaleFactor;
@@ -710,7 +709,7 @@ LandscapeGuideGridWindow::~LandscapeGuideGridWindow() {}
 
 void LandscapeGuideGridWindow::Create()
 {
-  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles.GetData(m_tileId);
+  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_tileId];
   m_guideGridPower = m_tileDef->GuideGridGetPower();
 
   int gridW = m_w - 80;

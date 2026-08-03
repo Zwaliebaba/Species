@@ -236,7 +236,7 @@ void LevelFile::ParseCameraMounts(TextReader* _in)
     cmnt->m_up.z = atof(word);
     cmnt->m_up.Normalise();
 
-    m_cameraMounts.PutData(cmnt);
+    m_cameraMounts.push_back(cmnt);
   }
 }
 
@@ -285,10 +285,10 @@ void LevelFile::ParseCameraAnims(TextReader* _in)
       node->m_duration = atof(word);
       ASSERT_TEXT(node->m_duration >= 0.0f && node->m_duration < 60.0f, "Bad camera animation transition time in level file %s", m_missionFilename);
 
-      anim->m_nodes.PutDataAtEnd(node);
+      anim->m_nodes.push_back(node);
     }
 
-    m_cameraAnimations.PutData(anim);
+    m_cameraAnimations.push_back(anim);
   }
 }
 
@@ -365,7 +365,7 @@ void LevelFile::ParseBuildings(TextReader* _in, bool _dynamic)
         }
       }
 
-      m_buildings.PutData(building);
+      m_buildings.push_back(building);
     }
   }
 }
@@ -448,7 +448,7 @@ void LevelFile::ParseInstantUnits(TextReader* _in)
       }
     }
 
-    m_instantUnits.PutData(iu);
+    m_instantUnits.push_back(iu);
 
     // Create some additional centipedes if necessary
     for (int i = 0; i < numCopies; i++)
@@ -458,7 +458,7 @@ void LevelFile::ParseInstantUnits(TextReader* _in)
       // Spread them out a bit
       copy->m_posX = iu->m_posX + sfrand(60);
       copy->m_posZ = iu->m_posZ + sfrand(60);
-      m_instantUnits.PutData(copy);
+      m_instantUnits.push_back(copy);
     }
   }
 }
@@ -524,7 +524,7 @@ void LevelFile::ParseLandscapeTiles(TextReader* _in)
     }
 
     LandscapeTile* def = new LandscapeTile();
-    m_landscape.m_tiles.PutDataAtEnd(def);
+    m_landscape.m_tiles.push_back(def);
 
     def->m_posX = atoi(word);
 
@@ -602,7 +602,7 @@ void LevelFile::ParseLights(TextReader* _in)
 {
   bool ignoreLights = false;
 
-  if (m_lights.Size() > 0)
+  if (!m_lights.empty())
   {
     // This function is called first when parsing the level file and
     // secondly when parsing the map file. We only get here if the
@@ -627,7 +627,7 @@ void LevelFile::ParseLights(TextReader* _in)
       continue;
 
     Light* light = new Light;
-    m_lights.PutData(light);
+    m_lights.push_back(light);
 
     light->m_front[0] = atof(word);
 
@@ -796,10 +796,8 @@ void LevelFile::GenerateAutomaticObjectives()
   //
   // Add secondary objectives for trunk ports and research items
 
-  for (int i = 0; i < m_buildings.Size(); ++i)
+  for (Building* building : m_buildings)
   {
-    Building* building = m_buildings.GetData(i);
-
     if (building->m_type != Building::TypeResearchItem && building->m_type != Building::TypeTrunkPort)
     {
       continue;
@@ -853,9 +851,8 @@ void LevelFile::GenerateAutomaticObjectives()
           //
           // Is there a Control Tower that can enable this trunk port?
           bool towerFound = false;
-          for (int c = 0; c < m_buildings.Size(); ++c)
+          for (Building* thisBuilding : m_buildings)
           {
-            Building* thisBuilding = m_buildings[c];
             if (thisBuilding->m_type == Building::TypeControlTower && thisBuilding->GetBuildingLink() == building->m_id.GetUniqueId())
             {
               towerFound = true;
@@ -885,9 +882,9 @@ void LevelFile::WriteInstantUnits(FileWriter* _out)
   _out->printf("\t# Type         team    x       z   count  inUnit state   spread  waypointX waypointZ  routeId\n");
   _out->printf("\t# ==================================================================================\n");
 
-  for (int i = 0; i < m_instantUnits.Size(); i++)
+  for (int i = 0; i < static_cast<int>(m_instantUnits.size()); i++)
   {
-    InstantUnit* iu = m_instantUnits.GetData(i);
+    InstantUnit* iu = m_instantUnits[i];
     _out->printf("\t%-15s %2d %7.1f %7.1f %6d %4d %7d %7.1f %7.1f %7.1f %4d %4d\n", Entity::GetTypeName(iu->m_type), iu->m_teamId, iu->m_posX,
                  iu->m_posZ, iu->m_number, iu->m_inAUnit, iu->m_state, iu->m_spread, iu->m_waypointX, iu->m_waypointZ, iu->m_routeId,
                  iu->m_routeWaypointId);
@@ -922,9 +919,9 @@ void LevelFile::WriteCameraMounts(FileWriter* _out)
   _out->printf("\t# Name	          Pos                   Front          Up\n");
   _out->printf("\t# =========================================================================\n");
 
-  for (int i = 0; i < m_cameraMounts.Size(); i++)
+  for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); i++)
   {
-    CameraMount* cmnt = m_cameraMounts.GetData(i);
+    CameraMount* cmnt = m_cameraMounts[i];
     _out->printf("\t%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f\n", cmnt->m_name, cmnt->m_pos.x, cmnt->m_pos.y, cmnt->m_pos.z,
                  cmnt->m_front.x, cmnt->m_front.y, cmnt->m_front.z, cmnt->m_up.x, cmnt->m_up.y, cmnt->m_up.z);
   }
@@ -937,12 +934,11 @@ void LevelFile::WriteCameraAnims(FileWriter* _out)
 {
   _out->printf("CameraAnimations_StartDefinition\n");
 
-  for (int i = 0; i < m_cameraAnimations.Size(); i++)
+  for (CameraAnimation* anim : m_cameraAnimations)
   {
-    CameraAnimation* anim = m_cameraAnimations.GetData(i);
     _out->printf("\t%s\n", anim->m_name);
 
-    for (int j = 0; j < anim->m_nodes.Size(); ++j)
+    for (int j = 0; j < static_cast<int>(anim->m_nodes.size()); ++j)
     {
       CamAnimNode* node = anim->m_nodes[j];
       char const* camModeName = CamAnimNode::GetTransitModeName(node->m_transitionMode);
@@ -961,9 +957,8 @@ void LevelFile::WriteBuildings(FileWriter* _out, bool _dynamic)
   _out->printf("\t# Type              id      x       z       tm      rx      rz      isGlobal\n");
   _out->printf("\t# ==========================================================================\n");
 
-  for (int i = 0; i < m_buildings.Size(); i++)
+  for (Building* building : m_buildings)
   {
-    Building* building = m_buildings.GetData(i);
     if (building->m_dynamic == _dynamic)
     {
       building->Write(_out);
@@ -995,9 +990,9 @@ void LevelFile::WriteLandscapeTiles(FileWriter* _out)
   _out->printf("\t# x       y       z    size   dim  scale  height  method seed smooth  guideGrid\n");
   _out->printf("\t# =============================================================================\n");
 
-  for (int i = 0; i < m_landscape.m_tiles.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_landscape.m_tiles.size()); ++i)
   {
-    LandscapeTile* _def = m_landscape.m_tiles.GetData(i);
+    LandscapeTile* _def = m_landscape.m_tiles[i];
     _out->printf("\t%6d %6.2f %6d ", _def->m_posX, _def->m_posY, _def->m_posZ);
     _out->printf("%6d ", _def->m_size);
     _out->printf("%5.2f ", _def->m_fractalDimension);
@@ -1122,11 +1117,21 @@ LevelFile::LevelFile(char const* _missionFilename, char const* _mapFilename)
 
 LevelFile::~LevelFile()
 {
-  m_cameraMounts.EmptyAndDelete();
-  m_cameraAnimations.EmptyAndDelete();
-  m_buildings.EmptyAndDelete();
-  m_instantUnits.EmptyAndDelete();
-  m_lights.EmptyAndDelete();
+  for (CameraMount* mount : m_cameraMounts)
+    delete mount;
+  m_cameraMounts.clear();
+  for (CameraAnimation* anim : m_cameraAnimations)
+    delete anim;
+  m_cameraAnimations.clear();
+  for (Building* building : m_buildings)
+    delete building;
+  m_buildings.clear();
+  for (InstantUnit* unit : m_instantUnits)
+    delete unit;
+  m_instantUnits.clear();
+  for (Light* light : m_lights)
+    delete light;
+  m_lights.clear();
   for (Route* route : m_routes)
     delete route;
   m_routes.clear();
@@ -1209,9 +1214,8 @@ void LevelFile::SaveMissionFile(char const* _filename)
 
 Building* LevelFile::GetBuilding(int _id)
 {
-  for (int i = 0; i < m_buildings.Size(); ++i)
+  for (Building* building : m_buildings)
   {
-    Building* building = m_buildings.GetData(i);
     if (building->m_id.GetUniqueId() == _id)
     {
       return building;
@@ -1223,9 +1227,9 @@ Building* LevelFile::GetBuilding(int _id)
 
 CameraMount* LevelFile::GetCameraMount(char const* _name)
 {
-  for (int i = 0; i < m_cameraMounts.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); ++i)
   {
-    CameraMount* mount = m_cameraMounts.GetData(i);
+    CameraMount* mount = m_cameraMounts[i];
     if (stricmp(mount->m_name, _name) == 0)
     {
       return mount;
@@ -1237,9 +1241,9 @@ CameraMount* LevelFile::GetCameraMount(char const* _name)
 
 int LevelFile::GetCameraAnimId(char const* _name)
 {
-  for (int i = 0; i < m_cameraAnimations.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_cameraAnimations.size()); ++i)
   {
-    CameraAnimation* anim = m_cameraAnimations.GetData(i);
+    CameraAnimation* anim = m_cameraAnimations[i];
     if (stricmp(anim->m_name, _name) == 0)
     {
       return i;
@@ -1249,19 +1253,32 @@ int LevelFile::GetCameraAnimId(char const* _name)
 }
 
 
+CameraAnimation* LevelFile::GetCameraAnim(int _id)
+{
+  if (_id < 0 || _id >= static_cast<int>(m_cameraAnimations.size()))
+    return nullptr;
+  return m_cameraAnimations[_id];
+}
+
+
+InstantUnit* LevelFile::GetInstantUnit(int _id)
+{
+  if (_id < 0 || _id >= static_cast<int>(m_instantUnits.size()))
+    return nullptr;
+  return m_instantUnits[_id];
+}
+
+
 void LevelFile::RemoveBuilding(int _id)
 {
-  for (int i = 0; i < m_buildings.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_buildings.size()); ++i)
   {
-    if (m_buildings.ValidIndex(i))
+    Building* building = m_buildings[i];
+    if (building->m_id.GetUniqueId() == _id)
     {
-      Building* building = m_buildings.GetData(i);
-      if (building->m_id.GetUniqueId() == _id)
-      {
-        m_buildings.RemoveData(i);
-        delete building;
-        break;
-      }
+      m_buildings.erase(m_buildings.begin() + i);
+      delete building;
+      break;
     }
   }
 }
@@ -1307,7 +1324,9 @@ Route* LevelFile::GetRoute(int _id)
 
 void LevelFile::GenerateInstantUnits()
 {
-  m_instantUnits.EmptyAndDelete();
+  for (InstantUnit* unit : m_instantUnits)
+    delete unit;
+  m_instantUnits.clear();
 
   //
   // Record all the full size UNITS that exist
@@ -1350,7 +1369,7 @@ void LevelFile::GenerateInstantUnits()
           instant->m_spread = roamRange;
           instant->m_routeId = unit->m_routeId;
           instant->m_routeWaypointId = unit->m_routeWayPointId;
-          m_instantUnits.PutData(instant);
+          m_instantUnits.push_back(instant);
         }
       }
     }
@@ -1401,7 +1420,7 @@ void LevelFile::GenerateInstantUnits()
               }
             }
 
-            m_instantUnits.PutData(unit);
+            m_instantUnits.push_back(unit);
           }
         }
       }
@@ -1429,7 +1448,7 @@ void LevelFile::GenerateInstantUnits()
             unit->m_waypointZ = officer->m_orderPosition.z;
             unit->m_routeId = officer->m_routeId;
             unit->m_routeWaypointId = officer->m_routeWayPointId;
-            m_instantUnits.PutData(unit);
+            m_instantUnits.push_back(unit);
           }
           else if (entity->m_type == Entity::TypeArmour)
           {
@@ -1459,7 +1478,7 @@ void LevelFile::GenerateInstantUnits()
               unit->m_waypointZ = armour->m_wayPoint.z;
               unit->m_routeId = armour->m_routeId;
               unit->m_routeWaypointId = armour->m_routeWayPointId;
-              m_instantUnits.PutData(unit);
+              m_instantUnits.push_back(unit);
             }
           }
         }
@@ -1514,7 +1533,7 @@ void LevelFile::GenerateInstantUnits()
             unit->m_routeWaypointId = entity->m_routeWayPointId;
             // unit->m_waypointX = officer->m_orderPosition.x;
             // unit->m_waypointZ = officer->m_orderPosition.z;
-            m_instantUnits.PutData(unit);
+            m_instantUnits.push_back(unit);
           }
         }
       }
@@ -1530,7 +1549,7 @@ void LevelFile::GenerateDynamicBuildings()
   // Remove all dynamic buildings from the list
   // that aren't on the level anymore
 
-  for (int i = 0; i < m_buildings.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_buildings.size()); ++i)
   {
     Building* building = m_buildings[i];
     if (building && building->m_dynamic)
@@ -1538,7 +1557,7 @@ void LevelFile::GenerateDynamicBuildings()
       Building* locBuilding = g_location->GetBuilding(building->m_id.GetUniqueId());
       if (!locBuilding)
       {
-        m_buildings.RemoveData(i);
+        m_buildings.erase(m_buildings.begin() + i);
         delete building;
         --i;
       }
@@ -1604,7 +1623,7 @@ void LevelFile::GenerateDynamicBuildings()
           newBuilding->m_type = building->m_type;
           newBuilding->m_dynamic = building->m_dynamic;
           newBuilding->m_isGlobal = building->m_isGlobal;
-          m_buildings.PutData(newBuilding);
+          m_buildings.push_back(newBuilding);
         }
       }
     }

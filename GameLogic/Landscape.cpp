@@ -410,9 +410,9 @@ void Landscape::GenerateHeightMap(LandscapeDef* _def)
   m_heightMap->SetAll(m_outsideHeight);
 
   // Join the tiles together to form the whole level
-  for (int i = 0; i < _def->m_tiles.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(_def->m_tiles.size()); ++i)
   {
-    LandscapeTile* aTile = _def->m_tiles.GetData(i);
+    LandscapeTile* aTile = _def->m_tiles[i];
     aTile->m_outsideHeight = m_outsideHeight;
     aTile->Generate(_def);
     MergeTileIntoLandscape(aTile);
@@ -435,7 +435,7 @@ void Landscape::DeleteTile(int tileId)
 {
   LandscapeTile* tile = g_location->m_levelFile->m_landscape.m_tiles[tileId];
   delete tile;
-  g_location->m_levelFile->m_landscape.m_tiles.RemoveData(tileId);
+  g_location->m_levelFile->m_landscape.m_tiles.erase(g_location->m_levelFile->m_landscape.m_tiles.begin() + tileId);
   LandscapeDef* def = &g_location->m_levelFile->m_landscape;
   Init(def);
 }
