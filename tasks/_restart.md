@@ -12,12 +12,12 @@ answers "where were we, and what do I do next".
 
 ## Where it stopped
 
-Five plans are complete: `neuroncore-layering`, `rename-scaffolding`,
-`layering-inversion`, `containers-replaced`, and `rename-darwinian` except for
-its owner gate. Stage 3 is done — the legacy container headers are deleted, not
-merely unused.
+Six plans are complete: `neuroncore-layering`, `rename-scaffolding`,
+`layering-inversion`, `containers-replaced`, and — as of the owner's smoke-test
+run at `b0bde71` — `rename-darwinian`. Stage 3 is done: the legacy container
+headers are deleted, not merely unused.
 
-Four plans are open, with **20 tasks left** between them:
+Four plans are open, with **19 tasks left** between them:
 
 | Plan | Open | State |
 |---|---|---|
@@ -25,7 +25,6 @@ Four plans are open, with **20 tasks left** between them:
 | `ownership` | 5 of 7 | Stage 5. Two landed, the rest gated on stage 4. |
 | `language-hygiene` | 4 of 8 | Two sweeps landed; the enums and the min/max macros are left. |
 | `namespace-migration` | 3 of 5 | Sequenced last by design. |
-| `rename-darwinian` | 1 of 4 | Owner action only. About a minute of it. |
 
 It did not stop because something broke. The last four commits are notes,
 documentation and a scope correction — `80f4c92` *Record what T5 actually is,
@@ -194,19 +193,19 @@ types must stay outside the wrapper, and `class Foo*` in a parameter list
 *declares* `Neuron::Foo` if it is not already visible. Grep for
 `\(class |, class |^\s*class \w+\*` before wrapping anything.
 
-### Step 4 — the owner gate
+### The owner gate — closed
 
-`rename-darwinian/T4` has been blocked since 2026-08-03 on two numbers:
+`rename-darwinian/T4` was blocked on two numbers: 50 Citizens on team 0 in
+groups of **30 and 20**, and 179 Virii on team 1 across **eight groups**. The
+owner ran the full smoke test at `b0bde71` on 2026-08-03 and reported all seven
+steps correct. The plan is closed and `AGENTS.md` records the run.
 
-- 50 Citizens on team 0, in groups of **30 and 20**
-- 179 Virii on team 1 across **eight groups**
-
-The partial Garden run at `586c072` checked everything except those, and they
-are the only steps that can catch a string-resolved reference the rename
-missed — an unresolved spawn name produces a smaller group, not a crash. About
-a minute of a run that has already been done once. Nothing in the DAG waits on
-it, but the plan is not closeable without it and the counts get harder to trust
-the more the tree moves.
+That is the only evidence the tree has that the rename resolved — CI cannot
+produce it, and neither can any agent here. It also re-establishes the baseline
+for the restart: every task below starts from a build known to launch, load The
+Garden, spawn correctly and advance without tripping the sync assert. **The
+next agent to change something reachable from `Location::Advance` is changing
+a working game, and the only thing that will say otherwise is another run.**
 
 ---
 
