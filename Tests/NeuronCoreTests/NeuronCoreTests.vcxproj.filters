@@ -42,6 +42,9 @@
     <ClCompile Include="RandomTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SliceSlotMapTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="SlotMapTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

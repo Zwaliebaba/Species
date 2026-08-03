@@ -743,6 +743,45 @@ tasks:
       determinism rules, and the full Garden smoke test — request an owner run
       after this lands. Consider landing Location last within the task, after
       the smaller files prove the pattern.
+
+      IN PROGRESS. Measured 2026-08-03: 16 files, and the containers are
+      2 FastDArray, 6 SliceDArray and about 20 LList.
+
+      THE PLAN DID NOT NOTICE THAT SliceDArray HAS NO REPLACEMENT. T1-T4 built
+      SlotMap in two flavours to cover DArray and FastDArray, and the intent
+      above says "freelist-flavour SlotMap for every FastDArray" as though that
+      were the whole job. But six of the eight slot containers here are
+      SliceDArray, which derives from FastDArray and adds the slice bookkeeping
+      that drives the ten-slice advance loop. Nothing in NeuronCore had it, and
+      nothing pinned it either — DArrayTests covers DArray and FastDArray and
+      never mentions slices.
+
+      So step one is Neuron::SliceSlotMap, and its arithmetic is reproduced
+      character for character rather than tidied, because it decides WHICH
+      ENTITY ADVANCES ON WHICH FRAME. Three properties are surprising enough to
+      be worth naming, and all three are now tests:
+
+        Each non-final slice spans numPerSlice + 1 indices, not numPerSlice —
+        the bounds are inclusive and upper = lower + numPerSlice. So ten slices
+        cover more than Size(), the walk outruns the container, and the final
+        slice is frequently empty or inverted: at Size 25 it asks for [27, 24].
+        Callers guard every index with ValidIndex, which is what makes that
+        harmless and why it must not be "fixed" into an even division.
+
+        numPerSlice divides Size(), the capacity including holes, not
+        NumUsed(). Two containers with the same capacity and different
+        occupancy walk identically, so compacting one would move entities
+        between frames.
+
+        Slices partition without overlap or gap — lower is the previous
+        upper + 1. An earlier draft of the header comment claimed they overlap
+        by one; they do not, and the test says so.
+
+      The strongest evidence is differential: SliceSlotMapTests walks a
+      SliceDArray and a SliceSlotMap over the same eight sizes and asserts the
+      bound sequences are identical. That proves equivalence rather than
+      arguing it. It dies with SliceDArray at T16, which is why the individual
+      properties are pinned separately as well.
     status: todo
 
   - id: T13
