@@ -123,7 +123,6 @@ GameLogic/GunTurret.cpp -> Explosion.h
 GameLogic/GunTurret.cpp -> GlobalWorld.h
 GameLogic/GunTurret.cpp -> Location.h
 GameLogic/GunTurret.cpp -> Team.h
-GameLogic/GunTurret.cpp -> UserInput.h
 GameLogic/Incubator.cpp -> Location.h
 GameLogic/Incubator.cpp -> ParticleSystem.h
 GameLogic/InsertionSquad.cpp -> EntityGrid.h
@@ -154,7 +153,6 @@ GameLogic/LaserFence.cpp -> Team.h
 GameLogic/LaserTrooper.cpp -> Location.h
 GameLogic/LaserTrooper.cpp -> Team.h
 GameLogic/LaserTrooper.cpp -> Unit.h
-GameLogic/LaserTrooper.cpp -> UserInput.h
 GameLogic/Library.cpp -> Location.h
 GameLogic/Library.h -> GlobalWorld.h
 GameLogic/LightsWindow.cpp -> Location.h
@@ -186,13 +184,11 @@ GameLogic/RadarDish.cpp -> Unit.h
 GameLogic/ResearchItem.cpp -> Explosion.h
 GameLogic/ResearchItem.cpp -> GlobalWorld.h
 GameLogic/ResearchItem.cpp -> Location.h
-GameLogic/ResearchItem.cpp -> TaskManagerInterface.h
 GameLogic/Rocket.cpp -> EntityGrid.h
 GameLogic/Rocket.cpp -> Explosion.h
 GameLogic/Rocket.cpp -> GlobalWorld.h
 GameLogic/Rocket.cpp -> Location.h
 GameLogic/Rocket.cpp -> ParticleSystem.h
-GameLogic/Rocket.cpp -> TaskManagerInterface.h
 GameLogic/Rocket.cpp -> Team.h
 GameLogic/SafeArea.cpp -> EntityGrid.h
 GameLogic/SafeArea.cpp -> GlobalWorld.h
@@ -279,5 +275,3 @@ NeuronClient/Resource.cpp -> Location.h
 NeuronClient/SoundInstance.cpp -> Location.h
 NeuronClient/SoundSystem.cpp -> Entity.h
 NeuronClient/SoundSystem.cpp -> Location.h
-NeuronClient/TargetCursor.cpp -> ControlHelp.h
-NeuronClient/TargetCursor.cpp -> TaskManagerInterface.h

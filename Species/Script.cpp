@@ -243,7 +243,7 @@ void Script::RunCommand_GiveResearch(const char* _name)
     g_prefsManager->SetInt("ModSystemEnabled", 1);
     g_prefsManager->Save();
 
-    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, 999, 4.0f);
+    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 999, 4.0f);
   }
   else if (stricmp(_name, "accessallareas") == 0)
   {
@@ -258,7 +258,7 @@ void Script::RunCommand_GiveResearch(const char* _name)
     if (!success)
       DebugTrace("failed to create folder %s\n", folderName);
 
-    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
+    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
   }
   else
   {
@@ -266,7 +266,7 @@ void Script::RunCommand_GiveResearch(const char* _name)
     if (researchType != -1)
     {
       g_globalWorld->m_research->AddResearch(researchType);
-      g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, researchType, 4.0f);
+      TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, researchType, 4.0f);
     }
   }
 }
@@ -470,7 +470,7 @@ void Script::Advance()
       return;
 
   if (m_permitEscape)
-    g_taskManagerInterface->SetVisible(false);
+    TheTaskManagerInterface()->SetVisible(false);
 
   if (m_waitForFade && !TheRenderer()->IsFadeComplete())
     return;

@@ -666,7 +666,7 @@ void TeamControls::Advance()
   if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
     return;
 
-  m_mousePos = g_userInput->GetMousePos3d();
+  m_mousePos = TheUserInput()->GetMousePos3d();
 
   m_primaryFireTarget |= g_inputManager->controlEvent(ControlUnitPrimaryFireTarget);
   m_secondaryFireTarget |= g_inputManager->controlEvent(ControlUnitSecondaryFireTarget);
@@ -691,7 +691,7 @@ void TeamControls::Advance()
     m_directUnitMoveDx = waypoint.x;
     m_directUnitMoveDy = waypoint.z;
 
-    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
+    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
   }
 
   if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details) && !g_inputManager->controlEvent(ControlCameraRotate))
@@ -700,13 +700,13 @@ void TeamControls::Advance()
     m_directUnitFireDx = details.x;
     m_directUnitFireDy = details.y;
 
-    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondSquaddieFire);
+    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondSquaddieFire);
   }
 
   if (m_secondaryFireDirected)
   {
-    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireAirstrike);
-    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireGrenades);
-    g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondFireRocket);
+    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondFireAirstrike);
+    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondFireGrenades);
+    TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondFireRocket);
   }
 }

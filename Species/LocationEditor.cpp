@@ -266,7 +266,7 @@ int LocationEditor::GetMode() { return m_mode; }
 
 void LocationEditor::AdvanceModeNone()
 {
-  Vector3 pos = g_userInput->GetMousePos3d();
+  Vector3 pos = TheUserInput()->GetMousePos3d();
   Vector3 rayStart, rayDir;
   TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
@@ -306,7 +306,7 @@ void LocationEditor::MoveBuildingsInTile(LandscapeTile* _tile, float _dX, float 
 
 void LocationEditor::AdvanceModeLandTile()
 {
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
 
   int newSelectionId = -1;
   if (g_inputManager->controlEvent(ControlTileSelect))
@@ -395,12 +395,12 @@ void LocationEditor::AdvanceModeLandTile()
 
 void LocationEditor::AdvanceModeLandFlat()
 {
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
 
   int newSelectionId = -1;
   if (g_inputManager->controlEvent(ControlTileSelect))
   {
-    Vector3 mousePos = g_userInput->GetMousePos3d();
+    Vector3 mousePos = TheUserInput()->GetMousePos3d();
     newSelectionId = IsPosInFlattenArea(mousePos);
   }
 
@@ -527,7 +527,7 @@ void LocationEditor::AdvanceModeBuilding()
       {
       case ToolMove:
       {
-        Vector3 mousePos = g_userInput->GetMousePos3d();
+        Vector3 mousePos = TheUserInput()->GetMousePos3d();
         building->m_pos = mousePos;
         break;
       }
@@ -603,7 +603,7 @@ void LocationEditor::AdvanceModeInstantUnit()
       {
       case ToolMove:
       {
-        Vector3 mousePos = g_userInput->GetMousePos3d();
+        Vector3 mousePos = TheUserInput()->GetMousePos3d();
         iu->m_posX = mousePos.x;
         iu->m_posZ = mousePos.z;
         break;
@@ -770,7 +770,7 @@ void LocationEditor::RenderUnit(InstantUnit* _iu)
 
 void LocationEditor::RenderModeLandTile()
 {
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
   Landscape* land = &g_location->m_landscape;
 
   // Highlight any tile under our mouse cursor
@@ -890,7 +890,7 @@ void LocationEditor::RenderModeLandTile()
 
 void LocationEditor::RenderModeLandFlat()
 {
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
   Landscape* land = &g_location->m_landscape;
 
   // Highlight any flatten area under our mouse cursor
@@ -953,7 +953,7 @@ void LocationEditor::RenderModeBuilding()
     if (m_tool == ToolLink)
     {
       Vector3 height(0, 10, 0);
-      Vector3 mousePos(g_userInput->GetMousePos3d());
+      Vector3 mousePos(TheUserInput()->GetMousePos3d());
       Vector3 arrowDir(mousePos - building->m_pos);
       Vector3 arrowSize(0, 3, 0);
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ControlHelpAccess.h"
+
 // The application state the layers below Species read.
 //
 // These were members of Species::App, which is why 49 GameLogic and
@@ -11,7 +13,6 @@
 // The game-mode enum comes with them: it was an anonymous enum inside App, so
 // comparing g_gameMode against it would otherwise still drag App.h down here.
 class Server;
-class ControlHelpSystem;
 
 enum
 {
@@ -32,5 +33,5 @@ extern int g_gameMode;
 extern bool g_atMainMenu;
 extern bool g_requestToggleEditing;
 extern Server* g_server;
-extern ControlHelpSystem* g_controlHelpSystem;
+extern ControlHelpAccess* g_controlHelpSystem;
 extern char g_userProfileName[256];

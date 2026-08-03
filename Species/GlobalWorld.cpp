@@ -498,7 +498,7 @@ void GlobalResearch::EvaluateLevel(int _type)
       {
         // This action should only go off if a player UPGRADES an existing research item
         // Not if he finds a new one
-        g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearchUpgrade, _type, 4.0f);
+        TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearchUpgrade, _type, 4.0f);
       }
     }
   }
@@ -1278,7 +1278,7 @@ void GlobalWorld::Advance()
         GlobalLocation* loc = GetLocation(m_editorSelectionId);
         if (loc)
         {
-          Vector3 mousePos3D = g_userInput->GetMousePos3d();
+          Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
           loc->m_pos = mousePos3D / 120.0f;
         }
       }

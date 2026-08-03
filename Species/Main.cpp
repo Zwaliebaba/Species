@@ -230,7 +230,7 @@ bool HandleCommonConditions()
 
   if (!curWindowHasFocus)
   {
-    g_userInput->Advance();
+    TheUserInput()->Advance();
     g_app->m_soundSystem->Advance();
 
     // Render twice to avoid double buffering artefacts
@@ -380,7 +380,7 @@ void LocationGameLoop()
     {
       if (TheRenderer()->IsFadeComplete())
       {
-        g_controlHelpSystem->Shutdown();
+        TheControlHelp()->Shutdown();
         break;
       }
     }
@@ -395,15 +395,15 @@ void LocationGameLoop()
       {
         if (WindowsOnScreen())
           RemoveAllWindows();
-        else if (g_taskManagerInterface->m_visible)
-          g_taskManagerInterface->m_visible = false;
+        else if (TheTaskManagerInterface()->m_visible)
+          TheTaskManagerInterface()->m_visible = false;
         else
         {
           TheCamera()->SetDebugMode(Camera::DebugModeAuto);
           EclRegisterWindow(new LocationWindow());
         }
       }
-      g_userInput->Advance();
+      TheUserInput()->Advance();
     }
 
     if (HandleCommonConditions())
@@ -484,7 +484,7 @@ void LocationGameLoop()
           }
         }
 
-        if (g_taskManagerInterface->m_visible || EclGetWindows()->size() != 0 || chatLog || entityUnderMouse)
+        if (TheTaskManagerInterface()->m_visible || EclGetWindows()->size() != 0 || chatLog || entityUnderMouse)
           teamControls.ClearFlags();
 
         g_app->m_clientToServer->SendIAmAlive(g_globalWorld->m_myTeamId, teamControls);
@@ -556,7 +556,7 @@ void LocationGameLoop()
       g_app->m_profiler->Advance();
 #endif // PROFILER_ENABLED
 
-      g_userInput->Advance();
+      TheUserInput()->Advance();
 
       // Check Task Manager
       SwitchTaskManagerForX360Controller();
@@ -568,11 +568,11 @@ void LocationGameLoop()
       TheCamera()->Advance();
       g_app->m_locationInput->Advance();
       g_taskManager->Advance();
-      g_taskManagerInterface->Advance();
+      TheTaskManagerInterface()->Advance();
       TheScript()->Advance();
       g_explosionManager.Advance();
       g_app->m_soundSystem->Advance();
-      g_controlHelpSystem->Advance();
+      TheControlHelp()->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
       if (g_app->m_attractMode->m_running) { g_app->m_attractMode->Advance(); }
@@ -626,8 +626,7 @@ void SwitchTaskManagerForX360Controller()
 {
   static int oldControlType = INPUT_MODE_KEYBOARD;
 
-  if (oldControlType != INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && !g_taskManagerInterface->
-    m_visible)
+  if (oldControlType != INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == INPUT_MODE_GAMEPAD && !TheTaskManagerInterface()->m_visible)
   {
     // user has just switched to the game pad
     if (g_prefsManager->GetInt("ControlMethod") == 0)
@@ -637,8 +636,7 @@ void SwitchTaskManagerForX360Controller()
     }
     oldControlType = INPUT_MODE_GAMEPAD;
   }
-  else if (oldControlType == INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && !g_taskManagerInterface->
-    m_visible)
+  else if (oldControlType == INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != INPUT_MODE_GAMEPAD && !TheTaskManagerInterface()->m_visible)
     oldControlType = g_inputManager->getInputMode();
 }
 
@@ -657,7 +655,7 @@ void LocationEditorLoop()
     UpdateAdvanceTime();
     double timeNow = GetHighResTime();
 
-    g_userInput->Advance();
+    TheUserInput()->Advance();
     TheCamera()->Advance();
     g_locationEditor->Advance();
     g_app->m_soundSystem->Advance();
@@ -704,7 +702,7 @@ void GlobalWorldGameLoop()
         TheCamera()->SetDebugMode(Camera::DebugModeAuto);
         EclRegisterWindow(new MainMenuWindow());
       }
-      g_userInput->Advance();
+      TheUserInput()->Advance();
     }
 
     if (HandleCommonConditions())
@@ -716,7 +714,7 @@ void GlobalWorldGameLoop()
 
     TheScript()->Advance();
     g_globalWorld->Advance();
-    g_userInput->Advance();
+    TheUserInput()->Advance();
     TheCamera()->Advance();
     g_app->m_soundSystem->Advance();
 
@@ -768,7 +766,7 @@ void GlobalWorldEditorLoop()
     double timeNow = GetHighResTime();
 
     g_globalWorld->Advance();
-    g_userInput->Advance();
+    TheUserInput()->Advance();
     TheCamera()->Advance();
     g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
@@ -990,7 +988,7 @@ void MainMenuLoop()
   {
     UpdateAdvanceTime();
     TheRenderer()->Render();
-    g_userInput->Advance();
+    TheUserInput()->Advance();
     TheCamera()->Advance();
     g_app->m_soundSystem->Advance();
     HandleCommonConditions();

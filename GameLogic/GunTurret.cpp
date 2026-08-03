@@ -15,7 +15,6 @@
 #include "Location.h"
 #include "Team.h"
 #include "EntityGrid.h"
-#include "UserInput.h"
 #include "GameTime.h"
 #include "GlobalWorld.h"
 #include "Explosion.h"

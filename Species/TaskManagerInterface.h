@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "TaskManagerInterfaceAccess.h"
+#include "WorldPointers.h"
 #include "LList.h"
 #include "Entity.h"
 #include "WorldObject.h"
@@ -57,7 +59,7 @@ public:
 // Please don't use me directly - use one of the derived classes
 
 
-class TaskManagerInterface
+class TaskManagerInterface : public TaskManagerInterfaceAccess
 {
 public:
     bool    m_visible;
@@ -70,16 +72,6 @@ public:
     bool    m_lockTaskManager;
     bool    m_quickUnitVisible;                                     // the quickunit creation is visible
 
-    enum
-    {
-        MessageSuccess,
-        MessageFailure,
-        MessageShutdown,
-        MessageResearch,
-        MessageResearchUpgrade,
-        MessageObjectivesComplete,
-        NumMessages
-    };
 
 	enum TMControl
 	{
@@ -91,6 +83,8 @@ public:
     TaskManagerInterface();
 
     void    SetCurrentMessage ( int _messageType, int _taskType, float _timer );
+
+    bool IsVisible() const { return m_visible; }
 
     void    RunDefaultObjective ( GlobalEventCondition *_cond );            // Runs basic cut-scene for trunk ports + research items
 
@@ -112,4 +106,8 @@ public:
 };
 
 
-
+// g_taskManagerInterface is a TaskManagerInterfaceAccess* so the layers below
+// Species need only the interface. Species reaches the whole class through
+// here, at every call site. The cast is safe because only App, Main and the
+// keybindings window assign it, and all three assign a TaskManagerInterface.
+inline TaskManagerInterface* TheTaskManagerInterface() { return static_cast<TaskManagerInterface*>(g_taskManagerInterface); }

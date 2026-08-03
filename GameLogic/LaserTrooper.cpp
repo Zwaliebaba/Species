@@ -5,7 +5,6 @@
 #include "Location.h"
 #include "Team.h"
 #include "Unit.h"
-#include "UserInput.h"
 
 #include "LaserTrooper.h"
 #include "Resource.h"

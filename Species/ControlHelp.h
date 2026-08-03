@@ -3,12 +3,14 @@
 #include "LList.h"
 #include "DArray.h"
 #include "BoundedArray.h"
+#include "ControlHelpAccess.h"
 #include "WorldObject.h"
+#include "AppState.h"
 
 class HelpIcon;
 class HelpIconSet;
 
-class ControlHelpSystem
+class ControlHelpSystem : public ControlHelpAccess
 {
   public:
     ControlHelpSystem();
@@ -35,40 +37,6 @@ class ControlHelpSystem
     };
 
     enum { MaxSets = 4 };
-
-    enum
-    {
-      CondDestroyUnit,
-      CondTaskManagerCreateBlue,
-      CondTaskManagerCloseBlue,
-      CondTaskManagerCloseRed,
-      CondDeselectUnit,
-      CondMoveUnit,
-      CondSelectUnit,
-      CondTaskManagerCreateGreen,
-      CondTaskManagerSelect,
-      CondPlaceUnit,
-      CondPromoteOfficer,
-      CondMoveCameraOrUnit,
-      CondZoom,
-      CondCameraAim,
-      CondSquaddieFire,
-      CondChangeWeapon,
-      CondChangeOrders,
-      CondCameraUp,
-      CondCameraDown,
-      CondFireGrenades,
-      CondFireRocket,
-      CondFireAirstrike,
-      CondOfficerSetGoto,
-      CondOfficerSetFollow,
-      CondArmourSetTurret,
-      CondSwitchPrevUnit,
-      CondSwitchNextUnit,
-      CondRadarAim,
-      CondSkipCutscene,
-      MaxConditions
-    };
 
     void RecordCondUsed(int _cond);
 
@@ -112,3 +80,8 @@ class ControlHelpSystem
     TextIndicator m_conditionIconMap[MaxConditions];
 };
 
+
+// g_controlHelpSystem is a ControlHelpAccess* so the layers below Species need
+// only the interface. Species reaches the whole class through here, at every
+// call site. The cast is safe because App is the only thing that assigns it.
+inline ControlHelpSystem* TheControlHelp() { return static_cast<ControlHelpSystem*>(g_controlHelpSystem); }

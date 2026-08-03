@@ -396,13 +396,13 @@ void Renderer::RenderFrame(bool withFlip)
   }
 
   CHECK_OPENGL_STATE();
-  g_controlHelpSystem->Render();
+  TheControlHelp()->Render();
   g_explosionManager.Render();
   g_particleSystem->Render();
 
-  g_userInput->Render();
+  TheUserInput()->Render();
   g_app->m_gameCursor->Render();
-  g_taskManagerInterface->Render();
+  TheTaskManagerInterface()->Render();
   TheCamera()->Render();
 
 #ifdef DEBUG_RENDER_ENABLED

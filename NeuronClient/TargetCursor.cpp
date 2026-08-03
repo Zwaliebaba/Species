@@ -6,10 +6,8 @@
 
 #include "WindowManager.h"
 
-#include "ControlHelp.h"
 
 #include "Eclipse.h"
-#include "TaskManagerInterface.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -68,7 +66,7 @@ int TargetCursor::dY() const { return m_velocity[AXIS_Y]; }
 int TargetCursor::dZ() const { return m_velocity[AXIS_Z]; }
 
 
-bool secondaryInputEnabled() { return (EclGetWindows()->size() == 0) && !g_taskManagerInterface->m_visible; }
+bool secondaryInputEnabled() { return (EclGetWindows()->size() == 0) && !g_taskManagerInterface->IsVisible(); }
 
 void TargetCursor::Advance()
 {
@@ -83,7 +81,7 @@ void TargetCursor::Advance()
     m_screenCoords[AXIS_Y] += m_velocity[AXIS_Y];
 
     if (g_camera->IsInMode(CameraAccess::ModeFreeMovement))
-      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraAim);
+      g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondCameraAim);
   }
   else
     m_velocity[AXIS_X] = m_velocity[AXIS_Y] = 0;

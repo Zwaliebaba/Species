@@ -795,6 +795,24 @@ tasks:
 
       Allowlist 274 -> 272.
 
+      Then three more seams in one slice, all following Camera's shape:
+      UserInputAccess (GetMousePos3d, the only member anything below Species
+      calls), TaskManagerInterfaceAccess (SetCurrentMessage, SetVisible, and
+      IsVisible standing in for the m_visible field a base class cannot offer)
+      and ControlHelpAccess (RecordCondUsed plus the Cond enum, moved rather
+      than duplicated so ControlHelpSystem::CondCameraAim still resolves in
+      Species through inheritance). Allowlist 272 -> 266.
+
+      Two of those interfaces deliberately drop a default argument that the
+      concrete class keeps — TaskManagerInterface::SetVisible defaults _visible
+      to true. Camera's third red build was exactly this, so every below-Species
+      call site was checked against the interface signature before the sweep,
+      and Species goes through the accessor everywhere.
+
+      What is left after this: LocationEditor.h (11), TaskManager.h (5), and
+      the three construction-site entries (Water.h x2,
+      TaskManagerInterfaceIcons.h x1) that no interface can fix.
+
   - id: T11
     title: Shrink LinkStubs and land the first real GameLogic behaviour tests
     intent: >

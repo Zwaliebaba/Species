@@ -158,7 +158,7 @@ void Camera::AdvanceSphereWorldMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -167,8 +167,8 @@ void Camera::AdvanceSphereWorldMode()
   if (g_inputManager->controlEvent(ControlCameraMove, details))
   {
     g_target->SetMousePos(g_target->X() + details.x, g_target->Y() + details.y);
-    g_userInput->RecalcMousePos3d();
-    mousePos3D = g_userInput->GetMousePos3d();
+    TheUserInput()->RecalcMousePos3d();
+    mousePos3D = TheUserInput()->GetMousePos3d();
     Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
     oldMouseY = screenH - oldMouseY;
   }
@@ -259,7 +259,7 @@ void Camera::AdvanceSphereWorldScriptedMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -565,13 +565,13 @@ void Camera::AdvanceFreeMovementMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
 
   // Allow quake keys to move us
-  if (!g_taskManagerInterface->m_visible)
+  if (!TheTaskManagerInterface()->m_visible)
   {
     float moveRate = 250.0f;
     Vector3 accelForward = m_front;
@@ -608,7 +608,7 @@ void Camera::AdvanceFreeMovementMode()
         m_targetPos -= accelRight * g_advanceTime * details.x * 10.0f;
         m_targetPos -= accelForward * g_advanceTime * details.y * 10.0f;
 
-        g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
+        TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
       }
     }
 
@@ -682,7 +682,7 @@ void Camera::AdvanceFreeMovementMode()
     // Update camera orientation
     bool chatLog = false;
 
-    if (!g_taskManagerInterface->m_visible && !chatLog)
+    if (!TheTaskManagerInterface()->m_visible && !chatLog)
     {
       if (mousePos3D.MagSquared() > 1.0f)
       {
@@ -979,16 +979,16 @@ bool Camera::AdvanceManualCameraHeight(Vector3& cameraTarget)
     if (g_inputManager->controlEvent(ControlCameraUp))
     {
       m_heightMultiplier += heightScale;
-      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
+      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
+      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
     if (g_inputManager->controlEvent(ControlCameraDown))
     {
       m_heightMultiplier -= heightScale;
       camDown = true;
-      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
+      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
+      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
     m_heightMultiplier = min(2.0f, m_heightMultiplier);
@@ -1122,7 +1122,7 @@ void Camera::RotateTowardsEntity(Entity* entity)
 
 void Camera::AdvanceEntityTrackMode()
 {
-  if (g_taskManagerInterface->m_visible)
+  if (TheTaskManagerInterface()->m_visible)
     return;
 
   UpdateEntityTrackingMode();
@@ -1290,7 +1290,7 @@ void Camera::AdvanceRadarAimMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -1386,7 +1386,7 @@ void Camera::AdvanceTurretAimMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = g_userInput->GetMousePos3d();
+  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -1791,7 +1791,7 @@ Building* Camera::GetBestBuildingInView()
 void Camera::AdvanceComponentZoom()
 {
   // No zoom inside the task manager
-  if (g_taskManagerInterface->m_visible || IsInMode(ModeEntityTrack))
+  if (TheTaskManagerInterface()->m_visible || IsInMode(ModeEntityTrack))
     return;
 
   float change = 30.0f;
@@ -1851,8 +1851,8 @@ void Camera::AdvanceComponentMouseWheelHeight()
       delta -= g_advanceTime * 7.0f;
     if (keyUp || keyDown)
     {
-      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      g_controlHelpSystem->RecordCondUsed(ControlHelpSystem::CondCameraDown);
+      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
+      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
   }
 
@@ -2059,7 +2059,7 @@ void Camera::Advance()
   float dot = m_front * m_up;
   DEBUG_ASSERT(NearlyEquals(dot, 0.0f));
 
-  g_userInput->RecalcMousePos3d();
+  TheUserInput()->RecalcMousePos3d();
 
   m_framesInThisMode++;
 

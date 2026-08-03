@@ -157,13 +157,13 @@ bool GameCursor::GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& 
   bool somethingHighlighted = false;
   bool found = false;
 
-  if (!g_taskManagerInterface->m_visible)
+  if (!TheTaskManagerInterface()->m_visible)
   {
     somethingHighlighted = g_app->m_locationInput->GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
   }
   else
   {
-    Task* task = g_taskManager->GetTask(g_taskManagerInterface->m_highlightedTaskId);
+    Task* task = g_taskManager->GetTask(TheTaskManagerInterface()->m_highlightedTaskId);
     if (task && task->m_objId.IsValid())
     {
       id = task->m_objId;
@@ -280,7 +280,7 @@ void GameCursor::Render()
 
   int screenX = g_target->X();
   int screenY = g_target->Y();
-  Vector3 mousePos = g_userInput->GetMousePos3d();
+  Vector3 mousePos = TheUserInput()->GetMousePos3d();
   mousePos.y = max(1.0f, mousePos.y);
 
   bool cursorRendered = false;
@@ -335,7 +335,7 @@ void GameCursor::Render()
     bool somethingSelected = GetSelectedObject(selectedId, selectedWorldPos);
     bool somethingHighlighted = GetHighlightedObject(highlightedId, highlightedWorldPos, highlightedRadius);
 
-    if (g_taskManagerInterface->m_visible)
+    if (TheTaskManagerInterface()->m_visible)
     {
       // Looking at the task manager
       if (somethingSelected && selectedId.GetUnitId() != UNIT_BUILDINGS)

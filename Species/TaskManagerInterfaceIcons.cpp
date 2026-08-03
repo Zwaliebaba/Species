@@ -2476,7 +2476,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
     {
       int taskId = GetQuickUnitTask(2 - m_quickUnitDirection);
       if (taskId != -1)
-        g_taskManagerInterface->SetCurrentMessage(MessageSuccess, taskId, 3.0f);
+        TheTaskManagerInterface()->SetCurrentMessage(MessageSuccess, taskId, 3.0f);
     }
 
     if (g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitCreate))

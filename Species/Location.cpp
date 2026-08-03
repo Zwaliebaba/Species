@@ -796,7 +796,7 @@ void Location::DoMissionCompleteActions()
   // gloc->m_missionAvailable = false;
   // strcpy(gloc->m_missionFilename, "null");
 
-  g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageObjectivesComplete, -1, 5.0f);
+  TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageObjectivesComplete, -1, 5.0f);
 
 
   //    if( !TheCamera()->IsInteractive() ||

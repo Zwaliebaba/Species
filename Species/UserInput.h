@@ -3,14 +3,16 @@
 #include "LList.h"
 #include "Vector3.h"
 
+#include "UserInputAccess.h"
 #include "WorldObject.h"
+#include "WorldPointers.h"
 
 class StretchyIcons;
 class Building;
 class Engineer;
 
 
-class UserInput
+class UserInput : public UserInputAccess
 {
 public:
 	bool		m_removeTopLevelMenu;
@@ -33,3 +35,7 @@ public:
 };
 
 
+// g_userInput is a UserInputAccess* so the layers below Species need only the
+// interface. Species reaches the whole class through here, at every call site.
+// The cast is safe because App is the only thing that assigns g_userInput.
+inline UserInput* TheUserInput() { return static_cast<UserInput*>(g_userInput); }

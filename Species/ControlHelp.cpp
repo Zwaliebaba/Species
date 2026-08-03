@@ -617,76 +617,77 @@ bool ControlHelpSystem::CheckCondition(int _condition)
   case CondTaskManagerCreateBlue:
     // Always tell the user that the it is possible to create a unit
     // (even if full up) (so long as you're not in the task manager)
-    return !g_taskManagerInterface->m_visible || g_taskManagerInterface->AdviseCreateControlHelpBlue();
+    return !TheTaskManagerInterface()->m_visible || TheTaskManagerInterface()->AdviseCreateControlHelpBlue();
 
   case CondTaskManagerCloseBlue:
     // Too cluttered to have two close buttons
-    return false; // g_taskManagerInterface->AdviseCloseControlHelp();
+    return false; // TheTaskManagerInterface()->AdviseCloseControlHelp();
 
   case CondTaskManagerCloseRed:
-    return g_taskManagerInterface->m_visible;
+    return TheTaskManagerInterface()->m_visible;
 
   case CondDeselectUnit:
     return UnitSelected() || BuildingSelected();
 
   case CondSelectUnit:
-    return !g_taskManagerInterface->m_visible && g_app->m_gameCursor->AdviseHighlightingSomething();
+    return !TheTaskManagerInterface()->m_visible && g_app->m_gameCursor->AdviseHighlightingSomething();
 
   case CondTaskManagerCreateGreen:
-    return g_taskManagerInterface->m_visible && g_taskManagerInterface->AdviseCreateControlHelpGreen();
+    return TheTaskManagerInterface()->m_visible && TheTaskManagerInterface()->AdviseCreateControlHelpGreen();
 
   case CondMoveUnit:
-    return !g_taskManagerInterface->m_visible && g_app->m_gameCursor->AdviseMoveableEntitySelected();
+    return !TheTaskManagerInterface()->m_visible && g_app->m_gameCursor->AdviseMoveableEntitySelected();
 
   case CondTaskManagerSelect:
-    return g_taskManagerInterface->m_visible && g_taskManagerInterface->AdviseOverSelectableZone();
+    return TheTaskManagerInterface()->m_visible && TheTaskManagerInterface()->AdviseOverSelectableZone();
 
   case CondPlaceUnit:
-    return !g_taskManagerInterface->m_visible && g_app->m_gameCursor->AdvisePlacementOpportunity();
+    return !TheTaskManagerInterface()->m_visible && g_app->m_gameCursor->AdvisePlacementOpportunity();
 
   case CondPromoteOfficer:
-    return !g_taskManagerInterface->m_visible && g_app->m_gameCursor->AdviseHighlightingSomething() && PlacingOfficerProgram();
+    return !TheTaskManagerInterface()->m_visible && g_app->m_gameCursor->AdviseHighlightingSomething() && PlacingOfficerProgram();
 
   case CondMoveCameraOrUnit:
-    return !g_taskManagerInterface->m_visible && (TheCamera()->IsInMode(Camera::ModeFreeMovement) || TheCamera()->IsInMode(Camera::ModeEntityTrack));
+    return !TheTaskManagerInterface()->m_visible &&
+           (TheCamera()->IsInMode(Camera::ModeFreeMovement) || TheCamera()->IsInMode(Camera::ModeEntityTrack));
 
   case CondCameraAim:
-    return !g_taskManagerInterface->m_visible && TheCamera()->IsInMode(Camera::ModeFreeMovement);
+    return !TheTaskManagerInterface()->m_visible && TheCamera()->IsInMode(Camera::ModeFreeMovement);
 
   case CondSquaddieFire:
-    return !g_taskManagerInterface->m_visible && SquaddieSelected();
+    return !TheTaskManagerInterface()->m_visible && SquaddieSelected();
 
   case CondChangeWeapon:
-    return !g_taskManagerInterface->m_visible && SquaddieSelected() && HasMoreThanOneSecondaryWeapon();
+    return !TheTaskManagerInterface()->m_visible && SquaddieSelected() && HasMoreThanOneSecondaryWeapon();
 
   case CondChangeOrders:
-    return !g_taskManagerInterface->m_visible && OfficerOrArmourSelected();
+    return !TheTaskManagerInterface()->m_visible && OfficerOrArmourSelected();
 
   case CondCameraUp:
-    return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !g_taskManagerInterface->m_visible;
+    return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !TheTaskManagerInterface()->m_visible;
 
   case CondCameraDown:
-    return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !g_taskManagerInterface->m_visible;
+    return !m_icons[LA]->Enabled() && !m_icons[RA]->Enabled() && !TheTaskManagerInterface()->m_visible;
 
   case CondZoom:
-    return !g_taskManagerInterface->m_visible &&
+    return !TheTaskManagerInterface()->m_visible &&
            // RadarDishSelected() &&
            TheCamera()->IsInMode(Camera::ModeRadarAim);
 
   case CondFireGrenades:
-    return !g_taskManagerInterface->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
            WeaponSelected(GlobalResearch::TypeGrenade);
 
   case CondFireRocket:
-    return !g_taskManagerInterface->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
            WeaponSelected(GlobalResearch::TypeRocket);
 
   case CondFireAirstrike:
-    return !g_taskManagerInterface->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
            WeaponSelected(GlobalResearch::TypeAirStrike);
 
   case CondOfficerSetGoto:
-    return !g_taskManagerInterface->m_visible && OfficerSelected();
+    return !TheTaskManagerInterface()->m_visible && OfficerSelected();
 
   case CondOfficerSetFollow:
   {
@@ -698,18 +699,18 @@ bool ControlHelpSystem::CheckCondition(int _condition)
       if (e && e->m_type == Entity::TypeOfficer)
         officerHighlighted = true;
     }
-    return !g_taskManagerInterface->m_visible && OfficerSelected() && officerHighlighted;
+    return !TheTaskManagerInterface()->m_visible && OfficerSelected() && officerHighlighted;
   }
 
   case CondArmourSetTurret:
-    return !g_taskManagerInterface->m_visible && ArmourSelected();
+    return !TheTaskManagerInterface()->m_visible && ArmourSelected();
 
   case CondSwitchPrevUnit:
   case CondSwitchNextUnit:
-    return !g_taskManagerInterface->m_visible && CanSwitchUnit();
+    return !TheTaskManagerInterface()->m_visible && CanSwitchUnit();
 
   case CondRadarAim:
-    return !g_taskManagerInterface->m_visible && RadarDishSelected();
+    return !TheTaskManagerInterface()->m_visible && RadarDishSelected();
 
   case CondSkipCutscene:
   {
@@ -796,7 +797,7 @@ void ControlHelpSystem::Render()
     return;
   }
 
-  if (g_taskManagerInterface->m_visible)
+  if (TheTaskManagerInterface()->m_visible)
     setPosition.x -= 100;
 
   for (int i = 0; i < MaxSets; i++)

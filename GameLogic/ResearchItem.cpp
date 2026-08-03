@@ -16,7 +16,6 @@
 #include "GlobalWorld.h"
 #include "ProtocolLimits.h"
 #include "Location.h"
-#include "TaskManagerInterface.h"
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"
@@ -101,11 +100,11 @@ bool ResearchItem::Advance()
 
     if (existingLevel == 0)
     {
-      g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearch, m_researchType, 4.0f);
+      g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageResearch, m_researchType, 4.0f);
     }
     else
     {
-      g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageResearchUpgrade, m_researchType, 4.0f);
+      g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageResearchUpgrade, m_researchType, 4.0f);
     }
 
     return true;

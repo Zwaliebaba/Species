@@ -23,7 +23,6 @@
 #include "Explosion.h"
 #include "GlobalWorld.h"
 #include "EntityGrid.h"
-#include "TaskManagerInterface.h"
 
 #include "SoundSystem.h"
 #include "WorldPointers.h"

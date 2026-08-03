@@ -79,7 +79,7 @@ bool StartSequence::Advance()
   if (!g_eventHandler->WindowHasFocus())
   {
     Sleep(1);
-    g_userInput->Advance();
+    TheUserInput()->Advance();
     return false;
   }
 
@@ -89,7 +89,7 @@ bool StartSequence::Advance()
     return true;
   }
 
-  g_userInput->Advance();
+  TheUserInput()->Advance();
   TheCamera()->Advance();
   g_app->m_soundSystem->Advance();
 #ifdef PROFILER_ENABLED

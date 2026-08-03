@@ -12,5 +12,5 @@ int g_gameMode = GameModeNone;
 bool g_atMainMenu = false;
 bool g_requestToggleEditing = false;
 Server* g_server = nullptr;
-ControlHelpSystem* g_controlHelpSystem = nullptr;
+ControlHelpAccess* g_controlHelpSystem = nullptr;
 char g_userProfileName[256] = "";
