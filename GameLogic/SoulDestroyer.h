@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Entity.h"
+#include "FastDArray.h"
 
 #define SOULDESTROYER_MINSEARCHRANGE       200.0f
 #define SOULDESTROYER_MAXSEARCHRANGE       300.0f

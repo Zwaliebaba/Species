@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "LList.h"
+
 
 class StartSequenceCaption;
 
