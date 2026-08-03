@@ -279,10 +279,10 @@ void GameMenu::CreateMenu()
   EclRegisterWindow(new GameMenuWindow());
 
   // set the camera to a position with a good view of the internet
-  g_camera->RequestMode(Camera::ModeMainMenu);
+  TheCamera()->RequestMode(Camera::ModeMainMenu);
   TheCamera()->SetDebugMode(Camera::DebugModeNever);
-  g_camera->SetTarget(Vector3(-900000, 3000000, 397000), Vector3(0, 0.5f, -1));
-  g_camera->CutToTarget();
+  TheCamera()->SetTarget(Vector3(-900000, 3000000, 397000), Vector3(0, 0.5f, -1));
+  TheCamera()->CutToTarget();
 
   /*if( g_app->m_multiwinia )
   {

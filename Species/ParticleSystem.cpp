@@ -163,8 +163,8 @@ void Particle::Render(float _predictionTime)
 
   Vector3 predictedPos = m_pos + _predictionTime * m_vel;
   float size = m_size / 16.0f;
-  Vector3 up(g_camera->GetUp() * size);
-  Vector3 right(g_camera->GetRight() * size);
+  Vector3 up(TheCamera()->GetUp() * size);
+  Vector3 right(TheCamera()->GetRight() * size);
 
   if (m_typeId == TypeMissileTrail)
   {

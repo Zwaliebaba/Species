@@ -71,7 +71,7 @@ bool StartSequence::Advance()
     started = true;
     g_app->m_soundSystem->TriggerOtherEvent(nullptr, "StartSequence", SoundSourceBlueprint::TypeMusic);
     TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-    g_camera->RequestMode(Camera::ModeSphereWorldIntro);
+    TheCamera()->RequestMode(Camera::ModeSphereWorldIntro);
   }
 
   g_inputManager->PollForEvents();

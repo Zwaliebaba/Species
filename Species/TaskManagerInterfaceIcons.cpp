@@ -148,14 +148,14 @@ void TaskManagerInterfaceIcons::Advance()
   {
     // We were running a default objective description (trunk port, research item)
     // So shut it down now
-    g_camera->RequestMode(Camera::ModeFreeMovement);
+    TheCamera()->RequestMode(Camera::ModeFreeMovement);
     m_viewingDefaultObjective = false;
   }
 
   bool inCutscene = false;
   if (g_script->IsRunningScript() && g_script->m_permitEscape)
     inCutscene = true;
-  if (g_camera->IsInMode(Camera::ModeBuildingFocus))
+  if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
     inCutscene = true;
 
   if (inCutscene)
@@ -1732,9 +1732,9 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
   TheCamera()->Get2DScreenPos(_worldPos, &screenX, &screenY);
   screenY = screenH - screenY;
 
-  Vector3 toCam = g_camera->GetPos() - _worldPos;
-  float angle = toCam * g_camera->GetFront();
-  Vector3 rotationVector = toCam ^ g_camera->GetFront();
+  Vector3 toCam = TheCamera()->GetPos() - _worldPos;
+  float angle = toCam * TheCamera()->GetFront();
+  Vector3 rotationVector = toCam ^ TheCamera()->GetFront();
 
   Vector2 compassVector;
 
@@ -1751,7 +1751,7 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
   {
     // _pos is offscreen
     Vector3 rayStart, rayDir;
-    g_camera->GetClickRay(_screenX * screenW / m_screenW, _screenY * screenH / m_screenH, &rayStart, &rayDir);
+    TheCamera()->GetClickRay(_screenX * screenW / m_screenW, _screenY * screenH / m_screenH, &rayStart, &rayDir);
     Vector3 camPos = rayStart + rayDir * 1000;
     Vector3 camToTarget = (_worldPos - camPos).SetLength(100);
 

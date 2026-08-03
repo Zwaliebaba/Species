@@ -893,8 +893,8 @@ void RunBootLoaders()
     delete g_app->m_startSequence;
     g_app->m_startSequence = nullptr;
 
-    g_camera->SetTarget(Vector3(1000, 500, 1000), Vector3(0, -0.5f, -1));
-    g_camera->CutToTarget();
+    TheCamera()->SetTarget(Vector3(1000, 500, 1000), Vector3(0, -0.5f, -1));
+    TheCamera()->CutToTarget();
 
     g_inputManager->Advance(); // clears g_keyDeltas[KEY_ESC]
     g_inputManager->Advance();
@@ -936,9 +936,9 @@ void EnterLocation()
   float minX = -borderSize;
   float maxX = g_location->m_landscape.GetWorldSizeX() + borderSize;
   TheCamera()->SetBounds(minX, maxX, minX, maxX);
-  g_camera->SetTarget(Vector3(maxX, 1000, maxX), Vector3(-1, -0.7, -1)); // Incase start doesn't exist
-  g_camera->SetTarget("start");
-  g_camera->CutToTarget();
+  TheCamera()->SetTarget(Vector3(maxX, 1000, maxX), Vector3(-1, -0.7, -1)); // Incase start doesn't exist
+  TheCamera()->SetTarget("start");
+  TheCamera()->CutToTarget();
 
   if (g_editing)
   {
@@ -952,7 +952,7 @@ void EnterLocation()
   else
   {
     TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-    g_camera->RequestMode(Camera::ModeFreeMovement);
+    TheCamera()->RequestMode(Camera::ModeFreeMovement);
 
     LocationGameLoop();
   }
@@ -972,7 +972,7 @@ void EnterGlobalWorld()
 
   // Put the camera in a sensible place
   TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-  g_camera->RequestMode(Camera::ModeSphereWorld);
+  TheCamera()->RequestMode(Camera::ModeSphereWorld);
   TheCamera()->SetHeight(50.0f);
 
   if (g_editing)
@@ -983,7 +983,7 @@ void EnterGlobalWorld()
 
 void MainMenuLoop()
 {
-  g_camera->RequestMode(Camera::ModeMainMenu);
+  TheCamera()->RequestMode(Camera::ModeMainMenu);
   while (g_atMainMenu)
   {
     UpdateAdvanceTime();

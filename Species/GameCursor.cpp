@@ -276,7 +276,7 @@ void GameCursor::Render()
   START_PROFILE(g_app->m_profiler, "Render GameCursor");
 
   float nearPlaneStart = g_renderer->GetNearPlane();
-  g_camera->SetupProjectionMatrix(nearPlaneStart * 1.05f, g_renderer->GetFarPlane());
+  TheCamera()->SetupProjectionMatrix(nearPlaneStart * 1.05f, g_renderer->GetFarPlane());
 
   int screenX = g_target->X();
   int screenY = g_target->Y();
@@ -302,7 +302,7 @@ void GameCursor::Render()
   {
     // Reading Sepulveda's history
   }
-  else if (!g_camera->IsInteractive())
+  else if (!TheCamera()->IsInteractive())
   {
     // Cut scene of some sort, no player control, so no cursor
     cursorRendered = true;
@@ -345,7 +345,7 @@ void GameCursor::Render()
 
       if (somethingHighlighted)
       {
-        float camDist = (g_camera->GetPos() - highlightedWorldPos).Mag();
+        float camDist = (TheCamera()->GetPos() - highlightedWorldPos).Mag();
         float posX, posY;
         TheCamera()->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
         m_cursorSelection->SetSize(highlightedRadius * 100 / sqrt(camDist));
@@ -372,7 +372,7 @@ void GameCursor::Render()
 
       cursorRendered = true;
     }
-    else if (g_camera->IsInMode(Camera::ModeEntityTrack))
+    else if (TheCamera()->IsInMode(Camera::ModeEntityTrack))
     {
       if (false)
       {
@@ -401,7 +401,7 @@ void GameCursor::Render()
     {
       if (somethingHighlighted && !(somethingSelected && highlightedId.GetUnitId() == UNIT_BUILDINGS))
       {
-        float camDist = (g_camera->GetPos() - highlightedWorldPos).Mag();
+        float camDist = (TheCamera()->GetPos() - highlightedWorldPos).Mag();
         if (camDist > 100 || !somethingSelected || selectedId != highlightedId)
         {
           float posX, posY;
@@ -504,7 +504,7 @@ void GameCursor::Render()
 
   RenderMarkers();
 
-  g_camera->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
+  TheCamera()->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
 
   END_PROFILE(g_app->m_profiler, "Render GameCursor");
 }
@@ -707,9 +707,9 @@ void GameCursor::RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos)
   TheCamera()->Get2DScreenPos(_pos, &screenX, &screenY);
   screenY = screenH - screenY;
 
-  Vector3 toCam = g_camera->GetPos() - _pos;
-  float angle = toCam * g_camera->GetFront();
-  Vector3 rotationVector = toCam ^ g_camera->GetFront();
+  Vector3 toCam = TheCamera()->GetPos() - _pos;
+  float angle = toCam * TheCamera()->GetFront();
+  Vector3 rotationVector = toCam ^ TheCamera()->GetFront();
 
   if (angle <= 0.0f && screenX >= 0 && screenX < screenW && screenY >= 0 && screenY < screenH)
   {
@@ -738,7 +738,7 @@ void GameCursor::RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos)
   else
   {
     // _pos is offscreen
-    Vector3 camPos = g_camera->GetPos() + g_camera->GetFront() * 1000;
+    Vector3 camPos = TheCamera()->GetPos() + TheCamera()->GetFront() * 1000;
     Vector3 camToTarget = (_pos - camPos).SetLength(100);
 
     float camX = screenW / 2.0f;
@@ -780,7 +780,7 @@ void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
     screenY = screenH - screenY;
 
   // Calculate alpha
-  Vector3 toCam = g_camera->GetPos() - _pos;
+  Vector3 toCam = TheCamera()->GetPos() - _pos;
   float distance = toCam.Mag();
 
     if( distance < 400.0f )
@@ -807,8 +807,8 @@ void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
   m_selectionArrowBoost -= g_advanceTime * BOOST_FADE_RATE;
 
   // Deal with the selected unit not being on screen
-  float angle = toCam * g_camera->GetFront();
-  Vector3 rotationVector = toCam ^ g_camera->GetFront();
+  float angle = toCam * TheCamera()->GetFront();
+  Vector3 rotationVector = toCam ^ TheCamera()->GetFront();
   if (angle > 0.0f)
   {
     // Unit is behind camera
@@ -881,7 +881,7 @@ void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
 
     if( !onScreen )
     {
-        Vector3 camPos = g_camera->GetPos() + g_camera->GetFront() * 1000;
+        Vector3 camPos = TheCamera()->GetPos() + TheCamera()->GetFront() * 1000;
         Vector3 camToTarget = ( _pos - camPos ).SetLength( 100 );
 
         float camX = screenW / 2.0f;
@@ -1087,7 +1087,7 @@ void MouseCursor::Render3D(Vector3 const& _pos, Vector3 const& _front, Vector3 c
   float scale = GetSize();
   if (_cameraScale)
   {
-    float camDist = (g_camera->GetPos() - _pos).Mag();
+    float camDist = (TheCamera()->GetPos() - _pos).Mag();
     scale *= sqrtf(camDist) / 40.0f;
   }
 

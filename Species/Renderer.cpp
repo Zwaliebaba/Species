@@ -137,9 +137,9 @@ void Renderer::RenderFlatTexture()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
   float size = m_nearPlane * 0.3f;
-  Vector3 up = g_camera->GetUp() * 1.0f * size;
-  Vector3 right = g_camera->GetRight() * 1.0f * size;
-  Vector3 pos = g_camera->GetPos() + g_camera->GetFront() * m_nearPlane * 1.01f;
+  Vector3 up = TheCamera()->GetUp() * 1.0f * size;
+  Vector3 right = TheCamera()->GetRight() * 1.0f * size;
+  Vector3 pos = TheCamera()->GetPos() + TheCamera()->GetFront() * m_nearPlane * 1.01f;
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -432,7 +432,7 @@ void Renderer::RenderFrame(bool withFlip)
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     g_editorFont.DrawText2D(12, 10, DEF_FONT_SIZE, "FPS: %d", m_fps);
     //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "TFPS: %2.0f", g_targetFrameRate);
-    //		Vector3 const camPos = g_camera->GetPos();
+    //		Vector3 const camPos = TheCamera()->GetPos();
     //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "cam: %.1f, %.1f, %.1f", camPos.x, camPos.y, camPos.z);
   }
 
@@ -933,7 +933,7 @@ void Renderer::PreRenderPixelEffect()
   float nearest = 99999.9f;
 
   float cutoff = 1000.0f;
-  Vector3 camPos = g_camera->GetPos();
+  Vector3 camPos = TheCamera()->GetPos();
 
   for (int t = 0; t < NUM_TEAMS; ++t)
   {
@@ -963,7 +963,7 @@ void Renderer::PreRenderPixelEffect()
                       rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
                     if (rendered)
                     {
-                      float distance = (entity->m_pos - g_camera->GetPos()).Mag();
+                      float distance = (entity->m_pos - TheCamera()->GetPos()).Mag();
                       if (distance < nearest)
                         nearest = distance;
                     }
@@ -992,7 +992,7 @@ void Renderer::PreRenderPixelEffect()
                 rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
               if (rendered)
               {
-                float distance = (entity->m_pos - g_camera->GetPos()).Mag();
+                float distance = (entity->m_pos - TheCamera()->GetPos()).Mag();
                 if (distance < nearest)
                   nearest = distance;
               }
@@ -1014,7 +1014,7 @@ void Renderer::PreRenderPixelEffect()
         bool rendered = building->RenderPixelEffect(g_predictionTime);
         if (rendered)
         {
-          float distance = (building->m_pos - g_camera->GetPos()).Mag();
+          float distance = (building->m_pos - TheCamera()->GetPos()).Mag();
           if (distance < nearest)
             nearest = distance;
         }
@@ -1370,7 +1370,7 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
 
   // Return early if this shape fragment isn't on the screen
   {
-    if (!g_camera->SphereInViewFrustum(worldPos, _frag->m_radius))
+    if (!TheCamera()->SphereInViewFrustum(worldPos, _frag->m_radius))
       return;
   }
 

@@ -47,7 +47,7 @@ void LocationInput::AdvanceRadarDishControl(Building* _building)
   {
     Vector3 rayStart;
     Vector3 rayDir;
-    g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+    TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
     int buildId = g_location->GetBuildingId(rayStart, rayDir, 255);
     Building* building = g_location->GetBuilding(buildId);
@@ -69,7 +69,7 @@ bool LocationInput::GetObjectUnderMouse(WorldObjectId& _id, int _teamId)
 {
   Vector3 rayStart;
   Vector3 rayDir;
-  g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+  TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
   // Find any objects the ray intersects
   float buildDist = FLT_MAX;
@@ -172,7 +172,7 @@ void LocationInput::AdvanceNoSelection()
     {
         Vector3 rayStart;
         Vector3 rayDir;
-        g_camera->GetClickRay(g_inputManager->m_mouseX, g_inputManager->m_mouseY,
+        TheCamera()->GetClickRay(g_inputManager->m_mouseX, g_inputManager->m_mouseY,
                    &rayStart, &rayDir);
 
         // Find any objects the ray intersects
@@ -250,7 +250,7 @@ void LocationInput::AdvanceTeamControl()
   bool inCutscene = false;
   if (g_script->IsRunningScript() && g_script->m_permitEscape)
     inCutscene = true;
-  if (g_camera->IsInMode(Camera::ModeBuildingFocus))
+  if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
     inCutscene = true;
 
   if (inCutscene)
@@ -287,7 +287,7 @@ void LocationInput::AdvanceTeamControl()
     if (objectSelected)
     {
       g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
-      g_camera->RequestMode(Camera::ModeFreeMovement);
+      TheCamera()->RequestMode(Camera::ModeFreeMovement);
       g_taskManager->m_currentTaskId = -1;
 
       if (team->m_currentUnitId != -1)
@@ -334,7 +334,7 @@ void LocationInput::AdvanceTeamControl()
           {
             // Player pressed CTRL-C, so terminate this turret
             g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
-            g_camera->RequestMode(Camera::ModeFreeMovement);
+            TheCamera()->RequestMode(Camera::ModeFreeMovement);
             building->Damage(-100);
           }
         }
@@ -353,7 +353,7 @@ void LocationInput::AdvanceTeamControl()
         {
           // Player pressed CTRL-C, so demote this officer
           g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
-          g_camera->RequestMode(Camera::ModeFreeMovement);
+          TheCamera()->RequestMode(Camera::ModeFreeMovement);
           ent->ChangeHealth(-999);
         }
 
@@ -450,7 +450,7 @@ void LocationInput::AdvanceTeamControl()
     else
     {
       g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
-      g_camera->RequestMode(Camera::ModeFreeMovement);
+      TheCamera()->RequestMode(Camera::ModeFreeMovement);
     }
   }
 }

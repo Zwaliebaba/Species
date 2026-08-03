@@ -192,7 +192,7 @@ void UserInput::RecalcMousePos3d()
   // Get click ray
   Vector3 rayStart;
   Vector3 rayDir;
-  g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+  TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
   ASSERT_VECTOR3_IS_SANE(rayStart);
   ASSERT_VECTOR3_IS_SANE(rayDir);
   rayStart += rayDir * 0.0f;

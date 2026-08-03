@@ -268,7 +268,7 @@ void LocationEditor::AdvanceModeNone()
 {
   Vector3 pos = g_userInput->GetMousePos3d();
   Vector3 rayStart, rayDir;
-  g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+  TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
   if (g_inputManager->controlEvent(ControlSelectLocation)) // TODO: Really?
   {
@@ -622,7 +622,7 @@ void LocationEditor::AdvanceModeCameraMount()
     if (win && win->m_newNodeArmed)
     {
       Vector3 rayStart, rayDir;
-      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+      TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
       int mountId = DoesRayHitCameraMount(rayStart, rayDir);
       if (mountId != -1)
       {
@@ -706,8 +706,8 @@ void LocationEditor::RenderUnit(InstantUnit* _iu)
   colour.a = 200;
   glColor4ubv(colour.GetData());
 
-  Vector3 camUp = g_camera->GetUp() * 5.0f;
-  Vector3 camRight = g_camera->GetRight() * 5.0f;
+  Vector3 camUp = TheCamera()->GetUp() * 5.0f;
+  Vector3 camRight = TheCamera()->GetRight() * 5.0f;
 
   glDisable(GL_CULL_FACE);
   glEnable(GL_BLEND);
@@ -1068,7 +1068,7 @@ void LocationEditor::Render()
     for (int i = 0; i < g_location->m_levelFile->m_cameraMounts.Size(); ++i)
     {
       CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
-      Vector3 camToMount = g_camera->GetPos() - mount->m_pos;
+      Vector3 camToMount = TheCamera()->GetPos() - mount->m_pos;
       if (camToMount.Mag() < 20.0f)
         continue;
       mat.OrientFU(mount->m_front, mount->m_up);

@@ -57,9 +57,9 @@ void Script::RunCommand_CamCut(const char* _mountName)
   if (!g_location)
     return;
 
-  bool mountFound = g_camera->SetTarget(_mountName);
+  bool mountFound = TheCamera()->SetTarget(_mountName);
   DEBUG_ASSERT(mountFound);
-  g_camera->CutToTarget();
+  TheCamera()->CutToTarget();
 }
 
 void Script::RunCommand_CamMove(const char* _mountName, float _duration)
@@ -67,11 +67,11 @@ void Script::RunCommand_CamMove(const char* _mountName, float _duration)
   if (!g_location)
     return;
 
-  if (g_camera->SetTarget(_mountName))
+  if (TheCamera()->SetTarget(_mountName))
   {
     TheCamera()->SetMoveDuration(_duration);
 
-    g_camera->RequestMode(Camera::ModeMoveToTarget);
+    TheCamera()->RequestMode(Camera::ModeMoveToTarget);
   }
 }
 
@@ -83,7 +83,7 @@ void Script::RunCommand_CamAnim(const char* _animName)
   int animId = g_location->m_levelFile->GetCameraAnimId(_animName);
   ASSERT_TEXT(animId != -1, "Invalid camera animation requested %s", _animName);
   CameraAnimation* camAnim = g_location->m_levelFile->m_cameraAnimations[animId];
-  g_camera->PlayAnimation(camAnim);
+  TheCamera()->PlayAnimation(camAnim);
 }
 
 void Script::RunCommand_CamFov(float _fov, bool _immediate)
@@ -116,9 +116,9 @@ void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float
 
   if (building)
   {
-    g_camera->SetTarget(building->m_centrePos, _range, _height);
+    TheCamera()->SetTarget(building->m_centrePos, _range, _height);
     TheCamera()->SetMoveDuration(_duration);
-    g_camera->RequestMode(Camera::ModeMoveToTarget);
+    TheCamera()->RequestMode(Camera::ModeMoveToTarget);
   }
   else
     DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
@@ -144,22 +144,22 @@ void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
     targetPos = g_globalWorld->GetLocationPosition(locationId);
   }
 
-  if (!g_camera->IsInMode(Camera::ModeSphereWorldScripted))
-    g_camera->RequestMode(Camera::ModeSphereWorldScripted);
+  if (!TheCamera()->IsInMode(Camera::ModeSphereWorldScripted))
+    TheCamera()->RequestMode(Camera::ModeSphereWorldScripted);
 
   TheCamera()->SetTargetFOV(_fov);
-  g_camera->SetTarget(targetPos, Vector3(0, 0, 1), g_upVector);
+  TheCamera()->SetTarget(targetPos, Vector3(0, 0, 1), g_upVector);
 }
 
 void Script::RunCommand_CamReset()
 {
   if (TheCamera()->IsAnimPlaying())
-    g_camera->StopAnimation();
+    TheCamera()->StopAnimation();
 
   if (g_location)
-    g_camera->RequestMode(Camera::ModeFreeMovement);
+    TheCamera()->RequestMode(Camera::ModeFreeMovement);
   else
-    g_camera->RequestMode(Camera::ModeSphereWorld);
+    TheCamera()->RequestMode(Camera::ModeSphereWorld);
 }
 
 void Script::RunCommand_EnterLocation(char* _name)
@@ -278,7 +278,7 @@ void Script::RunCommand_GameOver()
   //
   // Go into the outro camera mode
 
-  g_camera->RequestMode(Camera::ModeSphereWorldOutro);
+  TheCamera()->RequestMode(Camera::ModeSphereWorldOutro);
 
   //
   // Kill global world ambiences
@@ -454,9 +454,9 @@ bool Script::Skip()
     g_app->m_soundSystem->StopAllSounds(WorldObjectId(), "Music");
     m_permitEscape = false;
     if (g_location)
-      g_camera->RequestMode(Camera::ModeFreeMovement);
+      TheCamera()->RequestMode(Camera::ModeFreeMovement);
     else
-      g_camera->RequestMode(Camera::ModeSphereWorld);
+      TheCamera()->RequestMode(Camera::ModeSphereWorld);
     return true;
   }
 

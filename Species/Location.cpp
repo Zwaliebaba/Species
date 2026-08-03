@@ -799,7 +799,7 @@ void Location::DoMissionCompleteActions()
   g_taskManagerInterface->SetCurrentMessage(TaskManagerInterface::MessageObjectivesComplete, -1, 5.0f);
 
 
-  //    if( !g_camera->IsInteractive() ||
+  //    if( !TheCamera()->IsInteractive() ||
   //        g_script->IsRunningScript() )
   //    {
   //        return;
@@ -1177,7 +1177,7 @@ void Location::RenderBuildingAlphas()
         Vector3 centrePos;
         if (building->PerformDepthSort(centrePos))
         {
-          float distance = (centrePos - g_camera->GetPos()).MagSquared();
+          float distance = (centrePos - TheCamera()->GetPos()).MagSquared();
           s_sortedBuildings[s_nextSortedBuilding].m_buildingIndex = i;
           s_sortedBuildings[s_nextSortedBuilding].m_distance = distance;
           s_nextSortedBuilding++;
@@ -1307,7 +1307,7 @@ void Location::RenderWeapons()
 
 
   float nearPlaneStart = g_renderer->GetNearPlane();
-  g_camera->SetupProjectionMatrix(nearPlaneStart * 1.2f, g_renderer->GetFarPlane());
+  TheCamera()->SetupProjectionMatrix(nearPlaneStart * 1.2f, g_renderer->GetFarPlane());
 
   for (int i = 0; i < m_lasers.Size(); ++i)
   {
@@ -1333,7 +1333,7 @@ void Location::RenderWeapons()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glDisable(GL_LINE_SMOOTH);
 
-  g_camera->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
+  TheCamera()->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
 
   END_PROFILE(g_app->m_profiler, "Render Weapons");
 }
@@ -1355,7 +1355,7 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
     DebugTrace("CLIENT : Assigned team %d\n", _teamId);
     g_globalWorld->m_myTeamId = _teamId;
     //		g_target->SetMousePos(g_renderer->ScreenW(), g_renderer->ScreenH());
-    //		g_camera->RequestMode(Camera::ModeFreeMovement);
+    //		TheCamera()->RequestMode(Camera::ModeFreeMovement);
   }
 
   // Create instant units that belong to this team
@@ -2009,8 +2009,8 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
   // Is visible?
 
   Vector3 tmp;
-  bool isVisible = !m_landscape.RayHit(g_camera->GetPos(), _pos - g_camera->GetPos(), &tmp) ||
-                   (tmp - g_camera->GetPos()).Mag() > (_pos - g_camera->GetPos()).Mag() - 0.3f;
+  bool isVisible = !m_landscape.RayHit(TheCamera()->GetPos(), _pos - TheCamera()->GetPos(), &tmp) ||
+                   (tmp - TheCamera()->GetPos()).Mag() > (_pos - TheCamera()->GetPos()).Mag() - 0.3f;
 
   //
   // Shockwave

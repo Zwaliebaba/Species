@@ -490,7 +490,7 @@ static bool SquaddieSelected()
   Unit* unit = nullptr;
   Task* currentTask = nullptr;
 
-  return g_camera->IsInMode(Camera::ModeEntityTrack) && (unit = GetSelectedUnit()) && unit->m_troopType == Entity::TypeInsertionSquadie &&
+  return TheCamera()->IsInMode(Camera::ModeEntityTrack) && (unit = GetSelectedUnit()) && unit->m_troopType == Entity::TypeInsertionSquadie &&
          (currentTask = g_taskManager->GetCurrentTask()) && currentTask->m_state == Task::StateRunning;
 }
 
@@ -648,10 +648,10 @@ bool ControlHelpSystem::CheckCondition(int _condition)
     return !g_taskManagerInterface->m_visible && g_app->m_gameCursor->AdviseHighlightingSomething() && PlacingOfficerProgram();
 
   case CondMoveCameraOrUnit:
-    return !g_taskManagerInterface->m_visible && (g_camera->IsInMode(Camera::ModeFreeMovement) || g_camera->IsInMode(Camera::ModeEntityTrack));
+    return !g_taskManagerInterface->m_visible && (TheCamera()->IsInMode(Camera::ModeFreeMovement) || TheCamera()->IsInMode(Camera::ModeEntityTrack));
 
   case CondCameraAim:
-    return !g_taskManagerInterface->m_visible && g_camera->IsInMode(Camera::ModeFreeMovement);
+    return !g_taskManagerInterface->m_visible && TheCamera()->IsInMode(Camera::ModeFreeMovement);
 
   case CondSquaddieFire:
     return !g_taskManagerInterface->m_visible && SquaddieSelected();
@@ -671,7 +671,7 @@ bool ControlHelpSystem::CheckCondition(int _condition)
   case CondZoom:
     return !g_taskManagerInterface->m_visible &&
            // RadarDishSelected() &&
-           g_camera->IsInMode(Camera::ModeRadarAim);
+           TheCamera()->IsInMode(Camera::ModeRadarAim);
 
   case CondFireGrenades:
     return !g_taskManagerInterface->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
@@ -716,7 +716,7 @@ bool ControlHelpSystem::CheckCondition(int _condition)
     bool inCutscene = false;
     if (g_script->IsRunningScript() && g_script->m_permitEscape)
       inCutscene = true;
-    if (g_camera->IsInMode(Camera::ModeBuildingFocus))
+    if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
       inCutscene = true;
     return inCutscene;
   }
@@ -784,7 +784,7 @@ void ControlHelpSystem::Render()
   bool inCutscene = false;
   if (g_script->IsRunningScript() && g_script->m_permitEscape)
     inCutscene = true;
-  if (g_camera->IsInMode(Camera::ModeBuildingFocus))
+  if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
     inCutscene = true;
 
   if (inCutscene)

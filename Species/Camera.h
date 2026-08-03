@@ -188,9 +188,15 @@ class Camera : public CameraAccess
 
 
 // g_camera is a CameraAccess* so the layers below Species need only the
-// interface. Species owns the concrete type and drives the camera, so it
-// reaches the rest of the API — Advance and Render, the request modes, the
-// bounds and FOV setters — through here. The cast is safe because App is the
-// only thing that ever assigns g_camera, and it assigns a Camera. Same shape
-// as TheRenderer() in Renderer.h.
+// interface. Species owns the concrete type and reaches the camera through
+// here — every call site in Species, not just the ones needing a member the
+// interface omits. The cast is safe because App is the only thing that ever
+// assigns g_camera, and it assigns a Camera.
+//
+// Uniform rather than mixed, unlike TheRenderer() in Renderer.h, and SetTarget
+// is why. Camera has three SetTarget overloads and CameraAccess declares one;
+// a Species call through the interface pointer sees only that one, so
+// SetTarget(pos, front) and SetTarget(mountName) stop compiling while
+// SetTarget(pos, front, up) keeps working. Splitting call sites by which
+// overload they happen to use is a trap. Species goes through here.
 inline Camera* TheCamera() { return static_cast<Camera*>(g_camera); }
