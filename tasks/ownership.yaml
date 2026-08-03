@@ -150,7 +150,49 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
     notes: >
-      After containers-replaced T4 for these files (cross-plan).
+      Surveyed 2026-08-02 and deliberately NOT started: the survey turned up
+      two lifetime hazards and one pre-existing leak, in code whose only
+      coverage is "a new Server starts empty" plus CI's 20-tick run with no
+      client attached. A mistake here is a use-after-free in the authoritative
+      host, so the analysis is written down and the conversion left for a pass
+      that can give it full attention.
+
+      The containers are already converted (containers-replaced T4 and T22).
+      What remains: m_clients and m_teams become SlotMap<unique_ptr>, and
+      m_history, m_inbox and m_outbox become vectors of unique_ptr. m_sync
+      holds values and needs nothing.
+
+      HAZARD 1 — MarkNotUsed does not destroy. It clears the occupancy bit and
+      nothing else, so a SlotMap<unique_ptr> keeps the object alive until the
+      slot is reused or the map dies. RemoveClient currently does
+      `m_clients.MarkNotUsed(clientId); delete sToC;` — the object dies THERE.
+      Preserving that means resetting the slot's unique_ptr explicitly, before
+      MarkNotUsed while operator[] is still valid. Getting this wrong does not
+      crash; it silently keeps disconnected clients alive, which is exactly
+      the "changes WHEN objects die" failure this plan's summary warns about.
+
+      HAZARD 2 — the outbox send path deletes conditionally. SendLetters does
+      `letter = m_outbox.front(); if (m_clients.ValidIndex(...)) { ...send...;
+      delete letter; } m_outbox.erase(begin());`. The delete is INSIDE the
+      valid-client branch, so a letter addressed to a client that disconnected
+      before it was sent is erased and leaked — a real pre-existing leak on a
+      reachable path. Converting to unique_ptr fixes it by construction
+      (moving the letter out of the vector and letting scope end it), which
+      is a behaviour change, however desirable. Call it out in the commit
+      rather than letting it ride along silently, and drop the explicit
+      delete or the result is a double free.
+
+      UNRELATED DEFECT, found while surveying, not this task's business:
+      ListenThread contains `auto m_listener = new NetSocketListener(4000);`.
+      That is a LOCAL with a member's name prefix, and it is never deleted.
+      The leak is once per process and probably harmless if StartListening
+      blocks — but whether it blocks is the thing to establish before anyone
+      "fixes" it into a stack object, because if it returns immediately a
+      stack object would destroy the listener and kill inbound connections.
+
+      Nothing outside NeuronServer touches these members; ServerTests reads
+      m_clients.NumUsed() and m_teams.NumUsed(), both of which survive the
+      conversion unchanged.
     status: todo
 
   - id: T3
