@@ -454,9 +454,41 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
+    notes: |
+      STARTED AND STASHED 2026-08-03, uncommitted, with the tree left green.
+      `git stash list` — "strings T5 work-in-progress". What is done and what is
+      not is worth reading before picking it up, because the half-done state
+      does not compile and that is inherent to the change rather than a mistake.
 
-  - id: T6
+      DONE: InputField itself. m_buf is a std::string, m_string is a
+      std::string*, RegisterString takes std::string*, and SpeciesWindow's
+      CreateValueControl casts the void* to std::string* for TypeString. The
+      seven members that get registered are converted too — CameraMount::m_name,
+      CameraAnimation::m_name, ScriptTrigger::m_scriptFilename,
+      GenericHub::m_shapeName, StaticShape::m_shapeName, FenceSwitch::m_script,
+      and the two editor statics s_profileName and s_locationName.
+
+      NOT DONE: roughly 68 call sites that read those seven members — level-file
+      Write functions, name comparisons, resource lookups.
+
+      THE SHAPE OF THIS TASK IS NOT WHAT THE FILE LIST SAYS, and that is the
+      thing to know. InputField writes into its target through a raw pointer, so
+      converting it FORCES all seven members to convert in the same commit —
+      there is no intermediate state that compiles. Five of those members are
+      written to level files, which is T8's byte-identical requirement, and two
+      are the fields T6 deliberately left as fixed arrays behind Neuron::CopyInto
+      for exactly this reason.
+
+      So T5, T6's three members, T8 and T11 are ONE coupled change wearing four
+      task numbers. The DAG says they are independent and it is wrong. Whoever
+      picks this up should either merge them or give them an explicit order with
+      the level-file byte-identity check owned by whichever lands last.
+
+      The CAST IS THE HAZARD. CreateValueControl takes void*, so passing a
+      char[256] where a std::string* is now expected still COMPILES and corrupts
+      memory at runtime. All seven call sites were updated, but the compiler will
+      not catch the eighth.- id: T6
     title: Convert GameLogic simulation-side string handling
     intent: >
       ScriptTrigger (9), Rocket, GenericHub, Switch and the remaining
