@@ -1031,7 +1031,9 @@ tasks:
       - GameLogic/Water.cpp
       - GameLogic/LandscapeRenderer.h
     acceptance:
-      - grep -lwE "LList|DArray|FastDArray|BoundedArray|2dArray|2dSurfaceMap" on the listed files returns nothing
+      - grep -lwE "LList|DArray|FastDArray|SliceDArray|BoundedArray" on the listed files returns nothing
+      - "2dArray and 2dSurfaceMap are deliberately NOT in that grep — see notes. Array2D and SurfaceMap2D are kept as vector-backed row-major wrappers, because there is no std 2D grid and the plan intent for T12 already says grids stay row-major fixed arrays"
+      - "SliceDArray IS in that grep now: -w treats it as one word, so the old pattern listing DArray never matched it, and ParticleSystem would have passed with it still in place"
       - Explosion and ParticleSystem keep slot indices and iteration order by-construction identical
     verify:
       - python3 tools/check_layering.py

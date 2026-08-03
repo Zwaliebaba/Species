@@ -105,7 +105,7 @@ class TaskManager
 
     void StopAllTasks();
 
-    LList<TaskTargetArea>* GetTargetArea(int _id); // Returns all valid placement areas
+    std::vector<TaskTargetArea>* GetTargetArea(int _id); // Returns all valid placement areas
 
     void Advance();
 };

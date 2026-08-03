@@ -1,8 +1,6 @@
 #pragma once
 
 
-#include "FastDArray.h"
-#include "LList.h"
 #include "Vector3.h"
 
 
@@ -41,7 +39,7 @@ class GlobalInternetLink
     unsigned short m_from;
     unsigned short m_to;
     float m_size;
-    LList<float> m_packets;
+    std::vector<float> m_packets;
 };
 
 
@@ -56,8 +54,8 @@ class GlobalInternet
     unsigned short m_numNodes;
     GlobalInternetLink* m_links;
     unsigned short m_numLinks;
-    LList<int> m_leafs;
-    LList<int> m_bursts;
+    std::vector<int> m_leafs;
+    std::vector<int> m_bursts;
 
     int m_nearestNodeToCentre;
     float m_nearestDistance;

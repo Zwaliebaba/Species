@@ -95,7 +95,7 @@ Water::Water()
 
 Water::~Water()
 {
-  m_renderVerts.Empty();
+  m_renderVerts.clear();
   delete[] m_waterDepths;
   m_waterDepths = nullptr;
   delete[] m_shoreNoise;
@@ -305,9 +305,6 @@ bool Water::IsVertNeeded(float x, float z)
 
 void Water::BuildTriangleStrips()
 {
-  m_renderVerts.SetStepDouble();
-  m_strips.SetStepDouble();
-
   float const landSizeX = g_location->m_landscape.GetWorldSizeX();
   float const landSizeZ = g_location->m_landscape.GetWorldSizeZ();
 
@@ -344,39 +341,37 @@ void Water::BuildTriangleStrips()
         vertex2.m_pos.Set(fx, 0.0f, fz + m_cellSize);
         if (degen == 1)
         {
-          m_renderVerts.PutData(vertex1);
-          m_renderVerts.PutData(vertex1);
+          m_renderVerts.push_back(vertex1);
+          m_renderVerts.push_back(vertex1);
         }
         degen = 2;
-        m_renderVerts.PutData(vertex1);
-        m_renderVerts.PutData(vertex2);
+        m_renderVerts.push_back(vertex1);
+        m_renderVerts.push_back(vertex2);
       }
       else
       {
         // Not needed, add degenerated joint.
         if (degen == 2)
         {
-          m_renderVerts.PutData(vertex2);
-          m_renderVerts.PutData(vertex2);
+          m_renderVerts.push_back(vertex2);
+          m_renderVerts.push_back(vertex2);
           degen = 1;
         }
       }
     }
   }
 
-  strip->m_numVerts = m_renderVerts.NumUsed();
-  m_strips.PutData(strip);
+  strip->m_numVerts = static_cast<int>(m_renderVerts.size());
+  m_strips.push_back(strip);
 
   // Down-size the finished FastDArrays to fit their data tightly
-  m_renderVerts.SetSize(m_renderVerts.NumUsed());
-  m_strips.SetSize(m_strips.NumUsed());
 
   // Up-size the empty FastDArrays to be the same size as the vertex array
-  m_waterDepths = new float[m_renderVerts.NumUsed()];
-  m_shoreNoise = new float[m_renderVerts.NumUsed()];
+  m_waterDepths = new float[static_cast<int>(m_renderVerts.size())];
+  m_shoreNoise = new float[static_cast<int>(m_renderVerts.size())];
 
   // Create other per-vertex arrays
-  for (int i = 0; i < m_renderVerts.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_renderVerts.size()); ++i)
   {
     Vector3 const& pos = m_renderVerts[i].m_pos;
     float depth = m_waterDepthMap->GetValue(pos.x, pos.z);
@@ -551,7 +546,7 @@ void Water::UpdateDynamicWater()
 
   int totalNumVertices = 0;
 
-  for (int i = 0; i < m_strips.Size(); ++i)
+  for (int i = 0; i < static_cast<int>(m_strips.size()); ++i)
   {
     WaterTriangleStrip* strip = m_strips[i];
 
@@ -646,7 +641,7 @@ void Water::RenderDynamicWater()
   glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(WaterVertex), &m_renderVerts[0].m_col);
 
 
-  int numStrips = m_strips.Size();
+  int numStrips = static_cast<int>(m_strips.size());
   for (int i = 0; i < numStrips; ++i)
   {
     WaterTriangleStrip* strip = m_strips[i];

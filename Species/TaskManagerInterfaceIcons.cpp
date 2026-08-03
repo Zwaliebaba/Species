@@ -1071,12 +1071,12 @@ void TaskManagerInterfaceIcons::RenderTargetAreas()
 
   if (task && task->m_type != GlobalResearch::TypeOfficer && task->m_state == Task::StateStarted)
   {
-    LList<TaskTargetArea>* targetAreas = g_taskManager->GetTargetArea(task->m_id);
+    std::vector<TaskTargetArea>* targetAreas = g_taskManager->GetTargetArea(task->m_id);
     RGBAColour* colour = &g_location->GetMyTeam()->m_colour;
 
-    for (int i = 0; i < targetAreas->Size(); ++i)
+    for (int i = 0; i < static_cast<int>(targetAreas->size()); ++i)
     {
-      TaskTargetArea* tta = targetAreas->GetPointer(i);
+      TaskTargetArea* tta = &(*targetAreas)[i];
 
       if (tta->m_stationary)
       {
@@ -1584,15 +1584,15 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       {
         if (task->m_type == GlobalResearch::TypeSquad)
         {
-          LList<int> availableWeapons;
+          std::vector<int> availableWeapons;
           if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeGrenade))
-            availableWeapons.PutData(GlobalResearch::TypeGrenade);
+            availableWeapons.push_back(GlobalResearch::TypeGrenade);
           if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeRocket))
-            availableWeapons.PutData(GlobalResearch::TypeRocket);
+            availableWeapons.push_back(GlobalResearch::TypeRocket);
           if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeAirStrike))
-            availableWeapons.PutData(GlobalResearch::TypeAirStrike);
+            availableWeapons.push_back(GlobalResearch::TypeAirStrike);
           if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeController))
-            availableWeapons.PutData(GlobalResearch::TypeController);
+            availableWeapons.push_back(GlobalResearch::TypeController);
 
           auto squad = static_cast<InsertionSquad*>(unit);
           int currentWeapon = -1;
@@ -1606,10 +1606,10 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
           glEnable(GL_TEXTURE_2D);
 
-          if (availableWeapons.Size() > 0)
+          if (!availableWeapons.empty())
             zone->m_subZones = true;
 
-          for (int i = 0; i < availableWeapons.Size(); ++i)
+          for (int i = 0; i < static_cast<int>(availableWeapons.size()); ++i)
           {
             int weaponType = availableWeapons[i];
             sprintf(bmpFilename, "Icons/Icon%s.bmp", Task::GetTaskName(weaponType));

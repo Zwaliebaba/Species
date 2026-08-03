@@ -1,17 +1,29 @@
 #pragma once
 
+#include <vector>
+
 
 // ****************************************************************************
 // Class Array2D
 //
 // Provides a mechanism to store a fixed number of elements arranged as a 2D
-// array. Get and Set methods assume that values for X and Y are within bounds.
+// array. Every accessor bounds-checks and answers m_outsideValue off the edge,
+// so the comment this replaces — "Get and Set methods assume that values for X
+// and Y are within bounds" — was describing an older version of the class.
+//
+// Storage is a std::vector rather than a raw new[] block. The layout is
+// unchanged: one contiguous row-major allocation indexed y * columns + x, which
+// is what the landscape height map and the obstruction grid depend on. What
+// does change is that cells start value-initialised rather than holding
+// whatever was on the heap. That is a fix, not a regression: a cell read before
+// it was written used to yield garbage that could differ between two clients
+// running the same simulation.
 // ****************************************************************************
 
 template <class T> class Array2D
 {
   protected:
-    T* m_data;
+    std::vector<T> m_data;
     T m_outsideValue;
     unsigned short m_numColumns;
     unsigned short m_numRows;
@@ -44,8 +56,7 @@ template <class T> class Array2D
 template <class T>
 Array2D<T>::Array2D()
   : m_numColumns(0),
-    m_numRows(0),
-    m_data(nullptr)
+    m_numRows(0)
 {
 }
 
@@ -56,15 +67,11 @@ Array2D<T>::Array2D(unsigned short _numColumns, unsigned short _numRows, T _outs
     m_numRows(_numRows),
     m_outsideValue(_outsideValue)
 {
-  m_data = new T[_numColumns * _numRows];
+  m_data.resize(static_cast<size_t>(_numColumns) * _numRows);
 }
 
 
-template <class T> Array2D<T>::~Array2D()
-{
-  delete[] m_data;
-  m_data = nullptr;
-}
+template <class T> Array2D<T>::~Array2D() = default;
 
 
 template <class T> void Array2D<T>::Initialise(unsigned short _numColumns, unsigned short _numRows, T _outsideValue)
@@ -73,7 +80,7 @@ template <class T> void Array2D<T>::Initialise(unsigned short _numColumns, unsig
   m_numColumns = _numColumns;
   m_numRows = _numRows;
   m_outsideValue = _outsideValue;
-  m_data = new T[_numColumns * _numRows];
+  m_data.resize(static_cast<size_t>(_numColumns) * _numRows);
 }
 
 

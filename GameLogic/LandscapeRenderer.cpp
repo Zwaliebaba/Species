@@ -16,7 +16,7 @@
 #include "Vector3.h"
 
 #include "LandscapeRenderer.h"
-#include "Location.h"	// For SetupFog
+#include "Location.h" // For SetupFog
 #include "LevelFile.h"
 #include "WorldPointers.h"
 
@@ -274,7 +274,6 @@ LandscapeRenderer::~LandscapeRenderer()
   }
 
   m_verts.Empty();
-
 }
 
 void LandscapeRenderer::BuildOpenGlState(SurfaceMap2D<float>* _heightMap)

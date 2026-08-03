@@ -13,11 +13,11 @@ class BitmapRGBA;
 
 class LandVertex
 {
-public:
-	Vector3		m_pos;
-	Vector3		m_norm;
-	RGBAColour	m_col;
-	TextureUV	m_uv;
+  public:
+    Vector3 m_pos;
+    Vector3 m_norm;
+    RGBAColour m_col;
+    TextureUV m_uv;
 };
 
 
@@ -27,11 +27,15 @@ public:
 
 class LandTriangleStrip
 {
-public:
-	int				m_firstVertIndex;
-	int				m_numVerts;
+  public:
+    int m_firstVertIndex;
+    int m_numVerts;
 
-	LandTriangleStrip(): m_firstVertIndex(-1), m_numVerts(-2) {}
+    LandTriangleStrip()
+      : m_firstVertIndex(-1),
+        m_numVerts(-2)
+    {
+    }
 };
 
 
@@ -43,51 +47,48 @@ struct IDirect3DVertexBuffer9;
 
 class LandscapeRenderer
 {
-protected:
-	enum
-	{
-		RenderModeVertexArray,
-		RenderModeDisplayList,
-		RenderModeVertexBufferObject,
-		RenderModeVertexBufferDirect3D
-	};
+  protected:
+    enum
+    {
+      RenderModeVertexArray,
+      RenderModeDisplayList,
+      RenderModeVertexBufferObject,
+      RenderModeVertexBufferDirect3D
+    };
 
-    BitmapRGBA      *m_landscapeColour;
-	float			m_highest;
-	int				m_renderMode;
+    BitmapRGBA* m_landscapeColour;
+    float m_highest;
+    int m_renderMode;
 
-	FastDArray		<LandVertex> m_verts;
+    FastDArray<LandVertex> m_verts;
 
-	unsigned int	m_vertexBuffer;
+    unsigned int m_vertexBuffer;
 
-	FastDArray		<LandTriangleStrip *> m_strips;
+    FastDArray<LandTriangleStrip*> m_strips;
 
-	void BuildVertArrayAndTriStrip(SurfaceMap2D <float> *_heightMap);
-	void BuildNormArray();
-	void BuildUVArray(SurfaceMap2D <float> *_heightMap);
-	void GetLandscapeColour(float _height, float _gradient,
-							unsigned int _x, unsigned int _y, RGBAColour *_colour);
-	void BuildColourArray();
+    void BuildVertArrayAndTriStrip(SurfaceMap2D<float>* _heightMap);
+    void BuildNormArray();
+    void BuildUVArray(SurfaceMap2D<float>* _heightMap);
+    void GetLandscapeColour(float _height, float _gradient, unsigned int _x, unsigned int _y, RGBAColour* _colour);
+    void BuildColourArray();
 
-public:
-	static const unsigned int	m_posOffset;
-	static const unsigned int	m_normOffset;
-	static const unsigned int	m_colOffset;
-	static const unsigned int	m_uvOffset;
+  public:
+    static const unsigned int m_posOffset;
+    static const unsigned int m_normOffset;
+    static const unsigned int m_colOffset;
+    static const unsigned int m_uvOffset;
 
-public:
-	int				m_numTriangles;
+  public:
+    int m_numTriangles;
 
-	LandscapeRenderer(SurfaceMap2D <float> *_heightMap);
-	~LandscapeRenderer();
+    LandscapeRenderer(SurfaceMap2D<float>* _heightMap);
+    ~LandscapeRenderer();
 
-	void BuildOpenGlState(SurfaceMap2D <float> *_heightMap);
+    void BuildOpenGlState(SurfaceMap2D<float>* _heightMap);
 
-	void Initialise();
+    void Initialise();
 
-	void RenderMainSlow();
-	void RenderOverlaySlow();
-	void Render();
+    void RenderMainSlow();
+    void RenderOverlaySlow();
+    void Render();
 };
-
-

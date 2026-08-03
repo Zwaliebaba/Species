@@ -1,7 +1,8 @@
 #pragma once
 
 #include "RgbColour.h"
-#include "SliceDArray.h"
+#include "SliceWalker.h"
+#include "SlotMap.h"
 #include "Vector3.h"
 
 
@@ -80,7 +81,12 @@ class Particle
 class ParticleSystem
 {
   private:
-    SliceDArray<Particle> m_particles;
+    FastSlotMap<Particle> m_particles;
+
+    // The slice bookkeeping the legacy sliced array carried as a base class.
+    // Reset alongside the container in Empty(), which is what the legacy
+    // Empty did for itself.
+    SliceWalker m_particlesWalker;
 
   public:
     ParticleSystem();
