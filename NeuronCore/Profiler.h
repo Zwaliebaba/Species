@@ -1,8 +1,21 @@
 #pragma once
 
-#include "SortingHashTable.h"
+#include <map>
+#include <string>
 
 #ifdef PROFILER_ENABLED
+
+// Children are ordered by name, case-insensitively, because that is what the
+// hand-rolled sorting table this replaced did: its FindPrevKey compared with
+// stricmp, and the hash beneath it uppercased each key byte, so the whole
+// structure was case-insensitive end to end. The order is observable twice over — the profile window
+// lists children in it, and GetMaxChildTime divides by the first child's
+// m_historyNumSeconds — so it is preserved rather than simplified away.
+struct ProfileNameLess
+{
+    using is_transparent = void;
+    bool operator()(const std::string& _a, const std::string& _b) const { return stricmp(_a.c_str(), _b.c_str()) < 0; }
+};
 
 //*****************************************************************************
 // Class ProfiledElement
@@ -33,7 +46,7 @@ class ProfiledElement
     double m_callStartTime;
     char* m_name;
 
-    SortingHashTable<ProfiledElement*> m_children;
+    std::map<std::string, ProfiledElement*, ProfileNameLess> m_children;
     ProfiledElement* m_parent;
 
     bool m_isExpanded; // Bit of data that a tree view display can use

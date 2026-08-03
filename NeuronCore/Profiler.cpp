@@ -34,7 +34,11 @@ ProfiledElement::ProfiledElement(const char* _name, ProfiledElement* _parent)
 ProfiledElement::~ProfiledElement()
 {
   free(m_name);
-  m_children.EmptyAndDelete();
+  for (auto& entry : m_children)
+  {
+    delete entry.second;
+  }
+  m_children.clear();
 }
 
 // *** Start
@@ -66,10 +70,9 @@ void ProfiledElement::Advance()
   m_historyNumSeconds += 1.0;
   m_historyNumCalls += m_lastNumCalls;
 
-  for (int i = 0; i < m_children.Size(); ++i)
+  for (auto& entry : m_children)
   {
-    if (m_children.ValidIndex(i))
-      m_children[i]->Advance();
+    entry.second->Advance();
   }
 }
 
@@ -82,33 +85,33 @@ void ProfiledElement::ResetHistory()
   m_longest = DBL_MIN;
   m_shortest = DBL_MAX;
 
-  for (unsigned int i = 0; i < m_children.Size(); ++i)
+  for (auto& entry : m_children)
   {
-    if (m_children.ValidIndex(i))
-      m_children[i]->ResetHistory();
+    entry.second->ResetHistory();
   }
 }
 
 double ProfiledElement::GetMaxChildTime()
 {
-  double rv = 0.0;
-
-  short first = m_children.StartOrderedWalk();
-  if (first == -1)
+  if (m_children.empty())
     return 0.0;
 
-  short i = first;
-  while (i != -1)
+  double rv = 0.0;
+  for (const auto& entry : m_children)
   {
-    float val = m_children[i]->m_historyTotalTime;
-    ProfiledElement* child = m_children[i];
+    // Deliberately float, not double: m_historyTotalTime is a double and the
+    // narrowing is what the comparison below has always seen. Widening it here
+    // would change which child wins a near-tie.
+    const float val = entry.second->m_historyTotalTime;
     if (val > rv)
       rv = val;
-
-    i = m_children.GetNextOrderedIndex();
   }
 
-  return rv / m_children[first]->m_historyNumSeconds;
+  // The divisor is the FIRST child's history length, not the winner's, which
+  // is why the ordering has to be preserved exactly. It reads like an
+  // oversight; it is left alone because changing it changes a number the
+  // profile window puts on screen.
+  return rv / m_children.begin()->second->m_historyNumSeconds;
 }
 
 // ****************************************************************************
@@ -165,11 +168,13 @@ void Profiler::StartProfile(const char* _name)
 {
   MAIN_THREAD_ONLY;
 
-  ProfiledElement* pe = m_currentElement->m_children.GetData(_name);
+  auto& children = m_currentElement->m_children;
+  const auto entry = children.find(_name);
+  ProfiledElement* pe = (entry == children.end()) ? nullptr : entry->second;
   if (!pe)
   {
     pe = new ProfiledElement(_name, m_currentElement);
-    m_currentElement->m_children.PutData(_name, pe);
+    children[_name] = pe;
   }
 
   ASSERT_TEXT(m_rootElement->m_isExpanded, "Profiler root element has been un-expanded");

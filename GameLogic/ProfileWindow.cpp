@@ -68,7 +68,7 @@ ProfileWindow::~ProfileWindow() { g_profiler->m_doGlFinish = false; }
 
 void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _indent)
 {
-  if (_pe->m_children.NumUsed() == 0)
+  if (_pe->m_children.empty())
     return;
 
   int left = m_x + 10;
@@ -88,10 +88,9 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
   float largestTime = 1000.0f * _pe->GetMaxChildTime();
   float totalTime = 0.0f;
 
-  short i = _pe->m_children.StartOrderedWalk();
-  while (i != -1)
+  for (const auto& entry : _pe->m_children)
   {
-    ProfiledElement* child = _pe->m_children[i];
+    ProfiledElement* child = entry.second;
 
     float time = float(child->m_lastTotalTime * 1000.0f);
     float avrgTime = 1000.0f * child->m_historyTotalTime / child->m_historyNumCalls;
@@ -100,7 +99,7 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
       totalTime += time;
 
       char icon[] = " ";
-      if (child->m_children.NumUsed() > 0)
+      if (!child->m_children.empty())
       {
         icon[0] = child->m_isExpanded ? '-' : '+';
       }
@@ -154,13 +153,11 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
         m_h += 12;
       }
 
-      if (child->m_isExpanded && child->m_children.NumUsed() > 0)
+      if (child->m_isExpanded && !child->m_children.empty())
       {
         RenderElementProfile(child, _indent + 2);
       }
     }
-
-    i = _pe->m_children.GetNextOrderedIndex();
   }
 
   glColor3ub(255, 255, 255);
@@ -182,7 +179,6 @@ void ProfileWindow::Render(bool hasFocus)
   }
 
   ProfiledElement* root = g_profiler->m_rootElement;
-  int tableSize = root->m_children.Size();
 
   m_yPos = m_y + 42;
 
