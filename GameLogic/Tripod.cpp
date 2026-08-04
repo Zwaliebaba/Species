@@ -187,15 +187,24 @@ void Tripod::DoFallForTwoLegs()
     RayRayDist(m_legs[0]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
   }
 
+  // The three locals above are Vector3 because RayRayDist writes through
+  // Vector3* out-parameters. &aVector3 is a Vector3*, and the seam's conversion
+  // is to a REFERENCE, so it does not apply through a pointer -- these
+  // copy-initialised locals are what runs it. Same trap as GunTurret's Matrix34
+  // rows in T16.
+  DirectX::XMFLOAT3 const betweenFeetStore = pointBetweenFeet;
+  DirectX::XMFLOAT3 const underBodyStore = pointUnderBody;
+  DirectX::XMFLOAT3 const footToFootStore = footToFoot;
+
   // Calc moment due to centre of gravity and the contact point on the ground not being vertically aligned
-  DirectX::XMVECTOR const betweenFeet = DirectX::XMLoadFloat3(&pointBetweenFeet);
-  DirectX::XMVECTOR const lever = DirectX::XMVectorSubtract(betweenFeet, DirectX::XMLoadFloat3(&pointUnderBody));
+  DirectX::XMVECTOR const betweenFeet = DirectX::XMLoadFloat3(&betweenFeetStore);
+  DirectX::XMVECTOR const lever = DirectX::XMVectorSubtract(betweenFeet, DirectX::XMLoadFloat3(&underBodyStore));
   float momentPerUnitMass = DirectX::XMVectorGetX(DirectX::XMVector3Length(lever)) * GRAVITY;
 
   // Calc force due to moment
   DirectX::XMVECTOR const feetToBody = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), betweenFeet);
   float feetToBodyLen = DirectX::XMVectorGetX(DirectX::XMVector3Length(feetToBody));
-  DirectX::XMVECTOR const footToFootDir = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&footToFoot));
+  DirectX::XMVECTOR const footToFootDir = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&footToFootStore));
 
   // SetLength on the cross of two roughly perpendicular unit vectors, so it is
   // not zero-length here; this takes the native normalise.
@@ -348,7 +357,10 @@ void Tripod::DoNavigation()
   }
 
   // Should we changed direction?
-  float cross = m_navData.m_directions[m_navData.m_dir] ^ delta;
+  // Vector2::operator^ was the 2D cross product, x*b.y - y*b.x. XMFLOAT2 has
+  // no operators, so it is written out.
+  DirectX::XMFLOAT2 const& heading = m_navData.m_directions[m_navData.m_dir];
+  float cross = heading.x * delta.y - heading.y * delta.x;
   float theta = asinf(cross / deltaMag);
   if (theta < -M_PI / 6.0f)
   {

@@ -26,6 +26,7 @@ local's type leaves every use of it behind, and those uses name no type:
     XMLoadFloat3(&mat.f) Matrix34's rows are Vector3, and Vector3 converts to
                          XMFLOAT3 by REFERENCE -- which does nothing for a
                          pointer (added by T16)
+    XMLoadFloat3(&v)     the same, on a plain Vector3 local (added by T15)
     mat.ConvertToOpenGLFormat()
     mat.pos              where mat is an XMFLOAT4X4 (added by T17)
 
@@ -67,6 +68,16 @@ DECL = re.compile(
     r"(m_[A-Za-z0-9_]+)\s*(?P<init>[={;,])"
 )
 
+# ARRAY MEMBERS ARE DELIBERATELY NOT TRACKED, and T15 tried. Teaching DECL to
+# match `XMFLOAT2 m_directions[6];` and every rule to see through a `[i]`
+# subscript does catch a real bug -- Tripod's `m_directions[i] ^ delta` reached
+# CI -- but it also reported three CORRECT lines, because `m_mousePos` is an
+# int[3] in InputDriverWin32 and `m_right` is a float* in SoundLibrary3d. Those
+# are T14's failure mode 6: a contended name that is not a math type at all,
+# which this tool has no way to see. The header above says under-reporting is
+# recoverable and crying wolf gets the tool switched off, so the trade was
+# refused. Array members stay a hand-sweep item.
+
 # The same member name can be native in one class and still legacy in another --
 # m_pos is an XMFLOAT3 on SoundSource and a Vector3 on WorldObject. Resolving
 # that needs a type checker, so a contended name is SKIPPED AND COUNTED rather
@@ -76,6 +87,12 @@ DECL = re.compile(
 # Matrix34 locals, so the address-of rule below can tell a legacy row from a
 # field that merely shares its name.
 MATRIX34_LOCAL = re.compile(r"\bMatrix34\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
+
+# Vector3/Vector2 locals, for the plain form of the same trap. A file that keeps
+# a legacy local on purpose -- to feed a MathUtils out-parameter, say -- and then
+# hands its address to XMLoadFloat3 has exactly the Matrix34-row bug without a
+# matrix in sight. Tripod reached CI that way.
+LEGACY_VECTOR_LOCAL = re.compile(r"\bVector([23])\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;,]")
 
 # XMFLOAT4X4 locals, for the mirror of that rule -- see below.
 NATIVE_MATRIX_LOCAL = re.compile(r"\b(?:DirectX::)?XMFLOAT4X4\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
@@ -204,6 +221,7 @@ def main():
         # declared in the same file rather than any `.f`, so a struct that
         # happens to have a field called f is not accused.
         matrix34_locals = set(MATRIX34_LOCAL.findall(text))
+        legacy_vector_locals = {name for _, name in LEGACY_VECTOR_LOCAL.findall(text)}
 
         # THE MIRROR OF THAT RULE, and the one that let Tree.cpp reach CI.
         # Converting `Matrix34 mat(...)` to an XMFLOAT4X4 leaves every USE of
@@ -216,6 +234,11 @@ def main():
 
         # Same discipline as the contended member names above: a local name
         # that means two things in one file is skipped rather than guessed at.
+        # A name that is a Vector3 in one scope and an XMFLOAT3 in another is
+        # skipped, same discipline as everywhere else in this tool.
+        legacy_vector_locals -= set(NATIVE_VECTOR_LOCAL.findall(text))
+        legacy_vector_locals -= set(native_members) | set(XMVECTOR_LOCAL.findall(text))
+
         contended_locals = (native_matrix_locals & matrix34_locals) | (native_matrix_locals & xmmatrix_locals)
         native_matrix_locals -= contended_locals
         matrix34_locals -= contended_locals
@@ -254,6 +277,13 @@ def main():
                                      raw.strip()))
                 if re.search(r"(?<![.>\w])%s\s*(?:[-+*^/]=)(?!=)" % re.escape(local), line):
                     problems.append((rel, number, "compound assignment to %s -- it is an XMFLOAT3, which has no operators" % local,
+                                     raw.strip()))
+
+            for local in legacy_vector_locals:
+                if re.search(r"XMLoadFloat[23]\s*\(\s*&\s*%s\b" % re.escape(local), line):
+                    problems.append((rel, number,
+                                     "XMLoadFloat3(&%s) -- %s is a Vector3, and the seam's conversion is to a reference, "
+                                     "so it does not apply through a pointer" % (local, local),
                                      raw.strip()))
 
             for local in matrix34_locals:

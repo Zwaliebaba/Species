@@ -1400,6 +1400,28 @@ tasks:
       used it. Converting it would have meant writing a native no-op, so it is
       gone, noted here rather than silently.
 
+      THE ADDRESS-OF TRAP CAME BACK IN ITS PLAIN FORM. T16 found it on
+      Matrix34 ROWS and the checker learned that shape; Tripod hit it on a bare
+      Vector3 LOCAL, kept legacy on purpose to feed RayRayDist's out-parameters
+      and then handed to XMLoadFloat3. Same cause -- the seam converts by
+      reference, and a reference conversion does nothing for an address -- with
+      no matrix anywhere in sight. The checker covers both now.
+
+      AND ONE CHECKER CHANGE MADE AND THEN DELIBERATELY REVERTED. Tripod also
+      hit `m_directions[i] ^ delta`, an XMFLOAT2 ARRAY member, which every rule
+      in the tool walks straight past because they all stop at the `[`.
+      Teaching DECL to match array declarations and the rules to see through a
+      subscript does catch it -- and also reports three CORRECT lines, because
+      m_mousePos is an int[3] in InputDriverWin32 and m_right is a float* in
+      SoundLibrary3d. That is T14's failure mode 6, a contended name that is
+      not a math type at all, and the tool cannot see it. Its own header says
+      under-reporting is recoverable and crying wolf gets it switched off, so
+      the trade was refused and the reasoning written at the DECL regex.
+
+      Array members are a HAND-SWEEP item instead. There are exactly three in
+      the tree -- Tripod's m_directions, SoulDestroyer's m_spiritPosition and
+      SphereRenderer's m_corner -- and all three are clean as of this task.
+
       CHECK_MATH_TYPES EARNED ITS KEEP MID-TASK. The local-tracking rules added
       after T17's CI round caught m_hitcheckCentre in Tree during T17 and then,
       in T15, forty-eight sites in Egg and three in AntHill that the file-level
