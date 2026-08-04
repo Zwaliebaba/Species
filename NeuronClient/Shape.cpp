@@ -88,23 +88,23 @@ ShapeMarker::ShapeMarker(TextReader* _in, char const* _name)
       else if (stricmp(firstWord, "front") == 0)
       {
         char* secondWord = _in->GetNextToken();
-        m_transform.f.x = (float)atof(secondWord);
-        m_transform.f.y = (float)atof(_in->GetNextToken());
-        m_transform.f.z = (float)atof(_in->GetNextToken());
+        m_transform._31 = (float)atof(secondWord);
+        m_transform._32 = (float)atof(_in->GetNextToken());
+        m_transform._33 = (float)atof(_in->GetNextToken());
       }
       else if (stricmp(firstWord, "up") == 0)
       {
         char* secondWord = _in->GetNextToken();
-        m_transform.u.x = (float)atof(secondWord);
-        m_transform.u.y = (float)atof(_in->GetNextToken());
-        m_transform.u.z = (float)atof(_in->GetNextToken());
+        m_transform._21 = (float)atof(secondWord);
+        m_transform._22 = (float)atof(_in->GetNextToken());
+        m_transform._23 = (float)atof(_in->GetNextToken());
       }
       else if (stricmp(firstWord, "pos") == 0)
       {
         char* secondWord = _in->GetNextToken();
-        m_transform.pos.x = (float)atof(secondWord);
-        m_transform.pos.y = (float)atof(_in->GetNextToken());
-        m_transform.pos.z = (float)atof(_in->GetNextToken());
+        m_transform._41 = (float)atof(secondWord);
+        m_transform._42 = (float)atof(_in->GetNextToken());
+        m_transform._43 = (float)atof(_in->GetNextToken());
       }
       else if (stricmp(firstWord, "MarkerEnd") == 0)
       {
@@ -173,9 +173,9 @@ void ShapeMarker::WriteToFile(FILE* _out) const
   fprintf(_out, "Marker: %s\n", m_name);
   fprintf(_out, "\tParentName: %s\n", m_parentName);
   fprintf(_out, "\tDepth: %d\n", m_depth);
-  fprintf(_out, "\tUp:    %5.2f %5.2f %5.2f\n", m_transform.u.x, m_transform.u.y, m_transform.u.z);
-  fprintf(_out, "\tFront: %5.2f %5.2f %5.2f\n", m_transform.f.x, m_transform.f.y, m_transform.f.z);
-  fprintf(_out, "\tPos:   %5.2f %5.2f %5.2f\n", m_transform.pos.x, m_transform.pos.y, m_transform.pos.z);
+  fprintf(_out, "\tUp:    %5.2f %5.2f %5.2f\n", m_transform._21, m_transform._22, m_transform._23);
+  fprintf(_out, "\tFront: %5.2f %5.2f %5.2f\n", m_transform._31, m_transform._32, m_transform._33);
+  fprintf(_out, "\tPos:   %5.2f %5.2f %5.2f\n", m_transform._41, m_transform._42, m_transform._43);
   fprintf(_out, "\tMarkerEnd\n\n\n");
 }
 
@@ -234,21 +234,21 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
     }
     else if (stricmp(firstWord, "front") == 0)
     {
-      m_transform.f.x = (float)atof(secondWord);
-      m_transform.f.y = (float)atof(_in->GetNextToken());
-      m_transform.f.z = (float)atof(_in->GetNextToken());
+      m_transform._31 = (float)atof(secondWord);
+      m_transform._32 = (float)atof(_in->GetNextToken());
+      m_transform._33 = (float)atof(_in->GetNextToken());
     }
     else if (stricmp(firstWord, "up") == 0)
     {
-      m_transform.u.x = (float)atof(secondWord);
-      m_transform.u.y = (float)atof(_in->GetNextToken());
-      m_transform.u.z = (float)atof(_in->GetNextToken());
+      m_transform._21 = (float)atof(secondWord);
+      m_transform._22 = (float)atof(_in->GetNextToken());
+      m_transform._23 = (float)atof(_in->GetNextToken());
     }
     else if (stricmp(firstWord, "pos") == 0)
     {
-      m_transform.pos.x = (float)atof(secondWord);
-      m_transform.pos.y = (float)atof(_in->GetNextToken());
-      m_transform.pos.z = (float)atof(_in->GetNextToken());
+      m_transform._41 = (float)atof(secondWord);
+      m_transform._42 = (float)atof(_in->GetNextToken());
+      m_transform._43 = (float)atof(_in->GetNextToken());
     }
     else if (stricmp(firstWord, "Positions") == 0)
     {
@@ -408,8 +408,8 @@ void ShapeFragment::WriteToFile(FILE* _out) const
   {
     fprintf(_out, "Fragment: %s\n", m_name);
     fprintf(_out, "\tParentName: %s\n", m_parentName);
-    fprintf(_out, "\tup:    %5.2f %5.2f %5.2f\n", m_transform.u.x, m_transform.u.y, m_transform.u.z);
-    fprintf(_out, "\tfront: %5.2f %5.2f %5.2f\n", m_transform.f.x, m_transform.f.y, m_transform.f.z);
+    fprintf(_out, "\tup:    %5.2f %5.2f %5.2f\n", m_transform._21, m_transform._22, m_transform._23);
+    fprintf(_out, "\tfront: %5.2f %5.2f %5.2f\n", m_transform._31, m_transform._32, m_transform._33);
     fprintf(_out, "\tpos: %.2f %.2f %.2f\n", m_transform._41, m_transform._42, m_transform._43);
 
     // Write out the positions
