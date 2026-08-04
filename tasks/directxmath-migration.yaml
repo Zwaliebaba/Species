@@ -739,6 +739,13 @@ tasks:
       Recommend (a). The twenty sites are mechanical, the sweep that finds them
       is written down, and (b) weakens the only verification this migration has.
 
+      OWNER CHOSE (a), 2026-08-04: this task owns the external fix-ups, and
+      lands before the T13 gate. Its `files` list therefore understates its
+      touch set — the GameLogic and Species sites it has to repair are named in
+      the commit rather than added to the list, because they are seam repairs
+      rather than conversions and those files still convert in full under their
+      own tasks.
+
 
   - id: T11
     title: Convert the sound subsystem's positional math
