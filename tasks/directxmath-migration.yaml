@@ -153,7 +153,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: |
       THE CONVENTION TRAP, found while surveying and the reason this task
       exists at all. Matrix33 and Matrix34 use OPPOSITE conventions for
@@ -213,6 +213,19 @@ tasks:
       task should use it rather than writing a literal. Exact comparison is
       still right where a conversion only copies fields, and the row-layout test
       keeps it.
+
+      LANDED. CI runs 362 and 363 green at 41f00ac: x64 Debug builds with
+      DirectXMath included tree-wide, and the suite is 132 tests where it was
+      124. The eight new ones are the conventions, asserted against the legacy
+      operators rather than against my reading of them.
+
+      NOT DONE HERE, and the next agent should not go looking for it: the
+      normalise audit below is written as a decision, but the call-site LIST it
+      calls for has not been produced. Nothing in the tree normalises through
+      the native path yet -- the seam still routes every call to
+      Vector3::Normalise -- so the audit belongs with the first task that
+      actually converts a normalise site, and T14 is where it starts to matter.
+      Recorded as a gap rather than quietly dropped.
 
       THE NORMALISE AUDIT belongs here because it is a decision, not a sweep.
       Vector3::Normalise returns (0,0,1) for zero length; XMVector3Normalize
