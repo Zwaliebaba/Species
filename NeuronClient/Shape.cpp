@@ -10,7 +10,7 @@
 #include "DebugRender.h"
 #include "MathUtils.h"
 #include "Matrix33.h"
-#include "Matrix34.h"
+#include "NeuronMath.h"
 #include "Shape.h"
 #include "TextStreamReaders.h"
 
@@ -27,7 +27,7 @@
 // *** Constructor
 // This constructor is used in the export process. The m_parents array is never
 // populated in the exporter, so it is intentionally left blank
-ShapeMarker::ShapeMarker(char const* _name, char* _parentName, int _depth, Matrix34 const& _transform)
+ShapeMarker::ShapeMarker(char const* _name, char* _parentName, int _depth, DirectX::XMFLOAT4X4 const& _transform)
   : m_depth(_depth),
     m_transform(_transform)
 {
@@ -113,7 +113,7 @@ ShapeMarker::ShapeMarker(TextReader* _in, char const* _name)
     }
   }
 
-  m_transform.Normalise();
+  DirectX::XMStoreFloat4x4(&m_transform, NormaliseBasis(DirectX::XMLoadFloat4x4(&m_transform)));
 
   m_parents.assign(m_depth, nullptr);
 
@@ -132,17 +132,40 @@ ShapeMarker::~ShapeMarker()
 }
 
 // *** GetWorldMatrix
-Matrix34 ShapeMarker::GetWorldMatrix(Matrix34 const& _rootTransform)
+DirectX::XMFLOAT4X4 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
 {
-  Matrix34 mat = _rootTransform;
+  DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&_rootTransform);
   for (int i = 0; i < m_depth; ++i)
   {
-    mat = m_parents[i]->m_transform * mat;
+    mat = DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_parents[i]->m_transform), mat);
   }
-  mat = m_transform * mat;
+  mat = DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), mat);
 
-  return mat;
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, mat);
+  return result;
 }
+
+
+// OpenGL reads sixteen floats as COLUMN-major and DirectXMath stores XMFLOAT4X4
+// ROW-major, so the same memory already is the transpose OpenGL wants and there
+// is nothing to do but hand it over. That coincidence is exactly why this must
+// live in renderer code rather than on the matrix type: a Direct3D backend
+// wants a different answer and would change it here and nowhere else. See
+// NeuronMath.h, "no math type knows which graphics API it is feeding".
+// What Matrix34::Normalise did: re-orthonormalise the basis rows, front first,
+// leaving the translation alone.
+static DirectX::XMMATRIX NormaliseBasis(DirectX::FXMMATRIX _matrix)
+{
+  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(_matrix.r[2]);
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(_matrix.r[1], front));
+  DirectX::XMVECTOR const up = DirectX::XMVector3Cross(front, right);
+
+  return DirectX::XMMATRIX(right, up, front, _matrix.r[3]);
+}
+
+
+static void MultiplyGLMatrix(DirectX::XMFLOAT4X4 const& _matrix) { glMultMatrixf(&_matrix._11); }
 
 
 void ShapeMarker::WriteToFile(FILE* _out) const
@@ -193,9 +216,9 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
   DEBUG_ASSERT(_name);
   m_name = strdup(_name);
 
-  m_transform.SetToIdentity();
-  m_angVel.Zero();
-  m_vel.Zero();
+  DirectX::XMStoreFloat4x4(&m_transform, DirectX::XMMatrixIdentity());
+  m_angVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
   while (_in->ReadLine())
   {
@@ -261,7 +284,7 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
     }
   }
 
-  m_transform.Normalise();
+  DirectX::XMStoreFloat4x4(&m_transform, NormaliseBasis(DirectX::XMLoadFloat4x4(&m_transform)));
 
   if (!m_name)
     m_name = strdup("unknown");
@@ -270,7 +293,7 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
 
   GenerateNormals();
 
-  m_positionsInWS = new Vector3[m_numVertices];
+  m_positionsInWS = new DirectX::XMFLOAT3[m_numVertices];
 }
 
 
@@ -299,9 +322,9 @@ ShapeFragment::ShapeFragment(char const* _name, char const* _parentName)
   m_maxTriangles = 1;
   m_triangles = new ShapeTriangle[m_maxTriangles];
 
-  m_transform.SetToIdentity();
-  m_angVel.Zero();
-  m_vel.Zero();
+  DirectX::XMStoreFloat4x4(&m_transform, DirectX::XMMatrixIdentity());
+  m_angVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_name = strdup(_name);
   m_parentName = strdup(_parentName);
 
@@ -393,7 +416,7 @@ void ShapeFragment::WriteToFile(FILE* _out) const
     fprintf(_out, "\tPositions: %d\n", m_numPositions);
     for (i = 0; i < m_numPositions; i++)
     {
-      Vector3 const& v = m_positions[i];
+      DirectX::XMFLOAT3 const& v = m_positions[i];
       fprintf(_out, "\t\t%d: %7.3f %7.3f %7.3f\n", i, v.x, v.y, v.z);
     }
 
@@ -401,7 +424,7 @@ void ShapeFragment::WriteToFile(FILE* _out) const
     fprintf(_out, "\tNormals: %d\n", m_numNormals);
     for (i = 0; i < m_numNormals; i++)
     {
-      Vector3 const& n = m_normals[i];
+      DirectX::XMFLOAT3 const& n = m_normals[i];
       fprintf(_out, "\t\t%d: %6.3f %6.3f %6.3f\n", i, n.x, n.y, n.z);
     }
 
@@ -448,7 +471,7 @@ void ShapeFragment::WriteToFile(FILE* _out) const
 // *** ParsePositionBlock
 void ShapeFragment::ParsePositionBlock(TextReader* _in, unsigned int _numPositions)
 {
-  Vector3* positions = new Vector3[_numPositions];
+  DirectX::XMFLOAT3* positions = new DirectX::XMFLOAT3[_numPositions];
 
   int expectedId = 0;
   while (expectedId < _numPositions)
@@ -467,7 +490,7 @@ void ShapeFragment::ParsePositionBlock(TextReader* _in, unsigned int _numPositio
         return;
       }
 
-      Vector3* vect = &positions[id];
+      DirectX::XMFLOAT3* vect = &positions[id];
       c = _in->GetNextToken();
       DEBUG_ASSERT(c);
       vect->x = (float)atof(c);
@@ -491,7 +514,7 @@ void ShapeFragment::ParseNormalBlock(TextReader* _in, unsigned int _numNorms)
 {
   if (_numNorms != 0)
   {
-    m_normals = new Vector3[_numNorms];
+    m_normals = new DirectX::XMFLOAT3[_numNorms];
   }
   m_numNormals = _numNorms;
 
@@ -512,7 +535,7 @@ void ShapeFragment::ParseNormalBlock(TextReader* _in, unsigned int _numNorms)
         DEBUG_ASSERT(0);
       }
 
-      Vector3* vect = &m_normals[id];
+      DirectX::XMFLOAT3* vect = &m_normals[id];
       c = _in->GetNextToken();
       DEBUG_ASSERT(c);
       vect->x = (float)atof(c);
@@ -749,7 +772,7 @@ void ShapeFragment::ParseTriangleBlock(TextReader* _in, unsigned int _numTriangl
 void ShapeFragment::GenerateNormals()
 {
   m_numNormals = m_numTriangles;
-  m_normals = new Vector3[m_numNormals];
+  m_normals = new DirectX::XMFLOAT3[m_numNormals];
   int normId = 0;
 
   for (int j = 0; j < m_numTriangles; ++j)
@@ -758,13 +781,12 @@ void ShapeFragment::GenerateNormals()
     VertexPosCol const& vertA = m_vertices[tri->v1];
     VertexPosCol const& vertB = m_vertices[tri->v2];
     VertexPosCol const& vertC = m_vertices[tri->v3];
-    Vector3& a = m_positions[vertA.m_posId];
-    Vector3& b = m_positions[vertB.m_posId];
-    Vector3& c = m_positions[vertC.m_posId];
-    Vector3 ab = b - a;
-    Vector3 bc = c - b;
-    m_normals[normId] = ab ^ bc;
-    m_normals[normId].Normalise();
+    DirectX::XMVECTOR const a = DirectX::XMLoadFloat3(&m_positions[vertA.m_posId]);
+    DirectX::XMVECTOR const b = DirectX::XMLoadFloat3(&m_positions[vertB.m_posId]);
+    DirectX::XMVECTOR const c = DirectX::XMLoadFloat3(&m_positions[vertC.m_posId]);
+    DirectX::XMVECTOR const ab = DirectX::XMVectorSubtract(b, a);
+    DirectX::XMVECTOR const bc = DirectX::XMVectorSubtract(c, b);
+    DirectX::XMStoreFloat3(&m_normals[normId], DirectX::XMVector3Normalize(DirectX::XMVector3Cross(ab, bc)));
     //		if (!(j & 1)) m_normals[normId] = -m_normals[normId];
     normId++;
   }
@@ -772,7 +794,7 @@ void ShapeFragment::GenerateNormals()
 
 
 // *** RegisterPositions
-void ShapeFragment::RegisterPositions(Vector3* _positions, unsigned int _numPositions)
+void ShapeFragment::RegisterPositions(DirectX::XMFLOAT3* _positions, unsigned int _numPositions)
 {
   int i;
 
@@ -814,8 +836,8 @@ void ShapeFragment::RegisterPositions(Vector3* _positions, unsigned int _numPosi
     float radiusSquared = 0.0f;
     for (i = 0; i < m_numPositions; ++i)
     {
-      Vector3 delta = m_centre - m_positions[i];
-      float magSquared = delta.MagSquared();
+      DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_centre), DirectX::XMLoadFloat3(&m_positions[i]));
+      float magSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(delta));
       if (magSquared > radiusSquared)
       {
         radiusSquared = magSquared;
@@ -841,9 +863,10 @@ void ShapeFragment::RegisterPositions(Vector3* _positions, unsigned int _numPosi
       {
         m_mostNegativeY = m_positions[i].y;
       }
-      Vector3 delta = m_centre - m_positions[i];
+      DirectX::XMFLOAT3 delta;
+      DirectX::XMStoreFloat3(&delta, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_centre), DirectX::XMLoadFloat3(&m_positions[i])));
       delta.y = 0.0f;
-      float magSquared = delta.MagSquared();
+      float magSquared = delta.x * delta.x + delta.z * delta.z;
       if (magSquared > radiusSquared)
       {
         radiusSquared = magSquared;
@@ -863,7 +886,7 @@ void ShapeFragment::RegisterPositions(Vector3* _positions, unsigned int _numPosi
 }
 
 
-void ShapeFragment::RegisterNormals(Vector3* _norms, unsigned int _numNorms)
+void ShapeFragment::RegisterNormals(DirectX::XMFLOAT3* _norms, unsigned int _numNorms)
 {
   delete[] m_normals;
   m_normals = _norms;
@@ -898,15 +921,28 @@ void ShapeFragment::RegisterTriangles(ShapeTriangle* _tris, unsigned int _numTri
 void ShapeFragment::Render(float _predictionTime)
 {
 #ifndef EXPORTER_BUILD
-  Matrix34 predictedTransform = m_transform;
-  predictedTransform.RotateAround(m_angVel * _predictionTime);
-  predictedTransform.pos += m_vel * _predictionTime;
+  // The rotation applies to the basis rows ONLY, never to the translation --
+  // that is what DirectX::XMFLOAT4X4::FastRotateAround did, and rotating row 3 as well
+  // would drag the fragment through an arc instead of spinning it in place.
+  DirectX::XMMATRIX predicted = DirectX::XMLoadFloat4x4(&m_transform);
+  DirectX::XMVECTOR const angularVelocity = DirectX::XMLoadFloat3(&m_angVel);
+  float const angle = DirectX::XMVectorGetX(DirectX::XMVector3Length(angularVelocity)) * _predictionTime;
+  if (angle > 0.0f)
+  {
+    DirectX::XMVECTOR const translation = predicted.r[3];
+    predicted = DirectX::XMMatrixMultiply(predicted, DirectX::XMMatrixRotationAxis(angularVelocity, angle));
+    predicted.r[3] = translation;
+  }
+  predicted.r[3] = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), predicted.r[3]);
 
-  bool matrixIsIdentity = predictedTransform == g_identityMatrix34;
+  DirectX::XMFLOAT4X4 predictedTransform;
+  DirectX::XMStoreFloat4x4(&predictedTransform, predicted);
+
+  bool matrixIsIdentity = DirectX::XMMatrixIsIdentity(predicted);
   if (!matrixIsIdentity)
   {
     glPushMatrix();
-    glMultMatrixf(predictedTransform.ConvertToOpenGLFormat());
+    MultiplyGLMatrix(predictedTransform);
   }
 
 #ifdef USE_DISPLAY_LISTS
@@ -968,17 +1004,17 @@ void ShapeFragment::RenderSlow()
     n[0]/=l; n[1]/=l; n[2]/=l;
     glNormal3fv(n);*/
 
-    glNormal3fv(m_normals[norm].GetData());
+    glNormal3fv(&m_normals[norm].x);
     glColor4ub(m_colours[vertA->m_colId].r, m_colours[vertA->m_colId].g, m_colours[vertA->m_colId].b, alpha);
-    glVertex3fv(m_positions[vertA->m_posId].GetData());
+    glVertex3fv(&m_positions[vertA->m_posId].x);
 
-    glNormal3fv(m_normals[norm].GetData());
+    glNormal3fv(&m_normals[norm].x);
     glColor4ub(m_colours[vertB->m_colId].r, m_colours[vertB->m_colId].g, m_colours[vertB->m_colId].b, alpha);
-    glVertex3fv(m_positions[vertB->m_posId].GetData());
+    glVertex3fv(&m_positions[vertB->m_posId].x);
 
-    glNormal3fv(m_normals[norm].GetData());
+    glNormal3fv(&m_normals[norm].x);
     glColor4ub(m_colours[vertC->m_colId].r, m_colours[vertC->m_colId].g, m_colours[vertC->m_colId].b, alpha);
-    glVertex3fv(m_positions[vertC->m_posId].GetData());
+    glVertex3fv(&m_positions[vertC->m_posId].x);
     norm++;
   }
   glEnd();
@@ -1040,27 +1076,35 @@ ShapeMarker* ShapeFragment::LookupMarker(char const* _name)
 
 
 // *** RenderHitCheck
-void ShapeFragment::RenderHitCheck(Matrix34 const& _transform)
+void ShapeFragment::RenderHitCheck(DirectX::XMFLOAT4X4 const& _transform)
 {
 #ifndef EXPORTER_BUILD
 #ifdef DEBUG_RENDER_ENABLED
-  Matrix34 totalMatrix = m_transform * _transform;
+  DirectX::XMFLOAT4X4 totalMatrix;
+  DirectX::XMStoreFloat4x4(&totalMatrix, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), DirectX::XMLoadFloat4x4(&_transform)));
+  DirectX::XMMATRIX const total = DirectX::XMLoadFloat4x4(&totalMatrix);
 
   if (m_useCylinder)
   {
-    Vector3 centreTop = m_centre;
-    centreTop.y = m_mostPositiveY;
-    centreTop = totalMatrix * centreTop;
-    Vector3 centreBase = m_centre;
-    centreBase.y = m_mostNegativeY;
-    centreBase = totalMatrix * centreBase;
-    Vector3 verticalAxis = centreTop - centreBase;
-    RenderVerticalCylinder(centreBase, verticalAxis, verticalAxis.Mag(), m_radius);
+    DirectX::XMFLOAT3 topLocal = m_centre;
+    topLocal.y = m_mostPositiveY;
+    DirectX::XMFLOAT3 baseLocal = m_centre;
+    baseLocal.y = m_mostNegativeY;
+
+    DirectX::XMVECTOR const top = DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&topLocal), total);
+    DirectX::XMVECTOR const base = DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&baseLocal), total);
+    DirectX::XMVECTOR const axis = DirectX::XMVectorSubtract(top, base);
+
+    DirectX::XMFLOAT3 centreBase, verticalAxis;
+    DirectX::XMStoreFloat3(&centreBase, base);
+    DirectX::XMStoreFloat3(&verticalAxis, axis);
+    RenderVerticalCylinder(centreBase, verticalAxis, DirectX::XMVectorGetX(DirectX::XMVector3Length(axis)), m_radius);
   }
   else
   {
     // Get world space version of m_centre
-    Vector3 centre = totalMatrix * m_centre;
+    DirectX::XMFLOAT3 centre;
+    DirectX::XMStoreFloat3(&centre, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_centre), total));
     RenderSphere(centre, m_radius);
   }
 
@@ -1075,7 +1119,7 @@ void ShapeFragment::RenderHitCheck(Matrix34 const& _transform)
 
 
 // *** RenderMarkers
-void ShapeFragment::RenderMarkers(Matrix34 const& _rootTransform)
+void ShapeFragment::RenderMarkers(DirectX::XMFLOAT4X4 const& _rootTransform)
 {
 #ifndef EXPORTER_BUILD
 #ifdef DEBUG_RENDER_ENABLED
@@ -1087,7 +1131,7 @@ void ShapeFragment::RenderMarkers(Matrix34 const& _rootTransform)
   for (i = 0; i < numMarkers; ++i)
   {
     ShapeMarker* marker = m_childMarkers[i].get();
-    Matrix34 mat = marker->GetWorldMatrix(_rootTransform);
+    DirectX::XMFLOAT4X4 mat = marker->GetWorldMatrix(_rootTransform);
     RenderArrow(mat.pos, mat.pos + mat.f * 20.0f, 2.0f);
     RenderArrow(mat.pos, mat.pos + mat.u * 10.0f, 2.0f);
     //		glLineWidth(2.0f);
@@ -1116,11 +1160,13 @@ void ShapeFragment::RenderMarkers(Matrix34 const& _rootTransform)
 
 
 // *** RayHit
-bool ShapeFragment::RayHit(RayPackage* _package, Matrix34 const& _transform, bool _accurate)
+bool ShapeFragment::RayHit(RayPackage* _package, DirectX::XMFLOAT4X4 const& _transform, bool _accurate)
 {
 #ifndef EXPORTER_BUILD
-  Matrix34 totalMatrix = m_transform * _transform;
-  Vector3 centre = totalMatrix * m_centre;
+  DirectX::XMFLOAT4X4 totalMatrix;
+  DirectX::XMStoreFloat4x4(&totalMatrix, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), DirectX::XMLoadFloat4x4(&_transform)));
+  DirectX::XMFLOAT3 centre;
+  DirectX::XMStoreFloat3(&centre, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_centre), DirectX::XMLoadFloat4x4(&totalMatrix)));
 
   // First do bounding sphere check
   if (m_radius > 0.0f && RaySphereIntersection(_package->m_rayStart, _package->m_rayDir, centre, m_radius, _package->m_rayLen))
@@ -1136,7 +1182,8 @@ bool ShapeFragment::RayHit(RayPackage* _package, Matrix34 const& _transform, boo
     // Compute World Space versions of all the vertices
     for (int i = 0; i < m_numPositions; ++i)
     {
-      m_positionsInWS[i] = m_positions[i] * totalMatrix;
+      DirectX::XMStoreFloat3(&m_positionsInWS[i],
+                             DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_positions[i]), DirectX::XMLoadFloat4x4(&totalMatrix)));
     }
 
     // Check each triangle in this fragment for intersection
@@ -1171,11 +1218,13 @@ bool ShapeFragment::RayHit(RayPackage* _package, Matrix34 const& _transform, boo
 
 
 // *** SphereHit
-bool ShapeFragment::SphereHit(SpherePackage* _package, Matrix34 const& _transform, bool _accurate)
+bool ShapeFragment::SphereHit(SpherePackage* _package, DirectX::XMFLOAT4X4 const& _transform, bool _accurate)
 {
 #ifndef EXPORTER_BUILD
-  Matrix34 totalMatrix = m_transform * _transform;
-  Vector3 centre = totalMatrix * m_centre;
+  DirectX::XMFLOAT4X4 totalMatrix;
+  DirectX::XMStoreFloat4x4(&totalMatrix, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), DirectX::XMLoadFloat4x4(&_transform)));
+  DirectX::XMFLOAT3 centre;
+  DirectX::XMStoreFloat3(&centre, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_centre), DirectX::XMLoadFloat4x4(&totalMatrix)));
 
   if (m_radius > 0.0f && SphereSphereIntersection(_package->m_pos, _package->m_radius, centre, m_radius))
   {
@@ -1188,7 +1237,8 @@ bool ShapeFragment::SphereHit(SpherePackage* _package, Matrix34 const& _transfor
     // Compute World Space versions of all the vertices
     for (int i = 0; i < m_numPositions; ++i)
     {
-      m_positionsInWS[i] = m_positions[i] * totalMatrix;
+      DirectX::XMStoreFloat3(&m_positionsInWS[i],
+                             DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_positions[i]), DirectX::XMLoadFloat4x4(&totalMatrix)));
     }
 
     // Check each triangle in this fragment for intersection
@@ -1222,12 +1272,14 @@ bool ShapeFragment::SphereHit(SpherePackage* _package, Matrix34 const& _transfor
 
 
 // *** ShapeHit
-bool ShapeFragment::ShapeHit(Shape* _shape, Matrix34 const& _theTransform, Matrix34 const& _ourTransform, bool _accurate)
+bool ShapeFragment::ShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 const& _theTransform, DirectX::XMFLOAT4X4 const& _ourTransform, bool _accurate)
 {
 #ifndef EXPORTER_BUILD
 
-  Matrix34 totalMatrix = m_transform * _ourTransform;
-  Vector3 centre = totalMatrix * m_centre;
+  DirectX::XMFLOAT4X4 totalMatrix;
+  DirectX::XMStoreFloat4x4(&totalMatrix, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), DirectX::XMLoadFloat4x4(&_ourTransform)));
+  DirectX::XMFLOAT3 centre;
+  DirectX::XMStoreFloat3(&centre, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_centre), DirectX::XMLoadFloat4x4(&totalMatrix)));
 
   if (m_radius > 0.0f)
   {
@@ -1256,12 +1308,14 @@ bool ShapeFragment::ShapeHit(Shape* _shape, Matrix34 const& _theTransform, Matri
 }
 
 
-void ShapeFragment::CalculateCentre(Matrix34 const& _transform, Vector3& _centre, int& _numFragments)
+void ShapeFragment::CalculateCentre(DirectX::XMFLOAT4X4 const& _transform, DirectX::XMFLOAT3& _centre, int& _numFragments)
 {
-  Matrix34 totalMatrix = m_transform * _transform;
-  Vector3 centre = totalMatrix * m_centre;
+  DirectX::XMFLOAT4X4 totalMatrix;
+  DirectX::XMStoreFloat4x4(&totalMatrix, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), DirectX::XMLoadFloat4x4(&_transform)));
+  DirectX::XMFLOAT3 centre;
+  DirectX::XMStoreFloat3(&centre, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_centre), DirectX::XMLoadFloat4x4(&totalMatrix)));
 
-  _centre += centre;
+  DirectX::XMStoreFloat3(&_centre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_centre), DirectX::XMLoadFloat3(&centre)));
   _numFragments++;
 
   int numFragments = static_cast<int>(m_childFragments.size());
@@ -1273,12 +1327,15 @@ void ShapeFragment::CalculateCentre(Matrix34 const& _transform, Vector3& _centre
 }
 
 
-void ShapeFragment::CalculateRadius(Matrix34 const& _transform, Vector3 const& _centre, float& _radius)
+void ShapeFragment::CalculateRadius(DirectX::XMFLOAT4X4 const& _transform, DirectX::XMFLOAT3 const& _centre, float& _radius)
 {
-  Matrix34 totalMatrix = m_transform * _transform;
-  Vector3 centre = totalMatrix * m_centre;
+  DirectX::XMFLOAT4X4 totalMatrix;
+  DirectX::XMStoreFloat4x4(&totalMatrix, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), DirectX::XMLoadFloat4x4(&_transform)));
+  DirectX::XMFLOAT3 centre;
+  DirectX::XMStoreFloat3(&centre, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_centre), DirectX::XMLoadFloat4x4(&totalMatrix)));
 
-  float distance = (centre - _centre).Mag();
+  float distance =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&centre), DirectX::XMLoadFloat3(&_centre))));
   if (distance + m_radius > _radius)
   {
     _radius = distance + m_radius;
@@ -1444,13 +1501,13 @@ void Shape::Load(TextReader* _in)
 
 void Shape::WriteToFile(FILE* _out) const { m_rootFragment->WriteToFile(_out); }
 
-void Shape::Render(float _predictionTime, Matrix34 const& _transform)
+void Shape::Render(float _predictionTime, DirectX::XMFLOAT4X4 const& _transform)
 {
 #ifndef EXPORTER_BUILD
   glEnable(GL_COLOR_MATERIAL);
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
-  glMultMatrixf(_transform.ConvertToOpenGLFormat());
+  MultiplyGLMatrix(_transform);
 
 #ifdef USE_DISPLAY_LISTS
   int id = -1;
@@ -1475,13 +1532,13 @@ void Shape::Render(float _predictionTime, Matrix34 const& _transform)
 }
 
 
-void Shape::RenderHitCheck(Matrix34 const& _transform)
+void Shape::RenderHitCheck(DirectX::XMFLOAT4X4 const& _transform)
 {
 #ifndef EXPORTER_BUILD
   // Like the main render function this function starts a recursive tree
   // walk, rendering as it goes. UNLIKE the main renderer, it doesn't
   // use the OpenGL matrix stack to store the combined matrix results, but
-  // rather does all the matrix muls using our own Matrix34 code. The
+  // rather does all the matrix muls using our own DirectX::XMFLOAT4X4 code. The
   // reason for this is that this function is designed to aid debugging
   // of the hitcheck. Since the hitcheck uses no OpenGL commands, it
   // makes sense to emulate that behaviour here as much as possible.
@@ -1490,13 +1547,13 @@ void Shape::RenderHitCheck(Matrix34 const& _transform)
 }
 
 
-void Shape::RenderMarkers(Matrix34 const& _transform)
+void Shape::RenderMarkers(DirectX::XMFLOAT4X4 const& _transform)
 {
 #ifndef EXPORTER_BUILD
   // Like the main render function this function starts a recursive tree
   // walk, rendering as it goes. UNLIKE the main renderer, it doesn't
   // use the OpenGL matrix stack to store the combined matrix results, but
-  // rather does all the matrix muls using our own Matrix34 code. The
+  // rather does all the matrix muls using our own DirectX::XMFLOAT4X4 code. The
   // reason for this is that this function is designed to aid debugging
   // of the hitcheck. Since the hitcheck uses no OpenGL commands, it
   // makes sense to emulate that behaviour here as much as possible.
@@ -1505,7 +1562,7 @@ void Shape::RenderMarkers(Matrix34 const& _transform)
 }
 
 
-bool Shape::RayHit(RayPackage* _package, Matrix34 const& _transform, bool _accurate)
+bool Shape::RayHit(RayPackage* _package, DirectX::XMFLOAT4X4 const& _transform, bool _accurate)
 {
 #ifndef EXPORTER_BUILD
   //	bool rv = m_rootFragment->RayHit(&package, _transform);
@@ -1517,7 +1574,7 @@ bool Shape::RayHit(RayPackage* _package, Matrix34 const& _transform, bool _accur
 }
 
 
-bool Shape::SphereHit(SpherePackage* _package, Matrix34 const& _transform, bool _accurate)
+bool Shape::SphereHit(SpherePackage* _package, DirectX::XMFLOAT4X4 const& _transform, bool _accurate)
 {
 #ifndef EXPORTER_BUILD
   bool hit = m_rootFragment->SphereHit(_package, _transform, _accurate);
@@ -1528,7 +1585,7 @@ bool Shape::SphereHit(SpherePackage* _package, Matrix34 const& _transform, bool 
 }
 
 
-bool Shape::ShapeHit(Shape* _shape, Matrix34 const& _theTransform, Matrix34 const& _ourTransform, bool _accurate)
+bool Shape::ShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 const& _theTransform, DirectX::XMFLOAT4X4 const& _ourTransform, bool _accurate)
 {
 #ifndef _EXPORTER_BUILDING
   bool hit = m_rootFragment->ShapeHit(_shape, _theTransform, _ourTransform, _accurate);
@@ -1539,9 +1596,9 @@ bool Shape::ShapeHit(Shape* _shape, Matrix34 const& _theTransform, Matrix34 cons
 }
 
 
-Vector3 Shape::CalculateCentre(Matrix34 const& _transform)
+DirectX::XMFLOAT3 Shape::CalculateCentre(DirectX::XMFLOAT4X4 const& _transform)
 {
-  Vector3 centre;
+  DirectX::XMFLOAT3 centre;
   int numFragments = 0;
 
   m_rootFragment->CalculateCentre(_transform, centre, numFragments);
@@ -1552,7 +1609,7 @@ Vector3 Shape::CalculateCentre(Matrix34 const& _transform)
 }
 
 
-float Shape::CalculateRadius(Matrix34 const& _transform, Vector3 const& _centre)
+float Shape::CalculateRadius(DirectX::XMFLOAT4X4 const& _transform, DirectX::XMFLOAT3 const& _centre)
 {
   float radius = 0.0f;
 
