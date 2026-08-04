@@ -612,7 +612,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   # ------------------------------------------------------------------
   # Wave 3 — NeuronClient
@@ -651,7 +651,7 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Matrix33::m_openGLFormat and Matrix34::m_openGLFormat are `static
       float[16]` returned by pointer — a shared mutable buffer that is neither
