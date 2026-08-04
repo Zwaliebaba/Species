@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "Resource.h"
 #include "Shape.h"
@@ -123,17 +124,6 @@ void Officer::Render(float _predictionTime)
   {
     RenderFlag(_predictionTime);
   }
-}
-
-
-// glVertex3fv wants three contiguous floats; an XMVECTOR is four lanes in a
-// register, so a computed position has to be stored first. Same helper, same
-// reason, as EmitVertex in TextRenderer and RingPoint in DebugRender (T10).
-static void EmitVertex(DirectX::FXMVECTOR _position)
-{
-  DirectX::XMFLOAT3 vertex;
-  DirectX::XMStoreFloat3(&vertex, _position);
-  glVertex3fv(&vertex.x);
 }
 
 void Officer::RenderSpirit(DirectX::XMFLOAT3 const& _pos)

@@ -21,12 +21,14 @@ class GunTurret : public Building
     ShapeMarker* m_barrelEnd[GUNTURRET_NUMBARRELS];
     ShapeMarker* m_statusMarkers[GUNTURRET_NUMSTATUSMARKERS];
 
-    Vector3 m_turretFront;
-    Vector3 m_barrelUp;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and GunTurret's constructor assigns neither of these nor m_target.
+    DirectX::XMFLOAT3 m_turretFront{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_barrelUp{0.0f, 0.0f, 0.0f};
 
     bool m_aiTargetCreated;
 
-    Vector3 m_target;
+    DirectX::XMFLOAT3 m_target{0.0f, 0.0f, 0.0f};
     WorldObjectId m_targetId;
     float m_fireTimer;
     int m_nextBarrel;
@@ -52,7 +54,7 @@ class GunTurret : public Building
     void Damage(float _damage);
     bool Advance();
 
-    Vector3 GetTarget();
+    DirectX::XMFLOAT3 GetTarget();
 
     bool IsInView();
     void Render(float _predictionTime);

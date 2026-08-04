@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "FileWriter.h"
 #include "Resource.h"
 #include "Shape.h"
@@ -88,7 +89,8 @@ bool SpawnBuilding::IsInView()
         SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
         if (building)
         {
-          float distance = (AsLegacy(building->m_centrePos) - m_visibilityMidpoint).Mag();
+          float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(
+            DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_centrePos), DirectX::XMLoadFloat3(&m_visibilityMidpoint))));
           distance += building->m_radius / 2.0f;
           m_visibilityRadius = std::max(m_visibilityRadius, distance);
         }
@@ -98,13 +100,21 @@ bool SpawnBuilding::IsInView()
 
   // Determine visibility
 
+  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(m_visibilityMidpoint, m_visibilityRadius);
 }
 
 
-void SpawnBuilding::RenderSpirit(Vector3 const& _pos)
+void SpawnBuilding::RenderSpirit(DirectX::XMFLOAT3 const& _pos)
 {
-  Vector3 pos = _pos;
+  DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
+
+  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
+  // of the eight vertices below, which each called them afresh.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   int innerAlpha = 255;
   int outerAlpha = 150;
@@ -115,27 +125,28 @@ void SpawnBuilding::RenderSpirit(Vector3 const& _pos)
   glColor4ub(150, 50, 25, innerAlpha);
 
   glBegin(GL_QUADS);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), pos));
   glEnd();
 
   size = spiritOuterSize;
   glColor4ub(150, 50, 25, outerAlpha);
 
   glBegin(GL_QUADS);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), pos));
   glEnd();
 }
 
 
 void SpawnBuilding::RenderAlphas(float _predictionTime)
 {
-  Vector3 ourPos = GetSpiritLink();
+  DirectX::XMFLOAT3 const ourPosStore = GetSpiritLink();
+  DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&ourPosStore);
 
   int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail", 1);
 
@@ -145,13 +156,16 @@ void SpawnBuilding::RenderAlphas(float _predictionTime)
     SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
     if (building)
     {
-      Vector3 theirPos = building->GetSpiritLink();
+      DirectX::XMFLOAT3 const theirPosStore = building->GetSpiritLink();
+      DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&theirPosStore);
+      DirectX::XMVECTOR const alongLink = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-      Vector3 camToOurPos = g_camera->GetPos() - ourPos;
-      Vector3 ourPosRight = camToOurPos ^ (theirPos - ourPos);
+      // Camera's accessors are still legacy -- Species belongs to T22.
+      DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
+      DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
-      Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
-      Vector3 theirPosRight = camToTheirPos ^ (theirPos - ourPos);
+      DirectX::XMVECTOR const ourPosCross = DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, ourPos), alongLink);
+      DirectX::XMVECTOR const theirPosCross = DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, theirPos), alongLink);
 
       glDisable(GL_CULL_FACE);
       glDepthMask(false);
@@ -172,18 +186,21 @@ void SpawnBuilding::RenderAlphas(float _predictionTime)
         size = 1.0f;
       }
 
-      theirPosRight.SetLength(size);
-      ourPosRight.SetLength(size);
+      // SetLength; see the note on the same call in Generator.cpp. Rendering
+      // only, and degenerate only with the camera exactly on the link, so this
+      // takes the native normalise rather than reproducing the (size, 0, 0).
+      DirectX::XMVECTOR const theirPosRight = DirectX::XMVectorScale(DirectX::XMVector3Normalize(theirPosCross), size);
+      DirectX::XMVECTOR const ourPosRight = DirectX::XMVectorScale(DirectX::XMVector3Normalize(ourPosCross), size);
 
       glBegin(GL_QUADS);
       glTexCoord2f(0.1f, 0);
-      glVertex3fv((ourPos - ourPosRight).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(ourPos, ourPosRight));
       glTexCoord2f(0.1f, 1);
-      glVertex3fv((ourPos + ourPosRight).GetData());
+      EmitVertex(DirectX::XMVectorAdd(ourPos, ourPosRight));
       glTexCoord2f(0.9f, 1);
-      glVertex3fv((theirPos + theirPosRight).GetData());
+      EmitVertex(DirectX::XMVectorAdd(theirPos, theirPosRight));
       glTexCoord2f(0.9f, 0);
-      glVertex3fv((theirPos - theirPosRight).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(theirPos, theirPosRight));
       glEnd();
 
       glDisable(GL_TEXTURE_2D);
@@ -198,7 +215,8 @@ void SpawnBuilding::RenderAlphas(float _predictionTime)
         float predictedProgress = spirit->m_currentProgress + _predictionTime;
         if (predictedProgress >= 0.0f && predictedProgress <= 1.0f)
         {
-          Vector3 position = ourPos + (theirPos - ourPos) * predictedProgress;
+          DirectX::XMFLOAT3 position;
+          DirectX::XMStoreFloat3(&position, DirectX::XMVectorMultiplyAdd(alongLink, DirectX::XMVectorReplicate(predictedProgress), ourPos));
           RenderSpirit(position);
         }
       }
@@ -251,7 +269,7 @@ std::vector<int>* SpawnBuilding::ExploreLinks()
 }
 
 
-Vector3 SpawnBuilding::GetSpiritLink()
+DirectX::XMFLOAT3 SpawnBuilding::GetSpiritLink()
 {
   if (!m_spiritLink)
   {
@@ -259,8 +277,10 @@ Vector3 SpawnBuilding::GetSpiritLink()
     DEBUG_ASSERT(m_spiritLink);
   }
 
-  Matrix34 mat(m_front, g_upVector, m_pos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   return m_spiritLink->GetWorldMatrix(mat).pos;
 }
 
@@ -520,7 +540,8 @@ bool SpawnPoint::PopulationLocked()
         if (building && building->m_type == TypeSpawnPopulationLock)
         {
           SpawnPopulationLock* lock = (SpawnPopulationLock*)building;
-          float distance = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
           if (distance < lock->m_searchRadius)
           {
             m_populationLock = lock->m_id.GetUniqueId();
@@ -599,9 +620,11 @@ void SpawnPoint::TriggerSpirit(SpawnBuildingSpirit* _spirit)
     // This spirit has arrived at its destination
     if (m_id.GetTeamId() != 255)
     {
-      Matrix34 mat(m_front, m_up, m_pos);
-      Matrix34 doorMat = m_doorMarker->GetWorldMatrix(mat);
-      g_location->SpawnEntities(doorMat.pos, m_id.GetTeamId(), -1, Entity::TypeCitizen, 1, g_zeroVector, 0.0f);
+      DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
+
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+      DirectX::XMFLOAT3 const doorPos = m_doorMarker->GetWorldMatrix(mat).pos;
+      g_location->SpawnEntities(doorPos, m_id.GetTeamId(), -1, Entity::TypeCitizen, 1, g_zeroVector, 0.0f);
     }
 
     delete _spirit;
@@ -674,8 +697,11 @@ void SpawnPoint::RenderAlphas(float _predictionTime)
 {
   SpawnBuilding::RenderAlphas(_predictionTime);
 
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  // Camera's accessors are still legacy -- Species belongs to T22.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   glDepthMask(false);
   glEnable(GL_BLEND);
@@ -696,26 +722,27 @@ void SpawnPoint::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < maxBlobs; ++i)
   {
-    Vector3 pos = m_centrePos;
-    pos += Vector3(0, 25, 0);
-    pos.x += sinf(timeIndex + i) * i * 0.7f;
-    pos.y += cosf(timeIndex + i) * sinf(i * 10) * 12;
-    pos.z += cosf(timeIndex + i) * i * 0.7f;
+    DirectX::XMVECTOR const pos = DirectX::XMVectorAdd(
+      DirectX::XMLoadFloat3(&m_centrePos),
+      DirectX::XMVectorSet(sinf(timeIndex + i) * i * 0.7f, 25.0f + cosf(timeIndex + i) * sinf(i * 10) * 12, cosf(timeIndex + i) * i * 0.7f, 0.0f));
 
     float size = 10.0f + sinf(timeIndex + i * 10) * 10.0f;
     size = std::max(size, 5.0f);
+
+    DirectX::XMVECTOR const right = DirectX::XMVectorScale(camRight, size);
+    DirectX::XMVECTOR const up = DirectX::XMVectorScale(camUp, size);
 
     glColor4f(0.6f, 0.2f, 0.1f, alpha);
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, right), up));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, right), up));
     glEnd();
   }
 
@@ -736,23 +763,29 @@ void SpawnPoint::RenderPorts()
 
   for (int i = 0; i < GetNumPorts(); ++i)
   {
-    Vector3 portPos;
-    Vector3 portFront;
+    DirectX::XMFLOAT3 portPos;
+    DirectX::XMFLOAT3 portFront;
     GetPortPosition(i, portPos, portFront);
 
-    Vector3 portUp = g_upVector;
-    Matrix34 mat(portFront, portUp, portPos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&portFront), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&portPos)));
 
     //
     // Render the status light
 
     float size = 6.0f;
-    Vector3 camR = g_camera->GetRight() * size;
-    Vector3 camU = g_camera->GetUp() * size;
 
-    Vector3 statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
-    statusPos.y = g_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
-    statusPos.y += 5.0f;
+    // Camera's accessors are still legacy -- Species belongs to T22.
+    DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+    DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+    DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);
+    DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), size);
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 statusPosStore = s_controlPadStatus->GetWorldMatrix(mat).pos;
+    statusPosStore.y = g_location->m_landscape.m_heightMap->GetValue(statusPosStore.x, statusPosStore.z);
+    statusPosStore.y += 5.0f;
+    DirectX::XMVECTOR const statusPos = DirectX::XMLoadFloat3(&statusPosStore);
 
     WorldObjectId occupantId = GetPortOccupant(i);
     if (!occupantId.IsValid())
@@ -766,13 +799,13 @@ void SpawnPoint::RenderPorts()
     }
 
     glTexCoord2i(0, 0);
-    glVertex3fv((statusPos - camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(statusPos, camR), camU));
     glTexCoord2i(1, 0);
-    glVertex3fv((statusPos + camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(statusPos, camR), camU));
     glTexCoord2i(1, 1);
-    glVertex3fv((statusPos + camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(statusPos, camR), camU));
     glTexCoord2i(0, 1);
-    glVertex3fv((statusPos - camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(statusPos, camR), camU));
   }
 
   glEnd();
@@ -887,22 +920,26 @@ void SpawnPopulationLock::RenderAlphas(float _predictionTime)
   {
     RenderSphere(m_pos, 30.0f, RGBAColour(255, 255, 255, 255));
 
-    Vector3 pos = AsLegacy(m_pos) + Vector3(0, 250, 0);
+    DirectX::XMFLOAT3 const pos(m_pos.x, m_pos.y + 250.0f, m_pos.z);
 
-    g_editorFont.DrawText3DCentre(pos + Vector3(0, 80, 0), 10, "SpawnPopulationLock");
-    g_editorFont.DrawText3DCentre(pos + Vector3(0, 70, 0), 10, "OriginalMaxPopulation = %d", m_originalMaxPopulation);
-    g_editorFont.DrawText3DCentre(pos + Vector3(0, 60, 0), 10, "CurrentMaxPopulation = %d", m_maxPopulation);
-    g_editorFont.DrawText3DCentre(pos + Vector3(0, 50, 0), 10, "Red = %d", m_teamCount[1]);
-    g_editorFont.DrawText3DCentre(pos + Vector3(0, 40, 0), 10, "Green = %d", m_teamCount[0]);
+    // Seven lines of debug text stacked above pos, each of which was written as
+    // pos + Vector3(0, height, 0). One lambda rather than seven constructions.
+    auto const above = [&pos](float _height) { return DirectX::XMFLOAT3(pos.x, pos.y + _height, pos.z); };
+
+    g_editorFont.DrawText3DCentre(above(80.0f), 10, "SpawnPopulationLock");
+    g_editorFont.DrawText3DCentre(above(70.0f), 10, "OriginalMaxPopulation = %d", m_originalMaxPopulation);
+    g_editorFont.DrawText3DCentre(above(60.0f), 10, "CurrentMaxPopulation = %d", m_maxPopulation);
+    g_editorFont.DrawText3DCentre(above(50.0f), 10, "Red = %d", m_teamCount[1]);
+    g_editorFont.DrawText3DCentre(above(40.0f), 10, "Green = %d", m_teamCount[0]);
 
     if (m_teamCount[0] > m_originalMaxPopulation)
     {
-      g_editorFont.DrawText3DCentre(pos + Vector3(0, 30, 0), 10, "Green Overpopulated by %d", m_teamCount[0] - m_originalMaxPopulation);
+      g_editorFont.DrawText3DCentre(above(30.0f), 10, "Green Overpopulated by %d", m_teamCount[0] - m_originalMaxPopulation);
     }
 
     if (m_teamCount[1] > m_originalMaxPopulation)
     {
-      g_editorFont.DrawText3DCentre(pos + Vector3(0, 20, 0), 10, "Red Overpopulated by %d", m_teamCount[1] - m_originalMaxPopulation);
+      g_editorFont.DrawText3DCentre(above(20.0f), 10, "Red Overpopulated by %d", m_teamCount[1] - m_originalMaxPopulation);
     }
 
 #ifdef LOCATION_EDITOR

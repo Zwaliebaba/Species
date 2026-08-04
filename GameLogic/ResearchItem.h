@@ -35,7 +35,7 @@ class ResearchItem : public Building
     void Read(TextReader* _in, bool _dynamic);
     void Write(FileWriter* _out);
 
-    void GetEndPositions(Vector3& _end1, Vector3& _end2);
+    void GetEndPositions(DirectX::XMFLOAT3& _end1, DirectX::XMFLOAT3& _end2);
 
     bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
     bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);

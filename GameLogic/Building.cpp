@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "DebugRender.h"
+#include "GlVertex.h"
 #include "Debug.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
@@ -314,15 +315,6 @@ bool Building::IsInView() { return (g_camera->SphereInViewFrustum(m_centrePos, m
 
 
 bool Building::PerformDepthSort(DirectX::XMFLOAT3& _centrePos) { return false; }
-
-
-// glVertex3fv wants three contiguous floats; an XMVECTOR is four lanes.
-static void EmitVertex(DirectX::FXMVECTOR _position)
-{
-  DirectX::XMFLOAT3 vertex;
-  DirectX::XMStoreFloat3(&vertex, _position);
-  glVertex3fv(&vertex.x);
-}
 
 void Building::Render(float predictionTime)
 {

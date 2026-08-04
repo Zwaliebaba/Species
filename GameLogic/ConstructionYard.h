@@ -37,8 +37,8 @@ class ConstructionYard : public Building
     void Render(float _predictionTime);
     void RenderAlphas(float _predictionTime);
 
-    Matrix34 GetRungMatrix1();
-    Matrix34 GetRungMatrix2();
+    DirectX::XMFLOAT4X4 GetRungMatrix1();
+    DirectX::XMFLOAT4X4 GetRungMatrix2();
 
     bool AddPrimitive();
     void AddPowerSurge();

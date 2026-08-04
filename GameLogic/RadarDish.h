@@ -15,10 +15,13 @@ class RadarDish : public Teleport
     ShapeFragment* m_upperMount;
     ShapeMarker* m_focusMarker;
 
-    Vector3 m_entrancePos;
-    Vector3 m_entranceFront;
+    // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
+    // not. RadarDish's constructor zeroes m_target explicitly but leaves the
+    // two entrance vectors to the default, so they need the braces.
+    DirectX::XMFLOAT3 m_entrancePos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_entranceFront{0.0f, 0.0f, 0.0f};
 
-    Vector3 m_target;
+    DirectX::XMFLOAT3 m_target{0.0f, 0.0f, 0.0f};
     int m_receiverId;
     float m_range;
     float m_signal;
@@ -29,8 +32,8 @@ class RadarDish : public Teleport
     bool m_verticallyAligned;
     bool m_movementSoundsPlaying;
 
-    Vector3 GetDishPos(float _predictionTime);   // Returns the position of the transmission point
-    Vector3 GetDishFront(float _predictionTime); // Returns the front vector of the dish
+    DirectX::XMFLOAT3 GetDishPos(float _predictionTime);   // Returns the position of the transmission point
+    DirectX::XMFLOAT3 GetDishFront(float _predictionTime); // Returns the front vector of the dish
 
     void RenderSignal(float _predictionTime, float _radius, float _alpha);
 
@@ -44,13 +47,19 @@ class RadarDish : public Teleport
     void Render(float _predictionTime);
     void RenderAlphas(float _predictionTime);
 
-    void Aim(Vector3 _worldPos);
+    void Aim(DirectX::XMFLOAT3 _worldPos);
 
     bool Connected();
     bool ReadyToSend();
 
     int GetConnectedDishId();
 
+    // DELIBERATELY STILL LEGACY -- these four override Teleport's virtuals,
+    // and a virtual override that stops matching its base silently stops
+    // overriding rather than failing to compile (the rule T12 learned the
+    // hard way). Teleport and its other deriver Bridge belong to T17, so the
+    // whole family converts there, in one commit, exactly as Building's
+    // fifteen overriders converted with Building here.
     Vector3 GetStartPoint();
     Vector3 GetEndPoint();
     bool GetEntrance(Vector3& _pos, Vector3& _front);

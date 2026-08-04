@@ -1390,7 +1390,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       MEASURED ON TAKING THE WAVE, 2026-08-04. T16 IS THE KEYSTONE OF T15-T17
       AND THE PLAN DOES NOT SAY SO. Building declares five virtuals carrying
@@ -1417,6 +1417,71 @@ tasks:
 
       Taking T16 first, then T17, then T15's Building-derived stragglers, then
       T18 and T19. Recorded rather than silently reordered.
+
+      CLOSED. Three commits: the keystone (Building plus all fifteen
+      overriders), the 25 sites that exposed, and the remaining twenty-two
+      bodies. What the second half turned up:
+
+      A SECOND KEYSTONE INSIDE T17, FOUND BY GREPPING FOR THE FIRST ONE.
+      RadarDish derives from Teleport, not from Building directly, and Teleport
+      declares FOUR more virtuals carrying math types -- GetEntrance, GetExit,
+      GetStartPoint, GetEndPoint -- overridden by RadarDish here and by Bridge
+      under T17. Same rule, same trap, one layer further down. RadarDish's four
+      are therefore LEFT LEGACY with a comment, exactly as T14 left Ai's, and
+      T17 converts the family with Teleport. The lesson generalises: before
+      converting a class, grep for what DERIVES from it AND for what it derives
+      from -- the second question is the one that catches this.
+
+      THE T10 SEAM IS STILL OPEN AND IS NOW THE LOUDEST THING IN THESE FILES.
+      ShapeMarker::GetWorldMatrix takes an XMFLOAT4X4 and returns a Matrix34.
+      Roughly twenty sites here call it, and where only .pos is wanted they
+      collapse to a native XMFLOAT3; where the whole basis is wanted the local
+      stays Matrix34 with a comment. Every one is marked "T10's seam" so the
+      follow-up can grep them.
+
+      A REAL BUG, PRE-EXISTING, FIXED IN PASSING. ControlTower::Advance tested
+      `m_dishMatrix == Matrix34()` to decide whether it had computed the dish
+      basis yet. Matrix34's default constructor leaves the matrix
+      UNINITIALISED, so that compared indeterminate memory against
+      indeterminate memory and only worked because a fresh allocation happens
+      to be zeroed. The member is braced to zero now and the test is an
+      explicit IsUncomputed. Called out because it is a behaviour change the
+      migration would otherwise have smuggled in.
+
+      TWO DEGENERATE-CASE DIVERGENCES, DECIDED DIFFERENTLY ON PURPOSE.
+      Vector3::SetLength left (len, 0, 0) for a zero-length vector; the native
+      normalise gives QNaN. In GunTurret's aiming rotation that fallback is
+      LOAD-BEARING -- when the turret points exactly away from its target the
+      cross product is zero, and the fallback's rotation about world X is what
+      breaks the deadlock -- so it is reproduced explicitly. In the four
+      rendering sites (Generator's power line, SpawnPoint's spirit link) it
+      only degenerates one quad with the camera exactly collinear, so those
+      take the native behaviour. Both choices are commented at the site.
+
+      GUARD THRESHOLDS ARE NOT INTERCHANGEABLE. Vector3::RotateAround skips
+      below 1e-8; Matrix34::RotateAround skips below 1e-5. RadarDish uses both,
+      about eighty lines apart. Each converted site names which one it is.
+
+      XMVector3Transform VERSUS XMVector3TransformNormal. Transform adds the
+      matrix's translation row and writes w = 1. Harmless when the result is
+      stored to an XMFLOAT3, which is every site T14 wrote -- but it would have
+      silently corrupted the ShapeFragment basis rows in RadarDish's
+      SpinBasisRows, where the xyz are identical and only w differs, so nothing
+      would have failed until something downstream multiplied the transform.
+      Rows are directions: use TransformNormal.
+
+      GLVERTEX3FV IS INFRASTRUCTURE, NOT A PER-FILE PROBLEM. 513 call sites
+      across 52 files, all needing the same XMVECTOR-to-XMFLOAT3 round trip.
+      T10 and T14 had already written five byte-identical file-static
+      EmitVertex helpers, each commented as being the same as the others. Those
+      are folded onto NeuronClient/GlVertex.h now. It is NOT transitional and
+      does not die with T25: it bridges DirectXMath to OpenGL, not old math to
+      new.
+
+      DEAD DECLARATION LEFT ALONE. DynamicHub::GetPowerLocation is declared in
+      GenericHub.h and never defined or called. Converted with the rest rather
+      than deleted -- removing it is not this task's business, but the next
+      person to touch that header should know it is dead.
 
   - id: T17
     title: Convert the functional buildings

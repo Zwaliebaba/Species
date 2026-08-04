@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include <math.h>
@@ -67,8 +68,7 @@ GunTurret::GunTurret()
 void GunTurret::Initialise(Building* _template)
 {
   _template->m_up = g_location->m_landscape.m_normalMap->GetValue(_template->m_pos.x, _template->m_pos.z);
-  Vector3 right(1, 0, 0);
-  _template->m_front = right ^ AsLegacy(_template->m_up);
+  DirectX::XMStoreFloat3(&_template->m_front, DirectX::XMVector3Cross(DirectX::g_XMIdentityR0, DirectX::XMLoadFloat3(&_template->m_up)));
 
   Building::Initialise(_template);
 
@@ -103,10 +103,16 @@ void GunTurret::Damage(float _damage)
 
 void GunTurret::ExplodeBody()
 {
-  Matrix34 turretPos(m_turretFront, m_up, m_pos);
-  Vector3 barrelPos = m_barrelMount->GetWorldMatrix(turretPos).pos;
-  Vector3 barrelFront = m_barrelMount->GetWorldMatrix(turretPos).f;
-  Matrix34 barrelMat(barrelFront, m_up, barrelPos);
+  DirectX::XMFLOAT4X4 turretPos;
+  DirectX::XMStoreFloat4x4(&turretPos,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_turretFront), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretPos);
+
+  DirectX::XMFLOAT4X4 barrelMat;
+  DirectX::XMStoreFloat4x4(
+    &barrelMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&barrelMount.f), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&barrelMount.pos)));
 
   g_explosionManager.AddExplosion(m_turret, turretPos);
   g_explosionManager.AddExplosion(m_barrel, barrelMat);
@@ -140,7 +146,7 @@ void GunTurret::SearchForRandomPos()
   float distance = 200.0f + syncfrand(200.0f);
   float height = syncfrand(100.0f);
 
-  m_target = AsLegacy(m_pos) + Vector3(cosf(angle) * distance, height, sinf(angle) * distance);
+  m_target = DirectX::XMFLOAT3(m_pos.x + cosf(angle) * distance, m_pos.y + height, m_pos.z + sinf(angle) * distance);
 }
 
 
@@ -197,16 +203,24 @@ void GunTurret::PrimaryFire()
   {
     if (GetPortOccupant(m_nextBarrel).IsValid())
     {
-      Matrix34 turretMat(m_turretFront, g_upVector, m_pos);
-      Vector3 barrelMountPos = m_barrelMount->GetWorldMatrix(turretMat).pos;
-      Vector3 barrelMountFront = m_barrelMount->GetWorldMatrix(turretMat).f;
-      Vector3 barrelRight = barrelMountFront ^ m_barrelUp;
-      barrelMountFront = m_barrelUp ^ barrelRight;
-      Matrix34 barrelMountMat(barrelMountFront, m_barrelUp, barrelMountPos);
-      Matrix34 barrelMat = m_barrelEnd[m_nextBarrel]->GetWorldMatrix(barrelMountMat);
+      DirectX::XMFLOAT4X4 turretMat;
+      DirectX::XMStoreFloat4x4(&turretMat,
+                               BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_turretFront), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-      Vector3 shellPos = barrelMat.pos;
-      Vector3 shellVel = barrelMountFront.SetLength(500.0f);
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+      Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretMat);
+
+      DirectX::XMVECTOR const barrelUp = DirectX::XMLoadFloat3(&m_barrelUp);
+      DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&barrelMount.f), barrelUp);
+      DirectX::XMVECTOR const barrelMountFront = DirectX::XMVector3Cross(barrelUp, barrelRight);
+
+      DirectX::XMFLOAT4X4 barrelMountMat;
+      DirectX::XMStoreFloat4x4(&barrelMountMat, BasisFromFrontAndUp(barrelMountFront, barrelUp, DirectX::XMLoadFloat3(&barrelMount.pos)));
+      Matrix34 const barrelMat = m_barrelEnd[m_nextBarrel]->GetWorldMatrix(barrelMountMat);
+
+      DirectX::XMFLOAT3 const shellPos = barrelMat.pos;
+      DirectX::XMFLOAT3 shellVel;
+      DirectX::XMStoreFloat3(&shellVel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(barrelMountFront), 500.0f));
 
 
       g_location->FireTurretShell(shellPos, shellVel);
@@ -315,42 +329,77 @@ bool GunTurret::Advance()
         m_targetId.SetInvalid();
         return Building::Advance();
       }
-      m_target = target->m_pos;
-      m_target += Vector3(sinf(g_gameTime * 3) * 20, fabs(sinf(g_gameTime * 2) * 10), cosf(g_gameTime * 3) * 20);
+      m_target = DirectX::XMFLOAT3(target->m_pos.x + sinf(g_gameTime * 3) * 20, target->m_pos.y + fabs(sinf(g_gameTime * 2) * 10),
+                                   target->m_pos.z + cosf(g_gameTime * 3) * 20);
 
-      Vector3 targetFront = (m_target - AsLegacy(m_pos));
-      targetFront.HorizontalAndNormalise();
-      float angle = acosf(targetFront * m_turretFront);
+      // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
+      DirectX::XMVECTOR const targetFront = DirectX::XMVector3Normalize(
+        DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_target), DirectX::XMLoadFloat3(&m_pos)), 0.0f));
+      float angle = acosf(DirectX::XMVectorGetX(DirectX::XMVector3Dot(targetFront, DirectX::XMLoadFloat3(&m_turretFront))));
 
       primaryFire = (angle < 0.25f);
     }
   }
 
 
-  float distance = (m_target - AsLegacy(m_pos)).Mag();
+  DirectX::XMVECTOR const turretPosVec = DirectX::XMLoadFloat3(&m_pos);
+  DirectX::XMVECTOR const toTargetFull = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_target), turretPosVec);
+  float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(toTargetFull));
   if (distance < 75.0f)
-    m_target = AsLegacy(m_pos) + (m_target - AsLegacy(m_pos)).SetLength(75.0f);
+  {
+    // SetLength, whose zero-length fallback left (75, 0, 0). Reproduced rather
+    // than taken natively: distance can be exactly zero here, and the native
+    // normalise would store QNaN into m_target and never recover.
+    DirectX::XMVECTOR const direction =
+      NearlyEquals(distance, 0.0f) ? DirectX::g_XMIdentityR0 : DirectX::XMVectorScale(toTargetFull, 1.0f / distance);
+    DirectX::XMStoreFloat3(&m_target, DirectX::XMVectorMultiplyAdd(direction, DirectX::XMVectorReplicate(75.0f), turretPosVec));
+  }
 
 
   //
   // Face our target
 
-  Matrix34 turretPos(m_turretFront, m_up, m_pos);
-  Vector3 barrelPos = m_barrelMount->GetWorldMatrix(turretPos).pos;
-  Vector3 toTarget = m_target - barrelPos;
-  toTarget.HorizontalAndNormalise();
-  float angle = acosf(toTarget * m_turretFront);
+  DirectX::XMFLOAT4X4 turretPos;
+  DirectX::XMStoreFloat4x4(&turretPos,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_turretFront), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-  Vector3 rotation = m_turretFront ^ toTarget;
-  rotation.SetLength(angle * 0.2f);
-  m_turretFront.RotateAround(rotation);
-  m_turretFront.Normalise();
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const barrelPosStore = m_barrelMount->GetWorldMatrix(turretPos).pos;
+  DirectX::XMVECTOR const barrelPos = DirectX::XMLoadFloat3(&barrelPosStore);
 
-  toTarget = (m_target - barrelPos).Normalise();
-  Vector3 barrelRight = toTarget ^ g_upVector;
-  Vector3 targetBarrelUp = toTarget ^ barrelRight;
+  DirectX::XMVECTOR const targetVec = DirectX::XMLoadFloat3(&m_target);
+  DirectX::XMVECTOR turretFront = DirectX::XMLoadFloat3(&m_turretFront);
+
+  // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
+  DirectX::XMVECTOR toTarget = DirectX::XMVector3Normalize(DirectX::XMVectorSetY(DirectX::XMVectorSubtract(targetVec, barrelPos), 0.0f));
+  float angle = acosf(DirectX::XMVectorGetX(DirectX::XMVector3Dot(toTarget, turretFront)));
+
+  // SetLength followed by RotateAround, and the zero-length fallback here is
+  // load-bearing rather than cosmetic. When the turret points exactly away from
+  // its target the cross product is zero and SetLength left (angle * 0.2, 0, 0)
+  // -- a real rotation about world X, which is what breaks the deadlock and
+  // lets the turret come round. Normalising natively would give QNaN, the 1e-8
+  // guard below would then skip the rotation, and the turret would stay aimed
+  // backwards for the rest of the game.
+  DirectX::XMVECTOR const rotationAxis = DirectX::XMVector3Cross(turretFront, toTarget);
+  float const axisLength = DirectX::XMVectorGetX(DirectX::XMVector3Length(rotationAxis));
+  DirectX::XMVECTOR const rotation = NearlyEquals(axisLength, 0.0f) ? DirectX::XMVectorSet(angle * 0.2f, 0.0f, 0.0f, 0.0f)
+                                                                    : DirectX::XMVectorScale(rotationAxis, (angle * 0.2f) / axisLength);
+
+  // RotateAround's angle is the vector's magnitude, with the same 1e-8 guard.
+  float const rotationLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+  if (rotationLengthSquared >= 1e-8f)
+  {
+    float const spin = sqrtf(rotationLengthSquared);
+    turretFront = DirectX::XMVector3Transform(turretFront, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+  }
+  DirectX::XMStoreFloat3(&m_turretFront, DirectX::XMVector3Normalize(turretFront));
+
+  toTarget = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(targetVec, barrelPos));
+  DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(toTarget, DirectX::g_XMIdentityR1);
+  DirectX::XMVECTOR const targetBarrelUp = DirectX::XMVector3Cross(toTarget, barrelRight);
   float factor = SERVER_ADVANCE_PERIOD * 2.0f;
-  m_barrelUp = m_barrelUp * (1.0f - factor) + targetBarrelUp * factor;
+  DirectX::XMStoreFloat3(&m_barrelUp, DirectX::XMVectorLerp(DirectX::XMLoadFloat3(&m_barrelUp), targetBarrelUp, factor));
 
   //
   // Open fire
@@ -362,7 +411,7 @@ bool GunTurret::Advance()
 }
 
 
-Vector3 GunTurret::GetTarget() { return m_target; }
+DirectX::XMFLOAT3 GunTurret::GetTarget() { return m_target; }
 
 
 bool GunTurret::IsInView()
@@ -388,15 +437,20 @@ void GunTurret::Render(float _predictionTime)
     m_turretFront = m_front;
   }
 
-  Matrix34 turretPos(m_turretFront, g_upVector, m_pos);
+  DirectX::XMFLOAT4X4 turretPos;
+  DirectX::XMStoreFloat4x4(&turretPos,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_turretFront), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
   m_turret->Render(_predictionTime, turretPos);
 
-  Vector3 barrelPos = m_barrelMount->GetWorldMatrix(turretPos).pos;
-  Vector3 barrelFront = m_barrelMount->GetWorldMatrix(turretPos).f;
-  Vector3 barrelRight = barrelFront ^ m_barrelUp;
-  barrelFront = m_barrelUp ^ barrelRight;
-  barrelFront.Normalise();
-  Matrix34 barrelMat(barrelFront, m_barrelUp, barrelPos);
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretPos);
+
+  DirectX::XMVECTOR const barrelUp = DirectX::XMLoadFloat3(&m_barrelUp);
+  DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&barrelMount.f), barrelUp);
+  DirectX::XMVECTOR const barrelFront = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(barrelUp, barrelRight));
+
+  DirectX::XMFLOAT4X4 barrelMat;
+  DirectX::XMStoreFloat4x4(&barrelMat, BasisFromFrontAndUp(barrelFront, barrelUp, DirectX::XMLoadFloat3(&barrelMount.pos)));
   m_barrel->Render(_predictionTime, barrelMat);
 
   // RenderArrow( barrelPos, barrelPos + barrelFront * 1000.0f, 1.0f );
@@ -452,17 +506,22 @@ void GunTurret::RenderPorts()
 
   for (int i = 0; i < GetNumPorts(); ++i)
   {
-    Matrix34 rootMat(m_front, m_up, m_pos);
-    Matrix34 worldMat = m_statusMarkers[i]->GetWorldMatrix(rootMat);
+    DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 const statusPos = m_statusMarkers[i]->GetWorldMatrix(rootMat).pos;
 
     //
     // Render the status light
 
     float size = 6.0f;
-    Vector3 camR = g_camera->GetRight() * size;
-    Vector3 camU = g_camera->GetUp() * size;
+    // Camera's accessors are still legacy -- Species belongs to T22.
+    DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+    DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+    DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);
+    DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), size);
 
-    Vector3 statusPos = worldMat.pos;
+    DirectX::XMVECTOR const status = DirectX::XMLoadFloat3(&statusPos);
 
     WorldObjectId occupantId = GetPortOccupant(i);
     if (!occupantId.IsValid())
@@ -477,13 +536,13 @@ void GunTurret::RenderPorts()
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((statusPos - camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(status, camR), camU));
     glTexCoord2i(1, 0);
-    glVertex3fv((statusPos + camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(status, camR), camU));
     glTexCoord2i(1, 1);
-    glVertex3fv((statusPos + camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(status, camR), camU));
     glTexCoord2i(0, 1);
-    glVertex3fv((statusPos - camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(status, camR), camU));
     glEnd();
   }
 
@@ -539,7 +598,7 @@ bool GunTurretTarget::Advance()
   }
   else
   {
-    AsLegacy(m_pos).Zero();
+    m_pos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   }
 
   return false;

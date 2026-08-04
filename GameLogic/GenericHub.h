@@ -36,7 +36,7 @@ class DynamicBase : public Building
     int GetBuildingLink();
     void SetBuildingLink(int _buildingId);
 
-    Vector3 GetPowerLocation();
+    DirectX::XMFLOAT3 GetPowerLocation();
 
     void SetShapeName(char* _shapeName);
 };

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include <math.h>
@@ -69,23 +70,53 @@ void ControlTower::Initialise(Building* _template)
   m_controlBuildingId = ((ControlTower*)_template)->m_controlBuildingId;
 }
 
+
+// See the call in Advance: the legacy `m_dishMatrix == Matrix34()` was an
+// indeterminate read, and this is the question it was reaching for. Exact
+// comparison against zero rather than NearlyEquals, because the header braces
+// the member to exactly zero and only this function's caller ever writes it.
+static bool IsUncomputed(DirectX::XMFLOAT4X4 const& _matrix)
+{
+  for (int row = 0; row < 4; ++row)
+  {
+    for (int column = 0; column < 4; ++column)
+    {
+      if (_matrix.m[row][column] != 0.0f)
+        return false;
+    }
+  }
+  return true;
+}
+
 bool ControlTower::Advance()
 {
   //
   // Calculate our Dish matrix (once only, during first Advance)
   // Also look to see if our building is already captured
 
-  if (m_dishMatrix == Matrix34())
+  // Legacy read: `m_dishMatrix == Matrix34()`, where Matrix34's default
+  // constructor leaves the matrix UNINITIALISED. That comparison was reading
+  // indeterminate memory on both sides and only worked because a fresh
+  // allocation happens to be zero. m_dishMatrix is braced to zero in the header
+  // now and this asks the question the old code meant to ask -- have we
+  // computed the dish basis yet -- without the indeterminate read.
+  if (IsUncomputed(m_dishMatrix))
   {
     Building* targetBuilding = g_location->GetBuilding(m_controlBuildingId);
     if (targetBuilding)
     {
-      Matrix34 mat(m_front, g_upVector, m_pos);
-      Vector3 dishPos = m_dishPos->GetWorldMatrix(mat).pos;
-      Vector3 dishFront = (dishPos - AsLegacy(targetBuilding->m_centrePos)).Normalise();
-      Vector3 dishRight = dishFront ^ g_upVector;
-      Vector3 dishUp = dishRight ^ dishFront;
-      m_dishMatrix = Matrix34(dishFront, dishUp, dishPos);
+      DirectX::XMFLOAT4X4 mat;
+      DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+      DirectX::XMFLOAT3 const dishPosStore = m_dishPos->GetWorldMatrix(mat).pos;
+      DirectX::XMVECTOR const dishPos = DirectX::XMLoadFloat3(&dishPosStore);
+
+      DirectX::XMVECTOR const dishFront =
+        DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(dishPos, DirectX::XMLoadFloat3(&targetBuilding->m_centrePos)));
+      DirectX::XMVECTOR const dishRight = DirectX::XMVector3Cross(dishFront, DirectX::g_XMIdentityR1);
+      DirectX::XMVECTOR const dishUp = DirectX::XMVector3Cross(dishRight, dishFront);
+      DirectX::XMStoreFloat4x4(&m_dishMatrix, BasisFromFrontAndUp(dishFront, dishUp, dishPos));
 
       if (targetBuilding->m_id.GetTeamId() == 255)
       {
@@ -128,25 +159,38 @@ bool ControlTower::Advance()
   {
     if (m_beingReprogrammed[i])
     {
-      Matrix34 rootMat(m_front, g_upVector, m_pos);
-      Matrix34 worldMat = m_console[i]->GetWorldMatrix(rootMat);
-      Vector3 particleVel = worldMat.pos - AsLegacy(m_pos);
-      particleVel += Vector3(sfrand() * 10.0f, sfrand() * 5.0f, sfrand() * 10.0f);
-      g_particleSystem->CreateParticle(worldMat.pos, particleVel, Particle::TypeBlueSpark);
+      DirectX::XMFLOAT4X4 rootMat;
+      DirectX::XMStoreFloat4x4(&rootMat,
+                               BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+      DirectX::XMFLOAT3 const consolePos = m_console[i]->GetWorldMatrix(rootMat).pos;
+
+      // The three sfrand calls stay in this order: they advance the RNG.
+      DirectX::XMFLOAT3 const jitter(sfrand() * 10.0f, sfrand() * 5.0f, sfrand() * 10.0f);
+      DirectX::XMFLOAT3 particleVel;
+      DirectX::XMStoreFloat3(&particleVel,
+                             DirectX::XMVectorAdd(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&consolePos), DirectX::XMLoadFloat3(&m_pos)),
+                                                  DirectX::XMLoadFloat3(&jitter)));
+      g_particleSystem->CreateParticle(consolePos, particleVel, Particle::TypeBlueSpark);
     }
   }
 
   return Building::Advance();
 }
 
-int ControlTower::GetAvailablePosition(Vector3& _pos, Vector3& _front)
+int ControlTower::GetAvailablePosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
   for (int i = 0; i < 3; ++i)
   {
     if (!m_beingReprogrammed[i])
     {
-      Matrix34 rootMat(m_front, g_upVector, m_pos);
-      Matrix34 worldMat = m_reprogrammer[i]->GetWorldMatrix(rootMat);
+      DirectX::XMFLOAT4X4 rootMat;
+      DirectX::XMStoreFloat4x4(&rootMat,
+                               BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+      Matrix34 const worldMat = m_reprogrammer[i]->GetWorldMatrix(rootMat);
 
       _pos = worldMat.pos;
       _front = worldMat.f;
@@ -159,14 +203,15 @@ int ControlTower::GetAvailablePosition(Vector3& _pos, Vector3& _front)
 }
 
 
-void ControlTower::GetConsolePosition(int _position, Vector3& _pos)
+void ControlTower::GetConsolePosition(int _position, DirectX::XMFLOAT3& _pos)
 {
   DEBUG_ASSERT(_position >= 0 && _position < 3);
 
-  Matrix34 rootMat(m_front, g_upVector, m_pos);
-  Matrix34 worldMat = m_console[_position]->GetWorldMatrix(rootMat);
+  DirectX::XMFLOAT4X4 rootMat;
+  DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  _pos = worldMat.pos;
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  _pos = m_console[_position]->GetWorldMatrix(rootMat).pos;
 }
 
 
@@ -263,8 +308,8 @@ bool ControlTower::IsInView()
   //
   // Check against the tall thin control line to heaven
 
-  Vector3 towerPos = m_pos;
-  towerPos.y = g_camera->GetPos().y;
+  // PosInViewFrustum still takes a Vector3 -- Camera belongs to T22.
+  DirectX::XMFLOAT3 const towerPos(m_pos.x, g_camera->GetPos().y, m_pos.z);
   return g_camera->PosInViewFrustum(towerPos);
 }
 
@@ -295,7 +340,9 @@ void ControlTower::RenderAlphas(float _predictionTime)
         Building* building = g_location->m_buildings[i];
         if (building && building->m_type == TypeControlTower)
         {
-          float camDist = (AsLegacy(building->m_pos) - g_camera->GetPos()).Mag();
+          DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+          float camDist = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&cameraPos))));
           if (camDist < nearest)
             nearest = camDist;
         }
@@ -321,12 +368,18 @@ void ControlTower::RenderAlphas(float _predictionTime)
   //
   // Pre-compute some positions and shit
 
-  Matrix34 rootMat(m_front, g_upVector, m_pos);
-  Matrix34 worldMat = m_lightPos->GetWorldMatrix(rootMat);
-  Vector3 lightPos = worldMat.pos;
+  DirectX::XMFLOAT4X4 rootMat;
+  DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  Vector3 camR = g_camera->GetRight();
-  Vector3 camU = g_camera->GetUp();
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const lightPosStore = m_lightPos->GetWorldMatrix(rootMat).pos;
+  DirectX::XMVECTOR const lightPos = DirectX::XMLoadFloat3(&lightPosStore);
+
+  // Camera's accessors are still legacy -- Species belongs to T22.
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMVECTOR const camR = DirectX::XMLoadFloat3(&camRightStore);
+  DirectX::XMVECTOR const camU = DirectX::XMLoadFloat3(&camUpStore);
 
   RGBAColour colour;
   if (m_id.GetTeamId() == 255)
@@ -344,7 +397,7 @@ void ControlTower::RenderAlphas(float _predictionTime)
 
   if (!g_editing)
   {
-    Vector3 controlUp(0, 50.0f + (m_id.GetUniqueId() % 50), 0);
+    DirectX::XMVECTOR const controlUp = DirectX::XMVectorSet(0.0f, 50.0f + (m_id.GetUniqueId() % 50), 0.0f, 0.0f);
 
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -357,13 +410,15 @@ void ControlTower::RenderAlphas(float _predictionTime)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-    float w = (lightPos - g_camera->GetPos()).Mag() * 0.002f;
+    DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+    float w = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(lightPos, DirectX::XMLoadFloat3(&cameraPos)))) * 0.002f;
     w = std::max(0.5f, w);
 
     for (int i = 0; i < 10; ++i)
     {
-      Vector3 thisUp1 = Vector3(0, -20, 0) + controlUp * (float)i;
-      Vector3 thisUp2 = Vector3(0, -20, 0) + controlUp * (float)(i + 1);
+      DirectX::XMVECTOR const baseUp = DirectX::XMVectorSet(0.0f, -20.0f, 0.0f, 0.0f);
+      DirectX::XMVECTOR const thisUp1 = DirectX::XMVectorMultiplyAdd(controlUp, DirectX::XMVectorReplicate((float)i), baseUp);
+      DirectX::XMVECTOR const thisUp2 = DirectX::XMVectorMultiplyAdd(controlUp, DirectX::XMVectorReplicate((float)(i + 1)), baseUp);
 
       int alpha = 255 - 255 * (float)i / 10.0f;
       int alpha2 = 255 - 255 * (float)(i + 1) / 10.0f;
@@ -380,17 +435,19 @@ void ControlTower::RenderAlphas(float _predictionTime)
       glBegin(GL_QUADS);
       glColor4ub(colour.r, colour.g, colour.b, alpha);
 
+      DirectX::XMVECTOR const halfWidth = DirectX::XMVectorScale(camR, w);
+
       glTexCoord2f(y, 0);
-      glVertex3fv((lightPos - camR * w + thisUp1).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(lightPos, halfWidth), thisUp1));
       glTexCoord2f(y, 1);
-      glVertex3fv((lightPos + camR * w + thisUp1).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(lightPos, halfWidth), thisUp1));
 
       glColor4ub(colour.r, colour.g, colour.b, alpha2);
 
       glTexCoord2f(y + h, 1);
-      glVertex3fv((lightPos + camR * w + thisUp2).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(lightPos, halfWidth), thisUp2));
       glTexCoord2f(y + h, 0);
-      glVertex3fv((lightPos - camR * w + thisUp2).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(lightPos, halfWidth), thisUp2));
       glEnd();
     }
 
@@ -411,9 +468,14 @@ void ControlTower::RenderAlphas(float _predictionTime)
 
   if ((m_id.GetTeamId() != 255 && (lastSeqId % 10) / 2 == m_id.GetTeamId()) || m_beingReprogrammed[lastSeqId % 3] || g_editing)
   {
-    Matrix34 rootMat(m_front, g_upVector, m_pos);
-    Matrix34 worldMat = m_lightPos->GetWorldMatrix(rootMat);
-    Vector3 lightPos = worldMat.pos;
+    // Shadows the outer lightPos, exactly as the legacy local did.
+    DirectX::XMFLOAT4X4 signalRootMat;
+    DirectX::XMStoreFloat4x4(&signalRootMat,
+                             BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 const signalPosStore = m_lightPos->GetWorldMatrix(signalRootMat).pos;
+    DirectX::XMVECTOR const signalPos = DirectX::XMLoadFloat3(&signalPosStore);
 
     float signalSize = m_ownership / 5.0f;
 
@@ -433,14 +495,17 @@ void ControlTower::RenderAlphas(float _predictionTime)
     {
       float size = signalSize * (float)i / 10.0f;
       glBegin(GL_QUADS);
+      DirectX::XMVECTOR const right = DirectX::XMVectorScale(camR, size);
+      DirectX::XMVECTOR const up = DirectX::XMVectorScale(camU, size);
+
       glTexCoord2f(0.0f, 0.0f);
-      glVertex3fv((lightPos - camR * size - camU * size).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(signalPos, right), up));
       glTexCoord2f(1.0f, 0.0f);
-      glVertex3fv((lightPos + camR * size - camU * size).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(signalPos, right), up));
       glTexCoord2f(1.0f, 1.0f);
-      glVertex3fv((lightPos + camR * size + camU * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(signalPos, right), up));
       glTexCoord2f(0.0f, 1.0f);
-      glVertex3fv((lightPos - camR * size + camU * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(signalPos, right), up));
       glEnd();
     }
 

@@ -49,9 +49,12 @@ bool Cave::Advance()
     //
     // Only spawn if the area is sufficiently empty
 
-    Matrix34 rootMat(m_front, g_upVector, m_pos);
-    Matrix34 worldMat = m_spawnPoint->GetWorldMatrix(rootMat);
-    Vector3 spawnPoint = worldMat.pos;
+    DirectX::XMFLOAT4X4 rootMat;
+    DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- so
+    // the marker's position comes back off a legacy row.
+    DirectX::XMFLOAT3 spawnPoint = m_spawnPoint->GetWorldMatrix(rootMat).pos;
     spawnPoint.y = g_location->m_landscape.m_heightMap->GetValue(spawnPoint.x, spawnPoint.z);
 
     int numFound;
@@ -80,7 +83,8 @@ void Cave::Damage(float _damage)
 {
   if (_damage > 80.0f)
   {
-    Matrix34 mat(m_front, g_upVector, m_pos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
     g_explosionManager.AddExplosion(m_shape, mat);
     m_dead = true;
   }

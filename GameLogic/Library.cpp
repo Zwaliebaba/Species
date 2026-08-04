@@ -31,13 +31,18 @@ bool Library::Advance()
       ShapeMarker* scrollMarker = m_shape->m_rootFragment->LookupMarker(markerName);
       DEBUG_ASSERT(scrollMarker);
 
-      Matrix34 rootMat(m_front, g_upVector, m_pos);
-      Matrix34 scrollPos = scrollMarker->GetWorldMatrix(rootMat);
+      DirectX::XMFLOAT4X4 rootMat;
+      DirectX::XMStoreFloat4x4(&rootMat,
+                               BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
+      // only the marker's position is wanted here.
+      DirectX::XMFLOAT3 const scrollPos = scrollMarker->GetWorldMatrix(rootMat).pos;
 
       ResearchItem* item = new ResearchItem();
       item->m_researchType = i;
       item->m_inLibrary = true;
-      item->m_pos = scrollPos.pos;
+      item->m_pos = scrollPos;
       item->m_id.SetUniqueId(g_globalWorld->GenerateBuildingId());
       g_location->m_buildings.PutData(item);
 

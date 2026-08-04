@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include <math.h>
@@ -977,12 +978,8 @@ void Engineer::BeginBridge(DirectX::XMFLOAT3 _to)
     component->m_id.SetTeamId(m_id.GetTeamId());
     linkBuildingId = component->m_id.GetUniqueId();
 
-    // Bridge inherits m_front from Building, which is still legacy -- T16 owns
-    // it. Store to a native local and assign; the seam converts on the way in.
     DirectX::XMVECTOR const right = DirectX::XMVector3Cross(bridgeFront, DirectX::g_XMIdentityR1);
-    DirectX::XMFLOAT3 componentFront;
-    DirectX::XMStoreFloat3(&componentFront, DirectX::XMVector3Cross(right, DirectX::g_XMIdentityR1));
-    component->m_front = componentFront;
+    DirectX::XMStoreFloat3(&component->m_front, DirectX::XMVector3Cross(right, DirectX::g_XMIdentityR1));
 
     if (i == numComponents || i == 0)
     {
@@ -1089,16 +1086,6 @@ bool Engineer::AdvanceToResearchItem()
   }
 
   return false;
-}
-
-
-// glVertex3fv wants three contiguous floats; an XMVECTOR is four lanes in a
-// register. Same helper, same reason, as T10's EmitVertex in TextRenderer.
-static void EmitVertex(DirectX::FXMVECTOR _position)
-{
-  DirectX::XMFLOAT3 vertex;
-  DirectX::XMStoreFloat3(&vertex, _position);
-  glVertex3fv(&vertex.x);
 }
 
 void Engineer::RenderShape(float predictionTime)

@@ -29,7 +29,9 @@ class SpawnBuilding : public Building
     std::vector<SpawnBuildingLink*> m_links;
     ShapeMarker* m_spiritLink;
 
-    Vector3 m_visibilityMidpoint;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and SpawnBuilding's constructor never assigned it.
+    DirectX::XMFLOAT3 m_visibilityMidpoint{0.0f, 0.0f, 0.0f};
     float m_visibilityRadius;
 
   public:
@@ -44,9 +46,9 @@ class SpawnBuilding : public Building
     bool IsInView();
     void Render(float _predictionTime);
     void RenderAlphas(float _predictionTime);
-    void RenderSpirit(Vector3 const& _pos);
+    void RenderSpirit(DirectX::XMFLOAT3 const& _pos);
 
-    Vector3 GetSpiritLink();
+    DirectX::XMFLOAT3 GetSpiritLink();
     void SetBuildingLink(int _buildingId);
     void ClearLinks();
 

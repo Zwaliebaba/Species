@@ -34,16 +34,32 @@ void StaticShape::Initialise(Building* _template)
 }
 
 
+// The basis Building::GetWorldMatrix states, with m_scale folded into the three
+// basis rows. Row 3 is the position and is deliberately left unscaled -- the
+// legacy Matrix34 scaled only r, u and f, so scaling it here would move every
+// static shape away from the origin by a factor of m_scale.
+DirectX::XMFLOAT4X4 StaticShape::GetScaledWorldMatrix() const
+{
+  DirectX::XMFLOAT4X4 const basis = GetWorldMatrix();
+  DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&basis);
+  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(m_scale);
+  mat.r[0] = DirectX::XMVectorMultiply(mat.r[0], scale);
+  mat.r[1] = DirectX::XMVectorMultiply(mat.r[1], scale);
+  mat.r[2] = DirectX::XMVectorMultiply(mat.r[2], scale);
+
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, mat);
+  return result;
+}
+
+
 void StaticShape::SetDetail(int _detail)
 {
   m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
   if (m_shape)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
-    mat.u *= m_scale;
-    mat.r *= m_scale;
-    mat.f *= m_scale;
+    DirectX::XMFLOAT4X4 mat = GetScaledWorldMatrix();
 
     m_centrePos = m_shape->CalculateCentre(mat);
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
@@ -59,10 +75,7 @@ void StaticShape::SetShapeName(char* _shapeName)
   {
     SetShape(g_resource->GetShape(m_shapeName));
 
-    Matrix34 mat(m_front, m_up, m_pos);
-    mat.u *= m_scale;
-    mat.r *= m_scale;
-    mat.f *= m_scale;
+    DirectX::XMFLOAT4X4 mat = GetScaledWorldMatrix();
 
     m_centrePos = m_shape->CalculateCentre(mat);
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
@@ -76,10 +89,7 @@ bool StaticShape::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOA
   if (m_shape)
   {
     RayPackage ray(_rayStart, _rayDir, _rayLen);
-    Matrix34 transform(m_front, m_up, m_pos);
-    transform.u *= m_scale;
-    transform.r *= m_scale;
-    transform.f *= m_scale;
+    DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
     return m_shape->RayHit(&ray, transform, true);
   }
   else
@@ -93,10 +103,7 @@ bool StaticShape::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
   if (m_shape)
   {
     SpherePackage sphere(_pos, _radius);
-    Matrix34 transform(m_front, m_up, m_pos);
-    transform.u *= m_scale;
-    transform.r *= m_scale;
-    transform.f *= m_scale;
+    DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
     return m_shape->SphereHit(&sphere, transform);
   }
   else
@@ -111,10 +118,7 @@ bool StaticShape::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _theTransform)
 {
   if (m_shape)
   {
-    Matrix34 ourTransform(m_front, m_up, m_pos);
-    ourTransform.u *= m_scale;
-    ourTransform.r *= m_scale;
-    ourTransform.f *= m_scale;
+    DirectX::XMFLOAT4X4 ourTransform = GetScaledWorldMatrix();
 
     // return m_shape->ShapeHit( _shape, _theTransform, ourTransform, true );
     return _shape->ShapeHit(m_shape, ourTransform, _theTransform, true);
@@ -131,10 +135,7 @@ void StaticShape::Render(float _predictionTime)
 {
   if (m_shape)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
-    mat.u *= m_scale;
-    mat.r *= m_scale;
-    mat.f *= m_scale;
+    DirectX::XMFLOAT4X4 mat = GetScaledWorldMatrix();
 
     glEnable(GL_NORMALIZE);
     m_shape->Render(_predictionTime, mat);

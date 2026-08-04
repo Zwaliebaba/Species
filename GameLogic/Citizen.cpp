@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include "DebugRender.h"
@@ -297,12 +298,9 @@ bool Citizen::AdvanceWatchingSpectacle()
   // Face the spectacle
 
   float amountToTurn = SERVER_ADVANCE_PERIOD * 4.0f;
-  // Building declares its own m_centrePos and it is still legacy -- T16 owns
-  // it. Copy-initialising the native type takes the seam's conversion.
-  DirectX::XMFLOAT3 const buildingCentre = building->m_centrePos;
-
-  DirectX::XMVECTOR const targetPos = DirectX::XMVectorAdd(
-    DirectX::XMLoadFloat3(&buildingCentre), DirectX::XMVectorSet(sinf(g_gameTime) * 30.0f, cosf(g_gameTime) * 20.0f, sinf(g_gameTime) * 25.0f, 0.0f));
+  DirectX::XMVECTOR const targetPos =
+    DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&building->m_centrePos),
+                         DirectX::XMVectorSet(sinf(g_gameTime) * 30.0f, cosf(g_gameTime) * 20.0f, sinf(g_gameTime) * 25.0f, 0.0f));
 
   DirectX::XMFLOAT3 targetDir;
   DirectX::XMStoreFloat3(&targetDir, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(targetPos, DirectX::XMLoadFloat3(&m_pos))));
@@ -2009,10 +2007,9 @@ DirectX::XMFLOAT3 Citizen::PushFromObstructions(DirectX::XMFLOAT3 const& pos, bo
         else if (building->DoesSphereHit(result, closest))
         {
           LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(((LaserFence*)building)->GetBuildingLink());
-          // Building::m_centrePos is still legacy; T16 owns it.
-          DirectX::XMFLOAT3 const fenceCentre = building->m_centrePos;
           DirectX::XMVECTOR pushForce = DirectX::XMVectorScale(
-            DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&fenceCentre), DirectX::XMLoadFloat3(&result))), 1.0f);
+            DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_centrePos), DirectX::XMLoadFloat3(&result))),
+            1.0f);
           if (nextFence)
           {
             DirectX::XMVECTOR const fenceVector =
@@ -2180,16 +2177,6 @@ void Citizen::SetFire() { m_state = StateOnFire; }
 
 
 bool Citizen::IsOnFire() { return (m_state == StateOnFire); }
-
-
-// glVertex3fv wants three contiguous floats; an XMVECTOR is four lanes.
-// Same helper, same reason, as T10's EmitVertex in TextRenderer.
-static void EmitVertex(DirectX::FXMVECTOR _position)
-{
-  DirectX::XMFLOAT3 vertex;
-  DirectX::XMStoreFloat3(&vertex, _position);
-  glVertex3fv(&vertex.x);
-}
 
 // Vector3::RotateAround(axis) took the ANGLE FROM THE AXIS VECTOR'S MAGNITUDE
 // and did nothing at all below 1e-8 squared. Both halves are load-bearing: the

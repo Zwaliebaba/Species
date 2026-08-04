@@ -21,7 +21,12 @@ class ControlTower : public Building
     ShapeMarker* m_console[3];
     ShapeMarker* m_dishPos;
 
-    Matrix34 m_dishMatrix;
+    // Braced to zero, and this one is load-bearing rather than tidiness.
+    // Advance tests it against zero to decide whether the dish basis has been
+    // computed yet; the legacy code wrote that test as `== Matrix34()`, which
+    // compared indeterminate memory on both sides and only worked because a
+    // fresh allocation happens to be zeroed. The braces make it true.
+    DirectX::XMFLOAT4X4 m_dishMatrix{};
 
     bool m_beingReprogrammed[3]; // One bool for each slot
     int m_controlBuildingId;     // Whom I affect
@@ -39,8 +44,8 @@ class ControlTower : public Building
     void Render(float _predictionTime);
     void RenderAlphas(float _predictionTime);
 
-    int GetAvailablePosition(Vector3& _pos, Vector3& _front); // Finds place for reprogrammer
-    void GetConsolePosition(int _position, Vector3& _pos);
+    int GetAvailablePosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front); // Finds place for reprogrammer
+    void GetConsolePosition(int _position, DirectX::XMFLOAT3& _pos);
 
     void BeginReprogram(int _position);
     bool Reprogram(int _teamId); // Returns true if job completed

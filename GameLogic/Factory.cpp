@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 
 #include "Debug.h"
 #include "FileWriter.h"
@@ -45,10 +46,13 @@ void Factory::Initialise(Building* _template)
   Building::Initialise(_template);
 
   ShapeMarker* markerSpiritStore = m_shape->m_rootFragment->LookupMarker("MarkerSpiritStore");
-  Matrix34 rootTransform(m_front, g_upVector, m_pos);
-  Matrix34 const& storeMat = markerSpiritStore->GetWorldMatrix(rootTransform);
+  DirectX::XMFLOAT4X4 rootTransform;
+  DirectX::XMStoreFloat4x4(&rootTransform,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  Vector3 spiritStorePos = storeMat.pos + Vector3(0, 11.0f, 0);
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const markerPos = markerSpiritStore->GetWorldMatrix(rootTransform).pos;
+  DirectX::XMFLOAT3 const spiritStorePos(markerPos.x, markerPos.y + 11.0f, markerPos.z);
   m_spiritStore.Initialise(m_initialCapacity, 200, spiritStorePos, 5.0f, 10.0f, 5.0f);
 }
 
@@ -65,14 +69,14 @@ void Factory::Render(float predictionTime)
 
   if (m_state == StateCreating)
   {
-    Vector3 pos(AsLegacy(m_pos) + Vector3(2.0f, 20.0f, 20.0f));
+    DirectX::XMVECTOR const pos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(2.0f, 20.0f, 20.0f, 0.0f));
 
     glLineWidth(2.0f);
     glBegin(GL_LINE_LOOP);
-    glVertex3fv((pos + Vector3(-5, -5, 0)).GetData());
-    glVertex3fv((pos + Vector3(-5, +5, 0)).GetData());
-    glVertex3fv((pos + Vector3(+5, +5, 0)).GetData());
-    glVertex3fv((pos + Vector3(+5, -5, 0)).GetData());
+    EmitVertex(DirectX::XMVectorAdd(pos, DirectX::XMVectorSet(-5.0f, -5.0f, 0.0f, 0.0f)));
+    EmitVertex(DirectX::XMVectorAdd(pos, DirectX::XMVectorSet(-5.0f, +5.0f, 0.0f, 0.0f)));
+    EmitVertex(DirectX::XMVectorAdd(pos, DirectX::XMVectorSet(+5.0f, +5.0f, 0.0f, 0.0f)));
+    EmitVertex(DirectX::XMVectorAdd(pos, DirectX::XMVectorSet(+5.0f, -5.0f, 0.0f, 0.0f)));
     glEnd();
   }
 }
@@ -105,7 +109,10 @@ void Factory::RequestUnit(unsigned char _troopType, int _numToCreate)
   {
     Team* team = &g_location->m_teams[m_id.GetTeamId()];
     Unit* unit = team->NewUnit(_troopType, _numToCreate, &m_unitId, m_pos);
-    unit->SetWayPoint(AsLegacy(m_pos) + AsLegacy(m_front) * 30.0f);
+    DirectX::XMFLOAT3 wayPoint;
+    DirectX::XMStoreFloat3(
+      &wayPoint, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front), DirectX::XMVectorReplicate(30.0f), DirectX::XMLoadFloat3(&m_pos)));
+    unit->SetWayPoint(wayPoint);
   }
   else
   {
@@ -153,8 +160,12 @@ void Factory::AdvanceStateCreating()
   {
     if (m_spiritStore.NumSpirits() > 0)
     {
-      Vector3 pos(AsLegacy(m_pos) + Vector3(syncsfrand(5.0f), 20.0f + syncsfrand(5.0f), 20.0f));
-      Vector3 vel(syncsfrand(1.0f), syncsfrand(1.0f), 5.0f + syncsfrand(1.0f));
+      // The five syncsfrand calls stay in this order: they advance the synchronised
+      // RNG, and the migration may not change the call sequence.
+      DirectX::XMFLOAT3 const offset(syncsfrand(5.0f), 20.0f + syncsfrand(5.0f), 20.0f);
+      DirectX::XMFLOAT3 pos;
+      DirectX::XMStoreFloat3(&pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&offset)));
+      DirectX::XMFLOAT3 const vel(syncsfrand(1.0f), syncsfrand(1.0f), 5.0f + syncsfrand(1.0f));
 
       m_spiritStore.RemoveSpirits(1);
       g_location->SpawnEntities(pos, m_id.GetTeamId(), m_unitId, m_troopType, 1, vel, 0.0f);

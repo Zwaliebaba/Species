@@ -52,7 +52,7 @@ void DynamicBase::Render(float _predictionTime)
   {
     RenderSphere(m_pos, 40.0f);
   }
-  /*Matrix34 mat(m_front, m_up, m_pos);
+  /*DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
   m_shape->Render(_predictionTime, mat);*/
 }
 
@@ -97,7 +97,7 @@ void DynamicBase::SetShapeName(char* _shapeName)
   {
     SetShape(g_resource->GetShape(m_shapeName));
 
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 
     m_centrePos = m_shape->CalculateCentre(mat);
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
@@ -399,8 +399,7 @@ void DynamicNode::Render(float _predictionTime)
   if (g_editing)
   {
     m_up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-    Vector3 right(1, 0, 0);
-    m_front = right ^ AsLegacy(m_up);
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Cross(DirectX::g_XMIdentityR0, DirectX::XMLoadFloat3(&m_up)));
   }
 
   glShadeModel(GL_SMOOTH);

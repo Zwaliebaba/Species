@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "DebugRender.h"
 #include "MathUtils.h"
 
@@ -217,18 +218,6 @@ void LaserTrooper::AdvanceVictoryDance()
     m_vel.y += 10.0f + syncfrand(10.0f);
     m_onGround = false;
   }
-}
-
-
-// glVertex3fv wants three contiguous floats and an XMVECTOR is four lanes in a
-// register, so a computed position has to be stored before it can be handed
-// over. The renderers T10 converted grew the same helper -- EmitVertex in
-// TextRenderer, RingPoint in DebugRender -- rather than repeating the store.
-static void EmitVertex(DirectX::FXMVECTOR _position)
-{
-  DirectX::XMFLOAT3 vertex;
-  DirectX::XMStoreFloat3(&vertex, _position);
-  glVertex3fv(&vertex.x);
 }
 
 void LaserTrooper::Render(float predictionTime, int teamId)

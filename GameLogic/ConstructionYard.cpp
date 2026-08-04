@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "DebugRender.h"
 #include "MathUtils.h"
 #include "Profiler.h"
@@ -91,14 +92,19 @@ bool ConstructionYard::Advance()
         m_numPrimitives = 0;
         m_numSurges = 1;
 
-        Matrix34 mat(m_front, g_upVector, m_pos);
-        Matrix34 prim = m_primitives[5]->GetWorldMatrix(mat);
-        WorldObjectId objId = g_location->SpawnEntities(prim.pos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0.0f);
+        DirectX::XMFLOAT4X4 mat;
+        DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+        DirectX::XMFLOAT3 const primPos = m_primitives[5]->GetWorldMatrix(mat).pos;
+        WorldObjectId objId = g_location->SpawnEntities(primPos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0.0f);
         Entity* entity = g_location->GetEntity(objId);
         Armour* armour = (Armour*)entity;
-        AsLegacy(armour->m_front).Set(0, 0, 1);
-        AsLegacy(armour->m_vel).Zero();
-        armour->SetWayPoint(AsLegacy(m_pos) + Vector3(0, 0, 500));
+        armour->m_front = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
+        armour->m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+        // Armour::SetWayPoint still takes a Vector3 -- Armour belongs to T15.
+        armour->SetWayPoint(Vector3(m_pos.x, m_pos.y, m_pos.z + 500.0f));
 
         ++m_numTanksProduced;
         m_timer = -1.0f;
@@ -110,42 +116,49 @@ bool ConstructionYard::Advance()
 }
 
 
-Matrix34 ConstructionYard::GetRungMatrix1()
+DirectX::XMFLOAT4X4 ConstructionYard::GetRungMatrix1()
 {
+  DirectX::XMFLOAT4X4 mat;
+
   if (m_numSurges > 0)
   {
     float rungHeight = 55.0f + sinf(g_gameTime) * 10.0f * m_fractionPopulated;
-    Vector3 rungPos = AsLegacy(m_pos) + Vector3(0, rungHeight, 0);
-    Vector3 front = m_front;
-    front.RotateAroundY(cosf(g_gameTime * 0.5f) * 0.5f * m_fractionPopulated);
+    DirectX::XMVECTOR const rungPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, rungHeight, 0.0f, 0.0f));
+    DirectX::XMVECTOR const front = DirectX::XMVector3TransformNormal(
+      DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(cosf(g_gameTime * 0.5f) * 0.5f * m_fractionPopulated));
 
-    Matrix34 mat(front, g_upVector, rungPos);
-    return mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(front, DirectX::g_XMIdentityR1, rungPos));
   }
   else
   {
-    Matrix34 mat(m_front, g_upVector, AsLegacy(m_pos) + Vector3(0, 45, 0));
-    return mat;
+    DirectX::XMVECTOR const rungPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 45.0f, 0.0f, 0.0f));
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, rungPos));
   }
+
+  return mat;
 }
 
 
-Matrix34 ConstructionYard::GetRungMatrix2()
+DirectX::XMFLOAT4X4 ConstructionYard::GetRungMatrix2()
 {
+  DirectX::XMFLOAT4X4 mat;
+
   if (m_numSurges > 0)
   {
     float rungHeight = 110.0f + sinf(g_gameTime * 0.8) * 15.0f * m_fractionPopulated;
-    Vector3 rungPos = AsLegacy(m_pos) + Vector3(0, rungHeight, 0);
-    Vector3 front = m_front;
-    front.RotateAroundY(cosf(g_gameTime * 0.4f) * 0.6f * m_fractionPopulated);
-    Matrix34 mat = Matrix34(front, g_upVector, rungPos);
-    return mat;
+    DirectX::XMVECTOR const rungPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, rungHeight, 0.0f, 0.0f));
+    DirectX::XMVECTOR const front = DirectX::XMVector3TransformNormal(
+      DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(cosf(g_gameTime * 0.4f) * 0.6f * m_fractionPopulated));
+
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(front, DirectX::g_XMIdentityR1, rungPos));
   }
   else
   {
-    Matrix34 mat = Matrix34(m_front, g_upVector, AsLegacy(m_pos) + Vector3(0, 75, 0));
-    return mat;
+    DirectX::XMVECTOR const rungPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 75.0f, 0.0f, 0.0f));
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, rungPos));
   }
+
+  return mat;
 }
 
 
@@ -154,7 +167,7 @@ void ConstructionYard::Render(float _predictionTime)
   Building::Render(_predictionTime);
 
   // Rung 1
-  Matrix34 mat = GetRungMatrix1();
+  DirectX::XMFLOAT4X4 mat = GetRungMatrix1();
   m_rung->Render(_predictionTime, mat);
 
 
@@ -168,7 +181,10 @@ void ConstructionYard::Render(float _predictionTime)
 
   for (int i = 0; i < m_numPrimitives; ++i)
   {
-    Matrix34 mat(m_front, g_upVector, m_pos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     Matrix34 prim = m_primitives[i]->GetWorldMatrix(mat);
     prim.pos.y += sinf(g_gameTime + i) * 5.0f;
 
@@ -181,8 +197,11 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  // Camera's accessors are still legacy -- Species belongs to T22.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   glDepthMask(false);
   glEnable(GL_BLEND);
@@ -227,13 +246,15 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < maxBlobs; ++i)
   {
-    Vector3 pos = m_centrePos;
-    pos.x += sinf(timeIndex + i) * i * 1.7f;
-    pos.y += fabs(cosf(timeIndex + i) * cosf(i * 20) * 64);
-    pos.z += cosf(timeIndex + i) * i * 1.7f;
+    DirectX::XMVECTOR const pos = DirectX::XMVectorAdd(
+      DirectX::XMLoadFloat3(&m_centrePos),
+      DirectX::XMVectorSet(sinf(timeIndex + i) * i * 1.7f, fabs(cosf(timeIndex + i) * cosf(i * 20) * 64), cosf(timeIndex + i) * i * 1.7f, 0.0f));
 
     float size = 30.0f * sinf(timeIndex + i * 13);
     size = std::max(size, 5.0f);
+
+    DirectX::XMVECTOR const right = DirectX::XMVectorScale(camRight, size);
+    DirectX::XMVECTOR const up = DirectX::XMVectorScale(camUp, size);
 
     glColor4f(0.6f, 0.2f, 0.1f, m_alpha);
     // glColor4f( 0.5f, 0.6f, 0.8f, m_alpha );
@@ -241,13 +262,13 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, right), up));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, right), up));
     glEnd();
   }
 
@@ -265,25 +286,27 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < numStars; ++i)
   {
-    Vector3 pos = m_centrePos;
-    pos.x += sinf(timeIndex + i) * i * 1.7f;
-    pos.y += fabs(cosf(timeIndex + i) * cosf(i * 20) * 64);
-    pos.z += cosf(timeIndex + i) * i * 1.7f;
+    DirectX::XMVECTOR const pos = DirectX::XMVectorAdd(
+      DirectX::XMLoadFloat3(&m_centrePos),
+      DirectX::XMVectorSet(sinf(timeIndex + i) * i * 1.7f, fabs(cosf(timeIndex + i) * cosf(i * 20) * 64), cosf(timeIndex + i) * i * 1.7f, 0.0f));
 
     float size = i * 30.0f;
+
+    DirectX::XMVECTOR const right = DirectX::XMVectorScale(camRight, size);
+    DirectX::XMVECTOR const up = DirectX::XMVectorScale(camUp, size);
 
     glColor4f(1.0f, 0.4f, 0.2f, m_alpha);
     // glColor4f( 0.4f, 0.5f, 1.0f, m_alpha );
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, right), up));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, right), up));
     glEnd();
   }
 
@@ -297,7 +320,7 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 
     for (int r = 0; r < 2; ++r)
     {
-      Matrix34 rungMat;
+      DirectX::XMFLOAT4X4 rungMat;
       if (r == 0)
         rungMat = GetRungMatrix1();
       else
@@ -305,8 +328,9 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 
       for (int i = 0; i < YARD_NUMRUNGSPIKES; ++i)
       {
-        Matrix34 spikeMat = m_rungSpikes[i]->GetWorldMatrix(rungMat);
-        Vector3 pos = spikeMat.pos;
+        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+        DirectX::XMFLOAT3 const spikePos = m_rungSpikes[i]->GetWorldMatrix(rungMat).pos;
+        DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&spikePos);
 
         for (int j = 0; j < numStars; ++j)
         {
@@ -316,13 +340,13 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 
           glBegin(GL_QUADS);
           glTexCoord2i(0, 0);
-          glVertex3fv((pos - camRight * size + camUp * size).GetData());
+          EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, right), up));
           glTexCoord2i(1, 0);
-          glVertex3fv((pos + camRight * size + camUp * size).GetData());
+          EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, right), up));
           glTexCoord2i(1, 1);
-          glVertex3fv((pos + camRight * size - camUp * size).GetData());
+          EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, right), up));
           glTexCoord2i(0, 1);
-          glVertex3fv((pos - camRight * size - camUp * size).GetData());
+          EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, right), up));
           glEnd();
         }
       }
@@ -399,16 +423,21 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  Vector3 armourPos = AsLegacy(m_centrePos) + Vector3(0, 75, 0);
-  Vector3 armourFront(0, 0, 1);
-  armourFront.RotateAroundY(g_gameTime * -0.75f);
+  DirectX::XMVECTOR const armourPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_centrePos), DirectX::XMVectorSet(0.0f, 75.0f, 0.0f, 0.0f));
+  DirectX::XMVECTOR const armourFront = DirectX::XMVector3TransformNormal(DirectX::g_XMIdentityR2, DirectX::XMMatrixRotationY(g_gameTime * -0.75f));
 
-  Matrix34 armourMat(armourFront, g_upVector, armourPos);
-  armourMat.f *= 3.0f;
-  armourMat.u *= 3.0f;
-  armourMat.r *= 3.0f;
+  // Only the three basis rows are scaled; the position row is left alone,
+  // exactly as the legacy f/u/r assignments did.
+  DirectX::XMMATRIX armour = BasisFromFrontAndUp(armourFront, DirectX::g_XMIdentityR1, armourPos);
+  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(3.0f);
+  armour.r[0] = DirectX::XMVectorMultiply(armour.r[0], scale);
+  armour.r[1] = DirectX::XMVectorMultiply(armour.r[1], scale);
+  armour.r[2] = DirectX::XMVectorMultiply(armour.r[2], scale);
 
-  Vector3 targetPos = armourMat.pos + Vector3(0, 50, 0);
+  DirectX::XMFLOAT4X4 armourMat;
+  DirectX::XMStoreFloat4x4(&armourMat, armour);
+
+  DirectX::XMVECTOR const targetPos = DirectX::XMVectorAdd(armour.r[3], DirectX::XMVectorSet(0.0f, 50.0f, 0.0f, 0.0f));
 
   glEnable(GL_BLEND);
   glDisable(GL_CULL_FACE);
@@ -417,8 +446,11 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
   //
   // Render black blob
 
-  Vector3 camRight = g_camera->GetRight();
-  Vector3 camUp = g_camera->GetUp();
+  // Camera's accessors are still legacy -- Species belongs to T22.
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
   float size = 70.0f;
   glColor4f(0.4f, 0.3f, 0.4f, 0.0f);
   glEnable(GL_TEXTURE_2D);
@@ -427,14 +459,17 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
 
   // glBegin( GL_QUADS );
+  DirectX::XMVECTOR const blobRight = DirectX::XMVectorScale(camRight, size);
+  DirectX::XMVECTOR const blobUp = DirectX::XMVectorScale(camUp, size);
+
   glTexCoord2i(0, 0);
-  glVertex3fv((targetPos - camRight * size - camUp * size).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(targetPos, blobRight), blobUp));
   glTexCoord2i(1, 0);
-  glVertex3fv((targetPos + camRight * size - camUp * size).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(targetPos, blobRight), blobUp));
   glTexCoord2i(1, 1);
-  glVertex3fv((targetPos + camRight * size + camUp * size).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(targetPos, blobRight), blobUp));
   glTexCoord2i(0, 1);
-  glVertex3fv((targetPos - camRight * size + camUp * size).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(targetPos, blobRight), blobUp));
   glEnd();
 
   glDisable(GL_TEXTURE_2D);
@@ -448,21 +483,25 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < DISPLAYSCREEN_NUMRAYS; ++i)
   {
-    Matrix34 buildingMat(m_front, m_up, m_pos);
-    Matrix34 rayMat = m_rays[i]->GetWorldMatrix(buildingMat);
+    DirectX::XMFLOAT4X4 buildingMat = GetWorldMatrix();
 
-    Vector3 rayToArmour = (rayMat.pos - targetPos).Normalise();
-    Vector3 right = (g_camera->GetPos() - rayMat.pos) ^ rayToArmour;
-    right.Normalise();
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 const rayPosStore = m_rays[i]->GetWorldMatrix(buildingMat).pos;
+    DirectX::XMVECTOR const rayPos = DirectX::XMLoadFloat3(&rayPosStore);
+
+    DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+    DirectX::XMVECTOR const rayToArmour = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(rayPos, targetPos));
+    DirectX::XMVECTOR const right =
+      DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), rayPos), rayToArmour));
 
     glBegin(GL_QUADS);
     glColor4f(0.9f, 0.9f, 0.9f, 0.5f);
-    glVertex3fv((rayMat.pos - right).GetData());
-    glVertex3fv((rayMat.pos + right).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(rayPos, right));
+    EmitVertex(DirectX::XMVectorAdd(rayPos, right));
 
     glColor4f(0.9f, 0.9f, 0.9f, 0.0f);
-    glVertex3fv((targetPos + right * 30).GetData());
-    glVertex3fv((targetPos - right * 30).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(right, DirectX::XMVectorReplicate(30.0f), targetPos));
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(right, DirectX::XMVectorReplicate(30.0f), targetPos));
     glEnd();
   }
 
