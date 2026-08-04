@@ -29,7 +29,7 @@ class Officer : public Entity
     };
 
     int m_state;
-    Vector3 m_wayPoint;
+    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
     int m_wayPointTeleportId; // Id of teleport we wish to walk into
 
     int m_shield;
@@ -38,8 +38,8 @@ class Officer : public Entity
     float m_absorbTimer;
 
     int m_orders;
-    Vector3 m_orderPosition; // Position in the world
-    int m_ordersBuildingId;  // Id of target building eg Teleport
+    DirectX::XMFLOAT3 m_orderPosition{0.0f, 0.0f, 0.0f}; // Position in the world
+    int m_ordersBuildingId;                              // Id of target building eg Teleport
 
     ShapeMarker* m_flagMarker;
     Flag m_flag;
@@ -56,7 +56,7 @@ class Officer : public Entity
 
     void RenderFlag(float _predictionTime);
     void RenderShield(float _predictionTime);
-    void RenderSpirit(Vector3 const& _pos);
+    void RenderSpirit(DirectX::XMFLOAT3 const& _pos);
 
   public:
     Officer();
@@ -70,8 +70,8 @@ class Officer : public Entity
 
     void ChangeHealth(int amount);
 
-    void SetWaypoint(Vector3 const& _wayPoint);
-    void SetOrders(Vector3 const& _orders);
+    void SetWaypoint(DirectX::XMFLOAT3 const& _wayPoint);
+    void SetOrders(DirectX::XMFLOAT3 const& _orders);
     // void SetDirectOrders( Vector3 const &_orders ); // orders while in direct control mode - removes Goto command
 
     void SetNextMode();
@@ -87,7 +87,7 @@ class Officer : public Entity
 class OfficerOrders : public WorldObject
 {
   public:
-    Vector3 m_wayPoint;
+    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
     float m_arrivedTimer;
 
   public:

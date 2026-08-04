@@ -154,7 +154,7 @@ int AI::FindTargetBuilding(int _fromTargetId, int _fromTeamId)
 }
 
 
-int AI::FindNearestTarget(Vector3 const& _fromPos)
+int AI::FindNearestTarget(DirectX::XMFLOAT3 const& _fromPos)
 {
   float nearest = FLT_MAX;
   int id = -1;
@@ -209,10 +209,11 @@ bool AI::Advance(Unit* _unit)
           Building* nearestTarget = g_location->GetBuilding(FindNearestTarget(citizen->m_pos));
           if (nearestTarget)
           {
-            float distance = (nearestTarget->m_pos - citizen->m_pos).Mag();
+            float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(
+              DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&nearestTarget->m_pos), DirectX::XMLoadFloat3(&citizen->m_pos))));
             if (distance > 70.0f)
             {
-              Vector3 targetPos = nearestTarget->m_pos;
+              DirectX::XMFLOAT3 targetPos = nearestTarget->m_pos;
               float positionError = 20.0f;
               float radius = 20.0f + syncfrand(positionError);
               float theta = syncfrand(M_PI * 2);
@@ -284,7 +285,7 @@ bool AI::Advance(Unit* _unit)
       sendChance = std::max(sendChance, 0.6f);
       sendChance = std::min(sendChance, 1.0f);
 
-      Vector3 targetPos = targetBuilding->m_pos;
+      DirectX::XMFLOAT3 targetPos = targetBuilding->m_pos;
       float positionError = 20.0f;
       float radius = 20.0f + syncfrand(positionError);
       float theta = syncfrand(M_PI * 2);
@@ -321,7 +322,7 @@ void AI::Render(float _predictionTime)
   {
     RGBAColour teamCol = g_location->m_teams[m_id.GetTeamId()].m_colour;
 
-    Vector3 pos = m_pos;
+    DirectX::XMFLOAT3 pos = m_pos;
     pos.y = 400.0f;
     RenderSphere(pos, 20.0f, teamCol);
 
@@ -329,8 +330,8 @@ void AI::Render(float _predictionTime)
     int numRed = g_location->m_teams[1].m_others.NumUsed();
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText3DCentre(pos - Vector3(0, 30, 0), 25, "Green : %d", numGreen);
-    g_editorFont.DrawText3DCentre(pos - Vector3(0, 60, 0), 25, "Red  : %d", numRed);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(pos.x, pos.y - 30.0f, pos.z), 25, "Green : %d", numGreen);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(pos.x, pos.y - 60.0f, pos.z), 25, "Red  : %d", numRed);
   }
 }
 
@@ -773,7 +774,8 @@ bool AISpawnPoint::Advance()
 
     if (m_timer <= 0.0f)
     {
-      g_location->SpawnEntities(m_pos, m_id.GetTeamId(), -1, m_entityType, 1, g_zeroVector, 20.0f, 100.0f, m_routeId);
+      // Location::SpawnEntities converts in T18; the seam takes both arguments.
+      g_location->SpawnEntities(m_pos, m_id.GetTeamId(), -1, m_entityType, 1, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 20.0f, 100.0f, m_routeId);
       ++m_numSpawned;
 
       if (m_numSpawned >= m_count)
@@ -801,9 +803,10 @@ void AISpawnPoint::RenderAlphas(float _predictionTime)
     RenderSphere(m_pos, 10.0f, colour);
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText3DCentre(m_pos + Vector3(0, 30, 0), 5.0f, "Spawn %d %s's", m_count, Entity::GetTypeName(m_entityType));
-    g_editorFont.DrawText3DCentre(m_pos + Vector3(0, 25, 0), 5.0f, "Every %d seconds", m_period);
-    g_editorFont.DrawText3DCentre(m_pos + Vector3(0, 20, 0), 5.0f, "Next spawn in %d seconds", (int)m_timer);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 5.0f, "Spawn %d %s's", m_count,
+                                  Entity::GetTypeName(m_entityType));
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 25.0f, m_pos.z), 5.0f, "Every %d seconds", m_period);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 5.0f, "Next spawn in %d seconds", (int)m_timer);
   }
 }
 

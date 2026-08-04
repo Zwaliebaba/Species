@@ -9,7 +9,7 @@ class AI : public Entity
 {
   protected:
     int FindTargetBuilding(int _fromTargetId, int _fromTeamId);
-    int FindNearestTarget(Vector3 const& _fromPos);
+    int FindNearestTarget(DirectX::XMFLOAT3 const& _fromPos);
 
     float m_timer;
 
@@ -57,6 +57,10 @@ class AITarget : public Building
 
     float IsNearTo(int _aiTargetId); // returns distance or -1
 
+    // DELIBERATELY LEGACY. These override Building's virtuals, and Building
+    // converts in T16. An override must match its base declaration exactly --
+    // no implicit conversion is consulted -- so moving these first would leave
+    // the class abstract rather than failing loudly. Same trap as T12.
     bool DoesSphereHit(Vector3 const& _pos, float _radius);
     bool DoesShapeHit(Shape* _shape, Matrix34 _transform);
 };
@@ -96,6 +100,10 @@ class AISpawnPoint : public Building
     int GetBuildingLink();
     void SetBuildingLink(int _buildingId);
 
+    // DELIBERATELY LEGACY. These override Building's virtuals, and Building
+    // converts in T16. An override must match its base declaration exactly --
+    // no implicit conversion is consulted -- so moving these first would leave
+    // the class abstract rather than failing loudly. Same trap as T12.
     bool DoesSphereHit(Vector3 const& _pos, float _radius);
     bool DoesShapeHit(Shape* _shape, Matrix34 _transform);
 };
