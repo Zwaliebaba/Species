@@ -23,20 +23,20 @@
 #include "LaserTrooper.h"
 #include "WorldPointers.h"
 
-Unit::Unit(int troopType, int teamId, int unitId, int numEntities, Vector3 const& _pos)
+Unit::Unit(int troopType, int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos)
   : m_troopType(troopType),
     m_teamId(teamId),
     m_unitId(unitId),
     m_radius(0.0f),
     m_centrePos(_pos),
-    m_vel(0, 0, 0),
-    m_accumulatedCentre(0, 0, 0),
+    m_vel(0.0f, 0.0f, 0.0f),
+    m_accumulatedCentre(0.0f, 0.0f, 0.0f),
     m_accumulatedRadiusSquared(0.0f),
     m_numAccumulated(0),
-    m_wayPoint(0, 0, 0),
+    m_wayPoint(0.0f, 0.0f, 0.0f),
     m_routeId(-1),
     m_routeWayPointId(-1),
-    m_targetDir(1, 0, 0),
+    m_targetDir(1.0f, 0.0f, 0.0f),
     m_attackAccumulator(0.0f)
 {
   m_entitiesWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
@@ -96,7 +96,7 @@ void Unit::AdvanceEntities(int _slice)
 
       if (s->m_enabled)
       {
-        Vector3 oldPos(s->m_pos);
+        DirectX::XMFLOAT3 const oldPos(s->m_pos);
 
         START_PROFILE(g_profiler, Entity::GetTypeName(s->m_type));
         bool amIdead = s->Advance(this);
@@ -153,11 +153,12 @@ bool Unit::Advance(int _slice)
   //
   // Maintain our centre and radius values
 
-  Vector3 oldPos = m_centrePos;
-  m_centrePos = m_accumulatedCentre;
+  DirectX::XMVECTOR const oldPos = DirectX::XMLoadFloat3(&m_centrePos);
+  DirectX::XMVECTOR centre = DirectX::XMLoadFloat3(&m_accumulatedCentre);
   if (m_numAccumulated != 0)
-    m_centrePos /= m_numAccumulated;
-  m_vel = (m_centrePos - oldPos) / SERVER_ADVANCE_PERIOD;
+    centre = DirectX::XMVectorScale(centre, 1.0f / (float)m_numAccumulated);
+  DirectX::XMStoreFloat3(&m_centrePos, centre);
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(centre, oldPos), 1.0f / SERVER_ADVANCE_PERIOD));
   m_radius = sqrtf(m_accumulatedRadiusSquared);
 
   if (m_entities.NumUsed() == 0)
@@ -166,7 +167,7 @@ bool Unit::Advance(int _slice)
     return true;
   }
 
-  m_accumulatedCentre.Zero();
+  m_accumulatedCentre = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_accumulatedRadiusSquared = 0.0f;
   m_numAccumulated = 0;
 
@@ -193,20 +194,23 @@ bool Unit::Advance(int _slice)
 
         if ((l->m_pos - l->m_targetPos).Mag() < leadDistance / 5.0f)
         {
-          Vector3 pos = l->m_pos;
+          DirectX::XMFLOAT3 pos = l->m_pos;
           //                    Vector3 targetPos = m_wayPoint;
           //                    targetPos += GetFormationOffset( FormationRectangle, l->m_unitIndex );
           //                    targetPos = l->PushFromObstructions( targetPos );
           //                    //targetPos = l->PushFromEachOther( targetPos );
           //                    l->m_unitTargetPos = targetPos;
 
-          Vector3 targetPos = l->m_unitTargetPos;
-          Vector3 desiredDirection = (targetPos - pos).Normalise();
-          float distance = (targetPos - pos).Mag();
+          DirectX::XMFLOAT3 const targetPos = l->m_unitTargetPos;
+
+          DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&targetPos), DirectX::XMLoadFloat3(&pos));
+          DirectX::XMVECTOR const desiredDirection = DirectX::XMVector3Normalize(toTarget);
+          float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget));
           float amountToMove = leadDistance;
           if (amountToMove > distance)
             amountToMove = distance;
-          pos += desiredDirection * amountToMove;
+          DirectX::XMStoreFloat3(
+            &pos, DirectX::XMVectorMultiplyAdd(desiredDirection, DirectX::XMVectorReplicate(amountToMove), DirectX::XMLoadFloat3(&pos)));
           pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
           pos = l->PushFromObstructions(pos);
           // pos = l->PushFromEachOther( pos );
@@ -241,7 +245,7 @@ int Unit::NumAliveEntities()
 }
 
 
-void Unit::Attack(Vector3 pos, bool _withGrenade)
+void Unit::Attack(DirectX::XMFLOAT3 pos, bool _withGrenade)
 {
   //
   // Deal with grenades
@@ -261,7 +265,8 @@ void Unit::Attack(Vector3 pos, bool _withGrenade)
         Entity* ent = m_entities[i];
         if (!ent->m_dead)
         {
-          float distance = (ent->m_pos - pos).Mag();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&ent->m_pos), DirectX::XMLoadFloat3(&pos))));
           if (distance < nearest)
           {
             nearest = distance;
@@ -322,12 +327,13 @@ void Unit::Attack(Vector3 pos, bool _withGrenade)
 }
 
 
-void Unit::UpdateEntityPosition(Vector3 pos, float _radius)
+void Unit::UpdateEntityPosition(DirectX::XMFLOAT3 pos, float _radius)
 {
-  m_accumulatedCentre += pos;
+  DirectX::XMStoreFloat3(&m_accumulatedCentre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_accumulatedCentre), DirectX::XMLoadFloat3(&pos)));
   ++m_numAccumulated;
 
-  float distanceFromCentre = (pos - m_centrePos).Mag();
+  float distanceFromCentre =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&pos), DirectX::XMLoadFloat3(&m_centrePos))));
   distanceFromCentre += _radius;
   float distanceFromCentreSquared = distanceFromCentre * distanceFromCentre;
 
@@ -338,13 +344,13 @@ void Unit::UpdateEntityPosition(Vector3 pos, float _radius)
 }
 
 
-Vector3 Unit::GetWayPoint() { return m_wayPoint; }
+DirectX::XMFLOAT3 Unit::GetWayPoint() { return m_wayPoint; }
 
 
-void Unit::SetWayPoint(Vector3 const& _pos) { m_wayPoint = _pos; }
+void Unit::SetWayPoint(DirectX::XMFLOAT3 const& _pos) { m_wayPoint = _pos; }
 
 
-Vector3 Unit::GetFormationOffset(int _formation, int _index)
+DirectX::XMFLOAT3 Unit::GetFormationOffset(int _formation, int _index)
 {
   static float* s_offsets = nullptr;
   int const numOffsets = 100;
@@ -352,7 +358,7 @@ Vector3 Unit::GetFormationOffset(int _formation, int _index)
 
   if (_index == -1)
   {
-    return g_zeroVector;
+    return DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   }
 
   // Generate some noise in our formation
@@ -382,7 +388,7 @@ Vector3 Unit::GetFormationOffset(int _formation, int _index)
     x += s_offsets[_index % numOffsets];
     z += s_offsets[_index % numOffsets];
 
-    return Vector3(z, 0, x);
+    return DirectX::XMFLOAT3(z, 0.0f, x);
   }
 
   case FormationAirstrike:
@@ -405,27 +411,31 @@ Vector3 Unit::GetFormationOffset(int _formation, int _index)
     y += s_offsets[_index % numOffsets];
     z += s_offsets[_index % numOffsets];
 
-    return Vector3(x, -y, z);
+    return DirectX::XMFLOAT3(x, -y, z);
   }
   }
 
-  return g_zeroVector;
+  return DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
 
 
-Vector3 Unit::GetOffset(int _formation, int _index)
+DirectX::XMFLOAT3 Unit::GetOffset(int _formation, int _index)
 {
-  Vector3 formationOffset = GetFormationOffset(_formation, _index);
-  Vector3 finalPos = m_wayPoint + formationOffset;
+  DirectX::XMFLOAT3 const formationOffset = GetFormationOffset(_formation, _index);
 
-  if (finalPos.Mag() == 0.0f)
+  DirectX::XMVECTOR const wayPoint = DirectX::XMLoadFloat3(&m_wayPoint);
+  DirectX::XMVECTOR const finalPos = DirectX::XMVectorAdd(wayPoint, DirectX::XMLoadFloat3(&formationOffset));
+
+  DirectX::XMFLOAT3 result;
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(finalPos)) == 0.0f)
   {
-    return finalPos;
+    DirectX::XMStoreFloat3(&result, finalPos);
   }
   else
   {
-    return (finalPos - m_wayPoint);
+    DirectX::XMStoreFloat3(&result, DirectX::XMVectorSubtract(finalPos, wayPoint));
   }
+  return result;
 }
 
 
@@ -457,9 +467,9 @@ void Unit::RecalculateOffsets()
       if (m_entities.ValidIndex(i))
       {
         LaserTrooper* l = (LaserTrooper*)m_entities[i];
-        Vector3 pos = l->m_pos;
-        Vector3 targetPos = m_wayPoint;
-        targetPos += GetFormationOffset(FormationRectangle, l->m_id.GetIndex());
+        DirectX::XMFLOAT3 const offset = GetFormationOffset(FormationRectangle, l->m_id.GetIndex());
+        DirectX::XMFLOAT3 targetPos;
+        DirectX::XMStoreFloat3(&targetPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_wayPoint), DirectX::XMLoadFloat3(&offset)));
         targetPos = l->PushFromObstructions(targetPos);
         // targetPos = l->PushFromEachOther( targetPos );
         l->m_unitTargetPos = targetPos;
@@ -480,10 +490,13 @@ void Unit::FollowRoute()
   }
 
   WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId];
-  m_wayPoint = waypoint->GetPos();
-  Vector3 targetVect = m_wayPoint - m_centrePos;
 
-  if (waypoint->m_type != WayPoint::TypeBuilding && targetVect.Mag() < 10.0f)
+  // LevelFile converts in T18, so GetPos still returns a legacy vector.
+  m_wayPoint = DirectX::XMFLOAT3(waypoint->GetPos());
+
+  DirectX::XMVECTOR const targetVect = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_wayPoint), DirectX::XMLoadFloat3(&m_centrePos));
+
+  if (waypoint->m_type != WayPoint::TypeBuilding && DirectX::XMVectorGetX(DirectX::XMVector3Length(targetVect)) < 10.0f)
   {
     m_routeWayPointId++;
     if (m_routeWayPointId >= static_cast<int>(route->m_wayPoints.size()))
@@ -502,7 +515,7 @@ void Unit::FollowRoute()
 }
 
 
-Entity* Unit::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir)
+Entity* Unit::RayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir)
 {
   for (unsigned int i = 0; i < m_entities.Size(); ++i)
   {

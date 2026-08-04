@@ -1,8 +1,8 @@
 #pragma once
 
+#include "NeuronMath.h"
 #include "SliceWalker.h"
 #include "SlotMap.h"
-#include "Vector3.h"
 
 #include "Entity.h"
 
@@ -10,7 +10,7 @@
 class Unit
 {
   protected:
-    Vector3 m_wayPoint;
+    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
 
   public:
     int m_routeId;
@@ -27,11 +27,13 @@ class Unit
     // extrapolation, exactly as it did through the container.
     SliceWalker m_entitiesWalker;
 
-    Vector3 m_centrePos;
-    Vector3 m_vel;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and Unit's constructor assigns only m_centrePos.
+    DirectX::XMFLOAT3 m_centrePos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
     float m_radius;
 
-    Vector3 m_targetDir;
+    DirectX::XMFLOAT3 m_targetDir{0.0f, 0.0f, 0.0f};
 
     float m_attackAccumulator; // Used to regulate fire rate
 
@@ -42,23 +44,23 @@ class Unit
       NumFormations
     };
 
-    Vector3 GetWayPoint();
-    virtual void SetWayPoint(Vector3 const& _pos);
-    Vector3 GetFormationOffset(int _formation, int _index);
-    Vector3 GetOffset(int _formation, int _index); // Takes into account formation AND obstructions
+    DirectX::XMFLOAT3 GetWayPoint();
+    virtual void SetWayPoint(DirectX::XMFLOAT3 const& _pos);
+    DirectX::XMFLOAT3 GetFormationOffset(int _formation, int _index);
+    DirectX::XMFLOAT3 GetOffset(int _formation, int _index); // Takes into account formation AND obstructions
 
   protected:
-    Vector3 m_accumulatedCentre;
+    DirectX::XMFLOAT3 m_accumulatedCentre{0.0f, 0.0f, 0.0f};
     float m_accumulatedRadiusSquared;
     int m_numAccumulated;
 
   public:
-    Unit(int troopType, int teamId, int unitId, int numEntities, Vector3 const& _pos);
+    Unit(int troopType, int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos);
     virtual ~Unit();
 
     virtual void Begin();
     virtual bool Advance(int _slice);
-    virtual void Attack(Vector3 pos, bool withGrenade);
+    virtual void Attack(DirectX::XMFLOAT3 pos, bool withGrenade);
     virtual void AdvanceEntities(int _slice);
     virtual void Render(float _predictionTime);
 
@@ -69,12 +71,12 @@ class Unit
     void RemoveEntity(int _index, float _posX, float _posZ);
     int NumEntities();
     int NumAliveEntities(); // Does not count entities still in the unit, but their m_dead=true
-    void UpdateEntityPosition(Vector3 pos, float _radius);
+    void UpdateEntityPosition(DirectX::XMFLOAT3 pos, float _radius);
     void RecalculateOffsets();
 
     void FollowRoute();
 
     virtual void DirectControl(TeamControls const& _teamControls);
 
-    Entity* RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir);
+    Entity* RayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir);
 };
