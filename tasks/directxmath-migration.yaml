@@ -1391,6 +1391,32 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     status: in_progress
+    notes: |
+      MEASURED ON TAKING THE WAVE, 2026-08-04. T16 IS THE KEYSTONE OF T15-T17
+      AND THE PLAN DOES NOT SAY SO. Building declares five virtuals carrying
+      math types -- PerformDepthSort, GetPortPosition, DoesSphereHit,
+      DoesShapeHit and DoesRayHit -- and they are overridden in FIFTEEN headers
+      spread across three tasks:
+
+        T16  StaticShape, ResearchItem, SpawnPoint, GunTurret, RadarDish, Tree
+        T17  LaserFence, FeedingTube, SafeArea, ScriptTrigger, TrunkPort
+        T15  Triffid
+        T14  Ai -- already converted, and its four overrides were LEFT LEGACY
+             on purpose, with a comment saying they clear when Building moves
+
+      A virtual override matches its base exactly or silently stops overriding,
+      so Building's signatures and all fifteen overriders have to land in one
+      commit. That is T12's finding a second time, one layer up: it is why T12
+      could not be done before T18 and T22, and it is why T16 cannot be done
+      after T15 and T17.
+
+      SO THE ORDER WITHIN THIS WAVE IS NOT FREE, whatever parallel_safe says.
+      Building's storage -- m_front, m_up, m_centrePos -- is also what a large
+      share of T14's ~490 AsLegacy repairs point at, so converting it first
+      removes repairs rather than adding them.
+
+      Taking T16 first, then T17, then T15's Building-derived stragglers, then
+      T18 and T19. Recorded rather than silently reordered.
 
   - id: T17
     title: Convert the functional buildings
