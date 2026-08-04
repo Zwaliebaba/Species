@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 
 #include <float.h>
 #include <math.h>
@@ -458,21 +459,25 @@ void Landscape::GenerateNormals()
 
       if (heightN == heightW && heightE == heightS && heightN == heightE)
       {
-        m_normalMap->PutData(x, z, g_upVector);
+        m_normalMap->PutData(x, z, DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
         continue;
       }
 
       float heightCentre = m_heightMap->GetData(x, z);
 
-      Vector3 vectN(0.0f, heightCentre - heightN, m_heightMap->m_cellSizeY);
-      Vector3 vectW(-m_heightMap->m_cellSizeX, heightCentre - heightW, 0.0f);
-      Vector3 vectS(0.0f, heightCentre - heightS, -m_heightMap->m_cellSizeY);
-      Vector3 vectE(m_heightMap->m_cellSizeX, heightCentre - heightE, 0.0f);
+      DirectX::XMVECTOR const vectN = DirectX::XMVectorSet(0.0f, heightCentre - heightN, m_heightMap->m_cellSizeY, 0.0f);
+      DirectX::XMVECTOR const vectW = DirectX::XMVectorSet(-m_heightMap->m_cellSizeX, heightCentre - heightW, 0.0f, 0.0f);
+      DirectX::XMVECTOR const vectS = DirectX::XMVectorSet(0.0f, heightCentre - heightS, -m_heightMap->m_cellSizeY, 0.0f);
+      DirectX::XMVECTOR const vectE = DirectX::XMVectorSet(m_heightMap->m_cellSizeX, heightCentre - heightE, 0.0f, 0.0f);
 
-      Vector3 normA = (vectW ^ vectN).Normalise();
-      Vector3 normB = (vectE ^ vectS).Normalise();
-      Vector3 norm = (normA + normB).Normalise();
+      // Each of the three normalises is separate, as the legacy code had them:
+      // the two face normals are unit length before they are averaged, so
+      // normalising only the sum would weight the steeper face.
+      DirectX::XMVECTOR const normA = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(vectW, vectN));
+      DirectX::XMVECTOR const normB = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(vectE, vectS));
 
+      DirectX::XMFLOAT3 norm;
+      DirectX::XMStoreFloat3(&norm, DirectX::XMVector3Normalize(DirectX::XMVectorAdd(normA, normB)));
       m_normalMap->PutData(x, z, norm);
     }
   }
@@ -488,10 +493,11 @@ void Landscape::RenderHitNormals() const
   {
     for (int x = 0; x < m_heightMap->GetNumColumns(); x++)
     {
-      Vector3 pos(x * m_heightMap->m_cellSizeX, m_heightMap->GetData(x, z), z * m_heightMap->m_cellSizeX);
-      glVertex3fv(pos.GetData());
-      pos += m_normalMap->GetData(x, z) * 20.0f;
-      glVertex3fv(pos.GetData());
+      DirectX::XMVECTOR const pos =
+        DirectX::XMVectorSet(x * m_heightMap->m_cellSizeX, m_heightMap->GetData(x, z), z * m_heightMap->m_cellSizeX, 0.0f);
+      EmitVertex(pos);
+      DirectX::XMFLOAT3 const normal = m_normalMap->GetData(x, z);
+      EmitVertex(DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&normal), DirectX::XMVectorReplicate(20.0f), pos));
     }
   }
   glEnd();
@@ -543,7 +549,8 @@ void Landscape::Init(LandscapeDef* _def, bool _justMakeTheHeightMap)
     delete m_heightMap;
     delete m_normalMap;
     m_heightMap = new SurfaceMap2D<float>(_def->m_worldSizeX, _def->m_worldSizeZ, 0.0f, 0.0f, _def->m_cellSize, _def->m_cellSize, m_outsideHeight);
-    m_normalMap = new SurfaceMap2D<Vector3>(_def->m_worldSizeX, _def->m_worldSizeZ, 0.0f, 0.0f, _def->m_cellSize, _def->m_cellSize, g_upVector);
+    m_normalMap = new SurfaceMap2D<DirectX::XMFLOAT3>(_def->m_worldSizeX, _def->m_worldSizeZ, 0.0f, 0.0f, _def->m_cellSize, _def->m_cellSize,
+                                                      DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
   }
 
 
@@ -612,6 +619,11 @@ bool Landscape::IsInLandscape(Vector3 const& _pos)
   return (_pos.x >= 0.0f && _pos.z >= 0.0f && _pos.x < GetWorldSizeX() && _pos.z < GetWorldSizeZ());
 }
 
+
+// Everything from here to the end of SphereHit stays on the legacy types on
+// purpose -- see the note on UnsafeRayHit in Landscape.h. The bodies below pass
+// their out-pointers into MathUtils, whose geometry API still takes Vector3*,
+// and the seam does not reach through a pointer.
 
 // *** RayHit
 // Does not assume that rayDir is normalised

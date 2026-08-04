@@ -1827,6 +1827,53 @@ tasks:
       keep producing the same floats, which is a different question from the
       arithmetic being allowed to diverge.
 
+      TWO GAPS IN THE PLAN ITSELF, both found by doing this task rather than by
+      reading it, and both blocking work this task was told to finish.
+
+      ONE: MATHUTILS' GEOMETRY API HAS NO CONVERTING TASK. T7 and T8 rebuilt
+      RayTriIntersection and RayRayDist on DirectXMath but deliberately kept
+      their Vector3 signatures so callers compiled unchanged — that is written
+      into both tasks' acceptance. Nothing after them converts those
+      signatures, and PointSegDist2D and SegRayIntersection2D still take
+      Vector2 const& and Vector2*. T25 then deletes Vector2 and Vector3.
+
+      That is what stops Landscape's ray and sphere API moving. RayHit,
+      RayHitCell, UnsafeRayHit and SphereHit all pass their out-pointer
+      straight into MathUtils, and THE SEAM DOES NOT REACH THROUGH A POINTER —
+      the same asymmetry T14 recorded as failure mode 7, one level up, in a
+      signature rather than a call. Both ends are stuck: seventeen call sites
+      in ten files pass `&someVector3` to Landscape::RayHit, and those ten
+      files belong to four different tasks.
+
+      So Landscape's storage converts here — m_normalMap and the normal
+      generation — and its ray and sphere API does not, commented at the
+      declaration. Recorded rather than quietly dropped, because the plan's own
+      acceptance for this task says no legacy math type remains in these files,
+      and that is now known to be unreachable until MathUtils has an owner.
+      A task for MathUtils' 3D and 2D geometry signatures needs to exist, and
+      T25 depends on it.
+
+      TWO: SurfaceMap2D HAD NO TASK EITHER, and it is not mentioned anywhere in
+      this file. Landscape::m_normalMap is a SurfaceMap2D<Vector3>, so Vector3
+      cannot be deleted while that stands, and the element type could not
+      change because the generic GetValue interpolates with `T * float` and
+      `T + T` — which XMFLOAT3 has by design not got.
+
+      Fixed here rather than deferred, because unlike the MathUtils gap it is
+      ten lines and touches nothing else: NeuronClient/2dSurfaceMap.h gains an
+      explicit GetValue specialisation for XMFLOAT3 that does the same four
+      weighted terms through XMVECTOR, in the same order, with separate
+      multiplies and adds so the rounding is unchanged. No operator layer, no
+      wrapper — the arithmetic moved to the one place that needed it. That
+      header is outside this task's file list and outside its project, which is
+      why it landed in its own commit.
+
+      A SMALLER THING WORTH KEEPING. GenerateNormals normalises three times —
+      both face normals, then their sum — and only the last one looks
+      redundant. It is not: normalising the two faces first is what makes the
+      average unweighted, so dropping either would tilt every landscape normal
+      toward the steeper face.
+
   - id: T19
     title: Convert weapons, effects and the task manager
     intent: >

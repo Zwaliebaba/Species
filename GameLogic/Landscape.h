@@ -3,7 +3,6 @@
 #include "2dArray.h"
 #include "2dSurfaceMap.h"
 
-class Vector3;
 class BitmapRGBA;
 class RGBAColour;
 class LandscapeFlattenArea;
@@ -72,7 +71,7 @@ class Landscape
 
   public:
     SurfaceMap2D<float>* m_heightMap;
-    SurfaceMap2D<Vector3>* m_normalMap;
+    SurfaceMap2D<DirectX::XMFLOAT3>* m_normalMap;
     float m_outsideHeight;
     LandscapeRenderer* m_renderer;
 
@@ -88,6 +87,15 @@ class Landscape
 
     void RenderHitNormals() const;
 
+    // THE RAY AND SPHERE API STAYS LEGACY, and this is a plan gap rather than
+    // an oversight. Every one of these hands its Vector3* out-parameter
+    // straight to MathUtils -- RayTriIntersection and SegRayIntersection2D --
+    // which still take Vector3 const& and Vector3*, because T7 and T8 rebuilt
+    // their bodies natively while deliberately keeping the signatures so
+    // callers compiled unchanged. The seam converts VALUES and REFERENCES, not
+    // POINTERS, so these cannot move until MathUtils does, and no task in
+    // directxmath-migration.yaml owns that. Seventeen call sites in ten files
+    // pass &someVector3 to RayHit alone. See T18's notes.
     bool UnsafeRayHit(Vector3 const& _rayStart, Vector3 const& _rayEnd, Vector3* _result) const;
 
   public:
