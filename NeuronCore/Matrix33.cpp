@@ -430,9 +430,9 @@ void Matrix33::Normalise()
 
 void Matrix33::OutputToDebugStream()
 {
-	DebugTrace("%4.1f %4.1f %4.1f\n", r.x, r.y, r.z );
-	DebugTrace("%4.1f %4.1f %4.1f\n", f.x, f.y, f.z );
-	DebugTrace("%4.1f %4.1f %4.1f\n", u.x, u.y, u.z );
+	DebugTrace("{:4.1f} {:4.1f} {:4.1f}\n", r.x, r.y, r.z );
+	DebugTrace("{:4.1f} {:4.1f} {:4.1f}\n", f.x, f.y, f.z );
+	DebugTrace("{:4.1f} {:4.1f} {:4.1f}\n", u.x, u.y, u.z );
 }
 
 float *Matrix33::ConvertToOpenGLFormat(Vector3 const *_pos)

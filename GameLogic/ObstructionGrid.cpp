@@ -122,7 +122,7 @@ void ObstructionGrid::CalculateAll()
   }
 
   float totalTime = GetHighResTime() - startTime;
-  DebugTrace("ObstructionGrid took %dms to generate\n", int(totalTime * 1000));
+  DebugTrace("ObstructionGrid took {}ms to generate\n", int(totalTime * 1000));
 }
 
 

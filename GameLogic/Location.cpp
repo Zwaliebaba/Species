@@ -245,8 +245,8 @@ void Location::InitBuildings()
     {
       ASSERT_TEXT(false,
                   "Error loading level file...duplicate building found\n"
-                  "Map filename = %s, Mission filename = %s\n"
-                  "Existing building type = %s, new building type = %s",
+                  "Map filename = {}, Mission filename = {}\n"
+                  "Existing building type = {}, new building type = {}",
                   m_levelFile->m_mapFilename, m_levelFile->m_missionFilename, Building::GetTypeName(existing->m_type),
                   Building::GetTypeName(building->m_type));
     }
@@ -1363,11 +1363,11 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
   team->Initialise(_teamId);
   team->SetTeamType(_teamType);
 
-  DebugTrace("CLIENT : New team created, id %d, type %d\n", _teamId, _teamType);
+  DebugTrace("CLIENT : New team created, id {}, type {}\n", _teamId, _teamType);
 
   if (_teamType == Team::TeamTypeLocalPlayer)
   {
-    DebugTrace("CLIENT : Assigned team %d\n", _teamId);
+    DebugTrace("CLIENT : Assigned team {}\n", _teamId);
     g_globalWorld->m_myTeamId = _teamId;
     //		g_target->SetMousePos(g_renderer->ScreenW(), g_renderer->ScreenH());
     //		g_camera->RequestMode(CameraAccess::ModeFreeMovement);

@@ -81,7 +81,7 @@ void Script::RunCommand_CamAnim(const char* _animName)
     return;
 
   int animId = g_location->m_levelFile->GetCameraAnimId(_animName);
-  ASSERT_TEXT(animId != -1, "Invalid camera animation requested %s", _animName);
+  ASSERT_TEXT(animId != -1, "Invalid camera animation requested {}", _animName);
   CameraAnimation* camAnim = g_location->m_levelFile->m_cameraAnimations[animId];
   // animId came from GetCameraAnimId, which returns a loop index into this
   // same list or -1, and the assert above rules out -1.
@@ -106,7 +106,7 @@ void Script::RunCommand_CamBuildingFocus(int _buildingId, float _range, float _h
   if (building)
     TheCamera()->RequestBuildingFocusMode(building, _range, _height);
   else
-    DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
+    DebugTrace("SCRIPT ERROR : Tried to target non-existent building {}", _buildingId);
 }
 
 void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float _height, float _duration)
@@ -123,7 +123,7 @@ void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float
     TheCamera()->RequestMode(Camera::ModeMoveToTarget);
   }
   else
-    DebugTrace("SCRIPT ERROR : Tried to target non-existent building %d", _buildingId);
+    DebugTrace("SCRIPT ERROR : Tried to target non-existent building {}", _buildingId);
 }
 
 void Script::RunCommand_CamGlobalWorldFocus() { TheCamera()->RequestSphereFocusMode(); }
@@ -253,12 +253,12 @@ void Script::RunCommand_GiveResearch(const char* _name)
     sprintf(folderName, "%susers/", g_appCommands->ProfileDirectory());
     bool success = CreateDirectory(folderName);
     if (!success)
-      DebugTrace("failed to create folder %s\n", folderName);
+      DebugTrace("failed to create folder {}\n", folderName);
 
     sprintf(folderName, "%susers/AccessAllAreas/", g_appCommands->ProfileDirectory());
     success = CreateDirectory(folderName);
     if (!success)
-      DebugTrace("failed to create folder %s\n", folderName);
+      DebugTrace("failed to create folder {}\n", folderName);
 
     TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
   }

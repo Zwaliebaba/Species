@@ -133,7 +133,7 @@ int Resource::GetTexture(const char* _name, bool _mipMapping, bool _masked)
 
   if (theTexture == -1)
   {
-    ASSERT_TEXT(false, "Failed to load texture %s", _name);
+    ASSERT_TEXT(false, "Failed to load texture {}", _name);
   }
 
   return theTexture;
@@ -199,7 +199,7 @@ Shape* Resource::GetShapeCopy(const char* _name, bool _animating)
   if (DoesFileExist(fullPath.c_str()))
     theShape = new Shape(fullPath.c_str(), _animating);
 
-  ASSERT_TEXT(theShape, "Couldn't create shape file %s", _name);
+  ASSERT_TEXT(theShape, "Couldn't create shape file {}", _name);
   return theShape;
 }
 

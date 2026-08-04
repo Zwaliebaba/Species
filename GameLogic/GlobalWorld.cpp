@@ -1696,7 +1696,7 @@ void GlobalWorld::LoadGame(const char* _filename)
         {
           if (!building->m_dynamic)
           {
-            DebugTrace("%s found on level %s should be dynamic (otherwise save games wont work)\n", Building::GetTypeName(building->m_type),
+            DebugTrace("{} found on level {} should be dynamic (otherwise save games wont work)\n", Building::GetTypeName(building->m_type),
                        GetLocationName(loc->m_id));
           }
         }
@@ -1861,7 +1861,7 @@ void GlobalWorld::TransferSpirits(int _locationId)
   int remainingSpirits = g_location->m_spirits.NumUsed();
 
   GlobalLocation* location = GetLocation(_locationId);
-  ASSERT_TEXT(location, "GlobalWorld::TransferSpirits, failed to lookup location %d", _locationId);
+  ASSERT_TEXT(location, "GlobalWorld::TransferSpirits, failed to lookup location {}", _locationId);
 
   int spiritCount = location->m_numSpirits + remainingSpirits / 2;
   location->m_numSpirits = remainingSpirits / 2;

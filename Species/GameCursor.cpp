@@ -84,7 +84,7 @@ GameCursor::GameCursor()
   SetArrowFilenames("Icons/SelectionArrow.bmp");
 
   BinaryReader* binReader = g_resource->GetBinaryReader(m_selectionArrowFilename.c_str());
-  ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", m_selectionArrowFilename.c_str());
+  ASSERT_TEXT(binReader, "Failed to open mouse cursor resource {}", m_selectionArrowFilename);
   BitmapRGBA bmp(binReader, "bmp");
   SAFE_DELETE(binReader);
 
@@ -977,7 +977,7 @@ MouseCursor::MouseCursor(char const* _filename)
   m_mainFilename = strdup(_filename);
 
   BinaryReader* binReader = g_resource->GetBinaryReader(m_mainFilename);
-  ASSERT_TEXT(binReader, "Failed to open mouse cursor resource %s", _filename);
+  ASSERT_TEXT(binReader, "Failed to open mouse cursor resource {}", _filename);
   BitmapRGBA bmp(binReader, "bmp");
   SAFE_DELETE(binReader);
 

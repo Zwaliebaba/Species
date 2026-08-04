@@ -20,8 +20,8 @@ EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, 
 {
   m_shapeUpper = g_resource->GetShape(_shapeNameUpper);
   m_shapeLower = g_resource->GetShape(_shapeNameLower);
-  ASSERT_TEXT(m_shapeUpper, "EntityLeg: Couldn't load leg shape %s", _shapeNameUpper);
-  ASSERT_TEXT(m_shapeLower, "EntityLeg: Couldn't load leg shape %s", _shapeNameLower);
+  ASSERT_TEXT(m_shapeUpper, "EntityLeg: Couldn't load leg shape {}", _shapeNameUpper);
+  ASSERT_TEXT(m_shapeLower, "EntityLeg: Couldn't load leg shape {}", _shapeNameLower);
 
   ShapeMarker* endMarker = m_shapeUpper->m_rootFragment->LookupMarker("MarkerEnd");
   const Matrix34& endMatrix = endMarker->GetWorldMatrix(Matrix34(0));
@@ -32,7 +32,7 @@ EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, 
   m_shinLen = endMatrixLower.pos.Mag();
 
   m_rootMarker = m_parent->m_shape->m_rootFragment->LookupMarker(_rootMarkerName);
-  ASSERT_TEXT(m_rootMarker, "EntityLeg: Couldn't find root marker %s", _rootMarkerName);
+  ASSERT_TEXT(m_rootMarker, "EntityLeg: Couldn't find root marker {}", _rootMarkerName);
 
   m_foot.m_state = EntityFoot::FootState::OnGround;
 }

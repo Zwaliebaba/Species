@@ -71,12 +71,12 @@ EntityGridCell::~EntityGridCell()
 void EntityGridCell::OutputContents()
 {
   // The char[256] this built into overflowed silently once the grid had more
-  // than about eighty cells, which every real level does.
+
   std::string buffer = "Grid Cell: ";
   for (int i = 0; i < m_arraySize; i++)
     buffer += std::format("{} ", m_usageLists[i]);
   buffer += "\n";
-  DebugTrace("%s", buffer.c_str());
+  DebugTrace("{}", buffer);
 }
 
 
@@ -212,7 +212,7 @@ void EntityGrid::EnsureMaxNeighbours(int _maxNeighbours)
     m_maxNeighbours = newMaxNeighbours;
 
     float time = GetHighResTime() - startTime;
-    DebugTrace("EntityGrid max neighbours set to %d (time taken %2.2fms)\n", m_maxNeighbours, time * 1000.0f);
+    DebugTrace("EntityGrid max neighbours set to {} (time taken {:.2f}ms)\n", m_maxNeighbours, time * 1000.0f);
   }
 }
 

@@ -56,8 +56,8 @@ ScreenZone::ScreenZone(char const* _name, char const* _tooltip, float _x, float 
     m_scrollZone(-1),
     m_subZones(false)
 {
-  ASSERT_TEXT(strlen(_name) < sizeof(m_name), "Button name too long : %s", _name);
-  ASSERT_TEXT(strlen(_tooltip) < sizeof(m_toolTip), "Tooltip too long : %s", _tooltip);
+  ASSERT_TEXT(strlen(_name) < sizeof(m_name), "Button name too long : {}", _name);
+  ASSERT_TEXT(strlen(_tooltip) < sizeof(m_toolTip), "Tooltip too long : {}", _tooltip);
   strcpy(m_name, _name);
   strcpy(m_toolTip, _tooltip);
 }

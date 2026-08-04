@@ -741,7 +741,7 @@ EscapeRocket::EscapeRocket()
   {
     const std::string name = std::format("MarkerWindow0{}", i + 1);
     m_window[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
-    ASSERT_TEXT(m_window[i], "%s not found", name.c_str());
+    ASSERT_TEXT(m_window[i], "{} not found", name.c_str());
   }
 }
 

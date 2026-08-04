@@ -114,7 +114,7 @@ SoundLibrary2d::SoundLibrary2d()
     errString = "Device is synchronous but waveOutOpen called without WAVE_ALLOWSYNC flag";
     break;
   }
-  ASSERT_TEXT(result == MMSYSERR_NOERROR, "Failed to open audio output device: \"%s\"", errString);
+  ASSERT_TEXT(result == MMSYSERR_NOERROR, "Failed to open audio output device: \"{}\"", errString);
 
   //
   // Create the sound buffers

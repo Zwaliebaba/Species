@@ -1,573 +1,517 @@
 #include "pch.h"
 #include "SoundSources.h"
-
 #include "DebugRender.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
-#include "Profiler.h"
 #include "Resource.h"
 #include "TextStreamReaders.h"
 #include "Debug.h"
 #include "Shape.h"
-#include "HiResTime.h"
-#include "TextRenderer.h"
 #include "Preferences.h"
-
 #include "Tree.h"
-
 #include "SoundSystem.h"
-
 #include "ProtocolLimits.h"
 #include "ParticleSystem.h"
 #include "Location.h"
-#include "GameTime.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
 Tree::Tree()
-:   Building(),
+  : Building(),
     m_branchDisplayListId(-1),
     m_leafDisplayListId(-1),
+    m_hitcheckRadius(0),
+    m_numLeafs(0),
+    m_fireDamage(0.0f),
+    m_onFire(0.0f),
+    m_burnSoundPlaying(false),
+    m_leafColourArray{},
+    m_branchColourArray{},
     m_height(50.0f),
-    m_iterations(6),
     m_budsize(1.0f),
-    m_pushOut(1.0f),
     m_pushUp(1.0f),
+    m_pushOut(1.0f),
+    m_iterations(6),
     m_seed(0),
     m_leafColour(0xffffffff),
     m_branchColour(0xffffffff),
-    m_onFire(0.0f),
-    m_fireDamage(0.0f),
-    m_burnSoundPlaying(false),
-	m_leafDropRate(0)
+    m_leafDropRate(0) { m_type = TypeTree; }
+
+Tree::~Tree() { DeleteDisplayLists(); }
+
+void Tree::Initialise(Building* _template)
 {
-    m_type = TypeTree;
+  Building::Initialise(_template);
+
+  DEBUG_ASSERT(_template->m_type == TypeTree);
+  auto tree = static_cast<Tree*>(_template);
+
+  m_height = tree->m_height;
+  m_iterations = tree->m_iterations;
+  m_budsize = tree->m_budsize;
+  m_pushOut = tree->m_pushOut;
+  m_pushUp = tree->m_pushUp;
+  m_seed = tree->m_seed;
+  m_branchColour = tree->m_branchColour;
+  m_leafColour = tree->m_leafColour;
+  m_leafDropRate = tree->m_leafDropRate;
 }
 
-Tree::~Tree()
+void Tree::SetDetail(int _detail)
 {
-	DeleteDisplayLists();
+  Building::SetDetail(_detail);
+
+  int oldIterations = m_iterations;
+  if (_detail == 0)
+    m_iterations = 0;
+  else
+    m_iterations -= (_detail - 1);
+  m_iterations = std::max(m_iterations, 3);
+
+  Generate();
+
+  m_iterations = oldIterations;
+  m_centrePos = m_pos + m_hitcheckCentre * m_height;
+  m_radius = m_hitcheckRadius * m_height * 1.5f;
 }
-
-void Tree::Initialise( Building *_template )
-{
-    Building::Initialise( _template );
-
-    DEBUG_ASSERT( _template->m_type == TypeTree );
-    Tree *tree = (Tree *) _template;
-
-    m_height = tree->m_height;
-    m_iterations = tree->m_iterations;
-    m_budsize = tree->m_budsize;
-    m_pushOut = tree->m_pushOut;
-    m_pushUp = tree->m_pushUp;
-    m_seed = tree->m_seed;
-    m_branchColour = tree->m_branchColour;
-    m_leafColour = tree->m_leafColour;
-	m_leafDropRate = tree->m_leafDropRate;
-}
-
-
-void Tree::SetDetail( int _detail )
-{
-    Building::SetDetail( _detail );
-
-    int oldIterations = m_iterations;
-    if( _detail == 0 ) m_iterations = 0;
-    else m_iterations -= ( _detail - 1 );
-    m_iterations = std::max(m_iterations, 3);
-
-    Generate();
-
-    m_iterations = oldIterations;
-    m_centrePos = m_pos + m_hitcheckCentre * m_height;
-    m_radius = m_hitcheckRadius * m_height * 1.5f;
-}
-
 
 bool Tree::Advance()
 {
-    m_fireDamage -= SERVER_ADVANCE_PERIOD;
-    if( m_fireDamage < 0.0f ) m_fireDamage = 0.0f;
-    if( m_fireDamage > 100.0f ) m_fireDamage = 100.0f;
+  m_fireDamage -= SERVER_ADVANCE_PERIOD;
+  if (m_fireDamage < 0.0f)
+    m_fireDamage = 0.0f;
+  if (m_fireDamage > 100.0f)
+    m_fireDamage = 100.0f;
 
-    if( m_onFire > 0.0f )
+  if (m_onFire > 0.0f)
+  {
+    //
+    // Spawn fire particle
+
+    float actualHeight = GetActualHeight(0.0f);
+    int numFire = actualHeight / 5;
+    for (int i = 0; i < numFire; ++i)
     {
-        //
-        // Spawn fire particle
-
-        float actualHeight = GetActualHeight(0.0f);
-        int numFire = actualHeight / 5;
-        for( int i = 0; i < numFire; ++i )
-        {
-            Vector3 fireSpawn = m_pos + Vector3(0,actualHeight,0);
-            fireSpawn += Vector3( sfrand(actualHeight*1.0f),
-                                  sfrand(actualHeight*0.5f),
-                                  sfrand(actualHeight*1.0f) );
-            float fireSize = actualHeight*2.0f;
-            fireSize *= (1.0f + sfrand(0.5f) );
-            g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeFire, fireSize );
-        }
-
-        if( frand(100.0f) < 10.0f )
-        {
-            Vector3 fireSpawn = m_pos + Vector3(0,actualHeight,0);
-            fireSpawn += Vector3( sfrand(actualHeight*0.75f),
-                                  sfrand(actualHeight*0.75f),
-                                  sfrand(actualHeight*0.75f) );
-            g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeExplosionDebris );
-        }
-
-        //
-        // Burn down
-
-        m_onFire += SERVER_ADVANCE_PERIOD * 0.01f;
-        if( m_onFire > 1.0f )
-        {
-            m_onFire = -1.0f;
-        }
-
-        //
-        // Spread to nearby trees
-
-        Vector3 hitCentre = m_pos + m_hitcheckCentre*actualHeight;
-        float hitRadius = m_hitcheckRadius * actualHeight;
-
-        for( int b = 0; b < g_location->m_buildings.Size(); ++b )
-        {
-            if( g_location->m_buildings.ValidIndex(b) )
-            {
-                Building *building = g_location->m_buildings[b];
-                if( building != this &&
-                    building->m_type == TypeTree )
-                {
-                    Tree *tree = (Tree *) building;
-                    float distance = (tree->m_pos - m_pos).Mag();
-                    float theirActualHeight = tree->GetActualHeight(0.0f);
-                    float theirRadius = theirActualHeight * tree->m_hitcheckRadius * 1.5f;
-                    float ourRadius = actualHeight * m_hitcheckRadius * 1.5f;
-
-                    if( theirRadius + ourRadius >= distance )
-                    {
-                        tree->Damage(-1.0f);
-                    }
-                }
-            }
-        }
-
-    }
-    else if( m_onFire < 0.0f )
-    {
-        if( m_burnSoundPlaying )
-        {
-            g_soundSystem->StopAllSounds( m_id, "Tree Burn" );
-            g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Create");
-            m_burnSoundPlaying = false;
-        }
-
-        //
-        // Regrow
-
-        m_onFire += SERVER_ADVANCE_PERIOD * 0.01f;
-        if( m_onFire > 0.0f )
-        {
-            m_onFire = 0.0f;
-        }
+      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
+      fireSpawn += Vector3(sfrand(actualHeight * 1.0f), sfrand(actualHeight * 0.5f), sfrand(actualHeight * 1.0f));
+      float fireSize = actualHeight * 2.0f;
+      fireSize *= (1.0f + sfrand(0.5f));
+      g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeFire, fireSize);
     }
 
-	if( m_onFire == 0.0f &&
-		m_leafDropRate > 0 )
-	{
-		// drop some leaves
-		if( rand() % (51-m_leafDropRate) == 0 )
-		{
-			float actualHeight = GetActualHeight(0.0f);
-			Vector3 fireSpawn = m_pos + Vector3(0,actualHeight,0);
-			fireSpawn += Vector3( sfrand(actualHeight*1.0f),
-								  sfrand(actualHeight*0.25f),
-								  sfrand(actualHeight*1.0f) );
-			g_particleSystem->CreateParticle( fireSpawn, g_zeroVector, Particle::TypeLeaf, -1.0f, RGBAColour (m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2] ) );
-		}
-	}
+    if (frand(100.0f) < 10.0f)
+    {
+      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
+      fireSpawn += Vector3(sfrand(actualHeight * 0.75f), sfrand(actualHeight * 0.75f), sfrand(actualHeight * 0.75f));
+      g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeExplosionDebris);
+    }
 
-    return false;
+    //
+    // Burn down
+
+    m_onFire += SERVER_ADVANCE_PERIOD * 0.01f;
+    if (m_onFire > 1.0f)
+      m_onFire = -1.0f;
+
+    //
+    // Spread to nearby trees
+
+    Vector3 hitCentre = m_pos + m_hitcheckCentre * actualHeight;
+    float hitRadius = m_hitcheckRadius * actualHeight;
+
+    for (int b = 0; b < g_location->m_buildings.Size(); ++b)
+    {
+      if (g_location->m_buildings.ValidIndex(b))
+      {
+        Building* building = g_location->m_buildings[b];
+        if (building != this && building->m_type == TypeTree)
+        {
+          auto tree = static_cast<Tree*>(building);
+          float distance = (tree->m_pos - m_pos).Mag();
+          float theirActualHeight = tree->GetActualHeight(0.0f);
+          float theirRadius = theirActualHeight * tree->m_hitcheckRadius * 1.5f;
+          float ourRadius = actualHeight * m_hitcheckRadius * 1.5f;
+
+          if (theirRadius + ourRadius >= distance)
+            tree->Damage(-1.0f);
+        }
+      }
+    }
+  }
+  else if (m_onFire < 0.0f)
+  {
+    if (m_burnSoundPlaying)
+    {
+      g_soundSystem->StopAllSounds(m_id, "Tree Burn");
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Create");
+      m_burnSoundPlaying = false;
+    }
+
+    //
+    // Regrow
+
+    m_onFire += SERVER_ADVANCE_PERIOD * 0.01f;
+    if (m_onFire > 0.0f)
+      m_onFire = 0.0f;
+  }
+
+  if (m_onFire == 0.0f && m_leafDropRate > 0)
+  {
+    // drop some leaves
+    if (rand() % (51 - m_leafDropRate) == 0)
+    {
+      float actualHeight = GetActualHeight(0.0f);
+      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
+      fireSpawn += Vector3(sfrand(actualHeight * 1.0f), sfrand(actualHeight * 0.25f), sfrand(actualHeight * 1.0f));
+      g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeLeaf, -1.0f,
+                                       RGBAColour(m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2]));
+    }
+  }
+
+  return false;
 }
 
-float Tree::GetActualHeight( float _predictionTime )
+float Tree::GetActualHeight(float _predictionTime)
 {
-    float predictedOnFire = m_onFire;
-    if( predictedOnFire != 0.0f )
-    {
-        predictedOnFire += _predictionTime * 0.01f;
-    }
+  float predictedOnFire = m_onFire;
+  if (predictedOnFire != 0.0f)
+    predictedOnFire += _predictionTime * 0.01f;
 
-    float actualHeight = m_height * (1.0f-fabs(predictedOnFire));
-    if( actualHeight < m_height * 0.1f ) actualHeight = m_height * 0.1f;
+  float actualHeight = m_height * (1.0f - fabs(predictedOnFire));
+  if (actualHeight < m_height * 0.1f)
+    actualHeight = m_height * 0.1f;
 
-    return actualHeight;
+  return actualHeight;
 }
 
-static void intToArray(unsigned x, unsigned char *a)
+static void intToArray(unsigned x, unsigned char* a)
 {
-	a[0] = x & 0xFF;
-	x >>= 8;
-	a[1] = x & 0xFF;
-	x >>= 8;
-	a[2] = x & 0xFF;
-	x >>= 8;
-	a[3] = x & 0xFF;
+  a[0] = x & 0xFF;
+  x >>= 8;
+  a[1] = x & 0xFF;
+  x >>= 8;
+  a[2] = x & 0xFF;
+  x >>= 8;
+  a[3] = x & 0xFF;
 }
 
 void Tree::DeleteDisplayLists()
 {
-    if( m_branchDisplayListId != -1 )
-    {
-        glDeleteLists( m_branchDisplayListId, 1 );
-        m_branchDisplayListId = -1;
-    }
+  if (m_branchDisplayListId != -1)
+  {
+    glDeleteLists(m_branchDisplayListId, 1);
+    m_branchDisplayListId = -1;
+  }
 
-    if( m_leafDisplayListId != -1 )
-    {
-        glDeleteLists( m_leafDisplayListId, 1 );
-        m_leafDisplayListId = -1;
-    }
+  if (m_leafDisplayListId != -1)
+  {
+    glDeleteLists(m_leafDisplayListId, 1);
+    m_leafDisplayListId = -1;
+  }
 }
 
 void Tree::Generate()
 {
-    float timeNow = GetHighResTime();
+  m_hitcheckCentre.Zero();
+  m_hitcheckRadius = 0.0f;
+  m_numLeafs = 0;
 
-    m_hitcheckCentre.Zero();
-    m_hitcheckRadius = 0.0f;
-    m_numLeafs = 0;
+  DeleteDisplayLists();
 
-	DeleteDisplayLists();
+  intToArray(m_branchColour, m_branchColourArray);
+  intToArray(m_leafColour, m_leafColourArray);
 
-	intToArray(m_branchColour, m_branchColourArray);
-	intToArray(m_leafColour, m_leafColourArray);
+  int treeDetail = g_prefsManager->GetInt("RenderTreeDetail", 1);
+  if (treeDetail > 1)
+  {
+    int alpha = m_leafColourArray[3];
+    alpha *= pow(1.3f, treeDetail);
+    alpha = std::min(alpha, 255);
+    m_leafColourArray[3] = alpha;
+  }
 
-    int treeDetail = g_prefsManager->GetInt( "RenderTreeDetail", 1 );
-    if( treeDetail > 1 )
-    {
-        int alpha = m_leafColourArray[3];
-        alpha *= pow( 1.3f, treeDetail );
-        alpha = std::min(alpha, 255);
-        m_leafColourArray[3] = alpha;
-    }
+  speciesSeedRandom(m_seed);
+  m_branchDisplayListId = glGenLists(1);
+  glNewList(m_branchDisplayListId, GL_COMPILE);
+  glBegin(GL_QUADS);
+  RenderBranch(g_zeroVector, g_upVector, m_iterations, false, true, false);
+  glEnd();
+  glEndList();
 
-    speciesSeedRandom( m_seed );
-    m_branchDisplayListId = glGenLists(1);
-    glNewList       ( m_branchDisplayListId, GL_COMPILE );
-    glBegin         ( GL_QUADS );
-    RenderBranch    ( g_zeroVector, g_upVector, m_iterations, false, true, false );
-    glEnd           ();
-    glEndList       ();
+  speciesSeedRandom(m_seed);
+  m_leafDisplayListId = glGenLists(1);
+  glNewList(m_leafDisplayListId, GL_COMPILE);
+  glBegin(GL_QUADS);
+  RenderBranch(g_zeroVector, g_upVector, m_iterations, false, false, true);
+  glEnd();
+  glEndList();
 
-    speciesSeedRandom( m_seed );
-    m_leafDisplayListId = glGenLists(1);
-    glNewList       ( m_leafDisplayListId, GL_COMPILE );
-    glBegin         ( GL_QUADS );
-    RenderBranch    ( g_zeroVector, g_upVector, m_iterations, false, false, true );
-    glEnd           ();
-    glEndList       ();
+  //
+  // We now have all the leaf positions accumulated in m_hitcheckCentre
+  // So we can calculate the actual centre position, then the radius
 
-
-    //
-    // We now have all the leaf positions accumulated in m_hitcheckCentre
-    // So we can calculate the actual centre position, then the radius
-
-    m_hitcheckCentre /= (float) m_numLeafs;
-    RenderBranch( g_zeroVector, g_upVector, m_iterations, true, false, true );
-    m_hitcheckRadius *= 0.8f;
-
-    float totalTime = GetHighResTime() - timeNow;
-    DebugTrace( "Tree generated in %dms\n", int(totalTime * 1000.0f) );
+  m_hitcheckCentre /= static_cast<float>(m_numLeafs);
+  RenderBranch(g_zeroVector, g_upVector, m_iterations, true, false, true);
+  m_hitcheckRadius *= 0.8f;
 }
 
-void Tree::Render( float _predictionTime )
+void Tree::Render(float _predictionTime) {}
+
+bool Tree::PerformDepthSort(Vector3& _centrePos)
 {
-    //RenderHitCheck();
+  _centrePos = m_pos + m_hitcheckCentre * m_height;
+  return true;
 }
 
-
-bool Tree::PerformDepthSort( Vector3 &_centrePos )
+void Tree::RenderAlphas(float _predictionTime)
 {
-    _centrePos = m_pos+m_hitcheckCentre*m_height;
-    return true;
+  if (m_branchDisplayListId == -1 || m_leafDisplayListId == -1)
+    Generate();
+
+  if (g_editing)
+  {
+    intToArray(m_branchColour, m_branchColourArray);
+    intToArray(m_leafColour, m_leafColourArray);
+  }
+
+  float actualHeight = GetActualHeight(_predictionTime);
+
+  glEnable(GL_TEXTURE_2D);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glDisable(GL_CULL_FACE);
+  glDepthMask(false);
+
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  Matrix34 mat(m_front, g_upVector, m_pos);
+  glMultMatrixf(mat.ConvertToOpenGLFormat());
+  glScalef(actualHeight, actualHeight, actualHeight);
+
+  if (Location::ChristmasModEnabled() == 1)
+  {
+    m_branchColourArray[0] = 180;
+    m_branchColourArray[1] = 100;
+    m_branchColourArray[2] = 50;
+  }
+
+  glColor4ubv(m_branchColourArray);
+  glCallList(m_branchDisplayListId);
+
+  if (Location::ChristmasModEnabled() != 1)
+  {
+    glColor4ubv(m_leafColourArray);
+    glCallList(m_leafDisplayListId);
+  }
+
+  glPopMatrix();
+
+  glDepthMask(true);
+  glEnable(GL_CULL_FACE);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glDisable(GL_TEXTURE_2D);
+  glDisable(GL_BLEND);
 }
 
-
-void Tree::RenderAlphas( float _predictionTime )
-{
-    if( m_branchDisplayListId == -1 ||
-        m_leafDisplayListId == -1 )
-    {
-        Generate();
-    }
-
-    if( g_editing )
-    {
-	    intToArray(m_branchColour, m_branchColourArray);
-	    intToArray(m_leafColour, m_leafColourArray);
-    }
-
-    float actualHeight = GetActualHeight( _predictionTime );
-
-    glEnable        ( GL_TEXTURE_2D );
-    glEnable        ( GL_BLEND );
-    glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
-    glBindTexture   ( GL_TEXTURE_2D, g_resource->GetTexture( "Textures/Laser.bmp" ) );
-	glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-    glDisable       ( GL_CULL_FACE );
-    glDepthMask     ( false );
-
-    glMatrixMode    ( GL_MODELVIEW );
-	glPushMatrix    ();
-    Matrix34 mat    ( m_front, g_upVector, m_pos );
-    glMultMatrixf   ( mat.ConvertToOpenGLFormat());
-    glScalef        ( actualHeight, actualHeight, actualHeight );
-
-    if( Location::ChristmasModEnabled() == 1 )
-    {
-        m_branchColourArray[0] = 180;
-        m_branchColourArray[1] = 100;
-        m_branchColourArray[2] = 50;
-    }
-
-    glColor4ubv     ( m_branchColourArray );
-    glCallList      ( m_branchDisplayListId );
-
-    if( Location::ChristmasModEnabled() != 1 )
-    {
-        glColor4ubv     ( m_leafColourArray );
-        glCallList      ( m_leafDisplayListId );
-    }
-
-    glPopMatrix     ();
-
-    glDepthMask     ( true );
-    glEnable        ( GL_CULL_FACE );
-    glBlendFunc     ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-    glDisable       ( GL_TEXTURE_2D );
-    glDisable       ( GL_BLEND );
-}
-
-void Tree::RenderHitCheck ()
+void Tree::RenderHitCheck()
 {
 #ifdef DEBUG_RENDER_ENABLED
-    float actualHeight = GetActualHeight( 0.0f );
+  float actualHeight = GetActualHeight(0.0f);
 
-    RenderSphere( m_pos, 10.0f );
-    RenderSphere( m_pos+m_hitcheckCentre*actualHeight, m_hitcheckRadius*actualHeight);
+  RenderSphere(m_pos, 10.0f);
+  RenderSphere(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight);
 #endif
 }
 
-void Tree::Damage( float _damage )
+void Tree::Damage(float _damage)
 {
-    Building::Damage( _damage );
+  Building::Damage(_damage);
 
-    if( m_fireDamage < 50.0f )
+  if (m_fireDamage < 50.0f)
+  {
+    m_fireDamage += _damage * -1.0f;
+
+    if (m_fireDamage > 50.0f)
     {
-        m_fireDamage += _damage * -1.0f;
+      if (m_onFire == 0.0f)
+        m_onFire = 0.01f;
+      else if (m_onFire < 0.0f)
+        m_onFire = m_onFire * -1.0f;
 
-        if( m_fireDamage > 50.0f )
-        {
-            if( m_onFire == 0.0f )
-            {
-                m_onFire = 0.01f;
-            }
-            else if( m_onFire < 0.0f )
-            {
-                m_onFire = m_onFire * -1.0f;
-            }
-
-            if( !m_burnSoundPlaying )
-            {
-                g_soundSystem->StopAllSounds( m_id, "Tree Create" );
-                g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Burn");
-                m_burnSoundPlaying = true;
-            }
-        }
+      if (!m_burnSoundPlaying)
+      {
+        g_soundSystem->StopAllSounds(m_id, "Tree Create");
+        g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Burn");
+        m_burnSoundPlaying = true;
+      }
     }
+  }
 }
 
-bool Tree::DoesSphereHit(Vector3 const &_pos, float _radius)
+bool Tree::DoesSphereHit(const Vector3& _pos, float _radius)
 {
-    if( SphereSphereIntersection( m_pos, 10.0f,
-                                  _pos, _radius ) )
-    {
-        return true;
-    }
+  if (SphereSphereIntersection(m_pos, 10.0f, _pos, _radius))
+    return true;
 
-    float actualHeight = GetActualHeight(0.0f);
+  float actualHeight = GetActualHeight(0.0f);
 
-    if( SphereSphereIntersection( m_pos+m_hitcheckCentre*actualHeight, m_hitcheckRadius*actualHeight,
-                                  _pos, _radius ) )
-    {
-        return true;
-    }
+  if (SphereSphereIntersection(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _pos, _radius))
+    return true;
 
-    return false;
+  return false;
 }
 
-bool Tree::DoesShapeHit(Shape *_shape, Matrix34 _transform)
+bool Tree::DoesShapeHit(Shape* _shape, Matrix34 _transform)
 {
-    SpherePackage packageA( m_pos, 10.0f );
-    if( _shape->SphereHit( &packageA, _transform ) )
-    {
-        return true;
-    }
+  SpherePackage packageA(m_pos, 10.0f);
+  if (_shape->SphereHit(&packageA, _transform))
+    return true;
 
-    float actualHeight = GetActualHeight(0.0f);
+  float actualHeight = GetActualHeight(0.0f);
 
-    SpherePackage packageB( m_pos+m_hitcheckCentre*actualHeight, m_hitcheckRadius*actualHeight);
-    if( _shape->SphereHit( &packageB, _transform ) )
-    {
-        return true;
-    }
+  SpherePackage packageB(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight);
+  if (_shape->SphereHit(&packageB, _transform))
+    return true;
 
-    return false;
+  return false;
 }
 
-bool Tree::DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
-                      float _rayLen, Vector3 *_pos, Vector3 *_norm)
+bool Tree::DoesRayHit(const Vector3& _rayStart, const Vector3& _rayDir, float _rayLen, Vector3* _pos, Vector3* _norm)
 {
-    if( RaySphereIntersection( _rayStart, _rayDir, m_pos, 10.00f, _rayLen, _pos, _norm ) )
-    {
-        return true;
-    }
+  if (RaySphereIntersection(_rayStart, _rayDir, m_pos, 10.00f, _rayLen, _pos, _norm))
+    return true;
 
-    float actualHeight = GetActualHeight(0.0f);
+  float actualHeight = GetActualHeight(0.0f);
 
-    if( RaySphereIntersection( _rayStart, _rayDir,
-                               m_pos+m_hitcheckCentre*actualHeight, m_hitcheckRadius*actualHeight,
-                               _rayLen, _pos, _norm ) )
-    {
-        return true;
-    }
+  if (RaySphereIntersection(_rayStart, _rayDir, m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _rayLen, _pos,
+                            _norm))
+    return true;
 
-    return false;
+  return false;
 }
 
-
-void Tree::RenderBranch( Vector3 _from, Vector3 _to, int _iterations,
-                         bool _calcRadius, bool _renderBranch, bool _renderLeaf )
+void Tree::RenderBranch(Vector3 _from, Vector3 _to, int _iterations, bool _calcRadius, bool _renderBranch, bool _renderLeaf)
 {
-    if( _iterations == 0 ) return;
-    _iterations--;
+  if (_iterations == 0)
+    return;
+  _iterations--;
 
-    if( _iterations == 0 )
+  if (_iterations == 0)
+  {
+    if (_calcRadius)
     {
-        if( _calcRadius )
-        {
-            float distToCentre = (_to - m_hitcheckCentre).Mag();
-            if( distToCentre > m_hitcheckRadius ) m_hitcheckRadius = distToCentre;
-        }
-        else if( _renderLeaf )
-        {
-            m_hitcheckCentre += _to;
-            m_numLeafs++;
-        }
+      float distToCentre = (_to - m_hitcheckCentre).Mag();
+      if (distToCentre > m_hitcheckRadius)
+        m_hitcheckRadius = distToCentre;
     }
-
-    /*
-    Make the tree seem more alive animation
-    _to += Vector3(sinf(g_gameTime*(7-_iterations))*0.005f * _iterations,
-                   sinf(g_gameTime) * 0.01f,
-                   sinf(g_gameTime * (7-_iterations))*0.005f * _iterations );
-    */
-
-    Vector3 rightAngleA = ((_to - _from) ^ _to).Normalise();
-    Vector3 rightAngleB = (rightAngleA ^ (_to - _from)).Normalise();
-
-    Vector3 thisBranch = (_to - _from);
-
-    float thickness = thisBranch.Mag();
-
-    float budsize = 0.1f;
-
-    if( _iterations == 0 )
+    else if (_renderLeaf)
     {
-        budsize *= m_budsize;
+      m_hitcheckCentre += _to;
+      m_numLeafs++;
     }
+  }
 
-    Vector3 camRightA = rightAngleA * thickness * budsize;
-    Vector3 camRightB = rightAngleB * thickness * budsize;
+  /*
+  Make the tree seem more alive animation
+  _to += Vector3(sinf(g_gameTime*(7-_iterations))*0.005f * _iterations,
+                 sinf(g_gameTime) * 0.01f,
+                 sinf(g_gameTime * (7-_iterations))*0.005f * _iterations );
+  */
 
+  Vector3 rightAngleA = ((_to - _from) ^ _to).Normalise();
+  Vector3 rightAngleB = (rightAngleA ^ (_to - _from)).Normalise();
 
-    if( (_iterations == 0 && _renderLeaf) ||
-        (_iterations != 0 && _renderBranch) )
-    {
-        glTexCoord2f( 0.0f, 0.0f );             glVertex3fv( (_from - camRightA).GetData() );
-        glTexCoord2f( 0.0f, 1.0f );             glVertex3fv( (_from + camRightA).GetData() );
-        glTexCoord2f( 1.0f, 1.0f );             glVertex3fv( (_to + camRightA).GetData() );
-        glTexCoord2f( 1.0f, 0.0f );             glVertex3fv( (_to - camRightA).GetData() );
+  Vector3 thisBranch = (_to - _from);
 
-        glTexCoord2f( 0.0f, 0.0f );             glVertex3fv( (_from - camRightB).GetData() );
-        glTexCoord2f( 0.0f, 1.0f );             glVertex3fv( (_from + camRightB).GetData() );
-        glTexCoord2f( 1.0f, 1.0f );             glVertex3fv( (_to + camRightB).GetData() );
-        glTexCoord2f( 1.0f, 0.0f );             glVertex3fv( (_to - camRightB).GetData() );
-    }
+  float thickness = thisBranch.Mag();
 
-    int numBranches = 4;
+  float budsize = 0.1f;
 
-    for( int i = 0; i < numBranches; ++i )
-    {
-        Vector3 thisRightAngle;
-        if( i == 0 ) thisRightAngle = rightAngleA;
-        if( i == 1 ) thisRightAngle = -rightAngleA;
-        if( i == 2 ) thisRightAngle = rightAngleB;
-        if( i == 3 ) thisRightAngle = -rightAngleB;
+  if (_iterations == 0)
+    budsize *= m_budsize;
 
-        float distance = 0.3f + frand(0.6f);
-        Vector3 thisFrom = _from + thisBranch * distance;
-        Vector3 thisTo = thisFrom + thisRightAngle * thickness * 0.4f * m_pushOut
-                                  + thisBranch * (1.0f-distance) * m_pushUp;
-        RenderBranch( thisFrom, thisTo, _iterations, _calcRadius, _renderBranch, _renderLeaf );
-    }
+  Vector3 camRightA = rightAngleA * thickness * budsize;
+  Vector3 camRightB = rightAngleB * thickness * budsize;
 
+  if ((_iterations == 0 && _renderLeaf) || (_iterations != 0 && _renderBranch))
+  {
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3fv((_from - camRightA).GetData());
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3fv((_from + camRightA).GetData());
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3fv((_to + camRightA).GetData());
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3fv((_to - camRightA).GetData());
+
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3fv((_from - camRightB).GetData());
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3fv((_from + camRightB).GetData());
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3fv((_to + camRightB).GetData());
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3fv((_to - camRightB).GetData());
+  }
+
+  int numBranches = 4;
+
+  for (int i = 0; i < numBranches; ++i)
+  {
+    Vector3 thisRightAngle;
+    if (i == 0)
+      thisRightAngle = rightAngleA;
+    if (i == 1)
+      thisRightAngle = -rightAngleA;
+    if (i == 2)
+      thisRightAngle = rightAngleB;
+    if (i == 3)
+      thisRightAngle = -rightAngleB;
+
+    float distance = 0.3f + frand(0.6f);
+    Vector3 thisFrom = _from + thisBranch * distance;
+    Vector3 thisTo = thisFrom + thisRightAngle * thickness * 0.4f * m_pushOut + thisBranch * (1.0f - distance) * m_pushUp;
+    RenderBranch(thisFrom, thisTo, _iterations, _calcRadius, _renderBranch, _renderLeaf);
+  }
 }
-
 
 void Tree::ListSoundEvents(std::vector<const char*>* _list)
 {
-    Building::ListSoundEvents( _list );
+  Building::ListSoundEvents(_list);
 
-    _list->push_back("Burn");
+  _list->push_back("Burn");
 }
 
-
-void Tree::Read( TextReader *_in, bool _dynamic )
+void Tree::Read(TextReader* _in, bool _dynamic)
 {
-    Building::Read( _in, _dynamic );
+  Building::Read(_in, _dynamic);
 
-    m_height        = atof( _in->GetNextToken() );
-    m_budsize       = atof( _in->GetNextToken() );
-    m_pushOut       = atof( _in->GetNextToken() );
-    m_pushUp        = atof( _in->GetNextToken() );
-    m_iterations    = atoi( _in->GetNextToken() );
-    m_seed          = atoi( _in->GetNextToken() );
-    m_branchColour  = atoi( _in->GetNextToken() );
-    m_leafColour    = atoi( _in->GetNextToken() );
-	if( _in->TokenAvailable() )
-	{
-		m_leafDropRate = atoi( _in->GetNextToken() );
-	}
+  m_height = atof(_in->GetNextToken());
+  m_budsize = atof(_in->GetNextToken());
+  m_pushOut = atof(_in->GetNextToken());
+  m_pushUp = atof(_in->GetNextToken());
+  m_iterations = atoi(_in->GetNextToken());
+  m_seed = atoi(_in->GetNextToken());
+  m_branchColour = atoi(_in->GetNextToken());
+  m_leafColour = atoi(_in->GetNextToken());
+  if (_in->TokenAvailable())
+    m_leafDropRate = atoi(_in->GetNextToken());
 }
 
-void Tree::Write( FileWriter *_out )
+void Tree::Write(FileWriter* _out)
 {
-    Building::Write( _out );
+  Building::Write(_out);
 
-    _out->printf( "%-8.2f", m_height);
-    _out->printf( "%-8.2f", m_budsize);
-    _out->printf( "%-8.2f", m_pushOut);
-    _out->printf( "%-8.2f", m_pushUp);
-    _out->printf( "%-8d", m_iterations);
-    _out->printf( "%-8d", m_seed);
-    _out->printf( "%-12d", m_branchColour);
-    _out->printf( "%-12d", m_leafColour);
-	_out->printf( "%-8d", m_leafDropRate);
+  _out->printf("%-8.2f", m_height);
+  _out->printf("%-8.2f", m_budsize);
+  _out->printf("%-8.2f", m_pushOut);
+  _out->printf("%-8.2f", m_pushUp);
+  _out->printf("%-8d", m_iterations);
+  _out->printf("%-8d", m_seed);
+  _out->printf("%-12d", m_branchColour);
+  _out->printf("%-12d", m_leafColour);
+  _out->printf("%-8d", m_leafDropRate);
 }
-

@@ -314,12 +314,12 @@ void PrintMatrix(const char* _name, GLenum _whichMatrix)
 
   glGetDoublev(_whichMatrix, matrix);
 
-  DebugTrace("\tMatrix: %s\n", _name);
+  DebugTrace("\tMatrix: {}\n", _name);
   for (int row = 0; row < 4; row++)
   {
     DebugTrace("\t\t");
     for (int col = 0; col < 4; col++)
-      DebugTrace("% 13.1f ", matrix[col * 4 + row]);
+      DebugTrace("{: 13.1f} ", matrix[col * 4 + row]);
     DebugTrace("\n");
   }
   DebugTrace("\n");
@@ -333,7 +333,7 @@ void PrintMatrices(const char* _title)
     return;
 
   DebugTrace("OpenGL:   "
-             "%s\n",
+             "{}\n",
              _title);
   PrintMatrix("Model View", GL_MODELVIEW_MATRIX);
   PrintMatrix("Projection", GL_PROJECTION_MATRIX);

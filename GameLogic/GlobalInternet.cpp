@@ -140,7 +140,7 @@ void GlobalInternet::GenerateInternet()
   for (int i = 0; i < 5; ++i)
   {
     GlobalInternetNode* node = &m_nodes[i];
-    DebugTrace("Node %d : %2.2f %2.2f %2.2f\n", i, node->m_pos.x, node->m_pos.y, node->m_pos.z);
+    DebugTrace("Node {} : {:.2f} {:.2f} {:.2f}\n", i, node->m_pos.x, node->m_pos.y, node->m_pos.z);
 
     /*
             Node 0 : -797.00 1949.00 -1135.00
@@ -149,13 +149,13 @@ void GlobalInternet::GenerateInternet()
             Node 3 : 324.37 928.37 646.87
             Node 4 : 140.59 1095.22 520.61
     */
-  }
+
 
   double timeTaken = GetHighResTime() - timeStart;
-  DebugTrace("Global Internet time to generate : %.2fms\n", timeTaken * 1000.0);
-  DebugTrace("Global Internet number of nodes  : %d\n", m_numNodes);
-  DebugTrace("Global Internet number of links  : %d\n", m_numLinks);
-  DebugTrace("Global Internet number of leafs  : %d\n", static_cast<int>(m_leafs.size()));
+  DebugTrace("Global Internet time to generate : {:.2f}ms\n", timeTaken * 1000.0);
+  DebugTrace("Global Internet number of nodes  : {}\n", m_numNodes);
+  DebugTrace("Global Internet number of links  : {}\n", m_numLinks);
+  DebugTrace("Global Internet number of leafs  : {}\n", static_cast<int>(m_leafs.size()));
 #endif
 }
 

@@ -811,7 +811,7 @@ void InitialiseInputManager()
     TextReader* inputPrefsReader = g_resource->GetTextReader(InputPrefs::GetSystemPrefsPath());
     if (inputPrefsReader)
     {
-      ASSERT_TEXT(inputPrefsReader->IsOpen(), "Couldn't open input preferences file: %s\n", InputPrefs::GetSystemPrefsPath());
+      ASSERT_TEXT(inputPrefsReader->IsOpen(), "Couldn't open input preferences file: {}\n", InputPrefs::GetSystemPrefsPath());
       g_inputManager->parseInputPrefs(*inputPrefsReader);
       delete inputPrefsReader;
     }
