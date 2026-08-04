@@ -96,9 +96,9 @@ bool ConstructionYard::Advance()
         WorldObjectId objId = g_location->SpawnEntities(prim.pos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0.0f);
         Entity* entity = g_location->GetEntity(objId);
         Armour* armour = (Armour*)entity;
-        armour->m_front.Set(0, 0, 1);
-        armour->m_vel.Zero();
-        armour->SetWayPoint(m_pos + Vector3(0, 0, 500));
+        AsLegacy(armour->m_front).Set(0, 0, 1);
+        AsLegacy(armour->m_vel).Zero();
+        armour->SetWayPoint(AsLegacy(m_pos) + Vector3(0, 0, 500));
 
         ++m_numTanksProduced;
         m_timer = -1.0f;
@@ -115,7 +115,7 @@ Matrix34 ConstructionYard::GetRungMatrix1()
   if (m_numSurges > 0)
   {
     float rungHeight = 55.0f + sinf(g_gameTime) * 10.0f * m_fractionPopulated;
-    Vector3 rungPos = m_pos + Vector3(0, rungHeight, 0);
+    Vector3 rungPos = AsLegacy(m_pos) + Vector3(0, rungHeight, 0);
     Vector3 front = m_front;
     front.RotateAroundY(cosf(g_gameTime * 0.5f) * 0.5f * m_fractionPopulated);
 
@@ -124,7 +124,7 @@ Matrix34 ConstructionYard::GetRungMatrix1()
   }
   else
   {
-    Matrix34 mat(m_front, g_upVector, m_pos + Vector3(0, 45, 0));
+    Matrix34 mat(m_front, g_upVector, AsLegacy(m_pos) + Vector3(0, 45, 0));
     return mat;
   }
 }
@@ -135,7 +135,7 @@ Matrix34 ConstructionYard::GetRungMatrix2()
   if (m_numSurges > 0)
   {
     float rungHeight = 110.0f + sinf(g_gameTime * 0.8) * 15.0f * m_fractionPopulated;
-    Vector3 rungPos = m_pos + Vector3(0, rungHeight, 0);
+    Vector3 rungPos = AsLegacy(m_pos) + Vector3(0, rungHeight, 0);
     Vector3 front = m_front;
     front.RotateAroundY(cosf(g_gameTime * 0.4f) * 0.6f * m_fractionPopulated);
     Matrix34 mat = Matrix34(front, g_upVector, rungPos);
@@ -143,7 +143,7 @@ Matrix34 ConstructionYard::GetRungMatrix2()
   }
   else
   {
-    Matrix34 mat = Matrix34(m_front, g_upVector, m_pos + Vector3(0, 75, 0));
+    Matrix34 mat = Matrix34(m_front, g_upVector, AsLegacy(m_pos) + Vector3(0, 75, 0));
     return mat;
   }
 }
@@ -399,7 +399,7 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  Vector3 armourPos = m_centrePos + Vector3(0, 75, 0);
+  Vector3 armourPos = AsLegacy(m_centrePos) + Vector3(0, 75, 0);
   Vector3 armourFront(0, 0, 1);
   armourFront.RotateAroundY(g_gameTime * -0.75f);
 

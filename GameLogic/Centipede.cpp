@@ -195,7 +195,7 @@ bool Centipede::Advance(Unit* _unit)
         m_pos = trailPos;
         m_vel = trailVel;
         m_front = m_vel;
-        m_front.Normalise();
+        AsLegacy(m_front).Normalise();
         m_panic = centipede->m_panic;
       }
     }
@@ -319,7 +319,7 @@ void Centipede::Attack(Vector3 const& _pos)
   {
     WorldObjectId id = ids[i];
     Entity* entity = (Entity*)g_location->GetEntity(id);
-    Vector3 pushVector = (entity->m_pos - _pos);
+    Vector3 pushVector = (AsLegacy(entity->m_pos) - _pos);
     float distance = pushVector.Mag();
     if (distance < m_radius)
     {
@@ -328,7 +328,7 @@ void Centipede::Attack(Vector3 const& _pos)
       pushVector.SetLength(m_radius - distance);
 
       g_location->m_entityGrid->RemoveObject(id, entity->m_pos.x, entity->m_pos.z, entity->m_radius);
-      entity->m_pos += pushVector;
+      AsLegacy(entity->m_pos) += pushVector;
       g_location->m_entityGrid->AddObject(id, entity->m_pos.x, entity->m_pos.z, entity->m_radius);
 
       entity->ChangeHealth((m_radius - distance) * -10.0f);
@@ -359,7 +359,7 @@ void Centipede::EatSpirits()
 
       if (spirit->m_state == Spirit::StateFloating)
       {
-        Vector3 theVector = (spirit->m_pos - m_pos);
+        Vector3 theVector = (AsLegacy(spirit->m_pos) - AsLegacy(m_pos));
         theVector.y = 0.0f;
         if (theVector.Mag() < CENTIPEDE_SPIRITEATRANGE)
         {
@@ -454,7 +454,7 @@ bool Centipede::SearchForRetreatPosition()
   {
     WorldObjectId id = ids[i];
     WorldObject* entity = g_location->GetEntity(id);
-    float distance = (entity->m_pos - m_pos).Mag();
+    float distance = (AsLegacy(entity->m_pos) - AsLegacy(m_pos)).Mag();
     if (distance < bestDistance)
     {
       bestDistance = distance;
@@ -469,10 +469,10 @@ bool Centipede::SearchForRetreatPosition()
     DEBUG_ASSERT(obj);
 
     float distance = 50.0f;
-    Vector3 retreatVector = (m_pos - obj->m_pos).Normalise();
+    Vector3 retreatVector = (AsLegacy(m_pos) - AsLegacy(obj->m_pos)).Normalise();
     float angle = syncsfrand(M_PI * 1.0f);
     retreatVector.RotateAroundY(angle);
-    m_targetPos = m_pos + retreatVector * distance;
+    m_targetPos = AsLegacy(m_pos) + retreatVector * distance;
     m_targetPos = PushFromObstructions(m_targetPos);
     m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
     return true;
@@ -521,7 +521,7 @@ bool Centipede::SearchForSpirits()
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (s->m_pos - m_pos).Mag();
+      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
 
       if (theDist <= CENTIPEDE_MAXSEARCHRANGE && theDist >= CENTIPEDE_MINSEARCHRANGE && theDist < nearest && s->m_state == Spirit::StateFloating)
       {
@@ -544,22 +544,22 @@ bool Centipede::SearchForSpirits()
 
 bool Centipede::SearchForRandomPosition()
 {
-  float distToSpawnPoint = (m_pos - m_spawnPoint).Mag();
+  float distToSpawnPoint = (AsLegacy(m_pos) - AsLegacy(m_spawnPoint)).Mag();
   float chanceOfReturn = (distToSpawnPoint / m_roamRange);
   if (chanceOfReturn >= 1.0f || syncfrand(1.0f) <= chanceOfReturn)
   {
     // We have strayed too far from our spawn point
     // So head back there now
-    Vector3 returnVector = m_spawnPoint - m_pos;
+    Vector3 returnVector = AsLegacy(m_spawnPoint) - AsLegacy(m_pos);
     returnVector.SetLength(100.0f);
-    m_targetPos = m_pos + returnVector;
+    m_targetPos = AsLegacy(m_pos) + returnVector;
   }
   else
   {
     float distance = 100.0f;
     float angle = syncsfrand(2.0f * M_PI);
 
-    m_targetPos = m_pos + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
+    m_targetPos = AsLegacy(m_pos) + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
     m_targetPos = PushFromObstructions(m_targetPos);
   }
 
@@ -602,13 +602,13 @@ bool Centipede::AdvanceToTargetPosition()
   float amountToTurn = SERVER_ADVANCE_PERIOD * 3.0f;
   if (m_next.IsValid())
     amountToTurn *= 1.5f;
-  Vector3 targetDir = (m_targetPos - m_pos).Normalise();
-  Vector3 actualDir = m_front * (1.0f - amountToTurn) + targetDir * amountToTurn;
+  Vector3 targetDir = (m_targetPos - AsLegacy(m_pos)).Normalise();
+  Vector3 actualDir = AsLegacy(m_front) * (1.0f - amountToTurn) + targetDir * amountToTurn;
   actualDir.Normalise();
   float speed = m_stats[StatSpeed];
 
   Vector3 oldPos = m_pos;
-  Vector3 newPos = m_pos + actualDir * speed * SERVER_ADVANCE_PERIOD;
+  Vector3 newPos = AsLegacy(m_pos) + actualDir * speed * SERVER_ADVANCE_PERIOD;
 
 
   //
@@ -624,16 +624,16 @@ bool Centipede::AdvanceToTargetPosition()
     factor = 1.0f;
   speed *= factor;
 
-  newPos = m_pos + actualDir * speed * SERVER_ADVANCE_PERIOD;
+  newPos = AsLegacy(m_pos) + actualDir * speed * SERVER_ADVANCE_PERIOD;
   newPos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
   Vector3 moved = newPos - oldPos;
   if (moved.Mag() > speed * SERVER_ADVANCE_PERIOD)
     moved.SetLength(speed * SERVER_ADVANCE_PERIOD);
-  newPos = m_pos + moved;
+  newPos = AsLegacy(m_pos) + moved;
 
   m_pos = newPos;
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
   m_front = actualDir;
 
   if (m_targetPos.y < 0.0f)
@@ -650,7 +650,7 @@ bool Centipede::AdvanceToTargetPosition()
   }
 
 
-  return (m_pos - m_targetPos).Mag() < 20.0f;
+  return (AsLegacy(m_pos) - m_targetPos).Mag() < 20.0f;
 }
 
 
@@ -666,7 +666,7 @@ void Centipede::ListSoundEvents(std::vector<const char*>* _list)
 
 void Centipede::Render(float _predictionTime)
 {
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z);
 
   float maxHealth = EntityBlueprint::GetStat(TypeCentipede, StatHealth);
@@ -704,14 +704,14 @@ void Centipede::Render(float _predictionTime)
 }
 
 
-bool Centipede::IsInView() { return g_camera->SphereInViewFrustum(m_pos + m_centrePos, m_radius); }
+bool Centipede::IsInView() { return g_camera->SphereInViewFrustum(AsLegacy(m_pos) + AsLegacy(m_centrePos), m_radius); }
 
 
 bool Centipede::RenderPixelEffect(float _predictionTime)
 {
   Render(_predictionTime);
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z);
 
   if (!m_dead && m_linked)

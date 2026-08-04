@@ -88,7 +88,7 @@ bool SpawnBuilding::IsInView()
         SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
         if (building)
         {
-          float distance = (building->m_centrePos - m_visibilityMidpoint).Mag();
+          float distance = (AsLegacy(building->m_centrePos) - m_visibilityMidpoint).Mag();
           distance += building->m_radius / 2.0f;
           m_visibilityRadius = std::max(m_visibilityRadius, distance);
         }
@@ -520,7 +520,7 @@ bool SpawnPoint::PopulationLocked()
         if (building && building->m_type == TypeSpawnPopulationLock)
         {
           SpawnPopulationLock* lock = (SpawnPopulationLock*)building;
-          float distance = (building->m_pos - m_pos).Mag();
+          float distance = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag();
           if (distance < lock->m_searchRadius)
           {
             m_populationLock = lock->m_id.GetUniqueId();
@@ -887,7 +887,7 @@ void SpawnPopulationLock::RenderAlphas(float _predictionTime)
   {
     RenderSphere(m_pos, 30.0f, RGBAColour(255, 255, 255, 255));
 
-    Vector3 pos = m_pos + Vector3(0, 250, 0);
+    Vector3 pos = AsLegacy(m_pos) + Vector3(0, 250, 0);
 
     g_editorFont.DrawText3DCentre(pos + Vector3(0, 80, 0), 10, "SpawnPopulationLock");
     g_editorFont.DrawText3DCentre(pos + Vector3(0, 70, 0), 10, "OriginalMaxPopulation = %d", m_originalMaxPopulation);

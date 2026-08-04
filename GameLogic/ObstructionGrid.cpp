@@ -67,13 +67,13 @@ void ObstructionGrid::CalculateBuildingArea(int _buildingId)
         {
           Building* link = g_location->GetBuilding(building->GetBuildingLink());
 
-          Vector3 direction = (link->m_pos - building->m_pos);
+          Vector3 direction = (AsLegacy(link->m_pos) - AsLegacy(building->m_pos));
 
-          int numCells = (link->m_pos - building->m_pos).Mag() + 1;
+          int numCells = (AsLegacy(link->m_pos) - AsLegacy(building->m_pos)).Mag() + 1;
 
           for (int i = 0; i < numCells; ++i)
           {
-            Vector3 pos = building->m_pos + (direction / numCells) * i;
+            Vector3 pos = AsLegacy(building->m_pos) + (direction / numCells) * i;
             int cellX = m_cells.GetMapIndexX(pos.x);
             int cellY = m_cells.GetMapIndexY(pos.z);
 

@@ -65,7 +65,7 @@ bool BlueprintBuilding::Advance()
 
 Matrix34 BlueprintBuilding::GetMarker(float _predictionTime)
 {
-  Vector3 pos = m_pos + m_vel * _predictionTime;
+  Vector3 pos = AsLegacy(m_pos) + m_vel * _predictionTime;
   Matrix34 mat(m_front, g_upVector, pos);
 
   if (m_marker)
@@ -86,8 +86,8 @@ bool BlueprintBuilding::IsInView()
 
   if (link)
   {
-    Vector3 midPoint = (link->m_centrePos + m_centrePos) / 2.0f;
-    float radius = (link->m_centrePos - m_centrePos).Mag();
+    Vector3 midPoint = (AsLegacy(link->m_centrePos) + AsLegacy(m_centrePos)) / 2.0f;
+    float radius = (AsLegacy(link->m_centrePos) - AsLegacy(m_centrePos)).Mag();
     radius += m_radius;
     return (g_camera->SphereInViewFrustum(midPoint, radius));
   }
@@ -100,7 +100,7 @@ bool BlueprintBuilding::IsInView()
 
 void BlueprintBuilding::Render(float _predictionTime)
 {
-  Vector3 pos = m_pos + m_vel * _predictionTime;
+  Vector3 pos = AsLegacy(m_pos) + m_vel * _predictionTime;
   Matrix34 mat(m_front, g_upVector, pos);
   m_shape->Render(_predictionTime, mat);
 }
@@ -352,9 +352,9 @@ void BlueprintStore::GetDisplay(Vector3& _pos, Vector3& _right, Vector3& _up, fl
   front.RotateAroundY(sinf(g_gameTime) * 0.3f);
 
   Vector3 up = g_upVector;
-  up.RotateAround(m_front * cosf(g_gameTime) * 0.1f);
+  up.RotateAround(AsLegacy(m_front) * cosf(g_gameTime) * 0.1f);
 
-  _pos = m_pos + up * 50.0f - front * _size;
+  _pos = AsLegacy(m_pos) + up * 50.0f - front * _size;
   _right = front;
   _up = up;
 }
@@ -717,7 +717,7 @@ bool BlueprintRelay::Advance()
   m_pos.y += sinf(ourTime / 1.3f) * 1.0f;
   m_pos.z += cosf(ourTime / 1.7f) * 1.0f;
 
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
 
   m_centrePos = m_pos;
 

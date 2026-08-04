@@ -167,17 +167,17 @@ void Tripod::DoFallForTwoLegs()
   Vector3 pointUnderBody;
   if (m_legs[0]->m_foot.m_state != EntityFoot::FootState::OnGround)
   {
-    footToFoot = (m_legs[1]->m_foot.m_pos - m_legs[2]->m_foot.m_pos);
+    footToFoot = (AsLegacy(m_legs[1]->m_foot.m_pos) - AsLegacy(m_legs[2]->m_foot.m_pos));
     RayRayDist(m_legs[1]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
   }
   else if (m_legs[1]->m_foot.m_state != EntityFoot::FootState::OnGround)
   {
-    footToFoot = (m_legs[2]->m_foot.m_pos - m_legs[0]->m_foot.m_pos);
+    footToFoot = (AsLegacy(m_legs[2]->m_foot.m_pos) - AsLegacy(m_legs[0]->m_foot.m_pos));
     RayRayDist(m_legs[0]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
   }
   else
   {
-    footToFoot = (m_legs[0]->m_foot.m_pos - m_legs[1]->m_foot.m_pos);
+    footToFoot = (AsLegacy(m_legs[0]->m_foot.m_pos) - AsLegacy(m_legs[1]->m_foot.m_pos));
     RayRayDist(m_legs[0]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
   }
 
@@ -186,7 +186,7 @@ void Tripod::DoFallForTwoLegs()
   float momentPerUnitMass = lever.Mag() * GRAVITY;
 
   // Calc force due to moment
-  Vector3 feetToBody(m_pos - pointBetweenFeet);
+  Vector3 feetToBody(AsLegacy(m_pos) - pointBetweenFeet);
   float feetToBodyLen = feetToBody.Mag();
   Vector3 footToFootDir(footToFoot);
   footToFootDir.Normalise();
@@ -202,8 +202,8 @@ void Tripod::DoFallForTwoLegs()
   m_up.RotateAround(axis);
   //		m_front.RotateAround(axis);
 
-  m_pos += m_bodyVel * SERVER_ADVANCE_PERIOD;
-  Vector3 newFeetToBody(m_pos - pointBetweenFeet);
+  AsLegacy(m_pos) += m_bodyVel * SERVER_ADVANCE_PERIOD;
+  Vector3 newFeetToBody(AsLegacy(m_pos) - pointBetweenFeet);
   newFeetToBody.SetLength(feetToBodyLen);
   m_pos = pointBetweenFeet + newFeetToBody;
 }
@@ -223,8 +223,8 @@ WorldObjectId Tripod::FindEntityToAttack()
   for (int i = 0; i < numFound; ++i)
   {
     Entity* entity = g_location->GetEntity(enemies[i]);
-    float deltaX = entity->m_pos.x - m_pos.x;
-    float deltaY = entity->m_pos.z - m_pos.z;
+    float deltaX = entity->m_pos.x - AsLegacy(m_pos).x;
+    float deltaY = entity->m_pos.z - AsLegacy(m_pos).z;
     float distSqrd = deltaX * deltaX + deltaY * deltaY;
     if (distSqrd < nearestDistSqrd)
     {
@@ -281,7 +281,7 @@ void Tripod::DoNavigation()
   // wait until we come to rest before we choose a new direction to travel in
   if (m_navData.m_dir == -1)
   {
-    float speed = m_vel.Mag();
+    float speed = AsLegacy(m_vel).Mag();
     if (speed > 0.5f)
     {
       END_PROFILE(g_profiler, "DoNav");
@@ -345,7 +345,7 @@ void Tripod::DoNavigation()
 
 Vector3 Tripod::CalcAttackUpVector()
 {
-  Vector3 toEnemy = m_attackTarget - m_pos;
+  Vector3 toEnemy = m_attackTarget - AsLegacy(m_pos);
   toEnemy.Normalise();
   Vector3 toEnemyHorizontal(toEnemy);
   toEnemyHorizontal.HorizontalAndNormalise();
@@ -405,7 +405,7 @@ void Tripod::AdvanceWalk()
     else
     {
       m_bodyVel.Zero();
-      m_front.HorizontalAndNormalise();
+      AsLegacy(m_front).HorizontalAndNormalise();
       m_up = g_upVector;
     }
   }
@@ -419,7 +419,7 @@ void Tripod::AdvancePreAttack()
   START_PROFILE(g_profiler, "AdvancePreAttack");
 
   // Exit if we haven't come to a stop yet
-  if (m_vel.Mag() > 0.05f)
+  if (AsLegacy(m_vel).Mag() > 0.05f)
   {
     END_PROFILE(g_profiler, "AdvancePreAttack");
     return;
@@ -440,9 +440,9 @@ void Tripod::AdvancePreAttack()
   float factor1 = 0.8f * SERVER_ADVANCE_PERIOD;
   float factor2 = 1.0f - factor1;
   m_up = factor1 * desiredUp + factor2 * m_up;
-  Vector3 right = m_up ^ m_front;
+  Vector3 right = m_up ^ AsLegacy(m_front);
   m_front = right ^ m_up;
-  m_front.Normalise();
+  AsLegacy(m_front).Normalise();
 
   END_PROFILE(g_profiler, "AdvancePreAttack");
 }
@@ -474,15 +474,15 @@ void Tripod::AdvanceAttack()
     int t2 = (int)(timeInAttack * 10.0f);
     if (t2 & 1)
     {
-      Vector3 toEnemy = m_attackTarget - m_pos;
+      Vector3 toEnemy = m_attackTarget - AsLegacy(m_pos);
       toEnemy.Normalise();
       float const speed = 80.0f;
       right.SetLength(4.0f);
-      Vector3 pos = m_pos + right;
+      Vector3 pos = AsLegacy(m_pos) + right;
       toEnemy.x += syncsfrand(0.1f);
       toEnemy.z += syncsfrand(0.1f);
       g_location->FireLaser(pos + toEnemy * 5.0f, toEnemy * speed, m_id.GetTeamId());
-      pos = m_pos - right;
+      pos = AsLegacy(m_pos) - right;
       g_location->FireLaser(pos + toEnemy * 5.0f, toEnemy * speed, m_id.GetTeamId());
     }
   }
@@ -507,9 +507,9 @@ void Tripod::AdvancePostAttack()
   float factor1 = 0.8f * SERVER_ADVANCE_PERIOD;
   float factor2 = 1.0f - factor1;
   m_up = factor1 * g_upVector + factor2 * m_up;
-  Vector3 right = m_up ^ m_front;
+  Vector3 right = m_up ^ AsLegacy(m_front);
   m_front = right ^ m_up;
-  m_front.Normalise();
+  AsLegacy(m_front).Normalise();
 }
 
 
@@ -538,7 +538,7 @@ bool Tripod::Advance(Unit* _unit)
   //
   // Rotation
 
-  m_front.RotateAroundY(g_advanceTime * m_angVel.y);
+  AsLegacy(m_front).RotateAroundY(g_advanceTime * AsLegacy(m_angVel).y);
   m_angVel.y *= 1.0f - SERVER_ADVANCE_PERIOD * 0.5f;
 
 
@@ -550,8 +550,8 @@ bool Tripod::Advance(Unit* _unit)
   m_speed *= 1.0f - SERVER_ADVANCE_PERIOD * 0.5f;
   Vector3 frontHoriNorm = m_front;
   frontHoriNorm.HorizontalAndNormalise();
-  m_vel = m_front * m_speed * factor1 + m_vel * factor2;
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  m_vel = AsLegacy(m_front) * m_speed * factor1 + AsLegacy(m_vel) * factor2;
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
 
 
   //
@@ -562,7 +562,7 @@ bool Tripod::Advance(Unit* _unit)
     targetHeight += m_targetHoverHeight;
     float factor1 = 1.0f * SERVER_ADVANCE_PERIOD;
     float factor2 = 1.0f - factor1;
-    m_pos.y = factor1 * targetHeight + factor2 * m_pos.y;
+    m_pos.y = factor1 * targetHeight + factor2 * AsLegacy(m_pos).y;
   }
 
 
@@ -605,8 +605,8 @@ void Tripod::Render(float _predictionTime)
   //
   // Render body
 
-  Vector3 predictedMovement = _predictionTime * m_vel;
-  Vector3 predictedPos = m_pos + predictedMovement;
+  Vector3 predictedMovement = _predictionTime * AsLegacy(m_vel);
+  Vector3 predictedPos = AsLegacy(m_pos) + predictedMovement;
   //	predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) +
   //					 m_targetHoverHeight;
 

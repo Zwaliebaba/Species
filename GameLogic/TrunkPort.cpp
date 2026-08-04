@@ -61,7 +61,7 @@ void TrunkPort::SetDetail(int _detail)
 
   float size = 90.0f;
   Vector3 up = g_upVector * size;
-  Vector3 right = (m_front ^ g_upVector).Normalise() * size;
+  Vector3 right = (AsLegacy(m_front) ^ g_upVector).Normalise() * size;
 
 
   for (int x = 0; x < m_heightMapSize; ++x)
@@ -205,8 +205,8 @@ void TrunkPort::RenderAlphas(float predictionTime)
         float wave1 = cosf(centreDif * 0.15f);
         float wave2 = cosf(centreDif * 0.05f);
 
-        Vector3 thisDif = m_front * sinf(g_gameTime * 2) * wave1 * (1.0f - fractionOut) * 15 * timeScale;
-        thisDif += m_front * sinf(g_gameTime * 2.5) * wave2 * (1.0f - fractionOut) * 15 * timeScale;
+        Vector3 thisDif = AsLegacy(m_front) * sinf(g_gameTime * 2) * wave1 * (1.0f - fractionOut) * 15 * timeScale;
+        thisDif += AsLegacy(m_front) * sinf(g_gameTime * 2.5) * wave2 * (1.0f - fractionOut) * 15 * timeScale;
         thisDif += g_upVector * cosf(g_gameTime) * wave1 * timeScale * 10 * (1.0f - fractionOut);
         difMap[x][z] = thisDif;
       }

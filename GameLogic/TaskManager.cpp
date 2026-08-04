@@ -217,7 +217,7 @@ WorldObjectId Task::FindCitizen(Vector3 const& _pos)
     Entity* entity = g_location->GetEntity(id);
     if (entity && entity->m_type == Entity::TypeCitizen)
     {
-      float distance = (entity->m_pos - _pos).MagSquared();
+      float distance = (AsLegacy(entity->m_pos) - _pos).MagSquared();
       if (distance < nearest)
       {
         nearestId = id;

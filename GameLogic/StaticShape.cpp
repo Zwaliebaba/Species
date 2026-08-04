@@ -100,7 +100,7 @@ bool StaticShape::DoesSphereHit(Vector3 const& _pos, float _radius)
   }
   else
   {
-    float distance = (_pos - m_pos).Mag();
+    float distance = (_pos - AsLegacy(m_pos)).Mag();
     return (distance <= _radius + m_radius);
   }
 }

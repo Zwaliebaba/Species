@@ -71,7 +71,7 @@ void ViriiUnit::Render(float _predictionTime)
   }
   else
   {
-    float rangeToCam = (m_centrePos - g_camera->GetPos()).Mag();
+    float rangeToCam = (AsLegacy(m_centrePos) - g_camera->GetPos()).Mag();
     if (entityDetail == 1 && rangeToCam > 1000.0f)
       viriiDetail = 2;
     else if (entityDetail == 2 && rangeToCam > 1000.0f)
@@ -157,7 +157,7 @@ bool Virii::Advance(Unit* _unit)
 
   if (m_dead)
   {
-    m_vel.Zero();
+    AsLegacy(m_vel).Zero();
 
     if (m_spiritId != -1)
     {
@@ -176,7 +176,7 @@ bool Virii::Advance(Unit* _unit)
   if (!m_onGround)
   {
     m_vel.y += -10.0f * SERVER_ADVANCE_PERIOD;
-    m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
 
     float groundLevel = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 2.0f;
     if (m_pos.y <= groundLevel)
@@ -280,15 +280,15 @@ void Virii::RecordHistoryPosition(bool _required)
 
   ViriiHistory* history = new ViriiHistory();
   history->m_pos = m_pos;
-  history->m_right = (m_pos - prevPos) ^ landNormal;
+  history->m_right = (AsLegacy(m_pos) - prevPos) ^ landNormal;
   history->m_right.Normalise();
   history->m_distance = 0.0f;
   history->m_required = _required;
 
   if (static_cast<int>(m_positionHistory.size()) > 0)
   {
-    history->m_distance = (m_pos - m_positionHistory[0]->m_pos).Mag();
-    history->m_glowDiff = (m_pos - m_positionHistory[0]->m_pos);
+    history->m_distance = (AsLegacy(m_pos) - m_positionHistory[0]->m_pos).Mag();
+    history->m_glowDiff = (AsLegacy(m_pos) - m_positionHistory[0]->m_pos);
     history->m_glowDiff.SetLength(10.0f);
   }
 
@@ -331,14 +331,14 @@ bool Virii::AdvanceToTargetPos(Vector3 const& _pos)
 
   Vector3 oldPos = m_pos;
 
-  Vector3 distance = _pos - m_pos;
+  Vector3 distance = _pos - AsLegacy(m_pos);
   m_vel = distance;
-  m_vel.Normalise();
+  AsLegacy(m_vel).Normalise();
   m_front = m_vel;
-  m_vel *= m_stats[StatSpeed];
+  AsLegacy(m_vel) *= m_stats[StatSpeed];
   distance.y = 0.0f;
 
-  Vector3 nextPos = m_pos + m_vel * SERVER_ADVANCE_PERIOD;
+  Vector3 nextPos = AsLegacy(m_pos) + AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
   nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z) + m_hoverHeight;
   float currentHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   float nextHeight = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
@@ -352,8 +352,8 @@ bool Virii::AdvanceToTargetPos(Vector3 const& _pos)
     factor = 0.1f;
   if (factor > 2.0f)
     factor = 2.0f;
-  m_vel *= factor;
-  nextPos = m_pos + m_vel * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_vel) *= factor;
+  nextPos = AsLegacy(m_pos) + AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
   nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z) + m_hoverHeight;
 
 
@@ -361,14 +361,14 @@ bool Virii::AdvanceToTargetPos(Vector3 const& _pos)
   // Are we there?
 
   bool arrived = false;
-  if (distance.MagSquared() < m_vel.MagSquared() * SERVER_ADVANCE_PERIOD * SERVER_ADVANCE_PERIOD)
+  if (distance.MagSquared() < AsLegacy(m_vel).MagSquared() * SERVER_ADVANCE_PERIOD * SERVER_ADVANCE_PERIOD)
   {
     nextPos = _pos;
     arrived = true;
   }
 
   m_pos = nextPos;
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
 
   END_PROFILE(g_profiler, "AdvanceToTargetPos");
 
@@ -582,7 +582,7 @@ bool Virii::SearchForSpirits()
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (s->m_pos - m_pos).Mag();
+      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
 
       if (theDist <= VIRII_MAXSEARCHRANGE && theDist < closest && s->NumNearbyEggs() > 0 &&
           (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
@@ -631,7 +631,7 @@ WorldObjectId Virii::FindNearbyEgg(int _spiritId, float _autoAccept)
 
     if (egg && egg->m_state == Egg::StateDormant)
     {
-      float theDist = (egg->m_pos - spirit->m_pos).Mag();
+      float theDist = (AsLegacy(egg->m_pos) - AsLegacy(spirit->m_pos)).Mag();
       if (theDist <= _autoAccept)
       {
         return thisEggId;
@@ -709,7 +709,7 @@ bool Virii::SearchForIdleDirection()
 {
   START_PROFILE(g_profiler, "SearchForIdleDir");
 
-  float distToSpawnPoint = (m_pos - m_spawnPoint).Mag();
+  float distToSpawnPoint = (AsLegacy(m_pos) - AsLegacy(m_spawnPoint)).Mag();
   float chanceOfReturn = (distToSpawnPoint / m_roamRange);
   if (chanceOfReturn < 0.75f)
     chanceOfReturn = 0.0f;
@@ -717,7 +717,7 @@ bool Virii::SearchForIdleDirection()
   {
     // We have strayed too far from our spawn point
     // So head back there now
-    Vector3 newDirection = (m_spawnPoint - m_pos);
+    Vector3 newDirection = (AsLegacy(m_spawnPoint) - AsLegacy(m_pos));
     newDirection.y = 0;
     if (newDirection.x < -0.5f)
       newDirection.x = -1.0f;
@@ -732,7 +732,7 @@ bool Virii::SearchForIdleDirection()
     else
       newDirection.z = 0.0f;
     newDirection.SetLength(m_stats[StatSpeed]);
-    Vector3 nextPos = m_pos + newDirection * m_retargetTimer;
+    Vector3 nextPos = AsLegacy(m_pos) + newDirection * m_retargetTimer;
     nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
     m_wayPoint = nextPos;
     m_state = StateIdle;
@@ -754,7 +754,7 @@ bool Virii::SearchForIdleDirection()
       newVel.Normalise();
       newVel *= m_stats[StatSpeed];
 
-      Vector3 nextPos = m_pos + newVel * m_retargetTimer;
+      Vector3 nextPos = AsLegacy(m_pos) + newVel * m_retargetTimer;
       nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
       if (nextPos.y > 0.0f)
       {
@@ -852,7 +852,7 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
 {
   predictionTime += SERVER_ADVANCE_PERIOD;
 
-  Vector3 predictedPos = m_pos + m_vel * predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
   if (m_onGround && _detail == 1)
   {
     predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) + m_hoverHeight;
@@ -880,7 +880,7 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
 
   ViriiHistory prevPos;
   prevPos.m_pos = predictedPos;
-  prevPos.m_right = -m_front ^ landNormal;
+  prevPos.m_right = -AsLegacy(m_front) ^ landNormal;
   Vector3 firstPos;
   if (static_cast<int>(m_positionHistory.size()) > 0)
     firstPos = m_positionHistory[0]->m_pos;
@@ -976,7 +976,7 @@ void Virii::RenderLowDetail( float predictionTime, int teamId )
 {
     predictionTime += 0.1f;
 
-    Vector3 predictedPos = m_pos + m_vel * predictionTime;
+    Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
     if( m_onGround )
   {
     predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z ) + m_hoverHeight;
@@ -997,7 +997,7 @@ void Virii::RenderLowDetail( float predictionTime, int teamId )
 
     ViriiHistory prevPos;
     prevPos.m_pos = predictedPos;
-    prevPos.m_right = -m_front ^ landNormal;
+    prevPos.m_right = -AsLegacy(m_front) ^ landNormal;
     Vector3 firstPos;
     if( static_cast<int>(m_positionHistory.size()) > 0 ) firstPos = m_positionHistory[0]->m_pos;
     prevPos.m_distance = ( predictedPos - firstPos ).Mag();
@@ -1040,7 +1040,7 @@ void Virii::RenderGlow ( float predictionTime, int teamId )
 {
     predictionTime += 0.1f;
 
-    Vector3 predictedPos = m_pos + m_vel * predictionTime;
+    Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
     if( m_onGround )
   {
     //predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z ) + m_hoverHeight;
@@ -1063,7 +1063,7 @@ void Virii::RenderGlow ( float predictionTime, int teamId )
 
     ViriiHistory prevPos;
     prevPos.m_pos = predictedPos;
-    prevPos.m_right = -m_front ^ landNormal;
+    prevPos.m_right = -AsLegacy(m_front) ^ landNormal;
     Vector3 firstPos;
     if( static_cast<int>(m_positionHistory.size()) > 0 ) firstPos = m_positionHistory[0]->m_pos;
     prevPos.m_distance = ( predictedPos - firstPos ).Mag();

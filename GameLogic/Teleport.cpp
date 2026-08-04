@@ -132,7 +132,7 @@ void Teleport::RenderAlphas(float predictionTime)
     if (obj)
     {
       Entity* ent = (Entity*)obj;
-      Vector3 pos = obj->m_pos + obj->m_vel * predictionTime;
+      Vector3 pos = AsLegacy(obj->m_pos) + AsLegacy(obj->m_vel) * predictionTime;
       RenderSpirit(pos, ent->m_id.GetTeamId());
     }
   }
@@ -310,7 +310,7 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
         entity->m_id.SetUniqueId(newUniqueId);
         entity->m_onGround = false;
         entity->m_enabled = false;
-        entity->m_vel.Zero();
+        AsLegacy(entity->m_vel).Zero();
 
         newUnit->RecalculateOffsets();
       }

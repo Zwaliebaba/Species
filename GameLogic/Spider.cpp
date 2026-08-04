@@ -215,13 +215,13 @@ void Spider::StompFoot(Vector3 const& _pos)
     WorldObject* obj = g_location->GetEntity(id);
     Entity* entity = (Entity*)obj;
 
-    float distance = (entity->m_pos - _pos).Mag();
+    float distance = (AsLegacy(entity->m_pos) - _pos).Mag();
     float fraction = (FOOT_DAMAGE_RADIUS - distance) / FOOT_DAMAGE_RADIUS;
     fraction *= (1.0f + syncfrand(0.3f));
 
     entity->ChangeHealth(FOOT_DAMAGE_STRENGTH * fraction * -1.0f);
 
-    Vector3 push(entity->m_pos - _pos);
+    Vector3 push(AsLegacy(entity->m_pos) - _pos);
     push.Normalise();
     push *= fraction;
 
@@ -233,7 +233,7 @@ void Spider::StompFoot(Vector3 const& _pos)
     {
       push.y = -1;
     }
-    entity->m_vel += push;
+    AsLegacy(entity->m_vel) += push;
     entity->m_onGround = false;
   }
 }
@@ -268,8 +268,8 @@ void Spider::UpdateLegs()
   int stage = 0;
   for (int i = 1; i < 3; ++i)
   {
-    float diffBest = fabs(m_vel.Mag() - m_parameters[stage].m_idealSpeed);
-    float diffCurrent = fabs(m_vel.Mag() - m_parameters[i].m_idealSpeed);
+    float diffBest = fabs(AsLegacy(m_vel).Mag() - m_parameters[stage].m_idealSpeed);
+    float diffCurrent = fabs(AsLegacy(m_vel).Mag() - m_parameters[i].m_idealSpeed);
     if (diffCurrent < diffBest)
     {
       stage = i;
@@ -302,7 +302,7 @@ void Spider::UpdateLegs()
 // Tests that the line from m_pos to _dest doesn't go above a certain height
 float Spider::IsPathOK(Vector3 const& _dest)
 {
-  Vector3 toDest(_dest - m_pos);
+  Vector3 toDest(_dest - AsLegacy(m_pos));
   float distToDest = toDest.Mag();
   float const sampleSeperation = 8.0f;
   toDest.SetLength(sampleSeperation);
@@ -340,7 +340,7 @@ void Spider::DetectCollisions()
     {
       Entity* entity = g_location->GetEntity(neighbours[speciesRandom() % numFound]);
       DEBUG_ASSERT(entity);
-      Vector3 toNeighbour = m_pos - entity->m_pos;
+      Vector3 toNeighbour = AsLegacy(m_pos) - AsLegacy(entity->m_pos);
       toNeighbour.y = 0.0f;
       toNeighbour.Normalise();
       escapeVector += toNeighbour;
@@ -350,29 +350,29 @@ void Spider::DetectCollisions()
 
   if (collisionDetected)
   {
-    m_targetPos = m_pos + escapeVector * 40.0f;
+    m_targetPos = AsLegacy(m_pos) + escapeVector * 40.0f;
   }
 }
 
 
 bool Spider::FaceTarget()
 {
-  Vector3 toTarget = m_targetPos - m_pos;
+  Vector3 toTarget = m_targetPos - AsLegacy(m_pos);
   toTarget.y = 0.0f;
   float toTargetMag = toTarget.Mag();
   Vector3 toTargetNormalised = toTarget / toTargetMag;
 
-  float dotProd = toTargetNormalised * m_front;
+  float dotProd = toTargetNormalised * AsLegacy(m_front);
   if (dotProd < 0.999f)
   {
-    Vector3 rotation = m_front ^ toTargetNormalised;
+    Vector3 rotation = AsLegacy(m_front) ^ toTargetNormalised;
     if (dotProd < 0.9f)
       rotation.SetLength(TURN_RATE);
     else
       rotation.SetLength(TURN_RATE / 2.0f);
-    m_front.RotateAround(rotation);
-    m_front.Normalise();
-    m_vel.Zero();
+    AsLegacy(m_front).RotateAround(rotation);
+    AsLegacy(m_front).Normalise();
+    AsLegacy(m_vel).Zero();
 
     return false;
   }
@@ -383,7 +383,7 @@ bool Spider::FaceTarget()
 
 bool Spider::AdvanceToTarget()
 {
-  Vector3 toTarget = m_targetPos - m_pos;
+  Vector3 toTarget = m_targetPos - AsLegacy(m_pos);
   toTarget.y = 0.0f;
   float toTargetMag = toTarget.Mag();
 
@@ -399,20 +399,20 @@ bool Spider::AdvanceToTarget()
   bool facingTarget = FaceTarget();
 
   Vector3 toTargetNormalised = toTarget / toTargetMag;
-  float dotProd = toTargetNormalised * m_front;
+  float dotProd = toTargetNormalised * AsLegacy(m_front);
 
   if (dotProd > 0.5f)
   {
     m_vel = m_front;
     if (toTargetMag < 30.0f)
     {
-      m_vel.SetLength(toTargetMag);
+      AsLegacy(m_vel).SetLength(toTargetMag);
     }
     else
     {
-      m_vel.SetLength(30.0f);
+      AsLegacy(m_vel).SetLength(30.0f);
     }
-    m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
   }
 
   DetectCollisions();
@@ -448,7 +448,7 @@ bool Spider::AdvanceIdle()
 
   bool arrived = AdvanceToTarget();
   if (arrived)
-    m_vel.Zero();
+    AsLegacy(m_vel).Zero();
 
   return false;
 }
@@ -461,7 +461,7 @@ bool Spider::AdvanceAttack()
 
   if (facingTarget)
   {
-    float distance = (m_pounceTarget - m_pos).Mag();
+    float distance = (m_pounceTarget - AsLegacy(m_pos)).Mag();
 
     if (distance > 150.0f)
     {
@@ -472,7 +472,7 @@ bool Spider::AdvanceAttack()
       float force = sqrtf(distance) * 24.0f;
       // if( force > 130.0f ) force = 130.0f;
 
-      Vector3 up = (m_pounceTarget - m_pos).Normalise();
+      Vector3 up = (m_pounceTarget - AsLegacy(m_pos)).Normalise();
       up.y = 0.5f;
       up.Normalise();
       m_vel = up * force;
@@ -482,13 +482,13 @@ bool Spider::AdvanceAttack()
       m_state = StatePouncing;
       m_pounceStartTime = g_gameTime;
 
-      Vector3 forwards = (m_pounceTarget - m_pos);
+      Vector3 forwards = (m_pounceTarget - AsLegacy(m_pos));
       for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
       {
         m_legs[i]->m_foot.m_state = EntityFoot::FootState::Pouncing;
-        m_legs[i]->m_foot.m_bodyToFoot = m_pos - m_legs[i]->m_foot.m_pos;
+        m_legs[i]->m_foot.m_bodyToFoot = AsLegacy(m_pos) - m_legs[i]->m_foot.m_pos;
         m_legs[i]->m_foot.m_lastGroundPos = m_legs[i]->m_foot.m_pos;
-        m_legs[i]->m_foot.m_targetPos = m_legs[i]->m_foot.m_pos + forwards;
+        m_legs[i]->m_foot.m_targetPos = AsLegacy(m_legs[i]->m_foot.m_pos) + forwards;
       }
 
       g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
@@ -503,13 +503,13 @@ bool Spider::AdvanceAttack()
 bool Spider::AdvancePouncing()
 {
   m_vel.y -= 40.0f;
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
 
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   if (m_pos.y < landHeight + 1.0f)
   {
     m_pos.y = landHeight + 1.0f;
-    m_vel.Zero();
+    AsLegacy(m_vel).Zero();
     m_onGround = true;
     m_state = StateIdle;
     m_retargetTimer = 6.0f;
@@ -531,7 +531,7 @@ bool Spider::AdvancePouncing()
       WorldObjectId id = enemies[i];
       Entity* entity = g_location->GetEntity(id);
 
-      float distance = (entity->m_pos - m_pos).Mag();
+      float distance = (AsLegacy(entity->m_pos) - AsLegacy(m_pos)).Mag();
       float fraction = (squashRange - distance) / squashRange;
       fraction *= (1.0f + syncfrand(0.3f));
 
@@ -545,7 +545,7 @@ bool Spider::AdvancePouncing()
       pushLength = std::min(20.0f, pushLength);
       push.SetLength(pushLength);
 
-      entity->m_vel += push;
+      AsLegacy(entity->m_vel) += push;
       entity->m_onGround = false;
     }
   }
@@ -610,7 +610,7 @@ bool Spider::SearchForSpirits()
       Spirit* s = g_location->m_spirits.GetPointer(i);
       if (s->NumNearbyEggs() < 3 && s->m_pos.y > 10)
       {
-        float theDist = (s->m_pos - m_pos).Mag();
+        float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
 
         if (theDist <= SPIRIT_MAXSEARCHRANGE && theDist >= SPIRIT_MINSEARCHRANGE && theDist < nearest && s->m_state == Spirit::StateFloating)
         {
@@ -625,8 +625,8 @@ bool Spider::SearchForSpirits()
   if (found)
   {
     m_spiritId = foundIndex;
-    Vector3 usToThem = (found->m_pos - m_pos).Normalise() * 45.0f;
-    m_targetPos = found->m_pos + usToThem;
+    Vector3 usToThem = (AsLegacy(found->m_pos) - AsLegacy(m_pos)).Normalise() * 45.0f;
+    m_targetPos = AsLegacy(found->m_pos) + usToThem;
     m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
     m_state = StateEggLaying;
   }
@@ -716,7 +716,7 @@ bool Spider::Advance(Unit* _unit)
       targetHeight += m_targetHoverHeight;
       float factor1 = 1.0f * SERVER_ADVANCE_PERIOD;
       float factor2 = 1.0f - factor1;
-      m_pos.y = factor1 * targetHeight + factor2 * m_pos.y;
+      m_pos.y = factor1 * targetHeight + factor2 * AsLegacy(m_pos).y;
       UpdateLegs();
     }
   }
@@ -746,13 +746,13 @@ void Spider::Render(float _predictionTime)
   //
   // Render body
 
-  Vector3 predictedMovement = _predictionTime * m_vel;
-  Vector3 predictedPos = m_pos + predictedMovement;
+  Vector3 predictedMovement = _predictionTime * AsLegacy(m_vel);
+  Vector3 predictedPos = AsLegacy(m_pos) + predictedMovement;
   //	predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) +
   //					 m_targetHoverHeight;
 
   Vector3 up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-  Vector3 right = m_up ^ m_front;
+  Vector3 right = m_up ^ AsLegacy(m_front);
   Vector3 front = right ^ up;
 
   Matrix34 mat(front, up, predictedPos);
@@ -789,10 +789,10 @@ bool Spider::RenderPixelEffect(float _predictionTime)
 {
   Render(_predictionTime);
 
-  Vector3 predictedMovement = _predictionTime * m_vel;
-  Vector3 predictedPos = m_pos + predictedMovement;
+  Vector3 predictedMovement = _predictionTime * AsLegacy(m_vel);
+  Vector3 predictedPos = AsLegacy(m_pos) + predictedMovement;
   Vector3 up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-  Vector3 right = m_up ^ m_front;
+  Vector3 right = m_up ^ AsLegacy(m_front);
   Vector3 front = right ^ up;
 
   Matrix34 mat(front, up, predictedPos);
@@ -807,7 +807,7 @@ bool Spider::RenderPixelEffect(float _predictionTime)
 }
 
 
-bool Spider::IsInView() { return g_camera->SphereInViewFrustum(m_pos + m_centrePos, m_radius); }
+bool Spider::IsInView() { return g_camera->SphereInViewFrustum(AsLegacy(m_pos) + AsLegacy(m_centrePos), m_radius); }
 
 
 void Spider::ListSoundEvents(std::vector<const char*>* _list)

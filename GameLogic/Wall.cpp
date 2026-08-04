@@ -38,10 +38,10 @@ bool Wall::Advance()
       m_fallSpeed = 0.0f;
       m_pos.y = targetY;
 
-      Vector3 right = m_front ^ g_upVector;
+      Vector3 right = AsLegacy(m_front) ^ g_upVector;
       for (int i = -5; i < 5; ++i)
       {
-        Vector3 particlePos = m_pos + right * i * frand(10.0f);
+        Vector3 particlePos = AsLegacy(m_pos) + right * i * frand(10.0f);
         particlePos.y = g_location->m_landscape.m_heightMap->GetValue(particlePos.x, particlePos.z) + 10.0f;
         Vector3 particleVel(sfrand(10.0f), frand(10.0f), sfrand(10.0f));
 
@@ -62,11 +62,11 @@ void Wall::Render(float _predictionTime)
   {
     Vector3 pos(m_pos);
     pos.y += 5.0f;
-    RenderArrow(pos, pos + m_front * 20.0f, 4.0f);
+    RenderArrow(pos, pos + AsLegacy(m_front) * 20.0f, 4.0f);
   }
 #endif
 
-  Vector3 predictedPos = m_pos - Vector3(0, m_fallSpeed, 0) * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) - Vector3(0, m_fallSpeed, 0) * _predictionTime;
   Matrix34 mat(m_front, g_upVector, predictedPos);
   m_shape->Render(_predictionTime, mat);
 }

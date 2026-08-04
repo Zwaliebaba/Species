@@ -61,7 +61,7 @@ Triffid::Triffid()
 
 Matrix34 Triffid::GetHead()
 {
-  Vector3 _pos = m_pos + g_upVector * m_size * 30.0f;
+  Vector3 _pos = AsLegacy(m_pos) + g_upVector * m_size * 30.0f;
   Vector3 _front = m_front;
   Vector3 _up = g_upVector;
 
@@ -135,7 +135,7 @@ void Triffid::Render(float _predictionTime)
   glVertex3fv(mat.pos.GetData());
   glVertex3fv(midPoint.GetData());
   glVertex3fv(midPoint.GetData());
-  glVertex3fv(m_pos.GetData());
+  glVertex3fv(AsLegacy(m_pos).GetData());
   glEnd();
 
   //
@@ -230,18 +230,18 @@ void Triffid::RenderAlphas(float _predictionTime)
       glBegin(GL_LINES);
       while (true)
       {
-        glVertex3fv(egg.m_pos.GetData());
+        glVertex3fv(AsLegacy(egg.m_pos).GetData());
         egg.Advance(nullptr);
-        glVertex3fv(egg.m_pos.GetData());
+        glVertex3fv(AsLegacy(egg.m_pos).GetData());
 
-        if (egg.m_vel.Mag() < 20.0f)
+        if (AsLegacy(egg.m_vel).Mag() < 20.0f)
           break;
       }
       glEnd();
 
       if (m_useTrigger)
       {
-        Vector3 triggerPos = m_pos + m_triggerLocation;
+        Vector3 triggerPos = AsLegacy(m_pos) + m_triggerLocation;
         int numSteps = 20;
         glBegin(GL_LINE_LOOP);
         glLineWidth(1.0f);
@@ -315,7 +315,7 @@ void Triffid::Launch()
   {
     triffidEgg->m_spawnType = spawnType;
     triffidEgg->m_size = 1.0f + syncsfrand(0.3f);
-    triffidEgg->m_spawnPoint = m_pos + m_triggerLocation;
+    triffidEgg->m_spawnPoint = AsLegacy(m_pos) + m_triggerLocation;
     triffidEgg->m_roamRange = m_triggerRadius;
   }
 
@@ -363,7 +363,7 @@ bool Triffid::Advance()
     float fireSize = 100.0f + sfrand(100.0f * m_size);
     g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeFire, fireSize);
 
-    fireSpawn = m_pos + Vector3(sfrand(10.0f * m_size), sfrand(10.0f * m_size), sfrand(10.0f * m_size));
+    fireSpawn = AsLegacy(m_pos) + Vector3(sfrand(10.0f * m_size), sfrand(10.0f * m_size), sfrand(10.0f * m_size));
     g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeFire, fireSize);
 
     if (frand(100.0f) < 10.0f)
@@ -394,7 +394,7 @@ bool Triffid::Advance()
   if (m_useTrigger > 0 && GetHighResTime() > m_triggerTimer)
   {
     START_PROFILE(g_profiler, "CheckTrigger");
-    Vector3 triggerPos = m_pos + m_triggerLocation;
+    Vector3 triggerPos = AsLegacy(m_pos) + m_triggerLocation;
     bool enemiesFound = g_location->m_entityGrid->AreEnemiesPresent(triggerPos.x, triggerPos.z, m_triggerRadius, m_id.GetTeamId());
     m_triggered = enemiesFound;
     m_triggerTimer = GetHighResTime() + 5.0f;
@@ -624,7 +624,7 @@ void TriffidEgg::Spawn()
       WorldObjectId id = g_location->SpawnEntities(m_pos, teamId, -1, TypeCitizen, 1, vel, 0.0f, 0.0f);
       Entity* entity = g_location->GetEntity(id);
       entity->m_front.y = 0.0f;
-      entity->m_front.Normalise();
+      AsLegacy(entity->m_front).Normalise();
       entity->m_onGround = false;
     }
     break;
@@ -638,7 +638,7 @@ bool TriffidEgg::Advance(Unit* _unit)
   if (m_dead)
     return true;
 
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
 
   // Fly through the air, bounce
   m_vel.y -= 9.8f * m_force;
@@ -647,14 +647,14 @@ bool TriffidEgg::Advance(Unit* _unit)
   m_up.RotateAround(right * SERVER_ADVANCE_PERIOD * m_force * m_force * 30.0f);
   m_front = right ^ m_up;
   m_up.Normalise();
-  m_front.Normalise();
+  AsLegacy(m_front).Normalise();
 
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   if (m_pos.y < landHeight + 3.0f)
   {
     BounceOffLandscape();
     m_force *= TRIFFIDEGG_BOUNCEFRICTION;
-    m_vel *= m_force;
+    AsLegacy(m_vel) *= m_force;
     if (m_pos.y < landHeight + 3.0f)
       m_pos.y = landHeight + 3.0f;
     if (m_force > 0.1f)
@@ -668,10 +668,10 @@ bool TriffidEgg::Advance(Unit* _unit)
   if (m_up.y < 0.3f && m_force < 0.4f)
   {
     m_up = m_up * 0.95f + g_upVector * 0.05f;
-    Vector3 right = m_up ^ m_front;
+    Vector3 right = m_up ^ AsLegacy(m_front);
     m_front = right ^ m_up;
     m_up.Normalise();
-    m_front.Normalise();
+    AsLegacy(m_front).Normalise();
   }
 
   //
@@ -695,7 +695,7 @@ void TriffidEgg::Render(float _predictionTime)
   if (m_dead)
     return;
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
 
   Vector3 direction = m_vel;
   Vector3 right = (g_upVector ^ direction).Normalise();

@@ -423,7 +423,7 @@ bool ArmyAnt::SearchForSpirits()
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (s->m_pos - m_pos).Mag();
+      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
 
       if (theDist <= ARMYANT_SEARCHRANGE && theDist < closest && (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
       {
@@ -474,7 +474,7 @@ bool ArmyAnt::SearchForAntHill()
 
       if (building->m_type == Building::TypeAntHill && g_location->IsFriend(building->m_id.GetTeamId(), m_id.GetTeamId()))
       {
-        float distance = (building->m_pos - m_pos).Mag();
+        float distance = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag();
         if (distance < nearest)
         {
           buildingId = building->m_id.GetUniqueId();
@@ -498,22 +498,22 @@ bool ArmyAnt::SearchForAntHill()
 
 bool ArmyAnt::SearchForRandomPosition()
 {
-  float distToSpawnPoint = (m_pos - m_spawnPoint).Mag();
+  float distToSpawnPoint = (AsLegacy(m_pos) - AsLegacy(m_spawnPoint)).Mag();
   float chanceOfReturn = (distToSpawnPoint / 400.0f);
   if (chanceOfReturn >= 1.0f || syncfrand(1.0f) <= chanceOfReturn)
   {
     // We have strayed too far from our spawn point
     // So head back there now
-    Vector3 returnVector = m_spawnPoint - m_pos;
+    Vector3 returnVector = AsLegacy(m_spawnPoint) - AsLegacy(m_pos);
     returnVector.SetLength(100.0f);
-    m_wayPoint = m_pos + returnVector;
+    m_wayPoint = AsLegacy(m_pos) + returnVector;
   }
   else
   {
     float distance = 100.0f;
     float angle = syncsfrand(2.0f * M_PI);
 
-    m_wayPoint = m_pos + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
+    m_wayPoint = AsLegacy(m_pos) + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
     m_wayPoint = PushFromObstructions(m_wayPoint);
   }
 
@@ -533,24 +533,24 @@ bool ArmyAnt::AdvanceToTargetPosition()
   if (m_orders == CollectEntity || m_orders == AttackEnemy)
     speed *= 2.0f;
 
-  Vector3 actualDir = (m_wayPoint - m_pos).Normalise();
-  Vector3 newPos = m_pos + actualDir * speed * SERVER_ADVANCE_PERIOD;
+  Vector3 actualDir = (m_wayPoint - AsLegacy(m_pos)).Normalise();
+  Vector3 newPos = AsLegacy(m_pos) + actualDir * speed * SERVER_ADVANCE_PERIOD;
   // newPos = PushFromObstructions( newPos );
   newPos.y = g_location->m_landscape.m_heightMap->GetValue(newPos.x, newPos.z);
   Vector3 moved = newPos - oldPos;
   if (moved.Mag() > speed * SERVER_ADVANCE_PERIOD)
     moved.SetLength(speed * SERVER_ADVANCE_PERIOD);
-  newPos = m_pos + moved;
+  newPos = AsLegacy(m_pos) + moved;
 
   m_pos = newPos;
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
   m_front = (newPos - oldPos).Normalise();
-  m_front.RotateAroundY(syncsfrand(0.2f));
+  AsLegacy(m_front).RotateAroundY(syncsfrand(0.2f));
 
-  float distance = (m_pos - m_wayPoint).Mag();
-  if (distance < m_vel.Mag() * SERVER_ADVANCE_PERIOD)
+  float distance = (AsLegacy(m_pos) - m_wayPoint).Mag();
+  if (distance < AsLegacy(m_vel).Mag() * SERVER_ADVANCE_PERIOD)
   {
-    m_vel.Zero();
+    AsLegacy(m_vel).Zero();
     return true;
   }
 
@@ -572,7 +572,7 @@ void ArmyAnt::Render(float _predictionTime)
   if (m_dead)
     return;
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   Vector3 predictedUp = g_upVector;
 
   g_renderer->SetObjectLighting();

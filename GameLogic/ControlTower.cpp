@@ -82,7 +82,7 @@ bool ControlTower::Advance()
     {
       Matrix34 mat(m_front, g_upVector, m_pos);
       Vector3 dishPos = m_dishPos->GetWorldMatrix(mat).pos;
-      Vector3 dishFront = (dishPos - targetBuilding->m_centrePos).Normalise();
+      Vector3 dishFront = (dishPos - AsLegacy(targetBuilding->m_centrePos)).Normalise();
       Vector3 dishRight = dishFront ^ g_upVector;
       Vector3 dishUp = dishRight ^ dishFront;
       m_dishMatrix = Matrix34(dishFront, dishUp, dishPos);
@@ -130,7 +130,7 @@ bool ControlTower::Advance()
     {
       Matrix34 rootMat(m_front, g_upVector, m_pos);
       Matrix34 worldMat = m_console[i]->GetWorldMatrix(rootMat);
-      Vector3 particleVel = worldMat.pos - m_pos;
+      Vector3 particleVel = worldMat.pos - AsLegacy(m_pos);
       particleVel += Vector3(sfrand() * 10.0f, sfrand() * 5.0f, sfrand() * 10.0f);
       g_particleSystem->CreateParticle(worldMat.pos, particleVel, Particle::TypeBlueSpark);
     }
@@ -295,7 +295,7 @@ void ControlTower::RenderAlphas(float _predictionTime)
         Building* building = g_location->m_buildings[i];
         if (building && building->m_type == TypeControlTower)
         {
-          float camDist = (building->m_pos - g_camera->GetPos()).Mag();
+          float camDist = (AsLegacy(building->m_pos) - g_camera->GetPos()).Mag();
           if (camDist < nearest)
             nearest = camDist;
         }

@@ -80,19 +80,19 @@ void SporeGenerator::ChangeHealth(int _amount)
 
 bool SporeGenerator::SearchForRandomPos()
 {
-  float distToSpawnPoint = (m_pos - m_spawnPoint).Mag();
+  float distToSpawnPoint = (AsLegacy(m_pos) - AsLegacy(m_spawnPoint)).Mag();
   float chanceOfReturn = (distToSpawnPoint / m_roamRange);
   if (chanceOfReturn >= 1.0f || syncfrand(1.0f) <= chanceOfReturn)
   {
     // We have strayed too far from our spawn point
     // So head back there now
-    Vector3 returnVector = m_spawnPoint - m_pos;
+    Vector3 returnVector = AsLegacy(m_spawnPoint) - AsLegacy(m_pos);
     returnVector.SetLength(200.0f);
-    m_targetPos = m_pos + returnVector;
+    m_targetPos = AsLegacy(m_pos) + returnVector;
   }
   else
   {
-    m_targetPos = m_pos + Vector3(syncsfrand(200.0f), 0.0f, syncsfrand(200.0f));
+    m_targetPos = AsLegacy(m_pos) + Vector3(syncsfrand(200.0f), 0.0f, syncsfrand(200.0f));
   }
 
   m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
@@ -128,7 +128,7 @@ bool SporeGenerator::SearchForSpirits()
       Spirit* s = g_location->m_spirits.GetPointer(i);
       if (s->NumNearbyEggs() < 3 && s->m_pos.y > 0.0f)
       {
-        float theDist = (s->m_pos - m_pos).Mag();
+        float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
 
         if (theDist <= SPOREGENERATOR_SPIRITSEARCHRANGE && theDist < nearest && s->m_state == Spirit::StateFloating)
         {
@@ -164,7 +164,7 @@ bool SporeGenerator::AdvancePanic()
     return false;
   }
 
-  m_targetPos = m_pos + Vector3(syncsfrand(100.0f), syncfrand(10.0f), syncsfrand(100.0f));
+  m_targetPos = AsLegacy(m_pos) + Vector3(syncsfrand(100.0f), syncfrand(10.0f), syncsfrand(100.0f));
 
   AdvanceToTargetPosition();
 
@@ -175,7 +175,7 @@ bool SporeGenerator::AdvancePanic()
 bool SporeGenerator::AdvanceToTargetPosition()
 {
   float heightAboveGround = m_pos.y - g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
-  Vector3 toTarget = m_pos - m_targetPos;
+  Vector3 toTarget = AsLegacy(m_pos) - m_targetPos;
   float distanceToTarget = toTarget.Mag();
 
   Vector3 targetVel;
@@ -185,21 +185,21 @@ bool SporeGenerator::AdvanceToTargetPosition()
   {
     speed *= distanceToTarget / 50.0f;
   }
-  targetVel = (m_targetPos - m_pos).SetLength(speed);
+  targetVel = (m_targetPos - AsLegacy(m_pos)).SetLength(speed);
 
 
   float factor1 = SERVER_ADVANCE_PERIOD * 0.5f;
   float factor2 = 1.0f - factor1;
 
-  m_vel = m_vel * factor2 + targetVel * factor1;
+  m_vel = AsLegacy(m_vel) * factor2 + targetVel * factor1;
 
-  Vector3 right = m_front ^ g_upVector;
-  m_vel.RotateAround(right * sinf(g_gameTime * 3.0f) * SERVER_ADVANCE_PERIOD * 1.5f);
+  Vector3 right = AsLegacy(m_front) ^ g_upVector;
+  AsLegacy(m_vel).RotateAround(right * sinf(g_gameTime * 3.0f) * SERVER_ADVANCE_PERIOD * 1.5f);
 
   m_front = m_vel;
   m_front.y = 0.0f;
-  m_front.Normalise();
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_front).Normalise();
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
 
   return (distanceToTarget < 10.0f);
 }
@@ -264,7 +264,7 @@ bool SporeGenerator::AdvanceEggLaying()
   //
   // Lay eggs if we are in range
 
-  float distance = (m_targetPos - m_pos).Mag();
+  float distance = (m_targetPos - AsLegacy(m_pos)).Mag();
   if (distance < 50.0f)
   {
     m_eggTimer -= SERVER_ADVANCE_PERIOD;
@@ -328,7 +328,7 @@ void SporeGenerator::Render(float _predictionTime)
 
   Vector3 entityFront = Vector3(0, 0, 1);
   Vector3 entityUp = g_upVector;
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
 
   //
   // 3d Shape
@@ -364,7 +364,7 @@ void SporeGenerator::Render(float _predictionTime)
 
   int numTailParts = 3;
   static Vector3 s_vel;
-  s_vel = s_vel * 0.95f + m_vel * 0.05f;
+  s_vel = s_vel * 0.95f + AsLegacy(m_vel) * 0.05f;
 
   for (int i = 0; i < SPOREGENERATOR_NUMTAILS; ++i)
   {
@@ -420,7 +420,7 @@ void SporeGenerator::Render(float _predictionTime)
 }
 
 
-bool SporeGenerator::IsInView() { return g_camera->SphereInViewFrustum(m_pos + m_centrePos, m_radius); }
+bool SporeGenerator::IsInView() { return g_camera->SphereInViewFrustum(AsLegacy(m_pos) + AsLegacy(m_centrePos), m_radius); }
 
 
 bool SporeGenerator::RenderPixelEffect(float _predictionTime)
@@ -429,7 +429,7 @@ bool SporeGenerator::RenderPixelEffect(float _predictionTime)
 
   Vector3 entityFront = Vector3(0, 0, 1);
   Vector3 entityUp = g_upVector;
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
 
 
   //
@@ -444,7 +444,7 @@ bool SporeGenerator::RenderPixelEffect(float _predictionTime)
 
   int numTailParts = 3;
   static Vector3 s_vel;
-  s_vel = s_vel * 0.95f + m_vel * 0.05f;
+  s_vel = s_vel * 0.95f + AsLegacy(m_vel) * 0.05f;
 
   for (int i = 0; i < SPOREGENERATOR_NUMTAILS; ++i)
   {

@@ -53,7 +53,7 @@ void Spirit::Begin()
 
 bool Spirit::Advance()
 {
-  m_vel *= 0.9f;
+  AsLegacy(m_vel) *= 0.9f;
 
   if (m_state != StateAttached && m_state != StateInEgg)
   {
@@ -132,8 +132,8 @@ bool Spirit::Advance()
     PushFromBuildings();
   }
 
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
-  m_pos += m_hover * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += m_hover * SERVER_ADVANCE_PERIOD;
   float worldSizeX = g_location->m_landscape.GetWorldSizeX();
   float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
   if (m_pos.x < 0.0f)
@@ -202,16 +202,16 @@ void Spirit::PushFromBuildings()
     if (building && building->DoesSphereHit(m_pos, 5.0f))
     {
       hitFound = true;
-      Vector3 hitVector = (m_pos - building->m_pos);
-      m_vel += hitVector * 0.1f;
+      Vector3 hitVector = (AsLegacy(m_pos) - AsLegacy(building->m_pos));
+      AsLegacy(m_vel) += hitVector * 0.1f;
       m_vel.y = 0.0f;
-      float speed = m_vel.Mag();
+      float speed = AsLegacy(m_vel).Mag();
       speed = std::min(speed, 10.0f);
-      m_vel.SetLength(speed);
+      AsLegacy(m_vel).SetLength(speed);
     }
   }
 
-  if (!hitFound && m_vel.Mag() < 1.0f)
+  if (!hitFound && AsLegacy(m_vel).Mag() < 1.0f)
   {
     // Once we have cleared any buildings we are assumed to be safe
     m_pushFromBuildings = false;
@@ -239,7 +239,7 @@ void Spirit::CollectorArrives()
 
 void Spirit::CollectorDrops()
 {
-  m_vel.Zero();
+  AsLegacy(m_vel).Zero();
   m_hover.Zero();
   m_state = StateFloating;
   m_pushFromBuildings = true;
@@ -250,14 +250,14 @@ void Spirit::CollectorDrops()
 void Spirit::InEgg()
 {
   m_state = StateInEgg;
-  m_vel.Zero();
+  AsLegacy(m_vel).Zero();
   m_hover.Zero();
   g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "PlacedInEgg", SoundSourceBlueprint::TypeSpirit);
 }
 
 void Spirit::EggDestroyed()
 {
-  m_vel.Zero();
+  AsLegacy(m_vel).Zero();
   m_hover.Zero();
   m_state = StateFloating;
   //    Begin();
@@ -303,7 +303,7 @@ void Spirit::Render(float predictionTime)
 
   predictionTime -= SERVER_ADVANCE_PERIOD;
 
-  Vector3 predictedPos = m_pos + predictionTime * m_vel;
+  Vector3 predictedPos = AsLegacy(m_pos) + predictionTime * AsLegacy(m_vel);
   predictedPos += predictionTime * m_hover;
 
   float size = spiritInnerSize;

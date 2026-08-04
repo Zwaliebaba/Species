@@ -100,8 +100,8 @@ bool MineBuilding::IsInView()
   Building* trackLink = g_location->GetBuilding(m_trackLink);
   if (trackLink)
   {
-    Vector3 midPoint = (trackLink->m_centrePos + m_centrePos) / 2.0f;
-    float radius = (trackLink->m_centrePos - m_centrePos).Mag() / 2.0f;
+    Vector3 midPoint = (AsLegacy(trackLink->m_centrePos) + AsLegacy(m_centrePos)) / 2.0f;
+    float radius = (AsLegacy(trackLink->m_centrePos) - AsLegacy(m_centrePos)).Mag() / 2.0f;
     radius += m_radius;
 
     if (g_camera->SphereInViewFrustum(midPoint, radius))
@@ -692,7 +692,7 @@ void TrackStart::RenderAlphas(float _predictionTime)
     Building* req = g_location->GetBuilding(m_reqBuildingId);
     if (req)
     {
-      RenderArrow(m_pos + Vector3(0, 50, 0), req->m_pos + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
+      RenderArrow(AsLegacy(m_pos) + Vector3(0, 50, 0), AsLegacy(req->m_pos) + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
     }
   }
 #endif
@@ -801,7 +801,7 @@ void TrackEnd::RenderAlphas(float _predictionTime)
     Building* req = g_location->GetBuilding(m_reqBuildingId);
     if (req)
     {
-      RenderArrow(m_pos + Vector3(0, 50, 0), req->m_pos + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
+      RenderArrow(AsLegacy(m_pos) + Vector3(0, 50, 0), AsLegacy(req->m_pos) + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
     }
   }
 #endif

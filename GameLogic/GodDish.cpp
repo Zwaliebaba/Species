@@ -212,9 +212,9 @@ void GodDish::SpawnSpam(bool _isResearch)
   if (_isResearch)
     spam->SetAsResearch();
   spam->m_pos = m_pos;
-  spam->m_pos += Vector3(0, 1500 * 0.75f, 900 * 0.75f);
-  spam->m_vel = (m_pos - spam->m_pos);
-  spam->m_vel.SetLength(80.0f);
+  AsLegacy(spam->m_pos) += Vector3(0, 1500 * 0.75f, 900 * 0.75f);
+  spam->m_vel = (AsLegacy(m_pos) - AsLegacy(spam->m_pos));
+  AsLegacy(spam->m_vel).SetLength(80.0f);
 }
 
 

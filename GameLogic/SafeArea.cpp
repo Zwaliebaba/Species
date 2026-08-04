@@ -41,7 +41,7 @@ void SafeArea::Initialise(Building* _template)
   m_entityTypeRequired = ((SafeArea*)_template)->m_entityTypeRequired;
 
   m_radius = m_size;
-  m_centrePos = m_pos + Vector3(0, m_radius / 2, 0);
+  m_centrePos = AsLegacy(m_pos) + Vector3(0, m_radius / 2, 0);
 }
 
 
@@ -116,7 +116,7 @@ void SafeArea::Render(float predictionTime)
     {
       float xDiff = m_size * sinf(angle);
       float zDiff = m_size * cosf(angle);
-      Vector3 pos = m_pos + Vector3(xDiff, 5, zDiff);
+      Vector3 pos = AsLegacy(m_pos) + Vector3(xDiff, 5, zDiff);
       pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
       if (pos.y < 2)
         pos.y = 2;
@@ -131,11 +131,11 @@ void SafeArea::Render(float predictionTime)
             float angle = g_gameTime * 2.0f;
             Vector3 dif( m_size * sinf(angle), 0.0f, m_size * cosf(angle) );
 
-            Vector3 pos = m_pos + dif;
+            Vector3 pos = AsLegacy(m_pos) + dif;
             pos.y = g_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z ) + 5.0f;
             g_particleSystem->CreateParticle( pos, g_upVector*2 + dif/30, Particle::TypeMuzzleFlash, 100.0f );
 
-            pos = m_pos - dif;
+            pos = AsLegacy(m_pos) - dif;
             pos.y = g_location->m_landscape.m_heightMap->GetValue( pos.x, pos.z ) + 5.0f;
             g_particleSystem->CreateParticle( pos, g_upVector*2 - dif/30, Particle::TypeMuzzleFlash, 100.0f );
     */

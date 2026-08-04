@@ -60,7 +60,7 @@ void Egg::Render(float predictionTime)
     alpha = 0.1f;
   glColor4ub(255, 255, 255, 255 * alpha);
 
-  Vector3 pos = m_pos + m_vel * predictionTime;
+  Vector3 pos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
   pos.y += 3.0f;
   Vector3 up = g_camera->GetUp();
   Vector3 right = g_camera->GetRight();
@@ -208,7 +208,7 @@ bool Egg::Advance(Unit* _unit)
   if (g_location->m_spirits.ValidIndex(m_spiritId))
   {
     Spirit* spirit = g_location->m_spirits.GetPointer(m_spiritId);
-    spirit->m_pos = m_pos + Vector3(0, 3, 0);
+    spirit->m_pos = AsLegacy(m_pos) + Vector3(0, 3, 0);
   }
 
   if (!m_dead)
@@ -266,7 +266,7 @@ bool Egg::Advance(Unit* _unit)
   }
   else
   {
-    m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
   }
 
   if (m_pos.y <= 0.0f)

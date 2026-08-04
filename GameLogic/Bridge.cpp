@@ -225,18 +225,18 @@ bool Bridge::UpdateEntityInTransit(Entity* _entity)
   {
     Matrix34 theirMat(nextBridge->m_front, g_upVector, nextBridge->m_pos);
     Matrix34 theirSignal = nextBridge->m_signal->GetWorldMatrix(theirMat);
-    Vector3 offset = (theirSignal.pos - _entity->m_pos).Normalise();
-    float dist = (_entity->m_pos - theirSignal.pos).Mag();
+    Vector3 offset = (theirSignal.pos - AsLegacy(_entity->m_pos)).Normalise();
+    float dist = (AsLegacy(_entity->m_pos) - theirSignal.pos).Mag();
     bool arrived = false;
 
     _entity->m_vel = offset * BRIDGE_TRANSPORTSPEED;
-    if (_entity->m_vel.Mag() * SERVER_ADVANCE_PERIOD > dist)
+    if (AsLegacy(_entity->m_vel).Mag() * SERVER_ADVANCE_PERIOD > dist)
     {
-      _entity->m_vel = (_entity->m_pos - theirSignal.pos) / SERVER_ADVANCE_PERIOD;
+      _entity->m_vel = (AsLegacy(_entity->m_pos) - theirSignal.pos) / SERVER_ADVANCE_PERIOD;
       arrived = true;
     }
 
-    _entity->m_pos += _entity->m_vel * SERVER_ADVANCE_PERIOD;
+    AsLegacy(_entity->m_pos) += AsLegacy(_entity->m_vel) * SERVER_ADVANCE_PERIOD;
     _entity->m_onGround = false;
     _entity->m_enabled = false;
 
@@ -252,7 +252,7 @@ bool Bridge::UpdateEntityInTransit(Entity* _entity)
         _entity->m_front = exitFront;
         _entity->m_enabled = true;
         _entity->m_onGround = true;
-        _entity->m_vel.Zero();
+        AsLegacy(_entity->m_vel).Zero();
 
         g_location->m_entityGrid->AddObject(id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius);
         return true;

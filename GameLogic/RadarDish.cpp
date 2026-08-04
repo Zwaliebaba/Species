@@ -36,7 +36,7 @@ RadarDish::RadarDish()
 {
   m_type = Building::TypeRadarDish;
   m_target.Zero();
-  m_front.Set(0, 0, 1);
+  AsLegacy(m_front).Set(0, 0, 1);
   m_sendPeriod = RADARDISH_TRANSPORTPERIOD;
 
   Shape* radarShape = g_resource->GetShapeCopy("RadarDish.shp", true);
@@ -462,12 +462,12 @@ bool RadarDish::UpdateEntityInTransit(Entity* _entity)
   Vector3 dishPos = GetDishPos(0.0f);
   Vector3 dishFront = GetDishFront(0.0f);
   Vector3 targetPos = dishPos + dishFront * m_range;
-  Vector3 ourOffset = (targetPos - _entity->m_pos);
+  Vector3 ourOffset = (targetPos - AsLegacy(_entity->m_pos));
 
   WorldObjectId id(_entity->m_id);
 
   _entity->m_vel = dishFront * RADARDISH_TRANSPORTSPEED;
-  _entity->m_pos += _entity->m_vel * SERVER_ADVANCE_PERIOD;
+  AsLegacy(_entity->m_pos) += AsLegacy(_entity->m_vel) * SERVER_ADVANCE_PERIOD;
   _entity->m_onGround = false;
   _entity->m_enabled = false;
 
@@ -477,14 +477,14 @@ bool RadarDish::UpdateEntityInTransit(Entity* _entity)
     unit->UpdateEntityPosition(_entity->m_pos, _entity->m_radius);
   }
 
-  float distTravelled = (_entity->m_pos - dishPos).Mag();
+  float distTravelled = (AsLegacy(_entity->m_pos) - dishPos).Mag();
 
   if (m_signal == 0.0f)
   {
     // Shit - we lost the carrier signal, so we die
     _entity->ChangeHealth(-500);
     _entity->m_enabled = true;
-    _entity->m_vel += Vector3(syncsfrand(10.0f), syncfrand(10.0f), syncsfrand(10.0f));
+    AsLegacy(_entity->m_vel) += Vector3(syncsfrand(10.0f), syncfrand(10.0f), syncsfrand(10.0f));
 
     g_location->m_entityGrid->AddObject(id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius);
     return true;
@@ -498,7 +498,7 @@ bool RadarDish::UpdateEntityInTransit(Entity* _entity)
     _entity->m_front = exitFront;
     _entity->m_enabled = true;
     _entity->m_onGround = true;
-    _entity->m_vel.Zero();
+    AsLegacy(_entity->m_vel).Zero();
 
     g_location->m_entityGrid->AddObject(id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius);
 

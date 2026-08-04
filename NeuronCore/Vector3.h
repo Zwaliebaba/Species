@@ -227,8 +227,11 @@ inline Vector3 operator*(float _scale, Vector3 const& _v) { return _v * _scale; 
 // operators already perform in the opposite direction.
 //
 // EVERY CALL IS A REPAIR AWAITING A CONVERSION, not an idiom. A file still
-// holding one has not been converted yet, and the task that will convert it is
-// named in a comment at the site. Do not reach for this in new code: new code
-// stores XMFLOAT3 and computes with XMVECTOR.
+// holding one has not been converted yet, and `grep -rl AsLegacy` is therefore
+// the live list of files T15-T19, T22 and T24 have left to do. There are too
+// many to comment individually -- T14 wrote about 480 across 50 files -- so the
+// count and the reasoning live in that task's notes rather than at each site.
+// Do not reach for this in new code: new code stores XMFLOAT3 and computes with
+// XMVECTOR.
 inline Vector3& AsLegacy(DirectX::XMFLOAT3& _v) { return reinterpret_cast<Vector3&>(_v); }
 inline Vector3 const& AsLegacy(DirectX::XMFLOAT3 const& _v) { return reinterpret_cast<Vector3 const&>(_v); }

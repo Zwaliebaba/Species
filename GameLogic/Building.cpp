@@ -269,7 +269,7 @@ Vector3 Building::PushFromBuilding(Vector3 const& pos, float _radius)
 
   if (hit)
   {
-    Vector3 pushForce = (m_pos - result).SetLength(2.0f);
+    Vector3 pushForce = (AsLegacy(m_pos) - result).SetLength(2.0f);
     while (DoesSphereHit(result, _radius))
     {
       result -= pushForce;
@@ -592,7 +592,7 @@ bool Building::DoesSphereHit(Vector3 const& _pos, float _radius)
   }
   else
   {
-    float distance = (_pos - m_pos).Mag();
+    float distance = (_pos - AsLegacy(m_pos)).Mag();
     return (distance <= _radius + m_radius);
   }
 }

@@ -79,7 +79,7 @@ void Tree::SetDetail(int _detail)
   Generate();
 
   m_iterations = oldIterations;
-  m_centrePos = m_pos + m_hitcheckCentre * m_height;
+  m_centrePos = AsLegacy(m_pos) + m_hitcheckCentre * m_height;
   m_radius = m_hitcheckRadius * m_height * 1.5f;
 }
 
@@ -101,7 +101,7 @@ bool Tree::Advance()
     int numFire = actualHeight / 5;
     for (int i = 0; i < numFire; ++i)
     {
-      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
+      Vector3 fireSpawn = AsLegacy(m_pos) + Vector3(0, actualHeight, 0);
       fireSpawn += Vector3(sfrand(actualHeight * 1.0f), sfrand(actualHeight * 0.5f), sfrand(actualHeight * 1.0f));
       float fireSize = actualHeight * 2.0f;
       fireSize *= (1.0f + sfrand(0.5f));
@@ -110,7 +110,7 @@ bool Tree::Advance()
 
     if (frand(100.0f) < 10.0f)
     {
-      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
+      Vector3 fireSpawn = AsLegacy(m_pos) + Vector3(0, actualHeight, 0);
       fireSpawn += Vector3(sfrand(actualHeight * 0.75f), sfrand(actualHeight * 0.75f), sfrand(actualHeight * 0.75f));
       g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeExplosionDebris);
     }
@@ -127,7 +127,7 @@ bool Tree::Advance()
     //
     // Spread to nearby trees
 
-    Vector3 hitCentre = m_pos + m_hitcheckCentre * actualHeight;
+    Vector3 hitCentre = AsLegacy(m_pos) + m_hitcheckCentre * actualHeight;
     float hitRadius = m_hitcheckRadius * actualHeight;
 
     for (int b = 0; b < g_location->m_buildings.Size(); ++b)
@@ -138,7 +138,7 @@ bool Tree::Advance()
         if (building != this && building->m_type == TypeTree)
         {
           Tree* tree = (Tree*)building;
-          float distance = (tree->m_pos - m_pos).Mag();
+          float distance = (AsLegacy(tree->m_pos) - AsLegacy(m_pos)).Mag();
           float theirActualHeight = tree->GetActualHeight(0.0f);
           float theirRadius = theirActualHeight * tree->m_hitcheckRadius * 1.5f;
           float ourRadius = actualHeight * m_hitcheckRadius * 1.5f;
@@ -176,7 +176,7 @@ bool Tree::Advance()
     if (rand() % (51 - m_leafDropRate) == 0)
     {
       float actualHeight = GetActualHeight(0.0f);
-      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
+      Vector3 fireSpawn = AsLegacy(m_pos) + Vector3(0, actualHeight, 0);
       fireSpawn += Vector3(sfrand(actualHeight * 1.0f), sfrand(actualHeight * 0.25f), sfrand(actualHeight * 1.0f));
       g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeLeaf, -1.0f,
                                        RGBAColour(m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2]));
@@ -286,7 +286,7 @@ void Tree::Render(float _predictionTime)
 
 bool Tree::PerformDepthSort(Vector3& _centrePos)
 {
-  _centrePos = m_pos + m_hitcheckCentre * m_height;
+  _centrePos = AsLegacy(m_pos) + m_hitcheckCentre * m_height;
   return true;
 }
 
@@ -352,7 +352,7 @@ void Tree::RenderHitCheck()
   float actualHeight = GetActualHeight(0.0f);
 
   RenderSphere(m_pos, 10.0f);
-  RenderSphere(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight);
+  RenderSphere(AsLegacy(m_pos) + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight);
 #endif
 }
 
@@ -394,7 +394,7 @@ bool Tree::DoesSphereHit(Vector3 const& _pos, float _radius)
 
   float actualHeight = GetActualHeight(0.0f);
 
-  if (SphereSphereIntersection(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _pos, _radius))
+  if (SphereSphereIntersection(AsLegacy(m_pos) + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _pos, _radius))
   {
     return true;
   }
@@ -412,7 +412,7 @@ bool Tree::DoesShapeHit(Shape* _shape, Matrix34 _transform)
 
   float actualHeight = GetActualHeight(0.0f);
 
-  SpherePackage packageB(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight);
+  SpherePackage packageB(AsLegacy(m_pos) + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight);
   if (_shape->SphereHit(&packageB, _transform))
   {
     return true;
@@ -430,7 +430,8 @@ bool Tree::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _r
 
   float actualHeight = GetActualHeight(0.0f);
 
-  if (RaySphereIntersection(_rayStart, _rayDir, m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _rayLen, _pos, _norm))
+  if (RaySphereIntersection(_rayStart, _rayDir, AsLegacy(m_pos) + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _rayLen, _pos,
+                            _norm))
   {
     return true;
   }

@@ -84,7 +84,7 @@ void LaserFence::Spark()
   {
     Vector3 particleVel;
     if (nextFence)
-      particleVel = (m_pos - nextFence->m_pos) ^ g_upVector;
+      particleVel = (AsLegacy(m_pos) - AsLegacy(nextFence->m_pos)) ^ g_upVector;
     else
       particleVel = Vector3(sfrand(10.0f), sfrand(5.0f), sfrand(10.0f));
 
@@ -105,8 +105,8 @@ bool LaserFence::Advance()
     Building* building = g_location->GetBuilding(m_nextLaserFenceId);
     if (building)
     {
-      m_centrePos = (building->m_pos + m_pos) / 2.0f;
-      m_radius = (building->m_pos - m_pos).Mag() / 2.0f + m_radius;
+      m_centrePos = (AsLegacy(building->m_pos) + AsLegacy(m_pos)) / 2.0f;
+      m_radius = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag() / 2.0f + m_radius;
     }
     m_radiusSet = true;
   }
@@ -292,7 +292,7 @@ void LaserFence::RenderAlphas(float predictionTime)
 
       float ourFenceHeight = ourFenceMaxHeight * predictedStatus;
       float theirFenceHeight = theirFenceMaxHeight * predictedStatus;
-      float distance = (m_pos - nextFence->m_pos).Mag();
+      float distance = (AsLegacy(m_pos) - AsLegacy(nextFence->m_pos)).Mag();
       float dx = distance / (ourFenceMaxHeight * 2.0f);
       float dz = ourFenceHeight / ourFenceMaxHeight;
       float timeOff = g_gameTime / 15.0f;
@@ -325,19 +325,19 @@ void LaserFence::RenderAlphas(float predictionTime)
         glBegin(GL_QUADS);
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff, 0.0f);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0, 0);
-        glVertex3fv((m_pos - Vector3(0, ourFenceHeight / 3, 0)).GetData());
+        glVertex3fv((AsLegacy(m_pos) - Vector3(0, ourFenceHeight / 3, 0)).GetData());
 
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff, dz);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0, 1);
-        glVertex3fv((m_pos + Vector3(0, ourFenceHeight, 0)).GetData());
+        glVertex3fv((AsLegacy(m_pos) + Vector3(0, ourFenceHeight, 0)).GetData());
 
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff + dx, dz);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 1, 1);
-        glVertex3fv((nextFence->m_pos + Vector3(0, theirFenceHeight, 0)).GetData());
+        glVertex3fv((AsLegacy(nextFence->m_pos) + Vector3(0, theirFenceHeight, 0)).GetData());
 
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff + dx, 0.0f);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 1, 0);
-        glVertex3fv((nextFence->m_pos - Vector3(0, theirFenceHeight / 3, 0)).GetData());
+        glVertex3fv((AsLegacy(nextFence->m_pos) - Vector3(0, theirFenceHeight / 3, 0)).GetData());
         glEnd();
 
         gglActiveTextureARB(GL_TEXTURE1_ARB);
@@ -363,16 +363,16 @@ void LaserFence::RenderAlphas(float predictionTime)
 
       glBegin(GL_QUADS);
       glTexCoord2f(0, 0);
-      glVertex3fv((m_pos - Vector3(0, ourFenceHeight / 3, 0)).GetData());
+      glVertex3fv((AsLegacy(m_pos) - Vector3(0, ourFenceHeight / 3, 0)).GetData());
 
       glTexCoord2f(0, 1);
-      glVertex3fv((m_pos + Vector3(0, ourFenceHeight, 0)).GetData());
+      glVertex3fv((AsLegacy(m_pos) + Vector3(0, ourFenceHeight, 0)).GetData());
 
       glTexCoord2f(1, 1);
-      glVertex3fv((nextFence->m_pos + Vector3(0, theirFenceHeight, 0)).GetData());
+      glVertex3fv((AsLegacy(nextFence->m_pos) + Vector3(0, theirFenceHeight, 0)).GetData());
 
       glTexCoord2f(1, 0);
-      glVertex3fv((nextFence->m_pos - Vector3(0, theirFenceHeight / 3, 0)).GetData());
+      glVertex3fv((AsLegacy(nextFence->m_pos) - Vector3(0, theirFenceHeight / 3, 0)).GetData());
       glEnd();
 
       glDisable(GL_TEXTURE_2D);
@@ -384,8 +384,8 @@ void LaserFence::RenderAlphas(float predictionTime)
       glEnable(GL_LINE_SMOOTH);
 
       glBegin(GL_LINES);
-      glVertex3fv((m_pos + Vector3(0, ourFenceHeight, 0)).GetData());
-      glVertex3fv((nextFence->m_pos + Vector3(0, theirFenceHeight, 0)).GetData());
+      glVertex3fv((AsLegacy(m_pos) + Vector3(0, ourFenceHeight, 0)).GetData());
+      glVertex3fv((AsLegacy(nextFence->m_pos) + Vector3(0, theirFenceHeight, 0)).GetData());
       glEnd();
 
       glDepthMask(true);
@@ -550,10 +550,10 @@ bool LaserFence::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, fl
     Building* nextFence = g_location->GetBuilding(m_nextLaserFenceId);
     float maxHeight = GetFenceFullHeight();
     float fenceHeight = maxHeight * m_status;
-    Vector3 pos1 = m_pos - Vector3(0, fenceHeight / 3, 0);
-    Vector3 pos2 = m_pos + Vector3(0, fenceHeight, 0);
-    Vector3 pos3 = nextFence->m_pos - Vector3(0, fenceHeight / 3, 0);
-    Vector3 pos4 = nextFence->m_pos + Vector3(0, fenceHeight, 0);
+    Vector3 pos1 = AsLegacy(m_pos) - Vector3(0, fenceHeight / 3, 0);
+    Vector3 pos2 = AsLegacy(m_pos) + Vector3(0, fenceHeight, 0);
+    Vector3 pos3 = AsLegacy(nextFence->m_pos) - Vector3(0, fenceHeight / 3, 0);
+    Vector3 pos4 = AsLegacy(nextFence->m_pos) + Vector3(0, fenceHeight, 0);
 
     bool hitTri1 = false;
     bool hitTri2 = false;

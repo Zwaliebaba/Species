@@ -140,7 +140,7 @@ void GunTurret::SearchForRandomPos()
   float distance = 200.0f + syncfrand(200.0f);
   float height = syncfrand(100.0f);
 
-  m_target = m_pos + Vector3(cosf(angle) * distance, height, sinf(angle) * distance);
+  m_target = AsLegacy(m_pos) + Vector3(cosf(angle) * distance, height, sinf(angle) * distance);
 }
 
 
@@ -318,7 +318,7 @@ bool GunTurret::Advance()
       m_target = target->m_pos;
       m_target += Vector3(sinf(g_gameTime * 3) * 20, fabs(sinf(g_gameTime * 2) * 10), cosf(g_gameTime * 3) * 20);
 
-      Vector3 targetFront = (m_target - m_pos);
+      Vector3 targetFront = (m_target - AsLegacy(m_pos));
       targetFront.HorizontalAndNormalise();
       float angle = acosf(targetFront * m_turretFront);
 
@@ -327,9 +327,9 @@ bool GunTurret::Advance()
   }
 
 
-  float distance = (m_target - m_pos).Mag();
+  float distance = (m_target - AsLegacy(m_pos)).Mag();
   if (distance < 75.0f)
-    m_target = m_pos + (m_target - m_pos).SetLength(75.0f);
+    m_target = AsLegacy(m_pos) + (m_target - AsLegacy(m_pos)).SetLength(75.0f);
 
 
   //
@@ -538,7 +538,7 @@ bool GunTurretTarget::Advance()
   }
   else
   {
-    m_pos.Zero();
+    AsLegacy(m_pos).Zero();
   }
 
   return false;

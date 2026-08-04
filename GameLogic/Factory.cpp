@@ -65,7 +65,7 @@ void Factory::Render(float predictionTime)
 
   if (m_state == StateCreating)
   {
-    Vector3 pos(m_pos + Vector3(2.0f, 20.0f, 20.0f));
+    Vector3 pos(AsLegacy(m_pos) + Vector3(2.0f, 20.0f, 20.0f));
 
     glLineWidth(2.0f);
     glBegin(GL_LINE_LOOP);
@@ -105,7 +105,7 @@ void Factory::RequestUnit(unsigned char _troopType, int _numToCreate)
   {
     Team* team = &g_location->m_teams[m_id.GetTeamId()];
     Unit* unit = team->NewUnit(_troopType, _numToCreate, &m_unitId, m_pos);
-    unit->SetWayPoint(m_pos + m_front * 30.0f);
+    unit->SetWayPoint(AsLegacy(m_pos) + AsLegacy(m_front) * 30.0f);
   }
   else
   {
@@ -153,7 +153,7 @@ void Factory::AdvanceStateCreating()
   {
     if (m_spiritStore.NumSpirits() > 0)
     {
-      Vector3 pos(m_pos + Vector3(syncsfrand(5.0f), 20.0f + syncsfrand(5.0f), 20.0f));
+      Vector3 pos(AsLegacy(m_pos) + Vector3(syncsfrand(5.0f), 20.0f + syncsfrand(5.0f), 20.0f));
       Vector3 vel(syncsfrand(1.0f), syncsfrand(1.0f), 5.0f + syncsfrand(1.0f));
 
       m_spiritStore.RemoveSpirits(1);

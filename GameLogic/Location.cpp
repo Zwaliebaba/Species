@@ -294,14 +294,14 @@ WorldObjectId Location::SpawnEntities(Vector3 const& _pos, unsigned char _teamId
     s->m_pos = FindValidSpawnPosition(_pos, _spread);
     s->m_onGround = false;
     s->m_vel = _vel;
-    if (s->m_vel.MagSquared() > 0.0f)
+    if (AsLegacy(s->m_vel).MagSquared() > 0.0f)
     {
       s->m_front = _vel;
-      s->m_front.Normalise();
+      AsLegacy(s->m_front).Normalise();
     }
     else
     {
-      s->m_front.Set(1, 0, 0);
+      AsLegacy(s->m_front).Set(1, 0, 0);
     }
     s->m_id.SetTeamId(_teamId);
     s->m_id.SetUnitId(_unitId);
@@ -1406,7 +1406,7 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
       Building* building = GetBuilding(buildingId);
       if (building && building->m_type == Building::TypeRadarDish)
       {
-        Vector3 waypointToBuilding = (building->m_pos - targetPos);
+        Vector3 waypointToBuilding = (AsLegacy(building->m_pos) - targetPos);
         waypointToBuilding.y = 0;
         if (waypointToBuilding.Mag() < building->m_radius)
         {
@@ -1553,7 +1553,7 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
       // answers a zero-length input with (0,0,1) and XMVector3Normalize does
       // not, and a mouse position exactly on a unit's centre is reachable. This
       // line converts properly with the rest of Location in T18.
-      unit->m_targetDir = (Vector3(teamControls.m_mousePos) - unit->m_centrePos).Normalise();
+      unit->m_targetDir = (Vector3(teamControls.m_mousePos) - AsLegacy(unit->m_centrePos)).Normalise();
       unit->RecalculateOffsets();
 
       //
@@ -1657,7 +1657,7 @@ int Location::GetUnitId(Vector3 const& startRay, Vector3 const& direction, unsig
           if (theUnit->m_entities.ValidIndex(i))
           {
             Entity* entity = theUnit->m_entities[i];
-            Vector3 spherePos = entity->m_pos + entity->m_centrePos;
+            Vector3 spherePos = AsLegacy(entity->m_pos) + AsLegacy(entity->m_centrePos);
             float sphereRadius = entity->m_radius * 1.5f;
             Vector3 hitPos;
 
@@ -1706,7 +1706,7 @@ WorldObjectId Location::GetEntityId(Vector3 const& startRay, Vector3 const& dire
       Entity* ent = m_teams[teamId].m_others.GetData(i);
       if (!ent->m_dead)
       {
-        Vector3 spherePos = ent->m_pos + ent->m_centrePos;
+        Vector3 spherePos = AsLegacy(ent->m_pos) + AsLegacy(ent->m_centrePos);
         float sphereRadius = ent->m_radius * 1.5f;
         Vector3 hitPos;
         bool rayHit = RaySphereIntersection(startRay, direction, spherePos, sphereRadius, 1e10, &hitPos);
@@ -1999,7 +1999,7 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
     WorldObject* obj = g_location->GetEntity(id);
     Entity* entity = (Entity*)obj;
 
-    float distance = (entity->m_pos - _pos).Mag();
+    float distance = (AsLegacy(entity->m_pos) - _pos).Mag();
     float fraction = (_range * 2.0f - distance) / _range * 2.0f;
     // fraction *= (1.0f + syncfrand(0.3f));
     // fraction *= 1.5f;
@@ -2007,7 +2007,7 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
 
     entity->ChangeHealth(_damage * fraction * -1.0f);
 
-    Vector3 push(entity->m_pos - _pos);
+    Vector3 push(AsLegacy(entity->m_pos) - _pos);
     push.Normalise();
 
     if (entity->m_onGround)
@@ -2022,7 +2022,7 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
     push.Normalise();
     push *= fraction;
 
-    entity->m_vel += push;
+    AsLegacy(entity->m_vel) += push;
     entity->m_onGround = false;
   }
 
@@ -2053,7 +2053,7 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
     if (m_buildings.ValidIndex(i))
     {
       Building* building = m_buildings[i];
-      float dist = (_pos - building->m_pos).Mag();
+      float dist = (_pos - AsLegacy(building->m_pos)).Mag();
 
       if (dist < maxBuildingRange)
       {

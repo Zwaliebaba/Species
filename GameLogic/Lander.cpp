@@ -27,7 +27,7 @@ Lander::Lander()
 
 bool Lander::Advance(Unit* _unit)
 {
-  m_front.Set(-1, 0, 0);
+  AsLegacy(m_front).Set(-1, 0, 0);
 
   if (m_dead)
   {
@@ -67,8 +67,8 @@ void Lander::ChangeHealth(int amount) { g_particleSystem->CreateParticle(m_pos, 
 
 bool Lander::AdvanceSailing()
 {
-  m_vel = m_front * m_stats[StatSpeed];
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  m_vel = AsLegacy(m_front) * m_stats[StatSpeed];
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
 
   float groundLevel = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   m_pos.y = groundLevel;
@@ -77,7 +77,7 @@ bool Lander::AdvanceSailing()
 
   if (groundLevel > 0.0f)
   {
-    m_vel.Zero();
+    AsLegacy(m_vel).Zero();
     m_state = StateLanded;
   }
 
@@ -86,7 +86,7 @@ bool Lander::AdvanceSailing()
 
 bool Lander::AdvanceLanded()
 {
-  m_vel.Zero();
+  AsLegacy(m_vel).Zero();
 
   m_spawnTimer -= SERVER_ADVANCE_PERIOD;
   if (m_spawnTimer <= 0.0f)
@@ -97,7 +97,7 @@ bool Lander::AdvanceLanded()
     g_location->SpawnEntities(m_pos, m_id.GetTeamId(), unitId, Entity::TypeLaserTroop, numToSpawn, g_zeroVector, 0);
 
     Vector3 offset(0.0f, 0.0f, syncsfrand(200.0f));
-    unit->SetWayPoint(m_pos + m_front * 750.0f + offset);
+    unit->SetWayPoint(AsLegacy(m_pos) + AsLegacy(m_front) * 750.0f + offset);
 
     m_spawnTimer = m_stats[StatRate];
   }
@@ -110,7 +110,7 @@ void Lander::Render(float predictionTime, int teamId)
   //
   // Work out our predicted position and orientation
 
-  Vector3 predictedPos = m_pos + m_vel * predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
 
   Vector3 entityUp = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
   Vector3 entityFront = m_front;

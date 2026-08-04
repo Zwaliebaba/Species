@@ -37,7 +37,7 @@ ResearchItem::ResearchItem()
 
   SetShape(g_resource->GetShape("ResearchItem.shp"));
 
-  m_front.RotateAroundY(frand(2.0f * M_PI));
+  AsLegacy(m_front).RotateAroundY(frand(2.0f * M_PI));
 
   m_end1 = m_shape->m_rootFragment->LookupMarker("MarkerGrab1");
   m_end2 = m_shape->m_rootFragment->LookupMarker("MarkerGrab2");
@@ -66,18 +66,18 @@ void ResearchItem::SetDetail(int _detail)
 
 bool ResearchItem::Advance()
 {
-  if (m_vel.Mag() > 1.0f)
+  if (AsLegacy(m_vel).Mag() > 1.0f)
   {
-    m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
     m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
-    m_vel *= (1.0f - SERVER_ADVANCE_PERIOD * 0.5f);
+    AsLegacy(m_vel) *= (1.0f - SERVER_ADVANCE_PERIOD * 0.5f);
 
     Matrix34 mat(m_front, g_upVector, m_pos);
     m_centrePos = m_shape->CalculateCentre(mat);
   }
   else
   {
-    m_vel.Zero();
+    AsLegacy(m_vel).Zero();
   }
 
   if (m_researchType > -1 && g_globalWorld->m_research->HasResearch(m_researchType) &&
@@ -145,10 +145,10 @@ void ResearchItem::Render(float _predictionTime)
   rotateAround.RotateAroundZ(g_gameTime * 0.7f);
   rotateAround.Normalise();
 
-  m_front.RotateAround(rotateAround * g_advanceTime);
+  AsLegacy(m_front).RotateAround(rotateAround * g_advanceTime);
   m_up.RotateAround(rotateAround * g_advanceTime);
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   Matrix34 mat(m_front, m_up, predictedPos);
 
   m_shape->Render(0.0f, mat);
@@ -272,15 +272,15 @@ void ResearchItem::RenderAlphas(float _predictionTime)
     glBegin(GL_QUADS);
     glColor4f(0.1f, 0.2f, 0.8f, alpha);
     glTexCoord2i(0, 0);
-    glVertex3fv((m_pos + Vector3(0, -50, 0) - camRight * w).GetData());
+    glVertex3fv((AsLegacy(m_pos) + Vector3(0, -50, 0) - camRight * w).GetData());
     glTexCoord2i(0, 1);
-    glVertex3fv((m_pos + Vector3(0, -50, 0) + camRight * w).GetData());
+    glVertex3fv((AsLegacy(m_pos) + Vector3(0, -50, 0) + camRight * w).GetData());
 
     glColor4f(0.1f, 0.2f, 0.8f, 0.0f);
     glTexCoord2i(1, 1);
-    glVertex3fv((m_pos + Vector3(0, 1000, 0) + camRight * w).GetData());
+    glVertex3fv((AsLegacy(m_pos) + Vector3(0, 1000, 0) + camRight * w).GetData());
     glTexCoord2i(1, 0);
-    glVertex3fv((m_pos + Vector3(0, 1000, 0) - camRight * w).GetData());
+    glVertex3fv((AsLegacy(m_pos) + Vector3(0, 1000, 0) - camRight * w).GetData());
     glEnd();
 
     w *= 0.3f;
@@ -288,15 +288,15 @@ void ResearchItem::RenderAlphas(float _predictionTime)
     glBegin(GL_QUADS);
     glColor4f(0.1f, 0.2f, 0.8f, alpha);
     glTexCoord2i(0, 0);
-    glVertex3fv((m_pos + Vector3(0, -50, 0) - camRight * w).GetData());
+    glVertex3fv((AsLegacy(m_pos) + Vector3(0, -50, 0) - camRight * w).GetData());
     glTexCoord2i(0, 1);
-    glVertex3fv((m_pos + Vector3(0, -50, 0) + camRight * w).GetData());
+    glVertex3fv((AsLegacy(m_pos) + Vector3(0, -50, 0) + camRight * w).GetData());
 
     glColor4f(0.1f, 0.2f, 0.8f, 0.0f);
     glTexCoord2i(1, 1);
-    glVertex3fv((m_pos + Vector3(0, 1000, 0) + camRight * w).GetData());
+    glVertex3fv((AsLegacy(m_pos) + Vector3(0, 1000, 0) + camRight * w).GetData());
     glTexCoord2i(1, 0);
-    glVertex3fv((m_pos + Vector3(0, 1000, 0) - camRight * w).GetData());
+    glVertex3fv((AsLegacy(m_pos) + Vector3(0, 1000, 0) - camRight * w).GetData());
     glEnd();
   }
 
@@ -363,7 +363,7 @@ bool ResearchItem::IsInView()
   if (Building::IsInView())
     return true;
 
-  if (g_camera->PosInViewFrustum(m_pos + Vector3(0, g_camera->GetPos().y, 0)))
+  if (g_camera->PosInViewFrustum(AsLegacy(m_pos) + Vector3(0, g_camera->GetPos().y, 0)))
   {
     return true;
   }

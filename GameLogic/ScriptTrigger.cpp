@@ -95,7 +95,7 @@ bool ScriptTrigger::Advance()
           }
           else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
           {
-            float camDistance = (g_camera->GetPos() - m_pos).Mag();
+            float camDistance = (g_camera->GetPos() - AsLegacy(m_pos)).Mag();
             Vector3 camVel = g_camera->GetVel();
             bool camInteractive = g_camera->IsInteractive();
 
@@ -106,7 +106,7 @@ bool ScriptTrigger::Advance()
           }
           else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
           {
-            float camDistance = (g_camera->GetPos() - m_pos).Mag();
+            float camDistance = (g_camera->GetPos() - AsLegacy(m_pos)).Mag();
             Vector3 camVel = g_camera->GetVel();
             bool camInteractive = g_camera->IsInteractive();
             bool inView = RaySphereIntersection(g_camera->GetPos(), g_camera->GetFront(), m_pos, m_range);
@@ -171,8 +171,8 @@ void ScriptTrigger::RenderAlphas(float predictionTime)
     RenderSphere(m_pos, m_range, colour);
     RenderSphere(m_pos, m_range, colour);
 
-    g_editorFont.DrawText3DCentre(m_pos + Vector3(0, 30, 0), 10, "%s", m_scriptFilename);
-    g_editorFont.DrawText3DCentre(m_pos + Vector3(0, 20, 0), 10, "%d", m_triggered);
+    g_editorFont.DrawText3DCentre(AsLegacy(m_pos) + Vector3(0, 30, 0), 10, "%s", m_scriptFilename);
+    g_editorFont.DrawText3DCentre(AsLegacy(m_pos) + Vector3(0, 20, 0), 10, "%d", m_triggered);
   }
 };
 

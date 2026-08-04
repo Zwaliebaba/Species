@@ -208,7 +208,7 @@ bool SpaceInvader::Advance(Unit* _unit)
   {
     targetPos += _unit->GetFormationOffset(Unit::FormationAirstrike, m_formationIndex);
 
-    m_vel = (targetPos - m_pos) / SERVER_ADVANCE_PERIOD;
+    m_vel = (targetPos - AsLegacy(m_pos)) / SERVER_ADVANCE_PERIOD;
     m_pos = targetPos;
 
     m_front = airstrikeUnit->m_front;
@@ -219,10 +219,10 @@ bool SpaceInvader::Advance(Unit* _unit)
 
   if (m_armed)
   {
-    float distToTarget = (m_pos - airstrikeUnit->m_attackPosition).Mag();
+    float distToTarget = (AsLegacy(m_pos) - airstrikeUnit->m_attackPosition).Mag();
     if (distToTarget < 90.0f)
     {
-      Grenade* weapon = new Grenade(m_pos - g_upVector * 12.0f, m_front, m_vel.Mag());
+      Grenade* weapon = new Grenade(AsLegacy(m_pos) - g_upVector * 12.0f, m_front, AsLegacy(m_vel).Mag());
       weapon->m_type = EffectThrowableAirstrikeBomb;
       weapon->m_life = 1.5f;
       weapon->m_power = 50.0f;
@@ -277,7 +277,7 @@ void SpaceInvader::ListSoundEvents(std::vector<const char*>* _list)
 
 void SpaceInvader::Render(float _predictionTime)
 {
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   glDisable(GL_TEXTURE_2D);
 
 #ifdef DEBUG_RENDER_ENABLED

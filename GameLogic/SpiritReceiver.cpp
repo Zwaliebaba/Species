@@ -62,8 +62,8 @@ bool ReceiverBuilding::IsInView()
 
   if (spiritLink)
   {
-    Vector3 midPoint = (spiritLink->m_centrePos + m_centrePos) / 2.0f;
-    float radius = (spiritLink->m_centrePos - m_centrePos).Mag() / 2.0f;
+    Vector3 midPoint = (AsLegacy(spiritLink->m_centrePos) + AsLegacy(m_centrePos)) / 2.0f;
+    float radius = (AsLegacy(spiritLink->m_centrePos) - AsLegacy(m_centrePos)).Mag() / 2.0f;
     radius += m_radius;
     return (g_camera->SphereInViewFrustum(midPoint, radius));
   }
@@ -554,7 +554,7 @@ void SpiritProcessor::RenderAlphas(float _predictionTime)
   {
     UnprocessedSpirit* spirit = m_floatingSpirits[i];
     Vector3 pos = spirit->m_pos;
-    pos += spirit->m_vel * _predictionTime;
+    pos += AsLegacy(spirit->m_vel) * _predictionTime;
     pos += spirit->m_hover * _predictionTime;
     float life = spirit->GetLife();
     RenderUnprocessedSpirit(pos, life);
@@ -652,14 +652,14 @@ bool SpiritReceiver::Advance()
       UnprocessedSpirit* spirit = processor->m_floatingSpirits[i];
       if (spirit->m_state == UnprocessedSpirit::StateUnprocessedFloating)
       {
-        Vector3 themToUs = (m_pos - spirit->m_pos);
+        Vector3 themToUs = (AsLegacy(m_pos) - AsLegacy(spirit->m_pos));
         float distance = themToUs.Mag();
         Vector3 targetPos = m_pos;
         if (distance < 100.0f)
         {
           float fraction = 1.0f - distance / 100.0f;
           targetPos += Vector3(0, 100.0f * fraction, 0);
-          themToUs = targetPos - spirit->m_pos;
+          themToUs = targetPos - AsLegacy(spirit->m_pos);
           distance = themToUs.Mag();
         }
 
@@ -675,7 +675,7 @@ bool SpiritReceiver::Advance()
           float fraction = 1.0f - distance / 200.0f;
           fraction *= fractionOccupied;
           themToUs.SetLength(20.0f * fraction);
-          spirit->m_vel += themToUs * SERVER_ADVANCE_PERIOD;
+          AsLegacy(spirit->m_vel) += themToUs * SERVER_ADVANCE_PERIOD;
         }
       }
     }
@@ -797,7 +797,7 @@ UnprocessedSpirit::UnprocessedSpirit()
 
 bool UnprocessedSpirit::Advance()
 {
-  m_vel *= 0.9f;
+  AsLegacy(m_vel) *= 0.9f;
 
   //
   // Make me float around slowly
@@ -859,8 +859,8 @@ bool UnprocessedSpirit::Advance()
 
   Vector3 oldPos = m_pos;
 
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
-  m_pos += m_hover * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += m_hover * SERVER_ADVANCE_PERIOD;
   float worldSizeX = g_location->m_landscape.GetWorldSizeX();
   float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
   if (m_pos.x < 0.0f)

@@ -30,7 +30,7 @@ Snow::Snow()
 
 bool Snow::Advance()
 {
-  m_vel *= 0.9f;
+  AsLegacy(m_vel) *= 0.9f;
 
   //
   // Make me float around slowly
@@ -70,8 +70,8 @@ bool Snow::Advance()
 
   Vector3 oldPos = m_pos;
 
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
-  m_pos += m_hover * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += m_hover * SERVER_ADVANCE_PERIOD;
   float worldSizeX = g_location->m_landscape.GetWorldSizeX();
   float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
   if (m_pos.x < 0.0f)
@@ -100,7 +100,7 @@ void Snow::Render(float _predictionTime)
 {
   _predictionTime -= SERVER_ADVANCE_PERIOD;
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   predictedPos += m_hover * _predictionTime;
 
   float size = 20.0f;

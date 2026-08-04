@@ -74,7 +74,7 @@ class NewLocationButton : public SpeciesButton
       strlwr(loc->m_missionFilename);
       strcpy(loc->m_name, s_locationName);
       loc->m_available = true;
-      loc->m_pos.Set(-96.25, -274.02, 75.16);
+      AsLegacy(loc->m_pos).Set(-96.25, -274.02, 75.16);
       g_globalWorld->AddLocation(loc);
 
       //

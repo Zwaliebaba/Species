@@ -127,23 +127,23 @@ void Armour::AdvanceToTargetPos()
   //
   // Turn to face our waypoint
 
-  Vector3 toTarget = m_wayPoint - m_pos;
+  Vector3 toTarget = m_wayPoint - AsLegacy(m_pos);
   toTarget.HorizontalAndNormalise();
-  float angle = acosf(toTarget * m_front);
+  float angle = acosf(toTarget * AsLegacy(m_front));
 
-  if ((m_wayPoint - m_pos).Mag() > 10.0f)
+  if ((m_wayPoint - AsLegacy(m_pos)).Mag() > 10.0f)
   {
-    Vector3 rotation = m_front ^ toTarget;
+    Vector3 rotation = AsLegacy(m_front) ^ toTarget;
     float rotateSpeed = angle * 0.05f;
     rotation.SetLength(rotateSpeed);
-    m_front.RotateAround(rotation);
-    m_front.Normalise();
+    AsLegacy(m_front).RotateAround(rotation);
+    AsLegacy(m_front).Normalise();
   }
 
   //
   // Move towards waypoint
 
-  toTarget = m_wayPoint - m_pos;
+  toTarget = m_wayPoint - AsLegacy(m_pos);
   toTarget.y = 0.0f;
   float distance = toTarget.Mag();
   if (distance > 100.0f && angle < 1.0f)
@@ -168,7 +168,7 @@ void Armour::AdvanceToTargetPos()
   // Hover above the ground
 
   Vector3 oldPos = m_pos;
-  m_pos += m_front * m_speed * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += AsLegacy(m_front) * m_speed * SERVER_ADVANCE_PERIOD;
   PushFromObstructions(m_pos);
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   if (m_pos.y <= landHeight)
@@ -180,9 +180,9 @@ void Armour::AdvanceToTargetPos()
     Vector3 landUp = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
     m_up = m_up * (1.0f - factor) + landUp * factor;
 
-    float distTravelled = (m_pos - oldPos).Mag();
+    float distTravelled = (AsLegacy(m_pos) - oldPos).Mag();
     if (distTravelled > m_speed * SERVER_ADVANCE_PERIOD)
-      m_pos = oldPos + (m_pos - oldPos).SetLength(m_speed * SERVER_ADVANCE_PERIOD);
+      m_pos = oldPos + (AsLegacy(m_pos) - oldPos).SetLength(m_speed * SERVER_ADVANCE_PERIOD);
   }
   else
   {
@@ -196,7 +196,7 @@ void Armour::AdvanceToTargetPos()
     m_up = m_up * (1.0f - factor) + landUp * factor;
   }
 
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
 }
 
 void Armour::DetectCollisions()
@@ -216,7 +216,7 @@ void Armour::DetectCollisions()
     {
       Entity* entity = g_location->GetEntity(neighbours[speciesRandom() % numFound]);
       DEBUG_ASSERT(entity);
-      Vector3 toNeighbour = m_pos - entity->m_pos;
+      Vector3 toNeighbour = AsLegacy(m_pos) - AsLegacy(entity->m_pos);
       toNeighbour.y = 0.0f;
       toNeighbour.Normalise();
       escapeVector += toNeighbour;
@@ -225,7 +225,7 @@ void Armour::DetectCollisions()
   }
 
   if (collisionDetected)
-    m_wayPoint = m_pos + escapeVector * 40.0f;
+    m_wayPoint = AsLegacy(m_pos) + escapeVector * 40.0f;
 }
 
 bool Armour::Advance(Unit* _unit)
@@ -241,15 +241,15 @@ bool Armour::Advance(Unit* _unit)
   //
   // Create some smoke
 
-  float velocity = m_vel.Mag();
+  float velocity = AsLegacy(m_vel).Mag();
   int numSmoke = 1 + static_cast<int>(velocity / 20.0f);
   for (int i = 0; i < numSmoke; ++i)
   {
-    Vector3 right = m_up ^ m_front;
+    Vector3 right = m_up ^ AsLegacy(m_front);
     Vector3 vel = m_front;
     vel.RotateAround(m_up * syncfrand(2.0f * M_PI));
     vel.SetLength(syncfrand(5.0f));
-    Vector3 pos = m_pos + vel * 2;
+    Vector3 pos = AsLegacy(m_pos) + vel * 2;
     pos.y += 3.0f;
     float size = 50.0f + (syncrand() % 50);
     g_particleSystem->CreateParticle(pos, vel, Particle::TypeMissileTrail, size);
@@ -260,7 +260,7 @@ bool Armour::Advance(Unit* _unit)
 
   if (m_conversionPoint != g_zeroVector)
   {
-    float distance = (m_conversionPoint - m_pos).Mag();
+    float distance = (m_conversionPoint - AsLegacy(m_pos)).Mag();
     if (distance < 50.0f && m_numPassengers > 0)
     {
       // We are close and need to unload our passengers
@@ -282,7 +282,7 @@ void Armour::SetOrders(const Vector3& _orders)
 {
   m_newOrdersTimer = 0.0f;
 
-  float distance = (_orders - m_pos).Mag();
+  float distance = (_orders - AsLegacy(m_pos)).Mag();
 
   if (distance > 50.0f)
     SetConversionPoint(_orders);
@@ -425,7 +425,7 @@ void Armour::SetMissileTarget( Vector3 const &_startRay, Vector3 const &_rayDir 
     Entity *entity = g_location->GetEntity( id );
     if( entity )
     {
-        m_missileTarget = entity->m_pos+entity->m_centrePos;
+        m_missileTarget = AsLegacy(entity->m_pos)+AsLegacy(entity->m_centrePos);
         return;
     }
 
@@ -452,9 +452,9 @@ Vector3 Armour::GetMissileTarget()
 void Armour::LaunchMissile()
 {
     Missile *missile = new Missile();
-    missile->m_pos = m_pos + Vector3(0,30,0);
+    missile->m_pos = AsLegacy(m_pos) + Vector3(0,30,0);
 
-    Vector3 front = (m_front + m_up).Normalise();
+    Vector3 front = (AsLegacy(m_front) + m_up).Normalise();
     Vector3 right = front ^ g_upVector;
     Vector3 up = (right ^ front).Normalise();
     front = (up ^ right).Normalise();
@@ -484,7 +484,7 @@ void Armour::Render(float _predictionTime)
   //
   // Work out our predicted position
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   // predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
   // predictedPos.y = max( predictedPos.y, 0.0f );
   predictedPos.y += sinf(g_gameTime + m_id.GetUniqueId()) * 2;

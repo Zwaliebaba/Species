@@ -66,8 +66,8 @@ bool PowerBuilding::IsInView()
 
   if (powerLink)
   {
-    Vector3 midPoint = (powerLink->m_centrePos + m_centrePos) / 2.0f;
-    float radius = (powerLink->m_centrePos - m_centrePos).Mag() / 2.0f;
+    Vector3 midPoint = (AsLegacy(powerLink->m_centrePos) + AsLegacy(m_centrePos)) / 2.0f;
+    float radius = (AsLegacy(powerLink->m_centrePos) - AsLegacy(m_centrePos)).Mag() / 2.0f;
     radius += m_radius;
 
     return (g_camera->SphereInViewFrustum(midPoint, radius));
@@ -434,7 +434,7 @@ void PylonStart::RenderAlphas(float _predictionTime)
     Building* req = g_location->GetBuilding(m_reqBuildingId);
     if (req)
     {
-      RenderArrow(m_pos + Vector3(0, 50, 0), req->m_pos + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
+      RenderArrow(AsLegacy(m_pos) + Vector3(0, 50, 0), AsLegacy(req->m_pos) + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
     }
   }
 #endif

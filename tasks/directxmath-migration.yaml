@@ -1166,7 +1166,35 @@ tasks:
         EntityLeg.h 12, InsertionSquad.h 10, Team.cpp 7, Citizen.h 7, Officer.h 7,
         Engineer.h 6, Ai.h 5, EntityGrid.cpp 5, Team.h 3, LaserTrooper.h 2
 
-      STILL TO REPAIR: the 456 external sites, plus the virtual OVERRIDES that
+      THE EXTERNAL REPAIRS ARE DONE: about 480 lines across 50 files, wrapped in
+      AsLegacy. Applied by script and then corrected by hand, because two things
+      a script gets wrong here are worth recording:
+
+        A DECLARATION IN THE PAIRED HEADER SHADOWS JUST AS WELL AS ONE IN THE
+        .CPP. The first attempt looked only at the file itself and wrapped 137
+        lines of Species/Camera.cpp -- every one of them Camera's OWN m_pos and
+        m_vel, declared in Camera.h. Nineteen more files had the same shape.
+
+        RESOLVING THE CONTENDED NAMES BY FUNCTION SCOPE DOES NOT WORK EITHER.
+        The second attempt tracked which class each definition belonged to and
+        was wrong in a different direction, wrapping genuine legacy members
+        reached through a pointer -- `vertex1.m_pos` inside a Water method --
+        and producing `m_nodes[i].AsLegacy(m_pos)`, which is not even syntax.
+
+      So the rule this settled on is check_containers.py's, arrived at the same
+      way: SKIP A CONTENDED NAME RATHER THAN GUESS, and do those files by hand.
+      Only one file genuinely needed it -- Virii.cpp, where Virii::m_pos is
+      Entity's converted member and ViriiHistory::m_pos is the file's own legacy
+      one, both spelled m_pos, seventeen lines apart in places.
+
+      A wrong wrap is a COMPILE error and never a silent one, which is what made
+      scripting acceptable at this scale. Two guards ran over the result: a grep
+      for `.AsLegacy(` and `->AsLegacy(`, which catches a wrap that swallowed
+      part of an object chain (4 found, all in Spider and Tripod, all where an
+      array index broke the chain), and a paren-balance check on every changed
+      line (0 found).
+
+      STILL TO REPAIR: the virtual OVERRIDES that
       moved when Entity's signatures did. Those are in files this task does not
       own and were not on the 456 list, because an override is found by neither
       a type grep nor a member grep:
