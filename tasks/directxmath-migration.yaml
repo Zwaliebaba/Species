@@ -384,7 +384,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       This is a DIFFERENT ALGORITHM, not a reimplementation — the current one
       projects into plane space and does a triangle-area point test with a
@@ -393,6 +393,25 @@ tasks:
       collision test, so the visible effect is which shape fragment a click or
       a projectile registers against. State the new contract in the tests
       rather than trying to reproduce the old one.
+      LANDED. CI run 368 green at 4ccb3e4, 143 tests where there were 132 --
+      the seven new ones were discovered and ran, checked in the log rather
+      than inferred from a green tick.
+
+      136 lines out, 57 in. All six helpers went with SphereTriangleIntersection
+      and none had a caller outside it. PointSegDist2D was the one that could
+      not go: it lost this caller but keeps the ones in Weapons.cpp and
+      RoutingSystem.cpp. The Matrix34 include and forward declaration went too,
+      because nothing in MathUtils uses a matrix any more.
+
+      WHAT A REVIEWER SHOULD BE SUSPICIOUS OF: this is a different algorithm.
+      The old routine projected into plane space and ran a triangle-area point
+      test with a 1.0001f fudge factor; BoundingSphere::Intersects does not.
+      Edge and near-degenerate answers can differ. The tests state the new
+      contract rather than reproducing the old one, which is the honest thing to
+      do and also means they cannot prove the change is invisible. Its one
+      caller is Shape.cpp's collision test, so what the T13 smoke test should
+      watch for is clicks and projectiles registering against the wrong shape
+      fragment.
 
   - id: T6
     title: Rebuild the sphere intersection routines on native types
@@ -481,7 +500,33 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
+    notes: |
+      LANDED. CI run 368 green at 4ccb3e4, four new tests discovered and
+      passing. MathUtils.cpp is 393 lines and MathUtils.h is 104, down from 614
+      and 137 when this plan started -- so T4, T5 and T8 between them removed
+      about a third of the geometry library without converting a single call
+      site.
+
+      THE DEGENERATE CASE WAS A DECISION, not a translation, and it is the part
+      worth re-reading if this ever looks wrong. Parallel rays have no unique
+      closest approach. The old code asked RayPlaneIntersection, got back a
+      status code meaning "parallel, no intersection", IGNORED IT -- the two
+      result variables were assigned and never read -- and left the
+      out-parameters holding whatever the caller passed in. XMPlaneIntersectLine
+      answers with QNaN instead.
+
+      Propagating that NaN would put it into Tripod's leg positions and from
+      there into GenerateSyncValue, where it surfaces as a sync assert minutes
+      later in a Debug build and nowhere else. So the NaN is tested for and the
+      out-parameters are left alone. The test asserts "no NaN escapes" rather
+      than a distance, because there is no correct distance to assert.
+
+      Also worth recording: the plane normals differ in sign from the old ones.
+      Plane's three-point constructor took (a-b) x (a-c); XMPlaneFromPoints
+      takes (P2-P1) x (P3-P1). Both the normal and d flip together, so it is the
+      same plane and the intersection point is unchanged -- checked by reading,
+      and the perpendicular-skew-lines test would catch it if it were not.
 
   - id: T9
     title: Move the wire types to XMFLOAT3
