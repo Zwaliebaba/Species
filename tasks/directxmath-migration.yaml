@@ -612,11 +612,38 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
 
   # ------------------------------------------------------------------
   # Wave 3 — NeuronClient
   # ------------------------------------------------------------------
+    notes: |
+      LANDED. CI run 388 green at eacc737, after run 386 failed.
+
+      m_direction and SetDirection are DELETED rather than converted — T2's
+      finding, handed here. Declared, assigned by a setter with zero callers,
+      never written to or read from a byte stream. Dead state on a wire-format
+      class.
+
+      T2's byte pins passed unmodified, which is the claim this task rests on:
+      XMFLOAT3 has Vector3's layout and the packet did not move.
+
+      TWO CALL SITES OUTSIDE THIS TASK'S FILES had to change, both found by the
+      member-name sweep rather than by grepping for the type:
+      Location.cpp's `(m_mousePos - centre).Normalise()` and ServerUpdates.cpp's
+      `GetWorldPos() != g_zeroVector`. Both convert BACK to Vector3 rather than
+      going native, deliberately — the first is simulation code where
+      Vector3::Normalise's (0,0,1) zero-length answer differs from
+      XMVector3Normalize's and a mouse position exactly on a unit centre is
+      reachable, and the second is an assert meaning Vector3's per-component
+      NearlyEquals. Both carry a comment; both convert properly in T18 and T23.
+
+      A THIRD FAILURE MODE, which cost run 386 and belongs on the sweep list
+      beside the other two: replacing a header's include removes what it used to
+      supply transitively. NetworkUpdate.h stopped including Vector3.h and seven
+      lines of NetworkUpdateTests.cpp stopped compiling. Nothing in the changed
+      files is wrong and no grep over them would show it — the breakage is in a
+      file the task does not touch. Expect one per header whose includes change.
 
   - id: T10
     title: Convert the client renderers, and fix Shape's transposed matrix reading
@@ -670,6 +697,48 @@ tasks:
       ConvertToOpenGLFormat is the SHAPE being removed, not a signature to
       modernise: renaming it ConvertToNativeFormat would bake the same
       assumption in with a better name. See NeuronMath.h.
+
+      PARTIALLY DONE, LEFT in_progress DELIBERATELY. 2026-08-04.
+
+      WHAT LANDED: the first acceptance criterion, by deletion rather than
+      conversion. Matrix34::GetOr, Matrix34::InverseMultiplyVector and
+      Matrix33::InverseMultiplyVector are gone, along with the two
+      commented-out blocks in Shape.cpp that were their only appearance
+      anywhere in the tree. NeuronMath.h and Matrix33.h are corrected: I had
+      described GetOr as carrying the transpose "every time it is called", and
+      it is never called.
+
+      WHAT REMAINS: the actual conversion of the eleven renderer files, roughly
+      180 occurrences, of which Shape.h and Shape.cpp are 99.
+
+      WHY IT STOPPED HERE RATHER THAN BEING FORCED THROUGH. ShapeFragment's
+      math members are PUBLIC and read from GameLogic and Species —
+      m_transform, m_angVel, m_vel, m_centre. A member-and-operator sweep finds
+      about twenty external sites that stop compiling the moment those become
+      XMFLOAT3, in files owned by T14 through T20 and T22, all of which sit
+      behind the T13 smoke-test gate. Converting them here would be six other
+      tasks' work done out of order and unreviewed, in the commit least able to
+      carry it.
+
+      This is T12's defect in a milder form: a task scoped by DIRECTORY over a
+      type whose surface is public across directories. T12 could not be done at
+      all; this one can, but only by also owning its consumers.
+
+      THE DECISION IS THE OWNER'S, because both answers are defensible:
+
+        (a) T10 owns the ~20 external fix-ups, as T9 did for its two. Keeps
+            T10 before the T13 gate, which is where a wrong matrix convention
+            is meant to be caught — and Shape is where matrices are actually
+            used, so there is a real argument for not gating without it.
+
+        (b) Split T10: the renderer-internal conversion now, Shape's public
+            surface into a new task after the GameLogic wave. Smaller commits,
+            but the T13 gate then smoke-tests a renderer whose matrices have
+            not moved, which is most of what that gate is for.
+
+      Recommend (a). The twenty sites are mechanical, the sweep that finds them
+      is written down, and (b) weakens the only verification this migration has.
+
 
   - id: T11
     title: Convert the sound subsystem's positional math
