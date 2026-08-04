@@ -211,6 +211,70 @@ def blank_block_comments(text):
     return "".join(out)
 
 
+LOCAL_DECL = re.compile(
+    r"^\s*(?:const\s+|static\s+)*(?:DirectX::)?"
+    r"(?:XMFLOAT4X4|XMFLOAT3X3|XMFLOAT3|XMFLOAT2|XMVECTOR|XMMATRIX|Matrix34|Matrix33|Vector3|Vector2)\s+"
+    r"(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;({,]"
+)
+
+
+def stale_after_rename(rel, text):
+    """A math local USED ABOVE THE LINE THAT DECLARES IT, which in this
+    migration means a rename that left a use behind.
+
+    T15 renamed Triffid::Render's `mat` to `headMatrix` so the pre-wobble and
+    post-wobble matrices could be told apart, and missed the stem line -- which
+    then bound to the NEW `mat` declared forty lines further down and reached
+    CI as an undeclared identifier. Every other rule in this tool is about a
+    type that changed; this one is about a name that moved, and it is the only
+    failure mode here the compiler was catching alone.
+
+    Two narrowings, both measured against the real bug rather than guessed:
+    a line that itself declares the name is not a use of the later one, and a
+    name declared TWICE in a body is two variables in two scopes, so it is
+    skipped -- the same contended-name discipline as everywhere else. With
+    both, the tree reports the Triffid bug and nothing else; with neither, four
+    correct lines are accused.
+    """
+    problems = []
+    lines = text.splitlines()
+    depth = 0
+    body = None
+    for number, raw in enumerate(lines, 1):
+        line = strip_comment(raw)
+        opens, closes = line.count("{"), line.count("}")
+        if depth == 0 and opens and body is None:
+            body = []
+        if body is not None:
+            body.append((number, line))
+        depth += opens - closes
+        if body is None or depth != 0:
+            continue
+
+        declared = {}
+        for at, l in body:
+            found = LOCAL_DECL.match(l)
+            if found:
+                declared.setdefault(found.group(1), at)
+
+        for name, at in declared.items():
+            any_decl = re.compile(
+                r"^\s*(?:[A-Za-z_][A-Za-z0-9_:<>]*\s*[*&]?\s+)+[A-Za-z0-9_,\s*&]*\b%s\b\s*[=;,)]" % re.escape(name))
+            if sum(1 for _, l in body if any_decl.match(l)) > 1:
+                continue
+            use = re.compile(r"(?<![.>\w])%s\b(?!\s*[:.]\w)" % re.escape(name))
+            for number_of_use, l in body:
+                if number_of_use >= at:
+                    break
+                if use.search(l):
+                    problems.append((rel, number_of_use,
+                                     "%s is used here but not declared until line %d -- a rename that left a use "
+                                     "behind, now binding to a different local" % (name, at), l.strip()))
+                    break
+        body = None
+    return problems
+
+
 def main():
     native_members = {}   # member name -> (kind, first declaring file)
     legacy_members = set()
@@ -342,6 +406,9 @@ def main():
         xmvector_locals = set(XMVECTOR_LOCAL.findall(text))
         xmvector_locals -= set(NATIVE_VECTOR_LOCAL.findall(text)) | legacy_vector_locals
         xmvector_locals -= set(native_members) | legacy_members
+
+        if path.suffix == ".cpp":
+            problems.extend(stale_after_rename(rel, text))
 
         for number, raw in enumerate(text.splitlines(), 1):
             line = strip_comment(raw)

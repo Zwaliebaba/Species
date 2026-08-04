@@ -181,8 +181,10 @@ void Triffid::Render(float _predictionTime)
 
   // RenderArrow( m_pos, headPos, 1.0f, RGBAColour(100,0,0,255) );
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const stemPos = m_stem->GetWorldMatrix(mat).pos;
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam. The
+  // PRE-wobble head, as the legacy code had it: the stem line is drawn before
+  // the damage flicker scales a row.
+  DirectX::XMFLOAT3 const stemPos = m_stem->GetWorldMatrix(headMatrix).pos;
 
   // SetLength; rendering only, so this takes the native normalise.
   DirectX::XMVECTOR const midPoint = DirectX::XMVectorMultiplyAdd(
@@ -220,19 +222,19 @@ void Triffid::Render(float _predictionTime)
   // The wobble above scales a basis row IN PLACE, and both the shape below and
   // the launch marker after it use the wobbled matrix, exactly as the legacy
   // code did with its single mutable Matrix34.
-  DirectX::XMFLOAT4X4 mat;
-  DirectX::XMStoreFloat4x4(&mat, head);
+  DirectX::XMFLOAT4X4 wobbledHead;
+  DirectX::XMStoreFloat4x4(&wobbledHead, head);
 
   glEnable(GL_NORMALIZE);
 
-  m_shape->Render(_predictionTime, mat);
+  m_shape->Render(_predictionTime, wobbledHead);
 
   if (m_triggered && GetHighResTime() > m_timerSync - m_reloadTime * 0.25f)
   {
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, and
     // this one wants the marker's whole basis: the egg is drawn with the
     // launch point's UP as its front and its negated FRONT as its up.
-    Matrix34 const launchMat = m_launchPoint->GetWorldMatrix(mat);
+    Matrix34 const launchMat = m_launchPoint->GetWorldMatrix(wobbledHead);
     Shape* eggShape = g_resource->GetShape("TriffidEgg.shp");
 
     DirectX::XMFLOAT3 const eggFront = launchMat.u;

@@ -1472,6 +1472,22 @@ tasks:
       list, and it is the second time in this migration that a regex written to
       widen coverage silently narrowed it instead.
 
+      A THIRD ROUND, AND ITS ONE ERROR WAS A RENAME RATHER THAN A TYPE. Fixing
+      the Triffid wobble meant telling the pre-wobble head from the post-wobble
+      one, so `mat` became `headMatrix` -- and the stem line thirty lines above
+      kept saying `mat`, which then bound to the NEW `mat` declared forty lines
+      BELOW it. Every rule in check_math_types is about a type that changed;
+      this is a name that moved, and nothing in the tool had any view of it.
+
+      Closed, because it turns out to be cheap and precise: a math local used
+      ABOVE the line that declares it. Two narrowings, both measured rather
+      than guessed -- a line that itself declares the name is not a use of the
+      later one, and a name declared twice in a body is two variables in two
+      scopes and is skipped. With both, the tree reports the Triffid bug and
+      nothing else; with neither, four correct lines are accused. The two
+      variables are also just named apart now, headMatrix and wobbledHead,
+      which is what should have happened in the first place.
+
       AND ONE BEHAVIOUR CHANGE I INTRODUCED AND CAUGHT BY READING. Three
       SoulDestroyer blocks recompute front as right^up before building the
       basis; my first conversion passed the RAW m_front to
