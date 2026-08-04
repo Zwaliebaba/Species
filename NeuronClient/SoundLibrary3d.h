@@ -29,7 +29,7 @@ class SoundLibrary3d
     int m_numChannels; // Total number of channels including the music channel
     int m_sampleRate;
     int m_masterVolume;
-    DirectX::XMFLOAT3 m_listenerPos; // Records the most recent value passed into SetListenerPos
+    DirectX::XMFLOAT3 m_listenerPos{0.0f, 0.0f, 0.0f}; // Records the most recent value passed into SetListenerPos
 
     // This callback is called whenever SoundLibrary3d needs some more sound data for a certain channel.
     // The return value is true if some audio was written, or false if silence was written

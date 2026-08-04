@@ -124,7 +124,7 @@ class SoundSystem
     Profiler* m_eventProfiler;
     bool m_quitWithoutSave;
 
-    DirectX::XMFLOAT3 m_editorPos;
+    DirectX::XMFLOAT3 m_editorPos{0.0f, 0.0f, 0.0f};
     SoundInstanceId m_editorInstanceId;
 
     FastSlotMap<SoundInstance*> m_sounds; // All the sounds that want to play

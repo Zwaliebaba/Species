@@ -43,11 +43,11 @@ class SoftwareChannel
     unsigned int m_samplesInBuffer;
     bool m_containsSilence; // Updated in callback
 
-    unsigned int m_freq;     // Value recorded on previous call of SetChannelFrequency
-    float m_volume;          // Value recorded on previous call of SetChannelVolume
-    float m_minDist;         // Value recorded on previous call of SetChannelMinDist
-    DirectX::XMFLOAT3 m_pos; // Value recorded on previous call of SetChannelPosition
-    int m_3DMode;            // Value recorded on previous call of SetChannel3DMode
+    unsigned int m_freq;                       // Value recorded on previous call of SetChannelFrequency
+    float m_volume;                            // Value recorded on previous call of SetChannelVolume
+    float m_minDist;                           // Value recorded on previous call of SetChannelMinDist
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f}; // Value recorded on previous call of SetChannelPosition
+    int m_3DMode;                              // Value recorded on previous call of SetChannel3DMode
 
     float m_oldVolLeft;     // Volumes used last time this channel was mixed into
     float m_oldVolRight;    // the output buffer

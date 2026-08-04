@@ -17,9 +17,9 @@ class SoundLibrary3dSoftware : public SoundLibrary3d
     float* m_left; // Temp buffers used by mixer
     float* m_right;
 
-    DirectX::XMFLOAT3 m_listenerFront;
-    DirectX::XMFLOAT3 m_listenerUp;
-    DirectX::XMFLOAT3 m_listenerRight;
+    DirectX::XMFLOAT3 m_listenerFront{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_listenerUp{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_listenerRight{0.0f, 0.0f, 0.0f};
 
     void GetChannelData(float _duration);
     void ApplyDspFX(float _duration);

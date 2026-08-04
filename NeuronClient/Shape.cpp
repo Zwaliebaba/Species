@@ -410,7 +410,7 @@ void ShapeFragment::WriteToFile(FILE* _out) const
     fprintf(_out, "\tParentName: %s\n", m_parentName);
     fprintf(_out, "\tup:    %5.2f %5.2f %5.2f\n", m_transform.u.x, m_transform.u.y, m_transform.u.z);
     fprintf(_out, "\tfront: %5.2f %5.2f %5.2f\n", m_transform.f.x, m_transform.f.y, m_transform.f.z);
-    fprintf(_out, "\tpos: %.2f %.2f %.2f\n", m_transform.pos.x, m_transform.pos.y, m_transform.pos.z);
+    fprintf(_out, "\tpos: %.2f %.2f %.2f\n", m_transform._41, m_transform._42, m_transform._43);
 
     // Write out the positions
     fprintf(_out, "\tPositions: %d\n", m_numPositions);
@@ -1131,7 +1131,7 @@ void ShapeFragment::RenderMarkers(DirectX::XMFLOAT4X4 const& _rootTransform)
   for (i = 0; i < numMarkers; ++i)
   {
     ShapeMarker* marker = m_childMarkers[i].get();
-    DirectX::XMFLOAT4X4 mat = marker->GetWorldMatrix(_rootTransform);
+    Matrix34 mat = marker->GetWorldMatrix(_rootTransform);
     RenderArrow(mat.pos, mat.pos + mat.f * 20.0f, 2.0f);
     RenderArrow(mat.pos, mat.pos + mat.u * 10.0f, 2.0f);
     //		glLineWidth(2.0f);
@@ -1598,12 +1598,16 @@ bool Shape::ShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 const& _theTransform, Di
 
 DirectX::XMFLOAT3 Shape::CalculateCentre(DirectX::XMFLOAT4X4 const& _transform)
 {
-  DirectX::XMFLOAT3 centre;
+  // ZERO-INITIALISED DELIBERATELY. Vector3's default constructor zeroed and
+  // XMFLOAT3's does not, and CalculateCentre ACCUMULATES into this — reading an
+  // indeterminate value and adding to it would put garbage in every shape's
+  // centre. Any conversion that relied on Vector3() zeroing has to say so here.
+  DirectX::XMFLOAT3 centre(0.0f, 0.0f, 0.0f);
   int numFragments = 0;
 
   m_rootFragment->CalculateCentre(_transform, centre, numFragments);
 
-  centre /= (float)numFragments;
+  DirectX::XMStoreFloat3(&centre, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&centre), 1.0f / (float)numFragments));
 
   return centre;
 }

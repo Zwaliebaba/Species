@@ -129,8 +129,8 @@ class SoundInstance
     float m_loopDelayTimer;
     bool m_restartOccured;
 
-    DirectX::XMFLOAT3 m_pos;
-    DirectX::XMFLOAT3 m_vel;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
     std::vector<WorldObjectId*> m_objIds;
     WorldObjectId m_objId; // The selected objId from the list
 

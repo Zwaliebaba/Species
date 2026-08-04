@@ -22,9 +22,9 @@ class Shape;
 class RayPackage
 {
   public:
-    DirectX::XMFLOAT3 m_rayStart;
-    DirectX::XMFLOAT3 m_rayEnd;
-    DirectX::XMFLOAT3 m_rayDir;
+    DirectX::XMFLOAT3 m_rayStart{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_rayEnd{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_rayDir{0.0f, 0.0f, 0.0f};
     float m_rayLen;
 
     RayPackage(DirectX::XMFLOAT3 const& _start, DirectX::XMFLOAT3 const& _dir, float _length = 1e10)
@@ -45,7 +45,7 @@ class RayPackage
 class SpherePackage
 {
   public:
-    DirectX::XMFLOAT3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     float m_radius;
 
     SpherePackage(DirectX::XMFLOAT3 const& _pos, float _radius)
@@ -152,11 +152,11 @@ class ShapeFragment
     char* m_name;
     char* m_parentName;
     DirectX::XMFLOAT4X4 m_transform;
-    DirectX::XMFLOAT3 m_angVel;
-    DirectX::XMFLOAT3 m_vel;
+    DirectX::XMFLOAT3 m_angVel{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
     bool m_useCylinder; // If true then use cylinder hit check instead of sphere
-    DirectX::XMFLOAT3 m_centre;
+    DirectX::XMFLOAT3 m_centre{0.0f, 0.0f, 0.0f};
     float m_radius;
     float m_mostPositiveY;
     float m_mostNegativeY;

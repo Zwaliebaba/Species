@@ -22,10 +22,10 @@ struct SoundSource
     // blueprint type separately.
     int m_type;
 
-    DirectX::XMFLOAT3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
 
     // Read only by TriggerEntityEvent. TriggerBuildingEvent set the instance's
     // position and left its velocity as the blueprint had it, and this keeps
     // doing that.
-    DirectX::XMFLOAT3 m_vel;
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 };
