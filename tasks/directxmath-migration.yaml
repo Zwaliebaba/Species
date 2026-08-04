@@ -436,7 +436,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Fourteen caller files: Shape.cpp, GunTurret, ResearchItem, RadarDish,
       Location, GlobalWorld, Tree, Entity, StaticShape, Building,
@@ -465,7 +465,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Callers: NeuronClient/Shape.cpp, GameLogic/Landscape.cpp,
       GameLogic/LaserFence.cpp. Backface behaviour differs between Möller's
