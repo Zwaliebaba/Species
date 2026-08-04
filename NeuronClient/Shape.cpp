@@ -1122,10 +1122,6 @@ bool ShapeFragment::RayHit(RayPackage* _package, Matrix34 const& _transform, boo
   Matrix34 totalMatrix = m_transform * _transform;
   Vector3 centre = totalMatrix * m_centre;
 
-  //	Vector3 rayStart = m_transform.InverseMultiplyVector(_package->m_rayStart);
-  //	Vector3 rayDir = m_transform.GetOr().InverseMultiplyVector(_package->m_rayDir);
-  //	RayPackage package(rayStart, rayDir);
-
   // First do bounding sphere check
   if (m_radius > 0.0f && RaySphereIntersection(_package->m_rayStart, _package->m_rayDir, centre, m_radius, _package->m_rayLen))
   //		RaySphereIntersection(package.m_rayStart, package.m_rayDir,
@@ -1512,10 +1508,6 @@ void Shape::RenderMarkers(Matrix34 const& _transform)
 bool Shape::RayHit(RayPackage* _package, Matrix34 const& _transform, bool _accurate)
 {
 #ifndef EXPORTER_BUILD
-  //	Vector3 rayStart = _transform.InverseMultiplyVector(_package->m_rayStart);
-  //	Vector3 rayDir = _transform.GetOr().InverseMultiplyVector(_package->m_rayDir);
-  //	RayPackage package(rayStart, rayDir);
-
   //	bool rv = m_rootFragment->RayHit(&package, _transform);
   bool rv = m_rootFragment->RayHit(_package, _transform, _accurate);
   return rv;

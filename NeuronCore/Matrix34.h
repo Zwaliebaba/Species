@@ -103,8 +103,6 @@ class Matrix34
       return m_openGLFormat;
     }
 
-    Matrix33 GetOr() const { return Matrix33(r, u, f); }
-
     // TRANSITIONAL — see Vector3.h. T25 deletes this class and this seam with it.
     //
     // NO TRANSPOSE HERE, and that is not an oversight. Matrix34 already reads its
@@ -127,7 +125,6 @@ class Matrix34
       return result;
     }
 
-    Vector3 InverseMultiplyVector(Vector3 const&) const;
     void WriteToDebugStream();
 
     void Test();

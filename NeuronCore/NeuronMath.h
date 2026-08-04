@@ -58,10 +58,16 @@
 //                                     the above, so converting a Matrix33 to
 //                                     XMFLOAT3X3 transposes.
 //
-// Matrix34::GetOr() hands r, u and f straight into a Matrix33 constructor, so
-// the rotation transposes as it crosses that call. Every GetOr and
-// InverseMultiplyVector site in the tree is in NeuronClient/Shape.cpp, which is
-// the only reason this is a footnote rather than a plan of its own.
+// Matrix34::GetOr() used to hand r, u and f straight into a Matrix33
+// constructor, which transposed the rotation as it crossed. It is gone: its
+// only appearances in the tree were four COMMENTED-OUT lines in
+// NeuronClient/Shape.cpp, so the bridge between the two conventions was never
+// crossed by running code. GetOr and both InverseMultiplyVector overloads were
+// deleted with those lines in T10.
+//
+// The disagreement above therefore matters for the CONVERSIONS ONLY — it is
+// why Matrix33::ToNative transposes and Matrix34::ToNative does not — and not
+// for any behaviour the game has ever had.
 //
 // SECOND TRAP, same shape: in BOTH legacy classes `v * M` and `M * v` have
 // byte-identical bodies. The operand order is decorative today. Native
