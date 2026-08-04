@@ -251,6 +251,82 @@ namespace NeuronCoreTests
       }
   };
 
+  // The sphere routines, which directxmath-migration T6 rebuilt on XMVECTOR.
+  //
+  // RaySphereIntersection kept its geometric solution rather than becoming a
+  // BoundingSphere::Intersects call: that reports a distance, and fourteen
+  // caller files here want the intersection POINT and the surface NORMAL.
+  // SphereSphereIntersection did become one, because a bool is all it returns.
+  TEST_CLASS(SphereIntersectionTests)
+  {
+      static void AssertNearlyEqual(float _expected, float _actual)
+      {
+        float const tolerance = std::max(1e-5f, std::fabs(_expected) * 1e-5f);
+        Assert::AreEqual(_expected, _actual, tolerance);
+      }
+
+    public:
+      // A unit sphere of radius 2 at x=10, hit head-on from the origin. The near
+      // face is at x=8 and the normal there points back down the ray.
+      TEST_METHOD(ARayHitsTheNearFaceAndTheNormalPointsOutwards)
+      {
+        Vector3 pos, normal;
+        Assert::IsTrue(
+          RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f, 1e10f, &pos, &normal));
+
+        AssertNearlyEqual(8.0f, pos.x);
+        AssertNearlyEqual(0.0f, pos.y);
+        AssertNearlyEqual(-1.0f, normal.x);
+      }
+
+      TEST_METHOD(ARayPointingAwayFromTheSphereMisses)
+      {
+        Assert::IsFalse(RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(-1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f));
+      }
+
+      TEST_METHOD(ARayPassingBesideTheSphereMisses)
+      {
+        Assert::IsFalse(RaySphereIntersection(Vector3(0.0f, 50.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f));
+      }
+
+      // The cutoff is a world distance, and the near face is eight units out.
+      TEST_METHOD(TheRayLengthCutoffRejectsAHitBeyondIt)
+      {
+        Assert::IsTrue(RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f, 9.0f));
+        Assert::IsFalse(RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f, 7.0f));
+      }
+
+      // Asking for the normal WITHOUT the position. The body this replaces
+      // computed the normal as *pos - spherePos and so dereferenced pos whether
+      // or not the caller supplied one — a null dereference that no call site in
+      // the tree happens to reach, since the one caller wanting a normal
+      // (GameLogic/Tree.cpp) asks for both. The rewrite holds the hit point in a
+      // local, so the shape is safe rather than accidentally unreached.
+      TEST_METHOD(TheNormalCanBeAskedForWithoutThePosition)
+      {
+        Vector3 normal;
+        Assert::IsTrue(
+          RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f, 1e10f, nullptr, &normal));
+
+        AssertNearlyEqual(-1.0f, normal.x);
+      }
+
+      TEST_METHOD(SpheresThatOverlapIntersect)
+      {
+        Assert::IsTrue(SphereSphereIntersection(Vector3(0.0f, 0.0f, 0.0f), 5.0f, Vector3(8.0f, 0.0f, 0.0f), 5.0f));
+      }
+
+      TEST_METHOD(SpheresThatAreApartDoNot) { Assert::IsFalse(SphereSphereIntersection(Vector3(0.0f, 0.0f, 0.0f), 5.0f, Vector3(20.0f, 0.0f, 0.0f), 5.0f)); }
+
+      // Exactly touching counts as intersecting, which is what the <= in the
+      // routine this replaces did. Worth pinning: it is the kind of boundary a
+      // library swap silently flips.
+      TEST_METHOD(SpheresExactlyTouchingIntersect)
+      {
+        Assert::IsTrue(SphereSphereIntersection(Vector3(0.0f, 0.0f, 0.0f), 5.0f, Vector3(10.0f, 0.0f, 0.0f), 5.0f));
+      }
+  };
+
   // RayRayDist, which directxmath-migration T8 rebuilt on XMPlaneFromPoints and
   // XMPlaneIntersectLine. Deleting the Plane class and RayPlaneIntersection with
   // it left this the only routine in the tree that needs a plane at all, and its

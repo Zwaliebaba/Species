@@ -338,38 +338,36 @@ bool RayTriIntersection(Vector3 const& orig, Vector3 const& dir, Vector3 const& 
 bool RaySphereIntersection(Vector3 const& rayStart, Vector3 const& rayDir, Vector3 const& spherePos, float sphereRadius, float _rayLen, Vector3* pos,
                            Vector3* normal)
 {
-  Vector3 l = spherePos - rayStart;
+  DirectX::XMVECTOR const start = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(rayStart));
+  DirectX::XMVECTOR const direction = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(rayDir));
+  DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(spherePos));
 
-  // Find tca the distance along ray of point nearest to sphere centre.
-  // We'll call this point P
-  float tca = l * rayDir;
+  // Geometric solution, kept because BoundingSphere::Intersects reports a
+  // distance and this routine's callers want the point and the surface normal.
+  // The distance along the ray to the point nearest the sphere centre:
+  DirectX::XMVECTOR const toCentre = DirectX::XMVectorSubtract(centre, start);
+  float const tca = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toCentre, direction));
   if (tca < 0.0f)
     return false;
 
-  // Use Pythagoras now to find dist from P to sphere centre. Actually
-  // cheaper to calc dist sqrd and compare to radius sqrd
-  float radiusSqrd = sphereRadius * sphereRadius;
-  float lMagSqrd = l.MagSquared();
-  float d2 = lMagSqrd - (tca * tca);
-  if (d2 > radiusSqrd)
+  // Then Pythagoras for the distance from that point to the centre, squared so
+  // it can be compared against the radius without a root.
+  float const radiusSqrd = sphereRadius * sphereRadius;
+  float const distFromCentreSqrd = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(toCentre)) - (tca * tca);
+  if (distFromCentreSqrd > radiusSqrd)
     return false;
 
-  float thc = sqrtf(radiusSqrd - d2);
-  float t = tca - thc;
-
-  if (t < 0 || t > _rayLen)
+  float const t = tca - sqrtf(radiusSqrd - distFromCentreSqrd);
+  if (t < 0.0f || t > _rayLen)
     return false;
+
+  DirectX::XMVECTOR const hit = DirectX::XMVectorMultiplyAdd(direction, DirectX::XMVectorReplicate(t), start);
 
   if (pos)
-  {
-    *pos = rayStart + rayDir * t;
-  }
+    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*pos), hit);
 
   if (normal)
-  {
-    *normal = *pos - spherePos;
-    normal->Normalise();
-  }
+    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*normal), DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(hit, centre)));
 
   return true;
 }
@@ -377,9 +375,10 @@ bool RaySphereIntersection(Vector3 const& rayStart, Vector3 const& rayDir, Vecto
 
 bool SphereSphereIntersection(Vector3 const& _sphere1Pos, float _sphere1Radius, Vector3 const& _sphere2Pos, float _sphere2Radius)
 {
-  float distanceSqrd = (_sphere1Pos - _sphere2Pos).MagSquared();
-  float radiiSummed = _sphere1Radius + _sphere2Radius;
-  return (distanceSqrd <= radiiSummed * radiiSummed);
+  DirectX::BoundingSphere const sphere1(_sphere1Pos, _sphere1Radius);
+  DirectX::BoundingSphere const sphere2(_sphere2Pos, _sphere2Radius);
+
+  return sphere1.Intersects(sphere2);
 }
 
 
