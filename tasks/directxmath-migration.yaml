@@ -384,7 +384,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       This is a DIFFERENT ALGORITHM, not a reimplementation — the current one
       projects into plane space and does a triangle-area point test with a
