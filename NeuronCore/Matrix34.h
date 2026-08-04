@@ -110,6 +110,16 @@ class Matrix34
     // exactly the row-vector form XMVector3Transform implements, so the members
     // map straight onto the rows. Matrix33::ToNative DOES transpose, because
     // Matrix33 reads the same member names as rows. See NeuronMath.h.
+    // The IMPLICIT half of the seam, and the reason T10 could convert Shape at
+    // all. Shape's methods take a matrix by const reference and 89 call sites
+    // across GameLogic and Species pass a Matrix34 to them. With only the named
+    // ToNative below, every one of those would have had to be edited, in six
+    // other tasks' files, to land this one. With this, they compile untouched
+    // and convert under their own tasks — which is what the seam is for, and
+    // what T1 should have provided for matrices as well as vectors.
+    operator DirectX::XMFLOAT4X4() const { return ToNative(); }
+    Matrix34(DirectX::XMFLOAT4X4 const& _m) { *this = FromNative(_m); }
+
     DirectX::XMFLOAT4X4 ToNative() const
     {
       return DirectX::XMFLOAT4X4(r.x, r.y, r.z, 0.0f, u.x, u.y, u.z, 0.0f, f.x, f.y, f.z, 0.0f, pos.x, pos.y, pos.z, 1.0f);
