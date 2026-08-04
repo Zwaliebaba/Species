@@ -2,10 +2,10 @@
 
 #include "SphereRenderer.h"
 #include "Matrix34.h"
+#include "NeuronMath.h"
 
 class FileWriter;
 class TextReader;
-class Vector3;
 class Shape;
 class Building;
 class GlobalInternet;
@@ -19,7 +19,7 @@ class GlobalLocation
 {
   public:
     int m_id;
-    Vector3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     bool m_available; // Is it connected on the transit system
 
     char m_name[256];
@@ -46,7 +46,7 @@ class GlobalBuilding
     int m_id;
     int m_teamId;
     int m_locationId;
-    Vector3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     int m_type;
     bool m_online;
     int m_link;
@@ -280,7 +280,7 @@ class GlobalWorld
     void Advance();
     void Render();
 
-    int LocationHit(Vector3 const& _pos, Vector3 const& _dir, float locationRadius = 5000.0f);
+    int LocationHit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _dir, float locationRadius = 5000.0f);
 
     void AddLocation(GlobalLocation* location);
     void AddBuilding(GlobalBuilding* building);
@@ -292,7 +292,7 @@ class GlobalWorld
     int GetLocationIdFromMapFilename(char const* _mapFilename);
     char* GetLocationName(int _id);
     char* GetLocationNameTranslated(int _id);
-    Vector3 GetLocationPosition(int _id);
+    DirectX::XMFLOAT3 GetLocationPosition(int _id);
 
     GlobalBuilding* GetBuilding(int _id, int _locationId);
     int GenerateBuildingId();
