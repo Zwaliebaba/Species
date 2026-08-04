@@ -2,6 +2,7 @@
 
 
 #include "2dArray.h"
+#include "NeuronMath.h"
 
 
 // ****************************************************************************
@@ -146,6 +147,73 @@ T SurfaceMap2D<T>::GetValue(float _x, float _y) const
 		value22 * weight22;
 
 	return returnVal;
+}
+
+
+// SurfaceMap2D<XMFLOAT3>, which exists for Landscape's normal map.
+//
+// The generic GetValue above interpolates with `T * float` and `T + T`, and
+// XMFLOAT3 has neither -- that is the point of directxmath-migration, which
+// keeps storage inert and does the arithmetic through XMVECTOR at the call
+// site. So the ONE member that needs arithmetic is specialised here and the
+// rest of the template is used unchanged. GetHighestValue would need `>` and
+// is never instantiated for this element type.
+//
+// FOUND BY T18, WHICH THE PLAN DID NOT ANTICIPATE. No task owned this header,
+// so Landscape::m_normalMap had no way to stop being a SurfaceMap2D<Vector3> --
+// and T25 deletes Vector3 out from under it. See that task's notes.
+//
+// The index arithmetic below is copied from the generic version rather than
+// tidied, including the unsigned short truncation and the wrap-to-zero clamps:
+// changing any of it changes every landscape normal in the game. The four
+// weighted terms are summed left to right in the same order, with separate
+// multiplies and adds, because a fused multiply-add would round differently.
+template <> inline DirectX::XMFLOAT3 SurfaceMap2D<DirectX::XMFLOAT3>::GetValue(float _x, float _y) const
+{
+  _x -= m_x0;
+  _y -= m_y0;
+
+  float fractionalX = _x * m_invCellSizeX;
+  float fractionalY = _y * m_invCellSizeY;
+
+  unsigned short x1 = fractionalX;
+  unsigned short y1 = fractionalY;
+  unsigned short x2 = x1 + 1;
+  unsigned short y2 = y1 + 1;
+
+  fractionalX = fractionalX - floorf(fractionalX);
+  fractionalY = fractionalY - floorf(fractionalY);
+
+  if (x1 >= this->m_numColumns)
+    x1 = 0;
+  if (x2 >= this->m_numColumns)
+    x2 = 0;
+  if (y1 >= this->m_numRows)
+    y1 = 0;
+  if (y2 >= this->m_numRows)
+    y2 = 0;
+
+  // Named apart from the generic version's value11..value22 above: those are
+  // declared with the bare template parameter T, and a checker that sees an
+  // XMFLOAT3 of the same name in this file cannot tell the two apart.
+  DirectX::XMFLOAT3 const sample11 = this->GetData(x1, y1);
+  DirectX::XMFLOAT3 const sample12 = this->GetData(x1, y2);
+  DirectX::XMFLOAT3 const sample21 = this->GetData(x2, y1);
+  DirectX::XMFLOAT3 const sample22 = this->GetData(x2, y2);
+
+  float weight11 = (1.0f - fractionalX) * (1.0f - fractionalY);
+  float weight12 = (1.0f - fractionalX) * (fractionalY);
+  float weight21 = (fractionalX) * (1.0f - fractionalY);
+  float weight22 = (fractionalX) * (fractionalY);
+
+  DirectX::XMVECTOR sum = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&sample11), weight11);
+  sum = DirectX::XMVectorAdd(sum, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&sample12), weight12));
+  sum = DirectX::XMVectorAdd(sum, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&sample21), weight21));
+  sum = DirectX::XMVectorAdd(sum, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&sample22), weight22));
+
+  DirectX::XMFLOAT3 returnVal;
+  DirectX::XMStoreFloat3(&returnVal, sum);
+  return returnVal;
 }
 
 
