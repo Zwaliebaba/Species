@@ -251,6 +251,93 @@ namespace NeuronCoreTests
       }
   };
 
+  // RayTriIntersection, which directxmath-migration T7 replaced with
+  // DirectX::TriangleTests::Intersects. This is the one intersection test with
+  // an exact DirectXCollision equivalent including the distance out-parameter,
+  // so it is a true replacement rather than a rewrite.
+  //
+  // TWO THINGS DID CHANGE, and both are visible here rather than buried.
+  //
+  // The direction is normalised first, because TriangleTests::Intersects
+  // requires a unit direction and asserts on one that is not.
+  //
+  // And the _rayLen cutoff is now a plain distance comparison. What it replaces
+  // was `sqrt(t*t + u*u + v*v) > _rayLen` over Moller's barycentric outputs —
+  // mixing a distance with two barycentric coordinates, which is not a length
+  // of anything. Directly above it sat the commented-out `if (result.x >
+  // _rayLen)`, which is the test this now does. For a unit ray and the 1e10
+  // cutoff every caller but LaserFence passes, the two agree; where they differ
+  // the old one rejected slightly sooner.
+  TEST_CLASS(RayTriIntersectionTests)
+  {
+      static void AssertNearlyEqual(float _expected, float _actual)
+      {
+        float const tolerance = std::max(1e-5f, std::fabs(_expected) * 1e-5f);
+        Assert::AreEqual(_expected, _actual, tolerance);
+      }
+
+      // A triangle standing in the x/y plane ten units down z, straddling the
+      // axis so a ray along z passes through its middle.
+      static Vector3 V0() { return Vector3(-5.0f, -5.0f, 10.0f); }
+      static Vector3 V1() { return Vector3(5.0f, -5.0f, 10.0f); }
+      static Vector3 V2() { return Vector3(0.0f, 5.0f, 10.0f); }
+
+    public:
+      TEST_METHOD(ARayThroughTheMiddleHitsAtTheTrianglesDepth)
+      {
+        Vector3 result;
+        Assert::IsTrue(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 1e10f, &result));
+
+        AssertNearlyEqual(0.0f, result.x);
+        AssertNearlyEqual(0.0f, result.y);
+        AssertNearlyEqual(10.0f, result.z);
+      }
+
+      TEST_METHOD(ARayBesideTheTriangleMisses)
+      {
+        Assert::IsFalse(RayTriIntersection(Vector3(50.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 1e10f));
+      }
+
+      TEST_METHOD(ARayPointingAwayMisses)
+      {
+        Assert::IsFalse(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, -1.0f), V0(), V1(), V2(), 1e10f));
+      }
+
+      TEST_METHOD(TheRayLengthCutoffRejectsAHitBeyondIt)
+      {
+        Assert::IsTrue(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 11.0f));
+        Assert::IsFalse(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 9.0f));
+      }
+
+      // Backfaces still count. Moller's formulation here rejected only a
+      // near-zero determinant, never a negative one, so it was two-sided;
+      // TriangleTests::Intersects is two-sided as well. Landscape.cpp raycasts
+      // terrain triangles whose winding depends on which way the mouse ray came
+      // in, so this is load-bearing rather than incidental.
+      TEST_METHOD(ARayHittingTheBackFaceStillHits)
+      {
+        Vector3 result;
+        Assert::IsTrue(RayTriIntersection(Vector3(0.0f, 0.0f, 20.0f), Vector3(0.0f, 0.0f, -1.0f), V0(), V1(), V2(), 1e10f, &result));
+
+        AssertNearlyEqual(10.0f, result.z);
+      }
+
+      // A non-unit direction is normalised rather than asserted on. The hit
+      // point must land in the same place either way.
+      TEST_METHOD(ANonUnitDirectionIsHandledRatherThanAsserted)
+      {
+        Vector3 result;
+        Assert::IsTrue(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 7.0f), V0(), V1(), V2(), 1e10f, &result));
+
+        AssertNearlyEqual(10.0f, result.z);
+      }
+
+      TEST_METHOD(AZeroLengthDirectionMissesRatherThanDividingByZero)
+      {
+        Assert::IsFalse(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), V0(), V1(), V2(), 1e10f));
+      }
+  };
+
   // The sphere routines, which directxmath-migration T6 rebuilt on XMVECTOR.
   //
   // RaySphereIntersection kept its geometric solution rather than becoming a

@@ -278,58 +278,34 @@ float RayRayDist(Vector3 const& a, Vector3 const& aDir, Vector3 const& b, Vector
 bool RayTriIntersection(Vector3 const& orig, Vector3 const& dir, Vector3 const& vert0, Vector3 const& vert1, Vector3 const& vert2, float _rayLen,
                         Vector3* _result)
 {
-  Vector3 edge1, edge2, tvec, pvec, qvec;
-  float det, inv_det;
+  DirectX::XMVECTOR const origin = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(orig));
+  DirectX::XMVECTOR const direction = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(dir));
 
-  // Find vectors for two edges sharing vert0
-  edge1 = vert1 - vert0;
-  edge2 = vert2 - vert0;
-
-  // Begin calculating determinant - also used to calculate U parameter
-  pvec = dir ^ edge2;
-
-  // If determinant is near zero, ray lies in plane of triangle
-  det = edge1 * pvec;
-
-  if (det > -0.0000001f && det < 0.0000001f)
-  {
+  // TriangleTests::Intersects REQUIRES a unit direction and asserts on one that
+  // is not, so this normalises rather than trusting the caller. Every call site
+  // in the tree looks like it passes a unit ray, but "looks like" would be a
+  // Debug assert inside DirectXCollision on the first one that does not, and
+  // the cost here is a square root on a picking path rather than a hot loop.
+  float const dirLength = DirectX::XMVectorGetX(DirectX::XMVector3Length(direction));
+  if (dirLength <= 0.0f)
     return false;
-  }
-  inv_det = 1.0f / det;
 
-  /* calculate distance from vert0 to ray origin */
-  tvec = orig - vert0;
+  DirectX::XMVECTOR const unitDirection = DirectX::XMVectorDivide(direction, DirectX::XMVectorReplicate(dirLength));
 
-  Vector3 result;
-
-  /* calculate Y parameter and test bounds */
-  result.y = (tvec * pvec) * inv_det;
-  if (result.y < 0.0f || result.y > 1.0f)
+  float distance = 0.0f;
+  if (!DirectX::TriangleTests::Intersects(origin, unitDirection, DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(vert0)),
+                                          DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(vert1)),
+                                          DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(vert2)), distance))
   {
     return false;
   }
 
-  /* prepare to test Z parameter */
-  qvec = tvec ^ edge1;
-
-  /* calculate Z parameter and test bounds */
-  result.z = (dir * qvec) * inv_det;
-  if (result.z < 0.0f || result.y + result.z > 1.0f)
-  {
-    return false;
-  }
-
-  /* calculate X, ray intersects triangle */
-  result.x = (edge2 * qvec) * inv_det;
-
-  //    if (result.x > _rayLen ) return false;
-  if (result.MagSquared() > _rayLen * _rayLen)
+  if (distance > _rayLen)
     return false;
 
   if (_result)
-  {
-    *_result = orig + dir * result.x;
-  }
+    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*_result),
+                           DirectX::XMVectorMultiplyAdd(unitDirection, DirectX::XMVectorReplicate(distance), origin));
 
   return true;
 }
