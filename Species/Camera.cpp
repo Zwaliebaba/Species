@@ -1162,7 +1162,7 @@ void Camera::AdvanceEntityTrackMode()
 
   // Calculate the predicated position of the entity (where it should be at
   // the next frame). This is used by the auxiliary functions.
-  m_predictedEntityPos = entity->m_pos + g_advanceTime * entity->m_vel;
+  m_predictedEntityPos = AsLegacy(entity->m_pos) + g_advanceTime * AsLegacy(entity->m_vel);
   m_trackingEntity = entity;
 
   AdvanceAutomaticTracking();
@@ -1617,7 +1617,7 @@ void Camera::AdvanceEntityFollowMode()
 
   float factor1 = g_advanceTime * 5.0f;
   float factor2 = 1.0f - factor1;
-  Vector3 newTargetPos = obj->m_pos + g_predictionTime * obj->m_vel;
+  Vector3 newTargetPos = AsLegacy(obj->m_pos) + g_predictionTime * AsLegacy(obj->m_vel);
   m_targetPos = factor1 * newTargetPos + factor2 * m_targetPos;
   m_pos = m_targetPos - m_front * m_distFromEntity;
 }
@@ -1776,7 +1776,7 @@ Building* Camera::GetBestBuildingInView()
           Building* building = g_location->m_buildings[i];
           if (building->DoesRayHit(rayStart, rayDir))
           {
-            float distance = (building->m_pos - m_pos).Mag();
+            float distance = (AsLegacy(building->m_pos) - m_pos).Mag();
             if (distance < nearest)
             {
               nearest = distance;

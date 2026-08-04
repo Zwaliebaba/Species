@@ -115,7 +115,7 @@ bool GameCursor::GetSelectedObject(WorldObjectId& _id, Vector3& _pos)
     Entity* selectedEnt = team->GetMyEntity();
     if (selectedEnt)
     {
-      _pos = selectedEnt->m_pos + AsLegacy(selectedEnt->m_centrePos) + AsLegacy(selectedEnt->m_vel) * g_predictionTime;
+      _pos = AsLegacy(selectedEnt->m_pos) + AsLegacy(selectedEnt->m_centrePos) + AsLegacy(selectedEnt->m_vel) * g_predictionTime;
       _id = selectedEnt->m_id;
       return true;
     }
@@ -225,7 +225,7 @@ bool GameCursor::GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& 
       // Found an entity
       Entity* entity = g_location->GetEntity(id);
       _id = id;
-      _pos = entity->m_pos + AsLegacy(entity->m_vel) * g_predictionTime + AsLegacy(entity->m_centrePos);
+      _pos = AsLegacy(entity->m_pos) + AsLegacy(entity->m_vel) * g_predictionTime + AsLegacy(entity->m_centrePos);
       _radius = entity->m_radius * 1.5f;
       if (entity->m_type == Entity::TypeCitizen)
         _radius = entity->m_radius * 2.0f;
