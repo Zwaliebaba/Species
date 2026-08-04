@@ -328,7 +328,11 @@ void Tree::RenderAlphas(float _predictionTime)
   glPushMatrix();
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
-  glMultMatrixf(mat.ConvertToOpenGLFormat());
+  // Matrix34::ConvertToOpenGLFormat wrote r, u, f and pos consecutively into a
+  // float[16], which is exactly XMFLOAT4X4's row-major memory -- and handing
+  // row-major rows to a column-major reader is the row-vector-to-column-vector
+  // transpose glMultMatrixf needs. Same as T10's MultiplyGLMatrix in Shape.cpp.
+  glMultMatrixf(&mat._11);
   glScalef(actualHeight, actualHeight, actualHeight);
 
   if (Location::ChristmasModEnabled() == 1)

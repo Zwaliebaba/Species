@@ -84,7 +84,11 @@ DirectX::XMFLOAT3 FeedingTube::GetDishFront(float _predictionTime)
     {
       DirectX::XMFLOAT3 const ourDishPos = GetDishPos(_predictionTime);
       DirectX::XMFLOAT3 const receiverDishPos = receiver->GetDishPos(_predictionTime);
-      return (receiverDishPos - ourDishPos).Normalise();
+
+      DirectX::XMFLOAT3 result;
+      DirectX::XMStoreFloat3(
+        &result, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&receiverDishPos), DirectX::XMLoadFloat3(&ourDishPos))));
+      return result;
     }
   }
 

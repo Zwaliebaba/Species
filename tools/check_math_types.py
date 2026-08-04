@@ -20,11 +20,14 @@ member with a legacy method or a vector operator is reported:
     m_transform.pos      XMFLOAT4X4 has no pos; the rows are _11.._44
     XMFLOAT3 m_vel;      Vector3() zeroed and XMFLOAT3() does not
 
-and, independently of any member declaration:
+and, independently of any member declaration, on LOCALS -- because converting a
+local's type leaves every use of it behind, and those uses name no type:
 
     XMLoadFloat3(&mat.f) Matrix34's rows are Vector3, and Vector3 converts to
                          XMFLOAT3 by REFERENCE -- which does nothing for a
                          pointer (added by T16)
+    mat.ConvertToOpenGLFormat()
+    mat.pos              where mat is an XMFLOAT4X4 (added by T17)
 
 The last one is the important one: it is invisible to the compiler and to CI,
 and it shipped twice during this migration before anything noticed. Shape's
@@ -74,6 +77,22 @@ DECL = re.compile(
 # field that merely shares its name.
 MATRIX34_LOCAL = re.compile(r"\bMatrix34\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
 
+# XMFLOAT4X4 locals, for the mirror of that rule -- see below.
+NATIVE_MATRIX_LOCAL = re.compile(r"\b(?:DirectX::)?XMFLOAT4X4\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
+
+# XMMATRIX locals. Not checked -- they are here so the rules below can SKIP a
+# name that means different things in different scopes of one file. XMMATRIX
+# really does have an r[] array, and a file that converts `Matrix34 mat` to
+# `XMFLOAT4X4 mat` in one function while loading an `XMMATRIX mat` in another
+# is normal, not a bug.
+XMMATRIX_LOCAL = re.compile(r"\bXMMATRIX\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
+
+# XMFLOAT3/2 locals, and XMVECTOR locals to skip against. XMVECTOR DOES have
+# arithmetic operators -- DirectXMath defines them -- so a name that is an
+# XMFLOAT3 in one function and an XMVECTOR in another must not be accused.
+NATIVE_VECTOR_LOCAL = re.compile(r"\b(?:DirectX::)?XMFLOAT[23]\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
+XMVECTOR_LOCAL = re.compile(r"\bXMVECTOR\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
+
 LEGACY_DECL = re.compile(
     r"^\s*(?:static\s+|mutable\s+|const\s+)*(Vector2|Vector3|Matrix33|Matrix34)\s+"
     r"(m_[A-Za-z0-9_]+)\s*[={;,]"
@@ -97,6 +116,49 @@ def strip_comment(line):
     return line if cut < 0 else line[:cut]
 
 
+def blank_block_comments(text):
+    """Blank out comments and string literals, keeping every newline so line
+    numbers hold.
+
+    Added by T17, and it has to be a real scanner rather than a find("/*").
+    This tree is full of banner lines like
+
+        //*****************************************
+
+    and a naive search finds a "/*" one character in, then blanks everything
+    up to the next "*/" -- which in practice means a whole file. That mistake
+    cost two of T14's own verification scripts a wrong answer before it was
+    understood, so it is written out properly here: line comments win over
+    block comments, and string literals hide both.
+    """
+    out = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == "/" and i + 1 < n and text[i + 1] == "/":
+            while i < n and text[i] != "\n":
+                i += 1
+        elif c == "/" and i + 1 < n and text[i + 1] == "*":
+            i += 2
+            while i < n and not (text[i] == "*" and i + 1 < n and text[i + 1] == "/"):
+                if text[i] == "\n":
+                    out.append("\n")
+                i += 1
+            i += 2
+        elif c in ('"', "'"):
+            quote = c
+            i += 1
+            while i < n and text[i] != quote:
+                if text[i] == "\\":
+                    i += 1
+                i += 1
+            i += 1
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+
 def main():
     native_members = {}   # member name -> (kind, first declaring file)
     legacy_members = set()
@@ -104,7 +166,7 @@ def main():
 
     for path in source_files():
         rel = path.relative_to(ROOT)
-        for number, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        for number, raw in enumerate(blank_block_comments(path.read_text(encoding="utf-8", errors="replace")).splitlines(), 1):
             line = strip_comment(raw)
             legacy = LEGACY_DECL.match(line)
             if legacy:
@@ -127,7 +189,7 @@ def main():
     problems = []
     for path in source_files():
         rel = path.relative_to(ROOT)
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text = blank_block_comments(path.read_text(encoding="utf-8", errors="replace"))
 
         # THE ADDRESS-OF TRAP, and the reason it needs its own rule. Vector3
         # converts to XMFLOAT3 through `operator XMFLOAT3 const&`, which makes
@@ -143,8 +205,56 @@ def main():
         # happens to have a field called f is not accused.
         matrix34_locals = set(MATRIX34_LOCAL.findall(text))
 
+        # THE MIRROR OF THAT RULE, and the one that let Tree.cpp reach CI.
+        # Converting `Matrix34 mat(...)` to an XMFLOAT4X4 leaves every USE of
+        # that local behind, and those uses name no type: mat.ConvertToOpenGLFormat(),
+        # mat.pos, mat.Invert(). The member rules above cannot see them because
+        # a local is not a member. XMFLOAT4X4 has none of these, so any hit is
+        # a real error rather than a guess.
+        native_matrix_locals = set(NATIVE_MATRIX_LOCAL.findall(text))
+        xmmatrix_locals = set(XMMATRIX_LOCAL.findall(text))
+
+        # Same discipline as the contended member names above: a local name
+        # that means two things in one file is skipped rather than guessed at.
+        contended_locals = (native_matrix_locals & matrix34_locals) | (native_matrix_locals & xmmatrix_locals)
+        native_matrix_locals -= contended_locals
+        matrix34_locals -= contended_locals
+
+        # The same for vector locals. A converted local keeps every use it had,
+        # and `(a - b).Normalise()` names no type either -- that one reached CI
+        # in T17.
+        vector_locals = set(NATIVE_VECTOR_LOCAL.findall(text))
+        vector_locals -= set(XMVECTOR_LOCAL.findall(text))
+        vector_locals -= set(re.findall(r"\bVector[23]\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]", text))
+        vector_locals -= set(native_members) | legacy_members
+
         for number, raw in enumerate(text.splitlines(), 1):
             line = strip_comment(raw)
+
+            for local in native_matrix_locals:
+                for method in LEGACY_METHODS:
+                    if re.search(r"\b%s\s*\.\s*%s\s*\(" % (re.escape(local), method), line):
+                        problems.append((rel, number, "%s.%s() -- %s is an XMFLOAT4X4 and has no %s"
+                                         % (local, method, local, method), raw.strip()))
+                for field in LEGACY_MATRIX_FIELDS:
+                    if re.search(r"\b%s\s*\.\s*%s\b" % (re.escape(local), field), line):
+                        problems.append((rel, number, "%s.%s -- %s is an XMFLOAT4X4, which numbers its rows _11 to _44"
+                                         % (local, field, local), raw.strip()))
+
+            for local in vector_locals:
+                # (?<![.>\w]) so `something.pos.Mag()` is not read as a bare
+                # local called pos -- Matrix34's .pos really does have Mag, and
+                # EntityLeg reaches it through T10's seam on purpose.
+                for method in LEGACY_METHODS:
+                    if re.search(r"(?<![.>\w])%s\s*\.\s*%s\s*\(" % (re.escape(local), method), line):
+                        problems.append((rel, number, "%s.%s() -- %s is an XMFLOAT3 and has no %s"
+                                         % (local, method, local, method), raw.strip()))
+                if re.search(r"(?<![.>\w])%s\s*(?:[-+*^]|/(?!/))\s*[A-Za-z_(]" % re.escape(local), line):
+                    problems.append((rel, number, "arithmetic on %s -- it is an XMFLOAT3, which has no operators" % local,
+                                     raw.strip()))
+                if re.search(r"(?<![.>\w])%s\s*(?:[-+*^/]=)(?!=)" % re.escape(local), line):
+                    problems.append((rel, number, "compound assignment to %s -- it is an XMFLOAT3, which has no operators" % local,
+                                     raw.strip()))
 
             for local in matrix34_locals:
                 if re.search(r"XMLoadFloat[23]\s*\(\s*&\s*%s\s*\.\s*(?:pos|r|u|f)\b" % re.escape(local), line):

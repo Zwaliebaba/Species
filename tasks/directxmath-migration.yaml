@@ -1600,6 +1600,30 @@ tasks:
       keeping the name over an XMFLOAT3 would have meant a name that lies. They
       are m_trackPosition1/2 now. Contained entirely in Mine.h and Mine.cpp.
 
+      TWO ERRORS REACHED CI AND BOTH WERE THE SAME GAP: THE CHECKER ONLY SAW
+      MEMBERS. Converting a LOCAL's type leaves every use of that local behind,
+      and those uses name no type either -- `mat.ConvertToOpenGLFormat()` where
+      mat became an XMFLOAT4X4, and `(a - b).Normalise()` where both became
+      XMFLOAT3. check_math_types tracked member declarations only, so it was
+      blind to the whole category. It tracks native locals now, with the same
+      contended-name discipline it already used for members: a name that is an
+      XMFLOAT4X4 in one function and an XMMATRIX in another is skipped, because
+      XMMATRIX really does have r[].
+
+      AND THE BANNER-LINE BUG, FOR THE THIRD TIME IN THIS MIGRATION. Adding
+      those rules needed block comments stripped, and the obvious
+      text.find("/*") finds one inside every
+
+        //*****************************************
+
+      banner line in the tree, then blanks everything to the next "*/". That
+      exact mistake gave two of T14's own verification scripts wrong answers.
+      check_math_types now carries a real scanner -- line comments beat block
+      comments, string literals hide both -- with the reasoning written at the
+      function so the fourth person does not rediscover it. Its tracked-member
+      count is the canary: it went 31 to 24 when the naive version ate real
+      declarations, and back to 31 when the scanner replaced it.
+
       THE T10 SEAM IS THE LOUDEST REMAINING THING, same as T16 found.
       ShapeMarker::GetWorldMatrix takes an XMFLOAT4X4 and returns a Matrix34,
       and roughly thirty sites here call it. Where only .pos is wanted they
