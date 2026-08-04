@@ -638,12 +638,45 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
       SoundInstance.cpp draws from the synchronised RNG at lines 533 and 1009 —
       AGENTS.md Known issues, an open desync question that is NOT this plan's
       to fix. Do not touch those lines, do not "tidy" the surrounding
       expressions, and do not let a conversion change how many times they run.
+    notes: |
+      LANDED. CI run 380 green at 45049cd, after run 378 failed to compile.
+
+      PROCESS SLIP, RECORDED BECAUSE THE PLAN IS A RECORD: this task was worked
+      without being set in_progress first. T2, T3, T6 and T7 were taken
+      properly; this one was not, so for the length of the work the graph said
+      it was available. Harmless with one agent and a real collision risk with
+      two. docs/TASK_DAG.md step 2 exists for that.
+
+      Self-contained by accident of scoping rather than by design:
+      SoundLibrary3d's virtual signatures moved here and BOTH implementors were
+      already in the file list. T12 had no such luck — see its notes.
+
+      TWO Vector3 LOCALS REMAIN, both feeding
+      LocationAccess::GetSoundSource(WorldObjectId, Vector3*, Vector3*), both
+      commented in place. They clear when T12 lands.
+
+      THE FAILURE IS THE PART WORTH READING. Run 378 died on two errors —
+      `vel.Mag()` and `(m_pos - g_camera->GetPos()).Mag()` — because I swept
+      for the TYPE NAME, and a member whose type has changed is used through
+      its OWN name, not its type's. Neither line contains the word Vector3.
+
+      That is the same class of mistake tools/check_containers.py exists to
+      catch, and it will recur on every remaining task at far larger scale. The
+      sweep that finds them is over member names and operators, not the type:
+
+        grep -nE "(m_pos|m_vel|...)[.](Mag|MagSquared|Normalise|Zero|Set|GetData)"
+        grep -nE "(m_pos|m_vel|...) *[-+*^]"
+
+      Run both before pushing. Better still, a check_containers-style tool for
+      the math types would catch this in seconds rather than two CI cycles, and
+      that is worth proposing to tools/ before the GameLogic tasks start, where
+      the member count runs to hundreds.
 
   - id: T12
     title: Convert the client-side interface headers
