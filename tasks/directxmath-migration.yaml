@@ -1819,8 +1819,19 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
+      CLOSED, with two documented exceptions rather than a clean sweep. Six
+      commits: the nine leaf files, BlueprintStore, the SurfaceMap2D
+      specialisation, Landscape, GlobalWorld, and Location. Three CI rounds.
+
+      THE TWO EXCEPTIONS, both structural and both commented at the
+      declaration. Location::GetSoundSource overrides
+      LocationAccess::GetSoundSource and moves with it in T12. Landscape's ray
+      and sphere API passes its out-pointers into MathUtils, which has no
+      converting task — see the gap recorded below. Everything else in the
+      twenty-three files is native.
+
       Landscape.cpp holds the SegRayIntersection2D and RayTriIntersection call
       sites, so it depends on T7 having landed even though the edge is through
       T13. LevelFile parses positions out of GameData text — the parse must
@@ -1938,12 +1949,19 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: todo
     notes: |
       Spirit.cpp was changed by determinism.yaml T1 and its smoke test (T2
       there) is still open. If that gate has not been run when this task
       starts, this conversion lands a second unverified simulation change on
       the same file. Check determinism.yaml before taking this task.
+
+      RESET FROM in_progress TO todo, 2026-08-04. The commit that closed T14
+      claimed T15 through T19 in one go; T15, T16, T17 and T18 were then done
+      and this one was never started — Weapons.cpp still carries 86 legacy math
+      occurrences. A task marked in_progress that nobody is doing is worse than
+      one marked todo: --next stops offering it, so the claim has been dropped
+      rather than left standing.
 
   - id: T20
     title: Convert the in-game windows
@@ -2139,6 +2157,31 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
     status: todo
+    notes: |
+      BLOCKED ON WORK NO TASK OWNS, found while doing T18 and recorded here
+      because this is the task that trips over it.
+
+      MathUtils' geometry API still takes the legacy types, and nothing in this
+      plan converts it. T7 and T8 rebuilt RayTriIntersection and RayRayDist on
+      DirectXMath but deliberately kept their Vector3 signatures so callers
+      compiled unchanged -- that is written into both tasks' acceptance -- and
+      PointSegDist2D and SegRayIntersection2D still take Vector2 const& and
+      Vector2*. This task's third acceptance criterion cannot pass while that
+      is true, because those signatures ARE the remaining Vector3 and Vector2
+      identifiers.
+
+      It is not merely a rename. Their out-parameters are POINTERS, and the
+      seam converts values and references but not pointers, so each signature
+      has to move together with every caller. Landscape's ray and sphere API is
+      the largest instance: seventeen call sites in ten files across four tasks
+      pass &someVector3 into Landscape::RayHit alone, and T18 left that API
+      legacy for exactly this reason.
+
+      A TASK FOR IT NEEDS TO EXIST, in NeuronCore, owning MathUtils.h and .cpp
+      and the call sites in Landscape, Location, RoutingSystem, Weapons and the
+      editor windows, and this task should depend on it. Not added unilaterally:
+      it changes the shape of the plan and the wave order, which is the owner's
+      call.
 
   - id: T26
     title: Bring the documentation in line with what landed
@@ -2169,6 +2212,35 @@ tasks:
       permitted to differ between implementations, which makes them a desync
       between two clients on the same build — the one thing this plan is not
       allowed to cause.
+
+      PART OF THIS IS ALREADY DONE, 2026-08-04, because it went stale faster
+      than this task could wait for T25. Checked rather than assumed:
+
+        AGENTS.md already names DirectXMath as a header-only Windows SDK
+        dependency — criterion 1 is satisfied.
+
+        CODING_STANDARDS.md#determinism already carries the *Est ban, the
+        row-vector and right-handed conventions and the no-self-zeroing rule,
+        and has gained three more standing rules that GameLogic taught: the
+        zero-length fallbacks decide per site, the seam does not reach through
+        a pointer, and a virtual cannot move without its overriders. Criterion
+        3 is satisfied.
+
+        AGENTS.md's check_math_types paragraph and
+        tasks/_restart-directxmath.md were rewritten at the same time. Neither
+        is on this task's file list; both were simply wrong about the tree.
+
+      WHAT IS ACTUALLY LEFT HERE, and all of it genuinely needs T25 or T21:
+
+        The cross-architecture bullet in AGENTS.md, which still says "unproven"
+        and should say "not supported" with the reason. The bullet itself says
+        this task is where that wording lands, and it should not move until the
+        migration it describes has finished.
+
+        docs/BUILD.md recording the Windows SDK requirement.
+
+        The repository map's NeuronCore line, which cannot be final until T25
+        deletes the wrapper headers.
 
   - id: T27
     title: Owner runs the Garden smoke test on the wrapper-free tree

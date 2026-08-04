@@ -140,7 +140,16 @@ build result is most useful earliest.
 | `tools/check_project_files.py` | A source file on disk that no `.vcxproj` compiles |
 | `tools/check_layering.py` | A new include pointing at a higher layer |
 | `tools/check_task_dag.py` | A task plan with a cycle, dangling edge or inconsistent status |
+| `tools/check_containers.py` | A call site still asking a `std::vector` for `Size()` or `ValidIndex()` |
+| `tools/check_math_types.py` | A call site still asking a native math type for `Mag()`, an operator or a named row |
 | `tools/check_format.py` | Changed lines that do not match `.clang-format` |
+| `tools/check_hygiene.py` | Changed lines reintroducing `NULL`, `_included` guards, `strcpy` or a plain `enum` |
+
+`check_containers.py` and `check_math_types.py` exist because the same mistake
+cost several consecutive red CI rounds each: a call site a type sweep did not
+reach, which names no type and so survives every grep for one. Both resolve by
+member name, and both skip a name that means two things rather than guessing.
+AGENTS.md explains what that trade buys.
 
 The first two cover `Tests/<Name>Tests` as well as the six library projects, and
 discover those directories from the tree rather than from a hard-coded list — so
@@ -183,8 +192,16 @@ exactly the mistakes that are easy to make without an IDE open:
 python3 tools/check_project_files.py
 python3 tools/check_layering.py
 python3 tools/check_task_dag.py
+python3 tools/check_containers.py
+python3 tools/check_math_types.py
 python3 tools/check_format.py            # --fix to apply
+python3 tools/check_hygiene.py
 ```
+
+`check_format.py` and `check_hygiene.py` look at *changed lines*, and they
+compare against `merge-base(HEAD, origin/main)`. After merging `main` into a
+branch, commit the merge before running them — until you do, `main`'s own lines
+count as yours and get reported.
 
 The Python tools need `pyyaml`; `check_format.py` needs `clang-format` 18 on
 `PATH`. CI pins clang-format 18 so local and CI results agree.

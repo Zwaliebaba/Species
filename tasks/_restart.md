@@ -7,7 +7,7 @@ graph was known to be wrong.
 
 > **This file is about the modernisation plans (stages 3-5). It predates
 > `tasks/directxmath-migration.yaml`, which is a separate, larger effort that
-> is 12 of 27 tasks in as of 2026-08-04 and has its own restart note:
+> is 17 of 27 tasks in as of 2026-08-04 and has its own restart note:
 > [`_restart-directxmath.md`](_restart-directxmath.md). Neither file
 > supersedes the other; they cover different work.**
 
