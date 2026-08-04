@@ -186,6 +186,7 @@ python3 tools/check_project_files.py   # .vcxproj matches the files on disk
 python3 tools/check_layering.py        # no new upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
 python3 tools/check_containers.py      # no legacy container call left on a vector
+python3 tools/check_math_types.py       # no legacy math call left on a native type
 python3 tools/check_format.py          # changed lines match .clang-format
 python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum
@@ -195,6 +196,17 @@ python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
 `std::min` and `std::max` compile everywhere now — they did not, anywhere that
 header was reachable, until `language-hygiene` T8. If you find a hand-written
 comparison with a comment apologising for it, that is why, and it can go.
+
+`check_math_types.py` exists for the same reason and was written after five CI
+failures in a row during `directxmath-migration` T10, every one a call site a
+type sweep did not reach. Vector3 has methods and operators and XMFLOAT3 has
+neither, so `vel.Mag()` stops compiling without ever mentioning the type's
+name. It also reports the one failure mode neither the compiler nor CI can
+see: Vector3's default constructor zeroed and XMFLOAT3's does not, so a
+converted member that something accumulates into changes behaviour silently.
+It resolves by member NAME like `check_containers.py`, and skips a name
+declared as both a native and a legacy type rather than guessing — four are
+contended today (`m_pos`, `m_vel`, `m_centre`, `m_angVel`).
 
 `check_containers.py` exists because three CI failures in a row were the same
 mistake: a call site a container sweep did not reach, still asking a
@@ -285,6 +297,15 @@ observed by the agent that wrote this line. This is the run
 `rename-darwinian/T4` was waiting for, and it closes that plan: the spawn
 counts are what catch a string-resolved reference the rename missed, because
 a name that fails to resolve produces a smaller group rather than a crash.
+
+**Run at `36dd038` (2026-08-04), on the DirectXMath migration's converted
+engine layers** — NeuronCore's math and geometry, NeuronClient's renderers and
+sound, and the wire types. Owner-reported: the game runs. One observation is
+open rather than resolved — the procedurally generated landscape looks
+different in shape, shading unaffected — and no mechanism has been found for
+it; `tasks/directxmath-migration.yaml` T13 carries the evidence and the
+checksum commit that will settle it. Recorded here as a partial run, not a
+clean one.
 
 Earlier runs, kept because the sequence is the evidence:
 

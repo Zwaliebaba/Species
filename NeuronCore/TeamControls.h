@@ -22,7 +22,9 @@ class TeamControls
     void Clear();
 
   public:
-    DirectX::XMFLOAT3 m_mousePos;
+    // Zeroed by Clear()'s memset as well; stated here so the guarantee is local
+    // rather than dependent on another file, and so check_math_types.py can see it.
+    DirectX::XMFLOAT3 m_mousePos{0.0f, 0.0f, 0.0f};
 
     // Be sure to update GetFlags, SetFlags, ZeroFlags if you change these flags
     // Also, NetworkUpdate::GetByteStream and NetworkUpdate::ReadByteStream

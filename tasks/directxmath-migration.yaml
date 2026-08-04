@@ -969,7 +969,7 @@ tasks:
     acceptance:
       - All seven Garden smoke-test steps pass, owner-reported
       - AGENTS.md records the run with its commit hash, per "What working looks like"
-    status: todo
+    status: done
     notes: |
       Blocked on owner execution — no agent here can launch a Windows client.
       Same gate and the same reason as determinism.yaml T2.
@@ -987,10 +987,30 @@ tasks:
       layers' own math, which is where a wrong matrix convention or a NaN out
       of the normalise change would show up.
 
+      OWNER RAN IT, 2026-08-04, ON THE CONVERTED ENGINE LAYERS AT 36dd038.
+      Reported: "it works". The game launches, loads and plays.
+
+      ONE OBSERVATION IS STILL OPEN and this task does not get to paper over
+      it: the procedurally generated landscape looks different in SHAPE, with
+      shading unaffected. No mechanism has been found. GenerateHeightMap
+      reseeds the RNG from the level's m_randomSeed immediately before the
+      diamond-square loop, so nothing drawn from the shared stream beforehand
+      reaches it; Landscape.cpp and Landscape.h are untouched by this plan;
+      LandscapeRenderer's only change is a comment and a static_assert; and its
+      RNG reseed feeds GetLandscapeColour, which is colour, not geometry.
+
+      A temporary commit (57386fb) writes a height-map checksum and the tile
+      parameters that determine it, so the two builds can be compared as a
+      number rather than an impression. IF THAT COMES BACK UNEQUAL WITH
+      IDENTICAL TILE PARAMETERS, THIS TASK REOPENS and the GameLogic wave
+      should stop until it is explained — a generation change with no known
+      cause is exactly what a gate exists to catch.
+
+      Proceeding on the owner's instruction, with that condition attached.
+
   # ------------------------------------------------------------------
   # Wave 4 — GameLogic, six groups, all parallel
   # ------------------------------------------------------------------
-
 
   - id: T14
     title: Convert the entity core and the humanoid entities
