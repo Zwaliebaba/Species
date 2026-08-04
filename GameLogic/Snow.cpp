@@ -30,7 +30,7 @@ Snow::Snow()
 
 bool Snow::Advance()
 {
-  AsLegacy(m_vel) *= 0.9f;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 0.9f));
 
   //
   // Make me float around slowly
@@ -68,10 +68,13 @@ bool Snow::Advance()
     return true;
   }
 
-  Vector3 oldPos = m_pos;
+  // Two separate steps, as the legacy code had them: velocity first, then
+  // hover. One combined add would be a different rounding.
+  DirectX::XMVECTOR const step = DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD);
+  DirectX::XMVECTOR position = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), step, DirectX::XMLoadFloat3(&m_pos));
+  position = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hover), step, position);
+  DirectX::XMStoreFloat3(&m_pos, position);
 
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
-  AsLegacy(m_pos) += m_hover * SERVER_ADVANCE_PERIOD;
   float worldSizeX = g_location->m_landscape.GetWorldSizeX();
   float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
   if (m_pos.x < 0.0f)
@@ -100,11 +103,14 @@ void Snow::Render(float _predictionTime)
 {
   _predictionTime -= SERVER_ADVANCE_PERIOD;
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
-  predictedPos += m_hover * _predictionTime;
+  DirectX::XMVECTOR const prediction = DirectX::XMVectorReplicate(_predictionTime);
+  DirectX::XMVECTOR predictedPos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), prediction, DirectX::XMLoadFloat3(&m_pos));
+  predictedPos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hover), prediction, predictedPos);
 
   float size = 20.0f;
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0);
-  Render3DSprite(predictedPos, size, size, g_resource->GetTexture("Textures/Starburst.bmp"));
+  DirectX::XMFLOAT3 spritePos;
+  DirectX::XMStoreFloat3(&spritePos, predictedPos);
+  Render3DSprite(spritePos, size, size, g_resource->GetTexture("Textures/Starburst.bmp"));
 }

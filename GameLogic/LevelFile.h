@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include "NeuronMath.h"
 #include "WorldObject.h"
 #include "Landscape.h"
 
@@ -22,9 +23,9 @@ class CameraMount
 {
   public:
     char m_name[CAMERA_MOUNT_MAX_NAME_LEN + 1];
-    Vector3 m_pos;
-    Vector3 m_front;
-    Vector3 m_up;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
 };
 
 
@@ -113,7 +114,7 @@ class InstantUnit
 class LandscapeFlattenArea
 {
   public:
-    Vector3 m_centre;
+    DirectX::XMFLOAT3 m_centre{0.0f, 0.0f, 0.0f};
     float m_size;
 };
 

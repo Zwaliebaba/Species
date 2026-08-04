@@ -1,14 +1,14 @@
 
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 
 class Clouds
 {
   protected:
-    Vector3 m_offset;
-    Vector3 m_vel;
+    DirectX::XMFLOAT3 m_offset{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
     void RenderQuad(float posNorth, float posSouth, float posEast, float posWest, float height, float texNorth, float texSouth, float texEast,
                     float texWest);

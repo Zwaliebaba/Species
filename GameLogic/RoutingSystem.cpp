@@ -19,7 +19,7 @@
 // ****************************************************************************
 
 // *** Constructor
-WayPoint::WayPoint(int _type, Vector3 const& _pos)
+WayPoint::WayPoint(int _type, DirectX::XMFLOAT3 const& _pos)
   : m_type(_type),
     m_pos(_pos),
     m_buildingId(-1)
@@ -35,9 +35,9 @@ WayPoint::~WayPoint() {}
 // I could have made it so that the Y values for GroundPoses were set once at
 // level load time, but that would require an init phases after level file
 // parsing and landscape terrain generation.
-Vector3 WayPoint::GetPos()
+DirectX::XMFLOAT3 WayPoint::GetPos()
 {
-  Vector3 rv(m_pos);
+  DirectX::XMFLOAT3 rv(m_pos);
 
   if (m_type == TypeGroundPos)
   {
@@ -56,7 +56,7 @@ Vector3 WayPoint::GetPos()
     {
       DEBUG_ASSERT(building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge);
       Teleport* teleport = (Teleport*)building;
-      Vector3 pos, front;
+      DirectX::XMFLOAT3 pos, front;
       teleport->GetEntrance(pos, front);
       return pos;
     }
@@ -67,7 +67,7 @@ Vector3 WayPoint::GetPos()
 
 
 // *** SetPos
-void WayPoint::SetPos(Vector3 const& _pos) { m_pos = _pos; }
+void WayPoint::SetPos(DirectX::XMFLOAT3 const& _pos) { m_pos = _pos; }
 
 
 // ****************************************************************************
@@ -85,7 +85,7 @@ Route::Route(int _id)
 Route::~Route() { EmptyAndDelete(m_wayPoints); }
 
 
-void Route::AddWayPoint(Vector3 const& _pos)
+void Route::AddWayPoint(DirectX::XMFLOAT3 const& _pos)
 {
   WayPoint* wayPoint = new WayPoint(WayPoint::Type3DPos, _pos);
   m_wayPoints.push_back(wayPoint);
@@ -94,7 +94,7 @@ void Route::AddWayPoint(Vector3 const& _pos)
 
 void Route::AddWayPoint(int _buildingId)
 {
-  WayPoint* wayPoint = new WayPoint(WayPoint::TypeBuilding, g_zeroVector);
+  WayPoint* wayPoint = new WayPoint(WayPoint::TypeBuilding, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
   wayPoint->m_buildingId = _buildingId;
   m_wayPoints.push_back(wayPoint);
 }
@@ -112,7 +112,7 @@ WayPoint* Route::GetWayPoint(int _id)
 }
 
 
-int Route::GetIdOfNearestWayPoint(Vector3 const& _pos)
+int Route::GetIdOfNearestWayPoint(DirectX::XMFLOAT3 const& _pos)
 {
   int idOfNearest = -1;
   float distToNearestSqrd = FLT_MAX;
@@ -121,8 +121,9 @@ int Route::GetIdOfNearestWayPoint(Vector3 const& _pos)
   for (int i = 0; i < size; ++i)
   {
     WayPoint* wp = m_wayPoints[i];
-    Vector3 delta = _pos - wp->GetPos();
-    float distSqrd = delta.MagSquared();
+    DirectX::XMFLOAT3 const wayPointPos = wp->GetPos();
+    float distSqrd =
+      DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&wayPointPos))));
     if (distSqrd < distToNearestSqrd)
     {
       distToNearestSqrd = distSqrd;
@@ -135,14 +136,17 @@ int Route::GetIdOfNearestWayPoint(Vector3 const& _pos)
 
 
 // Returns the id of the first waypoint of the nearest edge
-int Route::GetIdOfNearestEdge(Vector3 const& _pos, float* _dist)
+int Route::GetIdOfNearestEdge(DirectX::XMFLOAT3 const& _pos, float* _dist)
 {
   int idOfNearest = 0;
   float distToNearest = FLT_MAX;
 
+  // Vector2 here on purpose: PointSegDist2D still takes Vector2 const&, and
+  // no task in this plan converts it before T25 deletes the class. Recorded in
+  // T18's notes rather than left as an oversight.
   Vector2 pos(_pos.x, _pos.z);
   WayPoint* wp = m_wayPoints[0];
-  Vector3 newPos = wp->GetPos();
+  DirectX::XMFLOAT3 newPos = wp->GetPos();
   Vector2 oldPos(newPos.x, newPos.z);
 
   int size = static_cast<int>(m_wayPoints.size());
@@ -171,14 +175,14 @@ void Route::Render()
     return;
 
 #ifdef DEBUG_RENDER_ENABLED
-  Vector3 lastPos;
+  DirectX::XMFLOAT3 lastPos{0.0f, 0.0f, 0.0f};
 
   glDisable(GL_DEPTH_TEST);
 
   for (int i = 0; i < static_cast<int>(m_wayPoints.size()); ++i)
   {
     WayPoint* wayPoint = m_wayPoints[i];
-    Vector3 thisPos = wayPoint->GetPos();
+    DirectX::XMFLOAT3 const thisPos = wayPoint->GetPos();
     if (i > 0)
     {
       RenderArrow(lastPos, thisPos, 5.0f, RGBAColour(255, 100, 100, 255));

@@ -667,7 +667,9 @@ void LevelFile::ParseRoute(TextReader* _in, int _id)
     DEBUG_ASSERT(isdigit(word[0]));
 
     int type = atoi(word);
-    Vector3 pos;
+    // Braced: the TypeGroundPos case below writes x and z and leaves y to the
+    // default, which Vector3's constructor zeroed and XMFLOAT3's does not.
+    DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
     int buildingId = -1;
 
     switch (type)
@@ -1035,7 +1037,7 @@ void LevelFile::WriteRoutes(FileWriter* _out)
     for (int j = 0; j < static_cast<int>(r->m_wayPoints.size()); ++j)
     {
       WayPoint* wp = r->m_wayPoints[j];
-      Vector3 pos = wp->GetPos();
+      DirectX::XMFLOAT3 const pos = wp->GetPos();
       if (wp->m_type == WayPoint::Type3DPos)
       {
         _out->printf("\t\t%-3d %6.2f %6.2f %6.2f\n", wp->m_type, pos.x, pos.y, pos.z);
@@ -1342,7 +1344,9 @@ void LevelFile::GenerateInstantUnits()
         {
           Unit* unit = team->m_units[u];
 
-          Vector3 centrePos;
+          // Accumulated into, so it has to start at zero -- Vector3's default
+          // constructor did that and XMFLOAT3's does not.
+          DirectX::XMVECTOR centrePosSum = DirectX::XMVectorZero();
           float roamRange = 0;
           int numFound = 0;
           for (int i = 0; i < unit->m_entities.Size(); ++i)
@@ -1350,13 +1354,14 @@ void LevelFile::GenerateInstantUnits()
             if (unit->m_entities.ValidIndex(i))
             {
               Entity* entity = unit->m_entities[i];
-              centrePos += entity->m_spawnPoint;
+              centrePosSum = DirectX::XMVectorAdd(centrePosSum, DirectX::XMLoadFloat3(&entity->m_spawnPoint));
               roamRange += entity->m_roamRange;
               numFound++;
             }
           }
 
-          centrePos /= (float)numFound;
+          DirectX::XMFLOAT3 centrePos;
+          DirectX::XMStoreFloat3(&centrePos, DirectX::XMVectorScale(centrePosSum, 1.0f / (float)numFound));
           roamRange /= (float)numFound;
 
           InstantUnit* instant = new InstantUnit();
@@ -1393,7 +1398,8 @@ void LevelFile::GenerateInstantUnits()
           Entity* entity = team->m_others[i];
           if (entity->m_enabled)
           {
-            bool insideSpawnArea = (AsLegacy(entity->m_pos) - AsLegacy(entity->m_spawnPoint)).Mag() < entity->m_roamRange;
+            bool insideSpawnArea = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(
+                                     DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&entity->m_spawnPoint)))) < entity->m_roamRange;
 
             InstantUnit* unit = new InstantUnit();
             unit->m_type = entity->m_type;
@@ -1498,7 +1504,7 @@ void LevelFile::GenerateInstantUnits()
       if (building && building->m_type == Building::TypeRadarDish)
       {
         RadarDish* dish = (RadarDish*)building;
-        Vector3 exitPos, exitFront;
+        DirectX::XMFLOAT3 exitPos, exitFront;
         dish->GetExit(exitPos, exitFront);
 
         for (int e = 0; e < static_cast<int>(dish->m_inTransit.size()); ++e)

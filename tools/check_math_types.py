@@ -138,10 +138,19 @@ STATEMENT_KEYWORDS = (
     "return|delete|case|throw|new|goto|else|do|co_return|co_await|co_yield|sizeof|typedef|using|friend|template"
 )
 
+# The type can be more than one word. `unsigned int m_offset;` in
+# TextStreamReaders was missed by the single-token version, so when T18 made
+# m_offset an XMFLOAT3 on Clouds the tool accused two correct `m_offset +=`
+# lines. Only the built-in multi-word spellings are listed: a general
+# "one or more identifiers" would swallow statement forms the keyword guard
+# above does not enumerate.
+TYPE_PREFIXES = r"(?:(?:unsigned|signed|long|short|struct|class|enum)\s+)*"
+
 NON_MATH_DECL = re.compile(
     r"^\s*(?:static\s+|mutable\s+|const\s+|inline\s+|virtual\s+)*"
     r"(?!(?:" + STATEMENT_KEYWORDS + r")\b)"
     r"(?!(?:DirectX::)?(?:XMFLOAT4X4|XMFLOAT3X3|XMFLOAT3|XMFLOAT2|XMVECTOR|XMMATRIX|Vector3|Vector2|Matrix34|Matrix33|Plane)\s)"
+    + TYPE_PREFIXES +
     r"[A-Za-z_][A-Za-z0-9_:]*\s*[*&]?\s+(m_[A-Za-z0-9_]+)\s*[\[={;,]"
 )
 

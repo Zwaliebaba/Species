@@ -14,7 +14,7 @@ class Snow : public WorldObject
     float m_zaxisRate;
 
   public:
-    Vector3 m_hover;
+    DirectX::XMFLOAT3 m_hover{0.0f, 0.0f, 0.0f};
 
   public:
     Snow();

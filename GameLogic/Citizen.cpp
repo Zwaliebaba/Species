@@ -2087,8 +2087,7 @@ void Citizen::TakeControl(int _controllerId)
   {
     m_controllerId = _controllerId;
     m_wayPointId = controller->m_route->GetIdOfNearestWayPoint(m_pos);
-    // LevelFile's WayPoint converts in T18, so GetPos is still legacy.
-    m_wayPoint = DirectX::XMFLOAT3(controller->m_route->GetWayPoint(m_wayPointId)->GetPos());
+    m_wayPoint = controller->m_route->GetWayPoint(m_wayPointId)->GetPos();
     float const jitterX = syncsfrand(30.0f);
     float const jitterZ = syncsfrand(30.0f);
     DirectX::XMStoreFloat3(&m_wayPoint, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_wayPoint), DirectX::XMVectorSet(jitterX, 0.0f, jitterZ, 0.0f)));

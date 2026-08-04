@@ -492,8 +492,7 @@ void Unit::FollowRoute()
 
   WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId];
 
-  // LevelFile converts in T18, so GetPos still returns a legacy vector.
-  m_wayPoint = DirectX::XMFLOAT3(waypoint->GetPos());
+  m_wayPoint = waypoint->GetPos();
 
   DirectX::XMVECTOR const targetVect = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_wayPoint), DirectX::XMLoadFloat3(&m_centrePos));
 

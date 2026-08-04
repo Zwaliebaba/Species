@@ -332,8 +332,8 @@ void Water::BuildTriangleStrips()
       if (needed1 || needed2 || needed3 || needed4 || needed5 || needed6)
       {
         // Is needed, so add it to the strip
-        vertex1.m_pos.Set(fx, 0.0f, fz);
-        vertex2.m_pos.Set(fx, 0.0f, fz + m_cellSize);
+        vertex1.m_pos = DirectX::XMFLOAT3(fx, 0.0f, fz);
+        vertex2.m_pos = DirectX::XMFLOAT3(fx, 0.0f, fz + m_cellSize);
         if (degen == 1)
         {
           m_renderVerts.push_back(vertex1);
@@ -368,7 +368,7 @@ void Water::BuildTriangleStrips()
   // Create other per-vertex arrays
   for (int i = 0; i < static_cast<int>(m_renderVerts.size()); ++i)
   {
-    Vector3 const& pos = m_renderVerts[i].m_pos;
+    DirectX::XMFLOAT3 const& pos = m_renderVerts[i].m_pos;
     float depth = m_waterDepthMap->GetValue(pos.x, pos.z);
     m_waterDepths[i] = depth;
     float shoreness = 1.0f - depth;
@@ -506,7 +506,10 @@ void Water::RenderFlatWater()
   glDepthMask(true);
 }
 
-bool isIdentical(const Vector3& a, const Vector3& b, const Vector3& c) { return a.x == b.x && a.x == c.x && a.z == b.z && a.z == c.z; }
+bool isIdentical(DirectX::XMFLOAT3 const& a, DirectX::XMFLOAT3 const& b, DirectX::XMFLOAT3 const& c)
+{
+  return a.x == b.x && a.x == c.x && a.z == b.z && a.z == c.z;
+}
 
 void Water::UpdateDynamicWater()
 {
@@ -600,11 +603,11 @@ void Water::UpdateDynamicWater()
       float dz1 = -(m_waveTableZ[indexZ + 1] - m_waveTableZ[indexZ]) * m_waterDepths[j - 1];
       float dz2 = -(m_waveTableZ[indexZ + 2] - m_waveTableZ[indexZ + 1]) * m_waterDepths[j];
       // realistic, but with artifacts around islands in wild water
-      vertex1->m_normal = Vector3(dx1, vertex1->m_pos.y, dz1);
-      vertex2->m_normal = Vector3(dx2, vertex2->m_pos.y, dz2);
+      vertex1->m_normal = DirectX::XMFLOAT3(dx1, vertex1->m_pos.y, dz1);
+      vertex2->m_normal = DirectX::XMFLOAT3(dx2, vertex2->m_pos.y, dz2);
       // no artifacts around islands in wild water, but much less realistic
-      // vertex1->m_normal = Vector3(0,-vertex1->m_pos.y,0);
-      // vertex2->m_normal = Vector3(0,-vertex2->m_pos.y,0);
+      // vertex1->m_normal = XMFLOAT3(0,-vertex1->m_pos.y,0);
+      // vertex2->m_normal = XMFLOAT3(0,-vertex2->m_pos.y,0);
 
       if (j >= 2 && isIdentical(vertex1->m_pos, vertex2->m_pos, m_renderVerts[j - 2].m_pos))
       {

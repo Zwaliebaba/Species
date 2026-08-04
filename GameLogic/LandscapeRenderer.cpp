@@ -13,7 +13,7 @@
 #include "Resource.h"
 #include "RgbColour.h"
 #include "TextureUv.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 #include "LandscapeRenderer.h"
 #include "Location.h" // For SetupFog
@@ -101,29 +101,27 @@ void LandscapeRenderer::BuildNormArray()
   {
     LandTriangleStrip* strip = m_strips[i];
 
-    m_verts[nextNormId++].m_norm = g_upVector;
-    m_verts[nextNormId++].m_norm = g_upVector;
+    m_verts[nextNormId++].m_norm = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+    m_verts[nextNormId++].m_norm = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
     const int maxJ = strip->m_numVerts - 2;
 
     // For each vertex in strip
     for (int j = 0; j < maxJ; j += 2)
     {
-      const Vector3& v1 = m_verts[strip->m_firstVertIndex + j].m_pos;
-      const Vector3& v2 = m_verts[strip->m_firstVertIndex + j + 1].m_pos;
-      const Vector3& v3 = m_verts[strip->m_firstVertIndex + j + 2].m_pos;
-      const Vector3& v4 = m_verts[strip->m_firstVertIndex + j + 3].m_pos;
+      DirectX::XMVECTOR const v1 = DirectX::XMLoadFloat3(&m_verts[strip->m_firstVertIndex + j].m_pos);
+      DirectX::XMVECTOR const v2 = DirectX::XMLoadFloat3(&m_verts[strip->m_firstVertIndex + j + 1].m_pos);
+      DirectX::XMVECTOR const v3 = DirectX::XMLoadFloat3(&m_verts[strip->m_firstVertIndex + j + 2].m_pos);
+      DirectX::XMVECTOR const v4 = DirectX::XMLoadFloat3(&m_verts[strip->m_firstVertIndex + j + 3].m_pos);
 
-      Vector3 north(v1 - v2);
-      Vector3 northEast(v3 - v2);
-      Vector3 east(v4 - v2);
+      DirectX::XMVECTOR const north = DirectX::XMVectorSubtract(v1, v2);
+      DirectX::XMVECTOR const northEast = DirectX::XMVectorSubtract(v3, v2);
+      DirectX::XMVECTOR const east = DirectX::XMVectorSubtract(v4, v2);
 
-      Vector3 norm1(northEast ^ north);
-      norm1.Normalise();
-      Vector3 norm2(east ^ northEast);
-      norm2.Normalise();
-
-      m_verts[nextNormId++].m_norm = norm1;
-      m_verts[nextNormId++].m_norm = norm2;
+      // The native normalise, per T1: these are lighting normals off a grid,
+      // so a zero cross needs two collinear cells and the result is a shading
+      // artifact rather than a simulation divergence.
+      DirectX::XMStoreFloat3(&m_verts[nextNormId++].m_norm, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(northEast, north)));
+      DirectX::XMStoreFloat3(&m_verts[nextNormId++].m_norm, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(east, northEast)));
 
       int vertIndex = strip->m_firstVertIndex + j + 2;
       DEBUG_ASSERT(nextNormId - 2 == vertIndex);
@@ -151,7 +149,7 @@ void LandscapeRenderer::BuildUVArray(SurfaceMap2D<float>* _heightMap)
     const int numVerts = strip->m_numVerts;
     for (int j = 0; j < numVerts; ++j)
     {
-      const Vector3& vert = m_verts[strip->m_firstVertIndex + j].m_pos;
+      DirectX::XMFLOAT3 const& vert = m_verts[strip->m_firstVertIndex + j].m_pos;
       float u = vert.x * factorX;
       float v = vert.z * factorZ;
       m_verts[nextUVId++].m_uv = TextureUV(u, v);
@@ -208,11 +206,12 @@ void LandscapeRenderer::BuildColourArray()
     const int numVerts = strip->m_numVerts - 2;
     for (int j = 0; j < numVerts; ++j)
     {
-      const Vector3& v1 = m_verts[strip->m_firstVertIndex + j].m_pos;
-      const Vector3& v2 = m_verts[strip->m_firstVertIndex + j + 1].m_pos;
-      const Vector3& v3 = m_verts[strip->m_firstVertIndex + j + 2].m_pos;
-      Vector3 centre = (v1 + v2 + v3) * 0.33333f;
-      const Vector3& norm = m_verts[strip->m_firstVertIndex + j + 2].m_norm;
+      DirectX::XMVECTOR const v1 = DirectX::XMLoadFloat3(&m_verts[strip->m_firstVertIndex + j].m_pos);
+      DirectX::XMVECTOR const v2 = DirectX::XMLoadFloat3(&m_verts[strip->m_firstVertIndex + j + 1].m_pos);
+      DirectX::XMVECTOR const v3 = DirectX::XMLoadFloat3(&m_verts[strip->m_firstVertIndex + j + 2].m_pos);
+      DirectX::XMFLOAT3 centre;
+      DirectX::XMStoreFloat3(&centre, DirectX::XMVectorScale(DirectX::XMVectorAdd(DirectX::XMVectorAdd(v1, v2), v3), 0.33333f));
+      DirectX::XMFLOAT3 const& norm = m_verts[strip->m_firstVertIndex + j + 2].m_norm;
       RGBAColour col;
       GetLandscapeColour(centre.y, norm.y, static_cast<unsigned int>(centre.x), static_cast<unsigned int>(centre.z), &col);
 
@@ -229,18 +228,18 @@ void LandscapeRenderer::BuildColourArray()
 //*****************************************************************************
 
 // These are byte offsets into an interleaved vertex buffer handed straight to
-// OpenGL, so they are arithmetic over the SIZE of Vector3 rather than uses of
+// OpenGL, so they are arithmetic over the SIZE of XMFLOAT3 rather than uses of
 // the type. Getting that size wrong does not fail to compile: it feeds the
 // driver a buffer whose fields are in the wrong places, and the landscape
-// renders as garbage. directxmath-migration replaces Vector3 with
-// DirectX::XMFLOAT3, which is the same three tightly packed floats — asserted
-// here rather than assumed, so the day that stops being true is a build error.
-static_assert(sizeof(Vector3) == 3 * sizeof(float), "the vertex buffer offsets below assume Vector3 is three tightly packed floats");
+// renders as garbage. T18 converted LandVertex from Vector3 to XMFLOAT3, which
+// is the same three tightly packed floats — asserted here rather than assumed,
+// so the day that stops being true is a build error.
+static_assert(sizeof(DirectX::XMFLOAT3) == 3 * sizeof(float), "the vertex buffer offsets below assume XMFLOAT3 is three tightly packed floats");
 
 const unsigned LandscapeRenderer::m_posOffset(0);
-const unsigned LandscapeRenderer::m_normOffset(sizeof(Vector3));
-const unsigned LandscapeRenderer::m_colOffset(sizeof(Vector3) * 2);
-const unsigned LandscapeRenderer::m_uvOffset(sizeof(Vector3) * 2 + sizeof(RGBAColour));
+const unsigned LandscapeRenderer::m_normOffset(sizeof(DirectX::XMFLOAT3));
+const unsigned LandscapeRenderer::m_colOffset(sizeof(DirectX::XMFLOAT3) * 2);
+const unsigned LandscapeRenderer::m_uvOffset(sizeof(DirectX::XMFLOAT3) * 2 + sizeof(RGBAColour));
 
 LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
   : m_vertexBuffer(0)
