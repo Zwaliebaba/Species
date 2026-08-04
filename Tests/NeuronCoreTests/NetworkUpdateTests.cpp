@@ -2,6 +2,11 @@
 
 #include "ByteStream.h"
 #include "NetworkUpdate.h"
+// Explicit since directxmath-migration T9: NetworkUpdate.h stores XMFLOAT3 now
+// and no longer includes Vector3.h, which this file had been getting through it.
+// The tests still build positions as Vector3 deliberately — that is what the
+// callers of SetWorldPos pass today, so it is the conversion path being pinned.
+#include "Vector3.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
