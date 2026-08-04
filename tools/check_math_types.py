@@ -113,6 +113,20 @@ XMMATRIX_LOCAL = re.compile(r"\bXMMATRIX\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)
 NATIVE_VECTOR_LOCAL = re.compile(r"\b(?:DirectX::)?XMFLOAT[23]\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
 XMVECTOR_LOCAL = re.compile(r"\bXMVECTOR\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
 
+# PARAMETERS, which are locals the rules above could not see. Converting a
+# SIGNATURE leaves every use of the parameter behind exactly as converting a
+# local does -- `_target - _pos` inside a body whose header now says XMFLOAT3 --
+# and the local regexes all end at `=` or `;`, so a parameter ending at `,` or
+# `)` matched none of them. T18 converted fifteen Location signatures and three
+# of those bodies reached CI.
+NATIVE_PARAM = re.compile(r"(?:DirectX::)?XMFLOAT[23]\s+(?:const\s*)?[&*]?\s*([A-Za-z_][A-Za-z0-9_]*)\s*[,)]")
+NATIVE_MATRIX_PARAM = re.compile(r"(?:DirectX::)?(?:XMFLOAT4X4|XMMATRIX)\s+(?:const\s*)?[&*]?\s*([A-Za-z_][A-Za-z0-9_]*)\s*[,)]")
+LEGACY_PARAM = re.compile(r"\bVector[23]\s+(?:const\s*)?[&*]?\s*([A-Za-z_][A-Za-z0-9_]*)\s*[,)]")
+
+# A class body opening, for the typed-receiver rule below. The negative
+# lookahead drops forward declarations, which end in a semicolon.
+CLASS_OPEN = re.compile(r"^\s*(?:class|struct)\s+([A-Za-z_][A-Za-z0-9_]*)\b(?!.*;\s*$)")
+
 # An XMVECTOR carries no methods AT ALL -- it is four lanes in a register, not a
 # class -- so any legacy method reached through one is unambiguously an error.
 # Added by T15: `prevTailDir.HorizontalAndNormalise()` on a converted local
@@ -284,6 +298,81 @@ def stale_after_rename(rel, text):
     return problems
 
 
+def classes_with_native_members(header_text):
+    """class name -> {member: kind}, for the typed-receiver rule below."""
+    found_classes = {}
+    current = None
+    depth = 0
+    for raw in header_text.splitlines():
+        line = strip_comment(raw)
+        if current is None:
+            opening = CLASS_OPEN.match(line)
+            if opening:
+                current = opening.group(1)
+                depth = line.count("{") - line.count("}")
+                found_classes.setdefault(current, {})
+            continue
+        declaration = DECL.match(line)
+        if declaration:
+            found_classes[current][declaration.group(2)] = (
+                "matrix" if declaration.group(1) in NATIVE_MATRICES else "vector")
+        depth += line.count("{") - line.count("}")
+        if depth <= 0:
+            current = None
+    return {name: members for name, members in found_classes.items() if members}
+
+
+def typed_receiver(rel, text, header_classes):
+    """`obj->m_pos.Set(...)` where obj's class is declared in this file's own
+    header, and that header says m_pos is native.
+
+    The tree-wide member rules cannot see these: m_pos, m_front and m_up are
+    the three most contended names in the codebase, so the ambiguity skip
+    silences them everywhere -- and the per-file rescue is restricted to BARE
+    uses, which `vertex1.m_pos` and `cmnt->m_front` are not. That left the three
+    commonest member names of all completely unchecked, and it cost T18 a CI
+    round: LandscapeRenderer, LevelFile and GlobalWorld each had one.
+
+    A typed receiver removes the ambiguity outright. `cmnt` is declared
+    CameraMount* in LevelFile.cpp and CameraMount is declared in LevelFile.h,
+    so there is nothing to guess about which m_front this is.
+    """
+    problems = []
+    receivers = {}
+    for class_name, members in header_classes.items():
+        # The whole declarator run, not just the first name: `LandVertex
+        # vertex1, vertex2;` declares two receivers and the second one is where
+        # LandscapeRenderer's bug was.
+        pattern = r"\b%s\s*(?:const\s*)?[*&]?\s+((?:const\s+)?[A-Za-z_][A-Za-z0-9_,*&\s]*?)\s*[=;)]" % re.escape(class_name)
+        for run in re.findall(pattern, text):
+            for name in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", run):
+                if name != "const":
+                    receivers.setdefault(name, class_name)
+    if not receivers:
+        return problems
+
+    for number, raw in enumerate(text.splitlines(), 1):
+        line = strip_comment(raw)
+        for name, class_name in receivers.items():
+            if name not in line:
+                continue
+            for member, kind in header_classes[class_name].items():
+                if member not in line:
+                    continue
+                for method in LEGACY_METHODS:
+                    if re.search(r"\b%s\s*(?:\.|->)\s*%s\s*\.\s*%s\s*\(" % (re.escape(name), re.escape(member), method), line):
+                        problems.append((rel, number,
+                                         "%s's %s is a native type and has no %s" % (class_name, member, method),
+                                         line.strip()))
+                if kind == "matrix":
+                    for field in LEGACY_MATRIX_FIELDS:
+                        if re.search(r"\b%s\s*(?:\.|->)\s*%s\s*\.\s*%s\b" % (re.escape(name), re.escape(member), field), line):
+                            problems.append((rel, number,
+                                             "%s's %s is an XMFLOAT4X4, which numbers its rows _11 to _44"
+                                             % (class_name, member), line.strip()))
+    return problems
+
+
 def main():
     native_members = {}   # member name -> (kind, first declaring file)
     legacy_members = set()
@@ -406,6 +495,11 @@ def main():
         # and `(a - b).Normalise()` names no type either -- that one reached CI
         # in T17.
         vector_locals = set(NATIVE_VECTOR_LOCAL.findall(text))
+        # Parameters count as locals here -- see NATIVE_PARAM. A name that is a
+        # native parameter in one signature and a LEGACY one in another is
+        # skipped, the same discipline as everywhere else in this tool.
+        vector_locals |= set(NATIVE_PARAM.findall(text)) - set(LEGACY_PARAM.findall(text))
+        vector_locals -= set(NATIVE_MATRIX_PARAM.findall(text))
         vector_locals -= set(XMVECTOR_LOCAL.findall(text))
         vector_locals -= set(re.findall(r"\bVector[23]\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]", text))
         vector_locals -= set(native_members) | legacy_members
@@ -418,6 +512,11 @@ def main():
 
         if path.suffix == ".cpp":
             problems.extend(stale_after_rename(rel, text))
+            header = path.with_suffix(".h")
+            if header.is_file():
+                problems.extend(typed_receiver(
+                    rel, text,
+                    classes_with_native_members(blank_block_comments(header.read_text(encoding="utf-8", errors="replace")))))
 
         for number, raw in enumerate(text.splitlines(), 1):
             line = strip_comment(raw)

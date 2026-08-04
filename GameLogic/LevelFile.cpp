@@ -225,7 +225,7 @@ void LevelFile::ParseCameraMounts(TextReader* _in)
     cmnt->m_front.y = atof(word);
     word = _in->GetNextToken();
     cmnt->m_front.z = atof(word);
-    cmnt->m_front.Normalise();
+    DirectX::XMStoreFloat3(&cmnt->m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&cmnt->m_front)));
 
     // Read up
     word = _in->GetNextToken();
@@ -234,7 +234,7 @@ void LevelFile::ParseCameraMounts(TextReader* _in)
     cmnt->m_up.y = atof(word);
     word = _in->GetNextToken();
     cmnt->m_up.z = atof(word);
-    cmnt->m_up.Normalise();
+    DirectX::XMStoreFloat3(&cmnt->m_up, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&cmnt->m_up)));
 
     m_cameraMounts.push_back(cmnt);
   }

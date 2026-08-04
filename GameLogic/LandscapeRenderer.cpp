@@ -55,8 +55,8 @@ void LandscapeRenderer::BuildVertArrayAndTriStrip(SurfaceMap2D<float>* _heightMa
       {
         // Yes it is, add it to the strip
         float fx = static_cast<float>(x) * _heightMap->m_cellSizeX;
-        vertex1.m_pos.Set(fx, height1, fz);
-        vertex2.m_pos.Set(fx, height2, fz + _heightMap->m_cellSizeY);
+        vertex1.m_pos = DirectX::XMFLOAT3(fx, height1, fz);
+        vertex2.m_pos = DirectX::XMFLOAT3(fx, height2, fz + _heightMap->m_cellSizeY);
         if (vertex1.m_pos.y < 0.3f)
           vertex1.m_pos.y = -10.0f;
         if (vertex2.m_pos.y < 0.3f)

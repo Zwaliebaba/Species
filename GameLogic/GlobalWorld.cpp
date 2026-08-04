@@ -1833,7 +1833,7 @@ void GlobalWorld::LoadLocations(const char* _filename)
 
     GlobalLocation* location = GetLocation(locIndex);
     if (location)
-      location->m_pos.Set(posX, posY, posZ);
+      location->m_pos = DirectX::XMFLOAT3(posX, posY, posZ);
   }
 
   delete in;

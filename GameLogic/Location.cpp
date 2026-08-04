@@ -384,7 +384,7 @@ int Location::SpawnSpirit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const
 
   int index = m_spirits.GetNextFree();
   Spirit* s = m_spirits.GetPointer(index);
-  s->m_pos = _pos + g_upVector;
+  DirectX::XMStoreFloat3(&s->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::g_XMIdentityR1));
   s->m_vel = _vel;
   s->m_teamId = _teamId;
   s->m_worldObjectId = _id;
@@ -1826,7 +1826,8 @@ int Location::GetBuildingId(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3
 
 void Location::ThrowWeapon(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _target, int _type, unsigned char _fromTeamId)
 {
-  float distance = (_target - _pos).Mag();
+  float distance =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_target), DirectX::XMLoadFloat3(&_pos))));
   float force = sqrtf(distance) * 8.0f;
 
   int grenadeResearch = g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeGrenade);
@@ -2108,7 +2109,8 @@ void Location::Bang(DirectX::XMFLOAT3 const& _pos, float _range, float _damage)
     if (m_buildings.ValidIndex(i))
     {
       Building* building = m_buildings[i];
-      float dist = (_pos - AsLegacy(building->m_pos)).Mag();
+      float dist = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&building->m_pos))));
 
       if (dist < maxBuildingRange)
       {

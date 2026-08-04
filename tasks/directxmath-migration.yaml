@@ -1868,6 +1868,35 @@ tasks:
       header is outside this task's file list and outside its project, which is
       why it landed in its own commit.
 
+      EIGHT CI ERRORS, AND BOTH BLIND SPOTS THEY EXPOSED ARE NOW CLOSED.
+      check_math_types was green on all eight, for two distinct reasons:
+
+        THREE WERE CONVERTED PARAMETERS. Converting a SIGNATURE leaves every
+        use of the parameter behind exactly as converting a local does —
+        `(_target - _pos).Mag()` in a body whose header now says XMFLOAT3 — and
+        every local regex in the tool ended at `=` or `;`, so a parameter
+        ending at `,` or `)` matched none of them. This task converted fifteen
+        Location signatures, which is the most any task has moved at once.
+
+        FIVE WERE MEMBERS REACHED THROUGH A TYPED RECEIVER: vertex1.m_pos.Set,
+        cmnt->m_front.Normalise, location->m_pos.Set. The tree-wide member
+        rules are silent on m_pos, m_front and m_up because those are the three
+        most contended names in the codebase, and the per-file rescue added
+        during T15 only covers BARE uses. So the three commonest member names
+        of all were completely unchecked.
+
+        A typed receiver removes the ambiguity rather than guessing at it: cmnt
+        is declared CameraMount* in LevelFile.cpp and CameraMount is declared
+        in LevelFile.h, so there is nothing left to resolve. Same shape as
+        every other narrowing this tool has taken — a smaller claim about where
+        a name's type is known, not a broader regex.
+
+      AND THE COMMA-DECLARATOR BUG, FOR THE SECOND TIME IN TWO TASKS. The first
+      cut of the receiver rule caught vertex1 and not vertex2, because
+      `LandVertex vertex1, vertex2;` declares two and the regex captured one —
+      exactly what the used-before-declared rule got wrong a task earlier with
+      `Vector3 pos, normal;`. Both now read the whole declarator run.
+
       A SMALLER THING WORTH KEEPING. GenerateNormals normalises three times —
       both face normals, then their sum — and only the last one looks
       redundant. It is not: normalising the two faces first is what makes the
