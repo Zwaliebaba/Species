@@ -166,7 +166,10 @@ bool SoulDestroyer::Advance(Unit* _unit)
   m_retargetTimer -= SERVER_ADVANCE_PERIOD;
 
   bool arrived = AdvanceToTargetPosition();
-  if (arrived || m_targetPos == g_zeroVector || m_retargetTimer < 0.0f)
+  // Was `m_targetPos == g_zeroVector`, which is Vector3::operator== -- a
+  // PER-COMPONENT NearlyEquals at 1e-6, not an exact comparison.
+  if (arrived || DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)) ||
+      m_retargetTimer < 0.0f)
   {
     m_retargetTimer = 5.0f;
     bool found = false;
@@ -241,8 +244,18 @@ void SoulDestroyer::Attack(DirectX::XMFLOAT3 const& _pos)
       Zombie* zombie = new Zombie();
       zombie->m_pos = entity->m_pos;
       zombie->m_front = entity->m_front;
-      zombie->m_up = g_upVector;
-      zombie->m_up.RotateAround(zombie->m_front * syncsfrand());
+      zombie->m_up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+
+      // RotateAround's angle is the vector's magnitude, with its own 1e-8 guard.
+      DirectX::XMVECTOR const spinAxis = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&zombie->m_front), syncsfrand());
+      float const spinLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(spinAxis));
+      if (spinLengthSquared >= 1e-8f)
+      {
+        float const spin = sqrtf(spinLengthSquared);
+        DirectX::XMStoreFloat3(&zombie->m_up,
+                               DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&zombie->m_up),
+                                                           DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(spinAxis, 1.0f / spin), spin)));
+      }
       DirectX::XMStoreFloat3(&zombie->m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 0.5f));
       zombie->m_vel.y = 20.0f + syncfrand(25.0f);
       int index = g_location->m_effects.PutData(zombie);
@@ -472,13 +485,15 @@ void SoulDestroyer::RenderShapes(float _predictionTime)
   DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
                                                                      DirectX::XMLoadFloat3(&m_pos)));
 
-  DirectX::XMVECTOR const predictedUp = DirectX::XMLoadFloat3(&m_up);
-  DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(predictedUp, DirectX::XMLoadFloat3(&m_front));
-  predictedFront = predictedRight ^ predictedUp;
-  predictedFront.Normalise();
-  predictedUp.Normalise();
+  // front is RECOMPUTED orthogonal to up and both are normalised before the
+  // basis is built -- passing m_front here would be a different matrix.
+  DirectX::XMVECTOR const rawUp = DirectX::XMLoadFloat3(&m_up);
+  DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(rawUp, DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(predictedRight, rawUp));
+  DirectX::XMVECTOR const predictedUp = DirectX::XMVector3Normalize(rawUp);
+
   DirectX::XMFLOAT4X4 mat;
-  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(predictedFront, predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
 
   glEnable(GL_NORMALIZE);
   glDisable(GL_TEXTURE_2D);
@@ -524,11 +539,14 @@ void SoulDestroyer::RenderShapesForPixelEffect(float _predictionTime)
   DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
                                                                      DirectX::XMLoadFloat3(&m_pos)));
 
+  // front is RECOMPUTED orthogonal to up, and deliberately NOT normalised
+  // here -- unlike the Render path, which normalises both.
   DirectX::XMVECTOR const predictedUp = DirectX::XMLoadFloat3(&m_up);
   DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(predictedUp, DirectX::XMLoadFloat3(&m_front));
-  predictedFront = predictedRight ^ predictedUp;
+  DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Cross(predictedRight, predictedUp);
+
   DirectX::XMFLOAT4X4 mat;
-  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(predictedFront, predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
 
   g_renderer->MarkUsedCells(s_shapeHead, mat);
 
@@ -570,11 +588,14 @@ void SoulDestroyer::Render(float _predictionTime)
     DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
                                                                        DirectX::XMLoadFloat3(&m_pos)));
 
+    // front is RECOMPUTED orthogonal to up, and deliberately NOT normalised
+    // here -- unlike the Render path, which normalises both.
     DirectX::XMVECTOR const predictedUp = DirectX::XMLoadFloat3(&m_up);
     DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(predictedUp, DirectX::XMLoadFloat3(&m_front));
-    predictedFront = predictedRight ^ predictedUp;
+    DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Cross(predictedRight, predictedUp);
+
     DirectX::XMFLOAT4X4 mat;
-    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(predictedFront, predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
 
     //        RenderSphere( m_targetPos, 5.0f );
     //        RenderSphere( predictedPos, 300.0f );

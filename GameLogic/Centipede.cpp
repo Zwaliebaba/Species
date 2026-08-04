@@ -253,7 +253,9 @@ bool Centipede::Advance(Unit* _unit)
     }
 
     bool arrived = AdvanceToTargetPosition();
-    if (arrived || m_targetPos == g_zeroVector)
+    // Was `m_targetPos == g_zeroVector`, which is Vector3::operator== -- a
+    // PER-COMPONENT NearlyEquals at 1e-6, not an exact comparison.
+    if (arrived || DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)))
     {
       bool found = false;
       if (!found)

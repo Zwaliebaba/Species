@@ -1427,6 +1427,60 @@ tasks:
       in T15, forty-eight sites in Egg and three in AntHill that the file-level
       greps had missed -- billboard vertices and a damaged-shape wobble, none
       of which name a legacy type. Those would all have been CI errors.
+
+      AND THEN COST A SECOND CI ROUND ANYWAY, sixteen errors on a green
+      checker. Worth writing down what each one says about the tool, because
+      three of the four causes were closeable and one was not:
+
+        TWO I SURVEYED AND THEN DID NOT CONVERT. `m_targetPos == g_zeroVector`
+        in SoulDestroyer and Centipede. The == rule existed and was silent,
+        because m_targetPos is XMFLOAT3 on six converted classes and still
+        Vector3 on Airstrike and Spam, and the contended-name skip is
+        TREE-WIDE. Closed: X.cpp's paired X.h is not a guess about which class
+        a bare m_x belongs to, so a contended name declared native in the
+        file's own header is now checked in that file -- for BARE uses only,
+        since without that restriction Citizen.h's XMFLOAT3 m_orders made three
+        correct `officer->m_orders` lines look wrong. Measured before keeping:
+        both real bugs caught, nothing else reported.
+
+        THREE MATRIX ROWS in a second Triffid wobble block, `mat.f *= ...`.
+        Skipped because Triffid's GetHead loads an `XMMATRIX mat` and the
+        blanket local skip gave up all four row names. But XMMATRIX has exactly
+        ONE of them -- r -- so .pos, .u and .f stay unambiguous under that
+        contention. Two of the three now caught; the .r line is genuinely
+        beyond the tool and stays a reading job.
+
+        TWO HorizontalAndNormalise ON AN XMVECTOR. An XMVECTOR has no methods
+        at all, so this needed no contention reasoning, just a rule that
+        existed for members and not for locals. Added.
+
+        ONE `XMFLOAT2 = XMFLOAT3` and one `zombie->m_up.RotateAround`. The
+        compiler's job; nothing for the checker to learn.
+
+      THE RULE THE TOOL KEEPS RE-LEARNING. Every gap above is the same shape:
+      a name whose type the checker knows in one place and not in another, and
+      the fix is never a broader regex -- it is a NARROWER claim about where
+      the name's type is known. Bare-use-only, and .pos/.u/.f-but-not-.r, are
+      both that. The two rules that had to be refused (array members, and the
+      first cut of this one) failed for the opposite reason.
+
+      A SEPARATE BUG IN THE TOOL ITSELF, found while closing the above. The
+      non-math declaration regex -- the one that models failure mode 6 -- read
+      `return m_avoidObstruction;` as a declaration of m_avoidObstruction with
+      type `return`, which marked it contended and switched every rule off for
+      it. Statement keywords are excluded now. It cost four names off the skip
+      list, and it is the second time in this migration that a regex written to
+      widen coverage silently narrowed it instead.
+
+      AND ONE BEHAVIOUR CHANGE I INTRODUCED AND CAUGHT BY READING. Three
+      SoulDestroyer blocks recompute front as right^up before building the
+      basis; my first conversion passed the RAW m_front to
+      BasisFromFrontAndUp and dropped the Render path's two explicit
+      Normalise calls. Nothing in the tree would have reported it -- both
+      versions compile and neither is a math-type error. Verified against the
+      pre-conversion source and fixed, with the normalising Render path and the
+      non-normalising MarkUsedCells and RenderPixelEffect paths now commented
+      apart at each site, since they differ deliberately.
   - id: T16
     title: Convert the structural buildings
     intent: >

@@ -106,7 +106,8 @@ void Tripod::Begin()
     m_legs[i]->PlantFoot();
   }
 
-  m_navData.m_targetPos = m_pos;
+  // Vector2's Vector3 constructor took x and z; XMFLOAT2 has no such thing.
+  m_navData.m_targetPos = DirectX::XMFLOAT2(m_pos.x, m_pos.z);
   m_navData.m_dir = -1;
 }
 

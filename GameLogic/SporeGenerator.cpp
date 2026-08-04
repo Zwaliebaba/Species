@@ -420,8 +420,9 @@ void SporeGenerator::Render(float _predictionTime)
   {
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 prevTailPos = m_tail[i]->GetWorldMatrix(mat).pos;
-    DirectX::XMVECTOR prevTailDir = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&prevTailPos), DirectX::XMLoadFloat3(&predictedPos));
-    prevTailDir.HorizontalAndNormalise();
+    // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
+    DirectX::XMVECTOR prevTailDir = DirectX::XMVector3Normalize(
+      DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&prevTailPos), DirectX::XMLoadFloat3(&predictedPos)), 0.0f));
 
     glBegin(GL_QUAD_STRIP);
 
@@ -525,8 +526,9 @@ bool SporeGenerator::RenderPixelEffect(float _predictionTime)
   {
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 prevTailPos = m_tail[i]->GetWorldMatrix(mat).pos;
-    DirectX::XMVECTOR prevTailDir = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&prevTailPos), DirectX::XMLoadFloat3(&predictedPos));
-    prevTailDir.HorizontalAndNormalise();
+    // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
+    DirectX::XMVECTOR prevTailDir = DirectX::XMVector3Normalize(
+      DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&prevTailPos), DirectX::XMLoadFloat3(&predictedPos)), 0.0f));
 
     for (int j = 0; j < numTailParts; ++j)
     {

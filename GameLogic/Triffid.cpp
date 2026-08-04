@@ -173,10 +173,11 @@ bool Triffid::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 c
 
 void Triffid::Render(float _predictionTime)
 {
-  DirectX::XMFLOAT4X4 mat = GetHead();
+  DirectX::XMFLOAT4X4 headMatrix = GetHead();
+  DirectX::XMMATRIX head = DirectX::XMLoadFloat4x4(&headMatrix);
 
   // Row 3 of the head matrix is its position.
-  DirectX::XMVECTOR const headPos = DirectX::XMVectorSet(mat._41, mat._42, mat._43, 0.0f);
+  DirectX::XMVECTOR const headPos = head.r[3];
 
   // RenderArrow( m_pos, headPos, 1.0f, RGBAColour(100,0,0,255) );
 
@@ -204,15 +205,23 @@ void Triffid::Render(float _predictionTime)
   {
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
     float thefrand = frand();
+
+    // r is row 0, u row 1, f row 2, in the row-vector convention.
     if (thefrand > 0.7f)
-      mat.f *= (1.0f - sinf(timeIndex) * 0.5f);
+      head.r[2] = DirectX::XMVectorScale(head.r[2], 1.0f - sinf(timeIndex) * 0.5f);
     else if (thefrand > 0.4f)
-      mat.u *= (1.0f - sinf(timeIndex) * 0.2f);
+      head.r[1] = DirectX::XMVectorScale(head.r[1], 1.0f - sinf(timeIndex) * 0.2f);
     else
-      mat.r *= (1.0f - sinf(timeIndex) * 0.5f);
+      head.r[0] = DirectX::XMVectorScale(head.r[0], 1.0f - sinf(timeIndex) * 0.5f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
   }
+
+  // The wobble above scales a basis row IN PLACE, and both the shape below and
+  // the launch marker after it use the wobbled matrix, exactly as the legacy
+  // code did with its single mutable Matrix34.
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, head);
 
   glEnable(GL_NORMALIZE);
 

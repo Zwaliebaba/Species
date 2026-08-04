@@ -17,6 +17,9 @@ member with a legacy method or a vector operator is reported:
     m_pos.Mag()          XMFLOAT3 has no Mag
     m_centre - other     XMFLOAT3 has no operator-
     m_centre += other    nor any compound assignment (added by T16)
+    m_centre == other    nor operator== -- and XMVector3Equal is NOT the same
+                         test as the per-component NearlyEquals Vector3 had
+                         (added by T15)
     m_transform.pos      XMFLOAT4X4 has no pos; the rows are _11.._44
     XMFLOAT3 m_vel;      Vector3() zeroed and XMFLOAT3() does not
 
@@ -110,6 +113,38 @@ XMMATRIX_LOCAL = re.compile(r"\bXMMATRIX\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)
 NATIVE_VECTOR_LOCAL = re.compile(r"\b(?:DirectX::)?XMFLOAT[23]\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
 XMVECTOR_LOCAL = re.compile(r"\bXMVECTOR\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
 
+# An XMVECTOR carries no methods AT ALL -- it is four lanes in a register, not a
+# class -- so any legacy method reached through one is unambiguously an error.
+# Added by T15: `prevTailDir.HorizontalAndNormalise()` on a converted local
+# reached CI twice in SporeGenerator.
+
+# ANY member declaration whose type is not one of the math types. This is
+# T14's failure mode 6 -- "a contended name that is not a math type at all" --
+# and it is the reason two otherwise-good rules had to be refused before it was
+# modelled: m_orders is an int on Officer and an XMFLOAT3 on Citizen,
+# m_mousePos is an int[3] in InputDriverWin32, m_right is a float* in
+# SoundLibrary3d. Collecting these lets the same contended-name skip that
+# already protects Vector3-vs-XMFLOAT3 protect int-vs-XMFLOAT3 too.
+#
+# Deliberately greedy: over-collecting only causes a name to be SKIPPED, and
+# the header above says under-reporting is the recoverable direction.
+#
+# But greedy is not the same as careless. `return m_avoidObstruction;` has the
+# exact shape of a declaration -- identifier, space, m_name, terminator -- so
+# without the keyword guard below every `return m_x;` in the tree silently
+# marks m_x contended and switches off every rule for it. The guard is what
+# keeps the skip list to genuinely ambiguous names.
+STATEMENT_KEYWORDS = (
+    "return|delete|case|throw|new|goto|else|do|co_return|co_await|co_yield|sizeof|typedef|using|friend|template"
+)
+
+NON_MATH_DECL = re.compile(
+    r"^\s*(?:static\s+|mutable\s+|const\s+|inline\s+|virtual\s+)*"
+    r"(?!(?:" + STATEMENT_KEYWORDS + r")\b)"
+    r"(?!(?:DirectX::)?(?:XMFLOAT4X4|XMFLOAT3X3|XMFLOAT3|XMFLOAT2|XMVECTOR|XMMATRIX|Vector3|Vector2|Matrix34|Matrix33|Plane)\s)"
+    r"[A-Za-z_][A-Za-z0-9_:]*\s*[*&]?\s+(m_[A-Za-z0-9_]+)\s*[\[={;,]"
+)
+
 LEGACY_DECL = re.compile(
     r"^\s*(?:static\s+|mutable\s+|const\s+)*(Vector2|Vector3|Matrix33|Matrix34)\s+"
     r"(m_[A-Za-z0-9_]+)\s*[={;,]"
@@ -179,6 +214,7 @@ def blank_block_comments(text):
 def main():
     native_members = {}   # member name -> (kind, first declaring file)
     legacy_members = set()
+    non_math_members = set()
     uninitialised = []
 
     for path in source_files():
@@ -189,6 +225,10 @@ def main():
             if legacy:
                 legacy_members.add(legacy.group(2))
 
+            non_math = NON_MATH_DECL.match(line)
+            if non_math:
+                non_math_members.add(non_math.group(1))
+
             found = DECL.match(line)
             if not found:
                 continue
@@ -198,10 +238,44 @@ def main():
             if kind in NATIVE_VECTORS and found.group("init") == ";":
                 uninitialised.append((rel, number, member, kind, raw.strip()))
 
-    ambiguous = sorted(set(native_members) & legacy_members)
+    ambiguous = sorted(set(native_members) & (legacy_members | non_math_members))
     for member in ambiguous:
         del native_members[member]
     uninitialised = [u for u in uninitialised if u[2] not in ambiguous]
+
+    # RESCUING A CONTENDED NAME FOR THE ONE FILE THAT OWNS IT. The skip above
+    # is tree-wide, and it is too blunt on its own: m_targetPos is XMFLOAT3 on
+    # six converted classes and still Vector3 on Airstrike and Spam, so the
+    # skip switched every rule off for it everywhere -- and two forgotten
+    # `m_targetPos == g_zeroVector` in SoulDestroyer and Centipede reached CI
+    # in T15 with the checker green.
+    #
+    # But X.cpp's paired X.h is not a guess about which class a bare m_x
+    # belongs to: inside X.cpp, an unqualified member reference is X's, or a
+    # base of X's, and either way the declaration in X.h is the one that binds.
+    # So a contended name declared native in the file's OWN header is checked
+    # in that file.
+    #
+    # Restricted to BARE uses -- the (?<![.>\w]) below. Without that, Citizen.h
+    # declaring `XMFLOAT3 m_orders` made three correct `officer->m_orders`
+    # lines in Citizen.cpp look wrong, since Officer's m_orders is an int.
+    # Measured before it was kept: with the restriction, both real T15 bugs are
+    # caught and nothing else is reported.
+    rescued_by_file = {}
+    for path in source_files():
+        if path.suffix != ".cpp":
+            continue
+        header = path.with_suffix(".h")
+        if not header.is_file():
+            continue
+        own = {}
+        for raw in blank_block_comments(header.read_text(encoding="utf-8", errors="replace")).splitlines():
+            found = DECL.match(strip_comment(raw))
+            if found:
+                own[found.group(2)] = "matrix" if found.group(1) in NATIVE_MATRICES else "vector"
+        rescued = {member: kind for member, kind in own.items() if member in ambiguous}
+        if rescued:
+            rescued_by_file[path] = rescued
 
     problems = []
     for path in source_files():
@@ -239,6 +313,18 @@ def main():
         legacy_vector_locals -= set(NATIVE_VECTOR_LOCAL.findall(text))
         legacy_vector_locals -= set(native_members) | set(XMVECTOR_LOCAL.findall(text))
 
+        # An XMFLOAT4X4 local contended with an XMMATRIX one is not fully lost.
+        # XMMATRIX has EXACTLY ONE of the four legacy row names -- r, its
+        # XMVECTOR[4] -- so .pos, .u and .f stay unambiguously wrong on such a
+        # name and only .r has to be given up. Triffid.cpp is why: its Render
+        # wrote `mat.f *= ...`, `mat.u *= ...`, `mat.r *= ...` on an XMFLOAT4X4
+        # while its GetHead loaded an `XMMATRIX mat`, and the blanket skip below
+        # let all three reach CI in T15. Two of the three are recoverable.
+        #
+        # Contention with a MATRIX34 of the same name gives up everything --
+        # Matrix34 has all four names -- so those are excluded here.
+        half_contended_matrix_locals = (native_matrix_locals & xmmatrix_locals) - matrix34_locals
+
         contended_locals = (native_matrix_locals & matrix34_locals) | (native_matrix_locals & xmmatrix_locals)
         native_matrix_locals -= contended_locals
         matrix34_locals -= contended_locals
@@ -251,10 +337,18 @@ def main():
         vector_locals -= set(re.findall(r"\bVector[23]\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]", text))
         vector_locals -= set(native_members) | legacy_members
 
+        # XMVECTOR locals, minus any name that is something else elsewhere in
+        # the file -- same contended-name discipline as everywhere here.
+        xmvector_locals = set(XMVECTOR_LOCAL.findall(text))
+        xmvector_locals -= set(NATIVE_VECTOR_LOCAL.findall(text)) | legacy_vector_locals
+        xmvector_locals -= set(native_members) | legacy_members
+
         for number, raw in enumerate(text.splitlines(), 1):
             line = strip_comment(raw)
 
             for local in native_matrix_locals:
+                if local not in line:
+                    continue
                 for method in LEGACY_METHODS:
                     if re.search(r"\b%s\s*\.\s*%s\s*\(" % (re.escape(local), method), line):
                         problems.append((rel, number, "%s.%s() -- %s is an XMFLOAT4X4 and has no %s"
@@ -264,7 +358,27 @@ def main():
                         problems.append((rel, number, "%s.%s -- %s is an XMFLOAT4X4, which numbers its rows _11 to _44"
                                          % (local, field, local), raw.strip()))
 
+            for local in half_contended_matrix_locals:
+                if local not in line:
+                    continue
+                for field in ("pos", "u", "f"):
+                    if re.search(r"\b%s\s*\.\s*%s\b" % (re.escape(local), field), line):
+                        problems.append((rel, number,
+                                         "%s.%s -- %s is an XMFLOAT4X4 here, which numbers its rows _11 to _44, "
+                                         "and an XMMATRIX elsewhere in this file, which has only .r"
+                                         % (local, field, local), raw.strip()))
+
+            for local in xmvector_locals:
+                if local not in line:
+                    continue
+                for method in LEGACY_METHODS:
+                    if re.search(r"(?<![.>\w])%s\s*\.\s*%s\s*\(" % (re.escape(local), method), line):
+                        problems.append((rel, number, "%s.%s() -- %s is an XMVECTOR, which has no methods at all"
+                                         % (local, method, local), raw.strip()))
+
             for local in vector_locals:
+                if local not in line:
+                    continue
                 # (?<![.>\w]) so `something.pos.Mag()` is not read as a bare
                 # local called pos -- Matrix34's .pos really does have Mag, and
                 # EntityLeg reaches it through T10's seam on purpose.
@@ -280,6 +394,8 @@ def main():
                                      raw.strip()))
 
             for local in legacy_vector_locals:
+                if local not in line:
+                    continue
                 if re.search(r"XMLoadFloat[23]\s*\(\s*&\s*%s\b" % re.escape(local), line):
                     problems.append((rel, number,
                                      "XMLoadFloat3(&%s) -- %s is a Vector3, and the seam's conversion is to a reference, "
@@ -287,33 +403,50 @@ def main():
                                      raw.strip()))
 
             for local in matrix34_locals:
+                if local not in line:
+                    continue
                 if re.search(r"XMLoadFloat[23]\s*\(\s*&\s*%s\s*\.\s*(?:pos|r|u|f)\b" % re.escape(local), line):
                     problems.append((rel, number,
                                      "XMLoadFloat3(&%s.<row>) -- Matrix34's rows are Vector3, and the seam's "
                                      "conversion is to a reference, so it does not apply through a pointer" % local,
                                      raw.strip()))
-            for member, (kind, _) in native_members.items():
+            # Tree-wide members match anywhere, including through a `->`.
+            # Rescued ones match only bare, for the reason given above.
+            checked = [(member, kind, r"\b") for member, (kind, _) in native_members.items()]
+            checked += [(member, kind, r"(?<![.>\w])") for member, kind in rescued_by_file.get(path, {}).items()]
+
+            for member, kind, at in checked:
                 if member not in line:
                     continue
                 for method in LEGACY_METHODS:
-                    if re.search(r"\b%s\s*\.\s*%s\s*\(" % (re.escape(member), method), line):
+                    if re.search(r"%s%s\s*\.\s*%s\s*\(" % (at, re.escape(member), method), line):
                         problems.append((rel, number, "%s.%s() -- the native type has no %s"
                                          % (member, method, method), raw.strip()))
                 if kind == "matrix":
                     for field in LEGACY_MATRIX_FIELDS:
-                        if re.search(r"\b%s\s*\.\s*%s\b" % (re.escape(member), field), line):
+                        if re.search(r"%s%s\s*\.\s*%s\b" % (at, re.escape(member), field), line):
                             problems.append((rel, number, "%s.%s -- XMFLOAT4X4 numbers its rows, _11 to _44"
                                              % (member, field), raw.strip()))
-                if re.search(r"\b%s\s*(?:[-+*^]|/(?!/))\s*[A-Za-z_(]" % re.escape(member), line):
+                if re.search(r"%s%s\s*(?:[-+*^]|/(?!/))\s*[A-Za-z_(]" % (at, re.escape(member)), line):
                     problems.append((rel, number, "arithmetic on %s -- the native types have no operators" % member,
                                      raw.strip()))
                 # Compound assignment was invisible until T16: the pattern above
                 # requires an identifier after the operator, and `+=` has an `=`
                 # there. These are the MUTATING operators, so they are the ones
                 # whose absence matters most -- two of them reached CI.
-                if re.search(r"\b%s\s*(?:[-+*^/]=)(?!=)" % re.escape(member), line):
+                if re.search(r"%s%s\s*(?:[-+*^/]=)(?!=)" % (at, re.escape(member)), line):
                     problems.append((rel, number,
                                      "compound assignment to %s -- the native types have no operators" % member,
+                                     raw.strip()))
+                # Equality too. Vector3::operator== was a per-component
+                # NearlyEquals at 1e-6; XMFLOAT3 has no operator== at all, and
+                # two of these reached CI in T15 after being spotted and then
+                # forgotten. XMVector3NearEqual with 1e-6 per lane is the
+                # equivalent -- XMVector3Equal is a DIFFERENT test.
+                if re.search(r"%s%s\s*[=!]=" % (at, re.escape(member)), line):
+                    problems.append((rel, number,
+                                     "%s compared with == or != -- XMFLOAT3 has neither; Vector3's was a "
+                                     "per-component NearlyEquals at 1e-6, so XMVector3NearEqual is the match" % member,
                                      raw.strip()))
 
     for rel, number, message, text in problems:
@@ -337,7 +470,7 @@ def main():
     print("Math types OK (%d native member name(s) tracked, %d ambiguous and skipped)."
           % (len(native_members), len(ambiguous)))
     if ambiguous:
-        print("  skipped, declared as both a native and a legacy type: %s" % ", ".join(ambiguous))
+        print("  skipped, the same name means something else somewhere: %s" % ", ".join(ambiguous))
     return 0
 
 
