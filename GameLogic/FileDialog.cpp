@@ -284,8 +284,6 @@ void FileDialog::RefreshFileList()
   m_selected.clear();
 
   m_files = g_resource->ListResources(m_path, m_filter, false);
-
-  EclDirtyWindow(m_name);
 }
 
 void FileDialog::FileClicked(int index)

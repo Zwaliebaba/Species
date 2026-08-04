@@ -6,10 +6,7 @@
 
 static std::vector<std::unique_ptr<EclWindow>> windows;
 
-static void (*clearDraw)(int, int, int, int) = nullptr;
 static void (*tooltipCallback)(EclWindow*, EclButton*) = nullptr;
-
-static std::vector<std::unique_ptr<DirtyRect>> dirtyrects;
 
 static int buttonDownMouseX = 0;
 static int buttonDownMouseY = 0;
@@ -40,30 +37,10 @@ static std::string popupWindow = "None";     // Current popup window
 static std::string maximisedWindow = "None"; // Which window is maximised
 static std::string currentButton = "None";   // Current highlighted button
 
-// ============================================================================
-
-DirtyRect::DirtyRect()
-  : m_x(0),
-    m_y(0),
-    m_width(0),
-    m_height(0)
-{
-}
-
-DirtyRect::DirtyRect(int newx, int newy, int newwidth, int newheight)
-  : m_x(newx),
-    m_y(newy),
-    m_width(newwidth),
-    m_height(newheight)
-{
-}
-
-
 void EclInitialise(int _screenW, int _screenH)
 {
   screenW = _screenW;
   screenH = _screenH;
-  EclDirtyRectangle(0, 0, screenW, screenH);
 }
 
 void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
@@ -73,12 +50,6 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
 
   mouseX = _mouseX;
   mouseY = _mouseY;
-
-  EclWindow* currentHighlightedWindow = EclGetWindow(mouseX, mouseY);
-  if (currentHighlightedWindow)
-  {
-    EclDirtyWindow(currentHighlightedWindow);
-  }
 
   if (!_lmb && !lmb && !_rmb && !rmb) // No buttons changed, mouse move only
   {
@@ -91,7 +62,6 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
         if (currentButton != button->m_name)
         {
           currentButton = button->m_name;
-          EclDirtyWindow(currentWindow);
           tooltipTimer = EclGetAccurateTime() + 1000;
         }
         else
@@ -108,7 +78,6 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
         if (currentButton != "None")
         {
           currentButton = "None";
-          EclDirtyWindow(currentWindow);
           if (tooltipCallback)
             tooltipCallback(nullptr, nullptr);
         }
@@ -132,8 +101,6 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
     EclWindow* currentWindow = EclGetWindow(mouseX, mouseY);
     if (currentWindow)
     {
-      if (windowFocus != "None")
-        EclDirtyWindow(windowFocus.c_str());
       windowFocus = currentWindow->m_name;
       EclBringWindowToFront(currentWindow->m_name);
       mouseDownWindow = currentWindow->m_name;
@@ -159,7 +126,6 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
     {
       if (windowFocus != "None")
       {
-        EclDirtyWindow(windowFocus.c_str());
         windowFocus = "None";
       }
     }
@@ -233,7 +199,6 @@ void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
       EclButton* button = currentWindow->GetButton(buttonDownMouseX - currentWindow->m_x, buttonDownMouseY - currentWindow->m_y);
       if (button)
       {
-        EclDirtyWindow(currentWindow);
         button->MouseUp();
       }
       else
@@ -285,7 +250,6 @@ void EclRender()
     EclWindow* maximised = EclGetWindow(maximisedWindow.c_str());
     if (maximised)
     {
-      clearDraw(maximised->m_x, maximised->m_y, maximised->m_w, maximised->m_h);
       maximised->Render(true);
       maximiseRender = true;
     }
@@ -298,29 +262,13 @@ void EclRender()
   if (!maximiseRender)
   {
     //
-    // Clear all dirty rectangle areas
-
-    if (clearDraw)
-    {
-      for (int i = 0; i < dirtyrects.size(); ++i)
-      {
-        DirtyRect* dr = dirtyrects[i].get();
-        clearDraw(dr->m_x, dr->m_y, dr->m_width, dr->m_height);
-      }
-    }
-
-    //
     // Draw all dirty buttons
 
     for (int i = windows.size() - 1; i >= 0; --i)
     {
       EclWindow* window = windows[i].get();
-      if (window->m_dirty)
-      {
-        bool hasFocus = (windowFocus == window->m_name);
-        window->Render(hasFocus);
-        // window->m_dirty = false;
-      }
+      bool hasFocus = (windowFocus == window->m_name);
+      window->Render(hasFocus);
     }
   }
 }
@@ -339,12 +287,7 @@ void EclUpdate()
 
 void EclShutdown()
 {
-  {
-    windows.clear();
-  };
-  {
-    dirtyrects.clear();
-  };
+  windows.clear();
 }
 
 char const* EclGetCurrentButton() { return currentButton.c_str(); }
@@ -405,7 +348,6 @@ void EclRegisterWindow(std::unique_ptr<EclWindow> owned, EclWindow* parent)
   window->MakeAllOnScreen();
   windows.insert(windows.begin(), std::move(owned));
   window->Create();
-  EclDirtyWindow(window);
 }
 
 void EclRegisterPopup(std::unique_ptr<EclWindow> window)
@@ -431,8 +373,6 @@ void EclRemoveWindow(char const* name)
   if (index != -1)
   {
     std::unique_ptr<EclWindow> owned = std::move(windows[index]);
-    EclWindow* window = owned.get();
-    EclDirtyRectangle(window->m_x, window->m_y, window->m_w, window->m_h);
     windows.erase(windows.begin() + (index));
     // Destroyed where the delete was, after the erase.
     owned.reset();
@@ -457,13 +397,8 @@ void EclSetWindowPosition(char const* name, int x, int y)
   EclWindow* window = EclGetWindow(name);
   if (window)
   {
-    EclDirtyWindow(window);
     window->m_x = x;
     window->m_y = y;
-    EclDirtyRectangle(window->m_x, window->m_y, window->m_w, window->m_h);
-  }
-  else
-  {
   }
 }
 
@@ -473,12 +408,9 @@ void EclSetWindowSize(char const* name, int w, int h)
   if (window)
   {
     window->Remove();
-    EclDirtyWindow(window);
-    EclDirtyRectangle(window->m_x, window->m_y, window->m_w, window->m_h);
     window->m_w = w;
     window->m_h = h;
     window->Create();
-    EclDirtyRectangle(window->m_x, window->m_y, window->m_w, window->m_h);
   }
   else
   {
@@ -494,7 +426,6 @@ void EclBringWindowToFront(char* name)
     EclWindow* window = owned.get();
     windows.erase(windows.begin() + (index));
     windows.insert(windows.begin(), std::move(owned));
-    EclDirtyWindow(window);
   }
   else
   {
@@ -509,9 +440,6 @@ bool EclMouseInWindow(EclWindow* window)
 
 bool EclMouseInButton(EclWindow* window, EclButton* button)
 {
-  // DebugAssert( window );
-  // DebugAssert( button );
-
   return (EclMouseInWindow(window) && mouseX >= window->m_x + button->m_x && mouseX <= window->m_x + button->m_x + button->m_w &&
           mouseY >= window->m_y + button->m_y && mouseY <= window->m_y + button->m_y + button->m_h);
 }
@@ -589,8 +517,6 @@ void EclUnMaximise()
     w->SetPosition(maximiseOldX, maximiseOldY);
     w->SetSize(maximiseOldW, maximiseOldH);
   }
-
-  EclDirtyRectangle(0, 0, screenW, screenH);
 }
 
 std::vector<std::unique_ptr<EclWindow>>* EclGetWindows() { return &windows; }
@@ -601,74 +527,9 @@ int EclGetScreenW() { return screenW; }
 
 int EclGetScreenH() { return screenH; }
 
-void EclRegisterClearFunction(void (*_clearDraw)(int, int, int, int)) { clearDraw = _clearDraw; }
-
-void EclDirtyWindow(char const* name)
-{
-  EclWindow* window = EclGetWindow(name);
-  if (window)
-  {
-    EclDirtyWindow(window);
-  }
-  else
-  {
-  }
-}
-
-void EclDirtyWindow(EclWindow* window)
-{
-  // DebugAssert( window );
-
-  if (!window->m_dirty)
-  {
-    window->m_dirty = true;
-    EclDirtyRectangle(window->m_x, window->m_y, window->m_w, window->m_h);
-  }
-}
-
-void EclDirtyRectangle(int x, int y, int w, int h)
-{
-  dirtyrects.push_back(std::make_unique<DirtyRect>(x, y, w, h));
-
-  for (int i = 0; i < windows.size(); ++i)
-  {
-    EclWindow* window = windows[i].get();
-    if (EclRectangleOverlap(x, y, w, h, window->m_x, window->m_y, window->m_w, window->m_h))
-      EclDirtyWindow(window);
-  }
-}
-
-void EclResetDirtyRectangles()
-{
-  dirtyrects.clear();
-
-  for (int i = 0; i < windows.size(); ++i)
-  {
-    EclWindow* window = windows[i].get();
-    window->m_dirty = false;
-  }
-}
-
-std::vector<std::unique_ptr<DirtyRect>>* EclGetDirtyRects() { return &dirtyrects; }
-
-bool EclRectangleOverlap(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2)
-{
-  int maxleft = x1 > x2 ? x1 : x2;
-  int maxtop = y1 > y2 ? y1 : y2;
-
-  int minright = x1 + w1 < x2 + w2 ? x1 + w1 : x2 + w2;
-  int minbottom = y1 + h1 < y2 + h2 ? y1 + h1 : y2 + h2;
-
-  if (maxtop <= minbottom && maxleft <= minright)
-    return true;
-
-  else
-    return false;
-}
-
 char const* EclGetCurrentFocus() { return windowFocus.c_str(); }
 
-void EclSetCurrentFocus(char* name)
+void EclSetCurrentFocus(const char* name)
 {
   if (strlen(name) < SIZE_ECLWINDOW_NAME)
   {

@@ -1,18 +1,5 @@
 
-/*
- *          ECLIPSE
- *        version 2.0
- *
- *
- *  Generic Interface Library
- *
- */
-
 #pragma once
-
-#include <memory>
-
-#include <vector>
 
 #include "EclWindow.h"
 #include "EclButton.h"
@@ -61,38 +48,10 @@ char const* EclGetCurrentButton();
 char const* EclGetCurrentClickedButton();
 
 char const* EclGetCurrentFocus();
-void EclSetCurrentFocus(char* name);
+void EclSetCurrentFocus(const char* name);
 
 char const* EclGenerateUniqueWindowName(char const* name); // In static mem (don't delete!)
 std::vector<std::unique_ptr<EclWindow>>* EclGetWindows();
-
-// ============================================================================
-// Dirty rectangles
-
-class DirtyRect
-{
-  public:
-    DirtyRect();
-    DirtyRect(int newx, int newy, int newwidth, int newheight);
-    int m_x;
-    int m_y;
-    int m_width;
-    int m_height;
-};
-
-
-void EclRegisterClearFunction(void (*_clearDraw)(int, int, int, int));
-
-void EclDirtyWindow(char const* name);
-void EclDirtyWindow(EclWindow* window);
-void EclDirtyRectangle(int x, int y, int w, int h);
-
-bool EclRectangleOverlap(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2);
-
-void EclResetDirtyRectangles();
-
-std::vector<std::unique_ptr<DirtyRect>>* EclGetDirtyRects();
-
 
 // ============================================================================
 // Other
