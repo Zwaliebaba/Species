@@ -1055,11 +1055,91 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Read CODING_STANDARDS.md#determinism before starting. The float results
       change by design here; the RNG call sequence and the iteration order must
       not. Those are separate properties and only the first one is sanctioned.
+
+      TAKEN 2026-08-04. MEASURED BEFORE EDITING ANYTHING, and the measurement
+      says this task cannot land as scoped. It is the STRUCTURAL RULE from T20's
+      notes for the FOURTH time, and this is the largest instance in the plan:
+      a task scoped by FILE LIST over storage whose surface is public across the
+      whole tree.
+
+      m_pos and m_vel are declared on WorldObject, which is the base class of
+      every entity, every building and every effect in GameLogic. This task owns
+      WorldObject.h. Nothing else in the wave does. So the moment they become
+      XMFLOAT3:
+
+        364 lines in 40 files stop compiling  (m_pos / m_vel)
+         92 lines in 26 files stop compiling  (m_front, m_angVel, m_centrePos,
+                                               m_spawnPoint on Entity, all public)
+        ---
+        456 lines in ~45 files, none of them in this task's file list
+
+      Measured at cd61487 with a member-name-and-operator sweep, comments
+      stripped, excluding the ~20 classes that declare a SHADOWING m_pos or
+      m_vel of their own (Camera, ParticleSystem, Virii, Explosion, Rocket,
+      Clouds, Flag, GlobalWorld, RoutingSystem, LevelFile and the rest — those
+      convert under their own tasks and are unaffected). 71 of the 364 and 26 of
+      the 92 MUTATE through the member (`m_vel *= f`, `m_pos.Normalise()`), so
+      they cannot be repaired by wrapping the read in a temporary.
+
+      The worst hit are all owned by other tasks: Weapons.cpp 67 (T19),
+      Spider.cpp 41 (T15), SoulDestroyer.cpp 31 (T15), Spam.cpp 24 (T19),
+      Centipede.cpp 25 (T15), Tripod.cpp 26 (T15), LaserFence.cpp 18 (T17).
+
+      WHY T10's ESCAPE DOES NOT WORK HERE. T10 hit the same wall at 89 sites and
+      got out of it for free: those were CALLS PASSING a Matrix34 by value, so
+      adding the implicit conversion pair collapsed all 89 to zero. These are
+      METHOD AND OPERATOR CALLS ON THE MEMBER ITSELF. C++ does not consult a
+      user-defined conversion on the left operand of a member operator, and
+      XMFLOAT3 has no members to call, so no seam improvement reaches them. This
+      one has to be paid.
+
+      AND THE SAFETY NET IS BLIND TO IT. tools/check_math_types.py skips a member
+      name declared as both a native and a legacy type, and reports today:
+
+        skipped, declared as both a native and a legacy type:
+          m_angVel, m_centre, m_pos, m_vel
+
+      m_pos and m_vel are contended because SoundSource, SoundInstance and Shape
+      already declare native ones. Converting WorldObject's does NOT resolve
+      that — Water.h, LevelFile.h, AntHill.h and sixteen others keep a legacy
+      m_pos — so the checker written for exactly this migration will stay silent
+      on exactly the two members this task converts. The tool is not wrong; the
+      name is genuinely ambiguous. It means this task's only compiler is CI.
+
+      AWAITING THE OWNER'S DECISION. Both answers are defensible and the
+      precedent points at (a), which is what T10 was given at a quarter of this
+      scale:
+
+        (a) THIS TASK OWNS THE ~456 SEAM REPAIRS, in 45 files belonging to
+            T15-T19, T22 and T24. Mechanical, and uniform if the seam gains a
+            transitional `Vector3& AsLegacy(XMFLOAT3&)` reinterpretation (legal
+            today — Vector3.h's static_asserts already pin the layout, and T25
+            deletes it with everything else). Keeps the plan's task shape and
+            keeps every wave-5 task independently CI-green.
+            Cost: one commit writing ~456 deliberately-legacy lines into files
+            six other tasks own, none of it compilable here.
+
+        (b) THE WAVE IS NOT PARALLEL AND THE PLAN SHOULD STOP SAYING IT IS.
+            T14-T19 all read WorldObject's storage, so they are one unit as far
+            as m_pos is concerned. Land them as a sequence of reviewable commits
+            on one branch, CI-green at the END of the wave rather than after
+            each task. No seam repairs are written and none are later unwritten.
+            Cost: a red-until-finished branch, which this repo has not done
+            before, and T21's gate moves no earlier.
+
+      Recommend (a), on the same reasoning the owner accepted for T10: it keeps
+      each task independently verifiable, and (b) trades that for avoiding work
+      that is mechanical rather than difficult. But (a) is four times the size of
+      the T10 estimate that was already wrong by four times, so the recommendation
+      is offered with that on the record.
+
+      NOTHING HAS BEEN CONVERTED YET. This entry is the discovery, committed
+      before the edits so a concurrent agent does not repeat it.
 
   - id: T15
     title: Convert the creature entities
