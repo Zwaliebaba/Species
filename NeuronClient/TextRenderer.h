@@ -1,7 +1,7 @@
 #pragma once
 
 class RGBAColour;
-class Vector3;
+#include "NeuronMath.h"
 
 
 #define DEF_FONT_SIZE 12.0f
@@ -47,12 +47,13 @@ class TextRenderer
     void DrawText2DDown(float _x, float _y, float _size, char const* _text, ...); // Like above but rotated 90 cw
 
 
-    void DrawText3DSimple(Vector3 const& _pos, float _size, char const* _text);
-    void DrawText3D(Vector3 const& _pos, float _size, char const* _text, ...);
-    void DrawText3DCentre(Vector3 const& _pos, float _size, char const* _text, ...);
-    void DrawText3DRight(Vector3 const& _pos, float _size, char const* _text, ...);
+    void DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text);
+    void DrawText3D(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
+    void DrawText3DCentre(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
+    void DrawText3DRight(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
 
-    void DrawText3D(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up, float _size, char const* _text, ...);
+    void DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, float _size, char const* _text,
+                    ...);
 
     float GetTextWidth(unsigned int _numChars, float _size = 13.0f);
 };

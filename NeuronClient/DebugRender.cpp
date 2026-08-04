@@ -56,7 +56,7 @@ void RenderSquare2d(float x, float y, float size, RGBAColour const& _col)
 }
 
 
-void RenderCube(Vector3 const& _centre, float _sizeX, float _sizeY, float _sizeZ, RGBAColour const& _col)
+void RenderCube(DirectX::XMFLOAT3 const& _centre, float _sizeX, float _sizeY, float _sizeZ, RGBAColour const& _col)
 {
   float halfX = _sizeX * 0.5f;
   float halfY = _sizeY * 0.5f;
@@ -109,7 +109,7 @@ void RenderCube(Vector3 const& _centre, float _sizeX, float _sizeY, float _sizeZ
 }
 
 
-void RenderSphereRings(Vector3 const& _centre, float _radius, RGBAColour const& _col)
+void RenderSphereRings(DirectX::XMFLOAT3 const& _centre, float _radius, RGBAColour const& _col)
 {
   glColor3ubv(_col.GetData());
 
@@ -135,34 +135,34 @@ void RenderSphereRings(Vector3 const& _centre, float _radius, RGBAColour const& 
   glBegin(GL_LINE_LOOP);
   for (i = 0; i < _segs; i++)
   {
-    Vector3 pos = _centre;
+    DirectX::XMFLOAT3 pos = _centre;
     pos.x += sx[i] * _radius;
     pos.z += cx[i] * _radius;
-    glVertex3fv(pos.GetData());
+    glVertex3fv(&pos.x);
   }
   glEnd();
   glBegin(GL_LINE_LOOP);
   for (i = 0; i < _segs; i++)
   {
-    Vector3 pos = _centre;
+    DirectX::XMFLOAT3 pos = _centre;
     pos.y += sx[i] * _radius;
     pos.z += cx[i] * _radius;
-    glVertex3fv(pos.GetData());
+    glVertex3fv(&pos.x);
   }
   glEnd();
   glBegin(GL_LINE_LOOP);
   for (i = 0; i < _segs; i++)
   {
-    Vector3 pos = _centre;
+    DirectX::XMFLOAT3 pos = _centre;
     pos.x += sx[i] * _radius;
     pos.y += cx[i] * _radius;
-    glVertex3fv(pos.GetData());
+    glVertex3fv(&pos.x);
   }
   glEnd();
 }
 
 
-void RenderSphere(Vector3 const& _centre, float _radius, RGBAColour const& _col)
+void RenderSphere(DirectX::XMFLOAT3 const& _centre, float _radius, RGBAColour const& _col)
 {
   static Sphere aSphere;
 
@@ -171,20 +171,29 @@ void RenderSphere(Vector3 const& _centre, float _radius, RGBAColour const& _col)
 }
 
 
-void RenderVerticalCylinder(Vector3 const& _centreBase, Vector3 const& _verticalAxis, float _height, float _radius, RGBAColour const& _col)
+// A point on a circle of _radius about _centre, in the plane spanned by the two
+// axes. The three loops below differ only in where the circle sits.
+static DirectX::XMVECTOR RingPoint(DirectX::FXMVECTOR _centre, DirectX::FXMVECTOR _axis2, DirectX::FXMVECTOR _axis3, float _theta, float _radius)
 {
-  Vector3 axis1 = _verticalAxis;
-  axis1.Normalise();
-  Vector3 axis2;
-  Vector3 axis3;
+  DirectX::XMVECTOR point = DirectX::XMVectorMultiplyAdd(_axis2, DirectX::XMVectorReplicate(sinf(_theta) * _radius), _centre);
+  return DirectX::XMVectorMultiplyAdd(_axis3, DirectX::XMVectorReplicate(cosf(_theta) * _radius), point);
+}
 
-  if (axis1.x > 0.5f)
-    axis2.Set(0, 1, 0);
-  else
-    axis2.Set(1, 0, 0);
 
-  axis3 = axis1 ^ axis2;
-  axis2 = axis1 ^ axis3;
+void RenderVerticalCylinder(DirectX::XMFLOAT3 const& _centreBase, DirectX::XMFLOAT3 const& _verticalAxis, float _height, float _radius,
+                            RGBAColour const& _col)
+{
+  DirectX::XMVECTOR const axis1 = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_verticalAxis));
+
+  // Any vector not parallel to axis1 will do to start the basis off.
+  DirectX::XMVECTOR seed = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+  if (DirectX::XMVectorGetX(axis1) > 0.5f)
+    seed = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+  DirectX::XMVECTOR const axis3 = DirectX::XMVector3Cross(axis1, seed);
+  DirectX::XMVECTOR const axis2 = DirectX::XMVector3Cross(axis1, axis3);
+
+  DirectX::XMVECTOR const base = DirectX::XMLoadFloat3(&_centreBase);
 
   glDisable(GL_LIGHTING);
   glDisable(GL_COLOR_MATERIAL);
@@ -198,11 +207,10 @@ void RenderVerticalCylinder(Vector3 const& _centreBase, Vector3 const& _vertical
   glBegin(GL_LINE_LOOP);
   for (int i = 0; i < numEdges; ++i)
   {
-    Vector3 pos = _centreBase;
     float theta = M_PI * 2.0f * (float)i / (float)numEdges;
-    pos += axis2 * sinf(theta) * _radius;
-    pos += axis3 * cosf(theta) * _radius;
-    glVertex3fv(pos.GetData());
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(&pos, RingPoint(base, axis2, axis3, theta, _radius));
+    glVertex3fv(&pos.x);
   }
   glEnd();
 
@@ -210,11 +218,11 @@ void RenderVerticalCylinder(Vector3 const& _centreBase, Vector3 const& _vertical
   glBegin(GL_LINE_LOOP);
   for (int i = 0; i < numEdges; ++i)
   {
-    Vector3 pos = _centreBase + axis1 * _height;
     float theta = M_PI * 2.0f * (float)i / (float)numEdges;
-    pos += axis2 * sinf(theta) * _radius;
-    pos += axis3 * cosf(theta) * _radius;
-    glVertex3fv(pos.GetData());
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(&pos,
+                           RingPoint(DirectX::XMVectorMultiplyAdd(axis1, DirectX::XMVectorReplicate(_height), base), axis2, axis3, theta, _radius));
+    glVertex3fv(&pos.x);
   }
   glEnd();
 
@@ -222,13 +230,14 @@ void RenderVerticalCylinder(Vector3 const& _centreBase, Vector3 const& _vertical
   glBegin(GL_LINE_LOOP);
   for (int i = 0; i < numEdges; ++i)
   {
-    Vector3 pos = _centreBase;
     float theta = M_PI * 2.0f * (float)i / (float)numEdges;
-    pos += axis2 * sinf(theta) * _radius;
-    pos += axis3 * cosf(theta) * _radius;
-    glVertex3fv(pos.GetData());
-    pos += axis1 * _height;
-    glVertex3fv(pos.GetData());
+    DirectX::XMVECTOR const onBase = RingPoint(base, axis2, axis3, theta, _radius);
+
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(&pos, onBase);
+    glVertex3fv(&pos.x);
+    DirectX::XMStoreFloat3(&pos, DirectX::XMVectorMultiplyAdd(axis1, DirectX::XMVectorReplicate(_height), onBase));
+    glVertex3fv(&pos.x);
   }
   glEnd();
 
@@ -236,16 +245,25 @@ void RenderVerticalCylinder(Vector3 const& _centreBase, Vector3 const& _vertical
 }
 
 
-void RenderArrow(Vector3 const& start, Vector3 const& end, float width, RGBAColour const& _col /* =RGBAColour */)
+void RenderArrow(DirectX::XMFLOAT3 const& start, DirectX::XMFLOAT3 const& end, float width, RGBAColour const& _col /* =RGBAColour */)
 {
   CameraAccess* cam = g_camera;
-  Vector3 midPoint = (start + end) * 0.5f;
-  Vector3 midPointToCamera = cam->GetPos() - midPoint;
-  float midPointToCameraDist = midPointToCamera.Mag();
-  Vector3 invDir = start - end;
-  Vector3 sidewaysDir = ((cam->GetPos() - end) ^ invDir).Normalise();
-  float arrowLen = invDir.Mag();
-  invDir.SetLength(arrowLen * 0.2f);
+  DirectX::XMFLOAT3 const cameraPos = cam->GetPos();
+
+  DirectX::XMVECTOR const startV = DirectX::XMLoadFloat3(&start);
+  DirectX::XMVECTOR const endV = DirectX::XMLoadFloat3(&end);
+  DirectX::XMVECTOR const camV = DirectX::XMLoadFloat3(&cameraPos);
+
+  DirectX::XMVECTOR const midPoint = DirectX::XMVectorScale(DirectX::XMVectorAdd(startV, endV), 0.5f);
+  float const midPointToCameraDist = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(camV, midPoint)));
+
+  DirectX::XMVECTOR const startToEnd = DirectX::XMVectorSubtract(startV, endV);
+  float const arrowLen = DirectX::XMVectorGetX(DirectX::XMVector3Length(startToEnd));
+  DirectX::XMVECTOR const sidewaysDir = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(camV, endV), startToEnd));
+
+  // SetLength on a zero-length vector used to leave (len,0,0) behind; a
+  // degenerate arrow now yields a zero head instead, which draws nothing.
+  DirectX::XMVECTOR const invDir = DirectX::XMVectorScale(DirectX::XMVector3Normalize(startToEnd), arrowLen * 0.2f);
 
   if (_col.a != 255)
   {
@@ -256,15 +274,20 @@ void RenderArrow(Vector3 const& start, Vector3 const& end, float width, RGBAColo
   glColor3ubv(_col.GetData());
 
   glBegin(GL_LINES);
-  glVertex3fv(start.GetDataConst());
-  glVertex3fv(end.GetDataConst());
+  glVertex3fv(&start.x);
+  glVertex3fv(&end.x);
 
-  Vector3 p1 = end + invDir + sidewaysDir * arrowLen * 0.1f;
-  Vector3 p2 = end + invDir - sidewaysDir * arrowLen * 0.1f;
-  glVertex3fv(p1.GetDataConst());
-  glVertex3fv(end.GetDataConst());
-  glVertex3fv(p2.GetDataConst());
-  glVertex3fv(end.GetDataConst());
+  DirectX::XMVECTOR const headBase = DirectX::XMVectorAdd(endV, invDir);
+  DirectX::XMVECTOR const halfWidth = DirectX::XMVectorScale(sidewaysDir, arrowLen * 0.1f);
+
+  DirectX::XMFLOAT3 p1, p2;
+  DirectX::XMStoreFloat3(&p1, DirectX::XMVectorAdd(headBase, halfWidth));
+  DirectX::XMStoreFloat3(&p2, DirectX::XMVectorSubtract(headBase, halfWidth));
+
+  glVertex3fv(&p1.x);
+  glVertex3fv(&end.x);
+  glVertex3fv(&p2.x);
+  glVertex3fv(&end.x);
   glEnd();
 
   glDisable(GL_LINE_SMOOTH);
@@ -272,14 +295,14 @@ void RenderArrow(Vector3 const& start, Vector3 const& end, float width, RGBAColo
 }
 
 
-void RenderPointMarker(Vector3 const& point, char const* _fmt, ...)
+void RenderPointMarker(DirectX::XMFLOAT3 const& point, char const* _fmt, ...)
 {
   char buf[512];
   va_list ap;
   va_start(ap, _fmt);
   vsprintf(buf, _fmt, ap);
 
-  Vector3 end(point + Vector3(20, 20, 20));
+  DirectX::XMFLOAT3 const end(point.x + 20.0f, point.y + 20.0f, point.z + 20.0f);
   RenderArrow(end, point, 2.0f);
   g_editorFont.DrawText3DCentre(end, 3.0f, buf);
 }

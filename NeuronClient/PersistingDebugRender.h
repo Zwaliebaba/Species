@@ -3,7 +3,7 @@
 #ifdef DEBUG_RENDER_ENABLED
 
 #include "SlotMap.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 
 //*****************************************************************************
@@ -13,7 +13,7 @@
 class PersistRenderItem
 {
   public:
-    Vector3 m_vect1, m_vect2;
+    DirectX::XMFLOAT3 m_vect1, m_vect2;
     float m_size1, m_size2, m_size3;
     unsigned int m_life;
     unsigned int m_type;
@@ -74,12 +74,14 @@ class PersistingDebugRenderer
              });
     }
 
-    template <typename... Args> void PointMarker(Vector3 const& _point, unsigned int _life, std::format_string<Args...> _fmt, Args&&... _args)
+    template <typename... Args>
+    void PointMarker(DirectX::XMFLOAT3 const& _point, unsigned int _life, std::format_string<Args...> _fmt, Args&&... _args)
     {
       Record(TypePointMarker, _life, std::format(_fmt, std::forward<Args>(_args)...), [&](PersistRenderItem& _item) { _item.m_vect1 = _point; });
     }
 
-    template <typename... Args> void Sphere(Vector3 const& _centre, float _radius, int _life, std::format_string<Args...> _fmt, Args&&... _args)
+    template <typename... Args>
+    void Sphere(DirectX::XMFLOAT3 const& _centre, float _radius, int _life, std::format_string<Args...> _fmt, Args&&... _args)
     {
       Record(TypeSphere, _life, std::format(_fmt, std::forward<Args>(_args)...),
              [&](PersistRenderItem& _item)
@@ -89,7 +91,8 @@ class PersistingDebugRenderer
              });
     }
 
-    template <typename... Args> void Vector(Vector3 const& _start, Vector3 const& _end, int _life, std::format_string<Args...> _fmt, Args&&... _args)
+    template <typename... Args>
+    void Vector(DirectX::XMFLOAT3 const& _start, DirectX::XMFLOAT3 const& _end, int _life, std::format_string<Args...> _fmt, Args&&... _args)
     {
       Record(TypeVector, _life, std::format(_fmt, std::forward<Args>(_args)...),
              [&](PersistRenderItem& _item)

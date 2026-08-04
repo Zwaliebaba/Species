@@ -2,8 +2,7 @@
 
 #include <math.h>
 
-#include "Vector2.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 #include "SphereRenderer.h"
 
@@ -11,7 +10,7 @@
 // ******************
 // * Class Triangle *
 // ******************
-Triangle::Triangle(Vector3 const& c1, Vector3 const& c2, Vector3 const& c3)
+Triangle::Triangle(DirectX::XMFLOAT3 const& c1, DirectX::XMFLOAT3 const& c2, DirectX::XMFLOAT3 const& c3)
 {
   m_corner[0] = c1;
   m_corner[1] = c2;
@@ -28,19 +27,19 @@ Sphere::Sphere()
   float const x = 0.5257311121;
   float const z = 0.85065080835;
 
-  Vector3 c[12];
-  c[0] = Vector3(-x, 0, z);
-  c[1] = Vector3(x, 0, z);
-  c[2] = Vector3(-x, 0, -z);
-  c[3] = Vector3(x, 0, -z);
-  c[4] = Vector3(0, z, x);
-  c[5] = Vector3(0, z, -x);
-  c[6] = Vector3(0, -z, x);
-  c[7] = Vector3(0, -z, -x);
-  c[8] = Vector3(z, x, 0);
-  c[9] = Vector3(-z, x, 0);
-  c[10] = Vector3(z, -x, 0);
-  c[11] = Vector3(-z, -x, 0);
+  DirectX::XMFLOAT3 c[12];
+  c[0] = DirectX::XMFLOAT3(-x, 0, z);
+  c[1] = DirectX::XMFLOAT3(x, 0, z);
+  c[2] = DirectX::XMFLOAT3(-x, 0, -z);
+  c[3] = DirectX::XMFLOAT3(x, 0, -z);
+  c[4] = DirectX::XMFLOAT3(0, z, x);
+  c[5] = DirectX::XMFLOAT3(0, z, -x);
+  c[6] = DirectX::XMFLOAT3(0, -z, x);
+  c[7] = DirectX::XMFLOAT3(0, -z, -x);
+  c[8] = DirectX::XMFLOAT3(z, x, 0);
+  c[9] = DirectX::XMFLOAT3(-z, x, 0);
+  c[10] = DirectX::XMFLOAT3(z, -x, 0);
+  c[11] = DirectX::XMFLOAT3(-z, -x, 0);
 
   m_topLevelTriangle[0] = Triangle(c[1], c[4], c[0]);
   m_topLevelTriangle[1] = Triangle(c[4], c[9], c[0]);
@@ -69,7 +68,7 @@ Sphere::Sphere()
   glEndList();
 }
 
-void Sphere::ConsiderTriangle(int level, Vector3 const& a, Vector3 const& b, Vector3 const& c)
+void Sphere::ConsiderTriangle(int level, DirectX::XMFLOAT3 const& a, DirectX::XMFLOAT3 const& b, DirectX::XMFLOAT3 const& c)
 {
   if (level > 0)
   {
@@ -83,10 +82,16 @@ void Sphere::ConsiderTriangle(int level, Vector3 const& a, Vector3 const& b, Vec
   {
     level++;
 
-    // Three new vertices (at the midpoints of each existing edge)
-    Vector3 p = (a + b).Normalise();
-    Vector3 q = (b + c).Normalise();
-    Vector3 r = (c + a).Normalise();
+    // Three new vertices, at the midpoints of each existing edge, pushed back
+    // out to the unit sphere.
+    DirectX::XMVECTOR const av = DirectX::XMLoadFloat3(&a);
+    DirectX::XMVECTOR const bv = DirectX::XMLoadFloat3(&b);
+    DirectX::XMVECTOR const cv = DirectX::XMLoadFloat3(&c);
+
+    DirectX::XMFLOAT3 p, q, r;
+    DirectX::XMStoreFloat3(&p, DirectX::XMVector3Normalize(DirectX::XMVectorAdd(av, bv)));
+    DirectX::XMStoreFloat3(&q, DirectX::XMVector3Normalize(DirectX::XMVectorAdd(bv, cv)));
+    DirectX::XMStoreFloat3(&r, DirectX::XMVector3Normalize(DirectX::XMVectorAdd(cv, av)));
 
     ConsiderTriangle(level, a, p, r);
     ConsiderTriangle(level, p, q, r);
@@ -105,7 +110,7 @@ void Sphere::RenderLong()
 }
 
 
-void Sphere::Render(Vector3 const& pos, float radius)
+void Sphere::Render(DirectX::XMFLOAT3 const& pos, float radius)
 {
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
