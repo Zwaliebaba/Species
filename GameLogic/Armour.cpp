@@ -331,15 +331,17 @@ void Armour::SetConversionPoint(const Vector3& _conversionPoint)
     m_conversionPoint = _conversionPoint;
     m_conversionPoint.y = g_location->m_landscape.m_heightMap->GetValue(m_conversionPoint.x, m_conversionPoint.z);
   }
-  else {}
+  else
+  {
+  }
 }
 
 bool Armour::IsLoading() { return (m_state == StateLoading && m_numPassengers < Capacity() && m_newOrdersTimer > 1.0f); }
 
 bool Armour::IsUnloading()
 {
-  return (m_state == StateUnloading && m_numPassengers > 0 && m_newOrdersTimer > 1.0f && GetHighResTime() >= m_previousUnloadTimer +
-    ARMOUR_UNLOADPERIOD);
+  return (m_state == StateUnloading && m_numPassengers > 0 && m_newOrdersTimer > 1.0f &&
+          GetHighResTime() >= m_previousUnloadTimer + ARMOUR_UNLOADPERIOD);
 }
 
 int Armour::Capacity()
@@ -469,24 +471,24 @@ void Armour::Render(float _predictionTime)
   if (m_dead)
     return;
 
-  //#ifdef DEBUG_RENDER_ENABLED
-  //    glDisable( GL_DEPTH_TEST );
-  //    RenderArrow( m_pos+Vector3(0,10,0), m_wayPoint, 1.0f, RGBAColour(255,255,255,155) );
-  //    if( m_attackTarget != g_zeroVector )
-  //    {
-  //        RenderArrow( m_pos+Vector3(0,10,0), m_attackTarget, 1.0f, RGBAColour(255,50,50,255) );
-  //    }
-  //    glEnable( GL_DEPTH_TEST );
-  //#endif
+  // #ifdef DEBUG_RENDER_ENABLED
+  //     glDisable( GL_DEPTH_TEST );
+  //     RenderArrow( m_pos+Vector3(0,10,0), m_wayPoint, 1.0f, RGBAColour(255,255,255,155) );
+  //     if( m_attackTarget != g_zeroVector )
+  //     {
+  //         RenderArrow( m_pos+Vector3(0,10,0), m_attackTarget, 1.0f, RGBAColour(255,50,50,255) );
+  //     }
+  //     glEnable( GL_DEPTH_TEST );
+  // #endif
 
   //
   // Work out our predicted position
 
   Vector3 predictedPos = m_pos + m_vel * _predictionTime;
-  //predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
-  //predictedPos.y = max( predictedPos.y, 0.0f );
+  // predictedPos.y = g_location->m_landscape.m_heightMap->GetValue( predictedPos.x, predictedPos.z );
+  // predictedPos.y = max( predictedPos.y, 0.0f );
   predictedPos.y += sinf(g_gameTime + m_id.GetUniqueId()) * 2;
-  Vector3 predictedUp = m_up; //g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
+  Vector3 predictedUp = m_up; // g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
   predictedUp.x += sinf((g_gameTime + m_id.GetUniqueId()) * 2) * 0.05f;
   predictedUp.z += cosf(g_gameTime + m_id.GetUniqueId()) * 0.05f;
 
