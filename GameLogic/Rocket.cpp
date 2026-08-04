@@ -530,7 +530,7 @@ bool FuelStation::BoardRocket(WorldObjectId _id)
     if (result)
     {
       Entity* entity = g_location->GetEntity(_id);
-      Vector3 entityPos = entity ? entity->m_pos : g_zeroVector;
+      Vector3 entityPos = entity ? AsLegacy(entity->m_pos) : g_zeroVector;
       entityPos.y += 2;
 
       int numFlashes = 4 + speciesRandom() % 4;

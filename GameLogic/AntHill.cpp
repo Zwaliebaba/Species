@@ -239,7 +239,7 @@ bool AntHill::PopulationLocked()
         if (building && building->m_type == TypeSpawnPopulationLock)
         {
           SpawnPopulationLock* lock = (SpawnPopulationLock*)building;
-          float distance = (building->m_pos - m_pos).Mag();
+          float distance = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag();
           if (distance < lock->m_searchRadius)
           {
             m_populationLock = lock->m_id.GetUniqueId();
@@ -337,7 +337,7 @@ bool AntHill::Advance()
     ArmyAnt* ant = (ArmyAnt*)g_location->GetEntity(spawnedId);
 
     ant->m_buildingId = m_id.GetUniqueId();
-    ant->m_front = (ant->m_pos - m_pos).Normalise();
+    ant->m_front = (AsLegacy(ant->m_pos) - AsLegacy(m_pos)).Normalise();
     ant->m_orders = ArmyAnt::ScoutArea;
     ant->m_wayPoint = objective->m_pos;
     ant->m_targetId = objective->m_targetId;

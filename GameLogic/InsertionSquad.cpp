@@ -42,13 +42,13 @@ unsigned int HistoricWayPoint::s_lastId = 0;
 // Class InsertionSquad
 //*****************************************************************************
 
-InsertionSquad::InsertionSquad(int teamId, int unitId, int numEntities, Vector3 const& _pos)
+InsertionSquad::InsertionSquad(int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos)
   : Unit(Entity::TypeInsertionSquadie, teamId, unitId, numEntities, _pos),
     m_weaponType(GlobalResearch::TypeGrenade),
     m_controllerId(-1),
     m_teleportId(-1)
 {
-  SetWayPoint(g_zeroVector);
+  SetWayPoint(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
   SetWayPoint(_pos);
 }
 
@@ -91,7 +91,7 @@ Entity* InsertionSquad::GetPointMan()
 }
 */
 
-void InsertionSquad::SetWayPoint(Vector3 const& _pos)
+void InsertionSquad::SetWayPoint(DirectX::XMFLOAT3 const& _pos)
 {
   m_wayPoint = _pos;
 
@@ -116,8 +116,10 @@ void InsertionSquad::SetWayPoint(Vector3 const& _pos)
   Task* controller = g_taskManager->GetTask(m_controllerId);
   if (controller)
   {
-    Vector3 lastAddedPos = controller->m_route->m_wayPoints[static_cast<int>(controller->m_route->m_wayPoints.size()) - 1]->GetPos();
-    float distance = (lastAddedPos - newWayPoint->m_pos).Mag();
+    // LevelFile's WayPoint converts in T18, so GetPos is still legacy.
+    DirectX::XMFLOAT3 const lastAddedPos = controller->m_route->m_wayPoints[static_cast<int>(controller->m_route->m_wayPoints.size()) - 1]->GetPos();
+    float distance = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&lastAddedPos), DirectX::XMLoadFloat3(&newWayPoint->m_pos))));
     if (distance > 20.0f)
     {
       controller->m_route->AddWayPoint(newWayPoint->m_pos);
@@ -135,12 +137,15 @@ void InsertionSquad::SetWayPoint(Vector3 const& _pos)
     if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge)
     {
       Teleport* teleport = (Teleport*)building;
-      float distance = (building->m_pos - _pos).Mag();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&_pos))));
       if (distance < 5.0f && teleport->Connected())
       {
         m_teleportId = building->m_id.GetUniqueId();
-        Vector3 entrancePos, entranceFront;
-        teleport->GetEntrance(entrancePos, entranceFront);
+        // Teleport converts in T17, so its out-parameters are still legacy.
+        DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
+        teleport->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
         m_wayPoint = entrancePos;
         break;
       }
@@ -153,7 +158,7 @@ void InsertionSquad::SetWayPoint(Vector3 const& _pos)
 // man is the leader of the squad. He always heads towards m_wayPoint.
 // When the user clicks to create a new m_wayPoint, the current pos of the
 // leader is added to the list of historic wayPoints.
-Vector3 InsertionSquad::GetTargetPos(float _distFromPointMan)
+DirectX::XMFLOAT3 InsertionSquad::GetTargetPos(float _distFromPointMan)
 {
   if (_distFromPointMan <= 0.0f)
   {
@@ -172,20 +177,24 @@ Vector3 InsertionSquad::GetTargetPos(float _distFromPointMan)
   // The first section of the route is the line from the point man to
   // the most recent HistoricWayPoint.
 
-  Vector3 lineEnd = pointMan->m_pos;
+  DirectX::XMFLOAT3 lineEnd = pointMan->m_pos;
 
   int i = 0;
   while (i < static_cast<int>(m_positionHistory.size()) && _distFromPointMan > 0.0f)
   {
-    Vector3 lineStart = lineEnd;
+    DirectX::XMFLOAT3 const lineStart = lineEnd;
     lineEnd = m_positionHistory[i]->m_pos;
 
-    Vector3 delta = lineEnd - lineStart;
-    float magDelta = delta.Mag();
+    DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&lineEnd), DirectX::XMLoadFloat3(&lineStart));
+    float magDelta = DirectX::XMVectorGetX(DirectX::XMVector3Length(delta));
     if (magDelta > _distFromPointMan)
     {
-      delta.SetLength(_distFromPointMan);
-      return lineStart + delta;
+      // SetLength then add. A zero-length segment used to give (len,0,0);
+      // native normalise gives zero, so the point stays at lineStart.
+      DirectX::XMFLOAT3 result;
+      DirectX::XMStoreFloat3(&result, DirectX::XMVectorMultiplyAdd(DirectX::XMVector3Normalize(delta), DirectX::XMVectorReplicate(_distFromPointMan),
+                                                                   DirectX::XMLoadFloat3(&lineStart)));
+      return result;
     }
     else
     {
@@ -201,7 +210,7 @@ Vector3 InsertionSquad::GetTargetPos(float _distFromPointMan)
 void InsertionSquad::SetWeaponType(int _weaponType) { m_weaponType = _weaponType; }
 
 
-void InsertionSquad::Attack(Vector3 pos, bool withGrenade)
+void InsertionSquad::Attack(DirectX::XMFLOAT3 pos, bool withGrenade)
 {
   //
   // Deal with grenades
@@ -295,12 +304,12 @@ void InsertionSquad::DirectControl(TeamControls const& _teamControls)
   }
   Squadie* pointMan = (Squadie*)point;
 
-  Vector3 right = g_camera->GetControlVector();
-  Vector3 front = g_upVector ^ -right;
+  // `right` and `front` were computed and never read -- every use below is
+  // commented out. Dropped rather than converted.
 
   if (_teamControls.m_directUnitMove)
   {
-    Vector3 t = pointMan->m_pos;
+    DirectX::XMFLOAT3 t = pointMan->m_pos;
 
     t.x += _teamControls.m_directUnitMoveDx;
     t.z += _teamControls.m_directUnitMoveDy;
@@ -324,7 +333,7 @@ void InsertionSquad::DirectControl(TeamControls const& _teamControls)
   }
   else
   {
-    if (m_vel.Mag() > 0)
+    if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) > 0)
     {
       SetWayPoint(pointMan->m_pos);
     }
@@ -332,7 +341,7 @@ void InsertionSquad::DirectControl(TeamControls const& _teamControls)
 
   if (_teamControls.m_primaryFireDirected)
   {
-    Vector3 t = pointMan->GetSecondaryWeaponTarget();
+    DirectX::XMFLOAT3 t = pointMan->GetSecondaryWeaponTarget();
 
     Attack(t, _teamControls.m_secondaryFireDirected);
   }
@@ -352,8 +361,9 @@ Squadie::Squadie()
   m_shape = g_resource->GetShape("Squad.shp");
   DEBUG_ASSERT(m_shape);
 
-  m_centrePos = m_shape->CalculateCentre(g_identityMatrix34);
-  m_radius = m_shape->CalculateRadius(g_identityMatrix34, m_centrePos);
+  DirectX::XMFLOAT4X4 const identity(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+  m_centrePos = m_shape->CalculateCentre(identity);
+  m_radius = m_shape->CalculateRadius(identity, m_centrePos);
 
   m_laser = m_shape->m_rootFragment->LookupMarker("MarkerLaser");
   m_brass = m_shape->m_rootFragment->LookupMarker("MarkerBrass");
@@ -394,7 +404,9 @@ void Squadie::ChangeHealth(int _amount)
 
   if (!dead && m_dead)
   {
-    Matrix34 transform(m_front, g_upVector, m_pos);
+    DirectX::XMFLOAT4X4 transform;
+    DirectX::XMStoreFloat4x4(&transform,
+                             BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
     g_explosionManager.AddExplosion(m_shape, transform);
   }
 }
@@ -415,32 +427,40 @@ bool Squadie::Advance(Unit* _theUnit)
 
   InsertionSquad* _unit = (InsertionSquad*)_theUnit;
 
-  Vector3 oldPos = m_pos;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
 
   if (!m_dead && m_onGround && m_inWater < 0.0f)
   {
-    Vector3 targetPos = _unit->GetTargetPos(GAP_BETWEEN_MEN * m_formationIndex);
-    Vector3 targetVector = targetPos - m_pos;
-    targetVector.y = 0.0f;
+    DirectX::XMFLOAT3 const targetPos = _unit->GetTargetPos(GAP_BETWEEN_MEN * m_formationIndex);
+    DirectX::XMVECTOR const targetVector =
+      DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&targetPos), DirectX::XMLoadFloat3(&m_pos)), 0.0f);
 
-
-    float distance = targetVector.Mag();
+    float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(targetVector));
 
     // If moving towards way point...
     if (distance > 0.01f || _unit->m_teleportId != -1)
     {
-      m_vel = targetVector;
-      m_vel *= m_stats[StatSpeed] / distance;
+      // Was `m_vel = targetVector; m_vel *= speed / distance;` -- a divide by
+      // `distance`, which the branch above only guarantees non-zero on the
+      // first of its two conditions. Kept as a divide rather than turned into
+      // a normalise, so the teleport path still produces the same infinity it
+      // always did rather than quietly changing behaviour.
+      DirectX::XMVECTOR velocity = DirectX::XMVectorScale(targetVector, m_stats[StatSpeed] / distance);
 
       //
       // Slow us down if we're going up hill
       // Speed up if going down hill
 
-      Vector3 nextPos = m_pos + m_vel * SERVER_ADVANCE_PERIOD;
+      DirectX::XMFLOAT3 nextPos;
+      DirectX::XMStoreFloat3(
+        &nextPos, DirectX::XMVectorMultiplyAdd(velocity, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos)));
       nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
       float currentHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
       float nextHeight = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
-      Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+
+      // The landscape converts in T18, so its normal map is still legacy.
+      DirectX::XMFLOAT3 const landNormal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+
       float factor = 1.0f - (currentHeight - nextHeight) / -3.0f;
       if (factor < 0.2f)
         factor = 0.2f;
@@ -448,30 +468,34 @@ bool Squadie::Advance(Unit* _theUnit)
         factor = 2.0f;
       if (landNormal.y < 0.6f && factor < 1.0f)
         factor = 0.0f;
-      m_vel *= factor;
+      velocity = DirectX::XMVectorScale(velocity, factor);
 
       if (distance < m_stats[StatSpeed] * SERVER_ADVANCE_PERIOD)
       {
-        m_vel.SetLength(distance / SERVER_ADVANCE_PERIOD);
+        velocity = DirectX::XMVectorScale(DirectX::XMVector3Normalize(velocity), distance / SERVER_ADVANCE_PERIOD);
       }
-      m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+      DirectX::XMStoreFloat3(&m_vel, velocity);
+      DirectX::XMStoreFloat3(
+        &m_pos, DirectX::XMVectorMultiplyAdd(velocity, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos)));
       m_pos = PushFromObstructions(m_pos);
       m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 0.1f;
     }
 
+    DirectX::XMVECTOR const front = DirectX::XMLoadFloat3(&m_front);
+
     Team* team = &g_location->m_teams[m_id.GetTeamId()];
     if (m_id.GetUnitId() == team->m_currentUnitId)
     {
-      Vector3 toMouse = team->m_currentMousePos - m_pos;
-      toMouse.HorizontalAndNormalise();
-      m_angVel = (m_front ^ toMouse) * 4.0f;
+      DirectX::XMVECTOR const toMouse = DirectX::XMVector3Normalize(
+        DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&team->m_currentMousePos), DirectX::XMLoadFloat3(&m_pos)), 0.0f));
+      DirectX::XMStoreFloat3(&m_angVel, DirectX::XMVectorScale(DirectX::XMVector3Cross(front, toMouse), 4.0f));
     }
     else
     {
-      Vector3 vel = m_vel;
-      if (vel.Mag() > 0.0f)
+      DirectX::XMVECTOR const velocity = DirectX::XMLoadFloat3(&m_vel);
+      if (DirectX::XMVectorGetX(DirectX::XMVector3Length(velocity)) > 0.0f)
       {
-        m_angVel = (vel.Normalise() ^ m_front) * 4.0f;
+        DirectX::XMStoreFloat3(&m_angVel, DirectX::XMVectorScale(DirectX::XMVector3Cross(DirectX::XMVector3Normalize(velocity), front), 4.0f));
       }
       else
       {
@@ -483,25 +507,39 @@ bool Squadie::Advance(Unit* _theUnit)
       Entity* enemy = g_location->GetEntity(m_enemyId);
       if (enemy)
       {
-        m_angVel = ((m_pos - enemy->m_pos).Normalise() ^ m_front) * 4.0f;
+        DirectX::XMVECTOR const away =
+          DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&enemy->m_pos)));
+        DirectX::XMStoreFloat3(&m_angVel, DirectX::XMVectorScale(DirectX::XMVector3Cross(away, front), 4.0f));
       }
     }
 
     m_angVel.x = 0.0f;
     m_angVel.z = 0.0f;
     float const maxTurnRate = 20.0f; // radians per second
-    if (m_angVel.Mag() > maxTurnRate)
+    DirectX::XMVECTOR angularVelocity = DirectX::XMLoadFloat3(&m_angVel);
+    if (DirectX::XMVectorGetX(DirectX::XMVector3Length(angularVelocity)) > maxTurnRate)
     {
-      m_angVel.SetLength(maxTurnRate);
+      angularVelocity = DirectX::XMVectorScale(DirectX::XMVector3Normalize(angularVelocity), maxTurnRate);
+      DirectX::XMStoreFloat3(&m_angVel, angularVelocity);
     }
-    m_front.RotateAround(m_angVel * SERVER_ADVANCE_PERIOD);
-    m_front.Normalise();
+
+    // RotateAround takes the angle as the vector's MAGNITUDE and does nothing
+    // below 1e-8 squared. Both halves reproduced -- without the guard a
+    // stationary squaddie would rotate its front by a NaN.
+    DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(angularVelocity, SERVER_ADVANCE_PERIOD);
+    float const rotationLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+    DirectX::XMVECTOR rotatedFront = front;
+    if (rotationLengthSquared >= 1e-8f)
+    {
+      float const angle = sqrtf(rotationLengthSquared);
+      rotatedFront = DirectX::XMVector3Transform(front, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / angle), angle));
+    }
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(rotatedFront));
 
     if (_unit->m_teleportId != -1)
     {
-      m_front = (targetPos - m_pos);
-      m_front.y = 0.0f;
-      m_front.Normalise();
+      DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMVectorSetY(
+                                         DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&targetPos), DirectX::XMLoadFloat3(&m_pos)), 0.0f)));
     }
 
     if (m_pos.y <= 0.0f)
@@ -552,7 +590,9 @@ void Squadie::Render(float _predictionTime)
   //
   // Work out our predicted position and orientation
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   if (m_onGround)
   {
     predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z);
@@ -560,11 +600,9 @@ void Squadie::Render(float _predictionTime)
 
   float size = 0.5f;
 
-  Vector3 entityUp = g_upVector; // g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
-  Vector3 entityFront = m_front;
-  entityFront.Normalise();
-  Vector3 entityRight = entityFront ^ entityUp;
-  entityUp = entityRight ^ entityFront;
+  DirectX::XMVECTOR const entityFront = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMVECTOR const entityRight = DirectX::XMVector3Cross(entityFront, DirectX::g_XMIdentityR1);
+  DirectX::XMVECTOR const entityUp = DirectX::XMVector3Cross(entityRight, entityFront);
 
   if (!m_dead)
   {
@@ -576,7 +614,8 @@ void Squadie::Render(float _predictionTime)
     glEnable(GL_COLOR_MATERIAL);
     glDisable(GL_BLEND);
 
-    Matrix34 mat(entityFront, entityUp, predictedPos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(entityFront, entityUp, DirectX::XMLoadFloat3(&predictedPos)));
 
     //
     // If we are damaged, flicked in and out based on our health
@@ -617,7 +656,9 @@ bool Squadie::RenderPixelEffect(float _predictionTime)
   //
   // Work out our predicted position and orientation
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   if (m_onGround)
   {
     predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z);
@@ -625,13 +666,14 @@ bool Squadie::RenderPixelEffect(float _predictionTime)
 
   float size = 0.5f;
 
-  Vector3 entityUp = g_upVector; // g_location->m_landscape.m_normalMap->GetValue( predictedPos.x, predictedPos.z );
-  Vector3 entityFront = m_front;
-  entityFront.Normalise();
-  Vector3 entityRight = entityFront ^ entityUp;
-  entityUp = entityRight ^ entityFront;
+  DirectX::XMVECTOR const entityFront = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMVECTOR const entityRight = DirectX::XMVector3Cross(entityFront, DirectX::g_XMIdentityR1);
+  DirectX::XMVECTOR const entityUp = DirectX::XMVector3Cross(entityRight, entityFront);
 
-  Matrix34 mat(entityFront, entityUp, predictedPos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(entityFront, entityUp, DirectX::XMLoadFloat3(&predictedPos)));
+
+  // RendererAccess still takes a legacy matrix; T12 converts it, behind T22.
   g_renderer->MarkUsedCells(m_shape, mat);
 
   return true;
@@ -668,28 +710,48 @@ void Squadie::RunAI()
 }
 
 
-void Squadie::Attack(Vector3 const& _pos)
+void Squadie::Attack(DirectX::XMFLOAT3 const& _pos)
 {
   if (m_reloading == 0.0f)
   {
     //
     // Fire laser
 
-    Matrix34 mat(m_front, g_upVector, m_pos);
-    Vector3 laserPos = m_laser->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    Vector3 fromPos = laserPos;
-    Vector3 toPos(_pos.x + syncsfrand(7.0f), _pos.y, _pos.z + syncsfrand(7.0f));
-    Vector3 velocity = (toPos - fromPos).SetLength(200.0f);
+    // GetWorldMatrix still returns a legacy matrix -- T10's recorded seam.
+    DirectX::XMFLOAT3 const fromPos = m_laser->GetWorldMatrix(mat).pos;
+
+    // Both syncsfrand draws stay, in order and unconditional.
+    float const spreadX = syncsfrand(7.0f);
+    float const spreadZ = syncsfrand(7.0f);
+    DirectX::XMVECTOR const toPos = DirectX::XMVectorSet(_pos.x + spreadX, _pos.y, _pos.z + spreadZ, 0.0f);
+
+    DirectX::XMFLOAT3 velocity;
+    DirectX::XMStoreFloat3(
+      &velocity, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(toPos, DirectX::XMLoadFloat3(&fromPos))), 200.0f));
     g_location->FireLaser(fromPos, velocity, m_id.GetTeamId());
     m_justFired = true;
 
     //
     // Create ejected brass particle
 
+    // The one legacy type left in this file, and deliberately: ShapeMarker::
+    // GetWorldMatrix still returns Matrix34 -- T10's recorded seam, because 43
+    // sites in fourteen GameLogic files read .pos or .f off it. Both are read
+    // here. It clears when that signature moves.
     Matrix34 brass = m_brass->GetWorldMatrix(mat);
-    Vector3 particleVel = brass.f * (5.0f + syncfrand(10.0f));
-    particleVel += Vector3(syncsfrand(5.0f), syncsfrand(5.0f), syncsfrand(5.0f));
+
+    // Four syncfrand/syncsfrand draws, in the same order and count as before.
+    float const brassSpeed = 5.0f + syncfrand(10.0f);
+    float const scatterX = syncsfrand(5.0f);
+    float const scatterY = syncsfrand(5.0f);
+    float const scatterZ = syncsfrand(5.0f);
+
+    DirectX::XMFLOAT3 particleVel;
+    DirectX::XMStoreFloat3(&particleVel, DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&brass.f), brassSpeed),
+                                                              DirectX::XMVectorSet(scatterX, scatterY, scatterZ, 0.0f)));
     g_particleSystem->CreateParticle(brass.pos, particleVel, Particle::TypeBrass);
 
 
@@ -705,15 +767,16 @@ void Squadie::Attack(Vector3 const& _pos)
 bool Squadie::HasSecondaryWeapon() { return (m_secondaryTimer <= 0.0f); }
 
 
-void Squadie::FireSecondaryWeapon(Vector3 const& _pos)
+void Squadie::FireSecondaryWeapon(DirectX::XMFLOAT3 const& _pos)
 {
   InsertionSquad* squad = (InsertionSquad*)g_location->GetUnit(m_id);
   DEBUG_ASSERT(squad);
 
   if (g_globalWorld->m_research->HasResearch(squad->m_weaponType))
   {
-    Matrix34 mat(m_front, g_upVector, m_pos);
-    Vector3 laserPos = m_laser->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+    DirectX::XMFLOAT3 const laserPos = m_laser->GetWorldMatrix(mat).pos;
 
     switch (squad->m_weaponType)
     {
@@ -757,7 +820,7 @@ void Squadie::ListSoundEvents(std::vector<const char*>* _list)
   _list->push_back("WeaponReturns");
 }
 
-Vector3 Squadie::GetCameraFocusPoint()
+DirectX::XMFLOAT3 Squadie::GetCameraFocusPoint()
 {
   if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected /* ControlUnitStartSecondaryFireDirected */) &&
       g_camera->IsInMode(CameraAccess::ModeEntityTrack))
@@ -765,26 +828,29 @@ Vector3 Squadie::GetCameraFocusPoint()
     InputDetails details;
     g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details);
 
-    Vector3 t = GetSecondaryWeaponTarget();
+    DirectX::XMFLOAT3 const t = GetSecondaryWeaponTarget();
 
-    return (t + m_pos) / 2;
+    DirectX::XMFLOAT3 midpoint;
+    DirectX::XMStoreFloat3(&midpoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&t), DirectX::XMLoadFloat3(&m_pos)), 0.5f));
+    return midpoint;
   }
 
   return Entity::GetCameraFocusPoint();
 }
 
-Vector3 Squadie::GetSecondaryWeaponTarget()
+DirectX::XMFLOAT3 Squadie::GetSecondaryWeaponTarget()
 {
   InputDetails details;
   g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details);
 
-  Vector3 t = m_pos;
+  DirectX::XMFLOAT3 t = m_pos;
 
-  Vector3 front = (m_pos - g_camera->GetPos());
-  front.y = 0.0f;
-  front.Normalise();
-  Vector3 right = front;
-  right.RotateAroundY(M_PI / 2.0f);
+  // CameraAccess still returns a legacy vector; T12 converts it, behind T22.
+  DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+
+  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(
+    DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&cameraPos)), 0.0f));
+  DirectX::XMVECTOR const right = DirectX::XMVector3Transform(front, DirectX::XMMatrixRotationY(M_PI / 2.0f));
 
   float force = ThrowableWeapon::GetMaxForce(g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeGrenade));
   float maxRange = ThrowableWeapon::GetApproxMaxRange(force);
@@ -803,8 +869,9 @@ Vector3 Squadie::GetSecondaryWeaponTarget()
 
   float rMod = (rangeFactor * maxRange * float(float(details.x) / 40.0f));
   float fMod = (rangeFactor * maxRange * float(float(details.y) / 40.0f));
-  t += right * -rMod;
-  t += front * -fMod;
+  DirectX::XMVECTOR offset = DirectX::XMVectorMultiplyAdd(right, DirectX::XMVectorReplicate(-rMod), DirectX::XMLoadFloat3(&t));
+  offset = DirectX::XMVectorMultiplyAdd(front, DirectX::XMVectorReplicate(-fMod), offset);
+  DirectX::XMStoreFloat3(&t, offset);
   t.y = g_location->m_landscape.m_heightMap->GetValue(t.x, t.z) + 5.0f;
 
   return t;

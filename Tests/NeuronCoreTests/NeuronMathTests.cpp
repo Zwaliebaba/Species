@@ -108,6 +108,48 @@ namespace NeuronCoreTests
         Assert::AreEqual(4.5f, roundTripped.y);
       }
 
+      // Vector3::FastRotateAround is Rodrigues' formula, and the conversion
+      // every remaining task reaches for is XMVector3Transform with
+      // XMMatrixRotationAxis. That they agree is a CLAIM ABOUT HANDEDNESS, and
+      // DirectXMath's own documentation describes its rotations as clockwise
+      // looking along the axis, which reads like the opposite convention. It is
+      // not -- the matrix is the same one -- but "reads like the opposite" is
+      // exactly how a migration ends up mirrored, so it is pinned rather than
+      // argued. T14 converts three of these; T15 converts far more.
+      TEST_METHOD(NativeAxisRotationMatchesTheLegacyRodriguesRotation)
+      {
+        Vector3 const axis = Vector3(0.3f, 0.8f, -0.5f).Normalise();
+        float const angle = 0.9f;
+
+        Vector3 legacy(4.0f, -2.0f, 7.0f);
+        legacy.FastRotateAround(axis, angle);
+
+        DirectX::XMFLOAT3 const start(4.0f, -2.0f, 7.0f);
+        DirectX::XMFLOAT3 native;
+        DirectX::XMStoreFloat3(&native, DirectX::XMVector3Transform(
+                                          DirectX::XMLoadFloat3(&start),
+                                          DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(axis)), angle)));
+
+        AssertNearlyEqual(legacy.x, native.x);
+        AssertNearlyEqual(legacy.y, native.y);
+        AssertNearlyEqual(legacy.z, native.z);
+      }
+
+      // The same claim for the axis-aligned helper, which is the one T14 uses.
+      TEST_METHOD(NativeRotationYMatchesLegacyRotateAroundY)
+      {
+        Vector3 legacy(4.0f, -2.0f, 7.0f);
+        legacy.RotateAroundY(0.9f);
+
+        DirectX::XMFLOAT3 const start(4.0f, -2.0f, 7.0f);
+        DirectX::XMFLOAT3 native;
+        DirectX::XMStoreFloat3(&native, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&start), DirectX::XMMatrixRotationY(0.9f)));
+
+        AssertNearlyEqual(legacy.x, native.x);
+        AssertNearlyEqual(legacy.y, native.y);
+        AssertNearlyEqual(legacy.z, native.z);
+      }
+
       // BasisFromFrontAndUp replaces the Matrix34(front, up, pos) constructor
       // that 196 sites call, so it is asserted AGAINST that constructor rather
       // than against my reading of it — the discipline T1 settled on. A

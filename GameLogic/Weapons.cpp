@@ -630,7 +630,7 @@ bool Laser::Advance()
             if (entity->m_type != Entity::TypeInsertionSquadie && entity->m_type != Entity::TypeVirii)
             {
               entity->m_front = push;
-              entity->m_front.Normalise();
+              AsLegacy(entity->m_front).Normalise();
             }
             if (entity->m_type != Entity::TypeVirii)
             {

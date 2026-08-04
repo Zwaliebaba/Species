@@ -13,7 +13,7 @@ class Cave : public Building
     float m_spawnTimer;
     bool m_dead;
 
-    ShapeMarker* AsLegacy(m_spawnPoint);
+    ShapeMarker* m_spawnPoint;
 
   public:
     Cave();

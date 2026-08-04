@@ -179,7 +179,7 @@ Unit* Team::GetMyUnit()
 }
 
 
-Entity* Team::RayHitEntity(Vector3 const& _rayStart, Vector3 const& _rayEnd)
+Entity* Team::RayHitEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayEnd)
 {
   // Hit against Units
   for (unsigned int i = 0; i < m_units.Size(); ++i)
@@ -227,7 +227,7 @@ Entity* Team::GetMyEntity()
 }
 
 
-Unit* Team::NewUnit(int _troopType, int _numEntities, int* _unitId, Vector3 const& _pos)
+Unit* Team::NewUnit(int _troopType, int _numEntities, int* _unitId, DirectX::XMFLOAT3 const& _pos)
 {
   *_unitId = m_units.GetNextFree();
   Unit* unit = nullptr;
@@ -363,7 +363,7 @@ void Team::Advance(int _slice)
         Entity* ent = m_others[i];
         if (ent->m_enabled)
         {
-          Vector3 oldPos(ent->m_pos);
+          DirectX::XMFLOAT3 const oldPos(ent->m_pos);
           WorldObjectId myId(m_teamId, -1, i, ent->m_id.GetUniqueId());
 
           char const* entityName = Entity::GetTypeName(ent->m_type);
@@ -669,11 +669,17 @@ void TeamControls::Advance()
   InputDetails details;
   if (g_inputManager->controlEvent(ControlUnitMove, details))
   {
-    Vector3 right = g_camera->GetControlVector();
-    Vector3 front = g_upVector ^ -right;
+    // CameraAccess still returns a legacy vector -- it converts in T12, which
+    // sits behind T22. Copy-initialising the native type takes the seam without
+    // naming the legacy one.
+    DirectX::XMFLOAT3 const controlVector = g_camera->GetControlVector();
 
-    Vector3 waypoint = right * -details.x;
-    waypoint += front * -details.y;
+    DirectX::XMVECTOR const right = DirectX::XMLoadFloat3(&controlVector);
+    DirectX::XMVECTOR const front = DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, DirectX::XMVectorNegate(right));
+
+    DirectX::XMFLOAT3 waypoint;
+    DirectX::XMStoreFloat3(&waypoint,
+                           DirectX::XMVectorMultiplyAdd(front, DirectX::XMVectorReplicate(-details.y), DirectX::XMVectorScale(right, -details.x)));
 
     m_directUnitMove = true;
     m_directUnitMoveDx = waypoint.x;

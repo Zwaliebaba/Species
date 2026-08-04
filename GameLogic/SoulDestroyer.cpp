@@ -377,7 +377,7 @@ bool SoulDestroyer::AdvanceToTargetPosition()
   Vector3 targetDir = (m_targetPos - AsLegacy(m_pos)).Normalise();
   if (!m_targetEntity.IsValid())
   {
-    Vector3 right1 = m_front ^ m_up;
+    Vector3 right1 = AsLegacy(m_front) ^ m_up;
     targetDir.RotateAround(right1 * sinf(g_gameTime * 6.0f) * 1.5f);
   }
 
@@ -389,7 +389,7 @@ bool SoulDestroyer::AdvanceToTargetPosition()
     targetDir = g_upVector;
   }
 
-  Vector3 actualDir = m_front * (1.0f - amountToTurn) + targetDir * amountToTurn;
+  Vector3 actualDir = AsLegacy(m_front) * (1.0f - amountToTurn) + targetDir * amountToTurn;
   actualDir.Normalise();
   float speed = m_stats[StatSpeed];
   speed = 130.0f;
@@ -408,8 +408,8 @@ bool SoulDestroyer::AdvanceToTargetPosition()
   m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
   m_front = actualDir;
 
-  Vector3 right = m_front ^ g_upVector;
-  m_up = right ^ m_front;
+  Vector3 right = AsLegacy(m_front) ^ g_upVector;
+  m_up = right ^ AsLegacy(m_front);
 
   return (AsLegacy(m_pos) - m_targetPos).Mag() < 40.0f;
 }

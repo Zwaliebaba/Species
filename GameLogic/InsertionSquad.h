@@ -16,11 +16,11 @@
 class HistoricWayPoint
 {
   public:
-    Vector3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     unsigned int m_id;
     static unsigned int s_lastId;
 
-    HistoricWayPoint(const Vector3& _pos)
+    HistoricWayPoint(DirectX::XMFLOAT3 const& _pos)
       : m_pos(_pos)
     {
       s_lastId++;
@@ -42,14 +42,14 @@ class InsertionSquad : public Unit
     int m_controllerId; // Task ID of controller if this squad is running one
     int m_teleportId;   // Id of teleport build we wish to enter, or -1
 
-    InsertionSquad(int teamId, int _unitId, int numEntities, const Vector3& _pos);
+    InsertionSquad(int teamId, int _unitId, int numEntities, DirectX::XMFLOAT3 const& _pos);
     ~InsertionSquad() override;
 
-    void SetWayPoint(const Vector3& _pos) override;
-    Vector3 GetTargetPos(float _distFromPointMan);
+    void SetWayPoint(DirectX::XMFLOAT3 const& _pos) override;
+    DirectX::XMFLOAT3 GetTargetPos(float _distFromPointMan);
     Entity* GetPointMan();
     void SetWeaponType(int _weaponType); // Indexes into GlobalResearch
-    void Attack(Vector3 pos, bool withGrenade) override;
+    void Attack(DirectX::XMFLOAT3 pos, bool withGrenade) override;
 
     void DirectControl(const TeamControls& _teamControls) override;
     // used when the squad is being directly controlled by the player using a control pad
@@ -81,17 +81,17 @@ class Squadie : public Entity
     void Begin() override;
     bool Advance(Unit* _unit) override;
     void ChangeHealth(int _amount) override;
-    void Attack(const Vector3& _pos) override;
+    void Attack(DirectX::XMFLOAT3 const& _pos) override;
 
     void Render(float _predictionTime) override;
     bool RenderPixelEffect(float _predictionTime) override;
 
     bool HasSecondaryWeapon();
-    void FireSecondaryWeapon(const Vector3& _pos);
+    void FireSecondaryWeapon(DirectX::XMFLOAT3 const& _pos);
 
     void ListSoundEvents(std::vector<const char*>* _list) override;
 
-    Vector3 GetCameraFocusPoint() override;
+    DirectX::XMFLOAT3 GetCameraFocusPoint() override;
 
-    Vector3 GetSecondaryWeaponTarget();
+    DirectX::XMFLOAT3 GetSecondaryWeaponTarget();
 };

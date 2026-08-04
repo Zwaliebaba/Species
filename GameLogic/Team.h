@@ -46,7 +46,7 @@ class Team
     int m_currentEntityId;     // Do not set these directly
     int m_currentBuildingId;   // They are updated by the network
                                //
-    Vector3 m_currentMousePos; //
+    DirectX::XMFLOAT3 m_currentMousePos{0.0f, 0.0f, 0.0f}; //
 
   public:
     Team();
@@ -59,10 +59,10 @@ class Team
     void RegisterSpecial(WorldObjectId _id);
     void UnRegisterSpecial(WorldObjectId _id);
 
-    Entity* RayHitEntity(Vector3 const& _rayStart, Vector3 const& _rayEnd);
+    Entity* RayHitEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayEnd);
     Unit* GetMyUnit();
     Entity* GetMyEntity();
-    Unit* NewUnit(int _troopType, int _numEntities, int* _unitId, Vector3 const& _pos);
+    Unit* NewUnit(int _troopType, int _numEntities, int* _unitId, DirectX::XMFLOAT3 const& _pos);
     Entity* NewEntity(int _troopType, int _unitId, int* _index);
 
     int NumEntities(int _troopType); // Counts the total number
