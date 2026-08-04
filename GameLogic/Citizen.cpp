@@ -297,9 +297,12 @@ bool Citizen::AdvanceWatchingSpectacle()
   // Face the spectacle
 
   float amountToTurn = SERVER_ADVANCE_PERIOD * 4.0f;
-  DirectX::XMVECTOR const targetPos =
-    DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&building->m_centrePos),
-                         DirectX::XMVectorSet(sinf(g_gameTime) * 30.0f, cosf(g_gameTime) * 20.0f, sinf(g_gameTime) * 25.0f, 0.0f));
+  // Building declares its own m_centrePos and it is still legacy -- T16 owns
+  // it. Copy-initialising the native type takes the seam's conversion.
+  DirectX::XMFLOAT3 const buildingCentre = building->m_centrePos;
+
+  DirectX::XMVECTOR const targetPos = DirectX::XMVectorAdd(
+    DirectX::XMLoadFloat3(&buildingCentre), DirectX::XMVectorSet(sinf(g_gameTime) * 30.0f, cosf(g_gameTime) * 20.0f, sinf(g_gameTime) * 25.0f, 0.0f));
 
   DirectX::XMFLOAT3 targetDir;
   DirectX::XMStoreFloat3(&targetDir, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(targetPos, DirectX::XMLoadFloat3(&m_pos))));
@@ -2006,9 +2009,10 @@ DirectX::XMFLOAT3 Citizen::PushFromObstructions(DirectX::XMFLOAT3 const& pos, bo
         else if (building->DoesSphereHit(result, closest))
         {
           LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(((LaserFence*)building)->GetBuildingLink());
+          // Building::m_centrePos is still legacy; T16 owns it.
+          DirectX::XMFLOAT3 const fenceCentre = building->m_centrePos;
           DirectX::XMVECTOR pushForce = DirectX::XMVectorScale(
-            DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_centrePos), DirectX::XMLoadFloat3(&result))),
-            1.0f);
+            DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&fenceCentre), DirectX::XMLoadFloat3(&result))), 1.0f);
           if (nextFence)
           {
             DirectX::XMVECTOR const fenceVector =
@@ -2260,8 +2264,8 @@ void Citizen::Render(float _predictionTime, float _highDetail)
 
   float size = 3.0f;
   size *= (1.0f + 0.03f * ((m_id.GetIndex() * m_id.GetUniqueId()) % 10));
-  entityRight *= size;
-  entityUp *= size * 2.0f;
+  entityRight = DirectX::XMVectorScale(entityRight, size);
+  entityUp = DirectX::XMVectorScale(entityUp, size * 2.0f);
 
 
   /*
@@ -2550,11 +2554,14 @@ void Citizen::Render(float _predictionTime, float _highDetail)
     BoxKite* boxKite = (BoxKite*)g_location->GetEffect(m_boxKiteId);
     if (boxKite)
     {
-      boxKite->m_up = entityUp;
-      DirectX::XMStoreFloat3(&boxKite->m_up, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&boxKite->m_up)));
-      boxKite->m_front = m_front;
-      DirectX::XMStoreFloat3(&boxKite->m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&boxKite->m_front)));
-      boxKite->m_pos = predictedPos + m_front * 2 + boxKite->m_up * 3;
+      DirectX::XMVECTOR const kiteUp = DirectX::XMVector3Normalize(entityUp);
+      DirectX::XMStoreFloat3(&boxKite->m_up, kiteUp);
+      DirectX::XMStoreFloat3(&boxKite->m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front)));
+
+      DirectX::XMVECTOR kitePos =
+        DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front), DirectX::XMVectorReplicate(2.0f), DirectX::XMLoadFloat3(&predictedPos));
+      kitePos = DirectX::XMVectorMultiplyAdd(kiteUp, DirectX::XMVectorReplicate(3.0f), kitePos);
+      DirectX::XMStoreFloat3(&boxKite->m_pos, kitePos);
       boxKite->m_vel = m_vel;
     }
   }
