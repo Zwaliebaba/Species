@@ -10,48 +10,45 @@
 
 class SporeGenerator : public Entity
 {
-public:
-    float       m_retargetTimer;
-    float       m_eggTimer;
-    Vector3     m_targetPos;
-    int         m_spiritId;
+  public:
+    float m_retargetTimer;
+    float m_eggTimer;
+    Vector3 m_targetPos;
+    int m_spiritId;
 
-protected:
-    bool    SearchForRandomPos      ();
-    bool    SearchForSpirits        ();
+  protected:
+    bool SearchForRandomPos();
+    bool SearchForSpirits();
 
-    bool    AdvanceToTargetPosition ();
-    bool    AdvanceIdle             ();
-    bool    AdvanceEggLaying        ();
-    bool    AdvancePanic            ();
+    bool AdvanceToTargetPosition();
+    bool AdvanceIdle();
+    bool AdvanceEggLaying();
+    bool AdvancePanic();
 
-    void    RenderTail( Vector3 const &_from, Vector3 const &_to, float _size );
+    void RenderTail(Vector3 const& _from, Vector3 const& _to, float _size);
 
-protected:
-    ShapeMarker     *m_eggMarker;
-    ShapeMarker     *m_tail[SPOREGENERATOR_NUMTAILS];
+  protected:
+    ShapeMarker* m_eggMarker;
+    ShapeMarker* m_tail[SPOREGENERATOR_NUMTAILS];
 
     enum
     {
-        StateIdle,
-        StateEggLaying,
-        StatePanic
+      StateIdle,
+      StateEggLaying,
+      StatePanic
     };
     int m_state;
 
-public:
+  public:
     SporeGenerator();
 
-    void Begin          ();
-    bool Advance        ( Unit *_unit );
-    void ChangeHealth   ( int _amount );
+    void Begin();
+    bool Advance(Unit* _unit);
+    void ChangeHealth(int _amount);
 
-    bool IsInView           ();
-    void Render             ( float _predictionTime );
-    bool RenderPixelEffect  ( float _predictionTime );
+    bool IsInView();
+    void Render(float _predictionTime);
+    bool RenderPixelEffect(float _predictionTime);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };
-
-
-

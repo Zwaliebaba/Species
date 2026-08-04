@@ -6,58 +6,57 @@
 #include "Entity.h"
 #include "SlotMap.h"
 
-#define SOULDESTROYER_MINSEARCHRANGE       200.0f
-#define SOULDESTROYER_MAXSEARCHRANGE       300.0f
-#define SOULDESTROYER_DAMAGERANGE          25.0f
-#define SOULDESTROYER_MAXSPIRITS           50
+#define SOULDESTROYER_MINSEARCHRANGE 200.0f
+#define SOULDESTROYER_MAXSEARCHRANGE 300.0f
+#define SOULDESTROYER_DAMAGERANGE 25.0f
+#define SOULDESTROYER_MAXSPIRITS 50
 
 class Shape;
 
 
-
 class SoulDestroyer : public Entity
 {
-protected:
-    Vector3         m_targetPos;
-    Vector3         m_up;
-    WorldObjectId   m_targetEntity;
+  protected:
+    Vector3 m_targetPos;
+    Vector3 m_up;
+    WorldObjectId m_targetEntity;
     std::vector<Vector3> m_positionHistory;
     FastSlotMap<float> m_spirits;
 
-    float           m_retargetTimer;
-    float           m_panic;
+    float m_retargetTimer;
+    float m_panic;
 
-    static Shape        *s_shapeHead;
-    static Shape        *s_shapeTail;
-    static ShapeMarker  *s_tailMarker;
+    static Shape* s_shapeHead;
+    static Shape* s_shapeTail;
+    static ShapeMarker* s_tailMarker;
 
-    Vector3      m_spiritPosition[SOULDESTROYER_MAXSPIRITS];
+    Vector3 m_spiritPosition[SOULDESTROYER_MAXSPIRITS];
 
-protected:
-    bool        SearchForRandomPosition();
-    bool        SearchForTargetEnemy();
-    bool        SearchForRetreatPosition();
+  protected:
+    bool SearchForRandomPosition();
+    bool SearchForTargetEnemy();
+    bool SearchForRetreatPosition();
 
-    bool        AdvanceToTargetPosition();
-    void        RecordHistoryPosition();
-    bool        GetTrailPosition( Vector3 &_pos, Vector3 &_vel );
+    bool AdvanceToTargetPosition();
+    void RecordHistoryPosition();
+    bool GetTrailPosition(Vector3& _pos, Vector3& _vel);
 
-    void RenderShapes               ( float _predictionTime );
-    void RenderShapesForPixelEffect ( float _predictionTime );
-    void RenderSpirit               ( Vector3 const &_pos, float _alpha );
-    bool RenderPixelEffect          ( float _predictionTime );
+    void RenderShapes(float _predictionTime);
+    void RenderShapesForPixelEffect(float _predictionTime);
+    void RenderSpirit(Vector3 const& _pos, float _alpha);
+    bool RenderPixelEffect(float _predictionTime);
 
-    void Panic( float _time );
+    void Panic(float _time);
 
-public:
+  public:
     SoulDestroyer();
 
-    void Begin              ();
-    bool Advance            ( Unit *_unit );
-    void ChangeHealth       ( int _amount );
-    void Render             ( float _predictionTime );
+    void Begin();
+    bool Advance(Unit* _unit);
+    void ChangeHealth(int _amount);
+    void Render(float _predictionTime);
 
-    void Attack             ( Vector3 const &_pos );
+    void Attack(Vector3 const& _pos);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
@@ -65,25 +64,22 @@ public:
 };
 
 
-
-
 class Zombie : public WorldObject
 {
-public:
-    Vector3     m_front;
-    Vector3     m_up;
-    float       m_life;
+  public:
+    Vector3 m_front;
+    Vector3 m_up;
+    float m_life;
 
-    Vector3     m_hover;
-    float       m_positionOffset;                       // Used to make them float around a bit
-    float       m_xaxisRate;
-    float       m_yaxisRate;
-    float       m_zaxisRate;
+    Vector3 m_hover;
+    float m_positionOffset; // Used to make them float around a bit
+    float m_xaxisRate;
+    float m_yaxisRate;
+    float m_zaxisRate;
 
-public:
+  public:
     Zombie();
 
     bool Advance();
-    void Render( float _predictionTime );
+    void Render(float _predictionTime);
 };
-
