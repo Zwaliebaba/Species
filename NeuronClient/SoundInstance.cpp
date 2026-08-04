@@ -859,7 +859,7 @@ bool SoundInstance::UpdateParameter(SoundParameter& _param)
       break;
 
     case SoundParameter::LinkedToVelocity:
-      _param.Recalculate(vel.Mag());
+      _param.Recalculate(DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&vel))));
       break;
 
     case SoundParameter::LinkedToCameraDistance:
@@ -936,7 +936,9 @@ void SoundInstance::CalculatePerceivedVolume()
   }
   else
   {
-    float distance = (m_pos - g_camera->GetPos()).Mag();
+    DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&cameraPos))));
     float distanceFactor = 1.0f;
     if (distance > m_minDistance)
     {
