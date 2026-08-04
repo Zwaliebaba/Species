@@ -207,6 +207,75 @@ namespace NeuronCoreTests
         Assert::AreEqual(0.0f, update.GetWorldPos().x);
       }
 
+      // The remaining two update types that carry a world position, pinned at
+      // their byte offsets before directxmath-migration T9 turns that position
+      // into an XMFLOAT3. Alive and CreateUnit were already pinned above.
+      //
+      // XMFLOAT3 has the same layout as Vector3, so the packet should not move
+      // — but "should not" is not how a wire format is verified, and this is the
+      // one part of that migration that would break other machines rather than
+      // just this build. If T9 changes a byte, these fail; they are not tests to
+      // update afterwards.
+      TEST_METHOD(AimBuildingCarriesItsPositionAfterTheBuildingId)
+      {
+        NetworkUpdate update;
+        update.SetType(NetworkUpdate::UpdateType::AimBuilding);
+        update.SetLastSequenceId(11);
+        update.SetTeamId(2);
+        update.SetBuildingID(37);
+        update.SetWorldPos(Vector3(-1.5f, 64.0f, 2.25f));
+
+        int length = 0;
+        char* read = update.GetByteStream(&length);
+
+        const int type = READ_INT(read);
+        const int sequenceId = READ_INT(read);
+        const unsigned char teamId = READ_UNSIGNED_CHAR(read);
+        const int buildingId = READ_INT(read);
+        const float x = READ_FLOAT(read);
+        const float y = READ_FLOAT(read);
+        const float z = READ_FLOAT(read);
+
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::AimBuilding), type);
+        Assert::AreEqual(11, sequenceId);
+        Assert::AreEqual(static_cast<unsigned char>(2), teamId);
+        Assert::AreEqual(37, buildingId);
+        Assert::AreEqual(-1.5f, x);
+        Assert::AreEqual(64.0f, y);
+        Assert::AreEqual(2.25f, z);
+        Assert::AreEqual(25, length);
+      }
+
+      TEST_METHOD(TargetProgramCarriesItsPositionAfterTheProgram)
+      {
+        NetworkUpdate update;
+        update.SetType(NetworkUpdate::UpdateType::TargetProgram);
+        update.SetLastSequenceId(12);
+        update.SetTeamId(1);
+        update.SetProgram(5);
+        update.SetWorldPos(Vector3(10.25f, -0.5f, 300.0f));
+
+        int length = 0;
+        char* read = update.GetByteStream(&length);
+
+        const int type = READ_INT(read);
+        const int sequenceId = READ_INT(read);
+        const unsigned char teamId = READ_UNSIGNED_CHAR(read);
+        const unsigned char program = READ_UNSIGNED_CHAR(read);
+        const float x = READ_FLOAT(read);
+        const float y = READ_FLOAT(read);
+        const float z = READ_FLOAT(read);
+
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::TargetProgram), type);
+        Assert::AreEqual(12, sequenceId);
+        Assert::AreEqual(static_cast<unsigned char>(1), teamId);
+        Assert::AreEqual(static_cast<unsigned char>(5), program);
+        Assert::AreEqual(10.25f, x);
+        Assert::AreEqual(-0.5f, y);
+        Assert::AreEqual(300.0f, z);
+        Assert::AreEqual(22, length);
+      }
+
       TEST_METHOD(EveryClientPacketFitsTheFixedBuffer)
       {
         // NETWORKUPDATE_BYTESTREAMSIZE is 42, and GetByteStream only asserts
