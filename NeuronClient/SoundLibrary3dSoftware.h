@@ -58,4 +58,3 @@ class SoundLibrary3dSoftware : public SoundLibrary3d
 
     void SetListenerPosition(const Vector3& _pos, const Vector3& _front, const Vector3& _up, const Vector3& _vel) override;
 };
-
