@@ -28,14 +28,14 @@ class Engineer : public Entity
     };
 
     int m_state;
-    Vector3 m_wayPoint; // User specified waypoint
+    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f}; // User specified waypoint
 
   protected:
     float m_hoverHeight;
     float m_idleRotateRate;
 
-    Vector3 m_targetPos;   // Our internal target position
-    Vector3 m_targetFront; // and orientation
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};   // Our internal target position
+    DirectX::XMFLOAT3 m_targetFront{0.0f, 0.0f, 0.0f}; // and orientation
 
     float m_retargetTimer;
     std::vector<int> m_spirits; // Collector only, Spirits already collected
@@ -44,7 +44,7 @@ class Engineer : public Entity
     int m_positionId; // Position on the building we are working on
     int m_bridgeId;   // Building ID of a bridge we own
 
-    std::vector<Vector3*> m_positionHistory;
+    std::vector<DirectX::XMFLOAT3*> m_positionHistory;
 
   protected:
     bool SearchForRandomPosition();
@@ -72,10 +72,10 @@ class Engineer : public Entity
     void Begin();
     bool Advance(Unit* _unit);
 
-    void BeginBridge(Vector3 _to);
+    void BeginBridge(DirectX::XMFLOAT3 _to);
     void EndBridge();
 
-    void SetWaypoint(Vector3 const& _wayPoint);
+    void SetWaypoint(DirectX::XMFLOAT3 const& _wayPoint);
     void ChangeHealth(int amount);
 
     int GetNumSpirits();

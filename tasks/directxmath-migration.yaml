@@ -1160,11 +1160,29 @@ tasks:
         Entity.h              CONVERTED — storage and every virtual signature
         Entity.cpp            CONVERTED
 
-      STILL TO CONVERT, 440 type sites over nineteen files, measured at 599e388:
-        Citizen.cpp 76, InsertionSquad.cpp 52, Engineer.cpp 51, EntityLeg.cpp 48,
-        Officer.cpp 41, Unit.cpp 23, LaserTrooper.cpp 21, Ai.cpp 18, Unit.h 14,
-        EntityLeg.h 12, InsertionSquad.h 10, Team.cpp 7, Citizen.h 7, Officer.h 7,
-        Engineer.h 6, Ai.h 5, EntityGrid.cpp 5, Team.h 3, LaserTrooper.h 2
+      ALL TWENTY-THREE FILES ARE NOW CONVERTED. Ten legacy references remain and
+      every one is a deliberate, commented seam rather than a miss:
+
+        WorldObject.h    the #include of Vector3.h, kept ON PURPOSE. Fifty files
+                         below read m_pos through AsLegacy and every one reaches
+                         this header; dropping the include breaks all of them at
+                         once, which is failure mode 3 and the one no checker
+                         sees. T25 removes it.
+        Ai.h/.cpp        AITarget and AISpawnPoint's DoesSphereHit and
+                         DoesShapeHit -- four overrides of Building's virtuals,
+                         and Building converts in T16. An override matches its
+                         base exactly or silently stops overriding, leaving the
+                         class abstract. This is T12's trap, avoided rather than
+                         re-learned.
+        InsertionSquad.cpp   one Matrix34 local off ShapeMarker::GetWorldMatrix,
+                             which T10 deliberately left legacy because 43 sites
+                             in fourteen files read .pos or .f off it.
+
+      WORTH RECORDING ABOUT THE VERIFICATION ITSELF: the script that checked for
+      leftover legacy types reported nine, not ten. It strips /* */ blocks before
+      matching, and an unbalanced comment opener in InsertionSquad.cpp swallowed
+      the rest of the file. A plain grep found the tenth. A checker that parses
+      is not automatically better than one that does not.
 
       THE EXTERNAL REPAIRS ARE DONE: about 480 lines across 50 files, wrapped in
       AsLegacy. Applied by script and then corrected by hand, because two things

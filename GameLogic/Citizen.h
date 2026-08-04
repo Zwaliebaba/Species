@@ -39,7 +39,7 @@ class Citizen : public Entity
 
     int m_state;
     bool m_promoted;
-    Vector3 m_wayPoint;
+    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
 
   protected:
     float m_retargetTimer;
@@ -58,15 +58,15 @@ class Citizen : public Entity
     int m_wayPointId;        // Control
     bool m_teleportRequired; //
 
-    Vector3 m_orders;       // Used when receiving orders
-    int m_ordersBuildingId; // from an officer
-    bool m_ordersSet;       //
+    DirectX::XMFLOAT3 m_orders{0.0f, 0.0f, 0.0f}; // Used when receiving orders
+    int m_ordersBuildingId;                       // from an officer
+    bool m_ordersSet;                             //
 
     float m_grenadeTimer;
     float m_officerTimer;
 
-    int m_shadowBuildingId;     // This building causes us to cast a shadow
-    Vector3 m_avoidObstruction; // Used to nagivate around big obstructions, eg water
+    int m_shadowBuildingId;                                 // This building causes us to cast a shadow
+    DirectX::XMFLOAT3 m_avoidObstruction{0.0f, 0.0f, 0.0f}; // Used to nagivate around big obstructions, eg water
 
   protected:
     bool SearchForNewTask();
@@ -106,9 +106,9 @@ class Citizen : public Entity
     bool IsInView();
     void Render(float _predictionTime, float _highDetail);
 
-    Vector3 PushFromObstructions(Vector3 const& pos, bool killem = true);
+    DirectX::XMFLOAT3 PushFromObstructions(DirectX::XMFLOAT3 const& pos, bool killem = true);
 
-    void GiveOrders(Vector3 const& _targetPos);
+    void GiveOrders(DirectX::XMFLOAT3 const& _targetPos);
     void TakeControl(int _controllerId);
     void AntCapture(WorldObjectId _antId);
     void WatchSpectacle(int _buildingId);
@@ -126,8 +126,10 @@ class BoxKite : public WorldObject
 {
   public:
     Shape* m_shape;
-    Vector3 m_front;
-    Vector3 m_up;
+    // BoxKite's own basis, shadowing nothing -- WorldObject declares neither.
+    // Braced to zero for the same reason as everywhere else in this task.
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
 
     enum
     {
