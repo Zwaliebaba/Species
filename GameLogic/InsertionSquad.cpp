@@ -230,7 +230,8 @@ void InsertionSquad::Attack(DirectX::XMFLOAT3 pos, bool withGrenade)
         Squadie* ent = (Squadie*)m_entities[i];
         if (!ent->m_dead && ent->m_enabled && ent->HasSecondaryWeapon())
         {
-          float distance = (ent->m_pos - pos).Mag();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&ent->m_pos), DirectX::XMLoadFloat3(&pos))));
           if (distance < nearest)
           {
             nearest = distance;
@@ -551,7 +552,8 @@ bool Squadie::Advance(Unit* _theUnit)
   if (!m_onGround)
     AdvanceInAir(nullptr);
 
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos)),
+                                                        1.0f / SERVER_ADVANCE_PERIOD));
 
   float worldSizeX = g_location->m_landscape.GetWorldSizeX();
   float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
@@ -624,12 +626,16 @@ void Squadie::Render(float _predictionTime)
     {
       float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
       float thefrand = frand();
+      // Matrix34 named its rows r/u/f; XMFLOAT4X4 numbers them -- row 0 is
+      // right, row 1 up, row 2 front, per NeuronMath.h.
+      DirectX::XMMATRIX squashed = DirectX::XMLoadFloat4x4(&mat);
       if (thefrand > 0.7f)
-        mat.f *= (1.0f - sinf(timeIndex) * 0.5f);
+        squashed.r[2] = DirectX::XMVectorScale(squashed.r[2], 1.0f - sinf(timeIndex) * 0.5f);
       else if (thefrand > 0.4f)
-        mat.u *= (1.0f - sinf(timeIndex) * 0.2f);
+        squashed.r[1] = DirectX::XMVectorScale(squashed.r[1], 1.0f - sinf(timeIndex) * 0.2f);
       else
-        mat.r *= (1.0f - sinf(timeIndex) * 0.5f);
+        squashed.r[0] = DirectX::XMVectorScale(squashed.r[0], 1.0f - sinf(timeIndex) * 0.5f);
+      DirectX::XMStoreFloat4x4(&mat, squashed);
       glEnable(GL_BLEND);
       glBlendFunc(GL_ONE, GL_ONE);
     }
@@ -701,7 +707,8 @@ void Squadie::RunAI()
   ;
   if (enemy)
   {
-    float distance = (enemy->m_pos - m_pos).Mag();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&enemy->m_pos), DirectX::XMLoadFloat3(&m_pos))));
     if (syncfrand(distance * 0.5f) < 2.0f)
     {
       Attack(enemy->m_pos);
@@ -749,8 +756,12 @@ void Squadie::Attack(DirectX::XMFLOAT3 const& _pos)
     float const scatterY = syncsfrand(5.0f);
     float const scatterZ = syncsfrand(5.0f);
 
+    // brass is the legacy Matrix34 above, so its rows are Vector3 and cannot
+    // be addressed as XMFLOAT3. Copy-initialising takes the seam's conversion.
+    DirectX::XMFLOAT3 const brassFront = brass.f;
+
     DirectX::XMFLOAT3 particleVel;
-    DirectX::XMStoreFloat3(&particleVel, DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&brass.f), brassSpeed),
+    DirectX::XMStoreFloat3(&particleVel, DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&brassFront), brassSpeed),
                                                               DirectX::XMVectorSet(scatterX, scatterY, scatterZ, 0.0f)));
     g_particleSystem->CreateParticle(brass.pos, particleVel, Particle::TypeBrass);
 

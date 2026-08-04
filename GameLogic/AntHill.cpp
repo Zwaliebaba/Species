@@ -137,7 +137,7 @@ bool AntHill::SearchForSpirits(Vector3& _pos)
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (s->m_pos - m_pos).Mag();
+      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
 
       if (theDist <= ANTHILL_SEARCHRANGE && !SearchingArea(s->m_pos) && (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
       {
@@ -163,7 +163,7 @@ bool AntHill::SearchForCitizens(Vector3& _pos, WorldObjectId& _id)
     if (entity && entity->m_type == Entity::TypeCitizen)
     {
       Citizen* citizen = (Citizen*)entity;
-      float theDist = (entity->m_pos - m_pos).Mag();
+      float theDist = (AsLegacy(entity->m_pos) - AsLegacy(m_pos)).Mag();
 
       if (theDist <= ANTHILL_SEARCHRANGE && citizen->m_state != Citizen::StateCapturedByAnt && !TargettedEntity(entity->m_id))
       {
@@ -188,7 +188,7 @@ bool AntHill::SearchForEnemies(Vector3& _pos, WorldObjectId& _id)
     WorldObjectId id = ids[i];
     Entity* entity = g_location->GetEntity(id);
 
-    float theDist = (entity->m_pos - m_pos).Mag();
+    float theDist = (AsLegacy(entity->m_pos) - AsLegacy(m_pos)).Mag();
 
     if (theDist <= ANTHILL_SEARCHRANGE && !TargettedEntity(entity->m_id))
     {

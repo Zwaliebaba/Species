@@ -1393,7 +1393,7 @@ void LevelFile::GenerateInstantUnits()
           Entity* entity = team->m_others[i];
           if (entity->m_enabled)
           {
-            bool insideSpawnArea = (entity->m_pos - AsLegacy(entity->m_spawnPoint)).Mag() < entity->m_roamRange;
+            bool insideSpawnArea = (AsLegacy(entity->m_pos) - AsLegacy(entity->m_spawnPoint)).Mag() < entity->m_roamRange;
 
             InstantUnit* unit = new InstantUnit();
             unit->m_type = entity->m_type;

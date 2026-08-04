@@ -313,12 +313,17 @@ bool Officer::RenderPixelEffect(float _predictionTime)
   {
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
     float thefrand = frand();
+    // Matrix34 named its rows r/u/f; XMFLOAT4X4 numbers them, and the
+    // convention is row 0 = right, row 1 = up, row 2 = front. Scaling one row
+    // squashes the model along that axis, which is the damage flicker.
+    DirectX::XMMATRIX squashed = DirectX::XMLoadFloat4x4(&mat);
     if (thefrand > 0.7f)
-      mat.f *= (1.0f - sinf(timeIndex) * 0.5f);
+      squashed.r[2] = DirectX::XMVectorScale(squashed.r[2], 1.0f - sinf(timeIndex) * 0.5f);
     else if (thefrand > 0.4f)
-      mat.u *= (1.0f - sinf(timeIndex) * 0.2f);
+      squashed.r[1] = DirectX::XMVectorScale(squashed.r[1], 1.0f - sinf(timeIndex) * 0.2f);
     else
-      mat.r *= (1.0f - sinf(timeIndex) * 0.5f);
+      squashed.r[0] = DirectX::XMVectorScale(squashed.r[0], 1.0f - sinf(timeIndex) * 0.5f);
+    DirectX::XMStoreFloat4x4(&mat, squashed);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
   }
@@ -353,7 +358,7 @@ bool Officer::AdvanceIdle()
     return false;
   }
 
-  m_vel.Zero();
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
   return false;
 }
@@ -405,16 +410,19 @@ bool Officer::AdvanceToTargetPosition()
       factor = 0.1f;
     if (factor > 2.0f)
       factor = 2.0f;
-    newPos = m_pos + actualDir * speed * factor * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(speed * factor * SERVER_ADVANCE_PERIOD),
+                                                                 DirectX::XMLoadFloat3(&m_pos)));
     newPos = PushFromObstructions(newPos);
 
     m_pos = newPos;
-    m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
-    m_front = (newPos - oldPos).Normalise();
+
+    DirectX::XMVECTOR const travelled = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos));
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(travelled, 1.0f / SERVER_ADVANCE_PERIOD));
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(travelled));
   }
   else
   {
-    m_vel.Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     return true;
   }
 
@@ -462,7 +470,8 @@ void Officer::Absorb()
     Entity* entity = g_location->GetEntity(id);
     if (entity && entity->m_type == Entity::TypeCitizen && !entity->m_dead)
     {
-      float distance = (entity->m_pos - m_pos).Mag();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
       if (distance < nearestDistance)
       {
         nearestDistance = distance;
@@ -656,7 +665,8 @@ void Officer::SetOrders(DirectX::XMFLOAT3 const& _orders)
   }
   else
   {
-    float distanceToOrders = (_orders - m_pos).Mag();
+    float distanceToOrders =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_orders), DirectX::XMLoadFloat3(&m_pos))));
 
     if (distanceToOrders > 20.0f)
     {
@@ -952,7 +962,7 @@ bool OfficerOrders::Advance()
   if (m_arrivedTimer >= 0.0f)
   {
     // We are already here, so just fade out
-    m_vel.Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     m_arrivedTimer += SERVER_ADVANCE_PERIOD;
     if (m_arrivedTimer > 1.0f)
       return true;

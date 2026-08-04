@@ -50,7 +50,7 @@ bool Cave::Advance()
     // Only spawn if the area is sufficiently empty
 
     Matrix34 rootMat(m_front, g_upVector, m_pos);
-    Matrix34 worldMat = AsLegacy(m_spawnPoint)->GetWorldMatrix(rootMat);
+    Matrix34 worldMat = m_spawnPoint->GetWorldMatrix(rootMat);
     Vector3 spawnPoint = worldMat.pos;
     spawnPoint.y = g_location->m_landscape.m_heightMap->GetValue(spawnPoint.x, spawnPoint.z);
 

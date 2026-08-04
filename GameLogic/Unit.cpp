@@ -192,7 +192,8 @@ bool Unit::Advance(int _slice)
       {
         LaserTrooper* l = (LaserTrooper*)m_entities[i];
 
-        if ((l->m_pos - l->m_targetPos).Mag() < leadDistance / 5.0f)
+        if (DirectX::XMVectorGetX(DirectX::XMVector3Length(
+              DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&l->m_pos), DirectX::XMLoadFloat3(&l->m_targetPos)))) < leadDistance / 5.0f)
         {
           DirectX::XMFLOAT3 pos = l->m_pos;
           //                    Vector3 targetPos = m_wayPoint;

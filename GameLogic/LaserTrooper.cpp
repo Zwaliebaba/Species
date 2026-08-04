@@ -213,7 +213,7 @@ void LaserTrooper::AdvanceVictoryDance()
 {
   if (syncfrand(100.0f) < 1.0f)
   {
-    m_vel.Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     m_vel.y += 10.0f + syncfrand(10.0f);
     m_onGround = false;
   }

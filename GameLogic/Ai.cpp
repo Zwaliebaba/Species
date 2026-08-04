@@ -167,7 +167,8 @@ int AI::FindNearestTarget(DirectX::XMFLOAT3 const& _fromPos)
       if (building->m_type == Building::TypeAITarget)
       {
         AITarget* target = (AITarget*)building;
-        float distance = (target->m_pos - _fromPos).Mag();
+        float distance = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&target->m_pos), DirectX::XMLoadFloat3(&_fromPos))));
         if (distance < nearest)
         {
           if (g_location->IsWalkable(_fromPos, target->m_pos, true))
@@ -367,7 +368,8 @@ void AITarget::RecalculateNeighbours()
       Building* building = g_location->m_buildings[i];
       if (building->m_type == Building::TypeAITarget && building != this)
       {
-        float distance = (building->m_pos - m_pos).Mag();
+        float distance = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
         bool isWalkable = g_location->IsWalkable(m_pos, building->m_pos, true);
         if (distance <= AITARGET_LINKRANGE && isWalkable)
         {
@@ -450,7 +452,8 @@ float AITarget::IsNearTo(int _aiTargetId)
       Building* building = g_location->GetBuilding(thisBuildingId);
       if (building && building->m_type == TypeAITarget)
       {
-        return (m_pos - building->m_pos).Mag();
+        return DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&building->m_pos))));
       }
     }
   }
@@ -672,7 +675,8 @@ bool AISpawnPoint::PopulationLocked()
         if (building && building->m_type == TypeSpawnPopulationLock)
         {
           SpawnPopulationLock* lock = (SpawnPopulationLock*)building;
-          float distance = (building->m_pos - m_pos).Mag();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
           if (distance < lock->m_searchRadius)
           {
             m_populationLock = lock->m_id.GetUniqueId();

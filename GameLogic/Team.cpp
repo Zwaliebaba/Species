@@ -500,7 +500,10 @@ void Team::RenderVirii(float _predictionTime)
         Virii* virii = (Virii*)entity;
         if (virii->IsInView())
         {
-          float rangeToCam = (virii->m_pos - g_camera->GetPos()).Mag();
+          // CameraAccess still returns a legacy vector; T12 converts it.
+          DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+          float rangeToCam = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&virii->m_pos), DirectX::XMLoadFloat3(&cameraPos))));
           int viriiDetail = 1;
           if (entityDetail == 1 && rangeToCam > 1000.0f)
             viriiDetail = 2;
@@ -578,7 +581,9 @@ void Team::RenderCitizens(float _predictionTime)
         Citizen* citizen = (Citizen*)entity;
         if (citizen->IsInView())
         {
-          float camDistSqd = (citizen->m_pos - g_camera->GetPos()).MagSquared();
+          DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+          float camDistSqd = DirectX::XMVectorGetX(
+            DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&citizen->m_pos), DirectX::XMLoadFloat3(&cameraPos))));
           float highDetail = 1.0f - (camDistSqd / highDetailDistanceSqd);
           highDetail = std::max(highDetail, 0.0f);
           highDetail = std::min(highDetail, 1.0f);

@@ -100,7 +100,7 @@ void AirstrikeUnit::Begin()
 
 bool AirstrikeUnit::AdvanceToTargetPosition(Vector3 _targetPos)
 {
-  Vector3 targetFront = (_targetPos - m_wayPoint);
+  Vector3 targetFront = (_targetPos - AsLegacy(m_wayPoint));
   targetFront.Normalise();
 
   float amountToTurn = SERVER_ADVANCE_PERIOD;
@@ -111,7 +111,7 @@ bool AirstrikeUnit::AdvanceToTargetPosition(Vector3 _targetPos)
   Vector3 right = m_front ^ g_upVector;
   m_up = right ^ m_front;
 
-  float distToTarget = (m_attackPosition - m_wayPoint).Mag();
+  float distToTarget = (m_attackPosition - AsLegacy(m_wayPoint)).Mag();
   float desiredSpeed = EntityBlueprint::GetStat(Entity::TypeSpaceInvader, Entity::StatSpeed);
   if ((m_state == StateApproaching && distToTarget > 600.0f) || (m_state == StateLeaving && distToTarget > 100.0f))
   {
@@ -119,9 +119,9 @@ bool AirstrikeUnit::AdvanceToTargetPosition(Vector3 _targetPos)
   }
   m_speed = m_speed * (1.0f - amountToTurn) + desiredSpeed * amountToTurn;
 
-  m_wayPoint += m_front * m_speed * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_wayPoint) += m_front * m_speed * SERVER_ADVANCE_PERIOD;
 
-  float newDistance = (_targetPos - m_wayPoint).Mag();
+  float newDistance = (_targetPos - AsLegacy(m_wayPoint)).Mag();
   return (newDistance < 10.0f);
 }
 

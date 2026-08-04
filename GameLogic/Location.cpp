@@ -125,7 +125,7 @@ bool Location::GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* 
     return false;
 
   // A building is heard from its centre. Everything else from where it is.
-  *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : object->m_pos;
+  *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : AsLegacy(object->m_pos);
   *_vel = object->m_vel;
   return true;
 }
@@ -1457,7 +1457,7 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
         WorldObjectId objId = SpawnEntities(pos, _teamId, -1, Entity::TypeEngineer, 1, g_zeroVector, 0.0f);
         Engineer* engineer = (Engineer*)GetEntitySafe(objId, Entity::TypeEngineer);
         engineer->m_state = program->m_state;
-        engineer->m_wayPoint.Set(program->m_waypointX, 0, program->m_waypointZ);
+        AsLegacy(engineer->m_wayPoint).Set(program->m_waypointX, 0, program->m_waypointZ);
         engineer->m_wayPoint.y = m_landscape.m_heightMap->GetValue(program->m_waypointX, program->m_waypointZ);
         engineer->m_stats[Entity::StatHealth] = program->m_health[0];
 

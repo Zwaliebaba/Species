@@ -530,7 +530,7 @@ bool ArmyAnt::AdvanceToTargetPosition()
   float speed = m_stats[StatSpeed];
   Vector3 oldPos = m_pos;
 
-  if (m_orders == CollectEntity || m_orders == AttackEnemy)
+  if (AsLegacy(m_orders) == CollectEntity || AsLegacy(m_orders) == AttackEnemy)
     speed *= 2.0f;
 
   Vector3 actualDir = (m_wayPoint - AsLegacy(m_pos)).Normalise();
