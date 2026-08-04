@@ -9,7 +9,7 @@
 #include "Debug.h"
 #include "FilesysUtils.h"
 #include "Resource.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 #include "TextRenderer.h"
 #include "WorldPointers.h"
@@ -466,17 +466,32 @@ namespace
   };
 } // namespace
 
-void TextRenderer::DrawText3DSimple(Vector3 const& _pos, float _size, char const* _text)
+// Stores a computed vertex and hands it to OpenGL. The 3D text paths build
+// every corner as an XMVECTOR expression, and glVertex3fv wants three floats in
+// memory, so the store has to happen somewhere; doing it here keeps the quad
+// emission below readable.
+static void EmitVertex(DirectX::FXMVECTOR _point)
+{
+  DirectX::XMFLOAT3 stored;
+  DirectX::XMStoreFloat3(&stored, _point);
+  glVertex3fv(&stored.x);
+}
+
+
+void TextRenderer::DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text)
 {
   // Store the GL state
   SaveGLFontDrawAttributes saveAttribs;
 
   CameraAccess* cam = g_camera;
-  Vector3 pos(_pos);
-  Vector3 vertSize = cam->GetUp() * _size;
-  Vector3 horiSize = -cam->GetRight() * _size * HORIZONTAL_SIZE;
+  DirectX::XMFLOAT3 const cameraUp = cam->GetUp();
+  DirectX::XMFLOAT3 const cameraRight = cam->GetRight();
+
+  DirectX::XMVECTOR const vertSize = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), _size);
+  DirectX::XMVECTOR const horiSize = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), -_size * HORIZONTAL_SIZE);
   unsigned int numChars = strlen(_text);
-  pos += vertSize * 0.5f;
+
+  DirectX::XMVECTOR pos = DirectX::XMVectorMultiplyAdd(vertSize, DirectX::XMVectorReplicate(0.5f), DirectX::XMLoadFloat3(&_pos));
 
 
   //
@@ -508,22 +523,22 @@ void TextRenderer::DrawText3DSimple(Vector3 const& _pos, float _size, char const
 
       glBegin(GL_QUADS);
       glTexCoord2f(texX, texY + TEX_HEIGHT);
-      glVertex3fv((pos).GetData());
+      EmitVertex(pos);
       glTexCoord2f(texX + TEX_WIDTH, texY + TEX_HEIGHT);
-      glVertex3fv((pos + horiSize).GetData());
+      EmitVertex(DirectX::XMVectorAdd(pos, horiSize));
       glTexCoord2f(texX + TEX_WIDTH, texY);
-      glVertex3fv((pos + horiSize - vertSize).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, horiSize), vertSize));
       glTexCoord2f(texX, texY);
-      glVertex3fv((pos - vertSize).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(pos, vertSize));
       glEnd();
     }
 
-    pos += horiSize;
+    pos = DirectX::XMVectorAdd(pos, horiSize);
   }
 }
 
 
-void TextRenderer::DrawText3D(Vector3 const& _pos, float _size, char const* _text, ...)
+void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...)
 {
   // Convert the variable argument list into a single string
   char buf[512];
@@ -535,37 +550,44 @@ void TextRenderer::DrawText3D(Vector3 const& _pos, float _size, char const* _tex
 }
 
 
-void TextRenderer::DrawText3DCentre(Vector3 const& _pos, float _size, char const* _text, ...)
+void TextRenderer::DrawText3DCentre(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...)
 {
   char buf[512];
   va_list ap;
   va_start(ap, _text);
   vsprintf(buf, _text, ap);
 
-  Vector3 pos = _pos;
+  DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   float amount = HORIZONTAL_SIZE * (float)strlen(buf) * 0.5f * _size;
-  pos += g_camera->GetRight() * amount;
+
+  DirectX::XMFLOAT3 pos;
+  DirectX::XMStoreFloat3(
+    &pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&cameraRight), DirectX::XMVectorReplicate(amount), DirectX::XMLoadFloat3(&_pos)));
 
   DrawText3DSimple(pos, _size, buf);
 }
 
 
-void TextRenderer::DrawText3DRight(Vector3 const& _pos, float _size, char const* _text, ...)
+void TextRenderer::DrawText3DRight(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...)
 {
   char buf[512];
   va_list ap;
   va_start(ap, _text);
   vsprintf(buf, _text, ap);
 
-  Vector3 pos = _pos;
+  DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   float amount = HORIZONTAL_SIZE * (float)strlen(buf) * _size;
-  pos += g_camera->GetRight() * amount;
+
+  DirectX::XMFLOAT3 pos;
+  DirectX::XMStoreFloat3(
+    &pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&cameraRight), DirectX::XMVectorReplicate(amount), DirectX::XMLoadFloat3(&_pos)));
 
   DrawText3DSimple(pos, _size, buf);
 }
 
 
-void TextRenderer::DrawText3D(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up, float _size, char const* _text, ...)
+void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, float _size,
+                              char const* _text, ...)
 {
   char buf[512];
   va_list ap;
@@ -576,12 +598,13 @@ void TextRenderer::DrawText3D(Vector3 const& _pos, Vector3 const& _front, Vector
 
   CameraAccess* cam = g_camera;
 
-  Vector3 pos = _pos;
-  Vector3 vertSize = _up * _size;
-  Vector3 horiSize = (_up ^ _front) * _size * HORIZONTAL_SIZE;
+  DirectX::XMVECTOR const upV = DirectX::XMLoadFloat3(&_up);
+  DirectX::XMVECTOR const vertSize = DirectX::XMVectorScale(upV, _size);
+  DirectX::XMVECTOR const horiSize = DirectX::XMVectorScale(DirectX::XMVector3Cross(upV, DirectX::XMLoadFloat3(&_front)), _size * HORIZONTAL_SIZE);
   unsigned int numChars = strlen(buf);
-  pos -= horiSize * numChars * 0.5f;
-  pos += vertSize * 0.5f;
+
+  DirectX::XMVECTOR pos = DirectX::XMVectorMultiplyAdd(horiSize, DirectX::XMVectorReplicate(-(float)numChars * 0.5f), DirectX::XMLoadFloat3(&_pos));
+  pos = DirectX::XMVectorMultiplyAdd(vertSize, DirectX::XMVectorReplicate(0.5f), pos);
 
 
   //
@@ -613,17 +636,17 @@ void TextRenderer::DrawText3D(Vector3 const& _pos, Vector3 const& _front, Vector
 
       glBegin(GL_QUADS);
       glTexCoord2f(texX, texY + TEX_HEIGHT);
-      glVertex3fv((pos).GetData());
+      EmitVertex(pos);
       glTexCoord2f(texX + TEX_WIDTH, texY + TEX_HEIGHT);
-      glVertex3fv((pos + horiSize).GetData());
+      EmitVertex(DirectX::XMVectorAdd(pos, horiSize));
       glTexCoord2f(texX + TEX_WIDTH, texY);
-      glVertex3fv((pos + horiSize - vertSize).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, horiSize), vertSize));
       glTexCoord2f(texX, texY);
-      glVertex3fv((pos - vertSize).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(pos, vertSize));
       glEnd();
     }
 
-    pos += horiSize;
+    pos = DirectX::XMVectorAdd(pos, horiSize);
   }
 }
 

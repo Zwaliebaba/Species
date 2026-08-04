@@ -357,15 +357,6 @@ void Matrix34::Normalise()
 }
 
 
-Vector3	Matrix34::InverseMultiplyVector(Vector3 const &s) const
-{
-	Vector3 v = s - pos;
-	return Vector3(r.x*v.x + u.x*v.y + f.x*v.z,
-				   r.y*v.x + u.y*v.y + f.y*v.z,
-				   r.z*v.x + u.z*v.y + f.z*v.z);
-}
-
-
 void Matrix34::WriteToDebugStream()
 {
     DebugTrace("%5.2f %5.2f %5.2f\n", r.x, r.y, r.z);

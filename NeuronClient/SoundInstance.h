@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 #include "SoundParameter.h"
 #include "WorldObjectId.h"
 
@@ -129,8 +129,8 @@ class SoundInstance
     float m_loopDelayTimer;
     bool m_restartOccured;
 
-    Vector3 m_pos;
-    Vector3 m_vel;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
     std::vector<WorldObjectId*> m_objIds;
     WorldObjectId m_objId; // The selected objId from the list
 

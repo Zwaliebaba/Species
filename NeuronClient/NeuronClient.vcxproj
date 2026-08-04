@@ -90,7 +90,6 @@
     <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="TextStreamReaders.cpp" />
     <ClCompile Include="Transform.cpp" />
-    <ClCompile Include="TriTri.cpp" />
     <ClCompile Include="UserInfo.cpp" />
     <ClCompile Include="Win32EventHandler.cpp" />
     <ClCompile Include="WindowManager.cpp" />

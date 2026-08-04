@@ -58,9 +58,6 @@
     <ClCompile Include="Matrix34.cpp">
       <Filter>GameMath</Filter>
     </ClCompile>
-    <ClCompile Include="Plane.cpp">
-      <Filter>GameMath</Filter>
-    </ClCompile>
     <ClCompile Include="Vector2.cpp">
       <Filter>GameMath</Filter>
     </ClCompile>
@@ -130,14 +127,14 @@
     <ClInclude Include="Matrix34.h">
       <Filter>GameMath</Filter>
     </ClInclude>
-    <ClInclude Include="Plane.h">
-      <Filter>GameMath</Filter>
-    </ClInclude>
     <ClInclude Include="Vector2.h">
       <Filter>GameMath</Filter>
     </ClInclude>
     <ClInclude Include="WorldObjectId.h" />
     <ClInclude Include="Vector3.h">
+      <Filter>GameMath</Filter>
+    </ClInclude>
+    <ClInclude Include="NeuronMath.h">
       <Filter>GameMath</Filter>
     </ClInclude>
     <ClInclude Include="Globals.h" />

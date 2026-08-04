@@ -525,6 +525,63 @@ void Landscape::BuildOpenGlState()
 
 
 // *** Init
+// TEMPORARY, FOR A LANDSCAPE-SHAPE INVESTIGATION. Delete this and its call
+// below once the question is answered — it is not part of any task.
+//
+// Terrain generation is a pure function of the level's m_randomSeed and its
+// tile parameters: GenerateHeightMap reseeds the RNG immediately before the
+// diamond-square loop, so nothing drawn from the shared stream beforehand can
+// reach it. This writes a checksum of the finished height map so that "the
+// landscape looks different" becomes a number that is either equal or not.
+//
+// Build this on two commits, run each once, and compare the file. Equal means
+// the terrain is bit-identical and the difference is in rendering or in the
+// eye. Unequal means generation genuinely moved, and the printed parameters
+// say whether the INPUTS moved (a different seed or tile setup, so not a code
+// change at all) or only the OUTPUT (which would be a real regression).
+//
+// The sum is order-dependent on purpose: it walks the map in a fixed order, so
+// two runs of the same build always agree.
+static void WriteHeightMapChecksum(SurfaceMap2D<float>* _heightMap, LandscapeDef* _def)
+{
+  double sum = 0.0;
+  float lowest = 1e30f;
+  float highest = -1e30f;
+
+  unsigned short const columns = _heightMap->GetNumColumns();
+  unsigned short const rows = _heightMap->GetNumRows();
+
+  for (unsigned short z = 0; z < rows; ++z)
+  {
+    for (unsigned short x = 0; x < columns; ++x)
+    {
+      float const height = _heightMap->GetData(x, z);
+      sum += (double)height * (double)(x + 1) * (double)(z + 1);
+      if (height < lowest)
+        lowest = height;
+      if (height > highest)
+        highest = height;
+    }
+  }
+
+  FILE* out = fopen("landscape-checksum.txt", "a");
+  if (!out)
+    return;
+
+  fprintf(out, "size %ux%u  cellSize %.6f  outsideHeight %.6f  tiles %d\n", columns, rows, _def->m_cellSize, _def->m_outsideHeight,
+          static_cast<int>(_def->m_tiles.size()));
+  for (int i = 0; i < static_cast<int>(_def->m_tiles.size()); ++i)
+  {
+    LandscapeTile* tile = _def->m_tiles[i];
+    fprintf(out, "  tile %d: seed %d  fractalDimension %.6f  heightScale %.6f  lowlandSmoothing %.6f  method %d  guidePower %d\n", i,
+            tile->m_randomSeed, tile->m_fractalDimension, tile->m_heightScale, tile->m_lowlandSmoothingFactor, tile->m_generationMethod,
+            tile->m_guideGridPower);
+  }
+  fprintf(out, "CHECKSUM %.6f  lowest %.6f  highest %.6f\n\n", sum, lowest, highest);
+  fclose(out);
+}
+
+
 void Landscape::Init(LandscapeDef* _def, bool _justMakeTheHeightMap)
 {
   //
@@ -551,6 +608,8 @@ void Landscape::Init(LandscapeDef* _def, bool _justMakeTheHeightMap)
   // Generate our landscape from those tiles
 
   GenerateHeightMap(_def);
+
+  WriteHeightMapChecksum(m_heightMap, _def);
 
   if (_justMakeTheHeightMap)
   {

@@ -17,9 +17,9 @@ class SoundLibrary3dSoftware : public SoundLibrary3d
     float* m_left; // Temp buffers used by mixer
     float* m_right;
 
-    Vector3 m_listenerFront;
-    Vector3 m_listenerUp;
-    Vector3 m_listenerRight;
+    DirectX::XMFLOAT3 m_listenerFront{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_listenerUp{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_listenerRight{0.0f, 0.0f, 0.0f};
 
     void GetChannelData(float _duration);
     void ApplyDspFX(float _duration);
@@ -47,7 +47,7 @@ class SoundLibrary3dSoftware : public SoundLibrary3d
     void ResetChannel(int _channel) override; // Refills entire channel with data immediately
 
     void SetChannel3DMode(int _channel, int _mode) override;
-    void SetChannelPosition(int _channel, const Vector3& _pos, const Vector3& _vel) override;
+    void SetChannelPosition(int _channel, DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel) override;
     void SetChannelFrequency(int _channel, int _frequency) override;
     void SetChannelMinDistance(int _channel, float _minDistance) override;
     void SetChannelVolume(int _channel, float _volume) override; // logarithmic, 0.0f - 10.0f
@@ -56,6 +56,6 @@ class SoundLibrary3dSoftware : public SoundLibrary3d
     void UpdateDspFX(int _channel, int _filterType, int _numParams, const float* _params) override;
     void DisableDspFX(int _channel) override;
 
-    void SetListenerPosition(const Vector3& _pos, const Vector3& _front, const Vector3& _up, const Vector3& _vel) override;
+    void SetListenerPosition(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up,
+                             DirectX::XMFLOAT3 const& _vel) override;
 };
-

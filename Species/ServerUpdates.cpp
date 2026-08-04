@@ -60,7 +60,10 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
       }
       else
       {
-        DEBUG_ASSERT(update->GetWorldPos() != g_zeroVector);
+        // GetWorldPos returns an XMFLOAT3 as of directxmath-migration T9, and
+        // XMFLOAT3 has no operator!=. Vector3's is a per-component
+        // NearlyEquals at 1e-6, which is what this assert has always meant.
+        DEBUG_ASSERT(Vector3(update->GetWorldPos()) != g_zeroVector);
         int unitId;
         // The returned Unit* was assigned to an unused local in the original.
         // Dropping the variable keeps the call and its side effects.

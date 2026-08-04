@@ -5,16 +5,21 @@
 #include "WorldPointers.h"
 
 
-void Render3DSprite(Vector3 const& _pos, float _width, float _height, int _textureId)
+void Render3DSprite(DirectX::XMFLOAT3 const& _pos, float _width, float _height, int _textureId)
 {
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = (camUp ^ g_camera->GetFront()) * (_width * 0.5f);
-  camUp *= _height;
+  DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
+  DirectX::XMFLOAT3 const cameraFront = g_camera->GetFront();
 
-  Vector3 bottomLeft(_pos - camRight);
-  Vector3 bottomRight(_pos + camRight);
-  Vector3 topLeft(bottomLeft + camUp);
-  Vector3 topRight(bottomRight + camUp);
+  DirectX::XMVECTOR const up = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), _height);
+  DirectX::XMVECTOR const right =
+    DirectX::XMVectorScale(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&cameraUp), DirectX::XMLoadFloat3(&cameraFront)), _width * 0.5f);
+  DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&_pos);
+
+  DirectX::XMFLOAT3 bottomLeft, bottomRight, topLeft, topRight;
+  DirectX::XMStoreFloat3(&bottomLeft, DirectX::XMVectorSubtract(centre, right));
+  DirectX::XMStoreFloat3(&bottomRight, DirectX::XMVectorAdd(centre, right));
+  DirectX::XMStoreFloat3(&topLeft, DirectX::XMVectorAdd(DirectX::XMVectorSubtract(centre, right), up));
+  DirectX::XMStoreFloat3(&topRight, DirectX::XMVectorAdd(DirectX::XMVectorAdd(centre, right), up));
 
   glEnable(GL_TEXTURE_2D);
   // glColor3ub(255, 255, 255);
@@ -24,13 +29,13 @@ void Render3DSprite(Vector3 const& _pos, float _width, float _height, int _textu
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glBegin(GL_QUADS);
   glTexCoord2f(1, 1);
-  glVertex3fv(topLeft.GetData());
+  glVertex3fv(&topLeft.x);
   glTexCoord2f(0, 1);
-  glVertex3fv(topRight.GetData());
+  glVertex3fv(&topRight.x);
   glTexCoord2f(0, 0);
-  glVertex3fv(bottomRight.GetData());
+  glVertex3fv(&bottomRight.x);
   glTexCoord2f(1, 0);
-  glVertex3fv(bottomLeft.GetData());
+  glVertex3fv(&bottomLeft.x);
   glEnd();
   glDisable(GL_TEXTURE_2D);
   glEnable(GL_CULL_FACE);

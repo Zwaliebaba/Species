@@ -727,8 +727,8 @@ bool SoundInstance::Update3DPosition()
   {
   case Type2D:
   {
-    m_pos.Zero();
-    m_vel.Zero();
+    m_pos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     return false;
   }
 
@@ -739,11 +739,15 @@ bool SoundInstance::Update3DPosition()
 
   case Type3DAttachedToObject:
   {
+    // These two stay Vector3 because LocationAccess::GetSoundSource still takes
+    // Vector3* — a virtual signature cannot move ahead of its implementors, so
+    // it converts with GameLogic's Location rather than here. The seam turns
+    // them into XMFLOAT3 on assignment. See directxmath-migration T12's notes.
     Vector3 pos, vel;
     if (!ResolveAttachedObject() || !g_locationAccess->GetSoundSource(m_objId, &pos, &vel))
     {
       m_positionType = Type3DStationary;
-      m_vel = g_zeroVector;
+      m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
       g_soundLibrary3d->SetChannelPosition(m_channelIndex, m_pos, m_vel);
       BeginRelease(true);
       return false;
@@ -761,9 +765,8 @@ bool SoundInstance::Update3DPosition()
 
   case TypeInEditor:
   {
-    Vector3 relativePos(g_soundSystem->m_editorPos.x, 0.0f, g_soundSystem->m_editorPos.z);
-    m_pos = relativePos;
-    m_vel.Zero();
+    m_pos = DirectX::XMFLOAT3(g_soundSystem->m_editorPos.x, 0.0f, g_soundSystem->m_editorPos.z);
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
     g_soundLibrary3d->SetChannelPosition(m_channelIndex, m_pos, m_vel);
     return false;
@@ -800,7 +803,7 @@ void SoundInstance::ForceParameter(SoundParameter& _param, float value)
     break;
 
   case SoundParameter::LinkedToVelocity:
-    m_vel.Set(0.0f, 0.0f, value);
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, value);
     break;
 
   case SoundParameter::LinkedToCameraDistance:
@@ -822,8 +825,8 @@ bool SoundInstance::UpdateParameter(SoundParameter& _param)
     return false;
   }
 
-  Vector3 pos = m_pos;
-  Vector3 vel = m_vel;
+  DirectX::XMFLOAT3 pos = m_pos;
+  DirectX::XMFLOAT3 vel = m_vel;
   if (m_positionType == Type2D)
   {
     pos = g_camera->GetPos();
@@ -856,7 +859,7 @@ bool SoundInstance::UpdateParameter(SoundParameter& _param)
       break;
 
     case SoundParameter::LinkedToVelocity:
-      _param.Recalculate(vel.Mag());
+      _param.Recalculate(DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&vel))));
       break;
 
     case SoundParameter::LinkedToCameraDistance:
@@ -933,7 +936,9 @@ void SoundInstance::CalculatePerceivedVolume()
   }
   else
   {
-    float distance = (m_pos - g_camera->GetPos()).Mag();
+    DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&cameraPos))));
     float distanceFactor = 1.0f;
     if (distance > m_minDistance)
     {
@@ -1029,6 +1034,7 @@ bool SoundInstance::ResolveAttachedObject()
           for (int i = 0; i < static_cast<int>(m_objIds.size()); ++i)
           {
             WorldObjectId* id = m_objIds[i];
+            // Vector3 for the same reason as above: GetSoundSource takes Vector3*.
             Vector3 pos, vel;
             // The pruning above removed every dead id, so this resolves.
             if (!g_locationAccess->GetSoundSource(*id, &pos, &vel))

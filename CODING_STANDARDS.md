@@ -382,6 +382,35 @@ Simulation code is `GameLogic/`, plus the world, entity, team and physics code i
   architectures. Do not swap one for another form (`powf(x, 0.5f)` for `sqrtf(x)`,
   a lookup table for a call, or vice versa) inside the simulation.
 
+### Native math
+
+`tasks/directxmath-migration.yaml` is replacing the inherited `Vector3`,
+`Matrix34` and friends with `DirectX::XMFLOAT3`, `XMFLOAT4X4` and `XMVECTOR`.
+Three rules come with that, and they apply to converted code today rather than
+when the migration finishes:
+
+- **The `*Est` family is banned in simulation code.** `XMVector3NormalizeEst`,
+  `XMVectorReciprocalEst` and the rest are explicitly permitted to differ
+  between implementations, which makes them a desync between two clients on the
+  *same* build. Rendering-only code may use them.
+- **Multiplication is row-vector, `v * M`,** and the coordinate system is
+  right-handed — use DirectXMath's `*RH` variants, never the `LH` ones. Both are
+  stated at length in `NeuronCore/NeuronMath.h`, which is the file to read
+  before converting a call site.
+- **`XMFLOAT3` does not zero itself.** `Vector3`'s default constructor did.
+  Anything that accumulates into a converted member, or reads it before its
+  first write, changed behaviour silently — give every converted member an
+  explicit initialiser. `tools/check_math_types.py` reports the ones that lack
+  one, and this is the only failure mode on its list that neither the compiler
+  nor CI can see.
+
+**The migration deliberately changes what the simulation computes** — lane
+arithmetic does not reproduce the current scalar arithmetic bit for bit, so a
+build carrying part of it desyncs against one that does not. That is sanctioned
+on the same terms as `determinism.yaml` T1. What it does **not** change, and
+what is still forbidden to change, is the RNG call sequence, iteration order,
+container identity and the wire format.
+
 > **Cross-architecture play is unproven.** The projects build both ARM64 and x64
 > with MSVC defaults — no `<FloatingPointModel>` is set anywhere. Whether an
 > ARM64 client and an x64 client stay in sync depends on contraction and libm
@@ -475,17 +504,17 @@ saying `// copy the files` would not.
 Delete commented-out code. It is in git. The tree still carries large commented
 blocks from Darwinia; removing them is fair game when you are converting a file.
 
-**Never delete a copyright or licence notice.** Two files carry third-party
-terms — `NeuronCore/MathUtils.cpp` and `NeuronClient/TriTri.cpp` — and one of
-them requires its notice be retained. The notice travels with the code: if you
-move one of these files to another project, the header goes with it, and if you
-reformat one, the header survives verbatim. See [`LICENSE`](LICENSE).
+**Never delete a copyright or licence notice.** One file carries third-party
+terms — `NeuronCore/MathUtils.cpp`, whose BSD 3-clause grant requires its notice
+be retained. The notice travels with the code: if you move that file to another
+project, the header goes with it, and if you reformat it, the header survives
+verbatim. See [`LICENSE`](LICENSE).
 
-`AutoVector.h` was a third file until containers-replaced/T16 deleted it. Note
-the distinction that made that legal: its grant was conditional on the notice
-not being removed, and deleting the whole file — notice included — is not
-shipping their code without their terms. Stripping the header while keeping the
-code would have been.
+`AutoVector.h` and `TriTri.cpp` were two more until containers-replaced/T16 and
+directxmath-migration/T4 deleted them. Note the distinction that made both
+legal: deleting a whole file — notice included — is not shipping someone's code
+without their terms. Stripping the header while keeping the code would have
+been.
 
 ---
 

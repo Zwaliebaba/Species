@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 #include "WorldObjectId.h"
 
 // What the sound system needs to know about the thing making a sound.
@@ -22,10 +22,10 @@ struct SoundSource
     // blueprint type separately.
     int m_type;
 
-    Vector3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
 
     // Read only by TriggerEntityEvent. TriggerBuildingEvent set the instance's
     // position and left its velocity as the blueprint had it, and this keeps
     // doing that.
-    Vector3 m_vel;
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 };

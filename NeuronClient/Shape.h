@@ -6,13 +6,12 @@
 #include <stdio.h>
 
 #include "Matrix34.h"
+#include "NeuronMath.h"
 #include "RgbColour.h"
-#include "Vector3.h"
 
 
 class TextReader;
 class ShapeFragment;
-class Matrix34;
 class Shape;
 
 
@@ -23,17 +22,18 @@ class Shape;
 class RayPackage
 {
   public:
-    Vector3 m_rayStart;
-    Vector3 m_rayEnd;
-    Vector3 m_rayDir;
+    DirectX::XMFLOAT3 m_rayStart{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_rayEnd{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_rayDir{0.0f, 0.0f, 0.0f};
     float m_rayLen;
 
-    RayPackage(Vector3 const& _start, Vector3 const& _dir, float _length = 1e10)
+    RayPackage(DirectX::XMFLOAT3 const& _start, DirectX::XMFLOAT3 const& _dir, float _length = 1e10)
       : m_rayStart(_start),
         m_rayDir(_dir)
     {
       m_rayLen = _length;
-      m_rayEnd = m_rayStart + m_rayDir * _length;
+      DirectX::XMStoreFloat3(&m_rayEnd, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_rayDir), DirectX::XMVectorReplicate(_length),
+                                                                     DirectX::XMLoadFloat3(&m_rayStart)));
     }
 };
 
@@ -45,10 +45,10 @@ class RayPackage
 class SpherePackage
 {
   public:
-    Vector3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     float m_radius;
 
-    SpherePackage(Vector3 const& _pos, float _radius)
+    SpherePackage(DirectX::XMFLOAT3 const& _pos, float _radius)
       : m_pos(_pos),
         m_radius(_radius)
     {
@@ -63,7 +63,7 @@ class SpherePackage
 class ShapeMarker
 {
   public:
-    Matrix34 m_transform;
+    DirectX::XMFLOAT4X4 m_transform;
     char* m_name;
     char* m_parentName;
     int m_depth; // Number of levels in the shape fragment tree from root to self
@@ -73,11 +73,19 @@ class ShapeMarker
     // `delete`, which is undefined behaviour; a vector removes both questions.
     std::vector<ShapeFragment*> m_parents;
 
-    ShapeMarker(char const* _name, char* _parentName, int _depth, Matrix34 const& _transform);
+    ShapeMarker(char const* _name, char* _parentName, int _depth, DirectX::XMFLOAT4X4 const& _transform);
     ShapeMarker(TextReader* _in, char const* _name);
     ~ShapeMarker();
 
-    Matrix34 GetWorldMatrix(Matrix34 const& _rootTransform);
+    // RETURNS THE LEGACY TYPE ON PURPOSE, and it is the last one in this file.
+    // 43 sites across fourteen GameLogic files read `.pos` or `.f` off this
+    // result, and XMFLOAT4X4 has neither. Converting the return type would mean
+    // editing all 43 — and whole-file reformatting the twenty legacy files they
+    // sit in — inside a task that owns none of them. The seam converts the
+    // matrix on the way out for free, so the callers stay untouched and this
+    // signature goes when they convert under T14-T20. Same judgement as the two
+    // Vector3 locals T11 left in SoundInstance.cpp.
+    Matrix34 GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform);
 
     void WriteToFile(FILE* _out) const;
 };
@@ -129,10 +137,10 @@ class ShapeFragment
 
   public:
     unsigned int m_numPositions;
-    Vector3* m_positions;
-    Vector3* m_positionsInWS; // Temp storage space used to cache World Space versions of all the vertex positions in the hit check routines
+    DirectX::XMFLOAT3* m_positions;
+    DirectX::XMFLOAT3* m_positionsInWS; // Temp storage space used to cache World Space versions of all the vertex positions in the hit check routines
     unsigned int m_numNormals;
-    Vector3* m_normals;
+    DirectX::XMFLOAT3* m_normals;
     unsigned int m_numColours;
     RGBAColour* m_colours;
     unsigned int m_numVertices; // Each element contains an index into m_positions and an index into m_colours
@@ -143,12 +151,12 @@ class ShapeFragment
 
     char* m_name;
     char* m_parentName;
-    Matrix34 m_transform;
-    Vector3 m_angVel;
-    Vector3 m_vel;
+    DirectX::XMFLOAT4X4 m_transform;
+    DirectX::XMFLOAT3 m_angVel{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
     bool m_useCylinder; // If true then use cylinder hit check instead of sphere
-    Vector3 m_centre;
+    DirectX::XMFLOAT3 m_centre{0.0f, 0.0f, 0.0f};
     float m_radius;
     float m_mostPositiveY;
     float m_mostNegativeY;
@@ -164,8 +172,8 @@ class ShapeFragment
 
     void BuildDisplayList();
 
-    void RegisterPositions(Vector3* positions, unsigned int numPositions);
-    void RegisterNormals(Vector3* norms, unsigned int numNorms);
+    void RegisterPositions(DirectX::XMFLOAT3* positions, unsigned int numPositions);
+    void RegisterNormals(DirectX::XMFLOAT3* norms, unsigned int numNorms);
     void RegisterColours(RGBAColour* colours, unsigned int numColours);
     void RegisterVertices(VertexPosCol* verts, unsigned int numVerts);
     void RegisterTriangles(ShapeTriangle* tris, unsigned int numTris);
@@ -174,19 +182,19 @@ class ShapeFragment
 
     void Render(float _predictionTime); // Uses display list
     void RenderSlow();                  // Doesn't use display list
-    void RenderHitCheck(Matrix34 const& _transform);
-    void RenderMarkers(Matrix34 const& _transform);
+    void RenderHitCheck(DirectX::XMFLOAT4X4 const& _transform);
+    void RenderMarkers(DirectX::XMFLOAT4X4 const& _transform);
 
     ShapeFragment* LookupFragment(char const* _name); // Recurses into child fragments
     ShapeMarker* LookupMarker(char const* _name);     // Recurses into child fragments
 
-    void CalculateCentre(Matrix34 const& _transform, Vector3& _centre, int& _numFragments);   // Recursive
-    void CalculateRadius(Matrix34 const& _transform, Vector3 const& _centre, float& _radius); // Recursive
+    void CalculateCentre(DirectX::XMFLOAT4X4 const& _transform, DirectX::XMFLOAT3& _centre, int& _numFragments);   // Recursive
+    void CalculateRadius(DirectX::XMFLOAT4X4 const& _transform, DirectX::XMFLOAT3 const& _centre, float& _radius); // Recursive
 
-    bool RayHit(RayPackage* _package, Matrix34 const& _transform, bool _accurate = false);
-    bool SphereHit(SpherePackage* _package, Matrix34 const& _transform, bool _accurate = false);
-    bool ShapeHit(Shape* _shape, Matrix34 const& _theTransform, // Transform of _shape
-                  Matrix34 const& _ourTransform,                // Transform of this
+    bool RayHit(RayPackage* _package, DirectX::XMFLOAT4X4 const& _transform, bool _accurate = false);
+    bool SphereHit(SpherePackage* _package, DirectX::XMFLOAT4X4 const& _transform, bool _accurate = false);
+    bool ShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 const& _theTransform, // Transform of _shape
+                  DirectX::XMFLOAT4X4 const& _ourTransform,                // Transform of this
                   bool _accurate = false);
 };
 
@@ -215,16 +223,16 @@ class Shape
 
     void WriteToFile(FILE* _out) const;
 
-    void Render(float _predictionTime, Matrix34 const& _transform);
-    void RenderHitCheck(Matrix34 const& _transform);
-    void RenderMarkers(Matrix34 const& _transform);
+    void Render(float _predictionTime, DirectX::XMFLOAT4X4 const& _transform);
+    void RenderHitCheck(DirectX::XMFLOAT4X4 const& _transform);
+    void RenderMarkers(DirectX::XMFLOAT4X4 const& _transform);
 
-    bool RayHit(RayPackage* _package, Matrix34 const& _transform, bool _accurate = false);
-    bool SphereHit(SpherePackage* _package, Matrix34 const& _transform, bool _accurate = false);
-    bool ShapeHit(Shape* _shape, Matrix34 const& _theTransform, // Transform of _shape
-                  Matrix34 const& _ourTransform,                // Transform of this
+    bool RayHit(RayPackage* _package, DirectX::XMFLOAT4X4 const& _transform, bool _accurate = false);
+    bool SphereHit(SpherePackage* _package, DirectX::XMFLOAT4X4 const& _transform, bool _accurate = false);
+    bool ShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 const& _theTransform, // Transform of _shape
+                  DirectX::XMFLOAT4X4 const& _ourTransform,                // Transform of this
                   bool _accurate = false);
 
-    Vector3 CalculateCentre(Matrix34 const& _transform);
-    float CalculateRadius(Matrix34 const& _transform, Vector3 const& _centre);
+    DirectX::XMFLOAT3 CalculateCentre(DirectX::XMFLOAT4X4 const& _transform);
+    float CalculateRadius(DirectX::XMFLOAT4X4 const& _transform, DirectX::XMFLOAT3 const& _centre);
 };

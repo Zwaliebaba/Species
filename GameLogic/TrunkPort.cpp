@@ -44,6 +44,12 @@ void TrunkPort::SetDetail( int _detail )
 
     if( m_heightMap ) delete m_heightMap;
     m_heightMap = new Vector3[ m_heightMapSize * m_heightMapSize ];
+    // Zeroing the array as raw bytes, so this depends on Vector3 being three
+    // tightly packed floats with no padding and nothing that a memset would
+    // corrupt. directxmath-migration replaces it with DirectX::XMFLOAT3, which
+    // holds that; the assert is here so the day it stops holding is a build
+    // error rather than a height map full of rubbish.
+    static_assert(sizeof(Vector3) == 3 * sizeof(float), "this memset assumes Vector3 is three tightly packed floats");
     memset( m_heightMap, 0, m_heightMapSize * m_heightMapSize * sizeof(Vector3) );
 
     ShapeMarker *marker = m_shape->m_rootFragment->LookupMarker( "MarkerSurface" );

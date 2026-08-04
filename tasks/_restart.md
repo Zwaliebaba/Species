@@ -5,6 +5,12 @@ new plan — the plans exist and most of them are finished. It is the ordering
 for picking the remaining ones back up, and the repair of the one place the
 graph was known to be wrong.
 
+> **This file is about the modernisation plans (stages 3-5). It predates
+> `tasks/directxmath-migration.yaml`, which is a separate, larger effort that
+> is 12 of 27 tasks in as of 2026-08-04 and has its own restart note:
+> [`_restart-directxmath.md`](_restart-directxmath.md). Neither file
+> supersedes the other; they cover different work.**
+
 Read `AGENTS.md` first. It is still the orientation document; this file only
 answers "where were we, and what do I do next".
 

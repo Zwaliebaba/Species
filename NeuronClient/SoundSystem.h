@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "SlotMap.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 #include "SoundInstance.h"
 #include "SoundSource.h"
 #include "WorldObjectId.h"
@@ -124,7 +124,7 @@ class SoundSystem
     Profiler* m_eventProfiler;
     bool m_quitWithoutSave;
 
-    Vector3 m_editorPos;
+    DirectX::XMFLOAT3 m_editorPos{0.0f, 0.0f, 0.0f};
     SoundInstanceId m_editorInstanceId;
 
     FastSlotMap<SoundInstance*> m_sounds; // All the sounds that want to play

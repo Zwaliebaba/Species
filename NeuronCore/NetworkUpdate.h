@@ -11,7 +11,7 @@
 #pragma once
 
 #include "TeamControls.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 #define NETWORKUPDATE_BYTESTREAMSIZE 42
 
@@ -56,7 +56,6 @@ class NetworkUpdate
     int m_numTroops;
     unsigned char m_teamId;
     float m_radius;
-    Vector3 m_direction;
     float m_yaw, m_dive;
     float m_power;
     unsigned char m_program;
@@ -77,13 +76,12 @@ class NetworkUpdate
     void SetClientIp(std::string_view ip);
     void SetTeamType(unsigned char _teamType);
     void SetDesiredTeamId(signed char _desiredTeamId);
-    void SetWorldPos(Vector3 const& _pos);
+    void SetWorldPos(DirectX::XMFLOAT3 const& _pos);
     void SetTeamControls(TeamControls const& _teamControls);
     void SetTeamId(unsigned char _teamId);
     void SetEntityType(unsigned char _type);
     void SetNumTroops(int _numTroops);
     void SetRadius(float _radius);
-    void SetDirection(Vector3 _dir);
     void SetUnitId(int _unitId);
     void SetEntityId(int _entityId);
     void SetBuildingID(int _buildingId);
@@ -96,8 +94,8 @@ class NetworkUpdate
 
     void SetLastSequenceId(int _lastSequenceId);
 
-    const Vector3& GetWorldPos() const;
-    Vector3& GetWorldPos();
+    const DirectX::XMFLOAT3& GetWorldPos() const;
+    DirectX::XMFLOAT3& GetWorldPos();
 
     int ReadByteStream(char* _byteStream); // Returns number of bytes read
     char* GetByteStream(int* _linearSize);

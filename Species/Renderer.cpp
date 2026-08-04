@@ -1372,8 +1372,11 @@ void Renderer::RasteriseSphere(const Vector3& _pos, float _radius)
 void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform)
 {
 #if USE_PIXEL_EFFECT_GRID_OPTIMISATION
-  Matrix34 total = _frag->m_transform * _transform;
-  Vector3 worldPos = _frag->m_centre * total;
+  // ShapeFragment stores native types as of directxmath-migration T10, and
+  // RendererAccess still takes a Matrix34. Converting back here keeps this
+  // rendering path computing exactly what it did; it goes native in T22.
+  Matrix34 total = Matrix34(_frag->m_transform) * _transform;
+  Vector3 worldPos = Vector3(_frag->m_centre) * total;
 
   // Return early if this shape fragment isn't on the screen
   {

@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClCompile Include="NetLibWin32.cpp" />
     <ClCompile Include="TeamControls.cpp" />
-    <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Random.cpp" />
     <ClCompile Include="HiResTime.cpp" />
     <ClCompile Include="MathUtils.cpp" />
@@ -50,7 +49,6 @@
   <ItemGroup>
     <ClInclude Include="ProtocolLimits.h" />
     <ClInclude Include="TeamControls.h" />
-    <ClInclude Include="Plane.h" />
     <ClInclude Include="Random.h" />
     <ClInclude Include="2dArray.h" />
     <ClInclude Include="Globals.h" />
@@ -60,6 +58,7 @@
     <ClInclude Include="SlotMap.h" />
     <ClInclude Include="VectorUtils.h" />
     <ClInclude Include="MathUtils.h" />
+    <ClInclude Include="NeuronMath.h" />
     <ClInclude Include="Matrix33.h" />
     <ClInclude Include="Matrix34.h" />
     <ClInclude Include="Preferences.h" />

@@ -66,8 +66,10 @@ Explosion::Explosion(ShapeFragment* _frag, Matrix34 const& _transform, float _fr
 
   std::vector<ExplodingTri> triangles;
 
-  Matrix34 totalTransform = _frag->m_transform * _transform;
-  Vector3 transformedFragCentre = totalTransform * _frag->m_centre;
+  // ShapeFragment stores native types as of directxmath-migration T10; this
+  // converts back so the explosion maths is untouched. Goes native in T19.
+  Matrix34 totalTransform = Matrix34(_frag->m_transform) * _transform;
+  Vector3 transformedFragCentre = totalTransform * Vector3(_frag->m_centre);
 
   for (int j = 0; j < _frag->m_numTriangles; ++j)
   {
@@ -262,7 +264,7 @@ void ExplosionManager::AddExplosion(ShapeFragment* _frag, Matrix34 const& _trans
 
   if (_recurse)
   {
-    Matrix34 totalMatrix = _frag->m_transform * _transform;
+    Matrix34 totalMatrix = Matrix34(_frag->m_transform) * _transform;
 
     for (int i = 0; i < static_cast<int>(_frag->m_childFragments.size()); ++i)
     {

@@ -1547,7 +1547,13 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
     if (unitMove)
     {
       unit->SetWayPoint(teamControls.m_mousePos);
-      unit->m_targetDir = (teamControls.m_mousePos - unit->m_centrePos).Normalise();
+      // TeamControls::m_mousePos is an XMFLOAT3 as of directxmath-migration T9.
+      // Converting back to Vector3 here rather than going native keeps this
+      // simulation line computing exactly what it did: Vector3::Normalise
+      // answers a zero-length input with (0,0,1) and XMVector3Normalize does
+      // not, and a mouse position exactly on a unit's centre is reachable. This
+      // line converts properly with the rest of Location in T18.
+      unit->m_targetDir = (Vector3(teamControls.m_mousePos) - unit->m_centrePos).Normalise();
       unit->RecalculateOffsets();
 
       //

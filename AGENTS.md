@@ -26,8 +26,11 @@ survive persistently.
 It is not that yet. The codebase began as the Darwinia source and is partway
 through being reshaped: renamed, relayered, and modernised into something a
 persistent authoritative server can be built on. Roughly 113,000 lines of C++
-across six MSBuild projects, with no third-party dependencies — it links only
-against the OS (OpenGL, GLU, WinMM, DirectSound, Winsock).
+across six MSBuild projects. It links only against the OS (OpenGL, GLU, WinMM,
+DirectSound, Winsock) and takes one header-only dependency, **DirectXMath**,
+which ships in the Windows SDK — no library to link and nothing vendored.
+`tasks/directxmath-migration.yaml` is replacing the inherited hand-rolled math
+with it; see *Current priority*.
 
 **Do not treat the ambition as the current scope.** The realtime world does not
 exist. Nothing in the tree is designed for it yet. Work toward it happens by
@@ -101,7 +104,8 @@ GameData.targets          Stages GameData/ next to the executable after each bui
 GameData/                 Game content: levels, shapes, textures, sounds, scripts.
 
 NeuronCore/       ~3.4k   Foundation: sockets, threads, byte streams, the wire
-                          protocol, filesystem, assertions. Static library.
+                          protocol, filesystem, assertions, and the math
+                          conventions in NeuronMath.h. Static library.
 NeuronClient/     ~30k    Presentation: OpenGL renderer, sound, input drivers,
                           the Eclipse UI toolkit, resource loading. Static library.
 NeuronServer/     ~0.5k   Authoritative simulation host: Server, ServerToClient,
@@ -116,7 +120,9 @@ Server/           ~0.1k   Headless server executable. Links NeuronCore and
 Tests/            ~0.4k   One <Name>Tests project per library, on the Microsoft
                           Native Unit Test Framework. Built and run by CI.
 tools/                    The checks CI runs. Run them locally too.
-tasks/                    Task DAGs. See docs/TASK_DAG.md.
+tasks/                    Task DAGs. See docs/TASK_DAG.md. Start at
+                          _restart.md, or _restart-directxmath.md for the
+                          math migration.
 docs/                     Architecture, build, testing, glossary, task breakdown.
 ```
 
@@ -186,6 +192,7 @@ python3 tools/check_project_files.py   # .vcxproj matches the files on disk
 python3 tools/check_layering.py        # no new upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
 python3 tools/check_containers.py      # no legacy container call left on a vector
+python3 tools/check_math_types.py       # no legacy math call left on a native type
 python3 tools/check_format.py          # changed lines match .clang-format
 python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum
@@ -195,6 +202,17 @@ python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
 `std::min` and `std::max` compile everywhere now — they did not, anywhere that
 header was reachable, until `language-hygiene` T8. If you find a hand-written
 comparison with a comment apologising for it, that is why, and it can go.
+
+`check_math_types.py` exists for the same reason and was written after five CI
+failures in a row during `directxmath-migration` T10, every one a call site a
+type sweep did not reach. Vector3 has methods and operators and XMFLOAT3 has
+neither, so `vel.Mag()` stops compiling without ever mentioning the type's
+name. It also reports the one failure mode neither the compiler nor CI can
+see: Vector3's default constructor zeroed and XMFLOAT3's does not, so a
+converted member that something accumulates into changes behaviour silently.
+It resolves by member NAME like `check_containers.py`, and skips a name
+declared as both a native and a legacy type rather than guessing — four are
+contended today (`m_pos`, `m_vel`, `m_centre`, `m_angVel`).
 
 `check_containers.py` exists because three CI failures in a row were the same
 mistake: a call site a container sweep did not reach, still asking a
@@ -286,6 +304,15 @@ observed by the agent that wrote this line. This is the run
 counts are what catch a string-resolved reference the rename missed, because
 a name that fails to resolve produces a smaller group rather than a crash.
 
+**Run at `36dd038` (2026-08-04), on the DirectXMath migration's converted
+engine layers** — NeuronCore's math and geometry, NeuronClient's renderers and
+sound, and the wire types. Owner-reported: the game runs. One observation is
+open rather than resolved — the procedurally generated landscape looks
+different in shape, shading unaffected — and no mechanism has been found for
+it; `tasks/directxmath-migration.yaml` T13 carries the evidence and the
+checksum commit that will settle it. Recorded here as a partial run, not a
+clean one.
+
 Earlier runs, kept because the sequence is the evidence:
 
 - **All seven steps, on the layering-inversion branch (2026-08-02)**, after
@@ -332,7 +359,12 @@ The full standard — schema, status semantics, how to write acceptance criteria
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
 
-**If you are picking the modernisation back up, start at
+**If you are picking the DirectXMath migration back up, start at
+[`tasks/_restart-directxmath.md`](tasks/_restart-directxmath.md).** It has what
+landed, what is open, the five ways this particular conversion breaks a file you
+did not touch, and the two questions still unanswered.
+
+**If you are picking the wider modernisation back up, start at
 [`tasks/_restart.md`](tasks/_restart.md).** Six plans are complete and four are
 open with nineteen tasks between them; that file has the re-measured counts, the
 order to restart in, and the critical path — nine of the nineteen are behind
@@ -440,6 +472,32 @@ Real, currently true, and worth knowing before you trip over them:
     lost — but a client carrying this change desyncs against one without it.
     `determinism.yaml` T2 is the owner-run smoke test that confirms it, and is
     still open.
+- **The Garden landscape may have changed shape, and nobody knows why.**
+  Reported by the owner on 2026-08-04 against the DirectXMath migration's
+  converted engine layers (`36dd038`): the procedurally generated terrain looks
+  different in shape, shading unaffected. **No mechanism has been found.**
+  `LandscapeTile::GenerateHeightMap` reseeds the RNG from the level's own
+  `m_randomSeed` immediately before the diamond-square loop, so nothing drawn
+  from the shared stream beforehand can reach it; `Landscape.cpp` and
+  `Landscape.h` are untouched by that plan; `LandscapeRenderer.cpp`'s only
+  change is a comment and a `static_assert`; and the renderer's RNG use feeds
+  `GetLandscapeColour`, which is colour rather than geometry.
+  - A temporary commit (`57386fb`) writes a height-map checksum and the tile
+    parameters that determine it to `landscape-checksum.txt`, so the two builds
+    can be compared as a number rather than an impression. **It is throwaway and
+    must be reverted once the question is answered.**
+  - Equal checksums mean the terrain is bit-identical and the difference is in
+    rendering or in the eye. Unequal with the same tile parameters means
+    generation genuinely moved with no known cause, `directxmath-migration` T13
+    reopens, and the GameLogic wave should stop until it is explained.
+- **`LandscapeRenderer::GetLandscapeColour` draws from and reseeds the
+  simulation's RNG from rendering code** — `speciesSeedRandom(_x | _y +
+  speciesRandom())`. That is the same class of latent determinism bug as the
+  `SoundInstance` entry above: a client-local, frame-rate-dependent path
+  perturbing the stream deterministic lockstep depends on. Found 2026-08-04
+  while investigating the landscape question, unrelated to it, and it predates
+  the DirectXMath work. Not investigated and not fixed; it belongs in
+  `tasks/determinism.yaml` when somebody has established what it costs.
 - **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
   MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
   Deterministic lockstep requires bit-identical results, and nobody has verified
@@ -447,6 +505,13 @@ Real, currently true, and worth knowing before you trip over them:
   `sinf`/`cosf`/`powf` calls in simulation code. Assume they desync until tested.
   Now that the game runs this is finally testable: two clients, one per
   architecture, and watch for the sync assert in `Server.cpp`.
+  - **DirectXMath makes this concrete rather than theoretical.** It dispatches
+    to SSE on x64 and ARM-NEON on ARM64, and the owner decided on 2026-08-03 to
+    accept that rather than force the scalar path — no `_XM_NO_INTRINSICS_`, no
+    `<FloatingPointModel>`. So mixed-architecture play is heading from
+    "unproven" to "not supported", and `directxmath-migration` T26 is where
+    that wording lands once the migration finishes. Within one architecture the
+    simulation stays deterministic, which is what the sync assert tests.
 - **ARM64 Debug is not gated by CI.** CI builds x64 Debug only, so the primary
   development platform is never checked here — build it yourself before relying
   on it. The unexplained ARM64 Debug failure that used to be recorded in this
