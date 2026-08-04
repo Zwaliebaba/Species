@@ -106,7 +106,8 @@ bool Engineer::SearchForSpirits()
       if (g_location->m_spirits.ValidIndex(i))
       {
         Spirit* s = g_location->m_spirits.GetPointer(i);
-        float theDist = (s->m_pos - m_pos).Mag();
+        float theDist =
+          DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&s->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
         if (theDist <= ENGINEER_SEARCHRANGE && theDist < closest && (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
         {
@@ -224,7 +225,8 @@ bool Engineer::SearchForResearchItems()
       if (building->m_type == Building::TypeResearchItem)
       {
         ResearchItem* item = (ResearchItem*)building;
-        float theDist = (building->m_pos - m_pos).Mag();
+        float theDist = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
         if (item->NeedsReprogram() && theDist <= ENGINEER_SEARCHRANGE && theDist < closest)
         {
           buildingIndex = i;
@@ -589,7 +591,7 @@ bool Engineer::AdvanceIdle()
 bool Engineer::AdvanceToWaypoint()
 {
   m_targetPos = m_wayPoint;
-  m_targetFront.Zero();
+  m_targetFront = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
   bool arrived = AdvanceToTargetPos();
   if (arrived)
@@ -615,7 +617,7 @@ bool Engineer::AdvanceToSpirit()
   }
 
   m_targetPos = s->m_pos;
-  m_targetFront.Zero();
+  m_targetFront = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   bool arrived = AdvanceToTargetPos();
   if (arrived)
   {
@@ -654,7 +656,8 @@ bool Engineer::SearchForIncubator()
       Building* building = g_location->m_buildings[i];
       if (building->m_type == Building::TypeIncubator && g_location->IsFriend(building->m_id.GetTeamId(), m_id.GetTeamId()))
       {
-        float distance = (building->m_pos - m_pos).Mag();
+        float distance = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
         int population = ((Incubator*)building)->NumSpiritsInside();
         distance += population * 10;
 
@@ -689,7 +692,8 @@ bool Engineer::AdvanceToIncubator()
   }
 
 
-  incubator->GetDockPoint(m_targetPos, m_targetFront);
+  // Incubator converts in T17; its out-parameters are still legacy.
+  incubator->GetDockPoint(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
   bool arrived = AdvanceToTargetPos();
   if (arrived)
   {
@@ -728,7 +732,8 @@ bool Engineer::AdvanceToControlTower()
   DEBUG_ASSERT(building->m_type == Building::TypeControlTower);
 
   ControlTower* ct = (ControlTower*)building;
-  int positionId = ct->GetAvailablePosition(m_targetPos, m_targetFront);
+  // ControlTower converts in T16; same seam.
+  int positionId = ct->GetAvailablePosition(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
 
   if ((ct->m_id.GetTeamId() == m_id.GetTeamId() && ct->m_ownership >= 100.0f) || positionId == -1)
   {
@@ -953,20 +958,24 @@ void Engineer::BeginBridge(DirectX::XMFLOAT3 _to)
                                                                    DirectX::XMVectorSet(jitterX, 0.0f, jitterZ, 0.0f)));
     component->m_pos.y = g_location->m_landscape.m_heightMap->GetValue(component->m_pos.x, component->m_pos.z);
 
+    // The legacy chain was: front = normalise(_to - m_wayPoint), then a
+    // quarter turn for the middle components or a half turn for the far end,
+    // then right = front x up and front = right x up. Kept whole -- the
+    // earlier conversion split the if/else and left an orphaned `else`.
     DirectX::XMVECTOR bridgeFront = DirectX::XMVector3Normalize(bridgeSpan);
     if (i < numComponents && i > 0)
     {
       bridgeFront = DirectX::XMVector3Transform(bridgeFront, DirectX::XMMatrixRotationY(0.5f * M_PI));
     }
-    DirectX::XMStoreFloat3(&component->m_front, bridgeFront);
     else if (i == numComponents)
     {
-      component->m_front.RotateAroundY(M_PI);
+      bridgeFront = DirectX::XMVector3Transform(bridgeFront, DirectX::XMMatrixRotationY(M_PI));
     }
+
     component->m_id.SetTeamId(m_id.GetTeamId());
     linkBuildingId = component->m_id.GetUniqueId();
 
-    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&component->m_front), DirectX::g_XMIdentityR1);
+    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(bridgeFront, DirectX::g_XMIdentityR1);
     DirectX::XMStoreFloat3(&component->m_front, DirectX::XMVector3Cross(right, DirectX::g_XMIdentityR1));
 
     if (i == numComponents || i == 0)
@@ -1007,7 +1016,8 @@ bool Engineer::AdvanceToBridge()
   if (building && building->m_type == Building::TypeBridge)
   {
     Bridge* bridge = (Bridge*)building;
-    bool positionAvailable = bridge->GetAvailablePosition(m_targetPos, m_targetFront);
+    // Bridge converts in T17; same seam.
+    bool positionAvailable = bridge->GetAvailablePosition(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
     if (!positionAvailable)
     {
       m_state = StateIdle;
@@ -1019,7 +1029,7 @@ bool Engineer::AdvanceToBridge()
       if (arrived)
       {
         m_state = StateOperatingBridge;
-        m_vel.Zero();
+        m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
         bridge->BeginOperation();
       }
     }
