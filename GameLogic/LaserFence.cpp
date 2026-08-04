@@ -508,14 +508,14 @@ bool LaserFence::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
   // Fake this for now using 2 ray hits
   // One running across the sphere in the x direction, the other in the z direction
 
-  Vector3 ray1Start = _pos - Vector3(_radius, 0, 0);
-  Vector3 ray1Dir(1, 0, 0);
+  DirectX::XMFLOAT3 const ray1Start(_pos.x - _radius, _pos.y, _pos.z);
+  DirectX::XMFLOAT3 const ray1Dir(1.0f, 0.0f, 0.0f);
   float ray1Len = _radius * 2;
   if (DoesRayHit(ray1Start, ray1Dir, ray1Len))
     return true;
 
-  Vector3 ray2Start = _pos - Vector3(0, 0, _radius);
-  Vector3 ray2Dir(0, 0, 1);
+  DirectX::XMFLOAT3 const ray2Start(_pos.x, _pos.y, _pos.z - _radius);
+  DirectX::XMFLOAT3 const ray2Dir(0.0f, 0.0f, 1.0f);
   float ray2Len = _radius * 2;
   if (DoesRayHit(ray2Start, ray2Dir, ray2Len))
     return true;
@@ -559,9 +559,14 @@ bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT
     bool hitTri1 = false;
     bool hitTri2 = false;
 
-    hitTri1 = RayTriIntersection(_rayStart, _rayDir, pos1, pos2, pos4, _rayLen, _pos);
+    // MathUtils still takes a Vector3* out-parameter: T6 and T7 rebuilt those
+    // bodies natively but deliberately left the signatures, so their fourteen
+    // caller files could convert under their own tasks. This is one of them.
+    Vector3* const legacyHit = _pos ? &AsLegacy(*_pos) : nullptr;
+
+    hitTri1 = RayTriIntersection(_rayStart, _rayDir, pos1, pos2, pos4, _rayLen, legacyHit);
     if (!hitTri1)
-      hitTri2 = RayTriIntersection(_rayStart, _rayDir, pos4, pos3, pos1, _rayLen, _pos);
+      hitTri2 = RayTriIntersection(_rayStart, _rayDir, pos4, pos3, pos1, _rayLen, legacyHit);
 
     if (hitTri1 || hitTri2)
     {
@@ -588,7 +593,8 @@ bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT
 
 bool LaserFence::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
 {
-  return DoesSphereHit(_transform.pos, _shape->m_rootFragment->m_radius);
+  // XMFLOAT4X4 numbers its rows: _41.._43 is the position.
+  return DoesSphereHit(DirectX::XMFLOAT3(_transform._41, _transform._42, _transform._43), _shape->m_rootFragment->m_radius);
 }
 
 

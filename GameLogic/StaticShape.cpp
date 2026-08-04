@@ -101,7 +101,8 @@ bool StaticShape::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
   }
   else
   {
-    float distance = (_pos - AsLegacy(m_pos)).Mag();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&m_pos))));
     return (distance <= _radius + m_radius);
   }
 }

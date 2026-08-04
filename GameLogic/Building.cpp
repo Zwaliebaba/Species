@@ -316,6 +316,14 @@ bool Building::IsInView() { return (g_camera->SphereInViewFrustum(m_centrePos, m
 bool Building::PerformDepthSort(DirectX::XMFLOAT3& _centrePos) { return false; }
 
 
+// glVertex3fv wants three contiguous floats; an XMVECTOR is four lanes.
+static void EmitVertex(DirectX::FXMVECTOR _position)
+{
+  DirectX::XMFLOAT3 vertex;
+  DirectX::XMStoreFloat3(&vertex, _position);
+  glVertex3fv(&vertex.x);
+}
+
 void Building::Render(float predictionTime)
 {
 #ifdef DEBUG_RENDER_ENABLED
@@ -401,13 +409,17 @@ void Building::RenderLights()
           float size = signalSize * (float)i / 10.0f;
           glBegin(GL_QUADS);
           glTexCoord2f(0.0f, 0.0f);
-          glVertex3fv((lightPos - camR * size - camU * size).GetData());
+          DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&lightPos);
+          DirectX::XMVECTOR const right = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camR), size);
+          DirectX::XMVECTOR const up = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camU), size);
+
+          EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(centre, right), up));
           glTexCoord2f(1.0f, 0.0f);
-          glVertex3fv((lightPos + camR * size - camU * size).GetData());
+          EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(centre, right), up));
           glTexCoord2f(1.0f, 1.0f);
-          glVertex3fv((lightPos + camR * size + camU * size).GetData());
+          EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(centre, right), up));
           glTexCoord2f(0.0f, 1.0f);
-          glVertex3fv((lightPos - camR * size + camU * size).GetData());
+          EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(centre, right), up));
           glEnd();
         }
 
@@ -527,13 +539,15 @@ void Building::RenderPorts()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((statusPos - camR - camU).GetData());
+    DirectX::XMVECTOR const status = DirectX::XMLoadFloat3(&statusPos);
+
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(status, camR), camU));
     glTexCoord2i(1, 0);
-    glVertex3fv((statusPos + camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(status, camR), camU));
     glTexCoord2i(1, 1);
-    glVertex3fv((statusPos + camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(status, camR), camU));
     glTexCoord2i(0, 1);
-    glVertex3fv((statusPos - camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(status, camR), camU));
     glEnd();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_BLEND);
@@ -635,7 +649,8 @@ bool Building::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
   }
   else
   {
-    float distance = (_pos - AsLegacy(m_pos)).Mag();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&m_pos))));
     return (distance <= _radius + m_radius);
   }
 }
@@ -749,7 +764,7 @@ void Building::Read(TextReader* _in, bool _dynamic)
   word = _in->GetNextToken();
   m_isGlobal = (bool)atoi(word);
 
-  m_front.Normalise();
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front)));
   m_id.Set(teamId, UNIT_BUILDINGS, -1, buildingId);
   m_dynamic = _dynamic;
 }

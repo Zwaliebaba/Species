@@ -424,15 +424,19 @@ bool Tree::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
 bool Tree::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
                       DirectX::XMFLOAT3* _norm)
 {
-  if (RaySphereIntersection(_rayStart, _rayDir, m_pos, 10.00f, _rayLen, _pos, _norm))
+  // Same seam as LaserFence: MathUtils kept its Vector3* out-parameters.
+  Vector3* const legacyHit = _pos ? &AsLegacy(*_pos) : nullptr;
+  Vector3* const legacyNorm = _norm ? &AsLegacy(*_norm) : nullptr;
+
+  if (RaySphereIntersection(_rayStart, _rayDir, m_pos, 10.00f, _rayLen, legacyHit, legacyNorm))
   {
     return true;
   }
 
   float actualHeight = GetActualHeight(0.0f);
 
-  if (RaySphereIntersection(_rayStart, _rayDir, AsLegacy(m_pos) + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _rayLen, _pos,
-                            _norm))
+  if (RaySphereIntersection(_rayStart, _rayDir, AsLegacy(m_pos) + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _rayLen,
+                            legacyHit, legacyNorm))
   {
     return true;
   }

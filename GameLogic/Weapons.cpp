@@ -575,8 +575,10 @@ bool Laser::Advance()
 
     Vector3 rayDir = m_vel;
     rayDir.Normalise();
-    Vector3 hitPos(0, 0, 0);
-    Vector3 hitNorm(0, 0, 0);
+    // Pure out-parameters -- written by DoesRayHit and never read afterwards --
+    // so they become native rather than needing a conversion at the call.
+    DirectX::XMFLOAT3 hitPos(0.0f, 0.0f, 0.0f);
+    DirectX::XMFLOAT3 hitNorm(0.0f, 0.0f, 0.0f);
 
     std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
     for (int buildingId : *nearbyBuildings)
@@ -1180,8 +1182,10 @@ bool TurretShell::Advance()
   {
     Vector3 rayDir = m_vel;
     rayDir.Normalise();
-    Vector3 hitPos(0, 0, 0);
-    Vector3 hitNorm(0, 0, 0);
+    // Pure out-parameters -- written by DoesRayHit and never read afterwards --
+    // so they become native rather than needing a conversion at the call.
+    DirectX::XMFLOAT3 hitPos(0.0f, 0.0f, 0.0f);
+    DirectX::XMFLOAT3 hitNorm(0.0f, 0.0f, 0.0f);
 
     for (int i = 0; i < g_location->m_buildings.Size(); ++i)
     {

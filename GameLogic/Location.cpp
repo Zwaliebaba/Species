@@ -125,7 +125,11 @@ bool Location::GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* 
     return false;
 
   // A building is heard from its centre. Everything else from where it is.
-  *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : AsLegacy(object->m_pos);
+  // Both branches are native now that Building has converted, so the
+  // ternary picks XMFLOAT3 and the seam converts on assignment. It needed
+  // the opposite repair one commit ago -- that is what a half-converted
+  // tree looks like from a file that reads both sides of it.
+  *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : object->m_pos;
   *_vel = object->m_vel;
   return true;
 }
