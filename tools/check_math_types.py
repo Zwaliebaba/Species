@@ -16,8 +16,15 @@ member with a legacy method or a vector operator is reported:
 
     m_pos.Mag()          XMFLOAT3 has no Mag
     m_centre - other     XMFLOAT3 has no operator-
+    m_centre += other    nor any compound assignment (added by T16)
     m_transform.pos      XMFLOAT4X4 has no pos; the rows are _11.._44
     XMFLOAT3 m_vel;      Vector3() zeroed and XMFLOAT3() does not
+
+and, independently of any member declaration:
+
+    XMLoadFloat3(&mat.f) Matrix34's rows are Vector3, and Vector3 converts to
+                         XMFLOAT3 by REFERENCE -- which does nothing for a
+                         pointer (added by T16)
 
 The last one is the important one: it is invisible to the compiler and to CI,
 and it shipped twice during this migration before anything noticed. Shape's
@@ -63,6 +70,10 @@ DECL = re.compile(
 # than guessed at, which is the discipline check_containers.py settled on for
 # exactly this reason. Under-reporting is recoverable; crying wolf on a
 # thousand correct lines gets the tool switched off.
+# Matrix34 locals, so the address-of rule below can tell a legacy row from a
+# field that merely shares its name.
+MATRIX34_LOCAL = re.compile(r"\bMatrix34\s+(?:const\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=;]")
+
 LEGACY_DECL = re.compile(
     r"^\s*(?:static\s+|mutable\s+|const\s+)*(Vector2|Vector3|Matrix33|Matrix34)\s+"
     r"(m_[A-Za-z0-9_]+)\s*[={;,]"
@@ -116,8 +127,31 @@ def main():
     problems = []
     for path in source_files():
         rel = path.relative_to(ROOT)
-        for number, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        text = path.read_text(encoding="utf-8", errors="replace")
+
+        # THE ADDRESS-OF TRAP, and the reason it needs its own rule. Vector3
+        # converts to XMFLOAT3 through `operator XMFLOAT3 const&`, which makes
+        # `XMFLOAT3 const a = someVector3;` compile and reads as though the two
+        # types are interchangeable. They are not interchangeable through a
+        # POINTER: `&someVector3` is a Vector3*, and XMLoadFloat3 wants an
+        # XMFLOAT3*. Every Matrix34 row is a Vector3, so `XMLoadFloat3(&mat.f)`
+        # on a matrix that came back from ShapeMarker::GetWorldMatrix -- still
+        # Matrix34 until T10's seam closes -- fails to compile.
+        #
+        # Six of those reached CI in T16. Matched against Matrix34 locals
+        # declared in the same file rather than any `.f`, so a struct that
+        # happens to have a field called f is not accused.
+        matrix34_locals = set(MATRIX34_LOCAL.findall(text))
+
+        for number, raw in enumerate(text.splitlines(), 1):
             line = strip_comment(raw)
+
+            for local in matrix34_locals:
+                if re.search(r"XMLoadFloat[23]\s*\(\s*&\s*%s\s*\.\s*(?:pos|r|u|f)\b" % re.escape(local), line):
+                    problems.append((rel, number,
+                                     "XMLoadFloat3(&%s.<row>) -- Matrix34's rows are Vector3, and the seam's "
+                                     "conversion is to a reference, so it does not apply through a pointer" % local,
+                                     raw.strip()))
             for member, (kind, _) in native_members.items():
                 if member not in line:
                     continue
@@ -132,6 +166,14 @@ def main():
                                              % (member, field), raw.strip()))
                 if re.search(r"\b%s\s*(?:[-+*^]|/(?!/))\s*[A-Za-z_(]" % re.escape(member), line):
                     problems.append((rel, number, "arithmetic on %s -- the native types have no operators" % member,
+                                     raw.strip()))
+                # Compound assignment was invisible until T16: the pattern above
+                # requires an identifier after the operator, and `+=` has an `=`
+                # there. These are the MUTATING operators, so they are the ones
+                # whose absence matters most -- two of them reached CI.
+                if re.search(r"\b%s\s*(?:[-+*^/]=)(?!=)" % re.escape(member), line):
+                    problems.append((rel, number,
+                                     "compound assignment to %s -- the native types have no operators" % member,
                                      raw.strip()))
 
     for rel, number, message, text in problems:

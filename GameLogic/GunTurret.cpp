@@ -107,12 +107,17 @@ void GunTurret::ExplodeBody()
   DirectX::XMStoreFloat4x4(&turretPos,
                            BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_turretFront), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and its
+  // rows are Vector3. XMLoadFloat3 needs an XMFLOAT3*, and &row is a Vector3*;
+  // the seam's conversion is to a REFERENCE, so it does not apply to taking an
+  // address. Copy-initialising these two locals is what runs it.
   Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretPos);
+  DirectX::XMFLOAT3 const barrelMountFront = barrelMount.f;
+  DirectX::XMFLOAT3 const barrelMountPos = barrelMount.pos;
 
   DirectX::XMFLOAT4X4 barrelMat;
   DirectX::XMStoreFloat4x4(
-    &barrelMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&barrelMount.f), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&barrelMount.pos)));
+    &barrelMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&barrelMountFront), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&barrelMountPos)));
 
   g_explosionManager.AddExplosion(m_turret, turretPos);
   g_explosionManager.AddExplosion(m_barrel, barrelMat);
@@ -207,15 +212,18 @@ void GunTurret::PrimaryFire()
       DirectX::XMStoreFloat4x4(&turretMat,
                                BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_turretFront), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, whose
+      // rows are Vector3; see ExplodeBody for why these copy through locals.
       Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretMat);
+      DirectX::XMFLOAT3 const markerFront = barrelMount.f;
+      DirectX::XMFLOAT3 const markerPos = barrelMount.pos;
 
       DirectX::XMVECTOR const barrelUp = DirectX::XMLoadFloat3(&m_barrelUp);
-      DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&barrelMount.f), barrelUp);
+      DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&markerFront), barrelUp);
       DirectX::XMVECTOR const barrelMountFront = DirectX::XMVector3Cross(barrelUp, barrelRight);
 
       DirectX::XMFLOAT4X4 barrelMountMat;
-      DirectX::XMStoreFloat4x4(&barrelMountMat, BasisFromFrontAndUp(barrelMountFront, barrelUp, DirectX::XMLoadFloat3(&barrelMount.pos)));
+      DirectX::XMStoreFloat4x4(&barrelMountMat, BasisFromFrontAndUp(barrelMountFront, barrelUp, DirectX::XMLoadFloat3(&markerPos)));
       Matrix34 const barrelMat = m_barrelEnd[m_nextBarrel]->GetWorldMatrix(barrelMountMat);
 
       DirectX::XMFLOAT3 const shellPos = barrelMat.pos;
@@ -442,15 +450,18 @@ void GunTurret::Render(float _predictionTime)
                            BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_turretFront), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
   m_turret->Render(_predictionTime, turretPos);
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, whose
+  // rows are Vector3; see ExplodeBody for why these copy through locals.
   Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretPos);
+  DirectX::XMFLOAT3 const markerFront = barrelMount.f;
+  DirectX::XMFLOAT3 const markerPos = barrelMount.pos;
 
   DirectX::XMVECTOR const barrelUp = DirectX::XMLoadFloat3(&m_barrelUp);
-  DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&barrelMount.f), barrelUp);
+  DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&markerFront), barrelUp);
   DirectX::XMVECTOR const barrelFront = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(barrelUp, barrelRight));
 
   DirectX::XMFLOAT4X4 barrelMat;
-  DirectX::XMStoreFloat4x4(&barrelMat, BasisFromFrontAndUp(barrelFront, barrelUp, DirectX::XMLoadFloat3(&barrelMount.pos)));
+  DirectX::XMStoreFloat4x4(&barrelMat, BasisFromFrontAndUp(barrelFront, barrelUp, DirectX::XMLoadFloat3(&markerPos)));
   m_barrel->Render(_predictionTime, barrelMat);
 
   // RenderArrow( barrelPos, barrelPos + barrelFront * 1000.0f, 1.0f );

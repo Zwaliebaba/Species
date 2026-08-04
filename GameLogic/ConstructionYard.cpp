@@ -335,6 +335,10 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
         for (int j = 0; j < numStars; ++j)
         {
           float size = sinf(timeIndex + r + i) * j * 5.0f;
+
+          DirectX::XMVECTOR const right = DirectX::XMVectorScale(camRight, size);
+          DirectX::XMVECTOR const up = DirectX::XMVectorScale(camUp, size);
+
           glColor4f(0.6f, 0.2f, 0.1f, m_alpha);
           // glColor4f( 0.4f, 0.5f, 0.9f, m_alpha );
 

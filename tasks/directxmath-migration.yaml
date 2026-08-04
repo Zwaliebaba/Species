@@ -1478,6 +1478,34 @@ tasks:
       does not die with T25: it bridges DirectXMath to OpenGL, not old math to
       new.
 
+      THE ADDRESS-OF TRAP, WHICH IS A NEW FAILURE MODE AND THE ONE THAT COST
+      THIS TASK ITS LAST RED ROUND. Vector3 converts to XMFLOAT3 through
+      `operator XMFLOAT3 const&`. That makes `XMFLOAT3 const a = someVector3;`
+      compile, which reads as though the two types are interchangeable. They
+      are NOT interchangeable through a POINTER: `&someVector3` is a Vector3*
+      and XMLoadFloat3 wants an XMFLOAT3*. Every Matrix34 row is a Vector3, so
+      `XMLoadFloat3(&mat.f)` on a matrix from ShapeMarker::GetWorldMatrix does
+      not compile. Six sites. The fix is a copy-initialised local, which is
+      what actually runs the conversion.
+
+      Add it to the list in T14's notes as mode 7: the seam converts by
+      reference, and a reference conversion does nothing for an address.
+
+      CHECK_MATH_TYPES HAD TWO GAPS AND BOTH ARE CLOSED. It missed the above
+      entirely -- no rule for it -- and it missed `m_x += y` because its
+      arithmetic pattern required an identifier after the operator and `+=` has
+      an `=` there. Compound assignment is exactly the mutating case that
+      matters most. Eight of the twenty-four errors in that round were things
+      the tool could have caught in two seconds. Both rules are added and both
+      were verified by re-introducing the real bugs and watching them fire.
+
+      WHAT IS STILL NOT CHECKED, and what to do about it. The tool skips
+      CONTENDED member names -- m_pos, m_front, m_up, m_vel, m_target and six
+      others are native on one class and legacy on another, so resolving them
+      needs a type checker. Those are the highest-traffic names in the
+      migration, so after converting a file, sweep them by hand against that
+      file's own members; T16 did and it was clean.
+
       DEAD DECLARATION LEFT ALONE. DynamicHub::GetPowerLocation is declared in
       GenericHub.h and never defined or called. Converted with the rest rather
       than deleted -- removing it is not this task's business, but the next

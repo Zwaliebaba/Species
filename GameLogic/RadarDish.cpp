@@ -184,7 +184,10 @@ bool RadarDish::Advance()
       targetFront.y = minAngle;
     DirectX::XMVECTOR const clampedFront = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&targetFront));
 
-    float amount = DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&worldMat.u), clampedFront));
+    // worldMat is Matrix34 -- T10's seam -- so its rows are Vector3 and &row is
+    // a Vector3*. Copy-initialising takes the seam's reference conversion.
+    DirectX::XMFLOAT3 const dishUp = worldMat.u;
+    float amount = DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&dishUp), clampedFront));
 
     // Row 0 of the transform is what Matrix34 called r. ShapeFragment stores
     // native types as of T10, and this reads that row directly now rather than
@@ -242,7 +245,9 @@ bool RadarDish::Advance()
       {
         if (g_location->IsVisible(dishPos, otherDish->GetDishPos(0.0f)))
         {
-          float newRange = (otherDish->GetDishPos(0.0f) - dishPos).Mag();
+          DirectX::XMFLOAT3 const otherDishPos = otherDish->GetDishPos(0.0f);
+          float newRange = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&otherDishPos), DirectX::XMLoadFloat3(&dishPos))));
           if (newRange < m_range)
           {
             m_receiverId = otherDish->m_id.GetUniqueId();

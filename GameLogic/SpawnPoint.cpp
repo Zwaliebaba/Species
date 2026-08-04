@@ -74,12 +74,13 @@ bool SpawnBuilding::IsInView()
         SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
         if (building)
         {
-          m_visibilityMidpoint += building->m_centrePos;
+          DirectX::XMStoreFloat3(&m_visibilityMidpoint,
+                                 DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_visibilityMidpoint), DirectX::XMLoadFloat3(&building->m_centrePos)));
           ++numLinks;
         }
       }
 
-      m_visibilityMidpoint /= (float)numLinks;
+      DirectX::XMStoreFloat3(&m_visibilityMidpoint, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_visibilityMidpoint), 1.0f / (float)numLinks));
 
       // Find radius
 
