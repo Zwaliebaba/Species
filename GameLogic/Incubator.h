@@ -12,7 +12,9 @@ class ShapeMarker;
 
 struct IncubatorIncoming
 {
-    Vector3 m_pos;
+    // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
+    // not. These are value-initialised into a vector, so nothing else would.
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     int m_entrance;
     float m_alpha;
 };
@@ -51,7 +53,7 @@ class Incubator : public Building
     void Read(TextReader* _in, bool _dynamic) override;
     void Write(FileWriter* _out) override;
 
-    void GetDockPoint(Vector3& _pos, Vector3& _front);
+    void GetDockPoint(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
 
     void ListSoundEvents(std::vector<const char*>* _list) override;
 };

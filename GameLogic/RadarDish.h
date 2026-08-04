@@ -54,16 +54,10 @@ class RadarDish : public Teleport
 
     int GetConnectedDishId();
 
-    // DELIBERATELY STILL LEGACY -- these four override Teleport's virtuals,
-    // and a virtual override that stops matching its base silently stops
-    // overriding rather than failing to compile (the rule T12 learned the
-    // hard way). Teleport and its other deriver Bridge belong to T17, so the
-    // whole family converts there, in one commit, exactly as Building's
-    // fifteen overriders converted with Building here.
-    Vector3 GetStartPoint();
-    Vector3 GetEndPoint();
-    bool GetEntrance(Vector3& _pos, Vector3& _front);
-    bool GetExit(Vector3& _pos, Vector3& _front);
+    DirectX::XMFLOAT3 GetStartPoint();
+    DirectX::XMFLOAT3 GetEndPoint();
+    bool GetEntrance(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
+    bool GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
 
     bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
 

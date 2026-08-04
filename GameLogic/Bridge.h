@@ -35,14 +35,14 @@ class Bridge : public Teleport
     void RenderAlphas(float predictionTime);
     bool Advance();
 
-    bool GetAvailablePosition(Vector3& _pos, Vector3& _front); // Finds place for engineer
+    bool GetAvailablePosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front); // Finds place for engineer
     void BeginOperation();
     void EndOperation();
 
     bool ReadyToSend();
-    Vector3 GetStartPoint();
-    Vector3 GetEndPoint();
-    bool GetExit(Vector3& _pos, Vector3& _front);
+    DirectX::XMFLOAT3 GetStartPoint();
+    DirectX::XMFLOAT3 GetEndPoint();
+    bool GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
 
     bool UpdateEntityInTransit(Entity* _entity);
 

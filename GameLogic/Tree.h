@@ -11,9 +11,11 @@ class Tree : public Building
   protected:
     int m_branchDisplayListId;
     int m_leafDisplayListId;
-    void RenderBranch(Vector3 _from, Vector3 _to, int _iterations, bool _calcRadius, bool _renderBranch, bool _renderLeaf);
+    void RenderBranch(DirectX::XMFLOAT3 _from, DirectX::XMFLOAT3 _to, int _iterations, bool _calcRadius, bool _renderBranch, bool _renderLeaf);
 
-    Vector3 m_hitcheckCentre;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and Tree's constructor never assigned it.
+    DirectX::XMFLOAT3 m_hitcheckCentre{0.0f, 0.0f, 0.0f};
     float m_hitcheckRadius;
     int m_numLeafs;
 

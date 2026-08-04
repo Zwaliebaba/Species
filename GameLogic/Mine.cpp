@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include "TextStreamReaders.h"
@@ -100,10 +101,15 @@ bool MineBuilding::IsInView()
   Building* trackLink = g_location->GetBuilding(m_trackLink);
   if (trackLink)
   {
-    Vector3 midPoint = (AsLegacy(trackLink->m_centrePos) + AsLegacy(m_centrePos)) / 2.0f;
-    float radius = (AsLegacy(trackLink->m_centrePos) - AsLegacy(m_centrePos)).Mag() / 2.0f;
+    DirectX::XMVECTOR const theirCentre = DirectX::XMLoadFloat3(&trackLink->m_centrePos);
+    DirectX::XMVECTOR const ourCentre = DirectX::XMLoadFloat3(&m_centrePos);
+
+    DirectX::XMFLOAT3 midPoint;
+    DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirCentre, ourCentre), 0.5f));
+    float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirCentre, ourCentre))) / 2.0f;
     radius += m_radius;
 
+    // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
     if (g_camera->SphereInViewFrustum(midPoint, radius))
     {
       return true;
@@ -118,6 +124,9 @@ void MineBuilding::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
+  // Camera's accessors are still legacy -- Species belongs to T22. These three
+  // are unused below and kept only because removing them is not this task's
+  // business; they were unused before the migration too.
   Vector3 camPos = g_camera->GetPos();
   Vector3 camFront = g_camera->GetFront();
   Vector3 camUp = g_camera->GetUp();
@@ -131,11 +140,15 @@ void MineBuilding::RenderAlphas(float _predictionTime)
 
       MineBuilding* mineBuilding = (MineBuilding*)trackLink;
 
-      Vector3 ourPos1 = GetTrackMarker1();
-      Vector3 theirPos1 = mineBuilding->GetTrackMarker1();
+      DirectX::XMFLOAT3 const ourPos1Store = GetTrackMarker1();
+      DirectX::XMFLOAT3 const theirPos1Store = mineBuilding->GetTrackMarker1();
+      DirectX::XMFLOAT3 const ourPos2Store = GetTrackMarker2();
+      DirectX::XMFLOAT3 const theirPos2Store = mineBuilding->GetTrackMarker2();
 
-      Vector3 ourPos2 = GetTrackMarker2();
-      Vector3 theirPos2 = mineBuilding->GetTrackMarker2();
+      DirectX::XMVECTOR const ourPos1 = DirectX::XMLoadFloat3(&ourPos1Store);
+      DirectX::XMVECTOR const theirPos1 = DirectX::XMLoadFloat3(&theirPos1Store);
+      DirectX::XMVECTOR const ourPos2 = DirectX::XMLoadFloat3(&ourPos2Store);
+      DirectX::XMVECTOR const theirPos2 = DirectX::XMLoadFloat3(&theirPos2Store);
 
       glColor4f(0.85f, 0.4f, 0.4f, 1.0f);
 
@@ -143,13 +156,16 @@ void MineBuilding::RenderAlphas(float _predictionTime)
       if (buildingDetail > 1)
         size = 1.0f;
 
-      Vector3 camToOurPos1 = g_camera->GetPos() - ourPos1;
-      Vector3 lineOurPos1 = camToOurPos1 ^ (ourPos1 - theirPos1);
-      lineOurPos1.SetLength(size);
+      DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
+      DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
+      DirectX::XMVECTOR const alongTrack = DirectX::XMVectorSubtract(ourPos1, theirPos1);
 
-      Vector3 camToTheirPos1 = g_camera->GetPos() - theirPos1;
-      Vector3 lineTheirPos1 = camToTheirPos1 ^ (ourPos1 - theirPos1);
-      lineTheirPos1.SetLength(size);
+      // SetLength; see the note on the same call in Generator.cpp. Rendering
+      // only, so this takes the native normalise rather than the fallback.
+      DirectX::XMVECTOR const lineOurPos1 =
+        DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, ourPos1), alongTrack)), size);
+      DirectX::XMVECTOR const lineTheirPos1 = DirectX::XMVectorScale(
+        DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, theirPos1), alongTrack)), size);
 
       glDisable(GL_CULL_FACE);
 
@@ -168,24 +184,24 @@ void MineBuilding::RenderAlphas(float _predictionTime)
 
       glBegin(GL_QUADS);
       glTexCoord2f(0.1, 0);
-      glVertex3fv((ourPos1 - lineOurPos1).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(ourPos1, lineOurPos1));
       glTexCoord2f(0.1, 1);
-      glVertex3fv((ourPos1 + lineOurPos1).GetData());
+      EmitVertex(DirectX::XMVectorAdd(ourPos1, lineOurPos1));
       glTexCoord2f(0.9, 1);
-      glVertex3fv((theirPos1 + lineTheirPos1).GetData());
+      EmitVertex(DirectX::XMVectorAdd(theirPos1, lineTheirPos1));
       glTexCoord2f(0.9, 0);
-      glVertex3fv((theirPos1 - lineTheirPos1).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(theirPos1, lineTheirPos1));
       glEnd();
 
       glBegin(GL_QUADS);
       glTexCoord2f(0.1, 0);
-      glVertex3fv((ourPos2 - lineOurPos1).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(ourPos2, lineOurPos1));
       glTexCoord2f(0.1, 1);
-      glVertex3fv((ourPos2 + lineOurPos1).GetData());
+      EmitVertex(DirectX::XMVectorAdd(ourPos2, lineOurPos1));
       glTexCoord2f(0.9, 1);
-      glVertex3fv((theirPos2 + lineTheirPos1).GetData());
+      EmitVertex(DirectX::XMVectorAdd(theirPos2, lineTheirPos1));
       glTexCoord2f(0.9, 0);
-      glVertex3fv((theirPos2 - lineTheirPos1).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(theirPos2, lineTheirPos1));
       glEnd();
 
       glDepthMask(true);
@@ -225,10 +241,15 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
 
     int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail", 1);
 
-    Vector3 ourMarker1 = GetTrackMarker1();
-    Vector3 ourMarker2 = GetTrackMarker2();
-    Vector3 theirMarker1 = mineBuilding->GetTrackMarker1();
-    Vector3 theirMarker2 = mineBuilding->GetTrackMarker2();
+    DirectX::XMFLOAT3 const ourMarker1Store = GetTrackMarker1();
+    DirectX::XMFLOAT3 const ourMarker2Store = GetTrackMarker2();
+    DirectX::XMFLOAT3 const theirMarker1Store = mineBuilding->GetTrackMarker1();
+    DirectX::XMFLOAT3 const theirMarker2Store = mineBuilding->GetTrackMarker2();
+
+    DirectX::XMVECTOR const ourMarker1 = DirectX::XMLoadFloat3(&ourMarker1Store);
+    DirectX::XMVECTOR const ourMarker2 = DirectX::XMLoadFloat3(&ourMarker2Store);
+    DirectX::XMVECTOR const theirMarker1 = DirectX::XMLoadFloat3(&theirMarker1Store);
+    DirectX::XMVECTOR const theirMarker2 = DirectX::XMLoadFloat3(&theirMarker2Store);
 
     float mineSpeed = RefinerySpeed();
 
@@ -239,38 +260,48 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
     if (predictedProgress > 1.0f)
       predictedProgress = 1.0f;
 
-    Vector3 trackLeft = ourMarker1 + (theirMarker1 - ourMarker1) * predictedProgress;
-    Vector3 trackRight = ourMarker2 + (theirMarker2 - ourMarker2) * predictedProgress;
+    DirectX::XMVECTOR const progress = DirectX::XMVectorReplicate(predictedProgress);
+    DirectX::XMVECTOR const trackLeft = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorSubtract(theirMarker1, ourMarker1), progress, ourMarker1);
+    DirectX::XMVECTOR const trackRight = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorSubtract(theirMarker2, ourMarker2), progress, ourMarker2);
 
-    Vector3 cartPos = (trackLeft + trackRight) / 2.0f;
-    cartPos += Vector3(0, -40, 0);
+    DirectX::XMVECTOR const cartPosVec =
+      DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMVectorAdd(trackLeft, trackRight), 0.5f), DirectX::XMVectorSet(0.0f, -40.0f, 0.0f, 0.0f));
+    DirectX::XMFLOAT3 cartPos;
+    DirectX::XMStoreFloat3(&cartPos, cartPosVec);
 
+    // PosInViewFrustum still takes a Vector3 -- Camera belongs to T22.
     if (g_camera->PosInViewFrustum(cartPos))
     {
-      Vector3 cartFront = (trackLeft - trackRight) ^ g_upVector;
-      cartFront.y = 0.0f;
-      cartFront.Normalise();
+      DirectX::XMVECTOR const cartFront = DirectX::XMVector3Normalize(
+        DirectX::XMVectorSetY(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(trackLeft, trackRight), DirectX::g_XMIdentityR1), 0.0f));
 
       // START_PROFILE(g_profiler, "RenderCartShape" );
-      Matrix34 transform(cartFront, g_upVector, cartPos);
+      DirectX::XMFLOAT4X4 transform;
+      DirectX::XMStoreFloat4x4(&transform, BasisFromFrontAndUp(cartFront, DirectX::g_XMIdentityR1, cartPosVec));
       s_cartShape->Render(0.0f, transform);
       // END_PROFILE(g_profiler, "RenderCartShape" );
 
-      Vector3 cartLinkLeft = s_cartMarker1->GetWorldMatrix(transform).pos;
-      Vector3 cartLinkRight = s_cartMarker2->GetWorldMatrix(transform).pos;
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+      DirectX::XMFLOAT3 const cartLinkLeftStore = s_cartMarker1->GetWorldMatrix(transform).pos;
+      DirectX::XMFLOAT3 const cartLinkRightStore = s_cartMarker2->GetWorldMatrix(transform).pos;
+      DirectX::XMVECTOR const cartLinkLeft = DirectX::XMLoadFloat3(&cartLinkLeftStore);
+      DirectX::XMVECTOR const cartLinkRight = DirectX::XMLoadFloat3(&cartLinkRightStore);
 
       // START_PROFILE(g_profiler, "RenderLines" );
-      Vector3 camRight = g_camera->GetRight() * 0.5f;
-      glBegin(GL_QUADS);
-      glVertex3fv((trackLeft - camRight).GetData());
-      glVertex3fv((trackLeft + camRight).GetData());
-      glVertex3fv((cartLinkLeft + camRight).GetData());
-      glVertex3fv((cartLinkLeft - camRight).GetData());
+      // Camera's accessors are still legacy -- Species belongs to T22.
+      DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+      DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), 0.5f);
 
-      glVertex3fv((trackRight - camRight).GetData());
-      glVertex3fv((trackRight + camRight).GetData());
-      glVertex3fv((cartLinkRight + camRight).GetData());
-      glVertex3fv((cartLinkRight - camRight).GetData());
+      glBegin(GL_QUADS);
+      EmitVertex(DirectX::XMVectorSubtract(trackLeft, camRight));
+      EmitVertex(DirectX::XMVectorAdd(trackLeft, camRight));
+      EmitVertex(DirectX::XMVectorAdd(cartLinkLeft, camRight));
+      EmitVertex(DirectX::XMVectorSubtract(cartLinkLeft, camRight));
+
+      EmitVertex(DirectX::XMVectorSubtract(trackRight, camRight));
+      EmitVertex(DirectX::XMVectorAdd(trackRight, camRight));
+      EmitVertex(DirectX::XMVectorAdd(cartLinkRight, camRight));
+      EmitVertex(DirectX::XMVectorSubtract(cartLinkRight, camRight));
       glEnd();
       // END_PROFILE(g_profiler, "RenderLines" );
 
@@ -301,7 +332,8 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
             float nearPlaneStart = g_renderer->GetNearPlane();
             g_camera->SetupProjectionMatrix(nearPlaneStart * 1.1f, g_renderer->GetFarPlane());
 
-            Render3DSprite(polyMat.pos - Vector3(0, 25, 0), 50.0f, 50.0f, g_resource->GetTexture("Textures/Glow.bmp"));
+            DirectX::XMFLOAT3 const glowPos(polyMat.pos.x, polyMat.pos.y - 25.0f, polyMat.pos.z);
+            Render3DSprite(glowPos, 50.0f, 50.0f, g_resource->GetTexture("Textures/Glow.bmp"));
 
             g_camera->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
 
@@ -377,31 +409,40 @@ void MineBuilding::TriggerCart(MineCart* _cart, float _initValue)
 }
 
 
-Vector3 MineBuilding::GetTrackMarker1()
+DirectX::XMFLOAT3 MineBuilding::GetTrackMarker1()
 {
   if (!m_trackMarker1 || g_editing)
   {
     m_trackMarker1 = m_shape->m_rootFragment->LookupMarker("MarkerTrack1");
     DEBUG_ASSERT(m_trackMarker1);
-    Matrix34 rootMat(m_front, g_upVector, m_pos);
-    m_trackMatrix1 = m_trackMarker1->GetWorldMatrix(rootMat);
+
+    DirectX::XMFLOAT4X4 rootMat;
+    DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
+    // only the position was ever kept, which is why the member is one now.
+    m_trackPosition1 = m_trackMarker1->GetWorldMatrix(rootMat).pos;
   }
 
-  return m_trackMatrix1.pos;
+  return m_trackPosition1;
 }
 
 
-Vector3 MineBuilding::GetTrackMarker2()
+DirectX::XMFLOAT3 MineBuilding::GetTrackMarker2()
 {
   if (!m_trackMarker2 || g_editing)
   {
     m_trackMarker2 = m_shape->m_rootFragment->LookupMarker("MarkerTrack2");
     DEBUG_ASSERT(m_trackMarker2);
-    Matrix34 rootMat(m_front, g_upVector, m_pos);
-    m_trackMatrix2 = m_trackMarker2->GetWorldMatrix(rootMat);
+
+    DirectX::XMFLOAT4X4 rootMat;
+    DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    m_trackPosition2 = m_trackMarker2->GetWorldMatrix(rootMat).pos;
   }
 
-  return m_trackMatrix2.pos;
+  return m_trackPosition2;
 }
 
 
@@ -568,9 +609,9 @@ void TrackJunction::RenderLink()
       Building* linkBuilding = g_location->GetBuilding(buildingId);
       if (linkBuilding)
       {
-        Vector3 start = m_pos;
+        DirectX::XMFLOAT3 start = m_pos;
         start.y += 10.0f;
-        Vector3 end = linkBuilding->m_pos;
+        DirectX::XMFLOAT3 end = linkBuilding->m_pos;
         end.y += 10.0f;
         RenderArrow(start, end, 6.0f, RGBAColour(255, 0, 255));
       }
@@ -692,7 +733,8 @@ void TrackStart::RenderAlphas(float _predictionTime)
     Building* req = g_location->GetBuilding(m_reqBuildingId);
     if (req)
     {
-      RenderArrow(AsLegacy(m_pos) + Vector3(0, 50, 0), AsLegacy(req->m_pos) + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
+      RenderArrow(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 50.0f, m_pos.z), DirectX::XMFLOAT3(req->m_pos.x, req->m_pos.y + 50.0f, req->m_pos.z), 2.0f,
+                  RGBAColour(255, 0, 0));
     }
   }
 #endif
@@ -801,7 +843,8 @@ void TrackEnd::RenderAlphas(float _predictionTime)
     Building* req = g_location->GetBuilding(m_reqBuildingId);
     if (req)
     {
-      RenderArrow(AsLegacy(m_pos) + Vector3(0, 50, 0), AsLegacy(req->m_pos) + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
+      RenderArrow(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 50.0f, m_pos.z), DirectX::XMFLOAT3(req->m_pos.x, req->m_pos.y + 50.0f, req->m_pos.z), 2.0f,
+                  RGBAColour(255, 0, 0));
     }
   }
 #endif
@@ -925,7 +968,12 @@ void Refinery::Render(float _predictionTime)
   //
   // Render wheels
 
-  Matrix34 refineryMat(m_front, g_upVector, m_pos);
+  DirectX::XMFLOAT4X4 refineryMat;
+  DirectX::XMStoreFloat4x4(&refineryMat,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
+  // the wheel matrices below are used as whole bases, so they stay legacy.
   Matrix34 wheel1Mat = m_wheel1->GetWorldMatrix(refineryMat);
   Matrix34 wheel2Mat = m_wheel2->GetWorldMatrix(refineryMat);
   Matrix34 wheel3Mat = m_wheel3->GetWorldMatrix(refineryMat);
@@ -994,7 +1042,11 @@ void Mine::Render(float _predictionTime)
   //
   // Render wheels
 
-  Matrix34 mineMat(m_front, g_upVector, m_pos);
+  DirectX::XMFLOAT4X4 mineMat;
+  DirectX::XMStoreFloat4x4(&mineMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
+  // the wheel matrices below are used as whole bases, so they stay legacy.
   Matrix34 wheel1Mat = m_wheel1->GetWorldMatrix(mineMat);
   Matrix34 wheel2Mat = m_wheel2->GetWorldMatrix(mineMat);
 

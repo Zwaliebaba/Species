@@ -37,7 +37,7 @@ class FenceSwitch : public Building
     void RenderAlphas(float predictionTime);
     void RenderLink();
     void RenderLights();
-    void RenderConnection(Vector3 _targetPos, bool _active);
+    void RenderConnection(DirectX::XMFLOAT3 _targetPos, bool _active);
 
     void Switch();
 
@@ -47,7 +47,7 @@ class FenceSwitch : public Building
     void Read(TextReader* _in, bool _dynamic);
     void Write(FileWriter* out);
 
-    Vector3 GetConnectionLocation();
+    DirectX::XMFLOAT3 GetConnectionLocation();
 
     bool IsInView();
 };

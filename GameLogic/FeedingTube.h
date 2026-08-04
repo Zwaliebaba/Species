@@ -11,9 +11,10 @@ class FeedingTube : public Building
     float m_range;
     float m_signal;
 
-    Vector3 GetDishPos(float _predictionTime);                                   // Returns the position of the transmission point
-    Vector3 GetDishFront(float _predictionTime);                                 // Returns the front vector of the dish
-    Vector3 GetForwardsClippingDir(float _predictionTime, FeedingTube* _sender); // Returns a good clipping direction for signal
+    DirectX::XMFLOAT3 GetDishPos(float _predictionTime);   // Returns the position of the transmission point
+    DirectX::XMFLOAT3 GetDishFront(float _predictionTime); // Returns the front vector of the dish
+    DirectX::XMFLOAT3 GetForwardsClippingDir(float _predictionTime,
+                                             FeedingTube* _sender); // Returns a good clipping direction for signal
 
     void RenderSignal(float _predictionTime, float _radius, float _alpha);
 
@@ -29,8 +30,8 @@ class FeedingTube : public Building
     void Render(float _predictionTime);
     void RenderAlphas(float _predictionTime);
 
-    Vector3 GetStartPoint();
-    Vector3 GetEndPoint();
+    DirectX::XMFLOAT3 GetStartPoint();
+    DirectX::XMFLOAT3 GetEndPoint();
 
     int GetBuildingLink();
     void SetBuildingLink(int _buildingId);

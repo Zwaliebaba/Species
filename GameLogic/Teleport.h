@@ -24,7 +24,7 @@ class Teleport : public Building
     ShapeMarker* m_entrance;
 
   protected:
-    void RenderSpirit(Vector3 const& _pos, int _teamId);
+    void RenderSpirit(DirectX::XMFLOAT3 const& _pos, int _teamId);
 
   public:
     std::vector<WorldObjectId> m_inTransit; // Entities on the move
@@ -44,11 +44,15 @@ class Teleport : public Building
     virtual bool Connected();
     virtual bool ReadyToSend();
 
-    virtual bool GetEntrance(Vector3& _pos, Vector3& _front);
-    virtual bool GetExit(Vector3& _pos, Vector3& _front);
+    // These four are overridden by Bridge below and by RadarDish under T16,
+    // which left its copies legacy on purpose and waited for this commit. A
+    // virtual override matches its base exactly or silently stops overriding,
+    // so all three classes move together or none of them do.
+    virtual bool GetEntrance(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
+    virtual bool GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
 
-    virtual Vector3 GetStartPoint();
-    virtual Vector3 GetEndPoint();
+    virtual DirectX::XMFLOAT3 GetStartPoint();
+    virtual DirectX::XMFLOAT3 GetEndPoint();
 
     virtual bool UpdateEntityInTransit(Entity* _entity); // Returns true (remove me) or false (still inside)
 };

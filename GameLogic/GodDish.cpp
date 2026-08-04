@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "Resource.h"
 #include "MathUtils.h"
@@ -65,8 +66,11 @@ void GodDish::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  // Camera's accessors are still legacy -- Species belongs to T22.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   glDepthMask(false);
   glEnable(GL_BLEND);
@@ -96,24 +100,26 @@ void GodDish::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < maxBlobs; ++i)
   {
-    Vector3 pos = m_centrePos;
-    pos.x += sinf(timeIndex + i) * i * 1.7f;
-    pos.y += fabs(cosf(timeIndex + i) * cosf(i * 20) * 64);
-    pos.z += cosf(timeIndex + i) * i * 1.7f;
+    DirectX::XMVECTOR const pos = DirectX::XMVectorAdd(
+      DirectX::XMLoadFloat3(&m_centrePos),
+      DirectX::XMVectorSet(sinf(timeIndex + i) * i * 1.7f, fabs(cosf(timeIndex + i) * cosf(i * 20) * 64), cosf(timeIndex + i) * i * 1.7f, 0.0f));
 
     float size = 20.0f * sinf(timeIndex + i * 13);
     size = std::max(size, 5.0f);
 
+    DirectX::XMVECTOR const right = DirectX::XMVectorScale(camRight, size);
+    DirectX::XMVECTOR const up = DirectX::XMVectorScale(camUp, size);
+
     glColor4f(0.6f, 0.2f, 0.1f, alpha);
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, right), up));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, right), up));
     glEnd();
   }
 
@@ -131,24 +137,26 @@ void GodDish::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < numStars; ++i)
   {
-    Vector3 pos = m_centrePos;
-    pos.x += sinf(timeIndex + i) * i * 1.7f;
-    pos.y += fabs(cosf(timeIndex + i) * cosf(i * 20) * 64);
-    pos.z += cosf(timeIndex + i) * i * 1.7f;
+    DirectX::XMVECTOR const pos = DirectX::XMVectorAdd(
+      DirectX::XMLoadFloat3(&m_centrePos),
+      DirectX::XMVectorSet(sinf(timeIndex + i) * i * 1.7f, fabs(cosf(timeIndex + i) * cosf(i * 20) * 64), cosf(timeIndex + i) * i * 1.7f, 0.0f));
 
     float size = i * 30.0f;
+
+    DirectX::XMVECTOR const right = DirectX::XMVectorScale(camRight, size);
+    DirectX::XMVECTOR const up = DirectX::XMVectorScale(camUp, size);
 
     glColor4f(1.0f, 0.4f, 0.2f, alpha);
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, right), up));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, right), up));
     glEnd();
   }
 
@@ -212,9 +220,13 @@ void GodDish::SpawnSpam(bool _isResearch)
   if (_isResearch)
     spam->SetAsResearch();
   spam->m_pos = m_pos;
-  AsLegacy(spam->m_pos) += Vector3(0, 1500 * 0.75f, 900 * 0.75f);
-  spam->m_vel = (AsLegacy(m_pos) - AsLegacy(spam->m_pos));
-  AsLegacy(spam->m_vel).SetLength(80.0f);
+  spam->m_pos = DirectX::XMFLOAT3(m_pos.x, m_pos.y + 1500 * 0.75f, m_pos.z + 900 * 0.75f);
+
+  // SetLength on the difference. The zero-length fallback cannot be reached
+  // here -- the offset above is a fixed non-zero vector -- so this takes the
+  // native normalise.
+  DirectX::XMVECTOR const toDish = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&spam->m_pos));
+  DirectX::XMStoreFloat3(&spam->m_vel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(toDish), 80.0f));
 }
 
 

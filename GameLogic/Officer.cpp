@@ -580,7 +580,7 @@ bool Officer::Advance(Unit* _unit)
       // Teleport converts in T17, so its out-parameters are still legacy.
       DirectX::XMFLOAT3 exitPos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 exitFront{0.0f, 0.0f, 0.0f};
-      bool exitFound = teleport->GetExit(AsLegacy(exitPos), AsLegacy(exitFront));
+      bool exitFound = teleport->GetExit(exitPos, exitFront);
       if (exitFound)
         DirectX::XMStoreFloat3(&m_wayPoint, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&exitFront), DirectX::XMVectorReplicate(30.0f),
                                                                          DirectX::XMLoadFloat3(&exitPos)));
@@ -617,7 +617,7 @@ void Officer::SetWaypoint(DirectX::XMFLOAT3 const& _wayPoint)
         // Teleport converts in T17, so its out-parameters are still legacy.
         DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-        teleport->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+        teleport->GetEntrance(entrancePos, entranceFront);
         m_wayPoint = entrancePos;
         break;
       }
@@ -686,7 +686,7 @@ void Officer::SetOrders(DirectX::XMFLOAT3 const& _orders)
             // Teleport converts in T17; same seam as above.
             DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
             DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-            teleport->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+            teleport->GetEntrance(entrancePos, entranceFront);
             m_orderPosition = entrancePos;
             foundTeleport = true;
             break;

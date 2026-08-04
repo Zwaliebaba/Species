@@ -58,7 +58,8 @@ void Bridge::Render(float predictionTime)
   //
   // Render our shape
 
-  Matrix34 mat(m_front, g_upVector, m_pos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
   m_shape->Render(predictionTime, mat);
 }
 
@@ -76,8 +77,8 @@ void Bridge::RenderAlphas(float predictionTime)
       Bridge* bridge = (Bridge*)building;
       if (m_status > 0.0f && bridge->m_status > 0.0f)
       {
-        Vector3 ourPos = GetStartPoint();
-        Vector3 theirPos = bridge->GetStartPoint();
+        DirectX::XMFLOAT3 const ourPos = GetStartPoint();
+        DirectX::XMFLOAT3 const theirPos = bridge->GetStartPoint();
 
         if (m_id.GetTeamId() == 255)
         {
@@ -93,8 +94,8 @@ void Bridge::RenderAlphas(float predictionTime)
         glEnable(GL_BLEND);
         glEnable(GL_LINE_SMOOTH);
         glBegin(GL_LINES);
-        glVertex3fv(ourPos.GetData());
-        glVertex3fv(theirPos.GetData());
+        glVertex3fv(&ourPos.x);
+        glVertex3fv(&theirPos.x);
         glEnd();
         glDisable(GL_LINE_SMOOTH);
         glDisable(GL_BLEND);
@@ -123,10 +124,13 @@ bool Bridge::Advance()
   return Teleport::Advance();
 }
 
-bool Bridge::GetAvailablePosition(Vector3& _pos, Vector3& _front)
+bool Bridge::GetAvailablePosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
-  Matrix34 ourMat(m_front, g_upVector, m_pos);
-  Matrix34 ourEngineer = m_signal->GetWorldMatrix(ourMat);
+  DirectX::XMFLOAT4X4 ourMat;
+  DirectX::XMStoreFloat4x4(&ourMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  Matrix34 const ourEngineer = m_signal->GetWorldMatrix(ourMat);
   _pos = ourEngineer.pos;
   _front = ourEngineer.f;
 
@@ -171,14 +175,16 @@ bool Bridge::ReadyToSend()
           Teleport::ReadyToSend());
 }
 
-Vector3 Bridge::GetStartPoint()
+DirectX::XMFLOAT3 Bridge::GetStartPoint()
 {
-  Matrix34 ourMat(m_front, g_upVector, m_pos);
-  Matrix34 ourSignal = m_signal->GetWorldMatrix(ourMat);
-  return ourSignal.pos;
+  DirectX::XMFLOAT4X4 ourMat;
+  DirectX::XMStoreFloat4x4(&ourMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  return m_signal->GetWorldMatrix(ourMat).pos;
 }
 
-Vector3 Bridge::GetEndPoint()
+DirectX::XMFLOAT3 Bridge::GetEndPoint()
 {
   Bridge* nextBridge = (Bridge*)this;
   while (nextBridge->m_nextBridgeId != -1)
@@ -187,14 +193,12 @@ Vector3 Bridge::GetEndPoint()
   }
 
   if (!nextBridge)
-    return g_zeroVector;
+    return DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
-  Vector3 theirPos = nextBridge->GetStartPoint();
-
-  return theirPos;
+  return nextBridge->GetStartPoint();
 }
 
-bool Bridge::GetExit(Vector3& _pos, Vector3& _front)
+bool Bridge::GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
   Bridge* nextBridge = (Bridge*)this;
   while (nextBridge->m_nextBridgeId != -1)
@@ -205,8 +209,12 @@ bool Bridge::GetExit(Vector3& _pos, Vector3& _front)
   if (!nextBridge)
     return false;
 
-  Matrix34 theirMat(nextBridge->m_front, g_upVector, nextBridge->m_pos);
-  Matrix34 theirEntrance = nextBridge->m_entrance->GetWorldMatrix(theirMat);
+  DirectX::XMFLOAT4X4 theirMat;
+  DirectX::XMStoreFloat4x4(
+    &theirMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&nextBridge->m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&nextBridge->m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  Matrix34 const theirEntrance = nextBridge->m_entrance->GetWorldMatrix(theirMat);
 
   _pos = theirEntrance.pos;
   _front = theirEntrance.f;
@@ -223,20 +231,33 @@ bool Bridge::UpdateEntityInTransit(Entity* _entity)
 
   if (m_status > 0.0f && nextBridge && nextBridge->m_type == Building::TypeBridge && nextBridge->m_status > 0.0f)
   {
-    Matrix34 theirMat(nextBridge->m_front, g_upVector, nextBridge->m_pos);
-    Matrix34 theirSignal = nextBridge->m_signal->GetWorldMatrix(theirMat);
-    Vector3 offset = (theirSignal.pos - AsLegacy(_entity->m_pos)).Normalise();
-    float dist = (AsLegacy(_entity->m_pos) - theirSignal.pos).Mag();
+    DirectX::XMFLOAT4X4 theirMat;
+    DirectX::XMStoreFloat4x4(&theirMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&nextBridge->m_front), DirectX::g_XMIdentityR1,
+                                                            DirectX::XMLoadFloat3(&nextBridge->m_pos)));
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 const theirSignalPos = nextBridge->m_signal->GetWorldMatrix(theirMat).pos;
+
+    DirectX::XMVECTOR const signalPos = DirectX::XMLoadFloat3(&theirSignalPos);
+    DirectX::XMVECTOR const entityPos = DirectX::XMLoadFloat3(&_entity->m_pos);
+    DirectX::XMVECTOR const offset = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(signalPos, entityPos));
+    float dist = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(entityPos, signalPos)));
     bool arrived = false;
 
-    _entity->m_vel = offset * BRIDGE_TRANSPORTSPEED;
-    if (AsLegacy(_entity->m_vel).Mag() * SERVER_ADVANCE_PERIOD > dist)
+    DirectX::XMStoreFloat3(&_entity->m_vel, DirectX::XMVectorScale(offset, BRIDGE_TRANSPORTSPEED));
+    if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&_entity->m_vel))) * SERVER_ADVANCE_PERIOD > dist)
     {
-      _entity->m_vel = (AsLegacy(_entity->m_pos) - theirSignal.pos) / SERVER_ADVANCE_PERIOD;
+      // PRESERVED AS WRITTEN, INCLUDING THE SIGN. Every other velocity here
+      // points from the entity TOWARDS the signal; this one is entityPos minus
+      // signalPos, which points away, so the arrival frame steps the entity to
+      // 2*pos - target before the branch below overwrites m_pos. That is what
+      // the legacy code did and the migration is not the place to change it.
+      DirectX::XMStoreFloat3(&_entity->m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(entityPos, signalPos), 1.0f / SERVER_ADVANCE_PERIOD));
       arrived = true;
     }
 
-    AsLegacy(_entity->m_pos) += AsLegacy(_entity->m_vel) * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&_entity->m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&_entity->m_vel),
+                                                                         DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), entityPos));
     _entity->m_onGround = false;
     _entity->m_enabled = false;
 
@@ -246,13 +267,13 @@ bool Bridge::UpdateEntityInTransit(Entity* _entity)
       // We are there
       if (nextBridge->m_bridgeType == Bridge::BridgeTypeEnd)
       {
-        Vector3 exitPos, exitFront;
+        DirectX::XMFLOAT3 exitPos, exitFront;
         nextBridge->GetExit(exitPos, exitFront);
         _entity->m_pos = exitPos;
         _entity->m_front = exitFront;
         _entity->m_enabled = true;
         _entity->m_onGround = true;
-        AsLegacy(_entity->m_vel).Zero();
+        _entity->m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
         g_location->m_entityGrid->AddObject(id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius);
         return true;
@@ -271,7 +292,8 @@ bool Bridge::UpdateEntityInTransit(Entity* _entity)
     // Shit - we lost the carrier signal, so we die
     _entity->ChangeHealth(-500);
     _entity->m_enabled = true;
-    _entity->m_vel = Vector3(syncsfrand(10.0f), syncfrand(10.0f), syncsfrand(10.0f));
+    // The three RNG calls stay in this order.
+    _entity->m_vel = DirectX::XMFLOAT3(syncsfrand(10.0f), syncfrand(10.0f), syncsfrand(10.0f));
 
     g_location->m_entityGrid->AddObject(id, _entity->m_pos.x, _entity->m_pos.z, _entity->m_radius);
     return true;

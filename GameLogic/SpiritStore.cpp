@@ -15,7 +15,7 @@ SpiritStore::SpiritStore()
 {
 }
 
-void SpiritStore::Initialise(int _initialCapacity, int _maxCapacity, Vector3 _pos, float _sizeX, float _sizeY, float _sizeZ)
+void SpiritStore::Initialise(int _initialCapacity, int _maxCapacity, DirectX::XMFLOAT3 _pos, float _sizeX, float _sizeY, float _sizeZ)
 {
   m_spirits.SetSize(_maxCapacity);
   m_spirits.SetStepSize(_maxCapacity / 2);
@@ -144,7 +144,10 @@ void SpiritStore::AddSpirit(Spirit* _spirit)
 {
   Spirit* target = m_spirits.GetPointer(m_spirits.GetNextFree());
   *target = *_spirit;
-  target->m_pos = m_pos + Vector3(syncsfrand(m_sizeX * 1.5f), syncsfrand(m_sizeY * 1.5f), syncsfrand(m_sizeZ * 1.5f));
+  // The three syncsfrand calls stay in this order: they advance the
+  // synchronised RNG, and the migration may not change the call sequence.
+  DirectX::XMFLOAT3 const scatter(syncsfrand(m_sizeX * 1.5f), syncsfrand(m_sizeY * 1.5f), syncsfrand(m_sizeZ * 1.5f));
+  DirectX::XMStoreFloat3(&target->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&scatter)));
   target->m_state = Spirit::StateInStore;
   target->m_numNearbyEggs = 0;
 }

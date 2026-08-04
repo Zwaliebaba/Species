@@ -30,7 +30,7 @@ class ReceiverBuilding : public Building
     void RenderAlphas(float _predictionTime);
 
     bool IsInView();
-    virtual Vector3 GetSpiritLocation();
+    virtual DirectX::XMFLOAT3 GetSpiritLocation();
     virtual void TriggerSpirit(float _initValue);
 
     void ListSoundEvents(std::vector<const char*>* _list);
@@ -38,9 +38,9 @@ class ReceiverBuilding : public Building
     static SpiritProcessor* GetSpiritProcessor();
 
     static void BeginRenderUnprocessedSpirits();
-    static void RenderUnprocessedSpirit(Vector3 const& _pos, float _life = 1.0f);        // gl friendly
-    static void RenderUnprocessedSpirit_basic(Vector3 const& _pos, float _life = 1.0f);  // dx friendly
-    static void RenderUnprocessedSpirit_detail(Vector3 const& _pos, float _life = 1.0f); // dx friendly
+    static void RenderUnprocessedSpirit(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f);        // gl friendly
+    static void RenderUnprocessedSpirit_basic(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f);  // dx friendly
+    static void RenderUnprocessedSpirit_detail(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f); // dx friendly
     static void EndRenderUnprocessedSpirits();
 
     void Read(TextReader* _in, bool _dynamic);
@@ -122,7 +122,7 @@ class SpiritReceiver : public ReceiverBuilding
   public:
     SpiritReceiver();
 
-    Vector3 GetSpiritLocation();
+    DirectX::XMFLOAT3 GetSpiritLocation();
 
     void Initialise(Building* _template);
     bool Advance();
@@ -146,7 +146,9 @@ class UnprocessedSpirit : public WorldObject
     float m_zaxisRate;
 
   public:
-    Vector3 m_hover;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and UnprocessedSpirit's constructor never assigned it.
+    DirectX::XMFLOAT3 m_hover{0.0f, 0.0f, 0.0f};
     enum
     {
       StateUnprocessedFalling,

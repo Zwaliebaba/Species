@@ -17,7 +17,7 @@ class TrunkPort : public Building
     ShapeMarker* m_destination2;
 
     int m_heightMapSize;
-    Vector3* m_heightMap;
+    DirectX::XMFLOAT3* m_heightMap;
     float m_openTimer;
 
   public:

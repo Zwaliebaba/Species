@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "Resource.h"
 #include "Debug.h"
@@ -42,26 +43,36 @@ void TrunkPort::SetDetail(int _detail)
   //
   // Pre-Generate our height map
 
+  // delete[], not delete. The array was allocated with new[] and freed with
+  // scalar delete, which is undefined behaviour -- it happened to work because
+  // the element type is trivially destructible. Fixed here rather than left,
+  // since this line had to change for the type anyway.
   if (m_heightMap)
-    delete m_heightMap;
-  m_heightMap = new Vector3[m_heightMapSize * m_heightMapSize];
-  // Zeroing the array as raw bytes, so this depends on Vector3 being three
-  // tightly packed floats with no padding and nothing that a memset would
-  // corrupt. directxmath-migration replaces it with DirectX::XMFLOAT3, which
-  // holds that; the assert is here so the day it stops holding is a build
-  // error rather than a height map full of rubbish.
-  static_assert(sizeof(Vector3) == 3 * sizeof(float), "this memset assumes Vector3 is three tightly packed floats");
-  memset(m_heightMap, 0, m_heightMapSize * m_heightMapSize * sizeof(Vector3));
+    delete[] m_heightMap;
+  m_heightMap = new DirectX::XMFLOAT3[m_heightMapSize * m_heightMapSize];
+
+  // Zeroing the array as raw bytes, so this depends on the element being three
+  // tightly packed floats with no padding and nothing a memset would corrupt.
+  // The assert is here so the day that stops holding is a build error rather
+  // than a height map full of rubbish. It now says XMFLOAT3, which is what the
+  // comment above used to promise the migration would arrive at.
+  static_assert(sizeof(DirectX::XMFLOAT3) == 3 * sizeof(float), "this memset assumes XMFLOAT3 is three tightly packed floats");
+  memset(m_heightMap, 0, m_heightMapSize * m_heightMapSize * sizeof(DirectX::XMFLOAT3));
 
   ShapeMarker* marker = m_shape->m_rootFragment->LookupMarker("MarkerSurface");
   DEBUG_ASSERT(marker);
 
-  Matrix34 transform(m_front, g_upVector, m_pos);
-  Vector3 worldPos = marker->GetWorldMatrix(transform).pos;
+  DirectX::XMFLOAT4X4 transform;
+  DirectX::XMStoreFloat4x4(&transform, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const worldPosStore = marker->GetWorldMatrix(transform).pos;
+  DirectX::XMVECTOR const worldPos = DirectX::XMLoadFloat3(&worldPosStore);
 
   float size = 90.0f;
-  Vector3 up = g_upVector * size;
-  Vector3 right = (AsLegacy(m_front) ^ g_upVector).Normalise() * size;
+  DirectX::XMVECTOR const up = DirectX::XMVectorScale(DirectX::g_XMIdentityR1, size);
+  DirectX::XMVECTOR const right =
+    DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1)), size);
 
 
   for (int x = 0; x < m_heightMapSize; ++x)
@@ -74,9 +85,8 @@ void TrunkPort::SetDetail(int _detail)
       fractionX -= 0.5f;
       fractionZ -= 0.5f;
 
-      Vector3 basePos = worldPos;
-      basePos += right * fractionX;
-      basePos += up * fractionZ;
+      DirectX::XMVECTOR basePos = DirectX::XMVectorMultiplyAdd(right, DirectX::XMVectorReplicate(fractionX), worldPos);
+      basePos = DirectX::XMVectorMultiplyAdd(up, DirectX::XMVectorReplicate(fractionZ), basePos);
 
       // basePos += right * 0.02f;
       // basePos += up * 0.02f;
@@ -84,7 +94,7 @@ void TrunkPort::SetDetail(int _detail)
       // basePos += right * 0.05f;
       // basePos += up * 0.05f;
 
-      m_heightMap[z * m_heightMapSize + x] = basePos;
+      DirectX::XMStoreFloat3(&m_heightMap[z * m_heightMapSize + x], basePos);
     }
   }
 }
@@ -131,8 +141,12 @@ void TrunkPort::Render(float predictionTime)
   float fontSize = 70.0f / strlen(caption);
   fontSize = std::min(fontSize, 10.0f);
 
-  Matrix34 portMat(m_front, g_upVector, m_pos);
+  DirectX::XMFLOAT4X4 portMat;
+  DirectX::XMStoreFloat4x4(&portMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
+  // this block wants the marker's whole basis to orient the text, so destMat
+  // stays legacy until that seam closes.
   Matrix34 destMat = m_destination1->GetWorldMatrix(portMat);
   glColor4f(0.9f, 0.8f, 0.8f, 1.0f);
   g_gameFont.DrawText3D(destMat.pos, destMat.f, destMat.u, fontSize, "%s", caption);
@@ -177,8 +191,13 @@ void TrunkPort::RenderAlphas(float predictionTime)
     ShapeMarker* marker = m_shape->m_rootFragment->LookupMarker("MarkerSurface");
     DEBUG_ASSERT(marker);
 
-    Matrix34 transform(m_front, g_upVector, m_pos);
-    Vector3 markerPos = marker->GetWorldMatrix(transform).pos;
+    DirectX::XMFLOAT4X4 transform;
+    DirectX::XMStoreFloat4x4(&transform,
+                             BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 const markerPosStore = marker->GetWorldMatrix(transform).pos;
+    DirectX::XMVECTOR const markerPos = DirectX::XMLoadFloat3(&markerPosStore);
     float maxDistance = 40.0f;
 
     float timeOpen = GetHighResTime() - m_openTimer;
@@ -191,13 +210,14 @@ void TrunkPort::RenderAlphas(float predictionTime)
 
     START_PROFILE(g_profiler, "Advance Heightmap");
 
-    Vector3 difMap[TRUNKPORT_HEIGHTMAP_MAXSIZE][TRUNKPORT_HEIGHTMAP_MAXSIZE];
+    DirectX::XMFLOAT3 difMap[TRUNKPORT_HEIGHTMAP_MAXSIZE][TRUNKPORT_HEIGHTMAP_MAXSIZE];
 
     for (int x = 0; x < m_heightMapSize; ++x)
     {
       for (int z = 0; z < m_heightMapSize; ++z)
       {
-        float centreDif = (m_heightMap[z * m_heightMapSize + x] - markerPos).Mag();
+        float centreDif = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_heightMap[z * m_heightMapSize + x]), markerPos)));
         float fractionOut = centreDif / maxDistance;
         if (fractionOut > 1.0f)
           fractionOut = 1.0f;
@@ -205,10 +225,13 @@ void TrunkPort::RenderAlphas(float predictionTime)
         float wave1 = cosf(centreDif * 0.15f);
         float wave2 = cosf(centreDif * 0.05f);
 
-        Vector3 thisDif = AsLegacy(m_front) * sinf(g_gameTime * 2) * wave1 * (1.0f - fractionOut) * 15 * timeScale;
-        thisDif += AsLegacy(m_front) * sinf(g_gameTime * 2.5) * wave2 * (1.0f - fractionOut) * 15 * timeScale;
-        thisDif += g_upVector * cosf(g_gameTime) * wave1 * timeScale * 10 * (1.0f - fractionOut);
-        difMap[x][z] = thisDif;
+        DirectX::XMVECTOR const front = DirectX::XMLoadFloat3(&m_front);
+        DirectX::XMVECTOR thisDif = DirectX::XMVectorScale(front, sinf(g_gameTime * 2) * wave1 * (1.0f - fractionOut) * 15 * timeScale);
+        thisDif = DirectX::XMVectorMultiplyAdd(
+          front, DirectX::XMVectorReplicate(sinf(g_gameTime * 2.5) * wave2 * (1.0f - fractionOut) * 15 * timeScale), thisDif);
+        thisDif = DirectX::XMVectorMultiplyAdd(DirectX::g_XMIdentityR1,
+                                               DirectX::XMVectorReplicate(cosf(g_gameTime) * wave1 * timeScale * 10 * (1.0f - fractionOut)), thisDif);
+        DirectX::XMStoreFloat3(&difMap[x][z], thisDif);
       }
     }
 
@@ -236,10 +259,14 @@ void TrunkPort::RenderAlphas(float predictionTime)
     {
       for (int z = 0; z < m_heightMapSize - 1; ++z)
       {
-        Vector3 thisPos1 = m_heightMap[z * m_heightMapSize + x] + difMap[x][z];
-        Vector3 thisPos2 = m_heightMap[z * m_heightMapSize + x + 1] + difMap[x + 1][z];
-        Vector3 thisPos3 = m_heightMap[(z + 1) * m_heightMapSize + x + 1] + difMap[x + 1][z + 1];
-        Vector3 thisPos4 = m_heightMap[(z + 1) * m_heightMapSize + x] + difMap[x][z + 1];
+        DirectX::XMVECTOR const thisPos1 =
+          DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_heightMap[z * m_heightMapSize + x]), DirectX::XMLoadFloat3(&difMap[x][z]));
+        DirectX::XMVECTOR const thisPos2 =
+          DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_heightMap[z * m_heightMapSize + x + 1]), DirectX::XMLoadFloat3(&difMap[x + 1][z]));
+        DirectX::XMVECTOR const thisPos3 =
+          DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_heightMap[(z + 1) * m_heightMapSize + x + 1]), DirectX::XMLoadFloat3(&difMap[x + 1][z + 1]));
+        DirectX::XMVECTOR const thisPos4 =
+          DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_heightMap[(z + 1) * m_heightMapSize + x]), DirectX::XMLoadFloat3(&difMap[x][z + 1]));
 
         float fractionX = (float)x / (float)m_heightMapSize;
         float fractionZ = (float)z / (float)m_heightMapSize;
@@ -247,13 +274,13 @@ void TrunkPort::RenderAlphas(float predictionTime)
 
         glBegin(GL_QUADS);
         glTexCoord2f(fractionX, fractionZ);
-        glVertex3fv(thisPos1.GetData());
+        EmitVertex(thisPos1);
         glTexCoord2f(fractionX + width, fractionZ);
-        glVertex3fv(thisPos2.GetData());
+        EmitVertex(thisPos2);
         glTexCoord2f(fractionX + width, fractionZ + width);
-        glVertex3fv(thisPos3.GetData());
+        EmitVertex(thisPos3);
         glTexCoord2f(fractionX, fractionZ + width);
-        glVertex3fv(thisPos4.GetData());
+        EmitVertex(thisPos4);
         glEnd();
       }
     }
@@ -266,10 +293,14 @@ void TrunkPort::RenderAlphas(float predictionTime)
     {
       for (int z = 0; z < m_heightMapSize - 1; ++z)
       {
-        Vector3 thisPos1 = m_heightMap[z * m_heightMapSize + x] + difMap[x][z];
-        Vector3 thisPos2 = m_heightMap[z * m_heightMapSize + x + 1] + difMap[x + 1][z];
-        Vector3 thisPos3 = m_heightMap[(z + 1) * m_heightMapSize + x + 1] + difMap[x + 1][z + 1];
-        Vector3 thisPos4 = m_heightMap[(z + 1) * m_heightMapSize + x] + difMap[x][z + 1];
+        DirectX::XMVECTOR const thisPos1 =
+          DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_heightMap[z * m_heightMapSize + x]), DirectX::XMLoadFloat3(&difMap[x][z]));
+        DirectX::XMVECTOR const thisPos2 =
+          DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_heightMap[z * m_heightMapSize + x + 1]), DirectX::XMLoadFloat3(&difMap[x + 1][z]));
+        DirectX::XMVECTOR const thisPos3 =
+          DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_heightMap[(z + 1) * m_heightMapSize + x + 1]), DirectX::XMLoadFloat3(&difMap[x + 1][z + 1]));
+        DirectX::XMVECTOR const thisPos4 =
+          DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_heightMap[(z + 1) * m_heightMapSize + x]), DirectX::XMLoadFloat3(&difMap[x][z + 1]));
 
         float fractionX = (float)x / (float)m_heightMapSize;
         float fractionZ = (float)z / (float)m_heightMapSize;
@@ -277,13 +308,13 @@ void TrunkPort::RenderAlphas(float predictionTime)
 
         glBegin(GL_QUADS);
         glTexCoord2f(fractionX, fractionZ);
-        glVertex3fv(thisPos1.GetData());
+        EmitVertex(thisPos1);
         glTexCoord2f(fractionX + width, fractionZ);
-        glVertex3fv(thisPos2.GetData());
+        EmitVertex(thisPos2);
         glTexCoord2f(fractionX + width, fractionZ + width);
-        glVertex3fv(thisPos3.GetData());
+        EmitVertex(thisPos3);
         glTexCoord2f(fractionX, fractionZ + width);
-        glVertex3fv(thisPos4.GetData());
+        EmitVertex(thisPos4);
         glEnd();
       }
     }

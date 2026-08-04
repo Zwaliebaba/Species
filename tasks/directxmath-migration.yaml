@@ -1554,8 +1554,58 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
+    notes: |
+      CLOSED. T16's closing notes predicted the keystone here and it was
+      exactly as measured: Teleport declares four virtuals carrying math types
+      -- GetEntrance, GetExit, GetStartPoint, GetEndPoint -- overridden by
+      Bridge in this task and by RadarDish in T16, which left its four legacy
+      on purpose and waited. All three classes moved in one commit. That is the
+      third time this shape has appeared (T12's Building overriders, T16's
+      Building keystone, T17's Teleport keystone) and the rule that finds it is
+      now written down: before converting a class, grep for what derives FROM
+      it AND for what it derives from.
 
+      CONVERTING A BASE REMOVES REPAIRS. Teleport's four going native retired
+      TEN AsLegacy wraps that T14 had put into Officer, Citizen, InsertionSquad
+      and Entity -- files this task does not own and did not otherwise touch.
+      That is the same effect T16 saw and it is the argument for the ordering:
+      bases before readers.
+
+      A SECOND PRE-EXISTING BUG FIXED IN PASSING, and the second one this wave.
+      TrunkPort::SetDetail allocated its height map with new[] and freed it
+      with scalar delete. Undefined behaviour that happened to work because the
+      element type is trivially destructible. The line had to change for the
+      type anyway, so it is delete[] now. Called out rather than smuggled.
+
+      A PRE-EXISTING BUG DELIBERATELY *NOT* FIXED. Bridge::UpdateEntityInTransit
+      computes its arrival velocity as (entityPos - signalPos), pointing AWAY
+      from the target, where every other velocity in that function points
+      towards it. The entity steps to 2*pos - target before the branch below
+      overwrites m_pos. It is preserved exactly, with a comment saying so. The
+      migration is not the place to change behaviour -- but the next person to
+      read that function should know it is not a conversion artefact.
+
+      TWO SCALED BASES IN ONE CLASS. LaserFence built a scaled world matrix at
+      eight sites, and they are not all the same matrix: the render and marker
+      paths level the fence against the WORLD up, the hit tests use the
+      building's own m_up. Collapsed to two named helpers rather than one, so
+      the difference is visible. Merging them would have tilted the hit volume
+      away from the rendered fence, and nothing would have failed to compile.
+
+      A MEMBER RENAMED, WHICH THE MIGRATION NORMALLY DOES NOT DO.
+      MineBuilding::m_trackMatrix1/2 were Matrix34 caches whose only read was
+      .pos -- the matrix half was never used. Keeping the name over an
+      XMFLOAT4X4 would have meant storing sixteen floats to fish out three;
+      keeping the name over an XMFLOAT3 would have meant a name that lies. They
+      are m_trackPosition1/2 now. Contained entirely in Mine.h and Mine.cpp.
+
+      THE T10 SEAM IS THE LOUDEST REMAINING THING, same as T16 found.
+      ShapeMarker::GetWorldMatrix takes an XMFLOAT4X4 and returns a Matrix34,
+      and roughly thirty sites here call it. Where only .pos is wanted they
+      collapse to a native XMFLOAT3; where the whole basis is wanted the local
+      stays Matrix34 with a "T10's seam" comment. grep for that phrase to find
+      the follow-up work.
   - id: T18
     title: Convert the world, landscape and routing
     intent: >

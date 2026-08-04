@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include <math.h>
@@ -72,26 +73,61 @@ void LaserFence::SetDetail(int _detail)
   Building::SetDetail(_detail);
 }
 
+// The two scaled bases LaserFence.h describes. Row 3 is the position and stays
+// unscaled: the legacy code scaled only f, u and r.
+static DirectX::XMFLOAT4X4 ScaleBasisRows(DirectX::FXMMATRIX _basis, float _scale)
+{
+  DirectX::XMMATRIX mat = _basis;
+  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_scale);
+  mat.r[0] = DirectX::XMVectorMultiply(mat.r[0], scale);
+  mat.r[1] = DirectX::XMVectorMultiply(mat.r[1], scale);
+  mat.r[2] = DirectX::XMVectorMultiply(mat.r[2], scale);
+
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, mat);
+  return result;
+}
+
+DirectX::XMFLOAT4X4 LaserFence::GetScaledLevelMatrix() const
+{
+  return ScaleBasisRows(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)), m_scale);
+}
+
+DirectX::XMFLOAT4X4 LaserFence::GetScaledWorldMatrix() const
+{
+  return ScaleBasisRows(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)), m_scale);
+}
+
 void LaserFence::Spark()
 {
-  Vector3 sparkPos = m_pos;
-  sparkPos.y += frand(m_scale * 50.0f);
+  DirectX::XMFLOAT3 const sparkPos(m_pos.x, m_pos.y + frand(m_scale * 50.0f), m_pos.z);
 
   LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
 
   int numSparks = 5.0f + frand(5.0f);
   for (int i = 0; i < numSparks; ++i)
   {
-    Vector3 particleVel;
+    // Every RNG call below stays where it is and in this order.
+    DirectX::XMVECTOR particleVel;
     if (nextFence)
-      particleVel = (AsLegacy(m_pos) - AsLegacy(nextFence->m_pos)) ^ g_upVector;
+    {
+      particleVel = DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&nextFence->m_pos)),
+                                            DirectX::g_XMIdentityR1);
+    }
     else
-      particleVel = Vector3(sfrand(10.0f), sfrand(5.0f), sfrand(10.0f));
+    {
+      particleVel = DirectX::XMVectorSet(sfrand(10.0f), sfrand(5.0f), sfrand(10.0f), 0.0f);
+    }
 
-    particleVel.SetLength(40.0f + frand(20.0f));
-    particleVel += Vector3(frand() * 20.0f, sfrand() * 20.0f, sfrand() * 20.0f);
+    // SetLength; rendering only, so this takes the native normalise.
+    particleVel = DirectX::XMVectorScale(DirectX::XMVector3Normalize(particleVel), 40.0f + frand(20.0f));
+
+    DirectX::XMFLOAT3 const jitter(frand() * 20.0f, sfrand() * 20.0f, sfrand() * 20.0f);
+    DirectX::XMFLOAT3 spark;
+    DirectX::XMStoreFloat3(&spark, DirectX::XMVectorAdd(particleVel, DirectX::XMLoadFloat3(&jitter)));
+
     float size = 25.0f + frand(25.0f);
-    g_particleSystem->CreateParticle(sparkPos, particleVel, Particle::TypeSpark, size);
+    g_particleSystem->CreateParticle(sparkPos, spark, Particle::TypeSpark, size);
   }
 
   g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Spark");
@@ -105,8 +141,10 @@ bool LaserFence::Advance()
     Building* building = g_location->GetBuilding(m_nextLaserFenceId);
     if (building)
     {
-      m_centrePos = (AsLegacy(building->m_pos) + AsLegacy(m_pos)) / 2.0f;
-      m_radius = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag() / 2.0f + m_radius;
+      DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&building->m_pos);
+      DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
+      DirectX::XMStoreFloat3(&m_centrePos, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirPos, ourPos), 0.5f));
+      m_radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirPos, ourPos))) / 2.0f + m_radius;
     }
     m_radiusSet = true;
   }
@@ -190,10 +228,7 @@ bool LaserFence::Advance()
 
 void LaserFence::Render(float predictionTime)
 {
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  mat.f *= m_scale;
-  mat.u *= m_scale;
-  mat.r *= m_scale;
+  DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
 
   glEnable(GL_NORMALIZE);
   m_shape->Render(predictionTime, mat);
@@ -203,12 +238,11 @@ void LaserFence::Render(float predictionTime)
 
 float LaserFence::GetFenceFullHeight()
 {
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  mat.u *= m_scale;
-  mat.r *= m_scale;
-  mat.f *= m_scale;
-  Vector3 marker1 = m_marker1->GetWorldMatrix(mat).pos;
-  Vector3 marker2 = m_marker2->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const marker1 = m_marker1->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const marker2 = m_marker2->GetWorldMatrix(mat).pos;
 
   return (marker2.y - marker1.y);
 }
@@ -292,7 +326,8 @@ void LaserFence::RenderAlphas(float predictionTime)
 
       float ourFenceHeight = ourFenceMaxHeight * predictedStatus;
       float theirFenceHeight = theirFenceMaxHeight * predictedStatus;
-      float distance = (AsLegacy(m_pos) - AsLegacy(nextFence->m_pos)).Mag();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&nextFence->m_pos))));
       float dx = distance / (ourFenceMaxHeight * 2.0f);
       float dz = ourFenceHeight / ourFenceMaxHeight;
       float timeOff = g_gameTime / 15.0f;
@@ -325,19 +360,19 @@ void LaserFence::RenderAlphas(float predictionTime)
         glBegin(GL_QUADS);
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff, 0.0f);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0, 0);
-        glVertex3fv((AsLegacy(m_pos) - Vector3(0, ourFenceHeight / 3, 0)).GetData());
+        EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y - ourFenceHeight / 3, m_pos.z, 0.0f));
 
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff, dz);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0, 1);
-        glVertex3fv((AsLegacy(m_pos) + Vector3(0, ourFenceHeight, 0)).GetData());
+        EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y + ourFenceHeight, m_pos.z, 0.0f));
 
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff + dx, dz);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 1, 1);
-        glVertex3fv((AsLegacy(nextFence->m_pos) + Vector3(0, theirFenceHeight, 0)).GetData());
+        EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y + theirFenceHeight, nextFence->m_pos.z, 0.0f));
 
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff + dx, 0.0f);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 1, 0);
-        glVertex3fv((AsLegacy(nextFence->m_pos) - Vector3(0, theirFenceHeight / 3, 0)).GetData());
+        EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y - theirFenceHeight / 3, nextFence->m_pos.z, 0.0f));
         glEnd();
 
         gglActiveTextureARB(GL_TEXTURE1_ARB);
@@ -363,16 +398,16 @@ void LaserFence::RenderAlphas(float predictionTime)
 
       glBegin(GL_QUADS);
       glTexCoord2f(0, 0);
-      glVertex3fv((AsLegacy(m_pos) - Vector3(0, ourFenceHeight / 3, 0)).GetData());
+      EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y - ourFenceHeight / 3, m_pos.z, 0.0f));
 
       glTexCoord2f(0, 1);
-      glVertex3fv((AsLegacy(m_pos) + Vector3(0, ourFenceHeight, 0)).GetData());
+      EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y + ourFenceHeight, m_pos.z, 0.0f));
 
       glTexCoord2f(1, 1);
-      glVertex3fv((AsLegacy(nextFence->m_pos) + Vector3(0, theirFenceHeight, 0)).GetData());
+      EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y + theirFenceHeight, nextFence->m_pos.z, 0.0f));
 
       glTexCoord2f(1, 0);
-      glVertex3fv((AsLegacy(nextFence->m_pos) - Vector3(0, theirFenceHeight / 3, 0)).GetData());
+      EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y - theirFenceHeight / 3, nextFence->m_pos.z, 0.0f));
       glEnd();
 
       glDisable(GL_TEXTURE_2D);
@@ -384,8 +419,8 @@ void LaserFence::RenderAlphas(float predictionTime)
       glEnable(GL_LINE_SMOOTH);
 
       glBegin(GL_LINES);
-      glVertex3fv((AsLegacy(m_pos) + Vector3(0, ourFenceHeight, 0)).GetData());
-      glVertex3fv((AsLegacy(nextFence->m_pos) + Vector3(0, theirFenceHeight, 0)).GetData());
+      EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y + ourFenceHeight, m_pos.z, 0.0f));
+      EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y + theirFenceHeight, nextFence->m_pos.z, 0.0f));
       glEnd();
 
       glDepthMask(true);
@@ -489,7 +524,7 @@ int LaserFence::GetBuildingLink() { return m_nextLaserFenceId; }
 void LaserFence::SetBuildingLink(int _buildingId) { m_nextLaserFenceId = _buildingId; }
 
 
-void LaserFence::Electrocute(Vector3 const& _pos) { g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Electrocute"); }
+void LaserFence::Electrocute(DirectX::XMFLOAT3 const& _pos) { g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Electrocute"); }
 
 
 bool LaserFence::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
@@ -497,10 +532,7 @@ bool LaserFence::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
   if (m_mode == ModeDisabled || g_editing)
   {
     SpherePackage sphere(_pos, _radius);
-    Matrix34 transform(m_front, m_up, m_pos);
-    transform.f *= m_scale;
-    transform.u *= m_scale;
-    transform.r *= m_scale;
+    DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
     return m_shape->SphereHit(&sphere, transform);
   }
 
@@ -525,10 +557,7 @@ bool LaserFence::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
   // Test against the shape
 
   SpherePackage sphere(_pos, _radius);
-  Matrix34 transform(m_front, m_up, m_pos);
-  transform.f *= m_scale;
-  transform.u *= m_scale;
-  transform.r *= m_scale;
+  DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
   return m_shape->SphereHit(&sphere, transform);
 }
 
@@ -539,10 +568,7 @@ bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT
   if (m_mode == ModeDisabled || g_editing)
   {
     RayPackage ray(_rayStart, _rayDir, _rayLen);
-    Matrix34 transform(m_front, m_up, m_pos);
-    transform.f *= m_scale;
-    transform.u *= m_scale;
-    transform.r *= m_scale;
+    DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
     return m_shape->RayHit(&ray, transform, true);
   }
 
@@ -551,10 +577,10 @@ bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT
     Building* nextFence = g_location->GetBuilding(m_nextLaserFenceId);
     float maxHeight = GetFenceFullHeight();
     float fenceHeight = maxHeight * m_status;
-    Vector3 pos1 = AsLegacy(m_pos) - Vector3(0, fenceHeight / 3, 0);
-    Vector3 pos2 = AsLegacy(m_pos) + Vector3(0, fenceHeight, 0);
-    Vector3 pos3 = AsLegacy(nextFence->m_pos) - Vector3(0, fenceHeight / 3, 0);
-    Vector3 pos4 = AsLegacy(nextFence->m_pos) + Vector3(0, fenceHeight, 0);
+    DirectX::XMFLOAT3 const pos1(m_pos.x, m_pos.y - fenceHeight / 3, m_pos.z);
+    DirectX::XMFLOAT3 const pos2(m_pos.x, m_pos.y + fenceHeight, m_pos.z);
+    DirectX::XMFLOAT3 const pos3(nextFence->m_pos.x, nextFence->m_pos.y - fenceHeight / 3, nextFence->m_pos.z);
+    DirectX::XMFLOAT3 const pos4(nextFence->m_pos.x, nextFence->m_pos.y + fenceHeight, nextFence->m_pos.z);
 
     bool hitTri1 = false;
     bool hitTri2 = false;
@@ -572,9 +598,10 @@ bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT
     {
       if (_norm)
       {
-        Vector3 v1 = pos1 - pos2;
-        Vector3 v2 = pos1 - pos3;
-        *_norm = (v2 ^ v1).Normalise();
+        DirectX::XMVECTOR const p1 = DirectX::XMLoadFloat3(&pos1);
+        DirectX::XMVECTOR const v1 = DirectX::XMVectorSubtract(p1, DirectX::XMLoadFloat3(&pos2));
+        DirectX::XMVECTOR const v2 = DirectX::XMVectorSubtract(p1, DirectX::XMLoadFloat3(&pos3));
+        DirectX::XMStoreFloat3(_norm, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(v2, v1)));
       }
       return true;
     }
@@ -583,10 +610,7 @@ bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT
   // return Building::DoesRayHit( _rayStart, _rayDir, _rayLen, _pos, _norm );
 
   RayPackage ray(_rayStart, _rayDir, _rayLen);
-  Matrix34 transform(m_front, m_up, m_pos);
-  transform.f *= m_scale;
-  transform.u *= m_scale;
-  transform.r *= m_scale;
+  DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
   return m_shape->RayHit(&ray, transform, true);
 }
 
@@ -606,11 +630,10 @@ void LaserFence::ListSoundEvents(std::vector<const char*>* _list)
   _list->push_back("Electrocute");
 }
 
-Vector3 LaserFence::GetTopPosition()
+DirectX::XMFLOAT3 LaserFence::GetTopPosition()
 {
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  mat.u *= m_scale;
-  mat.r *= m_scale;
-  mat.f *= m_scale;
+  DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   return m_marker2->GetWorldMatrix(mat).pos;
 }

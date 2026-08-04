@@ -145,7 +145,7 @@ void InsertionSquad::SetWayPoint(DirectX::XMFLOAT3 const& _pos)
         // Teleport converts in T17, so its out-parameters are still legacy.
         DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-        teleport->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+        teleport->GetEntrance(entrancePos, entranceFront);
         m_wayPoint = entrancePos;
         break;
       }

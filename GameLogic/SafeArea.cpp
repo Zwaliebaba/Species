@@ -41,7 +41,7 @@ void SafeArea::Initialise(Building* _template)
   m_entityTypeRequired = ((SafeArea*)_template)->m_entityTypeRequired;
 
   m_radius = m_size;
-  m_centrePos = AsLegacy(m_pos) + Vector3(0, m_radius / 2, 0);
+  m_centrePos = DirectX::XMFLOAT3(m_pos.x, m_pos.y + m_radius / 2, m_pos.z);
 }
 
 
@@ -116,11 +116,11 @@ void SafeArea::Render(float predictionTime)
     {
       float xDiff = m_size * sinf(angle);
       float zDiff = m_size * cosf(angle);
-      Vector3 pos = AsLegacy(m_pos) + Vector3(xDiff, 5, zDiff);
+      DirectX::XMFLOAT3 pos(m_pos.x + xDiff, m_pos.y + 5, m_pos.z + zDiff);
       pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
       if (pos.y < 2)
         pos.y = 2;
-      glVertex3fv(pos.GetData());
+      glVertex3fv(&pos.x);
       angle += 2.0f * M_PI / (float)numSteps;
     }
     glEnd();

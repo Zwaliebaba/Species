@@ -9,7 +9,9 @@
 class SpiritStore
 {
   public:
-    Vector3 m_pos;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and SpiritStore's constructor assigns it only in Initialise.
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     float m_sizeX;
     float m_sizeY;
     float m_sizeZ;
@@ -20,7 +22,7 @@ class SpiritStore
   public:
     SpiritStore();
 
-    void Initialise(int _initialCapacity, int _maxCapacity, Vector3 _pos, float _sizeX, float _sizeY,
+    void Initialise(int _initialCapacity, int _maxCapacity, DirectX::XMFLOAT3 _pos, float _sizeX, float _sizeY,
                     float _sizeZ); // Capacity isn't enforced, just provide a "best guess"
 
     void Advance();

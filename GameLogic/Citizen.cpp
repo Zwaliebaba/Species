@@ -979,7 +979,7 @@ bool Citizen::AdvanceFollowingOrders()
           // Teleport converts in T17; its out-parameters are still legacy.
           DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
           DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-          teleport->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+          teleport->GetEntrance(entrancePos, entranceFront);
           m_wayPoint = entrancePos;
           float radius = syncfrand(10.0f);
           float theta = syncfrand(M_PI * 2);
@@ -1052,7 +1052,7 @@ bool Citizen::AdvanceFollowingOfficer()
           // Teleport converts in T17; its out-parameters are still legacy.
           DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
           DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-          teleport->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+          teleport->GetEntrance(entrancePos, entranceFront);
           m_wayPoint = entrancePos;
           m_wayPoint = PushFromObstructions(m_wayPoint);
           m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue(m_wayPoint.x, m_wayPoint.z);
@@ -1112,7 +1112,7 @@ bool Citizen::AdvanceFollowingOfficer()
         // Teleport converts in T17; its out-parameters are still legacy.
         DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-        teleport->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+        teleport->GetEntrance(entrancePos, entranceFront);
         m_wayPoint = entrancePos;
         positionError = 10.0f;
       }
@@ -1468,7 +1468,7 @@ void Citizen::GiveOrders(DirectX::XMFLOAT3 const& _targetPos)
         // Teleport converts in T17; its out-parameters are still legacy.
         DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-        teleport->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+        teleport->GetEntrance(entrancePos, entranceFront);
         m_orders = entrancePos;
         foundTeleport = true;
         break;

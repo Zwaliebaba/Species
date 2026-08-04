@@ -250,7 +250,7 @@ int Entity::EnterTeleports(int _requiredId)
       // AsLegacy reaches them without naming the type; the storage is native.
       DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-      radarDish->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+      radarDish->GetEntrance(entrancePos, entranceFront);
 
       DirectX::XMVECTOR const toEntrance = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&entrancePos));
       float const range = DirectX::XMVectorGetX(DirectX::XMVector3Length(toEntrance));
@@ -269,7 +269,7 @@ int Entity::EnterTeleports(int _requiredId)
       // Bridge converts in T17; same seam as the radar dish above.
       DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-      if (bridge->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront)))
+      if (bridge->GetEntrance(entrancePos, entranceFront))
       {
         DirectX::XMVECTOR const toBridge = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&bridge->m_pos));
         float const range = DirectX::XMVectorGetX(DirectX::XMVector3Length(toBridge));

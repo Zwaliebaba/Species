@@ -101,7 +101,7 @@ void RadarDish::SetDetail(int _detail)
 }
 
 
-bool RadarDish::GetEntrance(Vector3& _pos, Vector3& _front)
+bool RadarDish::GetEntrance(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
   _pos = m_entrancePos;
   _front = m_entranceFront;
@@ -358,8 +358,6 @@ void RadarDish::RenderSignal(float _predictionTime, float _radius, float _alpha)
 {
   START_PROFILE(g_profiler, "Signal");
 
-  // GetStartPoint and GetEndPoint still return Vector3 -- they override
-  // Teleport's virtuals, so they convert with Teleport under T17.
   DirectX::XMFLOAT3 const startPos = GetStartPoint();
   DirectX::XMFLOAT3 const endPos = GetEndPoint();
   DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&endPos), DirectX::XMLoadFloat3(&startPos));
@@ -500,10 +498,10 @@ int RadarDish::GetConnectedDishId() { return m_receiverId; }
 bool RadarDish::ReadyToSend() { return (Connected() && Teleport::ReadyToSend()); }
 
 
-Vector3 RadarDish::GetStartPoint() { return GetDishPos(0.0f); }
+DirectX::XMFLOAT3 RadarDish::GetStartPoint() { return GetDishPos(0.0f); }
 
 
-Vector3 RadarDish::GetEndPoint()
+DirectX::XMFLOAT3 RadarDish::GetEndPoint()
 {
   DirectX::XMFLOAT3 const dishPos = GetDishPos(0.0f);
   DirectX::XMFLOAT3 const dishFront = GetDishFront(0.0f);
@@ -515,7 +513,7 @@ Vector3 RadarDish::GetEndPoint()
 }
 
 
-bool RadarDish::GetExit(Vector3& _pos, Vector3& _front)
+bool RadarDish::GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
   RadarDish* receiver = (RadarDish*)g_location->GetBuilding(m_receiverId);
   if (receiver)
@@ -572,9 +570,7 @@ bool RadarDish::UpdateEntityInTransit(Entity* _entity)
   else if (distTravelled >= m_range)
   {
     // We are there
-    // GetExit still takes Vector3& -- it overrides a Teleport virtual, so it
-    // converts with Teleport under T17.
-    Vector3 exitPos, exitFront;
+    DirectX::XMFLOAT3 exitPos, exitFront;
     GetExit(exitPos, exitFront);
     _entity->m_pos = exitPos;
     _entity->m_front = exitFront;
