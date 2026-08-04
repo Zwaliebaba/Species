@@ -1,0 +1,15 @@
+size 259x259  cellSize 17.200001  outsideHeight -2.250000  tiles 12
+  tile 0: seed 11  fractalDimension 0.900000  heightScale 1.400000  lowlandSmoothing 0.930000  method 0  guidePower 0
+  tile 1: seed 380303  fractalDimension 1.370000  heightScale 1.730000  lowlandSmoothing 1.030000  method 1  guidePower 0
+  tile 2: seed 246769  fractalDimension 1.310000  heightScale 1.840000  lowlandSmoothing 0.990000  method 1  guidePower 0
+  tile 3: seed 292204  fractalDimension 1.250000  heightScale 2.000000  lowlandSmoothing 0.950000  method 1  guidePower 0
+  tile 4: seed 990920  fractalDimension 2.070000  heightScale 2.110000  lowlandSmoothing 1.000000  method 1  guidePower 0
+  tile 5: seed 1332304  fractalDimension 1.360000  heightScale 2.940000  lowlandSmoothing 1.190000  method 1  guidePower 0
+  tile 6: seed 1676827  fractalDimension 1.230000  heightScale 1.000000  lowlandSmoothing 1.000000  method 1  guidePower 0
+  tile 7: seed 2095707  fractalDimension 1.130000  heightScale 1.040000  lowlandSmoothing 1.000000  method 1  guidePower 0
+  tile 8: seed 382212  fractalDimension 0.630000  heightScale 1.000000  lowlandSmoothing 1.000000  method 1  guidePower 0
+  tile 9: seed 1  fractalDimension 1.200000  heightScale 1.000000  lowlandSmoothing 1.000000  method 1  guidePower 0
+  tile 10: seed 946215  fractalDimension 1.200000  heightScale 0.010000  lowlandSmoothing 1.000000  method 1  guidePower 0
+  tile 11: seed 446264  fractalDimension 0.640000  heightScale 0.320000  lowlandSmoothing 1.000000  method 1  guidePower 0
+CHECKSUM 14092983554.116932  lowest -2.250000  highest 284.540588
+

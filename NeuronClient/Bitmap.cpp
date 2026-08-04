@@ -304,7 +304,7 @@ void BitmapRGBA::Write24BitLine(FILE* _out, int _y)
 void BitmapRGBA::SaveBmp(const char* _filename)
 {
   FILE* _out = fopen(FileSys::GetFullPathA(_filename).c_str(), "wb");
-  ASSERT_TEXT(_out, "Couldn't create image file %s", _filename);
+  ASSERT_TEXT(_out, "Couldn't create image file {}", _filename);
   WriteBmp(_out);
   fclose(_out);
 }
@@ -750,7 +750,7 @@ int BitmapRGBA::ConvertToTexture(bool _mipmapping) const
       result = gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, scaled.m_width, scaled.m_height, GL_RGBA, GL_UNSIGNED_BYTE, scaled.m_pixels);
     }
 
-    ASSERT_TEXT(result == 0, "ConvertToTexture failed with error : %s", reinterpret_cast<char const *>(gluErrorString(result)));
+    ASSERT_TEXT(result == 0, "ConvertToTexture failed with error : {}", reinterpret_cast<char const *>(gluErrorString(result)));
   }
   else
     glTexImage2D(GL_TEXTURE_2D, 0, 4, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_pixels);

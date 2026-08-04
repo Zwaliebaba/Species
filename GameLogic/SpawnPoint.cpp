@@ -428,7 +428,7 @@ bool MasterSpawnPoint::Advance()
     float startTime = GetHighResTime();
     ExploreLinks();
     float timeTaken = GetHighResTime() - startTime;
-    DebugTrace("Time to Explore all Spawn Point links : %d ms\n", int(timeTaken * 1000.0f));
+    DebugTrace("Time to Explore all Spawn Point links : {} ms\n", int(timeTaken * 1000.0f));
   }
 
 

@@ -324,7 +324,7 @@ namespace Neuron
       {
         if (GetClientId(incoming->m_clientIp) == -1)
         {
-          DebugTrace("SERVER: New Client connected from %s\n", incoming->m_clientIp);
+          DebugTrace("SERVER: New Client connected from {}\n", incoming->m_clientIp);
           RegisterNewClient(incoming->m_clientIp);
         }
       }
@@ -332,7 +332,7 @@ namespace Neuron
       {
         if (GetClientId(incoming->m_clientIp) != -1)
         {
-          DebugTrace("SERVER: Client at %s disconnected gracefully\n", incoming->m_clientIp);
+          DebugTrace("SERVER: Client at {} disconnected gracefully\n", incoming->m_clientIp);
           RemoveClient(incoming->m_clientIp);
         }
       }
@@ -340,7 +340,7 @@ namespace Neuron
       {
         if (GetClientId(incoming->m_clientIp) != -1)
         {
-          DebugTrace("SERVER: New team request from %s\n", incoming->m_clientIp);
+          DebugTrace("SERVER: New team request from {}\n", incoming->m_clientIp);
           RegisterNewTeam(incoming->m_clientIp, incoming->m_teamType, incoming->m_desiredTeamId);
         }
       }

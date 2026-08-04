@@ -529,7 +529,7 @@ void SoundInstance::OpenStream(bool _keepCurrentStream)
   if (m_sourceType == SampleGroupRandom)
   {
     SampleGroup* group = g_soundSystem->GetSampleGroup(m_soundName);
-    ASSERT_TEXT(group, "Failed to find Sample Group %s", m_soundName);
+    ASSERT_TEXT(group, "Failed to find Sample Group {}", m_soundName);
     int numSamples = static_cast<int>(group->m_samples.size());
 
     int memoryUsage = g_prefsManager->GetInt("SoundMemoryUsage", 1);

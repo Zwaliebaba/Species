@@ -359,10 +359,10 @@ void Matrix34::Normalise()
 
 void Matrix34::WriteToDebugStream()
 {
-    DebugTrace("%5.2f %5.2f %5.2f\n", r.x, r.y, r.z);
-    DebugTrace("%5.2f %5.2f %5.2f\n", u.x, u.y, u.z);
-    DebugTrace("%5.2f %5.2f %5.2f\n", f.x, f.y, f.z);
-    DebugTrace("%5.2f %5.2f %5.2f\n\n", pos.x, pos.y, pos.z);
+		DebugTrace("{:5.2f} {:5.2f} {:5.2f}\n", r.x, r.y, r.z);
+		DebugTrace("{:5.2f} {:5.2f} {:5.2f}\n", u.x, u.y, u.z);
+		DebugTrace("{:5.2f} {:5.2f} {:5.2f}\n", f.x, f.y, f.z);
+		DebugTrace("{:5.2f} {:5.2f} {:5.2f}\n\n", pos.x, pos.y, pos.z);
 }
 
 

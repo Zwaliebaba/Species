@@ -156,7 +156,7 @@ void LevelFile::ParseMapFile(char const* _levelFilename)
   char fullFilename[256];
   sprintf(fullFilename, "Levels/%s", _levelFilename);
   TextReader* in = g_resource->GetTextReader(fullFilename);
-  ASSERT_TEXT(in && in->IsOpen(), "Invalid map file specified (%s)", _levelFilename);
+  ASSERT_TEXT(in && in->IsOpen(), "Invalid map file specified ({})", _levelFilename);
 
   while (in->ReadLine())
   {
@@ -270,20 +270,20 @@ void LevelFile::ParseCameraAnims(TextReader* _in)
       // Read camera mode
       node->m_transitionMode = CamAnimNode::GetTransitModeId(word);
       ASSERT_TEXT(node->m_transitionMode >= 0 && node->m_transitionMode < CameraAccess::ModeNumModes,
-                  "Bad camera animation camera mode in level file %s", m_missionFilename);
+                  "Bad camera animation camera mode in level file {}", m_missionFilename);
 
-      // Read mount name
+
       word = _in->GetNextToken();
       node->m_mountName = strdup(word);
       if (stricmp(node->m_mountName, MAGIC_MOUNT_NAME_START_POS))
       {
-        ASSERT_TEXT(GetCameraMount(node->m_mountName), "Bad camera animation mount name in level file %s", m_missionFilename);
+        ASSERT_TEXT(GetCameraMount(node->m_mountName), "Bad camera animation mount name in level file {}", m_missionFilename);
       }
 
       // Read time
       word = _in->GetNextToken();
       node->m_duration = atof(word);
-      ASSERT_TEXT(node->m_duration >= 0.0f && node->m_duration < 60.0f, "Bad camera animation transition time in level file %s", m_missionFilename);
+      ASSERT_TEXT(node->m_duration >= 0.0f && node->m_duration < 60.0f, "Bad camera animation transition time in level file {}", m_missionFilename);
 
       anim->m_nodes.push_back(node);
     }
@@ -320,14 +320,14 @@ void LevelFile::ParseBuildings(TextReader* _in, bool _dynamic)
       Building* existingBuilding = GetBuilding(uniqueId);
       if (existingBuilding)
       {
-        ASSERT_TEXT(0, "%s UniqueId was not unique in %s", Building::GetTypeName(existingBuilding->m_type), _in->GetFilename());
+        ASSERT_TEXT(0, "{} UniqueId was not unique in {}", Building::GetTypeName(existingBuilding->m_type), _in->GetFilename());
       }
 
       // Make sure that it's global if it needs to be
       if (building->m_type == Building::TypeTrunkPort || building->m_type == Building::TypeControlTower ||
           building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeIncubator || building->m_type == Building::TypeFenceSwitch)
       {
-        ASSERT_TEXT(building->m_isGlobal, "Non-global %s found in %s", Building::GetTypeName(building->m_type), _in->GetFilename());
+        ASSERT_TEXT(building->m_isGlobal, "Non-global {} found in {}", Building::GetTypeName(building->m_type), _in->GetFilename());
       }
 
       // Increase the difficulty by raising the population limits for the opposing forces

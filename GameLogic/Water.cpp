@@ -273,7 +273,7 @@ void Water::GenerateLightMap()
 
 
   double totalTime = GetHighResTime() - startTime;
-  DebugTrace("Water lightmap generation took %dms\n", int(totalTime * 1000));
+  DebugTrace("Water lightmap generation took {}ms\n", int(totalTime * 1000));
 }
 
 

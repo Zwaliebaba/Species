@@ -56,7 +56,7 @@ static char const* DSoundErrorString(HRESULT _hr)
       const std::string reason = DSoundErrorString(x);                                                                                    \
       const std::string msg =                                                                                                             \
         std::format("DirectSound ERROR\n{} line {}\n\n{}\nError Code : 0x{:08x}\n{}", __FILE__, __LINE__, y, (unsigned long)(x), reason); \
-      ASSERT_TEXT(false, "%s", msg.c_str());                                                                                              \
+      ASSERT_TEXT(false, "{}", msg);                                                                                                      \
     }                                                                                                                                     \
   }
 
@@ -608,8 +608,8 @@ void SoundLibrary3dDirectSound::SetChannelMinDistance(int _channel, float _minDi
   if (!NearlyEquals(_minDistance, channel->m_minDist))
   {
     ASSERT_TEXT(_minDistance >= DS3D_DEFAULTMINDISTANCE && _minDistance <= DS3D_DEFAULTMAXDISTANCE,
-                "Channel MinDistance must be between %2.2f and %2.2f."
-                "You requested %2.2f",
+                "Channel MinDistance must be between {:.2f} and {:.2f}."
+                "You requested {:.2f}",
                 DS3D_DEFAULTMINDISTANCE, DS3D_DEFAULTMAXDISTANCE, _minDistance);
 
 

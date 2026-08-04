@@ -1,18 +1,12 @@
 #pragma once
 
-#include <vector>
-
-#include <stdio.h>
-
 #include "Building.h"
-
 
 class Shape;
 class ShapeFragment;
 class TextReader;
 
 #define LASERFENCE_RAISESPEED 0.3f
-
 
 class LaserFence : public Building
 {
@@ -37,25 +31,25 @@ class LaserFence : public Building
       ModeDisabling,
       ModeNeverOn
     };
+
     int m_mode;
     float m_scale;
 
-  public:
     LaserFence();
 
-    void Initialise(Building* _template);
-    void SetDetail(int _detail);
+    void Initialise(Building* _template) override;
+    void SetDetail(int _detail) override;
 
-    bool Advance();
-    void Render(float predictionTime);
-    void RenderAlphas(float predictionTime);
-    void RenderLights();
+    bool Advance() override;
+    void Render(float predictionTime) override;
+    void RenderAlphas(float predictionTime) override;
+    void RenderLights() override;
 
-    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos);
-    bool IsInView();
+    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos) override;
+    bool IsInView() override;
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
+    void Read(TextReader* _in, bool _dynamic) override;
+    void Write(FileWriter* _out) override;
 
     void Enable();
     void Disable();
@@ -65,8 +59,8 @@ class LaserFence : public Building
     void Spark();
     void Electrocute(DirectX::XMFLOAT3 const& _pos);
 
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
+    int GetBuildingLink() override;
+    void SetBuildingLink(int _buildingId) override;
 
     float GetFenceFullHeight();
 
@@ -80,12 +74,12 @@ class LaserFence : public Building
     DirectX::XMFLOAT4X4 GetScaledLevelMatrix() const; // front, WORLD up, pos
     DirectX::XMFLOAT4X4 GetScaledWorldMatrix() const; // front, m_up, pos
 
-    bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
+    bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) override;
     bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen = 1e10, DirectX::XMFLOAT3* _pos = nullptr,
-                    DirectX::XMFLOAT3* _norm = nullptr);
-    bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);
+                    DirectX::XMFLOAT3* _norm = nullptr) override;
+    bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) override;
 
-    void ListSoundEvents(std::vector<const char*>* _list);
+    void ListSoundEvents(std::vector<const char*>* _list) override;
 
     DirectX::XMFLOAT3 GetTopPosition();
 };

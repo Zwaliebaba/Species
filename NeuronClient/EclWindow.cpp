@@ -5,19 +5,17 @@
 #include "Eclipse.h"
 #include "EclWindow.h"
 
-
-EclWindow::EclWindow( char const *_name )
-:   m_x(0),
+EclWindow::EclWindow(const char* _name)
+  : m_x(0),
     m_y(0),
     m_w(0),
     m_h(0),
-    m_dirty(false),
     m_resizable(true)
-{    
-    SetName (_name);
-    SetTitle ( "New Window" );
-    SetMovable ( true );
-    strcpy( m_currentTextEdit, "None" );
+{
+  SetName(_name);
+  SetTitle("New Window");
+  SetMovable(true);
+  strcpy(m_currentTextEdit, "None");
 }
 
 EclWindow::~EclWindow()
@@ -27,85 +25,68 @@ EclWindow::~EclWindow()
   m_buttons.clear();
 }
 
-void EclWindow::SetName ( char const *_name )
+void EclWindow::SetName(const char* _name)
 {
+  if (strlen(_name) > SIZE_ECLWINDOW_NAME)
+    return;
 
-    if ( strlen(_name) > SIZE_ECLWINDOW_NAME )
-    {
-        return;
-    }
-
-    strcpy ( m_name, _name );
-
+  strcpy(m_name, _name);
 }
 
-void EclWindow::SetTitle ( char const *_title )
+void EclWindow::SetTitle(const char* _title)
 {
-    if ( strlen(_title) > SIZE_ECLWINDOW_TITLE )
-    {
-        return;
-    }
+  if (strlen(_title) > SIZE_ECLWINDOW_TITLE)
+    return;
 
-    strcpy ( m_title, _title );
-    EclDirtyWindow( this );
-
+  strcpy(m_title, _title);
 }
 
-void EclWindow::SetPosition ( int _x, int _y )
+void EclWindow::SetPosition(int _x, int _y)
 {
-    m_x = _x;
-    m_y = _y;
-    EclDirtyWindow( this );
+  m_x = _x;
+  m_y = _y;
 }
 
-void EclWindow::SetSize ( int _w, int _h )
+void EclWindow::SetSize(int _w, int _h)
 {
-    m_w = _w;
-    m_h = _h;
-    EclDirtyWindow( this );
+  m_w = _w;
+  m_h = _h;
 }
 
-void EclWindow::SetMovable ( bool _movable )
-{
-    m_movable = _movable;
-}
+void EclWindow::SetMovable(bool _movable) { m_movable = _movable; }
 
 void EclWindow::MakeAllOnScreen()
 {
-	int screenW = EclGetScreenW();
-	int screenH = EclGetScreenH();
-    if( m_x < 10 ) m_x = 10;
-    if( m_y < 10 ) m_y = 10;
-    if( m_x + m_w > screenW - 10 ) m_x = screenW - m_w - 10;
-    if( m_y + m_h > screenH - 10 ) m_y = screenH - m_h - 10;
+  int screenW = EclGetScreenW();
+  int screenH = EclGetScreenH();
+  if (m_x < 10)
+    m_x = 10;
+  if (m_y < 10)
+    m_y = 10;
+  if (m_x + m_w > screenW - 10)
+    m_x = screenW - m_w - 10;
+  if (m_y + m_h > screenH - 10)
+    m_y = screenH - m_h - 10;
 }
 
-void EclWindow::BeginTextEdit ( char *_name )
+void EclWindow::BeginTextEdit(const char* _name) { strcpy(m_currentTextEdit, _name); }
+
+void EclWindow::EndTextEdit() { strcpy(m_currentTextEdit, "None"); }
+
+void EclWindow::RegisterButton(EclButton* button)
 {
-    strcpy( m_currentTextEdit, _name );
+  button->SetParent(this);
+
+  m_buttons.insert(m_buttons.begin(), button);
+
+  if (button->m_y + button->m_h + 10 > m_h)
+  {
+    SetSize(m_w, button->m_y + button->m_h + 10);
+    MakeAllOnScreen();
+  }
 }
 
-void EclWindow::EndTextEdit()
-{
-    strcpy( m_currentTextEdit, "None" );
-}
-
-void EclWindow::RegisterButton ( EclButton *button )
-{
-    button->SetParent( this );
-
-    m_buttons.insert(m_buttons.begin(), button);
-
-    if (button->m_y + button->m_h + 10 > m_h)
-    {
-      SetSize(m_w, button->m_y + button->m_h + 10);
-      MakeAllOnScreen();
-    }
-
-    EclDirtyWindow(this);
-}
-
-void EclWindow::RemoveButton ( char const *_name )
+void EclWindow::RemoveButton(const char* _name)
 {
   for (int i = 0; i < m_buttons.size(); ++i)
   {
@@ -118,7 +99,7 @@ void EclWindow::RemoveButton ( char const *_name )
   }
 }
 
-EclButton *EclWindow::GetButton ( char const *_name )
+EclButton* EclWindow::GetButton(const char* _name)
 {
   for (int i = 0; i < m_buttons.size(); ++i)
   {
@@ -127,52 +108,38 @@ EclButton *EclWindow::GetButton ( char const *_name )
       return button;
   }
 
-    return nullptr;
-
+  return nullptr;
 }
 
-EclButton *EclWindow::GetButton ( int _x, int _y )
+EclButton* EclWindow::GetButton(int _x, int _y)
 {
   for (int i = 0; i < m_buttons.size(); ++i)
   {
     EclButton* button = m_buttons[i];
 
     if (_x >= button->m_x && _x <= button->m_x + button->m_w && _y >= button->m_y && _y <= button->m_y + button->m_h)
-    {
       return button;
-    }
   }
 
-    return nullptr;
-
+  return nullptr;
 }
 
-void EclWindow::Create ()
+void EclWindow::Create() {}
+
+void EclWindow::Remove() {}
+
+void EclWindow::Update() {}
+
+void EclWindow::Keypress(int keyCode, bool shift, bool ctrl, bool alt)
 {
+  EclButton* currentTextEdit = GetButton(m_currentTextEdit);
+  if (currentTextEdit)
+    currentTextEdit->Keypress(keyCode, shift, ctrl, alt);
 }
 
-void EclWindow::Remove ()
-{
-}
+void EclWindow::MouseEvent(bool lmb, bool rmb, bool up, bool down) {}
 
-void EclWindow::Update ()
-{
-}
-
-void EclWindow::Keypress ( int keyCode, bool shift, bool ctrl, bool alt )
-{
-    EclButton *currentTextEdit = GetButton( m_currentTextEdit );
-    if( currentTextEdit )
-    {
-        currentTextEdit->Keypress( keyCode, shift, ctrl, alt );
-    }
-}
-
-void EclWindow::MouseEvent ( bool lmb, bool rmb, bool up, bool down )
-{
-}
-
-void EclWindow::Render ( bool hasFocus )
+void EclWindow::Render(bool hasFocus)
 {
   for (int i = m_buttons.size() - 1; i >= 0; --i)
   {
@@ -182,4 +149,3 @@ void EclWindow::Render ( bool hasFocus )
     button->Render(m_x + button->m_x, m_y + button->m_y, highlighted, clicked);
   }
 }
-

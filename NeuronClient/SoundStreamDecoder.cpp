@@ -23,7 +23,7 @@ SoundStreamDecoder::SoundStreamDecoder(BinaryReader* _in)
     ReadWavHeader();
   }
   else
-    ASSERT_TEXT(0, "Unknown sound file format %s", m_in->m_filename);
+    ASSERT_TEXT(0, "Unknown sound file format {}", m_in->m_filename);
 }
 
 SoundStreamDecoder::~SoundStreamDecoder() { delete m_in; }
@@ -140,7 +140,7 @@ unsigned int SoundStreamDecoder::Read(signed short* _data, unsigned int _numSamp
   switch (m_fileType)
   {
   case TypeUnknown:
-    ASSERT_TEXT(0, "Unknown format of sound file %s", m_in->m_filename);
+    ASSERT_TEXT(0, "Unknown format of sound file {}", m_in->m_filename);
   case TypeWav:
     return ReadWavData(_data, _numSamples);
   }

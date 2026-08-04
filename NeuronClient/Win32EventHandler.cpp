@@ -79,7 +79,7 @@ LRESULT CALLBACK W32EventHandler::WndProc( HWND hWnd, UINT message,
 			return 0;
 
 		case WM_INPUTLANGCHANGE:
-			DebugTrace( "Input language change: w = %d, l = %d\n", wParam, lParam );
+			DebugTrace( "Input language change: w = {}, l = {}\n", wParam, lParam );
 			// Might want to reload key bindings and translations here if we can be bothered.
 			return 0;
 	}

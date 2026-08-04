@@ -264,7 +264,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
   }
 
   BinaryReader* reader = g_resource->GetBinaryReader(fullFilname);
-  ASSERT_TEXT(reader != nullptr, "Failed to get resource %s", fullFilname);
+  ASSERT_TEXT(reader != nullptr, "Failed to get resource {}", fullFilname);
   m_landscapeColour = new BitmapRGBA(reader, "bmp");
   delete reader;
 

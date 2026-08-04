@@ -1,27 +1,19 @@
 #include "pch.h"
 #include "GlVertex.h"
 #include "SoundSources.h"
-
 #include "DebugRender.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
-#include "Profiler.h"
 #include "Resource.h"
 #include "TextStreamReaders.h"
 #include "Debug.h"
 #include "Shape.h"
-#include "HiResTime.h"
-#include "TextRenderer.h"
 #include "Preferences.h"
-
 #include "Tree.h"
-
 #include "SoundSystem.h"
-
 #include "ProtocolLimits.h"
 #include "ParticleSystem.h"
 #include "Location.h"
-#include "GameTime.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -29,17 +21,21 @@ Tree::Tree()
   : Building(),
     m_branchDisplayListId(-1),
     m_leafDisplayListId(-1),
+    m_hitcheckRadius(0),
+    m_numLeafs(0),
+    m_fireDamage(0.0f),
+    m_onFire(0.0f),
+    m_burnSoundPlaying(false),
+    m_leafColourArray{},
+    m_branchColourArray{},
     m_height(50.0f),
-    m_iterations(6),
     m_budsize(1.0f),
-    m_pushOut(1.0f),
     m_pushUp(1.0f),
+    m_pushOut(1.0f),
+    m_iterations(6),
     m_seed(0),
     m_leafColour(0xffffffff),
     m_branchColour(0xffffffff),
-    m_onFire(0.0f),
-    m_fireDamage(0.0f),
-    m_burnSoundPlaying(false),
     m_leafDropRate(0)
 {
   m_type = TypeTree;
@@ -52,7 +48,7 @@ void Tree::Initialise(Building* _template)
   Building::Initialise(_template);
 
   DEBUG_ASSERT(_template->m_type == TypeTree);
-  Tree* tree = (Tree*)_template;
+  auto tree = static_cast<Tree*>(_template);
 
   m_height = tree->m_height;
   m_iterations = tree->m_iterations;
@@ -64,7 +60,6 @@ void Tree::Initialise(Building* _template)
   m_leafColour = tree->m_leafColour;
   m_leafDropRate = tree->m_leafDropRate;
 }
-
 
 void Tree::SetDetail(int _detail)
 {
@@ -84,7 +79,6 @@ void Tree::SetDetail(int _detail)
                                                                     DirectX::XMLoadFloat3(&m_pos)));
   m_radius = m_hitcheckRadius * m_height * 1.5f;
 }
-
 
 bool Tree::Advance()
 {
@@ -124,9 +118,7 @@ bool Tree::Advance()
 
     m_onFire += SERVER_ADVANCE_PERIOD * 0.01f;
     if (m_onFire > 1.0f)
-    {
       m_onFire = -1.0f;
-    }
 
     //
     // Spread to nearby trees
@@ -143,7 +135,7 @@ bool Tree::Advance()
         Building* building = g_location->m_buildings[b];
         if (building != this && building->m_type == TypeTree)
         {
-          Tree* tree = (Tree*)building;
+          auto tree = static_cast<Tree*>(building);
           float distance = DirectX::XMVectorGetX(
             DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&tree->m_pos), DirectX::XMLoadFloat3(&m_pos))));
           float theirActualHeight = tree->GetActualHeight(0.0f);
@@ -151,9 +143,7 @@ bool Tree::Advance()
           float ourRadius = actualHeight * m_hitcheckRadius * 1.5f;
 
           if (theirRadius + ourRadius >= distance)
-          {
             tree->Damage(-1.0f);
-          }
         }
       }
     }
@@ -172,9 +162,7 @@ bool Tree::Advance()
 
     m_onFire += SERVER_ADVANCE_PERIOD * 0.01f;
     if (m_onFire > 0.0f)
-    {
       m_onFire = 0.0f;
-    }
   }
 
   if (m_onFire == 0.0f && m_leafDropRate > 0)
@@ -198,9 +186,7 @@ float Tree::GetActualHeight(float _predictionTime)
 {
   float predictedOnFire = m_onFire;
   if (predictedOnFire != 0.0f)
-  {
     predictedOnFire += _predictionTime * 0.01f;
-  }
 
   float actualHeight = m_height * (1.0f - fabs(predictedOnFire));
   if (actualHeight < m_height * 0.1f)
@@ -237,8 +223,6 @@ void Tree::DeleteDisplayLists()
 
 void Tree::Generate()
 {
-  float timeNow = GetHighResTime();
-
   m_hitcheckCentre = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_hitcheckRadius = 0.0f;
   m_numLeafs = 0;
@@ -273,7 +257,6 @@ void Tree::Generate()
   glEnd();
   glEndList();
 
-
   //
   // We now have all the leaf positions accumulated in m_hitcheckCentre
   // So we can calculate the actual centre position, then the radius
@@ -281,16 +264,9 @@ void Tree::Generate()
   DirectX::XMStoreFloat3(&m_hitcheckCentre, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_hitcheckCentre), 1.0f / (float)m_numLeafs));
   RenderBranch(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f), m_iterations, true, false, true);
   m_hitcheckRadius *= 0.8f;
-
-  float totalTime = GetHighResTime() - timeNow;
-  DebugTrace("Tree generated in %dms\n", int(totalTime * 1000.0f));
 }
 
-void Tree::Render(float _predictionTime)
-{
-  // RenderHitCheck();
-}
-
+void Tree::Render(float _predictionTime) {}
 
 bool Tree::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
 {
@@ -299,13 +275,10 @@ bool Tree::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
   return true;
 }
 
-
 void Tree::RenderAlphas(float _predictionTime)
 {
   if (m_branchDisplayListId == -1 || m_leafDisplayListId == -1)
-  {
     Generate();
-  }
 
   if (g_editing)
   {
@@ -384,13 +357,9 @@ void Tree::Damage(float _damage)
     if (m_fireDamage > 50.0f)
     {
       if (m_onFire == 0.0f)
-      {
         m_onFire = 0.01f;
-      }
       else if (m_onFire < 0.0f)
-      {
         m_onFire = m_onFire * -1.0f;
-      }
 
       if (!m_burnSoundPlaying)
       {
@@ -405,9 +374,7 @@ void Tree::Damage(float _damage)
 bool Tree::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   if (SphereSphereIntersection(m_pos, 10.0f, _pos, _radius))
-  {
     return true;
-  }
 
   float actualHeight = GetActualHeight(0.0f);
 
@@ -415,9 +382,7 @@ bool Tree::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
   DirectX::XMStoreFloat3(&hitCentre, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre), DirectX::XMVectorReplicate(actualHeight),
                                                                   DirectX::XMLoadFloat3(&m_pos)));
   if (SphereSphereIntersection(hitCentre, m_hitcheckRadius * actualHeight, _pos, _radius))
-  {
     return true;
-  }
 
   return false;
 }
@@ -426,9 +391,7 @@ bool Tree::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
 {
   SpherePackage packageA(m_pos, 10.0f);
   if (_shape->SphereHit(&packageA, _transform))
-  {
     return true;
-  }
 
   float actualHeight = GetActualHeight(0.0f);
 
@@ -437,9 +400,7 @@ bool Tree::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
                                                                   DirectX::XMLoadFloat3(&m_pos)));
   SpherePackage packageB(hitCentre, m_hitcheckRadius * actualHeight);
   if (_shape->SphereHit(&packageB, _transform))
-  {
     return true;
-  }
 
   return false;
 }
@@ -452,9 +413,7 @@ bool Tree::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 cons
   Vector3* const legacyNorm = _norm ? &AsLegacy(*_norm) : nullptr;
 
   if (RaySphereIntersection(_rayStart, _rayDir, m_pos, 10.00f, _rayLen, legacyHit, legacyNorm))
-  {
     return true;
-  }
 
   float actualHeight = GetActualHeight(0.0f);
 
@@ -462,13 +421,10 @@ bool Tree::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 cons
   DirectX::XMStoreFloat3(&hitCentre, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre), DirectX::XMVectorReplicate(actualHeight),
                                                                   DirectX::XMLoadFloat3(&m_pos)));
   if (RaySphereIntersection(_rayStart, _rayDir, hitCentre, m_hitcheckRadius * actualHeight, _rayLen, legacyHit, legacyNorm))
-  {
     return true;
-  }
 
   return false;
 }
-
 
 void Tree::RenderBranch(DirectX::XMFLOAT3 _from, DirectX::XMFLOAT3 _to, int _iterations, bool _calcRadius, bool _renderBranch, bool _renderLeaf)
 {
@@ -511,13 +467,10 @@ void Tree::RenderBranch(DirectX::XMFLOAT3 _from, DirectX::XMFLOAT3 _to, int _ite
   float budsize = 0.1f;
 
   if (_iterations == 0)
-  {
     budsize *= m_budsize;
-  }
 
   DirectX::XMVECTOR const camRightA = DirectX::XMVectorScale(rightAngleA, thickness * budsize);
   DirectX::XMVECTOR const camRightB = DirectX::XMVectorScale(rightAngleB, thickness * budsize);
-
 
   if ((_iterations == 0 && _renderLeaf) || (_iterations != 0 && _renderBranch))
   {
@@ -568,14 +521,12 @@ void Tree::RenderBranch(DirectX::XMFLOAT3 _from, DirectX::XMFLOAT3 _to, int _ite
   }
 }
 
-
 void Tree::ListSoundEvents(std::vector<const char*>* _list)
 {
   Building::ListSoundEvents(_list);
 
   _list->push_back("Burn");
 }
-
 
 void Tree::Read(TextReader* _in, bool _dynamic)
 {
@@ -590,9 +541,7 @@ void Tree::Read(TextReader* _in, bool _dynamic)
   m_branchColour = atoi(_in->GetNextToken());
   m_leafColour = atoi(_in->GetNextToken());
   if (_in->TokenAvailable())
-  {
     m_leafDropRate = atoi(_in->GetNextToken());
-  }
 }
 
 void Tree::Write(FileWriter* _out)

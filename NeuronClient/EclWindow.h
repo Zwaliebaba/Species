@@ -32,7 +32,6 @@ class EclWindow
 
     bool m_movable;
     bool m_resizable;
-    bool m_dirty;
 
     std::vector<EclButton*> m_buttons;
 
@@ -53,7 +52,7 @@ class EclWindow
     void RegisterButton(EclButton* button);
     void RemoveButton(char const* _name);
 
-    void BeginTextEdit(char* _name);
+    void BeginTextEdit(const char* _name);
     void EndTextEdit();
 
     virtual EclButton* GetButton(char const* _name);

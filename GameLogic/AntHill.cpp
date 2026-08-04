@@ -463,7 +463,7 @@ void AntHill::Read(TextReader* _in, bool _dynamic)
 
   if (m_numAntsInside < 0 || m_numAntsInside > 10000)
   {
-    DebugTrace("Error loading Anthill : Bogus population of %d\n", m_numAntsInside);
+    DebugTrace("Error loading Anthill : Bogus population of {}\n", m_numAntsInside);
     m_numAntsInside = 0;
   }
 }

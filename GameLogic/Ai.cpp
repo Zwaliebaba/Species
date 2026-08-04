@@ -101,7 +101,7 @@ void AI::Begin()
 
 
   float timeTaken = GetHighResTime() - startTime;
-  DebugTrace("AI Node graph rebuilt in %dms\n", int(timeTaken * 1000.0f));
+  DebugTrace("AI Node graph rebuilt in {}ms\n", int(timeTaken * 1000.0f));
 }
 
 
