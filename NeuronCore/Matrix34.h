@@ -105,6 +105,28 @@ class Matrix34
 
     Matrix33 GetOr() const { return Matrix33(r, u, f); }
 
+    // TRANSITIONAL — see Vector3.h. T25 deletes this class and this seam with it.
+    //
+    // NO TRANSPOSE HERE, and that is not an oversight. Matrix34 already reads its
+    // r/u/f as basis vectors — `m * v` is v.x*r + v.y*u + v.z*f + pos — which is
+    // exactly the row-vector form XMVector3Transform implements, so the members
+    // map straight onto the rows. Matrix33::ToNative DOES transpose, because
+    // Matrix33 reads the same member names as rows. See NeuronMath.h.
+    DirectX::XMFLOAT4X4 ToNative() const
+    {
+      return DirectX::XMFLOAT4X4(r.x, r.y, r.z, 0.0f, u.x, u.y, u.z, 0.0f, f.x, f.y, f.z, 0.0f, pos.x, pos.y, pos.z, 1.0f);
+    }
+
+    static Matrix34 FromNative(DirectX::XMFLOAT4X4 const& _m)
+    {
+      Matrix34 result;
+      result.r = Vector3(_m._11, _m._12, _m._13);
+      result.u = Vector3(_m._21, _m._22, _m._23);
+      result.f = Vector3(_m._31, _m._32, _m._33);
+      result.pos = Vector3(_m._41, _m._42, _m._43);
+      return result;
+    }
+
     Vector3 InverseMultiplyVector(Vector3 const&) const;
     void WriteToDebugStream();
 
@@ -116,6 +138,13 @@ class Matrix34
     Matrix34 const& operator*=(Matrix34 const& _o);
     Matrix34 operator*(Matrix34 const& b) const { return Matrix34(*this) *= b; }
 };
+
+
+// TRANSITIONAL, with the seam above. Matrix34 is four Vector3s and nothing else;
+// XMFLOAT4X4 is deliberately NOT the same size, which is why the conversions
+// construct rather than reinterpret.
+static_assert(sizeof(Matrix34) == 4 * sizeof(Vector3), "Matrix34 must stay four tightly packed Vector3s");
+static_assert(std::is_standard_layout_v<Matrix34>, "Matrix34 must be standard layout");
 
 
 extern Matrix34 const g_identityMatrix34;

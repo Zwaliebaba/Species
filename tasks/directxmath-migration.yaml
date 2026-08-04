@@ -42,6 +42,14 @@ summary: >
        m_pos shows up in the sync value and nowhere else, so the audit is not
        optional.
     4. TriTri.cpp: DELETED, with its LICENSE row (T4). It has no callers.
+    5. Handedness: RIGHT-HANDED, and it stays that way — DirectXMath's *RH
+       variants only. Taken 2026-08-03 once the owner said a Direct3D renderer
+       migration is planned: LH is D3D's conventional choice rather than a
+       requirement, and adopting it would flip winding and culling against
+       geometry that has been right-handed since the code was inherited.
+    6. No math type knows which graphics API it feeds. The transpose and the
+       depth-range difference between GL and D3D both live in renderer code.
+       This reshaped T10 — see its notes.
 
   THE SURVEY'S BIGGEST FINDING, which reshaped this plan: most of the geometry
   library is dead. Measured at 4eeafa6 with
@@ -84,6 +92,16 @@ summary: >
     math library size            2,718 lines,  16 files
 
   Re-measure before citing any of these. They will have moved.
+
+  THE PLANNED DIRECT3D MIGRATION shaped decisions 5 and 6 and is worth stating
+  in one place, because it mostly CONFIRMS what was already chosen rather than
+  changing it. XMFLOAT4X4 with the row-vector convention is D3D's own; XMFLOAT3
+  storage is exactly what a D3D input layout wants; DirectXMath is the D3D math
+  library, so this migration is a prerequisite for that work rather than a
+  detour from it. What it did change: handedness is pinned right-handed now
+  rather than decided by reflex when D3D lands, and no math type may name a
+  graphics API. Nothing in this plan does any Direct3D work — the renderer is
+  out of scope per AGENTS.md and stays there.
 
   ORDERING AGAINST THE OTHER OPEN PLANS. strings-modernised, ownership,
   language-hygiene and namespace-migration all touch files this plan touches.
@@ -484,7 +502,8 @@ tasks:
     acceptance:
       - Shape.cpp holds no GetOr or InverseMultiplyVector call
       - The matrix reading at each former GetOr site is stated in a comment as row-vector, matching T1's conventions block
-      - ConvertToOpenGLFormat's two call sites here take an XMFLOAT4X4 by value, not a pointer into a shared static buffer
+      - No math type names a graphics API - ConvertToOpenGLFormat is gone, not renamed, and the transpose it performed lives in renderer code
+      - The two former ConvertToOpenGLFormat call sites take an XMFLOAT4X4 by value rather than a pointer into a shared static buffer
       - glVertex3fv and glNormal3fv sites pass &v.x on an XMFLOAT3
       - No Vector3, Vector2, Matrix33 or Matrix34 identifier remains in these files
     verify:
@@ -501,6 +520,16 @@ tasks:
       say so in the commit rather than leaving it as an unexplained signature
       change. OpenGL wants column-major and DirectXMath stores row-major, so
       the transpose happens in the store — one place, stated once.
+
+      RESHAPED 2026-08-03 after the owner said a Direct3D renderer migration is
+      planned. The point is no longer "return XMFLOAT4X4 instead of float*" — it
+      is that NO MATH TYPE KNOWS WHICH API IT FEEDS. Both APIs need a transpose
+      (GL takes column-major, HLSL packs column-major, DirectXMath stores
+      row-major) and they differ on depth range (GL z in [-1,1], D3D z in
+      [0,1]), so both belong in renderer code. A member function named
+      ConvertToOpenGLFormat is the SHAPE being removed, not a signature to
+      modernise: renaming it ConvertToNativeFormat would bake the same
+      assumption in with a better name. See NeuronMath.h.
 
   - id: T11
     title: Convert the sound subsystem's positional math

@@ -24,6 +24,7 @@
     <ClCompile Include="GenericTests.cpp" />
     <ClCompile Include="LookupTableTests.cpp" />
     <ClCompile Include="NetworkUpdateTests.cpp" />
+    <ClCompile Include="NeuronMathTests.cpp" />
     <ClCompile Include="PreferencesTests.cpp" />
     <ClCompile Include="ServerToClientLetterTests.cpp" />
     <ClCompile Include="pch.cpp">

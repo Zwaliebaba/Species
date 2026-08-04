@@ -140,6 +140,9 @@
     <ClInclude Include="Vector3.h">
       <Filter>GameMath</Filter>
     </ClInclude>
+    <ClInclude Include="NeuronMath.h">
+      <Filter>GameMath</Filter>
+    </ClInclude>
     <ClInclude Include="Globals.h" />
     <ClInclude Include="ProtocolLimits.h">
       <Filter>Network</Filter>

@@ -43,6 +43,21 @@ class Matrix33
 
     Vector3 InverseMultiplyVector(Vector3 const&) const;
 
+    // TRANSITIONAL — see Vector3.h. T25 deletes this class and this seam with it.
+    //
+    // THIS ONE TRANSPOSES. Matrix33 reads r/u/f as ROWS — `m * v` is dot(r,v),
+    // dot(u,v), dot(f,v) — while the row-vector convention the tree is moving to
+    // wants them as the matrix's columns. Matrix34::ToNative does NOT transpose,
+    // because Matrix34 reads the same member names the other way round. That
+    // disagreement is real, it predates this migration, and Matrix34::GetOr()
+    // carries it across every time it is called. See NeuronMath.h.
+    DirectX::XMFLOAT3X3 ToNative() const { return DirectX::XMFLOAT3X3(r.x, u.x, f.x, r.y, u.y, f.y, r.z, u.z, f.z); }
+
+    static Matrix33 FromNative(DirectX::XMFLOAT3X3 const& _m)
+    {
+      return Matrix33(Vector3(_m._11, _m._21, _m._31), Vector3(_m._12, _m._22, _m._32), Vector3(_m._13, _m._23, _m._33));
+    }
+
     void OutputToDebugStream();
     float* ConvertToOpenGLFormat(Vector3 const* _pos = nullptr);
 

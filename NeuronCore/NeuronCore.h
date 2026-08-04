@@ -64,6 +64,7 @@
 #include "Debug.h"
 #include "FileSys.h"
 #include "NeuronHelper.h"
+#include "NeuronMath.h"
 #include "VectorUtils.h"
 
 using namespace Neuron;
