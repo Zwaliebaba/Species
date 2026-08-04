@@ -68,6 +68,32 @@ namespace NeuronCoreTests
         Assert::AreEqual(6.0f, roundTripped.z);
       }
 
+      // AsLegacy is the other half of the seam, added by T14 so that the 45
+      // files reading WorldObject's converted storage keep compiling until
+      // their own tasks convert them. The property that matters is that it
+      // ALIASES: 97 of those sites mutate through the member, and a helper that
+      // copied would drop their writes with nothing to catch it.
+      TEST_METHOD(AsLegacyAliasesTheNativeTypeRatherThanCopyingIt)
+      {
+        DirectX::XMFLOAT3 native(1.0f, 2.0f, 3.0f);
+
+        Assert::IsTrue(static_cast<void const*>(&AsLegacy(native)) == static_cast<void const*>(&native));
+        Assert::AreEqual(1.0f, AsLegacy(native).x);
+        AssertNearlyEqual(sqrtf(14.0f), AsLegacy(native).Mag());
+
+        // A write through the legacy view has to land in the native object.
+        AsLegacy(native) *= 2.0f;
+        Assert::AreEqual(2.0f, native.x);
+        Assert::AreEqual(4.0f, native.y);
+        Assert::AreEqual(6.0f, native.z);
+
+        AsLegacy(native).Normalise();
+        AssertNearlyEqual(1.0f, AsLegacy(native).Mag());
+
+        DirectX::XMFLOAT3 const readOnly(7.0f, 8.0f, 9.0f);
+        Assert::AreEqual(8.0f, AsLegacy(readOnly).y);
+      }
+
       TEST_METHOD(Vector2ConvertsToAndFromTheNativeType)
       {
         Vector2 legacy(1.5f, 2.5f);

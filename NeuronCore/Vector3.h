@@ -206,3 +206,29 @@ static_assert(sizeof(Vector3) == 3 * sizeof(float), "GetData's callers read thre
 
 // Operator * between float and Vector3
 inline Vector3 operator*(float _scale, Vector3 const& _v) { return _v * _scale; }
+
+
+// TRANSITIONAL, AND THE OTHER HALF OF THE SEAM. T25 deletes it with everything
+// else in this header. Added by T14; read this before using it anywhere new.
+//
+// The conversions on the class above go Vector3 -> XMFLOAT3, which is what lets
+// a CONVERTED file call an UNCONVERTED api. This goes the other way, and it
+// exists because C++ will not do it implicitly however good the layout match
+// is: an implicit conversion is never consulted on the left operand of a member
+// operator or a member function call, and XMFLOAT3 has neither to offer. So the
+// moment WorldObject::m_pos became an XMFLOAT3, `m_pos.Mag()` and `m_vel *= f`
+// stopped compiling in 45 files that T14 does not own and cannot convert.
+//
+// AsLegacy reinterprets rather than copies, so it works for the sites that
+// MUTATE through the member as well as the ones that only read — 97 of the 456
+// do, and a temporary would have silently dropped their writes. The
+// static_asserts above are what make the reinterpretation legal rather than
+// hopeful, and it is the same reinterpretation the class's own conversion
+// operators already perform in the opposite direction.
+//
+// EVERY CALL IS A REPAIR AWAITING A CONVERSION, not an idiom. A file still
+// holding one has not been converted yet, and the task that will convert it is
+// named in a comment at the site. Do not reach for this in new code: new code
+// stores XMFLOAT3 and computes with XMVECTOR.
+inline Vector3& AsLegacy(DirectX::XMFLOAT3& _v) { return reinterpret_cast<Vector3&>(_v); }
+inline Vector3 const& AsLegacy(DirectX::XMFLOAT3 const& _v) { return reinterpret_cast<Vector3 const&>(_v); }
