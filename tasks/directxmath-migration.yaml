@@ -1288,7 +1288,7 @@ tasks:
       reaches the simulation, so they convert last within the layer and carry
       the least risk.
     project: GameLogic
-    depends_on: [T13]
+    depends_on: [T16, T17, T18, T22]
     files:
       - GameLogic/BuildingsWindow.cpp
       - GameLogic/CheatWindow.cpp
@@ -1302,6 +1302,32 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
     status: todo
+    notes: |
+      RE-POINTED 2026-08-04, on the same defect as T12 and for the third time
+      in this plan: a task scoped by DIRECTORY over code that owns no storage.
+
+      These five files declare no math member at all. Every Vector3 in them is
+      a LOCAL feeding an interface this task does not own:
+
+        g_camera->GetClickRay(..., Vector3*, Vector3*)   CameraAccess  (T12/T22)
+        m_landscape.RayHit(Vector3, Vector3, Vector3*)   Landscape     (T18)
+        building->GetPortPosition(p, Vector3&, Vector3&) Building      (T16/T17)
+        g_location->SpawnEntities(Vector3, ...)          Location      (T18)
+
+      So there is nothing here to convert. Making those locals XMFLOAT3 would
+      mean converting each one BACK at the call, which adds legacy references
+      rather than removing them -- the opposite of the task's point.
+
+      It now depends on its callees. Removing it from T21's dependency list is
+      the other half, exactly as T12 needed: T22 is behind T21, so leaving T20
+      in front of T21 while depending on T22 is a cycle, and check_task_dag
+      rejects it.
+
+      THE GENERAL RULE, worth applying to the rest of the plan before starting
+      it: a task that owns only CALL SITES and no STORAGE cannot convert
+      independently. Check for a declared member before scheduling a group as
+      parallel. T12, T10's GetWorldMatrix and now T20 all cost a discovery
+      round to learn this the same way.
 
   - id: T21
     title: Owner runs the Garden smoke test on the converted simulation
@@ -1309,7 +1335,7 @@ tasks:
       This is the gate that matters most in the plan. Every float the
       simulation computes has moved by now, and no check that runs in CI can
       see any of it.
-    depends_on: [T14, T15, T16, T17, T18, T19, T20]
+    depends_on: [T14, T15, T16, T17, T18, T19]
     files:
       - AGENTS.md
     acceptance:
