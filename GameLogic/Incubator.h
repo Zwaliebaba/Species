@@ -8,13 +8,13 @@
 
 class ShapeMarker;
 
-#define INCUBATOR_PROCESSTIME       5.0f
+#define INCUBATOR_PROCESSTIME 5.0f
 
 struct IncubatorIncoming
 {
-  Vector3 m_pos;
-  int m_entrance;
-  float m_alpha;
+    Vector3 m_pos;
+    int m_entrance;
+    float m_alpha;
 };
 
 class Incubator : public Building
@@ -55,4 +55,3 @@ class Incubator : public Building
 
     void ListSoundEvents(std::vector<const char*>* _list) override;
 };
-

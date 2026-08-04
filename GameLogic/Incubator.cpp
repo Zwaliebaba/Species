@@ -158,7 +158,7 @@ void Incubator::SpawnEntity()
   {
     Vector3 vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
     g_particleSystem->CreateParticle(exit.pos, vel, Particle::TypeControlFlash);
-    //g_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
+    // g_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
   }
 
   //

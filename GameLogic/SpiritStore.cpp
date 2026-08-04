@@ -9,122 +9,138 @@
 
 
 SpiritStore::SpiritStore()
-:   m_sizeX(0.0f),
+  : m_sizeX(0.0f),
     m_sizeY(0.0f),
     m_sizeZ(0.0f)
 {
 }
 
-void SpiritStore::Initialise ( int _initialCapacity, int _maxCapacity, Vector3 _pos,
-                                float _sizeX, float _sizeY, float _sizeZ )
+void SpiritStore::Initialise(int _initialCapacity, int _maxCapacity, Vector3 _pos, float _sizeX, float _sizeY, float _sizeZ)
 {
-    m_spirits.SetSize( _maxCapacity );
-    m_spirits.SetStepSize( _maxCapacity / 2 );
-    m_pos = _pos;
-    m_sizeX = _sizeX;
-    m_sizeY = _sizeY;
-    m_sizeZ = _sizeZ;
+  m_spirits.SetSize(_maxCapacity);
+  m_spirits.SetStepSize(_maxCapacity / 2);
+  m_pos = _pos;
+  m_sizeX = _sizeX;
+  m_sizeY = _sizeY;
+  m_sizeZ = _sizeZ;
 
-    for( int i = 0; i < _initialCapacity; ++i )
-    {
-        Spirit s;
-        s.m_teamId = 0;
-        s.Begin();
-        AddSpirit( &s );
-    }
+  for (int i = 0; i < _initialCapacity; ++i)
+  {
+    Spirit s;
+    s.m_teamId = 0;
+    s.Begin();
+    AddSpirit(&s);
+  }
 }
 
 void SpiritStore::Advance()
 {
-    for( int i = 0; i < m_spirits.Size(); ++i )
+  for (int i = 0; i < m_spirits.Size(); ++i)
+  {
+    if (m_spirits.ValidIndex(i))
     {
-        if( m_spirits.ValidIndex(i) )
-        {
-            Spirit *s = m_spirits.GetPointer(i);
-            s->Advance();
-        }
+      Spirit* s = m_spirits.GetPointer(i);
+      s->Advance();
     }
+  }
 }
 
-void SpiritStore::Render( float _predictionTime )
+void SpiritStore::Render(float _predictionTime)
 {
-	START_PROFILE(g_profiler, "Spirit Store");
+  START_PROFILE(g_profiler, "Spirit Store");
 
-    glEnable        ( GL_BLEND );
-    glBlendFunc     ( GL_SRC_ALPHA, GL_ONE );
-    glDepthMask     ( false );
-    glDisable       ( GL_CULL_FACE );
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+  glDepthMask(false);
+  glDisable(GL_CULL_FACE);
 
-    glColor4f       ( 1.0f, 1.0f, 1.0f, 0.5f );
+  glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
 
-    glEnable        (GL_TEXTURE_2D);
-    glBindTexture	(GL_TEXTURE_2D, g_resource->GetTexture("Textures/TriangleOutline.bmp", true, false));
-	glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-	glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-    glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-    glTexParameteri	(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/TriangleOutline.bmp", true, false));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    glBegin(GL_QUADS);
-        glNormal3f(0,1,0);
-        glTexCoord2f( 0.0f, 0.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
-        glTexCoord2f( 1.0f, 0.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
-        glTexCoord2f( 1.0f, 1.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
-        glTexCoord2f( 0.0f, 1.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
+  glBegin(GL_QUADS);
+  glNormal3f(0, 1, 0);
+  glTexCoord2f(0.0f, 0.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
+  glTexCoord2f(1.0f, 0.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
+  glTexCoord2f(1.0f, 1.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
+  glTexCoord2f(0.0f, 1.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
 
-        glNormal3f(0,0,-1);
-        glTexCoord2f( 0.0f, 0.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y - m_sizeY, m_pos.z - m_sizeZ);
-        glTexCoord2f( 1.0f, 0.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
-        glTexCoord2f( 1.0f, 1.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
-        glTexCoord2f( 0.0f, 1.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y - m_sizeY, m_pos.z - m_sizeZ);
+  glNormal3f(0, 0, -1);
+  glTexCoord2f(0.0f, 0.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y - m_sizeY, m_pos.z - m_sizeZ);
+  glTexCoord2f(1.0f, 0.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
+  glTexCoord2f(1.0f, 1.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
+  glTexCoord2f(0.0f, 1.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y - m_sizeY, m_pos.z - m_sizeZ);
 
-        glNormal3f(0,0,1);
-        glTexCoord2f( 0.0f, 0.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y - m_sizeY, m_pos.z + m_sizeZ);
-        glTexCoord2f( 1.0f, 0.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
-        glTexCoord2f( 1.0f, 1.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
-        glTexCoord2f( 0.0f, 1.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y - m_sizeY, m_pos.z + m_sizeZ);
+  glNormal3f(0, 0, 1);
+  glTexCoord2f(0.0f, 0.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y - m_sizeY, m_pos.z + m_sizeZ);
+  glTexCoord2f(1.0f, 0.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
+  glTexCoord2f(1.0f, 1.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
+  glTexCoord2f(0.0f, 1.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y - m_sizeY, m_pos.z + m_sizeZ);
 
-        glNormal3f(1,0,0);
-        glTexCoord2f( 0.0f, 0.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y - m_sizeY, m_pos.z - m_sizeZ);
-        glTexCoord2f( 1.0f, 0.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
-        glTexCoord2f( 1.0f, 1.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
-        glTexCoord2f( 0.0f, 1.0f );     glVertex3f(m_pos.x + m_sizeX, m_pos.y - m_sizeY, m_pos.z + m_sizeZ);
+  glNormal3f(1, 0, 0);
+  glTexCoord2f(0.0f, 0.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y - m_sizeY, m_pos.z - m_sizeZ);
+  glTexCoord2f(1.0f, 0.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
+  glTexCoord2f(1.0f, 1.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
+  glTexCoord2f(0.0f, 1.0f);
+  glVertex3f(m_pos.x + m_sizeX, m_pos.y - m_sizeY, m_pos.z + m_sizeZ);
 
-        glNormal3f(-1,0,0);
-        glTexCoord2f( 0.0f, 0.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y - m_sizeY, m_pos.z + m_sizeZ);
-        glTexCoord2f( 1.0f, 0.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
-        glTexCoord2f( 1.0f, 1.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
-        glTexCoord2f( 0.0f, 1.0f );     glVertex3f(m_pos.x - m_sizeX, m_pos.y - m_sizeY, m_pos.z - m_sizeZ);
-    glEnd();
+  glNormal3f(-1, 0, 0);
+  glTexCoord2f(0.0f, 0.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y - m_sizeY, m_pos.z + m_sizeZ);
+  glTexCoord2f(1.0f, 0.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z + m_sizeZ);
+  glTexCoord2f(1.0f, 1.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y + m_sizeY, m_pos.z - m_sizeZ);
+  glTexCoord2f(0.0f, 1.0f);
+  glVertex3f(m_pos.x - m_sizeX, m_pos.y - m_sizeY, m_pos.z - m_sizeZ);
+  glEnd();
 
-    glDisable       ( GL_TEXTURE_2D );
-    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-    glTexParameteri	( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+  glDisable(GL_TEXTURE_2D);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-    for( int i = 0; i < m_spirits.Size(); ++i )
+  for (int i = 0; i < m_spirits.Size(); ++i)
+  {
+    if (m_spirits.ValidIndex(i))
     {
-        if( m_spirits.ValidIndex(i) )
-        {
-            Spirit *s = m_spirits.GetPointer(i);
-            s->Render( _predictionTime );
-        }
+      Spirit* s = m_spirits.GetPointer(i);
+      s->Render(_predictionTime);
     }
+  }
 
-    glDisable       ( GL_BLEND );
-    glEnable        ( GL_CULL_FACE );
-    glBlendFunc     ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-    glDepthMask     ( true );
+  glDisable(GL_BLEND);
+  glEnable(GL_CULL_FACE);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glDepthMask(true);
 
-	END_PROFILE(g_profiler, "Spirit Store");
+  END_PROFILE(g_profiler, "Spirit Store");
 }
 
 
-int SpiritStore::NumSpirits ()
-{
-    return m_spirits.NumUsed();
-}
+int SpiritStore::NumSpirits() { return m_spirits.NumUsed(); }
 
 
-void SpiritStore::AddSpirit ( Spirit *_spirit )
+void SpiritStore::AddSpirit(Spirit* _spirit)
 {
   Spirit* target = m_spirits.GetPointer(m_spirits.GetNextFree());
   *target = *_spirit;
@@ -133,16 +149,17 @@ void SpiritStore::AddSpirit ( Spirit *_spirit )
   target->m_numNearbyEggs = 0;
 }
 
-void SpiritStore::RemoveSpirits ( int _quantity )
+void SpiritStore::RemoveSpirits(int _quantity)
 {
-    int numRemoved = 0;
-    for( int i = 0; i < m_spirits.Size(); ++i )
+  int numRemoved = 0;
+  for (int i = 0; i < m_spirits.Size(); ++i)
+  {
+    if (m_spirits.ValidIndex(i))
     {
-        if( m_spirits.ValidIndex(i) )
-        {
-            m_spirits.MarkNotUsed(i);
-            ++numRemoved;
-            if( numRemoved == _quantity ) return;
-        }
+      m_spirits.MarkNotUsed(i);
+      ++numRemoved;
+      if (numRemoved == _quantity)
+        return;
     }
+  }
 }
