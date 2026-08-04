@@ -53,7 +53,7 @@ class Entity : public WorldObject
     int m_formationIndex; // Our offset within the unit (NOT our index in the array)
     int m_buildingId;     // Which building created us
 
-    Vector3 m_spawnPoint; // Where I was created
+    DirectX::XMFLOAT3 m_spawnPoint{0.0f, 0.0f, 0.0f}; // Where I was created
     float m_roamRange;    // How far can I roam
 
     unsigned char m_stats[NumStats];
@@ -62,11 +62,13 @@ class Entity : public WorldObject
     float m_reloading; // Time left to reload
     float m_inWater;   // -1 = no, otherwise = time in water
 
-    Vector3 m_front;
-    Vector3 m_angVel;
+    // Zero-initialised explicitly: Vector3's default constructor did it and
+    // XMFLOAT3's does not, and Entity's constructor assigns none of these.
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_angVel{0.0f, 0.0f, 0.0f};
 
     Shape* m_shape; // Might be nullptr
-    Vector3 m_centrePos;
+    DirectX::XMFLOAT3 m_centrePos{0.0f, 0.0f, 0.0f};
     float m_radius; // Can be Zero, which means its a sprite
 
     bool m_renderDamaged;
@@ -90,15 +92,15 @@ class Entity : public WorldObject
     virtual void AdvanceInWater(Unit* _unit);
 
     virtual void ChangeHealth(int amount);
-    virtual void Attack(Vector3 const& pos);
+    virtual void Attack(DirectX::XMFLOAT3 const& pos);
 
     virtual bool IsInView();
 
-    virtual void SetWaypoint(Vector3 const _waypoint);
+    virtual void SetWaypoint(DirectX::XMFLOAT3 const _waypoint);
 
-    virtual Vector3 PushFromObstructions(Vector3 const& pos, bool killem = true);
-    virtual Vector3 PushFromCliffs(Vector3 const& pos, Vector3 const& oldPos);
-    virtual Vector3 PushFromEachOther(Vector3 const& _pos);
+    virtual DirectX::XMFLOAT3 PushFromObstructions(DirectX::XMFLOAT3 const& pos, bool killem = true);
+    virtual DirectX::XMFLOAT3 PushFromCliffs(DirectX::XMFLOAT3 const& pos, DirectX::XMFLOAT3 const& oldPos);
+    virtual DirectX::XMFLOAT3 PushFromEachOther(DirectX::XMFLOAT3 const& _pos);
     virtual int EnterTeleports(int _requiredId = -1); // Searches for valid nearby teleport entrances. Returns which one entered
 
     virtual void DirectControl(TeamControls const& _teamControls);
@@ -106,7 +108,7 @@ class Entity : public WorldObject
     virtual void ListSoundEvents(std::vector<const char*>* _list);
 
     static void BeginRenderShadow();
-    static void RenderShadow(Vector3 const& _pos, float _size);
+    static void RenderShadow(DirectX::XMFLOAT3 const& _pos, float _size);
     static void EndRenderShadow();
 
     static char const* GetTypeName(int _troopType);
@@ -115,9 +117,9 @@ class Entity : public WorldObject
 
     static char const* GetTypeNameTranslated(int _troopType);
 
-    bool RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir);
+    bool RayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir);
 
-    virtual Vector3 GetCameraFocusPoint(); // used in unit tracking to determine the position the camera should look at
+    virtual DirectX::XMFLOAT3 GetCameraFocusPoint(); // used in unit tracking to determine the position the camera should look at
     void FollowRoute();
 };
 

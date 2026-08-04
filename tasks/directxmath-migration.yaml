@@ -1142,8 +1142,81 @@ tasks:
       the T10 estimate that was already wrong by four times, so the recommendation
       is offered with that on the record.
 
-      NOTHING HAS BEEN CONVERTED YET. This entry is the discovery, committed
-      before the edits so a concurrent agent does not repeat it.
+      OWNER CHOSE (a), 2026-08-04: this task owns the external repairs and lands
+      as one unit. Its `files` list therefore understates its touch set, exactly
+      as T10's did.
+
+      WHAT HAS LANDED SO FAR, and the tree DOES NOT COMPILE at this point — said
+      plainly because the branch is red on purpose and a reviewer should know it
+      is not a mistake. Nothing compiles between the first converted member and
+      the last repaired call site; that is inherent to (a) and is what option (b)
+      was offering to avoid.
+
+        Reformat        21 files whole-file, no behaviour change, own commit
+        AsLegacy        the reverse half of the seam, in Vector3.h, tested
+        BasisFromFrontAndUp   the native Matrix34(front, up, pos), in
+                              NeuronMath.h, tested against the legacy ctor
+        WorldObject.h/.cpp    CONVERTED — m_pos and m_vel are XMFLOAT3
+        Entity.h              CONVERTED — storage and every virtual signature
+        Entity.cpp            CONVERTED
+
+      STILL TO CONVERT, 440 type sites over nineteen files, measured at 599e388:
+        Citizen.cpp 76, InsertionSquad.cpp 52, Engineer.cpp 51, EntityLeg.cpp 48,
+        Officer.cpp 41, Unit.cpp 23, LaserTrooper.cpp 21, Ai.cpp 18, Unit.h 14,
+        EntityLeg.h 12, InsertionSquad.h 10, Team.cpp 7, Citizen.h 7, Officer.h 7,
+        Engineer.h 6, Ai.h 5, EntityGrid.cpp 5, Team.h 3, LaserTrooper.h 2
+
+      STILL TO REPAIR: the 456 external sites, plus the virtual OVERRIDES that
+      moved when Entity's signatures did. Those are in files this task does not
+      own and were not on the 456 list, because an override is found by neither
+      a type grep nor a member grep:
+
+        Centipede.h/.cpp     Attack(Vector3 const&)
+        SoulDestroyer.h/.cpp Attack, SetWaypoint
+        Armour.h             SetWayPoint
+        Species/Camera.cpp   reads GetCameraFocusPoint's return type
+
+      THE IDIOM THIS TASK SETTLED ON, written down so the remaining nineteen
+      files do not each invent one:
+
+        storage        DirectX::XMFLOAT3 m_x{0.0f, 0.0f, 0.0f};  ALWAYS braced
+        compute        XMLoadFloat3 -> XMVector* -> XMStoreFloat3, fully
+                       qualified DirectX::, no `using namespace`
+        legacy VALUE   DirectX::XMFLOAT3 const v = LegacyCall();  copy-init
+                       takes the seam without naming Vector3. A REFERENCE would
+                       bind to the temporary the conversion operator returns and
+                       dangle -- do not write `XMFLOAT3 const& v = call()`.
+        legacy OUT-arg LegacyCall(AsLegacy(v))  and  &AsLegacy(v) for a pointer
+        legacy BY-VALUE arg   pass the XMFLOAT3; Vector3's converting ctor takes it
+        a matrix     BasisFromFrontAndUp(front, up, pos), stored with
+                     XMStoreFloat4x4; Matrix34's implicit conversion carries it
+                     into any API T16-T18 have not converted yet
+        up / zero    DirectX::g_XMIdentityR1 and DirectX::XMVectorZero(),
+                     not g_upVector and g_zeroVector
+        identity     XMFLOAT4X4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1) as a local
+
+      BEHAVIOUR CHANGES MADE DELIBERATELY IN THE CONVERTED FILES, each commented
+      at the site, none of them reproducible from the old code:
+
+        Vector3::SetLength on a zero-length vector left (len,0,0) behind.
+        Entity::Attack and Entity::AdvanceInWater now yield zero instead, per
+        the normalise decision. In PushFromObstructions the old fallback was
+        LOAD-BEARING -- the push loop does not terminate without it -- so that
+        one site keeps an explicit guard rather than taking the native answer.
+        Nothing said the fallback mattered there; reading the loop is how it
+        was found, and it is the shape to look for in the remaining files.
+
+        `targetPos != g_zeroVector` is Vector3::operator!=, which is a
+        PER-COMPONENT NearlyEquals at 1e-6 and not an exact comparison.
+        XMVector3NotEqual would have been a different test; XMVector3NearEqual
+        with 1e-6 in every lane is the same one. Expect more of these.
+
+      AND THE CHECKER GOT BLINDER, which is worth watching. check_math_types.py
+      skipped 4 contended member names before this task and skips 7 now --
+      m_centrePos, m_front and m_spawnPoint joined m_pos, m_vel, m_centre and
+      m_angVel, because nineteen other classes still declare legacy ones. Every
+      member this task converts REMOVES itself from the checker's coverage until
+      the whole wave lands. Do not read a green check_math_types as evidence.
 
   - id: T15
     title: Convert the creature entities

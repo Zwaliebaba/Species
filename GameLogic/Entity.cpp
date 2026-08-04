@@ -159,7 +159,9 @@ void Entity::ChangeHealth(int amount)
       m_stats[StatHealth] = 100;
       m_dead = true;
       g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Die");
-      g_location->SpawnSpirit(m_pos, m_vel * 0.5f, m_id.GetTeamId(), m_id);
+      DirectX::XMFLOAT3 spiritVel;
+      DirectX::XMStoreFloat3(&spiritVel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 0.5f));
+      g_location->SpawnSpirit(m_pos, spiritVel, m_id.GetTeamId(), m_id);
     }
     else if (m_stats[StatHealth] + amount > 255)
     {
@@ -173,14 +175,27 @@ void Entity::ChangeHealth(int amount)
 }
 
 
-void Entity::Attack(Vector3 const& pos)
+void Entity::Attack(DirectX::XMFLOAT3 const& pos)
 {
   if (m_reloading == 0.0f)
   {
-    Vector3 toPos(pos.x + syncsfrand(15.0f), pos.y, pos.z + syncsfrand(15.0f));
-    Vector3 fromPos = m_pos;
+    // The two syncsfrand draws stay in this order and are still made
+    // unconditionally, which is what the plan protects: the RNG call sequence
+    // is not sanctioned to move even though the float results are.
+    float const spreadX = syncsfrand(15.0f);
+    float const spreadZ = syncsfrand(15.0f);
+    DirectX::XMVECTOR const toPos = DirectX::XMVectorSet(pos.x + spreadX, pos.y, pos.z + spreadZ, 0.0f);
+
+    DirectX::XMFLOAT3 fromPos = m_pos;
     fromPos.y += 2.0f;
-    Vector3 velocity = (toPos - fromPos).SetLength(200.0f);
+
+    // SetLength(200) on a zero-length delta left (200,0,0) behind; scaling a
+    // normalised vector yields zero instead, which is the native normalise
+    // behaviour NeuronMath.h fixes. Reachable only if the entity is standing
+    // exactly on its own aim point, two units below it.
+    DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(toPos, DirectX::XMLoadFloat3(&fromPos));
+    DirectX::XMFLOAT3 velocity;
+    DirectX::XMStoreFloat3(&velocity, DirectX::XMVectorScale(DirectX::XMVector3Normalize(delta), 200.0f));
     g_location->FireLaser(fromPos, velocity, m_id.GetTeamId());
 
     m_reloading = m_stats[StatRate];
@@ -231,10 +246,16 @@ int Entity::EnterTeleports(int _requiredId)
     if (building->m_type == Building::TypeRadarDish)
     {
       RadarDish* radarDish = (RadarDish*)building;
-      Vector3 entrancePos, entranceFront;
-      radarDish->GetEntrance(entrancePos, entranceFront);
-      float range = (m_pos - entrancePos).Mag();
-      if (radarDish->ReadyToSend() && range < 15.0f && m_front * entranceFront < 0.0f)
+      // RadarDish converts in T16, so its out-parameters are still legacy.
+      // AsLegacy reaches them without naming the type; the storage is native.
+      DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
+      radarDish->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront));
+
+      DirectX::XMVECTOR const toEntrance = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&entrancePos));
+      float const range = DirectX::XMVectorGetX(DirectX::XMVector3Length(toEntrance));
+      float const facing = DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&entranceFront)));
+      if (radarDish->ReadyToSend() && range < 15.0f && facing < 0.0f)
       {
         WorldObjectId id(m_id);
         radarDish->EnterTeleport(id);
@@ -245,11 +266,15 @@ int Entity::EnterTeleports(int _requiredId)
     else if (building->m_type == Building::TypeBridge)
     {
       Bridge* bridge = (Bridge*)building;
-      Vector3 entrancePos, entranceFront;
-      if (bridge->GetEntrance(entrancePos, entranceFront))
+      // Bridge converts in T17; same seam as the radar dish above.
+      DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
+      if (bridge->GetEntrance(AsLegacy(entrancePos), AsLegacy(entranceFront)))
       {
-        float range = (m_pos - bridge->m_pos).Mag();
-        if (bridge->ReadyToSend() && range < 25.0f && m_front * entranceFront < 0.0f)
+        DirectX::XMVECTOR const toBridge = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&bridge->m_pos));
+        float const range = DirectX::XMVectorGetX(DirectX::XMVector3Length(toBridge));
+        float const facing = DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&entranceFront)));
+        if (bridge->ReadyToSend() && range < 25.0f && facing < 0.0f)
         {
           WorldObjectId id(m_id);
           bridge->EnterTeleport(id);
@@ -266,8 +291,15 @@ int Entity::EnterTeleports(int _requiredId)
 
 void Entity::AdvanceInAir(Unit* _unit)
 {
-  m_vel += Vector3(0, -15.0, 0) * SERVER_ADVANCE_PERIOD;
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  // The literal was `Vector3(0, -15.0, 0)` — a DOUBLE, narrowed to float by the
+  // constructor. XMVectorSet takes floats, so the gravity constant is spelled
+  // as one; -15.0 is exactly representable, so this is a spelling change.
+  DirectX::XMVECTOR const gravity = DirectX::XMVectorSet(0.0f, -15.0f, 0.0f, 0.0f);
+  DirectX::XMVECTOR velocity =
+    DirectX::XMVectorMultiplyAdd(gravity, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_vel));
+  DirectX::XMStoreFloat3(&m_vel, velocity);
+  DirectX::XMStoreFloat3(&m_pos,
+                         DirectX::XMVectorMultiplyAdd(velocity, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos)));
 
   if (!m_dead)
   {
@@ -275,13 +307,13 @@ void Entity::AdvanceInAir(Unit* _unit)
     if (m_pos.y <= groundLevel)
     {
       m_onGround = true;
-      m_vel = g_zeroVector;
+      m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
       m_pos.y = groundLevel + 0.1f;
     }
     if (m_pos.y <= 0.0f /*seaLevel*/)
     {
       m_inWater = 0;
-      m_vel = g_zeroVector;
+      m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     }
   }
 }
@@ -295,32 +327,47 @@ void Entity::AdvanceInWater(Unit* _unit)
     ChangeHealth(-500);
   }
 
-  Vector3 targetPos;
+  DirectX::XMVECTOR targetPos = DirectX::XMVectorZero();
   if (_unit)
   {
-    targetPos = _unit->GetWayPoint();
-    targetPos.y = 0.0f;
-    Vector3 offset = _unit->GetFormationOffset(Unit::FormationRectangle, m_id.GetIndex());
-    targetPos += offset;
+    DirectX::XMFLOAT3 const wayPoint = _unit->GetWayPoint();
+    DirectX::XMFLOAT3 const offset = _unit->GetFormationOffset(Unit::FormationRectangle, m_id.GetIndex());
+    targetPos = DirectX::XMVectorSetY(DirectX::XMLoadFloat3(&wayPoint), 0.0f);
+    targetPos = DirectX::XMVectorAdd(targetPos, DirectX::XMLoadFloat3(&offset));
   }
 
-  if (targetPos != g_zeroVector)
+  // Was `targetPos != g_zeroVector`, which is Vector3::operator!= — a
+  // PER-COMPONENT NearlyEquals at 1e-6, not an exact comparison, so
+  // XMVector3NotEqual would be a different test. XMVector3NearEqual with an
+  // epsilon of 1e-6 in every lane is the same one.
+  DirectX::XMVECTOR const epsilon = DirectX::XMVectorReplicate(1e-6f);
+  if (!DirectX::XMVector3NearEqual(targetPos, DirectX::XMVectorZero(), epsilon))
   {
-    Vector3 distance = targetPos - m_pos;
-    distance.y = 0.0f;
-    m_vel = distance;
-    m_vel.Normalise();
-    m_front = m_vel;
-    m_vel *= m_stats[StatSpeed] * 0.3f;
+    DirectX::XMVECTOR const distance = DirectX::XMVectorSetY(DirectX::XMVectorSubtract(targetPos, DirectX::XMLoadFloat3(&m_pos)), 0.0f);
 
-    if (distance.Mag() < m_vel.Mag() * SERVER_ADVANCE_PERIOD)
+    // Normalise then scale, which is what `m_vel = distance; m_vel.Normalise()`
+    // did — except that the legacy Normalise answered (0,0,1) for a zero-length
+    // input and the native one does not. Reachable here: an entity standing
+    // exactly on its own waypoint. It now gets a zero velocity and a zero
+    // front rather than being pointed at +z, and SetLength below turns the zero
+    // velocity into a zero rather than into (5,0,0).
+    DirectX::XMVECTOR const direction = DirectX::XMVector3Normalize(distance);
+    DirectX::XMStoreFloat3(&m_front, direction);
+
+    DirectX::XMVECTOR velocity = DirectX::XMVectorScale(direction, m_stats[StatSpeed] * 0.3f);
+
+    float const distanceLength = DirectX::XMVectorGetX(DirectX::XMVector3Length(distance));
+    float const speed = DirectX::XMVectorGetX(DirectX::XMVector3Length(velocity));
+    if (distanceLength < speed * SERVER_ADVANCE_PERIOD)
     {
-      m_vel = distance / SERVER_ADVANCE_PERIOD;
+      velocity = DirectX::XMVectorScale(distance, 1.0f / SERVER_ADVANCE_PERIOD);
     }
+    DirectX::XMStoreFloat3(&m_vel, velocity);
   }
 
-  m_vel.SetLength(5.0f);
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)), 5.0f));
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
   m_pos.y = 0.0f - sinf(m_inWater * 3.0f) - 4.0f;
 
   float groundLevel = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
@@ -337,8 +384,9 @@ void Entity::Begin()
 
   if (m_shape)
   {
-    m_centrePos = m_shape->CalculateCentre(g_identityMatrix34);
-    m_radius = m_shape->CalculateRadius(g_identityMatrix34, m_centrePos);
+    DirectX::XMFLOAT4X4 const identity(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_centrePos = m_shape->CalculateCentre(identity);
+    m_radius = m_shape->CalculateRadius(identity, m_centrePos);
   }
 }
 
@@ -405,9 +453,10 @@ void Entity::Render(float predictionTime) {}
 bool Entity::IsInView() { return true; }
 
 
-Vector3 Entity::PushFromEachOther(Vector3 const& _pos)
+DirectX::XMFLOAT3 Entity::PushFromEachOther(DirectX::XMFLOAT3 const& _pos)
 {
-  Vector3 result = _pos;
+  DirectX::XMVECTOR const source = DirectX::XMLoadFloat3(&_pos);
+  DirectX::XMVECTOR result = source;
 
   int numFound;
   WorldObjectId* neighbours = g_location->m_entityGrid->GetNeighbours(_pos.x, _pos.z, 2.0f, &numFound);
@@ -428,28 +477,29 @@ Vector3 Entity::PushFromEachOther(Vector3 const& _pos)
       //                distance = (obj->m_pos - thisPos).Mag();
       //            }
 
-      Vector3 diff = (_pos - obj->m_pos);
-      float force = 0.1f / diff.Mag();
-      diff.Normalise();
+      DirectX::XMVECTOR const diff = DirectX::XMVectorSubtract(source, DirectX::XMLoadFloat3(&obj->m_pos));
+      float const force = 0.1f / DirectX::XMVectorGetX(DirectX::XMVector3Length(diff));
 
-      Vector3 thisDiff = (diff * force);
-      result += thisDiff;
+      result = DirectX::XMVectorMultiplyAdd(DirectX::XMVector3Normalize(diff), DirectX::XMVectorReplicate(force), result);
     }
   }
 
-  result.y = g_location->m_landscape.m_heightMap->GetValue(result.x, result.z);
-  return result;
+  DirectX::XMFLOAT3 pushed;
+  DirectX::XMStoreFloat3(&pushed, result);
+  pushed.y = g_location->m_landscape.m_heightMap->GetValue(pushed.x, pushed.z);
+  return pushed;
 }
 
 
-Vector3 Entity::PushFromCliffs(Vector3 const& pos, Vector3 const& oldPos)
+DirectX::XMFLOAT3 Entity::PushFromCliffs(DirectX::XMFLOAT3 const& pos, DirectX::XMFLOAT3 const& oldPos)
 {
-  Vector3 horiz = (pos - oldPos);
-  horiz.y = 0.0f;
-  float horizDistance = horiz.Mag();
+  DirectX::XMVECTOR const old = DirectX::XMLoadFloat3(&oldPos);
+
+  DirectX::XMVECTOR horiz = DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&pos), old), 0.0f);
+  float horizDistance = DirectX::XMVectorGetX(DirectX::XMVector3Length(horiz));
   float gradient = (pos.y - oldPos.y) / horizDistance;
 
-  Vector3 result = pos;
+  DirectX::XMFLOAT3 result = pos;
 
   if (gradient > 1.0f)
   {
@@ -457,12 +507,14 @@ Vector3 Entity::PushFromCliffs(Vector3 const& pos, Vector3 const& oldPos)
     while (distance < 50.0f)
     {
       float angle = distance * 2.0f * M_PI;
-      Vector3 offset(cosf(angle) * distance, 0.0f, sinf(angle) * distance);
-      Vector3 newPos = result + offset;
+      DirectX::XMVECTOR const offset = DirectX::XMVectorSet(cosf(angle) * distance, 0.0f, sinf(angle) * distance, 0.0f);
+
+      DirectX::XMFLOAT3 newPos;
+      DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&result), offset));
       newPos.y = g_location->m_landscape.m_heightMap->GetValue(newPos.x, newPos.z);
-      horiz = (newPos - oldPos);
-      horiz.y = 0.0f;
-      horizDistance = horiz.Mag();
+
+      horiz = DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&newPos), old), 0.0f);
+      horizDistance = DirectX::XMVectorGetX(DirectX::XMVector3Length(horiz));
       float newGradient = (newPos.y - oldPos.y) / horizDistance;
       if (newGradient < 1.0f)
       {
@@ -477,15 +529,16 @@ Vector3 Entity::PushFromCliffs(Vector3 const& pos, Vector3 const& oldPos)
 }
 
 
-Vector3 Entity::PushFromObstructions(Vector3 const& pos, bool killem)
+DirectX::XMFLOAT3 Entity::PushFromObstructions(DirectX::XMFLOAT3 const& pos, bool killem)
 {
-  Vector3 result = pos;
+  DirectX::XMFLOAT3 result = pos;
   if (m_onGround)
   {
     result.y = g_location->m_landscape.m_heightMap->GetValue(result.x, result.z);
   }
 
-  Matrix34 transform(m_front, g_upVector, result);
+  DirectX::XMFLOAT4X4 transform;
+  DirectX::XMStoreFloat4x4(&transform, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&result)));
 
   //
   // Push from Water
@@ -497,8 +550,10 @@ Vector3 Entity::PushFromObstructions(Vector3 const& pos, bool killem)
     while (distance < 50.0f)
     {
       float angle = distance * pushAngle * M_PI;
-      Vector3 offset(cosf(angle) * distance, 0.0f, sinf(angle) * distance);
-      Vector3 newPos = result + offset;
+      DirectX::XMVECTOR const offset = DirectX::XMVectorSet(cosf(angle) * distance, 0.0f, sinf(angle) * distance, 0.0f);
+
+      DirectX::XMFLOAT3 newPos;
+      DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&result), offset));
       float height = g_location->m_landscape.m_heightMap->GetValue(newPos.x, newPos.z);
       if (height > 1.0f)
       {
@@ -536,10 +591,22 @@ Vector3 Entity::PushFromObstructions(Vector3 const& pos, bool killem)
         }
         else
         {
-          Vector3 pushForce = (building->m_pos - result).SetLength(2.0f);
+          // SetLength(2) on a zero-length delta left (2,0,0); scaling a
+          // normalised vector gives zero instead, so an entity standing exactly
+          // on a building's origin no longer gets pushed along +x — it stops
+          // being pushed at all, and this loop would then not terminate. Guarded
+          // rather than left to the native normalise, because the old fallback
+          // was load-bearing for the loop below and nothing said so.
+          DirectX::XMVECTOR const toResult = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&result), DirectX::XMLoadFloat3(&building->m_pos));
+          DirectX::XMVECTOR pushForce = DirectX::XMVectorScale(DirectX::XMVector3Normalize(toResult), -2.0f);
+          if (DirectX::XMVector3Equal(pushForce, DirectX::XMVectorZero()))
+          {
+            pushForce = DirectX::XMVectorSet(2.0f, 0.0f, 0.0f, 0.0f);
+          }
+
           while (building->DoesSphereHit(result, 1.0f))
           {
-            result -= pushForce;
+            DirectX::XMStoreFloat3(&result, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&result), pushForce));
             // result.y = g_location->m_landscape.m_heightMap->GetValue( result.x, result.z );
           }
         }
@@ -584,16 +651,20 @@ void Entity::EndRenderShadow()
 }
 
 
-void Entity::RenderShadow(Vector3 const& _pos, float _size)
+void Entity::RenderShadow(DirectX::XMFLOAT3 const& _pos, float _size)
 {
-  Vector3 shadowPos = _pos;
-  Vector3 shadowR = Vector3(_size, 0, 0);
-  Vector3 shadowU = Vector3(0, 0, _size);
+  DirectX::XMVECTOR const shadowPos = DirectX::XMLoadFloat3(&_pos);
+  DirectX::XMVECTOR const shadowR = DirectX::XMVectorSet(_size, 0.0f, 0.0f, 0.0f);
+  DirectX::XMVECTOR const shadowU = DirectX::XMVectorSet(0.0f, 0.0f, _size, 0.0f);
 
-  Vector3 posA = shadowPos - shadowR - shadowU;
-  Vector3 posB = shadowPos + shadowR - shadowU;
-  Vector3 posC = shadowPos + shadowR + shadowU;
-  Vector3 posD = shadowPos - shadowR + shadowU;
+  DirectX::XMFLOAT3 posA;
+  DirectX::XMFLOAT3 posB;
+  DirectX::XMFLOAT3 posC;
+  DirectX::XMFLOAT3 posD;
+  DirectX::XMStoreFloat3(&posA, DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(shadowPos, shadowR), shadowU));
+  DirectX::XMStoreFloat3(&posB, DirectX::XMVectorSubtract(DirectX::XMVectorAdd(shadowPos, shadowR), shadowU));
+  DirectX::XMStoreFloat3(&posC, DirectX::XMVectorAdd(DirectX::XMVectorAdd(shadowPos, shadowR), shadowU));
+  DirectX::XMStoreFloat3(&posD, DirectX::XMVectorAdd(DirectX::XMVectorSubtract(shadowPos, shadowR), shadowU));
 
   posA.y = g_location->m_landscape.m_heightMap->GetValue(posA.x, posA.z) + 0.9f;
   posB.y = g_location->m_landscape.m_heightMap->GetValue(posB.x, posB.z) + 0.9f;
@@ -613,13 +684,13 @@ void Entity::RenderShadow(Vector3 const& _pos, float _size)
 
   glBegin(GL_QUADS);
   glTexCoord2f(0.0f, 0.0f);
-  glVertex3fv(posA.GetData());
+  glVertex3fv(&posA.x);
   glTexCoord2f(1.0f, 0.0f);
-  glVertex3fv(posB.GetData());
+  glVertex3fv(&posB.x);
   glTexCoord2f(1.0f, 1.0f);
-  glVertex3fv(posC.GetData());
+  glVertex3fv(&posC.x);
   glTexCoord2f(0.0f, 1.0f);
-  glVertex3fv(posD.GetData());
+  glVertex3fv(&posD.x);
   glEnd();
 }
 
@@ -748,12 +819,14 @@ void Entity::ListSoundEvents(std::vector<const char*>* _list)
 }
 
 
-bool Entity::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir)
+bool Entity::RayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir)
 {
   if (m_shape)
   {
     RayPackage package(_rayStart, _rayDir);
-    Matrix34 mat(m_front, g_upVector, m_pos);
+
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
     return m_shape->RayHit(&package, mat);
   }
   else
@@ -765,9 +838,14 @@ bool Entity::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir)
 
 void Entity::DirectControl(TeamControls const& _teamControls) {}
 
-Vector3 Entity::GetCameraFocusPoint() { return m_pos + m_vel; }
+DirectX::XMFLOAT3 Entity::GetCameraFocusPoint()
+{
+  DirectX::XMFLOAT3 focus;
+  DirectX::XMStoreFloat3(&focus, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_vel)));
+  return focus;
+}
 
-void Entity::SetWaypoint(Vector3 const _waypoint) {}
+void Entity::SetWaypoint(DirectX::XMFLOAT3 const _waypoint) {}
 
 void Entity::FollowRoute()
 {
@@ -781,12 +859,17 @@ void Entity::FollowRoute()
   }
 
   WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId];
-  SetWaypoint(waypoint->GetPos());
-  Vector3 targetVect = waypoint->GetPos() - m_pos;
 
-  m_spawnPoint = waypoint->GetPos();
+  // LevelFile converts in T18, so GetPos still returns a legacy vector.
+  // Copy-initialising the native type takes the seam without naming it.
+  DirectX::XMFLOAT3 const wayPointPos = waypoint->GetPos();
+  SetWaypoint(wayPointPos);
 
-  if (waypoint->m_type != WayPoint::TypeBuilding && targetVect.Mag() < m_routeTriggerDistance)
+  DirectX::XMVECTOR const targetVect = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&wayPointPos), DirectX::XMLoadFloat3(&m_pos));
+
+  m_spawnPoint = wayPointPos;
+
+  if (waypoint->m_type != WayPoint::TypeBuilding && DirectX::XMVectorGetX(DirectX::XMVector3Length(targetVect)) < m_routeTriggerDistance)
   {
     m_routeWayPointId++;
     if (m_routeWayPointId >= static_cast<int>(route->m_wayPoints.size()))

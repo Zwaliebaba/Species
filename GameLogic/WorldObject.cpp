@@ -39,16 +39,23 @@ void WorldObject::BounceOffLandscape()
   // are now and where we were last frame. Let's use the midpoint of our last
   // and our current position as the point of impact (it will be correct on
   // average)
-  Vector3 lastPos = m_pos; // - m_vel * g_advanceTime;
-  Vector3 impactPos = (m_pos + lastPos) * 0.5f;
-  m_pos = impactPos;
+  DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&m_pos);
+  DirectX::XMVECTOR const lastPos = pos; // - m_vel * g_advanceTime;
+  DirectX::XMVECTOR const impactPos = DirectX::XMVectorScale(DirectX::XMVectorAdd(pos, lastPos), 0.5f);
+  DirectX::XMStoreFloat3(&m_pos, impactPos);
   m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
-  Vector3 normal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-  Vector3 incomingVel = m_vel * -1.0f;
-  float dotProd = normal * incomingVel;
-  m_vel = 2.0f * dotProd * normal - incomingVel;
-  m_vel *= COEF_OF_RESTITUTION;
+  // The landscape converts in T18, so its normal map still yields a legacy
+  // vector. Copy-initialising the native type takes the seam's conversion
+  // without naming the legacy one; a reference would bind to the temporary the
+  // conversion operator returns and dangle.
+  DirectX::XMFLOAT3 const normalValue = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+
+  DirectX::XMVECTOR const normal = DirectX::XMLoadFloat3(&normalValue);
+  DirectX::XMVECTOR const incomingVel = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), -1.0f);
+  float const dotProd = DirectX::XMVectorGetX(DirectX::XMVector3Dot(normal, incomingVel));
+  DirectX::XMVECTOR const bounced = DirectX::XMVectorSubtract(DirectX::XMVectorScale(normal, 2.0f * dotProd), incomingVel);
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(bounced, COEF_OF_RESTITUTION));
 }
 
 
@@ -73,7 +80,7 @@ Light::Light()
   m_colour[2] = 1.3f;
   m_colour[3] = 0.0f;
 
-  SetFront(Vector3(0, 0, 1));
+  SetFront(DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f));
 }
 
 
@@ -95,7 +102,7 @@ void Light::SetFront(float front[4])
 }
 
 
-void Light::SetFront(Vector3 front)
+void Light::SetFront(DirectX::XMFLOAT3 front)
 {
   m_front[0] = front.x;
   m_front[1] = front.y;
