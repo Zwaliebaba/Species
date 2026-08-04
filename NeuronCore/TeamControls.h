@@ -5,7 +5,7 @@
 // through GetFlags/SetFlags on every Alive update. Nothing here touches the game
 // model — it is a mouse position, a bitfield and a few deltas.
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 class TeamControls
 {
@@ -22,7 +22,7 @@ class TeamControls
     void Clear();
 
   public:
-    Vector3 m_mousePos;
+    DirectX::XMFLOAT3 m_mousePos;
 
     // Be sure to update GetFlags, SetFlags, ZeroFlags if you change these flags
     // Also, NetworkUpdate::GetByteStream and NetworkUpdate::ReadByteStream

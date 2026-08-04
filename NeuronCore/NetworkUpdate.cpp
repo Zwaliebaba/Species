@@ -148,7 +148,7 @@ void NetworkUpdate::SetTeamType(unsigned char _teamType) { m_teamType = _teamTyp
 
 void NetworkUpdate::SetDesiredTeamId(signed char _desiredTeamId) { m_desiredTeamId = _desiredTeamId; }
 
-void NetworkUpdate::SetWorldPos(Vector3 const& _pos)
+void NetworkUpdate::SetWorldPos(DirectX::XMFLOAT3 const& _pos)
 {
   // Shared with m_teamControls
   GetWorldPos() = _pos;
@@ -164,7 +164,6 @@ void NetworkUpdate::SetNumTroops(int _numTroops) { m_numTroops = _numTroops; }
 
 void NetworkUpdate::SetRadius(float _radius) { m_radius = _radius; }
 
-void NetworkUpdate::SetDirection(Vector3 _dir) { m_direction = _dir; }
 
 void NetworkUpdate::SetLastSequenceId(int _lastSequenceId) { m_lastSequenceId = _lastSequenceId; }
 
