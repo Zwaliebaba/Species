@@ -250,4 +250,77 @@ namespace NeuronCoreTests
         Assert::IsFalse(SphereTriangleIntersection(Vector3(20.0f, 0.0f, 20.0f), 3.0f, T1(), T2(), T3()));
       }
   };
+
+  // RayRayDist, which directxmath-migration T8 rebuilt on XMPlaneFromPoints and
+  // XMPlaneIntersectLine. Deleting the Plane class and RayPlaneIntersection with
+  // it left this the only routine in the tree that needs a plane at all, and its
+  // three call sites are all in GameLogic/Tripod.cpp — the leg geometry.
+  TEST_CLASS(RayRayDistTests)
+  {
+      static void AssertNearlyEqual(float _expected, float _actual)
+      {
+        float const tolerance = std::max(1e-5f, std::fabs(_expected) * 1e-5f);
+        Assert::AreEqual(_expected, _actual, tolerance);
+      }
+
+    public:
+      // Two perpendicular skew lines: one along x at the origin, one along z
+      // five units up. The closest approach is the vertical gap between them.
+      TEST_METHOD(PerpendicularSkewLinesAreSeparatedByTheGapBetweenThem)
+      {
+        Vector3 posOnA, posOnB;
+        float const dist =
+          RayRayDist(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), &posOnA, &posOnB);
+
+        AssertNearlyEqual(5.0f, dist);
+        AssertNearlyEqual(0.0f, posOnA.y);
+        AssertNearlyEqual(5.0f, posOnB.y);
+      }
+
+      TEST_METHOD(IntersectingLinesAreZeroApart)
+      {
+        Vector3 posOnA, posOnB;
+        float const dist =
+          RayRayDist(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(3.0f, 0.0f, -4.0f), Vector3(0.0f, 0.0f, 1.0f), &posOnA, &posOnB);
+
+        AssertNearlyEqual(0.0f, dist);
+        AssertNearlyEqual(3.0f, posOnA.x);
+      }
+
+      TEST_METHOD(TheOutParametersAreOptional)
+      {
+        float const dist = RayRayDist(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
+
+        AssertNearlyEqual(5.0f, dist);
+      }
+
+      // THE DEGENERATE CASE, and the one place this rewrite had to make a
+      // decision rather than a translation. Parallel rays have no unique closest
+      // approach: the cross product is zero, so the constructed planes are
+      // degenerate. The routine this replaces asked RayPlaneIntersection, got a
+      // status code back meaning "parallel, no intersection", ignored it, and
+      // left the out-parameters holding whatever the caller passed in.
+      //
+      // XMPlaneIntersectLine says QNaN instead. Propagating that would put a NaN
+      // into Tripod's leg positions and from there into GenerateSyncValue, where
+      // it would surface as a desync assert minutes later in a Debug build. So
+      // the NaN is tested for and the out-parameters are left alone, which is
+      // what callers have always observed. What this asserts is therefore "no
+      // NaN escapes", not a distance.
+      TEST_METHOD(ParallelLinesLeaveTheOutParametersAloneRatherThanReturningNaN)
+      {
+        Vector3 posOnA(1.0f, 2.0f, 3.0f);
+        Vector3 posOnB(4.0f, 5.0f, 6.0f);
+
+        float const dist =
+          RayRayDist(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), &posOnA, &posOnB);
+
+        Assert::IsFalse(std::isnan(posOnA.x) || std::isnan(posOnA.y) || std::isnan(posOnA.z));
+        Assert::IsFalse(std::isnan(posOnB.x) || std::isnan(posOnB.y) || std::isnan(posOnB.z));
+        Assert::IsFalse(std::isnan(dist));
+
+        AssertNearlyEqual(1.0f, posOnA.x);
+        AssertNearlyEqual(4.0f, posOnB.x);
+      }
+  };
 } // namespace NeuronCoreTests

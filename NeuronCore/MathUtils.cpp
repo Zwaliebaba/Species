@@ -3,7 +3,6 @@
 #include <math.h>
 
 #include "MathUtils.h"
-#include "Plane.h"
 #include "Vector2.h"
 #include "Vector3.h"
 
@@ -238,39 +237,41 @@ bool SegRayIntersection2D(Vector2 const& _lineStart, Vector2 const& _lineEnd, Ve
 // Stores the points of closest approach in posOnA and posOnB
 float RayRayDist(Vector3 const& a, Vector3 const& aDir, Vector3 const& b, Vector3 const& bDir, Vector3* posOnA, Vector3* posOnB)
 {
-  // Connecting line is perpendicular to both
-  Vector3 cDir = aDir ^ bDir;
   Vector3 temp1, temp2;
-
   if (posOnA == nullptr)
     posOnA = &temp1;
   if (posOnB == nullptr)
     posOnB = &temp2;
 
-  // Check for near-parallel lines
-  //    if ( 0 )
-  //	{
-  //        return 0.0f;	// degenerate case: lines are parallel
-  //    }
+  DirectX::XMVECTOR const aStart = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(a));
+  DirectX::XMVECTOR const bStart = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(b));
+  DirectX::XMVECTOR const aDirection = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(aDir));
+  DirectX::XMVECTOR const bDirection = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(bDir));
 
-  // Form plane containing line A, parallel to cdir
-  Plane planeA(a, a + aDir, a + cDir);
+  // The connecting line is perpendicular to both, so a plane containing one ray
+  // and parallel to it also contains the other ray's closest approach.
+  DirectX::XMVECTOR const cDir = DirectX::XMVector3Cross(aDirection, bDirection);
 
-  // Form plane containing line B, parallel to cdir
-  Plane planeB(b, b + bDir, b + cDir);
+  DirectX::XMVECTOR const planeA = DirectX::XMPlaneFromPoints(aStart, DirectX::XMVectorAdd(aStart, aDirection), DirectX::XMVectorAdd(aStart, cDir));
+  DirectX::XMVECTOR const planeB = DirectX::XMPlaneFromPoints(bStart, DirectX::XMVectorAdd(bStart, bDirection), DirectX::XMVectorAdd(bStart, cDir));
 
-  // Now we are going to find the points in the two
-  {
-    // Where line A intersects planeB is the point of closest approach to line B
-    int result1 = RayPlaneIntersection(a, aDir, planeB, posOnA);
+  DirectX::XMVECTOR const onA = DirectX::XMPlaneIntersectLine(planeB, aStart, DirectX::XMVectorAdd(aStart, aDirection));
+  DirectX::XMVECTOR const onB = DirectX::XMPlaneIntersectLine(planeA, bStart, DirectX::XMVectorAdd(bStart, bDirection));
 
-    // Where line B intersects planeA is the point of closest approach to line A
-    int result2 = RayPlaneIntersection(b, bDir, planeA, posOnB);
-  }
+  // XMPlaneIntersectLine answers a line parallel to the plane with QNaN, where
+  // the routine this replaces returned a status code and left the out-parameter
+  // alone. Leaving it alone is the behaviour callers have always seen, so a
+  // degenerate pair still yields whatever the caller passed in rather than
+  // propagating a NaN into the simulation.
+  if (!DirectX::XMVector3IsNaN(onA))
+    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*posOnA), onA);
+  if (!DirectX::XMVector3IsNaN(onB))
+    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*posOnB), onB);
 
-  float dist = ((*posOnA) - (*posOnB)).Mag();
+  DirectX::XMVECTOR const separation = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(*posOnA)),
+                                                                 DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(*posOnB)));
 
-  return dist;
+  return DirectX::XMVectorGetX(DirectX::XMVector3Length(separation));
 }
 
 
@@ -371,76 +372,6 @@ bool RaySphereIntersection(Vector3 const& rayStart, Vector3 const& rayDir, Vecto
   }
 
   return true;
-}
-
-
-// bool RayPlaneIntersection( Vector3 const &rayStart, Vector3 const &rayDir,
-////                           Vector3 const &planePos, Vector3 const &planeNormal,
-//						   Plane const &plane,
-//                           float _rayLen, Vector3 *pos )
-//{
-//	Vector3 pointInPlane = plane.m_distFromOrigin * plane.m_normal;
-//    float d = -pointInPlane.y;
-//    float t = -( rayStart * plane.m_normal + d ) / ( rayDir * plane.m_normal );
-//    if( t < 0.0f ) return false;
-//    if( t > _rayLen ) return false;
-//
-//    if (pos)
-//	{
-//		*pos = rayStart + rayDir * t;
-//	}
-//
-//    return true;
-//}
-
-
-// Returns 0 if line is parallel to plane but doens't intersect,
-//		   1 if line is in plane (ie intersects everywhere),
-//		   2 otherwise (this is the general case)
-int RayPlaneIntersection(Vector3 const& pOnLine, Vector3 const& lineDir, Plane const& plane, Vector3* intersectionPoint)
-{
-  /*If the plane is defined as:
-         a*x + b*y + c*z + d = 0
-  and the line is defined as:
-        x = x1 + (x2 - x1)*t = x1 + i*t
-        y = y1 + (y2 - y1)*t = y1 + j*t
-        z = z1 + (z2 - z1)*t = z1 + k*t
-  Then just substitute these into the plane equation. You end up
-    with:
-    t = - (a*x1 + b*y1 + c*z1 + d)/(a*i + b*j + c*k)
-  When the denominator is zero, the line is contained in the plane
-    if the numerator is also zero (the point at t=0 satisfies the
-    plane equation), otherwise the line is parallel to the plane.*/
-
-  float a, b, c, d;
-  plane.GetCartesianDefinition(&a, &b, &c, &d);
-
-  float x1 = pOnLine.x;
-  float y1 = pOnLine.y;
-  float z1 = pOnLine.z;
-
-  float i = lineDir.x;
-  float j = lineDir.y;
-  float k = lineDir.z;
-
-  float numerator = -(a * x1 + b * y1 + c * z1 + d);
-  float denominator = a * i + b * j + c * k;
-
-  if (fabs(denominator) < 1e-7)
-  {
-    if (fabs(numerator) < 1e-7)
-    {
-      return 1;
-    }
-    return 0;
-  }
-  float t = numerator / denominator;
-
-  intersectionPoint->x = x1 + i * t;
-  intersectionPoint->y = y1 + j * t;
-  intersectionPoint->z = z1 + k * t;
-
-  return 2;
 }
 
 

@@ -7,7 +7,6 @@
 
 class Vector3;
 class Vector2;
-class Plane;
 
 inline float frand(float range = 1.0f) { return range * ((float)speciesRandom() / (float)SPECIES_RAND_MAX); }
 inline float sfrand(float range = 1.0f) { return (0.5f - (float)speciesRandom() / (float)(SPECIES_RAND_MAX)) * range; }
@@ -96,11 +95,6 @@ float RayRayDist(Vector3 const& a, Vector3 const& aDir, Vector3 const& b, Vector
 
 bool RayTriIntersection(Vector3 const& orig, Vector3 const& dir, Vector3 const& vert0, Vector3 const& vert1, Vector3 const& vert2,
                         float _rayLen = 1e10, Vector3* result = nullptr);
-
-int RayPlaneIntersection(Vector3 const& pOnLine, Vector3 const& lineDir, Plane const& plane, Vector3* intersectionPoint = nullptr);
-// bool RayPlaneIntersection       (Vector3 const &rayStart, Vector3 const &rayDir,
-//                                   Vector3 const &planePos, Vector3 const &planeNormal,
-//						         float _rayLen=1e10, Vector3 *pos=nullptr );
 
 bool RaySphereIntersection(Vector3 const& rayStart, Vector3 const& rayDir, Vector3 const& spherePos, float sphereRadius, float _rayLen = 1e10,
                            Vector3* pos = nullptr, Vector3* normal = nullptr);
