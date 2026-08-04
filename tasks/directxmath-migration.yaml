@@ -990,23 +990,27 @@ tasks:
       OWNER RAN IT, 2026-08-04, ON THE CONVERTED ENGINE LAYERS AT 36dd038.
       Reported: "it works". The game launches, loads and plays.
 
-      ONE OBSERVATION IS STILL OPEN and this task does not get to paper over
-      it: the procedurally generated landscape looks different in SHAPE, with
-      shading unaffected. No mechanism has been found. GenerateHeightMap
+      ONE OBSERVATION WAS LEFT OPEN and is now CLOSED, 2026-08-04. The
+      procedurally generated landscape looked different in SHAPE, with shading
+      unaffected, and no mechanism was found by reading: GenerateHeightMap
       reseeds the RNG from the level's m_randomSeed immediately before the
       diamond-square loop, so nothing drawn from the shared stream beforehand
       reaches it; Landscape.cpp and Landscape.h are untouched by this plan;
       LandscapeRenderer's only change is a comment and a static_assert; and its
       RNG reseed feeds GetLandscapeColour, which is colour, not geometry.
 
-      A temporary commit (57386fb) writes a height-map checksum and the tile
-      parameters that determine it, so the two builds can be compared as a
-      number rather than an impression. IF THAT COMES BACK UNEQUAL WITH
-      IDENTICAL TILE PARAMETERS, THIS TASK REOPENS and the GameLogic wave
-      should stop until it is explained — a generation change with no known
-      cause is exactly what a gate exists to catch.
+      A temporary commit (57386fb) wrote a height-map checksum and the tile
+      parameters that determine it, so the two builds could be compared as a
+      number rather than an impression. OWNER RAN IT AND THE CHECKSUMS ARE
+      EQUAL: the terrain is bit-identical and the difference was in rendering or
+      in the eye. 57386fb is reverted, the condition attached to the GameLogic
+      wave is discharged, and AGENTS.md records the answer.
 
-      Proceeding on the owner's instruction, with that condition attached.
+      WORTH KEEPING RATHER THAN DELETING: this is the case for measuring instead
+      of arguing. Reading the code produced a correct argument that generation
+      could not have moved, and it did not settle anything — the observation
+      stood for a day and gated six tasks. Fifty-nine throwaway lines answered
+      it in one run.
 
   # ------------------------------------------------------------------
   # Wave 4 — GameLogic, six groups, all parallel

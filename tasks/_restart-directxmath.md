@@ -107,13 +107,13 @@ it is simulation code where `Matrix34::RotateAround`'s exact semantics matter.
 
 ---
 
-## Two open questions
+## One open question
 
-**1. The Garden landscape may have changed shape.** Owner-reported at
-`36dd038`; no mechanism found. `AGENTS.md` *Known issues* has the full evidence.
-Commit `57386fb` is a **temporary** height-map checksum dump that makes it
-answerable as a number — **revert it once answered.** If the checksums differ
-with identical tile parameters, T13 reopens and the GameLogic wave stops.
+~~**1. The Garden landscape may have changed shape.**~~ **Answered 2026-08-04:
+the height-map checksums are equal, so the terrain is bit-identical and the
+difference was in rendering or in the eye.** `57386fb`, the temporary checksum
+dump, is reverted. The condition it attached to the GameLogic wave is
+discharged.
 
 **2. `LandscapeRenderer::GetLandscapeColour` reseeds the simulation RNG from
 rendering code.** Unrelated to the above, predates this plan, unrecorded until
