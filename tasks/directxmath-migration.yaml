@@ -746,6 +746,39 @@ tasks:
       rather than conversions and those files still convert in full under their
       own tasks.
 
+      PART 1 LANDED, CI run 394 green at b8d1fb7. Five of the six file groups
+      are native: 3dSprite, SphereRenderer, DebugRender, TextRenderer and
+      PersistingDebugRender. Two helpers came out of it — RingPoint in
+      DebugRender and EmitVertex in TextRenderer — each replacing an expression
+      written out three or four times.
+
+      One behaviour change, in RenderArrow: Vector3::SetLength on a zero-length
+      vector left (len,0,0) behind, so a degenerate arrow drew a head pointing
+      along x. Scaling a normalised vector yields a zero head instead, which
+      draws nothing. Debug rendering, degenerate input either way.
+
+      THE ESTIMATE I GAVE THE OWNER WAS WRONG BY ROUGHLY FOUR TIMES. I said
+      about twenty external fix-ups; the real figure is 89 call sites passing a
+      Matrix34 into Shape's methods, plus the member accesses. The sweep behind
+      the estimate looked at member ACCESS and not at method CALLS. Recorded
+      because the recommendation to go with option (a) rested on that number.
+
+      It turned out not to matter, and the reason is worth knowing: T1 gave
+      Vector3 and Vector2 implicit conversions but left Matrix34's as named
+      ToNative/FromNative. Adding the implicit pair collapses all 89 to zero —
+      they compile untouched and convert under their own tasks. That is not a
+      new concession, it is T1 finished.
+
+      STILL TO DO: Shape.h and Shape.cpp, 94 occurrences. The matrix arithmetic
+      is the substance — `m_transform * _transform` becomes XMMatrixMultiply,
+      `totalMatrix * m_centre` becomes XMVector3Transform — plus m_positions,
+      m_normals and m_positionsInWS moving from Vector3* to XMFLOAT3*, and
+      ConvertToOpenGLFormat's two call sites at lines 909 and 1457, which per
+      decision 6 must end up in renderer code rather than on the type.
+
+      Stopped here rather than starting Shape and running out mid-file: a
+      half-converted Shape.cpp does not compile, and the checkpoint above does.
+
 
   - id: T11
     title: Convert the sound subsystem's positional math
