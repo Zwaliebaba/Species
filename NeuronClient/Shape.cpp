@@ -132,7 +132,7 @@ ShapeMarker::~ShapeMarker()
 }
 
 // *** GetWorldMatrix
-DirectX::XMFLOAT4X4 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
+Matrix34 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
 {
   DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&_rootTransform);
   for (int i = 0; i < m_depth; ++i)
