@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 
 #include "Resource.h"
 #include "Shape.h"
@@ -26,7 +27,7 @@ BlueprintBuilding::BlueprintBuilding()
     m_segment(0),
     m_marker(nullptr)
 {
-  m_vel.Zero();
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
 
 
@@ -63,15 +64,20 @@ bool BlueprintBuilding::Advance()
 }
 
 
-Matrix34 BlueprintBuilding::GetMarker(float _predictionTime)
+DirectX::XMFLOAT4X4 BlueprintBuilding::GetMarker(float _predictionTime)
 {
-  Vector3 pos = AsLegacy(m_pos) + m_vel * _predictionTime;
-  Matrix34 mat(m_front, g_upVector, pos);
+  DirectX::XMVECTOR const pos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, pos));
 
   if (m_marker)
   {
-    Matrix34 markerMat = m_marker->GetWorldMatrix(mat);
-    return markerMat;
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    // ToNative copies the rows as they are; rebuilding the basis from front
+    // and up would discard a marker matrix's own right row.
+    return m_marker->GetWorldMatrix(mat).ToNative();
   }
   else
   {
@@ -86,8 +92,11 @@ bool BlueprintBuilding::IsInView()
 
   if (link)
   {
-    Vector3 midPoint = (AsLegacy(link->m_centrePos) + AsLegacy(m_centrePos)) / 2.0f;
-    float radius = (AsLegacy(link->m_centrePos) - AsLegacy(m_centrePos)).Mag();
+    DirectX::XMVECTOR const linkCentre = DirectX::XMLoadFloat3(&link->m_centrePos);
+    DirectX::XMVECTOR const ourCentre = DirectX::XMLoadFloat3(&m_centrePos);
+    DirectX::XMFLOAT3 midPoint;
+    DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(linkCentre, ourCentre), 0.5f));
+    float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(linkCentre, ourCentre)));
     radius += m_radius;
     return (g_camera->SphereInViewFrustum(midPoint, radius));
   }
@@ -100,8 +109,11 @@ bool BlueprintBuilding::IsInView()
 
 void BlueprintBuilding::Render(float _predictionTime)
 {
-  Vector3 pos = AsLegacy(m_pos) + m_vel * _predictionTime;
-  Matrix34 mat(m_front, g_upVector, pos);
+  DirectX::XMVECTOR const pos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, pos));
   m_shape->Render(_predictionTime, mat);
 }
 
@@ -125,11 +137,21 @@ void BlueprintBuilding::RenderAlphas(float _predictionTime)
       glColor4f(infected, 0.7f - infected * 0.7f, 0.0f, 0.5f + fabs(sinf(ourTime)) * 0.5f);
     }
 
-    Vector3 ourPos = GetMarker(_predictionTime).pos;
-    Vector3 theirPos = link->GetMarker(_predictionTime).pos;
+    // Row 3 of each marker matrix is its position.
+    DirectX::XMFLOAT4X4 const ourMarker = GetMarker(_predictionTime);
+    DirectX::XMFLOAT4X4 const theirMarker = link->GetMarker(_predictionTime);
+    DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat4x4(&ourMarker).r[3];
+    DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat4x4(&theirMarker).r[3];
 
-    Vector3 rightAngle = (g_camera->GetPos() - ourPos) ^ (theirPos - ourPos);
-    rightAngle.SetLength(20.0f);
+    // CameraAccess::GetPos is a pure virtual and still returns Vector3 -- it
+    // moves with its implementors in T12/T22.
+    DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+    // SetLength, taken natively: the cross is only zero when the camera is
+    // exactly on the line joining the two markers, and this is rendering.
+    DirectX::XMVECTOR const rightAngle =
+      DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), ourPos),
+                                                                                 DirectX::XMVectorSubtract(theirPos, ourPos))),
+                             20.0f);
 
     glDisable(GL_CULL_FACE);
     glEnable(GL_TEXTURE_2D);
@@ -141,13 +163,13 @@ void BlueprintBuilding::RenderAlphas(float _predictionTime)
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((ourPos - rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(ourPos, rightAngle));
     glTexCoord2i(0, 1);
-    glVertex3fv((ourPos + rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(ourPos, rightAngle));
     glTexCoord2i(1, 1);
-    glVertex3fv((theirPos + rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(theirPos, rightAngle));
     glTexCoord2i(1, 0);
-    glVertex3fv((theirPos - rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(theirPos, rightAngle));
     glEnd();
 
     glDepthMask(true);
@@ -155,7 +177,7 @@ void BlueprintBuilding::RenderAlphas(float _predictionTime)
     glDisable(GL_TEXTURE_2D);
   }
 
-  // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,50,0), 10.0f, "%d Infected %2.2f", m_segment, m_infected );
+  // g_editorFont.DrawText3DCentre( m_pos+XMFLOAT3(0,50,0), 10.0f, "%d Infected %2.2f", m_segment, m_infected );
 }
 
 
@@ -344,19 +366,29 @@ int BlueprintStore::GetNumClean()
 }
 
 
-void BlueprintStore::GetDisplay(Vector3& _pos, Vector3& _right, Vector3& _up, float& _size)
+void BlueprintStore::GetDisplay(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _right, DirectX::XMFLOAT3& _up, float& _size)
 {
   _size = 50.0f;
 
-  Vector3 front = m_front;
-  front.RotateAroundY(sinf(g_gameTime) * 0.3f);
+  DirectX::XMVECTOR const front =
+    DirectX::XMVector3TransformNormal(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(sinf(g_gameTime) * 0.3f));
 
-  Vector3 up = g_upVector;
-  up.RotateAround(AsLegacy(m_front) * cosf(g_gameTime) * 0.1f);
+  // RotateAround's angle is the axis vector's magnitude, with its own 1e-8 guard.
+  DirectX::XMVECTOR up = DirectX::g_XMIdentityR1;
+  DirectX::XMVECTOR const spinAxis = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), cosf(g_gameTime) * 0.1f);
+  float const spinLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(spinAxis));
+  if (spinLengthSquared >= 1e-8f)
+  {
+    float const spin = sqrtf(spinLengthSquared);
+    up = DirectX::XMVector3Transform(up, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(spinAxis, 1.0f / spin), spin));
+  }
 
-  _pos = AsLegacy(m_pos) + up * 50.0f - front * _size;
-  _right = front;
-  _up = up;
+  DirectX::XMVECTOR position = DirectX::XMVectorMultiplyAdd(up, DirectX::XMVectorReplicate(50.0f), DirectX::XMLoadFloat3(&m_pos));
+  position = DirectX::XMVectorNegativeMultiplySubtract(front, DirectX::XMVectorReplicate(_size), position);
+
+  DirectX::XMStoreFloat3(&_pos, position);
+  DirectX::XMStoreFloat3(&_right, front);
+  DirectX::XMStoreFloat3(&_up, up);
 }
 
 
@@ -366,7 +398,7 @@ void BlueprintStore::Render(float _predictionTime)
 
   //    for( int i = 0; i < BLUEPRINTSTORE_NUMSEGMENTS; ++i )
   //    {
-  //        g_editorFont.DrawText3DCentre( m_pos+Vector3(0,170+i*20,0), 20, "Segment %d : %2.2f", i, m_segments[i] );
+  //        g_editorFont.DrawText3DCentre( m_pos+XMFLOAT3(0,170+i*20,0), 20, "Segment %d : %2.2f", i, m_segments[i] );
   //    }
 }
 
@@ -376,7 +408,7 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
 {
     BlueprintBuilding::RenderAlphas( _predictionTime );
 
-    Vector3 screenPos, screenRight, screenUp;
+    XMFLOAT3 screenPos, screenRight, screenUp;
     float screenSize;
     GetDisplay( screenPos, screenRight, screenUp, screenSize );
 
@@ -397,10 +429,10 @@ void BlueprintStore::RenderAlphas( float _predictionTime )
             float ty = (float) y / (float) numSteps;
             float size = 1.0f / (float) numSteps;
 
-            Vector3 pos = screenPos + x * screenRight * screenSize
-                                    + y * screenUp * screenSize;
-            Vector3 width = screenRight * screenSize;
-            Vector3 height = screenUp * screenSize;
+            XMFLOAT3 pos = screenPos + x * screenRight * screenSize
+                                     + y * screenUp * screenSize;
+            XMFLOAT3 width = screenRight * screenSize;
+            XMFLOAT3 height = screenUp * screenSize;
 
             float infected = m_segments[y*numSteps+x] / 100.0f;
             glColor4f( infected*0.8f, 0.8f-infected*0.8f, 0.0f, 1.0f );
@@ -423,9 +455,15 @@ void BlueprintStore::RenderAlphas(float _predictionTime)
 {
   BlueprintBuilding::RenderAlphas(_predictionTime);
 
-  Vector3 screenPos, screenRight, screenUp;
+  DirectX::XMFLOAT3 screenPosStore, screenRightStore, screenUpStore;
   float screenSize;
-  GetDisplay(screenPos, screenRight, screenUp, screenSize);
+  GetDisplay(screenPosStore, screenRightStore, screenUpStore, screenSize);
+
+  // The four corners below are all screenPos plus these two edges, and both
+  // edges carry the * 2 the legacy expressions applied at each corner.
+  DirectX::XMVECTOR const screenPos = DirectX::XMLoadFloat3(&screenPosStore);
+  DirectX::XMVECTOR const acrossQuad = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&screenRightStore), screenSize * 2);
+  DirectX::XMVECTOR const upQuad = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&screenUpStore), screenSize * 2);
 
   //
   // Render main citizen
@@ -447,22 +485,22 @@ void BlueprintStore::RenderAlphas(float _predictionTime)
   float infected = m_segments[0] / 100.0f;
   glColor4f(infected * 0.8f, 0.8f - infected * 0.8f, 0.0f, 1.0f);
   glTexCoord2f(texX, texY);
-  glVertex3fv(screenPos.GetData());
+  EmitVertex(screenPos);
 
   infected = m_segments[1] / 100.0f;
   glColor4f(infected * 0.8f, 0.8f - infected * 0.8f, 0.0f, 1.0f);
   glTexCoord2f(texX + texW, texY);
-  glVertex3fv((screenPos + screenRight * screenSize * 2).GetData());
+  EmitVertex(DirectX::XMVectorAdd(screenPos, acrossQuad));
 
   infected = m_segments[2] / 100.0f;
   glColor4f(infected * 0.8f, 0.8f - infected * 0.8f, 0.0f, 1.0f);
   glTexCoord2f(texX + texW, texY + texH);
-  glVertex3fv((screenPos + screenRight * screenSize * 2 + screenUp * screenSize * 2).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(screenPos, acrossQuad), upQuad));
 
   infected = m_segments[3] / 100.0f;
   glColor4f(infected * 0.8f, 0.8f - infected * 0.8f, 0.0f, 1.0f);
   glTexCoord2f(texX, texY + texH);
-  glVertex3fv((screenPos + screenUp * screenSize * 2).GetData());
+  EmitVertex(DirectX::XMVectorAdd(screenPos, upQuad));
   glEnd();
 
   //
@@ -484,22 +522,22 @@ void BlueprintStore::RenderAlphas(float _predictionTime)
     float infected = m_segments[0] / 100.0f;
     glColor4f(infected * 0.8f, 0.8f - infected * 0.8f, 0.0f, 1.0f);
     glTexCoord2f(texX, texY);
-    glVertex3fv(screenPos.GetData());
+    EmitVertex(screenPos);
 
     infected = m_segments[1] / 100.0f;
     glColor4f(infected * 0.8f, 0.8f - infected * 0.8f, 0.0f, 1.0f);
     glTexCoord2f(texX + texW, texY);
-    glVertex3fv((screenPos + screenRight * screenSize * 2).GetData());
+    EmitVertex(DirectX::XMVectorAdd(screenPos, acrossQuad));
 
     infected = m_segments[2] / 100.0f;
     glColor4f(infected * 0.8f, 0.8f - infected * 0.8f, 0.0f, 1.0f);
     glTexCoord2f(texX + texW, texY + texH);
-    glVertex3fv((screenPos + screenRight * screenSize * 2 + screenUp * screenSize * 2).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(screenPos, acrossQuad), upQuad));
 
     infected = m_segments[3] / 100.0f;
     glColor4f(infected * 0.8f, 0.8f - infected * 0.8f, 0.0f, 1.0f);
     glTexCoord2f(texX, texY + texH);
-    glVertex3fv((screenPos + screenUp * screenSize * 2).GetData());
+    EmitVertex(DirectX::XMVectorAdd(screenPos, upQuad));
     glEnd();
 
     texY *= 1.5f;
@@ -608,7 +646,8 @@ void BlueprintConsole::Render(float _predictionTime)
 {
   BlueprintBuilding::Render(_predictionTime);
 
-  Matrix34 mat(m_front, g_upVector, m_pos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
   m_shape->Render(0.0f, mat);
 }
 
@@ -617,23 +656,29 @@ void BlueprintConsole::RenderPorts()
 {
   for (int i = 0; i < GetNumPorts(); ++i)
   {
-    Vector3 portPos;
-    Vector3 portFront;
+    DirectX::XMFLOAT3 portPos;
+    DirectX::XMFLOAT3 portFront;
     GetPortPosition(i, portPos, portFront);
 
-    Vector3 portUp = g_upVector;
-    Matrix34 mat(portFront, portUp, portPos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&portFront), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&portPos)));
 
     //
     // Render the status light
 
     float size = 6.0f;
-    Vector3 camR = g_camera->GetRight() * size;
-    Vector3 camU = g_camera->GetUp() * size;
+    // CameraAccess::GetRight and GetUp are pure virtuals and still return
+    // Vector3 -- they move with their implementors in T12/T22.
+    DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
+    DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
+    DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), size);
+    DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), size);
 
-    Vector3 statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
     statusPos.y = g_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
     statusPos.y += 5.0f;
+    DirectX::XMVECTOR const status = DirectX::XMLoadFloat3(&statusPos);
 
     WorldObjectId occupantId = GetPortOccupant(i);
     if (!occupantId.IsValid())
@@ -654,13 +699,13 @@ void BlueprintConsole::RenderPorts()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((statusPos - camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(status, camR), camU));
     glTexCoord2i(1, 0);
-    glVertex3fv((statusPos + camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(status, camR), camU));
     glTexCoord2i(1, 1);
-    glVertex3fv((statusPos + camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(status, camR), camU));
     glTexCoord2i(0, 1);
-    glVertex3fv((statusPos - camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(status, camR), camU));
     glEnd();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_BLEND);
@@ -692,7 +737,8 @@ void BlueprintRelay::Initialise(Building* _template)
   m_altitude = blueprintRelay->m_altitude;
 
   m_pos.y = m_altitude;
-  Matrix34 mat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
   m_centrePos = m_shape->CalculateCentre(mat);
 }
 
@@ -701,7 +747,8 @@ void BlueprintRelay::SetDetail(int _detail)
 {
   m_pos.y = m_altitude;
 
-  Matrix34 mat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
   m_centrePos = m_shape->CalculateCentre(mat);
   m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 }
@@ -711,13 +758,14 @@ bool BlueprintRelay::Advance()
 {
   float ourTime = g_gameTime + m_id.GetUniqueId() + m_id.GetIndex();
 
-  Vector3 oldPos = m_pos;
+  DirectX::XMVECTOR const oldPos = DirectX::XMLoadFloat3(&m_pos);
 
   m_pos.x += sinf(ourTime / 1.5f) * 1.0f;
   m_pos.y += sinf(ourTime / 1.3f) * 1.0f;
   m_pos.z += cosf(ourTime / 1.7f) * 1.0f;
 
-  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_vel,
+                         DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), oldPos), 1.0f / SERVER_ADVANCE_PERIOD));
 
   m_centrePos = m_pos;
 

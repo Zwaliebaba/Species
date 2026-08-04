@@ -12,7 +12,7 @@ class BlueprintBuilding : public Building
 
   protected:
     ShapeMarker* m_marker;
-    Vector3 m_vel;
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
   public:
     BlueprintBuilding();
@@ -25,7 +25,7 @@ class BlueprintBuilding : public Building
 
     virtual void SendBlueprint(int _segment, bool _infected);
 
-    Matrix34 GetMarker(float _predictionTime);
+    DirectX::XMFLOAT4X4 GetMarker(float _predictionTime);
 
     void Read(TextReader* _in, bool _dynamic);
     void Write(FileWriter* _out);
@@ -47,7 +47,7 @@ class BlueprintStore : public BlueprintBuilding
   public:
     BlueprintStore();
 
-    void GetDisplay(Vector3& _pos, Vector3& _right, Vector3& _up, float& _size);
+    void GetDisplay(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _right, DirectX::XMFLOAT3& _up, float& _size);
 
     void Initialise(Building* _template);
     bool Advance();
