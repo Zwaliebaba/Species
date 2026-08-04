@@ -255,7 +255,7 @@ tasks:
     verify:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Characterisation before conversion, the documented exception to
       tests-ship-with-the-change (docs/TESTING.md). NetworkUpdateTests already
@@ -282,7 +282,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       LandscapeRenderer.cpp:232 derives m_normOffset, m_colOffset and m_uvOffset
       from sizeof(Vector3); TrunkPort.cpp:47 memsets m_heightMapSize^2 *
