@@ -51,7 +51,7 @@ public:
     void RenderAlphas   ( float predictionTime );
     void RenderLights   ();
 
-    bool PerformDepthSort   ( Vector3 &_centrePos );
+    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos);
     bool IsInView           ();
 
     void Read   ( TextReader *_in, bool _dynamic );
@@ -70,10 +70,10 @@ public:
 
     float GetFenceFullHeight    ();
 
-    bool DoesSphereHit          (Vector3 const &_pos, float _radius);
-    bool DoesRayHit             (Vector3 const &_rayStart, Vector3 const &_rayDir,
-                                 float _rayLen=1e10, Vector3 *_pos=nullptr, Vector3 *_norm=nullptr);
-    bool DoesShapeHit           (Shape *_shape, Matrix34 _transform);
+    bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
+    bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen = 1e10, DirectX::XMFLOAT3* _pos = nullptr,
+                    DirectX::XMFLOAT3* _norm = nullptr);
+    bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 

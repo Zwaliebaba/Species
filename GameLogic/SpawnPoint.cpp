@@ -613,7 +613,7 @@ void SpawnPoint::TriggerSpirit(SpawnBuildingSpirit* _spirit)
 }
 
 
-bool SpawnPoint::PerformDepthSort(Vector3& _centrePos)
+bool SpawnPoint::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
 {
   _centrePos = m_centrePos;
   return true;
@@ -931,7 +931,7 @@ void SpawnPopulationLock::Write(FileWriter* _out)
 }
 
 
-bool SpawnPopulationLock::DoesSphereHit(Vector3 const& _pos, float _radius) { return false; }
+bool SpawnPopulationLock::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
 
 
-bool SpawnPopulationLock::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return false; }
+bool SpawnPopulationLock::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }

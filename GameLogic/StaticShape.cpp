@@ -70,7 +70,8 @@ void StaticShape::SetShapeName(char* _shapeName)
 }
 
 
-bool StaticShape::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* norm)
+bool StaticShape::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                             DirectX::XMFLOAT3* norm)
 {
   if (m_shape)
   {
@@ -87,7 +88,7 @@ bool StaticShape::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, f
   }
 }
 
-bool StaticShape::DoesSphereHit(Vector3 const& _pos, float _radius)
+bool StaticShape::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   if (m_shape)
   {
@@ -105,7 +106,7 @@ bool StaticShape::DoesSphereHit(Vector3 const& _pos, float _radius)
   }
 }
 
-bool StaticShape::DoesShapeHit(Shape* _shape, Matrix34 _theTransform)
+bool StaticShape::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _theTransform)
 {
   if (m_shape)
   {

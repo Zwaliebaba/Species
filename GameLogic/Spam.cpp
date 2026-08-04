@@ -114,7 +114,7 @@ void Spam::Render(float _predictionTime)
   rotateAround.Normalise();
 
   AsLegacy(m_front).RotateAround(rotateAround * g_advanceTime);
-  m_up.RotateAround(rotateAround * g_advanceTime);
+  AsLegacy(m_up).RotateAround(rotateAround * g_advanceTime);
 
   Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   Matrix34 mat(m_front, m_up, predictedPos);

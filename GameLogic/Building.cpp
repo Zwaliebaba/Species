@@ -90,7 +90,18 @@ Building::Building()
 
   m_id.SetTeamId(1);
 
-  m_up = g_upVector;
+  m_up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+}
+
+
+// Every render and hit-test path in this file builds the same matrix from the
+// building's own basis, ten times over. BasisFromFrontAndUp states the
+// convention; this states which vectors this class feeds it.
+DirectX::XMFLOAT4X4 Building::GetWorldMatrix() const
+{
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
+  return mat;
 }
 
 void Building::Initialise(Building* _template)
@@ -106,7 +117,7 @@ void Building::Initialise(Building* _template)
 
   if (m_shape)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
     m_centrePos = m_shape->CalculateCentre(mat);
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 
@@ -133,7 +144,7 @@ void Building::SetDetail(int _detail)
 
   if (m_shape)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
     m_centrePos = m_shape->CalculateCentre(mat);
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 
@@ -194,7 +205,7 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
 
   int i;
 
-  Matrix34 buildingMat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 buildingMat = GetWorldMatrix();
 
   for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
   {
@@ -203,9 +214,18 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
     {
       BuildingPort* port = new BuildingPort();
       port->m_marker = marker;
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
+      // the conversion to XMFLOAT4X4 happens on assignment. From here the rows
+      // are numbered: _41.._43 is the position, _31.._33 the front.
       port->m_mat = marker->GetWorldMatrix(buildingMat);
-      port->m_mat.pos = PushFromBuilding(port->m_mat.pos, 5.0f);
-      port->m_mat.pos.y = g_location->m_landscape.m_heightMap->GetValue(port->m_mat.pos.x, port->m_mat.pos.z);
+
+      DirectX::XMFLOAT3 portPos(port->m_mat._41, port->m_mat._42, port->m_mat._43);
+      portPos = PushFromBuilding(portPos, 5.0f);
+      portPos.y = g_location->m_landscape.m_heightMap->GetValue(portPos.x, portPos.z);
+
+      port->m_mat._41 = portPos.x;
+      port->m_mat._42 = portPos.y;
+      port->m_mat._43 = portPos.z;
 
       for (int t = 0; t < NUM_TEAMS; ++t)
       {
@@ -257,11 +277,11 @@ void Building::SetTeamId(int _teamId)
 }
 
 
-Vector3 Building::PushFromBuilding(Vector3 const& pos, float _radius)
+DirectX::XMFLOAT3 Building::PushFromBuilding(DirectX::XMFLOAT3 const& pos, float _radius)
 {
   START_PROFILE(g_profiler, "PushFromBuilding");
 
-  Vector3 result = pos;
+  DirectX::XMFLOAT3 result = pos;
 
   bool hit = false;
   if (DoesSphereHit(result, _radius))
@@ -269,10 +289,18 @@ Vector3 Building::PushFromBuilding(Vector3 const& pos, float _radius)
 
   if (hit)
   {
-    Vector3 pushForce = (AsLegacy(m_pos) - result).SetLength(2.0f);
+    // The same load-bearing zero-length fallback as Entity and Citizen: the
+    // legacy SetLength left (2,0,0), and without it this loop cannot terminate.
+    DirectX::XMVECTOR pushForce = DirectX::XMVectorScale(
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&result))), 2.0f);
+    if (DirectX::XMVector3Equal(pushForce, DirectX::XMVectorZero()))
+    {
+      pushForce = DirectX::XMVectorSet(2.0f, 0.0f, 0.0f, 0.0f);
+    }
+
     while (DoesSphereHit(result, _radius))
     {
-      result -= pushForce;
+      DirectX::XMStoreFloat3(&result, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&result), pushForce));
     }
   }
 
@@ -285,7 +313,7 @@ Vector3 Building::PushFromBuilding(Vector3 const& pos, float _radius)
 bool Building::IsInView() { return (g_camera->SphereInViewFrustum(m_centrePos, m_radius)); }
 
 
-bool Building::PerformDepthSort(Vector3& _centrePos) { return false; }
+bool Building::PerformDepthSort(DirectX::XMFLOAT3& _centrePos) { return false; }
 
 
 void Building::Render(float predictionTime)
@@ -293,15 +321,19 @@ void Building::Render(float predictionTime)
 #ifdef DEBUG_RENDER_ENABLED
   if (g_editing)
   {
-    Vector3 pos(m_pos);
+    DirectX::XMFLOAT3 pos(m_pos);
     pos.y += 5.0f;
-    RenderArrow(pos, pos + m_front * 20.0f, 4.0f);
+
+    DirectX::XMFLOAT3 tip;
+    DirectX::XMStoreFloat3(
+      &tip, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front), DirectX::XMVectorReplicate(20.0f), DirectX::XMLoadFloat3(&pos)));
+    RenderArrow(pos, tip, 4.0f);
   }
 #endif
 
   if (m_shape)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
     m_shape->Render(predictionTime, mat);
 
     // m_shape->RenderMarkers(mat);
@@ -334,13 +366,16 @@ void Building::RenderLights()
       for (int i = 0; i < static_cast<int>(m_lights.size()); ++i)
       {
         ShapeMarker* marker = m_lights[i];
-        Matrix34 rootMat(m_front, m_up, m_pos);
+        DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
         Matrix34 worldMat = marker->GetWorldMatrix(rootMat);
-        Vector3 lightPos = worldMat.pos;
+        // GetWorldMatrix on a ShapeMarker still returns Matrix34 -- T10's seam.
+        DirectX::XMFLOAT3 const lightPos = worldMat.pos;
 
         float signalSize = 6.0f;
-        Vector3 camR = g_camera->GetRight();
-        Vector3 camU = g_camera->GetUp();
+
+        // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
+        DirectX::XMFLOAT3 const camR = g_camera->GetRight();
+        DirectX::XMFLOAT3 const camU = g_camera->GetUp();
 
         if (m_id.GetTeamId() == 255)
         {
@@ -402,7 +437,7 @@ void Building::EvaluatePorts()
     int numFound;
     if (g_location->m_entityGrid)
     {
-      WorldObjectId* ids = g_location->m_entityGrid->GetNeighbours(port->m_mat.pos.x, port->m_mat.pos.z, 5.0f, &numFound);
+      WorldObjectId* ids = g_location->m_entityGrid->GetNeighbours(port->m_mat._41, port->m_mat._43, 5.0f, &numFound);
       for (int i = 0; i < numFound; ++i)
       {
         WorldObjectId id = ids[i];
@@ -446,8 +481,8 @@ void Building::RenderPorts()
 
   for (int i = 0; i < GetNumPorts(); ++i)
   {
-    Vector3 portPos;
-    Vector3 portFront;
+    DirectX::XMFLOAT3 portPos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 portFront{0.0f, 0.0f, 0.0f};
     GetPortPosition(i, portPos, portFront);
 
 
@@ -455,8 +490,8 @@ void Building::RenderPorts()
     // Render the port shape
 
     portPos.y = g_location->m_landscape.m_heightMap->GetValue(portPos.x, portPos.z) + 0.5f;
-    Vector3 portUp = g_upVector;
-    Matrix34 mat(portFront, portUp, portPos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&portFront), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&portPos)));
 
     if (buildingDetail < 3)
     {
@@ -471,10 +506,13 @@ void Building::RenderPorts()
 
     float size = 6.0f;
 
-    Vector3 camR = g_camera->GetRight() * size;
-    Vector3 camU = g_camera->GetUp() * size;
+    DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
+    DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
 
-    Vector3 statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
+    DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), size);
+    DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), size);
+
+    DirectX::XMFLOAT3 const statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
 
     if (GetPortOccupant(i).IsValid())
       glColor4f(0.3f, 1.0f, 0.3f, 1.0f);
@@ -513,7 +551,7 @@ void Building::RenderHitCheck()
 #ifdef DEBUG_RENDER_ENABLED
   if (m_shape)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
     m_shape->RenderHitCheck(mat);
   }
   else
@@ -533,9 +571,9 @@ void Building::RenderLink()
     Building* linkBuilding = g_location->GetBuilding(buildingId);
     if (linkBuilding)
     {
-      Vector3 start = m_pos;
+      DirectX::XMFLOAT3 start = m_pos;
       start.y += 10.0f;
-      Vector3 end = linkBuilding->m_pos;
+      DirectX::XMFLOAT3 end = linkBuilding->m_pos;
       end.y += 10.0f;
       RenderArrow(start, end, 6.0f, RGBAColour(255, 0, 255));
     }
@@ -549,7 +587,10 @@ void Building::Destroy(float _intensity)
 {
   m_destroyed = true;
 
-  Matrix34 mat(m_front, g_upVector, m_pos);
+  // m_up rather than the global: Destroy used g_upVector where every other
+  // site in this file used m_up, and for an upright building they are the
+  // same vector. Kept as GetWorldMatrix so the basis is stated once.
+  DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
   for (int i = 0; i < 3; ++i)
   {
     g_explosionManager.AddExplosion(m_shape, mat);
@@ -560,7 +601,8 @@ void Building::Destroy(float _intensity)
 
   for (int i = 0; i < (int)(_intensity / 4.0f); ++i)
   {
-    Vector3 vel(0.0f, 0.0f, 0.0f);
+    // Three syncsfrand draws per fragment, in this order and count.
+    DirectX::XMFLOAT3 vel(0.0f, 0.0f, 0.0f);
     vel.x += syncsfrand(100.0f);
     vel.y += syncsfrand(100.0f);
     vel.z += syncsfrand(100.0f);
@@ -568,12 +610,13 @@ void Building::Destroy(float _intensity)
   }
 }
 
-bool Building::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* norm)
+bool Building::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                          DirectX::XMFLOAT3* norm)
 {
   if (m_shape)
   {
     RayPackage ray(_rayStart, _rayDir, _rayLen);
-    Matrix34 transform(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 transform = GetWorldMatrix();
     return m_shape->RayHit(&ray, transform, true);
   }
   else
@@ -582,12 +625,12 @@ bool Building::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, floa
   }
 }
 
-bool Building::DoesSphereHit(Vector3 const& _pos, float _radius)
+bool Building::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   if (m_shape)
   {
     SpherePackage sphere(_pos, _radius);
-    Matrix34 transform(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 transform = GetWorldMatrix();
     return m_shape->SphereHit(&sphere, transform);
   }
   else
@@ -597,11 +640,11 @@ bool Building::DoesSphereHit(Vector3 const& _pos, float _radius)
   }
 }
 
-bool Building::DoesShapeHit(Shape* _shape, Matrix34 _theTransform)
+bool Building::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _theTransform)
 {
   if (m_shape)
   {
-    Matrix34 ourTransform(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 ourTransform = GetWorldMatrix();
     // return m_shape->ShapeHit( _shape, _theTransform, ourTransform, true );
     return _shape->ShapeHit(m_shape, ourTransform, _theTransform, true);
   }
@@ -644,13 +687,13 @@ WorldObjectId Building::GetPortOccupant(int _portId)
 }
 
 
-bool Building::GetPortPosition(int _portId, Vector3& _pos, Vector3& _front)
+bool Building::GetPortPosition(int _portId, DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
   if (ValidIndex(m_ports, _portId))
   {
     BuildingPort* port = m_ports[_portId];
-    _pos = port->m_mat.pos;
-    _front = port->m_mat.f;
+    _pos = DirectX::XMFLOAT3(port->m_mat._41, port->m_mat._42, port->m_mat._43);
+    _front = DirectX::XMFLOAT3(port->m_mat._31, port->m_mat._32, port->m_mat._33);
     return true;
   }
 

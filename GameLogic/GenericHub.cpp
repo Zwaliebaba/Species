@@ -400,7 +400,7 @@ void DynamicNode::Render(float _predictionTime)
   {
     m_up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
     Vector3 right(1, 0, 0);
-    m_front = right ^ m_up;
+    m_front = right ^ AsLegacy(m_up);
   }
 
   glShadeModel(GL_SMOOTH);

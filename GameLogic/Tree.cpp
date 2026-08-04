@@ -284,7 +284,7 @@ void Tree::Render(float _predictionTime)
 }
 
 
-bool Tree::PerformDepthSort(Vector3& _centrePos)
+bool Tree::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
 {
   _centrePos = AsLegacy(m_pos) + m_hitcheckCentre * m_height;
   return true;
@@ -385,7 +385,7 @@ void Tree::Damage(float _damage)
   }
 }
 
-bool Tree::DoesSphereHit(Vector3 const& _pos, float _radius)
+bool Tree::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   if (SphereSphereIntersection(m_pos, 10.0f, _pos, _radius))
   {
@@ -402,7 +402,7 @@ bool Tree::DoesSphereHit(Vector3 const& _pos, float _radius)
   return false;
 }
 
-bool Tree::DoesShapeHit(Shape* _shape, Matrix34 _transform)
+bool Tree::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
 {
   SpherePackage packageA(m_pos, 10.0f);
   if (_shape->SphereHit(&packageA, _transform))
@@ -421,7 +421,8 @@ bool Tree::DoesShapeHit(Shape* _shape, Matrix34 _transform)
   return false;
 }
 
-bool Tree::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* _norm)
+bool Tree::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                      DirectX::XMFLOAT3* _norm)
 {
   if (RaySphereIntersection(_rayStart, _rayDir, m_pos, 10.00f, _rayLen, _pos, _norm))
   {

@@ -35,7 +35,7 @@ public:
     int  GetBuildingLink();
     void SetBuildingLink(int _buildingId);
 
-    bool    DoesSphereHit   (Vector3 const &_pos, float _radius);
+    bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
 
     void ListSoundEvents(std::vector<const char*>* _list);
     bool IsInView();

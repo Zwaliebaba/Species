@@ -160,7 +160,7 @@ void TrunkPort::Render(float predictionTime)
 }
 
 
-bool TrunkPort::PerformDepthSort(Vector3& _centrePos)
+bool TrunkPort::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
 {
   _centrePos = m_centrePos;
 

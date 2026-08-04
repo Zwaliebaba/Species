@@ -225,7 +225,7 @@ bool LaserFence::IsInView()
 }
 
 
-bool LaserFence::PerformDepthSort(Vector3& _centrePos)
+bool LaserFence::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
 {
   if (m_mode == ModeDisabled)
     return false;
@@ -492,7 +492,7 @@ void LaserFence::SetBuildingLink(int _buildingId) { m_nextLaserFenceId = _buildi
 void LaserFence::Electrocute(Vector3 const& _pos) { g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Electrocute"); }
 
 
-bool LaserFence::DoesSphereHit(Vector3 const& _pos, float _radius)
+bool LaserFence::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   if (m_mode == ModeDisabled || g_editing)
   {
@@ -533,7 +533,8 @@ bool LaserFence::DoesSphereHit(Vector3 const& _pos, float _radius)
 }
 
 
-bool LaserFence::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* _norm)
+bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                            DirectX::XMFLOAT3* _norm)
 {
   if (m_mode == ModeDisabled || g_editing)
   {
@@ -585,7 +586,10 @@ bool LaserFence::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, fl
 }
 
 
-bool LaserFence::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return DoesSphereHit(_transform.pos, _shape->m_rootFragment->m_radius); }
+bool LaserFence::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
+{
+  return DoesSphereHit(_transform.pos, _shape->m_rootFragment->m_radius);
+}
 
 
 void LaserFence::ListSoundEvents(std::vector<const char*>* _list)

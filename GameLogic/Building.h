@@ -2,8 +2,9 @@
 
 #include <vector>
 
-#include "Vector3.h"
 #include "Matrix34.h"
+#include "NeuronMath.h"
+#include "Vector3.h"
 
 #include "Entity.h"
 #include "WorldObject.h"
@@ -84,12 +85,15 @@ class Building : public WorldObject
       NumBuildingTypes
     };
 
-    Vector3 m_front;
-    Vector3 m_up;
+    // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
+    // not. Building's constructor assigns m_front and m_up but not m_centrePos,
+    // which Initialise accumulates into via the shape's centre.
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
     float m_timeOfDeath;
     bool m_dynamic; // Only appears on this level, not all levels for this map
     bool m_isGlobal;
-    Vector3 m_centrePos;
+    DirectX::XMFLOAT3 m_centrePos{0.0f, 0.0f, 0.0f};
     float m_radius;
 
     bool m_destroyed; // Building has been destroyed using the script command DestroyBuilding, remove it next Advance
@@ -122,7 +126,11 @@ class Building : public WorldObject
     virtual void RenderHitCheck();
     virtual void RenderLink(); // ie link to another building
 
-    virtual bool PerformDepthSort(Vector3& _centrePos); // Return true if you plan to use transparencies
+    // The building's own basis as a world matrix. Ten sites in Building.cpp
+    // built it inline from m_front, m_up and m_pos; this states it once.
+    DirectX::XMFLOAT4X4 GetWorldMatrix() const;
+
+    virtual bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos); // Return true if you plan to use transparencies
 
     virtual void SetTeamId(int _teamId);
     virtual void Reprogram(float _complete);
@@ -131,23 +139,24 @@ class Building : public WorldObject
     virtual void Damage(float _damage);
     virtual void Destroy(float _intensity);
 
-    Vector3 PushFromBuilding(Vector3 const& _pos, float _radius);
+    DirectX::XMFLOAT3 PushFromBuilding(DirectX::XMFLOAT3 const& _pos, float _radius);
 
     virtual void EvaluatePorts();
     virtual int GetNumPorts();
     virtual int GetNumPortsOccupied();
     virtual WorldObjectId GetPortOccupant(int _portId);
-    virtual bool GetPortPosition(int _portId, Vector3& _pos, Vector3& _front);
+    virtual bool GetPortPosition(int _portId, DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
 
     virtual void OperatePort(int _portId, int _teamId);
     virtual int GetPortOperatorCount(int _portId, int _teamId);
 
     virtual char const* GetObjectiveCounter();
 
-    virtual bool DoesSphereHit(Vector3 const& _pos, float _radius);
-    virtual bool DoesShapeHit(Shape* _shape, Matrix34 _transform);
-    virtual bool DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen = 1e10, Vector3* _pos = nullptr,
-                            Vector3* _norm = nullptr); // pos/norm will not always be available
+    virtual bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
+    virtual bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);
+    virtual bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen = 1e10,
+                            DirectX::XMFLOAT3* _pos = nullptr,
+                            DirectX::XMFLOAT3* _norm = nullptr); // pos/norm will not always be available
 
     virtual void ListSoundEvents(std::vector<const char*>* _list);
 
@@ -171,6 +180,6 @@ class BuildingPort
   public:
     ShapeMarker* m_marker;
     WorldObjectId m_occupant;
-    Matrix34 m_mat;
+    DirectX::XMFLOAT4X4 m_mat;
     int m_counter[NUM_TEAMS];
 };

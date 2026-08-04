@@ -56,7 +56,7 @@ public:
     bool    GetEntrance     ( Vector3 &_pos, Vector3 &_front );
     bool    GetExit         ( Vector3 &_pos, Vector3 &_front );
 
-    bool    DoesSphereHit   (Vector3 const &_pos, float _radius);
+    bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
 
     bool    UpdateEntityInTransit( Entity *_entity );
 

@@ -706,7 +706,7 @@ void FuelStation::RenderAlphas(float _predictionTime)
 }
 
 
-bool FuelStation::PerformDepthSort(Vector3& _centrePos)
+bool FuelStation::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
 {
   _centrePos = m_centrePos;
   return true;

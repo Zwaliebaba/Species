@@ -109,7 +109,7 @@ class SpawnPoint : public SpawnBuilding
 
     bool Advance();
 
-    bool PerformDepthSort(Vector3& _centrePos);
+    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos);
 
     void TriggerSpirit(SpawnBuildingSpirit* _spirit);
 
@@ -146,6 +146,6 @@ class SpawnPopulationLock : public Building
     void Read(TextReader* _in, bool _dynamic);
     void Write(FileWriter* _out);
 
-    bool DoesSphereHit(Vector3 const& _pos, float _radius);
-    bool DoesShapeHit(Shape* _shape, Matrix34 _transform);
+    bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
+    bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);
 };

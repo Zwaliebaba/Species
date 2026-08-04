@@ -109,7 +109,8 @@ Matrix34 Triffid::GetHead()
 }
 
 
-bool Triffid::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* _norm)
+bool Triffid::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                         DirectX::XMFLOAT3* _norm)
 {
   Matrix34 mat = GetHead();
 

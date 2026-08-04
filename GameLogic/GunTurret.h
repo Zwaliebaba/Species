@@ -58,8 +58,8 @@ public:
     void Render         ( float _predictionTime );
     void RenderPorts    ();
 
-    bool DoesRayHit(Vector3 const &_rayStart, Vector3 const &_rayDir,
-                    float _rayLen, Vector3 *_pos, Vector3 *norm );
+    bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                    DirectX::XMFLOAT3* norm);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };

@@ -286,7 +286,7 @@ void FeedingTube::ListSoundEvents(std::vector<const char*>* _list)
 }
 
 
-bool FeedingTube::DoesSphereHit(Vector3 const& _pos, float _radius)
+bool FeedingTube::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   // This method is overridden for Radar Dish in order to expand the number
   // of cells the Radar Dish is placed into.  We were having problems where

@@ -29,7 +29,7 @@ public:
     void Render             ( float predictionTime );
     void RenderAlphas       ( float predictionTime );
 
-    bool PerformDepthSort   ( Vector3 &_centrePos );
+    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos);
 
     void ReprogramComplete();
 

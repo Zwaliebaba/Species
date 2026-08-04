@@ -147,13 +147,14 @@ void SafeArea::Render(float predictionTime)
 }
 
 
-bool SafeArea::DoesSphereHit(Vector3 const& _pos, float _radius) { return false; }
+bool SafeArea::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
 
 
-bool SafeArea::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return false; }
+bool SafeArea::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }
 
 
-bool SafeArea::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* _norm)
+bool SafeArea::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                          DirectX::XMFLOAT3* _norm)
 {
   if (g_editing)
   {

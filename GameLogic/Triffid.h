@@ -56,7 +56,8 @@ class Triffid : public Building
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
-    bool DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen = 1e10, Vector3* _pos = nullptr, Vector3* _norm = nullptr);
+    bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen = 1e10, DirectX::XMFLOAT3* _pos = nullptr,
+                    DirectX::XMFLOAT3* _norm = nullptr);
 
     static char const* GetSpawnName(int _spawnType);
     static char const* GetSpawnNameTranslated(int _spawnType);

@@ -527,7 +527,7 @@ void SolarPanel::Initialise(Building* _template)
 {
   _template->m_up = g_location->m_landscape.m_normalMap->GetValue(_template->m_pos.x, _template->m_pos.z);
   Vector3 right = Vector3(1, 0, 0);
-  _template->m_front = right ^ _template->m_up;
+  _template->m_front = right ^ AsLegacy(_template->m_up);
 
   PowerBuilding::Initialise(_template);
 }
@@ -616,7 +616,7 @@ void SolarPanel::Render(float _predictionTime)
   {
     m_up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
     Vector3 right(1, 0, 0);
-    m_front = right ^ m_up;
+    m_front = right ^ AsLegacy(m_up);
   }
 
   glShadeModel(GL_SMOOTH);

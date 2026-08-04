@@ -68,7 +68,7 @@ void GunTurret::Initialise(Building* _template)
 {
   _template->m_up = g_location->m_landscape.m_normalMap->GetValue(_template->m_pos.x, _template->m_pos.z);
   Vector3 right(1, 0, 0);
-  _template->m_front = right ^ _template->m_up;
+  _template->m_front = right ^ AsLegacy(_template->m_up);
 
   Building::Initialise(_template);
 
@@ -494,7 +494,8 @@ void GunTurret::RenderPorts()
   glEnable(GL_CULL_FACE);
 }
 
-bool GunTurret::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* norm)
+bool GunTurret::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                           DirectX::XMFLOAT3* norm)
 {
   if (g_editing)
   {

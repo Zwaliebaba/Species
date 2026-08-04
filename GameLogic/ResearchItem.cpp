@@ -146,7 +146,7 @@ void ResearchItem::Render(float _predictionTime)
   rotateAround.Normalise();
 
   AsLegacy(m_front).RotateAround(rotateAround * g_advanceTime);
-  m_up.RotateAround(rotateAround * g_advanceTime);
+  AsLegacy(m_up).RotateAround(rotateAround * g_advanceTime);
 
   Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   Matrix34 mat(m_front, m_up, predictedPos);
@@ -346,13 +346,14 @@ void ResearchItem::ListSoundEvents(std::vector<const char*>* _list)
 }
 
 
-bool ResearchItem::DoesSphereHit(Vector3 const& _pos, float _radius) { return false; }
+bool ResearchItem::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
 
 
-bool ResearchItem::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return false; }
+bool ResearchItem::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }
 
 
-bool ResearchItem::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* norm)
+bool ResearchItem::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                              DirectX::XMFLOAT3* norm)
 {
   return RaySphereIntersection(_rayStart, _rayDir, m_pos, m_radius, _rayLen);
 }

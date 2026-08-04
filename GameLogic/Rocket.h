@@ -110,7 +110,7 @@ public:
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
-    bool PerformDepthSort( Vector3 &_centrePos );
+    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos);
 };
 
 

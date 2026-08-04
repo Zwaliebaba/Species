@@ -614,10 +614,10 @@ void AITarget::RenderAlphas(float _predictionTime)
 }
 
 
-bool AITarget::DoesSphereHit(Vector3 const& _pos, float _radius) { return false; }
+bool AITarget::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
 
 
-bool AITarget::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return false; }
+bool AITarget::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }
 
 
 // ============================================================================
@@ -848,7 +848,7 @@ void AISpawnPoint::Write(FileWriter* _out)
 }
 
 
-bool AISpawnPoint::DoesSphereHit(Vector3 const& _pos, float _radius) { return false; }
+bool AISpawnPoint::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
 
 
-bool AISpawnPoint::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return false; }
+bool AISpawnPoint::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }
