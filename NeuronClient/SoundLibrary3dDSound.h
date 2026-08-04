@@ -45,7 +45,7 @@ class SoundLibrary3dDirectSound : public SoundLibrary3d
     void ResetChannel(int _channel); // Refills entire channel with data immediately
 
     void SetChannel3DMode(int _channel, int _mode); // 0 = 3d, 1 = head relative, 2 = disabled
-    void SetChannelPosition(int _channel, Vector3 const& _pos, Vector3 const& _vel);
+    void SetChannelPosition(int _channel, DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel);
     void SetChannelFrequency(int _channel, int _frequency);
     void SetChannelMinDistance(int _channel, float _minDistance);
     void SetChannelVolume(int _channel, float _volume); // logarithmic, 0.0 - 10.0, 0=practially silent
@@ -54,7 +54,8 @@ class SoundLibrary3dDirectSound : public SoundLibrary3d
     void UpdateDspFX(int _channel, int _filterType, int _numParams, float const* _params);
     void DisableDspFX(int _channel);
 
-    void SetListenerPosition(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up, Vector3 const& _vel);
+    void SetListenerPosition(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up,
+                             DirectX::XMFLOAT3 const& _vel);
 
     void Advance();
 };

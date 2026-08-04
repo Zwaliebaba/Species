@@ -43,11 +43,11 @@ class SoftwareChannel
     unsigned int m_samplesInBuffer;
     bool m_containsSilence; // Updated in callback
 
-    unsigned int m_freq; // Value recorded on previous call of SetChannelFrequency
-    float m_volume;      // Value recorded on previous call of SetChannelVolume
-    float m_minDist;     // Value recorded on previous call of SetChannelMinDist
-    Vector3 m_pos;       // Value recorded on previous call of SetChannelPosition
-    int m_3DMode;        // Value recorded on previous call of SetChannel3DMode
+    unsigned int m_freq;     // Value recorded on previous call of SetChannelFrequency
+    float m_volume;          // Value recorded on previous call of SetChannelVolume
+    float m_minDist;         // Value recorded on previous call of SetChannelMinDist
+    DirectX::XMFLOAT3 m_pos; // Value recorded on previous call of SetChannelPosition
+    int m_3DMode;            // Value recorded on previous call of SetChannel3DMode
 
     float m_oldVolLeft;     // Volumes used last time this channel was mixed into
     float m_oldVolRight;    // the output buffer
@@ -240,10 +240,10 @@ void SoundLibrary3dSoftware::CalcChannelVolumes(int _channelIndex, float* _left,
 
   if (channel->m_3DMode == SoundLibrary3d::Mode3dPositioned)
   {
-    Vector3 to = channel->m_pos - m_listenerPos;
-    float dist = to.Mag();
-    to /= dist;
-    float dotRight = to * m_listenerRight;
+    DirectX::XMVECTOR to = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&channel->m_pos), DirectX::XMLoadFloat3(&m_listenerPos));
+    float dist = DirectX::XMVectorGetX(DirectX::XMVector3Length(to));
+    to = DirectX::XMVectorDivide(to, DirectX::XMVectorReplicate(dist));
+    float dotRight = DirectX::XMVectorGetX(DirectX::XMVector3Dot(to, DirectX::XMLoadFloat3(&m_listenerRight)));
     *_right = (dotRight + 1.0f) * 0.5f;
     *_left = 1.0f - *_right;
 
@@ -460,7 +460,10 @@ int SoundLibrary3dSoftware::GetChannelBufSize(int _channel) const { return 0; }
 void SoundLibrary3dSoftware::SetChannel3DMode(int _channel, int _mode) { m_channels[_channel].m_3DMode = _mode; }
 
 
-void SoundLibrary3dSoftware::SetChannelPosition(int _channel, Vector3 const& _pos, Vector3 const& _vel) { m_channels[_channel].m_pos = _pos; }
+void SoundLibrary3dSoftware::SetChannelPosition(int _channel, DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel)
+{
+  m_channels[_channel].m_pos = _pos;
+}
 
 
 void SoundLibrary3dSoftware::SetChannelFrequency(int _channel, int _frequency) { m_channels[_channel].m_freq = _frequency; }
@@ -472,12 +475,13 @@ void SoundLibrary3dSoftware::SetChannelMinDistance(int _channel, float _minDista
 void SoundLibrary3dSoftware::SetChannelVolume(int _channel, float _volume) { m_channels[_channel].m_volume = _volume; }
 
 
-void SoundLibrary3dSoftware::SetListenerPosition(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up, Vector3 const& _vel)
+void SoundLibrary3dSoftware::SetListenerPosition(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up,
+                                                 DirectX::XMFLOAT3 const& _vel)
 {
   m_listenerPos = _pos;
   m_listenerFront = _front;
   m_listenerUp = _up;
-  m_listenerRight = m_listenerUp ^ m_listenerFront;
+  DirectX::XMStoreFloat3(&m_listenerRight, DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_listenerUp), DirectX::XMLoadFloat3(&m_listenerFront)));
 }
 
 

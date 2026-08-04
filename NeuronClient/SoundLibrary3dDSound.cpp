@@ -144,7 +144,7 @@ class DirectSoundChannel
     unsigned int m_freq; // Value recorded on previous call of SetChannelFrequency
     float m_volume;      // Value recorded on previous call of SetChannelVolume
     float m_minDist;     // Value recorded on previous call of SetChannelMinDist
-    Vector3 m_pos;       // Value recorded on previous call of SetChannelPosition
+    DirectX::XMFLOAT3 m_pos; // Value recorded on previous call of SetChannelPosition
     int m_3DMode;        // Value recorded on previous call of SetChannel3DMode
 
   public:
@@ -546,7 +546,7 @@ void SoundLibrary3dDirectSound::SetChannel3DMode(int _channel, int _mode)
 }
 
 
-void SoundLibrary3dDirectSound::SetChannelPosition(int _channel, Vector3 const& _pos, Vector3 const& _vel)
+void SoundLibrary3dDirectSound::SetChannelPosition(int _channel, DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel)
 {
   DirectSoundChannel* channel;
   if (_channel == m_musicChannelId)
@@ -554,9 +554,14 @@ void SoundLibrary3dDirectSound::SetChannelPosition(int _channel, Vector3 const& 
   else
     channel = &m_channels[_channel];
 
-  Vector3 listenerToOldPos(_pos - m_listenerPos);
-  Vector3 oldPosToNewPos(_pos - channel->m_pos);
-  if (oldPosToNewPos.MagSquared() > listenerToOldPos.MagSquared() * 0.0025f)
+  DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
+  DirectX::XMVECTOR const listenerToOldPos = DirectX::XMVectorSubtract(pos, DirectX::XMLoadFloat3(&m_listenerPos));
+  DirectX::XMVECTOR const oldPosToNewPos = DirectX::XMVectorSubtract(pos, DirectX::XMLoadFloat3(&channel->m_pos));
+
+  // Only move the buffer once it has drifted far enough relative to how far
+  // away it is, which is what stops every tick issuing a DirectSound call.
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(oldPosToNewPos)) >
+      DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(listenerToOldPos)) * 0.0025f)
   {
     channel->m_pos = _pos;
 
@@ -654,7 +659,8 @@ void SoundLibrary3dDirectSound::SetChannelVolume(int _channel, float _volume)
 }
 
 
-void SoundLibrary3dDirectSound::SetListenerPosition(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up, Vector3 const& _vel)
+void SoundLibrary3dDirectSound::SetListenerPosition(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up,
+                                                    DirectX::XMFLOAT3 const& _vel)
 {
   m_listenerPos = _pos;
 

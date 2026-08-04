@@ -1478,11 +1478,13 @@ void SoundSystem::Advance()
 
     START_PROFILE(g_profiler, "UpdateListener");
 
-    Vector3 camUp = g_camera->GetUp();
+    DirectX::XMFLOAT3 camUp = g_camera->GetUp();
     if (g_prefsManager->GetInt("SoundSwapStereo", 0) == 0)
-      camUp *= -1.0f;
+      DirectX::XMStoreFloat3(&camUp, DirectX::XMVectorNegate(DirectX::XMLoadFloat3(&camUp)));
 
-    Vector3 camVel = g_camera->GetVel() * 0.2f;
+    DirectX::XMFLOAT3 const cameraVelocity = g_camera->GetVel();
+    DirectX::XMFLOAT3 camVel;
+    DirectX::XMStoreFloat3(&camVel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraVelocity), 0.2f));
     g_soundLibrary3d->SetListenerPosition(g_camera->GetPos(), g_camera->GetFront(), camUp, camVel);
 
     END_PROFILE(g_profiler, "UpdateListener");
@@ -1716,7 +1718,7 @@ void SoundSystem::Advance()
 
         START_PROFILE(g_profiler, "UpdateListener" );
 
-        Vector3 camUp = g_camera->GetUp();
+        DirectX::XMFLOAT3 camUp = g_camera->GetUp();
         if( g_prefsManager->GetInt("SoundSwapStereo",0) == 1 )
         {
             camUp.y *= -1.0f;

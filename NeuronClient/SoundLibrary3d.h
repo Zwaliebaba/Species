@@ -13,7 +13,7 @@
 //*****************************************************************************
 
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 
 class Profiler;
@@ -29,7 +29,7 @@ class SoundLibrary3d
     int m_numChannels; // Total number of channels including the music channel
     int m_sampleRate;
     int m_masterVolume;
-    Vector3 m_listenerPos; // Records the most recent value passed into SetListenerPos
+    DirectX::XMFLOAT3 m_listenerPos; // Records the most recent value passed into SetListenerPos
 
     // This callback is called whenever SoundLibrary3d needs some more sound data for a certain channel.
     // The return value is true if some audio was written, or false if silence was written
@@ -86,7 +86,7 @@ class SoundLibrary3d
     virtual void ResetChannel(int _channel) = 0; // Refills entire channel with data immediately
 
     virtual void SetChannel3DMode(int _channel, int _mode) = 0;
-    virtual void SetChannelPosition(int _channel, Vector3 const& _pos, Vector3 const& _vel) = 0;
+    virtual void SetChannelPosition(int _channel, DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel) = 0;
     virtual void SetChannelFrequency(int _channel, int _frequency) = 0;
     virtual void SetChannelMinDistance(int _channel, float _minDistance) = 0;
     virtual void SetChannelVolume(int _channel, float _volume) = 0; // logarithmic, 0.0f - 10.0f
@@ -95,7 +95,8 @@ class SoundLibrary3d
     virtual void UpdateDspFX(int _channel, int _filterType, int _numParams, float const* _params) = 0;
     virtual void DisableDspFX(int _channel) = 0;
 
-    virtual void SetListenerPosition(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up, Vector3 const& _vel) = 0;
+    virtual void SetListenerPosition(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up,
+                                     DirectX::XMFLOAT3 const& _vel) = 0;
 
     virtual void Advance() = 0;
 
