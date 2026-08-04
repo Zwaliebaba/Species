@@ -24,6 +24,21 @@
 // Class ShapeMarker
 // ****************************************************************************
 
+// What Matrix34::Normalise did: re-orthonormalise the basis rows, front first,
+// leaving the translation alone.
+static DirectX::XMMATRIX NormaliseBasis(DirectX::FXMMATRIX _matrix)
+{
+  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(_matrix.r[2]);
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(_matrix.r[1], front));
+  DirectX::XMVECTOR const up = DirectX::XMVector3Cross(front, right);
+
+  return DirectX::XMMATRIX(right, up, front, _matrix.r[3]);
+}
+
+
+static void MultiplyGLMatrix(DirectX::XMFLOAT4X4 const& _matrix) { glMultMatrixf(&_matrix._11); }
+
+
 // *** Constructor
 // This constructor is used in the export process. The m_parents array is never
 // populated in the exporter, so it is intentionally left blank
@@ -153,19 +168,6 @@ Matrix34 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
 // live in renderer code rather than on the matrix type: a Direct3D backend
 // wants a different answer and would change it here and nowhere else. See
 // NeuronMath.h, "no math type knows which graphics API it is feeding".
-// What Matrix34::Normalise did: re-orthonormalise the basis rows, front first,
-// leaving the translation alone.
-static DirectX::XMMATRIX NormaliseBasis(DirectX::FXMMATRIX _matrix)
-{
-  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(_matrix.r[2]);
-  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(_matrix.r[1], front));
-  DirectX::XMVECTOR const up = DirectX::XMVector3Cross(front, right);
-
-  return DirectX::XMMATRIX(right, up, front, _matrix.r[3]);
-}
-
-
-static void MultiplyGLMatrix(DirectX::XMFLOAT4X4 const& _matrix) { glMultMatrixf(&_matrix._11); }
 
 
 void ShapeMarker::WriteToFile(FILE* _out) const
@@ -201,7 +203,7 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
     m_triangles(nullptr),
     m_name(nullptr),
     m_parentName(nullptr),
-    m_transform(1),
+    m_transform(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f),
     m_angVel(0, 0, 0),
     m_vel(0, 0, 0),
     m_useCylinder(false),
