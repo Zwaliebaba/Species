@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "MathUtils.h"
 #include "Matrix33.h"
 #include "Matrix34.h"
 #include "NeuronMath.h"
@@ -195,6 +196,58 @@ namespace NeuronCoreTests
         DirectX::XMFLOAT3 const same(3.0f, 0.0f, 4.0f);
         AssertVectorEquals(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(legacy)),
                            DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&same)));
+      }
+  };
+
+  // SphereTriangleIntersection, which directxmath-migration T5 rebuilt on
+  // DirectX::BoundingSphere::Intersects.
+  //
+  // These state the NEW contract rather than reproducing the old one, and that
+  // is deliberate. What was here before projected the sphere centre into plane
+  // space, ran a triangle-area point test with a 1.0001f fudge factor, and fell
+  // back to three 2D point-segment distances for the outside-the-triangle case
+  // — about a third of MathUtils.cpp, and six helper functions that existed for
+  // no other caller. BoundingSphere::Intersects is a different algorithm, so
+  // edge and near-degenerate cases can answer differently. Its one caller is
+  // Shape.cpp's collision test, where the visible effect is which shape
+  // fragment a click or a projectile registers against.
+  TEST_CLASS(SphereTriangleIntersectionTests)
+  {
+      // A right triangle on the ground plane, so the geometry is easy to reason
+      // about: corner at the origin, ten units along x, ten along z.
+      static Vector3 T1() { return Vector3(0.0f, 0.0f, 0.0f); }
+      static Vector3 T2() { return Vector3(10.0f, 0.0f, 0.0f); }
+      static Vector3 T3() { return Vector3(0.0f, 0.0f, 10.0f); }
+
+    public:
+      TEST_METHOD(ASphereAboveTheFaceIntersectsWhenItReachesThePlane)
+      {
+        Assert::IsTrue(SphereTriangleIntersection(Vector3(2.0f, 1.0f, 2.0f), 2.0f, T1(), T2(), T3()));
+      }
+
+      TEST_METHOD(ASphereTooHighAboveTheFaceMisses) { Assert::IsFalse(SphereTriangleIntersection(Vector3(2.0f, 50.0f, 2.0f), 2.0f, T1(), T2(), T3())); }
+
+      TEST_METHOD(ASphereTouchingAnEdgeIntersects)
+      {
+        // Centre sits two units outside the x-axis edge, radius three.
+        Assert::IsTrue(SphereTriangleIntersection(Vector3(5.0f, 0.0f, -2.0f), 3.0f, T1(), T2(), T3()));
+      }
+
+      TEST_METHOD(ASphereJustShortOfAnEdgeMisses) { Assert::IsFalse(SphereTriangleIntersection(Vector3(5.0f, 0.0f, -8.0f), 3.0f, T1(), T2(), T3())); }
+
+      TEST_METHOD(ASphereContainingTheWholeTriangleIntersects)
+      {
+        Assert::IsTrue(SphereTriangleIntersection(Vector3(3.0f, 0.0f, 3.0f), 100.0f, T1(), T2(), T3()));
+      }
+
+      TEST_METHOD(ASphereAtAVertexIntersects) { Assert::IsTrue(SphereTriangleIntersection(Vector3(0.0f, 0.0f, 0.0f), 0.5f, T1(), T2(), T3())); }
+
+      // The outside-the-triangle-but-near-the-plane case, which is what the six
+      // deleted helpers existed to handle. Beyond the hypotenuse, far enough out
+      // that only the edge distance can decide it.
+      TEST_METHOD(ASphereBeyondTheHypotenuseMisses)
+      {
+        Assert::IsFalse(SphereTriangleIntersection(Vector3(20.0f, 0.0f, 20.0f), 3.0f, T1(), T2(), T3()));
       }
   };
 } // namespace NeuronCoreTests

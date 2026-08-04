@@ -7,7 +7,6 @@
 
 class Vector3;
 class Vector2;
-class Matrix34;
 class Plane;
 
 inline float frand(float range = 1.0f) { return range * ((float)speciesRandom() / (float)SPECIES_RAND_MAX); }
@@ -79,22 +78,10 @@ float Log2(float x);
 double RampUpAndDown(double _startTime, double _duration, double _timeNow);
 
 
-// **********************
-// General Geometry Utils
-// **********************
-
-void GetPlaneMatrix(Vector3 const& t1, Vector3 const& t2, Vector3 const& t3, Matrix34* mat);
-float ProjectPointOntoPlane(Vector3 const& point, Matrix34 const& planeMat, Vector3* result);
-void ConvertWorldSpaceIntoPlaneSpace(Vector3 const& point, Matrix34 const& plane, Vector2* result);
-void ConvertPlaneSpaceIntoWorldSpace(Vector2 const& point, Matrix34 const& plane, Vector3* result);
-float CalcTriArea(Vector2 const& t1, Vector2 const& t2, Vector2 const& t3);
-
-
 // *********************
 // 2D Intersection Tests
 // *********************
 
-bool IsPointInTriangle(Vector2 const& pos, Vector2 const& t1, Vector2 const& t2, Vector2 const& t3);
 float PointSegDist2D(Vector2 const& p,                     // Point
                      Vector2 const& l0, Vector2 const& l1, // Line seg
                      Vector2* result = nullptr);

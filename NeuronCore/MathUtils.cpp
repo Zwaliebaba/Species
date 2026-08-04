@@ -3,7 +3,6 @@
 #include <math.h>
 
 #include "MathUtils.h"
-#include "Matrix34.h"
 #include "Plane.h"
 #include "Vector2.h"
 #include "Vector3.h"
@@ -159,77 +158,8 @@ unsigned long syncrand()
 
 
 // ****************************************************************************
-// General Geometry Utils
-// ****************************************************************************
-
-// Generates a Matrix34 that defines a plane, as specified by three points in the plane
-void GetPlaneMatrix(Vector3 const& t1, Vector3 const& t2, Vector3 const& t3, Matrix34* mat)
-{
-  mat->f = (t1 - t2).Normalise();
-  mat->r = t2 - t3;
-  mat->u = (mat->f ^ mat->r).Normalise();
-  mat->r = mat->f ^ mat->u;
-  mat->pos = t1;
-}
-
-
-// Returns the distance from the point to the plane and writes the point in the plane into
-// result
-float ProjectPointOntoPlane(Vector3 const& point, Matrix34 const& planeMat, Vector3* result)
-{
-  Vector3 posToCentre = point - planeMat.pos;
-  float distFromCentreToPlane = posToCentre * planeMat.u;
-
-  *result = point - planeMat.u * distFromCentreToPlane;
-  return distFromCentreToPlane;
-}
-
-
-// Imagine that the plane is a 2D co-ordinate system embedded in a 3D co-ordinate system.
-// This function takes a point in 3D space (that must line on the plane) and converts it
-// into a 2D point in the "plane's co-ordinate system". If the specified point does not
-// lie on the plane in the first place, then the results are undefined.
-void ConvertWorldSpaceIntoPlaneSpace(Vector3 const& point, Matrix34 const& plane, Vector2* result)
-{
-  Vector3 pointToPlaneOrigin = point - plane.pos;
-  result->x = pointToPlaneOrigin * plane.r;
-  result->y = pointToPlaneOrigin * plane.f;
-}
-
-
-// The opposite of the function above
-void ConvertPlaneSpaceIntoWorldSpace(Vector2 const& point, Matrix34 const& plane, Vector3* result)
-{
-  *result = plane.pos + plane.f * point.y + plane.r * point.x;
-}
-
-
-// Returns the area of an arbitrary triangle in 2D space
-float CalcTriArea(Vector2 const& t1, Vector2 const& t2, Vector2 const& t3)
-{
-  return fabsf((t2.x * t1.y - t1.x * t2.y) + (t3.x * t2.y - t2.x * t3.y) + (t1.x * t3.y - t3.x * t1.y)) * 0.5f;
-}
-
-
-// ****************************************************************************
 // 2D Intersection Tests
 // ****************************************************************************
-
-bool IsPointInTriangle(Vector2 const& pos, Vector2 const& t1, Vector2 const& t2, Vector2 const& t3)
-{
-  float triArea = CalcTriArea(t1, t2, t3) * 1.0001f;
-  float subTrisArea = CalcTriArea(t1, t2, pos);
-  if (subTrisArea > triArea)
-    return false;
-  subTrisArea += CalcTriArea(t2, t3, pos);
-  if (subTrisArea > triArea)
-    return false;
-  subTrisArea += CalcTriArea(t3, t1, pos);
-  if (subTrisArea > triArea)
-    return false;
-  return true;
-}
-
 
 // Finds the point on the line segment that is nearest to the specified point.
 // Often this will be one of the end points of the line segment
@@ -524,58 +454,9 @@ bool SphereSphereIntersection(Vector3 const& _sphere1Pos, float _sphere1Radius, 
 
 bool SphereTriangleIntersection(Vector3 const& sphereCentre, float sphereRadius, Vector3 const& t1, Vector3 const& t2, Vector3 const& t3)
 {
-  Matrix34 planeMat;
-  GetPlaneMatrix(t1, t2, t3, &planeMat);
+  DirectX::BoundingSphere const sphere(sphereCentre, sphereRadius);
 
-  Vector3 result;
-  float dist = ProjectPointOntoPlane(sphereCentre, planeMat, &result);
-  if (dist > sphereRadius)
-    return false;
-
-  //	DrawPoint(result);
-
-  Vector2 point2D;
-  ConvertWorldSpaceIntoPlaneSpace(result, planeMat, &point2D);
-
-  Vector2 t12D, t22D, t32D;
-  ConvertWorldSpaceIntoPlaneSpace(t1, planeMat, &t12D);
-  ConvertWorldSpaceIntoPlaneSpace(t2, planeMat, &t22D);
-  ConvertWorldSpaceIntoPlaneSpace(t3, planeMat, &t32D);
-
-  bool isPointInTri = IsPointInTriangle(point2D, t12D, t22D, t32D);
-
-  if (!isPointInTri)
-  {
-    // Test against edge 1
-    Vector2 pointInTriangle;
-    float nearest = PointSegDist2D(point2D, t12D, t22D, &pointInTriangle);
-
-    // Test against edge 2
-    Vector2 temp;
-    float thisDist = PointSegDist2D(point2D, t22D, t32D, &temp);
-    if (thisDist < nearest)
-    {
-      nearest = thisDist;
-      pointInTriangle = temp;
-    }
-
-    // Test against edge 3
-    thisDist = PointSegDist2D(point2D, t32D, t12D, &temp);
-    if (thisDist < nearest)
-    {
-      nearest = thisDist;
-      pointInTriangle = temp;
-    }
-
-    ConvertPlaneSpaceIntoWorldSpace(pointInTriangle, planeMat, &result);
-    //		DrawPoint(result);
-  }
-
-  Vector3 centreToNearestPointInPlane = sphereCentre - result;
-  if (centreToNearestPointInPlane.MagSquared() > sphereRadius * sphereRadius)
-  {
-    return false;
-  }
-
-  return true;
+  return sphere.Intersects(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(t1)),
+                           DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(t2)),
+                           DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(t3)));
 }
