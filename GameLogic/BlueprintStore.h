@@ -3,63 +3,62 @@
 #include "Building.h"
 
 
-
 class BlueprintBuilding : public Building
 {
-public:
-    int     m_buildingLink;
-    float   m_infected;
-    int     m_segment;
+  public:
+    int m_buildingLink;
+    float m_infected;
+    int m_segment;
 
-protected:
-    ShapeMarker *m_marker;
-    Vector3      m_vel;
+  protected:
+    ShapeMarker* m_marker;
+    Vector3 m_vel;
 
-public:
+  public:
     BlueprintBuilding();
 
-    void Initialise( Building *_template );
+    void Initialise(Building* _template);
     bool Advance();
     bool IsInView();
-    void Render( float _predictionTime );
-    void RenderAlphas( float _predictionTime );
+    void Render(float _predictionTime);
+    void RenderAlphas(float _predictionTime);
 
-    virtual void SendBlueprint( int _segment, bool _infected );
+    virtual void SendBlueprint(int _segment, bool _infected);
 
-    Matrix34 GetMarker( float _predictionTime );
+    Matrix34 GetMarker(float _predictionTime);
 
-    void Read   ( TextReader *_in, bool _dynamic );
-    void Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 
-    int  GetBuildingLink();
-    void SetBuildingLink( int _buildingId );
+    int GetBuildingLink();
+    void SetBuildingLink(int _buildingId);
 };
 
 
 // ============================================================================
 
-#define BLUEPRINTSTORE_NUMSEGMENTS  4
+#define BLUEPRINTSTORE_NUMSEGMENTS 4
 
 class BlueprintStore : public BlueprintBuilding
 {
-public:
+  public:
     float m_segments[BLUEPRINTSTORE_NUMSEGMENTS];
 
-public:
+  public:
     BlueprintStore();
 
-    void GetDisplay     ( Vector3 &_pos, Vector3 &_right, Vector3 &_up, float &_size );
+    void GetDisplay(Vector3& _pos, Vector3& _right, Vector3& _up, float& _size);
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
-    void Render         ( float _predictionTime );
-    void RenderAlphas   ( float _predictionTime );
-    void SendBlueprint  ( int _segment, bool _infected );
+    void Initialise(Building* _template);
+    bool Advance();
+    void Render(float _predictionTime);
+    void RenderAlphas(float _predictionTime);
+    void SendBlueprint(int _segment, bool _infected);
 
-    char const *GetObjectiveCounter();
+    char const* GetObjectiveCounter();
 
-    int GetNumInfected();                           // Returns number of segments totally infected ie == 100.0f
-    int GetNumClean();                              // Returns number of segments totally clean ie == 0.0f
+    int GetNumInfected(); // Returns number of segments totally infected ie == 100.0f
+    int GetNumClean();    // Returns number of segments totally clean ie == 0.0f
 };
 
 
@@ -68,18 +67,18 @@ public:
 
 class BlueprintConsole : public BlueprintBuilding
 {
-public:
+  public:
     BlueprintConsole();
 
-    void            Initialise( Building *_template );
+    void Initialise(Building* _template);
 
-    void            RecalculateOwnership();
-    bool            Advance();
-    void            Render( float _predictionTime );
-    void            RenderPorts();
+    void RecalculateOwnership();
+    bool Advance();
+    void Render(float _predictionTime);
+    void RenderPorts();
 
-    void            Read   ( TextReader *_in, bool _dynamic );
-    void            Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 };
 
 
@@ -88,19 +87,19 @@ public:
 
 class BlueprintRelay : public BlueprintBuilding
 {
-public:
-    float   m_altitude;
+  public:
+    float m_altitude;
 
-public:
+  public:
     BlueprintRelay();
 
-    void Initialise( Building *_template );
-    void SetDetail( int _detail );
+    void Initialise(Building* _template);
+    void SetDetail(int _detail);
 
     bool Advance();
 
-    void Render         ( float _predictionTime );
+    void Render(float _predictionTime);
 
-    void Read   ( TextReader *_in, bool _dynamic );
-    void Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 };

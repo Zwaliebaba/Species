@@ -69,38 +69,40 @@ GlobalEventCondition::GlobalEventCondition()
     m_id(-1),
     m_locationId(-1),
     m_stringId(nullptr),
-    m_cutScene(nullptr) {}
+    m_cutScene(nullptr)
+{
+}
 
 GlobalEventCondition::GlobalEventCondition(const GlobalEventCondition& _other)
   : m_type(_other.m_type),
     m_id(_other.m_id),
     m_locationId(_other.m_locationId),
     m_stringId(NewStr(_other.m_stringId)),
-    m_cutScene(NewStr(_other.m_cutScene)) {}
+    m_cutScene(NewStr(_other.m_cutScene))
+{
+}
 
 GlobalEventCondition::~GlobalEventCondition()
 {
-  delete [] m_stringId;
-  delete [] m_cutScene;
+  delete[] m_stringId;
+  delete[] m_cutScene;
 }
 
 void GlobalEventCondition::SetStringId(const char* _stringId)
 {
-  delete [] m_stringId;
+  delete[] m_stringId;
   m_stringId = NewStr(_stringId);
 }
 
 void GlobalEventCondition::SetCutScene(char* _cutScene)
 {
-  delete [] m_cutScene;
+  delete[] m_cutScene;
   m_cutScene = NewStr(_cutScene);
 }
 
 const char* GlobalEventCondition::GetTypeName(int _type)
 {
-  static const char* names[] = {
-    "AlwaysTrue", "BuildingOnline", "BuildingOffline", "ResearchOwned", "NotInLocation", "DebugKey", "NeverTrue"
-  };
+  static const char* names[] = {"AlwaysTrue", "BuildingOnline", "BuildingOffline", "ResearchOwned", "NotInLocation", "DebugKey", "NeverTrue"};
 
   DEBUG_ASSERT(_type >= 0 && _type < NumConditions);
 
@@ -126,20 +128,20 @@ bool GlobalEventCondition::Evaluate()
     return true;
 
   case BuildingOnline:
-    {
-      GlobalBuilding* building = g_globalWorld->GetBuilding(m_id, m_locationId);
-      if (building)
-        return building->m_online;
-      break;
-    }
+  {
+    GlobalBuilding* building = g_globalWorld->GetBuilding(m_id, m_locationId);
+    if (building)
+      return building->m_online;
+    break;
+  }
 
   case BuildingOffline:
-    {
-      GlobalBuilding* building = g_globalWorld->GetBuilding(m_id, m_locationId);
-      if (building)
-        return !building->m_online;
-      break;
-    }
+  {
+    GlobalBuilding* building = g_globalWorld->GetBuilding(m_id, m_locationId);
+    if (building)
+      return !building->m_online;
+    break;
+  }
 
   case ResearchOwned:
     return (g_globalWorld->m_research->HasResearch(m_id));
@@ -150,7 +152,8 @@ bool GlobalEventCondition::Evaluate()
   case NeverTrue:
     return false;
 
-  default: DEBUG_ASSERT(false);
+  default:
+    DEBUG_ASSERT(false);
   }
 
   return false;
@@ -239,7 +242,8 @@ void GlobalEventAction::Write(FileWriter* _out)
     _out->printf("%s", locationName);
     break;
 
-  default: DEBUG_ASSERT(false);
+  default:
+    DEBUG_ASSERT(false);
   }
 
   _out->printf("\n");
@@ -247,30 +251,30 @@ void GlobalEventAction::Write(FileWriter* _out)
 
 void GlobalEventAction::Execute()
 {
-
   switch (m_type)
   {
   case SetMission:
-    {
-      GlobalLocation* loc = g_globalWorld->GetLocation(m_locationId);
-      DEBUG_ASSERT(loc);
-      strcpy(loc->m_missionFilename, m_filename);
-      break;
-    }
+  {
+    GlobalLocation* loc = g_globalWorld->GetLocation(m_locationId);
+    DEBUG_ASSERT(loc);
+    strcpy(loc->m_missionFilename, m_filename);
+    break;
+  }
   case RunScript:
-    {
-      g_script->RunScript(m_filename);
-      break;
-    }
+  {
+    g_script->RunScript(m_filename);
+    break;
+  }
   case MakeAvailable:
-    {
-      GlobalLocation* loc = g_globalWorld->GetLocation(m_locationId);
-      DEBUG_ASSERT(loc);
-      loc->m_available = true;
-      break;
-    }
+  {
+    GlobalLocation* loc = g_globalWorld->GetLocation(m_locationId);
+    DEBUG_ASSERT(loc);
+    loc->m_available = true;
+    break;
+  }
 
-  default: DEBUG_ASSERT(false);
+  default:
+    DEBUG_ASSERT(false);
   }
 }
 
@@ -388,7 +392,7 @@ void GlobalEvent::Read(TextReader* _in)
       char* word = _in->GetNextToken();
       if (stricmp(word, "end") == 0)
         break;
-      DEBUG_ASSERT(stricmp( word, "action" ) == 0);
+      DEBUG_ASSERT(stricmp(word, "action") == 0);
 
       auto action = new GlobalEventAction;
       action->Read(_in);
@@ -487,7 +491,9 @@ void GlobalResearch::EvaluateLevel(int _type)
       sprintf(sepStringId, "research_%s_v%d", GetTypeName(_type), m_researchLevel[_type]);
       strlwr(sepStringId);
 
-      if (ISLANGUAGEPHRASE(sepStringId)) {}
+      if (ISLANGUAGEPHRASE(sepStringId))
+      {
+      }
 
       if (currentLevel > 0)
       {
@@ -517,7 +523,9 @@ void GlobalResearch::SetCurrentResearch(int _type)
     sprintf(sepStringId, "research_%s", GetTypeName(_type));
     strlwr(sepStringId);
 
-    if (ISLANGUAGEPHRASE(sepStringId)) {}
+    if (ISLANGUAGEPHRASE(sepStringId))
+    {
+    }
   }
 }
 
@@ -614,9 +622,7 @@ void GlobalResearch::Read(TextReader* _in)
 
 const char* GlobalResearch::GetTypeName(int _type)
 {
-  const char* names[] = {
-    "Citizen", "Officer", "Squad", "Laser", "Grenade", "Rocket", "Controller", "AirStrike", "Armour", "TaskManager", "Engineer"
-  };
+  const char* names[] = {"Citizen", "Officer", "Squad", "Laser", "Grenade", "Rocket", "Controller", "AirStrike", "Armour", "TaskManager", "Engineer"};
 
   DEBUG_ASSERT(_type >= 0 && _type < NumResearchItems);
   return names[_type];
@@ -652,7 +658,7 @@ int GlobalResearch::GetType(char* _name)
 void ColourShapeFragment(ShapeFragment* _frag, const RGBAColour& _colour)
 {
   if (_frag->m_numColours == 0)
-    _frag->m_colours = new RGBAColour [1];
+    _frag->m_colours = new RGBAColour[1];
   _frag->m_colours[0] = _colour;
 
   for (int i = 0; i < _frag->m_numVertices; ++i)
@@ -910,7 +916,7 @@ void SphereWorld::RenderWorldShape()
 
 void SphereWorld::RenderTrunkLinks()
 {
-  //if( g_editing ) return;
+  // if( g_editing ) return;
 
   Matrix34 rootMat(0);
 
@@ -937,8 +943,8 @@ void SphereWorld::RenderTrunkLinks()
         else
           glColor4f(0.4f, 0.3f, 1.0f, 0.4f);
 
-        //fromPos *= 120.0f;
-        //toPos *= 120.0f;
+        // fromPos *= 120.0f;
+        // toPos *= 120.0f;
 
         Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
         Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
@@ -1344,7 +1350,7 @@ void GlobalWorld::Render()
 // does not intersect any location
 int GlobalWorld::LocationHit(const Vector3& _pos, const Vector3& _dir, float locationRadius)
 {
-  //float locationRadius = 5000.0f;
+  // float locationRadius = 5000.0f;
 
   for (GlobalLocation* gl : m_locations)
   {
@@ -1512,8 +1518,8 @@ void GlobalWorld::WriteBuildings(FileWriter* _out)
 
   for (GlobalBuilding* building : m_buildings)
   {
-    _out->printf("\t%4d %4d %6d %6d %6d %6d\n", building->m_id, building->m_teamId, building->m_locationId, building->m_type,
-                 building->m_link, building->m_online);
+    _out->printf("\t%4d %4d %6d %6d %6d %6d\n", building->m_id, building->m_teamId, building->m_locationId, building->m_type, building->m_link,
+                 building->m_online);
   }
 
   _out->printf("Buildings_EndDefinition\n\n");
@@ -1594,7 +1600,7 @@ void GlobalWorld::ParseEvents(TextReader* _in)
     if (stricmp(word, "events_enddefinition") == 0)
       return;
 
-    DEBUG_ASSERT(stricmp( word, "Event" ) == 0);
+    DEBUG_ASSERT(stricmp(word, "Event") == 0);
 
     auto event = new GlobalEvent();
     event->Read(_in);
@@ -1672,7 +1678,6 @@ void GlobalWorld::LoadGame(const char* _filename)
 
   for (GlobalLocation* loc : m_locations)
   {
-
     // Load all the level files for the location
     LevelFile levFile("null", loc->m_mapFilename);
     for (Building* building : levFile.m_buildings)
@@ -1691,8 +1696,7 @@ void GlobalWorld::LoadGame(const char* _filename)
       {
         AddLevelBuildingToGlobalBuildings(building, loc->m_id);
 
-        if (building->m_type == Building::TypeAntHill || building->m_type == Building::TypeTriffid || building->m_type ==
-          Building::TypeIncubator)
+        if (building->m_type == Building::TypeAntHill || building->m_type == Building::TypeTriffid || building->m_type == Building::TypeIncubator)
         {
           if (!building->m_dynamic)
           {
@@ -1750,9 +1754,7 @@ void GlobalWorld::SaveGame(const char* _filename)
   delete out;
 }
 
-void GlobalWorld::WriteTutorial(FileWriter* _out)
-{
-}
+void GlobalWorld::WriteTutorial(FileWriter* _out) {}
 
 void GlobalWorld::ParseTutorial(TextReader* _in)
 {
@@ -1904,7 +1906,7 @@ void GlobalWorld::SetupFog()
   glFogf(GL_FOG_END, 19000.0f);
   glFogfv(GL_FOG_COLOR, fogCol);
   glFogi(GL_FOG_MODE, GL_LINEAR);
-  //glEnable    (GL_FOG);
+  // glEnable    (GL_FOG);
 }
 
 float GlobalWorld::GetSize()
