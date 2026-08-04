@@ -191,6 +191,29 @@ tasks:
       prove it rather than trusting it. The seam is a wrapper and it is
       temporary; T25 deletes it and T25 is what makes this plan honest.
 
+      FLOAT TOLERANCES IN TESTS ARE RELATIVE, NEVER ABSOLUTE, and this task
+      learned it the useful way. CI run 360 built clean and failed one test:
+
+        Matrix34TransformsIdenticallyThroughTheNativeType
+        Assert failed. Expected:<22.7791> Actual:<22.7791>
+
+      Identical to the precision the failure message prints. The tolerance was
+      an absolute 1e-6f and one float ULP at magnitude 22.78 is already ~2.7e-6,
+      so the test was tighter than the type. What it caught is the migration's
+      own premise in the smallest case available: the legacy operator sums
+      r.x*v.x + u.x*v.y + f.x*v.z + pos.x in that order, XMVector3Transform does
+      four lanes at once and may contract to FMA, and they agree to float
+      precision and not beyond it.
+
+      Worth being clear about what this was NOT. Every convention test passed —
+      Matrix33's transposing conversion, Matrix34's non-transposing one, the row
+      layout, the round trip and the operand-order quirk. A wrong transpose
+      moves a coordinate by whole units, not by an ULP. The fix is
+      AssertNearlyEqual in NeuronMathTests.cpp, relative at 1e-5; every later
+      task should use it rather than writing a literal. Exact comparison is
+      still right where a conversion only copies fields, and the row-layout test
+      keeps it.
+
       THE NORMALISE AUDIT belongs here because it is a decision, not a sweep.
       Vector3::Normalise returns (0,0,1) for zero length; XMVector3Normalize
       returns zero or QNaN. Owner chose native. Before the sweeps start, list

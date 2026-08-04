@@ -19,13 +19,32 @@ namespace NeuronCoreTests
   // survives in spirit is the convention: v * M, rows are right/up/front/pos.
   TEST_CLASS(NeuronMathTests)
   {
-      static constexpr float Tolerance = 1e-6f;
+      // RELATIVE, not absolute, and the first CI run is why. An absolute 1e-6f
+      // failed on Matrix34TransformsIdenticallyThroughTheNativeType with
+      // "Expected:<22.7791> Actual:<22.7791>" — a float carries about seven
+      // significant digits, so one ULP at that magnitude is already ~2.7e-6 and
+      // the tolerance was tighter than the type.
+      //
+      // That difference IS the migration's whole premise, showing up in the
+      // smallest case there is: the legacy operator sums r.x*v.x + u.x*v.y +
+      // f.x*v.z + pos.x in that order, and XMVector3Transform does it four lanes
+      // at a time, possibly contracting to FMA. They agree to the precision
+      // float has and not beyond it, by design.
+      //
+      // This is loose enough to absorb a few ULP and nowhere near loose enough
+      // to hide a transposed matrix, which moves a coordinate by whole units.
+      // Every later task in the migration wants this helper, not a literal.
+      static void AssertNearlyEqual(float _expected, float _actual)
+      {
+        float const tolerance = std::max(1e-5f, std::fabs(_expected) * 1e-5f);
+        Assert::AreEqual(_expected, _actual, tolerance);
+      }
 
       static void AssertVectorEquals(DirectX::FXMVECTOR _expected, DirectX::FXMVECTOR _actual)
       {
-        Assert::AreEqual(DirectX::XMVectorGetX(_expected), DirectX::XMVectorGetX(_actual), Tolerance);
-        Assert::AreEqual(DirectX::XMVectorGetY(_expected), DirectX::XMVectorGetY(_actual), Tolerance);
-        Assert::AreEqual(DirectX::XMVectorGetZ(_expected), DirectX::XMVectorGetZ(_actual), Tolerance);
+        AssertNearlyEqual(DirectX::XMVectorGetX(_expected), DirectX::XMVectorGetX(_actual));
+        AssertNearlyEqual(DirectX::XMVectorGetY(_expected), DirectX::XMVectorGetY(_actual));
+        AssertNearlyEqual(DirectX::XMVectorGetZ(_expected), DirectX::XMVectorGetZ(_actual));
       }
 
     public:
