@@ -384,7 +384,7 @@ bool Citizen::AdvanceApproachingArmour()
   // Armour converts in T15, so its out-parameters are still legacy.
   DirectX::XMFLOAT3 exitPos{0.0f, 0.0f, 0.0f};
   DirectX::XMFLOAT3 exitDir{0.0f, 0.0f, 0.0f};
-  armour->GetEntrance(AsLegacy(exitPos), AsLegacy(exitDir));
+  armour->GetEntrance(exitPos, exitDir);
 
   float distance =
     DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&exitPos), DirectX::XMLoadFloat3(&m_pos))));
@@ -455,7 +455,7 @@ bool Citizen::AdvanceInsideArmour()
     // Armour converts in T15; same seam.
     DirectX::XMFLOAT3 exitPos{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 exitDir{0.0f, 0.0f, 0.0f};
-    armour->GetEntrance(AsLegacy(exitPos), AsLegacy(exitDir));
+    armour->GetEntrance(exitPos, exitDir);
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(exitPos.x, exitPos.z);
     if (landHeight > 0.0f)
     {
@@ -490,7 +490,7 @@ bool Citizen::AdvanceCapturedByAnt()
   // ArmyAnt converts in T15; same seam.
   DirectX::XMFLOAT3 carryPos{0.0f, 0.0f, 0.0f};
   DirectX::XMFLOAT3 carryVel{0.0f, 0.0f, 0.0f};
-  ant->GetCarryMarker(AsLegacy(carryPos), AsLegacy(carryVel));
+  ant->GetCarryMarker(carryPos, carryVel);
 
   m_pos = carryPos;
   m_vel = carryVel;

@@ -17,9 +17,9 @@ class Tripod;
 class TripodNavData
 {
   public:
-    Vector2 m_directions[6];
+    DirectX::XMFLOAT2 m_directions[6];
     int m_dir; // Index into m_directions
-    Vector2 m_targetPos;
+    DirectX::XMFLOAT2 m_targetPos{0.0f, 0.0f};
 
     TripodNavData();
 };
@@ -47,18 +47,20 @@ class Tripod : public Entity
     unsigned int m_nextLegToMove; // Not certain to be true - just used to influence the DesireToMove score
     float m_speed;
     float m_targetHoverHeight;
-    Vector3 m_up;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not. m_up and m_bodyVel are assigned in the constructor list.
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
     TripodNavData m_navData;
-    Vector3 m_bodyVel;
-    Vector3 m_attackTarget;
+    DirectX::XMFLOAT3 m_bodyVel{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_attackTarget{0.0f, 0.0f, 0.0f};
     float m_modeStartTime;
 
     void ChangeHealth(int _amount);
 
     int CalcWhichFootToMove();
-    Vector3 CalcAttackUpVector();
+    DirectX::XMFLOAT3 CalcAttackUpVector();
     void DoFallForTwoLegs();
-    Vector2 ChooseDestination();
+    DirectX::XMFLOAT2 ChooseDestination();
     void DoNavigation();
     WorldObjectId FindEntityToAttack();
 

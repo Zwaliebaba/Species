@@ -52,21 +52,23 @@ class Spider : public Entity
 
     float m_speed;
     float m_targetHoverHeight;
-    Vector3 m_targetPos;
-    Vector3 m_up;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not. m_up is assigned in the constructor list; m_targetPos is not.
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
 
     float m_pounceStartTime;
 
     int CalcWhichFootToMove();
-    void StompFoot(Vector3 const& _pos);
+    void StompFoot(DirectX::XMFLOAT3 const& _pos);
     void UpdateLegsPouncing();
     void UpdateLegs();
-    float IsPathOK(Vector3 const& _dest); // Returns amount of path that can be followed
+    float IsPathOK(DirectX::XMFLOAT3 const& _dest); // Returns amount of path that can be followed
     void DetectCollisions();
 
   protected: // AI stuff
     float m_retargetTimer;
-    Vector3 m_pounceTarget;
+    DirectX::XMFLOAT3 m_pounceTarget{0.0f, 0.0f, 0.0f};
     int m_spiritId;
 
     bool SearchForRandomPos();

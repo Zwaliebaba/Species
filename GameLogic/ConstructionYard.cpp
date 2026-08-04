@@ -103,8 +103,7 @@ bool ConstructionYard::Advance()
         armour->m_front = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
         armour->m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
-        // Armour::SetWayPoint still takes a Vector3 -- Armour belongs to T15.
-        armour->SetWayPoint(Vector3(m_pos.x, m_pos.y, m_pos.z + 500.0f));
+        armour->SetWayPoint(DirectX::XMFLOAT3(m_pos.x, m_pos.y, m_pos.z + 500.0f));
 
         ++m_numTanksProduced;
         m_timer = -1.0f;

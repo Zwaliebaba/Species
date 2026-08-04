@@ -1349,8 +1349,62 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
+    notes: |
+      CLOSED. Twenty-two files, the largest task in the wave by AsLegacy count
+      (229) and the first with NO keystone: not one T15 header declares a
+      virtual carrying a math type, so the inheritance sweep that T16 and T17
+      needed came back empty. AntHill and Triffid derive from Building and
+      their overrides were already native from T16's keystone commit.
 
+      IT STILL RETIRED SIX REPAIRS. Armour's and ArmyAnt's signatures going
+      native cleared AsLegacy wraps in Citizen and ConstructionYard -- files
+      this task does not own. Third task running where converting a class
+      removes work from files it never touches.
+
+      THE ZERO-LENGTH FALLBACK IS NOT ONE DECISION, IT IS TWELVE. T16 and T17
+      each had a handful of SetLength sites; T15 has about twenty, and they do
+      not all resolve the same way. Reproduced where the zero case is
+      REACHABLE and the QNaN would stick:
+
+        AntHill      spirit scatter -- syncfrand(20) can roll exactly 0
+        Centipede    Attack push -- an entity standing on the centipede
+        SoulDestroyer  same push, same reason
+        SporeGenerator  targetVel when distanceToTarget is 0, and the tail
+                     lag s_vel which starts at zero on the first frame
+        Triffid      four Spawn velocities rolled from syncsfrand
+        Virii        glowDiff when the worm has not moved since the last
+                     history point, and the compass step when it is already
+                     standing on its spawn point
+        Spider       IsPathOK when the destination is our own position
+
+      Taken natively where the zero case is unreachable or the site is
+      rendering-only, each commented with WHY at the site rather than left to
+      the reader.
+
+      AND ONE Normalise FALLBACK REPRODUCED, against the plan's own default.
+      T1 recorded that XMVector3Normalize's zero result replaces Vector3's
+      (0,0,1) and that this is sanctioned. Virii::SearchForIdleDirection is the
+      exception: it builds a direction from two integers each in {-1,0,1}, so
+      (0,0,0) is a ROLL, not a degenerate edge, and the legacy (0,0,1) is the
+      worm choosing north rather than the worm choosing QNaN. Called out
+      because it is a deliberate departure from a decision the owner made.
+
+      THREE LOAD-BEARING STEERING DEADLOCKS, same shape as GunTurret's in T16.
+      Armour, Spider and (via CalcAttackUpVector) Tripod all steer by crossing
+      front with the direction to their target and feeding the result to
+      RotateAround. Facing exactly away makes that cross zero, and SetLength's
+      (angle, 0, 0) fallback is what breaks the deadlock. All three reproduce it.
+
+      A DEAD LOCAL DROPPED. Tripod::Advance computed frontHoriNorm and never
+      used it. Converting it would have meant writing a native no-op, so it is
+      gone, noted here rather than silently.
+
+      CHECK_MATH_TYPES EARNED ITS KEEP MID-TASK. The local-tracking rules added
+      after T17's CI round caught m_hitcheckCentre in Tree during T17 and then,
+      in T15, forty-eight sites in Egg and three in AntHill that the file-level
+      greps had missed -- billboard vertices and a damaged-shape wobble, none
+      of which name a legacy type. Those would all have been CI errors.
   - id: T16
     title: Convert the structural buildings
     intent: >

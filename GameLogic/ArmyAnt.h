@@ -28,7 +28,8 @@ class ArmyAnt : public Entity
     bool SearchForRandomPosition();
 
   public:
-    Vector3 m_wayPoint;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
     int m_orders;
     bool m_targetFound;
     int m_spiritId;
@@ -55,5 +56,9 @@ class ArmyAnt : public Entity
 
     void OrderReturnToBase();
 
-    void GetCarryMarker(Vector3& _pos, Vector3& _vel);
+    void GetCarryMarker(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel);
+
+    // The ant's basis levelled against the world up, with m_scale folded into
+    // the three basis rows. Both the death explosion and Render built it.
+    DirectX::XMFLOAT4X4 GetScaledLevelMatrix() const;
 };

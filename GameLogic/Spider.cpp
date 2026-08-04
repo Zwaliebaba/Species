@@ -153,7 +153,9 @@ void Spider::ChangeHealth(int _amount)
     float fractionDead = 1.0f - (float)m_stats[StatHealth] / (float)EntityBlueprint::GetStat(TypeSpider, StatHealth);
     fractionDead = std::max(fractionDead, 0.0f);
     fractionDead = std::min(fractionDead, 1.0f);
-    Matrix34 transform(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 transform;
+    DirectX::XMStoreFloat4x4(&transform,
+                             BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
     g_explosionManager.AddExplosion(m_shape, transform, fractionDead);
   }
 }
@@ -194,11 +196,12 @@ int Spider::CalcWhichFootToMove()
 }
 
 
-void Spider::StompFoot(Vector3 const& _pos)
+void Spider::StompFoot(DirectX::XMFLOAT3 const& _pos)
 {
   for (int p = 0; p < 3; ++p)
   {
-    Vector3 vel(syncsfrand(20.0f), 5.0f + syncfrand(5.0f), syncsfrand(20.0f));
+    // The three RNG calls stay in this order.
+    DirectX::XMFLOAT3 const vel(syncsfrand(20.0f), 5.0f + syncfrand(5.0f), syncsfrand(20.0f));
 
     g_particleSystem->CreateParticle(_pos, vel, Particle::TypeMuzzleFlash, 10.0f);
   }
@@ -215,15 +218,17 @@ void Spider::StompFoot(Vector3 const& _pos)
     WorldObject* obj = g_location->GetEntity(id);
     Entity* entity = (Entity*)obj;
 
-    float distance = (AsLegacy(entity->m_pos) - _pos).Mag();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&_pos))));
     float fraction = (FOOT_DAMAGE_RADIUS - distance) / FOOT_DAMAGE_RADIUS;
     fraction *= (1.0f + syncfrand(0.3f));
 
     entity->ChangeHealth(FOOT_DAMAGE_STRENGTH * fraction * -1.0f);
 
-    Vector3 push(AsLegacy(entity->m_pos) - _pos);
-    push.Normalise();
-    push *= fraction;
+    DirectX::XMFLOAT3 push;
+    DirectX::XMStoreFloat3(&push, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos),
+                                                                                                               DirectX::XMLoadFloat3(&_pos))),
+                                                         fraction));
 
     if (entity->m_onGround)
     {
@@ -233,7 +238,7 @@ void Spider::StompFoot(Vector3 const& _pos)
     {
       push.y = -1;
     }
-    AsLegacy(entity->m_vel) += push;
+    DirectX::XMStoreFloat3(&entity->m_vel, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&entity->m_vel), DirectX::XMLoadFloat3(&push)));
     entity->m_onGround = false;
   }
 }
@@ -268,8 +273,8 @@ void Spider::UpdateLegs()
   int stage = 0;
   for (int i = 1; i < 3; ++i)
   {
-    float diffBest = fabs(AsLegacy(m_vel).Mag() - m_parameters[stage].m_idealSpeed);
-    float diffCurrent = fabs(AsLegacy(m_vel).Mag() - m_parameters[i].m_idealSpeed);
+    float diffBest = fabs(DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) - m_parameters[stage].m_idealSpeed);
+    float diffCurrent = fabs(DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) - m_parameters[i].m_idealSpeed);
     if (diffCurrent < diffBest)
     {
       stage = i;
@@ -300,23 +305,30 @@ void Spider::UpdateLegs()
 
 
 // Tests that the line from m_pos to _dest doesn't go above a certain height
-float Spider::IsPathOK(Vector3 const& _dest)
+float Spider::IsPathOK(DirectX::XMFLOAT3 const& _dest)
 {
-  Vector3 toDest(_dest - AsLegacy(m_pos));
-  float distToDest = toDest.Mag();
+  DirectX::XMVECTOR const toDestFull = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_dest), DirectX::XMLoadFloat3(&m_pos));
+  float distToDest = DirectX::XMVectorGetX(DirectX::XMVector3Length(toDestFull));
   float const sampleSeperation = 8.0f;
-  toDest.SetLength(sampleSeperation);
 
-  Vector3 pos(m_pos);
+  // SetLength. distToDest can be zero if the destination is our own position,
+  // and the loop below then does not execute at all -- but the legacy fallback
+  // still ran, leaving (8, 0, 0), so it is reproduced to keep the step finite.
+  DirectX::XMVECTOR const toDest = NearlyEquals(distToDest, 0.0f) ? DirectX::XMVectorSet(sampleSeperation, 0.0f, 0.0f, 0.0f)
+                                                                  : DirectX::XMVectorScale(toDestFull, sampleSeperation / distToDest);
+
+  DirectX::XMVECTOR position = DirectX::XMLoadFloat3(&m_pos);
   for (float i = 0.0f; i < distToDest; i += sampleSeperation)
   {
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(&pos, position);
     float height = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
     if (height > MAX_PATH_HEIGHT || height < 0.1f /*Sea level*/)
     {
       float rv = i / distToDest;
       return rv;
     }
-    pos += toDest;
+    position = DirectX::XMVectorAdd(position, toDest);
   }
 
   return 1.0f;
@@ -325,12 +337,14 @@ float Spider::IsPathOK(Vector3 const& _dest)
 
 void Spider::DetectCollisions()
 {
-  Vector3 pos(m_pos);
-  pos += m_vel;
+  DirectX::XMFLOAT3 pos;
+  DirectX::XMStoreFloat3(&pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_vel)));
   int numFound;
   WorldObjectId* neighbours = g_location->m_entityGrid->GetNeighbours(pos.x, pos.z, 22.0f, &numFound);
 
-  Vector3 escapeVector;
+  // Vector3's default constructor zeroed this and XMFLOAT3's does not; it is
+  // accumulated into below, so the zero is load-bearing.
+  DirectX::XMVECTOR escapeVector = DirectX::XMVectorZero();
   bool collisionDetected = false;
 
   for (int i = 0; i < numFound; ++i)
@@ -340,39 +354,51 @@ void Spider::DetectCollisions()
     {
       Entity* entity = g_location->GetEntity(neighbours[speciesRandom() % numFound]);
       DEBUG_ASSERT(entity);
-      Vector3 toNeighbour = AsLegacy(m_pos) - AsLegacy(entity->m_pos);
-      toNeighbour.y = 0.0f;
-      toNeighbour.Normalise();
-      escapeVector += toNeighbour;
+      DirectX::XMVECTOR const toNeighbour = DirectX::XMVector3Normalize(
+        DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&entity->m_pos)), 0.0f));
+      escapeVector = DirectX::XMVectorAdd(escapeVector, toNeighbour);
       collisionDetected = true;
     }
   }
 
   if (collisionDetected)
   {
-    m_targetPos = AsLegacy(m_pos) + escapeVector * 40.0f;
+    DirectX::XMStoreFloat3(&m_targetPos,
+                           DirectX::XMVectorMultiplyAdd(escapeVector, DirectX::XMVectorReplicate(40.0f), DirectX::XMLoadFloat3(&m_pos)));
   }
 }
 
 
 bool Spider::FaceTarget()
 {
-  Vector3 toTarget = m_targetPos - AsLegacy(m_pos);
-  toTarget.y = 0.0f;
-  float toTargetMag = toTarget.Mag();
-  Vector3 toTargetNormalised = toTarget / toTargetMag;
+  DirectX::XMVECTOR const toTarget =
+    DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_pos)), 0.0f);
+  float toTargetMag = DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget));
+  DirectX::XMVECTOR const toTargetNormalised = DirectX::XMVectorScale(toTarget, 1.0f / toTargetMag);
 
-  float dotProd = toTargetNormalised * AsLegacy(m_front);
+  DirectX::XMVECTOR front = DirectX::XMLoadFloat3(&m_front);
+  float dotProd = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toTargetNormalised, front));
   if (dotProd < 0.999f)
   {
-    Vector3 rotation = AsLegacy(m_front) ^ toTargetNormalised;
-    if (dotProd < 0.9f)
-      rotation.SetLength(TURN_RATE);
-    else
-      rotation.SetLength(TURN_RATE / 2.0f);
-    AsLegacy(m_front).RotateAround(rotation);
-    AsLegacy(m_front).Normalise();
-    AsLegacy(m_vel).Zero();
+    // SetLength then RotateAround, and the zero-length fallback is LOAD-BEARING
+    // as it is in GunTurret and Armour: facing exactly away makes the cross
+    // product zero, and the fallback's rotation about world X is what breaks
+    // the deadlock.
+    float const turnRate = dotProd < 0.9f ? TURN_RATE : TURN_RATE / 2.0f;
+    DirectX::XMVECTOR const rotationAxis = DirectX::XMVector3Cross(front, toTargetNormalised);
+    float const axisLength = DirectX::XMVectorGetX(DirectX::XMVector3Length(rotationAxis));
+    DirectX::XMVECTOR const rotation =
+      NearlyEquals(axisLength, 0.0f) ? DirectX::XMVectorSet(turnRate, 0.0f, 0.0f, 0.0f) : DirectX::XMVectorScale(rotationAxis, turnRate / axisLength);
+
+    // RotateAround's angle is the vector's magnitude, with the same 1e-8 guard.
+    float const rotationLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+    if (rotationLengthSquared >= 1e-8f)
+    {
+      float const spin = sqrtf(rotationLengthSquared);
+      front = DirectX::XMVector3Transform(front, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+    }
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(front));
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
     return false;
   }
@@ -383,9 +409,9 @@ bool Spider::FaceTarget()
 
 bool Spider::AdvanceToTarget()
 {
-  Vector3 toTarget = m_targetPos - AsLegacy(m_pos);
-  toTarget.y = 0.0f;
-  float toTargetMag = toTarget.Mag();
+  DirectX::XMVECTOR const toTarget =
+    DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_pos)), 0.0f);
+  float toTargetMag = DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget));
 
 
   //
@@ -398,21 +424,16 @@ bool Spider::AdvanceToTarget()
 
   bool facingTarget = FaceTarget();
 
-  Vector3 toTargetNormalised = toTarget / toTargetMag;
-  float dotProd = toTargetNormalised * AsLegacy(m_front);
+  DirectX::XMVECTOR const toTargetNormalised = DirectX::XMVectorScale(toTarget, 1.0f / toTargetMag);
+  float dotProd = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toTargetNormalised, DirectX::XMLoadFloat3(&m_front)));
 
   if (dotProd > 0.5f)
   {
-    m_vel = m_front;
-    if (toTargetMag < 30.0f)
-    {
-      AsLegacy(m_vel).SetLength(toTargetMag);
-    }
-    else
-    {
-      AsLegacy(m_vel).SetLength(30.0f);
-    }
-    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+    // SetLength on m_front, which FaceTarget keeps normalised, so never zero.
+    float const speed = toTargetMag < 30.0f ? toTargetMag : 30.0f;
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front)), speed));
+    DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                DirectX::XMLoadFloat3(&m_pos)));
   }
 
   DetectCollisions();
@@ -448,7 +469,7 @@ bool Spider::AdvanceIdle()
 
   bool arrived = AdvanceToTarget();
   if (arrived)
-    AsLegacy(m_vel).Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
   return false;
 }
@@ -461,7 +482,8 @@ bool Spider::AdvanceAttack()
 
   if (facingTarget)
   {
-    float distance = (m_pounceTarget - AsLegacy(m_pos)).Mag();
+    float distance = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pounceTarget), DirectX::XMLoadFloat3(&m_pos))));
 
     if (distance > 150.0f)
     {
@@ -472,23 +494,25 @@ bool Spider::AdvanceAttack()
       float force = sqrtf(distance) * 24.0f;
       // if( force > 130.0f ) force = 130.0f;
 
-      Vector3 up = (m_pounceTarget - AsLegacy(m_pos)).Normalise();
+      DirectX::XMFLOAT3 up;
+      DirectX::XMStoreFloat3(
+        &up, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pounceTarget), DirectX::XMLoadFloat3(&m_pos))));
       up.y = 0.5f;
-      up.Normalise();
-      m_vel = up * force;
+      DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&up)), force));
 
       m_onGround = false;
       m_retargetTimer = 3.0f;
       m_state = StatePouncing;
       m_pounceStartTime = g_gameTime;
 
-      Vector3 forwards = (m_pounceTarget - AsLegacy(m_pos));
+      DirectX::XMVECTOR const forwards = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pounceTarget), DirectX::XMLoadFloat3(&m_pos));
       for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
       {
         m_legs[i]->m_foot.m_state = EntityFoot::FootState::Pouncing;
-        m_legs[i]->m_foot.m_bodyToFoot = AsLegacy(m_pos) - m_legs[i]->m_foot.m_pos;
+        DirectX::XMStoreFloat3(&m_legs[i]->m_foot.m_bodyToFoot,
+                               DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_legs[i]->m_foot.m_pos)));
         m_legs[i]->m_foot.m_lastGroundPos = m_legs[i]->m_foot.m_pos;
-        m_legs[i]->m_foot.m_targetPos = AsLegacy(m_legs[i]->m_foot.m_pos) + forwards;
+        DirectX::XMStoreFloat3(&m_legs[i]->m_foot.m_targetPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_legs[i]->m_foot.m_pos), forwards));
       }
 
       g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
@@ -503,13 +527,14 @@ bool Spider::AdvanceAttack()
 bool Spider::AdvancePouncing()
 {
   m_vel.y -= 40.0f;
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   if (m_pos.y < landHeight + 1.0f)
   {
     m_pos.y = landHeight + 1.0f;
-    AsLegacy(m_vel).Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     m_onGround = true;
     m_state = StateIdle;
     m_retargetTimer = 6.0f;
@@ -531,21 +556,28 @@ bool Spider::AdvancePouncing()
       WorldObjectId id = enemies[i];
       Entity* entity = g_location->GetEntity(id);
 
-      float distance = (AsLegacy(entity->m_pos) - AsLegacy(m_pos)).Mag();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
       float fraction = (squashRange - distance) / squashRange;
       fraction *= (1.0f + syncfrand(0.3f));
 
       if (distance < 20.0f)
         entity->ChangeHealth(fraction * -damage);
 
-      Vector3 push(m_front);
-      push.y = push.Mag() * 4.0f;
+      // push.y is set from the magnitude of the WHOLE vector, which at that
+      // point is still m_front -- so the y term depends on m_front's length,
+      // not on its y. Preserved as written.
+      DirectX::XMFLOAT3 push = m_front;
+      push.y = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&push))) * 4.0f;
 
       float pushLength = fraction * 30.0f;
       pushLength = std::min(20.0f, pushLength);
-      push.SetLength(pushLength);
 
-      AsLegacy(entity->m_vel) += push;
+      // SetLength on a vector whose y is at least 4x m_front's length, so it is
+      // never zero here.
+      DirectX::XMStoreFloat3(&push, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&push)), pushLength));
+
+      DirectX::XMStoreFloat3(&entity->m_vel, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&entity->m_vel), DirectX::XMLoadFloat3(&push)));
       entity->m_onGround = false;
     }
   }
@@ -610,7 +642,8 @@ bool Spider::SearchForSpirits()
       Spirit* s = g_location->m_spirits.GetPointer(i);
       if (s->NumNearbyEggs() < 3 && s->m_pos.y > 10)
       {
-        float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
+        float theDist =
+          DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&s->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
         if (theDist <= SPIRIT_MAXSEARCHRANGE && theDist >= SPIRIT_MINSEARCHRANGE && theDist < nearest && s->m_state == Spirit::StateFloating)
         {
@@ -625,8 +658,9 @@ bool Spider::SearchForSpirits()
   if (found)
   {
     m_spiritId = foundIndex;
-    Vector3 usToThem = (AsLegacy(found->m_pos) - AsLegacy(m_pos)).Normalise() * 45.0f;
-    m_targetPos = AsLegacy(found->m_pos) + usToThem;
+    DirectX::XMVECTOR const usToThem = DirectX::XMVectorScale(
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&found->m_pos), DirectX::XMLoadFloat3(&m_pos))), 45.0f);
+    DirectX::XMStoreFloat3(&m_targetPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&found->m_pos), usToThem));
     m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
     m_state = StateEggLaying;
   }
@@ -664,10 +698,13 @@ bool Spider::AdvanceEggLaying()
 
   if (arrived)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
-    Matrix34 eggLayMat = m_eggLay->GetWorldMatrix(mat);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-    g_location->SpawnEntities(eggLayMat.pos, m_id.GetTeamId(), -1, TypeEgg, 1, g_zeroVector, 0.0f);
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 const eggLayPos = m_eggLay->GetWorldMatrix(mat).pos;
+
+    g_location->SpawnEntities(eggLayPos, m_id.GetTeamId(), -1, TypeEgg, 1, g_zeroVector, 0.0f);
 
     g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LayEgg");
 
@@ -716,7 +753,7 @@ bool Spider::Advance(Unit* _unit)
       targetHeight += m_targetHoverHeight;
       float factor1 = 1.0f * SERVER_ADVANCE_PERIOD;
       float factor2 = 1.0f - factor1;
-      m_pos.y = factor1 * targetHeight + factor2 * AsLegacy(m_pos).y;
+      m_pos.y = factor1 * targetHeight + factor2 * m_pos.y;
       UpdateLegs();
     }
   }
@@ -746,27 +783,39 @@ void Spider::Render(float _predictionTime)
   //
   // Render body
 
-  Vector3 predictedMovement = _predictionTime * AsLegacy(m_vel);
-  Vector3 predictedPos = AsLegacy(m_pos) + predictedMovement;
+  DirectX::XMFLOAT3 predictedMovement;
+  DirectX::XMStoreFloat3(&predictedMovement, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), _predictionTime));
+
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&predictedMovement)));
   //	predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) +
   //					 m_targetHoverHeight;
 
-  Vector3 up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-  Vector3 right = m_up ^ AsLegacy(m_front);
-  Vector3 front = right ^ up;
+  // SurfaceMap2D<Vector3> still returns a Vector3 -- Landscape belongs to T18.
+  DirectX::XMFLOAT3 const landUp = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+  DirectX::XMVECTOR const up = DirectX::XMLoadFloat3(&landUp);
 
-  Matrix34 mat(front, up, predictedPos);
+  // right comes from m_up, not from the landscape up just fetched. Preserved.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMVECTOR const front = DirectX::XMVector3Cross(right, up);
+
+  DirectX::XMMATRIX basis = BasisFromFrontAndUp(front, up, DirectX::XMLoadFloat3(&predictedPos));
 
   if (m_renderDamaged)
   {
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
+
+    // r is row 0 and u is row 1, in the row-vector convention.
     if (frand() > 0.5f)
-      mat.r *= (1.0f + sinf(timeIndex) * 0.5f);
+      basis.r[0] = DirectX::XMVectorScale(basis.r[0], 1.0f + sinf(timeIndex) * 0.5f);
     else
-      mat.u *= (1.0f + sinf(timeIndex) * 0.5f);
+      basis.r[1] = DirectX::XMVectorScale(basis.r[1], 1.0f + sinf(timeIndex) * 0.5f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   }
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, basis);
 
   m_shape->Render(_predictionTime, mat);
 
@@ -789,13 +838,21 @@ bool Spider::RenderPixelEffect(float _predictionTime)
 {
   Render(_predictionTime);
 
-  Vector3 predictedMovement = _predictionTime * AsLegacy(m_vel);
-  Vector3 predictedPos = AsLegacy(m_pos) + predictedMovement;
-  Vector3 up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-  Vector3 right = m_up ^ AsLegacy(m_front);
-  Vector3 front = right ^ up;
+  DirectX::XMFLOAT3 predictedMovement;
+  DirectX::XMStoreFloat3(&predictedMovement, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), _predictionTime));
 
-  Matrix34 mat(front, up, predictedPos);
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&predictedMovement)));
+  // SurfaceMap2D<Vector3> still returns a Vector3 -- Landscape belongs to T18.
+  DirectX::XMFLOAT3 const landUp = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+  DirectX::XMVECTOR const up = DirectX::XMLoadFloat3(&landUp);
+
+  // right comes from m_up, not from the landscape up just fetched. Preserved.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMVECTOR const front = DirectX::XMVector3Cross(right, up);
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(front, up, DirectX::XMLoadFloat3(&predictedPos)));
   g_renderer->MarkUsedCells(m_shape, mat);
 
   for (int i = 0; i < SPIDER_NUM_LEGS; ++i)
@@ -807,7 +864,14 @@ bool Spider::RenderPixelEffect(float _predictionTime)
 }
 
 
-bool Spider::IsInView() { return g_camera->SphereInViewFrustum(AsLegacy(m_pos) + AsLegacy(m_centrePos), m_radius); }
+bool Spider::IsInView()
+{
+  DirectX::XMFLOAT3 centre;
+  DirectX::XMStoreFloat3(&centre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_centrePos)));
+
+  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
+  return g_camera->SphereInViewFrustum(centre, m_radius);
+}
 
 
 void Spider::ListSoundEvents(std::vector<const char*>* _list)

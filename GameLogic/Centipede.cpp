@@ -123,12 +123,7 @@ void Centipede::ChangeHealth(int _amount)
   if (m_dead && !dead)
   {
     // We just died
-    Matrix34 transform(m_front, g_upVector, m_pos);
-    transform.f *= m_size;
-    transform.u *= m_size;
-    transform.r *= m_size;
-
-    g_explosionManager.AddExplosion(m_shape, transform);
+    g_explosionManager.AddExplosion(m_shape, GetScaledLevelMatrix(DirectX::XMLoadFloat3(&m_pos)));
 
     Centipede* next = (Centipede*)g_location->GetEntitySafe(m_next, TypeCentipede);
     if (next)
@@ -160,6 +155,26 @@ void Centipede::Panic(float _time)
 }
 
 
+// The centipede is drawn and exploded at m_size, and every site scaled the
+// three basis rows while leaving the position row alone.
+static DirectX::XMFLOAT4X4 ScaleCentipedeBasis(DirectX::FXMMATRIX _basis, float _size)
+{
+  DirectX::XMMATRIX mat = _basis;
+  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_size);
+  mat.r[0] = DirectX::XMVectorMultiply(mat.r[0], scale);
+  mat.r[1] = DirectX::XMVectorMultiply(mat.r[1], scale);
+  mat.r[2] = DirectX::XMVectorMultiply(mat.r[2], scale);
+
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, mat);
+  return result;
+}
+
+DirectX::XMFLOAT4X4 Centipede::GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const
+{
+  return ScaleCentipedeBasis(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, _position), m_size);
+}
+
 bool Centipede::Advance(Unit* _unit)
 {
   ASSERT_TEXT(_unit, "Centipedes must be created in a unit");
@@ -185,7 +200,7 @@ bool Centipede::Advance(Unit* _unit)
       if (centipede->m_linked)
         recordPositionHistory = true;
       m_linked = centipede->m_linked && (static_cast<int>(m_positionHistory.size()) >= 2);
-      Vector3 trailPos, trailVel;
+      DirectX::XMFLOAT3 trailPos, trailVel;
       int numSteps = 1;
       if (centipede->m_id.GetIndex() > m_id.GetIndex())
         numSteps = 0;
@@ -195,7 +210,7 @@ bool Centipede::Advance(Unit* _unit)
         m_pos = trailPos;
         m_vel = trailVel;
         m_front = m_vel;
-        AsLegacy(m_front).Normalise();
+        DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front)));
         m_panic = centipede->m_panic;
       }
     }
@@ -310,7 +325,7 @@ bool Centipede::Advance(Unit* _unit)
 }
 
 
-void Centipede::Attack(Vector3 const& _pos)
+void Centipede::Attack(DirectX::XMFLOAT3 const& _pos)
 {
   int numFound;
   WorldObjectId* ids = g_location->m_entityGrid->GetEnemies(_pos.x, _pos.z, m_radius, &numFound, m_id.GetTeamId());
@@ -319,16 +334,20 @@ void Centipede::Attack(Vector3 const& _pos)
   {
     WorldObjectId id = ids[i];
     Entity* entity = (Entity*)g_location->GetEntity(id);
-    Vector3 pushVector = (AsLegacy(entity->m_pos) - _pos);
-    float distance = pushVector.Mag();
+    DirectX::XMVECTOR pushVector = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&_pos));
+    float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(pushVector));
     if (distance < m_radius)
     {
       g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
 
-      pushVector.SetLength(m_radius - distance);
+      // SetLength, whose zero-length fallback left (len, 0, 0). distance can be
+      // exactly zero -- an entity standing on the centipede's own centre -- and
+      // the native normalise would push it to QNaN, so the fallback is kept.
+      pushVector = NearlyEquals(distance, 0.0f) ? DirectX::XMVectorSet(m_radius - distance, 0.0f, 0.0f, 0.0f)
+                                                : DirectX::XMVectorScale(pushVector, (m_radius - distance) / distance);
 
       g_location->m_entityGrid->RemoveObject(id, entity->m_pos.x, entity->m_pos.z, entity->m_radius);
-      AsLegacy(entity->m_pos) += pushVector;
+      DirectX::XMStoreFloat3(&entity->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&entity->m_pos), pushVector));
       g_location->m_entityGrid->AddObject(id, entity->m_pos.x, entity->m_pos.z, entity->m_radius);
 
       entity->ChangeHealth((m_radius - distance) * -10.0f);
@@ -359,9 +378,9 @@ void Centipede::EatSpirits()
 
       if (spirit->m_state == Spirit::StateFloating)
       {
-        Vector3 theVector = (AsLegacy(spirit->m_pos) - AsLegacy(m_pos));
-        theVector.y = 0.0f;
-        if (theVector.Mag() < CENTIPEDE_SPIRITEATRANGE)
+        DirectX::XMVECTOR const theVector =
+          DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&spirit->m_pos), DirectX::XMLoadFloat3(&m_pos)), 0.0f);
+        if (DirectX::XMVectorGetX(DirectX::XMVector3Length(theVector)) < CENTIPEDE_SPIRITEATRANGE)
         {
           m_eaten.push_back(i);
         }
@@ -454,7 +473,8 @@ bool Centipede::SearchForRetreatPosition()
   {
     WorldObjectId id = ids[i];
     WorldObject* entity = g_location->GetEntity(id);
-    float distance = (AsLegacy(entity->m_pos) - AsLegacy(m_pos)).Mag();
+    float distance = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
     if (distance < bestDistance)
     {
       bestDistance = distance;
@@ -469,10 +489,12 @@ bool Centipede::SearchForRetreatPosition()
     DEBUG_ASSERT(obj);
 
     float distance = 50.0f;
-    Vector3 retreatVector = (AsLegacy(m_pos) - AsLegacy(obj->m_pos)).Normalise();
+    DirectX::XMVECTOR retreatVector =
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&obj->m_pos)));
     float angle = syncsfrand(M_PI * 1.0f);
-    retreatVector.RotateAroundY(angle);
-    m_targetPos = AsLegacy(m_pos) + retreatVector * distance;
+    retreatVector = DirectX::XMVector3TransformNormal(retreatVector, DirectX::XMMatrixRotationY(angle));
+    DirectX::XMStoreFloat3(&m_targetPos,
+                           DirectX::XMVectorMultiplyAdd(retreatVector, DirectX::XMVectorReplicate(distance), DirectX::XMLoadFloat3(&m_pos)));
     m_targetPos = PushFromObstructions(m_targetPos);
     m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
     return true;
@@ -521,7 +543,8 @@ bool Centipede::SearchForSpirits()
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
+      float theDist =
+        DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&s->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
       if (theDist <= CENTIPEDE_MAXSEARCHRANGE && theDist >= CENTIPEDE_MINSEARCHRANGE && theDist < nearest && s->m_state == Spirit::StateFloating)
       {
@@ -544,22 +567,25 @@ bool Centipede::SearchForSpirits()
 
 bool Centipede::SearchForRandomPosition()
 {
-  float distToSpawnPoint = (AsLegacy(m_pos) - AsLegacy(m_spawnPoint)).Mag();
+  float distToSpawnPoint =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_spawnPoint))));
   float chanceOfReturn = (distToSpawnPoint / m_roamRange);
   if (chanceOfReturn >= 1.0f || syncfrand(1.0f) <= chanceOfReturn)
   {
     // We have strayed too far from our spawn point
     // So head back there now
-    Vector3 returnVector = AsLegacy(m_spawnPoint) - AsLegacy(m_pos);
-    returnVector.SetLength(100.0f);
-    m_targetPos = AsLegacy(m_pos) + returnVector;
+    // SetLength, unreachable at zero length: this branch needs the centipede to
+    // have strayed from its spawn point.
+    DirectX::XMVECTOR const returnVector = DirectX::XMVectorScale(
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_spawnPoint), DirectX::XMLoadFloat3(&m_pos))), 100.0f);
+    DirectX::XMStoreFloat3(&m_targetPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), returnVector));
   }
   else
   {
     float distance = 100.0f;
     float angle = syncsfrand(2.0f * M_PI);
 
-    m_targetPos = AsLegacy(m_pos) + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
+    m_targetPos = DirectX::XMFLOAT3(m_pos.x + sinf(angle) * distance, m_pos.y, m_pos.z + cosf(angle) * distance);
     m_targetPos = PushFromObstructions(m_targetPos);
   }
 
@@ -581,17 +607,19 @@ void Centipede::RecordHistoryPosition()
 }
 
 
-bool Centipede::GetTrailPosition(Vector3& _pos, Vector3& _vel, int _numSteps)
+bool Centipede::GetTrailPosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel, int _numSteps)
 {
   if (static_cast<int>(m_positionHistory.size()) < 3)
     return false;
 
   float timeSinceAdvance = g_gameTime - m_lastAdvance;
 
-  Vector3 pos1 = *&m_positionHistory[_numSteps + 1];
-  Vector3 pos2 = *&m_positionHistory[_numSteps];
-  _pos = pos1 + (pos2 - pos1) * (1.0f - m_size);
-  _vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
+  DirectX::XMVECTOR const pos1 = DirectX::XMLoadFloat3(&m_positionHistory[_numSteps + 1]);
+  DirectX::XMVECTOR const pos2 = DirectX::XMLoadFloat3(&m_positionHistory[_numSteps]);
+  DirectX::XMVECTOR const step = DirectX::XMVectorSubtract(pos2, pos1);
+
+  DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorMultiplyAdd(step, DirectX::XMVectorReplicate(1.0f - m_size), pos1));
+  DirectX::XMStoreFloat3(&_vel, DirectX::XMVectorScale(step, 1.0f / SERVER_ADVANCE_PERIOD));
 
   return true;
 }
@@ -602,13 +630,14 @@ bool Centipede::AdvanceToTargetPosition()
   float amountToTurn = SERVER_ADVANCE_PERIOD * 3.0f;
   if (m_next.IsValid())
     amountToTurn *= 1.5f;
-  Vector3 targetDir = (m_targetPos - AsLegacy(m_pos)).Normalise();
-  Vector3 actualDir = AsLegacy(m_front) * (1.0f - amountToTurn) + targetDir * amountToTurn;
-  actualDir.Normalise();
+  DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
+  DirectX::XMVECTOR const targetDir = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), ourPos));
+  DirectX::XMVECTOR const actualDir = DirectX::XMVector3Normalize(DirectX::XMVectorLerp(DirectX::XMLoadFloat3(&m_front), targetDir, amountToTurn));
   float speed = m_stats[StatSpeed];
 
-  Vector3 oldPos = m_pos;
-  Vector3 newPos = AsLegacy(m_pos) + actualDir * speed * SERVER_ADVANCE_PERIOD;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
+  DirectX::XMFLOAT3 newPos;
+  DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(speed * SERVER_ADVANCE_PERIOD), ourPos));
 
 
   //
@@ -624,17 +653,20 @@ bool Centipede::AdvanceToTargetPosition()
     factor = 1.0f;
   speed *= factor;
 
-  newPos = AsLegacy(m_pos) + actualDir * speed * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(speed * SERVER_ADVANCE_PERIOD), ourPos));
   newPos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
-  Vector3 moved = newPos - oldPos;
-  if (moved.Mag() > speed * SERVER_ADVANCE_PERIOD)
-    moved.SetLength(speed * SERVER_ADVANCE_PERIOD);
-  newPos = AsLegacy(m_pos) + moved;
+  DirectX::XMVECTOR const old = DirectX::XMLoadFloat3(&oldPos);
+  DirectX::XMVECTOR moved = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&newPos), old);
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(moved)) > speed * SERVER_ADVANCE_PERIOD)
+  {
+    // SetLength, guarded by the test above, so never zero-length here.
+    moved = DirectX::XMVectorScale(DirectX::XMVector3Normalize(moved), speed * SERVER_ADVANCE_PERIOD);
+  }
 
-  m_pos = newPos;
-  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
-  m_front = actualDir;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorAdd(ourPos, moved));
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), old), 1.0f / SERVER_ADVANCE_PERIOD));
+  DirectX::XMStoreFloat3(&m_front, actualDir);
 
   if (m_targetPos.y < 0.0f)
   {
@@ -650,7 +682,8 @@ bool Centipede::AdvanceToTargetPosition()
   }
 
 
-  return (AsLegacy(m_pos) - m_targetPos).Mag() < 20.0f;
+  return DirectX::XMVectorGetX(
+           DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_targetPos)))) < 20.0f;
 }
 
 
@@ -666,7 +699,9 @@ void Centipede::ListSoundEvents(std::vector<const char*>* _list)
 
 void Centipede::Render(float _predictionTime)
 {
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z);
 
   float maxHealth = EntityBlueprint::GetStat(TypeCentipede, StatHealth);
@@ -683,17 +718,14 @@ void Centipede::Render(float _predictionTime)
     glDisable(GL_TEXTURE_2D);
     // RenderSphere( m_targetPos, 5.0f );
 
-    Vector3 predictedFront = m_front;
-    Vector3 predictedUp = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
-    Vector3 predictedRight = predictedUp ^ predictedFront;
-    predictedFront = predictedRight ^ predictedUp;
-    predictedFront.Normalise();
+    // SurfaceMap2D<Vector3> still returns a Vector3 -- Landscape belongs to T18.
+    DirectX::XMFLOAT3 const landUp = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
+    DirectX::XMVECTOR const predictedUp = DirectX::XMLoadFloat3(&landUp);
+    DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(predictedUp, DirectX::XMLoadFloat3(&m_front));
+    DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(predictedRight, predictedUp));
 
-    Matrix34 mat(predictedFront, predictedUp, predictedPos);
-
-    mat.f *= m_size;
-    mat.u *= m_size;
-    mat.r *= m_size;
+    DirectX::XMFLOAT4X4 const mat =
+      ScaleCentipedeBasis(BasisFromFrontAndUp(predictedFront, predictedUp, DirectX::XMLoadFloat3(&predictedPos)), m_size);
 
     g_renderer->SetObjectLighting();
     shape->Render(_predictionTime, mat);
@@ -704,27 +736,40 @@ void Centipede::Render(float _predictionTime)
 }
 
 
-bool Centipede::IsInView() { return g_camera->SphereInViewFrustum(AsLegacy(m_pos) + AsLegacy(m_centrePos), m_radius); }
+bool Centipede::IsInView()
+{
+  DirectX::XMFLOAT3 centre;
+  DirectX::XMStoreFloat3(&centre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_centrePos)));
+
+  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
+  return g_camera->SphereInViewFrustum(centre, m_radius);
+}
 
 
 bool Centipede::RenderPixelEffect(float _predictionTime)
 {
   Render(_predictionTime);
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z);
 
   if (!m_dead && m_linked)
   {
-    Vector3 predictedFront = m_front;
-    Vector3 predictedUp = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
-    Vector3 predictedRight = predictedUp ^ predictedFront;
-    predictedFront = predictedRight ^ predictedUp;
+    // SurfaceMap2D<Vector3> still returns a Vector3 -- Landscape belongs to T18.
+    DirectX::XMFLOAT3 const landUp = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
+    DirectX::XMVECTOR const predictedUp = DirectX::XMLoadFloat3(&landUp);
+    DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(predictedUp, DirectX::XMLoadFloat3(&m_front));
 
-    Matrix34 mat(predictedFront, predictedUp, predictedPos);
-    mat.f *= m_size;
-    mat.u *= m_size;
-    mat.r *= m_size;
+    // NOT normalised, unlike the Render path a few lines up. Preserved as
+    // written: BasisFromFrontAndUp leaves the front row alone, so an
+    // unnormalised front scales the shape along its own axis, and that is what
+    // the cell-marking pass has always seen.
+    DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Cross(predictedRight, predictedUp);
+
+    DirectX::XMFLOAT4X4 const mat =
+      ScaleCentipedeBasis(BasisFromFrontAndUp(predictedFront, predictedUp, DirectX::XMLoadFloat3(&predictedPos)), m_size);
 
     g_renderer->MarkUsedCells(m_shape, mat);
   }

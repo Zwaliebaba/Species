@@ -37,11 +37,12 @@ class Triffid : public Building
     float m_force;
     float m_variance; // Horizontal
 
-    int m_useTrigger;          // Num enemies required to trigger
-    Vector3 m_triggerLocation; // Offset from m_pos
+    int m_useTrigger; // Num enemies required to trigger
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+    DirectX::XMFLOAT3 m_triggerLocation{0.0f, 0.0f, 0.0f}; // Offset from m_pos
     float m_triggerRadius;
 
-    Matrix34 GetHead(); // So to speak
+    DirectX::XMFLOAT4X4 GetHead(); // So to speak
 
   public:
     Triffid();
@@ -75,7 +76,8 @@ class Triffid : public Building
 class TriffidEgg : public Entity
 {
   protected:
-    Vector3 m_up;
+    // TriffidEgg's own basis. Braced to zero for the same reason as above.
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
     float m_force;
     float m_timerSync;
     float m_life;
@@ -83,7 +85,7 @@ class TriffidEgg : public Entity
   public:
     float m_size;
     int m_spawnType;
-    Vector3 m_spawnPoint;
+    DirectX::XMFLOAT3 m_spawnPoint{0.0f, 0.0f, 0.0f};
     float m_spawnRange;
 
   public:

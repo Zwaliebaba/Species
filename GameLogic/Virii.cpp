@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include "BinaryStreamReaders.h"
@@ -23,7 +24,7 @@
 #include "WorldPointers.h"
 
 
-ViriiUnit::ViriiUnit(int teamId, int unitId, int numEntities, Vector3 const& _pos)
+ViriiUnit::ViriiUnit(int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos)
   : Unit(Entity::TypeVirii, teamId, unitId, numEntities, _pos),
     m_enemiesFound(false),
     m_cameraClose(false)
@@ -71,7 +72,10 @@ void ViriiUnit::Render(float _predictionTime)
   }
   else
   {
-    float rangeToCam = (AsLegacy(m_centrePos) - g_camera->GetPos()).Mag();
+    // Camera's accessors are still legacy -- Species belongs to T22.
+    DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+    float rangeToCam = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_centrePos), DirectX::XMLoadFloat3(&cameraPos))));
     if (entityDetail == 1 && rangeToCam > 1000.0f)
       viriiDetail = 2;
     else if (entityDetail == 2 && rangeToCam > 1000.0f)
@@ -157,7 +161,7 @@ bool Virii::Advance(Unit* _unit)
 
   if (m_dead)
   {
-    AsLegacy(m_vel).Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
     if (m_spiritId != -1)
     {
@@ -176,7 +180,8 @@ bool Virii::Advance(Unit* _unit)
   if (!m_onGround)
   {
     m_vel.y += -10.0f * SERVER_ADVANCE_PERIOD;
-    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                DirectX::XMLoadFloat3(&m_pos)));
 
     float groundLevel = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z) + 2.0f;
     if (m_pos.y <= groundLevel)
@@ -273,23 +278,35 @@ void Virii::RecordHistoryPosition(bool _required)
 {
   START_PROFILE(g_profiler, "RecordHistory");
 
-  Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-  Vector3 prevPos;
+  // SurfaceMap2D<Vector3> still returns a Vector3 -- Landscape belongs to T18.
+  DirectX::XMFLOAT3 const landNormal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+
+  // Braced to zero: Vector3's default constructor did it and this stays zero
+  // when the history is empty.
+  DirectX::XMFLOAT3 prevPos{0.0f, 0.0f, 0.0f};
   if (static_cast<int>(m_positionHistory.size()) > 0)
     prevPos = m_positionHistory[0]->m_pos;
 
+  DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
+
   ViriiHistory* history = new ViriiHistory();
   history->m_pos = m_pos;
-  history->m_right = (AsLegacy(m_pos) - prevPos) ^ landNormal;
-  history->m_right.Normalise();
+  DirectX::XMStoreFloat3(&history->m_right,
+                         DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(ourPos, DirectX::XMLoadFloat3(&prevPos)),
+                                                                             DirectX::XMLoadFloat3(&landNormal))));
   history->m_distance = 0.0f;
   history->m_required = _required;
 
   if (static_cast<int>(m_positionHistory.size()) > 0)
   {
-    history->m_distance = (AsLegacy(m_pos) - m_positionHistory[0]->m_pos).Mag();
-    history->m_glowDiff = (AsLegacy(m_pos) - m_positionHistory[0]->m_pos);
-    history->m_glowDiff.SetLength(10.0f);
+    DirectX::XMVECTOR const step = DirectX::XMVectorSubtract(ourPos, DirectX::XMLoadFloat3(&m_positionHistory[0]->m_pos));
+    history->m_distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(step));
+
+    // SetLength. m_distance is exactly zero when the worm has not moved since
+    // the last recorded point, and the legacy fallback then left (10, 0, 0);
+    // reproduced rather than storing QNaN into the glow geometry.
+    DirectX::XMStoreFloat3(&history->m_glowDiff, NearlyEquals(history->m_distance, 0.0f) ? DirectX::XMVectorSet(10.0f, 0.0f, 0.0f, 0.0f)
+                                                                                         : DirectX::XMVectorScale(step, 10.0f / history->m_distance));
   }
 
 
@@ -325,20 +342,24 @@ void Virii::RecordHistoryPosition(bool _required)
 }
 
 
-bool Virii::AdvanceToTargetPos(Vector3 const& _pos)
+bool Virii::AdvanceToTargetPos(DirectX::XMFLOAT3 const& _pos)
 {
   START_PROFILE(g_profiler, "AdvanceToTargetPos");
 
-  Vector3 oldPos = m_pos;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
 
-  Vector3 distance = _pos - AsLegacy(m_pos);
-  m_vel = distance;
-  AsLegacy(m_vel).Normalise();
-  m_front = m_vel;
-  AsLegacy(m_vel) *= m_stats[StatSpeed];
-  distance.y = 0.0f;
+  DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&m_pos));
+  DirectX::XMVECTOR const direction = DirectX::XMVector3Normalize(toTarget);
+  DirectX::XMStoreFloat3(&m_front, direction);
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(direction, m_stats[StatSpeed]));
 
-  Vector3 nextPos = AsLegacy(m_pos) + AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  // The arrival test below uses the FLATTENED distance, but m_vel and m_front
+  // came from the full one. Preserved as written.
+  DirectX::XMVECTOR const distance = DirectX::XMVectorSetY(toTarget, 0.0f);
+
+  DirectX::XMFLOAT3 nextPos;
+  DirectX::XMStoreFloat3(&nextPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                DirectX::XMLoadFloat3(&m_pos)));
   nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z) + m_hoverHeight;
   float currentHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   float nextHeight = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
@@ -352,8 +373,9 @@ bool Virii::AdvanceToTargetPos(Vector3 const& _pos)
     factor = 0.1f;
   if (factor > 2.0f)
     factor = 2.0f;
-  AsLegacy(m_vel) *= factor;
-  nextPos = AsLegacy(m_pos) + AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), factor));
+  DirectX::XMStoreFloat3(&nextPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                DirectX::XMLoadFloat3(&m_pos)));
   nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z) + m_hoverHeight;
 
 
@@ -361,14 +383,16 @@ bool Virii::AdvanceToTargetPos(Vector3 const& _pos)
   // Are we there?
 
   bool arrived = false;
-  if (distance.MagSquared() < AsLegacy(m_vel).MagSquared() * SERVER_ADVANCE_PERIOD * SERVER_ADVANCE_PERIOD)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(distance)) <
+      DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMLoadFloat3(&m_vel))) * SERVER_ADVANCE_PERIOD * SERVER_ADVANCE_PERIOD)
   {
     nextPos = _pos;
     arrived = true;
   }
 
   m_pos = nextPos;
-  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos)),
+                                                        1.0f / SERVER_ADVANCE_PERIOD));
 
   END_PROFILE(g_profiler, "AdvanceToTargetPos");
 
@@ -444,7 +468,9 @@ bool Virii::AdvanceAttacking()
     entity->ChangeHealth(-20);
     for (int i = 0; i < 3; ++i)
     {
-      g_particleSystem->CreateParticle(m_pos, Vector3(syncsfrand(15.0f), syncsfrand(15.0f) + 15.0f, syncsfrand(15.0f)), Particle::TypeMuzzleFlash);
+      // The three syncsfrand calls stay in this order: they advance the RNG.
+      DirectX::XMFLOAT3 const flashVel(syncsfrand(15.0f), syncsfrand(15.0f) + 15.0f, syncsfrand(15.0f));
+      g_particleSystem->CreateParticle(m_pos, flashVel, Particle::TypeMuzzleFlash);
     }
     g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
     SearchForEnemies();
@@ -474,7 +500,7 @@ bool Virii::AdvanceToSpirit()
   }
 
   Spirit* spirit = g_location->m_spirits.GetPointer(m_spiritId);
-  Vector3 targetPos = spirit->m_pos;
+  DirectX::XMFLOAT3 targetPos = spirit->m_pos;
   targetPos.y = g_location->m_landscape.m_heightMap->GetValue(targetPos.x, targetPos.z);
   bool arrived = AdvanceToTargetPos(targetPos);
   if (arrived)
@@ -582,7 +608,8 @@ bool Virii::SearchForSpirits()
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
+      float theDist =
+        DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&s->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
       if (theDist <= VIRII_MAXSEARCHRANGE && theDist < closest && s->NumNearbyEggs() > 0 &&
           (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
@@ -631,7 +658,8 @@ WorldObjectId Virii::FindNearbyEgg(int _spiritId, float _autoAccept)
 
     if (egg && egg->m_state == Egg::StateDormant)
     {
-      float theDist = (AsLegacy(egg->m_pos) - AsLegacy(spirit->m_pos)).Mag();
+      float theDist = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&egg->m_pos), DirectX::XMLoadFloat3(&spirit->m_pos))));
       if (theDist <= _autoAccept)
       {
         return thisEggId;
@@ -648,7 +676,7 @@ WorldObjectId Virii::FindNearbyEgg(int _spiritId, float _autoAccept)
 }
 
 
-WorldObjectId Virii::FindNearbyEgg(Vector3 const& _pos)
+WorldObjectId Virii::FindNearbyEgg(DirectX::XMFLOAT3 const& _pos)
 {
   int numFound;
   WorldObjectId* ids = g_location->m_entityGrid->GetFriends(_pos.x, _pos.z, VIRII_MAXSEARCHRANGE, &numFound, m_id.GetTeamId());
@@ -709,7 +737,8 @@ bool Virii::SearchForIdleDirection()
 {
   START_PROFILE(g_profiler, "SearchForIdleDir");
 
-  float distToSpawnPoint = (AsLegacy(m_pos) - AsLegacy(m_spawnPoint)).Mag();
+  float distToSpawnPoint =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_spawnPoint))));
   float chanceOfReturn = (distToSpawnPoint / m_roamRange);
   if (chanceOfReturn < 0.75f)
     chanceOfReturn = 0.0f;
@@ -717,8 +746,9 @@ bool Virii::SearchForIdleDirection()
   {
     // We have strayed too far from our spawn point
     // So head back there now
-    Vector3 newDirection = (AsLegacy(m_spawnPoint) - AsLegacy(m_pos));
-    newDirection.y = 0;
+    DirectX::XMFLOAT3 newDirection;
+    DirectX::XMStoreFloat3(
+      &newDirection, DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_spawnPoint), DirectX::XMLoadFloat3(&m_pos)), 0.0f));
     if (newDirection.x < -0.5f)
       newDirection.x = -1.0f;
     else if (newDirection.x > 0.5f)
@@ -731,8 +761,16 @@ bool Virii::SearchForIdleDirection()
       newDirection.z = 1.0f;
     else
       newDirection.z = 0.0f;
-    newDirection.SetLength(m_stats[StatSpeed]);
-    Vector3 nextPos = AsLegacy(m_pos) + newDirection * m_retargetTimer;
+    // SetLength on a vector snapped to one of the eight compass directions
+    // above -- it is (0, 0, 0) when the worm is already on its spawn point, and
+    // the legacy fallback then left (speed, 0, 0). Reproduced.
+    float const directionLength = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&newDirection)));
+    DirectX::XMVECTOR const step = NearlyEquals(directionLength, 0.0f)
+                                     ? DirectX::XMVectorSet(m_stats[StatSpeed], 0.0f, 0.0f, 0.0f)
+                                     : DirectX::XMVectorScale(DirectX::XMLoadFloat3(&newDirection), m_stats[StatSpeed] / directionLength);
+
+    DirectX::XMFLOAT3 nextPos;
+    DirectX::XMStoreFloat3(&nextPos, DirectX::XMVectorMultiplyAdd(step, DirectX::XMVectorReplicate(m_retargetTimer), DirectX::XMLoadFloat3(&m_pos)));
     nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
     m_wayPoint = nextPos;
     m_state = StateIdle;
@@ -750,11 +788,18 @@ bool Virii::SearchForIdleDirection()
 
       int x = (((int)syncfrand(3.0f)) - 1);
       int z = (((int)syncfrand(3.0f)) - 1);
-      Vector3 newVel(x, 0.0f, z);
-      newVel.Normalise();
-      newVel *= m_stats[StatSpeed];
+      // x and z are each -1, 0 or 1, so (0,0,0) is a real outcome and the
+      // legacy Normalise left (0, 0, 1) for it. That fallback IS reproduced
+      // here, unlike the migration's default, because it is the difference
+      // between the worm picking a direction and picking QNaN.
+      DirectX::XMFLOAT3 const rawVel((float)x, 0.0f, (float)z);
+      float const rawLength = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&rawVel)));
+      DirectX::XMVECTOR const newVel = rawLength > 0.0f ? DirectX::XMVectorScale(DirectX::XMLoadFloat3(&rawVel), m_stats[StatSpeed] / rawLength)
+                                                        : DirectX::XMVectorSet(0.0f, 0.0f, m_stats[StatSpeed], 0.0f);
 
-      Vector3 nextPos = AsLegacy(m_pos) + newVel * m_retargetTimer;
+      DirectX::XMFLOAT3 nextPos;
+      DirectX::XMStoreFloat3(&nextPos,
+                             DirectX::XMVectorMultiplyAdd(newVel, DirectX::XMVectorReplicate(m_retargetTimer), DirectX::XMLoadFloat3(&m_pos)));
       nextPos.y = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
       if (nextPos.y > 0.0f)
       {
@@ -773,40 +818,17 @@ bool Virii::SearchForIdleDirection()
 }
 
 
-Vector3 Virii::AdvanceDeadPositionVector(int _index, Vector3 const& _pos, float _time)
+DirectX::XMFLOAT3 Virii::AdvanceDeadPositionVector(int _index, DirectX::XMFLOAT3 const& _pos, float _time)
 {
   float distance = 10.0f * _time;
-  Vector3 result = _pos;
 
-  switch (_index % 8)
-  {
-  case 0:
-    result += Vector3(-distance, 0, 0);
-    break;
-  case 1:
-    result += Vector3(-distance, 0, distance);
-    break;
-  case 2:
-    result += Vector3(0, 0, distance);
-    break;
-  case 3:
-    result += Vector3(distance, 0, distance);
-    break;
-  case 4:
-    result += Vector3(distance, 0, 0);
-    break;
-  case 5:
-    result += Vector3(distance, 0, -distance);
-    break;
-  case 6:
-    result += Vector3(0, 0, -distance);
-    break;
-  case 7:
-    result += Vector3(-distance, 0, -distance);
-    break;
-  }
+  // The eight compass offsets the switch used to spell out, in the same order:
+  // index 0 is -x and they turn anticlockwise from there.
+  static float const offsets[8][2] = {{-1.0f, 0.0f}, {-1.0f, 1.0f}, {0.0f, 1.0f},  {1.0f, 1.0f},
+                                      {1.0f, 0.0f},  {1.0f, -1.0f}, {0.0f, -1.0f}, {-1.0f, -1.0f}};
+  float const* const offset = offsets[_index % 8];
 
-  return result;
+  return DirectX::XMFLOAT3(_pos.x + offset[0] * distance, _pos.y, _pos.z + offset[1] * distance);
 }
 
 
@@ -814,7 +836,7 @@ bool Virii::AdvanceDead()
 {
   for (int i = 0; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
-    Vector3* thisPos = &m_positionHistory[i]->m_pos;
+    DirectX::XMFLOAT3* thisPos = &m_positionHistory[i]->m_pos;
     *thisPos = AdvanceDeadPositionVector(i, *thisPos, SERVER_ADVANCE_PERIOD);
   }
   return true;
@@ -823,13 +845,14 @@ bool Virii::AdvanceDead()
 
 bool Virii::IsInView()
 {
-  Vector3 centrePos = m_pos;
+  DirectX::XMFLOAT3 const centrePos = m_pos;
+  DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&centrePos);
   float radiusSqd = 0.0f;
 
   for (int i = 0; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
-    Vector3 pos = m_positionHistory[i]->m_pos;
-    float distance = (pos - centrePos).MagSquared();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_positionHistory[i]->m_pos), centre)));
     if (distance > radiusSqd)
     {
       radiusSqd = distance;
@@ -837,6 +860,8 @@ bool Virii::IsInView()
   }
 
   float radius = sqrtf(radiusSqd);
+
+  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(centrePos, radius);
 }
 
@@ -852,7 +877,9 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
 {
   predictionTime += SERVER_ADVANCE_PERIOD;
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   if (m_onGround && _detail == 1)
   {
     predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) + m_hoverHeight;
@@ -874,18 +901,29 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
     glowColour.a = 250 * m_stats[StatHealth] / 100.0f;
   }
 
-  Vector3 landNormal = g_upVector;
+  // SurfaceMap2D<Vector3> still returns a Vector3 -- Landscape belongs to T18.
+  DirectX::XMFLOAT3 landNormal(0.0f, 1.0f, 0.0f);
   if (_detail == 1)
     landNormal = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
 
   ViriiHistory prevPos;
   prevPos.m_pos = predictedPos;
-  prevPos.m_right = -AsLegacy(m_front) ^ landNormal;
-  Vector3 firstPos;
+  DirectX::XMStoreFloat3(&prevPos.m_right,
+                         DirectX::XMVector3Cross(DirectX::XMVectorNegate(DirectX::XMLoadFloat3(&m_front)), DirectX::XMLoadFloat3(&landNormal)));
+
+  // Braced to zero: Vector3's default constructor did it and this stays zero
+  // when the history is empty.
+  DirectX::XMFLOAT3 firstPos{0.0f, 0.0f, 0.0f};
   if (static_cast<int>(m_positionHistory.size()) > 0)
     firstPos = m_positionHistory[0]->m_pos;
-  prevPos.m_distance = (predictedPos - firstPos).Mag();
-  prevPos.m_glowDiff = (predictedPos - firstPos).SetLength(10.0f);
+
+  DirectX::XMVECTOR const toFirst = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&predictedPos), DirectX::XMLoadFloat3(&firstPos));
+  prevPos.m_distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(toFirst));
+
+  // SetLength, whose zero-length fallback left (10, 0, 0) -- reachable on the
+  // first frame, before any history exists.
+  DirectX::XMStoreFloat3(&prevPos.m_glowDiff, NearlyEquals(prevPos.m_distance, 0.0f) ? DirectX::XMVectorSet(10.0f, 0.0f, 0.0f, 0.0f)
+                                                                                     : DirectX::XMVectorScale(toFirst, 10.0f / prevPos.m_distance));
 
 #define wormWidth 3.0f
 #define wormTexW 32.0f / (32.0f + 128.0f)
@@ -917,11 +955,13 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
       continue;
     }
 
-    Vector3& pos = history->m_pos;
-    Vector3 wormRightAngle = prevPos.m_right * wormWidth;
-    Vector3 glowRightAngle = prevPos.m_right * glowWidth;
+    DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&history->m_pos);
+    DirectX::XMVECTOR const prevRight = DirectX::XMLoadFloat3(&prevPos.m_right);
+    DirectX::XMVECTOR const wormRightAngle = DirectX::XMVectorScale(prevRight, wormWidth);
+    DirectX::XMVECTOR const glowRightAngle = DirectX::XMVectorScale(prevRight, glowWidth);
     float distance = prevPos.m_distance + skippedDistance;
-    Vector3 const& glowDiff = prevPos.m_glowDiff;
+    DirectX::XMVECTOR const glowDiff = DirectX::XMLoadFloat3(&prevPos.m_glowDiff);
+    DirectX::XMVECTOR const prevPosVec = DirectX::XMLoadFloat3(&prevPos.m_pos);
 
     skippedDistance = 0.0f;
 
@@ -936,14 +976,14 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
     glColor4ubv(wormColour.GetData());
 
     glTexCoord2f(0.0f, wormTexYpos);
-    glVertex3fv((prevPos.m_pos - wormRightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(prevPosVec, wormRightAngle));
     glTexCoord2f(wormTexW, wormTexYpos);
-    glVertex3fv((prevPos.m_pos + wormRightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(prevPosVec, wormRightAngle));
     wormTexYpos += (distance * 6) / 512.0f;
     glTexCoord2f(wormTexW, wormTexYpos);
-    glVertex3fv((pos + wormRightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(pos, wormRightAngle));
     glTexCoord2f(0.0f, wormTexYpos);
-    glVertex3fv((pos - wormRightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(pos, wormRightAngle));
 
     //
     // Glow effect
@@ -957,14 +997,14 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
       glColor4ubv(glowColour.GetData());
 
       glTexCoord2f(glowTexXpos, 0.0f);
-      glVertex3fv((prevPos.m_pos - glowRightAngle + glowDiff).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(prevPosVec, glowRightAngle), glowDiff));
       glTexCoord2f(1.0f, 0.0f);
-      glVertex3fv((prevPos.m_pos + glowRightAngle + glowDiff).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(prevPosVec, glowRightAngle), glowDiff));
 
       glTexCoord2f(1.0f, glowTexH);
-      glVertex3fv((pos + glowRightAngle - glowDiff).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, glowRightAngle), glowDiff));
       glTexCoord2f(glowTexXpos, glowTexH);
-      glVertex3fv((pos - glowRightAngle - glowDiff).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, glowRightAngle), glowDiff));
     }
 
     prevPos = *history;

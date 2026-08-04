@@ -13,7 +13,8 @@ class SporeGenerator : public Entity
   public:
     float m_retargetTimer;
     float m_eggTimer;
-    Vector3 m_targetPos;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
     int m_spiritId;
 
   protected:
@@ -25,7 +26,7 @@ class SporeGenerator : public Entity
     bool AdvanceEggLaying();
     bool AdvancePanic();
 
-    void RenderTail(Vector3 const& _from, Vector3 const& _to, float _size);
+    void RenderTail(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to, float _size);
 
   protected:
     ShapeMarker* m_eggMarker;

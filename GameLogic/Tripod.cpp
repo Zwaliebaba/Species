@@ -122,7 +122,9 @@ void Tripod::ChangeHealth(int _amount)
     if (m_dead && !dead)
     {
       // We just died
-      Matrix34 transform(m_front, m_up, m_pos);
+      DirectX::XMFLOAT4X4 transform;
+      DirectX::XMStoreFloat4x4(&transform,
+                               BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
       g_explosionManager.AddExplosion(m_shape, transform);
     }
   }
@@ -162,6 +164,10 @@ int Tripod::CalcWhichFootToMove()
 void Tripod::DoFallForTwoLegs()
 {
   // Calc point between feet and point under body
+  // RayRayDist still takes Vector3* out-parameters -- T6 and T7 rebuilt those
+  // bodies natively but deliberately left the signatures for their callers to
+  // convert under their own tasks. This is one of them, so these three stay
+  // legacy until MathUtils' signatures move.
   Vector3 footToFoot;
   Vector3 pointBetweenFeet;
   Vector3 pointUnderBody;
@@ -182,30 +188,47 @@ void Tripod::DoFallForTwoLegs()
   }
 
   // Calc moment due to centre of gravity and the contact point on the ground not being vertically aligned
-  Vector3 lever(pointBetweenFeet - pointUnderBody);
-  float momentPerUnitMass = lever.Mag() * GRAVITY;
+  DirectX::XMVECTOR const betweenFeet = DirectX::XMLoadFloat3(&pointBetweenFeet);
+  DirectX::XMVECTOR const lever = DirectX::XMVectorSubtract(betweenFeet, DirectX::XMLoadFloat3(&pointUnderBody));
+  float momentPerUnitMass = DirectX::XMVectorGetX(DirectX::XMVector3Length(lever)) * GRAVITY;
 
   // Calc force due to moment
-  Vector3 feetToBody(AsLegacy(m_pos) - pointBetweenFeet);
-  float feetToBodyLen = feetToBody.Mag();
-  Vector3 footToFootDir(footToFoot);
-  footToFootDir.Normalise();
-  Vector3 forcePerUnitMass(m_up ^ footToFootDir);
-  forcePerUnitMass.SetLength(momentPerUnitMass / feetToBodyLen);
+  DirectX::XMVECTOR const feetToBody = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), betweenFeet);
+  float feetToBodyLen = DirectX::XMVectorGetX(DirectX::XMVector3Length(feetToBody));
+  DirectX::XMVECTOR const footToFootDir = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&footToFoot));
+
+  // SetLength on the cross of two roughly perpendicular unit vectors, so it is
+  // not zero-length here; this takes the native normalise.
+  DirectX::XMVECTOR const forcePerUnitMass = DirectX::XMVectorScale(
+    DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_up), footToFootDir)), momentPerUnitMass / feetToBodyLen);
 
   // Calc change in body vel due to force
-  m_bodyVel += forcePerUnitMass * SERVER_ADVANCE_PERIOD;
+  DirectX::XMVECTOR bodyVel =
+    DirectX::XMVectorMultiplyAdd(forcePerUnitMass, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_bodyVel));
+  DirectX::XMStoreFloat3(&m_bodyVel, bodyVel);
 
   // Calc change in body angle due to change in position (it is rotating around pointBetweenFeet)
-  float rotation = m_bodyVel.Mag() / feetToBodyLen; // Using small angle approximation (tan theta ~= theta)
-  Vector3 axis(footToFootDir * -rotation * 0.1f);
-  m_up.RotateAround(axis);
+  float rotation = DirectX::XMVectorGetX(DirectX::XMVector3Length(bodyVel)) / feetToBodyLen; // Small angle approximation
+
+  // RotateAround's angle is the vector's magnitude, with its own 1e-8 guard.
+  DirectX::XMVECTOR const axis = DirectX::XMVectorScale(footToFootDir, -rotation * 0.1f);
+  float const axisLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(axis));
+  if (axisLengthSquared >= 1e-8f)
+  {
+    float const spin = sqrtf(axisLengthSquared);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_up),
+                                                              DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(axis, 1.0f / spin), spin)));
+  }
   //		m_front.RotateAround(axis);
 
-  AsLegacy(m_pos) += m_bodyVel * SERVER_ADVANCE_PERIOD;
-  Vector3 newFeetToBody(AsLegacy(m_pos) - pointBetweenFeet);
-  newFeetToBody.SetLength(feetToBodyLen);
-  m_pos = pointBetweenFeet + newFeetToBody;
+  DirectX::XMStoreFloat3(&m_pos,
+                         DirectX::XMVectorMultiplyAdd(bodyVel, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos)));
+
+  // SetLength back onto the leg length. feetToBodyLen is a divisor above, so it
+  // is non-zero by the time we get here.
+  DirectX::XMVECTOR const newFeetToBody = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), betweenFeet);
+  DirectX::XMStoreFloat3(
+    &m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMVector3Normalize(newFeetToBody), DirectX::XMVectorReplicate(feetToBodyLen), betweenFeet));
 }
 
 
@@ -223,8 +246,8 @@ WorldObjectId Tripod::FindEntityToAttack()
   for (int i = 0; i < numFound; ++i)
   {
     Entity* entity = g_location->GetEntity(enemies[i]);
-    float deltaX = entity->m_pos.x - AsLegacy(m_pos).x;
-    float deltaY = entity->m_pos.z - AsLegacy(m_pos).z;
+    float deltaX = entity->m_pos.x - m_pos.x;
+    float deltaY = entity->m_pos.z - m_pos.z;
     float distSqrd = deltaX * deltaX + deltaY * deltaY;
     if (distSqrd < nearestDistSqrd)
     {
@@ -244,17 +267,20 @@ WorldObjectId Tripod::FindEntityToAttack()
 }
 
 
-Vector2 Tripod::ChooseDestination()
+DirectX::XMFLOAT2 Tripod::ChooseDestination()
 {
   START_PROFILE(g_profiler, "ChooseDest");
 
   int numFound;
   WorldObjectId* enemies = g_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z, NAVIGATION_SEARCH_RADIUS, &numFound, m_id.GetTeamId());
-  Vector2 pos;
+  // Vector2's Vector3 constructor took x and z; XMFLOAT2 has no such thing, so
+  // the flattening is written out.
+  DirectX::XMFLOAT2 pos;
 
   if (numFound == 0)
   {
-    pos = m_pos;
+    // The two syncsfrand calls stay in this order: they advance the RNG.
+    pos = DirectX::XMFLOAT2(m_pos.x, m_pos.z);
     pos.x += syncsfrand(300.0f);
     pos.y += syncsfrand(300.0f);
   }
@@ -262,7 +288,7 @@ Vector2 Tripod::ChooseDestination()
   {
     int i = syncrand() % numFound;
     Entity* targetEnemy = g_location->GetEntity(enemies[i]);
-    pos = targetEnemy->m_pos;
+    pos = DirectX::XMFLOAT2(targetEnemy->m_pos.x, targetEnemy->m_pos.z);
     pos.x += syncsfrand(100.0f);
     pos.y += syncsfrand(100.0f);
   }
@@ -281,7 +307,7 @@ void Tripod::DoNavigation()
   // wait until we come to rest before we choose a new direction to travel in
   if (m_navData.m_dir == -1)
   {
-    float speed = AsLegacy(m_vel).Mag();
+    float speed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel)));
     if (speed > 0.5f)
     {
       END_PROFILE(g_profiler, "DoNav");
@@ -290,15 +316,15 @@ void Tripod::DoNavigation()
   }
 
   // Have we reached our destination?
-  Vector2 pos(m_pos);
-  Vector2 delta(m_navData.m_targetPos - pos);
-  float deltaMag = delta.Mag();
+  DirectX::XMFLOAT2 const pos(m_pos.x, m_pos.z);
+  DirectX::XMFLOAT2 delta(m_navData.m_targetPos.x - pos.x, m_navData.m_targetPos.y - pos.y);
+  float deltaMag = sqrtf(delta.x * delta.x + delta.y * delta.y);
   if (deltaMag < 1.0f)
   {
     m_navData.m_targetPos = ChooseDestination();
 
-    delta = (m_navData.m_targetPos - pos);
-    deltaMag = delta.Mag();
+    delta = DirectX::XMFLOAT2(m_navData.m_targetPos.x - pos.x, m_navData.m_targetPos.y - pos.y);
+    deltaMag = sqrtf(delta.x * delta.x + delta.y * delta.y);
     m_navData.m_dir = -1;
   }
 
@@ -306,12 +332,12 @@ void Tripod::DoNavigation()
   if (m_navData.m_dir == -1)
   {
     // Choose the best direction
-    Vector2 deltaNorm(delta / deltaMag);
-    float largestDot = m_navData.m_directions[0] * deltaNorm;
+    DirectX::XMFLOAT2 const deltaNorm(delta.x / deltaMag, delta.y / deltaMag);
+    float largestDot = m_navData.m_directions[0].x * deltaNorm.x + m_navData.m_directions[0].y * deltaNorm.y;
     unsigned int best = 0;
     for (unsigned int i = 1; i < 6; i++)
     {
-      float result = m_navData.m_directions[i] * deltaNorm;
+      float result = m_navData.m_directions[i].x * deltaNorm.x + m_navData.m_directions[i].y * deltaNorm.y;
       if (result > largestDot)
       {
         largestDot = result;
@@ -343,15 +369,16 @@ void Tripod::DoNavigation()
 }
 
 
-Vector3 Tripod::CalcAttackUpVector()
+DirectX::XMFLOAT3 Tripod::CalcAttackUpVector()
 {
-  Vector3 toEnemy = m_attackTarget - AsLegacy(m_pos);
-  toEnemy.Normalise();
-  Vector3 toEnemyHorizontal(toEnemy);
-  toEnemyHorizontal.HorizontalAndNormalise();
-  Vector3 up = g_upVector - toEnemyHorizontal;
-  up.Normalise();
+  DirectX::XMVECTOR const toEnemy =
+    DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_attackTarget), DirectX::XMLoadFloat3(&m_pos)));
 
+  // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
+  DirectX::XMVECTOR const toEnemyHorizontal = DirectX::XMVector3Normalize(DirectX::XMVectorSetY(toEnemy, 0.0f));
+
+  DirectX::XMFLOAT3 up;
+  DirectX::XMStoreFloat3(&up, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::g_XMIdentityR1, toEnemyHorizontal)));
   return up;
 }
 
@@ -404,9 +431,11 @@ void Tripod::AdvanceWalk()
     }
     else
     {
-      m_bodyVel.Zero();
-      AsLegacy(m_front).HorizontalAndNormalise();
-      m_up = g_upVector;
+      m_bodyVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+      // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
+      DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMVectorSetY(DirectX::XMLoadFloat3(&m_front), 0.0f)));
+      m_up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
     }
   }
 
@@ -419,7 +448,7 @@ void Tripod::AdvancePreAttack()
   START_PROFILE(g_profiler, "AdvancePreAttack");
 
   // Exit if we haven't come to a stop yet
-  if (AsLegacy(m_vel).Mag() > 0.05f)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) > 0.05f)
   {
     END_PROFILE(g_profiler, "AdvancePreAttack");
     return;
@@ -436,13 +465,16 @@ void Tripod::AdvancePreAttack()
   }
 
   // Blend into attack orientation
-  Vector3 desiredUp = CalcAttackUpVector();
+  DirectX::XMFLOAT3 const desiredUp = CalcAttackUpVector();
   float factor1 = 0.8f * SERVER_ADVANCE_PERIOD;
   float factor2 = 1.0f - factor1;
-  m_up = factor1 * desiredUp + factor2 * m_up;
-  Vector3 right = m_up ^ AsLegacy(m_front);
-  m_front = right ^ m_up;
-  AsLegacy(m_front).Normalise();
+
+  DirectX::XMVECTOR const up = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&desiredUp), DirectX::XMVectorReplicate(factor1),
+                                                            DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_up), factor2));
+  DirectX::XMStoreFloat3(&m_up, up);
+
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(up, DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(right, up)));
 
   END_PROFILE(g_profiler, "AdvancePreAttack");
 }
@@ -465,7 +497,7 @@ void Tripod::AdvanceAttack()
 
 
   //	m_up = CalcAttackUpVector();
-  Vector3 right = m_up ^ g_upVector;
+  DirectX::XMVECTOR const rightAxis = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_up), DirectX::g_XMIdentityR1);
   //	m_front = m_up ^ right;
   //	m_front.Normalise();
 
@@ -474,16 +506,34 @@ void Tripod::AdvanceAttack()
     int t2 = (int)(timeInAttack * 10.0f);
     if (t2 & 1)
     {
-      Vector3 toEnemy = m_attackTarget - AsLegacy(m_pos);
-      toEnemy.Normalise();
+      DirectX::XMFLOAT3 toEnemy;
+      DirectX::XMStoreFloat3(
+        &toEnemy, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_attackTarget), DirectX::XMLoadFloat3(&m_pos))));
       float const speed = 80.0f;
-      right.SetLength(4.0f);
-      Vector3 pos = AsLegacy(m_pos) + right;
+
+      // SetLength on the cross of m_up and the world up: zero only if the tripod
+      // is exactly upright, which the attack crouch makes unreachable, so this
+      // takes the native normalise.
+      DirectX::XMVECTOR const barrelOffset = DirectX::XMVectorScale(DirectX::XMVector3Normalize(rightAxis), 4.0f);
+
+      // The two syncsfrand calls stay in this order: they advance the RNG, and
+      // they perturb toEnemy AFTER the muzzle offset is built.
       toEnemy.x += syncsfrand(0.1f);
       toEnemy.z += syncsfrand(0.1f);
-      g_location->FireLaser(pos + toEnemy * 5.0f, toEnemy * speed, m_id.GetTeamId());
-      pos = AsLegacy(m_pos) - right;
-      g_location->FireLaser(pos + toEnemy * 5.0f, toEnemy * speed, m_id.GetTeamId());
+
+      DirectX::XMVECTOR const aim = DirectX::XMLoadFloat3(&toEnemy);
+      DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
+
+      DirectX::XMFLOAT3 muzzle, shot;
+      DirectX::XMStoreFloat3(&shot, DirectX::XMVectorScale(aim, speed));
+
+      DirectX::XMStoreFloat3(&muzzle,
+                             DirectX::XMVectorMultiplyAdd(aim, DirectX::XMVectorReplicate(5.0f), DirectX::XMVectorAdd(ourPos, barrelOffset)));
+      g_location->FireLaser(muzzle, shot, m_id.GetTeamId());
+
+      DirectX::XMStoreFloat3(&muzzle,
+                             DirectX::XMVectorMultiplyAdd(aim, DirectX::XMVectorReplicate(5.0f), DirectX::XMVectorSubtract(ourPos, barrelOffset)));
+      g_location->FireLaser(muzzle, shot, m_id.GetTeamId());
     }
   }
 
@@ -506,10 +556,12 @@ void Tripod::AdvancePostAttack()
   // Blend out of attack orientation
   float factor1 = 0.8f * SERVER_ADVANCE_PERIOD;
   float factor2 = 1.0f - factor1;
-  m_up = factor1 * g_upVector + factor2 * m_up;
-  Vector3 right = m_up ^ AsLegacy(m_front);
-  m_front = right ^ m_up;
-  AsLegacy(m_front).Normalise();
+  DirectX::XMVECTOR const up = DirectX::XMVectorMultiplyAdd(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(factor1),
+                                                            DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_up), factor2));
+  DirectX::XMStoreFloat3(&m_up, up);
+
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(up, DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(right, up)));
 }
 
 
@@ -538,7 +590,8 @@ bool Tripod::Advance(Unit* _unit)
   //
   // Rotation
 
-  AsLegacy(m_front).RotateAroundY(g_advanceTime * AsLegacy(m_angVel).y);
+  DirectX::XMStoreFloat3(&m_front,
+                         DirectX::XMVector3TransformNormal(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(g_advanceTime * m_angVel.y)));
   m_angVel.y *= 1.0f - SERVER_ADVANCE_PERIOD * 0.5f;
 
 
@@ -548,10 +601,12 @@ bool Tripod::Advance(Unit* _unit)
   float factor1 = SERVER_ADVANCE_PERIOD * 1.65f;
   float factor2 = 1.0f - factor1;
   m_speed *= 1.0f - SERVER_ADVANCE_PERIOD * 0.5f;
-  Vector3 frontHoriNorm = m_front;
-  frontHoriNorm.HorizontalAndNormalise();
-  m_vel = AsLegacy(m_front) * m_speed * factor1 + AsLegacy(m_vel) * factor2;
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  // frontHoriNorm was computed and never used; dropped rather than kept as a
+  // native no-op.
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front), DirectX::XMVectorReplicate(m_speed * factor1),
+                                                              DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), factor2)));
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
 
   //
@@ -562,7 +617,7 @@ bool Tripod::Advance(Unit* _unit)
     targetHeight += m_targetHoverHeight;
     float factor1 = 1.0f * SERVER_ADVANCE_PERIOD;
     float factor2 = 1.0f - factor1;
-    m_pos.y = factor1 * targetHeight + factor2 * AsLegacy(m_pos).y;
+    m_pos.y = factor1 * targetHeight + factor2 * m_pos.y;
   }
 
 
@@ -586,7 +641,8 @@ bool Tripod::Advance(Unit* _unit)
 
   if (m_pos.y < g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z))
   {
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
     g_explosionManager.AddExplosion(m_shape, mat);
     return true;
   }
@@ -605,12 +661,17 @@ void Tripod::Render(float _predictionTime)
   //
   // Render body
 
-  Vector3 predictedMovement = _predictionTime * AsLegacy(m_vel);
-  Vector3 predictedPos = AsLegacy(m_pos) + predictedMovement;
+  DirectX::XMFLOAT3 predictedMovement;
+  DirectX::XMStoreFloat3(&predictedMovement, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), _predictionTime));
+
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&predictedMovement)));
   //	predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z) +
   //					 m_targetHoverHeight;
 
-  Matrix34 mat(m_front, m_up, predictedPos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&predictedPos)));
   m_shape->Render(_predictionTime, mat);
 
 

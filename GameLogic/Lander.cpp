@@ -27,7 +27,7 @@ Lander::Lander()
 
 bool Lander::Advance(Unit* _unit)
 {
-  AsLegacy(m_front).Set(-1, 0, 0);
+  m_front = DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f);
 
   if (m_dead)
   {
@@ -67,8 +67,9 @@ void Lander::ChangeHealth(int amount) { g_particleSystem->CreateParticle(m_pos, 
 
 bool Lander::AdvanceSailing()
 {
-  m_vel = AsLegacy(m_front) * m_stats[StatSpeed];
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), m_stats[StatSpeed]));
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
   float groundLevel = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   m_pos.y = groundLevel;
@@ -77,7 +78,7 @@ bool Lander::AdvanceSailing()
 
   if (groundLevel > 0.0f)
   {
-    AsLegacy(m_vel).Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     m_state = StateLanded;
   }
 
@@ -86,7 +87,7 @@ bool Lander::AdvanceSailing()
 
 bool Lander::AdvanceLanded()
 {
-  AsLegacy(m_vel).Zero();
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
   m_spawnTimer -= SERVER_ADVANCE_PERIOD;
   if (m_spawnTimer <= 0.0f)
@@ -96,8 +97,13 @@ bool Lander::AdvanceLanded()
     Unit* unit = g_location->m_teams[0].NewUnit(Entity::TypeLaserTroop, numToSpawn, &unitId, m_pos);
     g_location->SpawnEntities(m_pos, m_id.GetTeamId(), unitId, Entity::TypeLaserTroop, numToSpawn, g_zeroVector, 0);
 
-    Vector3 offset(0.0f, 0.0f, syncsfrand(200.0f));
-    unit->SetWayPoint(AsLegacy(m_pos) + AsLegacy(m_front) * 750.0f + offset);
+    DirectX::XMFLOAT3 const offset(0.0f, 0.0f, syncsfrand(200.0f));
+    DirectX::XMFLOAT3 wayPoint;
+    DirectX::XMStoreFloat3(&wayPoint,
+                           DirectX::XMVectorAdd(DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front), DirectX::XMVectorReplicate(750.0f),
+                                                                             DirectX::XMLoadFloat3(&m_pos)),
+                                                DirectX::XMLoadFloat3(&offset)));
+    unit->SetWayPoint(wayPoint);
 
     m_spawnTimer = m_stats[StatRate];
   }
@@ -110,13 +116,16 @@ void Lander::Render(float predictionTime, int teamId)
   //
   // Work out our predicted position and orientation
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
 
-  Vector3 entityUp = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
-  Vector3 entityFront = m_front;
-  entityFront.Normalise();
-  Vector3 entityRight = entityFront ^ entityUp;
-  entityUp = entityRight ^ entityFront;
+  // SurfaceMap2D<Vector3> still returns a Vector3 -- Landscape belongs to T18.
+  DirectX::XMFLOAT3 const landUp = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
+
+  DirectX::XMVECTOR const entityFront = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMVECTOR const entityRight = DirectX::XMVector3Cross(entityFront, DirectX::XMLoadFloat3(&landUp));
+  DirectX::XMVECTOR const entityUp = DirectX::XMVector3Cross(entityRight, entityFront);
 
   if (!m_dead)
   {
@@ -140,7 +149,8 @@ void Lander::Render(float predictionTime, int teamId)
     glEnable(GL_COLOR_MATERIAL);
     glDisable(GL_BLEND);
 
-    Matrix34 mat(entityFront, entityUp, predictedPos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(entityFront, entityUp, DirectX::XMLoadFloat3(&predictedPos)));
     m_shape->Render(predictionTime, mat);
 
     glEnable(GL_BLEND);

@@ -17,8 +17,9 @@ class Armour : public Entity
   protected:
     ShapeMarker* m_markerEntrance;
     ShapeMarker* m_markerFlag;
-    Vector3 m_up;
-    Vector3 m_conversionPoint;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_conversionPoint{0.0f, 0.0f, 0.0f};
     float m_speed;
 
     enum
@@ -35,7 +36,7 @@ class Armour : public Entity
     Flag m_deployFlag;
 
   public:
-    Vector3 m_wayPoint;
+    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
     int m_state;
 
   public:
@@ -48,9 +49,9 @@ class Armour : public Entity
 
     void ChangeHealth(int _amount);
 
-    void SetOrders(Vector3 const& _orders);
-    void SetWayPoint(Vector3 const& _wayPoint);
-    void SetConversionPoint(Vector3 const& _conversionPoint);
+    void SetOrders(DirectX::XMFLOAT3 const& _orders);
+    void SetWayPoint(DirectX::XMFLOAT3 const& _wayPoint);
+    void SetConversionPoint(DirectX::XMFLOAT3 const& _conversionPoint);
     void AdvanceToTargetPos();
     void DetectCollisions();
     void ConvertToGunTurret();
@@ -67,5 +68,5 @@ class Armour : public Entity
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
-    void GetEntrance(Vector3& _exitPos, Vector3& _exitDir);
+    void GetEntrance(DirectX::XMFLOAT3& _exitPos, DirectX::XMFLOAT3& _exitDir);
 };

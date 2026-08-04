@@ -68,11 +68,7 @@ void ArmyAnt::ChangeHealth(int _amount)
     //
     // We just died
 
-    Matrix34 transform(m_front, g_upVector, m_pos);
-    transform.f *= m_scale;
-    transform.u *= m_scale;
-    transform.r *= m_scale;
-    g_explosionManager.AddExplosion(m_shape, transform);
+    g_explosionManager.AddExplosion(m_shape, GetScaledLevelMatrix());
 
 
     //
@@ -94,6 +90,28 @@ void ArmyAnt::ChangeHealth(int _amount)
   }
 }
 
+
+// The ant's shape is drawn and exploded at m_scale, and both sites scaled the
+// three basis rows while leaving the position row alone. Stated once.
+static DirectX::XMFLOAT4X4 ScaleAntBasis(DirectX::FXMMATRIX _basis, float _scale)
+{
+  DirectX::XMMATRIX mat = _basis;
+  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_scale);
+  mat.r[0] = DirectX::XMVectorMultiply(mat.r[0], scale);
+  mat.r[1] = DirectX::XMVectorMultiply(mat.r[1], scale);
+  mat.r[2] = DirectX::XMVectorMultiply(mat.r[2], scale);
+
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, mat);
+  return result;
+}
+
+// The death explosion levels the ant against the world up; Render uses the
+// same world up. Both go through ScaleAntBasis above.
+DirectX::XMFLOAT4X4 ArmyAnt::GetScaledLevelMatrix() const
+{
+  return ScaleAntBasis(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)), m_scale);
+}
 
 bool ArmyAnt::Advance(Unit* _unit)
 {
@@ -140,7 +158,7 @@ bool ArmyAnt::Advance(Unit* _unit)
       Spirit* spirit = g_location->m_spirits.GetPointer(m_spiritId);
       if (spirit && spirit->m_state == Spirit::StateAttached)
       {
-        Vector3 carryPos, carryVel;
+        DirectX::XMFLOAT3 carryPos, carryVel;
         GetCarryMarker(carryPos, carryVel);
         spirit->m_pos = carryPos;
         spirit->m_vel = carryVel;
@@ -305,7 +323,9 @@ bool ArmyAnt::AdvanceAttackEnemy()
     targetEntity->ChangeHealth(-1);
     for (int i = 0; i < 3; ++i)
     {
-      g_particleSystem->CreateParticle(m_pos, Vector3(syncsfrand(15.0f), syncsfrand(15.0f) + 15.0f, syncsfrand(15.0f)), Particle::TypeMuzzleFlash);
+      // The three syncsfrand calls stay in this order: they advance the RNG.
+      DirectX::XMFLOAT3 const flashVel(syncsfrand(15.0f), syncsfrand(15.0f) + 15.0f, syncsfrand(15.0f));
+      g_particleSystem->CreateParticle(m_pos, flashVel, Particle::TypeMuzzleFlash);
     }
     g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
   }
@@ -423,7 +443,8 @@ bool ArmyAnt::SearchForSpirits()
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
+      float theDist =
+        DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&s->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
       if (theDist <= ARMYANT_SEARCHRANGE && theDist < closest && (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
       {
@@ -474,7 +495,8 @@ bool ArmyAnt::SearchForAntHill()
 
       if (building->m_type == Building::TypeAntHill && g_location->IsFriend(building->m_id.GetTeamId(), m_id.GetTeamId()))
       {
-        float distance = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag();
+        float distance = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
         if (distance < nearest)
         {
           buildingId = building->m_id.GetUniqueId();
@@ -498,22 +520,26 @@ bool ArmyAnt::SearchForAntHill()
 
 bool ArmyAnt::SearchForRandomPosition()
 {
-  float distToSpawnPoint = (AsLegacy(m_pos) - AsLegacy(m_spawnPoint)).Mag();
+  float distToSpawnPoint =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_spawnPoint))));
   float chanceOfReturn = (distToSpawnPoint / 400.0f);
   if (chanceOfReturn >= 1.0f || syncfrand(1.0f) <= chanceOfReturn)
   {
     // We have strayed too far from our spawn point
     // So head back there now
-    Vector3 returnVector = AsLegacy(m_spawnPoint) - AsLegacy(m_pos);
-    returnVector.SetLength(100.0f);
-    m_wayPoint = AsLegacy(m_pos) + returnVector;
+    // SetLength. distToSpawnPoint is compared against 400 above and this branch
+    // is reached when the ant has strayed, so the zero-length case is
+    // unreachable and this takes the native normalise.
+    DirectX::XMVECTOR const returnVector = DirectX::XMVectorScale(
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_spawnPoint), DirectX::XMLoadFloat3(&m_pos))), 100.0f);
+    DirectX::XMStoreFloat3(&m_wayPoint, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), returnVector));
   }
   else
   {
     float distance = 100.0f;
     float angle = syncsfrand(2.0f * M_PI);
 
-    m_wayPoint = AsLegacy(m_pos) + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
+    m_wayPoint = DirectX::XMFLOAT3(m_pos.x + sinf(angle) * distance, m_pos.y, m_pos.z + cosf(angle) * distance);
     m_wayPoint = PushFromObstructions(m_wayPoint);
   }
 
@@ -528,29 +554,42 @@ bool ArmyAnt::AdvanceToTargetPosition()
   // Work out where we want to be next
 
   float speed = m_stats[StatSpeed];
-  Vector3 oldPos = m_pos;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
 
   if (m_orders == CollectEntity || m_orders == AttackEnemy)
     speed *= 2.0f;
 
-  Vector3 actualDir = (m_wayPoint - AsLegacy(m_pos)).Normalise();
-  Vector3 newPos = AsLegacy(m_pos) + actualDir * speed * SERVER_ADVANCE_PERIOD;
+  DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
+  DirectX::XMVECTOR const actualDir = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_wayPoint), ourPos));
+
+  DirectX::XMFLOAT3 newPos;
+  DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(speed * SERVER_ADVANCE_PERIOD), ourPos));
   // newPos = PushFromObstructions( newPos );
   newPos.y = g_location->m_landscape.m_heightMap->GetValue(newPos.x, newPos.z);
-  Vector3 moved = newPos - oldPos;
-  if (moved.Mag() > speed * SERVER_ADVANCE_PERIOD)
-    moved.SetLength(speed * SERVER_ADVANCE_PERIOD);
-  newPos = AsLegacy(m_pos) + moved;
 
-  m_pos = newPos;
-  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
-  m_front = (newPos - oldPos).Normalise();
-  AsLegacy(m_front).RotateAroundY(syncsfrand(0.2f));
-
-  float distance = (AsLegacy(m_pos) - m_wayPoint).Mag();
-  if (distance < AsLegacy(m_vel).Mag() * SERVER_ADVANCE_PERIOD)
+  DirectX::XMVECTOR const old = DirectX::XMLoadFloat3(&oldPos);
+  DirectX::XMVECTOR moved = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&newPos), old);
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(moved)) > speed * SERVER_ADVANCE_PERIOD)
   {
-    AsLegacy(m_vel).Zero();
+    // SetLength, guarded by the Mag test above, so it cannot be reached with a
+    // zero-length vector.
+    moved = DirectX::XMVectorScale(DirectX::XMVector3Normalize(moved), speed * SERVER_ADVANCE_PERIOD);
+  }
+
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorAdd(ourPos, moved));
+
+  DirectX::XMVECTOR const movedFromOld = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), old);
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(movedFromOld, 1.0f / SERVER_ADVANCE_PERIOD));
+
+  // m_front used newPos, not the clamped m_pos -- preserved as written.
+  DirectX::XMVECTOR const facing = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&newPos), old));
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(facing, DirectX::XMMatrixRotationY(syncsfrand(0.2f))));
+
+  float distance =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_wayPoint))));
+  if (distance < DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) * SERVER_ADVANCE_PERIOD)
+  {
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     return true;
   }
 
@@ -558,10 +597,16 @@ bool ArmyAnt::AdvanceToTargetPosition()
 }
 
 
-void ArmyAnt::GetCarryMarker(Vector3& _pos, Vector3& _vel)
+void ArmyAnt::GetCarryMarker(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel)
 {
-  Vector3 groundUp = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-  Matrix34 mat(m_front, groundUp, m_pos);
+  // SurfaceMap2D<Vector3> still returns a Vector3 -- Landscape belongs to T18.
+  DirectX::XMFLOAT3 const groundUp = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&groundUp), DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   _pos = m_carryMarker->GetWorldMatrix(mat).pos;
   _vel = m_vel;
 }
@@ -572,16 +617,13 @@ void ArmyAnt::Render(float _predictionTime)
   if (m_dead)
     return;
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
-  Vector3 predictedUp = g_upVector;
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
 
   g_renderer->SetObjectLighting();
   glDisable(GL_TEXTURE_2D);
 
-  Matrix34 mat(m_front, predictedUp, predictedPos);
-  mat.u *= m_scale;
-  mat.f *= m_scale;
-  mat.r *= m_scale;
+  DirectX::XMFLOAT4X4 const mat = ScaleAntBasis(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, predictedPos), m_scale);
 
   m_shape->Render(_predictionTime, mat);
 

@@ -13,7 +13,8 @@ class FileWriter;
 
 struct AntObjective
 {
-    Vector3 m_pos;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     WorldObjectId m_targetId;
     int m_numToSend;
 };
@@ -33,14 +34,14 @@ class AntHill : public Building
     bool m_renderDamaged;
 
   protected:
-    bool SearchingArea(Vector3 _pos);
+    bool SearchingArea(DirectX::XMFLOAT3 _pos);
     bool TargettedEntity(WorldObjectId _id);
 
-    bool SearchForSpirits(Vector3& _pos);
-    bool SearchForCitizens(Vector3& _pos, WorldObjectId& _id);
-    bool SearchForEnemies(Vector3& _pos, WorldObjectId& _id);
+    bool SearchForSpirits(DirectX::XMFLOAT3& _pos);
+    bool SearchForCitizens(DirectX::XMFLOAT3& _pos, WorldObjectId& _id);
+    bool SearchForEnemies(DirectX::XMFLOAT3& _pos, WorldObjectId& _id);
 
-    bool SearchForScoutArea(Vector3& _pos);
+    bool SearchForScoutArea(DirectX::XMFLOAT3& _pos);
 
     bool PopulationLocked();
 

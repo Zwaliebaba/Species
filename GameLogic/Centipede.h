@@ -21,10 +21,13 @@ class Centipede : public Entity
     WorldObjectId m_next; // Guy infront of me
     WorldObjectId m_prev; // Guy behind me
 
-    Vector3 m_targetPos;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and Advance tests m_targetPos against zero to decide whether to
+    // pick a new target -- so the zero is load-bearing, not tidiness.
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
     WorldObjectId m_targetEntity;
 
-    std::vector<Vector3> m_positionHistory;
+    std::vector<DirectX::XMFLOAT3> m_positionHistory;
     bool m_linked;
     float m_panic;
     int m_numSpiritsEaten;
@@ -41,7 +44,7 @@ class Centipede : public Entity
 
     bool AdvanceToTargetPosition();
     void RecordHistoryPosition();
-    bool GetTrailPosition(Vector3& _pos, Vector3& _vel, int _numSteps);
+    bool GetTrailPosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel, int _numSteps);
 
     void Panic(float _time);
     void EatSpirits();
@@ -57,7 +60,11 @@ class Centipede : public Entity
 
     bool IsInView();
 
-    void Attack(Vector3 const& _pos);
+    void Attack(DirectX::XMFLOAT3 const& _pos);
+
+    // The centipede's basis levelled against the world up, with m_size folded
+    // into the three basis rows. The death explosion built it inline.
+    DirectX::XMFLOAT4X4 GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const;
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };

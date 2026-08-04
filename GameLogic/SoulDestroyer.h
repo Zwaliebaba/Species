@@ -17,10 +17,13 @@ class Shape;
 class SoulDestroyer : public Entity
 {
   protected:
-    Vector3 m_targetPos;
-    Vector3 m_up;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and Advance tests m_targetPos against zero to decide whether to
+    // retarget -- so the zero is load-bearing here, not tidiness.
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
     WorldObjectId m_targetEntity;
-    std::vector<Vector3> m_positionHistory;
+    std::vector<DirectX::XMFLOAT3> m_positionHistory;
     FastSlotMap<float> m_spirits;
 
     float m_retargetTimer;
@@ -30,7 +33,7 @@ class SoulDestroyer : public Entity
     static Shape* s_shapeTail;
     static ShapeMarker* s_tailMarker;
 
-    Vector3 m_spiritPosition[SOULDESTROYER_MAXSPIRITS];
+    DirectX::XMFLOAT3 m_spiritPosition[SOULDESTROYER_MAXSPIRITS];
 
   protected:
     bool SearchForRandomPosition();
@@ -39,11 +42,11 @@ class SoulDestroyer : public Entity
 
     bool AdvanceToTargetPosition();
     void RecordHistoryPosition();
-    bool GetTrailPosition(Vector3& _pos, Vector3& _vel);
+    bool GetTrailPosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel);
 
     void RenderShapes(float _predictionTime);
     void RenderShapesForPixelEffect(float _predictionTime);
-    void RenderSpirit(Vector3 const& _pos, float _alpha);
+    void RenderSpirit(DirectX::XMFLOAT3 const& _pos, float _alpha);
     bool RenderPixelEffect(float _predictionTime);
 
     void Panic(float _time);
@@ -56,22 +59,23 @@ class SoulDestroyer : public Entity
     void ChangeHealth(int _amount);
     void Render(float _predictionTime);
 
-    void Attack(Vector3 const& _pos);
+    void Attack(DirectX::XMFLOAT3 const& _pos);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
-    void SetWaypoint(Vector3 const _waypoint);
+    void SetWaypoint(DirectX::XMFLOAT3 const _waypoint);
 };
 
 
 class Zombie : public WorldObject
 {
   public:
-    Vector3 m_front;
-    Vector3 m_up;
+    // Zombie's own basis. Braced to zero for the same reason as above.
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
     float m_life;
 
-    Vector3 m_hover;
+    DirectX::XMFLOAT3 m_hover{0.0f, 0.0f, 0.0f};
     float m_positionOffset; // Used to make them float around a bit
     float m_xaxisRate;
     float m_yaxisRate;

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include "FileWriter.h"
@@ -59,60 +60,110 @@ Triffid::Triffid()
 }
 
 
-Matrix34 Triffid::GetHead()
+// Vector3::SetLength, fallback and all: a zero-length vector became (len, 0, 0)
+// rather than QNaN. Triffid's Spawn rolls its velocities from syncsfrand, which
+// can land on exactly zero, so the fallback is reachable and reproduced.
+static void SetLengthPreservingFallback(DirectX::XMFLOAT3& _vector, float _length)
 {
-  Vector3 _pos = AsLegacy(m_pos) + g_upVector * m_size * 30.0f;
-  Vector3 _front = m_front;
-  Vector3 _up = g_upVector;
+  float const magnitude = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&_vector)));
+  if (NearlyEquals(magnitude, 0.0f))
+  {
+    _vector = DirectX::XMFLOAT3(_length, 0.0f, 0.0f);
+    return;
+  }
+  DirectX::XMStoreFloat3(&_vector, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&_vector), _length / magnitude));
+}
+
+// TriffidEgg is drawn and exploded at m_size, scaling the three basis rows and
+// leaving the position row alone.
+static DirectX::XMFLOAT4X4 ScaledEggBasis(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position, float _size)
+{
+  DirectX::XMMATRIX mat = BasisFromFrontAndUp(_front, _up, _position);
+  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_size);
+  mat.r[0] = DirectX::XMVectorMultiply(mat.r[0], scale);
+  mat.r[1] = DirectX::XMVectorMultiply(mat.r[1], scale);
+  mat.r[2] = DirectX::XMVectorMultiply(mat.r[2], scale);
+
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, mat);
+  return result;
+}
+
+DirectX::XMFLOAT4X4 Triffid::GetHead()
+{
+  DirectX::XMVECTOR pos =
+    DirectX::XMVectorMultiplyAdd(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(m_size * 30.0f), DirectX::XMLoadFloat3(&m_pos));
+  DirectX::XMVECTOR front = DirectX::XMLoadFloat3(&m_front);
+  DirectX::XMVECTOR up = DirectX::g_XMIdentityR1;
 
   float timer = g_gameTime + m_id.GetUniqueId() * 10.0f;
 
   if (m_damage > 0.0f)
   {
-    _front.RotateAroundY(sinf(timer) * m_variance * 0.5f);
-    Vector3 right = _front ^ _up;
+    front = DirectX::XMVector3TransformNormal(front, DirectX::XMMatrixRotationY(sinf(timer) * m_variance * 0.5f));
+    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(front, up);
 
     float pitchVariation = 1.0f + sinf(timer) * 0.1f;
-    _front.RotateAround(right * m_pitch * 0.5f * pitchVariation);
+    {
+      DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(right, m_pitch * 0.5f * pitchVariation);
+      float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+      if (lengthSquared >= 1e-8f)
+      {
+        float const spin = sqrtf(lengthSquared);
+        front = DirectX::XMVector3Transform(front, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+      }
+    }
 
-    _pos += Vector3(sinf(timer / 1.3f) * 4, sinf(timer / 1.5f), sinf(timer / 1.2f) * 3);
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorSet(sinf(timer / 1.3f) * 4, sinf(timer / 1.5f), sinf(timer / 1.2f) * 3, 0.0f));
 
     float justFiredFraction = (m_timerSync - GetHighResTime()) / m_reloadTime;
     justFiredFraction = std::min(justFiredFraction, 1.0f);
     justFiredFraction = std::max(justFiredFraction, 0.0f);
     justFiredFraction = pow(justFiredFraction, 5);
 
-    _pos -= _front * justFiredFraction * 10.0f;
+    pos = DirectX::XMVectorNegativeMultiplySubtract(front, DirectX::XMVectorReplicate(justFiredFraction * 10.0f), pos);
   }
   else
   {
     // We are on fire, so thrash around a lot
-    Vector3 right = _front ^ _up;
-    _front = g_upVector;
-    _up = right ^ _front;
+    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(front, up);
+    front = DirectX::g_XMIdentityR1;
+    up = DirectX::XMVector3Cross(right, front);
 
-    _front.RotateAround(right * sinf(timer * 5.0f) * m_variance);
-    _up.RotateAroundY(sinf(timer * 3.5f) * m_variance);
+    {
+      DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(right, sinf(timer * 5.0f) * m_variance);
+      float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+      if (lengthSquared >= 1e-8f)
+      {
+        float const spin = sqrtf(lengthSquared);
+        front = DirectX::XMVector3Transform(front, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+      }
+    }
 
-    _pos += Vector3(sinf(timer * 3.3f) * 8, sinf(timer * 4.5f), sinf(timer * 3.2f) * 6);
+    up = DirectX::XMVector3TransformNormal(up, DirectX::XMMatrixRotationY(sinf(timer * 3.5f) * m_variance));
+
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorSet(sinf(timer * 3.3f) * 8, sinf(timer * 4.5f), sinf(timer * 3.2f) * 6, 0.0f));
   }
 
-  Matrix34 result(_front, _up, _pos);
+  DirectX::XMMATRIX result = BasisFromFrontAndUp(front, up, pos);
 
   float size = m_size * (1.0f + sinf(timer) * 0.1f);
 
-  result.f *= size;
-  result.u *= size;
-  result.r *= size;
+  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(size);
+  result.r[0] = DirectX::XMVectorMultiply(result.r[0], scale);
+  result.r[1] = DirectX::XMVectorMultiply(result.r[1], scale);
+  result.r[2] = DirectX::XMVectorMultiply(result.r[2], scale);
 
-  return result;
+  DirectX::XMFLOAT4X4 head;
+  DirectX::XMStoreFloat4x4(&head, result);
+  return head;
 }
 
 
 bool Triffid::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
                          DirectX::XMFLOAT3* _norm)
 {
-  Matrix34 mat = GetHead();
+  DirectX::XMFLOAT4X4 mat = GetHead();
 
   RayPackage ray(_rayStart, _rayDir, _rayLen);
 
@@ -122,21 +173,28 @@ bool Triffid::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 c
 
 void Triffid::Render(float _predictionTime)
 {
-  Matrix34 mat = GetHead();
+  DirectX::XMFLOAT4X4 mat = GetHead();
 
-  // RenderArrow( m_pos, mat.pos, 1.0f, RGBAColour(100,0,0,255) );
+  // Row 3 of the head matrix is its position.
+  DirectX::XMVECTOR const headPos = DirectX::XMVectorSet(mat._41, mat._42, mat._43, 0.0f);
 
-  Vector3 stemPos = m_stem->GetWorldMatrix(mat).pos;
-  Vector3 midPoint = mat.pos + (stemPos - mat.pos).SetLength(10.0f);
-  Vector3 midPoint2 = midPoint - Vector3(0, 20, 0);
+  // RenderArrow( m_pos, headPos, 1.0f, RGBAColour(100,0,0,255) );
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const stemPos = m_stem->GetWorldMatrix(mat).pos;
+
+  // SetLength; rendering only, so this takes the native normalise.
+  DirectX::XMVECTOR const midPoint = DirectX::XMVectorMultiplyAdd(
+    DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&stemPos), headPos)), DirectX::XMVectorReplicate(10.0f), headPos);
+
   glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
   glLineWidth(2.0f);
   glDisable(GL_TEXTURE_2D);
   glBegin(GL_LINES);
-  glVertex3fv(mat.pos.GetData());
-  glVertex3fv(midPoint.GetData());
-  glVertex3fv(midPoint.GetData());
-  glVertex3fv(AsLegacy(m_pos).GetData());
+  EmitVertex(headPos);
+  EmitVertex(midPoint);
+  EmitVertex(midPoint);
+  EmitVertex(DirectX::XMLoadFloat3(&m_pos));
   glEnd();
 
   //
@@ -162,12 +220,25 @@ void Triffid::Render(float _predictionTime)
 
   if (m_triggered && GetHighResTime() > m_timerSync - m_reloadTime * 0.25f)
   {
-    Matrix34 launchMat = m_launchPoint->GetWorldMatrix(mat);
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, and
+    // this one wants the marker's whole basis: the egg is drawn with the
+    // launch point's UP as its front and its negated FRONT as its up.
+    Matrix34 const launchMat = m_launchPoint->GetWorldMatrix(mat);
     Shape* eggShape = g_resource->GetShape("TriffidEgg.shp");
-    Matrix34 eggMat(launchMat.u, -launchMat.f, launchMat.pos);
-    eggMat.f *= m_size;
-    eggMat.u *= m_size;
-    eggMat.r *= m_size;
+
+    DirectX::XMFLOAT3 const eggFront = launchMat.u;
+    DirectX::XMFLOAT3 const eggPos = launchMat.pos;
+    DirectX::XMFLOAT3 const launchFront = launchMat.f;
+
+    DirectX::XMMATRIX egg = BasisFromFrontAndUp(DirectX::XMLoadFloat3(&eggFront), DirectX::XMVectorNegate(DirectX::XMLoadFloat3(&launchFront)),
+                                                DirectX::XMLoadFloat3(&eggPos));
+    DirectX::XMVECTOR const eggScale = DirectX::XMVectorReplicate(m_size);
+    egg.r[0] = DirectX::XMVectorMultiply(egg.r[0], eggScale);
+    egg.r[1] = DirectX::XMVectorMultiply(egg.r[1], eggScale);
+    egg.r[2] = DirectX::XMVectorMultiply(egg.r[2], eggScale);
+
+    DirectX::XMFLOAT4X4 eggMat;
+    DirectX::XMStoreFloat4x4(&eggMat, egg);
     eggShape->Render(_predictionTime, eggMat);
   }
 
@@ -185,30 +256,47 @@ void Triffid::RenderAlphas(float _predictionTime)
     glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
     glLineWidth(1.0f);
 
-    Matrix34 headMat = GetHead();
-    Matrix34 mat(m_front, g_upVector, headMat.pos);
-    Matrix34 launchMat = m_launchPoint->GetWorldMatrix(mat);
+    DirectX::XMFLOAT4X4 const headMat = GetHead();
+    DirectX::XMFLOAT3 const headPos(headMat._41, headMat._42, headMat._43);
 
-    Vector3 point1 = launchMat.pos;
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&headPos)));
 
-    Vector3 angle = launchMat.f;
-    angle.HorizontalAndNormalise();
-    angle.RotateAroundY(m_variance * 0.5f);
-    Vector3 right = angle ^ g_upVector;
-    angle.RotateAround(right * m_pitch * 0.5f);
-    Vector3 point2 = point1 + angle * m_force * 3.0f;
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    Matrix34 const launchMat = m_launchPoint->GetWorldMatrix(mat);
+    DirectX::XMFLOAT3 const launchPos = launchMat.pos;
+    DirectX::XMFLOAT3 const launchFront = launchMat.f;
 
-    angle = launchMat.f;
-    angle.HorizontalAndNormalise();
-    angle.RotateAroundY(m_variance * -0.5f);
-    right = angle ^ g_upVector;
-    angle.RotateAround(right * m_pitch * 0.5f);
-    Vector3 point3 = point1 + angle * m_force * 3.0f;
+    DirectX::XMVECTOR const point1 = DirectX::XMLoadFloat3(&launchPos);
+
+    // The two spread arms, mirrored about the launch direction. Written twice
+    // in the legacy code with only the sign of m_variance differing.
+    DirectX::XMVECTOR spread[2];
+    float const variances[2] = {m_variance * 0.5f, m_variance * -0.5f};
+    for (int arm = 0; arm < 2; ++arm)
+    {
+      // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
+      DirectX::XMVECTOR angle = DirectX::XMVector3Normalize(DirectX::XMVectorSetY(DirectX::XMLoadFloat3(&launchFront), 0.0f));
+      angle = DirectX::XMVector3TransformNormal(angle, DirectX::XMMatrixRotationY(variances[arm]));
+
+      DirectX::XMVECTOR const right = DirectX::XMVector3Cross(angle, DirectX::g_XMIdentityR1);
+      {
+        DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(right, m_pitch * 0.5f);
+        float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+        if (lengthSquared >= 1e-8f)
+        {
+          float const spin = sqrtf(lengthSquared);
+          angle = DirectX::XMVector3Transform(angle, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+        }
+      }
+
+      spread[arm] = DirectX::XMVectorMultiplyAdd(angle, DirectX::XMVectorReplicate(m_force * 3.0f), point1);
+    }
 
     glBegin(GL_LINE_LOOP);
-    glVertex3fv(point1.GetData());
-    glVertex3fv(point2.GetData());
-    glVertex3fv(point3.GetData());
+    EmitVertex(point1);
+    EmitVertex(spread[0]);
+    EmitVertex(spread[1]);
     glEnd();
 
 
@@ -219,30 +307,32 @@ void Triffid::RenderAlphas(float _predictionTime)
 #ifdef LOCATION_EDITOR
     if (g_locationEditor->GetMode() == LocationEditorAccess::ModeBuilding && g_locationEditor->GetSelectionId() == m_id.GetUniqueId())
     {
-      Vector3 velocity = headMat.f;
-      velocity.SetLength(m_force * m_size);
+      // Row 2 of the head matrix is its front.
+      DirectX::XMVECTOR const headFront = DirectX::XMVectorSet(headMat._31, headMat._32, headMat._33, 0.0f);
+
       TriffidEgg egg;
-      egg.m_pos = headMat.pos;
-      egg.m_vel = velocity;
-      egg.m_front = headMat.f;
+      egg.m_pos = headPos;
+      DirectX::XMStoreFloat3(&egg.m_vel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(headFront), m_force * m_size));
+      DirectX::XMStoreFloat3(&egg.m_front, headFront);
 
       glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
       glLineWidth(2.0f);
       glBegin(GL_LINES);
       while (true)
       {
-        glVertex3fv(AsLegacy(egg.m_pos).GetData());
+        EmitVertex(DirectX::XMLoadFloat3(&egg.m_pos));
         egg.Advance(nullptr);
-        glVertex3fv(AsLegacy(egg.m_pos).GetData());
+        EmitVertex(DirectX::XMLoadFloat3(&egg.m_pos));
 
-        if (AsLegacy(egg.m_vel).Mag() < 20.0f)
+        if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&egg.m_vel))) < 20.0f)
           break;
       }
       glEnd();
 
       if (m_useTrigger)
       {
-        Vector3 triggerPos = AsLegacy(m_pos) + m_triggerLocation;
+        DirectX::XMFLOAT3 triggerPos;
+        DirectX::XMStoreFloat3(&triggerPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_triggerLocation)));
         int numSteps = 20;
         glBegin(GL_LINE_LOOP);
         glLineWidth(1.0f);
@@ -250,14 +340,14 @@ void Triffid::RenderAlphas(float _predictionTime)
         for (int i = 0; i < numSteps; ++i)
         {
           float angle = 2.0f * M_PI * (float)i / (float)numSteps;
-          Vector3 thisPos = triggerPos + Vector3(sinf(angle) * m_triggerRadius, 0.0f, cosf(angle) * m_triggerRadius);
+          DirectX::XMFLOAT3 thisPos(triggerPos.x + sinf(angle) * m_triggerRadius, triggerPos.y, triggerPos.z + cosf(angle) * m_triggerRadius);
           thisPos.y = g_location->m_landscape.m_heightMap->GetValue(thisPos.x, thisPos.z);
           thisPos.y += 10.0f;
-          glVertex3fv(thisPos.GetData());
+          glVertex3fv(&thisPos.x);
         }
         glEnd();
 
-        g_editorFont.DrawText3DCentre(triggerPos + Vector3(0, 50, 0), 10.0f, "UseTrigger: %d", m_useTrigger);
+        g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(triggerPos.x, triggerPos.y + 50.0f, triggerPos.z), 10.0f, "UseTrigger: %d", m_useTrigger);
       }
     }
 #endif
@@ -305,18 +395,24 @@ void Triffid::Launch()
   //
   // Fire the egg
 
-  Matrix34 mat = GetHead();
-  Matrix34 launchMat = m_launchPoint->GetWorldMatrix(mat);
-  Vector3 velocity = launchMat.f;
-  velocity.SetLength(m_force * m_size * (1.0f + syncsfrand(0.2f)));
+  DirectX::XMFLOAT4X4 mat = GetHead();
 
-  WorldObjectId wobjId = g_location->SpawnEntities(launchMat.pos, m_id.GetTeamId(), -1, Entity::TypeTriffidEgg, 1, velocity, 0.0f);
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  Matrix34 const launchMat = m_launchPoint->GetWorldMatrix(mat);
+  DirectX::XMFLOAT3 const launchFront = launchMat.f;
+  DirectX::XMFLOAT3 const launchPos = launchMat.pos;
+
+  DirectX::XMFLOAT3 velocity;
+  DirectX::XMStoreFloat3(&velocity, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&launchFront)),
+                                                           m_force * m_size * (1.0f + syncsfrand(0.2f))));
+
+  WorldObjectId wobjId = g_location->SpawnEntities(launchPos, m_id.GetTeamId(), -1, Entity::TypeTriffidEgg, 1, velocity, 0.0f);
   TriffidEgg* triffidEgg = (TriffidEgg*)g_location->GetEntitySafe(wobjId, Entity::TypeTriffidEgg);
   if (triffidEgg)
   {
     triffidEgg->m_spawnType = spawnType;
     triffidEgg->m_size = 1.0f + syncsfrand(0.3f);
-    triffidEgg->m_spawnPoint = AsLegacy(m_pos) + m_triggerLocation;
+    DirectX::XMStoreFloat3(&triffidEgg->m_spawnPoint, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_triggerLocation)));
     triffidEgg->m_roamRange = m_triggerRadius;
   }
 
@@ -358,13 +454,16 @@ bool Triffid::Advance()
 
   if (m_damage <= 0.0f)
   {
-    Matrix34 headMat = GetHead();
-    Vector3 fireSpawn = headMat.pos;
-    fireSpawn += Vector3(sfrand(10.0f * m_size), sfrand(10.0f * m_size), sfrand(10.0f * m_size));
+    DirectX::XMFLOAT4X4 const headMat = GetHead();
+
+    // Every sfrand call below stays in this order: they advance the RNG.
+    DirectX::XMFLOAT3 const headScatter(sfrand(10.0f * m_size), sfrand(10.0f * m_size), sfrand(10.0f * m_size));
+    DirectX::XMFLOAT3 fireSpawn(headMat._41 + headScatter.x, headMat._42 + headScatter.y, headMat._43 + headScatter.z);
     float fireSize = 100.0f + sfrand(100.0f * m_size);
     g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeFire, fireSize);
 
-    fireSpawn = AsLegacy(m_pos) + Vector3(sfrand(10.0f * m_size), sfrand(10.0f * m_size), sfrand(10.0f * m_size));
+    DirectX::XMFLOAT3 const baseScatter(sfrand(10.0f * m_size), sfrand(10.0f * m_size), sfrand(10.0f * m_size));
+    fireSpawn = DirectX::XMFLOAT3(m_pos.x + baseScatter.x, m_pos.y + baseScatter.y, m_pos.z + baseScatter.z);
     g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeFire, fireSize);
 
     if (frand(100.0f) < 10.0f)
@@ -395,7 +494,8 @@ bool Triffid::Advance()
   if (m_useTrigger > 0 && GetHighResTime() > m_triggerTimer)
   {
     START_PROFILE(g_profiler, "CheckTrigger");
-    Vector3 triggerPos = AsLegacy(m_pos) + m_triggerLocation;
+    DirectX::XMFLOAT3 triggerPos;
+    DirectX::XMStoreFloat3(&triggerPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_triggerLocation)));
     bool enemiesFound = g_location->m_entityGrid->AreEnemiesPresent(triggerPos.x, triggerPos.z, m_triggerRadius, m_id.GetTeamId());
     m_triggered = enemiesFound;
     m_triggerTimer = GetHighResTime() + 5.0f;
@@ -537,11 +637,8 @@ void TriffidEgg::ChangeHealth(int _amount)
   if (m_dead && !dead)
   {
     // We just died
-    Matrix34 transform(m_front, m_up, m_pos);
-    transform.f *= m_size;
-    transform.u *= m_size;
-    transform.r *= m_size;
-    g_explosionManager.AddExplosion(m_shape, transform);
+    g_explosionManager.AddExplosion(
+      m_shape, ScaledEggBasis(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos), m_size));
   }
 }
 
@@ -580,8 +677,11 @@ void TriffidEgg::Spawn()
     int numSpirits = 5 + syncrand() % 5;
     for (int i = 0; i < numSpirits; ++i)
     {
-      Vector3 vel(syncsfrand(), 0.0f, syncsfrand());
-      vel.SetLength(20.0f + syncfrand(20.0f));
+      // The RNG calls stay in this order. SetLength on a vector that can be
+      // exactly zero (both syncsfrand rolls landing on 0), where the legacy
+      // fallback left (len, 0, 0) -- kept rather than taking a QNaN.
+      DirectX::XMFLOAT3 vel(syncsfrand(), 0.0f, syncsfrand());
+      SetLengthPreservingFallback(vel, 20.0f + syncfrand(20.0f));
       g_location->SpawnSpirit(m_pos, vel, teamId, WorldObjectId());
     }
     break;
@@ -592,8 +692,9 @@ void TriffidEgg::Spawn()
     int numEggs = 5 + syncrand() % 5;
     for (int i = 0; i < numEggs; ++i)
     {
-      Vector3 vel = g_upVector + Vector3(syncsfrand(), 0.0f, syncsfrand());
-      vel.SetLength(20.0f + syncfrand(20.0f));
+      // The RNG calls stay in this order.
+      DirectX::XMFLOAT3 vel(syncsfrand(), 1.0f, syncsfrand());
+      SetLengthPreservingFallback(vel, 20.0f + syncfrand(20.0f));
       g_location->SpawnEntities(m_pos, teamId, -1, TypeEgg, 1, vel, 0.0f, 0.0f);
     }
     break;
@@ -604,8 +705,9 @@ void TriffidEgg::Spawn()
     int numEggs = 2 + syncrand() % 3;
     for (int i = 0; i < numEggs; ++i)
     {
-      Vector3 vel(syncsfrand(), 0.5f + syncfrand(), syncsfrand());
-      vel.SetLength(75.0f + syncfrand(50.0f));
+      // The RNG calls stay in this order.
+      DirectX::XMFLOAT3 vel(syncsfrand(), 0.5f + syncfrand(), syncsfrand());
+      SetLengthPreservingFallback(vel, 75.0f + syncfrand(50.0f));
       WorldObjectId id = g_location->SpawnEntities(m_pos, teamId, -1, TypeTriffidEgg, 1, vel, 0.0f, 0.0f);
       TriffidEgg* egg = (TriffidEgg*)g_location->GetEntitySafe(id, TypeTriffidEgg);
       if (egg)
@@ -620,12 +722,13 @@ void TriffidEgg::Spawn()
     int numCitizens = 10 + syncrand() % 10;
     for (int i = 0; i < numCitizens; ++i)
     {
-      Vector3 vel = g_upVector + Vector3(syncsfrand(), 0.0f, syncsfrand());
-      vel.SetLength(10.0f + syncfrand(20.0f));
+      // The RNG calls stay in this order.
+      DirectX::XMFLOAT3 vel(syncsfrand(), 1.0f, syncsfrand());
+      SetLengthPreservingFallback(vel, 10.0f + syncfrand(20.0f));
       WorldObjectId id = g_location->SpawnEntities(m_pos, teamId, -1, TypeCitizen, 1, vel, 0.0f, 0.0f);
       Entity* entity = g_location->GetEntity(id);
       entity->m_front.y = 0.0f;
-      AsLegacy(entity->m_front).Normalise();
+      DirectX::XMStoreFloat3(&entity->m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&entity->m_front)));
       entity->m_onGround = false;
     }
     break;
@@ -639,23 +742,35 @@ bool TriffidEgg::Advance(Unit* _unit)
   if (m_dead)
     return true;
 
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
   // Fly through the air, bounce
   m_vel.y -= 9.8f * m_force;
-  Vector3 direction = m_vel;
-  Vector3 right = (g_upVector ^ direction).Normalise();
-  m_up.RotateAround(right * SERVER_ADVANCE_PERIOD * m_force * m_force * 30.0f);
-  m_front = right ^ m_up;
-  m_up.Normalise();
-  AsLegacy(m_front).Normalise();
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_vel)));
+
+  DirectX::XMVECTOR up = DirectX::XMLoadFloat3(&m_up);
+  {
+    DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(right, SERVER_ADVANCE_PERIOD * m_force * m_force * 30.0f);
+    float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+    if (lengthSquared >= 1e-8f)
+    {
+      float const spin = sqrtf(lengthSquared);
+      up = DirectX::XMVector3Transform(up, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+    }
+  }
+
+  // m_front is built from the UNNORMALISED up, then both are normalised.
+  DirectX::XMVECTOR const front = DirectX::XMVector3Cross(right, up);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Normalize(up));
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(front));
 
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   if (m_pos.y < landHeight + 3.0f)
   {
     BounceOffLandscape();
     m_force *= TRIFFIDEGG_BOUNCEFRICTION;
-    AsLegacy(m_vel) *= m_force;
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), m_force));
     if (m_pos.y < landHeight + 3.0f)
       m_pos.y = landHeight + 3.0f;
     if (m_force > 0.1f)
@@ -668,11 +783,12 @@ bool TriffidEgg::Advance(Unit* _unit)
 
   if (m_up.y < 0.3f && m_force < 0.4f)
   {
-    m_up = m_up * 0.95f + g_upVector * 0.05f;
-    Vector3 right = m_up ^ AsLegacy(m_front);
-    m_front = right ^ m_up;
-    m_up.Normalise();
-    AsLegacy(m_front).Normalise();
+    DirectX::XMVECTOR const up = DirectX::XMVectorMultiplyAdd(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(0.05f),
+                                                              DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_up), 0.95f));
+    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(up, DirectX::XMLoadFloat3(&m_front));
+    DirectX::XMVECTOR const front = DirectX::XMVector3Cross(right, up);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Normalize(up));
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(front));
   }
 
   //
@@ -680,7 +796,9 @@ bool TriffidEgg::Advance(Unit* _unit)
 
   if (GetHighResTime() > m_timerSync)
   {
-    Matrix34 transform(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 transform;
+    DirectX::XMStoreFloat4x4(&transform,
+                             BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
     g_explosionManager.AddExplosion(m_shape, transform);
     Spawn();
     g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "BurstOpen");
@@ -696,15 +814,27 @@ void TriffidEgg::Render(float _predictionTime)
   if (m_dead)
     return;
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
 
-  Vector3 direction = m_vel;
-  Vector3 right = (g_upVector ^ direction).Normalise();
-  Vector3 up = m_up;
-  up.RotateAround(right * _predictionTime * m_force * m_force * 30.0f);
-  Vector3 front = right ^ up;
-  up.Normalise();
-  front.Normalise();
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_vel)));
+
+  DirectX::XMVECTOR up = DirectX::XMLoadFloat3(&m_up);
+  {
+    DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(right, _predictionTime * m_force * m_force * 30.0f);
+    float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+    if (lengthSquared >= 1e-8f)
+    {
+      float const spin = sqrtf(lengthSquared);
+      up = DirectX::XMVector3Transform(up, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+    }
+  }
+
+  // front is built from the UNNORMALISED up, then both are normalised.
+  DirectX::XMVECTOR front = DirectX::XMVector3Cross(right, up);
+  up = DirectX::XMVector3Normalize(up);
+  front = DirectX::XMVector3Normalize(front);
 
   //
   // Make our size pulsate a little
@@ -714,10 +844,7 @@ void TriffidEgg::Render(float _predictionTime)
   float size = m_size + fabs(sinf(g_gameTime * 2.0f)) * (1.0f - age) * 0.4f;
 
   predictedPos.y -= size;
-  Matrix34 transform(front, up, predictedPos);
-  transform.f *= size;
-  transform.u *= size;
-  transform.r *= size;
+  DirectX::XMFLOAT4X4 const transform = ScaledEggBasis(front, up, DirectX::XMLoadFloat3(&predictedPos), size);
 
   glEnable(GL_NORMALIZE);
   g_renderer->SetObjectLighting();
