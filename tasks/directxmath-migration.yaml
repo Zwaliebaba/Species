@@ -255,12 +255,28 @@ tasks:
     verify:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       Characterisation before conversion, the documented exception to
       tests-ship-with-the-change (docs/TESTING.md). NetworkUpdateTests already
       exists; this extends it. If the bytes DO move in T9, that is a bug in T9,
       not a test to update.
+      LANDED. CI run 380 green at 45049cd.
+
+      TWO OF THREE CRITERIA WERE ALREADY MET OR UNMEETABLE, stated rather than
+      quietly reshaped. Alive was already pinned by
+      AliveCarriesTheTeamControlFlagsAsOneWord, which reads all three floats at
+      their offsets and asserts the 24-byte length; CreateUnit likewise. Both
+      predate this plan.
+
+      m_direction CANNOT BE PINNED: it never goes on the wire. Declared,
+      assigned by SetDirection, and that is all — no getter, no WRITE_FLOAT, no
+      reader, and zero callers of the setter anywhere in the tree. Dead state on
+      a wire-format class. Handed to T9, which owns this file's types.
+
+      What was actually missing and is now covered: AimBuilding and
+      TargetProgram. TargetProgram had a round-trip test, which proves the two
+      ends agree with each other but not that either matches the format.
 
   - id: T3
     title: Pin the raw-memory assumptions three call sites make about Vector3
@@ -282,13 +298,21 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       LandscapeRenderer.cpp:232 derives m_normOffset, m_colOffset and m_uvOffset
       from sizeof(Vector3); TrunkPort.cpp:47 memsets m_heightMapSize^2 *
       sizeof(Vector3). Both are interleaved-vertex-buffer arithmetic handed to
       OpenGL, so an error is a rendering corruption rather than a compile
       failure.
+      LANDED. CI run 380 green at 45049cd.
+
+      Two of the three sites carry a static_assert of their own. The third —
+      GetData handing &x to glVertex3fv across 46 files — is asserted in
+      Vector3.h beside the conversions, because it is a property of the type
+      rather than of the call sites. None of the three fails to compile when
+      wrong, which is the whole point: a bad vertex offset renders garbage and
+      a bad memset gives a rubbish height map.
 
   - id: T4
     title: Delete the geometry nothing calls, and TriTri.cpp with its licence row
@@ -436,13 +460,27 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       Fourteen caller files: Shape.cpp, GunTurret, ResearchItem, RadarDish,
       Location, GlobalWorld, Tree, Entity, StaticShape, Building,
       ScriptTrigger, UserInput, LocationEditor. They convert with their own
       subsystem later; this task deliberately does not touch them, so the diff
       stays reviewable and the signature change happens once, in T25's wake.
+      LANDED. CI run 380 green at 45049cd.
+
+      SphereSphereIntersection became BoundingSphere::Intersects.
+      RaySphereIntersection kept its geometric solution on XMVECTOR, because
+      DirectXCollision reports a distance and fourteen caller files want the
+      point and the normal. Neither signature moved, so those fourteen convert
+      with their own subsystems rather than being dragged in here.
+
+      A LATENT NULL DEREFERENCE WENT WITH IT: the old body computed the normal
+      as `*pos - spherePos`, dereferencing pos whether or not the caller
+      supplied one. Unreached rather than broken — GameLogic/Tree.cpp is the
+      only caller wanting a normal and it asks for both — but the rewrite holds
+      the hit point in a local, so the shape is safe rather than accidentally
+      safe, and there is a test for it.
 
   - id: T7
     title: Replace RayTriIntersection with TriangleTests::Intersects
@@ -465,12 +503,33 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       Callers: NeuronClient/Shape.cpp, GameLogic/Landscape.cpp,
       GameLogic/LaserFence.cpp. Backface behaviour differs between Möller's
       formulation and TriangleTests — check whether Landscape depends on
       hitting backfaces before assuming it does not.
+      LANDED. CI run 380 green at 45049cd.
+
+      TWO DELIBERATE BEHAVIOUR CHANGES, both tested, neither reproducible from
+      the old code.
+
+      The direction is normalised first. TriangleTests::Intersects REQUIRES a
+      unit direction and asserts on one that is not; every call site looks like
+      it passes a unit ray, but "looks like" would be a Debug assert inside
+      DirectXCollision on the first one that does not. A zero-length direction
+      now returns false rather than dividing by zero.
+
+      The _rayLen cutoff is a plain distance comparison now. It replaced
+      sqrt(t*t + u*u + v*v) > _rayLen over Moller's barycentric outputs, which
+      mixes a distance with two barycentric coordinates and is not a length of
+      anything. Directly above it, commented out, sat `if (result.x > _rayLen)`
+      — the test this now does. Someone replaced the sane test with the odd one
+      and left the evidence in place.
+
+      Backface behaviour is unchanged and now pinned. Landscape.cpp raycasts
+      terrain triangles whose winding depends on which way the mouse ray came
+      in, so two-sidedness is load-bearing rather than incidental.
 
   - id: T8
     title: Rebuild RayRayDist natively and delete the Plane class
