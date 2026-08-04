@@ -108,6 +108,54 @@ namespace NeuronCoreTests
         Assert::AreEqual(4.5f, roundTripped.y);
       }
 
+      // BasisFromFrontAndUp replaces the Matrix34(front, up, pos) constructor
+      // that 196 sites call, so it is asserted AGAINST that constructor rather
+      // than against my reading of it — the discipline T1 settled on. A
+      // reversed cross product mirrors the model and compiles perfectly.
+      TEST_METHOD(BasisFromFrontAndUpReproducesTheLegacyConstructor)
+      {
+        Vector3 const front(0.3f, 0.6f, -0.74f);
+        Vector3 const up(0.0f, 1.0f, 0.0f);
+        Vector3 const position(11.0f, -3.0f, 7.5f);
+
+        Matrix34 const legacy(front, up, position);
+
+        DirectX::XMFLOAT4X4 native;
+        DirectX::XMStoreFloat4x4(&native, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(front)),
+                                                              DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(up)),
+                                                              DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(position))));
+
+        DirectX::XMFLOAT4X4 const expected = legacy.ToNative();
+        for (int row = 0; row < 4; ++row)
+        {
+          for (int column = 0; column < 4; ++column)
+          {
+            AssertNearlyEqual(expected.m[row][column], native.m[row][column]);
+          }
+        }
+      }
+
+      // The legacy constructor stored the front vector EXACTLY as given and
+      // normalised only the two rows it derived. Several callers pass a scaled
+      // front and are scaling the model by doing it, so normalising row 2
+      // "for tidiness" would silently resize geometry.
+      TEST_METHOD(BasisFromFrontAndUpLeavesTheFrontRowUnnormalised)
+      {
+        Vector3 const front(0.0f, 0.0f, 4.0f);
+        Vector3 const up(0.0f, 1.0f, 0.0f);
+        Vector3 const position(0.0f, 0.0f, 0.0f);
+
+        DirectX::XMFLOAT4X4 native;
+        DirectX::XMStoreFloat4x4(&native, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(front)),
+                                                              DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(up)),
+                                                              DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(position))));
+
+        AssertNearlyEqual(4.0f, native._33);
+        AssertNearlyEqual(1.0f, native._11); // right stays unit
+        AssertNearlyEqual(1.0f, native._22); // and so does up
+        Assert::AreEqual(1.0f, native._44);
+      }
+
       // THE TEST THIS WHOLE TASK EXISTS FOR. If the row-vector decision is
       // wrong, or if ToNative transposes when it should not, this fails —
       // rather than the game rendering inside out three hundred commits later.
