@@ -678,7 +678,7 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       Matrix33::m_openGLFormat and Matrix34::m_openGLFormat are `static
       float[16]` returned by pointer — a shared mutable buffer that is neither
@@ -779,6 +779,46 @@ tasks:
       Stopped here rather than starting Shape and running out mid-file: a
       half-converted Shape.cpp does not compile, and the checkpoint above does.
 
+      DONE. CI run 406 green at 36dd038, after five red rounds -- 398, 400,
+      402, 404 -- every one of them a call site the sweep before the push did
+      not reach. That is the story of this task and it is worth more than the
+      diff.
+
+      FIVE WAYS A TYPE CONVERSION BREAKS A FILE YOU DID NOT TOUCH. Each cost a
+      CI round here; each will cost more in T14-T20, where the surface is
+      hundreds of members rather than nine:
+
+        1. The type name              grep -w Vector3
+        2. A converted MEMBER's name  `vel.Mag()` names no type      (T11)
+        3. A transitive include       a header stops supplying it     (T9)
+        4. The REPLACED type's fields `GetWorldMatrix(m).pos`         (T10)
+        5. Default construction       Vector3() zeroed, XMFLOAT3 does not
+
+      Number 5 is the dangerous one: invisible to the compiler and to CI. It
+      surfaced here only because `centre /= n` failed on the same variable that
+      CalculateCentre accumulates into -- and the same change had already
+      shipped in T11's sound members, where nothing would have caught it. Every
+      converted member now carries an explicit {0,0,0}.
+
+      TWO SIGNATURES DELIBERATELY LEFT LEGACY, both recorded rather than
+      claimed clean. ShapeMarker::GetWorldMatrix still returns Matrix34,
+      because 43 sites in fourteen GameLogic files read .pos or .f off it and
+      converting them means whole-file reformatting twenty legacy files from a
+      task that owns none of them. And T11's two Vector3 locals still feed
+      LocationAccess::GetSoundSource. Both clear when their own tasks land.
+
+      FOUR EXTERNAL FILES CARRY SEAM REPAIRS: Species/Renderer.cpp,
+      GameLogic/RadarDish.cpp, GameLogic/Explosion.cpp and
+      Tests/NeuronCoreTests/NetworkUpdateTests.cpp. All convert BACK to the
+      legacy types on purpose -- RadarDish is simulation code where
+      Matrix34::RotateAround's exact semantics matter -- and all are commented
+      with the task that will finish them.
+
+      THE OPENGL FORMAT IS NOW ONE FUNCTION, MultiplyGLMatrix, in renderer
+      code, and it does nothing: OpenGL reads column-major, DirectXMath stores
+      row-major, so the same sixteen floats already are the transpose. That
+      coincidence is exactly why it belongs in the renderer -- Direct3D wants a
+      different answer and changes it there and nowhere else.
 
   - id: T11
     title: Convert the sound subsystem's positional math
