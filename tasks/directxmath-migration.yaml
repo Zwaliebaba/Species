@@ -652,7 +652,7 @@ tasks:
       reach the client through. Their signatures have to move to native types
       before the files that implement and call them can drop the seam.
     project: NeuronClient
-    depends_on: [T1]
+    depends_on: [T1, T18, T22]
     files:
       - NeuronClient/CameraAccess.h
       - NeuronClient/RendererAccess.h
@@ -663,7 +663,7 @@ tasks:
       - NeuronClient/ClientToServer.cpp
     acceptance:
       - Every interface signature takes and returns native types
-      - Implementors and callers still compile through T1's seam, unedited
+      - Every implementor's override is changed in the same commit, because a virtual signature cannot move without them
       - python3 tools/check_layering.py still reports zero upward includes
     verify:
       - python3 tools/check_layering.py
@@ -676,6 +676,44 @@ tasks:
       layout-identical and T1 makes them convert implicitly, an interface can
       change signature while every implementor and caller stays as it is —
       which is what stops this plan needing one 200-file commit.
+    notes: |
+      BLOCKED 2026-08-03, ON A MISTAKE IN THIS TASK'S OWN PREMISE, found by
+      trying to do it.
+
+      The task assumed T1's seam would let an interface signature change while
+      "implementors and callers still compile, unedited". That is true of
+      ordinary function parameters, where an implicit conversion applies at the
+      call site. It is FALSE of virtual functions: an override must match its
+      base declaration exactly, in both parameter and return types. Change
+      CameraAccess::GetPos from Vector3 to XMFLOAT3 and Species/Camera.h's
+      `Vector3 GetPos()` stops overriding it, so Camera stays abstract and the
+      build fails. No implicit conversion is consulted, so there is no partial
+      version of this task either -- not even the parameter-only half.
+
+      The implementors are in the layers above, and each already belongs to a
+      task:
+
+        CameraAccess, UserInputAccess, GameCursorAccess, RendererAccess
+                                       -> Species/  (T22)
+        LocationAccess                 -> GameLogic/Location  (T18)
+
+      So this task has to land WITH them, not before them. It is re-pointed at
+      T18 and T22 via blocked_by and its acceptance is corrected to say the
+      overrides change in the same commit.
+
+      WHAT THIS COSTS ELSEWHERE, so it is not a surprise later: any converted
+      file that calls one of these interfaces keeps a legacy type at the seam
+      until then. T11 has two such locals in SoundInstance.cpp, both feeding
+      LocationAccess::GetSoundSource, both commented. Expect more as
+      NeuronClient and GameLogic convert. They are not oversights and they all
+      clear when this task lands.
+
+      THE GENERAL LESSON, which applies to every remaining conversion task: the
+      seam covers values and parameters, NOT virtual signatures. Any task whose
+      files declare a pure virtual taking or returning a math type must also
+      own its implementors, or be sequenced after them. T11 satisfied that by
+      accident of scoping -- SoundLibrary3d's two implementors were already in
+      its file list -- rather than by anyone having checked.
 
   - id: T13
     title: Owner runs the Garden smoke test on the converted engine layers
@@ -684,7 +722,7 @@ tasks:
       the matrix convention or the normalise change is wrong, it is wrong here,
       and finding that out after 140 GameLogic files have been converted on top
       of it is the expensive version.
-    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11, T12]
+    depends_on: [T4, T5, T6, T7, T8, T9, T10, T11]
     files:
       - AGENTS.md
     acceptance:
@@ -701,9 +739,17 @@ tasks:
       reaches m_pos and stops entities advancing. The spawn counts in steps 3
       and 4 prove little here — nothing in this plan touches level parsing.
 
+      SCOPE CORRECTED 2026-08-03: T12 was removed from this gate's
+      dependencies. It cannot land before Species and GameLogic convert — see
+      its own notes — so it now sits on the far side of this gate rather than
+      in front of it. The gate still covers what it was meant to: the engine
+      layers' own math, which is where a wrong matrix convention or a NaN out
+      of the normalise change would show up.
+
   # ------------------------------------------------------------------
   # Wave 4 — GameLogic, six groups, all parallel
   # ------------------------------------------------------------------
+
 
   - id: T14
     title: Convert the entity core and the humanoid entities
