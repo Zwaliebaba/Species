@@ -1059,7 +1059,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       Read CODING_STANDARDS.md#determinism before starting. The float results
       change by design here; the RNG call sequence and the iteration order must
@@ -1177,6 +1177,52 @@ tasks:
         InsertionSquad.cpp   one Matrix34 local off ShapeMarker::GetWorldMatrix,
                              which T10 deliberately left legacy because 43 sites
                              in fourteen files read .pos or .f off it.
+
+      LANDED. CI RUN 438 GREEN at 1fc7541 -- x64 Debug builds, the unit suite
+      passes, and Server.exe reached sequence id 20 in 2.03s with no client.
+      Nine red rounds before it: 420, 422, 424, 426, 429, 430, 432, 434, 436.
+
+      WHAT THE NINE ROUNDS WERE, because the shape matters more than the count.
+      Not one was a wrong conversion -- no transposed matrix, no mirrored basis,
+      no reversed cross product. Every single one was a CALL SITE THE SWEEP DID
+      NOT REACH, which is T10's finding repeated at ten times the scale. The
+      five failure modes on T10's list all appeared, and this task adds a sixth:
+
+        6. A CONTENDED NAME THAT IS NOT A MATH TYPE AT ALL. ArmyAnt::m_orders is
+           an enum; Citizen::m_orders is an XMFLOAT3. The shadow detection only
+           looks for legacy MATH declarations, so it did not see the collision
+           and wrapped the enum. Cave::m_spawnPoint is a ShapeMarker* and went
+           the same way. Both are invisible to a name-based sweep by
+           construction, and both were caught only by the compiler.
+
+      THE RULE THAT EXPLAINS MOST OF IT, and the one to carry into T15-T19: AN
+      IMPLICIT CONVERSION APPLIES TO THE RIGHT OPERAND OF A MEMBER OPERATOR AND
+      NOT THE LEFT. `rayStart - entity->m_pos` compiles untouched; `entity->
+      m_pos - rayStart` does not. That asymmetry is why T10's escape did not
+      work here, why only five of Species/'s forty-odd sites broke, and why the
+      repair count was 490 rather than 40.
+
+      AND THE SWEEP IS NOT A ONE-OFF. It has to be re-run after EVERY header a
+      task converts, because each one adds member names to it. Running it once
+      at the start missed eleven names and cost two rounds.
+
+      TWO BUGS OF MY OWN, both caught by the compiler rather than by me, both
+      recorded because a reviewer should know they happened. Converting
+      Engineer's bridge-tower loop I replaced the `if` half of an if/else and
+      orphaned the `else`, silently dropping the half-turn applied to the far-end
+      tower. And the AsLegacy sweep wrapped ArmyAnt's enum. The first would have
+      been a visible geometry change; the second would not compile.
+
+      WHAT IS STILL LEGACY HERE, all deliberate, all commented at the site:
+      WorldObject.h keeps its Vector3.h include (fifty files below reach
+      AsLegacy through it); Ai's four Building overrides; one Matrix34 local off
+      ShapeMarker::GetWorldMatrix; and roughly 490 AsLegacy calls across 50
+      files. `grep -rl AsLegacy` is the live worklist for T15-T19, T22 and T24 --
+      each of those tasks removes its own file's calls as it converts.
+
+      NOT VERIFIED BY ANY OF THIS: that the game still works. T14 changed what
+      Location::Advance computes on the hot path and the unit suite covers none
+      of it. T21 is that gate.
 
       WORTH RECORDING ABOUT THE VERIFICATION ITSELF: the script that checked for
       leftover legacy types reported nine, not ten. It strips /* */ blocks before
@@ -1303,7 +1349,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T16
     title: Convert the structural buildings
@@ -1344,7 +1390,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T17
     title: Convert the functional buildings
@@ -1389,7 +1435,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T18
     title: Convert the world, landscape and routing
@@ -1434,7 +1480,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Landscape.cpp holds the SegRayIntersection2D and RayTriIntersection call
       sites, so it depends on T7 having landed even though the edge is through
@@ -1477,7 +1523,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Spirit.cpp was changed by determinism.yaml T1 and its smoke test (T2
       there) is still open. If that gate has not been run when this task
