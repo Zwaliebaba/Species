@@ -197,6 +197,11 @@ static_assert(std::is_standard_layout_v<Vector3>, "Vector3 must be standard layo
 static_assert(offsetof(Vector3, x) == offsetof(DirectX::XMFLOAT3, x), "Vector3::x must sit where XMFLOAT3::x does");
 static_assert(offsetof(Vector3, y) == offsetof(DirectX::XMFLOAT3, y), "Vector3::y must sit where XMFLOAT3::y does");
 static_assert(offsetof(Vector3, z) == offsetof(DirectX::XMFLOAT3, z), "Vector3::z must sit where XMFLOAT3::z does");
+// GetData and GetDataConst hand &x to OpenGL as a three-float array — 46 files
+// feed one to glVertex3fv or glNormal3fv — so tight packing is a contract with
+// the driver, not an implementation detail. Stated on its own rather than left
+// implied by the XMFLOAT3 comparisons above.
+static_assert(sizeof(Vector3) == 3 * sizeof(float), "GetData's callers read three contiguous floats from &x");
 
 
 // Operator * between float and Vector3

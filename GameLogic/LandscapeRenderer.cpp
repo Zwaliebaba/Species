@@ -228,6 +228,15 @@ void LandscapeRenderer::BuildColourArray()
 // PublicFunctions
 //*****************************************************************************
 
+// These are byte offsets into an interleaved vertex buffer handed straight to
+// OpenGL, so they are arithmetic over the SIZE of Vector3 rather than uses of
+// the type. Getting that size wrong does not fail to compile: it feeds the
+// driver a buffer whose fields are in the wrong places, and the landscape
+// renders as garbage. directxmath-migration replaces Vector3 with
+// DirectX::XMFLOAT3, which is the same three tightly packed floats — asserted
+// here rather than assumed, so the day that stops being true is a build error.
+static_assert(sizeof(Vector3) == 3 * sizeof(float), "the vertex buffer offsets below assume Vector3 is three tightly packed floats");
+
 const unsigned LandscapeRenderer::m_posOffset(0);
 const unsigned LandscapeRenderer::m_normOffset(sizeof(Vector3));
 const unsigned LandscapeRenderer::m_colOffset(sizeof(Vector3) * 2);
