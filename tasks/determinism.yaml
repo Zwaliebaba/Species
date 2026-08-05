@@ -32,6 +32,14 @@ summary: >
   right about the fixes and wrong about the investigations — the investigation
   is precisely what can be planned, and it is the thing nobody was doing.
 
+  T3 AND T4 ARE ANSWERED (2026-08-05) AND THE ANSWER INVERTED THE QUESTION.
+  Both were written on the belief that speciesRandom() is the lockstep RNG.
+  It is not: syncrand() in NeuronCore/MathUtils.cpp is the synchronised stream
+  and speciesRandom() is an unsynchronised LCG for cosmetics. Neither finding
+  was a desync. The real defects run the other way -- simulation state drawn
+  from the client-local generator -- and there are six. They are T5, which is
+  a FIX and therefore lands alone and is gated by T6, exactly as T1 was by T2.
+
   ONE QUESTION STAYS OUT, and deliberately: cross-architecture float agreement
   between an ARM64 and an x64 client. AGENTS.md records that as decided rather
   than open — mixed-architecture play is not supported, on the owner's call of
@@ -79,19 +87,15 @@ tasks:
       branch and draws the same number of values. It is self-consistently
       deterministic.
 
-      Contrast SoundInstance.cpp, which AGENTS.md lists beside it: there the
+      Contrast SoundInstance.cpp, which AGENTS.md listed beside it: there the
       draw count depends on client-local sound configuration, so two clients
       that differ in what samples loaded consume different numbers of values.
-      That one is a genuine desync. This one is not, and the two should not be
-      fixed together or described in the same sentence.
-
-      CORRECTION, 2026-08-05: the paragraph above is wrong about SoundInstance
-      and is kept only because the contrast it draws is what T3 went and
-      checked. The sound draws are on speciesRandom(), which is NOT the
-      synchronised stream — syncrand() is, and they share no state. So the
-      draw count there varies and does not matter. Everything this note says
-      about T1 itself stands: m_hover.y is simulation state on the syncrand
-      stream, and this fix does change the sequence. See T3's answer.
+      CORRECTED 2026-08-05 -- this paragraph used to end "that one is a genuine
+      desync", and it is not. T3 established that SoundInstance draws from the
+      UNSYNCHRONISED LCG, which the simulation never reads, while this clamp
+      draws from syncfrand. The two really should not be described in the same
+      sentence, but for the opposite reason to the one given here: they are not
+      even the same generator.
 
       WHY FIX IT AT ALL, then. Three reasons, in order of weight: it is a trap —
       `(a > b) ? a : b` over a call with a side effect is exactly what the next
@@ -215,130 +219,96 @@ tasks:
       2026-08-02, written into AGENTS.md's Known issues, and unowned ever
       since — three batches went past it.
 
-      WHAT IS ALREADY KNOWN, so this starts from the reading rather than
-      repeating it. The two sites are SoundInstance.cpp:547 (pick a sample from
-      a group) and :1035 (pick an object id) — measured at 97b5844; they were
-      written down as :533 and :1009 and the file has grown since, so re-grep
-      `speciesRandom` rather than trusting either pair. speciesRandom() is the
-      deterministic lockstep RNG, the same sequence Location::Advance consumes,
-      and CODING_STANDARDS.md#determinism names the call sequence as
-      load-bearing. Whether either line runs depends on how many object ids an
-      instance holds, whether a sample group is populated, and whether the
-      instance is playing at all.
+      ANSWERED 2026-08-05. The answer is not the one the task was written to
+      expect, so it is stated first and the evidence follows.
 
-      THE DISTINCTION THAT MATTERS, and it is why T1 is not a precedent here.
-      T1's double draw was NEVER a desync risk: its branch depended on
-      m_hover.y, which is simulation state, so every in-sync client drew the
-      same number of values. These two are the dangerous shape — the draw count
-      varies with client-local configuration. Read T1's notes before assuming
-      the two are the same bug.
+      THE PREMISE IS WRONG. speciesRandom() IS NOT THE LOCKSTEP RNG. There are
+      TWO generators in this tree and the task, AGENTS.md's Known issues,
+      CODING_STANDARDS.md#determinism and Tests/NeuronCoreTests/RandomTests.cpp
+      all say there is one:
 
-      ownership/T8 converts m_sounds in this same file and is now unblocked,
-      so whoever takes that task is already in the right place to take this
-      one. They are different changes and want different commits.
+        syncrand()      NeuronCore/MathUtils.cpp — Mersenne Twister over mt[]
+                        THIS is the synchronised stream. Never explicitly
+                        seeded, so init_genrand(5489UL) runs on first use and
+                        every client starts identically. 345 call sites in
+                        GameLogic: every entity timer, spawn position, spread,
+                        kickback and reload — all simulation state.
 
-      ================= THE ANSWER, 2026-08-05 at 9d716f6 =================
+        speciesRandom() NeuronCore/Random.cpp — LCG over a single `holdrand`,
+                        with frand()/sfrand() on top. NOT synchronised. 186
+                        call sites, overwhelmingly particles, render wobble,
+                        spark jitter, muzzle-flash sizes, Eclipse window
+                        placement and sound.
 
-      THE PREMISE IS WRONG. speciesRandom() IS NOT THE LOCKSTEP STREAM, and
-      everything above that calls it one — including AGENTS.md's Known-issues
-      bullet, which is corrected in the same commit as this note — inherited
-      that claim without checking it. The tree has TWO generators with no
-      shared state:
+      MathUtils.h:12 has said so since it was inherited — "Network Syncronised
+      versions (only call inside Net-Safe code)" — above the syncrand block.
+      Spam::Spam() is the whole convention in one function: m_timer =
+      syncfrand(SpamReloadTime()) for simulation state, frand(2π) for the
+      visual facing.
 
-        speciesRandom()  NeuronCore/Random.cpp   a 32-bit LCG over one static
-                                                 `holdrand`. frand() and
-                                                 sfrand() are built on it.
-        syncrand()       NeuronCore/MathUtils.cpp  a Mersenne Twister with its
-                                                 own mt[]/mti state.
-                                                 syncfrand()/syncsfrand() are
-                                                 built on it.
+      PER CALL SITE, as the acceptance asks. Line numbers are current; the ones
+      AGENTS.md recorded (533, 1009) had drifted and are corrected there too.
 
-      MathUtils.h labels the second pair itself, and has since the code was
-      inherited: "Network Syncronised versions (only call inside Net-Safe
-      code)". The simulation obeys that label — syncrand appears in 40+
-      GameLogic files and 58 times in Citizen.cpp alone, while speciesRandom
-      appears in 19 files across the whole tree, most of them rendering or UI.
-      So the two SoundInstance draws are on the UNSYNCHRONISED stream, and no
-      number of them can move the synchronised one. There is no shared
-      sequence to perturb.
+      SoundInstance.cpp:547, in OpenStream — picks a sample from a group.
+        Executes when: OpenStream is reached AND the early return at :522
+        does not fire (no cached handle, or _keepCurrentStream is false and
+        m_sourceType is not Sample) AND m_sourceType == SampleGroupRandom.
+        OpenStream is reached from StartPlaying (:625), which the sound system
+        calls when this instance WINS A MIXER CHANNEL, and from AdvanceLoop
+        (:570, :581, :595) on a loop boundary, and from SoundSystem.cpp:1310
+        for music.
+        CLIENT-LOCAL: whether sound is enabled at all; the channel budget, so
+        which instances get a channel and when; the distance and priority
+        cull that decides who wins one; whether a cached sample handle already
+        exists; loop timing, which is driven by GetHighResTime() and so by
+        frame rate. The SoundMemoryUsage pref at :540 is client-local too but
+        changes only the modulo, not the draw count.
+        NOT client-local: m_sourceType, which comes from the sound blueprint.
 
-      PER CALL SITE, as the acceptance asks. Both are client-local several
-      times over, and the answer to "can two clients draw a different NUMBER
-      of values" is an emphatic YES — it is simply not a desync, because of
-      the stream.
+      SoundInstance.cpp:1035, in ResolveAttachedObject — picks an object id.
+        Executes when: m_positionType == Type3DAttachedToObject AND
+        g_locationId != -1 AND g_locationAccess AND recalculateAttachedObject
+        AND m_objIds is non-empty AND m_instanceType == MonophonicRandom.
+        recalculateAttachedObject is set by the attached object dying (shared
+        simulation state) OR by m_restartOccured, which OpenStream sets — so
+        it inherits every client-local condition above.
+        CLIENT-LOCAL: as above, through m_restartOccured and through whether
+        the instance exists and is playing at all.
 
-      Site 1, SoundInstance::OpenStream (:547). Executes only when: the
-      instance has no cached sample handle, or the caller passed
-      _keepCurrentStream=false and the source is not a plain Sample (:522);
-      AND m_sourceType == SampleGroupRandom (:534). The modulus is
-      `numSamples`, scaled by the "SoundMemoryUsage" PREFERENCE — 2 halves it,
-      3 quarters it (:539-543) — so two clients drawing at the same point get
-      DIFFERENT VALUES as well as, potentially, different counts. Reachable
-      from the preferences UI: PrefsSoundWindow.cpp:68 calls OpenStream when
-      the user changes a sound setting.
+      DO THE DRAW COUNTS DIVERGE BETWEEN CLIENTS? **YES, definitively**, and it
+      took no reproduction to establish: OpenStream is gated on winning a mixer
+      channel, and the channel budget is the SoundChannels preference. Two
+      clients with different sound settings draw different numbers of values.
 
-      Site 2, SoundInstance::ResolveAttachedObject (:1035). Executes only
-      when: m_positionType == Type3DAttachedToObject; g_locationId != -1 and
-      g_locationAccess is set; a recalculation is due — the attached object
-      died, OR m_instanceType == MonophonicNearest, OR (MonophonicRandom AND
-      m_restartOccured); m_objIds is non-empty; and m_instanceType is
-      MonophonicRandom. m_restartOccured is set by OpenStream, so the same
-      preferences-window path arms this one too.
+      DOES THAT DESYNC THE GAME? **NO.** They diverge the LCG, and the
+      simulation does not read the LCG — it reads syncrand. Nothing the sync
+      value observes is downstream of these two lines.
 
-      AND THE WHOLE SUBSYSTEM IS GATED CLIENT-LOCALLY, which settles the count
-      question before either site is reached. SoundSystem::Advance returns
-      immediately `if (!m_channels)` (:1276), and m_channels is allocated only
-      after the sound library initialises (:319) — a client with no audio
-      device, or with sound off, draws ZERO values all session. Past that gate
-      the body runs on `m_timeSync += g_advanceTime` against a 0.05s period
-      (:1284), and g_advanceTime is the WALL-CLOCK LENGTH OF THE LAST FRAME
-      (NeuronCore/GameTime.h:8), clamped to 0.25. At most one period is
-      consumed per call, so a client below 20fps advances the sound system
-      once per frame and a faster one advances it 20 times a second. The
-      number of draws is frame-rate dependent by construction.
+      TWO SITES THE FINDING MISSED, recorded so the next reader has the whole
+      set. SoundParameter.cpp:73 draws frand(diff) for TypeRangedRandom every
+      time a parameter recalculates, which is per frame; and Eclipse.cpp:339-345
+      draws four values placing a UI window. Both are the same shape as the two
+      above and equally harmless, for the same reason.
 
-      SO: NOT A DESYNC, AND THE FINDING RELOCATES RATHER THAN CLOSING. What
-      makes the draw count harmless is the stream, not the sound system — and
-      four sites in GameLogic compute SIMULATION STATE from that same
-      unsynchronised stream:
+      THE CHEAPEST FIX, which acceptance asks for and which is NOT in the sound
+      code. Leave the LCG alone: it cannot be made synchronised, because
+      Landscape::GenerateHeightMap and Tree::Generate reseed it wholesale
+      (speciesSeedRandom) and GetLandscapeColour reseeds it per landscape
+      vertex — see T4. What has to move is the small number of places that draw
+      SIMULATION state from the LCG. Six were found; they are T5, and yes, that
+      changes the sync sequence for everyone, exactly as T1 did.
 
-        Spider.cpp:354    picks a neighbour with speciesRandom() and writes
-                          m_targetPos from it
-        Armour.cpp:253    same shape, writes m_wayPoint
-        ArmyAnt.cpp:185   `while(true){ newIndex = speciesRandom()%3; if
-                          (newIndex != currentIndex) break; }` — a rejection
-                          loop, so even the COUNT it draws is unbounded
-        Explosion.cpp:144 picks a tumbler for each debris fragment
+      THE DISTINCTION THE TASK DREW, kept but re-pointed. It said T1 was safe
+      because its draw count depended on simulation state while these two
+      depend on client-local state. That reasoning was sound and the conclusion
+      still stands — it just applies to a stream the simulation never reads.
+      The dangerous shape turned out to be the mirror image: not a client-local
+      path drawing from the shared stream, but simulation state drawn from the
+      client-local one. T5 has the six.
 
-      Entity positions and velocities are what GenerateSyncValue sums
-      (Main.cpp:252-330, Debug only; in Release the sync value is
-      `255 * syncfrand()`), so the first two feed the checksum directly. That
-      is the real hazard, and it is the mirror image of the one recorded: it
-      is not that sound perturbs the simulation's stream, it is that a handful
-      of simulation sites read from the stream sound is allowed to perturb.
-      Any client-local consumer reaches them — sound, Eclipse's four draws,
-      LandscapeRenderer (T4), CameraAnimWindow, TreeWindow.
-
-      THE CHEAPEST FIX, and it is not in SoundInstance.cpp. Change those four
-      GameLogic sites from speciesRandom() to syncrand(), which is what the
-      header already tells them to use inside net-safe code. Nothing in
-      NeuronClient needs to change: sound, UI and rendering are entitled to
-      the unsynchronised generator and should keep it.
-
-      DOES IT CHANGE THE RNG SEQUENCE FOR EVERYONE? Yes, on both streams — the
-      four sites stop consuming from holdrand and start consuming from the
-      Mersenne Twister, so every subsequent draw on either stream shifts. That
-      makes it exactly T1's shape: a deliberate behaviour change, landing
-      alone, gated on an owner-run smoke test. It is NOT part of this task,
-      which changes nothing. It wants its own node, and the evidence for it is
-      this note.
-
-      WHAT THIS DOES NOT SAY. It does not say the sound system is well
-      behaved: reseeding and drawing from a process-global generator out of
-      rendering and UI code is why this question was expensive to answer.
-      It says the specific desync alleged in AGENTS.md cannot happen by the
-      mechanism alleged, and names the four places where an equivalent one
-      can.
+      ownership/T8 converts m_sounds in this same file. Still a different
+      change and still a different commit; nothing here blocks it, and nothing
+      here asks it to touch either line.
 
   - id: T4
     title: Establish what GetLandscapeColour's reseed costs
@@ -373,6 +343,11 @@ tasks:
       somebody establishes what it costs" — which is circular, since
       establishing that is the work. This task is the way out of that loop.
 
+      THE FILE MOVED and the task did not notice: layering-inversion T15 put
+      LandscapeRenderer in GameLogic, not Species. The `files` list and
+      `project` above are corrected. AGENTS.md names the function without a
+      path, so it was not wrong there.
+
       DO NOT CONFUSE THIS WITH THE LANDSCAPE-SHAPE QUESTION, which is closed.
       Terrain generation reseeds immediately before its diamond-square loop and
       is a pure function of the level's m_randomSeed and its tile parameters;
@@ -381,138 +356,201 @@ tasks:
       lookup, a different function, and nothing about the terrain answer says
       anything about it.
 
-      A CHEAP FIRST STEP, if it helps: the expression is
-      `speciesSeedRandom(_x | _y + speciesRandom())`, whose precedence is
-      `_x | (_y + speciesRandom())` rather than the `(_x | _y) + …` a reader
-      expects. That is worth noting in the answer either way, but it is not the
-      question — the question is the reseed.
+      ANSWERED 2026-08-05, in the same reading as T3 and resting on the same
+      finding: speciesRandom() is the UNSYNCHRONISED LCG, not the lockstep
+      stream. Read T3's notes for the two-generator argument; this answer takes
+      it as established.
 
-      THE DECLARED PATH WAS WRONG AND IS CORRECTED, 2026-08-05 at 97b5844.
-      This task was written against `Species/LandscapeRenderer.cpp`, which does
-      not exist: layering-inversion moved the renderer into GameLogic with the
-      rest of the world model, and the file is
-      `GameLogic/LandscapeRenderer.cpp` — the call is at line 169 and the only
-      caller inside the file at line 216. `project` was `Species` for the same
-      reason and is now GameLogic. Nothing caught this, and that is the point
-      worth carrying: check_task_dag.py validates the GRAPH, not that a
-      declared file is on disk, so a path that rots when a file moves stays
-      valid forever. An agent starting this task would have opened a missing
-      file first.
+      WHAT CALLS IT, AND HOW OFTEN. GetLandscapeColour has exactly ONE caller:
+      LandscapeRenderer::BuildColourArray (LandscapeRenderer.cpp:216), once per
+      landscape vertex. BuildColourArray has exactly one caller too —
+      BuildOpenGlState (:285), reached only from the LandscapeRenderer
+      constructor (:269) — so the whole thing runs once per renderer
+      construction, and a renderer is constructed only by
+      Landscape::BuildOpenGlState (Landscape.cpp:524).
 
-      ================= THE ANSWER, 2026-08-05 at 2258661 =================
+      NOT FRAME-RATE DEPENDENT AND NOT VIEW DEPENDENT, which is the first thing
+      the task asked and the intent's guess was wrong about. The loop walks
+      m_strips and m_verts, both built from the height map; the camera is not
+      an input, and nothing re-runs it per frame. m_renderMode — the one
+      client-local input in the constructor — selects the GL upload path AFTER
+      the colour array is built and does not change how many times the reseed
+      runs.
 
-      BENIGN, ON TWO INDEPENDENT GROUNDS, EITHER OF WHICH IS SUFFICIENT. Both
-      of the premises this task inherited are wrong, and they are wrong in
-      different ways.
+      IT IS NOT LOAD-TIME-ONLY EITHER, which is the part worth writing down.
+      Landscape::Init calls BuildOpenGlState at :566, so it runs on every level
+      load — but Location::RegenerateOpenGlState (:2281) calls it again, and
+      that is reached from PrefsScreenWindow.cpp:146, MainMenus.cpp:267 and
+      CheatWindow.cpp:239. **A player applying graphics preferences mid-session
+      re-runs thousands of reseeds at a moment no other client shares.** If the
+      LCG were the synchronised stream, that would be the worst determinism bug
+      in the tree.
 
-      GROUND 1 — IT IS THE WRONG STREAM, exactly as T3 found for the sound
-      draws. speciesSeedRandom/speciesRandom are the LCG in
-      NeuronCore/Random.cpp; the simulation runs on syncrand's Mersenne
-      Twister and the two share no state. Reseeding holdrand cannot touch a
-      synchronised sequence, because holdrand is not one. Read T3's answer
-      first — it establishes this once for both tasks.
+      IS IT REACHABLE MID-TICK? Not within one — Main.cpp's loop advances and
+      renders in sequence — but it is reachable BETWEEN ticks at an arbitrary,
+      client-local moment, which is the same thing for this purpose.
 
-      GROUND 2 — IT IS NOT ON A FRAME PATH AT ALL. The task says execution
-      "depends on what is on screen and how often the frame loop runs it".
-      It does not. The full call graph, measured:
+      WHAT THE STREAM'S STATE IS AFTERWARDS. holdrand ends up as
+      `_x | (_y + speciesRandom())` for the last vertex, so after the array is
+      built it is a function of the terrain and of nothing else that came
+      before — the chain of per-vertex reseeds does propagate an earlier
+      perturbation, but only through values derived from vertex coordinates.
+      At level load it runs immediately downstream of GenerateHeightMap's own
+      speciesSeedRandom(m_randomSeed) (Landscape.cpp:311), so on the load path
+      it actually ERASES prior client-local LCG divergence rather than creating
+      any.
 
-        LandscapeRenderer::GetLandscapeColour  (:164, the reseed at :169)
-          <- LandscapeRenderer::BuildColourArray  (:192, the only caller,
-             at :216, inside a loop over triangle-strip vertices)
-            <- LandscapeRenderer::BuildOpenGlState  (:287)
-              <- LandscapeRenderer::LandscapeRenderer  (:269)
-                <- Landscape::BuildOpenGlState  (Landscape.cpp:527, `new
-                   LandscapeRenderer(m_heightMap)`)
+      VERDICT: **BENIGN.** Two independent reasons, either sufficient. It
+      reseeds the LCG, which the simulation does not read. And on the path that
+      matters — level load — it is a pure function of the level, downstream of
+      an explicit reseed.
 
-      GetLandscapeColour has ONE caller, and it is a one-time colour bake
-      that runs when the landscape is built. It is not called from Render(),
-      not from any Advance, and its iteration count is the vertex count of
-      the terrain mesh — a function of the level, identical on every client
-      loading that level. Nothing about it is frame-rate or view dependent.
+      THE PRECEDENCE ODDITY IS REAL and stays unfixed: `_x | _y +
+      speciesRandom()` parses as `_x | (_y + speciesRandom())`, not the
+      `(_x | _y) + …` a reader expects. It is not a bug — this is noise for a
+      colour lookup and any bit-mixing does — but it reads as one, so it is
+      recorded here rather than left to be rediscovered. Changing it would
+      alter every landscape colour in the game for no gain.
 
-      IS THE RESEED REACHABLE WHILE A SIMULATION TICK IS IN PROGRESS? No.
-      It runs during location load, before the tick loop starts. And the
-      stream's state afterwards is settled by the level anyway: Location::Init
-      calls speciesSeedRandom(1) at Location.cpp:136, immediately after
-      LoadLevel and before InitLandscape, so the unsynchronised stream is
-      re-anchored per location regardless of what the colour bake left in it.
-
-      WHAT REMAINS TRUE AND IS WORTH A LINE. The expression is
-      `speciesSeedRandom(_x | _y + speciesRandom())`, which parses as
-      `_x | (_y + speciesRandom())` rather than the `(_x | _y) + …` a reader
-      expects — recorded because the next person will read it the same wrong
-      way, not because it is a defect. The comment above the function says x
-      and y are "only passed in as a means to get predicatable noise", and
-      that is exactly what it does: it makes terrain colour a repeatable
-      function of position. Reseeding a process-global generator to get
-      per-pixel noise is a poor way to spell that, and a local generator
-      would be better, but it is a tidiness question and this plan is not
-      where tidiness lands.
-
-      NO FIX IS PROPOSED AND NONE IS NEEDED. Unlike T3, this one does not
-      relocate: nothing downstream of the colour bake computes simulation
-      state. The four sites T3 found are the whole of that hazard, and they
-      are T5.
+      WHAT THIS DOES NOT SAY. It does not say the tree has no determinism
+      problem of this shape. It has six, they run the other way — simulation
+      state drawn from the client-local generator — and they are T5.
 
   - id: T5
-    title: Move the four simulation-side draws onto the synchronised stream
+    title: Move the six simulation-state draws off the unsynchronised generator
     intent: >
-      Four GameLogic sites compute simulation state from speciesRandom(), the
-      UNSYNCHRONISED generator, while everything around them uses syncrand().
-      Two of the four write entity positions, which GenerateSyncValue sums, so
-      any client-local consumer of that generator — sound, the Eclipse UI, the
-      landscape renderer — changes what the simulation computes. This is the
-      real hazard behind the finding T3 was written to investigate.
+      T3 and T4 established that syncrand() is the lockstep stream and
+      speciesRandom()/frand()/sfrand() is an unsynchronised LCG that sound,
+      the Eclipse UI and terrain generation consume and reseed at a
+      client-dependent rate. Six sites draw SIMULATION state from the LCG, so a
+      value that differs between clients reaches state the sync checksum
+      observes. This converts those six to the synchronised family and touches
+      nothing else. It is a behaviour change: it alters what the simulation
+      computes and shifts the synchronised sequence, which is why it is here,
+      lands alone, and is gated by T6.
     project: GameLogic
     depends_on: [T3, T4]
     files:
-      - GameLogic/Spider.cpp
-      - GameLogic/Armour.cpp
-      - GameLogic/ArmyAnt.cpp
-      - GameLogic/Explosion.cpp
+      - GameLogic/LaserFence.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/Incubator.cpp
+      - GameLogic/Spam.cpp
+      - GameLogic/ResearchItem.cpp
     acceptance:
-      - The four sites named in notes draw from syncrand() and no simulation
-        state in GameLogic is computed from speciesRandom() or from frand/sfrand
-      - The remaining speciesRandom callers are listed in the commit with, for
-        each, one line saying why it is not simulation state
-      - ArmyAnt's rejection loop draws a bounded number of values, or the commit
-        states why an unbounded loop on the synchronised stream is acceptable
-      - The commit states plainly that the RNG sequence changes on BOTH streams
-        from this point, and that a client with this change desyncs against one
-        without
-      - Owner runs the Garden smoke test — spiders, armour, army ants and
-        explosions are all in it
+      - The six sites read syncfrand/syncsfrand, with the reason stated at each site
+      - No cosmetic draw is converted -- particles, render jitter and UI placement stay on frand/sfrand
+      - The commit message states that the synchronised sequence changes from this point and that a client with this change desyncs against one without
     verify:
       - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
+    status: done
+    notes: |
+      THE SIX, with what each one reaches. Ordered by how bad it was.
+
+      1. LaserFence.cpp:66, Initialise -- m_sparkTimer = frand(10.0f).
+         THE ONE OUTRIGHT DESYNC. Advance() at :156 reseeds this timer with
+         syncfrand(4.0f) the moment it expires, so an unsynchronised value
+         decided WHICH TICK draws from the synchronised stream. Two clients
+         whose LCG differed at level load drew from the Mersenne Twister on
+         different ticks and diverged permanently, with every build green.
+         Nothing else in this list is this direct.
+
+      2/3. LevelFile.cpp:460-461, ParseInstantUnits -- the extra centipede
+         copies get spawn positions from sfrand(60). Those are entity
+         positions and GenerateSyncValue sums every entity's m_pos.
+         CAVEAT worth stating: numCopies depends on g_difficultyLevel, which
+         is a client-local preference, so on the synchronised stream two
+         clients at different difficulties now draw a different NUMBER of
+         values. That is not a regression -- difficulty already changes
+         iu->m_number, so the entity COUNT already differs and such a pair is
+         desynced before the first tick either way.
+
+      4/5. Incubator.cpp:63 and :190 -- a Spirit's m_pos scattered by
+         sfrand(20). Spirits are simulation objects; they are not summed
+         directly, but they drive which citizen collects what, and that
+         reaches entity positions. AddSpirit already drew syncrand() % 2
+         fifteen lines below the scatter it took from the LCG, which is the
+         clearest evidence available that this was an inherited slip rather
+         than a decision.
+
+      6. Spam.cpp:41 and ResearchItem.cpp:41 -- the building's facing from
+         frand(2π). Counted as one; they are the same line in two files.
+         For a level-file building the facing is overwritten by Read and
+         Initialise, so the draw is discarded. The live paths are
+         GodDish::SpawnSpam, which stack-constructs a Spam template that is
+         never read from a file and whose facing Building::Initialise turns
+         into m_centrePos -- and SpawnInfection hands m_centrePos to twenty
+         SpamInfections in m_effects, which sync sums directly -- and
+         Library::Advance, which news a ResearchItem straight into
+         m_buildings without calling Initialise at all.
+
+      WHAT WAS DELIBERATELY NOT CONVERTED. Every cosmetic draw stays on the
+      LCG: particles, render jitter, muzzle-flash sizes, m_renderDamaged,
+      Explosion's tumbler angular velocities, Eclipse window placement, the
+      sound sites in T3, and the terrain and tree reseeds. Converting those
+      would put thousands of frame-rate-dependent draws on the synchronised
+      stream, which is the bug this plan exists to prevent, pointing the other
+      way.
+
+      WHAT CHANGES, stated so T6 knows what it is looking at. Six draws move
+      onto the Mersenne Twister, so every syncrand() after the first affected
+      object returns a different value and the simulation evolves differently
+      from the frame this lands. Nothing degrades. A client with this change
+      desyncs against one without -- the same cost T1 accepted, and the same
+      argument carries it: there is no shipped build and no multiplayer in
+      use, and the cost only grows.
+
+      THE VISIBLE EFFECT IS EXPECTED TO BE NIL. Every converted draw keeps its
+      range: sfrand(r) and syncsfrand(r) both land in [-r/2, +r/2] and
+      frand(r) and syncfrand(r) both in [0, r). The two spread functions
+      mirror each other about zero -- sfrand is (0.5 - u) * r and syncsfrand
+      is (u - 0.5) * r -- which is invisible in a symmetric scatter.
+
+      NOT BUILT. No MSVC and no Windows client in this environment, so the two
+      build lines in verify have not been run here; the four Python checks
+      have. CI is the first thing to compile this.
+
+      THE SWEEP IS NOT COMPLETE and that is worth saying plainly. 186 LCG call
+      sites were classified far enough to find these six -- by grepping for
+      LCG values written into members, then reading the mixed-stream files.
+      A site-by-site record does not exist and no task owns making one.
+
+  - id: T6
+    title: Owner runs the Garden smoke test against the changed synchronised stream
+    intent: >
+      T5 changes what the simulation computes. Nothing that runs in CI can see
+      that: the unit suite does not reach LaserFence, Incubator, Spam or level
+      parsing, and a green build says nothing about a shifted RNG sequence. The
+      smoke test is the only evidence available, and T5 is not verified without
+      it. Same gate and same reason as T2.
+    depends_on: [T5]
+    files:
+      - AGENTS.md
+    acceptance:
+      - All seven Garden smoke-test steps pass on the changed build, owner-reported
+      - AGENTS.md records the run with the commit hash, per "What working looks like"
     status: todo
     notes: |
-      Added 2026-08-05 as T3's deliverable. T3 was a scoping task and this is
-      the fix it names; read T3's answer before starting, because the argument
-      for this task is entirely in it.
+      Blocked on owner execution -- agents in this environment cannot launch a
+      Windows client.
 
-      THE FOUR SITES, measured at 9d716f6:
-        Spider.cpp:354     neighbour pick -> m_targetPos
-        Armour.cpp:253     neighbour pick -> m_wayPoint
-        ArmyAnt.cpp:185    rejection loop -> m_shape
-        Explosion.cpp:144  debris tumbler pick
+      WHICH STEPS CARRY THE WEIGHT. Steps 3 and 4, the spawn counts, matter
+      here in a way they did not for T2: LevelFile.cpp:460 is on the
+      InstantUnit path, so a mistake there changes how many entities appear.
+      The Garden's counts are 50 Citizens and 179 Virii and neither involves a
+      centipede copy, so the expected reading is UNCHANGED counts -- a
+      different number means the parse changed, not the RNG.
 
-      Spider and Armour are the two that reach the checksum: both write a
-      target the entity then moves toward, and GenerateSyncValue sums entity
-      m_pos and m_vel. ArmyAnt's is a shape swap and Explosion's is debris, so
-      neither is obviously summed — they are in scope anyway because
-      ArmyAnt's loop draws an UNBOUNDED number of values from a shared
-      generator, and because leaving two of four converted is the kind of
-      half-state that reads as deliberate later.
+      Step 5, thirty seconds with no assert, and step 7, the sync assert in
+      single player, are the pair that show the simulation is still
+      self-consistent after the stream shifted.
 
-      IT NEEDS A DECISION BEFORE IT NEEDS AN AGENT, and the decision is the
-      owner's: this is a behaviour change of T1's exact shape. It is written
-      as todo rather than blocked because nothing technical stands in the way
-      — but do not start it on the strength of this note alone.
-
-      ONE TRAP. `frand()` and `sfrand()` are speciesRandom in disguise
-      (MathUtils.h:9-10) and read as innocuous. Any GameLogic site computing
-      simulation state through those is the same bug; the acceptance above
-      says so, and a grep for the two names is not optional.
+      WHAT TO LOOK AT SPECIFICALLY, since the Garden does not exercise all six.
+      Laser fences spark on a timer -- that they still spark, and not all at
+      once, is the observation for the site that mattered most. Incubators and
+      their spirits are present in The Garden. Spam, GodDish and Library are
+      not, so those three sites go unexercised by this run and will first be
+      seen on a level that has them; say so rather than implying otherwise.

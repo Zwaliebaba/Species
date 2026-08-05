@@ -462,9 +462,12 @@ void LevelFile::ParseInstantUnits(TextReader* _in)
       auto copyOwned = std::make_unique<InstantUnit>();
       InstantUnit* copy = copyOwned.get();
       *copy = *iu;
-      // Spread them out a bit
-      copy->m_posX = iu->m_posX + sfrand(60);
-      copy->m_posZ = iu->m_posZ + sfrand(60);
+      // Spread them out a bit. SYNCHRONISED: these are entity spawn positions,
+      // and GenerateSyncValue sums every entity's m_pos, so drawing them from
+      // the unsynchronised LCG put a client-local value straight into the
+      // desync checksum. determinism.yaml T5.
+      copy->m_posX = iu->m_posX + syncsfrand(60);
+      copy->m_posZ = iu->m_posZ + syncsfrand(60);
       m_instantUnits.push_back(std::move(copyOwned));
     }
   }

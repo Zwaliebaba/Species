@@ -210,33 +210,42 @@ question the two findings above came from.
 
 ## Progress — what Batch 4 actually did, 2026-08-05
 
-Five tasks landed across five commits. **Neither plan closed**, and both
-reasons are findings rather than slippage.
+Four tasks landed on this branch across five commits. **Neither plan closed**,
+and both reasons are findings rather than slippage.
 
 | Task | Outcome |
 |---|---|
-| `determinism/T3` | **Done.** The premise was wrong — see below. |
-| `determinism/T4` | **Done.** Benign on two independent grounds. |
+| `determinism/T3`, `T4` | **Done — and done twice.** See below. |
 | `ownership/T10` + `strings/T20` | **Done, one commit**, on the owner's decision. Five new tests. |
 | `ownership/T5` | **Done**, following the intent; `GlobalWorld.cpp` split out as `T11`. |
 | `ownership/T8`, `language-hygiene/T12` | **Not started.** |
 
-**`determinism` did not archive, because T3 found a real bug and it is not the
-one that was recorded.** `speciesRandom()` is *not* the lockstep RNG. The tree
-has two generators sharing no state — the LCG behind
-`speciesRandom`/`frand`/`sfrand`, and the Mersenne Twister behind
-`syncrand`/`syncfrand`, which `MathUtils.h` has labelled "Network Syncronised
-versions (only call inside Net-Safe code)" since the code was inherited. The
-simulation obeys the label. So the sound draws cannot desync anything, and the
-`AGENTS.md` bullet that stood for three days and three batches was wrong
-because nobody read that header.
+**THE DETERMINISM WORK WAS DONE TWICE, CONCURRENTLY, AND THAT IS THE MOST
+USEFUL THING THIS BATCH PRODUCED.** This branch and `main` both took
+`determinism/T3` and `T4` on 2026-08-05, without either knowing about the
+other, and reached the same answer independently: `speciesRandom()` is *not*
+the lockstep RNG, `syncrand()` is, and `MathUtils.h` has said so since the
+code was inherited. Two agents, one afternoon, one conclusion — which is
+strong evidence the conclusion is right, and pure waste otherwise.
 
-The hazard relocated instead of closing: **four GameLogic sites compute
-simulation state from the *unsynchronised* generator** — `Spider.cpp:354` and
-`Armour.cpp:253` write a movement target from it, `ArmyAnt.cpp:185` runs a
-rejection loop whose draw count is unbounded, `Explosion.cpp:144` picks a
-debris tumbler. Entity positions are what `GenerateSyncValue` sums. That is
-`determinism/T5`, and it needs an owner decision before an agent.
+**`main`'s version went further and is the one that survives.** It found
+**six** simulation-state draws on the unsynchronised generator where this
+branch found four, and it landed the fix as `T5`. The two it found and this
+branch missed came through `frand()`/`sfrand()` rather than `speciesRandom()`
+directly — including `LaserFence.cpp:66`, an outright desync. This branch's
+own `T5` proposal had written *"ONE TRAP: `frand()` and `sfrand()` are
+speciesRandom in disguise ... a grep for the two names is not optional"* and
+then did not run that grep. Naming a trap is not the same as checking it.
+
+The merge took `main`'s `determinism.yaml`, its `AGENTS.md` bullets and its
+code comments wholesale; this branch's parallel answer is gone from the tree
+and only this paragraph records that it existed.
+
+**The scheduling lesson is the one this file exists for.** Task claiming is
+per-plan and advisory — `status: in_progress` committed to a *branch* nobody
+else fetches prevents nothing. Both agents claimed correctly and still
+collided. If two agents may be working, the claim has to land on `main`
+before the work starts, or the plan has to be one nobody else is holding.
 
 **`ownership` did not close either**, and the batch's own premise is why: `T7`
 depends on `T6`, `T6` needs an owner-run smoke test after each commit, and
@@ -291,6 +300,53 @@ they can run together, because it reasons per plan.
 Reproduce with the script at the end of this file. Two cautions carry over:
 `strings/T12` declares 2 files against a reach of 45, and `namespace/T2`
 declares directories, so both under- and over-report by construction.
+
+---
+
+## Progress
+
+**`determinism/T3` and `T4` are done (2026-08-05), and they did not end where
+this file assumed.** Both were scoping tasks on the premise that
+`speciesRandom()` is the lockstep RNG. It is not — `syncrand()` is, and
+`speciesRandom()` is an unsynchronised LCG for cosmetics — so both findings
+were false alarms and `CODING_STANDARDS.md` carried the error that produced
+them. The reading found six real defects running the other way, simulation
+state drawn from the client-local generator, and those are **`T5`, landed**.
+`determinism` now has one open task, **`T6`**, the owner-run Garden smoke test
+that gates T5. The plan is at 5 of 6, not 2 of 4 as the table above says.
+
+The transferable part is the one this file already argues about `--next`:
+**a finding's premise expires the same way a batch proposal does.** That
+premise sat in `AGENTS.md`, `CODING_STANDARDS.md` and a test comment for three
+batches, and the tasks written from it inherited it verbatim. Checking it cost
+one afternoon of reading and was the whole of the work.
+
+**`strings/T8` landed on CI 556 (`6b38509`) and `strings/T19` on CI 560
+(`12581f3`), both 2026-08-05.** Together: fifteen files, 78 call sites, eleven
+new tests, x64 Debug green and 180 tests passing on each.
+
+**Stage 5's tail is open.** `ownership/T5` was blocked on those two and nothing
+else, so `--next` offers it now — and behind it are T6 (App owns its
+subsystems) and T7 (delete the macros), which is the whole of what `ownership`
+has left apart from T8. `strings/T17` became ready with them.
+
+T19's own finding is worth carrying into the rest of the batch: its two
+accessors return `char const*` rather than `std::string`, because
+`GetLocationName` answers **nullptr** for an unknown id and `Main.cpp` tests
+that before transferring spirits into the location. Returning a value would
+have turned "no such location" into an empty name and transferred anyway, with
+no compiler complaint. **Every accessor that can fail is that shape** — check
+what its null means before converting its return type.
+
+Two things came out of it that the rest of the batch should carry:
+
+- **`FileWriter::printf` is pinned now**, eight tests over the formats the
+  writers actually use. `strings/T19` and `T17` both have to prove they change
+  no bytes, and this is what they prove it against.
+- **`AGENTS.md`'s test count was wrong.** It said 180; CI counted **169** at
+  `e7a1a88`, and T8's eleven made the stale figure accidentally true. Corrected
+  there, with how to read the real number. It cost ten minutes of believing the
+  new tests had not run.
 
 ---
 

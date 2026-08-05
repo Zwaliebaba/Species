@@ -63,7 +63,13 @@ void LaserFence::Initialise(Building* _template)
   m_scale = ((LaserFence*)_template)->m_scale;
   m_mode = ((LaserFence*)_template)->m_mode;
 
-  m_sparkTimer = frand(10.0f);
+  // SYNCHRONISED, and it has to be. Advance() reseeds this timer with
+  // syncfrand(4.0f) the moment it expires, so the frame it first expires on
+  // decides which tick draws from the SYNCHRONISED stream. Seeding it from
+  // frand -- the unsynchronised LCG, which sound and the UI consume at a
+  // client-dependent rate -- meant two clients drew from the Mersenne Twister
+  // on different ticks and diverged permanently. determinism.yaml T5.
+  m_sparkTimer = syncfrand(10.0f);
 }
 
 void LaserFence::SetDetail(int _detail)

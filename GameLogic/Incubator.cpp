@@ -59,8 +59,10 @@ void Incubator::Initialise(Building* _template)
   for (int i = 0; i < m_numStartingSpirits; ++i)
   {
     Spirit* s = m_spirits.GetPointer(m_spirits.GetNextFree());
-    // The three sfrand calls stay in this order: they advance the RNG.
-    DirectX::XMFLOAT3 const scatter(sfrand(20.0f), sfrand(20.0f), sfrand(20.0f));
+    // The three calls stay in this order: they advance the RNG. SYNCHRONISED
+    // since determinism.yaml T5 -- a spirit's position is simulation state,
+    // and these were drawn from the unsynchronised LCG.
+    DirectX::XMFLOAT3 const scatter(syncsfrand(20.0f), syncsfrand(20.0f), syncsfrand(20.0f));
     DirectX::XMStoreFloat3(&s->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&spiritCentre), DirectX::XMLoadFloat3(&scatter)));
     s->m_teamId = m_id.GetTeamId();
     s->Begin();
@@ -186,8 +188,10 @@ void Incubator::AddSpirit(Spirit* _spirit)
 
   Spirit* s = m_spirits.GetPointer(m_spirits.GetNextFree());
 
-  // The three sfrand calls stay in this order: they advance the RNG.
-  DirectX::XMFLOAT3 const scatter(sfrand(20.0f), sfrand(20.0f), sfrand(20.0f));
+  // The three calls stay in this order: they advance the RNG. SYNCHRONISED
+  // since determinism.yaml T5, as in Initialise above -- and note the
+  // syncrand() draw fifteen lines below, which this function already made.
+  DirectX::XMFLOAT3 const scatter(syncsfrand(20.0f), syncsfrand(20.0f), syncsfrand(20.0f));
   DirectX::XMStoreFloat3(&s->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&spiritCentre), DirectX::XMLoadFloat3(&scatter)));
   s->m_teamId = _spirit->m_teamId;
   s->m_state = Spirit::StateInStore;

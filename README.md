@@ -1,6 +1,6 @@
 # Species
 
-**World Core** — a C++20 game built on the Neuron engine.
+**World Core** — a C++23 game built on the Neuron engine.
 
 The goal is a large-scale realtime multiplayer world in which player colonies
 work, live and survive persistently. The codebase is partway there: it began as
@@ -22,7 +22,7 @@ into a foundation an authoritative world server can be built on.
 | `GameData/` | Levels, shapes, textures, sounds, scripts |
 | `Tests/` | One `<Name>Tests` project per library |
 
-~113,000 lines of C++20. No third-party dependencies — it links only against the
+~113,000 lines of C++23. No third-party dependencies — it links only against the
 operating system.
 
 ## Building

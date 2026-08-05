@@ -6,7 +6,7 @@
 |---|---|
 | OS | Windows. The code uses Win32, Winsock, WGL and DirectSound directly. |
 | Toolchain | Visual Studio 2026, MSVC toolset **v145**, Windows SDK 10 |
-| Language | C++20 (`/std:c++20`, `/permissive-`) |
+| Language | C++23 (`/permissive-`). **Debug sets `stdcpplatest`, Release still sets `stdcpp20`** — see *Release* below.  |
 | Platforms | **ARM64** (primary) and **x64** |
 | Dependencies | **DirectXMath**, header-only, from the Windows SDK. Links only against `opengl32`, `glu32`, `winmm`, `dsound`, `dxguid`, `Ws2_32`. |
 
@@ -73,10 +73,36 @@ platform-specific, so the configuration groups are conditioned on
 | Precompiled header | Used | Used |
 | Whole program optimisation | off | on |
 | Debug info | generated | generated |
+| `LanguageStandard` | `stdcpplatest` | `stdcpplatest` |
 
 Both configurations carry identical `ClCompile` settings — include paths,
 precompiled header, language standard, conformance — and the same subsystem.
 Only the optimisation and `_DEBUG`/`NDEBUG` settings differ.
+
+> **Release used to set `stdcpp20` against Debug's `stdcpplatest`**, in all six
+> projects. Debug is the only configuration CI builds or anyone builds by hand,
+> so the two never got compared — the same blind spot that hid the three Release
+> defects below. Both are `stdcpplatest` now, which on toolset v145 is C++23
+> plus whatever is in preview. That is deliberate: the tree tracks the latest
+> standard rather than pinning a numbered one, so
+> [`CODING_STANDARDS.md`](../CODING_STANDARDS.md)'s "C++23" is the floor you can
+> rely on, not a ceiling the compiler enforces.
+>
+> **Nothing has compiled Release since**, so this is a corrected setting rather
+> than a verified one — the same caveat as the subsystem fix below.
+>
+> The four `Tests/*` projects carried a sharper version of the same bug and are
+> fixed with it. Each set `LanguageStandard` under
+> `Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'"` — the shape the
+> IDE writes when it records a setting against whichever configuration happened
+> to be active — so **every other configuration, including the x64 Debug that CI
+> builds and runs the suite in, compiled the tests at the toolset default.** The
+> condition is gone; all four now set `stdcpplatest` unconditionally, matching
+> the `AdditionalIncludeDirectories` beside them, which never carried one.
+>
+> All ten projects in the tree now agree. There is one setting to check when
+> this next drifts: `grep -rn LanguageStandard --include=*.vcxproj .` should
+> print ten lines saying `stdcpplatest` and nothing else.
 
 Every configuration defines `_CRT_SECURE_NO_WARNINGS`,
 `_CRT_NONSTDC_NO_WARNINGS` and `_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS`,
