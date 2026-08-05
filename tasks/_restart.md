@@ -7,9 +7,11 @@ graph was known to be wrong.
 
 > **This file is about the modernisation plans (stages 3-5). It predates
 > `tasks/directxmath-migration.yaml`, which is a separate, larger effort that
-> is 18 of 28 tasks in as of 2026-08-05 and has its own restart note:
-> [`_restart-directxmath.md`](_restart-directxmath.md). Neither file
-> supersedes the other; they cover different work.**
+> is CODE-COMPLETE as of 2026-08-05 — 27 of its 28 tasks are done and the
+> remaining one is an owner-run smoke test. Its restart note,
+> [`_restart-directxmath.md`](_restart-directxmath.md), is now a handover for
+> that run plus what the plan taught the plans below. Neither file supersedes
+> the other; they cover different work.**
 
 Read `AGENTS.md` first. It is still the orientation document; this file only
 answers "where were we, and what do I do next".

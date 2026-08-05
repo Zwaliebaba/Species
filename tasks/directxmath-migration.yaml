@@ -2975,8 +2975,36 @@ tasks:
     verify:
       - python3 tools/check_task_dag.py
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
+      DONE. All five criteria met, and two things beyond them that T25 made
+      false the moment it landed.
+
+      THE CROSS-ARCHITECTURE BULLET now says NOT SUPPORTED with the reason,
+      in both AGENTS.md and CODING_STANDARDS.md, and says the thing that
+      matters more: WITHIN one architecture the simulation is still
+      deterministic, which is the property the migration was required to keep
+      and the one the sync assert tests. It is a decision on the record, not a
+      bug report, and the bullet says so.
+
+      docs/BUILD.md records the SDK requirement: DirectXMath is not a package,
+      it ships in the Windows SDK 10 the toolchain row already requires, and an
+      SDK too old for DirectXCollision's TriangleTests will not compile
+      NeuronCore.
+
+      THE REPOSITORY MAP's NeuronCore line drops from ~3.4k to ~2.4k and says
+      the layer holds no math TYPES at all.
+
+      BEYOND THE LIST, because T25 falsified them: CODING_STANDARDS.md's two
+      rules about the conversion seam -- that it crossed values and references
+      but not pointers, and that AsLegacy was the escape hatch -- described
+      machinery that no longer exists. They are replaced by a note saying so,
+      because a reader hitting AsLegacy in an old commit message needs to know
+      where it went. The virtual-signature rule STAYS: it is a fact about C++
+      rather than about the seam, and it cost this plan four rounds.
+      docs/ARCHITECTURE.md's NeuronCore paragraph said the math types had
+      "moved down"; they moved down and were then deleted.
+
       The *Est ban is the one new standing rule this plan creates.
       XMVector3NormalizeEst, XMVectorReciprocalEst and the rest are explicitly
       permitted to differ between implementations, which makes them a desync

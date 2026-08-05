@@ -29,8 +29,10 @@ persistent authoritative server can be built on. Roughly 113,000 lines of C++
 across six MSBuild projects. It links only against the OS (OpenGL, GLU, WinMM,
 DirectSound, Winsock) and takes one header-only dependency, **DirectXMath**,
 which ships in the Windows SDK — no library to link and nothing vendored.
-`tasks/directxmath-migration.yaml` is replacing the inherited hand-rolled math
-with it; see *Current priority*.
+`tasks/directxmath-migration.yaml` replaced the inherited hand-rolled math with
+it and then deleted it: there is no Neuron vector or matrix type, storage is
+`XMFLOAT2/3`, `XMFLOAT3X3` and `XMFLOAT4X4`, and `NeuronCore/NeuronMath.h`
+holds the conventions rather than a class.
 
 **Do not treat the ambition as the current scope.** The realtime world does not
 exist. Nothing in the tree is designed for it yet. Work toward it happens by
@@ -103,9 +105,11 @@ Directory.Build.props     Settings shared by every project. Defines $(SpeciesRoo
 GameData.targets          Stages GameData/ next to the executable after each build.
 GameData/                 Game content: levels, shapes, textures, sounds, scripts.
 
-NeuronCore/       ~3.4k   Foundation: sockets, threads, byte streams, the wire
+NeuronCore/       ~2.4k   Foundation: sockets, threads, byte streams, the wire
                           protocol, filesystem, assertions, and the math
-                          conventions in NeuronMath.h. Static library.
+                          conventions in NeuronMath.h. It holds no math TYPES:
+                          Vector2/3, Matrix33/34 and Plane were deleted, and
+                          storage is DirectXMath's own. Static library.
 NeuronClient/     ~30k    Presentation: OpenGL renderer, sound, input drivers,
                           the Eclipse UI toolkit, resource loading. Static library.
 NeuronServer/     ~0.5k   Authoritative simulation host: Server, ServerToClient,
@@ -548,20 +552,22 @@ Real, currently true, and worth knowing before you trip over them:
   while investigating the landscape question, unrelated to it, and it predates
   the DirectXMath work. Not investigated and not fixed; it belongs in
   `tasks/Archive/determinism.yaml` when somebody has established what it costs.
-- **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
-  MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
-  Deterministic lockstep requires bit-identical results, and nobody has verified
-  that an ARM64 client and an x64 client agree, given FMA contraction and the 281
-  `sinf`/`cosf`/`powf` calls in simulation code. Assume they desync until tested.
-  Now that the game runs this is finally testable: two clients, one per
-  architecture, and watch for the sync assert in `Server.cpp`.
-  - **DirectXMath makes this concrete rather than theoretical.** It dispatches
-    to SSE on x64 and ARM-NEON on ARM64, and the owner decided on 2026-08-03 to
-    accept that rather than force the scalar path — no `_XM_NO_INTRINSICS_`, no
-    `<FloatingPointModel>`. So mixed-architecture play is heading from
-    "unproven" to "not supported", and `directxmath-migration` T26 is where
-    that wording lands once the migration finishes. Within one architecture the
-    simulation stays deterministic, which is what the sync assert tests.
+- **Mixed-architecture play is NOT SUPPORTED.** Not "unproven" — decided. The
+  simulation computes on DirectXMath, which dispatches to SSE on x64 and to
+  ARM-NEON on ARM64, and the owner decided on 2026-08-03 to accept that rather
+  than force the scalar path: no `_XM_NO_INTRINSICS_`, no
+  `<FloatingPointModel>`, no build-topology change. Two lane implementations do
+  not produce bit-identical results, deterministic lockstep requires that they
+  do, and the 281 `sinf`/`cosf`/`powf` calls in simulation code were already a
+  second reason before the first one existed. An ARM64 client and an x64 client
+  in one session will desync.
+  - **Within one architecture the simulation stays deterministic**, which is
+    what the sync assert in `Server.cpp` tests, and that is the property the
+    migration was required to preserve. Two x64 clients agree; two ARM64
+    clients agree.
+  - Making them agree with each other is a project in its own right — pinning
+    the float model and auditing every transcendental — and nothing in the tree
+    is waiting on it. Do not treat this bullet as a bug report.
 - **ARM64 Debug is not gated by CI.** CI builds x64 Debug only, so the primary
   development platform is never checked here — build it yourself before relying
   on it. The unexplained ARM64 Debug failure that used to be recorded in this

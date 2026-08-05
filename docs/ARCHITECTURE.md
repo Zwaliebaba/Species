@@ -94,10 +94,11 @@ Presentation and platform services for a graphical client.
   every in-game window derives from.
 - **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,
   sockets and sequence ids. Moved up out of `NeuronCore` by T8.
-- **Utilities that do not belong here:** none left. The maths types (`Vector3`,
-  `Matrix33/34`, `MathUtils`), `HiResTime`, `Profiler` and `Preferences` have all
-  moved down into `NeuronCore`. The inherited containers moved down too and have
-  since been deleted outright — see `SlotMap` below.
+- **Utilities that do not belong here:** none left. `MathUtils`, `HiResTime`,
+  `Profiler` and `Preferences` have all moved down into `NeuronCore`. The
+  inherited maths types moved down too and have since been deleted outright —
+  storage is DirectXMath's own, and `NeuronMath.h` holds the conventions rather
+  than a type. So did the inherited containers; see `SlotMap` below.
 
 ### NeuronServer
 
