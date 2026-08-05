@@ -1986,7 +1986,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Spirit.cpp was changed by determinism.yaml T1 and its smoke test (T2
       there) is still open. If that gate has not been run when this task
