@@ -766,4 +766,9 @@ Real, currently true, and worth knowing before you trip over them:
   carries a third-party notice that must never be stripped, including when moved
   or modernised — `NeuronCore/MathUtils.cpp`, under BSD 3-clause. This bullet
   said three; `LICENSE` has listed one since `AutoVector.h` and `TriTri.cpp`
-  were deleted, notices included, and it explains why each row went.
+  were deleted, notices included. `LICENSE` used to carry two paragraphs
+  explaining why each of those rows went; the owner removed them on 2026-08-05,
+  so that table now describes what the repository contains and nothing more.
+  The reasoning survives in git history and in `containers-replaced` T16 and
+  `directxmath-migration` T4. Neither file is in the tree, and nothing of
+  either author's is shipped stripped of its terms.
