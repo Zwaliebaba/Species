@@ -66,7 +66,6 @@ void Egg::Render(float predictionTime)
     &pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime), DirectX::XMLoadFloat3(&m_pos)));
   pos.y += 3.0f;
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const upStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const rightStore = g_camera->GetRight();
   DirectX::XMVECTOR const up = DirectX::XMLoadFloat3(&upStore);

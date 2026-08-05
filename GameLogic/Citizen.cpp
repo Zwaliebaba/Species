@@ -2739,7 +2739,6 @@ void BoxKite::Render(float _predictionTime)
   glEnable(GL_BLEND);
   glDepthMask(false);
 
-  // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
 

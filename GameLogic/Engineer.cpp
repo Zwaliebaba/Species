@@ -1198,7 +1198,6 @@ void Engineer::Render(float predictionTime)
       DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&toPos);
       DirectX::XMVECTOR const midPoint = DirectX::XMVectorScale(DirectX::XMVectorAdd(from, to), 0.5f);
 
-      // CameraAccess still returns a legacy vector; T12 converts it, behind T22.
       DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
       DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), midPoint);
 

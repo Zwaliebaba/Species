@@ -684,7 +684,6 @@ bool Squadie::RenderPixelEffect(float _predictionTime)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(entityFront, entityUp, DirectX::XMLoadFloat3(&predictedPos)));
 
-  // RendererAccess still takes a legacy matrix; T12 converts it, behind T22.
   g_renderer->MarkUsedCells(m_shape, mat);
 
   return true;
@@ -861,7 +860,6 @@ DirectX::XMFLOAT3 Squadie::GetSecondaryWeaponTarget()
 
   DirectX::XMFLOAT3 t = m_pos;
 
-  // CameraAccess still returns a legacy vector; T12 converts it, behind T22.
   DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
 
   DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(

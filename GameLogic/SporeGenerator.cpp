@@ -332,7 +332,6 @@ void SporeGenerator::RenderTail(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT
   DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
   DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&_to);
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
 
   // SetLength; rendering only, so this takes the native normalise.
@@ -486,7 +485,6 @@ bool SporeGenerator::IsInView()
   DirectX::XMFLOAT3 centre;
   DirectX::XMStoreFloat3(&centre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_centrePos)));
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(centre, m_radius);
 }
 

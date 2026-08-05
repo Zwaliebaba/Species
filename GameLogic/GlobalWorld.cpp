@@ -787,8 +787,6 @@ void SphereWorld::RenderSpirits()
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Glow.bmp"));
 
-  // CameraAccess's getters are pure virtuals and still return Vector3 -- they
-  // move with their implementors in T12/T22.
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&cameraRight);
@@ -987,8 +985,6 @@ void SphereWorld::RenderHeaven()
   glPushMatrix();
   glScalef(120.0f, 120.0f, 120.0f);
 
-  // CameraAccess's getters are pure virtuals and still return Vector3 -- they
-  // move with their implementors in T12/T22.
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&cameraUp);
@@ -1294,8 +1290,6 @@ void GlobalWorld::Advance()
         GlobalLocation* loc = GetLocation(m_editorSelectionId);
         if (loc)
         {
-          // UserInputAccess::GetMousePos3d is a pure virtual and still returns
-          // Vector3 -- it moves with its implementor in T12/T22.
           DirectX::XMFLOAT3 const mousePos3D = g_userInput->GetMousePos3d();
           DirectX::XMStoreFloat3(&loc->m_pos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&mousePos3D), 1.0f / 120.0f));
         }

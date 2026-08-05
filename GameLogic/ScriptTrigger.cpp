@@ -95,7 +95,6 @@ bool ScriptTrigger::Advance()
           }
           else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
           {
-            // Camera's accessors are still legacy -- Species belongs to T22.
             DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
             float camDistance = DirectX::XMVectorGetX(
               DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
@@ -109,7 +108,6 @@ bool ScriptTrigger::Advance()
           }
           else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
           {
-            // Camera's accessors are still legacy -- Species belongs to T22.
             DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
             float camDistance = DirectX::XMVectorGetX(
               DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));

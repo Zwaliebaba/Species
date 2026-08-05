@@ -1081,10 +1081,6 @@ void TaskManagerInterfaceIcons::RenderTargetAreas()
       }
 
       float angle = g_gameTime * 3.0f;
-      // These four lines belong to T22, not to T19. They are here because
-      // TaskTargetArea::m_centre converted in the header, and a converted
-      // member breaks every file that reads it — the rest of this file is
-      // still legacy and stays that way until T22.
       DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&tta->m_centre);
       DirectX::XMVECTOR const dif = DirectX::XMVectorSet(tta->m_radius * sinf(angle), 0.0f, tta->m_radius * cosf(angle), 0.0f);
 

@@ -196,7 +196,6 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -449,7 +448,6 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
   //
   // Render black blob
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);

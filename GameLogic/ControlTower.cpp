@@ -308,7 +308,6 @@ bool ControlTower::IsInView()
   //
   // Check against the tall thin control line to heaven
 
-  // PosInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   DirectX::XMFLOAT3 const towerPos(m_pos.x, g_camera->GetPos().y, m_pos.z);
   return g_camera->PosInViewFrustum(towerPos);
 }
@@ -375,7 +374,6 @@ void ControlTower::RenderAlphas(float _predictionTime)
   DirectX::XMFLOAT3 const lightPosStore = m_lightPos->GetWorldMatrix(rootMat).pos;
   DirectX::XMVECTOR const lightPos = DirectX::XMLoadFloat3(&lightPosStore);
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMVECTOR const camR = DirectX::XMLoadFloat3(&camRightStore);

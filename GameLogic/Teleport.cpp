@@ -106,7 +106,6 @@ bool Teleport::IsInView()
   float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
   radius += m_radius;
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   if (g_camera->SphereInViewFrustum(midPoint, radius))
   {
     return true;
@@ -157,8 +156,7 @@ void Teleport::RenderSpirit(DirectX::XMFLOAT3 const& _pos, int _teamId)
 {
   DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the eight vertices below, which each called them afresh.
+  // Hoisted out of the eight vertices below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);

@@ -190,8 +190,7 @@ void ResearchItem::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  // Camera's accessors are still legacy -- Species belongs to T22 -- so these
-  // convert on the way in rather than at each of the sixteen vertices below.
+  // Hoisted out of the sixteen vertices below rather than fetched at each.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -409,8 +408,6 @@ bool ResearchItem::IsInView()
   if (Building::IsInView())
     return true;
 
-  // PosInViewFrustum still takes a Vector3 -- Camera belongs to T22 -- and the
-  // XMFLOAT3 converts on the way in through the seam.
   DirectX::XMFLOAT3 const eyeLevelPos(m_pos.x, m_pos.y + g_camera->GetPos().y, m_pos.z);
   if (g_camera->PosInViewFrustum(eyeLevelPos))
   {

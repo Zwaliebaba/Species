@@ -130,7 +130,6 @@ void Officer::RenderSpirit(DirectX::XMFLOAT3 const& _pos)
 {
   DirectX::XMFLOAT3 pos = _pos;
 
-  // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   DirectX::XMVECTOR const camUpAxis = DirectX::XMLoadFloat3(&cameraUp);
@@ -1009,7 +1008,6 @@ void OfficerOrders::Render(float _time)
     size *= fraction;
   }
 
-  // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
 

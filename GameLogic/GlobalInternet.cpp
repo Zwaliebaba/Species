@@ -385,8 +385,6 @@ void GlobalInternet::RenderPackets()
   // Advance / render all packets
 
   float packetSize = 30.0f;
-  // CameraAccess::GetRight and GetUp still return Vector3 -- they are pure
-  // virtuals, so they move with their implementors in T12/T22, not here.
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), packetSize);

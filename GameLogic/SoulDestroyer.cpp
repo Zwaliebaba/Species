@@ -684,8 +684,7 @@ void SoulDestroyer::RenderSpirit(DirectX::XMFLOAT3 const& _pos, float _alpha)
 {
   DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the eight vertices below, which each called them afresh.
+  // Hoisted out of the eight vertices below, which each called them afresh.
   DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();

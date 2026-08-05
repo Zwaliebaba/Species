@@ -260,7 +260,6 @@ void FenceSwitch::RenderConnection(DirectX::XMFLOAT3 _targetPos, bool _active)
   DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&_targetPos);
   DirectX::XMVECTOR const alongLink = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
   DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
@@ -432,7 +431,6 @@ void FenceSwitch::RenderLights()
 
         float signalSize = 6.0f;
 
-        // Camera's accessors are still legacy -- Species belongs to T22.
         DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
         DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
         DirectX::XMVECTOR const camR = DirectX::XMLoadFloat3(&camRightStore);
@@ -517,7 +515,6 @@ bool FenceSwitch::IsInView()
       float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
       radius += m_radius;
 
-      // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
       if (g_camera->SphereInViewFrustum(midPoint, radius))
       {
         return true;
@@ -539,7 +536,6 @@ bool FenceSwitch::IsInView()
       float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
       radius += m_radius;
 
-      // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
       if (g_camera->SphereInViewFrustum(midPoint, radius))
       {
         return true;

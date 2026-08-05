@@ -103,7 +103,6 @@ bool SpawnBuilding::IsInView()
 
   // Determine visibility
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(m_visibilityMidpoint, m_visibilityRadius);
 }
 
@@ -112,8 +111,7 @@ void SpawnBuilding::RenderSpirit(DirectX::XMFLOAT3 const& _pos)
 {
   DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the eight vertices below, which each called them afresh.
+  // Hoisted out of the eight vertices below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -163,7 +161,6 @@ void SpawnBuilding::RenderAlphas(float _predictionTime)
       DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&theirPosStore);
       DirectX::XMVECTOR const alongLink = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-      // Camera's accessors are still legacy -- Species belongs to T22.
       DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
       DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
@@ -700,7 +697,6 @@ void SpawnPoint::RenderAlphas(float _predictionTime)
 {
   SpawnBuilding::RenderAlphas(_predictionTime);
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -778,7 +774,6 @@ void SpawnPoint::RenderPorts()
 
     float size = 6.0f;
 
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);

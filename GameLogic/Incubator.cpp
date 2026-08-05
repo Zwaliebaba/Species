@@ -285,7 +285,6 @@ void Incubator::RenderAlphas(float _predictionTime)
 
     DirectX::XMVECTOR const midPoint = DirectX::XMVectorScale(DirectX::XMVectorAdd(fromPos, toPos), 0.5f);
 
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
     DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), midPoint);
     DirectX::XMVECTOR const rightAngle =

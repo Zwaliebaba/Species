@@ -526,7 +526,6 @@ void GunTurret::RenderPorts()
     // Render the status light
 
     float size = 6.0f;
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);

@@ -109,7 +109,6 @@ bool MineBuilding::IsInView()
     float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirCentre, ourCentre))) / 2.0f;
     radius += m_radius;
 
-    // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
     if (g_camera->SphereInViewFrustum(midPoint, radius))
     {
       return true;
@@ -124,9 +123,8 @@ void MineBuilding::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. These three
-  // are unused below and kept only because removing them is not this task's
-  // business; they were unused before the migration too.
+  // These three are unused below and kept only because removing them is not
+  // this task's business; they were unused before the migration too.
   Vector3 camPos = g_camera->GetPos();
   Vector3 camFront = g_camera->GetFront();
   Vector3 camUp = g_camera->GetUp();
@@ -269,7 +267,6 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
     DirectX::XMFLOAT3 cartPos;
     DirectX::XMStoreFloat3(&cartPos, cartPosVec);
 
-    // PosInViewFrustum still takes a Vector3 -- Camera belongs to T22.
     if (g_camera->PosInViewFrustum(cartPos))
     {
       DirectX::XMVECTOR const cartFront = DirectX::XMVector3Normalize(
@@ -288,7 +285,6 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
       DirectX::XMVECTOR const cartLinkRight = DirectX::XMLoadFloat3(&cartLinkRightStore);
 
       // START_PROFILE(g_profiler, "RenderLines" );
-      // Camera's accessors are still legacy -- Species belongs to T22.
       DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
       DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), 0.5f);
 

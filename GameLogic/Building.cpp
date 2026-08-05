@@ -373,7 +373,6 @@ void Building::RenderLights()
 
         float signalSize = 6.0f;
 
-        // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
         DirectX::XMFLOAT3 const camR = g_camera->GetRight();
         DirectX::XMFLOAT3 const camU = g_camera->GetUp();
 

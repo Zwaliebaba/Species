@@ -313,8 +313,6 @@ bool EntityLeg::RenderPixelEffect(float _predictionTime, DirectX::XMFLOAT3 const
     DirectX::XMVECTOR const up = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(knee, foot));
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Cross(up, DirectX::g_XMIdentityR0), up, foot));
-    // RendererAccess still takes a legacy matrix -- it converts in T12,
-    // behind T22 -- so Matrix34's implicit conversion carries this across.
     g_renderer->MarkUsedCells(m_shapeLower, mat);
   }
 

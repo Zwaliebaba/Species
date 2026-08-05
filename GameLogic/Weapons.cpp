@@ -168,9 +168,7 @@ void ThrowableWeapon::Render(float _predictionTime)
   float flashAlpha = 1.0f - ((GetHighResTime() - m_birthTime) - numFlashes);
   if (flashAlpha < 0.2f)
   {
-    // CameraAccess's getters still return Vector3 -- T12/T22 own them -- so these
-    // copy-initialise through the seam before they can be loaded. Hoisted out of
-    // the eight vertex expressions that each called one.
+    // Hoisted out of the eight vertex expressions that each called one.
     DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
@@ -744,7 +742,6 @@ void Laser::Render(float predictionTime)
 
   DirectX::XMVECTOR const midPoint = DirectX::XMVectorAdd(fromPos, DirectX::XMVectorScale(DirectX::XMVectorSubtract(toPos, fromPos), 0.5f));
 
-  // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it.
   DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
   DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), midPoint);
   float camDistSqd = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(camToMidPoint));
@@ -926,8 +923,7 @@ void Shockwave::Render(float predictionTime)
 
   if (m_size - predictedLife < 1.0f)
   {
-    // CameraAccess's getters still return Vector3 -- T12/T22 own them. Hoisted
-    // out of the eight vertex expressions that each called one.
+    // Hoisted out of the eight vertex expressions that each called one.
     DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
@@ -1027,7 +1023,6 @@ void MuzzleFlash::Render(float _predictionTime)
 
   DirectX::XMVECTOR const midPoint = DirectX::XMVectorAdd(fromPos, DirectX::XMVectorScale(DirectX::XMVectorSubtract(toPos, fromPos), 0.5f));
 
-  // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it.
   DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
   DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), midPoint);
 

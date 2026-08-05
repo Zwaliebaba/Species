@@ -118,7 +118,6 @@ void ReceiverBuilding::RenderAlphas(float _predictionTime)
     DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&theirPosStore);
     DirectX::XMVECTOR const alongLink = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
     DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
@@ -282,8 +281,7 @@ void ReceiverBuilding::RenderUnprocessedSpirit(DirectX::XMFLOAT3 const& _pos, fl
 {
   DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the quads below, which each called them afresh.
+  // Hoisted out of the quads below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -354,8 +352,7 @@ void ReceiverBuilding::RenderUnprocessedSpirit_basic(DirectX::XMFLOAT3 const& _p
 {
   DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the quads below, which each called them afresh.
+  // Hoisted out of the quads below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -404,8 +401,7 @@ void ReceiverBuilding::RenderUnprocessedSpirit_detail(DirectX::XMFLOAT3 const& _
 {
   DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the quads below, which each called them afresh.
+  // Hoisted out of the quads below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -786,7 +782,6 @@ void SpiritReceiver::RenderPorts()
     // Render the status light
 
     float size = 6.0f;
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);

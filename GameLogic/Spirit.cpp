@@ -313,7 +313,6 @@ void Spirit::Render(float predictionTime)
   DirectX::XMVECTOR predictedPos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), predictionTimeVec, DirectX::XMLoadFloat3(&m_pos));
   predictedPos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hover), predictionTimeVec, predictedPos);
 
-  // GetUp and GetRight still return Vector3 until T12/T22; the seam converts.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);

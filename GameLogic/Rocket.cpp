@@ -131,8 +131,6 @@ bool FuelBuilding::IsInView()
 
     radius += m_radius;
 
-    // CameraAccess::SphereInViewFrustum still takes Vector3 -- T12/T22 own it --
-    // so the seam converts on the way in.
     return (g_camera->SphereInViewFrustum(midPoint, radius));
   }
   else
@@ -192,8 +190,6 @@ void FuelBuilding::RenderAlphas(float _predictionTime)
 
       DirectX::XMVECTOR const midPos = DirectX::XMVectorScale(DirectX::XMVectorAdd(startPos, endPos), 0.5f);
 
-      // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it -- so this
-      // local copy-initialises through the seam before it can be loaded.
       DirectX::XMFLOAT3 const camPos = g_camera->GetPos();
 
       // operator^ was the cross product; SetLength is normalise-then-scale.
@@ -734,7 +730,6 @@ void FuelStation::RenderAlphas(float _predictionTime)
       DirectX::XMVECTOR theirPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 200.0f, 0.0f, 0.0f));
       theirPos = DirectX::XMVectorMultiplyAdd(screenFront, DirectX::XMVectorReplicate(30.0f), theirPos);
 
-      // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it.
       DirectX::XMFLOAT3 const camPos = g_camera->GetPos();
       DirectX::XMVECTOR const camToTheirPos = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPos), theirPos);
 
@@ -1488,8 +1483,6 @@ void EscapeRocket::RenderAlphas(float _predictionTime)
 
   if (alpha > 0.0f)
   {
-    // CameraAccess::GetUp and GetRight still return Vector3 -- T12/T22 own them
-    // -- so these copy-initialise through the seam before being loaded.
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
     DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);

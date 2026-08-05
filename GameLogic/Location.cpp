@@ -1657,10 +1657,10 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
 }
 
 
-// The Vector3 locals below feed RaySphereIntersection's out-pointer and
-// CameraAccess::Get2DScreenPos, neither of which converts before T12 and the
-// MathUtils task that does not yet exist. The seam handles the reference
-// arguments; the pointer is what has to stay legacy. See T18's notes.
+// The Vector3 locals below feed RaySphereIntersection's out-pointer, which is
+// the last thing here that has not converted -- directxmath-migration T28 owns
+// that signature and every caller. The seam handles the reference arguments;
+// the pointer is what has to stay legacy.
 int Location::GetUnitId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 const& direction, unsigned char team, float* _range)
 {
   if (team == 255)

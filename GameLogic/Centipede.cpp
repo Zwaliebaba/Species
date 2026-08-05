@@ -743,7 +743,6 @@ bool Centipede::IsInView()
   DirectX::XMFLOAT3 centre;
   DirectX::XMStoreFloat3(&centre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_centrePos)));
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(centre, m_radius);
 }
 
