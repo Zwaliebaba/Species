@@ -624,7 +624,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    status: in_progress
 
   - id: T7
     title: Retire the SAFE_DELETE and SAFE_FREE macros
