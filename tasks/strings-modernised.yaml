@@ -270,8 +270,61 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - Owner runs the Garden smoke test — every step renders text, so a broken format shows immediately
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE 2026-08-05. NOT COMPILED — Linux, no MSVC; the seven Python checks
+      are the whole of the local evidence.
+
+      THE DESIGN THE NOTES BELOW ASKED FOR, built as described: two overloads
+      per entry point, not one. What they did not settle is how to keep the two
+      unambiguous, and the answer is that THE FORMATTING TEMPLATE TAKES AT
+      LEAST ONE ARGUMENT:
+
+        template <typename T, typename... Args>
+        void DrawText2D(..., std::format_string<T, Args...> _fmt, T&& _arg, Args&&...)
+        void DrawText2D(..., std::string_view _text)
+
+      With only the text, the template is not viable and the plain overload
+      takes the call. A single `format_string<Args...>` template would have
+      been ambiguous against the string_view overload for every zero-argument
+      call, and 147 of the 199 sites are zero-argument.
+
+      THE POPULATIONS, re-measured at 17b0778 with a parser rather than a grep,
+      over 199 real call sites. The old count of 225 included commented-out
+      code and TextRenderer's own declarations:
+
+        128  runtime string, no arguments   -> plain overload, source unchanged
+         52  literal format, with arguments -> formatting template, format
+                                               string rewritten
+         19  literal, no arguments          -> plain overload, source unchanged
+
+      92 format strings were rewritten across 29 files, counting commented-out
+      calls, which were converted too so they do not read as valid printf.
+
+      NO ZERO-ARGUMENT LITERAL CONTAINS A PERCENT SIGN. Checked before anything
+      moved, and it is the fact that makes the split safe: those 19 calls stop
+      being format strings entirely, so a `%` in one would have changed what is
+      drawn. There is none.
+
+      THE SPEC SET CONTAINED NO BARE %f, which is the one conversion that would
+      have changed output silently — printf's %f is six decimals and
+      std::format's {} is shortest-round-trip. Every float site already carried
+      an explicit precision:
+
+        %d x66  %s x21  %2.2f x12  %4.0f x4  %.1f x3  %.0f x2  %2.1f  %2.0f  %%
+
+      Translated by a converter that RAISES on anything it does not model
+      rather than guessing; it raised on nothing. Two of its rules are worth
+      keeping if this is repeated: a padded %s must become {:>N}, because
+      printf right-justifies strings and std::format left-justifies them, and a
+      literal brace has to be doubled.
+
+      TWO ENTRY POINTS WERE VARIADIC AND IGNORED THEIR ARGUMENTS. DrawText2DUp
+      and DrawText2DDown declared `char const* _text, ...` and their bodies
+      never called va_start — they drew the format string as it stood. Any
+      caller passing an argument would have printed "%d". No caller did, so
+      nothing changes; the declarations simply stop lying.
+
       Split out of T3 on 2026-08-03, on the measurement in T3's notes.
 
       The trap here is not the template. It is that printf and std::format
