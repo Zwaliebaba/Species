@@ -2011,10 +2011,17 @@ tasks:
       when picking this up.
 
       STILL LEGACY: Weapons (103 occurrences), Rocket (77), Spam (36),
-      Airstrike (29), TaskManager (21), Flag (17). 329 in total when this
-      started, of which 46 are done — ParticleSystem, Explosion and Spirit.
-      Spirit also lost its nine AsLegacy uses, which the seam count in
+      Airstrike (29), TaskManager (21). 329 in total when this started, of
+      which 63 are done — ParticleSystem, Explosion, Spirit and Flag. Spirit
+      also lost its nine AsLegacy uses, which the seam count in
       _restart-directxmath.md tracks.
+
+      ONE MORE SCRIPTED-CONVERSION HAZARD, from Spirit: replacing every
+      occurrence of an identical block puts duplicate declarations in any
+      function that contains two of them. Spirit::Render draws two quads
+      differing only in size and got two `sizeVec` declarations in one scope.
+      No check here can see it — only the compiler. Scan for repeated local
+      names per function after any block-level replacement.
 
       WHAT PARTICLESYSTEM COST, so the next eight are cheaper:
         - Particle's constructor assigns nothing, so m_pos and m_vel needed
