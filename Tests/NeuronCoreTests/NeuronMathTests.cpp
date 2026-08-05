@@ -733,9 +733,11 @@ namespace NeuronCoreTests
         Vector3 legacy(0.0f, 0.0f, 0.0f);
         legacy.Normalise();
 
-        AssertNearlyEqual(0.0f, legacy.x);
-        AssertNearlyEqual(0.0f, legacy.y);
-        AssertNearlyEqual(1.0f, legacy.z);
+        // Exact, not nearly: the fallback assigns the literals 0, 0 and 1
+        // rather than computing them, so there is no arithmetic to absorb.
+        Assert::AreEqual(0.0f, legacy.x);
+        Assert::AreEqual(0.0f, legacy.y);
+        Assert::AreEqual(1.0f, legacy.z);
 
         DirectX::XMVECTOR const native = DirectX::XMVector3Normalize(DirectX::XMVectorZero());
 
