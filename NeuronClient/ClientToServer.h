@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "TeamControls.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 // TeamControls.h is included rather than forward-declared: SendIAmAlive takes it
 // by const reference, which a declaration would satisfy, but the declaration used
@@ -66,11 +66,11 @@ class ClientToServer
 
     void RequestSelectUnit(unsigned char _teamId, int _unitId, int _entityId, int _buildingId);
     void RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, int _buildingId);
-    void RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, Vector3 const& _pos);
-    void RequestAimBuilding(unsigned char _teamId, int _buildingId, Vector3 const& _pos);
+    void RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, DirectX::XMFLOAT3 const& _pos);
+    void RequestAimBuilding(unsigned char _teamId, int _buildingId, DirectX::XMFLOAT3 const& _pos);
     void RequestToggleFence(int _buildingId);
     void RequestRunProgram(unsigned char _teamId, unsigned char _program);
-    void RequestTargetProgram(unsigned char _teamId, unsigned char _program, Vector3 const& _pos);
+    void RequestTargetProgram(unsigned char _teamId, unsigned char _program, DirectX::XMFLOAT3 const& _pos);
 
     void SendSyncronisation(int _lastProcessedId, unsigned char _sync);
     void SendIAmAlive(unsigned char _teamId, TeamControls const& _teamControls);

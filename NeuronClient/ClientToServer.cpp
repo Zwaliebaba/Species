@@ -403,7 +403,7 @@ void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _tro
 }
 
 
-void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, Vector3 const& _pos)
+void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _troopType, int _numToCreate, DirectX::XMFLOAT3 const& _pos)
 {
   auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::UpdateType::CreateUnit);
@@ -416,7 +416,7 @@ void ClientToServer::RequestCreateUnit(unsigned char _teamId, unsigned char _tro
 }
 
 
-void ClientToServer::RequestAimBuilding(unsigned char _teamId, int _buildingId, Vector3 const& _pos)
+void ClientToServer::RequestAimBuilding(unsigned char _teamId, int _buildingId, DirectX::XMFLOAT3 const& _pos)
 {
   auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::UpdateType::AimBuilding);
@@ -446,7 +446,7 @@ void ClientToServer::RequestRunProgram(unsigned char _teamId, unsigned char _pro
 }
 
 
-void ClientToServer::RequestTargetProgram(unsigned char _teamId, unsigned char _program, Vector3 const& _pos)
+void ClientToServer::RequestTargetProgram(unsigned char _teamId, unsigned char _program, DirectX::XMFLOAT3 const& _pos)
 {
   auto letter = std::make_unique<NetworkUpdate>();
   letter->SetType(NetworkUpdate::UpdateType::TargetProgram);

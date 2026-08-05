@@ -739,14 +739,11 @@ bool SoundInstance::Update3DPosition()
 
   case Type3DAttachedToObject:
   {
-    // Native storage with the seam at the call, rather than the other way
-    // round: LocationAccess::GetSoundSource still takes Vector3* out-pointers
-    // — a virtual signature cannot move ahead of its implementors, and its
-    // implementor is GameLogic's Location — so &AsLegacy is what bridges that
-    // until directxmath-migration T12 lands.
+    // Braced to zero: GetSoundSource leaves both untouched when the object
+    // has gone, and the branch below reads m_pos rather than these.
     DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 vel{0.0f, 0.0f, 0.0f};
-    if (!ResolveAttachedObject() || !g_locationAccess->GetSoundSource(m_objId, &AsLegacy(pos), &AsLegacy(vel)))
+    if (!ResolveAttachedObject() || !g_locationAccess->GetSoundSource(m_objId, &pos, &vel))
     {
       m_positionType = Type3DStationary;
       m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -1041,12 +1038,10 @@ bool SoundInstance::ResolveAttachedObject()
           for (int i = 0; i < static_cast<int>(m_objIds.size()); ++i)
           {
             WorldObjectId* id = m_objIds[i];
-            // &AsLegacy for the same reason as above: GetSoundSource takes
-            // Vector3 out-pointers until T12.
             DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
             DirectX::XMFLOAT3 vel{0.0f, 0.0f, 0.0f};
             // The pruning above removed every dead id, so this resolves.
-            if (!g_locationAccess->GetSoundSource(*id, &AsLegacy(pos), &AsLegacy(vel)))
+            if (!g_locationAccess->GetSoundSource(*id, &pos, &vel))
               continue;
             DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
             float distance = DirectX::XMVectorGetX(

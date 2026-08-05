@@ -944,8 +944,25 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
+      DONE, immediately after T22 and in one small commit, exactly as the
+      shrink below predicted. Three signatures moved:
+      LocationAccess::GetSoundSource with Location's override, and
+      ClientToServer's RequestCreateUnit, RequestAimBuilding and
+      RequestTargetProgram.
+
+      IT REMOVED SEAM USES RATHER THAN ADDING ANY, which is what a task at the
+      end of a wave should do: four &AsLegacy calls in SoundInstance.cpp, two
+      in EntityGridTests.cpp and three in LocationInput.cpp, all of them added
+      by earlier tasks with a comment naming this one. Every caller was already
+      holding native storage.
+
+      THE SEAM DID THE REST. The three ClientToServer parameters are ordinary
+      by-value ones, so nothing that passes a Vector3 to them had to change --
+      which is the property the task was written around and, unlike the virtual
+      case below, actually holds.
+
       This is the task the seam was built for. Because XMFLOAT3 and Vector3 are
       layout-identical and T1 makes them convert implicitly, an interface can
       change signature while every implementor and caller stays as it is —
@@ -2436,8 +2453,11 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
+      DONE. The keystone commit landed as mapped -- see the tail of these notes
+      for what the map got right and what it got wrong.
+
       RE-SCOPED BEFORE STARTING, 2026-08-05, on a measurement rather than
       after a red build. This task gains four headers from T12.
 
@@ -2504,6 +2524,49 @@ tasks:
       their GetClickRay locals now. That is the same relationship T16 had with
       T15 and T17, and it is handled the same way: repair them here, leave the
       rest of their conversion to T20.
+
+      WHAT THE MAP GOT WRONG, recorded because the next task will map the same
+      way. It over-counted the repairs by about half.
+
+      THE SEAM IS BIDIRECTIONAL FOR VALUES, and the map assumed it was not.
+      Vector3 has a non-explicit CONSTRUCTOR from XMFLOAT3 as well as a
+      conversion OPERATOR to it, so `Vector3 v = g_camera->GetPos()` and
+      `SomethingTakingVector3Const(nativeValue)` both keep compiling when a
+      getter's return type moves. What breaks is only what the earlier tasks
+      already knew breaks: ARITHMETIC on the result, because XMFLOAT3 has no
+      operators, and POINTERS, because a conversion is not consulted through
+      one. Of the twelve repair files the map listed, five needed nothing:
+      Location, Team, SporeGenerator and two others read the getters into
+      typed locals and were carried across by the constructor.
+
+      SO THE REAL REPAIR LIST WAS: the five window files' GetClickRay locals,
+      GlobalWorld's six GetClickRay calls -- which SIMPLIFIED, dropping twelve
+      &AsLegacy uses -- ParticleSystem's `GetUp() * size`, LaserTrooper's
+      `GetFront() * m_front` dot product, and SoundInstance's three arithmetic
+      sites. Nine edits, not twelve files.
+
+      THREE MATRIX33 CONVENTIONS HAD TO BE PINNED AT THE SITE, and only one of
+      them was already written down. RotateAroundX/Y/Z(a) applied as `v * mat`
+      rotates v by +a; FastRotateAround(n, a) and RotateAround(n, a) rotate the
+      matrix's three basis ROWS by +a, which transposes into rotating a vector
+      by MINUS a. AdvanceDebugMode and AdvanceFirstPersonMode each use one of
+      each, so the yaw keeps its sign and the pitch flips it. Both spellings
+      compile and both are rotations. This is the third distinct Matrix33 trap
+      this plan has found and the first that is not in NeuronMath.h -- it is
+      commented at the two sites instead, because it is a fact about the legacy
+      class rather than about the convention the tree is moving to.
+
+      TWO ZERO-LENGTH FALLBACKS WERE REPRODUCED, each commented at the site per
+      the standard T15 set: Camera::SetTarget(focus, distance, height) and
+      GameCursor's offscreen selection arrow both SetLength a difference that
+      is zero when the camera sits on the point it is looking at, and the QNaN
+      would reach m_targetPos. Four other Normalise sites took the native
+      behaviour.
+
+      THE COMMENTS WERE THE OTHER HALF OF THE JOB. Thirty-seven files carried a
+      note saying these getters were still legacy and that T22 or T12 would
+      convert them. They landed in a separate comment-only commit rather than
+      being left to rot.
 
   - id: T23
     title: Convert the app, script and server-update code

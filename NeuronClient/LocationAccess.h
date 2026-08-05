@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 #include "WorldObjectId.h"
 
 // What the layers below GameLogic ask the loaded world.
@@ -53,7 +53,7 @@ class LocationAccess
     // than its origin, which used to be a `((Building*)obj)->m_centrePos` cast
     // in SoundInstance. That rule is the world's knowledge about its own
     // objects, so it lives on this side of the seam.
-    virtual bool GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* _vel) = 0;
+    virtual bool GetSoundSource(WorldObjectId const& _id, DirectX::XMFLOAT3* _pos, DirectX::XMFLOAT3* _vel) = 0;
 };
 
 // The world currently loaded, or null between levels and in a test DLL.

@@ -55,14 +55,11 @@ void LocationInput::AdvanceRadarDishControl(Building* _building)
     if (building && building->m_type == Building::TypeRadarDish && building != _building)
     {
       RadarDish* dish = (RadarDish*)building;
-      // ClientToServer still takes Vector3 const&; directxmath-migration T12
-      // owns that signature and removes these three AsLegacy calls with it.
-      g_app->m_clientToServer->RequestAimBuilding(g_globalWorld->m_myTeamId, _building->m_id.GetUniqueId(), AsLegacy(dish->GetStartPoint()));
+      g_app->m_clientToServer->RequestAimBuilding(g_globalWorld->m_myTeamId, _building->m_id.GetUniqueId(), dish->GetStartPoint());
     }
     else
     {
-      g_app->m_clientToServer->RequestAimBuilding(g_globalWorld->m_myTeamId, _building->m_id.GetUniqueId(),
-                                                  AsLegacy(TheUserInput()->GetMousePos3d()));
+      g_app->m_clientToServer->RequestAimBuilding(g_globalWorld->m_myTeamId, _building->m_id.GetUniqueId(), TheUserInput()->GetMousePos3d());
     }
   }
 }
@@ -308,7 +305,7 @@ void LocationInput::AdvanceTeamControl()
     if (g_inputManager->controlEvent(ControlUnitCreate))
     {
       DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
-      g_app->m_clientToServer->RequestTargetProgram(g_globalWorld->m_myTeamId, g_taskManager->m_currentTaskId, AsLegacy(mousePos));
+      g_app->m_clientToServer->RequestTargetProgram(g_globalWorld->m_myTeamId, g_taskManager->m_currentTaskId, mousePos);
     }
   }
 

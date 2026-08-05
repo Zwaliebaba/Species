@@ -118,19 +118,13 @@ float Location::GroundHeight(float _worldX, float _worldZ)
 bool Location::WorldObjectExists(WorldObjectId const& _id) { return GetWorldObject(_id) != nullptr; }
 
 
-// STAYS LEGACY UNTIL T12 -- this overrides LocationAccess::GetSoundSource, and
-// an override must match its base exactly. See the note in Location.h.
-bool Location::GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* _vel)
+bool Location::GetSoundSource(WorldObjectId const& _id, DirectX::XMFLOAT3* _pos, DirectX::XMFLOAT3* _vel)
 {
   WorldObject* object = GetWorldObject(_id);
   if (!object)
     return false;
 
   // A building is heard from its centre. Everything else from where it is.
-  // Both branches are native now that Building has converted, so the
-  // ternary picks XMFLOAT3 and the seam converts on assignment. It needed
-  // the opposite repair one commit ago -- that is what a half-converted
-  // tree looks like from a file that reads both sides of it.
   *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : object->m_pos;
   *_vel = object->m_vel;
   return true;
