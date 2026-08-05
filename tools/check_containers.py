@@ -121,7 +121,7 @@ def main() -> int:
         print(
             f"\n{len(failures)} finding(s). These are compile errors; the check exists so you "
             "find them in a second rather than after a full Windows build.\n"
-            "See tasks/containers-replaced.yaml."
+            "See tasks/Archive/containers-replaced.yaml."
         )
         return 1
 

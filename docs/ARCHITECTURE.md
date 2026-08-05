@@ -75,7 +75,7 @@ This is the layer furthest through modernisation: `FileSys`, `Debug` and
 `NeuronHelper` are fully Neuron-style, and `Server.cpp` is partly converted.
 
 **It has no upward includes left**, down from thirty when
-`tasks/neuroncore-layering.yaml` was written. What is left is the door rather
+`tasks/Archive/neuroncore-layering.yaml` was written. What is left is the door rather
 than the violations: `NeuronCore.vcxproj` still lists `NeuronClient`, `Species`
 and `GameLogic` in `AdditionalIncludeDirectories`, so a new upward include would
 still compile. Closing that, and linking a `Server.exe` that ticks, is T10.
@@ -187,7 +187,7 @@ they free the storage layer's container choice. This is deliberately **not**
 part of the modernisation plans: it changes the wire format and the entity
 update order, both frozen while behaviour must not change, and slot-index
 resolution is hot-path O(1) where a tree map is not. What the plans do now is
-keep the swap cheap: `Neuron::SlotMap` (`tasks/containers-replaced.yaml` T3)
+keep the swap cheap: `Neuron::SlotMap` (`tasks/Archive/containers-replaced.yaml` T3)
 exposes a narrow handle-in/reference-out API so no caller does raw index
 arithmetic, leaving the eventual identity change one bounded edit rather than
 a tree-wide hunt.

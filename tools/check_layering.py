@@ -18,7 +18,7 @@ against the files actually on disk.
 
 **The check is strict.** Any upward include anywhere fails it. There is no
 allowlist and no way to record an exception — tools/layering_allowlist.txt held
-628 inherited violations when tasks/layering-inversion.yaml started and zero when
+628 inherited violations when tasks/Archive/layering-inversion.yaml started and zero when
 it finished, and the file was deleted rather than left empty so that nobody can
 reopen it by adding a line. If a change needs an upward include, the change is
 wrong: move the shared declaration down into a layer both sides can see, or
@@ -238,7 +238,7 @@ def main() -> int:
         print(
             "\nMove the shared declaration down into a layer both sides may see, or"
             "\ninvert the dependency with an interface. There is no allowlist to add"
-            "\nthese to; see tasks/layering-inversion.yaml for fifteen worked examples."
+            "\nthese to; see tasks/Archive/layering-inversion.yaml for fifteen worked examples."
         )
 
     links = find_link_violations()

@@ -91,7 +91,7 @@ Landed and CI-verified on `claude/migration-restart-plan-i69so0`:
 | `ownership` T3 | unique_ptr across six NeuronClient subsystems |
 | `ownership` T9 | `EclRegisterWindow` takes ownership in its signature |
 
-Plus `tasks/determinism.yaml` (new), the `strings-modernised` re-scope, and
+Plus `tasks/Archive/determinism.yaml` (new), the `strings-modernised` re-scope, and
 `ownership` T8/T9 split out of T3.
 
 **Six defects surfaced that were nobody's task**, four fixed and two preserved

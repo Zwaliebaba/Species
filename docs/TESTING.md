@@ -223,7 +223,7 @@ GameLogic.lib(WorldObject.obj) : error LNK2001:
     unresolved external symbol "class App * g_app"
 ```
 
-That wall is down. `tasks/layering-inversion.yaml` T8 and T14 moved the
+That wall is down. `tasks/Archive/layering-inversion.yaml` T8 and T14 moved the
 subsystem pointers, the application state and the `App`-only actions into
 `NeuronClient`, and T15 moved the world model — `Location`, `Team`, `Unit`, the
 grids, the routing system, the landscape — out of `Species` and into
@@ -243,7 +243,7 @@ can be built and queried against an empty `Location`, but `GetNeighbours`
 resolves each id through `Location::GetEntity`, and a `TypeGroundPos` waypoint
 samples the landscape heightmap — both need a level file, a landscape and
 populated teams. A fixture that loads one is the next step, and it belongs with
-`tasks/containers-replaced.yaml` T12, which needs exactly that to prove slot
+`tasks/Archive/containers-replaced.yaml` T12, which needs exactly that to prove slot
 identity survives the conversion.
 
 ---

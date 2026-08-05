@@ -1,5 +1,19 @@
 # The next implementation batch
 
+> **SUPERSEDED AS A PROPOSAL, KEPT AS A RECORD — 2026-08-05.** Batch 1 was
+> executed: `directxmath/T19` is done on CI 513, `ownership/T4` on CI 514, and
+> `strings/T8` was measured and released unstarted with a re-scope written into
+> its plan entry. The owner gate ran and closed `directxmath/T21` and
+> `determinism/T2` together, exactly as argued below.
+>
+> **Batch 2 was NOT what this file proposed, and the reason is instructive.**
+> This file put `strings/T12` and `T11` second because T21 was outstanding and
+> T22/T23 were blocked. Closing the gate made T22/T23 ready, and `strings/T12`
+> — whose declared file list is two files but whose real blast radius is 44 —
+> turned out to collide with them over six Species files. Batch 2 became
+> `directxmath` T22 + T23 instead. Every count and every "what is ready" table
+> below is therefore a snapshot of `a2d78c6`, not of the tree.
+
 Written 2026-08-05 at `a2d78c6`, the merge that closed the T19 partial run. This
 is a proposal, not a plan — the plans are the ten YAML files beside it and none
 of them changes here. It answers one question: **of everything that is ready,
@@ -200,7 +214,7 @@ what a document says.
 
 **1. `AGENTS.md` points at a completed task for work that is still owed.** The
 test-suite bullet says entity and building behaviour is "finally testable —
-nobody has written those tests yet, which is `tasks/layering-inversion.yaml`
+nobody has written those tests yet, which is `tasks/Archive/layering-inversion.yaml`
 T11." T11 is **done**: it landed with T15 and wrote ten tests. The observation
 behind the sentence is still true — `EntityGridTests` covers spatial indexing
 and `RoutingSystemTests` covers waypoint ordering, and neither is entity or
@@ -213,7 +227,7 @@ gap or give it a task. It should not keep naming T11.
 dependent paths, and `LandscapeRenderer::GetLandscapeColour` reseeding the
 simulation RNG from rendering code. Both are written up as *Known issues*, both
 are explicitly not modernisation work, and `_restart-directxmath.md` says the
-second "belongs in `tasks/determinism.yaml` once somebody establishes what it
+second "belongs in `tasks/Archive/determinism.yaml` once somebody establishes what it
 costs". `determinism.yaml` has two tasks and one of them is an owner gate, so
 the file is effectively idle and is the right home. **Scoping them is a reading
 task, doable on Linux, and it is the prerequisite either way** — neither can be

@@ -5,7 +5,8 @@ still the orientation document. This file answers "where did the math migration
 get to, and what do I do next".
 
 The plan is [`directxmath-migration.yaml`](directxmath-migration.yaml) and it is
-still the plan. **18 of its 28 tasks are done.** Everything below is either
+still the plan. **20 of its 28 tasks are done** (2026-08-05: T19 landed and
+T21, the owner's Garden run, closed with it).** Everything below is either
 recorded in a task's `notes` or reproducible from the commands quoted here.
 (It was 27 until 2026-08-05, when the first of the two gaps below became T28.)
 
@@ -34,7 +35,7 @@ entities, buildings, creatures, world, landscape and routing all compute on
 | T24 | the tests |
 
 **What is left in GameLogic is T19 and T20**; `Species/` is untouched, which is
-T22–T23. `--next` offers only T19 today. T28 (added 2026-08-05) closes the
+T22–T23, and T22 is in progress. `--next` offers T22 and T23 today. T28 (added 2026-08-05) closes the
 first of the two gaps below and sits between T20/T22 and the deletion.
 
 **T19 IS SEVEN NINTHS DONE, and its `notes` are the handover.** ParticleSystem,
@@ -177,8 +178,11 @@ native counterpart. That is what lets a converted file compile against an
 unconverted API. **T25 deletes all of it**, and until T25 lands the migration is
 not finished however good the intermediate state looks.
 
-`grep -rl AsLegacy` is the live worklist: **23 files** carry one today, and
-56 of the individual uses are in `Weapons.cpp`.
+`grep -rl AsLegacy` is the live worklist: **19 files** carry one today and
+there are **113 uses** between them. Count USES, not matching lines — the two
+differ because several lines carry more than one, and this file said 23/56 when
+it meant lines. Weapons.cpp held 71 of them until T19 converted it; it now
+holds exactly one, `Landscape::RayHit`'s out-pointer, which is T28's.
 
 Signatures deliberately still legacy, all commented in place:
 
@@ -239,7 +243,7 @@ an initialiser, and a rename that left a use behind.
 ## One open question
 
 **`LandscapeRenderer::GetLandscapeColour` reseeds the simulation RNG from
-rendering code.** Predates this plan. Belongs in `tasks/determinism.yaml` once
+rendering code.** Predates this plan. Belongs in `tasks/Archive/determinism.yaml` once
 somebody establishes what it costs.
 
 ---
