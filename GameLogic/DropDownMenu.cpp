@@ -90,7 +90,7 @@ DropDownMenu::~DropDownMenu() { Empty(); }
 
 void DropDownMenu::Empty()
 {
-  EmptyAndDelete(m_options);
+  m_options.clear();
   m_nextValue = 0;
 
   SelectOption(-1);
@@ -105,7 +105,7 @@ void DropDownMenu::AddOption(char const* _word, int _value)
     m_nextValue++;
   }
 
-  DropDownOptionData* option = new DropDownOptionData(_word, _value);
+  auto option = std::make_unique<DropDownOptionData>(_word, _value);
 
   if (m_sortItems)
   {
@@ -118,11 +118,11 @@ void DropDownMenu::AddOption(char const* _word, int _value)
         break;
       }
     }
-    m_options.insert(m_options.begin() + i, option);
+    m_options.insert(m_options.begin() + i, std::move(option));
   }
   else
   {
-    m_options.push_back(option);
+    m_options.push_back(std::move(option));
   }
 }
 

@@ -149,7 +149,7 @@ void Building::SetDetail(int _detail)
     m_centrePos = m_shape->CalculateCentre(mat);
     m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 
-    EmptyAndDelete(m_ports);
+    m_ports.clear();
     SetShapePorts(m_shape->m_rootFragment.get());
   }
   else
@@ -213,7 +213,7 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
     ShapeMarker* marker = _fragment->m_childMarkers[i].get();
     if (strstr(marker->m_name, "MarkerPort"))
     {
-      BuildingPort* port = new BuildingPort();
+      auto port = std::make_unique<BuildingPort>();
       port->m_marker = marker;
       // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
       // the conversion to XMFLOAT4X4 happens on assignment. From here the rows
@@ -233,7 +233,7 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
         port->m_counter[t] = 0;
       }
 
-      m_ports.push_back(port);
+      m_ports.push_back(std::move(port));
     }
   }
 
@@ -431,7 +431,7 @@ void Building::EvaluatePorts()
 {
   for (int i = 0; i < GetNumPorts(); ++i)
   {
-    BuildingPort* port = m_ports[i];
+    BuildingPort* port = m_ports[i].get();
     // port->m_mat = port->m_marker->GetWorldMatrix(buildingMat);
     port->m_occupant.SetInvalid();
 
@@ -686,7 +686,7 @@ WorldObjectId Building::GetPortOccupant(int _portId)
 {
   if (ValidIndex(m_ports, _portId))
   {
-    BuildingPort* port = m_ports[_portId];
+    BuildingPort* port = m_ports[_portId].get();
     return port->m_occupant;
   }
 
@@ -698,7 +698,7 @@ bool Building::GetPortPosition(int _portId, DirectX::XMFLOAT3& _pos, DirectX::XM
 {
   if (ValidIndex(m_ports, _portId))
   {
-    BuildingPort* port = m_ports[_portId];
+    BuildingPort* port = m_ports[_portId].get();
     _pos = DirectX::XMFLOAT3(port->m_mat._41, port->m_mat._42, port->m_mat._43);
     _front = DirectX::XMFLOAT3(port->m_mat._31, port->m_mat._32, port->m_mat._33);
     return true;
@@ -712,7 +712,7 @@ void Building::OperatePort(int _portId, int _teamId)
 {
   if (ValidIndex(m_ports, _portId))
   {
-    BuildingPort* port = m_ports[_portId];
+    BuildingPort* port = m_ports[_portId].get();
     port->m_counter[_teamId]++;
     port->m_counter[_teamId] = std::min(port->m_counter[_teamId], 50);
   }
@@ -723,7 +723,7 @@ int Building::GetPortOperatorCount(int _portId, int _teamId)
 {
   if (ValidIndex(m_ports, _portId))
   {
-    BuildingPort* port = m_ports[_portId];
+    BuildingPort* port = m_ports[_portId].get();
     return port->m_counter[_teamId];
   }
 

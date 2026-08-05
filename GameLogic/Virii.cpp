@@ -140,7 +140,8 @@ Virii::Virii()
 }
 
 
-Virii::~Virii() { EmptyAndDelete(m_positionHistory); }
+// m_positionHistory owns its elements now, so the vector's destructor is enough.
+Virii::~Virii() = default;
 
 bool Virii::Advance(Unit* _unit)
 {
@@ -289,7 +290,7 @@ void Virii::RecordHistoryPosition(bool _required)
 
   DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
 
-  ViriiHistory* history = new ViriiHistory();
+  auto history = std::make_unique<ViriiHistory>();
   history->m_pos = m_pos;
   DirectX::XMStoreFloat3(&history->m_right,
                          DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(ourPos, DirectX::XMLoadFloat3(&prevPos)),
@@ -310,7 +311,7 @@ void Virii::RecordHistoryPosition(bool _required)
   }
 
 
-  m_positionHistory.insert(m_positionHistory.begin(), history);
+  m_positionHistory.insert(m_positionHistory.begin(), std::move(history));
 
   float totalDistance = 0.0f;
   int removeFrom = -1;
@@ -318,7 +319,7 @@ void Virii::RecordHistoryPosition(bool _required)
   float tailLength = 175.0f; // - (entityDetail-1) * 50.0f;
   for (int i = 0; i < static_cast<int>(m_positionHistory.size()); ++i)
   {
-    ViriiHistory* history = m_positionHistory[i];
+    ViriiHistory* history = m_positionHistory[i].get();
     totalDistance += history->m_distance;
 
     if (totalDistance > tailLength)
@@ -332,9 +333,9 @@ void Virii::RecordHistoryPosition(bool _required)
   {
     while (ValidIndex(m_positionHistory, removeFrom))
     {
-      ViriiHistory* history = m_positionHistory[removeFrom];
+      // erase destroys the unique_ptr, so the element frees inside the same
+      // statement the explicit delete used to follow.
       m_positionHistory.erase(m_positionHistory.begin() + removeFrom);
-      delete history;
     }
   }
 
@@ -946,7 +947,7 @@ void Virii::Render(float predictionTime, int teamId, int _detail)
 
   for (int i = 0; i < lastIndex; i++)
   {
-    ViriiHistory* history = m_positionHistory[i];
+    ViriiHistory* history = m_positionHistory[i].get();
 
     if (!history->m_required)
     {
