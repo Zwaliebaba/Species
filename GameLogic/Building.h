@@ -180,6 +180,11 @@ class BuildingPort
   public:
     ShapeMarker* m_marker;
     WorldObjectId m_occupant;
-    DirectX::XMFLOAT4X4 m_mat;
+    // Identity by default, for the reason spelled out on ShapeMarker::m_transform.
+    // SetShapePorts assigns all sixteen floats before the port is published, so
+    // unlike that one this is not a live bug -- but the class is constructed with
+    // `new BuildingPort()` and read through raw row numbers, and the fourth column
+    // is exactly the one nobody remembers to write.
+    DirectX::XMFLOAT4X4 m_mat{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
     int m_counter[NUM_TEAMS];
 };

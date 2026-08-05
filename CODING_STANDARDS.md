@@ -387,8 +387,9 @@ Simulation code is `GameLogic/`, plus the world, entity, team and physics code i
 `tasks/directxmath-migration.yaml` is replacing the inherited `Vector3`,
 `Matrix34` and friends with `DirectX::XMFLOAT3`, `XMFLOAT4X4` and `XMVECTOR`.
 These rules apply to converted code today rather than when the migration
-finishes. The first three are properties of the native types; the last three
-were learned by converting GameLogic and cost a red CI round each:
+finishes. The first four are properties of the native types; the last three were
+learned by converting GameLogic and cost a red CI round each. The fourth cost
+something worse — it reached a player, twice over, from one uninitialised field:
 
 - **The `*Est` family is banned in simulation code.** `XMVector3NormalizeEst`,
   `XMVectorReciprocalEst` and the rest are explicitly permitted to differ
@@ -402,8 +403,16 @@ were learned by converting GameLogic and cost a red CI round each:
   Anything that accumulates into a converted member, or reads it before its
   first write, changed behaviour silently — give every converted member an
   explicit initialiser. `tools/check_math_types.py` reports the ones that lack
-  one, and this is the only failure mode on its list that neither the compiler
-  nor CI can see.
+  one. This and the rule below it are the failure modes on its list that neither
+  the compiler nor CI can see, which is why the checker exists.
+- **`XMFLOAT4X4` is WIDER than `Matrix34` was, and the extra column is real.**
+  `Matrix34` held twelve floats and its `ToNative()` supplied `(0,0,0,1)` for
+  the fourth column it did not have. Nothing supplies it now. A writer that
+  fills the old twelve — the shape-file marker parser was one — leaves `_14`,
+  `_24`, `_34` and `_44` holding stack garbage, and `XMMatrixMultiply` reads all
+  sixteen, so a junk `_44` multiplies the parent translation into the result.
+  That shipped as markers at roughly -1e12. **When a converted type is wider
+  than the one it replaced, audit every writer, not just every reader.**
 - **The zero-length fallbacks are gone, and each site decides.**
   `Vector3::Normalise` answered a zero-length input with `(0,0,1)` and
   `SetLength` with `(len,0,0)`; `XMVector3Normalize` answers with zero or QNaN.
