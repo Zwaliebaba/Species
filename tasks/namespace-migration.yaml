@@ -83,7 +83,7 @@ tasks:
     notes: >
       Large mechanical churn — land as several commits grouped by subsystem
       (sound, input, UI, rendering, resources) within the one task.
-    status: todo
+    status: in_progress
 
   - id: T3
     title: Bring NeuronServer fully into namespace Neuron
