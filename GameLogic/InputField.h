@@ -12,56 +12,55 @@
 // This widget provides an editable text box where the user can type in numbers
 // or short strings
 
-class InputField: public BorderlessButton
+class InputField : public BorderlessButton
 {
-public:
-	char	m_buf[256];
+  public:
+    char m_buf[256];
 
-	enum
-	{
-		TypeNowt,
-		TypeChar,
-		TypeInt,
-		TypeFloat,
-		TypeString
-	};
+    enum
+    {
+      TypeNowt,
+      TypeChar,
+      TypeInt,
+      TypeFloat,
+      TypeString
+    };
 
-	int		m_type;
+    int m_type;
 
-	unsigned char	*m_char;
-	int		        *m_int;
-	float	        *m_float;
-	char	        *m_string;
+    unsigned char* m_char;
+    int* m_int;
+    float* m_float;
+    char* m_string;
 
-	int				m_inputBoxWidth;
+    int m_inputBoxWidth;
 
-	float			m_lowBound;
-	float			m_highBound;
+    float m_lowBound;
+    float m_highBound;
 
-    SpeciesButton *m_callback;
+    SpeciesButton* m_callback;
 
-public:
-	InputField();
+  public:
+    InputField();
 
-	virtual void Render		( int realX, int realY, bool highlighted, bool clicked );
-	virtual void MouseUp    ();
-	virtual void Keypress	( int keyCode, bool shift, bool ctrl, bool alt );
+    virtual void Render(int realX, int realY, bool highlighted, bool clicked);
+    virtual void MouseUp();
+    virtual void Keypress(int keyCode, bool shift, bool ctrl, bool alt);
 
-	// These functions allow you to register a piece of storage with the button, such that
-	// the button's value is written back to the storage whenever the user changes the
-	// button's value
-	void RegisterChar		(unsigned char *);
-	void RegisterInt		(int *);
-	void RegisterFloat		(float *);
-	void RegisterString		(char *);
+    // These functions allow you to register a piece of storage with the button, such that
+    // the button's value is written back to the storage whenever the user changes the
+    // button's value
+    void RegisterChar(unsigned char*);
+    void RegisterInt(int*);
+    void RegisterFloat(float*);
+    void RegisterString(char*);
 
-	void ClampToBounds		();
+    void ClampToBounds();
 
-    void SetCallback        (SpeciesButton *button);              // This button will be clicked on Refresh
+    void SetCallback(SpeciesButton* button); // This button will be clicked on Refresh
 
-	void Refresh			();	// Updates the display if the registered variable has changed
+    void Refresh(); // Updates the display if the registered variable has changed
 };
-
 
 
 // ****************************************************************************
@@ -70,20 +69,18 @@ public:
 
 class InputScroller : public SpeciesButton
 {
-public:
-    InputField *m_inputField;
-    float       m_change;
-    float		m_mouseDownStartTime;
+  public:
+    InputField* m_inputField;
+    float m_change;
+    float m_mouseDownStartTime;
 
-public:
-
+  public:
     InputScroller();
 
-	void Render     ( int realX, int realY, bool highlighted, bool clicked );
-    void MouseDown  ();
-    void MouseUp    ();
+    void Render(int realX, int realY, bool highlighted, bool clicked);
+    void MouseDown();
+    void MouseUp();
 };
-
 
 
 // ****************************************************************************
@@ -92,20 +89,19 @@ public:
 
 class ColourWidget : public SpeciesButton
 {
-public:
-    SpeciesButton *m_callback;
-    int *m_value;
+  public:
+    SpeciesButton* m_callback;
+    int* m_value;
 
-public:
+  public:
     ColourWidget();
 
-	void Render     ( int realX, int realY, bool highlighted, bool clicked );
-    void MouseUp    ();
+    void Render(int realX, int realY, bool highlighted, bool clicked);
+    void MouseUp();
 
-    void SetValue           (int *value);
-    void SetCallback        (SpeciesButton *button);              // This button will be clicked on Refresh
+    void SetValue(int* value);
+    void SetCallback(SpeciesButton* button); // This button will be clicked on Refresh
 };
-
 
 
 // ****************************************************************************
@@ -114,18 +110,16 @@ public:
 
 class ColourWindow : public SpeciesWindow
 {
-public:
-    SpeciesButton *m_callback;
-    int *m_value;
+  public:
+    SpeciesButton* m_callback;
+    int* m_value;
 
-public:
-    ColourWindow( char const *_name );
+  public:
+    ColourWindow(char const* _name);
 
-    void SetValue           (int *value);
-    void SetCallback        (SpeciesButton *button);              // This button will be clicked on Refresh
+    void SetValue(int* value);
+    void SetCallback(SpeciesButton* button); // This button will be clicked on Refresh
 
     void Create();
-    void Render( bool hasFocus );
+    void Render(bool hasFocus);
 };
-
-
