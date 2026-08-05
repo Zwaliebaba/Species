@@ -2466,6 +2466,45 @@ tasks:
       Location in GameLogic, which T18 converted and deliberately left legacy.
       That is the one pairing this task does not complete.
 
+      THE KEYSTONE COMMIT IS T16-SCALE, measured 2026-08-05 before writing any
+      code. The sixteen virtuals and their sixteen overrides must move in ONE
+      commit, and so must every call site that stops compiling when they do.
+      Mapped rather than discovered:
+
+      CORE, all in one commit and not splittable:
+        NeuronClient/CameraAccess.h  RendererAccess.h  GameCursorAccess.h
+        UserInputAccess.h
+        Species/Camera.h .cpp   Renderer.h .cpp   GameCursor.h .cpp
+        Species/UserInput.h .cpp
+
+      REPAIRS THE SAME COMMIT MUST CARRY, twelve of them OUTSIDE this task's
+      file list:
+        GameLogic/BuildingsWindow.cpp  CheatWindow.cpp  InstantUnitWindow.cpp
+        GameLogic/LandscapeWindow.cpp  TreeWindow.cpp   -- all five are T20's
+        GameLogic/GlobalWorld.cpp  Location.cpp  LaserTrooper.cpp
+        GameLogic/ParticleSystem.cpp  SporeGenerator.cpp  Team.cpp
+        NeuronClient/SoundInstance.cpp
+
+      TWO SHAPES BREAK, and both are compile errors rather than silent:
+
+      1. GetClickRay's OUT-POINTERS, ~28 call sites. It takes Vector3* and the
+         seam converts by reference, so it does nothing through an address --
+         failure mode 7. Sites holding a Vector3 local must convert the local;
+         sites already holding an XMFLOAT3 pass &AsLegacy(x) today and SIMPLIFY
+         to &x, which is this commit removing seam uses rather than adding them.
+
+      2. ARITHMETIC ON A GETTER'S RESULT. XMFLOAT3 has no operators, so
+         `g_camera->GetUp() * size` and `(g_camera->GetPos() - pos).Mag()` stop
+         compiling. Nine sites across LaserTrooper, GlobalWorld, ParticleSystem
+         and SoundInstance. Note LaserTrooper's `g_camera->GetFront() * m_front`
+         is the DOT product, not a scale.
+
+      T20'S FIVE WINDOW FILES ARE THE AWKWARD PART. T20 depends on T22, so they
+      convert later -- but they will not COMPILE unless this commit repairs
+      their GetClickRay locals now. That is the same relationship T16 had with
+      T15 and T17, and it is handled the same way: repair them here, leave the
+      rest of their conversion to T20.
+
   - id: T23
     title: Convert the app, script and server-update code
     intent: >
