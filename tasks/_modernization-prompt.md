@@ -5,6 +5,16 @@ Copy everything below the rule into a fresh agent session on this repository
 changes. The figures embedded in it were measured on 2026-08-02 at `b69c951`;
 the prompt instructs the agent to re-measure rather than trust them.
 
+> **THIS PROMPT HAS BEEN RUN AND THE PLANS IT PRODUCED ARE ALL FINISHED.**
+> Eleven plans, 147 tasks, every one `done` or `abandoned`, all in
+> `tasks/Archive/` as of 2026-08-05. Its statements about what is open —
+> including "stages 3–5 are open" below — describe 2026-08-02 and nothing
+> since. Do not re-run it against the current tree expecting the same survey:
+> the containers, the strings, the ownership, the enums, the namespaces and the
+> math types have all been converted. It is kept as the worked example of what
+> a planning prompt has to specify, and because AGENTS.md's *How work is broken
+> down* points at this shape for the next one.
+
 ---
 
 You are working in the **Species** repository, a ~113k-line C++23 Windows game

@@ -46,7 +46,7 @@ namespace Species
           fd->FileSelected(filename);
         }
 
-        EclRemoveWindow(m_parent->m_name.c_str());
+        EclRemoveWindow(m_parent->m_name);
       }
   };
 
@@ -128,7 +128,7 @@ namespace Species
 
   class FileCancelButton : public SpeciesButton
   {
-      void MouseUp() { EclRemoveWindow(m_parent->m_name.c_str()); }
+      void MouseUp() { EclRemoveWindow(m_parent->m_name); }
   };
 
 
@@ -215,8 +215,7 @@ namespace Species
 
     for (int i = 0; i < numRows; ++i)
     {
-      char name[32];
-      sprintf(name, "File %d", i);
+      const std::string name = std::format("File {}", i);
       FileButton* button = new FileButton(i);
       button->SetProperties(name, 5, 25 + i * 13, m_w - 25, 12, " ", " ");
       RegisterButton(button);

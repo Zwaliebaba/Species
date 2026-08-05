@@ -18,7 +18,7 @@ namespace Species
       void MouseUp()
       {
         g_requestQuit = true;
-        EclRemoveWindow(m_parent->m_name.c_str());
+        EclRemoveWindow(m_parent->m_name);
       }
   };
 

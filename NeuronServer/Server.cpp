@@ -122,8 +122,8 @@ namespace Neuron
     {
       if (m_clients.ValidIndex(i))
       {
-        char* thisIP = m_clients[i]->GetIP();
-        if (strcmp(thisIP, _ip) == 0)
+        std::string_view const thisIP = m_clients[i]->GetIP();
+        if (thisIP == _ip)
           return i;
       }
     }

@@ -18,9 +18,8 @@ namespace Species
   {
     public:
       DropDownOptionData(const char* _word, int _value);
-      ~DropDownOptionData();
 
-      char* m_word;
+      std::string m_word;
       int m_value;
   };
 
@@ -109,14 +108,16 @@ namespace Species
   class DropDownMenuOption : public BorderlessButton
   {
     public:
-      char* m_parentWindowName;
-      char* m_parentMenuName;
+      // std::string since strings-modernised T9. Both were char* via NewStr and
+      // NULL until SetParentMenu ran — and Render and MouseUp handed them
+      // straight to EclGetWindow, which compares them against a std::string.
+      std::string m_parentWindowName;
+      std::string m_parentMenuName;
       //    int     m_menuIndex;
       int m_value; // An integer that the client specifies - often a value from an enum
 
     public:
       DropDownMenuOption();
-      ~DropDownMenuOption();
 
       void SetParentMenu(EclWindow* _window, DropDownMenu* _menu, int _value);
 

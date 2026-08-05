@@ -65,10 +65,16 @@ subject matter no longer exists.
 **When a plan has no task left in `todo`, `in_progress` or `blocked`, move it to
 `tasks/Archive/`.** That keeps `tasks/` to the plans someone might still pick
 up. Archived plans are still LOADED by `check_task_dag.py` and still resolve
-`blocked_by` — forty-three such edges point into them as of 2026-08-05, and an
-edge into a plan the loader cannot see is an unresolvable reference rather than
-a satisfied one. They are not validated or reported by default, because a
-finished plan does not need re-listing on every run.
+`blocked_by` — **all 65 such edges point into them as of 2026-08-05**, because
+every plan is now archived, and an edge into a plan the loader cannot see is an
+unresolvable reference rather than a satisfied one. They are not validated or
+reported by default, because a finished plan does not need re-listing on every
+run.
+
+> **As of 2026-08-05 `tasks/` holds no plan at all.** Eleven are in `Archive/`,
+> every task in every one of them `done` or `abandoned`, and what is left beside
+> `Archive/` is `_template.yaml` and the reading orders. The next piece of work
+> starts by writing a plan, not by picking one up.
 
 **Archiving is not one-way.** A finished plan whose subject turns out to have
 unowned work in it comes back out of `Archive/` with that work as new tasks
@@ -81,6 +87,10 @@ scoping tasks. The rule is the same in both directions — a plan lives in
 Moving a plan means updating the paths that name it. `grep -rn
 'tasks/<plan>.yaml'` across `*.md`, `*.py` and `.github/` finds them; fourteen
 files needed it for the first six, and four for `determinism` coming back.
+**Run it after archiving, not before** — archiving `strings-modernised` left six
+stale paths behind across `AGENTS.md`, `check_hygiene.py` and two of the reading
+orders, none of which any check catches: a path in prose is a string, and
+nothing validates it.
 
 ---
 

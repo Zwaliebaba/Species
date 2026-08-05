@@ -317,7 +317,7 @@ namespace Species
     for (char& c : m_title)
       c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
 
-    EclSetCurrentFocus(m_name.c_str());
+    EclSetCurrentFocus(m_name);
   }
 
   SpeciesWindow::~SpeciesWindow()
@@ -329,7 +329,7 @@ namespace Species
     // bounds check. std::vector would be undefined behaviour on an empty list.
     if (!windows->empty() && (*windows)[0])
     {
-      EclSetCurrentFocus((*windows)[0]->m_name.c_str());
+      EclSetCurrentFocus((*windows)[0]->m_name);
     }
   }
 
@@ -654,7 +654,7 @@ namespace Species
 
       if (g_inputManager->controlEvent(ControlType::ControlMenuClose) && !g_atMainMenu)
       {
-        EclRemoveWindow(m_name.c_str());
+        EclRemoveWindow(m_name);
       }
     }
   }
@@ -693,7 +693,7 @@ namespace Species
   {
   }
 
-  void CloseButton::MouseUp() { EclRemoveWindow(m_parent->m_name.c_str()); }
+  void CloseButton::MouseUp() { EclRemoveWindow(m_parent->m_name); }
 
 
   void CloseButton::Render(int realX, int realY, bool highlighted, bool clicked)

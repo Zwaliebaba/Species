@@ -50,13 +50,11 @@ namespace Species
     for (int i = 0; i < 3; ++i)
     {
       m_beingReprogrammed[i] = false;
-      char markerName[64];
+      const std::string reprogrammerName = std::format("MarkerReprogrammer{}", i);
+      m_reprogrammer[i] = m_shape->m_rootFragment->LookupMarker(reprogrammerName.c_str());
 
-      sprintf(markerName, "MarkerReprogrammer%d", i);
-      m_reprogrammer[i] = m_shape->m_rootFragment->LookupMarker(markerName);
-
-      sprintf(markerName, "MarkerConsole%d", i);
-      m_console[i] = m_shape->m_rootFragment->LookupMarker(markerName);
+      const std::string consoleName = std::format("MarkerConsole{}", i);
+      m_console[i] = m_shape->m_rootFragment->LookupMarker(consoleName.c_str());
     }
 
     if (!s_dishShape)
@@ -528,7 +526,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%6d", m_controlBuildingId);
+    _out->printf("{:6d}", m_controlBuildingId);
   }
 
   int ControlTower::GetBuildingLink() { return m_controlBuildingId; }

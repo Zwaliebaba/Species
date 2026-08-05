@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "SphereRenderer.h"
@@ -89,18 +90,22 @@ namespace Species
       int m_type;
       int m_id;
       int m_locationId;
-      char* m_stringId; // Brief description
-      char* m_cutScene; // Filename of cutscene to run
+      // std::string since strings-modernised T9, the last two members
+      // AGENTS.md listed as raw ownership this plan owned. Both were char* via
+      // NewStr, and the copy constructor below passed them STRAIGHT TO strlen —
+      // so copying a condition that had never been given a string was a crash.
+      // Empty means absent, which is what nullptr meant: the writer skips the
+      // field either way, and the reader only ever sets a real token.
+      std::string m_stringId; // Brief description
+      std::string m_cutScene; // Filename of cutscene to run
 
     public:
       GlobalEventCondition();
-      GlobalEventCondition(const GlobalEventCondition& _other);
-      ~GlobalEventCondition();
 
       bool Evaluate();
 
-      void SetStringId(char const* _stringId);
-      void SetCutScene(char* _cutScene);
+      void SetStringId(std::string_view _stringId);
+      void SetCutScene(std::string_view _cutScene);
 
       void Save(FileWriter* _out);
 

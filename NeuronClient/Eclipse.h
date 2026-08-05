@@ -26,18 +26,21 @@ namespace Neuron
 
   // Both take ownership. The window list holds it from here on.
   void EclRegisterWindow(std::unique_ptr<EclWindow> window, EclWindow* parent = nullptr);
-  void EclRemoveWindow(char const* name);
+  void EclRemoveWindow(std::string_view name);
   void EclRegisterPopup(std::unique_ptr<EclWindow> window);
   void EclRemovePopup();
 
-  // char const*, not char*, since strings-modernised T11: its only caller
-  // passes EclWindow::m_name, which is a std::string now.
-  void EclBringWindowToFront(char const* name);
-  void EclSetWindowPosition(char const* name, int x, int y);
-  void EclSetWindowSize(char const* name, int w, int h);
+  // Every name below is only ever COMPARED against EclWindow::m_name or copied
+  // into one of this module's std::string statics — none of them reaches a C
+  // API — so they are string_view since strings-modernised T13. That is what
+  // retires the .c_str() every caller wrote after T11 made m_name a
+  // std::string.
+  void EclBringWindowToFront(std::string_view name);
+  void EclSetWindowPosition(std::string_view name, int x, int y);
+  void EclSetWindowSize(std::string_view name, int w, int h);
 
-  int EclGetWindowIndex(char const* name); // -1 = failure
-  EclWindow* EclGetWindow(char const* name);
+  int EclGetWindowIndex(std::string_view name); // -1 = failure
+  EclWindow* EclGetWindow(std::string_view name);
   EclWindow* EclGetWindow(int x, int y);
 
   bool EclMouseInWindow(EclWindow* window);
@@ -46,16 +49,20 @@ namespace Neuron
 
   void EclRegisterTooltipCallback(void (*_callback)(EclWindow*, EclButton*));
 
-  void EclMaximiseWindow(char const* name);
+  void EclMaximiseWindow(std::string_view name);
   void EclUnMaximise();
 
+  // The three accessors below still return char const*, deliberately: they hand
+  // back a pointer into a static this module reassigns, and narrowing a return
+  // to string_view preserves that lifetime bug rather than fixing it. See
+  // CODING_STANDARDS.md, Strings.
   char const* EclGetCurrentButton();
   char const* EclGetCurrentClickedButton();
 
   char const* EclGetCurrentFocus();
-  void EclSetCurrentFocus(const char* name);
+  void EclSetCurrentFocus(std::string_view name);
 
-  char const* EclGenerateUniqueWindowName(char const* name); // In static mem (don't delete!)
+  char const* EclGenerateUniqueWindowName(std::string_view name); // In static mem (don't delete!)
   std::vector<std::unique_ptr<EclWindow>>* EclGetWindows();
 
   // ============================================================================

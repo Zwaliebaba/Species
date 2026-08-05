@@ -86,14 +86,12 @@ namespace Species
 
     if (!success)
     {
-      char caption[512];
-      sprintf(caption,
-              "Failed to set requested screen resolution of\n"
-              "%d x %d, %d bit colour, %s\n\n"
-              "Restored to safety settings of\n"
-              "640 x 480, 16 bit colour, windowed",
-              m_screenW, m_screenH, colourDepth, windowed ? "windowed" : "fullscreen");
-      auto owned = std::make_unique<MessageDialog>("Error", caption);
+      const std::string caption = std::format("Failed to set requested screen resolution of\n"
+                                              "{} x {}, {} bit colour, {}\n\n"
+                                              "Restored to safety settings of\n"
+                                              "640 x 480, 16 bit colour, windowed",
+                                              m_screenW, m_screenH, colourDepth, windowed ? "windowed" : "fullscreen");
+      auto owned = std::make_unique<MessageDialog>("Error", caption.c_str());
       MessageDialog* dialog = owned.get();
       EclRegisterWindow(std::move(owned));
       dialog->m_x = 100;

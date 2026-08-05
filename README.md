@@ -55,7 +55,7 @@ What to test and where it goes: [`docs/TESTING.md`](docs/TESTING.md).
 Start with [`AGENTS.md`](AGENTS.md) — it covers the current priority, the layering
 rules, and what to run before pushing. Then:
 
-- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — style, and the modernisation plan
+- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — style, ownership, strings and determinism
 - [`docs/TESTING.md`](docs/TESTING.md) — what earns a test, and what a test may touch
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the layers fit together
 - [`docs/TASK_DAG.md`](docs/TASK_DAG.md) — how work is broken down

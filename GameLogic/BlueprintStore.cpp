@@ -206,7 +206,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_buildingLink);
+    _out->printf("{:<8d}", m_buildingLink);
   }
 
 
@@ -230,15 +230,20 @@ namespace Species
 
   char const* BlueprintStore::GetObjectiveCounter()
   {
-    static char result[256];
+    // Still a function-local static, and so still a buffer every caller
+    // shares — narrowing that is a lifetime change with no owning task. What
+    // went is the unbounded write into 256 bytes of it: a translated phrase
+    // longer than the field used to run off the end.
+    static std::string result;
 
     float totalInfection = 0;
     for (int i = 0; i < BLUEPRINTSTORE_NUMSEGMENTS; ++i)
       totalInfection += m_segments[i];
 
-    sprintf(result, "%s %d%%", LANGUAGEPHRASE("objective_totalinfection"), int(100.0f * totalInfection / float(BLUEPRINTSTORE_NUMSEGMENTS * 100.0f)));
+    result =
+      std::format("{} {}%", LANGUAGEPHRASE("objective_totalinfection"), int(100.0f * totalInfection / float(BLUEPRINTSTORE_NUMSEGMENTS * 100.0f)));
 
-    return result;
+    return result.c_str();
   }
 
 
@@ -621,7 +626,7 @@ namespace Species
   {
     BlueprintBuilding::Write(_out);
 
-    _out->printf("%-8d", m_segment);
+    _out->printf("{:<8d}", m_segment);
   }
 
 
@@ -793,6 +798,6 @@ namespace Species
   {
     BlueprintBuilding::Write(_out);
 
-    _out->printf("%-2.2f", m_altitude);
+    _out->printf("{:<2.2f}", m_altitude);
   }
 } // namespace Species

@@ -219,6 +219,6 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_initialCapacity);
+    _out->printf("{:<8d}", m_initialCapacity);
   }
 } // namespace Species

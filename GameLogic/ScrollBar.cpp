@@ -34,7 +34,7 @@ namespace Species
     m_numRows = numRows;
     m_winSize = winSize;
 
-    EclWindow* parent = EclGetWindow(m_parentWindow.c_str());
+    EclWindow* parent = EclGetWindow(m_parentWindow);
     DEBUG_ASSERT(parent);
 
     // The three button names are derived from the scrollbar's own, and Remove()
@@ -60,7 +60,7 @@ namespace Species
 
   void ScrollBar::Remove()
   {
-    EclWindow* parent = EclGetWindow(m_parentWindow.c_str());
+    EclWindow* parent = EclGetWindow(m_parentWindow);
     if (parent)
     {
       std::string const barName = std::format("{} bar", m_name);
@@ -159,7 +159,7 @@ namespace Species
     {
       DEBUG_ASSERT(m_scrollBar);
 
-      EclWindow* parent = EclGetWindow(m_scrollBar->m_parentWindow.c_str());
+      EclWindow* parent = EclGetWindow(m_scrollBar->m_parentWindow);
       DEBUG_ASSERT(parent);
 
       int barTop = static_cast<int>(parent->m_y + m_y + m_h * (float)m_scrollBar->m_currentValue / (float)m_scrollBar->m_numRows);
@@ -193,7 +193,7 @@ namespace Species
     else
     {
       DEBUG_ASSERT(m_scrollBar);
-      EclWindow* parent = EclGetWindow(m_scrollBar->m_parentWindow.c_str());
+      EclWindow* parent = EclGetWindow(m_scrollBar->m_parentWindow);
       DEBUG_ASSERT(parent);
       int mouseY = g_target->Y();
       int barTop = static_cast<int>(m_parent->m_y + m_y + m_h * (float)m_scrollBar->m_currentValue / (float)m_scrollBar->m_numRows);

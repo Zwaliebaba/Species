@@ -23,6 +23,12 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 // because the point is to pin what the game writes and not what printf can do.
 // Two tests feed a real format synthetic values — an over-long name and an
 // empty one — to pin the edges of the padding rather than only its middle.
+//
+// T17 has landed, and the FORMAT SPELLINGS below moved with it — "%4d" is
+// "{:4d}" now, because FileWriter no longer has a variadic entry point to call.
+// NOT ONE EXPECTED STRING CHANGED, which is the whole proof: the same bytes
+// come out of std::format that came out of vsprintf, field widths included. The
+// diff is the evidence and it is worth reading as one.
 namespace NeuronClientTests
 {
   namespace
@@ -94,7 +100,7 @@ namespace NeuronClientTests
         ScopedWriterHome home;
         {
           FileWriter out("locations.txt", false);
-          out.printf("\t%4d %4d %30s %40s\n", 2, 1, "MapGarden.txt", "MissionGardenLiberate.txt");
+          out.printf("\t{:4d} {:4d} {:>30} {:>40}\n", 2, 1, "MapGarden.txt", "MissionGardenLiberate.txt");
         }
 
         // 4 and 4 wide for the two integers, then 30 and 40 wide RIGHT-aligned
@@ -110,7 +116,7 @@ namespace NeuronClientTests
         ScopedWriterHome home;
         {
           FileWriter out("locations.txt", false);
-          out.printf("\t%4d %4d %30s %40s\n", 10000, 1, "MapAnExcessivelyLongLocationName.txt", "null");
+          out.printf("\t{:4d} {:4d} {:>30} {:>40}\n", 10000, 1, "MapAnExcessivelyLongLocationName.txt", "null");
         }
 
         // printf's width is a MINIMUM, so an over-long value pushes the row
@@ -126,7 +132,7 @@ namespace NeuronClientTests
         ScopedWriterHome home;
         {
           FileWriter out("locations.txt", false);
-          out.printf("[%30s]\n", "");
+          out.printf("[{:>30}]\n", "");
         }
 
         Assert::AreEqual(std::string("[                              ]\n"), home.Read("locations.txt"));
@@ -141,9 +147,9 @@ namespace NeuronClientTests
         ScopedWriterHome home;
         {
           FileWriter out("map.txt", false);
-          out.printf("\tlandColourFile %s\n", "LandscapeDefault.bmp");
-          out.printf("\twavesColourFile %s\n", "WavesDefault.bmp");
-          out.printf("\twaterColourFile %s\n", "WaterDefault.bmp");
+          out.printf("\tlandColourFile {}\n", "LandscapeDefault.bmp");
+          out.printf("\twavesColourFile {}\n", "WavesDefault.bmp");
+          out.printf("\twaterColourFile {}\n", "WaterDefault.bmp");
         }
 
         Assert::AreEqual(std::string("\tlandColourFile LandscapeDefault.bmp\n"
@@ -157,8 +163,8 @@ namespace NeuronClientTests
         ScopedWriterHome home;
         {
           FileWriter out("map.txt", false);
-          out.printf("\tcellSize %.2f\n", 4.0f);
-          out.printf("\toutsideHeight %.2f\n", -1.75f);
+          out.printf("\tcellSize {:.2f}\n", 4.0f);
+          out.printf("\toutsideHeight {:.2f}\n", -1.75f);
         }
 
         // %.2f is fixed rather than shortest-round-trip, so the trailing zeros
@@ -195,6 +201,44 @@ namespace NeuronClientTests
         // header is the whole difference between the two paths, and it belongs
         // in a test rather than in a reader's memory.
         Assert::AreEqual(std::string("Landscape_StartDefinition\n"), home.Read("map.txt"));
+      }
+
+      // ---------------------------------------------------------------------
+      // What the T17 split changed. Both of these were undefined behaviour
+      // through the variadic entry point and are ordinary now.
+      // ---------------------------------------------------------------------
+
+      TEST_METHOD(APercentSignInTextWithNoArgumentsIsAPercentSign)
+      {
+        ScopedWriterHome home;
+        {
+          FileWriter out("map.txt", false);
+          out.printf("\tname 100% Complete\n");
+        }
+
+        // The plain overload takes this call because the formatting template
+        // needs at least one argument, so the text is text. Through the
+        // variadic printf it replaced, that "% C" was a conversion
+        // specification reading an argument that was never passed.
+        Assert::AreEqual(std::string("\tname 100% Complete\n"), home.Read("map.txt"));
+      }
+
+      TEST_METHOD(TextLongerThanTheOldStackBufferIsWrittenWhole)
+      {
+        const std::string longName(20000, 'a');
+
+        ScopedWriterHome home;
+        {
+          FileWriter out("map.txt", false);
+          out.printf(longName);
+        }
+
+        // The entry point this replaced vsprintf'd into a char[10240] on the
+        // stack with no bound, and the encryption loop then followed that write
+        // for `len` bytes. Nothing on the save path bounds a level name, a
+        // shape name or a script filename, so this is the case that used to
+        // corrupt the stack.
+        Assert::AreEqual(longName, home.Read("map.txt"));
       }
 
       TEST_METHOD(TheEncryptionShiftsPrintableBytesAndCarriesItsOffsetAcrossCalls)

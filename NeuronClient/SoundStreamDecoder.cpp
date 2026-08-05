@@ -5,6 +5,7 @@
 
 #include "BinaryStreamReaders.h"
 #include "Debug.h"
+#include "StringUtils.h"
 
 #include "SoundStreamDecoder.h"
 
@@ -19,8 +20,8 @@ namespace Neuron
       m_freq(0),
       m_numSamples(0)
   {
-    char* fileType = _in->GetFileType();
-    if (stricmp(fileType, "wav") == 0)
+    std::string_view const fileType = _in->GetFileType();
+    if (StrEqualsIgnoreCase(fileType, "wav"))
     {
       m_fileType = TypeWav;
       ReadWavHeader();

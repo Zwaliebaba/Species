@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "NeuronMath.h"
 #include "SoundParameter.h"
 #include "WorldObjectId.h"
@@ -157,7 +159,11 @@ namespace Neuron
       ~SoundInstance();
 
       void SetSoundName(char const* _name);
-      void SetEventName(char const* _entityName, char const* _eventName);
+      // Both are only formatted into m_eventName, so both are string_view.
+      // The second stayed char const* through T13 because
+      // SoundEventBlueprint::m_eventName was a NULLABLE char* then; T9 made it
+      // a std::string, so there is no null left to keep it out of a view.
+      void SetEventName(std::string_view _entityName, std::string_view _eventName);
 
       void Copy(SoundInstance* _copyMe);
       bool StartPlaying(int _channelIndex);

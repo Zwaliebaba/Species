@@ -250,6 +250,6 @@ namespace Species
     else
       entityType = Entity::GetTypeName(m_entityType);
 
-    _out->printf("%-6d %-6.2f %s %s", m_linkId, m_range, m_scriptFilename.c_str(), entityType);
+    _out->printf("{:<6d} {:<6.2f} {} {}", m_linkId, m_range, m_scriptFilename.c_str(), entityType);
   }
 } // namespace Species

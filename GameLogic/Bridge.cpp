@@ -165,8 +165,8 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_nextBridgeId);
-    _out->printf("%-8d", m_bridgeType);
+    _out->printf("{:<8d}", m_nextBridgeId);
+    _out->printf("{:<8d}", m_bridgeType);
   }
 
   bool Bridge::ReadyToSend()

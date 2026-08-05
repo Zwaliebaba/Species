@@ -202,10 +202,9 @@ namespace Neuron
   }
 
 
-  void SoundInstance::SetEventName(char const* _entityName, char const* _eventName)
+  void SoundInstance::SetEventName(std::string_view _entityName, std::string_view _eventName)
   {
     DEBUG_ASSERT(m_eventName == nullptr);
-    DEBUG_ASSERT(_entityName && _eventName);
     DEBUG_ASSERT(g_soundSystem);
 
     // Still malloc, because the destructor still free()s it — ownership/T3 is
@@ -533,7 +532,7 @@ namespace Neuron
     m_cachedSampleHandle = nullptr;
     g_deletingCachedSampleHandle = false;
 
-    char* sampleName = m_soundName;
+    char const* sampleName = m_soundName;
     if (m_sourceType == SampleGroupRandom)
     {
       SampleGroup* group = g_soundSystem->GetSampleGroup(m_soundName);
@@ -554,7 +553,7 @@ namespace Neuron
       // (sound preferences, audio device, frame rate), which is exactly why it
       // must not be on the synchronised stream. determinism/T3 has the reading.
       int sampleIndex = speciesRandom() % numSamples;
-      sampleName = group->m_samples[sampleIndex];
+      sampleName = group->m_samples[sampleIndex].c_str();
     }
 
     m_cachedSampleHandle = g_cachedSampleManager.GetSample(sampleName);

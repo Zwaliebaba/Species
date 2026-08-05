@@ -28,9 +28,8 @@ namespace Species
     {
       if (!m_scrollSpawned[i] && g_globalWorld->m_research->HasResearch(i))
       {
-        char markerName[256];
-        sprintf(markerName, "MarkerResearch%02d", i + 1);
-        ShapeMarker* scrollMarker = m_shape->m_rootFragment->LookupMarker(markerName);
+        const std::string markerName = std::format("MarkerResearch{:02}", i + 1);
+        ShapeMarker* scrollMarker = m_shape->m_rootFragment->LookupMarker(markerName.c_str());
         DEBUG_ASSERT(scrollMarker);
 
         DirectX::XMFLOAT4X4 rootMat;

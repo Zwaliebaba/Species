@@ -25,6 +25,7 @@
 #include "Resource.h"
 #include "Script.h"
 #include "SoundSystem.h"
+#include "StringUtils.h"
 #include "TargetCursor.h"
 #include "TaskManager.h"
 #include "TaskManagerInterface.h"
@@ -601,7 +602,7 @@ namespace Species
           for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
           {
             ScreenZone* zone = m_screenZones[i].get();
-            if (stricmp(zone->m_name, "SelectTask") == 0 && zone->m_data == taskIndex)
+            if (Neuron::StrEqualsIgnoreCase(zone->m_name, "SelectTask") && zone->m_data == taskIndex)
             {
               if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
               {
@@ -626,7 +627,7 @@ namespace Species
       ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
       if (currentZone)
       {
-        if (stricmp(currentZone->m_name, "SelectTask") == 0 && ValidIndex(g_taskManager->m_tasks, currentZone->m_data))
+        if (Neuron::StrEqualsIgnoreCase(currentZone->m_name, "SelectTask") && ValidIndex(g_taskManager->m_tasks, currentZone->m_data))
         {
           Task* task = g_taskManager->m_tasks[currentZone->m_data].get();
           m_highlightedTaskId = task->m_id;
@@ -642,7 +643,7 @@ namespace Species
     {
       ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
       if (currentZone)
-        RunScreenZone(currentZone->m_name, currentZone->m_data);
+        RunScreenZone(currentZone->m_name.c_str(), currentZone->m_data);
     }
   }
 
@@ -819,8 +820,8 @@ namespace Species
         gec = objectives[objectiveId].get();
       DEBUG_ASSERT(gec);
 
-      if (gec->m_cutScene)
-        TheScript()->RunScript(gec->m_cutScene);
+      if (!gec->m_cutScene.empty())
+        TheScript()->RunScript(gec->m_cutScene.c_str());
       else
         RunDefaultObjective(gec);
       HideTaskManager();
@@ -929,7 +930,7 @@ namespace Species
       //
       // Render tooltip caption
 
-      float timeRequired = strlen(zone->m_toolTip) / 50.0f;
+      float timeRequired = zone->m_toolTip.size() / 50.0f;
       float timeSoFar = GetHighResTime() - m_screenZoneTimer;
 
       std::string clippedTooltip(zone->m_toolTip);
@@ -952,13 +953,13 @@ namespace Species
         for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
         {
           KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
-          if (stricmp(shortcut->name(), zone->m_name) == 0 && shortcut->data() == zone->m_data)
+          if (Neuron::StrEqualsIgnoreCase(shortcut->name(), zone->m_name) && shortcut->data() == zone->m_data)
           {
             selectedShortcut = shortcut;
             break;
           }
 
-          if (stricmp(shortcut->name(), zone->m_name) == 0 && stricmp(shortcut->name(), "DeleteTask") == 0)
+          if (Neuron::StrEqualsIgnoreCase(shortcut->name(), zone->m_name) && Neuron::StrEqualsIgnoreCase(shortcut->name(), "DeleteTask"))
           {
             // Special case : DeleteTask shortcut key
             selectedShortcut = shortcut;
@@ -2017,7 +2018,7 @@ namespace Species
         GlobalEventCondition* condition = (*objectives)[i].get();
         bool completed = condition->Evaluate();
 
-        char* descriptor = LANGUAGEPHRASE(condition->m_stringId);
+        char* descriptor = LANGUAGEPHRASE(condition->m_stringId.c_str());
 
         g_gameFont.SetRenderOutline(true);
         glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
@@ -2637,14 +2638,14 @@ namespace Species
     ScreenZone* screenZone = nullptr;
 
     return m_currentScreenZone != -1 && g_taskManager->CapacityUsed() < g_taskManager->Capacity() &&
-           (screenZone = m_screenZones[m_currentScreenZone].get()) && strcmp(screenZone->m_name, "NewTask") == 0;
+           (screenZone = m_screenZones[m_currentScreenZone].get()) && screenZone->m_name == "NewTask";
   }
 
   bool TaskManagerInterfaceIcons::AdviseOverSelectableZone()
   {
     ScreenZone* screenZone = nullptr;
 
-    return m_currentScreenZone != -1 && (screenZone = m_screenZones[m_currentScreenZone].get()) && strcmp(screenZone->m_name, "NewTask") != 0;
+    return m_currentScreenZone != -1 && (screenZone = m_screenZones[m_currentScreenZone].get()) && screenZone->m_name != "NewTask";
   }
 
   bool TaskManagerInterfaceIcons::AdviseCloseControlHelp()

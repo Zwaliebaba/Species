@@ -170,7 +170,7 @@ namespace Species
   }
 
 
-  void Flag::RenderText(int _posX, int _posY, char* _caption)
+  void Flag::RenderText(int _posX, int _posY, std::string_view _caption)
   {
     if (_posX < 0 || _posY < 0 || _posX >= FLAG_RESOLUTION || _posY >= FLAG_RESOLUTION)
     {

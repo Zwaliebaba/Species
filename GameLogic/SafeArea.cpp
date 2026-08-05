@@ -171,9 +171,13 @@ bool SafeArea::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 
 
 char const* SafeArea::GetObjectiveCounter()
 {
-  static char result[256];
-  sprintf(result, "%s : %d", LANGUAGEPHRASE("objective_currentcount"), m_entitiesCounted);
-  return result;
+  // Still a function-local static, and so still a buffer every caller
+  // shares — narrowing that is a lifetime change with no owning task. What
+  // went is the unbounded write into 256 bytes of it: a translated phrase
+  // longer than the field used to run off the end.
+  static std::string result;
+  result = std::format("{} : {}", LANGUAGEPHRASE("objective_currentcount"), m_entitiesCounted);
+  return result.c_str();
 }
 
 
@@ -191,8 +195,8 @@ void SafeArea::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  _out->printf("%-6.2f", m_size);
-  _out->printf(" %d", m_entitiesRequired);
-  _out->printf(" %d", m_entityTypeRequired);
+  _out->printf("{:<6.2f}", m_size);
+  _out->printf(" {:d}", m_entitiesRequired);
+  _out->printf(" {:d}", m_entityTypeRequired);
 }
 } // namespace Species

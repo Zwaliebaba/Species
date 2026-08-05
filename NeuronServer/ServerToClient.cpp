@@ -17,7 +17,7 @@ namespace Neuron
   ServerToClient::ServerToClient(char* _ip)
     : m_socket(nullptr)
   {
-    strcpy(m_ip, _ip);
+    m_ip = _ip;
 
     m_socket = new NetSocket();
     NetRetCode retCode = m_socket->Connect(_ip, 4001);
@@ -27,7 +27,7 @@ namespace Neuron
   }
 
 
-  char* ServerToClient::GetIP() { return m_ip; }
+  std::string_view ServerToClient::GetIP() { return m_ip; }
 
 
   NetSocket* ServerToClient::GetSocket() { return m_socket; }

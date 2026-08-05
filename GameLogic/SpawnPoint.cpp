@@ -363,7 +363,7 @@ namespace Species
     for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
     {
       SpawnBuildingLink* link = m_links[i].get();
-      _out->printf("%-6d", link->m_targetBuildingId);
+      _out->printf("{:<6d}", link->m_targetBuildingId);
     }
   }
 
@@ -488,19 +488,23 @@ namespace Species
 
   char const* MasterSpawnPoint::GetObjectiveCounter()
   {
-    static char result[256];
+    // Still a function-local static, and so still a buffer every caller
+    // shares — narrowing that is a lifetime change with no owning task. What
+    // went is the unbounded write into 256 bytes of it: a translated phrase
+    // longer than the field used to run off the end.
+    static std::string result;
 
     if (g_location->m_teams[1].m_teamType != Team::TeamTypeUnused)
     {
       int numRed = g_location->m_teams[1].m_others.NumUsed();
-      sprintf(result, "%s : %d", LANGUAGEPHRASE("objective_redpopulation"), numRed);
+      result = std::format("{} : {}", LANGUAGEPHRASE("objective_redpopulation"), numRed);
     }
     else
     {
-      sprintf(result, "%s", LANGUAGEPHRASE("objective_redpopulation"));
+      result = LANGUAGEPHRASE("objective_redpopulation");
     }
 
-    return result;
+    return result.c_str();
   }
 
 
@@ -962,7 +966,7 @@ void SpawnPopulationLock::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  _out->printf("%-8.2f %-6d", m_searchRadius, m_maxPopulation);
+  _out->printf("{:<8.2f} {:<6d}", m_searchRadius, m_maxPopulation);
 }
 
 

@@ -56,7 +56,7 @@ namespace Neuron
 
     if (!_lmb && !lmb && !_rmb && !rmb) // No buttons changed, mouse move only
     {
-      EclWindow* currentWindow = EclGetWindow(windowFocus.c_str());
+      EclWindow* currentWindow = EclGetWindow(windowFocus);
       if (currentWindow)
       {
         EclButton* button = currentWindow->GetButton(mouseX - currentWindow->m_x, mouseY - currentWindow->m_y);
@@ -105,7 +105,7 @@ namespace Neuron
       if (currentWindow)
       {
         windowFocus = currentWindow->m_name;
-        EclBringWindowToFront(currentWindow->m_name.c_str());
+        EclBringWindowToFront(currentWindow->m_name);
         mouseDownWindow = currentWindow->m_name;
 
         EclButton* button = currentWindow->GetButton(mouseX - currentWindow->m_x, mouseY - currentWindow->m_y);
@@ -142,7 +142,7 @@ namespace Neuron
 
       if (mouseDownWindow != "None")
       {
-        EclWindow* window = EclGetWindow(mouseDownWindow.c_str());
+        EclWindow* window = EclGetWindow(mouseDownWindow);
         EclButton* button = window->GetButton(mouseX - window->m_x, mouseY - window->m_y);
 
         if (button)
@@ -177,14 +177,14 @@ namespace Neuron
                   newWidth = 60;
                 if (newHeight < 40)
                   newHeight = 40;
-                EclSetWindowSize(mouseDownWindow.c_str(), newWidth, newHeight);
+                EclSetWindowSize(mouseDownWindow, newWidth, newHeight);
               }
             }
             else
             {
               if (window->m_movable)
               {
-                EclSetWindowPosition(mouseDownWindow.c_str(), mouseX - mouseDownWindowX, mouseY - mouseDownWindowY);
+                EclSetWindowPosition(mouseDownWindow, mouseX - mouseDownWindowX, mouseY - mouseDownWindowY);
               }
             }
           }
@@ -232,7 +232,7 @@ namespace Neuron
 
   void EclUpdateKeyboard(int keyCode, bool shift, bool ctrl, bool alt)
   {
-    EclWindow* currentWindow = EclGetWindow(windowFocus.c_str());
+    EclWindow* currentWindow = EclGetWindow(windowFocus);
     if (currentWindow)
     {
       currentWindow->Keypress(keyCode, shift, ctrl, alt);
@@ -250,7 +250,7 @@ namespace Neuron
 
     if (maximisedWindow != "None")
     {
-      EclWindow* maximised = EclGetWindow(maximisedWindow.c_str());
+      EclWindow* maximised = EclGetWindow(maximisedWindow);
       if (maximised)
       {
         maximised->Render(true);
@@ -301,7 +301,7 @@ namespace Neuron
       return "None";
   }
 
-  char const* EclGenerateUniqueWindowName(char const* name)
+  char const* EclGenerateUniqueWindowName(std::string_view name)
   {
     // Static because the return type is a pointer and callers hold it long
     // enough to register a window with it.
@@ -309,7 +309,7 @@ namespace Neuron
 
     int index = 1;
     uniqueName = name;
-    while (EclGetWindow(uniqueName.c_str()))
+    while (EclGetWindow(uniqueName))
     {
       ++index;
       uniqueName = std::format("{}{}", name, index);
@@ -326,7 +326,7 @@ namespace Neuron
 
     //    DebugAssert( window );
 
-    if (EclGetWindow(window->m_name.c_str()))
+    if (EclGetWindow(window->m_name))
     {
     }
 
@@ -360,29 +360,37 @@ namespace Neuron
 
   void EclRemovePopup()
   {
-    if (EclGetWindow(popupWindow.c_str()))
+    if (EclGetWindow(popupWindow))
     {
-      EclRemoveWindow(popupWindow.c_str());
+      EclRemoveWindow(popupWindow);
     }
     popupWindow = "None";
   }
 
-  void EclRemoveWindow(char const* name)
+  void EclRemoveWindow(std::string_view name)
   {
     int index = EclGetWindowIndex(name);
     if (index != -1)
     {
+      // Almost every caller spells this EclRemoveWindow(w->m_name), so `name`
+      // borrows the storage the window about to be destroyed owns. The two
+      // comparisons below happen AFTER that destruction, so they have to read a
+      // copy. This was already a use-after-free when the parameter was
+      // char const* and every caller wrote .c_str(); narrowing it to
+      // string_view is what made it visible.
+      std::string const removed(name);
+
       std::unique_ptr<EclWindow> owned = std::move(windows[index]);
       windows.erase(windows.begin() + (index));
       // Destroyed where the delete was, after the erase.
       owned.reset();
 
-      if (mouseDownWindow == name)
+      if (mouseDownWindow == removed)
       {
         mouseDownWindow = "None";
       }
 
-      if (windowFocus == name)
+      if (windowFocus == removed)
       {
         windowFocus = "None";
       }
@@ -392,7 +400,7 @@ namespace Neuron
     }
   }
 
-  void EclSetWindowPosition(char const* name, int x, int y)
+  void EclSetWindowPosition(std::string_view name, int x, int y)
   {
     EclWindow* window = EclGetWindow(name);
     if (window)
@@ -402,7 +410,7 @@ namespace Neuron
     }
   }
 
-  void EclSetWindowSize(char const* name, int w, int h)
+  void EclSetWindowSize(std::string_view name, int w, int h)
   {
     EclWindow* window = EclGetWindow(name);
     if (window)
@@ -417,7 +425,7 @@ namespace Neuron
     }
   }
 
-  void EclBringWindowToFront(char const* name)
+  void EclBringWindowToFront(std::string_view name)
   {
     int index = EclGetWindowIndex(name);
     if (index != -1)
@@ -446,11 +454,11 @@ namespace Neuron
 
   bool EclIsTextEditing()
   {
-    EclWindow* currentWindow = EclGetWindow(windowFocus.c_str());
+    EclWindow* currentWindow = EclGetWindow(windowFocus);
     return (currentWindow && currentWindow->m_currentTextEdit != "None");
   }
 
-  int EclGetWindowIndex(char const* name)
+  int EclGetWindowIndex(std::string_view name)
   {
     for (int i = 0; i < windows.size(); ++i)
     {
@@ -462,7 +470,7 @@ namespace Neuron
     return -1;
   }
 
-  EclWindow* EclGetWindow(char const* name)
+  EclWindow* EclGetWindow(std::string_view name)
   {
     int index = EclGetWindowIndex(name);
     if (index == -1)
@@ -489,7 +497,7 @@ namespace Neuron
     return nullptr;
   }
 
-  void EclMaximiseWindow(char const* name)
+  void EclMaximiseWindow(std::string_view name)
   {
     EclUnMaximise();
     EclWindow* w = EclGetWindow(name);
@@ -509,7 +517,7 @@ namespace Neuron
 
   void EclUnMaximise()
   {
-    EclWindow* w = EclGetWindow(maximisedWindow.c_str());
+    EclWindow* w = EclGetWindow(maximisedWindow);
     maximisedWindow = "None";
 
     if (w)
@@ -529,11 +537,13 @@ namespace Neuron
 
   char const* EclGetCurrentFocus() { return windowFocus.c_str(); }
 
-  void EclSetCurrentFocus(const char* name)
+  void EclSetCurrentFocus(std::string_view name)
   {
-    if (strlen(name) < SIZE_ECLWINDOW_NAME)
-    {
-      windowFocus = name;
-    }
+    // The SIZE_ECLWINDOW_NAME length guard that used to sit here went with the
+    // char[256] it was guarding. It is the same defect T11 found in
+    // EclButton::SetProperties: a name one character too long left the focus
+    // where it was and said nothing, and m_name has not been a fixed buffer
+    // since T11.
+    windowFocus = name;
   }
 } // namespace Neuron

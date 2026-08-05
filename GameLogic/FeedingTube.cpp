@@ -366,7 +366,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_receiverId);
+    _out->printf("{:<8d}", m_receiverId);
   }
 
   bool FeedingTube::IsInView()

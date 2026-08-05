@@ -158,19 +158,22 @@ void StartSequence::Render()
     StartSequenceCaption* caption = m_captions[i];
     if (timeNow >= caption->m_startTime && timeNow <= caption->m_endTime)
     {
-      char theString[256];
-      sprintf(theString, caption->m_caption);
-      int stringLength = strlen(theString);
+      // The caption was handed to sprintf AS ITS FORMAT STRING and copied into
+      // a char[256] with no bound: a caption containing a percent sign read an
+      // argument nobody passed, and one over 255 characters overran the buffer.
+      // It is text now. strings-modernised T9.
+      std::string theString(caption->m_caption);
+      int stringLength = static_cast<int>(theString.size());
       int maxTimeLength = (timeNow - caption->m_startTime) * 20;
       if (maxTimeLength < stringLength)
       {
-        theString[maxTimeLength] = '\x0';
+        theString.resize(maxTimeLength);
       }
 
       glColor4f(1.0f, 1.0f, 1.0f, 0.8f);
       g_gameFont.DrawText2D(caption->m_x, caption->m_y, caption->m_size, theString);
 
-      int finishedLen = strlen(theString);
+      int finishedLen = static_cast<int>(theString.size());
       int texW = g_gameFont.GetTextWidth(finishedLen, caption->m_size);
       cursorPos = DirectX::XMFLOAT2(caption->m_x + texW, caption->m_y - 7.25f);
       cursorFlash = maxTimeLength > stringLength;

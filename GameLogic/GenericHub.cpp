@@ -80,8 +80,8 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_buildingLink);
-    _out->printf("%s  ", m_shapeName.c_str());
+    _out->printf("{:<8d}", m_buildingLink);
+    _out->printf("{}  ", m_shapeName.c_str());
   }
 
   int DynamicBase::GetBuildingLink() { return m_buildingLink; }
@@ -274,9 +274,9 @@ namespace Species
   void DynamicHub::Write(FileWriter* _out)
   {
     DynamicBase::Write(_out);
-    _out->printf("%-8d", m_requiredScore);
-    _out->printf("%-8d", m_currentScore);
-    _out->printf("%-8d", m_minActiveLinks);
+    _out->printf("{:<8d}", m_requiredScore);
+    _out->printf("{:<8d}", m_currentScore);
+    _out->printf("{:<8d}", m_minActiveLinks);
   }
 
   char const* DynamicHub::GetObjectiveCounter()
@@ -444,7 +444,7 @@ namespace Species
   void DynamicNode::Write(FileWriter* _out)
   {
     DynamicBase::Write(_out);
-    _out->printf("%-8d", m_scoreValue);
-    _out->printf("%-8d", m_scoreSupplied);
+    _out->printf("{:<8d}", m_scoreValue);
+    _out->printf("{:<8d}", m_scoreSupplied);
   }
 } // namespace Species

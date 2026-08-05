@@ -359,16 +359,16 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_linkedBuildingId);
-    _out->printf("%-8d", m_linkedBuildingId2);
-    _out->printf("%-8d", m_switchValue);
+    _out->printf("{:<8d}", m_linkedBuildingId);
+    _out->printf("{:<8d}", m_linkedBuildingId2);
+    _out->printf("{:<8d}", m_switchValue);
 
-    _out->printf("%-3d", m_lockable);
+    _out->printf("{:<3d}", m_lockable);
 
-    _out->printf("%s  ", m_script.c_str());
+    _out->printf("{}  ", m_script.c_str());
 
     int locked = m_locked ? 1 : 0;
-    _out->printf("%-3d", locked);
+    _out->printf("{:<3d}", locked);
   }
 
   void FenceSwitch::RenderLink()

@@ -466,7 +466,7 @@ namespace Species
   void MineBuilding::Write(FileWriter* _out)
   {
     Building::Write(_out);
-    _out->printf("%-8d", m_trackLink);
+    _out->printf("{:<8d}", m_trackLink);
   }
 
 
@@ -668,7 +668,7 @@ void TrackJunction::Write(FileWriter* _out)
 
   for (int i = 0; i < static_cast<int>(m_trackLinks.size()); ++i)
   {
-    _out->printf("%-4d", m_trackLinks[i]);
+    _out->printf("{:<4d}", m_trackLinks[i]);
   }
 }
 
@@ -763,7 +763,7 @@ void TrackStart::Write(FileWriter* _out)
 {
   MineBuilding::Write(_out);
 
-  _out->printf("%-8d", m_reqBuildingId);
+  _out->printf("{:<8d}", m_reqBuildingId);
 }
 
 
@@ -873,7 +873,7 @@ void TrackEnd::Write(FileWriter* _out)
 {
   MineBuilding::Write(_out);
 
-  _out->printf("%-8d", m_reqBuildingId);
+  _out->printf("{:<8d}", m_reqBuildingId);
 }
 
 
@@ -906,9 +906,13 @@ char const* Refinery::GetObjectiveCounter()
   if (gb)
     numRefined = gb->m_link;
 
-  static char result[256];
-  sprintf(result, "%s : %d", LANGUAGEPHRASE("objective_refined"), numRefined);
-  return result;
+  // Still a function-local static, and so still a buffer every caller
+  // shares — narrowing that is a lifetime change with no owning task. What
+  // went is the unbounded write into 256 bytes of it: a translated phrase
+  // longer than the field used to run off the end.
+  static std::string result;
+  result = std::format("{} : {}", LANGUAGEPHRASE("objective_refined"), numRefined);
+  return result.c_str();
 }
 
 

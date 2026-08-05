@@ -384,8 +384,8 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%s ", GlobalResearch::GetTypeName(m_researchType));
-    _out->printf("%6d", m_level);
+    _out->printf("{} ", GlobalResearch::GetTypeName(m_researchType));
+    _out->printf("{:6d}", m_level);
   }
 
 

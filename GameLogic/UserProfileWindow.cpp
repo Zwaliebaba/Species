@@ -23,7 +23,7 @@ namespace Species
       {
         g_appCommands->SetProfileName(m_profileName);
         g_appCommands->LoadProfile();
-        EclRemoveWindow(m_parent->m_name.c_str());
+        EclRemoveWindow(m_parent->m_name);
         EclRemoveWindow(LANGUAGEPHRASE("dialog_mainmenu"));
       }
   };
@@ -129,7 +129,7 @@ namespace Species
         NewUserProfileWindow* parent = (NewUserProfileWindow*)m_parent;
         g_appCommands->SetProfileName(parent->s_profileName.c_str());
         g_appCommands->LoadProfile();
-        EclRemoveWindow(m_parent->m_name.c_str());
+        EclRemoveWindow(m_parent->m_name);
         EclRemoveWindow(LANGUAGEPHRASE("dialog_newprofile"));
         EclRemoveWindow(LANGUAGEPHRASE("dialog_mainmenu"));
       }

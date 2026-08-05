@@ -412,6 +412,26 @@ tasks:
       - NeuronClient/Eclipse.cpp
       - NeuronClient/SoundSystem.h
       - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundInstance.h
+      - NeuronClient/SoundInstance.cpp
+      - GameLogic/BuyNowWindow.cpp
+      - GameLogic/DropDownMenu.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/GlobalWorldEditorWindow.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/MainMenus.cpp
+      - GameLogic/MessageDialog.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/ScrollBar.cpp
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/TreeWindow.cpp
+      - GameLogic/UpdateAvailableWindow.cpp
+      - GameLogic/UserProfileWindow.cpp
+      - Species/GameMenu.cpp
+      - Species/LocationEditor.cpp
+      - Species/Main.cpp
+      - Species/UserInput.cpp
     acceptance:
       - No listed function takes char const* for a parameter it only compares or copies
       - No call site passes .c_str() to one of them
@@ -419,7 +439,7 @@ tasks:
     verify:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
       Raised 2026-08-03 by the project owner, mid-conversion, and the criticism
       was fair: T3 and T7 widened several of these to char const* while fixing a
@@ -431,6 +451,51 @@ tasks:
       fopen, strcmp, strchr, _findfirst or a resource lookup, because it
       carries no null terminator — see the table in CODING_STANDARDS.md. The
       four files above are the ones measured to be free of that.
+
+      DONE 2026-08-05. Nine Eclipse entry points narrowed, not the five the
+      intent listed: EclDirtyWindow does not exist and has not for some time,
+      and EclGetWindowIndex, EclBringWindowToFront, EclMaximiseWindow,
+      EclSetCurrentFocus and EclGenerateUniqueWindowName all take a name they
+      only compare against EclWindow::m_name or copy into one of the module's
+      std::string statics. 36 .c_str() calls went from 18 files.
+
+      THE THREE ACCESSORS KEEP char const* AND THAT IS THE DECISION, NOT AN
+      OMISSION. EclGetCurrentButton, EclGetCurrentClickedButton and
+      EclGetCurrentFocus return a pointer into a static this module reassigns.
+      CODING_STANDARDS.md says narrowing that return to string_view preserves
+      the lifetime bug rather than fixing it, so the return types are
+      unchanged and the reason is now at the declaration.
+
+      TWO FILES WERE ADDED TO THE LIST AND ONE DEFECT CAME OUT OF IT.
+      ParseSoundEvent's _entityName is forwarded to
+      SoundInstance::SetEventName, so that signature had to move with it —
+      SoundInstance.h/.cpp are in the list now. Its SECOND parameter stays
+      char const* on purpose: the only caller passes
+      SoundEventBlueprint::m_eventName, which is NULL whenever the blueprint
+      line carried no token, because TextReader::GetNextToken returns nullptr
+      for a missing one. A string_view would have to be constructed from that
+      null before the assert that catches it ever runs. The assert dropped its
+      `_entityName &&` clause and kept the rest.
+
+      ECLREMOVEWINDOW WAS A USE-AFTER-FREE AND NARROWING IT IS WHAT SHOWED
+      THAT. Nearly every caller spells EclRemoveWindow(w->m_name), so the
+      argument borrows storage owned by the window the function then destroys —
+      and the two comparisons against mouseDownWindow and windowFocus run
+      AFTER that destruction. It was equally wrong when the parameter was
+      char const* and every caller wrote .c_str(); a raw pointer just made it
+      unremarkable to look at. The name is copied into a local before the
+      window goes.
+
+      EclSetCurrentFocus lost its SIZE_ECLWINDOW_NAME length guard, which is
+      the same defect T11 found in EclButton::SetProperties: a name one
+      character too long left the focus where it was and reported nothing.
+      m_name has not been a fixed buffer since T11, so the guard protected
+      nothing and only refused work.
+
+      NOT COMPILED. No MSVC in the executing environment, so the msbuild in
+      verify was not run — the seven Python checks are the whole of the
+      evidence, and an overload resolution change is exactly the kind of thing
+      only a compiler settles.
 
   - id: T11
     title: Convert the Eclipse widget name and caption members
@@ -1211,12 +1276,60 @@ tasks:
       whatever T1 listed as legitimately fixed-format.
     depends_on: [T2, T3, T4, T5, T6, T7, T8, T10, T11, T12, T13, T15, T17, T18, T19]
     files:
+      - GameLogic/Armour.cpp
+      - GameLogic/BlueprintStore.cpp
+      - GameLogic/Building.cpp
+      - GameLogic/ConstructionYard.cpp
+      - GameLogic/ControlTower.cpp
+      - GameLogic/DropDownMenu.cpp
+      - GameLogic/DropDownMenu.h
+      - GameLogic/Entity.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/Flag.cpp
+      - GameLogic/Flag.h
+      - GameLogic/Generator.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GunTurret.cpp
+      - GameLogic/InsertionSquad.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/Library.cpp
+      - GameLogic/MessageDialog.cpp
+      - GameLogic/MessageDialog.h
+      - GameLogic/Mine.cpp
+      - GameLogic/PrefsGraphicsWindow.cpp
+      - GameLogic/PrefsScreenWindow.cpp
+      - GameLogic/SafeArea.cpp
+      - GameLogic/SpawnPoint.cpp
+      - GameLogic/SpiritReceiver.cpp
+      - GameLogic/SporeGenerator.cpp
+      - GameLogic/Triffid.cpp
+      - GameLogic/TrunkPort.cpp
+      - GameLogic/UpdateAvailableWindow.cpp
+      - NeuronClient/BinaryStreamReaders.cpp
+      - NeuronClient/BinaryStreamReaders.h
+      - NeuronClient/SampleCache.cpp
+      - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SoundInstance.h
+      - NeuronClient/SoundStreamDecoder.cpp
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/StringUtils.h
+      - NeuronServer/Server.cpp
       - NeuronServer/ServerToClient.cpp
-      - NeuronClient/SoundLibrary2d.cpp
-      - GameLogic/EntityLeg.cpp
+      - NeuronServer/ServerToClient.h
+      - Species/ControlHelp.cpp
+      - Species/Renderer.cpp
       - Species/StartSequence.cpp
+      - Species/TaskManagerInterface.cpp
+      - Species/TaskManagerInterface.h
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Tests/NeuronClientTests/BinaryReaderTests.cpp
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj.filters
     acceptance:
-      - grep -rcE "strcpy|strncpy|strcat|sprintf|snprintf|vsprintf|vsnprintf|vprintf|vfprintf" over the six projects totals 0, excluding only buffers on T1's pinned list
+      - grep -rnE "\b(strcpy|strncpy|strcat|sprintf|snprintf|vsprintf|vsnprintf|vprintf|vfprintf)\b" over the six projects and Tests, with comment-only lines filtered out, totals 0 — excluding only buffers on T1's pinned list
       - The pinned wire tests from T1 still pass
     verify:
       - python3 tools/check_layering.py
@@ -1242,7 +1355,108 @@ tasks:
       a fixed stack buffer behind a `char const*, ...` entry point. The grep
       now names the v-family, and depends_on gained T17 and T18, which own the
       eleven.
-    status: todo
+
+      RE-MEASURED AND DONE 2026-08-05, immediately after T13 and T17. The tail
+      was 44 code sites in 26 files, not the four the placeholder guessed —
+      and only ONE of the four guesses was real. ServerToClient.cpp:20 was, as
+      its own note said. Species/StartSequence.cpp was, and it was the worst
+      line in the sweep. NeuronClient/SoundLibrary2d.cpp and
+      GameLogic/EntityLeg.cpp hold none of this work and never did.
+
+      THE ACCEPTANCE GREP STILL COULD NOT REACH ZERO, for a second reason, and
+      the criterion is amended again rather than fudged. Nine of the surviving
+      hits are PROSE: comments in NetLib.h, FileWriter.h, DebugRender.h/.cpp,
+      EclButton.h, InputField.h and this plan's own tests, each explaining what
+      an unbounded vsprintf or strcpy used to do there. A criterion that
+      forbids naming the thing you removed is a criterion that gets the
+      documentation deleted. The line now filters comment-only lines and says
+      so; with that filter the count is ZERO and every project is clear.
+
+      WHAT THE TAIL ACTUALLY WAS, in four shapes:
+
+        12 shape-marker lookups   sprintf(name, "MarkerGlow0%d", i + 1) into a
+                                  char[64], handed to LookupMarker. Mechanical.
+         6 objective counters     GetObjectiveCounter's `static char[256]`, an
+                                  unbounded sprintf of a TRANSLATED phrase into
+                                  it. They are a static std::string now. The
+                                  static is deliberately KEPT: every caller
+                                  shares that buffer, and narrowing the
+                                  char const* return is a lifetime change with
+                                  no owning task.
+         6 UI captions            resolutions, FPS, file rows, team buttons.
+        20 members and one-offs   the interesting half, below.
+
+      NEWSTR IS GONE, and taking it out is what made this a real sweep rather
+      than a grep. `strcpy(new char[strlen(src) + 1], src)` was the last hit in
+      NeuronClient and it had NINE callers, every one of them a raw owning
+      char* member. Rewriting NewStr with memcpy would have passed the
+      criterion and left all nine alive; they are std::string instead:
+
+        GlobalEventCondition::m_stringId / m_cutScene   the two AGENTS.md lists
+                                                        as this plan's own
+        DropDownOptionData::m_word
+        DropDownMenuOption::m_parentWindowName / m_parentMenuName
+        SoundEventBlueprint::m_eventName
+        SampleGroup::m_samples (a vector of owning char*)
+
+      FOUR DEFECTS FELL OUT OF THAT, none of them findable by reading a grep
+      result:
+
+      1. GlobalEventCondition's COPY CONSTRUCTOR CALLED strlen(nullptr).
+         It was `m_stringId(NewStr(_other.m_stringId))`, and the default
+         constructor sets both members to nullptr — so copying a condition
+         that had never been given a string crashed. The copy constructor and
+         the destructor are both gone now; std::string members need neither.
+      2. SoundEventBlueprint LEAKED ITS EVENT NAME, every blueprint, every
+         parse. The class has no destructor and never had one, and m_eventName
+         was NewStr'd.
+      3. MessageDialog wrote into `char* m_messageLines[20]` with NOTHING
+         BOUNDING m_numLines. A message of more than twenty lines wrote past
+         the end of the array. It is a std::vector<std::string> and the
+         destructor is gone.
+      4. BinaryReader::m_filename was strncpy'd with n = 255 into char[256],
+         which writes NO TERMINATOR for a name of 255 characters or more.
+
+      AND ONE THAT IS EXACTLY WHAT CODING_STANDARDS.md WARNS ABOUT.
+      StartSequence.cpp:162 was `sprintf(theString, caption->m_caption)` —
+      runtime data handed to the C formatter AS ITS FORMAT STRING, into a
+      char[256], for text that comes out of a level file. A percent sign in a
+      caption read an argument nobody passed. It is text now.
+
+      TWO SIGNATURES MOVED, both because the member behind them did:
+      BinaryReader::GetFileType returns std::string_view (it returned a char*
+      into the buffer, pointing AT THE TERMINATOR when there was no extension —
+      empty is the same answer without the arithmetic), and
+      ServerToClient::GetIP likewise. SoundInstance::SetEventName's second
+      parameter became a string_view too: T13 left it char const* because
+      SoundEventBlueprint::m_eventName was a nullable char* then, and it is not
+      any more. DropDownMenu::GetSelectionName is the counter-example and
+      STAYS char const*, because its nullptr is a real failure value callers
+      test — CODING_STANDARDS.md, Strings.
+
+      ONE BYTE OF OUTPUT WAS DELIBERATELY PRESERVED RATHER THAN IMPROVED.
+      WriteSoundEvent wrote MSVC's "(null)" for a blueprint whose EVENT line
+      carried no name. m_eventName is now an empty std::string rather than a
+      null char*, so the "(null)" is spelled out at the site. T17 claims the
+      sound blueprint file is byte-identical and it still is.
+
+      WHAT WAS RUN. The seven Python checks pass, and the amended acceptance
+      grep is at zero. The two rewrites that are NOT mechanical — MessageDialog's
+      line split and GetFileType's extension parse — were compiled with g++ 13
+      against their originals and compared over the edge cases each of them
+      has: empty input, a leading newline, a trailing newline, consecutive
+      newlines; and no dot, a leading dot, a trailing dot, several dots. Both
+      match exactly. Five tests were added for the extension parse and the
+      long filename, in a new Tests/NeuronClientTests/BinaryReaderTests.cpp —
+      BinaryDataReader is the constructible half of that pair, reading memory
+      the caller owns and touching no global.
+
+      NOT COMPILED AND NOT RUN. No MSVC here, so neither the msbuild nor the
+      vstest in verify happened. Nine members changed type and the work is
+      wherever each is NAMED — every one was grepped tree-wide and every hit
+      read, which is the method that has still been one file short twice in
+      this repository's history.
+    status: done
 
   - id: T14
     title: Replace CreateValueControl's void* with a typed overload set
@@ -1635,7 +1849,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
       Added 2026-08-05 at e7a1a88, from a measurement taken while scoping the
       batch after directxmath-migration closed. This is unowned work that the
@@ -1715,6 +1929,96 @@ tasks:
       Mine.cpp, Rocket.cpp — seven controlEvent lines that a scoped enum has
       to requalify). parallel_safe stays false above; flip it in the same
       commit as the work, per the standing rule.
+
+      DONE 2026-08-05. FileWriter takes the same two-overload shape T12 gave
+      TextRenderer — a plain std::string_view and a std::format_string template
+      that requires at least one argument — and the char[10240] is gone. 127
+      format strings across 30 files were rewritten; the other 91 calls pass
+      only text and now go to the plain overload verbatim, percent signs
+      included.
+
+      THE FILE LIST HELD A SECOND TIME AND NOTHING WAS ADDED TO IT. 218 calls,
+      not the 207 measured, and the difference is FileWriterTests' own eleven,
+      which the reach measurement did not count. Every one of the 29 declared
+      source files was touched and none was idle;
+      Tests/GameLogicTests/LevelFileTests.cpp is the one declared file with no
+      diff, which is correct — it names no printf and is in the list because
+      the acceptance says it must still pass.
+
+      ONE CALL IN THE TREE SPELLS ITS FORMAT AS CONCATENATED LITERALS and it
+      cost a second pass to find. SoundSystem::WriteSoundEvent writes
+      `"\tEVENT %-20s\n" "\t\tSOUNDNAME %s\n" ...` over six lines, and a sweep
+      keyed on `printf(` followed by ONE literal converts nothing and reports
+      nothing. It was caught by re-grepping for a surviving `%` inside a
+      brace-matched call rather than inside a literal. Any future sweep over a
+      formatting API should end with that second grep.
+
+      %d BECAME {:d}, NOT {}, AND THAT IS THE DECISION THIS TASK TURNS ON.
+      A bare {} formats a bool as "true", a char as a character and a float as
+      a float; printf's %d printed 1, a number and garbage respectively. Three
+      of the converted arguments are bools written as integers
+      (Building::m_isGlobal, InstantUnit::m_inAUnit, GlobalBuilding::m_online),
+      and one is an unsigned char (WorldObjectId::GetTeamId, written with
+      %-8d). Every one of them would have changed the bytes in a level file
+      under {}, with a green build. Spelling the `d` also makes a %d that was
+      fed a float a COMPILE error rather than a silent reformat — which is the
+      same trade check_math_types.py exists for, made in the format string
+      instead of a tool.
+
+      FOUR SITES PASSED A NULLABLE char const* TO %s AND NOW SAY SO.
+      GlobalWorld::GetLocationName answers nullptr for an unknown id (two call
+      sites), and SoundEventBlueprint::m_eventName is null whenever the
+      blueprint line carried no token. MSVC's printf writes "(null)" for that;
+      std::format is undefined for it. The substitution is explicit now, at
+      each site, with the reason. THE STRING IS PRESERVED RATHER THAN FIXED:
+      writing "(null)" into a level file is a defect — the file reloads with a
+      location of that name — but a save path is not the place to change what
+      the game writes, and no task owns fixing it. Two more nullable-looking
+      arguments were read and left alone: GuideGridToString is guarded by
+      `m_guideGridPower > 0` at its only call site, and CamAnimNode::m_mountName
+      is already handed to a bare std::format in CameraAnimWindow.cpp, so this
+      task is not where that assumption starts.
+
+      WHAT WAS ACTUALLY RUN, since none of it was MSVC. The seven Python checks
+      pass. On top of them, three things were compiled and executed with g++ 13
+      in the working environment, because "byte-identical" is a claim that can
+      be tested without the game:
+
+        1. Every (printf spec, format spec) PAIR this conversion produced —
+           10 integer, 13 float, 8 string — over ints from INT_MIN to INT_MAX,
+           floats including -0.0, 0.005, 2.675, 1e20 and the tie cases, and
+           strings from empty to longer than the field. Zero mismatches. The
+           float half is not luck: [charconv] specifies fixed-precision
+           to_chars as printf in the C locale, which is what formatter<float>
+           uses.
+        2. The OLD FileWriter::printf and the NEW one, side by side, on the
+           real call-site formats — the location row, the buildings row,
+           Building::Write's eight fields including the unsigned char and the
+           bool, the twelve-field InstantUnits row, the landscape tile row and
+           the concatenated EVENT block — encrypted and plain. Byte for byte
+           identical, and it also exercises the overload split: the
+           zero-argument calls resolve to the plain overload under a real
+           compiler.
+        3. All 127 converted format strings compiled through
+           consteval std::format with placeholder arguments typed from their
+           own specs. Every one is a valid format string and consistent with
+           the type it claims.
+
+      What that does NOT cover, and it is the important half: MSVC's CRT rather
+      than glibc, the real argument TYPES at each of the 127 sites, and a
+      profile written by the running game. An argument whose type does not
+      match its spec is a compile error nobody here can see yet.
+
+      THE TESTS' EXPECTED BYTES ARE UNCHANGED AND THE FORMAT SPELLINGS ARE NOT.
+      The acceptance line asks for the round-trip tests to pass with no edit in
+      the same commit, and the point of that line is that the proof must not be
+      weakened to fit the change. FileWriterTests calls the API being replaced,
+      so its eight format strings had to move to the new spelling — but not one
+      Assert::AreEqual changed, which is what makes the diff itself the
+      evidence. Two tests were ADDED for behaviour that did not exist before: a
+      percent sign in argument-free text is now a percent sign, and text longer
+      than the old 10240-byte stack buffer is written whole. Both were
+      undefined behaviour through the variadic entry point.
 
   - id: T18
     title: Retire the last three variadic format entry points

@@ -19,12 +19,10 @@
 namespace Species
 {
   DropDownOptionData::DropDownOptionData(const char* _word, int _value)
-    : m_word(NewStr(_word)),
+    : m_word(_word),
       m_value(_value)
   {
   }
-
-  DropDownOptionData::~DropDownOptionData() { delete[] m_word; }
 
 
   // ****************************************************************************
@@ -44,7 +42,7 @@ namespace Species
   {
     SpeciesWindow::Update();
 
-    EclWindow* parent = EclGetWindow(m_parentName.c_str());
+    EclWindow* parent = EclGetWindow(m_parentName);
     if (!parent)
     {
       RemoveDropDownWindow();
@@ -56,7 +54,7 @@ namespace Species
   {
     if (s_window)
     {
-      EclRemoveWindow(s_window->m_name.c_str());
+      EclRemoveWindow(s_window->m_name);
       s_window = nullptr;
     }
 
@@ -69,7 +67,7 @@ namespace Species
   {
     if (s_window)
     {
-      EclRemoveWindow(s_window->m_name.c_str());
+      EclRemoveWindow(s_window->m_name);
       s_window = nullptr;
     }
   }
@@ -118,7 +116,7 @@ namespace Species
       int i;
       for (i = 0; i < size; ++i)
       {
-        if (stricmp(_word, m_options[i]->m_word) < 0)
+        if (stricmp(_word, m_options[i]->m_word.c_str()) < 0)
         {
           break;
         }
@@ -159,8 +157,8 @@ namespace Species
   {
     for (int i = 0; i < static_cast<int>(m_options.size()); ++i)
     {
-      char* itemName = m_options[i]->m_word;
-      if (stricmp(itemName, _option) == 0)
+      std::string const& itemName = m_options[i]->m_word;
+      if (stricmp(itemName.c_str(), _option) == 0)
       {
         SelectOption(m_options[i]->m_value);
         return true;
@@ -188,7 +186,9 @@ namespace Species
     {
       return nullptr;
     }
-    return m_options[m_currentOption]->m_word;
+    // Still char const*, not std::string: nullptr above is a real failure value
+    // that callers test, and an empty string is not the same answer.
+    return m_options[m_currentOption]->m_word.c_str();
   }
 
 
@@ -256,7 +256,7 @@ namespace Species
         if (index >= static_cast<int>(m_options.size()))
           break;
 
-        char* thisOption = m_options[index]->m_word;
+        std::string const& thisOption = m_options[index]->m_word;
         // Was formatted into a char[64] from a name of up to 256, so a long menu
         // name ran off the end of it.
         std::string const thisName = std::format("{} {}", m_name, index);
@@ -264,7 +264,7 @@ namespace Species
         int w = m_w - 4;
 
         DropDownMenuOption* menuOption = new DropDownMenuOption();
-        menuOption->SetProperties(thisName, col * m_w + 2, (i + 1) * m_h, w, m_h, thisOption);
+        menuOption->SetProperties(thisName, col * m_w + 2, (i + 1) * m_h, w, m_h, thisOption.c_str());
         menuOption->SetParentMenu(m_parent, this, m_options[index]->m_value);
         window->RegisterButton(menuOption);
         window->m_buttonOrder.push_back(menuOption);
@@ -300,7 +300,7 @@ namespace Species
   }
 
 
-  bool DropDownMenu::IsMenuVisible() { return (EclGetWindow(m_name.c_str()) != nullptr); }
+  bool DropDownMenu::IsMenuVisible() { return (EclGetWindow(m_name) != nullptr); }
 
 
   //*****************************************************************************
@@ -309,33 +309,14 @@ namespace Species
 
   DropDownMenuOption::DropDownMenuOption()
     : BorderlessButton(),
-      m_parentWindowName(nullptr),
-      m_parentMenuName(nullptr),
       m_value(-1)
   {
   }
 
-  DropDownMenuOption::~DropDownMenuOption()
-  {
-    delete[] m_parentWindowName;
-    delete[] m_parentMenuName;
-  }
-
   void DropDownMenuOption::SetParentMenu(EclWindow* _window, DropDownMenu* _menu, int _value)
   {
-    if (m_parentWindowName)
-    {
-      delete[] m_parentWindowName;
-      m_parentWindowName = nullptr;
-    }
-    m_parentWindowName = NewStr(_window->m_name.c_str());
-
-    if (m_parentMenuName)
-    {
-      delete[] m_parentMenuName;
-      m_parentMenuName = nullptr;
-    }
-    m_parentMenuName = NewStr(_menu->m_name.c_str());
+    m_parentWindowName = _window->m_name;
+    m_parentMenuName = _menu->m_name;
 
     //    m_menuIndex = _index;
     m_value = _value;

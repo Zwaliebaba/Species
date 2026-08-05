@@ -126,21 +126,14 @@ namespace Species
   {
     Building::Render(predictionTime);
 
-    char caption[256];
-
+    // Was an unbounded strcpy into a char[256] — a translated location name
+    // longer than that overran it. strings-modernised T9.
     char const* locationName = g_globalWorld->GetLocationNameTranslated(m_targetLocationId);
-    if (locationName)
-    {
-      strcpy(caption, locationName);
-    }
-    else
-    {
-      sprintf(caption, "[%s]", LANGUAGEPHRASE("location_unknown"));
-    }
+    const std::string caption = locationName ? std::string(locationName) : std::format("[{}]", LANGUAGEPHRASE("location_unknown"));
 
     START_PROFILE(g_profiler, "RenderDestination");
 
-    float fontSize = 70.0f / strlen(caption);
+    float fontSize = 70.0f / caption.size();
     fontSize = std::min(fontSize, 10.0f);
 
     DirectX::XMFLOAT4X4 portMat;
@@ -399,6 +392,6 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_targetLocationId);
+    _out->printf("{:<8d}", m_targetLocationId);
   }
 } // namespace Species

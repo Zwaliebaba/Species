@@ -27,27 +27,31 @@ namespace Neuron
   FileWriter::~FileWriter() { fclose(m_file); }
 
 
-  int FileWriter::printf(char const* _fmt, ...)
+  int FileWriter::printf(std::string_view _text)
   {
-    char buf[10240];
-    va_list ap;
-    va_start (ap, _fmt);
-    int len = vsprintf(buf, _fmt, ap);
+    // The encryption is a walk over the bytes about to be written, so it needs
+    // storage it may modify. The char[10240] this replaces was the only reason
+    // the old entry point had a length limit at all.
+    std::string text(_text);
 
-	if (m_encrypt)
-	{
-		for (int i = 0; i < len; ++i)
-		{
-			if (buf[i] > 32) {
-				m_offsetIndex++;
-				m_offsetIndex %= 16;
-				int j = buf[i] + s_offsets[m_offsetIndex];
-				if (j >= 128) j -= 95;
-				buf[i] = j;
-			}
-		}
-	}
+    if (m_encrypt)
+    {
+      for (char& c : text)
+      {
+        // Signed char on purpose: a byte above 127 is NEGATIVE here and so is
+        // left alone, exactly as it was when this read buf[i] > 32.
+        if (c > 32)
+        {
+          m_offsetIndex++;
+          m_offsetIndex %= 16;
+          int j = c + s_offsets[m_offsetIndex];
+          if (j >= 128)
+            j -= 95;
+          c = static_cast<char>(j);
+        }
+      }
+    }
 
-	return fprintf(m_file, "%s", buf);
+    return fprintf(m_file, "%s", text.c_str());
   }
 } // namespace Neuron

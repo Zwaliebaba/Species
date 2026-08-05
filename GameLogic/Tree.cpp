@@ -578,14 +578,14 @@ void Tree::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  _out->printf("%-8.2f", m_height);
-  _out->printf("%-8.2f", m_budsize);
-  _out->printf("%-8.2f", m_pushOut);
-  _out->printf("%-8.2f", m_pushUp);
-  _out->printf("%-8d", m_iterations);
-  _out->printf("%-8d", m_seed);
-  _out->printf("%-12d", m_branchColour);
-  _out->printf("%-12d", m_leafColour);
-  _out->printf("%-8d", m_leafDropRate);
+  _out->printf("{:<8.2f}", m_height);
+  _out->printf("{:<8.2f}", m_budsize);
+  _out->printf("{:<8.2f}", m_pushOut);
+  _out->printf("{:<8.2f}", m_pushUp);
+  _out->printf("{:<8d}", m_iterations);
+  _out->printf("{:<8d}", m_seed);
+  _out->printf("{:<12d}", m_branchColour);
+  _out->printf("{:<12d}", m_leafColour);
+  _out->printf("{:<8d}", m_leafDropRate);
 }
 } // namespace Species

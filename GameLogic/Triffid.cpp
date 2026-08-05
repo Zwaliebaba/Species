@@ -570,8 +570,8 @@ void Triffid::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  _out->printf("%-6.2f %-6.2f %-6.2f %-6.2f %-6.2f ", m_size, m_pitch, m_force, m_variance, m_reloadTime);
-  _out->printf("%d %-8.2f %-8.2f %-6.2f ", m_useTrigger, m_triggerLocation.x, m_triggerLocation.z, m_triggerRadius);
+  _out->printf("{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} ", m_size, m_pitch, m_force, m_variance, m_reloadTime);
+  _out->printf("{:d} {:<8.2f} {:<8.2f} {:<6.2f} ", m_useTrigger, m_triggerLocation.x, m_triggerLocation.z, m_triggerRadius);
 
   for (int i = 0; i < NumSpawnTypes; ++i)
   {
@@ -596,12 +596,11 @@ char const* Triffid::GetSpawnNameTranslated(int _spawnType)
 {
   char const* spawnName = GetSpawnName(_spawnType);
 
-  char stringId[256];
-  sprintf(stringId, "spawnname_%s", spawnName);
+  const std::string stringId = std::format("spawnname_{}", spawnName);
 
-  if (ISLANGUAGEPHRASE(stringId))
+  if (ISLANGUAGEPHRASE(stringId.c_str()))
   {
-    return LANGUAGEPHRASE(stringId);
+    return LANGUAGEPHRASE(stringId.c_str());
   }
   else
   {

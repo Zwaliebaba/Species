@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <string_view>
+
 #include "NeuronMath.h"
 
 #define FLAG_RESOLUTION 6
@@ -35,6 +37,6 @@ namespace Species
       void SetSize(float _size);
 
       void Render();
-      void RenderText(int _posX, int _posY, char* _caption);
+      void RenderText(int _posX, int _posY, std::string_view _caption);
   };
 } // namespace Species
