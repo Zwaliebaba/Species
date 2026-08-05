@@ -2121,7 +2121,32 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: in_progress
+    status: done
+    notes: |
+      DONE 2026-08-05. 24 legacy-math references across the three files, all of
+      them Vector3(x,y,z) constructions feeding APIs that already take
+      XMFLOAT3.
+
+      NetworkUpdateTests carried a comment saying its Vector3 use was
+      DELIBERATE — "that is what the callers of SetWorldPos pass today, so it
+      is the conversion path being pinned". That rationale expires with the
+      seam T25 deletes, and NeuronMathTests already pins the conversion
+      explicitly, so the comment and the include went with the constructions.
+      The byte pin itself is untouched and still asserts the same bytes; the
+      layout note above it is kept because it is why the pin holds.
+
+      ONE SITE COULD NOT BE FULLY CONVERTED AND USES AsLegacy.
+      EntityGridTests passes &pos and &vel into Location::GetSoundSource, which
+      still takes Vector3 out-pointers and stays that way until T12. That is
+      failure mode 7 — the seam converts by reference and does nothing through
+      a pointer — so &AsLegacy(pos) is the documented escape hatch. Both calls
+      disappear when T12 lands, together with Location.h's include of
+      Vector3.h, which is what supplies AsLegacy here.
+
+      So `grep -rl AsLegacy Tests/` is 1, not 0, and that is expected rather
+      than a miss. T25 cannot run until it is 0; T12 is what gets it there.
+
+      Not compiled here (Linux).
 
   - id: T28
     title: Convert the geometry out-pointer signatures in MathUtils and Landscape

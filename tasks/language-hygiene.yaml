@@ -733,8 +733,26 @@ tasks:
     depends_on: []
     files:
       - NeuronClient/CameraAccess.h
+      - NeuronClient/LocationEditorAccess.h
+      - NeuronClient/TargetCursor.cpp
+      - GameLogic/EditorWindow.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/GunTurret.cpp
+      - GameLogic/InsertionSquad.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/Location.cpp
+      - GameLogic/TaskManager.cpp
+      - GameLogic/Team.cpp
       - Species/Camera.h
       - Species/Camera.cpp
+      - Species/ControlHelp.cpp
+      - Species/GameCursor.cpp
+      - Species/LocationInput.cpp
+      - Species/Main.cpp
+      - Species/Script.cpp
+      - Species/StartSequence.cpp
+      - Species/TaskManagerInterface.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
     acceptance:
       - Camera::Mode is enum class with an explicit underlying type
       - The 106 Mode use sites compile without a C-style cast, except at the boundaries the task lists
@@ -755,3 +773,16 @@ tasks:
       layering-inversion moved the enumerators onto CameraAccess and Camera
       inherits them, so `Camera::ModeFreeMovement` resolves through the base.
       Scoping changes that spelling everywhere, including in GameLogic.
+
+      THE FILE LIST WAS WRONG WHEN THIS TASK WAS SPLIT OUT and is now measured:
+      21 files, not the three the old T9 named. Corrected 2026-08-05 by
+      grepping the enumerators rather than the type name, because
+      `Camera::Mode` appears in almost none of them — the enumerators do.
+
+      CameraAccess.h's declaration carries one of the tree's two `hygiene-ok`
+      markers, and its reason is this task. The marker's comment still says
+      "converted by language-hygiene T5"; T5 reassigned it to T9 and T9 split,
+      so the reference needs updating to T12 when this runs. The comment also
+      records the real obstacle, which is not the keyword: Camera stores m_mode
+      as an int, indexes a static string table with it, and compares it against
+      ints throughout Camera.cpp.

@@ -175,9 +175,15 @@ namespace GameLogicTests
         // cleanly rather than walking an empty unit list.
         location.m_teams = new Team[NUM_TEAMS];
 
-        Vector3 pos(1.0f, 2.0f, 3.0f);
-        Vector3 vel(4.0f, 5.0f, 6.0f);
-        Assert::IsFalse(location.GetSoundSource(WorldObjectId(1, 0, 7, 42), &pos, &vel));
+        DirectX::XMFLOAT3 pos(1.0f, 2.0f, 3.0f);
+        DirectX::XMFLOAT3 vel(4.0f, 5.0f, 6.0f);
+        // GetSoundSource still takes Vector3 out-pointers and stays that way
+        // until T12 converts the *Access seam. The seam converts by reference
+        // and does nothing through a pointer, so &AsLegacy is what reaches a
+        // legacy out-parameter from native storage. Both calls go when T12
+        // lands; until then this is the documented escape hatch rather than a
+        // legacy type surviving in Tests/.
+        Assert::IsFalse(location.GetSoundSource(WorldObjectId(1, 0, 7, 42), &AsLegacy(pos), &AsLegacy(vel)));
 
         // Documented contract: the outputs are untouched when it returns false.
         Assert::AreEqual(1.0f, pos.x, 0.0001f);

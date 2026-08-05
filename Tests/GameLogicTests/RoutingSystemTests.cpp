@@ -1,7 +1,6 @@
 #include "pch.h"
 
 #include "RoutingSystem.h"
-#include "Vector3.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -23,9 +22,9 @@ namespace GameLogicTests
       TEST_METHOD(WayPointsKeepInsertionOrder)
       {
         Route route(7);
-        route.AddWayPoint(Vector3(10.0f, 0.0f, 0.0f));
-        route.AddWayPoint(Vector3(20.0f, 0.0f, 0.0f));
-        route.AddWayPoint(Vector3(30.0f, 0.0f, 0.0f));
+        route.AddWayPoint(DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f));
+        route.AddWayPoint(DirectX::XMFLOAT3(20.0f, 0.0f, 0.0f));
+        route.AddWayPoint(DirectX::XMFLOAT3(30.0f, 0.0f, 0.0f));
 
         Assert::AreEqual(size_t(3), route.m_wayPoints.size());
         Assert::AreEqual(10.0f, route.GetWayPoint(0)->GetPos().x, 0.0001f);
@@ -36,7 +35,7 @@ namespace GameLogicTests
       TEST_METHOD(GetWayPointRejectsAnIndexOffTheEnd)
       {
         Route route(7);
-        route.AddWayPoint(Vector3(10.0f, 0.0f, 0.0f));
+        route.AddWayPoint(DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f));
 
         Assert::IsNull(route.GetWayPoint(1));
         Assert::IsNull(route.GetWayPoint(-1));
@@ -45,19 +44,19 @@ namespace GameLogicTests
       TEST_METHOD(NearestWayPointIsByDistance)
       {
         Route route(7);
-        route.AddWayPoint(Vector3(0.0f, 0.0f, 0.0f));
-        route.AddWayPoint(Vector3(100.0f, 0.0f, 0.0f));
-        route.AddWayPoint(Vector3(200.0f, 0.0f, 0.0f));
+        route.AddWayPoint(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
+        route.AddWayPoint(DirectX::XMFLOAT3(100.0f, 0.0f, 0.0f));
+        route.AddWayPoint(DirectX::XMFLOAT3(200.0f, 0.0f, 0.0f));
 
-        Assert::AreEqual(1, route.GetIdOfNearestWayPoint(Vector3(90.0f, 0.0f, 0.0f)));
-        Assert::AreEqual(2, route.GetIdOfNearestWayPoint(Vector3(1000.0f, 0.0f, 0.0f)));
+        Assert::AreEqual(1, route.GetIdOfNearestWayPoint(DirectX::XMFLOAT3(90.0f, 0.0f, 0.0f)));
+        Assert::AreEqual(2, route.GetIdOfNearestWayPoint(DirectX::XMFLOAT3(1000.0f, 0.0f, 0.0f)));
       }
 
       TEST_METHOD(AnEmptyRouteHasNoNearestWayPoint)
       {
         Route route(7);
 
-        Assert::AreEqual(-1, route.GetIdOfNearestWayPoint(Vector3(0.0f, 0.0f, 0.0f)));
+        Assert::AreEqual(-1, route.GetIdOfNearestWayPoint(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)));
       }
 
       TEST_METHOD(BuildingWayPointsRememberTheirBuilding)

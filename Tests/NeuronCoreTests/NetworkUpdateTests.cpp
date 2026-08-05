@@ -2,11 +2,6 @@
 
 #include "ByteStream.h"
 #include "NetworkUpdate.h"
-// Explicit since directxmath-migration T9: NetworkUpdate.h stores XMFLOAT3 now
-// and no longer includes Vector3.h, which this file had been getting through it.
-// The tests still build positions as Vector3 deliberately — that is what the
-// callers of SetWorldPos pass today, so it is the conversion path being pinned.
-#include "Vector3.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -52,7 +47,7 @@ namespace NeuronCoreTests
         _update.SetSync(1);
         // Controls before position: SetTeamControls would otherwise overwrite it.
         _update.SetTeamControls(TeamControls());
-        _update.SetWorldPos(Vector3(1.0f, 1.0f, 1.0f));
+        _update.SetWorldPos(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
       }
 
     public:
@@ -118,7 +113,7 @@ namespace NeuronCoreTests
         update.SetEntityType(3);
         update.SetNumTroops(20);
         update.SetBuildingID(-1);
-        update.SetWorldPos(Vector3(1.0f, 2.0f, 3.0f));
+        update.SetWorldPos(DirectX::XMFLOAT3(1.0f, 2.0f, 3.0f));
 
         int length = 0;
         char* read = update.GetByteStream(&length);
@@ -154,7 +149,7 @@ namespace NeuronCoreTests
         // Built in the order SendIAmAlive builds it, which matters more than it
         // looks — see TheWorldPositionIsTheTeamControlsMousePosition below.
         TeamControls controls;
-        controls.m_mousePos = Vector3(-4.5f, 0.0f, 4.5f);
+        controls.m_mousePos = DirectX::XMFLOAT3(-4.5f, 0.0f, 4.5f);
         controls.m_unitMove = 1;
         controls.m_cameraEntityTracking = 1;
 
@@ -204,7 +199,7 @@ namespace NeuronCoreTests
         // This test exists to make that fact fail loudly if the aliasing is
         // ever removed, and to document it where the next person will look.
         NetworkUpdate update;
-        update.SetWorldPos(Vector3(1.0f, 2.0f, 3.0f));
+        update.SetWorldPos(DirectX::XMFLOAT3(1.0f, 2.0f, 3.0f));
         Assert::AreEqual(1.0f, update.m_teamControls.m_mousePos.x);
 
         TeamControls empty;
@@ -228,7 +223,7 @@ namespace NeuronCoreTests
         update.SetLastSequenceId(11);
         update.SetTeamId(2);
         update.SetBuildingID(37);
-        update.SetWorldPos(Vector3(-1.5f, 64.0f, 2.25f));
+        update.SetWorldPos(DirectX::XMFLOAT3(-1.5f, 64.0f, 2.25f));
 
         int length = 0;
         char* read = update.GetByteStream(&length);
@@ -258,7 +253,7 @@ namespace NeuronCoreTests
         update.SetLastSequenceId(12);
         update.SetTeamId(1);
         update.SetProgram(5);
-        update.SetWorldPos(Vector3(10.25f, -0.5f, 300.0f));
+        update.SetWorldPos(DirectX::XMFLOAT3(10.25f, -0.5f, 300.0f));
 
         int length = 0;
         char* read = update.GetByteStream(&length);
@@ -319,7 +314,7 @@ namespace NeuronCoreTests
         sent.SetLastSequenceId(77);
         sent.SetTeamId(3);
         sent.SetProgram(5);
-        sent.SetWorldPos(Vector3(10.25f, -0.5f, 300.0f));
+        sent.SetWorldPos(DirectX::XMFLOAT3(10.25f, -0.5f, 300.0f));
 
         int length = 0;
         char* stream = sent.GetByteStream(&length);
