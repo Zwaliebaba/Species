@@ -2328,8 +2328,34 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
+      DONE, straight after T22 as the re-pointing predicted, and it was as
+      small as the note below says: eleven ray-cast locals, five spawn
+      velocities and one port-position pair.
+
+      WHAT WAS ACTUALLY LEFT, once T22 had repaired the GetClickRay locals so
+      these files would compile at all:
+
+        eleven `Vector3 _pos` / `hitPos` locals feeding Landscape::RayHit
+        five g_zeroVector velocities passed to SpawnEntities and SpawnSpirit
+        one `Vector3 portPos, portFront` pair feeding GetPortPosition
+        one `_pos + Vector3(syncsfrand, 0, syncsfrand)` in SpawnSpiritButton
+
+      THE OUT-POINTERS DID NOT CONVERT, and could not: Landscape::RayHit still
+      takes Vector3*, T28 owns that signature, and T28 depends on THIS task.
+      So the locals are native and the call reads &AsLegacy -- eleven seam uses
+      ADDED here that T28 removes. That is the right way round: the storage
+      moves first and the signature follows, which is the rule the plan learned
+      in T16 and got wrong in T12.
+
+      g_zeroVector became a file-static s_noVelocity in CheatWindow rather than
+      five repeated braced literals. T25 retires the legacy constant.
+
+      The RNG line is commented at the site: two syncsfrand calls in one
+      expression, left in that order and that expression, because the call
+      sequence is explicitly NOT sanctioned to change.
+
       RE-POINTED 2026-08-04, on the same defect as T12 and for the third time
       in this plan: a task scoped by DIRECTORY over code that owns no storage.
 

@@ -62,8 +62,11 @@ class LandscapeTileButton : public SpeciesButton
         DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        Vector3 _pos;
-        g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
+        // Landscape::RayHit keeps its Vector3 out-pointer until
+        // directxmath-migration T28, and the seam does not reach through a
+        // pointer, so &AsLegacy is what writes native storage from it.
+        DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
+        g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
 
         LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
         LandscapeTile* tile = new LandscapeTile();
@@ -232,8 +235,11 @@ class NewTileButton : public SpeciesButton
       DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
       g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-      Vector3 _pos;
-      g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
+      // Landscape::RayHit keeps its Vector3 out-pointer until
+      // directxmath-migration T28, and the seam does not reach through a
+      // pointer, so &AsLegacy is what writes native storage from it.
+      DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
+      g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
 
       LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
       LandscapeTile* tile = new LandscapeTile();
@@ -268,8 +274,11 @@ class NewFlattenAreaButton : public SpeciesButton
       DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
       g_camera->GetClickRay(screenW / 2, screenH / 2, &rayStart, &rayDir);
-      Vector3 _pos;
-      g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
+      // Landscape::RayHit keeps its Vector3 out-pointer until
+      // directxmath-migration T28, and the seam does not reach through a
+      // pointer, so &AsLegacy is what writes native storage from it.
+      DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
+      g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
 
       LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
       LandscapeFlattenArea* def = new LandscapeFlattenArea();
