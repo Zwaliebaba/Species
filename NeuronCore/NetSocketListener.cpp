@@ -44,7 +44,7 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
   m_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (m_sockfd == NET_INVALID_SOCKET)
   {
-    NetDebugOut("Could not create listen socket: %d", NetGetLastError());
+    NetDebugOut("Could not create listen socket: {}", NetGetLastError());
     return NetRetCode::NetFailed;
   }
 
@@ -103,7 +103,7 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
       if (NetIsMsgTruncated(err) || NetIsReset(err))
         continue;
 
-      NetDebugOut("Listener receive failed: %d", err);
+      NetDebugOut("Listener receive failed: {}", err);
       return NetRetCode::NetFailed;
     }
 

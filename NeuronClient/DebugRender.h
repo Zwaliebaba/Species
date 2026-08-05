@@ -15,7 +15,13 @@ void RenderVerticalCylinder(DirectX::XMFLOAT3 const& _centreBase, DirectX::XMFLO
                             RGBAColour const& _col = RGBAColour(255, 255, 255));
 
 void RenderArrow(DirectX::XMFLOAT3 const& start, DirectX::XMFLOAT3 const& end, float width, RGBAColour const& _col = RGBAColour(255, 255, 255));
-void RenderPointMarker(DirectX::XMFLOAT3 const& point, char const* text, ...);
+// Takes the label itself, not a format for it. strings-modernised T18: this
+// was `(point, char const* text, ...)` over a char[512] and a vsprintf, and
+// its one caller has always passed a runtime label with no arguments. Making
+// it a std::format entry point would have been the wrong shape twice over --
+// nothing formats, and a label containing a brace would then throw where it
+// used to print.
+void RenderPointMarker(DirectX::XMFLOAT3 const& point, char const* _text);
 
 void PrintMatrix(const char* _name, GLenum _whichMatrix);
 void PrintMatrices(const char* _title);

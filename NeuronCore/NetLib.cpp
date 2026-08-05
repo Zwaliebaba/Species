@@ -2,22 +2,23 @@
 
 #include "pch.h"
 
-#include <stdarg.h>
 #include <stdio.h>
+
+#include <string>
 
 #include "NetLib.h"
 
 
-void NetDebugOut(char const *_fmt, ...)
+void NetDebugOutMessage(std::string_view _message)
 {
-    char buf[512];
-    va_list ap;
-    va_start (ap, _fmt);
-    vsprintf(buf, _fmt, ap);
+  // string_view is not guaranteed null-terminated and both sinks want a C
+  // string, so this copies once. The char[512] it replaces was written
+  // through an unbounded vsprintf.
+  const std::string message(_message);
 #ifdef WIN32
-    OutputDebugStringA(buf);
+  OutputDebugStringA(message.c_str());
 #else
-	fprintf(stderr, "%s\n", buf);
+  fprintf(stderr, "%s\n", message.c_str());
 #endif
 }
 

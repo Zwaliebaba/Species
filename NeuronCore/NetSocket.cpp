@@ -108,7 +108,7 @@ NetRetCode NetSocket::Connect()
   m_sockfd = socket(AF_INET, sockType, 0);
   if (m_sockfd == NET_INVALID_SOCKET)
   {
-    NetDebugOut("Could not create socket: %d", NetGetLastError());
+    NetDebugOut("Could not create socket: {}", NetGetLastError());
     return NetRetCode::NetFailed;
   }
 
@@ -120,7 +120,7 @@ NetRetCode NetSocket::Connect()
   NetHostDetails* pHostent = NetGetHostByName(m_hostname);
   if (!pHostent)
   {
-    NetDebugOut("Host address resolution failed for %s", m_hostname);
+    NetDebugOut("Host address resolution failed for {}", m_hostname);
     return NetRetCode::NetFailed;
   }
   servaddr->sin_addr.s_addr = *((unsigned long*)pHostent->h_addr_list[0]);
@@ -138,7 +138,7 @@ NetRetCode NetSocket::Connect()
     // never read back from winsock, so every failure fell through to the
     // catch-all branch no matter what had actually gone wrong.
     err = NetGetLastError();
-    NetDebugOut("Connection error: %d", err);
+    NetDebugOut("Connection error: {}", err);
     if (NetIsBlockingError(err))
     {
       timeout += 100;
@@ -156,7 +156,7 @@ NetRetCode NetSocket::Connect()
     }
     else
     {
-      NetDebugOut("Connect to host failed: %d", err);
+      NetDebugOut("Connect to host failed: {}", err);
       ret = NetRetCode::NetFailed;
       break;
     }

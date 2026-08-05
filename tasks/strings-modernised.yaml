@@ -1488,7 +1488,6 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
     notes: |
       Added 2026-08-05 at e7a1a88, alongside T17 and for the same reason: the
       v-family was invisible to every acceptance grep in this plan.
@@ -1522,6 +1521,53 @@ tasks:
       That does not change parallel_safe: all nine are still disjoint from
       every other ready task's measured reach, which is why this stayed in
       Batch 5 after the correction rather than dropping out of it.
+
+      DONE 2026-08-05, in Batch 5. Seven files edited, of the nine the reach
+      measurement named -- and the two it named that needed nothing are worth
+      separating out, because reach and edit-count are not the same number.
+      NetThreadWin32.cpp's single call and PersistingDebugRender.cpp's single
+      call both compile unchanged: the first passes a bare literal with no
+      specifier, the second passes a runtime label to a function that no
+      longer formats. A file can be in a task's reach and still need no diff;
+      what the measurement buys is knowing that in advance instead of finding
+      out from a build.
+
+      NetDebugOut IS a std::format_string entry point, as the acceptance
+      asked. It is a template in NetLib.h forwarding to NetDebugOutMessage,
+      which is the non-template that keeps the WIN32/else #ifdef in the .cpp.
+      All fourteen call sites are literals, so compile-time checking is real
+      here rather than theoretical; six carried %d or %s and are now {}.
+
+      RENDERPOINTMARKER IS NOT, AND THE ACCEPTANCE LINE WAS WRONG TO ASK.
+      It takes `char const* _text` -- the label itself, not a format for it.
+      Two reasons, and the second is the one that decided it. Nothing formats:
+      its only caller passes PersistingDebugRender's char[64] label with no
+      arguments, and always has. And a std::format entry point would THROW on
+      a label containing a brace, where the old code printed it -- turning a
+      debug helper into a crash on data a developer typed. string_view was
+      considered and rejected too: the label is handed to DrawText3DCentre,
+      which wants a C string, and string_view does not promise one.
+
+      ONE BEHAVIOUR FIX WENT WITH IT. The old body vsprintf'd into char[512]
+      and passed the RESULT to DrawText3DCentre, which is itself variadic
+      until T12 -- so a label containing a percent sign was interpreted as a
+      format twice, the second time against no arguments at all. The call now
+      passes "%s" with the label as an argument. When T12 converts
+      TextRenderer this line becomes "{}" and the hazard is gone for good.
+
+      Script::ReportError was deleted outright. Confirmed first: exactly one
+      occurrence tree-wide, its own declaration, with no definition and no
+      caller. Species/Script.h still forward-declares class LevelFile, which
+      is now unused by that header; left alone as it is not this task's file
+      to tidy.
+
+      NOT BUILT. No MSVC here. The acceptance greps were run and pass -- the
+      v-family over the six projects now returns only TextRenderer.cpp (eight,
+      T12's) and FileWriter.cpp (one, T17's) -- and all seven checks pass, but
+      nothing in this task has been compiled, and the netcode debug output it
+      touches is not exercised by the unit suite or by the Garden smoke test.
+
+    status: done
 
   - id: T19
     title: Convert GlobalLocation's and GlobalEventAction's filename members byte-identically
