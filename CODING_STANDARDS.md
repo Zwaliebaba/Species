@@ -59,10 +59,10 @@ is a migration task, not something to do opportunistically.
 **The UI scaffolding rename is done.** `DarwiniaWindow` → `SpeciesWindow` (213),
 `DarwiniaButton` → `SpeciesButton` (178), `DarwiniaModeButton` (6), the
 `DARWINIA_*` macros (30), and the `About*` pair that sat on top of them — landed
-via `tasks/rename-scaffolding.yaml`, CI-verified.
+via `tasks/Archive/rename-scaffolding.yaml`, CI-verified.
 
 **The entity rename is done too.** `Darwinian` → `Citizen` landed via
-`tasks/rename-darwinian.yaml` T3: the class and its file, `TypeCitizen` and every
+`tasks/Archive/rename-darwinian.yaml` T3: the class and its file, `TypeCitizen` and every
 identifier derived from it, 37 `GameData/` filenames, the level-file entity
 strings, the `Sounds.txt` groups and the entity-derived language keys, all in one
 commit. What remains named after the old game is **branding only**:
@@ -586,7 +586,7 @@ is finished and its headers are deleted; stage 4 has **112** `strcpy`-family cal
 across 42 files, down from 367 at the start of the restart and from 161 before
 `strings-modernised` T5; stage 5 has **32**
 `SAFE_DELETE`/`SAFE_FREE` occurrences and `EmptyAndDelete` in 13 files. Stages 1, 2, 6 and 7 landed with
-`tasks/neuroncore-layering.yaml`; stage 8 landed with `7ee8c00`. The only `g_app`
+`tasks/Archive/neuroncore-layering.yaml`; stage 8 landed with `7ee8c00`. The only `g_app`
 left anywhere under `NeuronCore/` is a comment explaining what replaced it.
 
 ### Converting a file

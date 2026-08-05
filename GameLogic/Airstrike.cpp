@@ -235,8 +235,6 @@ bool SpaceInvader::Advance(Unit* _unit)
       DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&airstrikeUnit->m_attackPosition))));
     if (distToTarget < 90.0f)
     {
-      // Grenade still takes Vector3 until Weapons converts; the seam converts
-      // these on the way in.
       DirectX::XMFLOAT3 dropPos;
       DirectX::XMStoreFloat3(&dropPos, DirectX::XMVectorNegativeMultiplySubtract(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(12.0f),
                                                                                  DirectX::XMLoadFloat3(&m_pos)));

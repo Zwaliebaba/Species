@@ -253,10 +253,17 @@ bool HandleCommonConditions()
 unsigned char GenerateSyncValue()
 {
 #ifdef TARGET_DEBUG
-  Vector3 unitPosition;
-  Vector3 entityPosition;
-  Vector3 laserPosition;
-  Vector3 effectsPosition;
+  // THE ACCUMULATORS, and the one place in this function a conversion can go
+  // wrong silently. Vector3's default constructor zeroed and XMFLOAT3's does
+  // not; these sum thousands of positions and the total feeds the desync
+  // assert below, so starting from uninitialised stack would fire it
+  // spuriously. XMVECTOR accumulators are explicitly zeroed and cannot repeat
+  // the mistake. Component-wise float addition either way, so the arithmetic
+  // is unchanged as well as the order.
+  DirectX::XMVECTOR unitPosition = DirectX::XMVectorZero();
+  DirectX::XMVECTOR entityPosition = DirectX::XMVectorZero();
+  DirectX::XMVECTOR laserPosition = DirectX::XMVectorZero();
+  DirectX::XMVECTOR effectsPosition = DirectX::XMVectorZero();
 
   for (int t = 0; t < NUM_TEAMS; ++t)
   {
@@ -268,14 +275,14 @@ unsigned char GenerateSyncValue()
         if (team->m_units.ValidIndex(u))
         {
           Unit* unit = team->m_units[u];
-          unitPosition += unit->m_centrePos;
+          unitPosition = DirectX::XMVectorAdd(unitPosition, DirectX::XMLoadFloat3(&unit->m_centrePos));
           for (int e = 0; e < unit->m_entities.Size(); ++e)
           {
             if (unit->m_entities.ValidIndex(e))
             {
               Entity* ent = unit->m_entities[e];
-              unitPosition += ent->m_pos;
-              unitPosition += ent->m_vel;
+              unitPosition = DirectX::XMVectorAdd(unitPosition, DirectX::XMLoadFloat3(&ent->m_pos));
+              unitPosition = DirectX::XMVectorAdd(unitPosition, DirectX::XMLoadFloat3(&ent->m_vel));
             }
           }
         }
@@ -286,8 +293,8 @@ unsigned char GenerateSyncValue()
         if (team->m_others.ValidIndex(e))
         {
           Entity* entity = team->m_others[e];
-          entityPosition += entity->m_pos;
-          entityPosition += entity->m_vel;
+          entityPosition = DirectX::XMVectorAdd(entityPosition, DirectX::XMLoadFloat3(&entity->m_pos));
+          entityPosition = DirectX::XMVectorAdd(entityPosition, DirectX::XMLoadFloat3(&entity->m_vel));
         }
       }
     }
@@ -298,8 +305,8 @@ unsigned char GenerateSyncValue()
     if (g_location->m_lasers.ValidIndex(l))
     {
       Laser* laser = g_location->m_lasers.GetPointer(l);
-      laserPosition += laser->m_pos;
-      laserPosition += laser->m_vel;
+      laserPosition = DirectX::XMVectorAdd(laserPosition, DirectX::XMLoadFloat3(&laser->m_pos));
+      laserPosition = DirectX::XMVectorAdd(laserPosition, DirectX::XMLoadFloat3(&laser->m_vel));
     }
   }
 
@@ -308,12 +315,16 @@ unsigned char GenerateSyncValue()
     if (g_location->m_effects.ValidIndex(e))
     {
       WorldObject* wobj = g_location->m_effects[e];
-      effectsPosition += wobj->m_pos;
-      effectsPosition += wobj->m_vel;
+      effectsPosition = DirectX::XMVectorAdd(effectsPosition, DirectX::XMLoadFloat3(&wobj->m_pos));
+      effectsPosition = DirectX::XMVectorAdd(effectsPosition, DirectX::XMLoadFloat3(&wobj->m_vel));
     }
   }
 
-  Vector3 position = unitPosition + entityPosition + laserPosition + effectsPosition;
+  // Left-associated exactly as the original was -- ((u + e) + l) + f. Float
+  // addition is not associative, and this total is compared across clients.
+  DirectX::XMFLOAT3 position;
+  DirectX::XMStoreFloat3(
+    &position, DirectX::XMVectorAdd(DirectX::XMVectorAdd(DirectX::XMVectorAdd(unitPosition, entityPosition), laserPosition), effectsPosition));
   float totalValue = position.x + position.y + position.z;
 
   totalValue -= static_cast<int>(totalValue);
@@ -904,7 +915,7 @@ void RunBootLoaders()
     delete g_app->m_startSequence;
     g_app->m_startSequence = nullptr;
 
-    TheCamera()->SetTarget(Vector3(1000, 500, 1000), Vector3(0, -0.5f, -1));
+    TheCamera()->SetTarget(DirectX::XMFLOAT3(1000, 500, 1000), DirectX::XMFLOAT3(0, -0.5f, -1));
     TheCamera()->CutToTarget();
 
     g_inputManager->Advance(); // clears g_keyDeltas[KEY_ESC]
@@ -947,7 +958,7 @@ void EnterLocation()
   float minX = -borderSize;
   float maxX = g_location->m_landscape.GetWorldSizeX() + borderSize;
   TheCamera()->SetBounds(minX, maxX, minX, maxX);
-  TheCamera()->SetTarget(Vector3(maxX, 1000, maxX), Vector3(-1, -0.7, -1)); // Incase start doesn't exist
+  TheCamera()->SetTarget(DirectX::XMFLOAT3(maxX, 1000, maxX), DirectX::XMFLOAT3(-1, -0.7f, -1)); // Incase start doesn't exist
   TheCamera()->SetTarget("start");
   TheCamera()->CutToTarget();
 

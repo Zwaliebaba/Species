@@ -446,12 +446,47 @@ tasks:
       already skips names like this rather than guessing, so it will not catch
       a mistake here — read the declaration, not the name.
 
+      DONE ON CI RUN 514 (commit a09d0bd), 2026-08-05, all five members: x64
+      Debug builds and the unit suite passes. Not smoke-tested -- a lifetime
+      mistake here is silent, and Virii is simulation code, so the Garden run
+      that T21 and determinism/T2 already need covers this too. Two findings worth carrying:
+
+      THE FILE LIST IS INCOMPLETE AND WAS ALWAYS GOING TO BE. It names seven
+      .cpp files, but a vector's element type is declared in a HEADER, so
+      Building.h, SpawnPoint.h, DropDownMenu.h, Virii.h and InsertionSquad.h
+      all had to change too -- each also gaining <memory>. The list was
+      written from the grep that found the EmptyAndDelete calls, and that grep
+      cannot see where the member is declared. Any remaining task in this plan
+      that names only .cpp files has the same gap.
+
+      TWO SITES NEEDED OWNERSHIP TO START AT THE ALLOCATION, not at the push,
+      and a mechanical `.get()` sweep would have missed both:
+      InsertionSquad::SetWayPoint reads the waypoint again AFTER inserting it,
+      so it keeps a non-owning observer across the move; Virii::RecordHistory
+      fills the record over twenty lines before inserting, so it make_uniques
+      at the top and lets operator-> carry the rest.
+
+      THE ACCEPTANCE GREP STILL RETURNS THREE MATCHES AND ALL THREE ARE PROSE
+      -- comments in FileDialog.cpp and PrefsOtherWindow.cpp, left by
+      containers-replaced T19 and T20, explaining that the legacy helper used
+      plain `delete` where the elements needed `delete[]` or `free`. Rewording
+      them to satisfy a grep would trade a real hazard note for a green tick.
+      They stay. Read the criterion as "no EmptyAndDelete or SAFE_DELETE CALL
+      remains", which is met.
+
+      WHAT IS STILL RAW IN THE LISTED FILES, deliberately not taken here:
+      FileDialog's m_scrollBar and its m_files list of `new char[]` names, and
+      PrefsOtherWindow's language file list. The char* lists are a strings
+      task rather than an ownership one -- they want std::vector<std::string>,
+      not unique_ptr -- and taking them here would have mixed two migrations
+      in one diff.
+
       VIRII IS SIMULATION CODE and the one to do last and carefully. Its
       m_positionHistory is walked from Advance and erased mid-tick at
       Virii.cpp:336; unique_ptr frees at the same program point, which is what
       the intent above requires, but that has to be stated per site in the
       commit rather than assumed.
-    status: todo
+    status: done
 
   - id: T5
     title: Adopt unique_ptr in Species outside App

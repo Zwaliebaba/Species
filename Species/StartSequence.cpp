@@ -145,7 +145,9 @@ void StartSequence::Render()
     glEnd();
   }
 
-  Vector2 cursorPos;
+  // Braced to zero: Vector2's default constructor did it, XMFLOAT2's does not,
+  // and the sentinel test below reads it whether the loop assigned it or not.
+  DirectX::XMFLOAT2 cursorPos{0.0f, 0.0f};
   bool cursorFlash = false;
   float cursorSize = 0.0f;
 
@@ -168,13 +170,15 @@ void StartSequence::Render()
 
       int finishedLen = strlen(theString);
       int texW = g_gameFont.GetTextWidth(finishedLen, caption->m_size);
-      cursorPos.Set(caption->m_x + texW, caption->m_y - 7.25f);
+      cursorPos = DirectX::XMFLOAT2(caption->m_x + texW, caption->m_y - 7.25f);
       cursorFlash = maxTimeLength > stringLength;
       cursorSize = caption->m_size;
     }
   }
 
-  if (cursorPos != Vector2(0, 0))
+  // Vector2::operator!= compared per component against FLT_EPSILON, so this
+  // sentinel test was never an exact one. Kept as it was rather than tightened.
+  if (fabsf(cursorPos.x) >= FLT_EPSILON || fabsf(cursorPos.y) >= FLT_EPSILON)
   {
     if (!cursorFlash || fmod(timeNow, 1) < 0.5f)
     {

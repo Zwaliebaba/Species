@@ -37,6 +37,12 @@ except ImportError:
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TASKS_DIR = REPO_ROOT / "tasks"
+# Plans with nothing left open move here. They are still LOADED, because open
+# plans carry blocked_by edges into them -- forty-one of them as of 2026-08-05 --
+# and an edge into a plan the loader cannot see is an unresolvable reference
+# rather than a satisfied one. They are not VALIDATED or reported by default:
+# a finished plan does not need re-listing on every run.
+ARCHIVE_DIR = TASKS_DIR / "Archive"
 
 REQUIRED_PLAN_KEYS = {"plan", "title", "tasks"}
 REQUIRED_TASK_KEYS = {"id", "title", "intent", "acceptance", "status"}
@@ -400,8 +406,10 @@ def main() -> int:
 
     # blocked_by resolves against every plan in the tree, not just the ones named
     # on the command line, so validating one file still checks its cross-plan
-    # edges.
-    registry = load_registry(sorted(set(list(TASKS_DIR.glob("*.yaml")) + list(paths))))
+    # edges. Archived plans are included here and only here: they still have to
+    # RESOLVE, but they are complete and do not need reporting.
+    known = list(TASKS_DIR.glob("*.yaml")) + list(ARCHIVE_DIR.glob("*.yaml"))
+    registry = load_registry(sorted(set(known + list(paths))))
 
     cycle = find_cross_plan_cycle(registry)
     if cycle:

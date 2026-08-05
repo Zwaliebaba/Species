@@ -75,7 +75,7 @@ server that ticks without `NeuronClient`.** Concretely, all four of:
    fails if the sequence id has not advanced.
 4. The build is green. **Met** — x64 Debug, every push.
 
-**This phase is done.** `tasks/neuroncore-layering.yaml` is the plan that got
+**This phase is done.** `tasks/Archive/neuroncore-layering.yaml` is the plan that got
 there; all thirteen of its tasks are complete.
 
 What that does *not* mean: the game client runs, the world server exists, or
@@ -85,7 +85,7 @@ things above it, so a server can be built without dragging a renderer in.
 Deliberately *not* the exit criterion: the rest of the tree's upward includes,
 and the client running. Both matter; neither gated the world server. The
 allowlist stood at 628 when this phase ended and is **gone** —
-`tasks/layering-inversion.yaml` took it to zero and deleted it.
+`tasks/Archive/layering-inversion.yaml` took it to zero and deleted it.
 
 > **Note:** the game runs again as of `7ee8c00`. That is recorded here because
 > this file is where it gets recorded — see *What working looks like*. It does
@@ -148,7 +148,7 @@ NeuronCore                   no dependencies
 
 **Includes may only ever point downward, and the tree obeys this.** Zero upward
 includes, down from the 628 inherited from Darwinia's single-binary layout.
-`tasks/layering-inversion.yaml` removed them over eighteen tasks and deleted the
+`tasks/Archive/layering-inversion.yaml` removed them over eighteen tasks and deleted the
 allowlist on the way out.
 
 What went, and how: `App.h` — no file below `Species` includes it — the frame
@@ -164,7 +164,7 @@ include, the design is wrong: move the shared declaration down into a layer both
 sides can see, or invert the dependency behind an interface. Do not recreate the
 allowlist.
 
-`tasks/neuroncore-layering.yaml` is the plan that eliminated the `NeuronCore`
+`tasks/Archive/neuroncore-layering.yaml` is the plan that eliminated the `NeuronCore`
 entries. All thirteen of its tasks are done — including T10, which dropped the
 upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 
@@ -326,6 +326,48 @@ was in rendering or in the eye. The temporary checksum commit that answered it
 (`57386fb`) has been reverted. `tasks/directxmath-migration.yaml` T13 carries
 the detail.
 
+**Run at `bd03d4e` (2026-08-05), owner-reported: THE SMOKE TEST FINISHED
+SUCCESSFULLY.** This is the run `directxmath-migration` T21 and
+`determinism` T2 were both waiting on, and one run closed both — they are the
+same seven steps on the same build, and Spirit.cpp carried both an RNG change
+and a math conversion into it. It is the first time the GameLogic wave
+(T14–T19: entities, creatures, buildings, world, effects, weapons) has been in
+front of a running game, and the first Garden run since `b0bde71`.
+
+Reported as "smoke test finished successfully", with trees confirmed visible
+again. That is the owner's word for the whole run; this file does not claim a
+per-step breakdown it was not given.
+
+**Two objects were reported missing during that run. One was a real defect and
+one was not, and the difference is worth keeping.**
+
+- **A research item was not there — and that was correct.** The owner had
+  raised their research level, and `ResearchItem::Advance` removes an item
+  whose research you already hold at that level. Working as designed. Recorded
+  so nobody investigates it a second time: *a missing research item is the
+  expected result of already owning that research.*
+
+- **THE TREES HAD DISAPPEARED, and that was real.** Found and fixed — `Tree::RenderBranch` crossed two vectors that
+are identical on the trunk, so the cross product was exactly zero, and
+`XMVector3Normalize` answers zero where `Vector3::Normalise` answered (0,0,1).
+Zero there collapses the trunk quads to zero width *and* hands all four child
+branches a zero right-angle, so the whole tree became an invisible vertical
+line. `directxmath-migration` T17 converted the file; the audit that was
+supposed to catch this missed the one site that degenerates **unconditionally**
+rather than in an edge case. The fallback is now reproduced locally in
+`Tree.cpp` with the reason at the site, and `NeuronMathTests` pins the
+divergence with a negative control.
+
+Confirmed fixed by the same run: the trees are visible again.
+
+> This is what the smoke test is *for*, and it is worth stating plainly: seven
+> green checks, two green CI runs and 180 passing tests all said this tree was
+> fine. None of them renders a tree. The owner looking at the game found it in
+> one run — and in the same run reported a second missing object that turned
+> out to be the game behaving correctly. Both halves of that are the point: the
+> smoke test finds what CI cannot, and a report from it still has to be
+> diagnosed rather than believed.
+
 Earlier runs, kept because the sequence is the evidence:
 
 - **All seven steps, on the layering-inversion branch (2026-08-02)**, after
@@ -398,7 +440,7 @@ its own plan entry — mixing the two produces a diff nobody can review.
 
 **Never reintroduce the layering allowlist.** It went from 628 entries to
 zero and was deleted. An upward include is now a build-stopping error with no
-way to record an exception, which is the point — `tasks/layering-inversion.yaml`
+way to record an exception, which is the point — `tasks/Archive/layering-inversion.yaml`
 has eighteen worked examples of removing one properly. The same check also
 catches a symbol declared in a library header and defined only in an executable,
 which is the same reach with the linker doing the work instead of the
@@ -505,7 +547,7 @@ Real, currently true, and worth knowing before you trip over them:
   perturbing the stream deterministic lockstep depends on. Found 2026-08-04
   while investigating the landscape question, unrelated to it, and it predates
   the DirectXMath work. Not investigated and not fixed; it belongs in
-  `tasks/determinism.yaml` when somebody has established what it costs.
+  `tasks/Archive/determinism.yaml` when somebody has established what it costs.
 - **Cross-architecture play is unproven.** The projects build ARM64 and x64 with
   MSVC float defaults — no `<FloatingPointModel>` is set anywhere in the tree.
   Deterministic lockstep requires bit-identical results, and nobody has verified
@@ -529,7 +571,7 @@ Real, currently true, and worth knowing before you trip over them:
   - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
     runner is a preview image that roughly doubles wall clock, and ARM64 is built
     constantly at the desk anyway. Deliberate, not an oversight.
-- **No upward includes remain, down from 628.** `tasks/layering-inversion.yaml`
+- **No upward includes remain, down from 628.** `tasks/Archive/layering-inversion.yaml`
   is complete and `tools/layering_allowlist.txt` is **deleted** — not emptied,
   deleted, so nobody can reopen it by adding a line. `NeuronCore` also lists no
   include directories at all in its `.vcxproj`, so an upward include there fails
@@ -588,8 +630,11 @@ Real, currently true, and worth knowing before you trip over them:
     afternoon.
   **`Tests/GameLogicTests/LinkStubs.cpp` is now empty**: `GameLogic` no longer
   names a symbol the executable owns, so it links into a test DLL on its own.
-  Entity and building behaviour is finally testable — nobody has written those
-  tests yet, which is `tasks/layering-inversion.yaml` T11. `Species` and `Server` have no
+  Entity and building behaviour is finally testable, and still largely untested.
+  `layering-inversion` T11 is **done** — it wrote ten tests — but they cover
+  spatial indexing (`EntityGridTests`) and waypoint ordering
+  (`RoutingSystemTests`), which is not entity or building BEHAVIOUR. That gap
+  has no owning task; do not follow T11 expecting to find one. `Species` and `Server` have no
   test project at all — an `.exe` cannot be linked into a test DLL, so code in
   either that is worth testing belongs in a library. See
   [`docs/TESTING.md`](docs/TESTING.md).

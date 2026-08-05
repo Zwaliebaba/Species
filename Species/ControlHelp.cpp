@@ -43,7 +43,7 @@
 class HelpIcon
 {
   public:
-    HelpIcon(const char* _filename, const char* _shadowFilename, const Vector2& _setRelativePos);
+    HelpIcon(const char* _filename, const char* _shadowFilename, DirectX::XMFLOAT2 const& _setRelativePos);
 
     void AddTextPosition(int _relx, int _rely);
 
@@ -53,15 +53,21 @@ class HelpIcon
     void Clear();
     void Set(int index, const char* _helpText, float _alpha);
 
-    void Render(const Vector2& _setPosition, float _alpha);
+    void Render(DirectX::XMFLOAT2 const& _setPosition, float _alpha);
 
   private:
     char m_filename[256], m_shadowFilename[256];
-    Vector2 m_setRelativePos;
+    // Braced although the only constructor sets it from its init list:
+    // Vector2's default constructor zeroed, XMFLOAT2's does not, and
+    // check_math_types flags the declaration rather than tracking init lists.
+    // Bracing is free and survives a second constructor being added.
+    DirectX::XMFLOAT2 m_setRelativePos{0.0f, 0.0f};
 
     struct PosText
     {
-        Vector2 m_pos;
+        // Braced to zero: DirectX::XMFLOAT2's default constructor did it and XMFLOAT2's
+        // does not.
+        DirectX::XMFLOAT2 m_pos{0.0f, 0.0f};
         const char* m_text;
         float m_alpha;
     };
@@ -83,7 +89,7 @@ void HelpIcon::AddTextPosition(int _relx, int _rely)
   m_texts.push_back(t);
 }
 
-HelpIcon::HelpIcon(const char* _filename, const char* _shadowFilename, const Vector2& _setRelativePos)
+HelpIcon::HelpIcon(const char* _filename, const char* _shadowFilename, DirectX::XMFLOAT2 const& _setRelativePos)
   : m_setRelativePos(_setRelativePos)
 {
   strcpy(m_filename, _filename);
@@ -135,7 +141,7 @@ void HelpIcon::Set(int _index, const char* _helpText, float _alpha)
 }
 
 
-void HelpIcon::Render(const Vector2& _setPosition, float _alpha)
+void HelpIcon::Render(DirectX::XMFLOAT2 const& _setPosition, float _alpha)
 {
   float iconSize = 50.0f;
   float iconGap = 10.0f;
@@ -158,9 +164,10 @@ void HelpIcon::Render(const Vector2& _setPosition, float _alpha)
 
   iconAlpha *= _alpha;
 
-  Vector2 position = _setPosition + m_setRelativePos;
+  // The only arithmetic this file did on a DirectX::XMFLOAT2; XMFLOAT2 has no operator+.
+  DirectX::XMFLOAT2 const position(_setPosition.x + m_setRelativePos.x, _setPosition.y + m_setRelativePos.y);
 
-  Vector2 iconCentre = Vector2(position.x, position.y);
+  DirectX::XMFLOAT2 iconCentre = DirectX::XMFLOAT2(position.x, position.y);
 
   // if( g_largeMenus )
   //{
@@ -223,7 +230,7 @@ void HelpIcon::Render(const Vector2& _setPosition, float _alpha)
     for (int i = 0; i < m_texts.size(); i++)
     {
       const char* text = m_texts[i].m_text;
-      const Vector2& pos = m_texts[i].m_pos;
+      DirectX::XMFLOAT2 const& pos = m_texts[i].m_pos;
 
       if (text == nullptr)
         continue;
@@ -234,7 +241,7 @@ void HelpIcon::Render(const Vector2& _setPosition, float _alpha)
       //	fontSize *= 1.5f;
       // }
 
-      Vector2 textCentrePos(iconCentre.x + (shadowSize / 2 + iconGap) * pos.x, iconCentre.y + (shadowSize / 2 + iconGap) * pos.y);
+      DirectX::XMFLOAT2 textCentrePos(iconCentre.x + (shadowSize / 2 + iconGap) * pos.x, iconCentre.y + (shadowSize / 2 + iconGap) * pos.y);
 
       g_gameFont.SetRenderOutline(true);
       glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
@@ -256,7 +263,7 @@ class HelpIconSet
     HelpIconSet(int _height);
 
     void AddIcon(HelpIcon* _icon);
-    void Render(Vector2& _setPosition);
+    void Render(DirectX::XMFLOAT2& _setPosition);
 
   private:
     std::vector<HelpIcon*> m_icons;
@@ -275,7 +282,7 @@ HelpIconSet::HelpIconSet(int _height)
 
 void HelpIconSet::AddIcon(HelpIcon* _icon) { m_icons.push_back(_icon); }
 
-void HelpIconSet::Render(Vector2& _setPosition)
+void HelpIconSet::Render(DirectX::XMFLOAT2& _setPosition)
 {
   // Are any of the icons enabled?
   bool atLeastOneEnabled = false;
@@ -345,44 +352,44 @@ void ControlHelpSystem::InitialiseIcons()
   int set = -1;
   // Set up the icons
 
-  m_icons[A] = new HelpIcon("Icons/ButtonA.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(50, 100));
+  m_icons[A] = new HelpIcon("Icons/ButtonA.bmp", "Icons/ButtonAbxyShadow.bmp", DirectX::XMFLOAT2(50, 100));
   m_icons[A]->AddTextPosition(0, 1);
 
-  m_icons[B] = new HelpIcon("Icons/ButtonB.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(100, 50));
+  m_icons[B] = new HelpIcon("Icons/ButtonB.bmp", "Icons/ButtonAbxyShadow.bmp", DirectX::XMFLOAT2(100, 50));
   m_icons[B]->AddTextPosition(1, 0);
 
-  m_icons[X] = new HelpIcon("Icons/ButtonX.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(0, 50));
+  m_icons[X] = new HelpIcon("Icons/ButtonX.bmp", "Icons/ButtonAbxyShadow.bmp", DirectX::XMFLOAT2(0, 50));
   m_icons[X]->AddTextPosition(-1, 0);
 
-  m_icons[Y] = new HelpIcon("Icons/ButtonY.bmp", "Icons/ButtonAbxyShadow.bmp", Vector2(50, 0));
+  m_icons[Y] = new HelpIcon("Icons/ButtonY.bmp", "Icons/ButtonAbxyShadow.bmp", DirectX::XMFLOAT2(50, 0));
   m_icons[Y]->AddTextPosition(0, -1);
 
-  m_icons[DPAD] = new HelpIcon("Icons/ButtonDpad.bmp", "Icons/ButtonControlShadow.bmp", Vector2(50, 0));
+  m_icons[DPAD] = new HelpIcon("Icons/ButtonDpad.bmp", "Icons/ButtonControlShadow.bmp", DirectX::XMFLOAT2(50, 0));
   m_icons[DPAD]->AddTextPosition(1, 0);
   m_icons[DPAD]->AddTextPosition(0, -1);
   m_icons[DPAD]->AddTextPosition(0, 1);
 
   const int hsep = 25;
 
-  m_icons[LB] = new HelpIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", Vector2(-hsep + 25, 0));
+  m_icons[LB] = new HelpIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", DirectX::XMFLOAT2(-hsep + 25, 0));
   m_icons[LB]->AddTextPosition(-1, 0);
 
-  m_icons[RB] = new HelpIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", Vector2(+hsep + 75, 0));
+  m_icons[RB] = new HelpIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", DirectX::XMFLOAT2(+hsep + 75, 0));
   m_icons[RB]->AddTextPosition(1, 0);
 
   const int vsep = -25;
   const int yoffset = -25;
 
-  m_icons[LA] = new HelpIcon("Icons/ButtonLa.bmp", "Icons/ButtonControlShadow.bmp", Vector2(-hsep + 50, yoffset + -vsep + 0));
+  m_icons[LA] = new HelpIcon("Icons/ButtonLa.bmp", "Icons/ButtonControlShadow.bmp", DirectX::XMFLOAT2(-hsep + 50, yoffset + -vsep + 0));
   m_icons[LA]->AddTextPosition(1, 0);
 
-  m_icons[LT] = new HelpIcon("Icons/ButtonLt.bmp", "Icons/ButtonTriggerShadow.bmp", Vector2(-hsep + 0, yoffset + -vsep + 0));
+  m_icons[LT] = new HelpIcon("Icons/ButtonLt.bmp", "Icons/ButtonTriggerShadow.bmp", DirectX::XMFLOAT2(-hsep + 0, yoffset + -vsep + 0));
   m_icons[LT]->AddTextPosition(0, 1);
 
-  m_icons[RA] = new HelpIcon("Icons/ButtonRa.bmp", "Icons/ButtonControlShadow.bmp", Vector2(+hsep + 50, yoffset + +vsep + 100));
+  m_icons[RA] = new HelpIcon("Icons/ButtonRa.bmp", "Icons/ButtonControlShadow.bmp", DirectX::XMFLOAT2(+hsep + 50, yoffset + +vsep + 100));
   m_icons[RA]->AddTextPosition(-1, 0);
 
-  m_icons[RT] = new HelpIcon("Icons/ButtonRt.bmp", "Icons/ButtonTriggerShadow.bmp", Vector2(+hsep + 100, yoffset + +vsep + 100));
+  m_icons[RT] = new HelpIcon("Icons/ButtonRt.bmp", "Icons/ButtonTriggerShadow.bmp", DirectX::XMFLOAT2(+hsep + 100, yoffset + +vsep + 100));
   m_icons[RT]->AddTextPosition(0, 1);
 
   m_sets[++set] = new HelpIconSet(175);
@@ -779,7 +786,7 @@ void ControlHelpSystem::Render()
     return;
   }
 
-  Vector2 setPosition(g_renderer->ScreenW() - 200, 50);
+  DirectX::XMFLOAT2 setPosition(g_renderer->ScreenW() - 200, 50);
   g_gameFont.BeginText2D();
 
   bool inCutscene = false;

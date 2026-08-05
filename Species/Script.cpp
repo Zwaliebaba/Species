@@ -133,10 +133,10 @@ void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
   if (g_location)
     return;
 
-  Vector3 targetPos;
+  DirectX::XMFLOAT3 targetPos(0.0f, 0.0f, 0.0f);
 
   if (stricmp(_locationName, "heaven") == 0)
-    targetPos = g_zeroVector;
+    targetPos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   else
   {
     int locationId = g_globalWorld->GetLocationId(_locationName);
@@ -150,7 +150,10 @@ void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
     TheCamera()->RequestMode(Camera::ModeSphereWorldScripted);
 
   TheCamera()->SetTargetFOV(_fov);
-  TheCamera()->SetTarget(targetPos, Vector3(0, 0, 1), g_upVector);
+  // g_upVector is still a Vector3; g_XMIdentityR1 is the (0,1,0,0) it holds.
+  DirectX::XMFLOAT3 worldUp;
+  DirectX::XMStoreFloat3(&worldUp, DirectX::g_XMIdentityR1);
+  TheCamera()->SetTarget(targetPos, DirectX::XMFLOAT3(0, 0, 1), worldUp);
 }
 
 void Script::RunCommand_CamReset()

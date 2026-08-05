@@ -53,7 +53,8 @@ InsertionSquad::InsertionSquad(int teamId, int unitId, int numEntities, DirectX:
 }
 
 
-InsertionSquad::~InsertionSquad() { EmptyAndDelete(m_positionHistory); }
+// m_positionHistory owns its elements now, so the vector's destructor is enough.
+InsertionSquad::~InsertionSquad() = default;
 
 
 Entity* InsertionSquad::GetPointMan()
@@ -99,16 +100,20 @@ void InsertionSquad::SetWayPoint(DirectX::XMFLOAT3 const& _pos)
 
   // If we found the point man add his position to the position history
   // otherwise add the position that was passed in as an argument
-  HistoricWayPoint* newWayPoint;
+  std::unique_ptr<HistoricWayPoint> newWayPoint;
   if (pointMan && pointMan->m_enabled)
   {
-    newWayPoint = new HistoricWayPoint(pointMan->m_pos);
+    newWayPoint = std::make_unique<HistoricWayPoint>(pointMan->m_pos);
   }
   else
   {
-    newWayPoint = new HistoricWayPoint(_pos);
+    newWayPoint = std::make_unique<HistoricWayPoint>(_pos);
   }
-  m_positionHistory.insert(m_positionHistory.begin(), newWayPoint);
+
+  // The vector owns it from the insert onwards, and the Route update below
+  // still reads its position, so keep a non-owning observer across the move.
+  HistoricWayPoint const* addedWayPoint = newWayPoint.get();
+  m_positionHistory.insert(m_positionHistory.begin(), std::move(newWayPoint));
 
 
   // If this squad is using a Controller, update the Route
@@ -119,10 +124,10 @@ void InsertionSquad::SetWayPoint(DirectX::XMFLOAT3 const& _pos)
     // LevelFile's WayPoint converts in T18, so GetPos is still legacy.
     DirectX::XMFLOAT3 const lastAddedPos = controller->m_route->m_wayPoints[static_cast<int>(controller->m_route->m_wayPoints.size()) - 1]->GetPos();
     float distance = DirectX::XMVectorGetX(
-      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&lastAddedPos), DirectX::XMLoadFloat3(&newWayPoint->m_pos))));
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&lastAddedPos), DirectX::XMLoadFloat3(&addedWayPoint->m_pos))));
     if (distance > 20.0f)
     {
-      controller->m_route->AddWayPoint(newWayPoint->m_pos);
+      controller->m_route->AddWayPoint(addedWayPoint->m_pos);
     }
   }
 

@@ -33,8 +33,10 @@ SpawnBuilding::SpawnBuilding()
 
 SpawnBuilding::~SpawnBuilding()
 {
-  EmptyAndDelete(m_links);
-  // SAFE_DELETE(m_spiritLink); probably not necessary
+  // m_links owns its elements now, so the vector's own destructor is enough.
+  // m_spiritLink is an observer into g_location and was never owned here --
+  // the commented-out free that used to sit on the next line said "probably
+  // not necessary" and was right.
 }
 
 void SpawnBuilding::Initialise(Building* _template)
@@ -44,7 +46,7 @@ void SpawnBuilding::Initialise(Building* _template)
   SpawnBuilding* spawn = (SpawnBuilding*)_template;
   for (int i = 0; i < static_cast<int>(spawn->m_links.size()); ++i)
   {
-    SpawnBuildingLink* link = spawn->m_links[i];
+    SpawnBuildingLink* link = spawn->m_links[i].get();
     SetBuildingLink(link->m_targetBuildingId);
   }
 }
@@ -70,7 +72,7 @@ bool SpawnBuilding::IsInView()
 
       for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
       {
-        SpawnBuildingLink* link = m_links[i];
+        SpawnBuildingLink* link = m_links[i].get();
         SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
         if (building)
         {
@@ -86,7 +88,7 @@ bool SpawnBuilding::IsInView()
 
       for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
       {
-        SpawnBuildingLink* link = m_links[i];
+        SpawnBuildingLink* link = m_links[i].get();
         SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
         if (building)
         {
@@ -153,7 +155,7 @@ void SpawnBuilding::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
-    SpawnBuildingLink* link = m_links[i];
+    SpawnBuildingLink* link = m_links[i].get();
     SpawnBuilding* building = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
     if (building)
     {
@@ -230,13 +232,13 @@ void SpawnBuilding::RenderAlphas(float _predictionTime)
 
 void SpawnBuilding::SetBuildingLink(int _buildingId)
 {
-  SpawnBuildingLink* link = new SpawnBuildingLink();
+  auto link = std::make_unique<SpawnBuildingLink>();
   link->m_targetBuildingId = _buildingId;
-  m_links.push_back(link);
+  m_links.push_back(std::move(link));
 }
 
 
-void SpawnBuilding::ClearLinks() { EmptyAndDelete(m_links); }
+void SpawnBuilding::ClearLinks() { m_links.clear(); }
 
 
 std::vector<int>* SpawnBuilding::ExploreLinks()
@@ -250,7 +252,7 @@ std::vector<int>* SpawnBuilding::ExploreLinks()
 
   for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
-    SpawnBuildingLink* link = m_links[i];
+    SpawnBuildingLink* link = m_links[i].get();
     link->m_targets.clear();
 
     SpawnBuilding* target = (SpawnBuilding*)g_location->GetBuilding(link->m_targetBuildingId);
@@ -292,7 +294,7 @@ void SpawnBuilding::TriggerSpirit(SpawnBuildingSpirit* _spirit)
 
   for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
-    SpawnBuildingLink* link = m_links[i];
+    SpawnBuildingLink* link = m_links[i].get();
     for (int j = 0; j < static_cast<int>(link->m_targets.size()); ++j)
     {
       int thisLink = link->m_targets[j];
@@ -321,7 +323,7 @@ bool SpawnBuilding::Advance()
 
   for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
-    SpawnBuildingLink* link = m_links[i];
+    SpawnBuildingLink* link = m_links[i].get();
     for (int j = 0; j < static_cast<int>(link->m_spirits.size()); ++j)
     {
       SpawnBuildingSpirit* spirit = link->m_spirits[j];
@@ -362,7 +364,7 @@ void SpawnBuilding::Write(FileWriter* _out)
 
   for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
   {
-    SpawnBuildingLink* link = m_links[i];
+    SpawnBuildingLink* link = m_links[i].get();
     _out->printf("%-6d", link->m_targetBuildingId);
   }
 }

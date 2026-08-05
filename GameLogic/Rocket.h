@@ -22,7 +22,7 @@ class FuelBuilding : public Building
 
     virtual void ProvideFuel(float _level);
 
-    Vector3 GetFuelPosition();
+    DirectX::XMFLOAT3 GetFuelPosition();
 
     FuelBuilding* GetLinkedBuilding();
 
@@ -53,7 +53,7 @@ class FuelGenerator : public FuelBuilding
     float m_pumpMovement;
     float m_previousPumpPos;
 
-    Vector3 GetPumpPos();
+    DirectX::XMFLOAT3 GetPumpPos();
 
   public:
     float m_surges;
@@ -101,7 +101,7 @@ class FuelStation : public FuelBuilding
     void Render(float _predictionTime);
     void RenderAlphas(float _predictionTime);
 
-    Vector3 GetEntrance();
+    DirectX::XMFLOAT3 GetEntrance();
 
     bool Advance();
     bool IsLoading();
@@ -125,7 +125,10 @@ class EscapeRocket : public FuelBuilding
     float m_shadowTimer;
     float m_cameraShake;
 
-    Vector3 m_vel;
+    // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
+    // not, and EscapeRocket's constructor never names m_vel. Render reads it on
+    // the frame before AdvanceFlight first writes it.
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
   public:
     enum

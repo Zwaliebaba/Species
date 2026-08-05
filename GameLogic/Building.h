@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "Matrix34.h"
@@ -100,7 +101,7 @@ class Building : public WorldObject
 
     Shape* m_shape;
     std::vector<ShapeMarker*> m_lights; // Ownership lights
-    std::vector<BuildingPort*> m_ports; // Require Citizens in them to operate
+    std::vector<std::unique_ptr<BuildingPort>> m_ports; // Require Citizens in them to operate
 
     static Shape* s_controlPad;
     static ShapeMarker* s_controlPadStatus;

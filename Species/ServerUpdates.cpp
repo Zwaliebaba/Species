@@ -60,16 +60,18 @@ void ProcessServerUpdates(ServerToClientLetter* _letter)
       }
       else
       {
-        // GetWorldPos returns an XMFLOAT3 as of directxmath-migration T9, and
-        // XMFLOAT3 has no operator!=. Vector3's is a per-component
-        // NearlyEquals at 1e-6, which is what this assert has always meant.
-        DEBUG_ASSERT(Vector3(update->GetWorldPos()) != g_zeroVector);
+        // Vector3::operator!= was a per-component NearlyEquals at 1e-6, which is
+        // what this assert has always meant. XMVector3NearEqual is the native
+        // spelling of exactly that, with the same per-component epsilon.
+        DirectX::XMFLOAT3 const worldPos = update->GetWorldPos();
+        DEBUG_ASSERT(!DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&worldPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)));
         int unitId;
         // The returned Unit* was assigned to an unused local in the original.
         // Dropping the variable keeps the call and its side effects.
         g_location->m_teams[update->m_teamId].NewUnit(update->m_entityType, update->m_numTroops, &unitId, update->GetWorldPos());
-        g_location->SpawnEntities(update->GetWorldPos(), update->m_teamId, unitId, update->m_entityType, update->m_numTroops, g_zeroVector,
-                                         update->m_numTroops * 2);
+        DirectX::XMFLOAT3 const noVelocity(0.0f, 0.0f, 0.0f);
+        g_location->SpawnEntities(update->GetWorldPos(), update->m_teamId, unitId, update->m_entityType, update->m_numTroops, noVelocity,
+                                  update->m_numTroops * 2);
       }
       break;
     }

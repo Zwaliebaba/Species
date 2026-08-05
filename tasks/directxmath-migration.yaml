@@ -932,11 +932,7 @@ tasks:
     project: NeuronClient
     depends_on: [T1, T18, T22]
     files:
-      - NeuronClient/CameraAccess.h
-      - NeuronClient/RendererAccess.h
       - NeuronClient/LocationAccess.h
-      - NeuronClient/GameCursorAccess.h
-      - NeuronClient/UserInputAccess.h
       - NeuronClient/ClientToServer.h
       - NeuronClient/ClientToServer.cpp
     acceptance:
@@ -992,6 +988,18 @@ tasks:
       own its implementors, or be sequenced after them. T11 satisfied that by
       accident of scoping -- SoundLibrary3d's two implementors were already in
       its file list -- rather than by anyone having checked.
+      SHRUNK 2026-08-05: four of its seven files moved to T22. CameraAccess,
+      RendererAccess, GameCursorAccess and UserInputAccess declare sixteen of
+      this task's seventeen math virtuals, and the sole overrider of every one
+      is a Species class T22 owns. A virtual signature cannot move without its
+      overriders, so those four could never have been done here whatever the
+      dependency order said. T22's notes carry the full map.
+
+      WHAT IS LEFT is LocationAccess::GetSoundSource, whose overrider is
+      Location in GameLogic, and the two ClientToServer files, which carry no
+      math virtuals at all. This task is now small, and it should be re-read
+      before being started rather than trusted: a task that owns only
+      signatures is the shape this plan has been wrong about five times.
 
   - id: T13
     title: Owner runs the Garden smoke test on the converted engine layers
@@ -1813,6 +1821,49 @@ tasks:
       collapse to a native XMFLOAT3; where the whole basis is wanted the local
       stays Matrix34 with a "T10's seam" comment. grep for that phrase to find
       the follow-up work.
+
+      DEFECT FOUND BY THE OWNER'S SMOKE TEST, 2026-08-05, and fixed. Trees did
+      not render in The Garden. Tree::RenderBranch computes rightAngleA as the
+      normalised cross product of (to - from) and to, and Generate seeds it with
+      from (0,0,0) and to (0,1,0) -- so the two arguments to the cross product
+      are THE SAME VECTOR and the result is exactly zero. Vector3::Normalise
+      answered that with (0,0,1); XMVector3Normalize answers zero. Zero
+      collapses both branch quads to zero width AND gives all four child
+      branches a zero right-angle, so every branch below the trunk is collinear
+      with it and the tree renders as an invisible vertical line.
+
+      WHY THE AUDIT MISSED IT, which is the reusable part. T1 decided the
+      (0,0,1) fallback would not be reproduced by default, and T15 audited
+      roughly twenty sites for whether they could see a zero-length input --
+      asking each time "is this reachable?". This site is not reachable in an
+      edge case, it degenerates ON EVERY TREE EVERY TIME, and a question phrased
+      as "can this input be zero?" reads straight past a site where the answer
+      is "always". When auditing Normalise, look first for a cross product whose
+      two arguments are the same expression, then for unlikely inputs.
+
+      NOTHING AUTOMATED COULD HAVE CAUGHT IT. It compiles, all seven local
+      checks pass, check_math_types is clean, and the unit suite was green on CI
+      runs 513 and 514. No test in this tree renders a tree. NeuronMathTests now
+      pins the divergence itself, with a negative control that fails if anyone
+      gives XMVector3Normalize the legacy fallback.
+
+      THE REST OF THE TREE WAS SWEPT FOR THE SAME SHAPE, and Tree was the only
+      instance. The net that finds it: for each XMVector3Cross(X, Y), resolve X
+      one level through its local XMVECTOR assignment and ask whether Y is an
+      operand of the resulting difference -- Cross(a - b, a) is zero whenever a
+      and b are parallel, which includes either being the origin. Resolving BOTH
+      sides is what makes the net miss, because `thisBranch` resolves to
+      XMVectorSubtract(to, from) while `to` resolves to XMLoadFloat3(&_to) and
+      the two stop matching textually. Compare the resolved left against the
+      UNRESOLVED right.
+
+      Verified by running it against the pre-fix revision, where it finds
+      Tree.cpp:462, and then across GameLogic, NeuronClient, NeuronCore and
+      Species, where it finds that site and nothing else. NOT added to tools/:
+      one site, now guarded, is not worth a check that would have to learn the
+      difference between guarded and unguarded to avoid crying wolf -- and this
+      plan's checks earn their place by making narrower claims, not broader
+      ones. The recipe is written down here instead.
   - id: T18
     title: Convert the world, landscape and routing
     intent: >
@@ -1986,7 +2037,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
       Spirit.cpp was changed by determinism.yaml T1 and its smoke test (T2
       there) is still open. If that gate has not been run when this task
@@ -2157,6 +2208,89 @@ tasks:
       re-reading before converting: it passes m_angVel.x as YAW, m_angVel.y as
       DIVE and m_angVel.z as ROLL.
 
+      ALL EIGHTEEN FILES ARE NOW CONVERTED, 2026-08-05. Rocket and Weapons
+      landed in two commits, in that order.
+
+      DONE ON CI RUN 513 (commit 2d3593f), which is the msbuild this task's
+      verify line asks for: x64 Debug builds and the unit suite passes with
+      both file pairs in. That is a compile and a suite, and it is not a
+      running game -- T21 is the owner's Garden run and is what this unblocks.
+
+      WHAT THE TWO FILE PAIRS COST, measured after the fact:
+        Rocket   77 type occurrences, 36 legacy method calls, 24 glVertex,
+                 16 AsLegacy, 15 legacy globals
+        Weapons  103 type occurrences, 70 legacy method calls, 26 glVertex,
+                 71 AsLegacy, 6 legacy globals
+      The tree's AsLegacy count went 198 -> 113 across the two, and Weapons
+      kept exactly one: Landscape::RayHit's out-pointer, which is T28's.
+
+      THE FIRST ACCEPTANCE LINE IS NOT LITERALLY MET AND CANNOT BE, which is
+      worth stating plainly rather than ticking. "No legacy math type remains
+      in these files" leaves three names behind, and every one is an API a
+      later task owns:
+
+        - Matrix34, twice in Rocket.cpp, as the RETURN TYPE of
+          ShapeMarker::GetWorldMatrix. That signature is deliberately still
+          legacy across 143 call sites; GunTurret.cpp does the same thing and
+          is CI-green. T25 owns it.
+        - g_upVector and g_zeroVector, five times across Airstrike, Spam and
+          TaskManager -- all in the SEVEN PAIRS THAT LANDED EARLIER, not in
+          Rocket or Weapons, both of which are free of them. T25 owns retiring
+          the globals. Left alone deliberately: those files are already
+          CI-green and rewriting them here buys nothing and risks a red build.
+        - Vector2, once in Weapons.cpp, inside the PointSegDist2D call. T28.
+
+      So the intent -- no legacy math STORAGE and no legacy math COMPUTATION
+      -- is met in all eighteen. The literal wording will only be true after
+      T25 and T28, and it should be read that way rather than re-scoped.
+
+      THE THIRD ACCEPTANCE LINE HAS TWO READINGS AND ONLY ONE IS ACHIEVABLE
+      HERE. "Weapons.cpp's PointSegDist2D call sites compile against the
+      native routine": if that means the ROUTINE is native, T28 owns it and
+      T28 depends on this task, so it cannot be met here -- the line predates
+      T28 being split out on 2026-08-05. If it means the call sites still
+      compile once their arguments are native, that is met: rayStart and
+      rayEnd are XMFLOAT3 now, and Vector2(XMFLOAT3) resolves through one
+      user-defined conversion exactly as Vector2(entity->m_pos) already did on
+      the same line. The second reading is what the line can have meant when
+      it was written.
+
+      THE RNG SEQUENCE IS UNCHANGED IN BOTH FILES, checked rather than
+      asserted: 23 draws in Rocket and 55 in Weapons, in the same order before
+      and after, by grepping both revisions for the six generator names.
+
+      A LATENT CROSS-COMPILER DETERMINISM QUESTION, found while doing this and
+      deliberately not answered. Four sites draw two or three values inside
+      ONE constructor call -- FuelStation::BoardRocket, EscapeRocket::Advance
+      twice, ControllerGrenade::Advance, TurretShell::Advance. C++ does not
+      order argument evaluation, so the sequence those draws consume is
+      MSVC's, not the source's. Every client builds with the same compiler, so
+      it is consistent today and this is not a live desync. Splitting them
+      into statements would have FIXED the order -- to a different one than
+      the game currently has -- so all four are left whole with the reason at
+      the site. It belongs in tasks/determinism.yaml if mixed-toolchain builds
+      ever matter.
+
+      TWO ZERO-INITIALISATION CATCHES, both failure mode 5 and both invisible
+      to the compiler and to CI:
+        - EscapeRocket::m_vel. The constructor never names it; Render and
+          RenderAlphas read it every frame to predict a position, and
+          AdvanceFlight is the only writer and only runs in StateFlight. It
+          would have predicted from uninitialised stack for the whole game up
+          to launch.
+        - Laser::Advance's hitPoint. Landscape::RayHit's RETURN VALUE IS
+          IGNORED and hitPoint is read on the next line either way, so the
+          legacy code was relying on Vector3's zeroing constructor whenever
+          the ray missed.
+      Also braced: Rocket::m_target, MuzzleFlash::m_front, Missile::m_front,
+      m_up and m_target -- none is set by its constructor and Missile reads
+      m_front before writing it.
+
+      ONE PIECE OF DEAD CODE REMOVED RATHER THAN CONVERTED.
+      MuzzleFlash::Render declared `right`, `camUp` and `camRight` and read
+      none of them; converting them would have meant writing new native code
+      with no effect. Checked against HEAD before deleting.
+
   - id: T20
     title: Convert the in-game windows
     intent: >
@@ -2218,7 +2352,7 @@ tasks:
       - All seven Garden smoke-test steps pass, owner-reported
       - Step 5 is run for the full thirty seconds and step 7 is explicitly checked
       - AGENTS.md records the run with its commit hash
-    status: todo
+    status: done
     notes: |
       Blocked on owner execution. All seven steps matter here, unlike T13:
       steps 3 and 4 catch entity creation breaking, step 5 catches NaN
@@ -2229,6 +2363,36 @@ tasks:
       the sanctioned divergence. It means one client disagrees with itself
       across frames, which points at uninitialised XMVECTOR lanes or a NaN, not
       at SIMD arithmetic.
+
+      DONE 2026-08-05 at bd03d4e, owner-reported: "Smoke test finished
+      successfully". The first time the GameLogic wave -- T14 through T19, the
+      entities, creatures, buildings, world, effects and weapons -- has been in
+      front of a running game.
+
+      ONE RUN CLOSED THIS AND determinism/T2 TOGETHER. They are the same seven
+      steps on the same build, and Spirit.cpp carried both an RNG change and a
+      math conversion into it, so asking the owner twice would have bought
+      nothing. That was the recommendation in tasks/_next-batch.md and it held.
+
+      WHAT THE RUN COST, AND IT WAS NOT FREE. It found a real defect that every
+      automated check had passed: the trees did not render, because
+      Tree::RenderBranch depended on Vector3::Normalise's zero-length fallback
+      and the native routine has none. See T17's notes. Fixed, and the same run
+      confirmed the trees are visible again.
+
+      IT ALSO PRODUCED A FALSE ALARM WORTH RECORDING, because the next person
+      will see it too. A research item was reported missing and was NOT a
+      defect: ResearchItem::Advance removes an item whose research the player
+      already holds at that level, and the owner had raised their research
+      level. A missing research item is the EXPECTED result of already owning
+      that research.
+
+      THE ACCEPTANCE IS RECORDED AS GIVEN, NOT AS ASKED. The second line above
+      wants step 5 run for the full thirty seconds and step 7 explicitly
+      checked; what was reported was that the run finished successfully, with
+      trees confirmed visible. This is closed on the owner's word for the run
+      as a whole rather than on a per-step breakdown, and that is stated here
+      rather than papered over.
 
   # ------------------------------------------------------------------
   # Wave 5 — Species, the tests, and the deletion
@@ -2243,6 +2407,13 @@ tasks:
     project: Species
     depends_on: [T21]
     files:
+      # Added 2026-08-05: these four declare pure virtuals carrying math
+      # types whose only overriders are this task's own classes, so the
+      # signature and the override must move in one commit. See notes.
+      - NeuronClient/CameraAccess.h
+      - NeuronClient/RendererAccess.h
+      - NeuronClient/GameCursorAccess.h
+      - NeuronClient/UserInputAccess.h
       - Species/Renderer.h
       - Species/Renderer.cpp
       - Species/Camera.h
@@ -2265,7 +2436,74 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
+    notes: |
+      RE-SCOPED BEFORE STARTING, 2026-08-05, on a measurement rather than
+      after a red build. This task gains four headers from T12.
+
+      THE BLOCKER. CameraAccess, RendererAccess, GameCursorAccess and
+      UserInputAccess declare sixteen pure virtuals between them carrying
+      Vector3, and the ONLY overrider of every one is a class THIS task owns:
+
+        CameraAccess       11 virtuals  ->  Species/Camera.h
+        RendererAccess      3 virtuals  ->  Species/Renderer.h
+        GameCursorAccess    1 virtual   ->  Species/GameCursor.h
+        UserInputAccess     1 virtual   ->  Species/UserInput.h
+        LocationAccess      1 virtual   ->  GameLogic/Location.h  (NOT ours)
+
+      A virtual signature cannot move without every overrider in the same
+      commit -- this plan's structural rule, learned four times and now five.
+      T12 owned the declarations and T22 the overriders, and T12 depends on
+      T22, so NEITHER could move them: T22 cannot make Camera::GetPos return
+      XMFLOAT3 while CameraAccess::GetPos returns Vector3, and T12 cannot
+      change the base without the derived class it does not own.
+
+      One change wearing two task numbers -- what T5 turned out to be in
+      strings-modernised, and what T16 turned out to be here. Resolved the way
+      T16 was: the task that owns the STORAGE takes the signatures with it.
+
+      LocationAccess::GetSoundSource stays with T12, because its overrider is
+      Location in GameLogic, which T18 converted and deliberately left legacy.
+      That is the one pairing this task does not complete.
+
+      THE KEYSTONE COMMIT IS T16-SCALE, measured 2026-08-05 before writing any
+      code. The sixteen virtuals and their sixteen overrides must move in ONE
+      commit, and so must every call site that stops compiling when they do.
+      Mapped rather than discovered:
+
+      CORE, all in one commit and not splittable:
+        NeuronClient/CameraAccess.h  RendererAccess.h  GameCursorAccess.h
+        UserInputAccess.h
+        Species/Camera.h .cpp   Renderer.h .cpp   GameCursor.h .cpp
+        Species/UserInput.h .cpp
+
+      REPAIRS THE SAME COMMIT MUST CARRY, twelve of them OUTSIDE this task's
+      file list:
+        GameLogic/BuildingsWindow.cpp  CheatWindow.cpp  InstantUnitWindow.cpp
+        GameLogic/LandscapeWindow.cpp  TreeWindow.cpp   -- all five are T20's
+        GameLogic/GlobalWorld.cpp  Location.cpp  LaserTrooper.cpp
+        GameLogic/ParticleSystem.cpp  SporeGenerator.cpp  Team.cpp
+        NeuronClient/SoundInstance.cpp
+
+      TWO SHAPES BREAK, and both are compile errors rather than silent:
+
+      1. GetClickRay's OUT-POINTERS, ~28 call sites. It takes Vector3* and the
+         seam converts by reference, so it does nothing through an address --
+         failure mode 7. Sites holding a Vector3 local must convert the local;
+         sites already holding an XMFLOAT3 pass &AsLegacy(x) today and SIMPLIFY
+         to &x, which is this commit removing seam uses rather than adding them.
+
+      2. ARITHMETIC ON A GETTER'S RESULT. XMFLOAT3 has no operators, so
+         `g_camera->GetUp() * size` and `(g_camera->GetPos() - pos).Mag()` stop
+         compiling. Nine sites across LaserTrooper, GlobalWorld, ParticleSystem
+         and SoundInstance. Note LaserTrooper's `g_camera->GetFront() * m_front`
+         is the DOT product, not a scale.
+
+      T20'S FIVE WINDOW FILES ARE THE AWKWARD PART. T20 depends on T22, so they
+      convert later -- but they will not COMPILE unless this commit repairs
+      their GetClickRay locals now. That is the same relationship T16 had with
+      T15 and T17, and it is handled the same way: repair them here, leave the
+      rest of their conversion to T20.
 
   - id: T23
     title: Convert the app, script and server-update code
@@ -2289,7 +2527,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       GenerateSyncValue is inside #ifdef TARGET_DEBUG. It is the only runtime
       determinism check the game has, so it must keep summing the same fields

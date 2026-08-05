@@ -45,7 +45,7 @@ The 19 values of the entity type enum (`GameLogic/Entity.h:23`).
 
 | Entity | File | Notes |
 |---|---|---|
-| **Citizen** | `Citizen.*` | The green population, called `Darwinian` until `tasks/rename-darwinian.yaml` T3. Not directly commanded — they are led, promoted, and herded. 14 states including `StateWorshipSpirit`, `StateOperatingPort`, `StateInsideArmour`, `StateCapturedByAnt`, `StateOnFire`. |
+| **Citizen** | `Citizen.*` | The green population, called `Darwinian` until `tasks/Archive/rename-darwinian.yaml` T3. Not directly commanded — they are led, promoted, and herded. 14 states including `StateWorshipSpirit`, `StateOperatingPort`, `StateInsideArmour`, `StateCapturedByAnt`, `StateOnFire`. |
 | **Engineer** | `Engineer.*` | Collects Spirits and delivers them; the player's manipulator of the spirit economy. |
 | **Officer** | `Officer.*` | A promoted Citizen that issues standing orders to nearby Citizens. Orders are `OrderNone`, `OrderGoto`, `OrderFollow` (`Officer.h:24`). |
 | **Armour** | `Armour.*` | A troop transport Citizens board (`StateApproachingArmour` → `StateInsideArmour`). |

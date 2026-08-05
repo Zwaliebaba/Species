@@ -50,7 +50,7 @@ In this order, completely:
 3. `docs/TASK_DAG.md` — the plan schema you are writing to.
 4. `docs/TESTING.md` — what earns a test, characterization-first conversion.
 5. `docs/ARCHITECTURE.md` — layers, runtime model, where things live.
-6. `tasks/neuroncore-layering.yaml` and `tasks/rename-scaffolding.yaml` — the
+6. `tasks/Archive/neuroncore-layering.yaml` and `tasks/Archive/rename-scaffolding.yaml` — the
    two completed exemplar plans. Match their standard: empirically grounded
    summaries, counts cited with the command that produced them, observable
    acceptance criteria, honest notes.
