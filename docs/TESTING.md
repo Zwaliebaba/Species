@@ -19,14 +19,26 @@ in [`BUILD.md`](BUILD.md) true.
 | Project | Covers | State |
 |---|---|---|
 | `Tests/NeuronCoreTests` | `NeuronCore` | Real coverage. IP conversion, the `speciesRandom` sequence, the `ByteStream` wire macros, `WorldObjectId` identity, the containers, the preferences file format, and the native-math conversions and geometry routines. |
-| `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`, and of the bytes `FileWriter::printf` emits — every format the level and profile writers use, including the width-specified location row and the encrypted form. |
+| `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`, of the bytes `FileWriter::printf` emits — every format the level and profile writers use, including the width-specified location row and the encrypted form — and of `ShapeMarker`'s parse of a shape-file marker block. |
 | `Tests/NeuronServerTests` | `NeuronServer` | Wiring smoke test only — the layer is a stub with no behaviour yet. |
 | `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker, `InputField` and `LevelFile`'s constructors. `LinkStubs.cpp` is empty and on its way out. |
 
-**180 tests as CI counted them on 2026-08-05 at `12581f3`** (run 560). Read the number off
-a run's *Total tests* line rather than from prose — `AGENTS.md` carried a figure
-that was wrong by eleven for a day, and a stale count is worse than none: it
-makes a green run look exactly like new tests that were never compiled.
+**185 tests at `a676611` (2026-08-05).** Read the number off a run's *Total
+tests* line rather than from prose — `AGENTS.md` has carried a wrong figure
+twice now, once low by eleven and once low by five, and a stale count is worse
+than none: it makes a green run look exactly like new tests that were never
+compiled.
+
+**`ShapeMarkerTests` is worth reading before you write a conversion test**, and
+it is five tests over one constructor. Four pin behaviour a `std::string`
+conversion had to preserve; the fifth is a NEGATIVE CONTROL asserting that
+`operator==` against `"SceneRoot"` FAILS on the spelling the shipped data
+actually uses. All 605 `ParentName` lines under `GameData/Shapes` say
+`sceneroot` in lower case while the code looks for `SceneRoot`, so a conversion
+that reached for `operator==` instead of `stricmp` would have failed to parent
+every fragment in every shape in the game — with a green build and a green
+suite. That is the shape of test this suite is short of: not "does the function
+work" but "here is the wrong answer somebody will reach for, pinned as wrong".
 
 `Species` and `Server` have no test project. They are executables, and an `.exe`
 cannot be linked into a test DLL. Code in either that is worth testing is code

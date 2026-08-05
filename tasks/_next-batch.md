@@ -1,62 +1,32 @@
 # The next implementation batch
 
-Written 2026-08-05 at `97b5844`, the merge that closed Batch 3. This is a
-proposal, not a plan — the plans are the five YAML files beside it. It answers
-one question, and this time a narrower one than usual: **which open plans can
-actually be FINISHED, and what stands between here and finishing them.**
+Written 2026-08-05 at `4a40231`, after Batch 4 executed. This is a proposal,
+not a plan — the plans are the five YAML files beside it. It answers one
+question: **of everything that is ready, what should the next batch be, and why
+that rather than the rest.**
 
 Read [`AGENTS.md`](../AGENTS.md) first. [`_restart.md`](_restart.md) is the
 modernisation reading order; it is still current and this file does not
-supersede it. **Batches 1, 2 and 3 are done** — what they were and what they
-taught is at the end of this file.
-
-Three plan files changed with this proposal, and none of the changes re-scopes
-an existing task. `ownership` gained **T10**, which owns the two calls its own
-closing node could not have passed with; `strings-modernised` gained **T20**,
-which owns the file that finding sits in; `language-hygiene/T10` gained the
-file holding 62% of its work; and `determinism/T4` had a declared path
-corrected that pointed at a file which does not exist. All four are described
-below.
-
----
-
-## Why this batch is shaped by plans rather than by tasks
-
-The previous three batches picked the most valuable ready tasks. That was
-right while there were forty of them. There are now **twenty open across five
-plans**, and three of those plans are within a few nodes of done — so the
-question worth asking changed from "what is the best task" to "**what closes a
-plan**".
-
-A closed plan is worth more than the sum of its tasks. It archives, it stops
-being something every future batch has to re-read and re-measure, and — twice
-in this tree — it turned out to be hiding work that only the closing node's
-own acceptance criteria would have caught. That happened again while measuring
-this batch, which is the finding below.
+supersede it. **Batches 1 to 4 are done** — what they were and what they taught
+is at the end of this file.
 
 ---
 
 ## Where every plan stands
 
-Counted from the YAML at `97b5844`, after this proposal's three additions.
-Six plans are complete and in `tasks/Archive/`; five are open.
+Counted from the YAML at `4a40231`. Six plans are complete and in
+`tasks/Archive/`; five are open with **sixteen tasks** between them.
 
-| Plan | done | todo | Nodes between here and archived |
+| Plan | done | todo | What is left |
 |---|---:|---:|---|
 | the six archived plans | 87 | 0 | — |
-| `determinism` | 2 | 2 | **2** — both ready, both parallel-safe, neither needs a build |
-| `ownership` | 5 | 5 | **5** — a 3-deep chain, plus 2 that run beside it |
-| `language-hygiene` | 9 | 3 | **3** — but two of them are joined at one file, see below |
-| `strings-modernised` | 13 | 7 | 7 — two of them large; not closable this batch |
-| `namespace-migration` | 2 | 3 | 3 — cannot start closing until the others do |
+| `determinism` | 5 | 1 | **T6 only, and it is yours** — the smoke test gating T5's RNG change |
+| `ownership` | 8 | 3 | T11, then T6 (yours) → T7. Stage 5 ends here. |
+| `language-hygiene` | 10 | 3 | T10 → T11, and T13 |
+| `namespace-migration` | 2 | 3 | T2 → T4 → T5, and T5 waits on `ownership/T6` |
+| `strings-modernised` | 14 | 6 | the largest remaining plan |
 
-Twenty tasks open, thirteen offered by `--next`. All seven local checks pass at
-`97b5844`, before and after this proposal's edits:
-
-```
-check_project_files  check_layering  check_task_dag  check_containers
-check_math_types     check_format    check_hygiene            — all OK
-```
+All seven local checks pass at `4a40231`, and CI is green on it.
 
 > `check_format` compares against `origin/main`. A container that cloned before
 > the last merge reports a failure that is entirely stale refs — `git fetch
@@ -66,317 +36,188 @@ check_math_types     check_format    check_hygiene            — all OK
 
 ## The finding that shapes this batch
 
-**`ownership/T7` — the node that closes migration stage 5 — could not have
-passed, and would not have found that out until every other task in the plan
-was done.**
+**The tree is now gated on the owner in two places, and almost nothing else is
+gated on anything.**
 
-Its acceptance is `grep -rwE "SAFE_DELETE|SAFE_FREE"` over the six projects
-returning nothing. Run at `97b5844`, that grep returns four files:
+Batch 4 finished the conversions that were blocking each other. What it left is
+a ready set of ten tasks that contest, in total, **two files**:
 
-| File | Sites | Macro | Owner |
-|---|---:|---|---|
-| `NeuronCore/NeuronCore.h` | 2 | both | the definitions — `T7` itself |
-| `Species/App.cpp` | 17 | `SAFE_DELETE` | `ownership/T6` |
-| `Species/GameCursor.cpp` | 10 | `SAFE_DELETE` | `ownership/T5` |
-| **`NeuronClient/Shape.cpp`** | **2** | **`SAFE_FREE`** | **nobody — now `ownership/T10`** |
+| Pair | Contested files |
+|---|---|
+| `ownership/T11` × `strings/T17` | 1 — `GlobalWorld.cpp` |
+| `language-hygiene/T13` × `strings/T17` | 1 — `LevelFile.cpp` |
+| every other pair | **0** |
 
-`ownership/T3` declared `Shape.cpp` and is done, legitimately: **its
-acceptance grep reads `EmptyAndDelete|SAFE_DELETE` and does not name
-`SAFE_FREE`.** The file passed a criterion that was never testing for the
-thing left in it. Both greps are correct in isolation; the gap is that nobody
-ran the *closing* one until the closing node was nearly reachable.
+Compare Batch 4, where five ready tasks contested nine files and the batch
+could not fan out at all. **This one can**, and it is the first that could
+since Batch 1.
 
-This is the same shape as Batch 3's finding — `\bsprintf\b` does not match
-`vsprintf`, so `strings/T9` could have declared a tree-wide zero over eleven
-unbounded `vsprintf` calls. Twice now, in two different plans, the terminal
-"everything is gone" node has been checkable months before it was reachable
-and nobody checked it. The rule worth taking from the second instance:
+What it cannot do is finish anything without you. Two of the sixteen open tasks
+are owner work rather than agent work, and both sit on critical paths:
 
-> **Run a closing node's acceptance grep on the day the node is WRITTEN.** It
-> costs one command, it is the only criterion in a plan that is testable before
-> its dependencies exist, and it is the one whose failure is most expensive —
-> it surfaces when the plan is otherwise finished.
+- **`determinism/T6`** — the Garden smoke test against `determinism/T5`, which
+  moved six simulation-state draws onto the synchronised RNG. That change is
+  already in `main`. Until the run happens the plan cannot close, and nobody
+  knows whether the simulation still behaves.
+- **`ownership/T6`** — App owning its subsystems. Its acceptance requires the
+  game to reach the main menu **after each commit**, and it is the highest
+  blast-radius change in the tree: 17 `SAFE_DELETE`s across the whole subsystem
+  graph, where construction and destruction order is load-bearing because
+  subsystems reach each other during teardown. `ownership/T7` is behind it, and
+  so is `namespace/T5`.
 
-The two calls are in `ShapeMarker::~ShapeMarker`. They are also nearly free to
-fix: the other two classes in the same file (`ShapeFragment` at :374/:376,
-`Shape` at :1404) already free identically-shaped members with a bare `free()`,
-so the macro is the odd one out in its own file. `ownership/T10` records that
-as the likely answer and leaves the decision to whoever runs it.
+**Migration stage 5 cannot end without that second run.** That is the single
+most useful thing to know when planning around this batch.
 
-**The second gap is behind the first.** Those members are `strdup`'d `char*`,
-and `NeuronClient/Shape.cpp` holds **13 `strdup` calls — more than any other
-file in the tree** — while `strings-modernised` declares `StaticShape.cpp` and
-never this file. `strings/T9`'s grep names the strcpy and sprintf families, so
-`strdup` is invisible to it too. That work is now **`strings/T20`**, which
-carries the hazard that makes it non-mechanical: every comparison of these
-names in the tree is `stricmp`, at six sites, and `std::string::operator==`
-matches `strcmp`. A straight conversion silently narrows marker lookup, on
-names that come from `GameData` files rather than from code.
+### What stage 5 has left, measured
+
+```
+EmptyAndDelete   ZERO call sites. Only the two transitional definitions
+                 remain, in SlotMap.h and VectorUtils.h — both dead code now,
+                 and both can go in T7.
+SAFE_FREE        ZERO call sites.
+SAFE_DELETE      17, all in Species/App.cpp, plus the NeuronCore.h definition.
+```
 
 ---
 
 ## The proposal
 
-### Batch 4 — close two plans, and clear the road to the third
+### Batch 5 — three agent tasks that genuinely fan out, and two gates to open
 
-| | Track | Tasks | What it finishes |
-|---|---|---|---|
-| **A** | `determinism` | `T3`, `T4` | **The whole plan.** Both are reading tasks that change no behaviour. |
-| **B** | `ownership` | `T10`, `T5` → `T6` → `T7`, and `T8` | **The whole plan, and migration stage 5.** Also clears `namespace/T5`'s last cross-plan blockers. |
-| **C** | `language-hygiene` | `T12` only, and only after Track B's `T5` | Leaves the plan at `T10` → `T11`, which is one batch of its own. |
+| | Task | Why it is in the batch |
+|---|---|---|
+| 1 | `ownership/T11` — unique_ptr in GlobalWorld | The half of T5 split out for reviewability. 23 raw `new`, 19 raw `delete`, five owning vectors, three subsystem members — all shapes T5 already converted, so it is the best-understood task in the ready set. |
+| 2 | `language-hygiene/T10` — InputType, and delete the dead `ControlTypes.cpp` | **File-disjoint from every other ready task**, measured. It unblocks `lh/T11` (473 sites), the last node in that plan. |
+| 3 | `language-hygiene/T13` — the transition enum and its wrong bound | Small and self-contained, four files. Its only contested file is `LevelFile.cpp`, with `strings/T17`, which is not in this batch. |
 
-**Track A is the one to start now, and it is the only plan-closure available
-to an agent that cannot build Windows.** `determinism/T3` and `T4` verify with
-`check_hygiene.py` and `check_format.py` — no msbuild, no vstest — because
-their deliverable is an answer written into the plan and their acceptance
-forbids a diff outside comments. Two commits close a plan and retire two
-`AGENTS.md` *Known issues* bullets that have been open since 2026-08-02 and
-2026-08-04 respectively.
+**These three can run at once.** `ownership/T11` touches `GlobalWorld.cpp/.h`;
+`lh/T10` touches the input drivers and `ControlTypes.inc`; `lh/T13` touches
+`LevelFile`, `CameraAnimWindow` and `Camera.cpp`. No overlap between any pair.
 
-They are disjoint from each other and from everything except `ownership/T8`,
-which shares `SoundInstance.cpp` and `SoundSystem.cpp` with `T3`. That overlap
-is deliberate and already recorded on both tasks: **same agent, separate
-commits.** Whoever opens `SoundInstance.cpp` for the ownership conversion is
-in the right place to answer the RNG question, and a lifetime conversion plus
-an RNG question in one diff is the review nobody can judge.
+**Their `parallel_safe` flags say otherwise, and the flags are wrong rather
+than the measurement.** All three are `parallel_safe: false`, set when the tree
+was more contested than it is now. Do not silently flip them — measure, then
+update the flag in the same commit as the work, with the measurement in notes.
+That is how `lh/T10`'s note already reads.
 
-**Track B is the spine, and it is strictly serial after its first node.**
-`T10` (three lines, `parallel_safe: true`, no dependencies) can go first or
-alongside. Then `T5` → `T6` → `T7`, each depending on the last. `T8` runs
-beside the chain — it shares no file with `T5`, `T6` or `T7`.
+### The two gates, and what they unlock
 
-Two things to know before starting the chain:
+Both are yours, both are Garden smoke tests, and **they are not the same run**:
 
-- **`T6` needs the owner.** Its acceptance requires the game to reach the main
-  menu after *each* commit, and it is the highest-blast-radius ownership change
-  in the tree — 17 `SAFE_DELETE`s across the whole subsystem graph, where
-  construction and destruction order is load-bearing because subsystems reach
-  each other during teardown. Plan for the gate; do not plan around it.
-- **Two of `T5`'s eight declared files have nothing left matching its
-  acceptance grep.** `LevelFile.cpp/.h` and `GlobalWorld.cpp` carry zero
-  `SAFE_DELETE`/`EmptyAndDelete` at `97b5844` — but they carry 47 raw `new` and
-  38 raw `delete` between them, which is what the task's *intent* is about. The
-  grep is narrower than the task. Read the intent, not the acceptance line, or
-  the two biggest files in the list look already done.
+- `determinism/T6` tests the RNG change. It closes `determinism`.
+- `ownership/T6` tests App's teardown, per commit. It unblocks `ownership/T7`
+  — which ends stage 5 and can delete the two dead `EmptyAndDelete` helpers
+  along with the macros — and `namespace/T5`.
 
-**Track C is one task, and its timing is the whole point.**
-`language-hygiene/T12` is ready and `parallel_safe: true` — and it collides
-with `ownership/T5` over **five** files: `GlobalWorld.cpp`, `LevelFile.cpp`,
-`TaskManager.cpp`, `GameCursor.cpp` and `TaskManagerInterfaceIcons.cpp`. Both
-are parallel-safe, which is once again exactly the wrong reason to run them
-together. It goes after `T5` lands, or it goes in Batch 5.
+Batch 1's gate closed two tasks in one run because they were the same seven
+steps on the same build. These two are not: `ownership/T6` lands commits that
+`determinism/T6` would then be testing on top of. If one run is to serve both,
+run `determinism/T6` **first**, on what is in `main` now.
 
 ### Not in the batch, and why
 
-- **`language-hygiene/T10` and `T11`.** They are the rest of that plan and they
-  should be a batch, not a track in this one. **They are joined at
-  `ControlTypes.inc`:** of T10's 218 `INPUT_TYPE_` sites, **136 are in that
-  one generated table**, and the table was declared by `T11` alone. T10 owns
-  the second column, T11 owns the first, and the existing `T10` → `T11` edge is
-  what keeps them from colliding. T10's file list is corrected here; the
-  measurement is why it is not also in this batch.
-- **`strings-modernised`.** Seven nodes, two of them large (`T12` at 225 call
-  sites in 45 files, `T11` over the tree's most contended member name). It is
-  not closable this batch under any ordering, so it contributes nothing to the
-  plan-closing goal — but **`T18` and `T20` are both small, `parallel_safe:
-  true`, and contested by nothing in Tracks A–C.** They are the two slots a
-  spare agent can take without touching the batch.
+- **`strings/T17` (FileWriter's variadic printf).** Ready, and the only task
+  contesting anything — both contested files in the whole ready set are its. It
+  wants a clear tree, and it is the obvious first task of Batch 6.
+- **`strings/T11` and `T12`.** Ready and large: T12 is 225 call sites in 45
+  files and splits into two populations needing different treatments; T11 is
+  over the tree's most contended member name. Each is a batch's worth alone.
+- **`strings/T18`.** Small, `parallel_safe: true`, contested by nothing — the
+  one slot a fourth agent could take without any measurement.
+- **`ownership/T6`, `determinism/T6`.** Owner work, above.
 - **`namespace/T2`.** Ready, sequenced last on purpose, and it declares whole
-  directories so it contests everything by construction. Note what Track B buys
-  it: `namespace/T5`'s only outstanding cross-plan blockers are `ownership/T5`
-  and `T6`, so closing Track B leaves `namespace` a clean `T2` → `T4` → `T5`
-  chain — the whole plan, in order, with nothing else in its way. **That makes
-  `namespace-migration` the natural Batch 5 or 6, and the last plan standing.**
-- **`strings/T17`.** Ready, and it contests `GlobalWorld.cpp` and
-  `LevelFile.cpp` with `ownership/T5` and `language-hygiene/T12`. It is the
-  three-way collision in this ready set; it wants a clear tree.
-
-### One decision to put to the owner
-
-**`ownership/T10` — bare `free()`, or convert the members?** Option 1 is three
-lines, matches what the other two classes in the same file already do, and
-unblocks `T7` immediately. Option 2 (`std::string`) is stage-4 work in a file
-`strings-modernised` does not own, so taking it inside an `ownership` task
-merges two migration stages in one diff, which this plan's own rule forbids.
-
-Both are written into `T10`, and it is safe in either order — if `strings/T20`
-lands first, `T10` closes as a no-op. **The recommendation is option 1**: it is
-the smaller diff, it is what the file already does three lines away, and it
-keeps the stage boundary the plans are built on. Recorded here as a decision
-rather than taken silently, because "which plan owns this file" is exactly the
-question the two findings above came from.
+  directories so it contests everything by construction. Note what this batch
+  buys it: after `ownership/T6`, `namespace` is a clean `T2` → `T4` → `T5`
+  chain with nothing else in its way — the whole plan, in order. **It is the
+  last plan standing** and wants planning as a project rather than as a batch
+  entry.
 
 ---
 
-## Progress — what Batch 4 actually did, 2026-08-05
+## Progress — what Batch 4 did
 
-Four tasks landed on this branch across five commits. **Neither plan closed**,
-and both reasons are findings rather than slippage.
+Six tasks landed: `determinism/T3` and `T4`, `ownership/T5`, `T8` and `T10`,
+`strings/T20` and `language-hygiene/T12`. Neither plan it was organised around
+closed, and both reasons were findings rather than slippage.
 
-| Task | Outcome |
-|---|---|
-| `determinism/T3`, `T4` | **Done — and done twice.** See below. |
-| `ownership/T10` + `strings/T20` | **Done, one commit**, on the owner's decision. Five new tests. |
-| `ownership/T5` | **Done**, following the intent; `GlobalWorld.cpp` split out as `T11`. |
-| `ownership/T8`, `language-hygiene/T12` | **Not started.** |
+**THE DETERMINISM WORK WAS DONE TWICE, CONCURRENTLY.** This branch and `main`
+both took `determinism/T3` and `T4` on the same day, without either knowing
+about the other, and reached the same answer independently: `speciesRandom()`
+is not the lockstep RNG, `syncrand()` is, and `MathUtils.h` has said so since
+the code was inherited. `main`'s version went further — **six**
+simulation-state draws on the unsynchronised generator where this branch found
+four — and is the one that survives. The two it found and this branch missed
+came through `frand()`/`sfrand()` rather than `speciesRandom()` directly,
+including `LaserFence.cpp:66`, an outright desync. This branch's own proposal
+had written *"ONE TRAP: `frand()` and `sfrand()` are speciesRandom in disguise
+… a grep for the two names is not optional"* and then did not run that grep.
 
-**THE DETERMINISM WORK WAS DONE TWICE, CONCURRENTLY, AND THAT IS THE MOST
-USEFUL THING THIS BATCH PRODUCED.** This branch and `main` both took
-`determinism/T3` and `T4` on 2026-08-05, without either knowing about the
-other, and reached the same answer independently: `speciesRandom()` is *not*
-the lockstep RNG, `syncrand()` is, and `MathUtils.h` has said so since the
-code was inherited. Two agents, one afternoon, one conclusion — which is
-strong evidence the conclusion is right, and pure waste otherwise.
+**The scheduling lesson.** Task claiming is per-plan and advisory —
+`status: in_progress` committed to a *branch nobody else fetches* prevents
+nothing. Both agents claimed correctly and still collided. If two agents may be
+working, the claim has to land on `main` before the work starts.
 
-**`main`'s version went further and is the one that survives.** It found
-**six** simulation-state draws on the unsynchronised generator where this
-branch found four, and it landed the fix as `T5`. The two it found and this
-branch missed came through `frand()`/`sfrand()` rather than `speciesRandom()`
-directly — including `LaserFence.cpp:66`, an outright desync. This branch's
-own `T5` proposal had written *"ONE TRAP: `frand()` and `sfrand()` are
-speciesRandom in disguise ... a grep for the two names is not optional"* and
-then did not run that grep. Naming a trap is not the same as checking it.
+### What else Batch 4 learned
 
-The merge took `main`'s `determinism.yaml`, its `AGENTS.md` bullets and its
-code comments wholesale; this branch's parallel answer is gone from the tree
-and only this paragraph records that it existed.
-
-**The scheduling lesson is the one this file exists for.** Task claiming is
-per-plan and advisory — `status: in_progress` committed to a *branch* nobody
-else fetches prevents nothing. Both agents claimed correctly and still
-collided. If two agents may be working, the claim has to land on `main`
-before the work starts, or the plan has to be one nobody else is holding.
-
-**`ownership` did not close either**, and the batch's own premise is why: `T7`
-depends on `T6`, `T6` needs an owner-run smoke test after each commit, and
-`T5` turned out to be twenty-seven files rather than eight.
-
-### What the batch learned, for whoever writes Batch 5
-
-- **A file list is written from where ownership LIVES; the work is wherever
-  the member is NAMED.** `ownership/T5` declared eight files and touched
-  twenty-seven. Twelve of them hold no ownership at all. `ownership/T1`'s
-  notes already said this and it cost the same again.
-- **`m_buildings` means four different things.** `LevelFile`'s,
-  `GlobalWorld`'s, `ObstructionGrid`'s, and `Location`'s — which is a
-  `FastSlotMap` whose indices are network identity. A name-based sweep would
-  have converted the simulation's live building list.
-- **The stricmp hazard is not theoretical.** All 605 `ParentName` lines under
-  `GameData/Shapes` say `sceneroot`, lower case, and the code compares them
-  against `"SceneRoot"`. A `std::string` conversion that reached for
-  `operator==` would have failed to parent every fragment in every shape in
-  the game, with a green build and a green suite.
+- **A file list is written from where ownership LIVES; the work is wherever the
+  member is NAMED.** `ownership/T5` declared eight files and touched
+  twenty-seven; twelve hold no ownership at all. **CI caught what the sweep
+  missed** — eighteen call sites in eight files, every one reached through an
+  expression the sweep had not thought to grep for: `m_tiles` through a
+  `LandscapeDef*`, `m_nodes` through an `anim` pointer, a `LevelFile` built on
+  the stack in `GlobalWorld.cpp`.
+- **`m_buildings` means four different things**, which is why
+  `check_containers.py` skips the name. `Location`'s is a `FastSlotMap` whose
+  indices are network identity. A name-based sweep would have converted it.
 - **Converting a raw pointer to `unique_ptr` can introduce use-after-move.**
-  Two were introduced and caught here — `zone->m_scrollZone` set *after*
-  `push_back(zone)`, harmless before and undefined after. A scan for "member
-  used after `std::move` of the same local" over every changed file is cheap
-  and belongs in every stage-5 task's verification.
-
-### Not compiled
-
-No MSVC and no Windows client in this environment. All seven Python checks
-pass on every commit; **nothing in the five commits has been through a
-compiler**, and the five new tests have never been run. `ownership/T5` in
-particular is a twenty-seven-file type change, which is exactly the shape
-where that matters.
+  Two were introduced and caught before commit — `zone->m_scrollZone` set after
+  `push_back(zone)`, harmless before and undefined after. Scan every changed
+  file for a local used after `std::move` of itself.
+- **The stricmp hazard is not theoretical.** All 605 `ParentName` lines under
+  `GameData/Shapes` say `sceneroot` in lower case while the code compares
+  against `"SceneRoot"`. A `std::string` conversion reaching for `operator==`
+  would have failed to parent every fragment in every shape in the game, with a
+  green build and a green suite. `ShapeMarkerTests` pins it with a negative
+  control.
+- **Three defects were found and deliberately NOT fixed**, each given an owner
+  instead: `ShapeMarker::m_depth` is used uninitialised when a marker block has
+  no `Depth:` line (recorded on `strings/T20`); `LevelFile.cpp:275` bounds a
+  transition mode against the wrong enum (now `language-hygiene/T13`). A third
+  WAS fixed and stated as a fix: `TaskManager::RunTask` leaked its argument at
+  capacity, which taking ownership in the signature ended.
 
 ---
 
 ## The collision check
 
-Thirteen ready tasks across five plans. `--next` says nothing about whether
-they can run together, because it reasons per plan.
+Ten ready tasks across five plans, contesting two files. Reproduce with the
+script at the end of this file.
 
-| Pair | Contested files |
-|---|---|
-| `language-hygiene/T12` × `ownership/T5` | **5** — GlobalWorld, LevelFile, TaskManager, GameCursor, TaskManagerInterfaceIcons |
-| `language-hygiene/T12` × `strings/T17` | 2 |
-| `ownership/T5` × `strings/T17` | 2 |
-| `determinism/T3` × `ownership/T8` | 2 — deliberate; same agent, separate commits |
-| `ownership/T10` × `strings/T20` | 1 — deliberate; safe in either order, never the same commit |
-| `language-hygiene/T10` × `T12` | 1 — TargetCursor.cpp |
-| `determinism/T4`, `strings/T18` × everything | **0** |
-
-Reproduce with the script at the end of this file. Two cautions carry over:
-`strings/T12` declares 2 files against a reach of 45, and `namespace/T2`
-declares directories, so both under- and over-report by construction.
-
----
-
-## Progress
-
-**`determinism/T3` and `T4` are done (2026-08-05), and they did not end where
-this file assumed.** Both were scoping tasks on the premise that
-`speciesRandom()` is the lockstep RNG. It is not — `syncrand()` is, and
-`speciesRandom()` is an unsynchronised LCG for cosmetics — so both findings
-were false alarms and `CODING_STANDARDS.md` carried the error that produced
-them. The reading found six real defects running the other way, simulation
-state drawn from the client-local generator, and those are **`T5`, landed**.
-`determinism` now has one open task, **`T6`**, the owner-run Garden smoke test
-that gates T5. The plan is at 5 of 6, not 2 of 4 as the table above says.
-
-The transferable part is the one this file already argues about `--next`:
-**a finding's premise expires the same way a batch proposal does.** That
-premise sat in `AGENTS.md`, `CODING_STANDARDS.md` and a test comment for three
-batches, and the tasks written from it inherited it verbatim. Checking it cost
-one afternoon of reading and was the whole of the work.
-
-**`strings/T8` landed on CI 556 (`6b38509`) and `strings/T19` on CI 560
-(`12581f3`), both 2026-08-05.** Together: fifteen files, 78 call sites, eleven
-new tests, x64 Debug green and 180 tests passing on each.
-
-**Stage 5's tail is open.** `ownership/T5` was blocked on those two and nothing
-else, so `--next` offers it now — and behind it are T6 (App owns its
-subsystems) and T7 (delete the macros), which is the whole of what `ownership`
-has left apart from T8. `strings/T17` became ready with them.
-
-T19's own finding is worth carrying into the rest of the batch: its two
-accessors return `char const*` rather than `std::string`, because
-`GetLocationName` answers **nullptr** for an unknown id and `Main.cpp` tests
-that before transferring spirits into the location. Returning a value would
-have turned "no such location" into an empty name and transferred anyway, with
-no compiler complaint. **Every accessor that can fail is that shape** — check
-what its null means before converting its return type.
-
-Two things came out of it that the rest of the batch should carry:
-
-- **`FileWriter::printf` is pinned now**, eight tests over the formats the
-  writers actually use. `strings/T19` and `T17` both have to prove they change
-  no bytes, and this is what they prove it against.
-- **`AGENTS.md`'s test count was wrong.** It said 180; CI counted **169** at
-  `e7a1a88`, and T8's eleven made the stale figure accidentally true. Corrected
-  there, with how to read the real number. It cost ten minutes of believing the
-  new tests had not run.
+Two cautions carry over: `strings/T12` declares 2 files against a reach of 45,
+and `namespace/T2` declares directories, so both under- and over-report by
+construction. And a third, new one: **`parallel_safe` flags in this tree lag
+reality.** Three of the ready set are flagged `false` and are provably disjoint
+today. Trust a fresh measurement over the flag, and correct the flag when you
+find it wrong.
 
 ---
 
 ## What I actually ran
 
-Linux, at `97b5844`. All seven Python checks, before and after the edits — all
-pass, after `git fetch origin main`. `check_task_dag.py --next` on every plan,
-before and after. The collision script over the thirteen ready tasks. Tree-wide
-greps for `SAFE_DELETE`/`SAFE_FREE` (4 files, 31 sites), `EmptyAndDelete` (**7**
-real call sites out of 16 apparent — the other nine are comments and the two
-transitional definitions), `strdup` (23 files, `Shape.cpp` highest at 13),
-`INPUT_TYPE_` split by extension (218 sites / 19 files, of which 136 in
-`ControlTypes.inc`), and the seventeen `Camera::Mode` enumerators by name
-(132 sites / 22 files, which matches `T12`'s declared list exactly).
-
-**Two measurements in the previous proposal were reproduced and one was
-corrected.** Camera::Mode's 22 files are right. The `Mode[A-Z]\w+` grep that
-produced them over-reports by 16 files when run without the enumerator names —
-`LaserFence`, `Tripod`, `LocationEditor` and eleven others have their own
-`Mode*` enumerators. The declared list is right; the grep in the previous
-file's table is not the one to re-run.
+Linux, at `4a40231`. All seven Python checks. `check_task_dag.py --next` on
+every plan. The collision script over the ten ready tasks. Tree-wide greps for
+`SAFE_DELETE`/`SAFE_FREE` (2 files: `App.cpp`, and the definition),
+`EmptyAndDelete` (zero call sites), `hygiene-ok` (zero) and `TEST_METHOD`
+(185).
 
 **Nothing here was built, and nothing was launched.** No MSVC and no Windows
-client in this environment, so every size is a count of lines and call sites
-rather than a compile, and the Garden smoke test remains the owner's. This
-batch is a scheduling argument; it is not evidence that any of it compiles.
+client in this environment. Batch 4's code changes were verified by CI rather
+than locally, and the Garden smoke test remains yours.
 
 ---
 
-## What happened to Batches 1, 2 and 3
+## What happened to Batches 1, 2, 3 and 4
 
 Kept because the sequence is the evidence.
 
@@ -385,24 +226,24 @@ parallel. T19 landed on CI 513 and T4 on CI 514. `strings/T8` was measured,
 found to be a different task than its file list implied, and released unstarted
 with the finding written into its plan entry.
 
-**Batch 2** was proposed as `strings/T12` then `strings/T11`, and was executed
-as `directxmath/T22` + `T23` instead: closing the owner gate made those ready,
-and `strings/T12` — two declared files, 44 real ones — collided with them over
-six `Species` files. **A batch proposal expires the moment a gate closes.**
-Both math tasks landed, the plan finished at 28 of 28, and it is archived.
+**Batch 2** was proposed as `strings/T12` then `strings/T11`, and executed as
+`directxmath/T22` + `T23` instead: closing the owner gate made those ready, and
+`strings/T12` collided with them over six `Species` files. **A batch proposal
+expires the moment a gate closes.** Both math tasks landed, that plan finished
+at 28 of 28, and it is archived.
 
-**Batch 3** was `strings/T8` → `T12` → `language-hygiene/T10`, and it executed
-as `strings/T8` (CI 556) then `strings/T19` (CI 560) — because T8 split in two
-on measurement, exactly as its own notes had proposed, though along a different
-line than proposed. Fifteen files, 78 call sites, eleven new tests, x64 Debug
-green and 180 tests passing on each. It also found the four unowned variadic
-entry points that became `strings/T17` and `T18`, and it corrected `AGENTS.md`'s
-test count, which had been wrong at 180 while CI counted 169.
+**Batch 3** was `strings/T8` → `T12` → `language-hygiene/T10`, and executed as
+`strings/T8` (CI 556) then `strings/T19` (CI 560) — T8 split in two on
+measurement, as its own notes had proposed, though along a different line. It
+found the four unowned variadic entry points that became `strings/T17` and
+`T18`.
 
-Two things it left that this batch used: `FileWriter::printf` is pinned by
-eight tests over the formats the writers actually use, and T19's accessor
-finding — **every accessor that can fail is `char const*` for a reason; check
-what its null means before converting its return type.**
+**Batch 4** was proposed as "close two plans" and closed neither, for the two
+findings above. It did land six tasks, take `SAFE_FREE` and `EmptyAndDelete` to
+zero tree-wide, retire the last `hygiene-ok` marker and add five tests. **The
+recurring lesson across all four is the same one:** a batch proposal is a
+measurement with a short half-life, and every batch so far has found its own
+premise partly wrong on contact.
 
 ---
 
@@ -412,11 +253,11 @@ what its null means before converting its return type.**
 # python3 - <tasks/_next-batch.md's script>  — run from the repo root
 import yaml, glob, collections
 ready = {  # refresh with: check_task_dag.py --next tasks/<plan>.yaml
-    'determinism':           ['T3', 'T4'],
-    'language-hygiene':      ['T10', 'T12'],
+    'determinism':           ['T6'],
+    'language-hygiene':      ['T10', 'T13'],
     'namespace-migration':   ['T2'],
-    'ownership':             ['T5', 'T8', 'T10'],
-    'strings-modernised':    ['T11', 'T12', 'T17', 'T18', 'T20'],
+    'ownership':             ['T6', 'T11'],
+    'strings-modernised':    ['T11', 'T12', 'T17', 'T18'],
 }
 owners = collections.defaultdict(list)
 for path in glob.glob('tasks/*.yaml'):
@@ -432,20 +273,10 @@ for f, who in sorted(owners.items()):
         print(f, who)
 ```
 
-**That script reads declared `files` lists, and this batch found a third one
-wrong** — after `language-hygiene/T10` (11 declared against 25) and
-`strings/T12` (2 against 45), it is now `determinism/T4`, which declared
-`Species/LandscapeRenderer.cpp`: **a path that does not exist.**
-`layering-inversion` moved the renderer into `GameLogic` with the rest of the
-world model — and it had already done so when T4 was written on 2026-08-05, so
-this is not stale-plan rot. It is a wrong path passing validation in a task
-written the same day this batch was scoped. Corrected here, along with its
-`project`, which said `Species` for the same reason.
-
-That one is worth a line of its own, because it is not the same mistake as the
-other two. `check_task_dag.py` validates the GRAPH — ids, edges, acyclicity,
-status transitions — and **not that a declared file is on disk**. A path that
-rots when a file moves stays valid forever, and the first person to notice is
-an agent opening a file that is not there. Every plan in `tasks/` predates at
-least one of the moves that `layering-inversion` made; if you are about to
-start a task written before 2026-08-02, `ls` its file list first.
+**That script reads declared `files` lists, and four have now been found
+wrong** — `language-hygiene/T10` (11 declared against 25, plus the `.inc`
+holding 62% of its work), `strings/T12` (2 against 45), `determinism/T4` (a
+path that did not exist), and `language-hygiene/T12` (a false positive from a
+shared enumerator name). `check_task_dag.py` validates the graph, not whether a
+declared file is on disk. `ls` a task's file list before starting it, and
+measure its reach with a grep for what the tree actually spells.
