@@ -845,7 +845,7 @@ void AISpawnPoint::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  _out->printf("%-6d %-6d %-6d %-6d %-6d %-6d", m_activatorId, m_entityType, m_count, m_period, m_spawnLimit, m_routeId);
+  _out->printf("{:<6d} {:<6d} {:<6d} {:<6d} {:<6d} {:<6d}", m_activatorId, m_entityType, m_count, m_period, m_spawnLimit, m_routeId);
 }
 
 

@@ -102,6 +102,6 @@ void Powerstation::Write( FileWriter *_out )
 {
     Building::Write( _out );
 
-    _out->printf( "%-8d", m_linkedBuildingId);
+    _out->printf("{:<8d}", m_linkedBuildingId);
 }
 } // namespace Species

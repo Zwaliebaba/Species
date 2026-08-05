@@ -1700,7 +1700,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: |
       Added 2026-08-05 at e7a1a88, from a measurement taken while scoping the
       batch after directxmath-migration closed. This is unowned work that the
@@ -1780,6 +1780,96 @@ tasks:
       Mine.cpp, Rocket.cpp — seven controlEvent lines that a scoped enum has
       to requalify). parallel_safe stays false above; flip it in the same
       commit as the work, per the standing rule.
+
+      DONE 2026-08-05. FileWriter takes the same two-overload shape T12 gave
+      TextRenderer — a plain std::string_view and a std::format_string template
+      that requires at least one argument — and the char[10240] is gone. 127
+      format strings across 30 files were rewritten; the other 91 calls pass
+      only text and now go to the plain overload verbatim, percent signs
+      included.
+
+      THE FILE LIST HELD A SECOND TIME AND NOTHING WAS ADDED TO IT. 218 calls,
+      not the 207 measured, and the difference is FileWriterTests' own eleven,
+      which the reach measurement did not count. Every one of the 29 declared
+      source files was touched and none was idle;
+      Tests/GameLogicTests/LevelFileTests.cpp is the one declared file with no
+      diff, which is correct — it names no printf and is in the list because
+      the acceptance says it must still pass.
+
+      ONE CALL IN THE TREE SPELLS ITS FORMAT AS CONCATENATED LITERALS and it
+      cost a second pass to find. SoundSystem::WriteSoundEvent writes
+      `"\tEVENT %-20s\n" "\t\tSOUNDNAME %s\n" ...` over six lines, and a sweep
+      keyed on `printf(` followed by ONE literal converts nothing and reports
+      nothing. It was caught by re-grepping for a surviving `%` inside a
+      brace-matched call rather than inside a literal. Any future sweep over a
+      formatting API should end with that second grep.
+
+      %d BECAME {:d}, NOT {}, AND THAT IS THE DECISION THIS TASK TURNS ON.
+      A bare {} formats a bool as "true", a char as a character and a float as
+      a float; printf's %d printed 1, a number and garbage respectively. Three
+      of the converted arguments are bools written as integers
+      (Building::m_isGlobal, InstantUnit::m_inAUnit, GlobalBuilding::m_online),
+      and one is an unsigned char (WorldObjectId::GetTeamId, written with
+      %-8d). Every one of them would have changed the bytes in a level file
+      under {}, with a green build. Spelling the `d` also makes a %d that was
+      fed a float a COMPILE error rather than a silent reformat — which is the
+      same trade check_math_types.py exists for, made in the format string
+      instead of a tool.
+
+      FOUR SITES PASSED A NULLABLE char const* TO %s AND NOW SAY SO.
+      GlobalWorld::GetLocationName answers nullptr for an unknown id (two call
+      sites), and SoundEventBlueprint::m_eventName is null whenever the
+      blueprint line carried no token. MSVC's printf writes "(null)" for that;
+      std::format is undefined for it. The substitution is explicit now, at
+      each site, with the reason. THE STRING IS PRESERVED RATHER THAN FIXED:
+      writing "(null)" into a level file is a defect — the file reloads with a
+      location of that name — but a save path is not the place to change what
+      the game writes, and no task owns fixing it. Two more nullable-looking
+      arguments were read and left alone: GuideGridToString is guarded by
+      `m_guideGridPower > 0` at its only call site, and CamAnimNode::m_mountName
+      is already handed to a bare std::format in CameraAnimWindow.cpp, so this
+      task is not where that assumption starts.
+
+      WHAT WAS ACTUALLY RUN, since none of it was MSVC. The seven Python checks
+      pass. On top of them, three things were compiled and executed with g++ 13
+      in the working environment, because "byte-identical" is a claim that can
+      be tested without the game:
+
+        1. Every (printf spec, format spec) PAIR this conversion produced —
+           10 integer, 13 float, 8 string — over ints from INT_MIN to INT_MAX,
+           floats including -0.0, 0.005, 2.675, 1e20 and the tie cases, and
+           strings from empty to longer than the field. Zero mismatches. The
+           float half is not luck: [charconv] specifies fixed-precision
+           to_chars as printf in the C locale, which is what formatter<float>
+           uses.
+        2. The OLD FileWriter::printf and the NEW one, side by side, on the
+           real call-site formats — the location row, the buildings row,
+           Building::Write's eight fields including the unsigned char and the
+           bool, the twelve-field InstantUnits row, the landscape tile row and
+           the concatenated EVENT block — encrypted and plain. Byte for byte
+           identical, and it also exercises the overload split: the
+           zero-argument calls resolve to the plain overload under a real
+           compiler.
+        3. All 127 converted format strings compiled through
+           consteval std::format with placeholder arguments typed from their
+           own specs. Every one is a valid format string and consistent with
+           the type it claims.
+
+      What that does NOT cover, and it is the important half: MSVC's CRT rather
+      than glibc, the real argument TYPES at each of the 127 sites, and a
+      profile written by the running game. An argument whose type does not
+      match its spec is a compile error nobody here can see yet.
+
+      THE TESTS' EXPECTED BYTES ARE UNCHANGED AND THE FORMAT SPELLINGS ARE NOT.
+      The acceptance line asks for the round-trip tests to pass with no edit in
+      the same commit, and the point of that line is that the proof must not be
+      weakened to fit the change. FileWriterTests calls the API being replaced,
+      so its eight format strings had to move to the new spelling — but not one
+      Assert::AreEqual changed, which is what makes the diff itself the
+      evidence. Two tests were ADDED for behaviour that did not exist before: a
+      percent sign in argument-free text is now a percent sign, and text longer
+      than the old 10240-byte stack buffer is written whole. Both were
+      undefined behaviour through the variadic entry point.
 
   - id: T18
     title: Retire the last three variadic format entry points

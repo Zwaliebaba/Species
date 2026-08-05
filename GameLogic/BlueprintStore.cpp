@@ -206,7 +206,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_buildingLink);
+    _out->printf("{:<8d}", m_buildingLink);
   }
 
 
@@ -621,7 +621,7 @@ namespace Species
   {
     BlueprintBuilding::Write(_out);
 
-    _out->printf("%-8d", m_segment);
+    _out->printf("{:<8d}", m_segment);
   }
 
 
@@ -793,6 +793,6 @@ namespace Species
   {
     BlueprintBuilding::Write(_out);
 
-    _out->printf("%-2.2f", m_altitude);
+    _out->printf("{:<2.2f}", m_altitude);
   }
 } // namespace Species

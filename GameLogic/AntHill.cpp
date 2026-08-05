@@ -475,6 +475,6 @@ void AntHill::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  _out->printf("%d", m_numAntsInside);
+  _out->printf("{:d}", m_numAntsInside);
 }
 } // namespace Species

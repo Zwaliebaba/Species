@@ -519,9 +519,9 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_nextLaserFenceId);
-    _out->printf("%-6.2f", m_scale);
-    _out->printf("%d", m_mode);
+    _out->printf("{:<8d}", m_nextLaserFenceId);
+    _out->printf("{:<6.2f}", m_scale);
+    _out->printf("{:d}", m_mode);
   }
 
 

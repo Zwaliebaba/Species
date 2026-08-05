@@ -233,7 +233,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%6d", m_numStartingSpirits);
+    _out->printf("{:6d}", m_numStartingSpirits);
   }
 
   void Incubator::Render(float _predictionTime)

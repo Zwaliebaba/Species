@@ -399,6 +399,6 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_targetLocationId);
+    _out->printf("{:<8d}", m_targetLocationId);
   }
 } // namespace Species

@@ -235,7 +235,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_powerLink);
+    _out->printf("{:<8d}", m_powerLink);
   }
 
   int PowerBuilding::GetBuildingLink() { return m_powerLink; }
@@ -492,7 +492,7 @@ void PylonStart::Write(FileWriter* _out)
 {
   PowerBuilding::Write(_out);
 
-  _out->printf("%-8d", m_reqBuildingId);
+  _out->printf("{:<8d}", m_reqBuildingId);
 }
 
 

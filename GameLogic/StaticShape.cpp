@@ -167,7 +167,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%6.2f  ", m_scale);
-    _out->printf("%s  ", m_shapeName.c_str());
+    _out->printf("{:6.2f}  ", m_scale);
+    _out->printf("{}  ", m_shapeName.c_str());
   }
 } // namespace Species

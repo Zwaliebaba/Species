@@ -191,8 +191,8 @@ void SafeArea::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  _out->printf("%-6.2f", m_size);
-  _out->printf(" %d", m_entitiesRequired);
-  _out->printf(" %d", m_entityTypeRequired);
+  _out->printf("{:<6.2f}", m_size);
+  _out->printf(" {:d}", m_entitiesRequired);
+  _out->printf(" {:d}", m_entityTypeRequired);
 }
 } // namespace Species

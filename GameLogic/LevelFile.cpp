@@ -909,9 +909,9 @@ namespace Species
     for (int i = 0; i < static_cast<int>(m_instantUnits.size()); i++)
     {
       InstantUnit* iu = m_instantUnits[i].get();
-      _out->printf("\t%-15s %2d %7.1f %7.1f %6d %4d %7d %7.1f %7.1f %7.1f %4d %4d\n", Entity::GetTypeName(iu->m_type), iu->m_teamId, iu->m_posX,
-                   iu->m_posZ, iu->m_number, iu->m_inAUnit, iu->m_state, iu->m_spread, iu->m_waypointX, iu->m_waypointZ, iu->m_routeId,
-                   iu->m_routeWaypointId);
+      _out->printf("\t{:<15} {:2d} {:7.1f} {:7.1f} {:6d} {:4d} {:7d} {:7.1f} {:7.1f} {:7.1f} {:4d} {:4d}\n", Entity::GetTypeName(iu->m_type),
+                   iu->m_teamId, iu->m_posX, iu->m_posZ, iu->m_number, iu->m_inAUnit, iu->m_state, iu->m_spread, iu->m_waypointX, iu->m_waypointZ,
+                   iu->m_routeId, iu->m_routeWaypointId);
     }
     _out->printf("InstantUnits_EndDefinition\n\n");
   }
@@ -928,8 +928,8 @@ namespace Species
       for (int i = 0; i < g_location->m_lights.Size(); ++i)
       {
         Light* light = g_location->m_lights.GetData(i);
-        _out->printf("\t%6.2f %6.2f %6.2f   %6.2f %6.2f %6.2f\n", light->m_front[0], light->m_front[1], light->m_front[2], light->m_colour[0],
-                     light->m_colour[1], light->m_colour[2]);
+        _out->printf("\t{:6.2f} {:6.2f} {:6.2f}   {:6.2f} {:6.2f} {:6.2f}\n", light->m_front[0], light->m_front[1], light->m_front[2],
+                     light->m_colour[0], light->m_colour[1], light->m_colour[2]);
       }
     }
 
@@ -946,8 +946,8 @@ namespace Species
     for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); i++)
     {
       CameraMount* cmnt = m_cameraMounts[i].get();
-      _out->printf("\t%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f\n", cmnt->m_name.c_str(), cmnt->m_pos.x, cmnt->m_pos.y,
-                   cmnt->m_pos.z, cmnt->m_front.x, cmnt->m_front.y, cmnt->m_front.z, cmnt->m_up.x, cmnt->m_up.y, cmnt->m_up.z);
+      _out->printf("\t{:<15} {:7.2f} {:7.2f} {:7.2f} {:4.2f} {:4.2f} {:4.2f} {:4.2f} {:4.2f} {:4.2f}\n", cmnt->m_name.c_str(), cmnt->m_pos.x,
+                   cmnt->m_pos.y, cmnt->m_pos.z, cmnt->m_front.x, cmnt->m_front.y, cmnt->m_front.z, cmnt->m_up.x, cmnt->m_up.y, cmnt->m_up.z);
     }
 
     _out->printf("CameraMounts_EndDefinition\n\n");
@@ -960,13 +960,13 @@ namespace Species
 
     for (auto const& anim : m_cameraAnimations)
     {
-      _out->printf("\t%s\n", anim->m_name.c_str());
+      _out->printf("\t{}\n", anim->m_name.c_str());
 
       for (int j = 0; j < static_cast<int>(anim->m_nodes.size()); ++j)
       {
         CamAnimNode* node = anim->m_nodes[j].get();
         char const* camModeName = CamAnimNode::GetTransitModeName(node->m_transitionMode);
-        _out->printf("\t\t%-8s %-15s %.2f\n", camModeName, node->m_mountName, node->m_duration);
+        _out->printf("\t\t{:<8} {:<15} {:.2f}\n", camModeName, node->m_mountName, node->m_duration);
       }
       _out->printf("\t\tEnd\n");
     }
@@ -996,13 +996,13 @@ namespace Species
   void LevelFile::WriteLandscapeData(FileWriter* _out)
   {
     _out->printf("Landscape_StartDefinition\n");
-    _out->printf("\tworldSizeX %d\n", m_landscape.m_worldSizeX);
-    _out->printf("\tworldSizeZ %d\n", m_landscape.m_worldSizeZ);
-    _out->printf("\tcellSize %.2f\n", m_landscape.m_cellSize);
-    _out->printf("\toutsideHeight %.2f\n", m_landscape.m_outsideHeight);
-    _out->printf("\tlandColourFile %s\n", m_landscapeColourFilename.c_str());
-    _out->printf("\twavesColourFile %s\n", m_wavesColourFilename.c_str());
-    _out->printf("\twaterColourFile %s\n", m_waterColourFilename.c_str());
+    _out->printf("\tworldSizeX {:d}\n", m_landscape.m_worldSizeX);
+    _out->printf("\tworldSizeZ {:d}\n", m_landscape.m_worldSizeZ);
+    _out->printf("\tcellSize {:.2f}\n", m_landscape.m_cellSize);
+    _out->printf("\toutsideHeight {:.2f}\n", m_landscape.m_outsideHeight);
+    _out->printf("\tlandColourFile {}\n", m_landscapeColourFilename.c_str());
+    _out->printf("\twavesColourFile {}\n", m_wavesColourFilename.c_str());
+    _out->printf("\twaterColourFile {}\n", m_waterColourFilename.c_str());
     _out->printf("Landscape_EndDefinition\n\n");
   }
 
@@ -1017,18 +1017,18 @@ namespace Species
     for (int i = 0; i < static_cast<int>(m_landscape.m_tiles.size()); ++i)
     {
       LandscapeTile* _def = m_landscape.m_tiles[i].get();
-      _out->printf("\t%6d %6.2f %6d ", _def->m_posX, _def->m_posY, _def->m_posZ);
-      _out->printf("%6d ", _def->m_size);
-      _out->printf("%5.2f ", _def->m_fractalDimension);
-      _out->printf("%6.2f ", _def->m_heightScale);
-      _out->printf("%6.0f ", _def->m_desiredHeight);
-      _out->printf("%6d ", _def->m_generationMethod);
-      _out->printf("%6d ", _def->m_randomSeed);
-      _out->printf("%6.2f", _def->m_lowlandSmoothingFactor);
-      _out->printf("%6d", _def->m_guideGridPower);
+      _out->printf("\t{:6d} {:6.2f} {:6d} ", _def->m_posX, _def->m_posY, _def->m_posZ);
+      _out->printf("{:6d} ", _def->m_size);
+      _out->printf("{:5.2f} ", _def->m_fractalDimension);
+      _out->printf("{:6.2f} ", _def->m_heightScale);
+      _out->printf("{:6.0f} ", _def->m_desiredHeight);
+      _out->printf("{:6d} ", _def->m_generationMethod);
+      _out->printf("{:6d} ", _def->m_randomSeed);
+      _out->printf("{:6.2f}", _def->m_lowlandSmoothingFactor);
+      _out->printf("{:6d}", _def->m_guideGridPower);
 
       if (_def->m_guideGridPower > 0)
-        _out->printf("   %s", _def->GuideGridToString());
+        _out->printf("   {}", _def->GuideGridToString());
 
       _out->printf("\n");
     }
@@ -1043,7 +1043,7 @@ namespace Species
     _out->printf("\t# ==========================\n");
     for (auto const& area : m_landscape.m_flattenAreas)
     {
-      _out->printf("\t%6.1f %6.1f %6.1f %6.1f\n", area->m_centre.x, area->m_centre.y, area->m_centre.z, area->m_size);
+      _out->printf("\t{:6.1f} {:6.1f} {:6.1f} {:6.1f}\n", area->m_centre.x, area->m_centre.y, area->m_centre.z, area->m_size);
     }
     _out->printf("LandFlattenAreas_EndDefinition\n\n");
   }
@@ -1054,7 +1054,7 @@ namespace Species
     _out->printf("Routes_StartDefinition\n");
     for (auto const& r : m_routes)
     {
-      _out->printf("\tRoute %d\n", r->m_id);
+      _out->printf("\tRoute {:d}\n", r->m_id);
 
       for (int j = 0; j < static_cast<int>(r->m_wayPoints.size()); ++j)
       {
@@ -1062,15 +1062,15 @@ namespace Species
         DirectX::XMFLOAT3 const pos = wp->GetPos();
         if (wp->m_type == WayPoint::Type3DPos)
         {
-          _out->printf("\t\t%-3d %6.2f %6.2f %6.2f\n", wp->m_type, pos.x, pos.y, pos.z);
+          _out->printf("\t\t{:<3d} {:6.2f} {:6.2f} {:6.2f}\n", wp->m_type, pos.x, pos.y, pos.z);
         }
         else if (wp->m_type == WayPoint::TypeGroundPos)
         {
-          _out->printf("\t\t%-3d %6.2f %6.2f\n", wp->m_type, pos.x, pos.z);
+          _out->printf("\t\t{:<3d} {:6.2f} {:6.2f}\n", wp->m_type, pos.x, pos.z);
         }
         else if (wp->m_type == WayPoint::TypeBuilding)
         {
-          _out->printf("\t\t%-3d %6d\n", wp->m_type, wp->m_buildingId);
+          _out->printf("\t\t{:<3d} {:6d}\n", wp->m_type, wp->m_buildingId);
         }
       }
 
@@ -1086,14 +1086,14 @@ namespace Species
 
     for (auto const& gec : m_primaryObjectives)
     {
-      //_out->printf( "\t%s:%d", gec->GetTypeName(gec->m_type), gec->m_id);
+      //_out->printf( "\t{}:{:d}", gec->GetTypeName(gec->m_type), gec->m_id);
       _out->printf("\t");
       gec->Save(_out);
 
       if (gec->m_stringId)
-        _out->printf("\t%s", gec->m_stringId);
+        _out->printf("\t{}", gec->m_stringId);
       if (gec->m_cutScene)
-        _out->printf("\t%s", gec->m_cutScene);
+        _out->printf("\t{}", gec->m_cutScene);
 
       _out->printf("\n");
     }
@@ -1691,9 +1691,9 @@ void LevelFile::WriteRunningPrograms(FileWriter* _out)
           Engineer* engineer = (Engineer*)g_location->GetEntitySafe(task->m_objId, Entity::TypeEngineer);
           if (engineer)
           {
-            _out->printf("\t%-15s %6d %6d %6d %8.2f %8.2f %8.2f %8.2f %d\n", Entity::GetTypeName(Entity::TypeEngineer), 1, engineer->m_state,
-                         engineer->GetNumSpirits(), engineer->m_wayPoint.x, engineer->m_wayPoint.z, engineer->m_pos.x, engineer->m_pos.z,
-                         engineer->m_stats[Entity::StatHealth]);
+            _out->printf("\t{:<15} {:6d} {:6d} {:6d} {:8.2f} {:8.2f} {:8.2f} {:8.2f} {:d}\n", Entity::GetTypeName(Entity::TypeEngineer), 1,
+                         engineer->m_state, engineer->GetNumSpirits(), engineer->m_wayPoint.x, engineer->m_wayPoint.z, engineer->m_pos.x,
+                         engineer->m_pos.z, engineer->m_stats[Entity::StatHealth]);
           }
         }
 
@@ -1702,8 +1702,8 @@ void LevelFile::WriteRunningPrograms(FileWriter* _out)
           InsertionSquad* squad = (InsertionSquad*)g_location->GetUnit(task->m_objId);
           if (squad && squad->m_troopType == Entity::TypeInsertionSquadie)
           {
-            _out->printf("\t%-15s %6d %6d %6d %8.2f %8.2f", Entity::GetTypeName(Entity::TypeInsertionSquadie), squad->m_entities.NumUsed(), 0,
-                         squad->m_weaponType, squad->GetWayPoint().x, squad->GetWayPoint().z);
+            _out->printf("\t{:<15} {:6d} {:6d} {:6d} {:8.2f} {:8.2f}", Entity::GetTypeName(Entity::TypeInsertionSquadie), squad->m_entities.NumUsed(),
+                         0, squad->m_weaponType, squad->GetWayPoint().x, squad->GetWayPoint().z);
 
             for (int e = 0; e < squad->m_entities.Size(); ++e)
             {
@@ -1711,7 +1711,7 @@ void LevelFile::WriteRunningPrograms(FileWriter* _out)
               {
                 Entity* entity = squad->m_entities[e];
 
-                _out->printf(" %8.2f %8.2f %6d", entity->m_pos.x, entity->m_pos.z, entity->m_stats[Entity::StatHealth]);
+                _out->printf(" {:8.2f} {:8.2f} {:6d}", entity->m_pos.x, entity->m_pos.z, entity->m_stats[Entity::StatHealth]);
               }
             }
 
@@ -1752,7 +1752,7 @@ void LevelFile::WriteDifficulty(FileWriter* _out)
   // When we write the difficulty setting to a file it should be 1-based
   // (internally it is 0 based).
   _out->printf("Difficulty_StartDefinition\n");
-  _out->printf("\tCreatedAsDifficulty %d\n", m_levelDifficulty + 1);
+  _out->printf("\tCreatedAsDifficulty {:d}\n", m_levelDifficulty + 1);
   _out->printf("Difficulty_EndDefinition\n\n");
 }
 } // namespace Species

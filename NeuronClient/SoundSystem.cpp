@@ -667,7 +667,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
     if (static_cast<int>(ssb->m_events.size()) > 0)
     {
       file->printf("# =========================================================\n");
-      file->printf("ENTITY %s\n", g_worldTypeNames->EntityTypeName(i));
+      file->printf("ENTITY {}\n", g_worldTypeNames->EntityTypeName(i));
 
       for (int j = 0; j < static_cast<int>(ssb->m_events.size()); ++j)
       {
@@ -687,7 +687,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
     if (static_cast<int>(ssb->m_events.size()) > 0)
     {
       file->printf("# =========================================================\n");
-      file->printf("BUILDING %s\n", g_worldTypeNames->BuildingTypeName(i));
+      file->printf("BUILDING {}\n", g_worldTypeNames->BuildingTypeName(i));
 
       for (int j = 0; j < static_cast<int>(ssb->m_events.size()); ++j)
       {
@@ -707,7 +707,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
     if (static_cast<int>(ssb->m_events.size()) > 0)
     {
       file->printf("# =========================================================\n");
-      file->printf("OTHER %s\n", SoundSourceBlueprint::GetSoundSourceName(i));
+      file->printf("OTHER {}\n", SoundSourceBlueprint::GetSoundSourceName(i));
 
       for (int j = 0; j < static_cast<int>(ssb->m_events.size()); ++j)
       {
@@ -726,7 +726,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
       SampleGroup* group = m_sampleGroups[i].get();
 
       file->printf("# =========================================================\n");
-      file->printf("SAMPLEGROUP %s\n", group->m_name);
+      file->printf("SAMPLEGROUP {}\n", group->m_name);
 
       WriteSampleGroup(file, group);
 
@@ -855,14 +855,20 @@ void SoundSystem::WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event
   DEBUG_ASSERT(_event);
   DEBUG_ASSERT(_event->m_instance);
 
-  _file->printf("\tEVENT %-20s\n"
-                "\t\tSOUNDNAME          %s\n"
-                "\t\tSOURCETYPE         %d\n"
-                "\t\tPOSITIONTYPE       %d\n"
-                "\t\tINSTANCETYPE       %d\n"
-                "\t\tLOOPTYPE           %d\n"
-                "\t\tMINDISTANCE        %2.2f\n",
-                _event->m_eventName, _event->m_instance->m_soundName, _event->m_instance->m_sourceType, _event->m_instance->m_positionType,
+  // m_eventName is null whenever the blueprint line carried no token, because
+  // SetEventName leaves it as the constructor left it. The C formatter this
+  // replaced wrote MSVC's "(null)" for that; std::format is undefined for it,
+  // so the substitution is spelled out. strings-modernised T17.
+  char const* eventName = _event->m_eventName ? _event->m_eventName : "(null)";
+
+  _file->printf("\tEVENT {:<20}\n"
+                "\t\tSOUNDNAME          {}\n"
+                "\t\tSOURCETYPE         {:d}\n"
+                "\t\tPOSITIONTYPE       {:d}\n"
+                "\t\tINSTANCETYPE       {:d}\n"
+                "\t\tLOOPTYPE           {:d}\n"
+                "\t\tMINDISTANCE        {:2.2f}\n",
+                eventName, _event->m_instance->m_soundName, _event->m_instance->m_sourceType, _event->m_instance->m_positionType,
                 _event->m_instance->m_instanceType, _event->m_instance->m_loopType, _event->m_instance->m_minDistance);
 
   _event->m_instance->m_volume.Write(_file, "VOLUME", 2);
@@ -883,7 +889,7 @@ void SoundSystem::WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event
     DspHandle* effect = _event->m_instance->m_dspFX[i];
     DspBlueprint* blueprint = m_filterBlueprints[effect->m_type].get();
 
-    _file->printf("\t\tEFFECT             %s\n", blueprint->m_name);
+    _file->printf("\t\tEFFECT             {}\n", blueprint->m_name);
     int paramIndex = 0;
     while (true)
     {
@@ -906,7 +912,7 @@ void SoundSystem::WriteSampleGroup(FileWriter* _file, SampleGroup* _group)
   for (int i = 0; i < static_cast<int>(_group->m_samples.size()); ++i)
   {
     char* sample = _group->m_samples[i];
-    _file->printf("\tSAMPLE  %s\n", sample);
+    _file->printf("\tSAMPLE  {}\n", sample);
   }
 }
 

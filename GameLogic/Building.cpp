@@ -761,15 +761,15 @@ void Building::Read(TextReader* _in, bool _dynamic)
 
 void Building::Write(FileWriter* _out)
 {
-  _out->printf("\t%-20s", GetTypeName(m_type));
+  _out->printf("\t{:<20}", GetTypeName(m_type));
 
-  _out->printf("%-8d", m_id.GetUniqueId());
-  _out->printf("%-8.2f", m_pos.x);
-  _out->printf("%-8.2f", m_pos.z);
-  _out->printf("%-8d", m_id.GetTeamId());
-  _out->printf("%-8.2f", m_front.x);
-  _out->printf("%-8.2f", m_front.z);
-  _out->printf("%-8d", m_isGlobal);
+  _out->printf("{:<8d}", m_id.GetUniqueId());
+  _out->printf("{:<8.2f}", m_pos.x);
+  _out->printf("{:<8.2f}", m_pos.z);
+  _out->printf("{:<8d}", m_id.GetTeamId());
+  _out->printf("{:<8.2f}", m_front.x);
+  _out->printf("{:<8.2f}", m_front.z);
+  _out->printf("{:<8d}", m_isGlobal);
 }
 
 Building* Building::CreateBuilding(char* _name)

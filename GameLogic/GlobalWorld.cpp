@@ -34,6 +34,18 @@
 
 namespace Species
 {
+  namespace
+  {
+    // GlobalWorld::GetLocationName answers nullptr for an id that names no
+    // location. The C formatter FileWriter::printf used to be wrote MSVC's
+    // "(null)" for that, and std::format is undefined for a null char const*,
+    // so the two writers below say what they mean rather than lean on the CRT.
+    // See strings-modernised T17: the string is preserved because a save path
+    // is not the place to change what the game writes, not because "(null)" in
+    // a level file is right.
+    char const* NameOrNull(char const* _name) { return _name ? _name : "(null)"; }
+  } // namespace
+
   GlobalLocation::GlobalLocation()
     : m_id(-1),
       m_available(false),
@@ -164,7 +176,7 @@ namespace Species
 
   void GlobalEventCondition::Save(FileWriter* _out)
   {
-    _out->printf("%s ", GetTypeName(m_type));
+    _out->printf("{} ", GetTypeName(m_type));
 
     switch (m_type)
     {
@@ -173,15 +185,21 @@ namespace Species
 
     case BuildingOnline:
     case BuildingOffline:
-      _out->printf(":%s,%d ", g_globalWorld->GetLocationName(m_locationId), m_id);
+      // GetLocationName answers nullptr for an id that names no location, and
+      // the C formatter this replaced wrote MSVC's "(null)" for that. Writing
+      // it is a defect either way — the file reloads with a location called
+      // "(null)" — but a save path is not where to change what the game
+      // writes, so the substitution is explicit rather than undefined.
+      // strings-modernised T17 records it; nothing owns fixing it.
+      _out->printf(":{},{:d} ", NameOrNull(g_globalWorld->GetLocationName(m_locationId)), m_id);
       break;
 
     case ResearchOwned:
-      _out->printf(":%s ", GlobalResearch::GetTypeName(m_id));
+      _out->printf(":{} ", GlobalResearch::GetTypeName(m_id));
       break;
 
     case DebugKey:
-      _out->printf(":%d ", m_id);
+      _out->printf(":{:d} ", m_id);
       break;
     }
   }
@@ -232,20 +250,20 @@ namespace Species
 
   void GlobalEventAction::Write(FileWriter* _out)
   {
-    _out->printf("\t\tAction %-10s ", GetTypeName(m_type));
+    _out->printf("\t\tAction {:<10} ", GetTypeName(m_type));
 
-    char const* locationName = g_globalWorld->GetLocationName(m_locationId);
+    char const* locationName = NameOrNull(g_globalWorld->GetLocationName(m_locationId));
 
     switch (m_type)
     {
     case SetMission:
-      _out->printf("%s %s", locationName, m_filename.c_str());
+      _out->printf("{} {}", locationName, m_filename.c_str());
       break;
     case RunScript:
-      _out->printf("%s", m_filename.c_str());
+      _out->printf("{}", m_filename.c_str());
       break;
     case MakeAvailable:
-      _out->printf("%s", locationName);
+      _out->printf("{}", locationName);
       break;
 
     default:
@@ -581,10 +599,10 @@ namespace Species
     _out->printf("Research_StartDefinition\n");
 
     for (int i = 0; i < NumResearchItems; ++i)
-      _out->printf("\tResearch %s %d %d\n", GetTypeName(i), CurrentProgress(i), CurrentLevel(i));
+      _out->printf("\tResearch {} {:d} {:d}\n", GetTypeName(i), CurrentProgress(i), CurrentLevel(i));
 
-    _out->printf("\tCurrentResearch %s\n", GetTypeName(m_currentResearch));
-    _out->printf("\tCurrentPoints %d\n", m_researchPoints);
+    _out->printf("\tCurrentResearch {}\n", GetTypeName(m_currentResearch));
+    _out->printf("\tCurrentPoints {:d}\n", m_researchPoints);
     _out->printf("Research_EndDefinition\n\n");
   }
 
@@ -1564,7 +1582,7 @@ namespace Species
 
     for (auto const& location : m_locations)
     {
-      _out->printf("\t%4d %4d %30s %40s\n", location->m_id, static_cast<int>(location->m_available), location->m_mapFilename.c_str(),
+      _out->printf("\t{:4d} {:4d} {:>30} {:>40}\n", location->m_id, static_cast<int>(location->m_available), location->m_mapFilename.c_str(),
                    location->m_missionFilename.c_str());
     }
 
@@ -1579,8 +1597,8 @@ namespace Species
 
     for (auto const& building : m_buildings)
     {
-      _out->printf("\t%4d %4d %6d %6d %6d %6d\n", building->m_id, building->m_teamId, building->m_locationId, building->m_type, building->m_link,
-                   building->m_online);
+      _out->printf("\t{:4d} {:4d} {:6d} {:6d} {:6d} {:6d}\n", building->m_id, building->m_teamId, building->m_locationId, building->m_type,
+                   building->m_link, building->m_online);
     }
 
     _out->printf("Buildings_EndDefinition\n\n");
@@ -1885,7 +1903,7 @@ void GlobalWorld::SaveLocations(const char* _filename)
 
   for (auto const& loc : m_locations)
   {
-    out->printf("%-6d %-8.2f %-8.2f %-8.2f\n", loc->m_id, loc->m_pos.x, loc->m_pos.y, loc->m_pos.z);
+    out->printf("{:<6d} {:<8.2f} {:<8.2f} {:<8.2f}\n", loc->m_id, loc->m_pos.x, loc->m_pos.y, loc->m_pos.z);
   }
 }
 

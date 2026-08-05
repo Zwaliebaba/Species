@@ -160,30 +160,25 @@ void SoundParameter::Write( FileWriter *_file, char const *_paramName, int _tabs
         _file->printf( "\t" );
     }
 
-    _file->printf( "%-18s PARAMETER %-18s",
-                            _paramName,
-                            GetParameterTypeName( m_type ) );
+    _file->printf("{:<18} PARAMETER {:<18}", _paramName, GetParameterTypeName(m_type));
 
     switch( m_type )
     {
         case TypeFixedValue:
-            _file->printf( "%8.2f", m_outputLower );
-            break;
+          _file->printf("{:8.2f}", m_outputLower);
+          break;
 
         case TypeRangedRandom:
-            _file->printf( "%8.2f %8.2f %8.2f", m_outputLower, m_outputUpper, m_smooth );
-            break;
+          _file->printf("{:8.2f} {:8.2f} {:8.2f}", m_outputLower, m_outputUpper, m_smooth);
+          break;
 
         case TypeLinked:
-            _file->printf( "%8.2f %8.2f %8.2f %8.2f %8.2f  %s",
-                            m_inputLower, m_outputLower,
-                            m_inputUpper, m_outputUpper,
-                            m_smooth,
-                            GetLinkName( m_link ) );
-            break;
+          _file->printf("{:8.2f} {:8.2f} {:8.2f} {:8.2f} {:8.2f}  {}", m_inputLower, m_outputLower, m_inputUpper, m_outputUpper, m_smooth,
+                        GetLinkName(m_link));
+          break;
     }
 
-    _file->printf( "  %s", GetUpdateTypeName( m_updateType ) );
+    _file->printf("  {}", GetUpdateTypeName(m_updateType));
     _file->printf( "\n" );
 }
 

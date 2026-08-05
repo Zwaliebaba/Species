@@ -258,7 +258,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%6d ", m_fuelLink);
+    _out->printf("{:6d} ", m_fuelLink);
   }
 
 
@@ -1602,7 +1602,7 @@ void EscapeRocket::Write(FileWriter* _out)
 {
   FuelBuilding::Write(_out);
 
-  _out->printf("%6.2f %6d %6d %6d", m_fuel, m_passengers, m_spawnBuildingId, (int)m_spawnCompleted);
+  _out->printf("{:6.2f} {:6d} {:6d} {:6d}", m_fuel, m_passengers, m_spawnBuildingId, (int)m_spawnCompleted);
 }
 
 

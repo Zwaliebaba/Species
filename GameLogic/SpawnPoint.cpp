@@ -363,7 +363,7 @@ namespace Species
     for (int i = 0; i < static_cast<int>(m_links.size()); ++i)
     {
       SpawnBuildingLink* link = m_links[i].get();
-      _out->printf("%-6d", link->m_targetBuildingId);
+      _out->printf("{:<6d}", link->m_targetBuildingId);
     }
   }
 
@@ -962,7 +962,7 @@ void SpawnPopulationLock::Write(FileWriter* _out)
 {
   Building::Write(_out);
 
-  _out->printf("%-8.2f %-6d", m_searchRadius, m_maxPopulation);
+  _out->printf("{:<8.2f} {:<6d}", m_searchRadius, m_maxPopulation);
 }
 
 

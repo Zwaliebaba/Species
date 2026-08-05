@@ -466,7 +466,7 @@ namespace Species
   void MineBuilding::Write(FileWriter* _out)
   {
     Building::Write(_out);
-    _out->printf("%-8d", m_trackLink);
+    _out->printf("{:<8d}", m_trackLink);
   }
 
 
@@ -668,7 +668,7 @@ void TrackJunction::Write(FileWriter* _out)
 
   for (int i = 0; i < static_cast<int>(m_trackLinks.size()); ++i)
   {
-    _out->printf("%-4d", m_trackLinks[i]);
+    _out->printf("{:<4d}", m_trackLinks[i]);
   }
 }
 
@@ -763,7 +763,7 @@ void TrackStart::Write(FileWriter* _out)
 {
   MineBuilding::Write(_out);
 
-  _out->printf("%-8d", m_reqBuildingId);
+  _out->printf("{:<8d}", m_reqBuildingId);
 }
 
 
@@ -873,7 +873,7 @@ void TrackEnd::Write(FileWriter* _out)
 {
   MineBuilding::Write(_out);
 
-  _out->printf("%-8d", m_reqBuildingId);
+  _out->printf("{:<8d}", m_reqBuildingId);
 }
 
 

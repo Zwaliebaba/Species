@@ -224,7 +224,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%-8d", m_spiritLink);
+    _out->printf("{:<8d}", m_spiritLink);
   }
 
   int ReceiverBuilding::GetBuildingLink() { return m_spiritLink; }

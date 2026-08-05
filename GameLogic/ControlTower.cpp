@@ -528,7 +528,7 @@ namespace Species
   {
     Building::Write(_out);
 
-    _out->printf("%6d", m_controlBuildingId);
+    _out->printf("{:6d}", m_controlBuildingId);
   }
 
   int ControlTower::GetBuildingLink() { return m_controlBuildingId; }
