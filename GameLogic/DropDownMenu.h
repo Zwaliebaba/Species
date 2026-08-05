@@ -38,7 +38,7 @@ namespace Species
       void Update();
 
       // There can be only one
-      static DropDownWindow* CreateDropDownWindow(char* _name, char* _parentName);
+      static DropDownWindow* CreateDropDownWindow(std::string_view _name, std::string_view _parentName);
       static void RemoveDropDownWindow();
   };
 

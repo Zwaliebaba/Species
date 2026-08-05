@@ -71,7 +71,7 @@ namespace Species
     // Remove current tool window
     if (mainWin->m_currentEditWindow)
     {
-      EclRemoveWindow(mainWin->m_currentEditWindow->m_name);
+      EclRemoveWindow(mainWin->m_currentEditWindow->m_name.c_str());
       mainWin->m_currentEditWindow = nullptr;
     }
 
@@ -195,7 +195,7 @@ namespace Species
     // Remove existing window
     if (mainWin->m_currentEditWindow)
     {
-      EclRemoveWindow(mainWin->m_currentEditWindow->m_name);
+      EclRemoveWindow(mainWin->m_currentEditWindow->m_name.c_str());
       mainWin->m_currentEditWindow = nullptr;
     }
 

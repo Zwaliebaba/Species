@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #define SIZE_ECLWINDOW_NAME 256
@@ -28,8 +30,11 @@ namespace Neuron
       int m_w;
       int m_h;
 
-      char m_name[SIZE_ECLWINDOW_NAME];
-      char m_title[SIZE_ECLWINDOW_TITLE];
+      // std::string since strings-modernised T11. Both were char[256] whose
+      // setters silently DID NOTHING for a longer value, leaving the window
+      // called "" — and a window with the wrong name cannot be found again.
+      std::string m_name;
+      std::string m_title;
 
       bool m_movable;
       bool m_resizable;
@@ -37,26 +42,26 @@ namespace Neuron
       std::vector<EclButton*> m_buttons;
 
     public:
-      char m_currentTextEdit[SIZE_ECLWINDOW_NAME];
+      std::string m_currentTextEdit;
 
     public:
-      EclWindow(char const* _name);
+      EclWindow(std::string_view _name);
       virtual ~EclWindow();
 
-      void SetName(char const* _name);
-      void SetTitle(char const* _title);
+      void SetName(std::string_view _name);
+      void SetTitle(std::string_view _title);
       void SetPosition(int _x, int _y);
       void SetSize(int _w, int _h);
       void SetMovable(bool _movable);
       void MakeAllOnScreen();
 
       void RegisterButton(EclButton* button);
-      void RemoveButton(char const* _name);
+      void RemoveButton(std::string_view _name);
 
-      void BeginTextEdit(const char* _name);
+      void BeginTextEdit(std::string_view _name);
       void EndTextEdit();
 
-      virtual EclButton* GetButton(char const* _name);
+      virtual EclButton* GetButton(std::string_view _name);
       virtual EclButton* GetButton(int _x, int _y);
 
       virtual void Create();

@@ -1,4 +1,7 @@
 #include "pch.h"
+
+#include <format>
+
 #include "ScrollBar.h"
 #include "TargetCursor.h"
 
@@ -15,15 +18,15 @@ namespace Species
       m_currentValue(0)
   {
     DEBUG_ASSERT(parent);
-    strcpy(m_parentWindow, parent->m_name);
-    strcpy(m_name, "New Scrollbar");
+    m_parentWindow = parent->m_name;
+    m_name = "New Scrollbar";
   }
 
   ScrollBar::~ScrollBar() {}
 
-  void ScrollBar::Create(const char* name, int x, int y, int w, int h, int numRows, int winSize, int stepSize)
+  void ScrollBar::Create(std::string_view name, int x, int y, int w, int h, int numRows, int winSize, int stepSize)
   {
-    strcpy(m_name, name);
+    m_name = name;
     m_x = x;
     m_y = y;
     m_w = w;
@@ -31,16 +34,16 @@ namespace Species
     m_numRows = numRows;
     m_winSize = winSize;
 
-    EclWindow* parent = EclGetWindow(m_parentWindow);
+    EclWindow* parent = EclGetWindow(m_parentWindow.c_str());
     DEBUG_ASSERT(parent);
 
-    char barName[256];
-    char upName[256];
-    char downName[256];
-
-    sprintf(barName, "%s bar", name);
-    sprintf(upName, "%s up", name);
-    sprintf(downName, "%s down", name);
+    // The three button names are derived from the scrollbar's own, and Remove()
+    // below derives them again to take the buttons away. They used to be built
+    // by the C formatter into a char[256] each, from a name that had itself
+    // been copied into a fixed buffer.
+    std::string const barName = std::format("{} bar", name);
+    std::string const upName = std::format("{} up", name);
+    std::string const downName = std::format("{} down", name);
 
     auto up = new ScrollChangeButton(this, stepSize * -1);
     up->SetProperties(upName, x, y, w, 18, "^", " ");
@@ -57,16 +60,12 @@ namespace Species
 
   void ScrollBar::Remove()
   {
-    EclWindow* parent = EclGetWindow(m_parentWindow);
+    EclWindow* parent = EclGetWindow(m_parentWindow.c_str());
     if (parent)
     {
-      char barName[256];
-      char upName[256];
-      char downName[256];
-
-      sprintf(barName, "%s bar", m_name);
-      sprintf(upName, "%s up", m_name);
-      sprintf(downName, "%s down", m_name);
+      std::string const barName = std::format("{} bar", m_name);
+      std::string const upName = std::format("{} up", m_name);
+      std::string const downName = std::format("{} down", m_name);
 
       parent->RemoveButton(barName);
       parent->RemoveButton(upName);
@@ -160,7 +159,7 @@ namespace Species
     {
       DEBUG_ASSERT(m_scrollBar);
 
-      EclWindow* parent = EclGetWindow(m_scrollBar->m_parentWindow);
+      EclWindow* parent = EclGetWindow(m_scrollBar->m_parentWindow.c_str());
       DEBUG_ASSERT(parent);
 
       int barTop = static_cast<int>(parent->m_y + m_y + m_h * (float)m_scrollBar->m_currentValue / (float)m_scrollBar->m_numRows);
@@ -194,7 +193,7 @@ namespace Species
     else
     {
       DEBUG_ASSERT(m_scrollBar);
-      EclWindow* parent = EclGetWindow(m_scrollBar->m_parentWindow);
+      EclWindow* parent = EclGetWindow(m_scrollBar->m_parentWindow.c_str());
       DEBUG_ASSERT(parent);
       int mouseY = g_target->Y();
       int barTop = static_cast<int>(m_parent->m_y + m_y + m_h * (float)m_scrollBar->m_currentValue / (float)m_scrollBar->m_numRows);

@@ -483,8 +483,64 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - Owner runs the Garden smoke test — step 6, the Task Manager, is the one this can break
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE 2026-08-05. NOT COMPILED — Linux, no MSVC.
+
+      WHAT CONVERTED: EclButton::m_name, m_caption and m_tooltip;
+      EclWindow::m_name, m_title and m_currentTextEdit; ScrollBar::m_name and
+      m_parentWindow. All std::string. No fixed char[N] member is left in any of
+      the three classes, and the acceptance grep for a C-string call on a widget
+      name comes back empty.
+
+      THE CASE-SENSITIVITY TRAP WAS REAL AND IT WAS SIXTEEN SITES. The notes
+      below predicted it; here is what it actually was. Eclipse's own lookup —
+      EclGetWindowIndex, EclWindow::GetButton, RemoveButton — compared with
+      strcmp, and std::string's == is the same comparison, so those are exactly
+      unchanged. But sixteen call sites in the UI compared a widget name or
+      caption with stricmp: ProfileWindow matches its buttons on their captions
+      ("Min", "Avg", "Max"), and LandscapeWindow, InstantUnitWindow and
+      CameraAnimWindow match theirs against a LANGUAGEPHRASE. Sweeping those to
+      == would have made each one stop matching whenever the language file's
+      spelling differed in case — silently, and only for some spellings.
+
+      They now call Neuron::StrEqualsIgnoreCase, added to StringUtils for this.
+      SampleCache.h already carried the same idea privately for the sample
+      cache's hash; this is the shared spelling of it.
+
+      FOUR DEFECTS THE CONVERSION RETIRED, none of them the point of the task:
+
+        EclButton::SetProperties silently REFUSED a name longer than 256 —
+        `if (strlen(_name) > SIZE) {} else strcpy(...)`. The button kept the
+        name "New Button", so every later lookup by the intended name missed.
+        EclWindow::SetName and SetTitle had the same shape and returned early.
+
+        ~EclButton freed m_caption and m_tooltip, and the destructor is gone
+        with them: the class needs no destructor now. This retires the fourth of
+        the raw-ownership survivors AGENTS.md lists.
+
+        InputField::Render guarded on `m_parent->m_currentTextEdit &&` — a
+        char[256] MEMBER, so the array always decayed to a non-null pointer and
+        the guard was dead.
+
+        DropDownMenu built an option name with the C formatter into a char[64]
+        from a menu name of up to 256, and ScrollBar built three button names
+        the same way. Both are std::format now.
+
+      CopyInto is gone from eleven call sites in CameraAnimWindow and
+      CameraMountWindow. It exists to bound a copy at a char array destination;
+      the destination is a std::string, so the label is simply assigned.
+
+      ONE SIGNATURE OUTSIDE THE FILE LIST HAD TO MOVE: EclBringWindowToFront
+      took `char*`, non-const, and its only caller passes EclWindow::m_name. It
+      is `char const*` now. DropDownWindow::CreateDropDownWindow took two
+      `char*` for the same reason and takes string_view.
+
+      THE .c_str() CALLS ARE T13's TO REMOVE, and there are 30 of them —
+      EclRemoveWindow, EclGetWindow and EclSetCurrentFocus still take
+      char const*. That is exactly the churn T13 exists for; it is the next task
+      and it deletes them.
+
       Split out of T3 on 2026-08-03. See T3's notes for the measurement.
 
       The risky part is not the type change, it is that Eclipse looks windows

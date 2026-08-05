@@ -202,7 +202,7 @@ namespace Species
         }
         else
         {
-          m_caption[0] = '\0';
+          m_caption.clear();
         }
 
         SpeciesButton::Render(x, y, highlighted, clicked);
@@ -299,7 +299,7 @@ namespace Species
       but->m_fontSize = GetMenuSize(15);
       but->m_centered = true;
       char const* keyName = m_bindings[i]->noun.c_str();
-      strcpy(but->m_caption, keyName);
+      but->SetCaption(keyName);
       RegisterButton(but);
       m_buttonOrder.push_back(but);
     }

@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "StringUtils.h"
+
 #include <string.h>
 
 #include "Debug.h"
@@ -38,12 +40,12 @@ namespace Species
 
       void MouseUp()
       {
-        if (stricmp(m_name, LANGUAGEPHRASE("editor_generate")) == 0)
+        if (StrEqualsIgnoreCase(m_name, LANGUAGEPHRASE("editor_generate")))
         {
           LandscapeDef* def = &g_location->m_levelFile->m_landscape;
           g_location->m_landscape.Init(def);
         }
-        else if (stricmp(m_name, LANGUAGEPHRASE("editor_randomise")) == 0)
+        else if (StrEqualsIgnoreCase(m_name, LANGUAGEPHRASE("editor_randomise")))
         {
           m_def->m_randomSeed = (int)(GetHighResTime() * 1000.0f);
           InputField* randomSeed = (InputField*)m_parent->GetButton(LANGUAGEPHRASE("editor_seed"));
@@ -54,13 +56,13 @@ namespace Species
           LandscapeDef* def = &g_location->m_levelFile->m_landscape;
           g_location->m_landscape.Init(def);
         }
-        else if (stricmp(m_name, LANGUAGEPHRASE("editor_delete")) == 0)
+        else if (StrEqualsIgnoreCase(m_name, LANGUAGEPHRASE("editor_delete")))
         {
           int tileId = ((LandscapeTileEditWindow*)m_parent)->m_tileId;
           g_location->m_landscape.DeleteTile(tileId);
-          EclRemoveWindow(m_parent->m_name);
+          EclRemoveWindow(m_parent->m_name.c_str());
         }
-        else if (stricmp(m_name, LANGUAGEPHRASE("editor_clone")) == 0)
+        else if (StrEqualsIgnoreCase(m_name, LANGUAGEPHRASE("editor_clone")))
         {
           DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
           DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
@@ -85,7 +87,7 @@ namespace Species
           LandscapeDef* def = &g_location->m_levelFile->m_landscape;
           g_location->m_landscape.Init(def);
         }
-        else if (stricmp(m_name, LANGUAGEPHRASE("editor_guidegrid")) == 0)
+        else if (StrEqualsIgnoreCase(m_name, LANGUAGEPHRASE("editor_guidegrid")))
         {
           int tileId = ((LandscapeTileEditWindow*)m_parent)->m_tileId;
           auto owned = std::make_unique<LandscapeGuideGridWindow>(LANGUAGEPHRASE("editor_guidegrid"), tileId);
@@ -181,7 +183,7 @@ class LandscapeFlattenAreaDeleteButton : public SpeciesButton
     {
       g_location->m_levelFile->m_landscape.m_flattenAreas.erase(g_location->m_levelFile->m_landscape.m_flattenAreas.begin() + m_areaId);
       g_locationEditor->SetSelectionId(-1);
-      EclRemoveWindow(m_parent->m_name);
+      EclRemoveWindow(m_parent->m_name.c_str());
     }
 };
 
@@ -423,7 +425,7 @@ class GuideGridButton : public SpeciesButton
   public:
     void MouseUp()
     {
-      if (stricmp(m_name, LANGUAGEPHRASE("editor_generate")) == 0)
+      if (StrEqualsIgnoreCase(m_name, LANGUAGEPHRASE("editor_generate")))
       {
         LandscapeGuideGridWindow* parent = (LandscapeGuideGridWindow*)m_parent;
         parent->m_tileDef->GuideGridSetPower(parent->m_guideGridPower);

@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "StringUtils.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -33,7 +35,7 @@ namespace Species
 
       void MouseUp()
       {
-        if (stricmp(m_name, LANGUAGEPHRASE("editor_move")) == 0)
+        if (StrEqualsIgnoreCase(m_name, LANGUAGEPHRASE("editor_move")))
         {
           g_locationEditor->SetTool(LocationEditorAccess::ToolMove);
         }
@@ -201,7 +203,7 @@ namespace Species
       {
         for (int i = 0; i < Entity::NumEntityTypes; ++i)
         {
-          if (stricmp(m_name, Entity::GetTypeNameTranslated(i)) == 0)
+          if (StrEqualsIgnoreCase(m_name, Entity::GetTypeNameTranslated(i)))
           {
             g_locationEditor->SetTool(LocationEditorAccess::ToolMove);
 
@@ -216,7 +218,7 @@ namespace Species
             EclWindow* ew = EclGetWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
             if (ew)
             {
-              EclRemoveWindow(ew->m_name);
+              EclRemoveWindow(ew->m_name.c_str());
             }
 
             // Create the new instant unit

@@ -11,6 +11,9 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
+
 #include "Eclipse.h"
 #include "SpeciesWindow.h"
 
@@ -20,8 +23,11 @@ namespace Species
   class ScrollBar
   {
     public:
-      char m_parentWindow[SIZE_ECLWINDOW_NAME];
-      char m_name[SIZE_ECLBUTTON_NAME];
+      // Both are Eclipse names — m_parentWindow is an EclWindow's and m_name
+      // an EclButton's — so they follow those members to std::string in
+      // strings-modernised T11 rather than being converted twice.
+      std::string m_parentWindow;
+      std::string m_name;
 
       int m_x;
       int m_y;
@@ -35,7 +41,7 @@ namespace Species
       ScrollBar(EclWindow* parent);
       ~ScrollBar();
 
-      void Create(char const* name, int x, int y, int w, int h, int numRows, int winSize, int stepSize = 1);
+      void Create(std::string_view name, int x, int y, int w, int h, int numRows, int winSize, int stepSize = 1);
 
       void Remove();
 

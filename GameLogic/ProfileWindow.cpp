@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "StringUtils.h"
+
 
 #include <stdio.h>
 #include <string.h>
@@ -31,29 +33,29 @@ namespace Species
     public:
       void MouseUp()
       {
-        if (stricmp(m_caption, "Toggle glFinish") == 0)
+        if (StrEqualsIgnoreCase(m_caption, "Toggle glFinish"))
         {
           g_profiler->m_doGlFinish = !g_profiler->m_doGlFinish;
         }
-        else if (stricmp(m_caption, "Reset History") == 0)
+        else if (StrEqualsIgnoreCase(m_caption, "Reset History"))
         {
           g_profiler->ResetHistory();
         }
-        // SetCaption, not a raw copy into the buffer. m_caption is a char*
-        // pointing at an allocation sized to the caption it was given, so writing
-        // into it directly only ever worked
-        // because "Min", "Avg" and "Max" are all three characters — a four-letter
-        // caption here would have overrun the heap block. SetCaption reallocates.
-        // The member itself stays a char*; that is strings-modernised T11's.
-        else if (stricmp(m_caption, "Min") == 0)
+        // SetCaption, not a raw copy into the buffer. m_caption USED TO BE a
+        // char* pointing at an allocation sized to the caption it was given, so
+        // writing into it directly only ever worked because "Min", "Avg" and
+        // "Max" are all three characters — a four-letter caption here would have
+        // overrun the heap block. strings-modernised T11 made it a std::string,
+        // so the hazard is gone and SetCaption is now simply the clearer call.
+        else if (StrEqualsIgnoreCase(m_caption, "Min"))
         {
           SetCaption("Avg");
         }
-        else if (stricmp(m_caption, "Avg") == 0)
+        else if (StrEqualsIgnoreCase(m_caption, "Avg"))
         {
           SetCaption("Max");
         }
-        else if (stricmp(m_caption, "Max") == 0)
+        else if (StrEqualsIgnoreCase(m_caption, "Max"))
         {
           SetCaption("Min");
         }
@@ -83,11 +85,11 @@ namespace Species
     int left = m_x + 10;
     EclButton* minAvgMaxButton = GetButton("Avg");
     int minAvgMax = 0;
-    if (stricmp(minAvgMaxButton->m_caption, "Avg") == 0)
+    if (StrEqualsIgnoreCase(minAvgMaxButton->m_caption, "Avg"))
     {
       minAvgMax = 1;
     }
-    else if (stricmp(minAvgMaxButton->m_caption, "Max") == 0)
+    else if (StrEqualsIgnoreCase(minAvgMaxButton->m_caption, "Max"))
     {
       minAvgMax = 2;
     }

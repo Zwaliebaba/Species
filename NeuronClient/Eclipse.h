@@ -30,7 +30,9 @@ namespace Neuron
   void EclRegisterPopup(std::unique_ptr<EclWindow> window);
   void EclRemovePopup();
 
-  void EclBringWindowToFront(char* name);
+  // char const*, not char*, since strings-modernised T11: its only caller
+  // passes EclWindow::m_name, which is a std::string now.
+  void EclBringWindowToFront(char const* name);
   void EclSetWindowPosition(char const* name, int x, int y);
   void EclSetWindowSize(char const* name, int w, int h);
 

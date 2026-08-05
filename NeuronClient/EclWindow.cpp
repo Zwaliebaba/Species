@@ -8,7 +8,7 @@
 
 namespace Neuron
 {
-  EclWindow::EclWindow(const char* _name)
+  EclWindow::EclWindow(std::string_view _name)
     : m_x(0),
       m_y(0),
       m_w(0),
@@ -18,7 +18,7 @@ namespace Neuron
     SetName(_name);
     SetTitle("New Window");
     SetMovable(true);
-    strcpy(m_currentTextEdit, "None");
+    m_currentTextEdit = "None";
   }
 
   EclWindow::~EclWindow()
@@ -28,21 +28,13 @@ namespace Neuron
     m_buttons.clear();
   }
 
-  void EclWindow::SetName(const char* _name)
-  {
-    if (strlen(_name) > SIZE_ECLWINDOW_NAME)
-      return;
+  // Both setters used to RETURN WITHOUT WRITING for a value longer than 256,
+  // which left the window nameless rather than truncating it — and a window
+  // whose name is not the one the caller asked for can never be found again.
+  // std::string holds whatever it is given.
+  void EclWindow::SetName(std::string_view _name) { m_name = _name; }
 
-    strcpy(m_name, _name);
-  }
-
-  void EclWindow::SetTitle(const char* _title)
-  {
-    if (strlen(_title) > SIZE_ECLWINDOW_TITLE)
-      return;
-
-    strcpy(m_title, _title);
-  }
+  void EclWindow::SetTitle(std::string_view _title) { m_title = _title; }
 
   void EclWindow::SetPosition(int _x, int _y)
   {
@@ -72,9 +64,9 @@ namespace Neuron
       m_y = screenH - m_h - 10;
   }
 
-  void EclWindow::BeginTextEdit(const char* _name) { strcpy(m_currentTextEdit, _name); }
+  void EclWindow::BeginTextEdit(std::string_view _name) { m_currentTextEdit = _name; }
 
-  void EclWindow::EndTextEdit() { strcpy(m_currentTextEdit, "None"); }
+  void EclWindow::EndTextEdit() { m_currentTextEdit = "None"; }
 
   void EclWindow::RegisterButton(EclButton* button)
   {
@@ -89,12 +81,12 @@ namespace Neuron
     }
   }
 
-  void EclWindow::RemoveButton(const char* _name)
+  void EclWindow::RemoveButton(std::string_view _name)
   {
     for (int i = 0; i < m_buttons.size(); ++i)
     {
       EclButton* button = m_buttons[i];
-      if (strcmp(button->m_name, _name) == 0)
+      if (button->m_name == _name)
       {
         m_buttons.erase(m_buttons.begin() + (i));
         delete button;
@@ -102,12 +94,12 @@ namespace Neuron
     }
   }
 
-  EclButton* EclWindow::GetButton(const char* _name)
+  EclButton* EclWindow::GetButton(std::string_view _name)
   {
     for (int i = 0; i < m_buttons.size(); ++i)
     {
       EclButton* button = m_buttons[i];
-      if (strcmp(button->m_name, _name) == 0)
+      if (button->m_name == _name)
         return button;
     }
 
@@ -147,8 +139,8 @@ namespace Neuron
     for (int i = m_buttons.size() - 1; i >= 0; --i)
     {
       EclButton* button = m_buttons[i];
-      bool highlighted = EclMouseInButton(this, button) || strcmp(m_currentTextEdit, button->m_name) == 0;
-      bool clicked = (hasFocus && strcmp(EclGetCurrentClickedButton(), button->m_name) == 0);
+      bool highlighted = EclMouseInButton(this, button) || m_currentTextEdit == button->m_name;
+      bool clicked = (hasFocus && button->m_name == EclGetCurrentClickedButton());
       button->Render(m_x + button->m_x, m_y + button->m_y, highlighted, clicked);
     }
   }

@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include <ctype.h>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -309,10 +311,13 @@ namespace Species
       m_buttonChangedThisUpdate(false),
       m_skipUpdate(false)
   {
-    SetTitle((char*)name);
-    strupr(m_title);
+    SetTitle(name);
+    // Was strupr(), which uppercases a char buffer in place. m_title is a
+    // std::string now, so the same thing is spelled out.
+    for (char& c : m_title)
+      c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
 
-    EclSetCurrentFocus(m_name);
+    EclSetCurrentFocus(m_name.c_str());
   }
 
   SpeciesWindow::~SpeciesWindow()
@@ -623,7 +628,7 @@ namespace Species
       return;
     }
 
-    if (strcmp(EclGetCurrentFocus(), m_name) == 0)
+    if (m_name == EclGetCurrentFocus())
     {
       if (g_inputManager->controlEvent(ControlType::ControlMenuDown))
       {
@@ -649,7 +654,7 @@ namespace Species
 
       if (g_inputManager->controlEvent(ControlType::ControlMenuClose) && !g_atMainMenu)
       {
-        EclRemoveWindow(m_name);
+        EclRemoveWindow(m_name.c_str());
       }
     }
   }
@@ -688,7 +693,7 @@ namespace Species
   {
   }
 
-  void CloseButton::MouseUp() { EclRemoveWindow(m_parent->m_name); }
+  void CloseButton::MouseUp() { EclRemoveWindow(m_parent->m_name.c_str()); }
 
 
   void CloseButton::Render(int realX, int realY, bool highlighted, bool clicked)

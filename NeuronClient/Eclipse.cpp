@@ -105,7 +105,7 @@ namespace Neuron
       if (currentWindow)
       {
         windowFocus = currentWindow->m_name;
-        EclBringWindowToFront(currentWindow->m_name);
+        EclBringWindowToFront(currentWindow->m_name.c_str());
         mouseDownWindow = currentWindow->m_name;
 
         EclButton* button = currentWindow->GetButton(mouseX - currentWindow->m_x, mouseY - currentWindow->m_y);
@@ -326,7 +326,7 @@ namespace Neuron
 
     //    DebugAssert( window );
 
-    if (EclGetWindow(window->m_name))
+    if (EclGetWindow(window->m_name.c_str()))
     {
     }
 
@@ -417,7 +417,7 @@ namespace Neuron
     }
   }
 
-  void EclBringWindowToFront(char* name)
+  void EclBringWindowToFront(char const* name)
   {
     int index = EclGetWindowIndex(name);
     if (index != -1)
@@ -447,7 +447,7 @@ namespace Neuron
   bool EclIsTextEditing()
   {
     EclWindow* currentWindow = EclGetWindow(windowFocus.c_str());
-    return (currentWindow && strcmp(currentWindow->m_currentTextEdit, "None") != 0);
+    return (currentWindow && currentWindow->m_currentTextEdit != "None");
   }
 
   int EclGetWindowIndex(char const* name)
@@ -455,7 +455,7 @@ namespace Neuron
     for (int i = 0; i < windows.size(); ++i)
     {
       EclWindow* window = windows[i].get();
-      if (strcmp(window->m_name, name) == 0)
+      if (window->m_name == name)
         return i;
     }
 

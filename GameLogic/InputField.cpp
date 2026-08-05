@@ -86,7 +86,9 @@ namespace Species
 
     int fieldX = realX + m_w - m_inputBoxWidth;
 
-    if (m_parent->m_currentTextEdit && (strcmp(m_parent->m_currentTextEdit, m_name) == 0))
+    // The null check that used to guard this was dead: m_currentTextEdit was a
+    // char[256] member, so the array always decayed to a non-null pointer.
+    if (m_parent->m_currentTextEdit == m_name)
     {
       BorderlessButton::Render(realX, realY, true, clicked);
       if (fmodf(GetHighResTime(), 1.0f) < 0.5f)
@@ -128,7 +130,7 @@ namespace Species
 
   void InputField::Keypress(int keyCode, bool shift, bool ctrl, bool alt)
   {
-    if (strcmp(m_parent->m_currentTextEdit, "None") == 0)
+    if (m_parent->m_currentTextEdit == "None")
       return;
 
     size_t len = m_buf.size();

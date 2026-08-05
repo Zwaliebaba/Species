@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include <format>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -182,27 +184,28 @@ namespace Species
 
       // The button label was formatted into a char[64] from a label plus a name
       // of up to 63 characters, so a long mount name ran off the end of it
-      // before ever reaching the 256-byte button name. CopyInto bounds it at the
-      // destination, which is what the copy always meant.
+      // before ever reaching the button name; CopyInto then bounded it at the
+      // 256-byte destination. Neither bound exists now — the button name is a
+      // std::string. strings-modernised T11.
       InputField* button = new InputField();
       button->SetShortProperties(LANGUAGEPHRASE("dialog_name"), 10, height += pitch, 150);
-      CopyInto(button->m_name, std::format("{}:{}", LANGUAGEPHRASE("dialog_name"), mount->m_name));
+      button->m_name = std::format("{}:{}", LANGUAGEPHRASE("dialog_name"), mount->m_name);
       button->RegisterString(&mount->m_name);
       RegisterButton(button);
 
       SpeciesButton* delButton = new DeleteMountButton(&mount->m_name);
       delButton->SetShortProperties(LANGUAGEPHRASE("editor_del"), 170, height);
-      CopyInto(delButton->m_name, std::format("{}:{}", LANGUAGEPHRASE("dialog_delete"), mount->m_name));
+      delButton->m_name = std::format("{}:{}", LANGUAGEPHRASE("dialog_delete"), mount->m_name);
       RegisterButton(delButton);
 
       SpeciesButton* gotoButton = new GotoMountButton(&mount->m_name);
       gotoButton->SetShortProperties(LANGUAGEPHRASE("editor_goto"), 210, height);
-      CopyInto(gotoButton->m_name, std::format("{}:{}", LANGUAGEPHRASE("editor_goto"), mount->m_name));
+      gotoButton->m_name = std::format("{}:{}", LANGUAGEPHRASE("editor_goto"), mount->m_name);
       RegisterButton(gotoButton);
 
       SpeciesButton* updateButton = new UpdateMountButton(&mount->m_name);
       updateButton->SetShortProperties(LANGUAGEPHRASE("editor_update"), 256, height);
-      CopyInto(updateButton->m_name, std::format("{}:{}", LANGUAGEPHRASE("editor_update"), mount->m_name));
+      updateButton->m_name = std::format("{}:{}", LANGUAGEPHRASE("editor_update"), mount->m_name);
       RegisterButton(updateButton);
     }
   }

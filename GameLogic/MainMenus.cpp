@@ -39,7 +39,7 @@ namespace Species
         while (windows->size() > 0)
         {
           EclWindow* w = (*windows)[0].get();
-          EclRemoveWindow(w->m_name);
+          EclRemoveWindow(w->m_name.c_str());
         }
 
         g_script->Skip();
@@ -55,7 +55,7 @@ namespace Species
         while (windows->size() > 0)
         {
           EclWindow* w = (*windows)[0].get();
-          EclRemoveWindow(w->m_name);
+          EclRemoveWindow(w->m_name.c_str());
         }
 
         g_script->Skip();
@@ -240,7 +240,7 @@ namespace Species
   {
       void MouseUp() override
       {
-        EclRemoveWindow(m_parent->m_name);
+        EclRemoveWindow(m_parent->m_name.c_str());
 
         g_requestedLocationId = -1;
       }
@@ -397,7 +397,7 @@ namespace Species
   {
       void MouseUp() override
       {
-        EclRemoveWindow(m_parent->m_name);
+        EclRemoveWindow(m_parent->m_name.c_str());
         EclRemoveWindow(LANGUAGEPHRASE("dialog_locationmenu"));
       }
   };

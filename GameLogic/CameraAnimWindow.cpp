@@ -1,5 +1,9 @@
 #include "pch.h"
 
+#include <format>
+
+#include "StringUtils.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -51,7 +55,7 @@ namespace Species
         auto* anims = &g_location->m_levelFile->m_cameraAnimations;
         for (int i = 0; i < static_cast<int>(anims->size()); ++i)
         {
-          if (stricmp((*anims)[i]->m_name.c_str(), m_name) == 0)
+          if (StrEqualsIgnoreCase((*anims)[i]->m_name, m_name))
           {
             // The erase destroys it.
             anims->erase(anims->begin() + i);
@@ -73,8 +77,11 @@ namespace Species
       {
         EclRemoveWindow(LANGUAGEPHRASE("editor_cameraanim"));
 
-        char* animName = m_name + strlen("select:");
-        int animId = g_location->m_levelFile->GetCameraAnimId(animName);
+        // The button carries the animation's name behind a "select:" prefix,
+        // and this used to step past it with pointer arithmetic on the char
+        // buffer. m_name is a std::string now.
+        std::string const animName = m_name.substr(strlen("select:"));
+        int animId = g_location->m_levelFile->GetCameraAnimId(animName.c_str());
         g_locationEditor->SetSelectionId(animId);
 
         //		EclWindow *secondaryWin = new CameraAnimSecondaryEditWindow(
@@ -124,11 +131,13 @@ namespace Species
     for (auto const& anim : g_location->m_levelFile->m_cameraAnimations)
     {
       // The label was built in a char[64] from a prefix plus a name of up to 63
-      // characters, which overran it before ever reaching the 256-byte button
-      // name. CopyInto bounds it at the destination instead.
+      // characters, which overran it before ever reaching the button name; then
+      // CopyInto bounded it at the 256-byte destination. Neither bound exists
+      // now — the button name is a std::string, so the label is simply
+      // assigned. strings-modernised T11.
       InputField* button = new InputField();
       button->SetShortProperties("Name:", 10, height += pitch, 150);
-      CopyInto(button->m_name, std::format("name:{}", anim->m_name));
+      button->m_name = std::format("name:{}", anim->m_name);
       button->RegisterString(&anim->m_name);
       RegisterButton(button);
 
@@ -138,12 +147,12 @@ namespace Species
       // before and is not this task's to change.
       SpeciesButton* delButton = new DeleteAnimButton();
       delButton->SetShortProperties("Del", 170, height);
-      CopyInto(delButton->m_name, anim->m_name);
+      delButton->m_name = anim->m_name;
       RegisterButton(delButton);
 
       SpeciesButton* selectButton = new SelectAnimButton();
       selectButton->SetShortProperties("Select", 210, height);
-      CopyInto(selectButton->m_name, std::format("select:{}", anim->m_name));
+      selectButton->m_name = std::format("select:{}", anim->m_name);
       RegisterButton(selectButton);
     }
   }
@@ -247,10 +256,11 @@ namespace Species
         CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(parent->m_animId);
         DEBUG_ASSERT(anim);
 
-        char* mountName = m_name + 7;
+        // Seven characters past the "delete:" prefix, as before.
+        std::string const mountName = m_name.substr(7);
         for (int i = 0; i < static_cast<int>(anim->m_nodes.size()); ++i)
         {
-          if (stricmp(anim->m_nodes[i]->m_mountName, mountName) == 0)
+          if (stricmp(anim->m_nodes[i]->m_mountName, mountName.c_str()) == 0)
           {
             anim->m_nodes.erase(anim->m_nodes.begin() + i);
             break;
@@ -333,13 +343,13 @@ namespace Species
         }
         modeBut->RegisterEnum(&node->m_transitionMode);
         x += 70;
-        CopyInto(modeBut->m_name, std::format("mode:{}", node->m_mountName));
+        modeBut->m_name = std::format("mode:{}", node->m_mountName);
         RegisterButton(modeBut);
 
         CreateValueControl(node->m_mountName, &node->m_duration, height, 0.5f, 0.1f, 100.0f, nullptr, x, 90);
         EclButton* b = GetButton(node->m_mountName);
-        CopyInto(b->m_name, std::format("duration:{}", node->m_mountName));
-        b->m_caption[0] = '\0';
+        b->m_name = std::format("duration:{}", node->m_mountName);
+        b->m_caption.clear();
         x += 100;
 
         SpeciesButton* but;
@@ -347,12 +357,12 @@ namespace Species
         but = new SelectMountButton();
         but->SetShortProperties(node->m_mountName, x, height, 80);
         x += 90;
-        CopyInto(but->m_name, std::format("mount:{}", node->m_mountName));
+        but->m_name = std::format("mount:{}", node->m_mountName);
         RegisterButton(but);
 
         but = new DeleteNodeButton();
         but->SetShortProperties("Del", x, height, 30);
-        CopyInto(but->m_name, std::format("delete:{}", node->m_mountName));
+        but->m_name = std::format("delete:{}", node->m_mountName);
         RegisterButton(but);
 
         height += pitch;
@@ -371,7 +381,7 @@ namespace Species
     for (int i = 0; i < m_buttons.size(); ++i)
     {
       EclButton* but = m_buttons[i];
-      if (stricmp(but->m_name, "Close") != 0)
+      if (!StrEqualsIgnoreCase(but->m_name, "Close"))
       {
         RemoveButton(m_buttons[i]->m_name);
         --i;

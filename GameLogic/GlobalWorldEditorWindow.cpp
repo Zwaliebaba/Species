@@ -160,7 +160,7 @@ void GlobalWorldEditorWindow::Update()
 {
   if (!g_editing || g_location)
   {
-    EclRemoveWindow(m_name);
+    EclRemoveWindow(m_name.c_str());
   }
 }
 } // namespace Species

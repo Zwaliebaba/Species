@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <format>
 #include "TextRenderer.h"
 #include "StringUtils.h"
 
@@ -50,11 +52,11 @@ namespace Species
   }
 
 
-  DropDownWindow* DropDownWindow::CreateDropDownWindow(char* _name, char* _parentName)
+  DropDownWindow* DropDownWindow::CreateDropDownWindow(std::string_view _name, std::string_view _parentName)
   {
     if (s_window)
     {
-      EclRemoveWindow(s_window->m_name);
+      EclRemoveWindow(s_window->m_name.c_str());
       s_window = nullptr;
     }
 
@@ -67,7 +69,7 @@ namespace Species
   {
     if (s_window)
     {
-      EclRemoveWindow(s_window->m_name);
+      EclRemoveWindow(s_window->m_name.c_str());
       s_window = nullptr;
     }
   }
@@ -255,8 +257,9 @@ namespace Species
           break;
 
         char* thisOption = m_options[index]->m_word;
-        char thisName[64];
-        sprintf(thisName, "%s %d", m_name, index);
+        // Was formatted into a char[64] from a name of up to 256, so a long menu
+        // name ran off the end of it.
+        std::string const thisName = std::format("{} {}", m_name, index);
 
         int w = m_w - 4;
 
@@ -297,7 +300,7 @@ namespace Species
   }
 
 
-  bool DropDownMenu::IsMenuVisible() { return (EclGetWindow(m_name) != nullptr); }
+  bool DropDownMenu::IsMenuVisible() { return (EclGetWindow(m_name.c_str()) != nullptr); }
 
 
   //*****************************************************************************
@@ -325,14 +328,14 @@ namespace Species
       delete[] m_parentWindowName;
       m_parentWindowName = nullptr;
     }
-    m_parentWindowName = NewStr(_window->m_name);
+    m_parentWindowName = NewStr(_window->m_name.c_str());
 
     if (m_parentMenuName)
     {
       delete[] m_parentMenuName;
       m_parentMenuName = nullptr;
     }
-    m_parentMenuName = NewStr(_menu->m_name);
+    m_parentMenuName = NewStr(_menu->m_name.c_str());
 
     //    m_menuIndex = _index;
     m_value = _value;

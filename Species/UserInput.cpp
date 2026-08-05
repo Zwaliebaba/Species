@@ -91,7 +91,7 @@ namespace Species
       EclWindow* win = EclGetWindow(LANGUAGEPHRASE("dialog_toolsmenu"));
       if (win)
       {
-        EclRemoveWindow(win->m_name);
+        EclRemoveWindow(win->m_name.c_str());
       }
       m_removeTopLevelMenu = false;
     }
