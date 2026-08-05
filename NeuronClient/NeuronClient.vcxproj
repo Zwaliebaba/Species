@@ -32,7 +32,6 @@
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="ClientToServer.cpp" />
     <ClCompile Include="ControlBindings.cpp" />
-    <ClCompile Include="ControlTypes.cpp" />
     <ClCompile Include="DebugRender.cpp" />
     <ClCompile Include="EclButton.cpp" />
     <ClCompile Include="Eclipse.cpp" />

@@ -52,9 +52,6 @@
     <ClCompile Include="ControlBindings.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="ControlTypes.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
     <ClCompile Include="EventHandler.cpp">
       <Filter>Input</Filter>
     </ClCompile>
