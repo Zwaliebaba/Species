@@ -257,12 +257,12 @@ except `ownership/T11`, which met three of four and says so.
 
 ### Where every plan stands now
 
-Ten tasks open across four plans, down from sixteen. `determinism` closed, and `ownership` is one deletion from closing.
+Nine tasks open across three plans, down from sixteen. `determinism` and `ownership` both closed; migration stage 5 is finished.
 
 | Plan | done | todo | What is left |
 |---|---:|---:|---|
 | `determinism` | 6 | 0 | **CLOSED 2026-08-05** — archived |
-| `ownership` | 10 | 1 | **T7 only** — a deletion, and stage 5 ends there |
+| `ownership` | 11 | 0 | **CLOSED 2026-08-05** — archived. Stage 5 is finished. |
 | `language-hygiene` | 12 | 1 | T11 only — 473 sites, now unblocked |
 | `namespace-migration` | 2 | 3 | T2 → T4 → T5, and T5 waits on `ownership/T6` |
 | `strings-modernised` | 15 | 5 | the largest remaining plan |
@@ -557,13 +557,15 @@ Not a proposal — no collision measurement has been run since Batch 5 landed,
 and this file's own history says not to trust one that has not. What is true
 at the point Batch 5 finished:
 
-**Ready for an agent:** `ownership` T7; `strings` T11, T12 and T17;
-`language-hygiene` T11; `namespace` T2.
+**Ready for an agent:** `strings` T11, T12 and T17; `language-hygiene` T11;
+`namespace` T2.
 
-- **`ownership/T7` is the cheapest close in the tree.** `SAFE_DELETE` and
-  `SAFE_FREE` have zero call sites tree-wide as of T6; only the two
-  definitions in `NeuronCore.h` remain, and the two dead `EmptyAndDelete`
-  helpers go with them. That ends migration stage 5.
+`ownership` closed on 2026-08-05 and stage 5 with it. Four pieces of raw
+ownership outlived the plan's scope and **none has an owning task** —
+`SAFE_DELETE_ARRAY`'s two callers, `GlobalEventCondition`'s two `char*`
+members, `ColourShapeFragment`'s array allocation, and
+`Resource::ListResources`' owning vector of owning `char*`. AGENTS.md lists
+them. Stage 5 finishing is not a claim that raw ownership is extinct.
 
 - **`strings/T17`** was Batch 5's named "obvious first task of Batch 6", and
   it still is — with one correction found while measuring: **its file list

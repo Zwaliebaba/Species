@@ -178,20 +178,28 @@ upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 
 ## Ownership
 
-Migration stage 5 — raw owning pointers become `std::unique_ptr` and values —
-**has one task left, and it is a deletion.** All three legacy greps are silent:
+**Migration stage 5 is COMPLETE.** `tasks/Archive/ownership.yaml` is the plan;
+all eleven of its tasks are done, finishing 2026-08-05. Raw owning pointers
+are `std::unique_ptr` and values, and all three legacy greps are at zero:
+`EmptyAndDelete`, `SAFE_FREE` and `SAFE_DELETE` no longer exist anywhere,
+definitions included.
+
+**Raw ownership is not extinct, and stage 5 ending does not claim it is.**
+Four things outlived the plan's scope, and NONE has an owning task:
 
 ```
-EmptyAndDelete   ZERO call sites. Only the two transitional definitions
-                 remain, in NeuronCore/SlotMap.h and NeuronCore/VectorUtils.h,
-                 and both are dead code.
-SAFE_FREE        ZERO call sites. Gone with ShapeMarker's names.
-SAFE_DELETE      ZERO call sites since ownership T6 on 2026-08-05. Only the
-                 definition in NeuronCore.h remains.
+SAFE_DELETE_ARRAY   2 callers in NeuronClient/Shape.cpp. The last of the
+                    macro family; T7's acceptance named only the other two.
+GlobalEventCondition::m_stringId / m_cutScene
+                    char* via NewStr/delete[]. Converting them is stage-4
+                    string work that reaches the level-file writer, where
+                    byte-identity is strings-modernised's proof to make.
+ColourShapeFragment new RGBAColour[1] into a ShapeFragment — Shape's
+                    ownership, in NeuronClient.
+Resource::ListResources
+                    returns std::vector<char*>* — an owning vector of owning
+                    char*, freed by every caller by hand.
 ```
-
-`ownership` T7 removes those definitions and the two dead `EmptyAndDelete`
-helpers, and that ends stage 5. Nothing blocks it.
 
 **T6 was the last hard one, and two things it found are worth carrying:**
 
@@ -531,15 +539,13 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-**Seven plans are complete and in `tasks/Archive/`** — `determinism` joined
-them on 2026-08-05 when its T6 smoke test passed. **Four are open with ten
-tasks between them** — `strings-modernised` (5), `namespace-migration` (3),
-`ownership` (1) and `language-hygiene` (1). Batch 5 landed four tasks on
-2026-08-05, then `ownership` T6 followed.
+**Eight plans are complete and in `tasks/Archive/`** — `determinism` and
+`ownership` both joined them on 2026-08-05. **Three are open with nine tasks
+between them** — `strings-modernised` (5), `namespace-migration` (3) and
+`language-hygiene` (1).
 
-**Nothing is gated on the owner any more.** `ownership` T6 landed on
-2026-08-05 and unblocked both `ownership` T7 — a deletion, which ends stage 5
-— and `namespace` T5. Every open task is startable by an agent.
+**Nothing is gated on the owner, and migration stage 5 is finished.** Every
+open task is startable by an agent today.
 
 **But T6 is the one to be sceptical about.** Its acceptance asked for the game
 to reach the main menu after each of its four commits, and that check was NOT
@@ -627,7 +633,7 @@ Real, currently true, and worth knowing before you trip over them:
   (2026-08-05), and it is also the most recent with an explicit
   all-seven-steps breakdown — see *What working looks like*. CI builds and runs
   the unit suite; it does not launch the client, and neither does any agent
-  working on Linux. A change that compiles and passes 185 tests can still break
+  working on Linux. A change that compiles and passes 184 tests can still break
   the game on the first frame.
   - Batch 5 is the standing example in both directions. Four tasks went in on
     CI evidence alone; CI then caught two real compile errors a name-keyed
@@ -715,8 +721,11 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **185** tests at `a676611`
-  (2026-08-05), covering IP conversion,
+- **The test suite is thin.** Four projects, **184** tests as of `ownership`
+  T7 (2026-08-05) — one FEWER than before, which is rare here and is why it is
+  spelled out: T7 deleted the transitional `SlotMap::EmptyAndDelete` helper,
+  and the single test that existed to characterise it went with it. The rest
+  cover IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new

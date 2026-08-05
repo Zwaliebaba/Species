@@ -189,19 +189,6 @@ namespace Neuron
         }
       }
 
-      // Transitional, for callers migrating off the legacy containers while
-      // they still hold raw owning pointers; ownership conversion is
-      // migration stage 5. A SlotMap of unique_ptr does not need this and
-      // will not compile it — the static_assert below is the diagnostic.
-      void EmptyAndDelete()
-      {
-        static_assert(std::is_pointer_v<T>, "EmptyAndDelete only makes sense for pointer elements");
-        for (int index = 0; index < Size(); ++index)
-          if (m_occupied[index])
-            delete m_slots[index];
-        Empty();
-      }
-
       // Iteration visits occupied slots only, in index order — the only
       // traversal order simulation code may observe.
       class ConstIterator

@@ -729,7 +729,6 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: in_progress
     notes: |
       T10 WAS ADDED TO depends_on ON 2026-08-05 at 97b5844, because this
       task's acceptance could not have reached zero without it. The tree's
@@ -746,6 +745,53 @@ tasks:
       node whose acceptance is a tree-wide grep, over a tree nobody had run the
       grep against. Run the closing grep when the node is WRITTEN, not when it
       is reached.
+
+      DONE 2026-08-05. MIGRATION STAGE 5 IS COMPLETE. The acceptance grep over
+      the six projects returns nothing, for code and comments alike.
+
+      THE NODE'S OWN WARNING APPLIED TO ITSELF. Its notes said to run the
+      closing grep when the node is WRITTEN rather than when it is reached,
+      because a tree-wide grep can be satisfied by files no open task names.
+      Written in 2026, it listed four call sites and got three right. What it
+      could not have known:
+
+        SAFE_DELETE_ARRAY  2 callers, NeuronClient/Shape.cpp, still live.
+                           NOT named by this task's acceptance -- which says
+                           SAFE_DELETE and SAFE_FREE -- and the grep is
+                           word-anchored, so it passes. KEPT, and NO TASK
+                           OWNS IT. It is the last of the family and the
+                           reason -w matters in that acceptance line.
+        SAFE_RELEASE       zero callers. A COM-style release macro nothing in
+                           this tree has ever used. Deleted here as dead code
+                           in a block already being edited; not named by the
+                           acceptance either.
+
+      THE TWO "DEAD" EmptyAndDelete HELPERS WERE NOT BOTH DEAD, and AGENTS.md
+      said they were. NeuronCore/VectorUtils.h's had no users and went
+      cleanly. NeuronCore/SlotMap.h's had ONE: a test,
+      SlotMapTests::EmptyAndDeleteDeletesThePointees, which existed to
+      characterise the helper itself. Deleting the helper meant deleting that
+      test, so THE SUITE DROPS FROM 185 TO 184. That is the correct trade --
+      the test covered a transitional helper with no production caller left,
+      and keeping the helper alive to keep its test green would have been the
+      tail wagging the dog -- but it is a test count going DOWN, which is rare
+      enough here to state rather than let someone discover in a CI diff.
+
+      Two stale comments in SlotMapTests.cpp that described the deleted helper
+      were rewritten rather than left pointing at nothing.
+
+      WHAT ACTUALLY ENDED. Every raw owning `new`/`delete` pair the plan set
+      out to convert is now a unique_ptr or a value; the three legacy greps --
+      EmptyAndDelete, SAFE_FREE, SAFE_DELETE -- are at zero call sites. What
+      did NOT end: SAFE_DELETE_ARRAY's two sites above, GlobalEventCondition's
+      two char* members recorded on T11, ColourShapeFragment's RGBAColour[1]
+      also on T11, and Resource::ListResources' owning vector of owning char*.
+      None has an owning task. Stage 5's scope is finished; raw ownership in
+      this tree is not extinct.
+
+      Not compiled here -- no MSVC. CI is the check.
+
+    status: done
 
   - id: T8
     title: Decide who owns a SoundInstance, then convert m_sounds
