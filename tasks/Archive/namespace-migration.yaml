@@ -170,6 +170,42 @@ tasks:
       now stops here for most lines, which is the cost the plan accepted when
       it chose to namespace at all.
 
+      TWO THINGS CI FOUND THAT NO STRUCTURAL CHECK HERE COULD HAVE, and the
+      second is the one to remember:
+
+      1. MACRO PARAMETER CAPTURE, in language-hygiene T11's static_asserts
+         rather than in this plan, but it is the same commit's CI round. The
+         generator macro took a parameter named `name` and the struct member it
+         reads is also `name`, so `.name` was substituted with the argument.
+         266 errors, all of them the assertion failing to see the table it was
+         checking. Parameters are x and y now.
+
+      2. A BLOCK-SCOPE `extern` DOES NOT JOIN THE ENCLOSING NAMESPACE. This is
+         the one genuinely subtle rule in the whole migration and it is
+         invisible to every check in tools/:
+
+           WindowManager.cpp      extern W32InputDriver* g_win32InputDriver;
+           Win32EventHandler.cpp  extern signed char g_keys[KEY_MAX];
+                                  extern signed char g_keyDeltas[KEY_MAX];
+
+         all declared INSIDE the function that used them, because no header
+         declares any of the three. With no visible namespace-scope declaration
+         to match, MSVC gives such a declaration external linkage in the GLOBAL
+         namespace — so after the wrap they named ::g_keys while the definition
+         in InputDriverWin32.cpp was Neuron::g_keys, and the link failed with
+         MSVC helpfully printing both mangled names.
+
+         The fix is to declare them at namespace scope in the files that use
+         them, which makes the match visible and is correct however a compiler
+         reads the rule. The tree has exactly four such declarations and all
+         four are now at namespace scope; a sweep for block-scope function
+         declarations found none.
+
+         WHY NOTHING CAUGHT IT: the pre-push audit checked that every `extern`
+         DECLARED in a project header is DEFINED in that project. These are
+         declared in no header at all. If this ever has to be done again, grep
+         for `^\s+extern\s` inside function bodies before wrapping anything.
+
       IT ALSO BROKE A CHECK, and the fix is worth reading before T4 and T5
       repeat it a hundredfold. tools/check_math_types.py finds a math local
       used above the line declaring it, and it found the first "body" in a file

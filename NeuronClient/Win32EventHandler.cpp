@@ -18,6 +18,21 @@ namespace Neuron
   typedef std::vector<W32EventProcessor*> ProcList;
   typedef ProcList::iterator ProcIt;
 
+  // DECLARED HERE, AT NAMESPACE SCOPE, RATHER THAN INSIDE THE FUNCTION THAT
+  // USES THEM. The Win32 driver's key state lives in InputDriverWin32.cpp and
+  // no header declares it, so these used to be block-scope `extern`s inside
+  // W32EventHandler::WndProc.
+  //
+  // A BLOCK-SCOPE extern DOES NOT JOIN THE ENCLOSING NAMESPACE. With no
+  // visible namespace-scope declaration to match, MSVC gives it external
+  // linkage in the GLOBAL namespace — so once this file moved into namespace
+  // Neuron the declarations named ::g_keys and ::g_keyDeltas while the
+  // definitions were Neuron's, and the linker said so. Declaring them out here
+  // is what makes the match visible, and it is correct however a compiler
+  // reads the block-scope rule. namespace-migration T2 learned it from CI.
+  extern signed char g_keyDeltas[KEY_MAX];
+  extern signed char g_keys[KEY_MAX];
+
 
   bool g_windowHasFocus = true;
   bool g_altTabBound = false;
@@ -39,9 +54,6 @@ namespace Neuron
     {
       // When switching away, ALT is often left down.
       // Let's clear it.
-
-      extern signed char g_keyDeltas[KEY_MAX];
-      extern signed char g_keys[KEY_MAX];
 
       if (g_keys[KEY_ALT])
       {
