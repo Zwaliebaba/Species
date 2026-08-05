@@ -558,7 +558,7 @@ tasks:
       With zero users, the macros leave NeuronCore.h, and with them the
       invitation to write new legacy-style ownership. Closes stage 5.
     project: NeuronCore
-    depends_on: [T1, T2, T3, T4, T5, T6]
+    depends_on: [T1, T2, T3, T4, T5, T6, T10]
     files:
       - NeuronCore/NeuronCore.h
     acceptance:
@@ -569,6 +569,22 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
     status: todo
+    notes: |
+      T10 WAS ADDED TO depends_on ON 2026-08-05 at 97b5844, because this
+      task's acceptance could not have reached zero without it. The tree's
+      SAFE_DELETE and SAFE_FREE sites at that commit are, in full:
+
+        NeuronCore/NeuronCore.h            2   the two definitions — this task
+        Species/App.cpp                   17   SAFE_DELETE — T6
+        Species/GameCursor.cpp            10   SAFE_DELETE — T5
+        NeuronClient/Shape.cpp             2   SAFE_FREE   — nobody, now T10
+
+      So after T5 and T6 land, two calls remain in a file no open task names,
+      and the grep above still returns something. Same failure mode as
+      strings-modernised T9's `\bsprintf\b` not matching `vsprintf`: a closing
+      node whose acceptance is a tree-wide grep, over a tree nobody had run the
+      grep against. Run the closing grep when the node is WRITTEN, not when it
+      is reached.
 
   - id: T8
     title: Decide who owns a SoundInstance, then convert m_sounds
@@ -710,4 +726,61 @@ tasks:
       InstantUnitWindow already had an `EclWindow* ew` in scope, holding the old
       edit window the block had just removed, so the new observer could not be
       called `ew` too. It is `editWindow`.
+
+  - id: T10
+    title: Retire ShapeMarker's two SAFE_FREE calls
+    intent: >
+      The last two SAFE_FREE calls in the tree outside NeuronCore.h's own
+      definition sit in ShapeMarker's destructor, and no task owned them. T7
+      cannot retire the macros while a caller remains, so this is the node
+      between here and the end of stage 5.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/Shape.cpp
+    acceptance:
+      - grep -wE "SAFE_DELETE|SAFE_FREE" over Shape.cpp returns nothing
+      - ShapeMarker's two name members are released exactly once, at the same
+        program point as today, with the release form matching the allocation
+      - The commit states which of the two options in notes was taken and why
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      Added 2026-08-05 at 97b5844, from the tree-wide grep run while scoping
+      the batch that closes this plan. It is unowned work, not a re-scope:
+      T3 declared Shape.cpp and converted its containers, but T3's acceptance
+      grep reads `EmptyAndDelete|SAFE_DELETE` — it does not name SAFE_FREE, so
+      the file passed T3 legitimately with these two calls still in it. T7's
+      grep DOES name SAFE_FREE, which is why the gap surfaces at the closing
+      node rather than earlier. Both greps are correct in isolation; nobody
+      ran the closing one early.
+
+      WHERE THEY ARE: ShapeMarker::~ShapeMarker, Shape.cpp:142-143 —
+      SAFE_FREE(m_parentName) then SAFE_FREE(m_name), both strdup'd, both
+      `char*` members on ShapeMarker in Shape.h.
+
+      TWO OPTIONS, AND THE DECISION BELONGS TO WHOEVER RUNS IT.
+
+      (1) MATCH THE FILE. ShapeFragment::~ShapeFragment (:374, :376) and
+      Shape::~Shape (:1404) already free the identically-shaped members with a
+      bare free(), so the macro is the odd one out in its own file. Replacing
+      the two calls with the form the neighbours use is a three-line diff, is
+      compile-time identical, and unblocks T7. This is the smaller and more
+      likely answer.
+
+      (2) CONVERT THE MEMBERS. m_name and m_parentName become std::string and
+      the frees go away with the strdups. That is stage-4 work in a file
+      strings-modernised does not own — see strings-modernised T20, added
+      alongside this task for exactly that reason — so taking it here would
+      merge two stages in one diff, which this plan's own rule forbids. If
+      T20 lands first, this task is already satisfied and closes as a no-op;
+      say so rather than writing a diff to prove it.
+
+      NOT A LIFETIME CHANGE EITHER WAY. SAFE_FREE(x) expands to free(x)
+      followed by x = nullptr, in a destructor, so the nulling is dead. The
+      object dies at the same point under both options.
 

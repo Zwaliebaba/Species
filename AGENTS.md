@@ -447,9 +447,14 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-Six plans are complete and in `tasks/Archive/`. **Five are open with eighteen
-tasks between them** — `strings-modernised` (6), `ownership` (4),
+Six plans are complete and in `tasks/Archive/`. **Five are open with twenty
+tasks between them** — `strings-modernised` (7), `ownership` (5),
 `language-hygiene` (3), `namespace-migration` (3) and `determinism` (2).
+
+**Three of those five are within a few nodes of finished**, which is what
+Batch 4 is organised around: `determinism` closes in two tasks that need no
+build, `ownership` in five, and `language-hygiene` in three. Read
+[`tasks/_next-batch.md`](tasks/_next-batch.md) for which and in what order.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:

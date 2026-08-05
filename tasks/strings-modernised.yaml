@@ -1549,3 +1549,55 @@ tasks:
       member shorter than seven characters that expression indexes before the
       start of the buffer. Reproduce the behaviour for well-formed names and
       say in the commit what happens to a malformed one now.
+
+  - id: T20
+    title: Convert Shape's three strdup'd name members
+    intent: >
+      ShapeMarker, ShapeFragment and Shape each hold their name and parent name
+      as a strdup'd char* freed by hand. It is ordinary stage-4 work in a file
+      no task in this plan declared, and it is invisible to every acceptance
+      grep the plan has.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/Shape.cpp
+      - NeuronClient/Shape.h
+    acceptance:
+      - grep -w strdup over Shape.cpp and Shape.h returns nothing
+      - Every name comparison stays case-INSENSITIVE, per site, and the commit
+        lists the six sites and what each became
+      - No free() or delete remains for a name member
+      - The shapes the Garden loads still resolve their markers by name, stated
+        as what was checked rather than assumed
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      Added 2026-08-05 at 97b5844, found by grepping strdup while scoping the
+      batch that closes `ownership`. Unowned rather than deferred: this plan
+      declares GameLogic/StaticShape.cpp but never NeuronClient/Shape.cpp,
+      which holds 13 strdup calls — more than any other file in the tree.
+
+      IT IS NOT IN T9's DEPENDS_ON AND THAT IS DELIBERATE. T9's acceptance
+      greps the strcpy and sprintf families; `strdup` is in neither, so T9 can
+      honestly reach zero with this file untouched. The plan still cannot be
+      archived while this task is todo, which is the correct amount of
+      coupling — a task, not an edge.
+
+      THE HAZARD IS stricmp, EXACTLY AS T11's NOTES DESCRIBE. Every comparison
+      of these members in the tree is case-insensitive — Shape.cpp:416, 1038,
+      1067, 1486, 1487 and 1507 — and `std::string::operator==` matches strcmp,
+      not stricmp. A straight `==` conversion silently narrows marker lookup on
+      six sites, and shape marker names come from GameData files rather than
+      from code, so nothing in the build or the suite would say so. T5 hit this
+      once already on camera names; do not hit it a third time.
+
+      TWO OF THE THREE CLASSES ALREADY USE BARE free() — ShapeFragment at
+      :374/:376 and Shape at :1404. The third, ShapeMarker at :142-143, still
+      uses SAFE_FREE and is `ownership` T10, which gates that plan's closing
+      node. If this task lands first, T10 closes as a no-op; the two are
+      written to be safe in either order and must not share a commit.
+

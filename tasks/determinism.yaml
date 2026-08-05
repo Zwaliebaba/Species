@@ -208,8 +208,10 @@ tasks:
       since — three batches went past it.
 
       WHAT IS ALREADY KNOWN, so this starts from the reading rather than
-      repeating it. The two sites are SoundInstance.cpp:533 (pick a sample from
-      a group) and :1009 (pick an object id). speciesRandom() is the
+      repeating it. The two sites are SoundInstance.cpp:547 (pick a sample from
+      a group) and :1035 (pick an object id) — measured at 97b5844; they were
+      written down as :533 and :1009 and the file has grown since, so re-grep
+      `speciesRandom` rather than trusting either pair. speciesRandom() is the
       deterministic lockstep RNG, the same sequence Location::Advance consumes,
       and CODING_STANDARDS.md#determinism names the call sequence as
       load-bearing. Whether either line runs depends on how many object ids an
@@ -238,10 +240,10 @@ tasks:
       potentially worse, because a reseed discards the stream rather than
       advancing it. As with T3 this task establishes what it costs and changes
       nothing.
-    project: Species
+    project: GameLogic
     depends_on: []
     files:
-      - Species/LandscapeRenderer.cpp
+      - GameLogic/LandscapeRenderer.cpp
     acceptance:
       - notes states what calls GetLandscapeColour, how often, and whether the count is frame-rate or view dependent
       - notes states whether the reseed is reachable while a simulation tick is in progress, and what the shared stream's state is afterwards
@@ -273,3 +275,15 @@ tasks:
       `_x | (_y + speciesRandom())` rather than the `(_x | _y) + …` a reader
       expects. That is worth noting in the answer either way, but it is not the
       question — the question is the reseed.
+
+      THE DECLARED PATH WAS WRONG AND IS CORRECTED, 2026-08-05 at 97b5844.
+      This task was written against `Species/LandscapeRenderer.cpp`, which does
+      not exist: layering-inversion moved the renderer into GameLogic with the
+      rest of the world model, and the file is
+      `GameLogic/LandscapeRenderer.cpp` — the call is at line 169 and the only
+      caller inside the file at line 216. `project` was `Species` for the same
+      reason and is now GameLogic. Nothing caught this, and that is the point
+      worth carrying: check_task_dag.py validates the GRAPH, not that a
+      declared file is on disk, so a path that rots when a file moves stays
+      valid forever. An agent starting this task would have opened a missing
+      file first.

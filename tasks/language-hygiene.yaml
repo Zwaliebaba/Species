@@ -661,6 +661,7 @@ tasks:
       - NeuronClient/Movement2d.h
       - NeuronClient/Movement2d.cpp
       - NeuronClient/TargetCursor.cpp
+      - NeuronClient/ControlTypes.inc
     acceptance:
       - InputType is enum class with an explicit underlying type
       - Neuron::ENUM_HELPER supplies its bitwise operators, or the task records why a plain enum was kept instead
@@ -716,6 +717,31 @@ tasks:
       this same plan, and T12 cannot run beside it regardless. parallel_safe is
       still false, so this is not permission to run it concurrently; it is the
       measurement someone will want before asking to.
+
+      SIXTY-TWO PER CENT OF THIS TASK LIVES IN A FILE IT DID NOT DECLARE.
+      Measured 2026-08-05 at 97b5844: of the 218 INPUT_TYPE_ sites, **136 are
+      in NeuronClient/ControlTypes.inc** and only 82 are in .cpp and .h files.
+      The .inc is the generated control table — `DEF_CONTROL_TYPE( MenuLeft,
+      INPUT_TYPE_BOOL )`, one line per control — and its second column is
+      InputType. Scoping the enum changes all 136 spellings, so this task must
+      edit that file; it has been added to the list above.
+
+      THAT FILE IS T11's, AND THE SEAM IS REAL RATHER THAN CLERICAL. T11 owns
+      ControlTypes.inc because it owns the FIRST column; this task owns the
+      second. They cannot both be in flight, which the existing T10 -> T11 edge
+      already prevents — but whoever runs T11 should expect the .inc to have
+      moved under them, and whoever runs this task should not be surprised to
+      be editing 136 lines of a file the task list called T11's.
+
+      THREE MACROS CONSUME THAT COLUMN, not one: ControlTypes.h ignores it
+      (`#define DEF_CONTROL_TYPE(x,y) Control##x,`), ControlBindings.cpp uses it
+      (`{#name, type}`), and ControlTypes.cpp — the dead, broken file this task
+      deletes — uses it too. Deleting ControlTypes.cpp first removes one of the
+      three consumers before the column changes, which is the cheaper order.
+
+      The "218 sites in 25 files" figure above counts INPUT_TYPE_ and
+      inputtype_t together across every extension. Split at 97b5844: 218
+      INPUT_TYPE_ in 19 files, of which 136 are the .inc, plus 25 inputtype_t.
 
   - id: T11
     title: Scope ControlType
