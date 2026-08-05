@@ -180,7 +180,7 @@ void Building::SetShapeLights(ShapeFragment* _fragment)
   for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
   {
     ShapeMarker* marker = _fragment->m_childMarkers[i].get();
-    if (strstr(marker->m_name, "MarkerLight"))
+    if (marker->m_name.find("MarkerLight") != std::string::npos)
     {
       m_lights.push_back(marker);
     }
@@ -210,7 +210,7 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
   for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
   {
     ShapeMarker* marker = _fragment->m_childMarkers[i].get();
-    if (strstr(marker->m_name, "MarkerPort"))
+    if (marker->m_name.find("MarkerPort") != std::string::npos)
     {
       auto port = std::make_unique<BuildingPort>();
       port->m_marker = marker;

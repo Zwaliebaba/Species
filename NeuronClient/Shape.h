@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <stdio.h>
@@ -70,8 +71,13 @@ class ShapeMarker
     // reads all sixteen, so a garbage _44 propagated straight into the
     // translation and put markers at coordinates around -1e12.
     DirectX::XMFLOAT4X4 m_transform{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-    char* m_name;
-    char* m_parentName;
+    // Both are "unknown" rather than empty when the shape file supplies
+    // neither, which is what the char* pair did through a null test — see the
+    // constructors. Compare them with stricmp: marker and fragment names come
+    // from GameData files and every comparison in the tree is
+    // case-insensitive, so operator== is the wrong tool here.
+    std::string m_name;
+    std::string m_parentName;
     int m_depth; // Number of levels in the shape fragment tree from root to self
     // Observers into the fragment tree, which owns them — the commented-out
     // "should we?" delete loop that used to sit in the destructor is answered
@@ -157,8 +163,8 @@ class ShapeFragment
     unsigned int m_maxTriangles;
     ShapeTriangle* m_triangles;
 
-    char* m_name;
-    char* m_parentName;
+    std::string m_name; // stricmp, not operator== — see ShapeMarker above
+    std::string m_parentName;
     DirectX::XMFLOAT4X4 m_transform{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
                                     0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}; // identity by default -- see ShapeMarker above
     DirectX::XMFLOAT3 m_angVel{0.0f, 0.0f, 0.0f};
@@ -221,7 +227,7 @@ class Shape
 
   public:
     std::unique_ptr<ShapeFragment> m_rootFragment;
-    char* m_name;
+    std::string m_name; // the shape file's name, from TextReader::GetFilename
 
     Shape();
     Shape(char const* filename, bool _animating);

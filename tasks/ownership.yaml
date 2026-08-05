@@ -748,7 +748,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
       Added 2026-08-05 at 97b5844, from the tree-wide grep run while scoping
       the batch that closes this plan. It is unowned work, not a re-scope:
@@ -783,4 +783,21 @@ tasks:
       NOT A LIFETIME CHANGE EITHER WAY. SAFE_FREE(x) expands to free(x)
       followed by x = nullptr, in a destructor, so the nulling is dead. The
       object dies at the same point under both options.
+
+      DONE 2026-08-05, OPTION 2, ON THE OWNER'S DECISION. The members are
+      std::string and the strdups went with them, so this task and
+      strings-modernised T20 are the same commit — which is the one thing the
+      notes above said to avoid. The owner was asked and chose it explicitly:
+      the stage-4/stage-5 split is a rule about not letting a fix ride along
+      unannounced, and here the two stages have the same three-line answer.
+      Recorded as a decision rather than a drift.
+
+      THE TREE'S LAST SAFE_FREE CALLS ARE GONE. What remains is SAFE_DELETE in
+      Species/App.cpp (17, T6) and Species/GameCursor.cpp (10, T5), plus the
+      two definitions in NeuronCore.h that T7 deletes. T7's grep now has a
+      reachable zero for the first time.
+
+      NOT COMPILED. No MSVC here; the seven Python checks pass and
+      NeuronClientTests gains five tests that have never been run. See T20 for
+      what they cover.
 

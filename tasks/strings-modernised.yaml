@@ -1574,7 +1574,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
       Added 2026-08-05 at 97b5844, found by grepping strdup while scoping the
       batch that closes `ownership`. Unowned rather than deferred: this plan
@@ -1600,4 +1600,51 @@ tasks:
       uses SAFE_FREE and is `ownership` T10, which gates that plan's closing
       node. If this task lands first, T10 closes as a no-op; the two are
       written to be safe in either order and must not share a commit.
+
+      DONE 2026-08-05, AND IT DID SHARE A COMMIT WITH ownership T10 — on the
+      owner's explicit decision when asked, not by drift. The two stages had
+      the same answer in the same three lines, and splitting them would have
+      produced a commit whose only content was rewriting SAFE_FREE as free()
+      immediately before deleting it.
+
+      THE stricmp HAZARD WAS NOT THEORETICAL, and the measurement is the part
+      to keep. All 605 ParentName lines under GameData/Shapes spell it
+      `sceneroot`, in lower case, and the code compares them against the
+      literal "SceneRoot" with stricmp — Shape.cpp:1427, :1440 and :1460. A
+      conversion to operator== would have failed to parent every fragment in
+      every shape in the game, and nothing in the build or the old test suite
+      would have said so. Six comparison sites kept stricmp with .c_str();
+      Building.cpp's two strstr sites became .find(), which IS the exact
+      equivalent because strstr is case-sensitive.
+
+      FIVE TESTS, in Tests/NeuronClientTests/ShapeMarkerTests.cpp, which is a
+      new file. ShapeMarker parses from a TextDataReader without a GL context,
+      so the marker constructor is testable where the rest of Shape is not.
+      They cover the name/parentName parse, both "unknown" defaults, the
+      exporter constructor's space stripping, and — the reason the file exists
+      — a NEGATIVE CONTROL asserting that operator== against "SceneRoot"
+      FAILS on the shipped spelling while stricmp succeeds.
+
+      TWO PRE-EXISTING DEFECTS FOUND, ONE FIXED BY THE CONVERSION AND ONE NOT.
+
+      Fixed as a side effect: `Shape::Shape() {}` initialises nothing, and
+      `Shape::~Shape()` called free(m_name) — so default-constructing a Shape
+      and destroying it freed an uninitialised pointer. std::string ends that
+      without anyone deciding to.
+
+      NOT FIXED, AND IT NEEDS AN OWNER: ShapeMarker's TextReader constructor
+      does not initialise m_depth before the parse loop, then calls
+      m_parents.assign(m_depth, nullptr). A marker block with no `Depth:` line
+      sizes a vector from an indeterminate value. Every shipped shape has one,
+      so it does not bite today. Left alone deliberately — a default member
+      initialiser is a behaviour change and this plan forbids one riding along
+      inside a conversion — and recorded here rather than fixed quietly. The
+      test file says the same thing at the helper that avoids it.
+
+      m_displayListName IS NOT IN SCOPE and stays a char*. It is not a strdup:
+      it comes from g_resource->GenerateName() and is released with delete[],
+      so it belongs to whoever converts Resource's naming API, not here.
+
+      NOT COMPILED. No MSVC in the environment this ran in. The seven Python
+      checks pass; the five new tests have never been executed.
 

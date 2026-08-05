@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="FileWriterTests.cpp" />
     <ClCompile Include="FilesysUtilsTests.cpp" />
+    <ClCompile Include="ShapeMarkerTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
