@@ -964,3 +964,36 @@ tasks:
       and caught there by a scan for "member used after std::move of the same
       local"; the same scan belongs in this task's verification, and its
       acceptance says so.
+
+      REACH MEASURED 2026-08-05 FOR BATCH 5, AND THE FILE LIST ABOVE IS TWO OF
+      SEVEN. This is T5's lesson arriving before the work rather than after it:
+      the list names where ownership LIVES, and the acceptance line already
+      asks for "every file naming one of them outside GlobalWorld.cpp", so
+      that list is here rather than waiting for CI to produce it.
+
+      Eight range-for loops in five files bind a raw element straight out of
+      the three owning vectors, and every one of them stops compiling the
+      moment those vectors hold unique_ptr:
+
+        GameLogic/Generator.cpp:435    for (GlobalBuilding* gb : ...m_buildings)
+        GameLogic/Mine.cpp:523         for (GlobalBuilding* gb : ...m_buildings)
+        GameLogic/TrunkPort.cpp:364    for (GlobalBuilding* building : ...m_buildings)
+        GameLogic/CheatWindow.cpp:179  for (GlobalBuilding* gb : ...m_buildings)
+        GameLogic/CheatWindow.cpp:204  for (GlobalBuilding* gb : ...m_buildings)
+        GameLogic/CheatWindow.cpp:226  for (GlobalLocation* loc : ...m_locations)
+        Species/App.cpp:331            for (GlobalBuilding* building : ...m_buildings)
+        Species/App.cpp:336            for (GlobalLocation* loc : ...m_locations)
+
+      Each wants `auto const&` plus `.get()` at the use, not a cast.
+
+      THE THREE SUBSYSTEM MEMBERS ARE THE CHEAP HALF, WHICH IS WORTH KNOWING
+      BEFORE THE COUNT FRIGHTENS ANYONE. m_research is named 69 times through
+      g_globalWorld->m_research, and ALL 69 are `m_research->` observation,
+      which unique_ptr's operator-> serves unchanged. m_globalInternet and
+      m_sphereWorld are named nowhere outside GlobalWorld.cpp/.h at all. So
+      the 69 sites need no edit and the eight loops above do.
+
+      THIS TASK REACHES Species/App.cpp, WHICH IS T6's FILE. Not a dependency
+      -- T6 does not have to land first -- but they must not be in flight at
+      the same time, and the declared-file collision script in _next-batch.md
+      cannot see it because App.cpp is not on either list.

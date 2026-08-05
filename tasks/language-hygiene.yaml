@@ -743,6 +743,20 @@ tasks:
       inputtype_t together across every extension. Split at 97b5844: 218
       INPUT_TYPE_ in 19 files, of which 136 are the .inc, plus 25 inputtype_t.
 
+      RE-VERIFIED 2026-08-05 FOR BATCH 5, AND THE LIST IS NOW EXACTLY RIGHT.
+      `grep -rl 'INPUT_TYPE_\|inputtype_t'` over the six projects and Tests
+      returns the 26 declared files, with nothing reached that is not declared
+      and nothing declared that is not reached. That is the only task in the
+      ready set of which this is true, and it is true because the list was
+      corrected by measurement twice rather than written once.
+
+      One sharpening to the NULL point above: `nullptr, NULL` in
+      ControlTypes.cpp is the last NULL in the TREE, not just in NeuronClient.
+      The only other tree-wide hit for `\bNULL\b` is inside a diagnostic string
+      literal in Win32EventHandler.cpp, which T1 correctly left alone. So
+      deleting this file takes the sweep T1 started to a genuine zero, and
+      that is worth saying in the commit that does it.
+
   - id: T11
     title: Scope ControlType
     intent: >

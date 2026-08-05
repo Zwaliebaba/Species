@@ -1443,6 +1443,26 @@ tasks:
       bounds a level name, a shape name or a script filename before it gets
       here.
 
+      THE LAST ENTRY IN THE FILE LIST ABOVE NAMES A FILE THAT DOES NOT EXIST.
+      Found 2026-08-05 while measuring for Batch 5, by ls-ing every declared
+      path in the ready set: there is no
+      Tests/GameLogicTests/LevelFileRoundTripTests.cpp, under that or any other
+      name. The tests the acceptance line means are
+
+        Tests/NeuronClientTests/FileWriterTests.cpp   the byte-level printf
+                                                     tests — the ones that
+                                                     would actually catch a
+                                                     reinterpreted format
+                                                     string or a lost field
+                                                     width
+        Tests/GameLogicTests/LevelFileTests.cpp       LevelFile's constructors
+
+      Correct the path in the same commit that starts the work. This matters
+      more than a typo usually would, because the acceptance line says those
+      tests must pass "with no edit to them in the same commit" — an agent that
+      cannot find them could conclude they do not exist yet and write new ones,
+      which is precisely the thing that line exists to forbid.
+
   - id: T18
     title: Retire the last three variadic format entry points
     intent: >
@@ -1483,6 +1503,25 @@ tasks:
       Species/Script.cpp belongs to T8 and Script.h does not, so the two do not
       collide on a file — but they collide on a reviewer's attention. Run this
       after T8 or well clear of it.
+
+      REACH RE-MEASURED 2026-08-05 FOR BATCH 5: NINE FILES, NOT THE FIVE
+      DECLARED. The count of 16 NetDebugOut references above was right; where
+      they live was never written down, and four of the files holding them are
+      not on the list:
+
+        NeuronCore/NetSocket.cpp          8 NetDebugOut
+        NeuronCore/NetSocketListener.cpp  3 NetDebugOut
+        NeuronCore/NetThreadWin32.cpp     1 NetDebugOut
+        NeuronClient/PersistingDebugRender.cpp  1 RenderPointMarker
+
+      The declared five hold the other four references plus both definitions.
+      NetThreadWin32.cpp is Win32-only and compiles in no other configuration,
+      so its one call site is the kind a Linux-side grep sees and a local build
+      would not.
+
+      That does not change parallel_safe: all nine are still disjoint from
+      every other ready task's measured reach, which is why this stayed in
+      Batch 5 after the correction rather than dropping out of it.
 
   - id: T19
     title: Convert GlobalLocation's and GlobalEventAction's filename members byte-identically
