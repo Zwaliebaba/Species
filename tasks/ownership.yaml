@@ -446,7 +446,10 @@ tasks:
       already skips names like this rather than guessing, so it will not catch
       a mistake here — read the declaration, not the name.
 
-      LANDED 2026-08-05, all five members. Two findings worth carrying:
+      DONE ON CI RUN 514 (commit a09d0bd), 2026-08-05, all five members: x64
+      Debug builds and the unit suite passes. Not smoke-tested -- a lifetime
+      mistake here is silent, and Virii is simulation code, so the Garden run
+      that T21 and determinism/T2 already need covers this too. Two findings worth carrying:
 
       THE FILE LIST IS INCOMPLETE AND WAS ALWAYS GOING TO BE. It names seven
       .cpp files, but a vector's element type is declared in a HEADER, so
@@ -483,7 +486,7 @@ tasks:
       Virii.cpp:336; unique_ptr frees at the same program point, which is what
       the intent above requires, but that has to be stated per site in the
       commit rather than assumed.
-    status: in_progress
+    status: done
 
   - id: T5
     title: Adopt unique_ptr in Species outside App
