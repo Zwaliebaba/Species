@@ -14,7 +14,7 @@
 #include "WorldPointers.h"
 
 
-AirstrikeUnit::AirstrikeUnit(int teamId, int unitId, int numEntities, Vector3 const& _pos)
+AirstrikeUnit::AirstrikeUnit(int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos)
   : Unit(Entity::TypeSpaceInvader, teamId, unitId, numEntities, _pos),
     m_numInvaders(numEntities),
     m_state(StateApproaching),
@@ -35,11 +35,11 @@ void AirstrikeUnit::Begin()
   float landSizeX = g_location->m_landscape.GetWorldSizeX();
   float landSizeZ = g_location->m_landscape.GetWorldSizeZ();
 
-  std::vector<Vector3> startPositions;
-  startPositions.push_back(Vector3(inset, startHeight, inset));
-  startPositions.push_back(Vector3(inset, startHeight, landSizeZ - inset));
-  startPositions.push_back(Vector3(landSizeX - inset, startHeight, landSizeZ - inset));
-  startPositions.push_back(Vector3(landSizeX - inset, startHeight, inset));
+  std::vector<DirectX::XMFLOAT3> startPositions;
+  startPositions.push_back(DirectX::XMFLOAT3(inset, startHeight, inset));
+  startPositions.push_back(DirectX::XMFLOAT3(inset, startHeight, landSizeZ - inset));
+  startPositions.push_back(DirectX::XMFLOAT3(landSizeX - inset, startHeight, landSizeZ - inset));
+  startPositions.push_back(DirectX::XMFLOAT3(landSizeX - inset, startHeight, inset));
 
   int enterIndex = -1;
   int exitIndex = -1;
@@ -50,8 +50,9 @@ void AirstrikeUnit::Begin()
 
   for (int i = 0; i < static_cast<int>(startPositions.size()); ++i)
   {
-    Vector3 thisPos = startPositions[i];
-    float thisDist = (thisPos - m_attackPosition).Mag();
+    DirectX::XMFLOAT3 thisPos = startPositions[i];
+    float thisDist = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&thisPos), DirectX::XMLoadFloat3(&m_attackPosition))));
     if (thisDist < nearest)
     {
       nearest = thisDist;
@@ -67,8 +68,9 @@ void AirstrikeUnit::Begin()
   {
     if (i != exitIndex)
     {
-      Vector3 thisPos = startPositions[i];
-      float thisDist = (thisPos - m_attackPosition).Mag();
+      DirectX::XMFLOAT3 thisPos = startPositions[i];
+      float thisDist = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&thisPos), DirectX::XMLoadFloat3(&m_attackPosition))));
       if (thisDist < nearest)
       {
         nearest = thisDist;
@@ -84,8 +86,10 @@ void AirstrikeUnit::Begin()
   m_enterPosition = startPositions[enterIndex];
   m_exitPosition = startPositions[exitIndex];
 
-  Vector3 centre(landSizeX / 2.0f, 0.0f, landSizeZ / 2.0f);
-  Vector3 front = (centre - m_enterPosition).Normalise();
+  DirectX::XMFLOAT3 const centre(landSizeX / 2.0f, 0.0f, landSizeZ / 2.0f);
+  DirectX::XMFLOAT3 front;
+  DirectX::XMStoreFloat3(
+    &front, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&centre), DirectX::XMLoadFloat3(&m_enterPosition))));
 
   m_wayPoint = m_enterPosition;
   m_front = front;
@@ -98,20 +102,22 @@ void AirstrikeUnit::Begin()
 }
 
 
-bool AirstrikeUnit::AdvanceToTargetPosition(Vector3 _targetPos)
+bool AirstrikeUnit::AdvanceToTargetPosition(DirectX::XMFLOAT3 _targetPos)
 {
-  Vector3 targetFront = (_targetPos - AsLegacy(m_wayPoint));
-  targetFront.Normalise();
+  DirectX::XMVECTOR const wayPoint = DirectX::XMLoadFloat3(&m_wayPoint);
+  DirectX::XMVECTOR const targetFront = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_targetPos), wayPoint));
 
   float amountToTurn = SERVER_ADVANCE_PERIOD;
-  Vector3 actualDir = m_front * (1.0f - amountToTurn) + targetFront * amountToTurn;
-  actualDir.Normalise();
-  m_front = actualDir;
+  DirectX::XMVECTOR const actualDir = DirectX::XMVector3Normalize(DirectX::XMVectorAdd(
+    DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), 1.0f - amountToTurn), DirectX::XMVectorScale(targetFront, amountToTurn)));
+  DirectX::XMStoreFloat3(&m_front, actualDir);
 
-  Vector3 right = m_front ^ g_upVector;
-  m_up = right ^ m_front;
+  // operator^ was the cross product.
+  DirectX::XMVECTOR const upAxis = DirectX::g_XMIdentityR1;
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(actualDir, upAxis);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, actualDir));
 
-  float distToTarget = (m_attackPosition - AsLegacy(m_wayPoint)).Mag();
+  float distToTarget = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_attackPosition), wayPoint)));
   float desiredSpeed = EntityBlueprint::GetStat(Entity::TypeSpaceInvader, Entity::StatSpeed);
   if ((m_state == StateApproaching && distToTarget > 600.0f) || (m_state == StateLeaving && distToTarget > 100.0f))
   {
@@ -119,9 +125,11 @@ bool AirstrikeUnit::AdvanceToTargetPosition(Vector3 _targetPos)
   }
   m_speed = m_speed * (1.0f - amountToTurn) + desiredSpeed * amountToTurn;
 
-  AsLegacy(m_wayPoint) += m_front * m_speed * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_wayPoint, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front),
+                                                                   DirectX::XMVectorReplicate(m_speed * SERVER_ADVANCE_PERIOD), wayPoint));
 
-  float newDistance = (_targetPos - AsLegacy(m_wayPoint)).Mag();
+  float newDistance = DirectX::XMVectorGetX(
+    DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_targetPos), DirectX::XMLoadFloat3(&m_wayPoint))));
   return (newDistance < 10.0f);
 }
 
@@ -202,13 +210,17 @@ bool SpaceInvader::Advance(Unit* _unit)
   //
   // Move a little
 
-  Vector3 targetPos = _unit->GetWayPoint();
+  DirectX::XMFLOAT3 targetPos = _unit->GetWayPoint();
 
-  if (targetPos != g_zeroVector)
+  if (!DirectX::XMVector3Equal(DirectX::XMLoadFloat3(&targetPos), DirectX::XMVectorZero()))
   {
-    targetPos += _unit->GetFormationOffset(Unit::FormationAirstrike, m_formationIndex);
+    DirectX::XMFLOAT3 const offset = _unit->GetFormationOffset(Unit::FormationAirstrike, m_formationIndex);
+    DirectX::XMVECTOR const target = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&targetPos), DirectX::XMLoadFloat3(&offset));
+    DirectX::XMStoreFloat3(&targetPos, target);
 
-    m_vel = (targetPos - AsLegacy(m_pos)) / SERVER_ADVANCE_PERIOD;
+    // operator/ multiplied by a precomputed reciprocal.
+    DirectX::XMStoreFloat3(&m_vel,
+                           DirectX::XMVectorScale(DirectX::XMVectorSubtract(target, DirectX::XMLoadFloat3(&m_pos)), 1.0f / SERVER_ADVANCE_PERIOD));
     m_pos = targetPos;
 
     m_front = airstrikeUnit->m_front;
@@ -219,10 +231,17 @@ bool SpaceInvader::Advance(Unit* _unit)
 
   if (m_armed)
   {
-    float distToTarget = (AsLegacy(m_pos) - airstrikeUnit->m_attackPosition).Mag();
+    float distToTarget = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&airstrikeUnit->m_attackPosition))));
     if (distToTarget < 90.0f)
     {
-      Grenade* weapon = new Grenade(AsLegacy(m_pos) - g_upVector * 12.0f, m_front, AsLegacy(m_vel).Mag());
+      // Grenade still takes Vector3 until Weapons converts; the seam converts
+      // these on the way in.
+      DirectX::XMFLOAT3 dropPos;
+      DirectX::XMStoreFloat3(&dropPos, DirectX::XMVectorNegativeMultiplySubtract(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(12.0f),
+                                                                                 DirectX::XMLoadFloat3(&m_pos)));
+      float const speed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel)));
+      Grenade* weapon = new Grenade(dropPos, m_front, speed);
       weapon->m_type = EffectThrowableAirstrikeBomb;
       weapon->m_life = 1.5f;
       weapon->m_power = 50.0f;
@@ -277,7 +296,9 @@ void SpaceInvader::ListSoundEvents(std::vector<const char*>* _list)
 
 void SpaceInvader::Render(float _predictionTime)
 {
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   glDisable(GL_TEXTURE_2D);
 
 #ifdef DEBUG_RENDER_ENABLED
@@ -286,15 +307,23 @@ void SpaceInvader::Render(float _predictionTime)
 
   g_renderer->SetObjectLighting();
 
-  Matrix34 mat(m_front, g_upVector, predictedPos);
-  mat.f *= 2.0f;
-  mat.u *= 2.0f;
-  mat.r *= 2.0f;
+  // BasisFromFrontAndUp is pinned against the legacy Matrix34(front, up, pos)
+  // constructor in NeuronMathTests. Its rows are right, up, front, position in
+  // that order, so scaling f, u and r means scaling rows 2, 1 and 0.
+  DirectX::XMMATRIX basis = BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&predictedPos));
+  basis.r[2] = DirectX::XMVectorScale(basis.r[2], 2.0f);
+  basis.r[1] = DirectX::XMVectorScale(basis.r[1], 2.0f);
+  basis.r[0] = DirectX::XMVectorScale(basis.r[0], 2.0f);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, basis);
   m_shape->Render(_predictionTime, mat);
 
   if (m_armed)
   {
-    mat = Matrix34(-g_upVector, m_front, predictedPos - g_upVector * 12.0f);
+    DirectX::XMVECTOR const upAxis = DirectX::g_XMIdentityR1;
+    DirectX::XMVECTOR const bombPos =
+      DirectX::XMVectorNegativeMultiplySubtract(upAxis, DirectX::XMVectorReplicate(12.0f), DirectX::XMLoadFloat3(&predictedPos));
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVectorNegate(upAxis), DirectX::XMLoadFloat3(&m_front), bombPos));
     m_bombShape->Render(_predictionTime, mat);
   }
 

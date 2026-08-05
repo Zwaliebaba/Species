@@ -2010,9 +2010,18 @@ tasks:
       ParticleSystem.h and ParticleSystem.cpp are fully converted. Skip both
       when picking this up.
 
-      STILL LEGACY: Weapons (103 occurrences), Rocket (77), Spam (36),
-      Airstrike (29). 329 in total when this started, of which 84 are done —
-      ParticleSystem, Explosion, Spirit, Flag and TaskManager. Spirit
+      STILL LEGACY: Weapons (103 occurrences), Rocket (77), Spam (36). 329 in
+      total when this started, of which 113 are done — ParticleSystem,
+      Explosion, Spirit, Flag, TaskManager and Airstrike.
+
+      g_upVector AND g_zeroVector ARE STILL Vector3, which is failure mode 7
+      pointing the other way and it will recur in all three remaining files.
+      `m_up = g_upVector` compiles, because the seam converts by value. But
+      XMLoadFloat3(&g_upVector) does NOT: taking the address gets a Vector3*,
+      and the seam does nothing through a pointer. Use what the already-
+      converted files use — DirectX::g_XMIdentityR1 for g_upVector, which is
+      (0,1,0,0), and DirectX::XMVectorZero() for g_zeroVector. T25 owns
+      retiring the globals themselves. Spirit
       also lost its nine AsLegacy uses, which the seam count in
       _restart-directxmath.md tracks.
 

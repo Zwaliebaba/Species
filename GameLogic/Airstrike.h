@@ -8,12 +8,12 @@
 class AirstrikeUnit : public Unit
 {
   public:
-    Vector3 m_enterPosition;
-    Vector3 m_attackPosition;
-    Vector3 m_exitPosition;
+    DirectX::XMFLOAT3 m_enterPosition{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_attackPosition{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_exitPosition{0.0f, 0.0f, 0.0f};
 
-    Vector3 m_front; // Current direction
-    Vector3 m_up;
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f}; // Current direction
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
     float m_speed;
 
     int m_effectId;
@@ -26,10 +26,10 @@ class AirstrikeUnit : public Unit
     };
     int m_state;
 
-    bool AdvanceToTargetPosition(Vector3 _targetPos);
+    bool AdvanceToTargetPosition(DirectX::XMFLOAT3 _targetPos);
 
   public:
-    AirstrikeUnit(int teamId, int unitId, int numEntities, Vector3 const& _pos);
+    AirstrikeUnit(int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos);
 
     void Begin();
     bool Advance(int _slice);
@@ -42,7 +42,7 @@ class AirstrikeUnit : public Unit
 class SpaceInvader : public Entity
 {
   protected:
-    Vector3 m_targetPos;
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
     bool m_armed;
     Shape* m_bombShape;
 
