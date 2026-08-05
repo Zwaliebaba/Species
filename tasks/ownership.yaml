@@ -523,7 +523,7 @@ tasks:
       Explosion, GlobalWorld and RoutingSystem into GameLogic and rewrites
       this list as part of its own acceptance; containers-replaced T12 and
       T13, which gate this task, already wait on that move.
-    status: todo
+    status: in_progress
 
   - id: T6
     title: Make App own its subsystems with unique_ptr
