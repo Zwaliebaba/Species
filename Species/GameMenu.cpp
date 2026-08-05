@@ -281,7 +281,7 @@ void GameMenu::CreateMenu()
   // set the camera to a position with a good view of the internet
   TheCamera()->RequestMode(Camera::ModeMainMenu);
   TheCamera()->SetDebugMode(Camera::DebugModeNever);
-  TheCamera()->SetTarget(Vector3(-900000, 3000000, 397000), Vector3(0, 0.5f, -1));
+  TheCamera()->SetTarget(DirectX::XMFLOAT3(-900000, 3000000, 397000), DirectX::XMFLOAT3(0, 0.5f, -1));
   TheCamera()->CutToTarget();
 
   /*if( g_app->m_multiwinia )

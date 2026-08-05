@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "Entity.h"
@@ -72,7 +73,7 @@ class Virii : public Entity
     void RecordHistoryPosition(bool _required);             // if !_required this is simply to make it smoother
     DirectX::XMFLOAT3 AdvanceDeadPositionVector(int _index, DirectX::XMFLOAT3 const& _pos, float _time);
 
-    std::vector<ViriiHistory*> m_positionHistory;
+    std::vector<std::unique_ptr<ViriiHistory>> m_positionHistory;
 
   public:
     Virii();

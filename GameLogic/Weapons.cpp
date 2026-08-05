@@ -7,6 +7,7 @@
 #include "Resource.h"
 #include "Profiler.h"
 #include "Vector2.h"
+#include "GlVertex.h"
 #include "Shape.h"
 #include "HiResTime.h"
 #include "DebugRender.h"
@@ -36,19 +37,21 @@
 //  Class ThrowableWeapon
 // ****************************************************************************
 
-ThrowableWeapon::ThrowableWeapon(int _type, Vector3 const& _startPos, Vector3 const& _front, float _force)
+ThrowableWeapon::ThrowableWeapon(int _type, DirectX::XMFLOAT3 const& _startPos, DirectX::XMFLOAT3 const& _front, float _force)
   : m_shape(nullptr),
     m_force(1.0f),
     m_numFlashes(0)
 {
   m_shape = g_resource->GetShape("Throwable.shp");
   m_pos = _startPos;
-  m_vel = _front * _force;
+  DirectX::XMVECTOR const front = DirectX::XMLoadFloat3(&_front);
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(front, _force));
 
   m_up = _front;
-  m_front = g_upVector;
-  Vector3 right = m_front ^ m_up;
-  m_front = right ^ m_up;
+  // operator^ was the cross product. m_front held g_upVector for exactly the one
+  // line that read it, so g_XMIdentityR1 stands in for it and the assignment goes.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, front);
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Cross(right, front));
 
   m_birthTime = GetHighResTime();
 
@@ -80,24 +83,31 @@ bool ThrowableWeapon::Advance()
 {
   if (m_type != EffectThrowableAirstrikeMarker && syncfrand() > 0.2f)
   {
-    Vector3 vel(AsLegacy(m_vel) / 4.0f);
+    DirectX::XMFLOAT3 vel;
+    DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f / 4.0f));
     vel.x += syncsfrand(5.0f);
     vel.y += syncsfrand(5.0f);
     vel.z += syncsfrand(5.0f);
-    g_particleSystem->CreateParticle(AsLegacy(m_pos) - AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD, vel, Particle::TypeRocketTrail, 40.0f);
+
+    DirectX::XMFLOAT3 trailPos;
+    DirectX::XMStoreFloat3(&trailPos,
+                           DirectX::XMVectorNegativeMultiplySubtract(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
+    g_particleSystem->CreateParticle(trailPos, vel, Particle::TypeRocketTrail, 40.0f);
   }
 
   if (m_force > 0.1f)
   {
     m_vel.y -= 9.8f;
-    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                DirectX::XMLoadFloat3(&m_pos)));
 
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     if (m_pos.y < landHeight + 1.0f)
     {
       BounceOffLandscape();
       m_force *= 0.75f;
-      AsLegacy(m_vel) *= m_force;
+      DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), m_force));
       if (m_pos.y < landHeight + 1.0f)
         m_pos.y = landHeight + 1.0f;
       TriggerSoundEvent("Bounce");
@@ -112,14 +122,28 @@ void ThrowableWeapon::Render(float _predictionTime)
 {
   _predictionTime -= SERVER_ADVANCE_PERIOD;
 
-  Vector3 right = m_up ^ m_front;
-  m_up.RotateAround(right * m_force * m_force * 0.15f);
-  m_front = right ^ m_up;
-  m_front.Normalise();
-  m_up.Normalise();
+  // operator^ was the cross product.
+  DirectX::XMVECTOR up = DirectX::XMLoadFloat3(&m_up);
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(up, DirectX::XMLoadFloat3(&m_front));
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
-  Matrix34 transform(m_front, m_up, predictedPos);
+  // RotateAround took its angle from the axis magnitude and did nothing below
+  // 1e-8 squared.
+  DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(right, m_force * m_force * 0.15f);
+  float const rotationLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+  if (rotationLengthSquared >= 1e-8f)
+  {
+    float const spin = sqrtf(rotationLengthSquared);
+    up = DirectX::XMVector3Transform(up, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+  }
+
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(right, up)));
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Normalize(up));
+
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
+
+  DirectX::XMFLOAT4X4 transform;
+  DirectX::XMStoreFloat4x4(&transform, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), predictedPos));
 
   g_renderer->SetObjectLighting();
   glEnable(GL_CULL_FACE);
@@ -144,7 +168,17 @@ void ThrowableWeapon::Render(float _predictionTime)
   float flashAlpha = 1.0f - ((GetHighResTime() - m_birthTime) - numFlashes);
   if (flashAlpha < 0.2f)
   {
-    float distToThrowable = (g_camera->GetPos() - predictedPos).Mag();
+    // CameraAccess's getters still return Vector3 -- T12/T22 own them -- so these
+    // copy-initialise through the seam before they can be loaded. Hoisted out of
+    // the eight vertex expressions that each called one.
+    DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+    DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+    DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+    DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+    DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
+
+    float distToThrowable =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), predictedPos)));
 
     float size = 1000.0f / sqrtf(distToThrowable);
     glColor4ub(m_colour.r, m_colour.g, m_colour.b, 200);
@@ -153,26 +187,26 @@ void ThrowableWeapon::Render(float _predictionTime)
     glDisable(GL_CULL_FACE);
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((predictedPos - g_camera->GetUp() * size).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(1, 0);
-    glVertex3fv((predictedPos + g_camera->GetRight() * size).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(1, 1);
-    glVertex3fv((predictedPos + g_camera->GetUp() * size).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(0, 1);
-    glVertex3fv((predictedPos - g_camera->GetRight() * size).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), predictedPos));
     glEnd();
     size *= 0.4f;
     glColor4f(1.0f, 1.0f, 1.0f, 0.7f);
     glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Starburst.bmp"));
     glBegin(GL_QUADS);
     glTexCoord2i(0, 1);
-    glVertex3fv((predictedPos - g_camera->GetUp() * size).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(1, 1);
-    glVertex3fv((predictedPos + g_camera->GetRight() * size).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(1, 0);
-    glVertex3fv((predictedPos + g_camera->GetUp() * size).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(0, 0);
-    glVertex3fv((predictedPos - g_camera->GetRight() * size).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), predictedPos));
     glEnd();
     glDisable(GL_TEXTURE_2D);
     glEnable(GL_CULL_FACE);
@@ -204,7 +238,7 @@ float ThrowableWeapon::GetApproxMaxRange(float _maxForce) { return _maxForce + (
 //  Class Grenade
 // ****************************************************************************
 
-Grenade::Grenade(Vector3 const& _startPos, Vector3 const& _front, float _force)
+Grenade::Grenade(DirectX::XMFLOAT3 const& _startPos, DirectX::XMFLOAT3 const& _front, float _force)
   : ThrowableWeapon(EffectThrowableGrenade, _startPos, _front, _force),
     m_life(3.0f),
     m_power(25.0f)
@@ -234,7 +268,7 @@ bool Grenade::Advance()
 // ****************************************************************************
 
 
-AirStrikeMarker::AirStrikeMarker(Vector3 const& _startPos, Vector3 const& _front, float _force)
+AirStrikeMarker::AirStrikeMarker(DirectX::XMFLOAT3 const& _startPos, DirectX::XMFLOAT3 const& _front, float _force)
   : ThrowableWeapon(EffectThrowableAirstrikeMarker, _startPos, _front, _force)
 {
   m_colour.Set(255, 100, 100);
@@ -249,7 +283,8 @@ bool AirStrikeMarker::Advance()
   //
   // Dump loads of smoke for the bombers to see
 
-  Vector3 vel(AsLegacy(m_vel) / 4.0f);
+  DirectX::XMFLOAT3 vel;
+  DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f / 4.0f));
   vel.x += syncsfrand(5.0f);
   vel.y += syncsfrand(5.0f);
   vel.z += syncsfrand(5.0f);
@@ -299,7 +334,7 @@ bool AirStrikeMarker::Advance()
 //  Class ControllerGrenade
 // ****************************************************************************
 
-ControllerGrenade::ControllerGrenade(Vector3 const& _startPos, Vector3 const& _front, float _force)
+ControllerGrenade::ControllerGrenade(DirectX::XMFLOAT3 const& _startPos, DirectX::XMFLOAT3 const& _front, float _force)
   : ThrowableWeapon(EffectThrowableControllerGrenade, _startPos, _front, _force)
 {
   m_colour.Set(100, 100, 255);
@@ -317,7 +352,9 @@ bool ControllerGrenade::Advance()
     int numFlashes = 5 + speciesRandom() % 5;
     for (int i = 0; i < numFlashes; ++i)
     {
-      Vector3 vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
+      // One constructor call on purpose: the three draws are ordered by the
+      // compiler's argument evaluation, not by this line.
+      DirectX::XMFLOAT3 const vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
       g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeControlFlash, 100.0f);
     }
 
@@ -355,12 +392,19 @@ bool ControllerGrenade::Advance()
 //  Class Rocket
 // ****************************************************************************
 
-Rocket::Rocket(Vector3 _startPos, Vector3 _targetPos)
+Rocket::Rocket(DirectX::XMFLOAT3 _startPos, DirectX::XMFLOAT3 _targetPos)
   : m_target(_targetPos),
     m_fromTeamId(255)
 {
-  m_pos = _startPos + Vector3(0, 2, 0);
-  m_vel = (_targetPos - AsLegacy(m_pos)).Normalise() * 50.0f;
+  m_pos = _startPos;
+  m_pos.y += 2.0f;
+
+  // Native Normalise behaviour, per NeuronMath.h. A rocket fired at its own
+  // muzzle is the only zero-length input, and FireRocket's target comes from a
+  // landscape or entity hit rather than from the firing position.
+  DirectX::XMStoreFloat3(
+    &m_vel, DirectX::XMVectorScale(
+              DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_targetPos), DirectX::XMLoadFloat3(&m_pos))), 50.0f));
 
   m_shape = g_resource->GetShape("Throwable.shp");
 
@@ -377,12 +421,13 @@ bool Rocket::Advance()
   //
   // Move a little bit
 
-  if (AsLegacy(m_vel).Mag() < 150.0f)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) < 150.0f)
   {
-    AsLegacy(m_vel) *= 1.2f;
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.2f));
   }
 
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
 
   //
@@ -390,11 +435,17 @@ bool Rocket::Advance()
 
   if (syncfrand() > 0.2f)
   {
-    Vector3 vel(AsLegacy(m_vel) / 10.0f);
+    DirectX::XMFLOAT3 vel;
+    DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f / 10.0f));
     vel.x += syncsfrand(4.0f);
     vel.y += syncsfrand(4.0f);
     vel.z += syncsfrand(4.0f);
-    g_particleSystem->CreateParticle(AsLegacy(m_pos) - AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD, vel, Particle::TypeFire);
+
+    DirectX::XMFLOAT3 trailPos;
+    DirectX::XMStoreFloat3(&trailPos,
+                           DirectX::XMVectorNegativeMultiplySubtract(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
+    g_particleSystem->CreateParticle(trailPos, vel, Particle::TypeFire);
   }
 
 
@@ -464,14 +515,17 @@ bool Rocket::Advance()
 
 void Rocket::Render(float predictionTime)
 {
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime), DirectX::XMLoadFloat3(&m_pos));
 
-  Vector3 front = m_vel;
-  front.Normalise();
-  Vector3 right = front ^ g_upVector;
-  Vector3 up = right ^ front;
+  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel));
+  // operator^ was the cross product; g_XMIdentityR1 is the (0,1,0,0) that
+  // g_upVector holds.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1);
+  DirectX::XMVECTOR const up = DirectX::XMVector3Cross(right, front);
 
-  Matrix34 transform(front, up, predictedPos);
+  DirectX::XMFLOAT4X4 transform;
+  DirectX::XMStoreFloat4x4(&transform, BasisFromFrontAndUp(front, up, predictedPos));
 
   g_renderer->SetObjectLighting();
   glEnable(GL_CULL_FACE);
@@ -487,11 +541,15 @@ void Rocket::Render(float predictionTime)
 
   for (int i = 0; i < 5; ++i)
   {
-    Vector3 vel(AsLegacy(m_vel) / -20.0f);
+    DirectX::XMFLOAT3 vel;
+    DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f / -20.0f));
     vel.x += sfrand(8.0f);
     vel.y += sfrand(8.0f);
     vel.z += sfrand(8.0f);
-    Vector3 pos = predictedPos - AsLegacy(m_vel) * (0.05f + frand(0.05f));
+
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(
+      &pos, DirectX::XMVectorNegativeMultiplySubtract(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(0.05f + frand(0.05f)), predictedPos));
     pos.x += sfrand(8.0f);
     pos.y += sfrand(8.0f);
     pos.z += sfrand(8.0f);
@@ -523,8 +581,9 @@ bool Laser::Advance()
     return true;
   }
 
-  Vector3 oldPos = m_pos;
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
   //
   // Detect collisions with landscape / buildings / people
@@ -541,23 +600,36 @@ bool Laser::Advance()
     else
     {
       // Richochet
-      Vector3 hitPoint;
-      Vector3 vel = m_vel;
-      vel.Normalise();
-      g_location->m_landscape.RayHit(oldPos, vel, &hitPoint);
-      float distanceTravelled = (hitPoint - oldPos).Mag();
-      float distanceTotal = (AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD).Mag();
+      // Braced to zero because RayHit's result is IGNORED and hitPoint is read
+      // either way: Vector3's default constructor zeroed and XMFLOAT3's does not.
+      DirectX::XMFLOAT3 hitPoint(0.0f, 0.0f, 0.0f);
+      DirectX::XMFLOAT3 vel;
+      DirectX::XMStoreFloat3(&vel, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)));
 
-      Vector3 normal = g_location->m_landscape.m_normalMap->GetValue(hitPoint.x, hitPoint.z);
-      Vector3 incomingVel = AsLegacy(m_vel) * -1.0f;
-      float dotProd = normal * incomingVel;
-      m_vel = 2.0f * dotProd * normal - incomingVel;
+      // Landscape::RayHit still takes a Vector3 out-pointer -- T28 owns it -- and
+      // the seam converts by reference, so it does nothing through an address.
+      // AsLegacy is the escape hatch until both ends convert together.
+      g_location->m_landscape.RayHit(oldPos, vel, &AsLegacy(hitPoint));
 
-      m_pos = hitPoint;
-      Vector3 distanceRemaining = m_vel;
-      distanceRemaining.SetLength(distanceTotal - distanceTravelled);
+      DirectX::XMVECTOR const velVec = DirectX::XMLoadFloat3(&m_vel);
+      float distanceTravelled =
+        DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&hitPoint), DirectX::XMLoadFloat3(&oldPos))));
+      float distanceTotal = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorScale(velVec, SERVER_ADVANCE_PERIOD)));
 
-      AsLegacy(m_pos) += distanceRemaining;
+      DirectX::XMFLOAT3 const normalStore = g_location->m_landscape.m_normalMap->GetValue(hitPoint.x, hitPoint.z);
+      DirectX::XMVECTOR const normal = DirectX::XMLoadFloat3(&normalStore);
+      DirectX::XMVECTOR const incomingVel = DirectX::XMVectorScale(velVec, -1.0f);
+
+      // operator* between two Vector3s was the DOT product, not a scale.
+      float dotProd = DirectX::XMVectorGetX(DirectX::XMVector3Dot(normal, incomingVel));
+      DirectX::XMVECTOR const reflected = DirectX::XMVectorSubtract(DirectX::XMVectorScale(normal, 2.0f * dotProd), incomingVel);
+      DirectX::XMStoreFloat3(&m_vel, reflected);
+
+      // SetLength on the reflected velocity, which is non-zero whenever the
+      // incoming one was.
+      DirectX::XMVECTOR const distanceRemaining = DirectX::XMVectorScale(DirectX::XMVector3Normalize(reflected), distanceTotal - distanceTravelled);
+
+      DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&hitPoint), distanceRemaining));
       g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "Richochet", SoundSourceBlueprint::TypeLaser);
 
       m_bounced = true;
@@ -573,20 +645,24 @@ bool Laser::Advance()
     //
     // Detect collisions with buildings
 
-    Vector3 rayDir = m_vel;
-    rayDir.Normalise();
+    DirectX::XMFLOAT3 rayDir;
+    DirectX::XMStoreFloat3(&rayDir, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)));
     // Pure out-parameters -- written by DoesRayHit and never read afterwards --
     // so they become native rather than needing a conversion at the call.
     DirectX::XMFLOAT3 hitPos(0.0f, 0.0f, 0.0f);
     DirectX::XMFLOAT3 hitNorm(0.0f, 0.0f, 0.0f);
 
+    float const rayLen =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), SERVER_ADVANCE_PERIOD)));
+
     std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(m_pos.x, m_pos.z);
     for (int buildingId : *nearbyBuildings)
     {
       Building* building = g_location->GetBuilding(buildingId);
-      if (building->DoesRayHit(m_pos, rayDir, (AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD).Mag(), &hitPos, &hitNorm))
+      if (building->DoesRayHit(m_pos, rayDir, rayLen, &hitPos, &hitNorm))
       {
-        Vector3 vel(-AsLegacy(m_vel) / 15.0f);
+        DirectX::XMFLOAT3 vel;
+        DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), -1.0f / 15.0f));
         vel.x += sfrand(10.0f);
         vel.y += sfrand(10.0f);
         vel.z += sfrand(10.0f);
@@ -602,11 +678,13 @@ bool Laser::Advance()
 
     if (!m_harmless)
     {
-      Vector3 halfDelta = AsLegacy(m_vel) * (SERVER_ADVANCE_PERIOD * 0.5f);
-      Vector3 rayStart = AsLegacy(m_pos) - halfDelta;
-      Vector3 rayEnd = AsLegacy(m_pos) + halfDelta;
+      DirectX::XMVECTOR const halfDelta = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), SERVER_ADVANCE_PERIOD * 0.5f);
+      DirectX::XMFLOAT3 rayStart;
+      DirectX::XMFLOAT3 rayEnd;
+      DirectX::XMStoreFloat3(&rayStart, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), halfDelta));
+      DirectX::XMStoreFloat3(&rayEnd, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), halfDelta));
       int numFound;
-      float maxRadius = halfDelta.Mag() * 2.0f;
+      float maxRadius = DirectX::XMVectorGetX(DirectX::XMVector3Length(halfDelta)) * 2.0f;
       WorldObjectId* ids = g_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z, maxRadius, &numFound, m_fromTeamId);
       for (int i = 0; i < numFound; ++i)
       {
@@ -626,17 +704,18 @@ bool Laser::Advance()
           {
             float damage = 20.0f + syncfrand(20.0f);
             entity->ChangeHealth((int)-damage);
-            Vector3 push(m_vel);
-            push.SetLength(syncfrand(10.0f));
+
+            // SetLength on the laser's own velocity, which is non-zero.
+            DirectX::XMFLOAT3 push;
+            DirectX::XMStoreFloat3(&push, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)), syncfrand(10.0f)));
             push.y = 7.0f + syncfrand(5.0f);
             if (entity->m_type != Entity::TypeInsertionSquadie && entity->m_type != Entity::TypeVirii)
             {
-              entity->m_front = push;
-              AsLegacy(entity->m_front).Normalise();
+              DirectX::XMStoreFloat3(&entity->m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&push)));
             }
             if (entity->m_type != Entity::TypeVirii)
             {
-              AsLegacy(entity->m_vel) += push;
+              DirectX::XMStoreFloat3(&entity->m_vel, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&entity->m_vel), DirectX::XMLoadFloat3(&push)));
             }
             // entity->m_onGround = false;
             m_harmless = true;
@@ -653,21 +732,26 @@ bool Laser::Advance()
 
 void Laser::Render(float predictionTime)
 {
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime), DirectX::XMLoadFloat3(&m_pos));
 
   //
   // No richochet occurred recently
-  Vector3 lengthVector = m_vel;
-  lengthVector.SetLength(10.0f);
-  Vector3 fromPos = predictedPos;
-  Vector3 toPos = predictedPos - lengthVector;
+  // SetLength on the laser's own velocity, which is non-zero.
+  DirectX::XMVECTOR const lengthVector = DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)), 10.0f);
+  DirectX::XMVECTOR const fromPos = predictedPos;
+  DirectX::XMVECTOR const toPos = DirectX::XMVectorSubtract(predictedPos, lengthVector);
 
-  Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
-  Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
-  float camDistSqd = camToMidPoint.MagSquared();
-  Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
+  DirectX::XMVECTOR const midPoint = DirectX::XMVectorAdd(fromPos, DirectX::XMVectorScale(DirectX::XMVectorSubtract(toPos, fromPos), 0.5f));
 
-  rightAngle *= 0.8f;
+  // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it.
+  DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+  DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), midPoint);
+  float camDistSqd = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(camToMidPoint));
+
+  // operator^ was the cross product.
+  DirectX::XMVECTOR const rightAngle =
+    DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camToMidPoint, DirectX::XMVectorSubtract(midPoint, toPos))), 0.8f);
 
   RGBAColour const& colour = g_location->m_teams[m_fromTeamId].m_colour;
   glColor4ub(colour.r, colour.g, colour.b, 255);
@@ -676,13 +760,13 @@ void Laser::Render(float predictionTime)
   for (int i = 0; i < 5; ++i)
   {
     glTexCoord2i(0, 0);
-    glVertex3fv((fromPos - rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(fromPos, rightAngle));
     glTexCoord2i(0, 1);
-    glVertex3fv((fromPos + rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(fromPos, rightAngle));
     glTexCoord2i(1, 1);
-    glVertex3fv((toPos + rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(toPos, rightAngle));
     glTexCoord2i(1, 0);
-    glVertex3fv((toPos - rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(toPos, rightAngle));
   }
   glEnd();
 
@@ -733,17 +817,22 @@ bool Shockwave::Advance()
     WorldObjectId id = ids[i];
     WorldObject* wobj = g_location->GetEntity(id);
     Entity* ent = (Entity*)wobj;
-    float distance = (AsLegacy(ent->m_pos) - AsLegacy(m_pos)).Mag();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&ent->m_pos), DirectX::XMLoadFloat3(&m_pos))));
     if (fabs(distance - radius) < 10.0f)
     {
       float fraction = (m_life / m_size);
       if (ent->m_onGround)
       {
-        Vector3 push(AsLegacy(ent->m_pos) - AsLegacy(m_pos));
-        push.Normalise();
+        // Native Normalise behaviour: an entity exactly on the blast centre is
+        // filtered out above, since fabs(distance - radius) < 10 needs a radius
+        // of at most 10 and radius starts at 35.
+        DirectX::XMFLOAT3 push;
+        DirectX::XMStoreFloat3(
+          &push, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&ent->m_pos), DirectX::XMLoadFloat3(&m_pos))));
         push.y = 3.0f;
-        push.SetLength(25.0f * fraction);
-        AsLegacy(ent->m_vel) += push;
+        DirectX::XMStoreFloat3(&push, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&push)), 25.0f * fraction));
+        DirectX::XMStoreFloat3(&ent->m_vel, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&ent->m_vel), DirectX::XMLoadFloat3(&push)));
         ent->m_onGround = false;
       }
       if (ent->m_type == Entity::TypeCitizen)
@@ -780,7 +869,7 @@ void Shockwave::Render(float predictionTime)
 
   glBegin(GL_TRIANGLE_FAN);
   glColor4f(1.0f, 1.0f, 0.0f, 0.0f);
-  glVertex3fv((AsLegacy(m_pos) + Vector3(0, 5, 0)).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 5.0f, 0.0f, 0.0f)));
   glColor4f(1.0f, 0.5f, 0.5f, alpha);
 
   float angle = 0.0f;
@@ -788,8 +877,7 @@ void Shockwave::Render(float predictionTime)
   {
     float xDiff = radius * sinf(angle);
     float zDiff = radius * cosf(angle);
-    Vector3 pos = AsLegacy(m_pos) + Vector3(xDiff, 5, zDiff);
-    glVertex3fv(pos.GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(xDiff, 5.0f, zDiff, 0.0f)));
     angle += 2.0f * M_PI / (float)numSteps;
   }
 
@@ -805,7 +893,9 @@ void Shockwave::Render(float predictionTime)
   {
     if (g_camera->PosInViewFrustum(m_pos))
     {
-      float distance = (g_camera->GetPos() - AsLegacy(m_pos)).Mag();
+      DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&m_pos))));
       float distanceFactor = 1.0f - (distance / 500.0f);
       if (distanceFactor < 0.0f)
         distanceFactor = 0.0f;
@@ -836,8 +926,17 @@ void Shockwave::Render(float predictionTime)
 
   if (m_size - predictedLife < 1.0f)
   {
-    float distToBang = (g_camera->GetPos() - AsLegacy(m_pos)).Mag();
-    Vector3 predictedPos = m_pos;
+    // CameraAccess's getters still return Vector3 -- T12/T22 own them. Hoisted
+    // out of the eight vertex expressions that each called one.
+    DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+    DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+    DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+    DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+    DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
+
+    float distToBang =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&m_pos))));
+    DirectX::XMVECTOR const predictedPos = DirectX::XMLoadFloat3(&m_pos);
     float size = (m_size * 2000.0f) / sqrtf(distToBang);
     float alpha = 1.0f - (m_size - predictedLife) / 1.0f;
     glColor4f(1.0f, 0.4f, 0.4f, alpha);
@@ -846,13 +945,13 @@ void Shockwave::Render(float predictionTime)
     glDisable(GL_CULL_FACE);
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((predictedPos - g_camera->GetUp() * size).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(1, 0);
-    glVertex3fv((predictedPos + g_camera->GetRight() * size).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(1, 1);
-    glVertex3fv((predictedPos + g_camera->GetUp() * size).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(0, 1);
-    glVertex3fv((predictedPos - g_camera->GetRight() * size).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), predictedPos));
     glEnd();
 
     size *= 0.4f;
@@ -860,13 +959,13 @@ void Shockwave::Render(float predictionTime)
     glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Starburst.bmp"));
     glBegin(GL_QUADS);
     glTexCoord2i(0, 1);
-    glVertex3fv((predictedPos - g_camera->GetUp() * size).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(1, 1);
-    glVertex3fv((predictedPos + g_camera->GetRight() * size).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(1, 0);
-    glVertex3fv((predictedPos + g_camera->GetUp() * size).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), predictedPos));
     glTexCoord2i(0, 0);
-    glVertex3fv((predictedPos - g_camera->GetRight() * size).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), predictedPos));
     glEnd();
     glDisable(GL_TEXTURE_2D);
     glEnable(GL_CULL_FACE);
@@ -888,7 +987,7 @@ MuzzleFlash::MuzzleFlash()
 }
 
 
-MuzzleFlash::MuzzleFlash(Vector3 const& _pos, Vector3 const& _front, float _size, float _life)
+MuzzleFlash::MuzzleFlash(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, float _size, float _life)
   : WorldObject(),
     m_front(_front),
     m_size(_size),
@@ -903,7 +1002,9 @@ bool MuzzleFlash::Advance()
   if (m_life <= 0.0f)
     return true;
 
-  AsLegacy(m_pos) += m_front * SERVER_ADVANCE_PERIOD * 10.0f;
+  DirectX::XMStoreFloat3(&m_pos,
+                         DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD * 10.0f),
+                                                      DirectX::XMLoadFloat3(&m_pos)));
   m_life -= SERVER_ADVANCE_PERIOD * 10.0f;
 
   return false;
@@ -914,21 +1015,26 @@ void MuzzleFlash::Render(float _predictionTime)
 {
   float predictedLife = m_life - _predictionTime * 10.0f;
   // float predictedLife = m_life;
-  Vector3 predictedPos = AsLegacy(m_pos) + m_front * _predictionTime * 10.0f;
-  Vector3 right = m_front ^ g_upVector;
+  DirectX::XMVECTOR const front = DirectX::XMLoadFloat3(&m_front);
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(front, DirectX::XMVectorReplicate(_predictionTime * 10.0f), DirectX::XMLoadFloat3(&m_pos));
 
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  // The legacy `right` and the two camera getters here were dead -- computed and
+  // never read -- so they go rather than being converted.
 
-  Vector3 fromPos = predictedPos;
-  Vector3 toPos = predictedPos + m_front * m_size;
+  DirectX::XMVECTOR const fromPos = predictedPos;
+  DirectX::XMVECTOR const toPos = DirectX::XMVectorMultiplyAdd(front, DirectX::XMVectorReplicate(m_size), predictedPos);
 
-  Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
-  Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
-  Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
-  Vector3 toPosToFromPos = toPos - fromPos;
+  DirectX::XMVECTOR const midPoint = DirectX::XMVectorAdd(fromPos, DirectX::XMVectorScale(DirectX::XMVectorSubtract(toPos, fromPos), 0.5f));
 
-  rightAngle *= m_size * 0.5f;
+  // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it.
+  DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+  DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), midPoint);
+
+  // operator^ was the cross product.
+  DirectX::XMVECTOR rightAngle = DirectX::XMVectorScale(
+    DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camToMidPoint, DirectX::XMVectorSubtract(midPoint, toPos))), m_size * 0.5f);
+  DirectX::XMVECTOR toPosToFromPos = DirectX::XMVectorSubtract(toPos, fromPos);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/MuzzleFlash.bmp"));
@@ -942,16 +1048,16 @@ void MuzzleFlash::Render(float _predictionTime)
   glBegin(GL_QUADS);
   for (int i = 0; i < 5; ++i)
   {
-    rightAngle *= 0.8f;
-    toPosToFromPos *= 0.8f;
+    rightAngle = DirectX::XMVectorScale(rightAngle, 0.8f);
+    toPosToFromPos = DirectX::XMVectorScale(toPosToFromPos, 0.8f);
     glTexCoord2i(0, 0);
-    glVertex3fv((fromPos - rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(fromPos, rightAngle));
     glTexCoord2i(0, 1);
-    glVertex3fv((fromPos + rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(fromPos, rightAngle));
     glTexCoord2i(1, 1);
-    glVertex3fv((fromPos + toPosToFromPos + rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(fromPos, toPosToFromPos), rightAngle));
     glTexCoord2i(1, 0);
-    glVertex3fv((fromPos + toPosToFromPos - rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(fromPos, toPosToFromPos), rightAngle));
   }
   glEnd();
 
@@ -974,42 +1080,51 @@ Missile::Missile()
 }
 
 
-bool Missile::AdvanceToTargetPosition(Vector3 const& _pos)
+bool Missile::AdvanceToTargetPosition(DirectX::XMFLOAT3 const& _pos)
 {
   float amountToTurn = SERVER_ADVANCE_PERIOD * 2.0f;
-  Vector3 targetDir = (_pos - AsLegacy(m_pos)).Normalise();
+  DirectX::XMVECTOR const target = DirectX::XMLoadFloat3(&_pos);
+  DirectX::XMVECTOR targetDir = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(target, DirectX::XMLoadFloat3(&m_pos)));
 
   // Look ahead to see if we're about to hit the ground
-  Vector3 forwardPos = AsLegacy(m_pos) + targetDir * 100.0f;
+  DirectX::XMFLOAT3 forwardPos;
+  DirectX::XMStoreFloat3(&forwardPos, DirectX::XMVectorMultiplyAdd(targetDir, DirectX::XMVectorReplicate(100.0f), DirectX::XMLoadFloat3(&m_pos)));
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(forwardPos.x, forwardPos.z);
-  if (forwardPos.y <= landHeight && (forwardPos - _pos).Mag() > 100.0f)
+  if (forwardPos.y <= landHeight &&
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&forwardPos), target))) > 100.0f)
   {
-    targetDir = g_upVector;
+    // g_upVector is still a Vector3; g_XMIdentityR1 is the (0,1,0,0) it holds.
+    targetDir = DirectX::g_XMIdentityR1;
   }
 
-  Vector3 actualDir = m_front * (1.0f - amountToTurn) + targetDir * amountToTurn;
-  actualDir.Normalise();
+  DirectX::XMVECTOR const actualDir = DirectX::XMVector3Normalize(DirectX::XMVectorAdd(
+    DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), 1.0f - amountToTurn), DirectX::XMVectorScale(targetDir, amountToTurn)));
   float speed = 200.0f;
 
-  Vector3 oldPos = m_pos;
-  Vector3 newPos = AsLegacy(m_pos) + actualDir * speed * SERVER_ADVANCE_PERIOD;
-  landHeight = g_location->m_landscape.m_heightMap->GetValue(newPos.x, newPos.z);
-  if (newPos.y <= landHeight)
+  DirectX::XMVECTOR const oldPos = DirectX::XMLoadFloat3(&m_pos);
+  DirectX::XMFLOAT3 newPosStore;
+  DirectX::XMStoreFloat3(&newPosStore, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(speed * SERVER_ADVANCE_PERIOD), oldPos));
+  landHeight = g_location->m_landscape.m_heightMap->GetValue(newPosStore.x, newPosStore.z);
+  if (newPosStore.y <= landHeight)
     return true;
 
-  Vector3 moved = newPos - oldPos;
-  if (moved.Mag() > speed * SERVER_ADVANCE_PERIOD)
-    moved.SetLength(speed * SERVER_ADVANCE_PERIOD);
-  newPos = AsLegacy(m_pos) + moved;
+  DirectX::XMVECTOR moved = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&newPosStore), oldPos);
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(moved)) > speed * SERVER_ADVANCE_PERIOD)
+  {
+    // SetLength, guarded by the magnitude test above, so never zero-length.
+    moved = DirectX::XMVectorScale(DirectX::XMVector3Normalize(moved), speed * SERVER_ADVANCE_PERIOD);
+  }
 
-  m_pos = newPos;
-  m_vel = (AsLegacy(m_pos) - oldPos) / SERVER_ADVANCE_PERIOD;
-  m_front = actualDir;
+  DirectX::XMVECTOR const newPos = DirectX::XMVectorAdd(oldPos, moved);
+  DirectX::XMStoreFloat3(&m_pos, newPos);
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(newPos, oldPos), 1.0f / SERVER_ADVANCE_PERIOD));
+  DirectX::XMStoreFloat3(&m_front, actualDir);
 
-  Vector3 right = m_front ^ g_upVector;
-  m_up = right ^ m_front;
+  // operator^ was the cross product.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(actualDir, DirectX::g_XMIdentityR1);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, actualDir));
 
-  return (AsLegacy(m_pos) - _pos).Mag() < 20.0f;
+  return DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(newPos, target))) < 20.0f;
 }
 
 
@@ -1041,17 +1156,30 @@ bool Missile::Advance()
   //
   // Create smoke trail
 
-  Vector3 vel(AsLegacy(m_vel) / -20.0f);
+  DirectX::XMFLOAT3 vel;
+  DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f / -20.0f));
   vel.x += syncsfrand(2.0f);
   vel.y += syncsfrand(2.0f);
   vel.z += syncsfrand(2.0f);
   float size = 50.0f + syncfrand(150.0f);
   float backPos = syncfrand(3.0f);
 
-  Matrix34 mat(m_front, m_up, m_pos);
-  Vector3 boosterPos = m_booster->GetWorldMatrix(mat).pos;
-  g_particleSystem->CreateParticle(boosterPos - AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD * 2.0f, vel, Particle::TypeMissileTrail, size);
-  g_particleSystem->CreateParticle(boosterPos - AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD * 1.5f, vel, Particle::TypeMissileTrail, size);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const boosterPosStore = m_booster->GetWorldMatrix(mat).pos;
+  DirectX::XMVECTOR const boosterPos = DirectX::XMLoadFloat3(&boosterPosStore);
+  DirectX::XMVECTOR const velVec = DirectX::XMLoadFloat3(&m_vel);
+
+  DirectX::XMFLOAT3 trailA;
+  DirectX::XMFLOAT3 trailB;
+  DirectX::XMStoreFloat3(&trailA,
+                         DirectX::XMVectorNegativeMultiplySubtract(velVec, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD * 2.0f), boosterPos));
+  DirectX::XMStoreFloat3(&trailB,
+                         DirectX::XMVectorNegativeMultiplySubtract(velVec, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD * 1.5f), boosterPos));
+  g_particleSystem->CreateParticle(trailA, vel, Particle::TypeMissileTrail, size);
+  g_particleSystem->CreateParticle(trailB, vel, Particle::TypeMissileTrail, size);
 
   return false;
 }
@@ -1062,8 +1190,11 @@ void Missile::Explode() { g_location->Bang(m_pos, 20.0f, 100.0f); }
 
 void Missile::Render(float _predictionTime)
 {
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
-  Matrix34 mat(m_front, m_up, predictedPos);
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), predictedPos));
 
   glDisable(GL_BLEND);
 
@@ -1080,20 +1211,24 @@ void Missile::Render(float _predictionTime)
   glDisable(GL_COLOR_MATERIAL);
   glDisable(GL_CULL_FACE);
 
-  Vector3 boosterPos = m_booster->GetWorldMatrix(mat).pos;
-  m_fire.m_pos = boosterPos;
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  m_fire.m_pos = m_booster->GetWorldMatrix(mat).pos;
   m_fire.m_vel = m_vel;
   m_fire.m_size = 30.0f + frand(20.0f);
-  m_fire.m_front = -m_front;
+  DirectX::XMStoreFloat3(&m_fire.m_front, DirectX::XMVectorNegate(DirectX::XMLoadFloat3(&m_front)));
   m_fire.Render(_predictionTime);
 
   for (int i = 0; i < 5; ++i)
   {
-    Vector3 vel(AsLegacy(m_vel) / -10.0f);
+    DirectX::XMFLOAT3 vel;
+    DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f / -10.0f));
     vel.x += sfrand(8.0f);
     vel.y += sfrand(8.0f);
     vel.z += sfrand(8.0f);
-    Vector3 pos = predictedPos - AsLegacy(m_vel) * (0.1f + frand(0.1f));
+
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(
+      &pos, DirectX::XMVectorNegativeMultiplySubtract(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(0.1f + frand(0.1f)), predictedPos));
     pos.x += sfrand(8.0f);
     pos.y += sfrand(8.0f);
     pos.z += sfrand(8.0f);
@@ -1120,14 +1255,15 @@ bool TurretShell::Advance()
   //
   // Update our position
 
-  Vector3 oldPos = m_pos;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
 
   m_life -= SERVER_ADVANCE_PERIOD;
   // m_vel.y -= 10.0f * SERVER_ADVANCE_PERIOD;
   // m_vel.x *= ( 1.0f - SERVER_ADVANCE_PERIOD );
   // m_vel.z *= ( 1.0f - SERVER_ADVANCE_PERIOD );
   // if( m_vel.y > 0 ) m_vel.y *= ( 1.0f - SERVER_ADVANCE_PERIOD );
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
   if (m_life <= 0.0f)
   {
@@ -1146,8 +1282,11 @@ bool TurretShell::Advance()
   //
   // Did we hit anyone?
 
-  Vector3 centrePos = (AsLegacy(m_pos) + oldPos) / 2.0f;
-  float radius = (AsLegacy(m_pos) - oldPos).Mag() / 1.0f;
+  DirectX::XMFLOAT3 centrePos;
+  DirectX::XMStoreFloat3(&centrePos,
+                         DirectX::XMVectorScale(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos)), 0.5f));
+  float radius =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos)))) / 1.0f;
   int numFound;
   WorldObjectId* ids = g_location->m_entityGrid->GetNeighbours(centrePos.x, centrePos.z, radius, &numFound);
 
@@ -1157,18 +1296,24 @@ bool TurretShell::Advance()
     Entity* entity = g_location->GetEntity(id);
     if (entity)
     {
-      Vector3 rayDir = m_vel;
-      rayDir.Normalise();
+      DirectX::XMFLOAT3 rayDir;
+      DirectX::XMStoreFloat3(&rayDir, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)));
       if (entity->RayHit(oldPos, rayDir))
       {
         entity->ChangeHealth(-10);
         if (entity->m_onGround)
         {
-          Vector3 push(AsLegacy(entity->m_pos) - AsLegacy(m_pos));
-          push.Normalise();
-          push += Vector3(syncsfrand(3.0f), syncfrand(3.0f), syncsfrand(3.0f));
-          push.SetLength(20.0f);
-          AsLegacy(entity->m_vel) += push;
+          DirectX::XMFLOAT3 push;
+          DirectX::XMStoreFloat3(
+            &push, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
+          // One constructor call on purpose: the three draws are ordered by the
+          // compiler's argument evaluation, not by this line.
+          DirectX::XMFLOAT3 const jitter(syncsfrand(3.0f), syncfrand(3.0f), syncsfrand(3.0f));
+          push.x += jitter.x;
+          push.y += jitter.y;
+          push.z += jitter.z;
+          DirectX::XMStoreFloat3(&push, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&push)), 20.0f));
+          DirectX::XMStoreFloat3(&entity->m_vel, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&entity->m_vel), DirectX::XMLoadFloat3(&push)));
           entity->m_onGround = false;
         }
       }
@@ -1180,24 +1325,29 @@ bool TurretShell::Advance()
   // Did we hit any buildings?
 
   {
-    Vector3 rayDir = m_vel;
-    rayDir.Normalise();
+    DirectX::XMFLOAT3 rayDir;
+    DirectX::XMStoreFloat3(&rayDir, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)));
     // Pure out-parameters -- written by DoesRayHit and never read afterwards --
     // so they become native rather than needing a conversion at the call.
     DirectX::XMFLOAT3 hitPos(0.0f, 0.0f, 0.0f);
     DirectX::XMFLOAT3 hitNorm(0.0f, 0.0f, 0.0f);
+
+    float const rayLen =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), SERVER_ADVANCE_PERIOD)));
 
     for (int i = 0; i < g_location->m_buildings.Size(); ++i)
     {
       if (g_location->m_buildings.ValidIndex(i))
       {
         Building* building = g_location->m_buildings.GetData(i);
-        if (building->DoesRayHit(m_pos, rayDir, (AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD).Mag(), &hitPos, &hitNorm))
+        if (building->DoesRayHit(m_pos, rayDir, rayLen, &hitPos, &hitNorm))
         {
           for (int p = 0; p < 3; ++p)
           {
-            Vector3 vel = (AsLegacy(m_pos) - AsLegacy(building->m_centrePos)).Normalise();
-            vel *= 50.0f;
+            DirectX::XMFLOAT3 vel;
+            DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(
+                                                                  DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&building->m_centrePos))),
+                                                                50.0f));
             vel.x += sfrand(10.0f);
             vel.y += frand(10.0f);
             vel.z += sfrand(10.0f);
@@ -1221,8 +1371,8 @@ bool TurretShell::Advance()
   {
     for (int i = 0; i < 3; ++i)
     {
-      Vector3 vel = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-      vel *= 50.0f;
+      DirectX::XMFLOAT3 vel = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+      DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&vel), 50.0f));
       vel.x += sfrand(10.0f);
       vel.y += frand(10.0f);
       vel.z += sfrand(10.0f);
@@ -1247,15 +1397,18 @@ void TurretShell::Render(float predictionTime)
   // RenderSphere( predictedPos, 1.0f );
 
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * predictionTime;
-  Vector3 predictedFront = m_vel;
-  predictedFront.Normalise();
-  Vector3 right = predictedFront ^ g_upVector;
-  Vector3 up = right ^ predictedFront;
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime), DirectX::XMLoadFloat3(&m_pos));
+  DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel));
+  // operator^ was the cross product; g_XMIdentityR1 is the (0,1,0,0) that
+  // g_upVector holds.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(predictedFront, DirectX::g_XMIdentityR1);
+  DirectX::XMVECTOR const up = DirectX::XMVector3Cross(right, predictedFront);
   Shape* shape = g_resource->GetShape("TurretShell.shp");
 
 
-  Matrix34 shellMat(predictedFront, up, predictedPos);
+  DirectX::XMFLOAT4X4 shellMat;
+  DirectX::XMStoreFloat4x4(&shellMat, BasisFromFrontAndUp(predictedFront, up, predictedPos));
 
   glDisable(GL_BLEND);
   g_renderer->SetObjectLighting();

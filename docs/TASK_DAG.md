@@ -53,12 +53,26 @@ survives a context window ending mid-task.
 ```
 tasks/
   _template.yaml            copy this to start
-  <plan-name>.yaml          one file per plan, kebab-case, matching `plan:`
+  <plan-name>.yaml          one open plan per file, kebab-case, matching `plan:`
+  Archive/
+    <plan-name>.yaml        plans with nothing left open
 ```
 
 A plan file is committed with the work it describes and stays in the tree after
 completion, as the record of how something was done. Delete a plan only when its
 subject matter no longer exists.
+
+**When a plan has no task left in `todo`, `in_progress` or `blocked`, move it to
+`tasks/Archive/`.** That keeps `tasks/` to the plans someone might still pick
+up. Archived plans are still LOADED by `check_task_dag.py` and still resolve
+`blocked_by` — forty-one such edges point into them as of 2026-08-05, and an
+edge into a plan the loader cannot see is an unresolvable reference rather than
+a satisfied one. They are not validated or reported by default, because a
+finished plan does not need re-listing on every run.
+
+Moving a plan means updating the paths that name it. `grep -rn
+'tasks/<plan>.yaml'` across `*.md`, `*.py` and `.github/` finds them; fourteen
+files needed it for the first six.
 
 ---
 
@@ -274,5 +288,5 @@ Two caveats the tool cannot check for you:
 
 `tasks/_template.yaml` is a minimal, valid starting point. For a worked example
 grounded in real numbers from this repository, see
-`tasks/neuroncore-layering.yaml` — the plan for removing the thirty upward
+`tasks/Archive/neuroncore-layering.yaml` — the plan for removing the thirty upward
 includes that make `NeuronCore` depend on the client, game and app layers.

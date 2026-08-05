@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "Building.h"
 
 
@@ -26,7 +28,7 @@ class SpawnBuildingLink
 class SpawnBuilding : public Building
 {
   protected:
-    std::vector<SpawnBuildingLink*> m_links;
+    std::vector<std::unique_ptr<SpawnBuildingLink>> m_links;
     ShapeMarker* m_spiritLink;
 
     // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does

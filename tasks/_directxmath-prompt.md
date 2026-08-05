@@ -42,7 +42,7 @@ inherit them.
 1. **Determinism: a one-off divergence is accepted.** DirectXMath's SIMD lane
    arithmetic does not reproduce the current scalar arithmetic bit-for-bit, so
    this migration *will* change what the simulation computes. That is
-   sanctioned here, exactly as `tasks/determinism.yaml` T1 was: the rule being
+   sanctioned here, exactly as `tasks/Archive/determinism.yaml` T1 was: the rule being
    suspended is "the new build matches the old build", **not** "every client in
    a session agrees". Clients must still be bit-identical to each other on the
    same build, and mixed-version play is expected to desync. The migration
@@ -98,7 +98,7 @@ In this order, completely:
    repo are shaped and where the modernisation currently stands. Four plans are
    open; your plan has to say how it sequences against them, because it touches
    files they also touch.
-7. `tasks/neuroncore-layering.yaml` and `tasks/containers-replaced.yaml` — the
+7. `tasks/Archive/neuroncore-layering.yaml` and `tasks/Archive/containers-replaced.yaml` — the
    exemplars. Match their standard: counts cited with the command that produced
    them, observable acceptance criteria, honest notes.
 

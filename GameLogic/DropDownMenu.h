@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 
 #include <limits.h>
 
@@ -40,7 +42,7 @@ class DropDownWindow : public SpeciesWindow
 class DropDownMenu : public SpeciesButton
 {
   protected:
-    std::vector<DropDownOptionData*> m_options;
+    std::vector<std::unique_ptr<DropDownOptionData>> m_options;
     int m_currentOption;
     int* m_int;
     bool m_sortItems;

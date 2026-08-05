@@ -4,7 +4,7 @@
 
 ## Why
 
-<!-- The problem, or the task-DAG node this closes (e.g. tasks/neuroncore-layering.yaml T3). -->
+<!-- The problem, or the task-DAG node this closes (e.g. tasks/Archive/neuroncore-layering.yaml T3). -->
 
 ## Kind of change
 
