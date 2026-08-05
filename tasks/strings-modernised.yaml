@@ -503,7 +503,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - Owner runs the Garden smoke test — step 6 exercises the windows that register these fields
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       RE-SCOPED 2026-08-03 as part of the restart (tasks/_restart.md). The note
       below is the discarded attempt's deliverable and is kept verbatim; what
