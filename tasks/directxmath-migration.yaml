@@ -1999,16 +1999,36 @@ tasks:
       `Matrix33 rotIncrement(yaw, dive, roll)`. That constructor is
       Matrix33.cpp:42 and it applies RotateAroundZ(roll), RotateAroundX(dive),
       RotateAroundY(yaw) IN THAT ORDER to an identity matrix.
-      XMMatrixRotationRollPitchYaw(pitch, yaw, roll) documents the same
-      Z-then-X-then-Y order, so `Matrix33(yaw, dive, roll)` looks equivalent to
-      XMMatrixRotationRollPitchYaw(dive, yaw, roll) — note the swapped first
-      two arguments. LOOKS EQUIVALENT IS NOT ENOUGH: the handedness and the
-      row-vector convention both have to agree, and a wrong rotation here
-      tumbles debris the wrong way rather than failing to compile. Pin it in
-      NeuronMathTests the way T1 pinned the axis rotation and the
-      front-and-up basis, THEN convert. Matrix33 has five other users outside
-      this task — LaserFence, Location, Shape, Camera and Matrix34 itself — so
-      the pin is worth more than this one file.
+      XMMatrixRotationRollPitchYaw documents the same Z-then-X-then-Y order, so
+      `Matrix33(yaw, dive, roll)` LOOKS equivalent to
+      XMMatrixRotationRollPitchYaw(dive, yaw, roll) with the first two
+      arguments swapped.
+
+      IT IS NOT, AND THAT WAS CHECKED RATHER THAN ARGUED. The equivalence was
+      worked out numerically against both implementations before any C++ was
+      written, over ten angle triples and five vectors each. The answer:
+
+        Matrix33(yaw, dive, roll) * v
+          ==  XMVector3Transform(v, RotationY(yaw) * RotationX(dive) * RotationZ(roll))
+
+      RollPitchYaw gives Z * X * Y; the legacy constructor gives Y * X * Z. The
+      composition is REVERSED, because RotateAroundZ/X/Y rewrite the matrix's
+      three basis rows in place rather than composing in row-vector order. The
+      call order in the constructor reads like RPY's and means the opposite.
+
+      Both readings compile and both are rotations. The wrong one tumbles
+      exploding debris the wrong way, and no build, test or check in this tree
+      would say so.
+
+      PINNED, so nobody has to re-derive it:
+      NeuronMathTests::NativeRotationMatchesTheLegacyYawDiveRollConstructor
+      asserts the mapping, and TheRollPitchYawReadingOfThatConstructorIsWrong
+      is its negative control — it fails if someone later "simplifies" the
+      conversion to RPY. Matrix33 has five users outside this task —
+      LaserFence, Location, Shape, Camera and Matrix34 itself — so the pin is
+      worth well more than Explosion alone.
+
+      With that pinned, Explosion is unblocked and is the right next file.
 
   - id: T20
     title: Convert the in-game windows

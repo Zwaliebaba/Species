@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include <cmath>
+
 #include "MathUtils.h"
 #include "Matrix33.h"
 #include "Matrix34.h"
@@ -148,6 +150,58 @@ namespace NeuronCoreTests
         AssertNearlyEqual(legacy.x, native.x);
         AssertNearlyEqual(legacy.y, native.y);
         AssertNearlyEqual(legacy.z, native.z);
+      }
+
+      // Matrix33(yaw, dive, roll) is the constructor Explosion rebuilds every
+      // tick for tumbling debris, and it has five other users -- LaserFence,
+      // Location, Shape, Camera and Matrix34 itself.
+      //
+      // IT IS NOT XMMatrixRotationRollPitchYaw, and that is the whole point of
+      // this test. The constructor calls RotateAroundZ, then RotateAroundX,
+      // then RotateAroundY, which reads exactly like RPY's documented "roll,
+      // then pitch, then yaw" order -- so the obvious conversion is
+      // XMMatrixRotationRollPitchYaw(dive, yaw, roll) with the first two
+      // arguments swapped. That is WRONG. The legacy calls rotate the matrix's
+      // three basis ROWS in place rather than composing in row-vector order,
+      // which reverses the composition: the equivalent is
+      // RotationY * RotationX * RotationZ, where RPY gives Z * X * Y.
+      //
+      // Both compile. Both are rotations. The wrong one tumbles debris the
+      // wrong way and nothing in the build, the suite or CI would say so, which
+      // is why directxmath-migration T19 stopped and wrote this before
+      // converting Explosion.
+      TEST_METHOD(NativeRotationMatchesTheLegacyYawDiveRollConstructor)
+      {
+        float const yaw = 0.7f, dive = -0.35f, roll = 1.1f;
+        Vector3 const v(4.0f, -2.0f, 7.0f);
+
+        Vector3 const legacy = Matrix33(yaw, dive, roll) * v;
+
+        DirectX::XMMATRIX const native = DirectX::XMMatrixRotationY(yaw) * DirectX::XMMatrixRotationX(dive) * DirectX::XMMatrixRotationZ(roll);
+        DirectX::XMFLOAT3 const start(4.0f, -2.0f, 7.0f);
+        DirectX::XMFLOAT3 result;
+        DirectX::XMStoreFloat3(&result, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&start), native));
+
+        AssertNearlyEqual(legacy.x, result.x);
+        AssertNearlyEqual(legacy.y, result.y);
+        AssertNearlyEqual(legacy.z, result.z);
+      }
+
+      // The negative control for the test above: the reading that looks right
+      // is measurably wrong, so if someone "simplifies" the conversion to RPY
+      // later, this fails and says why.
+      TEST_METHOD(TheRollPitchYawReadingOfThatConstructorIsWrong)
+      {
+        float const yaw = 0.7f, dive = -0.35f, roll = 1.1f;
+        Vector3 const legacy = Matrix33(yaw, dive, roll) * Vector3(4.0f, -2.0f, 7.0f);
+
+        DirectX::XMFLOAT3 const start(4.0f, -2.0f, 7.0f);
+        DirectX::XMFLOAT3 rpy;
+        DirectX::XMStoreFloat3(&rpy,
+                               DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&start), DirectX::XMMatrixRotationRollPitchYaw(dive, yaw, roll)));
+
+        Assert::IsTrue(std::fabs(legacy.x - rpy.x) > 0.5f || std::fabs(legacy.y - rpy.y) > 0.5f || std::fabs(legacy.z - rpy.z) > 0.5f,
+                       L"RollPitchYaw now agrees with the legacy constructor; re-derive the mapping in the test above.");
       }
 
       // BasisFromFrontAndUp replaces the Matrix34(front, up, pos) constructor
