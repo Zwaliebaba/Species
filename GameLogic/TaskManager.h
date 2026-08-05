@@ -37,15 +37,15 @@ class Task
     void SwitchTo();
     void Stop();
 
-    void Target(Vector3 const& _pos);
-    void TargetSquad(Vector3 const& _pos);
-    void TargetEngineer(Vector3 const& _pos);
-    void TargetOfficer(Vector3 const& _pos);
-    void TargetArmour(Vector3 const& _pos);
+    void Target(DirectX::XMFLOAT3 const& _pos);
+    void TargetSquad(DirectX::XMFLOAT3 const& _pos);
+    void TargetEngineer(DirectX::XMFLOAT3 const& _pos);
+    void TargetOfficer(DirectX::XMFLOAT3 const& _pos);
+    void TargetArmour(DirectX::XMFLOAT3 const& _pos);
 
     WorldObjectId Promote(WorldObjectId _id);
     static WorldObjectId Demote(WorldObjectId _id);
-    static WorldObjectId FindCitizen(Vector3 const& _pos);
+    static WorldObjectId FindCitizen(DirectX::XMFLOAT3 const& _pos);
 
     static char const* GetTaskName(int _type);
     static char const* GetTaskNameTranslated(int _type);
@@ -59,7 +59,9 @@ class Task
 class TaskTargetArea
 {
   public:
-    Vector3 m_centre;
+    // TaskTargetArea is default-constructed then assigned field by field in
+    // GetTargetArea, so this needs an initialiser of its own.
+    DirectX::XMFLOAT3 m_centre{0.0f, 0.0f, 0.0f};
     float m_radius;
     bool m_stationary;
 };
@@ -98,8 +100,8 @@ class TaskManager
     Task* GetTask(WorldObjectId _id);
     void SelectTask(int _id);
     void SelectTask(WorldObjectId _id); // Selects the corrisponding task
-    bool IsValidTargetArea(int _id, Vector3 const& _pos);
-    bool TargetTask(int _id, Vector3 const& _pos);
+    bool IsValidTargetArea(int _id, DirectX::XMFLOAT3 const& _pos);
+    bool TargetTask(int _id, DirectX::XMFLOAT3 const& _pos);
     bool TerminateTask(int _id);
 
     void StopAllTasks();
