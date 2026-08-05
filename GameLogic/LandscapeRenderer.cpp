@@ -166,6 +166,11 @@ void LandscapeRenderer::GetLandscapeColour(float _height, float _gradient, unsig
   float heightAboveSea = _height;
   float u = powf(1.0f - _gradient, 0.4f);
   float v = 1.0f - heightAboveSea / m_highest;
+  // Reseeds the UNSYNCHRONISED generator to make the colour noise a
+  // repeatable function of position. Safe: this is not syncrand's stream, and
+  // this function runs once per landscape from BuildColourArray, during load,
+  // not from the frame loop. Note the precedence — `_x | (_y + …)`, not
+  // `(_x | _y) + …`. determinism/T4 has the call graph and the reasoning.
   speciesSeedRandom(_x | _y + speciesRandom());
   if (heightAboveSea < 0.0f)
     heightAboveSea = 0.0f;

@@ -364,7 +364,7 @@ tasks:
       - python3 tools/check_hygiene.py
       - python3 tools/check_format.py
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       Added 2026-08-05 on the owner's decision to reopen this plan. Found
       2026-08-04 while investigating the Garden landscape question, unrelated
@@ -398,6 +398,61 @@ tasks:
       declared file is on disk, so a path that rots when a file moves stays
       valid forever. An agent starting this task would have opened a missing
       file first.
+
+      ================= THE ANSWER, 2026-08-05 at 2258661 =================
+
+      BENIGN, ON TWO INDEPENDENT GROUNDS, EITHER OF WHICH IS SUFFICIENT. Both
+      of the premises this task inherited are wrong, and they are wrong in
+      different ways.
+
+      GROUND 1 — IT IS THE WRONG STREAM, exactly as T3 found for the sound
+      draws. speciesSeedRandom/speciesRandom are the LCG in
+      NeuronCore/Random.cpp; the simulation runs on syncrand's Mersenne
+      Twister and the two share no state. Reseeding holdrand cannot touch a
+      synchronised sequence, because holdrand is not one. Read T3's answer
+      first — it establishes this once for both tasks.
+
+      GROUND 2 — IT IS NOT ON A FRAME PATH AT ALL. The task says execution
+      "depends on what is on screen and how often the frame loop runs it".
+      It does not. The full call graph, measured:
+
+        LandscapeRenderer::GetLandscapeColour  (:164, the reseed at :169)
+          <- LandscapeRenderer::BuildColourArray  (:192, the only caller,
+             at :216, inside a loop over triangle-strip vertices)
+            <- LandscapeRenderer::BuildOpenGlState  (:287)
+              <- LandscapeRenderer::LandscapeRenderer  (:269)
+                <- Landscape::BuildOpenGlState  (Landscape.cpp:527, `new
+                   LandscapeRenderer(m_heightMap)`)
+
+      GetLandscapeColour has ONE caller, and it is a one-time colour bake
+      that runs when the landscape is built. It is not called from Render(),
+      not from any Advance, and its iteration count is the vertex count of
+      the terrain mesh — a function of the level, identical on every client
+      loading that level. Nothing about it is frame-rate or view dependent.
+
+      IS THE RESEED REACHABLE WHILE A SIMULATION TICK IS IN PROGRESS? No.
+      It runs during location load, before the tick loop starts. And the
+      stream's state afterwards is settled by the level anyway: Location::Init
+      calls speciesSeedRandom(1) at Location.cpp:136, immediately after
+      LoadLevel and before InitLandscape, so the unsynchronised stream is
+      re-anchored per location regardless of what the colour bake left in it.
+
+      WHAT REMAINS TRUE AND IS WORTH A LINE. The expression is
+      `speciesSeedRandom(_x | _y + speciesRandom())`, which parses as
+      `_x | (_y + speciesRandom())` rather than the `(_x | _y) + …` a reader
+      expects — recorded because the next person will read it the same wrong
+      way, not because it is a defect. The comment above the function says x
+      and y are "only passed in as a means to get predicatable noise", and
+      that is exactly what it does: it makes terrain colour a repeatable
+      function of position. Reseeding a process-global generator to get
+      per-pixel noise is a poor way to spell that, and a local generator
+      would be better, but it is a tidiness question and this plan is not
+      where tidiness lands.
+
+      NO FIX IS PROPOSED AND NONE IS NEEDED. Unlike T3, this one does not
+      relocate: nothing downstream of the colour bake computes simulation
+      state. The four sites T3 found are the whole of that hazard, and they
+      are T5.
 
   - id: T5
     title: Move the four simulation-side draws onto the synchronised stream

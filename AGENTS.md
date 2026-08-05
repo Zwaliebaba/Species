@@ -594,18 +594,17 @@ Real, currently true, and worth knowing before you trip over them:
   its tile parameters — `GenerateHeightMap` reseeds immediately before the
   diamond-square loop — so it was never reachable from the RNG changes this
   branch made, and the checksum proved it instead of arguing it.
-- **`LandscapeRenderer::GetLandscapeColour` draws from and reseeds the
-  simulation's RNG from rendering code** — `speciesSeedRandom(_x | _y +
-  speciesRandom())`. That is the same class of latent determinism bug as the
-  `SoundInstance` entry above: a client-local, frame-rate-dependent path
-  perturbing the stream deterministic lockstep depends on. Found 2026-08-04
-  while investigating the landscape question, unrelated to it, and it predates
-  the DirectXMath work. Not investigated and not fixed — but it has an owning
-  task now: `tasks/determinism.yaml` T4, added on the owner's decision of
-  2026-08-05. It is a scoping task, not a fix. This bullet used to say the
-  finding "belongs in determinism.yaml once somebody establishes what it
-  costs", which was circular — establishing that IS the work, and it is what
-  nobody was doing.
+- ~~**`LandscapeRenderer::GetLandscapeColour` draws from and reseeds the
+  simulation's RNG from rendering code.**~~ **Answered 2026-08-05 by
+  `determinism` T4 and benign on two independent grounds.** It is the
+  unsynchronised generator, as above — and it is not on a frame path either.
+  `GetLandscapeColour` has exactly one caller, `BuildColourArray`, which runs
+  from the `LandscapeRenderer` constructor during location load; it is a
+  one-time colour bake over the terrain mesh, not something `Render()` or any
+  `Advance` reaches. `Location::Init` re-anchors the stream with
+  `speciesSeedRandom(1)` immediately afterwards in any case. The reasoning and
+  the full call graph are in T4's notes, and the reseed now carries a comment
+  saying why it is safe.
 - **Mixed-architecture play is NOT SUPPORTED.** Not "unproven" — decided. The
   simulation computes on DirectXMath, which dispatches to SSE on x64 and to
   ARM-NEON on ARM64, and the owner decided on 2026-08-03 to accept that rather
