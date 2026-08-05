@@ -317,7 +317,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - Owner runs the Garden smoke test — every step needs input to work at all
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       Split out of T4 on 2026-08-03, measured at fdf9421 before either was
       started. The three things that make this its own task, none of which the
