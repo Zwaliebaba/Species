@@ -799,7 +799,57 @@ tasks:
       byte-identity for output it does not yet own the types of. Landing last
       is also what makes the byte-identity proof meaningful: it covers T5's
       change as well as its own.
-    status: in_progress
+
+      MEASURED 2026-08-05, CLAIMED AND THEN RELEASED UNSTARTED, because the
+      measurement changes what this task is. No code was touched. That is the
+      outcome T5 had, for the same reason, so it is written up the same way --
+      the finding is the deliverable. Set back to todo rather than left
+      in_progress, because --next stops offering an in_progress task and
+      nobody is doing this one.
+
+      THE 43 CALLS ARE NOT THE WORK. Two of the three files write file bytes
+      through members declared in headers this task does not name, and
+      converting a member makes the blast radius every mention of it. Counted:
+
+        GlobalLocation::m_mapFilename       char[256]   28 uses,  9 files
+        GlobalLocation::m_missionFilename   char[256]   32 uses, 10 files
+        GlobalLocation::m_name              char[256]   contended tree-wide
+        GlobalEventAction::m_filename       char[256]
+        LevelFile::m_landscapeColourFilename            6 uses,  3 files
+        LevelFile::m_wavesColourFilename                6 uses,  3 files
+        LevelFile::m_waterColourFilename                6 uses,  3 files
+
+      SEVEN OF THOSE TEN FILES ARE NOT IN THIS TASK'S LIST -- GlobalWorld.h,
+      LevelFile.h, GlobalWorldEditorWindow.cpp, Location.cpp, Species/App.cpp,
+      Species/GameCursor.cpp and Species/Main.cpp.
+
+      THE BYTE-IDENTITY REQUIREMENT HAS A SHARP EDGE, worth knowing before
+      starting rather than after. GlobalWorld.cpp:1550 writes the location
+      table with WIDTH-SPECIFIED conversions -- a 4-wide integer twice, then a
+      30-wide and a 40-wide string, the last two being m_mapFilename and
+      m_missionFilename. Field widths are where std::format and printf are
+      least alike, and a profile written with different padding is a different
+      file even though every character of content matches. The three
+      colour-filename lines at LevelFile.cpp:984-986 are unpadded and safe.
+      Pin the padded line with a round-trip test BEFORE converting it.
+
+      THE SPLIT THIS SUGGESTS, for whoever picks it up to decide on rather
+      than inherit:
+        - the three LevelFile colour filenames, plus the local filename
+          buffers in LevelFile.cpp and Script.cpp, are genuinely containable
+          in this task's three files;
+        - GlobalLocation's three members and GlobalEventAction::m_filename are
+          one coupled change across ten files, and the padded write lives in
+          that half.
+      Splitting them lets the containable half land now and leaves the coupled
+      half a task of its own, which is what T5's re-scope did.
+
+      ORDERING THAT ALREADY DEPENDS ON THIS -- ownership/T5 is blocked_by this
+      task and names GlobalWorld.cpp, LevelFile.cpp and LevelFile.h;
+      language-hygiene/T12 names all three of this task's files; and
+      directxmath/T23 names Script.cpp. However it is split, it wants the tree
+      to itself over those files.
+    status: todo
 
   - id: T9
     title: Sweep the long tail to zero
