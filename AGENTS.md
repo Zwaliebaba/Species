@@ -486,11 +486,17 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-Six plans are complete and in `tasks/Archive/`. **Five are open with sixteen
-tasks between them** — `strings-modernised` (6), `language-hygiene` (3),
-`namespace-migration` (3), `ownership` (3) and `determinism` (1).
-Two of those sixteen are owner-run smoke tests rather than agent work:
+Six plans are complete and in `tasks/Archive/`. **Five are open with twelve
+tasks between them** — `strings-modernised` (5), `namespace-migration` (3),
+`ownership` (2), `language-hygiene` (1) and `determinism` (1). Batch 5 landed
+four of them on 2026-08-05: `ownership` T11, `language-hygiene` T10 and T13,
+and `strings-modernised` T18.
+
+Two of those twelve are owner-run smoke tests rather than agent work:
 `determinism` T6, and `ownership` T6 needs one after each of its commits.
+**Both are now on the critical path for everything else.** With T11 landed,
+`ownership` is T6 → T7 and nothing else; `namespace` T5 waits on T6 as well.
+The tree has more work gated on the owner than on agents.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:

@@ -1,5 +1,17 @@
 # The next implementation batch
 
+> ## BATCH 5 IS EXECUTED. All four of its agent tasks landed on 2026-08-05:
+> `ownership` T11, `language-hygiene` T10 and T13, and `strings` T18. What
+> happened is at [**Progress — what Batch 5 did**](#progress--what-batch-5-did),
+> and it is the section to read before proposing Batch 6. **The proposal below
+> is kept as written, not rewritten to match the outcome** — the point of this
+> file is that a batch proposal is a measurement with a short half-life, and
+> the only way to see that is to leave the prediction next to the result.
+>
+> **Nothing here is compiled or run.** No MSVC and no Windows client in the
+> environment that executed it. Four tasks, 26 files, zero builds. CI is the
+> first thing that will have an opinion.
+
 Written 2026-08-05 at `50560ab`. This is a proposal, not a plan — the plans are
 the five YAML files beside it. It answers one question: **of everything that is
 ready, what should the next batch be, and why that rather than the rest.**
@@ -230,6 +242,102 @@ measurement over the flag, and correct the flag when you find it wrong.
 
 ---
 
+## Progress — what Batch 5 did
+
+Four tasks, six commits, 26 files. Every one of the four met its acceptance
+except `ownership/T11`, which met three of four and says so.
+
+### Where every plan stands now
+
+Twelve tasks open across five plans, down from sixteen.
+
+| Plan | done | todo | What is left |
+|---|---:|---:|---|
+| `determinism` | 5 | 1 | **T6, and it is yours** |
+| `ownership` | 9 | 2 | **T6 (yours) → T7, and nothing else.** Stage 5 ends there. |
+| `language-hygiene` | 12 | 1 | T11 only — 473 sites, now unblocked |
+| `namespace-migration` | 2 | 3 | T2 → T4 → T5, and T5 waits on `ownership/T6` |
+| `strings-modernised` | 15 | 5 | the largest remaining plan |
+
+**The tree now has more work gated on the owner than on agents.** Both
+remaining `ownership` tasks are T6 and the task behind it; `namespace/T5` waits
+on T6 too. That was true before this batch and is sharper now.
+
+### What the batch got wrong about itself
+
+The proposal above says the reach measurement was the thing that made this
+batch safe. It was — and it was still incomplete in a way worth recording:
+
+- **`ownership/T11` reached EIGHT files, not the seven measured.** The miss was
+  `GlobalWorldEditorWindow.cpp`, and the cause is the same class of error the
+  measurement was written to catch. The sweep greped MEMBER NAMES, so it found
+  every file that touches `m_locations` or `m_buildings`. That file names no
+  member: it calls `new GlobalLocation()` and hands the result to
+  `AddLocation`. **A member-name sweep cannot see a file that only touches the
+  object in flight.** Grep the ownership-transfer entry points too — `Add*`,
+  `Set*`, `Register*`.
+- **`language-hygiene/T13` reached SIX files, not the four declared**, and the
+  two extra were a design decision rather than a clerical miss.
+  `DropDownMenu::RegisterInt` takes an `int*`, which a scoped enum cannot be
+  reached through, so the widget gained a typed binding beside it. The task's
+  acceptance offered an out — keep the member an int and say why — and it was
+  refused, because an int member puts `Camera.cpp`'s three switches back to
+  comparing an int against foreign enumerators, which is the hazard T13 exists
+  to close.
+- **`strings/T18` reached the nine files measured but only needed seven.**
+  Two were in the reach and needed no diff. Reach and edit-count are not the
+  same number, and the measurement is still what told us that in advance.
+
+### What else this batch learned
+
+- **`GlobalEvent` had no destructor at all**, so every condition and every
+  unexecuted action leaked with the event. Found by converting, not by
+  looking. Vectors of `unique_ptr` fix it.
+- **The use-after-move trap is not hypothetical in this file either.**
+  `GlobalWorld::AddLocation` calls `m_sphereWorld->AddLocation(location->m_id)`
+  *after* `push_back`, and `AddLevelBuildingToGlobalBuildings` writes through
+  its building after it. Both are fine only because an observer is taken with
+  `.get()` before the move. That is now three tasks in a row where this shape
+  appeared — T5 twice, T11 twice.
+- **`ownership/T11` did not fully meet its "no raw owning new or delete"
+  line, and the task notes say so** rather than claiming it. Four of the six
+  survivors are `GlobalEventCondition`'s `char*` string members, which are
+  stage-4 work reaching the level-file writer where byte-identity is another
+  task's proof. **No strings task owns those two members** — T19 converted
+  `GlobalEventAction::m_filename` and stopped. That is an unowned gap, and it
+  is the shape of thing Batch 4 gave owners to.
+- **`ControlTypes.inc`'s hand-aligned table did not survive `lh/T10`.**
+  136 of its lines changed, so the changed-lines format check reformatted
+  them. `// clang-format off` would have preserved the columns and was
+  rejected: **this tree has no formatting escape hatch anywhere**, by
+  deliberate policy — the last `hygiene-ok` marker went in T12 — and adding
+  the first one to save one table's alignment is a `.clang-format` policy
+  decision rather than a call a single task should make. If the alignment is
+  wanted back, that is the conversation to have.
+- **`NULL` is now at a genuine zero.** Deleting the dead `ControlTypes.cpp`
+  took the last one; the only hits left tree-wide are a diagnostic string
+  literal and a comment describing the sentinel that used to exist.
+- **`ENUM_HELPER` has its first user**, after being carried unused in
+  `NeuronHelper.h` since it was written. Only its bitwise half means anything
+  for a bit field, and `InputTypes.h` now says so at the invocation.
+
+### What was NOT done, and should be read as a gap
+
+**No runtime tests were added by any of the four tasks.** Three static_asserts
+went in — the transition-name table, and InputType's bit relationships — and
+those are real, but they are compile-time. Nothing in `Tests/` covers the
+input layer, `GlobalWorld`, or the debug renderer, and this batch did not
+change that. `GlobalWorld` is the awkward one: its constructor builds
+`SphereWorld`, which asks `g_resource` for shapes, so it is not constructible
+in a test DLL as it stands. That is a real obstacle and it has no owning task.
+
+**Nothing was compiled.** Four tasks, 26 files, no build. The seven Python
+checks pass and a use-after-move scan over the changed files is clean, which
+is the whole of the evidence. `GlobalWorld` is on the Garden smoke-test path
+at step 2 and the input layer at step 5.
+
+---
+
 ## Progress — what Batch 4 did
 
 Six tasks landed: `determinism/T3` and `T4`, `ownership/T5`, `T8` and `T10`,
@@ -330,11 +438,45 @@ found the four unowned variadic entry points that became `strings/T17` and
 findings above. It did land six tasks, take `SAFE_FREE` and `EmptyAndDelete` to
 zero tree-wide, retire the last `hygiene-ok` marker and add five tests.
 
-**The recurring lesson across all four is the same one:** a batch proposal is a
+**Batch 5** was proposed twice. The first proposal was never started and went
+stale against nothing but a closer look; the second measured reach instead of
+reading declared file lists, added a fourth task on the strength of that, and
+executed all four. It is the first batch whose composition was decided by
+measurement rather than by declaration — and its reach measurement was still
+one file short, for a reason no member-name grep could have caught.
+
+**The recurring lesson across all five is the same one:** a batch proposal is a
 measurement with a short half-life, and every batch so far has found its own
-premise partly wrong on contact. **The first Batch 5 proposal did not survive
-either, and it was never even started** — it went stale against nothing but a
-closer look. Measure before you claim, not after CI does.
+premise partly wrong on contact. Batch 5 included. Measure before you claim,
+not after CI does — and then expect the measurement to be wrong somewhere too.
+
+---
+
+## Where Batch 6 starts
+
+Not a proposal — no collision measurement has been run since Batch 5 landed,
+and this file's own history says not to trust one that has not. What is true
+at the point Batch 5 finished:
+
+**Ready for an agent:** `strings` T11, T12 and T17; `language-hygiene` T11;
+`namespace` T2.
+
+- **`strings/T17`** was Batch 5's named "obvious first task of Batch 6", and
+  it still is — with one correction found while measuring: **its file list
+  names `Tests/GameLogicTests/LevelFileRoundTripTests.cpp`, which does not
+  exist under that or any name.** The tests its acceptance means are
+  `Tests/NeuronClientTests/FileWriterTests.cpp` and
+  `Tests/GameLogicTests/LevelFileTests.cpp`. Fix the path when you take it.
+  Note it contests four files with the now-landed `ownership/T11`, so it is
+  rebasing onto changed code rather than competing with it.
+- **`language-hygiene/T11`** is newly unblocked by T10 and would close that
+  plan. 473 sites, and it inherits `ControlTypes.inc` — whose first column it
+  owns and whose second column T10 just rewrote. Expect the file to have moved.
+- **`namespace/T2`** is still sequenced last on purpose and still declares
+  whole directories.
+
+**The gate has not moved.** `ownership/T6` and `determinism/T6` are both still
+open, both still yours, and stage 5 still cannot end without the first.
 
 ---
 
