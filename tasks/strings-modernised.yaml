@@ -1516,7 +1516,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       Split out of T8 on 2026-08-05. See T8's notes for the measurement and for
       why the line is by class.
