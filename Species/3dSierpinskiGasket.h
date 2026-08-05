@@ -1,10 +1,12 @@
 #pragma once
 
+#include "NeuronMath.h"
+
 
 class Sierpinski3D
 {
   public:
-    Vector3* m_points;
+    DirectX::XMFLOAT3* m_points;
     unsigned int m_numPoints;
 
     Sierpinski3D(unsigned int _numPoints);

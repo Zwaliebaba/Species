@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 // What the layers below Species ask the user-input system for.
 //
@@ -19,5 +19,5 @@ class UserInputAccess
     virtual ~UserInputAccess() = default;
 
     // The cached mouse position, ray-cast against the landscape once a frame.
-    virtual Vector3 GetMousePos3d() = 0;
+    virtual DirectX::XMFLOAT3 GetMousePos3d() = 0;
 };

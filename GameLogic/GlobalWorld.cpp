@@ -1080,10 +1080,11 @@ void SphereWorld::RenderIslands()
 
   glMatrixMode(GL_MODELVIEW);
 
-  // GetClickRay takes Vector3* out-parameters, and the seam does not reach
-  // through a pointer -- AsLegacy is what bridges that until T12/T22.
-  DirectX::XMFLOAT3 rayStart, rayDir;
-  g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+  // GetClickRay took Vector3* out-parameters until T22 moved it to XMFLOAT3*,
+  // so the &AsLegacy that used to bridge that is gone.
+  DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+  g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
@@ -1265,8 +1266,9 @@ void GlobalWorld::Advance()
       // Edit locations
       if (g_inputManager->controlEvent(ControlSelectLocation))
       {
-        DirectX::XMFLOAT3 rayStart, rayDir;
-        g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+        g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
         int locId = LocationHit(rayStart, rayDir);
         if (locId != -1)
         {
@@ -1282,8 +1284,9 @@ void GlobalWorld::Advance()
       // Move locations
       if (g_inputManager->controlEvent(ControlSelectLocation))
       {
-        DirectX::XMFLOAT3 rayStart, rayDir;
-        g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+        g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
         m_editorSelectionId = LocationHit(rayStart, rayDir);
       }
       else if (g_inputManager->controlEvent(ControlLocationDragActive))
@@ -1308,8 +1311,9 @@ void GlobalWorld::Advance()
     // Has the user clicked on a location?
     if (g_inputManager->controlEvent(ControlSelectLocation) && m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
-      DirectX::XMFLOAT3 rayStart, rayDir;
-      g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
       int locId = LocationHit(rayStart, rayDir);
       if (locId != -1)
       {
@@ -1341,8 +1345,9 @@ void GlobalWorld::Advance()
     // Is the cursor attracted to a point?
     else if (m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
-      DirectX::XMFLOAT3 rayStart, rayDir;
-      g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
       int locId = LocationHit(rayStart, rayDir, 10000.0f);
       if (locId != -1)
       {
@@ -1421,8 +1426,9 @@ GlobalLocation* GlobalWorld::GetHighlightedLocation()
   int screenX = g_target->X();
   int screenY = g_target->Y();
 
-  DirectX::XMFLOAT3 rayStart, rayDir;
-  g_camera->GetClickRay(screenX, screenY, &AsLegacy(rayStart), &AsLegacy(rayDir));
+  DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+  g_camera->GetClickRay(screenX, screenY, &rayStart, &rayDir);
   int locId = g_globalWorld->LocationHit(rayStart, rayDir);
 
   GlobalLocation* loc = GetLocation(locId);

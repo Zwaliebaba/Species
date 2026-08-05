@@ -12,6 +12,10 @@
 #include "TargetCursor.h"
 #include "MathUtils.h"
 #include "Profiler.h"
+// For AsLegacy, which four calls below still need: Landscape::RayHit and
+// RaySphereIntersection keep their Vector3 out-pointers until
+// directxmath-migration T28, which removes both this include and those calls.
+#include "Vector3.h"
 #include "Resource.h"
 #include "Shape.h"
 #include "TextRenderer.h"
@@ -183,37 +187,45 @@ void UserInput::Render()
 
 
 // *** GetMousePos3d
-Vector3 UserInput::GetMousePos3d() { return m_mousePos3d; }
+DirectX::XMFLOAT3 UserInput::GetMousePos3d() { return m_mousePos3d; }
 
 
 // *** RecalcMousePos3d
 void UserInput::RecalcMousePos3d()
 {
   // Get click ray
-  Vector3 rayStart;
-  Vector3 rayDir;
+  // Braced to zero rather than left to the stack: GetClickRay writes both, but
+  // Vector3's constructor is what made that true before it was called.
+  DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
   TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
   ASSERT_VECTOR3_IS_SANE(rayStart);
   ASSERT_VECTOR3_IS_SANE(rayDir);
-  rayStart += rayDir * 0.0f;
+  // `rayStart += rayDir * 0.0f` added nothing and is dropped.
 
-
+  // THE SEAM IS STILL HERE, deliberately. Landscape::RayHit and
+  // RaySphereIntersection take Vector3 and a Vector3 out-POINTER, which the
+  // seam cannot cross -- directxmath-migration T28 owns both signatures and
+  // every caller together. Until it lands these four calls read
+  // &AsLegacy(...) onto native storage, which is what AsLegacy is for.
   bool landscapeHit = false;
   if (g_location)
   {
-    landscapeHit = g_location->m_landscape.RayHit(rayStart, rayDir, &m_mousePos3d);
+    landscapeHit = g_location->m_landscape.RayHit(AsLegacy(rayStart), AsLegacy(rayDir), &AsLegacy(m_mousePos3d));
   }
   else
   {
     // We are in the global world
     // So hit against the outer sphere
 
-    Vector3 sphereCentre(0, 0, 0);
+    DirectX::XMFLOAT3 sphereCentre{0.0f, 0.0f, 0.0f};
     float sphereRadius = 36000.0f;
 
-    rayStart += rayDir * (sphereRadius * 4.0f);
-    rayDir = -rayDir;
-    landscapeHit = RaySphereIntersection(rayStart, rayDir, sphereCentre, sphereRadius, 1e10, &m_mousePos3d);
+    DirectX::XMVECTOR const dir = DirectX::XMLoadFloat3(&rayDir);
+    DirectX::XMStoreFloat3(&rayStart,
+                           DirectX::XMVectorMultiplyAdd(dir, DirectX::XMVectorReplicate(sphereRadius * 4.0f), DirectX::XMLoadFloat3(&rayStart)));
+    DirectX::XMStoreFloat3(&rayDir, DirectX::XMVectorNegate(dir));
+    landscapeHit = RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(sphereCentre), sphereRadius, 1e10, &AsLegacy(m_mousePos3d));
     return;
   }
 
@@ -222,19 +234,22 @@ void UserInput::RecalcMousePos3d()
   {
     // OK, we didn't hit against the landscape mesh, so hit against a sphere that
     // encloses the whole world
-    Vector3 sphereCentre;
+    DirectX::XMFLOAT3 sphereCentre{0.0f, 0.0f, 0.0f};
     sphereCentre.x = g_globalWorld->GetSize() * 0.5f;
     sphereCentre.y = 0.0f;
     sphereCentre.z = g_globalWorld->GetSize() * 0.5f;
 
     float sphereRadius = g_globalWorld->GetSize() * 40.0f;
 
-    float dist = (rayStart - sphereCentre).Mag();
+    float dist = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&rayStart), DirectX::XMLoadFloat3(&sphereCentre))));
     // DEBUG_ASSERT(dist < sphereRadius);
 
-    rayStart += rayDir * (sphereRadius * 4.0f);
-    rayDir = -rayDir;
-    landscapeHit = RaySphereIntersection(rayStart, rayDir, sphereCentre, sphereRadius, 1e10, &m_mousePos3d);
+    DirectX::XMVECTOR const dir = DirectX::XMLoadFloat3(&rayDir);
+    DirectX::XMStoreFloat3(&rayStart,
+                           DirectX::XMVectorMultiplyAdd(dir, DirectX::XMVectorReplicate(sphereRadius * 4.0f), DirectX::XMLoadFloat3(&rayStart)));
+    DirectX::XMStoreFloat3(&rayDir, DirectX::XMVectorNegate(dir));
+    landscapeHit = RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(sphereCentre), sphereRadius, 1e10, &AsLegacy(m_mousePos3d));
     // DEBUG_ASSERT(landscapeHit);
   }
 }

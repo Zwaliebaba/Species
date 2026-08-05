@@ -739,12 +739,14 @@ bool SoundInstance::Update3DPosition()
 
   case Type3DAttachedToObject:
   {
-    // These two stay Vector3 because LocationAccess::GetSoundSource still takes
-    // Vector3* — a virtual signature cannot move ahead of its implementors, so
-    // it converts with GameLogic's Location rather than here. The seam turns
-    // them into XMFLOAT3 on assignment. See directxmath-migration T12's notes.
-    Vector3 pos, vel;
-    if (!ResolveAttachedObject() || !g_locationAccess->GetSoundSource(m_objId, &pos, &vel))
+    // Native storage with the seam at the call, rather than the other way
+    // round: LocationAccess::GetSoundSource still takes Vector3* out-pointers
+    // — a virtual signature cannot move ahead of its implementors, and its
+    // implementor is GameLogic's Location — so &AsLegacy is what bridges that
+    // until directxmath-migration T12 lands.
+    DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 vel{0.0f, 0.0f, 0.0f};
+    if (!ResolveAttachedObject() || !g_locationAccess->GetSoundSource(m_objId, &AsLegacy(pos), &AsLegacy(vel)))
     {
       m_positionType = Type3DStationary;
       m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -810,7 +812,10 @@ void SoundInstance::ForceParameter(SoundParameter& _param, float value)
   {
     if (g_camera)
     {
-      m_pos = g_camera->GetPos() + g_camera->GetFront() * value;
+      DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+      DirectX::XMFLOAT3 const camFrontStore = g_camera->GetFront();
+      DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&camFrontStore), DirectX::XMVectorReplicate(value),
+                                                                  DirectX::XMLoadFloat3(&camPosStore)));
     }
     break;
   }
@@ -867,7 +872,9 @@ bool SoundInstance::UpdateParameter(SoundParameter& _param)
       float camDist = 0.0f;
       if (g_camera)
       {
-        camDist = (g_camera->GetPos() - pos).Mag();
+        DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+        camDist = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&pos))));
       }
       _param.Recalculate(camDist);
     }
@@ -1034,12 +1041,16 @@ bool SoundInstance::ResolveAttachedObject()
           for (int i = 0; i < static_cast<int>(m_objIds.size()); ++i)
           {
             WorldObjectId* id = m_objIds[i];
-            // Vector3 for the same reason as above: GetSoundSource takes Vector3*.
-            Vector3 pos, vel;
+            // &AsLegacy for the same reason as above: GetSoundSource takes
+            // Vector3 out-pointers until T12.
+            DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
+            DirectX::XMFLOAT3 vel{0.0f, 0.0f, 0.0f};
             // The pruning above removed every dead id, so this resolves.
-            if (!g_locationAccess->GetSoundSource(*id, &pos, &vel))
+            if (!g_locationAccess->GetSoundSource(*id, &AsLegacy(pos), &AsLegacy(vel)))
               continue;
-            float distance = (g_camera->GetPos() - pos).MagSquared();
+            DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+            float distance = DirectX::XMVectorGetX(
+              DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&pos))));
             if (distance < nearest)
             {
               nearest = distance;

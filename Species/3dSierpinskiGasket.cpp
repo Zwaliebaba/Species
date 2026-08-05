@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "MathUtils.h"
-#include "Matrix34.h"
-#include "Vector3.h"
 #include "DebugRender.h"
 
 #include "App.h"    // DELETEME
@@ -13,7 +11,7 @@
 Sierpinski3D::Sierpinski3D(unsigned int _numPoints)
   : m_numPoints(_numPoints)
 {
-  m_points = new Vector3[_numPoints];
+  m_points = new DirectX::XMFLOAT3[_numPoints];
 
   float size = 20;
   float x1 = 0, y1 = 0, z1 = size;
@@ -85,7 +83,7 @@ void Sierpinski3D::Render(float scale)
   glBegin(GL_POINTS);
   for (unsigned int i = 0; i < m_numPoints; ++i)
   {
-    glVertex3fv(m_points[i].GetData());
+    glVertex3f(m_points[i].x, m_points[i].y, m_points[i].z);
   }
   glEnd();
 

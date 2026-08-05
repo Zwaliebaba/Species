@@ -69,7 +69,7 @@ class TaskManagerInterfaceIcons : public TaskManagerInterface
     void RenderCreateTaskMenu();
     void RenderQuickUnit();
 
-    void RenderCompass(float _screenX, float _screenY, Vector3 const& _worldPos, bool selected, float _size);
+    void RenderCompass(float _screenX, float _screenY, DirectX::XMFLOAT3 const& _worldPos, bool selected, float _size);
 
     int GetQuickUnitTask(int _position = 2);
     void CreateQuickUnitInterface();

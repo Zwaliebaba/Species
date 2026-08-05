@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 // What the layers below Species ask the game cursor to do.
 //
@@ -18,7 +18,7 @@ class GameCursorAccess
     virtual ~GameCursorAccess() = default;
 
     // A move order marker at a world position.
-    virtual void CreateMarker(Vector3 const& _pos) = 0;
+    virtual void CreateMarker(DirectX::XMFLOAT3 const& _pos) = 0;
 
     // Show the selection arrows for a while, after a selection changes.
     virtual void BoostSelectionArrows(float _seconds) = 0;

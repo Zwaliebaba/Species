@@ -3,7 +3,7 @@
 #ifdef LOCATION_EDITOR
 
 #include "LocationEditorAccess.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 #include "WorldPointers.h"
 
 
@@ -28,11 +28,11 @@ class LocationEditor : public LocationEditorAccess
 
     void CreateEditWindowForMode(int _mode);
 
-    int DoesRayHitBuilding(Vector3 const& rayStart, Vector3 const& rayDir);
-    int DoesRayHitInstantUnit(Vector3 const& rayStart, Vector3 const& rayDir);
-    int DoesRayHitCameraMount(Vector3 const& rayStart, Vector3 const& rayDir);
-    int IsPosInLandTile(Vector3 const& pos);
-    int IsPosInFlattenArea(Vector3 const& pos);
+    int DoesRayHitBuilding(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir);
+    int DoesRayHitInstantUnit(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir);
+    int DoesRayHitCameraMount(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir);
+    int IsPosInLandTile(DirectX::XMFLOAT3 const& pos);
+    int IsPosInFlattenArea(DirectX::XMFLOAT3 const& pos);
 
     void AdvanceModeNone();
     void AdvanceModeLandTile();
