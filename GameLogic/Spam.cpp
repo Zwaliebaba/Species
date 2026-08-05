@@ -38,7 +38,14 @@ Spam::Spam()
 
   // RotateAroundY was FastRotateAround(g_upVector, angle); the pinned
   // NativeRotationYMatchesLegacyRotateAroundY test covers this exact pair.
-  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(frand(2.0f * M_PI))));
+  //
+  // SYNCHRONISED since determinism.yaml T5. A level-file Spam has its facing
+  // overwritten by Read/Initialise, so this draw is discarded there -- but
+  // GodDish::SpawnSpam stack-constructs a template that is never read from a
+  // file, and Building::Initialise computes m_centrePos from that facing.
+  // SpawnInfection then hands m_centrePos to twenty SpamInfections, which live
+  // in m_effects, which GenerateSyncValue sums.
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(syncfrand(2.0f * M_PI))));
 
   SetShape(g_resource->GetShape("ResearchItem.shp"));
 }

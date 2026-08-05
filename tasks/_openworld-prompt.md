@@ -13,9 +13,9 @@ are not open. An agent that re-opens them is wasting the session.
 
 ---
 
-You are working in the **Species** repository, a ~113k-line C++20 Windows game
+You are working in the **Species** repository, a ~113k-line C++23 Windows game
 (six MSBuild projects, one header-only dependency) partway through being
-modernised from the inherited Darwinia source into Neuron-style C++20 with
+modernised from the inherited Darwinia source into Neuron-style C++23 with
 enforced layer boundaries. `AGENTS.md` states the long-term goal: *a
 large-scale realtime multiplayer world in which player colonies work, live and
 survive persistently.* Nothing in the tree is designed for that yet. This
@@ -90,7 +90,7 @@ reopens:
   change; where your design relaxes a constraint (and replacing lockstep
   relaxes several), name the constraint and say what replaces it.
 - **Frozen names stay frozen.** New systems get new names; existing
-  Darwinia-derived names follow `CODING_STANDARDS.md#renaming-away-from-darwinia`
+  Darwinia-derived names follow `CODING_STANDARDS.md#renaming`
   and are not renamed by a design document.
 - **Honesty.** You are almost certainly on Linux: you cannot build or run the
   game. Capacity figures are arithmetic, not measurements — label them so.

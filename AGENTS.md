@@ -19,7 +19,7 @@ linked documents; this file is the map.
 
 ## What this is
 
-Species is a C++20 game built on the **Neuron** engine. The long-term goal is a
+Species is a C++23 game built on the **Neuron** engine. The long-term goal is a
 large-scale realtime multiplayer world in which player colonies work, live and
 survive persistently.
 
@@ -45,7 +45,7 @@ making the existing code capable of supporting it, not by building it alongside.
 **Cleanup and modernisation first.**
 
 The near-term goal is to finish converting the inherited Darwinia code into
-Neuron-style C++20 with enforced layer boundaries. A runnable game and the
+Neuron-style C++23 with enforced layer boundaries. A runnable game and the
 authoritative world server are later milestones that depend on this landing.
 
 What that means for a task in front of you:
@@ -89,7 +89,8 @@ and the client running. Both matter; neither gated the world server. The
 allowlist stood at 628 when this phase ended and is **gone** —
 `tasks/Archive/layering-inversion.yaml` took it to zero and deleted it.
 
-> **Note:** the game runs again as of `7ee8c00`. That is recorded here because
+> **Note:** the game runs again — first at `7ee8c00` (2026-08-02), most
+> recently at `1af4979` (2026-08-05). That is recorded here because
 > this file is where it gets recorded — see *What working looks like*. It does
 > not lower the bar for a change: a successful compile is still not evidence that
 > anything works, and most agents cannot launch the client at all. Report what
@@ -181,7 +182,7 @@ upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64 /m
 ```
 
-Visual Studio 2026 (toolset v145), C++20, Windows-only. ARM64 is the primary
+Visual Studio 2026 (toolset v145), C++23, Windows-only. ARM64 is the primary
 development platform; x64 is also supported, and x64 Debug is the one
 configuration CI builds. Full detail — configurations, what CI does not cover,
 troubleshooting — is in [`docs/BUILD.md`](docs/BUILD.md).
@@ -447,9 +448,10 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-Six plans are complete and in `tasks/Archive/`. **Five are open with eighteen
+Six plans are complete and in `tasks/Archive/`. **Five are open with seventeen
 tasks between them** — `strings-modernised` (6), `ownership` (4),
-`language-hygiene` (3), `namespace-migration` (3) and `determinism` (2).
+`language-hygiene` (3), `namespace-migration` (3) and `determinism` (1).
+`determinism`'s one is T6, an owner-run smoke test rather than an agent task.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:
@@ -482,7 +484,10 @@ way to record an exception, which is the point — `tasks/Archive/layering-inver
 has eighteen worked examples of removing one properly. The same check also
 catches a symbol declared in a library header and defined only in an executable,
 which is the same reach with the linker doing the work instead of the
-preprocessor.
+preprocessor — the tree carried one for years, `WindowManager.h` declaring
+`AppMain()` for `Species` to define (T18). Class members are exempt, because a
+pure-virtual declared low and overridden high is dependency inversion, which is
+how most of the 628 were removed.
 
 **Do not change what the simulation computes.** Multiplayer is deterministic
 lockstep with a runtime checksum, so iteration order, floating-point arithmetic
@@ -523,78 +528,50 @@ warrants a question first.
 Real, currently true, and worth knowing before you trip over them:
 
 - **The game runs, and almost nothing here proves your change kept it that
-  way.** All seven Garden smoke-test steps passed as of `7ee8c00` — see *What
-  working looks like*. CI builds and runs the unit suite; it does not launch the
-  client, and neither does any agent working on Linux. A change that compiles and
-  passes 37 tests can still break the game on the first frame.
-- **The sound system draws from the simulation's random stream.**
-  `NeuronClient/SoundInstance.cpp` calls `speciesRandom()` twice — line 533 to
-  pick a sample from a group, line 1009 to pick an object id. That is the
-  deterministic lockstep RNG, the same sequence `Location::Advance` consumes,
-  and `CODING_STANDARDS.md#determinism` names the `speciesRandom()` call
-  sequence as load-bearing.
-  - The consequence is worse than it first reads. Whether those lines execute
-    depends on the sound path: how many object ids an instance holds, whether a
-    sample group is populated, whether the instance is playing at all. Two
-    clients that differ in sound configuration — or that fail to load the same
-    samples — draw a different NUMBER of values from the shared stream, and
-    every subsequent `speciesRandom()` in the simulation returns something
-    different on one machine than the other. That is a desync, and nothing in
-    the build or the test suite would show it.
-  - **Not investigated, not reproduced, and not fixed** — found by reading
-    while scoping `containers-replaced` T5 on 2026-08-02. It may already be
-    benign for reasons the code does not state (if these paths run identically
-    on every client regardless of settings, it costs nothing). Establishing
-    which is true is worth doing before multiplayer is trusted, and it is a
-    determinism question rather than a modernisation one.
-  - **It has an owning task now: `tasks/determinism.yaml` T3**, added on the
-    owner's decision of 2026-08-05 after this bullet sat unowned across three
-    batches. T3 is a SCOPING task — establish what it costs, change nothing —
-    and its deliverable is the answer written into that plan. `ownership` T8
-    converts `m_sounds` in the same file and is a different commit.
-- **`Spirit.cpp`'s hover clamp drew twice from the synchronised stream, and no
-  longer does.** `Spirit::Advance` clamped `m_hover.y` through what used to be
-  the `max` macro, which evaluated its second argument twice — and that argument
-  calls `syncfrand()`. When `m_hover.y` lost the comparison a second value was
-  drawn and stored, so the expression did not compute a maximum and consumed an
-  extra value from the stream about half the time. `language-hygiene` T8
-  preserved it exactly; `determinism.yaml` T1 fixed it on the owner's decision
-  (2026-08-03) and both sites are `std::max` with one draw.
-  - **It was never a desync risk**, and the distinction is worth keeping because
-    the shape invites the opposite conclusion. The branch depended on
-    `m_hover.y`, which is simulation state, so every in-sync client drew the same
-    number of values. `SoundInstance` above is the dangerous one: its draw count
-    varies with *client-local* sound configuration.
-  - **The RNG sequence changed**, so the simulation evolves differently from the
-    frame this landed. Nothing degrades — there was no correct sequence being
-    lost — but a client carrying this change desyncs against one without it.
-    `determinism.yaml` T2 is the owner-run smoke test that confirms it, and is
-    still open.
-- ~~**The Garden landscape may have changed shape.**~~ **Answered 2026-08-04
-  and no longer an issue.** The owner reported against `36dd038` that the
-  procedurally generated terrain looked different in shape, with shading
-  unaffected, and no mechanism was ever found by reading. A temporary commit
-  (`57386fb`) made it answerable as a number rather than an impression, by
-  dumping a height-map checksum and the tile parameters that determine it.
-  **The checksums are equal**, so the terrain is bit-identical across the two
-  builds and the difference was in rendering or in the eye. `57386fb` has been
-  reverted. Kept here rather than deleted because the reasoning is the useful
-  part: terrain generation is a pure function of the level's `m_randomSeed` and
-  its tile parameters — `GenerateHeightMap` reseeds immediately before the
-  diamond-square loop — so it was never reachable from the RNG changes this
-  branch made, and the checksum proved it instead of arguing it.
-- **`LandscapeRenderer::GetLandscapeColour` draws from and reseeds the
-  simulation's RNG from rendering code** — `speciesSeedRandom(_x | _y +
-  speciesRandom())`. That is the same class of latent determinism bug as the
-  `SoundInstance` entry above: a client-local, frame-rate-dependent path
-  perturbing the stream deterministic lockstep depends on. Found 2026-08-04
-  while investigating the landscape question, unrelated to it, and it predates
-  the DirectXMath work. Not investigated and not fixed — but it has an owning
-  task now: `tasks/determinism.yaml` T4, added on the owner's decision of
-  2026-08-05. It is a scoping task, not a fix. This bullet used to say the
-  finding "belongs in determinism.yaml once somebody establishes what it
-  costs", which was circular — establishing that IS the work, and it is what
-  nobody was doing.
+  way.** The most recent owner-reported successful run is `1af4979`
+  (2026-08-05); the last run with an explicit all-seven-steps breakdown is
+  `b0bde71` — see *What working looks like*. CI builds and runs the unit suite;
+  it does not launch the client, and neither does any agent working on Linux. A
+  change that compiles and passes 180 tests can still break the game on the
+  first frame.
+- **THERE ARE TWO RANDOM STREAMS, AND THE DOCUMENTATION SAID THERE WAS ONE.**
+  This is the correction that retired the two determinism bullets that used to
+  stand here, and it is the thing to know before reading any RNG call in this
+  tree:
+
+  | | Where | For |
+  |---|---|---|
+  | `syncrand` / `syncfrand` / `syncsfrand` | `NeuronCore/MathUtils.cpp`, Mersenne Twister | **the simulation** — 345 sites in `GameLogic` |
+  | `speciesRandom` / `frand` / `sfrand` | `NeuronCore/Random.cpp`, LCG over `holdrand` | **cosmetics** — particles, render jitter, UI, sound |
+
+  `syncrand` is the lockstep stream. `speciesRandom` is not, and cannot be made
+  so — terrain and tree generation reseed it wholesale, and sound and the UI
+  consume it at a client-dependent rate. `MathUtils.h:12` has said this since it
+  was inherited; `CODING_STANDARDS.md#determinism` contradicted it until
+  2026-08-05 by declaring `speciesRandom()` the only source, and
+  `tasks/determinism.yaml` T3 and T4 are the reading that settled it.
+  - **Two findings that used to sit here were false alarms, and both are
+    closed.** `SoundInstance.cpp`'s two draws (now lines 547 and 1035) and
+    `LandscapeRenderer::GetLandscapeColour`'s per-vertex reseed do vary in
+    count between clients — that part was right — but they vary the LCG, which
+    the simulation never reads. T3 and T4 carry the per-call-site conditions
+    and the evidence. Do not reopen either without reading them.
+  - **The real bug ran the other way and there were six of them**, all
+    simulation state drawn from the client-local generator. `determinism.yaml`
+    T5 fixed them: `LaserFence.cpp` (a spark timer from `frand` that then gated
+    a `syncfrand` draw inside `Advance` — the one outright desync),
+    `LevelFile.cpp` ×2 (centipede spawn positions, summed by
+    `GenerateSyncValue`), `Incubator.cpp` ×2 (spirit positions), `Spam.cpp` and
+    `ResearchItem.cpp` (building facing, which reaches `m_centrePos` and from
+    there the position of every SpamInfection in `m_effects`).
+  - **The RNG sequence changed with that fix**, so a client carrying it
+    desyncs against one without — the same cost `determinism.yaml` T1 accepted
+    and for the same reason. **`determinism.yaml` T6 is the owner-run Garden
+    smoke test that confirms it, and it is open.** Until it closes, T5 is
+    landed but unverified against a running game.
+  - **Nobody has swept the remaining LCG sites.** 186 of them were classified
+    far enough to find the six; a site-by-site record of which feed simulation
+    state does not exist and has no owning task.
 - **Mixed-architecture play is NOT SUPPORTED.** Not "unproven" — decided. The
   simulation computes on DirectXMath, which dispatches to SSE on x64 and to
   ARM-NEON on ARM64, and the owner decided on 2026-08-03 to accept that rather
@@ -620,25 +597,6 @@ Real, currently true, and worth knowing before you trip over them:
   - Adding ARM64 to CI was proposed and **declined on 2026-08-02**: the arm64
     runner is a preview image that roughly doubles wall clock, and ARM64 is built
     constantly at the desk anyway. Deliberate, not an oversight.
-- **No upward includes remain, down from 628.** `tasks/Archive/layering-inversion.yaml`
-  is complete and `tools/layering_allowlist.txt` is **deleted** — not emptied,
-  deleted, so nobody can reopen it by adding a line. `NeuronCore` also lists no
-  include directories at all in its `.vcxproj`, so an upward include there fails
-  to compile rather than quietly working. `App.h` is now in the same position for the layers below it: the
-  subsystem pointers live in `NeuronClient/WorldPointers.h`, the application
-  state in `AppState.h`, and the seven actions only `App` can perform behind the
-  `AppCommands` interface it installs at startup. `Renderer`, `Camera`,
-  `Script`, `UserInput`, `TaskManagerInterface`, `ControlHelp`,
-  `LocationEditor` and `GameCursor` are each reached through an `*Access`
-  interface header in `NeuronClient`, and the world model — `Location`,
-  `GlobalWorld`, `Team`, `Unit`, the grids, the routing system and the
-  landscape — now lives in `GameLogic` rather than being reached up into.
-  `check_layering.py` also reports any free function or extern variable a
-  library header declares that only an executable defines — an upward reach the
-  linker resolves and an include check cannot see. The tree carried one for
-  years: `WindowManager.h` declared `AppMain()` and `Species` defined it (T18).
-  Class members are exempt, because a pure-virtual declared low and overridden
-  high is dependency inversion, which is how most of the 628 were removed.
 - **Release is not built by anyone.** Three template leftovers — missing include
   paths, a precompiled header nothing created, and `Species` linking Release as a
   console app when `WinMain` is its entry point — are all fixed, and
@@ -723,6 +681,8 @@ Real, currently true, and worth knowing before you trip over them:
   internal research, non-commercial, not for distribution — but those terms cover
   only this project's own contributions. The licence covering the original
   Darwinia source has never been established, so nothing here may be published,
-  redistributed or used commercially without settling that first. Three files
-  carry third-party notices that must never be stripped, including when moved or
-  modernised; they are listed in `LICENSE`.
+  redistributed or used commercially without settling that first. **One** file
+  carries a third-party notice that must never be stripped, including when moved
+  or modernised — `NeuronCore/MathUtils.cpp`, under BSD 3-clause. This bullet
+  said three; `LICENSE` has listed one since `AutoVector.h` and `TriTri.cpp`
+  were deleted, notices included, and it explains why each row went.

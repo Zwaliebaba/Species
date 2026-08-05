@@ -15,7 +15,7 @@ intent.
 > terms: `Citizen` appears in 37 `GameData` filenames and as a literal string in
 > level files, and names derived from it — `TypeCitizen`, `numCitizens` — move
 > with it or not at all. The full policy is in
-> [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia).
+> [`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming).
 
 ---
 
@@ -179,7 +179,7 @@ moves away from Darwinia. The biggest of them already has: the entity is a
 so when the next one moves, this file moves with it.
 
 Renaming is governed by
-[`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming-away-from-darwinia). The
+[`CODING_STANDARDS.md`](../CODING_STANDARDS.md#renaming). The
 short version: the UI scaffolding rename is done, and every domain term in this
 glossary is frozen until the game runs again. 372 Darwinia-derived occurrences
 remain: 342 either named in `GameData/` or derived from something that is, and 30

@@ -295,6 +295,22 @@ Reproduce with the script at the end of this file.
 
 ## Progress
 
+**`determinism/T3` and `T4` are done (2026-08-05), and they did not end where
+this file assumed.** Both were scoping tasks on the premise that
+`speciesRandom()` is the lockstep RNG. It is not — `syncrand()` is, and
+`speciesRandom()` is an unsynchronised LCG for cosmetics — so both findings
+were false alarms and `CODING_STANDARDS.md` carried the error that produced
+them. The reading found six real defects running the other way, simulation
+state drawn from the client-local generator, and those are **`T5`, landed**.
+`determinism` now has one open task, **`T6`**, the owner-run Garden smoke test
+that gates T5. The plan is at 5 of 6, not 2 of 4 as the table above says.
+
+The transferable part is the one this file already argues about `--next`:
+**a finding's premise expires the same way a batch proposal does.** That
+premise sat in `AGENTS.md`, `CODING_STANDARDS.md` and a test comment for three
+batches, and the tasks written from it inherited it verbatim. Checking it cost
+one afternoon of reading and was the whole of the work.
+
 **`strings/T8` landed on CI 556 (`6b38509`) and `strings/T19` on CI 560
 (`12581f3`), both 2026-08-05.** Together: fifteen files, 78 call sites, eleven
 new tests, x64 Debug green and 180 tests passing on each.
