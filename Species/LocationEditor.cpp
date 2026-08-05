@@ -139,13 +139,13 @@ int LocationEditor::DoesRayHitCameraMount(DirectX::XMFLOAT3 const& rayStart, Dir
 int LocationEditor::IsPosInLandTile(DirectX::XMFLOAT3 const& pos)
 {
   Landscape* land = &g_location->m_landscape;
-  std::vector<LandscapeTile*>* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
+  auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
   int smallestId = -1;
   int smallestSize = INT_MAX;
 
   for (int i = 0; i < static_cast<int>(tiles->size()); ++i)
   {
-    LandscapeTile* tile = (*tiles)[i];
+    LandscapeTile* tile = (*tiles)[i].get();
     float worldX = tile->m_posX;
     float worldZ = tile->m_posZ;
     float sizeX = tile->m_size;
@@ -166,12 +166,12 @@ int LocationEditor::IsPosInLandTile(DirectX::XMFLOAT3 const& pos)
 
 int LocationEditor::IsPosInFlattenArea(DirectX::XMFLOAT3 const& pos)
 {
-  std::vector<LandscapeFlattenArea*>* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
+  auto* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
   Landscape* land = &g_location->m_landscape;
 
   for (int i = 0; i < static_cast<int>(areas->size()); ++i)
   {
-    LandscapeFlattenArea* area = (*areas)[i];
+    LandscapeFlattenArea* area = (*areas)[i].get();
     float halfSize = area->m_size;
     float size = halfSize * 2.0f;
     float worldX = area->m_centre.x - halfSize;
@@ -315,12 +315,12 @@ void LocationEditor::AdvanceModeLandTile()
     // No selection
 
     Landscape* land = &g_location->m_landscape;
-    std::vector<LandscapeTile*>* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
+    auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
 
     // Has the user selected a tile
     if (newSelectionId != -1)
     {
-      LandscapeTile* tile = (*tiles)[newSelectionId];
+      LandscapeTile* tile = (*tiles)[newSelectionId].get();
       m_tool = ToolMove;
       m_selectionId = newSelectionId;
       m_newLandscapeX = tile->m_posX;
@@ -346,7 +346,7 @@ void LocationEditor::AdvanceModeLandTile()
     if (g_inputManager->controlEvent(ControlTileDrop))
     {
       // Move the selected landscape to the new position and regenerate it
-      LandscapeTile* tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_selectionId];
+      LandscapeTile* tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_selectionId].get();
       if (m_newLandscapeX != tileDef->m_posX || m_newLandscapeZ != tileDef->m_posZ)
       {
         if (m_moveBuildingsWithLandscape)
@@ -366,7 +366,7 @@ void LocationEditor::AdvanceModeLandTile()
       {
         // The user "grabs" the landscape at this position
         LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-        LandscapeTile* tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_selectionId];
+        LandscapeTile* tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_selectionId].get();
         m_landscapeGrabX = mousePos3D.x - tileDef->m_posX;
         m_landscapeGrabZ = mousePos3D.z - tileDef->m_posZ;
       }
@@ -430,7 +430,7 @@ void LocationEditor::AdvanceModeLandFlat()
       {
         // The user "grabs" the landscape at this position
         LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-        LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId];
+        LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
         m_landscapeGrabX = mousePos3D.x - areaDef->m_centre.x;
         m_landscapeGrabZ = mousePos3D.z - areaDef->m_centre.z;
       }
@@ -445,7 +445,7 @@ void LocationEditor::AdvanceModeLandFlat()
     else if (g_inputManager->controlEvent(ControlTileDrag))
     {
       // The user "drags" the flatten area around
-      LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId];
+      LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
       areaDef->m_centre.x = mousePos3D.x - m_landscapeGrabX;
       areaDef->m_centre.z = mousePos3D.z - m_landscapeGrabZ;
     }
@@ -638,10 +638,10 @@ void LocationEditor::AdvanceModeCameraMount()
         CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(m_selectionId);
         DEBUG_ASSERT(anim);
 
-        CamAnimNode* node = new CamAnimNode;
+        auto node = std::make_unique<CamAnimNode>();
         node->m_mountName = strdup(mount->m_name.c_str());
 
-        anim->m_nodes.push_back(node);
+        anim->m_nodes.push_back(std::move(node));
 
         win->m_newNodeArmed = false;
         win->RemoveButtons();
@@ -783,13 +783,13 @@ void LocationEditor::RenderModeLandTile()
   Landscape* land = &g_location->m_landscape;
 
   // Highlight any tile under our mouse cursor
-  std::vector<LandscapeTile*>* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
+  auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
   for (int i = 0; i < static_cast<int>(tiles->size()); ++i)
   {
     if (i == m_selectionId)
       continue;
 
-    LandscapeTile* tile = (*tiles)[i];
+    LandscapeTile* tile = (*tiles)[i].get();
     float worldX = tile->m_posX - tile->m_heightMap->m_cellSizeX;
     float worldZ = tile->m_posZ - tile->m_heightMap->m_cellSizeY;
     float sizeX = tile->m_size;
@@ -814,7 +814,7 @@ void LocationEditor::RenderModeLandTile()
 
     if (m_selectionId != -1)
     {
-      LandscapeTile* tile = (*tiles)[m_selectionId];
+      LandscapeTile* tile = (*tiles)[m_selectionId].get();
 
       if (tile->m_guideGrid && tile->m_guideGrid->GetNumColumns() > 0)
       {
@@ -865,7 +865,7 @@ void LocationEditor::RenderModeLandTile()
   // Render a green box around the currently selected tile (if any)
   if (m_selectionId != -1)
   {
-    LandscapeTile* tile = (*tiles)[m_selectionId];
+    LandscapeTile* tile = (*tiles)[m_selectionId].get();
     float x = tile->m_posX - tile->m_heightMap->m_cellSizeX;
     float y = tile->m_outsideHeight;
     float z = tile->m_posZ - tile->m_heightMap->m_cellSizeY;
@@ -901,13 +901,13 @@ void LocationEditor::RenderModeLandFlat()
   Landscape* land = &g_location->m_landscape;
 
   // Highlight any flatten area under our mouse cursor
-  std::vector<LandscapeFlattenArea*>* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
+  auto* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
   for (int i = 0; i < static_cast<int>(areas->size()); ++i)
   {
     if (i == m_selectionId)
       continue;
 
-    LandscapeFlattenArea* area = (*areas)[i];
+    LandscapeFlattenArea* area = (*areas)[i].get();
     float worldX = area->m_centre.x;
     float worldZ = area->m_centre.z;
     float sizeX = area->m_size;
@@ -925,7 +925,7 @@ void LocationEditor::RenderModeLandFlat()
   if (m_selectionId != -1)
   {
     LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-    LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId];
+    LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
     float x = areaDef->m_centre.x;
     float y = areaDef->m_centre.y;
     float z = areaDef->m_centre.z;

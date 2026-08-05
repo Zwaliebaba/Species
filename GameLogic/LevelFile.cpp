@@ -1611,7 +1611,7 @@ void LevelFile::GenerateDynamicBuildings()
           newBuilding->m_type = building->m_type;
           newBuilding->m_dynamic = building->m_dynamic;
           newBuilding->m_isGlobal = building->m_isGlobal;
-          m_buildings.push_back(newBuilding);
+          m_buildings.push_back(std::unique_ptr<Building>(newBuilding));
         }
       }
     }

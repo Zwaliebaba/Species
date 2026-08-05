@@ -67,7 +67,7 @@ class LandscapeTileButton : public SpeciesButton
 
         LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
         LandscapeTile* tile = new LandscapeTile();
-        g_location->m_levelFile->m_landscape.m_tiles.push_back(tile);
+        g_location->m_levelFile->m_landscape.m_tiles.push_back(std::unique_ptr<LandscapeTile>(tile));
         tile->m_size = m_def->m_size;
         tile->m_posX = _pos.x - tile->m_size / 2;
         tile->m_posY = m_def->m_posY;
@@ -113,7 +113,7 @@ void LandscapeTileEditWindow::Create()
 {
   SpeciesWindow::Create();
 
-  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_tileId];
+  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_tileId].get();
   Landscape* land = &g_location->m_landscape;
 
   int height = 5;
@@ -201,7 +201,7 @@ void LandscapeFlattenAreaEditWindow::Create()
 {
   SpeciesWindow::Create();
 
-  m_areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_areaId];
+  m_areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_areaId].get();
 
   int height = 5;
   int pitch = 17;
@@ -237,7 +237,7 @@ class NewTileButton : public SpeciesButton
 
       LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
       LandscapeTile* tile = new LandscapeTile();
-      g_location->m_levelFile->m_landscape.m_tiles.push_back(tile);
+      g_location->m_levelFile->m_landscape.m_tiles.push_back(std::unique_ptr<LandscapeTile>(tile));
       tile->m_size = 384;
       tile->m_posX = _pos.x - tile->m_size / 2;
       tile->m_posY = 0.0f;
@@ -273,7 +273,7 @@ class NewFlattenAreaButton : public SpeciesButton
 
       LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
       LandscapeFlattenArea* def = new LandscapeFlattenArea();
-      g_location->m_levelFile->m_landscape.m_flattenAreas.push_back(def);
+      g_location->m_levelFile->m_landscape.m_flattenAreas.push_back(std::unique_ptr<LandscapeFlattenArea>(def));
       def->m_centre = _pos;
       def->m_size = 40.0f;
 
@@ -299,7 +299,7 @@ class ScaleLandscapeButton : public SpeciesButton
 
       for (int i = 0; i < static_cast<int>(levelFile->m_landscape.m_tiles.size()); ++i)
       {
-        LandscapeTile* tile = levelFile->m_landscape.m_tiles[i];
+        LandscapeTile* tile = levelFile->m_landscape.m_tiles[i].get();
         tile->m_posX *= m_scaleFactor;
         tile->m_posZ *= m_scaleFactor;
         tile->m_size *= m_scaleFactor;
@@ -705,7 +705,7 @@ LandscapeGuideGridWindow::~LandscapeGuideGridWindow() {}
 
 void LandscapeGuideGridWindow::Create()
 {
-  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_tileId];
+  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_tileId].get();
   m_guideGridPower = m_tileDef->GuideGridGetPower();
 
   int gridW = m_w - 80;

@@ -833,7 +833,7 @@ void TaskManagerInterfaceIcons::RenderScreenZones()
   /*
       for( int i = 0; i < static_cast<int>(m_screenZones.size()); ++i )
       {
-          ScreenZone *zone = m_screenZones[i];
+          ScreenZone* zone = m_screenZones[i].get();
 
           float hX = zone->m_x;
           float hY = zone->m_y;
@@ -856,7 +856,7 @@ void TaskManagerInterfaceIcons::RenderScreenZones()
 
   if (ValidIndex(m_screenZones, m_currentScreenZone))
   {
-    ScreenZone* zone = m_screenZones[m_currentScreenZone];
+    ScreenZone* zone = m_screenZones[m_currentScreenZone].get();
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
@@ -914,7 +914,7 @@ void TaskManagerInterfaceIcons::RenderTooltip()
 
   if (ValidIndex(m_screenZones, m_currentScreenZone))
   {
-    ScreenZone* zone = m_screenZones[m_currentScreenZone];
+    ScreenZone* zone = m_screenZones[m_currentScreenZone].get();
 
     //
     // Render tooltip caption
@@ -2627,14 +2627,14 @@ bool TaskManagerInterfaceIcons::AdviseCreateControlHelpGreen()
   ScreenZone* screenZone = nullptr;
 
   return m_currentScreenZone != -1 && g_taskManager->CapacityUsed() < g_taskManager->Capacity() &&
-         (screenZone = m_screenZones[m_currentScreenZone]) && strcmp(screenZone->m_name, "NewTask") == 0;
+         (screenZone = m_screenZones[m_currentScreenZone].get()) && strcmp(screenZone->m_name, "NewTask") == 0;
 }
 
 bool TaskManagerInterfaceIcons::AdviseOverSelectableZone()
 {
   ScreenZone* screenZone = nullptr;
 
-  return m_currentScreenZone != -1 && (screenZone = m_screenZones[m_currentScreenZone]) && strcmp(screenZone->m_name, "NewTask") != 0;
+  return m_currentScreenZone != -1 && (screenZone = m_screenZones[m_currentScreenZone].get()) && strcmp(screenZone->m_name, "NewTask") != 0;
 }
 
 bool TaskManagerInterfaceIcons::AdviseCloseControlHelp()

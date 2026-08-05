@@ -280,7 +280,7 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
             Task* controller = g_taskManager->GetTask(((InsertionSquad*)newUnit)->m_controllerId);
             if (controller)
             {
-              controller->m_objId = task->m_objId;
+              controller->m_objId = newTask->m_objId;
               controller->m_route->AddWayPoint(m_id.GetUniqueId());
             }
           }

@@ -2072,7 +2072,7 @@ void Camera::AdvanceComponentMouseWheelHeight()
 
 void Camera::AdvanceAnim()
 {
-  CamAnimNode* node = m_anim->m_nodes[m_animCurrentNode];
+  CamAnimNode* node = m_anim->m_nodes[m_animCurrentNode].get();
   float finishTime = m_animNodeStartTime + node->m_duration;
 
   if (g_gameTime > finishTime)
@@ -2089,7 +2089,7 @@ void Camera::AdvanceAnim()
     m_animCurrentNode++;
     if (m_animCurrentNode < static_cast<int>(m_anim->m_nodes.size()))
     {
-      node = m_anim->m_nodes[m_animCurrentNode];
+      node = m_anim->m_nodes[m_animCurrentNode].get();
       SetTarget(node->m_mountName);
       m_animNodeStartTime = g_gameTime;
 
@@ -2496,7 +2496,7 @@ void Camera::PlayAnimation(CameraAnimation* _anim)
   m_upBeforeAnim = m_up;
   m_frontBeforeAnim = m_front;
 
-  CamAnimNode* node = m_anim->m_nodes[0];
+  CamAnimNode* node = m_anim->m_nodes[0].get();
   SetTarget(node->m_mountName);
 
   switch (node->m_transitionMode)

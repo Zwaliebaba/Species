@@ -196,10 +196,10 @@ class CamBeforeMountButton : public SpeciesButton
         CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(parent->m_animId);
         DEBUG_ASSERT(anim);
 
-        CamAnimNode* node = new CamAnimNode;
+        auto node = std::make_unique<CamAnimNode>();
         node->m_mountName = strdup(MAGIC_MOUNT_NAME_START_POS);
 
-        anim->m_nodes.push_back(node);
+        anim->m_nodes.push_back(std::move(node));
 
         parent->m_newNodeArmed = false;
         parent->RemoveButtons();
@@ -315,7 +315,7 @@ void CameraAnimSecondaryEditWindow::AddButtons()
   {
     for (int j = 0; j < static_cast<int>(anim->m_nodes.size()); ++j)
     {
-      CamAnimNode* node = anim->m_nodes[j];
+      CamAnimNode* node = anim->m_nodes[j].get();
 
       int x = 10;
 

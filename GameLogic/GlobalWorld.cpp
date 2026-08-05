@@ -1733,9 +1733,9 @@ void GlobalWorld::LoadGame(const char* _filename)
   {
     // Load all the level files for the location
     LevelFile levFile("null", loc->m_mapFilename.c_str());
-    for (Building* building : levFile.m_buildings)
+    for (auto const& building : levFile.m_buildings)
     {
-      AddLevelBuildingToGlobalBuildings(building, loc->m_id);
+      AddLevelBuildingToGlobalBuildings(building.get(), loc->m_id);
     }
 
     const std::string filter = std::format("Mission{}*.txt", GetLocationName(loc->m_id));
@@ -1744,9 +1744,9 @@ void GlobalWorld::LoadGame(const char* _filename)
     {
       LevelFile levFile(missionFileName, loc->m_mapFilename.c_str());
 
-      for (Building* building : levFile.m_buildings)
+      for (auto const& building : levFile.m_buildings)
       {
-        AddLevelBuildingToGlobalBuildings(building, loc->m_id);
+        AddLevelBuildingToGlobalBuildings(building.get(), loc->m_id);
 
         if (building->m_type == Building::TypeAntHill || building->m_type == Building::TypeTriffid || building->m_type == Building::TypeIncubator)
         {
@@ -1759,7 +1759,7 @@ void GlobalWorld::LoadGame(const char* _filename)
       }
 
       bool objectivesComplete = true;
-      for (GlobalEventCondition* gec : levFile.m_primaryObjectives)
+      for (auto const& gec : levFile.m_primaryObjectives)
       {
         if (!gec->Evaluate())
         {
