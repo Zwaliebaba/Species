@@ -2123,6 +2123,108 @@ tasks:
     parallel_safe: true
     status: todo
 
+  - id: T28
+    title: Convert the geometry out-pointer signatures in MathUtils and Landscape
+    intent: >
+      T7 and T8 rebuilt the geometry routines on DirectXMath but deliberately
+      kept their Vector3 and Vector2 signatures so callers compiled unchanged,
+      and T18 left Landscape's ray and sphere API legacy for the same reason.
+      Nothing after them converts either, so the seam cannot be deleted: these
+      are the last legacy signatures in the tree and T25 depends on them being
+      gone. They convert together because Landscape passes its out-pointers
+      straight into MathUtils, and both convert together with their callers
+      because an out-pointer is failure mode 7 — the seam converts by
+      reference, which does nothing through a pointer.
+    project: NeuronCore
+    depends_on: [T19, T20, T22]
+    files:
+      - NeuronCore/MathUtils.h
+      - NeuronCore/MathUtils.cpp
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
+      - NeuronClient/Shape.cpp
+      - GameLogic/Location.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/Weapons.cpp
+      - GameLogic/Entity.cpp
+      - GameLogic/Building.cpp
+      - GameLogic/StaticShape.cpp
+      - GameLogic/ScriptTrigger.cpp
+      - GameLogic/LaserFence.cpp
+      - GameLogic/GunTurret.cpp
+      - GameLogic/RadarDish.cpp
+      - GameLogic/ResearchItem.cpp
+      - GameLogic/Tree.cpp
+      - GameLogic/Tripod.cpp
+      - GameLogic/Triffid.cpp
+      - GameLogic/Spam.cpp
+      - GameLogic/Unit.cpp
+      - GameLogic/Team.cpp
+      - GameLogic/Armour.cpp
+      - GameLogic/FeedingTube.cpp
+      - GameLogic/BuildingsWindow.cpp
+      - GameLogic/CheatWindow.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/TreeWindow.cpp
+      - Species/UserInput.cpp
+      - Species/LocationEditor.cpp
+      - Tests/NeuronCoreTests/NeuronMathTests.cpp
+    acceptance:
+      - MathUtils.h declares no Vector2 or Vector3 in any parameter or return type, and forward-declares neither
+      - PointSegDist2D, SegRayIntersection2D, RayRayDist, RayTriIntersection and RaySphereIntersection take and return the native types, out-pointers included
+      - Landscape's RayHit, RayHitCell, UnsafeRayHit, SphereHit and IsInLandscape take the native types, and Landscape.h carries no comment deferring the conversion
+      - No call site passes &AsLegacy(...) into any of them; grep -c '&AsLegacy' over the six projects returns 0
+      - NeuronMathTests still asserts the same geometry results, on the native types
+    verify:
+      - python3 tools/check_math_types.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+    notes: |
+      ADDED 2026-08-05. T25's notes recorded this gap when T18 found it and
+      declined to add the task unilaterally, because it changes the plan's wave
+      order and that was the owner's call; the task is added now with T25
+      depending on it, which pushes the deletion one wave later. That is the
+      honest shape — the plan previously claimed T25 could run after T22-T24,
+      and it could not.
+
+      WHY IT IS ONE TASK AND NOT THREE. Landscape::RayHit and RayHitCell pass
+      their Vector3* result straight into RayTriIntersection, and
+      Landscape::SegRayIntersection2D use does the same in 2D, so the two APIs
+      cannot convert in either order without one of them growing a reverse
+      seam that does not exist. The seam is one-directional by construction:
+      AsLegacy takes XMFLOAT3& to Vector3&, and nothing goes the other way,
+      deliberately (see the comment above it in Vector3.h). Converting a
+      signature therefore has to move every caller in the same commit.
+
+      WHY IT DEPENDS ON T19, T20 AND T22. Those are the tasks whose files still
+      hold legacy storage AND call these APIs. Weapons.cpp and Spam.cpp are
+      T19; the four windows are T20; UserInput.cpp and LocationEditor.cpp are
+      T22. Every other caller is already converted and reaches these APIs
+      through AsLegacy today, so for those files this task DELETES seam calls
+      rather than adding them. It does not depend on T23 or T12 — neither owns
+      a caller — and it owns NeuronMathTests.cpp itself, which T24's file list
+      does not include.
+
+      MEASURED 2026-08-05 on Linux:
+        RaySphereIntersection   13 caller files    the widest
+        Landscape::RayHit family 20 caller files   17 sites pass &someVector3
+        RayTriIntersection       4                 Shape, Landscape, LaserFence, tests
+        SphereSphereIntersection 4                 Shape, Tree, Spam, tests
+        PointSegDist2D           2                 Weapons, RoutingSystem
+        SegRayIntersection2D     1                 Landscape
+        RayRayDist               2                 Tripod, tests
+        &AsLegacy sites          9 in 3 files      LaserFence, GlobalWorld, Tree
+      Re-measure before starting; these will have moved.
+
+      THE OUT-PARAMETER DEFAULTS ARE PART OF THE SIGNATURE. Five of these
+      functions default their out-pointer to nullptr and callers rely on it.
+      Keep the defaults; converting the pointee type is the whole change.
+
   - id: T25
     title: Delete the seam and the wrapper headers
     intent: >
@@ -2130,7 +2232,7 @@ tasks:
       headers are gone the tree has two math libraries and a conversion layer
       between them, which is worse than either.
     project: NeuronCore
-    depends_on: [T22, T23, T24]
+    depends_on: [T22, T23, T24, T28]
     files:
       - NeuronCore/Vector2.h
       - NeuronCore/Vector2.cpp
@@ -2158,6 +2260,12 @@ tasks:
     parallel_safe: false
     status: todo
     notes: |
+      THE GAP BELOW IS NOW OWNED BY T28, added 2026-08-05, and this task
+      depends on it. The text is kept because it is the reasoning that produced
+      that task, and because the third acceptance criterion here is still what
+      fails if T28 is skipped. What has changed is only that the work has a
+      home: the deletion is one wave later than the plan used to claim.
+
       BLOCKED ON WORK NO TASK OWNS, found while doing T18 and recorded here
       because this is the task that trips over it.
 
@@ -2182,6 +2290,12 @@ tasks:
       editor windows, and this task should depend on it. Not added unilaterally:
       it changes the shape of the plan and the wave order, which is the owner's
       call.
+
+      THAT TASK IS T28. Added on the owner's instruction, 2026-08-05, scoped
+      from a re-measure rather than from the counts above: the caller set is
+      wider than "ten files" -- 20 files call the Landscape family and 13 call
+      RaySphereIntersection -- and it also owns NeuronMathTests.cpp, which no
+      other task lists.
 
   - id: T26
     title: Bring the documentation in line with what landed

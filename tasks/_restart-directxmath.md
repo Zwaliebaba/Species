@@ -5,8 +5,9 @@ still the orientation document. This file answers "where did the math migration
 get to, and what do I do next".
 
 The plan is [`directxmath-migration.yaml`](directxmath-migration.yaml) and it is
-still the plan. **17 of its 27 tasks are done.** Everything below is either
+still the plan. **17 of its 28 tasks are done.** Everything below is either
 recorded in a task's `notes` or reproducible from the commands quoted here.
+(It was 27 until 2026-08-05, when the first of the two gaps below became T28.)
 
 ---
 
@@ -32,7 +33,8 @@ entities, buildings, creatures, world, landscape and routing all compute on
 | T18 | the world, landscape and routing |
 
 **What is left in GameLogic is T19 and T20**; `Species/` is untouched, which is
-T22–T23. `--next` offers T19 and T24 today.
+T22–T23. `--next` offers T19 and T24 today. T28 (added 2026-08-05) closes the
+first of the two gaps below and sits between T20/T22 and the deletion.
 
 ---
 
@@ -100,20 +102,30 @@ and map its virtuals in both directions.** It is two greps and it saves a round.
 
 ## Two gaps in the plan itself, found by doing T18
 
-Both block work the plan assumes is possible. Neither has an owning task.
+Both blocked work the plan assumes is possible. **The first now has an owning
+task; the second is still unowned but is already fixed in the tree.**
 
-**1. MathUtils' geometry API has no converting task.** T7 and T8 rebuilt
-`RayTriIntersection` and `RayRayDist` on DirectXMath but deliberately kept their
-`Vector3` signatures so callers compiled unchanged — that is written into both
-tasks' acceptance. Nothing after them converts the signatures, and
+**1. MathUtils' geometry API had no converting task. It is now T28.** T7 and T8
+rebuilt `RayTriIntersection` and `RayRayDist` on DirectXMath but deliberately
+kept their `Vector3` signatures so callers compiled unchanged — that is written
+into both tasks' acceptance. Nothing after them converted the signatures, and
 `PointSegDist2D` and `SegRayIntersection2D` still take `Vector2 const&` and
-`Vector2*`. **T25 then deletes both classes.**
+`Vector2*`. **T25 then deletes both classes**, which it cannot do while they
+are named in a signature.
 
 This is what stops `Landscape`'s ray and sphere API moving: those functions pass
-their out-pointer straight into MathUtils, and seventeen call sites in ten files
-pass `&someVector3` into `Landscape::RayHit`. Both ends are stuck on failure
-mode 7. **A task for MathUtils' 2D and 3D geometry signatures needs to exist,
-and T25 depends on it.**
+their out-pointer straight into MathUtils, and the call sites pass
+`&someVector3` into `Landscape::RayHit`. Both ends are stuck on failure mode 7.
+
+**T28 owns both APIs and their callers**, added 2026-08-05 on the owner's
+instruction — the decision T25's notes deferred rather than took. It depends on
+T19, T20 and T22, which are the three tasks whose files still hold legacy
+storage *and* call these routines; every other caller already reaches them
+through `AsLegacy`, so for those files T28 removes seam calls rather than
+adding them. **T25 now depends on T28**, which puts the deletion in wave 10
+rather than wave 8. The counts in T28's notes were re-measured rather than
+inherited: the Landscape family has 20 caller files, not ten, and
+`RaySphereIntersection` alone has 13.
 
 **2. `SurfaceMap2D` was never mentioned in the plan.** `Landscape::m_normalMap`
 was a `SurfaceMap2D<Vector3>`, so `Vector3` could not be deleted while it stood,
@@ -142,9 +154,10 @@ Signatures deliberately still legacy, all commented in place:
 - `CameraAccess`'s `GetPos`/`GetFront`/`GetUp`/`GetRight`/`GetClickRay`/
   `Get2DScreenPos` and `UserInputAccess::GetMousePos3d` — pure virtuals, T12/T22.
 - `Landscape::RayHit`, `RayHitCell`, `UnsafeRayHit`, `SphereHit`,
-  `IsInLandscape` — blocked on the MathUtils gap above.
-- MathUtils' `RayTriIntersection`, `RaySphereIntersection`, `PointSegDist2D`,
-  `SegRayIntersection2D` — the gap itself.
+  `IsInLandscape` — **T28**, together with the MathUtils routines below, which
+  is why one task owns both.
+- MathUtils' `RayTriIntersection`, `RaySphereIntersection`, `RayRayDist`,
+  `PointSegDist2D`, `SegRayIntersection2D` — **T28**.
 
 ---
 
