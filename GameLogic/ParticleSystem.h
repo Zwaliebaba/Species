@@ -3,7 +3,7 @@
 #include "RgbColour.h"
 #include "SliceWalker.h"
 #include "SlotMap.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 
 // ****************************************************************************
@@ -57,8 +57,10 @@ class Particle
     static ParticleType m_types[TypeNumTypes];
 
   public:
-    Vector3 m_pos;
-    Vector3 m_vel;
+    // Explicit zero-initialisers: Vector3's default constructor zeroed and
+    // XMFLOAT3's does not, and Particle's constructor assigns neither.
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
     float m_birthTime;
     int m_typeId;
     float m_size;
@@ -66,7 +68,7 @@ class Particle
 
     Particle();
 
-    void Initialise(Vector3 const& _pos, Vector3 const& _vel, int _type, float _size = -1.0f);
+    void Initialise(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, int _type, float _size = -1.0f);
     bool Advance();
     void Render(float _predictionTime);
 
@@ -91,7 +93,7 @@ class ParticleSystem
   public:
     ParticleSystem();
 
-    void CreateParticle(Vector3 const& _pos, Vector3 const& _vel, int _particleTypeId, float _size = -1.0f, RGBAColour col = 0);
+    void CreateParticle(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, int _particleTypeId, float _size = -1.0f, RGBAColour col = 0);
 
     void Advance(int _slice);
     void Render();
