@@ -2028,7 +2028,27 @@ tasks:
       LaserFence, Location, Shape, Camera and Matrix34 itself — so the pin is
       worth well more than Explosion alone.
 
-      With that pinned, Explosion is unblocked and is the right next file.
+      A SECOND TRAP IN THE SAME FILE, found the same way and also pinned.
+      Matrix33::operator* is an ordinary row-major product, but Matrix33
+      transforms as M * v while XMVector3Transform computes v * M — so the
+      native matrix is the TRANSPOSE of the legacy one, and transposing
+      reverses a product. Tumbler::Advance does `m_rotMat *= rotIncrement`,
+      which converts to `rotMat = increment * rotMat` — the operands swap.
+
+      Writing it in the original order is wrong by about two percent after one
+      tick. It looks right, and it compounds every frame. Pinned by
+      NativeMatrixProductReversesRelativeToTheLegacyOne, which also asserts
+      that the same-order version genuinely differs, so the test is about the
+      conversion rather than about these particular angles.
+
+      Both pins passed under MSVC on the first run (179 tests, up from 177),
+      so the mapping is confirmed by the real toolchain and not only by the
+      model used to derive it.
+
+      With both pinned, Explosion is unblocked and is the right next file.
+      Note that Tumbler::Advance names its arguments in an order worth
+      re-reading before converting: it passes m_angVel.x as YAW, m_angVel.y as
+      DIVE and m_angVel.z as ROLL.
 
   - id: T20
     title: Convert the in-game windows

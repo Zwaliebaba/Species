@@ -187,6 +187,48 @@ namespace NeuronCoreTests
         AssertNearlyEqual(legacy.z, result.z);
       }
 
+      // The SECOND trap in the same conversion, and the nastier of the two.
+      //
+      // Matrix33::operator* is an ordinary row-major product, but Matrix33
+      // transforms a vector as M * v (its rows are dotted with v) while
+      // XMVector3Transform computes v * M. The native matrix is therefore the
+      // transpose of the legacy one, and transposing reverses a product:
+      // (M * R) transposed is R-transposed * M-transposed. So
+      //
+      //     m_rotMat *= rotIncrement          (Tumbler::Advance)
+      //
+      // becomes rotMat = increment * rotMat, NOT rotMat * increment.
+      //
+      // Writing it in the original order is wrong by about two percent after
+      // one tick -- close enough to look right, and it compounds every frame,
+      // which is the worst way for this to be wrong.
+      TEST_METHOD(NativeMatrixProductReversesRelativeToTheLegacyOne)
+      {
+        Matrix33 const legacyM(0.20f, -0.11f, 0.37f);
+        Matrix33 const legacyR(0.05f, 0.09f, -0.03f);
+        Vector3 const legacy = (legacyM * legacyR) * Vector3(4.0f, -2.0f, 7.0f);
+
+        auto const native = [](float yaw, float dive, float roll)
+        { return DirectX::XMMatrixRotationY(yaw) * DirectX::XMMatrixRotationX(dive) * DirectX::XMMatrixRotationZ(roll); };
+        DirectX::XMFLOAT3 const start(4.0f, -2.0f, 7.0f);
+
+        DirectX::XMFLOAT3 reversed;
+        DirectX::XMStoreFloat3(
+          &reversed, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&start), native(0.05f, 0.09f, -0.03f) * native(0.20f, -0.11f, 0.37f)));
+        AssertNearlyEqual(legacy.x, reversed.x);
+        AssertNearlyEqual(legacy.y, reversed.y);
+        AssertNearlyEqual(legacy.z, reversed.z);
+
+        // And the same-order version really does differ, so this is a fact
+        // about the conversion rather than a coincidence of these angles.
+        DirectX::XMFLOAT3 sameOrder;
+        DirectX::XMStoreFloat3(
+          &sameOrder, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&start), native(0.20f, -0.11f, 0.37f) * native(0.05f, 0.09f, -0.03f)));
+        Assert::IsTrue(std::fabs(legacy.x - sameOrder.x) > 0.05f || std::fabs(legacy.y - sameOrder.y) > 0.02f ||
+                         std::fabs(legacy.z - sameOrder.z) > 0.05f,
+                       L"the product order stopped mattering; re-derive the conversion in Tumbler::Advance.");
+      }
+
       // The negative control for the test above: the reading that looks right
       // is measurably wrong, so if someone "simplifies" the conversion to RPY
       // later, this fails and says why.
