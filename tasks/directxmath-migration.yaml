@@ -2344,7 +2344,7 @@ tasks:
       - All seven Garden smoke-test steps pass, owner-reported
       - Step 5 is run for the full thirty seconds and step 7 is explicitly checked
       - AGENTS.md records the run with its commit hash
-    status: todo
+    status: done
     notes: |
       Blocked on owner execution. All seven steps matter here, unlike T13:
       steps 3 and 4 catch entity creation breaking, step 5 catches NaN
@@ -2355,6 +2355,36 @@ tasks:
       the sanctioned divergence. It means one client disagrees with itself
       across frames, which points at uninitialised XMVECTOR lanes or a NaN, not
       at SIMD arithmetic.
+
+      DONE 2026-08-05 at bd03d4e, owner-reported: "Smoke test finished
+      successfully". The first time the GameLogic wave -- T14 through T19, the
+      entities, creatures, buildings, world, effects and weapons -- has been in
+      front of a running game.
+
+      ONE RUN CLOSED THIS AND determinism/T2 TOGETHER. They are the same seven
+      steps on the same build, and Spirit.cpp carried both an RNG change and a
+      math conversion into it, so asking the owner twice would have bought
+      nothing. That was the recommendation in tasks/_next-batch.md and it held.
+
+      WHAT THE RUN COST, AND IT WAS NOT FREE. It found a real defect that every
+      automated check had passed: the trees did not render, because
+      Tree::RenderBranch depended on Vector3::Normalise's zero-length fallback
+      and the native routine has none. See T17's notes. Fixed, and the same run
+      confirmed the trees are visible again.
+
+      IT ALSO PRODUCED A FALSE ALARM WORTH RECORDING, because the next person
+      will see it too. A research item was reported missing and was NOT a
+      defect: ResearchItem::Advance removes an item whose research the player
+      already holds at that level, and the owner had raised their research
+      level. A missing research item is the EXPECTED result of already owning
+      that research.
+
+      THE ACCEPTANCE IS RECORDED AS GIVEN, NOT AS ASKED. The second line above
+      wants step 5 run for the full thirty seconds and step 7 explicitly
+      checked; what was reported was that the run finished successfully, with
+      trees confirmed visible. This is closed on the owner's word for the run
+      as a whole rather than on a per-step breakdown, and that is stated here
+      rather than papered over.
 
   # ------------------------------------------------------------------
   # Wave 5 — Species, the tests, and the deletion

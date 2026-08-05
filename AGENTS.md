@@ -326,8 +326,28 @@ was in rendering or in the eye. The temporary checksum commit that answered it
 (`57386fb`) has been reverted. `tasks/directxmath-migration.yaml` T13 carries
 the detail.
 
-**Run on the Batch 1 tree (2026-08-05), owner-reported: THE TREES HAD
-DISAPPEARED.** Found and fixed — `Tree::RenderBranch` crossed two vectors that
+**Run at `bd03d4e` (2026-08-05), owner-reported: THE SMOKE TEST FINISHED
+SUCCESSFULLY.** This is the run `directxmath-migration` T21 and
+`determinism` T2 were both waiting on, and one run closed both — they are the
+same seven steps on the same build, and Spirit.cpp carried both an RNG change
+and a math conversion into it. It is the first time the GameLogic wave
+(T14–T19: entities, creatures, buildings, world, effects, weapons) has been in
+front of a running game, and the first Garden run since `b0bde71`.
+
+Reported as "smoke test finished successfully", with trees confirmed visible
+again. That is the owner's word for the whole run; this file does not claim a
+per-step breakdown it was not given.
+
+**Two objects were reported missing during that run. One was a real defect and
+one was not, and the difference is worth keeping.**
+
+- **A research item was not there — and that was correct.** The owner had
+  raised their research level, and `ResearchItem::Advance` removes an item
+  whose research you already hold at that level. Working as designed. Recorded
+  so nobody investigates it a second time: *a missing research item is the
+  expected result of already owning that research.*
+
+- **THE TREES HAD DISAPPEARED, and that was real.** Found and fixed — `Tree::RenderBranch` crossed two vectors that
 are identical on the trunk, so the cross product was exactly zero, and
 `XMVector3Normalize` answers zero where `Vector3::Normalise` answered (0,0,1).
 Zero there collapses the trunk quads to zero width *and* hands all four child
@@ -338,10 +358,15 @@ rather than in an edge case. The fallback is now reproduced locally in
 `Tree.cpp` with the reason at the site, and `NeuronMathTests` pins the
 divergence with a negative control.
 
+Confirmed fixed by the same run: the trees are visible again.
+
 > This is what the smoke test is *for*, and it is worth stating plainly: seven
 > green checks, two green CI runs and 180 passing tests all said this tree was
 > fine. None of them renders a tree. The owner looking at the game found it in
-> one run.
+> one run — and in the same run reported a second missing object that turned
+> out to be the game behaving correctly. Both halves of that are the point: the
+> smoke test finds what CI cannot, and a report from it still has to be
+> diagnosed rather than believed.
 
 Earlier runs, kept because the sequence is the evidence:
 

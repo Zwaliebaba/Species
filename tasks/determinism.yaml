@@ -140,7 +140,7 @@ tasks:
     acceptance:
       - All seven Garden smoke-test steps pass on the changed build, owner-reported
       - AGENTS.md records the run with the commit hash, per "What working looks like"
-    status: blocked
+    status: done
     notes: |
       Blocked on owner execution — agents in this environment cannot launch a
       Windows client, and no check that runs here can substitute. Same gate and
@@ -157,3 +157,13 @@ tasks:
       If a step does fail, it localises well. Spirits are visible in The Garden
       and their hover is the only thing this changes, so "spirits behave" and
       "nothing asserts" are the two observations worth writing down.
+
+      DONE 2026-08-05 at bd03d4e, owner-reported: "Smoke test finished
+      successfully". T1's change to Spirit's hover clamp -- one synchronised
+      draw where there had been two -- has now been in front of a running game.
+
+      CLOSED BY THE SAME RUN AS directxmath/T21, deliberately. Both gates are
+      the same seven Garden steps on the same build, and by the time the run
+      happened Spirit.cpp carried T1's RNG change AND its math conversion, so
+      one run is the only way to test either of them honestly. Recorded on both
+      tasks and in AGENTS.md.
