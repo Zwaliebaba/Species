@@ -879,7 +879,8 @@ tasks:
       and -1 is caught by the other half of the assert. The bound is preserved
       exactly, through static_cast<int>(Neuron::I(...)), because tightening it
       is a behaviour change and this plan forbids one riding along inside a
-      conversion. Someone should own it; nobody does.
+      conversion. IT HAS AN OWNER NOW: T13, added on the owner's instruction
+      the same day.
 
       THE DECLARED FILE LIST HAD A FALSE POSITIVE, from the same measurement
       that produced it. NeuronClient/LocationEditorAccess.h was listed because
@@ -891,3 +892,77 @@ tasks:
       shared enumerator, and ModeNumModes is shared.
 
       NOT COMPILED. No MSVC here; the seven Python checks pass.
+
+  - id: T13
+    title: Scope CamAnimNode's transition enum, and correct the bound that named the wrong one
+    intent: >
+      A camera-animation node's transition mode is validated against
+      CameraAccess::ModeNumModes -- a different enum, on a different class,
+      counting a different thing. Naming and scoping the transition enum makes
+      the mistake impossible to write rather than merely corrected, which is
+      the whole argument for this plan's enum tasks.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
+      - GameLogic/CameraAnimWindow.cpp
+      - Species/Camera.cpp
+    acceptance:
+      - CamAnimNode's transition enum is named and is enum class with an explicit underlying type
+      - m_transitionMode has that type, or notes records why it stayed an int and what stops the
+        wrong-enum comparison recurring
+      - LevelFile.cpp's parse-time bound names the transition enum, not CameraAccess::Mode
+      - GetTransitModeId's -1 answer is still distinguishable from a valid mode at every call site
+      - The DropDownMenu binding in CameraAnimWindow.cpp still round-trips a mode through the editor,
+        stated as what was checked
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+    notes: |
+      Added 2026-08-05 on the owner's instruction, from a defect T12 found and
+      deliberately did not fix -- tightening a bound is a behaviour change and
+      this plan forbids one riding along inside a conversion.
+
+      THE DEFECT. LevelFile.cpp:275 asserts
+      `m_transitionMode >= 0 && m_transitionMode < ModeNumModes`, where
+      ModeNumModes is CameraAccess::Mode's count. m_transitionMode is a
+      CamAnimNode transition: TransitionMove, TransitionCut,
+      TransitionNumModes -- **2 values, against a bound of 16**. The assert
+      accepts 0..15 for something that can only legitimately be 0 or 1.
+
+      IT IS LATENT, NOT LIVE, and that matters for how urgently to take it.
+      The only writer is GetTransitModeId, which returns -1, 0 or 1, and -1 is
+      caught by the other half of the assert. So no reachable input gets past
+      it today. What the wrong bound costs is the check itself: if the
+      transition enum ever gains a third value, or the parse ever gains
+      another writer, the assert will not notice.
+
+      THE ENUM IS ANONYMOUS, which is why the mistake was easy to write:
+      LevelFile.h:40 declares `enum { TransitionMove, TransitionCut,
+      TransitionNumModes };` with no name at all, so m_transitionMode HAD to
+      be an int and no comparison against it could ever be type-checked.
+      Naming it is most of the fix.
+
+      THE OBSTACLE IS THE EDITOR BINDING, and it is the same shape as T11's
+      integer loop. CameraAnimWindow.cpp:324 does
+      `modeBut->RegisterInt(&node->m_transitionMode)` -- DropDownMenu holds an
+      `int*` into the member and writes through it, so typing the member
+      breaks the binding. Three ways out, in the order they are worth trying:
+      keep an int in the widget and convert at the two edges; give
+      DropDownMenu a typed registration alongside RegisterInt; or leave the
+      member an int and rely on the corrected bound plus a named enum, which
+      satisfies this task's second acceptance line by the escape it offers.
+
+      THE OTHER SITES ARE ALREADY WELL-BEHAVED and should stay that way:
+      Camera.cpp switches on m_transitionMode at :2080, :2096 and :2503 with
+      CamAnimNode::TransitionMove / TransitionCut labels, and
+      GetTransitModeName's own DEBUG_ASSERT at LevelFile.cpp:67 bounds against
+      TransitionNumModes correctly. Only the parse-time assert names the wrong
+      enum.
+
+      parallel_safe false because LevelFile.cpp is contested: strings/T17
+      declares it, and ownership/T5 rewrote it on 2026-08-05.
