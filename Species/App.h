@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "AppCommands.h"
 #include "AppState.h"
 
@@ -35,18 +37,25 @@ class App : public AppCommands
 {
   public:
     // Library Code Objects
+    //
+    // m_resource is NOT owned here. Species/Main.cpp's Finalise() deletes
+    // g_resource, and that is the delete that actually executes -- see ~App.
     Resource* m_resource;
-    SoundSystem* m_soundSystem;
-    LangTable* m_langTable;
-    Profiler* m_profiler;
+    std::unique_ptr<SoundSystem> m_soundSystem;
+    std::unique_ptr<LangTable> m_langTable;
+    std::unique_ptr<Profiler> m_profiler;
 
     // Things that are the world
 
     // Everything else
-    ClientToServer* m_clientToServer; // Clients connection to Server
+    std::unique_ptr<ClientToServer> m_clientToServer; // Clients connection to Server
+
+    // Not owned either: Species/Main.cpp deletes both of these, and nothing
+    // anywhere deletes m_gameMenu.
     LocationInput* m_locationInput;
     StartSequence* m_startSequence;
-    AttractMode* m_attractMode;
+
+    std::unique_ptr<AttractMode> m_attractMode;
     GameMenu* m_gameMenu;
 
 

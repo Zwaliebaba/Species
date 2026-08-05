@@ -65,13 +65,8 @@ App* g_app = nullptr;
 
 App::App()
   : m_resource(nullptr),
-    m_soundSystem(nullptr),
-    m_langTable(nullptr),
-    m_profiler(nullptr),
-    m_clientToServer(nullptr),
     m_locationInput(nullptr),
     m_startSequence(nullptr),
-    m_attractMode(nullptr),
     m_gameMenu(nullptr),
     m_levelReset(false)
 {
@@ -95,8 +90,8 @@ App::App()
   UpdateDifficultyFromPreferences();
 
 #ifdef PROFILER_ENABLED
-  m_profiler = new Profiler();
-  g_profiler = m_profiler;
+  m_profiler = std::make_unique<Profiler>();
+  g_profiler = m_profiler.get();
   Profiler::SetRenderSyncHook(&ProfilerRenderSync);
 #endif
 
@@ -117,10 +112,10 @@ App::App()
   InstallWorldTypeRoster();
 
   g_gameCursor = new GameCursor();
-  m_soundSystem = new SoundSystem();
-  g_soundSystem = m_soundSystem;
-  m_clientToServer = new ClientToServer();
-  g_clientToServer = m_clientToServer;
+  m_soundSystem = std::make_unique<SoundSystem>();
+  g_soundSystem = m_soundSystem.get();
+  m_clientToServer = std::make_unique<ClientToServer>();
+  g_clientToServer = m_clientToServer.get();
   g_userInput = new UserInput();
   //    g_location          = new Location();
   //    m_locationInput		= new LocationInput();
@@ -153,7 +148,7 @@ App::App()
   g_taskManager = new TaskManager();
   g_script = new Script();
 #ifdef ATTRACTMODE_ENABLED
-  m_attractMode = new AttractMode();
+  m_attractMode = std::make_unique<AttractMode>();
 #endif
   g_controlHelpSystem = new ControlHelpSystem();
 
@@ -179,29 +174,55 @@ RendererAccess* App::CreateRenderer() { return new Renderer(); }
 TaskManagerInterfaceAccess* App::CreateTaskManagerInterface() { return new TaskManagerInterfaceIcons(); }
 
 
+// THIS DESTRUCTOR NEVER RUNS. Species/Main.cpp calls Finalise() and then
+// exit(0), which does not unwind the stack, and nothing anywhere deletes
+// g_app. Every line below is unreached today. That is not a reason to leave it
+// wrong -- it is the reason the conversion is safe to make, and the reason the
+// smoke test cannot confirm it. Recorded on ownership T6.
+//
+// THE ORDER BELOW IS BYTE-FOR-BYTE THE SEQUENCE THE SAFE_DELETEs HAD. The
+// unique_ptr members are reset explicitly, in place, rather than left to the
+// implicit destructor -- which would run them in reverse declaration order and
+// interleave them differently with the raw deletes that remain.
 App::~App()
 {
   SAFE_DELETE(g_globalWorld);
-  SAFE_DELETE(m_langTable);
+
+  m_langTable.reset();
+  g_langTable = nullptr;
+
   SAFE_DELETE(g_taskManagerInterface);
   SAFE_DELETE(g_controlHelpSystem);
 #ifdef ATTRACTMODE_ENABLED
-  SAFE_DELETE(m_attractMode);
+  m_attractMode.reset();
 #endif
   SAFE_DELETE(g_script);
   SAFE_DELETE(g_taskManager);
   SAFE_DELETE(g_particleSystem);
   SAFE_DELETE(g_camera);
   SAFE_DELETE(g_userInput);
-  SAFE_DELETE(m_clientToServer);
-  SAFE_DELETE(m_soundSystem);
+
+  m_clientToServer.reset();
+  g_clientToServer = nullptr;
+
+  m_soundSystem.reset();
+  g_soundSystem = nullptr;
+
   SAFE_DELETE(g_gameCursor);
   SAFE_DELETE(g_renderer);
 #ifdef PROFILER_ENABLED
-  SAFE_DELETE(m_profiler);
+  m_profiler.reset();
+  g_profiler = nullptr;
 #endif
   SAFE_DELETE(g_prefsManager);
-  SAFE_DELETE(m_resource);
+
+  // NOT deleted here, and this is a behaviour change: SAFE_DELETE(m_resource)
+  // used to run. Species/Main.cpp's Finalise() also does `delete g_resource`,
+  // and THAT is the one that actually executes, so the two together were a
+  // latent double delete that only the unreachability of this destructor kept
+  // from firing. Ownership is stated where it really lives rather than
+  // duplicated here.
+  m_resource = nullptr;
 }
 
 void App::SetProfileName(const char* _profileName)
@@ -222,9 +243,8 @@ void App::SetLanguage(const char* _language, bool _test)
 
   if (m_langTable)
   {
-    delete m_langTable;
-    m_langTable = nullptr;
-    g_langTable = m_langTable;
+    m_langTable.reset();
+    g_langTable = nullptr;
   }
 
   //
@@ -232,8 +252,8 @@ void App::SetLanguage(const char* _language, bool _test)
 
   std::string langFilename = std::format("Language/{}.txt", _language);
 
-  m_langTable = new LangTable(langFilename.c_str());
-  g_langTable = m_langTable;
+  m_langTable = std::make_unique<LangTable>(langFilename.c_str());
+  g_langTable = m_langTable.get();
 
   if (_test)
     m_langTable->TestAgainstEnglish();
