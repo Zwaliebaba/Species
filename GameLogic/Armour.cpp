@@ -463,7 +463,6 @@ void Armour::GetEntrance(DirectX::XMFLOAT3& _exitPos, DirectX::XMFLOAT3& _exitDi
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT4X4 const entranceMat = m_markerEntrance->GetWorldMatrix(mat);
   _exitPos = DirectX::XMFLOAT3(entranceMat._41, entranceMat._42, entranceMat._43);
   _exitDir = DirectX::XMFLOAT3(entranceMat._31, entranceMat._32, entranceMat._33);
@@ -594,7 +593,6 @@ void Armour::Render(float _predictionTime)
   // Render the flag
 
   float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 const flagPos = m_markerFlag->GetWorldPosition(bodyMat);
   m_flag.SetPosition(flagPos);
 

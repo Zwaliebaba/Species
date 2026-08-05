@@ -95,7 +95,6 @@ bool ConstructionYard::Advance()
         DirectX::XMFLOAT4X4 mat;
         DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
         DirectX::XMFLOAT3 const primPos = m_primitives[5]->GetWorldPosition(mat);
         WorldObjectId objId = g_location->SpawnEntities(primPos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0.0f);
         Entity* entity = g_location->GetEntity(objId);
@@ -183,7 +182,6 @@ void ConstructionYard::Render(float _predictionTime)
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT4X4 prim = m_primitives[i]->GetWorldMatrix(mat);
     prim._42 += sinf(g_gameTime + i) * 5.0f;
 
@@ -326,7 +324,6 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 
       for (int i = 0; i < YARD_NUMRUNGSPIKES; ++i)
       {
-        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
         DirectX::XMFLOAT3 const spikePos = m_rungSpikes[i]->GetWorldPosition(rungMat);
         DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&spikePos);
 
@@ -486,7 +483,6 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
   {
     DirectX::XMFLOAT4X4 buildingMat = GetWorldMatrix();
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 const rayPosStore = m_rays[i]->GetWorldPosition(buildingMat);
     DirectX::XMVECTOR const rayPos = DirectX::XMLoadFloat3(&rayPosStore);
 

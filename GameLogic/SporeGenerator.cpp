@@ -300,7 +300,6 @@ bool SporeGenerator::AdvanceEggLaying()
       DirectX::XMFLOAT4X4 mat;
       DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
       DirectX::XMFLOAT3 const eggLayPos = m_eggMarker->GetWorldPosition(mat);
       g_location->SpawnEntities(eggLayPos, m_id.GetTeamId(), -1, TypeEgg, 1, m_vel, 0.0f);
       g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LayEgg");
@@ -416,7 +415,6 @@ void SporeGenerator::Render(float _predictionTime)
 
   for (int i = 0; i < SPOREGENERATOR_NUMTAILS; ++i)
   {
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 prevTailPos = m_tail[i]->GetWorldPosition(mat);
     // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
     DirectX::XMVECTOR prevTailDir = DirectX::XMVector3Normalize(
@@ -521,7 +519,6 @@ bool SporeGenerator::RenderPixelEffect(float _predictionTime)
 
   for (int i = 0; i < SPOREGENERATOR_NUMTAILS; ++i)
   {
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 prevTailPos = m_tail[i]->GetWorldPosition(mat);
     // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
     DirectX::XMVECTOR prevTailDir = DirectX::XMVector3Normalize(

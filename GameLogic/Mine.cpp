@@ -290,7 +290,6 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
       s_cartShape->Render(0.0f, transform);
       // END_PROFILE(g_profiler, "RenderCartShape" );
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
       DirectX::XMFLOAT3 const cartLinkLeftStore = s_cartMarker1->GetWorldPosition(transform);
       DirectX::XMFLOAT3 const cartLinkRightStore = s_cartMarker2->GetWorldPosition(transform);
       DirectX::XMVECTOR const cartLinkLeft = DirectX::XMLoadFloat3(&cartLinkLeftStore);
@@ -427,7 +426,6 @@ DirectX::XMFLOAT3 MineBuilding::GetTrackMarker1()
     DirectX::XMFLOAT4X4 rootMat;
     DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
     // only the position was ever kept, which is why the member is one now.
     m_trackPosition1 = m_trackMarker1->GetWorldPosition(rootMat);
   }
@@ -446,7 +444,6 @@ DirectX::XMFLOAT3 MineBuilding::GetTrackMarker2()
     DirectX::XMFLOAT4X4 rootMat;
     DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     m_trackPosition2 = m_trackMarker2->GetWorldPosition(rootMat);
   }
 

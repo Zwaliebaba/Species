@@ -45,7 +45,6 @@ bool FeedingTube::Advance()
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 const dishPos = m_focusMarker->GetWorldPosition(rootMat);
 
   FeedingTube* ft = (FeedingTube*)g_location->GetBuilding(m_receiverId);
@@ -69,7 +68,6 @@ DirectX::XMFLOAT3 FeedingTube::GetDishPos(float _predictionTime)
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT4X4 const worldMat = m_focusMarker->GetWorldMatrix(rootMat);
   return DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
 }

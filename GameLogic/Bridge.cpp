@@ -129,7 +129,6 @@ bool Bridge::GetAvailablePosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _f
   DirectX::XMFLOAT4X4 ourMat;
   DirectX::XMStoreFloat4x4(&ourMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT4X4 const ourEngineer = m_signal->GetWorldMatrix(ourMat);
   _pos = DirectX::XMFLOAT3(ourEngineer._41, ourEngineer._42, ourEngineer._43);
   _front = DirectX::XMFLOAT3(ourEngineer._31, ourEngineer._32, ourEngineer._33);
@@ -180,7 +179,6 @@ DirectX::XMFLOAT3 Bridge::GetStartPoint()
   DirectX::XMFLOAT4X4 ourMat;
   DirectX::XMStoreFloat4x4(&ourMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   return m_signal->GetWorldPosition(ourMat);
 }
 
@@ -213,7 +211,6 @@ bool Bridge::GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
   DirectX::XMStoreFloat4x4(
     &theirMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&nextBridge->m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&nextBridge->m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT4X4 const theirEntrance = nextBridge->m_entrance->GetWorldMatrix(theirMat);
 
   _pos = DirectX::XMFLOAT3(theirEntrance._41, theirEntrance._42, theirEntrance._43);
@@ -235,7 +232,6 @@ bool Bridge::UpdateEntityInTransit(Entity* _entity)
     DirectX::XMStoreFloat4x4(&theirMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&nextBridge->m_front), DirectX::g_XMIdentityR1,
                                                             DirectX::XMLoadFloat3(&nextBridge->m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 const theirSignalPos = nextBridge->m_signal->GetWorldPosition(theirMat);
 
     DirectX::XMVECTOR const signalPos = DirectX::XMLoadFloat3(&theirSignalPos);

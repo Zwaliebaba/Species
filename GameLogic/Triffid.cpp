@@ -181,7 +181,6 @@ void Triffid::Render(float _predictionTime)
 
   // RenderArrow( m_pos, headPos, 1.0f, RGBAColour(100,0,0,255) );
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam. The
   // PRE-wobble head, as the legacy code had it: the stem line is drawn before
   // the damage flicker scales a row.
   DirectX::XMFLOAT3 const stemPos = m_stem->GetWorldPosition(headMatrix);
@@ -231,7 +230,6 @@ void Triffid::Render(float _predictionTime)
 
   if (m_triggered && GetHighResTime() > m_timerSync - m_reloadTime * 0.25f)
   {
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, and
     // this one wants the marker's whole basis: the egg is drawn with the
     // launch point's UP as its front and its negated FRONT as its up.
     DirectX::XMFLOAT4X4 const launchMat = m_launchPoint->GetWorldMatrix(wobbledHead);
@@ -273,7 +271,6 @@ void Triffid::RenderAlphas(float _predictionTime)
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&headPos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT4X4 const launchMat = m_launchPoint->GetWorldMatrix(mat);
     DirectX::XMFLOAT3 const launchPos = DirectX::XMFLOAT3(launchMat._41, launchMat._42, launchMat._43);
     DirectX::XMFLOAT3 const launchFront = DirectX::XMFLOAT3(launchMat._31, launchMat._32, launchMat._33);
@@ -408,7 +405,6 @@ void Triffid::Launch()
 
   DirectX::XMFLOAT4X4 mat = GetHead();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT4X4 const launchMat = m_launchPoint->GetWorldMatrix(mat);
   DirectX::XMFLOAT3 const launchFront = DirectX::XMFLOAT3(launchMat._31, launchMat._32, launchMat._33);
   DirectX::XMFLOAT3 const launchPos = DirectX::XMFLOAT3(launchMat._41, launchMat._42, launchMat._43);

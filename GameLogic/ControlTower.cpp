@@ -107,7 +107,6 @@ bool ControlTower::Advance()
       DirectX::XMFLOAT4X4 mat;
       DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
       DirectX::XMFLOAT3 const dishPosStore = m_dishPos->GetWorldPosition(mat);
       DirectX::XMVECTOR const dishPos = DirectX::XMLoadFloat3(&dishPosStore);
 
@@ -162,7 +161,6 @@ bool ControlTower::Advance()
       DirectX::XMStoreFloat4x4(&rootMat,
                                BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
       DirectX::XMFLOAT3 const consolePos = m_console[i]->GetWorldPosition(rootMat);
 
       // The three sfrand calls stay in this order: they advance the RNG.
@@ -188,7 +186,6 @@ int ControlTower::GetAvailablePosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT
       DirectX::XMStoreFloat4x4(&rootMat,
                                BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
       DirectX::XMFLOAT4X4 const worldMat = m_reprogrammer[i]->GetWorldMatrix(rootMat);
 
       _pos = DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
@@ -209,7 +206,6 @@ void ControlTower::GetConsolePosition(int _position, DirectX::XMFLOAT3& _pos)
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   _pos = m_console[_position]->GetWorldPosition(rootMat);
 }
 
@@ -369,7 +365,6 @@ void ControlTower::RenderAlphas(float _predictionTime)
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 const lightPosStore = m_lightPos->GetWorldPosition(rootMat);
   DirectX::XMVECTOR const lightPos = DirectX::XMLoadFloat3(&lightPosStore);
 
@@ -470,7 +465,6 @@ void ControlTower::RenderAlphas(float _predictionTime)
     DirectX::XMStoreFloat4x4(&signalRootMat,
                              BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 const signalPosStore = m_lightPos->GetWorldPosition(signalRootMat);
     DirectX::XMVECTOR const signalPos = DirectX::XMLoadFloat3(&signalPosStore);
 

@@ -55,7 +55,6 @@ DirectX::XMFLOAT3 PowerBuilding::GetPowerLocation()
     DEBUG_ASSERT(m_powerLocation);
   }
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
   return m_powerLocation->GetWorldPosition(rootMat);
 }
@@ -357,7 +356,6 @@ void Generator::Render(float _predictionTime)
   DirectX::XMStoreFloat4x4(&generatorMat,
                            BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- so the
   // counter's own basis stays legacy here and converts when that seam closes.
   DirectX::XMFLOAT4X4 counterMat = m_counter->GetWorldMatrix(generatorMat);
 
@@ -610,7 +608,6 @@ void SolarPanel::RenderPorts()
   {
     DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 const statusPos = m_statusMarkers[i]->GetWorldPosition(rootMat);
 
 
@@ -688,9 +685,6 @@ void SolarPanel::RenderAlphas(float _predictionTime)
 
     for (int i = 0; i < SOLARPANEL_NUMGLOWS; ++i)
     {
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
-      // this block wants the marker's whole basis, not just its position, so it
-      // stays legacy until that seam closes.
       DirectX::XMFLOAT4X4 thisGlow = m_glowMarker[i]->GetWorldMatrix(mat);
       DirectX::XMVECTOR const glowPos = DirectX::XMVectorSet(thisGlow._41, thisGlow._42, thisGlow._43, 0.0f);
       DirectX::XMVECTOR const glowRight = DirectX::XMVectorScale(DirectX::XMVectorSet(thisGlow._11, thisGlow._12, thisGlow._13, 0.0f), glowHeight);

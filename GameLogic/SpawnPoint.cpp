@@ -280,7 +280,6 @@ DirectX::XMFLOAT3 SpawnBuilding::GetSpiritLink()
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   return m_spiritLink->GetWorldPosition(mat);
 }
 
@@ -622,7 +621,6 @@ void SpawnPoint::TriggerSpirit(SpawnBuildingSpirit* _spirit)
     {
       DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
       DirectX::XMFLOAT3 const doorPos = m_doorMarker->GetWorldPosition(mat);
       g_location->SpawnEntities(doorPos, m_id.GetTeamId(), -1, Entity::TypeCitizen, 1, g_zeroVector, 0.0f);
     }
@@ -779,7 +777,6 @@ void SpawnPoint::RenderPorts()
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);
     DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), size);
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 statusPosStore = s_controlPadStatus->GetWorldPosition(mat);
     statusPosStore.y = g_location->m_landscape.m_heightMap->GetValue(statusPosStore.x, statusPosStore.z);
     statusPosStore.y += 5.0f;

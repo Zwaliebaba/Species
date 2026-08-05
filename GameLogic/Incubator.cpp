@@ -52,7 +52,6 @@ void Incubator::Initialise(Building* _template)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 const spiritCentre = m_spiritCentre->GetWorldPosition(mat);
 
   m_numStartingSpirits = static_cast<Incubator*>(_template)->m_numStartingSpirits;
@@ -129,7 +128,6 @@ void Incubator::SpawnEntity()
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, and this
   // one wants both the exit position and its facing.
   DirectX::XMFLOAT4X4 const exit = m_exit->GetWorldMatrix(mat);
 
@@ -184,7 +182,6 @@ void Incubator::AddSpirit(Spirit* _spirit)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 const spiritCentre = m_spiritCentre->GetWorldPosition(mat);
 
   Spirit* s = m_spirits.GetPointer(m_spirits.GetNextFree());
@@ -209,7 +206,6 @@ void Incubator::GetDockPoint(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT4X4 const dock = m_dock->GetWorldMatrix(mat);
   _pos = DirectX::XMFLOAT3(dock._41, dock._42, dock._43);
   _pos = PushFromBuilding(_pos, 5.0f);
@@ -272,7 +268,6 @@ void Incubator::RenderAlphas(float _predictionTime)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 entrances[3];
   entrances[0] = m_spiritEntrance[0]->GetWorldPosition(mat);
   entrances[1] = m_spiritEntrance[1]->GetWorldPosition(mat);

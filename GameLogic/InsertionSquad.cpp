@@ -728,7 +728,6 @@ void Squadie::Attack(DirectX::XMFLOAT3 const& _pos)
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // GetWorldMatrix still returns a legacy matrix -- T10's recorded seam.
     DirectX::XMFLOAT3 const fromPos = m_laser->GetWorldPosition(mat);
 
     // Both syncsfrand draws stay, in order and unconditional.
@@ -746,9 +745,6 @@ void Squadie::Attack(DirectX::XMFLOAT3 const& _pos)
     // Create ejected brass particle
 
     // The one legacy type left in this file, and deliberately: ShapeMarker::
-    // GetWorldMatrix still returns Matrix34 -- T10's recorded seam, because 43
-    // sites in fourteen GameLogic files read .pos or .f off it. Both are read
-    // here. It clears when that signature moves.
     DirectX::XMFLOAT4X4 brass = m_brass->GetWorldMatrix(mat);
 
     // Four syncfrand/syncsfrand draws, in the same order and count as before.

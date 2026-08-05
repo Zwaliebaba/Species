@@ -239,7 +239,6 @@ float LaserFence::GetFenceFullHeight()
 {
   DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 const marker1 = m_marker1->GetWorldPosition(mat);
   DirectX::XMFLOAT3 const marker2 = m_marker2->GetWorldPosition(mat);
 
@@ -628,6 +627,5 @@ DirectX::XMFLOAT3 LaserFence::GetTopPosition()
 {
   DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   return m_marker2->GetWorldPosition(mat);
 }

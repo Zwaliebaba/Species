@@ -700,7 +700,6 @@ bool Spider::AdvanceEggLaying()
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 const eggLayPos = m_eggLay->GetWorldPosition(mat);
 
     g_location->SpawnEntities(eggLayPos, m_id.GetTeamId(), -1, TypeEgg, 1, g_zeroVector, 0.0f);

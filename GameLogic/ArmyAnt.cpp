@@ -605,7 +605,6 @@ void ArmyAnt::GetCarryMarker(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel)
   DirectX::XMStoreFloat4x4(&mat,
                            BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&groundUp), DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   _pos = m_carryMarker->GetWorldPosition(mat);
   _vel = m_vel;
 }

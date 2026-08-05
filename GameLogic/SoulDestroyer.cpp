@@ -380,7 +380,6 @@ void SoulDestroyer::RecordHistoryPosition()
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 const tailPos = s_tailMarker->GetWorldPosition(mat);
   m_positionHistory.insert(m_positionHistory.begin(), tailPos);
 

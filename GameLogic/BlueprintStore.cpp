@@ -669,7 +669,6 @@ void BlueprintConsole::RenderPorts()
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), size);
     DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), size);
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 statusPos = s_controlPadStatus->GetWorldPosition(mat);
     statusPos.y = g_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
     statusPos.y += 5.0f;

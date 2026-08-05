@@ -425,7 +425,6 @@ void FenceSwitch::RenderLights()
         ShapeMarker* marker = m_lights[i];
         DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
         DirectX::XMFLOAT3 const lightPosStore = marker->GetWorldPosition(rootMat);
         DirectX::XMVECTOR const lightPos = DirectX::XMLoadFloat3(&lightPosStore);
 
@@ -495,7 +494,6 @@ DirectX::XMFLOAT3 FenceSwitch::GetConnectionLocation()
 
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   return m_connectionLocation->GetWorldPosition(rootMat);
 }
 

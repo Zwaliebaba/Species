@@ -65,7 +65,6 @@ void TrunkPort::SetDetail(int _detail)
   DirectX::XMFLOAT4X4 transform;
   DirectX::XMStoreFloat4x4(&transform, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 const worldPosStore = marker->GetWorldPosition(transform);
   DirectX::XMVECTOR const worldPos = DirectX::XMLoadFloat3(&worldPosStore);
 
@@ -144,9 +143,6 @@ void TrunkPort::Render(float predictionTime)
   DirectX::XMFLOAT4X4 portMat;
   DirectX::XMStoreFloat4x4(&portMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
-  // this block wants the marker's whole basis to orient the text, so destMat
-  // stays legacy until that seam closes.
   DirectX::XMFLOAT4X4 destMat = m_destination1->GetWorldMatrix(portMat);
   glColor4f(0.9f, 0.8f, 0.8f, 1.0f);
   g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
@@ -223,7 +219,6 @@ void TrunkPort::RenderAlphas(float predictionTime)
     DirectX::XMStoreFloat4x4(&transform,
                              BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     DirectX::XMFLOAT3 const markerPosStore = marker->GetWorldPosition(transform);
     DirectX::XMVECTOR const markerPos = DirectX::XMLoadFloat3(&markerPosStore);
     float maxDistance = 40.0f;

@@ -245,7 +245,6 @@ void Officer::RenderFlag(float _predictionTime)
             entityFront, entityUp,
             DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos))));
 
-  // GetWorldMatrix still returns a legacy matrix -- T10's recorded seam.
   DirectX::XMFLOAT3 const flagPos = m_flagMarker->GetWorldPosition(mat);
 
   int texId = -1;
