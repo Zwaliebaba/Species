@@ -328,12 +328,12 @@ bool App::LoadProfile()
 
     g_globalWorld = new GlobalWorld();
     g_globalWorld->LoadGame("GameUnlockAll.txt");
-    for (GlobalBuilding* building : g_globalWorld->m_buildings)
+    for (auto const& building : g_globalWorld->m_buildings)
     {
       if (building && building->m_type == Building::TypeTrunkPort)
         building->m_online = true;
     }
-    for (GlobalLocation* loc : g_globalWorld->m_locations)
+    for (auto const& loc : g_globalWorld->m_locations)
     {
       loc->m_available = true;
     }

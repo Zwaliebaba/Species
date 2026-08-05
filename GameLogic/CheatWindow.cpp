@@ -176,7 +176,7 @@ class EnableGeneratorAndMineButton : public SpeciesButton
       int generatorLocationId = g_globalWorld->GetLocationId("generator");
       int mineLocationId = g_globalWorld->GetLocationId("mine");
 
-      for (GlobalBuilding* gb : g_globalWorld->m_buildings)
+      for (auto const& gb : g_globalWorld->m_buildings)
       {
         if (gb && gb->m_locationId == generatorLocationId && gb->m_type == Building::TypeGenerator)
         {
@@ -201,7 +201,7 @@ class EnableReceiverAndBufferButton : public SpeciesButton
       int receiverLocationId = g_globalWorld->GetLocationId("receiver");
       int bufferLocationId = g_globalWorld->GetLocationId("PatternBuffer");
 
-      for (GlobalBuilding* gb : g_globalWorld->m_buildings)
+      for (auto const& gb : g_globalWorld->m_buildings)
       {
         if (gb && gb->m_locationId == receiverLocationId && gb->m_type == Building::TypeSpiritProcessor)
         {
@@ -223,7 +223,7 @@ class OpenAllLocationsButton : public SpeciesButton
 {
     void MouseUp()
     {
-      for (GlobalLocation* loc : g_globalWorld->m_locations)
+      for (auto const& loc : g_globalWorld->m_locations)
       {
         loc->m_available = true;
       }

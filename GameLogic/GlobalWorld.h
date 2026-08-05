@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "SphereRenderer.h"
 #include "NeuronMath.h"
@@ -127,8 +129,10 @@ class GlobalEventAction
 class GlobalEvent
 {
   public:
-    std::vector<GlobalEventCondition*> m_conditions;
-    std::vector<GlobalEventAction*> m_actions;
+    // Owns both. Before ownership T11 this class had no destructor at all, so
+    // every condition and every unexecuted action leaked with the event.
+    std::vector<std::unique_ptr<GlobalEventCondition>> m_conditions;
+    std::vector<std::unique_ptr<GlobalEventAction>> m_actions;
 
   public:
     GlobalEvent();
@@ -243,13 +247,19 @@ class SphereWorld
 class GlobalWorld
 {
   public:
-    GlobalInternet* m_globalInternet;
-    SphereWorld* m_sphereWorld;
-    GlobalResearch* m_research;
+    // GlobalInternet is only forward-declared here, so ~GlobalWorld stays
+    // declared here and defined in the .cpp where the type is complete.
+    std::unique_ptr<GlobalInternet> m_globalInternet;
+    std::unique_ptr<SphereWorld> m_sphereWorld;
+    std::unique_ptr<GlobalResearch> m_research;
 
-    std::vector<GlobalLocation*> m_locations;
-    std::vector<GlobalBuilding*> m_buildings;
-    std::vector<GlobalEvent*> m_events;
+    // GlobalWorld::m_buildings is NOT Location::m_buildings, which is a
+    // FastSlotMap whose indices are network identity, and is NOT
+    // LevelFile::m_buildings. Four members share the name, which is why
+    // check_containers.py skips it.
+    std::vector<std::unique_ptr<GlobalLocation>> m_locations;
+    std::vector<std::unique_ptr<GlobalBuilding>> m_buildings;
+    std::vector<std::unique_ptr<GlobalEvent>> m_events;
     int m_myTeamId;
 
     int m_editorMode;
@@ -283,8 +293,10 @@ class GlobalWorld
 
     int LocationHit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _dir, float locationRadius = 5000.0f);
 
-    void AddLocation(GlobalLocation* location);
-    void AddBuilding(GlobalBuilding* building);
+    // Both take ownership, and say so in the signature rather than in a
+    // comment a caller can miss.
+    void AddLocation(std::unique_ptr<GlobalLocation> _location);
+    void AddBuilding(std::unique_ptr<GlobalBuilding> _building);
 
     GlobalLocation* GetLocation(int _id);
     GlobalLocation* GetLocation(char const* _name);

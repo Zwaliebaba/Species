@@ -432,7 +432,7 @@ bool PylonStart::Advance()
 
   int generatorLocationId = g_globalWorld->GetLocationId("generator");
   GlobalBuilding* globalRefinery = nullptr;
-  for (GlobalBuilding* gb : g_globalWorld->m_buildings)
+  for (auto const& gb : g_globalWorld->m_buildings)
   {
     if (gb && gb->m_locationId == generatorLocationId && gb->m_type == TypeGenerator && gb->m_online)
     {

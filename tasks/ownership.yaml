@@ -942,7 +942,6 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: in_progress
     notes: |
       Split out of T5 on 2026-08-05, at the point T5 had converted its other
       seven owning files and the diff had reached twenty-seven files. Nothing
@@ -997,3 +996,92 @@ tasks:
       -- T6 does not have to land first -- but they must not be in flight at
       the same time, and the declared-file collision script in _next-batch.md
       cannot see it because App.cpp is not on either list.
+
+      DONE 2026-08-05, in Batch 5. Eight files, and the diff is net NEGATIVE in
+      code -- 100 added against 108 removed -- with 42 lines of added comment
+      on top. T1's notes say a stage-5 conversion that grows its files is doing
+      something other than moving ownership into the type system; that check
+      was run deliberately here and it passes.
+
+      EIGHT FILES, NOT THE SEVEN THE REACH MEASUREMENT PREDICTED, and the miss
+      is instructive because it is the same shape as the miss it was written to
+      catch. The Batch 5 measurement greped MEMBER NAMES -- who touches
+      m_locations, m_buildings, m_events -- and found the eight range-for
+      loops. It did not grep the ownership-TRANSFER API, so it missed
+      GlobalWorldEditorWindow.cpp, which never names a member: it calls
+      `new GlobalLocation()` and hands the result to AddLocation. A member-name
+      sweep cannot see a file that only touches the object in flight. Grep the
+      Add*/Set*/Register* entry points too.
+
+      WHAT EACH EXTERNAL FILE NEEDED, as the acceptance line asks:
+
+        GameLogic/Generator.cpp:435       loop -> auto const&
+        GameLogic/Mine.cpp:523            loop -> auto const&
+        GameLogic/TrunkPort.cpp:364       loop -> auto const&
+        GameLogic/CheatWindow.cpp:179     loop -> auto const&
+        GameLogic/CheatWindow.cpp:204     loop -> auto const&
+        GameLogic/CheatWindow.cpp:226     loop -> auto const&
+        Species/App.cpp:331               loop -> auto const&
+        Species/App.cpp:336               loop -> auto const&
+        GameLogic/GlobalWorldEditorWindow.cpp:71,79
+                                          make_unique + AddLocation(std::move)
+
+      Every loop body only dereferences or tests truthiness, both of which a
+      const unique_ptr& serves unchanged, so no body needed a .get(). The 69
+      g_globalWorld->m_research sites needed nothing at all, as predicted.
+
+      AddLocation AND AddBuilding NOW TAKE unique_ptr BY VALUE. They always
+      took ownership; the signature said `GlobalLocation*` and a caller had to
+      know. Same move ownership T9 made for EclRegisterWindow.
+
+      THE USE-AFTER-MOVE TRAP IS REAL IN THIS FILE and it appears twice.
+      AddLocation calls m_sphereWorld->AddLocation(location->m_id) AFTER
+      push_back, and AddLevelBuildingToGlobalBuildings writes gb->m_link and
+      gb->m_pos after it. Both take a raw observer with .get() before the move
+      and reach through that. A scan for a name used after std::move of itself
+      was run across all eight changed files and returns nothing.
+
+      THE DESTRUCTOR IS WRITTEN OUT RATHER THAN DEFAULTED, on purpose. unique_ptr
+      members destroy in reverse declaration order, which would have run all six
+      in the opposite order to the hand-written deletes. Nothing here is known to
+      reach anything else during teardown -- but ownership T6 is about to prove
+      that "known to" is doing a lot of work in this codebase, and keeping the
+      sequence identical cost two lines.
+
+      GLOBALEVENT LEAKED, AND NOW DOES NOT. It had no destructor at all, so
+      every condition and every unexecuted action died with the event and was
+      never freed. The implicit destructor over vectors of unique_ptr fixes it.
+      That is a real leak fixed as a side effect, not a behaviour change to
+      worry about -- nothing observed those objects after the event went.
+
+      SIX RAW DELETES REMAIN IN GlobalWorld.cpp AND THE ACCEPTANCE LINE ABOVE
+      IS THEREFORE NOT FULLY MET. Stated rather than glossed:
+
+        1. GlobalEventCondition::m_stringId and m_cutScene (4 sites: the
+           destructor and the two setters). These are char* from NewStr, which
+           is new char[], correctly paired with delete[]. The right conversion
+           is std::string -- stage 4, not stage 5 -- and it reaches
+           LevelFile.cpp's WRITER, where `if (gec->m_stringId)` becomes an
+           empty-vs-null question and byte-identity is owned by strings T8 and
+           T17. Doing it here would mix two migrations in one diff, which
+           CODING_STANDARDS forbids. NO STRINGS TASK OWNS THESE TWO MEMBERS
+           TODAY; T19 converted GlobalEventAction::m_filename and stopped.
+        2. ColourShapeFragment's `new RGBAColour[1]` (line 661). That allocates
+           into a ShapeFragment, which Shape owns, in NeuronClient. It is a
+           free function that happens to live in this file. Converting it is a
+           Shape task and no plan has one. Noted separately: that line does not
+           set m_numColours to 1 after allocating, which looks wrong, and is
+           left alone rather than fixed blind.
+        3. The `delete[] missionFileName` loop. Resource::ListResources returns
+           std::vector<char*>* -- an owning vector of owning char* -- and
+           freeing the elements is the caller's job under that API. The VECTOR
+           is now a unique_ptr, so `delete missionFileNames` is gone; the
+           element loop cannot go without changing Resource's signature.
+
+      NOT BUILT AND NOT RUN. No MSVC and no Windows client here. The seven
+      checks pass and the use-after-move scan is clean, but nothing in this
+      task has been compiled. GlobalWorld is on the Garden smoke-test path --
+      it is what loads Game.txt and holds the location list -- so a mistake
+      here would show at step 2, and ownership T6's run is not this task's run.
+
+    status: done

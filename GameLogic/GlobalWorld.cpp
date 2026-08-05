@@ -289,14 +289,14 @@ GlobalEvent::GlobalEvent() {}
 
 GlobalEvent::GlobalEvent(GlobalEvent& _other)
 {
-  for (GlobalEventCondition* condition : _other.m_conditions)
+  for (auto const& condition : _other.m_conditions)
   {
-    m_conditions.push_back(new GlobalEventCondition(*condition));
+    m_conditions.push_back(std::make_unique<GlobalEventCondition>(*condition));
   }
 
-  for (GlobalEventAction* action : _other.m_actions)
+  for (auto const& action : _other.m_actions)
   {
-    m_actions.push_back(new GlobalEventAction(*action));
+    m_actions.push_back(std::make_unique<GlobalEventAction>(*action));
   }
 }
 
@@ -304,7 +304,7 @@ bool GlobalEvent::Evaluate()
 {
   bool success = true;
 
-  for (GlobalEventCondition* condition : m_conditions)
+  for (auto const& condition : m_conditions)
   {
     if (!condition->Evaluate())
     {
@@ -321,10 +321,12 @@ bool GlobalEvent::Execute()
   if (m_actions.empty())
     return true;
 
-  GlobalEventAction* action = m_actions[0];
+  // Moved out before the erase, exactly as the raw pointer was read out before
+  // it: the action is executed after it has left the vector, and destroyed
+  // when this scope ends, which is where the `delete action` used to be.
+  std::unique_ptr<GlobalEventAction> action = std::move(m_actions[0]);
   m_actions.erase(m_actions.begin());
   action->Execute();
-  delete action;
 
   if (m_actions.empty())
     return true;
@@ -337,13 +339,11 @@ void GlobalEvent::MakeAlwaysTrue()
   if (m_conditions.size() == 1 && m_conditions[0]->m_type == GlobalEventCondition::AlwaysTrue)
     return;
 
-  for (GlobalEventCondition* condition : m_conditions)
-    delete condition;
   m_conditions.clear();
 
-  auto cond = new GlobalEventCondition();
+  auto cond = std::make_unique<GlobalEventCondition>();
   cond->m_type = GlobalEventCondition::AlwaysTrue;
-  m_conditions.push_back(cond);
+  m_conditions.push_back(std::move(cond));
 }
 
 void GlobalEvent::Read(TextReader* _in)
@@ -355,7 +355,7 @@ void GlobalEvent::Read(TextReader* _in)
   {
     char* conditionTypeName = _in->GetNextToken();
 
-    auto condition = new GlobalEventCondition;
+    auto condition = std::make_unique<GlobalEventCondition>();
     condition->m_type = condition->GetType(conditionTypeName);
     DEBUG_ASSERT(condition->m_type != -1);
 
@@ -382,7 +382,7 @@ void GlobalEvent::Read(TextReader* _in)
       break;
     }
 
-    m_conditions.push_back(condition);
+    m_conditions.push_back(std::move(condition));
   }
 
   //
@@ -397,9 +397,9 @@ void GlobalEvent::Read(TextReader* _in)
         break;
       DEBUG_ASSERT(stricmp(word, "action") == 0);
 
-      auto action = new GlobalEventAction;
+      auto action = std::make_unique<GlobalEventAction>();
       action->Read(_in);
-      m_actions.push_back(action);
+      m_actions.push_back(std::move(action));
     }
   }
 }
@@ -408,14 +408,14 @@ void GlobalEvent::Write(FileWriter* _out)
 {
   _out->printf("\tEvent ");
 
-  for (GlobalEventCondition* gec : m_conditions)
+  for (auto const& gec : m_conditions)
   {
     gec->Save(_out);
   }
 
   _out->printf("\n");
 
-  for (GlobalEventAction* gea : m_actions)
+  for (auto const& gea : m_actions)
   {
     gea->Write(_out);
   }
@@ -934,7 +934,7 @@ void SphereWorld::RenderTrunkLinks()
 
   glBegin(GL_QUADS);
 
-  for (GlobalBuilding* building : g_globalWorld->m_buildings)
+  for (auto const& building : g_globalWorld->m_buildings)
   {
     if (building->m_type == Building::TypeTrunkPort && building->m_link != -1)
     {
@@ -1097,7 +1097,7 @@ void SphereWorld::RenderIslands()
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Starburst.bmp"));
 
-  for (GlobalLocation* loc : g_globalWorld->m_locations)
+  for (auto const& loc : g_globalWorld->m_locations)
   {
     if (loc->m_available || g_editing)
     {
@@ -1135,7 +1135,7 @@ void SphereWorld::RenderIslands()
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-  for (GlobalLocation* loc : g_globalWorld->m_locations)
+  for (auto const& loc : g_globalWorld->m_locations)
   {
     if (loc->m_available || g_editing)
     {
@@ -1208,50 +1208,51 @@ GlobalWorld::GlobalWorld()
     m_nextBuildingId(0),
     m_locationRequested(-1)
 {
-  m_globalInternet = new GlobalInternet();
-  m_sphereWorld = new SphereWorld();
-  m_research = new GlobalResearch();
+  m_globalInternet = std::make_unique<GlobalInternet>();
+  m_sphereWorld = std::make_unique<SphereWorld>();
+  m_research = std::make_unique<GlobalResearch>();
 }
 
 GlobalWorld::GlobalWorld(GlobalWorld& _other)
-  : m_globalInternet(nullptr),
-    m_sphereWorld(nullptr),
-    m_myTeamId(_other.m_myTeamId),
+  : m_myTeamId(_other.m_myTeamId),
     m_nextLocationId(0),
     m_nextBuildingId(0),
     m_locationRequested(-1)
 {
-  m_research = new GlobalResearch();
+  // m_globalInternet and m_sphereWorld are deliberately left null here, as
+  // they were before: this constructor is only used by TestHarness and does
+  // not build the subsystems.
+  m_research = std::make_unique<GlobalResearch>();
 
-  for (GlobalLocation* location : _other.m_locations)
+  for (auto const& location : _other.m_locations)
   {
-    m_locations.push_back(new GlobalLocation(*location));
+    m_locations.push_back(std::make_unique<GlobalLocation>(*location));
   }
-  for (GlobalBuilding* building : _other.m_buildings)
+  for (auto const& building : _other.m_buildings)
   {
-    m_buildings.push_back(new GlobalBuilding(*building));
+    m_buildings.push_back(std::make_unique<GlobalBuilding>(*building));
   }
-  for (GlobalEvent* event : _other.m_events)
+  for (auto const& event : _other.m_events)
   {
-    m_events.push_back(new GlobalEvent(*event));
+    m_events.push_back(std::make_unique<GlobalEvent>(*event));
   }
 }
 
 GlobalWorld::~GlobalWorld()
 {
-  for (GlobalLocation* location : m_locations)
-    delete location;
+  // Written out rather than left to the implicit destructor, and the order is
+  // the point. unique_ptr members are destroyed in reverse declaration order,
+  // which would run these six in the opposite order to the hand-written
+  // deletes this replaces. Nothing here is known to reach anything else during
+  // teardown, but "not known to" is not "does not", and this is a two-line
+  // cost to keep the sequence identical.
   m_locations.clear();
-  for (GlobalBuilding* building : m_buildings)
-    delete building;
   m_buildings.clear();
-  for (GlobalEvent* event : m_events)
-    delete event;
   m_events.clear();
 
-  delete m_globalInternet;
-  delete m_sphereWorld;
-  delete m_research;
+  m_globalInternet.reset();
+  m_sphereWorld.reset();
+  m_research.reset();
 }
 
 void GlobalWorld::Advance()
@@ -1390,7 +1391,7 @@ int GlobalWorld::LocationHit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 co
 {
   // float locationRadius = 5000.0f;
 
-  for (GlobalLocation* gl : m_locations)
+  for (auto const& gl : m_locations)
   {
     DirectX::XMFLOAT3 const locPos = GetLocationPosition(gl->m_id);
 
@@ -1404,10 +1405,10 @@ int GlobalWorld::LocationHit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 co
 
 GlobalLocation* GlobalWorld::GetLocation(int _id)
 {
-  for (GlobalLocation* loc : m_locations)
+  for (auto const& loc : m_locations)
   {
     if (loc->m_id == _id)
-      return loc;
+      return loc.get();
   }
 
   return nullptr;
@@ -1443,7 +1444,7 @@ GlobalLocation* GlobalWorld::GetLocation(const char* _name)
 
 int GlobalWorld::GetLocationId(const char* _name)
 {
-  for (GlobalLocation* loc : m_locations)
+  for (auto const& loc : m_locations)
   {
     DEBUG_ASSERT(loc);
     if (stricmp(loc->m_name.c_str(), _name) == 0)
@@ -1508,17 +1509,23 @@ GlobalBuilding* GlobalWorld::GetBuilding(int _id, int _locationId)
   if (_id == -1 || _locationId == -1)
     return nullptr;
 
-  for (GlobalBuilding* buil : m_buildings)
+  for (auto const& buil : m_buildings)
   {
     if (buil->m_id == _id && buil->m_locationId == _locationId)
-      return buil;
+      return buil.get();
   }
 
   return nullptr;
 }
 
-void GlobalWorld::AddLocation(GlobalLocation* location)
+void GlobalWorld::AddLocation(std::unique_ptr<GlobalLocation> _location)
 {
+  // The id is read through an observer taken BEFORE the move, because
+  // m_sphereWorld->AddLocation needs it after the vector has taken ownership.
+  // Reaching through _location there would be a use-after-move -- the exact
+  // defect ownership T5 introduced twice and caught before commit.
+  GlobalLocation* location = _location.get();
+
   if (location->m_id == -1)
   {
     location->m_id = m_nextLocationId;
@@ -1527,21 +1534,21 @@ void GlobalWorld::AddLocation(GlobalLocation* location)
   else if (location->m_id >= m_nextLocationId)
     m_nextLocationId = location->m_id + 1;
 
-  m_locations.push_back(location);
+  m_locations.push_back(std::move(_location));
   m_sphereWorld->AddLocation(location->m_id);
 }
 
-void GlobalWorld::AddBuilding(GlobalBuilding* building)
+void GlobalWorld::AddBuilding(std::unique_ptr<GlobalBuilding> _building)
 {
-  if (building->m_id == -1)
+  if (_building->m_id == -1)
   {
-    building->m_id = m_nextBuildingId;
+    _building->m_id = m_nextBuildingId;
     m_nextBuildingId++;
   }
-  else if (building->m_id >= m_nextBuildingId)
-    m_nextBuildingId = building->m_id + 1;
+  else if (_building->m_id >= m_nextBuildingId)
+    m_nextBuildingId = _building->m_id + 1;
 
-  m_buildings.push_back(building);
+  m_buildings.push_back(std::move(_building));
 }
 
 void GlobalWorld::WriteLocations(FileWriter* _out)
@@ -1550,7 +1557,7 @@ void GlobalWorld::WriteLocations(FileWriter* _out)
   _out->printf("\t# Id  Avail                   mapFile                    missionFile\n");
   _out->printf("\t# ==================================================================\n");
 
-  for (GlobalLocation* location : m_locations)
+  for (auto const& location : m_locations)
   {
     _out->printf("\t%4d %4d %30s %40s\n", location->m_id, static_cast<int>(location->m_available), location->m_mapFilename.c_str(),
                  location->m_missionFilename.c_str());
@@ -1565,7 +1572,7 @@ void GlobalWorld::WriteBuildings(FileWriter* _out)
   _out->printf("\t# Id  teamId  locId   type   link  online\n");
   _out->printf("\t# =======================================\n");
 
-  for (GlobalBuilding* building : m_buildings)
+  for (auto const& building : m_buildings)
   {
     _out->printf("\t%4d %4d %6d %6d %6d %6d\n", building->m_id, building->m_teamId, building->m_locationId, building->m_type, building->m_link,
                  building->m_online);
@@ -1578,7 +1585,7 @@ void GlobalWorld::WriteEvents(FileWriter* _out)
 {
   _out->printf("Events_StartDefinition\n");
 
-  for (GlobalEvent* ge : m_events)
+  for (auto const& ge : m_events)
   {
     ge->Write(_out);
   }
@@ -1598,7 +1605,7 @@ void GlobalWorld::ParseLocations(TextReader* _in)
     if (stricmp(word, "Locations_EndDefinition") == 0)
       return;
 
-    auto location = new GlobalLocation();
+    auto location = std::make_unique<GlobalLocation>();
 
     location->m_id = atoi(word);
     location->m_available = static_cast<bool>(atoi(_in->GetNextToken()));
@@ -1614,7 +1621,7 @@ void GlobalWorld::ParseLocations(TextReader* _in)
     location->m_name =
       location->m_mapFilename.size() >= 7 ? location->m_mapFilename.substr(3, location->m_mapFilename.size() - 7) : location->m_mapFilename;
 
-    AddLocation(location);
+    AddLocation(std::move(location));
   }
 }
 
@@ -1630,7 +1637,7 @@ void GlobalWorld::ParseBuildings(TextReader* _in)
     if (stricmp(word, "buildings_enddefinition") == 0)
       return;
 
-    auto building = new GlobalBuilding();
+    auto building = std::make_unique<GlobalBuilding>();
 
     building->m_id = atoi(word);
     building->m_teamId = atoi(_in->GetNextToken());
@@ -1639,7 +1646,7 @@ void GlobalWorld::ParseBuildings(TextReader* _in)
     building->m_link = atoi(_in->GetNextToken());
     building->m_online = atoi(_in->GetNextToken());
 
-    AddBuilding(building);
+    AddBuilding(std::move(building));
   }
 }
 
@@ -1656,9 +1663,9 @@ void GlobalWorld::ParseEvents(TextReader* _in)
 
     DEBUG_ASSERT(stricmp(word, "Event") == 0);
 
-    auto event = new GlobalEvent();
+    auto event = std::make_unique<GlobalEvent>();
     event->Read(_in);
-    m_events.push_back(event);
+    m_events.push_back(std::move(event));
   }
 }
 
@@ -1669,12 +1676,17 @@ void GlobalWorld::AddLevelBuildingToGlobalBuildings(Building* _building, int _lo
     GlobalBuilding* gb = GetBuilding(_building->m_id.GetUniqueId(), _locId);
     if (!gb)
     {
-      gb = new GlobalBuilding();
+      // gb stays an observer across the move, because both the m_link write
+      // below and the m_pos write after the if still reach the object once the
+      // vector owns it. It is also the observer for the branch where the
+      // building already existed, which is why it is not a unique_ptr itself.
+      auto owned = std::make_unique<GlobalBuilding>();
+      gb = owned.get();
       gb->m_type = _building->m_type;
       gb->m_locationId = _locId;
       gb->m_id = _building->m_id.GetUniqueId();
       gb->m_teamId = _building->m_id.GetTeamId();
-      m_buildings.push_back(gb);
+      m_buildings.push_back(std::move(owned));
 
       if (_building->m_type == Building::TypeTrunkPort)
         gb->m_link = static_cast<TrunkPort*>(_building)->m_targetLocationId;
@@ -1685,17 +1697,21 @@ void GlobalWorld::AddLevelBuildingToGlobalBuildings(Building* _building, int _lo
 
 void GlobalWorld::LoadGame(const char* _filename)
 {
-  TextReader* in = nullptr;
+  // Same scoped-resource shape ownership T5 converted in LevelFile.cpp: the
+  // owner is a unique_ptr and everything below reads through a raw observer.
+  std::unique_ptr<TextReader> inOwned;
 
   if (!g_editing)
   {
     const std::string fullFilename = std::format("{}users/{}/{}", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
     if (DoesFileExist(fullFilename.c_str()))
-      in = new TextFileReader(fullFilename.c_str());
+      inOwned = std::make_unique<TextFileReader>(fullFilename.c_str());
   }
 
-  if (!in)
-    in = g_resource->GetTextReader(_filename);
+  if (!inOwned)
+    inOwned.reset(g_resource->GetTextReader(_filename));
+
+  TextReader* in = inOwned.get();
 
   if (in)
   {
@@ -1718,7 +1734,9 @@ void GlobalWorld::LoadGame(const char* _filename)
     }
   }
 
-  delete in;
+  // Released here rather than at scope end, which is where the `delete in`
+  // this replaces sat: the map-file loading below is long and does not use it.
+  inOwned.reset();
   in = nullptr;
 
   //
@@ -1729,7 +1747,7 @@ void GlobalWorld::LoadGame(const char* _filename)
   //
   // Load all map files into memory
 
-  for (GlobalLocation* loc : m_locations)
+  for (auto const& loc : m_locations)
   {
     // Load all the level files for the location
     LevelFile levFile("null", loc->m_mapFilename.c_str());
@@ -1739,7 +1757,11 @@ void GlobalWorld::LoadGame(const char* _filename)
     }
 
     const std::string filter = std::format("Mission{}*.txt", GetLocationName(loc->m_id));
-    std::vector<char*>* missionFileNames = g_resource->ListResources("Levels/", filter.c_str(), false);
+    // Resource::ListResources hands back an owning vector of owning char*.
+    // The vector is adopted here; the elements cannot be, because freeing them
+    // is still the caller's job under that API. Fixing the API belongs to
+    // Resource, and no task owns it today.
+    std::unique_ptr<std::vector<char*>> const missionFileNames(g_resource->ListResources("Levels/", filter.c_str(), false));
     for (const char* missionFileName : *missionFileNames)
     {
       LevelFile levFile(missionFileName, loc->m_mapFilename.c_str());
@@ -1773,7 +1795,6 @@ void GlobalWorld::LoadGame(const char* _filename)
     }
     for (char* missionFileName : *missionFileNames)
       delete[] missionFileName;
-    delete missionFileNames;
   }
 
   EvaluateEvents();
@@ -1781,20 +1802,22 @@ void GlobalWorld::LoadGame(const char* _filename)
 
 void GlobalWorld::SaveGame(const char* _filename)
 {
-  FileWriter* out = nullptr;
+  std::unique_ptr<FileWriter> outOwned;
 
   if (!g_editing && stricmp(g_userProfileName.c_str(), "none") != 0)
   {
     const std::string fullFilename = std::format("{}users/{}/{}", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
 #ifdef TARGET_DEBUG
-    out = new FileWriter(fullFilename.c_str(), false);
+    outOwned = std::make_unique<FileWriter>(fullFilename.c_str(), false);
 #else
-    out = new FileWriter(fullFilename.c_str(), true);
+    outOwned = std::make_unique<FileWriter>(fullFilename.c_str(), true);
 #endif
   }
 
-  if (!out)
-    out = g_resource->GetFileWriter(_filename, false);
+  if (!outOwned)
+    outOwned.reset(g_resource->GetFileWriter(_filename, false));
+
+  FileWriter* out = outOwned.get();
 
   WriteLocations(out);
   WriteBuildings(out);
@@ -1802,7 +1825,8 @@ void GlobalWorld::SaveGame(const char* _filename)
   WriteTutorial(out);
   WriteEvents(out);
 
-  delete out;
+  // The `delete out` this replaces was the last statement in the function, so
+  // the file is still closed and flushed at the same point.
 }
 
 void GlobalWorld::WriteTutorial(FileWriter* _out) {}
@@ -1826,7 +1850,8 @@ void GlobalWorld::ParseTutorial(TextReader* _in)
 
 void GlobalWorld::LoadLocations(const char* _filename)
 {
-  TextReader* in = g_resource->GetTextReader(_filename);
+  std::unique_ptr<TextReader> const inOwned(g_resource->GetTextReader(_filename));
+  TextReader* in = inOwned.get();
 
   while (in->ReadLine())
   {
@@ -1842,24 +1867,21 @@ void GlobalWorld::LoadLocations(const char* _filename)
     if (location)
       location->m_pos = DirectX::XMFLOAT3(posX, posY, posZ);
   }
-
-  delete in;
 }
 
 void GlobalWorld::SaveLocations(const char* _filename)
 {
-  FileWriter* out = g_resource->GetFileWriter(_filename, false);
+  std::unique_ptr<FileWriter> const outOwned(g_resource->GetFileWriter(_filename, false));
+  FileWriter* out = outOwned.get();
 
   out->printf("# ================================\n");
   out->printf("# id   x        y        z\n");
   out->printf("# ================================\n\n");
 
-  for (GlobalLocation* loc : m_locations)
+  for (auto const& loc : m_locations)
   {
     out->printf("%-6d %-8.2f %-8.2f %-8.2f\n", loc->m_id, loc->m_pos.x, loc->m_pos.y, loc->m_pos.z);
   }
-
-  delete out;
 }
 
 // Find the lowest unused building ID in the current location
@@ -1886,7 +1908,7 @@ bool GlobalWorld::EvaluateEvents()
 
   for (int i = 0; i < static_cast<int>(m_events.size()); ++i)
   {
-    GlobalEvent* event = m_events[i];
+    GlobalEvent* event = m_events[i].get();
 
     if (event->Evaluate())
     {
@@ -1894,8 +1916,9 @@ bool GlobalWorld::EvaluateEvents()
       bool amIDone = event->Execute();
       if (amIDone)
       {
+        // erase destroys the event, which is what the `delete event` that
+        // followed it used to do. Nothing reads `event` after this point.
         m_events.erase(m_events.begin() + i);
-        delete event;
         --i;
       }
       return true;
