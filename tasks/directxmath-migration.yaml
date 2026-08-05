@@ -2010,9 +2010,14 @@ tasks:
       ParticleSystem.h and ParticleSystem.cpp are fully converted. Skip both
       when picking this up.
 
-      STILL LEGACY: Weapons (103 occurrences), Rocket (77), Spam (36). 329 in
-      total when this started, of which 113 are done — ParticleSystem,
-      Explosion, Spirit, Flag, TaskManager and Airstrike.
+      STILL LEGACY: Weapons (103 occurrences) and Rocket (77). 329 in total
+      when this started, of which 149 are done — ParticleSystem, Explosion,
+      Spirit, Flag, TaskManager, Airstrike and Spam.
+
+      THE DUPLICATE-LOCAL SCAN FALSE-POSITIVES ON SIBLING BLOCKS. It flagged
+      seven names in Spam and two in Airstrike, and every one was two separate
+      for-loop or if bodies rather than one scope. Verify each hit by reading
+      the braces; the scan cannot tell a sibling block from a redeclaration.
 
       g_upVector AND g_zeroVector ARE STILL Vector3, which is failure mode 7
       pointing the other way and it will recur in all three remaining files.

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "DebugRender.h"
 #include "TextRenderer.h"
@@ -35,7 +36,9 @@ Spam::Spam()
   m_type = TypeSpam;
   m_timer = syncfrand(SpamReloadTime());
 
-  AsLegacy(m_front).RotateAroundY(frand(2.0f * M_PI));
+  // RotateAroundY was FastRotateAround(g_upVector, angle); the pinned
+  // NativeRotationYMatchesLegacyRotateAroundY test covers this exact pair.
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(frand(2.0f * M_PI))));
 
   SetShape(g_resource->GetShape("ResearchItem.shp"));
 }
@@ -52,7 +55,8 @@ void Spam::SetDetail(int _detail)
     m_pos.y += 20.0f;
   }
 
-  Matrix34 mat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
   m_centrePos = m_shape->CalculateCentre(mat);
   m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 }
@@ -72,7 +76,8 @@ void Spam::Damage(float _damage)
     float percentDead = 1.0f - m_damage / SPAM_DAMAGE;
     percentDead = std::min(percentDead, 1.0f);
     percentDead = std::max(percentDead, 0.0f);
-    Matrix34 mat(m_front, g_upVector, m_pos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
     g_explosionManager.AddExplosion(m_shape, mat, percentDead);
   }
 
@@ -108,16 +113,32 @@ void Spam::Render(float _predictionTime)
   //    Matrix34 mat( predictedFront, g_upVector, predictedPos );
   //    m_shape->Render( _predictionTime, mat );
 
-  Vector3 rotateAround = g_upVector;
-  rotateAround.RotateAroundX(g_gameTime * 1.0f);
-  rotateAround.RotateAroundZ(g_gameTime * 0.7f);
-  rotateAround.Normalise();
+  // RotateAroundX/Y/Z on a Vector3 were FastRotateAround about that axis, which
+  // is XMVector3Rotate with an axis quaternion — or equivalently a transform by
+  // XMMatrixRotationX/Z, which is what the pinned NativeRotationYMatchesLegacy
+  // test asserts for the Y case.
+  DirectX::XMVECTOR rotateAround = DirectX::g_XMIdentityR1;
+  rotateAround = DirectX::XMVector3Transform(rotateAround, DirectX::XMMatrixRotationX(g_gameTime * 1.0f));
+  rotateAround = DirectX::XMVector3Transform(rotateAround, DirectX::XMMatrixRotationZ(g_gameTime * 0.7f));
+  rotateAround = DirectX::XMVector3Normalize(rotateAround);
 
-  AsLegacy(m_front).RotateAround(rotateAround * g_advanceTime);
-  AsLegacy(m_up).RotateAround(rotateAround * g_advanceTime);
+  // RotateAround(axis) took the ANGLE FROM THE AXIS'S MAGNITUDE and returned
+  // early below 1e-8 squared. rotateAround is normalised immediately above, so
+  // the magnitude here is exactly g_advanceTime and the guard is what it always
+  // was: no rotation when the frame time is negligible.
+  if (g_advanceTime * g_advanceTime >= 1e-8f)
+  {
+    DirectX::XMMATRIX const spin = DirectX::XMMatrixRotationAxis(rotateAround, g_advanceTime);
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), spin));
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_up), spin));
+  }
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
-  Matrix34 mat(m_front, m_up, predictedPos);
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&predictedPos)));
 
   m_shape->Render(0.0f, mat);
 }
@@ -128,8 +149,11 @@ void Spam::RenderAlphas(float _predictionTime)
   // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,100,0), 10.0f, "timer %d", (int) m_timer );
   // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,90,0), 10.0f, "Damage %d", (int) m_damage );
 
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  // GetUp and GetRight still return Vector3 until T12/T22; the seam converts.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   glDepthMask(false);
   glEnable(GL_BLEND);
@@ -148,12 +172,14 @@ void Spam::RenderAlphas(float _predictionTime)
 
   float alpha = 1.0f;
 
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
-  Vector3 centreToMpos = AsLegacy(m_pos) - AsLegacy(m_centrePos);
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
+  DirectX::XMVECTOR const centreToMpos = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_centrePos));
 
   for (int i = 0; i < maxBlobs; ++i)
   {
-    Vector3 pos = predictedPos + centreToMpos;
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(&pos, DirectX::XMVectorAdd(predictedPos, centreToMpos));
     pos.x += sinf(timeIndex + i) * i * 0.3f;
     pos.y += cosf(timeIndex + i) * sinf(i * 10) * 5;
     pos.z += cosf(timeIndex + i) * i * 0.3f;
@@ -169,13 +195,16 @@ void Spam::RenderAlphas(float _predictionTime)
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    DirectX::XMVECTOR const posVec = DirectX::XMLoadFloat3(&pos);
+    DirectX::XMVECTOR const rightSized = DirectX::XMVectorScale(camRight, size);
+    DirectX::XMVECTOR const upSized = DirectX::XMVectorScale(camUp, size);
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(posVec, rightSized), upSized));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(posVec, rightSized), upSized));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(posVec, rightSized), upSized));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(posVec, rightSized), upSized));
     glEnd();
   }
 
@@ -196,7 +225,8 @@ void Spam::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < numStars; ++i)
   {
-    Vector3 pos = predictedPos + centreToMpos;
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(&pos, DirectX::XMVectorAdd(predictedPos, centreToMpos));
     pos.x += sinf(timeIndex + i) * i * 0.3f;
     pos.y += (cosf(timeIndex + i) * cosf(i * 10) * 2);
     pos.z += cosf(timeIndex + i) * i * 0.3f;
@@ -213,13 +243,16 @@ void Spam::RenderAlphas(float _predictionTime)
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    DirectX::XMVECTOR const posVec = DirectX::XMLoadFloat3(&pos);
+    DirectX::XMVECTOR const rightSized = DirectX::XMVectorScale(camRight, size);
+    DirectX::XMVECTOR const upSized = DirectX::XMVectorScale(camUp, size);
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(posVec, rightSized), upSized));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(posVec, rightSized), upSized));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(posVec, rightSized), upSized));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(posVec, rightSized), upSized));
     glEnd();
   }
 
@@ -234,9 +267,16 @@ void Spam::SpawnInfection()
 
   for (int i = 0; i < 20; ++i)
   {
-    Vector3 vel = g_upVector;
-    vel += Vector3(syncsfrand(1.0f), syncfrand(2.0f), syncsfrand(1.0f));
-    vel.SetLength(100.0f);
+    // THREE SYNCHRONISED DRAWS IN ONE CONSTRUCTOR CALL, and C++ leaves the
+    // argument evaluation order unspecified. That is a pre-existing determinism
+    // hazard, not one this conversion introduces: the shape is preserved
+    // exactly — same three calls, same source order, same compiler — so
+    // whatever MSVC did before, it still does.
+    DirectX::XMFLOAT3 const wobble(syncsfrand(1.0f), syncfrand(2.0f), syncsfrand(1.0f));
+    DirectX::XMFLOAT3 vel;
+    DirectX::XMStoreFloat3(
+      &vel,
+      DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVectorAdd(DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&wobble))), 100.0f));
 
     SpamInfection* infection = new SpamInfection();
     infection->m_pos = m_centrePos;
@@ -258,7 +298,8 @@ bool Spam::Advance()
 
   if (!m_onGround)
   {
-    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                DirectX::XMLoadFloat3(&m_pos)));
 
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     if (m_pos.y <= landHeight + 20.0f)
@@ -267,29 +308,34 @@ bool Spam::Advance()
       m_pos.y = landHeight + 20.0f;
       m_vel.x += syncsfrand(20.0f);
       m_vel.z += syncsfrand(30.0f);
-      float speed = AsLegacy(m_vel).Mag();
+      float speed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel)));
       m_vel.y = 0.0f;
-      AsLegacy(m_vel).SetLength(speed);
+      DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)), speed));
     }
 
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
     m_centrePos = m_shape->CalculateCentre(mat);
   }
   else if (m_onGround)
   {
-    if (AsLegacy(m_vel).Mag() > 1.0f)
+    if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) > 1.0f)
     {
-      AsLegacy(m_vel) *= (1.0f - SERVER_ADVANCE_PERIOD * 0.3f);
-      AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+      DirectX::XMVECTOR const damped = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f - SERVER_ADVANCE_PERIOD * 0.3f);
+      DirectX::XMStoreFloat3(&m_vel, damped);
+      DirectX::XMStoreFloat3(&m_pos,
+                             DirectX::XMVectorMultiplyAdd(damped, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos)));
       float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
       m_pos.y = landHeight + 20.0f;
 
-      Matrix34 mat(m_front, m_up, m_pos);
+      DirectX::XMFLOAT4X4 mat;
+      DirectX::XMStoreFloat4x4(&mat,
+                               BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
       m_centrePos = m_shape->CalculateCentre(mat);
     }
     else
     {
-      AsLegacy(m_vel).Zero();
+      m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     }
 
     //
@@ -305,8 +351,8 @@ bool Spam::Advance()
           bool intersect = SphereSphereIntersection(m_centrePos, m_radius, b->m_centrePos, b->m_radius);
           if (intersect)
           {
-            Vector3 dir = (AsLegacy(m_pos) - AsLegacy(b->m_pos));
-            AsLegacy(m_vel) += dir * 0.25f;
+            DirectX::XMVECTOR const dir = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&b->m_pos));
+            DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorMultiplyAdd(dir, DirectX::XMVectorReplicate(0.25f), DirectX::XMLoadFloat3(&m_vel)));
           }
         }
       }
@@ -387,7 +433,8 @@ bool SpamInfection::SearchForRandomPosition()
   Building* building = g_location->GetBuilding(m_parentId);
   if (building)
   {
-    float distance = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag();
+    float distance = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
     if (distance > 400.0f)
     {
       m_targetPos = building->m_pos;
@@ -423,7 +470,8 @@ bool SpamInfection::SearchForSpirits()
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
+      float theDist =
+        DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&s->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
       if (theDist <= SPAMINFECTION_MAXSEARCHRANGE && theDist >= SPAMINFECTION_MINSEARCHRANGE && theDist < nearest &&
           s->m_state == Spirit::StateFloating && s->m_pos.y > 10.0f)
@@ -516,9 +564,9 @@ void SpamInfection::AdvanceAttackingEntity()
     int numFlashes = 5 + speciesRandom() % 5;
     for (int i = 0; i < numFlashes; ++i)
     {
-      Vector3 vel(sfrand(15.0f), frand(15.0f), sfrand(15.0f));
+      DirectX::XMFLOAT3 vel(sfrand(15.0f), frand(15.0f), sfrand(15.0f));
       float size = i * 30;
-      Vector3 pos = AsLegacy(m_pos) + Vector3(0, 50, 0);
+      DirectX::XMFLOAT3 pos(m_pos.x, m_pos.y + 50.0f, m_pos.z);
       g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeFire, size);
     }
 
@@ -562,9 +610,9 @@ void SpamInfection::AdvanceAttackingSpirit()
     int numFlashes = 5 + speciesRandom() % 5;
     for (int i = 0; i < numFlashes; ++i)
     {
-      Vector3 vel(sfrand(15.0f), frand(15.0f), sfrand(15.0f));
+      DirectX::XMFLOAT3 vel(sfrand(15.0f), frand(15.0f), sfrand(15.0f));
       float size = i * 30;
-      Vector3 pos = AsLegacy(m_pos) + Vector3(0, 50, 0);
+      DirectX::XMFLOAT3 pos(m_pos.x, m_pos.y + 50.0f, m_pos.z);
       g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeFire, size);
     }
 
@@ -583,12 +631,17 @@ bool SpamInfection::AdvanceToTargetPosition()
     m_positionHistory.erase(m_positionHistory.begin() + i);
   }
 
-  Vector3 targetVel = (m_targetPos - AsLegacy(m_pos)).SetLength(200.0f);
+  DirectX::XMVECTOR const targetVel = DirectX::XMVectorScale(
+    DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_pos))), 200.0f);
   float factor = SERVER_ADVANCE_PERIOD * 0.5f;
-  m_vel = AsLegacy(m_vel) * (1.0f - factor) + targetVel * factor;
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
+  DirectX::XMVECTOR const newVel =
+    DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f - factor), DirectX::XMVectorScale(targetVel, factor));
+  DirectX::XMStoreFloat3(&m_vel, newVel);
+  DirectX::XMStoreFloat3(&m_pos,
+                         DirectX::XMVectorMultiplyAdd(newVel, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos)));
 
-  float distance = (m_targetPos - AsLegacy(m_pos)).Mag();
+  float distance =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_pos))));
   return (distance < 20.0f);
 }
 
@@ -615,7 +668,8 @@ bool SpamInfection::Advance()
 
 void SpamInfection::Render(float _time)
 {
-  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _time;
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_time), DirectX::XMLoadFloat3(&m_pos));
 
   // RenderSphere( predictedPos, 200.0f, RGBAColour(255,0,0,255) );
   // RenderArrow( predictedPos, m_targetPos, 1.0f, RGBAColour(255,255,255,255) );
@@ -627,7 +681,9 @@ void SpamInfection::Render(float _time)
   maxLength = std::max(maxLength, 2);
   maxLength = std::min(maxLength, static_cast<int>(m_positionHistory.size()));
 
-  Vector3 camPos = g_camera->GetPos();
+  // GetPos still returns Vector3 until T12/T22; the seam converts.
+  DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+  DirectX::XMVECTOR const camPos = DirectX::XMLoadFloat3(&camPosStore);
   int numRepeats = 4;
 
   glEnable(GL_TEXTURE_2D);
@@ -642,37 +698,40 @@ void SpamInfection::Render(float _time)
       float alpha = 1.0f - i / (float)maxLength;
       alpha *= 0.75f;
       glColor4f(1.0f, 0.1f, 0.1f, alpha);
-      Vector3 thisPos = *&m_positionHistory[i];
-      Vector3 lastPos = *&m_positionHistory[i - 1];
-      Vector3 rightAngle = (thisPos - lastPos) ^ (camPos - thisPos);
-      rightAngle.SetLength(size);
+      DirectX::XMVECTOR const thisPos = DirectX::XMLoadFloat3(&m_positionHistory[i]);
+      DirectX::XMVECTOR const lastPos = DirectX::XMLoadFloat3(&m_positionHistory[i - 1]);
+      // operator^ was the cross product; SetLength is normalise-then-scale.
+      DirectX::XMVECTOR const rightAngle = DirectX::XMVectorScale(
+        DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(thisPos, lastPos), DirectX::XMVectorSubtract(camPos, thisPos))),
+        size);
       glBegin(GL_QUADS);
       glTexCoord2f(0.2f, 0.0f);
-      glVertex3fv((thisPos - rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(thisPos, rightAngle));
       glTexCoord2f(0.2f, 1.0f);
-      glVertex3fv((thisPos + rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorAdd(thisPos, rightAngle));
       glTexCoord2f(0.8f, 1.0f);
-      glVertex3fv((lastPos + rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorAdd(lastPos, rightAngle));
       glTexCoord2f(0.8f, 0.0f);
-      glVertex3fv((lastPos - rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(lastPos, rightAngle));
       glEnd();
     }
     if (static_cast<int>(m_positionHistory.size()) > 0)
     {
       glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-      Vector3 lastPos = *&m_positionHistory[0];
-      Vector3 thisPos = predictedPos;
-      Vector3 rightAngle = (thisPos - lastPos) ^ (camPos - thisPos);
-      rightAngle.SetLength(size);
+      DirectX::XMVECTOR const lastPos = DirectX::XMLoadFloat3(&m_positionHistory[0]);
+      DirectX::XMVECTOR const thisPos = predictedPos;
+      DirectX::XMVECTOR const rightAngle = DirectX::XMVectorScale(
+        DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(thisPos, lastPos), DirectX::XMVectorSubtract(camPos, thisPos))),
+        size);
       glBegin(GL_QUADS);
       glTexCoord2f(0.2f, 0.0f);
-      glVertex3fv((thisPos - rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(thisPos, rightAngle));
       glTexCoord2f(0.2f, 1.0f);
-      glVertex3fv((thisPos + rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorAdd(thisPos, rightAngle));
       glTexCoord2f(0.8f, 1.0f);
-      glVertex3fv((lastPos + rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorAdd(lastPos, rightAngle));
       glTexCoord2f(0.8f, 0.0f);
-      glVertex3fv((lastPos - rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(lastPos, rightAngle));
       glEnd();
     }
   }

@@ -63,10 +63,13 @@ class SpamInfection : public WorldObject
     float m_retargetTimer;
     WorldObjectId m_targetId;
     int m_spiritId;
-    Vector3 m_targetPos;
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
     float m_life;
 
-    std::vector<Vector3> m_positionHistory;
+    // Values, not pointers — Virii and Engineer both have a m_positionHistory
+    // and neither holds what this one does, which is why check_math_types
+    // skips the name.
+    std::vector<DirectX::XMFLOAT3> m_positionHistory;
 
   protected:
     void AdvanceIdle();
