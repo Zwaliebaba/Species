@@ -6,7 +6,6 @@
 #include "MathUtils.h"
 #include "Resource.h"
 #include "Profiler.h"
-#include "Vector2.h"
 #include "GlVertex.h"
 #include "Shape.h"
 #include "HiResTime.h"
@@ -168,9 +167,7 @@ void ThrowableWeapon::Render(float _predictionTime)
   float flashAlpha = 1.0f - ((GetHighResTime() - m_birthTime) - numFlashes);
   if (flashAlpha < 0.2f)
   {
-    // CameraAccess's getters still return Vector3 -- T12/T22 own them -- so these
-    // copy-initialise through the seam before they can be loaded. Hoisted out of
-    // the eight vertex expressions that each called one.
+    // Hoisted out of the eight vertex expressions that each called one.
     DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
@@ -606,10 +603,7 @@ bool Laser::Advance()
       DirectX::XMFLOAT3 vel;
       DirectX::XMStoreFloat3(&vel, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)));
 
-      // Landscape::RayHit still takes a Vector3 out-pointer -- T28 owns it -- and
-      // the seam converts by reference, so it does nothing through an address.
-      // AsLegacy is the escape hatch until both ends convert together.
-      g_location->m_landscape.RayHit(oldPos, vel, &AsLegacy(hitPoint));
+      g_location->m_landscape.RayHit(oldPos, vel, &hitPoint);
 
       DirectX::XMVECTOR const velVec = DirectX::XMLoadFloat3(&m_vel);
       float distanceTravelled =
@@ -692,7 +686,12 @@ bool Laser::Advance()
         WorldObject* wobj = g_location->GetEntity(id);
         Entity* entity = (Entity*)wobj;
 
-        if (PointSegDist2D(Vector2(entity->m_pos), Vector2(rayStart), Vector2(rayEnd)) < 10.0f)
+        // Vector2's converting constructor from a Vector3 dropped y; XMFLOAT2
+        // has no such constructor, so the (x, z) projection is written out.
+        DirectX::XMFLOAT2 const entityPos2D(entity->m_pos.x, entity->m_pos.z);
+        DirectX::XMFLOAT2 const rayStart2D(rayStart.x, rayStart.z);
+        DirectX::XMFLOAT2 const rayEnd2D(rayEnd.x, rayEnd.z);
+        if (PointSegDist2D(entityPos2D, rayStart2D, rayEnd2D) < 10.0f)
         {
           g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "HitEntity", SoundSourceBlueprint::TypeLaser);
           if (entity->m_type == Entity::TypeSpider || entity->m_type == Entity::TypeSporeGenerator || entity->m_type == Entity::TypeEngineer ||
@@ -744,7 +743,6 @@ void Laser::Render(float predictionTime)
 
   DirectX::XMVECTOR const midPoint = DirectX::XMVectorAdd(fromPos, DirectX::XMVectorScale(DirectX::XMVectorSubtract(toPos, fromPos), 0.5f));
 
-  // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it.
   DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
   DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), midPoint);
   float camDistSqd = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(camToMidPoint));
@@ -926,8 +924,7 @@ void Shockwave::Render(float predictionTime)
 
   if (m_size - predictedLife < 1.0f)
   {
-    // CameraAccess's getters still return Vector3 -- T12/T22 own them. Hoisted
-    // out of the eight vertex expressions that each called one.
+    // Hoisted out of the eight vertex expressions that each called one.
     DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
@@ -1027,7 +1024,6 @@ void MuzzleFlash::Render(float _predictionTime)
 
   DirectX::XMVECTOR const midPoint = DirectX::XMVectorAdd(fromPos, DirectX::XMVectorScale(DirectX::XMVectorSubtract(toPos, fromPos), 0.5f));
 
-  // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it.
   DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
   DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), midPoint);
 
@@ -1167,8 +1163,7 @@ bool Missile::Advance()
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const boosterPosStore = m_booster->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const boosterPosStore = m_booster->GetWorldPosition(mat);
   DirectX::XMVECTOR const boosterPos = DirectX::XMLoadFloat3(&boosterPosStore);
   DirectX::XMVECTOR const velVec = DirectX::XMLoadFloat3(&m_vel);
 
@@ -1211,8 +1206,7 @@ void Missile::Render(float _predictionTime)
   glDisable(GL_COLOR_MATERIAL);
   glDisable(GL_CULL_FACE);
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  m_fire.m_pos = m_booster->GetWorldMatrix(mat).pos;
+  m_fire.m_pos = m_booster->GetWorldPosition(mat);
   m_fire.m_vel = m_vel;
   m_fire.m_size = 30.0f + frand(20.0f);
   DirectX::XMStoreFloat3(&m_fire.m_front, DirectX::XMVectorNegate(DirectX::XMLoadFloat3(&m_front)));

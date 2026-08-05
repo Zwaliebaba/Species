@@ -172,12 +172,10 @@ void Particle::Render(float _predictionTime)
   DirectX::XMVECTOR const predictedPos =
     DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
   float size = m_size / 16.0f;
-  // GetUp and GetRight still return Vector3 — CameraAccess stays legacy until
-  // T12/T22 — so the seam converts them on the way in.
-  DirectX::XMFLOAT3 const upStore = g_camera->GetUp() * size;
-  DirectX::XMFLOAT3 const rightStore = g_camera->GetRight() * size;
-  DirectX::XMVECTOR const up = DirectX::XMLoadFloat3(&upStore);
-  DirectX::XMVECTOR const right = DirectX::XMLoadFloat3(&rightStore);
+  DirectX::XMFLOAT3 const upStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const rightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const up = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&upStore), size);
+  DirectX::XMVECTOR const right = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&rightStore), size);
 
   if (m_typeId == TypeMissileTrail)
   {

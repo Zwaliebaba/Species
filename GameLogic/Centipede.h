@@ -64,7 +64,7 @@ class Centipede : public Entity
 
     // The centipede's basis levelled against the world up, with m_size folded
     // into the three basis rows. The death explosion built it inline.
-    DirectX::XMFLOAT4X4 GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const;
+    DirectX::XMFLOAT4X4 XM_CALLCONV GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const;
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };

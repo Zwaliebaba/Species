@@ -5,7 +5,6 @@
 #include <math.h>
 
 #include "Resource.h"
-#include "Matrix34.h"
 #include "Shape.h"
 #include "MathUtils.h"
 #include "DebugRender.h"
@@ -301,8 +300,7 @@ bool SporeGenerator::AdvanceEggLaying()
       DirectX::XMFLOAT4X4 mat;
       DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-      DirectX::XMFLOAT3 const eggLayPos = m_eggMarker->GetWorldMatrix(mat).pos;
+      DirectX::XMFLOAT3 const eggLayPos = m_eggMarker->GetWorldPosition(mat);
       g_location->SpawnEntities(eggLayPos, m_id.GetTeamId(), -1, TypeEgg, 1, m_vel, 0.0f);
       g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "LayEgg");
     }
@@ -332,7 +330,6 @@ void SporeGenerator::RenderTail(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT
   DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
   DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&_to);
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
 
   // SetLength; rendering only, so this takes the native normalise.
@@ -418,8 +415,7 @@ void SporeGenerator::Render(float _predictionTime)
 
   for (int i = 0; i < SPOREGENERATOR_NUMTAILS; ++i)
   {
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 prevTailPos = m_tail[i]->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 prevTailPos = m_tail[i]->GetWorldPosition(mat);
     // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
     DirectX::XMVECTOR prevTailDir = DirectX::XMVector3Normalize(
       DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&prevTailPos), DirectX::XMLoadFloat3(&predictedPos)), 0.0f));
@@ -486,7 +482,6 @@ bool SporeGenerator::IsInView()
   DirectX::XMFLOAT3 centre;
   DirectX::XMStoreFloat3(&centre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_centrePos)));
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(centre, m_radius);
 }
 
@@ -524,8 +519,7 @@ bool SporeGenerator::RenderPixelEffect(float _predictionTime)
 
   for (int i = 0; i < SPOREGENERATOR_NUMTAILS; ++i)
   {
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 prevTailPos = m_tail[i]->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 prevTailPos = m_tail[i]->GetWorldPosition(mat);
     // HorizontalAndNormalise: flatten to the XZ plane, then normalise.
     DirectX::XMVECTOR prevTailDir = DirectX::XMVector3Normalize(
       DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&prevTailPos), DirectX::XMLoadFloat3(&predictedPos)), 0.0f));

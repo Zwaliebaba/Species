@@ -74,10 +74,9 @@ DirectX::XMFLOAT4X4 BlueprintBuilding::GetMarker(float _predictionTime)
 
   if (m_marker)
   {
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    // ToNative copies the rows as they are; rebuilding the basis from front
-    // and up would discard a marker matrix's own right row.
-    return m_marker->GetWorldMatrix(mat).ToNative();
+    // The marker's own matrix, rows and all -- rebuilding the basis from front
+    // and up here would discard its right row.
+    return m_marker->GetWorldMatrix(mat);
   }
   else
   {
@@ -143,8 +142,6 @@ void BlueprintBuilding::RenderAlphas(float _predictionTime)
     DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat4x4(&ourMarker).r[3];
     DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat4x4(&theirMarker).r[3];
 
-    // CameraAccess::GetPos is a pure virtual and still returns Vector3 -- it
-    // moves with its implementors in T12/T22.
     DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
     // SetLength, taken natively: the cross is only zero when the camera is
     // exactly on the line joining the two markers, and this is rendering.
@@ -667,15 +664,12 @@ void BlueprintConsole::RenderPorts()
     // Render the status light
 
     float size = 6.0f;
-    // CameraAccess::GetRight and GetUp are pure virtuals and still return
-    // Vector3 -- they move with their implementors in T12/T22.
     DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
     DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), size);
     DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), size);
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 statusPos = s_controlPadStatus->GetWorldPosition(mat);
     statusPos.y = g_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
     statusPos.y += 5.0f;
     DirectX::XMVECTOR const status = DirectX::XMLoadFloat3(&statusPos);

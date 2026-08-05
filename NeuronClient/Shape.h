@@ -5,7 +5,6 @@
 
 #include <stdio.h>
 
-#include "Matrix34.h"
 #include "NeuronMath.h"
 #include "RgbColour.h"
 
@@ -85,14 +84,16 @@ class ShapeMarker
     ~ShapeMarker();
 
     // RETURNS THE LEGACY TYPE ON PURPOSE, and it is the last one in this file.
-    // 43 sites across fourteen GameLogic files read `.pos` or `.f` off this
-    // result, and XMFLOAT4X4 has neither. Converting the return type would mean
-    // editing all 43 — and whole-file reformatting the twenty legacy files they
-    // sit in — inside a task that owns none of them. The seam converts the
-    // matrix on the way out for free, so the callers stay untouched and this
-    // signature goes when they convert under T14-T20. Same judgement as the two
-    // Vector3 locals T11 left in SoundInstance.cpp.
-    Matrix34 GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform);
+    DirectX::XMFLOAT4X4 GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform);
+
+    // The TRANSLATION ROW of GetWorldMatrix, which is what two thirds of its
+    // call sites want and all Matrix34's `.pos` ever was. XMFLOAT4X4 numbers
+    // its rows _11 to _44 rather than naming them, so writing the row out at
+    // each of sixty-seven sites would be sixty-seven chances to reach for _31
+    // — the front row — instead. Not an operator layer: this is ShapeMarker
+    // answering a question about itself, and it lives here rather than on the
+    // math type for that reason.
+    DirectX::XMFLOAT3 GetWorldPosition(DirectX::XMFLOAT4X4 const& _rootTransform);
 
     void WriteToFile(FILE* _out) const;
 };

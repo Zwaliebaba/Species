@@ -149,7 +149,6 @@ void Spam::RenderAlphas(float _predictionTime)
   // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,100,0), 10.0f, "timer %d", (int) m_timer );
   // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,90,0), 10.0f, "Damage %d", (int) m_damage );
 
-  // GetUp and GetRight still return Vector3 until T12/T22; the seam converts.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -681,7 +680,6 @@ void SpamInfection::Render(float _time)
   maxLength = std::max(maxLength, 2);
   maxLength = std::min(maxLength, static_cast<int>(m_positionHistory.size()));
 
-  // GetPos still returns Vector3 until T12/T22; the seam converts.
   DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
   DirectX::XMVECTOR const camPos = DirectX::XMLoadFloat3(&camPosStore);
   int numRepeats = 4;

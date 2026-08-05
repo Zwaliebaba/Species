@@ -3,7 +3,6 @@
 
 #include "MathUtils.h"
 #include "Debug.h"
-#include "Vector2.h"
 #include "DebugRender.h"
 
 #include "Landscape.h"
@@ -141,20 +140,17 @@ int Route::GetIdOfNearestEdge(DirectX::XMFLOAT3 const& _pos, float* _dist)
   int idOfNearest = 0;
   float distToNearest = FLT_MAX;
 
-  // Vector2 here on purpose: PointSegDist2D still takes Vector2 const&, and
-  // no task in this plan converts it before T25 deletes the class. Recorded in
-  // T18's notes rather than left as an oversight.
-  Vector2 pos(_pos.x, _pos.z);
+  DirectX::XMFLOAT2 pos(_pos.x, _pos.z);
   WayPoint* wp = m_wayPoints[0];
   DirectX::XMFLOAT3 newPos = wp->GetPos();
-  Vector2 oldPos(newPos.x, newPos.z);
+  DirectX::XMFLOAT2 oldPos(newPos.x, newPos.z);
 
   int size = static_cast<int>(m_wayPoints.size());
   for (int i = 1; i < size; ++i)
   {
     wp = m_wayPoints[i];
     newPos = wp->GetPos();
-    Vector2 temp(newPos.x, newPos.z);
+    DirectX::XMFLOAT2 temp(newPos.x, newPos.z);
     float dist = PointSegDist2D(pos, oldPos, temp);
     oldPos = temp;
 

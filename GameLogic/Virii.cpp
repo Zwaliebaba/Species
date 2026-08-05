@@ -72,7 +72,6 @@ void ViriiUnit::Render(float _predictionTime)
   }
   else
   {
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
     float rangeToCam = DirectX::XMVectorGetX(
       DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_centrePos), DirectX::XMLoadFloat3(&cameraPos))));
@@ -862,7 +861,6 @@ bool Virii::IsInView()
 
   float radius = sqrtf(radiusSqd);
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(centrePos, radius);
 }
 

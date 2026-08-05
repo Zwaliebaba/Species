@@ -52,8 +52,7 @@ void Incubator::Initialise(Building* _template)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const spiritCentre = m_spiritCentre->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const spiritCentre = m_spiritCentre->GetWorldPosition(mat);
 
   m_numStartingSpirits = static_cast<Incubator*>(_template)->m_numStartingSpirits;
 
@@ -129,9 +128,8 @@ void Incubator::SpawnEntity()
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, and this
   // one wants both the exit position and its facing.
-  Matrix34 const exit = m_exit->GetWorldMatrix(mat);
+  DirectX::XMFLOAT4X4 const exit = m_exit->GetWorldMatrix(mat);
 
   //
   // Spawn the entity
@@ -139,7 +137,8 @@ void Incubator::SpawnEntity()
   if (teamId == 2)
     teamId = 0; // Green rather than yellow
 
-  g_location->SpawnEntities(exit.pos, teamId, -1, m_troopType, 1, exit.f, 0.0f);
+  g_location->SpawnEntities(DirectX::XMFLOAT3(exit._41, exit._42, exit._43), teamId, -1, m_troopType, 1,
+                            DirectX::XMFLOAT3(exit._31, exit._32, exit._33), 0.0f);
 
   //
   // Remove a spirit
@@ -168,7 +167,7 @@ void Incubator::SpawnEntity()
   {
     // The three RNG calls stay in this order.
     DirectX::XMFLOAT3 const vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
-    g_particleSystem->CreateParticle(exit.pos, vel, Particle::TypeControlFlash);
+    g_particleSystem->CreateParticle(DirectX::XMFLOAT3(exit._41, exit._42, exit._43), vel, Particle::TypeControlFlash);
     // g_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
   }
 
@@ -183,8 +182,7 @@ void Incubator::AddSpirit(Spirit* _spirit)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const spiritCentre = m_spiritCentre->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const spiritCentre = m_spiritCentre->GetWorldPosition(mat);
 
   Spirit* s = m_spirits.GetPointer(m_spirits.GetNextFree());
 
@@ -208,11 +206,10 @@ void Incubator::GetDockPoint(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  Matrix34 const dock = m_dock->GetWorldMatrix(mat);
-  _pos = dock.pos;
+  DirectX::XMFLOAT4X4 const dock = m_dock->GetWorldMatrix(mat);
+  _pos = DirectX::XMFLOAT3(dock._41, dock._42, dock._43);
   _pos = PushFromBuilding(_pos, 5.0f);
-  _front = dock.f;
+  _front = DirectX::XMFLOAT3(dock._31, dock._32, dock._33);
 }
 
 int Incubator::NumSpiritsInside() { return m_spirits.NumUsed(); }
@@ -271,11 +268,10 @@ void Incubator::RenderAlphas(float _predictionTime)
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT3 entrances[3];
-  entrances[0] = m_spiritEntrance[0]->GetWorldMatrix(mat).pos;
-  entrances[1] = m_spiritEntrance[1]->GetWorldMatrix(mat).pos;
-  entrances[2] = m_spiritEntrance[2]->GetWorldMatrix(mat).pos;
+  entrances[0] = m_spiritEntrance[0]->GetWorldPosition(mat);
+  entrances[1] = m_spiritEntrance[1]->GetWorldPosition(mat);
+  entrances[2] = m_spiritEntrance[2]->GetWorldPosition(mat);
 
   for (int i = 0; i < static_cast<int>(m_incoming.size()); ++i)
   {
@@ -285,7 +281,6 @@ void Incubator::RenderAlphas(float _predictionTime)
 
     DirectX::XMVECTOR const midPoint = DirectX::XMVectorScale(DirectX::XMVectorAdd(fromPos, toPos), 0.5f);
 
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
     DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), midPoint);
     DirectX::XMVECTOR const rightAngle =

@@ -238,7 +238,6 @@ void LaserTrooper::Render(float predictionTime, int teamId)
 
   float size = 2.0f;
 
-  // The landscape converts in T18, so its normal map still yields a legacy vector.
   DirectX::XMFLOAT3 const landNormal = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
   DirectX::XMVECTOR entityUp = DirectX::XMLoadFloat3(&landNormal);
   //	float wobble = m_wobble;
@@ -353,7 +352,9 @@ void LaserTrooper::Render(float predictionTime, int teamId)
     //
     // Draw a line through us if we are side-on with the camera
 
-    float alpha = 1.0f - fabsf(g_camera->GetFront() * m_front);
+    // operator* between two Vector3s was the DOT product, not a scale.
+    DirectX::XMFLOAT3 const camFrontStore = g_camera->GetFront();
+    float alpha = 1.0f - fabsf(DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&camFrontStore), DirectX::XMLoadFloat3(&m_front))));
     if (alpha > 0.5f)
     {
       // colour.a = 255;

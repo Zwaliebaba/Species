@@ -260,7 +260,6 @@ void FenceSwitch::RenderConnection(DirectX::XMFLOAT3 _targetPos, bool _active)
   DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&_targetPos);
   DirectX::XMVECTOR const alongLink = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
   DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
@@ -426,13 +425,11 @@ void FenceSwitch::RenderLights()
         ShapeMarker* marker = m_lights[i];
         DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-        DirectX::XMFLOAT3 const lightPosStore = marker->GetWorldMatrix(rootMat).pos;
+        DirectX::XMFLOAT3 const lightPosStore = marker->GetWorldPosition(rootMat);
         DirectX::XMVECTOR const lightPos = DirectX::XMLoadFloat3(&lightPosStore);
 
         float signalSize = 6.0f;
 
-        // Camera's accessors are still legacy -- Species belongs to T22.
         DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
         DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
         DirectX::XMVECTOR const camR = DirectX::XMLoadFloat3(&camRightStore);
@@ -497,8 +494,7 @@ DirectX::XMFLOAT3 FenceSwitch::GetConnectionLocation()
 
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_connectionLocation->GetWorldMatrix(rootMat).pos;
+  return m_connectionLocation->GetWorldPosition(rootMat);
 }
 
 bool FenceSwitch::IsInView()
@@ -517,7 +513,6 @@ bool FenceSwitch::IsInView()
       float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
       radius += m_radius;
 
-      // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
       if (g_camera->SphereInViewFrustum(midPoint, radius))
       {
         return true;
@@ -539,7 +534,6 @@ bool FenceSwitch::IsInView()
       float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
       radius += m_radius;
 
-      // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
       if (g_camera->SphereInViewFrustum(midPoint, radius))
       {
         return true;

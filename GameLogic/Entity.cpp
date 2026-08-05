@@ -246,7 +246,6 @@ int Entity::EnterTeleports(int _requiredId)
     if (building->m_type == Building::TypeRadarDish)
     {
       RadarDish* radarDish = (RadarDish*)building;
-      // RadarDish converts in T16, so its out-parameters are still legacy.
       // AsLegacy reaches them without naming the type; the storage is native.
       DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
@@ -266,7 +265,6 @@ int Entity::EnterTeleports(int _requiredId)
     else if (building->m_type == Building::TypeBridge)
     {
       Bridge* bridge = (Bridge*)building;
-      // Bridge converts in T17; same seam as the radar dish above.
       DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
       if (bridge->GetEntrance(entrancePos, entranceFront))
@@ -860,7 +858,6 @@ void Entity::FollowRoute()
 
   WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId];
 
-  // LevelFile converts in T18, so GetPos still returns a legacy vector.
   // Copy-initialising the native type takes the seam without naming it.
   DirectX::XMFLOAT3 const wayPointPos = waypoint->GetPos();
   SetWaypoint(wayPointPos);

@@ -14,7 +14,6 @@
 #include "StringUtils.h"
 #include "TextRenderer.h"
 #include "TextStreamReaders.h"
-#include "Vector3.h"
 #include "Eclipse.h"
 #include "GlobalInternet.h"
 #include "GlobalWorld.h"
@@ -787,8 +786,6 @@ void SphereWorld::RenderSpirits()
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Glow.bmp"));
 
-  // CameraAccess's getters are pure virtuals and still return Vector3 -- they
-  // move with their implementors in T12/T22.
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&cameraRight);
@@ -906,9 +903,11 @@ void SphereWorld::RenderWorldShape()
   //
   // Render outer
 
-  m_shapeOuter->Render(0.0f, g_identityMatrix34);
-  m_shapeMiddle->Render(0.0f, g_identityMatrix34);
-  m_shapeInner->Render(0.0f, g_identityMatrix34);
+  DirectX::XMFLOAT4X4 identity; // was g_identityMatrix34
+  DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity());
+  m_shapeOuter->Render(0.0f, identity);
+  m_shapeMiddle->Render(0.0f, identity);
+  m_shapeInner->Render(0.0f, identity);
 
   glDisable(GL_NORMALIZE);
   glPopMatrix();
@@ -925,7 +924,9 @@ void SphereWorld::RenderTrunkLinks()
 {
   // if( g_editing ) return;
 
-  Matrix34 rootMat(0);
+  // Matrix34(0) was the identity, whatever the argument looked like.
+  DirectX::XMFLOAT4X4 rootMat;
+  DirectX::XMStoreFloat4x4(&rootMat, DirectX::XMMatrixIdentity());
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -987,8 +988,6 @@ void SphereWorld::RenderHeaven()
   glPushMatrix();
   glScalef(120.0f, 120.0f, 120.0f);
 
-  // CameraAccess's getters are pure virtuals and still return Vector3 -- they
-  // move with their implementors in T12/T22.
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&cameraUp);
@@ -1080,10 +1079,9 @@ void SphereWorld::RenderIslands()
 
   glMatrixMode(GL_MODELVIEW);
 
-  // GetClickRay takes Vector3* out-parameters, and the seam does not reach
-  // through a pointer -- AsLegacy is what bridges that until T12/T22.
-  DirectX::XMFLOAT3 rayStart, rayDir;
-  g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+  DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+  g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
@@ -1265,8 +1263,9 @@ void GlobalWorld::Advance()
       // Edit locations
       if (g_inputManager->controlEvent(ControlSelectLocation))
       {
-        DirectX::XMFLOAT3 rayStart, rayDir;
-        g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+        g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
         int locId = LocationHit(rayStart, rayDir);
         if (locId != -1)
         {
@@ -1282,8 +1281,9 @@ void GlobalWorld::Advance()
       // Move locations
       if (g_inputManager->controlEvent(ControlSelectLocation))
       {
-        DirectX::XMFLOAT3 rayStart, rayDir;
-        g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+        g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
         m_editorSelectionId = LocationHit(rayStart, rayDir);
       }
       else if (g_inputManager->controlEvent(ControlLocationDragActive))
@@ -1291,8 +1291,6 @@ void GlobalWorld::Advance()
         GlobalLocation* loc = GetLocation(m_editorSelectionId);
         if (loc)
         {
-          // UserInputAccess::GetMousePos3d is a pure virtual and still returns
-          // Vector3 -- it moves with its implementor in T12/T22.
           DirectX::XMFLOAT3 const mousePos3D = g_userInput->GetMousePos3d();
           DirectX::XMStoreFloat3(&loc->m_pos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&mousePos3D), 1.0f / 120.0f));
         }
@@ -1308,8 +1306,9 @@ void GlobalWorld::Advance()
     // Has the user clicked on a location?
     if (g_inputManager->controlEvent(ControlSelectLocation) && m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
-      DirectX::XMFLOAT3 rayStart, rayDir;
-      g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
       int locId = LocationHit(rayStart, rayDir);
       if (locId != -1)
       {
@@ -1341,8 +1340,9 @@ void GlobalWorld::Advance()
     // Is the cursor attracted to a point?
     else if (m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
-      DirectX::XMFLOAT3 rayStart, rayDir;
-      g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
       int locId = LocationHit(rayStart, rayDir, 10000.0f);
       if (locId != -1)
       {
@@ -1392,12 +1392,9 @@ int GlobalWorld::LocationHit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 co
 
   for (GlobalLocation* gl : m_locations)
   {
-    // RaySphereIntersection still takes Vector3 const& -- MathUtils' geometry
-    // API has no converting task, and the seam handles the conversion here
-    // because these are references rather than pointers. See T18's notes.
     DirectX::XMFLOAT3 const locPos = GetLocationPosition(gl->m_id);
 
-    bool hit = RaySphereIntersection(AsLegacy(_pos), AsLegacy(_dir), AsLegacy(locPos), locationRadius);
+    bool hit = RaySphereIntersection(_pos, _dir, locPos, locationRadius);
     if (hit)
       return gl->m_id;
   }
@@ -1421,8 +1418,9 @@ GlobalLocation* GlobalWorld::GetHighlightedLocation()
   int screenX = g_target->X();
   int screenY = g_target->Y();
 
-  DirectX::XMFLOAT3 rayStart, rayDir;
-  g_camera->GetClickRay(screenX, screenY, &AsLegacy(rayStart), &AsLegacy(rayDir));
+  DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+  g_camera->GetClickRay(screenX, screenY, &rayStart, &rayDir);
   int locId = g_globalWorld->LocationHit(rayStart, rayDir);
 
   GlobalLocation* loc = GetLocation(locId);

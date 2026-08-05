@@ -74,7 +74,7 @@ class NewLocationButton : public SpeciesButton
       strlwr(loc->m_missionFilename);
       CopyInto(loc->m_name, s_locationName);
       loc->m_available = true;
-      AsLegacy(loc->m_pos).Set(-96.25, -274.02, 75.16);
+      loc->m_pos = DirectX::XMFLOAT3(-96.25f, -274.02f, 75.16f);
       g_globalWorld->AddLocation(loc);
 
       //

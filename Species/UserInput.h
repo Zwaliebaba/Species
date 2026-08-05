@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 #include "UserInputAccess.h"
 #include "WorldObject.h"
@@ -17,20 +17,23 @@ class UserInput : public UserInputAccess
     bool m_removeTopLevelMenu;
 
   private:
-    Vector3 m_mousePos3d;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and RecalcMousePos3d leaves this untouched on the frames where
+    // neither the landscape nor the enclosing sphere is hit.
+    DirectX::XMFLOAT3 m_mousePos3d{0.0f, 0.0f, 0.0f};
 
     void AdvanceMouse();
     void AdvanceMenus();
 
-    std::vector<Vector3*> m_mousePosHistory;
+    std::vector<DirectX::XMFLOAT3*> m_mousePosHistory;
 
   public:
     UserInput();
     void Advance();
     void Render();
 
-    void RecalcMousePos3d(); // Updates the cached value of m_mousePos3d by doing a ray cast against landscape
-    Vector3 GetMousePos3d(); // Returns the cached value "m_mousePos3d"
+    void RecalcMousePos3d();           // Updates the cached value of m_mousePos3d by doing a ray cast against landscape
+    DirectX::XMFLOAT3 GetMousePos3d(); // Returns the cached value "m_mousePos3d"
 };
 
 

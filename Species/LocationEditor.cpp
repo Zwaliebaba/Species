@@ -14,6 +14,7 @@
 
 #include "3dSprite.h"
 #include "DebugRender.h"
+#include "GlVertex.h"
 #include "Debug.h"
 #include "Input.h"
 #include "TargetCursor.h"
@@ -77,7 +78,7 @@ LocationEditor::~LocationEditor()
 }
 
 
-int LocationEditor::DoesRayHitBuilding(Vector3 const& rayStart, Vector3 const& rayDir)
+int LocationEditor::DoesRayHitBuilding(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
 {
   Location* location = g_location;
 
@@ -94,14 +95,14 @@ int LocationEditor::DoesRayHitBuilding(Vector3 const& rayStart, Vector3 const& r
 }
 
 
-int LocationEditor::DoesRayHitInstantUnit(Vector3 const& rayStart, Vector3 const& rayDir)
+int LocationEditor::DoesRayHitInstantUnit(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
 {
   Location* location = g_location;
 
   for (int i = 0; i < static_cast<int>(location->m_levelFile->m_instantUnits.size()); i++)
   {
     InstantUnit* iu = location->m_levelFile->m_instantUnits[i];
-    Vector3 pos(iu->m_posX, 0, iu->m_posZ);
+    DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
     pos.y = location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
     bool result = RaySphereIntersection(rayStart, rayDir, pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
     if (result)
@@ -114,11 +115,13 @@ int LocationEditor::DoesRayHitInstantUnit(Vector3 const& rayStart, Vector3 const
 }
 
 
-int LocationEditor::DoesRayHitCameraMount(Vector3 const& rayStart, Vector3 const& rayDir)
+int LocationEditor::DoesRayHitCameraMount(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
 {
   Shape* camShape = g_resource->GetShape("Camera.shp");
-  Vector3 centre = camShape->CalculateCentre(g_identityMatrix34);
-  float radius = camShape->CalculateRadius(g_identityMatrix34, centre);
+  DirectX::XMFLOAT4X4 identity;
+  DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity()); // was g_identityMatrix34
+  DirectX::XMFLOAT3 centre = camShape->CalculateCentre(identity);
+  float radius = camShape->CalculateRadius(identity, centre);
 
   for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
   {
@@ -133,7 +136,7 @@ int LocationEditor::DoesRayHitCameraMount(Vector3 const& rayStart, Vector3 const
 }
 
 
-int LocationEditor::IsPosInLandTile(Vector3 const& pos)
+int LocationEditor::IsPosInLandTile(DirectX::XMFLOAT3 const& pos)
 {
   Landscape* land = &g_location->m_landscape;
   std::vector<LandscapeTile*>* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
@@ -161,7 +164,7 @@ int LocationEditor::IsPosInLandTile(Vector3 const& pos)
 }
 
 
-int LocationEditor::IsPosInFlattenArea(Vector3 const& pos)
+int LocationEditor::IsPosInFlattenArea(DirectX::XMFLOAT3 const& pos)
 {
   std::vector<LandscapeFlattenArea*>* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
   Landscape* land = &g_location->m_landscape;
@@ -262,8 +265,9 @@ int LocationEditor::GetMode() { return m_mode; }
 
 void LocationEditor::AdvanceModeNone()
 {
-  Vector3 pos = TheUserInput()->GetMousePos3d();
-  Vector3 rayStart, rayDir;
+  DirectX::XMFLOAT3 pos = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
   TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
   if (g_inputManager->controlEvent(ControlSelectLocation)) // TODO: Really?
@@ -298,7 +302,7 @@ void LocationEditor::MoveBuildingsInTile(LandscapeTile* _tile, float _dX, float 
 
 void LocationEditor::AdvanceModeLandTile()
 {
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
 
   int newSelectionId = -1;
   if (g_inputManager->controlEvent(ControlTileSelect))
@@ -388,12 +392,12 @@ void LocationEditor::AdvanceModeLandTile()
 
 void LocationEditor::AdvanceModeLandFlat()
 {
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
 
   int newSelectionId = -1;
   if (g_inputManager->controlEvent(ControlTileSelect))
   {
-    Vector3 mousePos = TheUserInput()->GetMousePos3d();
+    DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
     newSelectionId = IsPosInFlattenArea(mousePos);
   }
 
@@ -461,7 +465,8 @@ void LocationEditor::AdvanceModeBuilding()
   int newSelectionId = -1;
   if (g_inputManager->controlEvent(ControlTileSelect))
   {
-    Vector3 rayStart, rayDir;
+    DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
     cam->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
     newSelectionId = DoesRayHitBuilding(rayStart, rayDir);
   }
@@ -523,15 +528,16 @@ void LocationEditor::AdvanceModeBuilding()
       {
       case ToolMove:
       {
-        Vector3 mousePos = TheUserInput()->GetMousePos3d();
+        DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
         building->m_pos = mousePos;
         break;
       }
       case ToolRotate:
       {
-        Vector3 front = building->m_front;
-        front.RotateAroundY((float)g_target->dX() * 0.05f);
-        building->m_front = front;
+        // Vector3::RotateAroundY(a) was the ordinary right-handed rotation
+        // about +Y, which XMMatrixRotationY(a) is under `v * M`.
+        DirectX::XMStoreFloat3(&building->m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&building->m_front),
+                                                                               DirectX::XMMatrixRotationY((float)g_target->dX() * 0.05f)));
         break;
       }
       }
@@ -547,8 +553,9 @@ void LocationEditor::AdvanceModeLight()
   if (location->m_lights.ValidIndex(m_selectionId) && g_inputManager->controlEvent(ControlTileDrag))
   {
     Light* worldLight = location->m_lights.GetData(m_selectionId);
-    Vector3 front(worldLight->m_front[0], worldLight->m_front[1], worldLight->m_front[2]);
-    front.RotateAroundY((float)g_target->dX() * 0.05f);
+    DirectX::XMFLOAT3 front(worldLight->m_front[0], worldLight->m_front[1], worldLight->m_front[2]);
+    DirectX::XMStoreFloat3(&front,
+                           DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&front), DirectX::XMMatrixRotationY((float)g_target->dX() * 0.05f)));
     worldLight->SetFront(front);
   }
 }
@@ -561,7 +568,8 @@ void LocationEditor::AdvanceModeInstantUnit()
   int newSelectionId = -1;
   if (g_inputManager->controlEvent(ControlTileSelect)) // TODO: Should be something else?
   {
-    Vector3 rayStart, rayDir;
+    DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
     cam->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
     newSelectionId = DoesRayHitInstantUnit(rayStart, rayDir);
   }
@@ -600,7 +608,7 @@ void LocationEditor::AdvanceModeInstantUnit()
       {
       case ToolMove:
       {
-        Vector3 mousePos = TheUserInput()->GetMousePos3d();
+        DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
         iu->m_posX = mousePos.x;
         iu->m_posZ = mousePos.z;
         break;
@@ -618,7 +626,8 @@ void LocationEditor::AdvanceModeCameraMount()
     CameraAnimSecondaryEditWindow* win = (CameraAnimSecondaryEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_cameraanim"));
     if (win && win->m_newNodeArmed)
     {
-      Vector3 rayStart, rayDir;
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
       TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
       int mountId = DoesRayHitCameraMount(rayStart, rayDir);
       if (mountId != -1)
@@ -688,7 +697,7 @@ void LocationEditor::RenderUnit(InstantUnit* _iu)
 
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(_iu->m_posX, _iu->m_posZ);
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-  g_editorFont.DrawText3DCentre(Vector3(_iu->m_posX, landHeight + 15.0f, _iu->m_posZ), 15.0f, "%d %s(s)", _iu->m_number, typeName);
+  g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(_iu->m_posX, landHeight + 15.0f, _iu->m_posZ), 15.0f, "%d %s(s)", _iu->m_number, typeName);
 
 
   // Render troops
@@ -703,8 +712,10 @@ void LocationEditor::RenderUnit(InstantUnit* _iu)
   colour.a = 200;
   glColor4ubv(colour.GetData());
 
-  Vector3 camUp = TheCamera()->GetUp() * 5.0f;
-  Vector3 camRight = TheCamera()->GetRight() * 5.0f;
+  DirectX::XMFLOAT3 const camUpStore = TheCamera()->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = TheCamera()->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), 5.0f);
+  DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), 5.0f);
 
   glDisable(GL_CULL_FACE);
   glEnable(GL_BLEND);
@@ -719,12 +730,13 @@ void LocationEditor::RenderUnit(InstantUnit* _iu)
   {
     for (int z = 0; z < maxZ; ++z)
     {
-      Vector3 pos(_iu->m_posX + offsetX + x * pitch, 0, _iu->m_posZ + offsetZ + z * pitch);
-      pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 2.0f;
-      glVertex3fv((pos - camUp - camRight).GetData());
-      glVertex3fv((pos - camUp + camRight).GetData());
-      glVertex3fv((pos + camUp + camRight).GetData());
-      glVertex3fv((pos + camUp - camRight).GetData());
+      DirectX::XMFLOAT3 posStore(_iu->m_posX + offsetX + x * pitch, 0.0f, _iu->m_posZ + offsetZ + z * pitch);
+      posStore.y = g_location->m_landscape.m_heightMap->GetValue(posStore.x, posStore.z) + 2.0f;
+      DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&posStore);
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, camUp), camRight));
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, camUp), camRight));
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, camUp), camRight));
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, camUp), camRight));
     }
   }
 
@@ -747,11 +759,11 @@ void LocationEditor::RenderUnit(InstantUnit* _iu)
     {
       float xDiff = _iu->m_spread * sinf(angle);
       float zDiff = _iu->m_spread * cosf(angle);
-      Vector3 pos = Vector3(_iu->m_posX, 0.0f, _iu->m_posZ) + Vector3(xDiff, 5, zDiff);
+      DirectX::XMFLOAT3 pos(_iu->m_posX + xDiff, 5.0f, _iu->m_posZ + zDiff);
       pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
       if (pos.y < 2)
         pos.y = 2;
-      glVertex3fv(pos.GetData());
+      glVertex3f(pos.x, pos.y, pos.z);
       angle += 2.0f * M_PI / (float)numSteps;
     }
     glEnd();
@@ -767,7 +779,7 @@ void LocationEditor::RenderUnit(InstantUnit* _iu)
 
 void LocationEditor::RenderModeLandTile()
 {
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
   Landscape* land = &g_location->m_landscape;
 
   // Highlight any tile under our mouse cursor
@@ -785,7 +797,7 @@ void LocationEditor::RenderModeLandTile()
     float sizeZ = tile->m_size;
     if (mousePos3D.x > worldX && mousePos3D.x < worldX + sizeX && mousePos3D.z > worldZ && mousePos3D.z < worldZ + sizeZ)
     {
-      Vector3 centre(worldX, tile->m_outsideHeight, worldZ);
+      DirectX::XMFLOAT3 centre(worldX, tile->m_outsideHeight, worldZ);
       centre.x += sizeX * 0.5f;
       centre.y += sizeY * 0.5f;
       centre.z += sizeZ * 0.5f;
@@ -860,7 +872,7 @@ void LocationEditor::RenderModeLandTile()
     float sX = tile->m_size;
     float sY = tile->m_desiredHeight - tile->m_outsideHeight;
     float sZ = tile->m_size;
-    Vector3 centre(x, y, z);
+    DirectX::XMFLOAT3 centre(x, y, z);
     centre.x += sX * 0.5f;
     centre.y += sY * 0.5f;
     centre.z += sZ * 0.5f;
@@ -885,7 +897,7 @@ void LocationEditor::RenderModeLandTile()
 
 void LocationEditor::RenderModeLandFlat()
 {
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
   Landscape* land = &g_location->m_landscape;
 
   // Highlight any flatten area under our mouse cursor
@@ -905,7 +917,7 @@ void LocationEditor::RenderModeLandFlat()
     float y = area->m_centre.y;
     float z = area->m_centre.z;
     float s = area->m_size * 2.0f;
-    Vector3 centre(x, y, z);
+    DirectX::XMFLOAT3 centre(x, y, z);
 
     RenderCube(centre, s, y + 20, s, RGBAColour(128, 255, 128, 99));
   }
@@ -918,7 +930,7 @@ void LocationEditor::RenderModeLandFlat()
     float y = areaDef->m_centre.y;
     float z = areaDef->m_centre.z;
     float s = areaDef->m_size * 2.0f;
-    Vector3 centre(x, y, z);
+    DirectX::XMFLOAT3 centre(x, y, z);
 
     RenderCube(centre, s, y + 20, s, RGBAColour(128, 255, 128, 255));
   }
@@ -933,8 +945,12 @@ void LocationEditor::RenderModeBuilding()
 
     if (building->m_shape)
     {
-      Matrix34 mat(building->m_front, g_upVector, building->m_pos);
-      Vector3 centrePos = building->m_shape->CalculateCentre(mat);
+      // Matrix34(front, up, pos) is what BasisFromFrontAndUp replaces, and
+      // g_upVector is the (0,1,0) that g_XMIdentityR1 holds.
+      DirectX::XMFLOAT4X4 mat;
+      DirectX::XMStoreFloat4x4(
+        &mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&building->m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&building->m_pos)));
+      DirectX::XMFLOAT3 centrePos = building->m_shape->CalculateCentre(mat);
       float radius = building->m_shape->CalculateRadius(mat, centrePos);
       RenderSphere(centrePos, radius, RGBAColour(255, 255, 255, 255));
     }
@@ -945,24 +961,26 @@ void LocationEditor::RenderModeBuilding()
 
     if (m_tool == ToolLink)
     {
-      Vector3 height(0, 10, 0);
-      Vector3 mousePos(TheUserInput()->GetMousePos3d());
-      Vector3 arrowDir(mousePos - AsLegacy(building->m_pos));
-      Vector3 arrowSize(0, 3, 0);
+      DirectX::XMVECTOR const height = DirectX::XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f);
+      DirectX::XMFLOAT3 const mousePosStore = TheUserInput()->GetMousePos3d();
+      DirectX::XMVECTOR const mousePos = DirectX::XMLoadFloat3(&mousePosStore);
+      DirectX::XMVECTOR const arrowDir = DirectX::XMVectorSubtract(mousePos, DirectX::XMLoadFloat3(&building->m_pos));
+      DirectX::XMVECTOR const arrowSize = DirectX::XMVectorSet(0.0f, 3.0f, 0.0f, 0.0f);
+      DirectX::XMVECTOR const arrowBase = DirectX::XMVectorSubtract(mousePos, DirectX::XMVectorScale(arrowDir, 0.1f));
 
       glEnable(GL_LINE_SMOOTH);
       glDisable(GL_DEPTH_TEST);
       glLineWidth(1.0f);
       glColor3f(1.0f, 0.5f, 0.5f);
       glBegin(GL_LINES);
-      glVertex3fv((AsLegacy(building->m_pos) + height).GetData());
-      glVertex3fv((mousePos).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&building->m_pos), height));
+      EmitVertex(mousePos);
 
-      glVertex3fv((mousePos).GetData());
-      glVertex3fv((mousePos - arrowDir * 0.1f + arrowSize).GetData());
+      EmitVertex(mousePos);
+      EmitVertex(DirectX::XMVectorAdd(arrowBase, arrowSize));
 
-      glVertex3fv((mousePos).GetData());
-      glVertex3fv((mousePos - arrowDir * 0.1f - arrowSize).GetData());
+      EmitVertex(mousePos);
+      EmitVertex(DirectX::XMVectorSubtract(arrowBase, arrowSize));
       glEnd();
       glDisable(GL_LINE_SMOOTH);
       glEnable(GL_DEPTH_TEST);
@@ -976,7 +994,7 @@ void LocationEditor::RenderModeInstantUnit()
   if (m_selectionId != -1)
   {
     InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(m_selectionId);
-    Vector3 pos(iu->m_posX, 0, iu->m_posZ);
+    DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
     pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
     RenderSphere(pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
   }
@@ -1052,16 +1070,22 @@ void LocationEditor::Render()
   {
     g_renderer->SetObjectLighting();
     Shape* camShape = g_resource->GetShape("Camera.shp");
-    Matrix34 mat;
+    DirectX::XMFLOAT4X4 mat;
 
     for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
     {
       CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
-      Vector3 camToMount = TheCamera()->GetPos() - AsLegacy(mount->m_pos);
-      if (camToMount.Mag() < 20.0f)
+      DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+      DirectX::XMVECTOR const camToMount = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&mount->m_pos));
+      if (DirectX::XMVectorGetX(DirectX::XMVector3Length(camToMount)) < 20.0f)
         continue;
-      mat.OrientFU(mount->m_front, mount->m_up);
-      mat.pos = mount->m_pos;
+      // OrientFU normalised the front, derived right as up x front and up as
+      // front x right, then took pos separately -- which is what
+      // BasisFromFrontAndUp does in one call, except that it does NOT
+      // normalise the front row. The mounts are stored with unit fronts, so
+      // the two agree; normalising here rather than relying on that.
+      DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&mount->m_front)),
+                                                         DirectX::XMLoadFloat3(&mount->m_up), DirectX::XMLoadFloat3(&mount->m_pos)));
       camShape->Render(0.0f, mat);
     }
     g_renderer->UnsetObjectLighting();
@@ -1106,7 +1130,7 @@ void LocationEditor::Render()
 
   float sizeX = g_location->m_landscape.GetWorldSizeX() / 2;
   float sizeZ = g_location->m_landscape.GetWorldSizeZ() / 2;
-  RenderArrow(Vector3(10, 200, 0), Vector3(sizeX, 200, 0), 4.0f);
+  RenderArrow(DirectX::XMFLOAT3(10.0f, 200.0f, 0.0f), DirectX::XMFLOAT3(sizeX, 200.0f, 0.0f), 4.0f);
   glBegin(GL_LINES);
   glVertex3f(sizeX, 250, 0);
   glVertex3f(sizeX + 90, 150, 0);
@@ -1116,7 +1140,7 @@ void LocationEditor::Render()
   glDisable(GL_BLEND);
   glDisable(GL_LINE_SMOOTH);
 
-  RenderArrow(Vector3(0, 200, 10), Vector3(0, 200, sizeZ), 4.0f);
+  RenderArrow(DirectX::XMFLOAT3(0.0f, 200.0f, 10.0f), DirectX::XMFLOAT3(0.0f, 200.0f, sizeZ), 4.0f);
   glBegin(GL_LINES);
   glVertex3f(0, 250, sizeZ);
   glVertex3f(0, 250, sizeZ + 90);

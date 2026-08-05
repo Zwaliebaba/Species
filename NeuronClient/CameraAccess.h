@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 #include "WorldObjectId.h"
 
 class CameraAnimation;
@@ -70,23 +70,23 @@ class CameraAccess
 
     // Position and orientation. Not const, because Camera's are not, and this
     // change is a seam rather than a cleanup.
-    virtual Vector3 GetPos() = 0;
-    virtual Vector3 GetFront() = 0;
-    virtual Vector3 GetUp() = 0;
-    virtual Vector3 GetRight() = 0;
-    virtual Vector3 GetVel() = 0;
-    virtual Vector3 GetControlVector() = 0;
+    virtual DirectX::XMFLOAT3 GetPos() = 0;
+    virtual DirectX::XMFLOAT3 GetFront() = 0;
+    virtual DirectX::XMFLOAT3 GetUp() = 0;
+    virtual DirectX::XMFLOAT3 GetRight() = 0;
+    virtual DirectX::XMFLOAT3 GetVel() = 0;
+    virtual DirectX::XMFLOAT3 GetControlVector() = 0;
 
     // Culling, called per object per frame from entity render bodies.
-    virtual bool PosInViewFrustum(Vector3 const& _pos) = 0;
-    virtual bool SphereInViewFrustum(Vector3 const& _centre, float _radius) = 0;
+    virtual bool PosInViewFrustum(DirectX::XMFLOAT3 const& _pos) = 0;
+    virtual bool SphereInViewFrustum(DirectX::XMFLOAT3 const& _centre, float _radius) = 0;
 
     virtual void SetupProjectionMatrix(float _nearPlane, float _farPlane) = 0;
 
     // World point to screen point. Used by entity render code to place labels
     // and health bars, so it moves with the cluster in
     // tasks/layering-inversion.yaml T15.
-    virtual void Get2DScreenPos(Vector3 const& _vector, float* _screenX, float* _screenY) = 0;
+    virtual void Get2DScreenPos(DirectX::XMFLOAT3 const& _vector, float* _screenX, float* _screenY) = 0;
 
     virtual void CreateCameraShake(float _intensity) = 0;
 
@@ -107,9 +107,9 @@ class CameraAccess
     // Camera declares the three-argument form with a default for _up. It is not
     // repeated here: a call through this interface passes all three, which is
     // what the one caller below Species does.
-    virtual void SetTarget(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up) = 0;
+    virtual void SetTarget(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up) = 0;
     virtual void CutToTarget() = 0;
 
     // Screen-space picking, used by the level editor windows.
-    virtual void GetClickRay(int _x, int _y, Vector3* _rayStart, Vector3* _rayDir) = 0;
+    virtual void GetClickRay(int _x, int _y, DirectX::XMFLOAT3* _rayStart, DirectX::XMFLOAT3* _rayDir) = 0;
 };

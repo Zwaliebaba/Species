@@ -95,34 +95,34 @@ bool ScriptTrigger::Advance()
           }
           else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
           {
-            // Camera's accessors are still legacy -- Species belongs to T22.
             DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
             float camDistance = DirectX::XMVectorGetX(
               DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
-            Vector3 camVel = g_camera->GetVel();
+            DirectX::XMFLOAT3 const camVelStore = g_camera->GetVel();
+            float const camSpeed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&camVelStore)));
             bool camInteractive = g_camera->IsInteractive();
 
-            if (camDistance <= m_range && camVel.Mag() < 5.0f && camInteractive)
+            if (camDistance <= m_range && camSpeed < 5.0f && camInteractive)
             {
               Trigger();
             }
           }
           else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
           {
-            // Camera's accessors are still legacy -- Species belongs to T22.
             DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
             float camDistance = DirectX::XMVectorGetX(
               DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
-            Vector3 camVel = g_camera->GetVel();
+            DirectX::XMFLOAT3 const camVelStore = g_camera->GetVel();
+            float const camSpeed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&camVelStore)));
             bool camInteractive = g_camera->IsInteractive();
             bool inView = RaySphereIntersection(g_camera->GetPos(), g_camera->GetFront(), m_pos, m_range);
 
-            if (camDistance <= (m_range + 300.0f) && camVel.Mag() < 5.0f && camInteractive && inView)
+            if (camDistance <= (m_range + 300.0f) && camSpeed < 5.0f && camInteractive && inView)
             {
               Trigger();
             }
 
-            if (camDistance <= m_range && camVel.Mag() < 5.0f && camInteractive)
+            if (camDistance <= m_range && camSpeed < 5.0f && camInteractive)
             {
               Trigger();
             }

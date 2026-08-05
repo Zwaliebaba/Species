@@ -45,8 +45,7 @@ bool FeedingTube::Advance()
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const dishPos = m_focusMarker->GetWorldMatrix(rootMat).pos;
+  DirectX::XMFLOAT3 const dishPos = m_focusMarker->GetWorldPosition(rootMat);
 
   FeedingTube* ft = (FeedingTube*)g_location->GetBuilding(m_receiverId);
   if (ft && ft->m_type == Building::TypeFeedingTube)
@@ -69,9 +68,8 @@ DirectX::XMFLOAT3 FeedingTube::GetDishPos(float _predictionTime)
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  Matrix34 const worldMat = m_focusMarker->GetWorldMatrix(rootMat);
-  return worldMat.pos;
+  DirectX::XMFLOAT4X4 const worldMat = m_focusMarker->GetWorldMatrix(rootMat);
+  return DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
 }
 
 
@@ -95,8 +93,10 @@ DirectX::XMFLOAT3 FeedingTube::GetDishFront(float _predictionTime)
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_focusMarker->GetWorldMatrix(rootMat).f;
+  // Matrix34's `.f` was the FRONT basis vector. XMFLOAT4X4 numbers its rows
+  // rather than naming them, and front is row 2 -- _31.._33, not _21 or _31.
+  DirectX::XMFLOAT4X4 const worldMat = m_focusMarker->GetWorldMatrix(rootMat);
+  return DirectX::XMFLOAT3(worldMat._31, worldMat._32, worldMat._33);
 }
 
 DirectX::XMFLOAT3 FeedingTube::GetForwardsClippingDir(float _predictionTime, FeedingTube* _sender)
@@ -379,7 +379,6 @@ bool FeedingTube::IsInView()
   float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
   radius += m_radius;
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   if (g_camera->SphereInViewFrustum(midPoint, radius))
   {
     return true;

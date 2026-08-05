@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Catch the call sites a math-type conversion leaves behind.
 
-WHY THIS EXISTS. tasks/directxmath-migration.yaml replaces Vector3, Vector2,
+WHY THIS EXISTS. tasks/Archive/directxmath-migration.yaml replaces Vector3, Vector2,
 Matrix33 and Matrix34 with DirectX::XMFLOAT3, XMFLOAT2, XMFLOAT3X3 and
 XMFLOAT4X4. The legacy types carry methods and operators; the native ones carry
 none. So converting a member or a signature silently invalidates every call

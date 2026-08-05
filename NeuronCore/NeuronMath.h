@@ -7,7 +7,7 @@
 
 // The tree's math conventions, fixed once so that a 200-file migration cannot
 // end up half transposed. Read this before converting a call site.
-// See tasks/directxmath-migration.yaml T1.
+// See tasks/Archive/directxmath-migration.yaml T1.
 //
 // DirectXMath is header-only and ships in the Windows SDK, so including it adds
 // no library to link and no dependency to vendor. This header declares no TYPE:
@@ -37,8 +37,34 @@
 //   Computation loads to XMVECTOR / XMMATRIX and stores back. XMVECTOR and
 //   XMMATRIX are 16-byte aligned and MUST NOT become data members of
 //   heap-allocated game objects without a deliberate alignment decision — that
-//   is why storage is the XMFLOAT types. Functions taking vectors by value use
-//   XM_CALLCONV with FXMVECTOR / GXMVECTOR / CXMVECTOR in the documented order.
+//   is why storage is the XMFLOAT types.
+//
+//
+// WHICH ONE A PARAMETER TAKES
+//
+//   XMFLOAT3 const&   the value is STORAGE the caller holds in memory — an
+//                     entity's m_pos, a shape marker's world position, a
+//                     landscape query's ray. This is most of the tree's APIs.
+//
+//   FXMVECTOR         the value is a LINK IN A COMPUTATION the caller is
+//                     already doing in registers. Then, and only then, the
+//                     load is work the caller has done anyway and passing the
+//                     register saves a round trip through memory.
+//                     A function taking one MUST be XM_CALLCONV, with
+//                     FXMVECTOR / GXMVECTOR / HXMVECTOR / CXMVECTOR in the
+//                     documented order for the 1st-3rd, 4th, 5th-6th and
+//                     remaining vector parameters.
+//
+//   FXMVECTOR WITHOUT XM_CALLCONV is the one combination to avoid: it asks for
+//   a register type and then passes it by the default convention, which costs
+//   the alignment constraint and buys none of the speed.
+//
+//   Do NOT convert a storage-facing API to FXMVECTOR as a tidy-up. Moving the
+//   XMLoadFloat3 out of ten callee bodies and into two hundred call sites is a
+//   loss, several of those callees only read .x and .z and would spill the
+//   register straight back to the stack, and the *Access interfaces are
+//   virtual — an override has to match its base exactly, so the choice is not
+//   local to one function.
 //
 //
 // MULTIPLICATION IS ROW-VECTOR: v * M, NOT M * v
@@ -146,6 +172,23 @@
 // It does NOT change the RNG call sequence, iteration order, container
 // identity, or the wire format. Those are separate properties and none of them
 // is sanctioned to move.
+
+
+// THE TWO LEGACY CONSTANTS, kept by NAME and converted rather than deleted.
+//
+// g_upVector and g_zeroVector were `extern Vector3 const` in Vector3.cpp and
+// T25 had to answer for them. Twenty-eight live sites pass one straight into a
+// parameter — SpawnEntities' velocity, CreateParticle's velocity, an entity's
+// initial m_up — and every one of them reads better for the name than for a
+// braced literal repeated in place. DirectX::g_XMIdentityR1 and
+// XMVectorZero() are the right answer where an XMVECTOR is wanted; these are
+// for the sites that want STORAGE, which is what the parameter takes.
+//
+// They are the only two names in this header that are not a DirectXMath
+// spelling, and they exist because deleting them would have been churn rather
+// than progress. Nothing here computes: a constant is not an operator layer.
+inline constexpr DirectX::XMFLOAT3 g_upVector{0.0f, 1.0f, 0.0f};
+inline constexpr DirectX::XMFLOAT3 g_zeroVector{0.0f, 0.0f, 0.0f};
 
 
 // Build a world matrix from a front vector, an up hint and a position — the

@@ -95,8 +95,7 @@ bool ConstructionYard::Advance()
         DirectX::XMFLOAT4X4 mat;
         DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-        DirectX::XMFLOAT3 const primPos = m_primitives[5]->GetWorldMatrix(mat).pos;
+        DirectX::XMFLOAT3 const primPos = m_primitives[5]->GetWorldPosition(mat);
         WorldObjectId objId = g_location->SpawnEntities(primPos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0.0f);
         Entity* entity = g_location->GetEntity(objId);
         Armour* armour = (Armour*)entity;
@@ -183,9 +182,8 @@ void ConstructionYard::Render(float _predictionTime)
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    Matrix34 prim = m_primitives[i]->GetWorldMatrix(mat);
-    prim.pos.y += sinf(g_gameTime + i) * 5.0f;
+    DirectX::XMFLOAT4X4 prim = m_primitives[i]->GetWorldMatrix(mat);
+    prim._42 += sinf(g_gameTime + i) * 5.0f;
 
     m_primitive->Render(_predictionTime, prim);
   }
@@ -196,7 +194,6 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -327,8 +324,7 @@ void ConstructionYard::RenderAlphas(float _predictionTime)
 
       for (int i = 0; i < YARD_NUMRUNGSPIKES; ++i)
       {
-        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-        DirectX::XMFLOAT3 const spikePos = m_rungSpikes[i]->GetWorldMatrix(rungMat).pos;
+        DirectX::XMFLOAT3 const spikePos = m_rungSpikes[i]->GetWorldPosition(rungMat);
         DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&spikePos);
 
         for (int j = 0; j < numStars; ++j)
@@ -449,7 +445,6 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
   //
   // Render black blob
 
-  // Camera's accessors are still legacy -- Species belongs to T22.
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
@@ -488,8 +483,7 @@ void DisplayScreen::RenderAlphas(float _predictionTime)
   {
     DirectX::XMFLOAT4X4 buildingMat = GetWorldMatrix();
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const rayPosStore = m_rays[i]->GetWorldMatrix(buildingMat).pos;
+    DirectX::XMFLOAT3 const rayPosStore = m_rays[i]->GetWorldPosition(buildingMat);
     DirectX::XMVECTOR const rayPos = DirectX::XMLoadFloat3(&rayPosStore);
 
     DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();

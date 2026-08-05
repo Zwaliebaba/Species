@@ -3,9 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "Matrix34.h"
 #include "NeuronMath.h"
-#include "Vector3.h"
 
 #include "Entity.h"
 #include "WorldObject.h"
@@ -100,7 +98,7 @@ class Building : public WorldObject
     bool m_destroyed; // Building has been destroyed using the script command DestroyBuilding, remove it next Advance
 
     Shape* m_shape;
-    std::vector<ShapeMarker*> m_lights; // Ownership lights
+    std::vector<ShapeMarker*> m_lights;                 // Ownership lights
     std::vector<std::unique_ptr<BuildingPort>> m_ports; // Require Citizens in them to operate
 
     static Shape* s_controlPad;

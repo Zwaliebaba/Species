@@ -43,14 +43,14 @@ class GameCursor : public GameCursorAccess
     bool m_validPlacementOpportunity;
     bool m_moveableEntitySelected;
 
-    bool GetSelectedObject(WorldObjectId& _id, Vector3& _pos);
-    bool GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& _radius);
+    bool GetSelectedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos);
+    bool GetHighlightedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos, float& _radius);
 
-    void RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos);
+    void RenderSelectionArrows(WorldObjectId _id, DirectX::XMFLOAT3 const& _pos);
     void RenderSelectionArrow(float _screenX, float _screenY, float _screenDX, float _screenDY, float _size, float _alpha);
 
     void RenderMarkers();
-    void FindScreenEdge(Vector2 const& _line, float* _posX, float* _posY);
+    void FindScreenEdge(DirectX::XMFLOAT2 const& _line, float* _posX, float* _posY);
 
     std::vector<MouseCursorMarker*> m_markers;
 
@@ -59,12 +59,12 @@ class GameCursor : public GameCursorAccess
     GameCursor();
     ~GameCursor();
 
-    void CreateMarker(Vector3 const& _pos);
+    void CreateMarker(DirectX::XMFLOAT3 const& _pos) override;
     void BoostSelectionArrows(float _seconds); // Show selection arrows for a specified time
     void Render();
 
     void RenderStandardCursor(float _screenX, float _screenY);
-    void RenderWeaponMarker(Vector3 _pos, Vector3 _front, Vector3 _up);
+    void RenderWeaponMarker(DirectX::XMFLOAT3 _pos, DirectX::XMFLOAT3 _front, DirectX::XMFLOAT3 _up);
 
     bool AdviseHighlightingSomething() { return m_highlightingSomething; };
     bool AdvisePlacementOpportunity() { return m_validPlacementOpportunity; };
@@ -77,9 +77,11 @@ class GameCursor : public GameCursorAccess
 class MouseCursorMarker
 {
   public:
-    Vector3 m_pos;
-    Vector3 m_front;
-    Vector3 m_up;
+    // Braced to zero, as Vector3's default constructor did: RenderMarkers
+    // reads all three, and CreateMarker is the only thing that writes them.
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
     float m_startTime;
 };
 
@@ -112,5 +114,5 @@ class MouseCursor
     void SetColour(RGBAColour const& _col);
 
     void Render(float _x, float _y);
-    void Render3D(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up, bool _cameraScale = true);
+    void Render3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, bool _cameraScale = true);
 };

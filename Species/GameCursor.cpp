@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Bitmap.h"
+#include "GlVertex.h"
 #include "TargetCursor.h"
 #include "MathUtils.h"
 #include "Resource.h"
@@ -106,7 +107,7 @@ GameCursor::~GameCursor()
   SAFE_DELETE(m_cursorMissile);
 }
 
-bool GameCursor::GetSelectedObject(WorldObjectId& _id, Vector3& _pos)
+bool GameCursor::GetSelectedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos)
 {
   Team* team = g_location->GetMyTeam();
 
@@ -115,7 +116,10 @@ bool GameCursor::GetSelectedObject(WorldObjectId& _id, Vector3& _pos)
     Entity* selectedEnt = team->GetMyEntity();
     if (selectedEnt)
     {
-      _pos = AsLegacy(selectedEnt->m_pos) + AsLegacy(selectedEnt->m_centrePos) + AsLegacy(selectedEnt->m_vel) * g_predictionTime;
+      DirectX::XMStoreFloat3(&_pos,
+                             DirectX::XMVectorMultiplyAdd(
+                               DirectX::XMLoadFloat3(&selectedEnt->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
+                               DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&selectedEnt->m_pos), DirectX::XMLoadFloat3(&selectedEnt->m_centrePos))));
       _id = selectedEnt->m_id;
       return true;
     }
@@ -134,7 +138,9 @@ bool GameCursor::GetSelectedObject(WorldObjectId& _id, Vector3& _pos)
       Unit* selected = team->GetMyUnit();
       if (selected)
       {
-        _pos = AsLegacy(selected->m_centrePos) + AsLegacy(selected->m_vel) * g_predictionTime;
+        DirectX::XMStoreFloat3(&_pos,
+                               DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&selected->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
+                                                            DirectX::XMLoadFloat3(&selected->m_centrePos)));
         _id.Set(selected->m_teamId, selected->m_unitId, -1, -1);
 
         // Add the centre pos
@@ -143,7 +149,7 @@ bool GameCursor::GetSelectedObject(WorldObjectId& _id, Vector3& _pos)
           if (selected->m_entities.ValidIndex(i))
           {
             Entity* ent = selected->m_entities[i];
-            _pos += ent->m_centrePos;
+            DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&ent->m_centrePos)));
             break;
           }
         }
@@ -157,7 +163,7 @@ bool GameCursor::GetSelectedObject(WorldObjectId& _id, Vector3& _pos)
 }
 
 
-bool GameCursor::GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& _radius)
+bool GameCursor::GetHighlightedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos, float& _radius)
 {
   WorldObjectId id;
   bool somethingHighlighted = false;
@@ -204,7 +210,8 @@ bool GameCursor::GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& 
       if (unit)
       {
         _id = id;
-        _pos = AsLegacy(unit->m_centrePos) + AsLegacy(unit->m_vel) * g_predictionTime;
+        DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&unit->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
+                                                                   DirectX::XMLoadFloat3(&unit->m_centrePos)));
         _radius = unit->m_radius;
         found = true;
 
@@ -214,7 +221,7 @@ bool GameCursor::GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& 
           if (unit->m_entities.ValidIndex(i))
           {
             Entity* ent = unit->m_entities[i];
-            _pos += ent->m_centrePos;
+            DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&ent->m_centrePos)));
             break;
           }
         }
@@ -225,7 +232,10 @@ bool GameCursor::GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& 
       // Found an entity
       Entity* entity = g_location->GetEntity(id);
       _id = id;
-      _pos = AsLegacy(entity->m_pos) + AsLegacy(entity->m_vel) * g_predictionTime + AsLegacy(entity->m_centrePos);
+      DirectX::XMStoreFloat3(
+        &_pos, DirectX::XMVectorAdd(DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&entity->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
+                                                                 DirectX::XMLoadFloat3(&entity->m_pos)),
+                                    DirectX::XMLoadFloat3(&entity->m_centrePos)));
       _radius = entity->m_radius * 1.5f;
       if (entity->m_type == Entity::TypeCitizen)
         _radius = entity->m_radius * 2.0f;
@@ -237,10 +247,12 @@ bool GameCursor::GetHighlightedObject(WorldObjectId& _id, Vector3& _pos, float& 
 }
 
 
-void GameCursor::CreateMarker(Vector3 const& _pos)
+void GameCursor::CreateMarker(DirectX::XMFLOAT3 const& _pos)
 {
-  Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(_pos.x, _pos.z);
-  Vector3 front = (landNormal ^ g_upVector).Normalise();
+  DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(_pos.x, _pos.z);
+  // operator^ was the cross product; g_upVector is (0,1,0).
+  DirectX::XMFLOAT3 front;
+  DirectX::XMStoreFloat3(&front, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
 
   MouseCursorMarker* marker = new MouseCursorMarker();
   marker->m_pos = _pos;
@@ -286,7 +298,7 @@ void GameCursor::Render()
 
   int screenX = g_target->X();
   int screenY = g_target->Y();
-  Vector3 mousePos = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
   mousePos.y = std::max(1.0f, mousePos.y);
 
   bool cursorRendered = false;
@@ -333,8 +345,11 @@ void GameCursor::Render()
     Task* task = g_taskManager->GetCurrentTask();
 
     WorldObjectId selectedId;
-    Vector3 selectedWorldPos;
-    Vector3 highlightedWorldPos;
+    // Braced to zero: GetSelectedObject and GetHighlightedObject leave these
+    // untouched when they return false, and Vector3's constructor is what made
+    // that the origin. Both are read below whether or not they were written.
+    DirectX::XMFLOAT3 selectedWorldPos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 highlightedWorldPos{0.0f, 0.0f, 0.0f};
     WorldObjectId highlightedId;
     float highlightedRadius;
 
@@ -351,7 +366,9 @@ void GameCursor::Render()
 
       if (somethingHighlighted)
       {
-        float camDist = (TheCamera()->GetPos() - highlightedWorldPos).Mag();
+        DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+        float camDist = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&highlightedWorldPos))));
         float posX, posY;
         TheCamera()->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
         m_cursorSelection->SetSize(highlightedRadius * 100 / sqrt(camDist));
@@ -368,8 +385,10 @@ void GameCursor::Render()
       bool validPlacement = g_taskManager->IsValidTargetArea(task->m_id, mousePos);
       m_cursorPlacement->SetAnimation(validPlacement);
       m_cursorPlacement->SetSize(40.0f);
-      Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
-      Vector3 front = (landNormal ^ g_upVector).Normalise();
+      DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
+      DirectX::XMFLOAT3 front;
+      DirectX::XMStoreFloat3(&front,
+                             DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
       m_cursorPlacement->Render3D(mousePos, front, landNormal);
       if (!validPlacement)
         m_cursorDisabled->Render3D(mousePos, front, landNormal);
@@ -392,10 +411,12 @@ void GameCursor::Render()
             InsertionSquad* squad = (InsertionSquad*)g_location->GetMyTeam()->GetMyUnit();
             Squadie* pointMan = (Squadie*)squad->GetPointMan();
 
-            Vector3 t = pointMan->GetSecondaryWeaponTarget();
+            DirectX::XMFLOAT3 t = pointMan->GetSecondaryWeaponTarget();
 
-            Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(t.x, t.z);
-            Vector3 front = (landNormal ^ g_upVector).Normalise();
+            DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(t.x, t.z);
+            DirectX::XMFLOAT3 front;
+            DirectX::XMStoreFloat3(&front,
+                                   DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
 
             RenderWeaponMarker(t, front, landNormal);
           }
@@ -407,7 +428,9 @@ void GameCursor::Render()
     {
       if (somethingHighlighted && !(somethingSelected && highlightedId.GetUnitId() == UNIT_BUILDINGS))
       {
-        float camDist = (TheCamera()->GetPos() - highlightedWorldPos).Mag();
+        DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+        float camDist = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&highlightedWorldPos))));
         if (camDist > 100 || !somethingSelected || selectedId != highlightedId)
         {
           float posX, posY;
@@ -446,7 +469,10 @@ void GameCursor::Render()
             RadarDish* dish = (RadarDish*)building;
             if (dish->Connected())
             {
-              Vector3 entrancePos, entranceFront;
+              // Braced to zero: GetEntrance writes both, but Vector3's
+              // constructor is what made that true before the call.
+              DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
+              DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
               dish->GetEntrance(entrancePos, entranceFront);
               float posX, posY;
               TheCamera()->Get2DScreenPos(entrancePos, &posX, &posY);
@@ -462,10 +488,13 @@ void GameCursor::Render()
         // Selected a unit OR an entity
         if (!somethingHighlighted || highlightedId.GetUnitId() == UNIT_BUILDINGS)
         {
-          Vector3 targetFront = (mousePos - selectedWorldPos).Normalise();
-          Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
-          Vector3 targetRight = (targetFront ^ landNormal).Normalise();
-          targetFront = (targetRight ^ landNormal).Normalise();
+          DirectX::XMVECTOR const targetFrontVec =
+            DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&mousePos), DirectX::XMLoadFloat3(&selectedWorldPos)));
+          DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
+          DirectX::XMVECTOR const normal = DirectX::XMLoadFloat3(&landNormal);
+          DirectX::XMVECTOR const targetRight = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(targetFrontVec, normal));
+          DirectX::XMFLOAT3 targetFront;
+          DirectX::XMStoreFloat3(&targetFront, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(targetRight, normal)));
           m_cursorMoveHere->SetSize(30.0f);
           m_cursorMoveHere->Render3D(mousePos, targetFront, landNormal);
           cursorRendered = true;
@@ -484,8 +513,10 @@ void GameCursor::Render()
       if (!somethingSelected && !somethingHighlighted)
       {
         // Looking at empty landscape
-        Vector3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
-        Vector3 front = (landNormal ^ g_upVector).Normalise();
+        DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
+        DirectX::XMFLOAT3 front;
+        DirectX::XMStoreFloat3(&front,
+                               DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
         m_cursorHighlight->SetAnimation(false);
         m_cursorHighlight->SetSize(30.0f);
         m_cursorHighlight->Render3D(mousePos, front, landNormal);
@@ -571,7 +602,7 @@ void BottomArrow(int x, int y, int size)
 }
 
 
-void GameCursor::FindScreenEdge(Vector2 const& _line, float* _posX, float* _posY)
+void GameCursor::FindScreenEdge(DirectX::XMFLOAT2 const& _line, float* _posX, float* _posY)
 {
   //    y = mx + c
   //    c = y - mx
@@ -638,12 +669,20 @@ void GameCursor::FindScreenEdge(Vector2 const& _line, float* _posX, float* _posY
 
 void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _screenDX, float _screenDY, float _size, float _alpha)
 {
-  Vector2 pos(_screenX, _screenY);
-  Vector2 gradient(_screenDX, _screenDY);
-  Vector2 rightAngle = gradient;
+  DirectX::XMFLOAT2 pos(_screenX, _screenY);
+  DirectX::XMFLOAT2 gradient(_screenDX, _screenDY);
+  DirectX::XMFLOAT2 rightAngle = gradient;
   float tempX = rightAngle.x;
   rightAngle.x = rightAngle.y;
   rightAngle.y = tempX * -1;
+
+  // The four corners, worked out once instead of six times. glVertex2fv used
+  // to read Vector2::GetData(); XMFLOAT2 has no such accessor and the two
+  // components are clearer written out than round-tripped through an array.
+  float const halfX = rightAngle.x * _size / 2.0f;
+  float const halfY = rightAngle.y * _size / 2.0f;
+  float const alongX = gradient.x * _size;
+  float const alongY = gradient.y * _size;
 
   glEnable(GL_BLEND);
   glDisable(GL_CULL_FACE);
@@ -657,13 +696,13 @@ void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _scr
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
-  glVertex2fv((pos - rightAngle * _size / 2.0f).GetData());
+  glVertex2f(pos.x - halfX, pos.y - halfY);
   glTexCoord2i(0, 0);
-  glVertex2fv((pos - rightAngle * _size / 2.0f + gradient * _size).GetData());
+  glVertex2f(pos.x - halfX + alongX, pos.y - halfY + alongY);
   glTexCoord2i(1, 0);
-  glVertex2fv((pos + rightAngle * _size / 2.0f + gradient * _size).GetData());
+  glVertex2f(pos.x + halfX + alongX, pos.y + halfY + alongY);
   glTexCoord2i(1, 1);
-  glVertex2fv((pos + rightAngle * _size / 2.0f).GetData());
+  glVertex2f(pos.x + halfX, pos.y + halfY);
   glEnd();
 
   glColor4f(1.0f, 1.0f, 0.3f, _alpha);
@@ -672,13 +711,13 @@ void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _scr
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
-  glVertex2fv((pos - rightAngle * _size / 2.0f).GetData());
+  glVertex2f(pos.x - halfX, pos.y - halfY);
   glTexCoord2i(0, 0);
-  glVertex2fv((pos - rightAngle * _size / 2.0f + gradient * _size).GetData());
+  glVertex2f(pos.x - halfX + alongX, pos.y - halfY + alongY);
   glTexCoord2i(1, 0);
-  glVertex2fv((pos + rightAngle * _size / 2.0f + gradient * _size).GetData());
+  glVertex2f(pos.x + halfX + alongX, pos.y + halfY + alongY);
   glTexCoord2i(1, 1);
-  glVertex2fv((pos + rightAngle * _size / 2.0f).GetData());
+  glVertex2f(pos.x + halfX, pos.y + halfY);
   glEnd();
 
   glDepthMask(true);
@@ -687,7 +726,7 @@ void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _scr
 }
 
 
-void GameCursor::RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos)
+void GameCursor::RenderSelectionArrows(WorldObjectId _id, DirectX::XMFLOAT3 const& _pos)
 {
   Entity* ent = g_location->GetEntity(_id);
   Unit* unit = g_location->GetUnit(_id);
@@ -713,14 +752,18 @@ void GameCursor::RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos)
   TheCamera()->Get2DScreenPos(_pos, &screenX, &screenY);
   screenY = screenH - screenY;
 
-  Vector3 toCam = TheCamera()->GetPos() - _pos;
-  float angle = toCam * TheCamera()->GetFront();
-  Vector3 rotationVector = toCam ^ TheCamera()->GetFront();
+  DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+  DirectX::XMFLOAT3 const camFrontStore = TheCamera()->GetFront();
+  DirectX::XMVECTOR const camFront = DirectX::XMLoadFloat3(&camFrontStore);
+  DirectX::XMVECTOR const toCam = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_pos));
+  // operator* between two Vector3s was the DOT product.
+  float angle = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toCam, camFront));
+  DirectX::XMVECTOR const rotationVector = DirectX::XMVector3Cross(toCam, camFront);
 
   if (angle <= 0.0f && screenX >= 0 && screenX < screenW && screenY >= 0 && screenY < screenH)
   {
     // _pos is onscreen
-    float camDist = toCam.Mag();
+    float camDist = DirectX::XMVectorGetX(DirectX::XMVector3Length(toCam));
     m_selectionArrowBoost -= g_advanceTime * 0.4f;
 
     float distanceOut = 1000 / sqrtf(camDist);
@@ -744,16 +787,27 @@ void GameCursor::RenderSelectionArrows(WorldObjectId _id, Vector3 const& _pos)
   else
   {
     // _pos is offscreen
-    Vector3 camPos = TheCamera()->GetPos() + TheCamera()->GetFront() * 1000;
-    Vector3 camToTarget = (_pos - camPos).SetLength(100);
+    DirectX::XMVECTOR const camPos = DirectX::XMVectorMultiplyAdd(camFront, DirectX::XMVectorReplicate(1000.0f), DirectX::XMLoadFloat3(&camPosStore));
+    // SetLength answered a zero-length input with (100,0,0). The camera is a
+    // thousand units in front of itself here, so _pos landing exactly on
+    // camPos would mean the selected object sitting on that point -- reachable
+    // in principle and a QNaN on screen if it happened, so the fallback stands.
+    DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), camPos);
+    DirectX::XMVECTOR camToTarget;
+    if (NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget)), 0.0f))
+      camToTarget = DirectX::XMVectorSet(100.0f, 0.0f, 0.0f, 0.0f);
+    else
+      camToTarget = DirectX::XMVectorScale(DirectX::XMVector3Normalize(toTarget), 100.0f);
 
     float camX = screenW / 2.0f;
     float camY = screenH / 2.0f;
     float posX, posY;
-    TheCamera()->Get2DScreenPos(camPos + camToTarget, &posX, &posY);
+    DirectX::XMFLOAT3 arrowTarget;
+    DirectX::XMStoreFloat3(&arrowTarget, DirectX::XMVectorAdd(camPos, camToTarget));
+    TheCamera()->Get2DScreenPos(arrowTarget, &posX, &posY);
 
-    Vector2 lineNormal(posX - camX, posY - camY);
-    lineNormal.Normalise();
+    DirectX::XMFLOAT2 lineNormal(posX - camX, posY - camY);
+    DirectX::XMStoreFloat2(&lineNormal, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&lineNormal)));
 
     float edgeX, edgeY;
     FindScreenEdge(lineNormal, &edgeX, &edgeY);
@@ -952,7 +1006,7 @@ void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
     }
 }*/
 
-void GameCursor::RenderWeaponMarker(Vector3 _pos, Vector3 _front, Vector3 _up)
+void GameCursor::RenderWeaponMarker(DirectX::XMFLOAT3 _pos, DirectX::XMFLOAT3 _front, DirectX::XMFLOAT3 _up)
 {
   m_cursorPlacement->SetSize(40.0f);
   m_cursorPlacement->SetShadowed(true);
@@ -1078,9 +1132,10 @@ void MouseCursor::Render(float _x, float _y)
 }
 
 
-void MouseCursor::Render3D(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up, bool _cameraScale)
+void MouseCursor::Render3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, bool _cameraScale)
 {
-  Vector3 rightAngle = (_front ^ _up).Normalise();
+  DirectX::XMVECTOR const front = DirectX::XMLoadFloat3(&_front);
+  DirectX::XMVECTOR const rightAngle = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::XMLoadFloat3(&_up)));
 
   glEnable(GL_TEXTURE_2D);
 
@@ -1092,13 +1147,18 @@ void MouseCursor::Render3D(Vector3 const& _pos, Vector3 const& _front, Vector3 c
   float scale = GetSize();
   if (_cameraScale)
   {
-    float camDist = (TheCamera()->GetPos() - _pos).Mag();
+    DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+    float camDist =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_pos))));
     scale *= sqrtf(camDist) / 40.0f;
   }
 
-  Vector3 pos = _pos;
-  pos -= m_hotspotX * rightAngle * scale;
-  pos += m_hotspotY * _front * scale;
+  DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&_pos);
+  pos = DirectX::XMVectorSubtract(pos, DirectX::XMVectorScale(rightAngle, m_hotspotX * scale));
+  pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, m_hotspotY * scale));
+
+  DirectX::XMVECTOR const alongRight = DirectX::XMVectorScale(rightAngle, scale);
+  DirectX::XMVECTOR const alongFront = DirectX::XMVectorScale(front, scale);
 
   if (m_shadowed)
   {
@@ -1108,13 +1168,13 @@ void MouseCursor::Render3D(Vector3 const& _pos, Vector3 const& _front, Vector3 c
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 1);
-    glVertex3fv((pos).GetData());
+    EmitVertex(pos);
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + rightAngle * scale).GetData());
+    EmitVertex(DirectX::XMVectorAdd(pos, alongRight));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos - _front * scale + rightAngle * scale).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, alongFront), alongRight));
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - _front * scale).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(pos, alongFront));
     glEnd();
   }
 
@@ -1124,13 +1184,13 @@ void MouseCursor::Render3D(Vector3 const& _pos, Vector3 const& _front, Vector3 c
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
-  glVertex3fv((pos).GetData());
+  EmitVertex(pos);
   glTexCoord2i(1, 1);
-  glVertex3fv((pos + rightAngle * scale).GetData());
+  EmitVertex(DirectX::XMVectorAdd(pos, alongRight));
   glTexCoord2i(1, 0);
-  glVertex3fv((pos - _front * scale + rightAngle * scale).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, alongFront), alongRight));
   glTexCoord2i(0, 0);
-  glVertex3fv((pos - _front * scale).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(pos, alongFront));
   glEnd();
 
   glDepthMask(true);

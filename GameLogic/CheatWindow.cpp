@@ -14,6 +14,12 @@
 #include "WorldPointers.h"
 
 
+// g_zeroVector, which the five spawn calls below passed as a velocity.
+// directxmath-migration T25 retires the legacy constant; this is the same
+// (0,0,0) as native storage, named rather than repeated.
+static DirectX::XMFLOAT3 const s_noVelocity{0.0f, 0.0f, 0.0f};
+
+
 #ifdef CHEATMENU_ENABLED
 
 class KillAllEnemiesButton : public SpeciesButton
@@ -83,13 +89,13 @@ class SpawnCitizensButton : public SpeciesButton
     {
       if (g_location)
       {
-        Vector3 rayStart;
-        Vector3 rayDir;
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        Vector3 _pos;
+        DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
         g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
-        g_location->SpawnEntities(_pos, m_teamId, -1, Entity::TypeCitizen, 20, g_zeroVector, 30);
+        g_location->SpawnEntities(_pos, m_teamId, -1, Entity::TypeCitizen, 20, s_noVelocity, 30);
       }
     }
 };
@@ -101,13 +107,13 @@ class SpawnTankButton : public SpeciesButton
     {
       if (g_location)
       {
-        Vector3 rayStart;
-        Vector3 rayDir;
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        Vector3 _pos;
+        DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
         g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
-        g_location->SpawnEntities(_pos, 2, -1, Entity::TypeArmour, 1, g_zeroVector, 0);
+        g_location->SpawnEntities(_pos, 2, -1, Entity::TypeArmour, 1, s_noVelocity, 0);
       }
     }
 };
@@ -119,13 +125,13 @@ class SpawnViriiButton : public SpeciesButton
     {
       if (g_location)
       {
-        Vector3 rayStart;
-        Vector3 rayDir;
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        Vector3 _pos;
+        DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
         g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
-        g_location->SpawnEntities(_pos, 1, -1, Entity::TypeVirii, 20, g_zeroVector, 0, 1000.0f);
+        g_location->SpawnEntities(_pos, 1, -1, Entity::TypeVirii, 20, s_noVelocity, 0, 1000.0f);
       }
     }
 };
@@ -137,16 +143,20 @@ class SpawnSpiritButton : public SpeciesButton
     {
       if (g_location)
       {
-        Vector3 rayStart;
-        Vector3 rayDir;
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        Vector3 _pos;
+        DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
         g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
         for (int i = 0; i < 10; ++i)
         {
-          Vector3 spiritPos = _pos + Vector3(syncsfrand(20.0f), 0.0f, syncsfrand(20.0f));
-          g_location->SpawnSpirit(spiritPos, g_zeroVector, 2, WorldObjectId());
+          // The RNG call order is not sanctioned to change, so the two
+          // syncsfrand calls stay in this order and in this one expression.
+          DirectX::XMFLOAT3 spiritPos;
+          DirectX::XMStoreFloat3(
+            &spiritPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::XMVectorSet(syncsfrand(20.0f), 0.0f, syncsfrand(20.0f), 0.0f)));
+          g_location->SpawnSpirit(spiritPos, s_noVelocity, 2, WorldObjectId());
         }
       }
     }
@@ -256,10 +266,14 @@ class SpawnPortsButton : public SpeciesButton
           Building* building = g_location->m_buildings[i];
           for (int p = 0; p < building->GetNumPorts(); ++p)
           {
-            Vector3 portPos, portFront;
+            // Braced to zero, as Vector3's default constructor did:
+            // GetPortPosition leaves both untouched on a building with no
+            // shape marker for the port it was asked about.
+            DirectX::XMFLOAT3 portPos{0.0f, 0.0f, 0.0f};
+            DirectX::XMFLOAT3 portFront{0.0f, 0.0f, 0.0f};
             building->GetPortPosition(p, portPos, portFront);
 
-            g_location->SpawnEntities(portPos, 0, -1, Entity::TypeCitizen, 3, g_zeroVector, 30.0f);
+            g_location->SpawnEntities(portPos, 0, -1, Entity::TypeCitizen, 3, s_noVelocity, 30.0f);
           }
         }
       }

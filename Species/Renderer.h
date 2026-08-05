@@ -3,12 +3,10 @@
 #include "RendererAccess.h"
 #include "WorldPointers.h"
 
-#define PIXEL_EFFECT_GRID_RES	16
+#define PIXEL_EFFECT_GRID_RES 16
 
 class Shape;
 class ShapeFragment;
-class Vector3;
-class Matrix34;
 
 class Renderer : public RendererAccess
 {
@@ -34,7 +32,7 @@ class Renderer : public RendererAccess
     double m_totalMatrix[16]; // Modelview matrix * Projection matrix
 
     float m_fadedness; // 1.0 means black screen. 0.0 means not fade out at all.
-    float m_fadeRate; // +ve means fading out, -ve means fading in
+    float m_fadeRate;  // +ve means fading out, -ve means fading in
     float m_fadeDelay; // Amount of time left to wait before starting fade
 
     unsigned int m_pixelEffectTexId;
@@ -88,12 +86,12 @@ class Renderer : public RendererAccess
     void SetupMatricesFor2D() const override;
 
     void UpdateTotalMatrix();
-    void Get2DScreenPos(const Vector3& _in, Vector3* _out);
+    void Get2DScreenPos(DirectX::XMFLOAT3 const& _in, DirectX::XMFLOAT3* _out);
     const double* GetTotalMatrix();
 
-    void RasteriseSphere(const Vector3& _pos, float _radius) override;
-    void MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform) override;
-    void MarkUsedCells(const Shape* _shape, const Matrix34& _transform) override;
+    void RasteriseSphere(DirectX::XMFLOAT3 const& _pos, float _radius) override;
+    void MarkUsedCells(ShapeFragment const* _frag, DirectX::XMFLOAT4X4 const& _transform) override;
+    void MarkUsedCells(Shape const* _shape, DirectX::XMFLOAT4X4 const& _transform) override;
 
     bool IsFadeComplete() const override;
     void StartFadeOut() override;

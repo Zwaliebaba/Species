@@ -778,7 +778,6 @@ bool AISpawnPoint::Advance()
 
     if (m_timer <= 0.0f)
     {
-      // Location::SpawnEntities converts in T18; the seam takes both arguments.
       g_location->SpawnEntities(m_pos, m_id.GetTeamId(), -1, m_entityType, 1, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 20.0f, 100.0f, m_routeId);
       ++m_numSpawned;
 

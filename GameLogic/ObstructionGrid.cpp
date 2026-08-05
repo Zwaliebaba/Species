@@ -4,7 +4,6 @@
 #include "HiResTime.h"
 #include "DebugRender.h"
 #include "Debug.h"
-#include "Vector2.h"
 
 #include "Location.h"
 #include "ObstructionGrid.h"

@@ -1,9 +1,9 @@
 #pragma once
 
+#include "NeuronMath.h"
+
 class Shape;
 class ShapeFragment;
-class Matrix34;
-class Vector3;
 
 // What the layers below Species ask the renderer to do.
 //
@@ -38,9 +38,9 @@ class RendererAccess
     virtual void SetupMatricesFor3D() const = 0;
     virtual void SetupMatricesFor2D() const = 0;
 
-    virtual void RasteriseSphere(const Vector3& _pos, float _radius) = 0;
-    virtual void MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform) = 0;
-    virtual void MarkUsedCells(const Shape* _shape, const Matrix34& _transform) = 0;
+    virtual void RasteriseSphere(DirectX::XMFLOAT3 const& _pos, float _radius) = 0;
+    virtual void MarkUsedCells(ShapeFragment const* _frag, DirectX::XMFLOAT4X4 const& _transform) = 0;
+    virtual void MarkUsedCells(Shape const* _shape, DirectX::XMFLOAT4X4 const& _transform) = 0;
 
     virtual void StartFadeOut() = 0;
 

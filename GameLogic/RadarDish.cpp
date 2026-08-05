@@ -94,10 +94,9 @@ void RadarDish::SetDetail(int _detail)
 
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  Matrix34 const worldMat = m_entrance->GetWorldMatrix(rootMat);
-  m_entrancePos = worldMat.pos;
-  m_entranceFront = worldMat.f;
+  DirectX::XMFLOAT4X4 const worldMat = m_entrance->GetWorldMatrix(rootMat);
+  m_entrancePos = DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
+  m_entranceFront = DirectX::XMFLOAT3(worldMat._31, worldMat._32, worldMat._33);
 }
 
 
@@ -135,10 +134,9 @@ bool RadarDish::Advance()
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  Matrix34 const worldMat = m_focusMarker->GetWorldMatrix(rootMat);
-  DirectX::XMFLOAT3 const dishPos = worldMat.pos;
-  DirectX::XMFLOAT3 const dishFront = worldMat.f;
+  DirectX::XMFLOAT4X4 const worldMat = m_focusMarker->GetWorldMatrix(rootMat);
+  DirectX::XMFLOAT3 const dishPos = DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
+  DirectX::XMFLOAT3 const dishFront = DirectX::XMFLOAT3(worldMat._31, worldMat._32, worldMat._33);
 
 
   //
@@ -184,9 +182,8 @@ bool RadarDish::Advance()
       targetFront.y = minAngle;
     DirectX::XMVECTOR const clampedFront = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&targetFront));
 
-    // worldMat is Matrix34 -- T10's seam -- so its rows are Vector3 and &row is
-    // a Vector3*. Copy-initialising takes the seam's reference conversion.
-    DirectX::XMFLOAT3 const dishUp = worldMat.u;
+    // Row 1 of the transform is what Matrix34 called u.
+    DirectX::XMFLOAT3 const dishUp = DirectX::XMFLOAT3(worldMat._21, worldMat._22, worldMat._23);
     float amount = DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&dishUp), clampedFront));
 
     // Row 0 of the transform is what Matrix34 called r. ShapeFragment stores
@@ -291,8 +288,7 @@ DirectX::XMFLOAT3 RadarDish::GetDishPos(float _predictionTime)
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_focusMarker->GetWorldMatrix(rootMat).pos;
+  return m_focusMarker->GetWorldPosition(rootMat);
 }
 
 
@@ -316,8 +312,10 @@ DirectX::XMFLOAT3 RadarDish::GetDishFront(float _predictionTime)
   DirectX::XMFLOAT4X4 rootMat;
   DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_focusMarker->GetWorldMatrix(rootMat).f;
+  // Matrix34's `.f` was the FRONT basis vector. XMFLOAT4X4 numbers its rows
+  // rather than naming them, and front is row 2 -- _31.._33, not _21 or _31.
+  DirectX::XMFLOAT4X4 const worldMat = m_focusMarker->GetWorldMatrix(rootMat);
+  return DirectX::XMFLOAT3(worldMat._31, worldMat._32, worldMat._33);
 }
 
 
@@ -522,10 +520,9 @@ bool RadarDish::GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
     DirectX::XMStoreFloat4x4(
       &rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&receiver->m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&receiver->m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    Matrix34 const worldMat = receiver->m_entrance->GetWorldMatrix(rootMat);
-    _pos = worldMat.pos;
-    _front = worldMat.f;
+    DirectX::XMFLOAT4X4 const worldMat = receiver->m_entrance->GetWorldMatrix(rootMat);
+    _pos = DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
+    _front = DirectX::XMFLOAT3(worldMat._31, worldMat._32, worldMat._33);
     return true;
   }
   return false;

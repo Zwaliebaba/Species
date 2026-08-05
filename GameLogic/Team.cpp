@@ -500,7 +500,6 @@ void Team::RenderVirii(float _predictionTime)
         Virii* virii = (Virii*)entity;
         if (virii->IsInView())
         {
-          // CameraAccess still returns a legacy vector; T12 converts it.
           DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
           float rangeToCam = DirectX::XMVectorGetX(
             DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&virii->m_pos), DirectX::XMLoadFloat3(&cameraPos))));
@@ -674,9 +673,6 @@ void TeamControls::Advance()
   InputDetails details;
   if (g_inputManager->controlEvent(ControlUnitMove, details))
   {
-    // CameraAccess still returns a legacy vector -- it converts in T12, which
-    // sits behind T22. Copy-initialising the native type takes the seam without
-    // naming the legacy one.
     DirectX::XMFLOAT3 const controlVector = g_camera->GetControlVector();
 
     DirectX::XMVECTOR const right = DirectX::XMLoadFloat3(&controlVector);

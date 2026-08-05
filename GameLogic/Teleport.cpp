@@ -106,7 +106,6 @@ bool Teleport::IsInView()
   float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
   radius += m_radius;
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   if (g_camera->SphereInViewFrustum(midPoint, radius))
   {
     return true;
@@ -157,8 +156,7 @@ void Teleport::RenderSpirit(DirectX::XMFLOAT3 const& _pos, int _teamId)
 {
   DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the eight vertices below, which each called them afresh.
+  // Hoisted out of the eight vertices below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -350,10 +348,9 @@ bool Teleport::GetEntrance(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  Matrix34 const worldMat = m_entrance->GetWorldMatrix(rootMat);
-  _pos = worldMat.pos;
-  _front = worldMat.f;
+  DirectX::XMFLOAT4X4 const worldMat = m_entrance->GetWorldMatrix(rootMat);
+  _pos = DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
+  _front = DirectX::XMFLOAT3(worldMat._31, worldMat._32, worldMat._33);
   return true;
 }
 

@@ -203,7 +203,9 @@ class CreateButton : public SpeciesButton
           g_locationEditor->SetTool(LocationEditorAccess::ToolMove);
 
           // Where did we click?
-          Vector3 rayStart, rayDir, hitPos;
+          DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+          DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+          DirectX::XMFLOAT3 hitPos{0.0f, 0.0f, 0.0f};
           g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
           g_location->m_landscape.RayHit(rayStart, rayDir, &hitPos);
 

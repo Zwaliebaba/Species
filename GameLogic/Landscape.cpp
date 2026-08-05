@@ -14,8 +14,6 @@
 #include "Profiler.h"
 #include "Resource.h"
 #include "RgbColour.h"
-#include "Vector2.h"
-#include "Vector3.h"
 
 #include "GlobalWorld.h"
 #include "Landscape.h"
@@ -614,28 +612,23 @@ float Landscape::GetWorldSizeZ() const
 }
 
 
-bool Landscape::IsInLandscape(Vector3 const& _pos)
+bool Landscape::IsInLandscape(DirectX::XMFLOAT3 const& _pos)
 {
   return (_pos.x >= 0.0f && _pos.z >= 0.0f && _pos.x < GetWorldSizeX() && _pos.z < GetWorldSizeZ());
 }
 
 
-// Everything from here to the end of SphereHit stays on the legacy types on
-// purpose -- see the note on UnsafeRayHit in Landscape.h. The bodies below pass
-// their out-pointers into MathUtils, whose geometry API still takes Vector3*,
-// and the seam does not reach through a pointer.
-
 // *** RayHit
 // Does not assume that rayDir is normalised
 // Warning: I think that it could hit triangle behind rayStart,
 // not only triangles in front of rayStart.
-bool Landscape::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3* _result) const
+bool Landscape::RayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
 {
   if (!m_heightMap)
     return false;
 
-  Vector3 rayDirNormalised = _rayDir;
-  rayDirNormalised.Normalise();
+  DirectX::XMFLOAT3 rayDirNormalised;
+  DirectX::XMStoreFloat3(&rayDirNormalised, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_rayDir)));
 
   // Find out which cell the ray starts in
   int x0 = m_heightMap->GetMapIndexX(_rayStart.x);
@@ -650,7 +643,15 @@ bool Landscape::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3
 
   // *** Find out which quadrant the 2D projection of the ray goes in ***
 
-  Vector2 segIntersectResult;
+  // Vector2's converting constructor from a Vector3 dropped y, and that
+  // projection is the whole reason the 2D tests below can be handed a 3D ray.
+  // XMFLOAT2 has no such constructor, so it is written out once.
+  DirectX::XMFLOAT2 const rayStart2D(_rayStart.x, _rayStart.z);
+  DirectX::XMFLOAT2 const rayDir2D(rayDirNormalised.x, rayDirNormalised.z);
+
+  // Braced to zero: every branch below writes it through SegRayIntersection2D's
+  // out-pointer, but only on the paths that do not return false first.
+  DirectX::XMFLOAT2 segIntersectResult{0.0f, 0.0f};
   if (rayDirNormalised.x > 0.0f)
   {
     if (rayDirNormalised.z > 0.0f)
@@ -660,14 +661,14 @@ bool Landscape::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3
       // Find if it ever intersects the landscape grid. The ray will intersect
       // the landscape grid if and only if it intersect either the bottom edge
       // or the left hand edge of the grid
-      Vector2 segStart(0.0f, 0.0f);
-      Vector2 segEnd(GetWorldSizeX(), 0.0f);
-      bool intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, rayDirNormalised, &segIntersectResult);
+      DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
+      DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), 0.0f);
+      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
       if (!intersects)
       {
-        Vector2 segStart(0.0f, 0.0f);
-        Vector2 segEnd(0.0f, GetWorldSizeZ());
-        intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, rayDirNormalised, &segIntersectResult);
+        DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
+        DirectX::XMFLOAT2 segEnd(0.0f, GetWorldSizeZ());
+        intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
         if (!intersects)
         {
           return false;
@@ -678,14 +679,14 @@ bool Landscape::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3
     {
       // Ray is going south east
 
-      Vector2 segStart(0.0f, GetWorldSizeZ());
-      Vector2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
-      bool intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, rayDirNormalised, &segIntersectResult);
+      DirectX::XMFLOAT2 segStart(0.0f, GetWorldSizeZ());
+      DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
+      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
       if (!intersects)
       {
-        Vector2 segStart(0.0f, 0.0f);
-        Vector2 segEnd(0.0f, GetWorldSizeZ());
-        intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, rayDirNormalised, &segIntersectResult);
+        DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
+        DirectX::XMFLOAT2 segEnd(0.0f, GetWorldSizeZ());
+        intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
         if (!intersects)
         {
           return false;
@@ -699,14 +700,14 @@ bool Landscape::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3
     {
       // Ray is going north west
 
-      Vector2 segStart(0.0f, 0.0f);
-      Vector2 segEnd(GetWorldSizeX(), 0.0f);
-      bool intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, rayDirNormalised, &segIntersectResult);
+      DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
+      DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), 0.0f);
+      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
       if (!intersects)
       {
-        Vector2 segStart(GetWorldSizeX(), 0.0f);
-        Vector2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
-        intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, rayDirNormalised, &segIntersectResult);
+        DirectX::XMFLOAT2 segStart(GetWorldSizeX(), 0.0f);
+        DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
+        intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
         if (!intersects)
         {
           return false;
@@ -717,14 +718,14 @@ bool Landscape::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3
     {
       // Ray is going south west
 
-      Vector2 segStart(0.0f, GetWorldSizeZ());
-      Vector2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
-      bool intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, rayDirNormalised, &segIntersectResult);
+      DirectX::XMFLOAT2 segStart(0.0f, GetWorldSizeZ());
+      DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
+      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
       if (!intersects)
       {
-        Vector2 segStart(GetWorldSizeX(), 0.0f);
-        Vector2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
-        intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, rayDirNormalised, &segIntersectResult);
+        DirectX::XMFLOAT2 segStart(GetWorldSizeX(), 0.0f);
+        DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
+        intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
         if (!intersects)
         {
           return false;
@@ -739,7 +740,7 @@ bool Landscape::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3
   float lambda = (segIntersectResult.x - _rayStart.x) / rayDirNormalised.x;
   float segIntersectResultY = _rayStart.y + lambda * rayDirNormalised.y;
 
-  return UnsafeRayHit(Vector3(segIntersectResult.x, segIntersectResultY, segIntersectResult.y), rayDirNormalised, _result);
+  return UnsafeRayHit(DirectX::XMFLOAT3(segIntersectResult.x, segIntersectResultY, segIntersectResult.y), rayDirNormalised, _result);
 }
 
 
@@ -747,11 +748,19 @@ bool Landscape::RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3
 // Determines if and where a ray intersects the landscape
 // ASSUMES: that the specified ray starts inside the landscape grid
 // ASSUMES: that _rayDir is normalised
-// ASSUMES: that _result is a pointer to a valid Vector3
-bool Landscape::UnsafeRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3* _result) const
+// ASSUMES: that _result is a pointer to a valid XMFLOAT3
+bool Landscape::UnsafeRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
 {
   int gridX = m_heightMap->GetMapIndexX(_rayStart.x);
   int gridZ = m_heightMap->GetMapIndexY(_rayStart.z);
+
+  // The same (x, z) projection RayHit writes out, and for the same reason: the
+  // segment tests below are 2D and used to be handed the 3D ray through
+  // Vector2's converting constructor. The segment endpoints carried a
+  // decorative 0.0f in y for exactly as long as that constructor threw it
+  // away; they are XMFLOAT2 now and the zero is gone with it.
+  DirectX::XMFLOAT2 const rayStart2D(_rayStart.x, _rayStart.z);
+  DirectX::XMFLOAT2 const rayDir2D(_rayDir.x, _rayDir.z);
 
   // Find out which quadrant the ray goes in
   if (_rayDir.x > 0.0f && _rayDir.z > 0.0f)
@@ -767,9 +776,9 @@ bool Landscape::UnsafeRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, V
         return true;
       }
 
-      Vector3 segStart(m_heightMap->GetRealX(gridX), 0.0f, m_heightMap->GetRealY(gridZ + 1));
-      Vector3 segEnd(m_heightMap->GetRealX(gridX + 1), 0.0f, m_heightMap->GetRealY(gridZ + 1));
-      bool intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, _rayDir);
+      DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ + 1));
+      DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ + 1));
+      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
       if (intersects)
       {
         gridZ++;
@@ -793,9 +802,9 @@ bool Landscape::UnsafeRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, V
         return true;
       }
 
-      Vector3 segStart(m_heightMap->GetRealX(gridX), 0.0f, m_heightMap->GetRealY(gridZ + 1));
-      Vector3 segEnd(m_heightMap->GetRealX(gridX + 1), 0.0f, m_heightMap->GetRealY(gridZ + 1));
-      bool intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, _rayDir);
+      DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ + 1));
+      DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ + 1));
+      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
       if (intersects)
       {
         gridZ++;
@@ -819,9 +828,9 @@ bool Landscape::UnsafeRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, V
         return true;
       }
 
-      Vector3 segStart(m_heightMap->GetRealX(gridX), 0.0f, m_heightMap->GetRealY(gridZ));
-      Vector3 segEnd(m_heightMap->GetRealX(gridX + 1), 0.0f, m_heightMap->GetRealY(gridZ));
-      bool intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, _rayDir);
+      DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ));
+      DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ));
+      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
       if (intersects)
       {
         gridZ--;
@@ -845,9 +854,9 @@ bool Landscape::UnsafeRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, V
         return true;
       }
 
-      Vector3 segStart(m_heightMap->GetRealX(gridX), 0.0f, m_heightMap->GetRealY(gridZ));
-      Vector3 segEnd(m_heightMap->GetRealX(gridX + 1), 0.0f, m_heightMap->GetRealY(gridZ));
-      bool intersects = SegRayIntersection2D(segStart, segEnd, _rayStart, _rayDir);
+      DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ));
+      DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ));
+      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
       if (intersects)
       {
         gridZ--;
@@ -867,18 +876,18 @@ bool Landscape::UnsafeRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, V
 // Determines if the specified ray hits the specified landscape cell (this can be thought
 // of as a cube with the top left corner being at the heightMap point x0,z0).
 // Assumes that _rayDir is normalised and that ray intersects cell in the 2D projection
-bool Landscape::RayHitCell(int x0, int z0, Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3* _result) const
+bool Landscape::RayHitCell(int x0, int z0, DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
 {
-  Vector3 corner1(m_heightMap->GetRealX(x0), m_heightMap->GetData(x0, z0), m_heightMap->GetRealY(z0));
-  Vector3 corner2(m_heightMap->GetRealX(x0), m_heightMap->GetData(x0, z0 + 1), m_heightMap->GetRealY(z0 + 1));
-  Vector3 corner3(m_heightMap->GetRealX(x0 + 1), m_heightMap->GetData(x0 + 1, z0), m_heightMap->GetRealY(z0));
+  DirectX::XMFLOAT3 corner1(m_heightMap->GetRealX(x0), m_heightMap->GetData(x0, z0), m_heightMap->GetRealY(z0));
+  DirectX::XMFLOAT3 corner2(m_heightMap->GetRealX(x0), m_heightMap->GetData(x0, z0 + 1), m_heightMap->GetRealY(z0 + 1));
+  DirectX::XMFLOAT3 corner3(m_heightMap->GetRealX(x0 + 1), m_heightMap->GetData(x0 + 1, z0), m_heightMap->GetRealY(z0));
 
   if (RayTriIntersection(_rayStart, _rayDir, corner1, corner2, corner3, 1e10, _result))
   {
     return true;
   }
 
-  Vector3 corner4(m_heightMap->GetRealX(x0 + 1), m_heightMap->GetData(x0 + 1, z0 + 1), m_heightMap->GetRealY(z0 + 1));
+  DirectX::XMFLOAT3 corner4(m_heightMap->GetRealX(x0 + 1), m_heightMap->GetData(x0 + 1, z0 + 1), m_heightMap->GetRealY(z0 + 1));
   if (RayTriIntersection(_rayStart, _rayDir, corner2, corner3, corner4, 1e10, _result))
   {
     return true;
@@ -942,7 +951,7 @@ bool Landscape::RayHitCell(int x0, int z0, Vector3 const& _rayStart, Vector3 con
 
 // Returns the distance to the nearest point on the landscape if it is
 // within the specified radius. Otherwise returns -1.0f.
-float Landscape::SphereHit(Vector3 const& _centre, float _radius) const
+float Landscape::SphereHit(DirectX::XMFLOAT3 const& _centre, float _radius) const
 {
   // Make sure the specified radius is +ve and not so large to cause
   // major efficiency problems
@@ -959,7 +968,8 @@ float Landscape::SphereHit(Vector3 const& _centre, float _radius) const
   ClampInPlace(y2, 0, m_heightMap->GetNumRows());
 
   float nearestSqrd = FLT_MAX;
-  Vector3 pos;
+  DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&_centre);
+  DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
   for (int y = y1; y < y2; ++y)
   {
     pos.z = m_heightMap->GetRealY(y);
@@ -968,7 +978,7 @@ float Landscape::SphereHit(Vector3 const& _centre, float _radius) const
     {
       pos.x = m_heightMap->GetRealX(x);
       pos.y = m_heightMap->GetData(x, y);
-      float distSqrd = (_centre - pos).MagSquared();
+      float distSqrd = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(centre, DirectX::XMLoadFloat3(&pos))));
       if (distSqrd < nearestSqrd)
       {
         nearestSqrd = distSqrd;

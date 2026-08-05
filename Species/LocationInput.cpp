@@ -5,7 +5,6 @@
 #include "Eclipse.h"
 
 #include "HiResTime.h"
-#include "Matrix34.h"
 #include "Shape.h"
 #include "TextRenderer.h"
 #include "TargetCursor.h"
@@ -45,8 +44,10 @@ void LocationInput::AdvanceRadarDishControl(Building* _building)
 {
   if (g_inputManager->controlEvent(ControlUnitSetTarget))
   {
-    Vector3 rayStart;
-    Vector3 rayDir;
+    // Braced to zero, as Vector3's default constructor did; GetClickRay writes
+    // both, but that was true before it was called too.
+    DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
     TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
     int buildId = g_location->GetBuildingId(rayStart, rayDir, 255);
@@ -67,8 +68,8 @@ void LocationInput::AdvanceRadarDishControl(Building* _building)
 // *** GetObjectUnderMouse
 bool LocationInput::GetObjectUnderMouse(WorldObjectId& _id, int _teamId)
 {
-  Vector3 rayStart;
-  Vector3 rayDir;
+  DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
   TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
 
   // Find any objects the ray intersects
@@ -87,7 +88,7 @@ bool LocationInput::GetObjectUnderMouse(WorldObjectId& _id, int _teamId)
     Task* task = g_taskManager->GetCurrentTask();
     if (task && task->m_state == Task::StateStarted && task->m_type == GlobalResearch::TypeOfficer)
     {
-      Vector3 mousePos = TheUserInput()->GetMousePos3d();
+      DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
       entId = Task::FindCitizen(mousePos);
       entDist = 0.0f;
     }
@@ -303,7 +304,7 @@ void LocationInput::AdvanceTeamControl()
   {
     if (g_inputManager->controlEvent(ControlUnitCreate))
     {
-      Vector3 mousePos = TheUserInput()->GetMousePos3d();
+      DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
       g_app->m_clientToServer->RequestTargetProgram(g_globalWorld->m_myTeamId, g_taskManager->m_currentTaskId, mousePos);
     }
   }

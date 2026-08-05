@@ -109,7 +109,6 @@ bool MineBuilding::IsInView()
     float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirCentre, ourCentre))) / 2.0f;
     radius += m_radius;
 
-    // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
     if (g_camera->SphereInViewFrustum(midPoint, radius))
     {
       return true;
@@ -120,16 +119,27 @@ bool MineBuilding::IsInView()
 }
 
 
+// Matrix34::RotateAroundF(a) rewrote the matrix's r and u rows in place --
+// r' = c*r + s*u, u' = -s*r + c*u -- leaving f and pos alone. Matrix34 reads
+// r/u/f as the basis vectors that XMFLOAT4X4 stores as rows 0, 1 and 2, so the
+// same thing natively is a rotation about the LOCAL z axis applied BEFORE the
+// matrix: XMMatrixRotationZ(a) * M, in that operand order.
+//
+// The order is the whole content of this. `M * RotationZ(a)` compiles, is a
+// rotation, and spins the mine wheels about the world axis instead of their
+// own -- which on a wheel is a wobble rather than a spin, and nothing in the
+// build or the checks would say so.
+static DirectX::XMFLOAT4X4 RotatedAroundLocalFront(DirectX::XMFLOAT4X4 const& _mat, float _angle)
+{
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationZ(_angle), DirectX::XMLoadFloat4x4(&_mat)));
+  return result;
+}
+
+
 void MineBuilding::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
-
-  // Camera's accessors are still legacy -- Species belongs to T22. These three
-  // are unused below and kept only because removing them is not this task's
-  // business; they were unused before the migration too.
-  Vector3 camPos = g_camera->GetPos();
-  Vector3 camFront = g_camera->GetFront();
-  Vector3 camUp = g_camera->GetUp();
 
   if (m_trackLink != -1)
   {
@@ -269,7 +279,6 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
     DirectX::XMFLOAT3 cartPos;
     DirectX::XMStoreFloat3(&cartPos, cartPosVec);
 
-    // PosInViewFrustum still takes a Vector3 -- Camera belongs to T22.
     if (g_camera->PosInViewFrustum(cartPos))
     {
       DirectX::XMVECTOR const cartFront = DirectX::XMVector3Normalize(
@@ -281,14 +290,12 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
       s_cartShape->Render(0.0f, transform);
       // END_PROFILE(g_profiler, "RenderCartShape" );
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-      DirectX::XMFLOAT3 const cartLinkLeftStore = s_cartMarker1->GetWorldMatrix(transform).pos;
-      DirectX::XMFLOAT3 const cartLinkRightStore = s_cartMarker2->GetWorldMatrix(transform).pos;
+      DirectX::XMFLOAT3 const cartLinkLeftStore = s_cartMarker1->GetWorldPosition(transform);
+      DirectX::XMFLOAT3 const cartLinkRightStore = s_cartMarker2->GetWorldPosition(transform);
       DirectX::XMVECTOR const cartLinkLeft = DirectX::XMLoadFloat3(&cartLinkLeftStore);
       DirectX::XMVECTOR const cartLinkRight = DirectX::XMLoadFloat3(&cartLinkRightStore);
 
       // START_PROFILE(g_profiler, "RenderLines" );
-      // Camera's accessors are still legacy -- Species belongs to T22.
       DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
       DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), 0.5f);
 
@@ -310,13 +317,13 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
       {
         if (_cart->m_polygons[i])
         {
-          Matrix34 polyMat = s_cartContents[i]->GetWorldMatrix(transform);
+          DirectX::XMFLOAT4X4 polyMat = s_cartContents[i]->GetWorldMatrix(transform);
           s_polygon1->Render(0.0f, polyMat);
         }
 
         if (_cart->m_primitives[i])
         {
-          Matrix34 polyMat = s_cartContents[i]->GetWorldMatrix(transform);
+          DirectX::XMFLOAT4X4 polyMat = s_cartContents[i]->GetWorldMatrix(transform);
           s_primitive1->Render(0.0f, polyMat);
 
           if (buildingDetail < 3)
@@ -332,7 +339,7 @@ void MineBuilding::RenderCart(MineCart* _cart, float _predictionTime)
             float nearPlaneStart = g_renderer->GetNearPlane();
             g_camera->SetupProjectionMatrix(nearPlaneStart * 1.1f, g_renderer->GetFarPlane());
 
-            DirectX::XMFLOAT3 const glowPos(polyMat.pos.x, polyMat.pos.y - 25.0f, polyMat.pos.z);
+            DirectX::XMFLOAT3 const glowPos(polyMat._41, polyMat._42 - 25.0f, polyMat._43);
             Render3DSprite(glowPos, 50.0f, 50.0f, g_resource->GetTexture("Textures/Glow.bmp"));
 
             g_camera->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
@@ -419,9 +426,8 @@ DirectX::XMFLOAT3 MineBuilding::GetTrackMarker1()
     DirectX::XMFLOAT4X4 rootMat;
     DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
     // only the position was ever kept, which is why the member is one now.
-    m_trackPosition1 = m_trackMarker1->GetWorldMatrix(rootMat).pos;
+    m_trackPosition1 = m_trackMarker1->GetWorldPosition(rootMat);
   }
 
   return m_trackPosition1;
@@ -438,8 +444,7 @@ DirectX::XMFLOAT3 MineBuilding::GetTrackMarker2()
     DirectX::XMFLOAT4X4 rootMat;
     DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    m_trackPosition2 = m_trackMarker2->GetWorldMatrix(rootMat).pos;
+    m_trackPosition2 = m_trackMarker2->GetWorldPosition(rootMat);
   }
 
   return m_trackPosition2;
@@ -972,29 +977,43 @@ void Refinery::Render(float _predictionTime)
   DirectX::XMStoreFloat4x4(&refineryMat,
                            BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
-  // the wheel matrices below are used as whole bases, so they stay legacy.
-  Matrix34 wheel1Mat = m_wheel1->GetWorldMatrix(refineryMat);
-  Matrix34 wheel2Mat = m_wheel2->GetWorldMatrix(refineryMat);
-  Matrix34 wheel3Mat = m_wheel3->GetWorldMatrix(refineryMat);
+  DirectX::XMFLOAT4X4 wheel1Mat = m_wheel1->GetWorldMatrix(refineryMat);
+  DirectX::XMFLOAT4X4 wheel2Mat = m_wheel2->GetWorldMatrix(refineryMat);
+  DirectX::XMFLOAT4X4 wheel3Mat = m_wheel3->GetWorldMatrix(refineryMat);
 
   float refinerySpeed = RefinerySpeed();
   float predictedWheelRotate = m_wheelRotate - 3.0f * refinerySpeed * _predictionTime;
 
-  wheel1Mat.RotateAroundF(predictedWheelRotate);
-  wheel2Mat.RotateAroundF(predictedWheelRotate * -1.0f);
-  wheel3Mat.RotateAroundF(predictedWheelRotate);
+  wheel1Mat = RotatedAroundLocalFront(wheel1Mat, predictedWheelRotate);
+  wheel2Mat = RotatedAroundLocalFront(wheel2Mat, predictedWheelRotate * -1.0f);
+  wheel3Mat = RotatedAroundLocalFront(wheel3Mat, predictedWheelRotate);
 
-  wheel1Mat.r *= 1.3f;
-  wheel1Mat.u *= 1.3f;
-  wheel1Mat.f *= 1.3f;
+  wheel1Mat._11 *= 1.3f;
+  wheel1Mat._12 *= 1.3f;
+  wheel1Mat._13 *= 1.3f;
+  wheel1Mat._21 *= 1.3f;
+  wheel1Mat._22 *= 1.3f;
+  wheel1Mat._23 *= 1.3f;
+  wheel1Mat._31 *= 1.3f;
+  wheel1Mat._32 *= 1.3f;
+  wheel1Mat._33 *= 1.3f;
 
-  wheel2Mat.r *= 0.8f;
-  wheel2Mat.u *= 0.8f;
+  wheel2Mat._11 *= 0.8f;
+  wheel2Mat._12 *= 0.8f;
+  wheel2Mat._13 *= 0.8f;
+  wheel2Mat._21 *= 0.8f;
+  wheel2Mat._22 *= 0.8f;
+  wheel2Mat._23 *= 0.8f;
 
-  wheel3Mat.r *= 1.6f;
-  wheel3Mat.u *= 1.6f;
-  wheel3Mat.f *= 1.6f;
+  wheel3Mat._11 *= 1.6f;
+  wheel3Mat._12 *= 1.6f;
+  wheel3Mat._13 *= 1.6f;
+  wheel3Mat._21 *= 1.6f;
+  wheel3Mat._22 *= 1.6f;
+  wheel3Mat._23 *= 1.6f;
+  wheel3Mat._31 *= 1.6f;
+  wheel3Mat._32 *= 1.6f;
+  wheel3Mat._33 *= 1.6f;
 
   s_wheelShape->Render(_predictionTime, wheel1Mat);
   s_wheelShape->Render(_predictionTime, wheel2Mat);
@@ -1005,15 +1024,31 @@ void Refinery::Render(float _predictionTime)
   if (gb)
     numRefined = gb->m_link;
 
-  Matrix34 counterMat = m_counter1->GetWorldMatrix(refineryMat);
+  DirectX::XMFLOAT4X4 counterMat = m_counter1->GetWorldMatrix(refineryMat);
   glColor4f(0.6f, 0.8f, 0.9f, 1.0f);
-  g_gameFont.DrawText3D(counterMat.pos, counterMat.f, counterMat.u, 10.0f, "%d", numRefined);
-  counterMat.pos += counterMat.f * 0.1f;
-  counterMat.pos += (counterMat.f ^ counterMat.u) * 0.2f;
-  counterMat.pos += counterMat.u * 0.2f;
+  g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
+                        DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
+                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 10.0f, "%d", numRefined);
+  // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
+  // operator^ was the cross product, and front x up is the RIGHT vector -- the
+  // opposite hand from GetRight()'s up x front, which is why it is spelled out
+  // in this order rather than reached for from elsewhere.
+  {
+    DirectX::XMVECTOR const front = DirectX::XMVectorSet(counterMat._31, counterMat._32, counterMat._33, 0.0f);
+    DirectX::XMVECTOR const up = DirectX::XMVectorSet(counterMat._21, counterMat._22, counterMat._23, 0.0f);
+    DirectX::XMVECTOR pos = DirectX::XMVectorSet(counterMat._41, counterMat._42, counterMat._43, 0.0f);
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, 0.1f));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(DirectX::XMVector3Cross(front, up), 0.2f));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(up, 0.2f));
+    counterMat._41 = DirectX::XMVectorGetX(pos);
+    counterMat._42 = DirectX::XMVectorGetY(pos);
+    counterMat._43 = DirectX::XMVectorGetZ(pos);
+  }
   g_gameFont.SetRenderShadow(true);
   glColor4f(0.6f, 0.8f, 0.9f, 0.0f);
-  g_gameFont.DrawText3D(counterMat.pos, counterMat.f, counterMat.u, 10.0f, "%d", numRefined);
+  g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
+                        DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
+                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 10.0f, "%d", numRefined);
   g_gameFont.SetRenderShadow(false);
 }
 
@@ -1045,22 +1080,28 @@ void Mine::Render(float _predictionTime)
   DirectX::XMFLOAT4X4 mineMat;
   DirectX::XMStoreFloat4x4(&mineMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
-  // the wheel matrices below are used as whole bases, so they stay legacy.
-  Matrix34 wheel1Mat = m_wheel1->GetWorldMatrix(mineMat);
-  Matrix34 wheel2Mat = m_wheel2->GetWorldMatrix(mineMat);
+  DirectX::XMFLOAT4X4 wheel1Mat = m_wheel1->GetWorldMatrix(mineMat);
+  DirectX::XMFLOAT4X4 wheel2Mat = m_wheel2->GetWorldMatrix(mineMat);
 
   float refinerySpeed = RefinerySpeed();
   float predictedWheelRotate = m_wheelRotate - 3.0f * refinerySpeed * _predictionTime;
 
-  wheel1Mat.RotateAroundF(predictedWheelRotate * -1.0f);
-  wheel2Mat.RotateAroundF(predictedWheelRotate);
+  wheel1Mat = RotatedAroundLocalFront(wheel1Mat, predictedWheelRotate * -1.0f);
+  wheel2Mat = RotatedAroundLocalFront(wheel2Mat, predictedWheelRotate);
 
-  wheel1Mat.r *= 0.5f;
-  wheel1Mat.u *= 0.5f;
+  wheel1Mat._11 *= 0.5f;
+  wheel1Mat._12 *= 0.5f;
+  wheel1Mat._13 *= 0.5f;
+  wheel1Mat._21 *= 0.5f;
+  wheel1Mat._22 *= 0.5f;
+  wheel1Mat._23 *= 0.5f;
 
-  wheel2Mat.r *= 0.9f;
-  wheel2Mat.u *= 0.9f;
+  wheel2Mat._11 *= 0.9f;
+  wheel2Mat._12 *= 0.9f;
+  wheel2Mat._13 *= 0.9f;
+  wheel2Mat._21 *= 0.9f;
+  wheel2Mat._22 *= 0.9f;
+  wheel2Mat._23 *= 0.9f;
 
   s_wheelShape->Render(_predictionTime, wheel1Mat);
   s_wheelShape->Render(_predictionTime, wheel2Mat);

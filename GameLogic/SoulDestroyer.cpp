@@ -2,7 +2,6 @@
 #include "GlVertex.h"
 #include "SoundSources.h"
 #include "Resource.h"
-#include "Matrix34.h"
 #include "Shape.h"
 #include "MathUtils.h"
 #include "DebugRender.h"
@@ -58,7 +57,7 @@ SoulDestroyer::SoulDestroyer()
 // The tail segments are drawn, exploded and shadowed from the same pair of
 // history points, and every site scaled the three basis rows while leaving the
 // position row alone.
-static DirectX::XMFLOAT4X4 ScaledTailBasis(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position, float _scale)
+static DirectX::XMFLOAT4X4 XM_CALLCONV ScaledTailBasis(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position, float _scale)
 {
   DirectX::XMMATRIX mat = BasisFromFrontAndUp(_front, _up, _position);
   DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_scale);
@@ -381,8 +380,7 @@ void SoulDestroyer::RecordHistoryPosition()
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const tailPos = s_tailMarker->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const tailPos = s_tailMarker->GetWorldPosition(mat);
   m_positionHistory.insert(m_positionHistory.begin(), tailPos);
 
   // int maxHistorys = 11;
@@ -684,8 +682,7 @@ void SoulDestroyer::RenderSpirit(DirectX::XMFLOAT3 const& _pos, float _alpha)
 {
   DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the eight vertices below, which each called them afresh.
+  // Hoisted out of the eight vertices below, which each called them afresh.
   DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();

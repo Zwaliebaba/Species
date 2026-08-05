@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 #include "CameraAccess.h"
 #include "Entity.h"
@@ -40,47 +40,54 @@ class Camera : public CameraAccess
     void AdvanceSphereWorldFocusMode();
     void AdvanceMainMenuMode();
 
-    float DistanceToBlockage(Vector3 const& _dir, float _maxDist);
-    float DirectDistanceToBlockage(Vector3 const& _from, Vector3 const& _to, float const _maxDist);
-    void GetHighestPoint(Vector3 const& _from, Vector3 const& _to, float _maxDist, Vector3& location);
-    void GetHighestTangentPoint(Vector3 const& _from, Vector3 const& _to, float _maxDist, Vector3& location);
+    float XM_CALLCONV DistanceToBlockage(DirectX::FXMVECTOR _dir, float _maxDist);
+    float XM_CALLCONV DirectDistanceToBlockage(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float const _maxDist);
+    void XM_CALLCONV GetHighestPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location);
+    void XM_CALLCONV GetHighestTangentPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location);
 
     bool GetEntityToTrack(WorldObjectId& selection);
     void AdvanceAutomaticTracking();
     void RotateTowardsEntity(Entity* entity);
 
-    bool AdvanceNotTooLow(Vector3& targetCamera);
-    bool AdvanceCanSeeUnits(Vector3& targetCamera);
-    bool AdvanceNotTooFarAway(Vector3& targetCamera);
-    bool AdvanceRopeModel(Vector3& cameraTarget);
-    bool AdvanceManualRotateCamera(Vector3& cameraTarget);
-    bool AdvanceManualCameraHeight(Vector3& cameraTarget);
+    bool AdvanceNotTooLow(DirectX::XMFLOAT3& targetCamera);
+    bool AdvanceCanSeeUnits(DirectX::XMFLOAT3& targetCamera);
+    bool AdvanceNotTooFarAway(DirectX::XMFLOAT3& targetCamera);
+    bool AdvanceRopeModel(DirectX::XMFLOAT3& cameraTarget);
+    bool AdvanceManualRotateCamera(DirectX::XMFLOAT3& cameraTarget);
+    bool AdvanceManualCameraHeight(DirectX::XMFLOAT3& cameraTarget);
 
     void UpdateControlVector(); // updates the vector used by units in direct control for the purposes of determining directions
 
   private:
-    Vector3 m_pos;
-    Vector3 m_front;
-    Vector3 m_up;
+    // Braced to zero throughout: Vector3's default constructor did it and
+    // XMFLOAT3's does not. The constructor writes m_pos, m_front, m_up and
+    // m_controlVector itself; every other member below was reaching a zeroed
+    // default and several are read before their first write — m_targetPos on
+    // the frame RequestMode(ModeFreeMovement) has not run yet, m_cameraTarget
+    // in AdvanceAutomaticTracking, and all three m_*BeforeAnim if a script
+    // cuts to a mount before anything has recorded a position.
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
     float m_fov;
     float m_cosFov;        // Updated once per frame from m_fov in SetupProjectionMatrix
     float m_maxFovRadians; // Updated once per frame from m_fov in SetupProjectionMatrix
     float m_height;        // Distance above ground (in metres)
-    Vector3 m_vel;
+    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
     float m_minX, m_maxX; // Bounds of camera movement
     float m_minZ, m_maxZ;
-    Vector3 m_targetPos;
-    Vector3 m_targetFront;
-    Vector3 m_targetUp;
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_targetFront{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_targetUp{0.0f, 0.0f, 0.0f};
     float m_targetFov;
-    Vector3 m_cameraTarget;       // Target Position of camera for automatic entity tracking
-    Vector3 m_predictedEntityPos; // Predicted Position of entity for automatic entity tracking
-    Entity* m_trackingEntity;     // The entity we are tracking
+    DirectX::XMFLOAT3 m_cameraTarget{0.0f, 0.0f, 0.0f};       // Target Position of camera for automatic entity tracking
+    DirectX::XMFLOAT3 m_predictedEntityPos{0.0f, 0.0f, 0.0f}; // Predicted Position of entity for automatic entity tracking
+    Entity* m_trackingEntity;                                 // The entity we are tracking
 
-    Vector3 m_startPos; // Camera pos and orientation at the start of a "MoveToTarget"
-    Vector3 m_startFront;
-    Vector3 m_startUp;
+    DirectX::XMFLOAT3 m_startPos{0.0f, 0.0f, 0.0f}; // Camera pos and orientation at the start of a "MoveToTarget"
+    DirectX::XMFLOAT3 m_startFront{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_startUp{0.0f, 0.0f, 0.0f};
     float m_startTime;
     float m_moveDuration;
 
@@ -96,37 +103,44 @@ class Camera : public CameraAccess
     float m_trackRange;
     float m_trackHeight;
     float m_trackTimer;
-    Vector3 m_trackVector; // Used to rotate around tracking object
+    DirectX::XMFLOAT3 m_trackVector{0.0f, 0.0f, 0.0f}; // Used to rotate around tracking object
 
     CameraAnimation* m_anim;
     int m_animCurrentNode;
     float m_animNodeStartTime;
     int m_modeBeforeAnim;
-    Vector3 m_posBeforeAnim;
-    Vector3 m_upBeforeAnim;
-    Vector3 m_frontBeforeAnim;
+    DirectX::XMFLOAT3 m_posBeforeAnim{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_upBeforeAnim{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_frontBeforeAnim{0.0f, 0.0f, 0.0f};
 
     float m_cameraShake;
 
-    bool m_entityTrack;      // the current state of automatic entity tracking
-    Vector3 m_controlVector; // previous right value of the camera, if the unit is not directly below
+    bool m_entityTrack;                                  // the current state of automatic entity tracking
+    DirectX::XMFLOAT3 m_controlVector{0.0f, 0.0f, 0.0f}; // previous right value of the camera, if the unit is not directly below
     bool m_skipDirectionCalculation;
 
   public:
     Camera();
 
-    Vector3 GetPos() { return m_pos; }
-    Vector3 GetFront() { return m_front; }
-    Vector3 GetUp() { return m_up; }
-    Vector3 GetRight() { return m_up ^ m_front; }
-    Vector3 GetVel() { return m_vel; }
+    DirectX::XMFLOAT3 GetPos() { return m_pos; }
+    DirectX::XMFLOAT3 GetFront() { return m_front; }
+    DirectX::XMFLOAT3 GetUp() { return m_up; }
+    DirectX::XMFLOAT3 GetRight()
+    {
+      // operator^ was the cross product, and the operand order is the whole
+      // meaning of this function: up x front, not front x up.
+      DirectX::XMFLOAT3 right;
+      DirectX::XMStoreFloat3(&right, DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_front)));
+      return right;
+    }
+    DirectX::XMFLOAT3 GetVel() { return m_vel; }
     float GetFov() { return m_fov; }
 
     void SetupProjectionMatrix(float _nearPlane, float _farPlane);
     void SetupModelviewMatrix();
 
-    bool PosInViewFrustum(Vector3 const& _pos);
-    bool SphereInViewFrustum(Vector3 const& _centre, float _radius);
+    bool PosInViewFrustum(DirectX::XMFLOAT3 const& _pos);
+    bool SphereInViewFrustum(DirectX::XMFLOAT3 const& _centre, float _radius);
 
     Building* GetBestBuildingInView(); // Is the player currently looking at a building?
 
@@ -157,9 +171,14 @@ class Camera : public CameraAccess
     // SetTarget() only sets the target data. To make these changes take effect, call either
     // CutToTarget() or RequestMode(Camera::ModeMoveToTarget), depending on whether you
     // want an instant cut or a smooth transition
-    void SetTarget(Vector3 const& _pos, Vector3 const& _front, Vector3 const& _up = g_upVector);
+    // The default for _up was g_upVector, a Vector3 constant T25 retires.
+    // s_defaultUp is the same (0,1,0) as an XMFLOAT3, kept as a default
+    // argument rather than an overload because the three call sites that rely
+    // on it read better for it.
+    static constexpr DirectX::XMFLOAT3 s_defaultUp{0.0f, 1.0f, 0.0f};
+    void SetTarget(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up = s_defaultUp);
     bool SetTarget(char const* _mountName); // Returns false if mount not found
-    void SetTarget(Vector3 const& _focusPos, float _distance, float _height);
+    void SetTarget(DirectX::XMFLOAT3 const& _focusPos, float _distance, float _height);
     void SetMoveDuration(float _duration);
     void CutToTarget();
     void SetHeight(float _height);
@@ -169,8 +188,8 @@ class Camera : public CameraAccess
     void Normalise(); // Needs to be called reasonably regularly to prevent the front
                       // and up vectors becoming non-orthogonal
 
-    void GetClickRay(int _x, int _y, Vector3* _rayStart, Vector3* _rayDir);
-    void Get2DScreenPos(Vector3 const& _vector, float* _screenX, float* _screenY);
+    void GetClickRay(int _x, int _y, DirectX::XMFLOAT3* _rayStart, DirectX::XMFLOAT3* _rayDir);
+    void Get2DScreenPos(DirectX::XMFLOAT3 const& _vector, float* _screenX, float* _screenY);
 
     void SetBounds(float _minX, float _maxX, float _minZ, float _maxZ);
 
@@ -181,7 +200,7 @@ class Camera : public CameraAccess
     void SwitchEntityTracking(bool _onOrOff);
     void UpdateEntityTrackingMode();
 
-    Vector3 GetControlVector();
+    DirectX::XMFLOAT3 GetControlVector();
 
     void WaterReflect();
 };

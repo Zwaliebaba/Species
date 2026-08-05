@@ -1,7 +1,6 @@
 #pragma once
 
 #include "SphereRenderer.h"
-#include "Matrix34.h"
 #include "NeuronMath.h"
 
 class FileWriter;

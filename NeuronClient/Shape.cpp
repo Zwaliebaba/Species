@@ -9,7 +9,6 @@
 #include "Debug.h"
 #include "DebugRender.h"
 #include "MathUtils.h"
-#include "Matrix33.h"
 #include "NeuronMath.h"
 #include "Shape.h"
 #include "TextStreamReaders.h"
@@ -147,7 +146,7 @@ ShapeMarker::~ShapeMarker()
 }
 
 // *** GetWorldMatrix
-Matrix34 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
+DirectX::XMFLOAT4X4 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
 {
   DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&_rootTransform);
   for (int i = 0; i < m_depth; ++i)
@@ -159,6 +158,14 @@ Matrix34 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
   DirectX::XMFLOAT4X4 result;
   DirectX::XMStoreFloat4x4(&result, mat);
   return result;
+}
+
+
+// *** GetWorldPosition
+DirectX::XMFLOAT3 ShapeMarker::GetWorldPosition(DirectX::XMFLOAT4X4 const& _rootTransform)
+{
+  DirectX::XMFLOAT4X4 const world = GetWorldMatrix(_rootTransform);
+  return DirectX::XMFLOAT3(world._41, world._42, world._43);
 }
 
 
@@ -1133,9 +1140,17 @@ void ShapeFragment::RenderMarkers(DirectX::XMFLOAT4X4 const& _rootTransform)
   for (i = 0; i < numMarkers; ++i)
   {
     ShapeMarker* marker = m_childMarkers[i].get();
-    Matrix34 mat = marker->GetWorldMatrix(_rootTransform);
-    RenderArrow(mat.pos, mat.pos + mat.f * 20.0f, 2.0f);
-    RenderArrow(mat.pos, mat.pos + mat.u * 10.0f, 2.0f);
+    DirectX::XMFLOAT4X4 mat = marker->GetWorldMatrix(_rootTransform);
+    DirectX::XMFLOAT3 const markerPos(mat._41, mat._42, mat._43);
+    DirectX::XMVECTOR const origin = DirectX::XMLoadFloat3(&markerPos);
+    DirectX::XMFLOAT3 frontTip;
+    DirectX::XMStoreFloat3(&frontTip,
+                           DirectX::XMVectorAdd(origin, DirectX::XMVectorScale(DirectX::XMVectorSet(mat._31, mat._32, mat._33, 0.0f), 20.0f)));
+    DirectX::XMFLOAT3 upTip;
+    DirectX::XMStoreFloat3(&upTip,
+                           DirectX::XMVectorAdd(origin, DirectX::XMVectorScale(DirectX::XMVectorSet(mat._21, mat._22, mat._23, 0.0f), 10.0f)));
+    RenderArrow(markerPos, frontTip, 2.0f);
+    RenderArrow(markerPos, upTip, 2.0f);
     //		glLineWidth(2.0f);
     //		glColor3f(1,0,0);
     //        glBegin(GL_LINES);

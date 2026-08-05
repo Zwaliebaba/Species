@@ -67,9 +67,8 @@ DirectX::XMFLOAT3 FuelBuilding::GetFuelPosition()
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and its
   // rows are Vector3. Returning .pos runs the seam's conversion on the way out.
-  return m_fuelMarker->GetWorldMatrix(mat).pos;
+  return m_fuelMarker->GetWorldPosition(mat);
 }
 
 
@@ -131,8 +130,6 @@ bool FuelBuilding::IsInView()
 
     radius += m_radius;
 
-    // CameraAccess::SphereInViewFrustum still takes Vector3 -- T12/T22 own it --
-    // so the seam converts on the way in.
     return (g_camera->SphereInViewFrustum(midPoint, radius));
   }
   else
@@ -192,8 +189,6 @@ void FuelBuilding::RenderAlphas(float _predictionTime)
 
       DirectX::XMVECTOR const midPos = DirectX::XMVectorScale(DirectX::XMVectorAdd(startPos, endPos), 0.5f);
 
-      // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it -- so this
-      // local copy-initialises through the seam before it can be loaded.
       DirectX::XMFLOAT3 const camPos = g_camera->GetPos();
 
       // operator^ was the cross product; SetLength is normalise-then-scale.
@@ -371,8 +366,7 @@ bool FuelGenerator::Advance()
       DirectX::XMFLOAT4X4 mat;
       DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&pumpPos)));
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-      DirectX::XMFLOAT3 const particlePos = m_pumpTip->GetWorldMatrix(mat).pos;
+      DirectX::XMFLOAT3 const particlePos = m_pumpTip->GetWorldPosition(mat);
       float size = 150.0f + frand(150.0f);
 
       g_particleSystem->CreateParticle(particlePos, pumpVel, Particle::TypeCitizenFire, size);
@@ -566,8 +560,7 @@ DirectX::XMFLOAT3 FuelStation::GetEntrance()
   DirectX::XMFLOAT4X4 mat;
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_entrance->GetWorldMatrix(mat).pos;
+  return m_entrance->GetWorldPosition(mat);
 }
 
 
@@ -734,7 +727,6 @@ void FuelStation::RenderAlphas(float _predictionTime)
       DirectX::XMVECTOR theirPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 200.0f, 0.0f, 0.0f));
       theirPos = DirectX::XMVectorMultiplyAdd(screenFront, DirectX::XMVectorReplicate(30.0f), theirPos);
 
-      // CameraAccess::GetPos still returns Vector3 -- T12/T22 own it.
       DirectX::XMFLOAT3 const camPos = g_camera->GetPos();
       DirectX::XMVECTOR const camToTheirPos = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPos), theirPos);
 
@@ -1159,13 +1151,12 @@ void EscapeRocket::AdvanceExploding()
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, whose
     // rows are Vector3. XMLoadFloat3 needs an XMFLOAT3*, and &row is a Vector3*;
     // the seam converts by reference, so these locals are what run it.
-    Matrix34 const windowMat = m_window[windowIndex]->GetWorldMatrix(mat);
-    DirectX::XMFLOAT3 const windowFront = windowMat.f;
-    DirectX::XMFLOAT3 const windowUp = windowMat.u;
-    DirectX::XMFLOAT3 const windowPos = windowMat.pos;
+    DirectX::XMFLOAT4X4 const windowMat = m_window[windowIndex]->GetWorldMatrix(mat);
+    DirectX::XMFLOAT3 const windowFront = DirectX::XMFLOAT3(windowMat._31, windowMat._32, windowMat._33);
+    DirectX::XMFLOAT3 const windowUp = DirectX::XMFLOAT3(windowMat._21, windowMat._22, windowMat._23);
+    DirectX::XMFLOAT3 const windowPos = DirectX::XMFLOAT3(windowMat._41, windowMat._42, windowMat._43);
 
     DirectX::XMVECTOR vel = DirectX::XMLoadFloat3(&windowFront);
     float angle = syncsfrand(M_PI * 0.25f);
@@ -1209,11 +1200,10 @@ void EscapeRocket::AdvanceExploding()
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-    // T10's seam again; see AdvanceExploding's passenger block above.
-    Matrix34 const windowMat = m_window[i]->GetWorldMatrix(mat);
-    DirectX::XMFLOAT3 const windowFront = windowMat.f;
-    DirectX::XMFLOAT3 const windowUp = windowMat.u;
-    DirectX::XMFLOAT3 const windowPos = windowMat.pos;
+    DirectX::XMFLOAT4X4 const windowMat = m_window[i]->GetWorldMatrix(mat);
+    DirectX::XMFLOAT3 const windowFront = DirectX::XMFLOAT3(windowMat._31, windowMat._32, windowMat._33);
+    DirectX::XMFLOAT3 const windowUp = DirectX::XMFLOAT3(windowMat._21, windowMat._22, windowMat._23);
+    DirectX::XMFLOAT3 const windowPos = DirectX::XMFLOAT3(windowMat._41, windowMat._42, windowMat._43);
 
     DirectX::XMVECTOR vel = DirectX::XMLoadFloat3(&windowFront);
     float angle = syncsfrand(M_PI * 0.25f);
@@ -1387,8 +1377,7 @@ bool EscapeRocket::Advance()
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const boosterPos = m_booster->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 const boosterPos = m_booster->GetWorldPosition(mat);
 
     for (int i = 0; i < 15; ++i)
     {
@@ -1488,8 +1477,6 @@ void EscapeRocket::RenderAlphas(float _predictionTime)
 
   if (alpha > 0.0f)
   {
-    // CameraAccess::GetUp and GetRight still return Vector3 -- T12/T22 own them
-    // -- so these copy-initialise through the seam before being loaded.
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
     DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);

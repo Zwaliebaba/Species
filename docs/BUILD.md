@@ -8,9 +8,17 @@
 | Toolchain | Visual Studio 2026, MSVC toolset **v145**, Windows SDK 10 |
 | Language | C++20 (`/std:c++20`, `/permissive-`) |
 | Platforms | **ARM64** (primary) and **x64** |
-| Dependencies | None. Links only against `opengl32`, `glu32`, `winmm`, `dsound`, `dxguid`, `Ws2_32`. |
+| Dependencies | **DirectXMath**, header-only, from the Windows SDK. Links only against `opengl32`, `glu32`, `winmm`, `dsound`, `dxguid`, `Ws2_32`. |
 
 There is nothing to install, restore or vendor. Clone and build.
+
+The one dependency is DirectXMath, and it is not a package: `<DirectXMath.h>`
+and `<DirectXCollision.h>` ship in the Windows SDK 10 that the toolchain row
+above already requires, so there is nothing to fetch and no library to link.
+Every math type in the tree is one of its — `XMFLOAT2/3`, `XMFLOAT3X3`,
+`XMFLOAT4X4`, `XMVECTOR`, `XMMATRIX` — as of
+`tasks/Archive/directxmath-migration.yaml`. An SDK old enough to lack
+`DirectXCollision.h`'s `TriangleTests` will not compile `NeuronCore`.
 
 The solution is `Species.slnx` — the XML solution format, which requires
 MSBuild 17.14 or newer. Visual Studio 2026 supplies it.

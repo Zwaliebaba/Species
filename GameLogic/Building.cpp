@@ -8,7 +8,6 @@
 #include "Debug.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
-#include "Matrix34.h"
 #include "Resource.h"
 #include "Shape.h"
 #include "TextStreamReaders.h"
@@ -215,7 +214,6 @@ void Building::SetShapePorts(ShapeFragment* _fragment)
     {
       auto port = std::make_unique<BuildingPort>();
       port->m_marker = marker;
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
       // the conversion to XMFLOAT4X4 happens on assignment. From here the rows
       // are numbered: _41.._43 is the position, _31.._33 the front.
       port->m_mat = marker->GetWorldMatrix(buildingMat);
@@ -367,13 +365,11 @@ void Building::RenderLights()
       {
         ShapeMarker* marker = m_lights[i];
         DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
-        Matrix34 worldMat = marker->GetWorldMatrix(rootMat);
-        // GetWorldMatrix on a ShapeMarker still returns Matrix34 -- T10's seam.
-        DirectX::XMFLOAT3 const lightPos = worldMat.pos;
+        DirectX::XMFLOAT4X4 worldMat = marker->GetWorldMatrix(rootMat);
+        DirectX::XMFLOAT3 const lightPos = DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
 
         float signalSize = 6.0f;
 
-        // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
         DirectX::XMFLOAT3 const camR = g_camera->GetRight();
         DirectX::XMFLOAT3 const camU = g_camera->GetUp();
 
@@ -516,7 +512,7 @@ void Building::RenderPorts()
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), size);
     DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), size);
 
-    DirectX::XMFLOAT3 const statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 const statusPos = s_controlPadStatus->GetWorldPosition(mat);
 
     if (GetPortOccupant(i).IsValid())
       glColor4f(0.3f, 1.0f, 0.3f, 1.0f);

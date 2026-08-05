@@ -381,7 +381,6 @@ bool Citizen::AdvanceApproachingArmour()
     return false;
   }
 
-  // Armour converts in T15, so its out-parameters are still legacy.
   DirectX::XMFLOAT3 exitPos{0.0f, 0.0f, 0.0f};
   DirectX::XMFLOAT3 exitDir{0.0f, 0.0f, 0.0f};
   armour->GetEntrance(exitPos, exitDir);
@@ -452,7 +451,6 @@ bool Citizen::AdvanceInsideArmour()
 
   if (armour->IsUnloading())
   {
-    // Armour converts in T15; same seam.
     DirectX::XMFLOAT3 exitPos{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 exitDir{0.0f, 0.0f, 0.0f};
     armour->GetEntrance(exitPos, exitDir);
@@ -487,7 +485,6 @@ bool Citizen::AdvanceCapturedByAnt()
     return false;
   }
 
-  // ArmyAnt converts in T15; same seam.
   DirectX::XMFLOAT3 carryPos{0.0f, 0.0f, 0.0f};
   DirectX::XMFLOAT3 carryVel{0.0f, 0.0f, 0.0f};
   ant->GetCarryMarker(carryPos, carryVel);
@@ -641,7 +638,6 @@ bool Citizen::AdvanceCombat()
           if (numPlayers == 0)
           {
             bool throwGrenade = false;
-            // The landscape converts in T18, so its normal map is still legacy.
             DirectX::XMFLOAT3 const ourLandNormal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
             DirectX::XMFLOAT3 const targetLandNormal = g_location->m_landscape.m_normalMap->GetValue(threat->m_pos.x, threat->m_pos.z);
 
@@ -814,10 +810,9 @@ bool Citizen::AdvanceApproachingPort()
   bool areWeThere = AdvanceToTargetPosition();
   if (areWeThere)
   {
-    // Building converts in T16, so its out-parameters are still legacy.
     DirectX::XMFLOAT3 portPos{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 portFront{0.0f, 0.0f, 0.0f};
-    building->GetPortPosition(m_portId, AsLegacy(portPos), AsLegacy(portFront));
+    building->GetPortPosition(m_portId, portPos, portFront);
     m_front = portFront;
     m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     m_state = StateOperatingPort;
@@ -976,7 +971,6 @@ bool Citizen::AdvanceFollowingOrders()
         }
         else
         {
-          // Teleport converts in T17; its out-parameters are still legacy.
           DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
           DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
           teleport->GetEntrance(entrancePos, entranceFront);
@@ -1049,7 +1043,6 @@ bool Citizen::AdvanceFollowingOfficer()
         }
         else
         {
-          // Teleport converts in T17; its out-parameters are still legacy.
           DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
           DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
           teleport->GetEntrance(entrancePos, entranceFront);
@@ -1109,7 +1102,6 @@ bool Citizen::AdvanceFollowingOfficer()
       }
       else
       {
-        // Teleport converts in T17; its out-parameters are still legacy.
         DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
         teleport->GetEntrance(entrancePos, entranceFront);
@@ -1465,7 +1457,6 @@ void Citizen::GiveOrders(DirectX::XMFLOAT3 const& _targetPos)
       {
         Teleport* teleport = (Teleport*)building;
         m_ordersBuildingId = building->m_id.GetUniqueId();
-        // Teleport converts in T17; its out-parameters are still legacy.
         DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
         teleport->GetEntrance(entrancePos, entranceFront);
@@ -1807,10 +1798,9 @@ bool Citizen::SearchForPorts()
   m_buildingId = chosenBuilding->m_id.GetUniqueId();
   m_portId = availablePorts[randomSelection];
   m_state = StateApproachingPort;
-  // Building converts in T16; same seam.
   DirectX::XMFLOAT3 portPos{0.0f, 0.0f, 0.0f};
   DirectX::XMFLOAT3 portFront{0.0f, 0.0f, 0.0f};
-  chosenBuilding->GetPortPosition(m_portId, AsLegacy(portPos), AsLegacy(portFront));
+  chosenBuilding->GetPortPosition(m_portId, portPos, portFront);
   m_wayPoint = portPos;
   // m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue( m_wayPoint.x, m_wayPoint.z );
 
@@ -2222,7 +2212,6 @@ void Citizen::Render(float _predictionTime, float _highDetail)
       predictedPos.y += 3.0f;
     }
 
-    // The landscape converts in T18, so its normal map is still legacy.
     DirectX::XMFLOAT3 const landNormal = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
     entityUp = DirectX::XMLoadFloat3(&landNormal);
 
@@ -2739,7 +2728,6 @@ void BoxKite::Render(float _predictionTime)
   glEnable(GL_BLEND);
   glDepthMask(false);
 
-  // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
   DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
 

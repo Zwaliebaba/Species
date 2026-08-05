@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "SoundSources.h"
 #include "Resource.h"
-#include "Matrix34.h"
 #include "Shape.h"
 #include "MathUtils.h"
 #include "DebugRender.h"
@@ -170,7 +169,7 @@ static DirectX::XMFLOAT4X4 ScaleCentipedeBasis(DirectX::FXMMATRIX _basis, float 
   return result;
 }
 
-DirectX::XMFLOAT4X4 Centipede::GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const
+DirectX::XMFLOAT4X4 XM_CALLCONV Centipede::GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const
 {
   return ScaleCentipedeBasis(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, _position), m_size);
 }
@@ -743,7 +742,6 @@ bool Centipede::IsInView()
   DirectX::XMFLOAT3 centre;
   DirectX::XMStoreFloat3(&centre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_centrePos)));
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(centre, m_radius);
 }
 

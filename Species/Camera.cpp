@@ -11,7 +11,6 @@
 #include "TargetCursor.h"
 #include "WindowManager.h"
 #include "MathUtils.h"
-#include "Matrix33.h"
 #include "Profiler.h"
 #include "DebugRender.h"
 
@@ -42,6 +41,23 @@
 #include "WorldPointers.h"
 #include "AppState.h"
 
+// Vector3::RotateAround(axis) took the ANGLE FROM THE AXIS VECTOR'S MAGNITUDE
+// and did nothing at all below 1e-8 squared. Both halves are load-bearing here:
+// the guard is what stops a cross product of two parallel vectors turning the
+// camera's up vector into QNaN. Named the same as Citizen.cpp's copy because it
+// is the same routine; NeuronMath.h refuses to grow an operator layer, so each
+// file that rotates this way carries it.
+static DirectX::XMVECTOR XM_CALLCONV RotateAroundScaledAxis(DirectX::FXMVECTOR _v, DirectX::FXMVECTOR _scaledAxis)
+{
+  float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(_scaledAxis));
+  if (lengthSquared < 1e-8f)
+    return _v;
+
+  float const angle = sqrtf(lengthSquared);
+  return DirectX::XMVector3Transform(_v, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(_scaledAxis, 1.0f / angle), angle));
+}
+
+
 #define MIN_GROUND_CLEARANCE 10.0f // Minimum height relative to land
 #define MIN_HEIGHT 10.0f           // Height above sea level (which is y=0)
 #define MAX_HEIGHT 5000.0f         // Height above sea level (which is y=0)
@@ -60,7 +76,10 @@ void Camera::AdvanceDebugMode()
     m_targetFov = 60.0f;
 
   float advanceTime = g_advanceTime;
-  Vector3 right = m_front ^ m_up;
+  // front x up, which is the NEGATIVE of GetRight()'s up x front. The sign is
+  // why the slide below SUBTRACTS this one; the rotate block further down
+  // takes GetRight() and is a different vector, not a repeat of this.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up));
 
   float speedSideways = g_globalWorld->GetSize() / 30.0f;
   if (g_locationId != -1)
@@ -88,9 +107,11 @@ void Camera::AdvanceDebugMode()
     static DPadMovement cam_slide(ControlCameraForwards, ControlCameraBackwards, ControlCameraLeft, ControlCameraRight, ControlCameraUp,
                                   ControlCameraDown, 1);
     cam_slide.Advance();
-    m_pos -= right * (cam_slide.signX() * advanceTime * speedSideways);
-    m_pos += m_up * (cam_slide.signZ() * advanceTime * speedVertical);
-    m_pos += m_front * (cam_slide.signY() * advanceTime * speedForwards);
+    DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&m_pos);
+    pos = DirectX::XMVectorSubtract(pos, DirectX::XMVectorScale(right, cam_slide.signX() * advanceTime * speedSideways));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_up), cam_slide.signZ() * advanceTime * speedVertical));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), cam_slide.signY() * advanceTime * speedForwards));
+    DirectX::XMStoreFloat3(&m_pos, pos);
   }
 
   int mx = g_target->dX();
@@ -99,20 +120,29 @@ void Camera::AdvanceDebugMode()
   // TODO: Really?
   if (g_inputManager->controlEvent(ControlCameraDebugRotate))
   {
-    Matrix33 mat(1);
-    mat.RotateAroundY(static_cast<float>(mx) * -0.005f);
-    m_up = m_up * mat;
-    m_front = m_front * mat;
+    // THE TWO MATRIX33 ROTATORS DISAGREE ABOUT SIGN, and only one of them
+    // says so in its name. Applied as `v * mat` from identity:
+    //
+    //   RotateAroundY(a)          rotates v by +a about +Y  ==  XMMatrixRotationY(a)
+    //   FastRotateAround(n, a)    rotates v by -a about n
+    //
+    // because FastRotateAround turns the matrix's three basis ROWS by +a, and
+    // a matrix built by rotating its rows transposes into the inverse of one
+    // that rotates vectors. Hence the flipped sign on the pitch below. Both
+    // spellings compile and both are rotations; one of them pitches the debug
+    // camera the wrong way when the mouse moves.
+    DirectX::XMMATRIX const yaw = DirectX::XMMatrixRotationY(static_cast<float>(mx) * -0.005f);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_up), yaw));
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), yaw));
 
-    Vector3 right = GetRight();
-    mat.SetToIdentity();
-    mat.FastRotateAround(right, static_cast<float>(my) * -0.005f);
-    m_up = m_up * mat;
-    m_front = m_front * mat;
+    DirectX::XMFLOAT3 const rightAxis = GetRight();
+    DirectX::XMMATRIX const pitch = DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&rightAxis), static_cast<float>(my) * 0.005f);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_up), pitch));
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), pitch));
   }
 }
 
-void Camera::Get2DScreenPos(const Vector3& _vector, float* _screenX, float* _screenY)
+void Camera::Get2DScreenPos(DirectX::XMFLOAT3 const& _vector, float* _screenX, float* _screenY)
 {
   double outX, outY, outZ;
 
@@ -149,7 +179,7 @@ void Camera::AdvanceSphereWorldMode()
   const int screenH = g_renderer->ScreenH();
   const int screenW = g_renderer->ScreenW();
 
-  auto focusPos = Vector3(0, m_height * -400, 0);
+  DirectX::XMVECTOR const focusPos = DirectX::XMVectorSet(0.0f, m_height * -400.0f, 0.0f, 0.0f);
 
   // Set up viewing matrices
   glPushMatrix();
@@ -157,7 +187,7 @@ void Camera::AdvanceSphereWorldMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -176,16 +206,18 @@ void Camera::AdvanceSphereWorldMode()
   float factor2 = 1.0f - factor1;
 
   // Update camera orientation
-  if (mousePos3D.MagSquared() > 1.0f)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMLoadFloat3(&mousePos3D))) > 1.0f)
   {
-    Vector3 desiredFront = mousePos3D - m_pos;
-    desiredFront.Normalise();
+    DirectX::XMVECTOR const desiredFront =
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&mousePos3D), DirectX::XMLoadFloat3(&m_pos)));
+    DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(
+      DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2), DirectX::XMVectorScale(desiredFront, factor1)));
 
-    m_front = m_front * factor2 + desiredFront * factor1;
-    m_front.Normalise();
-    Vector3 right = m_front ^ g_upVector;
-    right.Normalise();
-    m_up = right ^ m_front;
+    // g_upVector, which is (0,1,0). The right vector is derived from the NEW
+    // front, not the one this block was entered with.
+    DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1));
+    DirectX::XMStoreFloat3(&m_front, front);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
   }
 
   //
@@ -194,12 +226,15 @@ void Camera::AdvanceSphereWorldMode()
   factor1 /= 2.0f;
   factor2 = 1.0f - factor1;
 
-  Vector3 idealPos = focusPos - m_front * 30000;
-  if (idealPos.Mag() > 35000.0f)
-    idealPos.SetLength(35000.0f);
-  Vector3 toIdealPos = idealPos - m_pos;
-  float distToIdealPos = toIdealPos.Mag();
-  m_pos = idealPos * factor1 + m_pos * factor2;
+  DirectX::XMVECTOR idealPos = DirectX::XMVectorSubtract(focusPos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), 30000.0f));
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(idealPos)) > 35000.0f)
+    // SetLength answered a zero-length input with (len,0,0). The test above is
+    // what makes that branch unreachable, so no fallback is reproduced here.
+    idealPos = DirectX::XMVectorScale(DirectX::XMVector3Normalize(idealPos), 35000.0f);
+  DirectX::XMVECTOR const toIdealPos = DirectX::XMVectorSubtract(idealPos, DirectX::XMLoadFloat3(&m_pos));
+  float const distToIdealPos = DirectX::XMVectorGetX(DirectX::XMVector3Length(toIdealPos));
+  DirectX::XMStoreFloat3(
+    &m_pos, DirectX::XMVectorAdd(DirectX::XMVectorScale(idealPos, factor1), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_pos), factor2)));
 
   // Set up viewing matrices
   SetupModelviewMatrix();
@@ -247,10 +282,8 @@ void Camera::AdvanceSphereWorldScriptedMode()
   const int screenH = g_renderer->ScreenH();
   const int screenW = g_renderer->ScreenW();
 
-  auto focusPos = Vector3(0, m_height * -400, 0);
-  focusPos.x += sinf(g_gameTime * 0.5f) * 4000.0f;
-  focusPos.y += cosf(g_gameTime * 0.4f) * 2000.0f;
-  focusPos.z += sinf(g_gameTime * 0.3f) * 4000.0f;
+  DirectX::XMVECTOR const focusPos = DirectX::XMVectorSet(sinf(g_gameTime * 0.5f) * 4000.0f, m_height * -400.0f + cosf(g_gameTime * 0.4f) * 2000.0f,
+                                                          sinf(g_gameTime * 0.3f) * 4000.0f, 0.0f);
 
   // Set up viewing matrices
   glPushMatrix();
@@ -258,7 +291,7 @@ void Camera::AdvanceSphereWorldScriptedMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -267,14 +300,15 @@ void Camera::AdvanceSphereWorldScriptedMode()
   float factor2 = 1.0f - factor1;
 
   // Update camera orientation
-  Vector3 desiredFront = m_targetPos - m_pos;
-  desiredFront.Normalise();
+  DirectX::XMVECTOR const desiredFront =
+    DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_pos)));
+  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(
+    DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2), DirectX::XMVectorScale(desiredFront, factor1)));
 
-  m_front = m_front * factor2 + desiredFront * factor1;
-  m_front.Normalise();
-  Vector3 right = m_front ^ g_upVector;
-  right.Normalise();
-  m_up = right ^ m_front;
+  // g_upVector, which is (0,1,0).
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1));
+  DirectX::XMStoreFloat3(&m_front, front);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
 
   //
   // Move towards the idealPos
@@ -282,12 +316,15 @@ void Camera::AdvanceSphereWorldScriptedMode()
   factor1 /= 2.0f;
   factor2 = 1.0f - factor1;
 
-  Vector3 idealPos = focusPos - m_front * 30000;
-  if (idealPos.Mag() > 35000.0f)
-    idealPos.SetLength(35000.0f);
-  Vector3 toIdealPos = idealPos - m_pos;
-  float distToIdealPos = toIdealPos.Mag();
-  m_pos = idealPos * factor1 + m_pos * factor2;
+  DirectX::XMVECTOR idealPos = DirectX::XMVectorSubtract(focusPos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), 30000.0f));
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(idealPos)) > 35000.0f)
+    // SetLength answered a zero-length input with (len,0,0). The test above is
+    // what makes that branch unreachable, so no fallback is reproduced here.
+    idealPos = DirectX::XMVectorScale(DirectX::XMVector3Normalize(idealPos), 35000.0f);
+  DirectX::XMVECTOR const toIdealPos = DirectX::XMVectorSubtract(idealPos, DirectX::XMLoadFloat3(&m_pos));
+  float const distToIdealPos = DirectX::XMVectorGetX(DirectX::XMVector3Length(toIdealPos));
+  DirectX::XMStoreFloat3(
+    &m_pos, DirectX::XMVectorAdd(DirectX::XMVectorScale(idealPos, factor1), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_pos), factor2)));
 
   glPopMatrix();
 }
@@ -351,37 +388,42 @@ void Camera::AdvanceSphereWorldIntroMode()
   {
     startTime = GetHighResTime();
 
-    m_pos.Set(-965852, 1720000, 2600000);
-    m_front.Set(-1, 0, 0);
-    m_up.Set(0.15, 0.93, 0.31);
-    m_front.Normalise();
-    m_up.Normalise();
+    m_pos = DirectX::XMFLOAT3(-965852.0f, 1720000.0f, 2600000.0f);
+    // (-1,0,0) is already unit length, so the Normalise it used to go through
+    // was a no-op. (0.15, 0.93, 0.31) is not, so that one is kept.
+    m_front = DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Normalize(DirectX::XMVectorSet(0.15f, 0.93f, 0.31f, 0.0f)));
 
     fixMeUp = false;
   }
 
-  Vector3 targetPos = g_zeroVector;
+  DirectX::XMVECTOR targetPos = DirectX::XMVectorSet(1000.0f, 500.0f, 1000.0f, 0.0f);
   if (runningTime < 30.0f)
-    targetPos.Set(-1000000, 4000000, 397000);
-  else
-    targetPos.Set(1000, 500, 1000);
-  Vector3 targetFront = targetPos - m_pos;
-  float distance = targetFront.Mag();
+    targetPos = DirectX::XMVectorSet(-1000000.0f, 4000000.0f, 397000.0f, 0.0f);
+  DirectX::XMVECTOR targetFront = DirectX::XMVectorSubtract(targetPos, DirectX::XMLoadFloat3(&m_pos));
+  float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(targetFront));
 
   float forwardSpeed = 3000.0f;
 
   if (distance < 2000000 && runningTime > 30)
     forwardSpeed = (distance / 1070000.0f) * 3000.0f;
 
-  targetFront.Normalise();
+  targetFront = DirectX::XMVector3Normalize(targetFront);
 
   float rotateSpeed = 4000.0f / 30000.0f;
   float factor1 = frameTime * rotateSpeed;
   float factor2 = 1.0f - factor1;
-  m_front = m_front * factor2 + targetFront * factor1;
-  m_up.RotateAround(m_front * frameTime * rotateSpeed * sinf(runningTime * 0.1f + 0.4f) * 1.6f);
+  // The two lines below read the NEW front, which is why it is held rather
+  // than reloaded, and it is deliberately not normalised — nor was it.
+  DirectX::XMVECTOR const front =
+    DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2), DirectX::XMVectorScale(targetFront, factor1));
+  DirectX::XMStoreFloat3(&m_front, front);
+  DirectX::XMStoreFloat3(&m_up,
+                         RotateAroundScaledAxis(DirectX::XMLoadFloat3(&m_up),
+                                                DirectX::XMVectorScale(front, frameTime * rotateSpeed * sinf(runningTime * 0.1f + 0.4f) * 1.6f)));
 
-  m_pos += m_front * forwardSpeed * frameTime * 62;
+  DirectX::XMStoreFloat3(&m_pos,
+                         DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorScale(front, forwardSpeed * frameTime * 62.0f)));
 }
 
 void Camera::AdvanceSphereWorldOutroMode()
@@ -406,51 +448,60 @@ void Camera::AdvanceSphereWorldOutroMode()
   {
     startTime = GetHighResTime();
 
-    m_pos.Set(0, 0, 0);
-    m_front.Set(0, 1, 0);
-    m_up.Set(0, 0, 1);
-    m_front.Normalise();
-    m_up.Normalise();
+    // All three are already unit length, so the Normalise calls that followed
+    // them were no-ops.
+    m_pos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+    m_front = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+    m_up = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
 
     m_vel = m_front;
 
     fixMeUp = false;
   }
 
-  Vector3 targetPos(-1000000, 4000000, 397000);
+  DirectX::XMVECTOR targetPos = DirectX::XMVectorSet(-1000000.0f, 4000000.0f, 397000.0f, 0.0f);
 
   if (runningTime > 30.0f)
-    targetPos.Set(-965852, 1720000, 2600000);
+    targetPos = DirectX::XMVectorSet(-965852.0f, 1720000.0f, 2600000.0f, 0.0f);
 
-  Vector3 targetFront = (targetPos - m_pos) * -1.0f;
-  float distance = targetFront.Mag();
+  DirectX::XMVECTOR targetFront = DirectX::XMVectorScale(DirectX::XMVectorSubtract(targetPos, DirectX::XMLoadFloat3(&m_pos)), -1.0f);
+  float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(targetFront));
 
-  float forwardSpeed = sqrtf(m_pos.Mag()) * 4;
+  float forwardSpeed = sqrtf(DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_pos)))) * 4;
   forwardSpeed = std::max(forwardSpeed, 1000.0f);
   forwardSpeed = std::min(forwardSpeed, 2000.0f);
 
-  targetFront.Normalise();
+  targetFront = DirectX::XMVector3Normalize(targetFront);
 
   float rotateSpeed = 4000.0f / 30000.0f;
   float factor1 = frameTime * rotateSpeed;
   float factor2 = 1.0f - factor1;
-  m_vel = m_vel * factor2 + targetFront * factor1;
-  m_up.RotateAround(m_front * frameTime * rotateSpeed * sinf(runningTime * 0.1f + 0.4f) * 0.6f);
+  DirectX::XMVECTOR const vel =
+    DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), factor2), DirectX::XMVectorScale(targetFront, factor1));
+  DirectX::XMStoreFloat3(&m_vel, vel);
+  // The rotation axis is the OLD front — m_front is not written until the end
+  // of this function — so the order of these statements is load-bearing.
+  DirectX::XMStoreFloat3(&m_up, RotateAroundScaledAxis(DirectX::XMLoadFloat3(&m_up),
+                                                       DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front),
+                                                                              frameTime * rotateSpeed * sinf(runningTime * 0.1f + 0.4f) * 0.6f)));
 
-  m_pos -= m_vel * forwardSpeed * frameTime * 62;
+  DirectX::XMVECTOR const pos =
+    DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorScale(vel, forwardSpeed * frameTime * 62.0f));
+  DirectX::XMStoreFloat3(&m_pos, pos);
 
-  targetFront = -m_pos;
+  targetFront = DirectX::XMVectorNegate(pos);
   if (runningTime > 30.0f)
-    targetFront = m_vel;
+    targetFront = vel;
 
-  targetFront.Normalise();
+  targetFront = DirectX::XMVector3Normalize(targetFront);
   factor1 *= 5.0f;
-  m_front = m_front * factor2 + targetFront * factor1;
+  DirectX::XMStoreFloat3(
+    &m_front, DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2), DirectX::XMVectorScale(targetFront, factor1)));
 
   if (runningTime > 70.0f)
   {
     RequestMode(ModeSphereWorld);
-    m_pos.Set(0, 0, 100);
+    m_pos = DirectX::XMFLOAT3(0.0f, 0.0f, 100.0f);
   }
 }
 
@@ -458,21 +509,21 @@ void Camera::RequestSphereFocusMode()
 {
   m_framesInThisMode = 0;
   m_mode = ModeSphereWorldFocus;
-  m_targetPos.Zero();
+  m_targetPos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_trackRange = 100000.0f;
   m_trackHeight = 0.0f;
   m_trackTimer = GetHighResTime();
 
-  m_trackVector = (m_pos);
+  m_trackVector = m_pos;
   m_trackVector.y = 0.0f;
-  m_trackVector.Normalise();
+  DirectX::XMStoreFloat3(&m_trackVector, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_trackVector)));
 }
 
 void Camera::AdvanceSphereWorldFocusMode()
 {
   m_targetFov = 100;
 
-  Vector3 oldPos = m_pos;
+  DirectX::XMFLOAT3 oldPos = m_pos;
 
   m_trackRange = 100000;
   m_trackHeight = 50000;
@@ -480,11 +531,19 @@ void Camera::AdvanceSphereWorldFocusMode()
   //
   // Target a point that slowly rotates around the building
 
-  m_trackVector.RotateAroundY(g_advanceTime * -0.15f);
-  m_trackVector.Normalise();
+  // Vector3::RotateAroundY(a) went through FastRotateAround(g_upVector, a),
+  // which on a VECTOR is the ordinary right-handed rotation about +Y -- the
+  // same one XMMatrixRotationY(a) performs under `v * M`. It is only the
+  // MATRIX form of FastRotateAround that inverts; see AdvanceDebugMode.
+  DirectX::XMVECTOR trackVector =
+    DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_trackVector), DirectX::XMMatrixRotationY(g_advanceTime * -0.15f));
+  trackVector = DirectX::XMVector3Normalize(trackVector);
+  DirectX::XMStoreFloat3(&m_trackVector, trackVector);
   float height = sinf(g_gameTime * 0.2f) * m_trackHeight;
   float trackRange = fabs(m_trackRange) + sinf(g_gameTime * 0.3f) * fabs(m_trackRange) * 0.4f;
-  Vector3 realTargetPos = m_targetPos + m_trackVector * trackRange;
+  DirectX::XMFLOAT3 realTargetPos;
+  DirectX::XMStoreFloat3(&realTargetPos,
+                         DirectX::XMVectorMultiplyAdd(trackVector, DirectX::XMVectorReplicate(trackRange), DirectX::XMLoadFloat3(&m_targetPos)));
   realTargetPos.y = -110000 + height;
 
   // Calculate a Movement Factor, so we start moving slowly towards our target,
@@ -495,11 +554,14 @@ void Camera::AdvanceSphereWorldFocusMode()
 
   float factor1 = moveFactor * 0.5f * g_advanceTime;
   float factor2 = 1.0f - factor1;
-  m_pos = m_pos * factor2 + realTargetPos * factor1;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_pos), factor2),
+                                                      DirectX::XMVectorScale(DirectX::XMLoadFloat3(&realTargetPos), factor1)));
 
   m_targetPos.y = 10000;
 
-  Vector3 targetFront = (m_targetPos - m_pos).Normalise();
+  DirectX::XMFLOAT3 targetFront;
+  DirectX::XMStoreFloat3(&targetFront,
+                         DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_pos))));
   if (m_trackRange < 0.0f)
   {
     targetFront.x *= -1.0f;
@@ -507,28 +569,34 @@ void Camera::AdvanceSphereWorldFocusMode()
   }
   factor1 = moveFactor * 1.0f * g_advanceTime * 0.5f;
   factor2 = 1.0f - factor1;
-  m_front = m_front * factor2 + targetFront * factor1;
+  DirectX::XMVECTOR const front = DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2),
+                                                       DirectX::XMVectorScale(DirectX::XMLoadFloat3(&targetFront), factor1));
+  DirectX::XMStoreFloat3(&m_front, front);
 
-  m_up.Set(0.0f, -1.0f, 0.0f);
-  Vector3 right = m_up ^ m_front;
-  m_up = right ^ m_front;
+  // m_up is written to (0,-1,0) and immediately used to derive the right
+  // vector, so the intermediate never survives the function.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f), front);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
 }
 
 // Returns the number of meters to the nearest blockage that the camera would
 // experience if it travelled in the specified direction. A blockage is defined
 // as a piece of land more than 10 metres higher than the camera's current
 // height. If there is no blockage FLT_MAX is returned.
-float Camera::DistanceToBlockage(const Vector3& _dir, const float _maxDist)
+float XM_CALLCONV Camera::DistanceToBlockage(DirectX::FXMVECTOR _dir, const float _maxDist)
 {
   if (!g_location)
     return FLT_MAX;
+
+  DirectX::XMFLOAT3 dir;
+  DirectX::XMStoreFloat3(&dir, _dir);
 
   constexpr unsigned int numSteps = 40;
   const float distStep = _maxDist / static_cast<float>(numSteps);
   for (int i = 1; i <= numSteps; ++i)
   {
-    float x = m_pos.x + _dir.x * distStep * static_cast<float>(i);
-    float z = m_pos.z + _dir.z * distStep * static_cast<float>(i);
+    float x = m_pos.x + dir.x * distStep * static_cast<float>(i);
+    float z = m_pos.z + dir.z * distStep * static_cast<float>(i);
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(x, z);
     if (landHeight + MIN_GROUND_CLEARANCE > m_height)
       return static_cast<float>(i) * distStep;
@@ -564,7 +632,7 @@ void Camera::AdvanceFreeMovementMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -573,13 +641,17 @@ void Camera::AdvanceFreeMovementMode()
   if (!TheTaskManagerInterface()->m_visible)
   {
     float moveRate = 250.0f;
-    Vector3 accelForward = m_front;
-    accelForward.y = 0.0f;
-    accelForward.Normalise();
-    Vector3 accelRight = GetRight();
-    accelRight.y = 0.0f;
-    accelRight.Normalise();
-    Vector3 accelUp = g_upVector;
+    // Flattened onto the horizontal plane before normalising, both of them.
+    // A camera looking straight down makes the forward one zero-length, and
+    // XMVector3Normalize answers that with zero where Vector3::Normalise
+    // answered (0,0,1) -- but the result only ever scales a movement delta,
+    // so a zero is a stopped camera rather than a QNaN position. Left native.
+    DirectX::XMFLOAT3 accelForwardStore = m_front;
+    accelForwardStore.y = 0.0f;
+    DirectX::XMVECTOR const accelForward = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&accelForwardStore));
+    DirectX::XMFLOAT3 accelRightStore = GetRight();
+    accelRightStore.y = 0.0f;
+    DirectX::XMVECTOR const accelRight = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&accelRightStore));
 
     // TODO: Support mouse/joystick
     if (g_inputManager->controlEvent(ControlCameraSpeedup))
@@ -590,22 +662,23 @@ void Camera::AdvanceFreeMovementMode()
     bool keyLeft = g_inputManager->controlEvent(ControlCameraLeft);
     bool keyRight = g_inputManager->controlEvent(ControlCameraRight);
 
+    DirectX::XMVECTOR targetPos = DirectX::XMLoadFloat3(&m_targetPos);
     if (keyLeft)
-      m_targetPos += accelRight * g_advanceTime * moveRate;
+      targetPos = DirectX::XMVectorAdd(targetPos, DirectX::XMVectorScale(accelRight, g_advanceTime * moveRate));
     if (keyRight)
-      m_targetPos -= accelRight * g_advanceTime * moveRate;
+      targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelRight, g_advanceTime * moveRate));
     if (keyForward)
-      m_targetPos += accelForward * g_advanceTime * moveRate;
+      targetPos = DirectX::XMVectorAdd(targetPos, DirectX::XMVectorScale(accelForward, g_advanceTime * moveRate));
     if (keyBackward)
-      m_targetPos -= accelForward * g_advanceTime * moveRate;
+      targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelForward, g_advanceTime * moveRate));
 
     if (m_mode == ModeFreeMovement)
     {
       InputDetails details;
       if (g_inputManager->controlEvent(ControlCameraMove, details))
       {
-        m_targetPos -= accelRight * g_advanceTime * details.x * 10.0f;
-        m_targetPos -= accelForward * g_advanceTime * details.y * 10.0f;
+        targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelRight, g_advanceTime * details.x * 10.0f));
+        targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelForward, g_advanceTime * details.y * 10.0f));
 
         TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
       }
@@ -615,6 +688,8 @@ void Camera::AdvanceFreeMovementMode()
     {
     }
 
+    DirectX::XMStoreFloat3(&m_targetPos, targetPos);
+
     //		if (m_pos.x < m_minX)	m_targetPos.x -= (m_pos.x - m_minX);
     //		if (m_pos.x > m_maxX)	m_targetPos.x -= (m_pos.x - m_maxX);
     //		if (m_pos.z < m_minX)	m_targetPos.z -= (m_pos.z - m_minZ);
@@ -622,23 +697,24 @@ void Camera::AdvanceFreeMovementMode()
 
     // Stop camera getting too close to cliffs
     {
-      Vector3 horiDir = m_targetPos - m_pos;
-      horiDir.y = 0.0f;
-      if (horiDir.Mag() > 1e-4)
+      DirectX::XMFLOAT3 horiDirStore;
+      DirectX::XMStoreFloat3(&horiDirStore, DirectX::XMVectorSubtract(targetPos, DirectX::XMLoadFloat3(&m_pos)));
+      horiDirStore.y = 0.0f;
+      DirectX::XMVECTOR const horiDir = DirectX::XMLoadFloat3(&horiDirStore);
+      if (DirectX::XMVectorGetX(DirectX::XMVector3Length(horiDir)) > 1e-4)
       {
-        horiDir.Normalise();
-        const float distToBlockage = DistanceToBlockage(horiDir, 100.0f);
+        const float distToBlockage = DistanceToBlockage(DirectX::XMVector3Normalize(horiDir), 100.0f);
         if (distToBlockage < 100.0f)
         {
-          Vector3 targetVector = m_targetPos - m_pos;
-          Vector3 targetVectorHori = targetVector;
+          DirectX::XMVECTOR const targetVector = DirectX::XMVectorSubtract(targetPos, DirectX::XMLoadFloat3(&m_pos));
+          DirectX::XMFLOAT3 targetVectorHori;
+          DirectX::XMStoreFloat3(&targetVectorHori, targetVector);
           targetVectorHori.y = 0.0f;
           float maxSpeed = (distToBlockage - 30.0f) / (100.0f - 30.0f);
           if (maxSpeed < 0.0f)
             maxSpeed = 0.0f;
-          targetVector *= maxSpeed;
-          m_targetPos = m_pos + targetVector;
-          m_height += (1.0f - maxSpeed) * 1.0f * targetVectorHori.Mag();
+          DirectX::XMStoreFloat3(&m_targetPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorScale(targetVector, maxSpeed)));
+          m_height += (1.0f - maxSpeed) * 1.0f * DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&targetVectorHori)));
         }
       }
     }
@@ -673,35 +749,39 @@ void Camera::AdvanceFreeMovementMode()
     // Update our position
     float factor1 = 4.0f * g_advanceTime;
     float factor2 = 1.0f - factor1;
-    Vector3 deltaPos = -m_pos;
-    Vector3 oldPos = m_pos;
-    m_pos = m_pos * factor2 + m_targetPos * factor1;
+    DirectX::XMVECTOR const oldPos = DirectX::XMLoadFloat3(&m_pos);
+    DirectX::XMVECTOR const newPos =
+      DirectX::XMVectorAdd(DirectX::XMVectorScale(oldPos, factor2), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_targetPos), factor1));
+    DirectX::XMStoreFloat3(&m_pos, newPos);
 
-    deltaPos = m_pos + deltaPos;
-    m_vel = (m_pos - oldPos) / g_advanceTime;
+    // deltaPos started as -m_pos and had the new m_pos added to it, so it is
+    // the frame's movement. Written out rather than kept in two steps.
+    DirectX::XMVECTOR const deltaPos = DirectX::XMVectorSubtract(newPos, oldPos);
+    // operator/ multiplied by the reciprocal once, which is what XMVectorScale does.
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(deltaPos, 1.0f / g_advanceTime));
 
     // Update camera orientation
     bool chatLog = false;
 
     if (!TheTaskManagerInterface()->m_visible && !chatLog)
     {
-      if (mousePos3D.MagSquared() > 1.0f)
+      if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMLoadFloat3(&mousePos3D))) > 1.0f)
       {
-        Vector3 desiredFront = mousePos3D - m_pos;
-        desiredFront.Normalise();
-        Vector3 oldFront = m_front;
-        Vector3 desiredRotation = oldFront ^ desiredFront;
+        DirectX::XMVECTOR const desiredFront =
+          DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&mousePos3D), DirectX::XMLoadFloat3(&m_pos)));
+        DirectX::XMVECTOR const oldFront = DirectX::XMLoadFloat3(&m_front);
         float amountToRotate = sqrtf(g_advanceTime) * 1.0f;
         if (amountToRotate > 1.0f)
           amountToRotate = 1.0f;
-        desiredRotation *= amountToRotate;
-        m_front.RotateAround(desiredRotation);
-        //            m_front = m_front * factor2 + desiredFront * factor1;
-        m_front.Normalise();
+        // The cross product IS the rotation: its direction is the axis and its
+        // magnitude the angle, which is what RotateAround took.
+        DirectX::XMVECTOR const desiredRotation = DirectX::XMVectorScale(DirectX::XMVector3Cross(oldFront, desiredFront), amountToRotate);
+        DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(RotateAroundScaledAxis(oldFront, desiredRotation));
 
-        Vector3 right = m_front ^ g_upVector;
-        right.Normalise();
-        m_up = right ^ m_front;
+        // g_upVector, which is (0,1,0).
+        DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1));
+        DirectX::XMStoreFloat3(&m_front, front);
+        DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
       }
     }
 
@@ -710,7 +790,7 @@ void Camera::AdvanceFreeMovementMode()
 
     // Get the 2D mouse coordinates now that we have moved the camera
     float newMouseX, newMouseY;
-    mousePos3D += deltaPos;
+    DirectX::XMStoreFloat3(&mousePos3D, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&mousePos3D), deltaPos));
     Get2DScreenPos(mousePos3D, &newMouseX, &newMouseY);
     newMouseY = screenH - newMouseY;
 
@@ -753,16 +833,22 @@ void Camera::Render()
 
 void Camera::AdvanceBuildingFocusMode()
 {
-  Vector3 oldPos = m_pos;
+  DirectX::XMFLOAT3 oldPos = m_pos;
 
   //
   // Target a point that slowly rotates around the building
 
-  m_trackVector.RotateAroundY(g_advanceTime * -0.15f);
-  m_trackVector.Normalise();
+  // See AdvanceSphereWorldFocusMode: the VECTOR form of RotateAroundY is the
+  // ordinary right-handed rotation, and XMMatrixRotationY under `v * M` is it.
+  DirectX::XMVECTOR trackVector =
+    DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_trackVector), DirectX::XMMatrixRotationY(g_advanceTime * -0.15f));
+  trackVector = DirectX::XMVector3Normalize(trackVector);
+  DirectX::XMStoreFloat3(&m_trackVector, trackVector);
   float height = m_trackHeight + sinf(g_gameTime * 0.3f) * m_trackHeight * 0.5f;
   float trackRange = fabs(m_trackRange) + sinf(g_gameTime * 0.3f) * fabs(m_trackRange) * 0.3f;
-  Vector3 realTargetPos = m_targetPos + m_trackVector * trackRange;
+  DirectX::XMFLOAT3 realTargetPos;
+  DirectX::XMStoreFloat3(&realTargetPos,
+                         DirectX::XMVectorMultiplyAdd(trackVector, DirectX::XMVectorReplicate(trackRange), DirectX::XMLoadFloat3(&m_targetPos)));
   realTargetPos.y = m_targetPos.y + height;
 
   // Calculate a Movement Factor, so we start moving slowly towards our target,
@@ -774,16 +860,20 @@ void Camera::AdvanceBuildingFocusMode()
   if (timeSinceBegin < 2.0f)
   {
     // Make the camera lift up when first moving towards a building
-    float distance = (m_pos - realTargetPos).Mag();
+    float distance = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&realTargetPos))));
     realTargetPos.y += distance * 0.75f * (2.0f - timeSinceBegin);
     realTargetPos.y = std::min(realTargetPos.y, 1000.0f);
   }
 
   float factor1 = moveFactor * 0.5f * g_advanceTime;
   float factor2 = 1.0f - factor1;
-  m_pos = m_pos * factor2 + realTargetPos * factor1;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_pos), factor2),
+                                                      DirectX::XMVectorScale(DirectX::XMLoadFloat3(&realTargetPos), factor1)));
 
-  Vector3 targetFront = (m_targetPos - m_pos).Normalise();
+  DirectX::XMFLOAT3 targetFront;
+  DirectX::XMStoreFloat3(&targetFront,
+                         DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_pos))));
   if (m_trackRange < 0.0f)
   {
     targetFront.x *= -1.0f;
@@ -791,11 +881,12 @@ void Camera::AdvanceBuildingFocusMode()
   }
   factor1 = moveFactor * 1.0f * g_advanceTime;
   factor2 = 1.0f - factor1;
-  m_front = m_front * factor2 + targetFront * factor1;
+  DirectX::XMVECTOR const front = DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2),
+                                                       DirectX::XMVectorScale(DirectX::XMLoadFloat3(&targetFront), factor1));
+  DirectX::XMStoreFloat3(&m_front, front);
 
-  m_up.Set(0.0f, -1.0f, 0.0f);
-  Vector3 right = m_up ^ m_front;
-  m_up = right ^ m_front;
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f), front);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
 
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   if (m_pos.y < landHeight + 10.0f)
@@ -851,54 +942,65 @@ void Camera::AdvanceAutomaticTracking()
   float factor1 = g_advanceTime * 4.0f;
   float factor2 = 1.0f - factor1;
 
-  Vector3 avgCameraTarget;
+  // Braced to zero: this accumulates six optional contributions and
+  // Vector3's default constructor is what used to make that start from the
+  // origin. cameraTarget is written by each callee before it is read.
+  DirectX::XMFLOAT3 avgCameraTarget{0.0f, 0.0f, 0.0f};
   int numInputs = 0;
 
-  Vector3 cameraTarget;
+  DirectX::XMFLOAT3 cameraTarget{0.0f, 0.0f, 0.0f};
+
+  DirectX::XMVECTOR sum = DirectX::XMLoadFloat3(&avgCameraTarget);
 
   if (AdvanceRopeModel(cameraTarget))
   {
-    avgCameraTarget += cameraTarget;
+    sum = DirectX::XMVectorAdd(sum, DirectX::XMLoadFloat3(&cameraTarget));
     numInputs++;
   }
 
   if (AdvanceCanSeeUnits(cameraTarget))
   {
-    avgCameraTarget += cameraTarget;
+    sum = DirectX::XMVectorAdd(sum, DirectX::XMLoadFloat3(&cameraTarget));
     numInputs++;
   }
 
   if (AdvanceNotTooLow(cameraTarget))
   {
-    avgCameraTarget += cameraTarget;
+    sum = DirectX::XMVectorAdd(sum, DirectX::XMLoadFloat3(&cameraTarget));
     numInputs++;
   }
 
   if (AdvanceNotTooFarAway(cameraTarget))
   {
-    avgCameraTarget += cameraTarget;
+    sum = DirectX::XMVectorAdd(sum, DirectX::XMLoadFloat3(&cameraTarget));
     numInputs++;
   }
 
   if (AdvanceManualRotateCamera(cameraTarget))
   {
-    avgCameraTarget += 3 * cameraTarget;
+    sum = DirectX::XMVectorAdd(sum, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraTarget), 3.0f));
     numInputs += 3;
   }
 
   if (AdvanceManualCameraHeight(cameraTarget))
   {
-    avgCameraTarget += cameraTarget;
+    sum = DirectX::XMVectorAdd(sum, DirectX::XMLoadFloat3(&cameraTarget));
     numInputs++;
   }
 
   if (numInputs > 0)
-    avgCameraTarget = avgCameraTarget / static_cast<float>(numInputs);
+    // operator/ multiplied by the reciprocal once.
+    sum = DirectX::XMVectorScale(sum, 1.0f / static_cast<float>(numInputs));
   else
-    avgCameraTarget = m_pos;
+    sum = DirectX::XMLoadFloat3(&m_pos);
 
-  m_cameraTarget = factor2 * m_cameraTarget + factor1 * avgCameraTarget;
-  m_pos = factor2 * m_pos + factor1 * m_cameraTarget;
+  DirectX::XMStoreFloat3(&avgCameraTarget, sum);
+
+  DirectX::XMVECTOR const cameraTargetVec =
+    DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_cameraTarget), factor2), DirectX::XMVectorScale(sum, factor1));
+  DirectX::XMStoreFloat3(&m_cameraTarget, cameraTargetVec);
+  DirectX::XMStoreFloat3(
+    &m_pos, DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_pos), factor2), DirectX::XMVectorScale(cameraTargetVec, factor1)));
 
   // Finally face the unit
   RotateTowardsEntity(m_trackingEntity);
@@ -916,7 +1018,10 @@ void Camera::UpdateControlVector()
     recalc = true;
   }
 
-  float angle = cosf(g_upVector * GetUp());
+  // operator* between two Vector3s was the DOT product, not a scale. Taking
+  // cosf of a dot is what the original did and is kept exactly.
+  DirectX::XMFLOAT3 const upStore = GetUp();
+  float angle = cosf(DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&upStore))));
   if ((fabs(angle) < angleThreshold && !m_skipDirectionCalculation) || !g_inputManager->controlEvent(ControlUnitMove) || recalc)
   {
     m_controlVector = GetRight();
@@ -926,7 +1031,7 @@ void Camera::UpdateControlVector()
     m_skipDirectionCalculation = true;
 }
 
-bool Camera::AdvanceManualRotateCamera(Vector3& cameraTarget)
+bool Camera::AdvanceManualRotateCamera(DirectX::XMFLOAT3& cameraTarget)
 {
   if ((g_inputManager->controlEvent(ControlCameraRotateLeft) || g_inputManager->controlEvent(ControlCameraRotateRight)) &&
       !g_inputManager->controlEvent(ControlUnitPrimaryFireDirected))
@@ -951,25 +1056,27 @@ bool Camera::AdvanceManualRotateCamera(Vector3& cameraTarget)
     int deltaY = g_target->Y() - halfHeight;
     float rotRight = static_cast<float>(deltaY) * -0.01f;
 
-    Vector3 front = m_front;
-    front.RotateAroundY(rotY);
+    DirectX::XMVECTOR front = DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(rotY));
 
-    Vector3 right = (front ^ g_upVector).Normalise();
+    // g_upVector, which is (0,1,0).
+    DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1));
+    DirectX::XMVECTOR const scaledAxis = DirectX::XMVectorScale(right, rotRight);
 
-    Vector3 newUp = m_up;
+    DirectX::XMVECTOR const newUp = RotateAroundScaledAxis(DirectX::XMLoadFloat3(&m_up), scaledAxis);
 
-    newUp.RotateAround(right * rotRight);
-    if (newUp.y > 0.1f)
-      front.RotateAround(right * rotRight);
+    if (DirectX::XMVectorGetY(newUp) > 0.1f)
+      front = RotateAroundScaledAxis(front, scaledAxis);
 
-    cameraTarget = m_targetPos - front * m_currentDistance;
+    DirectX::XMStoreFloat3(&cameraTarget,
+                           DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMVectorScale(front, m_currentDistance)));
     return true;
   }
-  m_currentDistance = (m_pos - m_predictedEntityPos).Mag();
+  m_currentDistance = DirectX::XMVectorGetX(
+    DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_predictedEntityPos))));
   return false;
 }
 
-bool Camera::AdvanceManualCameraHeight(Vector3& cameraTarget)
+bool Camera::AdvanceManualCameraHeight(DirectX::XMFLOAT3& cameraTarget)
 {
   constexpr float heightScale = 0.05f;
 
@@ -1006,28 +1113,28 @@ bool Camera::AdvanceManualCameraHeight(Vector3& cameraTarget)
   return false;
 }
 
-bool Camera::AdvanceRopeModel(Vector3& cameraTarget)
+bool Camera::AdvanceRopeModel(DirectX::XMFLOAT3& cameraTarget)
 {
   // Follow along as if the camera is attached to the entity
   // by a rope on the floor.
 
-  Vector3 C(m_pos);
+  DirectX::XMFLOAT3 C = m_pos;
   C.y = 0.0f;
 
-  Vector3 E2(m_predictedEntityPos);
+  DirectX::XMFLOAT3 E2 = m_predictedEntityPos;
   E2.y = 0.0f;
 
-  Vector3 B = C - E2;
+  DirectX::XMVECTOR const flatEntityPos = DirectX::XMLoadFloat3(&E2);
+  DirectX::XMVECTOR const B = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&C), flatEntityPos);
 
   // Distance to stay within
   const float d = m_distFromEntity;
   const float dSquared = d * d;
 
   // Stay within a certain distance of the entity
-  if (B.MagSquared() > dSquared)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(B)) > dSquared)
   {
-    B.Normalise();
-    cameraTarget = E2 + B * d;
+    DirectX::XMStoreFloat3(&cameraTarget, DirectX::XMVectorMultiplyAdd(DirectX::XMVector3Normalize(B), DirectX::XMVectorReplicate(d), flatEntityPos));
     cameraTarget.y = m_pos.y;
     return true;
   }
@@ -1044,10 +1151,10 @@ bool Camera::AdvanceRopeModel(Vector3& cameraTarget)
   const float outsideDSquared = outsideD * outsideD;
 
   // DebugTrace("2dcamdist = %f, outsideD = %f\n", B.Mag(), outsideD);
-  if (B.MagSquared() < outsideDSquared)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(B)) < outsideDSquared)
   {
-    B.Normalise();
-    cameraTarget = E2 + B * outsideD;
+    DirectX::XMStoreFloat3(&cameraTarget,
+                           DirectX::XMVectorMultiplyAdd(DirectX::XMVector3Normalize(B), DirectX::XMVectorReplicate(outsideD), flatEntityPos));
     cameraTarget.y = m_pos.y;
     return true;
   }
@@ -1055,25 +1162,29 @@ bool Camera::AdvanceRopeModel(Vector3& cameraTarget)
   return false;
 }
 
-bool Camera::AdvanceCanSeeUnits(Vector3& targetCamera)
+bool Camera::AdvanceCanSeeUnits(DirectX::XMFLOAT3& targetCamera)
 {
-  float distToEntity = (m_predictedEntityPos - m_pos).Mag();
+  DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&m_pos);
+  DirectX::XMVECTOR const entityPos = DirectX::XMLoadFloat3(&m_predictedEntityPos);
+  float distToEntity = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(entityPos, pos)));
 
-  if (DirectDistanceToBlockage(m_pos, m_predictedEntityPos, distToEntity) < distToEntity - 1.0f)
+  if (DirectDistanceToBlockage(pos, entityPos, distToEntity) < distToEntity - 1.0f)
   {
-    Vector3 blockage;
-    GetHighestTangentPoint(m_predictedEntityPos, m_pos, distToEntity, blockage);
+    // Braced to zero: GetHighestTangentPoint writes this only if it finds a
+    // gradient steeper than the one it starts from, and Vector3's default
+    // constructor is what made the miss case the origin rather than stack junk.
+    DirectX::XMFLOAT3 blockage{0.0f, 0.0f, 0.0f};
+    GetHighestTangentPoint(entityPos, pos, distToEntity, blockage);
 
-    Vector3 ray = blockage - m_predictedEntityPos;
-    ray.Normalise();
-    targetCamera = m_predictedEntityPos + ray * distToEntity;
+    DirectX::XMVECTOR const ray = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&blockage), entityPos));
+    DirectX::XMStoreFloat3(&targetCamera, DirectX::XMVectorMultiplyAdd(ray, DirectX::XMVectorReplicate(distToEntity), entityPos));
     return true;
   }
 
   return false;
 }
 
-bool Camera::AdvanceNotTooLow(Vector3& targetCamera)
+bool Camera::AdvanceNotTooLow(DirectX::XMFLOAT3& targetCamera)
 {
   // Code to check if the camera is not too low of the ground
   float cameraHeight = m_pos.y - g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
@@ -1088,16 +1199,17 @@ bool Camera::AdvanceNotTooLow(Vector3& targetCamera)
   return false;
 }
 
-bool Camera::AdvanceNotTooFarAway(Vector3& targetCamera)
+bool Camera::AdvanceNotTooFarAway(DirectX::XMFLOAT3& targetCamera)
 {
-  Vector3 entityToCamera = m_pos - m_predictedEntityPos;
+  DirectX::XMVECTOR const entityPos = DirectX::XMLoadFloat3(&m_predictedEntityPos);
+  DirectX::XMVECTOR const entityToCamera = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), entityPos);
 
   float maxDist = m_distFromEntity * 1.2f;
 
-  if (entityToCamera.MagSquared() > maxDist * maxDist)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(entityToCamera)) > maxDist * maxDist)
   {
-    entityToCamera.Normalise();
-    targetCamera = m_predictedEntityPos + entityToCamera * maxDist;
+    DirectX::XMStoreFloat3(&targetCamera,
+                           DirectX::XMVectorMultiplyAdd(DirectX::XMVector3Normalize(entityToCamera), DirectX::XMVectorReplicate(maxDist), entityPos));
     return true;
   }
 
@@ -1111,14 +1223,18 @@ void Camera::RotateTowardsEntity(Entity* entity)
 
   // We deliberately overshoot the target pos?
 
-  Vector3 newTargetPos = entity->GetCameraFocusPoint();
-  m_targetPos = factor1 * newTargetPos + factor2 * m_targetPos;
+  DirectX::XMFLOAT3 newTargetPos = entity->GetCameraFocusPoint();
+  DirectX::XMVECTOR const targetPos = DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&newTargetPos), factor1),
+                                                           DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_targetPos), factor2));
+  DirectX::XMStoreFloat3(&m_targetPos, targetPos);
 
-  Vector3 targetFront = (m_targetPos - m_pos).Normalise();
-  m_front = m_front * factor2 + targetFront * factor1;
-  m_up.Set(0.0f, -1.0f, 0.0f);
-  Vector3 right = m_up ^ m_front;
-  m_up = right ^ m_front;
+  DirectX::XMVECTOR const targetFront = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(targetPos, DirectX::XMLoadFloat3(&m_pos)));
+  DirectX::XMVECTOR const front =
+    DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2), DirectX::XMVectorScale(targetFront, factor1));
+  DirectX::XMStoreFloat3(&m_front, front);
+
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f), front);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
 }
 
 void Camera::AdvanceEntityTrackMode()
@@ -1162,7 +1278,9 @@ void Camera::AdvanceEntityTrackMode()
 
   // Calculate the predicated position of the entity (where it should be at
   // the next frame). This is used by the auxiliary functions.
-  m_predictedEntityPos = AsLegacy(entity->m_pos) + g_advanceTime * AsLegacy(entity->m_vel);
+  DirectX::XMStoreFloat3(&m_predictedEntityPos,
+                         DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&entity->m_vel), DirectX::XMVectorReplicate(g_advanceTime),
+                                                      DirectX::XMLoadFloat3(&entity->m_pos)));
   m_trackingEntity = entity;
 
   AdvanceAutomaticTracking();
@@ -1178,17 +1296,23 @@ finishMode:
   RequestMode(ModeFreeMovement);
 }
 
-void Camera::GetHighestTangentPoint(const Vector3& _from, const Vector3& _to, float _maxDist, Vector3& location)
+void XM_CALLCONV Camera::GetHighestTangentPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location)
 {
   constexpr unsigned int numSteps = 40;
   const float distStep = _maxDist / static_cast<float>(numSteps);
 
-  Vector3 fromAtSameHeight = _from;
-  fromAtSameHeight.y = _to.y;
-  Vector3 dir = (_to - fromAtSameHeight).Normalise();
+  DirectX::XMFLOAT3 from;
+  DirectX::XMStoreFloat3(&from, _from);
+  DirectX::XMFLOAT3 to;
+  DirectX::XMStoreFloat3(&to, _to);
 
-  float x = _from.x;
-  float z = _from.z;
+  DirectX::XMFLOAT3 fromAtSameHeight = from;
+  fromAtSameHeight.y = to.y;
+  DirectX::XMFLOAT3 dir;
+  DirectX::XMStoreFloat3(&dir, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(_to, DirectX::XMLoadFloat3(&fromAtSameHeight))));
+
+  float x = from.x;
+  float z = from.z;
 
   const float deltaX = distStep * dir.x;
   const float deltaZ = distStep * dir.z;
@@ -1204,34 +1328,37 @@ void Camera::GetHighestTangentPoint(const Vector3& _from, const Vector3& _to, fl
 
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(x, z);
 
-    float gradient = (landHeight - _from.y) / distanceTravelled;
+    float gradient = (landHeight - from.y) / distanceTravelled;
 
     if (gradient > maxGradient)
     {
       maxGradient = gradient;
-      location.Set(x, landHeight, z);
+      location = DirectX::XMFLOAT3(x, landHeight, z);
     }
   }
 }
 
-void Camera::GetHighestPoint(const Vector3& _from, const Vector3& _to, float _maxDist, Vector3& location)
+void XM_CALLCONV Camera::GetHighestPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location)
 {
   constexpr unsigned int numSteps = 40;
   const float distStep = _maxDist / static_cast<float>(numSteps);
 
-  Vector3 dir = (_to - _from).Normalise();
+  DirectX::XMFLOAT3 from;
+  DirectX::XMStoreFloat3(&from, _from);
+  DirectX::XMFLOAT3 dir;
+  DirectX::XMStoreFloat3(&dir, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(_to, _from)));
 
   float maxHeight = 0.0f;
 
   for (int i = 1; i <= numSteps; ++i)
   {
-    float x = _from.x + dir.x * distStep * static_cast<float>(i);
-    float z = _from.z + dir.z * distStep * static_cast<float>(i);
+    float x = from.x + dir.x * distStep * static_cast<float>(i);
+    float z = from.z + dir.z * distStep * static_cast<float>(i);
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(x, z);
     if (landHeight > maxHeight)
     {
       maxHeight = landHeight;
-      location.Set(x, landHeight, z);
+      location = DirectX::XMFLOAT3(x, landHeight, z);
     }
   }
 }
@@ -1240,7 +1367,7 @@ void Camera::GetHighestPoint(const Vector3& _from, const Vector3& _to, float _ma
 // experience if it travelled in the specified direction. A blockage is defined
 // as a piece of land more than 10 metres higher than the camera's current
 // height. If there is no blockage FLT_MAX is returned.
-float Camera::DirectDistanceToBlockage(const Vector3& _from, const Vector3& _to, const float _maxDist)
+float XM_CALLCONV Camera::DirectDistanceToBlockage(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, const float _maxDist)
 {
   if (!g_location)
     return FLT_MAX;
@@ -1248,11 +1375,15 @@ float Camera::DirectDistanceToBlockage(const Vector3& _from, const Vector3& _to,
   constexpr unsigned int numSteps = 40;
   const float distStep = _maxDist / static_cast<float>(numSteps);
 
-  float x = _from.x;
-  float y = _from.y;
-  float z = _from.z;
+  DirectX::XMFLOAT3 from;
+  DirectX::XMStoreFloat3(&from, _from);
 
-  Vector3 dir = (_to - _from).Normalise();
+  float x = from.x;
+  float y = from.y;
+  float z = from.z;
+
+  DirectX::XMFLOAT3 dir;
+  DirectX::XMStoreFloat3(&dir, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(_to, _from)));
 
   const float deltaX = distStep * dir.x;
   const float deltaY = distStep * dir.y;
@@ -1279,10 +1410,10 @@ void Camera::AdvanceRadarAimMode()
   const int screenH = g_renderer->ScreenH();
   const int screenW = g_renderer->ScreenW();
 
-  Vector3 groundPos = m_targetPos;
+  DirectX::XMFLOAT3 groundPos = m_targetPos;
   groundPos.y = g_location->m_landscape.m_heightMap->GetValue(groundPos.x, groundPos.z);
 
-  Vector3 focusPos = groundPos;
+  DirectX::XMFLOAT3 focusPos = groundPos;
   focusPos.y += m_height;
 
   // Set up viewing matrices
@@ -1291,7 +1422,7 @@ void Camera::AdvanceRadarAimMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -1300,30 +1431,34 @@ void Camera::AdvanceRadarAimMode()
   float factor2 = 1.0f - factor1;
 
   // Update camera orientation
-  if (mousePos3D.MagSquared() > 1.0f)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMLoadFloat3(&mousePos3D))) > 1.0f)
   {
-    Vector3 desiredFront = mousePos3D - m_pos;
-    desiredFront.Normalise();
+    DirectX::XMVECTOR const desiredFront =
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&mousePos3D), DirectX::XMLoadFloat3(&m_pos)));
+    DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(
+      DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2), DirectX::XMVectorScale(desiredFront, factor1)));
 
-    m_front = m_front * factor2 + desiredFront * factor1;
-    m_front.Normalise();
-    Vector3 right = m_front ^ g_upVector;
-    right.Normalise();
-    m_up = right ^ m_front;
+    // g_upVector, which is (0,1,0). The right vector is derived from the NEW
+    // front, not the one this block was entered with.
+    DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1));
+    DirectX::XMStoreFloat3(&m_front, front);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
   }
 
   //
   // Move towards the idealPos
 
-  Vector3 idealPos = groundPos;
-  idealPos.y += m_height;
-  Vector3 horiCamFront = m_front;
+  DirectX::XMFLOAT3 idealPosStore = groundPos;
+  idealPosStore.y += m_height;
+  DirectX::XMFLOAT3 horiCamFront = m_front;
   horiCamFront.y = 0.0f;
-  horiCamFront.Normalise();
-  idealPos -= horiCamFront * (0.0f + m_height * 1.5f);
-  Vector3 toIdealPos = idealPos - m_pos;
-  float distToIdealPos = toIdealPos.Mag();
-  m_pos = idealPos * factor1 + m_pos * factor2;
+  DirectX::XMVECTOR const idealPos =
+    DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&idealPosStore),
+                              DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&horiCamFront)), 0.0f + m_height * 1.5f));
+  DirectX::XMVECTOR const toIdealPos = DirectX::XMVectorSubtract(idealPos, DirectX::XMLoadFloat3(&m_pos));
+  float const distToIdealPos = DirectX::XMVectorGetX(DirectX::XMVector3Length(toIdealPos));
+  DirectX::XMStoreFloat3(
+    &m_pos, DirectX::XMVectorAdd(DirectX::XMVectorScale(idealPos, factor1), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_pos), factor2)));
 
   // Set up viewing matrices
   SetupModelviewMatrix();
@@ -1368,17 +1503,18 @@ void Camera::AdvanceTurretAimMode()
   const int screenH = g_renderer->ScreenH();
   const int screenW = g_renderer->ScreenW();
 
-  Vector3 groundPos = m_targetPos;
+  DirectX::XMFLOAT3 groundPos = m_targetPos;
   groundPos.y += 20.0f;
   float minY = g_location->m_landscape.m_heightMap->GetValue(groundPos.x, groundPos.z);
 
-  groundPos -= m_front * m_height;
+  DirectX::XMStoreFloat3(
+    &groundPos, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&groundPos), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), m_height)));
   // groundPos.y = max( groundPos.y, minY );
 
   // groundPos.y = ;
   // groundPos.y -= 10.0f;
 
-  Vector3 focusPos = groundPos;
+  DirectX::XMFLOAT3 focusPos = groundPos;
   focusPos.y += m_height;
 
   // Set up viewing matrices
@@ -1387,7 +1523,7 @@ void Camera::AdvanceTurretAimMode()
   SetupModelviewMatrix();
 
   // Get the 2D mouse coordinates before we move the camera
-  Vector3 mousePos3D = TheUserInput()->GetMousePos3d();
+  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
   float oldMouseX, oldMouseY;
   Get2DScreenPos(mousePos3D, &oldMouseX, &oldMouseY);
   oldMouseY = screenH - oldMouseY;
@@ -1396,30 +1532,34 @@ void Camera::AdvanceTurretAimMode()
   float factor2 = 1.0f - factor1;
 
   // Update camera orientation
-  if (mousePos3D.MagSquared() > 1.0f)
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMLoadFloat3(&mousePos3D))) > 1.0f)
   {
-    Vector3 desiredFront = mousePos3D - m_pos;
-    desiredFront.Normalise();
+    DirectX::XMVECTOR const desiredFront =
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&mousePos3D), DirectX::XMLoadFloat3(&m_pos)));
+    DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(
+      DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2), DirectX::XMVectorScale(desiredFront, factor1)));
 
-    m_front = m_front * factor2 + desiredFront * factor1;
-    m_front.Normalise();
-    Vector3 right = m_front ^ g_upVector;
-    right.Normalise();
-    m_up = right ^ m_front;
+    // g_upVector, which is (0,1,0). The right vector is derived from the NEW
+    // front, not the one this block was entered with.
+    DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1));
+    DirectX::XMStoreFloat3(&m_front, front);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
   }
 
   //
   // Move towards the idealPos
 
-  Vector3 idealPos = groundPos;
-  idealPos.y += m_height;
-  Vector3 horiCamFront = m_front;
+  DirectX::XMFLOAT3 idealPosStore = groundPos;
+  idealPosStore.y += m_height;
+  DirectX::XMFLOAT3 horiCamFront = m_front;
   horiCamFront.y = 0.0f;
-  horiCamFront.Normalise();
-  idealPos -= horiCamFront * (0.0f + m_height * 0.4f);
-  Vector3 toIdealPos = idealPos - m_pos;
-  float distToIdealPos = toIdealPos.Mag();
-  m_pos = idealPos * factor1 + m_pos * factor2;
+  DirectX::XMVECTOR const idealPos =
+    DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&idealPosStore),
+                              DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&horiCamFront)), 0.0f + m_height * 0.4f));
+  DirectX::XMVECTOR const toIdealPos = DirectX::XMVectorSubtract(idealPos, DirectX::XMLoadFloat3(&m_pos));
+  float const distToIdealPos = DirectX::XMVectorGetX(DirectX::XMVector3Length(toIdealPos));
+  DirectX::XMStoreFloat3(
+    &m_pos, DirectX::XMVectorAdd(DirectX::XMVectorScale(idealPos, factor1), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_pos), factor2)));
 
   // Set up viewing matrices
   SetupModelviewMatrix();
@@ -1473,8 +1613,15 @@ void Camera::AdvanceFirstPersonMode()
     static float lastFire = 0.0f;
     if (GetHighResTime() > lastFire)
     {
-      Vector3 from = m_pos + GetRight() * -2.0f + GetUp() * -3.0f;
-      g_location->FireLaser(from, m_front * 200.0f, 3);
+      DirectX::XMFLOAT3 const rightStore = GetRight();
+      DirectX::XMFLOAT3 const upStore = GetUp();
+      DirectX::XMFLOAT3 from;
+      DirectX::XMStoreFloat3(&from, DirectX::XMVectorAdd(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos),
+                                                                              DirectX::XMVectorScale(DirectX::XMLoadFloat3(&rightStore), -2.0f)),
+                                                         DirectX::XMVectorScale(DirectX::XMLoadFloat3(&upStore), -3.0f)));
+      DirectX::XMFLOAT3 laserDir;
+      DirectX::XMStoreFloat3(&laserDir, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), 200.0f));
+      g_location->FireLaser(from, laserDir, 3);
       lastFire = GetHighResTime() + 0.1f;
     }
   }
@@ -1482,12 +1629,15 @@ void Camera::AdvanceFirstPersonMode()
   //
   // Allow quake keys to move us
 
-  Vector3 accelForward = m_front;
+  // Both are dead: every use of them below is commented out, and has been
+  // since the code was inherited. Kept because the commented lines are the
+  // only record of what this mode was meant to do.
+  DirectX::XMFLOAT3 accelForward = m_front;
   accelForward.y = 0.0f;
-  accelForward.Normalise();
-  Vector3 accelRight = GetRight();
+  DirectX::XMStoreFloat3(&accelForward, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&accelForward)));
+  DirectX::XMFLOAT3 accelRight = GetRight();
   accelRight.y = 0.0f;
-  accelRight.Normalise();
+  DirectX::XMStoreFloat3(&accelRight, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&accelRight)));
   float moveRate = 100.0f;
   //    if (g_controlBindings->CameraLeft())		m_vel += accelRight * g_advanceTime * moveRate;
   //	if (g_controlBindings->CameraRight())		m_vel -= accelRight * g_advanceTime * moveRate;
@@ -1497,23 +1647,26 @@ void Camera::AdvanceFirstPersonMode()
   //
   // Update our position and orientation
 
-  m_vel *= 0.9993f;
-  m_pos += g_advanceTime * m_vel;
+  DirectX::XMVECTOR const vel = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 0.9993f);
+  DirectX::XMStoreFloat3(&m_vel, vel);
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(vel, DirectX::XMVectorReplicate(g_advanceTime), DirectX::XMLoadFloat3(&m_pos)));
 
   int mx = 0, my = 0;
   mx = g_target->dX();
   my = g_target->dY();
 
-  Matrix33 mat(1);
-  mat.RotateAroundY(static_cast<float>(mx) * -0.01f);
-  m_up = m_up * mat;
-  m_front = m_front * mat;
+  // Same sign trap as AdvanceDebugMode, and this one reaches it through
+  // RotateAround(norm, angle) rather than FastRotateAround -- the two differ
+  // only in whether they normalise the axis first, so the inversion is the
+  // same and the angle flips sign here too.
+  DirectX::XMMATRIX const yaw = DirectX::XMMatrixRotationY(static_cast<float>(mx) * -0.01f);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_up), yaw));
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), yaw));
 
-  Vector3 right = GetRight();
-  mat.SetToIdentity();
-  mat.RotateAround(right, static_cast<float>(my) * 0.01f);
-  m_up = m_up * mat;
-  m_front = m_front * mat;
+  DirectX::XMFLOAT3 const rightAxis = GetRight();
+  DirectX::XMMATRIX const pitch = DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&rightAxis), static_cast<float>(my) * -0.01f);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_up), pitch));
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), pitch));
 
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   m_pos.y = landHeight + 3.0f;
@@ -1529,29 +1682,38 @@ void Camera::AdvanceMoveToTargetMode()
   currentTimeFraction = std::max(currentTimeFraction, static_cast<double>(0.2f));
 
   // Pos
-  Vector3 direction = m_targetPos - m_startPos;
-  float dist = direction.Mag();
-  direction /= dist;
+  DirectX::XMVECTOR const startFront = DirectX::XMLoadFloat3(&m_startFront);
+  DirectX::XMVECTOR const targetFront = DirectX::XMLoadFloat3(&m_targetFront);
+  DirectX::XMVECTOR direction = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_startPos));
+  float dist = DirectX::XMVectorGetX(DirectX::XMVector3Length(direction));
+  // operator/= multiplied by the reciprocal once, so this is not XMVector3Normalize.
+  direction = DirectX::XMVectorScale(direction, 1.0f / dist);
   float maxSpeed = (2.0f * dist) / m_moveDuration;
 
   // Orientation
-  Vector3 fullRotationDirection = m_startFront ^ m_targetFront;
-  Vector3 middleFront = m_startFront;
-  middleFront.RotateAround(fullRotationDirection * 0.5f);
+  DirectX::XMVECTOR const fullRotationDirection = DirectX::XMVector3Cross(startFront, targetFront);
+  DirectX::XMVECTOR const middleFront = RotateAroundScaledAxis(startFront, DirectX::XMVectorScale(fullRotationDirection, 0.5f));
 
   if (currentTimeFraction < 0.5)
   {
-    m_pos += direction * maxSpeed * 2.0 * currentTimeFraction * g_advanceTime;
+    DirectX::XMStoreFloat3(
+      &m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos),
+                                   DirectX::XMVectorScale(direction, static_cast<float>(maxSpeed * 2.0 * currentTimeFraction * g_advanceTime))));
     float amount2 = RampUpAndDown(m_startTime, m_moveDuration, g_gameTime) * 2.0f;
     float amount1 = 1.0f - amount2;
-    m_front = (m_startFront * amount1 + middleFront * amount2).Normalise();
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMVectorAdd(DirectX::XMVectorScale(startFront, amount1),
+                                                                                      DirectX::XMVectorScale(middleFront, amount2))));
   }
   else if (currentTimeFraction < 1.0)
   {
-    m_pos += direction * maxSpeed * 2.0 * (1.0 - currentTimeFraction) * g_advanceTime;
+    DirectX::XMStoreFloat3(
+      &m_pos,
+      DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos),
+                           DirectX::XMVectorScale(direction, static_cast<float>(maxSpeed * 2.0 * (1.0 - currentTimeFraction) * g_advanceTime))));
     float amount2 = (RampUpAndDown(m_startTime, m_moveDuration, g_gameTime) - 0.5f) * 2.0f;
     float amount1 = 1.0f - amount2;
-    m_front = (middleFront * amount1 + m_targetFront * amount2).Normalise();
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMVectorAdd(DirectX::XMVectorScale(middleFront, amount1),
+                                                                                      DirectX::XMVectorScale(targetFront, amount2))));
   }
   else
   {
@@ -1559,8 +1721,8 @@ void Camera::AdvanceMoveToTargetMode()
     m_front = m_targetFront;
   }
 
-  m_front.Normalise();
-  m_up = g_upVector;
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front)));
+  m_up = s_defaultUp; // was g_upVector
   // Vector3 right = m_front ^ m_up;
   // right.Normalise();
   // m_up = right ^ m_front;
@@ -1604,22 +1766,27 @@ void Camera::AdvanceEntityFollowMode()
   float rotY = static_cast<float>(deltaX) * -0.015f;
   float rotRight = static_cast<float>(deltaY) * -0.01f;
 
-  m_front.RotateAroundY(rotY);
-  Vector3 right = (m_front ^ g_upVector).Normalise();
-  Vector3 newUp(m_up);
-  newUp.RotateAround(right * rotRight);
-  if (newUp.y > 0.1f)
-    m_front.RotateAround(right * rotRight);
-  m_up = (right ^ m_front).Normalise();
+  DirectX::XMVECTOR front = DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(rotY));
+  // g_upVector, which is (0,1,0).
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1));
+  DirectX::XMVECTOR const scaledAxis = DirectX::XMVectorScale(right, rotRight);
+  DirectX::XMVECTOR const newUp = RotateAroundScaledAxis(DirectX::XMLoadFloat3(&m_up), scaledAxis);
+  if (DirectX::XMVectorGetY(newUp) > 0.1f)
+    front = RotateAroundScaledAxis(front, scaledAxis);
+  DirectX::XMStoreFloat3(&m_front, front);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(right, front)));
 
   //
   // Update position
 
   float factor1 = g_advanceTime * 5.0f;
   float factor2 = 1.0f - factor1;
-  Vector3 newTargetPos = AsLegacy(obj->m_pos) + g_predictionTime * AsLegacy(obj->m_vel);
-  m_targetPos = factor1 * newTargetPos + factor2 * m_targetPos;
-  m_pos = m_targetPos - m_front * m_distFromEntity;
+  DirectX::XMVECTOR const newTargetPos = DirectX::XMVectorMultiplyAdd(
+    DirectX::XMLoadFloat3(&obj->m_vel), DirectX::XMVectorReplicate(g_predictionTime), DirectX::XMLoadFloat3(&obj->m_pos));
+  DirectX::XMVECTOR const targetPos =
+    DirectX::XMVectorAdd(DirectX::XMVectorScale(newTargetPos, factor1), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_targetPos), factor2));
+  DirectX::XMStoreFloat3(&m_targetPos, targetPos);
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), m_distFromEntity)));
 }
 
 // **************
@@ -1630,7 +1797,7 @@ void Camera::AdvanceEntityFollowMode()
 Camera::Camera()
   : m_fov(60.0f),
     m_height(50.0f),
-    m_vel(0, 0, 0),
+    m_vel(0.0f, 0.0f, 0.0f),
     m_targetFov(60.0f),
     m_trackingEntity(nullptr),
     m_distFromEntity(100.0f),
@@ -1646,26 +1813,23 @@ Camera::Camera()
     m_skipDirectionCalculation(false)
 {
   m_cosFov = cos(m_fov / 180.0f * M_PI);
-  m_pos = Vector3(1000.0f,          // g_location->m_landscape.GetWorldSizeX() / 2.0f,
-                  500.0f, 1000.0f); // g_location->m_landscape.GetWorldSizeZ() / 2.0f);
+  m_pos = DirectX::XMFLOAT3(1000.0f,          // g_location->m_landscape.GetWorldSizeX() / 2.0f,
+                            500.0f, 1000.0f); // g_location->m_landscape.GetWorldSizeZ() / 2.0f);
 
   m_minX = -1e6;
   m_maxX = 1e6;
   m_minZ = -1e6;
   m_maxZ = 1e6;
 
-  // m_front = Vector3(0, -0.7f, 1);
-  m_front.Set(0, -0.5f, -1);
-  m_front.Normalise();
+  // m_front = (0, -0.7f, 1);
+  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(DirectX::XMVectorSet(0.0f, -0.5f, -1.0f, 0.0f));
+  DirectX::XMStoreFloat3(&m_front, front);
 
-  m_up = g_upVector;
-  Vector3 right = m_up ^ m_front;
-  right.Normalise();
-
-  m_up = m_front ^ right;
-  m_up.Normalise();
-
-  m_controlVector = right;
+  // m_up was assigned g_upVector purely to feed the cross product below, and
+  // the result overwrites it two lines later.
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, front));
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, right)));
+  DirectX::XMStoreFloat3(&m_controlVector, right);
 }
 
 void Camera::CreateCameraShake(float _intensity) { m_cameraShake = std::max(m_cameraShake, _intensity); }
@@ -1705,24 +1869,36 @@ void Camera::SetupProjectionMatrix(float _nearPlane, float _farPlane)
 
 void Camera::SetupModelviewMatrix()
 {
-  float dot = m_front * m_up;
-  DEBUG_ASSERT(NearlyEquals(m_front.MagSquared(), 1.0f));
-  DEBUG_ASSERT(NearlyEquals(m_up.MagSquared(), 1.0f));
+  DirectX::XMVECTOR const frontVec = DirectX::XMLoadFloat3(&m_front);
+  DirectX::XMVECTOR const upVec = DirectX::XMLoadFloat3(&m_up);
+  DirectX::XMVECTOR const posVec = DirectX::XMLoadFloat3(&m_pos);
+
+  // operator* between two Vector3s was the DOT product.
+  float dot = DirectX::XMVectorGetX(DirectX::XMVector3Dot(frontVec, upVec));
+  DEBUG_ASSERT(NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(frontVec)), 1.0f));
+  DEBUG_ASSERT(NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(upVec)), 1.0f));
   DEBUG_ASSERT(NearlyEquals(dot, 0.0f));
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  float magOfPos = m_pos.Mag();
-  Vector3 front = m_front * magOfPos;
-  Vector3 up = m_up * magOfPos;
-  Vector3 forwards = m_pos + front;
+  // gluLookAt owns the view matrix here, not DirectXMath. NeuronMath.h is
+  // explicit that projection and view construction stay in renderer code
+  // because the depth range differs between GL and D3D, so this stays a
+  // gluLookAt call fed three points rather than becoming XMMatrixLookAtRH.
+  float magOfPos = DirectX::XMVectorGetX(DirectX::XMVector3Length(posVec));
+  DirectX::XMFLOAT3 up;
+  DirectX::XMStoreFloat3(&up, DirectX::XMVectorScale(upVec, magOfPos));
+  DirectX::XMFLOAT3 forwards;
+  DirectX::XMStoreFloat3(&forwards, DirectX::XMVectorMultiplyAdd(frontVec, DirectX::XMVectorReplicate(magOfPos), posVec));
   gluLookAt(m_pos.x, m_pos.y, m_pos.z, forwards.x, forwards.y, forwards.z, up.x, up.y, up.z);
 }
 
-bool Camera::PosInViewFrustum(const Vector3& _pos)
+bool Camera::PosInViewFrustum(DirectX::XMFLOAT3 const& _pos)
 {
-  Vector3 dirToPos = (_pos - m_pos).Normalise();
-  float angle = dirToPos * m_front;
+  DirectX::XMVECTOR const dirToPos =
+    DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&m_pos)));
+  // operator* between two Vector3s was the DOT product.
+  float angle = DirectX::XMVectorGetX(DirectX::XMVector3Dot(dirToPos, DirectX::XMLoadFloat3(&m_front)));
   float fovInRadians = m_cosFov;
   float tolerance = 0.2f;
   if (angle < fovInRadians - tolerance)
@@ -1730,15 +1906,15 @@ bool Camera::PosInViewFrustum(const Vector3& _pos)
   return true;
 }
 
-bool Camera::SphereInViewFrustum(const Vector3& _centre, float _radius)
+bool Camera::SphereInViewFrustum(DirectX::XMFLOAT3 const& _centre, float _radius)
 {
-  Vector3 dirToPos = _centre - m_pos;
-  float distance = dirToPos.Mag();
+  DirectX::XMVECTOR const dirToPos = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_centre), DirectX::XMLoadFloat3(&m_pos));
+  float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(dirToPos));
   if (distance < _radius)
     return true;
 
   float angularSize = asinf(_radius / distance);
-  float angle = acosf(dirToPos.Normalise() * m_front);
+  float angle = acosf(DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMVector3Normalize(dirToPos), DirectX::XMLoadFloat3(&m_front))));
 
   return angle - angularSize <= m_maxFovRadians / 2;
 }
@@ -1748,7 +1924,8 @@ Building* Camera::GetBestBuildingInView()
   static float s_recalculateTimer = 0;
   static int s_buildingId = -1;
 
-  if (GetVel().Mag() > 5.0f)
+  DirectX::XMFLOAT3 const velStore = GetVel();
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&velStore))) > 5.0f)
   {
     // We are moving too fast to be focussing on a building
     s_buildingId = -1;
@@ -1762,8 +1939,10 @@ Building* Camera::GetBestBuildingInView()
   {
     if (GetHighResTime() > s_recalculateTimer + 1.0f)
     {
-      Vector3 rayStart;
-      Vector3 rayDir;
+      // GetClickRay writes both unconditionally, so these need no initialiser
+      // beyond the braces that replace Vector3's zeroing constructor.
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
       GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
 
       float nearest = 200.0f;
@@ -1776,7 +1955,8 @@ Building* Camera::GetBestBuildingInView()
           Building* building = g_location->m_buildings[i];
           if (building->DoesRayHit(rayStart, rayDir))
           {
-            float distance = (AsLegacy(building->m_pos) - m_pos).Mag();
+            float distance = DirectX::XMVectorGetX(
+              DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
             if (distance < nearest)
             {
               nearest = distance;
@@ -1934,17 +2114,21 @@ void Camera::AdvanceAnim()
 
 void Camera::AdvanceMainMenuMode()
 {
-  m_pos.RotateAroundZ(0.0005f);
-  m_pos.RotateAroundY(0.0005f);
+  // The vector forms of RotateAroundZ/Y are ordinary right-handed rotations,
+  // which XMMatrixRotationZ/Y are under `v * M`. Applied in the same order.
+  DirectX::XMVECTOR pos = DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_pos), DirectX::XMMatrixRotationZ(0.0005f));
+  pos = DirectX::XMVector3Transform(pos, DirectX::XMMatrixRotationY(0.0005f));
+  DirectX::XMStoreFloat3(&m_pos, pos);
   float factor1 = g_advanceTime * 2.0f;
   float factor2 = 1.0f - factor1;
 
-  Vector3 targetFront(0, 0, 0);
-  // Vector3 targetFront(50000, 50000, 50000);
-  m_front = m_front * factor2 + targetFront * factor1;
-  m_up.Set(0.0f, -1.0f, 0.0f);
-  Vector3 right = m_up ^ m_front;
-  m_up = right ^ m_front;
+  // targetFront is the zero vector, so the second term contributes nothing and
+  // this is a plain decay of m_front. Left written out because the commented
+  // (50000, 50000, 50000) above it is what the line is for.
+  DirectX::XMVECTOR const front = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), factor2);
+  DirectX::XMStoreFloat3(&m_front, front);
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f), front);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
 }
 
 void Camera::Advance()
@@ -2047,20 +2231,22 @@ void Camera::Advance()
 
   if (m_cameraShake > 0.0f)
   {
-    m_front.RotateAroundY(sfrand(m_cameraShake * 0.05f));
-    Vector3 up = g_upVector;
-    up.RotateAround(m_front * sfrand(m_cameraShake) * 0.3f);
-    Vector3 right = m_front ^ up;
-    right.Normalise();
-    m_front.Normalise();
-    m_up = right ^ m_front;
+    DirectX::XMVECTOR front = DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(sfrand(m_cameraShake * 0.05f)));
+    // g_upVector, rotated about the freshly yawed front.
+    DirectX::XMVECTOR const up =
+      RotateAroundScaledAxis(DirectX::g_XMIdentityR1, DirectX::XMVectorScale(DirectX::XMVectorScale(front, sfrand(m_cameraShake)), 0.3f));
+    DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, up));
+    front = DirectX::XMVector3Normalize(front);
+    DirectX::XMStoreFloat3(&m_front, front);
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, front));
     m_cameraShake -= g_advanceTime;
   }
 
   Normalise();
 
   ASSERT_VECTOR3_IS_SANE(m_pos);
-  float dot = m_front * m_up;
+  // operator* between two Vector3s was the DOT product.
+  float dot = DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up)));
   DEBUG_ASSERT(NearlyEquals(dot, 0.0f));
 
   TheUserInput()->RecalcMousePos3d();
@@ -2095,7 +2281,7 @@ void Camera::RequestMode(int _mode)
   {
   case ModeSphereWorld:
     g_target->SetMousePos(screenW / 2, screenH / 2);
-    m_pos.Set(1000, 500, 15000);
+    m_pos = DirectX::XMFLOAT3(1000.0f, 500.0f, 15000.0f);
     break;
   case ModeFreeMovement:
     m_targetPos = m_pos;
@@ -2121,9 +2307,9 @@ void Camera::RequestBuildingFocusMode(Building* _building, float _range, float _
   m_trackHeight = _height;
   m_trackTimer = GetHighResTime();
 
-  m_trackVector = (m_pos - _building->m_pos);
+  DirectX::XMStoreFloat3(&m_trackVector, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&_building->m_pos)));
   m_trackVector.y = 0.0f;
-  m_trackVector.Normalise();
+  DirectX::XMStoreFloat3(&m_trackVector, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_trackVector)));
 
   m_targetFov = 60.0f;
 }
@@ -2177,15 +2363,14 @@ bool Camera::IsInteractive()
 
 bool Camera::IsInMode(int _mode) { return (m_mode == _mode); }
 
-void Camera::SetTarget(const Vector3& _pos, const Vector3& _front, const Vector3& _up)
+void Camera::SetTarget(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up)
 {
   m_targetPos = _pos;
-  m_targetFront = _front;
-  m_targetFront.Normalise();
+  DirectX::XMVECTOR const targetFront = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_front));
+  DirectX::XMStoreFloat3(&m_targetFront, targetFront);
 
-  Vector3 right = _up ^ m_targetFront;
-  right.Normalise();
-  m_targetUp = m_targetFront ^ right;
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&_up), targetFront));
+  DirectX::XMStoreFloat3(&m_targetUp, DirectX::XMVector3Cross(targetFront, right));
 }
 
 bool Camera::SetTarget(const char* _mountName)
@@ -2209,16 +2394,34 @@ bool Camera::SetTarget(const char* _mountName)
   return false;
 }
 
-void Camera::SetTarget(const Vector3& _focusPos, float _distance, float _height)
+void Camera::SetTarget(DirectX::XMFLOAT3 const& _focusPos, float _distance, float _height)
 {
-  Vector3 themToUs = m_pos - _focusPos;
-  themToUs.SetLength(_distance);
-  Vector3 targetPos = _focusPos + themToUs;
+  DirectX::XMVECTOR const focusPos = DirectX::XMLoadFloat3(&_focusPos);
+  DirectX::XMVECTOR const themToUs = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), focusPos);
+
+  // SetLength answered a zero-length input with (_distance, 0, 0). The camera
+  // sitting exactly on its focus point is reachable -- a script can cut to a
+  // mount at the same position it is already focusing on -- and the native
+  // normalise would hand a QNaN straight into m_targetPos, so the fallback is
+  // reproduced here rather than taken natively.
+  DirectX::XMVECTOR scaled;
+  if (NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3Length(themToUs)), 0.0f))
+    scaled = DirectX::XMVectorSet(_distance, 0.0f, 0.0f, 0.0f);
+  else
+    scaled = DirectX::XMVectorScale(DirectX::XMVector3Normalize(themToUs), _distance);
+
+  DirectX::XMFLOAT3 targetPos;
+  DirectX::XMStoreFloat3(&targetPos, DirectX::XMVectorAdd(focusPos, scaled));
   targetPos.y = _focusPos.y + _height;
-  Vector3 targetFront = (_focusPos - targetPos).Normalise();
-  targetFront.Normalise();
-  Vector3 targetRight = targetFront ^ g_upVector;
-  Vector3 targetUp = targetRight ^ targetFront;
+
+  DirectX::XMVECTOR const targetFrontVec = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(focusPos, DirectX::XMLoadFloat3(&targetPos)));
+  DirectX::XMFLOAT3 targetFront;
+  DirectX::XMStoreFloat3(&targetFront, targetFrontVec);
+
+  // g_upVector, which is (0,1,0).
+  DirectX::XMVECTOR const targetRight = DirectX::XMVector3Cross(targetFrontVec, DirectX::g_XMIdentityR1);
+  DirectX::XMFLOAT3 targetUp;
+  DirectX::XMStoreFloat3(&targetUp, DirectX::XMVector3Cross(targetRight, targetFrontVec));
   SetTarget(targetPos, targetFront, targetUp);
 }
 
@@ -2237,13 +2440,13 @@ void Camera::CutToTarget()
 
 void Camera::Normalise()
 {
-  m_front.Normalise();
-  Vector3 right = m_up ^ m_front;
-  right.Normalise();
-  m_up = m_front ^ right;
+  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMStoreFloat3(&m_front, front);
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_up), front));
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(front, right));
 }
 
-void Camera::GetClickRay(int _x, int _y, Vector3* _rayStart, Vector3* _rayDir)
+void Camera::GetClickRay(int _x, int _y, DirectX::XMFLOAT3* _rayStart, DirectX::XMFLOAT3* _rayDir)
 {
   GLint viewport[4];
   GLdouble mvMatrix[16], projMatrix[16];
@@ -2263,12 +2466,11 @@ void Camera::GetClickRay(int _x, int _y, Vector3* _rayStart, Vector3* _rayDir)
   }
 
   gluUnProject(_x, realY, 0.0f, mvMatrix, projMatrix, viewport, &objx, &objy, &objz);
-  _rayStart->Set(objx, objy, objz);
+  *_rayStart = DirectX::XMFLOAT3(static_cast<float>(objx), static_cast<float>(objy), static_cast<float>(objz));
 
   gluUnProject(_x, realY, 1.0f, mvMatrix, projMatrix, viewport, &objx, &objy, &objz);
-  _rayDir->Set(objx, objy, objz);
-  *_rayDir -= *_rayStart;
-  _rayDir->Normalise();
+  DirectX::XMVECTOR const rayEnd = DirectX::XMVectorSet(static_cast<float>(objx), static_cast<float>(objy), static_cast<float>(objz), 0.0f);
+  DirectX::XMStoreFloat3(_rayDir, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(rayEnd, DirectX::XMLoadFloat3(_rayStart))));
 }
 
 void Camera::SetBounds(float _minX, float _maxX, float _minZ, float _maxZ)
@@ -2351,7 +2553,7 @@ void Camera::RestoreCameraPosition(bool _cut)
 
 void Camera::SwitchEntityTracking(bool _onOrOff) { m_entityTrack = _onOrOff; }
 
-Vector3 Camera::GetControlVector() { return m_controlVector; }
+DirectX::XMFLOAT3 Camera::GetControlVector() { return m_controlVector; }
 
 void Camera::UpdateEntityTrackingMode()
 {

@@ -53,8 +53,7 @@ DirectX::XMFLOAT3 ReceiverBuilding::GetSpiritLocation()
 
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_spiritLocation->GetWorldMatrix(rootMat).pos;
+  return m_spiritLocation->GetWorldPosition(rootMat);
 }
 
 
@@ -118,7 +117,6 @@ void ReceiverBuilding::RenderAlphas(float _predictionTime)
     DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&theirPosStore);
     DirectX::XMVECTOR const alongLink = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
     DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
@@ -282,8 +280,7 @@ void ReceiverBuilding::RenderUnprocessedSpirit(DirectX::XMFLOAT3 const& _pos, fl
 {
   DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the quads below, which each called them afresh.
+  // Hoisted out of the quads below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -354,8 +351,7 @@ void ReceiverBuilding::RenderUnprocessedSpirit_basic(DirectX::XMFLOAT3 const& _p
 {
   DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the quads below, which each called them afresh.
+  // Hoisted out of the quads below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -404,8 +400,7 @@ void ReceiverBuilding::RenderUnprocessedSpirit_detail(DirectX::XMFLOAT3 const& _
 {
   DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
 
-  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
-  // of the quads below, which each called them afresh.
+  // Hoisted out of the quads below, which each called them afresh.
   DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
   DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
@@ -735,8 +730,7 @@ void SpiritReceiver::Render(float _predictionTime)
 
   DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldPosition(mat);
 
   // The head is deliberately levelled: world up, world right, and a front that
   // falls out of the two. Not the building's own basis.
@@ -752,8 +746,7 @@ DirectX::XMFLOAT3 SpiritReceiver::GetSpiritLocation()
 {
   DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldPosition(mat);
 
   // The head is deliberately levelled: world up, world right, and a front that
   // falls out of the two. Not the building's own basis.
@@ -762,7 +755,7 @@ DirectX::XMFLOAT3 SpiritReceiver::GetSpiritLocation()
   DirectX::XMFLOAT4X4 headMat;
   DirectX::XMStoreFloat4x4(&headMat, BasisFromFrontAndUp(front, DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&headPos)));
 
-  return m_spiritLink->GetWorldMatrix(headMat).pos;
+  return m_spiritLink->GetWorldPosition(headMat);
 }
 
 
@@ -779,14 +772,12 @@ void SpiritReceiver::RenderPorts()
   {
     DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const statusPosStore = m_statusMarkers[i]->GetWorldMatrix(rootMat).pos;
+    DirectX::XMFLOAT3 const statusPosStore = m_statusMarkers[i]->GetWorldPosition(rootMat);
 
     //
     // Render the status light
 
     float size = 6.0f;
-    // Camera's accessors are still legacy -- Species belongs to T22.
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);

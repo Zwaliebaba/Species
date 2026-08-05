@@ -111,7 +111,6 @@ void Flag::Render()
   glDisable(GL_CULL_FACE);
   glDisable(GL_TEXTURE_2D);
 
-  // GetFront still returns Vector3 until T12/T22; the seam converts it.
   DirectX::XMFLOAT3 const camFrontStore = g_camera->GetFront();
   // operator^ was the cross product. SetLength(0.2) is normalise-then-scale,
   // and m_up crossed with the camera front is only degenerate when the camera

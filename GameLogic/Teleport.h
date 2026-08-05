@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Vector3.h"
+#include "NeuronMath.h"
+
 
 #include "Building.h"
 

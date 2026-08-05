@@ -5,7 +5,6 @@
 #include "SliceWalker.h"
 #include "SlotMap.h"
 #include "NeuronMath.h"
-#include "Vector3.h"
 
 #include "Landscape.h"
 #include "Building.h"
@@ -165,9 +164,5 @@ class Location : public LocationAccess
 
     float GroundHeight(float _worldX, float _worldZ) override;
     bool WorldObjectExists(WorldObjectId const& _id) override;
-    // STAYS LEGACY UNTIL T12. This overrides LocationAccess::GetSoundSource,
-    // and an override must match its base exactly -- no implicit conversion is
-    // consulted, so the two signatures move in one commit or not at all. T12
-    // owns the base and depends on this task; see its notes.
-    bool GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* _vel) override;
+    bool GetSoundSource(WorldObjectId const& _id, DirectX::XMFLOAT3* _pos, DirectX::XMFLOAT3* _vel) override;
 };

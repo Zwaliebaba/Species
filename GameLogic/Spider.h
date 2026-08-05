@@ -1,8 +1,9 @@
 #pragma once
 
+#include "NeuronMath.h"
+
 #include <vector>
 
-#include "Vector2.h"
 
 #include "Entity.h"
 

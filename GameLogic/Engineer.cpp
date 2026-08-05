@@ -144,10 +144,9 @@ bool Engineer::SearchForControlTowers()
       if (building->m_type == Building::TypeControlTower)
       {
         ControlTower* ct = (ControlTower*)building;
-        // ControlTower converts in T16, so its out-parameters are still legacy.
         DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 front{0.0f, 0.0f, 0.0f};
-        if ((ct->m_id.GetTeamId() != m_id.GetTeamId() || ct->m_ownership < 100.0f) && ct->GetAvailablePosition(AsLegacy(pos), AsLegacy(front)) != -1)
+        if ((ct->m_id.GetTeamId() != m_id.GetTeamId() || ct->m_ownership < 100.0f) && ct->GetAvailablePosition(pos, front) != -1)
         {
           float theDist = DirectX::XMVectorGetX(
             DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
@@ -186,13 +185,11 @@ bool Engineer::SearchForBridges()
       if (building->m_type == Building::TypeBridge)
       {
         Bridge* bridge = (Bridge*)building;
-        // Bridge converts in T17; same seam.
         DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 front{0.0f, 0.0f, 0.0f};
         float theDist = DirectX::XMVectorGetX(
           DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
-        if (bridge->GetAvailablePosition(AsLegacy(pos), AsLegacy(front)) && bridge->m_status < 100.0f && theDist <= ENGINEER_SEARCHRANGE &&
-            theDist < closest)
+        if (bridge->GetAvailablePosition(pos, front) && bridge->m_status < 100.0f && theDist <= ENGINEER_SEARCHRANGE && theDist < closest)
         {
           buildingIndex = i;
           closest = theDist;
@@ -695,8 +692,7 @@ bool Engineer::AdvanceToIncubator()
   }
 
 
-  // Incubator converts in T17; its out-parameters are still legacy.
-  incubator->GetDockPoint(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
+  incubator->GetDockPoint(m_targetPos, m_targetFront);
   bool arrived = AdvanceToTargetPos();
   if (arrived)
   {
@@ -735,8 +731,7 @@ bool Engineer::AdvanceToControlTower()
   DEBUG_ASSERT(building->m_type == Building::TypeControlTower);
 
   ControlTower* ct = (ControlTower*)building;
-  // ControlTower converts in T16; same seam.
-  int positionId = ct->GetAvailablePosition(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
+  int positionId = ct->GetAvailablePosition(m_targetPos, m_targetFront);
 
   if ((ct->m_id.GetTeamId() == m_id.GetTeamId() && ct->m_ownership >= 100.0f) || positionId == -1)
   {
@@ -801,10 +796,9 @@ bool Engineer::AdvanceResearching()
   //
   // Spark
 
-  // ResearchItem converts in T16, so its out-parameters are still legacy.
   DirectX::XMFLOAT3 end1{0.0f, 0.0f, 0.0f};
   DirectX::XMFLOAT3 end2{0.0f, 0.0f, 0.0f};
-  item->GetEndPositions(AsLegacy(end1), AsLegacy(end2));
+  item->GetEndPositions(end1, end2);
 
   float time = g_gameTime + m_id.GetIndex();
   DirectX::XMVECTOR const span = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&end2), DirectX::XMLoadFloat3(&end1));
@@ -891,9 +885,8 @@ bool Engineer::AdvanceReprogramming()
   //
   // Make us float around a bit while we work
 
-  // ControlTower converts in T16, so this out-parameter is still legacy.
   DirectX::XMFLOAT3 consolePos{0.0f, 0.0f, 0.0f};
-  ct->GetConsolePosition(m_positionId, AsLegacy(consolePos));
+  ct->GetConsolePosition(m_positionId, consolePos);
 
   DirectX::XMVECTOR const targetFront =
     DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&consolePos), DirectX::XMLoadFloat3(&m_pos)));
@@ -1019,8 +1012,7 @@ bool Engineer::AdvanceToBridge()
   if (building && building->m_type == Building::TypeBridge)
   {
     Bridge* bridge = (Bridge*)building;
-    // Bridge converts in T17; same seam.
-    bool positionAvailable = bridge->GetAvailablePosition(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
+    bool positionAvailable = bridge->GetAvailablePosition(m_targetPos, m_targetFront);
     if (!positionAvailable)
     {
       m_state = StateIdle;
@@ -1168,23 +1160,20 @@ void Engineer::Render(float predictionTime)
       if (building->m_type == Building::TypeControlTower)
       {
         ControlTower* tower = (ControlTower*)building;
-        // ControlTower converts in T16; its out-parameter is still legacy.
-        tower->GetConsolePosition(m_positionId, AsLegacy(toPos));
+        tower->GetConsolePosition(m_positionId, toPos);
       }
       else if (building->m_type == Building::TypeBridge)
       {
-        // Bridge converts in T17; same seam.
         DirectX::XMFLOAT3 front{0.0f, 0.0f, 0.0f};
         Bridge* bridge = (Bridge*)building;
-        bridge->GetAvailablePosition(AsLegacy(toPos), AsLegacy(front));
+        bridge->GetAvailablePosition(toPos, front);
       }
       else if (building->m_type == Building::TypeResearchItem)
       {
         ResearchItem* item = (ResearchItem*)building;
-        // ResearchItem converts in T16; same seam.
         DirectX::XMFLOAT3 end1{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 end2{0.0f, 0.0f, 0.0f};
-        item->GetEndPositions(AsLegacy(end1), AsLegacy(end2));
+        item->GetEndPositions(end1, end2);
 
         float time = g_gameTime + m_id.GetIndex();
         DirectX::XMVECTOR const span = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&end2), DirectX::XMLoadFloat3(&end1));
@@ -1198,7 +1187,6 @@ void Engineer::Render(float predictionTime)
       DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&toPos);
       DirectX::XMVECTOR const midPoint = DirectX::XMVectorScale(DirectX::XMVectorAdd(from, to), 0.5f);
 
-      // CameraAccess still returns a legacy vector; T12 converts it, behind T22.
       DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
       DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), midPoint);
 

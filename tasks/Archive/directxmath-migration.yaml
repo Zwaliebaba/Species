@@ -944,8 +944,25 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
+      DONE, immediately after T22 and in one small commit, exactly as the
+      shrink below predicted. Three signatures moved:
+      LocationAccess::GetSoundSource with Location's override, and
+      ClientToServer's RequestCreateUnit, RequestAimBuilding and
+      RequestTargetProgram.
+
+      IT REMOVED SEAM USES RATHER THAN ADDING ANY, which is what a task at the
+      end of a wave should do: four &AsLegacy calls in SoundInstance.cpp, two
+      in EntityGridTests.cpp and three in LocationInput.cpp, all of them added
+      by earlier tasks with a comment naming this one. Every caller was already
+      holding native storage.
+
+      THE SEAM DID THE REST. The three ClientToServer parameters are ordinary
+      by-value ones, so nothing that passes a Vector3 to them had to change --
+      which is the property the task was written around and, unlike the virtual
+      case below, actually holds.
+
       This is the task the seam was built for. Because XMFLOAT3 and Vector3 are
       layout-identical and T1 makes them convert implicitly, an interface can
       change signature while every implementor and caller stays as it is —
@@ -2311,8 +2328,34 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
+      DONE, straight after T22 as the re-pointing predicted, and it was as
+      small as the note below says: eleven ray-cast locals, five spawn
+      velocities and one port-position pair.
+
+      WHAT WAS ACTUALLY LEFT, once T22 had repaired the GetClickRay locals so
+      these files would compile at all:
+
+        eleven `Vector3 _pos` / `hitPos` locals feeding Landscape::RayHit
+        five g_zeroVector velocities passed to SpawnEntities and SpawnSpirit
+        one `Vector3 portPos, portFront` pair feeding GetPortPosition
+        one `_pos + Vector3(syncsfrand, 0, syncsfrand)` in SpawnSpiritButton
+
+      THE OUT-POINTERS DID NOT CONVERT, and could not: Landscape::RayHit still
+      takes Vector3*, T28 owns that signature, and T28 depends on THIS task.
+      So the locals are native and the call reads &AsLegacy -- eleven seam uses
+      ADDED here that T28 removes. That is the right way round: the storage
+      moves first and the signature follows, which is the rule the plan learned
+      in T16 and got wrong in T12.
+
+      g_zeroVector became a file-static s_noVelocity in CheatWindow rather than
+      five repeated braced literals. T25 retires the legacy constant.
+
+      The RNG line is commented at the site: two syncsfrand calls in one
+      expression, left in that order and that expression, because the call
+      sequence is explicitly NOT sanctioned to change.
+
       RE-POINTED 2026-08-04, on the same defect as T12 and for the third time
       in this plan: a task scoped by DIRECTORY over code that owns no storage.
 
@@ -2436,8 +2479,15 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
+      DONE at b62123a, CI run 534 GREEN ON THE FIRST TRY -- which for a commit
+      that moved sixteen pure virtuals and their sixteen overrides at once is
+      the result the mapping was for.
+
+      The keystone commit landed as mapped -- see the tail of these notes for
+      what the map got right and what it got wrong.
+
       RE-SCOPED BEFORE STARTING, 2026-08-05, on a measurement rather than
       after a red build. This task gains four headers from T12.
 
@@ -2505,6 +2555,49 @@ tasks:
       T15 and T17, and it is handled the same way: repair them here, leave the
       rest of their conversion to T20.
 
+      WHAT THE MAP GOT WRONG, recorded because the next task will map the same
+      way. It over-counted the repairs by about half.
+
+      THE SEAM IS BIDIRECTIONAL FOR VALUES, and the map assumed it was not.
+      Vector3 has a non-explicit CONSTRUCTOR from XMFLOAT3 as well as a
+      conversion OPERATOR to it, so `Vector3 v = g_camera->GetPos()` and
+      `SomethingTakingVector3Const(nativeValue)` both keep compiling when a
+      getter's return type moves. What breaks is only what the earlier tasks
+      already knew breaks: ARITHMETIC on the result, because XMFLOAT3 has no
+      operators, and POINTERS, because a conversion is not consulted through
+      one. Of the twelve repair files the map listed, five needed nothing:
+      Location, Team, SporeGenerator and two others read the getters into
+      typed locals and were carried across by the constructor.
+
+      SO THE REAL REPAIR LIST WAS: the five window files' GetClickRay locals,
+      GlobalWorld's six GetClickRay calls -- which SIMPLIFIED, dropping twelve
+      &AsLegacy uses -- ParticleSystem's `GetUp() * size`, LaserTrooper's
+      `GetFront() * m_front` dot product, and SoundInstance's three arithmetic
+      sites. Nine edits, not twelve files.
+
+      THREE MATRIX33 CONVENTIONS HAD TO BE PINNED AT THE SITE, and only one of
+      them was already written down. RotateAroundX/Y/Z(a) applied as `v * mat`
+      rotates v by +a; FastRotateAround(n, a) and RotateAround(n, a) rotate the
+      matrix's three basis ROWS by +a, which transposes into rotating a vector
+      by MINUS a. AdvanceDebugMode and AdvanceFirstPersonMode each use one of
+      each, so the yaw keeps its sign and the pitch flips it. Both spellings
+      compile and both are rotations. This is the third distinct Matrix33 trap
+      this plan has found and the first that is not in NeuronMath.h -- it is
+      commented at the two sites instead, because it is a fact about the legacy
+      class rather than about the convention the tree is moving to.
+
+      TWO ZERO-LENGTH FALLBACKS WERE REPRODUCED, each commented at the site per
+      the standard T15 set: Camera::SetTarget(focus, distance, height) and
+      GameCursor's offscreen selection arrow both SetLength a difference that
+      is zero when the camera sits on the point it is looking at, and the QNaN
+      would reach m_targetPos. Four other Normalise sites took the native
+      behaviour.
+
+      THE COMMENTS WERE THE OTHER HALF OF THE JOB. Thirty-seven files carried a
+      note saying these getters were still legacy and that T22 or T12 would
+      convert them. They landed in a separate comment-only commit rather than
+      being left to rot.
+
   - id: T23
     title: Convert the app, script and server-update code
     intent: >
@@ -2527,12 +2620,40 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       GenerateSyncValue is inside #ifdef TARGET_DEBUG. It is the only runtime
       determinism check the game has, so it must keep summing the same fields
       in the same order — the values it produces are allowed to change, the
       traversal is not.
+
+      DONE at 2cb2b5f, CI run 527 green. Closed 2026-08-05; the conversion
+      landed a day before the status did, which is the habit this plan keeps
+      warning about — write the plan file with the commit, not after it.
+
+      WHAT THE SEVEN FILES ACTUALLY HELD, so the next reader does not go
+      looking for more:
+
+        Main.cpp             GenerateSyncValue's four accumulators
+        ControlHelp.cpp      a file-local HelpIcon on Vector2 screen coords
+        StartSequence.cpp    a Vector2 cursor position
+        ServerUpdates.cpp    one comparison, commented
+        Script.cpp           one g_upVector use, now g_XMIdentityR1
+        GameMenu.cpp         nothing
+        TaskManagerInterface.cpp  nothing but the include
+
+      The accumulators are the part worth re-reading. They were
+      default-constructed Vector3s and XMFLOAT3 does not zero, so converted
+      straight they would have summed thousands of entity positions onto
+      uninitialised stack and fired the desync assert spuriously — failure
+      mode 5, in the one function whose job is detecting divergence. They are
+      XMVECTORs explicitly zeroed instead, and the final sum keeps the original
+      left-association ((u + e) + l) + f, because float addition is not
+      associative and this total is compared across clients.
+
+      Three `#include "Vector3.h"` and one `#include "Vector2.h"` survive in
+      Main.cpp, ServerUpdates.cpp and TaskManagerInterface.cpp. They are seam
+      includes with no legacy type behind them and T25 removes them.
 
   - id: T24
     title: Convert the tests
@@ -2640,8 +2761,43 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE. The last legacy signatures in the tree are gone, and with them
+      every &AsLegacy in the six projects except the one in NeuronMathTests
+      that tests AsLegacy itself.
+
+      RE-MEASURED BEFORE STARTING, and the counts below were smaller than the
+      ones this task was scoped from -- because T20 and T22 had already moved
+      the storage at most of the call sites, so this task mostly DELETED seam
+      calls. Landscape's family had 12 call sites outside Landscape.cpp, not
+      the "20 caller files" recorded here; RaySphereIntersection had 13 files
+      but only six needed an edit, the rest already passing native values.
+
+      WHAT ACTUALLY HAD TO CHANGE, beyond the signatures:
+
+        Vector2's CONVERTING CONSTRUCTOR FROM Vector3, which dropped y. That
+        projection is what let the 2D segment tests be handed a 3D ray, in
+        Landscape::RayHit, Landscape::UnsafeRayHit and Weapons. XMFLOAT2 has
+        no such constructor, so the (x, z) projection is written out at each
+        of the three -- and the decorative `0.0f` those segment endpoints
+        carried in y went with it.
+
+        Tripod's RayRayDist locals, which were three Vector3s copied into
+        three XMFLOAT3s immediately afterwards. Both halves collapse.
+
+        LaserFence and Tree, each of which built a `Vector3* const legacyHit`
+        from its own XMFLOAT3* out-parameter. Both are one deleted line.
+
+        NeuronMathTests' five geometry test classes, converted whole. The
+        seam's own tests -- the Vector3/Vector2 conversion tests, the Matrix33
+        pins and the zero-length normalise test -- stay legacy: they are
+        testing the seam, and T25 deletes them with it.
+
+      THE OUT-PARAMETER DEFAULTS ARE UNCHANGED, as this task's own note
+      required: five of these functions default their out-pointer to nullptr
+      and callers rely on it.
+
       ADDED 2026-08-05. T25's notes recorded this gap when T18 found it and
       declined to add the task unilaterally, because it changes the plan's wave
       order and that was the owner's call; the task is added now with T25
@@ -2715,8 +2871,81 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE. Vector2, Vector3, Matrix33 and Matrix34 are deleted from disk, from
+      NeuronCore.vcxproj and from its filters. 2,543 lines removed against 482
+      added, across 73 files.
+
+      GREEN AT 1af4979, CI runs 543 and 544 -- static checks and the x64 Debug
+      build and tests. That is the whole plan compiling and passing with the
+      wrapper headers gone.
+
+      IT TOOK TWO RED ROUNDS TO GET THERE, and both causes were invisible to
+      all seven local checks:
+
+        SoundInstance.cpp lost NearlyEquals when T12 dropped Vector3.h from
+        LocationAccess.h -- failure mode 3, the transitive include, and
+        NeuronClient's pch does not reach MathUtils.h. Swept the whole tree
+        against a resolved include graph afterwards; it was the only one.
+
+        Mine.cpp kept five RotateAroundF calls on locals this task converted.
+        check_math_types found all 128 MEMBER accesses on those locals and none
+        of the METHOD calls, because it checks members and not methods. THAT IS
+        A REAL GAP IN THE TOOL and worth knowing before the next plan trusts
+        it: a call CHAINED onto a converted result is invisible to it. Looking
+        for the same shape by hand afterwards found a third instance --
+        EntityLeg's `.pos.Mag()` -- before CI reached it.
+
+      Converting RotateAroundF needed care rather than a rename. It rewrote r
+      and u in place as r' = c*r + s*u, u' = -s*r + c*u, which natively is
+      XMMatrixRotationZ(a) * M -- the rotation applied BEFORE the matrix, in
+      the wheel's own frame. `M * RotationZ(a)` compiles, is also a rotation,
+      and spins the mine wheels about the world axis instead of their own.
+
+      FOUR THINGS HAD TO MOVE FIRST, and none of them was in this task's file
+      list -- which is the shape every wave-closing task in this plan has had:
+
+        ShapeMarker::GetWorldMatrix, the last deliberately-legacy signature in
+        the tree, with 75 call sites. Sixty-seven of them wanted `.pos` and
+        nothing else, so ShapeMarker gained GetWorldPosition and they call
+        that. The rest hold the matrix; two wanted `.f`. `check_math_types`
+        found 128 row accesses on the converted locals, which is exactly the
+        rule it was given in T16 after ShapeMarker's own uninitialised fourth
+        column shipped -- and it found every one of them.
+
+        The two legacy GLOBALS, kept BY NAME as native constants in
+        NeuronMath.h rather than deleted. Twenty-eight live sites pass
+        g_upVector or g_zeroVector straight into a parameter that takes
+        XMFLOAT3 storage, and DirectX::g_XMIdentityR1 and XMVectorZero() are
+        XMVECTORs, so they do not fit. This is what the acceptance criterion's
+        "or are native constants" was for. g_identityMatrix34 IS deleted: its
+        five callers each build XMMatrixIdentity locally.
+
+        Twenty-two &AsLegacy and AsLegacy calls that were no longer doing
+        anything -- Engineer, Citizen, Location and GlobalWorldEditorWindow
+        were passing a legacy view of native storage to a callee whose
+        signature had already converted underneath them.
+
+        Location::UpdateTeamControls' m_targetDir, the last live zero-length
+        fallback in the plan. It is REPRODUCED, not taken natively, and says so
+        at the site: a mouse position exactly on a unit's centre is reachable
+        and this is a simulation value.
+
+      WHAT THE TESTS COST. Twelve of NeuronMathTests' seventeen methods
+      compared a native result against the class it replaced, and a test that
+      cannot name its subject cannot be updated. They are deleted, and the file
+      says so at the top rather than leaving the next reader to wonder. Three
+      native-only tests replace them: the rows are right/up/front/position, a
+      transform is row-vector, and the front row is stored as given. Two of the
+      deleted ones -- the yaw/dive/roll composition order and the reversed
+      Matrix33 product -- caught readings that compiled and were wrong, which
+      is the argument for having written them.
+
+      THE COMMENTS WENT WITH IT. Thirty stale notes across ten files said an
+      API "converts in T15/T16/T17/T18/T19" or was "still legacy". All of them
+      were false by the time this task ran.
+
       THE GAP BELOW IS NOW OWNED BY T28, added 2026-08-05, and this task
       depends on it. The text is kept because it is the reasoning that produced
       that task, and because the third acceptance criterion here is still what
@@ -2776,8 +3005,36 @@ tasks:
     verify:
       - python3 tools/check_task_dag.py
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
+      DONE. All five criteria met, and two things beyond them that T25 made
+      false the moment it landed.
+
+      THE CROSS-ARCHITECTURE BULLET now says NOT SUPPORTED with the reason,
+      in both AGENTS.md and CODING_STANDARDS.md, and says the thing that
+      matters more: WITHIN one architecture the simulation is still
+      deterministic, which is the property the migration was required to keep
+      and the one the sync assert tests. It is a decision on the record, not a
+      bug report, and the bullet says so.
+
+      docs/BUILD.md records the SDK requirement: DirectXMath is not a package,
+      it ships in the Windows SDK 10 the toolchain row already requires, and an
+      SDK too old for DirectXCollision's TriangleTests will not compile
+      NeuronCore.
+
+      THE REPOSITORY MAP's NeuronCore line drops from ~3.4k to ~2.4k and says
+      the layer holds no math TYPES at all.
+
+      BEYOND THE LIST, because T25 falsified them: CODING_STANDARDS.md's two
+      rules about the conversion seam -- that it crossed values and references
+      but not pointers, and that AsLegacy was the escape hatch -- described
+      machinery that no longer exists. They are replaced by a note saying so,
+      because a reader hitting AsLegacy in an old commit message needs to know
+      where it went. The virtual-signature rule STAYS: it is a fact about C++
+      rather than about the seam, and it cost this plan four rounds.
+      docs/ARCHITECTURE.md's NeuronCore paragraph said the math types had
+      "moved down"; they moved down and were then deleted.
+
       The *Est ban is the one new standing rule this plan creates.
       XMVector3NormalizeEst, XMVectorReciprocalEst and the rest are explicitly
       permitted to differ between implementations, which makes them a desync
@@ -2825,9 +3082,21 @@ tasks:
     acceptance:
       - All seven Garden smoke-test steps pass on the wrapper-free build, owner-reported
       - AGENTS.md records the run with its commit hash and notes that it is the post-migration baseline
-    status: todo
+    status: done
     notes: |
-      Blocked on owner execution. This run is also the new baseline for the
-      simulation: from here the sync value is whatever native math produces,
-      and any future divergence is measured against this build rather than
-      against anything before it.
+      DONE. Owner-reported successful at 1af4979, 2026-08-05, on the
+      wrapper-free build. AGENTS.md records it as the POST-MIGRATION BASELINE.
+      THIS PLAN IS COMPLETE: 28 of 28.
+
+      This run is also the new baseline for the simulation: from here the sync
+      value is whatever native math produces, and any future divergence is
+      measured against this build rather than against anything before it. A
+      build from before the migration does not agree with this one and is not
+      supposed to.
+
+      It found nothing, which is worth recording rather than passing over. The
+      two runs before it each found a real defect that seven local checks, CI
+      and 180 tests had all passed -- Tree::RenderBranch's zero-length
+      normalise, and ShapeMarker's uninitialised fourth column. That this one
+      was clean is evidence about the deletion, not a reason to conclude the
+      gate was unnecessary.

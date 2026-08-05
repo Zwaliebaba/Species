@@ -31,7 +31,6 @@
 #include "Team.h"
 #include "TextRenderer.h"
 #include "Unit.h"
-#include "Vector2.h"
 #include "WorldPointers.h"
 #include "AppState.h"
 
@@ -1082,21 +1081,18 @@ void TaskManagerInterfaceIcons::RenderTargetAreas()
       }
 
       float angle = g_gameTime * 3.0f;
-      // These four lines belong to T22, not to T19. They are here because
-      // TaskTargetArea::m_centre converted in the header, and a converted
-      // member breaks every file that reads it — the rest of this file is
-      // still legacy and stays that way until T22.
       DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&tta->m_centre);
       DirectX::XMVECTOR const dif = DirectX::XMVectorSet(tta->m_radius * sinf(angle), 0.0f, tta->m_radius * cosf(angle), 0.0f);
 
       DirectX::XMFLOAT3 pos;
       DirectX::XMStoreFloat3(&pos, DirectX::XMVectorAdd(centre, dif));
       pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
-      g_particleSystem->CreateParticle(pos, g_zeroVector, Particle::TypeMuzzleFlash, 60.0f);
+      DirectX::XMFLOAT3 const zeroVelocity{0.0f, 0.0f, 0.0f}; // was g_zeroVector
+      g_particleSystem->CreateParticle(pos, zeroVelocity, Particle::TypeMuzzleFlash, 60.0f);
 
       DirectX::XMStoreFloat3(&pos, DirectX::XMVectorSubtract(centre, dif));
       pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
-      g_particleSystem->CreateParticle(pos, g_zeroVector, Particle::TypeMuzzleFlash, 60.0f);
+      g_particleSystem->CreateParticle(pos, zeroVelocity, Particle::TypeMuzzleFlash, 60.0f);
     }
 
     delete targetAreas;
@@ -1454,7 +1450,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
   for (int i = 0; i < numSlots; ++i)
   {
-    Vector2 iconCentre(iconX, iconY);
+    DirectX::XMFLOAT2 iconCentre(iconX, iconY);
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 1);
@@ -1503,7 +1499,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
     bool invisible = (task->m_state == Task::StateStarted && fmod(g_gameTime, 1.0) < 0.4);
 
-    Vector2 iconCentre(iconX, iconY);
+    DirectX::XMFLOAT2 iconCentre(iconX, iconY);
 
     if (!invisible)
     {
@@ -1571,7 +1567,10 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       // Render mode selection if we're an officer or armour
       // Render compass if we are an object
 
-      Vector3 taskWorldPos;
+      // Braced to zero: neither branch below runs when the task names nothing,
+      // and the test that follows is what reads the result. Vector3's default
+      // constructor is what made that test meaningful.
+      DirectX::XMFLOAT3 taskWorldPos{0.0f, 0.0f, 0.0f};
       Unit* unit = g_location->GetUnit(task->m_objId);
       Entity* entity = g_location->GetEntity(task->m_objId);
       if (unit)
@@ -1580,7 +1579,12 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
         taskWorldPos = entity->m_pos;
       float compassSize = iconSize * 0.75f;
 
-      if (taskWorldPos != g_zeroVector)
+      // Vector3::operator!= compared each component with NearlyEquals, which
+      // is |a - b| < 1e-6 -- not an exact test, whatever the comment above the
+      // declaration claimed about FLT_EPSILON. Kept at 1e-6 rather than
+      // tightened; XMVector3NearEqual uses <= where NearlyEquals used <, which
+      // differs only for a component exactly 1e-6 from zero.
+      if (!DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&taskWorldPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)))
       {
         RenderCompass(iconCentre.x, iconCentre.y, taskWorldPos, task->m_id == g_taskManager->m_currentTaskId, compassSize);
       }
@@ -1726,7 +1730,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
   }
 }
 
-void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, const Vector3& _worldPos, bool _selected, float _size)
+void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, DirectX::XMFLOAT3 const& _worldPos, bool _selected, float _size)
 {
   g_renderer->SetupMatricesFor3D();
   float screenH = g_renderer->ScreenH();
@@ -1740,11 +1744,17 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
   TheCamera()->Get2DScreenPos(_worldPos, &screenX, &screenY);
   screenY = screenH - screenY;
 
-  Vector3 toCam = TheCamera()->GetPos() - _worldPos;
-  float angle = toCam * TheCamera()->GetFront();
-  Vector3 rotationVector = toCam ^ TheCamera()->GetFront();
+  DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+  DirectX::XMFLOAT3 const camFrontStore = TheCamera()->GetFront();
+  DirectX::XMVECTOR const camFront = DirectX::XMLoadFloat3(&camFrontStore);
+  DirectX::XMVECTOR const toCam = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_worldPos));
+  // operator* between two Vector3s was the DOT product.
+  float angle = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toCam, camFront));
+  DirectX::XMVECTOR const rotationVector = DirectX::XMVector3Cross(toCam, camFront);
 
-  Vector2 compassVector;
+  // Braced to zero: both branches below write it, but Vector2's default
+  // constructor is what made that true before either ran.
+  DirectX::XMFLOAT2 compassVector{0.0f, 0.0f};
 
   if (angle <= 0.0f && screenX >= 0 && screenX < screenW && screenY >= 0 && screenY < screenH)
   {
@@ -1752,35 +1762,56 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
     screenX *= (m_screenW / screenW);
     screenY *= (m_screenH / screenH);
 
-    compassVector.Set(screenX - _screenX, screenY - _screenY);
-    compassVector.Normalise();
+    compassVector = DirectX::XMFLOAT2(screenX - _screenX, screenY - _screenY);
+    DirectX::XMStoreFloat2(&compassVector, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&compassVector)));
   }
   else
   {
     // _pos is offscreen
-    Vector3 rayStart, rayDir;
+    DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
     TheCamera()->GetClickRay(_screenX * screenW / m_screenW, _screenY * screenH / m_screenH, &rayStart, &rayDir);
-    Vector3 camPos = rayStart + rayDir * 1000;
-    Vector3 camToTarget = (_worldPos - camPos).SetLength(100);
+    DirectX::XMVECTOR const camPos =
+      DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&rayDir), DirectX::XMVectorReplicate(1000.0f), DirectX::XMLoadFloat3(&rayStart));
+
+    // SetLength answered a zero-length input with (100,0,0). The tracked
+    // object sitting exactly on the unprojected point a thousand units down
+    // the click ray is not something this code rules out, and the native
+    // normalise would put a QNaN on the compass, so the fallback stands.
+    DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_worldPos), camPos);
+    DirectX::XMVECTOR camToTarget;
+    if (NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget)), 0.0f))
+      camToTarget = DirectX::XMVectorSet(100.0f, 0.0f, 0.0f, 0.0f);
+    else
+      camToTarget = DirectX::XMVectorScale(DirectX::XMVector3Normalize(toTarget), 100.0f);
 
     float posX, posY;
-    TheCamera()->Get2DScreenPos(camPos + camToTarget, &posX, &posY);
+    DirectX::XMFLOAT3 compassTarget;
+    DirectX::XMStoreFloat3(&compassTarget, DirectX::XMVectorAdd(camPos, camToTarget));
+    TheCamera()->Get2DScreenPos(compassTarget, &posX, &posY);
     posY = screenH - posY;
     posX *= (m_screenW / screenW);
     posY *= (m_screenH / screenH);
 
-    compassVector.Set(posX - _screenX, posY - _screenY);
-    compassVector.Normalise();
+    compassVector = DirectX::XMFLOAT2(posX - _screenX, posY - _screenY);
+    DirectX::XMStoreFloat2(&compassVector, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&compassVector)));
   }
 
   //
   // Render the compass
 
-  Vector2 screenPos(_screenX - 0.5f, _screenY - 0.5f);
-  Vector2 compassRight = compassVector;
+  DirectX::XMFLOAT2 screenPos(_screenX - 0.5f, _screenY - 0.5f);
+  DirectX::XMFLOAT2 compassRight = compassVector;
   float temp = compassRight.x;
   compassRight.x = compassRight.y;
   compassRight.y = temp * -1.0f;
+
+  // The four corners, worked out once instead of eight times. glVertex2fv used
+  // to read Vector2::GetData(), which XMFLOAT2 does not have.
+  float const rightX = compassRight.x * _size;
+  float const rightY = compassRight.y * _size;
+  float const alongX = compassVector.x * _size;
+  float const alongY = compassVector.y * _size;
 
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/Compass.bmp", true, false));
   glEnable(GL_TEXTURE_2D);
@@ -1793,13 +1824,13 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
-  glVertex2fv((screenPos - compassRight * _size + compassVector * _size).GetData());
+  glVertex2f(screenPos.x - rightX + alongX, screenPos.y - rightY + alongY);
   glTexCoord2i(1, 1);
-  glVertex2fv((screenPos + compassRight * _size + compassVector * _size).GetData());
+  glVertex2f(screenPos.x + rightX + alongX, screenPos.y + rightY + alongY);
   glTexCoord2i(1, 0);
-  glVertex2fv((screenPos + compassRight * _size - compassVector * _size).GetData());
+  glVertex2f(screenPos.x + rightX - alongX, screenPos.y + rightY - alongY);
   glTexCoord2i(0, 0);
-  glVertex2fv((screenPos - compassRight * _size - compassVector * _size).GetData());
+  glVertex2f(screenPos.x - rightX - alongX, screenPos.y - rightY - alongY);
   glEnd();
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -1810,13 +1841,13 @@ void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, co
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 1);
-  glVertex2fv((screenPos - compassRight * _size + compassVector * _size).GetData());
+  glVertex2f(screenPos.x - rightX + alongX, screenPos.y - rightY + alongY);
   glTexCoord2i(1, 1);
-  glVertex2fv((screenPos + compassRight * _size + compassVector * _size).GetData());
+  glVertex2f(screenPos.x + rightX + alongX, screenPos.y + rightY + alongY);
   glTexCoord2i(1, 0);
-  glVertex2fv((screenPos + compassRight * _size - compassVector * _size).GetData());
+  glVertex2f(screenPos.x + rightX - alongX, screenPos.y + rightY - alongY);
   glTexCoord2i(0, 0);
-  glVertex2fv((screenPos - compassRight * _size - compassVector * _size).GetData());
+  glVertex2f(screenPos.x - rightX - alongX, screenPos.y - rightY - alongY);
   glEnd();
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2520,7 +2551,7 @@ void TaskManagerInterfaceIcons::RenderQuickUnit()
   float iconY = g_renderer->ScreenH() - iconSize;
   float iconAlpha = 0.9f;
 
-  Vector2 iconCentre(iconX, iconY);
+  DirectX::XMFLOAT2 iconCentre(iconX, iconY);
 
   float shadowOffset = 0;
   float shadowSize = iconSize;
@@ -2684,9 +2715,10 @@ QuickUnitButton::QuickUnitButton()
   float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
   float iconY = g_renderer->ScreenH() - iconSize - iconGap;
 
-  static Vector2 buttonPositions[5] = {Vector2(iconX - iconSize * 2 - iconGap * 2, iconY), Vector2(iconX - iconSize - iconGap, iconY),
-                                       Vector2(iconX, iconY), Vector2(iconX + iconSize + iconGap, iconY),
-                                       Vector2(iconX + iconSize * 2 + iconGap * 2, iconY)};
+  static DirectX::XMFLOAT2 buttonPositions[5] = {DirectX::XMFLOAT2(iconX - iconSize * 2 - iconGap * 2, iconY),
+                                                 DirectX::XMFLOAT2(iconX - iconSize - iconGap, iconY), DirectX::XMFLOAT2(iconX, iconY),
+                                                 DirectX::XMFLOAT2(iconX + iconSize + iconGap, iconY),
+                                                 DirectX::XMFLOAT2(iconX + iconSize * 2 + iconGap * 2, iconY)};
 
   auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
   m_positionId = static_cast<int>(tm->m_quickUnitButtons.size());
@@ -2710,9 +2742,10 @@ void QuickUnitButton::Advance()
   float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
   float iconY = g_renderer->ScreenH() - iconSize - iconGap;
 
-  static Vector2 buttonPositions[5] = {Vector2(iconX - iconSize * 2 - iconGap * 2, iconY), Vector2(iconX - iconSize - iconGap, iconY),
-                                       Vector2(iconX, iconY), Vector2(iconX + iconSize + iconGap, iconY),
-                                       Vector2(iconX + iconSize * 2 + iconGap * 2, iconY)};
+  static DirectX::XMFLOAT2 buttonPositions[5] = {DirectX::XMFLOAT2(iconX - iconSize * 2 - iconGap * 2, iconY),
+                                                 DirectX::XMFLOAT2(iconX - iconSize - iconGap, iconY), DirectX::XMFLOAT2(iconX, iconY),
+                                                 DirectX::XMFLOAT2(iconX + iconSize + iconGap, iconY),
+                                                 DirectX::XMFLOAT2(iconX + iconSize * 2 + iconGap * 2, iconY)};
 
   if (direction != 0 && m_movable)
   {
@@ -2767,7 +2800,7 @@ void QuickUnitButton::Render()
   float shadowOffset = 0;
   float shadowSize = iconSize + 10;
 
-  auto iconCentre = Vector2(m_x, m_y);
+  DirectX::XMFLOAT2 iconCentre(m_x, m_y);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));

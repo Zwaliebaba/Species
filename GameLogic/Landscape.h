@@ -87,16 +87,7 @@ class Landscape
 
     void RenderHitNormals() const;
 
-    // THE RAY AND SPHERE API STAYS LEGACY, and this is a plan gap rather than
-    // an oversight. Every one of these hands its Vector3* out-parameter
-    // straight to MathUtils -- RayTriIntersection and SegRayIntersection2D --
-    // which still take Vector3 const& and Vector3*, because T7 and T8 rebuilt
-    // their bodies natively while deliberately keeping the signatures so
-    // callers compiled unchanged. The seam converts VALUES and REFERENCES, not
-    // POINTERS, so these cannot move until MathUtils does, and no task in
-    // directxmath-migration.yaml owns that. Seventeen call sites in ten files
-    // pass &someVector3 to RayHit alone. See T18's notes.
-    bool UnsafeRayHit(Vector3 const& _rayStart, Vector3 const& _rayEnd, Vector3* _result) const;
+    bool UnsafeRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayEnd, DirectX::XMFLOAT3* _result) const;
 
   public:
     Landscape();
@@ -114,9 +105,9 @@ class Landscape
 
     float GetWorldSizeX() const;
     float GetWorldSizeZ() const;
-    bool IsInLandscape(Vector3 const& _pos);
+    bool IsInLandscape(DirectX::XMFLOAT3 const& _pos);
 
-    bool RayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3* _result) const;
-    bool RayHitCell(int x0, int z0, Vector3 const& _rayStart, Vector3 const& _rayDir, Vector3* _result) const;
-    float SphereHit(Vector3 const& _centre, float _radius) const;
+    bool RayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const;
+    bool RayHitCell(int x0, int z0, DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const;
+    float SphereHit(DirectX::XMFLOAT3 const& _centre, float _radius) const;
 };

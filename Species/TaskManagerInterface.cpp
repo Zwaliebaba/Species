@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "TextRenderer.h"
 #include "MathUtils.h"
-#include "Vector2.h"
 #include "Debug.h"
 #include "Resource.h"
 #include "Bitmap.h"

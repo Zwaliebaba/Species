@@ -9,7 +9,6 @@
 #include "Profiler.h"
 #include "Resource.h"
 #include "Shape.h"
-#include "Vector2.h"
 #include "TextRenderer.h"
 
 #include "EntityLeg.h"
@@ -701,8 +700,7 @@ bool Spider::AdvanceEggLaying()
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const eggLayPos = m_eggLay->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 const eggLayPos = m_eggLay->GetWorldPosition(mat);
 
     g_location->SpawnEntities(eggLayPos, m_id.GetTeamId(), -1, TypeEgg, 1, g_zeroVector, 0.0f);
 
@@ -869,7 +867,6 @@ bool Spider::IsInView()
   DirectX::XMFLOAT3 centre;
   DirectX::XMStoreFloat3(&centre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_centrePos)));
 
-  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   return g_camera->SphereInViewFrustum(centre, m_radius);
 }
 

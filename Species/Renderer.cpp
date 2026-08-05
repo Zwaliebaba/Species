@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "Input.h"
 #include "Debug.h"
 #include "HiResTime.h"
@@ -143,9 +144,14 @@ void Renderer::RenderFlatTexture()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
   float size = m_nearPlane * 0.3f;
-  Vector3 up = TheCamera()->GetUp() * 1.0f * size;
-  Vector3 right = TheCamera()->GetRight() * 1.0f * size;
-  Vector3 pos = TheCamera()->GetPos() + TheCamera()->GetFront() * m_nearPlane * 1.01f;
+  DirectX::XMFLOAT3 const camUp = TheCamera()->GetUp();
+  DirectX::XMFLOAT3 const camRight = TheCamera()->GetRight();
+  DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+  DirectX::XMFLOAT3 const camFront = TheCamera()->GetFront();
+  DirectX::XMVECTOR const up = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUp), 1.0f * size);
+  DirectX::XMVECTOR const right = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRight), 1.0f * size);
+  DirectX::XMVECTOR const pos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&camFront), DirectX::XMVectorReplicate(m_nearPlane * 1.01f),
+                                                             DirectX::XMLoadFloat3(&camPosStore));
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -156,13 +162,13 @@ void Renderer::RenderFlatTexture()
 
   glBegin(GL_QUADS);
   glTexCoord2f(1.0f, 1.0f);
-  glVertex3fv((pos + up - right).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, up), right));
   glTexCoord2f(0.0f, 1.0f);
-  glVertex3fv((pos + up + right).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, up), right));
   glTexCoord2f(0.0f, 0.0f);
-  glVertex3fv((pos - up + right).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, up), right));
   glTexCoord2f(1.0f, 0.0f);
-  glVertex3fv((pos - up - right).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, up), right));
   glEnd();
 
   glAlphaFunc(GL_GREATER, 0.01);
@@ -173,10 +179,10 @@ void Renderer::RenderFlatTexture()
 
   glLineWidth(1.0f);
   glBegin(GL_LINE_LOOP);
-  glVertex3fv((pos + up - right).GetData());
-  glVertex3fv((pos + up + right).GetData());
-  glVertex3fv((pos - up + right).GetData());
-  glVertex3fv((pos - up - right).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, up), right));
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, up), right));
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, up), right));
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, up), right));
   glEnd();
 }
 
@@ -935,7 +941,8 @@ void Renderer::PreRenderPixelEffect()
   float nearest = 99999.9f;
 
   float cutoff = 1000.0f;
-  Vector3 camPos = TheCamera()->GetPos();
+  DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+  DirectX::XMVECTOR const camPos = DirectX::XMLoadFloat3(&camPosStore);
 
   for (int t = 0; t < NUM_TEAMS; ++t)
   {
@@ -950,7 +957,8 @@ void Renderer::PreRenderPixelEffect()
           {
             if (unit->IsInView())
             {
-              float distance = (AsLegacy(unit->m_centrePos) - camPos).Mag();
+              float distance =
+                DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&unit->m_centrePos), camPos)));
               if (distance < cutoff)
               {
                 for (int j = 0; j < unit->m_entities.Size(); ++j)
@@ -965,7 +973,9 @@ void Renderer::PreRenderPixelEffect()
                       rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
                     if (rendered)
                     {
-                      float distance = (AsLegacy(entity->m_pos) - TheCamera()->GetPos()).Mag();
+                      DirectX::XMFLOAT3 const nowPos = TheCamera()->GetPos();
+                      float distance = DirectX::XMVectorGetX(
+                        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&nowPos))));
                       if (distance < nearest)
                         nearest = distance;
                     }
@@ -984,7 +994,8 @@ void Renderer::PreRenderPixelEffect()
           Entity* entity = g_location->m_teams[t].m_others[i];
           if (entity->IsInView())
           {
-            float distance = (AsLegacy(entity->m_pos) - camPos).Mag();
+            float distance =
+              DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), camPos)));
             if (distance < cutoff)
             {
               bool rendered = false;
@@ -994,7 +1005,9 @@ void Renderer::PreRenderPixelEffect()
                 rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
               if (rendered)
               {
-                float distance = (AsLegacy(entity->m_pos) - TheCamera()->GetPos()).Mag();
+                DirectX::XMFLOAT3 const nowPos = TheCamera()->GetPos();
+                float distance = DirectX::XMVectorGetX(
+                  DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&nowPos))));
                 if (distance < nearest)
                   nearest = distance;
               }
@@ -1010,13 +1023,16 @@ void Renderer::PreRenderPixelEffect()
     if (g_location->m_buildings.ValidIndex(i))
     {
       Building* building = g_location->m_buildings[i];
-      float distance = (AsLegacy(building->m_centrePos) - camPos).Mag();
+      float distance =
+        DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_centrePos), camPos)));
       if (distance < cutoff)
       {
         bool rendered = building->RenderPixelEffect(g_predictionTime);
         if (rendered)
         {
-          float distance = (AsLegacy(building->m_pos) - TheCamera()->GetPos()).Mag();
+          DirectX::XMFLOAT3 const nowPos = TheCamera()->GetPos();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&nowPos))));
           if (distance < nearest)
             nearest = distance;
         }
@@ -1305,7 +1321,7 @@ void Renderer::UpdateTotalMatrix()
   m_totalMatrix[15] = m[12] * p[3] + m[13] * p[7] + m[14] * p[11] + m[15] * p[15];
 }
 
-void Renderer::Get2DScreenPos(const Vector3& v, Vector3* _out)
+void Renderer::Get2DScreenPos(DirectX::XMFLOAT3 const& v, DirectX::XMFLOAT3* _out)
 {
   double out[4];
 
@@ -1335,17 +1351,26 @@ void Renderer::Get2DScreenPos(const Vector3& v, Vector3* _out)
 
 const double* Renderer::GetTotalMatrix() { return m_totalMatrix; }
 
-void Renderer::RasteriseSphere(const Vector3& _pos, float _radius)
+void Renderer::RasteriseSphere(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   const float screenToGridFactor = static_cast<float>(PIXEL_EFFECT_GRID_RES) / static_cast<float>(m_screenW);
   Camera* cam = TheCamera();
-  Vector3 centre;
-  Vector3 topLeft;
-  Vector3 bottomRight;
-  const Vector3 camUpRight = (cam->GetRight() + cam->GetUp()) * _radius;
+  // Get2DScreenPos returns early without writing when the point is behind the
+  // camera, so all three need the zeroing Vector3's constructor used to give.
+  DirectX::XMFLOAT3 centre{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 topLeft{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 bottomRight{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 const camRight = cam->GetRight();
+  DirectX::XMFLOAT3 const camUp = cam->GetUp();
+  DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
+  DirectX::XMVECTOR const camUpRight =
+    DirectX::XMVectorScale(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&camRight), DirectX::XMLoadFloat3(&camUp)), _radius);
+  DirectX::XMFLOAT3 offsetPos;
   Get2DScreenPos(_pos, &centre);
-  Get2DScreenPos(_pos + camUpRight, &topLeft);
-  Get2DScreenPos(_pos - camUpRight, &bottomRight);
+  DirectX::XMStoreFloat3(&offsetPos, DirectX::XMVectorAdd(pos, camUpRight));
+  Get2DScreenPos(offsetPos, &topLeft);
+  DirectX::XMStoreFloat3(&offsetPos, DirectX::XMVectorSubtract(pos, camUpRight));
+  Get2DScreenPos(offsetPos, &bottomRight);
 
   int x1 = floorf(topLeft.x * screenToGridFactor);
   int x2 = ceilf(bottomRight.x * screenToGridFactor);
@@ -1369,14 +1394,16 @@ void Renderer::RasteriseSphere(const Vector3& _pos, float _radius)
   }
 }
 
-void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transform)
+void Renderer::MarkUsedCells(ShapeFragment const* _frag, DirectX::XMFLOAT4X4 const& _transform)
 {
 #if USE_PIXEL_EFFECT_GRID_OPTIMISATION
-  // ShapeFragment stores native types as of directxmath-migration T10, and
-  // RendererAccess still takes a Matrix34. Converting back here keeps this
-  // rendering path computing exactly what it did; it goes native in T22.
-  Matrix34 total = Matrix34(_frag->m_transform) * _transform;
-  Vector3 worldPos = Vector3(_frag->m_centre) * total;
+  // Matrix34::operator* was already the row-vector product with r/u/f/pos as
+  // rows, in that operand order, so XMMatrixMultiply takes its operands the
+  // same way round. It is Matrix33 that reverses -- see NeuronMath.h.
+  DirectX::XMFLOAT4X4 total;
+  DirectX::XMStoreFloat4x4(&total, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&_frag->m_transform), DirectX::XMLoadFloat4x4(&_transform)));
+  DirectX::XMFLOAT3 worldPos;
+  DirectX::XMStoreFloat3(&worldPos, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&_frag->m_centre), DirectX::XMLoadFloat4x4(&total)));
 
   // Return early if this shape fragment isn't on the screen
   {
@@ -1397,7 +1424,7 @@ void Renderer::MarkUsedCells(const ShapeFragment* _frag, const Matrix34& _transf
 #endif // USE_PIXEL_EFFECT_GRID_OPTIMISATION
 }
 
-void Renderer::MarkUsedCells(const Shape* _shape, const Matrix34& _transform)
+void Renderer::MarkUsedCells(Shape const* _shape, DirectX::XMFLOAT4X4 const& _transform)
 {
   START_PROFILE(g_profiler, "MarkUsedCells");
   MarkUsedCells(_shape->m_rootFragment.get(), _transform);

@@ -23,16 +23,17 @@ EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, 
   ASSERT_TEXT(m_shapeUpper, "EntityLeg: Couldn't load leg shape {}", _shapeNameUpper);
   ASSERT_TEXT(m_shapeLower, "EntityLeg: Couldn't load leg shape {}", _shapeNameLower);
 
-  // ShapeMarker::GetWorldMatrix still returns a legacy matrix -- T10 left that
-  // signature deliberately, because 43 sites in fourteen GameLogic files read
-  // .pos or .f off it. Reading .pos here is that seam, not an oversight.
   DirectX::XMFLOAT4X4 const identity(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
+  // The marker's distance from the fragment origin, which against the identity
+  // is just the length of its own translation row.
   ShapeMarker* endMarker = m_shapeUpper->m_rootFragment->LookupMarker("MarkerEnd");
-  m_thighLen = endMarker->GetWorldMatrix(identity).pos.Mag();
+  DirectX::XMFLOAT3 thighEnd = endMarker->GetWorldPosition(identity);
+  m_thighLen = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&thighEnd)));
 
   endMarker = m_shapeLower->m_rootFragment->LookupMarker("MarkerEnd");
-  m_shinLen = endMarker->GetWorldMatrix(identity).pos.Mag();
+  DirectX::XMFLOAT3 shinEnd = endMarker->GetWorldPosition(identity);
+  m_shinLen = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&shinEnd)));
 
   m_rootMarker = m_parent->m_shape->m_rootFragment->LookupMarker(_rootMarkerName);
   ASSERT_TEXT(m_rootMarker, "EntityLeg: Couldn't find root marker {}", _rootMarkerName);
@@ -47,7 +48,7 @@ DirectX::XMFLOAT3 EntityLeg::GetLegRootPos()
     &rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_parent->m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_parent->m_pos)));
 
   // Legacy return type, per the GetWorldMatrix seam noted in the constructor.
-  return m_rootMarker->GetWorldMatrix(rootMat).pos;
+  return m_rootMarker->GetWorldPosition(rootMat);
 }
 
 DirectX::XMFLOAT3 EntityLeg::CalcFootHomePos(float _targetHoverHeight)
@@ -63,7 +64,6 @@ DirectX::XMFLOAT3 EntityLeg::CalcFootHomePos(float _targetHoverHeight)
   DirectX::XMVECTOR fromCentreToRoot =
     DirectX::XMVector3Normalize(DirectX::XMVectorSetY(DirectX::XMVectorSubtract(root, DirectX::XMLoadFloat3(&m_parent->m_pos)), 0.0f));
 
-  // The landscape converts in T18, so its normal map still yields a legacy vector.
   DirectX::XMFLOAT3 const groundNormal = g_location->m_landscape.m_normalMap->GetValue(m_parent->m_pos.x, m_parent->m_pos.z);
   fromCentreToRoot = DirectX::XMVectorScale(fromCentreToRoot, groundNormal.y);
 
@@ -313,8 +313,6 @@ bool EntityLeg::RenderPixelEffect(float _predictionTime, DirectX::XMFLOAT3 const
     DirectX::XMVECTOR const up = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(knee, foot));
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Cross(up, DirectX::g_XMIdentityR0), up, foot));
-    // RendererAccess still takes a legacy matrix -- it converts in T12,
-    // behind T22 -- so Matrix34's implicit conversion carries this across.
     g_renderer->MarkUsedCells(m_shapeLower, mat);
   }
 

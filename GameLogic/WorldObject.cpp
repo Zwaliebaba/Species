@@ -45,7 +45,6 @@ void WorldObject::BounceOffLandscape()
   DirectX::XMStoreFloat3(&m_pos, impactPos);
   m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
-  // The landscape converts in T18, so its normal map still yields a legacy
   // vector. Copy-initialising the native type takes the seam's conversion
   // without naming the legacy one; a reference would bind to the temporary the
   // conversion operator returns and dangle.

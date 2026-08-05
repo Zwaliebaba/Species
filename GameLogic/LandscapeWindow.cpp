@@ -59,10 +59,10 @@ class LandscapeTileButton : public SpeciesButton
       }
       else if (stricmp(m_name, LANGUAGEPHRASE("editor_clone")) == 0)
       {
-        Vector3 rayStart;
-        Vector3 rayDir;
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        Vector3 _pos;
+        DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
         g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
         LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
@@ -229,10 +229,10 @@ class NewTileButton : public SpeciesButton
   public:
     void MouseUp()
     {
-      Vector3 rayStart;
-      Vector3 rayDir;
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
       g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-      Vector3 _pos;
+      DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
       g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
       LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
@@ -265,10 +265,10 @@ class NewFlattenAreaButton : public SpeciesButton
     {
       int const screenH = g_renderer->ScreenH();
       int const screenW = g_renderer->ScreenW();
-      Vector3 rayStart;
-      Vector3 rayDir;
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
       g_camera->GetClickRay(screenW / 2, screenH / 2, &rayStart, &rayDir);
-      Vector3 _pos;
+      DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
       g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
       LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);

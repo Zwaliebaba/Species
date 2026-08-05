@@ -35,9 +35,8 @@ bool Library::Advance()
       DirectX::XMStoreFloat4x4(&rootMat,
                                BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
       // only the marker's position is wanted here.
-      DirectX::XMFLOAT3 const scrollPos = scrollMarker->GetWorldMatrix(rootMat).pos;
+      DirectX::XMFLOAT3 const scrollPos = scrollMarker->GetWorldPosition(rootMat);
 
       ResearchItem* item = new ResearchItem();
       item->m_researchType = i;
