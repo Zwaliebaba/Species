@@ -18,8 +18,8 @@ class ThrowableWeapon : public WorldObject
     float m_birthTime;
     float m_force;
 
-    Vector3 m_front;
-    Vector3 m_up;
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
 
     int m_numFlashes;
 
@@ -28,7 +28,7 @@ class ThrowableWeapon : public WorldObject
     void TriggerSoundEvent(char const* _event);
 
   public:
-    ThrowableWeapon(int _type, Vector3 const& _startPos, Vector3 const& _front, float _force);
+    ThrowableWeapon(int _type, DirectX::XMFLOAT3 const& _startPos, DirectX::XMFLOAT3 const& _front, float _force);
 
     void Initialise();
     bool Advance();
@@ -50,7 +50,7 @@ class Grenade : public ThrowableWeapon
     float m_power;
 
   public:
-    Grenade(Vector3 const& _startPos, Vector3 const& _front, float _force);
+    Grenade(DirectX::XMFLOAT3 const& _startPos, DirectX::XMFLOAT3 const& _front, float _force);
     bool Advance();
 };
 
@@ -65,7 +65,7 @@ class AirStrikeMarker : public ThrowableWeapon
     WorldObjectId m_airstrikeUnit;
 
   public:
-    AirStrikeMarker(Vector3 const& _startPos, Vector3 const& _front, float _force);
+    AirStrikeMarker(DirectX::XMFLOAT3 const& _startPos, DirectX::XMFLOAT3 const& _front, float _force);
     bool Advance();
 };
 
@@ -77,7 +77,7 @@ class AirStrikeMarker : public ThrowableWeapon
 class ControllerGrenade : public ThrowableWeapon
 {
   public:
-    ControllerGrenade(Vector3 const& _startPos, Vector3 const& _front, float _force);
+    ControllerGrenade(DirectX::XMFLOAT3 const& _startPos, DirectX::XMFLOAT3 const& _front, float _force);
     bool Advance();
 };
 
@@ -95,10 +95,12 @@ class Rocket : public WorldObject
     float m_timer;
 
   public:
-    Vector3 m_target;
+    // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
+    // not, and the defaulted Rocket() constructor leaves it alone.
+    DirectX::XMFLOAT3 m_target{0.0f, 0.0f, 0.0f};
 
     Rocket() {}
-    Rocket(Vector3 _startPos, Vector3 _targetPos);
+    Rocket(DirectX::XMFLOAT3 _startPos, DirectX::XMFLOAT3 _targetPos);
 
     void Initialise();
     bool Advance();
@@ -173,13 +175,13 @@ class Shockwave : public WorldObject
 class MuzzleFlash : public WorldObject
 {
   public:
-    Vector3 m_front;
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
     float m_size;
     float m_life;
 
   public:
     MuzzleFlash();
-    MuzzleFlash(Vector3 const& _pos, Vector3 const& _front, float _size, float _life);
+    MuzzleFlash(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, float _size, float _life);
 
     bool Advance();
     void Render(float _predictionTime);
@@ -194,22 +196,22 @@ class Missile : public WorldObject
 {
   protected:
     float m_life;
-    std::vector<Vector3> m_history;
+    std::vector<DirectX::XMFLOAT3> m_history;
     Shape* m_shape;
     ShapeMarker* m_booster;
     MuzzleFlash m_fire;
 
   public:
     WorldObjectId m_tankId; // Who fired me
-    Vector3 m_front;
-    Vector3 m_up;
-    Vector3 m_target;
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_target{0.0f, 0.0f, 0.0f};
 
   public:
     Missile();
 
     bool Advance();
-    bool AdvanceToTargetPosition(Vector3 const& _pos);
+    bool AdvanceToTargetPosition(DirectX::XMFLOAT3 const& _pos);
     void Explode();
     void Render(float _predictionTime);
 };
