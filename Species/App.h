@@ -30,6 +30,7 @@ class GameMenu;
 class StartSequence;
 class AttractMode;
 class ControlHelpSystem;
+class PrefsManager;
 class BitmapRGBA;
 class GameMenu;
 
@@ -56,7 +57,15 @@ class App : public AppCommands
     LocationInput* m_locationInput;
     StartSequence* m_startSequence;
 
+    // Guarded exactly like its construction and destruction in App.cpp.
+    // AttractMode has NO HEADER anywhere in the tree and ATTRACTMODE_ENABLED
+    // is defined nowhere, so the type is never completed -- an unguarded
+    // unique_ptr member instantiates a deleter for it and fails with
+    // "can't delete an incomplete type". A raw pointer hid that; an owner
+    // cannot.
+#ifdef ATTRACTMODE_ENABLED
     std::unique_ptr<AttractMode> m_attractMode;
+#endif
     GameMenu* m_gameMenu;
 
     // Owned here since ownership T6, and reachable only through App: GameLogic
@@ -65,6 +74,25 @@ class App : public AppCommands
     // g_renderer and g_taskManagerInterface observe these.
     std::unique_ptr<Renderer> m_renderer;
     std::unique_ptr<TaskManagerInterfaceIcons> m_taskManagerInterface;
+
+    // The rest of the subsystem graph, owned here since ownership T6. Each has
+    // a global beside it in WorldPointers.h or AppState.h that observes it --
+    // several of those are typed as the *Access interface rather than the
+    // concrete class, which is dependency inversion doing its job and not a
+    // reason for the owner to be typed that way too.
+    //
+    // Nothing outside App.cpp deletes or reassigns any of these; that was
+    // checked before they moved, and it is what separates them from
+    // m_renderer and m_taskManagerInterface above.
+    std::unique_ptr<PrefsManager> m_prefsManager;
+    std::unique_ptr<GameCursor> m_gameCursor;
+    std::unique_ptr<UserInput> m_userInput;
+    std::unique_ptr<Camera> m_camera;
+    std::unique_ptr<ParticleSystem> m_particleSystem;
+    std::unique_ptr<TaskManager> m_taskManager;
+    std::unique_ptr<Script> m_script;
+    std::unique_ptr<ControlHelpSystem> m_controlHelpSystem;
+    std::unique_ptr<GlobalWorld> m_globalWorld;
 
 
     // State flags

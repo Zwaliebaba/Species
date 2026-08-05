@@ -79,7 +79,8 @@ App::App()
   g_resource = m_resource;
 
   PrefsManager::SetDefaultsProvider(&ApplyShippedPreferenceDefaults);
-  g_prefsManager = new PrefsManager(GetPreferencesPath());
+  m_prefsManager = std::make_unique<PrefsManager>(GetPreferencesPath());
+  g_prefsManager = m_prefsManager.get();
 
   g_negativeRenderer = g_prefsManager->GetInt("RenderNegative", 0) ? true : false;
   if (g_negativeRenderer)
@@ -110,16 +111,19 @@ App::App()
   // blueprint that has to resolve an entity or building type name.
   InstallWorldTypeRoster();
 
-  g_gameCursor = new GameCursor();
+  m_gameCursor = std::make_unique<GameCursor>();
+  g_gameCursor = m_gameCursor.get();
   m_soundSystem = std::make_unique<SoundSystem>();
   g_soundSystem = m_soundSystem.get();
   m_clientToServer = std::make_unique<ClientToServer>();
   g_clientToServer = m_clientToServer.get();
-  g_userInput = new UserInput();
+  m_userInput = std::make_unique<UserInput>();
+  g_userInput = m_userInput.get();
   //    g_location          = new Location();
   //    m_locationInput		= new LocationInput();
 
-  g_camera = new Camera();
+  m_camera = std::make_unique<Camera>();
+  g_camera = m_camera.get();
   m_gameMenu = new GameMenu();
 
   m_gameDataFile = "Game.txt";
@@ -143,13 +147,17 @@ App::App()
 
   SetProfileName(g_prefsManager->GetString("UserProfile", "none"));
 
-  g_particleSystem = new ParticleSystem();
-  g_taskManager = new TaskManager();
-  g_script = new Script();
+  m_particleSystem = std::make_unique<ParticleSystem>();
+  g_particleSystem = m_particleSystem.get();
+  m_taskManager = std::make_unique<TaskManager>();
+  g_taskManager = m_taskManager.get();
+  m_script = std::make_unique<Script>();
+  g_script = m_script.get();
 #ifdef ATTRACTMODE_ENABLED
   m_attractMode = std::make_unique<AttractMode>();
 #endif
-  g_controlHelpSystem = new ControlHelpSystem();
+  m_controlHelpSystem = std::make_unique<ControlHelpSystem>();
+  g_controlHelpSystem = m_controlHelpSystem.get();
 
   ReplaceTaskManagerInterface();
 
@@ -206,13 +214,15 @@ void App::ReplaceTaskManagerInterface()
 // wrong -- it is the reason the conversion is safe to make, and the reason the
 // smoke test cannot confirm it. Recorded on ownership T6.
 //
-// THE ORDER BELOW IS BYTE-FOR-BYTE THE SEQUENCE THE SAFE_DELETEs HAD. The
+// THE ORDER BELOW IS BYTE-FOR-BYTE THE SEQUENCE THE MACRO CALLS HAD. The
 // unique_ptr members are reset explicitly, in place, rather than left to the
 // implicit destructor -- which would run them in reverse declaration order and
 // interleave them differently with the raw deletes that remain.
 App::~App()
 {
-  SAFE_DELETE(g_globalWorld);
+  m_globalWorld.reset();
+  g_globalWorld = nullptr;
+
 
   m_langTable.reset();
   g_langTable = nullptr;
@@ -220,15 +230,27 @@ App::~App()
   m_taskManagerInterface.reset();
   g_taskManagerInterface = nullptr;
 
-  SAFE_DELETE(g_controlHelpSystem);
+  m_controlHelpSystem.reset();
+  g_controlHelpSystem = nullptr;
+
 #ifdef ATTRACTMODE_ENABLED
   m_attractMode.reset();
 #endif
-  SAFE_DELETE(g_script);
-  SAFE_DELETE(g_taskManager);
-  SAFE_DELETE(g_particleSystem);
-  SAFE_DELETE(g_camera);
-  SAFE_DELETE(g_userInput);
+  m_script.reset();
+  g_script = nullptr;
+
+  m_taskManager.reset();
+  g_taskManager = nullptr;
+
+  m_particleSystem.reset();
+  g_particleSystem = nullptr;
+
+  m_camera.reset();
+  g_camera = nullptr;
+
+  m_userInput.reset();
+  g_userInput = nullptr;
+
 
   m_clientToServer.reset();
   g_clientToServer = nullptr;
@@ -236,7 +258,9 @@ App::~App()
   m_soundSystem.reset();
   g_soundSystem = nullptr;
 
-  SAFE_DELETE(g_gameCursor);
+  m_gameCursor.reset();
+  g_gameCursor = nullptr;
+
   m_renderer.reset();
   g_renderer = nullptr;
 
@@ -244,10 +268,12 @@ App::~App()
   m_profiler.reset();
   g_profiler = nullptr;
 #endif
-  SAFE_DELETE(g_prefsManager);
+  m_prefsManager.reset();
+  g_prefsManager = nullptr;
 
-  // NOT deleted here, and this is a behaviour change: SAFE_DELETE(m_resource)
-  // used to run. Species/Main.cpp's Finalise() also does `delete g_resource`,
+
+  // NOT deleted here, and this is a behaviour change: m_resource used to be
+  // destroyed on this line. Species/Main.cpp's Finalise() also does `delete g_resource`,
   // and THAT is the one that actually executes, so the two together were a
   // latent double delete that only the unreachability of this destructor kept
   // from firing. Ownership is stated where it really lives rather than
@@ -370,13 +396,11 @@ bool App::LoadProfile()
     // Cheat username that opens all locations
     // aimed at beta testers who've completed the game already
 
-    if (g_globalWorld)
-    {
-      delete g_globalWorld;
-      g_globalWorld = nullptr;
-    }
+    m_globalWorld.reset();
+    g_globalWorld = nullptr;
 
-    g_globalWorld = new GlobalWorld();
+    m_globalWorld = std::make_unique<GlobalWorld>();
+    g_globalWorld = m_globalWorld.get();
     g_globalWorld->LoadGame("GameUnlockAll.txt");
     for (auto const& building : g_globalWorld->m_buildings)
     {
@@ -390,13 +414,11 @@ bool App::LoadProfile()
   }
   else
   {
-    if (g_globalWorld)
-    {
-      delete g_globalWorld;
-      g_globalWorld = nullptr;
-    }
+    m_globalWorld.reset();
+    g_globalWorld = nullptr;
 
-    g_globalWorld = new GlobalWorld();
+    m_globalWorld = std::make_unique<GlobalWorld>();
+    g_globalWorld = m_globalWorld.get();
     g_globalWorld->LoadGame(m_gameDataFile.c_str());
   }
 
