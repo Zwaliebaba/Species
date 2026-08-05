@@ -532,31 +532,37 @@ Real, currently true, and worth knowing before you trip over them:
   working looks like*. CI builds and runs the unit suite; it does not launch the
   client, and neither does any agent working on Linux. A change that compiles and
   passes 37 tests can still break the game on the first frame.
-- **The sound system draws from the simulation's random stream.**
-  `NeuronClient/SoundInstance.cpp` calls `speciesRandom()` twice — line 533 to
-  pick a sample from a group, line 1009 to pick an object id. That is the
-  deterministic lockstep RNG, the same sequence `Location::Advance` consumes,
-  and `CODING_STANDARDS.md#determinism` names the `speciesRandom()` call
-  sequence as load-bearing.
-  - The consequence is worse than it first reads. Whether those lines execute
-    depends on the sound path: how many object ids an instance holds, whether a
-    sample group is populated, whether the instance is playing at all. Two
-    clients that differ in sound configuration — or that fail to load the same
-    samples — draw a different NUMBER of values from the shared stream, and
-    every subsequent `speciesRandom()` in the simulation returns something
-    different on one machine than the other. That is a desync, and nothing in
-    the build or the test suite would show it.
-  - **Not investigated, not reproduced, and not fixed** — found by reading
-    while scoping `containers-replaced` T5 on 2026-08-02. It may already be
-    benign for reasons the code does not state (if these paths run identically
-    on every client regardless of settings, it costs nothing). Establishing
-    which is true is worth doing before multiplayer is trusted, and it is a
-    determinism question rather than a modernisation one.
-  - **It has an owning task now: `tasks/determinism.yaml` T3**, added on the
-    owner's decision of 2026-08-05 after this bullet sat unowned across three
-    batches. T3 is a SCOPING task — establish what it costs, change nothing —
-    and its deliverable is the answer written into that plan. `ownership` T8
-    converts `m_sounds` in the same file and is a different commit.
+- ~~**The sound system draws from the simulation's random stream.**~~
+  **Answered 2026-08-05 by `determinism` T3, and the premise was wrong.**
+  `NeuronClient/SoundInstance.cpp` does call `speciesRandom()` twice, and how
+  often those lines run **is** client-local — it varies with sound
+  preferences, with whether an audio device initialised at all, and with frame
+  rate. What this bullet got wrong is the stream. **`speciesRandom()` is not
+  the lockstep RNG.** The tree has two generators sharing no state: the LCG in
+  `NeuronCore/Random.cpp` behind `speciesRandom`/`frand`/`sfrand`, and the
+  Mersenne Twister in `NeuronCore/MathUtils.cpp` behind
+  `syncrand`/`syncfrand`, which that header labels "Network Syncronised
+  versions (only call inside Net-Safe code)". The simulation uses the second —
+  40+ GameLogic files, 58 calls in `Citizen.cpp` alone. Sound cannot perturb
+  it.
+  - **The hazard relocated rather than disappearing, and the replacement is
+    real.** Four GameLogic sites compute simulation state from the
+    *unsynchronised* generator: `Spider.cpp:354` and `Armour.cpp:253` pick a
+    neighbour and write `m_targetPos`/`m_wayPoint` from it, `ArmyAnt.cpp:185`
+    runs a rejection loop whose draw COUNT is unbounded, and
+    `Explosion.cpp:144` picks a debris tumbler. Entity positions and
+    velocities are what `GenerateSyncValue` sums, so the first two reach the
+    checksum. Any client-local consumer of that generator — sound, Eclipse's
+    four draws, `LandscapeRenderer`, `CameraAnimWindow` — shifts what they
+    compute.
+  - The fix is to move those four to `syncrand()`, which is what the header
+    already tells net-safe code to use. It changes the sequence on both
+    streams, so it is a deliberate behaviour change of `determinism` T1's
+    shape and needs its own node and its own smoke test. **It does not have
+    one yet.** The evidence is in T3's notes.
+  - Worth keeping as a method note: this bullet stood for three days and
+    through three batches because it was plausible and nobody read
+    `MathUtils.h`. The reading took an afternoon.
 - **`Spirit.cpp`'s hover clamp drew twice from the synchronised stream, and no
   longer does.** `Spirit::Advance` clamped `m_hover.y` through what used to be
   the `max` macro, which evaluated its second argument twice — and that argument

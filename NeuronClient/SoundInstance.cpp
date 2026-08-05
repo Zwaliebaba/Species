@@ -544,6 +544,12 @@ void SoundInstance::OpenStream(bool _keepCurrentStream)
       numSamples *= 0.25f;
     numSamples = std::max(numSamples, 1);
 
+    // speciesRandom() is the UNSYNCHRONISED generator, and this draw is
+    // allowed to be here. It is not syncrand()/syncfrand(), which MathUtils.h
+    // reserves for net-safe code and which the simulation uses; the two share
+    // no state. How often this line runs is client-local several times over
+    // (sound preferences, audio device, frame rate), which is exactly why it
+    // must not be on the synchronised stream. determinism/T3 has the reading.
     int sampleIndex = speciesRandom() % numSamples;
     sampleName = group->m_samples[sampleIndex];
   }
@@ -1032,6 +1038,8 @@ bool SoundInstance::ResolveAttachedObject()
 
         case MonophonicRandom:
         {
+          // Unsynchronised generator, deliberately — see the note at the
+          // OpenStream draw and determinism/T3.
           int index = speciesRandom() % static_cast<int>(m_objIds.size());
           m_objId = *m_objIds[index];
           break;
