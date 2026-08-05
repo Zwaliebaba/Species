@@ -451,7 +451,7 @@ tasks:
       Virii.cpp:336; unique_ptr frees at the same program point, which is what
       the intent above requires, but that has to be stated per site in the
       commit rather than assumed.
-    status: todo
+    status: in_progress
 
   - id: T5
     title: Adopt unique_ptr in Species outside App
