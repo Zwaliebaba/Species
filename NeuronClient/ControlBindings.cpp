@@ -35,9 +35,13 @@ namespace Neuron
 // the enumerator it declares at position i names the entry s_actions holds at
 // position i. Reorder, insert or delete a line in the .inc and every pair from
 // there on fails the build, naming the first one that drifted.
-#define DEF_CONTROL_TYPE(name, type)                                                              \
-  static_assert(std::string_view(s_actions[Neuron::I(ControlType::Control##name)].name) == #name, \
-                "ControlTypes.inc and s_actions have drifted apart at " #name);
+// The parameters are x and y, NOT name and type, and that is load-bearing: the
+// member being read below is also called `name`, so a parameter of that name is
+// substituted into `.name` and the assert reads a member that does not exist.
+// It cost a CI round.
+#define DEF_CONTROL_TYPE(x, y)                                                              \
+  static_assert(std::string_view(s_actions[Neuron::I(ControlType::Control##x)].name) == #x, \
+                "ControlTypes.inc and s_actions have drifted apart at " #x);
 #include "ControlTypes.inc"
 #undef DEF_CONTROL_TYPE
 

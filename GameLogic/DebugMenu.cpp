@@ -221,7 +221,10 @@ void DebugKeyBindings::DebugMenu()
   if (EclGetWindow(debugMenuWindowName))
     EclRemoveWindow(debugMenuWindowName);
   else
-    EclRegisterWindow(std::make_unique<::DebugMenu>(debugMenuWindowName));
+    // Species::DebugMenu, not ::DebugMenu: the leading :: was here to pick the
+    // CLASS over the enclosing DebugKeyBindings::DebugMenu method, and the
+    // class moved into the game namespace. namespace-migration T4.
+    EclRegisterWindow(std::make_unique<Species::DebugMenu>(debugMenuWindowName));
 }
 
 #ifdef PROFILER_ENABLED

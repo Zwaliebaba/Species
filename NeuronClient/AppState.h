@@ -17,12 +17,13 @@
 // This file already carried a `namespace Neuron { class Server; }` block for
 // NeuronServer's Server, which T3 qualified. namespace-migration T2 puts the
 // whole file in that namespace, so the block is gone and the forward
-// declaration is an ordinary one again.
-class Server;
-
-
+// declaration is an ordinary one again — INSIDE the wrapper, because that is
+// where Neuron::Server is. Outside it, it declares an unrelated ::Server and
+// every dereference of g_server fails on an incomplete type. It did.
 namespace Neuron
 {
+  class Server;
+
 enum
 {
   GameModeNone,

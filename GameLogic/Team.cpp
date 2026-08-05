@@ -652,6 +652,9 @@ void Team::RenderOthers(float _predictionTime)
   }
 }
 
+} // namespace Species
+
+
 // ****************************************************************************
 //  Class TeamControls
 // ****************************************************************************
@@ -660,6 +663,12 @@ void Team::RenderOthers(float _predictionTime)
 // protocol serialises them. Advance() stays here: filling the struct in means
 // polling the camera, the mouse and the input manager, which is client work and
 // has no place in the foundation.
+//
+// IT IS ALSO OUTSIDE THE GAME NAMESPACE, and has to be: TeamControls is one of
+// the NeuronCore types still at global scope, and C++ will not let a class's
+// member be defined in a namespace that does not enclose the class. Everything
+// this function names is Neuron's or DirectX's, so nothing here needs
+// qualifying. namespace-migration T4 learned it from CI.
 void TeamControls::Advance()
 {
   if (g_camera->IsInMode(CameraAccess::Mode::ModeBuildingFocus))
@@ -714,4 +723,3 @@ void TeamControls::Advance()
     g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondFireRocket);
   }
 }
-} // namespace Species
