@@ -60,7 +60,7 @@ InputParserState PipeInputDriver::parseInputSpecification(InputSpecTokens const&
   string s = "";
   std::unique_ptr<InputFilterWithArgs> filterWithArgs(new InputFilterWithArgs());
 
-  spec.type = INPUT_TYPE_BOOL;
+  spec.type = InputType::INPUT_TYPE_BOOL;
 
   // Get the last position of an arrow token
   unsigned arrowPos = -1;

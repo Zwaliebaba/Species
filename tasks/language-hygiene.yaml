@@ -673,7 +673,6 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: in_progress
     notes: |
       Split out of T9 on 2026-08-05. 216 use sites across 19 files.
 
@@ -756,6 +755,71 @@ tasks:
       literal in Win32EventHandler.cpp, which T1 correctly left alone. So
       deleting this file takes the sweep T1 started to a genuine zero, and
       that is worth saying in the commit that does it.
+
+      DONE 2026-08-05, in Batch 5, in three commits: the dead-file deletion,
+      a whole-file reformat, then the conversion. 217 qualified INPUT_TYPE_
+      sites across 18 files.
+
+      InputType is `enum class InputType : int`. int because that is what the
+      `typedef int inputtype_t` it was reached through has always been.
+
+      ENUM_HELPER IS USED, AND THIS IS ITS FIRST USE IN THE TREE -- the macro
+      has been carried in NeuronHelper.h, invoked by nothing, since it was
+      written. Only half of it means anything here, and the header now says so
+      at the invocation: a bit field with gaps has no business with
+      operator++, ItInputType, RangeInputType or SizeOfInputType(), and
+      RangeInputType would walk 0 to 15 where eleven of the sixteen values
+      name nothing. The bitwise operators are what the code needs and they are
+      what it gets.
+
+      inputtype_t IS NOW `using inputtype_t = InputType`, not int, and not
+      deleted. Twenty-five signatures and members spell it; every one of them
+      now carries the real type without a single edit, and renaming them is
+      not this task's business. InputSpec.h gained an include of InputTypes.h
+      to make that alias legal.
+
+      THE BIT RELATIONSHIPS ARE PINNED BY static_assert, not by the comment
+      the acceptance line would have settled for. Scoping the enum stops a
+      value being confused with a ControlType; it does nothing about someone
+      renumbering these, which is the actual way this breaks. Four asserts:
+      1D carries ANALOG's bit, 2D carries ANALOG's bit, ANY is a superset of
+      all of them, and FAIL is the zero value the tables terminate on.
+      isAcceptibleInputType still ORs INPUT_TYPE_1D into a BOOL binding, and
+      `int validTypes` beside it is `InputType validTypes` now, so the & and |
+      there are InputType's own operators.
+
+      NO C-STYLE CAST WAS ADDED ANYWHERE, and no integer boundary needed
+      listing -- which was not a foregone conclusion. Every operation on these
+      values across all 18 files turned out to be assignment, ==, !=, >, >=, &
+      or |, all of which a scoped enum with ENUM_HELPER serves directly. Two
+      sites needed more than qualification: `int validTypes` above, and
+      ControlBindings.cpp's `{0, 0}` table terminator, which is now
+      {nullptr, InputType::INPUT_TYPE_FAIL}.
+
+      THE HAND-ALIGNED TABLE IN ControlTypes.inc DID NOT SURVIVE, and that was
+      a deliberate choice rather than an oversight. 136 of its lines change
+      here, so the changed-lines format check reformats them; clang-format
+      collapses `DEF_CONTROL_TYPE( MenuLeft,    INPUT_TYPE_BOOL )` to
+      `DEF_CONTROL_TYPE(MenuLeft, InputType::INPUT_TYPE_BOOL)` and aligns the
+      trailing comments instead. `// clang-format off` would have preserved
+      the columns. It was rejected: THIS TREE HAS NO FORMATTING ESCAPE HATCH
+      ANYWHERE, deliberately -- the last hygiene-ok marker went in T12 -- and
+      introducing the first one to save a table's alignment is not a trade a
+      single task should make unasked. If the alignment is wanted back, that
+      is a decision about the .clang-format policy, not about this file.
+
+      The reformat is its own commit, per AGENTS.md, and it cost blame on
+      three files: ControlTypes.inc, InputDriverIdle.cpp and Movement2d.cpp.
+      Movement2d.cpp is the poor-value one -- 141 lines reformatted to land a
+      single converted line -- and it is recorded because the changed-lines
+      rule will keep producing that shape.
+
+      NOT COMPILED. No MSVC here. This is 217 sites in the input layer and
+      nothing in the unit suite touches any of it; the Garden smoke test would
+      exercise it at step 5, since nothing moves without the input drivers.
+      T11 is next in this plan and inherits ControlTypes.inc's first column.
+
+    status: done
 
   - id: T11
     title: Scope ControlType

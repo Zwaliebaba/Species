@@ -53,23 +53,23 @@ int InputFilterWithDelta::getDelta(filterspec_id_t id, InputDetails& delta) cons
     delta.x = details.x - oldDetails.x;
     delta.y = details.y - oldDetails.y;
   }
-  else if (details.type != INPUT_TYPE_FAIL && oldDetails.type == INPUT_TYPE_FAIL)
+  else if (details.type != InputType::INPUT_TYPE_FAIL && oldDetails.type == InputType::INPUT_TYPE_FAIL)
   {
     delta.type = details.type;
     delta.x = details.x;
     delta.y = details.y;
     return 1;
   }
-  else if (details.type == INPUT_TYPE_FAIL && oldDetails.type != INPUT_TYPE_FAIL)
+  else if (details.type == InputType::INPUT_TYPE_FAIL && oldDetails.type != InputType::INPUT_TYPE_FAIL)
   {
     delta.type = oldDetails.type;
     delta.x = -oldDetails.x;
     delta.y = -oldDetails.y;
     return -1;
   }
-  else if (details.type == INPUT_TYPE_FAIL && oldDetails.type == INPUT_TYPE_FAIL)
+  else if (details.type == InputType::INPUT_TYPE_FAIL && oldDetails.type == InputType::INPUT_TYPE_FAIL)
   {
-    delta.type = INPUT_TYPE_FAIL;
+    delta.type = InputType::INPUT_TYPE_FAIL;
     delta.x = delta.y = 0;
   }
   return 0;

@@ -5,8 +5,14 @@
 #include <memory>
 #include <iostream>
 
+#include "InputTypes.h"
+
 typedef int control_id_t;
-typedef int inputtype_t;
+// Names InputType rather than int since language-hygiene T10 scoped it. Kept
+// as an alias rather than swept away because it appears in twenty-five
+// signatures and members whose spelling is not this task's business; every one
+// of them now carries the real type.
+using inputtype_t = InputType;
 // Driver-defined, and it stays an int deliberately. Three drivers put three
 // unrelated things in InputSpec::condition: InputCondition's enumerators
 // (the default driver), the anonymous {COND_TRUE, COND_FALSE} enum in

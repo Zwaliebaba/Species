@@ -22,7 +22,7 @@ enum
 
 
 // Must be in the same order as the above enum
-static ControlAction s_controls[] = {"atleast", INPUT_TYPE_1D, "reaches", INPUT_TYPE_1D, "no", INPUT_TYPE_BOOL};
+static ControlAction s_controls[] = {"atleast", InputType::INPUT_TYPE_1D, "reaches", InputType::INPUT_TYPE_1D, "no", InputType::INPUT_TYPE_BOOL};
 
 
 IdleInputDriver::IdleInputDriver()
@@ -43,17 +43,17 @@ bool IdleInputDriver::getInput(InputSpec const& spec, InputDetails& details)
   switch (spec.control_id)
   {
   case IdleAtLeast:
-    details.type = INPUT_TYPE_1D;
+    details.type = InputType::INPUT_TYPE_1D;
     ans = details.x >= spec.condition;
     break;
 
   case IdleExactly:
-    details.type = INPUT_TYPE_1D;
+    details.type = InputType::INPUT_TYPE_1D;
     ans = (m_oldIdleTime < spec.condition && spec.condition < m_idleTime);
     break;
 
   case IdleReset:
-    details.type = INPUT_TYPE_BOOL;
+    details.type = InputType::INPUT_TYPE_BOOL;
     ans = (0 == m_idleTime);
     break;
 
@@ -111,11 +111,11 @@ inputtype_t IdleInputDriver::getControlType(control_id_t control_id) { return s_
 
 condition_t IdleInputDriver::getConditionID(std::string const& name, inputtype_t& type)
 {
-  if (INPUT_TYPE_BOOL == type)
+  if (InputType::INPUT_TYPE_BOOL == type)
   {
     return (stricmp(name.c_str(), "longer") == 0) ? 0 : -1;
   }
-  else if (INPUT_TYPE_1D == type)
+  else if (InputType::INPUT_TYPE_1D == type)
   {
     std::istringstream str(name);
     int num;

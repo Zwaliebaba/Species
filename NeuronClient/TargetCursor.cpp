@@ -73,7 +73,7 @@ void TargetCursor::Advance()
   InputDetails details;
   if ((g_inputManager->controlEvent(ControlTargetMove, details) ||
        (secondaryInputEnabled() && g_inputManager->controlEvent(ControlTargetMoveSecondary, details))) &&
-      INPUT_TYPE_2D == details.type)
+      InputType::INPUT_TYPE_2D == details.type)
   {
     m_velocity[AXIS_X] = details.x;
     m_velocity[AXIS_Y] = details.y;
@@ -86,7 +86,7 @@ void TargetCursor::Advance()
   else
     m_velocity[AXIS_X] = m_velocity[AXIS_Y] = 0;
 
-  if (g_inputManager->controlEvent(ControlTargetMoveZ, details) && INPUT_TYPE_1D == details.type)
+  if (g_inputManager->controlEvent(ControlTargetMoveZ, details) && InputType::INPUT_TYPE_1D == details.type)
   {
     m_velocity[AXIS_Z] = details.x;
     m_screenCoords[AXIS_Z] += m_velocity[AXIS_Z];

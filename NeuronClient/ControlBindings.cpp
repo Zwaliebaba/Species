@@ -16,7 +16,7 @@ static ControlAction s_actions[] = {
 #define DEF_CONTROL_TYPE(name, type) {#name, type},
 #include "ControlTypes.inc"
 #undef DEF_CONTROL_TYPE
-  {"", INPUT_TYPE_ANY}, {0, 0}};
+  {"", InputType::INPUT_TYPE_ANY}, {nullptr, InputType::INPUT_TYPE_FAIL}};
 
 
 ControlBindings::ControlBindings() { memset(suppressed, 0, NumControlTypes); }
@@ -48,9 +48,12 @@ bool ControlBindings::isAcceptibleInputType(controltype_t binding, inputtype_t t
 {
   if (0 <= binding && binding < NumControlTypes)
   {
-    int validTypes = s_actions[binding].type;
-    if ((validTypes & INPUT_TYPE_BOOL) == INPUT_TYPE_BOOL)
-      validTypes = validTypes | INPUT_TYPE_1D; // BOOL implies 1D (can use triggers)
+    // Typed rather than an int now, which is the whole point of the scoping:
+    // the & and | below are InputType's own operators, so nothing here can be
+    // silently mixed with a ControlType or a condition id.
+    InputType validTypes = s_actions[binding].type;
+    if ((validTypes & InputType::INPUT_TYPE_BOOL) == InputType::INPUT_TYPE_BOOL)
+      validTypes = validTypes | InputType::INPUT_TYPE_1D; // BOOL implies 1D (can use triggers)
     return (validTypes & type) == type;
   }
   return false;

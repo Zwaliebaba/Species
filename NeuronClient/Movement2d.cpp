@@ -100,7 +100,7 @@ AnalogMovement2D::AnalogMovement2D(ControlType _move, int _sensitivity)
 void AnalogMovement2D::Advance()
 {
   InputDetails details;
-  if (g_inputManager->controlEvent(move, details) && INPUT_TYPE_2D == details.type)
+  if (g_inputManager->controlEvent(move, details) && InputType::INPUT_TYPE_2D == details.type)
   {
     vX = details.x * sensitivity;
     vY = details.y * sensitivity;
