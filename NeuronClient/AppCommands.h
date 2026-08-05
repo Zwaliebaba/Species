@@ -23,7 +23,7 @@ class AppCommands
     virtual ~AppCommands() = default;
 
     // Construction is the one thing a pure-virtual seam cannot express, so
-    // these two are factories rather than ordinary interface members. The
+    // these are factories rather than ordinary interface members. The
     // preferences windows rebuild the renderer when the screen mode changes,
     // and the keybindings window rebuilds the task manager interface when the
     // control method changes; both windows live in GameLogic, and neither can
@@ -31,13 +31,26 @@ class AppCommands
     // to the objects goes through RendererAccess and
     // TaskManagerInterfaceAccess. See tasks/layering-inversion.yaml T12.
     //
-    // Neither installs what it returns. The call sites differ in what they do
-    // between destroying the old object and installing the new one — one of
-    // them destroys a window in between, another builds a renderer only to
-    // throw it away — so a Recreate() that owned the whole sequence would have
-    // to guess which order it was being asked for.
-    virtual RendererAccess* CreateRenderer() = 0;
-    virtual TaskManagerInterfaceAccess* CreateTaskManagerInterface() = 0;
+    // THESE USED TO RETURN THE OBJECT AND LEAVE THE CALLER TO INSTALL IT, and
+    // ownership T6 changed that: App owns both, so a caller that did
+    // `delete g_renderer` was destroying something App held a unique_ptr to.
+    // They install what they build, and the matching destroy is a call here
+    // too. g_renderer and g_taskManagerInterface are observers now.
+    //
+    // THE RENDERER KEEPS TWO CALLS RATHER THAN ONE, deliberately, and the
+    // reason is the same one that argued against a Recreate() before
+    // ownership moved: its call sites differ in what they do between
+    // destroying the old object and building the new one. One destroys a
+    // window in between; one builds a renderer only to throw it away. A
+    // single Replace() would have to guess which sequence it was being asked
+    // for. The task manager interface has no such gap at either of its call
+    // sites, so it gets the single call.
+    //
+    // CreateRenderer also Initialise()s what it builds, because all three call
+    // sites did that on the next line and none of them can use it before.
+    virtual void DestroyRenderer() = 0;
+    virtual void CreateRenderer() = 0;
+    virtual void ReplaceTaskManagerInterface() = 0;
 
     virtual void SetProfileName(char const* _profileName) = 0;
     virtual bool LoadProfile() = 0;

@@ -52,14 +52,14 @@ InputParserState InvertInputDriver::parseInputSpecification(InputSpecTokens cons
     InputParserState state = g_inputManager->parseInputSpecTokens(*newtokens, invspec, lastError);
     if (PARSE_SUCCESS(state))
     {
-      if (invspec.type != INPUT_TYPE_BOOL)
+      if (invspec.type != InputType::INPUT_TYPE_BOOL)
       {
         static string complexErr = "Complex input types cannot be negated.";
         lastError = complexErr;
         return InputParserState::STATE_CONJ_ERROR; // This check may be too restrictive
       }
       m_specs.push_back(std::make_unique<const InputSpec>(invspec));
-      spec.type = INPUT_TYPE_BOOL;
+      spec.type = InputType::INPUT_TYPE_BOOL;
       spec.control_id = m_specs.size() - 1;
       return InputParserState::STATE_DONE;
     }

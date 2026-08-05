@@ -29,25 +29,6 @@ namespace Neuron
     return _index >= 0 && _index < static_cast<int>(_vector.size());
   }
 
-  // Transitional, exactly as SlotMap::EmptyAndDelete is: for callers that have
-  // moved off the legacy lists but still hold raw owning pointers. Ownership
-  // conversion is migration stage 5 (tasks/ownership.yaml), and every use of
-  // this should disappear there when the element type becomes unique_ptr.
-  //
-  // Note the form. The legacy EmptyAndDelete was plain `delete` and the legacy
-  // EmptyAndDeleteArray was `delete[]`, and picking the wrong one is undefined
-  // behaviour that nothing diagnoses. This is the `delete` flavour, so it is
-  // correct only for elements allocated with `new`. Elements from `new[]`,
-  // strdup or malloc need their own loop with the matching form — there is at
-  // least one of each in this tree, and one of them was calling the wrong one
-  // long before the conversion started.
-  template <typename T> inline void EmptyAndDelete(std::vector<T*>& _vector)
-  {
-    for (T* element : _vector)
-      delete element;
-    _vector.clear();
-  }
-
   // Copies into a fixed char array, truncating rather than overrunning.
   //
   // Transitional, like EmptyAndDelete above. It exists for fields that cannot

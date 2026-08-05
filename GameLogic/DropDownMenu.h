@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <type_traits>
 
 
 #include <limits.h>
@@ -45,6 +47,9 @@ class DropDownMenu : public SpeciesButton
     std::vector<std::unique_ptr<DropDownOptionData>> m_options;
     int m_currentOption;
     int* m_int;
+    // Set by RegisterEnum instead of m_int. Exactly one of the two is ever
+    // non-empty; SelectOption writes through whichever it has.
+    std::function<void(int)> m_writeBack;
     bool m_sortItems;
     int m_nextValue; // Used by AddOption if a value isn't passed in as an argument
 
@@ -64,6 +69,23 @@ class DropDownMenu : public SpeciesButton
     bool IsMenuVisible();
 
     void RegisterInt(int* _int);
+
+    // Binds a scoped-enum variable, which cannot be reached through an int*.
+    // The menu still deals in the enumerators' underlying values, so the
+    // options' values have to be the enumerators -- AddOption's default
+    // numbering does that when the options are added in declaration order.
+    //
+    // Added by language-hygiene T13 for CamAnimNode::Transition. Every other
+    // caller here still binds a genuine int, and several of those ints are
+    // enums that later tasks in that plan will scope; this is the hook they
+    // will need.
+    template <typename E>
+      requires std::is_enum_v<E>
+    void RegisterEnum(E* _enum)
+    {
+      m_writeBack = [_enum](int _value) { *_enum = static_cast<E>(_value); };
+      SelectOption(static_cast<std::underlying_type_t<E>>(*_enum));
+    }
 
     int FindValue(int _value); // Returns an index into m_options
 

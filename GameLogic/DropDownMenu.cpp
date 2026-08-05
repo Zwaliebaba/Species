@@ -140,8 +140,13 @@ void DropDownMenu::SelectOption(int _value)
     SetCaption(m_options[m_currentOption]->m_word);
   }
 
-  if (m_int && _value != -1)
-    *m_int = _value;
+  if (_value != -1)
+  {
+    if (m_int)
+      *m_int = _value;
+    else if (m_writeBack)
+      m_writeBack(_value);
+  }
 }
 
 

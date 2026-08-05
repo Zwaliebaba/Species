@@ -26,7 +26,7 @@ InputParserState ConjoinInputDriver::parseInputSpecification(InputSpecTokens con
   bool haveComplexInput = false;
   bool hasParts = false;
 
-  spec.type = INPUT_TYPE_BOOL;
+  spec.type = InputType::INPUT_TYPE_BOOL;
 
   for (int i = 0; i <= tokens.length(); ++i)
   {
@@ -38,11 +38,11 @@ InputParserState ConjoinInputDriver::parseInputSpecification(InputSpecTokens con
         return InputParserState::STATE_ERROR; // Not a conjunction
       hasParts = true;
       InputSpec partspec;
-      partspec.type = INPUT_TYPE_BOOL;
+      partspec.type = InputType::INPUT_TYPE_BOOL;
       InputParserState pState = g_inputManager->parseInputSpecString(s, partspec, lastError);
       if (PARSE_SUCCESS(pState))
       {
-        if (partspec.type > INPUT_TYPE_BOOL)
+        if (partspec.type > InputType::INPUT_TYPE_BOOL)
         {
           if (haveComplexInput)
           {
@@ -84,7 +84,7 @@ bool ConjoinInputDriver::getInput(InputSpec const& spec, InputDetails& details)
       InputDetails d;
       if (g_inputManager->checkInput(**i, d))
       {
-        if (!detailsSet || d.type > INPUT_TYPE_BOOL)
+        if (!detailsSet || d.type > InputType::INPUT_TYPE_BOOL)
         { // This is our actual return value
           details.type = d.type;
           details.x = d.x;
@@ -116,7 +116,7 @@ bool ConjoinInputDriver::getInputDescription(InputSpec const& spec, InputDescrip
   if (0 <= spec.control_id && spec.control_id < m_specs.size())
   {
     bool descSet = false;
-    inputtype_t curr_type = INPUT_TYPE_BOOL;
+    inputtype_t curr_type = InputType::INPUT_TYPE_BOOL;
     const InputSpecList& specs = *(m_specs[spec.control_id]);
 
     for (InputSpecIt i = specs.begin(); i != specs.end(); ++i)

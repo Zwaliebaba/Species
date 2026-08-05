@@ -26,7 +26,7 @@ InputParserState AliasInputDriver::parseInputSpecification(InputSpecTokens const
     return state;
   }
 
-  spec.type = INPUT_TYPE_BOOL;
+  spec.type = InputType::INPUT_TYPE_BOOL;
 
   return (idx < tokens.length()) ? InputParserState::STATE_OVERSTEP : InputParserState::STATE_DONE;
 }

@@ -139,26 +139,18 @@ using namespace Neuron;
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#define SAFE_FREE(x) \
-  {                  \
-    free(x);         \
-    x = nullptr;     \
-  }
-#define SAFE_DELETE(x) \
-  {                    \
-    delete x;          \
-    x = nullptr;       \
-  }
+// The delete-and-null macros for single objects and for free() are GONE,
+// retired by ownership T7 on 2026-08-05 with migration stage 5. Raw owning
+// pointers are unique_ptr and values now; if you are reaching for a macro that
+// deletes something and nulls it, what you want is an owner that does it for
+// you. The COM-style release macro went with them and had no callers at all.
+//
+// The ARRAY form below SURVIVES because it still has two callers, both in
+// NeuronClient/Shape.cpp, on char arrays that predate this migration. It is
+// not named by T7's acceptance and NO TASK OWNS IT. It is the last of the
+// family, and the reason the acceptance grep is worded for whole words.
 #define SAFE_DELETE_ARRAY(x) \
   {                          \
     delete[] x;              \
     x = nullptr;             \
-  }
-#define SAFE_RELEASE(x) \
-  {                     \
-    if (x)              \
-    {                   \
-      (x)->Release();   \
-      x = nullptr;      \
-    }                   \
   }

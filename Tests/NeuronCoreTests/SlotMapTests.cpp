@@ -10,8 +10,8 @@ namespace NeuronCoreTests
 {
   namespace
   {
-    // Counts destructions, so the tests can show EmptyAndDelete owns the
-    // pointees.
+    // Counts destructions, so the tests can show a slot map owns what it
+    // holds and frees it at the right moment.
     struct Probe
     {
         static inline int sm_destroyed = 0;
@@ -207,9 +207,9 @@ namespace NeuronCoreTests
         Assert::AreEqual(4, *map[reused]);
       }
 
-      // Owning slots free their contents when the map does, with no
-      // EmptyAndDelete in sight — that method does not compile for a
-      // unique_ptr element and is not needed.
+      // Owning slots free their contents when the map does, with nothing
+      // asked of the caller. This is what replaced the transitional
+      // EmptyAndDelete helper that ownership T7 deleted.
       TEST_METHOD(AMoveOnlyValueIsFreedWhenItsSlotIsReused)
       {
         Neuron::SlotMap<std::unique_ptr<Probe>> map;
@@ -223,17 +223,5 @@ namespace NeuronCoreTests
         Assert::AreEqual(1, Probe::sm_destroyed, L"overwriting a slot must free what it held");
       }
 
-      TEST_METHOD(EmptyAndDeleteDeletesThePointees)
-      {
-        Probe::sm_destroyed = 0;
-
-        Neuron::SlotMap<Probe*> slots;
-        slots.PutData(new Probe());
-        slots.PutData(new Probe());
-        slots.EmptyAndDelete();
-
-        Assert::AreEqual(2, Probe::sm_destroyed);
-        Assert::AreEqual(0, slots.Size());
-      }
   };
 } // namespace NeuronCoreTests

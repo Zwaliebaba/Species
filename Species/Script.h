@@ -76,8 +76,6 @@ public:
     bool        m_permitEscape;
 
 protected:
-	void ReportError(LevelFile const *_levelFile, char *_fmt, ...);
-
 	void RunCommand_CamCut			    (char const *_mountName);
 	void RunCommand_CamMove			    (char const *_mountName, float _duration);
 	void RunCommand_CamAnim			    (char const *_animName);

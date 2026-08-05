@@ -520,7 +520,7 @@ float MineBuilding::RefinerySpeed()
       s_refineryPopulation = 0.0f;
 
       GlobalBuilding* globalRefinery = nullptr;
-      for (GlobalBuilding* gb : g_globalWorld->m_buildings)
+      for (auto const& gb : g_globalWorld->m_buildings)
       {
         if (gb && gb->m_locationId == mineLocationId && gb->m_type == TypeRefinery && gb->m_online)
         {

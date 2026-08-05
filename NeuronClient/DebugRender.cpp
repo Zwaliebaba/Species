@@ -1,7 +1,6 @@
 #include "pch.h"
 
 #include <math.h>
-#include <stdarg.h>
 
 #include "MathUtils.h"
 #include "SphereRenderer.h"
@@ -296,16 +295,15 @@ void RenderArrow(DirectX::XMFLOAT3 const& start, DirectX::XMFLOAT3 const& end, f
 }
 
 
-void RenderPointMarker(DirectX::XMFLOAT3 const& point, char const* _fmt, ...)
+void RenderPointMarker(DirectX::XMFLOAT3 const& point, char const* _text)
 {
-  char buf[512];
-  va_list ap;
-  va_start(ap, _fmt);
-  vsprintf(buf, _fmt, ap);
-
   DirectX::XMFLOAT3 const end(point.x + 20.0f, point.y + 20.0f, point.z + 20.0f);
   RenderArrow(end, point, 2.0f);
-  g_editorFont.DrawText3DCentre(end, 3.0f, buf);
+  // "%s" rather than passing _text as the format. DrawText3DCentre is itself
+  // variadic until strings-modernised T12 converts it, and the old code fed it
+  // a buffer that vsprintf had already expanded -- so a label containing a
+  // percent sign was interpreted twice. This stops that.
+  g_editorFont.DrawText3DCentre(end, 3.0f, "%s", _text);
 }
 
 

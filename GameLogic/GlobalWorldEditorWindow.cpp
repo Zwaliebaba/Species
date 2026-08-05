@@ -68,7 +68,7 @@ class NewLocationButton : public SpeciesButton
       //
       // Create new global location
 
-      GlobalLocation* loc = new GlobalLocation();
+      auto loc = std::make_unique<GlobalLocation>();
       loc->m_mapFilename = std::format("Map{}.txt", s_locationName);
       loc->m_missionFilename = std::format("Mission{}.txt", s_locationName);
       StrToLower(loc->m_mapFilename.data());
@@ -76,7 +76,7 @@ class NewLocationButton : public SpeciesButton
       loc->m_name = s_locationName;
       loc->m_available = true;
       loc->m_pos = DirectX::XMFLOAT3(-96.25f, -274.02f, 75.16f);
-      g_globalWorld->AddLocation(loc);
+      g_globalWorld->AddLocation(std::move(loc));
 
       //
       // Save game.txt and locations.txt

@@ -20,16 +20,16 @@ struct ConditionInfo
 // that costs, which is a defect this task recorded rather than fixed.
 static ConditionInfo s_conditions[] = {
   // Type            Name        Condition
-  {INPUT_TYPE_BOOL, "down", InputCondition::COND_DOWN},       // Button was just pushed down
-  {INPUT_TYPE_BOOL, "up", InputCondition::COND_UP},           // Button was just released
-  {INPUT_TYPE_BOOL, "pressed", InputCondition::COND_PRESSED}, // Button is still pressed
+  {InputType::INPUT_TYPE_BOOL, "down", InputCondition::COND_DOWN},       // Button was just pushed down
+  {InputType::INPUT_TYPE_BOOL, "up", InputCondition::COND_UP},           // Button was just released
+  {InputType::INPUT_TYPE_BOOL, "pressed", InputCondition::COND_PRESSED}, // Button is still pressed
   //	INPUT_TYPE_BOOL,   "action",   COND_ACTION,   // Something happened (as in "key any action")
-  {INPUT_TYPE_ANALOG, "release", InputCondition::COND_RELEASED}, // Analog just entered dead zone
-  {INPUT_TYPE_ANALOG, "position", InputCondition::COND_NONZERO}, // Analog is outside dead zone (return position)
-  {INPUT_TYPE_ANALOG, "move", InputCondition::COND_MOVED},       // Analog is outside dead zone (return delta)
-  {INPUT_TYPE_ANALOG, "zero", InputCondition::COND_ZERO},        // Analog is still in dead zone
-  {INPUT_TYPE_ANALOG, "read", InputCondition::COND_READ},        // Analog always triggers (return default device info)
-  {INPUT_TYPE_FAIL, nullptr, InputCondition::COND_DOWN}};
+  {InputType::INPUT_TYPE_ANALOG, "release", InputCondition::COND_RELEASED}, // Analog just entered dead zone
+  {InputType::INPUT_TYPE_ANALOG, "position", InputCondition::COND_NONZERO}, // Analog is outside dead zone (return position)
+  {InputType::INPUT_TYPE_ANALOG, "move", InputCondition::COND_MOVED},       // Analog is outside dead zone (return delta)
+  {InputType::INPUT_TYPE_ANALOG, "zero", InputCondition::COND_ZERO},        // Analog is still in dead zone
+  {InputType::INPUT_TYPE_ANALOG, "read", InputCondition::COND_READ},        // Analog always triggers (return default device info)
+  {InputType::INPUT_TYPE_FAIL, nullptr, InputCondition::COND_DOWN}};
 
 condition_t InputDriver::getDefaultConditionID(std::string const& name, inputtype_t& type)
 {

@@ -150,7 +150,7 @@ bool InputManager::controlEventA(ControlType type, InputDetails& details)
         return true;
   }
 
-  details.type = INPUT_TYPE_FAIL;
+  details.type = InputType::INPUT_TYPE_FAIL;
   return false;
 }
 
@@ -218,7 +218,7 @@ bool InputManager::checkInput(InputSpec const& spec, InputDetails& details)
   InputDriver* driver = drivers[spec.driver];
   bool ans = driver->getInput(spec, details);
   if (!ans)
-    details.type = INPUT_TYPE_FAIL;
+    details.type = InputType::INPUT_TYPE_FAIL;
   return ans;
 }
 

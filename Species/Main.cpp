@@ -651,8 +651,7 @@ void SwitchTaskManagerForX360Controller()
     // user has just switched to the game pad
     if (g_prefsManager->GetInt("ControlMethod") == 0)
     {
-      delete g_taskManagerInterface;
-      g_taskManagerInterface = new TaskManagerInterfaceIcons();
+      g_appCommands->ReplaceTaskManagerInterface();
     }
     oldControlType = InputMode::INPUT_MODE_GAMEPAD;
   }

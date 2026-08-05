@@ -27,7 +27,7 @@ InputParserState ChordInputDriver::parseInputSpecification(InputSpecTokens const
   vector<string> strings;
   bool hasParts = false;
 
-  spec.type = INPUT_TYPE_BOOL;
+  spec.type = InputType::INPUT_TYPE_BOOL;
 
   for (unsigned i = 0; i <= tokens.length(); ++i)
   {
@@ -56,12 +56,12 @@ InputParserState ChordInputDriver::parseInputSpecification(InputSpecTokens const
     }
 
     InputSpec partspec;
-    partspec.type = INPUT_TYPE_BOOL;
+    partspec.type = InputType::INPUT_TYPE_BOOL;
 
     InputParserState pState = g_inputManager->parseInputSpecString(s, partspec, lastError);
     if (PARSE_SUCCESS(pState))
     {
-      if (partspec.type > INPUT_TYPE_BOOL)
+      if (partspec.type > InputType::INPUT_TYPE_BOOL)
       {
         static string repError = "Complex inputs are not allowed in chords.";
         lastError = repError;

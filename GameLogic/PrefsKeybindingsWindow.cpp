@@ -138,8 +138,7 @@ class ApplyKeybindingsButton : public SpeciesButton
       g_prefsManager->SetInt(CONTROL_MOUSEBUTTONS, parent->m_numMouseButtons);
       g_prefsManager->SetInt(CONTROL_METHOD, parent->m_controlMethod);
 
-      delete g_taskManagerInterface;
-      g_taskManagerInterface = g_appCommands->CreateTaskManagerInterface();
+      g_appCommands->ReplaceTaskManagerInterface();
 
 
       /*W32EventHandler *w = getW32EventHandler();

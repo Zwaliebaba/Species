@@ -90,7 +90,7 @@ allowlist stood at 628 when this phase ended and is **gone** —
 `tasks/Archive/layering-inversion.yaml` took it to zero and deleted it.
 
 > **Note:** the game runs again — first at `7ee8c00` (2026-08-02), most
-> recently at `1af4979` (2026-08-05). That is recorded here because
+> recently at `acf283b` (2026-08-05), all seven steps. That is recorded here because
 > this file is where it gets recorded — see *What working looks like*. It does
 > not lower the bar for a change: a successful compile is still not evidence that
 > anything works, and most agents cannot launch the client at all. Report what
@@ -178,28 +178,56 @@ upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 
 ## Ownership
 
-Migration stage 5 — raw owning pointers become `std::unique_ptr` and values —
-is nearly done, and what is left is worth knowing because two greps that used
-to be noisy are now almost silent.
+**Migration stage 5 is COMPLETE.** `tasks/Archive/ownership.yaml` is the plan;
+all eleven of its tasks are done, finishing 2026-08-05. Raw owning pointers
+are `std::unique_ptr` and values, and all three legacy greps are at zero:
+`EmptyAndDelete`, `SAFE_FREE` and `SAFE_DELETE` no longer exist anywhere,
+definitions included.
+
+**Raw ownership is not extinct, and stage 5 ending does not claim it is.**
+Four things outlived the plan's scope, and NONE has an owning task:
 
 ```
-EmptyAndDelete   ZERO call sites. Only the two transitional definitions
-                 remain, in NeuronCore/SlotMap.h and NeuronCore/VectorUtils.h,
-                 and both are now dead code.
-SAFE_FREE        ZERO call sites. Gone with ShapeMarker's names.
-SAFE_DELETE      17, all in Species/App.cpp, plus the definition in
-                 NeuronCore.h. That is ownership T6 and then T7.
+SAFE_DELETE_ARRAY   2 callers in NeuronClient/Shape.cpp. The last of the
+                    macro family; T7's acceptance named only the other two.
+GlobalEventCondition::m_stringId / m_cutScene
+                    char* via NewStr/delete[]. Converting them is stage-4
+                    string work that reaches the level-file writer, where
+                    byte-identity is strings-modernised's proof to make.
+ColourShapeFragment new RGBAColour[1] into a ShapeFragment — Shape's
+                    ownership, in NeuronClient.
+Resource::ListResources
+                    returns std::vector<char*>* — an owning vector of owning
+                    char*, freed by every caller by hand.
 ```
 
-**`App.cpp` is the whole of what is left of the macro**, and it is deliberately
-last: it constructs and tears down the entire subsystem graph, and subsystems
-reach each other during teardown, so construction and destruction ORDER is
-load-bearing. `ownership` T6 does it in small commits, each one owner-verified
-to reach the main menu. T7 then deletes the macros, and the two transitional
-`EmptyAndDelete` helpers can go with them — they have no users left.
+**T6 was the last hard one, and two things it found are worth carrying:**
 
-Two rules that came out of doing the rest of it, both learned the expensive
-way:
+- **`~App()` NEVER RUNS.** `Species/Main.cpp` calls `Finalise()` and then
+  `exit(0)`, which does not unwind the stack, and nothing anywhere deletes
+  `g_app`. All seventeen `SAFE_DELETE`s were unreached code, and this file
+  used to say the opposite — that subsystems reach each other during teardown
+  and destruction order is load-bearing. **There is no teardown.** The order
+  was preserved anyway, because it costs two lines and becomes true the day
+  someone deletes `g_app`. But if you are reasoning about App's lifetime,
+  start from the fact that it has no end.
+- **The real risk was ownership that was already shared.** `g_renderer` and
+  `g_taskManagerInterface` are deleted and rebuilt at RUNTIME from GameLogic
+  and `Main.cpp` — on a resolution change and a gamepad switch, paths that
+  really execute. Taking `unique_ptr` ownership without touching those would
+  have left App holding a freed pointer. Replacement now routes through
+  `AppCommands`, whose factories install what they build. **Before converting
+  a member, grep for who else deletes or reassigns it, not just who reads
+  it.**
+
+**Converting ownership turns silent hazards into build errors, and that is the
+point.** T6's one CI failure was `can't delete an incomplete type` on
+`AttractMode` — a type with no header anywhere in the tree, guarded by an
+`ATTRACTMODE_ENABLED` that is defined nowhere. A raw pointer member had hidden
+that for years; a `unique_ptr` member could not.
+
+Two more rules that came out of doing the rest of it, both learned the
+expensive way:
 
 - **A task's file list is written from where ownership LIVES; the work is
   wherever the member is NAMED.** `ownership` T5 declared eight files and
@@ -354,17 +382,42 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**POST-MIGRATION BASELINE: `1af4979` (2026-08-05), owner-reported successful,
+**CURRENT BASELINE: `acf283b` (2026-08-05), owner-reported, ALL SEVEN STEPS
+PASS.** This is the most recent run, the most recent run with an explicit
+per-step breakdown, and the build any future divergence is measured against.
+
+It closes `determinism` T6 and with it that whole plan, 6 of 6 —
+`tasks/Archive/determinism.yaml`. It was run on the Batch 5 branch rather than
+on `main`, which is more than the gate asked for: **it is also the first
+running-game evidence for Batch 5's four tasks** — `ownership` T11,
+`language-hygiene` T10 and T13, `strings` T18 — which until then had only ever
+been checked by CI. Steps 2, 5 and 6 are the ones that would have caught a
+mistake in them.
+
+**THE SIMULATION MOVED, AND THIS IS WHERE IT MOVED TO.** `determinism` T5
+postdates the `1af4979` baseline below and changes the `syncrand` call
+sequence, so the sync value this build produces is NOT the one `1af4979`
+produced. A client from before T5 desyncs against one after it. That cost was
+accepted on T1 and T5 and is now confirmed against a running game rather than
+assumed.
+
+What the run does **not** cover: three of T5's six fixed sites — Spam, GodDish
+and Library — are not in The Garden and remain unexercised. Laser fences and
+incubators are, and `LaserFence.cpp:66` was the one outright desync of the six.
+It also does **not** discharge `ownership` T6, which has not been started and
+needs the main menu reached after each of its own commits.
+
+**Previous baseline: `1af4979` (2026-08-05), owner-reported successful,
 on the WRAPPER-FREE build.** This is the run `directxmath-migration` T27 was
 waiting on, and it closes that plan: `Vector2`, `Vector3`, `Matrix33` and
 `Matrix34` are deleted, there is no conversion seam, and every math value in
 the tree is a DirectXMath type. `bb4a110` sits on top of it and is
 documentation only, so the binary is `1af4979`'s tree.
 
-**This run is the new baseline for the simulation.** From here the sync value
-is whatever native math produces, and any future divergence is measured
-against this build rather than against anything before it. A build from before
-the migration does not agree with this one, and is not supposed to.
+**This was the baseline until `acf283b` above.** It is the run that established
+that the sync value is whatever native math produces; a build from before the
+migration does not agree with it, and is not supposed to. It stopped being the
+measuring stick when `determinism` T5 shifted the RNG sequence on top of it.
 
 Why the run was needed when CI was green: T25 deleted the seam, which changed
 how every converted call site resolves its types, and three of this migration's
@@ -486,11 +539,20 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-Six plans are complete and in `tasks/Archive/`. **Five are open with sixteen
-tasks between them** — `strings-modernised` (6), `language-hygiene` (3),
-`namespace-migration` (3), `ownership` (3) and `determinism` (1).
-Two of those sixteen are owner-run smoke tests rather than agent work:
-`determinism` T6, and `ownership` T6 needs one after each of its commits.
+**Eight plans are complete and in `tasks/Archive/`** — `determinism` and
+`ownership` both joined them on 2026-08-05. **Three are open with nine tasks
+between them** — `strings-modernised` (5), `namespace-migration` (3) and
+`language-hygiene` (1).
+
+**Nothing is gated on the owner, and migration stage 5 is finished.** Every
+open task is startable by an agent today.
+
+**But T6 is the one to be sceptical about.** Its acceptance asked for the game
+to reach the main menu after each of its four commits, and that check was NOT
+performed; CI compiled them and nothing more. See its notes for what a smoke
+test can and cannot say about it — the destructor it rewrote is unreachable
+code, and the two runtime paths it did change need a resolution change and a
+gamepad switch to reach, neither of which is a Garden step.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:
@@ -567,12 +629,16 @@ warrants a question first.
 Real, currently true, and worth knowing before you trip over them:
 
 - **The game runs, and almost nothing here proves your change kept it that
-  way.** The most recent owner-reported successful run is `1af4979`
-  (2026-08-05); the last run with an explicit all-seven-steps breakdown is
-  `b0bde71` — see *What working looks like*. CI builds and runs the unit suite;
-  it does not launch the client, and neither does any agent working on Linux. A
-  change that compiles and passes 185 tests can still break the game on the
-  first frame.
+  way.** The most recent owner-reported successful run is `acf283b`
+  (2026-08-05), and it is also the most recent with an explicit
+  all-seven-steps breakdown — see *What working looks like*. CI builds and runs
+  the unit suite; it does not launch the client, and neither does any agent
+  working on Linux. A change that compiles and passes 184 tests can still break
+  the game on the first frame.
+  - Batch 5 is the standing example in both directions. Four tasks went in on
+    CI evidence alone; CI then caught two real compile errors a name-keyed
+    sweep had missed, and the owner's run afterwards is the only thing that
+    says the tree still plays. Neither check substitutes for the other.
 - **THERE ARE TWO RANDOM STREAMS, AND THE DOCUMENTATION SAID THERE WAS ONE.**
   This is the correction that retired the two determinism bullets that used to
   stand here, and it is the thing to know before reading any RNG call in this
@@ -605,9 +671,14 @@ Real, currently true, and worth knowing before you trip over them:
     there the position of every SpamInfection in `m_effects`).
   - **The RNG sequence changed with that fix**, so a client carrying it
     desyncs against one without — the same cost `determinism.yaml` T1 accepted
-    and for the same reason. **`determinism.yaml` T6 is the owner-run Garden
-    smoke test that confirms it, and it is open.** Until it closes, T5 is
-    landed but unverified against a running game.
+    and for the same reason. **T6 confirmed it against a running game on
+    2026-08-05 at `acf283b`, all seven steps, and that closed the plan** —
+    `tasks/Archive/determinism.yaml`. The shifted sequence is why `acf283b`
+    rather than `1af4979` is now the simulation baseline.
+    - **Three of the six sites are still unexercised.** `Spam.cpp`,
+      `GodDish` and `Library` do not appear in The Garden, so that run says
+      nothing about them; they will first be seen on a level that has them.
+      Laser fences and incubators were in front of the owner.
   - **Nobody has swept the remaining LCG sites.** 186 of them were classified
     far enough to find the six; a site-by-site record of which feed simulation
     state does not exist and has no owning task.
@@ -650,8 +721,11 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **185** tests at `a676611`
-  (2026-08-05), covering IP conversion,
+- **The test suite is thin.** Four projects, **184** tests as of `ownership`
+  T7 (2026-08-05) — one FEWER than before, which is rare here and is why it is
+  spelled out: T7 deleted the transitional `SlotMap::EmptyAndDelete` helper,
+  and the single test that existed to characterise it went with it. The rest
+  cover IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
@@ -726,4 +800,9 @@ Real, currently true, and worth knowing before you trip over them:
   carries a third-party notice that must never be stripped, including when moved
   or modernised — `NeuronCore/MathUtils.cpp`, under BSD 3-clause. This bullet
   said three; `LICENSE` has listed one since `AutoVector.h` and `TriTri.cpp`
-  were deleted, notices included, and it explains why each row went.
+  were deleted, notices included. `LICENSE` used to carry two paragraphs
+  explaining why each of those rows went; the owner removed them on 2026-08-05,
+  so that table now describes what the repository contains and nothing more.
+  The reasoning survives in git history and in `containers-replaced` T16 and
+  `directxmath-migration` T4. Neither file is in the tree, and nothing of
+  either author's is shipped stripped of its terms.

@@ -361,7 +361,7 @@ void TrunkPort::ReprogramComplete()
     location->m_available = true;
 
     // Look for a "receiver" trunk port and set that to the same state
-    for (GlobalBuilding* building : g_globalWorld->m_buildings)
+    for (auto const& building : g_globalWorld->m_buildings)
     {
       if (building->m_type == Building::TypeTrunkPort && building->m_locationId == m_targetLocationId && building->m_link == g_locationId)
       {

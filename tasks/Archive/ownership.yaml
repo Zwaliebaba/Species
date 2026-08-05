@@ -624,7 +624,94 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    notes: |
+      DONE 2026-08-05, in four commits: a whole-file reformat of App.h, then
+      App's own members, then the two externally-replaced subsystems, then the
+      remaining nine. All seventeen macro calls are gone and the acceptance
+      grep over App.cpp and App.h returns nothing.
+
+      TWO FINDINGS CHANGED WHAT THIS TASK WAS. Read them before trusting the
+      intent above, which was written from the SAFE_DELETE list rather than
+      from the code around it.
+
+      1. ~App() NEVER RUNS. Species/Main.cpp calls Finalise() and then exit(0),
+         which does not unwind the stack, and NOTHING ANYWHERE DELETES g_app.
+         All seventeen SAFE_DELETEs were unreached code. This task's intent
+         says subsystems reach each other during teardown and that destruction
+         ORDER is load-bearing -- it describes a teardown that does not happen.
+         The order was preserved anyway, byte for byte, because it costs two
+         lines and becomes true the day someone deletes g_app. But the real
+         risk in this task was never teardown; it was the runtime replacement
+         paths below.
+
+      2. m_resource WAS A LATENT DOUBLE DELETE. ~App destroyed it and
+         Main.cpp's Finalise() also does `delete g_resource`. Only finding 1
+         kept both from firing. App does not own it, and the destructor now
+         says where ownership really is. That is a behaviour change, in
+         unreachable code, and it is the only one in this task.
+
+      THE HARD PART WAS OWNERSHIP THAT WAS ALREADY SHARED. Two subsystems are
+      deleted and rebuilt at RUNTIME from outside App, on paths that really do
+      execute:
+
+        g_renderer              MainMenus.cpp (resolution change),
+                                PrefsScreenWindow.cpp x3
+        g_taskManagerInterface  PrefsKeybindingsWindow.cpp (gamepad switch),
+                                Species/Main.cpp
+
+      Taking unique_ptr ownership without touching those would have left App
+      holding a freed pointer every time a player changed resolution. THE
+      OWNER CHOSE to route replacement through App rather than leave the two
+      raw, so AppCommands' factories now install what they build and have
+      matching destroy calls.
+
+      THE RENDERER KEPT TWO CALLS RATHER THAN ONE. AppCommands.h had already
+      argued against a bundled Recreate() when layering-inversion T12 wrote
+      that seam: the renderer's call sites differ in what they do between
+      destroying the old object and building the new one -- one tears the
+      window down in between, one builds a renderer only to discard it. That
+      argument survives ownership moving, and the header now says so. The task
+      manager interface has no such gap at either site and gets one call.
+
+      BOTH IMPLEMENTATIONS reset() BEFORE CONSTRUCTING. Move-assigning over
+      the member frees the old object AFTER building the new one; every call
+      site destroyed the old one first, one of them with the window already
+      gone. Reversed, it would build a renderer while the old one still held
+      the GL context.
+
+      THE OTHER NINE NEEDED NO SUCH CARE, checked rather than assumed: nothing
+      outside App.cpp assigns or deletes g_globalWorld, g_camera, g_script,
+      g_userInput, g_gameCursor, g_particleSystem, g_taskManager or
+      g_controlHelpSystem. g_prefsManager is also built and deleted in
+      Server/WinMain.cpp, but that is Server.exe, which does not link App.cpp.
+
+      CI CAUGHT ONE ERROR AND IT IS THE MOST USEFUL THING HERE:
+
+        error C2027: use of undefined type 'AttractMode'
+        error C2338: static assertion failed: 'can't delete an incomplete type'
+
+      AttractMode HAS NO HEADER ANYWHERE IN THE TREE and ATTRACTMODE_ENABLED
+      is defined nowhere, so the type is never completed. The raw pointer
+      member hid that -- deleting an incomplete type through a raw pointer is
+      undefined, not diagnosed -- and a unique_ptr member cannot, because its
+      deleter is instantiated whether or not the guarded code using it
+      compiles. The member declaration now carries the same #ifdef its
+      construction and destruction always had. CONVERTING OWNERSHIP TURNED A
+      SILENT HAZARD INTO A BUILD ERROR; that is the conversion working. Every
+      other unique_ptr member's type was then checked complete in App.cpp.
+
+      App.h was whole-file reformatted first, in its own commit, for the
+      cascade reason language-hygiene T3 and T10 both hit.
+
+      NOT RUN. No Windows client here, and THE PER-COMMIT MAIN-MENU CHECK THIS
+      TASK'S ACCEPTANCE ASKS FOR WAS NOT PERFORMED BY THE AGENT for any of the
+      four commits; CI compiled them and that is all. Be precise about what a
+      smoke test can say here: the destructor is unreachable, so no run will
+      ever exercise it. What a run DOES exercise is startup -- every subsystem
+      is built through a unique_ptr now -- and the two replacement paths,
+      which need a RESOLUTION CHANGE and a GAMEPAD SWITCH to reach. Neither is
+      among the seven Garden steps.
+    status: done
 
   - id: T7
     title: Retire the SAFE_DELETE and SAFE_FREE macros
@@ -642,7 +729,6 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
     notes: |
       T10 WAS ADDED TO depends_on ON 2026-08-05 at 97b5844, because this
       task's acceptance could not have reached zero without it. The tree's
@@ -659,6 +745,53 @@ tasks:
       node whose acceptance is a tree-wide grep, over a tree nobody had run the
       grep against. Run the closing grep when the node is WRITTEN, not when it
       is reached.
+
+      DONE 2026-08-05. MIGRATION STAGE 5 IS COMPLETE. The acceptance grep over
+      the six projects returns nothing, for code and comments alike.
+
+      THE NODE'S OWN WARNING APPLIED TO ITSELF. Its notes said to run the
+      closing grep when the node is WRITTEN rather than when it is reached,
+      because a tree-wide grep can be satisfied by files no open task names.
+      Written in 2026, it listed four call sites and got three right. What it
+      could not have known:
+
+        SAFE_DELETE_ARRAY  2 callers, NeuronClient/Shape.cpp, still live.
+                           NOT named by this task's acceptance -- which says
+                           SAFE_DELETE and SAFE_FREE -- and the grep is
+                           word-anchored, so it passes. KEPT, and NO TASK
+                           OWNS IT. It is the last of the family and the
+                           reason -w matters in that acceptance line.
+        SAFE_RELEASE       zero callers. A COM-style release macro nothing in
+                           this tree has ever used. Deleted here as dead code
+                           in a block already being edited; not named by the
+                           acceptance either.
+
+      THE TWO "DEAD" EmptyAndDelete HELPERS WERE NOT BOTH DEAD, and AGENTS.md
+      said they were. NeuronCore/VectorUtils.h's had no users and went
+      cleanly. NeuronCore/SlotMap.h's had ONE: a test,
+      SlotMapTests::EmptyAndDeleteDeletesThePointees, which existed to
+      characterise the helper itself. Deleting the helper meant deleting that
+      test, so THE SUITE DROPS FROM 185 TO 184. That is the correct trade --
+      the test covered a transitional helper with no production caller left,
+      and keeping the helper alive to keep its test green would have been the
+      tail wagging the dog -- but it is a test count going DOWN, which is rare
+      enough here to state rather than let someone discover in a CI diff.
+
+      Two stale comments in SlotMapTests.cpp that described the deleted helper
+      were rewritten rather than left pointing at nothing.
+
+      WHAT ACTUALLY ENDED. Every raw owning `new`/`delete` pair the plan set
+      out to convert is now a unique_ptr or a value; the three legacy greps --
+      EmptyAndDelete, SAFE_FREE, SAFE_DELETE -- are at zero call sites. What
+      did NOT end: SAFE_DELETE_ARRAY's two sites above, GlobalEventCondition's
+      two char* members recorded on T11, ColourShapeFragment's RGBAColour[1]
+      also on T11, and Resource::ListResources' owning vector of owning char*.
+      None has an owning task. Stage 5's scope is finished; raw ownership in
+      this tree is not extinct.
+
+      Not compiled here -- no MSVC. CI is the check.
+
+    status: done
 
   - id: T8
     title: Decide who owns a SoundInstance, then convert m_sounds
@@ -942,7 +1075,6 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
     notes: |
       Split out of T5 on 2026-08-05, at the point T5 had converted its other
       seven owning files and the diff had reached twenty-seven files. Nothing
@@ -964,3 +1096,125 @@ tasks:
       and caught there by a scan for "member used after std::move of the same
       local"; the same scan belongs in this task's verification, and its
       acceptance says so.
+
+      REACH MEASURED 2026-08-05 FOR BATCH 5, AND THE FILE LIST ABOVE IS TWO OF
+      SEVEN. This is T5's lesson arriving before the work rather than after it:
+      the list names where ownership LIVES, and the acceptance line already
+      asks for "every file naming one of them outside GlobalWorld.cpp", so
+      that list is here rather than waiting for CI to produce it.
+
+      Eight range-for loops in five files bind a raw element straight out of
+      the three owning vectors, and every one of them stops compiling the
+      moment those vectors hold unique_ptr:
+
+        GameLogic/Generator.cpp:435    for (GlobalBuilding* gb : ...m_buildings)
+        GameLogic/Mine.cpp:523         for (GlobalBuilding* gb : ...m_buildings)
+        GameLogic/TrunkPort.cpp:364    for (GlobalBuilding* building : ...m_buildings)
+        GameLogic/CheatWindow.cpp:179  for (GlobalBuilding* gb : ...m_buildings)
+        GameLogic/CheatWindow.cpp:204  for (GlobalBuilding* gb : ...m_buildings)
+        GameLogic/CheatWindow.cpp:226  for (GlobalLocation* loc : ...m_locations)
+        Species/App.cpp:331            for (GlobalBuilding* building : ...m_buildings)
+        Species/App.cpp:336            for (GlobalLocation* loc : ...m_locations)
+
+      Each wants `auto const&` plus `.get()` at the use, not a cast.
+
+      THE THREE SUBSYSTEM MEMBERS ARE THE CHEAP HALF, WHICH IS WORTH KNOWING
+      BEFORE THE COUNT FRIGHTENS ANYONE. m_research is named 69 times through
+      g_globalWorld->m_research, and ALL 69 are `m_research->` observation,
+      which unique_ptr's operator-> serves unchanged. m_globalInternet and
+      m_sphereWorld are named nowhere outside GlobalWorld.cpp/.h at all. So
+      the 69 sites need no edit and the eight loops above do.
+
+      THIS TASK REACHES Species/App.cpp, WHICH IS T6's FILE. Not a dependency
+      -- T6 does not have to land first -- but they must not be in flight at
+      the same time, and the declared-file collision script in _next-batch.md
+      cannot see it because App.cpp is not on either list.
+
+      DONE 2026-08-05, in Batch 5. Eight files, and the diff is net NEGATIVE in
+      code -- 100 added against 108 removed -- with 42 lines of added comment
+      on top. T1's notes say a stage-5 conversion that grows its files is doing
+      something other than moving ownership into the type system; that check
+      was run deliberately here and it passes.
+
+      EIGHT FILES, NOT THE SEVEN THE REACH MEASUREMENT PREDICTED, and the miss
+      is instructive because it is the same shape as the miss it was written to
+      catch. The Batch 5 measurement greped MEMBER NAMES -- who touches
+      m_locations, m_buildings, m_events -- and found the eight range-for
+      loops. It did not grep the ownership-TRANSFER API, so it missed
+      GlobalWorldEditorWindow.cpp, which never names a member: it calls
+      `new GlobalLocation()` and hands the result to AddLocation. A member-name
+      sweep cannot see a file that only touches the object in flight. Grep the
+      Add*/Set*/Register* entry points too.
+
+      WHAT EACH EXTERNAL FILE NEEDED, as the acceptance line asks:
+
+        GameLogic/Generator.cpp:435       loop -> auto const&
+        GameLogic/Mine.cpp:523            loop -> auto const&
+        GameLogic/TrunkPort.cpp:364       loop -> auto const&
+        GameLogic/CheatWindow.cpp:179     loop -> auto const&
+        GameLogic/CheatWindow.cpp:204     loop -> auto const&
+        GameLogic/CheatWindow.cpp:226     loop -> auto const&
+        Species/App.cpp:331               loop -> auto const&
+        Species/App.cpp:336               loop -> auto const&
+        GameLogic/GlobalWorldEditorWindow.cpp:71,79
+                                          make_unique + AddLocation(std::move)
+
+      Every loop body only dereferences or tests truthiness, both of which a
+      const unique_ptr& serves unchanged, so no body needed a .get(). The 69
+      g_globalWorld->m_research sites needed nothing at all, as predicted.
+
+      AddLocation AND AddBuilding NOW TAKE unique_ptr BY VALUE. They always
+      took ownership; the signature said `GlobalLocation*` and a caller had to
+      know. Same move ownership T9 made for EclRegisterWindow.
+
+      THE USE-AFTER-MOVE TRAP IS REAL IN THIS FILE and it appears twice.
+      AddLocation calls m_sphereWorld->AddLocation(location->m_id) AFTER
+      push_back, and AddLevelBuildingToGlobalBuildings writes gb->m_link and
+      gb->m_pos after it. Both take a raw observer with .get() before the move
+      and reach through that. A scan for a name used after std::move of itself
+      was run across all eight changed files and returns nothing.
+
+      THE DESTRUCTOR IS WRITTEN OUT RATHER THAN DEFAULTED, on purpose. unique_ptr
+      members destroy in reverse declaration order, which would have run all six
+      in the opposite order to the hand-written deletes. Nothing here is known to
+      reach anything else during teardown -- but ownership T6 is about to prove
+      that "known to" is doing a lot of work in this codebase, and keeping the
+      sequence identical cost two lines.
+
+      GLOBALEVENT LEAKED, AND NOW DOES NOT. It had no destructor at all, so
+      every condition and every unexecuted action died with the event and was
+      never freed. The implicit destructor over vectors of unique_ptr fixes it.
+      That is a real leak fixed as a side effect, not a behaviour change to
+      worry about -- nothing observed those objects after the event went.
+
+      SIX RAW DELETES REMAIN IN GlobalWorld.cpp AND THE ACCEPTANCE LINE ABOVE
+      IS THEREFORE NOT FULLY MET. Stated rather than glossed:
+
+        1. GlobalEventCondition::m_stringId and m_cutScene (4 sites: the
+           destructor and the two setters). These are char* from NewStr, which
+           is new char[], correctly paired with delete[]. The right conversion
+           is std::string -- stage 4, not stage 5 -- and it reaches
+           LevelFile.cpp's WRITER, where `if (gec->m_stringId)` becomes an
+           empty-vs-null question and byte-identity is owned by strings T8 and
+           T17. Doing it here would mix two migrations in one diff, which
+           CODING_STANDARDS forbids. NO STRINGS TASK OWNS THESE TWO MEMBERS
+           TODAY; T19 converted GlobalEventAction::m_filename and stopped.
+        2. ColourShapeFragment's `new RGBAColour[1]` (line 661). That allocates
+           into a ShapeFragment, which Shape owns, in NeuronClient. It is a
+           free function that happens to live in this file. Converting it is a
+           Shape task and no plan has one. Noted separately: that line does not
+           set m_numColours to 1 after allocating, which looks wrong, and is
+           left alone rather than fixed blind.
+        3. The `delete[] missionFileName` loop. Resource::ListResources returns
+           std::vector<char*>* -- an owning vector of owning char* -- and
+           freeing the elements is the caller's job under that API. The VECTOR
+           is now a unique_ptr, so `delete missionFileNames` is gone; the
+           element loop cannot go without changing Resource's signature.
+
+      NOT BUILT AND NOT RUN. No MSVC and no Windows client here. The seven
+      checks pass and the use-after-move scan is clean, but nothing in this
+      task has been compiled. GlobalWorld is on the Garden smoke-test path --
+      it is what loads Game.txt and holds the location list -- so a mistake
+      here would show at step 2, and ownership T6's run is not this task's run.
+
+    status: done

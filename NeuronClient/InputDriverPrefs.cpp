@@ -59,7 +59,7 @@ InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const
     return state;
   spec.control_id = keyPosition(key);
 
-  spec.type = INPUT_TYPE_BOOL;
+  spec.type = InputType::INPUT_TYPE_BOOL;
 
   return (idx < tokens.length()) ? InputParserState::STATE_OVERSTEP : InputParserState::STATE_DONE;
 }
@@ -67,7 +67,7 @@ InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const
 
 bool PrefsInputDriver::getInput(InputSpec const& spec, InputDetails& details)
 {
-  details.type = INPUT_TYPE_BOOL;
+  details.type = InputType::INPUT_TYPE_BOOL;
   if (0 <= spec.control_id && spec.control_id < m_keys.size())
   {
     bool val = (g_prefsManager->GetInt(m_keys[spec.control_id]->c_str(), 0) > 0);

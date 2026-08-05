@@ -95,7 +95,7 @@ bool W32InputDriver::getKeyInput(InputSpec const& spec, InputDetails& details)
 {
   int button = spec.control_id;
   DEBUG_ASSERT(0 <= button && button < KEY_MAX);
-  details.type = INPUT_TYPE_BOOL;
+  details.type = InputType::INPUT_TYPE_BOOL;
 
   // spec.condition is a driver-defined int; this driver reads it as an
   // InputCondition, which is what the cast says. See InputSpec.h.
@@ -121,21 +121,21 @@ bool W32InputDriver::getMouseInput(InputSpec const& spec, InputDetails& details)
   {
   case MOUSE_LEFTBUTTON:
     button = L;
-    details.type = INPUT_TYPE_BOOL;
+    details.type = InputType::INPUT_TYPE_BOOL;
     break;
   case MOUSE_RIGHTBUTTON:
     button = R;
-    details.type = INPUT_TYPE_BOOL;
+    details.type = InputType::INPUT_TYPE_BOOL;
     break;
   case MOUSE_MIDBUTTON:
     button = M;
-    details.type = INPUT_TYPE_BOOL;
+    details.type = InputType::INPUT_TYPE_BOOL;
     break;
   case MOUSE_WHEEL:
-    details.type = INPUT_TYPE_1D;
+    details.type = InputType::INPUT_TYPE_1D;
     break;
   case MOUSE_MOVEMENT:
-    details.type = INPUT_TYPE_2D;
+    details.type = InputType::INPUT_TYPE_2D;
     break;
   default:
     return false; // We should never get here!
@@ -240,7 +240,7 @@ bool W32InputDriver::getFirstActiveInput(InputSpec& spec, bool instant)
         spec.condition = static_cast<condition_t>(InputCondition::COND_DOWN);
       else
         spec.condition = static_cast<condition_t>(InputCondition::COND_PRESSED);
-      spec.type = INPUT_TYPE_BOOL;
+      spec.type = InputType::INPUT_TYPE_BOOL;
       return true;
     }
   }
@@ -442,13 +442,27 @@ inputtype_t W32InputDriver::getControlType(control_id_t control_id)
   switch (lastAcceptedDriver)
   {
   case KEY_DRIVER:
-    return INPUT_TYPE_BOOL;
+    return InputType::INPUT_TYPE_BOOL;
 
   case MOUSE_DRIVER:
     return getMouseControlType(control_id);
 
   default:
-    return -1; // Should never get here!
+    // Should never get here!
+    //
+    // THE -1 IS PRESERVED EXACTLY RATHER THAN MAPPED TO INPUT_TYPE_FAIL, and
+    // the difference is not cosmetic. InputType is a bit field: -1 is every
+    // bit SET, so a `(type & x) == x` test accepts everything, while
+    // INPUT_TYPE_FAIL is zero and accepts nothing. Those are opposites at the
+    // one place this value is read -- it reaches
+    // InputDriver::getDefaultConditionID through InputSpec::type, which tests
+    // it exactly that way.
+    //
+    // So this is an integer boundary, declared as one by language-hygiene
+    // T10 rather than quietly given a nicer value. Whether -1 or FAIL is the
+    // RIGHT answer on an unreachable path is a separate question with no
+    // evidence behind it either way; see the task's notes.
+    return static_cast<InputType>(-1);
   }
 }
 
@@ -458,19 +472,21 @@ inputtype_t W32InputDriver::getMouseControlType(control_id_t control_id)
   switch (control_id)
   {
   case MOUSE_MOVEMENT:
-    return INPUT_TYPE_2D;
+    return InputType::INPUT_TYPE_2D;
   case MOUSE_LEFTBUTTON:
-    return INPUT_TYPE_BOOL;
+    return InputType::INPUT_TYPE_BOOL;
   case MOUSE_RIGHTBUTTON:
-    return INPUT_TYPE_BOOL;
+    return InputType::INPUT_TYPE_BOOL;
   case MOUSE_MIDBUTTON:
-    return INPUT_TYPE_BOOL;
+    return InputType::INPUT_TYPE_BOOL;
   case MOUSE_WHEEL:
-    return INPUT_TYPE_1D;
+    return InputType::INPUT_TYPE_1D;
   case MOUSE_ANY:
-    return INPUT_TYPE_BOOL;
+    return InputType::INPUT_TYPE_BOOL;
   default:
-    return -1; // Should never get here!
+    // Should never get here! Same preserved -1 as getControlType above, and
+    // for the same reason — see the comment there.
+    return static_cast<InputType>(-1);
   }
 }
 
@@ -508,7 +524,8 @@ bool W32InputDriver::getInputDescription(InputSpec const& spec, InputDescription
       desc.noun = "control_key_unknown";
 
     std::string prefCond;
-    if (getDefaultVerb(spec.condition, INPUT_TYPE_BOOL, desc.verb) && getDefaultPrefsString(spec.condition, INPUT_TYPE_BOOL, prefCond))
+    if (getDefaultVerb(spec.condition, InputType::INPUT_TYPE_BOOL, desc.verb) &&
+        getDefaultPrefsString(spec.condition, InputType::INPUT_TYPE_BOOL, prefCond))
     {
       desc.pref = "key ";
       desc.pref += desc.noun + " " + prefCond;
@@ -523,7 +540,7 @@ bool W32InputDriver::getInputDescription(InputSpec const& spec, InputDescription
   else if (MOUSE_DRIVER == spec.handler_id)
   {
     bool ret = true;
-    inputtype_t type = INPUT_TYPE_BOOL;
+    inputtype_t type = InputType::INPUT_TYPE_BOOL;
     desc.pref = "mouse ";
     switch (spec.control_id)
     {
@@ -542,12 +559,12 @@ bool W32InputDriver::getInputDescription(InputSpec const& spec, InputDescription
     case MOUSE_WHEEL:
       desc.noun = "control_mouse_wheel";
       desc.pref += "wheel ";
-      type = INPUT_TYPE_1D;
+      type = InputType::INPUT_TYPE_1D;
       break;
     case MOUSE_MOVEMENT:
       desc.noun = "control_mouse";
       desc.pref += "axes ";
-      type = INPUT_TYPE_2D;
+      type = InputType::INPUT_TYPE_2D;
       break;
     default:
       desc.noun = "control_mouse_unknown";

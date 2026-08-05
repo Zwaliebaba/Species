@@ -673,7 +673,6 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
     notes: |
       Split out of T9 on 2026-08-05. 216 use sites across 19 files.
 
@@ -742,6 +741,123 @@ tasks:
       The "218 sites in 25 files" figure above counts INPUT_TYPE_ and
       inputtype_t together across every extension. Split at 97b5844: 218
       INPUT_TYPE_ in 19 files, of which 136 are the .inc, plus 25 inputtype_t.
+
+      RE-VERIFIED 2026-08-05 FOR BATCH 5, AND THE LIST IS NOW EXACTLY RIGHT.
+      `grep -rl 'INPUT_TYPE_\|inputtype_t'` over the six projects and Tests
+      returns the 26 declared files, with nothing reached that is not declared
+      and nothing declared that is not reached. That is the only task in the
+      ready set of which this is true, and it is true because the list was
+      corrected by measurement twice rather than written once.
+
+      One sharpening to the NULL point above: `nullptr, NULL` in
+      ControlTypes.cpp is the last NULL in the TREE, not just in NeuronClient.
+      The only other tree-wide hit for `\bNULL\b` is inside a diagnostic string
+      literal in Win32EventHandler.cpp, which T1 correctly left alone. So
+      deleting this file takes the sweep T1 started to a genuine zero, and
+      that is worth saying in the commit that does it.
+
+      DONE 2026-08-05, in Batch 5, in three commits: the dead-file deletion,
+      a whole-file reformat, then the conversion. 217 qualified INPUT_TYPE_
+      sites across 18 files.
+
+      InputType is `enum class InputType : int`. int because that is what the
+      `typedef int inputtype_t` it was reached through has always been.
+
+      ENUM_HELPER IS USED, AND THIS IS ITS FIRST USE IN THE TREE -- the macro
+      has been carried in NeuronHelper.h, invoked by nothing, since it was
+      written. Only half of it means anything here, and the header now says so
+      at the invocation: a bit field with gaps has no business with
+      operator++, ItInputType, RangeInputType or SizeOfInputType(), and
+      RangeInputType would walk 0 to 15 where eleven of the sixteen values
+      name nothing. The bitwise operators are what the code needs and they are
+      what it gets.
+
+      inputtype_t IS NOW `using inputtype_t = InputType`, not int, and not
+      deleted. Twenty-five signatures and members spell it; every one of them
+      now carries the real type without a single edit, and renaming them is
+      not this task's business. InputSpec.h gained an include of InputTypes.h
+      to make that alias legal.
+
+      THE BIT RELATIONSHIPS ARE PINNED BY static_assert, not by the comment
+      the acceptance line would have settled for. Scoping the enum stops a
+      value being confused with a ControlType; it does nothing about someone
+      renumbering these, which is the actual way this breaks. Four asserts:
+      1D carries ANALOG's bit, 2D carries ANALOG's bit, ANY is a superset of
+      all of them, and FAIL is the zero value the tables terminate on.
+      isAcceptibleInputType still ORs INPUT_TYPE_1D into a BOOL binding, and
+      `int validTypes` beside it is `InputType validTypes` now, so the & and |
+      there are InputType's own operators.
+
+      NO C-STYLE CAST WAS ADDED ANYWHERE. Nearly every operation on these
+      values across all 18 files is assignment, ==, !=, >, >=, & or |, which a
+      scoped enum with ENUM_HELPER serves directly. Four sites needed more than
+      qualification: `int validTypes` above; ControlBindings.cpp's `{0, 0}`
+      table terminator, now {nullptr, InputType::INPUT_TYPE_FAIL}; and the two
+      integer boundaries below.
+
+      THE INTEGER BOUNDARY THIS TASK DECLARES, as its acceptance requires:
+      W32InputDriver::getControlType and ::getMouseControlType each end in
+      `default: return -1; // Should never get here!`. Both are now
+      `static_cast<InputType>(-1)`.
+
+      -1 IS PRESERVED RATHER THAN MAPPED TO INPUT_TYPE_FAIL, and choosing the
+      nicer-looking value would have inverted the behaviour. InputType is a bit
+      field: -1 is every bit SET, so a `(type & x) == x` test accepts
+      EVERYTHING; INPUT_TYPE_FAIL is zero and accepts NOTHING. The value is
+      read in exactly that form -- it flows through InputDriverSimple.cpp's
+      `spec.type = getControlType(...)` into
+      InputDriver::getDefaultConditionID, whose loop condition is
+      `(type & info.type) != info.type`. FAIL there would walk the table to the
+      terminator and hit the off-by-two failure path T9 already documented.
+
+      Whether -1 or FAIL is the RIGHT answer is a separate question and this
+      task does not answer it. The path is marked unreachable, both arms are
+      guarded by a prior `getControlID(...) >= 0`, and there is no evidence
+      either way. Recorded rather than fixed, in the shape Batch 4 used for the
+      three defects it found. NO TASK OWNS IT.
+
+      CI CAUGHT BOTH OF THESE AND THE FIRST PUSH OF THIS TASK WAS RED --
+      `error C2440: 'return': cannot convert from 'int' to 'inputtype_t'`,
+      twice, and nothing else in the tree. Worth reading as a method failure
+      rather than a typo:
+
+      THE SWEEP WAS KEYED ON THE ENUMERATOR NAME, so it found all 217 sites
+      that SPELL an INPUT_TYPE_ and was blind to the two that do not. Changing
+      a function's RETURN TYPE makes every `return` in it a conversion site,
+      and `return -1;` names nothing the grep could match. This is precisely
+      the failure mode check_math_types.py was written for during the
+      DirectXMath migration -- "a converted signature leaves its parameter's
+      uses behind exactly as a converted local does" -- and there is no
+      equivalent check for enum conversions. THE RULE FOR THE NEXT ONE: after
+      changing a type, enumerate the functions that RETURN it and read every
+      return statement, then the assignments INTO it. Do not rely on a sweep
+      over the enumerator names; by construction it cannot see a bare
+      integer.
+
+      THE HAND-ALIGNED TABLE IN ControlTypes.inc DID NOT SURVIVE, and that was
+      a deliberate choice rather than an oversight. 136 of its lines change
+      here, so the changed-lines format check reformats them; clang-format
+      collapses `DEF_CONTROL_TYPE( MenuLeft,    INPUT_TYPE_BOOL )` to
+      `DEF_CONTROL_TYPE(MenuLeft, InputType::INPUT_TYPE_BOOL)` and aligns the
+      trailing comments instead. `// clang-format off` would have preserved
+      the columns. It was rejected: THIS TREE HAS NO FORMATTING ESCAPE HATCH
+      ANYWHERE, deliberately -- the last hygiene-ok marker went in T12 -- and
+      introducing the first one to save a table's alignment is not a trade a
+      single task should make unasked. If the alignment is wanted back, that
+      is a decision about the .clang-format policy, not about this file.
+
+      The reformat is its own commit, per AGENTS.md, and it cost blame on
+      three files: ControlTypes.inc, InputDriverIdle.cpp and Movement2d.cpp.
+      Movement2d.cpp is the poor-value one -- 141 lines reformatted to land a
+      single converted line -- and it is recorded because the changed-lines
+      rule will keep producing that shape.
+
+      NOT COMPILED. No MSVC here. This is 217 sites in the input layer and
+      nothing in the unit suite touches any of it; the Garden smoke test would
+      exercise it at step 5, since nothing moves without the input drivers.
+      T11 is next in this plan and inherits ControlTypes.inc's first column.
+
+    status: done
 
   - id: T11
     title: Scope ControlType
@@ -921,7 +1037,6 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
     notes: |
       Added 2026-08-05 on the owner's instruction, from a defect T12 found and
       deliberately did not fix -- tightening a bound is a behaviour change and
@@ -966,3 +1081,62 @@ tasks:
 
       parallel_safe false because LevelFile.cpp is contested: strings/T17
       declares it, and ownership/T5 rewrote it on 2026-08-05.
+      DONE 2026-08-05, in Batch 5. The enum is `CamAnimNode::Transition : int`
+      with TransitionMove and TransitionCut pinned to 0 and 1, and
+      m_transitionMode carries that type rather than staying an int.
+
+      THE WRONG BOUND WAS DELETED RATHER THAN CORRECTED, which is the part
+      worth reading. LevelFile.cpp compared a parsed transition against
+      CameraAccess::Mode::ModeNumModes -- sixteen, for a two-valued enum. The
+      obvious fix is to swap in TransitionNumModes. Instead GetTransitModeId
+      now returns std::optional<Transition>, so the parse site asks
+      has_value() and there is no numeric bound at that site at all. That is
+      the honest answer to "what stops this recurring": not a corrected
+      constant that the next person can get wrong again, but no constant.
+
+      THE BOUND WAS NOT LIVE, and the plan entry should not have implied it
+      was. GetTransitModeId's own loop ran to TransitionNumModes and returned
+      -1 otherwise, so the value reaching the assert was always -1, 0 or 1 and
+      the too-loose upper bound could not admit anything. It was wrong in
+      intent and harmless in effect, and it would have become live the moment
+      a third transition was added. Recorded precisely so nobody re-reports it
+      as a fixed crash.
+
+      SIX FILES, NOT THE FOUR DECLARED, and the two extra are the whole
+      design question. DropDownMenu::RegisterInt(int*) is how the editor binds
+      a mode, and a scoped enum cannot be reached through an int*. The
+      acceptance line above offers an out -- keep m_transitionMode an int and
+      say why -- and that out was refused, because an int member puts the
+      Camera.cpp switches back to comparing an int against foreign
+      enumerators, which is the exact hazard this task exists to close.
+
+      So DropDownMenu gained RegisterEnum, a ~12-line template beside
+      RegisterInt that stores a std::function<void(int)> write-back instead of
+      an int*. SelectOption writes through whichever of the two is set. All 35
+      existing RegisterInt callers are untouched by construction, and several
+      of them bind ints that are morally enums -- LaserFence m_mode,
+      SafeArea m_entityTypeRequired, ResearchItem m_researchType, SpawnPoint
+      and ScriptTrigger m_entityType, m_buildingType -- so the next scoping
+      task in this plan has its hook already.
+
+      ONE ORDERING CHANGE IN CameraAnimWindow, stated because it is behaviour
+      even though it is invisible. The old sequence was RegisterInt, then
+      AddOption twice, then SelectOption. RegisterInt calls SelectOption
+      immediately, against an EMPTY option list, so FindValue answered -1 and
+      the caption was briefly the button's own name before the trailing
+      SelectOption fixed it. The new sequence adds both options first and then
+      calls RegisterEnum, which selects once, correctly. Same final state, one
+      fewer transient.
+
+      WHAT WAS ACTUALLY CHECKED, and it is not the editor. No MSVC and no
+      Windows client in this environment, so the drop-down round trip was
+      traced in the source rather than exercised: AddOption with the default
+      _value assigns m_nextValue 0 then 1 in call order, the menu is
+      constructed with _sortItems false so insertion order is preserved,
+      option values therefore equal the enumerators, and RegisterEnum's
+      lambda static_casts the selected value back to Transition. The
+      static_assert added beside g_transitionModeNames pins the other half --
+      one name per enumerator -- at compile time. THE EDITOR ITSELF IS
+      UNVERIFIED; the camera-animation window is not on the Garden smoke-test
+      path, so nothing in the seven steps would notice if this were wrong.
+    status: done

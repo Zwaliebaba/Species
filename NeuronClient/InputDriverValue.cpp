@@ -58,7 +58,7 @@ InputParserState ValueInputDriver::parseInputSpecification(InputSpecTokens const
 
 bool ValueInputDriver::getInput(InputSpec const& spec, InputDetails& details)
 {
-  details.type = INPUT_TYPE_BOOL;
+  details.type = InputType::INPUT_TYPE_BOOL;
   bool ans = false;
   switch (spec.control_id)
   {
