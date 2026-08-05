@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "RgbColour.h"
 
 #include "SpeciesWindow.h"
@@ -15,7 +17,10 @@
 class InputField : public BorderlessButton
 {
   public:
-    char m_buf[256];
+    // The text being edited. It was a char[256]. The digit and full-stop
+    // branches of Keypress tested the length before appending; the letter
+    // branch did not, and wrote two bytes at the end of a full field.
+    std::string m_buf;
 
     enum
     {
@@ -31,7 +36,10 @@ class InputField : public BorderlessButton
     unsigned char* m_char;
     int* m_int;
     float* m_float;
-    char* m_string;
+    // The registered storage for a text field. This was a char*, written
+    // through with strcpy from a 256-byte buffer regardless of how much room
+    // the target actually had — CameraMount::m_name has 64. See T5's notes.
+    std::string* m_string;
 
     int m_inputBoxWidth;
 
@@ -53,13 +61,14 @@ class InputField : public BorderlessButton
     void RegisterChar(unsigned char*);
     void RegisterInt(int*);
     void RegisterFloat(float*);
-    void RegisterString(char*);
+    void RegisterString(std::string*);
 
     void ClampToBounds();
 
     void SetCallback(SpeciesButton* button); // This button will be clicked on Refresh
 
-    void Refresh(); // Updates the display if the registered variable has changed
+    void ReloadBuffer(); // Copies the registered value into the edit buffer
+    void Refresh();      // Updates the display if the registered variable has changed
 };
 
 

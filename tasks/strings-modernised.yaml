@@ -503,7 +503,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - Owner runs the Garden smoke test — step 6 exercises the windows that register these fields
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: |
       RE-SCOPED 2026-08-03 as part of the restart (tasks/_restart.md). The note
       below is the discarded attempt's deliverable and is kept verbatim; what
@@ -565,6 +565,92 @@ tasks:
       should consider replacing the void* with an overload set before
       converting anything, so that the compiler is on their side for the rest
       of the change.
+
+
+      DONE 2026-08-05, in three commits: the whole-file reformat of
+      InputField, the characterisation tests, then the conversion.
+
+      THE COUPLING HELD EXACTLY AS THE DISCARDED ATTEMPT DESCRIBED, and T14
+      earned its keep: with the void* gone every mis-registration was a compile
+      error waiting rather than a corruption, and the seven registrations
+      became `&member` with nothing to check by hand.
+
+      THE TOUCH SET WAS NARROWER THAN DECLARED. 22 of the 25 listed files, plus
+      three test files. LandscapeWindow.cpp, Species/Camera.h and
+      Species/Script.cpp needed nothing: their m_name uses are all Eclipse
+      widget names, which are T11's, and Camera.h only forward-declares
+      CameraAnimation. Species/Camera.cpp and Species/LocationEditor.cpp needed
+      one line each.
+
+      CHARACTERISED FIRST, which is what makes the no-behaviour-change claim
+      evidence rather than assertion. Tests/GameLogicTests/InputFieldTests.cpp
+      is thirteen tests over the keystroke write-back, written against the
+      char* API and committed before the conversion; the conversion commit
+      changes four lines in it — the target's declaration, its registration,
+      and one std::string wrapper that stopped being needed — and not one
+      assertion. It is the first test of anything in GameLogic.
+
+      FIVE UNBOUNDED WRITES WENT WITH THE TYPES. None is fixed separately
+      because none survives the conversion; all five are recorded here because
+      the counts are the argument for doing the rest of stage 4.
+        1. InputField wrote its 256-byte buffer into the registered target with
+           strcpy, whatever size the target was. CameraMount::m_name had 64, so
+           a camera mount name over 63 characters overran it. This is the one
+           that motivated the task and it was live.
+        2. InputField's letter branch wrote m_buf[strlen] and [strlen+1] with
+           no length test, so a full field wrote two bytes past the array. The
+           digit and full-stop branches did test, and still do — MAX_EDIT_LENGTH
+           keeps them dropping the key at 255 rather than growing.
+        3. and 4. Both camera windows formatted button labels into a char[64]
+           from a prefix plus a name of up to 63 characters.
+        5. CreateValueScrollers and RemoveValueControl formatted "%s left" and
+           "%s right" into a char[64] from a control name of unbounded length.
+           T14 recorded these two as belonging here; they do, and they are gone.
+
+      WHAT WAS DELIBERATELY NOT CHANGED, each because it is another task's or
+      because changing it would be a behaviour change wearing a conversion's
+      clothes:
+        - The level-file load path still truncates camera mount and animation
+          names at 63. It is what a file carrying a longer name loads as today,
+          so it is what such a file writes back, and T8 cannot prove byte
+          identity against a load path that moved underneath it. The bound is
+          now written out rather than implied by an array size.
+        - InputField::Render passes m_buf as DrawText2D's FORMAT STRING, not as
+          an argument, exactly as before. A '%' cannot be typed — Keypress
+          accepts A-Z, 0-9 and '.' — but one can arrive in a name loaded from a
+          level file. Left for T12, whose notes say a call site that stops
+          compiling under std::format is a latent bug being surfaced. This is
+          one, and it will not compile there.
+        - The camera-mount window's delete, goto and update buttons ALIAS the
+          mount's name; they are std::string* now and still alias it, because
+          InputField edits that string in place and the lookup has to keep
+          matching after a rename. The camera-anim window's delete button holds
+          a COPY in its own EclButton::m_name and unbinds on rename. That
+          inconsistency is inherited and preserved.
+        - The two stricmp comparisons on camera names stay case-insensitive.
+          This is the hazard T11's notes describe, arriving one task early:
+          std::string::operator== matches strcmp and NOT stricmp, so every one
+          of these was read rather than swept.
+        - Refresh still does not update m_inputBoxWidth. The shared reload body
+          is factored out as ReloadBuffer, and the width assignment stayed in
+          Render where it was — folding it in would have changed what an
+          InputScroller drag does between frames.
+
+      SetShapeName took char* on both DynamicBase and StaticShape and takes
+      std::string_view now. Neither is virtual and they are unrelated classes,
+      so there was no overrider set to move with them.
+
+      RemoveValueControl has no callers anywhere in the tree.
+
+      NO GAMELOGIC HEADER USED std::string BEFORE THIS TASK. Eight do now, and
+      each includes <string> itself — the tree's practice, per Building.h and
+      <vector> — rather than relying on pch.h having been seen first.
+
+      Not compiled here (Linux) and the client cannot be launched here either.
+      CI's x64 Debug build and the unit suite are the first things to execute
+      any of this. The editor is where almost all of it lives, so the Garden
+      smoke test reaches only InputField's rendering path and none of the
+      windows.
 
   - id: T6
     title: Convert GameLogic simulation-side string handling

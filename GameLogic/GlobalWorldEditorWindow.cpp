@@ -12,7 +12,7 @@
 #include "AppState.h"
 
 
-static char s_locationName[256] = "NewLevel";
+static std::string s_locationName = "NewLevel";
 
 
 class SetModeButton : public SpeciesButton
@@ -57,8 +57,8 @@ class NewLocationButton : public SpeciesButton
       // Create the map and mission files
 
       LevelFile levelFile;
-      sprintf(levelFile.m_mapFilename, "Map%s.txt", s_locationName);
-      sprintf(levelFile.m_missionFilename, "Mission%s.txt", s_locationName);
+      CopyInto(levelFile.m_mapFilename, std::format("Map{}.txt", s_locationName));
+      CopyInto(levelFile.m_missionFilename, std::format("Mission{}.txt", s_locationName));
       strlwr(levelFile.m_mapFilename);
       strlwr(levelFile.m_missionFilename);
 
@@ -68,11 +68,11 @@ class NewLocationButton : public SpeciesButton
       // Create new global location
 
       GlobalLocation* loc = new GlobalLocation();
-      sprintf(loc->m_mapFilename, "Map%s.txt", s_locationName);
-      sprintf(loc->m_missionFilename, "Mission%s.txt", s_locationName);
+      CopyInto(loc->m_mapFilename, std::format("Map{}.txt", s_locationName));
+      CopyInto(loc->m_missionFilename, std::format("Mission{}.txt", s_locationName));
       strlwr(loc->m_mapFilename);
       strlwr(loc->m_missionFilename);
-      strcpy(loc->m_name, s_locationName);
+      CopyInto(loc->m_name, s_locationName);
       loc->m_available = true;
       AsLegacy(loc->m_pos).Set(-96.25, -274.02, 75.16);
       g_globalWorld->AddLocation(loc);
@@ -143,7 +143,7 @@ void GlobalWorldEditorWindow::Create()
   newLoc->SetShortProperties(LANGUAGEPHRASE("editor_createnewlocation"), 10, y += h, m_w - 20);
   RegisterButton(newLoc);
 
-  CreateValueControl(LANGUAGEPHRASE("dialog_name"), s_locationName, y += h, 0, 0, 0, nullptr, 10, m_w - 20);
+  CreateValueControl(LANGUAGEPHRASE("dialog_name"), &s_locationName, y += h, 0, 0, 0, nullptr, 10, m_w - 20);
 
   y += h;
 

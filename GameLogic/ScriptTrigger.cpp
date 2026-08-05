@@ -26,7 +26,7 @@ ScriptTrigger::ScriptTrigger()
 {
   m_type = TypeScriptTrigger;
 
-  CopyInto(m_scriptFilename, "NewScript");
+  m_scriptFilename = "NewScript";
 }
 
 
@@ -35,7 +35,7 @@ void ScriptTrigger::Initialise(Building* _template)
   Building::Initialise(_template);
 
   ScriptTrigger* trigger = (ScriptTrigger*)_template;
-  CopyInto(m_scriptFilename, trigger->m_scriptFilename);
+  m_scriptFilename = trigger->m_scriptFilename;
   m_range = trigger->m_range;
   m_entityType = trigger->m_entityType;
   m_linkId = trigger->m_linkId;
@@ -44,10 +44,10 @@ void ScriptTrigger::Initialise(Building* _template)
 
 void ScriptTrigger::Trigger()
 {
-  if (strstr(m_scriptFilename, ".txt"))
+  if (m_scriptFilename.find(".txt") != std::string::npos)
   {
     // Run a script, speficied by filename
-    g_script->RunScript(m_scriptFilename);
+    g_script->RunScript(m_scriptFilename.c_str());
     m_triggered = -1;
   }
   else
@@ -177,7 +177,7 @@ void ScriptTrigger::RenderAlphas(float predictionTime)
     RenderSphere(m_pos, m_range, colour);
     RenderSphere(m_pos, m_range, colour);
 
-    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 10, "%s", m_scriptFilename);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 10, "%s", m_scriptFilename.c_str());
     g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 10, "%d", m_triggered);
   }
 };
@@ -216,7 +216,7 @@ void ScriptTrigger::Read(TextReader* _in, bool _dynamic)
   m_linkId = atoi(_in->GetNextToken());
   m_range = atof(_in->GetNextToken());
 
-  CopyInto(m_scriptFilename, _in->GetNextToken());
+  m_scriptFilename = _in->GetNextToken();
 
   char* entityType = _in->GetNextToken();
   if (stricmp(entityType, "always") == 0)
@@ -248,5 +248,5 @@ void ScriptTrigger::Write(FileWriter* _out)
   else
     entityType = Entity::GetTypeName(m_entityType);
 
-  _out->printf("%-6d %-6.2f %s %s", m_linkId, m_range, m_scriptFilename, entityType);
+  _out->printf("%-6d %-6.2f %s %s", m_linkId, m_range, m_scriptFilename.c_str(), entityType);
 }

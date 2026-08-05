@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "Building.h"
 
 #define SCRIPTRIGGER_RUNALWAYS 999
@@ -12,7 +14,7 @@
 class ScriptTrigger : public Building
 {
   public:
-    char m_scriptFilename[256];
+    std::string m_scriptFilename;
     float m_range;
     int m_entityType;
     int m_linkId;

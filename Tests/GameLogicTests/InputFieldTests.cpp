@@ -13,13 +13,14 @@ namespace GameLogicTests
     // InputField is the editor's text widget: it accumulates keystrokes into
     // its own buffer and writes the result back into storage a caller
     // registered with it. These tests characterise that write-back, because
-    // strings-modernised T5 changes what the registered storage IS — a raw
-    // char* today, a std::string* after — and the only claim a conversion
+    // strings-modernised T5 changed what the registered storage IS — a raw
+    // char* before, a std::string* now — and the only claim a conversion
     // commit makes is that behaviour did not move.
     //
-    // Every assertion below is written to hold on both sides of that change.
-    // What differs between the two revisions is the two lines that declare and
-    // register the target; that is the whole point of the file.
+    // They were written against the char* version and committed before it, so
+    // the evidence is in the history: the conversion commit changes four lines
+    // here, all of them declaring or registering the target, and not one
+    // assertion.
     //
     // The widget needs a parent window and nothing else. EclWindow's
     // constructor touches no global and no renderer, and Keypress reaches the
@@ -29,15 +30,15 @@ namespace GameLogicTests
       public:
         EclWindow m_window{"test window"};
         InputField m_field;
-        char m_target[256]{};
+        std::string m_target;
 
         EditSession(char const* _initial = "")
         {
           // SetParent rather than RegisterButton: the window deletes every
           // button it holds, and this one lives on the stack.
           m_field.SetParent(&m_window);
-          Neuron::CopyInto(m_target, _initial);
-          m_field.RegisterString(m_target);
+          m_target = _initial;
+          m_field.RegisterString(&m_target);
           m_field.Refresh();
           m_window.BeginTextEdit(m_field.m_name);
         }
@@ -68,7 +69,7 @@ namespace GameLogicTests
       TEST_METHOD(RefreshLoadsTheRegisteredValueIntoTheBuffer)
       {
         EditSession session("Loaded");
-        Assert::AreEqual(std::string("Loaded"), std::string(session.m_field.m_buf));
+        Assert::AreEqual(std::string("Loaded"), session.m_field.m_buf);
       }
 
       TEST_METHOD(LettersArriveLowercaseWithoutShift)

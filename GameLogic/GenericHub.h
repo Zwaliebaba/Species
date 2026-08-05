@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "Building.h"
@@ -19,7 +21,7 @@ class DynamicBase : public Building
     int m_buildingLink;
 
   public:
-    char m_shapeName[256];
+    std::string m_shapeName;
 
   public:
     DynamicBase();
@@ -38,7 +40,7 @@ class DynamicBase : public Building
 
     DirectX::XMFLOAT3 GetPowerLocation();
 
-    void SetShapeName(char* _shapeName);
+    void SetShapeName(std::string_view _shapeName);
 };
 
 

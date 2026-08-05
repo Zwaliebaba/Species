@@ -350,18 +350,19 @@ InputField* SpeciesWindow::CreateInputField(char const* name, int y, float _lowB
 
 void SpeciesWindow::CreateValueScrollers(char const* name, InputField* input, int y, float change)
 {
-  char nameLeft[64];
-  sprintf(nameLeft, "%s left", name);
+  // Both scroller names were formatted into a char[64] from a control name of
+  // unbounded length, so a long label overran them. The names themselves stay
+  // char const* on the Eclipse side until T11 converts that.
+  std::string const nameLeft = std::format("{} left", name);
   InputScroller* left = new InputScroller();
-  left->SetProperties(nameLeft, input->m_x + input->m_w + 5, y, 15, 15, "<", "Value left");
+  left->SetProperties(nameLeft.c_str(), input->m_x + input->m_w + 5, y, 15, 15, "<", "Value left");
   left->m_inputField = input;
   left->m_change = -change;
   RegisterButton(left);
 
-  char nameRight[64];
-  sprintf(nameRight, "%s right", name);
+  std::string const nameRight = std::format("{} right", name);
   InputScroller* right = new InputScroller();
-  right->SetProperties(nameRight, input->m_x + input->m_w + 22, y, 15, 15, ">", "Value right");
+  right->SetProperties(nameRight.c_str(), input->m_x + input->m_w + 22, y, 15, 15, ">", "Value right");
   right->m_inputField = input;
   right->m_change = change;
   RegisterButton(right);
@@ -414,8 +415,8 @@ void SpeciesWindow::CreateValueControl(char const* name, float* value, int y, fl
   CreateValueScrollers(name, input, y, change);
 }
 
-void SpeciesWindow::CreateValueControl(char const* name, char* value, int y, float change, float _lowBound, float _highBound, SpeciesButton* callback,
-                                       int x, int w)
+void SpeciesWindow::CreateValueControl(char const* name, std::string* value, int y, float change, float _lowBound, float _highBound,
+                                       SpeciesButton* callback, int x, int w)
 {
   // change is unused for a text field, as it was before: the old function
   // created no scrollers for TypeString and change fed only those.
@@ -428,13 +429,8 @@ void SpeciesWindow::RemoveValueControl(char* name)
 {
   RemoveButton(name);
 
-  char nameLeft[64];
-  sprintf(nameLeft, "%s left", name);
-  RemoveButton(nameLeft);
-
-  char nameRight[64];
-  sprintf(nameRight, "%s right", name);
-  RemoveButton(nameRight);
+  RemoveButton(std::format("{} left", name).c_str());
+  RemoveButton(std::format("{} right", name).c_str());
 }
 
 void SpeciesWindow::CreateColourControl(char const* name, int* value, int y, SpeciesButton* callback, int x, int w)

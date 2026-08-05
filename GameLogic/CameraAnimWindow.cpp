@@ -30,7 +30,7 @@ class NewAnimButton : public SpeciesButton
     void MouseUp()
     {
       CameraAnimation* anim = new CameraAnimation;
-      sprintf(anim->m_name, "CamAnim%d", speciesRandom() & 0x3ff);
+      anim->m_name = std::format("CamAnim{}", speciesRandom() & 0x3ff);
       g_location->m_levelFile->m_cameraAnimations.push_back(anim);
 
       CameraAnimMainEditWindow* parent = (CameraAnimMainEditWindow*)m_parent;
@@ -48,7 +48,7 @@ class DeleteAnimButton : public SpeciesButton
       std::vector<CameraAnimation*>* anims = &g_location->m_levelFile->m_cameraAnimations;
       for (int i = 0; i < static_cast<int>(anims->size()); ++i)
       {
-        if (stricmp((*anims)[i]->m_name, m_name) == 0)
+        if (stricmp((*anims)[i]->m_name.c_str(), m_name) == 0)
         {
           delete (*anims)[i];
           anims->erase(anims->begin() + i);
@@ -120,24 +120,27 @@ void CameraAnimMainEditWindow::AddButtons()
 
   for (CameraAnimation* anim : g_location->m_levelFile->m_cameraAnimations)
   {
-    char buttonName[64];
-
-    sprintf(buttonName, "name:%s", anim->m_name);
+    // The label was built in a char[64] from a prefix plus a name of up to 63
+    // characters, which overran it before ever reaching the 256-byte button
+    // name. CopyInto bounds it at the destination instead.
     InputField* button = new InputField();
     button->SetShortProperties("Name:", 10, height += pitch, 150);
-    strcpy(button->m_name, buttonName);
-    button->RegisterString(anim->m_name);
+    CopyInto(button->m_name, std::format("name:{}", anim->m_name));
+    button->RegisterString(&anim->m_name);
     RegisterButton(button);
 
+    // Unlike the camera-mount window's buttons, this one holds a COPY of the
+    // name in its own m_name and looks the animation up by it. A rename
+    // therefore unbinds it until the window is rebuilt, which is what it did
+    // before and is not this task's to change.
     SpeciesButton* delButton = new DeleteAnimButton();
     delButton->SetShortProperties("Del", 170, height);
-    sprintf(delButton->m_name, "%s", anim->m_name);
+    CopyInto(delButton->m_name, anim->m_name);
     RegisterButton(delButton);
 
-    sprintf(buttonName, "select:%s", anim->m_name);
     SpeciesButton* selectButton = new SelectAnimButton();
     selectButton->SetShortProperties("Select", 210, height);
-    strcpy(selectButton->m_name, buttonName);
+    CopyInto(selectButton->m_name, std::format("select:{}", anim->m_name));
     RegisterButton(selectButton);
   }
 }
@@ -325,12 +328,12 @@ void CameraAnimSecondaryEditWindow::AddButtons()
       }
       modeBut->SelectOption(node->m_transitionMode);
       x += 70;
-      sprintf(modeBut->m_name, "mode:%s", node->m_mountName);
+      CopyInto(modeBut->m_name, std::format("mode:{}", node->m_mountName));
       RegisterButton(modeBut);
 
       CreateValueControl(node->m_mountName, &node->m_duration, height, 0.5f, 0.1f, 100.0f, nullptr, x, 90);
       EclButton* b = GetButton(node->m_mountName);
-      sprintf(b->m_name, "duration:%s", node->m_mountName);
+      CopyInto(b->m_name, std::format("duration:{}", node->m_mountName));
       b->m_caption[0] = '\0';
       x += 100;
 
@@ -339,12 +342,12 @@ void CameraAnimSecondaryEditWindow::AddButtons()
       but = new SelectMountButton();
       but->SetShortProperties(node->m_mountName, x, height, 80);
       x += 90;
-      sprintf(but->m_name, "mount:%s", node->m_mountName);
+      CopyInto(but->m_name, std::format("mount:{}", node->m_mountName));
       RegisterButton(but);
 
       but = new DeleteNodeButton();
       but->SetShortProperties("Del", x, height, 30);
-      sprintf(but->m_name, "delete:%s", node->m_mountName);
+      CopyInto(but->m_name, std::format("delete:{}", node->m_mountName));
       RegisterButton(but);
 
       height += pitch;

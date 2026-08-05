@@ -20,6 +20,11 @@
 
 #define PIXELS_PER_CHAR 7
 
+// What the old char m_buf[256] could hold. The two Keypress branches that
+// tested `len < sizeof(m_buf) - 1` still test it, so a full field drops the
+// key exactly as it did rather than growing without limit.
+static constexpr size_t MAX_EDIT_LENGTH = 255;
+
 // ****************************************************************************
 // Class InputField
 // ****************************************************************************
@@ -35,7 +40,6 @@ InputField::InputField()
     m_lowBound(0.0f),
     m_highBound(1e4)
 {
-  m_buf[0] = '\0';
 }
 
 
@@ -83,7 +87,7 @@ void InputField::Render(int realX, int realY, bool highlighted, bool clicked)
     BorderlessButton::Render(realX, realY, true, clicked);
     if (fmodf(GetHighResTime(), 1.0f) < 0.5f)
     {
-      int cursorOffset = strlen(m_buf) * PIXELS_PER_CHAR + 2;
+      int cursorOffset = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 2;
       glBegin(GL_LINES);
       glVertex2f(fieldX + cursorOffset, realY + 2);
       glVertex2f(fieldX + cursorOffset, realY + m_h - 2);
@@ -100,26 +104,18 @@ void InputField::Render(int realX, int realY, bool highlighted, bool clicked)
 
   if (!highlighted && fmodf(GetHighResTime(), 1.0f) < 0.5f)
   {
-    switch (m_type)
-    {
-    case TypeChar:
-      sprintf(m_buf, "%d", (int)*m_char);
-      break;
-    case TypeInt:
-      sprintf(m_buf, "%d", *m_int);
-      break;
-    case TypeFloat:
-      sprintf(m_buf, "%.2f", *m_float);
-      break;
-    case TypeString:
-      strncpy(m_buf, m_string, sizeof(m_buf) - 1);
-      break;
-    }
-    m_inputBoxWidth = strlen(m_buf) * PIXELS_PER_CHAR + 7;
+    ReloadBuffer();
+    m_inputBoxWidth = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 7;
   }
   SpeciesWindow* parent = (SpeciesWindow*)m_parent;
   fieldX = realX + m_w - parent->GetMenuSize(m_inputBoxWidth);
-  g_editorFont.DrawText2D(fieldX + 2, realY + 10, parent->GetMenuSize(DEF_FONT_SIZE), m_buf);
+  // m_buf is the format string, not an argument, exactly as it was before the
+  // conversion — so a '%' reaching it is read as a specifier. It cannot be
+  // typed (Keypress accepts only A-Z, 0-9 and '.') but it can arrive in a name
+  // loaded from a level file. Left alone deliberately: T12 owns this API and
+  // its notes say a call site that stops compiling under std::format is a
+  // latent bug being surfaced. This is one of them.
+  g_editorFont.DrawText2D(fieldX + 2, realY + 10, parent->GetMenuSize(DEF_FONT_SIZE), m_buf.c_str());
 }
 
 
@@ -131,14 +127,14 @@ void InputField::Keypress(int keyCode, bool shift, bool ctrl, bool alt)
   if (strcmp(m_parent->m_currentTextEdit, "None") == 0)
     return;
 
-  int len = strlen(m_buf);
+  size_t len = m_buf.size();
   if (keyCode == KEY_BACKSPACE)
   {
     if (len > 0)
-      m_buf[len - 1] = '\0';
+      m_buf.pop_back();
     if (m_type == TypeString)
     {
-      strcpy(m_string, m_buf);
+      *m_string = m_buf;
       Refresh();
     }
   }
@@ -148,19 +144,19 @@ void InputField::Keypress(int keyCode, bool shift, bool ctrl, bool alt)
 
     if (m_float)
     {
-      *m_float = atof(m_buf);
+      *m_float = atof(m_buf.c_str());
     }
     else if (m_int)
     {
-      *m_int = atoi(m_buf);
+      *m_int = atoi(m_buf.c_str());
     }
     else if (m_string)
     {
-      strcpy(m_string, m_buf);
+      *m_string = m_buf;
     }
     else if (m_char)
     {
-      *m_char = (unsigned char)atoi(m_buf);
+      *m_char = (unsigned char)atoi(m_buf.c_str());
     }
 
     ClampToBounds();
@@ -168,29 +164,27 @@ void InputField::Keypress(int keyCode, bool shift, bool ctrl, bool alt)
   }
   else if (keyCode == KEY_STOP)
   {
-    if (len < sizeof(m_buf) - 1)
+    if (len < MAX_EDIT_LENGTH)
     {
-      strcat(m_buf, ".");
+      m_buf += '.';
     }
 
     if (m_type == TypeString)
     {
-      strcpy(m_string, m_buf);
+      *m_string = m_buf;
       Refresh();
     }
   }
   else if (keyCode >= KEY_0 && keyCode <= KEY_9)
   {
-    if (len < sizeof(m_buf) - 1)
+    if (len < MAX_EDIT_LENGTH)
     {
-      char buf[2] = " ";
-      buf[0] = keyCode & 0xff;
-      strcat(m_buf, buf);
+      m_buf += static_cast<char>(keyCode & 0xff);
     }
 
     if (m_type == TypeString)
     {
-      strcpy(m_string, m_buf);
+      *m_string = m_buf;
       Refresh();
     }
   }
@@ -201,19 +195,22 @@ void InputField::Keypress(int keyCode, bool shift, bool ctrl, bool alt)
       unsigned char ascii = keyCode & 0xff;
       if (!shift)
         ascii -= ('A' - 'a');
-      int location = strlen(m_buf);
-      m_buf[location] = ascii;
-      m_buf[location + 1] = '\x0';
+      // No length test here, and there was none before: the letter branch
+      // wrote at m_buf[strlen(m_buf)] and [+1] with nothing stopping it, so a
+      // field already full ran off the end of the array. Appending is what
+      // that meant to do. The two branches above DID test, and keep testing,
+      // because dropping the key at the limit is behaviour rather than damage.
+      m_buf += static_cast<char>(ascii);
     }
 
     if (m_type == TypeString)
     {
-      strcpy(m_string, m_buf);
+      *m_string = m_buf;
       Refresh();
     }
   }
 
-  m_inputBoxWidth = strlen(m_buf) * PIXELS_PER_CHAR + 7;
+  m_inputBoxWidth = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 7;
 }
 
 
@@ -241,7 +238,7 @@ void InputField::RegisterFloat(float* _float)
 }
 
 
-void InputField::RegisterString(char* _string)
+void InputField::RegisterString(std::string* _string)
 {
   DEBUG_ASSERT(m_type == TypeNowt);
   m_type = TypeString;
@@ -275,23 +272,32 @@ void InputField::ClampToBounds()
 }
 
 
-void InputField::Refresh()
+// Renders the registered value into the edit buffer. Render did this inline
+// and Refresh did it again identically; the only difference between them was
+// Refresh's callback, so the shared half is named rather than duplicated.
+void InputField::ReloadBuffer()
 {
   switch (m_type)
   {
   case TypeChar:
-    sprintf(m_buf, "%d", (int)*m_char);
+    m_buf = std::format("{}", (int)*m_char);
     break;
   case TypeInt:
-    sprintf(m_buf, "%d", *m_int);
+    m_buf = std::format("{}", *m_int);
     break;
   case TypeFloat:
-    sprintf(m_buf, "%.2f", *m_float);
+    m_buf = std::format("{:.2f}", *m_float);
     break;
   case TypeString:
-    strncpy(m_buf, m_string, sizeof(m_buf) - 1);
+    m_buf = *m_string;
     break;
   }
+}
+
+
+void InputField::Refresh()
+{
+  ReloadBuffer();
 
   if (m_callback)
   {

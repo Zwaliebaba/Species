@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "Building.h"
 
 
@@ -21,7 +23,7 @@ class FenceSwitch : public Building
     ShapeMarker* m_connectionLocation;
 
   public:
-    char m_script[256];
+    std::string m_script;
     bool m_locked;
     int m_lockable;
     int m_switchValue;
