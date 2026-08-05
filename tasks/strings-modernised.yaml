@@ -419,7 +419,7 @@ tasks:
     verify:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       Raised 2026-08-03 by the project owner, mid-conversion, and the criticism
       was fair: T3 and T7 widened several of these to char const* while fixing a
@@ -1635,7 +1635,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       Added 2026-08-05 at e7a1a88, from a measurement taken while scoping the
       batch after directxmath-migration closed. This is unowned work that the
