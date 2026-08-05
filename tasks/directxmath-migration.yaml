@@ -1986,7 +1986,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       Spirit.cpp was changed by determinism.yaml T1 and its smoke test (T2
       there) is still open. If that gate has not been run when this task
@@ -2158,10 +2158,12 @@ tasks:
       DIVE and m_angVel.z as ROLL.
 
       ALL EIGHTEEN FILES ARE NOW CONVERTED, 2026-08-05. Rocket and Weapons
-      landed in two commits, in that order, and the code half of this task is
-      finished. Left in_progress rather than done until CI has compiled it:
-      no agent here can run MSVC, and this task's own verify line is an
-      msbuild.
+      landed in two commits, in that order.
+
+      DONE ON CI RUN 513 (commit 2d3593f), which is the msbuild this task's
+      verify line asks for: x64 Debug builds and the unit suite passes with
+      both file pairs in. That is a compile and a suite, and it is not a
+      running game -- T21 is the owner's Garden run and is what this unblocks.
 
       WHAT THE TWO FILE PAIRS COST, measured after the fact:
         Rocket   77 type occurrences, 36 legacy method calls, 24 glVertex,
