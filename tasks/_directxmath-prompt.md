@@ -42,7 +42,7 @@ inherit them.
 1. **Determinism: a one-off divergence is accepted.** DirectXMath's SIMD lane
    arithmetic does not reproduce the current scalar arithmetic bit-for-bit, so
    this migration *will* change what the simulation computes. That is
-   sanctioned here, exactly as `tasks/Archive/determinism.yaml` T1 was: the rule being
+   sanctioned here, exactly as `tasks/determinism.yaml` T1 was: the rule being
    suspended is "the new build matches the old build", **not** "every client in
    a session agrees". Clients must still be bit-identical to each other on the
    same build, and mixed-version play is expected to desync. The migration

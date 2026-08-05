@@ -15,21 +15,27 @@ summary: >
   at once.
 
   SCOPE NOTE, because the plan name overpromises: this is not a determinism
-  audit. AGENTS.md's Known issues carries two larger questions that are
-  deliberately NOT tasks here, because neither has been investigated far enough
-  to be planned:
+  audit. Add a FIX here only when the change is understood well enough to state
+  what it alters — T1 and T2 are that shape. Anything less understood is an
+  investigation, and an investigation gets a SCOPING task whose deliverable is
+  an answer rather than a diff.
 
-    SoundInstance.cpp draws from the synchronised stream on paths whose
-    execution depends on CLIENT-LOCAL sound configuration. That is a real
-    desync risk and a different class of problem from T1 below — read the
-    distinction in T1's notes before assuming they are the same bug.
+  REOPENED 2026-08-05 on the owner's decision, after being archived when T1 and
+  T2 closed. Two findings in AGENTS.md's Known issues had no owning task and
+  had sat unowned across three batches, which is how a finding becomes
+  folklore. They are T3 and T4 and they are SCOPING tasks: neither may change
+  behaviour, and each ends with an answer written into this file. Whether
+  either becomes a fix is a separate decision, taken after its answer exists.
 
-    Cross-architecture float agreement between an ARM64 and an x64 client has
-    never been tested.
+  The note this replaces said both were "deliberately NOT tasks here, because
+  neither has been investigated far enough to be planned". That reasoning was
+  right about the fixes and wrong about the investigations — the investigation
+  is precisely what can be planned, and it is the thing nobody was doing.
 
-  Add a task here only when the change is understood well enough to state what
-  it alters. Otherwise it is an investigation, and investigations belong in
-  Known issues until they produce an answer.
+  ONE QUESTION STAYS OUT, and deliberately: cross-architecture float agreement
+  between an ARM64 and an x64 client. AGENTS.md records that as decided rather
+  than open — mixed-architecture play is not supported, on the owner's call of
+  2026-08-03 — so it is not a finding awaiting investigation.
 
 tasks:
   - id: T1
@@ -167,3 +173,103 @@ tasks:
       happened Spirit.cpp carried T1's RNG change AND its math conversion, so
       one run is the only way to test either of them honestly. Recorded on both
       tasks and in AGENTS.md.
+
+  - id: T3
+    title: Establish what SoundInstance's two synchronised draws cost
+    intent: >
+      NeuronClient/SoundInstance.cpp calls speciesRandom() twice — once to pick
+      a sample from a group, once to pick an object id — and both sit on paths
+      whose execution depends on CLIENT-LOCAL sound configuration. If two
+      clients draw a different NUMBER of values from the shared stream, every
+      subsequent speciesRandom() in the simulation diverges and the game
+      desyncs with every build green. Nobody has established whether that can
+      actually happen. This task answers that and only that: it is a reading
+      task, its deliverable is the answer written into these notes, and it
+      changes no behaviour.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SoundSystem.cpp
+    acceptance:
+      - notes states, per call site, exactly which conditions decide whether it executes, and which of those are client-local
+      - notes states whether two clients with different sound settings, different hardware, or a failed sample load can draw a different number of values — yes, no, or "not determinable by reading", each with the evidence
+      - If the answer is that they can, notes names the cheapest fix and whether it changes the RNG sequence for everyone
+      - No behaviour change and no diff outside comments in this task
+    verify:
+      - python3 tools/check_hygiene.py
+      - python3 tools/check_format.py
+    parallel_safe: true
+    status: todo
+    notes: |
+      Added 2026-08-05 on the owner's decision to reopen this plan. The finding
+      itself is older: found by reading while scoping containers-replaced T5 on
+      2026-08-02, written into AGENTS.md's Known issues, and unowned ever
+      since — three batches went past it.
+
+      WHAT IS ALREADY KNOWN, so this starts from the reading rather than
+      repeating it. The two sites are SoundInstance.cpp:533 (pick a sample from
+      a group) and :1009 (pick an object id). speciesRandom() is the
+      deterministic lockstep RNG, the same sequence Location::Advance consumes,
+      and CODING_STANDARDS.md#determinism names the call sequence as
+      load-bearing. Whether either line runs depends on how many object ids an
+      instance holds, whether a sample group is populated, and whether the
+      instance is playing at all.
+
+      THE DISTINCTION THAT MATTERS, and it is why T1 is not a precedent here.
+      T1's double draw was NEVER a desync risk: its branch depended on
+      m_hover.y, which is simulation state, so every in-sync client drew the
+      same number of values. These two are the dangerous shape — the draw count
+      varies with client-local configuration. Read T1's notes before assuming
+      the two are the same bug.
+
+      ownership/T8 converts m_sounds in this same file and is now unblocked,
+      so whoever takes that task is already in the right place to take this
+      one. They are different changes and want different commits.
+
+  - id: T4
+    title: Establish what GetLandscapeColour's reseed costs
+    intent: >
+      LandscapeRenderer::GetLandscapeColour calls
+      speciesSeedRandom(_x | _y + speciesRandom()) — it both draws from and
+      RESEEDS the simulation's random stream, from rendering code, on a path
+      whose execution depends on what is on screen and how often the frame
+      loop runs it. That is the same class of latent desync as T3 and
+      potentially worse, because a reseed discards the stream rather than
+      advancing it. As with T3 this task establishes what it costs and changes
+      nothing.
+    project: Species
+    depends_on: []
+    files:
+      - Species/LandscapeRenderer.cpp
+    acceptance:
+      - notes states what calls GetLandscapeColour, how often, and whether the count is frame-rate or view dependent
+      - notes states whether the reseed is reachable while a simulation tick is in progress, and what the shared stream's state is afterwards
+      - notes answers whether this is benign, a real desync source, or not determinable by reading — with the evidence for whichever
+      - No behaviour change and no diff outside comments in this task
+    verify:
+      - python3 tools/check_hygiene.py
+      - python3 tools/check_format.py
+    parallel_safe: true
+    status: todo
+    notes: |
+      Added 2026-08-05 on the owner's decision to reopen this plan. Found
+      2026-08-04 while investigating the Garden landscape question, unrelated
+      to it, and it predates the DirectXMath work.
+      _restart-directxmath.md said it "belongs in tasks/determinism.yaml once
+      somebody establishes what it costs" — which is circular, since
+      establishing that is the work. This task is the way out of that loop.
+
+      DO NOT CONFUSE THIS WITH THE LANDSCAPE-SHAPE QUESTION, which is closed.
+      Terrain generation reseeds immediately before its diamond-square loop and
+      is a pure function of the level's m_randomSeed and its tile parameters;
+      the height-map checksums were equal across both builds and 57386fb, the
+      commit that measured it, has been reverted. This is the RENDERER's colour
+      lookup, a different function, and nothing about the terrain answer says
+      anything about it.
+
+      A CHEAP FIRST STEP, if it helps: the expression is
+      `speciesSeedRandom(_x | _y + speciesRandom())`, whose precedence is
+      `_x | (_y + speciesRandom())` rather than the `(_x | _y) + …` a reader
+      expects. That is worth noting in the answer either way, but it is not the
+      question — the question is the reseed.

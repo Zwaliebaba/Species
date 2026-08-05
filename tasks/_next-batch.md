@@ -2,7 +2,7 @@
 
 Written 2026-08-05 at `e7a1a88`, the merge that closed
 `directxmath-migration` and archived it. This is a proposal, not a plan — the
-plans are the four YAML files beside it. It answers one question: **of
+plans are the five YAML files beside it. It answers one question: **of
 everything that is ready, what should the next batch be, and why that rather
 than the rest.**
 
@@ -11,30 +11,33 @@ modernisation reading order; it is still current and this file does not
 supersede it. **Batches 1 and 2 are done** — what they were and what they
 taught is at the end of this file.
 
-Two plan files changed with this proposal, and both changes are additions
-rather than re-scopes: `strings-modernised` gained T17 and T18, which own work
-its own acceptance greps could not see, and two file lists were corrected from
-measurement. Both are described below and neither is in this batch.
+Four plan files changed with this proposal, and none of the changes re-scopes
+an existing task. `strings-modernised` gained T17 and T18, which own work its
+own acceptance greps could not see; two file lists were corrected from
+measurement; `ownership/T8` records the decision that unblocked it; and
+`determinism.yaml` came back out of `Archive/` with two scoping tasks. All four
+are described below, and none of the new work is in this batch.
 
 ---
 
 ## Where every plan stands
 
-Counted from the YAML at `e7a1a88`. Seven plans are complete and in
-`tasks/Archive/`; four are open.
+Counted from the YAML at `e7a1a88`. Six plans are complete and in
+`tasks/Archive/`; five are open.
 
 | Plan | done | todo | State |
 |---|---:|---:|---|
 | `directxmath-migration` | 28 | 0 | complete — **archived since Batch 2** |
-| `determinism` | 2 | 0 | complete — archived |
 | the five earlier plans | 59 | 0 | complete — archived |
 | `strings-modernised` | 11 | 7 | T8, T11, T12 ready; T17 and T18 are new |
-| `ownership` | 5 | 4 | T8 ready; T5 waits on `strings/T8` alone |
+| `ownership` | 5 | 4 | T8 ready and now unblocked; T5 waits on `strings/T8` alone |
 | `language-hygiene` | 9 | 3 | T10 and T12 ready |
 | `namespace-migration` | 2 | 3 | T2 ready, sequenced last by design |
+| `determinism` | 2 | 2 | **reopened 2026-08-05** — T3 and T4 are scoping tasks |
 
-Seventeen tasks open. Eight are offered by `--next` — the seven that were
-ready before this proposal, plus the new `strings/T18`.
+Nineteen tasks open. Ten are offered by `--next` — the seven that were ready
+before this proposal, plus `strings/T18` and the two reopened determinism
+tasks.
 
 ---
 
@@ -50,7 +53,7 @@ column. None of it was built.
 | `strings/T11` | **6** fixed `char[N]` members over 3 headers; 30 C-string calls in the 8 declared files. | `grep -nE 'char\s+m_\w+\s*\['` |
 | `language-hygiene/T10` | **218** `INPUT_TYPE_` sites — in **25** files, not the 11 the task declared. | `grep -rEo '\bINPUT_TYPE_\w+'` |
 | `language-hygiene/T12` | **22** files carry a `Camera::Mode` enumerator, not the 21 declared. | `grep -rEow 'Mode[A-Z]\w+'` |
-| `ownership/T8` | 38 `m_sounds` uses, 26 `ShutdownSound`/`InitialiseSound` sites — behind **a decision**. | T8 `notes` |
+| `ownership/T8` | 38 `m_sounds` uses, 26 `ShutdownSound`/`InitialiseSound` sites. **The decision it waited on is taken**, so this is now a size rather than a blocker. | T8 `notes` |
 | `namespace/T2` | whole of `NeuronClient`. Deliberately last. | — |
 
 All seven local checks pass at `e7a1a88`:
@@ -106,12 +109,14 @@ safe" would stop half way and not know it.
 
 ## The proposal
 
-### Batch 3 — three tasks in sequence, and one that may run beside them
+### Batch 3 — three tasks in sequence, and three that may run beside them
 
-**This batch cannot fan out, and that is the second finding.** Of the eight
-ready tasks only three are `parallel_safe: true`, and one of those three is the
-new `strings/T18` — five files, none of them anybody else's. The other two are
-`strings/T8` and `language-hygiene/T12`, and they collide over six files:
+**This batch cannot fan out, and that is the second finding.** Of the ten
+ready tasks only five are `parallel_safe: true`, and three of those five — the
+new `strings/T18` and the two reopened `determinism` scoping tasks — touch
+nothing anybody else claims and can run beside the batch. The other two are the
+batch's own `strings/T8` and `language-hygiene/T12`, and those two collide over
+six files:
 `GlobalWorld.cpp`, `LevelFile.cpp`, `Location.cpp`, `GameCursor.cpp`,
 `Main.cpp` and `Script.cpp`. Every other ready task is exclusive by its own
 flag. Batch 1 ran three agents at once because its three tasks happened to be
@@ -183,9 +188,15 @@ file supplies. That is worth writing in the commit as what the task fixed;
 - **`language-hygiene/T12` (`Camera::Mode`).** Ready and `parallel_safe: true`,
   and it collides with `strings/T8` over six files. Same conclusion as Batch 1
   reached for the same reason, re-measured: it is the one to hold back.
-- **`ownership/T8` (SoundInstance).** Still not schedulable, and still for the
-  same reason — its blocker is a decision, not work. **Ask for it with this
-  batch** (see below).
+- **`ownership/T8` (SoundInstance).** **Unblocked as of 2026-08-05** — the
+  decision it waited on was put to the owner and answered; see *The decisions*
+  below. It is not in the batch because the batch was already three deep and
+  this one wants the tree to itself, but it is now schedulable work rather than
+  a question, and it is the obvious first task of Batch 4.
+- **`determinism/T3` and `T4`.** New, `parallel_safe: true`, and disjoint from
+  everything — but they are reading tasks whose deliverable is an answer, not a
+  diff, so they do not compete with the batch for a slot. T3 wants to be read by
+  whoever takes `ownership/T8`, in a separate commit.
 - **`strings/T17` and `T18`.** New, and T17 depends on T8, so neither belongs
   here. T18 is small, self-contained and `parallel_safe: true`, and its five files
   are claimed by nothing else — so unlike everything else here it CAN run
@@ -194,35 +205,67 @@ file supplies. That is worth writing in the commit as what the task fixed;
 - **`namespace/T2`.** Ready, sequenced last on purpose. Every file in this
   batch is a file it would have to move.
 
-### One decision to ask the owner for, worth asking now
+### The decisions, put to the owner and taken 2026-08-05
 
-`ownership/T8` cannot start until somebody decides who owns a `SoundInstance`
-between `new` and `InitialiseSound` succeeding: `ShutdownSound` serves both
-registered and unregistered instances, deletes unconditionally, and tests
-`ValidIndex(m_id.m_index)` without checking the slot still holds *this*
-instance. Adding that check is a behaviour change and probably a fix.
+Four questions were open when this proposal was written. All four were asked
+and all four are answered; each is recorded on the task it governs, not only
+here, because this file is a proposal and proposals expire.
 
-Ask for it in the same message that claims this batch, because **the same file
-holds the tree's oldest unfixed determinism finding** — `SoundInstance.cpp`
-draws twice from `speciesRandom()` on paths whose execution depends on
-client-local sound configuration, which is a desync no build or test would show
-(`AGENTS.md`, *Known issues*). Whoever opens that file for T8 is in the right
-place to scope it, and scoping it is a reading task that works on Linux.
+**1. Who owns a `SoundInstance` between `new` and `InitialiseSound` succeeding
+— `ownership/T8`'s blocker.** *Decided: `InitialiseSound` takes
+`std::unique_ptr<SoundInstance>`.* It stores the instance on success and
+destroys it on the monophonic folding path, `m_sounds` becomes a
+`SlotMap<unique_ptr>`, and `ShutdownSound` serves registered instances only —
+one contract, in the header. The cheaper option, keeping the raw parameter and
+splitting the two cases inside `ShutdownSound`, was refused for leaving the
+transfer in a comment: `ownership` T2 and T9 exist to stop doing exactly that.
+**T8 is no longer blocked on anything but an agent.**
 
-Neither that finding nor `LandscapeRenderer::GetLandscapeColour` reseeding the
-simulation RNG from rendering code has an owning task, and `determinism.yaml`
-is now archived with both of its tasks done. Giving them a home means bringing
-that plan back out of `Archive/`, which is a structural change and the owner's
-call rather than a batch's — flagged here, not done.
+**2. `ShutdownSound`'s missing identity check.** *Decided: add it, as a fix and
+labelled as one.* The slot is released only when it still holds this instance.
+Today's `ValidIndex`-only test can un-register a live sound belonging to
+someone else after an index is reused, and sound destructors stop audio
+channels, so the failure is silent. Preserving today's behaviour exactly was
+offered and refused. It lands in T8's commit and says in the message that it is
+a behaviour change rather than part of the conversion.
+
+**3. Where the two unowned determinism findings live.** *Decided: reopen
+`determinism.yaml`.* It has moved out of `Archive/` and carries two new SCOPING
+tasks — **T3**, `SoundInstance.cpp`'s two `speciesRandom()` draws on
+client-configuration-dependent paths, and **T4**,
+`LandscapeRenderer::GetLandscapeColour` reseeding the simulation RNG from
+rendering code. Neither may change behaviour; each ends with an answer written
+into the plan, and whether it becomes a fix is a later decision. Both are
+reading tasks that work on Linux, both are `parallel_safe: true`, and the
+fourteen paths that named the archived file are updated.
+
+That reopening also retires a circular sentence. `AGENTS.md` said the second
+finding "belongs in `determinism.yaml` once somebody establishes what it
+costs" — but establishing that *is* the work, which is why it sat unowned
+across three batches. The plan's own scope note had the same shape and is
+rewritten: a fix needs to be understood before it is planned, an investigation
+does not.
+
+**4. The batch order.** *Decided: as proposed* — `strings/T8`, then
+`strings/T12`, then `language-hygiene/T10`, with `strings/T18` available beside
+them. Starting with T12 (the live undefined behaviour) or with T10 (the lowest
+risk) were both offered; T8 won on the same argument the table above makes,
+that it is the only node between here and the end of stage 5.
+
+**`ownership/T8` and `determinism/T3` are the same file and must not be the
+same commit.** Whoever opens `SoundInstance.cpp` for the ownership conversion
+is in the right place to scope the RNG draws, and a lifetime conversion plus an
+RNG question in one diff is precisely the review nobody can judge. Both tasks
+now say so.
 
 ---
 
 ## The collision check
 
-`--next` offers eight tasks across four plans and says nothing about whether
+`--next` offers ten tasks across five plans and says nothing about whether
 they can run together, because it reasons per plan. Cross-referencing the
 **measured** reach of each — not the declared `files` lists, which are
-under-declared in two of the eight — finds this:
+under-declared in two of the ten — finds this:
 
 | Pair | Contested files |
 |---|---|
@@ -261,6 +304,13 @@ conversion** and `strings/T12` does not.
 client in this environment, so every size is a count of lines and call sites
 rather than a compile, and the Garden smoke test remains the owner's. This
 batch is a scheduling argument; it is not evidence that any of it compiles.
+
+The four decisions above were **put to the owner and answered on 2026-08-05**,
+not inferred from the code. Each is recorded on the task it governs as well as
+here — `ownership/T8`'s notes and acceptance, `determinism.yaml`'s summary and
+its two new tasks, and `AGENTS.md`'s two Known-issues bullets, which now name
+an owning task instead of describing an orphan. `check_task_dag.py` passes on
+all five open plans.
 
 ---
 

@@ -532,6 +532,11 @@ Real, currently true, and worth knowing before you trip over them:
     on every client regardless of settings, it costs nothing). Establishing
     which is true is worth doing before multiplayer is trusted, and it is a
     determinism question rather than a modernisation one.
+  - **It has an owning task now: `tasks/determinism.yaml` T3**, added on the
+    owner's decision of 2026-08-05 after this bullet sat unowned across three
+    batches. T3 is a SCOPING task — establish what it costs, change nothing —
+    and its deliverable is the answer written into that plan. `ownership` T8
+    converts `m_sounds` in the same file and is a different commit.
 - **`Spirit.cpp`'s hover clamp drew twice from the synchronised stream, and no
   longer does.** `Spirit::Advance` clamped `m_hover.y` through what used to be
   the `max` macro, which evaluated its second argument twice — and that argument
@@ -569,8 +574,12 @@ Real, currently true, and worth knowing before you trip over them:
   `SoundInstance` entry above: a client-local, frame-rate-dependent path
   perturbing the stream deterministic lockstep depends on. Found 2026-08-04
   while investigating the landscape question, unrelated to it, and it predates
-  the DirectXMath work. Not investigated and not fixed; it belongs in
-  `tasks/Archive/determinism.yaml` when somebody has established what it costs.
+  the DirectXMath work. Not investigated and not fixed — but it has an owning
+  task now: `tasks/determinism.yaml` T4, added on the owner's decision of
+  2026-08-05. It is a scoping task, not a fix. This bullet used to say the
+  finding "belongs in determinism.yaml once somebody establishes what it
+  costs", which was circular — establishing that IS the work, and it is what
+  nobody was doing.
 - **Mixed-architecture play is NOT SUPPORTED.** Not "unproven" — decided. The
   simulation computes on DirectXMath, which dispatches to SSE on x64 and to
   ARM-NEON on ARM64, and the owner decided on 2026-08-03 to accept that rather
