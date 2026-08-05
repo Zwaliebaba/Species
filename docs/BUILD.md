@@ -6,7 +6,7 @@
 |---|---|
 | OS | Windows. The code uses Win32, Winsock, WGL and DirectSound directly. |
 | Toolchain | Visual Studio 2026, MSVC toolset **v145**, Windows SDK 10 |
-| Language | C++20 (`/std:c++20`, `/permissive-`) |
+| Language | C++23 (`/permissive-`). **Debug sets `stdcpplatest`, Release still sets `stdcpp20`** — see *Release* below.  |
 | Platforms | **ARM64** (primary) and **x64** |
 | Dependencies | **DirectXMath**, header-only, from the Windows SDK. Links only against `opengl32`, `glu32`, `winmm`, `dsound`, `dxguid`, `Ws2_32`. |
 
@@ -73,10 +73,21 @@ platform-specific, so the configuration groups are conditioned on
 | Precompiled header | Used | Used |
 | Whole program optimisation | off | on |
 | Debug info | generated | generated |
+| `LanguageStandard` | `stdcpplatest` | **`stdcpp20`** |
 
-Both configurations carry identical `ClCompile` settings — include paths,
-precompiled header, language standard, conformance — and the same subsystem.
-Only the optimisation and `_DEBUG`/`NDEBUG` settings differ.
+Apart from the language standard, both configurations carry identical
+`ClCompile` settings — include paths, precompiled header, conformance — and the
+same subsystem. Only the optimisation and `_DEBUG`/`NDEBUG` settings differ.
+
+> **The two configurations do not compile the same language, and that is not
+> deliberate.** Every one of the six projects sets `stdcpplatest` in Debug and
+> `stdcpp20` in Release. Debug is the only configuration CI builds and the only
+> one anyone builds by hand, so the divergence has never been compiled against —
+> which is the same reason the three Release defects below went unnoticed for as
+> long as they did. Code written to the documented C++23 standard is not
+> guaranteed to compile in Release until these are aligned. Doing so changes
+> every project file, so it wants a deliberate decision rather than a drive-by
+> edit.
 
 Every configuration defines `_CRT_SECURE_NO_WARNINGS`,
 `_CRT_NONSTDC_NO_WARNINGS` and `_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS`,

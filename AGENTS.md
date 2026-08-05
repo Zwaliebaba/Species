@@ -19,7 +19,7 @@ linked documents; this file is the map.
 
 ## What this is
 
-Species is a C++20 game built on the **Neuron** engine. The long-term goal is a
+Species is a C++23 game built on the **Neuron** engine. The long-term goal is a
 large-scale realtime multiplayer world in which player colonies work, live and
 survive persistently.
 
@@ -45,7 +45,7 @@ making the existing code capable of supporting it, not by building it alongside.
 **Cleanup and modernisation first.**
 
 The near-term goal is to finish converting the inherited Darwinia code into
-Neuron-style C++20 with enforced layer boundaries. A runnable game and the
+Neuron-style C++23 with enforced layer boundaries. A runnable game and the
 authoritative world server are later milestones that depend on this landing.
 
 What that means for a task in front of you:
@@ -182,7 +182,7 @@ upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 msbuild Species.slnx /p:Configuration=Debug /p:Platform=ARM64 /m
 ```
 
-Visual Studio 2026 (toolset v145), C++20, Windows-only. ARM64 is the primary
+Visual Studio 2026 (toolset v145), C++23, Windows-only. ARM64 is the primary
 development platform; x64 is also supported, and x64 Debug is the one
 configuration CI builds. Full detail — configurations, what CI does not cover,
 troubleshooting — is in [`docs/BUILD.md`](docs/BUILD.md).
@@ -681,6 +681,8 @@ Real, currently true, and worth knowing before you trip over them:
   internal research, non-commercial, not for distribution — but those terms cover
   only this project's own contributions. The licence covering the original
   Darwinia source has never been established, so nothing here may be published,
-  redistributed or used commercially without settling that first. Three files
-  carry third-party notices that must never be stripped, including when moved or
-  modernised; they are listed in `LICENSE`.
+  redistributed or used commercially without settling that first. **One** file
+  carries a third-party notice that must never be stripped, including when moved
+  or modernised — `NeuronCore/MathUtils.cpp`, under BSD 3-clause. This bullet
+  said three; `LICENSE` has listed one since `AutoVector.h` and `TriTri.cpp`
+  were deleted, notices included, and it explains why each row went.

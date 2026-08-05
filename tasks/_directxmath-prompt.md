@@ -11,9 +11,9 @@ is wasting the session.
 
 ---
 
-You are working in the **Species** repository, a ~113k-line C++20 Windows game
+You are working in the **Species** repository, a ~113k-line C++23 Windows game
 (six MSBuild projects) partway through being modernised from the inherited
-Darwinia source into Neuron-style C++20 with enforced layer boundaries.
+Darwinia source into Neuron-style C++23 with enforced layer boundaries.
 
 ## Mission
 
