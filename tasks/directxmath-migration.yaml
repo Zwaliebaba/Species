@@ -820,6 +820,43 @@ tasks:
       coincidence is exactly why it belongs in the renderer -- Direct3D wants a
       different answer and changes it there and nowhere else.
 
+      A DEFECT FROM THIS TASK REACHED THE OWNER, 2026-08-05. Recorded here
+      because it is failure mode 5 in a form the {0,0,0} sweep above was
+      constructed not to see.
+
+      ShapeMarker::m_transform became an XMFLOAT4X4 and kept the parsing
+      constructor's empty initialiser list. Matrix34 was TWELVE floats -- r, u,
+      f, pos -- with no fourth column at all, and ToNative() supplied
+      (0,0,0,1) for the one it did not have. XMFLOAT4X4 has that column for
+      real. The shape-file parser writes nine floats (front, up, pos) and
+      NormaliseBasis derives right, so _14, _24, _34 and _44 were never
+      written. XMMatrixMultiply reads all sixteen:
+
+        row3 = _41*r0 + _42*r1 + _43*r2 + _44*r3
+
+      so a _44 of about -1e9 times a building position of about 1200 put every
+      marker at roughly -1.2e12.
+
+      IT SURFACED AS TWO REPORTS THAT LOOKED UNRELATED. A research item that
+      stopped appearing -- Library::Advance spawns one AT a marker's world
+      position, `item->m_pos = scrollMarker->GetWorldMatrix(rootMat).pos` -- and
+      a GenerateSyncValue assert on a total of -2.5e12, which is that same
+      position summed. One uninitialised field, one rendering symptom, one
+      determinism symptom.
+
+      WHY THE SWEEP MISSED IT: the sweep asked "which members lost Vector3's
+      zeroing", and check_math_types.py encoded exactly that question --
+      `if kind in NATIVE_VECTORS`. A matrix that GAINED A FIELD is a different
+      question with the same answer, and neither the sweep nor the checker was
+      asking it. The checker now checks matrix members too, verified by
+      re-introducing the bug.
+
+      THE GENERAL RULE, added to CODING_STANDARDS.md: when a converted type is
+      WIDER than the one it replaced, audit every WRITER, not just every
+      reader. Fixed in ShapeMarker::m_transform and ShapeFragment::m_transform;
+      BuildingPort::m_mat got the same default defensively, being the only
+      other bare XMFLOAT4X4 member in the tree.
+
   - id: T11
     title: Convert the sound subsystem's positional math
     intent: >
