@@ -17,6 +17,22 @@
 #include "WorldPointers.h"
 #include "AppState.h"
 
+
+// Vector3::Normalise answered a zero-length input with (0,0,1) and
+// XMVector3Normalize answers zero. NeuronMath.h records that the migration
+// takes the native behaviour by default; RenderBranch is the one site in the
+// tree that depended on the fallback, and it depends on it unconditionally --
+// see the comment there. Kept file-local so it stays an exception rather than
+// becoming an operator layer NeuronMath.h explicitly refuses.
+static DirectX::XMVECTOR XM_CALLCONV NormaliseOrUnitZ(DirectX::FXMVECTOR _v)
+{
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(_v)) > 0.0f)
+    return DirectX::XMVector3Normalize(_v);
+
+  return DirectX::g_XMIdentityR2; // (0, 0, 1, 0), exactly what Normalise left
+}
+
+
 Tree::Tree()
   : Building(),
     m_branchDisplayListId(-1),
@@ -459,8 +475,22 @@ void Tree::RenderBranch(DirectX::XMFLOAT3 _from, DirectX::XMFLOAT3 _to, int _ite
 
   DirectX::XMVECTOR const thisBranch = DirectX::XMVectorSubtract(to, from);
 
-  DirectX::XMVECTOR const rightAngleA = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(thisBranch, to));
-  DirectX::XMVECTOR const rightAngleB = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(rightAngleA, thisBranch));
+  // THE TRUNK ALWAYS TAKES THE ZERO-LENGTH FALLBACK, which is why this needs
+  // one at all. Generate calls RenderBranch with _from (0,0,0) and _to (0,1,0),
+  // so thisBranch and `to` are the SAME vector and their cross product is
+  // exactly zero -- on every tree, every time the display lists are built.
+  //
+  // Vector3::Normalise answered a zero-length input with (0,0,1).
+  // XMVector3Normalize answers zero, and zero here collapses camRightA and
+  // camRightB to zero width AND hands all four child branches a zero
+  // right-angle, so every branch below the trunk is collinear with it too. The
+  // whole tree becomes an invisible zero-width vertical line. That is the
+  // trees-have-disappeared report from the Garden smoke test.
+  //
+  // Reproduced locally rather than in NeuronMath.h: T1 decided the fallback is
+  // not the default, and this is the one site in the tree that depends on it.
+  DirectX::XMVECTOR const rightAngleA = NormaliseOrUnitZ(DirectX::XMVector3Cross(thisBranch, to));
+  DirectX::XMVECTOR const rightAngleB = NormaliseOrUnitZ(DirectX::XMVector3Cross(rightAngleA, thisBranch));
 
   float thickness = DirectX::XMVectorGetX(DirectX::XMVector3Length(thisBranch));
 

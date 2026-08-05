@@ -1813,6 +1813,31 @@ tasks:
       collapse to a native XMFLOAT3; where the whole basis is wanted the local
       stays Matrix34 with a "T10's seam" comment. grep for that phrase to find
       the follow-up work.
+
+      DEFECT FOUND BY THE OWNER'S SMOKE TEST, 2026-08-05, and fixed. Trees did
+      not render in The Garden. Tree::RenderBranch computes rightAngleA as the
+      normalised cross product of (to - from) and to, and Generate seeds it with
+      from (0,0,0) and to (0,1,0) -- so the two arguments to the cross product
+      are THE SAME VECTOR and the result is exactly zero. Vector3::Normalise
+      answered that with (0,0,1); XMVector3Normalize answers zero. Zero
+      collapses both branch quads to zero width AND gives all four child
+      branches a zero right-angle, so every branch below the trunk is collinear
+      with it and the tree renders as an invisible vertical line.
+
+      WHY THE AUDIT MISSED IT, which is the reusable part. T1 decided the
+      (0,0,1) fallback would not be reproduced by default, and T15 audited
+      roughly twenty sites for whether they could see a zero-length input --
+      asking each time "is this reachable?". This site is not reachable in an
+      edge case, it degenerates ON EVERY TREE EVERY TIME, and a question phrased
+      as "can this input be zero?" reads straight past a site where the answer
+      is "always". When auditing Normalise, look first for a cross product whose
+      two arguments are the same expression, then for unlikely inputs.
+
+      NOTHING AUTOMATED COULD HAVE CAUGHT IT. It compiles, all seven local
+      checks pass, check_math_types is clean, and the unit suite was green on CI
+      runs 513 and 514. No test in this tree renders a tree. NeuronMathTests now
+      pins the divergence itself, with a negative control that fails if anyone
+      gives XMVector3Normalize the legacy fallback.
   - id: T18
     title: Convert the world, landscape and routing
     intent: >

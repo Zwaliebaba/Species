@@ -698,4 +698,52 @@ namespace NeuronCoreTests
         AssertNearlyEqual(4.0f, posOnB.x);
       }
   };
+
+
+  // THE ZERO-LENGTH NORMALISE DIVERGENCE, pinned after it shipped.
+  //
+  // NeuronMath.h records the decision: Vector3::Normalise answered a
+  // zero-length input with (0,0,1), XMVector3Normalize answers zero, and the
+  // migration takes the native behaviour rather than reproducing the fallback.
+  // Every call site was supposed to be audited for whether it can actually see
+  // a zero-length input. Tree::RenderBranch was missed, and it was the worst
+  // possible one to miss: the trunk is RenderBranch((0,0,0),(0,1,0)), so the
+  // two vectors it crosses are IDENTICAL and the cross product is exactly zero
+  // on every tree. The trees rendered as invisible zero-width lines, and the
+  // owner found it in the Garden smoke test rather than CI, because nothing
+  // here or in the compiler can see it.
+  //
+  // These pin the divergence itself so the next audit has something to point
+  // at. The second is the negative control: it fails if somebody ever
+  // "helpfully" gives XMVector3Normalize the legacy fallback, which would
+  // silently change every other converted site back.
+  TEST_CLASS(ZeroLengthNormaliseTests)
+  {
+    public:
+      TEST_METHOD(TheCrossProductOfAVectorWithItselfIsExactlyZero)
+      {
+        DirectX::XMVECTOR const v = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        DirectX::XMVECTOR const cross = DirectX::XMVector3Cross(v, v);
+
+        Assert::AreEqual(0.0f, DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(cross)));
+      }
+
+      TEST_METHOD(LegacyNormaliseAnsweredUnitZWhereTheNativeRoutineAnswersZero)
+      {
+        Vector3 legacy(0.0f, 0.0f, 0.0f);
+        legacy.Normalise();
+
+        AssertNearlyEqual(0.0f, legacy.x);
+        AssertNearlyEqual(0.0f, legacy.y);
+        AssertNearlyEqual(1.0f, legacy.z);
+
+        DirectX::XMVECTOR const native = DirectX::XMVector3Normalize(DirectX::XMVectorZero());
+
+        // The divergence, stated as the assertion rather than as a comment: the
+        // native routine does NOT reproduce the legacy fallback, so a site that
+        // depended on it has to say so locally.
+        Assert::AreEqual(0.0f, DirectX::XMVectorGetZ(native));
+        Assert::AreEqual(0.0f, DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(native)));
+      }
+  };
 } // namespace NeuronCoreTests

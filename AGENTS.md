@@ -326,6 +326,23 @@ was in rendering or in the eye. The temporary checksum commit that answered it
 (`57386fb`) has been reverted. `tasks/directxmath-migration.yaml` T13 carries
 the detail.
 
+**Run on the Batch 1 tree (2026-08-05), owner-reported: THE TREES HAD
+DISAPPEARED.** Found and fixed — `Tree::RenderBranch` crossed two vectors that
+are identical on the trunk, so the cross product was exactly zero, and
+`XMVector3Normalize` answers zero where `Vector3::Normalise` answered (0,0,1).
+Zero there collapses the trunk quads to zero width *and* hands all four child
+branches a zero right-angle, so the whole tree became an invisible vertical
+line. `directxmath-migration` T17 converted the file; the audit that was
+supposed to catch this missed the one site that degenerates **unconditionally**
+rather than in an edge case. The fallback is now reproduced locally in
+`Tree.cpp` with the reason at the site, and `NeuronMathTests` pins the
+divergence with a negative control.
+
+> This is what the smoke test is *for*, and it is worth stating plainly: seven
+> green checks, two green CI runs and 180 passing tests all said this tree was
+> fine. None of them renders a tree. The owner looking at the game found it in
+> one run.
+
 Earlier runs, kept because the sequence is the evidence:
 
 - **All seven steps, on the layering-inversion branch (2026-08-02)**, after
