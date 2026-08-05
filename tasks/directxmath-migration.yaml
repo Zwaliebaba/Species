@@ -1949,7 +1949,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: todo
     notes: |
       Spirit.cpp was changed by determinism.yaml T1 and its smoke test (T2
       there) is still open. If that gate has not been run when this task
@@ -1962,6 +1962,53 @@ tasks:
       occurrences. A task marked in_progress that nobody is doing is worse than
       one marked todo: --next stops offering it, so the claim has been dropped
       rather than left standing.
+
+      PARTIALLY DONE 2026-08-05, and set back to todo rather than left
+      in_progress, for the reason this task's own note gives above: a task
+      marked in_progress that nobody is doing stops --next offering it.
+
+      LANDED AND CI-GREEN: the five files that had drifted from clang-format
+      were reformatted in their own commit first (Rocket.h, Airstrike.h,
+      Spirit.h, Flag.h, Flag.cpp — the other thirteen already matched), and
+      ParticleSystem.h and ParticleSystem.cpp are fully converted. Skip both
+      when picking this up.
+
+      STILL LEGACY: Weapons (103 occurrences), Rocket (77), Spam (36),
+      Airstrike (29), Explosion (27), TaskManager (21), Flag (17), Spirit (4).
+      329 in total when this started, of which 15 are done.
+
+      WHAT PARTICLESYSTEM COST, so the next eight are cheaper:
+        - Particle's constructor assigns nothing, so m_pos and m_vel needed
+          explicit {0,0,0} initialisers. Failure mode 5, invisible to the
+          compiler and to CI.
+        - check_math_types found three sites grep could not, all failure mode
+          2 — a converted member's name with no type on the line. RUN IT AFTER
+          EVERY FILE, not at the end.
+        - Vector3::operator/ computed 1/b once and multiplied, so XMVectorScale
+          with the reciprocal is exact rather than approximate.
+        - Vector3::operator* between two vectors was the DOT PRODUCT. It reads
+          like a scale and is not.
+        - glVertex3fv(v.GetData()) becomes EmitVertex, and the file needs
+          #include "GlVertex.h" — it is not reachable through pch.h.
+        - g_camera->GetUp() and GetRight() still return Vector3 and stay that
+          way until T12/T22, so the seam converts them on the way in.
+
+      EXPLOSION NEEDS A DECISION BEFORE IT CAN BE CONVERTED, which is why the
+      work stopped there rather than part-way through a file. Explosion.h
+      stores `Matrix33 m_rotMat` and Explosion.cpp builds one per tick as
+      `Matrix33 rotIncrement(yaw, dive, roll)`. That constructor is
+      Matrix33.cpp:42 and it applies RotateAroundZ(roll), RotateAroundX(dive),
+      RotateAroundY(yaw) IN THAT ORDER to an identity matrix.
+      XMMatrixRotationRollPitchYaw(pitch, yaw, roll) documents the same
+      Z-then-X-then-Y order, so `Matrix33(yaw, dive, roll)` looks equivalent to
+      XMMatrixRotationRollPitchYaw(dive, yaw, roll) — note the swapped first
+      two arguments. LOOKS EQUIVALENT IS NOT ENOUGH: the handedness and the
+      row-vector convention both have to agree, and a wrong rotation here
+      tumbles debris the wrong way rather than failing to compile. Pin it in
+      NeuronMathTests the way T1 pinned the axis rotation and the
+      front-and-up basis, THEN convert. Matrix33 has five other users outside
+      this task — LaserFence, Location, Shape, Camera and Matrix34 itself — so
+      the pin is worth more than this one file.
 
   - id: T20
     title: Convert the in-game windows
