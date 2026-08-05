@@ -1,6 +1,8 @@
 #pragma once
 
 #include <functional>
+#include <string>
+#include <string_view>
 #include <memory>
 #include <type_traits>
 
@@ -30,11 +32,15 @@ namespace Species
   class DropDownWindow : public SpeciesWindow
   {
     public:
-      char m_parentName[256];
+      // An EclWindow name, so it follows EclWindow::m_name to std::string.
+      // strings-modernised T11 missed it on the first pass because the sweep
+      // was keyed on the MEMBER NAMES the widgets use, and this one is called
+      // something else.
+      std::string m_parentName;
       static DropDownWindow* s_window;
 
     public:
-      DropDownWindow(char* _name, char* _parentName);
+      DropDownWindow(std::string_view _name, std::string_view _parentName);
       void Update();
 
       // There can be only one

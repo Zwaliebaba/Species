@@ -305,8 +305,8 @@ namespace Species
   // Class SpeciesWindow
   // ****************************************************************************
 
-  SpeciesWindow::SpeciesWindow(char const* name)
-    : EclWindow((char*)name),
+  SpeciesWindow::SpeciesWindow(std::string_view name)
+    : EclWindow(name),
       m_currentButton(0),
       m_buttonChangedThisUpdate(false),
       m_skipUpdate(false)
@@ -329,7 +329,7 @@ namespace Species
     // bounds check. std::vector would be undefined behaviour on an empty list.
     if (!windows->empty() && (*windows)[0])
     {
-      EclSetCurrentFocus((*windows)[0]->m_name);
+      EclSetCurrentFocus((*windows)[0]->m_name.c_str());
     }
   }
 

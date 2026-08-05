@@ -33,10 +33,10 @@ namespace Species
 
   DropDownWindow* DropDownWindow::s_window = nullptr;
 
-  DropDownWindow::DropDownWindow(char* _name, char* _parentName)
-    : SpeciesWindow(_name)
+  DropDownWindow::DropDownWindow(std::string_view _name, std::string_view _parentName)
+    : SpeciesWindow(_name),
+      m_parentName(_parentName)
   {
-    strcpy(m_parentName, _parentName);
   }
 
 
@@ -44,7 +44,7 @@ namespace Species
   {
     SpeciesWindow::Update();
 
-    EclWindow* parent = EclGetWindow(m_parentName);
+    EclWindow* parent = EclGetWindow(m_parentName.c_str());
     if (!parent)
     {
       RemoveDropDownWindow();

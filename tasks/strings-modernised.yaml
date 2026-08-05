@@ -536,6 +536,25 @@ tasks:
       is `char const*` now. DropDownWindow::CreateDropDownWindow took two
       `char*` for the same reason and takes string_view.
 
+      WHAT CI CAUGHT, in one round of two errors, and both are the same class
+      of miss: THE SWEEP WAS KEYED ON THE MEMBER NAMES THE WIDGETS USE.
+
+        SpeciesWindow.cpp had EclSetCurrentFocus((*windows)[0]->m_name) and the
+        regex that added .c_str() elsewhere required an argument with no
+        parentheses in it. A receiver with a subscript or a dereference in it
+        does not match; 29 of the 30 sites did.
+
+        DropDownWindow::m_parentName IS AN ECLIPSE WINDOW NAME IN A char[256]
+        and this task should have converted it on the first pass. It holds
+        EclWindow::m_name, strcpy'd; it is not called m_name, so a sweep over
+        the widget member names could not see it. It is a std::string now, its
+        constructor takes string_view, and SpeciesWindow's constructor follows
+        — it forwards to EclWindow, which already took string_view.
+
+      A paren-aware re-sweep afterwards found no third site: the fourteen calls
+      that still hand a member straight to a C-string API are all on OTHER
+      classes — Profiler, SoundSystem's blueprints, ScreenZone, StartSequence.
+
       THE .c_str() CALLS ARE T13's TO REMOVE, and there are 30 of them —
       EclRemoveWindow, EclGetWindow and EclSetCurrentFocus still take
       char const*. That is exactly the churn T13 exists for; it is the next task

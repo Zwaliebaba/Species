@@ -11,6 +11,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include "Eclipse.h"
 
@@ -29,7 +30,7 @@ namespace Species
       bool m_skipUpdate;
 
     public:
-      SpeciesWindow(char const* name);
+      SpeciesWindow(std::string_view name);
       ~SpeciesWindow();
 
       void Create();
