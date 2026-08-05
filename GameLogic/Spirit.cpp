@@ -319,21 +319,19 @@ void Spirit::Render(float predictionTime)
   DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
   DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
-  float size = spiritInnerSize;
   glColor4ub(colour.r, colour.g, colour.b, innerAlpha);
 
   glBegin(GL_QUADS);
-  DirectX::XMVECTOR const sizeVec = DirectX::XMVectorReplicate(size);
+  DirectX::XMVECTOR sizeVec = DirectX::XMVectorReplicate(spiritInnerSize);
   EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, sizeVec, predictedPos));
   EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, sizeVec, predictedPos));
   EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, sizeVec, predictedPos));
   EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, sizeVec, predictedPos));
   glEnd();
 
-  size = spiritOuterSize;
   glColor4ub(colour.r, colour.g, colour.b, outerAlpha);
   glBegin(GL_QUADS);
-  DirectX::XMVECTOR const sizeVec = DirectX::XMVectorReplicate(size);
+  sizeVec = DirectX::XMVectorReplicate(spiritOuterSize);
   EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, sizeVec, predictedPos));
   EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, sizeVec, predictedPos));
   EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, sizeVec, predictedPos));
