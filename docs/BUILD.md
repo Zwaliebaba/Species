@@ -73,21 +73,29 @@ platform-specific, so the configuration groups are conditioned on
 | Precompiled header | Used | Used |
 | Whole program optimisation | off | on |
 | Debug info | generated | generated |
-| `LanguageStandard` | `stdcpplatest` | **`stdcpp20`** |
+| `LanguageStandard` | `stdcpplatest` | `stdcpplatest` |
 
-Apart from the language standard, both configurations carry identical
-`ClCompile` settings — include paths, precompiled header, conformance — and the
-same subsystem. Only the optimisation and `_DEBUG`/`NDEBUG` settings differ.
+Both configurations carry identical `ClCompile` settings — include paths,
+precompiled header, language standard, conformance — and the same subsystem.
+Only the optimisation and `_DEBUG`/`NDEBUG` settings differ.
 
-> **The two configurations do not compile the same language, and that is not
-> deliberate.** Every one of the six projects sets `stdcpplatest` in Debug and
-> `stdcpp20` in Release. Debug is the only configuration CI builds and the only
-> one anyone builds by hand, so the divergence has never been compiled against —
-> which is the same reason the three Release defects below went unnoticed for as
-> long as they did. Code written to the documented C++23 standard is not
-> guaranteed to compile in Release until these are aligned. Doing so changes
-> every project file, so it wants a deliberate decision rather than a drive-by
-> edit.
+> **Release used to set `stdcpp20` against Debug's `stdcpplatest`**, in all six
+> projects. Debug is the only configuration CI builds or anyone builds by hand,
+> so the two never got compared — the same blind spot that hid the three Release
+> defects below. Both are `stdcpplatest` now, which on toolset v145 is C++23
+> plus whatever is in preview. That is deliberate: the tree tracks the latest
+> standard rather than pinning a numbered one, so
+> [`CODING_STANDARDS.md`](../CODING_STANDARDS.md)'s "C++23" is the floor you can
+> rely on, not a ceiling the compiler enforces.
+>
+> **Nothing has compiled Release since**, so this is a corrected setting rather
+> than a verified one — the same caveat as the subsystem fix below.
+>
+> The four `Tests/*` projects are a separate case and are **not** covered by
+> this: each sets `LanguageStandard` only under
+> `Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'"`, so every other
+> configuration — including the x64 Debug that CI builds and runs the suite in —
+> compiles the tests at the toolset default.
 
 Every configuration defines `_CRT_SECURE_NO_WARNINGS`,
 `_CRT_NONSTDC_NO_WARNINGS` and `_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS`,
