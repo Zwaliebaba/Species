@@ -200,7 +200,7 @@ tasks:
       - python3 tools/check_hygiene.py
       - python3 tools/check_format.py
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Added 2026-08-05 on the owner's decision to reopen this plan. The finding
       itself is older: found by reading while scoping containers-replaced T5 on
@@ -251,7 +251,7 @@ tasks:
       - python3 tools/check_hygiene.py
       - python3 tools/check_format.py
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Added 2026-08-05 on the owner's decision to reopen this plan. Found
       2026-08-04 while investigating the Garden landscape question, unrelated
