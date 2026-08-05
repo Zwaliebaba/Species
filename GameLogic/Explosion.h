@@ -19,7 +19,12 @@ class Tumbler
     // Rotation only, so 3x3 storage. How it is BUILT and how it is MULTIPLIED
     // both reverse relative to the legacy Matrix33 — see the two pins in
     // NeuronMathTests and directxmath-migration T19's notes.
-    DirectX::XMFLOAT3X3 m_rotMat;
+    // IDENTITY BY DEFAULT, for the reason ShapeMarker::m_transform carries on
+    // main: the legacy Matrix33's default constructor did nothing either, but
+    // Tumbler() called SetToIdentity() and that was the only thing standing
+    // between this and stack garbage. Declaring it here means a second
+    // constructor cannot lose it.
+    DirectX::XMFLOAT3X3 m_rotMat{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
     DirectX::XMFLOAT3 m_angVel{0.0f, 0.0f, 0.0f};
 
     Tumbler();

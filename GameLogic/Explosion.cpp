@@ -35,7 +35,7 @@
 
 Tumbler::Tumbler()
 {
-  DirectX::XMStoreFloat3x3(&m_rotMat, DirectX::XMMatrixIdentity());
+  // m_rotMat is identity from its declaration — see Explosion.h.
   m_angVel.x = sfrand(MAX_ANG_VEL);
   m_angVel.y = sfrand(MAX_ANG_VEL);
   m_angVel.z = sfrand(MAX_ANG_VEL);
@@ -186,14 +186,16 @@ bool Explosion::Advance()
     if (g_gameTime > m_tris[i].m_timeToDie)
       continue;
 
-    m_tris[i].m_pos += m_tris[i].m_vel * g_advanceTime;
+    DirectX::XMVECTOR const vel = DirectX::XMLoadFloat3(&m_tris[i].m_vel);
+    DirectX::XMStoreFloat3(&m_tris[i].m_pos,
+                           DirectX::XMVectorMultiplyAdd(vel, DirectX::XMVectorReplicate(g_advanceTime), DirectX::XMLoadFloat3(&m_tris[i].m_pos)));
 
     // Friction
-    float speed = m_tris[i].m_vel.Mag();
+    float speed = DirectX::XMVectorGetX(DirectX::XMVector3Length(vel));
     float friction = speed * FRICTION_COEF * g_advanceTime;
     if (friction > 1.0f)
       friction = 1.0f;
-    m_tris[i].m_vel *= 1.0f - friction;
+    DirectX::XMStoreFloat3(&m_tris[i].m_vel, DirectX::XMVectorScale(vel, 1.0f - friction));
 
     // Gravity
     m_tris[i].m_vel.y += deltaVelY;
