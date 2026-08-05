@@ -215,8 +215,7 @@ namespace Species
 
     for (int i = 0; i < numRows; ++i)
     {
-      char name[32];
-      sprintf(name, "File %d", i);
+      const std::string name = std::format("File {}", i);
       FileButton* button = new FileButton(i);
       button->SetProperties(name, 5, 25 + i * 13, m_w - 25, 12, " ", " ");
       RegisterButton(button);

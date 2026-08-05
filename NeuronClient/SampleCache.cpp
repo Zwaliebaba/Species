@@ -18,10 +18,9 @@ namespace Neuron
   CachedSample::CachedSample(char const* _sampleName)
     : m_amountCached(0)
   {
-    char fullPath[512] = "Sounds/";
-    strcat(fullPath, _sampleName);
+    const std::string fullPath = std::format("Sounds/{}", _sampleName);
 
-    m_soundStreamDecoder = g_resource->GetSoundStreamDecoder(fullPath);
+    m_soundStreamDecoder = g_resource->GetSoundStreamDecoder(fullPath.c_str());
     ASSERT_TEXT(m_soundStreamDecoder, "Failed to open sound stream decoder : {}", fullPath);
 
     m_numChannels = m_soundStreamDecoder->m_numChannels;

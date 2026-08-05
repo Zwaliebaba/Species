@@ -868,12 +868,6 @@ namespace Species
 
     // float total = abs(details.x) + abs(details.y);
 
-    /*char debugstring[512];
-    double r = details.x * details.x + details.y * details.y;
-    r = sqrt(r);
-    sprintf(debugstring, "x = %d, y = %d r = %f\n", details.x, details.y, r);
-    DebugTrace( debugstring );*/
-
     // This should be dependent on distance of camera from units
     // Further away, rangeFactor = 1.0, closer rangeFactor closer to 0.66
     const float rangeFactor = 0.75;

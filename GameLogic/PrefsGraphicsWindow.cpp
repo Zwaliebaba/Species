@@ -226,8 +226,6 @@ void PrefsGraphicsWindow::Render(bool _hasFocus)
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_entitydetail"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_pixeleffect"));
 
-  char fpsCaption[64];
-  sprintf(fpsCaption, "%d FPS", g_renderer->Fps());
-  g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(60), GetMenuSize(20), fpsCaption);
+  g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(60), GetMenuSize(20), "{} FPS", g_renderer->Fps());
 }
 } // namespace Species

@@ -906,9 +906,13 @@ char const* Refinery::GetObjectiveCounter()
   if (gb)
     numRefined = gb->m_link;
 
-  static char result[256];
-  sprintf(result, "%s : %d", LANGUAGEPHRASE("objective_refined"), numRefined);
-  return result;
+  // Still a function-local static, and so still a buffer every caller
+  // shares — narrowing that is a lifetime change with no owning task. What
+  // went is the unbounded write into 256 bytes of it: a translated phrase
+  // longer than the field used to run off the end.
+  static std::string result;
+  result = std::format("{} : {}", LANGUAGEPHRASE("objective_refined"), numRefined);
+  return result.c_str();
 }
 
 

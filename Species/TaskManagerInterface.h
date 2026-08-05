@@ -23,8 +23,11 @@ namespace Species
   class ScreenZone
   {
     public:
-      char m_name[256];
-      char m_toolTip[1024];
+      // std::string since strings-modernised T9. Both were fixed buffers an
+      // unbounded strcpy wrote into, with an assert in front of each — so a
+      // long tooltip was a crash in Debug and a smashed object in Release.
+      std::string m_name;
+      std::string m_toolTip;
       float m_x;
       float m_y;
       float m_w;

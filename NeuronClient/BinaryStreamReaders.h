@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <string_view>
+
 
 //*****************************************************************************
 // Class BinaryReader
@@ -12,13 +15,18 @@ namespace Neuron
   {
     public:
       bool m_eof;
-      char m_filename[256];
+      // std::string since strings-modernised T9. Was char[256], written by an
+      // strncpy bounded to 255 — which leaves byte 255 UNWRITTEN, so a filename
+      // of exactly 255 characters or more was never terminated.
+      std::string m_filename;
 
       BinaryReader();
       virtual ~BinaryReader();
 
       virtual bool IsOpen() = 0;
-      virtual char* GetFileType() = 0;
+      // Empty rather than nullptr when the name has no extension, which is
+      // what the pointer-to-the-terminator this replaces amounted to.
+      virtual std::string_view GetFileType() = 0;
 
       virtual signed char ReadS8() = 0;
       virtual short ReadS16() = 0;
@@ -50,7 +58,7 @@ namespace Neuron
       ~BinaryFileReader();
 
       bool IsOpen();
-      char* GetFileType();
+      std::string_view GetFileType() override;
 
       signed char ReadS8();
       short ReadS16();
@@ -83,7 +91,7 @@ namespace Neuron
       ~BinaryDataReader();
 
       bool IsOpen();
-      char* GetFileType();
+      std::string_view GetFileType() override;
 
       signed char ReadS8();
       short ReadS16();

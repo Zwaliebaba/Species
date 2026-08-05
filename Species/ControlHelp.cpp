@@ -59,7 +59,9 @@ namespace Species
       void Render(DirectX::XMFLOAT2 const& _setPosition, float _alpha);
 
     private:
-      char m_filename[256], m_shadowFilename[256];
+      // std::string since strings-modernised T9. Both were char[256] an
+      // unbounded strcpy wrote into.
+      std::string m_filename, m_shadowFilename;
       // Braced although the only constructor sets it from its init list:
       // Vector2's default constructor zeroed, XMFLOAT2's does not, and
       // check_math_types flags the declaration rather than tracking init lists.
@@ -95,8 +97,8 @@ namespace Species
   HelpIcon::HelpIcon(const char* _filename, const char* _shadowFilename, DirectX::XMFLOAT2 const& _setRelativePos)
     : m_setRelativePos(_setRelativePos)
   {
-    strcpy(m_filename, _filename);
-    strcpy(m_shadowFilename, _shadowFilename);
+    m_filename = _filename;
+    m_shadowFilename = _shadowFilename;
   }
 
   inline bool HelpIcon::Enabled() const
@@ -185,7 +187,7 @@ namespace Species
 
     // Render the shadow
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename.c_str()));
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
     glDepthMask(false);
     glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
@@ -201,7 +203,7 @@ namespace Species
     glVertex2f(iconCentre.x - shadowX + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
     glEnd();
 
-    unsigned int texId = g_resource->GetTexture(m_filename);
+    unsigned int texId = g_resource->GetTexture(m_filename.c_str());
 
     // Render the icon
     glEnable(GL_TEXTURE_2D);

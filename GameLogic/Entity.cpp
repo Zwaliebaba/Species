@@ -796,12 +796,11 @@ namespace Species
   {
     char const* typeName = GetTypeName(_troopType);
 
-    char stringId[256];
-    sprintf(stringId, "entityname_%s", typeName);
+    const std::string stringId = std::format("entityname_{}", typeName);
 
-    if (ISLANGUAGEPHRASE(stringId))
+    if (ISLANGUAGEPHRASE(stringId.c_str()))
     {
-      return LANGUAGEPHRASE(stringId);
+      return LANGUAGEPHRASE(stringId.c_str());
     }
     else
     {

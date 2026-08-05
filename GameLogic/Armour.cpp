@@ -623,9 +623,7 @@ namespace Species
 
     if (m_numPassengers > 0)
     {
-      char caption[16];
-      sprintf(caption, "%d", m_numPassengers);
-      m_flag.RenderText(2, 2, caption);
+      m_flag.RenderText(2, 2, std::format("{}", m_numPassengers));
     }
 
     //

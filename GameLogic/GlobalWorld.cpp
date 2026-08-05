@@ -82,38 +82,17 @@ namespace Species
   GlobalEventCondition::GlobalEventCondition()
     : m_type(-1),
       m_id(-1),
-      m_locationId(-1),
-      m_stringId(nullptr),
-      m_cutScene(nullptr)
+      m_locationId(-1)
   {
   }
 
-  GlobalEventCondition::GlobalEventCondition(const GlobalEventCondition& _other)
-    : m_type(_other.m_type),
-      m_id(_other.m_id),
-      m_locationId(_other.m_locationId),
-      m_stringId(NewStr(_other.m_stringId)),
-      m_cutScene(NewStr(_other.m_cutScene))
-  {
-  }
+  // The copy constructor and destructor that used to sit here are gone. Both
+  // existed only for the two char* members, and the copy one was a defect: it
+  // handed a nullptr to NewStr, which is strlen(nullptr).
 
-  GlobalEventCondition::~GlobalEventCondition()
-  {
-    delete[] m_stringId;
-    delete[] m_cutScene;
-  }
+  void GlobalEventCondition::SetStringId(std::string_view _stringId) { m_stringId = _stringId; }
 
-  void GlobalEventCondition::SetStringId(const char* _stringId)
-  {
-    delete[] m_stringId;
-    m_stringId = NewStr(_stringId);
-  }
-
-  void GlobalEventCondition::SetCutScene(char* _cutScene)
-  {
-    delete[] m_cutScene;
-    m_cutScene = NewStr(_cutScene);
-  }
+  void GlobalEventCondition::SetCutScene(std::string_view _cutScene) { m_cutScene = _cutScene; }
 
   const char* GlobalEventCondition::GetTypeName(int _type)
   {

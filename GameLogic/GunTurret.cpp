@@ -53,16 +53,14 @@ namespace Species
 
     for (int i = 0; i < GUNTURRET_NUMBARRELS; ++i)
     {
-      char name[64];
-      sprintf(name, "MarkerBarrelEnd0%d", i + 1);
-      m_barrelEnd[i] = m_barrel->m_rootFragment->LookupMarker(name);
+      const std::string name = std::format("MarkerBarrelEnd0{}", i + 1);
+      m_barrelEnd[i] = m_barrel->m_rootFragment->LookupMarker(name.c_str());
     }
 
     for (int i = 0; i < GUNTURRET_NUMSTATUSMARKERS; ++i)
     {
-      char name[64];
-      sprintf(name, "MarkerStatus0%d", i + 1);
-      m_statusMarkers[i] = m_shape->m_rootFragment->LookupMarker(name);
+      const std::string name = std::format("MarkerStatus0{}", i + 1);
+      m_statusMarkers[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
     }
   }
 

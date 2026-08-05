@@ -159,12 +159,11 @@ namespace Neuron
       ~SoundInstance();
 
       void SetSoundName(char const* _name);
-      // _entityName is only ever formatted into m_eventName, so it is a
-      // string_view (strings-modernised T13). _eventName is NOT: its only
-      // caller passes SoundEventBlueprint::m_eventName, which is null when the
-      // blueprint line carried no token, and that null is what the assert in
-      // the body catches. A string_view would have to be built from it first.
-      void SetEventName(std::string_view _entityName, char const* _eventName);
+      // Both are only formatted into m_eventName, so both are string_view.
+      // The second stayed char const* through T13 because
+      // SoundEventBlueprint::m_eventName was a NULLABLE char* then; T9 made it
+      // a std::string, so there is no null left to keep it out of a view.
+      void SetEventName(std::string_view _entityName, std::string_view _eventName);
 
       void Copy(SoundInstance* _copyMe);
       bool StartPlaying(int _channelIndex);

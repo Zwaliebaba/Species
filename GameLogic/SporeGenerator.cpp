@@ -41,9 +41,8 @@ namespace Species
 
     for (int i = 0; i < SPOREGENERATOR_NUMTAILS; ++i)
     {
-      char name[256];
-      sprintf(name, "MarkerTail0%d", i + 1);
-      m_tail[i] = m_shape->m_rootFragment->LookupMarker(name);
+      const std::string name = std::format("MarkerTail0{}", i + 1);
+      m_tail[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
     }
   }
 

@@ -1,5 +1,45 @@
 # The next implementation batch
 
+> # THERE IS NO NEXT BATCH. EVERY PLAN IS FINISHED.
+>
+> `strings-modernised` closed on 2026-08-05 at 20 of 20 and is in
+> `tasks/Archive/` with the other ten. `tasks/` now holds `_template.yaml`, the
+> three reading orders and the archive — no plan, no ready task, nothing to
+> schedule. **This file is a record, not a proposal.** Read it before writing
+> the next plan, for how its predictions turned out; do not read it to find
+> work.
+>
+> What closed it, after the proposal below was overtaken:
+>
+> | Task | What it did |
+> |---|---|
+> | `strings/T13` | Nine Eclipse entry points and `SoundSystem::ParseSoundEvent` take `std::string_view`. 36 `.c_str()` calls went from 18 files — the ones T11 had just added. `EclRemoveWindow` turned out to READ ITS ARGUMENT AFTER DESTROYING THE WINDOW THAT OWNED IT, which it had done equally when the parameter was `char const*`. |
+> | `strings/T17` | `FileWriter::printf` becomes the two-overload `std::string_view` + `std::format_string` shape, and the unbounded `char[10240]` goes. 127 format strings rewritten across 30 files. |
+> | `strings/T9` | The tail: 44 code sites in 26 files, and `NewStr` deleted with its nine callers. Four latent defects fell out — a copy constructor that called `strlen(nullptr)`, a leak per sound blueprint, an unbounded write into a `char*[20]`, and an `strncpy` that left a 255-character filename unterminated. |
+>
+> **Three findings worth carrying into whatever gets planned next.**
+>
+> 1. **`%d` must become `{:d}`, never `{}`.** A bare `{}` writes a bool as
+>    "true", a `char` as a character and a `float` as a float, where `%d` wrote
+>    1, a number and garbage. T17 had four arguments that would have changed the
+>    bytes of a level file under `{}` — three bools and an `unsigned char` — with
+>    a green build and no test able to see it. Spelling the `d` also turns a `%d`
+>    that was fed a float into a compile error.
+> 2. **A grep keyed on `printf(` followed by ONE literal misses a concatenated
+>    format.** `SoundSystem::WriteSoundEvent` spells its format as six adjacent
+>    string literals over six lines. The sweep converted nothing there and
+>    reported nothing. It was found by re-grepping for a surviving `%` inside a
+>    brace-matched CALL rather than inside a literal — end any API sweep with
+>    that second grep.
+> 3. **An acceptance criterion that forbids naming what you removed gets the
+>    documentation deleted.** T9's grep counts comments, and nine of the
+>    survivors are prose explaining what an unbounded `vsprintf` used to do.
+>    The criterion was amended to filter comment-only lines. That is the second
+>    time this plan's closing grep has had to be corrected rather than met — the
+>    first was `\bsprintf\b` not matching `vsprintf`.
+>
+> The original Batch 6 header follows.
+
 > ## BATCH 6 WAS PROPOSED AND THEN NOT EXECUTED. The owner asked instead for
 > the last tasks of `language-hygiene` and `namespace-migration`, and both
 > plans are now closed and archived. What happened is at

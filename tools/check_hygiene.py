@@ -97,7 +97,7 @@ RULES = [
     Rule(
         "C string call",
         r"\b(?:strcpy|strncpy|strcat|sprintf|snprintf)\b",
-        "use std::string / std::format — see tasks/strings-modernised.yaml",
+        "use std::string / std::format — see tasks/Archive/strings-modernised.yaml",
     ),
     Rule(
         "subscript as a loop condition",

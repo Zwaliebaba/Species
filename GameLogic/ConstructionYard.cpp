@@ -40,17 +40,15 @@ namespace Species
 
     for (int i = 0; i < YARD_NUMPRIMITIVES; ++i)
     {
-      char name[64];
-      sprintf(name, "MarkerPrimitive0%d", i + 1);
-      m_primitives[i] = m_shape->m_rootFragment->LookupMarker(name);
+      const std::string name = std::format("MarkerPrimitive0{}", i + 1);
+      m_primitives[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
       DEBUG_ASSERT(m_primitives[i]);
     }
 
     for (int i = 0; i < YARD_NUMRUNGSPIKES; ++i)
     {
-      char name[64];
-      sprintf(name, "MarkerSpike0%d", i + 1);
-      m_rungSpikes[i] = m_rung->m_rootFragment->LookupMarker(name);
+      const std::string name = std::format("MarkerSpike0{}", i + 1);
+      m_rungSpikes[i] = m_rung->m_rootFragment->LookupMarker(name.c_str());
       DEBUG_ASSERT(m_rungSpikes[i]);
     }
   }
@@ -414,9 +412,8 @@ namespace Species
 
     for (int i = 0; i < DISPLAYSCREEN_NUMRAYS; ++i)
     {
-      char name[64];
-      sprintf(name, "MarkerRay0%d", i + 1);
-      m_rays[i] = m_shape->m_rootFragment->LookupMarker(name);
+      const std::string name = std::format("MarkerRay0{}", i + 1);
+      m_rays[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
     }
   }
 

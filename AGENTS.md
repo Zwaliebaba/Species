@@ -134,10 +134,11 @@ Server/           ~0.1k   Headless server executable. Links NeuronCore and
 Tests/            ~0.4k   One <Name>Tests project per library, on the Microsoft
                           Native Unit Test Framework. Built and run by CI.
 tools/                    The checks CI runs. Run them locally too.
-tasks/                    Task DAGs. See docs/TASK_DAG.md. Start at
-                          _next-batch.md — what is ready, what collides,
-                          and what the current batch is. Finished plans
-                          live in tasks/Archive/.
+tasks/                    Task DAGs. See docs/TASK_DAG.md. EVERY plan is
+                          finished and in tasks/Archive/; what is left here
+                          is _template.yaml and the reading orders.
+                          _next-batch.md is now a record rather than a
+                          proposal — there is nothing left to schedule.
 docs/                     Architecture, build, testing, glossary, task breakdown.
 ```
 
@@ -228,20 +229,18 @@ are `std::unique_ptr` and values, and all three legacy greps are at zero:
 definitions included.
 
 **Raw ownership is not extinct, and stage 5 ending does not claim it is.**
-Four things outlived the plan's scope, and NONE has an owning task. A fifth
-had one and is **gone**: `EclButton::m_caption` and `m_tooltip` were
+**Three** things outlived the plan's scope, and none has an owning task. Two
+more did and are **gone**: `EclButton::m_caption` and `m_tooltip` were
 `new char[]`/`delete[]` with a copy each, and `strings-modernised/T11` retired
 them on 2026-08-05 along with the widget `char[N]` members — `~EclButton` no
-longer exists, because the class no longer owns anything. The four without an
-owner:
+longer exists, because the class no longer owns anything. Then
+`GlobalEventCondition::m_stringId` and `m_cutScene` went the same way in
+`strings-modernised/T9`, which also took `NewStr` — `strcpy(new char[...])` —
+out of the tree along with its other seven callers. The three without an owner:
 
 ```
 SAFE_DELETE_ARRAY   2 callers in NeuronClient/Shape.cpp. The last of the
                     macro family; T7's acceptance named only the other two.
-GlobalEventCondition::m_stringId / m_cutScene
-                    char* via NewStr/delete[]. Converting them is stage-4
-                    string work that reaches the level-file writer, where
-                    byte-identity is strings-modernised's proof to make.
 ColourShapeFragment new RGBAColour[1] into a ShapeFragment — Shape's
                     ownership, in NeuronClient.
 Resource::ListResources
@@ -413,8 +412,18 @@ launch a Windows client, say so instead of implying you checked.
 `17b0778` — that build carries `language-hygiene` T11 and the whole of
 `namespace-migration`, so the namespaced tree compiles, links and passes the
 suite. **Everything after `17b0778` has NOT been compiled by anyone**: that is
-`strings-modernised` T12 and T11, written on Linux against the seven Python
-checks alone.
+`strings-modernised` T12, T11, and then the three that closed the plan — T13,
+T17 and T9 — all written on Linux against the seven Python checks alone.
+
+Those last three are the largest uncompiled block this file has ever recorded:
+127 rewritten format strings, nine members changed from `char*` to
+`std::string`, and four signatures narrowed. **What a Python check cannot see
+is a type that no longer matches its use**, and that is the whole failure mode
+here. Three things were compiled and run with g++ 13 to narrow it — every
+printf-to-`std::format` spec pair, the old and new `FileWriter::printf` side by
+side on the real call-site formats, and the two non-mechanical rewrites against
+their originals — and all three agree byte for byte. None of that is MSVC, and
+none of it type-checks a call site.
 
 Three CI rounds were needed to get the namespaced tree green, and what each
 caught is worth knowing because none of them was findable by any check in
@@ -597,37 +606,46 @@ The full standard — schema, status semantics, how to write acceptance criteria
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
 
-**If you are asking "what should I do next", start at
-[`tasks/_next-batch.md`](tasks/_next-batch.md).** It is the cross-plan
-scheduling argument: what is ready, measured; which ready tasks collide over
-which files, which `--next` cannot tell you because it reasons one plan at a
-time; and what the current batch is. It is rewritten each time a batch is
-chosen and it carries the record of the previous ones.
+**If you are asking "what should I do next", there is no answer in `tasks/`
+any more — every plan is finished.** The next piece of work needs its own plan
+written before code is written.
 
-**Ten plans are complete and in `tasks/Archive/`** — `determinism` and
-`ownership` joined them on 2026-08-05, and `language-hygiene` and
-`namespace-migration` on the same day. **One is open with three tasks** —
-`strings-modernised`, at 17 of 20. T12 (the TextRenderer format API) and T11
-(the Eclipse widget names) landed on 2026-08-05; T13, T17 and T9 are left, and
-T9 is the plan's last node by construction.
+[`tasks/_next-batch.md`](tasks/_next-batch.md) is kept as the record of how the
+seven batches were scheduled: what was ready, measured; which ready tasks
+collided over which files, which `--next` could not tell you because it reasons
+one plan at a time; and, each time, how the prediction turned out. **Read it
+before writing a plan, not to find work.** Its recurring finding is the
+transferable part: a task's declared `files` list is written from where a thing
+is DECLARED and the work is wherever it is NAMED, and eight of the nine lists
+measured against the tree were wrong.
+
+**ELEVEN PLANS ARE COMPLETE AND IN `tasks/Archive/`, AND NOTHING IS OPEN.**
+`determinism`, `ownership`, `language-hygiene` and `namespace-migration` all
+closed on 2026-08-05, and `strings-modernised` — the last one — closed the same
+day at 20 of 20. T13 narrowed the read-only name parameters to `string_view`,
+T17 replaced `FileWriter::printf` with `std::format` templates, and T9 swept
+the `strcpy`/`sprintf` family to a tree-wide zero and deleted `NewStr` with it.
+
+**There is no ready task anywhere.** `tasks/` holds the reading orders, the
+template and the archive, and nothing else. The next piece of work needs a plan
+written for it before code is written — see *How work is broken down* below and
+[`docs/TASK_DAG.md`](docs/TASK_DAG.md). What the closed plans left behind, each
+recorded and unowned, is the honest starting list: the three raw-ownership
+survivors above, the unswept LCG sites below, entity and building behaviour
+having no tests, and `GlobalWorld` not being constructible in a test DLL.
 
 The tree is namespaced; that is its own section, [above](#namespaces).
 
-**Nothing is gated on the owner, and migration stage 5 is finished.** Every
-open task is startable by an agent today — which is not the same as saying they
-can be started *at the same time*. Batch 6 measured all five tasks that were
-ready then and found exactly ONE disjoint pair; the other nine pairs contested
-between three and fourteen files each. **With three tasks left the question is
-nearly moot** — T13 and T17 are the only ready ones, T9 waits on both, and the
-wide, shallow ready sets that let three and four agents run at once are gone,
-because the isolated conversions went first.
+**Nothing is gated on the owner, and migration stage 5 is finished.** The
+scheduling problem the batch files exist to solve is gone with the last plan:
+there is nothing to schedule against.
 
-**But T6 is the one to be sceptical about.** Its acceptance asked for the game
-to reach the main menu after each of its four commits, and that check was NOT
-performed; CI compiled them and nothing more. See its notes for what a smoke
-test can and cannot say about it — the destructor it rewrote is unreachable
-code, and the two runtime paths it did change need a resolution change and a
-gamepad switch to reach, neither of which is a Garden step.
+**`ownership` T6 is still the one to be sceptical about.** Its acceptance asked
+for the game to reach the main menu after each of its four commits, and that
+check was NOT performed; CI compiled them and nothing more. See its notes for
+what a smoke test can and cannot say about it — the destructor it rewrote is
+unreachable code, and the two runtime paths it did change need a resolution
+change and a gamepad switch to reach, neither of which is a Garden step.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:
@@ -708,7 +726,7 @@ Real, currently true, and worth knowing before you trip over them:
   (2026-08-05), and it is also the most recent with an explicit
   all-seven-steps breakdown — see *What working looks like*. CI builds and runs
   the unit suite; it does not launch the client, and neither does any agent
-  working on Linux. A change that compiles and passes 191 tests can still break
+  working on Linux. A change that compiles and passes 198 tests can still break
   the game on the first frame.
   - Batch 5 is the standing example in both directions. Four tasks went in on
     CI evidence alone; CI then caught two real compile errors a name-keyed
@@ -796,9 +814,14 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **191** tests as of
-  `strings-modernised` T11 (2026-08-05). The seven newest are
-  `ControlBindingsTests`, which characterise the control-name lookup —
+- **The test suite is thin.** Four projects, **198** tests as of
+  `strings-modernised` T9 (2026-08-05). The seven newest are the five in
+  `BinaryReaderTests` — the filename extension parse, including the empty
+  answer for a name with no dot and a 400-character name that the char[256]
+  behind it could not have held — and the two `FileWriterTests` gained for
+  behaviour T17 created: a percent sign in argument-free text is now a percent
+  sign, and text longer than the old 10240-byte stack buffer is written whole.
+  Before them, `ControlBindingsTests` characterise the control-name lookup —
   including the edge where the EMPTY STRING matches and returns a real,
   bindable `ControlNull`. Before them the count was 184, one FEWER than the run
   before that, which is rare here and worth spelling out: `ownership` T7 deleted

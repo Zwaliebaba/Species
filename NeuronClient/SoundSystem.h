@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <string_view>
 
 #include <vector>
@@ -27,7 +28,11 @@ namespace Neuron
   class SoundEventBlueprint
   {
     public:
-      char* m_eventName;
+      // std::string since strings-modernised T9. Was NewStr'd into a char*
+      // that NOTHING EVER FREED — this class has no destructor — so every
+      // blueprint parsed leaked its event name. Empty is what nullptr was: the
+      // EVENT line carried no token.
+      std::string m_eventName;
       SoundInstance* m_instance;
 
       SoundEventBlueprint();
@@ -99,9 +104,11 @@ namespace Neuron
   {
     public:
       char m_name[256];
-      std::vector<char*> m_samples;
+      // std::string since strings-modernised T9. Was a vector of new char[]
+      // that the destructor below walked with delete[]; the destructor is gone
+      // with it.
+      std::vector<std::string> m_samples;
 
-      ~SampleGroup();
       void SetName(const char* _name);
       void AddSample(const char* _sample);
   };

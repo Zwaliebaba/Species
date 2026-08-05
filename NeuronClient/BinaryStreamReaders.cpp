@@ -11,7 +11,6 @@ namespace Neuron
   BinaryReader::BinaryReader()
     : m_eof(false)
   {
-    m_filename[0] = '\0';
   }
 
   BinaryReader::~BinaryReader() {}
@@ -25,7 +24,7 @@ namespace Neuron
   {
     if (_filename)
     {
-      strncpy(m_filename, _filename, sizeof(m_filename) - 1);
+      m_filename = _filename;
       m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "rb");
       DEBUG_ASSERT(m_file);
     }
@@ -40,13 +39,10 @@ namespace Neuron
     return false;
   }
 
-  char* BinaryFileReader::GetFileType()
+  std::string_view BinaryFileReader::GetFileType()
   {
-    char* extension = strrchr(m_filename, '.');
-    if (extension)
-      return extension + 1;
-
-    return &m_filename[strlen(m_filename)];
+    size_t const dot = m_filename.rfind('.');
+    return dot == std::string::npos ? std::string_view() : std::string_view(m_filename).substr(dot + 1);
   }
 
   signed char BinaryFileReader::ReadS8()
@@ -112,20 +108,17 @@ namespace Neuron
       m_data(_data),
       m_dataSize(_dataSize)
   {
-    strncpy(m_filename, _filename, sizeof(m_filename) - 1);
+    m_filename = _filename;
   }
 
   BinaryDataReader::~BinaryDataReader() {}
 
   bool BinaryDataReader::IsOpen() { return true; }
 
-  char* BinaryDataReader::GetFileType()
+  std::string_view BinaryDataReader::GetFileType()
   {
-    char* extension = strrchr(m_filename, '.');
-    if (extension)
-      return extension + 1;
-
-    return &m_filename[strlen(m_filename)];
+    size_t const dot = m_filename.rfind('.');
+    return dot == std::string::npos ? std::string_view() : std::string_view(m_filename).substr(dot + 1);
   }
 
   signed char BinaryDataReader::ReadS8()

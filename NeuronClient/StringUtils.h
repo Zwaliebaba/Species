@@ -9,7 +9,10 @@ namespace Neuron
 {
   void StrToLower(char* _string);
 
-  inline char* NewStr(const char* src) { return strcpy(new char[strlen(src) + 1], src); }
+  // NewStr is GONE. It was `strcpy(new char[strlen(src) + 1], src)` — an owning
+  // raw copy with no bound and no owner — and strings-modernised T9 converted
+  // its last nine callers to std::string. Nothing replaces it: a std::string
+  // member IS the copy. Do not bring it back.
 
   // CASE-INSENSITIVE EQUALITY, and it exists because std::string's own == is
   // not. strings-modernised T11 converted the Eclipse widget names and captions

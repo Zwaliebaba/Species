@@ -1276,12 +1276,60 @@ tasks:
       whatever T1 listed as legitimately fixed-format.
     depends_on: [T2, T3, T4, T5, T6, T7, T8, T10, T11, T12, T13, T15, T17, T18, T19]
     files:
+      - GameLogic/Armour.cpp
+      - GameLogic/BlueprintStore.cpp
+      - GameLogic/Building.cpp
+      - GameLogic/ConstructionYard.cpp
+      - GameLogic/ControlTower.cpp
+      - GameLogic/DropDownMenu.cpp
+      - GameLogic/DropDownMenu.h
+      - GameLogic/Entity.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/Flag.cpp
+      - GameLogic/Flag.h
+      - GameLogic/Generator.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GunTurret.cpp
+      - GameLogic/InsertionSquad.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/Library.cpp
+      - GameLogic/MessageDialog.cpp
+      - GameLogic/MessageDialog.h
+      - GameLogic/Mine.cpp
+      - GameLogic/PrefsGraphicsWindow.cpp
+      - GameLogic/PrefsScreenWindow.cpp
+      - GameLogic/SafeArea.cpp
+      - GameLogic/SpawnPoint.cpp
+      - GameLogic/SpiritReceiver.cpp
+      - GameLogic/SporeGenerator.cpp
+      - GameLogic/Triffid.cpp
+      - GameLogic/TrunkPort.cpp
+      - GameLogic/UpdateAvailableWindow.cpp
+      - NeuronClient/BinaryStreamReaders.cpp
+      - NeuronClient/BinaryStreamReaders.h
+      - NeuronClient/SampleCache.cpp
+      - NeuronClient/SoundInstance.cpp
+      - NeuronClient/SoundInstance.h
+      - NeuronClient/SoundStreamDecoder.cpp
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/StringUtils.h
+      - NeuronServer/Server.cpp
       - NeuronServer/ServerToClient.cpp
-      - NeuronClient/SoundLibrary2d.cpp
-      - GameLogic/EntityLeg.cpp
+      - NeuronServer/ServerToClient.h
+      - Species/ControlHelp.cpp
+      - Species/Renderer.cpp
       - Species/StartSequence.cpp
+      - Species/TaskManagerInterface.cpp
+      - Species/TaskManagerInterface.h
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Tests/NeuronClientTests/BinaryReaderTests.cpp
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj.filters
     acceptance:
-      - grep -rcE "strcpy|strncpy|strcat|sprintf|snprintf|vsprintf|vsnprintf|vprintf|vfprintf" over the six projects totals 0, excluding only buffers on T1's pinned list
+      - grep -rnE "\b(strcpy|strncpy|strcat|sprintf|snprintf|vsprintf|vsnprintf|vprintf|vfprintf)\b" over the six projects and Tests, with comment-only lines filtered out, totals 0 — excluding only buffers on T1's pinned list
       - The pinned wire tests from T1 still pass
     verify:
       - python3 tools/check_layering.py
@@ -1307,7 +1355,108 @@ tasks:
       a fixed stack buffer behind a `char const*, ...` entry point. The grep
       now names the v-family, and depends_on gained T17 and T18, which own the
       eleven.
-    status: todo
+
+      RE-MEASURED AND DONE 2026-08-05, immediately after T13 and T17. The tail
+      was 44 code sites in 26 files, not the four the placeholder guessed —
+      and only ONE of the four guesses was real. ServerToClient.cpp:20 was, as
+      its own note said. Species/StartSequence.cpp was, and it was the worst
+      line in the sweep. NeuronClient/SoundLibrary2d.cpp and
+      GameLogic/EntityLeg.cpp hold none of this work and never did.
+
+      THE ACCEPTANCE GREP STILL COULD NOT REACH ZERO, for a second reason, and
+      the criterion is amended again rather than fudged. Nine of the surviving
+      hits are PROSE: comments in NetLib.h, FileWriter.h, DebugRender.h/.cpp,
+      EclButton.h, InputField.h and this plan's own tests, each explaining what
+      an unbounded vsprintf or strcpy used to do there. A criterion that
+      forbids naming the thing you removed is a criterion that gets the
+      documentation deleted. The line now filters comment-only lines and says
+      so; with that filter the count is ZERO and every project is clear.
+
+      WHAT THE TAIL ACTUALLY WAS, in four shapes:
+
+        12 shape-marker lookups   sprintf(name, "MarkerGlow0%d", i + 1) into a
+                                  char[64], handed to LookupMarker. Mechanical.
+         6 objective counters     GetObjectiveCounter's `static char[256]`, an
+                                  unbounded sprintf of a TRANSLATED phrase into
+                                  it. They are a static std::string now. The
+                                  static is deliberately KEPT: every caller
+                                  shares that buffer, and narrowing the
+                                  char const* return is a lifetime change with
+                                  no owning task.
+         6 UI captions            resolutions, FPS, file rows, team buttons.
+        20 members and one-offs   the interesting half, below.
+
+      NEWSTR IS GONE, and taking it out is what made this a real sweep rather
+      than a grep. `strcpy(new char[strlen(src) + 1], src)` was the last hit in
+      NeuronClient and it had NINE callers, every one of them a raw owning
+      char* member. Rewriting NewStr with memcpy would have passed the
+      criterion and left all nine alive; they are std::string instead:
+
+        GlobalEventCondition::m_stringId / m_cutScene   the two AGENTS.md lists
+                                                        as this plan's own
+        DropDownOptionData::m_word
+        DropDownMenuOption::m_parentWindowName / m_parentMenuName
+        SoundEventBlueprint::m_eventName
+        SampleGroup::m_samples (a vector of owning char*)
+
+      FOUR DEFECTS FELL OUT OF THAT, none of them findable by reading a grep
+      result:
+
+      1. GlobalEventCondition's COPY CONSTRUCTOR CALLED strlen(nullptr).
+         It was `m_stringId(NewStr(_other.m_stringId))`, and the default
+         constructor sets both members to nullptr — so copying a condition
+         that had never been given a string crashed. The copy constructor and
+         the destructor are both gone now; std::string members need neither.
+      2. SoundEventBlueprint LEAKED ITS EVENT NAME, every blueprint, every
+         parse. The class has no destructor and never had one, and m_eventName
+         was NewStr'd.
+      3. MessageDialog wrote into `char* m_messageLines[20]` with NOTHING
+         BOUNDING m_numLines. A message of more than twenty lines wrote past
+         the end of the array. It is a std::vector<std::string> and the
+         destructor is gone.
+      4. BinaryReader::m_filename was strncpy'd with n = 255 into char[256],
+         which writes NO TERMINATOR for a name of 255 characters or more.
+
+      AND ONE THAT IS EXACTLY WHAT CODING_STANDARDS.md WARNS ABOUT.
+      StartSequence.cpp:162 was `sprintf(theString, caption->m_caption)` —
+      runtime data handed to the C formatter AS ITS FORMAT STRING, into a
+      char[256], for text that comes out of a level file. A percent sign in a
+      caption read an argument nobody passed. It is text now.
+
+      TWO SIGNATURES MOVED, both because the member behind them did:
+      BinaryReader::GetFileType returns std::string_view (it returned a char*
+      into the buffer, pointing AT THE TERMINATOR when there was no extension —
+      empty is the same answer without the arithmetic), and
+      ServerToClient::GetIP likewise. SoundInstance::SetEventName's second
+      parameter became a string_view too: T13 left it char const* because
+      SoundEventBlueprint::m_eventName was a nullable char* then, and it is not
+      any more. DropDownMenu::GetSelectionName is the counter-example and
+      STAYS char const*, because its nullptr is a real failure value callers
+      test — CODING_STANDARDS.md, Strings.
+
+      ONE BYTE OF OUTPUT WAS DELIBERATELY PRESERVED RATHER THAN IMPROVED.
+      WriteSoundEvent wrote MSVC's "(null)" for a blueprint whose EVENT line
+      carried no name. m_eventName is now an empty std::string rather than a
+      null char*, so the "(null)" is spelled out at the site. T17 claims the
+      sound blueprint file is byte-identical and it still is.
+
+      WHAT WAS RUN. The seven Python checks pass, and the amended acceptance
+      grep is at zero. The two rewrites that are NOT mechanical — MessageDialog's
+      line split and GetFileType's extension parse — were compiled with g++ 13
+      against their originals and compared over the edge cases each of them
+      has: empty input, a leading newline, a trailing newline, consecutive
+      newlines; and no dot, a leading dot, a trailing dot, several dots. Both
+      match exactly. Five tests were added for the extension parse and the
+      long filename, in a new Tests/NeuronClientTests/BinaryReaderTests.cpp —
+      BinaryDataReader is the constructible half of that pair, reading memory
+      the caller owns and touching no global.
+
+      NOT COMPILED AND NOT RUN. No MSVC here, so neither the msbuild nor the
+      vstest in verify happened. Nine members changed type and the work is
+      wherever each is NAMED — every one was grepped tree-wide and every hit
+      read, which is the method that has still been one file short twice in
+      this repository's history.
+    status: done
 
   - id: T14
     title: Replace CreateValueControl's void* with a typed overload set

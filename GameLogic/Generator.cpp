@@ -273,9 +273,13 @@ namespace Species
 
   char const* Generator::GetObjectiveCounter()
   {
-    static char result[256];
-    sprintf(result, "%s : %d Gq/s", LANGUAGEPHRASE("objective_output"), int(m_throughput * 10));
-    return result;
+    // Still a function-local static, and so still a buffer every caller
+    // shares — narrowing that is a lifetime change with no owning task. What
+    // went is the unbounded write into 256 bytes of it: a translated phrase
+    // longer than the field used to run off the end.
+    static std::string result;
+    result = std::format("{} : {} Gq/s", LANGUAGEPHRASE("objective_output"), int(m_throughput * 10));
+    return result.c_str();
   }
 
 
@@ -547,17 +551,15 @@ SolarPanel::SolarPanel()
 
   for (int i = 0; i < SOLARPANEL_NUMGLOWS; ++i)
   {
-    char name[64];
-    sprintf(name, "MarkerGlow0%d", i + 1);
-    m_glowMarker[i] = m_shape->m_rootFragment->LookupMarker(name);
+    const std::string name = std::format("MarkerGlow0{}", i + 1);
+    m_glowMarker[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
     DEBUG_ASSERT(m_glowMarker[i]);
   }
 
   for (int i = 0; i < SOLARPANEL_NUMSTATUSMARKERS; ++i)
   {
-    char name[64];
-    sprintf(name, "MarkerStatus0%d", i + 1);
-    m_statusMarkers[i] = m_shape->m_rootFragment->LookupMarker(name);
+    const std::string name = std::format("MarkerStatus0{}", i + 1);
+    m_statusMarkers[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
   }
 }
 

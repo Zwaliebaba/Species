@@ -475,9 +475,13 @@ namespace Species
 
   char const* SpiritProcessor::GetObjectiveCounter()
   {
-    static char result[256];
-    sprintf(result, "%s : %2.2f", LANGUAGEPHRASE("objective_throughput"), m_throughput);
-    return result;
+    // Still a function-local static, and so still a buffer every caller
+    // shares — narrowing that is a lifetime change with no owning task. What
+    // went is the unbounded write into 256 bytes of it: a translated phrase
+    // longer than the field used to run off the end.
+    static std::string result;
+    result = std::format("{} : {:2.2f}", LANGUAGEPHRASE("objective_throughput"), m_throughput);
+    return result.c_str();
   }
 
 
@@ -649,9 +653,8 @@ namespace Species
 
     for (int i = 0; i < SPIRITRECEIVER_NUMSTATUSMARKERS; ++i)
     {
-      char name[64];
-      sprintf(name, "MarkerStatus0%d", i + 1);
-      m_statusMarkers[i] = m_shape->m_rootFragment->LookupMarker(name);
+      const std::string name = std::format("MarkerStatus0{}", i + 1);
+      m_statusMarkers[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
     }
 
     m_headShape = g_resource->GetShape("SpiritReceiverHead.shp");

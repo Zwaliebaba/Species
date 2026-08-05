@@ -39,23 +39,12 @@ namespace Neuron
 // Class SoundEventBlueprint
 //*****************************************************************************
 
-SoundEventBlueprint::SoundEventBlueprint()
-  : m_eventName(nullptr),
-    m_instance(nullptr)
-{
-}
-
-void SoundEventBlueprint::SetEventName(const char* _name)
-{
-  if (m_eventName)
+  SoundEventBlueprint::SoundEventBlueprint()
+    : m_instance(nullptr)
   {
-    delete[] m_eventName;
-    m_eventName = nullptr;
-  }
-
-  if (_name)
-    m_eventName = NewStr(_name);
 }
+
+void SoundEventBlueprint::SetEventName(const char* _name) { m_eventName = _name ? _name : ""; }
 
 //*****************************************************************************
 // Class SoundSourceBlueprint
@@ -220,21 +209,7 @@ namespace
 
 void SampleGroup::SetName(const char* _name) { CopyName(m_name, _name); }
 
-void SampleGroup::AddSample(const char* _sample)
-{
-  char* sampleCopy = NewStr(_sample);
-  m_samples.push_back(sampleCopy);
-}
-
-SampleGroup::~SampleGroup()
-{
-  // delete[], not free: AddSample allocates through NewStr, which is new char[].
-  // The legacy call was EmptyAndDeleteArray, whose whole reason to exist was
-  // being the delete[] flavour of EmptyAndDelete.
-  for (char* sample : m_samples)
-    delete[] sample;
-  m_samples.clear();
-}
+void SampleGroup::AddSample(const char* _sample) { m_samples.emplace_back(_sample); }
 
 //*****************************************************************************
 // Class SoundSystem
@@ -855,11 +830,12 @@ void SoundSystem::WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event
   DEBUG_ASSERT(_event);
   DEBUG_ASSERT(_event->m_instance);
 
-  // m_eventName is null whenever the blueprint line carried no token, because
-  // SetEventName leaves it as the constructor left it. The C formatter this
-  // replaced wrote MSVC's "(null)" for that; std::format is undefined for it,
-  // so the substitution is spelled out. strings-modernised T17.
-  char const* eventName = _event->m_eventName ? _event->m_eventName : "(null)";
+  // m_eventName is empty whenever the blueprint line carried no token, and it
+  // was a null char* before T9 made it a std::string. The C formatter this file
+  // used to write through printed MSVC's "(null)" for that null, so the string
+  // is preserved rather than becoming an empty field — the bytes of the sound
+  // blueprint file do not change on this task. strings-modernised T17 and T9.
+  std::string_view const eventName = _event->m_eventName.empty() ? "(null)" : _event->m_eventName;
 
   _file->printf("\tEVENT {:<20}\n"
                 "\t\tSOUNDNAME          {}\n"
@@ -911,7 +887,7 @@ void SoundSystem::WriteSampleGroup(FileWriter* _file, SampleGroup* _group)
 {
   for (int i = 0; i < static_cast<int>(_group->m_samples.size()); ++i)
   {
-    char* sample = _group->m_samples[i];
+    std::string const& sample = _group->m_samples[i];
     _file->printf("\tSAMPLE  {}\n", sample);
   }
 }
@@ -1047,7 +1023,7 @@ void SoundSystem::TriggerEntityEvent(SoundSource const& _source, const char* _ev
     for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
-      if (stricmp(seb->m_eventName, _eventName) == 0)
+      if (stricmp(seb->m_eventName.c_str(), _eventName) == 0)
       {
         DEBUG_ASSERT(seb->m_instance);
         auto instance = std::make_unique<SoundInstance>();
@@ -1076,7 +1052,7 @@ void SoundSystem::TriggerBuildingEvent(SoundSource const& _source, const char* _
     for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
-      if (stricmp(seb->m_eventName, _eventName) == 0)
+      if (stricmp(seb->m_eventName.c_str(), _eventName) == 0)
       {
         DEBUG_ASSERT(seb->m_instance);
         auto instance = std::make_unique<SoundInstance>();
@@ -1122,7 +1098,7 @@ void SoundSystem::TriggerOtherEvent(SoundSource const* _other, const char* _even
     for (int i = 0; i < static_cast<int>(sourceBlueprint->m_events.size()); ++i)
     {
       SoundEventBlueprint* seb = sourceBlueprint->m_events[i];
-      if (stricmp(seb->m_eventName, _eventName) == 0)
+      if (stricmp(seb->m_eventName.c_str(), _eventName) == 0)
       {
         // We have a match
         DEBUG_ASSERT(seb->m_instance);
@@ -1840,11 +1816,11 @@ void SoundSystem::LoadtimeVerify()
     int size = static_cast<int>(sg->m_samples.size());
     for (int j = 0; j < size; ++j)
     {
-      char* soundName = sg->m_samples[j];
-      const char* err = IsSoundSourceOK(soundName);
+      std::string const& soundName = sg->m_samples[j];
+      const char* err = IsSoundSourceOK(soundName.c_str());
       if (err != nullptr)
       {
-        fprintf(soundErrors, "%s: %s In sound group %s\n", err, soundName, sg->m_name);
+        fprintf(soundErrors, "%s: %s In sound group %s\n", err, soundName.c_str(), sg->m_name);
         errorFound = true;
       }
     }
@@ -1871,7 +1847,8 @@ void SoundSystem::LoadtimeVerify()
         const char* err = IsSoundSourceOK(si->m_soundName);
         if (err != nullptr)
         {
-          fprintf(soundErrors, "%s: %s In entity %s, event %s\n", err, si->m_soundName, g_worldTypeNames->EntityTypeName(i), seb->m_eventName);
+          fprintf(soundErrors, "%s: %s In entity %s, event %s\n", err, si->m_soundName, g_worldTypeNames->EntityTypeName(i),
+                  seb->m_eventName.c_str());
           errorFound = true;
         }
       }
@@ -1884,7 +1861,7 @@ void SoundSystem::LoadtimeVerify()
           fprintf(soundErrors,
                   "Sound Group %s does not exist. "
                   "Referenced by entity %s, event %s\n",
-                  si->m_soundName, g_worldTypeNames->EntityTypeName(i), seb->m_eventName);
+                  si->m_soundName, g_worldTypeNames->EntityTypeName(i), seb->m_eventName.c_str());
           errorFound = true;
         }
       }
@@ -1909,7 +1886,8 @@ void SoundSystem::LoadtimeVerify()
         const char* err = IsSoundSourceOK(si->m_soundName);
         if (err != nullptr)
         {
-          fprintf(soundErrors, "%s: %s In building %s, event %s\n", err, si->m_soundName, g_worldTypeNames->BuildingTypeName(i), seb->m_eventName);
+          fprintf(soundErrors, "%s: %s In building %s, event %s\n", err, si->m_soundName, g_worldTypeNames->BuildingTypeName(i),
+                  seb->m_eventName.c_str());
           errorFound = true;
         }
       }
@@ -1922,7 +1900,7 @@ void SoundSystem::LoadtimeVerify()
           fprintf(soundErrors,
                   "Sound Group %s does not exist. "
                   "Referenced by building %s, event %s\n",
-                  si->m_soundName, g_worldTypeNames->BuildingTypeName(i), seb->m_eventName);
+                  si->m_soundName, g_worldTypeNames->BuildingTypeName(i), seb->m_eventName.c_str());
           errorFound = true;
         }
       }
@@ -1947,7 +1925,7 @@ void SoundSystem::LoadtimeVerify()
         const char* err = IsSoundSourceOK(si->m_soundName);
         if (err != nullptr)
         {
-          fprintf(soundErrors, "%s: %s In Others %s, event %s\n", err, si->m_soundName, ssb->GetSoundSourceName(i), seb->m_eventName);
+          fprintf(soundErrors, "%s: %s In Others %s, event %s\n", err, si->m_soundName, ssb->GetSoundSourceName(i), seb->m_eventName.c_str());
           errorFound = true;
         }
       }
@@ -1960,7 +1938,7 @@ void SoundSystem::LoadtimeVerify()
           fprintf(soundErrors,
                   "Sound Group %s does not exist. "
                   "Referenced by \"others\" %s, event %s\n",
-                  si->m_soundName, ssb->GetSoundSourceName(i), seb->m_eventName);
+                  si->m_soundName, ssb->GetSoundSourceName(i), seb->m_eventName.c_str());
           errorFound = true;
         }
       }
@@ -2029,8 +2007,8 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
             {
               for (int k = 0; k < static_cast<int>(group->m_samples.size()); ++k)
               {
-                char* thisSample = group->m_samples[k];
-                if (stricmp(thisSample, _soundName) == 0)
+                std::string const& thisSample = group->m_samples[k];
+                if (stricmp(thisSample.c_str(), _soundName) == 0)
                   return true;
               }
             }
@@ -2063,8 +2041,8 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
             {
               for (int k = 0; k < static_cast<int>(group->m_samples.size()); ++k)
               {
-                char* thisSample = group->m_samples[k];
-                if (stricmp(thisSample, _soundName) == 0)
+                std::string const& thisSample = group->m_samples[k];
+                if (stricmp(thisSample.c_str(), _soundName) == 0)
                   return true;
               }
             }
@@ -2097,8 +2075,8 @@ bool SoundSystem::IsSampleUsed(const char* _soundName)
             {
               for (int k = 0; k < static_cast<int>(group->m_samples.size()); ++k)
               {
-                char* thisSample = group->m_samples[k];
-                if (stricmp(thisSample, _soundName) == 0)
+                std::string const& thisSample = group->m_samples[k];
+                if (stricmp(thisSample.c_str(), _soundName) == 0)
                   return true;
               }
             }

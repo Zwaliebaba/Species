@@ -1090,9 +1090,9 @@ namespace Species
       _out->printf("\t");
       gec->Save(_out);
 
-      if (gec->m_stringId)
+      if (!gec->m_stringId.empty())
         _out->printf("\t{}", gec->m_stringId);
-      if (gec->m_cutScene)
+      if (!gec->m_cutScene.empty())
         _out->printf("\t{}", gec->m_cutScene);
 
       _out->printf("\n");

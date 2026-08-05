@@ -171,11 +171,10 @@ namespace Species
 
     for (int i = 0; i < 3; ++i)
     {
-      char name[64];
       int w = m_w / 3 - 8;
-      sprintf(name, "T%d", i);
+      const std::string name = std::format("T{}", i);
       TeamButton1* tb = new TeamButton1(i);
-      tb->SetShortProperties(name, 10 + (i * w) + (i * 2), y, w);
+      tb->SetShortProperties(name.c_str(), 10 + (i * w) + (i * 2), y, w);
       RegisterButton(tb);
     }
 

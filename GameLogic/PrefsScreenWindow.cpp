@@ -42,9 +42,8 @@ namespace Species
         for (int i = 0; i < resolution->m_refreshRates.size(); ++i)
         {
           int thisRate = resolution->m_refreshRates[i];
-          char caption[64];
-          sprintf(caption, "%d Hz", thisRate);
-          refresh->AddOption(caption, thisRate);
+          const std::string caption = std::format("{} Hz", thisRate);
+          refresh->AddOption(caption.c_str(), thisRate);
         }
         refresh->SelectOption(parent->m_refreshRate);
       }
@@ -268,9 +267,8 @@ int fontSize = GetMenuSize(13);*/
   for (int i = 0; i < g_windowManager->m_resolutions.size(); ++i)
   {
     Resolution* resolution = g_windowManager->m_resolutions[i];
-    char caption[64];
-    sprintf(caption, "%d x %d", resolution->m_width, resolution->m_height);
-    screenRes->AddOption(caption, i);
+    const std::string caption = std::format("{} x {}", resolution->m_width, resolution->m_height);
+    screenRes->AddOption(caption.c_str(), i);
   }
   screenRes->m_fontSize = fontSize;
 
