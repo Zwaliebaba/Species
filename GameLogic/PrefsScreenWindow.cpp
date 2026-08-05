@@ -118,7 +118,7 @@ void RestartWindowManagerAndRenderer()
   // shutdown old window
   // getW32EventHandler()->UnbindAltTab(); // was unbind done by someone else? it will be too late when window is destroyed
   g_windowManager->DestroyWin();
-  delete g_renderer;
+  g_appCommands->DestroyRenderer();
 
   // necessary for resolution change in fullscreen
   // create and destroy temporary window
@@ -130,18 +130,16 @@ void RestartWindowManagerAndRenderer()
     int oldH = g_prefsManager->GetInt("ScreenHeight");
     g_prefsManager->SetInt("ScreenWidth", 640);
     g_prefsManager->SetInt("ScreenHeight", 480);
-    g_renderer = g_appCommands->CreateRenderer();
-    g_renderer->Initialise();
+    g_appCommands->CreateRenderer();
     g_windowManager->DestroyWin();
-    delete g_renderer;
+    g_appCommands->DestroyRenderer();
     g_prefsManager->SetInt("ScreenWidth", oldW);
     g_prefsManager->SetInt("ScreenHeight", oldH);
     g_prefsManager->SetInt("ScreenWindowed", 0);
   }
 
   // start new window
-  g_renderer = g_appCommands->CreateRenderer();
-  g_renderer->Initialise();
+  g_appCommands->CreateRenderer();
   g_resource->FlushOpenGlState();
   g_resource->RegenerateOpenGlState();
 

@@ -20,6 +20,7 @@ class GlobalWorld;
 class ParticleSystem;
 class TaskManager;
 class TaskManagerInterface;
+class TaskManagerInterfaceIcons;
 class Script;
 class Profiler;
 class LocationEditor;
@@ -58,6 +59,13 @@ class App : public AppCommands
     std::unique_ptr<AttractMode> m_attractMode;
     GameMenu* m_gameMenu;
 
+    // Owned here since ownership T6, and reachable only through App: GameLogic
+    // used to delete g_renderer and g_taskManagerInterface directly, which is
+    // what DestroyRenderer/CreateRenderer/ReplaceTaskManagerInterface replace.
+    // g_renderer and g_taskManagerInterface observe these.
+    std::unique_ptr<Renderer> m_renderer;
+    std::unique_ptr<TaskManagerInterfaceIcons> m_taskManagerInterface;
+
 
     // State flags
 
@@ -72,8 +80,9 @@ class App : public AppCommands
     ~App();
 
 
-    RendererAccess* CreateRenderer() override;
-    TaskManagerInterfaceAccess* CreateTaskManagerInterface() override;
+    void DestroyRenderer() override;
+    void CreateRenderer() override;
+    void ReplaceTaskManagerInterface() override;
 
     void SetProfileName(char const* _profileName) override;
     bool LoadProfile() override;

@@ -259,9 +259,8 @@ class WebsiteButton : public SpeciesButton
         g_prefsManager->SetInt("ScreenHeight", 600);
 
         g_windowManager->DestroyWin();
-        delete g_renderer;
-        g_renderer = g_appCommands->CreateRenderer();
-        g_renderer->Initialise();
+        g_appCommands->DestroyRenderer();
+        g_appCommands->CreateRenderer();
         getW32EventHandler()->ResetWindowHandle();
         g_resource->FlushOpenGlState();
         g_resource->RegenerateOpenGlState();

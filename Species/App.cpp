@@ -95,8 +95,7 @@ App::App()
   Profiler::SetRenderSyncHook(&ProfilerRenderSync);
 #endif
 
-  g_renderer = new Renderer();
-  g_renderer->Initialise();
+  CreateRenderer();
 
   // Make sure that resources are now available - either the .dat files
   // or the data directory must exist
@@ -152,7 +151,7 @@ App::App()
 #endif
   g_controlHelpSystem = new ControlHelpSystem();
 
-  g_taskManagerInterface = new TaskManagerInterfaceIcons();
+  ReplaceTaskManagerInterface();
 
   m_soundSystem->Initialise();
 
@@ -166,12 +165,39 @@ App::App()
   bool profileLoaded = LoadProfile();
 }
 
-// The two factories AppCommands declares. GameLogic's preferences windows
-// rebuild these objects when a setting changes and cannot name the concrete
-// types; this is where `new` happens on their behalf.
-RendererAccess* App::CreateRenderer() { return new Renderer(); }
+// The factories AppCommands declares. GameLogic's preferences windows rebuild
+// these objects when a setting changes and cannot name the concrete types;
+// this is where `new` happens on their behalf.
+//
+// They INSTALL what they build rather than returning it, because App owns both
+// since ownership T6. A caller that did `delete g_renderer` was freeing an
+// object App holds a unique_ptr to.
 
-TaskManagerInterfaceAccess* App::CreateTaskManagerInterface() { return new TaskManagerInterfaceIcons(); }
+void App::DestroyRenderer()
+{
+  m_renderer.reset();
+  g_renderer = nullptr;
+}
+
+void App::CreateRenderer()
+{
+  // reset() first, explicitly. Move-assigning over the member would free the
+  // old renderer AFTER constructing the new one, and every call site here
+  // destroyed the old one first -- one of them tears the window down in
+  // between. The old renderer must be gone before the new one exists.
+  m_renderer.reset();
+  m_renderer = std::make_unique<Renderer>();
+  g_renderer = m_renderer.get();
+  g_renderer->Initialise();
+}
+
+void App::ReplaceTaskManagerInterface()
+{
+  // Same reset-before-construct reasoning as CreateRenderer.
+  m_taskManagerInterface.reset();
+  m_taskManagerInterface = std::make_unique<TaskManagerInterfaceIcons>();
+  g_taskManagerInterface = m_taskManagerInterface.get();
+}
 
 
 // THIS DESTRUCTOR NEVER RUNS. Species/Main.cpp calls Finalise() and then
@@ -191,7 +217,9 @@ App::~App()
   m_langTable.reset();
   g_langTable = nullptr;
 
-  SAFE_DELETE(g_taskManagerInterface);
+  m_taskManagerInterface.reset();
+  g_taskManagerInterface = nullptr;
+
   SAFE_DELETE(g_controlHelpSystem);
 #ifdef ATTRACTMODE_ENABLED
   m_attractMode.reset();
@@ -209,7 +237,9 @@ App::~App()
   g_soundSystem = nullptr;
 
   SAFE_DELETE(g_gameCursor);
-  SAFE_DELETE(g_renderer);
+  m_renderer.reset();
+  g_renderer = nullptr;
+
 #ifdef PROFILER_ENABLED
   m_profiler.reset();
   g_profiler = nullptr;
