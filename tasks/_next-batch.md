@@ -1,5 +1,15 @@
 # The next implementation batch
 
+> ## BATCH 6 WAS PROPOSED AND THEN NOT EXECUTED. The owner asked instead for
+> the last tasks of `language-hygiene` and `namespace-migration`, and both
+> plans are now closed and archived. What happened is at
+> [**Progress — what was done instead**](#progress--what-was-done-instead).
+> **The proposal below is kept as written**, because this file's premise is
+> that a batch proposal is a measurement with a short half-life and the only
+> way to see that is to leave the prediction next to the result. Its collision
+> table is still the best measurement anyone has of the `strings` tasks; its
+> plan-status counts are stale from the first table onward.
+
 Written 2026-08-05 at `18d13ed`, level with `origin/main`. This is a proposal,
 not a plan — the plans are the three YAML files beside it. It answers one
 question: **of everything that is ready, what should the next batch be, and why
@@ -288,6 +298,68 @@ those lists, not from the declared ones.
 client in this environment, so no claim is made about whether any of this
 compiles. Only YAML and Markdown changed in this commit — no C++ was touched.
 The Garden smoke test remains yours.
+
+---
+
+## Progress — what was done instead
+
+`language-hygiene` and `namespace-migration` are **closed and archived**. One
+plan is open: `strings-modernised`, with five tasks.
+
+| Plan | done | todo | What is left |
+|---|---:|---:|---|
+| the ten archived plans | 122 | 0 | — |
+| `strings-modernised` | 15 | 5 | T11, T12, T17 ready; T13 and T9 blocked |
+
+**`language-hygiene/T11` — scope ControlType.** 267 enumerator uses across 38
+files, which is the corrected measurement rather than the 473-in-64 the plan
+recorded. Landed in two commits, the first a whole-file reformat of the three
+headers it rewrites. Three things in it were not mechanical: `getControlID`
+returns `std::optional<ControlType>` rather than an invented enumerator,
+because `ControlNull` is a real bindable index and the -1 it replaced was not;
+five members of `ControlBindings` that were declared twice collapsed to one
+each, and the bounds-checked body won; and the enum-to-table agreement is now
+133 generated `static_assert`s instead of a comment asking you to check by eye.
+Seven new tests over a name lookup that had none.
+
+**`namespace-migration` T2, T4 and T5 — the whole rest of the plan.** 396
+files wrapped: NeuronClient and its 45 cross-project forward declarations into
+`namespace Neuron`, then GameLogic and Species into `namespace Species`.
+
+Four things worth carrying out of it:
+
+- **A using-directive makes a name findable; it does not fix a forward
+  declaration.** `NeuronCore.h` ends with `using namespace Neuron;`, which is
+  why T2 changed no caller at all — but `class Renderer;` in a GameLogic header
+  still declares a new `::Renderer`, and that is a link error pointing
+  somewhere else entirely. 51 forward declarations across the tree are wrapped
+  now. `check_layering.py` sees none of this, because a forward declaration
+  includes nothing.
+- **T4 and T5 were not separable**, and the plan could not have known it: T1
+  chose ONE namespace for all game code, so wrapping GameLogic alone leaves
+  every unqualified GameLogic name in `Species/` unresolvable. The reverse
+  order would have had buildable intermediates.
+- **The namespace broke a check, and the fix was a narrowing.**
+  `check_math_types.py` found a function body by looking for a brace at depth
+  zero, and `namespace Neuron {` is one — so a wrapped file read as a single
+  body holding every function in it. Braces are classified as they open now.
+- **Being forced to classify every forward declaration found dead ones.**
+  `struct IDirect3DVertexBuffer9` is declared in two GameLogic headers and used
+  nowhere; `GlobalInternet.cpp` has an unclosed brace inside an `#ifdef DEBUG`
+  that is defined nowhere. Both left alone, both recorded.
+
+**None of it was compiled.** No MSVC on Linux, and for a namespace migration
+that is a weaker guarantee than usual: these fail where a name resolves
+differently, and only a compiler resolves names. The seven Python checks pass
+and every structural invariant was verified by script over the whole tree —
+brace balance, no `#include` inside a wrapper, no name clash across the
+namespace boundary, no global whose declaration and definition straddle it.
+
+**What this leaves for the next batch.** `strings/T17` and `strings/T11` are
+still the disjoint pair measured below, and they are now the only ready work
+alongside `strings/T12`. Every one of them is in a file that has just moved
+into a namespace and been reindented, so **re-measure before starting**: the
+collision table below was taken before 396 files changed.
 
 ---
 
