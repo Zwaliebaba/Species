@@ -119,6 +119,24 @@ bool MineBuilding::IsInView()
 }
 
 
+// Matrix34::RotateAroundF(a) rewrote the matrix's r and u rows in place --
+// r' = c*r + s*u, u' = -s*r + c*u -- leaving f and pos alone. Matrix34 reads
+// r/u/f as the basis vectors that XMFLOAT4X4 stores as rows 0, 1 and 2, so the
+// same thing natively is a rotation about the LOCAL z axis applied BEFORE the
+// matrix: XMMatrixRotationZ(a) * M, in that operand order.
+//
+// The order is the whole content of this. `M * RotationZ(a)` compiles, is a
+// rotation, and spins the mine wheels about the world axis instead of their
+// own -- which on a wheel is a wobble rather than a spin, and nothing in the
+// build or the checks would say so.
+static DirectX::XMFLOAT4X4 RotatedAroundLocalFront(DirectX::XMFLOAT4X4 const& _mat, float _angle)
+{
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationZ(_angle), DirectX::XMLoadFloat4x4(&_mat)));
+  return result;
+}
+
+
 void MineBuilding::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
@@ -962,8 +980,6 @@ void Refinery::Render(float _predictionTime)
   DirectX::XMStoreFloat4x4(&refineryMat,
                            BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
-  // the wheel matrices below are used as whole bases, so they stay legacy.
   DirectX::XMFLOAT4X4 wheel1Mat = m_wheel1->GetWorldMatrix(refineryMat);
   DirectX::XMFLOAT4X4 wheel2Mat = m_wheel2->GetWorldMatrix(refineryMat);
   DirectX::XMFLOAT4X4 wheel3Mat = m_wheel3->GetWorldMatrix(refineryMat);
@@ -971,9 +987,9 @@ void Refinery::Render(float _predictionTime)
   float refinerySpeed = RefinerySpeed();
   float predictedWheelRotate = m_wheelRotate - 3.0f * refinerySpeed * _predictionTime;
 
-  wheel1Mat.RotateAroundF(predictedWheelRotate);
-  wheel2Mat.RotateAroundF(predictedWheelRotate * -1.0f);
-  wheel3Mat.RotateAroundF(predictedWheelRotate);
+  wheel1Mat = RotatedAroundLocalFront(wheel1Mat, predictedWheelRotate);
+  wheel2Mat = RotatedAroundLocalFront(wheel2Mat, predictedWheelRotate * -1.0f);
+  wheel3Mat = RotatedAroundLocalFront(wheel3Mat, predictedWheelRotate);
 
   wheel1Mat._11 *= 1.3f;
   wheel1Mat._12 *= 1.3f;
@@ -1067,16 +1083,14 @@ void Mine::Render(float _predictionTime)
   DirectX::XMFLOAT4X4 mineMat;
   DirectX::XMStoreFloat4x4(&mineMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
-  // the wheel matrices below are used as whole bases, so they stay legacy.
   DirectX::XMFLOAT4X4 wheel1Mat = m_wheel1->GetWorldMatrix(mineMat);
   DirectX::XMFLOAT4X4 wheel2Mat = m_wheel2->GetWorldMatrix(mineMat);
 
   float refinerySpeed = RefinerySpeed();
   float predictedWheelRotate = m_wheelRotate - 3.0f * refinerySpeed * _predictionTime;
 
-  wheel1Mat.RotateAroundF(predictedWheelRotate * -1.0f);
-  wheel2Mat.RotateAroundF(predictedWheelRotate);
+  wheel1Mat = RotatedAroundLocalFront(wheel1Mat, predictedWheelRotate * -1.0f);
+  wheel2Mat = RotatedAroundLocalFront(wheel2Mat, predictedWheelRotate);
 
   wheel1Mat._11 *= 0.5f;
   wheel1Mat._12 *= 0.5f;

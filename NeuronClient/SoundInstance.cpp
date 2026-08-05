@@ -4,6 +4,11 @@
 #include "BinaryStreamReaders.h"
 #include "Debug.h"
 #include "HiResTime.h"
+// NearlyEquals, six times below. It arrived through Vector3.h until
+// directxmath-migration T12 dropped that include from LocationAccess.h --
+// failure mode 3, the transitive include, and the one CI catches rather than
+// any of the seven local checks.
+#include "MathUtils.h"
 #include "Profiler.h"
 #include "Resource.h"
 #include "Random.h"
