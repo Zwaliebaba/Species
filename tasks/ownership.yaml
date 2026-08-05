@@ -502,6 +502,7 @@ tasks:
       - containers-replaced/T13
       - strings-modernised/T7
       - strings-modernised/T8
+      - strings-modernised/T19
     files:
       - GameLogic/LevelFile.cpp
       - GameLogic/LevelFile.h

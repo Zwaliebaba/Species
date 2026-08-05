@@ -129,15 +129,21 @@ conflict in the level-file writers.
 | 2 | `strings/T12` — the TextRenderer variadic API | The largest single safety win available, and the measurement below changes what it is. `parallel_safe: false`; run it alone. |
 | 3 | `language-hygiene/T10` — InputType, and delete the dead `ControlTypes.cpp` | **File-disjoint from every other ready task**, measured, so it is the safest thing to run whenever the tree is free. It unblocks `language-hygiene/T11` (473 sites), the last node in that plan. |
 
-**`strings/T8` should be split before it is started, exactly as its own notes
-propose.** They already lay out the line: the three `LevelFile` colour
-filenames plus the local buffers in `LevelFile.cpp` and `Script.cpp` are
-containable in the declared three files, while `GlobalLocation`'s three members
-and `GlobalEventAction::m_filename` are one coupled change over ten files —
-`m_mapFilename` is 28 uses in 9 files and `m_missionFilename` 32 in 10, both
-re-measured here and both unchanged since. That split is what `strings/T5`'s
-re-scope did, it is what made T5 land after being discarded once, and the
-containable half is what `ownership/T5` actually needs.
+**`strings/T8` was split before it was started, as its own notes proposed —
+and the line moved.** The notes proposed "the colour filenames plus the
+locals"; measuring the members first put it **by class** instead, because
+`m_mapFilename` and `m_missionFilename` are each declared TWICE — on
+`LevelFile` and on `GlobalLocation` — and the recorded "28 uses in 9 files"
+was both classes added together. `strings/T8` is now LevelFile's five members
+and the local buffers in all three files; **`strings/T19`** is
+`GlobalLocation`'s three plus `GlobalEventAction::m_filename`, ten files, and
+the width-padded location row.
+
+One correction to the argument above, and it matters: **the split does not
+unblock `ownership/T5` on its own.** T5 names `GlobalWorld.cpp`, so it needs
+both halves, and its `blocked_by` now says so. What the split buys is two
+reviewable diffs and a byte-identity test that exists before the risky half
+starts — not an earlier start for stage 5.
 
 **Write the round-trip test in the containable half regardless of how it
 splits.** `layering-inversion/T15` moved `LevelFile` and `GlobalWorld` into
