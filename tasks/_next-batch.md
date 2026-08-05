@@ -208,6 +208,71 @@ question the two findings above came from.
 
 ---
 
+## Progress — what Batch 4 actually did, 2026-08-05
+
+Five tasks landed across five commits. **Neither plan closed**, and both
+reasons are findings rather than slippage.
+
+| Task | Outcome |
+|---|---|
+| `determinism/T3` | **Done.** The premise was wrong — see below. |
+| `determinism/T4` | **Done.** Benign on two independent grounds. |
+| `ownership/T10` + `strings/T20` | **Done, one commit**, on the owner's decision. Five new tests. |
+| `ownership/T5` | **Done**, following the intent; `GlobalWorld.cpp` split out as `T11`. |
+| `ownership/T8`, `language-hygiene/T12` | **Not started.** |
+
+**`determinism` did not archive, because T3 found a real bug and it is not the
+one that was recorded.** `speciesRandom()` is *not* the lockstep RNG. The tree
+has two generators sharing no state — the LCG behind
+`speciesRandom`/`frand`/`sfrand`, and the Mersenne Twister behind
+`syncrand`/`syncfrand`, which `MathUtils.h` has labelled "Network Syncronised
+versions (only call inside Net-Safe code)" since the code was inherited. The
+simulation obeys the label. So the sound draws cannot desync anything, and the
+`AGENTS.md` bullet that stood for three days and three batches was wrong
+because nobody read that header.
+
+The hazard relocated instead of closing: **four GameLogic sites compute
+simulation state from the *unsynchronised* generator** — `Spider.cpp:354` and
+`Armour.cpp:253` write a movement target from it, `ArmyAnt.cpp:185` runs a
+rejection loop whose draw count is unbounded, `Explosion.cpp:144` picks a
+debris tumbler. Entity positions are what `GenerateSyncValue` sums. That is
+`determinism/T5`, and it needs an owner decision before an agent.
+
+**`ownership` did not close either**, and the batch's own premise is why: `T7`
+depends on `T6`, `T6` needs an owner-run smoke test after each commit, and
+`T5` turned out to be twenty-seven files rather than eight.
+
+### What the batch learned, for whoever writes Batch 5
+
+- **A file list is written from where ownership LIVES; the work is wherever
+  the member is NAMED.** `ownership/T5` declared eight files and touched
+  twenty-seven. Twelve of them hold no ownership at all. `ownership/T1`'s
+  notes already said this and it cost the same again.
+- **`m_buildings` means four different things.** `LevelFile`'s,
+  `GlobalWorld`'s, `ObstructionGrid`'s, and `Location`'s — which is a
+  `FastSlotMap` whose indices are network identity. A name-based sweep would
+  have converted the simulation's live building list.
+- **The stricmp hazard is not theoretical.** All 605 `ParentName` lines under
+  `GameData/Shapes` say `sceneroot`, lower case, and the code compares them
+  against `"SceneRoot"`. A `std::string` conversion that reached for
+  `operator==` would have failed to parent every fragment in every shape in
+  the game, with a green build and a green suite.
+- **Converting a raw pointer to `unique_ptr` can introduce use-after-move.**
+  Two were introduced and caught here — `zone->m_scrollZone` set *after*
+  `push_back(zone)`, harmless before and undefined after. A scan for "member
+  used after `std::move` of the same local" over every changed file is cheap
+  and belongs in every stage-5 task's verification.
+
+### Not compiled
+
+No MSVC and no Windows client in this environment. All seven Python checks
+pass on every commit; **nothing in the five commits has been through a
+compiler**, and the five new tests have never been run. `ownership/T5` in
+particular is a twenty-seven-file type change, which is exactly the shape
+where that matters.
+
+---
+
 ## The collision check
 
 Thirteen ready tasks across five plans. `--next` says nothing about whether
