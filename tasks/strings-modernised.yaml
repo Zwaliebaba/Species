@@ -282,6 +282,47 @@ tasks:
       to compile is a latent bug being surfaced, not a conversion error, and
       should be recorded as such rather than silently patched.
 
+      RE-MEASURED 2026-08-05 at e7a1a88, and the measurement changes what this
+      task is. No code was touched. 225 call sites outside TextRenderer.cpp —
+      GameLogic 161, Species 57, NeuronClient 8 — and they are TWO populations,
+      not one:
+
+        109 pass a STRING LITERAL as the format string, 89 of them with
+        arguments after it. These are the std::format conversions, and they are
+        where a wrong argument type becomes a compile error rather than
+        runtime undefined behaviour. This is the population the task was
+        written for.
+
+        116, in 22 files, pass NO literal at all — the format string is a
+        runtime value. `m_caption` (15), `LANGUAGEPHRASE(...)`, `caption.c_str()`,
+        `loc->m_mapFilename`, `islandName`, InputField's `m_buf.c_str()`. Not
+        one of them passes an argument after it.
+
+      THE 116 CANNOT BECOME std::format AT ALL, and that is the decision this
+      task has to make before it writes a line. std::format_string is
+      consteval — a runtime char const* does not convert to it — so a
+      single format template breaks every one of them. They want a SECOND,
+      NON-FORMATTING overload taking std::string_view, and converting them that
+      way is a fix rather than a translation: today each one hands user data,
+      level-file data or a translated phrase to vsprintf AS A FORMAT STRING, so
+      a `%` anywhere in that data is undefined behaviour.
+
+      How live that is, stated rather than implied: the shipped language files
+      hold exactly one `%` — Russian.txt:122, `sepulveda_pressreturnXmore`,
+      whose key no code references. So the hazard is latent in shipped content
+      today and unbounded in content a user or a level file supplies.
+
+      strings/T5 predicted InputField::Render would fail to compile here and
+      recorded it as a latent bug to surface. Under the two-overload design it
+      resolves to the safe overload instead and the bug is simply gone. Both
+      answers are correct; do not "fix" the site by wrapping it in "{}".
+
+      THE PATTERN IS ALREADY IN THE TREE. strings/T4 converted
+      NeuronClient/PersistingDebugRender.h from `char *_fmt, ...` to four
+      `std::format_string<Args...>` templates. Read that file before starting;
+      it is what these ten entry points should look like, minus the second
+      overload the 116 need.
+
   - id: T13
     title: Narrow the read-only char const* parameters to string_view
     intent: >
@@ -857,14 +898,14 @@ tasks:
       Re-measure after T2-T8 and convert every remaining call site the
       grouped tasks missed, ending stage 4 with a tree-wide zero outside
       whatever T1 listed as legitimately fixed-format.
-    depends_on: [T2, T3, T4, T5, T6, T7, T8, T10, T11, T12, T13, T15]
+    depends_on: [T2, T3, T4, T5, T6, T7, T8, T10, T11, T12, T13, T15, T17, T18]
     files:
       - NeuronServer/ServerToClient.cpp
       - NeuronClient/SoundLibrary2d.cpp
       - GameLogic/EntityLeg.cpp
       - Species/StartSequence.cpp
     acceptance:
-      - grep -rcE "strcpy|strncpy|strcat|sprintf|snprintf" over the six projects totals 0, excluding only buffers on T1's pinned list
+      - grep -rcE "strcpy|strncpy|strcat|sprintf|snprintf|vsprintf|vsnprintf|vprintf|vfprintf" over the six projects totals 0, excluding only buffers on T1's pinned list
       - The pinned wire tests from T1 still pass
     verify:
       - python3 tools/check_layering.py
@@ -881,6 +922,15 @@ tasks:
       2026-08-03 restart; it named neither the widget-name tasks nor the
       TextRenderer conversion before, so "the long tail" could have been
       measured while three grouped tasks were still outstanding.
+
+      THE ACCEPTANCE GREP COULD NOT HAVE REACHED ZERO, and that was found on
+      2026-08-05 at e7a1a88 rather than by running it. It named the strcpy
+      family only, and `\bsprintf\b` does not match `vsprintf` — the `v` is a
+      word character. Eleven vsprintf calls were therefore invisible to the
+      criterion that closes stage 4, every one of them an unbounded write into
+      a fixed stack buffer behind a `char const*, ...` entry point. The grep
+      now names the v-family, and depends_on gained T17 and T18, which own the
+      eleven.
     status: todo
 
   - id: T14
@@ -1214,3 +1264,137 @@ tasks:
       memcpy()s whole NetworkUpdate structs, so the type has to stay trivially
       copyable. That is ownership/T2's problem, not this one's.
     status: done
+
+  - id: T17
+    title: Convert FileWriter's variadic printf
+    intent: >
+      FileWriter::printf is `char const *fmt, ...` and vsprintf()s into a
+      char[10240] on the stack with no bound, then encrypts that buffer in
+      place and writes it. It is the API every level, location and profile file
+      is written through — 207 call sites in 29 files — so it, not the
+      sprintf family, is what actually produces the bytes T8 has to keep
+      identical. Converting it to std::format templates removes the last
+      unbounded write on the save path and puts the field widths under
+      compile-time checking.
+    project: NeuronClient
+    depends_on: [T8]
+    files:
+      - NeuronClient/FileWriter.h
+      - NeuronClient/FileWriter.cpp
+      - GameLogic/Ai.cpp
+      - GameLogic/AntHill.cpp
+      - GameLogic/BlueprintStore.cpp
+      - GameLogic/Bridge.cpp
+      - GameLogic/Building.cpp
+      - GameLogic/ControlTower.cpp
+      - GameLogic/Factory.cpp
+      - GameLogic/FeedingTube.cpp
+      - GameLogic/Generator.cpp
+      - GameLogic/GenericHub.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/Incubator.cpp
+      - GameLogic/LaserFence.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/Mine.cpp
+      - GameLogic/PowerStation.cpp
+      - GameLogic/ResearchItem.cpp
+      - GameLogic/Rocket.cpp
+      - GameLogic/SafeArea.cpp
+      - GameLogic/ScriptTrigger.cpp
+      - GameLogic/SpawnPoint.cpp
+      - GameLogic/SpiritReceiver.cpp
+      - GameLogic/StaticShape.cpp
+      - GameLogic/Switch.cpp
+      - GameLogic/Tree.cpp
+      - GameLogic/Triffid.cpp
+      - GameLogic/TrunkPort.cpp
+      - NeuronClient/SoundParameter.cpp
+      - NeuronClient/SoundSystem.cpp
+      - Tests/GameLogicTests/LevelFileRoundTripTests.cpp
+    acceptance:
+      - FileWriter declares no variadic entry point and holds no fixed stack buffer
+      - Every call site passes a literal format string, or is listed in notes with the reason it cannot
+      - The level and profile round-trip tests T8 wrote pass unchanged, with no edit to them in the same commit
+      - The width-specified location table write is byte-identical, demonstrated against a real profile and not by reading the format string
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+    notes: |
+      Added 2026-08-05 at e7a1a88, from a measurement taken while scoping the
+      batch after directxmath-migration closed. This is unowned work that the
+      plan's own summary covers and no task named: T12 owns TextRenderer's
+      variadic API and nothing owned this one.
+
+      WHY IT IS NOT PART OF T8. T8's acceptance is a grep for the strcpy
+      family, and `_out->printf("\t%4d %4d %30s %40s\n", ...)` matches none of
+      it. T8 can meet every criterion it has without touching a single byte of
+      file output formatting. The 43 calls T8 counts are buffers being BUILT;
+      the 207 here are the bytes being WRITTEN. Both are stage 4 and they are
+      different changes.
+
+      THE SHARP EDGE T8 RECORDS LIVES HERE, not there. GlobalWorld.cpp:1548
+      writes the location table with `%4d %4d %30s %40s` — two integers and
+      two 30/40-wide strings, the last being m_mapFilename and
+      m_missionFilename. Field widths are where std::format and printf are
+      least alike, and a profile written with different padding is a different
+      file even though every character of content matches. It is a
+      FileWriter::printf call. Pin it with T8's round-trip test first; that is
+      the whole reason this task depends on T8 rather than running beside it.
+
+      SIZE, measured: 207 calls in 29 files. LevelFile.cpp has 80 and
+      GlobalWorld.cpp 33, so 113 of them are in two files T8 already owns —
+      which is the second reason for the edge. SoundSystem.cpp (18) and
+      SoundParameter.cpp (7) write the sound blueprint file; the remaining 22
+      GameLogic files are one Write() method per building type.
+
+      THE BUFFER IS WORSE THAN UNBOUNDED. vsprintf writes into char[10240] and
+      the encryption loop then runs over `len` bytes of it — so an overrun
+      corrupts the stack AND the loop follows it. Nothing on the save path
+      bounds a level name, a shape name or a script filename before it gets
+      here.
+
+  - id: T18
+    title: Retire the last three variadic format entry points
+    intent: >
+      NetLib's NetDebugOut, DebugRender's RenderPointMarker and Script's
+      declared-but-undefined ReportError are the tail of the `char const*, ...`
+      plus vsprintf pattern once T12 and T17 land. Two are conversions and one
+      is a deletion, and together they are what lets T9 claim a tree-wide zero
+      that includes the v-family.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/NetLib.h
+      - NeuronCore/NetLib.cpp
+      - NeuronClient/DebugRender.h
+      - NeuronClient/DebugRender.cpp
+      - Species/Script.h
+    acceptance:
+      - NetDebugOut and RenderPointMarker take std::format_string and hold no fixed stack buffer
+      - Script::ReportError is gone from Script.h, or has a definition and a caller
+      - grep -rEw "vsprintf|vsnprintf|vprintf|vfprintf" over the six projects returns only what T12 and T17 own
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      Added 2026-08-05 at e7a1a88, alongside T17 and for the same reason: the
+      v-family was invisible to every acceptance grep in this plan.
+
+      Sizes, measured. NetDebugOut: 16 references, all inside NeuronCore's
+      networking. RenderPointMarker: 3 references — the declaration, the
+      definition and one caller. Script::ReportError: ONE reference in the
+      whole tree, its own declaration in Species/Script.h. There is no
+      definition and no caller, so it is a declaration for a function that does
+      not exist; deleting it is the conversion.
+
+      Species/Script.cpp belongs to T8 and Script.h does not, so the two do not
+      collide on a file — but they collide on a reviewer's attention. Run this
+      after T8 or well clear of it.
