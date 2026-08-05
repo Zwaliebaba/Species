@@ -413,7 +413,7 @@ tasks:
       layering-inversion T11 has landed by then over review-plus-smoke-test;
       fall back on review and the Garden smoke test only where no coverage
       exists yet, and say which in the commit.
-    status: todo
+    status: in_progress
 
   - id: T5
     title: Adopt unique_ptr in Species outside App
