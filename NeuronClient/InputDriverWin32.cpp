@@ -448,7 +448,21 @@ inputtype_t W32InputDriver::getControlType(control_id_t control_id)
     return getMouseControlType(control_id);
 
   default:
-    return -1; // Should never get here!
+    // Should never get here!
+    //
+    // THE -1 IS PRESERVED EXACTLY RATHER THAN MAPPED TO INPUT_TYPE_FAIL, and
+    // the difference is not cosmetic. InputType is a bit field: -1 is every
+    // bit SET, so a `(type & x) == x` test accepts everything, while
+    // INPUT_TYPE_FAIL is zero and accepts nothing. Those are opposites at the
+    // one place this value is read -- it reaches
+    // InputDriver::getDefaultConditionID through InputSpec::type, which tests
+    // it exactly that way.
+    //
+    // So this is an integer boundary, declared as one by language-hygiene
+    // T10 rather than quietly given a nicer value. Whether -1 or FAIL is the
+    // RIGHT answer on an unreachable path is a separate question with no
+    // evidence behind it either way; see the task's notes.
+    return static_cast<InputType>(-1);
   }
 }
 
@@ -470,7 +484,9 @@ inputtype_t W32InputDriver::getMouseControlType(control_id_t control_id)
   case MOUSE_ANY:
     return InputType::INPUT_TYPE_BOOL;
   default:
-    return -1; // Should never get here!
+    // Should never get here! Same preserved -1 as getControlType above, and
+    // for the same reason — see the comment there.
+    return static_cast<InputType>(-1);
   }
 }
 

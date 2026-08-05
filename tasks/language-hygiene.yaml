@@ -788,13 +788,51 @@ tasks:
       `int validTypes` beside it is `InputType validTypes` now, so the & and |
       there are InputType's own operators.
 
-      NO C-STYLE CAST WAS ADDED ANYWHERE, and no integer boundary needed
-      listing -- which was not a foregone conclusion. Every operation on these
-      values across all 18 files turned out to be assignment, ==, !=, >, >=, &
-      or |, all of which a scoped enum with ENUM_HELPER serves directly. Two
-      sites needed more than qualification: `int validTypes` above, and
-      ControlBindings.cpp's `{0, 0}` table terminator, which is now
-      {nullptr, InputType::INPUT_TYPE_FAIL}.
+      NO C-STYLE CAST WAS ADDED ANYWHERE. Nearly every operation on these
+      values across all 18 files is assignment, ==, !=, >, >=, & or |, which a
+      scoped enum with ENUM_HELPER serves directly. Four sites needed more than
+      qualification: `int validTypes` above; ControlBindings.cpp's `{0, 0}`
+      table terminator, now {nullptr, InputType::INPUT_TYPE_FAIL}; and the two
+      integer boundaries below.
+
+      THE INTEGER BOUNDARY THIS TASK DECLARES, as its acceptance requires:
+      W32InputDriver::getControlType and ::getMouseControlType each end in
+      `default: return -1; // Should never get here!`. Both are now
+      `static_cast<InputType>(-1)`.
+
+      -1 IS PRESERVED RATHER THAN MAPPED TO INPUT_TYPE_FAIL, and choosing the
+      nicer-looking value would have inverted the behaviour. InputType is a bit
+      field: -1 is every bit SET, so a `(type & x) == x` test accepts
+      EVERYTHING; INPUT_TYPE_FAIL is zero and accepts NOTHING. The value is
+      read in exactly that form -- it flows through InputDriverSimple.cpp's
+      `spec.type = getControlType(...)` into
+      InputDriver::getDefaultConditionID, whose loop condition is
+      `(type & info.type) != info.type`. FAIL there would walk the table to the
+      terminator and hit the off-by-two failure path T9 already documented.
+
+      Whether -1 or FAIL is the RIGHT answer is a separate question and this
+      task does not answer it. The path is marked unreachable, both arms are
+      guarded by a prior `getControlID(...) >= 0`, and there is no evidence
+      either way. Recorded rather than fixed, in the shape Batch 4 used for the
+      three defects it found. NO TASK OWNS IT.
+
+      CI CAUGHT BOTH OF THESE AND THE FIRST PUSH OF THIS TASK WAS RED --
+      `error C2440: 'return': cannot convert from 'int' to 'inputtype_t'`,
+      twice, and nothing else in the tree. Worth reading as a method failure
+      rather than a typo:
+
+      THE SWEEP WAS KEYED ON THE ENUMERATOR NAME, so it found all 217 sites
+      that SPELL an INPUT_TYPE_ and was blind to the two that do not. Changing
+      a function's RETURN TYPE makes every `return` in it a conversion site,
+      and `return -1;` names nothing the grep could match. This is precisely
+      the failure mode check_math_types.py was written for during the
+      DirectXMath migration -- "a converted signature leaves its parameter's
+      uses behind exactly as a converted local does" -- and there is no
+      equivalent check for enum conversions. THE RULE FOR THE NEXT ONE: after
+      changing a type, enumerate the functions that RETURN it and read every
+      return statement, then the assignments INTO it. Do not rely on a sweep
+      over the enumerator names; by construction it cannot see a bare
+      integer.
 
       THE HAND-ALIGNED TABLE IN ControlTypes.inc DID NOT SURVIVE, and that was
       a deliberate choice rather than an oversight. 136 of its lines change

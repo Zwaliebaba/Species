@@ -8,9 +8,11 @@
 > file is that a batch proposal is a measurement with a short half-life, and
 > the only way to see that is to leave the prediction next to the result.
 >
-> **Nothing here is compiled or run.** No MSVC and no Windows client in the
-> environment that executed it. Four tasks, 26 files, zero builds. CI is the
-> first thing that will have an opinion.
+> **Nothing here was compiled by the agent that wrote it** — no MSVC and no
+> Windows client in that environment. **CI then rejected it**, and the fix and
+> what it teaches are at [**What CI caught**](#what-ci-caught). Three of the
+> four tasks were green on CI as they landed; `language-hygiene/T10` was red
+> on two errors and is green after a follow-up.
 
 Written 2026-08-05 at `50560ab`. This is a proposal, not a plan — the plans are
 the five YAML files beside it. It answers one question: **of everything that is
@@ -321,6 +323,49 @@ batch safe. It was — and it was still incomplete in a way worth recording:
   `NeuronHelper.h` since it was written. Only its bitwise half means anything
   for a bit field, and `InputTypes.h` now says so at the invocation.
 
+### What CI caught
+
+**Three of the four tasks were green on CI as they landed** — `lh/T13` at
+`67c5580`, `strings/T18` at `a01ca40`, `ownership/T11` at `be89687`, each
+building x64 Debug and running the suite. **`language-hygiene/T10` was red**,
+on exactly two errors and nothing else in the tree:
+
+```
+InputDriverWin32.cpp(451,12): error C2440: 'return': cannot convert from 'int' to 'inputtype_t'
+InputDriverWin32.cpp(473,12): error C2440: 'return': cannot convert from 'int' to 'inputtype_t'
+```
+
+**Read it as a method failure rather than a typo.** The sweep was keyed on the
+enumerator NAME, so it found all 217 sites that *spell* an `INPUT_TYPE_` and
+was structurally blind to the two that do not. Changing a function's RETURN
+TYPE makes every `return` in it a conversion site, and `return -1;` names
+nothing a grep over enumerators can match.
+
+**This is the same shape as the miss `check_math_types.py` was built for**
+during the DirectXMath migration — *"a converted signature leaves its
+parameter's uses behind exactly as a converted local does"* — and there is no
+equivalent check for enum conversions. The rule for the next one: after
+changing a type, enumerate the functions that RETURN it and read every return
+statement, then the assignments INTO it. A sweep over enumerator names cannot
+see a bare integer, by construction.
+
+**The fix was not the obvious one, and the obvious one would have inverted
+behaviour.** Both sites are `default: return -1; // Should never get here!`,
+and mapping them to `INPUT_TYPE_FAIL` reads like an improvement. It is the
+opposite: `InputType` is a bit field, so `-1` is every bit SET and passes a
+`(type & x) == x` test for everything, while `INPUT_TYPE_FAIL` is zero and
+passes it for nothing. The value is read in exactly that form, in
+`InputDriver::getDefaultConditionID`. Both are now
+`static_cast<InputType>(-1)` — the bit pattern preserved, the boundary
+declared, and which value is *correct* on that unreachable path left open,
+with no owning task. **A compile error is not a licence to pick a new value.**
+
+Worth noting against this file's own premise: the reach measurement that
+shaped Batch 5 was about WHICH FILES a task touches, and it was good for
+that. It says nothing about which EXPRESSIONS inside those files a conversion
+reaches. Both errors were in `InputDriverWin32.cpp` — a file the measurement
+named correctly, and had counted 19 sites in.
+
 ### What was NOT done, and should be read as a gap
 
 **No runtime tests were added by any of the four tasks.** Three static_asserts
@@ -331,10 +376,15 @@ change that. `GlobalWorld` is the awkward one: its constructor builds
 `SphereWorld`, which asks `g_resource` for shapes, so it is not constructible
 in a test DLL as it stands. That is a real obstacle and it has no owning task.
 
-**Nothing was compiled.** Four tasks, 26 files, no build. The seven Python
-checks pass and a use-after-move scan over the changed files is clean, which
-is the whole of the evidence. `GlobalWorld` is on the Garden smoke-test path
-at step 2 and the input layer at step 5.
+**Nothing was compiled locally.** Four tasks, 26 files, no build in the
+executing environment — the seven Python checks and a use-after-move scan
+were the whole of the pre-push evidence, and CI found what they could not.
+That is the second time in five batches that CI has been the thing which
+caught a type conversion's missed call sites; `ownership/T5` was the first.
+
+**A green CI run is still not a running game.** `GlobalWorld` is on the
+Garden smoke-test path at step 2 and the input layer at step 5, and nothing
+in the suite renders or reads a key.
 
 ---
 
