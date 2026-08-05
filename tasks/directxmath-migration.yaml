@@ -932,11 +932,7 @@ tasks:
     project: NeuronClient
     depends_on: [T1, T18, T22]
     files:
-      - NeuronClient/CameraAccess.h
-      - NeuronClient/RendererAccess.h
       - NeuronClient/LocationAccess.h
-      - NeuronClient/GameCursorAccess.h
-      - NeuronClient/UserInputAccess.h
       - NeuronClient/ClientToServer.h
       - NeuronClient/ClientToServer.cpp
     acceptance:
@@ -992,6 +988,18 @@ tasks:
       own its implementors, or be sequenced after them. T11 satisfied that by
       accident of scoping -- SoundLibrary3d's two implementors were already in
       its file list -- rather than by anyone having checked.
+      SHRUNK 2026-08-05: four of its seven files moved to T22. CameraAccess,
+      RendererAccess, GameCursorAccess and UserInputAccess declare sixteen of
+      this task's seventeen math virtuals, and the sole overrider of every one
+      is a Species class T22 owns. A virtual signature cannot move without its
+      overriders, so those four could never have been done here whatever the
+      dependency order said. T22's notes carry the full map.
+
+      WHAT IS LEFT is LocationAccess::GetSoundSource, whose overrider is
+      Location in GameLogic, and the two ClientToServer files, which carry no
+      math virtuals at all. This task is now small, and it should be re-read
+      before being started rather than trusted: a task that owns only
+      signatures is the shape this plan has been wrong about five times.
 
   - id: T13
     title: Owner runs the Garden smoke test on the converted engine layers
@@ -2399,6 +2407,13 @@ tasks:
     project: Species
     depends_on: [T21]
     files:
+      # Added 2026-08-05: these four declare pure virtuals carrying math
+      # types whose only overriders are this task's own classes, so the
+      # signature and the override must move in one commit. See notes.
+      - NeuronClient/CameraAccess.h
+      - NeuronClient/RendererAccess.h
+      - NeuronClient/GameCursorAccess.h
+      - NeuronClient/UserInputAccess.h
       - Species/Renderer.h
       - Species/Renderer.cpp
       - Species/Camera.h
@@ -2421,7 +2436,35 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
+    notes: |
+      RE-SCOPED BEFORE STARTING, 2026-08-05, on a measurement rather than
+      after a red build. This task gains four headers from T12.
+
+      THE BLOCKER. CameraAccess, RendererAccess, GameCursorAccess and
+      UserInputAccess declare sixteen pure virtuals between them carrying
+      Vector3, and the ONLY overrider of every one is a class THIS task owns:
+
+        CameraAccess       11 virtuals  ->  Species/Camera.h
+        RendererAccess      3 virtuals  ->  Species/Renderer.h
+        GameCursorAccess    1 virtual   ->  Species/GameCursor.h
+        UserInputAccess     1 virtual   ->  Species/UserInput.h
+        LocationAccess      1 virtual   ->  GameLogic/Location.h  (NOT ours)
+
+      A virtual signature cannot move without every overrider in the same
+      commit -- this plan's structural rule, learned four times and now five.
+      T12 owned the declarations and T22 the overriders, and T12 depends on
+      T22, so NEITHER could move them: T22 cannot make Camera::GetPos return
+      XMFLOAT3 while CameraAccess::GetPos returns Vector3, and T12 cannot
+      change the base without the derived class it does not own.
+
+      One change wearing two task numbers -- what T5 turned out to be in
+      strings-modernised, and what T16 turned out to be here. Resolved the way
+      T16 was: the task that owns the STORAGE takes the signatures with it.
+
+      LocationAccess::GetSoundSource stays with T12, because its overrider is
+      Location in GameLogic, which T18 converted and deliberately left legacy.
+      That is the one pairing this task does not complete.
 
   - id: T23
     title: Convert the app, script and server-update code
@@ -2445,7 +2488,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       GenerateSyncValue is inside #ifdef TARGET_DEBUG. It is the only runtime
       determinism check the game has, so it must keep summing the same fields
