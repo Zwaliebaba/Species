@@ -23,17 +23,17 @@ Buildings_EndDefinition
 
 
 Research_StartDefinition
-	Research Citizen      0       4
-    Research Squad          0       3
-	Research Engineer       0       3
-    Research Laser          0       3
-	Research Grenade		0		3
-	Research Rocket			0		3
-	Research AirStrike		0		3
+	Research Citizen      0       2
+    Research Squad          0       1
+	Research Engineer       0       1
+    Research Laser          0       1
+	Research Grenade		0		0
+	Research Rocket			0		0
+	Research AirStrike		0		0
 	Research Controller		0		0
-	Research Officer		0		3
-    Research Armour         0       2
-    Research TaskManager    0       4
+	Research Officer		0		0
+    Research Armour         0       0
+    Research TaskManager    0       2
     CurrentResearch         Squad
 Research_EndDefinition
 
