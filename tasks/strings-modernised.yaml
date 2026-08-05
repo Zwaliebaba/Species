@@ -799,7 +799,7 @@ tasks:
       byte-identity for output it does not yet own the types of. Landing last
       is also what makes the byte-identity proof meaningful: it covers T5's
       change as well as its own.
-    status: todo
+    status: in_progress
 
   - id: T9
     title: Sweep the long tail to zero
