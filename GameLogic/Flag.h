@@ -8,26 +8,25 @@
 
 class Flag
 {
-protected:
+  protected:
     Vector3 m_flag[FLAG_RESOLUTION][FLAG_RESOLUTION];
 
-    int     m_texId;
+    int m_texId;
     Vector3 m_pos;
     Vector3 m_front;
     Vector3 m_up;
-    float   m_size;
+    float m_size;
 
-public:
+  public:
     Flag();
 
-    void Initialise         ();
+    void Initialise();
 
-    void SetTexture         ( int _textureId );
-    void SetPosition        ( Vector3 const &_pos );
-    void SetOrientation     ( Vector3 const &_front, Vector3 const &_up );
-    void SetSize            ( float _size );
+    void SetTexture(int _textureId);
+    void SetPosition(Vector3 const& _pos);
+    void SetOrientation(Vector3 const& _front, Vector3 const& _up);
+    void SetSize(float _size);
 
     void Render();
-    void RenderText         ( int _posX, int _posY, char *_caption );
+    void RenderText(int _posX, int _posY, char* _caption);
 };
-
