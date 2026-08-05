@@ -2021,6 +2021,24 @@ tasks:
         - check_math_types found three sites grep could not, all failure mode
           2 — a converted member's name with no type on the line. RUN IT AFTER
           EVERY FILE, not at the end.
+
+      THE VERIFICATION RECIPE, written after Explosion shipped a red build with
+      all seven checks green locally. Explosion::Advance was never converted and
+      nothing caught it: its three lines are `m_tris[i].m_pos += m_tris[i].m_vel
+      * g_advanceTime`, `m_vel.Mag()` and `m_vel *= 1.0f - friction`, and not
+      one contains a type name. check_math_types could not help either, because
+      m_pos and m_vel are contended names it SKIPS rather than guesses at — so
+      the type grep and the tool have the same blind spot. Weapons has 103
+      occurrences and will be full of this.
+
+      After converting a file, grep the converted MEMBERS rather than the types:
+
+        grep -nE '\.(Mag|MagSquared|Normalise|SetLength|SetToIdentity|GetData|GetDataConst|RotateAround|FastRotateAround)\s*\(' <file>
+        grep -nE '\bm_(name|of|each|converted|member)\b\s*(\*=|\+=|-=|/=|\^)' <file>
+
+      The first finds legacy method calls on native storage; the second finds
+      compound assignment and the cross product, neither of which the native
+      types have. Both return nothing on a finished file.
         - Vector3::operator/ computed 1/b once and multiplied, so XMVectorScale
           with the reciprocal is exact rather than approximate.
         - Vector3::operator* between two vectors was the DOT PRODUCT. It reads
