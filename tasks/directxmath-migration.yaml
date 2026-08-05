@@ -2010,9 +2010,38 @@ tasks:
       ParticleSystem.h and ParticleSystem.cpp are fully converted. Skip both
       when picking this up.
 
-      STILL LEGACY: Weapons (103 occurrences) and Rocket (77). 329 in total
-      when this started, of which 149 are done — ParticleSystem, Explosion,
-      Spirit, Flag, TaskManager, Airstrike and Spam.
+      STILL LEGACY: Weapons and Rocket. 329 type occurrences in total when this
+      started, of which 149 are done across seven file pairs — ParticleSystem,
+      Explosion, Spirit, Flag, TaskManager, Airstrike and Spam, every one
+      CI-green.
+
+      THE LAST TWO ARE MEASURED PROPERLY, because the type count understates
+      them badly. Counting every edit point rather than every type name:
+
+        Weapons.h    15 types
+        Weapons.cpp  88 types, 70 legacy method calls, 26 glVertex/glNormal,
+                     56 AsLegacy, 6 legacy globals   -> ~246 edit points
+        Rocket.h      4 types
+        Rocket.cpp   73 types, 36 legacy method calls, 24 glVertex/glNormal,
+                     13 AsLegacy, 15 legacy globals  -> ~161 edit points
+
+      Weapons.cpp holds 56 of the tree's remaining AsLegacy uses on its own —
+      more than every other file put together. It is the single densest math
+      file in GameLogic, which this task's intent said from the start.
+
+      They are INDEPENDENT of each other, which is worth knowing before
+      planning: Rocket.h and Rocket.cpp are the fuel buildings and the escape
+      rocket, and Weapons.h's own `Rocket` class is implemented in Weapons.cpp.
+      Neither header declares anything the other implements. Do them in either
+      order, in separate commits.
+
+      Every convention trap they can hit is already pinned or written down: the
+      two Matrix33 reversals (tests), BasisFromFrontAndUp's row order and its
+      lack of a namespace, g_upVector and g_zeroVector needing
+      DirectX::g_XMIdentityR1 and XMVectorZero(), RotateAround taking its angle
+      from the axis magnitude, operator^ being cross and operator* between two
+      vectors being dot, and the three-net search method. Nothing new should be
+      discovered; the remaining cost is volume.
 
       THE DUPLICATE-LOCAL SCAN FALSE-POSITIVES ON SIBLING BLOCKS. It flagged
       seven names in Spam and two in Airstrike, and every one was two separate
