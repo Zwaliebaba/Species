@@ -3,13 +3,14 @@
 #include "SpeciesWindow.h"
 
 
-class SaveOnQuitWindow : public SpeciesWindow
+namespace Species
 {
-public:
-    SaveOnQuitWindow( char const *_name );
+  class SaveOnQuitWindow : public SpeciesWindow
+  {
+    public:
+      SaveOnQuitWindow(char const* _name);
 
-    void Create();
-	void Render(bool hasFocus);
-};
-
-
+      void Create();
+      void Render(bool hasFocus);
+  };
+} // namespace Species

@@ -30,966 +30,971 @@
 
 // *** Constructor
 // Called from Landscape constructor
-LandscapeTile::LandscapeTile()
-  : m_outsideHeight(0.0f),
-    m_size(256),
-    m_heightMap(nullptr),
-    m_guideGridPower(0),
-    m_guideGrid(nullptr),
-    m_generationMethod(1),
-    m_desiredHeight(200),
-    m_fractalDimension(1.2f),
-    m_heightScale(1.0f),
-    m_lowlandSmoothingFactor(1.0f),
-    m_randomSeed(1)
+
+
+namespace Species
 {
-}
-
-
-// *** Destructor
-LandscapeTile::~LandscapeTile() { delete m_heightMap; }
-
-
-// *** GetPowerOfTwo
-int LandscapeTile::GetPowerOfTwo(int x) { return (int)ceil(Log2(x)); }
-
-
-// *** GuideGridSetPower
-void LandscapeTile::GuideGridSetPower(int _power)
-{
-  if (_power != m_guideGridPower)
+  LandscapeTile::LandscapeTile()
+    : m_outsideHeight(0.0f),
+      m_size(256),
+      m_heightMap(nullptr),
+      m_guideGridPower(0),
+      m_guideGrid(nullptr),
+      m_generationMethod(1),
+      m_desiredHeight(200),
+      m_fractalDimension(1.2f),
+      m_heightScale(1.0f),
+      m_lowlandSmoothingFactor(1.0f),
+      m_randomSeed(1)
   {
-    int resolution = (1 << _power) - 1;
-    int a = GetPowerOfTwo(resolution + 1);
-    int b = GetPowerOfTwo(resolution + 2);
-    DEBUG_ASSERT(a != b);
+  }
 
-    delete m_guideGrid;
-    m_guideGrid = nullptr;
-    m_guideGridPower = _power;
 
-    if (resolution != 0)
+  // *** Destructor
+  LandscapeTile::~LandscapeTile() { delete m_heightMap; }
+
+
+  // *** GetPowerOfTwo
+  int LandscapeTile::GetPowerOfTwo(int x) { return (int)ceil(Log2(x)); }
+
+
+  // *** GuideGridSetPower
+  void LandscapeTile::GuideGridSetPower(int _power)
+  {
+    if (_power != m_guideGridPower)
     {
-      m_guideGrid = new Array2D<unsigned char>(resolution, resolution, 0);
-      m_guideGrid->SetAll(0);
+      int resolution = (1 << _power) - 1;
+      int a = GetPowerOfTwo(resolution + 1);
+      int b = GetPowerOfTwo(resolution + 2);
+      DEBUG_ASSERT(a != b);
+
+      delete m_guideGrid;
+      m_guideGrid = nullptr;
+      m_guideGridPower = _power;
+
+      if (resolution != 0)
+      {
+        m_guideGrid = new Array2D<unsigned char>(resolution, resolution, 0);
+        m_guideGrid->SetAll(0);
+      }
     }
   }
-}
 
 
-// *** GuideGridGetPower
-int LandscapeTile::GuideGridGetPower() { return m_guideGridPower; }
+  // *** GuideGridGetPower
+  int LandscapeTile::GuideGridGetPower() { return m_guideGridPower; }
 
 
-// *** GuideGridToString
-char* LandscapeTile::GuideGridToString()
-{
-  static char* result = nullptr;
-  if (result)
+  // *** GuideGridToString
+  char* LandscapeTile::GuideGridToString()
   {
-    delete result;
-    result = nullptr;
+    static char* result = nullptr;
+    if (result)
+    {
+      delete result;
+      result = nullptr;
+    }
+
+    int res = m_guideGrid->GetNumColumns();
+    if (res > 0)
+    {
+      result = new char[res * res * 2 + 1];
+      char* target = result;
+
+      for (int z = 0; z < res; ++z)
+      {
+        for (int x = 0; x < res; ++x)
+        {
+          unsigned char actualVal = m_guideGrid->GetData(x, z);
+
+          *target = 'A' + int(actualVal / 16);
+          *(target + 1) = 'A' + actualVal - int(actualVal / 16) * 16;
+
+          target += 2;
+        }
+      }
+
+      *target = '\x0';
+    }
+
+    return result;
   }
 
-  int res = m_guideGrid->GetNumColumns();
-  if (res > 0)
-  {
-    result = new char[res * res * 2 + 1];
-    char* target = result;
 
+  // *** GuideGridFromString
+  void LandscapeTile::GuideGridFromString(char* _hex)
+  {
+    GuideGridSetPower(m_guideGridPower);
+    char* current = _hex;
+
+    int res = m_guideGrid->GetNumColumns();
     for (int z = 0; z < res; ++z)
     {
       for (int x = 0; x < res; ++x)
       {
-        unsigned char actualVal = m_guideGrid->GetData(x, z);
+        int valA = *current - 'A';
+        int valB = *(current + 1) - 'A';
 
-        *target = 'A' + int(actualVal / 16);
-        *(target + 1) = 'A' + actualVal - int(actualVal / 16) * 16;
+        int actualVal = valA * 16 + valB;
 
-        target += 2;
-      }
-    }
+        m_guideGrid->PutData(x, z, actualVal);
 
-    *target = '\x0';
-  }
-
-  return result;
-}
-
-
-// *** GuideGridFromString
-void LandscapeTile::GuideGridFromString(char* _hex)
-{
-  GuideGridSetPower(m_guideGridPower);
-  char* current = _hex;
-
-  int res = m_guideGrid->GetNumColumns();
-  for (int z = 0; z < res; ++z)
-  {
-    for (int x = 0; x < res; ++x)
-    {
-      int valA = *current - 'A';
-      int valB = *(current + 1) - 'A';
-
-      int actualVal = valA * 16 + valB;
-
-      m_guideGrid->PutData(x, z, actualVal);
-
-      current += 2;
-    }
-  }
-}
-
-
-// *** GenerateNoise
-float LandscapeTile::GenerateNoise(float _halfSize, float _height)
-{
-  float length = 256.0f * _halfSize / m_heightMap->GetNumColumns();
-  float val = sfrand(powf(length * 10.0f, m_fractalDimension));
-  val *= m_compensatedHeightScale;
-  val *= 0.1f + (float)powf(fabsf(_height), m_lowlandSmoothingFactor) * 0.15f;
-  return val;
-}
-
-
-// *** GenerateDiamondMidpoint
-void LandscapeTile::GenerateDiamondMidpoint(int _x, int _z, int _halfSize)
-{
-  float newHeight;
-
-  switch (m_generationMethod)
-  {
-  case 0:
-    newHeight = m_heightMap->GetData(_x - _halfSize, _z) + m_heightMap->GetData(_x + _halfSize, _z) + m_heightMap->GetData(_x, _z - _halfSize) +
-                m_heightMap->GetData(_x, _z + _halfSize);
-    newHeight *= 0.25f;
-    break;
-  case 1:
-    if (speciesRandom() & 1)
-    {
-      newHeight = m_heightMap->GetData(_x - _halfSize, _z) + m_heightMap->GetData(_x + _halfSize, _z);
-    }
-    else
-    {
-      newHeight = m_heightMap->GetData(_x, _z + _halfSize) + m_heightMap->GetData(_x, _z - _halfSize);
-    }
-    newHeight *= 0.5f;
-    break;
-  case 2:
-  {
-    int rnd = speciesRandom() & 0xffff;
-    if (rnd < 0x3fff)
-      newHeight = m_heightMap->GetData(_x - _halfSize, _z);
-    else if (rnd < 0x7fff)
-      newHeight = m_heightMap->GetData(_x + _halfSize, _z);
-    else if (rnd < 0xbfff)
-      newHeight = m_heightMap->GetData(_x, _z + _halfSize);
-    else
-      newHeight = m_heightMap->GetData(_x, _z - _halfSize);
-    break;
-  }
-  }
-
-  newHeight += GenerateNoise((float)_halfSize, newHeight);
-  m_heightMap->PutData(_x, _z, newHeight);
-}
-
-
-// *** GenerateSquareMidpoint
-void LandscapeTile::GenerateSquareMidpoint(int _x, int _z, int _halfSize)
-{
-  float newHeight;
-
-  switch (m_generationMethod)
-  {
-  case 0:
-    newHeight = m_heightMap->GetData(_x - _halfSize, _z - _halfSize) + m_heightMap->GetData(_x - _halfSize, _z + _halfSize) +
-                m_heightMap->GetData(_x + _halfSize, _z - _halfSize) + m_heightMap->GetData(_x + _halfSize, _z + _halfSize);
-    newHeight *= 0.25f;
-    break;
-  case 1:
-    if (speciesRandom() & 1)
-    {
-      newHeight = m_heightMap->GetData(_x - _halfSize, _z - _halfSize) + m_heightMap->GetData(_x + _halfSize, _z + _halfSize);
-    }
-    else
-    {
-      newHeight = m_heightMap->GetData(_x - _halfSize, _z + _halfSize) + m_heightMap->GetData(_x + _halfSize, _z - _halfSize);
-    }
-    newHeight *= 0.5f;
-    break;
-  case 2:
-  {
-    int rnd = speciesRandom() & 0xffff;
-    if (rnd < 0x3fff)
-      newHeight = m_heightMap->GetData(_x - _halfSize, _z - _halfSize);
-    else if (rnd < 0x7fff)
-      newHeight = m_heightMap->GetData(_x - _halfSize, _z + _halfSize);
-    else if (rnd < 0xbfff)
-      newHeight = m_heightMap->GetData(_x + _halfSize, _z - _halfSize);
-    else
-      newHeight = m_heightMap->GetData(_x + _halfSize, _z + _halfSize);
-    break;
-  }
-  }
-
-  newHeight += GenerateNoise((float)_halfSize, newHeight);
-  m_heightMap->PutData(_x, _z, newHeight);
-}
-
-
-// *** GenerateMidpoints
-void LandscapeTile::GenerateMidpoints(int _x1, int _z1, int _x2, int _z2)
-{
-  int halfSize = (_x2 - _x1) >> 1;
-  int midX = _x1 + halfSize;
-  int midZ = _z1 + halfSize;
-
-  // Create a new point in the centre of the parent square
-  GenerateSquareMidpoint(midX, midZ, halfSize);
-
-  // Create a new point at the mid point of the top edge of the parent square
-  if (_z1 != 0)
-  {
-    GenerateDiamondMidpoint(midX, _z1, halfSize);
-  }
-
-  // Create a new point at the mid point of the left edge of the parent square
-  if (_x1 != 0)
-  {
-    GenerateDiamondMidpoint(_x1, midZ, halfSize);
-  }
-}
-
-
-// *** Generate
-void LandscapeTile::Generate(LandscapeDef* _def)
-{
-  // Do we need to throw away our height map?
-  {
-    int reqWorldCells = m_size / _def->m_cellSize;
-    int reqCells = GetPowerOfTwo(reqWorldCells - 1);
-    reqCells = powf(2, reqCells) + 1;
-    if (!m_heightMap || reqCells != m_heightMap->GetNumColumns() || reqCells != m_heightMap->GetNumRows())
-    {
-      delete m_heightMap;
-      m_heightMap = new SurfaceMap2D<float>(reqCells, reqCells, 0.0f, 0.0f, 1.0f, 1.0f, // Cell size of 1.0 is correct here
-                                            m_outsideHeight);
-    }
-  }
-
-  // Initialise value of all height samples
-  m_heightMap->SetAll(m_outsideHeight);
-
-  // Populate the top level height samples with data from the guide grid
-  if (m_guideGrid)
-  {
-    int res = m_guideGrid->GetNumColumns();
-    int scale = (m_heightMap->GetNumColumns() - 1) / (res + 1);
-    for (unsigned short z = 0; z < res; ++z)
-    {
-      for (unsigned short x = 0; x < res; ++x)
-      {
-        float a = m_guideGrid->GetData(x, z);
-        m_heightMap->PutData((x + 1) * scale, (z + 1) * scale, a);
+        current += 2;
       }
     }
   }
 
-  // Generate the terrain
+
+  // *** GenerateNoise
+  float LandscapeTile::GenerateNoise(float _halfSize, float _height)
   {
-    float fracDimModifier = 30.7f * expf(-6.5f * m_fractalDimension);
-    float smoothingModifier = 15.353f * expf(-3.1f * m_lowlandSmoothingFactor);
-    m_compensatedHeightScale = m_heightScale;
-    m_compensatedHeightScale *= fracDimModifier;
-    m_compensatedHeightScale *= smoothingModifier;
+    float length = 256.0f * _halfSize / m_heightMap->GetNumColumns();
+    float val = sfrand(powf(length * 10.0f, m_fractalDimension));
+    val *= m_compensatedHeightScale;
+    val *= 0.1f + (float)powf(fabsf(_height), m_lowlandSmoothingFactor) * 0.15f;
+    return val;
+  }
 
-    int numIterationsToSkip = m_guideGridPower;
-    int numIterations = GetPowerOfTwo(m_heightMap->GetNumColumns()) - numIterationsToSkip;
-    int stepSize = ((m_heightMap->GetNumColumns()) - 1) >> numIterationsToSkip;
 
-    speciesSeedRandom(m_randomSeed);
+  // *** GenerateDiamondMidpoint
+  void LandscapeTile::GenerateDiamondMidpoint(int _x, int _z, int _halfSize)
+  {
+    float newHeight;
 
-    for (int i = 0; i < numIterations; ++i)
+    switch (m_generationMethod)
     {
-      for (int x = 0; x < m_heightMap->GetNumColumns() - 1; x += stepSize)
+    case 0:
+      newHeight = m_heightMap->GetData(_x - _halfSize, _z) + m_heightMap->GetData(_x + _halfSize, _z) + m_heightMap->GetData(_x, _z - _halfSize) +
+                  m_heightMap->GetData(_x, _z + _halfSize);
+      newHeight *= 0.25f;
+      break;
+    case 1:
+      if (speciesRandom() & 1)
       {
-        for (int z = 0; z < m_heightMap->GetNumColumns() - 1; z += stepSize)
+        newHeight = m_heightMap->GetData(_x - _halfSize, _z) + m_heightMap->GetData(_x + _halfSize, _z);
+      }
+      else
+      {
+        newHeight = m_heightMap->GetData(_x, _z + _halfSize) + m_heightMap->GetData(_x, _z - _halfSize);
+      }
+      newHeight *= 0.5f;
+      break;
+    case 2:
+    {
+      int rnd = speciesRandom() & 0xffff;
+      if (rnd < 0x3fff)
+        newHeight = m_heightMap->GetData(_x - _halfSize, _z);
+      else if (rnd < 0x7fff)
+        newHeight = m_heightMap->GetData(_x + _halfSize, _z);
+      else if (rnd < 0xbfff)
+        newHeight = m_heightMap->GetData(_x, _z + _halfSize);
+      else
+        newHeight = m_heightMap->GetData(_x, _z - _halfSize);
+      break;
+    }
+    }
+
+    newHeight += GenerateNoise((float)_halfSize, newHeight);
+    m_heightMap->PutData(_x, _z, newHeight);
+  }
+
+
+  // *** GenerateSquareMidpoint
+  void LandscapeTile::GenerateSquareMidpoint(int _x, int _z, int _halfSize)
+  {
+    float newHeight;
+
+    switch (m_generationMethod)
+    {
+    case 0:
+      newHeight = m_heightMap->GetData(_x - _halfSize, _z - _halfSize) + m_heightMap->GetData(_x - _halfSize, _z + _halfSize) +
+                  m_heightMap->GetData(_x + _halfSize, _z - _halfSize) + m_heightMap->GetData(_x + _halfSize, _z + _halfSize);
+      newHeight *= 0.25f;
+      break;
+    case 1:
+      if (speciesRandom() & 1)
+      {
+        newHeight = m_heightMap->GetData(_x - _halfSize, _z - _halfSize) + m_heightMap->GetData(_x + _halfSize, _z + _halfSize);
+      }
+      else
+      {
+        newHeight = m_heightMap->GetData(_x - _halfSize, _z + _halfSize) + m_heightMap->GetData(_x + _halfSize, _z - _halfSize);
+      }
+      newHeight *= 0.5f;
+      break;
+    case 2:
+    {
+      int rnd = speciesRandom() & 0xffff;
+      if (rnd < 0x3fff)
+        newHeight = m_heightMap->GetData(_x - _halfSize, _z - _halfSize);
+      else if (rnd < 0x7fff)
+        newHeight = m_heightMap->GetData(_x - _halfSize, _z + _halfSize);
+      else if (rnd < 0xbfff)
+        newHeight = m_heightMap->GetData(_x + _halfSize, _z - _halfSize);
+      else
+        newHeight = m_heightMap->GetData(_x + _halfSize, _z + _halfSize);
+      break;
+    }
+    }
+
+    newHeight += GenerateNoise((float)_halfSize, newHeight);
+    m_heightMap->PutData(_x, _z, newHeight);
+  }
+
+
+  // *** GenerateMidpoints
+  void LandscapeTile::GenerateMidpoints(int _x1, int _z1, int _x2, int _z2)
+  {
+    int halfSize = (_x2 - _x1) >> 1;
+    int midX = _x1 + halfSize;
+    int midZ = _z1 + halfSize;
+
+    // Create a new point in the centre of the parent square
+    GenerateSquareMidpoint(midX, midZ, halfSize);
+
+    // Create a new point at the mid point of the top edge of the parent square
+    if (_z1 != 0)
+    {
+      GenerateDiamondMidpoint(midX, _z1, halfSize);
+    }
+
+    // Create a new point at the mid point of the left edge of the parent square
+    if (_x1 != 0)
+    {
+      GenerateDiamondMidpoint(_x1, midZ, halfSize);
+    }
+  }
+
+
+  // *** Generate
+  void LandscapeTile::Generate(LandscapeDef* _def)
+  {
+    // Do we need to throw away our height map?
+    {
+      int reqWorldCells = m_size / _def->m_cellSize;
+      int reqCells = GetPowerOfTwo(reqWorldCells - 1);
+      reqCells = powf(2, reqCells) + 1;
+      if (!m_heightMap || reqCells != m_heightMap->GetNumColumns() || reqCells != m_heightMap->GetNumRows())
+      {
+        delete m_heightMap;
+        m_heightMap = new SurfaceMap2D<float>(reqCells, reqCells, 0.0f, 0.0f, 1.0f, 1.0f, // Cell size of 1.0 is correct here
+                                              m_outsideHeight);
+      }
+    }
+
+    // Initialise value of all height samples
+    m_heightMap->SetAll(m_outsideHeight);
+
+    // Populate the top level height samples with data from the guide grid
+    if (m_guideGrid)
+    {
+      int res = m_guideGrid->GetNumColumns();
+      int scale = (m_heightMap->GetNumColumns() - 1) / (res + 1);
+      for (unsigned short z = 0; z < res; ++z)
+      {
+        for (unsigned short x = 0; x < res; ++x)
         {
-          GenerateMidpoints(x, z, x + stepSize, z + stepSize);
+          float a = m_guideGrid->GetData(x, z);
+          m_heightMap->PutData((x + 1) * scale, (z + 1) * scale, a);
         }
       }
-      stepSize >>= 1;
     }
-  }
 
-  // Apply a height shift to the whole tile
-  for (unsigned short x = 0; x < m_heightMap->GetNumColumns(); ++x)
-  {
-    for (unsigned short z = 0; z < m_heightMap->GetNumColumns(); ++z)
+    // Generate the terrain
     {
-      m_heightMap->PutData(x, z, m_heightMap->GetData(x, z) + m_posY);
-    }
-  }
-}
+      float fracDimModifier = 30.7f * expf(-6.5f * m_fractalDimension);
+      float smoothingModifier = 15.353f * expf(-3.1f * m_lowlandSmoothingFactor);
+      m_compensatedHeightScale = m_heightScale;
+      m_compensatedHeightScale *= fracDimModifier;
+      m_compensatedHeightScale *= smoothingModifier;
 
+      int numIterationsToSkip = m_guideGridPower;
+      int numIterations = GetPowerOfTwo(m_heightMap->GetNumColumns()) - numIterationsToSkip;
+      int stepSize = ((m_heightMap->GetNumColumns()) - 1) >> numIterationsToSkip;
 
-// ****************************************************************************
-// Class Landscape
-// ****************************************************************************
+      speciesSeedRandom(m_randomSeed);
 
-void Landscape::FlattenArea(LandscapeFlattenArea const* _area)
-{
-  int x1 = m_heightMap->GetMapIndexX(_area->m_centre.x - _area->m_size) + 1;
-  int x2 = m_heightMap->GetMapIndexX(_area->m_centre.x + _area->m_size) + 1;
-  int z1 = m_heightMap->GetMapIndexY(_area->m_centre.z - _area->m_size) + 1;
-  int z2 = m_heightMap->GetMapIndexY(_area->m_centre.z + _area->m_size) + 1;
-  for (int z = z1; z < z2; ++z)
-  {
-    for (int x = x1; x < x2; ++x)
-    {
-      m_heightMap->PutData(x, z, _area->m_centre.y);
-    }
-  }
-}
-
-
-// *** MergeTileIntoLandscape
-void Landscape::MergeTileIntoLandscape(LandscapeTile const* _tile)
-{
-  unsigned short posX = (float)(_tile->m_posX / m_heightMap->m_cellSizeX) + 0.5f;
-  int posY = _tile->m_posY;
-  unsigned short posZ = (float)(_tile->m_posZ / m_heightMap->m_cellSizeY) + 0.5f;
-
-  // Calculate num cells that this tile will occupy in the main landscape
-  int numCells = (float)_tile->m_size / m_heightMap->m_cellSizeX;
-
-  // Calculate how much to increment in "tile space" for one unit in "main landscape space"
-  float factor = (float)(_tile->m_heightMap->GetNumColumns() - 1) / (float)(numCells - 1);
-
-  float heightRange = _tile->m_heightMap->GetHighestValue() - _tile->m_outsideHeight;
-  heightRange += 0.001f; // Prevent divide by zero below
-  float heightFactor = (_tile->m_desiredHeight - _tile->m_outsideHeight) / heightRange;
-
-  _tile->m_heightMap->m_x0 = _tile->m_posX;
-  _tile->m_heightMap->m_y0 = _tile->m_posZ;
-  _tile->m_heightMap->m_cellSizeX = _tile->m_size / (float)_tile->m_heightMap->GetNumColumns();
-  _tile->m_heightMap->m_cellSizeY = _tile->m_size / (float)_tile->m_heightMap->GetNumRows();
-  _tile->m_heightMap->m_invCellSizeX = 1.0f / _tile->m_heightMap->m_cellSizeX;
-  _tile->m_heightMap->m_invCellSizeY = 1.0f / _tile->m_heightMap->m_cellSizeY;
-
-  for (unsigned short z = 0; z < numCells; ++z)
-  {
-    //        float tileZ = posZ + (float)z * m_heightMap->m_cellSizeY;
-    float tileZ = m_heightMap->GetRealY((float)(z + posZ));
-
-    for (unsigned short x = 0; x < numCells; ++x)
-    {
-      //			float tileX = posX + (float)x * m_heightMap->m_cellSizeX;
-      float tileX = m_heightMap->GetRealX((float)(x + posX));
-      float height1 = _tile->m_heightMap->GetValue(tileX, tileZ);
-      height1 -= _tile->m_outsideHeight;
-      height1 *= heightFactor;
-      height1 += _tile->m_outsideHeight;
-      //			float height1 = _tile->m_heightMap->GetData(tileX, tileZ) * heightFactor;
-      float height2 = m_heightMap->GetData(x + posX, z + posZ);
-      if (height1 > height2)
+      for (int i = 0; i < numIterations; ++i)
       {
-        m_heightMap->PutData(x + posX, z + posZ, height1);
+        for (int x = 0; x < m_heightMap->GetNumColumns() - 1; x += stepSize)
+        {
+          for (int z = 0; z < m_heightMap->GetNumColumns() - 1; z += stepSize)
+          {
+            GenerateMidpoints(x, z, x + stepSize, z + stepSize);
+          }
+        }
+        stepSize >>= 1;
       }
     }
-  }
-}
 
-
-// *** GenerateHeightMap
-void Landscape::GenerateHeightMap(LandscapeDef* _def)
-{
-  // Initialise value of all height samples
-  m_heightMap->SetAll(m_outsideHeight);
-
-  // Join the tiles together to form the whole level
-  for (int i = 0; i < static_cast<int>(_def->m_tiles.size()); ++i)
-  {
-    LandscapeTile* aTile = _def->m_tiles[i].get();
-    aTile->m_outsideHeight = m_outsideHeight;
-    aTile->Generate(_def);
-    MergeTileIntoLandscape(aTile);
-  }
-
-  // Apply flatten areas
-  {
-    for (auto const& area : _def->m_flattenAreas)
-    {
-      FlattenArea(area.get());
-    }
-  }
-
-  m_worldSizeX = m_heightMap->m_cellSizeX * m_heightMap->GetNumColumns();
-  m_worldSizeZ = m_heightMap->m_cellSizeY * m_heightMap->GetNumRows();
-}
-
-
-void Landscape::DeleteTile(int tileId)
-{
-  // The erase destroys it; it used to be deleted first and then erased.
-  g_location->m_levelFile->m_landscape.m_tiles.erase(g_location->m_levelFile->m_landscape.m_tiles.begin() + tileId);
-  LandscapeDef* def = &g_location->m_levelFile->m_landscape;
-  Init(def);
-}
-
-
-// Generate normals that will be used for hit check, not rendering
-void Landscape::GenerateNormals()
-{
-  // Generate the normals from the height samples
-
-  for (unsigned short z = 0; z < m_heightMap->GetNumRows(); ++z)
-  {
-    int zTimesNumCells = z * m_heightMap->GetNumColumns();
+    // Apply a height shift to the whole tile
     for (unsigned short x = 0; x < m_heightMap->GetNumColumns(); ++x)
     {
-      float heightN = m_heightMap->GetData(x, z - 1);
-      float heightW = m_heightMap->GetData(x + 1, z);
-      float heightE = m_heightMap->GetData(x - 1, z);
-      float heightS = m_heightMap->GetData(x, z + 1);
-
-      if (heightN == heightW && heightE == heightS && heightN == heightE)
+      for (unsigned short z = 0; z < m_heightMap->GetNumColumns(); ++z)
       {
-        m_normalMap->PutData(x, z, DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
-        continue;
+        m_heightMap->PutData(x, z, m_heightMap->GetData(x, z) + m_posY);
       }
-
-      float heightCentre = m_heightMap->GetData(x, z);
-
-      DirectX::XMVECTOR const vectN = DirectX::XMVectorSet(0.0f, heightCentre - heightN, m_heightMap->m_cellSizeY, 0.0f);
-      DirectX::XMVECTOR const vectW = DirectX::XMVectorSet(-m_heightMap->m_cellSizeX, heightCentre - heightW, 0.0f, 0.0f);
-      DirectX::XMVECTOR const vectS = DirectX::XMVectorSet(0.0f, heightCentre - heightS, -m_heightMap->m_cellSizeY, 0.0f);
-      DirectX::XMVECTOR const vectE = DirectX::XMVectorSet(m_heightMap->m_cellSizeX, heightCentre - heightE, 0.0f, 0.0f);
-
-      // Each of the three normalises is separate, as the legacy code had them:
-      // the two face normals are unit length before they are averaged, so
-      // normalising only the sum would weight the steeper face.
-      DirectX::XMVECTOR const normA = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(vectW, vectN));
-      DirectX::XMVECTOR const normB = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(vectE, vectS));
-
-      DirectX::XMFLOAT3 norm;
-      DirectX::XMStoreFloat3(&norm, DirectX::XMVector3Normalize(DirectX::XMVectorAdd(normA, normB)));
-      m_normalMap->PutData(x, z, norm);
     }
   }
-}
 
 
-void Landscape::RenderHitNormals() const
-{
-  glColor3ub(255, 90, 90);
-  glLineWidth(1.0f);
-  glBegin(GL_LINES);
-  for (int z = 0; z < m_heightMap->GetNumRows(); z++)
+  // ****************************************************************************
+  // Class Landscape
+  // ****************************************************************************
+
+  void Landscape::FlattenArea(LandscapeFlattenArea const* _area)
   {
-    for (int x = 0; x < m_heightMap->GetNumColumns(); x++)
+    int x1 = m_heightMap->GetMapIndexX(_area->m_centre.x - _area->m_size) + 1;
+    int x2 = m_heightMap->GetMapIndexX(_area->m_centre.x + _area->m_size) + 1;
+    int z1 = m_heightMap->GetMapIndexY(_area->m_centre.z - _area->m_size) + 1;
+    int z2 = m_heightMap->GetMapIndexY(_area->m_centre.z + _area->m_size) + 1;
+    for (int z = z1; z < z2; ++z)
     {
-      DirectX::XMVECTOR const pos =
-        DirectX::XMVectorSet(x * m_heightMap->m_cellSizeX, m_heightMap->GetData(x, z), z * m_heightMap->m_cellSizeX, 0.0f);
-      EmitVertex(pos);
-      DirectX::XMFLOAT3 const normal = m_normalMap->GetData(x, z);
-      EmitVertex(DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&normal), DirectX::XMVectorReplicate(20.0f), pos));
+      for (int x = x1; x < x2; ++x)
+      {
+        m_heightMap->PutData(x, z, _area->m_centre.y);
+      }
     }
   }
-  glEnd();
-}
 
 
-// ******************
-//  Public Functions
-// ******************
-
-// *** Constructor
-// This one creates a
-Landscape::Landscape()
-  : m_heightMap(nullptr),
-    m_normalMap(nullptr),
-    m_outsideHeight(-20),
-    m_renderer(nullptr)
-{
-}
-
-
-// *** Destructor
-Landscape::~Landscape() { Empty(); }
-
-
-void Landscape::BuildOpenGlState()
-{
-  delete m_renderer;
-  m_renderer = new LandscapeRenderer(m_heightMap);
-}
-
-
-// *** Init
-void Landscape::Init(LandscapeDef* _def, bool _justMakeTheHeightMap)
-{
-  //
-  // Bring in values from the landscape definition
-
-  m_outsideHeight = _def->m_outsideHeight;
-
-  int detailScaleFactor = g_prefsManager->GetInt("RenderLandscapeDetail", 1);
-  float oldCellSize = _def->m_cellSize;
-
-  _def->m_cellSize *= (1.0f + (detailScaleFactor - 1) * 0.5f);
-
-  if (!m_heightMap || m_heightMap->m_cellSizeX != _def->m_cellSize || m_heightMap->m_cellSizeY != _def->m_cellSize ||
-      m_worldSizeX != _def->m_worldSizeX || m_worldSizeZ != _def->m_worldSizeZ)
+  // *** MergeTileIntoLandscape
+  void Landscape::MergeTileIntoLandscape(LandscapeTile const* _tile)
   {
+    unsigned short posX = (float)(_tile->m_posX / m_heightMap->m_cellSizeX) + 0.5f;
+    int posY = _tile->m_posY;
+    unsigned short posZ = (float)(_tile->m_posZ / m_heightMap->m_cellSizeY) + 0.5f;
+
+    // Calculate num cells that this tile will occupy in the main landscape
+    int numCells = (float)_tile->m_size / m_heightMap->m_cellSizeX;
+
+    // Calculate how much to increment in "tile space" for one unit in "main landscape space"
+    float factor = (float)(_tile->m_heightMap->GetNumColumns() - 1) / (float)(numCells - 1);
+
+    float heightRange = _tile->m_heightMap->GetHighestValue() - _tile->m_outsideHeight;
+    heightRange += 0.001f; // Prevent divide by zero below
+    float heightFactor = (_tile->m_desiredHeight - _tile->m_outsideHeight) / heightRange;
+
+    _tile->m_heightMap->m_x0 = _tile->m_posX;
+    _tile->m_heightMap->m_y0 = _tile->m_posZ;
+    _tile->m_heightMap->m_cellSizeX = _tile->m_size / (float)_tile->m_heightMap->GetNumColumns();
+    _tile->m_heightMap->m_cellSizeY = _tile->m_size / (float)_tile->m_heightMap->GetNumRows();
+    _tile->m_heightMap->m_invCellSizeX = 1.0f / _tile->m_heightMap->m_cellSizeX;
+    _tile->m_heightMap->m_invCellSizeY = 1.0f / _tile->m_heightMap->m_cellSizeY;
+
+    for (unsigned short z = 0; z < numCells; ++z)
+    {
+      //        float tileZ = posZ + (float)z * m_heightMap->m_cellSizeY;
+      float tileZ = m_heightMap->GetRealY((float)(z + posZ));
+
+      for (unsigned short x = 0; x < numCells; ++x)
+      {
+        //			float tileX = posX + (float)x * m_heightMap->m_cellSizeX;
+        float tileX = m_heightMap->GetRealX((float)(x + posX));
+        float height1 = _tile->m_heightMap->GetValue(tileX, tileZ);
+        height1 -= _tile->m_outsideHeight;
+        height1 *= heightFactor;
+        height1 += _tile->m_outsideHeight;
+        //			float height1 = _tile->m_heightMap->GetData(tileX, tileZ) * heightFactor;
+        float height2 = m_heightMap->GetData(x + posX, z + posZ);
+        if (height1 > height2)
+        {
+          m_heightMap->PutData(x + posX, z + posZ, height1);
+        }
+      }
+    }
+  }
+
+
+  // *** GenerateHeightMap
+  void Landscape::GenerateHeightMap(LandscapeDef* _def)
+  {
+    // Initialise value of all height samples
+    m_heightMap->SetAll(m_outsideHeight);
+
+    // Join the tiles together to form the whole level
+    for (int i = 0; i < static_cast<int>(_def->m_tiles.size()); ++i)
+    {
+      LandscapeTile* aTile = _def->m_tiles[i].get();
+      aTile->m_outsideHeight = m_outsideHeight;
+      aTile->Generate(_def);
+      MergeTileIntoLandscape(aTile);
+    }
+
+    // Apply flatten areas
+    {
+      for (auto const& area : _def->m_flattenAreas)
+      {
+        FlattenArea(area.get());
+      }
+    }
+
+    m_worldSizeX = m_heightMap->m_cellSizeX * m_heightMap->GetNumColumns();
+    m_worldSizeZ = m_heightMap->m_cellSizeY * m_heightMap->GetNumRows();
+  }
+
+
+  void Landscape::DeleteTile(int tileId)
+  {
+    // The erase destroys it; it used to be deleted first and then erased.
+    g_location->m_levelFile->m_landscape.m_tiles.erase(g_location->m_levelFile->m_landscape.m_tiles.begin() + tileId);
+    LandscapeDef* def = &g_location->m_levelFile->m_landscape;
+    Init(def);
+  }
+
+
+  // Generate normals that will be used for hit check, not rendering
+  void Landscape::GenerateNormals()
+  {
+    // Generate the normals from the height samples
+
+    for (unsigned short z = 0; z < m_heightMap->GetNumRows(); ++z)
+    {
+      int zTimesNumCells = z * m_heightMap->GetNumColumns();
+      for (unsigned short x = 0; x < m_heightMap->GetNumColumns(); ++x)
+      {
+        float heightN = m_heightMap->GetData(x, z - 1);
+        float heightW = m_heightMap->GetData(x + 1, z);
+        float heightE = m_heightMap->GetData(x - 1, z);
+        float heightS = m_heightMap->GetData(x, z + 1);
+
+        if (heightN == heightW && heightE == heightS && heightN == heightE)
+        {
+          m_normalMap->PutData(x, z, DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
+          continue;
+        }
+
+        float heightCentre = m_heightMap->GetData(x, z);
+
+        DirectX::XMVECTOR const vectN = DirectX::XMVectorSet(0.0f, heightCentre - heightN, m_heightMap->m_cellSizeY, 0.0f);
+        DirectX::XMVECTOR const vectW = DirectX::XMVectorSet(-m_heightMap->m_cellSizeX, heightCentre - heightW, 0.0f, 0.0f);
+        DirectX::XMVECTOR const vectS = DirectX::XMVectorSet(0.0f, heightCentre - heightS, -m_heightMap->m_cellSizeY, 0.0f);
+        DirectX::XMVECTOR const vectE = DirectX::XMVectorSet(m_heightMap->m_cellSizeX, heightCentre - heightE, 0.0f, 0.0f);
+
+        // Each of the three normalises is separate, as the legacy code had them:
+        // the two face normals are unit length before they are averaged, so
+        // normalising only the sum would weight the steeper face.
+        DirectX::XMVECTOR const normA = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(vectW, vectN));
+        DirectX::XMVECTOR const normB = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(vectE, vectS));
+
+        DirectX::XMFLOAT3 norm;
+        DirectX::XMStoreFloat3(&norm, DirectX::XMVector3Normalize(DirectX::XMVectorAdd(normA, normB)));
+        m_normalMap->PutData(x, z, norm);
+      }
+    }
+  }
+
+
+  void Landscape::RenderHitNormals() const
+  {
+    glColor3ub(255, 90, 90);
+    glLineWidth(1.0f);
+    glBegin(GL_LINES);
+    for (int z = 0; z < m_heightMap->GetNumRows(); z++)
+    {
+      for (int x = 0; x < m_heightMap->GetNumColumns(); x++)
+      {
+        DirectX::XMVECTOR const pos =
+          DirectX::XMVectorSet(x * m_heightMap->m_cellSizeX, m_heightMap->GetData(x, z), z * m_heightMap->m_cellSizeX, 0.0f);
+        EmitVertex(pos);
+        DirectX::XMFLOAT3 const normal = m_normalMap->GetData(x, z);
+        EmitVertex(DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&normal), DirectX::XMVectorReplicate(20.0f), pos));
+      }
+    }
+    glEnd();
+  }
+
+
+  // ******************
+  //  Public Functions
+  // ******************
+
+  // *** Constructor
+  // This one creates a
+  Landscape::Landscape()
+    : m_heightMap(nullptr),
+      m_normalMap(nullptr),
+      m_outsideHeight(-20),
+      m_renderer(nullptr)
+  {
+  }
+
+
+  // *** Destructor
+  Landscape::~Landscape() { Empty(); }
+
+
+  void Landscape::BuildOpenGlState()
+  {
+    delete m_renderer;
+    m_renderer = new LandscapeRenderer(m_heightMap);
+  }
+
+
+  // *** Init
+  void Landscape::Init(LandscapeDef* _def, bool _justMakeTheHeightMap)
+  {
+    //
+    // Bring in values from the landscape definition
+
+    m_outsideHeight = _def->m_outsideHeight;
+
+    int detailScaleFactor = g_prefsManager->GetInt("RenderLandscapeDetail", 1);
+    float oldCellSize = _def->m_cellSize;
+
+    _def->m_cellSize *= (1.0f + (detailScaleFactor - 1) * 0.5f);
+
+    if (!m_heightMap || m_heightMap->m_cellSizeX != _def->m_cellSize || m_heightMap->m_cellSizeY != _def->m_cellSize ||
+        m_worldSizeX != _def->m_worldSizeX || m_worldSizeZ != _def->m_worldSizeZ)
+    {
+      delete m_heightMap;
+      delete m_normalMap;
+      m_heightMap = new SurfaceMap2D<float>(_def->m_worldSizeX, _def->m_worldSizeZ, 0.0f, 0.0f, _def->m_cellSize, _def->m_cellSize, m_outsideHeight);
+      m_normalMap = new SurfaceMap2D<DirectX::XMFLOAT3>(_def->m_worldSizeX, _def->m_worldSizeZ, 0.0f, 0.0f, _def->m_cellSize, _def->m_cellSize,
+                                                        DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
+    }
+
+
+    //
+    // Generate our landscape from those tiles
+
+    GenerateHeightMap(_def);
+
+    if (_justMakeTheHeightMap)
+    {
+      return;
+    }
+
+    GenerateNormals();
+    BuildOpenGlState();
+
+    if (g_location->m_water)
+    {
+      g_location->m_water->GenerateLightMap();
+    }
+
+    _def->m_cellSize = oldCellSize;
+  }
+
+
+  // *** Empty
+  void Landscape::Empty()
+  {
+    delete m_renderer;
+    m_renderer = nullptr;
     delete m_heightMap;
+    m_heightMap = nullptr;
     delete m_normalMap;
-    m_heightMap = new SurfaceMap2D<float>(_def->m_worldSizeX, _def->m_worldSizeZ, 0.0f, 0.0f, _def->m_cellSize, _def->m_cellSize, m_outsideHeight);
-    m_normalMap = new SurfaceMap2D<DirectX::XMFLOAT3>(_def->m_worldSizeX, _def->m_worldSizeZ, 0.0f, 0.0f, _def->m_cellSize, _def->m_cellSize,
-                                                      DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
+    m_normalMap = nullptr;
   }
 
 
-  //
-  // Generate our landscape from those tiles
+  // *** Render
+  void Landscape::Render() { m_renderer->Render(); }
 
-  GenerateHeightMap(_def);
 
-  if (_justMakeTheHeightMap)
+  // *** GetWorldSizeX
+  float Landscape::GetWorldSizeX() const
   {
-    return;
+    if (!m_heightMap)
+    {
+      return 1e6;
+    }
+    return m_worldSizeX;
   }
 
-  GenerateNormals();
-  BuildOpenGlState();
 
-  if (g_location->m_water)
+  // *** GetWorldSizeZ
+  float Landscape::GetWorldSizeZ() const
   {
-    g_location->m_water->GenerateLightMap();
+    if (!m_heightMap)
+    {
+      return 1e6;
+    }
+    return m_worldSizeZ;
   }
 
-  _def->m_cellSize = oldCellSize;
-}
 
-
-// *** Empty
-void Landscape::Empty()
-{
-  delete m_renderer;
-  m_renderer = nullptr;
-  delete m_heightMap;
-  m_heightMap = nullptr;
-  delete m_normalMap;
-  m_normalMap = nullptr;
-}
-
-
-// *** Render
-void Landscape::Render() { m_renderer->Render(); }
-
-
-// *** GetWorldSizeX
-float Landscape::GetWorldSizeX() const
-{
-  if (!m_heightMap)
+  bool Landscape::IsInLandscape(DirectX::XMFLOAT3 const& _pos)
   {
-    return 1e6;
+    return (_pos.x >= 0.0f && _pos.z >= 0.0f && _pos.x < GetWorldSizeX() && _pos.z < GetWorldSizeZ());
   }
-  return m_worldSizeX;
-}
 
 
-// *** GetWorldSizeZ
-float Landscape::GetWorldSizeZ() const
-{
-  if (!m_heightMap)
+  // *** RayHit
+  // Does not assume that rayDir is normalised
+  // Warning: I think that it could hit triangle behind rayStart,
+  // not only triangles in front of rayStart.
+  bool Landscape::RayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
   {
-    return 1e6;
+    if (!m_heightMap)
+      return false;
+
+    DirectX::XMFLOAT3 rayDirNormalised;
+    DirectX::XMStoreFloat3(&rayDirNormalised, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_rayDir)));
+
+    // Find out which cell the ray starts in
+    int x0 = m_heightMap->GetMapIndexX(_rayStart.x);
+    int z0 = m_heightMap->GetMapIndexY(_rayStart.z);
+
+    // If the ray starts inside the landscape grid, then we are OK. Otherwise, we
+    // we need to clip the ray starting point against the landscape grid.
+    if (x0 >= 0 && x0 < m_heightMap->GetNumColumns() && z0 >= 0 && z0 <= m_heightMap->GetNumRows())
+    {
+      return UnsafeRayHit(_rayStart, rayDirNormalised, _result);
+    }
+
+    // *** Find out which quadrant the 2D projection of the ray goes in ***
+
+    // Vector2's converting constructor from a Vector3 dropped y, and that
+    // projection is the whole reason the 2D tests below can be handed a 3D ray.
+    // XMFLOAT2 has no such constructor, so it is written out once.
+    DirectX::XMFLOAT2 const rayStart2D(_rayStart.x, _rayStart.z);
+    DirectX::XMFLOAT2 const rayDir2D(rayDirNormalised.x, rayDirNormalised.z);
+
+    // Braced to zero: every branch below writes it through SegRayIntersection2D's
+    // out-pointer, but only on the paths that do not return false first.
+    DirectX::XMFLOAT2 segIntersectResult{0.0f, 0.0f};
+    if (rayDirNormalised.x > 0.0f)
+    {
+      if (rayDirNormalised.z > 0.0f)
+      {
+        // Ray is going North-East
+
+        // Find if it ever intersects the landscape grid. The ray will intersect
+        // the landscape grid if and only if it intersect either the bottom edge
+        // or the left hand edge of the grid
+        DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
+        DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), 0.0f);
+        bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
+        if (!intersects)
+        {
+          DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
+          DirectX::XMFLOAT2 segEnd(0.0f, GetWorldSizeZ());
+          intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
+          if (!intersects)
+          {
+            return false;
+          }
+        }
+      }
+      else
+      {
+        // Ray is going south east
+
+        DirectX::XMFLOAT2 segStart(0.0f, GetWorldSizeZ());
+        DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
+        bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
+        if (!intersects)
+        {
+          DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
+          DirectX::XMFLOAT2 segEnd(0.0f, GetWorldSizeZ());
+          intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
+          if (!intersects)
+          {
+            return false;
+          }
+        }
+      }
+    }
+    else
+    {
+      if (rayDirNormalised.z > 0.0f)
+      {
+        // Ray is going north west
+
+        DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
+        DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), 0.0f);
+        bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
+        if (!intersects)
+        {
+          DirectX::XMFLOAT2 segStart(GetWorldSizeX(), 0.0f);
+          DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
+          intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
+          if (!intersects)
+          {
+            return false;
+          }
+        }
+      }
+      else
+      {
+        // Ray is going south west
+
+        DirectX::XMFLOAT2 segStart(0.0f, GetWorldSizeZ());
+        DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
+        bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
+        if (!intersects)
+        {
+          DirectX::XMFLOAT2 segStart(GetWorldSizeX(), 0.0f);
+          DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
+          intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
+          if (!intersects)
+          {
+            return false;
+          }
+        }
+      }
+    }
+
+    x0 = m_heightMap->GetMapIndexX(segIntersectResult.x);
+    z0 = m_heightMap->GetMapIndexY(segIntersectResult.y);
+
+    float lambda = (segIntersectResult.x - _rayStart.x) / rayDirNormalised.x;
+    float segIntersectResultY = _rayStart.y + lambda * rayDirNormalised.y;
+
+    return UnsafeRayHit(DirectX::XMFLOAT3(segIntersectResult.x, segIntersectResultY, segIntersectResult.y), rayDirNormalised, _result);
   }
-  return m_worldSizeZ;
-}
 
 
-bool Landscape::IsInLandscape(DirectX::XMFLOAT3 const& _pos)
-{
-  return (_pos.x >= 0.0f && _pos.z >= 0.0f && _pos.x < GetWorldSizeX() && _pos.z < GetWorldSizeZ());
-}
+  // *** UnsafeRayHit
+  // Determines if and where a ray intersects the landscape
+  // ASSUMES: that the specified ray starts inside the landscape grid
+  // ASSUMES: that _rayDir is normalised
+  // ASSUMES: that _result is a pointer to a valid XMFLOAT3
+  bool Landscape::UnsafeRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
+  {
+    int gridX = m_heightMap->GetMapIndexX(_rayStart.x);
+    int gridZ = m_heightMap->GetMapIndexY(_rayStart.z);
+
+    // The same (x, z) projection RayHit writes out, and for the same reason: the
+    // segment tests below are 2D and used to be handed the 3D ray through
+    // Vector2's converting constructor. The segment endpoints carried a
+    // decorative 0.0f in y for exactly as long as that constructor threw it
+    // away; they are XMFLOAT2 now and the zero is gone with it.
+    DirectX::XMFLOAT2 const rayStart2D(_rayStart.x, _rayStart.z);
+    DirectX::XMFLOAT2 const rayDir2D(_rayDir.x, _rayDir.z);
+
+    // Find out which quadrant the ray goes in
+    if (_rayDir.x > 0.0f && _rayDir.z > 0.0f)
+    {
+      // Ray goes in North-East quadrant
+
+      // Now step along the line, going either north or east each step, until
+      // we step out of the landscape grid, or we find a hit.
+      while (gridX < m_heightMap->GetNumColumns() && gridZ < m_heightMap->GetNumRows())
+      {
+        if (RayHitCell(gridX, gridZ, _rayStart, _rayDir, _result))
+        {
+          return true;
+        }
+
+        DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ + 1));
+        DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ + 1));
+        bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
+        if (intersects)
+        {
+          gridZ++;
+        }
+        else
+        {
+          gridX++;
+        }
+      }
+    }
+    else if (_rayDir.x < 0.0f && _rayDir.z > 0.0f)
+    {
+      // Ray goes in North-West quadrant
+
+      // Now step along the line, going either north or west each step, until
+      // we step out of the landscape grid, or we find a hit.
+      while (gridX >= 0 && gridZ < m_heightMap->GetNumRows())
+      {
+        if (RayHitCell(gridX, gridZ, _rayStart, _rayDir, _result))
+        {
+          return true;
+        }
+
+        DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ + 1));
+        DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ + 1));
+        bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
+        if (intersects)
+        {
+          gridZ++;
+        }
+        else
+        {
+          gridX--;
+        }
+      }
+    }
+    else if (_rayDir.x < 0.0f && _rayDir.z < 0.0f)
+    {
+      // Ray goes in South-West quadrant
+
+      // Now step along the line, going either south or west each step, until
+      // we step out of the landscape grid, or we find a hit.
+      while (gridX >= 0 && gridZ >= 0)
+      {
+        if (RayHitCell(gridX, gridZ, _rayStart, _rayDir, _result))
+        {
+          return true;
+        }
+
+        DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ));
+        DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ));
+        bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
+        if (intersects)
+        {
+          gridZ--;
+        }
+        else
+        {
+          gridX--;
+        }
+      }
+    }
+    else
+    {
+      // Ray goes in South-East quadrant
+
+      // Now step along the line, going either south or east each step, until
+      // we step out of the landscape grid, or we find a hit.
+      while (gridX < m_heightMap->GetNumColumns() && gridZ >= 0)
+      {
+        if (RayHitCell(gridX, gridZ, _rayStart, _rayDir, _result))
+        {
+          return true;
+        }
+
+        DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ));
+        DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ));
+        bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
+        if (intersects)
+        {
+          gridZ--;
+        }
+        else
+        {
+          gridX++;
+        }
+      }
+    }
+
+    return false;
+  }
 
 
-// *** RayHit
-// Does not assume that rayDir is normalised
-// Warning: I think that it could hit triangle behind rayStart,
-// not only triangles in front of rayStart.
-bool Landscape::RayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
-{
-  if (!m_heightMap)
+  // *** RayHitCell
+  // Determines if the specified ray hits the specified landscape cell (this can be thought
+  // of as a cube with the top left corner being at the heightMap point x0,z0).
+  // Assumes that _rayDir is normalised and that ray intersects cell in the 2D projection
+  bool Landscape::RayHitCell(int x0, int z0, DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
+  {
+    DirectX::XMFLOAT3 corner1(m_heightMap->GetRealX(x0), m_heightMap->GetData(x0, z0), m_heightMap->GetRealY(z0));
+    DirectX::XMFLOAT3 corner2(m_heightMap->GetRealX(x0), m_heightMap->GetData(x0, z0 + 1), m_heightMap->GetRealY(z0 + 1));
+    DirectX::XMFLOAT3 corner3(m_heightMap->GetRealX(x0 + 1), m_heightMap->GetData(x0 + 1, z0), m_heightMap->GetRealY(z0));
+
+    if (RayTriIntersection(_rayStart, _rayDir, corner1, corner2, corner3, 1e10, _result))
+    {
+      return true;
+    }
+
+    DirectX::XMFLOAT3 corner4(m_heightMap->GetRealX(x0 + 1), m_heightMap->GetData(x0 + 1, z0 + 1), m_heightMap->GetRealY(z0 + 1));
+    if (RayTriIntersection(_rayStart, _rayDir, corner2, corner3, corner4, 1e10, _result))
+    {
+      return true;
+    }
+
     return false;
 
-  DirectX::XMFLOAT3 rayDirNormalised;
-  DirectX::XMStoreFloat3(&rayDirNormalised, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_rayDir)));
+    /*	float height00 = m_heightMap->GetData(x0, z0);
+      float height01 = m_heightMap->GetData(x0, z0 + 1);
+      float height10 = m_heightMap->GetData(x0 + 1, z0);
+      float height11 = m_heightMap->GetData(x0 + 1, z0 + 1);
 
-  // Find out which cell the ray starts in
-  int x0 = m_heightMap->GetMapIndexX(_rayStart.x);
-  int z0 = m_heightMap->GetMapIndexY(_rayStart.z);
+      float maxHeightOfCube = std::max(height00, height01);
+      maxHeightOfCube = std::max(height10, maxHeightOfCube);
+      maxHeightOfCube = std::max(height11, maxHeightOfCube);
 
-  // If the ray starts inside the landscape grid, then we are OK. Otherwise, we
-  // we need to clip the ray starting point against the landscape grid.
-  if (x0 >= 0 && x0 < m_heightMap->GetNumColumns() && z0 >= 0 && z0 <= m_heightMap->GetNumRows())
-  {
-    return UnsafeRayHit(_rayStart, rayDirNormalised, _result);
+      float minHeightOfCube = std::min(height00, height01);
+      minHeightOfCube = std::min(height10, minHeightOfCube);
+      minHeightOfCube = std::min(height11, minHeightOfCube);
+
+      float worldXForX0 = m_heightMap->GetRealX(x0);
+      float lambdaWhenRayCrossesX0 = (worldXForX0 - _rayStart.x) / _rayDir.x;
+
+      float worldXForX1 = m_heightMap->GetRealX(x0 + 1);
+      float lambdaWhenRayCrossesX1 = (worldXForX1 - _rayStart.x) / _rayDir.x;
+
+      float worldZForZ0 = m_heightMap->GetRealY(z0);
+      float lambdaWhenRayCrossesZ0 = (worldZForZ0 - _rayStart.z) / _rayDir.z;
+
+      float worldZForZ1 = m_heightMap->GetRealY(z0 + 1);
+      float lambdaWhenRayCrossesZ1 = (worldZForZ1 - _rayStart.z) / _rayDir.z;
+
+      float maxLambda = std::max(lambdaWhenRayCrossesX0, lambdaWhenRayCrossesX1);
+      maxLambda = std::max(lambdaWhenRayCrossesZ0, maxLambda);
+      maxLambda = std::max(lambdaWhenRayCrossesZ1, maxLambda);
+
+      float minLambda = std::min(lambdaWhenRayCrossesX0, lambdaWhenRayCrossesX1);
+      minLambda = std::min(lambdaWhenRayCrossesZ0, minLambda);
+      minLambda = std::min(lambdaWhenRayCrossesZ1, minLambda);
+
+      float heightAtMinLambda = _rayStart.y + minLambda * _rayDir.y;
+      float heightAtMaxLambda = _rayStart.y + maxLambda * _rayDir.y;
+
+      if (heightAtMinLambda > maxHeightOfCube && heightAtMaxLambda > maxHeightOfCube)
+      {
+        return false;
+      }
+
+      if (heightAtMinLambda < minHeightOfCube && heightAtMaxLambda < minHeightOfCube)
+      {
+        return false;
+      }
+
+        _result->x = m_heightMap->GetRealX(x0);
+        _result->y = (maxHeightOfCube + minHeightOfCube) * 0.5f;
+        _result->z = m_heightMap->GetRealY(z0);
+
+      return true;*/
   }
 
-  // *** Find out which quadrant the 2D projection of the ray goes in ***
 
-  // Vector2's converting constructor from a Vector3 dropped y, and that
-  // projection is the whole reason the 2D tests below can be handed a 3D ray.
-  // XMFLOAT2 has no such constructor, so it is written out once.
-  DirectX::XMFLOAT2 const rayStart2D(_rayStart.x, _rayStart.z);
-  DirectX::XMFLOAT2 const rayDir2D(rayDirNormalised.x, rayDirNormalised.z);
-
-  // Braced to zero: every branch below writes it through SegRayIntersection2D's
-  // out-pointer, but only on the paths that do not return false first.
-  DirectX::XMFLOAT2 segIntersectResult{0.0f, 0.0f};
-  if (rayDirNormalised.x > 0.0f)
+  // Returns the distance to the nearest point on the landscape if it is
+  // within the specified radius. Otherwise returns -1.0f.
+  float Landscape::SphereHit(DirectX::XMFLOAT3 const& _centre, float _radius) const
   {
-    if (rayDirNormalised.z > 0.0f)
-    {
-      // Ray is going North-East
+    // Make sure the specified radius is +ve and not so large to cause
+    // major efficiency problems
+    DEBUG_ASSERT(_radius > 0.0f && _radius < 200.0f);
 
-      // Find if it ever intersects the landscape grid. The ray will intersect
-      // the landscape grid if and only if it intersect either the bottom edge
-      // or the left hand edge of the grid
-      DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
-      DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), 0.0f);
-      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
-      if (!intersects)
+    int x1 = m_heightMap->GetMapIndexX(_centre.x - _radius);
+    int x2 = m_heightMap->GetMapIndexX(_centre.x + _radius);
+    int y1 = m_heightMap->GetMapIndexY(_centre.z - _radius);
+    int y2 = m_heightMap->GetMapIndexY(_centre.z + _radius);
+
+    ClampInPlace(x1, 0, m_heightMap->GetNumColumns());
+    ClampInPlace(x2, 0, m_heightMap->GetNumColumns());
+    ClampInPlace(y1, 0, m_heightMap->GetNumRows());
+    ClampInPlace(y2, 0, m_heightMap->GetNumRows());
+
+    float nearestSqrd = FLT_MAX;
+    DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&_centre);
+    DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
+    for (int y = y1; y < y2; ++y)
+    {
+      pos.z = m_heightMap->GetRealY(y);
+
+      for (int x = x1; x < x2; ++x)
       {
-        DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
-        DirectX::XMFLOAT2 segEnd(0.0f, GetWorldSizeZ());
-        intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
-        if (!intersects)
+        pos.x = m_heightMap->GetRealX(x);
+        pos.y = m_heightMap->GetData(x, y);
+        float distSqrd = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(centre, DirectX::XMLoadFloat3(&pos))));
+        if (distSqrd < nearestSqrd)
         {
-          return false;
+          nearestSqrd = distSqrd;
         }
       }
     }
-    else
+
+    float dist = sqrtf(nearestSqrd);
+    if (dist > _radius)
     {
-      // Ray is going south east
-
-      DirectX::XMFLOAT2 segStart(0.0f, GetWorldSizeZ());
-      DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
-      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
-      if (!intersects)
-      {
-        DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
-        DirectX::XMFLOAT2 segEnd(0.0f, GetWorldSizeZ());
-        intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
-        if (!intersects)
-        {
-          return false;
-        }
-      }
-    }
-  }
-  else
-  {
-    if (rayDirNormalised.z > 0.0f)
-    {
-      // Ray is going north west
-
-      DirectX::XMFLOAT2 segStart(0.0f, 0.0f);
-      DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), 0.0f);
-      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
-      if (!intersects)
-      {
-        DirectX::XMFLOAT2 segStart(GetWorldSizeX(), 0.0f);
-        DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
-        intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
-        if (!intersects)
-        {
-          return false;
-        }
-      }
-    }
-    else
-    {
-      // Ray is going south west
-
-      DirectX::XMFLOAT2 segStart(0.0f, GetWorldSizeZ());
-      DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
-      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
-      if (!intersects)
-      {
-        DirectX::XMFLOAT2 segStart(GetWorldSizeX(), 0.0f);
-        DirectX::XMFLOAT2 segEnd(GetWorldSizeX(), GetWorldSizeZ());
-        intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D, &segIntersectResult);
-        if (!intersects)
-        {
-          return false;
-        }
-      }
-    }
-  }
-
-  x0 = m_heightMap->GetMapIndexX(segIntersectResult.x);
-  z0 = m_heightMap->GetMapIndexY(segIntersectResult.y);
-
-  float lambda = (segIntersectResult.x - _rayStart.x) / rayDirNormalised.x;
-  float segIntersectResultY = _rayStart.y + lambda * rayDirNormalised.y;
-
-  return UnsafeRayHit(DirectX::XMFLOAT3(segIntersectResult.x, segIntersectResultY, segIntersectResult.y), rayDirNormalised, _result);
-}
-
-
-// *** UnsafeRayHit
-// Determines if and where a ray intersects the landscape
-// ASSUMES: that the specified ray starts inside the landscape grid
-// ASSUMES: that _rayDir is normalised
-// ASSUMES: that _result is a pointer to a valid XMFLOAT3
-bool Landscape::UnsafeRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
-{
-  int gridX = m_heightMap->GetMapIndexX(_rayStart.x);
-  int gridZ = m_heightMap->GetMapIndexY(_rayStart.z);
-
-  // The same (x, z) projection RayHit writes out, and for the same reason: the
-  // segment tests below are 2D and used to be handed the 3D ray through
-  // Vector2's converting constructor. The segment endpoints carried a
-  // decorative 0.0f in y for exactly as long as that constructor threw it
-  // away; they are XMFLOAT2 now and the zero is gone with it.
-  DirectX::XMFLOAT2 const rayStart2D(_rayStart.x, _rayStart.z);
-  DirectX::XMFLOAT2 const rayDir2D(_rayDir.x, _rayDir.z);
-
-  // Find out which quadrant the ray goes in
-  if (_rayDir.x > 0.0f && _rayDir.z > 0.0f)
-  {
-    // Ray goes in North-East quadrant
-
-    // Now step along the line, going either north or east each step, until
-    // we step out of the landscape grid, or we find a hit.
-    while (gridX < m_heightMap->GetNumColumns() && gridZ < m_heightMap->GetNumRows())
-    {
-      if (RayHitCell(gridX, gridZ, _rayStart, _rayDir, _result))
-      {
-        return true;
-      }
-
-      DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ + 1));
-      DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ + 1));
-      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
-      if (intersects)
-      {
-        gridZ++;
-      }
-      else
-      {
-        gridX++;
-      }
-    }
-  }
-  else if (_rayDir.x < 0.0f && _rayDir.z > 0.0f)
-  {
-    // Ray goes in North-West quadrant
-
-    // Now step along the line, going either north or west each step, until
-    // we step out of the landscape grid, or we find a hit.
-    while (gridX >= 0 && gridZ < m_heightMap->GetNumRows())
-    {
-      if (RayHitCell(gridX, gridZ, _rayStart, _rayDir, _result))
-      {
-        return true;
-      }
-
-      DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ + 1));
-      DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ + 1));
-      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
-      if (intersects)
-      {
-        gridZ++;
-      }
-      else
-      {
-        gridX--;
-      }
-    }
-  }
-  else if (_rayDir.x < 0.0f && _rayDir.z < 0.0f)
-  {
-    // Ray goes in South-West quadrant
-
-    // Now step along the line, going either south or west each step, until
-    // we step out of the landscape grid, or we find a hit.
-    while (gridX >= 0 && gridZ >= 0)
-    {
-      if (RayHitCell(gridX, gridZ, _rayStart, _rayDir, _result))
-      {
-        return true;
-      }
-
-      DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ));
-      DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ));
-      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
-      if (intersects)
-      {
-        gridZ--;
-      }
-      else
-      {
-        gridX--;
-      }
-    }
-  }
-  else
-  {
-    // Ray goes in South-East quadrant
-
-    // Now step along the line, going either south or east each step, until
-    // we step out of the landscape grid, or we find a hit.
-    while (gridX < m_heightMap->GetNumColumns() && gridZ >= 0)
-    {
-      if (RayHitCell(gridX, gridZ, _rayStart, _rayDir, _result))
-      {
-        return true;
-      }
-
-      DirectX::XMFLOAT2 segStart(m_heightMap->GetRealX(gridX), m_heightMap->GetRealY(gridZ));
-      DirectX::XMFLOAT2 segEnd(m_heightMap->GetRealX(gridX + 1), m_heightMap->GetRealY(gridZ));
-      bool intersects = SegRayIntersection2D(segStart, segEnd, rayStart2D, rayDir2D);
-      if (intersects)
-      {
-        gridZ--;
-      }
-      else
-      {
-        gridX++;
-      }
-    }
-  }
-
-  return false;
-}
-
-
-// *** RayHitCell
-// Determines if the specified ray hits the specified landscape cell (this can be thought
-// of as a cube with the top left corner being at the heightMap point x0,z0).
-// Assumes that _rayDir is normalised and that ray intersects cell in the 2D projection
-bool Landscape::RayHitCell(int x0, int z0, DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const
-{
-  DirectX::XMFLOAT3 corner1(m_heightMap->GetRealX(x0), m_heightMap->GetData(x0, z0), m_heightMap->GetRealY(z0));
-  DirectX::XMFLOAT3 corner2(m_heightMap->GetRealX(x0), m_heightMap->GetData(x0, z0 + 1), m_heightMap->GetRealY(z0 + 1));
-  DirectX::XMFLOAT3 corner3(m_heightMap->GetRealX(x0 + 1), m_heightMap->GetData(x0 + 1, z0), m_heightMap->GetRealY(z0));
-
-  if (RayTriIntersection(_rayStart, _rayDir, corner1, corner2, corner3, 1e10, _result))
-  {
-    return true;
-  }
-
-  DirectX::XMFLOAT3 corner4(m_heightMap->GetRealX(x0 + 1), m_heightMap->GetData(x0 + 1, z0 + 1), m_heightMap->GetRealY(z0 + 1));
-  if (RayTriIntersection(_rayStart, _rayDir, corner2, corner3, corner4, 1e10, _result))
-  {
-    return true;
-  }
-
-  return false;
-
-  /*	float height00 = m_heightMap->GetData(x0, z0);
-    float height01 = m_heightMap->GetData(x0, z0 + 1);
-    float height10 = m_heightMap->GetData(x0 + 1, z0);
-    float height11 = m_heightMap->GetData(x0 + 1, z0 + 1);
-
-    float maxHeightOfCube = std::max(height00, height01);
-    maxHeightOfCube = std::max(height10, maxHeightOfCube);
-    maxHeightOfCube = std::max(height11, maxHeightOfCube);
-
-    float minHeightOfCube = std::min(height00, height01);
-    minHeightOfCube = std::min(height10, minHeightOfCube);
-    minHeightOfCube = std::min(height11, minHeightOfCube);
-
-    float worldXForX0 = m_heightMap->GetRealX(x0);
-    float lambdaWhenRayCrossesX0 = (worldXForX0 - _rayStart.x) / _rayDir.x;
-
-    float worldXForX1 = m_heightMap->GetRealX(x0 + 1);
-    float lambdaWhenRayCrossesX1 = (worldXForX1 - _rayStart.x) / _rayDir.x;
-
-    float worldZForZ0 = m_heightMap->GetRealY(z0);
-    float lambdaWhenRayCrossesZ0 = (worldZForZ0 - _rayStart.z) / _rayDir.z;
-
-    float worldZForZ1 = m_heightMap->GetRealY(z0 + 1);
-    float lambdaWhenRayCrossesZ1 = (worldZForZ1 - _rayStart.z) / _rayDir.z;
-
-    float maxLambda = std::max(lambdaWhenRayCrossesX0, lambdaWhenRayCrossesX1);
-    maxLambda = std::max(lambdaWhenRayCrossesZ0, maxLambda);
-    maxLambda = std::max(lambdaWhenRayCrossesZ1, maxLambda);
-
-    float minLambda = std::min(lambdaWhenRayCrossesX0, lambdaWhenRayCrossesX1);
-    minLambda = std::min(lambdaWhenRayCrossesZ0, minLambda);
-    minLambda = std::min(lambdaWhenRayCrossesZ1, minLambda);
-
-    float heightAtMinLambda = _rayStart.y + minLambda * _rayDir.y;
-    float heightAtMaxLambda = _rayStart.y + maxLambda * _rayDir.y;
-
-    if (heightAtMinLambda > maxHeightOfCube && heightAtMaxLambda > maxHeightOfCube)
-    {
-      return false;
+      dist = -1.0f;
     }
 
-    if (heightAtMinLambda < minHeightOfCube && heightAtMaxLambda < minHeightOfCube)
-    {
-      return false;
-    }
-
-      _result->x = m_heightMap->GetRealX(x0);
-      _result->y = (maxHeightOfCube + minHeightOfCube) * 0.5f;
-      _result->z = m_heightMap->GetRealY(z0);
-
-    return true;*/
-}
-
-
-// Returns the distance to the nearest point on the landscape if it is
-// within the specified radius. Otherwise returns -1.0f.
-float Landscape::SphereHit(DirectX::XMFLOAT3 const& _centre, float _radius) const
-{
-  // Make sure the specified radius is +ve and not so large to cause
-  // major efficiency problems
-  DEBUG_ASSERT(_radius > 0.0f && _radius < 200.0f);
-
-  int x1 = m_heightMap->GetMapIndexX(_centre.x - _radius);
-  int x2 = m_heightMap->GetMapIndexX(_centre.x + _radius);
-  int y1 = m_heightMap->GetMapIndexY(_centre.z - _radius);
-  int y2 = m_heightMap->GetMapIndexY(_centre.z + _radius);
-
-  ClampInPlace(x1, 0, m_heightMap->GetNumColumns());
-  ClampInPlace(x2, 0, m_heightMap->GetNumColumns());
-  ClampInPlace(y1, 0, m_heightMap->GetNumRows());
-  ClampInPlace(y2, 0, m_heightMap->GetNumRows());
-
-  float nearestSqrd = FLT_MAX;
-  DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&_centre);
-  DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
-  for (int y = y1; y < y2; ++y)
-  {
-    pos.z = m_heightMap->GetRealY(y);
-
-    for (int x = x1; x < x2; ++x)
-    {
-      pos.x = m_heightMap->GetRealX(x);
-      pos.y = m_heightMap->GetData(x, y);
-      float distSqrd = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(centre, DirectX::XMLoadFloat3(&pos))));
-      if (distSqrd < nearestSqrd)
-      {
-        nearestSqrd = distSqrd;
-      }
-    }
+    return dist;
   }
-
-  float dist = sqrtf(nearestSqrd);
-  if (dist > _radius)
-  {
-    dist = -1.0f;
-  }
-
-  return dist;
-}
+} // namespace Species

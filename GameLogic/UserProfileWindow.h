@@ -6,22 +6,25 @@
 #include "SpeciesWindow.h"
 
 
-class UserProfileWindow : public SpeciesWindow
+namespace Species
 {
-public:
-    UserProfileWindow();
+  class UserProfileWindow : public SpeciesWindow
+  {
+    public:
+      UserProfileWindow();
 
-    void Render ( bool hasFocus );
-    void Create();
-};
+      void Render(bool hasFocus);
+      void Create();
+  };
 
 
-class NewUserProfileWindow : public SpeciesWindow
-{
-public:
-  static std::string s_profileName;
+  class NewUserProfileWindow : public SpeciesWindow
+  {
+    public:
+      static std::string s_profileName;
 
-public:
-    NewUserProfileWindow();
-    void Create();
-};
+    public:
+      NewUserProfileWindow();
+      void Create();
+  };
+} // namespace Species

@@ -3,12 +3,14 @@
 #include "SpeciesWindow.h"
 
 
-class GlobalWorldEditorWindow : public SpeciesWindow
+namespace Species
 {
-public:
-    GlobalWorldEditorWindow();
+  class GlobalWorldEditorWindow : public SpeciesWindow
+  {
+    public:
+      GlobalWorldEditorWindow();
 
-    void Create();
-    void Update();
-};
-
+      void Create();
+      void Update();
+  };
+} // namespace Species

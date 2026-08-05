@@ -23,124 +23,127 @@
 // Class LandscapeTileButton
 // ****************************************************************************
 
-class LandscapeTileButton : public SpeciesButton
+
+namespace Species
 {
-  public:
-    LandscapeTile* m_def;
+  class LandscapeTileButton : public SpeciesButton
+  {
+    public:
+      LandscapeTile* m_def;
 
-    LandscapeTileButton(LandscapeTile* _def)
-      : m_def(_def)
-    {
-    }
-
-    void MouseUp()
-    {
-      if (stricmp(m_name, LANGUAGEPHRASE("editor_generate")) == 0)
+      LandscapeTileButton(LandscapeTile* _def)
+        : m_def(_def)
       {
-        LandscapeDef* def = &g_location->m_levelFile->m_landscape;
-        g_location->m_landscape.Init(def);
       }
-      else if (stricmp(m_name, LANGUAGEPHRASE("editor_randomise")) == 0)
+
+      void MouseUp()
       {
-        m_def->m_randomSeed = (int)(GetHighResTime() * 1000.0f);
-        InputField* randomSeed = (InputField*)m_parent->GetButton(LANGUAGEPHRASE("editor_seed"));
-        if (randomSeed)
+        if (stricmp(m_name, LANGUAGEPHRASE("editor_generate")) == 0)
         {
-          randomSeed->Refresh();
+          LandscapeDef* def = &g_location->m_levelFile->m_landscape;
+          g_location->m_landscape.Init(def);
         }
-        LandscapeDef* def = &g_location->m_levelFile->m_landscape;
-        g_location->m_landscape.Init(def);
+        else if (stricmp(m_name, LANGUAGEPHRASE("editor_randomise")) == 0)
+        {
+          m_def->m_randomSeed = (int)(GetHighResTime() * 1000.0f);
+          InputField* randomSeed = (InputField*)m_parent->GetButton(LANGUAGEPHRASE("editor_seed"));
+          if (randomSeed)
+          {
+            randomSeed->Refresh();
+          }
+          LandscapeDef* def = &g_location->m_levelFile->m_landscape;
+          g_location->m_landscape.Init(def);
+        }
+        else if (stricmp(m_name, LANGUAGEPHRASE("editor_delete")) == 0)
+        {
+          int tileId = ((LandscapeTileEditWindow*)m_parent)->m_tileId;
+          g_location->m_landscape.DeleteTile(tileId);
+          EclRemoveWindow(m_parent->m_name);
+        }
+        else if (stricmp(m_name, LANGUAGEPHRASE("editor_clone")) == 0)
+        {
+          DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+          DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+          g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
+          DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
+          g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
+
+          LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
+          LandscapeTile* tile = new LandscapeTile();
+          g_location->m_levelFile->m_landscape.m_tiles.push_back(std::unique_ptr<LandscapeTile>(tile));
+          tile->m_size = m_def->m_size;
+          tile->m_posX = _pos.x - tile->m_size / 2;
+          tile->m_posY = m_def->m_posY;
+          tile->m_posZ = _pos.z - tile->m_size / 2;
+          tile->m_fractalDimension = m_def->m_fractalDimension;
+          tile->m_heightScale = m_def->m_heightScale;
+          tile->m_desiredHeight = m_def->m_desiredHeight;
+          tile->m_randomSeed = m_def->m_randomSeed;
+          tile->m_lowlandSmoothingFactor = m_def->m_lowlandSmoothingFactor;
+          tile->m_generationMethod = m_def->m_generationMethod;
+
+          LandscapeDef* def = &g_location->m_levelFile->m_landscape;
+          g_location->m_landscape.Init(def);
+        }
+        else if (stricmp(m_name, LANGUAGEPHRASE("editor_guidegrid")) == 0)
+        {
+          int tileId = ((LandscapeTileEditWindow*)m_parent)->m_tileId;
+          auto owned = std::make_unique<LandscapeGuideGridWindow>(LANGUAGEPHRASE("editor_guidegrid"), tileId);
+          LandscapeGuideGridWindow* guide = owned.get();
+          guide->SetSize(300, 300);
+          guide->SetPosition(m_parent->m_x + m_parent->m_w + 10, m_parent->m_y);
+          EclRegisterWindow(std::move(owned), m_parent);
+        }
       }
-      else if (stricmp(m_name, LANGUAGEPHRASE("editor_delete")) == 0)
-      {
-        int tileId = ((LandscapeTileEditWindow*)m_parent)->m_tileId;
-        g_location->m_landscape.DeleteTile(tileId);
-        EclRemoveWindow(m_parent->m_name);
-      }
-      else if (stricmp(m_name, LANGUAGEPHRASE("editor_clone")) == 0)
-      {
-        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
-        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
-        g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
-        g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
-
-        LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-        LandscapeTile* tile = new LandscapeTile();
-        g_location->m_levelFile->m_landscape.m_tiles.push_back(std::unique_ptr<LandscapeTile>(tile));
-        tile->m_size = m_def->m_size;
-        tile->m_posX = _pos.x - tile->m_size / 2;
-        tile->m_posY = m_def->m_posY;
-        tile->m_posZ = _pos.z - tile->m_size / 2;
-        tile->m_fractalDimension = m_def->m_fractalDimension;
-        tile->m_heightScale = m_def->m_heightScale;
-        tile->m_desiredHeight = m_def->m_desiredHeight;
-        tile->m_randomSeed = m_def->m_randomSeed;
-        tile->m_lowlandSmoothingFactor = m_def->m_lowlandSmoothingFactor;
-        tile->m_generationMethod = m_def->m_generationMethod;
-
-        LandscapeDef* def = &g_location->m_levelFile->m_landscape;
-        g_location->m_landscape.Init(def);
-      }
-      else if (stricmp(m_name, LANGUAGEPHRASE("editor_guidegrid")) == 0)
-      {
-        int tileId = ((LandscapeTileEditWindow*)m_parent)->m_tileId;
-        auto owned = std::make_unique<LandscapeGuideGridWindow>(LANGUAGEPHRASE("editor_guidegrid"), tileId);
-        LandscapeGuideGridWindow* guide = owned.get();
-        guide->SetSize(300, 300);
-        guide->SetPosition(m_parent->m_x + m_parent->m_w + 10, m_parent->m_y);
-        EclRegisterWindow(std::move(owned), m_parent);
-      }
-    }
-};
+  };
 
 
-// ****************************************************************************
-// Class LandscapeTileEditWindow
-// ****************************************************************************
+  // ****************************************************************************
+  // Class LandscapeTileEditWindow
+  // ****************************************************************************
 
-LandscapeTileEditWindow::LandscapeTileEditWindow(char* name, int tileId)
-  : SpeciesWindow(name),
-    m_tileId(tileId)
-{
-}
-
-
-LandscapeTileEditWindow::~LandscapeTileEditWindow() { g_locationEditor->SetSelectionId(-1); }
+  LandscapeTileEditWindow::LandscapeTileEditWindow(char* name, int tileId)
+    : SpeciesWindow(name),
+      m_tileId(tileId)
+  {
+  }
 
 
-void LandscapeTileEditWindow::Create()
-{
-  SpeciesWindow::Create();
+  LandscapeTileEditWindow::~LandscapeTileEditWindow() { g_locationEditor->SetSelectionId(-1); }
 
-  m_tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_tileId].get();
-  Landscape* land = &g_location->m_landscape;
 
-  int height = 5;
-  int pitch = 17;
-  int buttonWidth = m_w - 50;
+  void LandscapeTileEditWindow::Create()
+  {
+    SpeciesWindow::Create();
 
-  LandscapeTileButton* gen = new LandscapeTileButton(m_tileDef);
-  gen->SetShortProperties(LANGUAGEPHRASE("editor_generate"), 10, height += pitch, m_w - 20);
-  RegisterButton(gen);
+    m_tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_tileId].get();
+    Landscape* land = &g_location->m_landscape;
 
-  LandscapeTileButton* randomise = new LandscapeTileButton(m_tileDef);
-  randomise->SetShortProperties(LANGUAGEPHRASE("editor_randomise"), 10, height += pitch, m_w - 20);
-  RegisterButton(randomise);
+    int height = 5;
+    int pitch = 17;
+    int buttonWidth = m_w - 50;
 
-  LandscapeTileButton* deleteTile = new LandscapeTileButton(m_tileDef);
-  deleteTile->SetShortProperties(LANGUAGEPHRASE("editor_delete"), 10, height += pitch, m_w - 20);
-  RegisterButton(deleteTile);
+    LandscapeTileButton* gen = new LandscapeTileButton(m_tileDef);
+    gen->SetShortProperties(LANGUAGEPHRASE("editor_generate"), 10, height += pitch, m_w - 20);
+    RegisterButton(gen);
 
-  LandscapeTileButton* clone = new LandscapeTileButton(m_tileDef);
-  clone->SetShortProperties(LANGUAGEPHRASE("editor_clone"), 10, height += pitch, m_w - 20);
-  RegisterButton(clone);
+    LandscapeTileButton* randomise = new LandscapeTileButton(m_tileDef);
+    randomise->SetShortProperties(LANGUAGEPHRASE("editor_randomise"), 10, height += pitch, m_w - 20);
+    RegisterButton(randomise);
 
-  LandscapeTileButton* guideGrid = new LandscapeTileButton(m_tileDef);
-  guideGrid->SetShortProperties(LANGUAGEPHRASE("editor_guidegrid"), 10, height += pitch, m_w - 20);
-  RegisterButton(guideGrid);
+    LandscapeTileButton* deleteTile = new LandscapeTileButton(m_tileDef);
+    deleteTile->SetShortProperties(LANGUAGEPHRASE("editor_delete"), 10, height += pitch, m_w - 20);
+    RegisterButton(deleteTile);
 
-  height += 6;
+    LandscapeTileButton* clone = new LandscapeTileButton(m_tileDef);
+    clone->SetShortProperties(LANGUAGEPHRASE("editor_clone"), 10, height += pitch, m_w - 20);
+    RegisterButton(clone);
+
+    LandscapeTileButton* guideGrid = new LandscapeTileButton(m_tileDef);
+    guideGrid->SetShortProperties(LANGUAGEPHRASE("editor_guidegrid"), 10, height += pitch, m_w - 20);
+    RegisterButton(guideGrid);
+
+    height += 6;
 
 #define Y height += pitch
   int celSz = floorf(land->m_heightMap->m_cellSizeX);
@@ -157,7 +160,7 @@ void LandscapeTileEditWindow::Create()
 #undef FLOAT
 #undef INTGR
 #undef Y
-}
+  }
 
 
 // ****************************************************************************
@@ -758,3 +761,4 @@ void LandscapeGuideGridWindow::Create()
 }
 
 #endif // LOCATION_EDITOR
+} // namespace Species

@@ -47,15 +47,19 @@
 // camera's up vector into QNaN. Named the same as Citizen.cpp's copy because it
 // is the same routine; NeuronMath.h refuses to grow an operator layer, so each
 // file that rotates this way carries it.
-static DirectX::XMVECTOR XM_CALLCONV RotateAroundScaledAxis(DirectX::FXMVECTOR _v, DirectX::FXMVECTOR _scaledAxis)
-{
-  float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(_scaledAxis));
-  if (lengthSquared < 1e-8f)
-    return _v;
 
-  float const angle = sqrtf(lengthSquared);
-  return DirectX::XMVector3Transform(_v, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(_scaledAxis, 1.0f / angle), angle));
-}
+
+namespace Species
+{
+  static DirectX::XMVECTOR XM_CALLCONV RotateAroundScaledAxis(DirectX::FXMVECTOR _v, DirectX::FXMVECTOR _scaledAxis)
+  {
+    float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(_scaledAxis));
+    if (lengthSquared < 1e-8f)
+      return _v;
+
+    float const angle = sqrtf(lengthSquared);
+    return DirectX::XMVector3Transform(_v, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(_scaledAxis, 1.0f / angle), angle));
+  }
 
 
 #define MIN_GROUND_CLEARANCE 10.0f // Minimum height relative to land
@@ -2577,3 +2581,4 @@ void Camera::WaterReflect()
   m_front.y *= -1;
   m_up.y *= -1;
 }
+} // namespace Species

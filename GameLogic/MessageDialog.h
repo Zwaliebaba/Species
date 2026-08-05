@@ -3,18 +3,20 @@
 
 #include "SpeciesWindow.h"
 
-class MessageDialog : public SpeciesWindow
+
+namespace Species
 {
-protected:
-	char *m_messageLines[20];
-	int m_numLines;
+  class MessageDialog : public SpeciesWindow
+  {
+    protected:
+      char* m_messageLines[20];
+      int m_numLines;
 
-public:
-	MessageDialog(char const *_name, char const *_message);
-	~MessageDialog();
+    public:
+      MessageDialog(char const* _name, char const* _message);
+      ~MessageDialog();
 
-	void Create();
-	void Render(bool _hasFocus);
-};
-
-
+      void Create();
+      void Render(bool _hasFocus);
+  };
+} // namespace Species

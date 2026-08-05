@@ -61,196 +61,199 @@
 
 #define TARGET_FRAME_RATE_INCREMENT 0.25f
 
-static void Finalise();
 
-// ******************
-//  Global Variables
-// ******************
-
-// g_startTime moved to ClientToServer::m_startTime — it was derived entirely from
-// arriving letters, and this was the only translation unit that read it.
-
-void SwitchTaskManagerForX360Controller();
-
-// ******************
-//  Local Functions
-// ******************
-
-void UpdateAdvanceTime()
+namespace Species
 {
-  int recordDemo = g_prefsManager->GetInt("RecordDemo");
-  if (recordDemo == 1 || recordDemo == 2)
+  static void Finalise();
+
+  // ******************
+  //  Global Variables
+  // ******************
+
+  // g_startTime moved to ClientToServer::m_startTime — it was derived entirely from
+  // arriving letters, and this was the only translation unit that read it.
+
+  void SwitchTaskManagerForX360Controller();
+
+  // ******************
+  //  Local Functions
+  // ******************
+
+  void UpdateAdvanceTime()
   {
-    int demoFrameRate = g_prefsManager->GetInt("DemoFrameRate", 25);
-    g_advanceTime = 1.0f / static_cast<float>(demoFrameRate);
-    IncrementFakeTime(1.0f / static_cast<double>(demoFrameRate));
-    // g_gameTime += g_advanceTime;
-    g_gameTime = GetHighResTime();
-    g_predictionTime = static_cast<float>(g_gameTime - g_lastServerAdvance) - 0.07f;
-  }
-  else
-  {
-    double realTime = GetHighResTime();
-    g_advanceTime = static_cast<float>(realTime - g_gameTime);
-    if (g_advanceTime > 0.25f)
-      g_advanceTime = 0.25f;
-    g_gameTime = realTime;
-
-    float prevPredictionTime = g_predictionTime;
-    g_predictionTime = static_cast<float>(realTime - g_lastServerAdvance) - 0.07f;
-
-    // DebugTrace( "Change = %6.3f\n", g_predictionTime - prevPredictionTime );
-  }
-}
-
-double GetNetworkTime() { return g_lastProcessedSequenceId * 0.1f; }
-
-void UpdateTargetFrameRate(int _currentSlice)
-{
-  int numUpdatesToProcess = g_app->m_clientToServer->m_lastValidSequenceIdFromServer - g_lastProcessedSequenceId;
-  int numSlicesPending = numUpdatesToProcess * NUM_SLICES_PER_FRAME - _currentSlice;
-  float timeSinceStartOfAdvance = g_gameTime - g_lastServerAdvance;
-  int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
-
-  // Increase or lower the target frame rate, depending on how far behind schedule
-  // we are
-  //	if( numSlicesPending > NUM_SLICES_PER_FRAME/2 )
-  float amountBehind = numSlicesPending - numSlicesThatShouldBePending;
-  g_targetFrameRate -= 0.1f * amountBehind * TARGET_FRAME_RATE_INCREMENT;
-
-  // Make sure the target frame rate is within sensible bounds
-  if (g_targetFrameRate < 2.0f)
-    g_targetFrameRate = 2.0f;
-  else if (g_targetFrameRate > 85.0f)
-    g_targetFrameRate = 85.0f;
-}
-
-/*
-int GetNumSlicesToAdvance()
-{
-    int slicesPerSecond = SERVER_ADVANCE_FREQ * NUM_SLICES_PER_FRAME;
-    float ratio = (float)slicesPerSecond / (float)g_targetFrameRate;
-
-
-    static float accumulator = 0.0f;
-    accumulator += ratio;
-
-    int returnVal = floorf(accumulator);
-
-    accumulator -= (float)returnVal;
-
-    return returnVal;
-}*/
-
-int GetNumSlicesToAdvance()
-{
-  int numUpdatesToProcess = g_app->m_clientToServer->m_lastValidSequenceIdFromServer - g_lastProcessedSequenceId;
-  int numSlicesPending = numUpdatesToProcess * NUM_SLICES_PER_FRAME;
-  if (g_sliceNum != -1)
-    numSlicesPending -= g_sliceNum;
-  else if (g_sliceNum == -1)
-    numSlicesPending -= 10;
-
-  float timeSinceStartOfAdvance = g_gameTime - g_lastServerAdvance;
-  // int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
-
-  int numSlicesToAdvance = timeSinceStartOfAdvance * 100;
-  if (g_sliceNum != -1)
-    numSlicesToAdvance -= g_sliceNum;
-  if (g_sliceNum == -1)
-    numSlicesToAdvance -= 10;
-
-  // DEBUG_ASSERT( numSlicesToAdvance >= 0 );
-  numSlicesToAdvance = std::max(numSlicesToAdvance, 0);
-  numSlicesToAdvance = std::min(numSlicesToAdvance, 10);
-
-  return numSlicesToAdvance;
-}
-
-bool ProcessServerLetters(ServerToClientLetter* letter)
-{
-  switch (letter->m_type)
-  {
-  case ServerToClientLetter::LetterType::HelloClient:
-    if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
-      DebugTrace("CLIENT : Received HelloClient from Server\n");
-    return true;
-
-  case ServerToClientLetter::LetterType::GoodbyeClient:
-    // g_location->RemoveTeam( letter->m_teamId );
-    return true;
-
-  case ServerToClientLetter::LetterType::TeamAssign:
-
-    if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
-      g_location->InitialiseTeam(letter->m_teamId, letter->m_teamType);
+    int recordDemo = g_prefsManager->GetInt("RecordDemo");
+    if (recordDemo == 1 || recordDemo == 2)
+    {
+      int demoFrameRate = g_prefsManager->GetInt("DemoFrameRate", 25);
+      g_advanceTime = 1.0f / static_cast<float>(demoFrameRate);
+      IncrementFakeTime(1.0f / static_cast<double>(demoFrameRate));
+      // g_gameTime += g_advanceTime;
+      g_gameTime = GetHighResTime();
+      g_predictionTime = static_cast<float>(g_gameTime - g_lastServerAdvance) - 0.07f;
+    }
     else
-      g_location->InitialiseTeam(letter->m_teamId, Team::TeamTypeRemotePlayer);
-    return true;
+    {
+      double realTime = GetHighResTime();
+      g_advanceTime = static_cast<float>(realTime - g_gameTime);
+      if (g_advanceTime > 0.25f)
+        g_advanceTime = 0.25f;
+      g_gameTime = realTime;
 
-  default:
+      float prevPredictionTime = g_predictionTime;
+      g_predictionTime = static_cast<float>(realTime - g_lastServerAdvance) - 0.07f;
+
+      // DebugTrace( "Change = %6.3f\n", g_predictionTime - prevPredictionTime );
+    }
+  }
+
+  double GetNetworkTime() { return g_lastProcessedSequenceId * 0.1f; }
+
+  void UpdateTargetFrameRate(int _currentSlice)
+  {
+    int numUpdatesToProcess = g_app->m_clientToServer->m_lastValidSequenceIdFromServer - g_lastProcessedSequenceId;
+    int numSlicesPending = numUpdatesToProcess * NUM_SLICES_PER_FRAME - _currentSlice;
+    float timeSinceStartOfAdvance = g_gameTime - g_lastServerAdvance;
+    int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
+
+    // Increase or lower the target frame rate, depending on how far behind schedule
+    // we are
+    //	if( numSlicesPending > NUM_SLICES_PER_FRAME/2 )
+    float amountBehind = numSlicesPending - numSlicesThatShouldBePending;
+    g_targetFrameRate -= 0.1f * amountBehind * TARGET_FRAME_RATE_INCREMENT;
+
+    // Make sure the target frame rate is within sensible bounds
+    if (g_targetFrameRate < 2.0f)
+      g_targetFrameRate = 2.0f;
+    else if (g_targetFrameRate > 85.0f)
+      g_targetFrameRate = 85.0f;
+  }
+
+  /*
+  int GetNumSlicesToAdvance()
+  {
+      int slicesPerSecond = SERVER_ADVANCE_FREQ * NUM_SLICES_PER_FRAME;
+      float ratio = (float)slicesPerSecond / (float)g_targetFrameRate;
+
+
+      static float accumulator = 0.0f;
+      accumulator += ratio;
+
+      int returnVal = floorf(accumulator);
+
+      accumulator -= (float)returnVal;
+
+      return returnVal;
+  }*/
+
+  int GetNumSlicesToAdvance()
+  {
+    int numUpdatesToProcess = g_app->m_clientToServer->m_lastValidSequenceIdFromServer - g_lastProcessedSequenceId;
+    int numSlicesPending = numUpdatesToProcess * NUM_SLICES_PER_FRAME;
+    if (g_sliceNum != -1)
+      numSlicesPending -= g_sliceNum;
+    else if (g_sliceNum == -1)
+      numSlicesPending -= 10;
+
+    float timeSinceStartOfAdvance = g_gameTime - g_lastServerAdvance;
+    // int numSlicesThatShouldBePending = 10 - timeSinceStartOfAdvance * 10.0f;
+
+    int numSlicesToAdvance = timeSinceStartOfAdvance * 100;
+    if (g_sliceNum != -1)
+      numSlicesToAdvance -= g_sliceNum;
+    if (g_sliceNum == -1)
+      numSlicesToAdvance -= 10;
+
+    // DEBUG_ASSERT( numSlicesToAdvance >= 0 );
+    numSlicesToAdvance = std::max(numSlicesToAdvance, 0);
+    numSlicesToAdvance = std::min(numSlicesToAdvance, 10);
+
+    return numSlicesToAdvance;
+  }
+
+  bool ProcessServerLetters(ServerToClientLetter* letter)
+  {
+    switch (letter->m_type)
+    {
+    case ServerToClientLetter::LetterType::HelloClient:
+      if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
+        DebugTrace("CLIENT : Received HelloClient from Server\n");
+      return true;
+
+    case ServerToClientLetter::LetterType::GoodbyeClient:
+      // g_location->RemoveTeam( letter->m_teamId );
+      return true;
+
+    case ServerToClientLetter::LetterType::TeamAssign:
+
+      if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
+        g_location->InitialiseTeam(letter->m_teamId, letter->m_teamType);
+      else
+        g_location->InitialiseTeam(letter->m_teamId, Team::TeamTypeRemotePlayer);
+      return true;
+
+    default:
+      return false;
+    }
+  }
+
+  bool WindowsOnScreen() { return EclGetWindows()->size() > 0; }
+
+  void RemoveAllWindows()
+  {
+    std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
+    while (windows->size() > 0)
+    {
+      EclWindow* w = (*windows)[0].get();
+      EclRemoveWindow(w->m_name);
+    }
+  }
+
+  bool HandleCommonConditions()
+  {
+    bool curWindowHasFocus = g_eventHandler->WindowHasFocus();
+    static bool oldWindowFocus = true;
+
+    static bool controllerPlugged = true;
+    if (controllerPlugged && g_inputManager->controlEvent(ControlType::ControlControllerUnplugged))
+    {
+      auto owned = std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_unplugged1"), LANGUAGEPHRASE("dialog_unplugged2"));
+      MessageDialog* dialog = owned.get();
+      EclRegisterWindow(std::move(owned));
+      controllerPlugged = false;
+    }
+
+    if (!controllerPlugged && g_inputManager->controlEvent(ControlType::ControlControllerPlugged))
+    {
+      EclRemoveWindow(LANGUAGEPHRASE("dialog_unplugged1"));
+      controllerPlugged = true;
+    }
+
+    // Pretend we're not focused
+    if (!controllerPlugged && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
+      curWindowHasFocus = false;
+
+    if (!curWindowHasFocus)
+    {
+      TheUserInput()->Advance();
+      g_soundSystem->Advance();
+
+      // Render twice to avoid double buffering artefacts
+      TheRenderer()->Render();
+      TheRenderer()->Render();
+      return true;
+    }
+
+    if (g_requestQuit)
+    {
+      Finalise();
+      exit(0);
+    }
+
     return false;
   }
-}
 
-bool WindowsOnScreen() { return EclGetWindows()->size() > 0; }
-
-void RemoveAllWindows()
-{
-  std::vector<std::unique_ptr<EclWindow>>* windows = EclGetWindows();
-  while (windows->size() > 0)
+  unsigned char GenerateSyncValue()
   {
-    EclWindow* w = (*windows)[0].get();
-    EclRemoveWindow(w->m_name);
-  }
-}
-
-bool HandleCommonConditions()
-{
-  bool curWindowHasFocus = g_eventHandler->WindowHasFocus();
-  static bool oldWindowFocus = true;
-
-  static bool controllerPlugged = true;
-  if (controllerPlugged && g_inputManager->controlEvent(ControlType::ControlControllerUnplugged))
-  {
-    auto owned = std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_unplugged1"), LANGUAGEPHRASE("dialog_unplugged2"));
-    MessageDialog* dialog = owned.get();
-    EclRegisterWindow(std::move(owned));
-    controllerPlugged = false;
-  }
-
-  if (!controllerPlugged && g_inputManager->controlEvent(ControlType::ControlControllerPlugged))
-  {
-    EclRemoveWindow(LANGUAGEPHRASE("dialog_unplugged1"));
-    controllerPlugged = true;
-  }
-
-  // Pretend we're not focused
-  if (!controllerPlugged && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-    curWindowHasFocus = false;
-
-  if (!curWindowHasFocus)
-  {
-    TheUserInput()->Advance();
-    g_soundSystem->Advance();
-
-    // Render twice to avoid double buffering artefacts
-    TheRenderer()->Render();
-    TheRenderer()->Render();
-    return true;
-  }
-
-  if (g_requestQuit)
-  {
-    Finalise();
-    exit(0);
-  }
-
-  return false;
-}
-
-unsigned char GenerateSyncValue()
-{
 #ifdef TARGET_DEBUG
   // THE ACCUMULATORS, and the one place in this function a conversion can go
   // wrong silently. Vector3's default constructor zeroed and XMFLOAT3's does
@@ -354,7 +357,7 @@ unsigned char GenerateSyncValue()
   return 255 * syncfrand();
 
 #endif
-}
+  }
 
 void LocationGameLoop()
 {
@@ -1047,26 +1050,6 @@ void RunTheGame()
   }
 }
 
-// The process entry point.
-//
-// It used to be in NeuronClient/WindowManager.cpp, where it called AppMain()
-// below — a static library reaching up into the executable that links it.
-// check_layering never saw it, because an include check cannot: NeuronClient
-// DECLARED AppMain in its own header rather than including a Species one. The
-// linker sees it, and said so the moment a test DLL pulled WindowManager.obj
-// in without a game executable to satisfy it.
-int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _cmdLine, int _iCmdShow)
-{
-  SetWin32InstanceHandle(_hInstance);
-
-  g_windowManager = new WindowManager();
-
-  AppMain();
-
-  return WM_QUIT;
-}
-
-
 // Main Function
 void AppMain()
 {
@@ -1078,4 +1061,27 @@ void AppMain()
   FileSys::SetHomeDirectory(path);
 
   RunTheGame();
+}
+} // namespace Species
+
+
+// The process entry point, and the ONE thing in Species that stays at global
+// scope: the CRT startup code looks up ::WinMain by name, so namespace-migration
+// T5 left it out here and it calls into the namespace explicitly.
+//
+// It used to be in NeuronClient/WindowManager.cpp, where it called AppMain()
+// below — a static library reaching up into the executable that links it.
+// check_layering never saw it, because an include check cannot: NeuronClient
+// DECLARED AppMain in its own header rather than including a Species one. The
+// linker sees it, and said so the moment a test DLL pulled WindowManager.obj
+// in without a game executable to satisfy it.
+int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _cmdLine, int _iCmdShow)
+{
+  Neuron::SetWin32InstanceHandle(_hInstance);
+
+  Neuron::g_windowManager = new Neuron::WindowManager();
+
+  Species::AppMain();
+
+  return WM_QUIT;
 }

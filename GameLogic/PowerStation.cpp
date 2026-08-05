@@ -22,13 +22,17 @@
 // ****************************************************************************
 
 // *** Constructor
-Powerstation::Powerstation()
-:   Building(),
-    m_linkedBuildingId(-1)
+
+
+namespace Species
 {
+  Powerstation::Powerstation()
+    : Building(),
+      m_linkedBuildingId(-1)
+  {
     m_type = Building::TypePowerstation;
 	SetShape( g_resource->GetShape("PowerStation.shp") );
-}
+  }
 
 
 // *** Initialise
@@ -100,3 +104,4 @@ void Powerstation::Write( FileWriter *_out )
 
     _out->printf( "%-8d", m_linkedBuildingId);
 }
+} // namespace Species

@@ -16,4 +16,9 @@ class ServerToClientLetter;
 // Applies every update in an Update letter to the local game. The caller is
 // expected to have offered the letter to ProcessServerLetters first; this
 // handles the ones that letter-level handling did not claim.
-void ProcessServerUpdates(ServerToClientLetter* _letter);
+
+
+namespace Species
+{
+  void ProcessServerUpdates(ServerToClientLetter* _letter);
+} // namespace Species

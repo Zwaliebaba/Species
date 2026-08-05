@@ -5,203 +5,208 @@
 
 #include "Building.h"
 
-class Refinery;
-class MineCart;
 
 
 // ****************************************************************************
 // Class MineBuilding
 // ****************************************************************************
 
-class MineBuilding : public Building
+
+namespace Species
 {
-  protected:
-    int m_trackLink;
-    ShapeMarker* m_trackMarker1;
-    ShapeMarker* m_trackMarker2;
+  class Refinery;
+  class MineCart;
 
-    // RENAMED FROM m_trackMatrix1/2, which were Matrix34 caches whose only
-    // read was .pos -- the matrix half was never used. Storing an XMFLOAT4X4
-    // to fish three floats out of row 3 would have kept a name that lies.
-    DirectX::XMFLOAT3 m_trackPosition1{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 m_trackPosition2{0.0f, 0.0f, 0.0f};
+  class MineBuilding : public Building
+  {
+    protected:
+      int m_trackLink;
+      ShapeMarker* m_trackMarker1;
+      ShapeMarker* m_trackMarker2;
 
-    std::vector<MineCart*> m_carts;
+      // RENAMED FROM m_trackMatrix1/2, which were Matrix34 caches whose only
+      // read was .pos -- the matrix half was never used. Storing an XMFLOAT4X4
+      // to fish three floats out of row 3 would have kept a name that lies.
+      DirectX::XMFLOAT3 m_trackPosition1{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 m_trackPosition2{0.0f, 0.0f, 0.0f};
 
-    float m_previousMineSpeed;
-    float m_wheelRotate;
+      std::vector<MineCart*> m_carts;
 
-    static Shape* s_wheelShape;
-    static Shape* s_cartShape;
-    static ShapeMarker* s_cartMarker1;
-    static ShapeMarker* s_cartMarker2;
-    static ShapeMarker* s_cartContents[3];
-    static Shape* s_polygon1;
-    static Shape* s_primitive1;
+      float m_previousMineSpeed;
+      float m_wheelRotate;
 
-    static float s_refineryPopulation;
-    static float s_refineryRecalculateTimer;
-    static float RefinerySpeed();
+      static Shape* s_wheelShape;
+      static Shape* s_cartShape;
+      static ShapeMarker* s_cartMarker1;
+      static ShapeMarker* s_cartMarker2;
+      static ShapeMarker* s_cartContents[3];
+      static Shape* s_polygon1;
+      static Shape* s_primitive1;
 
-  public:
-    MineBuilding();
+      static float s_refineryPopulation;
+      static float s_refineryRecalculateTimer;
+      static float RefinerySpeed();
 
-    void Initialise(Building* _template);
-    bool Advance();
+    public:
+      MineBuilding();
 
-    bool IsInView();
+      void Initialise(Building* _template);
+      bool Advance();
 
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
-    void RenderCart(MineCart* _cart, float _predictionTime);
+      bool IsInView();
 
-    DirectX::XMFLOAT3 GetTrackMarker1();
-    DirectX::XMFLOAT3 GetTrackMarker2();
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
+      void RenderCart(MineCart* _cart, float _predictionTime);
 
-    virtual void TriggerCart(MineCart* _cart, float _initValue);
+      DirectX::XMFLOAT3 GetTrackMarker1();
+      DirectX::XMFLOAT3 GetTrackMarker2();
 
-    void ListSoundEvents(std::vector<const char*>* _list);
+      virtual void TriggerCart(MineCart* _cart, float _initValue);
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
+      void ListSoundEvents(std::vector<const char*>* _list);
 
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
-};
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
 
-
-class MineCart
-{
-  public:
-    float m_progress; // Progress down current line, 0.0f - 1.0f
-
-    bool m_polygons[3];
-    bool m_primitives[3];
-
-  public:
-    MineCart();
-};
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
+  };
 
 
-// ****************************************************************************
-// Class TrackLink
-// ****************************************************************************
+  class MineCart
+  {
+    public:
+      float m_progress; // Progress down current line, 0.0f - 1.0f
 
-class TrackLink : public MineBuilding
-{
-  public:
-    TrackLink();
+      bool m_polygons[3];
+      bool m_primitives[3];
 
-    bool Advance();
-};
-
-
-// ****************************************************************************
-// Class TrackJunction
-// ****************************************************************************
-
-class TrackJunction : public MineBuilding
-{
-  public:
-    std::vector<int> m_trackLinks;
-
-  public:
-    TrackJunction();
-
-    void Initialise(Building* _template);
-
-    void Render(float _predictionTime);
-    void TriggerCart(MineCart* _cart, float _initValue);
-
-    void RenderLink();
-    void SetBuildingLink(int _buildingId);
-
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-};
+    public:
+      MineCart();
+  };
 
 
-// ****************************************************************************
-// Class TrackStart
-// ****************************************************************************
+  // ****************************************************************************
+  // Class TrackLink
+  // ****************************************************************************
 
-class TrackStart : public MineBuilding
-{
-  public:
-    int m_reqBuildingId; // This building must be online
+  class TrackLink : public MineBuilding
+  {
+    public:
+      TrackLink();
 
-  public:
-    TrackStart();
-
-    void Initialise(Building* _template);
-    bool Advance();
-    void RenderAlphas(float _predictionTime);
-
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-};
+      bool Advance();
+  };
 
 
-// ****************************************************************************
-// Class TrackEnd
-// ****************************************************************************
+  // ****************************************************************************
+  // Class TrackJunction
+  // ****************************************************************************
 
-class TrackEnd : public MineBuilding
-{
-  public:
-    int m_reqBuildingId; // This building must be online
+  class TrackJunction : public MineBuilding
+  {
+    public:
+      std::vector<int> m_trackLinks;
 
-  public:
-    TrackEnd();
+    public:
+      TrackJunction();
 
-    void Initialise(Building* _template);
-    bool Advance();
+      void Initialise(Building* _template);
 
-    void RenderAlphas(float _predictionTime);
+      void Render(float _predictionTime);
+      void TriggerCart(MineCart* _cart, float _initValue);
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-};
+      void RenderLink();
+      void SetBuildingLink(int _buildingId);
 
-
-// ****************************************************************************
-// Class Refinery
-// ****************************************************************************
-
-class Refinery : public MineBuilding
-{
-  protected:
-    ShapeMarker* m_wheel1;
-    ShapeMarker* m_wheel2;
-    ShapeMarker* m_wheel3;
-    ShapeMarker* m_counter1;
-
-  public:
-    Refinery();
-
-    bool Advance();
-    void Render(float _predictionTime);
-
-    char const* GetObjectiveCounter();
-
-    void TriggerCart(MineCart* _cart, float _initValue);
-};
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
+  };
 
 
-// ****************************************************************************
-// Class Mine
-// ****************************************************************************
+  // ****************************************************************************
+  // Class TrackStart
+  // ****************************************************************************
 
-class Mine : public MineBuilding
-{
-  protected:
-    ShapeMarker* m_wheel1;
-    ShapeMarker* m_wheel2;
+  class TrackStart : public MineBuilding
+  {
+    public:
+      int m_reqBuildingId; // This building must be online
 
-  public:
-    Mine();
+    public:
+      TrackStart();
 
-    void Render(float _predictionTime);
+      void Initialise(Building* _template);
+      bool Advance();
+      void RenderAlphas(float _predictionTime);
 
-    void TriggerCart(MineCart* _cart, float _initValue);
-};
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
+  };
+
+
+  // ****************************************************************************
+  // Class TrackEnd
+  // ****************************************************************************
+
+  class TrackEnd : public MineBuilding
+  {
+    public:
+      int m_reqBuildingId; // This building must be online
+
+    public:
+      TrackEnd();
+
+      void Initialise(Building* _template);
+      bool Advance();
+
+      void RenderAlphas(float _predictionTime);
+
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
+  };
+
+
+  // ****************************************************************************
+  // Class Refinery
+  // ****************************************************************************
+
+  class Refinery : public MineBuilding
+  {
+    protected:
+      ShapeMarker* m_wheel1;
+      ShapeMarker* m_wheel2;
+      ShapeMarker* m_wheel3;
+      ShapeMarker* m_counter1;
+
+    public:
+      Refinery();
+
+      bool Advance();
+      void Render(float _predictionTime);
+
+      char const* GetObjectiveCounter();
+
+      void TriggerCart(MineCart* _cart, float _initValue);
+  };
+
+
+  // ****************************************************************************
+  // Class Mine
+  // ****************************************************************************
+
+  class Mine : public MineBuilding
+  {
+    protected:
+      ShapeMarker* m_wheel1;
+      ShapeMarker* m_wheel2;
+
+    public:
+      Mine();
+
+      void Render(float _predictionTime);
+
+      void TriggerCart(MineCart* _cart, float _initValue);
+  };
+} // namespace Species

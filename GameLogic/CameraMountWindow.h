@@ -11,15 +11,18 @@
 // Class CameraMountEditWindow
 // ****************************************************************************
 
-class CameraMountEditWindow: public SpeciesWindow
-{
-public:
-    CameraMountEditWindow( char const *name );
-	~CameraMountEditWindow();
 
-	void Create();
-};
+namespace Species
+{
+  class CameraMountEditWindow : public SpeciesWindow
+  {
+    public:
+      CameraMountEditWindow(char const* name);
+      ~CameraMountEditWindow();
+
+      void Create();
+  };
 
 
 #endif // LOCATION_EDITOR
-
+} // namespace Species

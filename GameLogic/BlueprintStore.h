@@ -3,39 +3,41 @@
 #include "Building.h"
 
 
-class BlueprintBuilding : public Building
+namespace Species
 {
-  public:
-    int m_buildingLink;
-    float m_infected;
-    int m_segment;
+  class BlueprintBuilding : public Building
+  {
+    public:
+      int m_buildingLink;
+      float m_infected;
+      int m_segment;
 
-  protected:
-    ShapeMarker* m_marker;
-    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
+    protected:
+      ShapeMarker* m_marker;
+      DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
-  public:
-    BlueprintBuilding();
+    public:
+      BlueprintBuilding();
 
-    void Initialise(Building* _template);
-    bool Advance();
-    bool IsInView();
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
+      void Initialise(Building* _template);
+      bool Advance();
+      bool IsInView();
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
 
-    virtual void SendBlueprint(int _segment, bool _infected);
+      virtual void SendBlueprint(int _segment, bool _infected);
 
-    DirectX::XMFLOAT4X4 GetMarker(float _predictionTime);
+      DirectX::XMFLOAT4X4 GetMarker(float _predictionTime);
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
 
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
-};
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
+  };
 
 
-// ============================================================================
+  // ============================================================================
 
 #define BLUEPRINTSTORE_NUMSEGMENTS 4
 
@@ -103,3 +105,4 @@ class BlueprintRelay : public BlueprintBuilding
     void Read(TextReader* _in, bool _dynamic);
     void Write(FileWriter* _out);
 };
+} // namespace Species

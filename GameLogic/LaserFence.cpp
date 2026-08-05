@@ -30,608 +30,612 @@
 #include "WorldPointers.h"
 #include "AppState.h"
 
-LaserFence::LaserFence()
-  : Building(),
-    m_nextLaserFenceId(-1),
-    m_status(0.0f),
-    m_mode(ModeDisabled),
-    m_scale(1.0f),
-    m_marker1(nullptr),
-    m_marker2(nullptr),
-    m_sparkTimer(0.0f),
-    m_radiusSet(false),
-    m_nextToggled(false)
+
+namespace Species
 {
-  m_type = Building::TypeLaserFence;
-
-  SetShape(g_resource->GetShape("LaserFence.shp"));
-
-  m_marker1 = m_shape->m_rootFragment->LookupMarker("MarkerFence01");
-  m_marker2 = m_shape->m_rootFragment->LookupMarker("MarkerFence02");
-
-  ASSERT_TEXT(m_marker1, "MarkerFence01 not found in laserfence.shp");
-  ASSERT_TEXT(m_marker2, "MarkerFence02 not found in laserfence.shp");
-}
-
-
-void LaserFence::Initialise(Building* _template)
-{
-  Building::Initialise(_template);
-  DEBUG_ASSERT(_template->m_type == Building::TypeLaserFence);
-
-  m_nextLaserFenceId = ((LaserFence*)_template)->m_nextLaserFenceId;
-  m_scale = ((LaserFence*)_template)->m_scale;
-  m_mode = ((LaserFence*)_template)->m_mode;
-
-  // SYNCHRONISED, and it has to be. Advance() reseeds this timer with
-  // syncfrand(4.0f) the moment it expires, so the frame it first expires on
-  // decides which tick draws from the SYNCHRONISED stream. Seeding it from
-  // frand -- the unsynchronised LCG, which sound and the UI consume at a
-  // client-dependent rate -- meant two clients drew from the Mersenne Twister
-  // on different ticks and diverged permanently. determinism.yaml T5.
-  m_sparkTimer = syncfrand(10.0f);
-}
-
-void LaserFence::SetDetail(int _detail)
-{
-  m_radiusSet = false;
-  Building::SetDetail(_detail);
-}
-
-// The two scaled bases LaserFence.h describes. Row 3 is the position and stays
-// unscaled: the legacy code scaled only f, u and r.
-static DirectX::XMFLOAT4X4 ScaleBasisRows(DirectX::FXMMATRIX _basis, float _scale)
-{
-  DirectX::XMMATRIX mat = _basis;
-  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_scale);
-  mat.r[0] = DirectX::XMVectorMultiply(mat.r[0], scale);
-  mat.r[1] = DirectX::XMVectorMultiply(mat.r[1], scale);
-  mat.r[2] = DirectX::XMVectorMultiply(mat.r[2], scale);
-
-  DirectX::XMFLOAT4X4 result;
-  DirectX::XMStoreFloat4x4(&result, mat);
-  return result;
-}
-
-DirectX::XMFLOAT4X4 LaserFence::GetScaledLevelMatrix() const
-{
-  return ScaleBasisRows(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)), m_scale);
-}
-
-DirectX::XMFLOAT4X4 LaserFence::GetScaledWorldMatrix() const
-{
-  return ScaleBasisRows(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)), m_scale);
-}
-
-void LaserFence::Spark()
-{
-  DirectX::XMFLOAT3 const sparkPos(m_pos.x, m_pos.y + frand(m_scale * 50.0f), m_pos.z);
-
-  LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
-
-  int numSparks = 5.0f + frand(5.0f);
-  for (int i = 0; i < numSparks; ++i)
+  LaserFence::LaserFence()
+    : Building(),
+      m_nextLaserFenceId(-1),
+      m_status(0.0f),
+      m_mode(ModeDisabled),
+      m_scale(1.0f),
+      m_marker1(nullptr),
+      m_marker2(nullptr),
+      m_sparkTimer(0.0f),
+      m_radiusSet(false),
+      m_nextToggled(false)
   {
-    // Every RNG call below stays where it is and in this order.
-    DirectX::XMVECTOR particleVel;
-    if (nextFence)
-    {
-      particleVel = DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&nextFence->m_pos)),
-                                            DirectX::g_XMIdentityR1);
-    }
-    else
-    {
-      particleVel = DirectX::XMVectorSet(sfrand(10.0f), sfrand(5.0f), sfrand(10.0f), 0.0f);
-    }
+    m_type = Building::TypeLaserFence;
 
-    // SetLength; rendering only, so this takes the native normalise.
-    particleVel = DirectX::XMVectorScale(DirectX::XMVector3Normalize(particleVel), 40.0f + frand(20.0f));
+    SetShape(g_resource->GetShape("LaserFence.shp"));
 
-    DirectX::XMFLOAT3 const jitter(frand() * 20.0f, sfrand() * 20.0f, sfrand() * 20.0f);
-    DirectX::XMFLOAT3 spark;
-    DirectX::XMStoreFloat3(&spark, DirectX::XMVectorAdd(particleVel, DirectX::XMLoadFloat3(&jitter)));
+    m_marker1 = m_shape->m_rootFragment->LookupMarker("MarkerFence01");
+    m_marker2 = m_shape->m_rootFragment->LookupMarker("MarkerFence02");
 
-    float size = 25.0f + frand(25.0f);
-    g_particleSystem->CreateParticle(sparkPos, spark, Particle::TypeSpark, size);
+    ASSERT_TEXT(m_marker1, "MarkerFence01 not found in laserfence.shp");
+    ASSERT_TEXT(m_marker2, "MarkerFence02 not found in laserfence.shp");
   }
 
-  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Spark");
-}
 
-
-bool LaserFence::Advance()
-{
-  if (!m_radiusSet)
+  void LaserFence::Initialise(Building* _template)
   {
-    Building* building = g_location->GetBuilding(m_nextLaserFenceId);
-    if (building)
-    {
-      DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&building->m_pos);
-      DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
-      DirectX::XMStoreFloat3(&m_centrePos, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirPos, ourPos), 0.5f));
-      m_radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirPos, ourPos))) / 2.0f + m_radius;
-    }
-    m_radiusSet = true;
+    Building::Initialise(_template);
+    DEBUG_ASSERT(_template->m_type == Building::TypeLaserFence);
+
+    m_nextLaserFenceId = ((LaserFence*)_template)->m_nextLaserFenceId;
+    m_scale = ((LaserFence*)_template)->m_scale;
+    m_mode = ((LaserFence*)_template)->m_mode;
+
+    // SYNCHRONISED, and it has to be. Advance() reseeds this timer with
+    // syncfrand(4.0f) the moment it expires, so the frame it first expires on
+    // decides which tick draws from the SYNCHRONISED stream. Seeding it from
+    // frand -- the unsynchronised LCG, which sound and the UI consume at a
+    // client-dependent rate -- meant two clients drew from the Mersenne Twister
+    // on different ticks and diverged permanently. determinism.yaml T5.
+    m_sparkTimer = syncfrand(10.0f);
   }
 
-  if (m_mode != ModeDisabled)
+  void LaserFence::SetDetail(int _detail)
   {
-    m_sparkTimer -= SERVER_ADVANCE_PERIOD;
-    if (m_sparkTimer < 0.0f)
-    {
-      m_sparkTimer = 8.0f + syncfrand(4.0f);
-      Spark();
-    }
+    m_radiusSet = false;
+    Building::SetDetail(_detail);
   }
 
-  switch (m_mode)
+  // The two scaled bases LaserFence.h describes. Row 3 is the position and stays
+  // unscaled: the legacy code scaled only f, u and r.
+  static DirectX::XMFLOAT4X4 ScaleBasisRows(DirectX::FXMMATRIX _basis, float _scale)
   {
-  case ModeEnabling:
-    m_status += LASERFENCE_RAISESPEED * SERVER_ADVANCE_PERIOD;
-    if (m_status >= 0.5f && m_nextLaserFenceId != -1 && !m_nextToggled)
+    DirectX::XMMATRIX mat = _basis;
+    DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_scale);
+    mat.r[0] = DirectX::XMVectorMultiply(mat.r[0], scale);
+    mat.r[1] = DirectX::XMVectorMultiply(mat.r[1], scale);
+    mat.r[2] = DirectX::XMVectorMultiply(mat.r[2], scale);
+
+    DirectX::XMFLOAT4X4 result;
+    DirectX::XMStoreFloat4x4(&result, mat);
+    return result;
+  }
+
+  DirectX::XMFLOAT4X4 LaserFence::GetScaledLevelMatrix() const
+  {
+    return ScaleBasisRows(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)), m_scale);
+  }
+
+  DirectX::XMFLOAT4X4 LaserFence::GetScaledWorldMatrix() const
+  {
+    return ScaleBasisRows(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)), m_scale);
+  }
+
+  void LaserFence::Spark()
+  {
+    DirectX::XMFLOAT3 const sparkPos(m_pos.x, m_pos.y + frand(m_scale * 50.0f), m_pos.z);
+
+    LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
+
+    int numSparks = 5.0f + frand(5.0f);
+    for (int i = 0; i < numSparks; ++i)
     {
-      LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
+      // Every RNG call below stays where it is and in this order.
+      DirectX::XMVECTOR particleVel;
       if (nextFence)
       {
-        nextFence->Enable();
-        m_nextToggled = true;
-      }
-    }
-    if (m_status >= 1.0f)
-    {
-      m_status = 1.0f;
-      m_mode = ModeEnabled;
-      if (m_nextLaserFenceId == -1)
-      {
-        g_location->m_obstructionGrid->CalculateAll();
-      }
-    }
-    break;
-
-  case ModeDisabling:
-    if (m_status <= 0.5f && m_nextLaserFenceId != -1 && !m_nextToggled)
-    {
-      LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
-      if (nextFence)
-      {
-        nextFence->Disable();
-        m_nextToggled = true;
-      }
-    }
-    m_status -= LASERFENCE_RAISESPEED * SERVER_ADVANCE_PERIOD;
-    if (m_status <= 0.0f)
-    {
-      m_status = 0.0f;
-      m_mode = ModeDisabled;
-      if (m_nextLaserFenceId == -1)
-      {
-        g_location->m_obstructionGrid->CalculateAll();
-      }
-    }
-    break;
-
-  case ModeEnabled:
-  {
-    if (m_status < 1.0f)
-    {
-      m_status = 1.0f;
-      if (m_nextLaserFenceId == -1)
-      {
-        g_location->m_obstructionGrid->CalculateAll();
-      }
-    }
-    break;
-  }
-  case ModeDisabled:
-    m_status = 0.0f;
-    break;
-  }
-
-  return Building::Advance();
-}
-
-
-void LaserFence::Render(float predictionTime)
-{
-  DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
-
-  glEnable(GL_NORMALIZE);
-  m_shape->Render(predictionTime, mat);
-  glDisable(GL_NORMALIZE);
-}
-
-
-float LaserFence::GetFenceFullHeight()
-{
-  DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
-
-  DirectX::XMFLOAT3 const marker1 = m_marker1->GetWorldPosition(mat);
-  DirectX::XMFLOAT3 const marker2 = m_marker2->GetWorldPosition(mat);
-
-  return (marker2.y - marker1.y);
-}
-
-
-bool LaserFence::IsInView()
-{
-  return Building::IsInView();
-
-  // No need to do the usual midpoint / radius calculation here
-  // as it has already been done in LaserFence::Advance.
-  // Our midpoint and radius values are frigged in order to
-  // correctly fill the obstruction grid.
-}
-
-
-bool LaserFence::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
-{
-  if (m_mode == ModeDisabled)
-    return false;
-
-
-  if (m_nextLaserFenceId != -1)
-  {
-    _centrePos = m_centrePos;
-    return true;
-  }
-
-
-  return false;
-  ;
-}
-
-
-void LaserFence::RenderAlphas(float predictionTime)
-{
-  Building::RenderAlphas(predictionTime);
-
-  if (m_mode != ModeDisabled && m_mode != ModeNeverOn)
-  {
-    //
-    // Draw the laser fence connecting to the next laser fence
-
-    if (m_nextLaserFenceId != -1)
-    {
-      Building* nextFence = g_location->GetBuilding(m_nextLaserFenceId);
-      if (!nextFence || nextFence->m_type != Building::TypeLaserFence)
-      {
-        m_nextLaserFenceId = -1;
-        return;
-      }
-      LaserFence* nextLaserFence = (LaserFence*)nextFence;
-
-      int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail", 1);
-
-      glDisable(GL_CULL_FACE);
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      glDepthMask(false);
-
-      unsigned char alpha = 150;
-      if (m_id.GetTeamId() == 255)
-      {
-        glColor4ub(100, 100, 100, alpha);
+        particleVel = DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&nextFence->m_pos)),
+                                              DirectX::g_XMIdentityR1);
       }
       else
       {
-        RGBAColour* colour = &g_location->m_teams[m_id.GetTeamId()].m_colour;
-        glColor4ub(colour->r, colour->g, colour->b, alpha);
+        particleVel = DirectX::XMVectorSet(sfrand(10.0f), sfrand(5.0f), sfrand(10.0f), 0.0f);
       }
 
-      float ourFenceMaxHeight = GetFenceFullHeight();
-      float theirFenceMaxHeight = nextLaserFence->GetFenceFullHeight();
-      float predictedStatus = m_status;
-      if (m_mode == ModeDisabling)
-        predictedStatus -= LASERFENCE_RAISESPEED * predictionTime;
-      if (m_mode == ModeEnabling)
-        predictedStatus += LASERFENCE_RAISESPEED * predictionTime;
-      if (g_editing)
-        predictedStatus = 1.0f;
+      // SetLength; rendering only, so this takes the native normalise.
+      particleVel = DirectX::XMVectorScale(DirectX::XMVector3Normalize(particleVel), 40.0f + frand(20.0f));
 
-      float ourFenceHeight = ourFenceMaxHeight * predictedStatus;
-      float theirFenceHeight = theirFenceMaxHeight * predictedStatus;
-      float distance = DirectX::XMVectorGetX(
-        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&nextFence->m_pos))));
-      float dx = distance / (ourFenceMaxHeight * 2.0f);
-      float dz = ourFenceHeight / ourFenceMaxHeight;
-      float timeOff = g_gameTime / 15.0f;
+      DirectX::XMFLOAT3 const jitter(frand() * 20.0f, sfrand() * 20.0f, sfrand() * 20.0f);
+      DirectX::XMFLOAT3 spark;
+      DirectX::XMStoreFloat3(&spark, DirectX::XMVectorAdd(particleVel, DirectX::XMLoadFloat3(&jitter)));
 
-      if (buildingDetail < 3)
+      float size = 25.0f + frand(25.0f);
+      g_particleSystem->CreateParticle(sparkPos, spark, Particle::TypeSpark, size);
+    }
+
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Spark");
+  }
+
+
+  bool LaserFence::Advance()
+  {
+    if (!m_radiusSet)
+    {
+      Building* building = g_location->GetBuilding(m_nextLaserFenceId);
+      if (building)
       {
-        glEnable(GL_TEXTURE_2D);
+        DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&building->m_pos);
+        DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
+        DirectX::XMStoreFloat3(&m_centrePos, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirPos, ourPos), 0.5f));
+        m_radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirPos, ourPos))) / 2.0f + m_radius;
+      }
+      m_radiusSet = true;
+    }
 
-        gglActiveTextureARB(GL_TEXTURE0_ARB);
-        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence.bmp"));
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
-        glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_REPLACE);
-        glEnable(GL_TEXTURE_2D);
+    if (m_mode != ModeDisabled)
+    {
+      m_sparkTimer -= SERVER_ADVANCE_PERIOD;
+      if (m_sparkTimer < 0.0f)
+      {
+        m_sparkTimer = 8.0f + syncfrand(4.0f);
+        Spark();
+      }
+    }
 
-        gglActiveTextureARB(GL_TEXTURE1_ARB);
+    switch (m_mode)
+    {
+    case ModeEnabling:
+      m_status += LASERFENCE_RAISESPEED * SERVER_ADVANCE_PERIOD;
+      if (m_status >= 0.5f && m_nextLaserFenceId != -1 && !m_nextToggled)
+      {
+        LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
+        if (nextFence)
+        {
+          nextFence->Enable();
+          m_nextToggled = true;
+        }
+      }
+      if (m_status >= 1.0f)
+      {
+        m_status = 1.0f;
+        m_mode = ModeEnabled;
+        if (m_nextLaserFenceId == -1)
+        {
+          g_location->m_obstructionGrid->CalculateAll();
+        }
+      }
+      break;
+
+    case ModeDisabling:
+      if (m_status <= 0.5f && m_nextLaserFenceId != -1 && !m_nextToggled)
+      {
+        LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
+        if (nextFence)
+        {
+          nextFence->Disable();
+          m_nextToggled = true;
+        }
+      }
+      m_status -= LASERFENCE_RAISESPEED * SERVER_ADVANCE_PERIOD;
+      if (m_status <= 0.0f)
+      {
+        m_status = 0.0f;
+        m_mode = ModeDisabled;
+        if (m_nextLaserFenceId == -1)
+        {
+          g_location->m_obstructionGrid->CalculateAll();
+        }
+      }
+      break;
+
+    case ModeEnabled:
+    {
+      if (m_status < 1.0f)
+      {
+        m_status = 1.0f;
+        if (m_nextLaserFenceId == -1)
+        {
+          g_location->m_obstructionGrid->CalculateAll();
+        }
+      }
+      break;
+    }
+    case ModeDisabled:
+      m_status = 0.0f;
+      break;
+    }
+
+    return Building::Advance();
+  }
+
+
+  void LaserFence::Render(float predictionTime)
+  {
+    DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
+
+    glEnable(GL_NORMALIZE);
+    m_shape->Render(predictionTime, mat);
+    glDisable(GL_NORMALIZE);
+  }
+
+
+  float LaserFence::GetFenceFullHeight()
+  {
+    DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
+
+    DirectX::XMFLOAT3 const marker1 = m_marker1->GetWorldPosition(mat);
+    DirectX::XMFLOAT3 const marker2 = m_marker2->GetWorldPosition(mat);
+
+    return (marker2.y - marker1.y);
+  }
+
+
+  bool LaserFence::IsInView()
+  {
+    return Building::IsInView();
+
+    // No need to do the usual midpoint / radius calculation here
+    // as it has already been done in LaserFence::Advance.
+    // Our midpoint and radius values are frigged in order to
+    // correctly fill the obstruction grid.
+  }
+
+
+  bool LaserFence::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
+  {
+    if (m_mode == ModeDisabled)
+      return false;
+
+
+    if (m_nextLaserFenceId != -1)
+    {
+      _centrePos = m_centrePos;
+      return true;
+    }
+
+
+    return false;
+    ;
+  }
+
+
+  void LaserFence::RenderAlphas(float predictionTime)
+  {
+    Building::RenderAlphas(predictionTime);
+
+    if (m_mode != ModeDisabled && m_mode != ModeNeverOn)
+    {
+      //
+      // Draw the laser fence connecting to the next laser fence
+
+      if (m_nextLaserFenceId != -1)
+      {
+        Building* nextFence = g_location->GetBuilding(m_nextLaserFenceId);
+        if (!nextFence || nextFence->m_type != Building::TypeLaserFence)
+        {
+          m_nextLaserFenceId = -1;
+          return;
+        }
+        LaserFence* nextLaserFence = (LaserFence*)nextFence;
+
+        int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail", 1);
+
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(false);
+
+        unsigned char alpha = 150;
+        if (m_id.GetTeamId() == 255)
+        {
+          glColor4ub(100, 100, 100, alpha);
+        }
+        else
+        {
+          RGBAColour* colour = &g_location->m_teams[m_id.GetTeamId()].m_colour;
+          glColor4ub(colour->r, colour->g, colour->b, alpha);
+        }
+
+        float ourFenceMaxHeight = GetFenceFullHeight();
+        float theirFenceMaxHeight = nextLaserFence->GetFenceFullHeight();
+        float predictedStatus = m_status;
+        if (m_mode == ModeDisabling)
+          predictedStatus -= LASERFENCE_RAISESPEED * predictionTime;
+        if (m_mode == ModeEnabling)
+          predictedStatus += LASERFENCE_RAISESPEED * predictionTime;
+        if (g_editing)
+          predictedStatus = 1.0f;
+
+        float ourFenceHeight = ourFenceMaxHeight * predictedStatus;
+        float theirFenceHeight = theirFenceMaxHeight * predictedStatus;
+        float distance = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&nextFence->m_pos))));
+        float dx = distance / (ourFenceMaxHeight * 2.0f);
+        float dz = ourFenceHeight / ourFenceMaxHeight;
+        float timeOff = g_gameTime / 15.0f;
+
+        if (buildingDetail < 3)
+        {
+          glEnable(GL_TEXTURE_2D);
+
+          gglActiveTextureARB(GL_TEXTURE0_ARB);
+          glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence.bmp"));
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+          glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
+          glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_REPLACE);
+          glEnable(GL_TEXTURE_2D);
+
+          gglActiveTextureARB(GL_TEXTURE1_ARB);
+          glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence2.bmp"));
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+          glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
+          glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
+          glEnable(GL_TEXTURE_2D);
+
+
+          glBegin(GL_QUADS);
+          gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff, 0.0f);
+          gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0, 0);
+          EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y - ourFenceHeight / 3, m_pos.z, 0.0f));
+
+          gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff, dz);
+          gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0, 1);
+          EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y + ourFenceHeight, m_pos.z, 0.0f));
+
+          gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff + dx, dz);
+          gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 1, 1);
+          EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y + theirFenceHeight, nextFence->m_pos.z, 0.0f));
+
+          gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff + dx, 0.0f);
+          gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 1, 0);
+          EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y - theirFenceHeight / 3, nextFence->m_pos.z, 0.0f));
+          glEnd();
+
+          gglActiveTextureARB(GL_TEXTURE1_ARB);
+          glDisable(GL_TEXTURE_2D);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+          gglActiveTextureARB(GL_TEXTURE0_ARB);
+          glDisable(GL_TEXTURE_2D);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+          glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        }
+
+        //
+        // Blend another poly over the top for burn effect
+
+        glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence2.bmp"));
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
-        glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
-        glEnable(GL_TEXTURE_2D);
-
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
         glBegin(GL_QUADS);
-        gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff, 0.0f);
-        gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0, 0);
+        glTexCoord2f(0, 0);
         EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y - ourFenceHeight / 3, m_pos.z, 0.0f));
 
-        gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff, dz);
-        gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0, 1);
+        glTexCoord2f(0, 1);
         EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y + ourFenceHeight, m_pos.z, 0.0f));
 
-        gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff + dx, dz);
-        gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 1, 1);
+        glTexCoord2f(1, 1);
         EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y + theirFenceHeight, nextFence->m_pos.z, 0.0f));
 
-        gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, timeOff + dx, 0.0f);
-        gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, 1, 0);
+        glTexCoord2f(1, 0);
         EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y - theirFenceHeight / 3, nextFence->m_pos.z, 0.0f));
         glEnd();
 
-        gglActiveTextureARB(GL_TEXTURE1_ARB);
         glDisable(GL_TEXTURE_2D);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-        gglActiveTextureARB(GL_TEXTURE0_ARB);
-        glDisable(GL_TEXTURE_2D);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+        //
+        // Gimme a line across the top
+        glLineWidth(2.0f);
+        glEnable(GL_LINE_SMOOTH);
+
+        glBegin(GL_LINES);
+        EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y + ourFenceHeight, m_pos.z, 0.0f));
+        EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y + theirFenceHeight, nextFence->m_pos.z, 0.0f));
+        glEnd();
+
+        glDepthMask(true);
+        glDisable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_CULL_FACE);
+        glDisable(GL_LINE_SMOOTH);
       }
-
-      //
-      // Blend another poly over the top for burn effect
-
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/LaserFence2.bmp"));
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-      glBegin(GL_QUADS);
-      glTexCoord2f(0, 0);
-      EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y - ourFenceHeight / 3, m_pos.z, 0.0f));
-
-      glTexCoord2f(0, 1);
-      EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y + ourFenceHeight, m_pos.z, 0.0f));
-
-      glTexCoord2f(1, 1);
-      EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y + theirFenceHeight, nextFence->m_pos.z, 0.0f));
-
-      glTexCoord2f(1, 0);
-      EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y - theirFenceHeight / 3, nextFence->m_pos.z, 0.0f));
-      glEnd();
-
-      glDisable(GL_TEXTURE_2D);
-
-
-      //
-      // Gimme a line across the top
-      glLineWidth(2.0f);
-      glEnable(GL_LINE_SMOOTH);
-
-      glBegin(GL_LINES);
-      EmitVertex(DirectX::XMVectorSet(m_pos.x, m_pos.y + ourFenceHeight, m_pos.z, 0.0f));
-      EmitVertex(DirectX::XMVectorSet(nextFence->m_pos.x, nextFence->m_pos.y + theirFenceHeight, nextFence->m_pos.z, 0.0f));
-      glEnd();
-
-      glDepthMask(true);
-      glDisable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      glEnable(GL_CULL_FACE);
-      glDisable(GL_LINE_SMOOTH);
     }
   }
-}
 
 
-void LaserFence::RenderLights() {}
+  void LaserFence::RenderLights() {}
 
 
-void LaserFence::Enable()
-{
-  if (m_mode != ModeEnabled && m_mode != ModeNeverOn)
+  void LaserFence::Enable()
   {
-    m_mode = ModeEnabling;
+    if (m_mode != ModeEnabled && m_mode != ModeNeverOn)
+    {
+      m_mode = ModeEnabling;
+    }
+
+    if (m_mode == ModeNeverOn)
+    {
+      LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
+      if (nextFence)
+        nextFence->Toggle();
+    }
+
+    m_nextToggled = false;
   }
 
-  if (m_mode == ModeNeverOn)
+
+  void LaserFence::Disable()
   {
-    LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
-    if (nextFence)
-      nextFence->Toggle();
+    if (m_mode != ModeDisabled && m_mode != ModeNeverOn)
+    {
+      m_mode = ModeDisabling;
+    }
+
+    if (m_mode == ModeNeverOn)
+    {
+      LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
+      if (nextFence)
+        nextFence->Toggle();
+    }
+
+    m_nextToggled = false;
   }
 
-  m_nextToggled = false;
-}
 
-
-void LaserFence::Disable()
-{
-  if (m_mode != ModeDisabled && m_mode != ModeNeverOn)
+  void LaserFence::Toggle()
   {
-    m_mode = ModeDisabling;
+    switch (m_mode)
+    {
+    case ModeDisabled:
+    case ModeDisabling:
+      Enable();
+      break;
+
+    case ModeEnabled:
+    case ModeEnabling:
+      Disable();
+      break;
+    }
+
+    m_nextToggled = false;
   }
 
-  if (m_mode == ModeNeverOn)
+
+  bool LaserFence::IsEnabled() { return (m_mode == ModeEnabled) || (m_mode == ModeEnabling); }
+
+
+  void LaserFence::Read(TextReader* _in, bool _dynamic)
   {
-    LaserFence* nextFence = (LaserFence*)g_location->GetBuilding(m_nextLaserFenceId);
-    if (nextFence)
-      nextFence->Toggle();
+    Building::Read(_in, _dynamic);
+
+    char* word = _in->GetNextToken();
+    m_nextLaserFenceId = atoi(word);
+
+    if (_in->TokenAvailable())
+      m_scale = atof(_in->GetNextToken());
+    if (_in->TokenAvailable())
+      m_mode = atof(_in->GetNextToken());
   }
 
-  m_nextToggled = false;
-}
 
-
-void LaserFence::Toggle()
-{
-  switch (m_mode)
+  void LaserFence::Write(FileWriter* _out)
   {
-  case ModeDisabled:
-  case ModeDisabling:
-    Enable();
-    break;
+    Building::Write(_out);
 
-  case ModeEnabled:
-  case ModeEnabling:
-    Disable();
-    break;
+    _out->printf("%-8d", m_nextLaserFenceId);
+    _out->printf("%-6.2f", m_scale);
+    _out->printf("%d", m_mode);
   }
 
-  m_nextToggled = false;
-}
+
+  int LaserFence::GetBuildingLink() { return m_nextLaserFenceId; }
 
 
-bool LaserFence::IsEnabled() { return (m_mode == ModeEnabled) || (m_mode == ModeEnabling); }
+  void LaserFence::SetBuildingLink(int _buildingId) { m_nextLaserFenceId = _buildingId; }
 
 
-void LaserFence::Read(TextReader* _in, bool _dynamic)
-{
-  Building::Read(_in, _dynamic);
-
-  char* word = _in->GetNextToken();
-  m_nextLaserFenceId = atoi(word);
-
-  if (_in->TokenAvailable())
-    m_scale = atof(_in->GetNextToken());
-  if (_in->TokenAvailable())
-    m_mode = atof(_in->GetNextToken());
-}
+  void LaserFence::Electrocute(DirectX::XMFLOAT3 const& _pos) { g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Electrocute"); }
 
 
-void LaserFence::Write(FileWriter* _out)
-{
-  Building::Write(_out);
-
-  _out->printf("%-8d", m_nextLaserFenceId);
-  _out->printf("%-6.2f", m_scale);
-  _out->printf("%d", m_mode);
-}
-
-
-int LaserFence::GetBuildingLink() { return m_nextLaserFenceId; }
-
-
-void LaserFence::SetBuildingLink(int _buildingId) { m_nextLaserFenceId = _buildingId; }
-
-
-void LaserFence::Electrocute(DirectX::XMFLOAT3 const& _pos) { g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Electrocute"); }
-
-
-bool LaserFence::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
-{
-  if (m_mode == ModeDisabled || g_editing)
+  bool LaserFence::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
   {
+    if (m_mode == ModeDisabled || g_editing)
+    {
+      SpherePackage sphere(_pos, _radius);
+      DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
+      return m_shape->SphereHit(&sphere, transform);
+    }
+
+    //
+    // Fake this for now using 2 ray hits
+    // One running across the sphere in the x direction, the other in the z direction
+
+    DirectX::XMFLOAT3 const ray1Start(_pos.x - _radius, _pos.y, _pos.z);
+    DirectX::XMFLOAT3 const ray1Dir(1.0f, 0.0f, 0.0f);
+    float ray1Len = _radius * 2;
+    if (DoesRayHit(ray1Start, ray1Dir, ray1Len))
+      return true;
+
+    DirectX::XMFLOAT3 const ray2Start(_pos.x, _pos.y, _pos.z - _radius);
+    DirectX::XMFLOAT3 const ray2Dir(0.0f, 0.0f, 1.0f);
+    float ray2Len = _radius * 2;
+    if (DoesRayHit(ray2Start, ray2Dir, ray2Len))
+      return true;
+
+    //
+    // Fence is ok
+    // Test against the shape
+
     SpherePackage sphere(_pos, _radius);
     DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
     return m_shape->SphereHit(&sphere, transform);
   }
 
-  //
-  // Fake this for now using 2 ray hits
-  // One running across the sphere in the x direction, the other in the z direction
 
-  DirectX::XMFLOAT3 const ray1Start(_pos.x - _radius, _pos.y, _pos.z);
-  DirectX::XMFLOAT3 const ray1Dir(1.0f, 0.0f, 0.0f);
-  float ray1Len = _radius * 2;
-  if (DoesRayHit(ray1Start, ray1Dir, ray1Len))
-    return true;
-
-  DirectX::XMFLOAT3 const ray2Start(_pos.x, _pos.y, _pos.z - _radius);
-  DirectX::XMFLOAT3 const ray2Dir(0.0f, 0.0f, 1.0f);
-  float ray2Len = _radius * 2;
-  if (DoesRayHit(ray2Start, ray2Dir, ray2Len))
-    return true;
-
-  //
-  // Fence is ok
-  // Test against the shape
-
-  SpherePackage sphere(_pos, _radius);
-  DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
-  return m_shape->SphereHit(&sphere, transform);
-}
-
-
-bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
-                            DirectX::XMFLOAT3* _norm)
-{
-  if (m_mode == ModeDisabled || g_editing)
+  bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                              DirectX::XMFLOAT3* _norm)
   {
+    if (m_mode == ModeDisabled || g_editing)
+    {
+      RayPackage ray(_rayStart, _rayDir, _rayLen);
+      DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
+      return m_shape->RayHit(&ray, transform, true);
+    }
+
+    if (m_nextLaserFenceId != -1 && m_status > 0.0f)
+    {
+      Building* nextFence = g_location->GetBuilding(m_nextLaserFenceId);
+      float maxHeight = GetFenceFullHeight();
+      float fenceHeight = maxHeight * m_status;
+      DirectX::XMFLOAT3 const pos1(m_pos.x, m_pos.y - fenceHeight / 3, m_pos.z);
+      DirectX::XMFLOAT3 const pos2(m_pos.x, m_pos.y + fenceHeight, m_pos.z);
+      DirectX::XMFLOAT3 const pos3(nextFence->m_pos.x, nextFence->m_pos.y - fenceHeight / 3, nextFence->m_pos.z);
+      DirectX::XMFLOAT3 const pos4(nextFence->m_pos.x, nextFence->m_pos.y + fenceHeight, nextFence->m_pos.z);
+
+      bool hitTri1 = false;
+      bool hitTri2 = false;
+
+      hitTri1 = RayTriIntersection(_rayStart, _rayDir, pos1, pos2, pos4, _rayLen, _pos);
+      if (!hitTri1)
+        hitTri2 = RayTriIntersection(_rayStart, _rayDir, pos4, pos3, pos1, _rayLen, _pos);
+
+      if (hitTri1 || hitTri2)
+      {
+        if (_norm)
+        {
+          DirectX::XMVECTOR const p1 = DirectX::XMLoadFloat3(&pos1);
+          DirectX::XMVECTOR const v1 = DirectX::XMVectorSubtract(p1, DirectX::XMLoadFloat3(&pos2));
+          DirectX::XMVECTOR const v2 = DirectX::XMVectorSubtract(p1, DirectX::XMLoadFloat3(&pos3));
+          DirectX::XMStoreFloat3(_norm, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(v2, v1)));
+        }
+        return true;
+      }
+    }
+
+    // return Building::DoesRayHit( _rayStart, _rayDir, _rayLen, _pos, _norm );
+
     RayPackage ray(_rayStart, _rayDir, _rayLen);
     DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
     return m_shape->RayHit(&ray, transform, true);
   }
 
-  if (m_nextLaserFenceId != -1 && m_status > 0.0f)
+
+  bool LaserFence::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
   {
-    Building* nextFence = g_location->GetBuilding(m_nextLaserFenceId);
-    float maxHeight = GetFenceFullHeight();
-    float fenceHeight = maxHeight * m_status;
-    DirectX::XMFLOAT3 const pos1(m_pos.x, m_pos.y - fenceHeight / 3, m_pos.z);
-    DirectX::XMFLOAT3 const pos2(m_pos.x, m_pos.y + fenceHeight, m_pos.z);
-    DirectX::XMFLOAT3 const pos3(nextFence->m_pos.x, nextFence->m_pos.y - fenceHeight / 3, nextFence->m_pos.z);
-    DirectX::XMFLOAT3 const pos4(nextFence->m_pos.x, nextFence->m_pos.y + fenceHeight, nextFence->m_pos.z);
-
-    bool hitTri1 = false;
-    bool hitTri2 = false;
-
-    hitTri1 = RayTriIntersection(_rayStart, _rayDir, pos1, pos2, pos4, _rayLen, _pos);
-    if (!hitTri1)
-      hitTri2 = RayTriIntersection(_rayStart, _rayDir, pos4, pos3, pos1, _rayLen, _pos);
-
-    if (hitTri1 || hitTri2)
-    {
-      if (_norm)
-      {
-        DirectX::XMVECTOR const p1 = DirectX::XMLoadFloat3(&pos1);
-        DirectX::XMVECTOR const v1 = DirectX::XMVectorSubtract(p1, DirectX::XMLoadFloat3(&pos2));
-        DirectX::XMVECTOR const v2 = DirectX::XMVectorSubtract(p1, DirectX::XMLoadFloat3(&pos3));
-        DirectX::XMStoreFloat3(_norm, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(v2, v1)));
-      }
-      return true;
-    }
+    // XMFLOAT4X4 numbers its rows: _41.._43 is the position.
+    return DoesSphereHit(DirectX::XMFLOAT3(_transform._41, _transform._42, _transform._43), _shape->m_rootFragment->m_radius);
   }
 
-  // return Building::DoesRayHit( _rayStart, _rayDir, _rayLen, _pos, _norm );
 
-  RayPackage ray(_rayStart, _rayDir, _rayLen);
-  DirectX::XMFLOAT4X4 transform = GetScaledWorldMatrix();
-  return m_shape->RayHit(&ray, transform, true);
-}
+  void LaserFence::ListSoundEvents(std::vector<const char*>* _list)
+  {
+    Building::ListSoundEvents(_list);
 
+    _list->push_back("Spark");
+    _list->push_back("Electrocute");
+  }
 
-bool LaserFence::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
-{
-  // XMFLOAT4X4 numbers its rows: _41.._43 is the position.
-  return DoesSphereHit(DirectX::XMFLOAT3(_transform._41, _transform._42, _transform._43), _shape->m_rootFragment->m_radius);
-}
+  DirectX::XMFLOAT3 LaserFence::GetTopPosition()
+  {
+    DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
 
-
-void LaserFence::ListSoundEvents(std::vector<const char*>* _list)
-{
-  Building::ListSoundEvents(_list);
-
-  _list->push_back("Spark");
-  _list->push_back("Electrocute");
-}
-
-DirectX::XMFLOAT3 LaserFence::GetTopPosition()
-{
-  DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
-
-  return m_marker2->GetWorldPosition(mat);
-}
+    return m_marker2->GetWorldPosition(mat);
+  }
+} // namespace Species

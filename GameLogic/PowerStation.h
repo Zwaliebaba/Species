@@ -2,7 +2,6 @@
 
 #include "Building.h"
 
-
 namespace Neuron
 {
   class Shape;
@@ -11,24 +10,25 @@ namespace Neuron
 } // namespace Neuron
 
 
-class Powerstation : public Building
+namespace Species
 {
-protected:
-    int					m_linkedBuildingId;
+  class Powerstation : public Building
+  {
+    protected:
+      int m_linkedBuildingId;
 
-public:
-    Powerstation		();
+    public:
+      Powerstation();
 
-	void Initialise		(Building *_template);
+      void Initialise(Building* _template);
 
-    bool Advance		();
-    void Render			(float predictionTime);
+      bool Advance();
+      void Render(float predictionTime);
 
-    int  GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
 
-	void Read( TextReader *_in, bool _dynamic );
-	void Write( FileWriter *out );
-};
-
-
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* out);
+  };
+} // namespace Species

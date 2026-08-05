@@ -34,434 +34,437 @@
 // Class PowerBuilding
 // ****************************************************************************
 
-PowerBuilding::PowerBuilding()
-  : Building(),
-    m_powerLink(-1),
-    m_powerLocation(nullptr)
-{
-}
 
-void PowerBuilding::Initialise(Building* _template)
+namespace Species
 {
-  Building::Initialise(_template);
-  m_powerLink = ((PowerBuilding*)_template)->m_powerLink;
-}
-
-DirectX::XMFLOAT3 PowerBuilding::GetPowerLocation()
-{
-  if (!m_powerLocation)
+  PowerBuilding::PowerBuilding()
+    : Building(),
+      m_powerLink(-1),
+      m_powerLocation(nullptr)
   {
-    m_powerLocation = m_shape->m_rootFragment->LookupMarker("MarkerPowerLocation");
-    DEBUG_ASSERT(m_powerLocation);
   }
 
-  DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
-  return m_powerLocation->GetWorldPosition(rootMat);
-}
-
-
-bool PowerBuilding::IsInView()
-{
-  Building* powerLink = g_location->GetBuilding(m_powerLink);
-
-  if (powerLink)
+  void PowerBuilding::Initialise(Building* _template)
   {
-    DirectX::XMVECTOR const theirCentre = DirectX::XMLoadFloat3(&powerLink->m_centrePos);
-    DirectX::XMVECTOR const ourCentre = DirectX::XMLoadFloat3(&m_centrePos);
-
-    DirectX::XMFLOAT3 midPoint;
-    DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirCentre, ourCentre), 0.5f));
-    float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirCentre, ourCentre))) / 2.0f;
-    radius += m_radius;
-
-    return (g_camera->SphereInViewFrustum(midPoint, radius));
+    Building::Initialise(_template);
+    m_powerLink = ((PowerBuilding*)_template)->m_powerLink;
   }
-  else
+
+  DirectX::XMFLOAT3 PowerBuilding::GetPowerLocation()
   {
-    return Building::IsInView();
+    if (!m_powerLocation)
+    {
+      m_powerLocation = m_shape->m_rootFragment->LookupMarker("MarkerPowerLocation");
+      DEBUG_ASSERT(m_powerLocation);
+    }
+
+    DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+    return m_powerLocation->GetWorldPosition(rootMat);
   }
-}
 
 
-void PowerBuilding::Render(float _predictionTime)
-{
-  DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
-  m_shape->Render(_predictionTime, mat);
-}
-
-
-void PowerBuilding::RenderAlphas(float _predictionTime)
-{
-  Building::RenderAlphas(_predictionTime);
-
-  Building* powerLink = g_location->GetBuilding(m_powerLink);
-  if (powerLink)
+  bool PowerBuilding::IsInView()
   {
-    //
-    // Render the power line itself
-    PowerBuilding* powerBuilding = (PowerBuilding*)powerLink;
+    Building* powerLink = g_location->GetBuilding(m_powerLink);
 
-    DirectX::XMFLOAT3 const ourPosStore = GetPowerLocation();
-    DirectX::XMFLOAT3 const theirPosStore = powerBuilding->GetPowerLocation();
-    DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&ourPosStore);
-    DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&theirPosStore);
-    DirectX::XMVECTOR const alongLine = DirectX::XMVectorSubtract(theirPos, ourPos);
+    if (powerLink)
+    {
+      DirectX::XMVECTOR const theirCentre = DirectX::XMLoadFloat3(&powerLink->m_centrePos);
+      DirectX::XMVECTOR const ourCentre = DirectX::XMLoadFloat3(&m_centrePos);
 
-    DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
-    DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
+      DirectX::XMFLOAT3 midPoint;
+      DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirCentre, ourCentre), 0.5f));
+      float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirCentre, ourCentre))) / 2.0f;
+      radius += m_radius;
 
-    // SetLength, which on a zero-length vector left (2, 0, 0); XMVector3Normalize
-    // yields QNaN there instead. That needs the camera exactly collinear with the
-    // power line, and it only degenerates one rendered quad, so this takes the
-    // native behaviour rather than reproducing the fallback -- the same call the
-    // three simulation sites in Entity, Citizen and Building do guard, because
-    // there the fallback is what terminates a push loop.
-    DirectX::XMVECTOR const ourPosRight =
-      DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, ourPos), alongLine)), 2.0f);
-    DirectX::XMVECTOR const theirPosRight =
-      DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, theirPos), alongLine)), 2.0f);
+      return (g_camera->SphereInViewFrustum(midPoint, radius));
+    }
+    else
+    {
+      return Building::IsInView();
+    }
+  }
 
-    glDisable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glDepthMask(false);
-    glColor4f(0.9f, 0.9f, 0.5f, 1.0f);
 
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  void PowerBuilding::Render(float _predictionTime)
+  {
+    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
+    m_shape->Render(_predictionTime, mat);
+  }
 
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.1f, 0);
-    EmitVertex(DirectX::XMVectorSubtract(ourPos, ourPosRight));
-    glTexCoord2f(0.1f, 1);
-    EmitVertex(DirectX::XMVectorAdd(ourPos, ourPosRight));
-    glTexCoord2f(0.9f, 1);
-    EmitVertex(DirectX::XMVectorAdd(theirPos, theirPosRight));
-    glTexCoord2f(0.9f, 0);
-    EmitVertex(DirectX::XMVectorSubtract(theirPos, theirPosRight));
-    glEnd();
 
-    //
-    // Render any surges
+  void PowerBuilding::RenderAlphas(float _predictionTime)
+  {
+    Building::RenderAlphas(_predictionTime);
 
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Starburst.bmp"));
+    Building* powerLink = g_location->GetBuilding(m_powerLink);
+    if (powerLink)
+    {
+      //
+      // Render the power line itself
+      PowerBuilding* powerBuilding = (PowerBuilding*)powerLink;
 
-    float surgeSize = 25.0f;
-    glColor4f(0.5f, 0.5f, 1.0f, 1.0f);
-    DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
-    DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
-    DirectX::XMVECTOR const camUp = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), surgeSize);
-    DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), surgeSize);
-    glBegin(GL_QUADS);
+      DirectX::XMFLOAT3 const ourPosStore = GetPowerLocation();
+      DirectX::XMFLOAT3 const theirPosStore = powerBuilding->GetPowerLocation();
+      DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&ourPosStore);
+      DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&theirPosStore);
+      DirectX::XMVECTOR const alongLine = DirectX::XMVectorSubtract(theirPos, ourPos);
+
+      DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
+      DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
+
+      // SetLength, which on a zero-length vector left (2, 0, 0); XMVector3Normalize
+      // yields QNaN there instead. That needs the camera exactly collinear with the
+      // power line, and it only degenerates one rendered quad, so this takes the
+      // native behaviour rather than reproducing the fallback -- the same call the
+      // three simulation sites in Entity, Citizen and Building do guard, because
+      // there the fallback is what terminates a push loop.
+      DirectX::XMVECTOR const ourPosRight =
+        DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, ourPos), alongLine)), 2.0f);
+      DirectX::XMVECTOR const theirPosRight =
+        DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, theirPos), alongLine)), 2.0f);
+
+      glDisable(GL_CULL_FACE);
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+      glDepthMask(false);
+      glColor4f(0.9f, 0.9f, 0.5f, 1.0f);
+
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+      glBegin(GL_QUADS);
+      glTexCoord2f(0.1f, 0);
+      EmitVertex(DirectX::XMVectorSubtract(ourPos, ourPosRight));
+      glTexCoord2f(0.1f, 1);
+      EmitVertex(DirectX::XMVectorAdd(ourPos, ourPosRight));
+      glTexCoord2f(0.9f, 1);
+      EmitVertex(DirectX::XMVectorAdd(theirPos, theirPosRight));
+      glTexCoord2f(0.9f, 0);
+      EmitVertex(DirectX::XMVectorSubtract(theirPos, theirPosRight));
+      glEnd();
+
+      //
+      // Render any surges
+
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Starburst.bmp"));
+
+      float surgeSize = 25.0f;
+      glColor4f(0.5f, 0.5f, 1.0f, 1.0f);
+      DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+      DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+      DirectX::XMVECTOR const camUp = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), surgeSize);
+      DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), surgeSize);
+      glBegin(GL_QUADS);
+      for (int i = 0; i < static_cast<int>(m_surges.size()); ++i)
+      {
+        float thisSurge = m_surges[i];
+        thisSurge += _predictionTime * 2;
+        if (thisSurge < 0.0f)
+          thisSurge = 0.0f;
+        if (thisSurge > 1.0f)
+          thisSurge = 1.0f;
+        DirectX::XMVECTOR const thisSurgePos = DirectX::XMVectorMultiplyAdd(alongLine, DirectX::XMVectorReplicate(thisSurge), ourPos);
+        glTexCoord2i(0, 0);
+        EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(thisSurgePos, camUp), camRight));
+        glTexCoord2i(1, 0);
+        EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(thisSurgePos, camUp), camRight));
+        glTexCoord2i(1, 1);
+        EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(thisSurgePos, camUp), camRight));
+        glTexCoord2i(0, 1);
+        EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(thisSurgePos, camUp), camRight));
+      }
+      glEnd();
+
+      glDisable(GL_TEXTURE_2D);
+      glDepthMask(true);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glDisable(GL_BLEND);
+      glEnable(GL_CULL_FACE);
+    }
+  }
+
+  bool PowerBuilding::Advance()
+  {
     for (int i = 0; i < static_cast<int>(m_surges.size()); ++i)
     {
-      float thisSurge = m_surges[i];
-      thisSurge += _predictionTime * 2;
-      if (thisSurge < 0.0f)
-        thisSurge = 0.0f;
-      if (thisSurge > 1.0f)
-        thisSurge = 1.0f;
-      DirectX::XMVECTOR const thisSurgePos = DirectX::XMVectorMultiplyAdd(alongLine, DirectX::XMVectorReplicate(thisSurge), ourPos);
-      glTexCoord2i(0, 0);
-      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(thisSurgePos, camUp), camRight));
-      glTexCoord2i(1, 0);
-      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(thisSurgePos, camUp), camRight));
-      glTexCoord2i(1, 1);
-      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(thisSurgePos, camUp), camRight));
-      glTexCoord2i(0, 1);
-      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(thisSurgePos, camUp), camRight));
-    }
-    glEnd();
-
-    glDisable(GL_TEXTURE_2D);
-    glDepthMask(true);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
-  }
-}
-
-bool PowerBuilding::Advance()
-{
-  for (int i = 0; i < static_cast<int>(m_surges.size()); ++i)
-  {
-    float* thisSurge = &m_surges[i];
-    *thisSurge += SERVER_ADVANCE_PERIOD * 2;
-    if (*thisSurge >= 1.0f)
-    {
-      m_surges.erase(m_surges.begin() + i);
-      --i;
-
-      Building* powerLink = g_location->GetBuilding(m_powerLink);
-      if (powerLink)
+      float* thisSurge = &m_surges[i];
+      *thisSurge += SERVER_ADVANCE_PERIOD * 2;
+      if (*thisSurge >= 1.0f)
       {
-        PowerBuilding* powerBuilding = (PowerBuilding*)powerLink;
-        powerBuilding->TriggerSurge(0.0f);
+        m_surges.erase(m_surges.begin() + i);
+        --i;
+
+        Building* powerLink = g_location->GetBuilding(m_powerLink);
+        if (powerLink)
+        {
+          PowerBuilding* powerBuilding = (PowerBuilding*)powerLink;
+          powerBuilding->TriggerSurge(0.0f);
+        }
       }
     }
+    return Building::Advance();
   }
-  return Building::Advance();
-}
 
-void PowerBuilding::TriggerSurge(float _initValue)
-{
-  m_surges.insert(m_surges.begin(), _initValue);
-
-  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "TriggerSurge");
-}
-
-
-void PowerBuilding::ListSoundEvents(std::vector<const char*>* _list)
-{
-  Building::ListSoundEvents(_list);
-
-  _list->push_back("TriggerSurge");
-}
-
-
-void PowerBuilding::Read(TextReader* _in, bool _dynamic)
-{
-  Building::Read(_in, _dynamic);
-  m_powerLink = atoi(_in->GetNextToken());
-}
-
-void PowerBuilding::Write(FileWriter* _out)
-{
-  Building::Write(_out);
-
-  _out->printf("%-8d", m_powerLink);
-}
-
-int PowerBuilding::GetBuildingLink() { return m_powerLink; }
-
-void PowerBuilding::SetBuildingLink(int _buildingId) { m_powerLink = _buildingId; }
-
-
-// ****************************************************************************
-// Class Generator
-// ****************************************************************************
-
-Generator::Generator()
-  : PowerBuilding(),
-    m_throughput(0.0f),
-    m_timerSync(0.0f),
-    m_numThisSecond(0),
-    m_enabled(false)
-{
-  m_type = TypeGenerator;
-  SetShape(g_resource->GetShape("Generator.shp"));
-
-  m_counter = m_shape->m_rootFragment->LookupMarker("MarkerCounter");
-}
-
-
-void Generator::TriggerSurge(float _initValue)
-{
-  if (m_enabled)
+  void PowerBuilding::TriggerSurge(float _initValue)
   {
-    PowerBuilding::TriggerSurge(_initValue);
-    ++m_numThisSecond;
+    m_surges.insert(m_surges.begin(), _initValue);
+
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "TriggerSurge");
   }
-}
 
 
-char const* Generator::GetObjectiveCounter()
-{
-  static char result[256];
-  sprintf(result, "%s : %d Gq/s", LANGUAGEPHRASE("objective_output"), int(m_throughput * 10));
-  return result;
-}
-
-
-void Generator::ReprogramComplete()
-{
-  m_enabled = true;
-  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Enable");
-}
-
-
-void Generator::ListSoundEvents(std::vector<const char*>* _list)
-{
-  PowerBuilding::ListSoundEvents(_list);
-
-  _list->push_back("Enable");
-}
-
-
-bool Generator::Advance()
-{
-  if (!m_enabled)
+  void PowerBuilding::ListSoundEvents(std::vector<const char*>* _list)
   {
-    m_surges.clear();
-    m_throughput = 0.0f;
-    m_numThisSecond = 0;
+    Building::ListSoundEvents(_list);
 
-    //
-    // Check to see if our control tower has been captured.
-    // This can happen if a user captures the control tower, exits the level and saves,
-    // then returns to the level.  The tower is captured and cannot be changed, but
-    // the m_enabled state of this building has been lost.
+    _list->push_back("TriggerSurge");
+  }
 
-    for (int i = 0; i < g_location->m_buildings.Size(); ++i)
+
+  void PowerBuilding::Read(TextReader* _in, bool _dynamic)
+  {
+    Building::Read(_in, _dynamic);
+    m_powerLink = atoi(_in->GetNextToken());
+  }
+
+  void PowerBuilding::Write(FileWriter* _out)
+  {
+    Building::Write(_out);
+
+    _out->printf("%-8d", m_powerLink);
+  }
+
+  int PowerBuilding::GetBuildingLink() { return m_powerLink; }
+
+  void PowerBuilding::SetBuildingLink(int _buildingId) { m_powerLink = _buildingId; }
+
+
+  // ****************************************************************************
+  // Class Generator
+  // ****************************************************************************
+
+  Generator::Generator()
+    : PowerBuilding(),
+      m_throughput(0.0f),
+      m_timerSync(0.0f),
+      m_numThisSecond(0),
+      m_enabled(false)
+  {
+    m_type = TypeGenerator;
+    SetShape(g_resource->GetShape("Generator.shp"));
+
+    m_counter = m_shape->m_rootFragment->LookupMarker("MarkerCounter");
+  }
+
+
+  void Generator::TriggerSurge(float _initValue)
+  {
+    if (m_enabled)
     {
-      if (g_location->m_buildings.ValidIndex(i))
+      PowerBuilding::TriggerSurge(_initValue);
+      ++m_numThisSecond;
+    }
+  }
+
+
+  char const* Generator::GetObjectiveCounter()
+  {
+    static char result[256];
+    sprintf(result, "%s : %d Gq/s", LANGUAGEPHRASE("objective_output"), int(m_throughput * 10));
+    return result;
+  }
+
+
+  void Generator::ReprogramComplete()
+  {
+    m_enabled = true;
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Enable");
+  }
+
+
+  void Generator::ListSoundEvents(std::vector<const char*>* _list)
+  {
+    PowerBuilding::ListSoundEvents(_list);
+
+    _list->push_back("Enable");
+  }
+
+
+  bool Generator::Advance()
+  {
+    if (!m_enabled)
+    {
+      m_surges.clear();
+      m_throughput = 0.0f;
+      m_numThisSecond = 0;
+
+      //
+      // Check to see if our control tower has been captured.
+      // This can happen if a user captures the control tower, exits the level and saves,
+      // then returns to the level.  The tower is captured and cannot be changed, but
+      // the m_enabled state of this building has been lost.
+
+      for (int i = 0; i < g_location->m_buildings.Size(); ++i)
       {
-        Building* building = g_location->m_buildings[i];
-        if (building && building->m_type == TypeControlTower)
+        if (g_location->m_buildings.ValidIndex(i))
         {
-          ControlTower* tower = (ControlTower*)building;
-          if (tower->GetBuildingLink() == m_id.GetUniqueId() && tower->m_id.GetTeamId() == m_id.GetTeamId())
+          Building* building = g_location->m_buildings[i];
+          if (building && building->m_type == TypeControlTower)
           {
-            m_enabled = true;
-            break;
+            ControlTower* tower = (ControlTower*)building;
+            if (tower->GetBuildingLink() == m_id.GetUniqueId() && tower->m_id.GetTeamId() == m_id.GetTeamId())
+            {
+              m_enabled = true;
+              break;
+            }
           }
         }
       }
     }
-  }
-  else
-  {
-    if (GetHighResTime() >= m_timerSync + 1.0f)
+    else
     {
-      float newAverage = m_numThisSecond;
-      m_numThisSecond = 0;
-      m_timerSync = GetHighResTime();
-      m_throughput = m_throughput * 0.8f + newAverage * 0.2f;
-    }
-
-    if (m_throughput > 6.5f)
-    {
-      GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
-      gb->m_online = true;
-    }
-  }
-
-  return PowerBuilding::Advance();
-}
-
-
-void Generator::Render(float _predictionTime)
-{
-  PowerBuilding::Render(_predictionTime);
-
-  // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,215,0), 10.0f, "NumThisSecond : %d", m_numThisSecond );
-
-  // if( m_enabled ) g_gameFont.DrawText3DCentre( m_pos + Vector3(0,180,0), 10.0f, "Enabled" );
-  // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,170,0), 10.0f, "Output : %d Gq/s", int(m_throughput*10.0f) );
-
-  DirectX::XMFLOAT4X4 generatorMat;
-  DirectX::XMStoreFloat4x4(&generatorMat,
-                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
-
-  // counter's own basis stays legacy here and converts when that seam closes.
-  DirectX::XMFLOAT4X4 counterMat = m_counter->GetWorldMatrix(generatorMat);
-
-  glColor4f(0.6f, 0.8f, 0.9f, 1.0f);
-  g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
-                        DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
-                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "%d", int(m_throughput * 10.0f));
-  // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
-  // operator^ was the cross product, and front x up is the RIGHT vector -- the
-  // opposite hand from GetRight()'s up x front, which is why it is spelled out
-  // in this order rather than reached for from elsewhere.
-  {
-    DirectX::XMVECTOR const front = DirectX::XMVectorSet(counterMat._31, counterMat._32, counterMat._33, 0.0f);
-    DirectX::XMVECTOR const up = DirectX::XMVectorSet(counterMat._21, counterMat._22, counterMat._23, 0.0f);
-    DirectX::XMVECTOR pos = DirectX::XMVectorSet(counterMat._41, counterMat._42, counterMat._43, 0.0f);
-    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, 0.1f));
-    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(DirectX::XMVector3Cross(front, up), 0.2f));
-    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(up, 0.2f));
-    counterMat._41 = DirectX::XMVectorGetX(pos);
-    counterMat._42 = DirectX::XMVectorGetY(pos);
-    counterMat._43 = DirectX::XMVectorGetZ(pos);
-  }
-  g_gameFont.SetRenderShadow(true);
-  glColor4f(0.6f, 0.8f, 0.9f, 0.0f);
-  g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
-                        DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
-                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "%d", int(m_throughput * 10.0f));
-  g_gameFont.SetRenderShadow(false);
-}
-
-
-// ****************************************************************************
-// Class Pylon
-// ****************************************************************************
-
-Pylon::Pylon()
-  : PowerBuilding()
-{
-  m_type = TypePylon;
-  SetShape(g_resource->GetShape("Pylon.shp"));
-}
-
-
-bool Pylon::Advance() { return PowerBuilding::Advance(); }
-
-
-// ****************************************************************************
-// Class PylonStart
-// ****************************************************************************
-
-PylonStart::PylonStart()
-  : PowerBuilding(),
-    m_reqBuildingId(-1)
-{
-  m_type = TypePylonStart;
-  SetShape(g_resource->GetShape("Pylon.shp"));
-};
-
-
-void PylonStart::Initialise(Building* _template)
-{
-  PowerBuilding::Initialise(_template);
-
-  m_reqBuildingId = ((PylonStart*)_template)->m_reqBuildingId;
-}
-
-
-bool PylonStart::Advance()
-{
-  //
-  // Is the Generator online?
-
-  bool generatorOnline = false;
-
-  int generatorLocationId = g_globalWorld->GetLocationId("generator");
-  GlobalBuilding* globalRefinery = nullptr;
-  for (auto const& gb : g_globalWorld->m_buildings)
-  {
-    if (gb && gb->m_locationId == generatorLocationId && gb->m_type == TypeGenerator && gb->m_online)
-    {
-      generatorOnline = true;
-      break;
-    }
-  }
-
-  if (generatorOnline)
-  {
-    //
-    // Is our required building online yet?
-    GlobalBuilding* globalBuilding = g_globalWorld->GetBuilding(m_reqBuildingId, g_locationId);
-    if (globalBuilding && globalBuilding->m_online)
-    {
-      if (syncfrand() > 0.7f)
+      if (GetHighResTime() >= m_timerSync + 1.0f)
       {
-        TriggerSurge(0.0f);
+        float newAverage = m_numThisSecond;
+        m_numThisSecond = 0;
+        m_timerSync = GetHighResTime();
+        m_throughput = m_throughput * 0.8f + newAverage * 0.2f;
+      }
+
+      if (m_throughput > 6.5f)
+      {
+        GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
+        gb->m_online = true;
       }
     }
+
+    return PowerBuilding::Advance();
   }
 
-  return PowerBuilding::Advance();
-}
+
+  void Generator::Render(float _predictionTime)
+  {
+    PowerBuilding::Render(_predictionTime);
+
+    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,215,0), 10.0f, "NumThisSecond : %d", m_numThisSecond );
+
+    // if( m_enabled ) g_gameFont.DrawText3DCentre( m_pos + Vector3(0,180,0), 10.0f, "Enabled" );
+    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,170,0), 10.0f, "Output : %d Gq/s", int(m_throughput*10.0f) );
+
+    DirectX::XMFLOAT4X4 generatorMat;
+    DirectX::XMStoreFloat4x4(&generatorMat,
+                             BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+    // counter's own basis stays legacy here and converts when that seam closes.
+    DirectX::XMFLOAT4X4 counterMat = m_counter->GetWorldMatrix(generatorMat);
+
+    glColor4f(0.6f, 0.8f, 0.9f, 1.0f);
+    g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
+                          DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
+                          DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "%d", int(m_throughput * 10.0f));
+    // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
+    // operator^ was the cross product, and front x up is the RIGHT vector -- the
+    // opposite hand from GetRight()'s up x front, which is why it is spelled out
+    // in this order rather than reached for from elsewhere.
+    {
+      DirectX::XMVECTOR const front = DirectX::XMVectorSet(counterMat._31, counterMat._32, counterMat._33, 0.0f);
+      DirectX::XMVECTOR const up = DirectX::XMVectorSet(counterMat._21, counterMat._22, counterMat._23, 0.0f);
+      DirectX::XMVECTOR pos = DirectX::XMVectorSet(counterMat._41, counterMat._42, counterMat._43, 0.0f);
+      pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, 0.1f));
+      pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(DirectX::XMVector3Cross(front, up), 0.2f));
+      pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(up, 0.2f));
+      counterMat._41 = DirectX::XMVectorGetX(pos);
+      counterMat._42 = DirectX::XMVectorGetY(pos);
+      counterMat._43 = DirectX::XMVectorGetZ(pos);
+    }
+    g_gameFont.SetRenderShadow(true);
+    glColor4f(0.6f, 0.8f, 0.9f, 0.0f);
+    g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
+                          DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
+                          DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "%d", int(m_throughput * 10.0f));
+    g_gameFont.SetRenderShadow(false);
+  }
 
 
-void PylonStart::RenderAlphas(float _predictionTime)
-{
-  PowerBuilding::RenderAlphas(_predictionTime);
+  // ****************************************************************************
+  // Class Pylon
+  // ****************************************************************************
+
+  Pylon::Pylon()
+    : PowerBuilding()
+  {
+    m_type = TypePylon;
+    SetShape(g_resource->GetShape("Pylon.shp"));
+  }
+
+
+  bool Pylon::Advance() { return PowerBuilding::Advance(); }
+
+
+  // ****************************************************************************
+  // Class PylonStart
+  // ****************************************************************************
+
+  PylonStart::PylonStart()
+    : PowerBuilding(),
+      m_reqBuildingId(-1)
+  {
+    m_type = TypePylonStart;
+    SetShape(g_resource->GetShape("Pylon.shp"));
+  };
+
+
+  void PylonStart::Initialise(Building* _template)
+  {
+    PowerBuilding::Initialise(_template);
+
+    m_reqBuildingId = ((PylonStart*)_template)->m_reqBuildingId;
+  }
+
+
+  bool PylonStart::Advance()
+  {
+    //
+    // Is the Generator online?
+
+    bool generatorOnline = false;
+
+    int generatorLocationId = g_globalWorld->GetLocationId("generator");
+    GlobalBuilding* globalRefinery = nullptr;
+    for (auto const& gb : g_globalWorld->m_buildings)
+    {
+      if (gb && gb->m_locationId == generatorLocationId && gb->m_type == TypeGenerator && gb->m_online)
+      {
+        generatorOnline = true;
+        break;
+      }
+    }
+
+    if (generatorOnline)
+    {
+      //
+      // Is our required building online yet?
+      GlobalBuilding* globalBuilding = g_globalWorld->GetBuilding(m_reqBuildingId, g_locationId);
+      if (globalBuilding && globalBuilding->m_online)
+      {
+        if (syncfrand() > 0.7f)
+        {
+          TriggerSurge(0.0f);
+        }
+      }
+    }
+
+    return PowerBuilding::Advance();
+  }
+
+
+  void PylonStart::RenderAlphas(float _predictionTime)
+  {
+    PowerBuilding::RenderAlphas(_predictionTime);
 
 #ifdef DEBUG_RENDER_ENABLED
   if (g_editing)
@@ -474,7 +477,7 @@ void PylonStart::RenderAlphas(float _predictionTime)
     }
   }
 #endif
-}
+  }
 
 
 void PylonStart::Read(TextReader* _in, bool _dynamic)
@@ -717,3 +720,4 @@ void SolarPanel::ListSoundEvents(std::vector<const char*>* _list)
 
   _list->push_back("Operate");
 }
+} // namespace Species

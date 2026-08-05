@@ -3,63 +3,68 @@
 #include "2dArray.h"
 #include "2dSurfaceMap.h"
 
-namespace Neuron
-{
-  class BitmapRGBA;
-  class RGBAColour;
-} // namespace Neuron
-class LandscapeFlattenArea;
-class Landscape;
-class LandscapeDef;
-class LandscapeRenderer;
 
 
 // ****************************************************************************
 // Class LandscapeTile
 // ****************************************************************************
 
-class LandscapeTile
+namespace Neuron
 {
-  public:
-    //          OUR DEFINITION DATA
-    float m_fractalDimension;
-    float m_heightScale;
-    float m_desiredHeight;
-    int m_generationMethod;
-    int m_randomSeed;
-    float m_lowlandSmoothingFactor;
-    int m_posX; // In world space
-    float m_posY;
-    int m_posZ;
-    float m_outsideHeight;
-    int m_guideGridPower; // Log to the base 2 of the resolution of the guide grid
-    int m_size;           // Size when copied into the main landscape,
-                          // (obviously in world space)
+  class BitmapRGBA;
+  class RGBAColour;
+} // namespace Neuron
 
-    Array2D<unsigned char>* m_guideGrid;
 
-    //          OUR GENERATED DATA
-    SurfaceMap2D<float>* m_heightMap; // Width and height of this must be equal and must be a power of 2 + 1
-    float m_compensatedHeightScale;
+namespace Species
+{
+  class LandscapeFlattenArea;
+  class Landscape;
+  class LandscapeDef;
+  class LandscapeRenderer;
 
-  protected:
-    int GetPowerOfTwo(int x);
-    float GenerateNoise(float _halfSize, float _height);
-    void GenerateDiamondMidpoint(int _x, int _z, int _halfSize);
-    void GenerateSquareMidpoint(int _x, int _z, int _halfSize);
-    void GenerateMidpoints(int _x1, int _x2, int _z1, int _z2);
+  class LandscapeTile
+  {
+    public:
+      //          OUR DEFINITION DATA
+      float m_fractalDimension;
+      float m_heightScale;
+      float m_desiredHeight;
+      int m_generationMethod;
+      int m_randomSeed;
+      float m_lowlandSmoothingFactor;
+      int m_posX; // In world space
+      float m_posY;
+      int m_posZ;
+      float m_outsideHeight;
+      int m_guideGridPower; // Log to the base 2 of the resolution of the guide grid
+      int m_size;           // Size when copied into the main landscape,
+                            // (obviously in world space)
 
-  public:
-    LandscapeTile();
-    ~LandscapeTile();
+      Array2D<unsigned char>* m_guideGrid;
 
-    void GuideGridSetPower(int _power);
-    int GuideGridGetPower();
-    char* GuideGridToString();
-    void GuideGridFromString(char* _hex);
+      //          OUR GENERATED DATA
+      SurfaceMap2D<float>* m_heightMap; // Width and height of this must be equal and must be a power of 2 + 1
+      float m_compensatedHeightScale;
 
-    void Generate(LandscapeDef* _def);
-};
+    protected:
+      int GetPowerOfTwo(int x);
+      float GenerateNoise(float _halfSize, float _height);
+      void GenerateDiamondMidpoint(int _x, int _z, int _halfSize);
+      void GenerateSquareMidpoint(int _x, int _z, int _halfSize);
+      void GenerateMidpoints(int _x1, int _x2, int _z1, int _z2);
+
+    public:
+      LandscapeTile();
+      ~LandscapeTile();
+
+      void GuideGridSetPower(int _power);
+      int GuideGridGetPower();
+      char* GuideGridToString();
+      void GuideGridFromString(char* _hex);
+
+      void Generate(LandscapeDef* _def);
+  };
 
 #define LIGHTMAP_SCALEFACTOR 1
 
@@ -114,3 +119,4 @@ class Landscape
     bool RayHitCell(int x0, int z0, DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, DirectX::XMFLOAT3* _result) const;
     float SphereHit(DirectX::XMFLOAT3 const& _centre, float _radius) const;
 };
+} // namespace Species

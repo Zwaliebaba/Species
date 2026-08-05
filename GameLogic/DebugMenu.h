@@ -3,26 +3,28 @@
 #include "SpeciesWindow.h"
 
 
-class DebugMenu : public SpeciesWindow
+namespace Species
 {
-public:
-    DebugMenu( char *name );
+  class DebugMenu : public SpeciesWindow
+  {
+    public:
+      DebugMenu(char* name);
 
-	void Advance();
-    void Create();
-	void Render(bool hasFocus);
-};
+      void Advance();
+      void Create();
+      void Render(bool hasFocus);
+  };
 
 
-class DebugKeyBindings
-{
-public:
-	static void DebugMenu();
-	static void NetworkButton();
-	static void DebugCameraButton();
-	static void FollowCameraButton();
-	static void FPSButton();
-	static void InputLogButton();
+  class DebugKeyBindings
+  {
+    public:
+      static void DebugMenu();
+      static void NetworkButton();
+      static void DebugCameraButton();
+      static void FollowCameraButton();
+      static void FPSButton();
+      static void InputLogButton();
 #ifdef PROFILER_ENABLED
 	static void ProfileButton();
 #endif
@@ -34,6 +36,5 @@ public:
 #endif
 	static void ReallyQuitButton();
 	static void ToggleFullscreenButton();
-};
-
-
+  };
+} // namespace Species

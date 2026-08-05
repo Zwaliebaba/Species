@@ -8,16 +8,16 @@
 
 namespace Neuron
 {
-  Location* g_location = nullptr;
+  Species::Location* g_location = nullptr;
   LocationAccess* g_locationAccess = nullptr;
   WorldTypeNames* g_worldTypeNames = nullptr;
-  GlobalWorld* g_globalWorld = nullptr;
+  Species::GlobalWorld* g_globalWorld = nullptr;
   CameraAccess* g_camera = nullptr;
   RendererAccess* g_renderer = nullptr;
-  ParticleSystem* g_particleSystem = nullptr;
+  Species::ParticleSystem* g_particleSystem = nullptr;
   LocationEditorAccess* g_locationEditor = nullptr;
   GameCursorAccess* g_gameCursor = nullptr;
-  TaskManager* g_taskManager = nullptr;
+  Species::TaskManager* g_taskManager = nullptr;
   TaskManagerInterfaceAccess* g_taskManagerInterface = nullptr;
   ScriptAccess* g_script = nullptr;
   UserInputAccess* g_userInput = nullptr;

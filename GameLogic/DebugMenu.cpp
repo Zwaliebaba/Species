@@ -24,11 +24,15 @@
 // ****************************************************************************
 
 #ifdef PROFILER_ENABLED
-class ProfileButton : public SpeciesButton
+
+
+namespace Species
 {
-  public:
-    void MouseUp() { DebugKeyBindings::ProfileButton(); }
-};
+  class ProfileButton : public SpeciesButton
+  {
+    public:
+      void MouseUp() { DebugKeyBindings::ProfileButton(); }
+  };
 #endif // PROFILER_ENABLED
 
 
@@ -295,3 +299,4 @@ void DebugKeyBindings::ToggleFullscreenButton()
   bool switchingToWindowed;
   SetWindowed(!g_windowManager->Windowed(), true, switchingToWindowed);
 }
+} // namespace Species

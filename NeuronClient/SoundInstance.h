@@ -4,8 +4,10 @@
 #include "SoundParameter.h"
 #include "WorldObjectId.h"
 
-class WorldObject;
-
+namespace Species
+{
+  class WorldObject;
+} // namespace Species
 
 
 // ============================================================================

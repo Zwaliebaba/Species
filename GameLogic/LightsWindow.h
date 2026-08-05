@@ -9,14 +9,17 @@
 // Class LightsEditWindow
 // ****************************************************************************
 
-class LightsEditWindow: public SpeciesWindow
-{
-public:
-    LightsEditWindow( char const *name );
-	~LightsEditWindow();
 
-	void Create();
-};
+namespace Species
+{
+  class LightsEditWindow : public SpeciesWindow
+  {
+    public:
+      LightsEditWindow(char const* name);
+      ~LightsEditWindow();
+
+      void Create();
+  };
 
 #endif // LOCATION_EDITOR
-
+} // namespace Species

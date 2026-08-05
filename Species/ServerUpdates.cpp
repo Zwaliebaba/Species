@@ -26,88 +26,92 @@
 // conditions. It is reachable from the client's advance loop, so changing what it
 // does changes what the simulation computes. See CODING_STANDARDS.md, Determinism.
 
-void ProcessServerUpdates(ServerToClientLetter* _letter)
+
+namespace Species
 {
-  DEBUG_ASSERT(_letter->m_type == ServerToClientLetter::LetterType::Update);
-
-  for (int i = 0; i < static_cast<int>(_letter->m_updates.size()); ++i)
+  void ProcessServerUpdates(ServerToClientLetter* _letter)
   {
-    NetworkUpdate* update = _letter->m_updates[i];
+    DEBUG_ASSERT(_letter->m_type == ServerToClientLetter::LetterType::Update);
 
-    switch (update->m_type)
+    for (int i = 0; i < static_cast<int>(_letter->m_updates.size()); ++i)
     {
-    case NetworkUpdate::UpdateType::Alive:
-      g_location->UpdateTeam(update->m_teamId, update->m_teamControls);
-      break;
+      NetworkUpdate* update = _letter->m_updates[i];
 
-    case NetworkUpdate::UpdateType::Pause:
-      g_paused = !g_paused;
-      break;
-
-    case NetworkUpdate::UpdateType::SelectUnit:
-      g_location->m_teams[update->m_teamId].SelectUnit(update->m_unitId, update->m_entityId, update->m_buildingId);
-      g_taskManager->SelectTask(WorldObjectId(update->m_teamId, update->m_unitId, update->m_entityId, -1));
-      break;
-
-    case NetworkUpdate::UpdateType::CreateUnit:
-    {
-      Building* building = g_location->GetBuilding(update->m_buildingId);
-      if (building && building->m_type == Building::TypeFactory)
+      switch (update->m_type)
       {
-        Factory* factory = (Factory*)building;
-        factory->RequestUnit(update->m_entityType, update->m_numTroops);
-      }
-      else
+      case NetworkUpdate::UpdateType::Alive:
+        g_location->UpdateTeam(update->m_teamId, update->m_teamControls);
+        break;
+
+      case NetworkUpdate::UpdateType::Pause:
+        g_paused = !g_paused;
+        break;
+
+      case NetworkUpdate::UpdateType::SelectUnit:
+        g_location->m_teams[update->m_teamId].SelectUnit(update->m_unitId, update->m_entityId, update->m_buildingId);
+        g_taskManager->SelectTask(WorldObjectId(update->m_teamId, update->m_unitId, update->m_entityId, -1));
+        break;
+
+      case NetworkUpdate::UpdateType::CreateUnit:
       {
-        // Vector3::operator!= was a per-component NearlyEquals at 1e-6, which is
-        // what this assert has always meant. XMVector3NearEqual is the native
-        // spelling of exactly that, with the same per-component epsilon.
-        DirectX::XMFLOAT3 const worldPos = update->GetWorldPos();
-        DEBUG_ASSERT(!DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&worldPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)));
-        int unitId;
-        // The returned Unit* was assigned to an unused local in the original.
-        // Dropping the variable keeps the call and its side effects.
-        g_location->m_teams[update->m_teamId].NewUnit(update->m_entityType, update->m_numTroops, &unitId, update->GetWorldPos());
-        DirectX::XMFLOAT3 const noVelocity(0.0f, 0.0f, 0.0f);
-        g_location->SpawnEntities(update->GetWorldPos(), update->m_teamId, unitId, update->m_entityType, update->m_numTroops, noVelocity,
-                                  update->m_numTroops * 2);
+        Building* building = g_location->GetBuilding(update->m_buildingId);
+        if (building && building->m_type == Building::TypeFactory)
+        {
+          Factory* factory = (Factory*)building;
+          factory->RequestUnit(update->m_entityType, update->m_numTroops);
+        }
+        else
+        {
+          // Vector3::operator!= was a per-component NearlyEquals at 1e-6, which is
+          // what this assert has always meant. XMVector3NearEqual is the native
+          // spelling of exactly that, with the same per-component epsilon.
+          DirectX::XMFLOAT3 const worldPos = update->GetWorldPos();
+          DEBUG_ASSERT(!DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&worldPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)));
+          int unitId;
+          // The returned Unit* was assigned to an unused local in the original.
+          // Dropping the variable keeps the call and its side effects.
+          g_location->m_teams[update->m_teamId].NewUnit(update->m_entityType, update->m_numTroops, &unitId, update->GetWorldPos());
+          DirectX::XMFLOAT3 const noVelocity(0.0f, 0.0f, 0.0f);
+          g_location->SpawnEntities(update->GetWorldPos(), update->m_teamId, unitId, update->m_entityType, update->m_numTroops, noVelocity,
+                                    update->m_numTroops * 2);
+        }
+        break;
       }
-      break;
-    }
 
-    case NetworkUpdate::UpdateType::AimBuilding:
-    {
-      Building* building = g_location->GetBuilding(update->m_buildingId);
-      if (building && building->m_id.GetTeamId() == update->m_teamId && building->m_type == Building::TypeRadarDish)
+      case NetworkUpdate::UpdateType::AimBuilding:
       {
-        RadarDish* radarDish = (RadarDish*)building;
-        radarDish->Aim(update->GetWorldPos());
+        Building* building = g_location->GetBuilding(update->m_buildingId);
+        if (building && building->m_id.GetTeamId() == update->m_teamId && building->m_type == Building::TypeRadarDish)
+        {
+          RadarDish* radarDish = (RadarDish*)building;
+          radarDish->Aim(update->GetWorldPos());
+        }
+        break;
       }
-      break;
-    }
 
-    case NetworkUpdate::UpdateType::ToggleLaserFence:
-    {
-      Building* building = g_location->GetBuilding(update->m_buildingId);
-      if (building && building->m_type == Building::TypeLaserFence)
+      case NetworkUpdate::UpdateType::ToggleLaserFence:
       {
-        LaserFence* laserfence = (LaserFence*)building;
-        laserfence->Toggle();
+        Building* building = g_location->GetBuilding(update->m_buildingId);
+        if (building && building->m_type == Building::TypeLaserFence)
+        {
+          LaserFence* laserfence = (LaserFence*)building;
+          laserfence->Toggle();
+        }
+        break;
       }
-      break;
-    }
 
-    case NetworkUpdate::UpdateType::RunProgram:
-    {
-      g_taskManager->RunTask(update->m_program);
-      break;
-    }
+      case NetworkUpdate::UpdateType::RunProgram:
+      {
+        g_taskManager->RunTask(update->m_program);
+        break;
+      }
 
-    case NetworkUpdate::UpdateType::TargetProgram:
-    {
-      int programId = update->m_program;
-      g_taskManager->TargetTask(programId, update->GetWorldPos());
-    }
+      case NetworkUpdate::UpdateType::TargetProgram:
+      {
+        int programId = update->m_program;
+        g_taskManager->TargetTask(programId, update->GetWorldPos());
+      }
+      }
     }
   }
-}
+} // namespace Species

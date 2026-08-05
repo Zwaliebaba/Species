@@ -31,929 +31,932 @@
 #include "AppState.h"
 
 
-Shape* FuelBuilding::s_fuelPipe = nullptr;
-
-
-FuelBuilding::FuelBuilding()
-  : Building(),
-    m_fuelLink(-1),
-    m_currentLevel(0.0f),
-    m_fuelMarker(nullptr)
+namespace Species
 {
-  if (!s_fuelPipe)
+  Shape* FuelBuilding::s_fuelPipe = nullptr;
+
+
+  FuelBuilding::FuelBuilding()
+    : Building(),
+      m_fuelLink(-1),
+      m_currentLevel(0.0f),
+      m_fuelMarker(nullptr)
   {
-    s_fuelPipe = g_resource->GetShape("FuelPipe.shp");
-    DEBUG_ASSERT(s_fuelPipe);
-  }
-}
-
-
-void FuelBuilding::Initialise(Building* _template)
-{
-  Building::Initialise(_template);
-
-  m_fuelLink = ((FuelBuilding*)_template)->m_fuelLink;
-}
-
-
-DirectX::XMFLOAT3 FuelBuilding::GetFuelPosition()
-{
-  if (!m_fuelMarker)
-  {
-    m_fuelMarker = m_shape->m_rootFragment->LookupMarker("MarkerFuel");
-    DEBUG_ASSERT(m_fuelMarker);
-  }
-
-  DirectX::XMFLOAT4X4 mat;
-  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
-
-  // rows are Vector3. Returning .pos runs the seam's conversion on the way out.
-  return m_fuelMarker->GetWorldPosition(mat);
-}
-
-
-void FuelBuilding::ProvideFuel(float _level)
-{
-  float factor2 = 0.2f * SERVER_ADVANCE_PERIOD;
-  float factor1 = 1.0f - factor2;
-
-  m_currentLevel = m_currentLevel * factor1 + _level * factor2;
-
-  m_currentLevel = std::min(m_currentLevel, 1.0f);
-  m_currentLevel = std::max(m_currentLevel, 0.0f);
-}
-
-
-FuelBuilding* FuelBuilding::GetLinkedBuilding()
-{
-  Building* building = g_location->GetBuilding(m_fuelLink);
-  if (building)
-  {
-    if (building->m_type == TypeFuelGenerator || building->m_type == TypeFuelPipe || building->m_type == TypeEscapeRocket ||
-        building->m_type == TypeFuelStation)
+    if (!s_fuelPipe)
     {
-      FuelBuilding* fuelBuilding = (FuelBuilding*)building;
-      return fuelBuilding;
+      s_fuelPipe = g_resource->GetShape("FuelPipe.shp");
+      DEBUG_ASSERT(s_fuelPipe);
     }
   }
 
-  return nullptr;
-}
 
-
-bool FuelBuilding::Advance()
-{
-  FuelBuilding* fuelBuilding = GetLinkedBuilding();
-  if (fuelBuilding)
+  void FuelBuilding::Initialise(Building* _template)
   {
-    fuelBuilding->ProvideFuel(m_currentLevel);
+    Building::Initialise(_template);
+
+    m_fuelLink = ((FuelBuilding*)_template)->m_fuelLink;
   }
 
-  return Building::Advance();
-}
 
-
-bool FuelBuilding::IsInView()
-{
-  FuelBuilding* fuelBuilding = GetLinkedBuilding();
-
-  if (fuelBuilding)
+  DirectX::XMFLOAT3 FuelBuilding::GetFuelPosition()
   {
-    DirectX::XMFLOAT3 const ourPipePosStore = GetFuelPosition();
-    DirectX::XMFLOAT3 const theirPipePosStore = fuelBuilding->GetFuelPosition();
-    DirectX::XMVECTOR const ourPipePos = DirectX::XMLoadFloat3(&ourPipePosStore);
-    DirectX::XMVECTOR const theirPipePos = DirectX::XMLoadFloat3(&theirPipePosStore);
+    if (!m_fuelMarker)
+    {
+      m_fuelMarker = m_shape->m_rootFragment->LookupMarker("MarkerFuel");
+      DEBUG_ASSERT(m_fuelMarker);
+    }
 
-    DirectX::XMFLOAT3 midPoint;
-    DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirPipePos, ourPipePos), 0.5f));
-    float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirPipePos, ourPipePos))) / 2.0f;
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
-    radius += m_radius;
-
-    return (g_camera->SphereInViewFrustum(midPoint, radius));
+    // rows are Vector3. Returning .pos runs the seam's conversion on the way out.
+    return m_fuelMarker->GetWorldPosition(mat);
   }
-  else
+
+
+  void FuelBuilding::ProvideFuel(float _level)
   {
-    return Building::IsInView();
+    float factor2 = 0.2f * SERVER_ADVANCE_PERIOD;
+    float factor1 = 1.0f - factor2;
+
+    m_currentLevel = m_currentLevel * factor1 + _level * factor2;
+
+    m_currentLevel = std::min(m_currentLevel, 1.0f);
+    m_currentLevel = std::max(m_currentLevel, 0.0f);
   }
-}
 
 
-void FuelBuilding::Render(float _predictionTime)
-{
-  Building::Render(_predictionTime);
-
-  FuelBuilding* fuelBuilding = GetLinkedBuilding();
-  if (fuelBuilding)
+  FuelBuilding* FuelBuilding::GetLinkedBuilding()
   {
-    DirectX::XMFLOAT3 const ourPipePosStore = GetFuelPosition();
-    DirectX::XMFLOAT3 const theirPipePosStore = fuelBuilding->GetFuelPosition();
-    DirectX::XMVECTOR const ourPipeStart = DirectX::XMLoadFloat3(&ourPipePosStore);
+    Building* building = g_location->GetBuilding(m_fuelLink);
+    if (building)
+    {
+      if (building->m_type == TypeFuelGenerator || building->m_type == TypeFuelPipe || building->m_type == TypeEscapeRocket ||
+          building->m_type == TypeFuelStation)
+      {
+        FuelBuilding* fuelBuilding = (FuelBuilding*)building;
+        return fuelBuilding;
+      }
+    }
 
-    // Native Normalise behaviour, per NeuronMath.h: no (0,0,1) fallback. The one
-    // way this sees a zero-length input is a level whose m_fuelLink points a
-    // building at itself, which would already be a broken link.
-    DirectX::XMVECTOR const pipeVector =
-      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&theirPipePosStore), ourPipeStart));
-
-    // operator^ was the cross product. g_upVector is still a Vector3 and cannot
-    // be loaded by address; g_XMIdentityR1 is the (0,1,0,0) it holds.
-    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(pipeVector, DirectX::g_XMIdentityR1);
-    DirectX::XMVECTOR const up = DirectX::XMVector3Cross(pipeVector, right);
-
-    DirectX::XMVECTOR const pipePos = DirectX::XMVectorMultiplyAdd(pipeVector, DirectX::XMVectorReplicate(10.0f), ourPipeStart);
-
-    // Matrix34(_f, _u, _pos): `up` is the FRONT argument here and pipeVector the
-    // UP one, which is how the legacy call read. Not a transposition.
-    DirectX::XMFLOAT4X4 pipeMat;
-    DirectX::XMStoreFloat4x4(&pipeMat, BasisFromFrontAndUp(up, pipeVector, pipePos));
-    DEBUG_ASSERT(s_fuelPipe);
-    s_fuelPipe->Render(_predictionTime, pipeMat);
+    return nullptr;
   }
-}
 
 
-void FuelBuilding::RenderAlphas(float _predictionTime)
-{
-  Building::RenderAlphas(_predictionTime);
-
-  if (m_currentLevel > 0.0f)
+  bool FuelBuilding::Advance()
   {
     FuelBuilding* fuelBuilding = GetLinkedBuilding();
     if (fuelBuilding)
     {
-      DirectX::XMFLOAT3 const startPosStore = GetFuelPosition();
-      DirectX::XMFLOAT3 const endPosStore = fuelBuilding->GetFuelPosition();
-      DirectX::XMVECTOR const startPos = DirectX::XMLoadFloat3(&startPosStore);
-      DirectX::XMVECTOR const endPos = DirectX::XMLoadFloat3(&endPosStore);
+      fuelBuilding->ProvideFuel(m_currentLevel);
+    }
 
-      DirectX::XMVECTOR const midPos = DirectX::XMVectorScale(DirectX::XMVectorAdd(startPos, endPos), 0.5f);
+    return Building::Advance();
+  }
 
-      DirectX::XMFLOAT3 const camPos = g_camera->GetPos();
 
-      // operator^ was the cross product; SetLength is normalise-then-scale.
-      DirectX::XMVECTOR rightAngle =
-        DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPos), midPos), DirectX::XMVectorSubtract(startPos, endPos));
-      rightAngle = DirectX::XMVectorScale(DirectX::XMVector3Normalize(rightAngle), 25.0f);
+  bool FuelBuilding::IsInView()
+  {
+    FuelBuilding* fuelBuilding = GetLinkedBuilding();
 
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Fuel.bmp"));
-      glEnable(GL_TEXTURE_2D);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-      glDepthMask(false);
+    if (fuelBuilding)
+    {
+      DirectX::XMFLOAT3 const ourPipePosStore = GetFuelPosition();
+      DirectX::XMFLOAT3 const theirPipePosStore = fuelBuilding->GetFuelPosition();
+      DirectX::XMVECTOR const ourPipePos = DirectX::XMLoadFloat3(&ourPipePosStore);
+      DirectX::XMVECTOR const theirPipePos = DirectX::XMLoadFloat3(&theirPipePosStore);
 
-      float tx = g_gameTime * -0.5f;
-      float tw = 1.0f;
+      DirectX::XMFLOAT3 midPoint;
+      DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirPipePos, ourPipePos), 0.5f));
+      float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirPipePos, ourPipePos))) / 2.0f;
 
-      glColor4f(1.0f, 0.4f, 0.1f, 0.4f * m_currentLevel);
+      radius += m_radius;
 
-      float nearPlaneStart = g_renderer->GetNearPlane();
-      g_camera->SetupProjectionMatrix(nearPlaneStart * 1.2f, g_renderer->GetFarPlane());
+      return (g_camera->SphereInViewFrustum(midPoint, radius));
+    }
+    else
+    {
+      return Building::IsInView();
+    }
+  }
 
-      int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail");
-      float maxLoops = 4 - buildingDetail;
-      maxLoops = std::max(maxLoops, 1.0f);
-      maxLoops = std::min(maxLoops, 3.0f);
 
-      for (int i = 0; i < maxLoops; ++i)
+  void FuelBuilding::Render(float _predictionTime)
+  {
+    Building::Render(_predictionTime);
+
+    FuelBuilding* fuelBuilding = GetLinkedBuilding();
+    if (fuelBuilding)
+    {
+      DirectX::XMFLOAT3 const ourPipePosStore = GetFuelPosition();
+      DirectX::XMFLOAT3 const theirPipePosStore = fuelBuilding->GetFuelPosition();
+      DirectX::XMVECTOR const ourPipeStart = DirectX::XMLoadFloat3(&ourPipePosStore);
+
+      // Native Normalise behaviour, per NeuronMath.h: no (0,0,1) fallback. The one
+      // way this sees a zero-length input is a level whose m_fuelLink points a
+      // building at itself, which would already be a broken link.
+      DirectX::XMVECTOR const pipeVector =
+        DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&theirPipePosStore), ourPipeStart));
+
+      // operator^ was the cross product. g_upVector is still a Vector3 and cannot
+      // be loaded by address; g_XMIdentityR1 is the (0,1,0,0) it holds.
+      DirectX::XMVECTOR const right = DirectX::XMVector3Cross(pipeVector, DirectX::g_XMIdentityR1);
+      DirectX::XMVECTOR const up = DirectX::XMVector3Cross(pipeVector, right);
+
+      DirectX::XMVECTOR const pipePos = DirectX::XMVectorMultiplyAdd(pipeVector, DirectX::XMVectorReplicate(10.0f), ourPipeStart);
+
+      // Matrix34(_f, _u, _pos): `up` is the FRONT argument here and pipeVector the
+      // UP one, which is how the legacy call read. Not a transposition.
+      DirectX::XMFLOAT4X4 pipeMat;
+      DirectX::XMStoreFloat4x4(&pipeMat, BasisFromFrontAndUp(up, pipeVector, pipePos));
+      DEBUG_ASSERT(s_fuelPipe);
+      s_fuelPipe->Render(_predictionTime, pipeMat);
+    }
+  }
+
+
+  void FuelBuilding::RenderAlphas(float _predictionTime)
+  {
+    Building::RenderAlphas(_predictionTime);
+
+    if (m_currentLevel > 0.0f)
+    {
+      FuelBuilding* fuelBuilding = GetLinkedBuilding();
+      if (fuelBuilding)
       {
-        glBegin(GL_QUADS);
-        glTexCoord2f(tx, 0);
-        EmitVertex(DirectX::XMVectorSubtract(startPos, rightAngle));
-        glTexCoord2f(tx, 1);
-        EmitVertex(DirectX::XMVectorAdd(startPos, rightAngle));
-        glTexCoord2f(tx + tw, 1);
-        EmitVertex(DirectX::XMVectorAdd(endPos, rightAngle));
-        glTexCoord2f(tx + tw, 0);
-        EmitVertex(DirectX::XMVectorSubtract(endPos, rightAngle));
-        glEnd();
-        rightAngle = DirectX::XMVectorScale(rightAngle, 0.7f);
-      }
+        DirectX::XMFLOAT3 const startPosStore = GetFuelPosition();
+        DirectX::XMFLOAT3 const endPosStore = fuelBuilding->GetFuelPosition();
+        DirectX::XMVECTOR const startPos = DirectX::XMLoadFloat3(&startPosStore);
+        DirectX::XMVECTOR const endPos = DirectX::XMLoadFloat3(&endPosStore);
 
-      g_camera->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
+        DirectX::XMVECTOR const midPos = DirectX::XMVectorScale(DirectX::XMVectorAdd(startPos, endPos), 0.5f);
 
-      glEnable(GL_DEPTH_TEST);
-      glDisable(GL_TEXTURE_2D);
-    }
-  }
+        DirectX::XMFLOAT3 const camPos = g_camera->GetPos();
 
-  //    glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-  //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,70,0), 5, "Fuel Pressure : %2.2f", m_currentLevel );
-}
+        // operator^ was the cross product; SetLength is normalise-then-scale.
+        DirectX::XMVECTOR rightAngle =
+          DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPos), midPos), DirectX::XMVectorSubtract(startPos, endPos));
+        rightAngle = DirectX::XMVectorScale(DirectX::XMVector3Normalize(rightAngle), 25.0f);
 
+        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Fuel.bmp"));
+        glEnable(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glDepthMask(false);
 
-void FuelBuilding::Read(TextReader* _in, bool _dynamic)
-{
-  Building::Read(_in, _dynamic);
+        float tx = g_gameTime * -0.5f;
+        float tw = 1.0f;
 
-  m_fuelLink = atoi(_in->GetNextToken());
-}
+        glColor4f(1.0f, 0.4f, 0.1f, 0.4f * m_currentLevel);
 
+        float nearPlaneStart = g_renderer->GetNearPlane();
+        g_camera->SetupProjectionMatrix(nearPlaneStart * 1.2f, g_renderer->GetFarPlane());
 
-void FuelBuilding::Write(FileWriter* _out)
-{
-  Building::Write(_out);
+        int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail");
+        float maxLoops = 4 - buildingDetail;
+        maxLoops = std::max(maxLoops, 1.0f);
+        maxLoops = std::min(maxLoops, 3.0f);
 
-  _out->printf("%6d ", m_fuelLink);
-}
-
-
-int FuelBuilding::GetBuildingLink() { return m_fuelLink; }
-
-
-void FuelBuilding::SetBuildingLink(int _buildingId) { m_fuelLink = _buildingId; }
-
-void FuelBuilding::Destroy(float _intensity)
-{
-  Building::Destroy(_intensity);
-  FuelBuilding* fuelBuilding = GetLinkedBuilding();
-
-  if (fuelBuilding)
-  {
-    DirectX::XMFLOAT3 const ourPipePosStore = GetFuelPosition();
-    DirectX::XMFLOAT3 const theirPipePosStore = fuelBuilding->GetFuelPosition();
-    DirectX::XMVECTOR const ourPipeStart = DirectX::XMLoadFloat3(&ourPipePosStore);
-
-    // Native Normalise behaviour; see FuelBuilding::Render for the one input
-    // that could be zero-length.
-    DirectX::XMVECTOR const pipeVector =
-      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&theirPipePosStore), ourPipeStart));
-
-    // operator^ was the cross product; g_XMIdentityR1 is the (0,1,0,0) that
-    // g_upVector holds.
-    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(pipeVector, DirectX::g_XMIdentityR1);
-    DirectX::XMVECTOR const up = DirectX::XMVector3Cross(pipeVector, right);
-
-    DirectX::XMVECTOR const pipePos = DirectX::XMVectorMultiplyAdd(pipeVector, DirectX::XMVectorReplicate(10.0f), ourPipeStart);
-
-    // Matrix34(_f, _u, _pos): `up` is the FRONT argument, as in Render.
-    DirectX::XMFLOAT4X4 pipeMat;
-    DirectX::XMStoreFloat4x4(&pipeMat, BasisFromFrontAndUp(up, pipeVector, pipePos));
-    g_explosionManager.AddExplosion(s_fuelPipe, pipeMat);
-  }
-}
-// ============================================================================
-
-
-FuelGenerator::FuelGenerator()
-  : FuelBuilding(),
-    m_surges(0.0f),
-    m_pump(nullptr),
-    m_pumpTip(nullptr),
-    m_pumpMovement(0.0f),
-    m_previousPumpPos(0.0f)
-{
-  m_type = TypeFuelGenerator;
-
-  SetShape(g_resource->GetShape("FuelGenerator.shp"));
-
-  m_pump = g_resource->GetShape("FuelGeneratorPump.shp");
-  m_pumpTip = m_pump->m_rootFragment->LookupMarker("MarkerTip");
-}
-
-
-void FuelGenerator::ProvideSurge() { m_surges++; }
-
-
-bool FuelGenerator::Advance()
-{
-  //
-  // Advance surges
-
-  m_surges -= SERVER_ADVANCE_PERIOD * 1.0f;
-  m_surges = std::min(m_surges, 10.0f);
-  m_surges = std::max(m_surges, 0.0f);
-
-  if (m_surges > 8)
-  {
-    GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
-    if (gb)
-      gb->m_online = true;
-  }
-
-
-  //
-  // Pump fuel
-
-  float fuelVal = m_surges / 10.0f;
-  ProvideFuel(fuelVal);
-
-
-  //
-  // Spawn particles
-
-  float previousPumpPos = m_previousPumpPos;
-  DirectX::XMFLOAT3 pumpPos = GetPumpPos();
-  m_previousPumpPos = (pumpPos.y - m_pos.y) / -80.0f;
-
-  if (fuelVal > 0.0f && pumpPos.y > m_pos.y - 20.0f)
-  {
-    pumpPos.x += sfrand(10.0f);
-    pumpPos.z += sfrand(10.0f);
-
-    for (int i = 0; i < int(m_surges); ++i)
-    {
-      // g_upVector is still a Vector3 and cannot be loaded by address;
-      // g_XMIdentityR1 is the (0,1,0,0) it holds. Kept as two steps so the
-      // single frand draw stays where it was.
-      DirectX::XMVECTOR pumpVelVec = DirectX::XMVectorScale(DirectX::g_XMIdentityR1, 20.0f);
-      pumpVelVec = DirectX::XMVectorAdd(pumpVelVec, DirectX::XMVectorScale(DirectX::g_XMIdentityR1, frand(10)));
-      DirectX::XMFLOAT3 pumpVel;
-      DirectX::XMStoreFloat3(&pumpVel, pumpVelVec);
-
-      DirectX::XMFLOAT4X4 mat;
-      DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&pumpPos)));
-
-      DirectX::XMFLOAT3 const particlePos = m_pumpTip->GetWorldPosition(mat);
-      float size = 150.0f + frand(150.0f);
-
-      g_particleSystem->CreateParticle(particlePos, pumpVel, Particle::TypeCitizenFire, size);
-    }
-  }
-
-
-  //
-  // Play sounds
-
-  if (previousPumpPos >= 0.1f && m_previousPumpPos < 0.1f)
-  {
-    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpUp");
-  }
-  else if (previousPumpPos <= 0.9f && m_previousPumpPos > 0.9f)
-  {
-    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpDown");
-  }
-
-  return FuelBuilding::Advance();
-}
-
-
-void FuelGenerator::ListSoundEvents(std::vector<const char*>* _list)
-{
-  FuelBuilding::ListSoundEvents(_list);
-
-  _list->push_back("PumpUp");
-  _list->push_back("PumpDown");
-}
-
-
-DirectX::XMFLOAT3 FuelGenerator::GetPumpPos()
-{
-  DirectX::XMFLOAT3 pumpPos = m_pos;
-  float pumpHeight = 80;
-
-  pumpPos.y -= pumpHeight;
-  pumpPos.y += fabs(cosf(m_pumpMovement)) * pumpHeight;
-
-  return pumpPos;
-}
-
-void FuelGenerator::Render(float _predictionTime)
-{
-  FuelBuilding::Render(_predictionTime);
-
-  //
-  // Render the pump
-
-  float fuelVal = m_surges / 10.0f;
-  m_pumpMovement += g_advanceTime * fuelVal * 2;
-
-  DirectX::XMFLOAT3 const pumpPos = GetPumpPos();
-  DirectX::XMFLOAT4X4 mat;
-  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&pumpPos)));
-
-  m_pump->Render(_predictionTime, mat);
-}
-
-
-void FuelGenerator::RenderAlphas(float _predictionTime)
-{
-  FuelBuilding::RenderAlphas(_predictionTime);
-
-  //    glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-  //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,90,0), 10, "Surges : %2.2f", m_surges );
-}
-
-
-char const* FuelGenerator::GetObjectiveCounter()
-{
-  static std::string buffer;
-  buffer = std::format("{} {}%", LANGUAGEPHRASE("objective_fuelpressure"), int(m_currentLevel * 100));
-  return buffer.c_str();
-}
-
-
-// ============================================================================
-
-
-FuelPipe::FuelPipe()
-  : FuelBuilding()
-{
-  m_type = TypeFuelPipe;
-
-  SetShape(g_resource->GetShape("FuelPipeBase.shp"));
-}
-
-
-bool FuelPipe::Advance()
-{
-  //
-  // Ensure our sound ambiences are playing
-
-  int numInstances = g_soundSystem->NumInstances(m_id, "FuelPipe PumpFuel");
-
-  if (m_currentLevel > 0.2f && numInstances == 0)
-  {
-    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpFuel");
-  }
-  else if (m_currentLevel <= 0.2f && numInstances > 0)
-  {
-    g_soundSystem->StopAllSounds(m_id, "FuelPipe PumpFuel");
-  }
-
-
-  return FuelBuilding::Advance();
-}
-
-
-void FuelPipe::ListSoundEvents(std::vector<const char*>* _list)
-{
-  FuelBuilding::ListSoundEvents(_list);
-
-  _list->push_back("PumpFuel");
-}
-
-
-// ============================================================================
-
-
-FuelStation::FuelStation()
-  : FuelBuilding(),
-    m_entrance(nullptr)
-{
-  m_type = TypeFuelStation;
-
-  SetShape(g_resource->GetShape("FuelStation.shp"));
-
-  m_entrance = m_shape->m_rootFragment->LookupMarker("MarkerEntrance");
-}
-
-
-bool FuelStation::IsLoading()
-{
-  Building* building = g_location->GetBuilding(m_fuelLink);
-  if (building && building->m_type == TypeEscapeRocket)
-  {
-    EscapeRocket* rocket = (EscapeRocket*)building;
-    if (rocket->m_state == EscapeRocket::StateLoading)
-    {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-
-bool FuelStation::Advance()
-{
-  Building* building = g_location->GetBuilding(m_fuelLink);
-  if (building && building->m_type == TypeEscapeRocket)
-  {
-    EscapeRocket* rocket = (EscapeRocket*)building;
-    if (rocket->m_state == EscapeRocket::StateLoading && rocket->SafeToLaunch())
-    {
-      //
-      // Find a random Citizen and make him board
-
-      Team* team = &g_location->m_teams[0];
-      int numOthers = team->m_others.Size();
-      if (numOthers > 0)
-      {
-        int randomIndex = syncrand() % numOthers;
-        if (team->m_others.ValidIndex(randomIndex))
+        for (int i = 0; i < maxLoops; ++i)
         {
-          Entity* entity = team->m_others[randomIndex];
-          if (entity && entity->m_type == Entity::TypeCitizen)
+          glBegin(GL_QUADS);
+          glTexCoord2f(tx, 0);
+          EmitVertex(DirectX::XMVectorSubtract(startPos, rightAngle));
+          glTexCoord2f(tx, 1);
+          EmitVertex(DirectX::XMVectorAdd(startPos, rightAngle));
+          glTexCoord2f(tx + tw, 1);
+          EmitVertex(DirectX::XMVectorAdd(endPos, rightAngle));
+          glTexCoord2f(tx + tw, 0);
+          EmitVertex(DirectX::XMVectorSubtract(endPos, rightAngle));
+          glEnd();
+          rightAngle = DirectX::XMVectorScale(rightAngle, 0.7f);
+        }
+
+        g_camera->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
+
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_TEXTURE_2D);
+      }
+    }
+
+    //    glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,70,0), 5, "Fuel Pressure : %2.2f", m_currentLevel );
+  }
+
+
+  void FuelBuilding::Read(TextReader* _in, bool _dynamic)
+  {
+    Building::Read(_in, _dynamic);
+
+    m_fuelLink = atoi(_in->GetNextToken());
+  }
+
+
+  void FuelBuilding::Write(FileWriter* _out)
+  {
+    Building::Write(_out);
+
+    _out->printf("%6d ", m_fuelLink);
+  }
+
+
+  int FuelBuilding::GetBuildingLink() { return m_fuelLink; }
+
+
+  void FuelBuilding::SetBuildingLink(int _buildingId) { m_fuelLink = _buildingId; }
+
+  void FuelBuilding::Destroy(float _intensity)
+  {
+    Building::Destroy(_intensity);
+    FuelBuilding* fuelBuilding = GetLinkedBuilding();
+
+    if (fuelBuilding)
+    {
+      DirectX::XMFLOAT3 const ourPipePosStore = GetFuelPosition();
+      DirectX::XMFLOAT3 const theirPipePosStore = fuelBuilding->GetFuelPosition();
+      DirectX::XMVECTOR const ourPipeStart = DirectX::XMLoadFloat3(&ourPipePosStore);
+
+      // Native Normalise behaviour; see FuelBuilding::Render for the one input
+      // that could be zero-length.
+      DirectX::XMVECTOR const pipeVector =
+        DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&theirPipePosStore), ourPipeStart));
+
+      // operator^ was the cross product; g_XMIdentityR1 is the (0,1,0,0) that
+      // g_upVector holds.
+      DirectX::XMVECTOR const right = DirectX::XMVector3Cross(pipeVector, DirectX::g_XMIdentityR1);
+      DirectX::XMVECTOR const up = DirectX::XMVector3Cross(pipeVector, right);
+
+      DirectX::XMVECTOR const pipePos = DirectX::XMVectorMultiplyAdd(pipeVector, DirectX::XMVectorReplicate(10.0f), ourPipeStart);
+
+      // Matrix34(_f, _u, _pos): `up` is the FRONT argument, as in Render.
+      DirectX::XMFLOAT4X4 pipeMat;
+      DirectX::XMStoreFloat4x4(&pipeMat, BasisFromFrontAndUp(up, pipeVector, pipePos));
+      g_explosionManager.AddExplosion(s_fuelPipe, pipeMat);
+    }
+  }
+  // ============================================================================
+
+
+  FuelGenerator::FuelGenerator()
+    : FuelBuilding(),
+      m_surges(0.0f),
+      m_pump(nullptr),
+      m_pumpTip(nullptr),
+      m_pumpMovement(0.0f),
+      m_previousPumpPos(0.0f)
+  {
+    m_type = TypeFuelGenerator;
+
+    SetShape(g_resource->GetShape("FuelGenerator.shp"));
+
+    m_pump = g_resource->GetShape("FuelGeneratorPump.shp");
+    m_pumpTip = m_pump->m_rootFragment->LookupMarker("MarkerTip");
+  }
+
+
+  void FuelGenerator::ProvideSurge() { m_surges++; }
+
+
+  bool FuelGenerator::Advance()
+  {
+    //
+    // Advance surges
+
+    m_surges -= SERVER_ADVANCE_PERIOD * 1.0f;
+    m_surges = std::min(m_surges, 10.0f);
+    m_surges = std::max(m_surges, 0.0f);
+
+    if (m_surges > 8)
+    {
+      GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
+      if (gb)
+        gb->m_online = true;
+    }
+
+
+    //
+    // Pump fuel
+
+    float fuelVal = m_surges / 10.0f;
+    ProvideFuel(fuelVal);
+
+
+    //
+    // Spawn particles
+
+    float previousPumpPos = m_previousPumpPos;
+    DirectX::XMFLOAT3 pumpPos = GetPumpPos();
+    m_previousPumpPos = (pumpPos.y - m_pos.y) / -80.0f;
+
+    if (fuelVal > 0.0f && pumpPos.y > m_pos.y - 20.0f)
+    {
+      pumpPos.x += sfrand(10.0f);
+      pumpPos.z += sfrand(10.0f);
+
+      for (int i = 0; i < int(m_surges); ++i)
+      {
+        // g_upVector is still a Vector3 and cannot be loaded by address;
+        // g_XMIdentityR1 is the (0,1,0,0) it holds. Kept as two steps so the
+        // single frand draw stays where it was.
+        DirectX::XMVECTOR pumpVelVec = DirectX::XMVectorScale(DirectX::g_XMIdentityR1, 20.0f);
+        pumpVelVec = DirectX::XMVectorAdd(pumpVelVec, DirectX::XMVectorScale(DirectX::g_XMIdentityR1, frand(10)));
+        DirectX::XMFLOAT3 pumpVel;
+        DirectX::XMStoreFloat3(&pumpVel, pumpVelVec);
+
+        DirectX::XMFLOAT4X4 mat;
+        DirectX::XMStoreFloat4x4(&mat,
+                                 BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&pumpPos)));
+
+        DirectX::XMFLOAT3 const particlePos = m_pumpTip->GetWorldPosition(mat);
+        float size = 150.0f + frand(150.0f);
+
+        g_particleSystem->CreateParticle(particlePos, pumpVel, Particle::TypeCitizenFire, size);
+      }
+    }
+
+
+    //
+    // Play sounds
+
+    if (previousPumpPos >= 0.1f && m_previousPumpPos < 0.1f)
+    {
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpUp");
+    }
+    else if (previousPumpPos <= 0.9f && m_previousPumpPos > 0.9f)
+    {
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpDown");
+    }
+
+    return FuelBuilding::Advance();
+  }
+
+
+  void FuelGenerator::ListSoundEvents(std::vector<const char*>* _list)
+  {
+    FuelBuilding::ListSoundEvents(_list);
+
+    _list->push_back("PumpUp");
+    _list->push_back("PumpDown");
+  }
+
+
+  DirectX::XMFLOAT3 FuelGenerator::GetPumpPos()
+  {
+    DirectX::XMFLOAT3 pumpPos = m_pos;
+    float pumpHeight = 80;
+
+    pumpPos.y -= pumpHeight;
+    pumpPos.y += fabs(cosf(m_pumpMovement)) * pumpHeight;
+
+    return pumpPos;
+  }
+
+  void FuelGenerator::Render(float _predictionTime)
+  {
+    FuelBuilding::Render(_predictionTime);
+
+    //
+    // Render the pump
+
+    float fuelVal = m_surges / 10.0f;
+    m_pumpMovement += g_advanceTime * fuelVal * 2;
+
+    DirectX::XMFLOAT3 const pumpPos = GetPumpPos();
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&pumpPos)));
+
+    m_pump->Render(_predictionTime, mat);
+  }
+
+
+  void FuelGenerator::RenderAlphas(float _predictionTime)
+  {
+    FuelBuilding::RenderAlphas(_predictionTime);
+
+    //    glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,90,0), 10, "Surges : %2.2f", m_surges );
+  }
+
+
+  char const* FuelGenerator::GetObjectiveCounter()
+  {
+    static std::string buffer;
+    buffer = std::format("{} {}%", LANGUAGEPHRASE("objective_fuelpressure"), int(m_currentLevel * 100));
+    return buffer.c_str();
+  }
+
+
+  // ============================================================================
+
+
+  FuelPipe::FuelPipe()
+    : FuelBuilding()
+  {
+    m_type = TypeFuelPipe;
+
+    SetShape(g_resource->GetShape("FuelPipeBase.shp"));
+  }
+
+
+  bool FuelPipe::Advance()
+  {
+    //
+    // Ensure our sound ambiences are playing
+
+    int numInstances = g_soundSystem->NumInstances(m_id, "FuelPipe PumpFuel");
+
+    if (m_currentLevel > 0.2f && numInstances == 0)
+    {
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "PumpFuel");
+    }
+    else if (m_currentLevel <= 0.2f && numInstances > 0)
+    {
+      g_soundSystem->StopAllSounds(m_id, "FuelPipe PumpFuel");
+    }
+
+
+    return FuelBuilding::Advance();
+  }
+
+
+  void FuelPipe::ListSoundEvents(std::vector<const char*>* _list)
+  {
+    FuelBuilding::ListSoundEvents(_list);
+
+    _list->push_back("PumpFuel");
+  }
+
+
+  // ============================================================================
+
+
+  FuelStation::FuelStation()
+    : FuelBuilding(),
+      m_entrance(nullptr)
+  {
+    m_type = TypeFuelStation;
+
+    SetShape(g_resource->GetShape("FuelStation.shp"));
+
+    m_entrance = m_shape->m_rootFragment->LookupMarker("MarkerEntrance");
+  }
+
+
+  bool FuelStation::IsLoading()
+  {
+    Building* building = g_location->GetBuilding(m_fuelLink);
+    if (building && building->m_type == TypeEscapeRocket)
+    {
+      EscapeRocket* rocket = (EscapeRocket*)building;
+      if (rocket->m_state == EscapeRocket::StateLoading)
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+
+  bool FuelStation::Advance()
+  {
+    Building* building = g_location->GetBuilding(m_fuelLink);
+    if (building && building->m_type == TypeEscapeRocket)
+    {
+      EscapeRocket* rocket = (EscapeRocket*)building;
+      if (rocket->m_state == EscapeRocket::StateLoading && rocket->SafeToLaunch())
+      {
+        //
+        // Find a random Citizen and make him board
+
+        Team* team = &g_location->m_teams[0];
+        int numOthers = team->m_others.Size();
+        if (numOthers > 0)
+        {
+          int randomIndex = syncrand() % numOthers;
+          if (team->m_others.ValidIndex(randomIndex))
           {
-            Citizen* citizen = (Citizen*)entity;
-            float distance = DirectX::XMVectorGetX(
-              DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
-            if (distance < 300.0f && (citizen->m_state == Citizen::StateIdle || citizen->m_state == Citizen::StateWorshipSpirit))
+            Entity* entity = team->m_others[randomIndex];
+            if (entity && entity->m_type == Entity::TypeCitizen)
             {
-              citizen->BoardRocket(m_id.GetUniqueId());
+              Citizen* citizen = (Citizen*)entity;
+              float distance = DirectX::XMVectorGetX(
+                DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
+              if (distance < 300.0f && (citizen->m_state == Citizen::StateIdle || citizen->m_state == Citizen::StateWorshipSpirit))
+              {
+                citizen->BoardRocket(m_id.GetUniqueId());
+              }
             }
           }
         }
       }
     }
+
+    return FuelBuilding::Advance();
   }
 
-  return FuelBuilding::Advance();
-}
 
-
-DirectX::XMFLOAT3 FuelStation::GetEntrance()
-{
-  DirectX::XMFLOAT4X4 mat;
-  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
-
-  return m_entrance->GetWorldPosition(mat);
-}
-
-
-bool FuelStation::BoardRocket(WorldObjectId _id)
-{
-  Building* building = g_location->GetBuilding(m_fuelLink);
-  if (building && building->m_type == TypeEscapeRocket)
+  DirectX::XMFLOAT3 FuelStation::GetEntrance()
   {
-    EscapeRocket* rocket = (EscapeRocket*)building;
-    bool result = rocket->BoardRocket(_id);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
-    if (result)
+    return m_entrance->GetWorldPosition(mat);
+  }
+
+
+  bool FuelStation::BoardRocket(WorldObjectId _id)
+  {
+    Building* building = g_location->GetBuilding(m_fuelLink);
+    if (building && building->m_type == TypeEscapeRocket)
     {
-      Entity* entity = g_location->GetEntity(_id);
-      DirectX::XMFLOAT3 entityPos = entity ? entity->m_pos : DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-      entityPos.y += 2;
+      EscapeRocket* rocket = (EscapeRocket*)building;
+      bool result = rocket->BoardRocket(_id);
 
-      int numFlashes = 4 + speciesRandom() % 4;
-      for (int i = 0; i < numFlashes; ++i)
+      if (result)
       {
-        // Left as one constructor call on purpose: the three draws are ordered
-        // by the compiler's argument evaluation, not by this line, and splitting
-        // them into statements would fix that order and change the sequence.
-        DirectX::XMFLOAT3 const vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
-        g_particleSystem->CreateParticle(entityPos, vel, Particle::TypeControlFlash);
+        Entity* entity = g_location->GetEntity(_id);
+        DirectX::XMFLOAT3 entityPos = entity ? entity->m_pos : DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+        entityPos.y += 2;
+
+        int numFlashes = 4 + speciesRandom() % 4;
+        for (int i = 0; i < numFlashes; ++i)
+        {
+          // Left as one constructor call on purpose: the three draws are ordered
+          // by the compiler's argument evaluation, not by this line, and splitting
+          // them into statements would fix that order and change the sequence.
+          DirectX::XMFLOAT3 const vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
+          g_particleSystem->CreateParticle(entityPos, vel, Particle::TypeControlFlash);
+        }
+
+        g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "LoadPassenger");
       }
 
-      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "LoadPassenger");
+      return result;
     }
 
-    return result;
+    return false;
   }
 
-  return false;
-}
 
-
-void FuelStation::ListSoundEvents(std::vector<const char*>* _list)
-{
-  FuelBuilding::ListSoundEvents(_list);
-
-  _list->push_back("LoadPassenger");
-}
-
-
-void FuelStation::Render(float _predictionTime) { Building::Render(_predictionTime); }
-
-
-void FuelStation::RenderAlphas(float _predictionTime)
-{
-  // Prevent FuelBuilding::RenderAlphas from being called
-
-
-  //
-  // Render countdown
-
-  Building* building = g_location->GetBuilding(m_fuelLink);
-  if (building && building->m_type == TypeEscapeRocket)
+  void FuelStation::ListSoundEvents(std::vector<const char*>* _list)
   {
-    EscapeRocket* rocket = (EscapeRocket*)building;
-    if ((rocket->m_state == EscapeRocket::StateCountdown && rocket->m_countdown <= 10.0f) || rocket->m_state == EscapeRocket::StateFlight)
+    FuelBuilding::ListSoundEvents(_list);
+
+    _list->push_back("LoadPassenger");
+  }
+
+
+  void FuelStation::Render(float _predictionTime) { Building::Render(_predictionTime); }
+
+
+  void FuelStation::RenderAlphas(float _predictionTime)
+  {
+    // Prevent FuelBuilding::RenderAlphas from being called
+
+
+    //
+    // Render countdown
+
+    Building* building = g_location->GetBuilding(m_fuelLink);
+    if (building && building->m_type == TypeEscapeRocket)
     {
-      float screenSize = 60.0f;
-      DirectX::XMFLOAT3 const screenFrontStore = m_front;
-      DirectX::XMVECTOR const screenFront = DirectX::XMLoadFloat3(&screenFrontStore);
-      // screenFront.RotateAroundY( 0.33f * M_PI );
-
-      // operator^ was the cross product; g_XMIdentityR1 is the (0,1,0,0) that
-      // g_upVector holds.
-      DirectX::XMVECTOR const screenRight = DirectX::XMVector3Cross(screenFront, DirectX::g_XMIdentityR1);
-      DirectX::XMVECTOR screenPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 150.0f, 0.0f, 0.0f));
-      screenPos = DirectX::XMVectorSubtract(screenPos, DirectX::XMVectorScale(DirectX::XMVectorScale(screenRight, screenSize), 0.5f));
-      screenPos = DirectX::XMVectorMultiplyAdd(screenFront, DirectX::XMVectorReplicate(30.0f), screenPos);
-      DirectX::XMVECTOR const screenUp = DirectX::g_XMIdentityR1;
-
-      //
-      // Render lines for over effect
-
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceGrey.bmp"));
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-      glEnable(GL_TEXTURE_2D);
-      glEnable(GL_BLEND);
-      glDepthMask(false);
-      glShadeModel(GL_SMOOTH);
-      glDisable(GL_CULL_FACE);
-
-      float texX = 0.0f;
-      float texW = 3.0f;
-      float texY = g_gameTime * 0.01f;
-      float texH = 0.3f;
-
-      glColor4f(0.0f, 0.0f, 0.0f, 0.5f);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-      DirectX::XMVECTOR const screenRightSized = DirectX::XMVectorScale(screenRight, screenSize);
-      DirectX::XMVECTOR const screenUpSized = DirectX::XMVectorScale(screenUp, screenSize);
-
-      glBegin(GL_QUADS);
-      EmitVertex(screenPos);
-      EmitVertex(DirectX::XMVectorAdd(screenPos, screenRightSized));
-      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(screenPos, screenRightSized), screenUpSized));
-      EmitVertex(DirectX::XMVectorAdd(screenPos, screenUpSized));
-      glEnd();
-
-      glColor4f(1.0f, 0.4f, 0.2f, 1.0f);
-
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-      for (int i = 0; i < 2; ++i)
+      EscapeRocket* rocket = (EscapeRocket*)building;
+      if ((rocket->m_state == EscapeRocket::StateCountdown && rocket->m_countdown <= 10.0f) || rocket->m_state == EscapeRocket::StateFlight)
       {
+        float screenSize = 60.0f;
+        DirectX::XMFLOAT3 const screenFrontStore = m_front;
+        DirectX::XMVECTOR const screenFront = DirectX::XMLoadFloat3(&screenFrontStore);
+        // screenFront.RotateAroundY( 0.33f * M_PI );
+
+        // operator^ was the cross product; g_XMIdentityR1 is the (0,1,0,0) that
+        // g_upVector holds.
+        DirectX::XMVECTOR const screenRight = DirectX::XMVector3Cross(screenFront, DirectX::g_XMIdentityR1);
+        DirectX::XMVECTOR screenPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 150.0f, 0.0f, 0.0f));
+        screenPos = DirectX::XMVectorSubtract(screenPos, DirectX::XMVectorScale(DirectX::XMVectorScale(screenRight, screenSize), 0.5f));
+        screenPos = DirectX::XMVectorMultiplyAdd(screenFront, DirectX::XMVectorReplicate(30.0f), screenPos);
+        DirectX::XMVECTOR const screenUp = DirectX::g_XMIdentityR1;
+
+        //
+        // Render lines for over effect
+
+        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceGrey.bmp"));
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glDepthMask(false);
+        glShadeModel(GL_SMOOTH);
+        glDisable(GL_CULL_FACE);
+
+        float texX = 0.0f;
+        float texW = 3.0f;
+        float texY = g_gameTime * 0.01f;
+        float texH = 0.3f;
+
+        glColor4f(0.0f, 0.0f, 0.0f, 0.5f);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        DirectX::XMVECTOR const screenRightSized = DirectX::XMVectorScale(screenRight, screenSize);
+        DirectX::XMVECTOR const screenUpSized = DirectX::XMVectorScale(screenUp, screenSize);
+
         glBegin(GL_QUADS);
-        glTexCoord2f(texX, texY);
         EmitVertex(screenPos);
-
-        glTexCoord2f(texX + texW, texY);
         EmitVertex(DirectX::XMVectorAdd(screenPos, screenRightSized));
-
-        glTexCoord2f(texX + texW, texY + texH);
         EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(screenPos, screenRightSized), screenUpSized));
-
-        glTexCoord2f(texX, texY + texH);
         EmitVertex(DirectX::XMVectorAdd(screenPos, screenUpSized));
         glEnd();
 
-        texY *= 1.5f;
-        texH = 0.1f;
-      }
+        glColor4f(1.0f, 0.4f, 0.2f, 1.0f);
 
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-      glDepthMask(false);
-
-      //
-      // Render countdown
-
-      glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-      DirectX::XMFLOAT3 textPos;
-      DirectX::XMStoreFloat3(&textPos, DirectX::XMVectorAdd(DirectX::XMVectorAdd(screenPos, DirectX::XMVectorScale(screenRightSized, 0.5f)),
-                                                            DirectX::XMVectorScale(screenUpSized, 0.5f)));
-
-      DirectX::XMFLOAT3 screenUpStore;
-      DirectX::XMStoreFloat3(&screenUpStore, screenUp);
-
-      if (rocket->m_state == EscapeRocket::StateCountdown)
-      {
-        int countdown = (int)rocket->m_countdown + 1;
-        g_gameFont.DrawText3D(textPos, screenFrontStore, screenUpStore, 50, "%d", countdown);
-      }
-      else
-      {
-        if (fmod(g_gameTime, 2) < 1)
+        for (int i = 0; i < 2; ++i)
         {
-          g_gameFont.DrawText3D(textPos, screenFrontStore, screenUpStore, 50, "0");
+          glBegin(GL_QUADS);
+          glTexCoord2f(texX, texY);
+          EmitVertex(screenPos);
+
+          glTexCoord2f(texX + texW, texY);
+          EmitVertex(DirectX::XMVectorAdd(screenPos, screenRightSized));
+
+          glTexCoord2f(texX + texW, texY + texH);
+          EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(screenPos, screenRightSized), screenUpSized));
+
+          glTexCoord2f(texX, texY + texH);
+          EmitVertex(DirectX::XMVectorAdd(screenPos, screenUpSized));
+          glEnd();
+
+          texY *= 1.5f;
+          texH = 0.1f;
         }
+
+
+        glDepthMask(false);
+
+        //
+        // Render countdown
+
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        DirectX::XMFLOAT3 textPos;
+        DirectX::XMStoreFloat3(&textPos, DirectX::XMVectorAdd(DirectX::XMVectorAdd(screenPos, DirectX::XMVectorScale(screenRightSized, 0.5f)),
+                                                              DirectX::XMVectorScale(screenUpSized, 0.5f)));
+
+        DirectX::XMFLOAT3 screenUpStore;
+        DirectX::XMStoreFloat3(&screenUpStore, screenUp);
+
+        if (rocket->m_state == EscapeRocket::StateCountdown)
+        {
+          int countdown = (int)rocket->m_countdown + 1;
+          g_gameFont.DrawText3D(textPos, screenFrontStore, screenUpStore, 50, "%d", countdown);
+        }
+        else
+        {
+          if (fmod(g_gameTime, 2) < 1)
+          {
+            g_gameFont.DrawText3D(textPos, screenFrontStore, screenUpStore, 50, "0");
+          }
+        }
+
+
+        //
+        // Render projection effect
+
+        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
+
+        DirectX::XMVECTOR const ourPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 90.0f, 0.0f, 0.0f));
+        DirectX::XMVECTOR theirPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 200.0f, 0.0f, 0.0f));
+        theirPos = DirectX::XMVectorMultiplyAdd(screenFront, DirectX::XMVectorReplicate(30.0f), theirPos);
+
+        DirectX::XMFLOAT3 const camPos = g_camera->GetPos();
+        DirectX::XMVECTOR const camToTheirPos = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPos), theirPos);
+
+        // operator^ was the cross product; SetLength is normalise-then-scale.
+        DirectX::XMVECTOR const lineTheirPos = DirectX::XMVectorScale(
+          DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camToTheirPos, DirectX::XMVectorSubtract(ourPos, theirPos))), m_radius * 0.5f);
+
+        for (int i = 0; i < 3; ++i)
+        {
+          DirectX::XMFLOAT3 pos;
+          DirectX::XMStoreFloat3(&pos, theirPos);
+          pos.x += sinf(g_gameTime + i) * 15;
+          pos.y += sinf(g_gameTime + i) * 15;
+          pos.z += cosf(g_gameTime + i) * 15;
+
+          float blue = 0.5f + fabs(sinf(g_gameTime * i)) * 0.5f;
+
+          DirectX::XMVECTOR const posVec = DirectX::XMLoadFloat3(&pos);
+
+          glBegin(GL_QUADS);
+          glColor4f(1.0f, 0.4f, 0.2f, 0.4f);
+          glTexCoord2f(1, 0);
+          EmitVertex(DirectX::XMVectorSubtract(ourPos, lineTheirPos));
+          glTexCoord2f(1, 1);
+          EmitVertex(DirectX::XMVectorAdd(ourPos, lineTheirPos));
+          glColor4f(1.0f, 0.4f, 0.2f, 0.2f);
+          glTexCoord2f(0, 1);
+          EmitVertex(DirectX::XMVectorAdd(posVec, lineTheirPos));
+          glTexCoord2f(0, 0);
+          EmitVertex(DirectX::XMVectorSubtract(posVec, lineTheirPos));
+          glEnd();
+        }
+
+
+        glDepthMask(true);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_TEXTURE_2D);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_BLEND);
+        glShadeModel(GL_FLAT);
       }
-
-
-      //
-      // Render projection effect
-
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
-
-      DirectX::XMVECTOR const ourPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 90.0f, 0.0f, 0.0f));
-      DirectX::XMVECTOR theirPos = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 200.0f, 0.0f, 0.0f));
-      theirPos = DirectX::XMVectorMultiplyAdd(screenFront, DirectX::XMVectorReplicate(30.0f), theirPos);
-
-      DirectX::XMFLOAT3 const camPos = g_camera->GetPos();
-      DirectX::XMVECTOR const camToTheirPos = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPos), theirPos);
-
-      // operator^ was the cross product; SetLength is normalise-then-scale.
-      DirectX::XMVECTOR const lineTheirPos = DirectX::XMVectorScale(
-        DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camToTheirPos, DirectX::XMVectorSubtract(ourPos, theirPos))), m_radius * 0.5f);
-
-      for (int i = 0; i < 3; ++i)
-      {
-        DirectX::XMFLOAT3 pos;
-        DirectX::XMStoreFloat3(&pos, theirPos);
-        pos.x += sinf(g_gameTime + i) * 15;
-        pos.y += sinf(g_gameTime + i) * 15;
-        pos.z += cosf(g_gameTime + i) * 15;
-
-        float blue = 0.5f + fabs(sinf(g_gameTime * i)) * 0.5f;
-
-        DirectX::XMVECTOR const posVec = DirectX::XMLoadFloat3(&pos);
-
-        glBegin(GL_QUADS);
-        glColor4f(1.0f, 0.4f, 0.2f, 0.4f);
-        glTexCoord2f(1, 0);
-        EmitVertex(DirectX::XMVectorSubtract(ourPos, lineTheirPos));
-        glTexCoord2f(1, 1);
-        EmitVertex(DirectX::XMVectorAdd(ourPos, lineTheirPos));
-        glColor4f(1.0f, 0.4f, 0.2f, 0.2f);
-        glTexCoord2f(0, 1);
-        EmitVertex(DirectX::XMVectorAdd(posVec, lineTheirPos));
-        glTexCoord2f(0, 0);
-        EmitVertex(DirectX::XMVectorSubtract(posVec, lineTheirPos));
-        glEnd();
-      }
-
-
-      glDepthMask(true);
-      glEnable(GL_DEPTH_TEST);
-      glDisable(GL_TEXTURE_2D);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      glDisable(GL_BLEND);
-      glShadeModel(GL_FLAT);
     }
   }
-}
 
 
-bool FuelStation::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
-{
-  _centrePos = m_centrePos;
-  return true;
-}
-
-
-// ============================================================================
-
-
-EscapeRocket::EscapeRocket()
-  : FuelBuilding(),
-    m_fuel(0.0f),
-    m_pipeCount(0),
-    m_passengers(0),
-    m_countdown(-1.0f),
-    m_booster(nullptr),
-    m_shadowTimer(0.0f),
-    m_state(StateRefueling),
-    m_damage(0.0f),
-    m_spawnBuildingId(-1),
-    m_spawnCompleted(false),
-    m_cameraShake(0.0f)
-{
-  m_type = TypeEscapeRocket;
-
-  SetShape(g_resource->GetShape("Rocket.shp"));
-
-  m_booster = m_shape->m_rootFragment->LookupMarker("MarkerBooster");
-  ASSERT_TEXT(m_booster, "MarkerBooster not found in rocket.shp");
-
-  for (int i = 0; i < 3; ++i)
+  bool FuelStation::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
   {
-    const std::string name = std::format("MarkerWindow0{}", i + 1);
-    m_window[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
-    ASSERT_TEXT(m_window[i], "{} not found", name.c_str());
-  }
-}
-
-
-void EscapeRocket::ListSoundEvents(std::vector<const char*>* _list)
-{
-  FuelBuilding::ListSoundEvents(_list);
-
-  _list->push_back("Refueling");
-  _list->push_back("Happy");
-  _list->push_back("Unhappy");
-  _list->push_back("Flight");
-  _list->push_back("Malfunction");
-  _list->push_back("Explode");
-  _list->push_back("EngineBurn");
-}
-
-
-void EscapeRocket::SetupSounds()
-{
-  char const* requiredSoundName = nullptr;
-
-  //
-  // What ambience should be playing?
-
-  switch (m_state)
-  {
-  case StateRefueling:
-    if (m_currentLevel > 0.2f)
-      requiredSoundName = "Refueling";
-    else
-      requiredSoundName = "Unhappy";
-    break;
-
-  case StateLoading:
-  case StateIgnition:
-  case StateReady:
-  case StateCountdown:
-    if (m_damage < 10)
-      requiredSoundName = "Happy";
-    else
-      requiredSoundName = "Malfunction";
-    break;
-
-  case StateExploding:
-    if (m_fuel > 0.0f)
-      requiredSoundName = "Malfunction";
-    else
-      requiredSoundName = "Unhappy";
-    break;
-
-  case StateFlight:
-    requiredSoundName = "Flight";
-    break;
-  }
-
-  std::string fullName;
-  if (requiredSoundName)
-    fullName = std::format("EscapeRocket {}", requiredSoundName);
-
-
-  //
-  // If we're not set up right, kill all sounds first
-
-
-  int numInstances = requiredSoundName ? g_soundSystem->NumInstances(m_id, fullName.c_str()) : 0;
-
-  if (!requiredSoundName || numInstances == 0)
-  {
-    g_soundSystem->StopAllSounds(m_id, "EscapeRocket Refueling");
-    g_soundSystem->StopAllSounds(m_id, "EscapeRocket Happy");
-    g_soundSystem->StopAllSounds(m_id, "EscapeRocket Unhappy");
-    g_soundSystem->StopAllSounds(m_id, "EscapeRocket Malfunction");
-    g_soundSystem->StopAllSounds(m_id, "EscapeRocket Flight");
-  }
-
-
-  //
-  // Spawn the correct sound
-
-  if (requiredSoundName && numInstances == 0)
-  {
-    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), requiredSoundName);
-  }
-
-
-  //
-  // If our engines are on then trigger the event
-
-  int numEngineInstances = g_soundSystem->NumInstances(m_id, "EscapeRocket EngineBurn");
-
-  if (m_state == StateReady || m_state == StateCountdown || m_state == StateFlight)
-  {
-    if (numEngineInstances == 0)
-    {
-      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "EngineBurn");
-    }
-  }
-  else
-  {
-    if (numEngineInstances > 0)
-    {
-      g_soundSystem->StopAllSounds(m_id, "EscapeRocket EngineBurn");
-    }
-  }
-}
-
-
-void EscapeRocket::Initialise(Building* _template)
-{
-  FuelBuilding::Initialise(_template);
-
-  m_fuel = ((EscapeRocket*)_template)->m_fuel;
-  m_passengers = ((EscapeRocket*)_template)->m_passengers;
-  m_spawnBuildingId = ((EscapeRocket*)_template)->m_spawnBuildingId;
-  m_spawnCompleted = ((EscapeRocket*)_template)->m_spawnCompleted;
-}
-
-
-char const* EscapeRocket::GetObjectiveCounter()
-{
-  static std::string buffer;
-  buffer = std::format("{} {}%, {} {}%", LANGUAGEPHRASE("objective_fuel"), (int)m_fuel, LANGUAGEPHRASE("objective_passengers"), (int)m_passengers);
-  return buffer.c_str();
-}
-
-
-bool EscapeRocket::BoardRocket(WorldObjectId _id)
-{
-  if (m_state == StateLoading)
-  {
-    ++m_passengers;
+    _centrePos = m_centrePos;
     return true;
   }
 
-  return false;
-}
+
+  // ============================================================================
 
 
-void EscapeRocket::ProvideFuel(float _level)
-{
-#ifdef CHEATMENU_ENABLED
-  if (g_inputManager->controlEvent(ControlType::ControlScrollSpeedup))
+  EscapeRocket::EscapeRocket()
+    : FuelBuilding(),
+      m_fuel(0.0f),
+      m_pipeCount(0),
+      m_passengers(0),
+      m_countdown(-1.0f),
+      m_booster(nullptr),
+      m_shadowTimer(0.0f),
+      m_state(StateRefueling),
+      m_damage(0.0f),
+      m_spawnBuildingId(-1),
+      m_spawnCompleted(false),
+      m_cameraShake(0.0f)
   {
-    _level *= 100;
+    m_type = TypeEscapeRocket;
+
+    SetShape(g_resource->GetShape("Rocket.shp"));
+
+    m_booster = m_shape->m_rootFragment->LookupMarker("MarkerBooster");
+    ASSERT_TEXT(m_booster, "MarkerBooster not found in rocket.shp");
+
+    for (int i = 0; i < 3; ++i)
+    {
+      const std::string name = std::format("MarkerWindow0{}", i + 1);
+      m_window[i] = m_shape->m_rootFragment->LookupMarker(name.c_str());
+      ASSERT_TEXT(m_window[i], "{} not found", name.c_str());
+    }
   }
+
+
+  void EscapeRocket::ListSoundEvents(std::vector<const char*>* _list)
+  {
+    FuelBuilding::ListSoundEvents(_list);
+
+    _list->push_back("Refueling");
+    _list->push_back("Happy");
+    _list->push_back("Unhappy");
+    _list->push_back("Flight");
+    _list->push_back("Malfunction");
+    _list->push_back("Explode");
+    _list->push_back("EngineBurn");
+  }
+
+
+  void EscapeRocket::SetupSounds()
+  {
+    char const* requiredSoundName = nullptr;
+
+    //
+    // What ambience should be playing?
+
+    switch (m_state)
+    {
+    case StateRefueling:
+      if (m_currentLevel > 0.2f)
+        requiredSoundName = "Refueling";
+      else
+        requiredSoundName = "Unhappy";
+      break;
+
+    case StateLoading:
+    case StateIgnition:
+    case StateReady:
+    case StateCountdown:
+      if (m_damage < 10)
+        requiredSoundName = "Happy";
+      else
+        requiredSoundName = "Malfunction";
+      break;
+
+    case StateExploding:
+      if (m_fuel > 0.0f)
+        requiredSoundName = "Malfunction";
+      else
+        requiredSoundName = "Unhappy";
+      break;
+
+    case StateFlight:
+      requiredSoundName = "Flight";
+      break;
+    }
+
+    std::string fullName;
+    if (requiredSoundName)
+      fullName = std::format("EscapeRocket {}", requiredSoundName);
+
+
+    //
+    // If we're not set up right, kill all sounds first
+
+
+    int numInstances = requiredSoundName ? g_soundSystem->NumInstances(m_id, fullName.c_str()) : 0;
+
+    if (!requiredSoundName || numInstances == 0)
+    {
+      g_soundSystem->StopAllSounds(m_id, "EscapeRocket Refueling");
+      g_soundSystem->StopAllSounds(m_id, "EscapeRocket Happy");
+      g_soundSystem->StopAllSounds(m_id, "EscapeRocket Unhappy");
+      g_soundSystem->StopAllSounds(m_id, "EscapeRocket Malfunction");
+      g_soundSystem->StopAllSounds(m_id, "EscapeRocket Flight");
+    }
+
+
+    //
+    // Spawn the correct sound
+
+    if (requiredSoundName && numInstances == 0)
+    {
+      g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), requiredSoundName);
+    }
+
+
+    //
+    // If our engines are on then trigger the event
+
+    int numEngineInstances = g_soundSystem->NumInstances(m_id, "EscapeRocket EngineBurn");
+
+    if (m_state == StateReady || m_state == StateCountdown || m_state == StateFlight)
+    {
+      if (numEngineInstances == 0)
+      {
+        g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "EngineBurn");
+      }
+    }
+    else
+    {
+      if (numEngineInstances > 0)
+      {
+        g_soundSystem->StopAllSounds(m_id, "EscapeRocket EngineBurn");
+      }
+    }
+  }
+
+
+  void EscapeRocket::Initialise(Building* _template)
+  {
+    FuelBuilding::Initialise(_template);
+
+    m_fuel = ((EscapeRocket*)_template)->m_fuel;
+    m_passengers = ((EscapeRocket*)_template)->m_passengers;
+    m_spawnBuildingId = ((EscapeRocket*)_template)->m_spawnBuildingId;
+    m_spawnCompleted = ((EscapeRocket*)_template)->m_spawnCompleted;
+  }
+
+
+  char const* EscapeRocket::GetObjectiveCounter()
+  {
+    static std::string buffer;
+    buffer = std::format("{} {}%, {} {}%", LANGUAGEPHRASE("objective_fuel"), (int)m_fuel, LANGUAGEPHRASE("objective_passengers"), (int)m_passengers);
+    return buffer.c_str();
+  }
+
+
+  bool EscapeRocket::BoardRocket(WorldObjectId _id)
+  {
+    if (m_state == StateLoading)
+    {
+      ++m_passengers;
+      return true;
+    }
+
+    return false;
+  }
+
+
+  void EscapeRocket::ProvideFuel(float _level)
+  {
+#ifdef CHEATMENU_ENABLED
+    if (g_inputManager->controlEvent(ControlType::ControlScrollSpeedup))
+    {
+      _level *= 100;
+    }
 #endif
 
   FuelBuilding::ProvideFuel(_level);
@@ -1617,3 +1620,4 @@ int EscapeRocket::GetStateId(char* _state)
 
   return -1;
 }
+} // namespace Species

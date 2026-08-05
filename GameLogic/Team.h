@@ -8,77 +8,82 @@
 #include "WorldObject.h"
 #include "Entity.h"
 
-class Unit;
-class InsertionSquad;
 
 
 // ****************************************************************************
 //  Class Team
 // ****************************************************************************
 
-class Team
+
+namespace Species
 {
-  public:
-    enum
-    {
-      TeamTypeUnused = -1,
-      TeamTypeLocalPlayer,
-      TeamTypeRemotePlayer,
-      TeamTypeCPU
-    };
+  class Unit;
+  class InsertionSquad;
 
-    int m_teamId;
-    int m_teamType;
+  class Team
+  {
+    public:
+      enum
+      {
+        TeamTypeUnused = -1,
+        TeamTypeLocalPlayer,
+        TeamTypeRemotePlayer,
+        TeamTypeCPU
+      };
 
-    FastSlotMap<Unit*> m_units;
-    FastSlotMap<Entity*> m_others;
+      int m_teamId;
+      int m_teamType;
 
-    // The slice bookkeeping m_others used to inherit from the legacy sliced
-    // array. Public for the same reason Unit's is: Renderer reads
-    // GetLastUpdated to decide which entities need a frame of extrapolation.
-    SliceWalker m_othersWalker;
+      FastSlotMap<Unit*> m_units;
+      FastSlotMap<Entity*> m_others;
 
-    std::vector<WorldObjectId> m_specials; // Officers and tanks for quick lookup
+      // The slice bookkeeping m_others used to inherit from the legacy sliced
+      // array. Public for the same reason Unit's is: Renderer reads
+      // GetLastUpdated to decide which entities need a frame of extrapolation.
+      SliceWalker m_othersWalker;
 
-    RGBAColour m_colour;
+      std::vector<WorldObjectId> m_specials; // Officers and tanks for quick lookup
 
-    int m_currentUnitId;       //
-    int m_currentEntityId;     // Do not set these directly
-    int m_currentBuildingId;   // They are updated by the network
-                               //
-    DirectX::XMFLOAT3 m_currentMousePos{0.0f, 0.0f, 0.0f}; //
+      RGBAColour m_colour;
 
-  public:
-    Team();
+      int m_currentUnitId;                                   //
+      int m_currentEntityId;                                 // Do not set these directly
+      int m_currentBuildingId;                               // They are updated by the network
+                                                             //
+      DirectX::XMFLOAT3 m_currentMousePos{0.0f, 0.0f, 0.0f}; //
 
-    void Initialise(int _teamId); // Call when this team enters the game
-    void SetTeamType(int _teamType);
+    public:
+      Team();
 
-    void SelectUnit(int _unitId, int _entityId, int _buildingId);
+      void Initialise(int _teamId); // Call when this team enters the game
+      void SetTeamType(int _teamType);
 
-    void RegisterSpecial(WorldObjectId _id);
-    void UnRegisterSpecial(WorldObjectId _id);
+      void SelectUnit(int _unitId, int _entityId, int _buildingId);
 
-    Entity* RayHitEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayEnd);
-    Unit* GetMyUnit();
-    Entity* GetMyEntity();
-    Unit* NewUnit(int _troopType, int _numEntities, int* _unitId, DirectX::XMFLOAT3 const& _pos);
-    Entity* NewEntity(int _troopType, int _unitId, int* _index);
+      void RegisterSpecial(WorldObjectId _id);
+      void UnRegisterSpecial(WorldObjectId _id);
 
-    int NumEntities(int _troopType); // Counts the total number
+      Entity* RayHitEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayEnd);
+      Unit* GetMyUnit();
+      Entity* GetMyEntity();
+      Unit* NewUnit(int _troopType, int _numEntities, int* _unitId, DirectX::XMFLOAT3 const& _pos);
+      Entity* NewEntity(int _troopType, int _unitId, int* _index);
 
-    void Advance(int _slice);
+      int NumEntities(int _troopType); // Counts the total number
 
-    void Render();
-    void RenderVirii(float _predictionTime);
-    void RenderCitizens(float _predictionTime);
-    void RenderOthers(float _predictionTime);
-};
+      void Advance(int _slice);
+
+      void Render();
+      void RenderVirii(float _predictionTime);
+      void RenderCitizens(float _predictionTime);
+      void RenderOthers(float _predictionTime);
+  };
 
 
-// ****************************************************************************
-//  Class TeamControls
-//
-//   capture all the control information necessary to send
-//   over the network for "remote" control of units
-// ****************************************************************************
+  // ****************************************************************************
+  //  Class TeamControls
+  //
+  //   capture all the control information necessary to send
+  //   over the network for "remote" control of units
+  // ****************************************************************************
+} // namespace Species

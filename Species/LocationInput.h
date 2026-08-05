@@ -1,23 +1,22 @@
 #pragma once
 
 
-class Building;
-class Engineer;
-
-
-class LocationInput
+namespace Species
 {
-private:
-	void	AdvanceRadarDishControl(Building *_building);
-	void	AdvanceNoSelection();
-    void	AdvanceTeamControl();
+  class Building;
+  class Engineer;
 
-public:
+  class LocationInput
+  {
+    private:
+      void AdvanceRadarDishControl(Building* _building);
+      void AdvanceNoSelection();
+      void AdvanceTeamControl();
 
-    bool    GetObjectUnderMouse( WorldObjectId &_id, int _teamId );
+    public:
+      bool GetObjectUnderMouse(WorldObjectId& _id, int _teamId);
 
-	void	Advance();
-	void	Render();
-};
-
-
+      void Advance();
+      void Render();
+  };
+} // namespace Species

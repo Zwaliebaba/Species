@@ -15,14 +15,16 @@
 #include "AppState.h"
 
 
-NetworkWindow::NetworkWindow( char const *name )
-:   SpeciesWindow( name )
+namespace Species
 {
-}
+  NetworkWindow::NetworkWindow(char const* name)
+    : SpeciesWindow(name)
+  {
+  }
 
 
-void NetworkWindow::Render( bool hasFocus )
-{
+  void NetworkWindow::Render(bool hasFocus)
+  {
     SpeciesWindow::Render( hasFocus );
 
     glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
@@ -58,5 +60,5 @@ void NetworkWindow::Render( bool hasFocus )
 
     int nextSeqId = g_clientToServer->GetNextLetterSeqID();
     g_editorFont.DrawText2D( m_x + 10, m_y + 96, DEF_FONT_SIZE, "First Letter SeqID: %d", nextSeqId );
-}
-
+  }
+} // namespace Species

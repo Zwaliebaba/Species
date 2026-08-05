@@ -6,128 +6,132 @@
 #include "Building.h"
 
 
-namespace Neuron
-{
-  class FileWriter;
-} // namespace Neuron
 
 
 // ****************************************************************************
 // Class PowerBuilding
 // ****************************************************************************
 
-class PowerBuilding : public Building
+namespace Neuron
 {
-  protected:
-    int m_powerLink;
-    ShapeMarker* m_powerLocation;
-
-    std::vector<float> m_surges;
-
-  public:
-    PowerBuilding();
-
-    void Initialise(Building* _template);
-    bool Advance();
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
-
-    bool IsInView();
-    DirectX::XMFLOAT3 GetPowerLocation();
-    virtual void TriggerSurge(float _initValue);
-
-    void ListSoundEvents(std::vector<const char*>* _list);
-
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
-};
+  class FileWriter;
+} // namespace Neuron
 
 
-// ****************************************************************************
-// Class Generator
-// ****************************************************************************
-
-class Generator : public PowerBuilding
+namespace Species
 {
-  protected:
-    ShapeMarker* m_counter;
+  class PowerBuilding : public Building
+  {
+    protected:
+      int m_powerLink;
+      ShapeMarker* m_powerLocation;
 
-    float m_timerSync;
-    int m_numThisSecond;
-    bool m_enabled;
+      std::vector<float> m_surges;
 
-  public:
-    float m_throughput;
+    public:
+      PowerBuilding();
 
-  public:
-    Generator();
+      void Initialise(Building* _template);
+      bool Advance();
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
 
-    void TriggerSurge(float _initValue);
+      bool IsInView();
+      DirectX::XMFLOAT3 GetPowerLocation();
+      virtual void TriggerSurge(float _initValue);
 
-    void ReprogramComplete();
+      void ListSoundEvents(std::vector<const char*>* _list);
 
-    char const* GetObjectiveCounter();
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
 
-    void ListSoundEvents(std::vector<const char*>* _list);
-
-    bool Advance();
-    void Render(float _predictionTime);
-};
-
-
-// ****************************************************************************
-// Class Pylon
-// ****************************************************************************
-
-class Pylon : public PowerBuilding
-{
-  public:
-    Pylon();
-    bool Advance();
-};
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
+  };
 
 
-// ****************************************************************************
-// Class PylonStart
-// ****************************************************************************
+  // ****************************************************************************
+  // Class Generator
+  // ****************************************************************************
 
-class PylonStart : public PowerBuilding
-{
-  public:
-    int m_reqBuildingId;
+  class Generator : public PowerBuilding
+  {
+    protected:
+      ShapeMarker* m_counter;
 
-  public:
-    PylonStart();
+      float m_timerSync;
+      int m_numThisSecond;
+      bool m_enabled;
 
-    void Initialise(Building* _template);
-    bool Advance();
-    void RenderAlphas(float _predictionTime);
+    public:
+      float m_throughput;
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-};
+    public:
+      Generator();
 
+      void TriggerSurge(float _initValue);
 
-// ****************************************************************************
-// Class PylonEnd
-// ****************************************************************************
+      void ReprogramComplete();
 
-class PylonEnd : public PowerBuilding
-{
-  public:
-    PylonEnd();
+      char const* GetObjectiveCounter();
 
-    void TriggerSurge(float _initValue);
-    void RenderAlphas(float _predictionTime);
-};
+      void ListSoundEvents(std::vector<const char*>* _list);
+
+      bool Advance();
+      void Render(float _predictionTime);
+  };
 
 
-// ****************************************************************************
-// Class SolarPanel
-// ****************************************************************************
+  // ****************************************************************************
+  // Class Pylon
+  // ****************************************************************************
+
+  class Pylon : public PowerBuilding
+  {
+    public:
+      Pylon();
+      bool Advance();
+  };
+
+
+  // ****************************************************************************
+  // Class PylonStart
+  // ****************************************************************************
+
+  class PylonStart : public PowerBuilding
+  {
+    public:
+      int m_reqBuildingId;
+
+    public:
+      PylonStart();
+
+      void Initialise(Building* _template);
+      bool Advance();
+      void RenderAlphas(float _predictionTime);
+
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
+  };
+
+
+  // ****************************************************************************
+  // Class PylonEnd
+  // ****************************************************************************
+
+  class PylonEnd : public PowerBuilding
+  {
+    public:
+      PylonEnd();
+
+      void TriggerSurge(float _initValue);
+      void RenderAlphas(float _predictionTime);
+  };
+
+
+  // ****************************************************************************
+  // Class SolarPanel
+  // ****************************************************************************
 
 #define SOLARPANEL_NUMGLOWS 4
 #define SOLARPANEL_NUMSTATUSMARKERS 5
@@ -152,3 +156,4 @@ class SolarPanel : public PowerBuilding
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };
+} // namespace Species

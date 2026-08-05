@@ -5,26 +5,28 @@
 #include "Entity.h"
 
 
-class AI : public Entity
+namespace Species
 {
-  protected:
-    int FindTargetBuilding(int _fromTargetId, int _fromTeamId);
-    int FindNearestTarget(DirectX::XMFLOAT3 const& _fromPos);
+  class AI : public Entity
+  {
+    protected:
+      int FindTargetBuilding(int _fromTargetId, int _fromTeamId);
+      int FindNearestTarget(DirectX::XMFLOAT3 const& _fromPos);
 
-    float m_timer;
+      float m_timer;
 
-  public:
-    AI();
+    public:
+      AI();
 
-    void Begin();
-    bool Advance(Unit* _unit);
-    void ChangeHealth(int _amount);
+      void Begin();
+      bool Advance(Unit* _unit);
+      void ChangeHealth(int _amount);
 
-    void Render(float _predictionTime);
-};
+      void Render(float _predictionTime);
+  };
 
 
-// ============================================================================
+  // ============================================================================
 
 
 #define AITARGET_LINKRANGE 600.0f
@@ -99,3 +101,4 @@ class AISpawnPoint : public Building
     bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
     bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);
 };
+} // namespace Species

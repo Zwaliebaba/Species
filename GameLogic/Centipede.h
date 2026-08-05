@@ -17,57 +17,60 @@ namespace Neuron
 } // namespace Neuron
 
 
-class Centipede : public Entity
+namespace Species
 {
-  protected:
-    float m_size;
-    WorldObjectId m_next; // Guy infront of me
-    WorldObjectId m_prev; // Guy behind me
+  class Centipede : public Entity
+  {
+    protected:
+      float m_size;
+      WorldObjectId m_next; // Guy infront of me
+      WorldObjectId m_prev; // Guy behind me
 
-    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
-    // not, and Advance tests m_targetPos against zero to decide whether to
-    // pick a new target -- so the zero is load-bearing, not tidiness.
-    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
-    WorldObjectId m_targetEntity;
+      // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+      // not, and Advance tests m_targetPos against zero to decide whether to
+      // pick a new target -- so the zero is load-bearing, not tidiness.
+      DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
+      WorldObjectId m_targetEntity;
 
-    std::vector<DirectX::XMFLOAT3> m_positionHistory;
-    bool m_linked;
-    float m_panic;
-    int m_numSpiritsEaten;
-    float m_lastAdvance;
+      std::vector<DirectX::XMFLOAT3> m_positionHistory;
+      bool m_linked;
+      float m_panic;
+      int m_numSpiritsEaten;
+      float m_lastAdvance;
 
-    static Shape* s_shapeBody;
-    static Shape* s_shapeHead;
+      static Shape* s_shapeBody;
+      static Shape* s_shapeHead;
 
-  protected:
-    bool SearchForRandomPosition();
-    bool SearchForTargetEnemy();
-    bool SearchForSpirits();
-    bool SearchForRetreatPosition();
+    protected:
+      bool SearchForRandomPosition();
+      bool SearchForTargetEnemy();
+      bool SearchForSpirits();
+      bool SearchForRetreatPosition();
 
-    bool AdvanceToTargetPosition();
-    void RecordHistoryPosition();
-    bool GetTrailPosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel, int _numSteps);
+      bool AdvanceToTargetPosition();
+      void RecordHistoryPosition();
+      bool GetTrailPosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel, int _numSteps);
 
-    void Panic(float _time);
-    void EatSpirits();
+      void Panic(float _time);
+      void EatSpirits();
 
-  public:
-    Centipede();
+    public:
+      Centipede();
 
-    void Begin();
-    bool Advance(Unit* _unit);
-    void ChangeHealth(int _amount);
-    void Render(float _predictionTime);
-    bool RenderPixelEffect(float _predictionTime);
+      void Begin();
+      bool Advance(Unit* _unit);
+      void ChangeHealth(int _amount);
+      void Render(float _predictionTime);
+      bool RenderPixelEffect(float _predictionTime);
 
-    bool IsInView();
+      bool IsInView();
 
-    void Attack(DirectX::XMFLOAT3 const& _pos);
+      void Attack(DirectX::XMFLOAT3 const& _pos);
 
-    // The centipede's basis levelled against the world up, with m_size folded
-    // into the three basis rows. The death explosion built it inline.
-    DirectX::XMFLOAT4X4 XM_CALLCONV GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const;
+      // The centipede's basis levelled against the world up, with m_size folded
+      // into the three basis rows. The death explosion built it inline.
+      DirectX::XMFLOAT4X4 XM_CALLCONV GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const;
 
-    void ListSoundEvents(std::vector<const char*>* _list);
-};
+      void ListSoundEvents(std::vector<const char*>* _list);
+  };
+} // namespace Species

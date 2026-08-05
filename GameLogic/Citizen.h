@@ -15,137 +15,141 @@
 
 #define CITIZEN_FEARRANGE 200.0f
 
-class Citizen : public Entity
+
+namespace Species
 {
-  public:
-    enum
-    {
-      StateIdle,
-      StateApproachingPort,
-      StateOperatingPort,
-      StateApproachingArmour,
-      StateInsideArmour,
-      StateWorshipSpirit,
-      StateUnderControl,
-      StateFollowingOrders,
-      StateFollowingOfficer,
-      StateCombat,
-      StateCapturedByAnt,
-      StateBoardingRocket,
-      StateWatchingSpectacle,
-      StateAttackingBuilding, // Eg attacking rocket in demo2
-      StateOnFire
-    };
+  class Citizen : public Entity
+  {
+    public:
+      enum
+      {
+        StateIdle,
+        StateApproachingPort,
+        StateOperatingPort,
+        StateApproachingArmour,
+        StateInsideArmour,
+        StateWorshipSpirit,
+        StateUnderControl,
+        StateFollowingOrders,
+        StateFollowingOfficer,
+        StateCombat,
+        StateCapturedByAnt,
+        StateBoardingRocket,
+        StateWatchingSpectacle,
+        StateAttackingBuilding, // Eg attacking rocket in demo2
+        StateOnFire
+      };
 
-    int m_state;
-    bool m_promoted;
-    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
+      int m_state;
+      bool m_promoted;
+      DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
 
-  protected:
-    float m_retargetTimer;
-    WorldObjectId m_threatId;
-    WorldObjectId m_armourId;
-    WorldObjectId m_officerId;
-    int m_spiritId;
-    int m_buildingId;
-    int m_portId;
-    WorldObjectId m_boxKiteId;
+    protected:
+      float m_retargetTimer;
+      WorldObjectId m_threatId;
+      WorldObjectId m_armourId;
+      WorldObjectId m_officerId;
+      int m_spiritId;
+      int m_buildingId;
+      int m_portId;
+      WorldObjectId m_boxKiteId;
 
-    float m_threatRange;
-    bool m_scared;
+      float m_threatRange;
+      bool m_scared;
 
-    int m_controllerId;      // Used only when Under
-    int m_wayPointId;        // Control
-    bool m_teleportRequired; //
+      int m_controllerId;      // Used only when Under
+      int m_wayPointId;        // Control
+      bool m_teleportRequired; //
 
-    DirectX::XMFLOAT3 m_orders{0.0f, 0.0f, 0.0f}; // Used when receiving orders
-    int m_ordersBuildingId;                       // from an officer
-    bool m_ordersSet;                             //
+      DirectX::XMFLOAT3 m_orders{0.0f, 0.0f, 0.0f}; // Used when receiving orders
+      int m_ordersBuildingId;                       // from an officer
+      bool m_ordersSet;                             //
 
-    float m_grenadeTimer;
-    float m_officerTimer;
+      float m_grenadeTimer;
+      float m_officerTimer;
 
-    int m_shadowBuildingId;                                 // This building causes us to cast a shadow
-    DirectX::XMFLOAT3 m_avoidObstruction{0.0f, 0.0f, 0.0f}; // Used to nagivate around big obstructions, eg water
+      int m_shadowBuildingId;                                 // This building causes us to cast a shadow
+      DirectX::XMFLOAT3 m_avoidObstruction{0.0f, 0.0f, 0.0f}; // Used to nagivate around big obstructions, eg water
 
-  protected:
-    bool SearchForNewTask();
+    protected:
+      bool SearchForNewTask();
 
-    bool SearchForRandomPosition();
-    bool SearchForThreats();
-    bool SearchForSpirits();
-    bool SearchForPorts();
-    bool SearchForOfficers();
-    bool SearchForArmour();
-    bool BeginVictoryDance();
+      bool SearchForRandomPosition();
+      bool SearchForThreats();
+      bool SearchForSpirits();
+      bool SearchForPorts();
+      bool SearchForOfficers();
+      bool SearchForArmour();
+      bool BeginVictoryDance();
 
-    bool AdvanceIdle();
-    bool AdvanceApproachingPort();
-    bool AdvanceOperatingPort();
-    bool AdvanceApproachingArmour();
-    bool AdvanceInsideArmour();
-    bool AdvanceWorshipSpirit();
-    bool AdvanceUnderControl();
-    bool AdvanceFollowingOrders();
-    bool AdvanceFollowingOfficer();
-    bool AdvanceCombat();
-    bool AdvanceCapturedByAnt();
-    bool AdvanceWatchingSpectacle();
-    bool AdvanceBoardingRocket();
-    bool AdvanceAttackingBuilding();
-    bool AdvanceOnFire();
+      bool AdvanceIdle();
+      bool AdvanceApproachingPort();
+      bool AdvanceOperatingPort();
+      bool AdvanceApproachingArmour();
+      bool AdvanceInsideArmour();
+      bool AdvanceWorshipSpirit();
+      bool AdvanceUnderControl();
+      bool AdvanceFollowingOrders();
+      bool AdvanceFollowingOfficer();
+      bool AdvanceCombat();
+      bool AdvanceCapturedByAnt();
+      bool AdvanceWatchingSpectacle();
+      bool AdvanceBoardingRocket();
+      bool AdvanceAttackingBuilding();
+      bool AdvanceOnFire();
 
-    bool AdvanceToTargetPosition();
+      bool AdvanceToTargetPosition();
 
-  public:
-    Citizen();
+    public:
+      Citizen();
 
-    void Begin();
-    bool Advance(Unit* _unit);
-    void ChangeHealth(int _amount);
-    bool IsInView();
-    void Render(float _predictionTime, float _highDetail);
+      void Begin();
+      bool Advance(Unit* _unit);
+      void ChangeHealth(int _amount);
+      bool IsInView();
+      void Render(float _predictionTime, float _highDetail);
 
-    DirectX::XMFLOAT3 PushFromObstructions(DirectX::XMFLOAT3 const& pos, bool killem = true);
+      DirectX::XMFLOAT3 PushFromObstructions(DirectX::XMFLOAT3 const& pos, bool killem = true);
 
-    void GiveOrders(DirectX::XMFLOAT3 const& _targetPos);
-    void TakeControl(int _controllerId);
-    void AntCapture(WorldObjectId _antId);
-    void WatchSpectacle(int _buildingId);
-    void CastShadow(int _buildingId);
-    void BoardRocket(int _buildingId);
-    void AttackBuilding(int _buildingId);
-    void SetFire();
-    bool IsOnFire();
+      void GiveOrders(DirectX::XMFLOAT3 const& _targetPos);
+      void TakeControl(int _controllerId);
+      void AntCapture(WorldObjectId _antId);
+      void WatchSpectacle(int _buildingId);
+      void CastShadow(int _buildingId);
+      void BoardRocket(int _buildingId);
+      void AttackBuilding(int _buildingId);
+      void SetFire();
+      bool IsOnFire();
 
-    void ListSoundEvents(std::vector<const char*>* _list);
-};
+      void ListSoundEvents(std::vector<const char*>* _list);
+  };
 
 
-class BoxKite : public WorldObject
-{
-  public:
-    Shape* m_shape;
-    // BoxKite's own basis, shadowing nothing -- WorldObject declares neither.
-    // Braced to zero for the same reason as everywhere else in this task.
-    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
+  class BoxKite : public WorldObject
+  {
+    public:
+      Shape* m_shape;
+      // BoxKite's own basis, shadowing nothing -- WorldObject declares neither.
+      // Braced to zero for the same reason as everywhere else in this task.
+      DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
 
-    enum
-    {
-      StateHeld,
-      StateReleased
-    };
-    int m_state;
+      enum
+      {
+        StateHeld,
+        StateReleased
+      };
+      int m_state;
 
-    float m_birthTime;
-    float m_deathTime;
-    float m_brightness;
-    float m_size;
+      float m_birthTime;
+      float m_deathTime;
+      float m_brightness;
+      float m_size;
 
-  public:
-    BoxKite();
-    bool Advance();
-    void Release();
-    void Render(float _predictionTime);
-};
+    public:
+      BoxKite();
+      bool Advance();
+      void Release();
+      void Render(float _predictionTime);
+  };
+} // namespace Species

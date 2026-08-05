@@ -543,10 +543,26 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-**Eight plans are complete and in `tasks/Archive/`** — `determinism` and
-`ownership` both joined them on 2026-08-05. **Three are open with nine tasks
-between them** — `strings-modernised` (5), `namespace-migration` (3) and
-`language-hygiene` (1).
+**Ten plans are complete and in `tasks/Archive/`** — `determinism` and
+`ownership` joined them on 2026-08-05, and `language-hygiene` and
+`namespace-migration` on the same day. **One is open with five tasks** —
+`strings-modernised`.
+
+**The tree is namespaced.** `NeuronCore` is still only partly in
+`namespace Neuron`; `NeuronClient` and `NeuronServer` are fully in it, and
+`GameLogic` and `Species` are in `namespace Species`. `NeuronCore.h` ends with
+`using namespace Neuron;` and every pch includes it, so engine names resolve
+unqualified everywhere and the migration changed no caller. **The game
+namespace has no such directive on purpose** — GameLogic and Species are its
+only code and they are both inside it. The exception is
+`Tests/GameLogicTests`, whose five sources each carry a `using namespace
+Species;` because a test DLL sits outside looking in.
+
+**Forward declarations are what a namespace change breaks**, and they are what
+to check first if something here does not link: a using-directive makes a name
+findable without making `class Renderer;` declare `Neuron::Renderer`. 51 of
+them across the tree are now wrapped. `tools/check_layering.py` cannot see any
+of this — a forward declaration includes nothing.
 
 **Nothing is gated on the owner, and migration stage 5 is finished.** Every
 open task is startable by an agent today — which is not the same as saying they

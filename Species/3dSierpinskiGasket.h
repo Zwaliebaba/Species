@@ -3,14 +3,17 @@
 #include "NeuronMath.h"
 
 
-class Sierpinski3D
+namespace Species
 {
-  public:
-    DirectX::XMFLOAT3* m_points;
-    unsigned int m_numPoints;
+  class Sierpinski3D
+  {
+    public:
+      DirectX::XMFLOAT3* m_points;
+      unsigned int m_numPoints;
 
-    Sierpinski3D(unsigned int _numPoints);
-    ~Sierpinski3D();
+      Sierpinski3D(unsigned int _numPoints);
+      ~Sierpinski3D();
 
-    void Render(float _scale);
-};
+      void Render(float _scale);
+  };
+} // namespace Species

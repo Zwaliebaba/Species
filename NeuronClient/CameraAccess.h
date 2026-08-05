@@ -3,7 +3,10 @@
 #include "NeuronMath.h"
 #include "WorldObjectId.h"
 
-class CameraAnimation;
+namespace Species
+{
+  class CameraAnimation;
+} // namespace Species
 
 // What the layers below Species ask the camera for.
 //
@@ -110,7 +113,7 @@ namespace Neuron
       virtual int GetDebugMode() = 0;
       virtual void SetNextDebugMode() = 0;
 
-      virtual void PlayAnimation(CameraAnimation* _anim) = 0;
+      virtual void PlayAnimation(Species::CameraAnimation* _anim) = 0;
       virtual void StopAnimation() = 0;
 
       // Camera declares the three-argument form with a default for _up. It is not

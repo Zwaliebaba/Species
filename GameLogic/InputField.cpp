@@ -23,300 +23,304 @@
 // What the old char m_buf[256] could hold. The two Keypress branches that
 // tested `len < sizeof(m_buf) - 1` still test it, so a full field drops the
 // key exactly as it did rather than growing without limit.
-static constexpr size_t MAX_EDIT_LENGTH = 255;
 
-// ****************************************************************************
-// Class InputField
-// ****************************************************************************
 
-InputField::InputField()
-  : m_type(TypeNowt),
-    m_string(nullptr),
-    m_int(nullptr),
-    m_float(nullptr),
-    m_char(nullptr),
-    m_inputBoxWidth(0),
-    m_callback(nullptr),
-    m_lowBound(0.0f),
-    m_highBound(1e4)
+namespace Species
 {
-}
+  static constexpr size_t MAX_EDIT_LENGTH = 255;
 
+  // ****************************************************************************
+  // Class InputField
+  // ****************************************************************************
 
-void InputField::SetCallback(SpeciesButton* button) { m_callback = button; }
-
-
-void InputField::Render(int realX, int realY, bool highlighted, bool clicked)
-{
-  glColor4f(0.1f, 0.0f, 0.0f, 0.5f);
-  float editAreaWidth = m_w * 0.4f;
-  glBegin(GL_QUADS);
-  glVertex2f(realX + m_w - editAreaWidth, realY);
-  glVertex2f(realX + m_w, realY);
-  glVertex2f(realX + m_w, realY + m_h);
-  glVertex2f(realX + m_w - editAreaWidth, realY + m_h);
-  glEnd();
-
-  glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-  glBegin(GL_LINES); // top
-  glVertex2f(realX + m_w - editAreaWidth, realY);
-  glVertex2f(realX + m_w, realY);
-  glEnd();
-
-  glBegin(GL_LINES); // left
-  glVertex2f(realX + m_w - editAreaWidth, realY);
-  glVertex2f(realX + m_w - editAreaWidth, realY + m_h);
-  glEnd();
-
-  glColor4ub(100, 34, 34, 150);
-  // glColor4f( 0.9f, 0.3f, 0.3f, 0.3f );        // right
-  glBegin(GL_LINES);
-  glVertex2f(realX + m_w, realY);
-  glVertex2f(realX + m_w, realY + m_h);
-  glEnd();
-
-  glBegin(GL_LINES); // bottom
-  glVertex2f(realX + m_w - editAreaWidth, realY + m_h);
-  glVertex2f(realX + m_w, realY + m_h);
-  glEnd();
-
-  int fieldX = realX + m_w - m_inputBoxWidth;
-
-  if (m_parent->m_currentTextEdit && (strcmp(m_parent->m_currentTextEdit, m_name) == 0))
+  InputField::InputField()
+    : m_type(TypeNowt),
+      m_string(nullptr),
+      m_int(nullptr),
+      m_float(nullptr),
+      m_char(nullptr),
+      m_inputBoxWidth(0),
+      m_callback(nullptr),
+      m_lowBound(0.0f),
+      m_highBound(1e4)
   {
-    BorderlessButton::Render(realX, realY, true, clicked);
-    if (fmodf(GetHighResTime(), 1.0f) < 0.5f)
+  }
+
+
+  void InputField::SetCallback(SpeciesButton* button) { m_callback = button; }
+
+
+  void InputField::Render(int realX, int realY, bool highlighted, bool clicked)
+  {
+    glColor4f(0.1f, 0.0f, 0.0f, 0.5f);
+    float editAreaWidth = m_w * 0.4f;
+    glBegin(GL_QUADS);
+    glVertex2f(realX + m_w - editAreaWidth, realY);
+    glVertex2f(realX + m_w, realY);
+    glVertex2f(realX + m_w, realY + m_h);
+    glVertex2f(realX + m_w - editAreaWidth, realY + m_h);
+    glEnd();
+
+    glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+    glBegin(GL_LINES); // top
+    glVertex2f(realX + m_w - editAreaWidth, realY);
+    glVertex2f(realX + m_w, realY);
+    glEnd();
+
+    glBegin(GL_LINES); // left
+    glVertex2f(realX + m_w - editAreaWidth, realY);
+    glVertex2f(realX + m_w - editAreaWidth, realY + m_h);
+    glEnd();
+
+    glColor4ub(100, 34, 34, 150);
+    // glColor4f( 0.9f, 0.3f, 0.3f, 0.3f );        // right
+    glBegin(GL_LINES);
+    glVertex2f(realX + m_w, realY);
+    glVertex2f(realX + m_w, realY + m_h);
+    glEnd();
+
+    glBegin(GL_LINES); // bottom
+    glVertex2f(realX + m_w - editAreaWidth, realY + m_h);
+    glVertex2f(realX + m_w, realY + m_h);
+    glEnd();
+
+    int fieldX = realX + m_w - m_inputBoxWidth;
+
+    if (m_parent->m_currentTextEdit && (strcmp(m_parent->m_currentTextEdit, m_name) == 0))
     {
-      int cursorOffset = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 2;
-      glBegin(GL_LINES);
-      glVertex2f(fieldX + cursorOffset, realY + 2);
-      glVertex2f(fieldX + cursorOffset, realY + m_h - 2);
-      glEnd();
+      BorderlessButton::Render(realX, realY, true, clicked);
+      if (fmodf(GetHighResTime(), 1.0f) < 0.5f)
+      {
+        int cursorOffset = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 2;
+        glBegin(GL_LINES);
+        glVertex2f(fieldX + cursorOffset, realY + 2);
+        glVertex2f(fieldX + cursorOffset, realY + m_h - 2);
+        glEnd();
+      }
     }
+    else
+    {
+      BorderlessButton::Render(realX, realY, highlighted, clicked);
+    }
+
+
+    // Edit by Chris - so we don't need to keep Refreshing, just generate the Buffer here every second
+
+    if (!highlighted && fmodf(GetHighResTime(), 1.0f) < 0.5f)
+    {
+      ReloadBuffer();
+      m_inputBoxWidth = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 7;
+    }
+    SpeciesWindow* parent = (SpeciesWindow*)m_parent;
+    fieldX = realX + m_w - parent->GetMenuSize(m_inputBoxWidth);
+    // m_buf is the format string, not an argument, exactly as it was before the
+    // conversion — so a '%' reaching it is read as a specifier. It cannot be
+    // typed (Keypress accepts only A-Z, 0-9 and '.') but it can arrive in a name
+    // loaded from a level file. Left alone deliberately: T12 owns this API and
+    // its notes say a call site that stops compiling under std::format is a
+    // latent bug being surfaced. This is one of them.
+    g_editorFont.DrawText2D(fieldX + 2, realY + 10, parent->GetMenuSize(DEF_FONT_SIZE), m_buf.c_str());
   }
-  else
+
+
+  void InputField::MouseUp() { m_parent->BeginTextEdit(m_name); }
+
+
+  void InputField::Keypress(int keyCode, bool shift, bool ctrl, bool alt)
   {
-    BorderlessButton::Render(realX, realY, highlighted, clicked);
-  }
+    if (strcmp(m_parent->m_currentTextEdit, "None") == 0)
+      return;
 
+    size_t len = m_buf.size();
+    if (keyCode == KEY_BACKSPACE)
+    {
+      if (len > 0)
+        m_buf.pop_back();
+      if (m_type == TypeString)
+      {
+        *m_string = m_buf;
+        Refresh();
+      }
+    }
+    else if (keyCode == KEY_ENTER)
+    {
+      m_parent->EndTextEdit();
 
-  // Edit by Chris - so we don't need to keep Refreshing, just generate the Buffer here every second
+      if (m_float)
+      {
+        *m_float = atof(m_buf.c_str());
+      }
+      else if (m_int)
+      {
+        *m_int = atoi(m_buf.c_str());
+      }
+      else if (m_string)
+      {
+        *m_string = m_buf;
+      }
+      else if (m_char)
+      {
+        *m_char = (unsigned char)atoi(m_buf.c_str());
+      }
 
-  if (!highlighted && fmodf(GetHighResTime(), 1.0f) < 0.5f)
-  {
-    ReloadBuffer();
+      ClampToBounds();
+      Refresh();
+    }
+    else if (keyCode == KEY_STOP)
+    {
+      if (len < MAX_EDIT_LENGTH)
+      {
+        m_buf += '.';
+      }
+
+      if (m_type == TypeString)
+      {
+        *m_string = m_buf;
+        Refresh();
+      }
+    }
+    else if (keyCode >= KEY_0 && keyCode <= KEY_9)
+    {
+      if (len < MAX_EDIT_LENGTH)
+      {
+        m_buf += static_cast<char>(keyCode & 0xff);
+      }
+
+      if (m_type == TypeString)
+      {
+        *m_string = m_buf;
+        Refresh();
+      }
+    }
+    else
+    {
+      if (m_type == TypeString && keyCode >= KEY_A && keyCode <= KEY_Z)
+      {
+        unsigned char ascii = keyCode & 0xff;
+        if (!shift)
+          ascii -= ('A' - 'a');
+        // No length test here, and there was none before: the letter branch
+        // wrote at m_buf[strlen(m_buf)] and [+1] with nothing stopping it, so a
+        // field already full ran off the end of the array. Appending is what
+        // that meant to do. The two branches above DID test, and keep testing,
+        // because dropping the key at the limit is behaviour rather than damage.
+        m_buf += static_cast<char>(ascii);
+      }
+
+      if (m_type == TypeString)
+      {
+        *m_string = m_buf;
+        Refresh();
+      }
+    }
+
     m_inputBoxWidth = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 7;
   }
-  SpeciesWindow* parent = (SpeciesWindow*)m_parent;
-  fieldX = realX + m_w - parent->GetMenuSize(m_inputBoxWidth);
-  // m_buf is the format string, not an argument, exactly as it was before the
-  // conversion — so a '%' reaching it is read as a specifier. It cannot be
-  // typed (Keypress accepts only A-Z, 0-9 and '.') but it can arrive in a name
-  // loaded from a level file. Left alone deliberately: T12 owns this API and
-  // its notes say a call site that stops compiling under std::format is a
-  // latent bug being surfaced. This is one of them.
-  g_editorFont.DrawText2D(fieldX + 2, realY + 10, parent->GetMenuSize(DEF_FONT_SIZE), m_buf.c_str());
-}
 
 
-void InputField::MouseUp() { m_parent->BeginTextEdit(m_name); }
-
-
-void InputField::Keypress(int keyCode, bool shift, bool ctrl, bool alt)
-{
-  if (strcmp(m_parent->m_currentTextEdit, "None") == 0)
-    return;
-
-  size_t len = m_buf.size();
-  if (keyCode == KEY_BACKSPACE)
+  void InputField::RegisterChar(unsigned char* _char)
   {
-    if (len > 0)
-      m_buf.pop_back();
-    if (m_type == TypeString)
-    {
-      *m_string = m_buf;
-      Refresh();
-    }
+    DEBUG_ASSERT(m_type == TypeNowt);
+    m_type = TypeChar;
+    m_char = _char;
   }
-  else if (keyCode == KEY_ENTER)
+
+
+  void InputField::RegisterInt(int* _int)
   {
-    m_parent->EndTextEdit();
-
-    if (m_float)
-    {
-      *m_float = atof(m_buf.c_str());
-    }
-    else if (m_int)
-    {
-      *m_int = atoi(m_buf.c_str());
-    }
-    else if (m_string)
-    {
-      *m_string = m_buf;
-    }
-    else if (m_char)
-    {
-      *m_char = (unsigned char)atoi(m_buf.c_str());
-    }
-
-    ClampToBounds();
-    Refresh();
+    DEBUG_ASSERT(m_type == TypeNowt);
+    m_type = TypeInt;
+    m_int = _int;
   }
-  else if (keyCode == KEY_STOP)
-  {
-    if (len < MAX_EDIT_LENGTH)
-    {
-      m_buf += '.';
-    }
 
-    if (m_type == TypeString)
-    {
-      *m_string = m_buf;
-      Refresh();
-    }
+
+  void InputField::RegisterFloat(float* _float)
+  {
+    DEBUG_ASSERT(m_type == TypeNowt);
+    m_type = TypeFloat;
+    m_float = _float;
   }
-  else if (keyCode >= KEY_0 && keyCode <= KEY_9)
-  {
-    if (len < MAX_EDIT_LENGTH)
-    {
-      m_buf += static_cast<char>(keyCode & 0xff);
-    }
 
-    if (m_type == TypeString)
-    {
-      *m_string = m_buf;
-      Refresh();
-    }
+
+  void InputField::RegisterString(std::string* _string)
+  {
+    DEBUG_ASSERT(m_type == TypeNowt);
+    m_type = TypeString;
+    m_string = _string;
   }
-  else
-  {
-    if (m_type == TypeString && keyCode >= KEY_A && keyCode <= KEY_Z)
-    {
-      unsigned char ascii = keyCode & 0xff;
-      if (!shift)
-        ascii -= ('A' - 'a');
-      // No length test here, and there was none before: the letter branch
-      // wrote at m_buf[strlen(m_buf)] and [+1] with nothing stopping it, so a
-      // field already full ran off the end of the array. Appending is what
-      // that meant to do. The two branches above DID test, and keep testing,
-      // because dropping the key at the limit is behaviour rather than damage.
-      m_buf += static_cast<char>(ascii);
-    }
 
-    if (m_type == TypeString)
+
+  void InputField::ClampToBounds()
+  {
+    switch (m_type)
     {
-      *m_string = m_buf;
-      Refresh();
+    case TypeChar:
+      if (*m_char > m_highBound)
+        *m_char = m_highBound;
+      else if (*m_char < m_lowBound)
+        *m_char = m_lowBound;
+      break;
+    case TypeInt:
+      if (*m_int > m_highBound)
+        *m_int = m_highBound;
+      else if (*m_int < m_lowBound)
+        *m_int = m_lowBound;
+      break;
+    case TypeFloat:
+      if (*m_float > m_highBound)
+        *m_float = m_highBound;
+      else if (*m_float < m_lowBound)
+        *m_float = m_lowBound;
+      break;
     }
   }
 
-  m_inputBoxWidth = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 7;
-}
 
-
-void InputField::RegisterChar(unsigned char* _char)
-{
-  DEBUG_ASSERT(m_type == TypeNowt);
-  m_type = TypeChar;
-  m_char = _char;
-}
-
-
-void InputField::RegisterInt(int* _int)
-{
-  DEBUG_ASSERT(m_type == TypeNowt);
-  m_type = TypeInt;
-  m_int = _int;
-}
-
-
-void InputField::RegisterFloat(float* _float)
-{
-  DEBUG_ASSERT(m_type == TypeNowt);
-  m_type = TypeFloat;
-  m_float = _float;
-}
-
-
-void InputField::RegisterString(std::string* _string)
-{
-  DEBUG_ASSERT(m_type == TypeNowt);
-  m_type = TypeString;
-  m_string = _string;
-}
-
-
-void InputField::ClampToBounds()
-{
-  switch (m_type)
+  // Renders the registered value into the edit buffer. Render did this inline
+  // and Refresh did it again identically; the only difference between them was
+  // Refresh's callback, so the shared half is named rather than duplicated.
+  void InputField::ReloadBuffer()
   {
-  case TypeChar:
-    if (*m_char > m_highBound)
-      *m_char = m_highBound;
-    else if (*m_char < m_lowBound)
-      *m_char = m_lowBound;
-    break;
-  case TypeInt:
-    if (*m_int > m_highBound)
-      *m_int = m_highBound;
-    else if (*m_int < m_lowBound)
-      *m_int = m_lowBound;
-    break;
-  case TypeFloat:
-    if (*m_float > m_highBound)
-      *m_float = m_highBound;
-    else if (*m_float < m_lowBound)
-      *m_float = m_lowBound;
-    break;
+    switch (m_type)
+    {
+    case TypeChar:
+      m_buf = std::format("{}", (int)*m_char);
+      break;
+    case TypeInt:
+      m_buf = std::format("{}", *m_int);
+      break;
+    case TypeFloat:
+      m_buf = std::format("{:.2f}", *m_float);
+      break;
+    case TypeString:
+      m_buf = *m_string;
+      break;
+    }
   }
-}
 
 
-// Renders the registered value into the edit buffer. Render did this inline
-// and Refresh did it again identically; the only difference between them was
-// Refresh's callback, so the shared half is named rather than duplicated.
-void InputField::ReloadBuffer()
-{
-  switch (m_type)
+  void InputField::Refresh()
   {
-  case TypeChar:
-    m_buf = std::format("{}", (int)*m_char);
-    break;
-  case TypeInt:
-    m_buf = std::format("{}", *m_int);
-    break;
-  case TypeFloat:
-    m_buf = std::format("{:.2f}", *m_float);
-    break;
-  case TypeString:
-    m_buf = *m_string;
-    break;
+    ReloadBuffer();
+
+    if (m_callback)
+    {
+      m_callback->MouseUp();
+    }
   }
-}
 
 
-void InputField::Refresh()
-{
-  ReloadBuffer();
+  // ****************************************************************************
+  // Class InputScroller
+  // ****************************************************************************
 
-  if (m_callback)
+  InputScroller::InputScroller()
+    : SpeciesButton(),
+      m_inputField(nullptr),
+      m_change(0.0f),
+      m_mouseDownStartTime(-1.0f)
   {
-    m_callback->MouseUp();
   }
-}
-
-
-// ****************************************************************************
-// Class InputScroller
-// ****************************************************************************
-
-InputScroller::InputScroller()
-  : SpeciesButton(),
-    m_inputField(nullptr),
-    m_change(0.0f),
-    m_mouseDownStartTime(-1.0f)
-{
-}
 
 
 #define INTEGER_INCREMENT_PERIOD 0.1f
@@ -466,3 +470,4 @@ void ColourWindow::Render(bool hasFocus)
   glVertex2i(m_x + m_w - 60, m_y + m_h - 10);
   glEnd();
 }
+} // namespace Species

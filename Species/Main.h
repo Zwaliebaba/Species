@@ -5,4 +5,8 @@
 // code that has always got it from Main.h still does.
 #include "GameTime.h"
 
-void AppMain();
+
+namespace Species
+{
+  void AppMain();
+} // namespace Species

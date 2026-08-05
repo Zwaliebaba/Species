@@ -44,1129 +44,1132 @@
 #define INSTANT_UNIT_SIZE_FACTOR 6.0f
 
 
-LocationEditor::LocationEditor()
-  : m_tool(ToolNone),
-    m_waitingForRelease(false),
-    m_selectionId(-1),
-    m_subSelectionId(-1),
-    m_mode(ModeNone),
-    m_moveBuildingsWithLandscape(1)
+namespace Species
 {
-  auto ownedMain = std::make_unique<MainEditWindow>(LANGUAGEPHRASE("editor_mainedit"));
-  MainEditWindow* mainWin = ownedMain.get();
-  mainWin->m_w = 150;
-  mainWin->m_h = 140;
-  mainWin->m_x = g_renderer->ScreenW();
-  mainWin->m_y = 0;
-  EclRegisterWindow(std::move(ownedMain));
-}
-
-
-LocationEditor::~LocationEditor()
-{
-  MainEditWindow* mainWin = (MainEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_mainedit"));
-
-  // Remove current tool window
-  if (mainWin->m_currentEditWindow)
+  LocationEditor::LocationEditor()
+    : m_tool(ToolNone),
+      m_waitingForRelease(false),
+      m_selectionId(-1),
+      m_subSelectionId(-1),
+      m_mode(ModeNone),
+      m_moveBuildingsWithLandscape(1)
   {
-    EclRemoveWindow(mainWin->m_currentEditWindow->m_name);
-    mainWin->m_currentEditWindow = nullptr;
+    auto ownedMain = std::make_unique<MainEditWindow>(LANGUAGEPHRASE("editor_mainedit"));
+    MainEditWindow* mainWin = ownedMain.get();
+    mainWin->m_w = 150;
+    mainWin->m_h = 140;
+    mainWin->m_x = g_renderer->ScreenW();
+    mainWin->m_y = 0;
+    EclRegisterWindow(std::move(ownedMain));
   }
 
-  // Remove main edit window
-  EclRemoveWindow(LANGUAGEPHRASE("editor_mainedit"));
-}
 
-
-int LocationEditor::DoesRayHitBuilding(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
-{
-  Location* location = g_location;
-
-  for (auto const& building : location->m_levelFile->m_buildings)
+  LocationEditor::~LocationEditor()
   {
-    bool result = building->DoesRayHit(rayStart, rayDir);
-    if (result)
+    MainEditWindow* mainWin = (MainEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_mainedit"));
+
+    // Remove current tool window
+    if (mainWin->m_currentEditWindow)
     {
-      return building->m_id.GetUniqueId();
+      EclRemoveWindow(mainWin->m_currentEditWindow->m_name);
+      mainWin->m_currentEditWindow = nullptr;
     }
+
+    // Remove main edit window
+    EclRemoveWindow(LANGUAGEPHRASE("editor_mainedit"));
   }
 
-  return -1;
-}
 
-
-int LocationEditor::DoesRayHitInstantUnit(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
-{
-  Location* location = g_location;
-
-  for (int i = 0; i < static_cast<int>(location->m_levelFile->m_instantUnits.size()); i++)
-  {
-    InstantUnit* iu = location->m_levelFile->m_instantUnits[i].get();
-    DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
-    pos.y = location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
-    bool result = RaySphereIntersection(rayStart, rayDir, pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
-    if (result)
-    {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-
-int LocationEditor::DoesRayHitCameraMount(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
-{
-  Shape* camShape = g_resource->GetShape("Camera.shp");
-  DirectX::XMFLOAT4X4 identity;
-  DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity()); // was g_identityMatrix34
-  DirectX::XMFLOAT3 centre = camShape->CalculateCentre(identity);
-  float radius = camShape->CalculateRadius(identity, centre);
-
-  for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
-  {
-    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
-    if (RaySphereIntersection(rayStart, rayDir, mount->m_pos, radius))
-    {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-
-int LocationEditor::IsPosInLandTile(DirectX::XMFLOAT3 const& pos)
-{
-  Landscape* land = &g_location->m_landscape;
-  auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
-  int smallestId = -1;
-  int smallestSize = INT_MAX;
-
-  for (int i = 0; i < static_cast<int>(tiles->size()); ++i)
-  {
-    LandscapeTile* tile = (*tiles)[i].get();
-    float worldX = tile->m_posX;
-    float worldZ = tile->m_posZ;
-    float sizeX = tile->m_size;
-    float sizeZ = tile->m_size;
-    if (pos.x > worldX && pos.x < worldX + sizeX && pos.z > worldZ && pos.z < worldZ + sizeZ)
-    {
-      if (tile->m_size < smallestSize)
-      {
-        smallestId = i;
-        smallestSize = tile->m_size;
-      }
-    }
-  }
-
-  return smallestId;
-}
-
-
-int LocationEditor::IsPosInFlattenArea(DirectX::XMFLOAT3 const& pos)
-{
-  auto* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
-  Landscape* land = &g_location->m_landscape;
-
-  for (int i = 0; i < static_cast<int>(areas->size()); ++i)
-  {
-    LandscapeFlattenArea* area = (*areas)[i].get();
-    float halfSize = area->m_size;
-    float size = halfSize * 2.0f;
-    float worldX = area->m_centre.x - halfSize;
-    float worldZ = area->m_centre.z - halfSize;
-    if (pos.x > worldX && pos.x < worldX + size && pos.z > worldZ && pos.z < worldZ + size)
-    {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-
-void LocationEditor::CreateEditWindowForMode(int _mode)
-{
-  MainEditWindow* mainWin = (MainEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_mainedit"));
-
-  // Remove existing window
-  if (mainWin->m_currentEditWindow)
-  {
-    EclRemoveWindow(mainWin->m_currentEditWindow->m_name);
-    mainWin->m_currentEditWindow = nullptr;
-  }
-
-  SpeciesWindow* window = nullptr;
-  switch (_mode)
-  {
-  case LocationEditor::ModeLandTile:
-    window = new LandscapeEditWindow(LANGUAGEPHRASE("editor_landscape"));
-    window->m_w = 220;
-    break;
-  case LocationEditor::ModeLandFlat:
-    window = new LandscapeEditWindow(LANGUAGEPHRASE("editor_landscape"));
-    window->m_w = 220;
-    break;
-  case LocationEditor::ModeLight:
-    window = new LightsEditWindow(LANGUAGEPHRASE("editor_lights"));
-    window->m_w = 220;
-    break;
-  case LocationEditor::ModeBuilding:
-    window = new BuildingsCreateWindow(LANGUAGEPHRASE("editor_buildings"));
-    window->m_w = 220;
-    break;
-  case LocationEditor::ModeInstantUnit:
-    window = new InstantUnitCreateWindow(LANGUAGEPHRASE("editor_instantunits"));
-    window->m_w = 220;
-    break;
-  case LocationEditor::ModeCameraMount:
-  {
-    window = new CameraMountEditWindow(LANGUAGEPHRASE("editor_cameramounts"));
-    window->m_w = 320;
-    //				SpeciesWindow *otherWin = new CameraAnimMainEditWindow(LANGUAGEPHRASE("editor_cameraanims"));
-    //				otherWin->m_w = 270;
-    //				otherWin->m_h = 100;
-    //				otherWin->m_x = 340;
-    //				otherWin->m_y = g_renderer->ScreenH() - window->m_h;
-    //				EclRegisterWindow(otherWin);
-  }
-  break;
-  }
-
-  window->m_h = 100;
-  window->m_x = 0;
-  window->m_y = g_renderer->ScreenH() - window->m_h;
-  // The switch above assigns `window` through several branches, so ownership is
-  // adopted here rather than at each `new`. mainWin keeps an observer, which is
-  // what m_currentEditWindow always was.
-  EclRegisterWindow(std::unique_ptr<EclWindow>(window));
-
-  mainWin->m_currentEditWindow = window;
-}
-
-
-void LocationEditor::RequestMode(int _mode)
-{
-  if (_mode == m_mode)
-    return;
-  if (_mode != ModeNone)
-  {
-    CreateEditWindowForMode(_mode);
-  }
-
-  m_mode = _mode;
-  m_selectionId = -1;
-}
-
-
-int LocationEditor::GetMode() { return m_mode; }
-
-
-void LocationEditor::AdvanceModeNone()
-{
-  DirectX::XMFLOAT3 pos = TheUserInput()->GetMousePos3d();
-  DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
-  DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
-  TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
-
-  if (g_inputManager->controlEvent(ControlType::ControlSelectLocation)) // TODO: Really?
-  {
-    if (DoesRayHitBuilding(rayStart, rayDir) != -1)
-      RequestMode(ModeBuilding);
-    else if (DoesRayHitInstantUnit(rayStart, rayDir) != -1)
-      RequestMode(ModeInstantUnit);
-    else if (DoesRayHitCameraMount(rayStart, rayDir) != -1)
-      RequestMode(ModeCameraMount);
-    else if (IsPosInLandTile(pos) != -1)
-      RequestMode(ModeLandTile);
-    else if (IsPosInFlattenArea(pos) != -1)
-      RequestMode(ModeLandTile);
-  }
-}
-
-
-void LocationEditor::MoveBuildingsInTile(LandscapeTile* _tile, float _dX, float _dZ)
-{
-  for (auto const& building : g_location->m_levelFile->m_buildings)
-  {
-    if (building->m_pos.x >= _tile->m_posX && building->m_pos.z >= _tile->m_posZ && building->m_pos.x <= _tile->m_posX + _tile->m_size &&
-        building->m_pos.z <= _tile->m_posZ + _tile->m_size)
-    {
-      building->m_pos.x += _dX;
-      building->m_pos.z += _dZ;
-    }
-  }
-}
-
-
-void LocationEditor::AdvanceModeLandTile()
-{
-  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
-
-  int newSelectionId = -1;
-  if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
-  {
-    newSelectionId = IsPosInLandTile(mousePos3D);
-  }
-
-  if (m_selectionId == -1)
-  {
-    // No selection
-
-    Landscape* land = &g_location->m_landscape;
-    auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
-
-    // Has the user selected a tile
-    if (newSelectionId != -1)
-    {
-      LandscapeTile* tile = (*tiles)[newSelectionId].get();
-      m_tool = ToolMove;
-      m_selectionId = newSelectionId;
-      m_newLandscapeX = tile->m_posX;
-      m_newLandscapeZ = tile->m_posZ;
-      m_waitingForRelease = true;
-
-      EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_landscape"));
-      DEBUG_ASSERT(cw);
-      auto owned = std::make_unique<LandscapeTileEditWindow>(LANGUAGEPHRASE("editor_landscapetile"), newSelectionId);
-      LandscapeTileEditWindow* ew = owned.get();
-      ew->m_w = cw->m_w;
-      ew->m_h = 150;
-      ew->m_x = cw->m_x;
-      EclRegisterWindow(std::move(owned));
-      ew->m_y = cw->m_y - ew->m_h - 10;
-    }
-  }
-
-  if (m_selectionId != -1)
-  {
-    // There is a current selection
-
-    if (g_inputManager->controlEvent(ControlType::ControlTileDrop))
-    {
-      // Move the selected landscape to the new position and regenerate it
-      LandscapeTile* tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_selectionId].get();
-      if (m_newLandscapeX != tileDef->m_posX || m_newLandscapeZ != tileDef->m_posZ)
-      {
-        if (m_moveBuildingsWithLandscape)
-        {
-          MoveBuildingsInTile(tileDef, m_newLandscapeX - tileDef->m_posX, m_newLandscapeZ - tileDef->m_posZ);
-        }
-
-        tileDef->m_posX = m_newLandscapeX;
-        tileDef->m_posZ = m_newLandscapeZ;
-        LandscapeDef* def = &g_location->m_levelFile->m_landscape;
-        g_location->m_landscape.Init(def);
-      }
-    }
-    if (g_inputManager->controlEvent(ControlType::ControlTileSelect)) // TODO: Should this be ControlTileGrab?
-    {
-      if (newSelectionId == m_selectionId)
-      {
-        // The user "grabs" the landscape at this position
-        LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-        LandscapeTile* tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_selectionId].get();
-        m_landscapeGrabX = mousePos3D.x - tileDef->m_posX;
-        m_landscapeGrabZ = mousePos3D.z - tileDef->m_posZ;
-      }
-      else
-      {
-        // The user has deselected the landscape
-        m_tool = ToolNone;
-        m_selectionId = -1;
-        m_waitingForRelease = true;
-        EclRemoveWindow(LANGUAGEPHRASE("editor_landscapetile"));
-        EclRemoveWindow(LANGUAGEPHRASE("editor_guidegrid"));
-      }
-    }
-    else if (g_inputManager->controlEvent(ControlType::ControlTileDrag))
-    {
-      // The user "drags" the landscape around
-      m_newLandscapeX = mousePos3D.x - m_landscapeGrabX;
-      m_newLandscapeZ = mousePos3D.z - m_landscapeGrabZ;
-    }
-  }
-}
-
-
-void LocationEditor::AdvanceModeLandFlat()
-{
-  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
-
-  int newSelectionId = -1;
-  if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
-  {
-    DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
-    newSelectionId = IsPosInFlattenArea(mousePos);
-  }
-
-  if (m_selectionId == -1)
-  {
-    // If there isn't currently any selection, then check for a new one
-    if (newSelectionId != -1)
-    {
-      m_selectionId = newSelectionId;
-      m_waitingForRelease = true;
-
-      EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_landscape"));
-      DEBUG_ASSERT(cw);
-      auto owned = std::make_unique<LandscapeFlattenAreaEditWindow>("Flatten Area", newSelectionId);
-      LandscapeFlattenAreaEditWindow* ew = owned.get();
-      ew->m_w = cw->m_w;
-      ew->m_h = 100;
-      ew->m_x = 0;
-      EclRegisterWindow(std::move(owned));
-      ew->m_y = cw->m_y - ew->m_h - 10;
-    }
-  }
-  else
+  int LocationEditor::DoesRayHitBuilding(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
   {
     Location* location = g_location;
 
-    if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
+    for (auto const& building : location->m_levelFile->m_buildings)
     {
-      if (newSelectionId == m_selectionId)
+      bool result = building->DoesRayHit(rayStart, rayDir);
+      if (result)
       {
-        // The user "grabs" the landscape at this position
-        LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-        LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
-        m_landscapeGrabX = mousePos3D.x - areaDef->m_centre.x;
-        m_landscapeGrabZ = mousePos3D.z - areaDef->m_centre.z;
-      }
-      else
-      {
-        // The user has deselected the flatten area
-        m_selectionId = newSelectionId;
-        m_waitingForRelease = true;
-        EclRemoveWindow("Flatten Area");
+        return building->m_id.GetUniqueId();
       }
     }
-    else if (g_inputManager->controlEvent(ControlType::ControlTileDrag))
-    {
-      // The user "drags" the flatten area around
-      LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
-      areaDef->m_centre.x = mousePos3D.x - m_landscapeGrabX;
-      areaDef->m_centre.z = mousePos3D.z - m_landscapeGrabZ;
-    }
-  }
-}
 
-
-void LocationEditor::AdvanceModeBuilding()
-{
-  BuildingEditWindow* ew = (BuildingEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_buildingid"));
-  if (ew && EclMouseInWindow(ew))
-    return;
-
-  Camera* cam = TheCamera();
-
-  // Find the ID of the building the user is clicking on
-  int newSelectionId = -1;
-  if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
-  {
-    DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
-    cam->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
-    newSelectionId = DoesRayHitBuilding(rayStart, rayDir);
+    return -1;
   }
 
-  if (m_selectionId == -1)
-  {
-    // If there isn't currently any selection, then check for a new one
-    if (newSelectionId != -1)
-    {
-      m_selectionId = newSelectionId;
-      BuildingsCreateWindow* cw = (BuildingsCreateWindow*)EclGetWindow(LANGUAGEPHRASE("editor_buildings"));
-      DEBUG_ASSERT(!ew);
-      DEBUG_ASSERT(cw);
-      auto ownedBew = std::make_unique<BuildingEditWindow>(LANGUAGEPHRASE("editor_buildingid"));
-      BuildingEditWindow* bew = ownedBew.get();
-      bew->m_w = cw->m_w;
-      bew->m_h = 140;
-      bew->m_x = cw->m_x;
-      EclRegisterWindow(std::move(ownedBew));
-      bew->m_y = cw->m_y - bew->m_h - 10;
-      m_waitingForRelease = true;
 
-      Location* location = g_location;
-      Building* building = location->GetBuilding(m_selectionId);
-      if (building->m_type == Building::TypeTree)
-      {
-        auto ownedTree = std::make_unique<TreeWindow>(LANGUAGEPHRASE("editor_treeditor"));
-        TreeWindow* tw = ownedTree.get();
-        tw->m_w = cw->m_w;
-        tw->m_h = 230;
-        tw->m_y = bew->m_y - tw->m_h - 10;
-        tw->m_x = bew->m_x;
-        EclRegisterWindow(std::move(ownedTree));
-      }
-    }
-  }
-  else
+  int LocationEditor::DoesRayHitInstantUnit(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
   {
     Location* location = g_location;
-    Building* building = location->GetBuilding(m_selectionId);
 
-
-    if (g_inputManager->controlEvent(ControlType::ControlTileSelect)) // If left mouse is clicked then consider creating a new link
+    for (int i = 0; i < static_cast<int>(location->m_levelFile->m_instantUnits.size()); i++)
     {
-      if (newSelectionId == -1)
+      InstantUnit* iu = location->m_levelFile->m_instantUnits[i].get();
+      DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
+      pos.y = location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
+      bool result = RaySphereIntersection(rayStart, rayDir, pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
+      if (result)
       {
-        EclRemoveWindow(LANGUAGEPHRASE("editor_buildingid"));
-        m_selectionId = -1;
-      }
-      else if (m_tool == ToolLink)
-      {
-        building->SetBuildingLink(newSelectionId);
-        m_tool = ToolNone;
-      }
-    }
-    else if (g_inputManager->controlEvent(ControlType::ControlTileDrag) && newSelectionId == -1) // Otherwise consider rotation and movement
-    {
-      switch (m_tool)
-      {
-      case ToolMove:
-      {
-        DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
-        building->m_pos = mousePos;
-        break;
-      }
-      case ToolRotate:
-      {
-        // Vector3::RotateAroundY(a) was the ordinary right-handed rotation
-        // about +Y, which XMMatrixRotationY(a) is under `v * M`.
-        DirectX::XMStoreFloat3(&building->m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&building->m_front),
-                                                                               DirectX::XMMatrixRotationY((float)g_target->dX() * 0.05f)));
-        break;
-      }
-      }
-    }
-  }
-}
-
-
-void LocationEditor::AdvanceModeLight()
-{
-  Location* location = g_location;
-
-  if (location->m_lights.ValidIndex(m_selectionId) && g_inputManager->controlEvent(ControlType::ControlTileDrag))
-  {
-    Light* worldLight = location->m_lights.GetData(m_selectionId);
-    DirectX::XMFLOAT3 front(worldLight->m_front[0], worldLight->m_front[1], worldLight->m_front[2]);
-    DirectX::XMStoreFloat3(&front,
-                           DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&front), DirectX::XMMatrixRotationY((float)g_target->dX() * 0.05f)));
-    worldLight->SetFront(front);
-  }
-}
-
-
-void LocationEditor::AdvanceModeInstantUnit()
-{
-  Camera* cam = TheCamera();
-
-  int newSelectionId = -1;
-  if (g_inputManager->controlEvent(ControlType::ControlTileSelect)) // TODO: Should be something else?
-  {
-    DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
-    cam->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
-    newSelectionId = DoesRayHitInstantUnit(rayStart, rayDir);
-  }
-
-  if (m_selectionId == -1)
-  {
-    if (newSelectionId != -1)
-    {
-      m_selectionId = newSelectionId;
-      EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
-      DEBUG_ASSERT(cw);
-      auto owned = std::make_unique<InstantUnitEditWindow>(LANGUAGEPHRASE("editor_instantuniteditor"));
-      InstantUnitEditWindow* ew = owned.get();
-      ew->m_w = cw->m_w;
-      ew->m_h = 160;
-      ew->m_x = cw->m_x;
-      EclRegisterWindow(std::move(owned));
-      ew->m_y = cw->m_y - ew->m_h - 10;
-      m_waitingForRelease = true;
-    }
-  }
-  else
-  {
-    if (g_inputManager->controlEvent(ControlType::ControlTileSelect)) // TODO: Something else?
-    {
-      if (newSelectionId != m_selectionId)
-      {
-        m_selectionId = -1;
-        EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
-      }
-    }
-    else if (g_inputManager->controlEvent(ControlType::ControlTileDrag)) // TODO: Something else?
-    {
-      InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(m_selectionId);
-      switch (m_tool)
-      {
-      case ToolMove:
-      {
-        DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
-        iu->m_posX = mousePos.x;
-        iu->m_posZ = mousePos.z;
-        break;
-      }
-      }
-    }
-  }
-}
-
-
-void LocationEditor::AdvanceModeCameraMount()
-{
-  if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
-  {
-    CameraAnimSecondaryEditWindow* win = (CameraAnimSecondaryEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_cameraanim"));
-    if (win && win->m_newNodeArmed)
-    {
-      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
-      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
-      TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
-      int mountId = DoesRayHitCameraMount(rayStart, rayDir);
-      if (mountId != -1)
-      {
-        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[mountId].get();
-        DEBUG_ASSERT(mount);
-
-        CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(m_selectionId);
-        DEBUG_ASSERT(anim);
-
-        auto node = std::make_unique<CamAnimNode>();
-        node->m_mountName = strdup(mount->m_name.c_str());
-
-        anim->m_nodes.push_back(std::move(node));
-
-        win->m_newNodeArmed = false;
-        win->RemoveButtons();
-        win->AddButtons();
-      }
-    }
-  }
-}
-
-
-void LocationEditor::Advance()
-{
-  if (!EclGetWindow(g_target->X(), g_target->Y()))
-  {
-    if (m_waitingForRelease && (g_inputManager->controlEvent(ControlType::ControlTileDrag) ||
-                                g_inputManager->controlEvent(ControlType::ControlTileDrop))) // TODO: Something else?
-    {
-      return;
-    }
-    m_waitingForRelease = false;
-
-    switch (m_mode)
-    {
-    case ModeNone:
-      AdvanceModeNone();
-      break;
-    case ModeLandTile:
-      AdvanceModeLandTile();
-      break;
-    case ModeLandFlat:
-      AdvanceModeLandFlat();
-      break;
-    case ModeBuilding:
-      AdvanceModeBuilding();
-      break;
-    case ModeLight:
-      AdvanceModeLight();
-      break;
-    case ModeInstantUnit:
-      AdvanceModeInstantUnit();
-      break;
-    case ModeCameraMount:
-      AdvanceModeCameraMount();
-      break;
-    }
-  }
-}
-
-
-void LocationEditor::RenderUnit(InstantUnit* _iu)
-{
-  char const* typeName = Entity::GetTypeName(_iu->m_type);
-
-  float landHeight = g_location->m_landscape.m_heightMap->GetValue(_iu->m_posX, _iu->m_posZ);
-  glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-  g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(_iu->m_posX, landHeight + 15.0f, _iu->m_posZ), 15.0f, "%d %s(s)", _iu->m_number, typeName);
-
-
-  // Render troops
-  int maxX = (int)sqrtf(_iu->m_number);
-  int maxZ = _iu->m_number / maxX;
-  float pitch = 10.0f;
-  float offsetX = -maxX * pitch * 0.5f;
-  float offsetZ = -maxZ * pitch * 0.5f;
-  RGBAColour colour;
-  if (_iu->m_teamId >= 0)
-    colour = g_location->m_teams[_iu->m_teamId].m_colour;
-  colour.a = 200;
-  glColor4ubv(colour.GetData());
-
-  DirectX::XMFLOAT3 const camUpStore = TheCamera()->GetUp();
-  DirectX::XMFLOAT3 const camRightStore = TheCamera()->GetRight();
-  DirectX::XMVECTOR const camUp = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), 5.0f);
-  DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), 5.0f);
-
-  glDisable(GL_CULL_FACE);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  glDepthMask(false);
-  glBegin(GL_QUADS);
-
-  //
-  // Render dots for the number and team of the unit
-
-  for (int x = 0; x < maxX; ++x)
-  {
-    for (int z = 0; z < maxZ; ++z)
-    {
-      DirectX::XMFLOAT3 posStore(_iu->m_posX + offsetX + x * pitch, 0.0f, _iu->m_posZ + offsetZ + z * pitch);
-      posStore.y = g_location->m_landscape.m_heightMap->GetValue(posStore.x, posStore.z) + 2.0f;
-      DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&posStore);
-      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, camUp), camRight));
-      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, camUp), camRight));
-      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, camUp), camRight));
-      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, camUp), camRight));
-    }
-  }
-
-  glEnd();
-
-
-  //
-  // Render our spread circle
-
-  if (m_mode == ModeInstantUnit)
-  {
-    int numSteps = 30;
-    float angle = 0.0f;
-
-    colour.a = 100;
-    glColor4ubv(colour.GetData());
-    glLineWidth(2.0f);
-    glBegin(GL_LINE_LOOP);
-    for (int i = 0; i <= numSteps; ++i)
-    {
-      float xDiff = _iu->m_spread * sinf(angle);
-      float zDiff = _iu->m_spread * cosf(angle);
-      DirectX::XMFLOAT3 pos(_iu->m_posX + xDiff, 5.0f, _iu->m_posZ + zDiff);
-      pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
-      if (pos.y < 2)
-        pos.y = 2;
-      glVertex3f(pos.x, pos.y, pos.z);
-      angle += 2.0f * M_PI / (float)numSteps;
-    }
-    glEnd();
-  }
-
-
-  glDisable(GL_BLEND);
-  glDepthMask(true);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glEnable(GL_CULL_FACE);
-}
-
-
-void LocationEditor::RenderModeLandTile()
-{
-  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
-  Landscape* land = &g_location->m_landscape;
-
-  // Highlight any tile under our mouse cursor
-  auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
-  for (int i = 0; i < static_cast<int>(tiles->size()); ++i)
-  {
-    if (i == m_selectionId)
-      continue;
-
-    LandscapeTile* tile = (*tiles)[i].get();
-    float worldX = tile->m_posX - tile->m_heightMap->m_cellSizeX;
-    float worldZ = tile->m_posZ - tile->m_heightMap->m_cellSizeY;
-    float sizeX = tile->m_size;
-    float sizeY = tile->m_desiredHeight - tile->m_outsideHeight;
-    float sizeZ = tile->m_size;
-    if (mousePos3D.x > worldX && mousePos3D.x < worldX + sizeX && mousePos3D.z > worldZ && mousePos3D.z < worldZ + sizeZ)
-    {
-      DirectX::XMFLOAT3 centre(worldX, tile->m_outsideHeight, worldZ);
-      centre.x += sizeX * 0.5f;
-      centre.y += sizeY * 0.5f;
-      centre.z += sizeZ * 0.5f;
-      RenderCube(centre, sizeX, sizeY, sizeZ, RGBAColour(128, 255, 128, 99));
-    }
-  }
-
-  // Render guide grids
-
-  if (EclGetWindow(LANGUAGEPHRASE("editor_guidegrid")))
-  {
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-
-    if (m_selectionId != -1)
-    {
-      LandscapeTile* tile = (*tiles)[m_selectionId].get();
-
-      if (tile->m_guideGrid && tile->m_guideGrid->GetNumColumns() > 0)
-      {
-        float gridCellSize = tile->m_size / (float)(tile->m_guideGrid->GetNumColumns() + 1);
-        for (int x = 0; x < tile->m_guideGrid->GetNumColumns() - 1; ++x)
-        {
-          for (int z = 0; z < tile->m_guideGrid->GetNumColumns() - 1; ++z)
-          {
-            float value1 = tile->m_desiredHeight * (tile->m_guideGrid->GetData(x, z) / 256.0f);
-            float value2 = tile->m_desiredHeight * (tile->m_guideGrid->GetData(x + 1, z) / 256.0f);
-            float value3 = tile->m_desiredHeight * (tile->m_guideGrid->GetData(x + 1, z + 1) / 256.0f);
-            float value4 = tile->m_desiredHeight * (tile->m_guideGrid->GetData(x, z + 1) / 256.0f);
-
-            float tileX = tile->m_posX + (x + 1) * gridCellSize;
-            float tileZ = tile->m_posZ + (z + 1) * gridCellSize;
-            float tileW = gridCellSize;
-            float tileH = gridCellSize;
-
-            glDisable(GL_DEPTH_TEST);
-            glLineWidth(1.0f);
-            glColor4f(1.0f, 0.0f, 0.0f, 0.2f);
-            glBegin(GL_LINE_LOOP);
-            glVertex3f(tileX, tile->m_posY + value1, tileZ);
-            glVertex3f(tileX + tileW, tile->m_posY + value2, tileZ);
-            glVertex3f(tileX + tileW, tile->m_posY + value3, tileZ + tileH);
-            glVertex3f(tileX, tile->m_posY + value4, tileZ + tileH);
-            glEnd();
-
-            glEnable(GL_DEPTH_TEST);
-            glColor4f(1.0f, 0.0f, 0.0f, 0.8f);
-            glLineWidth(3.0f);
-            glBegin(GL_LINE_LOOP);
-            glVertex3f(tileX, tile->m_posY + value1, tileZ);
-            glVertex3f(tileX + tileW, tile->m_posY + value2, tileZ);
-            glVertex3f(tileX + tileW, tile->m_posY + value3, tileZ + tileH);
-            glVertex3f(tileX, tile->m_posY + value4, tileZ + tileH);
-            glEnd();
-          }
-        }
+        return i;
       }
     }
 
-    glDisable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
+    return -1;
   }
 
 
-  // Render a green box around the currently selected tile (if any)
-  if (m_selectionId != -1)
+  int LocationEditor::DoesRayHitCameraMount(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir)
   {
-    LandscapeTile* tile = (*tiles)[m_selectionId].get();
-    float x = tile->m_posX - tile->m_heightMap->m_cellSizeX;
-    float y = tile->m_outsideHeight;
-    float z = tile->m_posZ - tile->m_heightMap->m_cellSizeY;
-    float sX = tile->m_size;
-    float sY = tile->m_desiredHeight - tile->m_outsideHeight;
-    float sZ = tile->m_size;
-    DirectX::XMFLOAT3 centre(x, y, z);
-    centre.x += sX * 0.5f;
-    centre.y += sY * 0.5f;
-    centre.z += sZ * 0.5f;
-    RenderCube(centre, sX, sY, sZ, RGBAColour(128, 255, 128));
-
-    if (m_newLandscapeX != tile->m_posX || m_newLandscapeZ != tile->m_posZ)
-    {
-      x = m_newLandscapeX;
-      y = 1.0f;
-      z = m_newLandscapeZ;
-      glColor3ub(0, 0, 255);
-      glBegin(GL_LINE_LOOP);
-      glVertex3f(x, y, z);
-      glVertex3f(x + sX, y, z);
-      glVertex3f(x + sX, y, z + sZ);
-      glVertex3f(x, y, z + sZ);
-      glEnd();
-    }
-  }
-}
-
-
-void LocationEditor::RenderModeLandFlat()
-{
-  DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
-  Landscape* land = &g_location->m_landscape;
-
-  // Highlight any flatten area under our mouse cursor
-  auto* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
-  for (int i = 0; i < static_cast<int>(areas->size()); ++i)
-  {
-    if (i == m_selectionId)
-      continue;
-
-    LandscapeFlattenArea* area = (*areas)[i].get();
-    float worldX = area->m_centre.x;
-    float worldZ = area->m_centre.z;
-    float sizeX = area->m_size;
-    float sizeY = area->m_centre.y;
-    float sizeZ = area->m_size;
-    float x = area->m_centre.x;
-    float y = area->m_centre.y;
-    float z = area->m_centre.z;
-    float s = area->m_size * 2.0f;
-    DirectX::XMFLOAT3 centre(x, y, z);
-
-    RenderCube(centre, s, y + 20, s, RGBAColour(128, 255, 128, 99));
-  }
-
-  if (m_selectionId != -1)
-  {
-    LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
-    LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
-    float x = areaDef->m_centre.x;
-    float y = areaDef->m_centre.y;
-    float z = areaDef->m_centre.z;
-    float s = areaDef->m_size * 2.0f;
-    DirectX::XMFLOAT3 centre(x, y, z);
-
-    RenderCube(centre, s, y + 20, s, RGBAColour(128, 255, 128, 255));
-  }
-}
-
-
-void LocationEditor::RenderModeBuilding()
-{
-  if (m_selectionId != -1)
-  {
-    Building* building = g_location->GetBuilding(m_selectionId);
-
-    if (building->m_shape)
-    {
-      // Matrix34(front, up, pos) is what BasisFromFrontAndUp replaces, and
-      // g_upVector is the (0,1,0) that g_XMIdentityR1 holds.
-      DirectX::XMFLOAT4X4 mat;
-      DirectX::XMStoreFloat4x4(
-        &mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&building->m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&building->m_pos)));
-      DirectX::XMFLOAT3 centrePos = building->m_shape->CalculateCentre(mat);
-      float radius = building->m_shape->CalculateRadius(mat, centrePos);
-      RenderSphere(centrePos, radius, RGBAColour(255, 255, 255, 255));
-    }
-    else
-    {
-      building->RenderHitCheck();
-    }
-
-    if (m_tool == ToolLink)
-    {
-      DirectX::XMVECTOR const height = DirectX::XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f);
-      DirectX::XMFLOAT3 const mousePosStore = TheUserInput()->GetMousePos3d();
-      DirectX::XMVECTOR const mousePos = DirectX::XMLoadFloat3(&mousePosStore);
-      DirectX::XMVECTOR const arrowDir = DirectX::XMVectorSubtract(mousePos, DirectX::XMLoadFloat3(&building->m_pos));
-      DirectX::XMVECTOR const arrowSize = DirectX::XMVectorSet(0.0f, 3.0f, 0.0f, 0.0f);
-      DirectX::XMVECTOR const arrowBase = DirectX::XMVectorSubtract(mousePos, DirectX::XMVectorScale(arrowDir, 0.1f));
-
-      glEnable(GL_LINE_SMOOTH);
-      glDisable(GL_DEPTH_TEST);
-      glLineWidth(1.0f);
-      glColor3f(1.0f, 0.5f, 0.5f);
-      glBegin(GL_LINES);
-      EmitVertex(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&building->m_pos), height));
-      EmitVertex(mousePos);
-
-      EmitVertex(mousePos);
-      EmitVertex(DirectX::XMVectorAdd(arrowBase, arrowSize));
-
-      EmitVertex(mousePos);
-      EmitVertex(DirectX::XMVectorSubtract(arrowBase, arrowSize));
-      glEnd();
-      glDisable(GL_LINE_SMOOTH);
-      glEnable(GL_DEPTH_TEST);
-    }
-  }
-}
-
-
-void LocationEditor::RenderModeInstantUnit()
-{
-  if (m_selectionId != -1)
-  {
-    InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(m_selectionId);
-    DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
-    pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
-    RenderSphere(pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
-  }
-}
-
-
-void LocationEditor::RenderModeCameraMount()
-{
-  RGBAColour bright(255, 255, 0);
-  RGBAColour dim(90, 90, 0);
-
-  auto* list = &g_location->m_levelFile->m_cameraAnimations;
-  for (int i = 0; i < static_cast<int>(list->size()); ++i)
-  {
-    CameraAnimation* anim = (*list)[i].get();
-    // An animation with no nodes draws nothing. The loop below already skipped
-    // it by never running, but only because the legacy list's GetData(0) answered an empty
-    // list with nullptr rather than reading off the front of it.
-    if (anim->m_nodes.empty())
-      continue;
-
-    CamAnimNode* lastNode = anim->m_nodes[0].get();
-    for (int j = 1; j < static_cast<int>(anim->m_nodes.size()); ++j)
-    {
-      CamAnimNode* node = anim->m_nodes[j].get();
-      if (stricmp(node->m_mountName, MAGIC_MOUNT_NAME_START_POS) == 0 || stricmp(lastNode->m_mountName, MAGIC_MOUNT_NAME_START_POS) == 0)
-      {
-        continue;
-      }
-
-      CameraMount* mount1 = g_location->m_levelFile->GetCameraMount(lastNode->m_mountName);
-      CameraMount* mount2 = g_location->m_levelFile->GetCameraMount(node->m_mountName);
-      if (i == m_selectionId)
-      {
-        RenderArrow(mount1->m_pos, mount2->m_pos, 1.0f, bright);
-      }
-      else
-      {
-        RenderArrow(mount1->m_pos, mount2->m_pos, 1.0f, dim);
-      }
-
-      lastNode = node;
-    }
-  }
-}
-
-
-void LocationEditor::Render()
-{
-  //
-  // Render our buildings
-
-  g_renderer->SetObjectLighting();
-  LevelFile* levelFile = g_location->m_levelFile;
-  for (auto const& b : levelFile->m_buildings)
-  {
-    b->Render(0.0f);
-  }
-  g_renderer->UnsetObjectLighting();
-  if (m_mode == ModeBuilding)
-  {
-    for (auto const& b : levelFile->m_buildings)
-    {
-      b->RenderAlphas(0.0f);
-      b->RenderLink();
-    }
-  }
-
-
-  //
-  // Render camera mounts
-
-  {
-    g_renderer->SetObjectLighting();
     Shape* camShape = g_resource->GetShape("Camera.shp");
-    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMFLOAT4X4 identity;
+    DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity()); // was g_identityMatrix34
+    DirectX::XMFLOAT3 centre = camShape->CalculateCentre(identity);
+    float radius = camShape->CalculateRadius(identity, centre);
 
     for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
     {
       CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
-      DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
-      DirectX::XMVECTOR const camToMount = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&mount->m_pos));
-      if (DirectX::XMVectorGetX(DirectX::XMVector3Length(camToMount)) < 20.0f)
+      if (RaySphereIntersection(rayStart, rayDir, mount->m_pos, radius))
+      {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+
+  int LocationEditor::IsPosInLandTile(DirectX::XMFLOAT3 const& pos)
+  {
+    Landscape* land = &g_location->m_landscape;
+    auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
+    int smallestId = -1;
+    int smallestSize = INT_MAX;
+
+    for (int i = 0; i < static_cast<int>(tiles->size()); ++i)
+    {
+      LandscapeTile* tile = (*tiles)[i].get();
+      float worldX = tile->m_posX;
+      float worldZ = tile->m_posZ;
+      float sizeX = tile->m_size;
+      float sizeZ = tile->m_size;
+      if (pos.x > worldX && pos.x < worldX + sizeX && pos.z > worldZ && pos.z < worldZ + sizeZ)
+      {
+        if (tile->m_size < smallestSize)
+        {
+          smallestId = i;
+          smallestSize = tile->m_size;
+        }
+      }
+    }
+
+    return smallestId;
+  }
+
+
+  int LocationEditor::IsPosInFlattenArea(DirectX::XMFLOAT3 const& pos)
+  {
+    auto* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
+    Landscape* land = &g_location->m_landscape;
+
+    for (int i = 0; i < static_cast<int>(areas->size()); ++i)
+    {
+      LandscapeFlattenArea* area = (*areas)[i].get();
+      float halfSize = area->m_size;
+      float size = halfSize * 2.0f;
+      float worldX = area->m_centre.x - halfSize;
+      float worldZ = area->m_centre.z - halfSize;
+      if (pos.x > worldX && pos.x < worldX + size && pos.z > worldZ && pos.z < worldZ + size)
+      {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+
+  void LocationEditor::CreateEditWindowForMode(int _mode)
+  {
+    MainEditWindow* mainWin = (MainEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_mainedit"));
+
+    // Remove existing window
+    if (mainWin->m_currentEditWindow)
+    {
+      EclRemoveWindow(mainWin->m_currentEditWindow->m_name);
+      mainWin->m_currentEditWindow = nullptr;
+    }
+
+    SpeciesWindow* window = nullptr;
+    switch (_mode)
+    {
+    case LocationEditor::ModeLandTile:
+      window = new LandscapeEditWindow(LANGUAGEPHRASE("editor_landscape"));
+      window->m_w = 220;
+      break;
+    case LocationEditor::ModeLandFlat:
+      window = new LandscapeEditWindow(LANGUAGEPHRASE("editor_landscape"));
+      window->m_w = 220;
+      break;
+    case LocationEditor::ModeLight:
+      window = new LightsEditWindow(LANGUAGEPHRASE("editor_lights"));
+      window->m_w = 220;
+      break;
+    case LocationEditor::ModeBuilding:
+      window = new BuildingsCreateWindow(LANGUAGEPHRASE("editor_buildings"));
+      window->m_w = 220;
+      break;
+    case LocationEditor::ModeInstantUnit:
+      window = new InstantUnitCreateWindow(LANGUAGEPHRASE("editor_instantunits"));
+      window->m_w = 220;
+      break;
+    case LocationEditor::ModeCameraMount:
+    {
+      window = new CameraMountEditWindow(LANGUAGEPHRASE("editor_cameramounts"));
+      window->m_w = 320;
+      //				SpeciesWindow *otherWin = new CameraAnimMainEditWindow(LANGUAGEPHRASE("editor_cameraanims"));
+      //				otherWin->m_w = 270;
+      //				otherWin->m_h = 100;
+      //				otherWin->m_x = 340;
+      //				otherWin->m_y = g_renderer->ScreenH() - window->m_h;
+      //				EclRegisterWindow(otherWin);
+    }
+    break;
+    }
+
+    window->m_h = 100;
+    window->m_x = 0;
+    window->m_y = g_renderer->ScreenH() - window->m_h;
+    // The switch above assigns `window` through several branches, so ownership is
+    // adopted here rather than at each `new`. mainWin keeps an observer, which is
+    // what m_currentEditWindow always was.
+    EclRegisterWindow(std::unique_ptr<EclWindow>(window));
+
+    mainWin->m_currentEditWindow = window;
+  }
+
+
+  void LocationEditor::RequestMode(int _mode)
+  {
+    if (_mode == m_mode)
+      return;
+    if (_mode != ModeNone)
+    {
+      CreateEditWindowForMode(_mode);
+    }
+
+    m_mode = _mode;
+    m_selectionId = -1;
+  }
+
+
+  int LocationEditor::GetMode() { return m_mode; }
+
+
+  void LocationEditor::AdvanceModeNone()
+  {
+    DirectX::XMFLOAT3 pos = TheUserInput()->GetMousePos3d();
+    DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+    TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+
+    if (g_inputManager->controlEvent(ControlType::ControlSelectLocation)) // TODO: Really?
+    {
+      if (DoesRayHitBuilding(rayStart, rayDir) != -1)
+        RequestMode(ModeBuilding);
+      else if (DoesRayHitInstantUnit(rayStart, rayDir) != -1)
+        RequestMode(ModeInstantUnit);
+      else if (DoesRayHitCameraMount(rayStart, rayDir) != -1)
+        RequestMode(ModeCameraMount);
+      else if (IsPosInLandTile(pos) != -1)
+        RequestMode(ModeLandTile);
+      else if (IsPosInFlattenArea(pos) != -1)
+        RequestMode(ModeLandTile);
+    }
+  }
+
+
+  void LocationEditor::MoveBuildingsInTile(LandscapeTile* _tile, float _dX, float _dZ)
+  {
+    for (auto const& building : g_location->m_levelFile->m_buildings)
+    {
+      if (building->m_pos.x >= _tile->m_posX && building->m_pos.z >= _tile->m_posZ && building->m_pos.x <= _tile->m_posX + _tile->m_size &&
+          building->m_pos.z <= _tile->m_posZ + _tile->m_size)
+      {
+        building->m_pos.x += _dX;
+        building->m_pos.z += _dZ;
+      }
+    }
+  }
+
+
+  void LocationEditor::AdvanceModeLandTile()
+  {
+    DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
+
+    int newSelectionId = -1;
+    if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
+    {
+      newSelectionId = IsPosInLandTile(mousePos3D);
+    }
+
+    if (m_selectionId == -1)
+    {
+      // No selection
+
+      Landscape* land = &g_location->m_landscape;
+      auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
+
+      // Has the user selected a tile
+      if (newSelectionId != -1)
+      {
+        LandscapeTile* tile = (*tiles)[newSelectionId].get();
+        m_tool = ToolMove;
+        m_selectionId = newSelectionId;
+        m_newLandscapeX = tile->m_posX;
+        m_newLandscapeZ = tile->m_posZ;
+        m_waitingForRelease = true;
+
+        EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_landscape"));
+        DEBUG_ASSERT(cw);
+        auto owned = std::make_unique<LandscapeTileEditWindow>(LANGUAGEPHRASE("editor_landscapetile"), newSelectionId);
+        LandscapeTileEditWindow* ew = owned.get();
+        ew->m_w = cw->m_w;
+        ew->m_h = 150;
+        ew->m_x = cw->m_x;
+        EclRegisterWindow(std::move(owned));
+        ew->m_y = cw->m_y - ew->m_h - 10;
+      }
+    }
+
+    if (m_selectionId != -1)
+    {
+      // There is a current selection
+
+      if (g_inputManager->controlEvent(ControlType::ControlTileDrop))
+      {
+        // Move the selected landscape to the new position and regenerate it
+        LandscapeTile* tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_selectionId].get();
+        if (m_newLandscapeX != tileDef->m_posX || m_newLandscapeZ != tileDef->m_posZ)
+        {
+          if (m_moveBuildingsWithLandscape)
+          {
+            MoveBuildingsInTile(tileDef, m_newLandscapeX - tileDef->m_posX, m_newLandscapeZ - tileDef->m_posZ);
+          }
+
+          tileDef->m_posX = m_newLandscapeX;
+          tileDef->m_posZ = m_newLandscapeZ;
+          LandscapeDef* def = &g_location->m_levelFile->m_landscape;
+          g_location->m_landscape.Init(def);
+        }
+      }
+      if (g_inputManager->controlEvent(ControlType::ControlTileSelect)) // TODO: Should this be ControlTileGrab?
+      {
+        if (newSelectionId == m_selectionId)
+        {
+          // The user "grabs" the landscape at this position
+          LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
+          LandscapeTile* tileDef = g_location->m_levelFile->m_landscape.m_tiles[m_selectionId].get();
+          m_landscapeGrabX = mousePos3D.x - tileDef->m_posX;
+          m_landscapeGrabZ = mousePos3D.z - tileDef->m_posZ;
+        }
+        else
+        {
+          // The user has deselected the landscape
+          m_tool = ToolNone;
+          m_selectionId = -1;
+          m_waitingForRelease = true;
+          EclRemoveWindow(LANGUAGEPHRASE("editor_landscapetile"));
+          EclRemoveWindow(LANGUAGEPHRASE("editor_guidegrid"));
+        }
+      }
+      else if (g_inputManager->controlEvent(ControlType::ControlTileDrag))
+      {
+        // The user "drags" the landscape around
+        m_newLandscapeX = mousePos3D.x - m_landscapeGrabX;
+        m_newLandscapeZ = mousePos3D.z - m_landscapeGrabZ;
+      }
+    }
+  }
+
+
+  void LocationEditor::AdvanceModeLandFlat()
+  {
+    DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
+
+    int newSelectionId = -1;
+    if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
+    {
+      DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
+      newSelectionId = IsPosInFlattenArea(mousePos);
+    }
+
+    if (m_selectionId == -1)
+    {
+      // If there isn't currently any selection, then check for a new one
+      if (newSelectionId != -1)
+      {
+        m_selectionId = newSelectionId;
+        m_waitingForRelease = true;
+
+        EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_landscape"));
+        DEBUG_ASSERT(cw);
+        auto owned = std::make_unique<LandscapeFlattenAreaEditWindow>("Flatten Area", newSelectionId);
+        LandscapeFlattenAreaEditWindow* ew = owned.get();
+        ew->m_w = cw->m_w;
+        ew->m_h = 100;
+        ew->m_x = 0;
+        EclRegisterWindow(std::move(owned));
+        ew->m_y = cw->m_y - ew->m_h - 10;
+      }
+    }
+    else
+    {
+      Location* location = g_location;
+
+      if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
+      {
+        if (newSelectionId == m_selectionId)
+        {
+          // The user "grabs" the landscape at this position
+          LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
+          LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
+          m_landscapeGrabX = mousePos3D.x - areaDef->m_centre.x;
+          m_landscapeGrabZ = mousePos3D.z - areaDef->m_centre.z;
+        }
+        else
+        {
+          // The user has deselected the flatten area
+          m_selectionId = newSelectionId;
+          m_waitingForRelease = true;
+          EclRemoveWindow("Flatten Area");
+        }
+      }
+      else if (g_inputManager->controlEvent(ControlType::ControlTileDrag))
+      {
+        // The user "drags" the flatten area around
+        LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
+        areaDef->m_centre.x = mousePos3D.x - m_landscapeGrabX;
+        areaDef->m_centre.z = mousePos3D.z - m_landscapeGrabZ;
+      }
+    }
+  }
+
+
+  void LocationEditor::AdvanceModeBuilding()
+  {
+    BuildingEditWindow* ew = (BuildingEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_buildingid"));
+    if (ew && EclMouseInWindow(ew))
+      return;
+
+    Camera* cam = TheCamera();
+
+    // Find the ID of the building the user is clicking on
+    int newSelectionId = -1;
+    if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
+    {
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+      cam->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+      newSelectionId = DoesRayHitBuilding(rayStart, rayDir);
+    }
+
+    if (m_selectionId == -1)
+    {
+      // If there isn't currently any selection, then check for a new one
+      if (newSelectionId != -1)
+      {
+        m_selectionId = newSelectionId;
+        BuildingsCreateWindow* cw = (BuildingsCreateWindow*)EclGetWindow(LANGUAGEPHRASE("editor_buildings"));
+        DEBUG_ASSERT(!ew);
+        DEBUG_ASSERT(cw);
+        auto ownedBew = std::make_unique<BuildingEditWindow>(LANGUAGEPHRASE("editor_buildingid"));
+        BuildingEditWindow* bew = ownedBew.get();
+        bew->m_w = cw->m_w;
+        bew->m_h = 140;
+        bew->m_x = cw->m_x;
+        EclRegisterWindow(std::move(ownedBew));
+        bew->m_y = cw->m_y - bew->m_h - 10;
+        m_waitingForRelease = true;
+
+        Location* location = g_location;
+        Building* building = location->GetBuilding(m_selectionId);
+        if (building->m_type == Building::TypeTree)
+        {
+          auto ownedTree = std::make_unique<TreeWindow>(LANGUAGEPHRASE("editor_treeditor"));
+          TreeWindow* tw = ownedTree.get();
+          tw->m_w = cw->m_w;
+          tw->m_h = 230;
+          tw->m_y = bew->m_y - tw->m_h - 10;
+          tw->m_x = bew->m_x;
+          EclRegisterWindow(std::move(ownedTree));
+        }
+      }
+    }
+    else
+    {
+      Location* location = g_location;
+      Building* building = location->GetBuilding(m_selectionId);
+
+
+      if (g_inputManager->controlEvent(ControlType::ControlTileSelect)) // If left mouse is clicked then consider creating a new link
+      {
+        if (newSelectionId == -1)
+        {
+          EclRemoveWindow(LANGUAGEPHRASE("editor_buildingid"));
+          m_selectionId = -1;
+        }
+        else if (m_tool == ToolLink)
+        {
+          building->SetBuildingLink(newSelectionId);
+          m_tool = ToolNone;
+        }
+      }
+      else if (g_inputManager->controlEvent(ControlType::ControlTileDrag) && newSelectionId == -1) // Otherwise consider rotation and movement
+      {
+        switch (m_tool)
+        {
+        case ToolMove:
+        {
+          DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
+          building->m_pos = mousePos;
+          break;
+        }
+        case ToolRotate:
+        {
+          // Vector3::RotateAroundY(a) was the ordinary right-handed rotation
+          // about +Y, which XMMatrixRotationY(a) is under `v * M`.
+          DirectX::XMStoreFloat3(&building->m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&building->m_front),
+                                                                                 DirectX::XMMatrixRotationY((float)g_target->dX() * 0.05f)));
+          break;
+        }
+        }
+      }
+    }
+  }
+
+
+  void LocationEditor::AdvanceModeLight()
+  {
+    Location* location = g_location;
+
+    if (location->m_lights.ValidIndex(m_selectionId) && g_inputManager->controlEvent(ControlType::ControlTileDrag))
+    {
+      Light* worldLight = location->m_lights.GetData(m_selectionId);
+      DirectX::XMFLOAT3 front(worldLight->m_front[0], worldLight->m_front[1], worldLight->m_front[2]);
+      DirectX::XMStoreFloat3(&front,
+                             DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&front), DirectX::XMMatrixRotationY((float)g_target->dX() * 0.05f)));
+      worldLight->SetFront(front);
+    }
+  }
+
+
+  void LocationEditor::AdvanceModeInstantUnit()
+  {
+    Camera* cam = TheCamera();
+
+    int newSelectionId = -1;
+    if (g_inputManager->controlEvent(ControlType::ControlTileSelect)) // TODO: Should be something else?
+    {
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+      cam->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+      newSelectionId = DoesRayHitInstantUnit(rayStart, rayDir);
+    }
+
+    if (m_selectionId == -1)
+    {
+      if (newSelectionId != -1)
+      {
+        m_selectionId = newSelectionId;
+        EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));
+        DEBUG_ASSERT(cw);
+        auto owned = std::make_unique<InstantUnitEditWindow>(LANGUAGEPHRASE("editor_instantuniteditor"));
+        InstantUnitEditWindow* ew = owned.get();
+        ew->m_w = cw->m_w;
+        ew->m_h = 160;
+        ew->m_x = cw->m_x;
+        EclRegisterWindow(std::move(owned));
+        ew->m_y = cw->m_y - ew->m_h - 10;
+        m_waitingForRelease = true;
+      }
+    }
+    else
+    {
+      if (g_inputManager->controlEvent(ControlType::ControlTileSelect)) // TODO: Something else?
+      {
+        if (newSelectionId != m_selectionId)
+        {
+          m_selectionId = -1;
+          EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
+        }
+      }
+      else if (g_inputManager->controlEvent(ControlType::ControlTileDrag)) // TODO: Something else?
+      {
+        InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(m_selectionId);
+        switch (m_tool)
+        {
+        case ToolMove:
+        {
+          DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
+          iu->m_posX = mousePos.x;
+          iu->m_posZ = mousePos.z;
+          break;
+        }
+        }
+      }
+    }
+  }
+
+
+  void LocationEditor::AdvanceModeCameraMount()
+  {
+    if (g_inputManager->controlEvent(ControlType::ControlTileSelect))
+    {
+      CameraAnimSecondaryEditWindow* win = (CameraAnimSecondaryEditWindow*)EclGetWindow(LANGUAGEPHRASE("editor_cameraanim"));
+      if (win && win->m_newNodeArmed)
+      {
+        DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+        TheCamera()->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+        int mountId = DoesRayHitCameraMount(rayStart, rayDir);
+        if (mountId != -1)
+        {
+          CameraMount* mount = g_location->m_levelFile->m_cameraMounts[mountId].get();
+          DEBUG_ASSERT(mount);
+
+          CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(m_selectionId);
+          DEBUG_ASSERT(anim);
+
+          auto node = std::make_unique<CamAnimNode>();
+          node->m_mountName = strdup(mount->m_name.c_str());
+
+          anim->m_nodes.push_back(std::move(node));
+
+          win->m_newNodeArmed = false;
+          win->RemoveButtons();
+          win->AddButtons();
+        }
+      }
+    }
+  }
+
+
+  void LocationEditor::Advance()
+  {
+    if (!EclGetWindow(g_target->X(), g_target->Y()))
+    {
+      if (m_waitingForRelease && (g_inputManager->controlEvent(ControlType::ControlTileDrag) ||
+                                  g_inputManager->controlEvent(ControlType::ControlTileDrop))) // TODO: Something else?
+      {
+        return;
+      }
+      m_waitingForRelease = false;
+
+      switch (m_mode)
+      {
+      case ModeNone:
+        AdvanceModeNone();
+        break;
+      case ModeLandTile:
+        AdvanceModeLandTile();
+        break;
+      case ModeLandFlat:
+        AdvanceModeLandFlat();
+        break;
+      case ModeBuilding:
+        AdvanceModeBuilding();
+        break;
+      case ModeLight:
+        AdvanceModeLight();
+        break;
+      case ModeInstantUnit:
+        AdvanceModeInstantUnit();
+        break;
+      case ModeCameraMount:
+        AdvanceModeCameraMount();
+        break;
+      }
+    }
+  }
+
+
+  void LocationEditor::RenderUnit(InstantUnit* _iu)
+  {
+    char const* typeName = Entity::GetTypeName(_iu->m_type);
+
+    float landHeight = g_location->m_landscape.m_heightMap->GetValue(_iu->m_posX, _iu->m_posZ);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(_iu->m_posX, landHeight + 15.0f, _iu->m_posZ), 15.0f, "%d %s(s)", _iu->m_number, typeName);
+
+
+    // Render troops
+    int maxX = (int)sqrtf(_iu->m_number);
+    int maxZ = _iu->m_number / maxX;
+    float pitch = 10.0f;
+    float offsetX = -maxX * pitch * 0.5f;
+    float offsetZ = -maxZ * pitch * 0.5f;
+    RGBAColour colour;
+    if (_iu->m_teamId >= 0)
+      colour = g_location->m_teams[_iu->m_teamId].m_colour;
+    colour.a = 200;
+    glColor4ubv(colour.GetData());
+
+    DirectX::XMFLOAT3 const camUpStore = TheCamera()->GetUp();
+    DirectX::XMFLOAT3 const camRightStore = TheCamera()->GetRight();
+    DirectX::XMVECTOR const camUp = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), 5.0f);
+    DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), 5.0f);
+
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(false);
+    glBegin(GL_QUADS);
+
+    //
+    // Render dots for the number and team of the unit
+
+    for (int x = 0; x < maxX; ++x)
+    {
+      for (int z = 0; z < maxZ; ++z)
+      {
+        DirectX::XMFLOAT3 posStore(_iu->m_posX + offsetX + x * pitch, 0.0f, _iu->m_posZ + offsetZ + z * pitch);
+        posStore.y = g_location->m_landscape.m_heightMap->GetValue(posStore.x, posStore.z) + 2.0f;
+        DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&posStore);
+        EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, camUp), camRight));
+        EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, camUp), camRight));
+        EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, camUp), camRight));
+        EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, camUp), camRight));
+      }
+    }
+
+    glEnd();
+
+
+    //
+    // Render our spread circle
+
+    if (m_mode == ModeInstantUnit)
+    {
+      int numSteps = 30;
+      float angle = 0.0f;
+
+      colour.a = 100;
+      glColor4ubv(colour.GetData());
+      glLineWidth(2.0f);
+      glBegin(GL_LINE_LOOP);
+      for (int i = 0; i <= numSteps; ++i)
+      {
+        float xDiff = _iu->m_spread * sinf(angle);
+        float zDiff = _iu->m_spread * cosf(angle);
+        DirectX::XMFLOAT3 pos(_iu->m_posX + xDiff, 5.0f, _iu->m_posZ + zDiff);
+        pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 10.0f;
+        if (pos.y < 2)
+          pos.y = 2;
+        glVertex3f(pos.x, pos.y, pos.z);
+        angle += 2.0f * M_PI / (float)numSteps;
+      }
+      glEnd();
+    }
+
+
+    glDisable(GL_BLEND);
+    glDepthMask(true);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
+  }
+
+
+  void LocationEditor::RenderModeLandTile()
+  {
+    DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
+    Landscape* land = &g_location->m_landscape;
+
+    // Highlight any tile under our mouse cursor
+    auto* tiles = &g_location->m_levelFile->m_landscape.m_tiles;
+    for (int i = 0; i < static_cast<int>(tiles->size()); ++i)
+    {
+      if (i == m_selectionId)
         continue;
-      // OrientFU normalised the front, derived right as up x front and up as
-      // front x right, then took pos separately -- which is what
-      // BasisFromFrontAndUp does in one call, except that it does NOT
-      // normalise the front row. The mounts are stored with unit fronts, so
-      // the two agree; normalising here rather than relying on that.
-      DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&mount->m_front)),
-                                                         DirectX::XMLoadFloat3(&mount->m_up), DirectX::XMLoadFloat3(&mount->m_pos)));
-      camShape->Render(0.0f, mat);
+
+      LandscapeTile* tile = (*tiles)[i].get();
+      float worldX = tile->m_posX - tile->m_heightMap->m_cellSizeX;
+      float worldZ = tile->m_posZ - tile->m_heightMap->m_cellSizeY;
+      float sizeX = tile->m_size;
+      float sizeY = tile->m_desiredHeight - tile->m_outsideHeight;
+      float sizeZ = tile->m_size;
+      if (mousePos3D.x > worldX && mousePos3D.x < worldX + sizeX && mousePos3D.z > worldZ && mousePos3D.z < worldZ + sizeZ)
+      {
+        DirectX::XMFLOAT3 centre(worldX, tile->m_outsideHeight, worldZ);
+        centre.x += sizeX * 0.5f;
+        centre.y += sizeY * 0.5f;
+        centre.z += sizeZ * 0.5f;
+        RenderCube(centre, sizeX, sizeY, sizeZ, RGBAColour(128, 255, 128, 99));
+      }
+    }
+
+    // Render guide grids
+
+    if (EclGetWindow(LANGUAGEPHRASE("editor_guidegrid")))
+    {
+      glEnable(GL_LINE_SMOOTH);
+      glEnable(GL_BLEND);
+
+      if (m_selectionId != -1)
+      {
+        LandscapeTile* tile = (*tiles)[m_selectionId].get();
+
+        if (tile->m_guideGrid && tile->m_guideGrid->GetNumColumns() > 0)
+        {
+          float gridCellSize = tile->m_size / (float)(tile->m_guideGrid->GetNumColumns() + 1);
+          for (int x = 0; x < tile->m_guideGrid->GetNumColumns() - 1; ++x)
+          {
+            for (int z = 0; z < tile->m_guideGrid->GetNumColumns() - 1; ++z)
+            {
+              float value1 = tile->m_desiredHeight * (tile->m_guideGrid->GetData(x, z) / 256.0f);
+              float value2 = tile->m_desiredHeight * (tile->m_guideGrid->GetData(x + 1, z) / 256.0f);
+              float value3 = tile->m_desiredHeight * (tile->m_guideGrid->GetData(x + 1, z + 1) / 256.0f);
+              float value4 = tile->m_desiredHeight * (tile->m_guideGrid->GetData(x, z + 1) / 256.0f);
+
+              float tileX = tile->m_posX + (x + 1) * gridCellSize;
+              float tileZ = tile->m_posZ + (z + 1) * gridCellSize;
+              float tileW = gridCellSize;
+              float tileH = gridCellSize;
+
+              glDisable(GL_DEPTH_TEST);
+              glLineWidth(1.0f);
+              glColor4f(1.0f, 0.0f, 0.0f, 0.2f);
+              glBegin(GL_LINE_LOOP);
+              glVertex3f(tileX, tile->m_posY + value1, tileZ);
+              glVertex3f(tileX + tileW, tile->m_posY + value2, tileZ);
+              glVertex3f(tileX + tileW, tile->m_posY + value3, tileZ + tileH);
+              glVertex3f(tileX, tile->m_posY + value4, tileZ + tileH);
+              glEnd();
+
+              glEnable(GL_DEPTH_TEST);
+              glColor4f(1.0f, 0.0f, 0.0f, 0.8f);
+              glLineWidth(3.0f);
+              glBegin(GL_LINE_LOOP);
+              glVertex3f(tileX, tile->m_posY + value1, tileZ);
+              glVertex3f(tileX + tileW, tile->m_posY + value2, tileZ);
+              glVertex3f(tileX + tileW, tile->m_posY + value3, tileZ + tileH);
+              glVertex3f(tileX, tile->m_posY + value4, tileZ + tileH);
+              glEnd();
+            }
+          }
+        }
+      }
+
+      glDisable(GL_BLEND);
+      glEnable(GL_DEPTH_TEST);
+    }
+
+
+    // Render a green box around the currently selected tile (if any)
+    if (m_selectionId != -1)
+    {
+      LandscapeTile* tile = (*tiles)[m_selectionId].get();
+      float x = tile->m_posX - tile->m_heightMap->m_cellSizeX;
+      float y = tile->m_outsideHeight;
+      float z = tile->m_posZ - tile->m_heightMap->m_cellSizeY;
+      float sX = tile->m_size;
+      float sY = tile->m_desiredHeight - tile->m_outsideHeight;
+      float sZ = tile->m_size;
+      DirectX::XMFLOAT3 centre(x, y, z);
+      centre.x += sX * 0.5f;
+      centre.y += sY * 0.5f;
+      centre.z += sZ * 0.5f;
+      RenderCube(centre, sX, sY, sZ, RGBAColour(128, 255, 128));
+
+      if (m_newLandscapeX != tile->m_posX || m_newLandscapeZ != tile->m_posZ)
+      {
+        x = m_newLandscapeX;
+        y = 1.0f;
+        z = m_newLandscapeZ;
+        glColor3ub(0, 0, 255);
+        glBegin(GL_LINE_LOOP);
+        glVertex3f(x, y, z);
+        glVertex3f(x + sX, y, z);
+        glVertex3f(x + sX, y, z + sZ);
+        glVertex3f(x, y, z + sZ);
+        glEnd();
+      }
+    }
+  }
+
+
+  void LocationEditor::RenderModeLandFlat()
+  {
+    DirectX::XMFLOAT3 mousePos3D = TheUserInput()->GetMousePos3d();
+    Landscape* land = &g_location->m_landscape;
+
+    // Highlight any flatten area under our mouse cursor
+    auto* areas = &g_location->m_levelFile->m_landscape.m_flattenAreas;
+    for (int i = 0; i < static_cast<int>(areas->size()); ++i)
+    {
+      if (i == m_selectionId)
+        continue;
+
+      LandscapeFlattenArea* area = (*areas)[i].get();
+      float worldX = area->m_centre.x;
+      float worldZ = area->m_centre.z;
+      float sizeX = area->m_size;
+      float sizeY = area->m_centre.y;
+      float sizeZ = area->m_size;
+      float x = area->m_centre.x;
+      float y = area->m_centre.y;
+      float z = area->m_centre.z;
+      float s = area->m_size * 2.0f;
+      DirectX::XMFLOAT3 centre(x, y, z);
+
+      RenderCube(centre, s, y + 20, s, RGBAColour(128, 255, 128, 99));
+    }
+
+    if (m_selectionId != -1)
+    {
+      LandscapeDef* landscapeDef = &(g_location->m_levelFile->m_landscape);
+      LandscapeFlattenArea* areaDef = g_location->m_levelFile->m_landscape.m_flattenAreas[m_selectionId].get();
+      float x = areaDef->m_centre.x;
+      float y = areaDef->m_centre.y;
+      float z = areaDef->m_centre.z;
+      float s = areaDef->m_size * 2.0f;
+      DirectX::XMFLOAT3 centre(x, y, z);
+
+      RenderCube(centre, s, y + 20, s, RGBAColour(128, 255, 128, 255));
+    }
+  }
+
+
+  void LocationEditor::RenderModeBuilding()
+  {
+    if (m_selectionId != -1)
+    {
+      Building* building = g_location->GetBuilding(m_selectionId);
+
+      if (building->m_shape)
+      {
+        // Matrix34(front, up, pos) is what BasisFromFrontAndUp replaces, and
+        // g_upVector is the (0,1,0) that g_XMIdentityR1 holds.
+        DirectX::XMFLOAT4X4 mat;
+        DirectX::XMStoreFloat4x4(
+          &mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&building->m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&building->m_pos)));
+        DirectX::XMFLOAT3 centrePos = building->m_shape->CalculateCentre(mat);
+        float radius = building->m_shape->CalculateRadius(mat, centrePos);
+        RenderSphere(centrePos, radius, RGBAColour(255, 255, 255, 255));
+      }
+      else
+      {
+        building->RenderHitCheck();
+      }
+
+      if (m_tool == ToolLink)
+      {
+        DirectX::XMVECTOR const height = DirectX::XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f);
+        DirectX::XMFLOAT3 const mousePosStore = TheUserInput()->GetMousePos3d();
+        DirectX::XMVECTOR const mousePos = DirectX::XMLoadFloat3(&mousePosStore);
+        DirectX::XMVECTOR const arrowDir = DirectX::XMVectorSubtract(mousePos, DirectX::XMLoadFloat3(&building->m_pos));
+        DirectX::XMVECTOR const arrowSize = DirectX::XMVectorSet(0.0f, 3.0f, 0.0f, 0.0f);
+        DirectX::XMVECTOR const arrowBase = DirectX::XMVectorSubtract(mousePos, DirectX::XMVectorScale(arrowDir, 0.1f));
+
+        glEnable(GL_LINE_SMOOTH);
+        glDisable(GL_DEPTH_TEST);
+        glLineWidth(1.0f);
+        glColor3f(1.0f, 0.5f, 0.5f);
+        glBegin(GL_LINES);
+        EmitVertex(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&building->m_pos), height));
+        EmitVertex(mousePos);
+
+        EmitVertex(mousePos);
+        EmitVertex(DirectX::XMVectorAdd(arrowBase, arrowSize));
+
+        EmitVertex(mousePos);
+        EmitVertex(DirectX::XMVectorSubtract(arrowBase, arrowSize));
+        glEnd();
+        glDisable(GL_LINE_SMOOTH);
+        glEnable(GL_DEPTH_TEST);
+      }
+    }
+  }
+
+
+  void LocationEditor::RenderModeInstantUnit()
+  {
+    if (m_selectionId != -1)
+    {
+      InstantUnit* iu = g_location->m_levelFile->GetInstantUnit(m_selectionId);
+      DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
+      pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
+      RenderSphere(pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
+    }
+  }
+
+
+  void LocationEditor::RenderModeCameraMount()
+  {
+    RGBAColour bright(255, 255, 0);
+    RGBAColour dim(90, 90, 0);
+
+    auto* list = &g_location->m_levelFile->m_cameraAnimations;
+    for (int i = 0; i < static_cast<int>(list->size()); ++i)
+    {
+      CameraAnimation* anim = (*list)[i].get();
+      // An animation with no nodes draws nothing. The loop below already skipped
+      // it by never running, but only because the legacy list's GetData(0) answered an empty
+      // list with nullptr rather than reading off the front of it.
+      if (anim->m_nodes.empty())
+        continue;
+
+      CamAnimNode* lastNode = anim->m_nodes[0].get();
+      for (int j = 1; j < static_cast<int>(anim->m_nodes.size()); ++j)
+      {
+        CamAnimNode* node = anim->m_nodes[j].get();
+        if (stricmp(node->m_mountName, MAGIC_MOUNT_NAME_START_POS) == 0 || stricmp(lastNode->m_mountName, MAGIC_MOUNT_NAME_START_POS) == 0)
+        {
+          continue;
+        }
+
+        CameraMount* mount1 = g_location->m_levelFile->GetCameraMount(lastNode->m_mountName);
+        CameraMount* mount2 = g_location->m_levelFile->GetCameraMount(node->m_mountName);
+        if (i == m_selectionId)
+        {
+          RenderArrow(mount1->m_pos, mount2->m_pos, 1.0f, bright);
+        }
+        else
+        {
+          RenderArrow(mount1->m_pos, mount2->m_pos, 1.0f, dim);
+        }
+
+        lastNode = node;
+      }
+    }
+  }
+
+
+  void LocationEditor::Render()
+  {
+    //
+    // Render our buildings
+
+    g_renderer->SetObjectLighting();
+    LevelFile* levelFile = g_location->m_levelFile;
+    for (auto const& b : levelFile->m_buildings)
+    {
+      b->Render(0.0f);
     }
     g_renderer->UnsetObjectLighting();
+    if (m_mode == ModeBuilding)
+    {
+      for (auto const& b : levelFile->m_buildings)
+      {
+        b->RenderAlphas(0.0f);
+        b->RenderLink();
+      }
+    }
+
+
+    //
+    // Render camera mounts
+
+    {
+      g_renderer->SetObjectLighting();
+      Shape* camShape = g_resource->GetShape("Camera.shp");
+      DirectX::XMFLOAT4X4 mat;
+
+      for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
+      {
+        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
+        DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+        DirectX::XMVECTOR const camToMount = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&mount->m_pos));
+        if (DirectX::XMVectorGetX(DirectX::XMVector3Length(camToMount)) < 20.0f)
+          continue;
+        // OrientFU normalised the front, derived right as up x front and up as
+        // front x right, then took pos separately -- which is what
+        // BasisFromFrontAndUp does in one call, except that it does NOT
+        // normalise the front row. The mounts are stored with unit fronts, so
+        // the two agree; normalising here rather than relying on that.
+        DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&mount->m_front)),
+                                                           DirectX::XMLoadFloat3(&mount->m_up), DirectX::XMLoadFloat3(&mount->m_pos)));
+        camShape->Render(0.0f, mat);
+      }
+      g_renderer->UnsetObjectLighting();
+    }
+
+
+    g_renderer->UnsetObjectLighting();
+
+
+    //
+    // Render our instant units
+
+    for (auto const& iu : levelFile->m_instantUnits)
+    {
+      RenderUnit(iu.get());
+    }
+
+    switch (m_mode)
+    {
+    case ModeLandTile:
+      RenderModeLandTile();
+      break;
+    case ModeLandFlat:
+      RenderModeLandFlat();
+      break;
+    case ModeBuilding:
+      RenderModeBuilding();
+      break;
+    case ModeLight:
+      break;
+    case ModeInstantUnit:
+      RenderModeInstantUnit();
+      break;
+    case ModeCameraMount:
+      RenderModeCameraMount();
+      break;
+    }
+
+
+    //
+    // Render axes
+
+    float sizeX = g_location->m_landscape.GetWorldSizeX() / 2;
+    float sizeZ = g_location->m_landscape.GetWorldSizeZ() / 2;
+    RenderArrow(DirectX::XMFLOAT3(10.0f, 200.0f, 0.0f), DirectX::XMFLOAT3(sizeX, 200.0f, 0.0f), 4.0f);
+    glBegin(GL_LINES);
+    glVertex3f(sizeX, 250, 0);
+    glVertex3f(sizeX + 90, 150, 0);
+    glVertex3f(sizeX, 150, 0);
+    glVertex3f(sizeX + 90, 250, 0);
+    glEnd();
+    glDisable(GL_BLEND);
+    glDisable(GL_LINE_SMOOTH);
+
+    RenderArrow(DirectX::XMFLOAT3(0.0f, 200.0f, 10.0f), DirectX::XMFLOAT3(0.0f, 200.0f, sizeZ), 4.0f);
+    glBegin(GL_LINES);
+    glVertex3f(0, 250, sizeZ);
+    glVertex3f(0, 250, sizeZ + 90);
+    glVertex3f(0, 250, sizeZ);
+    glVertex3f(0, 150, sizeZ + 90);
+    glVertex3f(0, 150, sizeZ);
+    glVertex3f(0, 150, sizeZ + 90);
+    glEnd();
+    glDisable(GL_BLEND);
+    glDisable(GL_LINE_SMOOTH);
+
+
+    //
+    // Render targetting crosshair
+
+    g_renderer->SetupMatricesFor2D();
+    glColor3ub(255, 255, 255);
+    glLineWidth(1.0f);
+    glBegin(GL_LINES);
+    glVertex2i(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2 - 30);
+    glVertex2i(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2 + 30);
+
+    glVertex2i(g_renderer->ScreenW() / 2 - 30, g_renderer->ScreenH() / 2);
+    glVertex2i(g_renderer->ScreenW() / 2 + 30, g_renderer->ScreenH() / 2);
+    glEnd();
+    g_renderer->SetupMatricesFor3D();
   }
-
-
-  g_renderer->UnsetObjectLighting();
-
-
-  //
-  // Render our instant units
-
-  for (auto const& iu : levelFile->m_instantUnits)
-  {
-    RenderUnit(iu.get());
-  }
-
-  switch (m_mode)
-  {
-  case ModeLandTile:
-    RenderModeLandTile();
-    break;
-  case ModeLandFlat:
-    RenderModeLandFlat();
-    break;
-  case ModeBuilding:
-    RenderModeBuilding();
-    break;
-  case ModeLight:
-    break;
-  case ModeInstantUnit:
-    RenderModeInstantUnit();
-    break;
-  case ModeCameraMount:
-    RenderModeCameraMount();
-    break;
-  }
-
-
-  //
-  // Render axes
-
-  float sizeX = g_location->m_landscape.GetWorldSizeX() / 2;
-  float sizeZ = g_location->m_landscape.GetWorldSizeZ() / 2;
-  RenderArrow(DirectX::XMFLOAT3(10.0f, 200.0f, 0.0f), DirectX::XMFLOAT3(sizeX, 200.0f, 0.0f), 4.0f);
-  glBegin(GL_LINES);
-  glVertex3f(sizeX, 250, 0);
-  glVertex3f(sizeX + 90, 150, 0);
-  glVertex3f(sizeX, 150, 0);
-  glVertex3f(sizeX + 90, 250, 0);
-  glEnd();
-  glDisable(GL_BLEND);
-  glDisable(GL_LINE_SMOOTH);
-
-  RenderArrow(DirectX::XMFLOAT3(0.0f, 200.0f, 10.0f), DirectX::XMFLOAT3(0.0f, 200.0f, sizeZ), 4.0f);
-  glBegin(GL_LINES);
-  glVertex3f(0, 250, sizeZ);
-  glVertex3f(0, 250, sizeZ + 90);
-  glVertex3f(0, 250, sizeZ);
-  glVertex3f(0, 150, sizeZ + 90);
-  glVertex3f(0, 150, sizeZ);
-  glVertex3f(0, 150, sizeZ + 90);
-  glEnd();
-  glDisable(GL_BLEND);
-  glDisable(GL_LINE_SMOOTH);
-
-
-  //
-  // Render targetting crosshair
-
-  g_renderer->SetupMatricesFor2D();
-  glColor3ub(255, 255, 255);
-  glLineWidth(1.0f);
-  glBegin(GL_LINES);
-  glVertex2i(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2 - 30);
-  glVertex2i(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2 + 30);
-
-  glVertex2i(g_renderer->ScreenW() / 2 - 30, g_renderer->ScreenH() / 2);
-  glVertex2i(g_renderer->ScreenW() / 2 + 30, g_renderer->ScreenH() / 2);
-  glEnd();
-  g_renderer->SetupMatricesFor3D();
-}
 
 #endif
+} // namespace Species

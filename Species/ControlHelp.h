@@ -4,88 +4,92 @@
 #include "WorldObject.h"
 #include "AppState.h"
 
-class HelpIcon;
-class HelpIconSet;
 
-class ControlHelpSystem : public ControlHelpAccess
+namespace Species
 {
-  public:
-    ControlHelpSystem();
+  class HelpIcon;
+  class HelpIconSet;
 
-    void Advance();
-    void Render();
+  class ControlHelpSystem : public ControlHelpAccess
+  {
+    public:
+      ControlHelpSystem();
 
-    void Shutdown();
+      void Advance();
+      void Render();
 
-    enum
-    {
-      A,
-      B,
-      X,
-      Y,
-      LA,
-      RA,
-      LB,
-      RB,
-      LT,
-      RT,
-      DPAD,
-      MaxIcons
-    };
+      void Shutdown();
 
-    enum
-    {
-      MaxSets = 4
-    };
+      enum
+      {
+        A,
+        B,
+        X,
+        Y,
+        LA,
+        RA,
+        LB,
+        RB,
+        LT,
+        RT,
+        DPAD,
+        MaxIcons
+      };
 
-    void RecordCondUsed(int _cond);
+      enum
+      {
+        MaxSets = 4
+      };
 
-  private:
-    void InitialiseIcons();
-    void InitialiseConditions();
-    bool CheckCondition(int _cond);
-    void SetCondIcon(int _cond);
-    void DecayCond(int _cond);
+      void RecordCondUsed(int _cond);
 
-    HelpIcon* m_icons[MaxIcons];
-    HelpIconSet* m_sets[MaxSets];
+    private:
+      void InitialiseIcons();
+      void InitialiseConditions();
+      bool CheckCondition(int _cond);
+      void SetCondIcon(int _cond);
+      void DecayCond(int _cond);
 
-    struct TextIndicator
-    {
-        TextIndicator()
-          : m_icon(0),
-            m_text(0),
-            m_minTime(0.0f),
-            m_maxTime(0.0f),
-            m_maxUsage(0.0f),
-            m_decayRate(1.0f)
-        {
-        }
+      HelpIcon* m_icons[MaxIcons];
+      HelpIconSet* m_sets[MaxSets];
 
-        TextIndicator(int _icon, int _text, const char* _langPhrase, float _minTime = 0.0f, float _maxTime = 0.0f, float _maxUsage = 0.0f,
-                      float _decayRate = 1.0f)
-          : m_icon(_icon),
-            m_text(_text),
-            m_langPhrase(_langPhrase),
-            m_minTime(_minTime),
-            m_maxTime(_maxTime),
-            m_maxUsage(_maxUsage),
-            m_decayRate(_decayRate)
-        {
-        }
+      struct TextIndicator
+      {
+          TextIndicator()
+            : m_icon(0),
+              m_text(0),
+              m_minTime(0.0f),
+              m_maxTime(0.0f),
+              m_maxUsage(0.0f),
+              m_decayRate(1.0f)
+          {
+          }
 
-        int m_icon, m_text;
-        const char* m_langPhrase;
+          TextIndicator(int _icon, int _text, const char* _langPhrase, float _minTime = 0.0f, float _maxTime = 0.0f, float _maxUsage = 0.0f,
+                        float _decayRate = 1.0f)
+            : m_icon(_icon),
+              m_text(_text),
+              m_langPhrase(_langPhrase),
+              m_minTime(_minTime),
+              m_maxTime(_maxTime),
+              m_maxUsage(_maxUsage),
+              m_decayRate(_decayRate)
+          {
+          }
 
-        float m_timeUsed;
-        float m_minTime, m_maxTime, m_maxUsage, m_decayRate;
-    };
+          int m_icon, m_text;
+          const char* m_langPhrase;
 
-    TextIndicator m_conditionIconMap[MaxConditions];
-};
+          float m_timeUsed;
+          float m_minTime, m_maxTime, m_maxUsage, m_decayRate;
+      };
+
+      TextIndicator m_conditionIconMap[MaxConditions];
+  };
 
 
-// g_controlHelpSystem is a ControlHelpAccess* so the layers below Species need
-// only the interface. Species reaches the whole class through here, at every
-// call site. The cast is safe because App is the only thing that assigns it.
-inline ControlHelpSystem* TheControlHelp() { return static_cast<ControlHelpSystem*>(g_controlHelpSystem); }
+  // g_controlHelpSystem is a ControlHelpAccess* so the layers below Species need
+  // only the interface. Species reaches the whole class through here, at every
+  // call site. The cast is safe because App is the only thing that assigns it.
+  inline ControlHelpSystem* TheControlHelp() { return static_cast<ControlHelpSystem*>(g_controlHelpSystem); }
+} // namespace Species

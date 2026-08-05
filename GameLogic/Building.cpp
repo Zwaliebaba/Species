@@ -66,256 +66,258 @@
 #include "AppState.h"
 
 
-Shape* Building::s_controlPad = nullptr;
-ShapeMarker* Building::s_controlPadStatus = nullptr;
-
-
-Building::Building()
-  : m_front(1, 0, 0),
-    m_radius(13.0f),
-    m_timeOfDeath(-1.0f),
-    m_shape(nullptr),
-    m_dynamic(false),
-    m_isGlobal(false),
-    m_destroyed(false)
+namespace Species
 {
-  if (!s_controlPad)
+  Shape* Building::s_controlPad = nullptr;
+  ShapeMarker* Building::s_controlPadStatus = nullptr;
+
+
+  Building::Building()
+    : m_front(1, 0, 0),
+      m_radius(13.0f),
+      m_timeOfDeath(-1.0f),
+      m_shape(nullptr),
+      m_dynamic(false),
+      m_isGlobal(false),
+      m_destroyed(false)
   {
-    s_controlPad = g_resource->GetShape("ControlPad.shp");
-    DEBUG_ASSERT(s_controlPad);
-
-    s_controlPadStatus = s_controlPad->m_rootFragment->LookupMarker("MarkerStatus");
-    DEBUG_ASSERT(s_controlPadStatus);
-  }
-
-  m_id.SetTeamId(1);
-
-  m_up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
-}
-
-
-// Every render and hit-test path in this file builds the same matrix from the
-// building's own basis, ten times over. BasisFromFrontAndUp states the
-// convention; this states which vectors this class feeds it.
-DirectX::XMFLOAT4X4 Building::GetWorldMatrix() const
-{
-  DirectX::XMFLOAT4X4 mat;
-  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
-  return mat;
-}
-
-void Building::Initialise(Building* _template)
-{
-  m_id = _template->m_id;
-  m_pos = _template->m_pos;
-  m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
-  m_front = _template->m_front;
-  m_up = _template->m_up;
-  m_dynamic = _template->m_dynamic;
-  m_isGlobal = _template->m_isGlobal;
-  m_destroyed = _template->m_destroyed;
-
-  if (m_shape)
-  {
-    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
-    m_centrePos = m_shape->CalculateCentre(mat);
-    m_radius = m_shape->CalculateRadius(mat, m_centrePos);
-
-    SetShapeLights(m_shape->m_rootFragment.get());
-    SetShapePorts(m_shape->m_rootFragment.get());
-  }
-  else
-  {
-    m_centrePos = m_pos;
-    m_radius = 13.0f;
-  }
-
-  GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_requestedLocationId);
-  if (gb)
-    m_id.SetTeamId(gb->m_teamId);
-
-  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Create");
-}
-
-
-void Building::SetDetail(int _detail)
-{
-  m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
-
-  if (m_shape)
-  {
-    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
-    m_centrePos = m_shape->CalculateCentre(mat);
-    m_radius = m_shape->CalculateRadius(mat, m_centrePos);
-
-    m_ports.clear();
-    SetShapePorts(m_shape->m_rootFragment.get());
-  }
-  else
-  {
-    m_centrePos = m_pos;
-    m_radius = 13.0f;
-  }
-}
-
-
-bool Building::Advance()
-{
-  if (m_destroyed)
-    return true;
-
-  EvaluatePorts();
-  return false;
-}
-
-void Building::SetShape(Shape* _shape) { m_shape = _shape; }
-
-void Building::SetShapeLights(ShapeFragment* _fragment)
-{
-  //
-  // Enter all lights from this fragment
-
-  int i;
-
-  for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
-  {
-    ShapeMarker* marker = _fragment->m_childMarkers[i].get();
-    if (marker->m_name.find("MarkerLight") != std::string::npos)
+    if (!s_controlPad)
     {
-      m_lights.push_back(marker);
+      s_controlPad = g_resource->GetShape("ControlPad.shp");
+      DEBUG_ASSERT(s_controlPad);
+
+      s_controlPadStatus = s_controlPad->m_rootFragment->LookupMarker("MarkerStatus");
+      DEBUG_ASSERT(s_controlPadStatus);
+    }
+
+    m_id.SetTeamId(1);
+
+    m_up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+  }
+
+
+  // Every render and hit-test path in this file builds the same matrix from the
+  // building's own basis, ten times over. BasisFromFrontAndUp states the
+  // convention; this states which vectors this class feeds it.
+  DirectX::XMFLOAT4X4 Building::GetWorldMatrix() const
+  {
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
+    return mat;
+  }
+
+  void Building::Initialise(Building* _template)
+  {
+    m_id = _template->m_id;
+    m_pos = _template->m_pos;
+    m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+    m_front = _template->m_front;
+    m_up = _template->m_up;
+    m_dynamic = _template->m_dynamic;
+    m_isGlobal = _template->m_isGlobal;
+    m_destroyed = _template->m_destroyed;
+
+    if (m_shape)
+    {
+      DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
+      m_centrePos = m_shape->CalculateCentre(mat);
+      m_radius = m_shape->CalculateRadius(mat, m_centrePos);
+
+      SetShapeLights(m_shape->m_rootFragment.get());
+      SetShapePorts(m_shape->m_rootFragment.get());
+    }
+    else
+    {
+      m_centrePos = m_pos;
+      m_radius = 13.0f;
+    }
+
+    GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_requestedLocationId);
+    if (gb)
+      m_id.SetTeamId(gb->m_teamId);
+
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Create");
+  }
+
+
+  void Building::SetDetail(int _detail)
+  {
+    m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
+
+    if (m_shape)
+    {
+      DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
+      m_centrePos = m_shape->CalculateCentre(mat);
+      m_radius = m_shape->CalculateRadius(mat, m_centrePos);
+
+      m_ports.clear();
+      SetShapePorts(m_shape->m_rootFragment.get());
+    }
+    else
+    {
+      m_centrePos = m_pos;
+      m_radius = 13.0f;
     }
   }
 
 
-  //
-  // Recurse to all child fragments
-
-  for (i = 0; i < static_cast<int>(_fragment->m_childFragments.size()); ++i)
+  bool Building::Advance()
   {
-    ShapeFragment* fragment = _fragment->m_childFragments[i].get();
-    SetShapeLights(fragment);
+    if (m_destroyed)
+      return true;
+
+    EvaluatePorts();
+    return false;
   }
-}
 
+  void Building::SetShape(Shape* _shape) { m_shape = _shape; }
 
-void Building::SetShapePorts(ShapeFragment* _fragment)
-{
-  //
-  // Enter all ports from this fragment
-
-  int i;
-
-  DirectX::XMFLOAT4X4 buildingMat = GetWorldMatrix();
-
-  for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
+  void Building::SetShapeLights(ShapeFragment* _fragment)
   {
-    ShapeMarker* marker = _fragment->m_childMarkers[i].get();
-    if (marker->m_name.find("MarkerPort") != std::string::npos)
+    //
+    // Enter all lights from this fragment
+
+    int i;
+
+    for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
     {
-      auto port = std::make_unique<BuildingPort>();
-      port->m_marker = marker;
-      // the conversion to XMFLOAT4X4 happens on assignment. From here the rows
-      // are numbered: _41.._43 is the position, _31.._33 the front.
-      port->m_mat = marker->GetWorldMatrix(buildingMat);
-
-      DirectX::XMFLOAT3 portPos(port->m_mat._41, port->m_mat._42, port->m_mat._43);
-      portPos = PushFromBuilding(portPos, 5.0f);
-      portPos.y = g_location->m_landscape.m_heightMap->GetValue(portPos.x, portPos.z);
-
-      port->m_mat._41 = portPos.x;
-      port->m_mat._42 = portPos.y;
-      port->m_mat._43 = portPos.z;
-
-      for (int t = 0; t < NUM_TEAMS; ++t)
+      ShapeMarker* marker = _fragment->m_childMarkers[i].get();
+      if (marker->m_name.find("MarkerLight") != std::string::npos)
       {
-        port->m_counter[t] = 0;
+        m_lights.push_back(marker);
+      }
+    }
+
+
+    //
+    // Recurse to all child fragments
+
+    for (i = 0; i < static_cast<int>(_fragment->m_childFragments.size()); ++i)
+    {
+      ShapeFragment* fragment = _fragment->m_childFragments[i].get();
+      SetShapeLights(fragment);
+    }
+  }
+
+
+  void Building::SetShapePorts(ShapeFragment* _fragment)
+  {
+    //
+    // Enter all ports from this fragment
+
+    int i;
+
+    DirectX::XMFLOAT4X4 buildingMat = GetWorldMatrix();
+
+    for (i = 0; i < static_cast<int>(_fragment->m_childMarkers.size()); ++i)
+    {
+      ShapeMarker* marker = _fragment->m_childMarkers[i].get();
+      if (marker->m_name.find("MarkerPort") != std::string::npos)
+      {
+        auto port = std::make_unique<BuildingPort>();
+        port->m_marker = marker;
+        // the conversion to XMFLOAT4X4 happens on assignment. From here the rows
+        // are numbered: _41.._43 is the position, _31.._33 the front.
+        port->m_mat = marker->GetWorldMatrix(buildingMat);
+
+        DirectX::XMFLOAT3 portPos(port->m_mat._41, port->m_mat._42, port->m_mat._43);
+        portPos = PushFromBuilding(portPos, 5.0f);
+        portPos.y = g_location->m_landscape.m_heightMap->GetValue(portPos.x, portPos.z);
+
+        port->m_mat._41 = portPos.x;
+        port->m_mat._42 = portPos.y;
+        port->m_mat._43 = portPos.z;
+
+        for (int t = 0; t < NUM_TEAMS; ++t)
+        {
+          port->m_counter[t] = 0;
+        }
+
+        m_ports.push_back(std::move(port));
+      }
+    }
+
+
+    //
+    // Recurse to all child fragments
+
+    for (i = 0; i < static_cast<int>(_fragment->m_childFragments.size()); ++i)
+    {
+      ShapeFragment* fragment = _fragment->m_childFragments[i].get();
+      SetShapePorts(fragment);
+    }
+  }
+
+
+  void Building::Reprogram(float _complete) {}
+
+
+  void Building::ReprogramComplete()
+  {
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ReprogramComplete");
+
+    GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
+    if (gb)
+    {
+      gb->m_online = !gb->m_online;
+    }
+
+    g_globalWorld->EvaluateEvents();
+  }
+
+
+  void Building::SetTeamId(int _teamId)
+  {
+    m_id.SetTeamId(_teamId);
+
+    GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
+    if (gb)
+      gb->m_teamId = _teamId;
+
+    g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ChangeTeam");
+  }
+
+
+  DirectX::XMFLOAT3 Building::PushFromBuilding(DirectX::XMFLOAT3 const& pos, float _radius)
+  {
+    START_PROFILE(g_profiler, "PushFromBuilding");
+
+    DirectX::XMFLOAT3 result = pos;
+
+    bool hit = false;
+    if (DoesSphereHit(result, _radius))
+      hit = true;
+
+    if (hit)
+    {
+      // The same load-bearing zero-length fallback as Entity and Citizen: the
+      // legacy SetLength left (2,0,0), and without it this loop cannot terminate.
+      DirectX::XMVECTOR pushForce = DirectX::XMVectorScale(
+        DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&result))), 2.0f);
+      if (DirectX::XMVector3Equal(pushForce, DirectX::XMVectorZero()))
+      {
+        pushForce = DirectX::XMVectorSet(2.0f, 0.0f, 0.0f, 0.0f);
       }
 
-      m_ports.push_back(std::move(port));
-    }
-  }
-
-
-  //
-  // Recurse to all child fragments
-
-  for (i = 0; i < static_cast<int>(_fragment->m_childFragments.size()); ++i)
-  {
-    ShapeFragment* fragment = _fragment->m_childFragments[i].get();
-    SetShapePorts(fragment);
-  }
-}
-
-
-void Building::Reprogram(float _complete) {}
-
-
-void Building::ReprogramComplete()
-{
-  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ReprogramComplete");
-
-  GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
-  if (gb)
-  {
-    gb->m_online = !gb->m_online;
-  }
-
-  g_globalWorld->EvaluateEvents();
-}
-
-
-void Building::SetTeamId(int _teamId)
-{
-  m_id.SetTeamId(_teamId);
-
-  GlobalBuilding* gb = g_globalWorld->GetBuilding(m_id.GetUniqueId(), g_locationId);
-  if (gb)
-    gb->m_teamId = _teamId;
-
-  g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "ChangeTeam");
-}
-
-
-DirectX::XMFLOAT3 Building::PushFromBuilding(DirectX::XMFLOAT3 const& pos, float _radius)
-{
-  START_PROFILE(g_profiler, "PushFromBuilding");
-
-  DirectX::XMFLOAT3 result = pos;
-
-  bool hit = false;
-  if (DoesSphereHit(result, _radius))
-    hit = true;
-
-  if (hit)
-  {
-    // The same load-bearing zero-length fallback as Entity and Citizen: the
-    // legacy SetLength left (2,0,0), and without it this loop cannot terminate.
-    DirectX::XMVECTOR pushForce = DirectX::XMVectorScale(
-      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&result))), 2.0f);
-    if (DirectX::XMVector3Equal(pushForce, DirectX::XMVectorZero()))
-    {
-      pushForce = DirectX::XMVectorSet(2.0f, 0.0f, 0.0f, 0.0f);
+      while (DoesSphereHit(result, _radius))
+      {
+        DirectX::XMStoreFloat3(&result, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&result), pushForce));
+      }
     }
 
-    while (DoesSphereHit(result, _radius))
-    {
-      DirectX::XMStoreFloat3(&result, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&result), pushForce));
-    }
+    END_PROFILE(g_profiler, "PushFromBuilding");
+
+    return result;
   }
 
-  END_PROFILE(g_profiler, "PushFromBuilding");
 
-  return result;
-}
+  bool Building::IsInView() { return (g_camera->SphereInViewFrustum(m_centrePos, m_radius)); }
 
 
-bool Building::IsInView() { return (g_camera->SphereInViewFrustum(m_centrePos, m_radius)); }
+  bool Building::PerformDepthSort(DirectX::XMFLOAT3& _centrePos) { return false; }
 
-
-bool Building::PerformDepthSort(DirectX::XMFLOAT3& _centrePos) { return false; }
-
-void Building::Render(float predictionTime)
-{
+  void Building::Render(float predictionTime)
+  {
 #ifdef DEBUG_RENDER_ENABLED
   if (g_editing)
   {
@@ -336,7 +338,7 @@ void Building::Render(float predictionTime)
 
     // m_shape->RenderMarkers(mat);
   }
-}
+  }
 
 
 void Building::RenderAlphas(float predictionTime)
@@ -1084,3 +1086,4 @@ void Building::ListSoundEvents(std::vector<const char*>* _list)
   _list->push_back("ChangeTeam");
   _list->push_back("Damage");
 }
+} // namespace Species

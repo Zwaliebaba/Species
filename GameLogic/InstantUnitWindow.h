@@ -9,29 +9,32 @@
 // Class InstantUnitEditWindow
 // ****************************************************************************
 
-class InstantUnitEditWindow: public SpeciesWindow
+
+namespace Species
 {
-public:
-	InstantUnitEditWindow( char const *name );
-	~InstantUnitEditWindow();
+  class InstantUnitEditWindow : public SpeciesWindow
+  {
+    public:
+      InstantUnitEditWindow(char const* name);
+      ~InstantUnitEditWindow();
 
-	void Create();
-};
+      void Create();
+  };
 
 
-// ****************************************************************************
-// Class InstantUnitCreateWindow
-// ****************************************************************************
+  // ****************************************************************************
+  // Class InstantUnitCreateWindow
+  // ****************************************************************************
 
-class InstantUnitCreateWindow: public SpeciesWindow
-{
-public:
-    InstantUnitCreateWindow( char const *name );
-	~InstantUnitCreateWindow();
+  class InstantUnitCreateWindow : public SpeciesWindow
+  {
+    public:
+      InstantUnitCreateWindow(char const* name);
+      ~InstantUnitCreateWindow();
 
-	void Create();
-};
+      void Create();
+  };
 
 
 #endif // LOCATION_EDITOR
-
+} // namespace Species

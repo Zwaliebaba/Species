@@ -29,29 +29,32 @@
 // Class MainEditWindowButton
 // ****************************************************************************
 
-class MainEditWindowButton : public BorderlessButton
+
+namespace Species
 {
-  public:
-    enum
-    {
-      TypeSave = LocationEditorAccess::ModeNumModes
-    };
-
-    int m_type;
-
-    MainEditWindowButton(int type)
-      : m_type(type)
-    {
-    }
-
-    void MouseUp()
-    {
-      if (m_type == TypeSave)
+  class MainEditWindowButton : public BorderlessButton
+  {
+    public:
+      enum
       {
-        //
-        // If a MOD hasn't been set, don't allow this to happen
-        // as it will try to save into darwinia/data/levels, which is clearly wrong
-        // for the end user (but allow it for us)
+        TypeSave = LocationEditorAccess::ModeNumModes
+      };
+
+      int m_type;
+
+      MainEditWindowButton(int type)
+        : m_type(type)
+      {
+      }
+
+      void MouseUp()
+      {
+        if (m_type == TypeSave)
+        {
+          //
+          // If a MOD hasn't been set, don't allow this to happen
+          // as it will try to save into darwinia/data/levels, which is clearly wrong
+          // for the end user (but allow it for us)
 
 #ifndef TARGET_DEBUG
         if (!g_resource->IsModLoaded())
@@ -65,7 +68,7 @@ class MainEditWindowButton : public BorderlessButton
         g_location->m_levelFile->Save();
 
         return;
-      }
+        }
 
       g_locationEditor->RequestMode(m_type);
     }
@@ -82,7 +85,7 @@ class MainEditWindowButton : public BorderlessButton
         BorderlessButton::Render(realX, realY, highlighted, clicked);
       }
     }
-};
+  };
 
 
 // ****************************************************************************
@@ -134,3 +137,4 @@ void MainEditWindow::Create()
 }
 
 #endif // LOCATION_EDITOR
+} // namespace Species

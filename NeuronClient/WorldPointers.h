@@ -22,22 +22,25 @@
 // Forward declarations are enough to declare the pointers. A file that
 // dereferences one still includes that type's own header, exactly as it did
 // before. See tasks/layering-inversion.yaml T8.
-class Location;
-class GlobalWorld;
-class ParticleSystem;
-class TaskManager;
+namespace Species
+{
+  class Location;
+  class GlobalWorld;
+  class ParticleSystem;
+  class TaskManager;
+} // namespace Species
 
 
 namespace Neuron
 {
-  extern Location* g_location;
-  extern GlobalWorld* g_globalWorld;
+  extern Species::Location* g_location;
+  extern Species::GlobalWorld* g_globalWorld;
   extern CameraAccess* g_camera;
   extern RendererAccess* g_renderer;
-  extern ParticleSystem* g_particleSystem;
+  extern Species::ParticleSystem* g_particleSystem;
   extern LocationEditorAccess* g_locationEditor;
   extern GameCursorAccess* g_gameCursor;
-  extern TaskManager* g_taskManager;
+  extern Species::TaskManager* g_taskManager;
   extern TaskManagerInterfaceAccess* g_taskManagerInterface;
   extern ScriptAccess* g_script;
   extern UserInputAccess* g_userInput;

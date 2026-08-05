@@ -3,25 +3,28 @@
 #include "Entity.h"
 
 
-class Lander : public Entity
+namespace Species
 {
-  protected:
-    enum
-    {
-      StateSailing,
-      StateLanded
-    };
+  class Lander : public Entity
+  {
+    protected:
+      enum
+      {
+        StateSailing,
+        StateLanded
+      };
 
-    int m_state;
-    float m_spawnTimer;
+      int m_state;
+      float m_spawnTimer;
 
-  public:
-    Lander();
+    public:
+      Lander();
 
-    bool Advance(Unit* _unit);
-    bool AdvanceSailing();
-    bool AdvanceLanded();
+      bool Advance(Unit* _unit);
+      bool AdvanceSailing();
+      bool AdvanceLanded();
 
-    void ChangeHealth(int amount);
-    void Render(float _predictionTime, int _teamId);
-};
+      void ChangeHealth(int amount);
+      void Render(float _predictionTime, int _teamId);
+  };
+} // namespace Species

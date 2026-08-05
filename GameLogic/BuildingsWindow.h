@@ -10,35 +10,38 @@
 // ****************************************************************************
 
 // This window is displayed when a building is selected for editing
-class BuildingEditWindow : public SpeciesWindow
+
+
+namespace Species
 {
-public:
-    BuildingEditWindow( char const *name );
-	~BuildingEditWindow();
+  class BuildingEditWindow : public SpeciesWindow
+  {
+    public:
+      BuildingEditWindow(char const* name);
+      ~BuildingEditWindow();
 
-	void Create();
-    void Render( bool hasFocus );
-};
+      void Create();
+      void Render(bool hasFocus);
+  };
 
 
-// ****************************************************************************
-// Class BuildingsCreateWindow
-// ****************************************************************************
+  // ****************************************************************************
+  // Class BuildingsCreateWindow
+  // ****************************************************************************
 
-// Top level window that contains a "create" button for every type of builing
-class BuildingsCreateWindow : public SpeciesWindow
-{
-public:
-    int m_buildingType;
+  // Top level window that contains a "create" button for every type of builing
+  class BuildingsCreateWindow : public SpeciesWindow
+  {
+    public:
+      int m_buildingType;
 
-public:
-    BuildingsCreateWindow( char const *_name );
-	~BuildingsCreateWindow();
+    public:
+      BuildingsCreateWindow(char const* _name);
+      ~BuildingsCreateWindow();
 
-    void Create();
-};
+      void Create();
+  };
 
 
 #endif // LOCATION_EDITOR
-
-
+} // namespace Species

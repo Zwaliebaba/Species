@@ -11,43 +11,46 @@
 #define YARD_NUMPRIMITIVES 9
 #define YARD_NUMRUNGSPIKES 6
 
-class ConstructionYard : public Building
+
+namespace Species
 {
-  protected:
-    Shape* m_rung;
-    Shape* m_primitive;
-    ShapeMarker* m_primitives[YARD_NUMPRIMITIVES];
-    ShapeMarker* m_rungSpikes[YARD_NUMRUNGSPIKES];
+  class ConstructionYard : public Building
+  {
+    protected:
+      Shape* m_rung;
+      Shape* m_primitive;
+      ShapeMarker* m_primitives[YARD_NUMPRIMITIVES];
+      ShapeMarker* m_rungSpikes[YARD_NUMRUNGSPIKES];
 
-    int m_numPrimitives;
-    int m_numSurges;
-    int m_numTanksProduced;
-    float m_fractionPopulated;
-    float m_timer;
+      int m_numPrimitives;
+      int m_numSurges;
+      int m_numTanksProduced;
+      float m_fractionPopulated;
+      float m_timer;
 
-    float m_alpha;
+      float m_alpha;
 
-    bool IsPopulationLocked(); // Are there too many tanks already
+      bool IsPopulationLocked(); // Are there too many tanks already
 
-  public:
-    ConstructionYard();
+    public:
+      ConstructionYard();
 
-    bool Advance();
+      bool Advance();
 
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
 
-    DirectX::XMFLOAT4X4 GetRungMatrix1();
-    DirectX::XMFLOAT4X4 GetRungMatrix2();
+      DirectX::XMFLOAT4X4 GetRungMatrix1();
+      DirectX::XMFLOAT4X4 GetRungMatrix2();
 
-    bool AddPrimitive();
-    void AddPowerSurge();
-};
+      bool AddPrimitive();
+      void AddPowerSurge();
+  };
 
 
-// ****************************************************************************
-// Class DisplayScreen
-// ****************************************************************************
+  // ****************************************************************************
+  // Class DisplayScreen
+  // ****************************************************************************
 
 #define DISPLAYSCREEN_NUMRAYS 3
 
@@ -62,3 +65,4 @@ class DisplayScreen : public Building
 
     void RenderAlphas(float _predictionTime);
 };
+} // namespace Species

@@ -14,45 +14,43 @@
 
 #include "SpeciesWindow.h"
 
-class ScrollBar;
 
-
-
-class FileDialog : public SpeciesWindow
+namespace Species
 {
-public:
-    char    *m_path;
-    char    *m_filter;
-    char    *m_parent;
-	bool    m_allowMultiSelect;
-    bool	m_okPressed;
+  class ScrollBar;
 
-    // Owned. Holds names from Resource::ListResources, so each one is a
-    // `new char[]` and needs delete[].
-    std::vector<char*>* m_files;
-    std::vector<int> m_selected;
+  class FileDialog : public SpeciesWindow
+  {
+    public:
+      char* m_path;
+      char* m_filter;
+      char* m_parent;
+      bool m_allowMultiSelect;
+      bool m_okPressed;
 
-    ScrollBar   *m_scrollBar;
+      // Owned. Holds names from Resource::ListResources, so each one is a
+      // `new char[]` and needs delete[].
+      std::vector<char*>* m_files;
+      std::vector<int> m_selected;
 
-public:
-    FileDialog( char const *name, char const *parent,
-                char const *path=nullptr, char const *filter=nullptr,
-                bool allowMultiSelect=false );
-    ~FileDialog();
+      ScrollBar* m_scrollBar;
 
-    void Create();
-    void Remove();
+    public:
+      FileDialog(char const* name, char const* parent, char const* path = nullptr, char const* filter = nullptr, bool allowMultiSelect = false);
+      ~FileDialog();
 
-    void SetDirectory   ( char const *path );
-    void SetParent      ( char const *parent );
-    void SetFilter      ( char const *filter );
+      void Create();
+      void Remove();
 
-    void FileClicked    ( int index );
-    int  IsFileSelected ( int index );                                  // Returns index within m_selected, or -1 if not found
+      void SetDirectory(char const* path);
+      void SetParent(char const* parent);
+      void SetFilter(char const* filter);
 
-    void RefreshFileList();
+      void FileClicked(int index);
+      int IsFileSelected(int index); // Returns index within m_selected, or -1 if not found
 
-    virtual void FileSelected( char *filename );                        // This will be called for all selected files
-};
+      void RefreshFileList();
 
-
+      virtual void FileSelected(char* filename); // This will be called for all selected files
+  };
+} // namespace Species

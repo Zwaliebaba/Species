@@ -5,109 +5,113 @@
 
 #include "Building.h"
 
-class SpiritProcessor;
-class UnprocessedSpirit;
 
 
 // ****************************************************************************
 // Class ReceiverBuilding
 // ****************************************************************************
 
-class ReceiverBuilding : public Building
+
+namespace Species
 {
-  protected:
-    int m_spiritLink;
-    ShapeMarker* m_spiritLocation;
+  class SpiritProcessor;
+  class UnprocessedSpirit;
 
-    std::vector<float> m_spirits;
+  class ReceiverBuilding : public Building
+  {
+    protected:
+      int m_spiritLink;
+      ShapeMarker* m_spiritLocation;
 
-  public:
-    ReceiverBuilding();
+      std::vector<float> m_spirits;
 
-    void Initialise(Building* _template);
-    bool Advance();
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
+    public:
+      ReceiverBuilding();
 
-    bool IsInView();
-    virtual DirectX::XMFLOAT3 GetSpiritLocation();
-    virtual void TriggerSpirit(float _initValue);
+      void Initialise(Building* _template);
+      bool Advance();
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
 
-    void ListSoundEvents(std::vector<const char*>* _list);
+      bool IsInView();
+      virtual DirectX::XMFLOAT3 GetSpiritLocation();
+      virtual void TriggerSpirit(float _initValue);
 
-    static SpiritProcessor* GetSpiritProcessor();
+      void ListSoundEvents(std::vector<const char*>* _list);
 
-    static void BeginRenderUnprocessedSpirits();
-    static void RenderUnprocessedSpirit(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f);        // gl friendly
-    static void RenderUnprocessedSpirit_basic(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f);  // dx friendly
-    static void RenderUnprocessedSpirit_detail(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f); // dx friendly
-    static void EndRenderUnprocessedSpirits();
+      static SpiritProcessor* GetSpiritProcessor();
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
+      static void BeginRenderUnprocessedSpirits();
+      static void RenderUnprocessedSpirit(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f);        // gl friendly
+      static void RenderUnprocessedSpirit_basic(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f);  // dx friendly
+      static void RenderUnprocessedSpirit_detail(DirectX::XMFLOAT3 const& _pos, float _life = 1.0f); // dx friendly
+      static void EndRenderUnprocessedSpirits();
 
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
-};
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
 
-
-// ****************************************************************************
-// Class SpiritProcessor
-// ****************************************************************************
-
-class SpiritProcessor : public ReceiverBuilding
-{
-  protected:
-    float m_timerSync;
-    int m_numThisSecond;
-    float m_spawnSync;
-    float m_throughput;
-
-  public:
-    std::vector<UnprocessedSpirit*> m_floatingSpirits;
-
-  public:
-    SpiritProcessor();
-
-    void TriggerSpirit(float _initValue);
-
-    char const* GetObjectiveCounter();
-
-    void Initialise(Building* _building);
-    bool Advance();
-    bool IsInView();
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
-};
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
+  };
 
 
-// ****************************************************************************
-// Class ReceiverLink
-// ****************************************************************************
+  // ****************************************************************************
+  // Class SpiritProcessor
+  // ****************************************************************************
 
-class ReceiverLink : public ReceiverBuilding
-{
-  public:
-    ReceiverLink();
-    bool Advance();
-};
+  class SpiritProcessor : public ReceiverBuilding
+  {
+    protected:
+      float m_timerSync;
+      int m_numThisSecond;
+      float m_spawnSync;
+      float m_throughput;
+
+    public:
+      std::vector<UnprocessedSpirit*> m_floatingSpirits;
+
+    public:
+      SpiritProcessor();
+
+      void TriggerSpirit(float _initValue);
+
+      char const* GetObjectiveCounter();
+
+      void Initialise(Building* _building);
+      bool Advance();
+      bool IsInView();
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
+  };
 
 
-// ****************************************************************************
-// Class ReceiverSpiritSpawner
-// ****************************************************************************
+  // ****************************************************************************
+  // Class ReceiverLink
+  // ****************************************************************************
 
-class ReceiverSpiritSpawner : public ReceiverBuilding
-{
-  public:
-    ReceiverSpiritSpawner();
-    bool Advance();
-};
+  class ReceiverLink : public ReceiverBuilding
+  {
+    public:
+      ReceiverLink();
+      bool Advance();
+  };
 
 
-// ****************************************************************************
-// Class SpiritReceiver
-// ****************************************************************************
+  // ****************************************************************************
+  // Class ReceiverSpiritSpawner
+  // ****************************************************************************
+
+  class ReceiverSpiritSpawner : public ReceiverBuilding
+  {
+    public:
+      ReceiverSpiritSpawner();
+      bool Advance();
+  };
+
+
+  // ****************************************************************************
+  // Class SpiritReceiver
+  // ****************************************************************************
 
 #define SPIRITRECEIVER_NUMSTATUSMARKERS 5
 
@@ -163,3 +167,4 @@ class UnprocessedSpirit : public WorldObject
     bool Advance();
     float GetLife(); // Returns 0.0f-1.0f (0.0f=dead, 1.0f=alive)
 };
+} // namespace Species

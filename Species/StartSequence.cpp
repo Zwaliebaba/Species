@@ -22,75 +22,77 @@
 #include "AppState.h"
 
 
-StartSequence::StartSequence()
+namespace Species
 {
-  m_startTime = GetHighResTime();
-
-  float screenRatio = (float)g_renderer->ScreenH() / (float)g_renderer->ScreenW();
-  int screenH = 800 * screenRatio;
-
-  float x = 150;
-  float y = screenH * 4 / 5.0f;
-  float size = 10.0f;
-
-  RegisterCaption(LANGUAGEPHRASE("intro_1"), x, y, size, 3, 15);
-  RegisterCaption(LANGUAGEPHRASE("intro_2"), x, y + 15, 20, 8, 15);
-  RegisterCaption(LANGUAGEPHRASE("intro_3"), x, y + 40, size, 30, 45);
-  RegisterCaption(LANGUAGEPHRASE("intro_4"), x, y + 50, size, 42, 45);
-  RegisterCaption(LANGUAGEPHRASE("intro_5"), x, y, size, 54, 65);
-  RegisterCaption(LANGUAGEPHRASE("intro_6"), x, y, size, 66, 74);
-  RegisterCaption(LANGUAGEPHRASE("intro_7"), x, y + 15, size, 72, 74);
-  RegisterCaption(LANGUAGEPHRASE("intro_8"), x, y, size, 74, 90);
-  RegisterCaption(LANGUAGEPHRASE("intro_9"), x, y + 15, 15, 82, 90);
-  RegisterCaption(LANGUAGEPHRASE("intro_10"), x, y + 30, 15, 86, 90);
-}
-
-
-void StartSequence::RegisterCaption(char* _caption, float _x, float _y, float _size, float _startTime, float _endTime)
-{
-  StartSequenceCaption* caption = new StartSequenceCaption();
-
-
-  caption->m_caption = strdup(_caption);
-  caption->m_x = _x;
-  caption->m_y = _y;
-  caption->m_size = _size;
-  caption->m_startTime = _startTime;
-  caption->m_endTime = _endTime;
-
-  m_captions.push_back(caption);
-}
-
-
-bool StartSequence::Advance()
-{
-  static bool started = false;
-  if (GetHighResTime() > m_startTime && !started)
+  StartSequence::StartSequence()
   {
-    started = true;
-    g_soundSystem->TriggerOtherEvent("StartSequence", SoundSourceBlueprint::TypeMusic);
-    TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-    TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldIntro);
+    m_startTime = GetHighResTime();
+
+    float screenRatio = (float)g_renderer->ScreenH() / (float)g_renderer->ScreenW();
+    int screenH = 800 * screenRatio;
+
+    float x = 150;
+    float y = screenH * 4 / 5.0f;
+    float size = 10.0f;
+
+    RegisterCaption(LANGUAGEPHRASE("intro_1"), x, y, size, 3, 15);
+    RegisterCaption(LANGUAGEPHRASE("intro_2"), x, y + 15, 20, 8, 15);
+    RegisterCaption(LANGUAGEPHRASE("intro_3"), x, y + 40, size, 30, 45);
+    RegisterCaption(LANGUAGEPHRASE("intro_4"), x, y + 50, size, 42, 45);
+    RegisterCaption(LANGUAGEPHRASE("intro_5"), x, y, size, 54, 65);
+    RegisterCaption(LANGUAGEPHRASE("intro_6"), x, y, size, 66, 74);
+    RegisterCaption(LANGUAGEPHRASE("intro_7"), x, y + 15, size, 72, 74);
+    RegisterCaption(LANGUAGEPHRASE("intro_8"), x, y, size, 74, 90);
+    RegisterCaption(LANGUAGEPHRASE("intro_9"), x, y + 15, 15, 82, 90);
+    RegisterCaption(LANGUAGEPHRASE("intro_10"), x, y + 30, 15, 86, 90);
   }
 
-  g_inputManager->PollForEvents();
 
-  if (!g_eventHandler->WindowHasFocus())
+  void StartSequence::RegisterCaption(char* _caption, float _x, float _y, float _size, float _startTime, float _endTime)
   {
-    Sleep(1);
+    StartSequenceCaption* caption = new StartSequenceCaption();
+
+
+    caption->m_caption = strdup(_caption);
+    caption->m_x = _x;
+    caption->m_y = _y;
+    caption->m_size = _size;
+    caption->m_startTime = _startTime;
+    caption->m_endTime = _endTime;
+
+    m_captions.push_back(caption);
+  }
+
+
+  bool StartSequence::Advance()
+  {
+    static bool started = false;
+    if (GetHighResTime() > m_startTime && !started)
+    {
+      started = true;
+      g_soundSystem->TriggerOtherEvent("StartSequence", SoundSourceBlueprint::TypeMusic);
+      TheCamera()->SetDebugMode(Camera::DebugModeAuto);
+      TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldIntro);
+    }
+
+    g_inputManager->PollForEvents();
+
+    if (!g_eventHandler->WindowHasFocus())
+    {
+      Sleep(1);
+      TheUserInput()->Advance();
+      return false;
+    }
+
+    if (g_inputManager->controlEvent(ControlType::ControlSkipMessage) || g_requestQuit || (GetHighResTime() - m_startTime) > 90)
+    {
+      g_soundSystem->StopAllSounds(WorldObjectId(), "Music StartSequence");
+      return true;
+    }
+
     TheUserInput()->Advance();
-    return false;
-  }
-
-  if (g_inputManager->controlEvent(ControlType::ControlSkipMessage) || g_requestQuit || (GetHighResTime() - m_startTime) > 90)
-  {
-    g_soundSystem->StopAllSounds(WorldObjectId(), "Music StartSequence");
-    return true;
-  }
-
-  TheUserInput()->Advance();
-  TheCamera()->Advance();
-  g_soundSystem->Advance();
+    TheCamera()->Advance();
+    g_soundSystem->Advance();
 #ifdef PROFILER_ENABLED
   g_profiler->Advance();
 #endif // PROFILER_ENABLED
@@ -260,3 +262,4 @@ void StartSequence::Render()
     glPopMatrix();
   }
 }
+} // namespace Species

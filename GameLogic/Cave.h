@@ -8,19 +8,22 @@ namespace Neuron
 } // namespace Neuron
 
 
-class Cave : public Building
+namespace Species
 {
-  protected:
-    int m_troopType;
-    int m_unitId;
-    float m_spawnTimer;
-    bool m_dead;
+  class Cave : public Building
+  {
+    protected:
+      int m_troopType;
+      int m_unitId;
+      float m_spawnTimer;
+      bool m_dead;
 
-    ShapeMarker* m_spawnPoint;
+      ShapeMarker* m_spawnPoint;
 
-  public:
-    Cave();
+    public:
+      Cave();
 
-    bool Advance();
-    void Damage(float _damage);
-};
+      bool Advance();
+      void Damage(float _damage);
+  };
+} // namespace Species

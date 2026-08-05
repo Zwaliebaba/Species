@@ -276,7 +276,73 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
+    notes: |
+      DONE 2026-08-05, in the same commit as T5. 213 of GameLogic's 215 files
+      are in namespace Species; the two skipped are pch.h and pch.cpp.
+
+      T4 AND T5 ARE NOT SEPARABLE IN THE TREE, and the plan could not have
+      known it because the fact belongs to the namespace NAME rather than to
+      either task. T1 chose one name for all game code, so GameLogic and
+      Species land in the SAME namespace. Wrap GameLogic alone and every
+      unqualified GameLogic name in Species/ stops resolving — there is no
+      `using namespace Species;` the way NeuronCore.h supplies one for Neuron —
+      so T4 on its own is a tree that does not build. The choice was between
+      landing a broken commit, writing a throwaway qualification pass for
+      Species/ that T5 would immediately delete, or landing the pair. The pair
+      landed. The graph edge T5 -> T4 is still right about the ORDER the work
+      is done in; it is wrong that the states between them are checkpoints.
+
+      Worth noting for anyone re-planning this: the reverse order DOES have
+      buildable intermediates. Species/ inside namespace Species finds global
+      GameLogic names by ordinary outward lookup, and wrapping GameLogic
+      afterwards then brings them into the same namespace. T5 -> T4 would have
+      been two standalone commits. It was not worth inverting a plan edge to
+      get that, but it is the answer if this ever has to be split.
+
+      NOT COMPILED. Linux, no MSVC.
+
+      THE ENGINE REACHES UP IN SIX PLACES, and they had to be qualified rather
+      than wrapped, because these are engine files naming game types:
+
+        NeuronClient/WorldPointers.h   Location, GlobalWorld, ParticleSystem
+        NeuronClient/WorldPointers.cpp and TaskManager -- the world subsystem
+                                       pointers layering-inversion T8 moved out
+                                       of App. Now Species::Location* and so on.
+        NeuronClient/CameraAccess.h    CameraAnimation, in PlayAnimation's
+                                       signature.
+        NeuronClient/SoundInstance.h   WorldObject, forward declaration only.
+
+      These are upward references that check_layering cannot see, because a
+      forward declaration includes nothing -- the same blind spot T3 recorded
+      for AppState.h's `extern Server*`. They are pre-existing and this task
+      did not create or remove them; it made them SPELL the direction they were
+      already pointing in, which is the one good thing to come out of having to
+      touch them.
+
+      The globals themselves are fine: all eleven WorldPointers externs are
+      declared and defined in NeuronClient, so nothing straddles.
+
+      TWO DEAD DECLARATIONS FOUND BY BEING FORCED TO CLASSIFY THEM.
+      GameLogic/LandscapeRenderer.h and GameLogic/Water.h both forward-declare
+      `struct IDirect3DVertexBuffer9`, a Direct3D COM type used NOWHERE in the
+      tree -- inherited leftovers from a renderer path that does not exist.
+      Inside the wrapper they would declare Species::IDirect3DVertexBuffer9,
+      which is not what the name means, so both stay outside with a note. They
+      are not deleted: that is a cleanup, and this is a namespace change.
+
+      ONE FILE HAD AN #include BELOW A DEFINITION. GameLogic/Team.cpp included
+      Input.h just above TeamControls::Advance, six hundred lines in; the
+      wrapper would have pulled Input.h into the game namespace. It moved to
+      the top.
+
+      GameLogic/GlobalInternet.cpp HAS UNBALANCED BRACES AND ALWAYS HAS. The
+      `for` loop at line 141 is never closed -- a block comment swallowed its
+      closing brace. It is inside `#ifdef DEBUG`, which is defined nowhere
+      (this tree uses TARGET_DEBUG), so the preprocessor deletes it and the
+      compiled file balances. Left alone: fixing it means guessing where the
+      brace belongs, in code that has never been compiled. Recorded because the
+      next tool that counts braces will trip over it too.
 
   - id: T5
     title: Bring Species into the game namespace
@@ -304,4 +370,49 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
+    notes: |
+      DONE 2026-08-05, in the same commit as T4 -- see T4's notes for why they
+      could not be separated.
+
+      32 of Species'"'"'s 34 files are in namespace Species; pch.h and pch.cpp are
+      skipped. This closes namespace-migration, 5 of 5.
+
+      NOT COMPILED. Linux, no MSVC.
+
+      THE ONE THING LEFT AT GLOBAL SCOPE IS WinMain, which is the acceptance
+      line'"'"'s "only entry points remain global" and is the whole list. The CRT
+      startup code looks up ::WinMain by name, so it stays outside the wrapper
+      in Species/Main.cpp and reaches in explicitly:
+      Neuron::SetWin32InstanceHandle, Neuron::g_windowManager and
+      Species::AppMain. AppMain itself moved INSIDE -- it is declared in
+      Species/Main.h and defined in Species/Main.cpp, both this project'"'"'s, and
+      nothing outside names it since layering-inversion T18 stopped
+      NeuronClient calling it.
+
+      No externally-mandated symbol beyond that. Server/WinMain.cpp'"'"'s `main`
+      belongs to the Server project, which this task does not touch.
+
+      THE GAME NAMESPACE HAS NO using-directive, deliberately, and that is the
+      difference from Neuron. NeuronCore.h ends with `using namespace Neuron;`
+      and every pch includes it, which is why T2 changed no caller at all.
+      Nothing equivalent exists or was added for Species: GameLogic and
+      Species/ are the only code in that namespace and they are now both inside
+      it, so they see each other without one.
+
+      THE EXCEPTION IS THE TESTS, and a .cpp is the right place for it.
+      Tests/GameLogicTests holds five sources that name GameLogic types --
+      EntityGridTests, InputFieldTests, LevelFileTests, RoutingSystemTests and
+      SliceWiringTests -- and they are test DLLs outside the namespace looking
+      in. Each gained `using namespace Species;` after the CppUnitTest
+      using-directive it already had. Nothing includes a .cpp, so this does not
+      leak. LinkStubs.cpp names no game type and is unchanged; it is still
+      empty, as layering-inversion T18 left it.
+
+      NO NAME CLASHES. Every type defined in GameLogic was compared against
+      every type defined in Species/ before the wrap -- the two projects share
+      one namespace now, so a name in both would be a redefinition rather than
+      an ambiguity. Zero, across 335 GameLogic types and 35 Species ones. And
+      nothing in the tree is named `Species`, so the namespace does not collide
+      with a type; the collision with the Species/ DIRECTORY was noted and
+      accepted by the owner when T1 chose the name.

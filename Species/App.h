@@ -7,74 +7,69 @@
 
 #include "RgbColour.h"
 
-class Camera;
-class Location;
+class Profiler;
+class AttractMode;
+class PrefsManager;
+
 namespace Neuron
 {
   class ClientToServer;
-} // namespace Neuron
-class Renderer;
-class UserInput;
-namespace Neuron
-{
   class Resource;
   class SoundSystem;
-} // namespace Neuron
-class LocationInput;
-namespace Neuron
-{
   class LangTable;
-} // namespace Neuron
-class GlobalWorld;
-class ParticleSystem;
-class TaskManager;
-class TaskManagerInterface;
-class TaskManagerInterfaceIcons;
-class Script;
-class Profiler;
-class LocationEditor;
-class MouseCursor;
-class GameCursor;
-class GameMenu;
-class StartSequence;
-class AttractMode;
-class ControlHelpSystem;
-class PrefsManager;
-namespace Neuron
-{
   class BitmapRGBA;
 } // namespace Neuron
-class GameMenu;
 
 
-class App : public AppCommands
+namespace Species
 {
-  public:
-    // Library Code Objects
-    //
-    // m_resource is NOT owned here. Species/Main.cpp's Finalise() deletes
-    // g_resource, and that is the delete that actually executes -- see ~App.
-    Resource* m_resource;
-    std::unique_ptr<SoundSystem> m_soundSystem;
-    std::unique_ptr<LangTable> m_langTable;
-    std::unique_ptr<Profiler> m_profiler;
+  class Camera;
+  class Location;
+  class Renderer;
+  class UserInput;
+  class LocationInput;
+  class GlobalWorld;
+  class ParticleSystem;
+  class TaskManager;
+  class TaskManagerInterface;
+  class TaskManagerInterfaceIcons;
+  class Script;
+  class LocationEditor;
+  class MouseCursor;
+  class GameCursor;
+  class GameMenu;
+  class StartSequence;
+  class ControlHelpSystem;
+  class GameMenu;
 
-    // Things that are the world
+  class App : public AppCommands
+  {
+    public:
+      // Library Code Objects
+      //
+      // m_resource is NOT owned here. Species/Main.cpp's Finalise() deletes
+      // g_resource, and that is the delete that actually executes -- see ~App.
+      Resource* m_resource;
+      std::unique_ptr<SoundSystem> m_soundSystem;
+      std::unique_ptr<LangTable> m_langTable;
+      std::unique_ptr<Profiler> m_profiler;
 
-    // Everything else
-    std::unique_ptr<ClientToServer> m_clientToServer; // Clients connection to Server
+      // Things that are the world
 
-    // Not owned either: Species/Main.cpp deletes both of these, and nothing
-    // anywhere deletes m_gameMenu.
-    LocationInput* m_locationInput;
-    StartSequence* m_startSequence;
+      // Everything else
+      std::unique_ptr<ClientToServer> m_clientToServer; // Clients connection to Server
 
-    // Guarded exactly like its construction and destruction in App.cpp.
-    // AttractMode has NO HEADER anywhere in the tree and ATTRACTMODE_ENABLED
-    // is defined nowhere, so the type is never completed -- an unguarded
-    // unique_ptr member instantiates a deleter for it and fails with
-    // "can't delete an incomplete type". A raw pointer hid that; an owner
-    // cannot.
+      // Not owned either: Species/Main.cpp deletes both of these, and nothing
+      // anywhere deletes m_gameMenu.
+      LocationInput* m_locationInput;
+      StartSequence* m_startSequence;
+
+      // Guarded exactly like its construction and destruction in App.cpp.
+      // AttractMode has NO HEADER anywhere in the tree and ATTRACTMODE_ENABLED
+      // is defined nowhere, so the type is never completed -- an unguarded
+      // unique_ptr member instantiates a deleter for it and fails with
+      // "can't delete an incomplete type". A raw pointer hid that; an owner
+      // cannot.
 #ifdef ATTRACTMODE_ENABLED
     std::unique_ptr<AttractMode> m_attractMode;
 #endif
@@ -140,6 +135,7 @@ class App : public AppCommands
     static const char* GetScreenshotDirectory();
 
     void UpdateDifficultyFromPreferences() override;
-};
+  };
 
 extern App* g_app;
+} // namespace Species

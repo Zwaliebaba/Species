@@ -17,7 +17,11 @@
 // g_zeroVector, which the five spawn calls below passed as a velocity.
 // directxmath-migration T25 retires the legacy constant; this is the same
 // (0,0,0) as native storage, named rather than repeated.
-static DirectX::XMFLOAT3 const s_noVelocity{0.0f, 0.0f, 0.0f};
+
+
+namespace Species
+{
+  static DirectX::XMFLOAT3 const s_noVelocity{0.0f, 0.0f, 0.0f};
 
 
 #ifdef CHEATMENU_ENABLED
@@ -368,3 +372,4 @@ CheatWindow::CheatWindow(char const* _name)
   : SpeciesWindow(_name)
 {
 }
+} // namespace Species
