@@ -922,7 +922,60 @@ tasks:
       names GlobalWorld.cpp, so it needs both halves. The split buys two
       reviewable diffs and a byte-identity test that exists before the risky
       half starts, not an earlier start for stage 5.
-    status: in_progress
+
+      DONE ON CI RUN 556 (commit 6b38509), 2026-08-05: x64 Debug builds, 180
+      tests pass, and the headless server still reaches sequence id 20. Eight
+      files, 33 call sites, eleven new tests.
+
+      THE TESTS ARE THE DELIVERABLE AS MUCH AS THE CONVERSION IS. Nothing
+      pinned a byte of FileWriter::printf before this task and T19 and T17 both
+      have to prove they change none. NeuronClientTests/FileWriterTests.cpp is
+      eight tests over the formats the writers actually use: the
+      %4d %4d %30s %40s location row, what that row does with a value WIDER
+      than its field (printf's width is a minimum, so the row grows rather than
+      truncating), an empty string in a padded field, the unpadded colour
+      lines, %.2f's trailing zeros, and the encrypted form -- the redshirt2
+      header and the byte shift, which takes the SECOND offset first because
+      the index increments before it is used, and carries across calls so a
+      save file cannot be decrypted a line at a time.
+
+      FOUR BEHAVIOUR CHANGES, none of them silent.
+
+      1. The default constructor left m_mapFilename and m_missionFilename
+         INDETERMINATE. Save() tests both with strstr, so stack garbage
+         containing "null" skipped the write and garbage that did not wrote a
+         file named after it. They are empty now and LevelFileTests says so.
+      2. GetLocationIdFromMapFilename did strstr(buf, "Map") + 3 and then
+         indexed [strlen - 4], so a filename with neither read AND WROTE
+         outside its buffer -- the + 3 happened before the null test, the same
+         shape FilesysUtils' path helpers had before T4 defined them. It
+         answers -1 now, which is what GetLocationId already returns for an
+         unknown name. CHECKED RATHER THAN ARGUED: all eleven Map*.txt names in
+         GameData produce identical results under both versions, and only the
+         previously-undefined inputs differ.
+      3. The five members were filled by unbounded strcpy from a level-file
+         token. LevelFile::m_mapFilename had 256 bytes and a level file
+         supplies the name.
+      4. MAX_FILENAME_LEN is gone. Its last user was the buffer in (2).
+
+      WHAT DID NOT NEED TOUCHING, because it was already converted: Water.cpp
+      and Location.cpp read three of these members through std::format and an
+      ASSERT_TEXT, and std::format takes a std::string as happily as a char
+      array. LandscapeRenderer.cpp did not -- its sprintf into a char[256] is
+      the one call site outside the three declared files that the member change
+      forced, and the Christmas-mod override that used to strcpy over the
+      buffer is a ternary now.
+
+      A COUNT IN AGENTS.md WAS WRONG AND IS CORRECTED. It said 180 tests as of
+      2026-08-05; CI counted 169 at e7a1a88. This task added eleven, which
+      makes the stale figure accidentally true -- worth knowing before somebody
+      else uses it as a baseline and concludes their tests did not run, which
+      is exactly what happened here for ten minutes.
+
+      Not smoke-tested. The Garden run reaches this through level loading
+      (step 2) and the terrain (steps 1 and 5); the editor paths in
+      GlobalWorldEditorWindow it does not reach at all.
+    status: done
 
   - id: T9
     title: Sweep the long tail to zero

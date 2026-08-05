@@ -638,13 +638,15 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **180** tests as CI counted them
-  on 2026-08-05, covering IP conversion,
+- **The test suite is thin.** Four projects, **180** tests as CI counted them on
+  2026-08-05 at `6b38509`, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
   `Server` starts in, the legacy containers plus their `Neuron::SlotMap`
-  replacement, the preferences file format, the native-math conversions and
+  replacement, the preferences file format, the bytes `FileWriter::printf`
+  emits for every format the level and profile writers use, `LevelFile`'s
+  constructors, the native-math conversions and
   geometry routines, the entity grid, the routing system's waypoints, the slice
   walker, `InputField`'s keystroke write-back, and the two `Matrix33` rotation
   mappings — each with a negative control asserting that the intuitive reading
@@ -652,6 +654,14 @@ Real, currently true, and worth knowing before you trip over them:
   and protocol layer plus a thin skin over the rest — no entity behaviour, no
   rendering, no level loading, and nothing at all that would notice the game
   failing to start.
+  - **The figure recorded here before was also 180, and it was wrong.** CI
+    counted **169** at `e7a1a88`; `strings-modernised` T8 added eleven and made
+    the stale number true by accident. Read the count off a CI run's *Total
+    tests* line or off `git grep -c TEST_METHOD -- 'Tests/*.cpp'`, and note that
+    those two agree only because every `TEST_METHOD` in the tree is compiled —
+    a test file missing from its `.vcxproj` would make the grep the higher of
+    the two, which is the shape of the failure `check_project_files.py` exists
+    to prevent.
   - The preferences tests are worth the paragraph they cost, as an argument for
     writing more of them. They were added as characterisation before a
     conversion (`containers-replaced` T19) and the first CI run was red: three

@@ -125,7 +125,7 @@ conflict in the level-file writers.
 
 | | Task | Why it is in the batch |
 |---|---|---|
-| 1 | `strings/T8` — the level and profile writers | **The only thing standing between today and the end of stage 5.** `ownership/T5` is blocked by this task and nothing else; T5 → T6 (App owns its subsystems) → T7 (delete the macros) is then everything `ownership` has left except T8, and `namespace/T5` is behind it too. It also gates `strings/T9` and the new T17. Four tasks and the end of stage 5, behind one node. |
+| 1 | ~~`strings/T8`~~ — **done, CI 556** | **The only thing standing between today and the end of stage 5.** `ownership/T5` is blocked by this task and nothing else; T5 → T6 (App owns its subsystems) → T7 (delete the macros) is then everything `ownership` has left except T8, and `namespace/T5` is behind it too. It also gates `strings/T9` and the new T17. Four tasks and the end of stage 5, behind one node. |
 | 2 | `strings/T12` — the TextRenderer variadic API | The largest single safety win available, and the measurement below changes what it is. `parallel_safe: false`; run it alone. |
 | 3 | `language-hygiene/T10` — InputType, and delete the dead `ControlTypes.cpp` | **File-disjoint from every other ready task**, measured, so it is the safest thing to run whenever the tree is free. It unblocks `language-hygiene/T11` (473 sites), the last node in that plan. |
 
@@ -290,6 +290,25 @@ apparent collisions with `lh/T12` are a different `m_name`. And
 construction; that is what "sequenced last" means in practice.
 
 Reproduce with the script at the end of this file.
+
+---
+
+## Progress
+
+**`strings/T8` landed on CI 556 (`6b38509`), 2026-08-05.** Eight files, 33 call
+sites, eleven new tests, x64 Debug green and 180 tests passing. It was split
+first — see the plan entry — and the split produced `strings/T19`, which is now
+the batch's first item instead. `ownership/T5` waits on T19 alone.
+
+Two things came out of it that the rest of the batch should carry:
+
+- **`FileWriter::printf` is pinned now**, eight tests over the formats the
+  writers actually use. `strings/T19` and `T17` both have to prove they change
+  no bytes, and this is what they prove it against.
+- **`AGENTS.md`'s test count was wrong.** It said 180; CI counted **169** at
+  `e7a1a88`, and T8's eleven made the stale figure accidentally true. Corrected
+  there, with how to read the real number. It cost ten minutes of believing the
+  new tests had not run.
 
 ---
 
