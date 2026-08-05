@@ -33,56 +33,55 @@ class GameMenu;
 
 class App : public AppCommands
 {
-public:
-	// Library Code Objects
-    Resource            *m_resource;
-    SoundSystem         *m_soundSystem;
-	LangTable			*m_langTable;
-    Profiler            *m_profiler;
+  public:
+    // Library Code Objects
+    Resource* m_resource;
+    SoundSystem* m_soundSystem;
+    LangTable* m_langTable;
+    Profiler* m_profiler;
 
-	// Things that are the world
+    // Things that are the world
 
-	// Everything else
-    ClientToServer      *m_clientToServer;          // Clients connection to Server
-	LocationInput		*m_locationInput;
-    StartSequence       *m_startSequence;
-	AttractMode			*m_attractMode;
-    GameMenu            *m_gameMenu;
+    // Everything else
+    ClientToServer* m_clientToServer; // Clients connection to Server
+    LocationInput* m_locationInput;
+    StartSequence* m_startSequence;
+    AttractMode* m_attractMode;
+    GameMenu* m_gameMenu;
 
 
-	// State flags
+    // State flags
 
-	// Requested state flags
+    // Requested state flags
 
-    bool                m_levelReset;
+    bool m_levelReset;
     std::string m_gameDataFile;
 
 
   public:
-    App ();
-	~App();
+    App();
+    ~App();
 
 
-  RendererAccess* CreateRenderer() override;
-  TaskManagerInterfaceAccess* CreateTaskManagerInterface() override;
+    RendererAccess* CreateRenderer() override;
+    TaskManagerInterfaceAccess* CreateTaskManagerInterface() override;
 
-  void SetProfileName(char const* _profileName) override;
-  bool LoadProfile() override;
+    void SetProfileName(char const* _profileName) override;
+    bool LoadProfile() override;
 
-  void SetLanguage(char const* _language, bool _test) override;
+    void SetLanguage(char const* _language, bool _test) override;
 
-  bool HasBoughtGame() override;
+    bool HasBoughtGame() override;
 
-  void LoadPrologue() override;
-  void LoadCampaign() override;
+    void LoadPrologue() override;
+    void LoadCampaign() override;
 
-  static const char* GetProfileDirectory();
-  char const* ProfileDirectory() override { return GetProfileDirectory(); }
-  static const char* GetPreferencesPath();
-  static const char* GetScreenshotDirectory();
+    static const char* GetProfileDirectory();
+    char const* ProfileDirectory() override { return GetProfileDirectory(); }
+    static const char* GetPreferencesPath();
+    static const char* GetScreenshotDirectory();
 
-  void UpdateDifficultyFromPreferences() override;
+    void UpdateDifficultyFromPreferences() override;
 };
 
-extern App *g_app;
-
+extern App* g_app;
