@@ -21,8 +21,8 @@ This describes the code as it exists. Where something is aspirational it says so
         │     NeuronClient      │      │       NeuronServer        │  static libs
         │  OpenGL renderer,     │      │  authoritative simulation │
         │  sound, input, the    │      │  host                     │
-        │  Eclipse UI toolkit,  │      │                           │
-        │  resources            │      │        (stub)             │
+        │  Eclipse UI toolkit,  │      │  host: clients, teams,    │
+        │  resources            │      │  sequence, sync values     │
         └───────────┬───────────┘      └───────────────┬───────────┘
                     └───────────────┬──────────────────┘
                     ┌───────────────▼──────────────────┐
@@ -33,8 +33,8 @@ This describes the code as it exists. Where something is aspirational it says so
             ┌───────────────────────┴───────────────────────┐
    ┌────────▼─────────┐                          ┌──────────▼────────┐
    │     Species      │  exe                     │      Server       │  exe
-   │  app, world,     │                          │                   │
-   │  camera, levels  │                          │      (stub)       │
+   │  app, world,     │                          │  headless host,   │
+   │  camera, levels  │                          │  ticks at 10 Hz   │
    └──────────────────┘                          └───────────────────┘
 ```
 
@@ -135,9 +135,15 @@ particle systems, and the location editor.
 
 ### Server
 
-A stub: `WinMain.cpp` returning 0, and a `pch`. Links `NeuronCore` and
-`NeuronServer` and nothing else — the library it needs now exists, but nothing
-drives it. Making it tick is T10.
+The headless binary. It links `NeuronCore` and `NeuronServer` and nothing else,
+constructs the host and ticks it at 10 Hz; `Server.exe --ticks 20` runs it for
+two seconds and reports the sequence id it reached. CI runs exactly that on
+every push and fails if the id has not advanced, which is condition 3 of the
+definition of done in [`AGENTS.md`](../AGENTS.md) checked rather than asserted.
+
+It does not simulate a world. The host sequences whatever clients send it,
+which is what it always did — what changed is that nothing above `NeuronServer`
+has to be linked in for it to do so.
 
 ---
 

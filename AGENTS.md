@@ -125,8 +125,9 @@ Tests/            ~0.4k   One <Name>Tests project per library, on the Microsoft
                           Native Unit Test Framework. Built and run by CI.
 tools/                    The checks CI runs. Run them locally too.
 tasks/                    Task DAGs. See docs/TASK_DAG.md. Start at
-                          _restart.md, or _restart-directxmath.md for the
-                          math migration.
+                          _next-batch.md — what is ready, what collides,
+                          and what the current batch is. Finished plans
+                          live in tasks/Archive/.
 docs/                     Architecture, build, testing, glossary, task breakdown.
 ```
 
@@ -248,8 +249,10 @@ judge **the lines your change writes**, not the file you wrote them in. A legacy
 file with two hundred `sprintf`s stays legal until its conversion task; add one
 more and only that line is reported. It is a ratchet, so it only ever turns one
 way. A genuine exception is marked `hygiene-ok` in a comment on the line, with a
-reason — there are two in the tree today, and both are explained in
-`tasks/language-hygiene.yaml` T1.
+reason — there is exactly **one** in the tree today, `Camera::Mode` in
+`NeuronClient/CameraAccess.h`, waiting on `language-hygiene` T12. The mechanism
+is explained in `tasks/language-hygiene.yaml` T1; the second marker that used to
+sit beside it went with the file that carried it.
 
 Then build **and run the tests**. A change that has not been compiled is not
 finished; a change with new behaviour and no test is not finished either.
@@ -437,17 +440,29 @@ The full standard — schema, status semantics, how to write acceptance criteria
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
 
-**If you are picking the DirectXMath migration back up, start at
-[`tasks/_restart-directxmath.md`](tasks/_restart-directxmath.md).** It has what
-landed, what is open, the five ways this particular conversion breaks a file you
-did not touch, and the two questions still unanswered.
+**If you are asking "what should I do next", start at
+[`tasks/_next-batch.md`](tasks/_next-batch.md).** It is the cross-plan
+scheduling argument: what is ready, measured; which ready tasks collide over
+which files, which `--next` cannot tell you because it reasons one plan at a
+time; and what the current batch is. It is rewritten each time a batch is
+chosen and it carries the record of the previous ones.
 
-**If you are picking the wider modernisation back up, start at
-[`tasks/_restart.md`](tasks/_restart.md).** Six plans are complete and four are
-open with nineteen tasks between them; that file has the re-measured counts, the
-order to restart in, and the critical path — nine of the nineteen are behind
-`strings-modernised/T5` alone. It is a reading order, not a plan file; the plans
-are still the plan.
+Six plans are complete and in `tasks/Archive/`. **Five are open with eighteen
+tasks between them** — `strings-modernised` (6), `ownership` (4),
+`language-hygiene` (3), `namespace-migration` (3) and `determinism` (2).
+
+The two older reading orders are still there and still worth reading, but
+neither answers "what next" any more:
+
+- [`tasks/_restart.md`](tasks/_restart.md) is the modernisation restart of
+  2026-08-03. Its ordering has been executed and its counts are historical; what
+  survives is *why* the plans are shaped as they are, and the recurring failure
+  mode it names — a task list written from grep counts rather than from reading
+  call sites.
+- [`tasks/_restart-directxmath.md`](tasks/_restart-directxmath.md) is the math
+  migration's handover. **That plan is complete and archived**; the file is kept
+  for the five ways that conversion broke files nobody touched, which is the
+  transferable part.
 
 ---
 

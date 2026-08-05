@@ -1,5 +1,17 @@
 # Restarting the migration
 
+> **HISTORICAL AS OF 2026-08-05. Every count below is a snapshot of
+> `4b7ebbc`, and the restart it describes has been executed.** For what is
+> ready now, what collides with what, and which batch is running, read
+> [`_next-batch.md`](_next-batch.md) instead. Six plans are archived and five
+> are open with eighteen tasks between them.
+>
+> This file is kept because the *reasoning* has outlived the numbers: why the
+> plans are shaped the way they are, why `strings-modernised` T5 was re-scoped
+> rather than merged, and the failure mode it names — a task list written from
+> grep counts rather than from reading call sites — which has now recurred in
+> `strings` T8, T19 and `language-hygiene` T10, every time exactly as described.
+
 Written 2026-08-03 at `b0bde71`, the commit the work stopped on. This is not a
 new plan — the plans exist and most of them are finished. It is the ordering
 for picking the remaining ones back up, and the repair of the one place the

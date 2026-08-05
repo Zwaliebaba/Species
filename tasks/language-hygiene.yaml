@@ -815,7 +815,7 @@ tasks:
       grepping the enumerators rather than the type name, because
       `Camera::Mode` appears in almost none of them — the enumerators do.
 
-      CameraAccess.h's declaration carries one of the tree's two `hygiene-ok`
+      CameraAccess.h's declaration carries the tree's ONLY remaining `hygiene-ok`
       markers, and its reason is this task. The marker's comment still says
       "converted by language-hygiene T5"; T5 reassigned it to T9 and T9 split,
       so the reference needs updating to T12 when this runs. The comment also

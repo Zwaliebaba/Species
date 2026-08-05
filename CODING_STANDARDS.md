@@ -582,7 +582,7 @@ ahead within a file.
 | 1 | **Containers down** | done | `LList`, `DArray`, `BTree`, `FastDArray` move from `NeuronClient` into `NeuronCore` | Nothing else can be layered correctly while the foundation reaches upward for its own containers |
 | 2 | **Maths down** | done | `Vector3`, `Matrix33/34`, `MathUtils` move into `NeuronCore` | The wire protocol serialises these; a headless server needs them without a renderer |
 | 3 | **Containers replaced** | done | `LList` → `std::vector`. **`DArray` → `Neuron::SlotMap`, never `std::vector`** — its indices are network identity, see [Determinism](#determinism). All ten legacy container headers are deleted | The stage most able to break lockstep silently. `SlotMap` ships in two flavours because the legacy templates assigned different indices after a removal: `FastSlotMap` pops a freelist (was `FastDArray`), plain `SlotMap` scans lowest-first (was `DArray`). Picking the wrong one changes network identity for the same spawn sequence |
-| 4 | **Strings** | in progress | `char*`, `char[N]`, `strcpy`, `sprintf` → `std::string`, `string_view`, `std::format` — which of the first two is decided by the table under [Strings](#strings) | The largest source of latent buffer bugs. Seven found so far were live defects rather than risks: three unbounded writes, a null dereference, a double-evaluated shared static, a `delete` on a `strdup` pointer, and two `strrchr(...) + 1` reads of address 1 |
+| 4 | **Strings** | in progress | `char*`, `char[N]`, `strcpy`, `sprintf` → `std::string`, `string_view`, `std::format` — which of the first two is decided by the table under [Strings](#strings) | The largest source of latent buffer bugs. Nine found so far were live defects rather than risks: three unbounded writes, a null dereference, a double-evaluated shared static, a `delete` on a `strdup` pointer, two `strrchr(...) + 1` reads of address 1, and two writes that indexed *before* the start of their buffer — `GetLocationIdFromMapFilename` and the location name derived from it |
 | 5 | **Ownership** | **in progress** | raw `new`/`delete`, `SAFE_DELETE`, `EmptyAndDelete` → `unique_ptr` and values | Containers are standard now, so this is unblocked. The transitional `Neuron::EmptyAndDelete` and `Neuron::CopyInto` in `VectorUtils.h` exist for this stage to remove |
 | 6 | **Protocol types** | done | `Entity`, `Team`, `WorldObject` out of `NeuronCore`'s headers | Severs the last game dependency from the network layer |
 | 7 | **Globals** | done | `g_app` reached from inside `NeuronCore` → injected dependencies | The final blocker on a standalone server binary |
@@ -591,13 +591,24 @@ ahead within a file.
 Stages 1, 2 and 8 are tree-wide moves. Stages 3–7 proceed file by file, and a
 file at stage *n* is fully at stage *n* before it advances.
 
-Status re-measured on 2026-08-05, and re-measure rather than trusting it: stage 3
-is finished and its headers are deleted; stage 4 has **112** `strcpy`-family calls
-across 42 files, down from 367 at the start of the restart and from 161 before
-`strings-modernised` T5; stage 5 has **32**
-`SAFE_DELETE`/`SAFE_FREE` occurrences and `EmptyAndDelete` in 13 files. Stages 1, 2, 6 and 7 landed with
+Status re-measured on 2026-08-05 at `40aae5c`, and re-measure rather than
+trusting it: stage 3 is finished and its headers are deleted; stage 4 has **66**
+`strcpy`-family calls across 37 files, down from 367 at the start of the restart,
+161 before `strings-modernised` T5 and 112 before T8 and T19 took the level and
+profile writers; stage 5 has **31** `SAFE_DELETE`/`SAFE_FREE` occurrences and
+`EmptyAndDelete` calls in 8 files. Stages 1, 2, 6 and 7 landed with
 `tasks/Archive/neuroncore-layering.yaml`; stage 8 landed with `7ee8c00`. The only `g_app`
 left anywhere under `NeuronCore/` is a comment explaining what replaced it.
+
+**The stage-4 grep under-reports, and by a known amount.** It names the
+`strcpy` family, and `\bsprintf\b` does not match `vsprintf` — the `v` is a word
+character. There are **11** `vsprintf` calls the count above cannot see, every
+one an unbounded write into a fixed stack buffer behind a `char const*, ...`
+entry point: `TextRenderer`'s ten `DrawText*` functions (`strings-modernised`
+T12), `FileWriter::printf` (T17), and three smaller ones (T18). Include the
+v-family when you measure this stage, or it will read as finished while the
+four APIs that produce most of the game's text and every byte of its save files
+are still variadic.
 
 ### Converting a file
 

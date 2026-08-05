@@ -65,14 +65,22 @@ subject matter no longer exists.
 **When a plan has no task left in `todo`, `in_progress` or `blocked`, move it to
 `tasks/Archive/`.** That keeps `tasks/` to the plans someone might still pick
 up. Archived plans are still LOADED by `check_task_dag.py` and still resolve
-`blocked_by` — forty-one such edges point into them as of 2026-08-05, and an
+`blocked_by` — forty-three such edges point into them as of 2026-08-05, and an
 edge into a plan the loader cannot see is an unresolvable reference rather than
 a satisfied one. They are not validated or reported by default, because a
 finished plan does not need re-listing on every run.
 
+**Archiving is not one-way.** A finished plan whose subject turns out to have
+unowned work in it comes back out of `Archive/` with that work as new tasks
+rather than getting a near-duplicate plan file beside it. `determinism.yaml`
+did exactly that on 2026-08-05: it closed at two tasks, was archived, and
+reopened when the owner gave its two long-standing *Known issues* findings
+scoping tasks. The rule is the same in both directions — a plan lives in
+`tasks/` when something in it is open.
+
 Moving a plan means updating the paths that name it. `grep -rn
 'tasks/<plan>.yaml'` across `*.md`, `*.py` and `.github/` finds them; fourteen
-files needed it for the first six.
+files needed it for the first six, and four for `determinism` coming back.
 
 ---
 
