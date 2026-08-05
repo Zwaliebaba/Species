@@ -500,7 +500,7 @@ void Camera::AdvanceSphereWorldOutroMode()
 
   if (runningTime > 70.0f)
   {
-    RequestMode(ModeSphereWorld);
+    RequestMode(Mode::ModeSphereWorld);
     m_pos = DirectX::XMFLOAT3(0.0f, 0.0f, 100.0f);
   }
 }
@@ -508,7 +508,7 @@ void Camera::AdvanceSphereWorldOutroMode()
 void Camera::RequestSphereFocusMode()
 {
   m_framesInThisMode = 0;
-  m_mode = ModeSphereWorldFocus;
+  m_mode = Mode::ModeSphereWorldFocus;
   m_targetPos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_trackRange = 100000.0f;
   m_trackHeight = 0.0f;
@@ -672,7 +672,7 @@ void Camera::AdvanceFreeMovementMode()
     if (keyBackward)
       targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelForward, g_advanceTime * moveRate));
 
-    if (m_mode == ModeFreeMovement)
+    if (m_mode == Mode::ModeFreeMovement)
     {
       InputDetails details;
       if (g_inputManager->controlEvent(ControlCameraMove, details))
@@ -1293,7 +1293,7 @@ void Camera::AdvanceEntityTrackMode()
   return;
 
 finishMode:
-  RequestMode(ModeFreeMovement);
+  RequestMode(Mode::ModeFreeMovement);
 }
 
 void XM_CALLCONV Camera::GetHighestTangentPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location)
@@ -1603,7 +1603,7 @@ void Camera::AdvanceFirstPersonMode()
 {
   if (g_inputManager->controlEvent(ControlCameraFreeMovement))
   {
-    RequestMode(ModeFreeMovement);
+    RequestMode(Mode::ModeFreeMovement);
     return;
   }
 
@@ -1717,7 +1717,7 @@ void Camera::AdvanceMoveToTargetMode()
   }
   else
   {
-    RequestMode(ModeDoNothing);
+    RequestMode(Mode::ModeDoNothing);
     m_front = m_targetFront;
   }
 
@@ -1737,7 +1737,7 @@ void Camera::AdvanceEntityFollowMode()
   auto obj = g_location->GetEntity(m_objectId);
   if (!obj)
   {
-    RequestMode(ModeFreeMovement);
+    RequestMode(Mode::ModeFreeMovement);
     return;
   }
 
@@ -1803,7 +1803,7 @@ Camera::Camera()
     m_distFromEntity(100.0f),
     m_currentDistance(0.0f),
     m_heightMultiplier(1.0f),
-    m_mode(ModeDoNothing),
+    m_mode(Mode::ModeDoNothing),
     m_debugMode(DebugModeAuto),
     m_framesInThisMode(0),
     m_objectId(),
@@ -1976,7 +1976,7 @@ Building* Camera::GetBestBuildingInView()
 void Camera::AdvanceComponentZoom()
 {
   // No zoom inside the task manager
-  if (TheTaskManagerInterface()->m_visible || IsInMode(ModeEntityTrack))
+  if (TheTaskManagerInterface()->m_visible || IsInMode(Mode::ModeEntityTrack))
     return;
 
   float change = 30.0f;
@@ -1989,10 +1989,10 @@ void Camera::AdvanceComponentZoom()
     change = 100.0f;
   }
 
-  if (m_mode == ModeSphereWorldScripted)
+  if (m_mode == Mode::ModeSphereWorldScripted)
     change = 10.0f;
 
-  if (m_mode == ModeMoveToTarget || m_mode == ModeDoNothing || m_mode == ModeBuildingFocus)
+  if (m_mode == Mode::ModeMoveToTarget || m_mode == Mode::ModeDoNothing || m_mode == Mode::ModeBuildingFocus)
     change = 1.0f;
 
   //    if( m_fov < adjustedTargetFov )
@@ -2049,7 +2049,7 @@ void Camera::AdvanceComponentMouseWheelHeight()
     float altitude = m_height - landheight;
     m_height += delta * 2.0f * sqrtf(fabsf(altitude));
 
-    if (m_mode == ModeTurretAim)
+    if (m_mode == Mode::ModeTurretAim)
       m_height = std::max(m_height, MIN_GROUND_CLEARANCE);
     else
     {
@@ -2096,11 +2096,11 @@ void Camera::AdvanceAnim()
       switch (node->m_transitionMode)
       {
       case CamAnimNode::TransitionMove:
-        RequestMode(ModeMoveToTarget);
+        RequestMode(Mode::ModeMoveToTarget);
         SetMoveDuration(node->m_duration);
         break;
       case CamAnimNode::TransitionCut:
-        RequestMode(ModeDoNothing);
+        RequestMode(Mode::ModeDoNothing);
         break;
       }
     }
@@ -2144,29 +2144,29 @@ void Camera::Advance()
 
   //	switch (m_mode)
   //	{
-  //		case ModeReplay:
-  //		case ModeSphereWorld:
-  //		case ModeFreeMovement:
-  //		case ModeBuildingFocus:
-  //		case ModeEntityTrack:
-  //		case ModeRadarAim:
-  //		case ModeFirstPerson:
-  //		case ModeEntityFollow:
-  //        case ModeTurretAim:
-  //        case ModeMoveToTarget:
-  //        case ModeSphereWorldScripted:
+  //		case Mode::ModeReplay:
+  //		case Mode::ModeSphereWorld:
+  //		case Mode::ModeFreeMovement:
+  //		case Mode::ModeBuildingFocus:
+  //		case Mode::ModeEntityTrack:
+  //		case Mode::ModeRadarAim:
+  //		case Mode::ModeFirstPerson:
+  //		case Mode::ModeEntityFollow:
+  //        case Mode::ModeTurretAim:
+  //        case Mode::ModeMoveToTarget:
+  //        case Mode::ModeSphereWorldScripted:
   AdvanceComponentZoom();
   //	}
 
   switch (m_mode)
   {
-  case ModeSphereWorld:
-  case ModeFreeMovement:
-  case ModeBuildingFocus:
-  case ModeEntityTrack:
-  case ModeRadarAim:
-  case ModeFirstPerson:
-  case ModeTurretAim:
+  case Mode::ModeSphereWorld:
+  case Mode::ModeFreeMovement:
+  case Mode::ModeBuildingFocus:
+  case Mode::ModeEntityTrack:
+  case Mode::ModeRadarAim:
+  case Mode::ModeFirstPerson:
+  case Mode::ModeTurretAim:
     AdvanceComponentMouseWheelHeight();
   }
 
@@ -2184,46 +2184,46 @@ void Camera::Advance()
     g_windowManager->EnsureMouseCaptured();
     switch (m_mode)
     {
-    case ModeSphereWorld:
+    case Mode::ModeSphereWorld:
       AdvanceSphereWorldMode();
       break;
-    case ModeFreeMovement:
+    case Mode::ModeFreeMovement:
       AdvanceFreeMovementMode();
       break;
-    case ModeBuildingFocus:
+    case Mode::ModeBuildingFocus:
       AdvanceBuildingFocusMode();
       break;
-    case ModeEntityTrack:
+    case Mode::ModeEntityTrack:
       AdvanceEntityTrackMode();
       break;
-    case ModeRadarAim:
+    case Mode::ModeRadarAim:
       AdvanceRadarAimMode();
       break;
-    case ModeFirstPerson:
+    case Mode::ModeFirstPerson:
       AdvanceFirstPersonMode();
       break;
-    case ModeMoveToTarget:
+    case Mode::ModeMoveToTarget:
       AdvanceMoveToTargetMode();
       break;
-    case ModeEntityFollow:
+    case Mode::ModeEntityFollow:
       AdvanceEntityFollowMode();
       break;
-    case ModeTurretAim:
+    case Mode::ModeTurretAim:
       AdvanceTurretAimMode();
       break;
-    case ModeSphereWorldScripted:
+    case Mode::ModeSphereWorldScripted:
       AdvanceSphereWorldScriptedMode();
       break;
-    case ModeSphereWorldIntro:
+    case Mode::ModeSphereWorldIntro:
       AdvanceSphereWorldIntroMode();
       break;
-    case ModeSphereWorldOutro:
+    case Mode::ModeSphereWorldOutro:
       AdvanceSphereWorldOutroMode();
       break;
-    case ModeSphereWorldFocus:
+    case Mode::ModeSphereWorldFocus:
       AdvanceSphereWorldFocusMode();
       break;
-    case ModeMainMenu:
+    case Mode::ModeMainMenu:
       AdvanceMainMenuMode();
       break;
     }
@@ -2267,9 +2267,9 @@ void Camera::SetNextDebugMode()
     m_debugMode = 0;
 }
 
-void Camera::RequestMode(int _mode)
+void Camera::RequestMode(Mode _mode)
 {
-  DEBUG_ASSERT(_mode >= 0 && _mode < ModeNumModes);
+  DEBUG_ASSERT(Neuron::I(_mode) < Neuron::I(Mode::ModeNumModes));
   int screenW = g_renderer->ScreenW();
   int screenH = g_renderer->ScreenH();
 
@@ -2279,17 +2279,17 @@ void Camera::RequestMode(int _mode)
 
   switch (_mode)
   {
-  case ModeSphereWorld:
+  case Mode::ModeSphereWorld:
     g_target->SetMousePos(screenW / 2, screenH / 2);
     m_pos = DirectX::XMFLOAT3(1000.0f, 500.0f, 15000.0f);
     break;
-  case ModeFreeMovement:
+  case Mode::ModeFreeMovement:
     m_targetPos = m_pos;
     m_height = m_pos.y;
     m_targetFov = 60.0f;
     g_target->SetMousePos(screenW / 2, screenH / 2);
     break;
-  case ModeMoveToTarget:
+  case Mode::ModeMoveToTarget:
     m_startPos = m_pos;
     m_startFront = m_front;
     m_startUp = m_up;
@@ -2301,7 +2301,7 @@ void Camera::RequestMode(int _mode)
 void Camera::RequestBuildingFocusMode(Building* _building, float _range, float _height)
 {
   m_framesInThisMode = 0;
-  m_mode = ModeBuildingFocus;
+  m_mode = Mode::ModeBuildingFocus;
   m_targetPos = _building->m_centrePos;
   m_trackRange = _range;
   m_trackHeight = _height;
@@ -2317,14 +2317,14 @@ void Camera::RequestBuildingFocusMode(Building* _building, float _range, float _
 void Camera::RequestRadarAimMode(Building* _building)
 {
   m_framesInThisMode = 0;
-  m_mode = ModeRadarAim;
+  m_mode = Mode::ModeRadarAim;
   m_targetPos = _building->m_pos;
 }
 
 void Camera::RequestTurretAimMode(Building* _building)
 {
   m_framesInThisMode = 0;
-  m_mode = ModeTurretAim;
+  m_mode = Mode::ModeTurretAim;
   m_objectId = _building->m_id;
   m_targetPos = _building->m_pos;
 }
@@ -2332,7 +2332,7 @@ void Camera::RequestTurretAimMode(Building* _building)
 void Camera::RequestEntityTrackMode(const WorldObjectId& _id)
 {
   m_framesInThisMode = 0;
-  m_mode = ModeEntityTrack;
+  m_mode = Mode::ModeEntityTrack;
 
   m_distFromEntity = 200.0f;
   m_objectId = _id;
@@ -2348,20 +2348,21 @@ void Camera::RequestEntityTrackMode(const WorldObjectId& _id)
 void Camera::RequestEntityFollowMode(const WorldObjectId& _id)
 {
   m_framesInThisMode = 0;
-  m_mode = ModeEntityFollow;
+  m_mode = Mode::ModeEntityFollow;
   m_objectId = _id;
 }
 
-bool Camera::IsMoving() { return m_mode == ModeMoveToTarget; }
+bool Camera::IsMoving() { return m_mode == Mode::ModeMoveToTarget; }
 
 bool Camera::IsInteractive()
 {
   // if( TheScript()->IsRunningScript() ) return false;
 
-  return (m_mode == ModeSphereWorld || m_mode == ModeFreeMovement || m_mode == ModeRadarAim || m_mode == ModeTurretAim || m_mode == ModeEntityTrack);
+  return (m_mode == Mode::ModeSphereWorld || m_mode == Mode::ModeFreeMovement || m_mode == Mode::ModeRadarAim || m_mode == Mode::ModeTurretAim ||
+          m_mode == Mode::ModeEntityTrack);
 }
 
-bool Camera::IsInMode(int _mode) { return (m_mode == _mode); }
+bool Camera::IsInMode(Mode _mode) { return (m_mode == _mode); }
 
 void Camera::SetTarget(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up)
 {
@@ -2502,11 +2503,11 @@ void Camera::PlayAnimation(CameraAnimation* _anim)
   switch (node->m_transitionMode)
   {
   case CamAnimNode::TransitionMove:
-    RequestMode(ModeMoveToTarget);
+    RequestMode(Mode::ModeMoveToTarget);
     SetMoveDuration(node->m_duration);
     break;
   case CamAnimNode::TransitionCut:
-    RequestMode(ModeDoNothing);
+    RequestMode(Mode::ModeDoNothing);
     break;
   }
 }
@@ -2525,7 +2526,7 @@ bool Camera::IsAnimPlaying()
   if (m_anim)
     return true;
 
-  if (m_mode == ModeMoveToTarget)
+  if (m_mode == Mode::ModeMoveToTarget)
     return true;
 
   return false;
@@ -2546,7 +2547,7 @@ void Camera::RestoreCameraPosition(bool _cut)
     CutToTarget();
   else
   {
-    RequestMode(ModeMoveToTarget);
+    RequestMode(Mode::ModeMoveToTarget);
     SetMoveDuration(3);
   }
 }

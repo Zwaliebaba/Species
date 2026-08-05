@@ -146,14 +146,14 @@ void TaskManagerInterfaceIcons::Advance()
   {
     // We were running a default objective description (trunk port, research item)
     // So shut it down now
-    TheCamera()->RequestMode(Camera::ModeFreeMovement);
+    TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
     m_viewingDefaultObjective = false;
   }
 
   bool inCutscene = false;
   if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
     inCutscene = true;
-  if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
+  if (TheCamera()->IsInMode(Camera::Mode::ModeBuildingFocus))
     inCutscene = true;
 
   if (inCutscene)

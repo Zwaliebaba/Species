@@ -251,7 +251,7 @@ void LocationInput::AdvanceTeamControl()
   bool inCutscene = false;
   if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
     inCutscene = true;
-  if (TheCamera()->IsInMode(Camera::ModeBuildingFocus))
+  if (TheCamera()->IsInMode(Camera::Mode::ModeBuildingFocus))
     inCutscene = true;
 
   if (inCutscene)
@@ -288,7 +288,7 @@ void LocationInput::AdvanceTeamControl()
     if (objectSelected)
     {
       g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
-      TheCamera()->RequestMode(Camera::ModeFreeMovement);
+      TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
       g_taskManager->m_currentTaskId = -1;
 
       if (team->m_currentUnitId != -1)
@@ -335,7 +335,7 @@ void LocationInput::AdvanceTeamControl()
           {
             // Player pressed CTRL-C, so terminate this turret
             g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
-            TheCamera()->RequestMode(Camera::ModeFreeMovement);
+            TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
             building->Damage(-100);
           }
         }
@@ -354,7 +354,7 @@ void LocationInput::AdvanceTeamControl()
         {
           // Player pressed CTRL-C, so demote this officer
           g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
-          TheCamera()->RequestMode(Camera::ModeFreeMovement);
+          TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
           ent->ChangeHealth(-999);
         }
 
@@ -451,7 +451,7 @@ void LocationInput::AdvanceTeamControl()
     else
     {
       g_app->m_clientToServer->RequestSelectUnit(team->m_teamId, -1, -1, -1);
-      TheCamera()->RequestMode(Camera::ModeFreeMovement);
+      TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
     }
   }
 }

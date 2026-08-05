@@ -71,7 +71,7 @@ void Script::RunCommand_CamMove(const char* _mountName, float _duration)
   {
     TheCamera()->SetMoveDuration(_duration);
 
-    TheCamera()->RequestMode(Camera::ModeMoveToTarget);
+    TheCamera()->RequestMode(Camera::Mode::ModeMoveToTarget);
   }
 }
 
@@ -120,7 +120,7 @@ void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float
   {
     TheCamera()->SetTarget(building->m_centrePos, _range, _height);
     TheCamera()->SetMoveDuration(_duration);
-    TheCamera()->RequestMode(Camera::ModeMoveToTarget);
+    TheCamera()->RequestMode(Camera::Mode::ModeMoveToTarget);
   }
   else
     DebugTrace("SCRIPT ERROR : Tried to target non-existent building {}", _buildingId);
@@ -146,8 +146,8 @@ void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
     targetPos = g_globalWorld->GetLocationPosition(locationId);
   }
 
-  if (!TheCamera()->IsInMode(Camera::ModeSphereWorldScripted))
-    TheCamera()->RequestMode(Camera::ModeSphereWorldScripted);
+  if (!TheCamera()->IsInMode(Camera::Mode::ModeSphereWorldScripted))
+    TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldScripted);
 
   TheCamera()->SetTargetFOV(_fov);
   // g_upVector is still a Vector3; g_XMIdentityR1 is the (0,1,0,0) it holds.
@@ -162,9 +162,9 @@ void Script::RunCommand_CamReset()
     TheCamera()->StopAnimation();
 
   if (g_location)
-    TheCamera()->RequestMode(Camera::ModeFreeMovement);
+    TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
   else
-    TheCamera()->RequestMode(Camera::ModeSphereWorld);
+    TheCamera()->RequestMode(Camera::Mode::ModeSphereWorld);
 }
 
 void Script::RunCommand_EnterLocation(char* _name)
@@ -280,7 +280,7 @@ void Script::RunCommand_GameOver()
   //
   // Go into the outro camera mode
 
-  TheCamera()->RequestMode(Camera::ModeSphereWorldOutro);
+  TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldOutro);
 
   //
   // Kill global world ambiences
@@ -453,9 +453,9 @@ bool Script::Skip()
     g_soundSystem->StopAllSounds(WorldObjectId(), "Music");
     m_permitEscape = false;
     if (g_location)
-      TheCamera()->RequestMode(Camera::ModeFreeMovement);
+      TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
     else
-      TheCamera()->RequestMode(Camera::ModeSphereWorld);
+      TheCamera()->RequestMode(Camera::Mode::ModeSphereWorld);
     return true;
   }
 

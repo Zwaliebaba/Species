@@ -215,7 +215,7 @@ void TaskManagerInterface::AdvanceTab()
         }
         else
         {
-          TheCamera()->RequestMode(Camera::ModeFreeMovement);
+          TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
         }
         taskId = g_taskManager->m_tasks[index]->m_id;
         g_taskManager->SelectTask(taskId);

@@ -973,7 +973,7 @@ void EnterLocation()
   else
   {
     TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-    TheCamera()->RequestMode(Camera::ModeFreeMovement);
+    TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
 
     LocationGameLoop();
   }
@@ -993,7 +993,7 @@ void EnterGlobalWorld()
 
   // Put the camera in a sensible place
   TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-  TheCamera()->RequestMode(Camera::ModeSphereWorld);
+  TheCamera()->RequestMode(Camera::Mode::ModeSphereWorld);
   TheCamera()->SetHeight(50.0f);
 
   if (g_editing)
@@ -1004,7 +1004,7 @@ void EnterGlobalWorld()
 
 void MainMenuLoop()
 {
-  TheCamera()->RequestMode(Camera::ModeMainMenu);
+  TheCamera()->RequestMode(Camera::Mode::ModeMainMenu);
   while (g_atMainMenu)
   {
     UpdateAdvanceTime();

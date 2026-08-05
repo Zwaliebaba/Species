@@ -1069,7 +1069,7 @@ void SphereWorld::RenderHeaven()
 
 void SphereWorld::RenderIslands()
 {
-  if (g_camera->IsInMode(CameraAccess::ModeSphereWorldIntro) || g_camera->IsInMode(CameraAccess::ModeSphereWorldOutro))
+  if (g_camera->IsInMode(CameraAccess::Mode::ModeSphereWorldIntro) || g_camera->IsInMode(CameraAccess::Mode::ModeSphereWorldOutro))
     return;
 
   //

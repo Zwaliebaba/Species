@@ -272,7 +272,7 @@ void LevelFile::ParseCameraAnims(TextReader* _in)
 
       // Read camera mode
       node->m_transitionMode = CamAnimNode::GetTransitModeId(word);
-      ASSERT_TEXT(node->m_transitionMode >= 0 && node->m_transitionMode < CameraAccess::ModeNumModes,
+      ASSERT_TEXT(node->m_transitionMode >= 0 && node->m_transitionMode < static_cast<int>(Neuron::I(CameraAccess::Mode::ModeNumModes)),
                   "Bad camera animation camera mode in level file {}", m_missionFilename);
 
 

@@ -387,7 +387,7 @@ void GameCursor::Render()
 
       cursorRendered = true;
     }
-    else if (TheCamera()->IsInMode(Camera::ModeEntityTrack))
+    else if (TheCamera()->IsInMode(Camera::Mode::ModeEntityTrack))
     {
       if (false)
       {

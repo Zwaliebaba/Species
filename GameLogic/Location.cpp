@@ -1385,7 +1385,7 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
     DebugTrace("CLIENT : Assigned team {}\n", _teamId);
     g_globalWorld->m_myTeamId = _teamId;
     //		g_target->SetMousePos(g_renderer->ScreenW(), g_renderer->ScreenH());
-    //		g_camera->RequestMode(CameraAccess::ModeFreeMovement);
+    //		g_camera->RequestMode(CameraAccess::Mode::ModeFreeMovement);
   }
 
   // Create instant units that belong to this team
