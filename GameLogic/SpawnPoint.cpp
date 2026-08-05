@@ -925,19 +925,19 @@ namespace Species
       auto const above = [&pos](float _height) { return DirectX::XMFLOAT3(pos.x, pos.y + _height, pos.z); };
 
       g_editorFont.DrawText3DCentre(above(80.0f), 10, "SpawnPopulationLock");
-      g_editorFont.DrawText3DCentre(above(70.0f), 10, "OriginalMaxPopulation = %d", m_originalMaxPopulation);
-      g_editorFont.DrawText3DCentre(above(60.0f), 10, "CurrentMaxPopulation = %d", m_maxPopulation);
-      g_editorFont.DrawText3DCentre(above(50.0f), 10, "Red = %d", m_teamCount[1]);
-      g_editorFont.DrawText3DCentre(above(40.0f), 10, "Green = %d", m_teamCount[0]);
+      g_editorFont.DrawText3DCentre(above(70.0f), 10, "OriginalMaxPopulation = {}", m_originalMaxPopulation);
+      g_editorFont.DrawText3DCentre(above(60.0f), 10, "CurrentMaxPopulation = {}", m_maxPopulation);
+      g_editorFont.DrawText3DCentre(above(50.0f), 10, "Red = {}", m_teamCount[1]);
+      g_editorFont.DrawText3DCentre(above(40.0f), 10, "Green = {}", m_teamCount[0]);
 
       if (m_teamCount[0] > m_originalMaxPopulation)
       {
-        g_editorFont.DrawText3DCentre(above(30.0f), 10, "Green Overpopulated by %d", m_teamCount[0] - m_originalMaxPopulation);
+        g_editorFont.DrawText3DCentre(above(30.0f), 10, "Green Overpopulated by {}", m_teamCount[0] - m_originalMaxPopulation);
       }
 
       if (m_teamCount[1] > m_originalMaxPopulation)
       {
-        g_editorFont.DrawText3DCentre(above(20.0f), 10, "Red Overpopulated by %d", m_teamCount[1] - m_originalMaxPopulation);
+        g_editorFont.DrawText3DCentre(above(20.0f), 10, "Red Overpopulated by {}", m_teamCount[1] - m_originalMaxPopulation);
       }
 
 #ifdef LOCATION_EDITOR

@@ -444,10 +444,10 @@ void Renderer::RenderFrame(bool withFlip)
     glEnd();
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText2D(12, 10, DEF_FONT_SIZE, "FPS: %d", m_fps);
-    //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "TFPS: %2.0f", g_targetFrameRate);
+    g_editorFont.DrawText2D(12, 10, DEF_FONT_SIZE, "FPS: {}", m_fps);
+    //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "TFPS: {:2.0f}", g_targetFrameRate);
     //		Vector3 const camPos = TheCamera()->GetPos();
-    //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "cam: %.1f, %.1f, %.1f", camPos.x, camPos.y, camPos.z);
+    //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "cam: {:.1f}, {:.1f}, {:.1f}", camPos.x, camPos.y, camPos.z);
   }
 
   if (m_displayInputMode)
@@ -474,7 +474,7 @@ void Renderer::RenderFrame(bool withFlip)
     }
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText2D(84, 10, DEF_FONT_SIZE, "InputMode: %s", inmode.c_str());
+    g_editorFont.DrawText2D(84, 10, DEF_FONT_SIZE, "InputMode: {}", inmode.c_str());
   }
 
   if (g_editing)
@@ -483,9 +483,9 @@ void Renderer::RenderFrame(bool withFlip)
 
     if (g_locationId != -1)
     {
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : %d", g_location->m_landscape.m_renderer->m_numTriangles);
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : %s", g_requestedMission.c_str());
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : %s", g_requestedMap.c_str());
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : {}", g_location->m_landscape.m_renderer->m_numTriangles);
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : {}", g_requestedMission.c_str());
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : {}", g_requestedMap.c_str());
     }
   }
 
@@ -502,7 +502,7 @@ void Renderer::RenderFrame(bool withFlip)
       glVertex2f(m_screenW / 2 - 200, 80);
       glEnd();
       glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-      g_editorFont.DrawText2DCentre(m_screenW / 2, 100, 20, "Client LAG %dms behind Server ", latency * 100);
+      g_editorFont.DrawText2DCentre(m_screenW / 2, 100, 20, "Client LAG {}ms behind Server ", latency * 100);
     }
   }
 
@@ -1268,7 +1268,7 @@ void Renderer::ApplyPixelEffect()
         const float dist = m_pixelEffectGrid[x][blah];
         if (dist < 1e9)
         {
-          g_editorFont.DrawText2DCentre(static_cast<float>(x) * scaleX + offsetX, static_cast<float>(y) * scaleY + offsetY, 12, "%.0f", dist);
+          g_editorFont.DrawText2DCentre(static_cast<float>(x) * scaleX + offsetX, static_cast<float>(y) * scaleY + offsetY, 12, "{:.0f}", dist);
         }
       }
     }

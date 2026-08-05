@@ -699,7 +699,7 @@ namespace Species
 
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(_iu->m_posX, _iu->m_posZ);
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(_iu->m_posX, landHeight + 15.0f, _iu->m_posZ), 15.0f, "%d %s(s)", _iu->m_number, typeName);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(_iu->m_posX, landHeight + 15.0f, _iu->m_posZ), 15.0f, "{} {}(s)", _iu->m_number, typeName);
 
 
     // Render troops

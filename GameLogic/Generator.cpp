@@ -350,10 +350,10 @@ namespace Species
   {
     PowerBuilding::Render(_predictionTime);
 
-    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,215,0), 10.0f, "NumThisSecond : %d", m_numThisSecond );
+    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,215,0), 10.0f, "NumThisSecond : {}", m_numThisSecond );
 
     // if( m_enabled ) g_gameFont.DrawText3DCentre( m_pos + Vector3(0,180,0), 10.0f, "Enabled" );
-    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,170,0), 10.0f, "Output : %d Gq/s", int(m_throughput*10.0f) );
+    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,170,0), 10.0f, "Output : {} Gq/s", int(m_throughput*10.0f) );
 
     DirectX::XMFLOAT4X4 generatorMat;
     DirectX::XMStoreFloat4x4(&generatorMat,
@@ -365,7 +365,7 @@ namespace Species
     glColor4f(0.6f, 0.8f, 0.9f, 1.0f);
     g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
                           DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
-                          DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "%d", int(m_throughput * 10.0f));
+                          DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "{}", int(m_throughput * 10.0f));
     // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
     // operator^ was the cross product, and front x up is the RIGHT vector -- the
     // opposite hand from GetRight()'s up x front, which is why it is spelled out
@@ -385,7 +385,7 @@ namespace Species
     glColor4f(0.6f, 0.8f, 0.9f, 0.0f);
     g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
                           DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
-                          DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "%d", int(m_throughput * 10.0f));
+                          DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "{}", int(m_throughput * 10.0f));
     g_gameFont.SetRenderShadow(false);
   }
 

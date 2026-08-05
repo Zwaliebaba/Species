@@ -149,7 +149,7 @@ namespace Species
     DirectX::XMFLOAT4X4 destMat = m_destination1->GetWorldMatrix(portMat);
     glColor4f(0.9f, 0.8f, 0.8f, 1.0f);
     g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
-                          DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "%s", caption);
+                          DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "{}", caption);
     g_gameFont.SetRenderShadow(true);
     // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
     // operator^ was the cross product, and front x up is the RIGHT vector -- the
@@ -168,13 +168,13 @@ namespace Species
     }
     glColor4f(0.9f, 0.8f, 0.8f, 0.0f);
     g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
-                          DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "%s", caption);
+                          DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "{}", caption);
 
     g_gameFont.SetRenderShadow(false);
     glColor4f(0.9f, 0.8f, 0.8f, 1.0f);
     destMat = m_destination2->GetWorldMatrix(portMat);
     g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
-                          DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "%s", caption);
+                          DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "{}", caption);
     g_gameFont.SetRenderShadow(true);
     // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
     // operator^ was the cross product, and front x up is the RIGHT vector -- the
@@ -193,7 +193,7 @@ namespace Species
     }
     glColor4f(0.9f, 0.8f, 0.8f, 0.0f);
     g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
-                          DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "%s", caption);
+                          DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "{}", caption);
 
     g_gameFont.SetRenderShadow(false);
 

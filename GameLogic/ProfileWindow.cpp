@@ -178,7 +178,7 @@ namespace Species
     }
 
     glColor3ub(255, 255, 255);
-    g_editorFont.DrawText2D(left + (_indent + 1) * 7.5f, m_yPos += 12, DEF_FONT_SIZE, "Total %.0f", totalTime);
+    g_editorFont.DrawText2D(left + (_indent + 1) * 7.5f, m_yPos += 12, DEF_FONT_SIZE, "Total {:.0f}", totalTime);
   }
 
 

@@ -283,7 +283,7 @@ void PrefsSoundWindow::Render(bool _hasFocus)
 
 
   //    int numChannels = g_soundLibrary3d->m_numChannels;
-  //    g_editorFont.DrawText2DCentre( m_x + m_w/2, m_y + m_h - 70, 12, "%d channels allocated", numChannels );
+  //    g_editorFont.DrawText2DCentre( m_x + m_w/2, m_y + m_h - 70, 12, "{} channels allocated", numChannels );
 
 #ifdef PROFILER_ENABLED
   const auto& children = g_profiler->m_rootElement->m_children;
@@ -294,7 +294,7 @@ void PrefsSoundWindow::Render(bool _hasFocus)
     float occup = element->m_lastTotalTime * 100;
     if (occup > 15)
       glColor4f(1.0f, 0.3f, 0.3f, 1.0f);
-    g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(50), GetMenuSize(17), "%s %d%%", LANGUAGEPHRASE("dialog_cpuusage"),
+    g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(50), GetMenuSize(17), "{} {}%", LANGUAGEPHRASE("dialog_cpuusage"),
                                   int(occup));
   }
   else
@@ -308,6 +308,6 @@ void PrefsSoundWindow::Render(bool _hasFocus)
   float memoryUsage = g_cachedSampleManager.GetMemoryUsage();
   memoryUsage /= 1024.0f;
   memoryUsage /= 1024.0f;
-  g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(70), size, "%s %2.1f Mb", LANGUAGEPHRASE("dialog_memoryusage"), memoryUsage);
+  g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(70), size, "{} {:2.1f} Mb", LANGUAGEPHRASE("dialog_memoryusage"), memoryUsage);
 }
 } // namespace Species

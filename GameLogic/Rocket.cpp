@@ -242,7 +242,7 @@ namespace Species
     }
 
     //    glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,70,0), 5, "Fuel Pressure : %2.2f", m_currentLevel );
+    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,70,0), 5, "Fuel Pressure : {:2.2f}", m_currentLevel );
   }
 
 
@@ -436,7 +436,7 @@ namespace Species
     FuelBuilding::RenderAlphas(_predictionTime);
 
     //    glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,90,0), 10, "Surges : %2.2f", m_surges );
+    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,90,0), 10, "Surges : {:2.2f}", m_surges );
   }
 
 
@@ -710,7 +710,7 @@ namespace Species
         if (rocket->m_state == EscapeRocket::StateCountdown)
         {
           int countdown = (int)rocket->m_countdown + 1;
-          g_gameFont.DrawText3D(textPos, screenFrontStore, screenUpStore, 50, "%d", countdown);
+          g_gameFont.DrawText3D(textPos, screenFrontStore, screenUpStore, 50, "{}", countdown);
         }
         else
         {
@@ -1459,14 +1459,14 @@ void EscapeRocket::RenderAlphas(float _predictionTime)
                                                                      DirectX::XMLoadFloat3(&m_pos)));
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-  //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,120,0), 10, "Fuel : %2.2f", m_fuel );
-  //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,130,0), 10, "Passengers : %d", m_passengers );
-  //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,140,0), 10, "Damage : %2.2f", m_damage );
-  //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,150,0), 10, "Timer : %2.2f", m_countdown );
+  //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,120,0), 10, "Fuel : {:2.2f}", m_fuel );
+  //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,130,0), 10, "Passengers : {}", m_passengers );
+  //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,140,0), 10, "Damage : {:2.2f}", m_damage );
+  //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,150,0), 10, "Timer : {:2.2f}", m_countdown );
 
   //    if( m_state == StateCountdown && m_countdown <= 10.0f )
   //    {
-  //        g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,200,0), 100, "%d", int(m_countdown) );
+  //        g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,200,0), 100, "{}", int(m_countdown) );
   //    }
 
 

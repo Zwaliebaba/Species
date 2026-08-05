@@ -357,7 +357,7 @@ namespace Species
         }
         glEnd();
 
-        g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(triggerPos.x, triggerPos.y + 50.0f, triggerPos.z), 10.0f, "UseTrigger: %d", m_useTrigger);
+        g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(triggerPos.x, triggerPos.y + 50.0f, triggerPos.z), 10.0f, "UseTrigger: {}", m_useTrigger);
       }
     }
 #endif

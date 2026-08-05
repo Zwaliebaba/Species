@@ -1033,7 +1033,7 @@ void Refinery::Render(float _predictionTime)
   glColor4f(0.6f, 0.8f, 0.9f, 1.0f);
   g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
                         DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
-                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 10.0f, "%d", numRefined);
+                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 10.0f, "{}", numRefined);
   // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
   // operator^ was the cross product, and front x up is the RIGHT vector -- the
   // opposite hand from GetRight()'s up x front, which is why it is spelled out
@@ -1053,7 +1053,7 @@ void Refinery::Render(float _predictionTime)
   glColor4f(0.6f, 0.8f, 0.9f, 0.0f);
   g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
                         DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
-                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 10.0f, "%d", numRefined);
+                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 10.0f, "{}", numRefined);
   g_gameFont.SetRenderShadow(false);
 }
 

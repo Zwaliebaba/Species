@@ -248,11 +248,11 @@ namespace Species
 
         g_gameFont.SetRenderOutline(true);
         glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
-        g_gameFont.DrawText2DJustified(textCentrePos.x, textCentrePos.y, fontSize, pos.x, "%s", text);
+        g_gameFont.DrawText2DJustified(textCentrePos.x, textCentrePos.y, fontSize, pos.x, "{}", text);
 
         g_gameFont.SetRenderOutline(false);
         glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
-        g_gameFont.DrawText2DJustified(textCentrePos.x, textCentrePos.y, fontSize, pos.x, "%s", text);
+        g_gameFont.DrawText2DJustified(textCentrePos.x, textCentrePos.y, fontSize, pos.x, "{}", text);
       }
     }
   }

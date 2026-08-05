@@ -40,11 +40,10 @@ namespace Species
 //        g_editorFont.DrawText2D( m_x + 10, m_y + 135, DEF_FONT_SIZE,
 //			"Server RECV  : %4.0f bytes", g_profiler->GetTotalTime("Server Receive") );
 #endif // PROFILER_ENABLED
-        g_editorFont.DrawText2D( m_x + 10, m_y + 30,  DEF_FONT_SIZE,
-			"SERVER SeqID : %d", g_server->m_sequenceId );
+      g_editorFont.DrawText2D(m_x + 10, m_y + 30, DEF_FONT_SIZE, "SERVER SeqID : {}", g_server->m_sequenceId);
 
-        int diff = g_server->m_sequenceId - g_lastProcessedSequenceId;
-        g_editorFont.DrawText2D( m_x + 10, m_y + 60, DEF_FONT_SIZE, "Diff         : %d", diff );
+      int diff = g_server->m_sequenceId - g_lastProcessedSequenceId;
+      g_editorFont.DrawText2D(m_x + 10, m_y + 60, DEF_FONT_SIZE, "Diff         : {}", diff);
     }
 
 #ifdef PROFILER_ENABLED
@@ -53,12 +52,11 @@ namespace Species
 //    g_editorFont.DrawText2D( m_x + 10, m_y + 175, DEF_FONT_SIZE,
 //		"Client RECV  : %4.0f bytes", g_profiler->GetTotalTime("Client Receive") );
 #endif // PROFILER_ENABLED
-    g_editorFont.DrawText2D( m_x + 10, m_y + 45, DEF_FONT_SIZE,
-		"CLIENT SeqID : %d", g_lastProcessedSequenceId );
+    g_editorFont.DrawText2D(m_x + 10, m_y + 45, DEF_FONT_SIZE, "CLIENT SeqID : {}", g_lastProcessedSequenceId);
 
-    g_editorFont.DrawText2D(m_x + 10, m_y + 80, DEF_FONT_SIZE, "Inbox: %d", static_cast<int>(g_clientToServer->m_inbox.size()));
+    g_editorFont.DrawText2D(m_x + 10, m_y + 80, DEF_FONT_SIZE, "Inbox: {}", static_cast<int>(g_clientToServer->m_inbox.size()));
 
     int nextSeqId = g_clientToServer->GetNextLetterSeqID();
-    g_editorFont.DrawText2D( m_x + 10, m_y + 96, DEF_FONT_SIZE, "First Letter SeqID: %d", nextSeqId );
+    g_editorFont.DrawText2D(m_x + 10, m_y + 96, DEF_FONT_SIZE, "First Letter SeqID: {}", nextSeqId);
   }
 } // namespace Species

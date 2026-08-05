@@ -361,7 +361,7 @@ namespace Species
 
     //    RenderArrow( m_pos, m_pos+m_front*20.0f, 1.0f );
     //    RenderArrow( m_pos, m_targetPos, 2.0f );
-    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,50,0), 10.0f, "%d", (int) m_stats[StatHealth] );
+    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,50,0), 10.0f, "{}", (int) m_stats[StatHealth] );
 
     DirectX::XMFLOAT3 predictedPos;
     DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),

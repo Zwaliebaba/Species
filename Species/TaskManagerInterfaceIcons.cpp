@@ -1548,12 +1548,12 @@ namespace Species
             g_gameFont.SetRenderShadow(true);
             glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
             g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 25, 7, state);
-            g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 2, 12, "%d", numSpirits);
+            g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 2, 12, "{}", numSpirits);
 
             g_gameFont.SetRenderShadow(false);
             glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
             g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 25, 7, state);
-            g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 2, 12, "%d", numSpirits);
+            g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 2, 12, "{}", numSpirits);
           }
         }
         else if (task->m_type == GlobalResearch::TypeSquad)
@@ -1565,11 +1565,11 @@ namespace Species
 
             glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
             g_gameFont.SetRenderShadow(true);
-            g_gameFont.DrawText2D(iconCentre.x + 11, iconCentre.y + 5, 10, "x%d", numSquaddies);
+            g_gameFont.DrawText2D(iconCentre.x + 11, iconCentre.y + 5, 10, "x{}", numSquaddies);
 
             glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
             g_gameFont.SetRenderShadow(false);
-            g_gameFont.DrawText2D(iconCentre.x + 11, iconCentre.y + 5, 10, "x%d", numSquaddies);
+            g_gameFont.DrawText2D(iconCentre.x + 11, iconCentre.y + 5, 10, "x{}", numSquaddies);
           }
         }
 
@@ -2021,13 +2021,13 @@ namespace Species
 
         g_gameFont.SetRenderOutline(true);
         glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-        g_gameFont.DrawText2D(textX, textY, textH * 0.65f, "%s", descriptor);
+        g_gameFont.DrawText2D(textX, textY, textH * 0.65f, "{}", descriptor);
         g_gameFont.SetRenderOutline(false);
         if (completed)
           glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
         else
           glColor4f(1.0f, 0.2f, 0.2f, 1.0f);
-        g_gameFont.DrawText2D(textX, textY, textH * 0.65f, "%s", descriptor);
+        g_gameFont.DrawText2D(textX, textY, textH * 0.65f, "{}", descriptor);
 
         const char* completedString = (completed ? LANGUAGEPHRASE("taskmanager_complete") : LANGUAGEPHRASE("taskmanager_incomplete"));
         g_gameFont.SetRenderOutline(true);
@@ -2046,7 +2046,7 @@ namespace Species
           if (building)
           {
             const char* objectiveCounter = building->GetObjectiveCounter();
-            g_gameFont.DrawText2D(completeX, textY + textH * 0.75f, textH / 3, "%s", objectiveCounter);
+            g_gameFont.DrawText2D(completeX, textY + textH * 0.75f, textH / 3, "{}", objectiveCounter);
           }
         }
 
@@ -2098,7 +2098,7 @@ namespace Species
     g_gameFont.SetRenderOutline(false);
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_research"));
-    // g_gameFont.DrawText2DCentre( m_screenW/2.0f, 80, 20, "ResearchPoints : %d", g_globalWorld->m_research->m_researchPoints );
+    // g_gameFont.DrawText2DCentre( m_screenW/2.0f, 80, 20, "ResearchPoints : {}", g_globalWorld->m_research->m_researchPoints );
 
     float mouseX = g_target->X();
     float mouseY = g_target->Y();
@@ -2279,10 +2279,10 @@ namespace Species
 
         g_gameFont.SetRenderOutline(true);
         glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-        g_gameFont.DrawText2D(iconX + iconSize + 10, iconY + iconSize / 2, 20, "%s", GlobalResearch::GetTypeNameTranslated(i));
+        g_gameFont.DrawText2D(iconX + iconSize + 10, iconY + iconSize / 2, 20, "{}", GlobalResearch::GetTypeNameTranslated(i));
         g_gameFont.SetRenderOutline(false);
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        g_gameFont.DrawText2D(iconX + iconSize + 10, iconY + iconSize / 2, 20, "%s", GlobalResearch::GetTypeNameTranslated(i));
+        g_gameFont.DrawText2D(iconX + iconSize + 10, iconY + iconSize / 2, 20, "{}", GlobalResearch::GetTypeNameTranslated(i));
 
         float boxX = 300;
         float boxY = iconY + iconSize * 0.25f;
@@ -2400,7 +2400,7 @@ namespace Species
         float texX = 630;
 
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        g_gameFont.DrawText2D(texX, iconY + iconSize / 2, 12, "v%d.0", researchLevel);
+        g_gameFont.DrawText2D(texX, iconY + iconSize / 2, 12, "v{}.0", researchLevel);
 
         iconY += totalSize;
       }

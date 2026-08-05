@@ -197,7 +197,7 @@ namespace Species
   if (totalOccup > 0.0f)
   {
     // if( totalOccup > 25 ) glColor4f( 1.0f, 0.3f, 0.3f, 1.0f );
-    g_editorFont.DrawText2DCentre(x, y, 15, "%d%%", int(totalOccup));
+    g_editorFont.DrawText2DCentre(x, y, 15, "{}%", int(totalOccup));
   }
   else
   {

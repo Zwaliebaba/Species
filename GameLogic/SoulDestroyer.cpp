@@ -678,7 +678,7 @@ namespace Species
 
 
       // glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-      // g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,50,0), 20, "%2.2f", m_panic );
+      // g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,50,0), 20, "{:2.2f}", m_panic );
     }
   }
 

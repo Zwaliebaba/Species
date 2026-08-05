@@ -437,9 +437,9 @@ namespace Species
 
 
 #ifdef DEBUG_RENDER_ENABLED
-  // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,140,0), 20, "Health %d", m_health );
-  // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,120,0), 20, "%d Ants Inside", m_numAntsInside );
-  // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,100,0), 20, "%d Spirits Inside", m_numSpiritsInside );
+    // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,140,0), 20, "Health {}", m_health );
+    // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,120,0), 20, "{} Ants Inside", m_numAntsInside );
+    // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,100,0), 20, "{} Spirits Inside", m_numSpiritsInside );
 //    for( int i = 0; i < static_cast<int>(m_objectives.size()); ++i )
 //    {
 //        AntObjective *objective = m_objectives[i];

@@ -305,7 +305,7 @@ namespace Neuron
     // variadic until strings-modernised T12 converts it, and the old code fed it
     // a buffer that vsprintf had already expanded -- so a label containing a
     // percent sign was interpreted twice. This stops that.
-    g_editorFont.DrawText3DCentre(end, 3.0f, "%s", _text);
+    g_editorFont.DrawText3DCentre(end, 3.0f, "{}", _text);
   }
 
 

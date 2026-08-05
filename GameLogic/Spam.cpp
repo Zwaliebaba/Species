@@ -157,8 +157,8 @@ namespace Species
 
   void Spam::RenderAlphas(float _predictionTime)
   {
-    // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,100,0), 10.0f, "timer %d", (int) m_timer );
-    // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,90,0), 10.0f, "Damage %d", (int) m_damage );
+    // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,100,0), 10.0f, "timer {}", (int) m_timer );
+    // g_editorFont.DrawText3DCentre( m_pos+Vector3(0,90,0), 10.0f, "Damage {}", (int) m_damage );
 
     DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
     DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();

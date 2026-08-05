@@ -188,7 +188,7 @@ namespace Species
     {
       g_gameFont.DrawText3DCentre(DirectX::XMFLOAT3(predictedPos.x, predictedPos.y + 25.0f, predictedPos.z), 5,
                                   GlobalResearch::GetTypeName(m_researchType));
-      g_gameFont.DrawText3DCentre(DirectX::XMFLOAT3(predictedPos.x, predictedPos.y + 20.0f, predictedPos.z), 5, "%2.2f", m_reprogrammed);
+      g_gameFont.DrawText3DCentre(DirectX::XMFLOAT3(predictedPos.x, predictedPos.y + 20.0f, predictedPos.z), 5, "{:2.2f}", m_reprogrammed);
     }
   }
 

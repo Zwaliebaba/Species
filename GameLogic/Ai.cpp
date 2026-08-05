@@ -333,8 +333,8 @@ namespace Species
       int numRed = g_location->m_teams[1].m_others.NumUsed();
 
       glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(pos.x, pos.y - 30.0f, pos.z), 25, "Green : %d", numGreen);
-      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(pos.x, pos.y - 60.0f, pos.z), 25, "Red  : %d", numRed);
+      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(pos.x, pos.y - 30.0f, pos.z), 25, "Green : {}", numGreen);
+      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(pos.x, pos.y - 60.0f, pos.z), 25, "Red  : {}", numRed);
     }
   }
 
@@ -542,8 +542,8 @@ namespace Species
       Building::Render(_predictionTime);
     }
 
-    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,80,0), 10.0f, "Green  : f%d e%d i%d", m_friendCount[0], m_enemyCount[0], m_idleCount[0] );
-    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,70,0), 10.0f, "Red    : f%d e%d i%d", m_friendCount[1], m_enemyCount[1], m_idleCount[1] );
+    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,80,0), 10.0f, "Green  : f{} e{} i{}", m_friendCount[0], m_enemyCount[0], m_idleCount[0] );
+    //    g_editorFont.DrawText3DCentre( m_pos+Vector3(0,70,0), 10.0f, "Red    : f{} e{} i{}", m_friendCount[1], m_enemyCount[1], m_idleCount[1] );
 
     // for( int t = 0; t < NUM_TEAMS; ++t )
     //    {
@@ -552,7 +552,7 @@ namespace Species
     //        if( team->m_teamType != Team::TeamTypeUnused )
     //        {
     //            glColor3ubv( team->m_colour.GetData() );
-    //            g_editorFont.DrawText3DCentre( m_pos+Vector3(0,60+t*15,0), 10.0f, "%2.2f", m_priority[t] );
+    //            g_editorFont.DrawText3DCentre( m_pos+Vector3(0,60+t*15,0), 10.0f, "{:2.2f}", m_priority[t] );
     //        }
     //    }
   }
@@ -808,10 +808,10 @@ void AISpawnPoint::RenderAlphas(float _predictionTime)
     RenderSphere(m_pos, 10.0f, colour);
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 5.0f, "Spawn %d %s's", m_count,
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 5.0f, "Spawn {} {}'s", m_count,
                                   Entity::GetTypeName(m_entityType));
-    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 25.0f, m_pos.z), 5.0f, "Every %d seconds", m_period);
-    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 5.0f, "Next spawn in %d seconds", (int)m_timer);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 25.0f, m_pos.z), 5.0f, "Every {} seconds", m_period);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 5.0f, "Next spawn in {} seconds", (int)m_timer);
   }
 }
 

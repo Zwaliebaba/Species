@@ -479,7 +479,7 @@ namespace Species
     {
       glColor4ubv(g_location->GetMyTeam()->m_colour.GetData());
       //		glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-      g_editorFont.DrawText2D(12, 19, DEF_FONT_SIZE, "You are TEAM %d", (int)g_globalWorld->m_myTeamId);
+      g_editorFont.DrawText2D(12, 19, DEF_FONT_SIZE, "You are TEAM {}", (int)g_globalWorld->m_myTeamId);
     }
 
     g_editorFont.EndText2D();

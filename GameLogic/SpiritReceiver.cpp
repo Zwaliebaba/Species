@@ -564,8 +564,8 @@ namespace Species
   {
     ReceiverBuilding::Render(_predictionTime);
 
-    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,215,0), 10.0f, "NumThisSecond : %d", m_numThisSecond );
-    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,200,0), 10.0f, "Throughput    : %2.2f", m_throughput );
+    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,215,0), 10.0f, "NumThisSecond : {}", m_numThisSecond );
+    // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,200,0), 10.0f, "Throughput    : {:2.2f}", m_throughput );
   }
 
 

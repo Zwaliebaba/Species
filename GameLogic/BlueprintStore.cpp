@@ -176,7 +176,7 @@ namespace Species
       glDisable(GL_TEXTURE_2D);
     }
 
-    // g_editorFont.DrawText3DCentre( m_pos+XMFLOAT3(0,50,0), 10.0f, "%d Infected %2.2f", m_segment, m_infected );
+    // g_editorFont.DrawText3DCentre( m_pos+XMFLOAT3(0,50,0), 10.0f, "{} Infected {:2.2f}", m_segment, m_infected );
   }
 
 
@@ -397,7 +397,7 @@ namespace Species
 
     //    for( int i = 0; i < BLUEPRINTSTORE_NUMSEGMENTS; ++i )
     //    {
-    //        g_editorFont.DrawText3DCentre( m_pos+XMFLOAT3(0,170+i*20,0), 20, "Segment %d : %2.2f", i, m_segments[i] );
+    //        g_editorFont.DrawText3DCentre( m_pos+XMFLOAT3(0,170+i*20,0), 20, "Segment {} : {:2.2f}", i, m_segments[i] );
     //    }
   }
 

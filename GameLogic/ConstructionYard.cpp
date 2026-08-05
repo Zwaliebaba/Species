@@ -360,10 +360,10 @@ namespace Species
 
 
     //    glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-    //    g_gameFont.DrawText3DCentre( m_pos+Vector3(0,300,0), 20.0f, "Surges : %d", m_numSurges );
-    //    g_gameFont.DrawText3DCentre( m_pos+Vector3(0,270,0), 20.0f, "Primitives : %d", m_numPrimitives );
-    //    g_gameFont.DrawText3DCentre( m_pos+Vector3(0,240,0), 20.0f, "Timer : %2.2f", m_timer );
-    //    g_gameFont.DrawText3DCentre( m_pos+Vector3(0,210,0), 20.0f, "Armour : %d", m_numTanksProduced );
+    //    g_gameFont.DrawText3DCentre( m_pos+Vector3(0,300,0), 20.0f, "Surges : {}", m_numSurges );
+    //    g_gameFont.DrawText3DCentre( m_pos+Vector3(0,270,0), 20.0f, "Primitives : {}", m_numPrimitives );
+    //    g_gameFont.DrawText3DCentre( m_pos+Vector3(0,240,0), 20.0f, "Timer : {:2.2f}", m_timer );
+    //    g_gameFont.DrawText3DCentre( m_pos+Vector3(0,210,0), 20.0f, "Armour : {}", m_numTanksProduced );
   }
 
 

@@ -145,7 +145,7 @@ namespace Species
 
 
   // char *entityTypeRequired = Entity::GetTypeName( m_entityTypeRequired );
-  // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,m_size/2,0), 10.0f, "%d / %d %ss", m_entitiesCounted, m_entitiesRequired, entityTypeRequired );
+  // g_editorFont.DrawText3DCentre( m_pos + Vector3(0,m_size/2,0), 10.0f, "{} / {} {}s", m_entitiesCounted, m_entitiesRequired, entityTypeRequired );
 }
 
 

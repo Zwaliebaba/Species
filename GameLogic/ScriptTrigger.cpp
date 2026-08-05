@@ -179,8 +179,8 @@ namespace Species
       RenderSphere(m_pos, m_range, colour);
       RenderSphere(m_pos, m_range, colour);
 
-      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 10, "%s", m_scriptFilename.c_str());
-      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 10, "%d", m_triggered);
+      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 10, "{}", m_scriptFilename.c_str());
+      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 10, "{}", m_triggered);
     }
   };
 

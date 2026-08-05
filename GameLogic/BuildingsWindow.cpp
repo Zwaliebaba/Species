@@ -70,7 +70,7 @@ namespace Species
         if (m_toolType == LocationEditorAccess::ToolLink)
         {
           Building* b = g_location->GetBuilding(g_locationEditor->GetSelectionId());
-          g_editorFont.DrawText2DRight(realX + m_w - 10, realY + 10, 14, "%d", b->GetBuildingLink());
+          g_editorFont.DrawText2DRight(realX + m_w - 10, realY + 10, 14, "{}", b->GetBuildingLink());
         }
       }
   };
@@ -179,7 +179,7 @@ namespace Species
         Building* b = g_location->GetBuilding(g_locationEditor->GetSelectionId());
         if (b)
         {
-          g_editorFont.DrawText2DRight(realX + m_w - 10, realY + 10, DEF_FONT_SIZE, "%d", b->m_isGlobal);
+          g_editorFont.DrawText2DRight(realX + m_w - 10, realY + 10, DEF_FONT_SIZE, "{}", b->m_isGlobal);
         }
       };
 
@@ -500,8 +500,8 @@ namespace Species
 
     g_editorFont.SetRenderShadow(true);
     glColor4ub(255, 255, 150, 30);
-    g_editorFont.DrawText2D(m_x + m_w - 43, m_y + 8, DEF_FONT_SIZE * 1.1f, "%d", building->m_id.GetUniqueId());
-    g_editorFont.DrawText2D(m_x + m_w - 43, m_y + 8, DEF_FONT_SIZE * 1.1f, "%d", building->m_id.GetUniqueId());
+    g_editorFont.DrawText2D(m_x + m_w - 43, m_y + 8, DEF_FONT_SIZE * 1.1f, "{}", building->m_id.GetUniqueId());
+    g_editorFont.DrawText2D(m_x + m_w - 43, m_y + 8, DEF_FONT_SIZE * 1.1f, "{}", building->m_id.GetUniqueId());
     g_editorFont.SetRenderShadow(false);
   }
 
