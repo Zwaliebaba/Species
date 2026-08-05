@@ -448,9 +448,10 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-Six plans are complete and in `tasks/Archive/`. **Five are open with eighteen
+Six plans are complete and in `tasks/Archive/`. **Five are open with seventeen
 tasks between them** — `strings-modernised` (6), `ownership` (4),
-`language-hygiene` (3), `namespace-migration` (3) and `determinism` (2).
+`language-hygiene` (3), `namespace-migration` (3) and `determinism` (1).
+`determinism`'s one is T6, an owner-run smoke test rather than an agent task.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:
