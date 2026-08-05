@@ -257,21 +257,39 @@ except `ownership/T11`, which met three of four and says so.
 
 ### Where every plan stands now
 
-Eleven tasks open across four plans, down from sixteen. `determinism` closed.
+Ten tasks open across four plans, down from sixteen. `determinism` closed, and `ownership` is one deletion from closing.
 
 | Plan | done | todo | What is left |
 |---|---:|---:|---|
 | `determinism` | 6 | 0 | **CLOSED 2026-08-05** — archived |
-| `ownership` | 9 | 2 | **T6 (yours) → T7, and nothing else.** Stage 5 ends there. |
+| `ownership` | 10 | 1 | **T7 only** — a deletion, and stage 5 ends there |
 | `language-hygiene` | 12 | 1 | T11 only — 473 sites, now unblocked |
 | `namespace-migration` | 2 | 3 | T2 → T4 → T5, and T5 waits on `ownership/T6` |
 | `strings-modernised` | 15 | 5 | the largest remaining plan |
 
-**One gate closed and one did not.** `determinism/T6` is done. `ownership/T6`
-is untouched, and everything left in `ownership` and `namespace` is behind it:
-`ownership` is T6 → T7 and nothing else, and `namespace/T5` waits on T6 as
-well. It cannot be discharged by the run above — its acceptance needs the main
-menu reached after each of ITS OWN commits, and nobody has made them.
+**Both gates are closed, and nothing is waiting on the owner any more.**
+`determinism/T6` passed. `ownership/T6` landed afterwards in four commits,
+unblocking `ownership/T7` and `namespace/T5`.
+
+**T6 is the one to hold at arm's length.** Its acceptance asked for the game
+to reach the main menu after each of its four commits and that was NOT done —
+CI compiled them, nothing ran them. Two findings from it are worth carrying
+into any similar work:
+
+- **`~App()` never runs.** `Main.cpp` calls `Finalise()` then `exit(0)`, which
+  does not unwind, and nothing deletes `g_app`. All seventeen `SAFE_DELETE`s
+  were unreached code, and the task's own intent said the opposite. **The plan
+  entry was written from the grep, not from the code around it.**
+- **The real risk was already-shared ownership.** `g_renderer` and
+  `g_taskManagerInterface` are deleted and rebuilt at runtime by GameLogic on
+  paths that do execute. The owner chose to route replacement through App.
+  Before converting a member, grep for who else *deletes or reassigns* it, not
+  just who reads it.
+
+And one that argues for the whole exercise: converting ownership turned a
+silent hazard into a build error. `AttractMode` has no header anywhere and its
+`#ifdef` is never defined; a raw pointer member had hidden that for years, and
+a `unique_ptr` member could not.
 
 ### What the batch got wrong about itself
 
@@ -539,8 +557,13 @@ Not a proposal — no collision measurement has been run since Batch 5 landed,
 and this file's own history says not to trust one that has not. What is true
 at the point Batch 5 finished:
 
-**Ready for an agent:** `strings` T11, T12 and T17; `language-hygiene` T11;
-`namespace` T2.
+**Ready for an agent:** `ownership` T7; `strings` T11, T12 and T17;
+`language-hygiene` T11; `namespace` T2.
+
+- **`ownership/T7` is the cheapest close in the tree.** `SAFE_DELETE` and
+  `SAFE_FREE` have zero call sites tree-wide as of T6; only the two
+  definitions in `NeuronCore.h` remain, and the two dead `EmptyAndDelete`
+  helpers go with them. That ends migration stage 5.
 
 - **`strings/T17`** was Batch 5's named "obvious first task of Batch 6", and
   it still is — with one correction found while measuring: **its file list

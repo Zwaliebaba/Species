@@ -179,27 +179,47 @@ upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 ## Ownership
 
 Migration stage 5 — raw owning pointers become `std::unique_ptr` and values —
-is nearly done, and what is left is worth knowing because two greps that used
-to be noisy are now almost silent.
+**has one task left, and it is a deletion.** All three legacy greps are silent:
 
 ```
 EmptyAndDelete   ZERO call sites. Only the two transitional definitions
                  remain, in NeuronCore/SlotMap.h and NeuronCore/VectorUtils.h,
-                 and both are now dead code.
+                 and both are dead code.
 SAFE_FREE        ZERO call sites. Gone with ShapeMarker's names.
-SAFE_DELETE      17, all in Species/App.cpp, plus the definition in
-                 NeuronCore.h. That is ownership T6 and then T7.
+SAFE_DELETE      ZERO call sites since ownership T6 on 2026-08-05. Only the
+                 definition in NeuronCore.h remains.
 ```
 
-**`App.cpp` is the whole of what is left of the macro**, and it is deliberately
-last: it constructs and tears down the entire subsystem graph, and subsystems
-reach each other during teardown, so construction and destruction ORDER is
-load-bearing. `ownership` T6 does it in small commits, each one owner-verified
-to reach the main menu. T7 then deletes the macros, and the two transitional
-`EmptyAndDelete` helpers can go with them — they have no users left.
+`ownership` T7 removes those definitions and the two dead `EmptyAndDelete`
+helpers, and that ends stage 5. Nothing blocks it.
 
-Two rules that came out of doing the rest of it, both learned the expensive
-way:
+**T6 was the last hard one, and two things it found are worth carrying:**
+
+- **`~App()` NEVER RUNS.** `Species/Main.cpp` calls `Finalise()` and then
+  `exit(0)`, which does not unwind the stack, and nothing anywhere deletes
+  `g_app`. All seventeen `SAFE_DELETE`s were unreached code, and this file
+  used to say the opposite — that subsystems reach each other during teardown
+  and destruction order is load-bearing. **There is no teardown.** The order
+  was preserved anyway, because it costs two lines and becomes true the day
+  someone deletes `g_app`. But if you are reasoning about App's lifetime,
+  start from the fact that it has no end.
+- **The real risk was ownership that was already shared.** `g_renderer` and
+  `g_taskManagerInterface` are deleted and rebuilt at RUNTIME from GameLogic
+  and `Main.cpp` — on a resolution change and a gamepad switch, paths that
+  really execute. Taking `unique_ptr` ownership without touching those would
+  have left App holding a freed pointer. Replacement now routes through
+  `AppCommands`, whose factories install what they build. **Before converting
+  a member, grep for who else deletes or reassigns it, not just who reads
+  it.**
+
+**Converting ownership turns silent hazards into build errors, and that is the
+point.** T6's one CI failure was `can't delete an incomplete type` on
+`AttractMode` — a type with no header anywhere in the tree, guarded by an
+`ATTRACTMODE_ENABLED` that is defined nowhere. A raw pointer member had hidden
+that for years; a `unique_ptr` member could not.
+
+Two more rules that came out of doing the rest of it, both learned the
+expensive way:
 
 - **A task's file list is written from where ownership LIVES; the work is
   wherever the member is NAMED.** `ownership` T5 declared eight files and
@@ -512,16 +532,21 @@ time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
 **Seven plans are complete and in `tasks/Archive/`** — `determinism` joined
-them on 2026-08-05 when its T6 smoke test passed. **Four are open with eleven
+them on 2026-08-05 when its T6 smoke test passed. **Four are open with ten
 tasks between them** — `strings-modernised` (5), `namespace-migration` (3),
-`ownership` (2) and `language-hygiene` (1). Batch 5 landed four tasks on
-2026-08-05: `ownership` T11, `language-hygiene` T10 and T13, and
-`strings-modernised` T18.
+`ownership` (1) and `language-hygiene` (1). Batch 5 landed four tasks on
+2026-08-05, then `ownership` T6 followed.
 
-**One of those eleven is owner work rather than agent work, and everything
-else in `ownership` and `namespace` is behind it:** `ownership` T6 needs the
-game to reach the main menu after each of its commits. With T11 landed,
-`ownership` is T6 → T7 and nothing else, and `namespace` T5 waits on T6 too.
+**Nothing is gated on the owner any more.** `ownership` T6 landed on
+2026-08-05 and unblocked both `ownership` T7 — a deletion, which ends stage 5
+— and `namespace` T5. Every open task is startable by an agent.
+
+**But T6 is the one to be sceptical about.** Its acceptance asked for the game
+to reach the main menu after each of its four commits, and that check was NOT
+performed; CI compiled them and nothing more. See its notes for what a smoke
+test can and cannot say about it — the destructor it rewrote is unreachable
+code, and the two runtime paths it did change need a resolution change and a
+gamepad switch to reach, neither of which is a Garden step.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:

@@ -624,7 +624,94 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: in_progress
+    notes: |
+      DONE 2026-08-05, in four commits: a whole-file reformat of App.h, then
+      App's own members, then the two externally-replaced subsystems, then the
+      remaining nine. All seventeen macro calls are gone and the acceptance
+      grep over App.cpp and App.h returns nothing.
+
+      TWO FINDINGS CHANGED WHAT THIS TASK WAS. Read them before trusting the
+      intent above, which was written from the SAFE_DELETE list rather than
+      from the code around it.
+
+      1. ~App() NEVER RUNS. Species/Main.cpp calls Finalise() and then exit(0),
+         which does not unwind the stack, and NOTHING ANYWHERE DELETES g_app.
+         All seventeen SAFE_DELETEs were unreached code. This task's intent
+         says subsystems reach each other during teardown and that destruction
+         ORDER is load-bearing -- it describes a teardown that does not happen.
+         The order was preserved anyway, byte for byte, because it costs two
+         lines and becomes true the day someone deletes g_app. But the real
+         risk in this task was never teardown; it was the runtime replacement
+         paths below.
+
+      2. m_resource WAS A LATENT DOUBLE DELETE. ~App destroyed it and
+         Main.cpp's Finalise() also does `delete g_resource`. Only finding 1
+         kept both from firing. App does not own it, and the destructor now
+         says where ownership really is. That is a behaviour change, in
+         unreachable code, and it is the only one in this task.
+
+      THE HARD PART WAS OWNERSHIP THAT WAS ALREADY SHARED. Two subsystems are
+      deleted and rebuilt at RUNTIME from outside App, on paths that really do
+      execute:
+
+        g_renderer              MainMenus.cpp (resolution change),
+                                PrefsScreenWindow.cpp x3
+        g_taskManagerInterface  PrefsKeybindingsWindow.cpp (gamepad switch),
+                                Species/Main.cpp
+
+      Taking unique_ptr ownership without touching those would have left App
+      holding a freed pointer every time a player changed resolution. THE
+      OWNER CHOSE to route replacement through App rather than leave the two
+      raw, so AppCommands' factories now install what they build and have
+      matching destroy calls.
+
+      THE RENDERER KEPT TWO CALLS RATHER THAN ONE. AppCommands.h had already
+      argued against a bundled Recreate() when layering-inversion T12 wrote
+      that seam: the renderer's call sites differ in what they do between
+      destroying the old object and building the new one -- one tears the
+      window down in between, one builds a renderer only to discard it. That
+      argument survives ownership moving, and the header now says so. The task
+      manager interface has no such gap at either site and gets one call.
+
+      BOTH IMPLEMENTATIONS reset() BEFORE CONSTRUCTING. Move-assigning over
+      the member frees the old object AFTER building the new one; every call
+      site destroyed the old one first, one of them with the window already
+      gone. Reversed, it would build a renderer while the old one still held
+      the GL context.
+
+      THE OTHER NINE NEEDED NO SUCH CARE, checked rather than assumed: nothing
+      outside App.cpp assigns or deletes g_globalWorld, g_camera, g_script,
+      g_userInput, g_gameCursor, g_particleSystem, g_taskManager or
+      g_controlHelpSystem. g_prefsManager is also built and deleted in
+      Server/WinMain.cpp, but that is Server.exe, which does not link App.cpp.
+
+      CI CAUGHT ONE ERROR AND IT IS THE MOST USEFUL THING HERE:
+
+        error C2027: use of undefined type 'AttractMode'
+        error C2338: static assertion failed: 'can't delete an incomplete type'
+
+      AttractMode HAS NO HEADER ANYWHERE IN THE TREE and ATTRACTMODE_ENABLED
+      is defined nowhere, so the type is never completed. The raw pointer
+      member hid that -- deleting an incomplete type through a raw pointer is
+      undefined, not diagnosed -- and a unique_ptr member cannot, because its
+      deleter is instantiated whether or not the guarded code using it
+      compiles. The member declaration now carries the same #ifdef its
+      construction and destruction always had. CONVERTING OWNERSHIP TURNED A
+      SILENT HAZARD INTO A BUILD ERROR; that is the conversion working. Every
+      other unique_ptr member's type was then checked complete in App.cpp.
+
+      App.h was whole-file reformatted first, in its own commit, for the
+      cascade reason language-hygiene T3 and T10 both hit.
+
+      NOT RUN. No Windows client here, and THE PER-COMMIT MAIN-MENU CHECK THIS
+      TASK'S ACCEPTANCE ASKS FOR WAS NOT PERFORMED BY THE AGENT for any of the
+      four commits; CI compiled them and that is all. Be precise about what a
+      smoke test can say here: the destructor is unreachable, so no run will
+      ever exercise it. What a run DOES exercise is startup -- every subsystem
+      is built through a unique_ptr now -- and the two replacement paths,
+      which need a RESOLUTION CHANGE and a GAMEPAD SWITCH to reach. Neither is
+      among the seven Garden steps.
+    status: done
 
   - id: T7
     title: Retire the SAFE_DELETE and SAFE_FREE macros
