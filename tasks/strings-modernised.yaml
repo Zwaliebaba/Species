@@ -1488,7 +1488,7 @@ tasks:
       - python3 tools/check_project_files.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Added 2026-08-05 at e7a1a88, alongside T17 and for the same reason: the
       v-family was invisible to every acceptance grep in this plan.

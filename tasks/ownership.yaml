@@ -942,7 +942,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       Split out of T5 on 2026-08-05, at the point T5 had converted its other
       seven owning files and the diff had reached twenty-seven files. Nothing

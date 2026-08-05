@@ -673,7 +673,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       Split out of T9 on 2026-08-05. 216 use sites across 19 files.
 
@@ -935,7 +935,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       Added 2026-08-05 on the owner's instruction, from a defect T12 found and
       deliberately did not fix -- tightening a bound is a behaviour change and
