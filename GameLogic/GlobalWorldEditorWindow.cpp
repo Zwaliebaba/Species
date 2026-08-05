@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Resource.h"
 #include "LanguageTable.h"
+#include "StringUtils.h"
 
 #include "InputField.h"
 #include "GlobalWorldEditorWindow.h"
@@ -57,10 +58,10 @@ class NewLocationButton : public SpeciesButton
       // Create the map and mission files
 
       LevelFile levelFile;
-      CopyInto(levelFile.m_mapFilename, std::format("Map{}.txt", s_locationName));
-      CopyInto(levelFile.m_missionFilename, std::format("Mission{}.txt", s_locationName));
-      strlwr(levelFile.m_mapFilename);
-      strlwr(levelFile.m_missionFilename);
+      levelFile.m_mapFilename = std::format("Map{}.txt", s_locationName);
+      levelFile.m_missionFilename = std::format("Mission{}.txt", s_locationName);
+      StrToLower(levelFile.m_mapFilename.data());
+      StrToLower(levelFile.m_missionFilename.data());
 
       levelFile.Save();
 

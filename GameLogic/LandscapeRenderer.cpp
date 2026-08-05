@@ -244,11 +244,9 @@ const unsigned LandscapeRenderer::m_uvOffset(sizeof(DirectX::XMFLOAT3) * 2 + siz
 LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
   : m_vertexBuffer(0)
 {
-  char fullFilname[256];
-  sprintf(fullFilname, "Terrain/%s", g_location->m_levelFile->m_landscapeColourFilename);
-
-  if (Location::ChristmasModEnabled() == 1)
-    strcpy(fullFilname, "Terrain/LandscapeIcecaps.bmp");
+  const std::string fullFilname = Location::ChristmasModEnabled() == 1
+                                    ? std::string("Terrain/LandscapeIcecaps.bmp")
+                                    : std::format("Terrain/{}", g_location->m_levelFile->m_landscapeColourFilename);
 
   // Read render mode from prefs file
   m_renderMode = g_prefsManager->GetInt("RenderLandscapeMode", 2);
@@ -263,7 +261,7 @@ LandscapeRenderer::LandscapeRenderer(SurfaceMap2D<float>* _heightMap)
     }
   }
 
-  BinaryReader* reader = g_resource->GetBinaryReader(fullFilname);
+  BinaryReader* reader = g_resource->GetBinaryReader(fullFilname.c_str());
   ASSERT_TEXT(reader != nullptr, "Failed to get resource {}", fullFilname);
   m_landscapeColour = new BitmapRGBA(reader, "bmp");
   delete reader;

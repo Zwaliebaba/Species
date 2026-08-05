@@ -9,7 +9,6 @@
 
 #define CAMERA_MOUNT_MAX_NAME_LEN 63
 #define CAMERA_ANIM_MAX_NAME_LEN 63
-#define MAX_FILENAME_LEN 256
 #define MAGIC_MOUNT_NAME_START_POS "CamPosBefore"
 
 
@@ -209,12 +208,15 @@ class LevelFile
     void WriteDifficulty(FileWriter* _out);
 
   public:
-    char m_missionFilename[MAX_FILENAME_LEN];
-    char m_mapFilename[MAX_FILENAME_LEN];
+    // Empty until the two-argument constructor or the map file names them. The
+    // default constructor left the first two INDETERMINATE while they were
+    // arrays, and Save() tests both with strstr — see LevelFileTests.
+    std::string m_missionFilename;
+    std::string m_mapFilename;
 
-    char m_landscapeColourFilename[MAX_FILENAME_LEN];
-    char m_wavesColourFilename[MAX_FILENAME_LEN];
-    char m_waterColourFilename[MAX_FILENAME_LEN];
+    std::string m_landscapeColourFilename;
+    std::string m_wavesColourFilename;
+    std::string m_waterColourFilename;
 
     std::vector<CameraMount*> m_cameraMounts;
     std::vector<CameraAnimation*> m_cameraAnimations;

@@ -225,18 +225,16 @@ void Script::RunCommand_ClearHighlights() {}
 
 void Script::RunCommand_TriggerSound(const char* _event)
 {
-  char eventName[256];
-  sprintf(eventName, "Music %s", _event);
+  const std::string eventName = std::format("Music {}", _event);
 
-  if (g_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName) == 0)
+  if (g_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName.c_str()) == 0)
     g_soundSystem->TriggerOtherEvent(_event, SoundSourceBlueprint::TypeMusic);
 }
 
 void Script::RunCommand_StopSound(const char* _event)
 {
-  char eventName[256];
-  sprintf(eventName, "Music %s", _event);
-  g_soundSystem->StopAllSounds(WorldObjectId(), eventName);
+  const std::string eventName = std::format("Music {}", _event);
+  g_soundSystem->StopAllSounds(WorldObjectId(), eventName.c_str());
 }
 
 void Script::RunCommand_DemoGesture(const char* _name) {}
@@ -252,14 +250,13 @@ void Script::RunCommand_GiveResearch(const char* _name)
   }
   else if (stricmp(_name, "accessallareas") == 0)
   {
-    char folderName[512];
-    sprintf(folderName, "%susers/", g_appCommands->ProfileDirectory());
-    bool success = CreateDirectory(folderName);
+    std::string folderName = std::format("{}users/", g_appCommands->ProfileDirectory());
+    bool success = CreateDirectory(folderName.c_str());
     if (!success)
       DebugTrace("failed to create folder {}\n", folderName);
 
-    sprintf(folderName, "%susers/AccessAllAreas/", g_appCommands->ProfileDirectory());
-    success = CreateDirectory(folderName);
+    folderName = std::format("{}users/AccessAllAreas/", g_appCommands->ProfileDirectory());
+    success = CreateDirectory(folderName.c_str());
     if (!success)
       DebugTrace("failed to create folder {}\n", folderName);
 
@@ -360,11 +357,10 @@ void Script::RunCommand_PurityControl()
   //
   // Delete the save game
 
-  char saveDir[256];
-  sprintf(saveDir, "users/%s/", g_userProfileName.c_str());
+  const std::string saveDir = std::format("users/{}/", g_userProfileName);
   // Neither the names nor the vector are freed. The exit(0) below is why that
   // has never mattered.
-  std::vector<char*>* allFiles = ListDirectory(saveDir, "*.*");
+  std::vector<char*>* allFiles = ListDirectory(saveDir.c_str(), "*.*");
 
   for (const char* filename : *allFiles)
     DeleteThisFile(filename);
@@ -420,8 +416,7 @@ void Script::RunScript(const char* _filename)
   {
 
     // Run a script, speficied by filename
-    char fullFilename[256] = "Scripts/";
-    strcat(fullFilename, _filename);
+    const std::string fullFilename = std::format("Scripts/{}", _filename);
     m_in = g_resource->GetTextReader(fullFilename);
     DEBUG_ASSERT(m_in);
   }
@@ -433,9 +428,8 @@ void Script::RunScript(const char* _filename)
     int stringIndex = 1;
     while (true)
     {
-      char stringName[256];
-      sprintf(stringName, "%s_%d", _filename, stringIndex);
-      if (!ISLANGUAGEPHRASE_ANY(stringName))
+      const std::string stringName = std::format("{}_{}", _filename, stringIndex);
+      if (!ISLANGUAGEPHRASE_ANY(stringName.c_str()))
         break;
 
       ++stringIndex;

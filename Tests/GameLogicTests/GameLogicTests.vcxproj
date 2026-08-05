@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="EntityGridTests.cpp" />
     <ClCompile Include="InputFieldTests.cpp" />
+    <ClCompile Include="LevelFileTests.cpp" />
     <ClCompile Include="LinkStubs.cpp" />
     <ClCompile Include="RoutingSystemTests.cpp" />
     <ClCompile Include="SliceWiringTests.cpp" />

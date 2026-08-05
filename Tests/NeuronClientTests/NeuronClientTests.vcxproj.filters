@@ -11,6 +11,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FileWriterTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="FilesysUtilsTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

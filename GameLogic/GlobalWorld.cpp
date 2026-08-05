@@ -487,11 +487,10 @@ void GlobalResearch::EvaluateLevel(int _type)
       m_researchLevel[_type]++;
       m_researchProgress[_type] -= requiredProgress;
 
-      char sepStringId[256];
-      sprintf(sepStringId, "research_%s_v%d", GetTypeName(_type), m_researchLevel[_type]);
-      strlwr(sepStringId);
+      std::string sepStringId = std::format("research_{}_v{}", GetTypeName(_type), m_researchLevel[_type]);
+      StrToLower(sepStringId.data());
 
-      if (ISLANGUAGEPHRASE(sepStringId))
+      if (ISLANGUAGEPHRASE(sepStringId.c_str()))
       {
       }
 
@@ -519,11 +518,10 @@ void GlobalResearch::SetCurrentResearch(int _type)
   {
     m_currentResearch = _type;
 
-    char sepStringId[256];
-    sprintf(sepStringId, "research_%s", GetTypeName(_type));
-    strlwr(sepStringId);
+    std::string sepStringId = std::format("research_{}", GetTypeName(_type));
+    StrToLower(sepStringId.data());
 
-    if (ISLANGUAGEPHRASE(sepStringId))
+    if (ISLANGUAGEPHRASE(sepStringId.c_str()))
     {
     }
   }
@@ -632,11 +630,10 @@ const char* GlobalResearch::GetTypeNameTranslated(int _type)
 {
   const char* typeName = GetTypeName(_type);
 
-  char stringId[256];
-  sprintf(stringId, "researchname_%s", typeName);
+  const std::string stringId = std::format("researchname_{}", typeName);
 
-  if (ISLANGUAGEPHRASE(stringId))
-    return LANGUAGEPHRASE(stringId);
+  if (ISLANGUAGEPHRASE(stringId.c_str()))
+    return LANGUAGEPHRASE(stringId.c_str());
   return typeName;
 }
 
@@ -1455,12 +1452,20 @@ int GlobalWorld::GetLocationId(const char* _name)
 
 int GlobalWorld::GetLocationIdFromMapFilename(const char* _mapFilename)
 {
-  char buf[MAX_FILENAME_LEN];
-  strcpy(buf, _mapFilename);
-  char* mapName = strstr(buf, "Map") + 3;
-  mapName[strlen(mapName) - 4] = '\0';
+  // Skip a leading "Map" and drop the four-character extension. The old code
+  // did that with strstr(buf, "Map") + 3 and then indexed [strlen - 4], so a
+  // filename carrying neither read and WROTE outside the buffer — the +3
+  // happened before the null test, exactly as FilesysUtils' path helpers did
+  // before strings-modernised T4 defined them. A name that does not have both
+  // now answers "no such location", which is what GetLocationId returns for an
+  // unknown name anyway.
+  const std::string filename = _mapFilename;
+  const size_t nameStart = filename.find("Map");
+  if (nameStart == std::string::npos || filename.size() < nameStart + 3 + 4)
+    return -1;
 
-  return GetLocationId(mapName);
+  const std::string mapName = filename.substr(nameStart + 3, filename.size() - nameStart - 3 - 4);
+  return GetLocationId(mapName.c_str());
 }
 
 char* GlobalWorld::GetLocationName(int _id)
@@ -1477,11 +1482,10 @@ char* GlobalWorld::GetLocationNameTranslated(int _id)
   if (!loc)
     return nullptr;
 
-  char stringId[256];
-  sprintf(stringId, "location_%s", loc->m_name);
+  const std::string stringId = std::format("location_{}", loc->m_name);
 
-  if (ISLANGUAGEPHRASE(stringId))
-    return LANGUAGEPHRASE(stringId);
+  if (ISLANGUAGEPHRASE(stringId.c_str()))
+    return LANGUAGEPHRASE(stringId.c_str());
   return loc->m_name;
 }
 
@@ -1674,13 +1678,12 @@ void GlobalWorld::AddLevelBuildingToGlobalBuildings(Building* _building, int _lo
 void GlobalWorld::LoadGame(const char* _filename)
 {
   TextReader* in = nullptr;
-  char fullFilename[256];
 
   if (!g_editing)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName.c_str(), _filename);
-    if (DoesFileExist(fullFilename))
-      in = new TextFileReader(fullFilename);
+    const std::string fullFilename = std::format("{}users/{}/{}", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
+    if (DoesFileExist(fullFilename.c_str()))
+      in = new TextFileReader(fullFilename.c_str());
   }
 
   if (!in)
@@ -1727,9 +1730,8 @@ void GlobalWorld::LoadGame(const char* _filename)
       AddLevelBuildingToGlobalBuildings(building, loc->m_id);
     }
 
-    char filter[256];
-    sprintf(filter, "Mission%s*.txt", GetLocationName(loc->m_id));
-    std::vector<char*>* missionFileNames = g_resource->ListResources("Levels/", filter, false);
+    const std::string filter = std::format("Mission{}*.txt", GetLocationName(loc->m_id));
+    std::vector<char*>* missionFileNames = g_resource->ListResources("Levels/", filter.c_str(), false);
     for (const char* missionFileName : *missionFileNames)
     {
       LevelFile levFile(missionFileName, loc->m_mapFilename);
@@ -1772,15 +1774,14 @@ void GlobalWorld::LoadGame(const char* _filename)
 void GlobalWorld::SaveGame(const char* _filename)
 {
   FileWriter* out = nullptr;
-  char fullFilename[256];
 
   if (!g_editing && stricmp(g_userProfileName.c_str(), "none") != 0)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName.c_str(), _filename);
+    const std::string fullFilename = std::format("{}users/{}/{}", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
 #ifdef TARGET_DEBUG
-    out = new FileWriter(fullFilename, false);
+    out = new FileWriter(fullFilename.c_str(), false);
 #else
-    out = new FileWriter(fullFilename, true);
+    out = new FileWriter(fullFilename.c_str(), true);
 #endif
   }
 
