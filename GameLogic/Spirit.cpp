@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include <math.h>
@@ -53,7 +54,7 @@ void Spirit::Begin()
 
 bool Spirit::Advance()
 {
-  AsLegacy(m_vel) *= 0.9f;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 0.9f));
 
   if (m_state != StateAttached && m_state != StateInEgg)
   {
@@ -125,15 +126,17 @@ bool Spirit::Advance()
     };
   }
 
-  Vector3 oldPos = m_pos;
+  DirectX::XMFLOAT3 oldPos = m_pos;
 
   if (m_pushFromBuildings && m_state != StateInStore && m_state != StateDeath)
   {
     PushFromBuildings();
   }
 
-  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
-  AsLegacy(m_pos) += m_hover * SERVER_ADVANCE_PERIOD;
+  DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&m_pos);
+  pos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), pos);
+  pos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hover), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), pos);
+  DirectX::XMStoreFloat3(&m_pos, pos);
   float worldSizeX = g_location->m_landscape.GetWorldSizeX();
   float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
   if (m_pos.x < 0.0f)
@@ -202,16 +205,19 @@ void Spirit::PushFromBuildings()
     if (building && building->DoesSphereHit(m_pos, 5.0f))
     {
       hitFound = true;
-      Vector3 hitVector = (AsLegacy(m_pos) - AsLegacy(building->m_pos));
-      AsLegacy(m_vel) += hitVector * 0.1f;
+      DirectX::XMVECTOR const hitVector = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&building->m_pos));
+      DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorMultiplyAdd(hitVector, DirectX::XMVectorReplicate(0.1f), DirectX::XMLoadFloat3(&m_vel)));
       m_vel.y = 0.0f;
-      float speed = AsLegacy(m_vel).Mag();
-      speed = std::min(speed, 10.0f);
-      AsLegacy(m_vel).SetLength(speed);
+      // `speed = min(|vel|, 10)` followed by `SetLength(speed)` is a magnitude
+      // clamp written in two steps, and XMVector3ClampLength is that operation
+      // directly. It also answers a zero vector cleanly, where the legacy pair
+      // divided by |vel| and leaned on Vector3::SetLength's (len, 0, 0)
+      // fallback to survive it.
+      DirectX::XMStoreFloat3(&m_vel, DirectX::XMVector3ClampLength(DirectX::XMLoadFloat3(&m_vel), 0.0f, 10.0f));
     }
   }
 
-  if (!hitFound && AsLegacy(m_vel).Mag() < 1.0f)
+  if (!hitFound && DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) < 1.0f)
   {
     // Once we have cleared any buildings we are assumed to be safe
     m_pushFromBuildings = false;
@@ -239,8 +245,8 @@ void Spirit::CollectorArrives()
 
 void Spirit::CollectorDrops()
 {
-  AsLegacy(m_vel).Zero();
-  m_hover.Zero();
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+  m_hover = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_state = StateFloating;
   m_pushFromBuildings = true;
   //    Begin();
@@ -250,15 +256,15 @@ void Spirit::CollectorDrops()
 void Spirit::InEgg()
 {
   m_state = StateInEgg;
-  AsLegacy(m_vel).Zero();
-  m_hover.Zero();
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+  m_hover = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "PlacedInEgg", SoundSourceBlueprint::TypeSpirit);
 }
 
 void Spirit::EggDestroyed()
 {
-  AsLegacy(m_vel).Zero();
-  m_hover.Zero();
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+  m_hover = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_state = StateFloating;
   //    Begin();
   g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "EggDestroyed", SoundSourceBlueprint::TypeSpirit);
@@ -303,26 +309,35 @@ void Spirit::Render(float predictionTime)
 
   predictionTime -= SERVER_ADVANCE_PERIOD;
 
-  Vector3 predictedPos = AsLegacy(m_pos) + predictionTime * AsLegacy(m_vel);
-  predictedPos += predictionTime * m_hover;
+  DirectX::XMVECTOR const predictionTimeVec = DirectX::XMVectorReplicate(predictionTime);
+  DirectX::XMVECTOR predictedPos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), predictionTimeVec, DirectX::XMLoadFloat3(&m_pos));
+  predictedPos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hover), predictionTimeVec, predictedPos);
+
+  // GetUp and GetRight still return Vector3 until T12/T22; the seam converts.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   float size = spiritInnerSize;
   glColor4ub(colour.r, colour.g, colour.b, innerAlpha);
 
   glBegin(GL_QUADS);
-  glVertex3fv((predictedPos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((predictedPos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((predictedPos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((predictedPos - g_camera->GetRight() * size).GetData());
+  DirectX::XMVECTOR const sizeVec = DirectX::XMVectorReplicate(size);
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, sizeVec, predictedPos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, sizeVec, predictedPos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, sizeVec, predictedPos));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, sizeVec, predictedPos));
   glEnd();
 
   size = spiritOuterSize;
   glColor4ub(colour.r, colour.g, colour.b, outerAlpha);
   glBegin(GL_QUADS);
-  glVertex3fv((predictedPos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((predictedPos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((predictedPos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((predictedPos - g_camera->GetRight() * size).GetData());
+  DirectX::XMVECTOR const sizeVec = DirectX::XMVectorReplicate(size);
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, sizeVec, predictedPos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, sizeVec, predictedPos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, sizeVec, predictedPos));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, sizeVec, predictedPos));
   glEnd();
 }
 

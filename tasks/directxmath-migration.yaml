@@ -2011,8 +2011,10 @@ tasks:
       when picking this up.
 
       STILL LEGACY: Weapons (103 occurrences), Rocket (77), Spam (36),
-      Airstrike (29), TaskManager (21), Flag (17), Spirit (4). 329 in total
-      when this started, of which 42 are done — ParticleSystem and Explosion.
+      Airstrike (29), TaskManager (21), Flag (17). 329 in total when this
+      started, of which 46 are done — ParticleSystem, Explosion and Spirit.
+      Spirit also lost its nine AsLegacy uses, which the seam count in
+      _restart-directxmath.md tracks.
 
       WHAT PARTICLESYSTEM COST, so the next eight are cheaper:
         - Particle's constructor assigns nothing, so m_pos and m_vel needed

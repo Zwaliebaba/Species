@@ -31,7 +31,9 @@ class Spirit : public WorldObject
   protected:
     float m_timeSync;
 
-    Vector3 m_hover;
+    // Spirit's constructor does not assign this, so it relied on Vector3's
+    // zeroing default constructor. XMFLOAT3 has none — failure mode 5.
+    DirectX::XMFLOAT3 m_hover{0.0f, 0.0f, 0.0f};
     float m_positionOffset; // Used to make them float around a bit
     float m_xaxisRate;
     float m_yaxisRate;
