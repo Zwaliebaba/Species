@@ -7,7 +7,7 @@ graph was known to be wrong.
 
 > **This file is about the modernisation plans (stages 3-5). It predates
 > `tasks/directxmath-migration.yaml`, which is a separate, larger effort that
-> is 17 of 27 tasks in as of 2026-08-04 and has its own restart note:
+> is 18 of 28 tasks in as of 2026-08-05 and has its own restart note:
 > [`_restart-directxmath.md`](_restart-directxmath.md). Neither file
 > supersedes the other; they cover different work.**
 
@@ -47,20 +47,29 @@ written down instead. That finding is the reason this file exists.
 
 ### Where the tree actually is
 
-Re-measured at `b0bde71` on Linux. Commands are the ones to re-run rather than
-trust; every one of these numbers will have moved by the time it matters.
+Re-measured on Linux at `4b7ebbc` (2026-08-05). Commands are the ones to re-run
+rather than trust; every one of these numbers will have moved by the time it
+matters.
 
-| Axis | At `11aee84` | At `b0bde71` | Now (`main` merged) | Command |
+| Axis | At `11aee84` | At `b0bde71` | Now (2026-08-05) | Command |
 |---|---|---|---|---|
-| `strcpy` family | 367 | 180 | **161**, 49 files | `grep -rEow 'strcpy\|strncpy\|strcat\|sprintf\|snprintf' <projects>` |
-| `NULL` | ~578 | 4 | **4** — two documented exceptions, a comment, a string literal | `grep -rw NULL <projects>` |
+| `strcpy` family | 367 | 180 | **112**, 42 files | `grep -rEow 'strcpy\|strncpy\|strcat\|sprintf\|snprintf' <projects>` |
+| `NULL` | ~578 | 4 | **4**, but only ONE is real — `ControlTypes.cpp`; the others are two comments and a string literal | `grep -rw NULL <projects>` |
 | `#ifndef _included` guards | 223 | 0 | **0** | `grep -rl '#ifndef _included' <projects>` |
-| Plain `enum` in headers | 12 | 11 to convert | **4 left**, 8 scoped | `grep -rE '^\s*enum\s+[A-Za-z]' --include='*.h'` |
-| Bare `min(`/`max(` | 216 | 216 | **12**, all in commented-out code | `grep -rEo '(^\|[^:_A-Za-z0-9])(min\|max)\s*\(' <projects>` |
+| Plain `enum` in headers | 12 | 11 to convert | **12 lines, 3 enums left to scope** — `ControlType`, `InputType`, `Camera::Mode` | `grep -rE '^\s*enum\s+[A-Za-z]' --include='*.h'` |
+| Bare `min(`/`max(` | 216 | 216 | **13**, all in commented-out code | `grep -rEo '(^\|[^:_A-Za-z0-9])(min\|max)\s*\(' <projects>` |
 | `EmptyAndDelete` | 26 files | 13 | **13** call-site files | `grep -rlw EmptyAndDelete <projects> --include='*.cpp'` |
 | `SAFE_DELETE`/`SAFE_FREE` | 35 | 38 | **32** | `grep -rEow 'SAFE_DELETE\|SAFE_FREE' <projects>` |
-| Raw `new` / `delete` in `.cpp` | 815 / 246 | 805 / 287 | **731 / 264** | |
-| Tests | 103 | 103 | **124** | `grep -rc TEST_METHOD Tests/*/*.cpp` |
+| Raw `new` / `delete` in `.cpp` | 815 / 246 | 805 / 287 | **733 / 267** | |
+| Tests | 103 | 103 | **180** | `grep -rc TEST_METHOD Tests/*/*.cpp` |
+
+The `strcpy` family fell from 161 to 112 because `strings-modernised` T5
+converted `InputField` and the seven members it writes through. The `NULL` row
+is worth reading rather than counting: `language-hygiene` T9 retired the two in
+`InputDriver.cpp`'s condition table, and the single remaining real one is in
+`ControlTypes.cpp`, a dead and broken file that `language-hygiene` T10 owns.
+Tests went 124 → 180 across this session and the two before it; the count in
+`AGENTS.md` had been stale by three tasks' worth of work.
 
 Stage 4 is past half and stage 5 is genuinely under way — the `new`/`delete`
 counts moved for the first time, from 805/287 to 731/264, as `ownership` T3 and
@@ -132,9 +141,11 @@ now says:
   to be on the next person's side before they start. Two of the seven existing
   `TypeString` sites already disagree about whether they pass an array or its
   address, which only a `void*` could hide.
-- **T5** is now that coupled change and only that, with the full touch set
+- **T5** became that coupled change and only that, with the full touch set
   declared — 25 files, reaching into `Species/Camera.cpp`,
-  `Species/LocationEditor.cpp` and `Species/Script.cpp`.
+  `Species/LocationEditor.cpp` and `Species/Script.cpp`. **It landed on
+  2026-08-05**, characterised first by twelve `InputField` tests written against
+  the `char*` API and committed before the conversion.
 - **T15** (new) takes the four window files that were only ever grouped with T5
   because they are Eclipse-derived windows in GameLogic. None registers
   anything `InputField` writes into.
@@ -161,7 +172,13 @@ now says:
 
 ## The restart order
 
-### Step 0 — clear the standing obstacle first: `language-hygiene` T8
+> **Steps 0 and 1 are DONE and are kept as the record of how the restart went,
+> not as instructions.** Step 2's critical path is also cleared:
+> `strings-modernised` T5 landed on 2026-08-05. If you are picking this up now,
+> start at *Step 2* for what is ready, and read *Where it stopped* above for
+> the current per-plan counts.
+
+### Step 0 — clear the standing obstacle first: `language-hygiene` T8 — **DONE**
 
 `NeuronCore/MathUtils.h` defines function-style `min` and `max` macros, so
 `std::min` and `std::max` do not compile anywhere that header is reachable —
@@ -177,7 +194,7 @@ the macros double-evaluate their arguments: a call site passing an expression
 with a side effect changes behaviour when it stops being evaluated twice. That
 is an audit, not a sweep.
 
-### Step 1 — restart the parallel work
+### Step 1 — restart the parallel work — **DONE**
 
 These have no path between them and no overlapping files. Four agents, or one
 in this order:
