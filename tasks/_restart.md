@@ -28,8 +28,8 @@ after which seven tasks landed — see *What the restart actually did*:
 
 | Plan | Open | State |
 |---|---|---|
-| `strings-modernised` | 6 of 16 | Stage 4. T5 is the critical path; five tasks sit behind it. |
-| `ownership` | 5 of 9 | Stage 5. T8 needs an ownership decision before it can start. |
+| `strings-modernised` | 5 of 16 | Stage 4. **T5 landed 2026-08-05** and with it the critical path; T8, T11 and T12 are all ready now. |
+| `ownership` | 5 of 9 | Stage 5. T4 became ready when T5 landed; T8 needs an ownership decision before it can start. |
 | `language-hygiene` | 1 of 9 | Only T9 — the four enums that `int` typedefs stand in for. |
 | `namespace-migration` | 3 of 5 | Sequenced last by design. Untouched. |
 
@@ -212,7 +212,13 @@ being surfaced, not a conversion error.** Record them as found.
 
 ### Step 2 — the critical path
 
-Everything left funnels through one node:
+**T5 landed on 2026-08-05 and this step is open rather than blocked.** The
+graph below is kept because it is still the shape of what remains: `strings`
+T8, T11 and T12 are ready concurrently, T13 waits on T11 and T12, T9 waits on
+all of them, and `ownership` T4 became ready the moment T5 did. What follows
+the diagram — the two hazards — is unchanged and still applies to T11.
+
+Everything left funnelled through one node:
 
 ```
 strings/T14 ──▶ strings/T5 ─┬─▶ strings/T8 ──▶ ownership/T5 ─┐
@@ -228,9 +234,11 @@ directly or transitively. If only one thing is worked at a time, work this.
 Two hazards, both recorded on the tasks themselves and both worth repeating
 because they fail silently:
 
-- **`CreateValueControl`'s `void*`** — a wrong-typed registration compiles and
-  corrupts memory. T14 exists to remove this before T5 starts. Do not skip it
-  on the grounds that it looks like tidying.
+- ~~**`CreateValueControl`'s `void*`**~~ — gone. T14 replaced it with a typed
+  overload set before T5 started, which is exactly what it was for: every one
+  of T5's seven registrations became `&member` and a wrong-typed one is now a
+  compile error. Recorded as the worked example for the next task that is
+  tempted to skip its own preparatory node.
 - **Eclipse looks buttons and windows up by name**, using `strcmp` in some
   places and `stricmp` in others. `std::string::operator==` matches the first
   and not the second, so T11's call sites have to be read rather than swept.
