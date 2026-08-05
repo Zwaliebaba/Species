@@ -91,11 +91,18 @@ Only the optimisation and `_DEBUG`/`NDEBUG` settings differ.
 > **Nothing has compiled Release since**, so this is a corrected setting rather
 > than a verified one — the same caveat as the subsystem fix below.
 >
-> The four `Tests/*` projects are a separate case and are **not** covered by
-> this: each sets `LanguageStandard` only under
-> `Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'"`, so every other
-> configuration — including the x64 Debug that CI builds and runs the suite in —
-> compiles the tests at the toolset default.
+> The four `Tests/*` projects carried a sharper version of the same bug and are
+> fixed with it. Each set `LanguageStandard` under
+> `Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'"` — the shape the
+> IDE writes when it records a setting against whichever configuration happened
+> to be active — so **every other configuration, including the x64 Debug that CI
+> builds and runs the suite in, compiled the tests at the toolset default.** The
+> condition is gone; all four now set `stdcpplatest` unconditionally, matching
+> the `AdditionalIncludeDirectories` beside them, which never carried one.
+>
+> All ten projects in the tree now agree. There is one setting to check when
+> this next drifts: `grep -rn LanguageStandard --include=*.vcxproj .` should
+> print ten lines saying `stdcpplatest` and nothing else.
 
 Every configuration defines `_CRT_SECURE_NO_WARNINGS`,
 `_CRT_NONSTDC_NO_WARNINGS` and `_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS`,
