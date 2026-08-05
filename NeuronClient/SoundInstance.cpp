@@ -202,10 +202,10 @@ namespace Neuron
   }
 
 
-  void SoundInstance::SetEventName(char const* _entityName, char const* _eventName)
+  void SoundInstance::SetEventName(std::string_view _entityName, char const* _eventName)
   {
     DEBUG_ASSERT(m_eventName == nullptr);
-    DEBUG_ASSERT(_entityName && _eventName);
+    DEBUG_ASSERT(_eventName);
     DEBUG_ASSERT(g_soundSystem);
 
     // Still malloc, because the destructor still free()s it — ownership/T3 is

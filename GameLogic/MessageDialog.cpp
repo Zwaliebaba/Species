@@ -29,7 +29,7 @@ namespace Species
       {
       }
 
-      void MouseUp() { EclRemoveWindow(m_parent->m_name.c_str()); }
+      void MouseUp() { EclRemoveWindow(m_parent->m_name); }
   };
 
 

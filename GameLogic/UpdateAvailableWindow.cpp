@@ -7,7 +7,7 @@ namespace Species
   class GetItNowButton : public SpeciesButton
   {
     public:
-      void MouseUp() override { EclRemoveWindow(m_parent->m_name.c_str()); }
+      void MouseUp() override { EclRemoveWindow(m_parent->m_name); }
   };
 
   static char* buf = nullptr;

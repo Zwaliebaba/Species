@@ -97,7 +97,7 @@ namespace Species
           while (windows->size() > 0)
           {
             EclWindow* w = (*windows)[0].get();
-            EclRemoveWindow(w->m_name.c_str());
+            EclRemoveWindow(w->m_name);
           }
         }
 

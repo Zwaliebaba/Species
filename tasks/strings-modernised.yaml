@@ -412,6 +412,26 @@ tasks:
       - NeuronClient/Eclipse.cpp
       - NeuronClient/SoundSystem.h
       - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundInstance.h
+      - NeuronClient/SoundInstance.cpp
+      - GameLogic/BuyNowWindow.cpp
+      - GameLogic/DropDownMenu.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/GlobalWorldEditorWindow.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/MainMenus.cpp
+      - GameLogic/MessageDialog.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/ScrollBar.cpp
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/TreeWindow.cpp
+      - GameLogic/UpdateAvailableWindow.cpp
+      - GameLogic/UserProfileWindow.cpp
+      - Species/GameMenu.cpp
+      - Species/LocationEditor.cpp
+      - Species/Main.cpp
+      - Species/UserInput.cpp
     acceptance:
       - No listed function takes char const* for a parameter it only compares or copies
       - No call site passes .c_str() to one of them
@@ -419,7 +439,7 @@ tasks:
     verify:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: |
       Raised 2026-08-03 by the project owner, mid-conversion, and the criticism
       was fair: T3 and T7 widened several of these to char const* while fixing a
@@ -431,6 +451,51 @@ tasks:
       fopen, strcmp, strchr, _findfirst or a resource lookup, because it
       carries no null terminator — see the table in CODING_STANDARDS.md. The
       four files above are the ones measured to be free of that.
+
+      DONE 2026-08-05. Nine Eclipse entry points narrowed, not the five the
+      intent listed: EclDirtyWindow does not exist and has not for some time,
+      and EclGetWindowIndex, EclBringWindowToFront, EclMaximiseWindow,
+      EclSetCurrentFocus and EclGenerateUniqueWindowName all take a name they
+      only compare against EclWindow::m_name or copy into one of the module's
+      std::string statics. 36 .c_str() calls went from 18 files.
+
+      THE THREE ACCESSORS KEEP char const* AND THAT IS THE DECISION, NOT AN
+      OMISSION. EclGetCurrentButton, EclGetCurrentClickedButton and
+      EclGetCurrentFocus return a pointer into a static this module reassigns.
+      CODING_STANDARDS.md says narrowing that return to string_view preserves
+      the lifetime bug rather than fixing it, so the return types are
+      unchanged and the reason is now at the declaration.
+
+      TWO FILES WERE ADDED TO THE LIST AND ONE DEFECT CAME OUT OF IT.
+      ParseSoundEvent's _entityName is forwarded to
+      SoundInstance::SetEventName, so that signature had to move with it —
+      SoundInstance.h/.cpp are in the list now. Its SECOND parameter stays
+      char const* on purpose: the only caller passes
+      SoundEventBlueprint::m_eventName, which is NULL whenever the blueprint
+      line carried no token, because TextReader::GetNextToken returns nullptr
+      for a missing one. A string_view would have to be constructed from that
+      null before the assert that catches it ever runs. The assert dropped its
+      `_entityName &&` clause and kept the rest.
+
+      ECLREMOVEWINDOW WAS A USE-AFTER-FREE AND NARROWING IT IS WHAT SHOWED
+      THAT. Nearly every caller spells EclRemoveWindow(w->m_name), so the
+      argument borrows storage owned by the window the function then destroys —
+      and the two comparisons against mouseDownWindow and windowFocus run
+      AFTER that destruction. It was equally wrong when the parameter was
+      char const* and every caller wrote .c_str(); a raw pointer just made it
+      unremarkable to look at. The name is copied into a local before the
+      window goes.
+
+      EclSetCurrentFocus lost its SIZE_ECLWINDOW_NAME length guard, which is
+      the same defect T11 found in EclButton::SetProperties: a name one
+      character too long left the focus where it was and reported nothing.
+      m_name has not been a fixed buffer since T11, so the guard protected
+      nothing and only refused work.
+
+      NOT COMPILED. No MSVC in the executing environment, so the msbuild in
+      verify was not run — the seven Python checks are the whole of the
+      evidence, and an overload resolution change is exactly the kind of thing
+      only a compiler settles.
 
   - id: T11
     title: Convert the Eclipse widget name and caption members

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "NeuronMath.h"
 #include "SoundParameter.h"
 #include "WorldObjectId.h"
@@ -157,7 +159,12 @@ namespace Neuron
       ~SoundInstance();
 
       void SetSoundName(char const* _name);
-      void SetEventName(char const* _entityName, char const* _eventName);
+      // _entityName is only ever formatted into m_eventName, so it is a
+      // string_view (strings-modernised T13). _eventName is NOT: its only
+      // caller passes SoundEventBlueprint::m_eventName, which is null when the
+      // blueprint line carried no token, and that null is what the assert in
+      // the body catches. A string_view would have to be built from it first.
+      void SetEventName(std::string_view _entityName, char const* _eventName);
 
       void Copy(SoundInstance* _copyMe);
       bool StartPlaying(int _channelIndex);

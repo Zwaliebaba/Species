@@ -218,7 +218,7 @@ namespace Species
             EclWindow* ew = EclGetWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
             if (ew)
             {
-              EclRemoveWindow(ew->m_name.c_str());
+              EclRemoveWindow(ew->m_name);
             }
 
             // Create the new instant unit

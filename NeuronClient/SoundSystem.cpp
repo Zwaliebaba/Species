@@ -608,7 +608,7 @@ void SoundSystem::LoadBlueprints()
           if (stricmp(word, "END") == 0)
             break;
           DEBUG_ASSERT(stricmp(word, "EVENT") == 0);
-          ParseSoundEvent(in, ssb, objectName.c_str());
+          ParseSoundEvent(in, ssb, objectName);
         }
       }
     }
@@ -737,7 +737,7 @@ void SoundSystem::SaveBlueprints(const char* _filename)
   delete file;
 }
 
-void SoundSystem::ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, const char* _entityName)
+void SoundSystem::ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, std::string_view _entityName)
 {
   auto seb = new SoundEventBlueprint();
   seb->SetEventName(_in->GetNextToken());

@@ -44,7 +44,7 @@ namespace Species
   {
     SpeciesWindow::Update();
 
-    EclWindow* parent = EclGetWindow(m_parentName.c_str());
+    EclWindow* parent = EclGetWindow(m_parentName);
     if (!parent)
     {
       RemoveDropDownWindow();
@@ -56,7 +56,7 @@ namespace Species
   {
     if (s_window)
     {
-      EclRemoveWindow(s_window->m_name.c_str());
+      EclRemoveWindow(s_window->m_name);
       s_window = nullptr;
     }
 
@@ -69,7 +69,7 @@ namespace Species
   {
     if (s_window)
     {
-      EclRemoveWindow(s_window->m_name.c_str());
+      EclRemoveWindow(s_window->m_name);
       s_window = nullptr;
     }
   }
@@ -300,7 +300,7 @@ namespace Species
   }
 
 
-  bool DropDownMenu::IsMenuVisible() { return (EclGetWindow(m_name.c_str()) != nullptr); }
+  bool DropDownMenu::IsMenuVisible() { return (EclGetWindow(m_name) != nullptr); }
 
 
   //*****************************************************************************

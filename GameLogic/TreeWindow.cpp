@@ -125,20 +125,20 @@ namespace Species
   {
     if (!g_locationEditor)
     {
-      EclRemoveWindow(m_name.c_str());
+      EclRemoveWindow(m_name);
       return;
     }
 
     if (g_locationEditor->GetSelectionId() != m_selectionId)
     {
-      EclRemoveWindow(m_name.c_str());
+      EclRemoveWindow(m_name);
       return;
     }
 
     Building* building = g_location->GetBuilding(m_selectionId);
     if (!building || building->m_type != Building::TypeTree)
     {
-      EclRemoveWindow(m_name.c_str());
+      EclRemoveWindow(m_name);
     }
   }
 

@@ -46,7 +46,7 @@ namespace Species
           fd->FileSelected(filename);
         }
 
-        EclRemoveWindow(m_parent->m_name.c_str());
+        EclRemoveWindow(m_parent->m_name);
       }
   };
 
@@ -128,7 +128,7 @@ namespace Species
 
   class FileCancelButton : public SpeciesButton
   {
-      void MouseUp() { EclRemoveWindow(m_parent->m_name.c_str()); }
+      void MouseUp() { EclRemoveWindow(m_parent->m_name); }
   };
 
 

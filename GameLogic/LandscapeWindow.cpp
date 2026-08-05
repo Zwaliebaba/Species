@@ -60,7 +60,7 @@ namespace Species
         {
           int tileId = ((LandscapeTileEditWindow*)m_parent)->m_tileId;
           g_location->m_landscape.DeleteTile(tileId);
-          EclRemoveWindow(m_parent->m_name.c_str());
+          EclRemoveWindow(m_parent->m_name);
         }
         else if (StrEqualsIgnoreCase(m_name, LANGUAGEPHRASE("editor_clone")))
         {
@@ -183,7 +183,7 @@ class LandscapeFlattenAreaDeleteButton : public SpeciesButton
     {
       g_location->m_levelFile->m_landscape.m_flattenAreas.erase(g_location->m_levelFile->m_landscape.m_flattenAreas.begin() + m_areaId);
       g_locationEditor->SetSelectionId(-1);
-      EclRemoveWindow(m_parent->m_name.c_str());
+      EclRemoveWindow(m_parent->m_name);
     }
 };
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string_view>
 
 #include <vector>
 
@@ -152,7 +153,7 @@ namespace Neuron
       SlotMap<std::unique_ptr<SampleGroup>> m_sampleGroups;
 
     protected:
-      void ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, const char* _entityName);
+      void ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, std::string_view _entityName);
       void ParseSoundEffect(TextReader* _in, SoundEventBlueprint* _blueprint);
       void ParseSampleGroup(TextReader* _in, SampleGroup* _group);
 
