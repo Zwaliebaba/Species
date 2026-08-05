@@ -8,9 +8,16 @@
 #define PARSE_SUCCESS(x) (InputParserState::STATE_DONE == (x))
 
 
-// Specific drivers may or may not want to use this enum,
-// but is is possibly helpful for maintainability
-enum InputCondition
+// The DEFAULT driver's vocabulary for InputSpec::condition, and only that.
+//
+// It is scoped, and the casts at every InputSpec::condition boundary are the
+// point rather than an annoyance: condition_t is a driver-defined integer and
+// three drivers fill it with three unrelated things — these enumerators, the
+// anonymous {COND_TRUE, COND_FALSE} in InputDriverPrefs.cpp, and a raw
+// millisecond count that IdleInputDriver::getConditionID parses out of the
+// binding string. See language-hygiene T9's notes; that is why condition_t
+// stayed an int rather than becoming this type.
+enum class InputCondition : int
 {
   COND_DOWN,     // Button was just pushed down
   COND_UP,       // Button was just released

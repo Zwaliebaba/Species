@@ -265,11 +265,10 @@ void BuildingEditWindow::Create()
 
   for (int i = -1; i < 3; ++i)
   {
-    char name[256];
     int w = m_w / 4 - 5;
-    sprintf(name, "T%d", i);
+    std::string const name = std::format("T{}", i);
     TeamButton* tb = new TeamButton(i);
-    tb->SetShortProperties(name, 61 + (float)i * ((float)w + 1.0f), y, w - 2);
+    tb->SetShortProperties(name.c_str(), 61 + (float)i * ((float)w + 1.0f), y, w - 2);
     RegisterButton(tb);
   }
 
@@ -431,7 +430,7 @@ void BuildingEditWindow::Create()
     ScriptTrigger* trigger = (ScriptTrigger*)building;
 
     CreateValueControl(LANGUAGEPHRASE("editor_range"), &trigger->m_range, y += buttonPitch, 0.5f, 0.0f, 1000.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_script"), trigger->m_scriptFilename, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_script"), &trigger->m_scriptFilename, y += buttonPitch, 0, 0, 0);
 
     DropDownMenu* menu = new DropDownMenu(true);
     menu->SetShortProperties(LANGUAGEPHRASE("editor_entitytype"), 10, y += buttonPitch, m_w - 20);
@@ -451,7 +450,7 @@ void BuildingEditWindow::Create()
     StaticShape* staticShape = (StaticShape*)building;
 
     CreateValueControl(LANGUAGEPHRASE("editor_scale"), &staticShape->m_scale, y += buttonPitch, 0.1f, 0.0f, 100.0f);
-    CreateValueControl(LANGUAGEPHRASE("editor_shape"), staticShape->m_shapeName, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_shape"), &staticShape->m_shapeName, y += buttonPitch, 0, 0, 0);
   }
   else if (building->m_type == Building::TypeIncubator)
   {
@@ -469,7 +468,7 @@ void BuildingEditWindow::Create()
   {
     DynamicHub* hub = (DynamicHub*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_shape"), hub->m_shapeName, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_shape"), &hub->m_shapeName, y += buttonPitch, 0, 0, 0);
     CreateValueControl(LANGUAGEPHRASE("editor_requiredscore"), &hub->m_requiredScore, y += buttonPitch, 1, 0, 100000);
     CreateValueControl(LANGUAGEPHRASE("editor_minlinks"), &hub->m_minActiveLinks, y += buttonPitch, 1, 0, 100);
   }
@@ -477,7 +476,7 @@ void BuildingEditWindow::Create()
   {
     DynamicNode* node = (DynamicNode*)building;
 
-    CreateValueControl(LANGUAGEPHRASE("editor_shape"), node->m_shapeName, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_shape"), &node->m_shapeName, y += buttonPitch, 0, 0, 0);
     CreateValueControl(LANGUAGEPHRASE("editor_pointspersec"), &node->m_scoreValue, y += buttonPitch, 1, 0, 1000);
   }
   else if (building->m_type == Building::TypeFenceSwitch)
@@ -485,7 +484,7 @@ void BuildingEditWindow::Create()
     FenceSwitch* fs = (FenceSwitch*)building;
 
     CreateValueControl(LANGUAGEPHRASE("editor_switchonce"), &fs->m_lockable, y += buttonPitch, 0, 1, 0);
-    CreateValueControl(LANGUAGEPHRASE("editor_script"), fs->m_script, y += buttonPitch, 0, 0, 0);
+    CreateValueControl(LANGUAGEPHRASE("editor_script"), &fs->m_script, y += buttonPitch, 0, 0, 0);
   }
 }
 

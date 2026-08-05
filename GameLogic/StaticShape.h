@@ -1,13 +1,16 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
+
 #include "Building.h"
 
 
 class StaticShape : public Building
 {
   public:
-    char m_shapeName[256];
+    std::string m_shapeName;
     float m_scale;
 
   public:
@@ -16,7 +19,7 @@ class StaticShape : public Building
     void Initialise(Building* _template);
     void SetDetail(int _detail);
 
-    void SetShapeName(char* _shapeName);
+    void SetShapeName(std::string_view _shapeName);
     void SetStringId(char* _stringId);
 
     bool Advance();

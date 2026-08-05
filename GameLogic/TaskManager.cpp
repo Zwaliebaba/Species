@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "TextRenderer.h"
 #include "MathUtils.h"
-#include "Vector2.h"
 #include "Debug.h"
 #include "Input.h"
 #include "InputTypes.h"
@@ -57,7 +56,7 @@ Task::~Task() { delete m_route; }
 void Task::Start() { m_state = StateStarted; }
 
 
-void Task::Target(Vector3 const& _pos)
+void Task::Target(DirectX::XMFLOAT3 const& _pos)
 {
   switch (m_type)
   {
@@ -77,7 +76,7 @@ void Task::Target(Vector3 const& _pos)
 }
 
 
-void Task::TargetSquad(Vector3 const& _pos)
+void Task::TargetSquad(DirectX::XMFLOAT3 const& _pos)
 {
   int teamId = g_globalWorld->m_myTeamId;
 
@@ -109,11 +108,11 @@ void Task::TargetSquad(Vector3 const& _pos)
 }
 
 
-void Task::TargetEngineer(Vector3 const& _pos)
+void Task::TargetEngineer(DirectX::XMFLOAT3 const& _pos)
 {
   int teamId = g_globalWorld->m_myTeamId;
 
-  Vector3 pos = _pos;
+  DirectX::XMFLOAT3 pos = _pos;
   pos.y += 10.0f;
   m_objId = g_location->SpawnEntities(pos, teamId, -1, Entity::TypeEngineer, 1, g_zeroVector, 0);
   g_location->m_teams[teamId].SelectUnit(-1, m_objId.GetIndex(), -1);
@@ -123,7 +122,7 @@ void Task::TargetEngineer(Vector3 const& _pos)
 }
 
 
-void Task::TargetArmour(Vector3 const& _pos)
+void Task::TargetArmour(DirectX::XMFLOAT3 const& _pos)
 {
   int teamId = g_globalWorld->m_myTeamId;
 
@@ -158,7 +157,7 @@ WorldObjectId Task::Promote(WorldObjectId _id)
   int numFlashes = 5 + speciesRandom() % 5;
   for (int i = 0; i < numFlashes; ++i)
   {
-    Vector3 vel(sfrand(5.0f), frand(15.0f), sfrand(5.0f));
+    DirectX::XMFLOAT3 vel(sfrand(5.0f), frand(15.0f), sfrand(5.0f));
     g_particleSystem->CreateParticle(entity->m_pos, vel, Particle::TypeControlFlash);
   }
 
@@ -193,7 +192,7 @@ WorldObjectId Task::Demote(WorldObjectId _id)
   int numFlashes = 5 + speciesRandom() % 5;
   for (int i = 0; i < numFlashes; ++i)
   {
-    Vector3 vel(sfrand(5.0f), frand(15.0f), sfrand(5.0f));
+    DirectX::XMFLOAT3 vel(sfrand(5.0f), frand(15.0f), sfrand(5.0f));
     g_particleSystem->CreateParticle(entity->m_pos, vel, Particle::TypeControlFlash);
   }
 
@@ -202,7 +201,7 @@ WorldObjectId Task::Demote(WorldObjectId _id)
 }
 
 
-WorldObjectId Task::FindCitizen(Vector3 const& _pos)
+WorldObjectId Task::FindCitizen(DirectX::XMFLOAT3 const& _pos)
 {
   int teamId = g_globalWorld->m_myTeamId;
 
@@ -217,7 +216,8 @@ WorldObjectId Task::FindCitizen(Vector3 const& _pos)
     Entity* entity = g_location->GetEntity(id);
     if (entity && entity->m_type == Entity::TypeCitizen)
     {
-      float distance = (AsLegacy(entity->m_pos) - _pos).MagSquared();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&_pos))));
       if (distance < nearest)
       {
         nearestId = id;
@@ -230,7 +230,7 @@ WorldObjectId Task::FindCitizen(Vector3 const& _pos)
 }
 
 
-void Task::TargetOfficer(Vector3 const& _pos)
+void Task::TargetOfficer(DirectX::XMFLOAT3 const& _pos)
 {
   int teamId = g_globalWorld->m_myTeamId;
 
@@ -721,7 +721,7 @@ Task* TaskManager::GetTask(WorldObjectId _id)
 }
 
 
-bool TaskManager::TargetTask(int _id, Vector3 const& _pos)
+bool TaskManager::TargetTask(int _id, DirectX::XMFLOAT3 const& _pos)
 {
   if (IsValidTargetArea(_id, _pos))
   {
@@ -734,7 +734,7 @@ bool TaskManager::TargetTask(int _id, Vector3 const& _pos)
 }
 
 
-bool TaskManager::IsValidTargetArea(int _id, Vector3 const& _pos)
+bool TaskManager::IsValidTargetArea(int _id, DirectX::XMFLOAT3 const& _pos)
 {
   Task* task = g_taskManager->GetTask(_id);
   if (!task)
@@ -770,7 +770,9 @@ bool TaskManager::IsValidTargetArea(int _id, Vector3 const& _pos)
       for (int i = 0; i < static_cast<int>(targetAreas->size()); ++i)
       {
         TaskTargetArea* targetArea = &(*targetAreas)[i];
-        if ((_pos - targetArea->m_centre).Mag() <= targetArea->m_radius)
+        float const toCentre = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&targetArea->m_centre))));
+        if (toCentre <= targetArea->m_radius)
         {
           success = true;
           break;
@@ -861,7 +863,7 @@ std::vector<TaskTargetArea>* TaskManager::GetTargetArea(int _id)
     case GlobalResearch::TypeOfficer:
     {
       TaskTargetArea tta;
-      tta.m_centre.Set(0, 0, 0);
+      tta.m_centre = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
       tta.m_radius = 99999.9f;
       result->push_back(tta);
       break;

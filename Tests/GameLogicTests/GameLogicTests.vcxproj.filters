@@ -14,6 +14,9 @@
     <ClCompile Include="EntityGridTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InputFieldTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="LinkStubs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -52,9 +52,8 @@ void UserProfileWindow::Render(bool hasFocus)
 
 void UserProfileWindow::Create()
 {
-  char profileDir[256];
-  sprintf(profileDir, "%susers/*.*", g_appCommands->ProfileDirectory());
-  std::vector<char*>* profileList = ListSubDirectoryNames(profileDir);
+  std::string const profileDir = std::format("{}users/*.*", g_appCommands->ProfileDirectory());
+  std::vector<char*>* profileList = ListSubDirectoryNames(profileDir.c_str());
   int numProfiles = static_cast<int>(profileList->size());
 
   int windowH = 150 + numProfiles * 30;
@@ -86,10 +85,9 @@ void UserProfileWindow::Create()
 
   for (char* profileName : *profileList)
   {
-    char caption[256];
-    sprintf(caption, "%s: '%s'", LANGUAGEPHRASE("dialog_loadprofile"), profileName);
+    std::string const caption = std::format("{}: '{}'", LANGUAGEPHRASE("dialog_loadprofile"), profileName);
     LoadUserProfileButton* button = new LoadUserProfileButton();
-    button->SetShortProperties(caption, 20, y += h, m_w - 40, GetMenuSize(20));
+    button->SetShortProperties(caption.c_str(), 20, y += h, m_w - 40, GetMenuSize(20));
     button->m_profileName = profileName;
     button->m_fontSize = GetMenuSize(11);
     button->m_centered = true;
@@ -127,7 +125,7 @@ class NewProfileButton : public SpeciesButton
     void MouseUp()
     {
       NewUserProfileWindow* parent = (NewUserProfileWindow*)m_parent;
-      g_appCommands->SetProfileName(parent->s_profileName);
+      g_appCommands->SetProfileName(parent->s_profileName.c_str());
       g_appCommands->LoadProfile();
       EclRemoveWindow(m_parent->m_name);
       EclRemoveWindow(LANGUAGEPHRASE("dialog_newprofile"));
@@ -135,7 +133,7 @@ class NewProfileButton : public SpeciesButton
     }
 };
 
-char NewUserProfileWindow::s_profileName[256] = "NewUser";
+std::string NewUserProfileWindow::s_profileName = "NewUser";
 
 
 NewUserProfileWindow::NewUserProfileWindow()
@@ -155,7 +153,7 @@ void NewUserProfileWindow::Create()
   box->SetShortProperties("box", 10, GetMenuSize(30), m_w - 20, GetMenuSize(40));
   RegisterButton(box);
 
-  CreateValueControl(LANGUAGEPHRASE("dialog_name"), s_profileName, GetMenuSize(40), 0, 0, 0, nullptr, 20, m_w - 40);
+  CreateValueControl(LANGUAGEPHRASE("dialog_name"), &s_profileName, GetMenuSize(40), 0, 0, 0, nullptr, 20, m_w - 40);
 
   int y = m_h - GetMenuSize(30);
 

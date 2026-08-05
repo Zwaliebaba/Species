@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <string>
 #include "NeuronMath.h"
 #include "WorldObject.h"
 #include "Landscape.h"
@@ -22,7 +23,10 @@ class FileWriter;
 class CameraMount
 {
   public:
-    char m_name[CAMERA_MOUNT_MAX_NAME_LEN + 1];
+    // InputField edits this in the camera-mount window and wrote through a raw
+    // char* from a 256-byte buffer, so a long enough name overran the 64 bytes
+    // this used to be. See strings-modernised T5.
+    std::string m_name;
     DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
@@ -66,7 +70,7 @@ class CameraAnimation
 {
   public:
     std::vector<CamAnimNode*> m_nodes;
-    char m_name[CAMERA_ANIM_MAX_NAME_LEN + 1];
+    std::string m_name;
 
     ~CameraAnimation()
     {

@@ -630,7 +630,7 @@ void LocationEditor::AdvanceModeCameraMount()
         DEBUG_ASSERT(anim);
 
         CamAnimNode* node = new CamAnimNode;
-        node->m_mountName = strdup(mount->m_name);
+        node->m_mountName = strdup(mount->m_name.c_str());
 
         anim->m_nodes.push_back(node);
 

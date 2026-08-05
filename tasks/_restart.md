@@ -7,7 +7,7 @@ graph was known to be wrong.
 
 > **This file is about the modernisation plans (stages 3-5). It predates
 > `tasks/directxmath-migration.yaml`, which is a separate, larger effort that
-> is 17 of 27 tasks in as of 2026-08-04 and has its own restart note:
+> is 18 of 28 tasks in as of 2026-08-05 and has its own restart note:
 > [`_restart-directxmath.md`](_restart-directxmath.md). Neither file
 > supersedes the other; they cover different work.**
 
@@ -28,9 +28,9 @@ after which seven tasks landed — see *What the restart actually did*:
 
 | Plan | Open | State |
 |---|---|---|
-| `strings-modernised` | 6 of 16 | Stage 4. T5 is the critical path; five tasks sit behind it. |
-| `ownership` | 5 of 9 | Stage 5. T8 needs an ownership decision before it can start. |
-| `language-hygiene` | 1 of 9 | Only T9 — the four enums that `int` typedefs stand in for. |
+| `strings-modernised` | 5 of 16 | Stage 4. **T5 landed 2026-08-05** and with it the critical path; T8, T11 and T12 are all ready now. |
+| `ownership` | 5 of 9 | Stage 5. T4 became ready when T5 landed; T8 needs an ownership decision before it can start. |
+| `language-hygiene` | 3 of 12 | **T9 re-scoped 2026-08-05.** It was one task for four enums and ~900 sites; it is now T9 (InputCondition, done) plus T10, T11 and T12. `condition_t` turned out not to be an enum at all — see T9's notes. |
 | `namespace-migration` | 3 of 5 | Sequenced last by design. Untouched. |
 
 A fifth was added on 2026-08-03 and is not part of the modernisation:
@@ -47,20 +47,29 @@ written down instead. That finding is the reason this file exists.
 
 ### Where the tree actually is
 
-Re-measured at `b0bde71` on Linux. Commands are the ones to re-run rather than
-trust; every one of these numbers will have moved by the time it matters.
+Re-measured on Linux at `4b7ebbc` (2026-08-05). Commands are the ones to re-run
+rather than trust; every one of these numbers will have moved by the time it
+matters.
 
-| Axis | At `11aee84` | At `b0bde71` | Now (`main` merged) | Command |
+| Axis | At `11aee84` | At `b0bde71` | Now (2026-08-05) | Command |
 |---|---|---|---|---|
-| `strcpy` family | 367 | 180 | **161**, 49 files | `grep -rEow 'strcpy\|strncpy\|strcat\|sprintf\|snprintf' <projects>` |
-| `NULL` | ~578 | 4 | **4** — two documented exceptions, a comment, a string literal | `grep -rw NULL <projects>` |
+| `strcpy` family | 367 | 180 | **112**, 42 files | `grep -rEow 'strcpy\|strncpy\|strcat\|sprintf\|snprintf' <projects>` |
+| `NULL` | ~578 | 4 | **4**, but only ONE is real — `ControlTypes.cpp`; the others are two comments and a string literal | `grep -rw NULL <projects>` |
 | `#ifndef _included` guards | 223 | 0 | **0** | `grep -rl '#ifndef _included' <projects>` |
-| Plain `enum` in headers | 12 | 11 to convert | **4 left**, 8 scoped | `grep -rE '^\s*enum\s+[A-Za-z]' --include='*.h'` |
-| Bare `min(`/`max(` | 216 | 216 | **12**, all in commented-out code | `grep -rEo '(^\|[^:_A-Za-z0-9])(min\|max)\s*\(' <projects>` |
+| Plain `enum` in headers | 12 | 11 to convert | **12 lines, 3 enums left to scope** — `ControlType`, `InputType`, `Camera::Mode` | `grep -rE '^\s*enum\s+[A-Za-z]' --include='*.h'` |
+| Bare `min(`/`max(` | 216 | 216 | **13**, all in commented-out code | `grep -rEo '(^\|[^:_A-Za-z0-9])(min\|max)\s*\(' <projects>` |
 | `EmptyAndDelete` | 26 files | 13 | **13** call-site files | `grep -rlw EmptyAndDelete <projects> --include='*.cpp'` |
 | `SAFE_DELETE`/`SAFE_FREE` | 35 | 38 | **32** | `grep -rEow 'SAFE_DELETE\|SAFE_FREE' <projects>` |
-| Raw `new` / `delete` in `.cpp` | 815 / 246 | 805 / 287 | **731 / 264** | |
-| Tests | 103 | 103 | **124** | `grep -rc TEST_METHOD Tests/*/*.cpp` |
+| Raw `new` / `delete` in `.cpp` | 815 / 246 | 805 / 287 | **733 / 267** | |
+| Tests | 103 | 103 | **180** | `grep -rc TEST_METHOD Tests/*/*.cpp` |
+
+The `strcpy` family fell from 161 to 112 because `strings-modernised` T5
+converted `InputField` and the seven members it writes through. The `NULL` row
+is worth reading rather than counting: `language-hygiene` T9 retired the two in
+`InputDriver.cpp`'s condition table, and the single remaining real one is in
+`ControlTypes.cpp`, a dead and broken file that `language-hygiene` T10 owns.
+Tests went 124 → 180 across this session and the two before it; the count in
+`AGENTS.md` had been stale by three tasks' worth of work.
 
 Stage 4 is past half and stage 5 is genuinely under way — the `new`/`delete`
 counts moved for the first time, from 805/287 to 731/264, as `ownership` T3 and
@@ -132,9 +141,11 @@ now says:
   to be on the next person's side before they start. Two of the seven existing
   `TypeString` sites already disagree about whether they pass an array or its
   address, which only a `void*` could hide.
-- **T5** is now that coupled change and only that, with the full touch set
+- **T5** became that coupled change and only that, with the full touch set
   declared — 25 files, reaching into `Species/Camera.cpp`,
-  `Species/LocationEditor.cpp` and `Species/Script.cpp`.
+  `Species/LocationEditor.cpp` and `Species/Script.cpp`. **It landed on
+  2026-08-05**, characterised first by twelve `InputField` tests written against
+  the `char*` API and committed before the conversion.
 - **T15** (new) takes the four window files that were only ever grouped with T5
   because they are Eclipse-derived windows in GameLogic. None registers
   anything `InputField` writes into.
@@ -161,7 +172,13 @@ now says:
 
 ## The restart order
 
-### Step 0 — clear the standing obstacle first: `language-hygiene` T8
+> **Steps 0 and 1 are DONE and are kept as the record of how the restart went,
+> not as instructions.** Step 2's critical path is also cleared:
+> `strings-modernised` T5 landed on 2026-08-05. If you are picking this up now,
+> start at *Step 2* for what is ready, and read *Where it stopped* above for
+> the current per-plan counts.
+
+### Step 0 — clear the standing obstacle first: `language-hygiene` T8 — **DONE**
 
 `NeuronCore/MathUtils.h` defines function-style `min` and `max` macros, so
 `std::min` and `std::max` do not compile anywhere that header is reachable —
@@ -177,7 +194,7 @@ the macros double-evaluate their arguments: a call site passing an expression
 with a side effect changes behaviour when it stops being evaluated twice. That
 is an audit, not a sweep.
 
-### Step 1 — restart the parallel work
+### Step 1 — restart the parallel work — **DONE**
 
 These have no path between them and no overlapping files. Four agents, or one
 in this order:
@@ -212,7 +229,13 @@ being surfaced, not a conversion error.** Record them as found.
 
 ### Step 2 — the critical path
 
-Everything left funnels through one node:
+**T5 landed on 2026-08-05 and this step is open rather than blocked.** The
+graph below is kept because it is still the shape of what remains: `strings`
+T8, T11 and T12 are ready concurrently, T13 waits on T11 and T12, T9 waits on
+all of them, and `ownership` T4 became ready the moment T5 did. What follows
+the diagram — the two hazards — is unchanged and still applies to T11.
+
+Everything left funnelled through one node:
 
 ```
 strings/T14 ──▶ strings/T5 ─┬─▶ strings/T8 ──▶ ownership/T5 ─┐
@@ -228,9 +251,11 @@ directly or transitively. If only one thing is worked at a time, work this.
 Two hazards, both recorded on the tasks themselves and both worth repeating
 because they fail silently:
 
-- **`CreateValueControl`'s `void*`** — a wrong-typed registration compiles and
-  corrupts memory. T14 exists to remove this before T5 starts. Do not skip it
-  on the grounds that it looks like tidying.
+- ~~**`CreateValueControl`'s `void*`**~~ — gone. T14 replaced it with a typed
+  overload set before T5 started, which is exactly what it was for: every one
+  of T5's seven registrations became `&member` and a wrong-typed one is now a
+  compile error. Recorded as the worked example for the next task that is
+  tempted to skip its own preparatory node.
 - **Eclipse looks buttons and windows up by name**, using `strcmp` in some
   places and `stricmp` in others. `std::string::operator==` matches the first
   and not the second, so T11's call sites have to be read rather than swept.

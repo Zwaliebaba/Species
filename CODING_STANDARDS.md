@@ -430,6 +430,13 @@ something worse — it reached a player, twice over, from one uninitialised fiel
   convert until both ends convert together**, which is a sequencing constraint
   on plans, not a call-site detail. Where the callee is deliberately staying
   legacy, `&AsLegacy(*_pos)` is a `Vector3*` onto native storage.
+- **The legacy GLOBALS are the same trap with a different face.** `g_upVector`
+  and `g_zeroVector` are still `Vector3` and `tasks/directxmath-migration.yaml`
+  T25 owns retiring them. `m_up = g_upVector` compiles, because that is the
+  conversion operator doing its job — but `XMLoadFloat3(&g_upVector)` does not,
+  because the address is a `Vector3*`. Use what the converted files use:
+  `DirectX::g_XMIdentityR1` for `g_upVector`, which is `(0,1,0,0)`, and
+  `DirectX::XMVectorZero()` for `g_zeroVector`.
 - **A virtual signature cannot move without every overrider in the same
   commit.** An override must match its base exactly; no implicit conversion is
   consulted, and a mismatch silently stops overriding rather than failing. Map a
@@ -574,9 +581,10 @@ ahead within a file.
 Stages 1, 2 and 8 are tree-wide moves. Stages 3–7 proceed file by file, and a
 file at stage *n* is fully at stage *n* before it advances.
 
-Status re-measured on 2026-08-03, and re-measure rather than trusting it: stage 3
-is finished and its headers are deleted; stage 4 has **161** `strcpy`-family calls
-across 49 files, down from 367 at the start of the restart; stage 5 has **32**
+Status re-measured on 2026-08-05, and re-measure rather than trusting it: stage 3
+is finished and its headers are deleted; stage 4 has **112** `strcpy`-family calls
+across 42 files, down from 367 at the start of the restart and from 161 before
+`strings-modernised` T5; stage 5 has **32**
 `SAFE_DELETE`/`SAFE_FREE` occurrences and `EmptyAndDelete` in 13 files. Stages 1, 2, 6 and 7 landed with
 `tasks/neuroncore-layering.yaml`; stage 8 landed with `7ee8c00`. The only `g_app`
 left anywhere under `NeuronCore/` is a comment explaining what replaced it.

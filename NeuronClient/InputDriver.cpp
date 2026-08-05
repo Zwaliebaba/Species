@@ -9,21 +9,27 @@ struct ConditionInfo
 {
     inputtype_t type; // InputType
     char const* name;
-    condition_t cond; // InputCondition
+    InputCondition cond;
 };
 
+// The braces are new; the entries are not. This was a brace-elided flat list
+// terminated by `NULL, nullptr, NULL`, and the terminator's first and third
+// fields were the only two NULLs left in NeuronClient. Both were zero, and
+// both still are: INPUT_TYPE_FAIL is 0 and COND_DOWN is 0. Nothing about the
+// sentinel's VALUE changed — see the note in getDefaultConditionID about what
+// that costs, which is a defect this task recorded rather than fixed.
 static ConditionInfo s_conditions[] = {
   // Type            Name        Condition
-  INPUT_TYPE_BOOL, "down", COND_DOWN,          // Button was just pushed down
-  INPUT_TYPE_BOOL, "up", COND_UP,              // Button was just released
-  INPUT_TYPE_BOOL, "pressed", COND_PRESSED,    // Button is still pressed
-                                               //	INPUT_TYPE_BOOL,   "action",   COND_ACTION,   // Something happened (as in "key any action")
-  INPUT_TYPE_ANALOG, "release", COND_RELEASED, // Analog just entered dead zone
-  INPUT_TYPE_ANALOG, "position", COND_NONZERO, // Analog is outside dead zone (return position)
-  INPUT_TYPE_ANALOG, "move", COND_MOVED,       // Analog is outside dead zone (return delta)
-  INPUT_TYPE_ANALOG, "zero", COND_ZERO,        // Analog is still in dead zone
-  INPUT_TYPE_ANALOG, "read", COND_READ,        // Analog always triggers (return default device info)
-  NULL, nullptr, NULL};
+  {INPUT_TYPE_BOOL, "down", InputCondition::COND_DOWN},       // Button was just pushed down
+  {INPUT_TYPE_BOOL, "up", InputCondition::COND_UP},           // Button was just released
+  {INPUT_TYPE_BOOL, "pressed", InputCondition::COND_PRESSED}, // Button is still pressed
+  //	INPUT_TYPE_BOOL,   "action",   COND_ACTION,   // Something happened (as in "key any action")
+  {INPUT_TYPE_ANALOG, "release", InputCondition::COND_RELEASED}, // Analog just entered dead zone
+  {INPUT_TYPE_ANALOG, "position", InputCondition::COND_NONZERO}, // Analog is outside dead zone (return position)
+  {INPUT_TYPE_ANALOG, "move", InputCondition::COND_MOVED},       // Analog is outside dead zone (return delta)
+  {INPUT_TYPE_ANALOG, "zero", InputCondition::COND_ZERO},        // Analog is still in dead zone
+  {INPUT_TYPE_ANALOG, "read", InputCondition::COND_READ},        // Analog always triggers (return default device info)
+  {INPUT_TYPE_FAIL, nullptr, InputCondition::COND_DOWN}};
 
 condition_t InputDriver::getDefaultConditionID(std::string const& name, inputtype_t& type)
 {
@@ -31,10 +37,14 @@ condition_t InputDriver::getDefaultConditionID(std::string const& name, inputtyp
   ConditionInfo info = s_conditions[i];
   while (info.name && ((type & info.type) != info.type || name != info.name))
     info = s_conditions[++i];
-  if (i < NumInputConditions)
+  // PRESERVED, NOT FIXED, and it is wrong: the table holds eight entries plus
+  // a terminator, so an unmatched name leaves i at 8, and 8 is less than
+  // NumInputConditions (10). The failure path therefore returns the
+  // terminator's cond — COND_DOWN — rather than -1. See T9's notes.
+  if (i < static_cast<int>(InputCondition::NumInputConditions))
   {
     type = info.type;
-    return info.cond;
+    return static_cast<condition_t>(info.cond);
   }
   else
     return -1;
@@ -45,9 +55,12 @@ bool InputDriver::getDefaultPrefsString(condition_t condition_id, inputtype_t ty
 {
   int i = 0;
   ConditionInfo info = s_conditions[i];
-  while (info.name && ((type & info.type) != info.type || condition_id != info.cond))
+  while (info.name && ((type & info.type) != info.type || condition_id != static_cast<condition_t>(info.cond)))
     info = s_conditions[++i];
-  if (i < NumInputConditions)
+  // Same off-by-two as above, and worse here: on the failure path info.name is
+  // the terminator's nullptr, and assigning nullptr to a std::string is
+  // undefined. Preserved rather than fixed — see T9's notes.
+  if (i < static_cast<int>(InputCondition::NumInputConditions))
   {
     prefsString = info.name;
     return true;

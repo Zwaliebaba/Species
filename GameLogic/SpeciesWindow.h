@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "Eclipse.h"
 
 class InputField;
@@ -52,10 +54,9 @@ class SpeciesWindow : public EclWindow
     void CreateValueControl(char const* name, float* value, int y, float change, float _lowBound, float _highBound, SpeciesButton* callback = nullptr,
                             int x = -1, int w = -1);
     // Text fields have no scroller buttons and take the full width, which is the
-    // only behavioural difference the old dataType switch encoded. char* rather
-    // than std::string* until strings-modernised T5 converts InputField.
-    void CreateValueControl(char const* name, char* value, int y, float change, float _lowBound, float _highBound, SpeciesButton* callback = nullptr,
-                            int x = -1, int w = -1);
+    // only behavioural difference the old dataType switch encoded.
+    void CreateValueControl(char const* name, std::string* value, int y, float change, float _lowBound, float _highBound,
+                            SpeciesButton* callback = nullptr, int x = -1, int w = -1);
 
     void CreateColourControl(char const* name, int* value, int y, SpeciesButton* callback = nullptr, int x = -1, int w = -1);
 

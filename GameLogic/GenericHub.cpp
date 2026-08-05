@@ -32,7 +32,7 @@ DynamicBase::DynamicBase()
   : Building(),
     m_buildingLink(-1)
 {
-  CopyInto(m_shapeName, "none");
+  m_shapeName = "none";
 }
 
 void DynamicBase::Initialise(Building* _template)
@@ -78,7 +78,7 @@ void DynamicBase::Write(FileWriter* _out)
   Building::Write(_out);
 
   _out->printf("%-8d", m_buildingLink);
-  _out->printf("%s  ", m_shapeName);
+  _out->printf("%s  ", m_shapeName.c_str());
 }
 
 int DynamicBase::GetBuildingLink() { return m_buildingLink; }
@@ -89,13 +89,13 @@ void DynamicBase::SetBuildingLink(int _buildingId)
   // m_powerLink = _buildingId;
 }
 
-void DynamicBase::SetShapeName(char* _shapeName)
+void DynamicBase::SetShapeName(std::string_view _shapeName)
 {
-  CopyInto(m_shapeName, _shapeName);
+  m_shapeName = _shapeName;
 
-  if (strcmp(m_shapeName, "none") != 0)
+  if (m_shapeName != "none")
   {
-    SetShape(g_resource->GetShape(m_shapeName));
+    SetShape(g_resource->GetShape(m_shapeName.c_str()));
 
     DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 

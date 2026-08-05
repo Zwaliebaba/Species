@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "SpeciesWindow.h"
 
 
@@ -17,7 +19,7 @@ public:
 class NewUserProfileWindow : public SpeciesWindow
 {
 public:
-    static char s_profileName[256];
+  static std::string s_profileName;
 
 public:
     NewUserProfileWindow();

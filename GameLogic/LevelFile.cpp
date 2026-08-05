@@ -207,8 +207,11 @@ void LevelFile::ParseCameraMounts(TextReader* _in)
 
     CameraMount* cmnt = new CameraMount();
 
-    // Read name
-    strncpy(cmnt->m_name, word, CAMERA_MOUNT_MAX_NAME_LEN);
+    // Read name. The truncation is kept rather than dropped with the array it
+    // used to bound: it is what a level file carrying a longer name loads as
+    // today, and it is therefore what such a file writes back out. T8 owns the
+    // round-trip proof and cannot make it against a load path that changed.
+    cmnt->m_name = std::string_view{word}.substr(0, CAMERA_MOUNT_MAX_NAME_LEN);
 
     // Read pos
     word = _in->GetNextToken();
@@ -253,7 +256,7 @@ void LevelFile::ParseCameraAnims(TextReader* _in)
       return;
 
     CameraAnimation* anim = new CameraAnimation();
-    strncpy(anim->m_name, word, CAMERA_ANIM_MAX_NAME_LEN);
+    anim->m_name = std::string_view{word}.substr(0, CAMERA_ANIM_MAX_NAME_LEN);
 
     while (_in->ReadLine())
     {
@@ -924,7 +927,7 @@ void LevelFile::WriteCameraMounts(FileWriter* _out)
   for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); i++)
   {
     CameraMount* cmnt = m_cameraMounts[i];
-    _out->printf("\t%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f\n", cmnt->m_name, cmnt->m_pos.x, cmnt->m_pos.y, cmnt->m_pos.z,
+    _out->printf("\t%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f\n", cmnt->m_name.c_str(), cmnt->m_pos.x, cmnt->m_pos.y, cmnt->m_pos.z,
                  cmnt->m_front.x, cmnt->m_front.y, cmnt->m_front.z, cmnt->m_up.x, cmnt->m_up.y, cmnt->m_up.z);
   }
 
@@ -938,7 +941,7 @@ void LevelFile::WriteCameraAnims(FileWriter* _out)
 
   for (CameraAnimation* anim : m_cameraAnimations)
   {
-    _out->printf("\t%s\n", anim->m_name);
+    _out->printf("\t%s\n", anim->m_name.c_str());
 
     for (int j = 0; j < static_cast<int>(anim->m_nodes.size()); ++j)
     {
@@ -1232,7 +1235,7 @@ CameraMount* LevelFile::GetCameraMount(char const* _name)
   for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); ++i)
   {
     CameraMount* mount = m_cameraMounts[i];
-    if (stricmp(mount->m_name, _name) == 0)
+    if (stricmp(mount->m_name.c_str(), _name) == 0)
     {
       return mount;
     }
@@ -1246,7 +1249,7 @@ int LevelFile::GetCameraAnimId(char const* _name)
   for (int i = 0; i < static_cast<int>(m_cameraAnimations.size()); ++i)
   {
     CameraAnimation* anim = m_cameraAnimations[i];
-    if (stricmp(anim->m_name, _name) == 0)
+    if (stricmp(anim->m_name.c_str(), _name) == 0)
     {
       return i;
     }

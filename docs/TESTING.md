@@ -18,10 +18,10 @@ in [`BUILD.md`](BUILD.md) true.
 
 | Project | Covers | State |
 |---|---|---|
-| `Tests/NeuronCoreTests` | `NeuronCore` | Real coverage. IP conversion, the `speciesRandom` sequence, the `ByteStream` wire macros, `WorldObjectId` identity, the containers. |
+| `Tests/NeuronCoreTests` | `NeuronCore` | Real coverage. IP conversion, the `speciesRandom` sequence, the `ByteStream` wire macros, `WorldObjectId` identity, the containers, the preferences file format, and the native-math conversions and geometry routines. |
 | `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`. |
 | `Tests/NeuronServerTests` | `NeuronServer` | Wiring smoke test only — the layer is a stub with no behaviour yet. |
-| `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid` and `Route`. `LinkStubs.cpp` is empty and on its way out. |
+| `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker and `InputField`. `LinkStubs.cpp` is empty and on its way out. |
 
 `Species` and `Server` have no test project. They are executables, and an `.exe`
 cannot be linked into a test DLL. Code in either that is worth testing is code

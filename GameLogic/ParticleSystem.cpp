@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "Globals.h"
 
 
@@ -46,7 +47,7 @@ Particle::Particle() {}
 
 
 // *** Initialise
-void Particle::Initialise(Vector3 const& _pos, Vector3 const& _vel, int _typeId, float _size)
+void Particle::Initialise(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, int _typeId, float _size)
 {
   DEBUG_ASSERT(_typeId < Particle::TypeNumTypes);
 
@@ -82,10 +83,11 @@ bool Particle::Advance()
     return true;
   }
 
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
   float amount = SERVER_ADVANCE_PERIOD * type.m_friction;
-  m_vel *= (1.0f - amount);
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f - amount));
 
   if (type.m_gravity != 0.0f)
   {
@@ -107,8 +109,10 @@ bool Particle::Advance()
       // CreateParticle might have to resize the particles array, which
       // might invalidate what "p" points to, so we need to make local
       // copies of the bits of p that we need
-      Vector3 pos = m_pos;
-      Vector3 vel = m_vel / 5.0f;
+      DirectX::XMFLOAT3 pos = m_pos;
+      // operator/ computed 1/b once and multiplied, which is what XMVectorScale does.
+      DirectX::XMFLOAT3 vel;
+      DirectX::XMStoreFloat3(&vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 1.0f / 5.0f));
       g_particleSystem->CreateParticle(pos, vel, Particle::TypeRocketTrail, m_size / 2.0f);
       particleCreated = true;
     }
@@ -125,14 +129,19 @@ bool Particle::Advance()
       float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
       if (m_pos.y <= landHeight)
       {
-        Vector3 lastPos = m_pos; // - m_vel * g_advanceTime;
-        Vector3 impactPos = (m_pos + lastPos) * 0.5f;
+        DirectX::XMFLOAT3 lastPos = m_pos; // - m_vel * g_advanceTime;
+        DirectX::XMFLOAT3 impactPos;
+        DirectX::XMStoreFloat3(&impactPos,
+                               DirectX::XMVectorScale(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&lastPos)), 0.5f));
         m_pos = impactPos;
         m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
 
-        Vector3 normal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-        float dotProd = normal * m_vel;
-        m_vel -= normal * 2.0f * dotProd * 0.7f;
+        DirectX::XMFLOAT3 normal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
+        // Vector3's operator* between two vectors was the dot product.
+        DirectX::XMVECTOR const normalVec = DirectX::XMLoadFloat3(&normal);
+        float dotProd = DirectX::XMVectorGetX(DirectX::XMVector3Dot(normalVec, DirectX::XMLoadFloat3(&m_vel)));
+        DirectX::XMStoreFloat3(&m_vel,
+                               DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorScale(normalVec, 2.0f * dotProd * 0.7f)));
       }
     }
   }
@@ -160,10 +169,15 @@ void Particle::Render(float _predictionTime)
       alpha = 0;
   }
 
-  Vector3 predictedPos = m_pos + _predictionTime * m_vel;
+  DirectX::XMVECTOR const predictedPos =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
   float size = m_size / 16.0f;
-  Vector3 up(g_camera->GetUp() * size);
-  Vector3 right(g_camera->GetRight() * size);
+  // GetUp and GetRight still return Vector3 — CameraAccess stays legacy until
+  // T12/T22 — so the seam converts them on the way in.
+  DirectX::XMFLOAT3 const upStore = g_camera->GetUp() * size;
+  DirectX::XMFLOAT3 const rightStore = g_camera->GetRight() * size;
+  DirectX::XMVECTOR const up = DirectX::XMLoadFloat3(&upStore);
+  DirectX::XMVECTOR const right = DirectX::XMLoadFloat3(&rightStore);
 
   if (m_typeId == TypeMissileTrail)
   {
@@ -179,16 +193,16 @@ void Particle::Render(float _predictionTime)
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 0);
-  glVertex3fv((predictedPos - up).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(predictedPos, up));
 
   glTexCoord2i(0, 1);
-  glVertex3fv((predictedPos + right).GetData());
+  EmitVertex(DirectX::XMVectorAdd(predictedPos, right));
 
   glTexCoord2i(1, 1);
-  glVertex3fv((predictedPos + up).GetData());
+  EmitVertex(DirectX::XMVectorAdd(predictedPos, up));
 
   glTexCoord2i(1, 0);
-  glVertex3fv((predictedPos - right).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(predictedPos, right));
   glEnd();
 }
 
@@ -305,7 +319,7 @@ ParticleSystem::ParticleSystem()
 
 
 // *** CreateParticle
-void ParticleSystem::CreateParticle(Vector3 const& _pos, Vector3 const& _vel, int _typeId, float _size, RGBAColour col)
+void ParticleSystem::CreateParticle(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, int _typeId, float _size, RGBAColour col)
 {
   Particle* aParticle = m_particles.GetPointer(m_particles.GetNextFree());
   aParticle->Initialise(_pos, _vel, _typeId, _size);

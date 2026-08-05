@@ -37,9 +37,9 @@ class CameraAccess
     // Still an unscoped enum, and moved verbatim rather than converted: Camera
     // stores m_mode as an int, indexes a string table with it and compares it
     // against ints throughout Camera.cpp. Making it an enum class is a change
-    // to that machinery, not to this seam — tasks/language-hygiene.yaml T5
-    // owns it.
-    enum Mode // hygiene-ok: moved unchanged, see above; converted by language-hygiene T5
+    // to that machinery, not to this seam — tasks/language-hygiene.yaml T12
+    // owns it. (T5 first, then T9, then T12 when T9 split on 2026-08-05.)
+    enum Mode // hygiene-ok: moved unchanged, see above; converted by language-hygiene T12
     {
       ModeReplay = 0,
       ModeSphereWorld = 1,

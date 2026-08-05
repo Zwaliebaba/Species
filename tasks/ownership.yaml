@@ -413,6 +413,44 @@ tasks:
       layering-inversion T11 has landed by then over review-plus-smoke-test;
       fall back on review and the Garden smoke test only where no coverage
       exists yet, and say which in the commit.
+
+      MEASURED 2026-08-05, claimed and then released unstarted, because the
+      measurement changed what the task is. No code was touched.
+
+      Only SIX EmptyAndDelete calls are left in the seven files, not the ten a
+      grep suggests — the other mentions are comments left by containers-replaced
+      T19 and T20 explaining conversions already done, and SpawnPoint.cpp:37's
+      SAFE_DELETE is commented out. So the sites are:
+        SpawnPoint.cpp:36 and :239   m_links
+        InsertionSquad.cpp:56        m_positionHistory
+        DropDownMenu.cpp:93          m_options
+        Virii.cpp:143                m_positionHistory
+        Building.cpp:152             m_ports
+
+      THE SIX CALLS ARE NOT THE WORK. Each one only becomes a clear() once its
+      container owns its elements, and changing the element type makes the
+      blast radius every mention of that member — this plan's own T1 and T2
+      recorded exactly that lesson. Counted:
+        SpawnBuilding::m_links          vector<SpawnBuildingLink*>   20 uses
+        Virii::m_positionHistory        vector<ViriiHistory*>        28 uses
+        DropDownMenu::m_options         vector<DropDownOptionData*>  15 uses
+        Building::m_ports               vector<BuildingPort*>        14 uses
+        InsertionSquad::m_positionHistory vector<HistoricWayPoint*>   4 uses
+      About eighty sites, nearly all of them a `T* x = v[i]` that becomes
+      `v[i].get()`.
+
+      m_positionHistory IS A CONTENDED NAME and three classes mean three
+      different things by it: Virii holds ViriiHistory*, InsertionSquad holds
+      HistoricWayPoint*, Engineer holds XMFLOAT3*, and SoulDestroyer holds
+      XMFLOAT3 BY VALUE. Only the first two are this task's. check_containers.py
+      already skips names like this rather than guessing, so it will not catch
+      a mistake here — read the declaration, not the name.
+
+      VIRII IS SIMULATION CODE and the one to do last and carefully. Its
+      m_positionHistory is walked from Advance and erased mid-tick at
+      Virii.cpp:336; unique_ptr frees at the same program point, which is what
+      the intent above requires, but that has to be stated per site in the
+      commit rather than assumed.
     status: todo
 
   - id: T5

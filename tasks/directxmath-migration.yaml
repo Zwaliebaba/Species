@@ -2000,6 +2000,163 @@ tasks:
       one marked todo: --next stops offering it, so the claim has been dropped
       rather than left standing.
 
+      PARTIALLY DONE 2026-08-05, and set back to todo rather than left
+      in_progress, for the reason this task's own note gives above: a task
+      marked in_progress that nobody is doing stops --next offering it.
+
+      LANDED AND CI-GREEN: the five files that had drifted from clang-format
+      were reformatted in their own commit first (Rocket.h, Airstrike.h,
+      Spirit.h, Flag.h, Flag.cpp — the other thirteen already matched), and
+      ParticleSystem.h and ParticleSystem.cpp are fully converted. Skip both
+      when picking this up.
+
+      STILL LEGACY: Weapons and Rocket. 329 type occurrences in total when this
+      started, of which 149 are done across seven file pairs — ParticleSystem,
+      Explosion, Spirit, Flag, TaskManager, Airstrike and Spam, every one
+      CI-green.
+
+      THE LAST TWO ARE MEASURED PROPERLY, because the type count understates
+      them badly. Counting every edit point rather than every type name:
+
+        Weapons.h    15 types
+        Weapons.cpp  88 types, 70 legacy method calls, 26 glVertex/glNormal,
+                     56 AsLegacy, 6 legacy globals   -> ~246 edit points
+        Rocket.h      4 types
+        Rocket.cpp   73 types, 36 legacy method calls, 24 glVertex/glNormal,
+                     13 AsLegacy, 15 legacy globals  -> ~161 edit points
+
+      Weapons.cpp holds 56 of the tree's remaining AsLegacy uses on its own —
+      more than every other file put together. It is the single densest math
+      file in GameLogic, which this task's intent said from the start.
+
+      They are INDEPENDENT of each other, which is worth knowing before
+      planning: Rocket.h and Rocket.cpp are the fuel buildings and the escape
+      rocket, and Weapons.h's own `Rocket` class is implemented in Weapons.cpp.
+      Neither header declares anything the other implements. Do them in either
+      order, in separate commits.
+
+      Every convention trap they can hit is already pinned or written down: the
+      two Matrix33 reversals (tests), BasisFromFrontAndUp's row order and its
+      lack of a namespace, g_upVector and g_zeroVector needing
+      DirectX::g_XMIdentityR1 and XMVectorZero(), RotateAround taking its angle
+      from the axis magnitude, operator^ being cross and operator* between two
+      vectors being dot, and the three-net search method. Nothing new should be
+      discovered; the remaining cost is volume.
+
+      THE DUPLICATE-LOCAL SCAN FALSE-POSITIVES ON SIBLING BLOCKS. It flagged
+      seven names in Spam and two in Airstrike, and every one was two separate
+      for-loop or if bodies rather than one scope. Verify each hit by reading
+      the braces; the scan cannot tell a sibling block from a redeclaration.
+
+      g_upVector AND g_zeroVector ARE STILL Vector3, which is failure mode 7
+      pointing the other way and it will recur in all three remaining files.
+      `m_up = g_upVector` compiles, because the seam converts by value. But
+      XMLoadFloat3(&g_upVector) does NOT: taking the address gets a Vector3*,
+      and the seam does nothing through a pointer. Use what the already-
+      converted files use — DirectX::g_XMIdentityR1 for g_upVector, which is
+      (0,1,0,0), and DirectX::XMVectorZero() for g_zeroVector. T25 owns
+      retiring the globals themselves. Spirit
+      also lost its nine AsLegacy uses, which the seam count in
+      _restart-directxmath.md tracks.
+
+      ONE MORE SCRIPTED-CONVERSION HAZARD, from Spirit: replacing every
+      occurrence of an identical block puts duplicate declarations in any
+      function that contains two of them. Spirit::Render draws two quads
+      differing only in size and got two `sizeVec` declarations in one scope.
+      No check here can see it — only the compiler. Scan for repeated local
+      names per function after any block-level replacement.
+
+      WHAT PARTICLESYSTEM COST, so the next eight are cheaper:
+        - Particle's constructor assigns nothing, so m_pos and m_vel needed
+          explicit {0,0,0} initialisers. Failure mode 5, invisible to the
+          compiler and to CI.
+        - check_math_types found three sites grep could not, all failure mode
+          2 — a converted member's name with no type on the line. RUN IT AFTER
+          EVERY FILE, not at the end.
+
+      THE VERIFICATION RECIPE, written after Explosion shipped a red build with
+      all seven checks green locally. Explosion::Advance was never converted and
+      nothing caught it: its three lines are `m_tris[i].m_pos += m_tris[i].m_vel
+      * g_advanceTime`, `m_vel.Mag()` and `m_vel *= 1.0f - friction`, and not
+      one contains a type name. check_math_types could not help either, because
+      m_pos and m_vel are contended names it SKIPS rather than guesses at — so
+      the type grep and the tool have the same blind spot. Weapons has 103
+      occurrences and will be full of this.
+
+      After converting a file, grep the converted MEMBERS rather than the types:
+
+        grep -nE '\.(Mag|MagSquared|Normalise|SetLength|SetToIdentity|Set|Zero|GetData|GetDataConst|RotateAround|FastRotateAround)\s*\(' <file>
+        grep -nE '\bm_(name|of|each|converted|member)\b\s*(\*=|\+=|-=|/=|\^)' <file>
+
+      The first finds legacy method calls on native storage; the second finds
+      compound assignment and the cross product, neither of which the native
+      types have. Both return nothing on a finished file.
+        - Vector3::operator/ computed 1/b once and multiplied, so XMVectorScale
+          with the reciprocal is exact rather than approximate.
+        - Vector3::operator* between two vectors was the DOT PRODUCT. It reads
+          like a scale and is not.
+        - glVertex3fv(v.GetData()) becomes EmitVertex, and the file needs
+          #include "GlVertex.h" — it is not reachable through pch.h.
+        - g_camera->GetUp() and GetRight() still return Vector3 and stay that
+          way until T12/T22, so the seam converts them on the way in.
+
+      EXPLOSION NEEDS A DECISION BEFORE IT CAN BE CONVERTED, which is why the
+      work stopped there rather than part-way through a file. Explosion.h
+      stores `Matrix33 m_rotMat` and Explosion.cpp builds one per tick as
+      `Matrix33 rotIncrement(yaw, dive, roll)`. That constructor is
+      Matrix33.cpp:42 and it applies RotateAroundZ(roll), RotateAroundX(dive),
+      RotateAroundY(yaw) IN THAT ORDER to an identity matrix.
+      XMMatrixRotationRollPitchYaw documents the same Z-then-X-then-Y order, so
+      `Matrix33(yaw, dive, roll)` LOOKS equivalent to
+      XMMatrixRotationRollPitchYaw(dive, yaw, roll) with the first two
+      arguments swapped.
+
+      IT IS NOT, AND THAT WAS CHECKED RATHER THAN ARGUED. The equivalence was
+      worked out numerically against both implementations before any C++ was
+      written, over ten angle triples and five vectors each. The answer:
+
+        Matrix33(yaw, dive, roll) * v
+          ==  XMVector3Transform(v, RotationY(yaw) * RotationX(dive) * RotationZ(roll))
+
+      RollPitchYaw gives Z * X * Y; the legacy constructor gives Y * X * Z. The
+      composition is REVERSED, because RotateAroundZ/X/Y rewrite the matrix's
+      three basis rows in place rather than composing in row-vector order. The
+      call order in the constructor reads like RPY's and means the opposite.
+
+      Both readings compile and both are rotations. The wrong one tumbles
+      exploding debris the wrong way, and no build, test or check in this tree
+      would say so.
+
+      PINNED, so nobody has to re-derive it:
+      NeuronMathTests::NativeRotationMatchesTheLegacyYawDiveRollConstructor
+      asserts the mapping, and TheRollPitchYawReadingOfThatConstructorIsWrong
+      is its negative control — it fails if someone later "simplifies" the
+      conversion to RPY. Matrix33 has five users outside this task —
+      LaserFence, Location, Shape, Camera and Matrix34 itself — so the pin is
+      worth well more than Explosion alone.
+
+      A SECOND TRAP IN THE SAME FILE, found the same way and also pinned.
+      Matrix33::operator* is an ordinary row-major product, but Matrix33
+      transforms as M * v while XMVector3Transform computes v * M — so the
+      native matrix is the TRANSPOSE of the legacy one, and transposing
+      reverses a product. Tumbler::Advance does `m_rotMat *= rotIncrement`,
+      which converts to `rotMat = increment * rotMat` — the operands swap.
+
+      Writing it in the original order is wrong by about two percent after one
+      tick. It looks right, and it compounds every frame. Pinned by
+      NativeMatrixProductReversesRelativeToTheLegacyOne, which also asserts
+      that the same-order version genuinely differs, so the test is about the
+      conversion rather than about these particular angles.
+
+      Both pins passed under MSVC on the first run (179 tests, up from 177),
+      so the mapping is confirmed by the real toolchain and not only by the
+      model used to derive it.
+
+      With both pinned, Explosion is unblocked and is the right next file.
+      Note that Tumbler::Advance names its arguments in an order worth
+      re-reading before converting: it passes m_angVel.x as YAW, m_angVel.y as
+      DIVE and m_angVel.z as ROLL.
+
   - id: T20
     title: Convert the in-game windows
     intent: >
@@ -2158,7 +2315,134 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
+    status: done
+    notes: |
+      DONE 2026-08-05. 24 legacy-math references across the three files, all of
+      them Vector3(x,y,z) constructions feeding APIs that already take
+      XMFLOAT3.
+
+      NetworkUpdateTests carried a comment saying its Vector3 use was
+      DELIBERATE — "that is what the callers of SetWorldPos pass today, so it
+      is the conversion path being pinned". That rationale expires with the
+      seam T25 deletes, and NeuronMathTests already pins the conversion
+      explicitly, so the comment and the include went with the constructions.
+      The byte pin itself is untouched and still asserts the same bytes; the
+      layout note above it is kept because it is why the pin holds.
+
+      ONE SITE COULD NOT BE FULLY CONVERTED AND USES AsLegacy.
+      EntityGridTests passes &pos and &vel into Location::GetSoundSource, which
+      still takes Vector3 out-pointers and stays that way until T12. That is
+      failure mode 7 — the seam converts by reference and does nothing through
+      a pointer — so &AsLegacy(pos) is the documented escape hatch. Both calls
+      disappear when T12 lands, together with Location.h's include of
+      Vector3.h, which is what supplies AsLegacy here.
+
+      So `grep -rl AsLegacy Tests/` is 1, not 0, and that is expected rather
+      than a miss. T25 cannot run until it is 0; T12 is what gets it there.
+
+      Not compiled here (Linux).
+
+  - id: T28
+    title: Convert the geometry out-pointer signatures in MathUtils and Landscape
+    intent: >
+      T7 and T8 rebuilt the geometry routines on DirectXMath but deliberately
+      kept their Vector3 and Vector2 signatures so callers compiled unchanged,
+      and T18 left Landscape's ray and sphere API legacy for the same reason.
+      Nothing after them converts either, so the seam cannot be deleted: these
+      are the last legacy signatures in the tree and T25 depends on them being
+      gone. They convert together because Landscape passes its out-pointers
+      straight into MathUtils, and both convert together with their callers
+      because an out-pointer is failure mode 7 — the seam converts by
+      reference, which does nothing through a pointer.
+    project: NeuronCore
+    depends_on: [T19, T20, T22]
+    files:
+      - NeuronCore/MathUtils.h
+      - NeuronCore/MathUtils.cpp
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
+      - NeuronClient/Shape.cpp
+      - GameLogic/Location.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/RoutingSystem.cpp
+      - GameLogic/Weapons.cpp
+      - GameLogic/Entity.cpp
+      - GameLogic/Building.cpp
+      - GameLogic/StaticShape.cpp
+      - GameLogic/ScriptTrigger.cpp
+      - GameLogic/LaserFence.cpp
+      - GameLogic/GunTurret.cpp
+      - GameLogic/RadarDish.cpp
+      - GameLogic/ResearchItem.cpp
+      - GameLogic/Tree.cpp
+      - GameLogic/Tripod.cpp
+      - GameLogic/Triffid.cpp
+      - GameLogic/Spam.cpp
+      - GameLogic/Unit.cpp
+      - GameLogic/Team.cpp
+      - GameLogic/Armour.cpp
+      - GameLogic/FeedingTube.cpp
+      - GameLogic/BuildingsWindow.cpp
+      - GameLogic/CheatWindow.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/TreeWindow.cpp
+      - Species/UserInput.cpp
+      - Species/LocationEditor.cpp
+      - Tests/NeuronCoreTests/NeuronMathTests.cpp
+    acceptance:
+      - MathUtils.h declares no Vector2 or Vector3 in any parameter or return type, and forward-declares neither
+      - PointSegDist2D, SegRayIntersection2D, RayRayDist, RayTriIntersection and RaySphereIntersection take and return the native types, out-pointers included
+      - Landscape's RayHit, RayHitCell, UnsafeRayHit, SphereHit and IsInLandscape take the native types, and Landscape.h carries no comment deferring the conversion
+      - No call site passes &AsLegacy(...) into any of them; grep -c '&AsLegacy' over the six projects returns 0
+      - NeuronMathTests still asserts the same geometry results, on the native types
+    verify:
+      - python3 tools/check_math_types.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
     status: todo
+    notes: |
+      ADDED 2026-08-05. T25's notes recorded this gap when T18 found it and
+      declined to add the task unilaterally, because it changes the plan's wave
+      order and that was the owner's call; the task is added now with T25
+      depending on it, which pushes the deletion one wave later. That is the
+      honest shape — the plan previously claimed T25 could run after T22-T24,
+      and it could not.
+
+      WHY IT IS ONE TASK AND NOT THREE. Landscape::RayHit and RayHitCell pass
+      their Vector3* result straight into RayTriIntersection, and
+      Landscape::SegRayIntersection2D use does the same in 2D, so the two APIs
+      cannot convert in either order without one of them growing a reverse
+      seam that does not exist. The seam is one-directional by construction:
+      AsLegacy takes XMFLOAT3& to Vector3&, and nothing goes the other way,
+      deliberately (see the comment above it in Vector3.h). Converting a
+      signature therefore has to move every caller in the same commit.
+
+      WHY IT DEPENDS ON T19, T20 AND T22. Those are the tasks whose files still
+      hold legacy storage AND call these APIs. Weapons.cpp and Spam.cpp are
+      T19; the four windows are T20; UserInput.cpp and LocationEditor.cpp are
+      T22. Every other caller is already converted and reaches these APIs
+      through AsLegacy today, so for those files this task DELETES seam calls
+      rather than adding them. It does not depend on T23 or T12 — neither owns
+      a caller — and it owns NeuronMathTests.cpp itself, which T24's file list
+      does not include.
+
+      MEASURED 2026-08-05 on Linux:
+        RaySphereIntersection   13 caller files    the widest
+        Landscape::RayHit family 20 caller files   17 sites pass &someVector3
+        RayTriIntersection       4                 Shape, Landscape, LaserFence, tests
+        SphereSphereIntersection 4                 Shape, Tree, Spam, tests
+        PointSegDist2D           2                 Weapons, RoutingSystem
+        SegRayIntersection2D     1                 Landscape
+        RayRayDist               2                 Tripod, tests
+        &AsLegacy sites          9 in 3 files      LaserFence, GlobalWorld, Tree
+      Re-measure before starting; these will have moved.
+
+      THE OUT-PARAMETER DEFAULTS ARE PART OF THE SIGNATURE. Five of these
+      functions default their out-pointer to nullptr and callers rely on it.
+      Keep the defaults; converting the pointee type is the whole change.
 
   - id: T25
     title: Delete the seam and the wrapper headers
@@ -2167,7 +2451,7 @@ tasks:
       headers are gone the tree has two math libraries and a conversion layer
       between them, which is worse than either.
     project: NeuronCore
-    depends_on: [T22, T23, T24]
+    depends_on: [T22, T23, T24, T28]
     files:
       - NeuronCore/Vector2.h
       - NeuronCore/Vector2.cpp
@@ -2195,6 +2479,12 @@ tasks:
     parallel_safe: false
     status: todo
     notes: |
+      THE GAP BELOW IS NOW OWNED BY T28, added 2026-08-05, and this task
+      depends on it. The text is kept because it is the reasoning that produced
+      that task, and because the third acceptance criterion here is still what
+      fails if T28 is skipped. What has changed is only that the work has a
+      home: the deletion is one wave later than the plan used to claim.
+
       BLOCKED ON WORK NO TASK OWNS, found while doing T18 and recorded here
       because this is the task that trips over it.
 
@@ -2219,6 +2509,12 @@ tasks:
       editor windows, and this task should depend on it. Not added unilaterally:
       it changes the shape of the plan and the wave order, which is the owner's
       call.
+
+      THAT TASK IS T28. Added on the owner's instruction, 2026-08-05, scoped
+      from a re-measure rather than from the counts above: the caller set is
+      wider than "ten files" -- 20 files call the Landscape family and 13 call
+      RaySphereIntersection -- and it also owns NeuronMathTests.cpp, which no
+      other task lists.
 
   - id: T26
     title: Bring the documentation in line with what landed

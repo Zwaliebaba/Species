@@ -5,8 +5,9 @@ still the orientation document. This file answers "where did the math migration
 get to, and what do I do next".
 
 The plan is [`directxmath-migration.yaml`](directxmath-migration.yaml) and it is
-still the plan. **17 of its 27 tasks are done.** Everything below is either
+still the plan. **18 of its 28 tasks are done.** Everything below is either
 recorded in a task's `notes` or reproducible from the commands quoted here.
+(It was 27 until 2026-08-05, when the first of the two gaps below became T28.)
 
 ---
 
@@ -30,9 +31,19 @@ entities, buildings, creatures, world, landscape and routing all compute on
 | T16 | the structural buildings — **the keystone of the GameLogic wave** |
 | T17 | the functional buildings |
 | T18 | the world, landscape and routing |
+| T24 | the tests |
 
 **What is left in GameLogic is T19 and T20**; `Species/` is untouched, which is
-T22–T23. `--next` offers T19 and T24 today.
+T22–T23. `--next` offers only T19 today. T28 (added 2026-08-05) closes the
+first of the two gaps below and sits between T20/T22 and the deletion.
+
+**T19 IS SEVEN NINTHS DONE, and its `notes` are the handover.** ParticleSystem,
+Explosion, Spirit, Flag, TaskManager, Airstrike and Spam are converted and
+CI-green; the five files that had drifted from clang-format were reformatted
+first, in their own commit. Weapons and Rocket remain, and the task records them
+by EDIT POINT rather than type name — roughly 246 and 161 — because the type
+count understates them about threefold. Weapons.cpp alone holds 56 of the
+tree's remaining `AsLegacy` uses. The two are independent of each other.
 
 ---
 
@@ -48,11 +59,11 @@ has the fallback decisions, and T18 has the two gaps in the plan itself.
 
 ---
 
-## The seven ways this conversion breaks a file you did not touch
+## The eight ways this conversion breaks a file you did not touch
 
-The first five were known after T10. T14 added 6 and 7, and every one of them
-has since cost at least one red round. `tools/check_math_types.py` catches all
-but 3.
+The first five were known after T10. T14 added 6 and 7, T19 added 8, and every
+one of them has since cost at least one red round. `tools/check_math_types.py`
+catches all but 3 and 8.
 
 | | What | Why grep misses it |
 |---|---|---|
@@ -63,6 +74,13 @@ but 3.
 | 5 | **Default construction** | `Vector3()` zeroed; `XMFLOAT3()` does not — and `Matrix34` had no fourth column where `XMFLOAT4X4` has one |
 | 6 | A contended name that **is not a math type at all** | `ArmyAnt::m_orders` is an `int`, `m_mousePos` an `int[3]`, `m_right` a `float*` |
 | 7 | **The address-of trap** | the seam converts by REFERENCE, which does nothing through a pointer |
+| 8 | **A legacy GLOBAL** | `m_up = g_upVector` compiles; `XMLoadFloat3(&g_upVector)` does not — same trap, other direction |
+
+Number 8 is 7 seen from the other side and was hit five times in one file during
+T19. `g_upVector` and `g_zeroVector` are still `Vector3` and T25 owns retiring
+them. Until then, use what the converted files use: `DirectX::g_XMIdentityR1`
+for `g_upVector`, which is (0,1,0,0), and `DirectX::XMVectorZero()` for
+`g_zeroVector`. Assignment through the seam is fine; taking the address is not.
 
 Number 5 is the dangerous one: invisible to the compiler *and* to CI. It shipped
 three times before anything noticed — `Shape::CalculateCentre` accumulating
@@ -116,20 +134,30 @@ and map its virtuals in both directions.** It is two greps and it saves a round.
 
 ## Two gaps in the plan itself, found by doing T18
 
-Both block work the plan assumes is possible. Neither has an owning task.
+Both blocked work the plan assumes is possible. **The first now has an owning
+task; the second is still unowned but is already fixed in the tree.**
 
-**1. MathUtils' geometry API has no converting task.** T7 and T8 rebuilt
-`RayTriIntersection` and `RayRayDist` on DirectXMath but deliberately kept their
-`Vector3` signatures so callers compiled unchanged — that is written into both
-tasks' acceptance. Nothing after them converts the signatures, and
+**1. MathUtils' geometry API had no converting task. It is now T28.** T7 and T8
+rebuilt `RayTriIntersection` and `RayRayDist` on DirectXMath but deliberately
+kept their `Vector3` signatures so callers compiled unchanged — that is written
+into both tasks' acceptance. Nothing after them converted the signatures, and
 `PointSegDist2D` and `SegRayIntersection2D` still take `Vector2 const&` and
-`Vector2*`. **T25 then deletes both classes.**
+`Vector2*`. **T25 then deletes both classes**, which it cannot do while they
+are named in a signature.
 
 This is what stops `Landscape`'s ray and sphere API moving: those functions pass
-their out-pointer straight into MathUtils, and seventeen call sites in ten files
-pass `&someVector3` into `Landscape::RayHit`. Both ends are stuck on failure
-mode 7. **A task for MathUtils' 2D and 3D geometry signatures needs to exist,
-and T25 depends on it.**
+their out-pointer straight into MathUtils, and the call sites pass
+`&someVector3` into `Landscape::RayHit`. Both ends are stuck on failure mode 7.
+
+**T28 owns both APIs and their callers**, added 2026-08-05 on the owner's
+instruction — the decision T25's notes deferred rather than took. It depends on
+T19, T20 and T22, which are the three tasks whose files still hold legacy
+storage *and* call these routines; every other caller already reaches them
+through `AsLegacy`, so for those files T28 removes seam calls rather than
+adding them. **T25 now depends on T28**, which puts the deletion in wave 10
+rather than wave 8. The counts in T28's notes were re-measured rather than
+inherited: the Landscape family has 20 caller files, not ten, and
+`RaySphereIntersection` alone has 13.
 
 **2. `SurfaceMap2D` was never mentioned in the plan.** `Landscape::m_normalMap`
 was a `SurfaceMap2D<Vector3>`, so `Vector3` could not be deleted while it stood,
@@ -149,7 +177,8 @@ native counterpart. That is what lets a converted file compile against an
 unconverted API. **T25 deletes all of it**, and until T25 lands the migration is
 not finished however good the intermediate state looks.
 
-`grep -rl AsLegacy` is the live worklist: **25 files** carry one today.
+`grep -rl AsLegacy` is the live worklist: **23 files** carry one today, and
+56 of the individual uses are in `Weapons.cpp`.
 
 Signatures deliberately still legacy, all commented in place:
 
@@ -158,9 +187,10 @@ Signatures deliberately still legacy, all commented in place:
 - `CameraAccess`'s `GetPos`/`GetFront`/`GetUp`/`GetRight`/`GetClickRay`/
   `Get2DScreenPos` and `UserInputAccess::GetMousePos3d` — pure virtuals, T12/T22.
 - `Landscape::RayHit`, `RayHitCell`, `UnsafeRayHit`, `SphereHit`,
-  `IsInLandscape` — blocked on the MathUtils gap above.
-- MathUtils' `RayTriIntersection`, `RaySphereIntersection`, `PointSegDist2D`,
-  `SegRayIntersection2D` — the gap itself.
+  `IsInLandscape` — **T28**, together with the MathUtils routines below, which
+  is why one task owns both.
+- MathUtils' `RayTriIntersection`, `RaySphereIntersection`, `RayRayDist`,
+  `PointSegDist2D`, `SegRayIntersection2D` — **T28**.
 
 ---
 
@@ -211,6 +241,45 @@ an initialiser, and a rename that left a use behind.
 **`LandscapeRenderer::GetLandscapeColour` reseeds the simulation RNG from
 rendering code.** Predates this plan. Belongs in `tasks/determinism.yaml` once
 somebody establishes what it costs.
+
+---
+
+## Finding the sites: three nets, none sufficient alone
+
+T19 settled this after two red builds that all seven local checks had passed.
+The type grep, the member grep and `check_math_types` have **different** blind
+spots, and a file is only clean when all three are.
+
+```bash
+# 1. the type names — misses everything that does not spell one
+grep -nE '\b(Vector3|Vector2|Matrix33|Matrix34|AsLegacy)\b' <file>
+
+# 2. the converted MEMBERS — legacy methods and operators the native types lack
+grep -nE '\.(Mag|MagSquared|Normalise|SetLength|SetToIdentity|Set|Zero|GetData|GetDataConst|RotateAround|FastRotateAround)\s*\(' <file>
+grep -nE '\bm_[a-zA-Z]+\b\s*(\*=|\+=|-=|/=|\^)' <file>
+
+# 3. the tool, which resolves types the greps cannot
+python3 tools/check_math_types.py
+```
+
+Why all three. `Explosion::Advance` was missed by net 1 because
+`m_pos += m_vel * g_advanceTime` names no type, and by net 3 because `m_pos`
+and `m_vel` were **contended names it skips rather than guesses at**. Net 2
+found `.Set(` in TaskManager only after `Set` was added to it. Net 3 found the
+cross-file break in `Species/TaskManagerInterfaceIcons.cpp` that neither grep
+could see, and it found it only because that conversion had *just* made
+`m_centre` unambiguous.
+
+**Net 3 gets stronger as the migration proceeds** — every conversion removes a
+contended name. Files converted early were checked less thoroughly than files
+converted late, which is worth knowing if something surfaces in T14–T18 work.
+
+**One hazard no net catches.** Replacing every occurrence of an identical block
+puts duplicate declarations in any function containing two of them —
+`Spirit::Render` draws two quads differing only in size and got two `sizeVec`
+declarations in one scope. Only the compiler sees it. A per-function scan for
+repeated local names helps, but it false-positived nine times out of nine on
+sibling `for`/`if` bodies in Spam and Airstrike, so read the braces on each hit.
 
 ---
 

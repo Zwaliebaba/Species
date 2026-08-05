@@ -42,7 +42,7 @@ FenceSwitch::FenceSwitch()
 {
   m_type = Building::TypeFenceSwitch;
   SetShape(g_resource->GetShape("FenceSwitch.shp"));
-  CopyInto(m_script, "none");
+  m_script = "none";
 }
 
 
@@ -56,7 +56,7 @@ void FenceSwitch::Initialise(Building* _template)
   m_switchValue = ((FenceSwitch*)_template)->m_switchValue;
   m_lockable = ((FenceSwitch*)_template)->m_lockable;
   m_locked = ((FenceSwitch*)_template)->m_locked;
-  CopyInto(m_script, ((FenceSwitch*)_template)->m_script);
+  m_script = ((FenceSwitch*)_template)->m_script;
 }
 
 void FenceSwitch::SetDetail(int _detail)
@@ -219,9 +219,9 @@ bool FenceSwitch::Advance()
 
   if (switched)
   {
-    if (strstr(m_script, ".txt"))
+    if (m_script.find(".txt") != std::string::npos)
     {
-      g_script->RunScript(m_script);
+      g_script->RunScript(m_script.c_str());
     }
     if (m_lockable)
     {
@@ -334,7 +334,7 @@ void FenceSwitch::Read(TextReader* _in, bool _dynamic)
   m_linkedBuildingId2 = atoi(_in->GetNextToken());
   m_switchValue = atoi(_in->GetNextToken());
   m_lockable = atoi(_in->GetNextToken());
-  CopyInto(m_script, _in->GetNextToken());
+  m_script = _in->GetNextToken();
   if (_in->TokenAvailable())
   {
     int locked = atoi(_in->GetNextToken());
@@ -362,7 +362,7 @@ void FenceSwitch::Write(FileWriter* _out)
 
   _out->printf("%-3d", m_lockable);
 
-  _out->printf("%s  ", m_script);
+  _out->printf("%s  ", m_script.c_str());
 
   int locked = m_locked ? 1 : 0;
   _out->printf("%-3d", locked);

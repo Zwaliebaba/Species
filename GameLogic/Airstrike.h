@@ -7,54 +7,51 @@
 
 class AirstrikeUnit : public Unit
 {
-public:
-    Vector3     m_enterPosition;
-    Vector3     m_attackPosition;
-    Vector3     m_exitPosition;
+  public:
+    DirectX::XMFLOAT3 m_enterPosition{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_attackPosition{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_exitPosition{0.0f, 0.0f, 0.0f};
 
-    Vector3     m_front;                            // Current direction
-    Vector3     m_up;
-    float       m_speed;
+    DirectX::XMFLOAT3 m_front{0.0f, 0.0f, 0.0f}; // Current direction
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
+    float m_speed;
 
-    int         m_effectId;
-    int         m_numInvaders;
+    int m_effectId;
+    int m_numInvaders;
 
     enum
     {
-        StateApproaching,
-        StateLeaving
+      StateApproaching,
+      StateLeaving
     };
-    int         m_state;
+    int m_state;
 
-    bool        AdvanceToTargetPosition( Vector3 _targetPos );
+    bool AdvanceToTargetPosition(DirectX::XMFLOAT3 _targetPos);
 
-public:
-    AirstrikeUnit(int teamId, int unitId, int numEntities, Vector3 const &_pos);
+  public:
+    AirstrikeUnit(int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos);
 
-    void Begin      ();
-    bool Advance    ( int _slice );
-    void Render     ( float _predictionTime );
+    void Begin();
+    bool Advance(int _slice);
+    void Render(float _predictionTime);
 
-    bool IsInView   ();
+    bool IsInView();
 };
-
 
 
 class SpaceInvader : public Entity
 {
-protected:
-    Vector3         m_targetPos;
-    bool            m_armed;
-    Shape           *m_bombShape;
+  protected:
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
+    bool m_armed;
+    Shape* m_bombShape;
 
-public:
+  public:
     SpaceInvader();
 
-    bool Advance        ( Unit *_unit );
-    void ChangeHealth   ( int _amount );
-    void Render         ( float _predictionTime );
+    bool Advance(Unit* _unit);
+    void ChangeHealth(int _amount);
+    void Render(float _predictionTime);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };
-
-

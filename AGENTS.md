@@ -185,14 +185,14 @@ troubleshooting — is in [`docs/BUILD.md`](docs/BUILD.md).
 
 ## Before you push
 
-Run all five. CI runs the same five and will fail on anything you skip.
+Run all seven. CI runs the same seven and will fail on anything you skip.
 
 ```bash
 python3 tools/check_project_files.py   # .vcxproj matches the files on disk
 python3 tools/check_layering.py        # no new upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
 python3 tools/check_containers.py      # no legacy container call left on a vector
-python3 tools/check_math_types.py       # no legacy math call left on a native type
+python3 tools/check_math_types.py      # no legacy math call left on a native type
 python3 tools/check_format.py          # changed lines match .clang-format
 python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum
@@ -562,13 +562,18 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, 124 tests, covering IP conversion,
+- **The test suite is thin.** Four projects, **180** tests as CI counted them
+  on 2026-08-05, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
   `Server` starts in, the legacy containers plus their `Neuron::SlotMap`
-  replacement, and the preferences file format. That is the encoding, identity
-  and protocol layer and almost nothing else — no entity behaviour, no
+  replacement, the preferences file format, the native-math conversions and
+  geometry routines, the entity grid, the routing system's waypoints, the slice
+  walker, `InputField`'s keystroke write-back, and the two `Matrix33` rotation
+  mappings — each with a negative control asserting that the intuitive reading
+  is measurably wrong. That is the encoding, identity
+  and protocol layer plus a thin skin over the rest — no entity behaviour, no
   rendering, no level loading, and nothing at all that would notice the game
   failing to start.
   - The preferences tests are worth the paragraph they cost, as an argument for

@@ -19,7 +19,7 @@ StaticShape::StaticShape()
 {
   m_type = TypeStaticShape;
 
-  strcpy(m_shapeName, "none");
+  m_shapeName = "none";
 }
 
 
@@ -67,13 +67,13 @@ void StaticShape::SetDetail(int _detail)
 }
 
 
-void StaticShape::SetShapeName(char* _shapeName)
+void StaticShape::SetShapeName(std::string_view _shapeName)
 {
-  strcpy(m_shapeName, _shapeName);
+  m_shapeName = _shapeName;
 
-  if (strcmp(m_shapeName, "none") != 0)
+  if (m_shapeName != "none")
   {
-    SetShape(g_resource->GetShape(m_shapeName));
+    SetShape(g_resource->GetShape(m_shapeName.c_str()));
 
     DirectX::XMFLOAT4X4 mat = GetScaledWorldMatrix();
 
@@ -166,5 +166,5 @@ void StaticShape::Write(FileWriter* _out)
   Building::Write(_out);
 
   _out->printf("%6.2f  ", m_scale);
-  _out->printf("%s  ", m_shapeName);
+  _out->printf("%s  ", m_shapeName.c_str());
 }
