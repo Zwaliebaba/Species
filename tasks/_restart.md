@@ -1,16 +1,18 @@
 # Restarting the migration
 
 > **HISTORICAL AS OF 2026-08-05. Every count below is a snapshot of
-> `4b7ebbc`, and the restart it describes has been executed.** For what is
-> ready now, what collides with what, and which batch is running, read
-> [`_next-batch.md`](_next-batch.md) instead. Six plans are archived and five
-> are open with eighteen tasks between them.
+> `4b7ebbc`, and the restart it describes has been executed and finished.**
+> ALL ELEVEN PLANS ARE COMPLETE AND ARCHIVED — nothing named as open below is
+> open, and every plan path in this file points into `tasks/Archive/`. There is
+> no batch running and no ready task anywhere; the next piece of work starts by
+> writing a plan.
 >
 > This file is kept because the *reasoning* has outlived the numbers: why the
 > plans are shaped the way they are, why `strings-modernised` T5 was re-scoped
 > rather than merged, and the failure mode it names — a task list written from
-> grep counts rather than from reading call sites — which has now recurred in
-> `strings` T8, T19 and `language-hygiene` T10, every time exactly as described.
+> grep counts rather than from reading call sites — which recurred in
+> `strings` T8, T19, `language-hygiene` T10 and finally `strings` T9, every
+> time exactly as described.
 
 Written 2026-08-03 at `b0bde71`, the commit the work stopped on. This is not a
 new plan — the plans exist and most of them are finished. It is the ordering
@@ -105,7 +107,7 @@ Landed and CI-verified on `claude/migration-restart-plan-i69so0`:
 | `ownership` T3 | unique_ptr across six NeuronClient subsystems |
 | `ownership` T9 | `EclRegisterWindow` takes ownership in its signature |
 
-Plus `tasks/determinism.yaml` (new), the `strings-modernised` re-scope, and
+Plus `tasks/Archive/determinism.yaml` (new at the time), the `strings-modernised` re-scope, and
 `ownership` T8/T9 split out of T3.
 
 **Six defects surfaced that were nobody's task**, four fixed and two preserved

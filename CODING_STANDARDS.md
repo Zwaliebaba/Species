@@ -156,6 +156,10 @@ owning task; do not add a third.
 **Strings.** `std::string` / `std::wstring` to own, `std::string_view` /
 `std::wstring_view` to borrow. Not `char*`. Not fixed `char[N]` buffers.
 
+`NewStr` no longer EXISTS either. It was `strcpy(new char[strlen(src) + 1], src)`
+— an owning raw copy with no bound and no owner — and it went with its last
+caller. A `std::string` member *is* the copy; do not reintroduce it.
+
 Which of the two, for a parameter or a return, is decided by ONE question:
 does anything downstream need a null terminator? `string_view` does not carry
 one — `.data()` is not guaranteed terminated — and this tree hands strings to
@@ -592,7 +596,13 @@ never all at once. Each conversion is its own task in a DAG under `tasks/` (see
 Conversions are staged, and a file at stage *n* is fully at stage *n* before it
 advances: containers, then strings, then ownership. Later stages assume earlier
 ones have landed **for the file they touch** — do not skip ahead within a file.
-Which stage a given file is at, and which plan owns it, is in `tasks/`.
+
+**There is no per-file stage to look up any more.** The staged sweeps are done
+tree-wide and their plans are archived, so nothing here tells you which stage a
+file is at — that question no longer has an answer, and `tasks/` holds no plan
+that owns a file. This section governs a file you are converting for some other
+reason, and a conversion still needs a plan written before code is written.
+[`AGENTS.md`](AGENTS.md) carries the status; `docs/TASK_DAG.md` the standard.
 
 1. Read it first. Darwinia code has non-obvious invariants, especially around
    ownership semantics in the inherited containers and the fixed-size buffers in

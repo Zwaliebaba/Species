@@ -42,22 +42,34 @@ making the existing code capable of supporting it, not by building it alongside.
 
 ## Current priority
 
-**Cleanup and modernisation first.**
+**Cleanup and modernisation first — and as of 2026-08-05 THE PLANNED
+MODERNISATION IS FINISHED.** Eleven plans, 147 tasks, every one done or
+deliberately abandoned, all of them in `tasks/Archive/`. Nothing is open, and
+`tasks/` holds no plan to pick up.
 
-The near-term goal is to finish converting the inherited Darwinia code into
-Neuron-style C++23 with enforced layer boundaries. A runnable game and the
-authoritative world server are later milestones that depend on this landing.
+That converted the inherited Darwinia code into Neuron-style C++23 with enforced
+layer boundaries: zero upward includes, standard containers, `std::string` and
+`std::format`, `std::unique_ptr` and values, scoped enums, two namespaces, and
+DirectXMath as the only math. A runnable game and the authoritative world server
+were always the later milestones, and this is what they were waiting on.
 
-What that means for a task in front of you:
+**This does not mean the priority has changed by itself.** The owner sets what
+comes next; nothing in the tree does. What that means for a task in front of you
+today:
 
-- **In scope:** modernising legacy code, removing upward layer dependencies,
-  replacing hand-rolled containers with standard ones, killing raw owning
-  pointers, tightening project structure, improving the build and the checks.
-- **In scope but secondary:** fixing things that are outright broken, when you
-  encounter them in code you are already changing.
-- **Out of scope:** new gameplay features, world/persistence systems, netcode
-  redesign, renderer rewrites. Not because they are unwelcome — because the
-  foundation is not ready and the work would have to be redone.
+- **In scope, and now unblocked:** the work that was deliberately deferred while
+  the foundation moved. `tasks/_openworld-prompt.md` is the one written-down
+  candidate — it is a design prompt, not a plan, and it has not been run.
+- **In scope, and unowned:** the leftovers the closed plans recorded rather than
+  fixed. They are listed where they were found — the three raw-ownership
+  survivors under *Ownership*, the unswept LCG sites and the untested entity and
+  building behaviour under *Known issues*. **None has a task.** Picking one up
+  means writing a plan for it first; see *How work is broken down*.
+- **Still true:** fixing things that are outright broken, when you encounter
+  them in code you are already changing.
+- **Still the rule that governs all of it:** anything larger than a single-file
+  change is a DAG under `tasks/` before code is written. The modernisation
+  finishing removes the plans, not the standard.
 
 If a task you have been given falls outside this, say so before starting rather
 than after.
@@ -365,7 +377,7 @@ way. A genuine exception is marked `hygiene-ok` in a comment on the line, with a
 reason — and **there are none left in the tree**. The last one was `Camera::Mode`
 in `NeuronClient/CameraAccess.h`, and it went with the enum when
 `language-hygiene` T12 scoped it on 2026-08-05. The mechanism is explained in
-`tasks/language-hygiene.yaml` T1 and is still available; nothing is currently
+`tasks/Archive/language-hygiene.yaml` T1 and is still available; nothing is currently
 using it, which is the state to keep it in.
 
 Then build **and run the tests**. A change that has not been compiled is not
@@ -478,8 +490,9 @@ assumed.
 What the run does **not** cover: three of T5's six fixed sites — Spam, GodDish
 and Library — are not in The Garden and remain unexercised. Laser fences and
 incubators are, and `LaserFence.cpp:66` was the one outright desync of the six.
-It also does **not** discharge `ownership` T6, which has not been started and
-needs the main menu reached after each of its own commits.
+It also does **not** discharge `ownership` T6. That task has since landed and is
+done, but its own acceptance asked for the main menu after each of its four
+commits and nobody performed that; see *How work is broken down* below.
 
 **Previous baseline: `1af4979` (2026-08-05), owner-reported successful,
 on the WRAPPER-FREE build.** This is the run `directxmath-migration` T27 was
@@ -600,7 +613,7 @@ plan". Those carry a `blocked_by` edge into a different plan file — the
 modernisation stages run per file across three separate plans, so "this file
 finishes stage 3 before it starts stage 5" is an ordering no single plan's graph
 can see. Trust it: before those edges existed, `--next` offered every
-`tasks/ownership.yaml` task on files whose stage-3 conversion had not begun.
+`tasks/Archive/ownership.yaml` task on files whose stage-3 conversion had not begun.
 
 The full standard — schema, status semantics, how to write acceptance criteria,
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
@@ -747,7 +760,7 @@ Real, currently true, and worth knowing before you trip over them:
   consume it at a client-dependent rate. `MathUtils.h:12` has said this since it
   was inherited; `CODING_STANDARDS.md#determinism` contradicted it until
   2026-08-05 by declaring `speciesRandom()` the only source, and
-  `tasks/determinism.yaml` T3 and T4 are the reading that settled it.
+  `tasks/Archive/determinism.yaml` T3 and T4 are the reading that settled it.
   - **Two findings that used to sit here were false alarms, and both are
     closed.** `SoundInstance.cpp`'s two draws (now lines 547 and 1035) and
     `LandscapeRenderer::GetLandscapeColour`'s per-vertex reseed do vary in

@@ -7,7 +7,9 @@ code changes, and not task-DAG files. A planning prompt in the style of
 not write it in the same session.
 
 The facts embedded below were read on 2026-08-04 at `67966fd`; the prompt
-instructs the agent to re-read rather than trust them. The three decisions in
+instructs the agent to re-read rather than trust them. **The modernisation has
+since finished** — all eleven plans closed on 2026-08-05 — so a few of them have
+been corrected in place where they described work in flight. The three decisions in
 *Decisions already made* were taken by the project owner on 2026-08-04. They
 are not open. An agent that re-opens them is wasting the session.
 
@@ -126,9 +128,9 @@ pointers — **re-verify each by reading; the tree moves**:
 | The Garden is 2,002×2,002 world-units at `cellSize 10.66` (~188×188 height samples); defaults are 2,000×2,000 at 12 | `GameData/Levels/MapGarden.txt`, `LevelFile.h` `LandscapeDef` |
 | Terrain is a single merged `SurfaceMap2D<float>` heightmap + normal map, generated at load by seeded diamond-square tiles, then flattened under buildings | `LandscapeTile::Generate`, `Landscape::GenerateHeightMap`, `LandscapeFlattenArea` |
 | The heightmap container lives in the presentation layer | `NeuronClient/2dSurfaceMap.h` |
-| Positions are 32-bit float `Vector3` throughout (mid-migration to `XMFLOAT3`) | `NeuronCore/Vector3.h`, `tasks/Archive/directxmath-migration.yaml` |
+| Positions are 32-bit float `DirectX::XMFLOAT3` throughout — `Vector3` is DELETED and there is no conversion seam, since `directxmath-migration` closed on 2026-08-05 | `NeuronCore/NeuronMath.h`, `tasks/Archive/directxmath-migration.yaml` |
 | Spatial indexes are whole-map allocations: `EntityGrid` at 8×8 units *per team*, `ObstructionGrid` at 64×64 | `Location.cpp` (`Init`), `EntityGrid.h`, `ObstructionGrid.h` |
-| Simulation is `Location::Advance` — 10 Hz ticks × 10 slices, five categories, one shared LCG whose call sequence is load-bearing, a sync checksum over every position and velocity | `Location.cpp`, `SliceWalker`, `speciesRandom`, `GenerateSyncValue` |
+| Simulation is `Location::Advance` — 10 Hz ticks × 10 slices, five categories, a sync checksum over every position and velocity. THERE ARE TWO RNG STREAMS: `syncrand` (Mersenne Twister) is the lockstep one the simulation must use, `speciesRandom` (LCG) is client-local cosmetics | `Location.cpp`, `SliceWalker`, `MathUtils.h`, `GenerateSyncValue`, `tasks/Archive/determinism.yaml` |
 | The `#pragma omp parallel for` across the five Advance categories is **inert** — no project enables OpenMP — and would race the shared LCG if it ever ran | `Location::Advance`, absence of `<OpenMPSupport>` in any `.vcxproj` |
 | Identity is `{teamId, unitId, slot index, uniqueId}` with the slot index serialised on the wire | `NeuronCore/WorldObjectId.h` |
 | The wire vocabulary is 13 fixed-size update types; **none places a building** | `NeuronCore/NetworkUpdate.h` |
@@ -300,7 +302,7 @@ design cheap — the narrow `SlotMap` handle API is the recorded exemplar;
 identify the equivalents this design needs (seams around `LevelFile`
 parsing, `LocationAccess` as the world-query interface, the heightmap
 container's layer, not spreading location-scale float signatures further).
-These become notes for the open plans, not new tasks.
+These become notes on the archived plans they belong to, not new tasks. (No plan is open — all eleven are in `tasks/Archive/` as of 2026-08-05, so a finding here that deserves an owner needs a plan written for it, per `docs/TASK_DAG.md`.)
 
 ## Step 3 — how to shape the documents
 

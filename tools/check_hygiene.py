@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reject changes that increase a file's count of a legacy pattern a sweep removed.
 
-A sweep that is not enforced regrows. `tasks/language-hygiene.yaml` T1 and T2
+A sweep that is not enforced regrows. `tasks/Archive/language-hygiene.yaml` T1 and T2
 converted 578 `NULL`s and 223 `#ifndef _included_*` guards across the tree; the
 strings and enum work is converging on the same kind of zero. Nothing stops the
 next change from writing one back, and nobody reviewing a 40-file diff will spot
@@ -387,7 +387,7 @@ def main() -> int:
             print(failure)
         print(
             f"\n{len(failures)} finding(s). These are ratchets, not style preferences — "
-            "see tasks/language-hygiene.yaml.\n"
+            "see tasks/Archive/language-hygiene.yaml.\n"
             f"A genuine exception is marked with `{EXEMPT_MARKER}` in a comment on the line, "
             "with a reason."
         )

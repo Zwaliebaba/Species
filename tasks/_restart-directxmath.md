@@ -10,9 +10,13 @@ records it as the post-migration baseline.
 
 This is not a restart note any more, and the plan file has moved to
 `Archive/`. It is kept for two things: what the tree looks like now, and what
-the migration cost that the five still-open plans are about to pay again — the
-five ways this conversion broke files nobody touched are the transferable
-part.
+the migration cost that the plans after it went on to pay again — the five ways
+this conversion broke files nobody touched are the transferable part.
+
+> **The plans it calls "still open" below are all finished.**
+> `strings-modernised`, `ownership`, `language-hygiene` and
+> `namespace-migration` all closed on 2026-08-05 and are in `Archive/`; every
+> plan is. Read the five lessons, not the status.
 
 ---
 
