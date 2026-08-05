@@ -74,9 +74,8 @@ DirectX::XMFLOAT4X4 BlueprintBuilding::GetMarker(float _predictionTime)
 
   if (m_marker)
   {
-    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    // ToNative copies the rows as they are; rebuilding the basis from front
-    // and up would discard a marker matrix's own right row.
+    // The marker's own matrix, rows and all -- rebuilding the basis from front
+    // and up here would discard its right row.
     return m_marker->GetWorldMatrix(mat);
   }
   else
