@@ -584,11 +584,18 @@ tasks:
 
       CHARACTERISED FIRST, which is what makes the no-behaviour-change claim
       evidence rather than assertion. Tests/GameLogicTests/InputFieldTests.cpp
-      is thirteen tests over the keystroke write-back, written against the
-      char* API and committed before the conversion; the conversion commit
-      changes four lines in it — the target's declaration, its registration,
-      and one std::string wrapper that stopped being needed — and not one
-      assertion. It is the first test of anything in GameLogic.
+      is TWELVE tests over the keystroke write-back, written against the char*
+      API and committed before the conversion; the conversion commit changes
+      four lines in it — the target's declaration, its registration, and one
+      std::string wrapper that stopped being needed — and not one assertion.
+
+      TWO CLAIMS IN THIS TASK'S COMMIT MESSAGES ARE WRONG, corrected here
+      because the plan file is the record that gets read. They said thirteen
+      tests, and there are twelve. They also said this is the first test of
+      anything in GameLogic, and it is not — EntityGridTests, RoutingSystemTests
+      and SliceWiringTests were already there. What is true is narrower: it is
+      the first test of a GameLogic UI widget. Both were caught by reading CI's
+      test output rather than by anything here.
 
       FIVE UNBOUNDED WRITES WENT WITH THE TYPES. None is fixed separately
       because none survives the conversion; all five are recorded here because

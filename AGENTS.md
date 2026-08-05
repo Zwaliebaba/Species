@@ -562,13 +562,16 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, 124 tests, covering IP conversion,
+- **The test suite is thin.** Four projects, **177** tests as CI counted them
+  on 2026-08-05, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
   `Server` starts in, the legacy containers plus their `Neuron::SlotMap`
-  replacement, and the preferences file format. That is the encoding, identity
-  and protocol layer and almost nothing else — no entity behaviour, no
+  replacement, the preferences file format, the native-math conversions and
+  geometry routines, the entity grid, the routing system's waypoints, the slice
+  walker, and `InputField`'s keystroke write-back. That is the encoding, identity
+  and protocol layer plus a thin skin over the rest — no entity behaviour, no
   rendering, no level loading, and nothing at all that would notice the game
   failing to start.
   - The preferences tests are worth the paragraph they cost, as an argument for
