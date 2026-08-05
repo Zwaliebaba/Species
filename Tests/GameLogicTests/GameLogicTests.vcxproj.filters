@@ -17,6 +17,9 @@
     <ClCompile Include="InputFieldTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LevelFileTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="LinkStubs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

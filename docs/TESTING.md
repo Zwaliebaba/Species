@@ -19,9 +19,14 @@ in [`BUILD.md`](BUILD.md) true.
 | Project | Covers | State |
 |---|---|---|
 | `Tests/NeuronCoreTests` | `NeuronCore` | Real coverage. IP conversion, the `speciesRandom` sequence, the `ByteStream` wire macros, `WorldObjectId` identity, the containers, the preferences file format, and the native-math conversions and geometry routines. |
-| `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`. |
+| `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`, and of the bytes `FileWriter::printf` emits — every format the level and profile writers use, including the width-specified location row and the encrypted form. |
 | `Tests/NeuronServerTests` | `NeuronServer` | Wiring smoke test only — the layer is a stub with no behaviour yet. |
-| `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker and `InputField`. `LinkStubs.cpp` is empty and on its way out. |
+| `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker, `InputField` and `LevelFile`'s constructors. `LinkStubs.cpp` is empty and on its way out. |
+
+**180 tests as CI counted them on 2026-08-05 at `12581f3`** (run 560). Read the number off
+a run's *Total tests* line rather than from prose — `AGENTS.md` carried a figure
+that was wrong by eleven for a day, and a stale count is worse than none: it
+makes a green run look exactly like new tests that were never compiled.
 
 `Species` and `Server` have no test project. They are executables, and an `.exe`
 cannot be linked into a test DLL. Code in either that is worth testing is code

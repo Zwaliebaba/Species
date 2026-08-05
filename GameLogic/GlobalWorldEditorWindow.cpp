@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Resource.h"
 #include "LanguageTable.h"
+#include "StringUtils.h"
 
 #include "InputField.h"
 #include "GlobalWorldEditorWindow.h"
@@ -57,10 +58,10 @@ class NewLocationButton : public SpeciesButton
       // Create the map and mission files
 
       LevelFile levelFile;
-      CopyInto(levelFile.m_mapFilename, std::format("Map{}.txt", s_locationName));
-      CopyInto(levelFile.m_missionFilename, std::format("Mission{}.txt", s_locationName));
-      strlwr(levelFile.m_mapFilename);
-      strlwr(levelFile.m_missionFilename);
+      levelFile.m_mapFilename = std::format("Map{}.txt", s_locationName);
+      levelFile.m_missionFilename = std::format("Mission{}.txt", s_locationName);
+      StrToLower(levelFile.m_mapFilename.data());
+      StrToLower(levelFile.m_missionFilename.data());
 
       levelFile.Save();
 
@@ -68,11 +69,11 @@ class NewLocationButton : public SpeciesButton
       // Create new global location
 
       GlobalLocation* loc = new GlobalLocation();
-      CopyInto(loc->m_mapFilename, std::format("Map{}.txt", s_locationName));
-      CopyInto(loc->m_missionFilename, std::format("Mission{}.txt", s_locationName));
-      strlwr(loc->m_mapFilename);
-      strlwr(loc->m_missionFilename);
-      CopyInto(loc->m_name, s_locationName);
+      loc->m_mapFilename = std::format("Map{}.txt", s_locationName);
+      loc->m_missionFilename = std::format("Mission{}.txt", s_locationName);
+      StrToLower(loc->m_mapFilename.data());
+      StrToLower(loc->m_missionFilename.data());
+      loc->m_name = s_locationName;
       loc->m_available = true;
       loc->m_pos = DirectX::XMFLOAT3(-96.25f, -274.02f, 75.16f);
       g_globalWorld->AddLocation(loc);

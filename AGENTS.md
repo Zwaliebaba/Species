@@ -125,8 +125,9 @@ Tests/            ~0.4k   One <Name>Tests project per library, on the Microsoft
                           Native Unit Test Framework. Built and run by CI.
 tools/                    The checks CI runs. Run them locally too.
 tasks/                    Task DAGs. See docs/TASK_DAG.md. Start at
-                          _restart.md, or _restart-directxmath.md for the
-                          math migration.
+                          _next-batch.md — what is ready, what collides,
+                          and what the current batch is. Finished plans
+                          live in tasks/Archive/.
 docs/                     Architecture, build, testing, glossary, task breakdown.
 ```
 
@@ -248,8 +249,10 @@ judge **the lines your change writes**, not the file you wrote them in. A legacy
 file with two hundred `sprintf`s stays legal until its conversion task; add one
 more and only that line is reported. It is a ratchet, so it only ever turns one
 way. A genuine exception is marked `hygiene-ok` in a comment on the line, with a
-reason — there are two in the tree today, and both are explained in
-`tasks/language-hygiene.yaml` T1.
+reason — there is exactly **one** in the tree today, `Camera::Mode` in
+`NeuronClient/CameraAccess.h`, waiting on `language-hygiene` T12. The mechanism
+is explained in `tasks/language-hygiene.yaml` T1; the second marker that used to
+sit beside it went with the file that carried it.
 
 Then build **and run the tests**. A change that has not been compiled is not
 finished; a change with new behaviour and no test is not finished either.
@@ -437,17 +440,29 @@ The full standard — schema, status semantics, how to write acceptance criteria
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
 
-**If you are picking the DirectXMath migration back up, start at
-[`tasks/_restart-directxmath.md`](tasks/_restart-directxmath.md).** It has what
-landed, what is open, the five ways this particular conversion breaks a file you
-did not touch, and the two questions still unanswered.
+**If you are asking "what should I do next", start at
+[`tasks/_next-batch.md`](tasks/_next-batch.md).** It is the cross-plan
+scheduling argument: what is ready, measured; which ready tasks collide over
+which files, which `--next` cannot tell you because it reasons one plan at a
+time; and what the current batch is. It is rewritten each time a batch is
+chosen and it carries the record of the previous ones.
 
-**If you are picking the wider modernisation back up, start at
-[`tasks/_restart.md`](tasks/_restart.md).** Six plans are complete and four are
-open with nineteen tasks between them; that file has the re-measured counts, the
-order to restart in, and the critical path — nine of the nineteen are behind
-`strings-modernised/T5` alone. It is a reading order, not a plan file; the plans
-are still the plan.
+Six plans are complete and in `tasks/Archive/`. **Five are open with eighteen
+tasks between them** — `strings-modernised` (6), `ownership` (4),
+`language-hygiene` (3), `namespace-migration` (3) and `determinism` (2).
+
+The two older reading orders are still there and still worth reading, but
+neither answers "what next" any more:
+
+- [`tasks/_restart.md`](tasks/_restart.md) is the modernisation restart of
+  2026-08-03. Its ordering has been executed and its counts are historical; what
+  survives is *why* the plans are shaped as they are, and the recurring failure
+  mode it names — a task list written from grep counts rather than from reading
+  call sites.
+- [`tasks/_restart-directxmath.md`](tasks/_restart-directxmath.md) is the math
+  migration's handover. **That plan is complete and archived**; the file is kept
+  for the five ways that conversion broke files nobody touched, which is the
+  transferable part.
 
 ---
 
@@ -532,6 +547,11 @@ Real, currently true, and worth knowing before you trip over them:
     on every client regardless of settings, it costs nothing). Establishing
     which is true is worth doing before multiplayer is trusted, and it is a
     determinism question rather than a modernisation one.
+  - **It has an owning task now: `tasks/determinism.yaml` T3**, added on the
+    owner's decision of 2026-08-05 after this bullet sat unowned across three
+    batches. T3 is a SCOPING task — establish what it costs, change nothing —
+    and its deliverable is the answer written into that plan. `ownership` T8
+    converts `m_sounds` in the same file and is a different commit.
 - **`Spirit.cpp`'s hover clamp drew twice from the synchronised stream, and no
   longer does.** `Spirit::Advance` clamped `m_hover.y` through what used to be
   the `max` macro, which evaluated its second argument twice — and that argument
@@ -569,8 +589,12 @@ Real, currently true, and worth knowing before you trip over them:
   `SoundInstance` entry above: a client-local, frame-rate-dependent path
   perturbing the stream deterministic lockstep depends on. Found 2026-08-04
   while investigating the landscape question, unrelated to it, and it predates
-  the DirectXMath work. Not investigated and not fixed; it belongs in
-  `tasks/Archive/determinism.yaml` when somebody has established what it costs.
+  the DirectXMath work. Not investigated and not fixed — but it has an owning
+  task now: `tasks/determinism.yaml` T4, added on the owner's decision of
+  2026-08-05. It is a scoping task, not a fix. This bullet used to say the
+  finding "belongs in determinism.yaml once somebody establishes what it
+  costs", which was circular — establishing that IS the work, and it is what
+  nobody was doing.
 - **Mixed-architecture play is NOT SUPPORTED.** Not "unproven" — decided. The
   simulation computes on DirectXMath, which dispatches to SSE on x64 and to
   ARM-NEON on ARM64, and the owner decided on 2026-08-03 to accept that rather
@@ -629,13 +653,15 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **180** tests as CI counted them
-  on 2026-08-05, covering IP conversion,
+- **The test suite is thin.** Four projects, **180** tests as CI counted them on
+  2026-08-05 at `6b38509`, covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
   `Server` starts in, the legacy containers plus their `Neuron::SlotMap`
-  replacement, the preferences file format, the native-math conversions and
+  replacement, the preferences file format, the bytes `FileWriter::printf`
+  emits for every format the level and profile writers use, `LevelFile`'s
+  constructors, the native-math conversions and
   geometry routines, the entity grid, the routing system's waypoints, the slice
   walker, `InputField`'s keystroke write-back, and the two `Matrix33` rotation
   mappings — each with a negative control asserting that the intuitive reading
@@ -643,6 +669,14 @@ Real, currently true, and worth knowing before you trip over them:
   and protocol layer plus a thin skin over the rest — no entity behaviour, no
   rendering, no level loading, and nothing at all that would notice the game
   failing to start.
+  - **The figure recorded here before was also 180, and it was wrong.** CI
+    counted **169** at `e7a1a88`; `strings-modernised` T8 added eleven and made
+    the stale number true by accident. Read the count off a CI run's *Total
+    tests* line or off `git grep -c TEST_METHOD -- 'Tests/*.cpp'`, and note that
+    those two agree only because every `TEST_METHOD` in the tree is compiled —
+    a test file missing from its `.vcxproj` would make the grep the higher of
+    the two, which is the shape of the failure `check_project_files.py` exists
+    to prevent.
   - The preferences tests are worth the paragraph they cost, as an argument for
     writing more of them. They were added as characterisation before a
     conversion (`containers-replaced` T19) and the first CI run was red: three

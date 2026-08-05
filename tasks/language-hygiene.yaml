@@ -644,9 +644,23 @@ tasks:
       - NeuronClient/ControlBindings.cpp
       - NeuronClient/ControlTypes.cpp
       - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/InputDriverWin32.h
       - NeuronClient/InputDriverSimple.cpp
+      - NeuronClient/InputDriverSimple.h
       - NeuronClient/InputDriverIdle.cpp
+      - NeuronClient/InputDriverIdle.h
       - NeuronClient/InputDriverPrefs.cpp
+      - NeuronClient/InputDriverAlias.cpp
+      - NeuronClient/InputDriverChord.cpp
+      - NeuronClient/InputDriverConjoin.cpp
+      - NeuronClient/InputDriverInvert.cpp
+      - NeuronClient/InputDriverPipe.cpp
+      - NeuronClient/InputDriverValue.cpp
+      - NeuronClient/InputFilterWithDelta.cpp
+      - NeuronClient/Input.cpp
+      - NeuronClient/Movement2d.h
+      - NeuronClient/Movement2d.cpp
+      - NeuronClient/TargetCursor.cpp
     acceptance:
       - InputType is enum class with an explicit underlying type
       - Neuron::ENUM_HELPER supplies its bitwise operators, or the task records why a plain enum was kept instead
@@ -681,6 +695,27 @@ tasks:
       NeuronClient.vcxproj lists it. Deleting the file is almost certainly
       right, and it is a file removal rather than a conversion, so do it in its
       own commit with check_project_files.py run after.
+
+      THE FILE LIST WAS ELEVEN FILES AND THE REACH IS TWENTY-FIVE. Corrected
+      2026-08-05 at e7a1a88 by grepping `INPUT_TYPE_\w+|inputtype_t` over the
+      six projects rather than trusting the list: every declared file is real,
+      and fourteen more were missing — Input.cpp, TargetCursor.cpp, Movement2d
+      (.h and .cpp), the six composing drivers (Alias, Chord, Conjoin, Invert,
+      Pipe, Value), InputFilterWithDelta.cpp, and the three driver HEADERS whose
+      .cpp was listed without them. Same shape as the correction T12's list
+      needed on the day this task was split out, and the same cause: the list
+      was written from the type name, and the enumerators are what the tree
+      actually spells.
+
+      The 216 sites above re-measure to 218 at e7a1a88, which is drift in
+      commented code rather than new work.
+
+      IT IS FILE-DISJOINT FROM EVERY OTHER READY TASK — checked at e7a1a88
+      against strings T8, T11 and T12 and ownership T8: not one shared file.
+      Its only overlap in the whole ready set is TargetCursor.cpp, with T12 in
+      this same plan, and T12 cannot run beside it regardless. parallel_safe is
+      still false, so this is not permission to run it concurrently; it is the
+      measurement someone will want before asking to.
 
   - id: T11
     title: Scope ControlType
@@ -735,6 +770,7 @@ tasks:
       - NeuronClient/CameraAccess.h
       - NeuronClient/LocationEditorAccess.h
       - NeuronClient/TargetCursor.cpp
+      - Species/GameMenu.cpp
       - GameLogic/EditorWindow.cpp
       - GameLogic/GlobalWorld.cpp
       - GameLogic/GunTurret.cpp
@@ -779,10 +815,20 @@ tasks:
       grepping the enumerators rather than the type name, because
       `Camera::Mode` appears in almost none of them — the enumerators do.
 
-      CameraAccess.h's declaration carries one of the tree's two `hygiene-ok`
+      CameraAccess.h's declaration carries the tree's ONLY remaining `hygiene-ok`
       markers, and its reason is this task. The marker's comment still says
       "converted by language-hygiene T5"; T5 reassigned it to T9 and T9 split,
       so the reference needs updating to T12 when this runs. The comment also
       records the real obstacle, which is not the keyword: Camera stores m_mode
       as an int, indexes a static string table with it, and compares it against
       ints throughout Camera.cpp.
+
+      ONE MORE FILE, found 2026-08-05 at e7a1a88 by re-running the enumerator
+      grep: Species/GameMenu.cpp. Twenty-two files, not twenty-one.
+
+      IT COLLIDES WITH strings/T8 OVER SIX FILES — GlobalWorld.cpp,
+      LevelFile.cpp, Location.cpp, GameCursor.cpp, Main.cpp and Script.cpp —
+      and with strings/T11 and T12 over five more. Both this task and
+      strings/T8 are parallel_safe: true and they are the only two ready tasks
+      that are, so "both are parallel_safe" is exactly the wrong reason to run
+      them together. Whichever starts second should re-read this list first.

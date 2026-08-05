@@ -502,6 +502,7 @@ tasks:
       - containers-replaced/T13
       - strings-modernised/T7
       - strings-modernised/T8
+      - strings-modernised/T19
     files:
       - GameLogic/LevelFile.cpp
       - GameLogic/LevelFile.h
@@ -587,8 +588,11 @@ tasks:
       - GameLogic/PrefsSoundWindow.cpp
     acceptance:
       - grep -w EmptyAndDelete over SoundSystem.cpp returns nothing
-      - ShutdownSound has one contract, stated in the header, covering both the registered and unregistered cases
-      - Instances die at the same program points they do today, stated per call site in the commit
+      - InitialiseSound takes std::unique_ptr<SoundInstance> and no caller shuts down an instance it handed over
+      - m_sounds is a SlotMap of unique_ptr, and a slot is reset explicitly while operator[] is still valid rather than left to MarkNotUsed
+      - ShutdownSound has one contract, stated in the header, and serves registered instances only
+      - ShutdownSound releases a slot only when that slot still holds this instance; the commit states this as a fix, separately from the conversion
+      - Instances die at the same program points they do today, stated per call site in the commit — except the folding path, where the instance now dies inside InitialiseSound instead of in the caller's ShutdownSound
       - Owner runs the Garden smoke test — sounds fire throughout it, and a lifetime mistake here is silent rather than a crash
     verify:
       - python3 tools/check_layering.py
@@ -621,6 +625,40 @@ tasks:
 
       m_music and m_requestedMusic are raw observers into the same instances and
       have to be reasoned about with them.
+
+      DECIDED BY THE OWNER 2026-08-05. Both questions above were put and both
+      were answered; this task is no longer blocked on anything but an agent.
+
+      (1) INITIALISESOUND TAKES OWNERSHIP. Its parameter becomes
+      std::unique_ptr<SoundInstance>, m_sounds becomes SlotMap<unique_ptr>, and
+      the instance is stored on success and destroyed inside InitialiseSound on
+      the monophonic folding path. The caller therefore never shuts down
+      something it thought it still owned, and ShutdownSound stops serving two
+      populations — which is what made the old signature undecidable rather than
+      merely untidy. Chosen over keeping the raw parameter and splitting the two
+      cases inside ShutdownSound: that is a smaller diff, and it leaves the
+      transfer in a comment, which is precisely what ownership T2 and T9 were
+      done to stop doing.
+
+      This is a call-site change, so the enumerate-every-use discipline T1 and
+      T2 each lost a CI round to applies: ShutdownSound and InitialiseSound have
+      26 references between them, and every local whose type changes has to be
+      read, not just every member.
+
+      (2) THE IDENTITY CHECK GOES IN, as a fix and stated as one. ShutdownSound
+      releases the slot only when the slot still holds this instance. The
+      current ValidIndex-only test can un-register a live sound belonging to
+      somebody else after an index is reused, which is silent — sound
+      destructors stop audio channels, and nothing asserts. It lands in the same
+      task but says in the commit that it is a behaviour change rather than part
+      of the conversion, per this plan's rule about not letting a fix ride along
+      unannounced. Preserving today's behaviour exactly was offered and refused.
+
+      SAME FILE, DIFFERENT TASK: SoundInstance.cpp's two speciesRandom() draws
+      are determinism/T3 as of the same decision. Do not fix them here. Whoever
+      takes this task is in the right place to take that one, and they want
+      separate commits — a lifetime conversion and an RNG question in one diff
+      is exactly the review nobody can judge.
 
   - id: T9
     title: Make EclRegisterWindow take ownership in its signature

@@ -842,7 +842,7 @@ void Location::DoMissionCompleteActions()
   gloc->m_missionCompleted = true;
 
   // gloc->m_missionAvailable = false;
-  // strcpy(gloc->m_missionFilename, "null");
+  // gloc->m_missionFilename = "null";
 
   g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageObjectivesComplete, -1, 5.0f);
 

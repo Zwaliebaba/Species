@@ -80,20 +80,19 @@ char const* CamAnimNode::GetTransitModeName(int _modeId)
 void LevelFile::ParseMissionFile(char const* _filename)
 {
   TextReader* in = nullptr;
-  char fullFilename[256];
 
   if (!g_editing)
   {
     // Try to load a save game first
-    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName.c_str(), _filename);
-    if (DoesFileExist(fullFilename))
-      in = new TextFileReader(fullFilename);
+    const std::string fullFilename = std::format("{}users/{}/{}", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
+    if (DoesFileExist(fullFilename.c_str()))
+      in = new TextFileReader(fullFilename.c_str());
   }
 
   if (!in)
   {
-    sprintf(fullFilename, "Levels/%s", _filename);
-    in = g_resource->GetTextReader(fullFilename);
+    const std::string fullFilename = std::format("Levels/{}", _filename);
+    in = g_resource->GetTextReader(fullFilename.c_str());
   }
 
   ASSERT_TEXT(in && in->IsOpen(), "Invalid level specified");
@@ -153,9 +152,8 @@ void LevelFile::ParseMissionFile(char const* _filename)
 
 void LevelFile::ParseMapFile(char const* _levelFilename)
 {
-  char fullFilename[256];
-  sprintf(fullFilename, "Levels/%s", _levelFilename);
-  TextReader* in = g_resource->GetTextReader(fullFilename);
+  const std::string fullFilename = std::format("Levels/{}", _levelFilename);
+  TextReader* in = g_resource->GetTextReader(fullFilename.c_str());
   ASSERT_TEXT(in && in->IsOpen(), "Invalid map file specified ({})", _levelFilename);
 
   while (in->ReadLine())
@@ -495,15 +493,15 @@ void LevelFile::ParseLandscapeData(TextReader* _in)
     }
     else if (stricmp("landColourFile", word) == 0)
     {
-      strcpy(m_landscapeColourFilename, secondWord);
+      m_landscapeColourFilename = secondWord;
     }
     else if (stricmp("wavesColourFile", word) == 0)
     {
-      strcpy(m_wavesColourFilename, secondWord);
+      m_wavesColourFilename = secondWord;
     }
     else if (stricmp("waterColourFile", word) == 0)
     {
-      strcpy(m_waterColourFilename, secondWord);
+      m_waterColourFilename = secondWord;
     }
     else if (stricmp("landscape_endDefinition", word) == 0)
     {
@@ -828,7 +826,7 @@ void LevelFile::GenerateAutomaticObjectives()
 
     if (!found)
     {
-      int locationId = g_globalWorld->GetLocationIdFromMapFilename(m_mapFilename);
+      int locationId = g_globalWorld->GetLocationIdFromMapFilename(m_mapFilename.c_str());
 
       if (building->m_type == Building::TypeResearchItem)
       {
@@ -981,9 +979,9 @@ void LevelFile::WriteLandscapeData(FileWriter* _out)
   _out->printf("\tworldSizeZ %d\n", m_landscape.m_worldSizeZ);
   _out->printf("\tcellSize %.2f\n", m_landscape.m_cellSize);
   _out->printf("\toutsideHeight %.2f\n", m_landscape.m_outsideHeight);
-  _out->printf("\tlandColourFile %s\n", m_landscapeColourFilename);
-  _out->printf("\twavesColourFile %s\n", m_wavesColourFilename);
-  _out->printf("\twaterColourFile %s\n", m_waterColourFilename);
+  _out->printf("\tlandColourFile %s\n", m_landscapeColourFilename.c_str());
+  _out->printf("\twavesColourFile %s\n", m_wavesColourFilename.c_str());
+  _out->printf("\twaterColourFile %s\n", m_waterColourFilename.c_str());
   _out->printf("Landscape_EndDefinition\n\n");
 }
 
@@ -1088,20 +1086,20 @@ void LevelFile::WritePrimaryObjectives(FileWriter* _out)
 // **************
 
 LevelFile::LevelFile()
+  : m_landscapeColourFilename("LandscapeDefault.bmp"),
+    m_wavesColourFilename("WavesDefault.bmp"),
+    m_waterColourFilename("WaterDefault.bmp")
 {
-  sprintf(m_landscapeColourFilename, "LandscapeDefault.bmp");
-  sprintf(m_wavesColourFilename, "WavesDefault.bmp");
-  sprintf(m_waterColourFilename, "WaterDefault.bmp");
   m_levelDifficulty = -1;
 }
 
 LevelFile::LevelFile(char const* _missionFilename, char const* _mapFilename)
+  : m_missionFilename(_missionFilename),
+    m_mapFilename(_mapFilename),
+    m_landscapeColourFilename("LandscapeDefault.bmp"),
+    m_wavesColourFilename("WavesDefault.bmp"),
+    m_waterColourFilename("WaterDefault.bmp")
 {
-  sprintf(m_mapFilename, "%s", _mapFilename);
-  sprintf(m_missionFilename, "%s", _missionFilename);
-  sprintf(m_landscapeColourFilename, "LandscapeDefault.bmp");
-  sprintf(m_wavesColourFilename, "WavesDefault.bmp");
-  sprintf(m_waterColourFilename, "WaterDefault.bmp");
   m_levelDifficulty = -1;
 
   // Make sure that the current game difficulty setting
@@ -1112,9 +1110,9 @@ LevelFile::LevelFile(char const* _missionFilename, char const* _mapFilename)
 
   if (stricmp(_missionFilename, "null") != 0)
   {
-    ParseMissionFile(m_missionFilename);
+    ParseMissionFile(m_missionFilename.c_str());
   }
-  ParseMapFile(m_mapFilename);
+  ParseMapFile(m_mapFilename.c_str());
 
   GenerateAutomaticObjectives();
 }
@@ -1155,25 +1153,24 @@ LevelFile::~LevelFile()
 void LevelFile::Save()
 {
   // Write the mission file
-  if (strstr(m_missionFilename, "null") == nullptr)
+  if (m_missionFilename.find("null") == std::string::npos)
   {
-    SaveMissionFile(m_missionFilename);
+    SaveMissionFile(m_missionFilename.c_str());
   }
 
   // Write the map file
-  if (strstr(m_mapFilename, "null") == nullptr)
+  if (m_mapFilename.find("null") == std::string::npos)
   {
-    SaveMapFile(m_mapFilename);
+    SaveMapFile(m_mapFilename.c_str());
   }
 }
 
 
 void LevelFile::SaveMapFile(char const* _filename)
 {
-  char fullFilename[256];
-  sprintf(fullFilename, "Levels/%s", _filename);
+  const std::string fullFilename = std::format("Levels/{}", _filename);
 
-  FileWriter* out = g_resource->GetFileWriter(fullFilename, false);
+  FileWriter* out = g_resource->GetFileWriter(fullFilename.c_str(), false);
   WriteLandscapeData(out);
   WriteLandscapeTiles(out);
   WriteLandFlattenAreas(out);
@@ -1186,22 +1183,21 @@ void LevelFile::SaveMapFile(char const* _filename)
 void LevelFile::SaveMissionFile(char const* _filename)
 {
   FileWriter* out = nullptr;
-  char fullFilename[256];
 
   if (!g_editing)
   {
-    sprintf(fullFilename, "%susers/%s/%s", g_appCommands->ProfileDirectory(), g_userProfileName.c_str(), _filename);
+    const std::string fullFilename = std::format("{}users/{}/{}", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
 #ifdef TARGET_DEBUG
-    out = new FileWriter(fullFilename, false);
+    out = new FileWriter(fullFilename.c_str(), false);
 #else
-    out = new FileWriter(fullFilename, true);
+    out = new FileWriter(fullFilename.c_str(), true);
 #endif
   }
 
   if (!out)
   {
-    sprintf(fullFilename, "Levels/%s", _filename);
-    out = g_resource->GetFileWriter(fullFilename, false);
+    const std::string fullFilename = std::format("Levels/{}", _filename);
+    out = g_resource->GetFileWriter(fullFilename.c_str(), false);
   }
 
   WriteDifficulty(out);

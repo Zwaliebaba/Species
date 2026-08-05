@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "SphereRenderer.h"
 #include "NeuronMath.h"
 
@@ -21,9 +23,9 @@ class GlobalLocation
     DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     bool m_available; // Is it connected on the transit system
 
-    char m_name[256];
-    char m_mapFilename[256];
-    char m_missionFilename[256];
+    std::string m_name;
+    std::string m_mapFilename;
+    std::string m_missionFilename;
     bool m_missionCompleted;
 
     int m_numSpirits; // Number of spirits that have died
@@ -109,7 +111,7 @@ class GlobalEventAction
     };
     int m_type;
     int m_locationId;
-    char m_filename[256];
+    std::string m_filename;
 
   public:
     GlobalEventAction();
@@ -289,8 +291,11 @@ class GlobalWorld
     GlobalLocation* GetHighlightedLocation(); // ie whats under the mouse
     int GetLocationId(char const* _name);
     int GetLocationIdFromMapFilename(char const* _mapFilename);
-    char* GetLocationName(int _id);
-    char* GetLocationNameTranslated(int _id);
+    // Both answer nullptr for an id no location has, and Species/Main.cpp
+    // tests that before transferring spirits — which is why these return a
+    // pointer rather than a std::string that could only say "empty".
+    char const* GetLocationName(int _id);
+    char const* GetLocationNameTranslated(int _id);
     DirectX::XMFLOAT3 GetLocationPosition(int _id);
 
     GlobalBuilding* GetBuilding(int _id, int _locationId);

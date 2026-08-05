@@ -282,6 +282,47 @@ tasks:
       to compile is a latent bug being surfaced, not a conversion error, and
       should be recorded as such rather than silently patched.
 
+      RE-MEASURED 2026-08-05 at e7a1a88, and the measurement changes what this
+      task is. No code was touched. 225 call sites outside TextRenderer.cpp —
+      GameLogic 161, Species 57, NeuronClient 8 — and they are TWO populations,
+      not one:
+
+        109 pass a STRING LITERAL as the format string, 89 of them with
+        arguments after it. These are the std::format conversions, and they are
+        where a wrong argument type becomes a compile error rather than
+        runtime undefined behaviour. This is the population the task was
+        written for.
+
+        116, in 22 files, pass NO literal at all — the format string is a
+        runtime value. `m_caption` (15), `LANGUAGEPHRASE(...)`, `caption.c_str()`,
+        `loc->m_mapFilename`, `islandName`, InputField's `m_buf.c_str()`. Not
+        one of them passes an argument after it.
+
+      THE 116 CANNOT BECOME std::format AT ALL, and that is the decision this
+      task has to make before it writes a line. std::format_string is
+      consteval — a runtime char const* does not convert to it — so a
+      single format template breaks every one of them. They want a SECOND,
+      NON-FORMATTING overload taking std::string_view, and converting them that
+      way is a fix rather than a translation: today each one hands user data,
+      level-file data or a translated phrase to vsprintf AS A FORMAT STRING, so
+      a `%` anywhere in that data is undefined behaviour.
+
+      How live that is, stated rather than implied: the shipped language files
+      hold exactly one `%` — Russian.txt:122, `sepulveda_pressreturnXmore`,
+      whose key no code references. So the hazard is latent in shipped content
+      today and unbounded in content a user or a level file supplies.
+
+      strings/T5 predicted InputField::Render would fail to compile here and
+      recorded it as a latent bug to surface. Under the two-overload design it
+      resolves to the safe overload instead and the bug is simply gone. Both
+      answers are correct; do not "fix" the site by wrapping it in "{}".
+
+      THE PATTERN IS ALREADY IN THE TREE. strings/T4 converted
+      NeuronClient/PersistingDebugRender.h from `char *_fmt, ...` to four
+      `std::format_string<Args...>` templates. Read that file before starting;
+      it is what these ten entry points should look like, minus the second
+      overload the 116 need.
+
   - id: T13
     title: Narrow the read-only char const* parameters to string_view
     intent: >
@@ -760,25 +801,33 @@ tasks:
     status: done
 
   - id: T8
-    title: Convert the level and profile file writers byte-identically
+    title: Convert LevelFile's own filename members and the three writers' local buffers
     intent: >
-      GlobalWorld.cpp (22) and LevelFile.cpp (19) parse AND write the level,
-      location and profile formats; Script.cpp reads scripted sequences.
-      Every sprintf that produces file output is converted to a std::format
-      call proven equivalent — same width, precision, sign and separator per
-      call site — so existing GameData content and user profiles round-trip
-      unchanged. The riskiest strings task, deliberately last among the
-      big ones.
-    project: Species
+      The containable half of the level and profile writers: LevelFile's five
+      char[MAX_FILENAME_LEN] members — m_missionFilename, m_mapFilename and the
+      three colour filenames — and every local char buffer that GlobalWorld.cpp,
+      LevelFile.cpp and Script.cpp format a path, a key or a filter into. The
+      file output these produce stays byte-identical, and the round-trip test
+      that proves it is written here because everything after this depends on
+      it. GlobalLocation's members are the coupled half and are T19.
+    project: GameLogic
     depends_on: [T1, T5, T7]
     blocked_by: [containers-replaced/T12, containers-replaced/T13, layering-inversion/T15]
     files:
-      - GameLogic/GlobalWorld.cpp
+      - GameLogic/LevelFile.h
       - GameLogic/LevelFile.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/GlobalWorldEditorWindow.cpp
+      - GameLogic/LandscapeRenderer.cpp
       - Species/Script.cpp
+      - Tests/NeuronClientTests/FileWriterTests.cpp
+      - Tests/GameLogicTests/LevelFileTests.cpp
     acceptance:
-      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over the three files returns 0
-      - A written level or profile is byte-identical to the pre-conversion output for the same state (compared on a real save during review, and by the Garden smoke test loading MapGarden.txt + MissionGardenLiberate.txt)
+      - LevelFile declares no char[N] member
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over LevelFile.cpp and Script.cpp returns 0, and over GlobalWorld.cpp returns only the sites that write GlobalLocation's members, which are T19's
+      - No local fixed char buffer remains in the three converted files
+      - The bytes FileWriter::printf emits for every format the level and profile writers use — including the width-specified %4d %4d %30s %40s location row — are pinned by a test before anything is converted
+      - GameLogicTests covers the two LevelFile constructors' filename state, which was indeterminate for two members before this task and is defined after it
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
@@ -849,7 +898,84 @@ tasks:
       language-hygiene/T12 names all three of this task's files; and
       directxmath/T23 names Script.cpp. However it is split, it wants the tree
       to itself over those files.
-    status: todo
+
+      SPLIT 2026-08-05, on the owner's approval of Batch 3, and the line is
+      BY CLASS rather than by the "colour filenames plus locals" the paragraph
+      above proposed. Measuring the members first showed why: m_mapFilename and
+      m_missionFilename are declared TWICE, on LevelFile (MAX_FILENAME_LEN) and
+      on GlobalLocation (256), and the earlier count of "28 uses in 9 files"
+      was both classes added together. Another contended name, in a plan whose
+      recurring failure is exactly that.
+
+        LevelFile::m_missionFilename, m_mapFilename and the three colour
+        filenames are reached from LevelFile.cpp, LandscapeRenderer.cpp,
+        Water.cpp, Location.cpp and GlobalWorldEditorWindow.cpp — no writer,
+        no padded field, and the three colour lines LevelFile.cpp:984-986
+        write are unpadded. That is this task.
+
+        GlobalLocation::m_name, m_mapFilename, m_missionFilename and
+        GlobalEventAction::m_filename reach ten files across three projects
+        and carry the width-specified location row. That is T19.
+
+      WHAT THE SPLIT DOES NOT DO, stated because the batch proposal could be
+      read as claiming it: it does NOT unblock ownership/T5 on its own. T5
+      names GlobalWorld.cpp, so it needs both halves. The split buys two
+      reviewable diffs and a byte-identity test that exists before the risky
+      half starts, not an earlier start for stage 5.
+
+      DONE ON CI RUN 556 (commit 6b38509), 2026-08-05: x64 Debug builds, 180
+      tests pass, and the headless server still reaches sequence id 20. Eight
+      files, 33 call sites, eleven new tests.
+
+      THE TESTS ARE THE DELIVERABLE AS MUCH AS THE CONVERSION IS. Nothing
+      pinned a byte of FileWriter::printf before this task and T19 and T17 both
+      have to prove they change none. NeuronClientTests/FileWriterTests.cpp is
+      eight tests over the formats the writers actually use: the
+      %4d %4d %30s %40s location row, what that row does with a value WIDER
+      than its field (printf's width is a minimum, so the row grows rather than
+      truncating), an empty string in a padded field, the unpadded colour
+      lines, %.2f's trailing zeros, and the encrypted form -- the redshirt2
+      header and the byte shift, which takes the SECOND offset first because
+      the index increments before it is used, and carries across calls so a
+      save file cannot be decrypted a line at a time.
+
+      FOUR BEHAVIOUR CHANGES, none of them silent.
+
+      1. The default constructor left m_mapFilename and m_missionFilename
+         INDETERMINATE. Save() tests both with strstr, so stack garbage
+         containing "null" skipped the write and garbage that did not wrote a
+         file named after it. They are empty now and LevelFileTests says so.
+      2. GetLocationIdFromMapFilename did strstr(buf, "Map") + 3 and then
+         indexed [strlen - 4], so a filename with neither read AND WROTE
+         outside its buffer -- the + 3 happened before the null test, the same
+         shape FilesysUtils' path helpers had before T4 defined them. It
+         answers -1 now, which is what GetLocationId already returns for an
+         unknown name. CHECKED RATHER THAN ARGUED: all eleven Map*.txt names in
+         GameData produce identical results under both versions, and only the
+         previously-undefined inputs differ.
+      3. The five members were filled by unbounded strcpy from a level-file
+         token. LevelFile::m_mapFilename had 256 bytes and a level file
+         supplies the name.
+      4. MAX_FILENAME_LEN is gone. Its last user was the buffer in (2).
+
+      WHAT DID NOT NEED TOUCHING, because it was already converted: Water.cpp
+      and Location.cpp read three of these members through std::format and an
+      ASSERT_TEXT, and std::format takes a std::string as happily as a char
+      array. LandscapeRenderer.cpp did not -- its sprintf into a char[256] is
+      the one call site outside the three declared files that the member change
+      forced, and the Christmas-mod override that used to strcpy over the
+      buffer is a ternary now.
+
+      A COUNT IN AGENTS.md WAS WRONG AND IS CORRECTED. It said 180 tests as of
+      2026-08-05; CI counted 169 at e7a1a88. This task added eleven, which
+      makes the stale figure accidentally true -- worth knowing before somebody
+      else uses it as a baseline and concludes their tests did not run, which
+      is exactly what happened here for ten minutes.
+
+      Not smoke-tested. The Garden run reaches this through level loading
+      (step 2) and the terrain (steps 1 and 5); the editor paths in
+      GlobalWorldEditorWindow it does not reach at all.
+    status: done
 
   - id: T9
     title: Sweep the long tail to zero
@@ -857,14 +983,14 @@ tasks:
       Re-measure after T2-T8 and convert every remaining call site the
       grouped tasks missed, ending stage 4 with a tree-wide zero outside
       whatever T1 listed as legitimately fixed-format.
-    depends_on: [T2, T3, T4, T5, T6, T7, T8, T10, T11, T12, T13, T15]
+    depends_on: [T2, T3, T4, T5, T6, T7, T8, T10, T11, T12, T13, T15, T17, T18, T19]
     files:
       - NeuronServer/ServerToClient.cpp
       - NeuronClient/SoundLibrary2d.cpp
       - GameLogic/EntityLeg.cpp
       - Species/StartSequence.cpp
     acceptance:
-      - grep -rcE "strcpy|strncpy|strcat|sprintf|snprintf" over the six projects totals 0, excluding only buffers on T1's pinned list
+      - grep -rcE "strcpy|strncpy|strcat|sprintf|snprintf|vsprintf|vsnprintf|vprintf|vfprintf" over the six projects totals 0, excluding only buffers on T1's pinned list
       - The pinned wire tests from T1 still pass
     verify:
       - python3 tools/check_layering.py
@@ -881,6 +1007,15 @@ tasks:
       2026-08-03 restart; it named neither the widget-name tasks nor the
       TextRenderer conversion before, so "the long tail" could have been
       measured while three grouped tasks were still outstanding.
+
+      THE ACCEPTANCE GREP COULD NOT HAVE REACHED ZERO, and that was found on
+      2026-08-05 at e7a1a88 rather than by running it. It named the strcpy
+      family only, and `\bsprintf\b` does not match `vsprintf` — the `v` is a
+      word character. Eleven vsprintf calls were therefore invisible to the
+      criterion that closes stage 4, every one of them an unbounded write into
+      a fixed stack buffer behind a `char const*, ...` entry point. The grep
+      now names the v-family, and depends_on gained T17 and T18, which own the
+      eleven.
     status: todo
 
   - id: T14
@@ -1214,3 +1349,203 @@ tasks:
       memcpy()s whole NetworkUpdate structs, so the type has to stay trivially
       copyable. That is ownership/T2's problem, not this one's.
     status: done
+
+  - id: T17
+    title: Convert FileWriter's variadic printf
+    intent: >
+      FileWriter::printf is `char const *fmt, ...` and vsprintf()s into a
+      char[10240] on the stack with no bound, then encrypts that buffer in
+      place and writes it. It is the API every level, location and profile file
+      is written through — 207 call sites in 29 files — so it, not the
+      sprintf family, is what actually produces the bytes T8 has to keep
+      identical. Converting it to std::format templates removes the last
+      unbounded write on the save path and puts the field widths under
+      compile-time checking.
+    project: NeuronClient
+    depends_on: [T8, T19]
+    files:
+      - NeuronClient/FileWriter.h
+      - NeuronClient/FileWriter.cpp
+      - GameLogic/Ai.cpp
+      - GameLogic/AntHill.cpp
+      - GameLogic/BlueprintStore.cpp
+      - GameLogic/Bridge.cpp
+      - GameLogic/Building.cpp
+      - GameLogic/ControlTower.cpp
+      - GameLogic/Factory.cpp
+      - GameLogic/FeedingTube.cpp
+      - GameLogic/Generator.cpp
+      - GameLogic/GenericHub.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/Incubator.cpp
+      - GameLogic/LaserFence.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/Mine.cpp
+      - GameLogic/PowerStation.cpp
+      - GameLogic/ResearchItem.cpp
+      - GameLogic/Rocket.cpp
+      - GameLogic/SafeArea.cpp
+      - GameLogic/ScriptTrigger.cpp
+      - GameLogic/SpawnPoint.cpp
+      - GameLogic/SpiritReceiver.cpp
+      - GameLogic/StaticShape.cpp
+      - GameLogic/Switch.cpp
+      - GameLogic/Tree.cpp
+      - GameLogic/Triffid.cpp
+      - GameLogic/TrunkPort.cpp
+      - NeuronClient/SoundParameter.cpp
+      - NeuronClient/SoundSystem.cpp
+      - Tests/GameLogicTests/LevelFileRoundTripTests.cpp
+    acceptance:
+      - FileWriter declares no variadic entry point and holds no fixed stack buffer
+      - Every call site passes a literal format string, or is listed in notes with the reason it cannot
+      - The level and profile round-trip tests T8 wrote pass unchanged, with no edit to them in the same commit
+      - The width-specified location table write is byte-identical, demonstrated against a real profile and not by reading the format string
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: todo
+    notes: |
+      Added 2026-08-05 at e7a1a88, from a measurement taken while scoping the
+      batch after directxmath-migration closed. This is unowned work that the
+      plan's own summary covers and no task named: T12 owns TextRenderer's
+      variadic API and nothing owned this one.
+
+      WHY IT IS NOT PART OF T8. T8's acceptance is a grep for the strcpy
+      family, and `_out->printf("\t%4d %4d %30s %40s\n", ...)` matches none of
+      it. T8 can meet every criterion it has without touching a single byte of
+      file output formatting. The 43 calls T8 counts are buffers being BUILT;
+      the 207 here are the bytes being WRITTEN. Both are stage 4 and they are
+      different changes.
+
+      THE SHARP EDGE T8 RECORDS LIVES HERE, not there. GlobalWorld.cpp:1548
+      writes the location table with `%4d %4d %30s %40s` — two integers and
+      two 30/40-wide strings, the last being m_mapFilename and
+      m_missionFilename. Field widths are where std::format and printf are
+      least alike, and a profile written with different padding is a different
+      file even though every character of content matches. It is a
+      FileWriter::printf call. Pin it with T8's round-trip test first; that is
+      the whole reason this task depends on T8 rather than running beside it.
+
+      SIZE, measured: 207 calls in 29 files. LevelFile.cpp has 80 and
+      GlobalWorld.cpp 33, so 113 of them are in two files T8 already owns —
+      which is the second reason for the edge. SoundSystem.cpp (18) and
+      SoundParameter.cpp (7) write the sound blueprint file; the remaining 22
+      GameLogic files are one Write() method per building type.
+
+      THE BUFFER IS WORSE THAN UNBOUNDED. vsprintf writes into char[10240] and
+      the encryption loop then runs over `len` bytes of it — so an overrun
+      corrupts the stack AND the loop follows it. Nothing on the save path
+      bounds a level name, a shape name or a script filename before it gets
+      here.
+
+  - id: T18
+    title: Retire the last three variadic format entry points
+    intent: >
+      NetLib's NetDebugOut, DebugRender's RenderPointMarker and Script's
+      declared-but-undefined ReportError are the tail of the `char const*, ...`
+      plus vsprintf pattern once T12 and T17 land. Two are conversions and one
+      is a deletion, and together they are what lets T9 claim a tree-wide zero
+      that includes the v-family.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/NetLib.h
+      - NeuronCore/NetLib.cpp
+      - NeuronClient/DebugRender.h
+      - NeuronClient/DebugRender.cpp
+      - Species/Script.h
+    acceptance:
+      - NetDebugOut and RenderPointMarker take std::format_string and hold no fixed stack buffer
+      - Script::ReportError is gone from Script.h, or has a definition and a caller
+      - grep -rEw "vsprintf|vsnprintf|vprintf|vfprintf" over the six projects returns only what T12 and T17 own
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      Added 2026-08-05 at e7a1a88, alongside T17 and for the same reason: the
+      v-family was invisible to every acceptance grep in this plan.
+
+      Sizes, measured. NetDebugOut: 16 references, all inside NeuronCore's
+      networking. RenderPointMarker: 3 references — the declaration, the
+      definition and one caller. Script::ReportError: ONE reference in the
+      whole tree, its own declaration in Species/Script.h. There is no
+      definition and no caller, so it is a declaration for a function that does
+      not exist; deleting it is the conversion.
+
+      Species/Script.cpp belongs to T8 and Script.h does not, so the two do not
+      collide on a file — but they collide on a reviewer's attention. Run this
+      after T8 or well clear of it.
+
+  - id: T19
+    title: Convert GlobalLocation's and GlobalEventAction's filename members byte-identically
+    intent: >
+      The coupled half of T8. GlobalLocation::m_name, m_mapFilename and
+      m_missionFilename and GlobalEventAction::m_filename are char[256] members
+      read from ten files across three projects, and the profile's location
+      table is written through them with FIELD WIDTHS — `%4d %4d %30s %40s`.
+      Converting them is what makes the level and profile writers free of fixed
+      buffers, and the byte-identity proof lands with it because this is the
+      half that can break it.
+    project: GameLogic
+    depends_on: [T8]
+    files:
+      - GameLogic/GlobalWorld.h
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/GlobalWorldEditorWindow.cpp
+      - GameLogic/Location.cpp
+      - Species/App.cpp
+      - Species/Main.cpp
+      - Species/Script.cpp
+      - Species/GameCursor.cpp
+    acceptance:
+      - GlobalLocation and GlobalEventAction declare no char[N] member
+      - grep -cE "strcpy|strncpy|strcat|sprintf|snprintf" over GlobalWorld.cpp returns 0
+      - The location row still writes 4, 4, 30 and 40 character fields in that order, proven against the FileWriter byte tests T8 wrote rather than by reading the format string
+      - Every strcmp and stricmp on one of these members is read rather than swept — operator== matches strcmp and does NOT match stricmp, and both appear on m_missionFilename
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: done
+    notes: |
+      Split out of T8 on 2026-08-05. See T8's notes for the measurement and for
+      why the line is by class.
+
+      THE HAZARD IS THE FIELD WIDTHS, and it is the reason this half waits for
+      the other. GlobalWorld.cpp:1548 writes the location table as
+      `_out->printf("\t%4d %4d %30s %40s\n", ...)` with m_mapFilename and
+      m_missionFilename in the two padded slots. Field widths are where printf
+      and std::format are least alike, and a profile written with different
+      padding is a different file even though every character of content
+      matches. T8's FileWriter tests pin those bytes first; this task must not
+      change them.
+
+      Note what does NOT change here: the row is a FileWriter::printf call, so
+      it stays printf-formatted after this task. All this task does is hand it
+      a std::string's c_str() where it handed a char[256]. Converting the call
+      itself is T17, which depends on both halves for exactly this reason.
+
+      FOUR SITES NEED READING RATHER THAN SWEEPING, all comparisons on
+      m_missionFilename: GlobalWorld.cpp:1108 and :1181 use stricmp against
+      "null", :1316 uses strcmp against "null", and GameCursor.cpp:332 uses
+      strcmp. std::string::operator== matches strcmp and not stricmp, which is
+      the hazard T11's notes describe and T5 already hit once on camera names.
+      The two stricmp sites keep case-insensitive comparison explicitly.
+
+      ONE DERIVED WRITE TO PRESERVE EXACTLY. GlobalWorld.cpp:1602 builds
+      m_name from m_mapFilename as `strcpy(m_name, m_mapFilename + 3)` and then
+      truncates four characters with
+      `m_name[strlen(m_name) - 4] = '\0'` — skip "Map", drop ".txt". On a
+      member shorter than seven characters that expression indexes before the
+      start of the buffer. Reproduce the behaviour for well-formed names and
+      say in the commit what happens to a malformed one now.

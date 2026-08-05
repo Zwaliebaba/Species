@@ -8,9 +8,11 @@ are done.** The tree is CI-green at `1af4979` (runs 543 and 544), and the owner
 ran the Garden smoke test on that build and reported it successful. AGENTS.md
 records it as the post-migration baseline.
 
-This is not a restart note any more. It is kept for two things: what the tree
-looks like now, and what the migration cost that the four still-open plans are
-about to pay again.
+This is not a restart note any more, and the plan file has moved to
+`Archive/`. It is kept for two things: what the tree looks like now, and what
+the migration cost that the five still-open plans are about to pay again — the
+five ways this conversion broke files nobody touched are the transferable
+part.
 
 ---
 

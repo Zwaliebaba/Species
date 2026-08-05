@@ -15,10 +15,10 @@ into a foundation an authoritative world server can be built on.
 |---|---|
 | `NeuronCore/` | Sockets, threads, wire protocol, filesystem, assertions |
 | `NeuronClient/` | OpenGL renderer, sound, input, the Eclipse UI toolkit |
-| `NeuronServer/` | Authoritative simulation host *(stub)* |
+| `NeuronServer/` | Authoritative simulation host — sequences client letters; no world yet |
 | `GameLogic/` | Entities, buildings, teams, unit behaviour |
 | `Species/` | Client executable |
-| `Server/` | Server executable *(stub)* |
+| `Server/` | Headless server executable — ticks the host at 10 Hz |
 | `GameData/` | Levels, shapes, textures, sounds, scripts |
 | `Tests/` | One `<Name>Tests` project per library |
 
@@ -61,13 +61,18 @@ rules, and what to run before pushing. Then:
 Before pushing:
 
 ```bash
-python3 tools/check_project_files.py
-python3 tools/check_layering.py
-python3 tools/check_task_dag.py
-python3 tools/check_format.py
+python3 tools/check_project_files.py   # .vcxproj matches the files on disk
+python3 tools/check_layering.py        # no upward includes
+python3 tools/check_task_dag.py        # task plans are valid DAGs
+python3 tools/check_containers.py      # no legacy container call on a vector
+python3 tools/check_math_types.py      # no legacy math call on a native type
+python3 tools/check_format.py          # changed lines match .clang-format
+python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
+                                       # _included guards, strcpy or plain enum
 ```
 
-then build and run the suite.
+then build and run the suite. CI runs the same seven and fails on anything
+skipped; [`AGENTS.md`](AGENTS.md) explains what each one exists to catch.
 
 ## Licence
 
