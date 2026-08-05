@@ -4,10 +4,11 @@ Rewritten 2026-08-05, after T25 deleted the wrapper headers. Read
 [`AGENTS.md`](../AGENTS.md) first — it is still the orientation document. This
 file answers "is the math migration finished, and what is left".
 
-**27 of the plan's 28 tasks are done.** The one that is not is
-[`T27`](directxmath-migration.yaml), and it is not code: the owner runs the
-Garden smoke test on the wrapper-free build. **Nothing else in the plan is
-open, and no agent can close T27.**
+**27 of the plan's 28 tasks are done, and the tree is CI-green at `1af4979` —
+runs 543 and 544, static checks and the x64 Debug build and tests.** The one
+that is not done is [`T27`](directxmath-migration.yaml), and it is not code:
+the owner runs the Garden smoke test on the wrapper-free build. **Nothing else
+in the plan is open, and no agent can close T27.**
 
 ---
 
@@ -122,11 +123,31 @@ each, and none of them is specific to math:
 5. **Whole-file reformat first, in its own commit.** The changed-lines format
    check makes an insertion drag its neighbours in.
 
-And one that is about tools rather than tasks:
-`tools/check_math_types.py` found **128** row accesses on the locals T25
+---
+
+## `tools/check_math_types.py`, and the one gap left in it
+
+It earned its keep to the end. In T25 it found **128** row accesses on locals
 converted from `Matrix34` to `XMFLOAT4X4` — `.pos`, `.f`, `.u` and `.r` on a
-type that numbers its rows `_11` to `_44`. Every one was a real compile error
-waiting to happen, in files no human was reading. **Its governing doctrine is
-still the right one: under-reporting is recoverable, crying wolf gets the tool
-switched off.** Every gap ever found in it closed with a NARROWER claim about
-where a name's type is known, never a broader regex.
+type that numbers its rows `_11` to `_44`. Every one was a compile error
+waiting to happen, in files nobody was reading.
+
+**But it checks MEMBERS and cannot see METHODS**, so a call CHAINED onto a
+converted result is invisible to it. Three got past it in T25, on the very
+expressions where it had flagged the member access: `Mine.cpp`'s five
+`RotateAroundF` calls, and `EntityLeg`'s `.pos.Mag()`. CI found the first; a
+hand sweep found the second. So the tool is not the whole net — grep the
+legacy method names too:
+
+```bash
+grep -rnE '\.(Mag|MagSquared|Normalise|SetLength|SetToIdentity|Set|Zero|GetData|RotateAround[RUFXYZ]?|FastRotateAround|Orient[RUF][RUF]|Transpose|Invert|ToNative)\s*\(' --include=*.cpp --include=*.h .
+```
+
+Most hits are `RGBAColour::GetData` and `SlotMap::GetData`; read the type, not
+the name.
+
+**Its governing doctrine is still the right one: under-reporting is
+recoverable, crying wolf gets the tool switched off.** Every gap ever found in
+it closed with a NARROWER claim about where a name's type is known, never a
+broader regex — and the fix for the gap above is a separate grep rather than
+teaching it to guess at methods.

@@ -2481,8 +2481,12 @@ tasks:
     parallel_safe: true
     status: done
     notes: |
-      DONE. The keystone commit landed as mapped -- see the tail of these notes
-      for what the map got right and what it got wrong.
+      DONE at b62123a, CI run 534 GREEN ON THE FIRST TRY -- which for a commit
+      that moved sixteen pure virtuals and their sixteen overrides at once is
+      the result the mapping was for.
+
+      The keystone commit landed as mapped -- see the tail of these notes for
+      what the map got right and what it got wrong.
 
       RE-SCOPED BEFORE STARTING, 2026-08-05, on a measurement rather than
       after a red build. This task gains four headers from T12.
@@ -2872,6 +2876,32 @@ tasks:
       DONE. Vector2, Vector3, Matrix33 and Matrix34 are deleted from disk, from
       NeuronCore.vcxproj and from its filters. 2,543 lines removed against 482
       added, across 73 files.
+
+      GREEN AT 1af4979, CI runs 543 and 544 -- static checks and the x64 Debug
+      build and tests. That is the whole plan compiling and passing with the
+      wrapper headers gone.
+
+      IT TOOK TWO RED ROUNDS TO GET THERE, and both causes were invisible to
+      all seven local checks:
+
+        SoundInstance.cpp lost NearlyEquals when T12 dropped Vector3.h from
+        LocationAccess.h -- failure mode 3, the transitive include, and
+        NeuronClient's pch does not reach MathUtils.h. Swept the whole tree
+        against a resolved include graph afterwards; it was the only one.
+
+        Mine.cpp kept five RotateAroundF calls on locals this task converted.
+        check_math_types found all 128 MEMBER accesses on those locals and none
+        of the METHOD calls, because it checks members and not methods. THAT IS
+        A REAL GAP IN THE TOOL and worth knowing before the next plan trusts
+        it: a call CHAINED onto a converted result is invisible to it. Looking
+        for the same shape by hand afterwards found a third instance --
+        EntityLeg's `.pos.Mag()` -- before CI reached it.
+
+      Converting RotateAroundF needed care rather than a rename. It rewrote r
+      and u in place as r' = c*r + s*u, u' = -s*r + c*u, which natively is
+      XMMatrixRotationZ(a) * M -- the rotation applied BEFORE the matrix, in
+      the wheel's own frame. `M * RotationZ(a)` compiles, is also a rotation,
+      and spins the mine wheels about the world axis instead of their own.
 
       FOUR THINGS HAD TO MOVE FIRST, and none of them was in this task's file
       list -- which is the shape every wave-closing task in this plan has had:
