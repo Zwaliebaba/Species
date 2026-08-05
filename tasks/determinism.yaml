@@ -32,6 +32,14 @@ summary: >
   right about the fixes and wrong about the investigations — the investigation
   is precisely what can be planned, and it is the thing nobody was doing.
 
+  T3 AND T4 ARE ANSWERED (2026-08-05) AND THE ANSWER INVERTED THE QUESTION.
+  Both were written on the belief that speciesRandom() is the lockstep RNG.
+  It is not: syncrand() in NeuronCore/MathUtils.cpp is the synchronised stream
+  and speciesRandom() is an unsynchronised LCG for cosmetics. Neither finding
+  was a desync. The real defects run the other way -- simulation state drawn
+  from the client-local generator -- and there are six. They are T5, which is
+  a FIX and therefore lands alone and is gated by T6, exactly as T1 was by T2.
+
   ONE QUESTION STAYS OUT, and deliberately: cross-architecture float agreement
   between an ARM64 and an x64 client. AGENTS.md records that as decided rather
   than open — mixed-architecture play is not supported, on the owner's call of
@@ -79,11 +87,15 @@ tasks:
       branch and draws the same number of values. It is self-consistently
       deterministic.
 
-      Contrast SoundInstance.cpp, which AGENTS.md lists beside it: there the
+      Contrast SoundInstance.cpp, which AGENTS.md listed beside it: there the
       draw count depends on client-local sound configuration, so two clients
       that differ in what samples loaded consume different numbers of values.
-      That one is a genuine desync. This one is not, and the two should not be
-      fixed together or described in the same sentence.
+      CORRECTED 2026-08-05 -- this paragraph used to end "that one is a genuine
+      desync", and it is not. T3 established that SoundInstance draws from the
+      UNSYNCHRONISED LCG, which the simulation never reads, while this clamp
+      draws from syncfrand. The two really should not be described in the same
+      sentence, but for the opposite reason to the one given here: they are not
+      even the same generator.
 
       WHY FIX IT AT ALL, then. Three reasons, in order of weight: it is a trap —
       `(a > b) ? a : b` over a call with a side effect is exactly what the next
@@ -403,3 +415,142 @@ tasks:
       WHAT THIS DOES NOT SAY. It does not say the tree has no determinism
       problem of this shape. It has six, they run the other way — simulation
       state drawn from the client-local generator — and they are T5.
+
+  - id: T5
+    title: Move the six simulation-state draws off the unsynchronised generator
+    intent: >
+      T3 and T4 established that syncrand() is the lockstep stream and
+      speciesRandom()/frand()/sfrand() is an unsynchronised LCG that sound,
+      the Eclipse UI and terrain generation consume and reseed at a
+      client-dependent rate. Six sites draw SIMULATION state from the LCG, so a
+      value that differs between clients reaches state the sync checksum
+      observes. This converts those six to the synchronised family and touches
+      nothing else. It is a behaviour change: it alters what the simulation
+      computes and shifts the synchronised sequence, which is why it is here,
+      lands alone, and is gated by T6.
+    project: GameLogic
+    depends_on: [T3, T4]
+    files:
+      - GameLogic/LaserFence.cpp
+      - GameLogic/LevelFile.cpp
+      - GameLogic/Incubator.cpp
+      - GameLogic/Spam.cpp
+      - GameLogic/ResearchItem.cpp
+    acceptance:
+      - The six sites read syncfrand/syncsfrand, with the reason stated at each site
+      - No cosmetic draw is converted -- particles, render jitter and UI placement stay on frand/sfrand
+      - The commit message states that the synchronised sequence changes from this point and that a client with this change desyncs against one without
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: done
+    notes: |
+      THE SIX, with what each one reaches. Ordered by how bad it was.
+
+      1. LaserFence.cpp:66, Initialise -- m_sparkTimer = frand(10.0f).
+         THE ONE OUTRIGHT DESYNC. Advance() at :156 reseeds this timer with
+         syncfrand(4.0f) the moment it expires, so an unsynchronised value
+         decided WHICH TICK draws from the synchronised stream. Two clients
+         whose LCG differed at level load drew from the Mersenne Twister on
+         different ticks and diverged permanently, with every build green.
+         Nothing else in this list is this direct.
+
+      2/3. LevelFile.cpp:460-461, ParseInstantUnits -- the extra centipede
+         copies get spawn positions from sfrand(60). Those are entity
+         positions and GenerateSyncValue sums every entity's m_pos.
+         CAVEAT worth stating: numCopies depends on g_difficultyLevel, which
+         is a client-local preference, so on the synchronised stream two
+         clients at different difficulties now draw a different NUMBER of
+         values. That is not a regression -- difficulty already changes
+         iu->m_number, so the entity COUNT already differs and such a pair is
+         desynced before the first tick either way.
+
+      4/5. Incubator.cpp:63 and :190 -- a Spirit's m_pos scattered by
+         sfrand(20). Spirits are simulation objects; they are not summed
+         directly, but they drive which citizen collects what, and that
+         reaches entity positions. AddSpirit already drew syncrand() % 2
+         fifteen lines below the scatter it took from the LCG, which is the
+         clearest evidence available that this was an inherited slip rather
+         than a decision.
+
+      6. Spam.cpp:41 and ResearchItem.cpp:41 -- the building's facing from
+         frand(2π). Counted as one; they are the same line in two files.
+         For a level-file building the facing is overwritten by Read and
+         Initialise, so the draw is discarded. The live paths are
+         GodDish::SpawnSpam, which stack-constructs a Spam template that is
+         never read from a file and whose facing Building::Initialise turns
+         into m_centrePos -- and SpawnInfection hands m_centrePos to twenty
+         SpamInfections in m_effects, which sync sums directly -- and
+         Library::Advance, which news a ResearchItem straight into
+         m_buildings without calling Initialise at all.
+
+      WHAT WAS DELIBERATELY NOT CONVERTED. Every cosmetic draw stays on the
+      LCG: particles, render jitter, muzzle-flash sizes, m_renderDamaged,
+      Explosion's tumbler angular velocities, Eclipse window placement, the
+      sound sites in T3, and the terrain and tree reseeds. Converting those
+      would put thousands of frame-rate-dependent draws on the synchronised
+      stream, which is the bug this plan exists to prevent, pointing the other
+      way.
+
+      WHAT CHANGES, stated so T6 knows what it is looking at. Six draws move
+      onto the Mersenne Twister, so every syncrand() after the first affected
+      object returns a different value and the simulation evolves differently
+      from the frame this lands. Nothing degrades. A client with this change
+      desyncs against one without -- the same cost T1 accepted, and the same
+      argument carries it: there is no shipped build and no multiplayer in
+      use, and the cost only grows.
+
+      THE VISIBLE EFFECT IS EXPECTED TO BE NIL. Every converted draw keeps its
+      range: sfrand(r) and syncsfrand(r) both land in [-r/2, +r/2] and
+      frand(r) and syncfrand(r) both in [0, r). The two spread functions
+      mirror each other about zero -- sfrand is (0.5 - u) * r and syncsfrand
+      is (u - 0.5) * r -- which is invisible in a symmetric scatter.
+
+      NOT BUILT. No MSVC and no Windows client in this environment, so the two
+      build lines in verify have not been run here; the four Python checks
+      have. CI is the first thing to compile this.
+
+      THE SWEEP IS NOT COMPLETE and that is worth saying plainly. 186 LCG call
+      sites were classified far enough to find these six -- by grepping for
+      LCG values written into members, then reading the mixed-stream files.
+      A site-by-site record does not exist and no task owns making one.
+
+  - id: T6
+    title: Owner runs the Garden smoke test against the changed synchronised stream
+    intent: >
+      T5 changes what the simulation computes. Nothing that runs in CI can see
+      that: the unit suite does not reach LaserFence, Incubator, Spam or level
+      parsing, and a green build says nothing about a shifted RNG sequence. The
+      smoke test is the only evidence available, and T5 is not verified without
+      it. Same gate and same reason as T2.
+    depends_on: [T5]
+    files:
+      - AGENTS.md
+    acceptance:
+      - All seven Garden smoke-test steps pass on the changed build, owner-reported
+      - AGENTS.md records the run with the commit hash, per "What working looks like"
+    status: todo
+    notes: |
+      Blocked on owner execution -- agents in this environment cannot launch a
+      Windows client.
+
+      WHICH STEPS CARRY THE WEIGHT. Steps 3 and 4, the spawn counts, matter
+      here in a way they did not for T2: LevelFile.cpp:460 is on the
+      InstantUnit path, so a mistake there changes how many entities appear.
+      The Garden's counts are 50 Citizens and 179 Virii and neither involves a
+      centipede copy, so the expected reading is UNCHANGED counts -- a
+      different number means the parse changed, not the RNG.
+
+      Step 5, thirty seconds with no assert, and step 7, the sync assert in
+      single player, are the pair that show the simulation is still
+      self-consistent after the stream shifted.
+
+      WHAT TO LOOK AT SPECIFICALLY, since the Garden does not exercise all six.
+      Laser fences spark on a timer -- that they still spark, and not all at
+      once, is the observation for the site that mattered most. Incubators and
+      their spirits are present in The Garden. Spam, GodDish and Library are
+      not, so those three sites go unexercised by this run and will first be
+      seen on a level that has them; say so rather than implying otherwise.

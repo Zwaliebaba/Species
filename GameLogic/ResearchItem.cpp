@@ -38,7 +38,12 @@ ResearchItem::ResearchItem()
 
   SetShape(g_resource->GetShape("ResearchItem.shp"));
 
-  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(frand(2.0f * M_PI))));
+  // SYNCHRONISED since determinism.yaml T5, for the same reason as Spam's
+  // identical line. A level-file item has its facing overwritten by
+  // Read/Initialise, but Library::Advance news one straight into
+  // g_location->m_buildings without calling either, so the facing this draw
+  // produces is what that world building keeps.
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(syncfrand(2.0f * M_PI))));
 
   m_end1 = m_shape->m_rootFragment->LookupMarker("MarkerGrab1");
   m_end2 = m_shape->m_rootFragment->LookupMarker("MarkerGrab2");
