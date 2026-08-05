@@ -125,7 +125,7 @@ conflict in the level-file writers.
 
 | | Task | Why it is in the batch |
 |---|---|---|
-| 1 | ~~`strings/T8`~~ — **done, CI 556** | **The only thing standing between today and the end of stage 5.** `ownership/T5` is blocked by this task and nothing else; T5 → T6 (App owns its subsystems) → T7 (delete the macros) is then everything `ownership` has left except T8, and `namespace/T5` is behind it too. It also gates `strings/T9` and the new T17. Four tasks and the end of stage 5, behind one node. |
+| 1 | ~~`strings/T8`~~ — **done, CI 556**; ~~`T19`~~ — **done, CI 560** | **The only thing standing between today and the end of stage 5.** `ownership/T5` is blocked by this task and nothing else; T5 → T6 (App owns its subsystems) → T7 (delete the macros) is then everything `ownership` has left except T8, and `namespace/T5` is behind it too. It also gates `strings/T9` and the new T17. Four tasks and the end of stage 5, behind one node. |
 | 2 | `strings/T12` — the TextRenderer variadic API | The largest single safety win available, and the measurement below changes what it is. `parallel_safe: false`; run it alone. |
 | 3 | `language-hygiene/T10` — InputType, and delete the dead `ControlTypes.cpp` | **File-disjoint from every other ready task**, measured, so it is the safest thing to run whenever the tree is free. It unblocks `language-hygiene/T11` (473 sites), the last node in that plan. |
 
@@ -295,10 +295,22 @@ Reproduce with the script at the end of this file.
 
 ## Progress
 
-**`strings/T8` landed on CI 556 (`6b38509`), 2026-08-05.** Eight files, 33 call
-sites, eleven new tests, x64 Debug green and 180 tests passing. It was split
-first — see the plan entry — and the split produced `strings/T19`, which is now
-the batch's first item instead. `ownership/T5` waits on T19 alone.
+**`strings/T8` landed on CI 556 (`6b38509`) and `strings/T19` on CI 560
+(`12581f3`), both 2026-08-05.** Together: fifteen files, 78 call sites, eleven
+new tests, x64 Debug green and 180 tests passing on each.
+
+**Stage 5's tail is open.** `ownership/T5` was blocked on those two and nothing
+else, so `--next` offers it now — and behind it are T6 (App owns its
+subsystems) and T7 (delete the macros), which is the whole of what `ownership`
+has left apart from T8. `strings/T17` became ready with them.
+
+T19's own finding is worth carrying into the rest of the batch: its two
+accessors return `char const*` rather than `std::string`, because
+`GetLocationName` answers **nullptr** for an unknown id and `Main.cpp` tests
+that before transferring spirits into the location. Returning a value would
+have turned "no such location" into an empty name and transferred anyway, with
+no compiler complaint. **Every accessor that can fail is that shape** — check
+what its null means before converting its return type.
 
 Two things came out of it that the rest of the batch should carry:
 
