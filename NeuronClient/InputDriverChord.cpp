@@ -8,133 +8,136 @@
 using namespace std;
 
 
-static string nullErr = "";
-
-
-ChordInputDriver::ChordInputDriver()
-  : m_specs(),
-    lastError(nullErr)
+namespace Neuron
 {
-  setName("Chord");
-}
+  static string nullErr = "";
 
 
-InputParserState ChordInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
-{
-  string s;
-
-  std::unique_ptr<InputSpecList> speclist(new InputSpecList());
-  vector<string> strings;
-  bool hasParts = false;
-
-  spec.type = InputType::INPUT_TYPE_BOOL;
-
-  for (unsigned i = 0; i <= tokens.length(); ++i)
+  ChordInputDriver::ChordInputDriver()
+    : m_specs(),
+      lastError(nullErr)
   {
-    if (i < tokens.length() && tokens[i] != "++")
-      s += " " + tokens[i];
-    else
-    {
-      if (!hasParts && tokens.length() == i)
-        return InputParserState::STATE_ERROR; // Not a chord
-      hasParts = true;
-      strings.push_back(s);
-      s.clear(); // Ready for another spec
-    }
+    setName("Chord");
   }
 
-  for (unsigned nDown = 0; nDown < strings.size(); ++nDown)
+
+  InputParserState ChordInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
   {
-    for (unsigned i = 0; i < strings.size(); ++i)
+    string s;
+
+    std::unique_ptr<InputSpecList> speclist(new InputSpecList());
+    vector<string> strings;
+    bool hasParts = false;
+
+    spec.type = InputType::INPUT_TYPE_BOOL;
+
+    for (unsigned i = 0; i <= tokens.length(); ++i)
     {
-      if (!i)
-        s = "";
+      if (i < tokens.length() && tokens[i] != "++")
+        s += " " + tokens[i];
       else
-        s.append(" && ");
-      s.append(strings[i]);
-      s.append((nDown == i) ? " down" : " pressed");
+      {
+        if (!hasParts && tokens.length() == i)
+          return InputParserState::STATE_ERROR; // Not a chord
+        hasParts = true;
+        strings.push_back(s);
+        s.clear(); // Ready for another spec
+      }
     }
 
-    InputSpec partspec;
-    partspec.type = InputType::INPUT_TYPE_BOOL;
-
-    InputParserState pState = g_inputManager->parseInputSpecString(s, partspec, lastError);
-    if (PARSE_SUCCESS(pState))
+    for (unsigned nDown = 0; nDown < strings.size(); ++nDown)
     {
-      if (partspec.type > InputType::INPUT_TYPE_BOOL)
+      for (unsigned i = 0; i < strings.size(); ++i)
       {
-        static string repError = "Complex inputs are not allowed in chords.";
-        lastError = repError;
+        if (!i)
+          s = "";
+        else
+          s.append(" && ");
+        s.append(strings[i]);
+        s.append((nDown == i) ? " down" : " pressed");
+      }
+
+      InputSpec partspec;
+      partspec.type = InputType::INPUT_TYPE_BOOL;
+
+      InputParserState pState = g_inputManager->parseInputSpecString(s, partspec, lastError);
+      if (PARSE_SUCCESS(pState))
+      {
+        if (partspec.type > InputType::INPUT_TYPE_BOOL)
+        {
+          static string repError = "Complex inputs are not allowed in chords.";
+          lastError = repError;
+          return InputParserState::STATE_CONJ_ERROR;
+        }
+        speclist->push_back(InputSpecPtr(new InputSpec(partspec)));
+      }
+      else
+      {
         return InputParserState::STATE_CONJ_ERROR;
       }
-      speclist->push_back(InputSpecPtr(new InputSpec(partspec)));
     }
-    else
-    {
-      return InputParserState::STATE_CONJ_ERROR;
-    }
+
+    // Parsing went OK. Save this.
+    m_specs.push_back(std::move(speclist));
+    spec.control_id = m_specs.size() - 1;
+    return InputParserState::STATE_DONE;
   }
 
-  // Parsing went OK. Save this.
-  m_specs.push_back(std::move(speclist));
-  spec.control_id = m_specs.size() - 1;
-  return InputParserState::STATE_DONE;
-}
 
-
-// Actually implements a disjunction
-bool ChordInputDriver::getInput(InputSpec const& spec, InputDetails& details)
-{
-  if (0 <= spec.control_id && spec.control_id < m_specs.size())
+  // Actually implements a disjunction
+  bool ChordInputDriver::getInput(InputSpec const& spec, InputDetails& details)
   {
-    const InputSpecList& specs = *(m_specs[spec.control_id]);
-    for (InputSpecIt i = specs.begin(); i != specs.end(); ++i)
-      if (g_inputManager->checkInput(**i, details))
-        return true;
-  }
-  return false;
-}
-
-
-void ChordInputDriver::Advance() {}
-
-
-const string& ChordInputDriver::getLastParseError(InputParserState state) { return lastError; }
-
-
-bool ChordInputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc)
-{
-  // IF _any_ return false, we don't return a description at all.
-
-  bool firstPart = true;
-
-  if (0 <= spec.control_id && spec.control_id < m_specs.size())
-  {
-    const InputSpecList& specs = *(m_specs[spec.control_id]);
-
-    for (InputSpecIt i = specs.begin(); i != specs.end(); ++i)
+    if (0 <= spec.control_id && spec.control_id < m_specs.size())
     {
-      InputDescription d;
-      const InputSpec& spec = **i;
-      if (g_inputManager->getInputDescription(spec, d))
+      const InputSpecList& specs = *(m_specs[spec.control_id]);
+      for (InputSpecIt i = specs.begin(); i != specs.end(); ++i)
+        if (g_inputManager->checkInput(**i, details))
+          return true;
+    }
+    return false;
+  }
+
+
+  void ChordInputDriver::Advance() {}
+
+
+  const string& ChordInputDriver::getLastParseError(InputParserState state) { return lastError; }
+
+
+  bool ChordInputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc)
+  {
+    // IF _any_ return false, we don't return a description at all.
+
+    bool firstPart = true;
+
+    if (0 <= spec.control_id && spec.control_id < m_specs.size())
+    {
+      const InputSpecList& specs = *(m_specs[spec.control_id]);
+
+      for (InputSpecIt i = specs.begin(); i != specs.end(); ++i)
       {
-        d.translate();
-        if (firstPart)
+        InputDescription d;
+        const InputSpec& spec = **i;
+        if (g_inputManager->getInputDescription(spec, d))
         {
-          desc.noun = d.noun;
-          desc.verb = d.verb;
-          desc.translated = true;
-          firstPart = false;
+          d.translate();
+          if (firstPart)
+          {
+            desc.noun = d.noun;
+            desc.verb = d.verb;
+            desc.translated = true;
+            firstPart = false;
+          }
+          else
+            desc.noun.append("-").append(d.noun);
         }
         else
-          desc.noun.append("-").append(d.noun);
+          return false;
       }
-      else
-        return false;
-    }
 
-    return !firstPart;
+      return !firstPart;
+    }
+    else
+      return false; // We should never get here!
   }
-  else
-    return false; // We should never get here!
-}
+} // namespace Neuron

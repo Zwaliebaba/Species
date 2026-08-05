@@ -9,40 +9,42 @@
 #define SPAM_DAMAGE 100.0f
 
 
-class Spam : public Building
+namespace Species
 {
-  protected:
-    float m_timer;
-    float m_damage;
+  class Spam : public Building
+  {
+    protected:
+      float m_timer;
+      float m_damage;
 
-    bool m_research;
-    bool m_onGround;
-    bool m_activated;
+      bool m_research;
+      bool m_onGround;
+      bool m_activated;
 
-  public:
-    Spam();
+    public:
+      Spam();
 
-    void Initialise(Building* _template);
-    void SetDetail(int _detail);
-    void Damage(float _damage);
-    void Destroy(float _intensity);
+      void Initialise(Building* _template);
+      void SetDetail(int _detail);
+      void Damage(float _damage);
+      void Destroy(float _intensity);
 
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
 
-    bool Advance();
+      bool Advance();
 
-    void ListSoundEvents(std::vector<const char*>* _list);
+      void ListSoundEvents(std::vector<const char*>* _list);
 
-    void SetAsResearch();
-    void SendFromHeaven();
-    void SpawnInfection();
-};
+      void SetAsResearch();
+      void SendFromHeaven();
+      void SpawnInfection();
+  };
 
 
-// ****************************************************************************
-//  Class SpamInfection
-// ****************************************************************************
+  // ****************************************************************************
+  //  Class SpamInfection
+  // ****************************************************************************
 
 #define SPAMINFECTION_MINSEARCHRANGE 100.0f
 #define SPAMINFECTION_MAXSEARCHRANGE 200.0f
@@ -90,3 +92,4 @@ class SpamInfection : public WorldObject
     bool Advance();
     void Render(float _time);
 };
+} // namespace Species

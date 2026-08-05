@@ -7,149 +7,157 @@
 #include "SphereRenderer.h"
 #include "NeuronMath.h"
 
-class FileWriter;
-class TextReader;
-class Shape;
-class Building;
-class GlobalInternet;
 
 
 // ****************************************************************************
 // GlobalLocation
 // ****************************************************************************
 
-class GlobalLocation
+namespace Neuron
 {
-  public:
-    int m_id;
-    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
-    bool m_available; // Is it connected on the transit system
-
-    std::string m_name;
-    std::string m_mapFilename;
-    std::string m_missionFilename;
-    bool m_missionCompleted;
-
-    int m_numSpirits; // Number of spirits that have died
-
-  public:
-    GlobalLocation();
-
-    void AddSpirits(int _count = 1);
-};
+  class FileWriter;
+  class TextReader;
+  class Shape;
+} // namespace Neuron
 
 
-// ****************************************************************************
-// GlobalBuilding
-// ****************************************************************************
-
-class GlobalBuilding
+namespace Species
 {
-  public:
-    int m_id;
-    int m_teamId;
-    int m_locationId;
-    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
-    int m_type;
-    bool m_online;
-    int m_link;
-    Shape* m_shape;
+  class Building;
+  class GlobalInternet;
 
-  public:
-    GlobalBuilding();
-};
+  class GlobalLocation
+  {
+    public:
+      int m_id;
+      DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+      bool m_available; // Is it connected on the transit system
 
+      std::string m_name;
+      std::string m_mapFilename;
+      std::string m_missionFilename;
+      bool m_missionCompleted;
 
-// ****************************************************************************
-// Class GlobalEvent + guests
-// ****************************************************************************
+      int m_numSpirits; // Number of spirits that have died
 
-class GlobalEventCondition
-{
-  public:
-    enum
-    {
-      AlwaysTrue,      // 0
-      BuildingOnline,  // 1
-      BuildingOffline, // 2
-      ResearchOwned,   // 3
-      NotInLocation,   // 4
-      DebugKey,        // 5
-      NeverTrue,       // 6
-      NumConditions    // Remember to update GetTypeName
-    };
-    int m_type;
-    int m_id;
-    int m_locationId;
-    char* m_stringId; // Brief description
-    char* m_cutScene; // Filename of cutscene to run
+    public:
+      GlobalLocation();
 
-  public:
-    GlobalEventCondition();
-    GlobalEventCondition(const GlobalEventCondition& _other);
-    ~GlobalEventCondition();
-
-    bool Evaluate();
-
-    void SetStringId(char const* _stringId);
-    void SetCutScene(char* _cutScene);
-
-    void Save(FileWriter* _out);
-
-    static char const* GetTypeName(int _type);
-    static int GetType(char const* _typeName);
-};
+      void AddSpirits(int _count = 1);
+  };
 
 
-class GlobalEventAction
-{
-  public:
-    enum
-    {
-      SetMission,
-      RunScript,
-      MakeAvailable,
-      NumActionTypes
-    };
-    int m_type;
-    int m_locationId;
-    std::string m_filename;
+  // ****************************************************************************
+  // GlobalBuilding
+  // ****************************************************************************
 
-  public:
-    GlobalEventAction();
+  class GlobalBuilding
+  {
+    public:
+      int m_id;
+      int m_teamId;
+      int m_locationId;
+      DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+      int m_type;
+      bool m_online;
+      int m_link;
+      Shape* m_shape;
 
-    void Read(TextReader* _in);
-    void Write(FileWriter* _file);
-    void Execute();
-
-    static char const* GetTypeName(int _type);
-};
+    public:
+      GlobalBuilding();
+  };
 
 
-class GlobalEvent
-{
-  public:
-    // Owns both. Before ownership T11 this class had no destructor at all, so
-    // every condition and every unexecuted action leaked with the event.
-    std::vector<std::unique_ptr<GlobalEventCondition>> m_conditions;
-    std::vector<std::unique_ptr<GlobalEventAction>> m_actions;
+  // ****************************************************************************
+  // Class GlobalEvent + guests
+  // ****************************************************************************
 
-  public:
-    GlobalEvent();
-    GlobalEvent(GlobalEvent& _other); // Copy constructor only used by TestHarness
+  class GlobalEventCondition
+  {
+    public:
+      enum
+      {
+        AlwaysTrue,      // 0
+        BuildingOnline,  // 1
+        BuildingOffline, // 2
+        ResearchOwned,   // 3
+        NotInLocation,   // 4
+        DebugKey,        // 5
+        NeverTrue,       // 6
+        NumConditions    // Remember to update GetTypeName
+      };
+      int m_type;
+      int m_id;
+      int m_locationId;
+      char* m_stringId; // Brief description
+      char* m_cutScene; // Filename of cutscene to run
 
-    void Read(TextReader* _in);
-    void Write(FileWriter* _file);
-    bool Evaluate();
-    bool Execute(); // Returns true when all done
+    public:
+      GlobalEventCondition();
+      GlobalEventCondition(const GlobalEventCondition& _other);
+      ~GlobalEventCondition();
 
-    void MakeAlwaysTrue();
-};
+      bool Evaluate();
+
+      void SetStringId(char const* _stringId);
+      void SetCutScene(char* _cutScene);
+
+      void Save(FileWriter* _out);
+
+      static char const* GetTypeName(int _type);
+      static int GetType(char const* _typeName);
+  };
 
 
-// ****************************************************************************
-// Class GlobalResearch
-// ****************************************************************************
+  class GlobalEventAction
+  {
+    public:
+      enum
+      {
+        SetMission,
+        RunScript,
+        MakeAvailable,
+        NumActionTypes
+      };
+      int m_type;
+      int m_locationId;
+      std::string m_filename;
+
+    public:
+      GlobalEventAction();
+
+      void Read(TextReader* _in);
+      void Write(FileWriter* _file);
+      void Execute();
+
+      static char const* GetTypeName(int _type);
+  };
+
+
+  class GlobalEvent
+  {
+    public:
+      // Owns both. Before ownership T11 this class had no destructor at all, so
+      // every condition and every unexecuted action leaked with the event.
+      std::vector<std::unique_ptr<GlobalEventCondition>> m_conditions;
+      std::vector<std::unique_ptr<GlobalEventAction>> m_actions;
+
+    public:
+      GlobalEvent();
+      GlobalEvent(GlobalEvent& _other); // Copy constructor only used by TestHarness
+
+      void Read(TextReader* _in);
+      void Write(FileWriter* _file);
+      bool Evaluate();
+      bool Execute(); // Returns true when all done
+
+      void MakeAlwaysTrue();
+  };
+
+
+  // ****************************************************************************
+  // Class GlobalResearch
+  // ****************************************************************************
 
 #define GLOBALRESEARCH_TIMEPERPOINT 10
 #define GLOBALRESEARCH_POINTS_CONTROLTOWER 22
@@ -327,3 +335,4 @@ class GlobalWorld
 
     float GetSize();
 };
+} // namespace Species

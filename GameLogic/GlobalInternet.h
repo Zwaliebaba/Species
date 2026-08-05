@@ -14,62 +14,66 @@
 // Class GlobalInternetNode
 // ****************************************************************************
 
-class GlobalInternetNode
+
+namespace Species
 {
-  public:
-    GlobalInternetNode();
-    void AddLink(int id);
+  class GlobalInternetNode
+  {
+    public:
+      GlobalInternetNode();
+      void AddLink(int id);
 
-    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
-    unsigned char m_size;
-    float m_burst;
+      DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+      unsigned char m_size;
+      float m_burst;
 
-    unsigned short m_links[GLOBALINTERNET_ITERATIONS];
-    unsigned short m_numLinks;
-};
-
-
-//*****************************************************************************
-// Class GlobalInternetLink
-//*****************************************************************************
-
-class GlobalInternetLink
-{
-  public:
-    unsigned short m_from;
-    unsigned short m_to;
-    float m_size;
-    std::vector<float> m_packets;
-};
+      unsigned short m_links[GLOBALINTERNET_ITERATIONS];
+      unsigned short m_numLinks;
+  };
 
 
-//*****************************************************************************
-// Class GlobalInternet
-//*****************************************************************************
+  //*****************************************************************************
+  // Class GlobalInternetLink
+  //*****************************************************************************
 
-class GlobalInternet
-{
-  protected:
-    GlobalInternetNode* m_nodes;
-    unsigned short m_numNodes;
-    GlobalInternetLink* m_links;
-    unsigned short m_numLinks;
-    std::vector<int> m_leafs;
-    std::vector<int> m_bursts;
+  class GlobalInternetLink
+  {
+    public:
+      unsigned short m_from;
+      unsigned short m_to;
+      float m_size;
+      std::vector<float> m_packets;
+  };
 
-    int m_nearestNodeToCentre;
-    float m_nearestDistance;
 
-    void GenerateInternet();
-    unsigned short GenerateInternet(DirectX::XMFLOAT3 const& _pos, unsigned char _size);
-    void DeleteInternet();
+  //*****************************************************************************
+  // Class GlobalInternet
+  //*****************************************************************************
 
-    void TriggerPacket(unsigned short _nodeId, unsigned short _fromLinkId);
+  class GlobalInternet
+  {
+    protected:
+      GlobalInternetNode* m_nodes;
+      unsigned short m_numNodes;
+      GlobalInternetLink* m_links;
+      unsigned short m_numLinks;
+      std::vector<int> m_leafs;
+      std::vector<int> m_bursts;
 
-  public:
-    GlobalInternet();
-    ~GlobalInternet();
+      int m_nearestNodeToCentre;
+      float m_nearestDistance;
 
-    void Render();
-    void RenderPackets();
-};
+      void GenerateInternet();
+      unsigned short GenerateInternet(DirectX::XMFLOAT3 const& _pos, unsigned char _size);
+      void DeleteInternet();
+
+      void TriggerPacket(unsigned short _nodeId, unsigned short _fromLinkId);
+
+    public:
+      GlobalInternet();
+      ~GlobalInternet();
+
+      void Render();
+      void RenderPackets();
+  };
+} // namespace Species

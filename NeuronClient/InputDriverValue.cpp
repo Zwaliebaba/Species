@@ -8,14 +8,16 @@
 using namespace std;
 
 
-enum
+namespace Neuron
 {
+  enum
+  {
 #define DEF_VALUE(x, y) Value##x,
 #include "InputDriverValues.inc"
 #undef DEF_VALUE
 
-  NumValues
-};
+    NumValues
+  };
 
 
 static string s_values[] = {
@@ -100,3 +102,4 @@ static string errors[] = {"An unknown error occurred.",
 // by language-hygiene T4, which had to look at the indexing to compile it.
 // Fixing it is a behaviour change and is recorded on that task, not done here.
 const std::string& ValueInputDriver::getLastParseError(InputParserState state) { return errors[static_cast<size_t>(state)]; }
+} // namespace Neuron

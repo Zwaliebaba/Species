@@ -39,505 +39,505 @@
 // Public Functions
 //*****************************************************************************
 
-Script::Script()
-  : m_in(nullptr),
-    m_waitUntil(-1.0f),
-    m_waitForSpeech(false),
-    m_waitForCamera(false),
-    m_waitForFade(false),
-    m_waitForPlayerNotBusy(false),
-    m_requestedLocationId(-1),
-    m_waitForRocket(false),
-    m_permitEscape(false) {}
 
-bool Script::IsRunningScript() { return (m_in != nullptr); }
-
-void Script::RunCommand_CamCut(const char* _mountName)
+namespace Species
 {
-  if (!g_location)
-    return;
-
-  bool mountFound = TheCamera()->SetTarget(_mountName);
-  DEBUG_ASSERT(mountFound);
-  TheCamera()->CutToTarget();
-}
-
-void Script::RunCommand_CamMove(const char* _mountName, float _duration)
-{
-  if (!g_location)
-    return;
-
-  if (TheCamera()->SetTarget(_mountName))
+  Script::Script()
+    : m_in(nullptr),
+      m_waitUntil(-1.0f),
+      m_waitForSpeech(false),
+      m_waitForCamera(false),
+      m_waitForFade(false),
+      m_waitForPlayerNotBusy(false),
+      m_requestedLocationId(-1),
+      m_waitForRocket(false),
+      m_permitEscape(false)
   {
-    TheCamera()->SetMoveDuration(_duration);
-
-    TheCamera()->RequestMode(Camera::Mode::ModeMoveToTarget);
   }
-}
 
-void Script::RunCommand_CamAnim(const char* _animName)
-{
-  if (!g_location)
-    return;
+  bool Script::IsRunningScript() { return (m_in != nullptr); }
 
-  int animId = g_location->m_levelFile->GetCameraAnimId(_animName);
-  ASSERT_TEXT(animId != -1, "Invalid camera animation requested {}", _animName);
-  CameraAnimation* camAnim = g_location->m_levelFile->m_cameraAnimations[animId].get();
-  // animId came from GetCameraAnimId, which returns a loop index into this
-  // same list or -1, and the assert above rules out -1.
-  TheCamera()->PlayAnimation(camAnim);
-}
-
-void Script::RunCommand_CamFov(float _fov, bool _immediate)
-{
-  if (_immediate)
-    TheCamera()->SetFOV(_fov);
-  else
-    TheCamera()->SetTargetFOV(_fov);
-}
-
-void Script::RunCommand_CamBuildingFocus(int _buildingId, float _range, float _height)
-{
-  if (!g_location)
-    return;
-
-  Building* building = g_location->GetBuilding(_buildingId);
-
-  if (building)
-    TheCamera()->RequestBuildingFocusMode(building, _range, _height);
-  else
-    DebugTrace("SCRIPT ERROR : Tried to target non-existent building {}", _buildingId);
-}
-
-void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float _height, float _duration)
-{
-  if (!g_location)
-    return;
-
-  Building* building = g_location->GetBuilding(_buildingId);
-
-  if (building)
+  void Script::RunCommand_CamCut(const char* _mountName)
   {
-    TheCamera()->SetTarget(building->m_centrePos, _range, _height);
-    TheCamera()->SetMoveDuration(_duration);
-    TheCamera()->RequestMode(Camera::Mode::ModeMoveToTarget);
-  }
-  else
-    DebugTrace("SCRIPT ERROR : Tried to target non-existent building {}", _buildingId);
-}
-
-void Script::RunCommand_CamGlobalWorldFocus() { TheCamera()->RequestSphereFocusMode(); }
-
-void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
-{
-  if (g_location)
-    return;
-
-  DirectX::XMFLOAT3 targetPos(0.0f, 0.0f, 0.0f);
-
-  if (stricmp(_locationName, "heaven") == 0)
-    targetPos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-  else
-  {
-    int locationId = g_globalWorld->GetLocationId(_locationName);
-    if (locationId == -1)
+    if (!g_location)
       return;
 
-    targetPos = g_globalWorld->GetLocationPosition(locationId);
+    bool mountFound = TheCamera()->SetTarget(_mountName);
+    DEBUG_ASSERT(mountFound);
+    TheCamera()->CutToTarget();
   }
 
-  if (!TheCamera()->IsInMode(Camera::Mode::ModeSphereWorldScripted))
-    TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldScripted);
-
-  TheCamera()->SetTargetFOV(_fov);
-  // g_upVector is still a Vector3; g_XMIdentityR1 is the (0,1,0,0) it holds.
-  DirectX::XMFLOAT3 worldUp;
-  DirectX::XMStoreFloat3(&worldUp, DirectX::g_XMIdentityR1);
-  TheCamera()->SetTarget(targetPos, DirectX::XMFLOAT3(0, 0, 1), worldUp);
-}
-
-void Script::RunCommand_CamReset()
-{
-  if (TheCamera()->IsAnimPlaying())
-    TheCamera()->StopAnimation();
-
-  if (g_location)
-    TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
-  else
-    TheCamera()->RequestMode(Camera::Mode::ModeSphereWorld);
-}
-
-void Script::RunCommand_EnterLocation(char* _name)
-{
-  g_requestedLocationId = g_globalWorld->GetLocationId(_name);
-
-  m_requestedLocationId = g_requestedLocationId;
-
-  GlobalLocation* loc = g_globalWorld->GetLocation(g_requestedLocationId);
-  DEBUG_ASSERT(loc);
-
-  g_requestedMission = loc->m_missionFilename;
-  g_requestedMap = loc->m_mapFilename;
-}
-
-void Script::RunCommand_ExitLocation()
-{
-  g_requestedLocationId = -1;
-  g_requestedMission.clear();
-  g_requestedMap.clear();
-
-  m_requestedLocationId = g_requestedLocationId;
-}
-
-void Script::RunCommand_SetMission(char* _locName, char* _missionName)
-{
-  GlobalLocation* loc = g_globalWorld->GetLocation(_locName);
-  DEBUG_ASSERT(loc);
-  loc->m_missionFilename = _missionName;
-  loc->m_missionCompleted = false;
-}
-
-void Script::RunCommand_Say(char* _stringId) {}
-
-void Script::RunCommand_ShutUp() {}
-
-void Script::RunCommand_Wait(double _time) { m_waitUntil = std::max(m_waitUntil, GetHighResTime() + _time); }
-
-void Script::RunCommand_WaitSay() { m_waitForSpeech = true; }
-
-void Script::RunCommand_WaitCam() { m_waitForCamera = true; }
-
-void Script::RunCommand_WaitFade() { m_waitForFade = true; }
-
-void Script::RunCommand_WaitRocket(int _buildingId, char* _state, int _data)
-{
-  m_rocketId = _buildingId;
-  m_rocketState = EscapeRocket::GetStateId(_state);
-  m_rocketData = _data;
-  m_waitForRocket = true;
-}
-
-void Script::RunCommand_WaitPlayerNotBusy() { m_waitForPlayerNotBusy = true; }
-
-void Script::RunCommand_Highlight(int _buildingId) {}
-
-void Script::RunCommand_ClearHighlights() {}
-
-void Script::RunCommand_TriggerSound(const char* _event)
-{
-  const std::string eventName = std::format("Music {}", _event);
-
-  if (g_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName.c_str()) == 0)
-    g_soundSystem->TriggerOtherEvent(_event, SoundSourceBlueprint::TypeMusic);
-}
-
-void Script::RunCommand_StopSound(const char* _event)
-{
-  const std::string eventName = std::format("Music {}", _event);
-  g_soundSystem->StopAllSounds(WorldObjectId(), eventName.c_str());
-}
-
-void Script::RunCommand_DemoGesture(const char* _name) {}
-
-void Script::RunCommand_GiveResearch(const char* _name)
-{
-  if (stricmp(_name, "modsystem") == 0)
+  void Script::RunCommand_CamMove(const char* _mountName, float _duration)
   {
-    g_prefsManager->SetInt("ModSystemEnabled", 1);
-    g_prefsManager->Save();
+    if (!g_location)
+      return;
 
-    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 999, 4.0f);
-  }
-  else if (stricmp(_name, "accessallareas") == 0)
-  {
-    std::string folderName = std::format("{}users/", g_appCommands->ProfileDirectory());
-    bool success = CreateDirectory(folderName.c_str());
-    if (!success)
-      DebugTrace("failed to create folder {}\n", folderName);
-
-    folderName = std::format("{}users/AccessAllAreas/", g_appCommands->ProfileDirectory());
-    success = CreateDirectory(folderName.c_str());
-    if (!success)
-      DebugTrace("failed to create folder {}\n", folderName);
-
-    TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
-  }
-  else
-  {
-    int researchType = GlobalResearch::GetType((char*)_name);
-    if (researchType != -1)
+    if (TheCamera()->SetTarget(_mountName))
     {
-      g_globalWorld->m_research->AddResearch(researchType);
-      TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, researchType, 4.0f);
-    }
-  }
-}
+      TheCamera()->SetMoveDuration(_duration);
 
-void Script::RunCommand_RunCredits() {}
-
-void Script::RunCommand_GameOver()
-{
-  //
-  // Go into the outro camera mode
-
-  TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldOutro);
-
-  //
-  // Kill global world ambiences
-
-  g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
-}
-
-void Script::RunCommand_ResetResearch()
-{
-  m_citizenResearchLevel = g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen];
-  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen] = 1;
-}
-
-void Script::RunCommand_RestoreResearch()
-{
-  g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen] = m_citizenResearchLevel;
-}
-
-GodDish* GetGodDish()
-{
-  for (int i = 0; i < g_location->m_buildings.Size(); ++i)
-  {
-    if (g_location->m_buildings.ValidIndex(i))
-    {
-      Building* building = g_location->m_buildings[i];
-      if (building && building->m_type == Building::TypeGodDish)
-      {
-        auto dish = static_cast<GodDish*>(building);
-        return dish;
-      }
+      TheCamera()->RequestMode(Camera::Mode::ModeMoveToTarget);
     }
   }
 
-  return nullptr;
-}
-
-void Script::RunCommand_GodDishActivate()
-{
-  GodDish* dish = GetGodDish();
-  if (dish)
-    dish->Activate();
-}
-
-void Script::RunCommand_GodDishDeactivate()
-{
-  GodDish* dish = GetGodDish();
-  if (dish)
-    dish->DeActivate();
-}
-
-void Script::RunCommand_GodDishSpawnSpam()
-{
-  GodDish* dish = GetGodDish();
-  if (dish)
-    dish->SpawnSpam(false);
-}
-
-void Script::RunCommand_GodDishSpawnResearch()
-{
-  GodDish* dish = GetGodDish();
-  if (dish)
-    dish->SpawnSpam(true);
-}
-
-void Script::RunCommand_SpamTrigger()
-{
-  GodDish* dish = GetGodDish();
-  if (dish)
-    dish->TriggerSpam();
-}
-
-void Script::RunCommand_PurityControl()
-{
-  //
-  // Delete the save game
-
-  const std::string saveDir = std::format("users/{}/", g_userProfileName);
-  // Neither the names nor the vector are freed. The exit(0) below is why that
-  // has never mattered.
-  std::vector<char*>* allFiles = ListDirectory(saveDir.c_str(), "*.*");
-
-  for (const char* filename : *allFiles)
-    DeleteThisFile(filename);
-
-  //
-  // Open up our store website
-
-  g_windowManager->OpenWebsite("http://www.darwinia.co.uk/store/");
-
-  //
-  // Shut down
-
-  exit(0);
-}
-
-void Script::RunCommand_ShowDarwinLogo()
-{
-  TheRenderer()->m_renderDarwinLogo = GetHighResTime();
-  g_soundSystem->TriggerOtherEvent("ShowLogo", SoundSourceBlueprint::TypeInterface);
-}
-
-void Script::RunCommand_ShowDemoEndSequence() {}
-
-void Script::RunCommand_PermitEscape() { m_permitEscape = true; }
-
-void Script::RunCommand_DestroyBuilding(int _buildingId, float _intensity)
-{
-  Building* b = g_location->GetBuilding(_buildingId);
-  if (b)
-    b->Destroy(_intensity);
-}
-
-void Script::RunCommand_ActivateTrunkPort(int _buildingId, bool _fullActivation)
-{
-  Building* b = g_location->GetBuilding(_buildingId);
-  if (b && b->m_type == Building::TypeTrunkPort)
+  void Script::RunCommand_CamAnim(const char* _animName)
   {
-    if (_fullActivation)
-      b->ReprogramComplete();
+    if (!g_location)
+      return;
+
+    int animId = g_location->m_levelFile->GetCameraAnimId(_animName);
+    ASSERT_TEXT(animId != -1, "Invalid camera animation requested {}", _animName);
+    CameraAnimation* camAnim = g_location->m_levelFile->m_cameraAnimations[animId].get();
+    // animId came from GetCameraAnimId, which returns a loop index into this
+    // same list or -1, and the assert above rules out -1.
+    TheCamera()->PlayAnimation(camAnim);
+  }
+
+  void Script::RunCommand_CamFov(float _fov, bool _immediate)
+  {
+    if (_immediate)
+      TheCamera()->SetFOV(_fov);
+    else
+      TheCamera()->SetTargetFOV(_fov);
+  }
+
+  void Script::RunCommand_CamBuildingFocus(int _buildingId, float _range, float _height)
+  {
+    if (!g_location)
+      return;
+
+    Building* building = g_location->GetBuilding(_buildingId);
+
+    if (building)
+      TheCamera()->RequestBuildingFocusMode(building, _range, _height);
+    else
+      DebugTrace("SCRIPT ERROR : Tried to target non-existent building {}", _buildingId);
+  }
+
+  void Script::RunCommand_CamBuildingApproach(int _buildingId, float _range, float _height, float _duration)
+  {
+    if (!g_location)
+      return;
+
+    Building* building = g_location->GetBuilding(_buildingId);
+
+    if (building)
+    {
+      TheCamera()->SetTarget(building->m_centrePos, _range, _height);
+      TheCamera()->SetMoveDuration(_duration);
+      TheCamera()->RequestMode(Camera::Mode::ModeMoveToTarget);
+    }
+    else
+      DebugTrace("SCRIPT ERROR : Tried to target non-existent building {}", _buildingId);
+  }
+
+  void Script::RunCommand_CamGlobalWorldFocus() { TheCamera()->RequestSphereFocusMode(); }
+
+  void Script::RunCommand_LocationFocus(const char* _locationName, float _fov)
+  {
+    if (g_location)
+      return;
+
+    DirectX::XMFLOAT3 targetPos(0.0f, 0.0f, 0.0f);
+
+    if (stricmp(_locationName, "heaven") == 0)
+      targetPos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     else
     {
-      GlobalBuilding* gb = g_globalWorld->GetBuilding(b->m_id.GetUniqueId(), g_locationId);
-      gb->m_online = true;
+      int locationId = g_globalWorld->GetLocationId(_locationName);
+      if (locationId == -1)
+        return;
+
+      targetPos = g_globalWorld->GetLocationPosition(locationId);
     }
+
+    if (!TheCamera()->IsInMode(Camera::Mode::ModeSphereWorldScripted))
+      TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldScripted);
+
+    TheCamera()->SetTargetFOV(_fov);
+    // g_upVector is still a Vector3; g_XMIdentityR1 is the (0,1,0,0) it holds.
+    DirectX::XMFLOAT3 worldUp;
+    DirectX::XMStoreFloat3(&worldUp, DirectX::g_XMIdentityR1);
+    TheCamera()->SetTarget(targetPos, DirectX::XMFLOAT3(0, 0, 1), worldUp);
   }
-}
 
-// Opens a script file and returns. The script will only actually be run when
-// Script::Advance gets called
-void Script::RunScript(const char* _filename)
-{
-  if (strstr(_filename, ".txt"))
+  void Script::RunCommand_CamReset()
   {
+    if (TheCamera()->IsAnimPlaying())
+      TheCamera()->StopAnimation();
 
-    // Run a script, speficied by filename
-    const std::string fullFilename = std::format("Scripts/{}", _filename);
-    m_in = g_resource->GetTextReader(fullFilename);
-    DEBUG_ASSERT(m_in);
-  }
-  else
-  {
-    // This script is specified as a string id, eg "cutscenealpha"
-    // Meaning we want to say all strings like "cutscenealpha_1", "cutscenealpha_2" etc
-    // Simply dump all matching strings into Sepulveda's queue
-    int stringIndex = 1;
-    while (true)
-    {
-      const std::string stringName = std::format("{}_{}", _filename, stringIndex);
-      if (!ISLANGUAGEPHRASE_ANY(stringName.c_str()))
-        break;
-
-      ++stringIndex;
-    }
-  }
-}
-
-bool Script::Skip()
-{
-  m_waitUntil = g_gameTime;
-  m_waitForCamera = false;
-  m_waitForRocket = false;
-  m_waitForPlayerNotBusy = false;
-  TheRenderer()->m_renderDarwinLogo = -1.0f;
-
-  if (m_permitEscape)
-  {
-    // Quick exit the entire cutscene
-    delete m_in;
-    m_in = nullptr;
-    g_soundSystem->StopAllSounds(WorldObjectId(), "Music");
-    m_permitEscape = false;
     if (g_location)
       TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
     else
       TheCamera()->RequestMode(Camera::Mode::ModeSphereWorld);
-    return true;
   }
 
-  return false;
-}
-
-void Script::Advance()
-{
-  if (g_inputManager->controlEvent(ControlSkipCutscene))
-    if (Skip())
-      return;
-
-  if (m_permitEscape)
-    TheTaskManagerInterface()->SetVisible(false);
-
-  if (m_waitForFade && !TheRenderer()->IsFadeComplete())
-    return;
-  if (m_waitUntil > g_gameTime)
-    return;
-  if (m_waitForCamera && TheCamera()->IsAnimPlaying())
-    return;
-
-  if (m_waitForRocket)
+  void Script::RunCommand_EnterLocation(char* _name)
   {
-    auto rocket = static_cast<EscapeRocket*>(g_location->GetBuilding(m_rocketId));
-    if (!rocket || rocket->m_type != Building::TypeEscapeRocket)
+    g_requestedLocationId = g_globalWorld->GetLocationId(_name);
+
+    m_requestedLocationId = g_requestedLocationId;
+
+    GlobalLocation* loc = g_globalWorld->GetLocation(g_requestedLocationId);
+    DEBUG_ASSERT(loc);
+
+    g_requestedMission = loc->m_missionFilename;
+    g_requestedMap = loc->m_mapFilename;
+  }
+
+  void Script::RunCommand_ExitLocation()
+  {
+    g_requestedLocationId = -1;
+    g_requestedMission.clear();
+    g_requestedMap.clear();
+
+    m_requestedLocationId = g_requestedLocationId;
+  }
+
+  void Script::RunCommand_SetMission(char* _locName, char* _missionName)
+  {
+    GlobalLocation* loc = g_globalWorld->GetLocation(_locName);
+    DEBUG_ASSERT(loc);
+    loc->m_missionFilename = _missionName;
+    loc->m_missionCompleted = false;
+  }
+
+  void Script::RunCommand_Say(char* _stringId) {}
+
+  void Script::RunCommand_ShutUp() {}
+
+  void Script::RunCommand_Wait(double _time) { m_waitUntil = std::max(m_waitUntil, GetHighResTime() + _time); }
+
+  void Script::RunCommand_WaitSay() { m_waitForSpeech = true; }
+
+  void Script::RunCommand_WaitCam() { m_waitForCamera = true; }
+
+  void Script::RunCommand_WaitFade() { m_waitForFade = true; }
+
+  void Script::RunCommand_WaitRocket(int _buildingId, char* _state, int _data)
+  {
+    m_rocketId = _buildingId;
+    m_rocketState = EscapeRocket::GetStateId(_state);
+    m_rocketData = _data;
+    m_waitForRocket = true;
+  }
+
+  void Script::RunCommand_WaitPlayerNotBusy() { m_waitForPlayerNotBusy = true; }
+
+  void Script::RunCommand_Highlight(int _buildingId) {}
+
+  void Script::RunCommand_ClearHighlights() {}
+
+  void Script::RunCommand_TriggerSound(const char* _event)
+  {
+    const std::string eventName = std::format("Music {}", _event);
+
+    if (g_soundSystem->NumInstancesPlaying(WorldObjectId(), eventName.c_str()) == 0)
+      g_soundSystem->TriggerOtherEvent(_event, SoundSourceBlueprint::TypeMusic);
+  }
+
+  void Script::RunCommand_StopSound(const char* _event)
+  {
+    const std::string eventName = std::format("Music {}", _event);
+    g_soundSystem->StopAllSounds(WorldObjectId(), eventName.c_str());
+  }
+
+  void Script::RunCommand_DemoGesture(const char* _name) {}
+
+  void Script::RunCommand_GiveResearch(const char* _name)
+  {
+    if (stricmp(_name, "modsystem") == 0)
     {
-      m_waitForRocket = false;
-      return;
+      g_prefsManager->SetInt("ModSystemEnabled", 1);
+      g_prefsManager->Save();
+
+      TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 999, 4.0f);
     }
+    else if (stricmp(_name, "accessallareas") == 0)
+    {
+      std::string folderName = std::format("{}users/", g_appCommands->ProfileDirectory());
+      bool success = CreateDirectory(folderName.c_str());
+      if (!success)
+        DebugTrace("failed to create folder {}\n", folderName);
 
-    if (rocket->m_state < m_rocketState)
-      return;
+      folderName = std::format("{}users/AccessAllAreas/", g_appCommands->ProfileDirectory());
+      success = CreateDirectory(folderName.c_str());
+      if (!success)
+        DebugTrace("failed to create folder {}\n", folderName);
 
-    if (rocket->m_state == m_rocketState && m_rocketState == EscapeRocket::StateCountdown && static_cast<int>(rocket->m_countdown) >
-      m_rocketData)
-      return;
-  }
-
-  if (m_requestedLocationId != -1)
-  {
-    if (g_locationId != m_requestedLocationId)
-      return;
-    m_requestedLocationId = -1;
-  }
-
-  m_waitForSpeech = false;
-  m_waitForCamera = false;
-  m_waitForFade = false;
-  m_waitForRocket = false;
-  m_waitForPlayerNotBusy = false;
-
-  if (m_in)
-  {
-    if (m_in->ReadLine())
-      AdvanceScript();
+      TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, 998, 4.0f);
+    }
     else
     {
-      delete m_in;
-      m_in = nullptr;
-      m_permitEscape = false;
+      int researchType = GlobalResearch::GetType((char*)_name);
+      if (researchType != -1)
+      {
+        g_globalWorld->m_research->AddResearch(researchType);
+        TheTaskManagerInterface()->SetCurrentMessage(TaskManagerInterface::MessageResearch, researchType, 4.0f);
+      }
     }
   }
-}
 
-void Script::AdvanceScript()
-{
-  if (!m_in->TokenAvailable())
-    return;
+  void Script::RunCommand_RunCredits() {}
 
-  int opCode = GetOpCode(m_in->GetNextToken());
-  char* nextWord = nullptr;
-  float nextFloat = 0.0f;
-  if (m_in->TokenAvailable())
+  void Script::RunCommand_GameOver()
   {
-    nextWord = m_in->GetNextToken();
-    nextFloat = atof(nextWord);
+    //
+    // Go into the outro camera mode
+
+    TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldOutro);
+
+    //
+    // Kill global world ambiences
+
+    g_soundSystem->StopAllSounds(WorldObjectId(), "Ambience EnterGlobalWorld");
   }
 
-  switch (opCode)
+  void Script::RunCommand_ResetResearch()
   {
-  case OpCamMove:
+    m_citizenResearchLevel = g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen];
+    g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen] = 1;
+  }
+
+  void Script::RunCommand_RestoreResearch() { g_globalWorld->m_research->m_researchLevel[GlobalResearch::TypeCitizen] = m_citizenResearchLevel; }
+
+  GodDish* GetGodDish()
+  {
+    for (int i = 0; i < g_location->m_buildings.Size(); ++i)
+    {
+      if (g_location->m_buildings.ValidIndex(i))
+      {
+        Building* building = g_location->m_buildings[i];
+        if (building && building->m_type == Building::TypeGodDish)
+        {
+          auto dish = static_cast<GodDish*>(building);
+          return dish;
+        }
+      }
+    }
+
+    return nullptr;
+  }
+
+  void Script::RunCommand_GodDishActivate()
+  {
+    GodDish* dish = GetGodDish();
+    if (dish)
+      dish->Activate();
+  }
+
+  void Script::RunCommand_GodDishDeactivate()
+  {
+    GodDish* dish = GetGodDish();
+    if (dish)
+      dish->DeActivate();
+  }
+
+  void Script::RunCommand_GodDishSpawnSpam()
+  {
+    GodDish* dish = GetGodDish();
+    if (dish)
+      dish->SpawnSpam(false);
+  }
+
+  void Script::RunCommand_GodDishSpawnResearch()
+  {
+    GodDish* dish = GetGodDish();
+    if (dish)
+      dish->SpawnSpam(true);
+  }
+
+  void Script::RunCommand_SpamTrigger()
+  {
+    GodDish* dish = GetGodDish();
+    if (dish)
+      dish->TriggerSpam();
+  }
+
+  void Script::RunCommand_PurityControl()
+  {
+    //
+    // Delete the save game
+
+    const std::string saveDir = std::format("users/{}/", g_userProfileName);
+    // Neither the names nor the vector are freed. The exit(0) below is why that
+    // has never mattered.
+    std::vector<char*>* allFiles = ListDirectory(saveDir.c_str(), "*.*");
+
+    for (const char* filename : *allFiles)
+      DeleteThisFile(filename);
+
+    //
+    // Open up our store website
+
+    g_windowManager->OpenWebsite("http://www.darwinia.co.uk/store/");
+
+    //
+    // Shut down
+
+    exit(0);
+  }
+
+  void Script::RunCommand_ShowDarwinLogo()
+  {
+    TheRenderer()->m_renderDarwinLogo = GetHighResTime();
+    g_soundSystem->TriggerOtherEvent("ShowLogo", SoundSourceBlueprint::TypeInterface);
+  }
+
+  void Script::RunCommand_ShowDemoEndSequence() {}
+
+  void Script::RunCommand_PermitEscape() { m_permitEscape = true; }
+
+  void Script::RunCommand_DestroyBuilding(int _buildingId, float _intensity)
+  {
+    Building* b = g_location->GetBuilding(_buildingId);
+    if (b)
+      b->Destroy(_intensity);
+  }
+
+  void Script::RunCommand_ActivateTrunkPort(int _buildingId, bool _fullActivation)
+  {
+    Building* b = g_location->GetBuilding(_buildingId);
+    if (b && b->m_type == Building::TypeTrunkPort)
+    {
+      if (_fullActivation)
+        b->ReprogramComplete();
+      else
+      {
+        GlobalBuilding* gb = g_globalWorld->GetBuilding(b->m_id.GetUniqueId(), g_locationId);
+        gb->m_online = true;
+      }
+    }
+  }
+
+  // Opens a script file and returns. The script will only actually be run when
+  // Script::Advance gets called
+  void Script::RunScript(const char* _filename)
+  {
+    if (strstr(_filename, ".txt"))
+    {
+      // Run a script, speficied by filename
+      const std::string fullFilename = std::format("Scripts/{}", _filename);
+      m_in = g_resource->GetTextReader(fullFilename);
+      DEBUG_ASSERT(m_in);
+    }
+    else
+    {
+      // This script is specified as a string id, eg "cutscenealpha"
+      // Meaning we want to say all strings like "cutscenealpha_1", "cutscenealpha_2" etc
+      // Simply dump all matching strings into Sepulveda's queue
+      int stringIndex = 1;
+      while (true)
+      {
+        const std::string stringName = std::format("{}_{}", _filename, stringIndex);
+        if (!ISLANGUAGEPHRASE_ANY(stringName.c_str()))
+          break;
+
+        ++stringIndex;
+      }
+    }
+  }
+
+  bool Script::Skip()
+  {
+    m_waitUntil = g_gameTime;
+    m_waitForCamera = false;
+    m_waitForRocket = false;
+    m_waitForPlayerNotBusy = false;
+    TheRenderer()->m_renderDarwinLogo = -1.0f;
+
+    if (m_permitEscape)
+    {
+      // Quick exit the entire cutscene
+      delete m_in;
+      m_in = nullptr;
+      g_soundSystem->StopAllSounds(WorldObjectId(), "Music");
+      m_permitEscape = false;
+      if (g_location)
+        TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
+      else
+        TheCamera()->RequestMode(Camera::Mode::ModeSphereWorld);
+      return true;
+    }
+
+    return false;
+  }
+
+  void Script::Advance()
+  {
+    if (g_inputManager->controlEvent(ControlType::ControlSkipCutscene))
+      if (Skip())
+        return;
+
+    if (m_permitEscape)
+      TheTaskManagerInterface()->SetVisible(false);
+
+    if (m_waitForFade && !TheRenderer()->IsFadeComplete())
+      return;
+    if (m_waitUntil > g_gameTime)
+      return;
+    if (m_waitForCamera && TheCamera()->IsAnimPlaying())
+      return;
+
+    if (m_waitForRocket)
+    {
+      auto rocket = static_cast<EscapeRocket*>(g_location->GetBuilding(m_rocketId));
+      if (!rocket || rocket->m_type != Building::TypeEscapeRocket)
+      {
+        m_waitForRocket = false;
+        return;
+      }
+
+      if (rocket->m_state < m_rocketState)
+        return;
+
+      if (rocket->m_state == m_rocketState && m_rocketState == EscapeRocket::StateCountdown && static_cast<int>(rocket->m_countdown) > m_rocketData)
+        return;
+    }
+
+    if (m_requestedLocationId != -1)
+    {
+      if (g_locationId != m_requestedLocationId)
+        return;
+      m_requestedLocationId = -1;
+    }
+
+    m_waitForSpeech = false;
+    m_waitForCamera = false;
+    m_waitForFade = false;
+    m_waitForRocket = false;
+    m_waitForPlayerNotBusy = false;
+
+    if (m_in)
+    {
+      if (m_in->ReadLine())
+        AdvanceScript();
+      else
+      {
+        delete m_in;
+        m_in = nullptr;
+        m_permitEscape = false;
+      }
+    }
+  }
+
+  void Script::AdvanceScript()
+  {
+    if (!m_in->TokenAvailable())
+      return;
+
+    int opCode = GetOpCode(m_in->GetNextToken());
+    char* nextWord = nullptr;
+    float nextFloat = 0.0f;
+    if (m_in->TokenAvailable())
+    {
+      nextWord = m_in->GetNextToken();
+      nextFloat = atof(nextWord);
+    }
+
+    switch (opCode)
+    {
+    case OpCamMove:
     {
       float duration = atof(m_in->GetNextToken());
       RunCommand_CamMove(nextWord, duration);
@@ -746,3 +746,4 @@ int Script::GetOpCode(const char* _word)
 
   return -1;
 }
+} // namespace Species

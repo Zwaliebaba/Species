@@ -11,26 +11,28 @@
 #include "AppState.h"
 
 
-class BuyNowButton : public SpeciesButton
+namespace Species
 {
-    void MouseUp()
-    {
-		g_requestQuit = true;
-		EclRemoveWindow( m_parent->m_name );
-    }
-};
+  class BuyNowButton : public SpeciesButton
+  {
+      void MouseUp()
+      {
+        g_requestQuit = true;
+        EclRemoveWindow(m_parent->m_name.c_str());
+      }
+  };
 
 
-BuyNowWindow::BuyNowWindow()
-: SpeciesWindow( LANGUAGEPHRASE("dialog_buydarwinia" ) )
-{
+  BuyNowWindow::BuyNowWindow()
+    : SpeciesWindow(LANGUAGEPHRASE("dialog_buydarwinia"))
+  {
     int screenW = g_renderer->ScreenW();
     int screenH = g_renderer->ScreenH();
 
     SetSize( 370, 150 );
     SetPosition( screenW/2.0f - m_w/2.0f,
                  screenH/2.0f - m_h/2.0f );
-}
+  }
 
 void BuyNowWindow::Create()
 {
@@ -71,4 +73,4 @@ void BuyNowWindow::Render(bool _hasFocus)
 		g_gameFont.DrawText2DCentre( m_x+m_w/2, y+=h, 13, line[i] );
 
 }
-
+} // namespace Species

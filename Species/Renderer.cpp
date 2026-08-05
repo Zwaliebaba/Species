@@ -44,199 +44,202 @@
 
 #define USE_PIXEL_EFFECT_GRID_OPTIMISATION 1
 
-Renderer::Renderer()
-  : m_fps(60),
-    m_displayFPS(false),
-    m_renderDebug(false),
-    m_displayInputMode(false),
-    m_renderDarwinLogo(-1.0f),
-    m_nearPlane(5.0f),
-    m_farPlane(150000.0f),
-    m_tileIndex(0),
-    m_fadedness(0.0f),
-    m_fadeRate(0.0f),
-    m_fadeDelay(0.0f),
-    m_pixelSize(256)
-{
-}
 
-void Renderer::Initialise()
+namespace Species
 {
-  m_screenW = g_prefsManager->GetInt("ScreenWidth", 0);
-  m_screenH = g_prefsManager->GetInt("ScreenHeight", 0);
-  bool windowed = g_prefsManager->GetInt("ScreenWindowed", 0) ? true : false;
-  int colourDepth = g_prefsManager->GetInt("ScreenColourDepth", 32);
-  int refreshRate = g_prefsManager->GetInt("ScreenRefresh", 75);
-  int zDepth = g_prefsManager->GetInt("ScreenZDepth", 24);
-  bool waitVRT = g_prefsManager->GetInt("WaitVerticalRetrace", 1);
-
-  if (m_screenW == 0 || m_screenH == 0)
+  Renderer::Renderer()
+    : m_fps(60),
+      m_displayFPS(false),
+      m_renderDebug(false),
+      m_displayInputMode(false),
+      m_renderDarwinLogo(-1.0f),
+      m_nearPlane(5.0f),
+      m_farPlane(150000.0f),
+      m_tileIndex(0),
+      m_fadedness(0.0f),
+      m_fadeRate(0.0f),
+      m_fadeDelay(0.0f),
+      m_pixelSize(256)
   {
-    g_windowManager->SuggestDefaultRes(&m_screenW, &m_screenH, &refreshRate, &colourDepth);
-    g_prefsManager->SetInt("ScreenWidth", m_screenW);
-    g_prefsManager->SetInt("ScreenHeight", m_screenH);
-    g_prefsManager->SetInt("ScreenRefresh", refreshRate);
-    g_prefsManager->SetInt("ScreenColourDepth", colourDepth);
   }
 
-  bool success = g_windowManager->CreateWin(m_screenW, m_screenH, windowed, colourDepth, refreshRate, zDepth, waitVRT);
-
-  if (!success)
+  void Renderer::Initialise()
   {
-    char caption[512];
-    sprintf(caption,
-            "Failed to set requested screen resolution of\n"
-            "%d x %d, %d bit colour, %s\n\n"
-            "Restored to safety settings of\n"
-            "640 x 480, 16 bit colour, windowed",
-            m_screenW, m_screenH, colourDepth, windowed ? "windowed" : "fullscreen");
-    auto owned = std::make_unique<MessageDialog>("Error", caption);
-    MessageDialog* dialog = owned.get();
-    EclRegisterWindow(std::move(owned));
-    dialog->m_x = 100;
-    dialog->m_y = 100;
+    m_screenW = g_prefsManager->GetInt("ScreenWidth", 0);
+    m_screenH = g_prefsManager->GetInt("ScreenHeight", 0);
+    bool windowed = g_prefsManager->GetInt("ScreenWindowed", 0) ? true : false;
+    int colourDepth = g_prefsManager->GetInt("ScreenColourDepth", 32);
+    int refreshRate = g_prefsManager->GetInt("ScreenRefresh", 75);
+    int zDepth = g_prefsManager->GetInt("ScreenZDepth", 24);
+    bool waitVRT = g_prefsManager->GetInt("WaitVerticalRetrace", 1);
 
-    // Go for safety values
-    m_screenW = 640;
-    m_screenH = 480;
-    windowed = true;
-    colourDepth = 16;
-    zDepth = 16;
-    refreshRate = 60;
+    if (m_screenW == 0 || m_screenH == 0)
+    {
+      g_windowManager->SuggestDefaultRes(&m_screenW, &m_screenH, &refreshRate, &colourDepth);
+      g_prefsManager->SetInt("ScreenWidth", m_screenW);
+      g_prefsManager->SetInt("ScreenHeight", m_screenH);
+      g_prefsManager->SetInt("ScreenRefresh", refreshRate);
+      g_prefsManager->SetInt("ScreenColourDepth", colourDepth);
+    }
 
-    success = g_windowManager->CreateWin(m_screenW, m_screenH, windowed, colourDepth, refreshRate, zDepth, waitVRT);
+    bool success = g_windowManager->CreateWin(m_screenW, m_screenH, windowed, colourDepth, refreshRate, zDepth, waitVRT);
+
     if (!success)
     {
-      // next try with 24bit z (colour depth is automatic in windowed mode)
-      zDepth = 24;
-      success = g_windowManager->CreateWin(m_screenW, m_screenH, windowed, colourDepth, refreshRate, zDepth, waitVRT);
-    }
-    ASSERT_TEXT(success, "Failed to set screen mode");
+      char caption[512];
+      sprintf(caption,
+              "Failed to set requested screen resolution of\n"
+              "%d x %d, %d bit colour, %s\n\n"
+              "Restored to safety settings of\n"
+              "640 x 480, 16 bit colour, windowed",
+              m_screenW, m_screenH, colourDepth, windowed ? "windowed" : "fullscreen");
+      auto owned = std::make_unique<MessageDialog>("Error", caption);
+      MessageDialog* dialog = owned.get();
+      EclRegisterWindow(std::move(owned));
+      dialog->m_x = 100;
+      dialog->m_y = 100;
 
-    g_prefsManager->SetInt("ScreenWidth", m_screenW);
-    g_prefsManager->SetInt("ScreenHeight", m_screenH);
-    g_prefsManager->SetInt("ScreenWindowed", 1);
-    g_prefsManager->SetInt("ScreenColourDepth", colourDepth);
-    g_prefsManager->SetInt("ScreenRefresh", 60);
-    g_prefsManager->Save();
+      // Go for safety values
+      m_screenW = 640;
+      m_screenH = 480;
+      windowed = true;
+      colourDepth = 16;
+      zDepth = 16;
+      refreshRate = 60;
+
+      success = g_windowManager->CreateWin(m_screenW, m_screenH, windowed, colourDepth, refreshRate, zDepth, waitVRT);
+      if (!success)
+      {
+        // next try with 24bit z (colour depth is automatic in windowed mode)
+        zDepth = 24;
+        success = g_windowManager->CreateWin(m_screenW, m_screenH, windowed, colourDepth, refreshRate, zDepth, waitVRT);
+      }
+      ASSERT_TEXT(success, "Failed to set screen mode");
+
+      g_prefsManager->SetInt("ScreenWidth", m_screenW);
+      g_prefsManager->SetInt("ScreenHeight", m_screenH);
+      g_prefsManager->SetInt("ScreenWindowed", 1);
+      g_prefsManager->SetInt("ScreenColourDepth", colourDepth);
+      g_prefsManager->SetInt("ScreenRefresh", 60);
+      g_prefsManager->Save();
+    }
+
+    InitialiseOGLExtensions();
+
+    BuildOpenGlState();
   }
 
-  InitialiseOGLExtensions();
+  void Renderer::Restart() { BuildOpenGlState(); }
 
-  BuildOpenGlState();
-}
+  void Renderer::BuildOpenGlState() { glGenTextures(1, &m_pixelEffectTexId); }
 
-void Renderer::Restart() { BuildOpenGlState(); }
+  void Renderer::RenderFlatTexture()
+  {
+    glColor3ubv(g_colourWhite.GetData());
+    glEnable(GL_TEXTURE_2D);
+    int textureId = g_resource->GetTexture("Textures/privatedemo.bmp", true, true);
+    if (textureId == -1)
+      return;
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-void Renderer::BuildOpenGlState() { glGenTextures(1, &m_pixelEffectTexId); }
+    float size = m_nearPlane * 0.3f;
+    DirectX::XMFLOAT3 const camUp = TheCamera()->GetUp();
+    DirectX::XMFLOAT3 const camRight = TheCamera()->GetRight();
+    DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+    DirectX::XMFLOAT3 const camFront = TheCamera()->GetFront();
+    DirectX::XMVECTOR const up = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUp), 1.0f * size);
+    DirectX::XMVECTOR const right = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRight), 1.0f * size);
+    DirectX::XMVECTOR const pos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&camFront), DirectX::XMVectorReplicate(m_nearPlane * 1.01f),
+                                                               DirectX::XMLoadFloat3(&camPosStore));
 
-void Renderer::RenderFlatTexture()
-{
-  glColor3ubv(g_colourWhite.GetData());
-  glEnable(GL_TEXTURE_2D);
-  int textureId = g_resource->GetTexture("Textures/privatedemo.bmp", true, true);
-  if (textureId == -1)
-    return;
-  glBindTexture(GL_TEXTURE_2D, textureId);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-  float size = m_nearPlane * 0.3f;
-  DirectX::XMFLOAT3 const camUp = TheCamera()->GetUp();
-  DirectX::XMFLOAT3 const camRight = TheCamera()->GetRight();
-  DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
-  DirectX::XMFLOAT3 const camFront = TheCamera()->GetFront();
-  DirectX::XMVECTOR const up = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUp), 1.0f * size);
-  DirectX::XMVECTOR const right = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRight), 1.0f * size);
-  DirectX::XMVECTOR const pos = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&camFront), DirectX::XMVectorReplicate(m_nearPlane * 1.01f),
-                                                             DirectX::XMLoadFloat3(&camPosStore));
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, 0.02f);
 
-  glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glBegin(GL_QUADS);
+    glTexCoord2f(1.0f, 1.0f);
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, up), right));
+    glTexCoord2f(0.0f, 1.0f);
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, up), right));
+    glTexCoord2f(0.0f, 0.0f);
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, up), right));
+    glTexCoord2f(1.0f, 0.0f);
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, up), right));
+    glEnd();
 
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glEnable(GL_ALPHA_TEST);
-  glAlphaFunc(GL_GREATER, 0.02f);
+    glAlphaFunc(GL_GREATER, 0.01);
+    glDisable(GL_ALPHA_TEST);
+    glDisable(GL_BLEND);
 
-  glBegin(GL_QUADS);
-  glTexCoord2f(1.0f, 1.0f);
-  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, up), right));
-  glTexCoord2f(0.0f, 1.0f);
-  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, up), right));
-  glTexCoord2f(0.0f, 0.0f);
-  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, up), right));
-  glTexCoord2f(1.0f, 0.0f);
-  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, up), right));
-  glEnd();
+    glDisable(GL_TEXTURE_2D);
 
-  glAlphaFunc(GL_GREATER, 0.01);
-  glDisable(GL_ALPHA_TEST);
-  glDisable(GL_BLEND);
+    glLineWidth(1.0f);
+    glBegin(GL_LINE_LOOP);
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, up), right));
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, up), right));
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, up), right));
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, up), right));
+    glEnd();
+  }
 
-  glDisable(GL_TEXTURE_2D);
+  void Renderer::RenderLogo()
+  {
+    glColor3ubv(g_colourWhite.GetData());
+    glEnable(GL_BLEND);
+    glDepthMask(false);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  glLineWidth(1.0f);
-  glBegin(GL_LINE_LOOP);
-  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, up), right));
-  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, up), right));
-  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, up), right));
-  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, up), right));
-  glEnd();
-}
+    glColor4ub(0, 0, 0, 200);
+    float logoW = 200;
+    float logoH = 35;
+    glBegin(GL_QUADS);
+    glVertex2f(m_screenW - logoW - 10, m_screenH - logoH - 10);
+    glVertex2f(m_screenW - 10, m_screenH - logoH - 10);
+    glVertex2f(m_screenW - 10, m_screenH - 10);
+    glVertex2f(m_screenW - logoW - 10, m_screenH - 10);
+    glEnd();
 
-void Renderer::RenderLogo()
-{
-  glColor3ubv(g_colourWhite.GetData());
-  glEnable(GL_BLEND);
-  glDepthMask(false);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor4ub(255, 255, 255, 255);
+    glEnable(GL_TEXTURE_2D);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    int textureId = g_resource->GetTexture("Textures/privatedemo.bmp", true, false);
+    if (textureId == -1)
+      return;
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-  glColor4ub(0, 0, 0, 200);
-  float logoW = 200;
-  float logoH = 35;
-  glBegin(GL_QUADS);
-  glVertex2f(m_screenW - logoW - 10, m_screenH - logoH - 10);
-  glVertex2f(m_screenW - 10, m_screenH - logoH - 10);
-  glVertex2f(m_screenW - 10, m_screenH - 10);
-  glVertex2f(m_screenW - logoW - 10, m_screenH - 10);
-  glEnd();
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(m_screenW - logoW - 10, m_screenH - logoH - 10);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(m_screenW - 10, m_screenH - logoH - 10);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f(m_screenW - 10, m_screenH - 10);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(m_screenW - logoW - 10, m_screenH - 10);
+    glEnd();
 
-  glColor4ub(255, 255, 255, 255);
-  glEnable(GL_TEXTURE_2D);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  int textureId = g_resource->GetTexture("Textures/privatedemo.bmp", true, false);
-  if (textureId == -1)
-    return;
-  glBindTexture(GL_TEXTURE_2D, textureId);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glDepthMask(true);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  glBegin(GL_QUADS);
-  glTexCoord2f(0.0f, 1.0f);
-  glVertex2f(m_screenW - logoW - 10, m_screenH - logoH - 10);
-  glTexCoord2f(1.0f, 1.0f);
-  glVertex2f(m_screenW - 10, m_screenH - logoH - 10);
-  glTexCoord2f(1.0f, 0.0f);
-  glVertex2f(m_screenW - 10, m_screenH - 10);
-  glTexCoord2f(0.0f, 0.0f);
-  glVertex2f(m_screenW - logoW - 10, m_screenH - 10);
-  glEnd();
+    glColor4f(1.0f, 0.75f, 0.75f, 1.0f);
+    g_gameFont.DrawText2D(20, m_screenH - 70, 25, LANGUAGEPHRASE("privatedemo1"));
+    g_gameFont.DrawText2D(20, m_screenH - 40, 25, LANGUAGEPHRASE("privatedemo2"));
+    g_gameFont.DrawText2D(20, m_screenH - 10, 10, LANGUAGEPHRASE("privatedemo2"));
+  }
 
-  glDepthMask(true);
-  glDisable(GL_TEXTURE_2D);
-  glDisable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  glColor4f(1.0f, 0.75f, 0.75f, 1.0f);
-  g_gameFont.DrawText2D(20, m_screenH - 70, 25, LANGUAGEPHRASE("privatedemo1"));
-  g_gameFont.DrawText2D(20, m_screenH - 40, 25, LANGUAGEPHRASE("privatedemo2"));
-  g_gameFont.DrawText2D(20, m_screenH - 10, 10, LANGUAGEPHRASE("privatedemo2"));
-}
-
-void Renderer::Render()
-{
+  void Renderer::Render()
+  {
 #ifdef PROFILER_ENABLED
   g_profiler->RenderStarted();
 #endif
@@ -246,7 +249,7 @@ void Renderer::Render()
 #ifdef PROFILER_ENABLED
   g_profiler->RenderEnded();
 #endif // PROFILER_ENABLED
-}
+  }
 
 bool Renderer::IsFadeComplete() const
 {
@@ -441,10 +444,10 @@ void Renderer::RenderFrame(bool withFlip)
     glEnd();
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText2D(12, 10, DEF_FONT_SIZE, "FPS: %d", m_fps);
-    //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "TFPS: %2.0f", g_targetFrameRate);
+    g_editorFont.DrawText2D(12, 10, DEF_FONT_SIZE, "FPS: {}", m_fps);
+    //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "TFPS: {:2.0f}", g_targetFrameRate);
     //		Vector3 const camPos = TheCamera()->GetPos();
-    //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "cam: %.1f, %.1f, %.1f", camPos.x, camPos.y, camPos.z);
+    //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "cam: {:.1f}, {:.1f}, {:.1f}", camPos.x, camPos.y, camPos.z);
   }
 
   if (m_displayInputMode)
@@ -471,7 +474,7 @@ void Renderer::RenderFrame(bool withFlip)
     }
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText2D(84, 10, DEF_FONT_SIZE, "InputMode: %s", inmode.c_str());
+    g_editorFont.DrawText2D(84, 10, DEF_FONT_SIZE, "InputMode: {}", inmode.c_str());
   }
 
   if (g_editing)
@@ -480,9 +483,9 @@ void Renderer::RenderFrame(bool withFlip)
 
     if (g_locationId != -1)
     {
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : %d", g_location->m_landscape.m_renderer->m_numTriangles);
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : %s", g_requestedMission.c_str());
-      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : %s", g_requestedMap.c_str());
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 40, DEF_FONT_SIZE, "Triangles : {}", g_location->m_landscape.m_renderer->m_numTriangles);
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 25, DEF_FONT_SIZE, "Mission   : {}", g_requestedMission.c_str());
+      g_editorFont.DrawText2D(m_screenW - 300, m_screenH - 10, DEF_FONT_SIZE, "Map       : {}", g_requestedMap.c_str());
     }
   }
 
@@ -499,7 +502,7 @@ void Renderer::RenderFrame(bool withFlip)
       glVertex2f(m_screenW / 2 - 200, 80);
       glEnd();
       glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-      g_editorFont.DrawText2DCentre(m_screenW / 2, 100, 20, "Client LAG %dms behind Server ", latency * 100);
+      g_editorFont.DrawText2DCentre(m_screenW / 2, 100, 20, "Client LAG {}ms behind Server ", latency * 100);
     }
   }
 
@@ -1265,7 +1268,7 @@ void Renderer::ApplyPixelEffect()
         const float dist = m_pixelEffectGrid[x][blah];
         if (dist < 1e9)
         {
-          g_editorFont.DrawText2DCentre(static_cast<float>(x) * scaleX + offsetX, static_cast<float>(y) * scaleY + offsetY, 12, "%.0f", dist);
+          g_editorFont.DrawText2DCentre(static_cast<float>(x) * scaleX + offsetX, static_cast<float>(y) * scaleY + offsetY, 12, "{:.0f}", dist);
         }
       }
     }
@@ -1430,3 +1433,4 @@ void Renderer::MarkUsedCells(Shape const* _shape, DirectX::XMFLOAT4X4 const& _tr
   MarkUsedCells(_shape->m_rootFragment.get(), _transform);
   END_PROFILE(g_profiler, "MarkUsedCells");
 }
+} // namespace Species

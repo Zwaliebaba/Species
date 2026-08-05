@@ -1,6 +1,5 @@
 #pragma once
 
-class BinaryReader;
 
 //*****************************************************************************
 // Class SoundStreamDecoder
@@ -10,35 +9,40 @@ class BinaryReader;
 // If the file contains 8 bit data it gets converted into 16 bit data. It
 // assumes that 8 bit wav files are unsigned and that 16 bit wav files are signed.
 
-class SoundStreamDecoder
+
+namespace Neuron
 {
-  protected:
-    BinaryReader* m_in;
+  class BinaryReader;
 
-    unsigned int m_samplesRemaining; // Wav only
-    unsigned int m_dataStartOffset; // Wav only - bytes from start of file
+  class SoundStreamDecoder
+  {
+    protected:
+      BinaryReader* m_in;
 
-    unsigned char m_bits; // 8 or 16 - Indicates source file format - output is always 16 bit
-    int m_fileType;
+      unsigned int m_samplesRemaining; // Wav only
+      unsigned int m_dataStartOffset;  // Wav only - bytes from start of file
 
-    void ReadWavHeader();
-    unsigned ReadWavData(signed short* _data, unsigned int _numSamples);
+      unsigned char m_bits; // 8 or 16 - Indicates source file format - output is always 16 bit
+      int m_fileType;
 
-  public:
-    unsigned int m_numChannels;
-    unsigned int m_freq;
-    unsigned int m_numSamples;
+      void ReadWavHeader();
+      unsigned ReadWavData(signed short* _data, unsigned int _numSamples);
 
-    enum
-    {
-      TypeUnknown,
-      TypeWav
-    };
+    public:
+      unsigned int m_numChannels;
+      unsigned int m_freq;
+      unsigned int m_numSamples;
 
-    SoundStreamDecoder(BinaryReader* _in);
-    ~SoundStreamDecoder();
+      enum
+      {
+        TypeUnknown,
+        TypeWav
+      };
 
-    unsigned int Read(signed short* _data, unsigned int _numSamples);
-    void Restart();
-};
+      SoundStreamDecoder(BinaryReader* _in);
+      ~SoundStreamDecoder();
 
+      unsigned int Read(signed short* _data, unsigned int _numSamples);
+      void Restart();
+  };
+} // namespace Neuron

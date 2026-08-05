@@ -16,81 +16,84 @@
 #define AXIS_Z 2
 
 
-TargetCursor* g_target = nullptr;
-
-
-TargetCursor::TargetCursor()
+namespace Neuron
 {
-  m_screenCoords[AXIS_X] = 0;
-  m_screenCoords[AXIS_Y] = 0;
-  m_screenCoords[AXIS_Z] = 0;
-  m_velocity[AXIS_X] = 0;
-  m_velocity[AXIS_Y] = 0;
-  m_velocity[AXIS_Z] = 0;
-}
+  TargetCursor* g_target = nullptr;
 
 
-void TargetCursor::SetMousePos(int x, int y)
-{
-  m_screenCoords[AXIS_X] = x;
-  m_screenCoords[AXIS_Y] = y;
-  g_windowManager->NastySetMousePos(x, y);
-}
-
-
-void TargetCursor::MoveCursor(int x, int y)
-{
-  m_velocity[AXIS_X] += x;
-  m_velocity[AXIS_Y] += y;
-  m_screenCoords[AXIS_X] += x;
-  m_screenCoords[AXIS_Y] += y;
-  g_windowManager->NastyMoveMouse(x, y);
-}
-
-
-int TargetCursor::X() const { return m_screenCoords[AXIS_X]; }
-
-
-int TargetCursor::Y() const { return m_screenCoords[AXIS_Y]; }
-
-
-int TargetCursor::Z() const { return m_screenCoords[AXIS_Z]; }
-
-
-int TargetCursor::dX() const { return m_velocity[AXIS_X]; }
-
-
-int TargetCursor::dY() const { return m_velocity[AXIS_Y]; }
-
-
-int TargetCursor::dZ() const { return m_velocity[AXIS_Z]; }
-
-
-bool secondaryInputEnabled() { return (EclGetWindows()->size() == 0) && !g_taskManagerInterface->IsVisible(); }
-
-void TargetCursor::Advance()
-{
-  InputDetails details;
-  if ((g_inputManager->controlEvent(ControlTargetMove, details) ||
-       (secondaryInputEnabled() && g_inputManager->controlEvent(ControlTargetMoveSecondary, details))) &&
-      InputType::INPUT_TYPE_2D == details.type)
+  TargetCursor::TargetCursor()
   {
-    m_velocity[AXIS_X] = details.x;
-    m_velocity[AXIS_Y] = details.y;
-    m_screenCoords[AXIS_X] += m_velocity[AXIS_X];
-    m_screenCoords[AXIS_Y] += m_velocity[AXIS_Y];
-
-    if (g_camera->IsInMode(CameraAccess::Mode::ModeFreeMovement))
-      g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondCameraAim);
-  }
-  else
-    m_velocity[AXIS_X] = m_velocity[AXIS_Y] = 0;
-
-  if (g_inputManager->controlEvent(ControlTargetMoveZ, details) && InputType::INPUT_TYPE_1D == details.type)
-  {
-    m_velocity[AXIS_Z] = details.x;
-    m_screenCoords[AXIS_Z] += m_velocity[AXIS_Z];
-  }
-  else
+    m_screenCoords[AXIS_X] = 0;
+    m_screenCoords[AXIS_Y] = 0;
+    m_screenCoords[AXIS_Z] = 0;
+    m_velocity[AXIS_X] = 0;
+    m_velocity[AXIS_Y] = 0;
     m_velocity[AXIS_Z] = 0;
-}
+  }
+
+
+  void TargetCursor::SetMousePos(int x, int y)
+  {
+    m_screenCoords[AXIS_X] = x;
+    m_screenCoords[AXIS_Y] = y;
+    g_windowManager->NastySetMousePos(x, y);
+  }
+
+
+  void TargetCursor::MoveCursor(int x, int y)
+  {
+    m_velocity[AXIS_X] += x;
+    m_velocity[AXIS_Y] += y;
+    m_screenCoords[AXIS_X] += x;
+    m_screenCoords[AXIS_Y] += y;
+    g_windowManager->NastyMoveMouse(x, y);
+  }
+
+
+  int TargetCursor::X() const { return m_screenCoords[AXIS_X]; }
+
+
+  int TargetCursor::Y() const { return m_screenCoords[AXIS_Y]; }
+
+
+  int TargetCursor::Z() const { return m_screenCoords[AXIS_Z]; }
+
+
+  int TargetCursor::dX() const { return m_velocity[AXIS_X]; }
+
+
+  int TargetCursor::dY() const { return m_velocity[AXIS_Y]; }
+
+
+  int TargetCursor::dZ() const { return m_velocity[AXIS_Z]; }
+
+
+  bool secondaryInputEnabled() { return (EclGetWindows()->size() == 0) && !g_taskManagerInterface->IsVisible(); }
+
+  void TargetCursor::Advance()
+  {
+    InputDetails details;
+    if ((g_inputManager->controlEvent(ControlType::ControlTargetMove, details) ||
+         (secondaryInputEnabled() && g_inputManager->controlEvent(ControlType::ControlTargetMoveSecondary, details))) &&
+        InputType::INPUT_TYPE_2D == details.type)
+    {
+      m_velocity[AXIS_X] = details.x;
+      m_velocity[AXIS_Y] = details.y;
+      m_screenCoords[AXIS_X] += m_velocity[AXIS_X];
+      m_screenCoords[AXIS_Y] += m_velocity[AXIS_Y];
+
+      if (g_camera->IsInMode(CameraAccess::Mode::ModeFreeMovement))
+        g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondCameraAim);
+    }
+    else
+      m_velocity[AXIS_X] = m_velocity[AXIS_Y] = 0;
+
+    if (g_inputManager->controlEvent(ControlType::ControlTargetMoveZ, details) && InputType::INPUT_TYPE_1D == details.type)
+    {
+      m_velocity[AXIS_Z] = details.x;
+      m_screenCoords[AXIS_Z] += m_velocity[AXIS_Z];
+    }
+    else
+      m_velocity[AXIS_Z] = 0;
+  }
+} // namespace Neuron

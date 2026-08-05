@@ -7,112 +7,116 @@
 #include "WorldObject.h"
 #include "TaskManagerInterface.h"
 
-class QuickUnitButton;
 
-class TaskManagerInterfaceIcons : public TaskManagerInterface
+namespace Species
 {
-  protected:
-    enum
-    {
-      ScreenOverlay, // On all screens
-      ScreenTaskManager,
-      ScreenObjectives,
-      ScreenResearch
-    };
-    int m_screenId;
+  class QuickUnitButton;
 
-    float m_screenY;
-    float m_desiredScreenY;
-    float m_screenW;
-    float m_screenH;
+  class TaskManagerInterfaceIcons : public TaskManagerInterface
+  {
+    protected:
+      enum
+      {
+        ScreenOverlay, // On all screens
+        ScreenTaskManager,
+        ScreenObjectives,
+        ScreenResearch
+      };
+      int m_screenId;
 
-    float m_chatLogY;
+      float m_screenY;
+      float m_desiredScreenY;
+      float m_screenW;
+      float m_screenH;
 
-    // Both owning. A zone moves from m_newScreenZones to m_screenZones once a
-    // frame; the transfer is a move, and the old m_screenZones contents are
-    // destroyed at the same point EmptyAndDelete used to destroy them.
-    std::vector<std::unique_ptr<ScreenZone>> m_screenZones;    // All clickable areas on-screen
-    std::vector<std::unique_ptr<ScreenZone>> m_newScreenZones; // New zones generated this frame
-    std::vector<KeyboardShortcut*> m_keyboardShortcuts; // Keyboard shortcuts to screenzones
-    int m_currentScreenZone;
-    int m_currentMouseScreenZone;
-    int m_currentScrollZone;
-    float m_screenZoneTimer;
-    double m_taskManagerDownTime;
+      float m_chatLogY;
 
-  public:
-    int m_currentQuickUnit;
-    int m_quickUnitDirection;
-    std::vector<std::unique_ptr<QuickUnitButton>> m_quickUnitButtons;
+      // Both owning. A zone moves from m_newScreenZones to m_screenZones once a
+      // frame; the transfer is a move, and the old m_screenZones contents are
+      // destroyed at the same point EmptyAndDelete used to destroy them.
+      std::vector<std::unique_ptr<ScreenZone>> m_screenZones;    // All clickable areas on-screen
+      std::vector<std::unique_ptr<ScreenZone>> m_newScreenZones; // New zones generated this frame
+      std::vector<KeyboardShortcut*> m_keyboardShortcuts;        // Keyboard shortcuts to screenzones
+      int m_currentScreenZone;
+      int m_currentMouseScreenZone;
+      int m_currentScrollZone;
+      float m_screenZoneTimer;
+      double m_taskManagerDownTime;
 
-  protected:
-    void AdvanceScrolling();
-    void AdvanceScreenEdges();
-    void AdvanceScreenZones();
-    void AdvanceKeyboardShortcuts();
-    void AdvanceTerminate();
-    void AdvanceQuickUnit();
+    public:
+      int m_currentQuickUnit;
+      int m_quickUnitDirection;
+      std::vector<std::unique_ptr<QuickUnitButton>> m_quickUnitButtons;
 
-    void HideTaskManager();
+    protected:
+      void AdvanceScrolling();
+      void AdvanceScreenEdges();
+      void AdvanceScreenZones();
+      void AdvanceKeyboardShortcuts();
+      void AdvanceTerminate();
+      void AdvanceQuickUnit();
 
-    bool ScreenZoneHighlighted(ScreenZone* _zone);
-    void RunScreenZone(const char* _name, int _data); // Occurs during click or keypress
+      void HideTaskManager();
 
-    void SetupRenderMatrices(int _screenId);
-    void ConvertMousePosition(float& _x, float& _y);
-    void RestoreRenderMatrices();
+      bool ScreenZoneHighlighted(ScreenZone* _zone);
+      void RunScreenZone(const char* _name, int _data); // Occurs during click or keypress
 
-    void RenderTargetAreas();
-    void RenderMessages();
-    void RenderRunningTasks();
-    void RenderOverview();
-    void RenderTaskManager();
-    void RenderObjectives();
-    void RenderResearch();
-    void RenderTitleBar();
-    void RenderScreenZones();
-    void RenderTooltip();
-    void RenderCreateTaskMenu();
-    void RenderQuickUnit();
+      void SetupRenderMatrices(int _screenId);
+      void ConvertMousePosition(float& _x, float& _y);
+      void RestoreRenderMatrices();
 
-    void RenderCompass(float _screenX, float _screenY, DirectX::XMFLOAT3 const& _worldPos, bool selected, float _size);
+      void RenderTargetAreas();
+      void RenderMessages();
+      void RenderRunningTasks();
+      void RenderOverview();
+      void RenderTaskManager();
+      void RenderObjectives();
+      void RenderResearch();
+      void RenderTitleBar();
+      void RenderScreenZones();
+      void RenderTooltip();
+      void RenderCreateTaskMenu();
+      void RenderQuickUnit();
 
-    int GetQuickUnitTask(int _position = 2);
-    void CreateQuickUnitInterface();
-    void DestroyQuickUnitInterface();
+      void RenderCompass(float _screenX, float _screenY, DirectX::XMFLOAT3 const& _worldPos, bool selected, float _size);
 
-    bool ButtonHeld();
-    bool ButtonHeldAndReleased();
+      int GetQuickUnitTask(int _position = 2);
+      void CreateQuickUnitInterface();
+      void DestroyQuickUnitInterface();
 
-  public:
-    TaskManagerInterfaceIcons();
+      bool ButtonHeld();
+      bool ButtonHeldAndReleased();
 
-    virtual void Advance();
-    virtual void Render();
+    public:
+      TaskManagerInterfaceIcons();
 
-    bool ControlEvent(TMControl _type);
-    bool AdviseCreateControlHelpBlue();
-    bool AdviseCreateControlHelpGreen();
-    bool AdviseCloseControlHelp();
-    bool AdviseOverSelectableZone();
-};
+      virtual void Advance();
+      virtual void Render();
 
-class QuickUnitButton
-{
-  public:
-    int m_taskId;
-    int m_positionId;
-    float m_size;
+      bool ControlEvent(TMControl _type);
+      bool AdviseCreateControlHelpBlue();
+      bool AdviseCreateControlHelpGreen();
+      bool AdviseCloseControlHelp();
+      bool AdviseOverSelectableZone();
+  };
 
-    int m_x;
-    int m_y;
-    float m_alpha;
+  class QuickUnitButton
+  {
+    public:
+      int m_taskId;
+      int m_positionId;
+      float m_size;
 
-    bool m_movable;
+      int m_x;
+      int m_y;
+      float m_alpha;
 
-  public:
-    QuickUnitButton();
-    void Advance();
-    void Render();
-    void ActivateButton();
-};
+      bool m_movable;
+
+    public:
+      QuickUnitButton();
+      void Advance();
+      void Render();
+      void ActivateButton();
+  };
+} // namespace Species

@@ -4,10 +4,11 @@
 #include "RenderUtils.h"
 
 
-void RenderSplitUpQuadTextured(
-		float posNorth, float posSouth, float posEast, float posWest, float height,
-		float texNorth, float texSouth, float texEast, float texWest, int steps)
+namespace Neuron
 {
+  void RenderSplitUpQuadTextured(float posNorth, float posSouth, float posEast, float posWest, float height, float texNorth, float texSouth,
+                                 float texEast, float texWest, int steps)
+  {
     float sizeX = posWest - posEast;
     float sizeZ = posSouth - posNorth;
 	float texSizeX = texWest - texEast;
@@ -42,7 +43,7 @@ void RenderSplitUpQuadTextured(
 			}
 		}
 	glEnd();
-}
+  }
 
 
 void RenderSplitUpQuadMultiTextured(
@@ -97,3 +98,4 @@ void RenderSplitUpQuadMultiTextured(
 		}
 	glEnd();
 }
+} // namespace Neuron

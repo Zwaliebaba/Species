@@ -13,10 +13,16 @@
 //
 // The game-mode enum comes with them: it was an anonymous enum inside App, so
 // comparing g_gameMode against it would otherwise still drag App.h down here.
+//
+// This file already carried a `namespace Neuron { class Server; }` block for
+// NeuronServer's Server, which T3 qualified. namespace-migration T2 puts the
+// whole file in that namespace, so the block is gone and the forward
+// declaration is an ordinary one again — INSIDE the wrapper, because that is
+// where Neuron::Server is. Outside it, it declares an unrelated ::Server and
+// every dereference of g_server fails on an incomplete type. It did.
 namespace Neuron
 {
   class Server;
-}
 
 enum
 {
@@ -36,7 +42,7 @@ extern int g_requestedLocationId;
 extern int g_gameMode;
 extern bool g_atMainMenu;
 extern bool g_requestToggleEditing;
-extern Neuron::Server* g_server;
+extern Server* g_server;
 extern ControlHelpAccess* g_controlHelpSystem;
 extern std::string g_userProfileName;
 
@@ -59,3 +65,4 @@ extern RGBAColour g_backgroundColour;
 // The RenderNegative preference, read once at startup. The landscape and water
 // renderers invert their colours for it.
 extern bool g_negativeRenderer;
+} // namespace Neuron

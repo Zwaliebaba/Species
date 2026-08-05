@@ -4,8 +4,13 @@
 
 #define REALLYQUIT_WINDOWNAME "Really Quit?"
 
-class ReallyQuitWindow : public SpeciesWindow {
-public:
-	ReallyQuitWindow();
-	void Create();
-};
+
+namespace Species
+{
+  class ReallyQuitWindow : public SpeciesWindow
+  {
+    public:
+      ReallyQuitWindow();
+      void Create();
+  };
+} // namespace Species

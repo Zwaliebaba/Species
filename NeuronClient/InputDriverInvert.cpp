@@ -8,78 +8,81 @@
 using namespace std;
 
 
-static string nullErr = "";
-
-
-InvertInputDriver::InvertInputDriver()
-  : m_specs(),
-    lastError(nullErr)
+namespace Neuron
 {
-  setName("Invert");
-}
+  static string nullErr = "";
 
 
-bool InvertInputDriver::getInput(InputSpec const& spec, InputDetails& details)
-{
-  if (0 <= spec.control_id && spec.control_id < m_specs.size())
+  InvertInputDriver::InvertInputDriver()
+    : m_specs(),
+      lastError(nullErr)
   {
-    const InputSpec& invspec = *(m_specs[spec.control_id]);
-    bool ans = !(g_inputManager->checkInput(invspec, details));
-    return ans;
+    setName("Invert");
   }
-  return false;
-}
 
 
-void InvertInputDriver::Advance() {}
-
-
-const string& InvertInputDriver::getLastParseError(InputParserState state) { return lastError; }
-
-
-InputParserState InvertInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
-{
-  // ofstream derr( "inputinvert_debug.txt", ios::app );
-  // derr << "Full: " << tokens << endl;
-
-  if (tokens.length() < 1)
-    return InputParserState::STATE_ERROR;
-  if ((stricmp(tokens[0].c_str(), "not") == 0) || tokens[0] == "!")
+  bool InvertInputDriver::getInput(InputSpec const& spec, InputDetails& details)
   {
-    std::unique_ptr<InputSpecTokens> newtokens = tokens(1, -1);
-    // derr << "Part: " << *newtokens << endl;
-    InputSpec invspec;
-    InputParserState state = g_inputManager->parseInputSpecTokens(*newtokens, invspec, lastError);
-    if (PARSE_SUCCESS(state))
+    if (0 <= spec.control_id && spec.control_id < m_specs.size())
     {
-      if (invspec.type != InputType::INPUT_TYPE_BOOL)
+      const InputSpec& invspec = *(m_specs[spec.control_id]);
+      bool ans = !(g_inputManager->checkInput(invspec, details));
+      return ans;
+    }
+    return false;
+  }
+
+
+  void InvertInputDriver::Advance() {}
+
+
+  const string& InvertInputDriver::getLastParseError(InputParserState state) { return lastError; }
+
+
+  InputParserState InvertInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
+  {
+    // ofstream derr( "inputinvert_debug.txt", ios::app );
+    // derr << "Full: " << tokens << endl;
+
+    if (tokens.length() < 1)
+      return InputParserState::STATE_ERROR;
+    if ((stricmp(tokens[0].c_str(), "not") == 0) || tokens[0] == "!")
+    {
+      std::unique_ptr<InputSpecTokens> newtokens = tokens(1, -1);
+      // derr << "Part: " << *newtokens << endl;
+      InputSpec invspec;
+      InputParserState state = g_inputManager->parseInputSpecTokens(*newtokens, invspec, lastError);
+      if (PARSE_SUCCESS(state))
       {
-        static string complexErr = "Complex input types cannot be negated.";
-        lastError = complexErr;
-        return InputParserState::STATE_CONJ_ERROR; // This check may be too restrictive
+        if (invspec.type != InputType::INPUT_TYPE_BOOL)
+        {
+          static string complexErr = "Complex input types cannot be negated.";
+          lastError = complexErr;
+          return InputParserState::STATE_CONJ_ERROR; // This check may be too restrictive
+        }
+        m_specs.push_back(std::make_unique<const InputSpec>(invspec));
+        spec.type = InputType::INPUT_TYPE_BOOL;
+        spec.control_id = m_specs.size() - 1;
+        return InputParserState::STATE_DONE;
       }
-      m_specs.push_back(std::make_unique<const InputSpec>(invspec));
-      spec.type = InputType::INPUT_TYPE_BOOL;
-      spec.control_id = m_specs.size() - 1;
-      return InputParserState::STATE_DONE;
+      return state;
     }
-    return state;
+    else
+      return InputParserState::STATE_ERROR;
   }
-  else
-    return InputParserState::STATE_ERROR;
-}
 
 
-bool InvertInputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc)
-{
-  if (0 <= spec.control_id && spec.control_id < m_specs.size())
+  bool InvertInputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc)
   {
-    const InputSpec& invspec = *(m_specs[spec.control_id]);
-    if (g_inputManager->getInputDescription(invspec, desc))
+    if (0 <= spec.control_id && spec.control_id < m_specs.size())
     {
-      desc.verb = "not " + desc.verb;
-      return true;
+      const InputSpec& invspec = *(m_specs[spec.control_id]);
+      if (g_inputManager->getInputDescription(invspec, desc))
+      {
+        desc.verb = "not " + desc.verb;
+        return true;
+      }
     }
+    return false;
   }
-  return false;
-}
+} // namespace Neuron

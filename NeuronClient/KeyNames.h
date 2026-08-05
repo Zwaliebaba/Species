@@ -1,5 +1,7 @@
 #pragma once
 
 
-char const * const *getKeyNames();
-
+namespace Neuron
+{
+  char const* const* getKeyNames();
+} // namespace Neuron

@@ -1,0 +1,454 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: namespace-migration
+title: Move engine code into namespace Neuron and game code into its own namespace
+summary: >
+  Owner opted in (2026-08-02). Today `namespace Neuron` holds only the
+  converted NeuronCore code; NeuronClient, NeuronServer remnants, GameLogic
+  and Species sit at global scope. This plan finishes the engine namespace
+  bottom-up, then gives game code a namespace of its own.
+
+  Determinism: namespaces are name-mangling only — zero runtime effect —
+  which makes this the one plan free of simulation risk. The cost is pure
+  churn: qualifying names ripples every caller above, so tasks run
+  bottom-up, each is parallel_safe false, and the whole plan is sequenced
+  LAST among the modernisation plans (after the sweeps and the bulk of
+  containers/strings/ownership) so it churns files that have already
+  settled. Where layering-inversion is still moving files between projects,
+  land the move first — namespacing a file and then moving it double-churns
+  the allowlist.
+
+  That sequencing is now stated as `blocked_by` edges rather than left to
+  whoever reads this paragraph (docs/TASK_DAG.md, "Ordering across plans").
+  Each task names the conversion tasks covering ITS project — T2 the eight
+  NeuronClient container/string/ownership tasks, T4 and T5 their GameLogic
+  and Species equivalents plus layering-inversion T15, which decides where
+  those files live. The effect is that every task here sorts behind the
+  work it would otherwise churn, and `--next` says so.
+
+  Style note: CODING_STANDARDS.md sets the shape — namespace contents
+  indented, PascalCase namespace names. Wrapping a file is not converting
+  it; a legacy file gains the namespace wrapper without any style
+  modernisation riding along (that stays the conversion plans' job).
+
+tasks:
+  - id: T1
+    title: Owner confirms the game-code namespace name
+    intent: >
+      Engine code goes in Neuron — established. Game code needs a name:
+      `Species` collides with the project/exe naming in casual reading but
+      matches the game; `Game` is neutral. One word from the owner settles
+      it before T4 and T5 exist in any diff.
+    depends_on: []
+    files: []
+    acceptance:
+      - The chosen namespace name is recorded in this task's notes by or with the owner
+    status: done
+    notes: >
+      Decided by the owner on 2026-08-02: game code lives in namespace
+      Species. Chosen over Game and Colony; the collision with the
+      Species/ project directory was noted and accepted.
+
+  - id: T2
+    title: Bring the rest of NeuronClient into namespace Neuron
+    intent: >
+      The presentation layer joins the engine namespace file by file —
+      renderer, sound, input, Eclipse, resources — with using-declarations
+      forbidden in headers and callers in GameLogic/Species qualified as
+      they are touched. Engine namespace complete when this and T3 land.
+    project: NeuronClient
+    depends_on: []
+    blocked_by:
+      - containers-replaced/T5
+      - containers-replaced/T6
+      - containers-replaced/T7
+      - containers-replaced/T8
+      - containers-replaced/T14
+      - strings-modernised/T3
+      - strings-modernised/T4
+      - ownership/T3
+    files:
+      - NeuronClient
+      - GameLogic
+      - Species
+    acceptance:
+      - Every type defined in NeuronClient lives in namespace Neuron
+      - No header gained a using-directive; callers qualify names explicitly
+      - The solution builds and the suite passes
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    notes: |
+      Large mechanical churn — the plan suggested landing it as several commits
+      grouped by subsystem. It went in as one instead, because the wrap is
+      generated rather than hand-written and a partial NeuronClient does not
+      compile: a header inside namespace Neuron and its .cpp outside it are two
+      different classes, so the split would have to be per FILE PAIR, and the
+      subsystems share headers.
+
+      DONE 2026-08-05. 151 of NeuronClient's 158 files are wrapped; the seven
+      skipped are pch.h/pch.cpp, NeuronClient.h, KeyDefs.h, PreferenceNames.h
+      and MouseCursor.h/.cpp — all pure #include or #define, with no
+      declaration to put in a namespace.
+
+      NOT COMPILED. Linux, no MSVC. Everything below was verified structurally
+      — by script, over the whole project — and nothing has been near a
+      compiler. For a change of this shape that is a weaker guarantee than
+      usual: namespace migrations fail at the point where a name resolves
+      differently, and only a compiler resolves names.
+
+      WHY IT NEEDED NO CALLER CHANGES, which is the fact the plan's summary
+      does not state and the thing that makes this tractable at all:
+      NeuronCore.h ends with `using namespace Neuron;` and every project's pch
+      includes it. So GameLogic and Species see every NeuronClient type
+      unqualified exactly as before. T3 found the same and said so; it is worth
+      repeating because the acceptance line "callers qualify names explicitly"
+      reads as though thousands of call sites were going to move. None did.
+
+      WHAT DID BREAK, and it is the one class of thing that does: FORWARD
+      DECLARATIONS. A using-directive makes a name findable; it does not make
+      `class Renderer;` in a GameLogic header declare Neuron::Renderer. It
+      declares a NEW ::Renderer, and the error surfaces at link time pointing
+      somewhere else — T3's first trap, at 45x the scale.
+
+        45 forward declarations in 24 files outside NeuronClient are now
+        `namespace Neuron { class X; }`. Building.h and Species/App.h had five
+        each.
+
+        Inside NeuronClient, the same problem runs the other way: a forward
+        declaration sitting above the wrapper declares ::X while the definition
+        below it is Neuron::X. The 18 OWN forward declarations were moved
+        inside the namespace and the 15 FOREIGN ones deliberately left outside
+        — NetLib, NetMutex, NetSocket, NetSocketListener, NetworkUpdate,
+        ServerToClientLetter and Profiler are NeuronCore types that are still
+        at global scope; CameraAnimation, GlobalWorld, Location,
+        ParticleSystem, TaskManager and WorldObject are GameLogic's;
+        jpeg_decoder and IDirectSoundBuffer are third-party. Six names that
+        LOOK foreign are not — BitmapFileHeader, BitmapInfoHeader,
+        DirectSoundChannel, DirectSoundData, SoftwareChannel and
+        InputFilterWithArgs are declared in a header and defined in a
+        NeuronClient .cpp, so they are Neuron's and went inside.
+
+      TWO THINGS CHECKED BECAUSE THEY WOULD HAVE BEEN SILENT:
+
+        NAME CLASHES. `using namespace Neuron;` turns a name defined both in
+        Neuron and at global scope from a redefinition error into an AMBIGUOUS
+        lookup at every unqualified use. Every type defined in NeuronClient was
+        compared against every type defined in NeuronCore, GameLogic and
+        Species. Zero clashes.
+
+        STRADDLING GLOBALS. A global declared `extern` in one project's header
+        and defined in another project's .cpp would now have its declaration
+        and definition in different namespaces — a link error with no obvious
+        cause. All 64 externs declared in NeuronClient headers are defined in
+        NeuronClient .cpp files, and nothing outside NeuronClient declares one
+        that NeuronClient defines. Zero.
+
+      THREE FILES NEEDED HAND WORK:
+
+        SoundLibrary2d.cpp had two #includes BELOW two definitions. Wrapping
+        would have pulled HiResTime.h and SoundSystem.h into namespace Neuron.
+        They moved above the definitions.
+
+        AppState.h already carried `namespace Neuron { class Server; }` from
+        T3. Wrapping the file around it would have declared
+        Neuron::Neuron::Server. The block is gone and `extern Server* g_server`
+        is unqualified again, in both the header and AppState.cpp.
+
+        Win32EventHandler.cpp was the only file where clang-format's
+        changed-lines mode would not converge — its tab indentation and the
+        namespace reindent fought each other. Whole-file formatted.
+
+      THE DIFF IS MOSTLY WHITESPACE, as T3 predicted: .clang-format sets
+      NamespaceIndentation: All, so wrapping reindents every line inside the
+      wrapper. About 11,000 of NeuronClient's 23,700 lines moved two columns.
+      That is inherent to the change and not separable — there is nothing to
+      reformat until the wrapper exists — so it is not split out the way a
+      standalone reformat would be. It does mean `git blame` on NeuronClient
+      now stops here for most lines, which is the cost the plan accepted when
+      it chose to namespace at all.
+
+      TWO THINGS CI FOUND THAT NO STRUCTURAL CHECK HERE COULD HAVE, and the
+      second is the one to remember:
+
+      1. MACRO PARAMETER CAPTURE, in language-hygiene T11's static_asserts
+         rather than in this plan, but it is the same commit's CI round. The
+         generator macro took a parameter named `name` and the struct member it
+         reads is also `name`, so `.name` was substituted with the argument.
+         266 errors, all of them the assertion failing to see the table it was
+         checking. Parameters are x and y now.
+
+      2. A BLOCK-SCOPE `extern` DOES NOT JOIN THE ENCLOSING NAMESPACE. This is
+         the one genuinely subtle rule in the whole migration and it is
+         invisible to every check in tools/:
+
+           WindowManager.cpp      extern W32InputDriver* g_win32InputDriver;
+           Win32EventHandler.cpp  extern signed char g_keys[KEY_MAX];
+                                  extern signed char g_keyDeltas[KEY_MAX];
+
+         all declared INSIDE the function that used them, because no header
+         declares any of the three. With no visible namespace-scope declaration
+         to match, MSVC gives such a declaration external linkage in the GLOBAL
+         namespace — so after the wrap they named ::g_keys while the definition
+         in InputDriverWin32.cpp was Neuron::g_keys, and the link failed with
+         MSVC helpfully printing both mangled names.
+
+         The fix is to declare them at namespace scope in the files that use
+         them, which makes the match visible and is correct however a compiler
+         reads the rule. The tree has exactly four such declarations and all
+         four are now at namespace scope; a sweep for block-scope function
+         declarations found none.
+
+         WHY NOTHING CAUGHT IT: the pre-push audit checked that every `extern`
+         DECLARED in a project header is DEFINED in that project. These are
+         declared in no header at all. If this ever has to be done again, grep
+         for `^\s+extern\s` inside function bodies before wrapping anything.
+
+      IT ALSO BROKE A CHECK, and the fix is worth reading before T4 and T5
+      repeat it a hundredfold. tools/check_math_types.py finds a math local
+      used above the line declaring it, and it found the first "body" in a file
+      by looking for a brace at depth zero. `namespace Neuron {` IS a brace at
+      depth zero, so a wrapped file read as ONE body containing every function
+      in it — and DebugRender.cpp then looked like it used `end` fifty lines
+      before declaring it, because `end` is a parameter of RenderArrow and a
+      local of RenderPointMarker. The tool now classifies each brace as it
+      opens and only code braces nest a body. That is a NARROWING, which is the
+      only direction that file accepts changes in: it still reports the Triffid
+      bug the rule was written for, at global scope and inside a namespace
+      both, and it reports nothing else tree-wide.
+    status: done
+
+  - id: T3
+    title: Bring NeuronServer fully into namespace Neuron
+    intent: >
+      The smallest project (~0.5k lines) closes the engine namespace. Server
+      and ServerToClient join whatever of the layer is not already inside.
+    project: NeuronServer
+    depends_on: []
+    blocked_by:
+      - containers-replaced/T4
+      - ownership/T2
+    files:
+      - NeuronServer/Server.h
+      - NeuronServer/Server.cpp
+      - NeuronServer/ServerToClient.h
+      - NeuronServer/ServerToClient.cpp
+      - NeuronClient/AppState.h
+      - NeuronClient/AppState.cpp
+      - Species/App.h
+    acceptance:
+      - Every type defined in NeuronServer lives in namespace Neuron
+      - Server.exe --ticks 20 still advances the sequence id
+    verify:
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: done
+    notes: >
+      Server, ServerTeam and ServerToClient are in namespace Neuron. No caller
+      needed qualifying: NeuronCore.h ends with `using namespace Neuron;` and
+      every pch includes it, which is the same thing that has kept SlotMap,
+      FileSys and the Debug helpers reachable since they were converted.
+
+      TWO TRAPS, both of which would have compiled into something wrong rather
+      than failing loudly, and neither of which the plan's summary anticipates.
+
+      Server.h forward-declares six NeuronCore types. NeuronCore is only
+      PARTLY in the namespace — Debug, FileSys, LookupTable, NeuronHelper and
+      SlotMap are, the networking types are not — so those declarations had to
+      stay OUTSIDE the wrapper. Inside it they would have declared
+      Neuron::NetLib and friends: new types, never defined, and the error would
+      have come out at link time pointing somewhere else entirely. Any task
+      here that wraps a project sitting on top of a half-converted one has the
+      same problem, and T2 wraps the biggest of them.
+
+      Server.h also wrote `class Profiler* m_profiler;` and
+      `void Initialise(class Profiler*)`. An elaborated type specifier DECLARES
+      the type if it is not already visible, so inside the namespace both would
+      have quietly become Neuron::Profiler. They are a plain `Profiler*` now
+      against a forward declaration outside. Worth grepping for
+      `\(class |, class |^\s*class \w+\*` before wrapping anything.
+
+      Two forward declarations of Server outside the project had to follow it.
+      NeuronClient/AppState.h holds `extern Server* g_server` — a NeuronClient
+      header naming a NeuronServer type, which check_layering does not see
+      because a forward declaration includes nothing. It is Neuron::Server now.
+      Species/App.h had one too and it was DEAD: Server appears nowhere in
+      App.h or App.cpp, so it was deleted rather than qualified.
+
+      The diff is mostly whitespace. .clang-format sets NamespaceIndentation:
+      All, so wrapping a file reindents every line in it. That is inherent to
+      the change rather than incidental churn, so it is not split out the way a
+      standalone reformat would be — there is nothing to reformat until the
+      wrapper exists.
+
+  - id: T4
+    title: Bring GameLogic into the game namespace
+    intent: >
+      Entities, buildings, AI and the in-game windows move into the T1 name.
+      Runs after T2/T3 so engine references are already qualified, and after
+      the layering-inversion moves have settled which files live here.
+    project: GameLogic
+    depends_on: [T1, T2, T3]
+    blocked_by:
+      - layering-inversion/T15
+      - containers-replaced/T9
+      - containers-replaced/T10
+      - containers-replaced/T11
+      - strings-modernised/T5
+      - strings-modernised/T6
+      - strings-modernised/T15
+      - ownership/T4
+    files:
+      - GameLogic
+      - Species
+    acceptance:
+      - Every type defined in GameLogic lives in the chosen namespace
+      - The solution builds and the suite passes
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: done
+    notes: |
+      DONE 2026-08-05, in the same commit as T5. 213 of GameLogic's 215 files
+      are in namespace Species; the two skipped are pch.h and pch.cpp.
+
+      T4 AND T5 ARE NOT SEPARABLE IN THE TREE, and the plan could not have
+      known it because the fact belongs to the namespace NAME rather than to
+      either task. T1 chose one name for all game code, so GameLogic and
+      Species land in the SAME namespace. Wrap GameLogic alone and every
+      unqualified GameLogic name in Species/ stops resolving — there is no
+      `using namespace Species;` the way NeuronCore.h supplies one for Neuron —
+      so T4 on its own is a tree that does not build. The choice was between
+      landing a broken commit, writing a throwaway qualification pass for
+      Species/ that T5 would immediately delete, or landing the pair. The pair
+      landed. The graph edge T5 -> T4 is still right about the ORDER the work
+      is done in; it is wrong that the states between them are checkpoints.
+
+      Worth noting for anyone re-planning this: the reverse order DOES have
+      buildable intermediates. Species/ inside namespace Species finds global
+      GameLogic names by ordinary outward lookup, and wrapping GameLogic
+      afterwards then brings them into the same namespace. T5 -> T4 would have
+      been two standalone commits. It was not worth inverting a plan edge to
+      get that, but it is the answer if this ever has to be split.
+
+      NOT COMPILED. Linux, no MSVC.
+
+      THE ENGINE REACHES UP IN SIX PLACES, and they had to be qualified rather
+      than wrapped, because these are engine files naming game types:
+
+        NeuronClient/WorldPointers.h   Location, GlobalWorld, ParticleSystem
+        NeuronClient/WorldPointers.cpp and TaskManager -- the world subsystem
+                                       pointers layering-inversion T8 moved out
+                                       of App. Now Species::Location* and so on.
+        NeuronClient/CameraAccess.h    CameraAnimation, in PlayAnimation's
+                                       signature.
+        NeuronClient/SoundInstance.h   WorldObject, forward declaration only.
+
+      These are upward references that check_layering cannot see, because a
+      forward declaration includes nothing -- the same blind spot T3 recorded
+      for AppState.h's `extern Server*`. They are pre-existing and this task
+      did not create or remove them; it made them SPELL the direction they were
+      already pointing in, which is the one good thing to come out of having to
+      touch them.
+
+      The globals themselves are fine: all eleven WorldPointers externs are
+      declared and defined in NeuronClient, so nothing straddles.
+
+      TWO DEAD DECLARATIONS FOUND BY BEING FORCED TO CLASSIFY THEM.
+      GameLogic/LandscapeRenderer.h and GameLogic/Water.h both forward-declare
+      `struct IDirect3DVertexBuffer9`, a Direct3D COM type used NOWHERE in the
+      tree -- inherited leftovers from a renderer path that does not exist.
+      Inside the wrapper they would declare Species::IDirect3DVertexBuffer9,
+      which is not what the name means, so both stay outside with a note. They
+      are not deleted: that is a cleanup, and this is a namespace change.
+
+      ONE FILE HAD AN #include BELOW A DEFINITION. GameLogic/Team.cpp included
+      Input.h just above TeamControls::Advance, six hundred lines in; the
+      wrapper would have pulled Input.h into the game namespace. It moved to
+      the top.
+
+      GameLogic/GlobalInternet.cpp HAS UNBALANCED BRACES AND ALWAYS HAS. The
+      `for` loop at line 141 is never closed -- a block comment swallowed its
+      closing brace. It is inside `#ifdef DEBUG`, which is defined nowhere
+      (this tree uses TARGET_DEBUG), so the preprocessor deletes it and the
+      compiled file balances. Left alone: fixing it means guessing where the
+      brace belongs, in code that has never been compiled. Recorded because the
+      next tool that counts braces will trip over it too.
+
+  - id: T5
+    title: Bring Species into the game namespace
+    intent: >
+      The client executable joins last — app, world remnants, camera, task
+      manager — closing the migration: nothing in the tree at global scope
+      except main entry points and the C ABI surface.
+    project: Species
+    depends_on: [T4]
+    blocked_by:
+      - layering-inversion/T15
+      - containers-replaced/T12
+      - containers-replaced/T13
+      - strings-modernised/T7
+      - strings-modernised/T8
+      - ownership/T5
+      - ownership/T6
+    files:
+      - Species
+    acceptance:
+      - Every type defined in Species lives in the chosen namespace; only entry points remain global
+      - grep for types at global scope across the six projects finds only entry points and externally-mandated symbols, listed in notes
+    verify:
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    parallel_safe: false
+    status: done
+    notes: |
+      DONE 2026-08-05, in the same commit as T4 -- see T4's notes for why they
+      could not be separated.
+
+      32 of Species'"'"'s 34 files are in namespace Species; pch.h and pch.cpp are
+      skipped. This closes namespace-migration, 5 of 5.
+
+      NOT COMPILED. Linux, no MSVC.
+
+      THE ONE THING LEFT AT GLOBAL SCOPE IS WinMain, which is the acceptance
+      line'"'"'s "only entry points remain global" and is the whole list. The CRT
+      startup code looks up ::WinMain by name, so it stays outside the wrapper
+      in Species/Main.cpp and reaches in explicitly:
+      Neuron::SetWin32InstanceHandle, Neuron::g_windowManager and
+      Species::AppMain. AppMain itself moved INSIDE -- it is declared in
+      Species/Main.h and defined in Species/Main.cpp, both this project'"'"'s, and
+      nothing outside names it since layering-inversion T18 stopped
+      NeuronClient calling it.
+
+      No externally-mandated symbol beyond that. Server/WinMain.cpp'"'"'s `main`
+      belongs to the Server project, which this task does not touch.
+
+      THE GAME NAMESPACE HAS NO using-directive, deliberately, and that is the
+      difference from Neuron. NeuronCore.h ends with `using namespace Neuron;`
+      and every pch includes it, which is why T2 changed no caller at all.
+      Nothing equivalent exists or was added for Species: GameLogic and
+      Species/ are the only code in that namespace and they are now both inside
+      it, so they see each other without one.
+
+      THE EXCEPTION IS THE TESTS, and a .cpp is the right place for it.
+      Tests/GameLogicTests holds five sources that name GameLogic types --
+      EntityGridTests, InputFieldTests, LevelFileTests, RoutingSystemTests and
+      SliceWiringTests -- and they are test DLLs outside the namespace looking
+      in. Each gained `using namespace Species;` after the CppUnitTest
+      using-directive it already had. Nothing includes a .cpp, so this does not
+      leak. LinkStubs.cpp names no game type and is unchanged; it is still
+      empty, as layering-inversion T18 left it.
+
+      NO NAME CLASHES. Every type defined in GameLogic was compared against
+      every type defined in Species/ before the wrap -- the two projects share
+      one namespace now, so a name in both would be a redefinition rather than
+      an ambiguity. Zero, across 335 GameLogic types and 35 Species ones. And
+      nothing in the tree is named `Species`, so the namespace does not collide
+      with a type; the collision with the Species/ DIRECTORY was noted and
+      accepted by the owner when T1 chose the name.

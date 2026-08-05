@@ -9,21 +9,26 @@
 
 
 // Owning — see NeuronClient/InputSpecList.h.
-typedef std::vector<std::unique_ptr<InputDescription>> InputDescList;
 
 
-class PrefsKeybindingsWindow : public SpeciesWindow
+namespace Species
 {
-  public:
-    InputDescList m_bindings;
-    int m_numMouseButtons;
-    int m_controlMethod;
+  typedef std::vector<std::unique_ptr<InputDescription>> InputDescList;
 
-  public:
-    PrefsKeybindingsWindow();
 
-    void Create();
-    void Remove();
+  class PrefsKeybindingsWindow : public SpeciesWindow
+  {
+    public:
+      InputDescList m_bindings;
+      int m_numMouseButtons;
+      int m_controlMethod;
 
-    void Render(bool _hasFocus);
-};
+    public:
+      PrefsKeybindingsWindow();
+
+      void Create();
+      void Remove();
+
+      void Render(bool _hasFocus);
+  };
+} // namespace Species

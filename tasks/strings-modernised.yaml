@@ -270,8 +270,61 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - Owner runs the Garden smoke test — every step renders text, so a broken format shows immediately
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE 2026-08-05. NOT COMPILED — Linux, no MSVC; the seven Python checks
+      are the whole of the local evidence.
+
+      THE DESIGN THE NOTES BELOW ASKED FOR, built as described: two overloads
+      per entry point, not one. What they did not settle is how to keep the two
+      unambiguous, and the answer is that THE FORMATTING TEMPLATE TAKES AT
+      LEAST ONE ARGUMENT:
+
+        template <typename T, typename... Args>
+        void DrawText2D(..., std::format_string<T, Args...> _fmt, T&& _arg, Args&&...)
+        void DrawText2D(..., std::string_view _text)
+
+      With only the text, the template is not viable and the plain overload
+      takes the call. A single `format_string<Args...>` template would have
+      been ambiguous against the string_view overload for every zero-argument
+      call, and 147 of the 199 sites are zero-argument.
+
+      THE POPULATIONS, re-measured at 17b0778 with a parser rather than a grep,
+      over 199 real call sites. The old count of 225 included commented-out
+      code and TextRenderer's own declarations:
+
+        128  runtime string, no arguments   -> plain overload, source unchanged
+         52  literal format, with arguments -> formatting template, format
+                                               string rewritten
+         19  literal, no arguments          -> plain overload, source unchanged
+
+      92 format strings were rewritten across 29 files, counting commented-out
+      calls, which were converted too so they do not read as valid printf.
+
+      NO ZERO-ARGUMENT LITERAL CONTAINS A PERCENT SIGN. Checked before anything
+      moved, and it is the fact that makes the split safe: those 19 calls stop
+      being format strings entirely, so a `%` in one would have changed what is
+      drawn. There is none.
+
+      THE SPEC SET CONTAINED NO BARE %f, which is the one conversion that would
+      have changed output silently — printf's %f is six decimals and
+      std::format's {} is shortest-round-trip. Every float site already carried
+      an explicit precision:
+
+        %d x66  %s x21  %2.2f x12  %4.0f x4  %.1f x3  %.0f x2  %2.1f  %2.0f  %%
+
+      Translated by a converter that RAISES on anything it does not model
+      rather than guessing; it raised on nothing. Two of its rules are worth
+      keeping if this is repeated: a padded %s must become {:>N}, because
+      printf right-justifies strings and std::format left-justifies them, and a
+      literal brace has to be doubled.
+
+      TWO ENTRY POINTS WERE VARIADIC AND IGNORED THEIR ARGUMENTS. DrawText2DUp
+      and DrawText2DDown declared `char const* _text, ...` and their bodies
+      never called va_start — they drew the format string as it stood. Any
+      caller passing an argument would have printed "%d". No caller did, so
+      nothing changes; the declarations simply stop lying.
+
       Split out of T3 on 2026-08-03, on the measurement in T3's notes.
 
       The trap here is not the template. It is that printf and std::format
@@ -322,6 +375,25 @@ tasks:
       `std::format_string<Args...>` templates. Read that file before starting;
       it is what these ten entry points should look like, minus the second
       overload the 116 need.
+
+      COLLISIONS MEASURED 2026-08-05 at 18d13ed, while scoping Batch 6. This
+      is the most contested of the five ready tasks and it is why it is not in
+      Batch 6: 46 files, contesting 14 with strings/T17 (the GameLogic
+      buildings, which both render text and write themselves to a level file),
+      12 with strings/T11 and 12 with language-hygiene/T11. There is no ready
+      task it can run beside.
+
+      THE 15 m_caption SITES ARE strings/T11's MEMBER, and the two tasks
+      interact whichever order they run in. 17 lines in
+      GameLogic/SpeciesWindow.cpp pass EclButton::m_caption — a raw char*
+      today — straight into DrawText2D and DrawText2DCentre. If T11 lands
+      first, those 17 pass a std::string through `...`, which MSVC accepts
+      with warning C4840 and which is undefined at runtime; T11's notes carry
+      that and require .c_str() at each. If THIS task lands first, the
+      non-formatting string_view overload takes them and T11's conversion is
+      free. T12 first is the cheaper order, and neither task should gain a
+      graph edge for it — they are not sequenced, they are merely not
+      concurrent.
 
   - id: T13
     title: Narrow the read-only char const* parameters to string_view
@@ -376,9 +448,31 @@ tasks:
       - NeuronClient/EclWindow.h
       - NeuronClient/EclWindow.cpp
       - NeuronClient/Eclipse.cpp
-      - NeuronClient/WindowManager.cpp
       - GameLogic/ScrollBar.h
       - GameLogic/ScrollBar.cpp
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/CameraAnimWindow.cpp
+      - GameLogic/CameraMountWindow.cpp
+      - GameLogic/ProfileWindow.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/DropDownMenu.cpp
+      - GameLogic/MainMenus.cpp
+      - GameLogic/TreeWindow.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/UserProfileWindow.cpp
+      - GameLogic/PrefsKeybindingsWindow.cpp
+      - GameLogic/PrefsOtherWindow.cpp
+      - GameLogic/InputField.h
+      - GameLogic/InputField.cpp
+      - GameLogic/GlobalWorldEditorWindow.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/UpdateAvailableWindow.cpp
+      - GameLogic/MessageDialog.cpp
+      - GameLogic/BuyNowWindow.cpp
+      - Species/LocationEditor.cpp
+      - Species/GameMenu.cpp
+      - Species/UserInput.cpp
+      - Species/Main.cpp
     acceptance:
       - EclButton and EclWindow declare no fixed char[N] member
       - ScrollBar::m_parentWindow and ScrollBar::m_name follow the same types, and its six button-name builders stop formatting into fixed buffers
@@ -389,8 +483,83 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - Owner runs the Garden smoke test — step 6, the Task Manager, is the one this can break
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE 2026-08-05. NOT COMPILED — Linux, no MSVC.
+
+      WHAT CONVERTED: EclButton::m_name, m_caption and m_tooltip;
+      EclWindow::m_name, m_title and m_currentTextEdit; ScrollBar::m_name and
+      m_parentWindow. All std::string. No fixed char[N] member is left in any of
+      the three classes, and the acceptance grep for a C-string call on a widget
+      name comes back empty.
+
+      THE CASE-SENSITIVITY TRAP WAS REAL AND IT WAS SEVENTEEN SITES. The notes
+      below predicted it; here is what it actually was. Eclipse's own lookup —
+      EclGetWindowIndex, EclWindow::GetButton, RemoveButton — compared with
+      strcmp, and std::string's == is the same comparison, so those are exactly
+      unchanged. But seventeen call sites in the UI compared a widget name
+      or caption with stricmp: ProfileWindow matches its buttons on their captions
+      ("Min", "Avg", "Max"), and LandscapeWindow, InstantUnitWindow and
+      CameraAnimWindow match theirs against a LANGUAGEPHRASE. Sweeping those to
+      == would have made each one stop matching whenever the language file's
+      spelling differed in case — silently, and only for some spellings.
+
+      They now call Neuron::StrEqualsIgnoreCase, added to StringUtils for this.
+      SampleCache.h already carried the same idea privately for the sample
+      cache's hash; this is the shared spelling of it.
+
+      FOUR DEFECTS THE CONVERSION RETIRED, none of them the point of the task:
+
+        EclButton::SetProperties silently REFUSED a name longer than 256 —
+        `if (strlen(_name) > SIZE) {} else strcpy(...)`. The button kept the
+        name "New Button", so every later lookup by the intended name missed.
+        EclWindow::SetName and SetTitle had the same shape and returned early.
+
+        ~EclButton freed m_caption and m_tooltip, and the destructor is gone
+        with them: the class needs no destructor now. This retires the fourth of
+        the raw-ownership survivors AGENTS.md lists.
+
+        InputField::Render guarded on `m_parent->m_currentTextEdit &&` — a
+        char[256] MEMBER, so the array always decayed to a non-null pointer and
+        the guard was dead.
+
+        DropDownMenu built an option name with the C formatter into a char[64]
+        from a menu name of up to 256, and ScrollBar built three button names
+        the same way. Both are std::format now.
+
+      CopyInto is gone from eleven call sites in CameraAnimWindow and
+      CameraMountWindow. It exists to bound a copy at a char array destination;
+      the destination is a std::string, so the label is simply assigned.
+
+      ONE SIGNATURE OUTSIDE THE FILE LIST HAD TO MOVE: EclBringWindowToFront
+      took `char*`, non-const, and its only caller passes EclWindow::m_name. It
+      is `char const*` now. DropDownWindow::CreateDropDownWindow took two
+      `char*` for the same reason and takes string_view.
+
+      WHAT CI CAUGHT, in one round of two errors, and both are the same class
+      of miss: THE SWEEP WAS KEYED ON THE MEMBER NAMES THE WIDGETS USE.
+
+        SpeciesWindow.cpp had EclSetCurrentFocus((*windows)[0]->m_name) and the
+        regex that added .c_str() elsewhere required an argument with no
+        parentheses in it. A receiver with a subscript or a dereference in it
+        does not match; 29 of the 30 sites did.
+
+        DropDownWindow::m_parentName IS AN ECLIPSE WINDOW NAME IN A char[256]
+        and this task should have converted it on the first pass. It holds
+        EclWindow::m_name, strcpy'd; it is not called m_name, so a sweep over
+        the widget member names could not see it. It is a std::string now, its
+        constructor takes string_view, and SpeciesWindow's constructor follows
+        — it forwards to EclWindow, which already took string_view.
+
+      A paren-aware re-sweep afterwards found no third site: the fourteen calls
+      that still hand a member straight to a C-string API are all on OTHER
+      classes — Profiler, SoundSystem's blueprints, ScreenZone, StartSequence.
+
+      THE .c_str() CALLS ARE T13's TO REMOVE, and there are 30 of them —
+      EclRemoveWindow, EclGetWindow and EclSetCurrentFocus still take
+      char const*. That is exactly the churn T13 exists for; it is the next task
+      and it deletes them.
+
       Split out of T3 on 2026-08-03. See T3's notes for the measurement.
 
       The risky part is not the type change, it is that Eclipse looks windows
@@ -410,6 +579,63 @@ tasks:
       buttons up with. Converting those while EclWindow::m_name is still a
       char[N] means converting them twice, which is the same argument that put
       EclWindow.cpp and EclButton.cpp here rather than in T3.
+
+      REACH MEASURED 2026-08-05 at 18d13ed, while scoping Batch 6. No code was
+      touched. THE FILE LIST WAS THE WORST ONE FOUND IN THIS TREE SO FAR: it
+      declared EIGHT files against a measured THIRTY, and one of the eight was
+      wrong. The list above is the corrected one.
+
+      NeuronClient/WindowManager.cpp WAS ON THE LIST AND HOLDS NONE OF THIS
+      WORK. Its only matches are m_titleHeight — a different member of a
+      different class, caught by a substring. It is removed above. This is the
+      seventh declared list found wrong here and the second to name a file that
+      has nothing to do with the task (determinism/T4 named a path that did not
+      exist; language-hygiene/T12 matched a shared enumerator name).
+
+      WHY THE UNDER-COUNT, because it is not carelessness — it is that these
+      members cannot be measured by name. m_name means TWELVE different things
+      in this tree: Profiler, three SoundSystem classes, three Shape classes,
+      InputDriver, InputFilter, two LevelFile classes, GlobalWorld and two
+      TaskManagerInterface classes all declare one, and only EclButton's,
+      EclWindow's and ScrollBar's are this task. A grep for the member name
+      returns 54 files and over-reports; a grep for the declaring class
+      returns 8 and under-reports, because every use site reaches the member
+      through a pointer whose type is named nowhere on the line. The thirty
+      above were arrived at by grepping the member names and then READING
+      every hit to classify its receiver. m_caption is contended too, at two:
+      EclButton's and Species/StartSequence's, and StartSequence's is NOT this
+      task.
+
+      THE 23 FILES THE LIST WAS MISSING are the UI windows — every
+      *Window.cpp in GameLogic plus DropDownMenu, MainMenus, FileDialog,
+      MessageDialog, InputField, and four Species files that call
+      EclRemoveWindow(w->m_name). They contain no widget DECLARATION, which is
+      why a list written from where the members live could not see them. This
+      is the same rule ownership/T5 and T11 both hit, stated in AGENTS.md: a
+      file list is written from where the member LIVES, and the work is
+      wherever it is NAMED.
+
+      THE ONE SITE THAT NEEDS A DECISION BEFORE ANY OF IT, and it is a silent
+      hazard rather than a compile error. GameLogic/SpeciesWindow.cpp passes
+      EclButton::m_caption straight into TextRenderer's variadic
+      DrawText2D/DrawText2DCentre at 17 lines. Convert m_caption to
+      std::string with T12 unconverted and those 17 lines pass a CLASS TYPE
+      THROUGH `...`, which MSVC accepts with warning C4840 and which is
+      undefined at runtime — a green build that prints garbage or faults.
+      Either add .c_str() at all 17 in the same commit, or let T12 land first
+      and take its non-formatting string_view overload. T12's own notes count
+      m_caption as 15 of the 116 runtime-format-string sites it has to give
+      that overload to; these are those sites. Neither task depends on the
+      other in the graph and neither should — but they must not be in flight
+      at the same time, and if both are wanted, T12 first is the cheaper
+      order.
+
+      EclButton::m_caption AND m_tooltip ARE RAW OWNING char*, new[]/delete[]
+      in SetCaption/SetTooltip and the destructor, with a strcpy each. They
+      are not in AGENTS.md's list of raw-ownership survivors because that list
+      is what outlived the ownership plan and these are stage-4 string work
+      that this task owns. Converting them retires two `new char[]`, two
+      `delete[]` and two strcpy along with the char[N] members.
 
   - id: T4
     title: Convert NeuronClient sound, resource and filesystem string handling
@@ -1395,7 +1621,8 @@ tasks:
       - GameLogic/TrunkPort.cpp
       - NeuronClient/SoundParameter.cpp
       - NeuronClient/SoundSystem.cpp
-      - Tests/GameLogicTests/LevelFileRoundTripTests.cpp
+      - Tests/NeuronClientTests/FileWriterTests.cpp
+      - Tests/GameLogicTests/LevelFileTests.cpp
     acceptance:
       - FileWriter declares no variadic entry point and holds no fixed stack buffer
       - Every call site passes a literal format string, or is listed in notes with the reason it cannot
@@ -1443,11 +1670,12 @@ tasks:
       bounds a level name, a shape name or a script filename before it gets
       here.
 
-      THE LAST ENTRY IN THE FILE LIST ABOVE NAMES A FILE THAT DOES NOT EXIST.
-      Found 2026-08-05 while measuring for Batch 5, by ls-ing every declared
-      path in the ready set: there is no
+      THE LAST ENTRY IN THE FILE LIST USED TO NAME A FILE THAT DOES NOT EXIST,
+      AND IT IS NOW FIXED. Found 2026-08-05 while measuring for Batch 5, by
+      ls-ing every declared path in the ready set: there is no
       Tests/GameLogicTests/LevelFileRoundTripTests.cpp, under that or any other
-      name. The tests the acceptance line means are
+      name. It was replaced in the list above on 2026-08-05, while scoping
+      Batch 6, by the two files the acceptance line actually means:
 
         Tests/NeuronClientTests/FileWriterTests.cpp   the byte-level printf
                                                      tests — the ones that
@@ -1457,11 +1685,36 @@ tasks:
                                                      width
         Tests/GameLogicTests/LevelFileTests.cpp       LevelFile's constructors
 
-      Correct the path in the same commit that starts the work. This matters
-      more than a typo usually would, because the acceptance line says those
-      tests must pass "with no edit to them in the same commit" — an agent that
-      cannot find them could conclude they do not exist yet and write new ones,
-      which is precisely the thing that line exists to forbid.
+      The path mattered more than a typo usually would, because the acceptance
+      line says those tests must pass "with no edit to them in the same commit"
+      — an agent that cannot find them could conclude they do not exist yet and
+      write new ones, which is precisely the thing that line exists to forbid.
+
+      REACH MEASURED 2026-08-05 at 18d13ed, while scoping Batch 6. No code was
+      touched. THIS IS THE FIRST DECLARED FILE LIST IN THIS TREE TO SURVIVE
+      MEASUREMENT INTACT on its source files: grepping every `->printf(` and
+      `.printf(` receiver tree-wide returns exactly the 29 source files
+      declared here, plus FileWriter's own pair. Nothing was missing and
+      nothing declared was idle. Six lists have been found wrong before this
+      one; recording the one that was right is the other half of the argument
+      for measuring.
+
+      Why it held where the others did not: FileWriter::printf is reached
+      through a FUNCTION NAME on an object, not through a member name or a
+      type name. `_out->printf(...)` spells the thing being converted at every
+      single call site, so a grep for it cannot miss a caller the way a grep
+      for m_locations misses a file that only calls AddLocation, or a grep for
+      INPUT_TYPE_ misses a bare `return -1`. Expect a variadic-API conversion
+      to measure honestly and a member-type conversion not to.
+
+      Batch 6 puts this task beside strings/T11, and the pair is disjoint on
+      measured reach — zero contested files, T17 being the building Write()
+      methods and the sound blueprint writer, T11 being the Eclipse widgets
+      and the UI windows. It is NOT disjoint from strings/T12 (14 contested
+      GameLogic files) nor from language-hygiene/T11 (3: GlobalWorld.cpp,
+      Mine.cpp, Rocket.cpp — seven controlEvent lines that a scoped enum has
+      to requalify). parallel_safe stays false above; flip it in the same
+      commit as the work, per the standing rule.
 
   - id: T18
     title: Retire the last three variadic format entry points

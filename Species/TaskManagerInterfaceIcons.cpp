@@ -36,1910 +36,2091 @@
 
 // ============================================================================
 
-TaskManagerInterfaceIcons::TaskManagerInterfaceIcons()
-  : m_screenId(ScreenTaskManager),
-    m_screenY(0.0f),
-    m_desiredScreenY(0.0f),
-    m_screenW(800),
-    m_screenH(600),
-    m_chatLogY(0.0f),
-    m_currentScreenZone(-1),
-    m_currentMouseScreenZone(-1),
-    m_currentScrollZone(1),
-    m_screenZoneTimer(0.0f),
-    m_taskManagerDownTime(0.0),
-    m_currentQuickUnit(-1),
-    m_quickUnitDirection(0)
+
+namespace Species
 {
-  m_viewingDefaultObjective = false;
-  m_messageTimer = 0.0f;
-  m_currentTaskType = -1;
-  m_currentMessageType = -1;
-  m_highlightedTaskId = -1;
-  SetVisible(false);
-
-  //
-  // Pre-load all the graphics we intend to use for these screens
-  // If we don't do this the interface screens are slow and sluggish first visit
-
-  for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
+  TaskManagerInterfaceIcons::TaskManagerInterfaceIcons()
+    : m_screenId(ScreenTaskManager),
+      m_screenY(0.0f),
+      m_desiredScreenY(0.0f),
+      m_screenW(800),
+      m_screenH(600),
+      m_chatLogY(0.0f),
+      m_currentScreenZone(-1),
+      m_currentMouseScreenZone(-1),
+      m_currentScrollZone(1),
+      m_screenZoneTimer(0.0f),
+      m_taskManagerDownTime(0.0),
+      m_currentQuickUnit(-1),
+      m_quickUnitDirection(0)
   {
-    std::string iconFilename;
-    iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(i));
-    if (g_resource->DoesTextureExist(iconFilename.c_str()))
-      unsigned int texId = g_resource->GetTexture(iconFilename.c_str(), true, false);
-  }
-
-  g_resource->GetTexture("Textures/InterfaceGrey.bmp", true, false);
-  g_resource->GetTexture("Textures/InterfaceRed.bmp", true, false);
-  g_resource->GetTexture("Icons/IconShadow.bmp", true, false);
-
-  //
-  // Create keyboard shortcuts
-
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeSquad, ControlIconsTaskManagerNewSquad));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeEngineer, ControlIconsTaskManagerNewEngineer));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeOfficer, ControlIconsTaskManagerNewOfficer));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeArmour, ControlIconsTaskManagerNewArmour));
-
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeGrenade, ControlIconsTaskManagerSelectGrenade));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeRocket, ControlIconsTaskManagerSelectRocket));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeAirStrike, ControlIconsTaskManagerSelectAirStrike));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeController, ControlIconsTaskManagerSelectController));
-
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 0, ControlTaskManagerSelectTask1));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 1, ControlTaskManagerSelectTask2));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 2, ControlTaskManagerSelectTask3));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 3, ControlTaskManagerSelectTask4));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 4, ControlTaskManagerSelectTask5));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 5, ControlTaskManagerSelectTask6));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 6, ControlTaskManagerSelectTask7));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 7, ControlTaskManagerSelectTask8));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 8, ControlTaskManagerSelectTask9));
-
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("DeleteTask", -1, ControlTaskManagerEndTask));
-
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlUnitCycleLeft));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlUnitCycleRight));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlCameraForwards));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlCameraBackwards));
-}
-
-void TaskManagerInterfaceIcons::AdvanceTerminate()
-{
-  if (g_inputManager->controlEvent(ControlIconsTaskManagerEndTask))
-  {
-    g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
-    g_taskManager->m_currentTaskId = -1;
-  }
-}
-
-void TaskManagerInterfaceIcons::HideTaskManager()
-{
-  //
-  // Put the mouse to the middle of the screen
-  float midX = g_renderer->ScreenW() / 2.0f;
-  float midY = g_renderer->ScreenH() / 2.0f;
-  g_target->SetMousePos(midX, midY);
-  TheCamera()->Advance();
-
-  if (static_cast<int>(g_taskManager->m_tasks.size()) > 0)
-    g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
-
-  m_screenY = 0.0f;
-  m_desiredScreenY = 0.0f;
-  m_screenId = ScreenTaskManager;
-  SetVisible(false);
-
-  g_soundSystem->TriggerOtherEvent("Hide", SoundSourceBlueprint::TypeInterface);
-}
-
-void TaskManagerInterfaceIcons::Advance()
-{
-  if (m_lockTaskManager)
-    return;
-
-  AdvanceScrolling();
-  AdvanceTab();
-
-  if (m_viewingDefaultObjective)
-  {
-    // We were running a default objective description (trunk port, research item)
-    // So shut it down now
-    TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
     m_viewingDefaultObjective = false;
+    m_messageTimer = 0.0f;
+    m_currentTaskType = -1;
+    m_currentMessageType = -1;
+    m_highlightedTaskId = -1;
+    SetVisible(false);
+
+    //
+    // Pre-load all the graphics we intend to use for these screens
+    // If we don't do this the interface screens are slow and sluggish first visit
+
+    for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
+    {
+      std::string iconFilename;
+      iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(i));
+      if (g_resource->DoesTextureExist(iconFilename.c_str()))
+        unsigned int texId = g_resource->GetTexture(iconFilename.c_str(), true, false);
+    }
+
+    g_resource->GetTexture("Textures/InterfaceGrey.bmp", true, false);
+    g_resource->GetTexture("Textures/InterfaceRed.bmp", true, false);
+    g_resource->GetTexture("Icons/IconShadow.bmp", true, false);
+
+    //
+    // Create keyboard shortcuts
+
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeSquad, ControlType::ControlIconsTaskManagerNewSquad));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeEngineer, ControlType::ControlIconsTaskManagerNewEngineer));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeOfficer, ControlType::ControlIconsTaskManagerNewOfficer));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeArmour, ControlType::ControlIconsTaskManagerNewArmour));
+
+    m_keyboardShortcuts.push_back(
+      new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeGrenade, ControlType::ControlIconsTaskManagerSelectGrenade));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeRocket, ControlType::ControlIconsTaskManagerSelectRocket));
+    m_keyboardShortcuts.push_back(
+      new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeAirStrike, ControlType::ControlIconsTaskManagerSelectAirStrike));
+    m_keyboardShortcuts.push_back(
+      new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeController, ControlType::ControlIconsTaskManagerSelectController));
+
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 0, ControlType::ControlTaskManagerSelectTask1));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 1, ControlType::ControlTaskManagerSelectTask2));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 2, ControlType::ControlTaskManagerSelectTask3));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 3, ControlType::ControlTaskManagerSelectTask4));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 4, ControlType::ControlTaskManagerSelectTask5));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 5, ControlType::ControlTaskManagerSelectTask6));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 6, ControlType::ControlTaskManagerSelectTask7));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 7, ControlType::ControlTaskManagerSelectTask8));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 8, ControlType::ControlTaskManagerSelectTask9));
+
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("DeleteTask", -1, ControlType::ControlTaskManagerEndTask));
+
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlType::ControlUnitCycleLeft));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlType::ControlUnitCycleRight));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlType::ControlCameraForwards));
+    m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlType::ControlCameraBackwards));
   }
 
-  bool inCutscene = false;
-  if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
-    inCutscene = true;
-  if (TheCamera()->IsInMode(Camera::Mode::ModeBuildingFocus))
-    inCutscene = true;
-
-  if (inCutscene)
+  void TaskManagerInterfaceIcons::AdvanceTerminate()
   {
-    if (m_visible)
-      HideTaskManager();
-    return;
+    if (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerEndTask))
+    {
+      g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
+      g_taskManager->m_currentTaskId = -1;
+    }
   }
 
-  if (!m_visible &&
-      (g_inputManager->controlEvent(ControlIconsTaskManagerDisplay) || g_inputManager->controlEvent(ControlIconsTaskManagerDisplayDown)))
+  void TaskManagerInterfaceIcons::HideTaskManager()
   {
-    // Tab key just pressed
-    // Pop up the task manager
+    //
+    // Put the mouse to the middle of the screen
+    float midX = g_renderer->ScreenW() / 2.0f;
+    float midY = g_renderer->ScreenH() / 2.0f;
+    g_target->SetMousePos(midX, midY);
+    TheCamera()->Advance();
+
+    if (static_cast<int>(g_taskManager->m_tasks.size()) > 0)
+      g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
+
     m_screenY = 0.0f;
     m_desiredScreenY = 0.0f;
     m_screenId = ScreenTaskManager;
-    m_currentScrollZone = 1;
+    SetVisible(false);
 
-    SetVisible();
+    g_soundSystem->TriggerOtherEvent("Hide", SoundSourceBlueprint::TypeInterface);
+  }
 
-    g_soundSystem->TriggerOtherEvent("Show", SoundSourceBlueprint::TypeInterface);
+  void TaskManagerInterfaceIcons::Advance()
+  {
+    if (m_lockTaskManager)
+      return;
 
-    if (g_inputManager->controlEvent(ControlIconsTaskManagerDisplayDown))
+    AdvanceScrolling();
+    AdvanceTab();
+
+    if (m_viewingDefaultObjective)
     {
-      // Controller activated the task manager, record the time
-      m_taskManagerDownTime = GetHighResTime();
+      // We were running a default objective description (trunk port, research item)
+      // So shut it down now
+      TheCamera()->RequestMode(Camera::Mode::ModeFreeMovement);
+      m_viewingDefaultObjective = false;
     }
-  }
-  else if (m_visible && g_inputManager->controlEvent(ControlIconsTaskManagerHide))
-  {
-    // Tab key pressed while visible
-    // So remove the task manager
-    HideTaskManager();
-  }
 
-  if (m_visible)
-    AdvanceScreenEdges();
-  AdvanceScreenZones();
-  AdvanceKeyboardShortcuts();
-  AdvanceTerminate();
-  AdvanceQuickUnit();
+    bool inCutscene = false;
+    if (TheScript()->IsRunningScript() && TheScript()->m_permitEscape)
+      inCutscene = true;
+    if (TheCamera()->IsInMode(Camera::Mode::ModeBuildingFocus))
+      inCutscene = true;
 
-  if (g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnit))
-  {
-    if (!m_quickUnitVisible)
-      CreateQuickUnitInterface();
-    else
-      DestroyQuickUnitInterface();
-  }
-}
-
-void TaskManagerInterfaceIcons::AdvanceScrolling()
-{
-  if (m_screenY != m_desiredScreenY)
-  {
-    float diff = g_advanceTime * 10;
-    m_screenY = m_screenY * (1.0f - diff) + (m_desiredScreenY * diff);
-    if (fabs(m_desiredScreenY - m_screenY) < 0.001f)
-      m_screenY = m_desiredScreenY;
-  }
-}
-
-void TaskManagerInterfaceIcons::AdvanceScreenEdges()
-{
-  bool scrollPermitted = fabs(m_desiredScreenY - m_screenY) == 0;
-
-  int screenBorder = 10;
-
-  bool scrollRequested = false;
-  switch (m_screenId)
-  {
-  case ScreenTaskManager:
-    if (scrollPermitted)
+    if (inCutscene)
     {
-      if (g_target->Y() < screenBorder)
+      if (m_visible)
+        HideTaskManager();
+      return;
+    }
+
+    if (!m_visible && (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplay) ||
+                       g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayDown)))
+    {
+      // Tab key just pressed
+      // Pop up the task manager
+      m_screenY = 0.0f;
+      m_desiredScreenY = 0.0f;
+      m_screenId = ScreenTaskManager;
+      m_currentScrollZone = 1;
+
+      SetVisible();
+
+      g_soundSystem->TriggerOtherEvent("Show", SoundSourceBlueprint::TypeInterface);
+
+      if (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayDown))
       {
-        m_screenId = ScreenResearch;
-        m_desiredScreenY = -1.0f;
-        scrollRequested = true;
-      }
-      if (g_target->Y() > g_renderer->ScreenH() - screenBorder)
-      {
-        m_screenId = ScreenObjectives;
-        m_desiredScreenY = 1.0f;
-        scrollRequested = true;
+        // Controller activated the task manager, record the time
+        m_taskManagerDownTime = GetHighResTime();
       }
     }
-    break;
-
-  case ScreenObjectives:
-    if (scrollPermitted)
+    else if (m_visible && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerHide))
     {
-      if (g_target->Y() < screenBorder)
-      {
-        m_screenId = ScreenTaskManager;
-        m_desiredScreenY = 0.0f;
-        scrollRequested = true;
-      }
+      // Tab key pressed while visible
+      // So remove the task manager
+      HideTaskManager();
     }
-    break;
 
-  case ScreenResearch:
-    if (scrollPermitted)
+    if (m_visible)
+      AdvanceScreenEdges();
+    AdvanceScreenZones();
+    AdvanceKeyboardShortcuts();
+    AdvanceTerminate();
+    AdvanceQuickUnit();
+
+    if (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerQuickUnit))
     {
-      if (g_target->Y() > g_renderer->ScreenH() - screenBorder)
-      {
-        m_screenId = ScreenTaskManager;
-        m_desiredScreenY = 0.0f;
-        scrollRequested = true;
-      }
+      if (!m_quickUnitVisible)
+        CreateQuickUnitInterface();
+      else
+        DestroyQuickUnitInterface();
     }
-    break;
   }
 
-  if (scrollRequested)
-    g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
-}
-
-void TaskManagerInterfaceIcons::SetupRenderMatrices(int _screenId)
-{
-  /*
-   *	This is designed to make rendering of the individual screens much easier.
-   *  It maps the screen co-ordinates so that each renderer can simply render
-   *  to a fixed size window, without having to worry about scrolling, screen resolution etc
-   *  The window will be 800x600 on a normal screen
-   *  And 960x600 on a widescreen screen
-   */
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-
-  float screenRatio = static_cast<float>(g_renderer->ScreenW()) / static_cast<float>(g_renderer->ScreenH());
-  m_screenH = 600.0f;
-  m_screenW = m_screenH * screenRatio;
-
-  float left = 0;
-  float top = 0;
-
-  switch (_screenId)
+  void TaskManagerInterfaceIcons::AdvanceScrolling()
   {
-  case ScreenOverlay:
-    break;
-
-  case ScreenTaskManager:
-    top += m_screenY * m_screenH;
-    break;
-
-  case ScreenObjectives:
-    top += (m_screenY - 1.0f) * m_screenH;
-    break;
-
-  case ScreenResearch:
-    top += (m_screenY + 1.0f) * m_screenH;
-    break;
+    if (m_screenY != m_desiredScreenY)
+    {
+      float diff = g_advanceTime * 10;
+      m_screenY = m_screenY * (1.0f - diff) + (m_desiredScreenY * diff);
+      if (fabs(m_desiredScreenY - m_screenY) < 0.001f)
+        m_screenY = m_desiredScreenY;
+    }
   }
 
-  float right = left + m_screenW;
-  float bottom = top + m_screenH;
-
-  gluOrtho2D(left, right, bottom, top);
-  glMatrixMode(GL_MODELVIEW);
-}
-
-void TaskManagerInterfaceIcons::ConvertMousePosition(float& _x, float& _y)
-{
-  float fractionX = _x / static_cast<float>(g_renderer->ScreenW());
-  float fractionY = _y / static_cast<float>(g_renderer->ScreenH());
-
-  _x = m_screenW * fractionX;
-  _y = m_screenH * fractionY;
-}
-
-void TaskManagerInterfaceIcons::RestoreRenderMatrices() { g_renderer->SetupMatricesFor2D(); }
-
-void TaskManagerInterfaceIcons::Render()
-{
-  if (g_editing || !g_location || EclGetWindows()->size())
-    return;
-
-  START_PROFILE(g_profiler, "Render Taskman");
-
-  glEnable(GL_BLEND);
-  glDisable(GL_CULL_FACE);
-
-  if (g_locationId != -1)
-    RenderTargetAreas();
-
-  g_gameFont.BeginText2D();
-  SetupRenderMatrices(ScreenOverlay);
-
-  RenderMessages();
-
-  if (m_visible)
+  void TaskManagerInterfaceIcons::AdvanceScreenEdges()
   {
-    RenderTitleBar();
+    bool scrollPermitted = fabs(m_desiredScreenY - m_screenY) == 0;
 
-    if (m_screenY > -1.0f && m_screenY < 1.0f)
-      RenderTaskManager();
-    if (m_screenY < 0.0f)
-      RenderResearch();
-    if (m_screenY > 0.0f)
-      RenderObjectives();
+    int screenBorder = 10;
 
+    bool scrollRequested = false;
+    switch (m_screenId)
+    {
+    case ScreenTaskManager:
+      if (scrollPermitted)
+      {
+        if (g_target->Y() < screenBorder)
+        {
+          m_screenId = ScreenResearch;
+          m_desiredScreenY = -1.0f;
+          scrollRequested = true;
+        }
+        if (g_target->Y() > g_renderer->ScreenH() - screenBorder)
+        {
+          m_screenId = ScreenObjectives;
+          m_desiredScreenY = 1.0f;
+          scrollRequested = true;
+        }
+      }
+      break;
+
+    case ScreenObjectives:
+      if (scrollPermitted)
+      {
+        if (g_target->Y() < screenBorder)
+        {
+          m_screenId = ScreenTaskManager;
+          m_desiredScreenY = 0.0f;
+          scrollRequested = true;
+        }
+      }
+      break;
+
+    case ScreenResearch:
+      if (scrollPermitted)
+      {
+        if (g_target->Y() > g_renderer->ScreenH() - screenBorder)
+        {
+          m_screenId = ScreenTaskManager;
+          m_desiredScreenY = 0.0f;
+          scrollRequested = true;
+        }
+      }
+      break;
+    }
+
+    if (scrollRequested)
+      g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
+  }
+
+  void TaskManagerInterfaceIcons::SetupRenderMatrices(int _screenId)
+  {
+    /*
+     *	This is designed to make rendering of the individual screens much easier.
+     *  It maps the screen co-ordinates so that each renderer can simply render
+     *  to a fixed size window, without having to worry about scrolling, screen resolution etc
+     *  The window will be 800x600 on a normal screen
+     *  And 960x600 on a widescreen screen
+     */
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    float screenRatio = static_cast<float>(g_renderer->ScreenW()) / static_cast<float>(g_renderer->ScreenH());
+    m_screenH = 600.0f;
+    m_screenW = m_screenH * screenRatio;
+
+    float left = 0;
+    float top = 0;
+
+    switch (_screenId)
+    {
+    case ScreenOverlay:
+      break;
+
+    case ScreenTaskManager:
+      top += m_screenY * m_screenH;
+      break;
+
+    case ScreenObjectives:
+      top += (m_screenY - 1.0f) * m_screenH;
+      break;
+
+    case ScreenResearch:
+      top += (m_screenY + 1.0f) * m_screenH;
+      break;
+    }
+
+    float right = left + m_screenW;
+    float bottom = top + m_screenH;
+
+    gluOrtho2D(left, right, bottom, top);
+    glMatrixMode(GL_MODELVIEW);
+  }
+
+  void TaskManagerInterfaceIcons::ConvertMousePosition(float& _x, float& _y)
+  {
+    float fractionX = _x / static_cast<float>(g_renderer->ScreenW());
+    float fractionY = _y / static_cast<float>(g_renderer->ScreenH());
+
+    _x = m_screenW * fractionX;
+    _y = m_screenH * fractionY;
+  }
+
+  void TaskManagerInterfaceIcons::RestoreRenderMatrices() { g_renderer->SetupMatricesFor2D(); }
+
+  void TaskManagerInterfaceIcons::Render()
+  {
+    if (g_editing || !g_location || EclGetWindows()->size())
+      return;
+
+    START_PROFILE(g_profiler, "Render Taskman");
+
+    glEnable(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+
+    if (g_locationId != -1)
+      RenderTargetAreas();
+
+    g_gameFont.BeginText2D();
     SetupRenderMatrices(ScreenOverlay);
 
-    //
-    // Render silver bar
+    RenderMessages();
 
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceDivider.bmp"));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glBegin(GL_QUADS);
-    glTexCoord2i(0, 0);
-    glVertex2i(0, m_screenH - 26);
-    glTexCoord2i(100, 0);
-    glVertex2i(m_screenW, m_screenH - 26);
-    glTexCoord2i(100, 1);
-    glVertex2i(m_screenW, m_screenH);
-    glTexCoord2i(0, 1);
-    glVertex2i(0, m_screenH);
-    glEnd();
-
-    glDisable(GL_TEXTURE_2D);
-
-    RenderTooltip();
-    RenderScreenZones();
-  }
-
-  RestoreRenderMatrices();
-
-  SetupRenderMatrices(ScreenOverlay);
-
-  if (!m_visible)
-    RenderRunningTasks();
-  RestoreRenderMatrices();
-  // RenderQuickUnit();
-
-  //
-  // Render a mouse cursor if we are visible
-  // The normal one is obscured by the task manager
-
-  if (m_visible)
-  {
-    float mouseX = g_target->X();
-    float mouseY = g_target->Y();
-    g_gameCursor->RenderStandardCursor(mouseX, mouseY);
-  }
-
-  g_gameFont.EndText2D();
-
-  glEnable(GL_CULL_FACE);
-  glDisable(GL_BLEND);
-
-  END_PROFILE(g_profiler, "Render Taskman");
-}
-
-void TaskManagerInterfaceIcons::AdvanceScreenZones()
-{
-  //
-  // Copy the newly generated screenzone list over
-  // Remove the old set of screen zones
-
-  m_screenZones.clear();
-  while (static_cast<int>(m_newScreenZones.size()) > 0)
-  {
-    ScreenZone* zone = m_newScreenZones[0].get();
-    m_screenZones.push_back(std::move(m_newScreenZones[0]));
-    m_newScreenZones.erase(m_newScreenZones.begin() + 0);
-    if (m_currentScreenZone == -1 && zone->m_scrollZone == m_currentScrollZone)
-      m_currentScreenZone = static_cast<int>(m_screenZones.size()) - 1;
-  }
-
-  //
-  // Where is the mouse right now
-
-  bool found = false;
-
-  if (m_visible)
-  {
-    for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
+    if (m_visible)
     {
-      ScreenZone* zone = m_screenZones[i].get();
-      if (ScreenZoneHighlighted(zone))
-      {
-        if (m_currentScreenZone != i && m_currentMouseScreenZone != i)
-        {
-          m_currentMouseScreenZone = i;
-          m_currentScreenZone = i;
-          m_screenZoneTimer = GetHighResTime();
-          g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
-        }
-        found = true;
-      }
-    }
-
-    if (g_inputManager->controlEvent(ControlMenuDown) && m_currentScrollZone != 3)
-    {
-      int numZones = static_cast<int>(m_screenZones.size());
-      int zonesRemaining = numZones;
-      g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
-      while (zonesRemaining)
-      {
-        m_currentScreenZone = (m_currentScreenZone + 1) % numZones;
-        zonesRemaining--;
-
-        if (ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
-          break;
-      }
-    }
-
-    if (g_inputManager->controlEvent(ControlMenuUp) && m_currentScrollZone != 3)
-    {
-      int numZones = static_cast<int>(m_screenZones.size());
-      int zonesRemaining = numZones;
-      g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
-      while (zonesRemaining)
-      {
-        m_currentScreenZone = (m_currentScreenZone + numZones - 1) % numZones;
-        zonesRemaining--;
-
-        if (ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
-          break;
-      }
-    }
-
-    bool changeScrollZone = false;
-    if (m_screenId == ScreenTaskManager)
-    {
-      if (g_inputManager->controlEvent(ControlMenuLeft))
-      {
-        if (m_currentScrollZone == 1)
-        {
-          m_currentScrollZone = 2;
-          changeScrollZone = true;
-        }
-        else if (m_currentScrollZone == 3)
-        {
-          while (true)
-          {
-            m_currentScreenZone--;
-            if (m_currentScreenZone < 0)
-            {
-              m_currentScrollZone = 2;
-              changeScrollZone = true;
-              break;
-            }
-
-            if ((ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
-                static_cast<int>(m_screenZones.size()) == 0)
-              break;
-          }
-        }
-      }
-
-      if (g_inputManager->controlEvent(ControlMenuRight))
-      {
-        if (m_currentScrollZone == 2)
-        {
-          if (m_screenZones[m_currentScreenZone]->m_subZones)
-            m_currentScrollZone = 3;
-          else
-            m_currentScrollZone = 1;
-          changeScrollZone = true;
-        }
-        else if (m_currentScrollZone == 3)
-        {
-          while (true)
-          {
-            m_currentScreenZone++;
-            if (m_currentScreenZone >= static_cast<int>(m_screenZones.size()))
-            {
-              m_currentScrollZone = 1;
-              changeScrollZone = true;
-              break;
-            }
-
-            if ((ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
-                static_cast<int>(m_screenZones.size()) == 0)
-              break;
-          }
-        }
-      }
-    }
-
-    if (changeScrollZone)
-    {
-      m_currentScreenZone = -1;
-      for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
-      {
-        if (m_screenZones[i]->m_scrollZone == m_currentScrollZone)
-        {
-          m_currentMouseScreenZone = i;
-          m_currentScreenZone = i;
-          m_screenZoneTimer = GetHighResTime();
-          g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
-          break;
-        }
-      }
-      if (m_currentScreenZone == -1)
-        m_currentScrollZone = (m_currentScreenZone == 1) ? 2 : 1;
-    }
-  }
-
-  //
-  // Special case - the player is highlighting a unit/entity in the real world
-  // We want to highlight the button that corrisponds to that task ID
-  // (if it exists)
-
-  bool highlightOnly = false;
-
-  if (!m_visible)
-  {
-    m_currentScreenZone = -1;
-    WorldObjectId id;
-    bool somethingHighlighted = g_app->m_locationInput->GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
-    if (somethingHighlighted)
-    {
-      int taskIndex = -1;
-      for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
-      {
-        if (g_taskManager->m_tasks[i]->m_objId == id)
-        {
-          taskIndex = i;
-          break;
-        }
-      }
-
-      if (taskIndex != -1)
-      {
-        for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
-        {
-          ScreenZone* zone = m_screenZones[i].get();
-          if (stricmp(zone->m_name, "SelectTask") == 0 && zone->m_data == taskIndex)
-          {
-            if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
-            {
-              // m_currentScreenZone = i;
-            }
-            found = true;
-            highlightOnly = true;
-          }
-        }
-      }
-    }
-  }
-
-  // if( !found ) m_currentScreenZone = -1;
-
-  //
-  // Are we highlighting a task?
-
-  m_highlightedTaskId = -1;
-  if (m_currentScreenZone != -1)
-  {
-    ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
-    if (currentZone)
-    {
-      if (stricmp(currentZone->m_name, "SelectTask") == 0 && ValidIndex(g_taskManager->m_tasks, currentZone->m_data))
-      {
-        Task* task = g_taskManager->m_tasks[currentZone->m_data].get();
-        m_highlightedTaskId = task->m_id;
-      }
-    }
-  }
-
-  //
-  // Handle mouse clickage
-
-  if (m_currentScreenZone != -1 && (g_inputManager->controlEvent(ControlActivateTMButton) || ButtonHeldAndReleased()) && !highlightOnly)
-  {
-    ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
-    if (currentZone)
-      RunScreenZone(currentZone->m_name, currentZone->m_data);
-  }
-}
-
-bool TaskManagerInterfaceIcons::ButtonHeld() { return GetHighResTime() - m_taskManagerDownTime > 0.5; }
-
-bool TaskManagerInterfaceIcons::ButtonHeldAndReleased() { return ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayUp); }
-
-void TaskManagerInterfaceIcons::AdvanceKeyboardShortcuts()
-{
-  for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
-  {
-    KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
-    if ((*shortcut)())
-      RunScreenZone(shortcut->name(), shortcut->data());
-  }
-}
-
-void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
-{
-  //
-  // New task buttons
-
-  if (stricmp(_name, "NewTask") == 0)
-  {
-    //
-    // Prevent creation of new tasks if we're placing one
-
-    Task* task = g_taskManager->GetCurrentTask();
-    if (task && task->m_state == Task::StateStarted && task->m_type != GlobalResearch::TypeOfficer)
-    {
-      SetCurrentMessage(MessageFailure, -1, 2.5f);
-      return;
-    }
-
-    if (g_globalWorld->m_research->HasResearch(_data))
-    {
-      g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
-      g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
-      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-        HideTaskManager();
-    }
-    else
-      SetCurrentMessage(MessageFailure, -1, 2.5f);
-  }
-
-  //
-  // Select task buttons
-
-  if (stricmp(_name, "SelectTask") == 0)
-  {
-    if (ValidIndex(g_taskManager->m_tasks, _data))
-    {
-      Task* nextTask = g_taskManager->m_tasks[_data].get();
-      g_taskManager->m_currentTaskId = nextTask->m_id;
-      g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
-      g_soundSystem->TriggerOtherEvent("SelectTask", SoundSourceBlueprint::TypeInterface);
-      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-        HideTaskManager();
-    }
-  }
-
-  //
-  // Delete task buttons
-
-  if (stricmp(_name, "DeleteTask") == 0)
-  {
-    if (_data == -1)
-      g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
-    else
-      g_taskManager->TerminateTask(_data);
-    g_soundSystem->TriggerOtherEvent("DeleteTask", SoundSourceBlueprint::TypeInterface);
-  }
-
-  //
-  // Select weapon buttons
-
-  if (stricmp(_name, "SelectWeapon") == 0)
-  {
-    if (g_globalWorld->m_research->HasResearch(_data))
-    {
-      g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
-      g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
-      g_soundSystem->TriggerOtherEvent("GestureSuccess", SoundSourceBlueprint::TypeGesture);
-      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-        HideTaskManager();
-    }
-    else
-      SetCurrentMessage(MessageFailure, -1, 2.5f);
-  }
-
-  //
-  // Show screen
-
-  if (m_visible)
-  {
-    if (stricmp(_name, "ShowScreen") == 0)
-    {
-      m_screenId = _data;
-
-      switch (m_screenId)
-      {
-      case ScreenOverlay:
-      case ScreenTaskManager:
-        m_desiredScreenY = 0.0f;
-        break;
-      case ScreenObjectives:
-        m_desiredScreenY = 1.0f;
-        break;
-      case ScreenResearch:
-        m_desiredScreenY = -1.0f;
-        break;
-      }
-
-      g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
-    }
-
-    if (stricmp(_name, "ScreenUp") == 0)
-    {
-      switch (m_screenId)
-      {
-      case ScreenOverlay:
-      case ScreenTaskManager:
-        RunScreenZone("ShowScreen", ScreenResearch);
-        break;
-      case ScreenObjectives:
-        RunScreenZone("ShowScreen", ScreenTaskManager);
-        break;
-      }
-    }
-
-    if (stricmp(_name, "ScreenDown") == 0)
-    {
-      switch (m_screenId)
-      {
-      case ScreenOverlay:
-      case ScreenTaskManager:
-        RunScreenZone("ShowScreen", ScreenObjectives);
-        break;
-      case ScreenResearch:
-        RunScreenZone("ShowScreen", ScreenTaskManager);
-        break;
-      }
-    }
-  }
-
-  //
-  // Research
-
-  if (stricmp(_name, "Research") == 0)
-    g_globalWorld->m_research->SetCurrentResearch(_data);
-
-  //
-  // Objectives
-
-  if (stricmp(_name, "Objective") == 0)
-  {
-    bool primary = _data > 0;
-    int objectiveId = _data;
-    if (!primary)
-      objectiveId *= -1;
-    objectiveId -= 10;
-
-    // The bounds check is explicit now and was not before. These were LLists,
-    // whose operator[] returns nullptr for an out-of-range read, so the assert
-    // below was doing double duty as a range check on an objectiveId derived
-    // from a screen-zone id. std::vector would have been undefined behaviour.
-    auto const& objectives = primary ? g_location->m_levelFile->m_primaryObjectives : g_location->m_levelFile->m_secondaryObjectives;
-
-    GlobalEventCondition* gec = nullptr;
-    if (objectiveId >= 0 && objectiveId < static_cast<int>(objectives.size()))
-      gec = objectives[objectiveId].get();
-    DEBUG_ASSERT(gec);
-
-    if (gec->m_cutScene)
-      TheScript()->RunScript(gec->m_cutScene);
-    else
-      RunDefaultObjective(gec);
-    HideTaskManager();
-  }
-}
-
-bool TaskManagerInterfaceIcons::ScreenZoneHighlighted(ScreenZone* _zone)
-{
-  float mouseX = g_target->X();
-  float mouseY = g_target->Y();
-  ConvertMousePosition(mouseX, mouseY);
-
-  mouseY += m_screenY * m_screenH;
-
-  return (mouseX >= _zone->m_x && mouseY >= _zone->m_y && mouseX <= _zone->m_x + _zone->m_w && mouseY <= _zone->m_y + _zone->m_h);
-}
-
-void TaskManagerInterfaceIcons::RenderScreenZones()
-{
-  /*
-      for( int i = 0; i < static_cast<int>(m_screenZones.size()); ++i )
-      {
-          ScreenZone* zone = m_screenZones[i].get();
-
-          float hX = zone->m_x;
-          float hY = zone->m_y;
-          float hW = zone->m_w;
-          float hH = zone->m_h;
-
-          hX -= m_screenY * m_screenW;
-
-          glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-
-          glBegin( GL_LINE_LOOP );
-              glVertex2f( hX, hY );
-              glVertex2f( hX+hW, hY );
-              glVertex2f( hX+hW, hY+hH );
-              glVertex2f( hX, hY+hH );
-          glEnd();
-      }
-
-  */
-
-  if (ValidIndex(m_screenZones, m_currentScreenZone))
-  {
-    ScreenZone* zone = m_screenZones[m_currentScreenZone].get();
-
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-    float overSpill = zone->m_h * 0.1f;
-    float hX = zone->m_x - overSpill;
-    float hY = zone->m_y - overSpill;
-    float hW = zone->m_w + overSpill * 2;
-    float hH = zone->m_h + overSpill * 2;
-
-    // hX -= m_screenY * m_screenW;
-    hY -= m_screenY * m_screenH;
-
-    glColor4f(0.05f, 0.05f, 0.5f, 0.3f);
-
-    glBegin(GL_QUADS);
-    glVertex2f(hX, hY);
-    glVertex2f(hX + hW, hY);
-    glVertex2f(hX + hW, hY + hH);
-    glVertex2f(hX, hY + hH);
-    glEnd();
-
-    glColor4f(1.0f, 1.0f, 0.3f, 1.0f);
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/MouseSelection.bmp"));
-    glEnable(GL_TEXTURE_2D);
-
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex2f(hX, hY);
-    glTexCoord2f(0.5f, 0.0f);
-    glVertex2f(hX + hH / 2, hY);
-    glTexCoord2f(0.5f, 1.0f);
-    glVertex2f(hX + hH / 2, hY + hH);
-    glTexCoord2f(0.0f, 1.0f);
-    glVertex2f(hX, hY + hH);
-
-    glTexCoord2f(0.5f, 0.0f);
-    glVertex2f(hX + hW - hH / 2, hY);
-    glTexCoord2f(1.0f, 0.0f);
-    glVertex2f(hX + hW, hY);
-    glTexCoord2f(1.0f, 1.0f);
-    glVertex2f(hX + hW, hY + hH);
-    glTexCoord2f(0.5f, 1.0f);
-    glVertex2f(hX + hW - hH / 2, hY + hH);
-    glEnd();
-
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_TEXTURE_2D);
-  }
-}
-
-void TaskManagerInterfaceIcons::RenderTooltip()
-{
-  g_gameFont.SetRenderShadow(true);
-  glColor4ub(255, 255, 150, 30);
-
-  if (ValidIndex(m_screenZones, m_currentScreenZone))
-  {
-    ScreenZone* zone = m_screenZones[m_currentScreenZone].get();
-
-    //
-    // Render tooltip caption
-
-    float timeRequired = strlen(zone->m_toolTip) / 50.0f;
-    float timeSoFar = GetHighResTime() - m_screenZoneTimer;
-
-    std::string clippedTooltip(zone->m_toolTip);
-    if (timeSoFar < timeRequired)
-    {
-      float fraction = timeSoFar / timeRequired;
-      clippedTooltip.resize(static_cast<size_t>(clippedTooltip.size() * fraction));
-    }
-
-    g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
-    g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
-
-    if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
-    {
-      //
-      // Render keyboard shortcut
-
-      KeyboardShortcut* selectedShortcut = nullptr;
-
-      for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
-      {
-        KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
-        if (stricmp(shortcut->name(), zone->m_name) == 0 && shortcut->data() == zone->m_data)
-        {
-          selectedShortcut = shortcut;
-          break;
-        }
-
-        if (stricmp(shortcut->name(), zone->m_name) == 0 && stricmp(shortcut->name(), "DeleteTask") == 0)
-        {
-          // Special case : DeleteTask shortcut key
-          selectedShortcut = shortcut;
-          break;
-        }
-      }
-
-      if (selectedShortcut)
-      {
-        std::string caption;
-
-        caption = std::format("Keyboard shortcut : {}", selectedShortcut->noun().c_str());
-
-        g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
-        g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
-      }
-    }
-  }
-
-  //    else
-  //    {
-  //        //
-  //        // How do I escape the task manager
-  //
-  //        char *toolTip = LANGUAGEPHRASE("newcontrols_hidetaskmanager");
-  //        glColor4ub( 255, 255, 150, 50 );
-  //        g_gameFont.DrawText2D( 20, m_screenH - 12, 12, toolTip );
-  //    }
-
-  g_gameFont.SetRenderShadow(false);
-}
-
-void TaskManagerInterfaceIcons::RenderMessages()
-{
-  if (m_currentMessageType != -1)
-  {
-    //
-    // Are we done yet?
-
-    if (GetHighResTime() >= m_messageTimer)
-    {
-      m_currentMessageType = -1;
-      return;
-    }
-
-    //
-    // Lookup message portion
-
-    std::string currentMessageStringId;
-    currentMessageStringId = std::format("taskmanager_msg{}", m_currentMessageType);
-    if (!ISLANGUAGEPHRASE(currentMessageStringId.c_str()))
-    {
-      m_currentMessageType = -1;
-      return;
-    }
-
-    const char* message = LANGUAGEPHRASE(currentMessageStringId.c_str());
-
-    //
-    // Lookup task name
-
-    const char* taskName = nullptr;
-
-    if (m_currentTaskType == 999)
-      taskName = LANGUAGEPHRASE("taskmanager_mapeditor");
-    else if (m_currentTaskType == 998)
-      taskName = LANGUAGEPHRASE("taskmanager_accessallareas");
-    else if (m_currentTaskType != -1)
-      taskName = Task::GetTaskNameTranslated(m_currentTaskType);
-
-    //
-    // Build string
-
-    std::string fullMessage;
-    if (taskName)
-    {
-      if (m_currentMessageType == MessageResearchUpgrade)
-      {
-        int researchLevel = g_globalWorld->m_research->CurrentLevel(m_currentTaskType);
-        fullMessage = std::format("{}: {} v{}.0", message, taskName, researchLevel);
-      }
-      else
-        fullMessage = std::format("{}: {}", message, taskName);
-    }
-    else
-      fullMessage = std::format("{}", message);
-
-    //
-    // Render string
-
-    float timeRemaining = m_messageTimer - GetHighResTime();
-    float alpha = timeRemaining * 0.5f;
-    alpha = std::min(alpha, 1.0f);
-    alpha = std::max(alpha, 0.0f);
-    float size = 40.0f;
-    if (timeRemaining < 2.0f)
-    {
-      // size = sqrtf( 2.7f - timeRemaining ) * 30.0f;
-      size += sqrtf(2.0f - timeRemaining) * 15.0f;
-    }
-
-    float outlineAlpha = alpha * alpha * alpha;
-
-    g_gameFont.SetRenderOutline(true);
-    glColor4f(outlineAlpha, outlineAlpha, outlineAlpha, 0.0f);
-    g_gameFont.DrawText2DCentre(m_screenW / 2.0f, 370.0f, size, fullMessage.c_str());
-
-    g_gameFont.SetRenderOutline(false);
-    glColor4f(1.0f, 1.0f, 1.0f, alpha);
-    g_gameFont.DrawText2DCentre(m_screenW / 2.0f, 370.0f, size, fullMessage.c_str());
-  }
-}
-
-void TaskManagerInterfaceIcons::RenderTargetAreas()
-{
-  Task* task = g_taskManager->GetCurrentTask();
-
-  if (task && task->m_type != GlobalResearch::TypeOfficer && task->m_state == Task::StateStarted)
-  {
-    std::vector<TaskTargetArea>* targetAreas = g_taskManager->GetTargetArea(task->m_id);
-    RGBAColour* colour = &g_location->GetMyTeam()->m_colour;
-
-    for (int i = 0; i < static_cast<int>(targetAreas->size()); ++i)
-    {
-      TaskTargetArea* tta = &(*targetAreas)[i];
-
-      if (tta->m_stationary)
-      {
-      }
-
-      float angle = g_gameTime * 3.0f;
-      DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&tta->m_centre);
-      DirectX::XMVECTOR const dif = DirectX::XMVectorSet(tta->m_radius * sinf(angle), 0.0f, tta->m_radius * cosf(angle), 0.0f);
-
-      DirectX::XMFLOAT3 pos;
-      DirectX::XMStoreFloat3(&pos, DirectX::XMVectorAdd(centre, dif));
-      pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
-      DirectX::XMFLOAT3 const zeroVelocity{0.0f, 0.0f, 0.0f}; // was g_zeroVector
-      g_particleSystem->CreateParticle(pos, zeroVelocity, Particle::TypeMuzzleFlash, 60.0f);
-
-      DirectX::XMStoreFloat3(&pos, DirectX::XMVectorSubtract(centre, dif));
-      pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
-      g_particleSystem->CreateParticle(pos, zeroVelocity, Particle::TypeMuzzleFlash, 60.0f);
-    }
-
-    delete targetAreas;
-  }
-  else
-  {
-  }
-}
-
-static void RenderIcon(const char* _foreground, const char* _background, int _x, int _y, float _iconSize, unsigned _alpha)
-{
-  // Render the shadow
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(_background));
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-  glDepthMask(false);
-  glColor4ub(_alpha, _alpha, _alpha, 0.0f);
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(_x, _y);
-  glTexCoord2i(1, 1);
-  glVertex2f(_x + _iconSize, _y);
-  glTexCoord2i(1, 0);
-  glVertex2f(_x + _iconSize, _y + _iconSize);
-  glTexCoord2i(0, 0);
-  glVertex2f(_x, _y + _iconSize);
-  glEnd();
-
-  // Render the icon
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(_foreground));
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-  glColor4ub(255, 255, 255, _alpha);
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(_x, _y);
-  glTexCoord2i(1, 1);
-  glVertex2f(_x + _iconSize, _y);
-  glTexCoord2i(1, 0);
-  glVertex2f(_x + _iconSize, _y + _iconSize);
-  glTexCoord2i(0, 0);
-  glVertex2f(_x, _y + _iconSize);
-  glEnd();
-}
-
-void TaskManagerInterfaceIcons::RenderTaskManager()
-{
-  SetupRenderMatrices(ScreenTaskManager);
-
-  g_gameFont.SetRenderOutline(true);
-  glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-  g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_taskmanager"));
-  g_gameFont.SetRenderOutline(false);
-  glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-  g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_taskmanager"));
-
-  //
-  // Render running tasks
-
-  RenderRunningTasks();
-
-  //
-  // Render task creation menu
-
-  RenderCreateTaskMenu();
-
-  //
-  // Render navigation arrows
-
-  if (fabs(m_screenY) < 0.1f)
-  {
-    bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
-
-    unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
-
-    if (render360Controls)
-    {
-      RenderIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", m_screenW - 60, 10, 40, alpha);
-      RenderIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", m_screenW - 60, m_screenH - 70, 40, alpha);
-    }
-    else
-    {
-      glColor4ub(199, 214, 220, alpha);
-
-      glBegin(GL_TRIANGLES);
-      glVertex2f(m_screenW - 40, 10);
-      glVertex2f(m_screenW - 20, 30);
-      glVertex2f(m_screenW - 60, 30);
-
-      glVertex2f(m_screenW - 40, m_screenH - 30);
-      glVertex2f(m_screenW - 20, m_screenH - 50);
-      glVertex2f(m_screenW - 60, m_screenH - 50);
-      glEnd();
-    }
-
-    auto zoneLeft = std::make_unique<ScreenZone>("ScreenUp", LANGUAGEPHRASE("newcontrols_showresearch"), m_screenW - 60, 10, 40, 20, -1);
-    auto zoneRight =
-      std::make_unique<ScreenZone>("ScreenDown", LANGUAGEPHRASE("newcontrols_showobjectives"), m_screenW - 60, m_screenH - 50, 40, 20, -1);
-
-    m_newScreenZones.push_back(std::move(zoneLeft));
-    m_newScreenZones.push_back(std::move(zoneRight));
-  }
-}
-
-void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
-{
-  int numRunnableTasks = 4;
-  int runnableTaskType[] = {GlobalResearch::TypeSquad, GlobalResearch::TypeEngineer, GlobalResearch::TypeOfficer, GlobalResearch::TypeArmour};
-
-  int numAvailable = 0;
-  for (int i = 0; i < numRunnableTasks; ++i)
-  {
-    if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
-      numAvailable++;
-  }
-
-  // float w = 200;
-  // float h = 36;
-  // float x = (m_screenW-80)/2 - w/2;
-  // float y = 350;
-
-  float w = 200;
-  float h = 46;
-  float x = m_screenW / 2 + 30;
-  float y = m_screenH / 2;
-
-  //
-  // Title bar
-
-  float titleHeight = 20.0f;
-  float boxH = numAvailable * (h + 5);
-
-  glShadeModel(GL_SMOOTH);
-  glBegin(GL_QUADS);
-  glColor4ub(199, 214, 220, 255);
-  glVertex2f(x, y - titleHeight);
-  glVertex2f(x + w, y - titleHeight);
-  glColor4ub(112, 141, 168, 255);
-  glVertex2f(x + w, y);
-  glVertex2f(x, y);
-  glEnd();
-  glShadeModel(GL_FLAT);
-
-  g_gameFont.SetRenderShadow(true);
-  glColor4ub(255, 255, 150, 30);
-  g_gameFont.DrawText2DCentre(x + w / 2.0f, y - titleHeight / 2 + 1, 13, LANGUAGEPHRASE("newcontrols_createnewtask"));
-  g_gameFont.DrawText2DCentre(x + w / 2.0f, y - titleHeight / 2 + 1, 13, LANGUAGEPHRASE("newcontrols_createnewtask"));
-  g_gameFont.SetRenderShadow(false);
-
-  //
-  // Background box
-
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceRed.bmp"));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  glColor4f(0.8f, 0.8f, 0.8f, 0.8f);
-  glBegin(GL_QUADS);
-  glTexCoord2f(0, 0);
-  glVertex2f(x, y);
-  glTexCoord2f(1, 0);
-  glVertex2f(x + w, y);
-  glTexCoord2f(1, boxH / m_screenH * 1.5);
-  glVertex2f(x + w, y + boxH);
-  glTexCoord2f(0, boxH / m_screenH * 1.5);
-  glVertex2f(x, y + boxH);
-  glEnd();
-
-  glDisable(GL_TEXTURE_2D);
-
-  glColor4ub(199, 214, 220, 255);
-  glLineWidth(2.0f);
-  glBegin(GL_LINE_LOOP);
-  glVertex2f(x, y - titleHeight);
-  glVertex2f(x + w, y - titleHeight);
-  glVertex2f(x + w, y + boxH);
-  glVertex2f(x, y + boxH);
-  glEnd();
-  glLineWidth(1.0f);
-
-  y += titleHeight;
-
-  for (int i = 0; i < numRunnableTasks; ++i)
-  {
-    int taskType = runnableTaskType[i];
-    if (g_globalWorld->m_research->HasResearch(taskType))
-    {
-      std::string tooltipId;
-      tooltipId = std::format("newcontrols_create_{}", GlobalResearch::GetTypeName(taskType));
-
-      auto zone = std::make_unique<ScreenZone>("NewTask", LANGUAGEPHRASE(tooltipId.c_str()), x + 5, y - h / 3, w - 10, h, taskType);
-      zone->m_scrollZone = 1;
-      m_newScreenZones.push_back(std::move(zone));
+      RenderTitleBar();
+
+      if (m_screenY > -1.0f && m_screenY < 1.0f)
+        RenderTaskManager();
+      if (m_screenY < 0.0f)
+        RenderResearch();
+      if (m_screenY > 0.0f)
+        RenderObjectives();
+
+      SetupRenderMatrices(ScreenOverlay);
 
       //
-      // Render task name and F-key shortcut
+      // Render silver bar
 
-      g_gameFont.SetRenderOutline(true);
-      glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-      g_gameFont.DrawText2D(x + 70, y + 5, 18, GlobalResearch::GetTypeNameTranslated(taskType));
-      g_gameFont.SetRenderOutline(false);
-      glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
-      g_gameFont.DrawText2D(x + 70, y + 5, 18, GlobalResearch::GetTypeNameTranslated(taskType));
-
-      //
-      // Render the shadow
+      glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
       glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-      glDepthMask(false);
-      glColor4f(0.5f, 0.5f, 0.5f, 0.0f);
-
-      float iconSize = (h - 6);
-      float iconX = x + 10;
-      float iconY = y - 12;
-
-      float shadowSize = iconSize * 1.1f;
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceDivider.bmp"));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
       glBegin(GL_QUADS);
-      glTexCoord2i(0, 1);
-      glVertex2f(iconX, iconY);
-      glTexCoord2i(1, 1);
-      glVertex2f(iconX + shadowSize, iconY);
-      glTexCoord2i(1, 0);
-      glVertex2f(iconX + shadowSize, iconY + shadowSize);
       glTexCoord2i(0, 0);
-      glVertex2f(iconX, iconY + shadowSize);
+      glVertex2i(0, m_screenH - 26);
+      glTexCoord2i(100, 0);
+      glVertex2i(m_screenW, m_screenH - 26);
+      glTexCoord2i(100, 1);
+      glVertex2i(m_screenW, m_screenH);
+      glTexCoord2i(0, 1);
+      glVertex2i(0, m_screenH);
       glEnd();
 
       glDisable(GL_TEXTURE_2D);
 
-      //
-      // Render the task symbol
+      RenderTooltip();
+      RenderScreenZones();
+    }
 
-      std::string iconFilename;
-      iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(taskType));
-      unsigned int texId = g_resource->GetTexture(iconFilename.c_str());
-      if (texId != -1)
+    RestoreRenderMatrices();
+
+    SetupRenderMatrices(ScreenOverlay);
+
+    if (!m_visible)
+      RenderRunningTasks();
+    RestoreRenderMatrices();
+    // RenderQuickUnit();
+
+    //
+    // Render a mouse cursor if we are visible
+    // The normal one is obscured by the task manager
+
+    if (m_visible)
+    {
+      float mouseX = g_target->X();
+      float mouseY = g_target->Y();
+      g_gameCursor->RenderStandardCursor(mouseX, mouseY);
+    }
+
+    g_gameFont.EndText2D();
+
+    glEnable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+
+    END_PROFILE(g_profiler, "Render Taskman");
+  }
+
+  void TaskManagerInterfaceIcons::AdvanceScreenZones()
+  {
+    //
+    // Copy the newly generated screenzone list over
+    // Remove the old set of screen zones
+
+    m_screenZones.clear();
+    while (static_cast<int>(m_newScreenZones.size()) > 0)
+    {
+      ScreenZone* zone = m_newScreenZones[0].get();
+      m_screenZones.push_back(std::move(m_newScreenZones[0]));
+      m_newScreenZones.erase(m_newScreenZones.begin() + 0);
+      if (m_currentScreenZone == -1 && zone->m_scrollZone == m_currentScrollZone)
+        m_currentScreenZone = static_cast<int>(m_screenZones.size()) - 1;
+    }
+
+    //
+    // Where is the mouse right now
+
+    bool found = false;
+
+    if (m_visible)
+    {
+      for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
       {
+        ScreenZone* zone = m_screenZones[i].get();
+        if (ScreenZoneHighlighted(zone))
+        {
+          if (m_currentScreenZone != i && m_currentMouseScreenZone != i)
+          {
+            m_currentMouseScreenZone = i;
+            m_currentScreenZone = i;
+            m_screenZoneTimer = GetHighResTime();
+            g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+          }
+          found = true;
+        }
+      }
+
+      if (g_inputManager->controlEvent(ControlType::ControlMenuDown) && m_currentScrollZone != 3)
+      {
+        int numZones = static_cast<int>(m_screenZones.size());
+        int zonesRemaining = numZones;
+        g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+        while (zonesRemaining)
+        {
+          m_currentScreenZone = (m_currentScreenZone + 1) % numZones;
+          zonesRemaining--;
+
+          if (ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
+            break;
+        }
+      }
+
+      if (g_inputManager->controlEvent(ControlType::ControlMenuUp) && m_currentScrollZone != 3)
+      {
+        int numZones = static_cast<int>(m_screenZones.size());
+        int zonesRemaining = numZones;
+        g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+        while (zonesRemaining)
+        {
+          m_currentScreenZone = (m_currentScreenZone + numZones - 1) % numZones;
+          zonesRemaining--;
+
+          if (ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone)
+            break;
+        }
+      }
+
+      bool changeScrollZone = false;
+      if (m_screenId == ScreenTaskManager)
+      {
+        if (g_inputManager->controlEvent(ControlType::ControlMenuLeft))
+        {
+          if (m_currentScrollZone == 1)
+          {
+            m_currentScrollZone = 2;
+            changeScrollZone = true;
+          }
+          else if (m_currentScrollZone == 3)
+          {
+            while (true)
+            {
+              m_currentScreenZone--;
+              if (m_currentScreenZone < 0)
+              {
+                m_currentScrollZone = 2;
+                changeScrollZone = true;
+                break;
+              }
+
+              if ((ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
+                  static_cast<int>(m_screenZones.size()) == 0)
+                break;
+            }
+          }
+        }
+
+        if (g_inputManager->controlEvent(ControlType::ControlMenuRight))
+        {
+          if (m_currentScrollZone == 2)
+          {
+            if (m_screenZones[m_currentScreenZone]->m_subZones)
+              m_currentScrollZone = 3;
+            else
+              m_currentScrollZone = 1;
+            changeScrollZone = true;
+          }
+          else if (m_currentScrollZone == 3)
+          {
+            while (true)
+            {
+              m_currentScreenZone++;
+              if (m_currentScreenZone >= static_cast<int>(m_screenZones.size()))
+              {
+                m_currentScrollZone = 1;
+                changeScrollZone = true;
+                break;
+              }
+
+              if ((ValidIndex(m_screenZones, m_currentScreenZone) && m_screenZones[m_currentScreenZone]->m_scrollZone == m_currentScrollZone) ||
+                  static_cast<int>(m_screenZones.size()) == 0)
+                break;
+            }
+          }
+        }
+      }
+
+      if (changeScrollZone)
+      {
+        m_currentScreenZone = -1;
+        for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
+        {
+          if (m_screenZones[i]->m_scrollZone == m_currentScrollZone)
+          {
+            m_currentMouseScreenZone = i;
+            m_currentScreenZone = i;
+            m_screenZoneTimer = GetHighResTime();
+            g_soundSystem->TriggerOtherEvent("MouseOverIcon", SoundSourceBlueprint::TypeInterface);
+            break;
+          }
+        }
+        if (m_currentScreenZone == -1)
+          m_currentScrollZone = (m_currentScreenZone == 1) ? 2 : 1;
+      }
+    }
+
+    //
+    // Special case - the player is highlighting a unit/entity in the real world
+    // We want to highlight the button that corrisponds to that task ID
+    // (if it exists)
+
+    bool highlightOnly = false;
+
+    if (!m_visible)
+    {
+      m_currentScreenZone = -1;
+      WorldObjectId id;
+      bool somethingHighlighted = g_app->m_locationInput->GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
+      if (somethingHighlighted)
+      {
+        int taskIndex = -1;
+        for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
+        {
+          if (g_taskManager->m_tasks[i]->m_objId == id)
+          {
+            taskIndex = i;
+            break;
+          }
+        }
+
+        if (taskIndex != -1)
+        {
+          for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
+          {
+            ScreenZone* zone = m_screenZones[i].get();
+            if (stricmp(zone->m_name, "SelectTask") == 0 && zone->m_data == taskIndex)
+            {
+              if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
+              {
+                // m_currentScreenZone = i;
+              }
+              found = true;
+              highlightOnly = true;
+            }
+          }
+        }
+      }
+    }
+
+    // if( !found ) m_currentScreenZone = -1;
+
+    //
+    // Are we highlighting a task?
+
+    m_highlightedTaskId = -1;
+    if (m_currentScreenZone != -1)
+    {
+      ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
+      if (currentZone)
+      {
+        if (stricmp(currentZone->m_name, "SelectTask") == 0 && ValidIndex(g_taskManager->m_tasks, currentZone->m_data))
+        {
+          Task* task = g_taskManager->m_tasks[currentZone->m_data].get();
+          m_highlightedTaskId = task->m_id;
+        }
+      }
+    }
+
+    //
+    // Handle mouse clickage
+
+    if (m_currentScreenZone != -1 && (g_inputManager->controlEvent(ControlType::ControlActivateTMButton) || ButtonHeldAndReleased()) &&
+        !highlightOnly)
+    {
+      ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
+      if (currentZone)
+        RunScreenZone(currentZone->m_name, currentZone->m_data);
+    }
+  }
+
+  bool TaskManagerInterfaceIcons::ButtonHeld() { return GetHighResTime() - m_taskManagerDownTime > 0.5; }
+
+  bool TaskManagerInterfaceIcons::ButtonHeldAndReleased()
+  {
+    return ButtonHeld() && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayUp);
+  }
+
+  void TaskManagerInterfaceIcons::AdvanceKeyboardShortcuts()
+  {
+    for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
+    {
+      KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
+      if ((*shortcut)())
+        RunScreenZone(shortcut->name(), shortcut->data());
+    }
+  }
+
+  void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
+  {
+    //
+    // New task buttons
+
+    if (stricmp(_name, "NewTask") == 0)
+    {
+      //
+      // Prevent creation of new tasks if we're placing one
+
+      Task* task = g_taskManager->GetCurrentTask();
+      if (task && task->m_state == Task::StateStarted && task->m_type != GlobalResearch::TypeOfficer)
+      {
+        SetCurrentMessage(MessageFailure, -1, 2.5f);
+        return;
+      }
+
+      if (g_globalWorld->m_research->HasResearch(_data))
+      {
+        g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
+        g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
+        if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
+          HideTaskManager();
+      }
+      else
+        SetCurrentMessage(MessageFailure, -1, 2.5f);
+    }
+
+    //
+    // Select task buttons
+
+    if (stricmp(_name, "SelectTask") == 0)
+    {
+      if (ValidIndex(g_taskManager->m_tasks, _data))
+      {
+        Task* nextTask = g_taskManager->m_tasks[_data].get();
+        g_taskManager->m_currentTaskId = nextTask->m_id;
+        g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
+        g_soundSystem->TriggerOtherEvent("SelectTask", SoundSourceBlueprint::TypeInterface);
+        if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
+          HideTaskManager();
+      }
+    }
+
+    //
+    // Delete task buttons
+
+    if (stricmp(_name, "DeleteTask") == 0)
+    {
+      if (_data == -1)
+        g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
+      else
+        g_taskManager->TerminateTask(_data);
+      g_soundSystem->TriggerOtherEvent("DeleteTask", SoundSourceBlueprint::TypeInterface);
+    }
+
+    //
+    // Select weapon buttons
+
+    if (stricmp(_name, "SelectWeapon") == 0)
+    {
+      if (g_globalWorld->m_research->HasResearch(_data))
+      {
+        g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
+        g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
+        g_soundSystem->TriggerOtherEvent("GestureSuccess", SoundSourceBlueprint::TypeGesture);
+        if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
+          HideTaskManager();
+      }
+      else
+        SetCurrentMessage(MessageFailure, -1, 2.5f);
+    }
+
+    //
+    // Show screen
+
+    if (m_visible)
+    {
+      if (stricmp(_name, "ShowScreen") == 0)
+      {
+        m_screenId = _data;
+
+        switch (m_screenId)
+        {
+        case ScreenOverlay:
+        case ScreenTaskManager:
+          m_desiredScreenY = 0.0f;
+          break;
+        case ScreenObjectives:
+          m_desiredScreenY = 1.0f;
+          break;
+        case ScreenResearch:
+          m_desiredScreenY = -1.0f;
+          break;
+        }
+
+        g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
+      }
+
+      if (stricmp(_name, "ScreenUp") == 0)
+      {
+        switch (m_screenId)
+        {
+        case ScreenOverlay:
+        case ScreenTaskManager:
+          RunScreenZone("ShowScreen", ScreenResearch);
+          break;
+        case ScreenObjectives:
+          RunScreenZone("ShowScreen", ScreenTaskManager);
+          break;
+        }
+      }
+
+      if (stricmp(_name, "ScreenDown") == 0)
+      {
+        switch (m_screenId)
+        {
+        case ScreenOverlay:
+        case ScreenTaskManager:
+          RunScreenZone("ShowScreen", ScreenObjectives);
+          break;
+        case ScreenResearch:
+          RunScreenZone("ShowScreen", ScreenTaskManager);
+          break;
+        }
+      }
+    }
+
+    //
+    // Research
+
+    if (stricmp(_name, "Research") == 0)
+      g_globalWorld->m_research->SetCurrentResearch(_data);
+
+    //
+    // Objectives
+
+    if (stricmp(_name, "Objective") == 0)
+    {
+      bool primary = _data > 0;
+      int objectiveId = _data;
+      if (!primary)
+        objectiveId *= -1;
+      objectiveId -= 10;
+
+      // The bounds check is explicit now and was not before. These were LLists,
+      // whose operator[] returns nullptr for an out-of-range read, so the assert
+      // below was doing double duty as a range check on an objectiveId derived
+      // from a screen-zone id. std::vector would have been undefined behaviour.
+      auto const& objectives = primary ? g_location->m_levelFile->m_primaryObjectives : g_location->m_levelFile->m_secondaryObjectives;
+
+      GlobalEventCondition* gec = nullptr;
+      if (objectiveId >= 0 && objectiveId < static_cast<int>(objectives.size()))
+        gec = objectives[objectiveId].get();
+      DEBUG_ASSERT(gec);
+
+      if (gec->m_cutScene)
+        TheScript()->RunScript(gec->m_cutScene);
+      else
+        RunDefaultObjective(gec);
+      HideTaskManager();
+    }
+  }
+
+  bool TaskManagerInterfaceIcons::ScreenZoneHighlighted(ScreenZone* _zone)
+  {
+    float mouseX = g_target->X();
+    float mouseY = g_target->Y();
+    ConvertMousePosition(mouseX, mouseY);
+
+    mouseY += m_screenY * m_screenH;
+
+    return (mouseX >= _zone->m_x && mouseY >= _zone->m_y && mouseX <= _zone->m_x + _zone->m_w && mouseY <= _zone->m_y + _zone->m_h);
+  }
+
+  void TaskManagerInterfaceIcons::RenderScreenZones()
+  {
+    /*
+        for( int i = 0; i < static_cast<int>(m_screenZones.size()); ++i )
+        {
+            ScreenZone* zone = m_screenZones[i].get();
+
+            float hX = zone->m_x;
+            float hY = zone->m_y;
+            float hW = zone->m_w;
+            float hH = zone->m_h;
+
+            hX -= m_screenY * m_screenW;
+
+            glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+
+            glBegin( GL_LINE_LOOP );
+                glVertex2f( hX, hY );
+                glVertex2f( hX+hW, hY );
+                glVertex2f( hX+hW, hY+hH );
+                glVertex2f( hX, hY+hH );
+            glEnd();
+        }
+
+    */
+
+    if (ValidIndex(m_screenZones, m_currentScreenZone))
+    {
+      ScreenZone* zone = m_screenZones[m_currentScreenZone].get();
+
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+      float overSpill = zone->m_h * 0.1f;
+      float hX = zone->m_x - overSpill;
+      float hY = zone->m_y - overSpill;
+      float hW = zone->m_w + overSpill * 2;
+      float hH = zone->m_h + overSpill * 2;
+
+      // hX -= m_screenY * m_screenW;
+      hY -= m_screenY * m_screenH;
+
+      glColor4f(0.05f, 0.05f, 0.5f, 0.3f);
+
+      glBegin(GL_QUADS);
+      glVertex2f(hX, hY);
+      glVertex2f(hX + hW, hY);
+      glVertex2f(hX + hW, hY + hH);
+      glVertex2f(hX, hY + hH);
+      glEnd();
+
+      glColor4f(1.0f, 1.0f, 0.3f, 1.0f);
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/MouseSelection.bmp"));
+      glEnable(GL_TEXTURE_2D);
+
+      glBegin(GL_QUADS);
+      glTexCoord2f(0.0f, 0.0f);
+      glVertex2f(hX, hY);
+      glTexCoord2f(0.5f, 0.0f);
+      glVertex2f(hX + hH / 2, hY);
+      glTexCoord2f(0.5f, 1.0f);
+      glVertex2f(hX + hH / 2, hY + hH);
+      glTexCoord2f(0.0f, 1.0f);
+      glVertex2f(hX, hY + hH);
+
+      glTexCoord2f(0.5f, 0.0f);
+      glVertex2f(hX + hW - hH / 2, hY);
+      glTexCoord2f(1.0f, 0.0f);
+      glVertex2f(hX + hW, hY);
+      glTexCoord2f(1.0f, 1.0f);
+      glVertex2f(hX + hW, hY + hH);
+      glTexCoord2f(0.5f, 1.0f);
+      glVertex2f(hX + hW - hH / 2, hY + hH);
+      glEnd();
+
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glDisable(GL_TEXTURE_2D);
+    }
+  }
+
+  void TaskManagerInterfaceIcons::RenderTooltip()
+  {
+    g_gameFont.SetRenderShadow(true);
+    glColor4ub(255, 255, 150, 30);
+
+    if (ValidIndex(m_screenZones, m_currentScreenZone))
+    {
+      ScreenZone* zone = m_screenZones[m_currentScreenZone].get();
+
+      //
+      // Render tooltip caption
+
+      float timeRequired = strlen(zone->m_toolTip) / 50.0f;
+      float timeSoFar = GetHighResTime() - m_screenZoneTimer;
+
+      std::string clippedTooltip(zone->m_toolTip);
+      if (timeSoFar < timeRequired)
+      {
+        float fraction = timeSoFar / timeRequired;
+        clippedTooltip.resize(static_cast<size_t>(clippedTooltip.size() * fraction));
+      }
+
+      g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
+      g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
+
+      if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
+      {
+        //
+        // Render keyboard shortcut
+
+        KeyboardShortcut* selectedShortcut = nullptr;
+
+        for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
+        {
+          KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
+          if (stricmp(shortcut->name(), zone->m_name) == 0 && shortcut->data() == zone->m_data)
+          {
+            selectedShortcut = shortcut;
+            break;
+          }
+
+          if (stricmp(shortcut->name(), zone->m_name) == 0 && stricmp(shortcut->name(), "DeleteTask") == 0)
+          {
+            // Special case : DeleteTask shortcut key
+            selectedShortcut = shortcut;
+            break;
+          }
+        }
+
+        if (selectedShortcut)
+        {
+          std::string caption;
+
+          caption = std::format("Keyboard shortcut : {}", selectedShortcut->noun().c_str());
+
+          g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
+          g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
+        }
+      }
+    }
+
+    //    else
+    //    {
+    //        //
+    //        // How do I escape the task manager
+    //
+    //        char *toolTip = LANGUAGEPHRASE("newcontrols_hidetaskmanager");
+    //        glColor4ub( 255, 255, 150, 50 );
+    //        g_gameFont.DrawText2D( 20, m_screenH - 12, 12, toolTip );
+    //    }
+
+    g_gameFont.SetRenderShadow(false);
+  }
+
+  void TaskManagerInterfaceIcons::RenderMessages()
+  {
+    if (m_currentMessageType != -1)
+    {
+      //
+      // Are we done yet?
+
+      if (GetHighResTime() >= m_messageTimer)
+      {
+        m_currentMessageType = -1;
+        return;
+      }
+
+      //
+      // Lookup message portion
+
+      std::string currentMessageStringId;
+      currentMessageStringId = std::format("taskmanager_msg{}", m_currentMessageType);
+      if (!ISLANGUAGEPHRASE(currentMessageStringId.c_str()))
+      {
+        m_currentMessageType = -1;
+        return;
+      }
+
+      const char* message = LANGUAGEPHRASE(currentMessageStringId.c_str());
+
+      //
+      // Lookup task name
+
+      const char* taskName = nullptr;
+
+      if (m_currentTaskType == 999)
+        taskName = LANGUAGEPHRASE("taskmanager_mapeditor");
+      else if (m_currentTaskType == 998)
+        taskName = LANGUAGEPHRASE("taskmanager_accessallareas");
+      else if (m_currentTaskType != -1)
+        taskName = Task::GetTaskNameTranslated(m_currentTaskType);
+
+      //
+      // Build string
+
+      std::string fullMessage;
+      if (taskName)
+      {
+        if (m_currentMessageType == MessageResearchUpgrade)
+        {
+          int researchLevel = g_globalWorld->m_research->CurrentLevel(m_currentTaskType);
+          fullMessage = std::format("{}: {} v{}.0", message, taskName, researchLevel);
+        }
+        else
+          fullMessage = std::format("{}: {}", message, taskName);
+      }
+      else
+        fullMessage = std::format("{}", message);
+
+      //
+      // Render string
+
+      float timeRemaining = m_messageTimer - GetHighResTime();
+      float alpha = timeRemaining * 0.5f;
+      alpha = std::min(alpha, 1.0f);
+      alpha = std::max(alpha, 0.0f);
+      float size = 40.0f;
+      if (timeRemaining < 2.0f)
+      {
+        // size = sqrtf( 2.7f - timeRemaining ) * 30.0f;
+        size += sqrtf(2.0f - timeRemaining) * 15.0f;
+      }
+
+      float outlineAlpha = alpha * alpha * alpha;
+
+      g_gameFont.SetRenderOutline(true);
+      glColor4f(outlineAlpha, outlineAlpha, outlineAlpha, 0.0f);
+      g_gameFont.DrawText2DCentre(m_screenW / 2.0f, 370.0f, size, fullMessage.c_str());
+
+      g_gameFont.SetRenderOutline(false);
+      glColor4f(1.0f, 1.0f, 1.0f, alpha);
+      g_gameFont.DrawText2DCentre(m_screenW / 2.0f, 370.0f, size, fullMessage.c_str());
+    }
+  }
+
+  void TaskManagerInterfaceIcons::RenderTargetAreas()
+  {
+    Task* task = g_taskManager->GetCurrentTask();
+
+    if (task && task->m_type != GlobalResearch::TypeOfficer && task->m_state == Task::StateStarted)
+    {
+      std::vector<TaskTargetArea>* targetAreas = g_taskManager->GetTargetArea(task->m_id);
+      RGBAColour* colour = &g_location->GetMyTeam()->m_colour;
+
+      for (int i = 0; i < static_cast<int>(targetAreas->size()); ++i)
+      {
+        TaskTargetArea* tta = &(*targetAreas)[i];
+
+        if (tta->m_stationary)
+        {
+        }
+
+        float angle = g_gameTime * 3.0f;
+        DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&tta->m_centre);
+        DirectX::XMVECTOR const dif = DirectX::XMVectorSet(tta->m_radius * sinf(angle), 0.0f, tta->m_radius * cosf(angle), 0.0f);
+
+        DirectX::XMFLOAT3 pos;
+        DirectX::XMStoreFloat3(&pos, DirectX::XMVectorAdd(centre, dif));
+        pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
+        DirectX::XMFLOAT3 const zeroVelocity{0.0f, 0.0f, 0.0f}; // was g_zeroVector
+        g_particleSystem->CreateParticle(pos, zeroVelocity, Particle::TypeMuzzleFlash, 60.0f);
+
+        DirectX::XMStoreFloat3(&pos, DirectX::XMVectorSubtract(centre, dif));
+        pos.y = g_location->m_landscape.m_heightMap->GetValue(pos.x, pos.z) + 5.0f;
+        g_particleSystem->CreateParticle(pos, zeroVelocity, Particle::TypeMuzzleFlash, 60.0f);
+      }
+
+      delete targetAreas;
+    }
+    else
+    {
+    }
+  }
+
+  static void RenderIcon(const char* _foreground, const char* _background, int _x, int _y, float _iconSize, unsigned _alpha)
+  {
+    // Render the shadow
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(_background));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+    glDepthMask(false);
+    glColor4ub(_alpha, _alpha, _alpha, 0.0f);
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(_x, _y);
+    glTexCoord2i(1, 1);
+    glVertex2f(_x + _iconSize, _y);
+    glTexCoord2i(1, 0);
+    glVertex2f(_x + _iconSize, _y + _iconSize);
+    glTexCoord2i(0, 0);
+    glVertex2f(_x, _y + _iconSize);
+    glEnd();
+
+    // Render the icon
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(_foreground));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+    glColor4ub(255, 255, 255, _alpha);
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(_x, _y);
+    glTexCoord2i(1, 1);
+    glVertex2f(_x + _iconSize, _y);
+    glTexCoord2i(1, 0);
+    glVertex2f(_x + _iconSize, _y + _iconSize);
+    glTexCoord2i(0, 0);
+    glVertex2f(_x, _y + _iconSize);
+    glEnd();
+  }
+
+  void TaskManagerInterfaceIcons::RenderTaskManager()
+  {
+    SetupRenderMatrices(ScreenTaskManager);
+
+    g_gameFont.SetRenderOutline(true);
+    glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
+    g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_taskmanager"));
+    g_gameFont.SetRenderOutline(false);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_taskmanager"));
+
+    //
+    // Render running tasks
+
+    RenderRunningTasks();
+
+    //
+    // Render task creation menu
+
+    RenderCreateTaskMenu();
+
+    //
+    // Render navigation arrows
+
+    if (fabs(m_screenY) < 0.1f)
+    {
+      bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
+
+      unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
+
+      if (render360Controls)
+      {
+        RenderIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", m_screenW - 60, 10, 40, alpha);
+        RenderIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", m_screenW - 60, m_screenH - 70, 40, alpha);
+      }
+      else
+      {
+        glColor4ub(199, 214, 220, alpha);
+
+        glBegin(GL_TRIANGLES);
+        glVertex2f(m_screenW - 40, 10);
+        glVertex2f(m_screenW - 20, 30);
+        glVertex2f(m_screenW - 60, 30);
+
+        glVertex2f(m_screenW - 40, m_screenH - 30);
+        glVertex2f(m_screenW - 20, m_screenH - 50);
+        glVertex2f(m_screenW - 60, m_screenH - 50);
+        glEnd();
+      }
+
+      auto zoneLeft = std::make_unique<ScreenZone>("ScreenUp", LANGUAGEPHRASE("newcontrols_showresearch"), m_screenW - 60, 10, 40, 20, -1);
+      auto zoneRight =
+        std::make_unique<ScreenZone>("ScreenDown", LANGUAGEPHRASE("newcontrols_showobjectives"), m_screenW - 60, m_screenH - 50, 40, 20, -1);
+
+      m_newScreenZones.push_back(std::move(zoneLeft));
+      m_newScreenZones.push_back(std::move(zoneRight));
+    }
+  }
+
+  void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
+  {
+    int numRunnableTasks = 4;
+    int runnableTaskType[] = {GlobalResearch::TypeSquad, GlobalResearch::TypeEngineer, GlobalResearch::TypeOfficer, GlobalResearch::TypeArmour};
+
+    int numAvailable = 0;
+    for (int i = 0; i < numRunnableTasks; ++i)
+    {
+      if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
+        numAvailable++;
+    }
+
+    // float w = 200;
+    // float h = 36;
+    // float x = (m_screenW-80)/2 - w/2;
+    // float y = 350;
+
+    float w = 200;
+    float h = 46;
+    float x = m_screenW / 2 + 30;
+    float y = m_screenH / 2;
+
+    //
+    // Title bar
+
+    float titleHeight = 20.0f;
+    float boxH = numAvailable * (h + 5);
+
+    glShadeModel(GL_SMOOTH);
+    glBegin(GL_QUADS);
+    glColor4ub(199, 214, 220, 255);
+    glVertex2f(x, y - titleHeight);
+    glVertex2f(x + w, y - titleHeight);
+    glColor4ub(112, 141, 168, 255);
+    glVertex2f(x + w, y);
+    glVertex2f(x, y);
+    glEnd();
+    glShadeModel(GL_FLAT);
+
+    g_gameFont.SetRenderShadow(true);
+    glColor4ub(255, 255, 150, 30);
+    g_gameFont.DrawText2DCentre(x + w / 2.0f, y - titleHeight / 2 + 1, 13, LANGUAGEPHRASE("newcontrols_createnewtask"));
+    g_gameFont.DrawText2DCentre(x + w / 2.0f, y - titleHeight / 2 + 1, 13, LANGUAGEPHRASE("newcontrols_createnewtask"));
+    g_gameFont.SetRenderShadow(false);
+
+    //
+    // Background box
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceRed.bmp"));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glColor4f(0.8f, 0.8f, 0.8f, 0.8f);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0, 0);
+    glVertex2f(x, y);
+    glTexCoord2f(1, 0);
+    glVertex2f(x + w, y);
+    glTexCoord2f(1, boxH / m_screenH * 1.5);
+    glVertex2f(x + w, y + boxH);
+    glTexCoord2f(0, boxH / m_screenH * 1.5);
+    glVertex2f(x, y + boxH);
+    glEnd();
+
+    glDisable(GL_TEXTURE_2D);
+
+    glColor4ub(199, 214, 220, 255);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x, y - titleHeight);
+    glVertex2f(x + w, y - titleHeight);
+    glVertex2f(x + w, y + boxH);
+    glVertex2f(x, y + boxH);
+    glEnd();
+    glLineWidth(1.0f);
+
+    y += titleHeight;
+
+    for (int i = 0; i < numRunnableTasks; ++i)
+    {
+      int taskType = runnableTaskType[i];
+      if (g_globalWorld->m_research->HasResearch(taskType))
+      {
+        std::string tooltipId;
+        tooltipId = std::format("newcontrols_create_{}", GlobalResearch::GetTypeName(taskType));
+
+        auto zone = std::make_unique<ScreenZone>("NewTask", LANGUAGEPHRASE(tooltipId.c_str()), x + 5, y - h / 3, w - 10, h, taskType);
+        zone->m_scrollZone = 1;
+        m_newScreenZones.push_back(std::move(zone));
+
+        //
+        // Render task name and F-key shortcut
+
+        g_gameFont.SetRenderOutline(true);
+        glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
+        g_gameFont.DrawText2D(x + 70, y + 5, 18, GlobalResearch::GetTypeNameTranslated(taskType));
+        g_gameFont.SetRenderOutline(false);
+        glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
+        g_gameFont.DrawText2D(x + 70, y + 5, 18, GlobalResearch::GetTypeNameTranslated(taskType));
+
+        //
+        // Render the shadow
+
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+        glDepthMask(false);
+        glColor4f(0.5f, 0.5f, 0.5f, 0.0f);
+
+        float iconSize = (h - 6);
+        float iconX = x + 10;
+        float iconY = y - 12;
+
+        float shadowSize = iconSize * 1.1f;
 
         glBegin(GL_QUADS);
         glTexCoord2i(0, 1);
         glVertex2f(iconX, iconY);
         glTexCoord2i(1, 1);
-        glVertex2f(iconX + iconSize, iconY);
+        glVertex2f(iconX + shadowSize, iconY);
         glTexCoord2i(1, 0);
-        glVertex2f(iconX + iconSize, iconY + iconSize);
+        glVertex2f(iconX + shadowSize, iconY + shadowSize);
         glTexCoord2i(0, 0);
-        glVertex2f(iconX, iconY + iconSize);
+        glVertex2f(iconX, iconY + shadowSize);
         glEnd();
 
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDisable(GL_TEXTURE_2D);
-      }
-    }
 
-    y += h + 4;
-  }
-}
+        //
+        // Render the task symbol
 
-void TaskManagerInterfaceIcons::RenderTitleBar()
-{
-  SetupRenderMatrices(ScreenTaskManager);
-
-  //
-  // Render panel
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  glColor4f(0.5f, 0.5f, 1.0f, 0.7f);
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceGrey.bmp"));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  float panelW = 80;
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 0);
-  glVertex2i(m_screenW, -m_screenH);
-  glTexCoord2i(1, 0);
-  glVertex2i(m_screenW, m_screenH * 2);
-  glTexCoord2i(1, 1);
-  glVertex2i(m_screenW - panelW, m_screenH * 2);
-  glTexCoord2i(0, 1);
-  glVertex2i(m_screenW - panelW, -m_screenH);
-  glEnd();
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  glDisable(GL_TEXTURE_2D);
-
-  //
-  // Render dividing line
-
-  glBegin(GL_LINES);
-  glVertex2i(m_screenW - panelW, -m_screenH);
-  glVertex2i(m_screenW - panelW, m_screenH * 2);
-  glEnd();
-}
-
-void TaskManagerInterfaceIcons::RenderRunningTasks()
-{
-  int numSlots = g_taskManager->Capacity();
-
-  static float s_iconSize = 45;
-  static float s_iconX = 40;
-  static float s_iconY = 130;
-
-  float desiredIconSize = 50;
-  float desiredIconX = 40;
-  float desiredIconY = 130;
-
-  if (m_visible)
-  {
-    desiredIconSize = 70;
-    desiredIconX = 80;
-    desiredIconY = 130;
-  }
-
-  float factor = g_advanceTime * 10;
-  s_iconSize = (s_iconSize * (1 - factor)) + (desiredIconSize * factor);
-  s_iconX = (s_iconX * (1 - factor)) + (desiredIconX * factor);
-  s_iconY = (s_iconY * (1 - factor)) + (desiredIconY * factor);
-
-  float iconX = s_iconX;
-  float iconY = s_iconY;
-  float iconSize = s_iconSize;
-  float iconGap = 10;
-  float shadowOffset = 0;
-  float shadowSize = iconSize + 10;
-  float totalWidth = (numSlots - 1) * (iconSize + iconGap);
-
-  float iconAlpha = 0.9f;
-
-  //
-  // Render shadows for available task slots
-
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-  glDepthMask(false);
-  glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
-
-  for (int i = 0; i < numSlots; ++i)
-  {
-    DirectX::XMFLOAT2 iconCentre(iconX, iconY);
-
-    glBegin(GL_QUADS);
-    glTexCoord2i(0, 1);
-    glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
-    glTexCoord2i(1, 1);
-    glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
-    glTexCoord2i(1, 0);
-    glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
-    glTexCoord2i(0, 0);
-    glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
-    glEnd();
-
-    iconY += iconSize;
-    iconY += iconGap;
-  }
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_TEXTURE_2D);
-  glDepthMask(true);
-
-  iconY = s_iconY;
-
-  //
-  // Render our running tasks
-
-  int numTasks = static_cast<int>(g_taskManager->m_tasks.size());
-
-  for (int i = 0; i < numTasks; ++i)
-  {
-    Task* task = g_taskManager->m_tasks[i].get();
-    std::string bmpFilename;
-    bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(task->m_type));
-    unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
-
-    //
-    // Create clickable zone over the task
-
-    std::string captionId;
-    captionId = std::format("newcontrols_select_{}", Task::GetTaskName(task->m_type));
-    if (task->m_state == Task::StateStarted)
-      captionId = std::format("newcontrols_place_{}", Task::GetTaskName(task->m_type));
-
-    auto zone = std::make_unique<ScreenZone>("SelectTask", LANGUAGEPHRASE(captionId.c_str()), iconX - iconSize / 2, iconY - iconSize / 2, iconSize,
-                                             iconSize, i);
-    zone->m_scrollZone = 2;
-    m_newScreenZones.push_back(std::move(zone));
-
-    bool invisible = (task->m_state == Task::StateStarted && fmod(g_gameTime, 1.0) < 0.4);
-
-    DirectX::XMFLOAT2 iconCentre(iconX, iconY);
-
-    if (!invisible)
-    {
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, texId);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-      if (task->m_id == g_taskManager->m_currentTaskId)
-        glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
-      else
-        glColor4f(1.0f, 1.0f, 1.0f, iconAlpha * 0.3f);
-
-      glBegin(GL_QUADS);
-      glTexCoord2i(0, 1);
-      glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y - iconSize / 2);
-      glTexCoord2i(1, 1);
-      glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y - iconSize / 2);
-      glTexCoord2i(1, 0);
-      glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y + iconSize / 2);
-      glTexCoord2i(0, 0);
-      glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y + iconSize / 2);
-      glEnd();
-
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      glDisable(GL_TEXTURE_2D);
-
-      if (task->m_type == GlobalResearch::TypeEngineer)
-      {
-        auto engineer = static_cast<Engineer*>(g_location->GetEntitySafe(task->m_objId, Entity::TypeEngineer));
-        if (engineer)
+        std::string iconFilename;
+        iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(taskType));
+        unsigned int texId = g_resource->GetTexture(iconFilename.c_str());
+        if (texId != -1)
         {
-          char* state = engineer->GetCurrentAction();
-          int numSpirits = engineer->GetNumSpirits();
-
-          g_gameFont.SetRenderShadow(true);
-          glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
-          g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 25, 7, state);
-          g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 2, 12, "%d", numSpirits);
-
-          g_gameFont.SetRenderShadow(false);
-          glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
-          g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 25, 7, state);
-          g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 2, 12, "%d", numSpirits);
-        }
-      }
-      else if (task->m_type == GlobalResearch::TypeSquad)
-      {
-        auto squad = static_cast<InsertionSquad*>(g_location->GetUnit(task->m_objId));
-        if (squad)
-        {
-          int numSquaddies = squad->NumAliveEntities();
-
-          glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
-          g_gameFont.SetRenderShadow(true);
-          g_gameFont.DrawText2D(iconCentre.x + 11, iconCentre.y + 5, 10, "x%d", numSquaddies);
-
-          glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
-          g_gameFont.SetRenderShadow(false);
-          g_gameFont.DrawText2D(iconCentre.x + 11, iconCentre.y + 5, 10, "x%d", numSquaddies);
-        }
-      }
-
-      //
-      // Render weapon selection if we're a squad
-      // Render mode selection if we're an officer or armour
-      // Render compass if we are an object
-
-      // Braced to zero: neither branch below runs when the task names nothing,
-      // and the test that follows is what reads the result. Vector3's default
-      // constructor is what made that test meaningful.
-      DirectX::XMFLOAT3 taskWorldPos{0.0f, 0.0f, 0.0f};
-      Unit* unit = g_location->GetUnit(task->m_objId);
-      Entity* entity = g_location->GetEntity(task->m_objId);
-      if (unit)
-        taskWorldPos = unit->m_centrePos;
-      if (entity)
-        taskWorldPos = entity->m_pos;
-      float compassSize = iconSize * 0.75f;
-
-      // Vector3::operator!= compared each component with NearlyEquals, which
-      // is |a - b| < 1e-6 -- not an exact test, whatever the comment above the
-      // declaration claimed about FLT_EPSILON. Kept at 1e-6 rather than
-      // tightened; XMVector3NearEqual uses <= where NearlyEquals used <, which
-      // differs only for a component exactly 1e-6 from zero.
-      if (!DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&taskWorldPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)))
-      {
-        RenderCompass(iconCentre.x, iconCentre.y, taskWorldPos, task->m_id == g_taskManager->m_currentTaskId, compassSize);
-      }
-
-      if (task->m_state != Task::StateStarted && m_visible && task->m_id == g_taskManager->m_currentTaskId)
-      {
-        if (task->m_type == GlobalResearch::TypeSquad)
-        {
-          std::vector<int> availableWeapons;
-          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeGrenade))
-            availableWeapons.push_back(GlobalResearch::TypeGrenade);
-          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeRocket))
-            availableWeapons.push_back(GlobalResearch::TypeRocket);
-          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeAirStrike))
-            availableWeapons.push_back(GlobalResearch::TypeAirStrike);
-          if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeController))
-            availableWeapons.push_back(GlobalResearch::TypeController);
-
-          auto squad = static_cast<InsertionSquad*>(unit);
-          int currentWeapon = -1;
-          if (squad)
-            currentWeapon = squad->m_weaponType;
-
-          float weaponSize = iconSize * 0.5f;
-          float weaponGap = weaponSize * 0.15f;
-          float weaponX = iconCentre.x + iconSize / 1.2f;
-          float weaponY = iconCentre.y + iconSize / 5;
-
           glEnable(GL_TEXTURE_2D);
+          glBindTexture(GL_TEXTURE_2D, texId);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+          glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-          if (!availableWeapons.empty())
-            zone->m_subZones = true;
-
-          for (int i = 0; i < static_cast<int>(availableWeapons.size()); ++i)
-          {
-            int weaponType = availableWeapons[i];
-            bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(weaponType));
-            texId = g_resource->GetTexture(bmpFilename.c_str());
-
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-            glColor4f(0.9f, 0.9f, 0.9f, 0.0f);
-            glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
-            glBegin(GL_QUADS);
-            glTexCoord2i(0, 1);
-            glVertex2f(weaponX - weaponSize / 2, weaponY - weaponSize / 2);
-            glTexCoord2i(1, 1);
-            glVertex2f(weaponX + weaponSize / 2, weaponY - weaponSize / 2);
-            glTexCoord2i(1, 0);
-            glVertex2f(weaponX + weaponSize / 2, weaponY + weaponSize / 2);
-            glTexCoord2i(0, 0);
-            glVertex2f(weaponX - weaponSize / 2, weaponY + weaponSize / 2);
-            glEnd();
-
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-            glBindTexture(GL_TEXTURE_2D, texId);
-            glColor4f(1.0f, 1.0f, 1.0f, iconAlpha * 0.3f);
-            if (weaponType == currentWeapon)
-              glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
-
-            glBegin(GL_QUADS);
-            glTexCoord2i(0, 1);
-            glVertex2f(weaponX - weaponSize / 2, weaponY - weaponSize / 2);
-            glTexCoord2i(1, 1);
-            glVertex2f(weaponX + weaponSize / 2, weaponY - weaponSize / 2);
-            glTexCoord2i(1, 0);
-            glVertex2f(weaponX + weaponSize / 2, weaponY + weaponSize / 2);
-            glTexCoord2i(0, 0);
-            glVertex2f(weaponX - weaponSize / 2, weaponY + weaponSize / 2);
-            glEnd();
-
-            std::string captionId;
-            captionId = std::format("newcontrols_select_{}", Task::GetTaskName(weaponType));
-            auto zone = std::make_unique<ScreenZone>("SelectWeapon", LANGUAGEPHRASE(captionId.c_str()), weaponX - weaponSize / 2,
-                                                     weaponY - weaponSize / 2, weaponSize, weaponSize, weaponType);
-            zone->m_scrollZone = 3;
-            m_newScreenZones.push_back(std::move(zone));
-
-            weaponX += weaponSize;
-            weaponX += weaponGap;
-          }
+          glBegin(GL_QUADS);
+          glTexCoord2i(0, 1);
+          glVertex2f(iconX, iconY);
+          glTexCoord2i(1, 1);
+          glVertex2f(iconX + iconSize, iconY);
+          glTexCoord2i(1, 0);
+          glVertex2f(iconX + iconSize, iconY + iconSize);
+          glTexCoord2i(0, 0);
+          glVertex2f(iconX, iconY + iconSize);
+          glEnd();
 
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
           glDisable(GL_TEXTURE_2D);
         }
       }
+
+      y += h + 4;
     }
+  }
+
+  void TaskManagerInterfaceIcons::RenderTitleBar()
+  {
+    SetupRenderMatrices(ScreenTaskManager);
 
     //
-    // Render delete icon
+    // Render panel
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glColor4f(0.5f, 0.5f, 1.0f, 0.7f);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceGrey.bmp"));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    float panelW = 80;
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 0);
+    glVertex2i(m_screenW, -m_screenH);
+    glTexCoord2i(1, 0);
+    glVertex2i(m_screenW, m_screenH * 2);
+    glTexCoord2i(1, 1);
+    glVertex2i(m_screenW - panelW, m_screenH * 2);
+    glTexCoord2i(0, 1);
+    glVertex2i(m_screenW - panelW, -m_screenH);
+    glEnd();
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDisable(GL_TEXTURE_2D);
+
+    //
+    // Render dividing line
+
+    glBegin(GL_LINES);
+    glVertex2i(m_screenW - panelW, -m_screenH);
+    glVertex2i(m_screenW - panelW, m_screenH * 2);
+    glEnd();
+  }
+
+  void TaskManagerInterfaceIcons::RenderRunningTasks()
+  {
+    int numSlots = g_taskManager->Capacity();
+
+    static float s_iconSize = 45;
+    static float s_iconX = 40;
+    static float s_iconY = 130;
+
+    float desiredIconSize = 50;
+    float desiredIconX = 40;
+    float desiredIconY = 130;
 
     if (m_visible)
     {
-      float deleteX = iconCentre.x - iconSize / 1.7f;
-      float deleteY = iconCentre.y - iconSize / 1.7f;
-      float deleteSize = iconSize * 0.4f;
-
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-      glDepthMask(false);
-      glColor4f(0.9f, 0.9f, 0.9f, 0.0f);
-
-      glBegin(GL_QUADS);
-      glTexCoord2i(0, 0);
-      glVertex2f(deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f);
-      glTexCoord2i(1, 0);
-      glVertex2f(deleteX + deleteSize / 2.0f, deleteY - deleteSize / 2.0f);
-      glTexCoord2i(1, 1);
-      glVertex2f(deleteX + deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
-      glTexCoord2i(0, 1);
-      glVertex2f(deleteX - deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
-      glEnd();
-
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconDelete.bmp"));
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-      glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-      glBegin(GL_QUADS);
-      glTexCoord2i(0, 0);
-      glVertex2f(deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f);
-      glTexCoord2i(1, 0);
-      glVertex2f(deleteX + deleteSize / 2.0f, deleteY - deleteSize / 2.0f);
-      glTexCoord2i(1, 1);
-      glVertex2f(deleteX + deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
-      glTexCoord2i(0, 1);
-      glVertex2f(deleteX - deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
-      glEnd();
-
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      glDisable(GL_TEXTURE_2D);
-
-      std::string captionId;
-      captionId = std::format("newcontrols_delete_{}", Task::GetTaskName(task->m_type));
-
-      auto zone = std::make_unique<ScreenZone>("DeleteTask", LANGUAGEPHRASE(captionId.c_str()), deleteX - deleteSize / 2.0f,
-                                               deleteY - deleteSize / 2.0f, deleteSize, deleteSize, task->m_id);
-      m_newScreenZones.push_back(std::move(zone));
+      desiredIconSize = 70;
+      desiredIconX = 80;
+      desiredIconY = 130;
     }
 
-    iconY += iconSize;
-    iconY += iconGap;
+    float factor = g_advanceTime * 10;
+    s_iconSize = (s_iconSize * (1 - factor)) + (desiredIconSize * factor);
+    s_iconX = (s_iconX * (1 - factor)) + (desiredIconX * factor);
+    s_iconY = (s_iconY * (1 - factor)) + (desiredIconY * factor);
+
+    float iconX = s_iconX;
+    float iconY = s_iconY;
+    float iconSize = s_iconSize;
+    float iconGap = 10;
+    float shadowOffset = 0;
+    float shadowSize = iconSize + 10;
+    float totalWidth = (numSlots - 1) * (iconSize + iconGap);
+
+    float iconAlpha = 0.9f;
+
+    //
+    // Render shadows for available task slots
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+    glDepthMask(false);
+    glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
+
+    for (int i = 0; i < numSlots; ++i)
+    {
+      DirectX::XMFLOAT2 iconCentre(iconX, iconY);
+
+      glBegin(GL_QUADS);
+      glTexCoord2i(0, 1);
+      glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
+      glTexCoord2i(1, 1);
+      glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
+      glTexCoord2i(1, 0);
+      glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
+      glTexCoord2i(0, 0);
+      glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
+      glEnd();
+
+      iconY += iconSize;
+      iconY += iconGap;
+    }
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
+    glDepthMask(true);
+
+    iconY = s_iconY;
+
+    //
+    // Render our running tasks
+
+    int numTasks = static_cast<int>(g_taskManager->m_tasks.size());
+
+    for (int i = 0; i < numTasks; ++i)
+    {
+      Task* task = g_taskManager->m_tasks[i].get();
+      std::string bmpFilename;
+      bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(task->m_type));
+      unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
+
+      //
+      // Create clickable zone over the task
+
+      std::string captionId;
+      captionId = std::format("newcontrols_select_{}", Task::GetTaskName(task->m_type));
+      if (task->m_state == Task::StateStarted)
+        captionId = std::format("newcontrols_place_{}", Task::GetTaskName(task->m_type));
+
+      auto zone = std::make_unique<ScreenZone>("SelectTask", LANGUAGEPHRASE(captionId.c_str()), iconX - iconSize / 2, iconY - iconSize / 2, iconSize,
+                                               iconSize, i);
+      zone->m_scrollZone = 2;
+      m_newScreenZones.push_back(std::move(zone));
+
+      bool invisible = (task->m_state == Task::StateStarted && fmod(g_gameTime, 1.0) < 0.4);
+
+      DirectX::XMFLOAT2 iconCentre(iconX, iconY);
+
+      if (!invisible)
+      {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texId);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+        if (task->m_id == g_taskManager->m_currentTaskId)
+          glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
+        else
+          glColor4f(1.0f, 1.0f, 1.0f, iconAlpha * 0.3f);
+
+        glBegin(GL_QUADS);
+        glTexCoord2i(0, 1);
+        glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y - iconSize / 2);
+        glTexCoord2i(1, 1);
+        glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y - iconSize / 2);
+        glTexCoord2i(1, 0);
+        glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y + iconSize / 2);
+        glTexCoord2i(0, 0);
+        glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y + iconSize / 2);
+        glEnd();
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_TEXTURE_2D);
+
+        if (task->m_type == GlobalResearch::TypeEngineer)
+        {
+          auto engineer = static_cast<Engineer*>(g_location->GetEntitySafe(task->m_objId, Entity::TypeEngineer));
+          if (engineer)
+          {
+            char* state = engineer->GetCurrentAction();
+            int numSpirits = engineer->GetNumSpirits();
+
+            g_gameFont.SetRenderShadow(true);
+            glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
+            g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 25, 7, state);
+            g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 2, 12, "{}", numSpirits);
+
+            g_gameFont.SetRenderShadow(false);
+            glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
+            g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 25, 7, state);
+            g_gameFont.DrawText2DCentre(iconCentre.x + 3, iconCentre.y + 2, 12, "{}", numSpirits);
+          }
+        }
+        else if (task->m_type == GlobalResearch::TypeSquad)
+        {
+          auto squad = static_cast<InsertionSquad*>(g_location->GetUnit(task->m_objId));
+          if (squad)
+          {
+            int numSquaddies = squad->NumAliveEntities();
+
+            glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
+            g_gameFont.SetRenderShadow(true);
+            g_gameFont.DrawText2D(iconCentre.x + 11, iconCentre.y + 5, 10, "x{}", numSquaddies);
+
+            glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
+            g_gameFont.SetRenderShadow(false);
+            g_gameFont.DrawText2D(iconCentre.x + 11, iconCentre.y + 5, 10, "x{}", numSquaddies);
+          }
+        }
+
+        //
+        // Render weapon selection if we're a squad
+        // Render mode selection if we're an officer or armour
+        // Render compass if we are an object
+
+        // Braced to zero: neither branch below runs when the task names nothing,
+        // and the test that follows is what reads the result. Vector3's default
+        // constructor is what made that test meaningful.
+        DirectX::XMFLOAT3 taskWorldPos{0.0f, 0.0f, 0.0f};
+        Unit* unit = g_location->GetUnit(task->m_objId);
+        Entity* entity = g_location->GetEntity(task->m_objId);
+        if (unit)
+          taskWorldPos = unit->m_centrePos;
+        if (entity)
+          taskWorldPos = entity->m_pos;
+        float compassSize = iconSize * 0.75f;
+
+        // Vector3::operator!= compared each component with NearlyEquals, which
+        // is |a - b| < 1e-6 -- not an exact test, whatever the comment above the
+        // declaration claimed about FLT_EPSILON. Kept at 1e-6 rather than
+        // tightened; XMVector3NearEqual uses <= where NearlyEquals used <, which
+        // differs only for a component exactly 1e-6 from zero.
+        if (!DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&taskWorldPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)))
+        {
+          RenderCompass(iconCentre.x, iconCentre.y, taskWorldPos, task->m_id == g_taskManager->m_currentTaskId, compassSize);
+        }
+
+        if (task->m_state != Task::StateStarted && m_visible && task->m_id == g_taskManager->m_currentTaskId)
+        {
+          if (task->m_type == GlobalResearch::TypeSquad)
+          {
+            std::vector<int> availableWeapons;
+            if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeGrenade))
+              availableWeapons.push_back(GlobalResearch::TypeGrenade);
+            if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeRocket))
+              availableWeapons.push_back(GlobalResearch::TypeRocket);
+            if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeAirStrike))
+              availableWeapons.push_back(GlobalResearch::TypeAirStrike);
+            if (g_globalWorld->m_research->HasResearch(GlobalResearch::TypeController))
+              availableWeapons.push_back(GlobalResearch::TypeController);
+
+            auto squad = static_cast<InsertionSquad*>(unit);
+            int currentWeapon = -1;
+            if (squad)
+              currentWeapon = squad->m_weaponType;
+
+            float weaponSize = iconSize * 0.5f;
+            float weaponGap = weaponSize * 0.15f;
+            float weaponX = iconCentre.x + iconSize / 1.2f;
+            float weaponY = iconCentre.y + iconSize / 5;
+
+            glEnable(GL_TEXTURE_2D);
+
+            if (!availableWeapons.empty())
+              zone->m_subZones = true;
+
+            for (int i = 0; i < static_cast<int>(availableWeapons.size()); ++i)
+            {
+              int weaponType = availableWeapons[i];
+              bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(weaponType));
+              texId = g_resource->GetTexture(bmpFilename.c_str());
+
+              glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+              glColor4f(0.9f, 0.9f, 0.9f, 0.0f);
+              glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
+              glBegin(GL_QUADS);
+              glTexCoord2i(0, 1);
+              glVertex2f(weaponX - weaponSize / 2, weaponY - weaponSize / 2);
+              glTexCoord2i(1, 1);
+              glVertex2f(weaponX + weaponSize / 2, weaponY - weaponSize / 2);
+              glTexCoord2i(1, 0);
+              glVertex2f(weaponX + weaponSize / 2, weaponY + weaponSize / 2);
+              glTexCoord2i(0, 0);
+              glVertex2f(weaponX - weaponSize / 2, weaponY + weaponSize / 2);
+              glEnd();
+
+              glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+              glBindTexture(GL_TEXTURE_2D, texId);
+              glColor4f(1.0f, 1.0f, 1.0f, iconAlpha * 0.3f);
+              if (weaponType == currentWeapon)
+                glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
+
+              glBegin(GL_QUADS);
+              glTexCoord2i(0, 1);
+              glVertex2f(weaponX - weaponSize / 2, weaponY - weaponSize / 2);
+              glTexCoord2i(1, 1);
+              glVertex2f(weaponX + weaponSize / 2, weaponY - weaponSize / 2);
+              glTexCoord2i(1, 0);
+              glVertex2f(weaponX + weaponSize / 2, weaponY + weaponSize / 2);
+              glTexCoord2i(0, 0);
+              glVertex2f(weaponX - weaponSize / 2, weaponY + weaponSize / 2);
+              glEnd();
+
+              std::string captionId;
+              captionId = std::format("newcontrols_select_{}", Task::GetTaskName(weaponType));
+              auto zone = std::make_unique<ScreenZone>("SelectWeapon", LANGUAGEPHRASE(captionId.c_str()), weaponX - weaponSize / 2,
+                                                       weaponY - weaponSize / 2, weaponSize, weaponSize, weaponType);
+              zone->m_scrollZone = 3;
+              m_newScreenZones.push_back(std::move(zone));
+
+              weaponX += weaponSize;
+              weaponX += weaponGap;
+            }
+
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glDisable(GL_TEXTURE_2D);
+          }
+        }
+      }
+
+      //
+      // Render delete icon
+
+      if (m_visible)
+      {
+        float deleteX = iconCentre.x - iconSize / 1.7f;
+        float deleteY = iconCentre.y - iconSize / 1.7f;
+        float deleteSize = iconSize * 0.4f;
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+        glDepthMask(false);
+        glColor4f(0.9f, 0.9f, 0.9f, 0.0f);
+
+        glBegin(GL_QUADS);
+        glTexCoord2i(0, 0);
+        glVertex2f(deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f);
+        glTexCoord2i(1, 0);
+        glVertex2f(deleteX + deleteSize / 2.0f, deleteY - deleteSize / 2.0f);
+        glTexCoord2i(1, 1);
+        glVertex2f(deleteX + deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
+        glTexCoord2i(0, 1);
+        glVertex2f(deleteX - deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
+        glEnd();
+
+        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconDelete.bmp"));
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+        glBegin(GL_QUADS);
+        glTexCoord2i(0, 0);
+        glVertex2f(deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f);
+        glTexCoord2i(1, 0);
+        glVertex2f(deleteX + deleteSize / 2.0f, deleteY - deleteSize / 2.0f);
+        glTexCoord2i(1, 1);
+        glVertex2f(deleteX + deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
+        glTexCoord2i(0, 1);
+        glVertex2f(deleteX - deleteSize / 2.0f, deleteY + deleteSize / 2.0f);
+        glEnd();
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_TEXTURE_2D);
+
+        std::string captionId;
+        captionId = std::format("newcontrols_delete_{}", Task::GetTaskName(task->m_type));
+
+        auto zone = std::make_unique<ScreenZone>("DeleteTask", LANGUAGEPHRASE(captionId.c_str()), deleteX - deleteSize / 2.0f,
+                                                 deleteY - deleteSize / 2.0f, deleteSize, deleteSize, task->m_id);
+        m_newScreenZones.push_back(std::move(zone));
+      }
+
+      iconY += iconSize;
+      iconY += iconGap;
+    }
   }
-}
 
-void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, DirectX::XMFLOAT3 const& _worldPos, bool _selected, float _size)
-{
-  g_renderer->SetupMatricesFor3D();
-  float screenH = g_renderer->ScreenH();
-  float screenW = g_renderer->ScreenW();
-
-  //
-  // Project worldPos into screen co-ordinates
-  // Is it on screen or not?
-
-  float screenX, screenY;
-  TheCamera()->Get2DScreenPos(_worldPos, &screenX, &screenY);
-  screenY = screenH - screenY;
-
-  DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
-  DirectX::XMFLOAT3 const camFrontStore = TheCamera()->GetFront();
-  DirectX::XMVECTOR const camFront = DirectX::XMLoadFloat3(&camFrontStore);
-  DirectX::XMVECTOR const toCam = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_worldPos));
-  // operator* between two Vector3s was the DOT product.
-  float angle = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toCam, camFront));
-  DirectX::XMVECTOR const rotationVector = DirectX::XMVector3Cross(toCam, camFront);
-
-  // Braced to zero: both branches below write it, but Vector2's default
-  // constructor is what made that true before either ran.
-  DirectX::XMFLOAT2 compassVector{0.0f, 0.0f};
-
-  if (angle <= 0.0f && screenX >= 0 && screenX < screenW && screenY >= 0 && screenY < screenH)
+  void TaskManagerInterfaceIcons::RenderCompass(float _screenX, float _screenY, DirectX::XMFLOAT3 const& _worldPos, bool _selected, float _size)
   {
-    // _pos is onscreen
-    screenX *= (m_screenW / screenW);
-    screenY *= (m_screenH / screenH);
+    g_renderer->SetupMatricesFor3D();
+    float screenH = g_renderer->ScreenH();
+    float screenW = g_renderer->ScreenW();
 
-    compassVector = DirectX::XMFLOAT2(screenX - _screenX, screenY - _screenY);
-    DirectX::XMStoreFloat2(&compassVector, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&compassVector)));
-  }
-  else
-  {
-    // _pos is offscreen
-    DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
-    TheCamera()->GetClickRay(_screenX * screenW / m_screenW, _screenY * screenH / m_screenH, &rayStart, &rayDir);
-    DirectX::XMVECTOR const camPos =
-      DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&rayDir), DirectX::XMVectorReplicate(1000.0f), DirectX::XMLoadFloat3(&rayStart));
+    //
+    // Project worldPos into screen co-ordinates
+    // Is it on screen or not?
 
-    // SetLength answered a zero-length input with (100,0,0). The tracked
-    // object sitting exactly on the unprojected point a thousand units down
-    // the click ray is not something this code rules out, and the native
-    // normalise would put a QNaN on the compass, so the fallback stands.
-    DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_worldPos), camPos);
-    DirectX::XMVECTOR camToTarget;
-    if (NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget)), 0.0f))
-      camToTarget = DirectX::XMVectorSet(100.0f, 0.0f, 0.0f, 0.0f);
+    float screenX, screenY;
+    TheCamera()->Get2DScreenPos(_worldPos, &screenX, &screenY);
+    screenY = screenH - screenY;
+
+    DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+    DirectX::XMFLOAT3 const camFrontStore = TheCamera()->GetFront();
+    DirectX::XMVECTOR const camFront = DirectX::XMLoadFloat3(&camFrontStore);
+    DirectX::XMVECTOR const toCam = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_worldPos));
+    // operator* between two Vector3s was the DOT product.
+    float angle = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toCam, camFront));
+    DirectX::XMVECTOR const rotationVector = DirectX::XMVector3Cross(toCam, camFront);
+
+    // Braced to zero: both branches below write it, but Vector2's default
+    // constructor is what made that true before either ran.
+    DirectX::XMFLOAT2 compassVector{0.0f, 0.0f};
+
+    if (angle <= 0.0f && screenX >= 0 && screenX < screenW && screenY >= 0 && screenY < screenH)
+    {
+      // _pos is onscreen
+      screenX *= (m_screenW / screenW);
+      screenY *= (m_screenH / screenH);
+
+      compassVector = DirectX::XMFLOAT2(screenX - _screenX, screenY - _screenY);
+      DirectX::XMStoreFloat2(&compassVector, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&compassVector)));
+    }
     else
-      camToTarget = DirectX::XMVectorScale(DirectX::XMVector3Normalize(toTarget), 100.0f);
+    {
+      // _pos is offscreen
+      DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
+      TheCamera()->GetClickRay(_screenX * screenW / m_screenW, _screenY * screenH / m_screenH, &rayStart, &rayDir);
+      DirectX::XMVECTOR const camPos =
+        DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&rayDir), DirectX::XMVectorReplicate(1000.0f), DirectX::XMLoadFloat3(&rayStart));
 
-    float posX, posY;
-    DirectX::XMFLOAT3 compassTarget;
-    DirectX::XMStoreFloat3(&compassTarget, DirectX::XMVectorAdd(camPos, camToTarget));
-    TheCamera()->Get2DScreenPos(compassTarget, &posX, &posY);
-    posY = screenH - posY;
-    posX *= (m_screenW / screenW);
-    posY *= (m_screenH / screenH);
+      // SetLength answered a zero-length input with (100,0,0). The tracked
+      // object sitting exactly on the unprojected point a thousand units down
+      // the click ray is not something this code rules out, and the native
+      // normalise would put a QNaN on the compass, so the fallback stands.
+      DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_worldPos), camPos);
+      DirectX::XMVECTOR camToTarget;
+      if (NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget)), 0.0f))
+        camToTarget = DirectX::XMVectorSet(100.0f, 0.0f, 0.0f, 0.0f);
+      else
+        camToTarget = DirectX::XMVectorScale(DirectX::XMVector3Normalize(toTarget), 100.0f);
 
-    compassVector = DirectX::XMFLOAT2(posX - _screenX, posY - _screenY);
-    DirectX::XMStoreFloat2(&compassVector, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&compassVector)));
+      float posX, posY;
+      DirectX::XMFLOAT3 compassTarget;
+      DirectX::XMStoreFloat3(&compassTarget, DirectX::XMVectorAdd(camPos, camToTarget));
+      TheCamera()->Get2DScreenPos(compassTarget, &posX, &posY);
+      posY = screenH - posY;
+      posX *= (m_screenW / screenW);
+      posY *= (m_screenH / screenH);
+
+      compassVector = DirectX::XMFLOAT2(posX - _screenX, posY - _screenY);
+      DirectX::XMStoreFloat2(&compassVector, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&compassVector)));
+    }
+
+    //
+    // Render the compass
+
+    DirectX::XMFLOAT2 screenPos(_screenX - 0.5f, _screenY - 0.5f);
+    DirectX::XMFLOAT2 compassRight = compassVector;
+    float temp = compassRight.x;
+    compassRight.x = compassRight.y;
+    compassRight.y = temp * -1.0f;
+
+    // The four corners, worked out once instead of eight times. glVertex2fv used
+    // to read Vector2::GetData(), which XMFLOAT2 does not have.
+    float const rightX = compassRight.x * _size;
+    float const rightY = compassRight.y * _size;
+    float const alongX = compassVector.x * _size;
+    float const alongY = compassVector.y * _size;
+
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/Compass.bmp", true, false));
+    glEnable(GL_TEXTURE_2D);
+
+    g_renderer->SetupMatricesFor2D();
+    SetupRenderMatrices(ScreenTaskManager);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+    glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(screenPos.x - rightX + alongX, screenPos.y - rightY + alongY);
+    glTexCoord2i(1, 1);
+    glVertex2f(screenPos.x + rightX + alongX, screenPos.y + rightY + alongY);
+    glTexCoord2i(1, 0);
+    glVertex2f(screenPos.x + rightX - alongX, screenPos.y + rightY - alongY);
+    glTexCoord2i(0, 0);
+    glVertex2f(screenPos.x - rightX - alongX, screenPos.y - rightY - alongY);
+    glEnd();
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    if (_selected)
+      glColor4f(1.0f, 1.0f, 0.3f, 0.8f);
+    else
+      glColor4f(1.0f, 1.0f, 1.0f, 0.6f);
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(screenPos.x - rightX + alongX, screenPos.y - rightY + alongY);
+    glTexCoord2i(1, 1);
+    glVertex2f(screenPos.x + rightX + alongX, screenPos.y + rightY + alongY);
+    glTexCoord2i(1, 0);
+    glVertex2f(screenPos.x + rightX - alongX, screenPos.y + rightY - alongY);
+    glTexCoord2i(0, 0);
+    glVertex2f(screenPos.x - rightX - alongX, screenPos.y - rightY - alongY);
+    glEnd();
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
   }
 
-  //
-  // Render the compass
-
-  DirectX::XMFLOAT2 screenPos(_screenX - 0.5f, _screenY - 0.5f);
-  DirectX::XMFLOAT2 compassRight = compassVector;
-  float temp = compassRight.x;
-  compassRight.x = compassRight.y;
-  compassRight.y = temp * -1.0f;
-
-  // The four corners, worked out once instead of eight times. glVertex2fv used
-  // to read Vector2::GetData(), which XMFLOAT2 does not have.
-  float const rightX = compassRight.x * _size;
-  float const rightY = compassRight.y * _size;
-  float const alongX = compassVector.x * _size;
-  float const alongY = compassVector.y * _size;
-
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/Compass.bmp", true, false));
-  glEnable(GL_TEXTURE_2D);
-
-  g_renderer->SetupMatricesFor2D();
-  SetupRenderMatrices(ScreenTaskManager);
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-  glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(screenPos.x - rightX + alongX, screenPos.y - rightY + alongY);
-  glTexCoord2i(1, 1);
-  glVertex2f(screenPos.x + rightX + alongX, screenPos.y + rightY + alongY);
-  glTexCoord2i(1, 0);
-  glVertex2f(screenPos.x + rightX - alongX, screenPos.y + rightY - alongY);
-  glTexCoord2i(0, 0);
-  glVertex2f(screenPos.x - rightX - alongX, screenPos.y - rightY - alongY);
-  glEnd();
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  if (_selected)
-    glColor4f(1.0f, 1.0f, 0.3f, 0.8f);
-  else
-    glColor4f(1.0f, 1.0f, 1.0f, 0.6f);
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(screenPos.x - rightX + alongX, screenPos.y - rightY + alongY);
-  glTexCoord2i(1, 1);
-  glVertex2f(screenPos.x + rightX + alongX, screenPos.y + rightY + alongY);
-  glTexCoord2i(1, 0);
-  glVertex2f(screenPos.x + rightX - alongX, screenPos.y + rightY - alongY);
-  glTexCoord2i(0, 0);
-  glVertex2f(screenPos.x - rightX - alongX, screenPos.y - rightY - alongY);
-  glEnd();
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_TEXTURE_2D);
-}
-
-void TaskManagerInterfaceIcons::RenderOverview()
-{
-  float boxW = 100;
-  float boxX = (m_screenW / 2.0f) - (boxW / 2) + (m_screenY * boxW);
-  float boxY = 95;
-  float boxH = 16;
-  float screenCentre = m_screenW / 2.0f;
-
-  g_gameFont.SetRenderShadow(true);
-  glColor4ub(255, 255, 150, 30);
-  g_gameFont.DrawText2DCentre(screenCentre - boxW, 105, 12, LANGUAGEPHRASE("taskmanager_research"));
-  g_gameFont.DrawText2DCentre(screenCentre, 105, 12, LANGUAGEPHRASE("taskmanager_taskmanager"));
-  g_gameFont.DrawText2DCentre(screenCentre + boxW, 105, 12, LANGUAGEPHRASE("taskmanager_objectives"));
-  g_gameFont.SetRenderShadow(false);
-
-  glColor4f(0.0f, 0.0f, 0.5f, 0.6f);
-  glLineWidth(1.0f);
-  glBegin(GL_LINE_LOOP);
-  glVertex2f(boxX, boxY);
-  glVertex2f(boxX + boxW, boxY);
-  glVertex2f(boxX + boxW, boxY + boxH);
-  glVertex2f(boxX, boxY + boxH);
-  glEnd();
-  glLineWidth(1.0f);
-
-  glColor4f(0.0f, 0.0f, 0.5f, 0.2f);
-  glBegin(GL_QUADS);
-  glVertex2f(boxX, boxY);
-  glVertex2f(boxX + boxW, boxY);
-  glVertex2f(boxX + boxW, boxY + boxH);
-  glVertex2f(boxX, boxY + boxH);
-  glEnd();
-}
-
-void TaskManagerInterfaceIcons::RenderObjectives()
-{
-  SetupRenderMatrices(ScreenObjectives);
-
-  //
-  // Render title
-
-  g_gameFont.SetRenderOutline(true);
-  glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-  g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_objectives"));
-  glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-  g_gameFont.SetRenderOutline(false);
-  g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_objectives"));
-
-  //
-  // Render background fill
-
-  float panelW = 81;
-  float textX = 50;
-  float completeX = m_screenW - 300;
-  float textY = 100;
-  float textH = 25;
-
-  float boxX = 30;
-  float boxW = m_screenW - boxX * 2 - panelW;
-
-  //
-  // Render primary objectives
-
-  float mouseX = g_target->X();
-  float mouseY = g_target->Y();
-
-  ConvertMousePosition(mouseX, mouseY);
-
-  for (int o = 0; o < 2; ++o)
+  void TaskManagerInterfaceIcons::RenderOverview()
   {
-    decltype(&g_location->m_levelFile->m_primaryObjectives) objectives = nullptr;
-    if (o == 0)
-      objectives = &g_location->m_levelFile->m_primaryObjectives;
-    else
-      objectives = &g_location->m_levelFile->m_secondaryObjectives;
+    float boxW = 100;
+    float boxX = (m_screenW / 2.0f) - (boxW / 2) + (m_screenY * boxW);
+    float boxY = 95;
+    float boxH = 16;
+    float screenCentre = m_screenW / 2.0f;
 
-    int numObjectives = static_cast<int>(objectives->size());
-    if (numObjectives == 0)
-      continue;
+    g_gameFont.SetRenderShadow(true);
+    glColor4ub(255, 255, 150, 30);
+    g_gameFont.DrawText2DCentre(screenCentre - boxW, 105, 12, LANGUAGEPHRASE("taskmanager_research"));
+    g_gameFont.DrawText2DCentre(screenCentre, 105, 12, LANGUAGEPHRASE("taskmanager_taskmanager"));
+    g_gameFont.DrawText2DCentre(screenCentre + boxW, 105, 12, LANGUAGEPHRASE("taskmanager_objectives"));
+    g_gameFont.SetRenderShadow(false);
+
+    glColor4f(0.0f, 0.0f, 0.5f, 0.6f);
+    glLineWidth(1.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(boxX, boxY);
+    glVertex2f(boxX + boxW, boxY);
+    glVertex2f(boxX + boxW, boxY + boxH);
+    glVertex2f(boxX, boxY + boxH);
+    glEnd();
+    glLineWidth(1.0f);
+
+    glColor4f(0.0f, 0.0f, 0.5f, 0.2f);
+    glBegin(GL_QUADS);
+    glVertex2f(boxX, boxY);
+    glVertex2f(boxX + boxW, boxY);
+    glVertex2f(boxX + boxW, boxY + boxH);
+    glVertex2f(boxX, boxY + boxH);
+    glEnd();
+  }
+
+  void TaskManagerInterfaceIcons::RenderObjectives()
+  {
+    SetupRenderMatrices(ScreenObjectives);
+
+    //
+    // Render title
+
+    g_gameFont.SetRenderOutline(true);
+    glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
+    g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_objectives"));
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    g_gameFont.SetRenderOutline(false);
+    g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_objectives"));
+
+    //
+    // Render background fill
+
+    float panelW = 81;
+    float textX = 50;
+    float completeX = m_screenW - 300;
+    float textY = 100;
+    float textH = 25;
+
+    float boxX = 30;
+    float boxW = m_screenW - boxX * 2 - panelW;
+
+    //
+    // Render primary objectives
+
+    float mouseX = g_target->X();
+    float mouseY = g_target->Y();
+
+    ConvertMousePosition(mouseX, mouseY);
+
+    for (int o = 0; o < 2; ++o)
+    {
+      decltype(&g_location->m_levelFile->m_primaryObjectives) objectives = nullptr;
+      if (o == 0)
+        objectives = &g_location->m_levelFile->m_primaryObjectives;
+      else
+        objectives = &g_location->m_levelFile->m_secondaryObjectives;
+
+      int numObjectives = static_cast<int>(objectives->size());
+      if (numObjectives == 0)
+        continue;
+
+      //
+      // Title bar
+
+      float boxY = textY - textH;
+      float boxH = numObjectives * (textH * 1.5f) + textH * 0.75f;
+      float titleHeight = 20.0f;
+
+      glShadeModel(GL_SMOOTH);
+      glBegin(GL_QUADS);
+      glColor4ub(199, 214, 220, 255);
+      glVertex2f(boxX, boxY - titleHeight);
+      glVertex2f(boxX + boxW, boxY - titleHeight);
+      glColor4ub(112, 141, 168, 255);
+      glVertex2f(boxX + boxW, boxY);
+      glVertex2f(boxX, boxY);
+      glEnd();
+      glShadeModel(GL_FLAT);
+
+      g_gameFont.SetRenderShadow(true);
+      glColor4ub(255, 255, 150, 30);
+      const char* theString = (o == 0 ? LANGUAGEPHRASE("taskmanager_primarys") : LANGUAGEPHRASE("taskmanager_secondarys"));
+      g_gameFont.DrawText2DCentre(boxX + boxW / 2.0f, boxY - titleHeight / 2 + 1, 13, theString);
+      g_gameFont.DrawText2DCentre(boxX + boxW / 2.0f, boxY - titleHeight / 2 + 1, 13, theString);
+      g_gameFont.SetRenderShadow(false);
+
+      //
+      // Background box
+
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceRed.bmp"));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+      glColor4f(0.8f, 0.8f, 0.8f, 0.9f);
+      glBegin(GL_QUADS);
+      glTexCoord2f(0, 0);
+      glVertex2f(boxX, boxY);
+      glTexCoord2f(1, 0);
+      glVertex2f(boxX + boxW, boxY);
+      glTexCoord2f(1, boxH / m_screenH * 1.5);
+      glVertex2f(boxX + boxW, boxY + boxH);
+      glTexCoord2f(0, boxH / m_screenH * 1.5);
+      glVertex2f(boxX, boxY + boxH);
+      glEnd();
+
+      glDisable(GL_TEXTURE_2D);
+
+      glColor4ub(199, 214, 220, 255);
+      glLineWidth(2.0f);
+      glBegin(GL_LINE_LOOP);
+      glVertex2f(boxX, boxY - titleHeight);
+      glVertex2f(boxX + boxW, boxY - titleHeight);
+      glVertex2f(boxX + boxW, boxY + boxH);
+      glVertex2f(boxX, boxY + boxH);
+      glEnd();
+      glLineWidth(1.0f);
+
+      for (int i = 0; i < numObjectives; ++i)
+      {
+        float objectiveId = i + 10;
+        if (o == 1)
+          objectiveId *= -1;
+        auto zone = std::make_unique<ScreenZone>("Objective", LANGUAGEPHRASE("help_explainobjective"), boxX + 10, m_screenH + textY - textH / 2,
+                                                 boxW - 20, textH * 1.5f, objectiveId);
+        zone->m_scrollZone = 1;
+        m_newScreenZones.push_back(std::move(zone));
+
+        GlobalEventCondition* condition = (*objectives)[i].get();
+        bool completed = condition->Evaluate();
+
+        char* descriptor = LANGUAGEPHRASE(condition->m_stringId);
+
+        g_gameFont.SetRenderOutline(true);
+        glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
+        g_gameFont.DrawText2D(textX, textY, textH * 0.65f, "{}", descriptor);
+        g_gameFont.SetRenderOutline(false);
+        if (completed)
+          glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
+        else
+          glColor4f(1.0f, 0.2f, 0.2f, 1.0f);
+        g_gameFont.DrawText2D(textX, textY, textH * 0.65f, "{}", descriptor);
+
+        const char* completedString = (completed ? LANGUAGEPHRASE("taskmanager_complete") : LANGUAGEPHRASE("taskmanager_incomplete"));
+        g_gameFont.SetRenderOutline(true);
+        glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
+        g_gameFont.DrawText2D(completeX, textY, textH * 0.75f, completedString);
+        g_gameFont.SetRenderOutline(false);
+        if (completed)
+          glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
+        else
+          glColor4f(1.0f, 0.2f, 0.2f, 1.0f);
+        g_gameFont.DrawText2D(completeX, textY, textH * 0.75f, completedString);
+
+        if (condition->m_type == GlobalEventCondition::BuildingOnline)
+        {
+          Building* building = g_location->GetBuilding(condition->m_id);
+          if (building)
+          {
+            const char* objectiveCounter = building->GetObjectiveCounter();
+            g_gameFont.DrawText2D(completeX, textY + textH * 0.75f, textH / 3, "{}", objectiveCounter);
+          }
+        }
+
+        textY += textH * 1.5f;
+      }
+
+      textY += 70;
+    }
+
+    //
+    // Render nav arrows
+
+    if (m_screenY > 0.9f)
+    {
+      bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
+
+      unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
+
+      if (render360Controls)
+        RenderIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", m_screenW - 60, 10, 40, alpha);
+      else
+      {
+        glColor4ub(199, 214, 220, alpha);
+
+        glBegin(GL_TRIANGLES);
+        glVertex2f(m_screenW - 40, 10);
+        glVertex2f(m_screenW - 20, 30);
+        glVertex2f(m_screenW - 60, 30);
+        glEnd();
+      }
+
+      auto zoneLeft =
+        std::make_unique<ScreenZone>("ScreenUp", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, m_screenH + 10, 40, 20, -1);
+
+      m_newScreenZones.push_back(std::move(zoneLeft));
+    }
+  }
+
+  void TaskManagerInterfaceIcons::RenderResearch()
+  {
+    SetupRenderMatrices(ScreenResearch);
+
+    //
+    // Render title text
+
+    g_gameFont.SetRenderOutline(true);
+    glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
+    g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_research"));
+    g_gameFont.SetRenderOutline(false);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_research"));
+    // g_gameFont.DrawText2DCentre( m_screenW/2.0f, 80, 20, "ResearchPoints : {}", g_globalWorld->m_research->m_researchPoints );
+
+    float mouseX = g_target->X();
+    float mouseY = g_target->Y();
+    ConvertMousePosition(mouseX, mouseY);
+
+    int numItemsResearched = 0;
+    for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
+    {
+      if (g_globalWorld->m_research->HasResearch(i))
+        ++numItemsResearched;
+    }
 
     //
     // Title bar
 
+    float panelW = 80;
+    float textH = 26;
+    float boxX = 30;
+    float boxW = m_screenW - boxX * 2 - panelW;
+    float textY = 70;
     float boxY = textY - textH;
-    float boxH = numObjectives * (textH * 1.5f) + textH * 0.75f;
+    float boxH = numItemsResearched * (textH * 1.7f) + textH * 1.0f;
     float titleHeight = 20.0f;
 
     glShadeModel(GL_SMOOTH);
@@ -1955,7 +2136,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
 
     g_gameFont.SetRenderShadow(true);
     glColor4ub(255, 255, 150, 30);
-    const char* theString = (o == 0 ? LANGUAGEPHRASE("taskmanager_primarys") : LANGUAGEPHRASE("taskmanager_secondarys"));
+    const char* theString = LANGUAGEPHRASE("taskmanager_research");
     g_gameFont.DrawText2DCentre(boxX + boxW / 2.0f, boxY - titleHeight / 2 + 1, 13, theString);
     g_gameFont.DrawText2DCentre(boxX + boxW / 2.0f, boxY - titleHeight / 2 + 1, 13, theString);
     g_gameFont.SetRenderShadow(false);
@@ -1966,11 +2147,11 @@ void TaskManagerInterfaceIcons::RenderObjectives()
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceRed.bmp"));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    glColor4f(0.8f, 0.8f, 0.8f, 0.9f);
+    glColor4f(0.8f, 0.8f, 0.8f, 0.8f);
     glBegin(GL_QUADS);
     glTexCoord2f(0, 0);
     glVertex2f(boxX, boxY);
@@ -1994,370 +2175,184 @@ void TaskManagerInterfaceIcons::RenderObjectives()
     glEnd();
     glLineWidth(1.0f);
 
-    for (int i = 0; i < numObjectives; ++i)
+    //
+    // Render each item
+
+    float iconY = textY - 20;
+    float totalSize = (boxH - 20) / static_cast<float>(numItemsResearched);
+    totalSize = std::min(totalSize, 50.0f);
+
+    for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
     {
-      float objectiveId = i + 10;
-      if (o == 1)
-        objectiveId *= -1;
-      auto zone = std::make_unique<ScreenZone>("Objective", LANGUAGEPHRASE("help_explainobjective"), boxX + 10, m_screenH + textY - textH / 2,
-                                               boxW - 20, textH * 1.5f, objectiveId);
-      zone->m_scrollZone = 1;
-      m_newScreenZones.push_back(std::move(zone));
-
-      GlobalEventCondition* condition = (*objectives)[i].get();
-      bool completed = condition->Evaluate();
-
-      char* descriptor = LANGUAGEPHRASE(condition->m_stringId);
-
-      g_gameFont.SetRenderOutline(true);
-      glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-      g_gameFont.DrawText2D(textX, textY, textH * 0.65f, "%s", descriptor);
-      g_gameFont.SetRenderOutline(false);
-      if (completed)
-        glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
-      else
-        glColor4f(1.0f, 0.2f, 0.2f, 1.0f);
-      g_gameFont.DrawText2D(textX, textY, textH * 0.65f, "%s", descriptor);
-
-      const char* completedString = (completed ? LANGUAGEPHRASE("taskmanager_complete") : LANGUAGEPHRASE("taskmanager_incomplete"));
-      g_gameFont.SetRenderOutline(true);
-      glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-      g_gameFont.DrawText2D(completeX, textY, textH * 0.75f, completedString);
-      g_gameFont.SetRenderOutline(false);
-      if (completed)
-        glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
-      else
-        glColor4f(1.0f, 0.2f, 0.2f, 1.0f);
-      g_gameFont.DrawText2D(completeX, textY, textH * 0.75f, completedString);
-
-      if (condition->m_type == GlobalEventCondition::BuildingOnline)
+      if (g_globalWorld->m_research->HasResearch(i))
       {
-        Building* building = g_location->GetBuilding(condition->m_id);
-        if (building)
+        float iconX = 50;
+        float gapSize = 3;
+        float iconSize = totalSize - gapSize;
+
+        //
+        // Render selection boxes
+
+        if (g_globalWorld->m_research->m_currentResearch == i)
         {
-          const char* objectiveCounter = building->GetObjectiveCounter();
-          g_gameFont.DrawText2D(completeX, textY + textH * 0.75f, textH / 3, "%s", objectiveCounter);
+          glColor4f(0.05f, 0.05f, 0.5f, 0.4f);
+          glBegin(GL_QUADS);
+          glVertex2i(40, iconY - 1);
+          glVertex2i(m_screenW - 120, iconY - 1);
+          glVertex2i(m_screenW - 120, iconY + iconSize + 1);
+          glVertex2i(40, iconY + iconSize + 1);
+          glEnd();
+          glColor4f(0.5f, 0.5f, 0.7f, 0.8f);
+          glBegin(GL_LINE_LOOP);
+          glVertex2i(40, iconY - 1);
+          glVertex2i(m_screenW - 120, iconY - 1);
+          glVertex2i(m_screenW - 120, iconY + iconSize + 1);
+          glVertex2i(40, iconY + iconSize + 1);
+          glEnd();
         }
-      }
 
-      textY += textH * 1.5f;
-    }
+        std::string tooltipId;
+        tooltipId = std::format("newcontrols_research_{}", GlobalResearch::GetTypeName(i));
+        auto zone = std::make_unique<ScreenZone>("Research", LANGUAGEPHRASE(tooltipId.c_str()), 40, -m_screenH + iconY, m_screenW - 160, iconSize, i);
+        zone->m_scrollZone = 1;
+        m_newScreenZones.push_back(std::move(zone));
 
-    textY += 70;
-  }
+        //
+        // Render the shadow
 
-  //
-  // Render nav arrows
-
-  if (m_screenY > 0.9f)
-  {
-    bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
-
-    unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
-
-    if (render360Controls)
-      RenderIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", m_screenW - 60, 10, 40, alpha);
-    else
-    {
-      glColor4ub(199, 214, 220, alpha);
-
-      glBegin(GL_TRIANGLES);
-      glVertex2f(m_screenW - 40, 10);
-      glVertex2f(m_screenW - 20, 30);
-      glVertex2f(m_screenW - 60, 30);
-      glEnd();
-    }
-
-    auto zoneLeft =
-      std::make_unique<ScreenZone>("ScreenUp", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, m_screenH + 10, 40, 20, -1);
-
-    m_newScreenZones.push_back(std::move(zoneLeft));
-  }
-}
-
-void TaskManagerInterfaceIcons::RenderResearch()
-{
-  SetupRenderMatrices(ScreenResearch);
-
-  //
-  // Render title text
-
-  g_gameFont.SetRenderOutline(true);
-  glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-  g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_research"));
-  g_gameFont.SetRenderOutline(false);
-  glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-  g_gameFont.DrawText2DDown(m_screenW - 65, 100, 45, LANGUAGEPHRASE("taskmanager_research"));
-  // g_gameFont.DrawText2DCentre( m_screenW/2.0f, 80, 20, "ResearchPoints : %d", g_globalWorld->m_research->m_researchPoints );
-
-  float mouseX = g_target->X();
-  float mouseY = g_target->Y();
-  ConvertMousePosition(mouseX, mouseY);
-
-  int numItemsResearched = 0;
-  for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
-  {
-    if (g_globalWorld->m_research->HasResearch(i))
-      ++numItemsResearched;
-  }
-
-  //
-  // Title bar
-
-  float panelW = 80;
-  float textH = 26;
-  float boxX = 30;
-  float boxW = m_screenW - boxX * 2 - panelW;
-  float textY = 70;
-  float boxY = textY - textH;
-  float boxH = numItemsResearched * (textH * 1.7f) + textH * 1.0f;
-  float titleHeight = 20.0f;
-
-  glShadeModel(GL_SMOOTH);
-  glBegin(GL_QUADS);
-  glColor4ub(199, 214, 220, 255);
-  glVertex2f(boxX, boxY - titleHeight);
-  glVertex2f(boxX + boxW, boxY - titleHeight);
-  glColor4ub(112, 141, 168, 255);
-  glVertex2f(boxX + boxW, boxY);
-  glVertex2f(boxX, boxY);
-  glEnd();
-  glShadeModel(GL_FLAT);
-
-  g_gameFont.SetRenderShadow(true);
-  glColor4ub(255, 255, 150, 30);
-  const char* theString = LANGUAGEPHRASE("taskmanager_research");
-  g_gameFont.DrawText2DCentre(boxX + boxW / 2.0f, boxY - titleHeight / 2 + 1, 13, theString);
-  g_gameFont.DrawText2DCentre(boxX + boxW / 2.0f, boxY - titleHeight / 2 + 1, 13, theString);
-  g_gameFont.SetRenderShadow(false);
-
-  //
-  // Background box
-
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceRed.bmp"));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  glColor4f(0.8f, 0.8f, 0.8f, 0.8f);
-  glBegin(GL_QUADS);
-  glTexCoord2f(0, 0);
-  glVertex2f(boxX, boxY);
-  glTexCoord2f(1, 0);
-  glVertex2f(boxX + boxW, boxY);
-  glTexCoord2f(1, boxH / m_screenH * 1.5);
-  glVertex2f(boxX + boxW, boxY + boxH);
-  glTexCoord2f(0, boxH / m_screenH * 1.5);
-  glVertex2f(boxX, boxY + boxH);
-  glEnd();
-
-  glDisable(GL_TEXTURE_2D);
-
-  glColor4ub(199, 214, 220, 255);
-  glLineWidth(2.0f);
-  glBegin(GL_LINE_LOOP);
-  glVertex2f(boxX, boxY - titleHeight);
-  glVertex2f(boxX + boxW, boxY - titleHeight);
-  glVertex2f(boxX + boxW, boxY + boxH);
-  glVertex2f(boxX, boxY + boxH);
-  glEnd();
-  glLineWidth(1.0f);
-
-  //
-  // Render each item
-
-  float iconY = textY - 20;
-  float totalSize = (boxH - 20) / static_cast<float>(numItemsResearched);
-  totalSize = std::min(totalSize, 50.0f);
-
-  for (int i = 0; i < GlobalResearch::NumResearchItems; ++i)
-  {
-    if (g_globalWorld->m_research->HasResearch(i))
-    {
-      float iconX = 50;
-      float gapSize = 3;
-      float iconSize = totalSize - gapSize;
-
-      //
-      // Render selection boxes
-
-      if (g_globalWorld->m_research->m_currentResearch == i)
-      {
-        glColor4f(0.05f, 0.05f, 0.5f, 0.4f);
-        glBegin(GL_QUADS);
-        glVertex2i(40, iconY - 1);
-        glVertex2i(m_screenW - 120, iconY - 1);
-        glVertex2i(m_screenW - 120, iconY + iconSize + 1);
-        glVertex2i(40, iconY + iconSize + 1);
-        glEnd();
-        glColor4f(0.5f, 0.5f, 0.7f, 0.8f);
-        glBegin(GL_LINE_LOOP);
-        glVertex2i(40, iconY - 1);
-        glVertex2i(m_screenW - 120, iconY - 1);
-        glVertex2i(m_screenW - 120, iconY + iconSize + 1);
-        glVertex2i(40, iconY + iconSize + 1);
-        glEnd();
-      }
-
-      std::string tooltipId;
-      tooltipId = std::format("newcontrols_research_{}", GlobalResearch::GetTypeName(i));
-      auto zone = std::make_unique<ScreenZone>("Research", LANGUAGEPHRASE(tooltipId.c_str()), 40, -m_screenH + iconY, m_screenW - 160, iconSize, i);
-      zone->m_scrollZone = 1;
-      m_newScreenZones.push_back(std::move(zone));
-
-      //
-      // Render the shadow
-
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-      glDepthMask(false);
-      glColor4f(0.5f, 0.5f, 0.5f, 0.0f);
-
-      float shadowSize = iconSize * 1.1f;
-
-      glBegin(GL_QUADS);
-      glTexCoord2i(0, 1);
-      glVertex2f(iconX, iconY);
-      glTexCoord2i(1, 1);
-      glVertex2f(iconX + shadowSize, iconY);
-      glTexCoord2i(1, 0);
-      glVertex2f(iconX + shadowSize, iconY + shadowSize);
-      glTexCoord2i(0, 0);
-      glVertex2f(iconX, iconY + shadowSize);
-      glEnd();
-
-      glDisable(GL_TEXTURE_2D);
-
-      //
-      // Render the task symbol
-
-      std::string iconFilename;
-      iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(i));
-      unsigned int texId = g_resource->GetTexture(iconFilename.c_str());
-      if (texId != -1)
-      {
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+        glDepthMask(false);
+        glColor4f(0.5f, 0.5f, 0.5f, 0.0f);
+
+        float shadowSize = iconSize * 1.1f;
 
         glBegin(GL_QUADS);
         glTexCoord2i(0, 1);
         glVertex2f(iconX, iconY);
         glTexCoord2i(1, 1);
-        glVertex2f(iconX + iconSize, iconY);
+        glVertex2f(iconX + shadowSize, iconY);
         glTexCoord2i(1, 0);
-        glVertex2f(iconX + iconSize, iconY + iconSize);
+        glVertex2f(iconX + shadowSize, iconY + shadowSize);
         glTexCoord2i(0, 0);
-        glVertex2f(iconX, iconY + iconSize);
+        glVertex2f(iconX, iconY + shadowSize);
         glEnd();
 
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDisable(GL_TEXTURE_2D);
-      }
 
-      //
-      // Render research progress
+        //
+        // Render the task symbol
 
-      int researchLevel = g_globalWorld->m_research->CurrentLevel(i);
-      int researchProgress = g_globalWorld->m_research->CurrentProgress(i);
-
-      g_gameFont.SetRenderOutline(true);
-      glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
-      g_gameFont.DrawText2D(iconX + iconSize + 10, iconY + iconSize / 2, 20, "%s", GlobalResearch::GetTypeNameTranslated(i));
-      g_gameFont.SetRenderOutline(false);
-      glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-      g_gameFont.DrawText2D(iconX + iconSize + 10, iconY + iconSize / 2, 20, "%s", GlobalResearch::GetTypeNameTranslated(i));
-
-      float boxX = 300;
-      float boxY = iconY + iconSize * 0.25f;
-      float boxH = iconSize * 0.4f;
-      float boxScale = 0.85f;
-
-      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceGrey.bmp"));
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-      for (int level = 1; level < 4; ++level)
-      {
-        int requiredProgress = g_globalWorld->m_research->RequiredProgress(level);
-
-        float shadowOffset = 2.0f;
-        glColor4f(0.0f, 0.0f, 0.0f, 0.5f);
-        glBegin(GL_QUADS);
-        glVertex2i(boxX, boxY);
-        glVertex2i(boxX + requiredProgress * boxScale + shadowOffset, boxY);
-        glVertex2i(boxX + requiredProgress * boxScale + shadowOffset, boxY + boxH + shadowOffset);
-        glVertex2i(boxX, boxY + boxH + shadowOffset);
-        glEnd();
-
-        if (researchLevel > level)
+        std::string iconFilename;
+        iconFilename = std::format("Icons/Icon{}.bmp", GlobalResearch::GetTypeName(i));
+        unsigned int texId = g_resource->GetTexture(iconFilename.c_str());
+        if (texId != -1)
         {
-          glColor4f(0.7f, 0.7f, 0.9f, 1.0f);
           glEnable(GL_TEXTURE_2D);
-          glBegin(GL_QUADS);
-          glTexCoord2i(0, 0);
-          glVertex2i(boxX, boxY);
-          glTexCoord2i(10, 0);
-          glVertex2i(boxX + requiredProgress * boxScale, boxY);
-          glTexCoord2i(10, 1);
-          glVertex2i(boxX + requiredProgress * boxScale, boxY + boxH);
-          glTexCoord2i(0, 1);
-          glVertex2i(boxX, boxY + boxH);
-          glEnd();
-          float alpha = 1.0f;
-          if (g_globalWorld->m_research->m_currentResearch == i)
-            alpha = fabs(sinf(g_gameTime * 2));
-          glColor4f(0.9f, 0.9f, 1.0f, alpha);
+          glBindTexture(GL_TEXTURE_2D, texId);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+          glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
           glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
           glBegin(GL_QUADS);
-          glTexCoord2i(0, 0);
-          glVertex2i(boxX, boxY);
-          glTexCoord2i(10, 0);
-          glVertex2i(boxX + requiredProgress * boxScale, boxY);
-          glTexCoord2i(10, 1);
-          glVertex2i(boxX + requiredProgress * boxScale, boxY + boxH);
           glTexCoord2i(0, 1);
-          glVertex2i(boxX, boxY + boxH);
+          glVertex2f(iconX, iconY);
+          glTexCoord2i(1, 1);
+          glVertex2f(iconX + iconSize, iconY);
+          glTexCoord2i(1, 0);
+          glVertex2f(iconX + iconSize, iconY + iconSize);
           glTexCoord2i(0, 0);
-          glVertex2i(boxX, boxY);
-          glTexCoord2i(10, 0);
-          glVertex2i(boxX + requiredProgress * boxScale, boxY);
-          glTexCoord2i(10, 1);
-          glVertex2i(boxX + requiredProgress * boxScale, boxY + boxH);
-          glTexCoord2i(0, 1);
-          glVertex2i(boxX, boxY + boxH);
+          glVertex2f(iconX, iconY + iconSize);
           glEnd();
+
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
           glDisable(GL_TEXTURE_2D);
         }
 
-        if (researchLevel == level && researchProgress > 0)
+        //
+        // Render research progress
+
+        int researchLevel = g_globalWorld->m_research->CurrentLevel(i);
+        int researchProgress = g_globalWorld->m_research->CurrentProgress(i);
+
+        g_gameFont.SetRenderOutline(true);
+        glColor4f(0.8f, 0.8f, 0.8f, 0.0f);
+        g_gameFont.DrawText2D(iconX + iconSize + 10, iconY + iconSize / 2, 20, "{}", GlobalResearch::GetTypeNameTranslated(i));
+        g_gameFont.SetRenderOutline(false);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        g_gameFont.DrawText2D(iconX + iconSize + 10, iconY + iconSize / 2, 20, "{}", GlobalResearch::GetTypeNameTranslated(i));
+
+        float boxX = 300;
+        float boxY = iconY + iconSize * 0.25f;
+        float boxH = iconSize * 0.4f;
+        float boxScale = 0.85f;
+
+        glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/InterfaceGrey.bmp"));
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        for (int level = 1; level < 4; ++level)
         {
-          glColor4f(0.7f, 0.7f, 1.0f, 1.0f);
-          glEnable(GL_TEXTURE_2D);
+          int requiredProgress = g_globalWorld->m_research->RequiredProgress(level);
+
+          float shadowOffset = 2.0f;
+          glColor4f(0.0f, 0.0f, 0.0f, 0.5f);
           glBegin(GL_QUADS);
-          glTexCoord2i(0, 0);
           glVertex2i(boxX, boxY);
-          glTexCoord2i(10, 0);
-          glVertex2i(boxX + researchProgress * boxScale, boxY);
-          glTexCoord2i(10, 1);
-          glVertex2i(boxX + researchProgress * boxScale, boxY + boxH);
-          glTexCoord2i(0, 1);
-          glVertex2i(boxX, boxY + boxH);
+          glVertex2i(boxX + requiredProgress * boxScale + shadowOffset, boxY);
+          glVertex2i(boxX + requiredProgress * boxScale + shadowOffset, boxY + boxH + shadowOffset);
+          glVertex2i(boxX, boxY + boxH + shadowOffset);
           glEnd();
-          if (g_globalWorld->m_research->m_currentResearch == i)
+
+          if (researchLevel > level)
           {
-            float alpha = fabs(sinf(g_gameTime * 2));
+            glColor4f(0.7f, 0.7f, 0.9f, 1.0f);
+            glEnable(GL_TEXTURE_2D);
+            glBegin(GL_QUADS);
+            glTexCoord2i(0, 0);
+            glVertex2i(boxX, boxY);
+            glTexCoord2i(10, 0);
+            glVertex2i(boxX + requiredProgress * boxScale, boxY);
+            glTexCoord2i(10, 1);
+            glVertex2i(boxX + requiredProgress * boxScale, boxY + boxH);
+            glTexCoord2i(0, 1);
+            glVertex2i(boxX, boxY + boxH);
+            glEnd();
+            float alpha = 1.0f;
+            if (g_globalWorld->m_research->m_currentResearch == i)
+              alpha = fabs(sinf(g_gameTime * 2));
             glColor4f(0.9f, 0.9f, 1.0f, alpha);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+            glBegin(GL_QUADS);
+            glTexCoord2i(0, 0);
+            glVertex2i(boxX, boxY);
+            glTexCoord2i(10, 0);
+            glVertex2i(boxX + requiredProgress * boxScale, boxY);
+            glTexCoord2i(10, 1);
+            glVertex2i(boxX + requiredProgress * boxScale, boxY + boxH);
+            glTexCoord2i(0, 1);
+            glVertex2i(boxX, boxY + boxH);
+            glTexCoord2i(0, 0);
+            glVertex2i(boxX, boxY);
+            glTexCoord2i(10, 0);
+            glVertex2i(boxX + requiredProgress * boxScale, boxY);
+            glTexCoord2i(10, 1);
+            glVertex2i(boxX + requiredProgress * boxScale, boxY + boxH);
+            glTexCoord2i(0, 1);
+            glVertex2i(boxX, boxY + boxH);
+            glEnd();
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glDisable(GL_TEXTURE_2D);
+          }
+
+          if (researchLevel == level && researchProgress > 0)
+          {
+            glColor4f(0.7f, 0.7f, 1.0f, 1.0f);
+            glEnable(GL_TEXTURE_2D);
             glBegin(GL_QUADS);
             glTexCoord2i(0, 0);
             glVertex2i(boxX, boxY);
@@ -2368,482 +2363,498 @@ void TaskManagerInterfaceIcons::RenderResearch()
             glTexCoord2i(0, 1);
             glVertex2i(boxX, boxY + boxH);
             glEnd();
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            if (g_globalWorld->m_research->m_currentResearch == i)
+            {
+              float alpha = fabs(sinf(g_gameTime * 2));
+              glColor4f(0.9f, 0.9f, 1.0f, alpha);
+              glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+              glBegin(GL_QUADS);
+              glTexCoord2i(0, 0);
+              glVertex2i(boxX, boxY);
+              glTexCoord2i(10, 0);
+              glVertex2i(boxX + researchProgress * boxScale, boxY);
+              glTexCoord2i(10, 1);
+              glVertex2i(boxX + researchProgress * boxScale, boxY + boxH);
+              glTexCoord2i(0, 1);
+              glVertex2i(boxX, boxY + boxH);
+              glEnd();
+              glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            }
+
+            glDisable(GL_TEXTURE_2D);
           }
 
-          glDisable(GL_TEXTURE_2D);
+          glColor4f(1.0f, 1.0f, 1.0f, 0.8f);
+          glLineWidth(1.0f);
+          glBegin(GL_LINE_LOOP);
+          glVertex2i(boxX, boxY);
+          glVertex2i(boxX + requiredProgress * boxScale, boxY);
+          glVertex2i(boxX + requiredProgress * boxScale, boxY + boxH);
+          glVertex2i(boxX, boxY + boxH);
+          glEnd();
+
+          boxX += requiredProgress * boxScale;
+          boxX += 3;
         }
 
-        glColor4f(1.0f, 1.0f, 1.0f, 0.8f);
-        glLineWidth(1.0f);
-        glBegin(GL_LINE_LOOP);
-        glVertex2i(boxX, boxY);
-        glVertex2i(boxX + requiredProgress * boxScale, boxY);
-        glVertex2i(boxX + requiredProgress * boxScale, boxY + boxH);
-        glVertex2i(boxX, boxY + boxH);
+        float texX = 630;
+
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        g_gameFont.DrawText2D(texX, iconY + iconSize / 2, 12, "v{}.0", researchLevel);
+
+        iconY += totalSize;
+      }
+    }
+
+    //
+    // Render navigation arrows
+
+    if (m_screenY < 0.1f)
+    {
+      bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
+
+      unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
+
+      if (render360Controls)
+        RenderIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", m_screenW - 60, m_screenH - 70, 40, alpha);
+      else
+      {
+        glColor4ub(199, 214, 220, alpha);
+
+        glBegin(GL_TRIANGLES);
+        glVertex2f(m_screenW - 40, m_screenH - 30);
+        glVertex2f(m_screenW - 20, m_screenH - 50);
+        glVertex2f(m_screenW - 60, m_screenH - 50);
         glEnd();
-
-        boxX += requiredProgress * boxScale;
-        boxX += 3;
       }
 
-      float texX = 630;
-
-      glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-      g_gameFont.DrawText2D(texX, iconY + iconSize / 2, 12, "v%d.0", researchLevel);
-
-      iconY += totalSize;
+      auto zoneRight = std::make_unique<ScreenZone>("ScreenDown", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, -50, 40, 20, -1);
+      zoneRight->m_scrollZone = -1;
+      m_newScreenZones.push_back(std::move(zoneRight));
     }
   }
 
-  //
-  // Render navigation arrows
-
-  if (m_screenY < 0.1f)
+  bool TaskManagerInterfaceIcons::ControlEvent(TMControl _type)
   {
-    bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
-
-    unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
-
-    if (render360Controls)
-      RenderIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", m_screenW - 60, m_screenH - 70, 40, alpha);
-    else
+    switch (_type)
     {
-      glColor4ub(199, 214, 220, alpha);
-
-      glBegin(GL_TRIANGLES);
-      glVertex2f(m_screenW - 40, m_screenH - 30);
-      glVertex2f(m_screenW - 20, m_screenH - 50);
-      glVertex2f(m_screenW - 60, m_screenH - 50);
-      glEnd();
-    }
-
-    auto zoneRight = std::make_unique<ScreenZone>("ScreenDown", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, -50, 40, 20, -1);
-    zoneRight->m_scrollZone = -1;
-    m_newScreenZones.push_back(std::move(zoneRight));
-  }
-}
-
-bool TaskManagerInterfaceIcons::ControlEvent(TMControl _type)
-{
-  switch (_type)
-  {
-  case TMControl::TMTerminate:
-    return g_inputManager->controlEvent(ControlIconsTaskManagerEndTask);
-  case TMControl::TMDisplay:
-    return g_inputManager->controlEvent(ControlIconsTaskManagerDisplay);
-  default:
-    return false;
-  }
-}
-
-void TaskManagerInterfaceIcons::AdvanceQuickUnit()
-{
-  if (!m_quickUnitVisible)
-    return;
-
-  int numRunnableTasks = 4;
-  int runnableTaskType[] = {GlobalResearch::TypeSquad, GlobalResearch::TypeEngineer, GlobalResearch::TypeOfficer, GlobalResearch::TypeArmour};
-
-  int numAvailable = 0;
-  for (int i = 0; i < numRunnableTasks; ++i)
-  {
-    if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
-      numAvailable++;
-  }
-
-  if (numAvailable == 0)
-  {
-    m_quickUnitVisible = false;
-    return;
-  }
-
-  for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
-    m_quickUnitButtons[i]->Advance();
-
-  bool showUnitName = false;
-
-  if (numAvailable > 1 && m_quickUnitDirection == 0)
-  {
-    InputDetails cameraDetails, targetDetails;
-    g_inputManager->controlEvent(ControlTargetMove, targetDetails);
-    g_inputManager->controlEvent(ControlCameraMove, cameraDetails);
-
-    bool right = (g_inputManager->controlEvent(ControlUnitCycleLeft) || cameraDetails.x < -10 || targetDetails.x < -10 ||
-                  g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitLeft));
-
-    bool left = (g_inputManager->controlEvent(ControlUnitCycleRight) || cameraDetails.x > 10 || targetDetails.x > 10 ||
-                 g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitRight));
-
-    if (left)
-    {
-      while (true)
-      {
-        m_currentQuickUnit--;
-        if (m_currentQuickUnit < 0)
-          m_currentQuickUnit = numRunnableTasks - 1;
-        if (g_globalWorld->m_research->HasResearch(runnableTaskType[m_currentQuickUnit]))
-          break;
-      }
-
-      for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
-        m_quickUnitButtons[i]->m_movable = true;
-      m_quickUnitDirection = -1;
-      showUnitName = true;
-      g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
-    }
-
-    if (right)
-    {
-      while (true)
-      {
-        m_currentQuickUnit++;
-        if (m_currentQuickUnit >= numRunnableTasks)
-          m_currentQuickUnit = 0;
-        if (g_globalWorld->m_research->HasResearch(runnableTaskType[m_currentQuickUnit]))
-          break;
-      }
-
-      for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
-        m_quickUnitButtons[i]->m_movable = true;
-      m_quickUnitDirection = 1;
-      showUnitName = true;
-      g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
-    }
-
-    if (showUnitName)
-    {
-      int taskId = GetQuickUnitTask(2 - m_quickUnitDirection);
-      if (taskId != -1)
-        TheTaskManagerInterface()->SetCurrentMessage(MessageSuccess, taskId, 3.0f);
-    }
-
-    if (g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitCreate))
-    {
-      int taskId = GetQuickUnitTask();
-      if (taskId != -1)
-      {
-        g_app->m_clientToServer->RequestRunProgram(g_location->GetMyTeam()->m_teamId, taskId);
-        g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
-        DestroyQuickUnitInterface();
-      }
+    case TMControl::TMTerminate:
+      return g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerEndTask);
+    case TMControl::TMDisplay:
+      return g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplay);
+    default:
+      return false;
     }
   }
-  else if (m_quickUnitDirection != 0)
+
+  void TaskManagerInterfaceIcons::AdvanceQuickUnit()
   {
-    bool stop = true;
-    for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
-    {
-      if (m_quickUnitButtons[i]->m_movable)
-        stop = false;
-    }
-    if (stop)
-      m_quickUnitDirection = 0;
-  }
-}
+    if (!m_quickUnitVisible)
+      return;
 
-void TaskManagerInterfaceIcons::RenderQuickUnit()
-{
-  if (!m_quickUnitVisible)
-    return;
+    int numRunnableTasks = 4;
+    int runnableTaskType[] = {GlobalResearch::TypeSquad, GlobalResearch::TypeEngineer, GlobalResearch::TypeOfficer, GlobalResearch::TypeArmour};
 
-  float iconSize = 110;
-  float iconGap = 10;
-  float iconX = (g_renderer->ScreenW() / 2.0f);
-  float iconY = g_renderer->ScreenH() - iconSize;
-  float iconAlpha = 0.9f;
-
-  DirectX::XMFLOAT2 iconCentre(iconX, iconY);
-
-  float shadowOffset = 0;
-  float shadowSize = iconSize;
-  // float totalWidth = (numSlots-1) * ( iconSize + iconGap );   */
-
-  for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
-    m_quickUnitButtons[i]->Render();
-
-  std::string shadowFileName;
-  shadowFileName = std::format("shadow_icons/MouseSelection.bmp");
-
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(shadowFileName.c_str()));
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-  glDepthMask(false);
-  glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
-  glTexCoord2i(1, 1);
-  glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
-  glTexCoord2i(1, 0);
-  glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
-  glTexCoord2i(0, 0);
-  glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
-  glEnd();
-
-  std::string bmpFilename;
-  bmpFilename = std::format("Icons/MouseSelection.bmp");
-  unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
-
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, texId);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-  glColor4f(1.0f, 1.0f, 0.0f, iconAlpha);
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y - iconSize / 2);
-  glTexCoord2i(1, 1);
-  glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y - iconSize / 2);
-  glTexCoord2i(1, 0);
-  glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y + iconSize / 2);
-  glTexCoord2i(0, 0);
-  glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y + iconSize / 2);
-  glEnd();
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_TEXTURE_2D);
-}
-
-int TaskManagerInterfaceIcons::GetQuickUnitTask(int _position)
-{
-  for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
-  {
-    if (m_quickUnitButtons[i]->m_positionId == _position)
-      return m_quickUnitButtons[i]->m_taskId;
-  }
-  return -1;
-}
-
-bool TaskManagerInterfaceIcons::AdviseCreateControlHelpBlue()
-{
-  return m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayPressed) &&
-         g_taskManager->CapacityUsed() < g_taskManager->Capacity();
-}
-
-bool TaskManagerInterfaceIcons::AdviseCreateControlHelpGreen()
-{
-  ScreenZone* screenZone = nullptr;
-
-  return m_currentScreenZone != -1 && g_taskManager->CapacityUsed() < g_taskManager->Capacity() &&
-         (screenZone = m_screenZones[m_currentScreenZone].get()) && strcmp(screenZone->m_name, "NewTask") == 0;
-}
-
-bool TaskManagerInterfaceIcons::AdviseOverSelectableZone()
-{
-  ScreenZone* screenZone = nullptr;
-
-  return m_currentScreenZone != -1 && (screenZone = m_screenZones[m_currentScreenZone].get()) && strcmp(screenZone->m_name, "NewTask") != 0;
-}
-
-bool TaskManagerInterfaceIcons::AdviseCloseControlHelp()
-{
-  if (!m_visible)
-    return false;
-
-  if (m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayPressed))
-    return false;
-
-  return true;
-}
-
-void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
-{
-  int numRunnableTasks = 4;
-  int runnableTaskType[] = {GlobalResearch::TypeOfficer, GlobalResearch::TypeEngineer, GlobalResearch::TypeSquad, GlobalResearch::TypeArmour};
-
-  int numAvailable = 0;
-  for (int i = 0; i < numRunnableTasks; ++i)
-  {
-    if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
-      numAvailable++;
-  }
-
-  while (static_cast<int>(m_quickUnitButtons.size()) < 5)
-  {
+    int numAvailable = 0;
     for (int i = 0; i < numRunnableTasks; ++i)
     {
       if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
+        numAvailable++;
+    }
+
+    if (numAvailable == 0)
+    {
+      m_quickUnitVisible = false;
+      return;
+    }
+
+    for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
+      m_quickUnitButtons[i]->Advance();
+
+    bool showUnitName = false;
+
+    if (numAvailable > 1 && m_quickUnitDirection == 0)
+    {
+      InputDetails cameraDetails, targetDetails;
+      g_inputManager->controlEvent(ControlType::ControlTargetMove, targetDetails);
+      g_inputManager->controlEvent(ControlType::ControlCameraMove, cameraDetails);
+
+      bool right = (g_inputManager->controlEvent(ControlType::ControlUnitCycleLeft) || cameraDetails.x < -10 || targetDetails.x < -10 ||
+                    g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerQuickUnitLeft));
+
+      bool left = (g_inputManager->controlEvent(ControlType::ControlUnitCycleRight) || cameraDetails.x > 10 || targetDetails.x > 10 ||
+                   g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerQuickUnitRight));
+
+      if (left)
       {
-        bool buttonFound = false;
-        for (int j = 0; j < static_cast<int>(m_quickUnitButtons.size()); ++j)
+        while (true)
         {
-          if (m_quickUnitButtons[j]->m_taskId == runnableTaskType[i])
-          {
-            buttonFound = true;
+          m_currentQuickUnit--;
+          if (m_currentQuickUnit < 0)
+            m_currentQuickUnit = numRunnableTasks - 1;
+          if (g_globalWorld->m_research->HasResearch(runnableTaskType[m_currentQuickUnit]))
             break;
+        }
+
+        for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
+          m_quickUnitButtons[i]->m_movable = true;
+        m_quickUnitDirection = -1;
+        showUnitName = true;
+        g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
+      }
+
+      if (right)
+      {
+        while (true)
+        {
+          m_currentQuickUnit++;
+          if (m_currentQuickUnit >= numRunnableTasks)
+            m_currentQuickUnit = 0;
+          if (g_globalWorld->m_research->HasResearch(runnableTaskType[m_currentQuickUnit]))
+            break;
+        }
+
+        for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
+          m_quickUnitButtons[i]->m_movable = true;
+        m_quickUnitDirection = 1;
+        showUnitName = true;
+        g_soundSystem->TriggerOtherEvent("Slide", SoundSourceBlueprint::TypeInterface);
+      }
+
+      if (showUnitName)
+      {
+        int taskId = GetQuickUnitTask(2 - m_quickUnitDirection);
+        if (taskId != -1)
+          TheTaskManagerInterface()->SetCurrentMessage(MessageSuccess, taskId, 3.0f);
+      }
+
+      if (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerQuickUnitCreate))
+      {
+        int taskId = GetQuickUnitTask();
+        if (taskId != -1)
+        {
+          g_app->m_clientToServer->RequestRunProgram(g_location->GetMyTeam()->m_teamId, taskId);
+          g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
+          DestroyQuickUnitInterface();
+        }
+      }
+    }
+    else if (m_quickUnitDirection != 0)
+    {
+      bool stop = true;
+      for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
+      {
+        if (m_quickUnitButtons[i]->m_movable)
+          stop = false;
+      }
+      if (stop)
+        m_quickUnitDirection = 0;
+    }
+  }
+
+  void TaskManagerInterfaceIcons::RenderQuickUnit()
+  {
+    if (!m_quickUnitVisible)
+      return;
+
+    float iconSize = 110;
+    float iconGap = 10;
+    float iconX = (g_renderer->ScreenW() / 2.0f);
+    float iconY = g_renderer->ScreenH() - iconSize;
+    float iconAlpha = 0.9f;
+
+    DirectX::XMFLOAT2 iconCentre(iconX, iconY);
+
+    float shadowOffset = 0;
+    float shadowSize = iconSize;
+    // float totalWidth = (numSlots-1) * ( iconSize + iconGap );   */
+
+    for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
+      m_quickUnitButtons[i]->Render();
+
+    std::string shadowFileName;
+    shadowFileName = std::format("shadow_icons/MouseSelection.bmp");
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(shadowFileName.c_str()));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+    glDepthMask(false);
+    glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
+    glTexCoord2i(1, 1);
+    glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
+    glTexCoord2i(1, 0);
+    glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
+    glTexCoord2i(0, 0);
+    glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
+    glEnd();
+
+    std::string bmpFilename;
+    bmpFilename = std::format("Icons/MouseSelection.bmp");
+    unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+    glColor4f(1.0f, 1.0f, 0.0f, iconAlpha);
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y - iconSize / 2);
+    glTexCoord2i(1, 1);
+    glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y - iconSize / 2);
+    glTexCoord2i(1, 0);
+    glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y + iconSize / 2);
+    glTexCoord2i(0, 0);
+    glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y + iconSize / 2);
+    glEnd();
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
+  }
+
+  int TaskManagerInterfaceIcons::GetQuickUnitTask(int _position)
+  {
+    for (int i = 0; i < static_cast<int>(m_quickUnitButtons.size()); ++i)
+    {
+      if (m_quickUnitButtons[i]->m_positionId == _position)
+        return m_quickUnitButtons[i]->m_taskId;
+    }
+    return -1;
+  }
+
+  bool TaskManagerInterfaceIcons::AdviseCreateControlHelpBlue()
+  {
+    return m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayPressed) &&
+           g_taskManager->CapacityUsed() < g_taskManager->Capacity();
+  }
+
+  bool TaskManagerInterfaceIcons::AdviseCreateControlHelpGreen()
+  {
+    ScreenZone* screenZone = nullptr;
+
+    return m_currentScreenZone != -1 && g_taskManager->CapacityUsed() < g_taskManager->Capacity() &&
+           (screenZone = m_screenZones[m_currentScreenZone].get()) && strcmp(screenZone->m_name, "NewTask") == 0;
+  }
+
+  bool TaskManagerInterfaceIcons::AdviseOverSelectableZone()
+  {
+    ScreenZone* screenZone = nullptr;
+
+    return m_currentScreenZone != -1 && (screenZone = m_screenZones[m_currentScreenZone].get()) && strcmp(screenZone->m_name, "NewTask") != 0;
+  }
+
+  bool TaskManagerInterfaceIcons::AdviseCloseControlHelp()
+  {
+    if (!m_visible)
+      return false;
+
+    if (m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayPressed))
+      return false;
+
+    return true;
+  }
+
+  void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
+  {
+    int numRunnableTasks = 4;
+    int runnableTaskType[] = {GlobalResearch::TypeOfficer, GlobalResearch::TypeEngineer, GlobalResearch::TypeSquad, GlobalResearch::TypeArmour};
+
+    int numAvailable = 0;
+    for (int i = 0; i < numRunnableTasks; ++i)
+    {
+      if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
+        numAvailable++;
+    }
+
+    while (static_cast<int>(m_quickUnitButtons.size()) < 5)
+    {
+      for (int i = 0; i < numRunnableTasks; ++i)
+      {
+        if (g_globalWorld->m_research->HasResearch(runnableTaskType[i]))
+        {
+          bool buttonFound = false;
+          for (int j = 0; j < static_cast<int>(m_quickUnitButtons.size()); ++j)
+          {
+            if (m_quickUnitButtons[j]->m_taskId == runnableTaskType[i])
+            {
+              buttonFound = true;
+              break;
+            }
+          }
+
+          if (!buttonFound ||
+              (buttonFound && static_cast<int>(m_quickUnitButtons.size()) >= numAvailable && static_cast<int>(m_quickUnitButtons.size()) < 5))
+          {
+            auto button = std::make_unique<QuickUnitButton>();
+            button->m_taskId = runnableTaskType[i];
+            m_quickUnitButtons.push_back(std::move(button));
           }
         }
 
-        if (!buttonFound ||
-            (buttonFound && static_cast<int>(m_quickUnitButtons.size()) >= numAvailable && static_cast<int>(m_quickUnitButtons.size()) < 5))
-        {
-          auto button = std::make_unique<QuickUnitButton>();
-          button->m_taskId = runnableTaskType[i];
-          m_quickUnitButtons.push_back(std::move(button));
-        }
+        if (static_cast<int>(m_quickUnitButtons.size()) == 5)
+          break;
+      }
+    }
+    m_quickUnitVisible = true;
+    if (m_currentQuickUnit == -1)
+      m_currentQuickUnit = 0;
+    g_location->GetMyTeam()->SelectUnit(-1, -1, -1);
+  }
+
+  void TaskManagerInterfaceIcons::DestroyQuickUnitInterface()
+  {
+    m_quickUnitButtons.clear();
+    m_quickUnitVisible = false;
+    m_currentQuickUnit = -1;
+    m_quickUnitDirection = 0;
+  }
+
+  QuickUnitButton::QuickUnitButton()
+    : m_taskId(-1),
+      m_positionId(-1),
+      m_size(0.0f),
+      m_x(-1),
+      m_y(-1),
+      m_alpha(0.9f),
+      m_movable(false)
+  {
+    float iconSize = 100.0f;
+    float iconGap = 10.0f;
+    float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
+    float iconY = g_renderer->ScreenH() - iconSize - iconGap;
+
+    static DirectX::XMFLOAT2 buttonPositions[5] = {DirectX::XMFLOAT2(iconX - iconSize * 2 - iconGap * 2, iconY),
+                                                   DirectX::XMFLOAT2(iconX - iconSize - iconGap, iconY), DirectX::XMFLOAT2(iconX, iconY),
+                                                   DirectX::XMFLOAT2(iconX + iconSize + iconGap, iconY),
+                                                   DirectX::XMFLOAT2(iconX + iconSize * 2 + iconGap * 2, iconY)};
+
+    auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
+    m_positionId = static_cast<int>(tm->m_quickUnitButtons.size());
+    if (m_positionId == 0 || m_positionId == 4)
+      m_alpha = 0.0f;
+
+    m_x = buttonPositions[m_positionId].x;
+    m_y = buttonPositions[m_positionId].y;
+  }
+
+  void QuickUnitButton::Advance()
+  {
+    auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
+    int direction = tm->m_quickUnitDirection;
+
+    if (direction == 0)
+      return;
+
+    float iconSize = 100.0f;
+    float iconGap = 10.0f;
+    float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
+    float iconY = g_renderer->ScreenH() - iconSize - iconGap;
+
+    static DirectX::XMFLOAT2 buttonPositions[5] = {DirectX::XMFLOAT2(iconX - iconSize * 2 - iconGap * 2, iconY),
+                                                   DirectX::XMFLOAT2(iconX - iconSize - iconGap, iconY), DirectX::XMFLOAT2(iconX, iconY),
+                                                   DirectX::XMFLOAT2(iconX + iconSize + iconGap, iconY),
+                                                   DirectX::XMFLOAT2(iconX + iconSize * 2 + iconGap * 2, iconY)};
+
+    if (direction != 0 && m_movable)
+    {
+      int nextPos = m_positionId + direction;
+      if (nextPos < 0)
+        nextPos = 4;
+      if (nextPos > 4)
+        nextPos = 0;
+
+      if (nextPos == 0 || nextPos == 4)
+      {
+        int distance = m_x - buttonPositions[nextPos].x;
+        if (abs(distance) > iconSize + iconGap)
+          m_x = buttonPositions[nextPos].x - direction * iconSize;
+
+        if (nextPos == 0 && direction == -1)
+          m_alpha -= 0.09f;
+        else if (nextPos == 4 && direction == 1)
+          m_alpha -= 0.09f;
+      }
+      else if (nextPos == 1 && direction == 1)
+      {
+        m_alpha += 0.09f;
+        m_alpha = std::min(m_alpha, 0.9f);
+      }
+      else if (nextPos == 3 && direction == -1)
+      {
+        m_alpha += 0.09f;
+        m_alpha = std::min(m_alpha, 0.9f);
       }
 
-      if (static_cast<int>(m_quickUnitButtons.size()) == 5)
-        break;
+      m_x += direction * 10;
+
+      if (m_x == buttonPositions[nextPos].x)
+      {
+        m_movable = false;
+        m_positionId = nextPos;
+        m_x = buttonPositions[m_positionId].x;
+      }
     }
   }
-  m_quickUnitVisible = true;
-  if (m_currentQuickUnit == -1)
-    m_currentQuickUnit = 0;
-  g_location->GetMyTeam()->SelectUnit(-1, -1, -1);
-}
 
-void TaskManagerInterfaceIcons::DestroyQuickUnitInterface()
-{
-  m_quickUnitButtons.clear();
-  m_quickUnitVisible = false;
-  m_currentQuickUnit = -1;
-  m_quickUnitDirection = 0;
-}
-
-QuickUnitButton::QuickUnitButton()
-  : m_taskId(-1),
-    m_positionId(-1),
-    m_size(0.0f),
-    m_x(-1),
-    m_y(-1),
-    m_alpha(0.9f),
-    m_movable(false)
-{
-  float iconSize = 100.0f;
-  float iconGap = 10.0f;
-  float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
-  float iconY = g_renderer->ScreenH() - iconSize - iconGap;
-
-  static DirectX::XMFLOAT2 buttonPositions[5] = {DirectX::XMFLOAT2(iconX - iconSize * 2 - iconGap * 2, iconY),
-                                                 DirectX::XMFLOAT2(iconX - iconSize - iconGap, iconY), DirectX::XMFLOAT2(iconX, iconY),
-                                                 DirectX::XMFLOAT2(iconX + iconSize + iconGap, iconY),
-                                                 DirectX::XMFLOAT2(iconX + iconSize * 2 + iconGap * 2, iconY)};
-
-  auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
-  m_positionId = static_cast<int>(tm->m_quickUnitButtons.size());
-  if (m_positionId == 0 || m_positionId == 4)
-    m_alpha = 0.0f;
-
-  m_x = buttonPositions[m_positionId].x;
-  m_y = buttonPositions[m_positionId].y;
-}
-
-void QuickUnitButton::Advance()
-{
-  auto tm = static_cast<TaskManagerInterfaceIcons*>(g_taskManagerInterface);
-  int direction = tm->m_quickUnitDirection;
-
-  if (direction == 0)
-    return;
-
-  float iconSize = 100.0f;
-  float iconGap = 10.0f;
-  float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
-  float iconY = g_renderer->ScreenH() - iconSize - iconGap;
-
-  static DirectX::XMFLOAT2 buttonPositions[5] = {DirectX::XMFLOAT2(iconX - iconSize * 2 - iconGap * 2, iconY),
-                                                 DirectX::XMFLOAT2(iconX - iconSize - iconGap, iconY), DirectX::XMFLOAT2(iconX, iconY),
-                                                 DirectX::XMFLOAT2(iconX + iconSize + iconGap, iconY),
-                                                 DirectX::XMFLOAT2(iconX + iconSize * 2 + iconGap * 2, iconY)};
-
-  if (direction != 0 && m_movable)
+  void QuickUnitButton::Render()
   {
-    int nextPos = m_positionId + direction;
-    if (nextPos < 0)
-      nextPos = 4;
-    if (nextPos > 4)
-      nextPos = 0;
+    // if( m_positionId == 0 || m_positionId == 4 ) return;
 
-    if (nextPos == 0 || nextPos == 4)
-    {
-      int distance = m_x - buttonPositions[nextPos].x;
-      if (abs(distance) > iconSize + iconGap)
-        m_x = buttonPositions[nextPos].x - direction * iconSize;
+    float iconSize = 100.0f;
+    float iconGap = 10.0f;
+    float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
+    float iconY = g_renderer->ScreenH() - iconSize - iconGap;
+    float iconAlpha = m_alpha;
+    float shadowOffset = 0;
+    float shadowSize = iconSize + 10;
 
-      if (nextPos == 0 && direction == -1)
-        m_alpha -= 0.09f;
-      else if (nextPos == 4 && direction == 1)
-        m_alpha -= 0.09f;
-    }
-    else if (nextPos == 1 && direction == 1)
-    {
-      m_alpha += 0.09f;
-      m_alpha = std::min(m_alpha, 0.9f);
-    }
-    else if (nextPos == 3 && direction == -1)
-    {
-      m_alpha += 0.09f;
-      m_alpha = std::min(m_alpha, 0.9f);
-    }
+    DirectX::XMFLOAT2 iconCentre(m_x, m_y);
 
-    m_x += direction * 10;
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+    glDepthMask(false);
+    glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
+    glTexCoord2i(1, 1);
+    glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
+    glTexCoord2i(1, 0);
+    glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
+    glTexCoord2i(0, 0);
+    glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
+    glEnd();
 
-    if (m_x == buttonPositions[nextPos].x)
-    {
-      m_movable = false;
-      m_positionId = nextPos;
-      m_x = buttonPositions[m_positionId].x;
-    }
+    std::string bmpFilename;
+    if (m_taskId == -1)
+      bmpFilename = std::format("Icons/IconNoTask.bmp");
+    else
+      bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(m_taskId));
+    unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+    glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y - iconSize / 2);
+    glTexCoord2i(1, 1);
+    glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y - iconSize / 2);
+    glTexCoord2i(1, 0);
+    glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y + iconSize / 2);
+    glTexCoord2i(0, 0);
+    glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y + iconSize / 2);
+    glEnd();
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
   }
-}
-
-void QuickUnitButton::Render()
-{
-  // if( m_positionId == 0 || m_positionId == 4 ) return;
-
-  float iconSize = 100.0f;
-  float iconGap = 10.0f;
-  float iconX = (g_renderer->ScreenW() / 2.0f); // - iconSize - iconGap;
-  float iconY = g_renderer->ScreenH() - iconSize - iconGap;
-  float iconAlpha = m_alpha;
-  float shadowOffset = 0;
-  float shadowSize = iconSize + 10;
-
-  DirectX::XMFLOAT2 iconCentre(m_x, m_y);
-
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Icons/IconShadow.bmp"));
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-  glDepthMask(false);
-  glColor4f(iconAlpha, iconAlpha, iconAlpha, 0.0f);
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
-  glTexCoord2i(1, 1);
-  glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y - shadowSize / 2 + shadowOffset);
-  glTexCoord2i(1, 0);
-  glVertex2f(iconCentre.x + shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
-  glTexCoord2i(0, 0);
-  glVertex2f(iconCentre.x - shadowSize / 2 + shadowOffset, iconCentre.y + shadowSize / 2 + shadowOffset);
-  glEnd();
-
-  std::string bmpFilename;
-  if (m_taskId == -1)
-    bmpFilename = std::format("Icons/IconNoTask.bmp");
-  else
-    bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(m_taskId));
-  unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
-
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, texId);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-  glColor4f(1.0f, 1.0f, 1.0f, iconAlpha);
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y - iconSize / 2);
-  glTexCoord2i(1, 1);
-  glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y - iconSize / 2);
-  glTexCoord2i(1, 0);
-  glVertex2f(iconCentre.x + iconSize / 2, iconCentre.y + iconSize / 2);
-  glTexCoord2i(0, 0);
-  glVertex2f(iconCentre.x - iconSize / 2, iconCentre.y + iconSize / 2);
-  glEnd();
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_TEXTURE_2D);
-}
+} // namespace Species

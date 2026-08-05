@@ -3,7 +3,10 @@
 #include "NeuronMath.h"
 #include "WorldObjectId.h"
 
-class CameraAnimation;
+namespace Species
+{
+  class CameraAnimation;
+} // namespace Species
 
 // What the layers below Species ask the camera for.
 //
@@ -24,97 +27,102 @@ class CameraAnimation;
 // includes GameLogic's Entity.h and WorldObject.h for its tracking members, so
 // the move would invert the violation rather than remove it. See
 // tasks/layering-inversion.yaml T9.
-class CameraAccess
+
+
+namespace Neuron
 {
-  public:
-    virtual ~CameraAccess() = default;
+  class CameraAccess
+  {
+    public:
+      virtual ~CameraAccess() = default;
 
-    // Declared here rather than in Camera so that a caller naming a mode does
-    // not need Camera.h for the enumerator. Camera derives from this class, so
-    // `Camera::Mode::ModeFreeMovement` still resolves for the Species-side code that
-    // spells it that way.
-    //
-    // Scoped by language-hygiene T12. Camera stored m_mode as an int, compared
-    // it against ints and indexed a string table with it; all three are typed
-    // now, and the one remaining integer boundary is GetModeName's index,
-    // which spells the conversion Neuron::I(). The values are pinned because
-    // they were explicit before and a level file's camera-animation node
-    // writes a transition mode as a number.
-    enum class Mode : int
-    {
-      ModeReplay = 0,
-      ModeSphereWorld = 1,
-      ModeFreeMovement = 2,  // Remember to update the static string table
-      ModeBuildingFocus = 3, // at the end of camera.cpp when you update this
-      ModeEntityTrack = 4,
-      ModeRadarAim = 5,
-      ModeFirstPerson = 6,
-      ModeMoveToTarget = 7,
-      ModeDoNothing = 8,
-      ModeEntityFollow = 9,
-      ModeTurretAim = 10,
-      ModeSphereWorldScripted = 11,
-      ModeSphereWorldIntro = 12,
-      ModeSphereWorldOutro = 13,
-      ModeSphereWorldFocus = 14,
-      ModeMainMenu = 15,
-      ModeNumModes
-    };
+      // Declared here rather than in Camera so that a caller naming a mode does
+      // not need Camera.h for the enumerator. Camera derives from this class, so
+      // `Camera::Mode::ModeFreeMovement` still resolves for the Species-side code that
+      // spells it that way.
+      //
+      // Scoped by language-hygiene T12. Camera stored m_mode as an int, compared
+      // it against ints and indexed a string table with it; all three are typed
+      // now, and the one remaining integer boundary is GetModeName's index,
+      // which spells the conversion Neuron::I(). The values are pinned because
+      // they were explicit before and a level file's camera-animation node
+      // writes a transition mode as a number.
+      enum class Mode : int
+      {
+        ModeReplay = 0,
+        ModeSphereWorld = 1,
+        ModeFreeMovement = 2,  // Remember to update the static string table
+        ModeBuildingFocus = 3, // at the end of camera.cpp when you update this
+        ModeEntityTrack = 4,
+        ModeRadarAim = 5,
+        ModeFirstPerson = 6,
+        ModeMoveToTarget = 7,
+        ModeDoNothing = 8,
+        ModeEntityFollow = 9,
+        ModeTurretAim = 10,
+        ModeSphereWorldScripted = 11,
+        ModeSphereWorldIntro = 12,
+        ModeSphereWorldOutro = 13,
+        ModeSphereWorldFocus = 14,
+        ModeMainMenu = 15,
+        ModeNumModes
+      };
 
-    // The enumerators are spelled Mode::ModeFreeMovement now. Code below
-    // Species that named one as CameraAccess::Mode::ModeFreeMovement says
-    // CameraAccess::Mode::ModeFreeMovement.
+      // The enumerators are spelled Mode::ModeFreeMovement now. Code below
+      // Species that named one as CameraAccess::Mode::ModeFreeMovement says
+      // CameraAccess::Mode::ModeFreeMovement.
 
-    enum
-    {
-      DebugModeNever,
-      DebugModeAlways,
-      DebugModeAuto,
-      DebugModeNumStates
-    };
+      enum
+      {
+        DebugModeNever,
+        DebugModeAlways,
+        DebugModeAuto,
+        DebugModeNumStates
+      };
 
-    // Position and orientation. Not const, because Camera's are not, and this
-    // change is a seam rather than a cleanup.
-    virtual DirectX::XMFLOAT3 GetPos() = 0;
-    virtual DirectX::XMFLOAT3 GetFront() = 0;
-    virtual DirectX::XMFLOAT3 GetUp() = 0;
-    virtual DirectX::XMFLOAT3 GetRight() = 0;
-    virtual DirectX::XMFLOAT3 GetVel() = 0;
-    virtual DirectX::XMFLOAT3 GetControlVector() = 0;
+      // Position and orientation. Not const, because Camera's are not, and this
+      // change is a seam rather than a cleanup.
+      virtual DirectX::XMFLOAT3 GetPos() = 0;
+      virtual DirectX::XMFLOAT3 GetFront() = 0;
+      virtual DirectX::XMFLOAT3 GetUp() = 0;
+      virtual DirectX::XMFLOAT3 GetRight() = 0;
+      virtual DirectX::XMFLOAT3 GetVel() = 0;
+      virtual DirectX::XMFLOAT3 GetControlVector() = 0;
 
-    // Culling, called per object per frame from entity render bodies.
-    virtual bool PosInViewFrustum(DirectX::XMFLOAT3 const& _pos) = 0;
-    virtual bool SphereInViewFrustum(DirectX::XMFLOAT3 const& _centre, float _radius) = 0;
+      // Culling, called per object per frame from entity render bodies.
+      virtual bool PosInViewFrustum(DirectX::XMFLOAT3 const& _pos) = 0;
+      virtual bool SphereInViewFrustum(DirectX::XMFLOAT3 const& _centre, float _radius) = 0;
 
-    virtual void SetupProjectionMatrix(float _nearPlane, float _farPlane) = 0;
+      virtual void SetupProjectionMatrix(float _nearPlane, float _farPlane) = 0;
 
-    // World point to screen point. Used by entity render code to place labels
-    // and health bars, so it moves with the cluster in
-    // tasks/layering-inversion.yaml T15.
-    virtual void Get2DScreenPos(DirectX::XMFLOAT3 const& _vector, float* _screenX, float* _screenY) = 0;
+      // World point to screen point. Used by entity render code to place labels
+      // and health bars, so it moves with the cluster in
+      // tasks/layering-inversion.yaml T15.
+      virtual void Get2DScreenPos(DirectX::XMFLOAT3 const& _vector, float* _screenX, float* _screenY) = 0;
 
-    virtual void CreateCameraShake(float _intensity) = 0;
+      virtual void CreateCameraShake(float _intensity) = 0;
 
-    virtual bool IsInteractive() = 0;
-    virtual bool IsInMode(Mode _mode) = 0;
-    virtual void RequestMode(Mode _mode) = 0;
+      virtual bool IsInteractive() = 0;
+      virtual bool IsInMode(Mode _mode) = 0;
+      virtual void RequestMode(Mode _mode) = 0;
 
-    // Follow a particular object. Asked for by the task manager, which moves
-    // down in tasks/layering-inversion.yaml T15.
-    virtual void RequestEntityTrackMode(WorldObjectId const& _id) = 0;
+      // Follow a particular object. Asked for by the task manager, which moves
+      // down in tasks/layering-inversion.yaml T15.
+      virtual void RequestEntityTrackMode(WorldObjectId const& _id) = 0;
 
-    virtual int GetDebugMode() = 0;
-    virtual void SetNextDebugMode() = 0;
+      virtual int GetDebugMode() = 0;
+      virtual void SetNextDebugMode() = 0;
 
-    virtual void PlayAnimation(CameraAnimation* _anim) = 0;
-    virtual void StopAnimation() = 0;
+      virtual void PlayAnimation(Species::CameraAnimation* _anim) = 0;
+      virtual void StopAnimation() = 0;
 
-    // Camera declares the three-argument form with a default for _up. It is not
-    // repeated here: a call through this interface passes all three, which is
-    // what the one caller below Species does.
-    virtual void SetTarget(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up) = 0;
-    virtual void CutToTarget() = 0;
+      // Camera declares the three-argument form with a default for _up. It is not
+      // repeated here: a call through this interface passes all three, which is
+      // what the one caller below Species does.
+      virtual void SetTarget(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up) = 0;
+      virtual void CutToTarget() = 0;
 
-    // Screen-space picking, used by the level editor windows.
-    virtual void GetClickRay(int _x, int _y, DirectX::XMFLOAT3* _rayStart, DirectX::XMFLOAT3* _rayDir) = 0;
-};
+      // Screen-space picking, used by the level editor windows.
+      virtual void GetClickRay(int _x, int _y, DirectX::XMFLOAT3* _rayStart, DirectX::XMFLOAT3* _rayDir) = 0;
+  };
+} // namespace Neuron

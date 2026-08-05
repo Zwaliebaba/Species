@@ -13,37 +13,39 @@
 #include "AppState.h"
 
 
-static std::string s_locationName = "NewLevel";
-
-
-class SetModeButton : public SpeciesButton
+namespace Species
 {
-  public:
-    int m_mode;
-    void MouseUp() { g_globalWorld->m_editorMode = m_mode; }
+  static std::string s_locationName = "NewLevel";
 
-    void Render(int realX, int realY, bool highlighted, bool clicked)
-    {
-      if (g_globalWorld->m_editorMode == m_mode)
+
+  class SetModeButton : public SpeciesButton
+  {
+    public:
+      int m_mode;
+      void MouseUp() { g_globalWorld->m_editorMode = m_mode; }
+
+      void Render(int realX, int realY, bool highlighted, bool clicked)
       {
-        SpeciesButton::Render(realX, realY, true, clicked);
+        if (g_globalWorld->m_editorMode == m_mode)
+        {
+          SpeciesButton::Render(realX, realY, true, clicked);
+        }
+        else
+        {
+          SpeciesButton::Render(realX, realY, highlighted, clicked);
+        }
       }
-      else
+  };
+
+
+  class NewLocationButton : public SpeciesButton
+  {
+      void MouseUp()
       {
-        SpeciesButton::Render(realX, realY, highlighted, clicked);
-      }
-    }
-};
-
-
-class NewLocationButton : public SpeciesButton
-{
-    void MouseUp()
-    {
-      //
-      // If a MOD hasn't been set, don't allow this to happen
-      // as it will try to save into darwinia/data/levels, which is clearly wrong
-      // for the end user (but allow it for us)
+        //
+        // If a MOD hasn't been set, don't allow this to happen
+        // as it will try to save into darwinia/data/levels, which is clearly wrong
+        // for the end user (but allow it for us)
 
 #ifndef TARGET_DEBUG
       if (!g_resource->IsModLoaded())
@@ -83,8 +85,8 @@ class NewLocationButton : public SpeciesButton
 
       g_globalWorld->SaveGame("Game.txt");
       g_globalWorld->SaveLocations("Locations.txt");
-    }
-};
+      }
+  };
 
 
 class SaveLocationsButton : public SpeciesButton
@@ -158,6 +160,7 @@ void GlobalWorldEditorWindow::Update()
 {
   if (!g_editing || g_location)
   {
-    EclRemoveWindow(m_name);
+    EclRemoveWindow(m_name.c_str());
   }
 }
+} // namespace Species

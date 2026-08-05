@@ -24,6 +24,11 @@
 #include "GameTime.h"
 #include "EntityGrid.h"
 #include "Team.h"
+
+// Moved up from just above TeamControls by namespace-migration T4: an #include
+// cannot sit inside the namespace wrapper without pulling Input.h into the game
+// namespace with it.
+#include "Input.h"
 #include "Unit.h"
 #include "TaskManager.h"
 
@@ -43,333 +48,337 @@
 // ****************************************************************************
 
 // *** Constructor
-Team::Team()
-  : m_teamId(-1),
-    m_teamType(TeamTypeUnused),
-    m_currentUnitId(-1),
-    m_currentEntityId(-1),
-    m_currentBuildingId(-1)
+
+
+namespace Species
 {
-  m_othersWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
-  m_others.SetStepSize(100);
-  m_units.SetStepSize(5);
-}
-
-
-void Team::Initialise(int _teamId)
-{
-  m_teamId = _teamId;
-
-
-  //
-  // Generate the ViriiFull bmp
-
-  if (!g_resource->DoesTextureExist("Sprites/viriifull.bmp"))
+  Team::Team()
+    : m_teamId(-1),
+      m_teamType(TeamTypeUnused),
+      m_currentUnitId(-1),
+      m_currentEntityId(-1),
+      m_currentBuildingId(-1)
   {
-    BinaryReader* reader = g_resource->GetBinaryReader("Sprites/Virii.bmp");
-    BitmapRGBA little(reader, "bmp");
-    delete reader;
-    BitmapRGBA big(32 + 128, 512);
-    big.Clear(RGBAColour(0, 0, 0));
-    int destY = 0;
-    float viriiWidth = 32.0f;
+    m_othersWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+    m_others.SetStepSize(100);
+    m_units.SetStepSize(5);
+  }
 
-    for (int i = 0; i < 32; ++i)
+
+  void Team::Initialise(int _teamId)
+  {
+    m_teamId = _teamId;
+
+
+    //
+    // Generate the ViriiFull bmp
+
+    if (!g_resource->DoesTextureExist("Sprites/viriifull.bmp"))
     {
-      int destWidth = 32 - i / 2;
-      int destHeight = 32 - i / 2;
+      BinaryReader* reader = g_resource->GetBinaryReader("Sprites/Virii.bmp");
+      BitmapRGBA little(reader, "bmp");
+      delete reader;
+      BitmapRGBA big(32 + 128, 512);
+      big.Clear(RGBAColour(0, 0, 0));
+      int destY = 0;
+      float viriiWidth = 32.0f;
 
-      if (destY + destHeight < 512)
+      for (int i = 0; i < 32; ++i)
       {
-        int targetX = viriiWidth / 2 - destWidth / 2;
-        big.Blit(0, little.m_height, little.m_width, -little.m_height, &little, targetX, destY, destWidth, destHeight, true);
-        destY += destHeight;
+        int destWidth = 32 - i / 2;
+        int destHeight = 32 - i / 2;
+
+        if (destY + destHeight < 512)
+        {
+          int targetX = viriiWidth / 2 - destWidth / 2;
+          big.Blit(0, little.m_height, little.m_width, -little.m_height, &little, targetX, destY, destWidth, destHeight, true);
+          destY += destHeight;
+        }
+      }
+
+      reader = g_resource->GetBinaryReader("Textures/Glow.bmp");
+      BitmapRGBA glow(reader, "bmp");
+      delete reader;
+      big.Blit(0, 0, 128, 128, &glow, 32, 0, 128, 128, true);
+
+      g_resource->AddBitmap("Sprites/viriifull.bmp", big, true);
+    }
+  }
+
+
+  void Team::SetTeamType(int _teamType) { m_teamType = _teamType; }
+
+
+  void Team::RegisterSpecial(WorldObjectId _id) { m_specials.push_back(_id); }
+
+
+  void Team::UnRegisterSpecial(WorldObjectId _id)
+  {
+    for (int i = 0; i < static_cast<int>(m_specials.size()); ++i)
+    {
+      if (m_specials[i] == _id)
+      {
+        m_specials.erase(m_specials.begin() + i);
+        break;
+      }
+    }
+  }
+
+
+  void Team::SelectUnit(int _unitId, int _entityId, int _buildingId)
+  {
+    m_currentBuildingId = _buildingId;
+    m_currentUnitId = _unitId;
+    m_currentEntityId = _entityId;
+
+    if (m_teamId == g_globalWorld->m_myTeamId)
+    {
+      g_gameCursor->BoostSelectionArrows(2.0f);
+    }
+
+    if (m_currentUnitId == -1 && m_currentBuildingId == -1 && m_others.ValidIndex(m_currentEntityId))
+    {
+      Entity* entity = m_others[m_currentEntityId];
+      if (entity && entity->m_type == Entity::TypeOfficer)
+      {
+        g_taskManager->SelectTask(-1);
       }
     }
 
-    reader = g_resource->GetBinaryReader("Textures/Glow.bmp");
-    BitmapRGBA glow(reader, "bmp");
-    delete reader;
-    big.Blit(0, 0, 128, 128, &glow, 32, 0, 128, 128, true);
-
-    g_resource->AddBitmap("Sprites/viriifull.bmp", big, true);
-  }
-}
-
-
-void Team::SetTeamType(int _teamType) { m_teamType = _teamType; }
-
-
-void Team::RegisterSpecial(WorldObjectId _id) { m_specials.push_back(_id); }
-
-
-void Team::UnRegisterSpecial(WorldObjectId _id)
-{
-  for (int i = 0; i < static_cast<int>(m_specials.size()); ++i)
-  {
-    if (m_specials[i] == _id)
+    if (_unitId == -1 && _entityId == -1 && _buildingId == -1)
     {
-      m_specials.erase(m_specials.begin() + i);
-      break;
+      g_soundSystem->TriggerOtherEvent("TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface);
     }
-  }
-}
-
-
-void Team::SelectUnit(int _unitId, int _entityId, int _buildingId)
-{
-  m_currentBuildingId = _buildingId;
-  m_currentUnitId = _unitId;
-  m_currentEntityId = _entityId;
-
-  if (m_teamId == g_globalWorld->m_myTeamId)
-  {
-    g_gameCursor->BoostSelectionArrows(2.0f);
-  }
-
-  if (m_currentUnitId == -1 && m_currentBuildingId == -1 && m_others.ValidIndex(m_currentEntityId))
-  {
-    Entity* entity = m_others[m_currentEntityId];
-    if (entity && entity->m_type == Entity::TypeOfficer)
+    else
     {
-      g_taskManager->SelectTask(-1);
+      g_soundSystem->TriggerOtherEvent("TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface);
+    }
+
+    //    if( m_teamId == g_globalWorld->m_myTeamId )
+    //    {
+    //        Vector3 worldpos;
+    //        if( m_units.ValidIndex(_unitId) )
+    //        {
+    //            Unit *unit = m_units[_unitId];
+    //            worldpos = unit->m_centrePos - g_camera->GetFront() * 200.0f;
+    //        }
+    //        else if( m_others.ValidIndex(_entityId) )
+    //        {
+    //            Entity *entity = m_others[_entityId];
+    //            worldpos = entity->m_pos - g_camera->GetFront() * 200.0f;
+    //        }
+    //    }
+  }
+
+
+  Unit* Team::GetMyUnit()
+  {
+    if (m_currentUnitId == -1 || !m_units.ValidIndex(m_currentUnitId))
+    {
+      return nullptr;
+    }
+    else if (m_units.ValidIndex(m_currentUnitId))
+    {
+      return m_units[m_currentUnitId];
+    }
+    else
+    {
+      return nullptr;
     }
   }
 
-  if (_unitId == -1 && _entityId == -1 && _buildingId == -1)
-  {
-    g_soundSystem->TriggerOtherEvent("TaskManagerDeselectTask", SoundSourceBlueprint::TypeInterface);
-  }
-  else
-  {
-    g_soundSystem->TriggerOtherEvent("TaskManagerSelectTask", SoundSourceBlueprint::TypeInterface);
-  }
 
-  //    if( m_teamId == g_globalWorld->m_myTeamId )
-  //    {
-  //        Vector3 worldpos;
-  //        if( m_units.ValidIndex(_unitId) )
-  //        {
-  //            Unit *unit = m_units[_unitId];
-  //            worldpos = unit->m_centrePos - g_camera->GetFront() * 200.0f;
-  //        }
-  //        else if( m_others.ValidIndex(_entityId) )
-  //        {
-  //            Entity *entity = m_others[_entityId];
-  //            worldpos = entity->m_pos - g_camera->GetFront() * 200.0f;
-  //        }
-  //    }
-}
-
-
-Unit* Team::GetMyUnit()
-{
-  if (m_currentUnitId == -1 || !m_units.ValidIndex(m_currentUnitId))
+  Entity* Team::RayHitEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayEnd)
   {
+    // Hit against Units
+    for (unsigned int i = 0; i < m_units.Size(); ++i)
+    {
+      if (m_units.ValidIndex(i))
+      {
+        Entity* result = m_units[i]->RayHit(_rayStart, _rayEnd);
+        if (result)
+        {
+          return result;
+        }
+      }
+    }
+
+    // Hit against Others
+    for (unsigned int i = 0; i < m_others.Size(); ++i)
+    {
+      if (m_others.ValidIndex(i))
+      {
+        if (m_others[i]->RayHit(_rayStart, _rayEnd))
+        {
+          return m_others[i];
+        }
+      }
+    }
+
     return nullptr;
   }
-  else if (m_units.ValidIndex(m_currentUnitId))
+
+
+  Entity* Team::GetMyEntity()
   {
-    return m_units[m_currentUnitId];
+    if (m_currentEntityId == -1)
+    {
+      return nullptr;
+    }
+    else if (m_others.ValidIndex(m_currentEntityId))
+    {
+      return m_others[m_currentEntityId];
+    }
+    else
+    {
+      return nullptr;
+    }
   }
-  else
+
+
+  Unit* Team::NewUnit(int _troopType, int _numEntities, int* _unitId, DirectX::XMFLOAT3 const& _pos)
   {
+    *_unitId = m_units.GetNextFree();
+    Unit* unit = nullptr;
+
+    if (_troopType == Entity::TypeInsertionSquadie)
+    {
+      unit = new InsertionSquad(m_teamId, *_unitId, _numEntities, _pos);
+    }
+    else if (_troopType == Entity::TypeSpaceInvader)
+    {
+      unit = new AirstrikeUnit(m_teamId, *_unitId, _numEntities, _pos);
+    }
+    else if (_troopType == Entity::TypeVirii)
+    {
+      unit = new ViriiUnit(m_teamId, *_unitId, _numEntities, _pos);
+    }
+    else
+    {
+      unit = new Unit(_troopType, m_teamId, *_unitId, _numEntities, _pos);
+    }
+
+    m_units.PutData(unit, *_unitId);
+    unit->Begin();
+    return unit;
+  }
+
+  Entity* Team::NewEntity(int _troopType, int _unitId, int* _index)
+  {
+    if (_unitId == -1)
+    {
+      Entity* entity = Entity::NewEntity(_troopType);
+      DEBUG_ASSERT(entity);
+      *_index = m_others.PutData(entity);
+      return entity;
+    }
+    else
+    {
+      if (m_units.ValidIndex(_unitId))
+      {
+        Unit* unit = m_units.GetData(_unitId);
+        return unit->NewEntity(_index);
+      }
+    }
+
     return nullptr;
   }
-}
 
-
-Entity* Team::RayHitEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayEnd)
-{
-  // Hit against Units
-  for (unsigned int i = 0; i < m_units.Size(); ++i)
+  int Team::NumEntities(int _troopType)
   {
-    if (m_units.ValidIndex(i))
+    int result = 0;
+    int i;
+
+    for (i = 0; i < m_units.Size(); ++i)
     {
-      Entity* result = m_units[i]->RayHit(_rayStart, _rayEnd);
-      if (result)
+      if (m_units.ValidIndex(i))
       {
-        return result;
+        Unit* unit = m_units[i];
+        if (unit->m_troopType == _troopType)
+        {
+          result += unit->NumEntities();
+        }
       }
     }
-  }
 
-  // Hit against Others
-  for (unsigned int i = 0; i < m_others.Size(); ++i)
-  {
-    if (m_others.ValidIndex(i))
+    for (i = 0; i < m_others.Size(); ++i)
     {
-      if (m_others[i]->RayHit(_rayStart, _rayEnd))
+      if (m_others.ValidIndex(i))
       {
-        return m_others[i];
+        Entity* ent = m_others[i];
+        if (ent->m_type == _troopType)
+        {
+          ++result;
+        }
       }
     }
+
+    return result;
   }
 
-  return nullptr;
-}
 
+  void Team::Advance(int _slice)
+  {
+    //
+    // Advance all Units
 
-Entity* Team::GetMyEntity()
-{
-  if (m_currentEntityId == -1)
-  {
-    return nullptr;
-  }
-  else if (m_others.ValidIndex(m_currentEntityId))
-  {
-    return m_others[m_currentEntityId];
-  }
-  else
-  {
-    return nullptr;
-  }
-}
-
-
-Unit* Team::NewUnit(int _troopType, int _numEntities, int* _unitId, DirectX::XMFLOAT3 const& _pos)
-{
-  *_unitId = m_units.GetNextFree();
-  Unit* unit = nullptr;
-
-  if (_troopType == Entity::TypeInsertionSquadie)
-  {
-    unit = new InsertionSquad(m_teamId, *_unitId, _numEntities, _pos);
-  }
-  else if (_troopType == Entity::TypeSpaceInvader)
-  {
-    unit = new AirstrikeUnit(m_teamId, *_unitId, _numEntities, _pos);
-  }
-  else if (_troopType == Entity::TypeVirii)
-  {
-    unit = new ViriiUnit(m_teamId, *_unitId, _numEntities, _pos);
-  }
-  else
-  {
-    unit = new Unit(_troopType, m_teamId, *_unitId, _numEntities, _pos);
-  }
-
-  m_units.PutData(unit, *_unitId);
-  unit->Begin();
-  return unit;
-}
-
-Entity* Team::NewEntity(int _troopType, int _unitId, int* _index)
-{
-  if (_unitId == -1)
-  {
-    Entity* entity = Entity::NewEntity(_troopType);
-    DEBUG_ASSERT(entity);
-    *_index = m_others.PutData(entity);
-    return entity;
-  }
-  else
-  {
-    if (m_units.ValidIndex(_unitId))
+    if (m_teamType > TeamTypeUnused)
     {
-      Unit* unit = m_units.GetData(_unitId);
-      return unit->NewEntity(_index);
-    }
-  }
-
-  return nullptr;
-}
-
-int Team::NumEntities(int _troopType)
-{
-  int result = 0;
-  int i;
-
-  for (i = 0; i < m_units.Size(); ++i)
-  {
-    if (m_units.ValidIndex(i))
-    {
-      Unit* unit = m_units[i];
-      if (unit->m_troopType == _troopType)
-      {
-        result += unit->NumEntities();
-      }
-    }
-  }
-
-  for (i = 0; i < m_others.Size(); ++i)
-  {
-    if (m_others.ValidIndex(i))
-    {
-      Entity* ent = m_others[i];
-      if (ent->m_type == _troopType)
-      {
-        ++result;
-      }
-    }
-  }
-
-  return result;
-}
-
-
-void Team::Advance(int _slice)
-{
-  //
-  // Advance all Units
-
-  if (m_teamType > TeamTypeUnused)
-  {
-    START_PROFILE(g_profiler, "Advance Unit Entities");
-    for (int unit = 0; unit < m_units.Size(); ++unit)
-    {
-      if (m_units.ValidIndex(unit))
-      {
-        Unit* theUnit = m_units.GetData(unit);
-        theUnit->AdvanceEntities(_slice);
-      }
-    }
-    END_PROFILE(g_profiler, "Advance Unit Entities");
-
-    if (_slice == 0)
-    {
-      START_PROFILE(g_profiler, "Advance Units");
+      START_PROFILE(g_profiler, "Advance Unit Entities");
       for (int unit = 0; unit < m_units.Size(); ++unit)
       {
         if (m_units.ValidIndex(unit))
         {
           Unit* theUnit = m_units.GetData(unit);
-          bool amIDead = theUnit->Advance(unit);
-          if (amIDead)
-          {
-            m_units.MarkNotUsed(unit);
-            delete theUnit;
-          }
+          theUnit->AdvanceEntities(_slice);
         }
       }
-      END_PROFILE(g_profiler, "Advance Units");
-    }
-  }
+      END_PROFILE(g_profiler, "Advance Unit Entities");
 
-
-  //
-  // Advance all Other entities
-
-  if (m_teamType > TeamTypeUnused)
-  {
-    START_PROFILE(g_profiler, "Advance Others");
-    int startIndex, endIndex;
-    m_othersWalker.GetNextSliceBounds(_slice, m_others.Size(), &startIndex, &endIndex);
-
-    for (int i = startIndex; i <= endIndex; i++)
-    {
-      if (m_others.ValidIndex(i))
+      if (_slice == 0)
       {
-        Entity* ent = m_others[i];
-        if (ent->m_enabled)
+        START_PROFILE(g_profiler, "Advance Units");
+        for (int unit = 0; unit < m_units.Size(); ++unit)
         {
-          DirectX::XMFLOAT3 const oldPos(ent->m_pos);
-          WorldObjectId myId(m_teamId, -1, i, ent->m_id.GetUniqueId());
+          if (m_units.ValidIndex(unit))
+          {
+            Unit* theUnit = m_units.GetData(unit);
+            bool amIDead = theUnit->Advance(unit);
+            if (amIDead)
+            {
+              m_units.MarkNotUsed(unit);
+              delete theUnit;
+            }
+          }
+        }
+        END_PROFILE(g_profiler, "Advance Units");
+      }
+    }
 
-          char const* entityName = Entity::GetTypeName(ent->m_type);
-          START_PROFILE(g_profiler, entityName);
-          bool amIdead = ent->Advance(nullptr);
-          END_PROFILE(g_profiler, entityName);
+
+    //
+    // Advance all Other entities
+
+    if (m_teamType > TeamTypeUnused)
+    {
+      START_PROFILE(g_profiler, "Advance Others");
+      int startIndex, endIndex;
+      m_othersWalker.GetNextSliceBounds(_slice, m_others.Size(), &startIndex, &endIndex);
+
+      for (int i = startIndex; i <= endIndex; i++)
+      {
+        if (m_others.ValidIndex(i))
+        {
+          Entity* ent = m_others[i];
+          if (ent->m_enabled)
+          {
+            DirectX::XMFLOAT3 const oldPos(ent->m_pos);
+            WorldObjectId myId(m_teamId, -1, i, ent->m_id.GetUniqueId());
+
+            char const* entityName = Entity::GetTypeName(ent->m_type);
+            START_PROFILE(g_profiler, entityName);
+            bool amIdead = ent->Advance(nullptr);
+            END_PROFILE(g_profiler, entityName);
 
 #ifdef PROFILER_ENABLED
           DEBUG_ASSERT(strcmp(g_profiler->m_currentElement->m_name, "Advance Others") == 0);
@@ -389,13 +398,13 @@ void Team::Advance(int _slice)
           {
             g_location->m_entityGrid->UpdateObject(myId, oldPos.x, oldPos.z, ent->m_pos.x, ent->m_pos.z, ent->m_radius);
           }
-        }
+          }
       }
     }
 
     END_PROFILE(g_profiler, "Advance Others");
   }
-}
+  }
 
 void Team::Render()
 {
@@ -643,16 +652,23 @@ void Team::RenderOthers(float _predictionTime)
   }
 }
 
+} // namespace Species
+
+
 // ****************************************************************************
 //  Class TeamControls
 // ****************************************************************************
-
-#include "Input.h"
 
 // TeamControls' data and its flags encoding live in NeuronCore, because the wire
 // protocol serialises them. Advance() stays here: filling the struct in means
 // polling the camera, the mouse and the input manager, which is client work and
 // has no place in the foundation.
+//
+// IT IS ALSO OUTSIDE THE GAME NAMESPACE, and has to be: TeamControls is one of
+// the NeuronCore types still at global scope, and C++ will not let a class's
+// member be defined in a namespace that does not enclose the class. Everything
+// this function names is Neuron's or DirectX's, so nothing here needs
+// qualifying. namespace-migration T4 learned it from CI.
 void TeamControls::Advance()
 {
   if (g_camera->IsInMode(CameraAccess::Mode::ModeBuildingFocus))
@@ -660,18 +676,19 @@ void TeamControls::Advance()
 
   m_mousePos = g_userInput->GetMousePos3d();
 
-  m_primaryFireTarget |= g_inputManager->controlEvent(ControlUnitPrimaryFireTarget);
-  m_secondaryFireTarget |= g_inputManager->controlEvent(ControlUnitSecondaryFireTarget);
-  m_primaryFireDirected |= g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && !g_inputManager->controlEvent(ControlCameraRotate);
-  m_secondaryFireDirected |=
-    g_inputManager->controlEvent(ControlUnitSecondaryFireDirected) /* && g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected ) */;
+  m_primaryFireTarget |= g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireTarget);
+  m_secondaryFireTarget |= g_inputManager->controlEvent(ControlType::ControlUnitSecondaryFireTarget);
+  m_primaryFireDirected |=
+    g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected) && !g_inputManager->controlEvent(ControlType::ControlCameraRotate);
+  m_secondaryFireDirected |= g_inputManager->controlEvent(
+    ControlType::ControlUnitSecondaryFireDirected) /* && g_inputManager->controlEvent( ControlType::ControlUnitStartSecondaryFireDirected ) */;
   m_cameraEntityTracking |= g_camera->IsInMode(CameraAccess::Mode::ModeEntityTrack);
-  m_unitMove |= g_inputManager->controlEvent(ControlUnitSetTarget) && !m_secondaryFireTarget;
-  m_unitSecondaryMode |= g_inputManager->controlEvent(ControlUnitStartSecondaryFireDirected);
-  m_endSetTarget |= g_inputManager->controlEvent(ControlUnitEndSetTarget);
+  m_unitMove |= g_inputManager->controlEvent(ControlType::ControlUnitSetTarget) && !m_secondaryFireTarget;
+  m_unitSecondaryMode |= g_inputManager->controlEvent(ControlType::ControlUnitStartSecondaryFireDirected);
+  m_endSetTarget |= g_inputManager->controlEvent(ControlType::ControlUnitEndSetTarget);
 
   InputDetails details;
-  if (g_inputManager->controlEvent(ControlUnitMove, details))
+  if (g_inputManager->controlEvent(ControlType::ControlUnitMove, details))
   {
     DirectX::XMFLOAT3 const controlVector = g_camera->GetControlVector();
 
@@ -689,7 +706,8 @@ void TeamControls::Advance()
     g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondMoveCameraOrUnit);
   }
 
-  if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details) && !g_inputManager->controlEvent(ControlCameraRotate))
+  if (g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected, details) &&
+      !g_inputManager->controlEvent(ControlType::ControlCameraRotate))
   {
     m_primaryFireDirected = true;
     m_directUnitFireDx = details.x;

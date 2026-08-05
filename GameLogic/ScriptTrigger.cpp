@@ -16,237 +16,240 @@
 #include "AppState.h"
 
 
-ScriptTrigger::ScriptTrigger()
-  : Building(),
-    m_range(100.0f),
-    m_timer(0.0f),
-    m_entityType(SCRIPTRIGGER_RUNNEVER),
-    m_linkId(-1),
-    m_triggered(0)
+namespace Species
 {
-  m_type = TypeScriptTrigger;
-
-  m_scriptFilename = "NewScript";
-}
-
-
-void ScriptTrigger::Initialise(Building* _template)
-{
-  Building::Initialise(_template);
-
-  ScriptTrigger* trigger = (ScriptTrigger*)_template;
-  m_scriptFilename = trigger->m_scriptFilename;
-  m_range = trigger->m_range;
-  m_entityType = trigger->m_entityType;
-  m_linkId = trigger->m_linkId;
-}
-
-
-void ScriptTrigger::Trigger()
-{
-  if (m_scriptFilename.find(".txt") != std::string::npos)
+  ScriptTrigger::ScriptTrigger()
+    : Building(),
+      m_range(100.0f),
+      m_timer(0.0f),
+      m_entityType(SCRIPTRIGGER_RUNNEVER),
+      m_linkId(-1),
+      m_triggered(0)
   {
-    // Run a script, speficied by filename
-    g_script->RunScript(m_scriptFilename.c_str());
-    m_triggered = -1;
+    m_type = TypeScriptTrigger;
+
+    m_scriptFilename = "NewScript";
   }
-  else
+
+
+  void ScriptTrigger::Initialise(Building* _template)
   {
-    m_triggered = 1;
+    Building::Initialise(_template);
+
+    ScriptTrigger* trigger = (ScriptTrigger*)_template;
+    m_scriptFilename = trigger->m_scriptFilename;
+    m_range = trigger->m_range;
+    m_entityType = trigger->m_entityType;
+    m_linkId = trigger->m_linkId;
   }
-}
 
 
-bool ScriptTrigger::Advance()
-{
-  if (m_entityType != SCRIPTRIGGER_RUNNEVER)
+  void ScriptTrigger::Trigger()
   {
-    if (m_triggered == -1)
+    if (m_scriptFilename.find(".txt") != std::string::npos)
     {
-      // Our script has been run, we are done
-      return true;
-    }
-    else if (m_triggered > 0)
-    {
-      const std::string nextPhrase = std::format("{}_{}", m_scriptFilename, m_triggered);
-      if (!ISLANGUAGEPHRASE_ANY(nextPhrase.c_str()))
-      {
-        // We've run out of strings to say, so we are now done
-        return true;
-      }
-      ++m_triggered;
+      // Run a script, speficied by filename
+      g_script->RunScript(m_scriptFilename.c_str());
+      m_triggered = -1;
     }
     else
     {
-      bool alreadyRunningScript = g_script->IsRunningScript() || !g_camera->IsInteractive();
+      m_triggered = 1;
+    }
+  }
 
-      if (!alreadyRunningScript)
+
+  bool ScriptTrigger::Advance()
+  {
+    if (m_entityType != SCRIPTRIGGER_RUNNEVER)
+    {
+      if (m_triggered == -1)
       {
-        // We haven't been triggered yet
-        m_timer -= SERVER_ADVANCE_PERIOD;
-
-        if (m_timer <= 0.0f)
+        // Our script has been run, we are done
+        return true;
+      }
+      else if (m_triggered > 0)
+      {
+        const std::string nextPhrase = std::format("{}_{}", m_scriptFilename, m_triggered);
+        if (!ISLANGUAGEPHRASE_ANY(nextPhrase.c_str()))
         {
-          m_timer = 1.0f;
+          // We've run out of strings to say, so we are now done
+          return true;
+        }
+        ++m_triggered;
+      }
+      else
+      {
+        bool alreadyRunningScript = g_script->IsRunningScript() || !g_camera->IsInteractive();
 
-          if (m_entityType == SCRIPTRIGGER_RUNALWAYS)
-          {
-            Trigger();
-          }
-          else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
-          {
-            DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
-            float camDistance = DirectX::XMVectorGetX(
-              DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
-            DirectX::XMFLOAT3 const camVelStore = g_camera->GetVel();
-            float const camSpeed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&camVelStore)));
-            bool camInteractive = g_camera->IsInteractive();
+        if (!alreadyRunningScript)
+        {
+          // We haven't been triggered yet
+          m_timer -= SERVER_ADVANCE_PERIOD;
 
-            if (camDistance <= m_range && camSpeed < 5.0f && camInteractive)
+          if (m_timer <= 0.0f)
+          {
+            m_timer = 1.0f;
+
+            if (m_entityType == SCRIPTRIGGER_RUNALWAYS)
             {
               Trigger();
             }
-          }
-          else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
-          {
-            DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
-            float camDistance = DirectX::XMVectorGetX(
-              DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
-            DirectX::XMFLOAT3 const camVelStore = g_camera->GetVel();
-            float const camSpeed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&camVelStore)));
-            bool camInteractive = g_camera->IsInteractive();
-            bool inView = RaySphereIntersection(g_camera->GetPos(), g_camera->GetFront(), m_pos, m_range);
+            else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
+            {
+              DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+              float camDistance = DirectX::XMVectorGetX(
+                DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
+              DirectX::XMFLOAT3 const camVelStore = g_camera->GetVel();
+              float const camSpeed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&camVelStore)));
+              bool camInteractive = g_camera->IsInteractive();
 
-            if (camDistance <= (m_range + 300.0f) && camSpeed < 5.0f && camInteractive && inView)
-            {
-              Trigger();
-            }
-
-            if (camDistance <= m_range && camSpeed < 5.0f && camInteractive)
-            {
-              Trigger();
-            }
-          }
-          else
-          {
-            int numFound;
-            int numCorrectTypeFound = 0;
-            WorldObjectId* ids = g_location->m_entityGrid->GetNeighbours(m_pos.x, m_pos.z, m_range, &numFound);
-            for (int i = 0; i < numFound; ++i)
-            {
-              WorldObjectId id = ids[i];
-              if (id.IsValid() && id.GetTeamId() == m_id.GetTeamId())
+              if (camDistance <= m_range && camSpeed < 5.0f && camInteractive)
               {
-                Entity* entity = g_location->GetEntity(id);
-                if (entity && entity->m_type == m_entityType)
-                {
-                  ++numCorrectTypeFound;
-                  break;
-                }
+                Trigger();
               }
             }
-
-            if (numCorrectTypeFound > 0)
+            else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
             {
-              Trigger();
+              DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+              float camDistance = DirectX::XMVectorGetX(
+                DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
+              DirectX::XMFLOAT3 const camVelStore = g_camera->GetVel();
+              float const camSpeed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&camVelStore)));
+              bool camInteractive = g_camera->IsInteractive();
+              bool inView = RaySphereIntersection(g_camera->GetPos(), g_camera->GetFront(), m_pos, m_range);
+
+              if (camDistance <= (m_range + 300.0f) && camSpeed < 5.0f && camInteractive && inView)
+              {
+                Trigger();
+              }
+
+              if (camDistance <= m_range && camSpeed < 5.0f && camInteractive)
+              {
+                Trigger();
+              }
+            }
+            else
+            {
+              int numFound;
+              int numCorrectTypeFound = 0;
+              WorldObjectId* ids = g_location->m_entityGrid->GetNeighbours(m_pos.x, m_pos.z, m_range, &numFound);
+              for (int i = 0; i < numFound; ++i)
+              {
+                WorldObjectId id = ids[i];
+                if (id.IsValid() && id.GetTeamId() == m_id.GetTeamId())
+                {
+                  Entity* entity = g_location->GetEntity(id);
+                  if (entity && entity->m_type == m_entityType)
+                  {
+                    ++numCorrectTypeFound;
+                    break;
+                  }
+                }
+              }
+
+              if (numCorrectTypeFound > 0)
+              {
+                Trigger();
+              }
             }
           }
         }
       }
     }
+
+    return Building::Advance();
   }
 
-  return Building::Advance();
-}
 
-
-void ScriptTrigger::RenderAlphas(float predictionTime)
-{
-  if (g_editing)
+  void ScriptTrigger::RenderAlphas(float predictionTime)
   {
-    RGBAColour colour;
-    if (m_id.GetTeamId() == 255)
+    if (g_editing)
     {
-      colour.Set(100, 100, 100);
+      RGBAColour colour;
+      if (m_id.GetTeamId() == 255)
+      {
+        colour.Set(100, 100, 100);
+      }
+      else
+      {
+        colour = g_location->m_teams[m_id.GetTeamId()].m_colour;
+      }
+
+      RenderSphere(m_pos, m_range, colour);
+      RenderSphere(m_pos, m_range, colour);
+
+      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 10, "{}", m_scriptFilename.c_str());
+      g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 10, "{}", m_triggered);
+    }
+  };
+
+
+  bool ScriptTrigger::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
+
+
+  bool ScriptTrigger::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }
+
+
+  bool ScriptTrigger::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                                 DirectX::XMFLOAT3* _norm)
+  {
+    if (g_editing)
+    {
+      return Building::DoesRayHit(_rayStart, _rayDir, _rayLen, _pos, _norm);
     }
     else
     {
-      colour = g_location->m_teams[m_id.GetTeamId()].m_colour;
+      return false;
     }
-
-    RenderSphere(m_pos, m_range, colour);
-    RenderSphere(m_pos, m_range, colour);
-
-    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 10, "%s", m_scriptFilename.c_str());
-    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 10, "%d", m_triggered);
   }
-};
 
 
-bool ScriptTrigger::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
+  int ScriptTrigger::GetBuildingLink() { return m_linkId; }
 
 
-bool ScriptTrigger::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }
+  void ScriptTrigger::SetBuildingLink(int _buildingId) { m_linkId = _buildingId; }
 
 
-bool ScriptTrigger::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
-                               DirectX::XMFLOAT3* _norm)
-{
-  if (g_editing)
+  void ScriptTrigger::Read(TextReader* _in, bool _dynamic)
   {
-    return Building::DoesRayHit(_rayStart, _rayDir, _rayLen, _pos, _norm);
+    Building::Read(_in, _dynamic);
+
+    m_linkId = atoi(_in->GetNextToken());
+    m_range = atof(_in->GetNextToken());
+
+    m_scriptFilename = _in->GetNextToken();
+
+    char* entityType = _in->GetNextToken();
+    if (stricmp(entityType, "always") == 0)
+      m_entityType = SCRIPTRIGGER_RUNALWAYS;
+    else if (stricmp(entityType, "never") == 0)
+      m_entityType = SCRIPTRIGGER_RUNNEVER;
+    else if (stricmp(entityType, "camenter") == 0)
+      m_entityType = SCRIPTRIGGER_RUNCAMENTER;
+    else if (stricmp(entityType, "camview") == 0)
+      m_entityType = SCRIPTRIGGER_RUNCAMVIEW;
+    else
+      m_entityType = Entity::GetTypeId(entityType);
   }
-  else
+
+
+  void ScriptTrigger::Write(FileWriter* _out)
   {
-    return false;
+    Building::Write(_out);
+
+    char const* entityType;
+    if (m_entityType == SCRIPTRIGGER_RUNALWAYS)
+      entityType = "always";
+    else if (m_entityType == SCRIPTRIGGER_RUNNEVER)
+      entityType = "never";
+    else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
+      entityType = "camenter";
+    else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
+      entityType = "camview";
+    else
+      entityType = Entity::GetTypeName(m_entityType);
+
+    _out->printf("%-6d %-6.2f %s %s", m_linkId, m_range, m_scriptFilename.c_str(), entityType);
   }
-}
-
-
-int ScriptTrigger::GetBuildingLink() { return m_linkId; }
-
-
-void ScriptTrigger::SetBuildingLink(int _buildingId) { m_linkId = _buildingId; }
-
-
-void ScriptTrigger::Read(TextReader* _in, bool _dynamic)
-{
-  Building::Read(_in, _dynamic);
-
-  m_linkId = atoi(_in->GetNextToken());
-  m_range = atof(_in->GetNextToken());
-
-  m_scriptFilename = _in->GetNextToken();
-
-  char* entityType = _in->GetNextToken();
-  if (stricmp(entityType, "always") == 0)
-    m_entityType = SCRIPTRIGGER_RUNALWAYS;
-  else if (stricmp(entityType, "never") == 0)
-    m_entityType = SCRIPTRIGGER_RUNNEVER;
-  else if (stricmp(entityType, "camenter") == 0)
-    m_entityType = SCRIPTRIGGER_RUNCAMENTER;
-  else if (stricmp(entityType, "camview") == 0)
-    m_entityType = SCRIPTRIGGER_RUNCAMVIEW;
-  else
-    m_entityType = Entity::GetTypeId(entityType);
-}
-
-
-void ScriptTrigger::Write(FileWriter* _out)
-{
-  Building::Write(_out);
-
-  char const* entityType;
-  if (m_entityType == SCRIPTRIGGER_RUNALWAYS)
-    entityType = "always";
-  else if (m_entityType == SCRIPTRIGGER_RUNNEVER)
-    entityType = "never";
-  else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
-    entityType = "camenter";
-  else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
-    entityType = "camview";
-  else
-    entityType = Entity::GetTypeName(m_entityType);
-
-  _out->printf("%-6d %-6.2f %s %s", m_linkId, m_range, m_scriptFilename.c_str(), entityType);
-}
+} // namespace Species

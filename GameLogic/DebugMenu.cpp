@@ -24,11 +24,15 @@
 // ****************************************************************************
 
 #ifdef PROFILER_ENABLED
-class ProfileButton : public SpeciesButton
+
+
+namespace Species
 {
-  public:
-    void MouseUp() { DebugKeyBindings::ProfileButton(); }
-};
+  class ProfileButton : public SpeciesButton
+  {
+    public:
+      void MouseUp() { DebugKeyBindings::ProfileButton(); }
+  };
 #endif // PROFILER_ENABLED
 
 
@@ -217,7 +221,10 @@ void DebugKeyBindings::DebugMenu()
   if (EclGetWindow(debugMenuWindowName))
     EclRemoveWindow(debugMenuWindowName);
   else
-    EclRegisterWindow(std::make_unique<::DebugMenu>(debugMenuWindowName));
+    // Species::DebugMenu, not ::DebugMenu: the leading :: was here to pick the
+    // CLASS over the enclosing DebugKeyBindings::DebugMenu method, and the
+    // class moved into the game namespace. namespace-migration T4.
+    EclRegisterWindow(std::make_unique<Species::DebugMenu>(debugMenuWindowName));
 }
 
 #ifdef PROFILER_ENABLED
@@ -295,3 +302,4 @@ void DebugKeyBindings::ToggleFullscreenButton()
   bool switchingToWindowed;
   SetWindowed(!g_windowManager->Windowed(), true, switchingToWindowed);
 }
+} // namespace Species

@@ -12,68 +12,71 @@
 #define GUNTURRET_OWNERSHIPTIMER 1.0f
 
 
-class GunTurret : public Building
+namespace Species
 {
-  protected:
-    Shape* m_turret;
-    Shape* m_barrel;
-    ShapeMarker* m_barrelMount;
-    ShapeMarker* m_barrelEnd[GUNTURRET_NUMBARRELS];
-    ShapeMarker* m_statusMarkers[GUNTURRET_NUMSTATUSMARKERS];
+  class GunTurret : public Building
+  {
+    protected:
+      Shape* m_turret;
+      Shape* m_barrel;
+      ShapeMarker* m_barrelMount;
+      ShapeMarker* m_barrelEnd[GUNTURRET_NUMBARRELS];
+      ShapeMarker* m_statusMarkers[GUNTURRET_NUMSTATUSMARKERS];
 
-    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
-    // not, and GunTurret's constructor assigns neither of these nor m_target.
-    DirectX::XMFLOAT3 m_turretFront{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 m_barrelUp{0.0f, 0.0f, 0.0f};
+      // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+      // not, and GunTurret's constructor assigns neither of these nor m_target.
+      DirectX::XMFLOAT3 m_turretFront{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 m_barrelUp{0.0f, 0.0f, 0.0f};
 
-    bool m_aiTargetCreated;
+      bool m_aiTargetCreated;
 
-    DirectX::XMFLOAT3 m_target{0.0f, 0.0f, 0.0f};
-    WorldObjectId m_targetId;
-    float m_fireTimer;
-    int m_nextBarrel;
-    float m_retargetTimer;
-    bool m_targetCreated;
+      DirectX::XMFLOAT3 m_target{0.0f, 0.0f, 0.0f};
+      WorldObjectId m_targetId;
+      float m_fireTimer;
+      int m_nextBarrel;
+      float m_retargetTimer;
+      bool m_targetCreated;
 
-    float m_health;
-    float m_ownershipTimer;
+      float m_health;
+      float m_ownershipTimer;
 
-  protected:
-    void PrimaryFire();
-    bool SearchForTargets();
-    void SearchForRandomPos();
-    void RecalculateOwnership();
+    protected:
+      void PrimaryFire();
+      bool SearchForTargets();
+      void SearchForRandomPos();
+      void RecalculateOwnership();
 
-  public:
-    GunTurret();
+    public:
+      GunTurret();
 
-    void Initialise(Building* _template);
-    void SetDetail(int _detail);
+      void Initialise(Building* _template);
+      void SetDetail(int _detail);
 
-    void ExplodeBody();
-    void Damage(float _damage);
-    bool Advance();
+      void ExplodeBody();
+      void Damage(float _damage);
+      bool Advance();
 
-    DirectX::XMFLOAT3 GetTarget();
+      DirectX::XMFLOAT3 GetTarget();
 
-    bool IsInView();
-    void Render(float _predictionTime);
-    void RenderPorts();
+      bool IsInView();
+      void Render(float _predictionTime);
+      void RenderPorts();
 
-    bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
-                    DirectX::XMFLOAT3* norm);
+      bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                      DirectX::XMFLOAT3* norm);
 
-    void ListSoundEvents(std::vector<const char*>* _list);
-};
+      void ListSoundEvents(std::vector<const char*>* _list);
+  };
 
 
-class GunTurretTarget : public WorldObject
-{
-  public:
-    int m_buildingId;
+  class GunTurretTarget : public WorldObject
+  {
+    public:
+      int m_buildingId;
 
-  public:
-    GunTurretTarget(int _buildingId);
-    bool Advance();
-    void Render(float _time);
-};
+    public:
+      GunTurretTarget(int _buildingId);
+      bool Advance();
+      void Render(float _time);
+  };
+} // namespace Species

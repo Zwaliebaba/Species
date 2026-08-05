@@ -4,22 +4,23 @@
 #include "Building.h"
 
 
-class UpgradePort: public Building
+namespace Species
 {
-public:
-	UpgradePort();
-};
+  class UpgradePort : public Building
+  {
+    public:
+      UpgradePort();
+  };
 
 
+  class PrimaryUpgradePort : public Building
+  {
+    public:
+      int m_controlTowersOwned;
 
-class PrimaryUpgradePort : public Building
-{
-public:
-    int m_controlTowersOwned;
+    public:
+      PrimaryUpgradePort();
 
-public:
-    PrimaryUpgradePort();
-
-    void ReprogramComplete();
-};
-
+      void ReprogramComplete();
+  };
+} // namespace Species

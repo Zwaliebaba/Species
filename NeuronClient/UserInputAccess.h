@@ -13,11 +13,16 @@
 // Same shape as CameraAccess.h and RendererAccess.h: g_userInput in
 // WorldPointers.h is a UserInputAccess*, and Species reaches the rest through
 // TheUserInput() in UserInput.h.
-class UserInputAccess
-{
-  public:
-    virtual ~UserInputAccess() = default;
 
-    // The cached mouse position, ray-cast against the landscape once a frame.
-    virtual DirectX::XMFLOAT3 GetMousePos3d() = 0;
-};
+
+namespace Neuron
+{
+  class UserInputAccess
+  {
+    public:
+      virtual ~UserInputAccess() = default;
+
+      // The cached mouse position, ray-cast against the landscape once a frame.
+      virtual DirectX::XMFLOAT3 GetMousePos3d() = 0;
+  };
+} // namespace Neuron

@@ -7,62 +7,69 @@
 
 #include "RgbColour.h"
 
-class Camera;
-class Location;
-class ClientToServer;
-class Renderer;
-class UserInput;
-class Resource;
-class SoundSystem;
-class LocationInput;
-class LangTable;
-class GlobalWorld;
-class ParticleSystem;
-class TaskManager;
-class TaskManagerInterface;
-class TaskManagerInterfaceIcons;
-class Script;
 class Profiler;
-class LocationEditor;
-class MouseCursor;
-class GameCursor;
-class GameMenu;
-class StartSequence;
 class AttractMode;
-class ControlHelpSystem;
 class PrefsManager;
-class BitmapRGBA;
-class GameMenu;
 
-
-class App : public AppCommands
+namespace Neuron
 {
-  public:
-    // Library Code Objects
-    //
-    // m_resource is NOT owned here. Species/Main.cpp's Finalise() deletes
-    // g_resource, and that is the delete that actually executes -- see ~App.
-    Resource* m_resource;
-    std::unique_ptr<SoundSystem> m_soundSystem;
-    std::unique_ptr<LangTable> m_langTable;
-    std::unique_ptr<Profiler> m_profiler;
+  class ClientToServer;
+  class Resource;
+  class SoundSystem;
+  class LangTable;
+  class BitmapRGBA;
+} // namespace Neuron
 
-    // Things that are the world
 
-    // Everything else
-    std::unique_ptr<ClientToServer> m_clientToServer; // Clients connection to Server
+namespace Species
+{
+  class Camera;
+  class Location;
+  class Renderer;
+  class UserInput;
+  class LocationInput;
+  class GlobalWorld;
+  class ParticleSystem;
+  class TaskManager;
+  class TaskManagerInterface;
+  class TaskManagerInterfaceIcons;
+  class Script;
+  class LocationEditor;
+  class MouseCursor;
+  class GameCursor;
+  class GameMenu;
+  class StartSequence;
+  class ControlHelpSystem;
+  class GameMenu;
 
-    // Not owned either: Species/Main.cpp deletes both of these, and nothing
-    // anywhere deletes m_gameMenu.
-    LocationInput* m_locationInput;
-    StartSequence* m_startSequence;
+  class App : public AppCommands
+  {
+    public:
+      // Library Code Objects
+      //
+      // m_resource is NOT owned here. Species/Main.cpp's Finalise() deletes
+      // g_resource, and that is the delete that actually executes -- see ~App.
+      Resource* m_resource;
+      std::unique_ptr<SoundSystem> m_soundSystem;
+      std::unique_ptr<LangTable> m_langTable;
+      std::unique_ptr<Profiler> m_profiler;
 
-    // Guarded exactly like its construction and destruction in App.cpp.
-    // AttractMode has NO HEADER anywhere in the tree and ATTRACTMODE_ENABLED
-    // is defined nowhere, so the type is never completed -- an unguarded
-    // unique_ptr member instantiates a deleter for it and fails with
-    // "can't delete an incomplete type". A raw pointer hid that; an owner
-    // cannot.
+      // Things that are the world
+
+      // Everything else
+      std::unique_ptr<ClientToServer> m_clientToServer; // Clients connection to Server
+
+      // Not owned either: Species/Main.cpp deletes both of these, and nothing
+      // anywhere deletes m_gameMenu.
+      LocationInput* m_locationInput;
+      StartSequence* m_startSequence;
+
+      // Guarded exactly like its construction and destruction in App.cpp.
+      // AttractMode has NO HEADER anywhere in the tree and ATTRACTMODE_ENABLED
+      // is defined nowhere, so the type is never completed -- an unguarded
+      // unique_ptr member instantiates a deleter for it and fails with
+      // "can't delete an incomplete type". A raw pointer hid that; an owner
+      // cannot.
 #ifdef ATTRACTMODE_ENABLED
     std::unique_ptr<AttractMode> m_attractMode;
 #endif
@@ -128,6 +135,7 @@ class App : public AppCommands
     static const char* GetScreenshotDirectory();
 
     void UpdateDifficultyFromPreferences() override;
-};
+  };
 
 extern App* g_app;
+} // namespace Species

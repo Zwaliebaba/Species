@@ -5,86 +5,89 @@
 #include "SpeciesWindow.h"
 
 
-class LandscapeFlattenArea;
-class LandscapeTile;
 
 
 // ****************************************************************************
 // Class LandscapeTileEditWindow
 // ****************************************************************************
 
-class LandscapeTileEditWindow: public SpeciesWindow
+
+namespace Species
 {
-public:
-	LandscapeTile        	*m_tileDef;
-    int						m_tileId;
+  class LandscapeFlattenArea;
+  class LandscapeTile;
 
-    LandscapeTileEditWindow( char *name, int tileId );
-    ~LandscapeTileEditWindow();
+  class LandscapeTileEditWindow : public SpeciesWindow
+  {
+    public:
+      LandscapeTile* m_tileDef;
+      int m_tileId;
 
-	void					Create();
-};
+      LandscapeTileEditWindow(char* name, int tileId);
+      ~LandscapeTileEditWindow();
 
-
-// ****************************************************************************
-// Class LandscapeFlatAreaEditWindow
-// ****************************************************************************
-
-class LandscapeFlattenAreaEditWindow: public SpeciesWindow
-{
-public:
-	LandscapeFlattenArea	*m_areaDef;
-    int						m_areaId;
-
-    LandscapeFlattenAreaEditWindow(char const *_name, int areaId);
-    ~LandscapeFlattenAreaEditWindow();
-
-	void					Create();
-};
+      void Create();
+  };
 
 
-// ****************************************************************************
-// Class LandscapeEditWindow
-// ****************************************************************************
+  // ****************************************************************************
+  // Class LandscapeFlatAreaEditWindow
+  // ****************************************************************************
 
-class LandscapeEditWindow: public SpeciesWindow
-{
-public:
-    LandscapeEditWindow( char const *name );
-    ~LandscapeEditWindow();
+  class LandscapeFlattenAreaEditWindow : public SpeciesWindow
+  {
+    public:
+      LandscapeFlattenArea* m_areaDef;
+      int m_areaId;
 
-	void					Create();
-};
+      LandscapeFlattenAreaEditWindow(char const* _name, int areaId);
+      ~LandscapeFlattenAreaEditWindow();
+
+      void Create();
+  };
 
 
-// ****************************************************************************
-// Class LandscapeGuideGridWindow
-// ****************************************************************************
+  // ****************************************************************************
+  // Class LandscapeEditWindow
+  // ****************************************************************************
 
-class LandscapeGuideGridWindow : public SpeciesWindow
-{
-public:
-	LandscapeTile       	*m_tileDef;
-    int						m_tileId;
-    int                     m_guideGridPower;
-    int                     m_pixelSizePerSample;
+  class LandscapeEditWindow : public SpeciesWindow
+  {
+    public:
+      LandscapeEditWindow(char const* name);
+      ~LandscapeEditWindow();
 
-    enum
-    {
+      void Create();
+  };
+
+
+  // ****************************************************************************
+  // Class LandscapeGuideGridWindow
+  // ****************************************************************************
+
+  class LandscapeGuideGridWindow : public SpeciesWindow
+  {
+    public:
+      LandscapeTile* m_tileDef;
+      int m_tileId;
+      int m_guideGridPower;
+      int m_pixelSizePerSample;
+
+      enum
+      {
         GuideGridToolFreehand,
         GuideGridToolFlatten,
         GuideGridToolBinary
-    };
-    int                     m_tool;
-    float                   m_toolSize;
+      };
+      int m_tool;
+      float m_toolSize;
 
-    LandscapeGuideGridWindow( char *name, int tileId );
-    ~LandscapeGuideGridWindow();
+      LandscapeGuideGridWindow(char* name, int tileId);
+      ~LandscapeGuideGridWindow();
 
-    void                    Create();
-};
+      void Create();
+  };
 
 
 #endif // LOCATION_EDITOR
-
-
+} // namespace Species

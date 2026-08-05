@@ -28,7 +28,10 @@
 #include "WorldTypeNames.h"
 #include "AppState.h"
 
-SoundSystem* g_soundSystem = nullptr;
+
+namespace Neuron
+{
+  SoundSystem* g_soundSystem = nullptr;
 
 #define SOUNDSYSTEM_UPDATEPERIOD 0.05f
 
@@ -2226,3 +2229,4 @@ bool SoundSystem::RenameSampleGroup(const char* _oldName, const char* _newName)
 
   return true;
 }
+} // namespace Neuron

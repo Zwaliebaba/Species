@@ -10,22 +10,23 @@
 #include "AppState.h"
 
 
-UpgradePort::UpgradePort()
-:   Building()
+namespace Species
 {
-	m_type = TypeUpgradePort;
-	SetShape( g_resource->GetShape("UpgradePort.shp") );
-}
+  UpgradePort::UpgradePort()
+    : Building()
+  {
+    m_type = TypeUpgradePort;
+    SetShape(g_resource->GetShape("UpgradePort.shp"));
+  }
 
 
-
-PrimaryUpgradePort::PrimaryUpgradePort()
-:   Building(),
-    m_controlTowersOwned(0)
-{
+  PrimaryUpgradePort::PrimaryUpgradePort()
+    : Building(),
+      m_controlTowersOwned(0)
+  {
     m_type = TypePrimaryUpgradePort;
     SetShape( g_resource->GetShape("PrimaryUpgradePort.shp" ) );
-}
+  }
 
 
 void PrimaryUpgradePort::ReprogramComplete()
@@ -42,3 +43,4 @@ void PrimaryUpgradePort::ReprogramComplete()
         }
     }
 }
+} // namespace Species

@@ -45,7 +45,7 @@ than either.
 | Parameter | `_camelCase` | `_fileName`, `_desiredTeamId` |
 | Local | `camelCase` | `clientId` |
 | Constant, enumerator | `PascalCase` | `HelloClient`, `TeamAssign` |
-| Macro | `SCREAMING_SNAKE` | `DEBUG_ASSERT`, `SAFE_DELETE` |
+| Macro | `SCREAMING_SNAKE` | `DEBUG_ASSERT`, `ENUM_HELPER` |
 | Namespace | `PascalCase` | `Neuron` |
 | File | `PascalCase.cpp` / `.h` | `NetSocketListener.cpp` |
 
@@ -54,9 +54,18 @@ converted code. It is legal C++ — the reserved forms are `_Uppercase` and
 `__anything`, and identifiers starting `_lowercase` at global scope. Do not use
 either of those.
 
-Engine code lives in `namespace Neuron`. Game code does not — `Species`,
-`GameLogic` and most of `NeuronClient` are still at global scope, and moving them
-is a conversion task, not something to do opportunistically.
+**Engine code lives in `namespace Neuron`; game code lives in
+`namespace Species`.** All of `NeuronClient` and `NeuronServer` are in the
+first, all of `GameLogic` and the `Species` executable in the second, and
+`NeuronCore` is in it only in part — its converted helpers are, its networking
+and protocol types are not. `docs/ARCHITECTURE.md#namespaces` has the split and
+the three ways a namespace change breaks a build; read it before adding a
+forward declaration that crosses a layer.
+
+You do not have to qualify an engine name: `NeuronCore.h` ends with
+`using namespace Neuron;` and every pch includes it. **Do not add the
+equivalent for `Species`** — its only users are inside it, and a test DLL that
+needs one puts it in a `.cpp`, never a header.
 
 ### Renaming
 
@@ -139,8 +148,10 @@ C++23, MSVC v145, `/permissive-` (`ConformanceMode`). Use the standard library.
 
 **Ownership.** Prefer values. Where a pointer is needed, it is `std::unique_ptr`
 or `std::shared_ptr`; a raw pointer is a non-owning observer and never gets
-`delete`d. The `SAFE_DELETE` / `SAFE_FREE` macros in `NeuronCore.h` are legacy —
-do not use them in new code.
+`delete`d. `SAFE_DELETE`, `SAFE_FREE` and `EmptyAndDelete` no longer EXIST —
+migration stage 5 deleted them along with their last callers. `SAFE_DELETE_ARRAY`
+survives in `NeuronCore.h` with two callers in `NeuronClient/Shape.cpp` and no
+owning task; do not add a third.
 
 **Strings.** `std::string` / `std::wstring` to own, `std::string_view` /
 `std::wstring_view` to borrow. Not `char*`. Not fixed `char[N]` buffers.
@@ -169,6 +180,16 @@ by returning owning storage.
 A `char const*` parameter that only ever gets compared is a `string_view` that
 has not been converted yet, not a considered choice.
 
+**`==` IS NOT A DROP-IN FOR `stricmp`.** `std::string`'s comparison is
+case-SENSITIVE, so converting a member to `std::string` and sweeping its
+comparisons to `==` silently changes every site that deliberately compared
+case-insensitively — and it changes them only for the inputs whose case
+differs, which is the worst possible failure shape. Read each comparison before
+converting it. Where the old behaviour was `stricmp`, the replacement is
+`Neuron::StrEqualsIgnoreCase` (`StringUtils.h`). Seventeen sites in the UI needed
+it when the Eclipse widget names became `std::string`; Eclipse's own lookup used
+`strcmp` and is exactly unchanged.
+
 **An accessor that can fail returns `char const*`, not `std::string`.** Check
 what a lookup's failure value is before converting its return type: a `nullptr`
 that callers test turns into an empty string that they do not, and the compiler
@@ -178,10 +199,30 @@ says nothing.
 `printf`-family varargs.
 
 **Never pass runtime data as a format string.** A `char const*, ...` entry point
-that `vsprintf`s a caption, a translated phrase or a level-file field is
-undefined behaviour the moment that data contains a `%`. Take
+that formats a caption, a translated phrase or a level-file field through the C
+library is undefined behaviour the moment that data contains a `%`. Take
 `std::format_string<Args...>` where the format is a literal, and a plain
 `std::string_view` overload where it is not.
+
+**Give the formatting template at least one argument, or the two overloads are
+ambiguous.** `std::format_string<Args...>` with an empty pack and
+`std::string_view` are both reachable from a string literal by one user-defined
+conversion, so a zero-argument call cannot choose. Spell the template
+`format_string<T, Args...> _fmt, T&& _arg, Args&&... _args` and the plain
+overload takes every call that passes only text:
+
+```cpp
+void        Draw(float _x, std::string_view _text);
+template <typename T, typename... Args>
+void        Draw(float _x, std::format_string<T, Args...> _fmt, T&& _arg, Args&&... _args);
+```
+
+**Converting printf specs is not search-and-replace.** `%f` is six decimals and
+`{}` is shortest round-trip, so a bare `%f` changes output silently; it must
+become `{:f}`. `%10s` right-justifies and `{:10}` LEFT-justifies a string, so a
+padded `%s` becomes `{:>10}`. A literal brace has to be doubled. And a literal
+with no arguments after it stops being a format string entirely under the split
+above — check it for a `%` before you move it.
 
 **Containers.** `std::vector` by default; `std::unordered_map` / `std::map` /
 `std::set` as the shape demands.
@@ -241,8 +282,8 @@ Multiplayer is deterministic lockstep. The server sequences player *intent*;
 every client then advances its own copy of the world and is expected to arrive at
 the same state. `Species/Main.cpp` `GenerateSyncValue()` sums every unit's,
 entity's, laser's and effect's `m_pos` and `m_vel`, folds the result to one byte,
-and sends it up each frame. `NeuronCore/Server.cpp` compares it against the other
-clients:
+and sends it up each frame. `NeuronServer/Server.cpp` compares it against the
+other clients:
 
 ```cpp
 DEBUG_ASSERT(lastKnownSync == sync);   // Server.cpp — a desync lands here

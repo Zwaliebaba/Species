@@ -2,22 +2,28 @@
 
 #include "Building.h"
 
-class ShapeMarker;
-
-
-class Cave : public Building
+namespace Neuron
 {
-  protected:
-    int m_troopType;
-    int m_unitId;
-    float m_spawnTimer;
-    bool m_dead;
+  class ShapeMarker;
+} // namespace Neuron
 
-    ShapeMarker* m_spawnPoint;
 
-  public:
-    Cave();
+namespace Species
+{
+  class Cave : public Building
+  {
+    protected:
+      int m_troopType;
+      int m_unitId;
+      float m_spawnTimer;
+      bool m_dead;
 
-    bool Advance();
-    void Damage(float _damage);
-};
+      ShapeMarker* m_spawnPoint;
+
+    public:
+      Cave();
+
+      bool Advance();
+      void Damage(float _damage);
+  };
+} // namespace Species

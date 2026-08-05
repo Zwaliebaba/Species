@@ -47,15 +47,19 @@
 // camera's up vector into QNaN. Named the same as Citizen.cpp's copy because it
 // is the same routine; NeuronMath.h refuses to grow an operator layer, so each
 // file that rotates this way carries it.
-static DirectX::XMVECTOR XM_CALLCONV RotateAroundScaledAxis(DirectX::FXMVECTOR _v, DirectX::FXMVECTOR _scaledAxis)
-{
-  float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(_scaledAxis));
-  if (lengthSquared < 1e-8f)
-    return _v;
 
-  float const angle = sqrtf(lengthSquared);
-  return DirectX::XMVector3Transform(_v, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(_scaledAxis, 1.0f / angle), angle));
-}
+
+namespace Species
+{
+  static DirectX::XMVECTOR XM_CALLCONV RotateAroundScaledAxis(DirectX::FXMVECTOR _v, DirectX::FXMVECTOR _scaledAxis)
+  {
+    float const lengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(_scaledAxis));
+    if (lengthSquared < 1e-8f)
+      return _v;
+
+    float const angle = sqrtf(lengthSquared);
+    return DirectX::XMVector3Transform(_v, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(_scaledAxis, 1.0f / angle), angle));
+  }
 
 
 #define MIN_GROUND_CLEARANCE 10.0f // Minimum height relative to land
@@ -87,13 +91,13 @@ void Camera::AdvanceDebugMode()
   float speedVertical = speedSideways;
   float speedForwards = speedSideways;
 
-  if (g_inputManager->controlEvent(ControlCameraSpeedup))
+  if (g_inputManager->controlEvent(ControlType::ControlCameraSpeedup))
   {
     speedSideways *= 10.0f;
     speedVertical *= 10.0f;
     speedForwards *= 10.0f;
   }
-  else if (g_inputManager->controlEvent(ControlCameraSlowdown))
+  else if (g_inputManager->controlEvent(ControlType::ControlCameraSlowdown))
   {
     speedSideways *= 0.1f;
     speedVertical /= 10.0f;
@@ -104,8 +108,8 @@ void Camera::AdvanceDebugMode()
   //  TODO: Support mouse/joystick
   // if( EclGetWindows()->size() == 0 )
   {
-    static DPadMovement cam_slide(ControlCameraForwards, ControlCameraBackwards, ControlCameraLeft, ControlCameraRight, ControlCameraUp,
-                                  ControlCameraDown, 1);
+    static DPadMovement cam_slide(ControlType::ControlCameraForwards, ControlType::ControlCameraBackwards, ControlType::ControlCameraLeft,
+                                  ControlType::ControlCameraRight, ControlType::ControlCameraUp, ControlType::ControlCameraDown, 1);
     cam_slide.Advance();
     DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&m_pos);
     pos = DirectX::XMVectorSubtract(pos, DirectX::XMVectorScale(right, cam_slide.signX() * advanceTime * speedSideways));
@@ -118,7 +122,7 @@ void Camera::AdvanceDebugMode()
   int my = g_target->dY();
 
   // TODO: Really?
-  if (g_inputManager->controlEvent(ControlCameraDebugRotate))
+  if (g_inputManager->controlEvent(ControlType::ControlCameraDebugRotate))
   {
     // THE TWO MATRIX33 ROTATORS DISAGREE ABOUT SIGN, and only one of them
     // says so in its name. Applied as `v * mat` from identity:
@@ -193,7 +197,7 @@ void Camera::AdvanceSphereWorldMode()
   oldMouseY = screenH - oldMouseY;
 
   InputDetails details;
-  if (g_inputManager->controlEvent(ControlCameraMove, details))
+  if (g_inputManager->controlEvent(ControlType::ControlCameraMove, details))
   {
     g_target->SetMousePos(g_target->X() + details.x, g_target->Y() + details.y);
     TheUserInput()->RecalcMousePos3d();
@@ -380,7 +384,7 @@ void Camera::AdvanceSphereWorldIntroMode()
   lastFrame = timeNow;
 
 #ifdef _DEBUG
-  if (g_inputManager->controlEvent(ControlDebugCameraFixUp))
+  if (g_inputManager->controlEvent(ControlType::ControlDebugCameraFixUp))
     fixMeUp = true;
 #endif
 
@@ -440,7 +444,7 @@ void Camera::AdvanceSphereWorldOutroMode()
   lastFrame = timeNow;
 
 #ifdef _DEBUG
-  if (g_inputManager->controlEvent(ControlDebugCameraFixUp))
+  if (g_inputManager->controlEvent(ControlType::ControlDebugCameraFixUp))
     fixMeUp = true;
 #endif
 
@@ -654,13 +658,13 @@ void Camera::AdvanceFreeMovementMode()
     DirectX::XMVECTOR const accelRight = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&accelRightStore));
 
     // TODO: Support mouse/joystick
-    if (g_inputManager->controlEvent(ControlCameraSpeedup))
+    if (g_inputManager->controlEvent(ControlType::ControlCameraSpeedup))
       moveRate *= 4.0f;
 
-    bool keyForward = g_inputManager->controlEvent(ControlCameraForwards);
-    bool keyBackward = g_inputManager->controlEvent(ControlCameraBackwards);
-    bool keyLeft = g_inputManager->controlEvent(ControlCameraLeft);
-    bool keyRight = g_inputManager->controlEvent(ControlCameraRight);
+    bool keyForward = g_inputManager->controlEvent(ControlType::ControlCameraForwards);
+    bool keyBackward = g_inputManager->controlEvent(ControlType::ControlCameraBackwards);
+    bool keyLeft = g_inputManager->controlEvent(ControlType::ControlCameraLeft);
+    bool keyRight = g_inputManager->controlEvent(ControlType::ControlCameraRight);
 
     DirectX::XMVECTOR targetPos = DirectX::XMLoadFloat3(&m_targetPos);
     if (keyLeft)
@@ -675,7 +679,7 @@ void Camera::AdvanceFreeMovementMode()
     if (m_mode == Mode::ModeFreeMovement)
     {
       InputDetails details;
-      if (g_inputManager->controlEvent(ControlCameraMove, details))
+      if (g_inputManager->controlEvent(ControlType::ControlCameraMove, details))
       {
         targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelRight, g_advanceTime * details.x * 10.0f));
         targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelForward, g_advanceTime * details.y * 10.0f));
@@ -1012,7 +1016,7 @@ void Camera::UpdateControlVector()
   constexpr float angleThreshold = 0.98f;
 
   bool recalc = false;
-  if (g_inputManager->controlEvent(ControlUnitMoveDirectionChange))
+  if (g_inputManager->controlEvent(ControlType::ControlUnitMoveDirectionChange))
   {
     m_skipDirectionCalculation = false;
     recalc = true;
@@ -1022,7 +1026,7 @@ void Camera::UpdateControlVector()
   // cosf of a dot is what the original did and is kept exactly.
   DirectX::XMFLOAT3 const upStore = GetUp();
   float angle = cosf(DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&upStore))));
-  if ((fabs(angle) < angleThreshold && !m_skipDirectionCalculation) || !g_inputManager->controlEvent(ControlUnitMove) || recalc)
+  if ((fabs(angle) < angleThreshold && !m_skipDirectionCalculation) || !g_inputManager->controlEvent(ControlType::ControlUnitMove) || recalc)
   {
     m_controlVector = GetRight();
     m_skipDirectionCalculation = false;
@@ -1033,8 +1037,8 @@ void Camera::UpdateControlVector()
 
 bool Camera::AdvanceManualRotateCamera(DirectX::XMFLOAT3& cameraTarget)
 {
-  if ((g_inputManager->controlEvent(ControlCameraRotateLeft) || g_inputManager->controlEvent(ControlCameraRotateRight)) &&
-      !g_inputManager->controlEvent(ControlUnitPrimaryFireDirected))
+  if ((g_inputManager->controlEvent(ControlType::ControlCameraRotateLeft) || g_inputManager->controlEvent(ControlType::ControlCameraRotateRight)) &&
+      !g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected))
   {
     m_trackHeight = 0.0f;
 
@@ -1042,10 +1046,10 @@ bool Camera::AdvanceManualRotateCamera(DirectX::XMFLOAT3& cameraTarget)
 
     int halfWidth = g_renderer->ScreenW() / 2;
     int deltaX = g_target->X() - halfWidth;
-    if (g_inputManager->controlEvent(ControlCameraRotateLeft))
+    if (g_inputManager->controlEvent(ControlType::ControlCameraRotateLeft))
       deltaX = rotSpeed;
 
-    if (g_inputManager->controlEvent(ControlCameraRotateRight))
+    if (g_inputManager->controlEvent(ControlType::ControlCameraRotateRight))
       deltaX = -rotSpeed;
 
     float rotY = static_cast<float>(deltaX) * 0.015f;
@@ -1084,14 +1088,14 @@ bool Camera::AdvanceManualCameraHeight(DirectX::XMFLOAT3& cameraTarget)
 
   if (EclGetWindows()->size() == 0)
   {
-    if (g_inputManager->controlEvent(ControlCameraUp))
+    if (g_inputManager->controlEvent(ControlType::ControlCameraUp))
     {
       m_heightMultiplier += heightScale;
       TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
       TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
-    if (g_inputManager->controlEvent(ControlCameraDown))
+    if (g_inputManager->controlEvent(ControlType::ControlCameraDown))
     {
       m_heightMultiplier -= heightScale;
       camDown = true;
@@ -1601,14 +1605,14 @@ void Camera::AdvanceTurretAimMode()
 
 void Camera::AdvanceFirstPersonMode()
 {
-  if (g_inputManager->controlEvent(ControlCameraFreeMovement))
+  if (g_inputManager->controlEvent(ControlType::ControlCameraFreeMovement))
   {
     RequestMode(Mode::ModeFreeMovement);
     return;
   }
 
   // JAMES_TODO: Support directional firing mode
-  if (g_inputManager->controlEvent(ControlUnitPrimaryFireTarget))
+  if (g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireTarget))
   {
     static float lastFire = 0.0f;
     if (GetHighResTime() > lastFire)
@@ -1983,7 +1987,7 @@ void Camera::AdvanceComponentZoom()
   float adjustedTargetFov = m_targetFov;
 
   // JAMES CHECK:
-  if (g_inputManager->controlEvent(ControlCameraZoom))
+  if (g_inputManager->controlEvent(ControlType::ControlCameraZoom))
   {
     adjustedTargetFov /= 4.0f;
     change = 100.0f;
@@ -2028,8 +2032,8 @@ void Camera::AdvanceComponentMouseWheelHeight()
 
   if (EclGetWindows()->size() == 0)
   {
-    bool keyUp = g_inputManager->controlEvent(ControlCameraUp);
-    bool keyDown = g_inputManager->controlEvent(ControlCameraDown);
+    bool keyUp = g_inputManager->controlEvent(ControlType::ControlCameraUp);
+    bool keyDown = g_inputManager->controlEvent(ControlType::ControlCameraDown);
     if (keyUp)
       delta += g_advanceTime * 7.0f;
     if (keyDown)
@@ -2139,7 +2143,7 @@ void Camera::Advance()
     AdvanceAnim();
 
   // Toggle entity tracking
-  /*if (g_inputManager->controlEvent( ControlCameraSwitchMode ))
+  /*if (g_inputManager->controlEvent( ControlType::ControlCameraSwitchMode ))
     m_entityTrack = !m_entityTrack;*/
 
   //	switch (m_mode)
@@ -2577,3 +2581,4 @@ void Camera::WaterReflect()
   m_front.y *= -1;
   m_up.y *= -1;
 }
+} // namespace Species

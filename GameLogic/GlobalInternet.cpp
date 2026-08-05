@@ -23,119 +23,122 @@
 // Class GlobalInternetNode
 //*****************************************************************************
 
-GlobalInternetNode::GlobalInternetNode()
-  : m_size(0),
-    m_burst(0),
-    m_numLinks(0)
+
+namespace Species
 {
-}
-
-
-void GlobalInternetNode::AddLink(int _id)
-{
-  DEBUG_ASSERT(m_numLinks < GLOBALINTERNET_MAXNODELINKS);
-  m_links[m_numLinks] = _id;
-  m_numLinks++;
-}
-
-
-// ****************************************************************************
-// Class GlobalInternet
-// ****************************************************************************
-
-GlobalInternet::GlobalInternet()
-  : m_links(0),
-    m_numLinks(0),
-    m_nodes(nullptr),
-    m_numNodes(0),
-    m_nearestNodeToCentre(-1),
-    m_nearestDistance(FLT_MAX)
-{
-  speciesSeedRandom(1);
-  GenerateInternet();
-}
-
-
-GlobalInternet::~GlobalInternet() { DeleteInternet(); }
-
-
-unsigned short GlobalInternet::GenerateInternet(DirectX::XMFLOAT3 const& _pos, unsigned char _size)
-{
-  GetHighResTime();
-
-  GlobalInternetNode* node = &m_nodes[m_numNodes];
-  node->m_pos = _pos;
-  node->m_size = _size;
-  unsigned short nodeIndex = m_numNodes;
-  m_numNodes++;
-  DEBUG_ASSERT(m_numNodes < GLOBALINTERNET_MAXNODES);
-
-  float distanceToCentre = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&_pos)));
-  if (distanceToCentre < m_nearestDistance)
+  GlobalInternetNode::GlobalInternetNode()
+    : m_size(0),
+      m_burst(0),
+      m_numLinks(0)
   {
-    m_nearestDistance = distanceToCentre;
-    m_nearestNodeToCentre = nodeIndex;
   }
 
-  unsigned char numLinks = _size;
-  float distance = powf(_size, 4.0f) * 2.0f;
 
-  while (numLinks > 0)
+  void GlobalInternetNode::AddLink(int _id)
   {
-    float z = sfrand(distance);
-    float y = sfrand(distance);
-    float x = sfrand(distance);
-    DirectX::XMFLOAT3 const newPos(_pos.x + x, _pos.y + y, _pos.z + z);
-    unsigned short newIndex = GenerateInternet(newPos, _size - 1);
-    m_links[m_numLinks].m_from = nodeIndex;
-    m_links[m_numLinks].m_to = newIndex;
-    m_links[m_numLinks].m_size = _size;
+    DEBUG_ASSERT(m_numLinks < GLOBALINTERNET_MAXNODELINKS);
+    m_links[m_numLinks] = _id;
+    m_numLinks++;
+  }
 
-    m_nodes[newIndex].AddLink(m_numLinks);
-    node->AddLink(m_numLinks);
 
+  // ****************************************************************************
+  // Class GlobalInternet
+  // ****************************************************************************
+
+  GlobalInternet::GlobalInternet()
+    : m_links(0),
+      m_numLinks(0),
+      m_nodes(nullptr),
+      m_numNodes(0),
+      m_nearestNodeToCentre(-1),
+      m_nearestDistance(FLT_MAX)
+  {
+    speciesSeedRandom(1);
+    GenerateInternet();
+  }
+
+
+  GlobalInternet::~GlobalInternet() { DeleteInternet(); }
+
+
+  unsigned short GlobalInternet::GenerateInternet(DirectX::XMFLOAT3 const& _pos, unsigned char _size)
+  {
+    GetHighResTime();
+
+    GlobalInternetNode* node = &m_nodes[m_numNodes];
+    node->m_pos = _pos;
+    node->m_size = _size;
+    unsigned short nodeIndex = m_numNodes;
+    m_numNodes++;
+    DEBUG_ASSERT(m_numNodes < GLOBALINTERNET_MAXNODES);
+
+    float distanceToCentre = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&_pos)));
+    if (distanceToCentre < m_nearestDistance)
+    {
+      m_nearestDistance = distanceToCentre;
+      m_nearestNodeToCentre = nodeIndex;
+    }
+
+    unsigned char numLinks = _size;
+    float distance = powf(_size, 4.0f) * 2.0f;
+
+    while (numLinks > 0)
+    {
+      float z = sfrand(distance);
+      float y = sfrand(distance);
+      float x = sfrand(distance);
+      DirectX::XMFLOAT3 const newPos(_pos.x + x, _pos.y + y, _pos.z + z);
+      unsigned short newIndex = GenerateInternet(newPos, _size - 1);
+      m_links[m_numLinks].m_from = nodeIndex;
+      m_links[m_numLinks].m_to = newIndex;
+      m_links[m_numLinks].m_size = _size;
+
+      m_nodes[newIndex].AddLink(m_numLinks);
+      node->AddLink(m_numLinks);
+
+      m_numLinks++;
+      DEBUG_ASSERT(m_numLinks <= GLOBALINTERNET_MAXLINKS);
+
+      --numLinks;
+    }
+
+    return nodeIndex;
+  }
+
+
+  void GlobalInternet::GenerateInternet()
+  {
+    double timeStart = GetHighResTime();
+
+    m_links = new GlobalInternetLink[GLOBALINTERNET_MAXLINKS];
+    m_nodes = new GlobalInternetNode[GLOBALINTERNET_MAXNODES];
+
+    // XMFLOAT3 centre(200, 200, 200);
+    // XMFLOAT3 centre(449,1787,-139);
+    DirectX::XMFLOAT3 const centre(-797.0f, 1949.0f, -1135.0f);
+    unsigned short firstNode = GenerateInternet(centre, GLOBALINTERNET_ITERATIONS);
+
+    m_nodes[m_numNodes].m_pos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+    m_nodes[m_numNodes].m_size = 0.0f;
+    unsigned short nodeIndex = m_numNodes;
+    m_numNodes++;
+    DEBUG_ASSERT(m_numNodes <= GLOBALINTERNET_MAXNODES);
+
+    m_links[m_numLinks].m_from = m_nearestNodeToCentre;
+    m_links[m_numLinks].m_to = nodeIndex;
+    m_links[m_numLinks].m_size = 1.0f;
     m_numLinks++;
     DEBUG_ASSERT(m_numLinks <= GLOBALINTERNET_MAXLINKS);
 
-    --numLinks;
-  }
-
-  return nodeIndex;
-}
-
-
-void GlobalInternet::GenerateInternet()
-{
-  double timeStart = GetHighResTime();
-
-  m_links = new GlobalInternetLink[GLOBALINTERNET_MAXLINKS];
-  m_nodes = new GlobalInternetNode[GLOBALINTERNET_MAXNODES];
-
-  // XMFLOAT3 centre(200, 200, 200);
-  // XMFLOAT3 centre(449,1787,-139);
-  DirectX::XMFLOAT3 const centre(-797.0f, 1949.0f, -1135.0f);
-  unsigned short firstNode = GenerateInternet(centre, GLOBALINTERNET_ITERATIONS);
-
-  m_nodes[m_numNodes].m_pos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-  m_nodes[m_numNodes].m_size = 0.0f;
-  unsigned short nodeIndex = m_numNodes;
-  m_numNodes++;
-  DEBUG_ASSERT(m_numNodes <= GLOBALINTERNET_MAXNODES);
-
-  m_links[m_numLinks].m_from = m_nearestNodeToCentre;
-  m_links[m_numLinks].m_to = nodeIndex;
-  m_links[m_numLinks].m_size = 1.0f;
-  m_numLinks++;
-  DEBUG_ASSERT(m_numLinks <= GLOBALINTERNET_MAXLINKS);
-
-  for (int i = 0; i < m_numNodes; ++i)
-  {
-    GlobalInternetNode* node = &m_nodes[i];
-    if (node->m_numLinks == 1)
+    for (int i = 0; i < m_numNodes; ++i)
     {
-      m_leafs.push_back(i);
+      GlobalInternetNode* node = &m_nodes[i];
+      if (node->m_numLinks == 1)
+      {
+        m_leafs.push_back(i);
+      }
     }
-  }
 
 #ifdef DEBUG
   for (int i = 0; i < 5; ++i)
@@ -469,3 +472,4 @@ void GlobalInternet::RenderPackets()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 }
+  } // namespace Species

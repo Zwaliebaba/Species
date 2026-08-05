@@ -24,88 +24,91 @@
 
 #define LIGHTMAP_TEXTURE_NAME "water_lightmap"
 
-float const waveBrightnessScale = 4.0f;
-float const shoreBrighteningFactor = 250.0f;
-float const shoreNoiseFactor = 0.25f;
 
-// ****************************************************************************
-// Class Water
-// ****************************************************************************
-
-Water::Water()
-  : m_waterDepths(nullptr),
-    m_shoreNoise(nullptr),
-    m_waterDepthMap(nullptr),
-    m_waveTableX(nullptr),
-    m_waveTableZ(nullptr),
-    m_renderWaterEffect(0),
-    m_colourTable(nullptr)
+namespace Species
 {
-  if (!g_editing)
+  float const waveBrightnessScale = 4.0f;
+  float const shoreBrighteningFactor = 250.0f;
+  float const shoreNoiseFactor = 0.25f;
+
+  // ****************************************************************************
+  // Class Water
+  // ****************************************************************************
+
+  Water::Water()
+    : m_waterDepths(nullptr),
+      m_shoreNoise(nullptr),
+      m_waterDepthMap(nullptr),
+      m_waveTableX(nullptr),
+      m_waveTableZ(nullptr),
+      m_renderWaterEffect(0),
+      m_colourTable(nullptr)
   {
-    Landscape* land = &g_location->m_landscape;
-
-    GenerateLightMap();
-
-    int detail = g_prefsManager->GetInt("RenderWaterDetail");
-
-    if (detail > 0)
+    if (!g_editing)
     {
-      float worldSize = std::max(g_location->m_landscape.GetWorldSizeX(), g_location->m_landscape.GetWorldSizeZ());
-      worldSize /= 100.0f;
+      Landscape* land = &g_location->m_landscape;
 
-      m_cellSize = (float)detail * worldSize;
+      GenerateLightMap();
 
-      int alpha = (g_negativeRenderer ? 0 : 255);
+      int detail = g_prefsManager->GetInt("RenderWaterDetail");
 
-      // Load colour information from a bitmap
+      if (detail > 0)
       {
-        std::string fullFilename = Location::ChristmasModEnabled() == 1 ? std::string("Terrain/WavesEarth.bmp")
-                                                                        : std::format("Terrain/{}", g_location->m_levelFile->m_wavesColourFilename);
+        float worldSize = std::max(g_location->m_landscape.GetWorldSizeX(), g_location->m_landscape.GetWorldSizeZ());
+        worldSize /= 100.0f;
 
-        BinaryReader* in = g_resource->GetBinaryReader(fullFilename.c_str());
-        BitmapRGBA bmp(in, "bmp");
-        m_colourTable = new RGBAColour[bmp.m_width];
-        m_numColours = bmp.m_width;
-        for (int x = 0; x < bmp.m_width; ++x)
+        m_cellSize = (float)detail * worldSize;
+
+        int alpha = (g_negativeRenderer ? 0 : 255);
+
+        // Load colour information from a bitmap
         {
-          m_colourTable[x] = bmp.GetPixel(x, 1);
-          m_colourTable[x].a = alpha;
+          std::string fullFilename = Location::ChristmasModEnabled() == 1 ? std::string("Terrain/WavesEarth.bmp")
+                                                                          : std::format("Terrain/{}", g_location->m_levelFile->m_wavesColourFilename);
+
+          BinaryReader* in = g_resource->GetBinaryReader(fullFilename.c_str());
+          BitmapRGBA bmp(in, "bmp");
+          m_colourTable = new RGBAColour[bmp.m_width];
+          m_numColours = bmp.m_width;
+          for (int x = 0; x < bmp.m_width; ++x)
+          {
+            m_colourTable[x] = bmp.GetPixel(x, 1);
+            m_colourTable[x].a = alpha;
+          }
+          delete in;
         }
-        delete in;
+
+        BuildTriangleStrips();
+
+        m_waveTableSizeX = (2.0f * land->GetWorldSizeX()) / m_cellSize + 2;
+        m_waveTableSizeZ = (2.0f * land->GetWorldSizeZ()) / m_cellSize + 2;
+        m_waveTableX = new float[m_waveTableSizeX];
+        m_waveTableZ = new float[m_waveTableSizeZ];
+
+        BuildOpenGlState();
       }
-
-      BuildTriangleStrips();
-
-      m_waveTableSizeX = (2.0f * land->GetWorldSizeX()) / m_cellSize + 2;
-      m_waveTableSizeZ = (2.0f * land->GetWorldSizeZ()) / m_cellSize + 2;
-      m_waveTableX = new float[m_waveTableSizeX];
-      m_waveTableZ = new float[m_waveTableSizeZ];
-
-      BuildOpenGlState();
     }
   }
-}
 
 
-Water::~Water()
-{
-  m_renderVerts.clear();
-  delete[] m_waterDepths;
-  m_waterDepths = nullptr;
-  delete[] m_shoreNoise;
-  m_shoreNoise = nullptr;
-  delete[] m_colourTable;
-  m_colourTable = nullptr;
-  delete[] m_waveTableX;
-  m_waveTableX = nullptr;
-  delete[] m_waveTableZ;
-  m_waveTableZ = nullptr;
-}
+  Water::~Water()
+  {
+    m_renderVerts.clear();
+    delete[] m_waterDepths;
+    m_waterDepths = nullptr;
+    delete[] m_shoreNoise;
+    m_shoreNoise = nullptr;
+    delete[] m_colourTable;
+    m_colourTable = nullptr;
+    delete[] m_waveTableX;
+    m_waveTableX = nullptr;
+    delete[] m_waveTableZ;
+    m_waveTableZ = nullptr;
+  }
 
-void Water::GenerateLightMap()
-{
-  double startTime = GetHighResTime();
+  void Water::GenerateLightMap()
+  {
+    double startTime = GetHighResTime();
 
 #define MASK_SIZE 128
 
@@ -274,7 +277,7 @@ void Water::GenerateLightMap()
 
   double totalTime = GetHighResTime() - startTime;
   DebugTrace("Water lightmap generation took {}ms\n", int(totalTime * 1000));
-}
+  }
 
 
 void Water::BuildOpenGlState() {}
@@ -725,3 +728,4 @@ void Water::Advance()
     END_PROFILE(g_profiler, "Advance Water");
   }
 }
+} // namespace Species

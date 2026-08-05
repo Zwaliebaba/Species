@@ -39,79 +39,83 @@
 
 
 // *** Constructor
-UserInput::UserInput()
-  : m_removeTopLevelMenu(false)
+
+
+namespace Species
 {
-  int const screenH = g_renderer->ScreenH();
-  int const screenW = g_renderer->ScreenW();
-
-  EclInitialise(g_renderer->ScreenW(), g_renderer->ScreenH());
-}
-
-
-// *** AdvanceMenus
-void UserInput::AdvanceMenus()
-{
-  //	if ( g_keyDeltas[KEY_F1] )
-  //		DebugKeyBindings::DebugMenu();
-
-  InputManager* im = g_inputManager;
-  int mouseX = g_target->X();
-  int mouseY = g_target->Y();
-  bool lmb = im->controlEvent(ControlEclipseLMousePressed);
-  bool rmb = im->controlEvent(ControlEclipseRMousePressed);
-
-  EclUpdateMouse(mouseX, mouseY, lmb, rmb);
-  EclUpdate();
-
-  if (im->controlEvent(ControlEclipseLMouseDown))
+  UserInput::UserInput()
+    : m_removeTopLevelMenu(false)
   {
-    EclWindow* winUnderMouse = EclGetWindow(mouseX, mouseY);
-    if (winUnderMouse)
-    {
-      im->suppressEvent(ControlEclipseLMouseDown);
-    }
-  }
-}
+    int const screenH = g_renderer->ScreenH();
+    int const screenW = g_renderer->ScreenW();
 
-
-// *** Advance
-void UserInput::Advance()
-{
-  START_PROFILE(g_profiler, "Advance UserInput");
-
-  g_inputManager->Advance();
-
-  if (m_removeTopLevelMenu)
-  {
-    EclWindow* win = EclGetWindow(LANGUAGEPHRASE("dialog_toolsmenu"));
-    if (win)
-    {
-      EclRemoveWindow(win->m_name);
-    }
-    m_removeTopLevelMenu = false;
+    EclInitialise(g_renderer->ScreenW(), g_renderer->ScreenH());
   }
 
-  AdvanceMenus();
 
-  bool modsEnabled = g_prefsManager->GetInt("ModSystemEnabled", 0) != 0;
+  // *** AdvanceMenus
+  void UserInput::AdvanceMenus()
+  {
+    //	if ( g_keyDeltas[KEY_F1] )
+    //		DebugKeyBindings::DebugMenu();
+
+    InputManager* im = g_inputManager;
+    int mouseX = g_target->X();
+    int mouseY = g_target->Y();
+    bool lmb = im->controlEvent(ControlType::ControlEclipseLMousePressed);
+    bool rmb = im->controlEvent(ControlType::ControlEclipseRMousePressed);
+
+    EclUpdateMouse(mouseX, mouseY, lmb, rmb);
+    EclUpdate();
+
+    if (im->controlEvent(ControlType::ControlEclipseLMouseDown))
+    {
+      EclWindow* winUnderMouse = EclGetWindow(mouseX, mouseY);
+      if (winUnderMouse)
+      {
+        im->suppressEvent(ControlType::ControlEclipseLMouseDown);
+      }
+    }
+  }
 
 
-  if (g_inputManager->controlEvent(ControlGamePause))
-    g_app->m_clientToServer->RequestPause();
+  // *** Advance
+  void UserInput::Advance()
+  {
+    START_PROFILE(g_profiler, "Advance UserInput");
+
+    g_inputManager->Advance();
+
+    if (m_removeTopLevelMenu)
+    {
+      EclWindow* win = EclGetWindow(LANGUAGEPHRASE("dialog_toolsmenu"));
+      if (win)
+      {
+        EclRemoveWindow(win->m_name.c_str());
+      }
+      m_removeTopLevelMenu = false;
+    }
+
+    AdvanceMenus();
+
+    bool modsEnabled = g_prefsManager->GetInt("ModSystemEnabled", 0) != 0;
+
+
+    if (g_inputManager->controlEvent(ControlType::ControlGamePause))
+      g_app->m_clientToServer->RequestPause();
 
 //    if (g_keyDeltas[KEY_F2]) DebugKeyBindings::DebugCameraButton();
 #ifdef LOCATION_EDITOR
   if (modsEnabled)
   {
-    if (g_inputManager->controlEvent(ControlToggleEditor))
+    if (g_inputManager->controlEvent(ControlType::ControlToggleEditor))
       DebugKeyBindings::EditorButton();
   }
 #endif
 //
 #ifdef CHEATMENU_ENABLED
-  if (g_inputManager->controlEvent(ControlToggleCheatMenu))
-    DebugKeyBindings::CheatButton();
+    if (g_inputManager->controlEvent(ControlType::ControlToggleCheatMenu))
+      DebugKeyBindings::CheatButton();
 #endif
 
   //
@@ -122,7 +126,7 @@ void UserInput::Advance()
 
 
   END_PROFILE(g_profiler, "Advance UserInput");
-}
+  }
 
 
 // *** Render
@@ -244,3 +248,4 @@ void UserInput::RecalcMousePos3d()
     // DEBUG_ASSERT(landscapeHit);
   }
 }
+} // namespace Species

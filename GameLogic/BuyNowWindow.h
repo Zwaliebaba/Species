@@ -2,11 +2,15 @@
 
 #include "SpeciesWindow.h"
 
-class BuyNowWindow : public SpeciesWindow {
-public:
 
-	BuyNowWindow();
+namespace Species
+{
+  class BuyNowWindow : public SpeciesWindow
+  {
+    public:
+      BuyNowWindow();
 
-	void Create();
-    void Render(bool _hasFocus);
-};
+      void Create();
+      void Render(bool _hasFocus);
+  };
+} // namespace Species

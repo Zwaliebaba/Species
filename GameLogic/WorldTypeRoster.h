@@ -15,4 +15,9 @@
 // guaranteed to be linked in at all — a self-installing object would work until
 // the day the linker decided it was unused. See tasks/layering-inversion.yaml
 // T17.
-void InstallWorldTypeRoster();
+
+
+namespace Species
+{
+  void InstallWorldTypeRoster();
+} // namespace Species

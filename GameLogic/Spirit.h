@@ -6,60 +6,63 @@
 #define SPIRIT_MAXNEARBYEGGS 8
 
 
-class Spirit : public WorldObject
+namespace Species
 {
-  public:
-    enum
-    {
-      StateUnknown,
-      StateBirth,    // Just been created, float to a certain height
-      StateFloating, // Float around, can be captured
-      StateAttached, // Attached to a garbage collector
-      StateInStore,  // Locked in a Spirit Store
-      StateInEgg,    // Fertilising an Egg
-      StateDeath     // Fade away
-    };
+  class Spirit : public WorldObject
+  {
+    public:
+      enum
+      {
+        StateUnknown,
+        StateBirth,    // Just been created, float to a certain height
+        StateFloating, // Float around, can be captured
+        StateAttached, // Attached to a garbage collector
+        StateInStore,  // Locked in a Spirit Store
+        StateInEgg,    // Fertilising an Egg
+        StateDeath     // Fade away
+      };
 
-    unsigned char m_teamId;
-    int m_state;
-    WorldObjectId m_worldObjectId; // The Id of the entity that died
+      unsigned char m_teamId;
+      int m_state;
+      WorldObjectId m_worldObjectId; // The Id of the entity that died
 
-    WorldObjectId m_nearbyEggs[SPIRIT_MAXNEARBYEGGS];
-    int m_numNearbyEggs;
-    float m_eggSearchTimer; // How often to re-search
+      WorldObjectId m_nearbyEggs[SPIRIT_MAXNEARBYEGGS];
+      int m_numNearbyEggs;
+      float m_eggSearchTimer; // How often to re-search
 
-  protected:
-    float m_timeSync;
+    protected:
+      float m_timeSync;
 
-    // Spirit's constructor does not assign this, so it relied on Vector3's
-    // zeroing default constructor. XMFLOAT3 has none — failure mode 5.
-    DirectX::XMFLOAT3 m_hover{0.0f, 0.0f, 0.0f};
-    float m_positionOffset; // Used to make them float around a bit
-    float m_xaxisRate;
-    float m_yaxisRate;
-    float m_zaxisRate;
+      // Spirit's constructor does not assign this, so it relied on Vector3's
+      // zeroing default constructor. XMFLOAT3 has none — failure mode 5.
+      DirectX::XMFLOAT3 m_hover{0.0f, 0.0f, 0.0f};
+      float m_positionOffset; // Used to make them float around a bit
+      float m_xaxisRate;
+      float m_yaxisRate;
+      float m_zaxisRate;
 
-    bool m_pushFromBuildings;
+      bool m_pushFromBuildings;
 
-  public:
-    Spirit();
-    ~Spirit();
+    public:
+      Spirit();
+      ~Spirit();
 
-    void Begin();
-    bool Advance();
-    void Render(float predictionTime);
+      void Begin();
+      bool Advance();
+      void Render(float predictionTime);
 
-    void CollectorArrives(); // A collector is above me and picks me up
-    void CollectorDrops();   // My collector has dropped me
+      void CollectorArrives(); // A collector is above me and picks me up
+      void CollectorDrops();   // My collector has dropped me
 
-    void InEgg();        // I have been used to fertilise an egg
-    void EggDestroyed(); // My egg was destroyed, i'm now free
+      void InEgg();        // I have been used to fertilise an egg
+      void EggDestroyed(); // My egg was destroyed, i'm now free
 
-    void SkipStage();
-    void AddToGlobalWorld();
+      void SkipStage();
+      void AddToGlobalWorld();
 
-    void PushFromBuildings();
+      void PushFromBuildings();
 
-    int NumNearbyEggs();
-    WorldObjectId* GetNearbyEggs();
-};
+      int NumNearbyEggs();
+      WorldObjectId* GetNearbyEggs();
+  };
+} // namespace Species

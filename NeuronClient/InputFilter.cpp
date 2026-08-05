@@ -3,19 +3,13 @@
 #include "InputFilter.h"
 
 
-void InputFilter::setName( std::string const &name )
+namespace Neuron
 {
-	m_name = name;
-}
+  void InputFilter::setName(std::string const& name) { m_name = name; }
 
 
-const std::string &InputFilter::getName() const
-{
-	return m_name;
-}
+  const std::string& InputFilter::getName() const { return m_name; }
 
 
-std::ostream &operator<<( std::ostream &stream, InputFilter const &filter )
-{
-	return stream << "InputFilter (" << filter.getName() << ")";
-}
+  std::ostream& operator<<(std::ostream& stream, InputFilter const& filter) { return stream << "InputFilter (" << filter.getName() << ")"; }
+} // namespace Neuron

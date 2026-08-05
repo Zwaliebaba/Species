@@ -6,7 +6,7 @@
 #pragma once
 
 
-void InvertMatrix( double *matrixIn, double *matrixOut, int rows, int cols );
-
-
-
+namespace Neuron
+{
+  void InvertMatrix(double* matrixIn, double* matrixOut, int rows, int cols);
+} // namespace Neuron

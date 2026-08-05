@@ -4,52 +4,57 @@
 
 #include "Building.h"
 
-
-class Shape;
-class ShapeFragment;
-class ShapeMarker;
-
-
-class FenceSwitch : public Building
+namespace Neuron
 {
-  protected:
-    int m_linkedBuildingId;
-    int m_linkedBuildingId2; // optional second link for fence toggling
+  class Shape;
+  class ShapeFragment;
+  class ShapeMarker;
+} // namespace Neuron
 
-    bool m_switchable;
 
-    float m_timer; // no fences changes will be made until this timer counts to 0 for the first time
+namespace Species
+{
+  class FenceSwitch : public Building
+  {
+    protected:
+      int m_linkedBuildingId;
+      int m_linkedBuildingId2; // optional second link for fence toggling
 
-    ShapeMarker* m_connectionLocation;
+      bool m_switchable;
 
-  public:
-    std::string m_script;
-    bool m_locked;
-    int m_lockable;
-    int m_switchValue;
+      float m_timer; // no fences changes will be made until this timer counts to 0 for the first time
 
-  public:
-    FenceSwitch();
+      ShapeMarker* m_connectionLocation;
 
-    void Initialise(Building* _template);
-    void SetDetail(int _detail);
+    public:
+      std::string m_script;
+      bool m_locked;
+      int m_lockable;
+      int m_switchValue;
 
-    bool Advance();
-    void Render(float predictionTime);
-    void RenderAlphas(float predictionTime);
-    void RenderLink();
-    void RenderLights();
-    void RenderConnection(DirectX::XMFLOAT3 _targetPos, bool _active);
+    public:
+      FenceSwitch();
 
-    void Switch();
+      void Initialise(Building* _template);
+      void SetDetail(int _detail);
 
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
+      bool Advance();
+      void Render(float predictionTime);
+      void RenderAlphas(float predictionTime);
+      void RenderLink();
+      void RenderLights();
+      void RenderConnection(DirectX::XMFLOAT3 _targetPos, bool _active);
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* out);
+      void Switch();
 
-    DirectX::XMFLOAT3 GetConnectionLocation();
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
 
-    bool IsInView();
-};
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* out);
+
+      DirectX::XMFLOAT3 GetConnectionLocation();
+
+      bool IsInView();
+  };
+} // namespace Species

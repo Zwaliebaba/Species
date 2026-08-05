@@ -5,16 +5,17 @@
 #include "SpeciesWindow.h"
 
 
-class MainEditWindow : public SpeciesWindow
+namespace Species
 {
-public:
-	SpeciesWindow *m_currentEditWindow;
+  class MainEditWindow : public SpeciesWindow
+  {
+    public:
+      SpeciesWindow* m_currentEditWindow;
 
-	MainEditWindow( char const *name );
+      MainEditWindow(char const* name);
 
-	void Create();
-};
+      void Create();
+  };
 
 #endif // LOCATION_EDITOR
-
-
+} // namespace Species

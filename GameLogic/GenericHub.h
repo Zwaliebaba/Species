@@ -8,114 +8,122 @@
 #include "Building.h"
 
 
-class FileWriter;
 
 
 // ****************************************************************************
 // Class DynamicBase
 // ****************************************************************************
 
-class DynamicBase : public Building
+namespace Neuron
 {
-  protected:
-    int m_buildingLink;
-
-  public:
-    std::string m_shapeName;
-
-  public:
-    DynamicBase();
-
-    void Initialise(Building* _template);
-    bool Advance();
-    void Render(float _predictionTime);
-
-    void ListSoundEvents(std::vector<const char*>* _list);
-
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
-
-    DirectX::XMFLOAT3 GetPowerLocation();
-
-    void SetShapeName(std::string_view _shapeName);
-};
+  class FileWriter;
+} // namespace Neuron
 
 
-// ****************************************************************************
-// Class DynamicHub
-// ****************************************************************************
-
-class DynamicHub : public DynamicBase
+namespace Species
 {
-  protected:
-    bool m_enabled;      // set to true once all connected nodes are active
-    bool m_reprogrammed; // set to true if a connected Control Tower is reprogrammed, or no tower is connected
+  class DynamicBase : public Building
+  {
+    protected:
+      int m_buildingLink;
 
-    int m_numLinks;    // the number of Nodes linked to this Hub
-    int m_activeLinks; // the number of active nodes linked to this hub
+    public:
+      std::string m_shapeName;
 
-  public:
-    int m_currentScore;   // the current number of 'points' this hub has recieved from connected Nodes
-    int m_requiredScore;  // the required number of 'points' before this Hub will activate
-    int m_minActiveLinks; // if scores mode is being used, this is the mimimum number of buildings required in addition to the score requirement
+    public:
+      DynamicBase();
 
-  public:
-    DynamicHub();
+      void Initialise(Building* _template);
+      bool Advance();
+      void Render(float _predictionTime);
 
-    void Initialise(Building* _template);
+      void ListSoundEvents(std::vector<const char*>* _list);
 
-    void ReprogramComplete();
-    char const* GetObjectiveCounter();
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
 
-    void ListSoundEvents(std::vector<const char*>* _list);
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
 
-    bool Advance();
-    void Render(float _predictionTime);
+      DirectX::XMFLOAT3 GetPowerLocation();
 
-    void ActivateLink();
-    void DeactivateLink();
-
-    bool ChangeScore(int _points);
-
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-
-    int PointsPerHub(); // the number of points each node supplies if there is a minimum active node limit
-};
+      void SetShapeName(std::string_view _shapeName);
+  };
 
 
-// ****************************************************************************
-// Class DynamicNode
-// ****************************************************************************
+  // ****************************************************************************
+  // Class DynamicHub
+  // ****************************************************************************
 
-class DynamicNode : public DynamicBase
-{
-  protected:
-    bool m_operating;
+  class DynamicHub : public DynamicBase
+  {
+    protected:
+      bool m_enabled;      // set to true once all connected nodes are active
+      bool m_reprogrammed; // set to true if a connected Control Tower is reprogrammed, or no tower is connected
 
-  public:
-    int m_scoreValue; // the number of points that will be added to the connected hubs score every second, if this Node is active
-    float m_scoreTimer;
-    int m_scoreSupplied; // the number of points this node has already given the hub
+      int m_numLinks;    // the number of Nodes linked to this Hub
+      int m_activeLinks; // the number of active nodes linked to this hub
 
-  public:
-    DynamicNode();
+    public:
+      int m_currentScore;   // the current number of 'points' this hub has recieved from connected Nodes
+      int m_requiredScore;  // the required number of 'points' before this Hub will activate
+      int m_minActiveLinks; // if scores mode is being used, this is the mimimum number of buildings required in addition to the score requirement
+
+    public:
+      DynamicHub();
+
+      void Initialise(Building* _template);
+
+      void ReprogramComplete();
+      char const* GetObjectiveCounter();
+
+      void ListSoundEvents(std::vector<const char*>* _list);
+
+      bool Advance();
+      void Render(float _predictionTime);
+
+      void ActivateLink();
+      void DeactivateLink();
+
+      bool ChangeScore(int _points);
+
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
+
+      int PointsPerHub(); // the number of points each node supplies if there is a minimum active node limit
+  };
 
 
-    void Initialise(Building* _template);
-    bool Advance();
+  // ****************************************************************************
+  // Class DynamicNode
+  // ****************************************************************************
 
-    void Render(float _predictionTime);
-    void RenderPorts();
-    void RenderAlphas(float _predictionTime);
+  class DynamicNode : public DynamicBase
+  {
+    protected:
+      bool m_operating;
 
-    void ListSoundEvents(std::vector<const char*>* _list);
+    public:
+      int m_scoreValue; // the number of points that will be added to the connected hubs score every second, if this Node is active
+      float m_scoreTimer;
+      int m_scoreSupplied; // the number of points this node has already given the hub
 
-    void ReprogramComplete();
+    public:
+      DynamicNode();
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-};
+
+      void Initialise(Building* _template);
+      bool Advance();
+
+      void Render(float _predictionTime);
+      void RenderPorts();
+      void RenderAlphas(float _predictionTime);
+
+      void ListSoundEvents(std::vector<const char*>* _list);
+
+      void ReprogramComplete();
+
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
+  };
+} // namespace Species

@@ -5,191 +5,194 @@
 #include "Building.h"
 
 
-class FuelBuilding : public Building
+namespace Species
 {
-  protected:
-    ShapeMarker* m_fuelMarker;
-    static Shape* s_fuelPipe;
+  class FuelBuilding : public Building
+  {
+    protected:
+      ShapeMarker* m_fuelMarker;
+      static Shape* s_fuelPipe;
 
-  public:
-    int m_fuelLink;
-    float m_currentLevel;
+    public:
+      int m_fuelLink;
+      float m_currentLevel;
 
-  public:
-    FuelBuilding();
+    public:
+      FuelBuilding();
 
-    void Initialise(Building* _template);
+      void Initialise(Building* _template);
 
-    virtual void ProvideFuel(float _level);
+      virtual void ProvideFuel(float _level);
 
-    DirectX::XMFLOAT3 GetFuelPosition();
+      DirectX::XMFLOAT3 GetFuelPosition();
 
-    FuelBuilding* GetLinkedBuilding();
+      FuelBuilding* GetLinkedBuilding();
 
-    bool Advance();
+      bool Advance();
 
-    bool IsInView();
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
+      bool IsInView();
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
 
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
 
-    void Destroy(float _intensity);
-};
-
-
-// ============================================================================
-
-
-class FuelGenerator : public FuelBuilding
-{
-  protected:
-    Shape* m_pump;
-    ShapeMarker* m_pumpTip;
-    float m_pumpMovement;
-    float m_previousPumpPos;
-
-    DirectX::XMFLOAT3 GetPumpPos();
-
-  public:
-    float m_surges;
-
-  public:
-    FuelGenerator();
-
-    void ProvideSurge();
-
-    bool Advance();
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
-
-    void ListSoundEvents(std::vector<const char*>* _list);
-
-    char const* GetObjectiveCounter();
-};
+      void Destroy(float _intensity);
+  };
 
 
-// ============================================================================
+  // ============================================================================
 
 
-class FuelPipe : public FuelBuilding
-{
-  public:
-    FuelPipe();
+  class FuelGenerator : public FuelBuilding
+  {
+    protected:
+      Shape* m_pump;
+      ShapeMarker* m_pumpTip;
+      float m_pumpMovement;
+      float m_previousPumpPos;
 
-    bool Advance();
+      DirectX::XMFLOAT3 GetPumpPos();
 
-    void ListSoundEvents(std::vector<const char*>* _list);
-};
+    public:
+      float m_surges;
 
+    public:
+      FuelGenerator();
 
-// ============================================================================
+      void ProvideSurge();
 
+      bool Advance();
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
 
-class FuelStation : public FuelBuilding
-{
-  protected:
-    ShapeMarker* m_entrance;
+      void ListSoundEvents(std::vector<const char*>* _list);
 
-  public:
-    FuelStation();
-
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
-
-    DirectX::XMFLOAT3 GetEntrance();
-
-    bool Advance();
-    bool IsLoading();
-    bool BoardRocket(WorldObjectId id);
-
-    void ListSoundEvents(std::vector<const char*>* _list);
-
-    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos);
-};
+      char const* GetObjectiveCounter();
+  };
 
 
-// ============================================================================
+  // ============================================================================
 
 
-class EscapeRocket : public FuelBuilding
-{
-  protected:
-    ShapeMarker* m_booster;
-    ShapeMarker* m_window[3];
-    Shape* m_rocketLowRes;
-    float m_shadowTimer;
-    float m_cameraShake;
+  class FuelPipe : public FuelBuilding
+  {
+    public:
+      FuelPipe();
 
-    // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
-    // not, and EscapeRocket's constructor never names m_vel. Render reads it on
-    // the frame before AdvanceFlight first writes it.
-    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
+      bool Advance();
 
-  public:
-    enum
-    {
-      StateRefueling,
-      StateLoading,
-      StateIgnition,
-      StateReady,
-      StateCountdown,
-      StateExploding,
-      StateFlight,
-      NumStates
-    };
+      void ListSoundEvents(std::vector<const char*>* _list);
+  };
 
-    int m_state;
-    float m_fuel;
-    int m_pipeCount;
-    int m_passengers;
-    float m_countdown;
-    float m_damage;
-    int m_spawnBuildingId;
-    bool m_spawnCompleted;
 
-  protected:
-    void Refuel();
-    void SetupSpectacle();
-    void SetupAttackers();
+  // ============================================================================
 
-    void AdvanceRefueling();
-    void AdvanceLoading();
-    void AdvanceIgnition();
-    void AdvanceReady();
-    void AdvanceCountdown();
-    void AdvanceFlight();
-    void AdvanceExploding();
 
-    void SetupSounds();
+  class FuelStation : public FuelBuilding
+  {
+    protected:
+      ShapeMarker* m_entrance;
 
-  public:
-    EscapeRocket();
+    public:
+      FuelStation();
 
-    void Initialise(Building* _template);
-    bool Advance();
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
 
-    void ProvideFuel(float _level);
-    bool SafeToLaunch();
-    bool BoardRocket(WorldObjectId _id);
-    void Damage(float _damage);
+      DirectX::XMFLOAT3 GetEntrance();
 
-    bool IsSpectacle();
-    bool IsInView();
+      bool Advance();
+      bool IsLoading();
+      bool BoardRocket(WorldObjectId id);
 
-    void Render(float _predictionTime);
-    void RenderAlphas(float _predictionTime);
+      void ListSoundEvents(std::vector<const char*>* _list);
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
+      bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos);
+  };
 
-    char const* GetObjectiveCounter();
 
-    void ListSoundEvents(std::vector<const char*>* _list);
+  // ============================================================================
 
-    static int GetStateId(char* _state);
-};
+
+  class EscapeRocket : public FuelBuilding
+  {
+    protected:
+      ShapeMarker* m_booster;
+      ShapeMarker* m_window[3];
+      Shape* m_rocketLowRes;
+      float m_shadowTimer;
+      float m_cameraShake;
+
+      // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
+      // not, and EscapeRocket's constructor never names m_vel. Render reads it on
+      // the frame before AdvanceFlight first writes it.
+      DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
+
+    public:
+      enum
+      {
+        StateRefueling,
+        StateLoading,
+        StateIgnition,
+        StateReady,
+        StateCountdown,
+        StateExploding,
+        StateFlight,
+        NumStates
+      };
+
+      int m_state;
+      float m_fuel;
+      int m_pipeCount;
+      int m_passengers;
+      float m_countdown;
+      float m_damage;
+      int m_spawnBuildingId;
+      bool m_spawnCompleted;
+
+    protected:
+      void Refuel();
+      void SetupSpectacle();
+      void SetupAttackers();
+
+      void AdvanceRefueling();
+      void AdvanceLoading();
+      void AdvanceIgnition();
+      void AdvanceReady();
+      void AdvanceCountdown();
+      void AdvanceFlight();
+      void AdvanceExploding();
+
+      void SetupSounds();
+
+    public:
+      EscapeRocket();
+
+      void Initialise(Building* _template);
+      bool Advance();
+
+      void ProvideFuel(float _level);
+      bool SafeToLaunch();
+      bool BoardRocket(WorldObjectId _id);
+      void Damage(float _damage);
+
+      bool IsSpectacle();
+      bool IsInView();
+
+      void Render(float _predictionTime);
+      void RenderAlphas(float _predictionTime);
+
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
+
+      char const* GetObjectiveCounter();
+
+      void ListSoundEvents(std::vector<const char*>* _list);
+
+      static int GetStateId(char* _state);
+  };
+} // namespace Species

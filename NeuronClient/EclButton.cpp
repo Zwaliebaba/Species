@@ -2,80 +2,59 @@
 #include "Eclipse.h"
 #include "EclButton.h"
 
-EclButton::EclButton()
-  : m_x(0),
-    m_y(0),
-    m_w(0),
-    m_h(0),
-    m_caption(nullptr),
-    m_tooltip(nullptr),
-    m_parent(nullptr)
+
+namespace Neuron
 {
-  strcpy(m_name, "New Button");
-  EclButton::SetTooltip(" ");
-}
-
-EclButton::~EclButton()
-{
-  // delete[], not delete. Both are allocated with new char[] in SetCaption and
-  // SetTooltip, and both of those release with delete[] correctly — only the
-  // destructor had the mismatched form. Freeing an array with plain delete is
-  // undefined behaviour that nothing diagnoses.
-  delete[] m_caption;
-  delete[] m_tooltip;
-}
-
-void EclButton::SetProperties(const char* _name, int _x, int _y, int _w, int _h, const char* _caption, const char* _tooltip)
-{
-  if (!_caption)
-    _caption = _name;
-
-  if (strlen(_name) > SIZE_ECLBUTTON_NAME) {}
-  else
-    strcpy(m_name, _name);
-
-  m_x = _x;
-  m_y = _y;
-  m_w = _w;
-  m_h = _h;
-  SetCaption(_caption);
-  SetTooltip(_tooltip);
-}
-
-void EclButton::SetCaption(const char* _caption)
-{
-  if (m_caption)
-    delete [] m_caption;
-  if (_caption)
+  EclButton::EclButton()
+    : m_name("New Button"),
+      m_x(0),
+      m_y(0),
+      m_w(0),
+      m_h(0),
+      m_tooltip(" "),
+      m_parent(nullptr)
   {
-    m_caption = new char [strlen(_caption) + 1];
-    strcpy(m_caption, _caption);
   }
-  else
+
+  // THE DESTRUCTOR IS GONE, and with it the last delete[] in this class.
+  // m_caption and m_tooltip were raw owning char* — the destructor freed them,
+  // and freeing an array with plain `delete` rather than `delete[]` had been a
+  // documented defect here. std::string owns them now, so ~EclButton is
+  // `= default` in the header and there is nothing to get wrong.
+
+  // _caption and _tooltip stay char const* rather than becoming string_view,
+  // because NULL is one of the values they take and means something: a null
+  // caption means "use the name", and a null tooltip means "empty". A
+  // string_view cannot carry that, and giving them defaults instead would
+  // change what SetProperties(name, ..., nullptr) does at 60 call sites.
+  void EclButton::SetProperties(std::string_view _name, int _x, int _y, int _w, int _h, char const* _caption, char const* _tooltip)
   {
-    m_caption = new char[1];
-    *m_caption = '\0';
+    // The old code REFUSED a name longer than SIZE_ECLBUTTON_NAME, leaving the
+    // button called "New Button" so that every lookup by the intended name
+    // missed. std::string simply holds it.
+    m_name = _name;
+
+    m_x = _x;
+    m_y = _y;
+    m_w = _w;
+    m_h = _h;
+    SetCaption(_caption ? std::string_view(_caption) : _name);
+    SetTooltip(_tooltip ? std::string_view(_tooltip) : std::string_view());
   }
-}
 
-void EclButton::SetTooltip(const char* _tooltip)
-{
-  if (!_tooltip)
-    _tooltip = "";
-  if (m_tooltip)
-    delete [] m_tooltip;
-  m_tooltip = new char [strlen(_tooltip) + 1];
-  strcpy(m_tooltip, _tooltip);
-}
+  void EclButton::SetCaption(std::string_view _caption) { m_caption = _caption; }
 
-void EclButton::SetParent(EclWindow* _parent) { m_parent = _parent; }
+  void EclButton::SetTooltip(std::string_view _tooltip) { m_tooltip = _tooltip; }
 
-void EclButton::Render(int realX, int realY, bool highlighted, bool clicked) {}
+  void EclButton::SetParent(EclWindow* _parent) { m_parent = _parent; }
 
-void EclButton::MouseUp() {}
+  void EclButton::Render(int realX, int realY, bool highlighted, bool clicked) {}
 
-void EclButton::MouseDown() {}
+  void EclButton::MouseUp() {}
 
-void EclButton::MouseMove() {}
+  void EclButton::MouseDown() {}
 
-void EclButton::Keypress(int keyCode, bool shift, bool ctrl, bool alt) {}
+  void EclButton::MouseMove() {}
+
+  void EclButton::Keypress(int keyCode, bool shift, bool ctrl, bool alt) {}
+} // namespace Neuron

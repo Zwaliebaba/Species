@@ -16,13 +16,16 @@ into a foundation an authoritative world server can be built on.
 | `NeuronCore/` | Sockets, threads, wire protocol, filesystem, assertions |
 | `NeuronClient/` | OpenGL renderer, sound, input, the Eclipse UI toolkit |
 | `NeuronServer/` | Authoritative simulation host — sequences client letters; no world yet |
-| `GameLogic/` | Entities, buildings, teams, unit behaviour |
+| `GameLogic/` | Entities, buildings, teams, unit behaviour, and the world model |
 | `Species/` | Client executable |
 | `Server/` | Headless server executable — ticks the host at 10 Hz |
 | `GameData/` | Levels, shapes, textures, sounds, scripts |
 | `Tests/` | One `<Name>Tests` project per library |
 
-~113,000 lines of C++23. No third-party dependencies — it links only against the
+Engine code is in `namespace Neuron`, game code in `namespace Species`. Includes
+point downward only, with no allowlist.
+
+~115,000 lines of C++23. No third-party dependencies — it links only against the
 operating system.
 
 ## Building

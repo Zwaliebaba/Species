@@ -4,12 +4,13 @@
 #include "SpeciesWindow.h"
 
 
-class NetworkWindow : public SpeciesWindow
+namespace Species
 {
-public:
-    NetworkWindow( char const *name );
+  class NetworkWindow : public SpeciesWindow
+  {
+    public:
+      NetworkWindow(char const* name);
 
-    void Render( bool hasFocus );
-};
-
-
+      void Render(bool hasFocus);
+  };
+} // namespace Species

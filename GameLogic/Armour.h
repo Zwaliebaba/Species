@@ -6,67 +6,74 @@
 #include "Entity.h"
 #include "Flag.h"
 
-class ShapeMarker;
-class Shape;
 
 #define ARMOUR_UNLOADPERIOD 0.1f
 
-
-class Armour : public Entity
+namespace Neuron
 {
-  protected:
-    ShapeMarker* m_markerEntrance;
-    ShapeMarker* m_markerFlag;
-    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
-    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 m_conversionPoint{0.0f, 0.0f, 0.0f};
-    float m_speed;
+  class ShapeMarker;
+  class Shape;
+} // namespace Neuron
 
-    enum
-    {
-      StateIdle,
-      StateUnloading,
-      StateLoading,
-    };
-    int m_numPassengers;
-    float m_previousUnloadTimer;
-    float m_newOrdersTimer;
 
-    Flag m_flag;
-    Flag m_deployFlag;
+namespace Species
+{
+  class Armour : public Entity
+  {
+    protected:
+      ShapeMarker* m_markerEntrance;
+      ShapeMarker* m_markerFlag;
+      // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+      DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 m_conversionPoint{0.0f, 0.0f, 0.0f};
+      float m_speed;
 
-  public:
-    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
-    int m_state;
+      enum
+      {
+        StateIdle,
+        StateUnloading,
+        StateLoading,
+      };
+      int m_numPassengers;
+      float m_previousUnloadTimer;
+      float m_newOrdersTimer;
 
-  public:
-    Armour();
-    ~Armour();
+      Flag m_flag;
+      Flag m_deployFlag;
 
-    void Begin();
-    bool Advance(Unit* _unit);
-    void Render(float _predictionTime);
+    public:
+      DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
+      int m_state;
 
-    void ChangeHealth(int _amount);
+    public:
+      Armour();
+      ~Armour();
 
-    void SetOrders(DirectX::XMFLOAT3 const& _orders);
-    void SetWayPoint(DirectX::XMFLOAT3 const& _wayPoint);
-    void SetConversionPoint(DirectX::XMFLOAT3 const& _conversionPoint);
-    void AdvanceToTargetPos();
-    void DetectCollisions();
-    void ConvertToGunTurret();
+      void Begin();
+      bool Advance(Unit* _unit);
+      void Render(float _predictionTime);
 
-    void SetDirectOrders(); // orders while in direct control mode - removes gun turret mode
+      void ChangeHealth(int _amount);
 
-    bool IsLoading();
-    bool IsUnloading();
-    void ToggleLoading();
-    void AddPassenger();
-    void RemovePassenger();
+      void SetOrders(DirectX::XMFLOAT3 const& _orders);
+      void SetWayPoint(DirectX::XMFLOAT3 const& _wayPoint);
+      void SetConversionPoint(DirectX::XMFLOAT3 const& _conversionPoint);
+      void AdvanceToTargetPos();
+      void DetectCollisions();
+      void ConvertToGunTurret();
 
-    int Capacity();
+      void SetDirectOrders(); // orders while in direct control mode - removes gun turret mode
 
-    void ListSoundEvents(std::vector<const char*>* _list);
+      bool IsLoading();
+      bool IsUnloading();
+      void ToggleLoading();
+      void AddPassenger();
+      void RemovePassenger();
 
-    void GetEntrance(DirectX::XMFLOAT3& _exitPos, DirectX::XMFLOAT3& _exitDir);
-};
+      int Capacity();
+
+      void ListSoundEvents(std::vector<const char*>* _list);
+
+      void GetEntrance(DirectX::XMFLOAT3& _exitPos, DirectX::XMFLOAT3& _exitDir);
+  };
+} // namespace Species

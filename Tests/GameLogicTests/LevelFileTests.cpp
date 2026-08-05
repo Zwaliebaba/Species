@@ -6,6 +6,11 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
+// GameLogic is in namespace Species since namespace-migration T4, and unlike
+// namespace Neuron it has no tree-wide using-directive to reach it by. A test
+// source is the right place for one: it is a .cpp, so nothing includes it.
+using namespace Species;
+
 // Only the default constructor is reachable from a test. The two-argument one
 // parses its map and mission files through g_resource and g_appCommands, both
 // of which the executable owns, so what it does with its arguments cannot be

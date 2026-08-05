@@ -20,4 +20,9 @@
 // velocity and TriggerOtherEvent is told its blueprint type separately — but
 // filling all four here is cheaper than remembering which is which, and
 // SoundSource.h records what each one is for.
-inline SoundSource SoundSourceOf(WorldObject const* _object) { return {_object->m_id, _object->m_type, _object->m_pos, _object->m_vel}; }
+
+
+namespace Species
+{
+  inline SoundSource SoundSourceOf(WorldObject const* _object) { return {_object->m_id, _object->m_type, _object->m_pos, _object->m_vel}; }
+} // namespace Species

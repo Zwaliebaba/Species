@@ -164,10 +164,11 @@ The buildings that move Spirits around:
 | **SliceWalker** | `NeuronCore/SliceWalker.h` | Hands out the index range to advance this slice. Ten slices are one server tick. Was a base class on `SliceDArray`; a sibling of the container now. |
 | **Legacy containers** | *deleted* | `LList`, `DArray`, `FastDArray`, `SliceDArray`, `BTree`, `HashTable`, `SortingHashTable`, `BoundedArray` and `AutoVector` were removed by containers-replaced/T16. `LList` was a linked list that often owned its elements (`EmptyAndDelete`); if you meet the name in a comment or an old commit, that is what it was. |
 | **Slice** | `NeuronCore/Globals.h:13` | `NUM_SLICES_PER_FRAME` = 10. Heavy simulation is spread across 10 slices per frame; `g_sliceNum` is the current one. |
-| **Sequence id** | `NeuronCore/Server.h` | The server's monotonic tick counter. Every broadcast carries one; clients apply them in order. |
+| **Sequence id** | `NeuronServer/Server.h` | The server's monotonic tick counter. Every broadcast carries one; clients apply them in order. |
 | **Sync value** | `Species/Main.cpp:252` | One-byte checksum of all entity positions and velocities, compared across clients to detect desync. |
 | **Shape / `.shp`** | `NeuronClient/Shape.*`, `GameData/Shapes/` | The model format. `ShapeMarker` names an attachment point on a model — buildings use them for spirit entrances, docks and exits. |
-| **`speciesRandom()`** | `NeuronCore/Random.cpp` | The single global LCG the simulation shares. Its call sequence is load-bearing. |
+| **`syncrand()`** | `NeuronCore/MathUtils.cpp` | The Mersenne Twister the SIMULATION draws from. Its call sequence is load-bearing: every client must make the same draws in the same order. `syncfrand` and `syncsfrand` are its float forms. |
+| **`speciesRandom()`** | `NeuronCore/Random.cpp` | An LCG over `holdrand`, for COSMETICS only — particles, render jitter, UI, sound. **Not** synchronised and cannot be made so: terrain and tree generation reseed it wholesale and sound consumes it at a client-dependent rate. `frand` and `sfrand` are its float forms and are the same stream. Drawing simulation state from it is the bug `determinism` T5 fixed in six places. |
 
 ---
 

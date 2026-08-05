@@ -4,21 +4,23 @@
 #include "SpeciesWindow.h"
 
 
-class PrefsGraphicsWindow : public SpeciesWindow
+namespace Species
 {
-public:
-    int     m_landscapeDetail;
-    int     m_waterDetail;
-    int     m_cloudDetail;
-    int     m_buildingDetail;
-    int     m_entityDetail;
-    int     m_pixelEffectRange;
+  class PrefsGraphicsWindow : public SpeciesWindow
+  {
+    public:
+      int m_landscapeDetail;
+      int m_waterDetail;
+      int m_cloudDetail;
+      int m_buildingDetail;
+      int m_entityDetail;
+      int m_pixelEffectRange;
 
-public:
-    PrefsGraphicsWindow();
-    ~PrefsGraphicsWindow();
+    public:
+      PrefsGraphicsWindow();
+      ~PrefsGraphicsWindow();
 
-    void Create();
-    void Render( bool _hasFocus );
-};
-
+      void Create();
+      void Render(bool _hasFocus);
+  };
+} // namespace Species

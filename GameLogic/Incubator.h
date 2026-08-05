@@ -6,54 +6,62 @@
 #include "Building.h"
 #include "Spirit.h"
 
-class ShapeMarker;
 
 #define INCUBATOR_PROCESSTIME 5.0f
 
-struct IncubatorIncoming
+namespace Neuron
 {
-    // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
-    // not. These are value-initialised into a vector, so nothing else would.
-    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
-    int m_entrance;
-    float m_alpha;
-};
+  class ShapeMarker;
+} // namespace Neuron
 
-class Incubator : public Building
+
+namespace Species
 {
-  protected:
-    FastSlotMap<Spirit> m_spirits;
-    ShapeMarker* m_spiritCentre;
-    ShapeMarker* m_exit;
-    ShapeMarker* m_dock;
-    ShapeMarker* m_spiritEntrance[3];
+  struct IncubatorIncoming
+  {
+      // Braced to zero: Vector3's default constructor did it and XMFLOAT3's does
+      // not. These are value-initialised into a vector, so nothing else would.
+      DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+      int m_entrance;
+      float m_alpha;
+  };
 
-    int m_troopType;
-    float m_timer;
+  class Incubator : public Building
+  {
+    protected:
+      FastSlotMap<Spirit> m_spirits;
+      ShapeMarker* m_spiritCentre;
+      ShapeMarker* m_exit;
+      ShapeMarker* m_dock;
+      ShapeMarker* m_spiritEntrance[3];
 
-    std::vector<IncubatorIncoming*> m_incoming;
+      int m_troopType;
+      float m_timer;
 
-  public:
-    int m_numStartingSpirits;
+      std::vector<IncubatorIncoming*> m_incoming;
 
-    Incubator();
-    ~Incubator() override;
+    public:
+      int m_numStartingSpirits;
 
-    void Initialise(Building* _template) override;
+      Incubator();
+      ~Incubator() override;
 
-    bool Advance() override;
-    void SpawnEntity();
-    void AddSpirit(Spirit* _spirit);
+      void Initialise(Building* _template) override;
 
-    void Render(float _predictionTime) override;
-    void RenderAlphas(float _predictionTime) override;
+      bool Advance() override;
+      void SpawnEntity();
+      void AddSpirit(Spirit* _spirit);
 
-    int NumSpiritsInside();
+      void Render(float _predictionTime) override;
+      void RenderAlphas(float _predictionTime) override;
 
-    void Read(TextReader* _in, bool _dynamic) override;
-    void Write(FileWriter* _out) override;
+      int NumSpiritsInside();
 
-    void GetDockPoint(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
+      void Read(TextReader* _in, bool _dynamic) override;
+      void Write(FileWriter* _out) override;
 
-    void ListSoundEvents(std::vector<const char*>* _list) override;
-};
+      void GetDockPoint(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
+
+      void ListSoundEvents(std::vector<const char*>* _list) override;
+  };
+} // namespace Species

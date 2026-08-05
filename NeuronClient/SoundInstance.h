@@ -4,12 +4,10 @@
 #include "SoundParameter.h"
 #include "WorldObjectId.h"
 
-class WorldObject;
-
-class SoundInstance;
-class SoundStreamDecoder;
-class DspEffect;
-class CachedSampleHandle;
+namespace Species
+{
+  class WorldObject;
+} // namespace Species
 
 
 // ============================================================================
@@ -17,166 +15,175 @@ class CachedSampleHandle;
 
 #define MAX_PARAMS 13
 
-class DspHandle
+
+namespace Neuron
 {
-  public:
-    int m_type; // enum'd in SoundLibrary3d
+  class SoundInstance;
+  class SoundStreamDecoder;
+  class DspEffect;
+  class CachedSampleHandle;
 
-    SoundParameter m_params[MAX_PARAMS];
-    SoundInstance* m_parent;
+  class DspHandle
+  {
+    public:
+      int m_type; // enum'd in SoundLibrary3d
 
-  public:
-    DspHandle();
+      SoundParameter m_params[MAX_PARAMS];
+      SoundInstance* m_parent;
 
-    void Copy(DspHandle* _copyMe);
-    void Initialise(SoundInstance* _parent);
-    void Advance();
-};
+    public:
+      DspHandle();
 
-
-// ============================================================================
-// class SoundInstanceId
-
-class SoundInstanceId
-{
-  protected:
-    static int m_nextUniqueId;
-
-  public:
-    SoundInstanceId();
-
-    int m_index;
-    int m_uniqueId;
-
-    void SetInvalid();
-
-    bool operator==(SoundInstanceId const& w) const;
-    SoundInstanceId const& operator=(SoundInstanceId const& w);
-
-    static int GenerateUniqueId();
-};
+      void Copy(DspHandle* _copyMe);
+      void Initialise(SoundInstance* _parent);
+      void Advance();
+  };
 
 
-// ============================================================================
-// class SoundInstance
+  // ============================================================================
+  // class SoundInstanceId
 
-class SoundInstance
-{
-  public:
-    enum // Position Types
-    {
-      Type2D,
-      Type3DStationary,
-      Type3DAttachedToObject,
-      TypeInEditor,
-      NumPositionTypes
-    };
+  class SoundInstanceId
+  {
+    protected:
+      static int m_nextUniqueId;
 
-    enum // Instance types
-    {
-      Polyphonic,
-      MonophonicRandom,
-      MonophonicNearest,
-      NumInstanceTypes
-    };
+    public:
+      SoundInstanceId();
 
-    enum // Loop Types
-    {
-      SinglePlay,
-      Looped,
-      LoopedADSR,
-      NumLoopTypes
-    };
+      int m_index;
+      int m_uniqueId;
 
-    enum // Source types
-    {
-      Sample,
-      SampleGroupRandom,
-      NumSourceTypes
-    };
+      void SetInvalid();
 
-    enum // ADSR State types
-    {
-      StateAttack,
-      StateDecay,
-      StateSustain,
-      StateRelease
-    };
+      bool operator==(SoundInstanceId const& w) const;
+      SoundInstanceId const& operator=(SoundInstanceId const& w);
 
-    SoundInstanceId m_id;
+      static int GenerateUniqueId();
+  };
 
-    char m_soundName[256];
-    int m_positionType;
-    int m_instanceType;
-    int m_loopType;
-    int m_sourceType;
 
-    int m_restartAttempts; // Used to give single play sounds more than one chance to start
+  // ============================================================================
+  // class SoundInstance
 
-    float m_minDistance;      // Distance (m) at which sound begins to attenuate
-    SoundParameter m_volume;  // Channel volume, logarithmic, 0.0f (silence) to 10.0f (full)
-    SoundParameter m_attack;  // ADSR
-    SoundParameter m_sustain; // ADSR
-    SoundParameter m_release; // ADSR
-    int m_adsrState;          // ADSR
-    float m_adsrTimer;        // ADSR
-    float m_channelVolume;    // m_volume after considering ADSR
-    float m_perceivedVolume;  // m_channelVolume after considering 3d location
+  class SoundInstance
+  {
+    public:
+      enum // Position Types
+      {
+        Type2D,
+        Type3DStationary,
+        Type3DAttachedToObject,
+        TypeInEditor,
+        NumPositionTypes
+      };
 
-    SoundParameter m_freq;
+      enum // Instance types
+      {
+        Polyphonic,
+        MonophonicRandom,
+        MonophonicNearest,
+        NumInstanceTypes
+      };
 
-    SoundParameter m_loopDelay;
-    float m_loopDelayTimer;
-    bool m_restartOccured;
+      enum // Loop Types
+      {
+        SinglePlay,
+        Looped,
+        LoopedADSR,
+        NumLoopTypes
+      };
 
-    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
-    std::vector<WorldObjectId*> m_objIds;
-    WorldObjectId m_objId; // The selected objId from the list
+      enum // Source types
+      {
+        Sample,
+        SampleGroupRandom,
+        NumSourceTypes
+      };
 
-    float m_calculatedPriority;
-    int m_channelIndex;
+      enum // ADSR State types
+      {
+        StateAttack,
+        StateDecay,
+        StateSustain,
+        StateRelease
+      };
 
-    CachedSampleHandle* m_cachedSampleHandle;
-    SoundInstance* m_parent; // The blueprint from which I was copied
+      SoundInstanceId m_id;
 
-    std::vector<DspHandle*> m_dspFX;
+      char m_soundName[256];
+      int m_positionType;
+      int m_instanceType;
+      int m_loopType;
+      int m_sourceType;
 
-    char* m_eventName;
+      int m_restartAttempts; // Used to give single play sounds more than one chance to start
 
-    void OpenStream(bool _keepCurrentStream); // Handles sound groups, file types etc
+      float m_minDistance;      // Distance (m) at which sound begins to attenuate
+      SoundParameter m_volume;  // Channel volume, logarithmic, 0.0f (silence) to 10.0f (full)
+      SoundParameter m_attack;  // ADSR
+      SoundParameter m_sustain; // ADSR
+      SoundParameter m_release; // ADSR
+      int m_adsrState;          // ADSR
+      float m_adsrTimer;        // ADSR
+      float m_channelVolume;    // m_volume after considering ADSR
+      float m_perceivedVolume;  // m_channelVolume after considering 3d location
 
-  public:
-    SoundInstance();
-    ~SoundInstance();
+      SoundParameter m_freq;
 
-    void SetSoundName(char const* _name);
-    void SetEventName(char const* _entityName, char const* _eventName);
+      SoundParameter m_loopDelay;
+      float m_loopDelayTimer;
+      bool m_restartOccured;
 
-    void Copy(SoundInstance* _copyMe);
-    bool StartPlaying(int _channelIndex);
-    bool IsPlaying();
-    bool Advance();                 // Only call me if we are actually playing
-    bool AdvanceLoop();             // true if loop phase is complete and we can write more samples
-    void BeginRelease(bool _final); // Enters Release phase of sound
-    void StopPlaying();             // Stops sound immediately (if playing)
+      DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
+      std::vector<WorldObjectId*> m_objIds;
+      WorldObjectId m_objId; // The selected objId from the list
 
-    int GetChannelIndex();
-    char* GetDescriptor();
+      float m_calculatedPriority;
+      int m_channelIndex;
 
-    bool Update3DPosition();         // Will only set the pos if required
-    bool UpdateChannelVolume();      // Takes into account ADSR. Returns true if done
-    void CalculatePerceivedVolume(); // Fills in m_perceivedVolume
+      CachedSampleHandle* m_cachedSampleHandle;
+      SoundInstance* m_parent; // The blueprint from which I was copied
 
-    void ForceParameter(SoundParameter& _param, float value); // Forces the instance values eg vel, pos
-    bool UpdateParameter(SoundParameter& _param);             // Returns true if any change occured
+      std::vector<DspHandle*> m_dspFX;
 
-    void PropagateBlueprints(); // Call this to update all looping sounds
+      char* m_eventName;
 
-    bool ResolveAttachedObject();
+      void OpenStream(bool _keepCurrentStream); // Handles sound groups, file types etc
 
-    static char const* GetPositionTypeName(int _type);
-    static char const* GetInstanceTypeName(int _type);
-    static char const* GetLoopTypeName(int _type);
-    static char const* GetSourceTypeName(int _type);
-};
+    public:
+      SoundInstance();
+      ~SoundInstance();
+
+      void SetSoundName(char const* _name);
+      void SetEventName(char const* _entityName, char const* _eventName);
+
+      void Copy(SoundInstance* _copyMe);
+      bool StartPlaying(int _channelIndex);
+      bool IsPlaying();
+      bool Advance();                 // Only call me if we are actually playing
+      bool AdvanceLoop();             // true if loop phase is complete and we can write more samples
+      void BeginRelease(bool _final); // Enters Release phase of sound
+      void StopPlaying();             // Stops sound immediately (if playing)
+
+      int GetChannelIndex();
+      char* GetDescriptor();
+
+      bool Update3DPosition();         // Will only set the pos if required
+      bool UpdateChannelVolume();      // Takes into account ADSR. Returns true if done
+      void CalculatePerceivedVolume(); // Fills in m_perceivedVolume
+
+      void ForceParameter(SoundParameter& _param, float value); // Forces the instance values eg vel, pos
+      bool UpdateParameter(SoundParameter& _param);             // Returns true if any change occured
+
+      void PropagateBlueprints(); // Call this to update all looping sounds
+
+      bool ResolveAttachedObject();
+
+      static char const* GetPositionTypeName(int _type);
+      static char const* GetInstanceTypeName(int _type);
+      static char const* GetLoopTypeName(int _type);
+      static char const* GetSourceTypeName(int _type);
+  };
+} // namespace Neuron

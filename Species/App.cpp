@@ -38,28 +38,32 @@
 // This lives here rather than in Preferences.cpp because reaching the file means
 // going through the resource system, which decrypts and strips comments — a
 // settings store in NeuronCore has no business knowing that exists.
-static void ApplyShippedPreferenceDefaults(PrefsManager& _prefs)
-{
-  if (!g_app || !g_resource)
-    return;
 
-  TextReader* reader = g_resource->GetTextReader("DefaultPreferences.txt");
-  if (reader && reader->IsOpen())
+
+namespace Species
+{
+  static void ApplyShippedPreferenceDefaults(PrefsManager& _prefs)
   {
-    while (reader->ReadLine())
+    if (!g_app || !g_resource)
+      return;
+
+    TextReader* reader = g_resource->GetTextReader("DefaultPreferences.txt");
+    if (reader && reader->IsOpen())
     {
-      _prefs.AddLine(reader->GetRestOfLine(), true);
+      while (reader->ReadLine())
+      {
+        _prefs.AddLine(reader->GetRestOfLine(), true);
+      }
     }
   }
-}
 
-// Drains the graphics pipeline so a render timing measures work that has actually
-// happened rather than work still queued. Installed on Profiler, which cannot
-// make the call itself without dragging OpenGL into NeuronCore and with it every
-// binary that links the foundation — including the headless server.
-static void ProfilerRenderSync() { glFinish(); }
+  // Drains the graphics pipeline so a render timing measures work that has actually
+  // happened rather than work still queued. Installed on Profiler, which cannot
+  // make the call itself without dragging OpenGL into NeuronCore and with it every
+  // binary that links the foundation — including the headless server.
+  static void ProfilerRenderSync() { glFinish(); }
 
-App* g_app = nullptr;
+  App* g_app = nullptr;
 
 #define GAMEDATAFILE "Game.txt"
 
@@ -465,3 +469,4 @@ void App::LoadCampaign()
   g_prefsManager->SetInt("CurrentGameMode", 1);
   g_prefsManager->Save();
 }
+} // namespace Species

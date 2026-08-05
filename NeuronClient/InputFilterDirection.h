@@ -6,19 +6,18 @@
 // into a set of four queriable buttons, which correspond
 // to up, down, left and right buttons
 
-class DirectionInputFilter : public InputFilterWithDelta  {
 
-public:
-	// Apply the filter to a set of InputDetails to get another InputDetails
-	virtual bool filter( InputDetailsList const &inDetails, InputFilterSpec const &filterSpec,
-	                     InputDetails &outDetails );
+namespace Neuron
+{
+  class DirectionInputFilter : public InputFilterWithDelta
+  {
+    public:
+      // Apply the filter to a set of InputDetails to get another InputDetails
+      virtual bool filter(InputDetailsList const& inDetails, InputFilterSpec const& filterSpec, InputDetails& outDetails);
 
-	// Return true if the tokens were successfully parsed into an InputFilterSpec
-	virtual bool parseFilterSpecification( InputSpecTokens const &tokens,
-	                                       InputFilterSpec &spec );
+      // Return true if the tokens were successfully parsed into an InputFilterSpec
+      virtual bool parseFilterSpecification(InputSpecTokens const& tokens, InputFilterSpec& spec);
 
-	virtual void calcDetails( InputFilterSpec const &spec, InputDetails &details );
-
-};
-
-
+      virtual void calcDetails(InputFilterSpec const& spec, InputDetails& details);
+  };
+} // namespace Neuron

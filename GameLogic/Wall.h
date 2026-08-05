@@ -4,19 +4,19 @@
 #include "Building.h"
 
 
-class Wall : public Building
+namespace Species
 {
-protected:
-    float m_damage;
-    float m_fallSpeed;
+  class Wall : public Building
+  {
+    protected:
+      float m_damage;
+      float m_fallSpeed;
 
-public:
-    Wall();
+    public:
+      Wall();
 
-    bool Advance    ();
-    void Damage     ( float _damage );
-    void Render     ( float _predictionTime );
-
-};
-
-
+      bool Advance();
+      void Damage(float _damage);
+      void Render(float _predictionTime);
+  };
+} // namespace Species

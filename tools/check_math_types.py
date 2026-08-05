@@ -234,6 +234,13 @@ def blank_block_comments(text):
     return "".join(out)
 
 
+# `namespace X`, `namespace X {` or an anonymous `namespace` -- the brace it
+# opens is scope, not a function body. See stale_after_rename's third
+# narrowing. Deliberately does not match `using namespace ...;`, which opens
+# nothing, nor `} // namespace X`, whose comment is stripped before this runs.
+NAMESPACE_OPEN = re.compile(r"^\s*namespace\b[^{}]*\{?\s*$")
+
+
 LOCAL_DECL = re.compile(
     r"^\s*(?:const\s+|static\s+)*(?:DirectX::)?"
     r"(?:XMFLOAT4X4|XMFLOAT3X3|XMFLOAT3|XMFLOAT2|XMVECTOR|XMMATRIX|Matrix34|Matrix33|Vector3|Vector2)\s+"
@@ -252,26 +259,44 @@ def stale_after_rename(rel, text):
     type that changed; this one is about a name that moved, and it is the only
     failure mode here the compiler was catching alone.
 
-    Two narrowings, both measured against the real bug rather than guessed:
-    a line that itself declares the name is not a use of the later one, and a
+    THREE narrowings, all measured against the real bug rather than guessed:
+    a line that itself declares the name is not a use of the later one; a
     name declared TWICE in a body is two variables in two scopes, so it is
-    skipped -- the same contended-name discipline as everywhere else. With
-    both, the tree reports the Triffid bug and nothing else; with neither, four
-    correct lines are accused.
+    skipped -- the same contended-name discipline as everywhere else; and a
+    NAMESPACE BLOCK IS NOT A FUNCTION BODY. With all three, the tree reports
+    the Triffid bug and nothing else; without the first two, four correct
+    lines are accused.
+
+    The third was added by namespace-migration T2 and is the same shape as the
+    other two. `namespace Neuron {` opens a brace at depth zero, so a wrapped
+    file used to read as ONE body containing every function in it -- and then
+    a parameter named `end` in one function and a local named `end` in another
+    look like a use forty lines above its declaration. DebugRender.cpp was the
+    first file to hit it and every file this plan touches would have followed.
+    Braces are classified as they open now, and only the code ones nest a
+    body.
     """
     problems = []
     lines = text.splitlines()
-    depth = 0
+    stack = []          # one entry per open brace: "namespace" or "code"
+    pending_namespace = False
     body = None
     for number, raw in enumerate(lines, 1):
         line = strip_comment(raw)
-        opens, closes = line.count("{"), line.count("}")
-        if depth == 0 and opens and body is None:
+        if NAMESPACE_OPEN.match(line):
+            pending_namespace = True
+        code_depth_before = stack.count("code")
+        if code_depth_before == 0 and "{" in line and body is None and not pending_namespace:
             body = []
         if body is not None:
             body.append((number, line))
-        depth += opens - closes
-        if body is None or depth != 0:
+        for character in line:
+            if character == "{":
+                stack.append("namespace" if pending_namespace else "code")
+                pending_namespace = False
+            elif character == "}" and stack:
+                stack.pop()
+        if body is None or stack.count("code") != 0:
             continue
 
         declared = {}

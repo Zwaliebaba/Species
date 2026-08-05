@@ -3,7 +3,11 @@
 #include "InputFilterSpec.h"
 
 
-unsigned long newFilterSpecID() {
-	static unsigned long nextID = 0;
-	return nextID++;
-}
+namespace Neuron
+{
+  unsigned long newFilterSpecID()
+  {
+    static unsigned long nextID = 0;
+    return nextID++;
+  }
+} // namespace Neuron

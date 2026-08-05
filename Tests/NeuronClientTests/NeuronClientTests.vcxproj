@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ControlBindingsTests.cpp" />
     <ClCompile Include="FileWriterTests.cpp" />
     <ClCompile Include="FilesysUtilsTests.cpp" />
     <ClCompile Include="ShapeMarkerTests.cpp" />

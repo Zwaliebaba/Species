@@ -6,16 +6,16 @@
 #include "GlobalWorld.h"
 
 
-
-class Library : public Building
+namespace Species
 {
-public:
-    bool m_scrollSpawned[GlobalResearch::NumResearchItems];
+  class Library : public Building
+  {
+    public:
+      bool m_scrollSpawned[GlobalResearch::NumResearchItems];
 
-public:
-    Library();
+    public:
+      Library();
 
-    bool Advance();
-};
-
-
+      bool Advance();
+  };
+} // namespace Species

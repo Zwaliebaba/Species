@@ -11,102 +11,106 @@
 #define VIRII_TAILLENGTH 175.0f
 
 
-class ViriiHistory;
 
 //*****************************************************************************
 // Class ViriiUnit
 //*****************************************************************************
 
 
-class ViriiUnit : public Unit
+namespace Species
 {
-  public:
-    bool m_enemiesFound;
-    bool m_cameraClose;
+  class ViriiHistory;
 
-  public:
-    ViriiUnit(int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos);
+  class ViriiUnit : public Unit
+  {
+    public:
+      bool m_enemiesFound;
+      bool m_cameraClose;
 
-    bool Advance(int _slice);
-    void Render(float _predictionTime);
-};
+    public:
+      ViriiUnit(int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos);
 
-
-//*****************************************************************************
-// Class Virii
-//*****************************************************************************
-
-class Virii : public Entity
-{
-  public:
-    enum
-    {
-      StateIdle,
-      StateAttacking,
-      StateToSpirit,
-      StateToEgg
-    };
-    int m_state;
-
-    float m_hoverHeight;
-    float m_retargetTimer;
-    WorldObjectId m_enemyId;
-    WorldObjectId m_eggId;
-    int m_spiritId;
-    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
-    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
-    float m_historyTimer;
-
-    DirectX::XMFLOAT3 m_prevPos{0.0f, 0.0f, 0.0f};
-    float m_prevPosTimer;
-
-  protected:
-    bool SearchForEnemies();
-    bool SearchForSpirits();
-    bool SearchForEggs();
-    bool SearchForIdleDirection();
-
-    WorldObjectId FindNearbyEgg(int _spiritId, float _autoAccept = 99999.9f);
-    WorldObjectId FindNearbyEgg(DirectX::XMFLOAT3 const& _pos);
-
-    bool AdvanceToTargetPos(DirectX::XMFLOAT3 const& _pos); // returns have-I-Arrived?
-    void RecordHistoryPosition(bool _required);             // if !_required this is simply to make it smoother
-    DirectX::XMFLOAT3 AdvanceDeadPositionVector(int _index, DirectX::XMFLOAT3 const& _pos, float _time);
-
-    std::vector<std::unique_ptr<ViriiHistory>> m_positionHistory;
-
-  public:
-    Virii();
-    ~Virii();
-
-    bool Advance(Unit* _unit);
-    bool AdvanceIdle();
-    bool AdvanceAttacking();
-    bool AdvanceToSpirit();
-    bool AdvanceToEgg();
-    bool AdvanceDead();
-
-    bool IsInView();
-
-    void Render(float predictionTime, int teamId, int _detail);
-
-    void ListSoundEvents(std::vector<const char*>* _list);
-};
+      bool Advance(int _slice);
+      void Render(float _predictionTime);
+  };
 
 
-//*****************************************************************************
-// Class ViriiHistory
-//*****************************************************************************
+  //*****************************************************************************
+  // Class Virii
+  //*****************************************************************************
 
-class ViriiHistory
-{
-  public:
-    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
-    // not, and ViriiHistory is filled in by assignment after construction.
-    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};      // Position in world
-    DirectX::XMFLOAT3 m_right{0.0f, 0.0f, 0.0f};    // Right vector (front is to next point, up is land normal)
-    DirectX::XMFLOAT3 m_glowDiff{0.0f, 0.0f, 0.0f}; // Diff to previous history point, sized for glow effect
-    float m_distance;                               // Distance to previous history point
-    bool m_required;                                // True means this is an absolute history position (eg direction change)
-                                                    // false means its just to smooth out the path (eg height change)
-};
+  class Virii : public Entity
+  {
+    public:
+      enum
+      {
+        StateIdle,
+        StateAttacking,
+        StateToSpirit,
+        StateToEgg
+      };
+      int m_state;
+
+      float m_hoverHeight;
+      float m_retargetTimer;
+      WorldObjectId m_enemyId;
+      WorldObjectId m_eggId;
+      int m_spiritId;
+      // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+      DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
+      float m_historyTimer;
+
+      DirectX::XMFLOAT3 m_prevPos{0.0f, 0.0f, 0.0f};
+      float m_prevPosTimer;
+
+    protected:
+      bool SearchForEnemies();
+      bool SearchForSpirits();
+      bool SearchForEggs();
+      bool SearchForIdleDirection();
+
+      WorldObjectId FindNearbyEgg(int _spiritId, float _autoAccept = 99999.9f);
+      WorldObjectId FindNearbyEgg(DirectX::XMFLOAT3 const& _pos);
+
+      bool AdvanceToTargetPos(DirectX::XMFLOAT3 const& _pos); // returns have-I-Arrived?
+      void RecordHistoryPosition(bool _required);             // if !_required this is simply to make it smoother
+      DirectX::XMFLOAT3 AdvanceDeadPositionVector(int _index, DirectX::XMFLOAT3 const& _pos, float _time);
+
+      std::vector<std::unique_ptr<ViriiHistory>> m_positionHistory;
+
+    public:
+      Virii();
+      ~Virii();
+
+      bool Advance(Unit* _unit);
+      bool AdvanceIdle();
+      bool AdvanceAttacking();
+      bool AdvanceToSpirit();
+      bool AdvanceToEgg();
+      bool AdvanceDead();
+
+      bool IsInView();
+
+      void Render(float predictionTime, int teamId, int _detail);
+
+      void ListSoundEvents(std::vector<const char*>* _list);
+  };
+
+
+  //*****************************************************************************
+  // Class ViriiHistory
+  //*****************************************************************************
+
+  class ViriiHistory
+  {
+    public:
+      // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+      // not, and ViriiHistory is filled in by assignment after construction.
+      DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};      // Position in world
+      DirectX::XMFLOAT3 m_right{0.0f, 0.0f, 0.0f};    // Right vector (front is to next point, up is land normal)
+      DirectX::XMFLOAT3 m_glowDiff{0.0f, 0.0f, 0.0f}; // Diff to previous history point, sized for glow effect
+      float m_distance;                               // Distance to previous history point
+      bool m_required;                                // True means this is an absolute history position (eg direction change)
+                                                      // false means its just to smooth out the path (eg height change)
+  };
+} // namespace Species

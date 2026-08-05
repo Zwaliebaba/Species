@@ -6,49 +6,52 @@
 #define BRIDGE_TRANSPORTSPEED 50.0f
 
 
-class Bridge : public Teleport
+namespace Species
 {
-  public:
-    enum
-    {
-      BridgeTypeEnd,
-      BridgeTypeTower,
-      NumBridgeTypes
-    };
-    int m_bridgeType;
-    int m_nextBridgeId;
-    float m_status; // Construction status, 0=not started, 100=finished, < 0.0f = shutdown
+  class Bridge : public Teleport
+  {
+    public:
+      enum
+      {
+        BridgeTypeEnd,
+        BridgeTypeTower,
+        NumBridgeTypes
+      };
+      int m_bridgeType;
+      int m_nextBridgeId;
+      float m_status; // Construction status, 0=not started, 100=finished, < 0.0f = shutdown
 
-  protected:
-    Shape* m_shapes[NumBridgeTypes];
-    ShapeMarker* m_signal;
+    protected:
+      Shape* m_shapes[NumBridgeTypes];
+      ShapeMarker* m_signal;
 
-    bool m_beingOperated;
+      bool m_beingOperated;
 
-  public:
-    Bridge();
+    public:
+      Bridge();
 
-    void Initialise(Building* _template);
-    void SetBridgeType(int _type);
+      void Initialise(Building* _template);
+      void SetBridgeType(int _type);
 
-    void Render(float predictionTime);
-    void RenderAlphas(float predictionTime);
-    bool Advance();
+      void Render(float predictionTime);
+      void RenderAlphas(float predictionTime);
+      bool Advance();
 
-    bool GetAvailablePosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front); // Finds place for engineer
-    void BeginOperation();
-    void EndOperation();
+      bool GetAvailablePosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front); // Finds place for engineer
+      void BeginOperation();
+      void EndOperation();
 
-    bool ReadyToSend();
-    DirectX::XMFLOAT3 GetStartPoint();
-    DirectX::XMFLOAT3 GetEndPoint();
-    bool GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
+      bool ReadyToSend();
+      DirectX::XMFLOAT3 GetStartPoint();
+      DirectX::XMFLOAT3 GetEndPoint();
+      bool GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front);
 
-    bool UpdateEntityInTransit(Entity* _entity);
+      bool UpdateEntityInTransit(Entity* _entity);
 
-    int GetBuildingLink();
-    void SetBuildingLink(int _buildingId);
+      int GetBuildingLink();
+      void SetBuildingLink(int _buildingId);
 
-    void Read(TextReader* _in, bool _dynamic);
-    void Write(FileWriter* _out);
-};
+      void Read(TextReader* _in, bool _dynamic);
+      void Write(FileWriter* _out);
+  };
+} // namespace Species

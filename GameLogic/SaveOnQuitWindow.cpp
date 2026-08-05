@@ -10,48 +10,47 @@
 #include "AppState.h"
 
 
-class YesButton : public SpeciesButton
+namespace Species
 {
-    void MouseUp()
-    {
-		g_soundSystem->SaveBlueprints();
-		g_requestQuit = true;
-    }
-};
+  class YesButton : public SpeciesButton
+  {
+      void MouseUp()
+      {
+        g_soundSystem->SaveBlueprints();
+        g_requestQuit = true;
+      }
+  };
 
 
-class NoButton : public SpeciesButton
-{
-    void MouseUp()
-    {
-		g_requestQuit = true;
-		g_soundSystem->m_quitWithoutSave = true;
-    }
-};
+  class NoButton : public SpeciesButton
+  {
+      void MouseUp()
+      {
+        g_requestQuit = true;
+        g_soundSystem->m_quitWithoutSave = true;
+      }
+  };
 
 
-class CancelButton : public SpeciesButton
-{
-    void MouseUp()
-    {
-		EclRemoveWindow(LANGUAGEPHRASE("editor_savesettings"));
-    }
-};
+  class CancelButton : public SpeciesButton
+  {
+      void MouseUp() { EclRemoveWindow(LANGUAGEPHRASE("editor_savesettings")); }
+  };
 
 
-SaveOnQuitWindow::SaveOnQuitWindow( char const *_name )
-:   SpeciesWindow( _name )
-{
-	m_w = 200;
-	m_h = 100;
-	m_x = g_renderer->ScreenW()/2 - m_w/2;
-	m_y = g_renderer->ScreenH()/2 - m_h/2;
-}
+  SaveOnQuitWindow::SaveOnQuitWindow(char const* _name)
+    : SpeciesWindow(_name)
+  {
+    m_w = 200;
+    m_h = 100;
+    m_x = g_renderer->ScreenW() / 2 - m_w / 2;
+    m_y = g_renderer->ScreenH() / 2 - m_h / 2;
+  }
 
 
-void SaveOnQuitWindow::Create()
-{
-	SpeciesWindow::Create();
+  void SaveOnQuitWindow::Create()
+  {
+    SpeciesWindow::Create();
 
     SpeciesButton *button;
 	int width = 55;
@@ -70,7 +69,7 @@ void SaveOnQuitWindow::Create()
 	button = new CancelButton();
     button->SetShortProperties( "Cancel", x += pitch, y, width );
     RegisterButton( button );
-}
+  }
 
 
 void SaveOnQuitWindow::Render(bool _hasFocus)
@@ -80,3 +79,4 @@ void SaveOnQuitWindow::Render(bool _hasFocus)
 	g_editorFont.DrawText2D(m_x + 55, m_y + 38, DEF_FONT_SIZE, "Save changes to");
 	g_editorFont.DrawText2D(m_x + 55, m_y + 52, DEF_FONT_SIZE, "sounds.txt?");
 }
+} // namespace Species

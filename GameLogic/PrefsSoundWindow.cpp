@@ -24,152 +24,154 @@
 #define SOUND_MEMORY "SoundMemoryUsage"
 
 
-class RestartSoundButton : public SpeciesButton
+namespace Species
 {
-  public:
-    void MouseUp()
-    {
-      PrefsSoundWindow* parent = (PrefsSoundWindow*)m_parent;
-
-      int oldMemoryUsage = g_prefsManager->GetInt(SOUND_MEMORY);
-
-      g_prefsManager->SetInt(SOUND_MIXFREQ, parent->m_mixFreq);
-      g_prefsManager->SetInt(SOUND_CHANNELS, parent->m_numChannels);
-      g_prefsManager->SetInt(SOUND_HW3D, parent->m_useHardware3D);
-      g_prefsManager->SetInt(SOUND_SWAPSTEREO, parent->m_swapStereo);
-      g_prefsManager->SetInt(SOUND_DSPEFFECTS, parent->m_dspEffects);
-      g_prefsManager->SetInt(SOUND_MEMORY, parent->m_memoryUsage);
-
-      if (parent->m_soundLib == 0)
-        g_prefsManager->SetString(SOUND_LIBRARY, "software");
-      else
-        g_prefsManager->SetString(SOUND_LIBRARY, "dsound");
-
-      g_soundSystem->RestartSoundLibrary();
-
-      if (parent->m_memoryUsage != oldMemoryUsage)
+  class RestartSoundButton : public SpeciesButton
+  {
+    public:
+      void MouseUp()
       {
-        //
-        // Clear out the sample cache
+        PrefsSoundWindow* parent = (PrefsSoundWindow*)m_parent;
 
-        g_cachedSampleManager.EmptyCache();
+        int oldMemoryUsage = g_prefsManager->GetInt(SOUND_MEMORY);
 
-        for (int i = 0; i < g_soundSystem->m_sounds.Size(); ++i)
+        g_prefsManager->SetInt(SOUND_MIXFREQ, parent->m_mixFreq);
+        g_prefsManager->SetInt(SOUND_CHANNELS, parent->m_numChannels);
+        g_prefsManager->SetInt(SOUND_HW3D, parent->m_useHardware3D);
+        g_prefsManager->SetInt(SOUND_SWAPSTEREO, parent->m_swapStereo);
+        g_prefsManager->SetInt(SOUND_DSPEFFECTS, parent->m_dspEffects);
+        g_prefsManager->SetInt(SOUND_MEMORY, parent->m_memoryUsage);
+
+        if (parent->m_soundLib == 0)
+          g_prefsManager->SetString(SOUND_LIBRARY, "software");
+        else
+          g_prefsManager->SetString(SOUND_LIBRARY, "dsound");
+
+        g_soundSystem->RestartSoundLibrary();
+
+        if (parent->m_memoryUsage != oldMemoryUsage)
         {
-          if (g_soundSystem->m_sounds.ValidIndex(i))
+          //
+          // Clear out the sample cache
+
+          g_cachedSampleManager.EmptyCache();
+
+          for (int i = 0; i < g_soundSystem->m_sounds.Size(); ++i)
           {
-            SoundInstance* instance = g_soundSystem->m_sounds[i].get();
-            if (instance->m_cachedSampleHandle)
+            if (g_soundSystem->m_sounds.ValidIndex(i))
             {
-              g_deletingCachedSampleHandle = true;
-              delete instance->m_cachedSampleHandle;
-              instance->m_cachedSampleHandle = nullptr;
-              g_deletingCachedSampleHandle = false;
-              instance->OpenStream(false);
+              SoundInstance* instance = g_soundSystem->m_sounds[i].get();
+              if (instance->m_cachedSampleHandle)
+              {
+                g_deletingCachedSampleHandle = true;
+                delete instance->m_cachedSampleHandle;
+                instance->m_cachedSampleHandle = nullptr;
+                g_deletingCachedSampleHandle = false;
+                instance->OpenStream(false);
+              }
             }
+          }
+
+          if (g_soundSystem->m_music && g_soundSystem->m_music->m_cachedSampleHandle)
+          {
+            g_deletingCachedSampleHandle = true;
+            delete g_soundSystem->m_music->m_cachedSampleHandle;
+            g_soundSystem->m_music->m_cachedSampleHandle = nullptr;
+            g_deletingCachedSampleHandle = false;
+            g_soundSystem->m_music->OpenStream(false);
           }
         }
 
-        if (g_soundSystem->m_music && g_soundSystem->m_music->m_cachedSampleHandle)
+
+        if (parent->m_dspEffects)
         {
-          g_deletingCachedSampleHandle = true;
-          delete g_soundSystem->m_music->m_cachedSampleHandle;
-          g_soundSystem->m_music->m_cachedSampleHandle = nullptr;
-          g_deletingCachedSampleHandle = false;
-          g_soundSystem->m_music->OpenStream(false);
+          g_soundSystem->PropagateBlueprints();
+          // Causes all sounds to reload their DSP effects from the blueprints
+        }
+        else
+        {
+          g_soundSystem->StopAllDSPEffects();
+        }
+
+        g_prefsManager->Save();
+      }
+  };
+
+
+  class HW3DDropDownMenu : public DropDownMenu
+  {
+    public:
+      void Render(int realX, int realY, bool highlighted, bool clicked)
+      {
+        bool available = g_soundLibrary3d->Hardware3DSupport();
+        if (available)
+        {
+          DropDownMenu::Render(realX, realY, highlighted, clicked);
+        }
+        else
+        {
+          SpeciesWindow* parent = (SpeciesWindow*)m_parent;
+          g_editorFont.DrawText2D(realX + 10, realY + 9, parent->GetMenuSize(13), LANGUAGEPHRASE("dialog_unavailable"));
         }
       }
 
-
-      if (parent->m_dspEffects)
+      void MouseUp()
       {
-        g_soundSystem->PropagateBlueprints();
-        // Causes all sounds to reload their DSP effects from the blueprints
+        bool available = g_soundLibrary3d->Hardware3DSupport();
+        if (available)
+        {
+          DropDownMenu::MouseUp();
+        }
       }
-      else
-      {
-        g_soundSystem->StopAllDSPEffects();
-      }
-
-      g_prefsManager->Save();
-    }
-};
+  };
 
 
-class HW3DDropDownMenu : public DropDownMenu
-{
-  public:
-    void Render(int realX, int realY, bool highlighted, bool clicked)
-    {
-      bool available = g_soundLibrary3d->Hardware3DSupport();
-      if (available)
-      {
-        DropDownMenu::Render(realX, realY, highlighted, clicked);
-      }
-      else
-      {
-        SpeciesWindow* parent = (SpeciesWindow*)m_parent;
-        g_editorFont.DrawText2D(realX + 10, realY + 9, parent->GetMenuSize(13), LANGUAGEPHRASE("dialog_unavailable"));
-      }
-    }
+  PrefsSoundWindow::PrefsSoundWindow()
+    : SpeciesWindow(LANGUAGEPHRASE("dialog_soundoptions"))
+  {
+    SetMenuSize(532, 390);
+    SetPosition(g_renderer->ScreenW() / 2 - m_w / 2, g_renderer->ScreenH() / 2 - m_h / 2);
 
-    void MouseUp()
-    {
-      bool available = g_soundLibrary3d->Hardware3DSupport();
-      if (available)
-      {
-        DropDownMenu::MouseUp();
-      }
-    }
-};
+    m_mixFreq = g_prefsManager->GetInt(SOUND_MIXFREQ, 22050);
+    m_numChannels = g_prefsManager->GetInt(SOUND_CHANNELS, 16);
+    m_useHardware3D = g_prefsManager->GetInt(SOUND_HW3D, 0);
+    m_swapStereo = g_prefsManager->GetInt(SOUND_SWAPSTEREO, 0);
+    m_dspEffects = g_prefsManager->GetInt(SOUND_DSPEFFECTS, 1);
+    m_memoryUsage = g_prefsManager->GetInt(SOUND_MEMORY, 1);
+
+    char const* soundLib = g_prefsManager->GetString(SOUND_LIBRARY);
+
+    if (stricmp(soundLib, "dsound") == 0)
+      m_soundLib = 1;
+    else
+      m_soundLib = 0;
+  }
 
 
-PrefsSoundWindow::PrefsSoundWindow()
-  : SpeciesWindow(LANGUAGEPHRASE("dialog_soundoptions"))
-{
-  SetMenuSize(532, 390);
-  SetPosition(g_renderer->ScreenW() / 2 - m_w / 2, g_renderer->ScreenH() / 2 - m_h / 2);
+  void PrefsSoundWindow::Create()
+  {
+    SpeciesWindow::Create();
 
-  m_mixFreq = g_prefsManager->GetInt(SOUND_MIXFREQ, 22050);
-  m_numChannels = g_prefsManager->GetInt(SOUND_CHANNELS, 16);
-  m_useHardware3D = g_prefsManager->GetInt(SOUND_HW3D, 0);
-  m_swapStereo = g_prefsManager->GetInt(SOUND_SWAPSTEREO, 0);
-  m_dspEffects = g_prefsManager->GetInt(SOUND_DSPEFFECTS, 1);
-  m_memoryUsage = g_prefsManager->GetInt(SOUND_MEMORY, 1);
+    /*int x = GetMenuSize(150);
+    int w = GetMenuSize(170);
+    int y = GetMenuSize(30);
+    int h = GetMenuSize(30);
+  int fontSize = GetMenuSize(13);*/
 
-  char const* soundLib = g_prefsManager->GetString(SOUND_LIBRARY);
+    int y = GetClientRectY1() + GetMenuSize(30);
+    int border = GetClientRectX1() + 10;
+    int x = m_w / 2;
+    int buttonH = GetMenuSize(20);
+    int buttonW = m_w / 2 - border * 2;
+    int h = buttonH + border;
+    int fontSize = GetMenuSize(13);
 
-  if (stricmp(soundLib, "dsound") == 0)
-    m_soundLib = 1;
-  else
-    m_soundLib = 0;
-}
+    InvertedBox* box = new InvertedBox();
+    box->SetShortProperties("invert", 10, y += border, m_w - 20, GetClientRectY2() - h * 3 - y);
+    RegisterButton(box);
 
-
-void PrefsSoundWindow::Create()
-{
-  SpeciesWindow::Create();
-
-  /*int x = GetMenuSize(150);
-  int w = GetMenuSize(170);
-  int y = GetMenuSize(30);
-  int h = GetMenuSize(30);
-int fontSize = GetMenuSize(13);*/
-
-  int y = GetClientRectY1() + GetMenuSize(30);
-  int border = GetClientRectX1() + 10;
-  int x = m_w / 2;
-  int buttonH = GetMenuSize(20);
-  int buttonW = m_w / 2 - border * 2;
-  int h = buttonH + border;
-  int fontSize = GetMenuSize(13);
-
-  InvertedBox* box = new InvertedBox();
-  box->SetShortProperties("invert", 10, y += border, m_w - 20, GetClientRectY2() - h * 3 - y);
-  RegisterButton(box);
-
-  DropDownMenu* soundLib = new DropDownMenu();
-  soundLib->SetShortProperties(LANGUAGEPHRASE("dialog_soundlibrary"), x, y += border, buttonW, buttonH);
+    DropDownMenu* soundLib = new DropDownMenu();
+    soundLib->SetShortProperties(LANGUAGEPHRASE("dialog_soundlibrary"), x, y += border, buttonW, buttonH);
 #ifdef HAVE_DSOUND
   soundLib->AddOption(LANGUAGEPHRASE("dialog_directsound"), 1);
 #else
@@ -253,7 +255,7 @@ int fontSize = GetMenuSize(13);*/
   apply->m_centered = true;
   RegisterButton(apply);
   m_buttonOrder.push_back(apply);
-}
+  }
 
 
 void PrefsSoundWindow::Render(bool _hasFocus)
@@ -281,7 +283,7 @@ void PrefsSoundWindow::Render(bool _hasFocus)
 
 
   //    int numChannels = g_soundLibrary3d->m_numChannels;
-  //    g_editorFont.DrawText2DCentre( m_x + m_w/2, m_y + m_h - 70, 12, "%d channels allocated", numChannels );
+  //    g_editorFont.DrawText2DCentre( m_x + m_w/2, m_y + m_h - 70, 12, "{} channels allocated", numChannels );
 
 #ifdef PROFILER_ENABLED
   const auto& children = g_profiler->m_rootElement->m_children;
@@ -292,7 +294,7 @@ void PrefsSoundWindow::Render(bool _hasFocus)
     float occup = element->m_lastTotalTime * 100;
     if (occup > 15)
       glColor4f(1.0f, 0.3f, 0.3f, 1.0f);
-    g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(50), GetMenuSize(17), "%s %d%%", LANGUAGEPHRASE("dialog_cpuusage"),
+    g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(50), GetMenuSize(17), "{} {}%", LANGUAGEPHRASE("dialog_cpuusage"),
                                   int(occup));
   }
   else
@@ -306,5 +308,6 @@ void PrefsSoundWindow::Render(bool _hasFocus)
   float memoryUsage = g_cachedSampleManager.GetMemoryUsage();
   memoryUsage /= 1024.0f;
   memoryUsage /= 1024.0f;
-  g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(70), size, "%s %2.1f Mb", LANGUAGEPHRASE("dialog_memoryusage"), memoryUsage);
+  g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + m_h - GetMenuSize(70), size, "{} {:2.1f} Mb", LANGUAGEPHRASE("dialog_memoryusage"), memoryUsage);
 }
+} // namespace Species

@@ -7,18 +7,20 @@
 #include "SpeciesWindow.h"
 
 
-class TreeWindow : public SpeciesWindow
+namespace Species
 {
-public:
-    int m_selectionId;
+  class TreeWindow : public SpeciesWindow
+  {
+    public:
+      int m_selectionId;
 
-public:
-    TreeWindow( char const *_name );
+    public:
+      TreeWindow(char const* _name);
 
-    void Create();
-    void Update();
-};
+      void Create();
+      void Update();
+  };
 
 
 #endif // LOCATION_EDITOR
-
+} // namespace Species

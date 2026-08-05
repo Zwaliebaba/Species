@@ -4,21 +4,24 @@
 #include "SpeciesWindow.h"
 
 
-class PrefsScreenWindow : public SpeciesWindow
+namespace Species
 {
-public:
-    int     m_resId;
-    int     m_windowed;
-    int     m_colourDepth;
-    int     m_refreshRate;
-    int     m_zDepth;
+  class PrefsScreenWindow : public SpeciesWindow
+  {
+    public:
+      int m_resId;
+      int m_windowed;
+      int m_colourDepth;
+      int m_refreshRate;
+      int m_zDepth;
 
-public:
-    PrefsScreenWindow();
+    public:
+      PrefsScreenWindow();
 
-    void Create();
-    void Render( bool _hasFocus );
-};
+      void Create();
+      void Render(bool _hasFocus);
+  };
 
-void SetWindowed(bool _isWindowed, bool _isPermanent, bool &_isSwitchingWindowed);
-void RestartWindowManagerAndRenderer();
+  void SetWindowed(bool _isWindowed, bool _isPermanent, bool& _isSwitchingWindowed);
+  void RestartWindowManagerAndRenderer();
+} // namespace Species

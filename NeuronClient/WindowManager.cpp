@@ -6,7 +6,23 @@
 #include "WindowManager.h"
 #include "WindowManagerWin32.h"
 
-static HINSTANCE g_hInstance;
+
+namespace Neuron
+{
+  static HINSTANCE g_hInstance;
+
+  // DECLARED HERE, AT NAMESPACE SCOPE, RATHER THAN INSIDE THE FUNCTIONS THAT
+  // USE IT. g_win32InputDriver lives in InputDriverWin32.cpp and no header declares
+  // it, so this used to be a block-scope `extern` in each user.
+  //
+  // A BLOCK-SCOPE extern DOES NOT JOIN THE ENCLOSING NAMESPACE. With no
+  // visible namespace-scope declaration to match, MSVC gives it external
+  // linkage in the GLOBAL namespace — so once this file moved into namespace
+  // Neuron the declaration named ::g_win32InputDriver while the definition was
+  // Neuron::g_win32InputDriver, and the linker said so. Declaring it out here is what
+  // makes the match visible, and it is correct however a compiler reads the
+  // block-scope rule. namespace-migration T2 learned it from CI.
+  extern W32InputDriver* g_win32InputDriver;
 
 #define WH_KEYBOARD_LL 13
 
@@ -297,7 +313,6 @@ void WindowManager::NastySetMousePos(int x, int y)
 
   SetCursorPos(x + m_mouseOffsetX, y + m_mouseOffsetY);
 
-  extern W32InputDriver* g_win32InputDriver;
   g_win32InputDriver->SetMousePosNoVelocity(x, y);
 }
 
@@ -307,7 +322,6 @@ void WindowManager::NastyMoveMouse(int x, int y)
   GetCursorPos(&pos);
   SetCursorPos(x + pos.x, y + pos.y);
 
-  extern W32InputDriver* g_win32InputDriver;
   g_win32InputDriver->SetMousePosNoVelocity(x, y);
 }
 
@@ -388,3 +402,4 @@ void WindowManager::OpenWebsite(const char* _url)
 }
 
 void SetWin32InstanceHandle(HINSTANCE _hInstance) { g_hInstance = _hInstance; }
+} // namespace Neuron

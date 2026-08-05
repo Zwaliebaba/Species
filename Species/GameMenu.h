@@ -7,64 +7,67 @@
 
 #define MAX_GAME_TYPES 6
 
-class GlobalInternet;
 
-class GameMenu
+namespace Species
 {
-public:
+  class GlobalInternet;
 
-    bool            m_menuCreated;
-    GlobalInternet  *m_internet;
+  class GameMenu
+  {
+    public:
+      bool m_menuCreated;
+      GlobalInternet* m_internet;
 
-public:
-    GameMenu();
+    public:
+      GameMenu();
 
-    void Render();
+      void Render();
 
-    void CreateMenu();
-    void DestroyMenu();
-};
+      void CreateMenu();
+      void DestroyMenu();
+  };
 
-class GameMenuButton : public SpeciesButton
-{
-public:
-    char    *m_iconName;
-public:
-    GameMenuButton( char const *_iconName );
-    void Render( int realX, int realY, bool highlighted, bool clicked );
-};
+  class GameMenuButton : public SpeciesButton
+  {
+    public:
+      char* m_iconName;
 
-class GameMenuWindow : public SpeciesWindow
-{
-public:
-    int     m_currentPage;
-    int     m_newPage;
+    public:
+      GameMenuButton(char const* _iconName);
+      void Render(int realX, int realY, bool highlighted, bool clicked);
+  };
+
+  class GameMenuWindow : public SpeciesWindow
+  {
+    public:
+      int m_currentPage;
+      int m_newPage;
 
 
-    enum
-    {
+      enum
+      {
         PageMain = 0,
         PageSpecies,
         PageMultiwinia,
         PageGameSetup,
         PageResearch,
         NumPages
-    };
+      };
 
-public:
-    GameMenuWindow();
+    public:
+      GameMenuWindow();
 
-    void Create ();
-    void Update();
-    void Render ( bool _hasFocus );
+      void Create();
+      void Update();
+      void Render(bool _hasFocus);
 
-    void SetupNewPage( int _page );
-    void SetupMainPage();
-    void SetupSpeciesPage();
+      void SetupNewPage(int _page);
+      void SetupMainPage();
+      void SetupSpeciesPage();
 
-    void CreateMenuControl( char const *name, int dataType, void *value, int y,
-							float change, float _lowBound, float _highBound,
-                            SpeciesButton *callback, int x, int w, float fontSize);
+      void CreateMenuControl(char const* name, int dataType, void* value, int y, float change, float _lowBound, float _highBound,
+                             SpeciesButton* callback, int x, int w, float fontSize);
 
-    void GetDefaultPositions( int *_x, int *_y, int *_gap );
-};
+      void GetDefaultPositions(int* _x, int* _y, int* _gap);
+  };
+} // namespace Species

@@ -71,14 +71,18 @@ The foundation. Everything else may depend on it; it may depend on nothing.
   `NeuronHelper.h` (`BaseException`, `NonCopyable`, `ScopedHandle`,
   `ENUM_HELPER`).
 
-This is the layer furthest through modernisation: `FileSys`, `Debug` and
-`NeuronHelper` are fully Neuron-style, and `Server.cpp` is partly converted.
+This is the layer furthest through modernisation: `FileSys`, `Debug`,
+`NeuronHelper`, `SlotMap`, `SliceWalker`, `LookupTable` and `VectorUtils` are
+fully Neuron-style and live in `namespace Neuron`. The networking and protocol
+types are not there yet and are still at global scope — see
+[Namespaces](#namespaces), because that split is what a forward declaration in
+this layer has to get right.
 
 **It has no upward includes left**, down from thirty when
-`tasks/Archive/neuroncore-layering.yaml` was written. What is left is the door rather
-than the violations: `NeuronCore.vcxproj` still lists `NeuronClient`, `Species`
-and `GameLogic` in `AdditionalIncludeDirectories`, so a new upward include would
-still compile. Closing that, and linking a `Server.exe` that ticks, is T10.
+`tasks/Archive/neuroncore-layering.yaml` was written, and the door is shut as
+well: `NeuronCore.vcxproj` lists no other project in
+`AdditionalIncludeDirectories` at all, so a new upward include does not compile.
+That was T10, and it is what let `Server.exe` link and tick.
 
 ### NeuronClient
 
@@ -118,20 +122,34 @@ The bulk of the inherited code, ~48k lines. Entities (`Citizen`, `Engineer`,
 (`Factory`, `Generator`, `RadarDish`, `GunTurret`, `LaserFence`, `Teleport`, …),
 `Ai`, `Weapons`, and the in-game windows built on Eclipse.
 
-Its includes still reach up into `Species` for `Location`, `Team`,
-`GlobalWorld`, `LevelFile` and `Camera` — the largest remaining violation
-cluster, reflecting Darwinia's original design where everything lived in one
-binary. `App` is no longer among them: the subsystem pointers, the application
-state and the few app-level actions moved to `NeuronClient` behind
+**It reaches up into `Species` for nothing.** It used to, for `Location`,
+`Team`, `GlobalWorld`, `LevelFile` and `Camera` — the largest violation cluster
+in the tree, reflecting Darwinia's original design where everything lived in one
+binary. `tasks/Archive/layering-inversion.yaml` resolved every one of them, and
+mostly by MOVING THE MODEL DOWN rather than by inverting a dependency: the world
+model — `Location`, `GlobalWorld`, `Team`, `Unit`, `LevelFile`, the grids, the
+routing system, the landscape — lives here now, which is why this layer is the
+bulk of the tree.
+
+What did invert went behind `*Access` interfaces in `NeuronClient` — `Renderer`,
+`Camera`, `Script`, `UserInput`, `TaskManagerInterface`, `ControlHelp`,
+`LocationEditor`, `GameCursor` — and `App` went with them: the subsystem
+pointers, the application state and the app-level actions are in
 `WorldPointers.h`, `AppState.h` and the `AppCommands` interface, so nothing
 below `Species` includes `App.h`.
 
 ### Species
 
-The client executable. Application object and main loop (`App`, `Main`),
-world and level model (`GlobalWorld`, `Location`, `LevelFile`, `Landscape`,
-`Water`, `Clouds`), camera, `Team`/`Unit`, the task manager and its interface,
-particle systems, and the location editor.
+The client executable, and it is now a thin one — ~15k lines. Application
+object and main loop (`App`, `Main`), the camera, the renderer entry point, the
+task manager interface, the location editor, the start sequence and the game
+menu.
+
+**The world model is NOT here any more.** `GlobalWorld`, `Location`,
+`LevelFile`, `Landscape`, `Water`, `Team`, `Unit` and the particle systems all
+moved down into `GameLogic` during `layering-inversion`, because a static
+library cannot include a header from the executable that links it. If you are
+looking for the world, look one layer down.
 
 ### Server
 
@@ -144,6 +162,62 @@ definition of done in [`AGENTS.md`](../AGENTS.md) checked rather than asserted.
 It does not simulate a world. The host sequences whatever clients send it,
 which is what it always did — what changed is that nothing above `NeuronServer`
 has to be linked in for it to do so.
+
+---
+
+## Namespaces
+
+Two, and the boundary between them is the layer boundary above.
+
+| Namespace | Holds | Reached from outside by |
+|---|---|---|
+| `Neuron` | all of `NeuronClient` and `NeuronServer`, and the converted half of `NeuronCore` | a tree-wide using-directive |
+| `Species` | all of `GameLogic` and all of the `Species` executable | nothing — its only users are inside it |
+
+**`NeuronCore` is only PARTLY namespaced, and that is the fact that bites.**
+`FileSys`, `Debug`, `NeuronHelper`, `SlotMap`, `SliceWalker`, `LookupTable` and
+`VectorUtils` are in `namespace Neuron`. The networking and protocol types —
+`NetLib`, `NetMutex`, `NetSocket`, `NetSocketListener`, `NetworkUpdate`,
+`ServerToClientLetter`, `Profiler`, `TeamControls` — are still at global scope.
+So "is this a Neuron type?" is a per-type question in that layer, not a
+per-project one.
+
+**Nothing had to be qualified when the engine moved.** `NeuronCore.h` ends with
+`using namespace Neuron;` and every project's pch includes it, so every engine
+name resolves unqualified from anywhere, exactly as before the migration. The
+game namespace deliberately has no equivalent: `GameLogic` and the `Species`
+executable are its only code and both are inside it, so they see each other
+without one.
+
+The exception is the test DLLs. `Tests/GameLogicTests` sits outside the game
+namespace looking in, so its five game-touching sources each carry a
+`using namespace Species;`. A `.cpp` is the right place for one — nothing
+includes it.
+
+### What a namespace change actually breaks
+
+Not call sites. **Forward declarations.** A using-directive makes a name
+findable; it does not make `class Renderer;` in a GameLogic header declare
+`Neuron::Renderer`. It declares a new `::Renderer`, and the error surfaces at
+LINK time pointing somewhere else entirely. 51 forward declarations across the
+tree are wrapped for this reason, and `tools/check_layering.py` can see none of
+them — a forward declaration includes nothing.
+
+Three more shapes, each of which cost a CI round during
+`tasks/Archive/namespace-migration.yaml`:
+
+- **A block-scope `extern` does not join the enclosing namespace.** With no
+  visible namespace-scope declaration to match, it gets external linkage in the
+  GLOBAL namespace. `WindowManager.cpp` and `Win32EventHandler.cpp` each
+  declared one inside the function that used it, and after the wrap they named
+  `::g_keys` while the definition was `Neuron::g_keys`. All four such
+  declarations in the tree are at namespace scope now.
+- **A member of a global class cannot be defined inside a namespace.**
+  `TeamControls` is a NeuronCore type still at global scope and
+  `GameLogic/Team.cpp` defines its `Advance()`; that definition sits outside the
+  game namespace, deliberately.
+- **An elaborated type specifier declares a new type.** `void f(class Profiler*)`
+  inside a namespace quietly means `Neuron::Profiler`, never defined.
 
 ---
 
@@ -169,7 +243,17 @@ lockstep**, not client-server authority in the modern sense.
 **This makes bit-identical simulation a hard requirement, not a nicety.**
 `GenerateSyncValue()` sums entity positions and velocities in container index
 order, so iteration order, container identity, floating-point arithmetic order
-and the `speciesRandom()` call sequence are all load-bearing. `SlotMap` indices
+and the RNG call sequence are all load-bearing.
+
+**Which RNG, precisely: `syncrand`, not `speciesRandom`.** There are two
+streams and this file used to name the wrong one. `syncrand`/`syncfrand`/
+`syncsfrand` (`NeuronCore/MathUtils.cpp`, a Mersenne Twister) is the lockstep
+stream the simulation draws from; `speciesRandom`/`frand`/`sfrand`
+(`NeuronCore/Random.cpp`, an LCG over `holdrand`) is for cosmetics — particles,
+render jitter, UI, sound — and cannot be made deterministic, because terrain and
+tree generation reseed it wholesale and sound consumes it at a client-dependent
+rate. `tasks/Archive/determinism.yaml` T3 and T4 are the reading that settled
+it, and T5 fixed six sites that drew SIMULATION state from the cosmetic one. `SlotMap` indices
 are part of object identity on the wire (`WorldObjectId::m_index` is serialised
 verbatim), and the flavour matters: `FastSlotMap` pops a freelist and `SlotMap`
 scans lowest-first, so they hand out different indices after a removal. The constraints this puts on ordinary refactoring are spelled out in
@@ -231,10 +315,11 @@ If a type name means nothing to you — `Spirit`, `TrunkPort`, `Incubator` —
 | Concern | Start at |
 |---|---|
 | Frame loop, timing, prediction | `Species/Main.cpp` |
+| World and level model | `GameLogic/Location.cpp`, `GlobalWorld.cpp`, `LevelFile.cpp` |
 | Application state, subsystem ownership | `Species/App.cpp` |
 | Wire protocol | `NeuronCore/NetworkUpdate.h`, `ServerToClientLetter.h` |
-| Server tick and client registry | `NeuronCore/Server.cpp` |
-| Client-side netcode | `NeuronCore/ClientToServer.cpp` |
+| Server tick and client registry | `NeuronServer/Server.cpp` |
+| Client-side netcode | `NeuronClient/ClientToServer.cpp` |
 | Entity behaviour | `GameLogic/Entity.cpp`, `GameLogic/Citizen.cpp` |
 | Building behaviour | `GameLogic/Building.cpp` |
 | Rendering entry | `Species/Renderer.cpp`, `GameLogic/LandscapeRenderer.cpp` |

@@ -6,88 +6,99 @@
 #include "TextureUv.h"
 #include "NeuronMath.h"
 
-
-class BitmapRGBA;
-
-
-class LandVertex
+namespace Neuron
 {
-  public:
-    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 m_norm{0.0f, 0.0f, 0.0f};
-    RGBAColour m_col;
-    TextureUV m_uv;
-};
+  class BitmapRGBA;
+} // namespace Neuron
 
 
-//*****************************************************************************
-// Class LandTriangleStrip
-//*****************************************************************************
-
-class LandTriangleStrip
-{
-  public:
-    int m_firstVertIndex;
-    int m_numVerts;
-
-    LandTriangleStrip()
-      : m_firstVertIndex(-1),
-        m_numVerts(-2)
-    {
-    }
-};
-
-
-//*****************************************************************************
-// Class LandscapeRenderer
-//*****************************************************************************
-
+// A Direct3D COM type, declared here since the code was inherited and used
+// nowhere in the tree. It stays OUTSIDE the game namespace, where
+// namespace-migration T4 found it: inside, it would declare
+// Species::IDirect3DVertexBuffer9, which is not the type the name means.
 struct IDirect3DVertexBuffer9;
 
-class LandscapeRenderer
+
+namespace Species
 {
-  protected:
-    enum
-    {
-      RenderModeVertexArray,
-      RenderModeDisplayList,
-      RenderModeVertexBufferObject,
-      RenderModeVertexBufferDirect3D
-    };
+  class LandVertex
+  {
+    public:
+      DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 m_norm{0.0f, 0.0f, 0.0f};
+      RGBAColour m_col;
+      TextureUV m_uv;
+  };
 
-    BitmapRGBA* m_landscapeColour;
-    float m_highest;
-    int m_renderMode;
 
-    std::vector<LandVertex> m_verts;
+  //*****************************************************************************
+  // Class LandTriangleStrip
+  //*****************************************************************************
 
-    unsigned int m_vertexBuffer;
+  class LandTriangleStrip
+  {
+    public:
+      int m_firstVertIndex;
+      int m_numVerts;
 
-    std::vector<LandTriangleStrip*> m_strips;
+      LandTriangleStrip()
+        : m_firstVertIndex(-1),
+          m_numVerts(-2)
+      {
+      }
+  };
 
-    void BuildVertArrayAndTriStrip(SurfaceMap2D<float>* _heightMap);
-    void BuildNormArray();
-    void BuildUVArray(SurfaceMap2D<float>* _heightMap);
-    void GetLandscapeColour(float _height, float _gradient, unsigned int _x, unsigned int _y, RGBAColour* _colour);
-    void BuildColourArray();
 
-  public:
-    static const unsigned int m_posOffset;
-    static const unsigned int m_normOffset;
-    static const unsigned int m_colOffset;
-    static const unsigned int m_uvOffset;
+  //*****************************************************************************
+  // Class LandscapeRenderer
+  //*****************************************************************************
 
-  public:
-    int m_numTriangles;
 
-    LandscapeRenderer(SurfaceMap2D<float>* _heightMap);
-    ~LandscapeRenderer();
+  class LandscapeRenderer
+  {
+    protected:
+      enum
+      {
+        RenderModeVertexArray,
+        RenderModeDisplayList,
+        RenderModeVertexBufferObject,
+        RenderModeVertexBufferDirect3D
+      };
 
-    void BuildOpenGlState(SurfaceMap2D<float>* _heightMap);
+      BitmapRGBA* m_landscapeColour;
+      float m_highest;
+      int m_renderMode;
 
-    void Initialise();
+      std::vector<LandVertex> m_verts;
 
-    void RenderMainSlow();
-    void RenderOverlaySlow();
-    void Render();
-};
+      unsigned int m_vertexBuffer;
+
+      std::vector<LandTriangleStrip*> m_strips;
+
+      void BuildVertArrayAndTriStrip(SurfaceMap2D<float>* _heightMap);
+      void BuildNormArray();
+      void BuildUVArray(SurfaceMap2D<float>* _heightMap);
+      void GetLandscapeColour(float _height, float _gradient, unsigned int _x, unsigned int _y, RGBAColour* _colour);
+      void BuildColourArray();
+
+    public:
+      static const unsigned int m_posOffset;
+      static const unsigned int m_normOffset;
+      static const unsigned int m_colOffset;
+      static const unsigned int m_uvOffset;
+
+    public:
+      int m_numTriangles;
+
+      LandscapeRenderer(SurfaceMap2D<float>* _heightMap);
+      ~LandscapeRenderer();
+
+      void BuildOpenGlState(SurfaceMap2D<float>* _heightMap);
+
+      void Initialise();
+
+      void RenderMainSlow();
+      void RenderOverlaySlow();
+      void Render();
+  };
+} // namespace Species

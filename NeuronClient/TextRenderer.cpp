@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "GlVertex.h"
 
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -16,8 +15,10 @@
 #include "WorldPointers.h"
 
 
-TextRenderer g_gameFont;
-TextRenderer g_editorFont;
+namespace Neuron
+{
+  TextRenderer g_gameFont;
+  TextRenderer g_editorFont;
 
 
 // Horizontal size as a proportion of vertical size
@@ -120,7 +121,7 @@ float TextRenderer::GetTexCoordY(unsigned char theChar)
 }
 
 
-void TextRenderer::DrawText2DUp(float _x, float _y, float _size, char const* _text, ...)
+void TextRenderer::DrawText2DUp(float _x, float _y, float _size, std::string_view _text)
 {
   float horiSize = _size * HORIZONTAL_SIZE;
 
@@ -136,7 +137,7 @@ void TextRenderer::DrawText2DUp(float _x, float _y, float _size, char const* _te
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-  unsigned numChars = strlen(_text);
+  unsigned numChars = static_cast<unsigned>(_text.size());
   for (unsigned int i = 0; i < numChars; ++i)
   {
     unsigned char thisChar = _text[i];
@@ -167,7 +168,7 @@ void TextRenderer::DrawText2DUp(float _x, float _y, float _size, char const* _te
 }
 
 
-void TextRenderer::DrawText2DDown(float _x, float _y, float _size, char const* _text, ...)
+void TextRenderer::DrawText2DDown(float _x, float _y, float _size, std::string_view _text)
 {
   float horiSize = _size * HORIZONTAL_SIZE;
 
@@ -183,7 +184,7 @@ void TextRenderer::DrawText2DDown(float _x, float _y, float _size, char const* _
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-  unsigned numChars = strlen(_text);
+  unsigned numChars = static_cast<unsigned>(_text.size());
   for (unsigned int i = 0; i < numChars; ++i)
   {
     unsigned char thisChar = _text[i];
@@ -245,7 +246,7 @@ void TextRenderer::SetRenderShadow(bool _renderShadow) { m_renderShadow = _rende
 void TextRenderer::SetRenderOutline(bool _renderOutline) { m_renderOutline = _renderOutline; }
 
 
-void TextRenderer::DrawText2DSimple(float _x, float _y, float _size, char const* _text)
+void TextRenderer::DrawText2DSimple(float _x, float _y, float _size, std::string_view _text)
 {
   // Compatibility wank - needed to achieve the same behaviour the old code had
   _y -= 7.0f;
@@ -265,7 +266,7 @@ void TextRenderer::DrawText2DSimple(float _x, float _y, float _size, char const*
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-  unsigned numChars = strlen(_text);
+  unsigned numChars = static_cast<unsigned>(_text.size());
   for (unsigned int i = 0; i < numChars; ++i)
   {
     unsigned char thisChar = _text[i];
@@ -324,58 +325,36 @@ void TextRenderer::DrawText2DSimple(float _x, float _y, float _size, char const*
 //		_xJustification < 0		Right justified text
 //	    _xJustification == 0	Centred text
 //		_xJustification > 0		Left justified text
-void TextRenderer::DrawText2DJustified(float _x, float _y, float _size, int _xJustification, char const* _text, ...)
+void TextRenderer::DrawText2DJustified(float _x, float _y, float _size, int _xJustification, std::string_view _text)
 {
-  char buf[512];
-  va_list ap;
-  va_start(ap, _text);
-  vsprintf(buf, _text, ap);
-
   if (_xJustification > 0)
-    DrawText2DSimple(_x, _y, _size, buf); // Left Justification
+    DrawText2DSimple(_x, _y, _size, _text); // Left Justification
   else
   {
-    float width = GetTextWidth(strlen(buf), _size);
+    float width = GetTextWidth(static_cast<unsigned int>(_text.size()), _size);
 
     if (_xJustification < 0)
-      DrawText2DSimple(_x - width, _y, _size, buf); // Right Justification
+      DrawText2DSimple(_x - width, _y, _size, _text); // Right Justification
     else
-      DrawText2DSimple(_x - width / 2, _y, _size, buf); // Centre
+      DrawText2DSimple(_x - width / 2, _y, _size, _text); // Centre
   }
 }
 
 
-void TextRenderer::DrawText2D(float _x, float _y, float _size, char const* _text, ...)
+void TextRenderer::DrawText2D(float _x, float _y, float _size, std::string_view _text) { DrawText2DSimple(_x, _y, _size, _text); }
+
+
+void TextRenderer::DrawText2DRight(float _x, float _y, float _size, std::string_view _text)
 {
-  char buf[512];
-  va_list ap;
-  va_start(ap, _text);
-  vsprintf(buf, _text, ap);
-  DrawText2DSimple(_x, _y, _size, buf);
+  float width = GetTextWidth(static_cast<unsigned int>(_text.size()), _size);
+  DrawText2DSimple(_x - width, _y, _size, _text);
 }
 
 
-void TextRenderer::DrawText2DRight(float _x, float _y, float _size, char const* _text, ...)
+void TextRenderer::DrawText2DCentre(float _x, float _y, float _size, std::string_view _text)
 {
-  char buf[512];
-  va_list ap;
-  va_start(ap, _text);
-  vsprintf(buf, _text, ap);
-
-  float width = GetTextWidth(strlen(buf), _size);
-  DrawText2DSimple(_x - width, _y, _size, buf);
-}
-
-
-void TextRenderer::DrawText2DCentre(float _x, float _y, float _size, char const* _text, ...)
-{
-  char buf[512];
-  va_list ap;
-  va_start(ap, _text);
-  vsprintf(buf, _text, ap);
-
-  float width = GetTextWidth(strlen(buf), _size);
-  DrawText2DSimple(_x - width / 2, _y, _size, buf);
+  float width = GetTextWidth(static_cast<unsigned int>(_text.size()), _size);
+  DrawText2DSimple(_x - width / 2, _y, _size, _text);
 }
 
 namespace
@@ -468,7 +447,7 @@ namespace
 } // namespace
 
 
-void TextRenderer::DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text)
+void TextRenderer::DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, std::string_view _text)
 {
   // Store the GL state
   SaveGLFontDrawAttributes saveAttribs;
@@ -479,7 +458,7 @@ void TextRenderer::DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, 
 
   DirectX::XMVECTOR const vertSize = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), _size);
   DirectX::XMVECTOR const horiSize = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), -_size * HORIZONTAL_SIZE);
-  unsigned int numChars = strlen(_text);
+  unsigned int numChars = static_cast<unsigned int>(_text.size());
 
   DirectX::XMVECTOR pos = DirectX::XMVectorMultiplyAdd(vertSize, DirectX::XMVectorReplicate(0.5f), DirectX::XMLoadFloat3(&_pos));
 
@@ -528,62 +507,38 @@ void TextRenderer::DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, 
 }
 
 
-void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...)
+void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, float _size, std::string_view _text) { DrawText3DSimple(_pos, _size, _text); }
+
+
+void TextRenderer::DrawText3DCentre(DirectX::XMFLOAT3 const& _pos, float _size, std::string_view _text)
 {
-  // Convert the variable argument list into a single string
-  char buf[512];
-  va_list ap;
-  va_start(ap, _text);
-  vsprintf(buf, _text, ap);
-
-  DrawText3DSimple(_pos, _size, buf);
-}
-
-
-void TextRenderer::DrawText3DCentre(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...)
-{
-  char buf[512];
-  va_list ap;
-  va_start(ap, _text);
-  vsprintf(buf, _text, ap);
-
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
-  float amount = HORIZONTAL_SIZE * (float)strlen(buf) * 0.5f * _size;
+  float amount = HORIZONTAL_SIZE * (float)_text.size() * 0.5f * _size;
 
   DirectX::XMFLOAT3 pos;
   DirectX::XMStoreFloat3(
     &pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&cameraRight), DirectX::XMVectorReplicate(amount), DirectX::XMLoadFloat3(&_pos)));
 
-  DrawText3DSimple(pos, _size, buf);
+  DrawText3DSimple(pos, _size, _text);
 }
 
 
-void TextRenderer::DrawText3DRight(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...)
+void TextRenderer::DrawText3DRight(DirectX::XMFLOAT3 const& _pos, float _size, std::string_view _text)
 {
-  char buf[512];
-  va_list ap;
-  va_start(ap, _text);
-  vsprintf(buf, _text, ap);
-
   DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
-  float amount = HORIZONTAL_SIZE * (float)strlen(buf) * _size;
+  float amount = HORIZONTAL_SIZE * (float)_text.size() * _size;
 
   DirectX::XMFLOAT3 pos;
   DirectX::XMStoreFloat3(
     &pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&cameraRight), DirectX::XMVectorReplicate(amount), DirectX::XMLoadFloat3(&_pos)));
 
-  DrawText3DSimple(pos, _size, buf);
+  DrawText3DSimple(pos, _size, _text);
 }
 
 
 void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, float _size,
-                              char const* _text, ...)
+                              std::string_view _text)
 {
-  char buf[512];
-  va_list ap;
-  va_start(ap, _text);
-  vsprintf(buf, _text, ap);
-
   SaveGLFontDrawAttributes saveAttribs;
 
   CameraAccess* cam = g_camera;
@@ -591,7 +546,7 @@ void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 c
   DirectX::XMVECTOR const upV = DirectX::XMLoadFloat3(&_up);
   DirectX::XMVECTOR const vertSize = DirectX::XMVectorScale(upV, _size);
   DirectX::XMVECTOR const horiSize = DirectX::XMVectorScale(DirectX::XMVector3Cross(upV, DirectX::XMLoadFloat3(&_front)), _size * HORIZONTAL_SIZE);
-  unsigned int numChars = strlen(buf);
+  unsigned int numChars = static_cast<unsigned int>(_text.size());
 
   DirectX::XMVECTOR pos = DirectX::XMVectorMultiplyAdd(horiSize, DirectX::XMVectorReplicate(-(float)numChars * 0.5f), DirectX::XMLoadFloat3(&_pos));
   pos = DirectX::XMVectorMultiplyAdd(vertSize, DirectX::XMVectorReplicate(0.5f), pos);
@@ -617,7 +572,7 @@ void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 c
 
   for (unsigned int i = 0; i < numChars; ++i)
   {
-    unsigned char thisChar = buf[i];
+    unsigned char thisChar = _text[i];
 
     if (thisChar > 32)
     {
@@ -642,3 +597,4 @@ void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 c
 
 
 float TextRenderer::GetTextWidth(unsigned int _numChars, float _size) { return _numChars * _size * HORIZONTAL_SIZE; }
+} // namespace Neuron

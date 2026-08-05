@@ -6,113 +6,117 @@
 #include "Entity.h"
 #include "WorldObject.h"
 
-class Route;
-class GlobalEventCondition;
 
 // ============================================================================
 // class Task
 
 
-class Task
+namespace Species
 {
-  public:
-    enum
-    {
-      StateIdle,    // Not yet run
-      StateStarted, // Running, not yet targetted
-      StateRunning, // Targetted, running
-      StateStopping // Stopping
-    };
+  class Route;
+  class GlobalEventCondition;
 
-    int m_id;
-    int m_type;
-    int m_state;
-    WorldObjectId m_objId;
+  class Task
+  {
+    public:
+      enum
+      {
+        StateIdle,    // Not yet run
+        StateStarted, // Running, not yet targetted
+        StateRunning, // Targetted, running
+        StateStopping // Stopping
+      };
 
-    std::unique_ptr<Route> m_route; // Only used when this is a Controller task; owning
+      int m_id;
+      int m_type;
+      int m_state;
+      WorldObjectId m_objId;
 
-  public:
-    Task();
-    ~Task();
+      std::unique_ptr<Route> m_route; // Only used when this is a Controller task; owning
 
-    void Start();
-    bool Advance();
-    void SwitchTo();
-    void Stop();
+    public:
+      Task();
+      ~Task();
 
-    void Target(DirectX::XMFLOAT3 const& _pos);
-    void TargetSquad(DirectX::XMFLOAT3 const& _pos);
-    void TargetEngineer(DirectX::XMFLOAT3 const& _pos);
-    void TargetOfficer(DirectX::XMFLOAT3 const& _pos);
-    void TargetArmour(DirectX::XMFLOAT3 const& _pos);
+      void Start();
+      bool Advance();
+      void SwitchTo();
+      void Stop();
 
-    WorldObjectId Promote(WorldObjectId _id);
-    static WorldObjectId Demote(WorldObjectId _id);
-    static WorldObjectId FindCitizen(DirectX::XMFLOAT3 const& _pos);
+      void Target(DirectX::XMFLOAT3 const& _pos);
+      void TargetSquad(DirectX::XMFLOAT3 const& _pos);
+      void TargetEngineer(DirectX::XMFLOAT3 const& _pos);
+      void TargetOfficer(DirectX::XMFLOAT3 const& _pos);
+      void TargetArmour(DirectX::XMFLOAT3 const& _pos);
 
-    static char const* GetTaskName(int _type);
-    static char const* GetTaskNameTranslated(int _type);
-};
+      WorldObjectId Promote(WorldObjectId _id);
+      static WorldObjectId Demote(WorldObjectId _id);
+      static WorldObjectId FindCitizen(DirectX::XMFLOAT3 const& _pos);
 
-
-// ============================================================================
-// class TaskTargetArea
-
-
-class TaskTargetArea
-{
-  public:
-    // TaskTargetArea is default-constructed then assigned field by field in
-    // GetTargetArea, so this needs an initialiser of its own.
-    DirectX::XMFLOAT3 m_centre{0.0f, 0.0f, 0.0f};
-    float m_radius;
-    bool m_stationary;
-};
+      static char const* GetTaskName(int _type);
+      static char const* GetTaskNameTranslated(int _type);
+  };
 
 
-// ============================================================================
-// class TaskManager
+  // ============================================================================
+  // class TaskTargetArea
 
 
-class TaskManager
-{
-  public:
-    // The task manager owns its tasks. RunTask and RegisterTask take that
-    // ownership in their signatures, so a task that fails to register is
-    // destroyed rather than leaked.
-    std::vector<std::unique_ptr<Task>> m_tasks;
+  class TaskTargetArea
+  {
+    public:
+      // TaskTargetArea is default-constructed then assigned field by field in
+      // GetTargetArea, so this needs an initialiser of its own.
+      DirectX::XMFLOAT3 m_centre{0.0f, 0.0f, 0.0f};
+      float m_radius;
+      bool m_stationary;
+  };
 
-    int m_nextTaskId;
-    int m_currentTaskId;
-    bool m_verifyTargetting;
 
-  protected:
-    void AdvanceTasks();
+  // ============================================================================
+  // class TaskManager
 
-  public:
-    TaskManager();
 
-    int Capacity();
-    int CapacityUsed();
+  class TaskManager
+  {
+    public:
+      // The task manager owns its tasks. RunTask and RegisterTask take that
+      // ownership in their signatures, so a task that fails to register is
+      // destroyed rather than leaked.
+      std::vector<std::unique_ptr<Task>> m_tasks;
 
-    bool RunTask(std::unique_ptr<Task> _task); // Starts the task, registers it; takes ownership either way
-    bool RunTask(int _type);
-    bool RegisterTask(std::unique_ptr<Task> _task); // Assumes task is already started; takes ownership either way
+      int m_nextTaskId;
+      int m_currentTaskId;
+      bool m_verifyTargetting;
 
-    int MapGestureToTask(int _gestureId); // Maps a gesture to a task type
+    protected:
+      void AdvanceTasks();
 
-    Task* GetCurrentTask();
-    Task* GetTask(int _id);
-    Task* GetTask(WorldObjectId _id);
-    void SelectTask(int _id);
-    void SelectTask(WorldObjectId _id); // Selects the corrisponding task
-    bool IsValidTargetArea(int _id, DirectX::XMFLOAT3 const& _pos);
-    bool TargetTask(int _id, DirectX::XMFLOAT3 const& _pos);
-    bool TerminateTask(int _id);
+    public:
+      TaskManager();
 
-    void StopAllTasks();
+      int Capacity();
+      int CapacityUsed();
 
-    std::vector<TaskTargetArea>* GetTargetArea(int _id); // Returns all valid placement areas
+      bool RunTask(std::unique_ptr<Task> _task); // Starts the task, registers it; takes ownership either way
+      bool RunTask(int _type);
+      bool RegisterTask(std::unique_ptr<Task> _task); // Assumes task is already started; takes ownership either way
 
-    void Advance();
-};
+      int MapGestureToTask(int _gestureId); // Maps a gesture to a task type
+
+      Task* GetCurrentTask();
+      Task* GetTask(int _id);
+      Task* GetTask(WorldObjectId _id);
+      void SelectTask(int _id);
+      void SelectTask(WorldObjectId _id); // Selects the corrisponding task
+      bool IsValidTargetArea(int _id, DirectX::XMFLOAT3 const& _pos);
+      bool TargetTask(int _id, DirectX::XMFLOAT3 const& _pos);
+      bool TerminateTask(int _id);
+
+      void StopAllTasks();
+
+      std::vector<TaskTargetArea>* GetTargetArea(int _id); // Returns all valid placement areas
+
+      void Advance();
+  };
+} // namespace Species

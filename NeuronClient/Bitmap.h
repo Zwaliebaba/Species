@@ -1,72 +1,73 @@
 #pragma once
 
 
-class RGBAColour;
 class jpeg_decoder;
-class BitmapFileHeader;
-class BitmapInfoHeader;
-class BinaryReader;
 
 
-class BitmapRGBA
+namespace Neuron
 {
-private:
-	void ReadBMPFileHeader(BinaryReader *f, BitmapFileHeader *fileheader);
-	void ReadWinBMPInfoHeader(BinaryReader *f, BitmapInfoHeader *infoheader);
-	void ReadOS2BMPInfoHeader(BinaryReader *f, BitmapInfoHeader *infoheader);
+  class RGBAColour;
+  class BitmapFileHeader;
+  class BitmapInfoHeader;
+  class BinaryReader;
 
-	void ReadBMPPalette(int ncols, RGBAColour pal[256], BinaryReader *f, int win_flag);
-	void Read4BitLine(int length, BinaryReader *f, RGBAColour *pal, int line);
-	void Read8BitLine(int length, BinaryReader *f, RGBAColour *pal, int line);
-	void Read24BitLine(int length, BinaryReader *f, int line);
-	void LoadBmp(BinaryReader *_in);
+  class BitmapRGBA
+  {
+    private:
+      void ReadBMPFileHeader(BinaryReader* f, BitmapFileHeader* fileheader);
+      void ReadWinBMPInfoHeader(BinaryReader* f, BitmapInfoHeader* infoheader);
+      void ReadOS2BMPInfoHeader(BinaryReader* f, BitmapInfoHeader* infoheader);
 
-	void WriteBMPFileHeader(FILE *_out);
-	void WriteWinBMPInfoHeader(FILE *_out);
-	void Write24BitLine(FILE *_out, int _y);
+      void ReadBMPPalette(int ncols, RGBAColour pal[256], BinaryReader* f, int win_flag);
+      void Read4BitLine(int length, BinaryReader* f, RGBAColour* pal, int line);
+      void Read8BitLine(int length, BinaryReader* f, RGBAColour* pal, int line);
+      void Read24BitLine(int length, BinaryReader* f, int line);
+      void LoadBmp(BinaryReader* _in);
 
-public:
-	int m_width;
-	int m_height;
-	RGBAColour *m_pixels;
-	RGBAColour **m_lines;
+      void WriteBMPFileHeader(FILE* _out);
+      void WriteWinBMPInfoHeader(FILE* _out);
+      void Write24BitLine(FILE* _out, int _y);
 
-	BitmapRGBA();
-	BitmapRGBA(BitmapRGBA const &_other);
-	BitmapRGBA(int _width, int _height);
-	BitmapRGBA(char const *_filename);
-	BitmapRGBA(BinaryReader *_reader, char const *_type);
-	~BitmapRGBA();
+    public:
+      int m_width;
+      int m_height;
+      RGBAColour* m_pixels;
+      RGBAColour** m_lines;
 
-	void Initialise(int _width, int _height);
-	void Initialise(char const *_filename);
-	void Initialise(BinaryReader *_reader, char const *_type);
+      BitmapRGBA();
+      BitmapRGBA(BitmapRGBA const& _other);
+      BitmapRGBA(int _width, int _height);
+      BitmapRGBA(char const* _filename);
+      BitmapRGBA(BinaryReader* _reader, char const* _type);
+      ~BitmapRGBA();
 
-	void SaveBmp(char const *_filename);
-	void WriteBmp(FILE *_out);
+      void Initialise(int _width, int _height);
+      void Initialise(char const* _filename);
+      void Initialise(BinaryReader* _reader, char const* _type);
 
-    void Clear( RGBAColour const &colour );
+      void SaveBmp(char const* _filename);
+      void WriteBmp(FILE* _out);
 
-	void PutPixel(int x, int y, RGBAColour const &colour);
-	RGBAColour const &GetPixel(int x, int y) const;
+      void Clear(RGBAColour const& colour);
 
-	void PutPixelClipped(int x, int y, RGBAColour const &colour);
-	RGBAColour const &GetPixelClipped(int x, int y) const;
+      void PutPixel(int x, int y, RGBAColour const& colour);
+      RGBAColour const& GetPixel(int x, int y) const;
 
-    void DrawLine(int x1, int y1, int x2, int y2, RGBAColour const &colour);
+      void PutPixelClipped(int x, int y, RGBAColour const& colour);
+      RGBAColour const& GetPixelClipped(int x, int y) const;
 
-	RGBAColour GetInterpolatedPixel(float x, float y) const;
+      void DrawLine(int x1, int y1, int x2, int y2, RGBAColour const& colour);
 
-	void Blit(int srcX,  int srcY,  int srcW,  int srcH, const BitmapRGBA *_srcBmp,
-			  int destX, int destY, int destW, int destH, bool _bilinear);
+      RGBAColour GetInterpolatedPixel(float x, float y) const;
 
-    void ApplyBlurFilter(float _scale);
-    void ApplyDilateFilter();
+      void Blit(int srcX, int srcY, int srcW, int srcH, const BitmapRGBA* _srcBmp, int destX, int destY, int destW, int destH, bool _bilinear);
 
-	void ConvertPinkToTransparent();
-	void ConvertColourToAlpha();	// Luminance of rgb data is copied into the alpha channel and the rgb data is set to 255,255,255
-	void ConvertToGreyScale();		// Colour is averaged out
-	int ConvertToTexture(bool _mipmapping = true) const;
-};
+      void ApplyBlurFilter(float _scale);
+      void ApplyDilateFilter();
 
-
+      void ConvertPinkToTransparent();
+      void ConvertColourToAlpha(); // Luminance of rgb data is copied into the alpha channel and the rgb data is set to 255,255,255
+      void ConvertToGreyScale();   // Colour is averaged out
+      int ConvertToTexture(bool _mipmapping = true) const;
+  };
+} // namespace Neuron

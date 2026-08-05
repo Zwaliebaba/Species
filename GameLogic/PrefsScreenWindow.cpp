@@ -19,8 +19,11 @@
 
 #define HAVE_REFRESH_RATES
 
-class ScreenResDropDownMenu : public DropDownMenu
+
+namespace Species
 {
+  class ScreenResDropDownMenu : public DropDownMenu
+  {
 #ifdef HAVE_REFRESH_RATES
     void SelectOption(int _option)
     {
@@ -47,7 +50,7 @@ class ScreenResDropDownMenu : public DropDownMenu
       }
     }
 #endif
-};
+  };
 
 
 class FullscreenRequiredMenu : public DropDownMenu
@@ -353,3 +356,4 @@ void PrefsScreenWindow::Render(bool _hasFocus)
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_colourdepth"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_zbufferdepth"));
 }
+} // namespace Species

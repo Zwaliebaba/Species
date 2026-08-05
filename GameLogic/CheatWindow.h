@@ -4,14 +4,13 @@
 #include "SpeciesWindow.h"
 
 
-
-class CheatWindow : public SpeciesWindow
+namespace Species
 {
-public:
-    CheatWindow( char const *_name );
+  class CheatWindow : public SpeciesWindow
+  {
+    public:
+      CheatWindow(char const* _name);
 
-    void Create();
-};
-
-
-
+      void Create();
+  };
+} // namespace Species

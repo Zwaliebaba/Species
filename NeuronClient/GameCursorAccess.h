@@ -12,23 +12,28 @@
 // Unlike the earlier seams there is no TheGameCursor(): every caller in the
 // tree uses one of these, so the interface is the whole used API and Species
 // has no reason to reach past it.
-class GameCursorAccess
+
+
+namespace Neuron
 {
-  public:
-    virtual ~GameCursorAccess() = default;
+  class GameCursorAccess
+  {
+    public:
+      virtual ~GameCursorAccess() = default;
 
-    // A move order marker at a world position.
-    virtual void CreateMarker(DirectX::XMFLOAT3 const& _pos) = 0;
+      // A move order marker at a world position.
+      virtual void CreateMarker(DirectX::XMFLOAT3 const& _pos) = 0;
 
-    // Show the selection arrows for a while, after a selection changes.
-    virtual void BoostSelectionArrows(float _seconds) = 0;
+      // Show the selection arrows for a while, after a selection changes.
+      virtual void BoostSelectionArrows(float _seconds) = 0;
 
-    virtual void Render() = 0;
-    virtual void RenderStandardCursor(float _screenX, float _screenY) = 0;
+      virtual void Render() = 0;
+      virtual void RenderStandardCursor(float _screenX, float _screenY) = 0;
 
-    // What the cursor is currently over, read by the control-help system to
-    // decide which prompt to show.
-    virtual bool AdviseHighlightingSomething() = 0;
-    virtual bool AdvisePlacementOpportunity() = 0;
-    virtual bool AdviseMoveableEntitySelected() = 0;
-};
+      // What the cursor is currently over, read by the control-help system to
+      // decide which prompt to show.
+      virtual bool AdviseHighlightingSomething() = 0;
+      virtual bool AdvisePlacementOpportunity() = 0;
+      virtual bool AdviseMoveableEntitySelected() = 0;
+  };
+} // namespace Neuron

@@ -19,12 +19,17 @@
 // way: an overload set that is complete on the concrete type and partial on
 // the interface breaks whichever call sites happen to use the missing
 // overloads, and splitting call sites by that is a trap.
-class ScriptAccess
-{
-  public:
-    virtual ~ScriptAccess() = default;
 
-    virtual void RunScript(char const* _filename) = 0;
-    virtual bool IsRunningScript() = 0;
-    virtual bool Skip() = 0;
-};
+
+namespace Neuron
+{
+  class ScriptAccess
+  {
+    public:
+      virtual ~ScriptAccess() = default;
+
+      virtual void RunScript(char const* _filename) = 0;
+      virtual bool IsRunningScript() = 0;
+      virtual bool Skip() = 0;
+  };
+} // namespace Neuron

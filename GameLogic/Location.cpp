@@ -60,831 +60,835 @@
 // ****************************************************************************
 
 // *** Constructor
-Location::Location()
-  : m_missionComplete(false),
-    m_entityGrid(nullptr),
-    m_obstructionGrid(nullptr),
-    m_levelFile(nullptr),
-    m_clouds(nullptr),
-    m_water(nullptr),
-    m_lastSliceProcessed(0),
-    m_teams(nullptr),
-    m_christmasTimer(-99.9f)
+
+
+namespace Species
 {
-  m_spiritsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
-  m_lasersWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
-  m_effectsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
-  m_buildingsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
-
-  m_spirits.SetSize(100);
-
-  m_lights.SetStepSize(1);
-  m_buildings.SetStepSize(10);
-  m_spirits.SetStepSize(100);
-  m_lasers.SetStepSize(100);
-  m_effects.SetSize(100);
-
-  // Install the seam the layers below GameLogic reach the world through. Doing
-  // it here rather than at the assignment sites is what keeps it honest: there
-  // is exactly one place a Location comes into existence, and exactly one place
-  // it stops.
-  g_locationAccess = this;
-}
-
-
-// *** Destructor
-Location::~Location()
-{
-  // Only if we are the world still installed. Main.cpp destroys the old world
-  // before building the new one, so this is normally an unconditional clear —
-  // but a caller that built the replacement first would otherwise null a
-  // pointer to the live world on the way out.
-  if (g_locationAccess == this)
-    g_locationAccess = nullptr;
-
-  Empty();
-}
-
-
-float Location::GroundHeight(float _worldX, float _worldZ)
-{
-  if (!m_landscape.m_heightMap)
-    return 0.0f;
-  return m_landscape.m_heightMap->GetValue(_worldX, _worldZ);
-}
-
-
-bool Location::WorldObjectExists(WorldObjectId const& _id) { return GetWorldObject(_id) != nullptr; }
-
-
-bool Location::GetSoundSource(WorldObjectId const& _id, DirectX::XMFLOAT3* _pos, DirectX::XMFLOAT3* _vel)
-{
-  WorldObject* object = GetWorldObject(_id);
-  if (!object)
-    return false;
-
-  // A building is heard from its centre. Everything else from where it is.
-  *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : object->m_pos;
-  *_vel = object->m_vel;
-  return true;
-}
-
-
-void Location::Init(char const* _missionFilename, char const* _mapFilename)
-{
-  LoadLevel(_missionFilename, _mapFilename);
-  speciesSeedRandom(1);
-
-  InitLights();
-  InitLandscape();
-
-  m_water = new Water();
-
-  if (!g_editing)
+  Location::Location()
+    : m_missionComplete(false),
+      m_entityGrid(nullptr),
+      m_obstructionGrid(nullptr),
+      m_levelFile(nullptr),
+      m_clouds(nullptr),
+      m_water(nullptr),
+      m_lastSliceProcessed(0),
+      m_teams(nullptr),
+      m_christmasTimer(-99.9f)
   {
-    InitBuildings();
+    m_spiritsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+    m_lasersWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+    m_effectsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
+    m_buildingsWalker.SetTotalNumSlices(NUM_SLICES_PER_FRAME);
 
-    m_entityGrid = new EntityGrid(8.0f, 8.0f);
-    m_obstructionGrid = new ObstructionGrid(64.0f, 64.0f);
-    m_clouds = new Clouds();
+    m_spirits.SetSize(100);
+
+    m_lights.SetStepSize(1);
+    m_buildings.SetStepSize(10);
+    m_spirits.SetStepSize(100);
+    m_lasers.SetStepSize(100);
+    m_effects.SetSize(100);
+
+    // Install the seam the layers below GameLogic reach the world through. Doing
+    // it here rather than at the assignment sites is what keeps it honest: there
+    // is exactly one place a Location comes into existence, and exactly one place
+    // it stops.
+    g_locationAccess = this;
   }
-  else
+
+
+  // *** Destructor
+  Location::~Location()
   {
-    for (auto const& building : m_levelFile->m_buildings)
+    // Only if we are the world still installed. Main.cpp destroys the old world
+    // before building the new one, so this is normally an unconditional clear —
+    // but a caller that built the replacement first would otherwise null a
+    // pointer to the live world on the way out.
+    if (g_locationAccess == this)
+      g_locationAccess = nullptr;
+
+    Empty();
+  }
+
+
+  float Location::GroundHeight(float _worldX, float _worldZ)
+  {
+    if (!m_landscape.m_heightMap)
+      return 0.0f;
+    return m_landscape.m_heightMap->GetValue(_worldX, _worldZ);
+  }
+
+
+  bool Location::WorldObjectExists(WorldObjectId const& _id) { return GetWorldObject(_id) != nullptr; }
+
+
+  bool Location::GetSoundSource(WorldObjectId const& _id, DirectX::XMFLOAT3* _pos, DirectX::XMFLOAT3* _vel)
+  {
+    WorldObject* object = GetWorldObject(_id);
+    if (!object)
+      return false;
+
+    // A building is heard from its centre. Everything else from where it is.
+    *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : object->m_pos;
+    *_vel = object->m_vel;
+    return true;
+  }
+
+
+  void Location::Init(char const* _missionFilename, char const* _mapFilename)
+  {
+    LoadLevel(_missionFilename, _mapFilename);
+    speciesSeedRandom(1);
+
+    InitLights();
+    InitLandscape();
+
+    m_water = new Water();
+
+    if (!g_editing)
     {
-      building->m_pos.y = m_landscape.m_heightMap->GetValue(building->m_pos.x, building->m_pos.z);
-    }
-  }
+      InitBuildings();
 
-  InitTeams();
-
-  if (m_levelFile->m_levelDifficulty == -1)
-  {
-    // Remember the difficulty factor that this with which this level was created.
-    m_levelFile->m_levelDifficulty = g_difficultyLevel;
-  }
-  else
-  {
-    // Set difficulty level to the created level difficulty
-    g_difficultyLevel = m_levelFile->m_levelDifficulty;
-  }
-}
-
-
-void Location::Empty()
-{
-  m_landscape.Empty();
-
-  m_lights.Empty();
-  m_buildings.Empty();
-  m_spirits.Empty();
-  m_lasers.Empty();
-  m_effects.Empty();
-
-  m_buildingsWalker.Reset();
-  m_spiritsWalker.Reset();
-  m_lasersWalker.Reset();
-  m_effectsWalker.Reset();
-
-  delete m_levelFile;
-  m_levelFile = nullptr;
-  delete[] m_teams;
-  m_teams = nullptr;
-  delete m_entityGrid;
-  m_entityGrid = nullptr;
-  delete m_obstructionGrid;
-  m_obstructionGrid = nullptr;
-  delete m_clouds;
-  m_clouds = nullptr;
-  delete m_water;
-  m_water = nullptr;
-}
-
-
-void Location::LoadLevel(char const* missionFilename, char const* mapFilename)
-{
-  m_levelFile = new LevelFile(missionFilename, mapFilename);
-
-
-  //
-  // Are the objectives already completed on entry?
-  // If so, suppress congratulations message
-
-  if (MissionComplete())
-  {
-    m_missionComplete = true;
-
-    GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
-    gloc->m_missionCompleted = true;
-  }
-}
-
-
-void Location::InitLandscape() { m_landscape.Init(&m_levelFile->m_landscape); }
-
-
-void Location::InitLights()
-{
-  for (auto const& levelLight : m_levelFile->m_lights)
-  {
-    Light* light = new Light();
-    light->SetColour(levelLight->m_colour);
-    light->SetFront(levelLight->m_front);
-    m_lights.PutData(light);
-  }
-}
-
-
-void Location::InitBuildings()
-{
-  for (auto const& building : m_levelFile->m_buildings)
-  {
-    Building* existing = g_location->GetBuilding(building->m_id.GetUniqueId());
-    if (existing)
-    {
-      ASSERT_TEXT(false,
-                  "Error loading level file...duplicate building found\n"
-                  "Map filename = {}, Mission filename = {}\n"
-                  "Existing building type = {}, new building type = {}",
-                  m_levelFile->m_mapFilename, m_levelFile->m_missionFilename, Building::GetTypeName(existing->m_type),
-                  Building::GetTypeName(building->m_type));
-    }
-    Building* newBuilding = Building::CreateBuilding(building->m_type);
-    m_buildings.PutData(newBuilding);
-    newBuilding->Initialise(building.get());
-    newBuilding->SetDetail(g_prefsManager->GetInt("RenderBuildingDetail", 1));
-  }
-}
-
-
-void Location::InitTeams()
-{
-  m_teams = new Team[NUM_TEAMS];
-
-  m_teams[0].m_colour.Set(100, 255, 100); // Normally Green AI
-  m_teams[1].m_colour.Set(200, 50, 50);   // Normally Virii
-  m_teams[2].m_colour.Set(200, 200, 30);  // Normally Player
-  m_teams[3].m_colour.Set(120, 180, 255); // Magenta
-  //    m_teams[4].m_colour.Set(120,180,255);	// Blue
-  //    m_teams[5].m_colour.Set( 50,255, 50);	// Green
-  //    m_teams[6].m_colour.Set(250,200, 10);	// Orange
-  //    m_teams[7].m_colour.Set(150,150,150);	// Grey
-}
-
-
-// *** SpawnEntities
-// Returns id of last entity spawned
-// Only useful if we've only spawned one entity, eg an engineer
-WorldObjectId Location::SpawnEntities(DirectX::XMFLOAT3 const& _pos, unsigned char _teamId, int _unitId, unsigned char _type, int _numEntities,
-                                      DirectX::XMFLOAT3 const& _vel, float _spread, float _range, int _routeId, int _routeWaypointId)
-{
-  DEBUG_ASSERT(_teamId < NUM_TEAMS && m_teams[_teamId].m_teamType > Team::TeamTypeUnused);
-
-  Team* team = &m_teams[_teamId];
-  WorldObjectId entityId;
-
-  for (int i = 0; i < _numEntities; i++)
-  {
-    int unitIndex;
-    Entity* s = team->NewEntity(_type, _unitId, &unitIndex);
-    DEBUG_ASSERT(s);
-
-    s->SetType(_type);
-    s->m_pos = FindValidSpawnPosition(_pos, _spread);
-    s->m_onGround = false;
-    s->m_vel = _vel;
-    // The zero case is REACHABLE -- SpawnEntities is called with a zero
-    // velocity all over the tree -- and the legacy fallback was an explicit
-    // (1,0,0) rather than Normalise's, so the branch is kept as it was.
-    if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMLoadFloat3(&s->m_vel))) > 0.0f)
-    {
-      DirectX::XMStoreFloat3(&s->m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_vel)));
+      m_entityGrid = new EntityGrid(8.0f, 8.0f);
+      m_obstructionGrid = new ObstructionGrid(64.0f, 64.0f);
+      m_clouds = new Clouds();
     }
     else
     {
-      s->m_front = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
+      for (auto const& building : m_levelFile->m_buildings)
+      {
+        building->m_pos.y = m_landscape.m_heightMap->GetValue(building->m_pos.x, building->m_pos.z);
+      }
     }
-    s->m_id.SetTeamId(_teamId);
-    s->m_id.SetUnitId(_unitId);
-    s->m_id.SetIndex(unitIndex);
-    s->m_spawnPoint = _pos;
-    s->m_roamRange = _range;
-    s->m_routeId = _routeId;
-    s->m_routeWayPointId = _routeWaypointId;
-    if (_range == -1.0f)
-      s->m_roamRange = _spread;
+
+    InitTeams();
+
+    if (m_levelFile->m_levelDifficulty == -1)
+    {
+      // Remember the difficulty factor that this with which this level was created.
+      m_levelFile->m_levelDifficulty = g_difficultyLevel;
+    }
+    else
+    {
+      // Set difficulty level to the created level difficulty
+      g_difficultyLevel = m_levelFile->m_levelDifficulty;
+    }
+  }
+
+
+  void Location::Empty()
+  {
+    m_landscape.Empty();
+
+    m_lights.Empty();
+    m_buildings.Empty();
+    m_spirits.Empty();
+    m_lasers.Empty();
+    m_effects.Empty();
+
+    m_buildingsWalker.Reset();
+    m_spiritsWalker.Reset();
+    m_lasersWalker.Reset();
+    m_effectsWalker.Reset();
+
+    delete m_levelFile;
+    m_levelFile = nullptr;
+    delete[] m_teams;
+    m_teams = nullptr;
+    delete m_entityGrid;
+    m_entityGrid = nullptr;
+    delete m_obstructionGrid;
+    m_obstructionGrid = nullptr;
+    delete m_clouds;
+    m_clouds = nullptr;
+    delete m_water;
+    m_water = nullptr;
+  }
+
+
+  void Location::LoadLevel(char const* missionFilename, char const* mapFilename)
+  {
+    m_levelFile = new LevelFile(missionFilename, mapFilename);
+
+
+    //
+    // Are the objectives already completed on entry?
+    // If so, suppress congratulations message
+
+    if (MissionComplete())
+    {
+      m_missionComplete = true;
+
+      GlobalLocation* gloc = g_globalWorld->GetLocation(g_requestedLocationId);
+      gloc->m_missionCompleted = true;
+    }
+  }
+
+
+  void Location::InitLandscape() { m_landscape.Init(&m_levelFile->m_landscape); }
+
+
+  void Location::InitLights()
+  {
+    for (auto const& levelLight : m_levelFile->m_lights)
+    {
+      Light* light = new Light();
+      light->SetColour(levelLight->m_colour);
+      light->SetFront(levelLight->m_front);
+      m_lights.PutData(light);
+    }
+  }
+
+
+  void Location::InitBuildings()
+  {
+    for (auto const& building : m_levelFile->m_buildings)
+    {
+      Building* existing = g_location->GetBuilding(building->m_id.GetUniqueId());
+      if (existing)
+      {
+        ASSERT_TEXT(false,
+                    "Error loading level file...duplicate building found\n"
+                    "Map filename = {}, Mission filename = {}\n"
+                    "Existing building type = {}, new building type = {}",
+                    m_levelFile->m_mapFilename, m_levelFile->m_missionFilename, Building::GetTypeName(existing->m_type),
+                    Building::GetTypeName(building->m_type));
+      }
+      Building* newBuilding = Building::CreateBuilding(building->m_type);
+      m_buildings.PutData(newBuilding);
+      newBuilding->Initialise(building.get());
+      newBuilding->SetDetail(g_prefsManager->GetInt("RenderBuildingDetail", 1));
+    }
+  }
+
+
+  void Location::InitTeams()
+  {
+    m_teams = new Team[NUM_TEAMS];
+
+    m_teams[0].m_colour.Set(100, 255, 100); // Normally Green AI
+    m_teams[1].m_colour.Set(200, 50, 50);   // Normally Virii
+    m_teams[2].m_colour.Set(200, 200, 30);  // Normally Player
+    m_teams[3].m_colour.Set(120, 180, 255); // Magenta
+    //    m_teams[4].m_colour.Set(120,180,255);	// Blue
+    //    m_teams[5].m_colour.Set( 50,255, 50);	// Green
+    //    m_teams[6].m_colour.Set(250,200, 10);	// Orange
+    //    m_teams[7].m_colour.Set(150,150,150);	// Grey
+  }
+
+
+  // *** SpawnEntities
+  // Returns id of last entity spawned
+  // Only useful if we've only spawned one entity, eg an engineer
+  WorldObjectId Location::SpawnEntities(DirectX::XMFLOAT3 const& _pos, unsigned char _teamId, int _unitId, unsigned char _type, int _numEntities,
+                                        DirectX::XMFLOAT3 const& _vel, float _spread, float _range, int _routeId, int _routeWaypointId)
+  {
+    DEBUG_ASSERT(_teamId < NUM_TEAMS && m_teams[_teamId].m_teamType > Team::TeamTypeUnused);
+
+    Team* team = &m_teams[_teamId];
+    WorldObjectId entityId;
+
+    for (int i = 0; i < _numEntities; i++)
+    {
+      int unitIndex;
+      Entity* s = team->NewEntity(_type, _unitId, &unitIndex);
+      DEBUG_ASSERT(s);
+
+      s->SetType(_type);
+      s->m_pos = FindValidSpawnPosition(_pos, _spread);
+      s->m_onGround = false;
+      s->m_vel = _vel;
+      // The zero case is REACHABLE -- SpawnEntities is called with a zero
+      // velocity all over the tree -- and the legacy fallback was an explicit
+      // (1,0,0) rather than Normalise's, so the branch is kept as it was.
+      if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMLoadFloat3(&s->m_vel))) > 0.0f)
+      {
+        DirectX::XMStoreFloat3(&s->m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_vel)));
+      }
+      else
+      {
+        s->m_front = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
+      }
+      s->m_id.SetTeamId(_teamId);
+      s->m_id.SetUnitId(_unitId);
+      s->m_id.SetIndex(unitIndex);
+      s->m_spawnPoint = _pos;
+      s->m_roamRange = _range;
+      s->m_routeId = _routeId;
+      s->m_routeWayPointId = _routeWaypointId;
+      if (_range == -1.0f)
+        s->m_roamRange = _spread;
+      s->Begin();
+
+      m_entityGrid->AddObject(s->m_id, s->m_pos.x, s->m_pos.z, s->m_radius);
+
+      entityId = s->m_id;
+    }
+
+    if (_unitId != -1)
+    {
+      Unit* unit = team->m_units[_unitId];
+      unit->RecalculateOffsets();
+    }
+
+    return entityId;
+  }
+
+
+  DirectX::XMFLOAT3 Location::FindValidSpawnPosition(DirectX::XMFLOAT3 const& _pos, float _spread)
+  {
+    int tries = 10;
+
+    while (tries > 0)
+    {
+      DirectX::XMFLOAT3 randomPos = _pos;
+
+      float radius = syncfrand(_spread);
+      float theta = syncfrand(M_PI * 2);
+      randomPos.x += radius * sinf(theta);
+      randomPos.z += radius * cosf(theta);
+
+      bool onMap = randomPos.x >= 0 && randomPos.z >= 0 && randomPos.x < m_landscape.GetWorldSizeX() && randomPos.z < m_landscape.GetWorldSizeZ();
+
+      if (onMap)
+      {
+        float landHeight = m_landscape.m_heightMap->GetValue(randomPos.x, randomPos.z);
+
+        if (landHeight > 0.0f)
+        {
+          return randomPos;
+        }
+      }
+
+      tries--;
+    }
+
+    //
+    // Failed to find a valid pos
+
+    DirectX::XMFLOAT3 pos = _pos;
+    pos.x = std::max(pos.x, 20.0f);
+    pos.z = std::max(pos.z, 20.0f);
+    pos.x = std::min(pos.x, m_landscape.GetWorldSizeX() - 20);
+    pos.z = std::min(pos.z, m_landscape.GetWorldSizeZ() - 20);
+
+    return pos;
+  }
+
+
+  int Location::SpawnSpirit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, unsigned char _teamId, WorldObjectId _id)
+  {
+    DEBUG_ASSERT(_teamId < NUM_TEAMS);
+
+    int index = m_spirits.GetNextFree();
+    Spirit* s = m_spirits.GetPointer(index);
+    DirectX::XMStoreFloat3(&s->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::g_XMIdentityR1));
+    s->m_vel = _vel;
+    s->m_teamId = _teamId;
+    s->m_worldObjectId = _id;
+    s->m_id.Set(_teamId, UNIT_SPIRITS, index, -1);
     s->Begin();
 
-    m_entityGrid->AddObject(s->m_id, s->m_pos.x, s->m_pos.z, s->m_radius);
-
-    entityId = s->m_id;
+    return index;
   }
 
-  if (_unitId != -1)
+
+  //  *** GetSpirit
+  int Location::GetSpirit(WorldObjectId _id)
   {
-    Unit* unit = team->m_units[_unitId];
-    unit->RecalculateOffsets();
-  }
-
-  return entityId;
-}
-
-
-DirectX::XMFLOAT3 Location::FindValidSpawnPosition(DirectX::XMFLOAT3 const& _pos, float _spread)
-{
-  int tries = 10;
-
-  while (tries > 0)
-  {
-    DirectX::XMFLOAT3 randomPos = _pos;
-
-    float radius = syncfrand(_spread);
-    float theta = syncfrand(M_PI * 2);
-    randomPos.x += radius * sinf(theta);
-    randomPos.z += radius * cosf(theta);
-
-    bool onMap = randomPos.x >= 0 && randomPos.z >= 0 && randomPos.x < m_landscape.GetWorldSizeX() && randomPos.z < m_landscape.GetWorldSizeZ();
-
-    if (onMap)
+    if (!_id.IsValid())
     {
-      float landHeight = m_landscape.m_heightMap->GetValue(randomPos.x, randomPos.z);
+      return -1;
+    }
 
-      if (landHeight > 0.0f)
+    for (int i = 0; i < m_spirits.Size(); ++i)
+    {
+      if (m_spirits.ValidIndex(i))
       {
-        return randomPos;
-      }
-    }
-
-    tries--;
-  }
-
-  //
-  // Failed to find a valid pos
-
-  DirectX::XMFLOAT3 pos = _pos;
-  pos.x = std::max(pos.x, 20.0f);
-  pos.z = std::max(pos.z, 20.0f);
-  pos.x = std::min(pos.x, m_landscape.GetWorldSizeX() - 20);
-  pos.z = std::min(pos.z, m_landscape.GetWorldSizeZ() - 20);
-
-  return pos;
-}
-
-
-int Location::SpawnSpirit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, unsigned char _teamId, WorldObjectId _id)
-{
-  DEBUG_ASSERT(_teamId < NUM_TEAMS);
-
-  int index = m_spirits.GetNextFree();
-  Spirit* s = m_spirits.GetPointer(index);
-  DirectX::XMStoreFloat3(&s->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::g_XMIdentityR1));
-  s->m_vel = _vel;
-  s->m_teamId = _teamId;
-  s->m_worldObjectId = _id;
-  s->m_id.Set(_teamId, UNIT_SPIRITS, index, -1);
-  s->Begin();
-
-  return index;
-}
-
-
-//  *** GetSpirit
-int Location::GetSpirit(WorldObjectId _id)
-{
-  if (!_id.IsValid())
-  {
-    return -1;
-  }
-
-  for (int i = 0; i < m_spirits.Size(); ++i)
-  {
-    if (m_spirits.ValidIndex(i))
-    {
-      Spirit* spirit = m_spirits.GetPointer(i);
-      if (spirit->m_worldObjectId == _id)
-      {
-        return i;
-      }
-    }
-  }
-
-  return -1;
-}
-
-
-WorldObject* Location::GetWorldObject(WorldObjectId _id)
-{
-  switch (_id.GetUnitId())
-  {
-  case UNIT_BUILDINGS:
-    return GetBuilding(_id.GetUniqueId());
-  case UNIT_EFFECTS:
-    return GetEffect(_id);
-  case UNIT_SPIRITS:
-    return GetSpirit(_id.GetIndex());
-  default:
-    return GetEntity(_id);
-  }
-}
-
-
-Spirit* Location::GetSpirit(int _index)
-{
-  if (m_spirits.ValidIndex(_index))
-  {
-    return &m_spirits[_index];
-  }
-
-  return nullptr;
-}
-
-
-WorldObject* Location::GetEffect(WorldObjectId _id)
-{
-  if (m_effects.ValidIndex(_id.GetIndex()))
-  {
-    WorldObject* wobj = m_effects[_id.GetIndex()];
-    if (wobj->m_id.GetUniqueId() == _id.GetUniqueId())
-    {
-      return wobj;
-    }
-  }
-
-  return nullptr;
-}
-
-
-Entity* Location::GetEntity(WorldObjectId _id)
-{
-  unsigned char const teamId = _id.GetTeamId();
-  int const unitId = _id.GetUnitId();
-  int const index = _id.GetIndex();
-  int const uniqueId = _id.GetUniqueId();
-
-  if (teamId >= NUM_TEAMS || m_teams[teamId].m_teamType == Team::TeamTypeUnused)
-  {
-    return nullptr;
-  }
-
-  if (m_teams[teamId].m_units.ValidIndex(unitId))
-  {
-    Unit* unit = m_teams[teamId].m_units[unitId];
-    if (unit->m_entities.ValidIndex(index))
-    {
-      Entity* entity = unit->m_entities[index];
-      if (entity->m_id.GetUniqueId() == uniqueId)
-      {
-        return entity;
-      }
-    }
-  }
-
-  if (unitId == -1)
-  {
-    if (m_teams[teamId].m_others.ValidIndex(index))
-    {
-      Entity* entity = m_teams[teamId].m_others[index];
-      if (entity->m_id.GetUniqueId() == uniqueId)
-      {
-        return entity;
-      }
-    }
-  }
-
-  return nullptr;
-}
-
-
-Entity* Location::GetEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir)
-{
-  for (unsigned int i = 0; i < NUM_TEAMS; ++i)
-  {
-    Entity* result = m_teams[i].RayHitEntity(_rayStart, _rayDir);
-    if (result)
-    {
-      return result;
-    }
-  }
-
-  return nullptr;
-}
-
-
-Entity* Location::GetEntitySafe(WorldObjectId _id, unsigned char _type)
-{
-  WorldObject* wobj = GetEntity(_id);
-  Entity* ent = (Entity*)wobj;
-
-  if (ent && ent->m_type == _type)
-  {
-    return ent;
-  }
-
-  return nullptr;
-}
-
-
-Unit* Location::GetUnit(WorldObjectId _id)
-{
-  unsigned char teamId = _id.GetTeamId();
-  int unitId = _id.GetUnitId();
-
-  if (teamId >= NUM_TEAMS || m_teams[teamId].m_teamType == Team::TeamTypeUnused)
-  {
-    return nullptr;
-  }
-
-  if (m_teams[teamId].m_units.ValidIndex(unitId))
-  {
-    Unit* unit = m_teams[teamId].m_units[unitId];
-    return unit;
-  }
-
-  return nullptr;
-}
-
-
-Building* Location::GetBuilding(int _id)
-{
-  if (_id == -1)
-    return nullptr;
-
-  if (g_editing)
-  {
-    return m_levelFile->GetBuilding(_id);
-  }
-  else
-  {
-    for (int i = 0; i < m_buildings.Size(); ++i)
-    {
-      if (m_buildings.ValidIndex(i))
-      {
-        Building* building = m_buildings.GetData(i);
-        if (building->m_id.GetUniqueId() == _id)
+        Spirit* spirit = m_spirits.GetPointer(i);
+        if (spirit->m_worldObjectId == _id)
         {
-          return building;
+          return i;
         }
       }
     }
+
+    return -1;
   }
 
-  return nullptr;
-}
 
-
-Building* Location::GetBuilding(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir)
-{
-  for (unsigned int i = 0; i < m_buildings.Size(); ++i)
+  WorldObject* Location::GetWorldObject(WorldObjectId _id)
   {
-    if (m_buildings.ValidIndex(i))
+    switch (_id.GetUnitId())
     {
-      Building* b = m_buildings[i];
-      if (b->DoesRayHit(_rayStart, _rayDir))
-      {
-        return b;
-      }
+    case UNIT_BUILDINGS:
+      return GetBuilding(_id.GetUniqueId());
+    case UNIT_EFFECTS:
+      return GetEffect(_id);
+    case UNIT_SPIRITS:
+      return GetSpirit(_id.GetIndex());
+    default:
+      return GetEntity(_id);
     }
   }
 
-  return nullptr;
-}
 
-
-bool Location::IsVisible(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to)
-{
-  DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
-  DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_to), from);
-
-  float tolerance = 20.0f;
-  DirectX::XMFLOAT3 rayDir;
-  DirectX::XMStoreFloat3(&rayDir, DirectX::XMVector3Normalize(delta));
-
-  DirectX::XMFLOAT3 startPos;
-  DirectX::XMStoreFloat3(&startPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&rayDir), DirectX::XMVectorReplicate(tolerance), from));
-
-  // Braced to zero: the early return below is what stops an unwritten hitPos
-  // being read, and Vector3's default constructor is what made that safe
-  // before the return existed.
-  DirectX::XMFLOAT3 hitPos{0.0f, 0.0f, 0.0f};
-  bool landHit = g_location->m_landscape.RayHit(startPos, rayDir, &hitPos);
-
-  if (!landHit)
-    return true;
-
-  float distanceToTarget = DirectX::XMVectorGetX(DirectX::XMVector3Length(delta));
-  float distanceToHit = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&hitPos), from)));
-  if (distanceToHit > distanceToTarget + tolerance)
-    return true;
-
-  return false;
-}
-
-
-bool Location::IsWalkable(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to, bool _evaluateCliffs)
-{
-  float waterLevel = -1.0f;
-
-  if (_from.y <= waterLevel || _to.y <= waterLevel)
+  Spirit* Location::GetSpirit(int _index)
   {
+    if (m_spirits.ValidIndex(_index))
+    {
+      return &m_spirits[_index];
+    }
+
+    return nullptr;
+  }
+
+
+  WorldObject* Location::GetEffect(WorldObjectId _id)
+  {
+    if (m_effects.ValidIndex(_id.GetIndex()))
+    {
+      WorldObject* wobj = m_effects[_id.GetIndex()];
+      if (wobj->m_id.GetUniqueId() == _id.GetUniqueId())
+      {
+        return wobj;
+      }
+    }
+
+    return nullptr;
+  }
+
+
+  Entity* Location::GetEntity(WorldObjectId _id)
+  {
+    unsigned char const teamId = _id.GetTeamId();
+    int const unitId = _id.GetUnitId();
+    int const index = _id.GetIndex();
+    int const uniqueId = _id.GetUniqueId();
+
+    if (teamId >= NUM_TEAMS || m_teams[teamId].m_teamType == Team::TeamTypeUnused)
+    {
+      return nullptr;
+    }
+
+    if (m_teams[teamId].m_units.ValidIndex(unitId))
+    {
+      Unit* unit = m_teams[teamId].m_units[unitId];
+      if (unit->m_entities.ValidIndex(index))
+      {
+        Entity* entity = unit->m_entities[index];
+        if (entity->m_id.GetUniqueId() == uniqueId)
+        {
+          return entity;
+        }
+      }
+    }
+
+    if (unitId == -1)
+    {
+      if (m_teams[teamId].m_others.ValidIndex(index))
+      {
+        Entity* entity = m_teams[teamId].m_others[index];
+        if (entity->m_id.GetUniqueId() == uniqueId)
+        {
+          return entity;
+        }
+      }
+    }
+
+    return nullptr;
+  }
+
+
+  Entity* Location::GetEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir)
+  {
+    for (unsigned int i = 0; i < NUM_TEAMS; ++i)
+    {
+      Entity* result = m_teams[i].RayHitEntity(_rayStart, _rayDir);
+      if (result)
+      {
+        return result;
+      }
+    }
+
+    return nullptr;
+  }
+
+
+  Entity* Location::GetEntitySafe(WorldObjectId _id, unsigned char _type)
+  {
+    WorldObject* wobj = GetEntity(_id);
+    Entity* ent = (Entity*)wobj;
+
+    if (ent && ent->m_type == _type)
+    {
+      return ent;
+    }
+
+    return nullptr;
+  }
+
+
+  Unit* Location::GetUnit(WorldObjectId _id)
+  {
+    unsigned char teamId = _id.GetTeamId();
+    int unitId = _id.GetUnitId();
+
+    if (teamId >= NUM_TEAMS || m_teams[teamId].m_teamType == Team::TeamTypeUnused)
+    {
+      return nullptr;
+    }
+
+    if (m_teams[teamId].m_units.ValidIndex(unitId))
+    {
+      Unit* unit = m_teams[teamId].m_units[unitId];
+      return unit;
+    }
+
+    return nullptr;
+  }
+
+
+  Building* Location::GetBuilding(int _id)
+  {
+    if (_id == -1)
+      return nullptr;
+
+    if (g_editing)
+    {
+      return m_levelFile->GetBuilding(_id);
+    }
+    else
+    {
+      for (int i = 0; i < m_buildings.Size(); ++i)
+      {
+        if (m_buildings.ValidIndex(i))
+        {
+          Building* building = m_buildings.GetData(i);
+          if (building->m_id.GetUniqueId() == _id)
+          {
+            return building;
+          }
+        }
+      }
+    }
+
+    return nullptr;
+  }
+
+
+  Building* Location::GetBuilding(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir)
+  {
+    for (unsigned int i = 0; i < m_buildings.Size(); ++i)
+    {
+      if (m_buildings.ValidIndex(i))
+      {
+        Building* b = m_buildings[i];
+        if (b->DoesRayHit(_rayStart, _rayDir))
+        {
+          return b;
+        }
+      }
+    }
+
+    return nullptr;
+  }
+
+
+  bool Location::IsVisible(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to)
+  {
+    DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
+    DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_to), from);
+
+    float tolerance = 20.0f;
+    DirectX::XMFLOAT3 rayDir;
+    DirectX::XMStoreFloat3(&rayDir, DirectX::XMVector3Normalize(delta));
+
+    DirectX::XMFLOAT3 startPos;
+    DirectX::XMStoreFloat3(&startPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&rayDir), DirectX::XMVectorReplicate(tolerance), from));
+
+    // Braced to zero: the early return below is what stops an unwritten hitPos
+    // being read, and Vector3's default constructor is what made that safe
+    // before the return existed.
+    DirectX::XMFLOAT3 hitPos{0.0f, 0.0f, 0.0f};
+    bool landHit = g_location->m_landscape.RayHit(startPos, rayDir, &hitPos);
+
+    if (!landHit)
+      return true;
+
+    float distanceToTarget = DirectX::XMVectorGetX(DirectX::XMVector3Length(delta));
+    float distanceToHit = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&hitPos), from)));
+    if (distanceToHit > distanceToTarget + tolerance)
+      return true;
+
     return false;
   }
 
-  START_PROFILE(g_profiler, "QueryWalkable");
 
-  float stepSize = 50.0f;
-  DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
-  DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&_to);
-  float totalDistance = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(from, to)));
-  int numSteps = totalDistance / stepSize;
-  DirectX::XMFLOAT3 diff;
-  DirectX::XMStoreFloat3(&diff, DirectX::XMVectorScale(DirectX::XMVectorSubtract(to, from), 1.0f / (float)numSteps));
-  float distanceUnderWater = 0.0f;
-
-  DirectX::XMFLOAT3 position = _from;
-  DirectX::XMFLOAT3 oldPosition = _from;
-  for (int i = 0; i < numSteps; ++i)
+  bool Location::IsWalkable(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to, bool _evaluateCliffs)
   {
-    position.y = m_landscape.m_heightMap->GetValue(position.x, position.z);
-    if (position.y <= waterLevel)
-    {
-      distanceUnderWater += stepSize;
-    }
+    float waterLevel = -1.0f;
 
-    if (distanceUnderWater >= 100.0f)
+    if (_from.y <= waterLevel || _to.y <= waterLevel)
     {
-      END_PROFILE(g_profiler, "QueryWalkable");
       return false;
     }
 
-    if (_evaluateCliffs)
+    START_PROFILE(g_profiler, "QueryWalkable");
+
+    float stepSize = 50.0f;
+    DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
+    DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&_to);
+    float totalDistance = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(from, to)));
+    int numSteps = totalDistance / stepSize;
+    DirectX::XMFLOAT3 diff;
+    DirectX::XMStoreFloat3(&diff, DirectX::XMVectorScale(DirectX::XMVectorSubtract(to, from), 1.0f / (float)numSteps));
+    float distanceUnderWater = 0.0f;
+
+    DirectX::XMFLOAT3 position = _from;
+    DirectX::XMFLOAT3 oldPosition = _from;
+    for (int i = 0; i < numSteps; ++i)
     {
-      float gradient = (position.y - oldPosition.y) / stepSize;
-      if (gradient > 2.3f)
+      position.y = m_landscape.m_heightMap->GetValue(position.x, position.z);
+      if (position.y <= waterLevel)
+      {
+        distanceUnderWater += stepSize;
+      }
+
+      if (distanceUnderWater >= 100.0f)
       {
         END_PROFILE(g_profiler, "QueryWalkable");
         return false;
       }
-    }
 
-    DirectX::XMStoreFloat3(&position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&position), DirectX::XMLoadFloat3(&diff)));
-  }
-
-  END_PROFILE(g_profiler, "QueryWalkable");
-
-  return true;
-}
-
-
-void Location::AdvanceWeapons(int _slice)
-{
-  START_PROFILE(g_profiler, "Advance Lasers");
-  int startIndex, endIndex;
-  m_lasersWalker.GetNextSliceBounds(_slice, m_lasers.Size(), &startIndex, &endIndex);
-  for (int i = startIndex; i <= endIndex; ++i)
-  {
-    if (m_lasers.ValidIndex(i))
-    {
-      Laser* l = m_lasers.GetPointer(i);
-      bool remove = l->Advance();
-      if (remove)
+      if (_evaluateCliffs)
       {
-        m_lasers.MarkNotUsed(i);
-      }
-    }
-  }
-  END_PROFILE(g_profiler, "Advance Lasers");
-
-
-  START_PROFILE(g_profiler, "Advance Effects");
-  m_effectsWalker.GetNextSliceBounds(_slice, m_effects.Size(), &startIndex, &endIndex);
-  for (int i = startIndex; i <= endIndex; ++i)
-  {
-    if (m_effects.ValidIndex(i))
-    {
-      WorldObject* e = m_effects[i];
-      bool remove = e->Advance();
-      if (remove)
-      {
-        m_effects.MarkNotUsed(i);
-        delete e;
-      }
-    }
-  }
-  END_PROFILE(g_profiler, "Advance Effects");
-}
-
-
-// *** AdvanceBuildings
-void Location::AdvanceBuildings(int _slice)
-{
-  START_PROFILE(g_profiler, "Advance Buildings");
-  bool obstructionGridChanged = false;
-
-  int startIndex, endIndex;
-  m_buildingsWalker.GetNextSliceBounds(_slice, m_buildings.Size(), &startIndex, &endIndex);
-  for (int i = startIndex; i <= endIndex; ++i)
-  {
-    if (m_buildings.ValidIndex(i))
-    {
-      Building* building = m_buildings.GetData(i);
-
-      START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
-      bool removeBuilding = building->Advance();
-      END_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
-
-      if (removeBuilding)
-      {
-        m_buildings.MarkNotUsed(i);
-        obstructionGridChanged = true;
-      }
-    }
-  }
-
-  if (obstructionGridChanged)
-  {
-    // TODO: This is WAY too slow, should only recalculate the areas affected
-    g_location->m_obstructionGrid->CalculateAll();
-  }
-
-  END_PROFILE(g_profiler, "Advance Buildings");
-}
-/*
-void Location::AdvanceBuildings( int _slice )
-{
-    if( _slice == 5 )
-    {
-        START_PROFILE(g_profiler, "Advance Buildings");
-        bool obstructionGridChanged = false;
-
-        for( int i = 0; i < m_buildings.Size(); ++i )
+        float gradient = (position.y - oldPosition.y) / stepSize;
+        if (gradient > 2.3f)
         {
-            if( m_buildings.ValidIndex(i) )
-            {
-                Building *building = m_buildings.GetData(i);
-
-                START_PROFILE( g_profiler, Building::GetTypeName( building->m_type ) );
-                bool removeBuilding = building->Advance();
-                END_PROFILE( g_profiler, Building::GetTypeName( building->m_type ) );
-
-                if( removeBuilding )
-                {
-                    m_buildings.MarkNotUsed(i);
-                    obstructionGridChanged = true;
-                }
-            }
+          END_PROFILE(g_profiler, "QueryWalkable");
+          return false;
         }
-
-        if( obstructionGridChanged )
-        {
-            // TODO: This is WAY too slow, should only recalculate the areas affected
-            g_location->m_obstructionGrid->CalculateAll();
-        }
-
-        END_PROFILE(g_profiler, "Advance Buildings");
-    }
-}*/
-
-
-// *** AdvanceTeams
-void Location::AdvanceTeams(int _slice)
-{
-  for (int i = 0; i < NUM_TEAMS; i++)
-  {
-    m_teams[i].Advance(_slice);
-  }
-}
-
-
-// *** AdvanceSpirits
-void Location::AdvanceSpirits(int _slice)
-{
-  START_PROFILE(g_profiler, "Advance Spirits");
-
-  int startIndex, endIndex;
-  m_spiritsWalker.GetNextSliceBounds(_slice, m_spirits.Size(), &startIndex, &endIndex);
-  for (int i = startIndex; i <= endIndex; ++i)
-  {
-    if (m_spirits.ValidIndex(i))
-    {
-      Spirit* s = m_spirits.GetPointer(i);
-      bool removeSpirit = s->Advance();
-      if (removeSpirit)
-      {
-        m_spirits.MarkNotUsed(i);
       }
+
+      DirectX::XMStoreFloat3(&position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&position), DirectX::XMLoadFloat3(&diff)));
     }
-  }
 
-  END_PROFILE(g_profiler, "Advance Spirits");
-}
+    END_PROFILE(g_profiler, "QueryWalkable");
 
-
-// *** AdvanceClouds
-void Location::AdvanceClouds(int _slice)
-{
-  if (_slice == 3)
-  {
-    START_PROFILE(g_profiler, "Advance Clouds");
-    m_clouds->Advance();
-    END_PROFILE(g_profiler, "Advance Clouds");
-  }
-}
-
-
-// *** DoMissionCompleteActions
-// Does whatever needs to be done when a mission is completed
-void Location::DoMissionCompleteActions()
-{
-  //
-  // Update the mission file for this location
-
-  GlobalLocation* gloc = g_globalWorld->GetLocation(g_locationId);
-  gloc->m_missionCompleted = true;
-
-  // gloc->m_missionAvailable = false;
-  // gloc->m_missionFilename = "null";
-
-  g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageObjectivesComplete, -1, 5.0f);
-
-
-  //    if( !g_camera->IsInteractive() ||
-  //        g_script->IsRunningScript() )
-  //    {
-  //        return;
-  //    }
-
-  //
-  // Get Sepulveda to tell you that the level is complete
-}
-
-
-// *** MissionComplete
-bool Location::MissionComplete()
-{
-  if (m_missionComplete)
     return true;
+  }
 
-  auto* objectivesList = &m_levelFile->m_primaryObjectives;
 
-  for (auto const& gec : *objectivesList)
+  void Location::AdvanceWeapons(int _slice)
   {
-    if (!gec->Evaluate())
+    START_PROFILE(g_profiler, "Advance Lasers");
+    int startIndex, endIndex;
+    m_lasersWalker.GetNextSliceBounds(_slice, m_lasers.Size(), &startIndex, &endIndex);
+    for (int i = startIndex; i <= endIndex; ++i)
     {
-      return false;
+      if (m_lasers.ValidIndex(i))
+      {
+        Laser* l = m_lasers.GetPointer(i);
+        bool remove = l->Advance();
+        if (remove)
+        {
+          m_lasers.MarkNotUsed(i);
+        }
+      }
+    }
+    END_PROFILE(g_profiler, "Advance Lasers");
+
+
+    START_PROFILE(g_profiler, "Advance Effects");
+    m_effectsWalker.GetNextSliceBounds(_slice, m_effects.Size(), &startIndex, &endIndex);
+    for (int i = startIndex; i <= endIndex; ++i)
+    {
+      if (m_effects.ValidIndex(i))
+      {
+        WorldObject* e = m_effects[i];
+        bool remove = e->Advance();
+        if (remove)
+        {
+          m_effects.MarkNotUsed(i);
+          delete e;
+        }
+      }
+    }
+    END_PROFILE(g_profiler, "Advance Effects");
+  }
+
+
+  // *** AdvanceBuildings
+  void Location::AdvanceBuildings(int _slice)
+  {
+    START_PROFILE(g_profiler, "Advance Buildings");
+    bool obstructionGridChanged = false;
+
+    int startIndex, endIndex;
+    m_buildingsWalker.GetNextSliceBounds(_slice, m_buildings.Size(), &startIndex, &endIndex);
+    for (int i = startIndex; i <= endIndex; ++i)
+    {
+      if (m_buildings.ValidIndex(i))
+      {
+        Building* building = m_buildings.GetData(i);
+
+        START_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
+        bool removeBuilding = building->Advance();
+        END_PROFILE(g_profiler, Building::GetTypeName(building->m_type));
+
+        if (removeBuilding)
+        {
+          m_buildings.MarkNotUsed(i);
+          obstructionGridChanged = true;
+        }
+      }
+    }
+
+    if (obstructionGridChanged)
+    {
+      // TODO: This is WAY too slow, should only recalculate the areas affected
+      g_location->m_obstructionGrid->CalculateAll();
+    }
+
+    END_PROFILE(g_profiler, "Advance Buildings");
+  }
+  /*
+  void Location::AdvanceBuildings( int _slice )
+  {
+      if( _slice == 5 )
+      {
+          START_PROFILE(g_profiler, "Advance Buildings");
+          bool obstructionGridChanged = false;
+
+          for( int i = 0; i < m_buildings.Size(); ++i )
+          {
+              if( m_buildings.ValidIndex(i) )
+              {
+                  Building *building = m_buildings.GetData(i);
+
+                  START_PROFILE( g_profiler, Building::GetTypeName( building->m_type ) );
+                  bool removeBuilding = building->Advance();
+                  END_PROFILE( g_profiler, Building::GetTypeName( building->m_type ) );
+
+                  if( removeBuilding )
+                  {
+                      m_buildings.MarkNotUsed(i);
+                      obstructionGridChanged = true;
+                  }
+              }
+          }
+
+          if( obstructionGridChanged )
+          {
+              // TODO: This is WAY too slow, should only recalculate the areas affected
+              g_location->m_obstructionGrid->CalculateAll();
+          }
+
+          END_PROFILE(g_profiler, "Advance Buildings");
+      }
+  }*/
+
+
+  // *** AdvanceTeams
+  void Location::AdvanceTeams(int _slice)
+  {
+    for (int i = 0; i < NUM_TEAMS; i++)
+    {
+      m_teams[i].Advance(_slice);
     }
   }
 
-  return true;
-}
+
+  // *** AdvanceSpirits
+  void Location::AdvanceSpirits(int _slice)
+  {
+    START_PROFILE(g_profiler, "Advance Spirits");
+
+    int startIndex, endIndex;
+    m_spiritsWalker.GetNextSliceBounds(_slice, m_spirits.Size(), &startIndex, &endIndex);
+    for (int i = startIndex; i <= endIndex; ++i)
+    {
+      if (m_spirits.ValidIndex(i))
+      {
+        Spirit* s = m_spirits.GetPointer(i);
+        bool removeSpirit = s->Advance();
+        if (removeSpirit)
+        {
+          m_spirits.MarkNotUsed(i);
+        }
+      }
+    }
+
+    END_PROFILE(g_profiler, "Advance Spirits");
+  }
 
 
-// *** Advance
-void Location::Advance(int _slice)
-{
-  if (g_paused)
-    return;
+  // *** AdvanceClouds
+  void Location::AdvanceClouds(int _slice)
+  {
+    if (_slice == 3)
+    {
+      START_PROFILE(g_profiler, "Advance Clouds");
+      m_clouds->Advance();
+      END_PROFILE(g_profiler, "Advance Clouds");
+    }
+  }
 
-  m_lastSliceProcessed = _slice;
+
+  // *** DoMissionCompleteActions
+  // Does whatever needs to be done when a mission is completed
+  void Location::DoMissionCompleteActions()
+  {
+    //
+    // Update the mission file for this location
+
+    GlobalLocation* gloc = g_globalWorld->GetLocation(g_locationId);
+    gloc->m_missionCompleted = true;
+
+    // gloc->m_missionAvailable = false;
+    // gloc->m_missionFilename = "null";
+
+    g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageObjectivesComplete, -1, 5.0f);
+
+
+    //    if( !g_camera->IsInteractive() ||
+    //        g_script->IsRunningScript() )
+    //    {
+    //        return;
+    //    }
+
+    //
+    // Get Sepulveda to tell you that the level is complete
+  }
+
+
+  // *** MissionComplete
+  bool Location::MissionComplete()
+  {
+    if (m_missionComplete)
+      return true;
+
+    auto* objectivesList = &m_levelFile->m_primaryObjectives;
+
+    for (auto const& gec : *objectivesList)
+    {
+      if (!gec->Evaluate())
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+
+  // *** Advance
+  void Location::Advance(int _slice)
+  {
+    if (g_paused)
+      return;
+
+    m_lastSliceProcessed = _slice;
 
 #undef for
 #pragma omp parallel for schedule(dynamic)
@@ -921,7 +925,7 @@ void Location::Advance(int _slice)
   {
     AdvanceChristmas();
   }
-}
+  }
 
 void Location::AdvanceChristmas()
 {
@@ -1117,9 +1121,9 @@ void Location::RenderBuildings()
   }
 
 #ifdef CHEATMENU_ENABLED
-  if (g_inputManager->controlEvent(ControlRTLoaderPixelWaveIncrease))
+  if (g_inputManager->controlEvent(ControlType::ControlRTLoaderPixelWaveIncrease))
     g_prefsManager->SetInt("RenderSpecialLighting", 1);
-  if (g_inputManager->controlEvent(ControlRTLoaderPixelWaveDecrease))
+  if (g_inputManager->controlEvent(ControlType::ControlRTLoaderPixelWaveDecrease))
     g_prefsManager->SetInt("RenderSpecialLighting", 0);
 #endif
 
@@ -2283,3 +2287,4 @@ void Location::RegenerateOpenGlState()
   // Tell the water
   g_location->m_water->BuildOpenGlState();
 }
+} // namespace Species

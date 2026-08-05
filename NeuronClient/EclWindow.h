@@ -10,59 +10,66 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #define SIZE_ECLWINDOW_NAME 256
 #define SIZE_ECLWINDOW_TITLE 256
 
 
-class EclButton;
-
-
-class EclWindow
+namespace Neuron
 {
-  public:
-    int m_x;
-    int m_y;
-    int m_w;
-    int m_h;
+  class EclButton;
 
-    char m_name[SIZE_ECLWINDOW_NAME];
-    char m_title[SIZE_ECLWINDOW_TITLE];
+  class EclWindow
+  {
+    public:
+      int m_x;
+      int m_y;
+      int m_w;
+      int m_h;
 
-    bool m_movable;
-    bool m_resizable;
+      // std::string since strings-modernised T11. Both were char[256] whose
+      // setters silently DID NOTHING for a longer value, leaving the window
+      // called "" — and a window with the wrong name cannot be found again.
+      std::string m_name;
+      std::string m_title;
 
-    std::vector<EclButton*> m_buttons;
+      bool m_movable;
+      bool m_resizable;
 
-  public:
-    char m_currentTextEdit[SIZE_ECLWINDOW_NAME];
+      std::vector<EclButton*> m_buttons;
 
-  public:
-    EclWindow(char const* _name);
-    virtual ~EclWindow();
+    public:
+      std::string m_currentTextEdit;
 
-    void SetName(char const* _name);
-    void SetTitle(char const* _title);
-    void SetPosition(int _x, int _y);
-    void SetSize(int _w, int _h);
-    void SetMovable(bool _movable);
-    void MakeAllOnScreen();
+    public:
+      EclWindow(std::string_view _name);
+      virtual ~EclWindow();
 
-    void RegisterButton(EclButton* button);
-    void RemoveButton(char const* _name);
+      void SetName(std::string_view _name);
+      void SetTitle(std::string_view _title);
+      void SetPosition(int _x, int _y);
+      void SetSize(int _w, int _h);
+      void SetMovable(bool _movable);
+      void MakeAllOnScreen();
 
-    void BeginTextEdit(const char* _name);
-    void EndTextEdit();
+      void RegisterButton(EclButton* button);
+      void RemoveButton(std::string_view _name);
 
-    virtual EclButton* GetButton(char const* _name);
-    virtual EclButton* GetButton(int _x, int _y);
+      void BeginTextEdit(std::string_view _name);
+      void EndTextEdit();
 
-    virtual void Create();
-    virtual void Remove();
-    virtual void Update();
-    virtual void Render(bool hasFocus);
+      virtual EclButton* GetButton(std::string_view _name);
+      virtual EclButton* GetButton(int _x, int _y);
 
-    virtual void Keypress(int keyCode, bool shift, bool ctrl, bool alt);
-    virtual void MouseEvent(bool lmb, bool rmb, bool up, bool down);
-};
+      virtual void Create();
+      virtual void Remove();
+      virtual void Update();
+      virtual void Render(bool hasFocus);
+
+      virtual void Keypress(int keyCode, bool shift, bool ctrl, bool alt);
+      virtual void MouseEvent(bool lmb, bool rmb, bool up, bool down);
+  };
+} // namespace Neuron

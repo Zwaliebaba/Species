@@ -33,396 +33,335 @@
 #include "AppState.h"
 
 
-void GameCursor::SetArrowFilenames(std::string_view _mainFilename)
+namespace Species
 {
-  m_selectionArrowFilename = _mainFilename;
-  m_selectionArrowShadowFilename = std::format("shadow_{}", m_selectionArrowFilename);
-}
-
-
-GameCursor::GameCursor()
-  : m_selectionArrowBoost(0.0f),
-    m_highlightingSomething(false),
-    m_validPlacementOpportunity(false),
-    m_moveableEntitySelected(false)
-{
-  m_cursorStandard = std::make_unique<MouseCursor>("Icons/MouseMain.bmp");
-  m_cursorStandard->SetHotspot(0.055f, 0.070f);
-  m_cursorStandard->SetSize(25.0f);
-
-  m_cursorPlacement = std::make_unique<MouseCursor>("Icons/MousePlacement.bmp");
-  m_cursorPlacement->SetHotspot(0.5f, 0.5f);
-  m_cursorPlacement->SetSize(40.0f);
-
-  m_cursorDisabled = std::make_unique<MouseCursor>("Icons/MouseDisabled.bmp");
-  m_cursorDisabled->SetHotspot(0.5f, 0.5f);
-  m_cursorDisabled->SetSize(60.0f);
-  m_cursorDisabled->SetColour(RGBAColour(255, 0, 0, 255));
-
-  m_cursorMoveHere = std::make_unique<MouseCursor>("Icons/MouseMoveHere.bmp");
-  m_cursorMoveHere->SetHotspot(0.5f, 0.5f);
-  m_cursorMoveHere->SetSize(30.0f);
-  m_cursorMoveHere->SetAnimation(true);
-  m_cursorMoveHere->SetColour(RGBAColour(255, 255, 150, 255));
-
-  m_cursorHighlight = std::make_unique<MouseCursor>("Icons/MouseHighlight.bmp");
-  m_cursorHighlight->SetHotspot(0.5f, 0.5f);
-  m_cursorHighlight->SetAnimation(true);
-
-  m_cursorTurretTarget = std::make_unique<MouseCursor>("Icons/MouseTurretTarget.bmp");
-  m_cursorTurretTarget->SetHotspot(0.5f, 0.5f);
-  m_cursorTurretTarget->SetColour(RGBAColour(255, 255, 255, 255));
-  m_cursorTurretTarget->SetShadowed(false);
-
-  m_cursorSelection = std::make_unique<MouseCursor>("Icons/MouseSelection.bmp");
-  m_cursorSelection->SetHotspot(0.5f, 0.5f);
-
-  m_cursorMissile.reset();
-
-  //
-  // Load selection arrow graphic
-
-  SetArrowFilenames("Icons/SelectionArrow.bmp");
-
-  std::unique_ptr<BinaryReader> binReader(g_resource->GetBinaryReader(m_selectionArrowFilename.c_str()));
-  ASSERT_TEXT(binReader, "Failed to open mouse cursor resource {}", m_selectionArrowFilename);
-  BitmapRGBA bmp(binReader.get(), "bmp");
-  binReader.reset();
-
-  g_resource->AddBitmap(m_selectionArrowFilename.c_str(), bmp);
-
-  bmp.ApplyBlurFilter(10.0f);
-  g_resource->AddBitmap(m_selectionArrowShadowFilename.c_str(), bmp);
-}
-
-GameCursor::~GameCursor() = default;
-
-bool GameCursor::GetSelectedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos)
-{
-  Team* team = g_location->GetMyTeam();
-
-  if (team)
+  void GameCursor::SetArrowFilenames(std::string_view _mainFilename)
   {
-    Entity* selectedEnt = team->GetMyEntity();
-    if (selectedEnt)
+    m_selectionArrowFilename = _mainFilename;
+    m_selectionArrowShadowFilename = std::format("shadow_{}", m_selectionArrowFilename);
+  }
+
+
+  GameCursor::GameCursor()
+    : m_selectionArrowBoost(0.0f),
+      m_highlightingSomething(false),
+      m_validPlacementOpportunity(false),
+      m_moveableEntitySelected(false)
+  {
+    m_cursorStandard = std::make_unique<MouseCursor>("Icons/MouseMain.bmp");
+    m_cursorStandard->SetHotspot(0.055f, 0.070f);
+    m_cursorStandard->SetSize(25.0f);
+
+    m_cursorPlacement = std::make_unique<MouseCursor>("Icons/MousePlacement.bmp");
+    m_cursorPlacement->SetHotspot(0.5f, 0.5f);
+    m_cursorPlacement->SetSize(40.0f);
+
+    m_cursorDisabled = std::make_unique<MouseCursor>("Icons/MouseDisabled.bmp");
+    m_cursorDisabled->SetHotspot(0.5f, 0.5f);
+    m_cursorDisabled->SetSize(60.0f);
+    m_cursorDisabled->SetColour(RGBAColour(255, 0, 0, 255));
+
+    m_cursorMoveHere = std::make_unique<MouseCursor>("Icons/MouseMoveHere.bmp");
+    m_cursorMoveHere->SetHotspot(0.5f, 0.5f);
+    m_cursorMoveHere->SetSize(30.0f);
+    m_cursorMoveHere->SetAnimation(true);
+    m_cursorMoveHere->SetColour(RGBAColour(255, 255, 150, 255));
+
+    m_cursorHighlight = std::make_unique<MouseCursor>("Icons/MouseHighlight.bmp");
+    m_cursorHighlight->SetHotspot(0.5f, 0.5f);
+    m_cursorHighlight->SetAnimation(true);
+
+    m_cursorTurretTarget = std::make_unique<MouseCursor>("Icons/MouseTurretTarget.bmp");
+    m_cursorTurretTarget->SetHotspot(0.5f, 0.5f);
+    m_cursorTurretTarget->SetColour(RGBAColour(255, 255, 255, 255));
+    m_cursorTurretTarget->SetShadowed(false);
+
+    m_cursorSelection = std::make_unique<MouseCursor>("Icons/MouseSelection.bmp");
+    m_cursorSelection->SetHotspot(0.5f, 0.5f);
+
+    m_cursorMissile.reset();
+
+    //
+    // Load selection arrow graphic
+
+    SetArrowFilenames("Icons/SelectionArrow.bmp");
+
+    std::unique_ptr<BinaryReader> binReader(g_resource->GetBinaryReader(m_selectionArrowFilename.c_str()));
+    ASSERT_TEXT(binReader, "Failed to open mouse cursor resource {}", m_selectionArrowFilename);
+    BitmapRGBA bmp(binReader.get(), "bmp");
+    binReader.reset();
+
+    g_resource->AddBitmap(m_selectionArrowFilename.c_str(), bmp);
+
+    bmp.ApplyBlurFilter(10.0f);
+    g_resource->AddBitmap(m_selectionArrowShadowFilename.c_str(), bmp);
+  }
+
+  GameCursor::~GameCursor() = default;
+
+  bool GameCursor::GetSelectedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos)
+  {
+    Team* team = g_location->GetMyTeam();
+
+    if (team)
     {
-      DirectX::XMStoreFloat3(&_pos,
-                             DirectX::XMVectorMultiplyAdd(
-                               DirectX::XMLoadFloat3(&selectedEnt->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
-                               DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&selectedEnt->m_pos), DirectX::XMLoadFloat3(&selectedEnt->m_centrePos))));
-      _id = selectedEnt->m_id;
-      return true;
-    }
-    else if (team->m_currentBuildingId != -1)
-    {
-      Building* building = g_location->GetBuilding(team->m_currentBuildingId);
-      if (building)
-      {
-        _pos = building->m_centrePos;
-        _id = building->m_id;
-        return true;
-      }
-    }
-    else
-    {
-      Unit* selected = team->GetMyUnit();
-      if (selected)
+      Entity* selectedEnt = team->GetMyEntity();
+      if (selectedEnt)
       {
         DirectX::XMStoreFloat3(&_pos,
-                               DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&selected->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
-                                                            DirectX::XMLoadFloat3(&selected->m_centrePos)));
-        _id.Set(selected->m_teamId, selected->m_unitId, -1, -1);
-
-        // Add the centre pos
-        for (int i = 0; i < selected->m_entities.Size(); ++i)
-        {
-          if (selected->m_entities.ValidIndex(i))
-          {
-            Entity* ent = selected->m_entities[i];
-            DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&ent->m_centrePos)));
-            break;
-          }
-        }
-
+                               DirectX::XMVectorMultiplyAdd(
+                                 DirectX::XMLoadFloat3(&selectedEnt->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
+                                 DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&selectedEnt->m_pos), DirectX::XMLoadFloat3(&selectedEnt->m_centrePos))));
+        _id = selectedEnt->m_id;
         return true;
       }
-    }
-  }
-
-  return false;
-}
-
-
-bool GameCursor::GetHighlightedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos, float& _radius)
-{
-  WorldObjectId id;
-  bool somethingHighlighted = false;
-  bool found = false;
-
-  if (!TheTaskManagerInterface()->m_visible)
-  {
-    somethingHighlighted = g_app->m_locationInput->GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
-  }
-  else
-  {
-    Task* task = g_taskManager->GetTask(TheTaskManagerInterface()->m_highlightedTaskId);
-    if (task && task->m_objId.IsValid())
-    {
-      id = task->m_objId;
-      somethingHighlighted = true;
-    }
-  }
-
-
-  if (somethingHighlighted)
-  {
-    if (id.GetUnitId() == UNIT_BUILDINGS)
-    {
-      // Found a building
-      Building* building = g_location->GetBuilding(id.GetUniqueId());
-      if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge || building->m_type == Building::TypeGunTurret ||
-          building->m_type == Building::TypeFenceSwitch)
+      else if (team->m_currentBuildingId != -1)
       {
-        _id = id;
-        _pos = building->m_centrePos;
-        _radius = building->m_radius;
-        found = true;
-        if (building->m_type == Building::TypeGunTurret)
+        Building* building = g_location->GetBuilding(team->m_currentBuildingId);
+        if (building)
         {
-          _pos.y += _radius * 0.5f;
+          _pos = building->m_centrePos;
+          _id = building->m_id;
+          return true;
         }
       }
-    }
-    else if (id.GetIndex() == -1)
-    {
-      // Found a unit
-      Unit* unit = g_location->GetUnit(id);
-      if (unit)
-      {
-        _id = id;
-        DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&unit->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
-                                                                   DirectX::XMLoadFloat3(&unit->m_centrePos)));
-        _radius = unit->m_radius;
-        found = true;
-
-        // Add the centre pos
-        for (int i = 0; i < unit->m_entities.Size(); ++i)
-        {
-          if (unit->m_entities.ValidIndex(i))
-          {
-            Entity* ent = unit->m_entities[i];
-            DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&ent->m_centrePos)));
-            break;
-          }
-        }
-      }
-    }
-    else
-    {
-      // Found an entity
-      Entity* entity = g_location->GetEntity(id);
-      _id = id;
-      DirectX::XMStoreFloat3(
-        &_pos, DirectX::XMVectorAdd(DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&entity->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
-                                                                 DirectX::XMLoadFloat3(&entity->m_pos)),
-                                    DirectX::XMLoadFloat3(&entity->m_centrePos)));
-      _radius = entity->m_radius * 1.5f;
-      if (entity->m_type == Entity::TypeCitizen)
-        _radius = entity->m_radius * 2.0f;
-      found = true;
-    }
-  }
-
-  return found;
-}
-
-
-void GameCursor::CreateMarker(DirectX::XMFLOAT3 const& _pos)
-{
-  DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(_pos.x, _pos.z);
-  // operator^ was the cross product; g_upVector is (0,1,0).
-  DirectX::XMFLOAT3 front;
-  DirectX::XMStoreFloat3(&front, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
-
-  auto marker = std::make_unique<MouseCursorMarker>();
-  marker->m_pos = _pos;
-  marker->m_front = front;
-  marker->m_up = landNormal;
-  marker->m_startTime = GetHighResTime();
-
-  m_markers.push_back(std::move(marker));
-}
-
-
-void GameCursor::BoostSelectionArrows(float _seconds) { m_selectionArrowBoost = std::max(m_selectionArrowBoost, _seconds); }
-
-
-void GameCursor::RenderMarkers()
-{
-  for (int i = 0; i < static_cast<int>(m_markers.size()); ++i)
-  {
-    MouseCursorMarker* marker = m_markers[i].get();
-    float timeSync = GetHighResTime() - marker->m_startTime;
-    if (timeSync > 0.5f)
-    {
-      // The erase destroys it.
-      m_markers.erase(m_markers.begin() + i);
-      --i;
-    }
-    else
-    {
-      m_cursorPlacement->SetSize(20.0f - timeSync * 40.0f);
-      m_cursorPlacement->SetAnimation(false);
-      m_cursorPlacement->Render3D(marker->m_pos, marker->m_front, marker->m_up, false);
-    }
-  }
-}
-
-
-void GameCursor::Render()
-{
-  START_PROFILE(g_profiler, "Render GameCursor");
-
-  float nearPlaneStart = g_renderer->GetNearPlane();
-  TheCamera()->SetupProjectionMatrix(nearPlaneStart * 1.05f, g_renderer->GetFarPlane());
-
-  int screenX = g_target->X();
-  int screenY = g_target->Y();
-  DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
-  mousePos.y = std::max(1.0f, mousePos.y);
-
-  bool cursorRendered = false;
-  bool chatLog = false;
-
-  m_highlightingSomething = false;
-  m_validPlacementOpportunity = false;
-  m_moveableEntitySelected = false;
-
-  // Set mip mapping for game cursor
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  if (g_editing || EclGetWindows()->size() > 0)
-  {
-    // Editing
-  }
-  else if (chatLog)
-  {
-    // Reading Sepulveda's history
-  }
-  else if (!TheCamera()->IsInteractive())
-  {
-    // Cut scene of some sort, no player control, so no cursor
-    cursorRendered = true;
-  }
-  else if (!g_location)
-  {
-    // We are in the global world
-    GlobalLocation* highlightedLocation = g_globalWorld->GetHighlightedLocation();
-    bool locAvailable = highlightedLocation && highlightedLocation->m_missionFilename != "null" && highlightedLocation->m_available;
-    g_renderer->SetupMatricesFor2D();
-    m_cursorPlacement->SetAnimation(locAvailable);
-    m_cursorPlacement->SetSize(40.0f);
-    m_cursorPlacement->Render(screenX, screenY);
-    if (!locAvailable)
-      m_cursorDisabled->Render(screenX, screenY);
-    g_renderer->SetupMatricesFor3D();
-    cursorRendered = true;
-  }
-  else if (g_location)
-  {
-    // We are at a location
-    Task* task = g_taskManager->GetCurrentTask();
-
-    WorldObjectId selectedId;
-    // Braced to zero: GetSelectedObject and GetHighlightedObject leave these
-    // untouched when they return false, and Vector3's constructor is what made
-    // that the origin. Both are read below whether or not they were written.
-    DirectX::XMFLOAT3 selectedWorldPos{0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 highlightedWorldPos{0.0f, 0.0f, 0.0f};
-    WorldObjectId highlightedId;
-    float highlightedRadius;
-
-    bool somethingSelected = GetSelectedObject(selectedId, selectedWorldPos);
-    bool somethingHighlighted = GetHighlightedObject(highlightedId, highlightedWorldPos, highlightedRadius);
-
-    if (TheTaskManagerInterface()->m_visible)
-    {
-      // Looking at the task manager
-      if (somethingSelected && selectedId.GetUnitId() != UNIT_BUILDINGS)
-      {
-        RenderSelectionArrows(selectedId, selectedWorldPos);
-      }
-
-      if (somethingHighlighted)
-      {
-        DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
-        float camDist = DirectX::XMVectorGetX(
-          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&highlightedWorldPos))));
-        float posX, posY;
-        TheCamera()->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
-        m_cursorSelection->SetSize(highlightedRadius * 100 / sqrt(camDist));
-        m_cursorSelection->SetColour(RGBAColour(255, 255, 100, 255));
-        m_cursorSelection->SetAnimation(false);
-        g_renderer->SetupMatricesFor2D();
-        m_cursorSelection->Render(posX, g_renderer->ScreenH() - posY);
-        g_renderer->SetupMatricesFor3D();
-      }
-    }
-    else if (task && task->m_state == Task::StateStarted && task->m_type != GlobalResearch::TypeOfficer && !somethingHighlighted)
-    {
-      // The player is placing a task
-      bool validPlacement = g_taskManager->IsValidTargetArea(task->m_id, mousePos);
-      m_cursorPlacement->SetAnimation(validPlacement);
-      m_cursorPlacement->SetSize(40.0f);
-      DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
-      DirectX::XMFLOAT3 front;
-      DirectX::XMStoreFloat3(&front,
-                             DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
-      m_cursorPlacement->Render3D(mousePos, front, landNormal);
-      if (!validPlacement)
-        m_cursorDisabled->Render3D(mousePos, front, landNormal);
       else
-        m_validPlacementOpportunity = true;
-
-      cursorRendered = true;
-    }
-    else if (TheCamera()->IsInMode(Camera::Mode::ModeEntityTrack))
-    {
-      if (false)
       {
-        if (task && task->m_type == GlobalResearch::TypeSquad && task->m_state == Task::StateRunning)
+        Unit* selected = team->GetMyUnit();
+        if (selected)
         {
-          if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected /* ControlUnitStartSecondaryFireDirected */))
+          DirectX::XMStoreFloat3(&_pos,
+                                 DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&selected->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
+                                                              DirectX::XMLoadFloat3(&selected->m_centrePos)));
+          _id.Set(selected->m_teamId, selected->m_unitId, -1, -1);
+
+          // Add the centre pos
+          for (int i = 0; i < selected->m_entities.Size(); ++i)
           {
-            InputDetails details;
-            g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details);
-
-            InsertionSquad* squad = (InsertionSquad*)g_location->GetMyTeam()->GetMyUnit();
-            Squadie* pointMan = (Squadie*)squad->GetPointMan();
-
-            DirectX::XMFLOAT3 t = pointMan->GetSecondaryWeaponTarget();
-
-            DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(t.x, t.z);
-            DirectX::XMFLOAT3 front;
-            DirectX::XMStoreFloat3(&front,
-                                   DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
-
-            RenderWeaponMarker(t, front, landNormal);
+            if (selected->m_entities.ValidIndex(i))
+            {
+              Entity* ent = selected->m_entities[i];
+              DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&ent->m_centrePos)));
+              break;
+            }
           }
+
+          return true;
         }
       }
-      cursorRendered = true;
+    }
+
+    return false;
+  }
+
+
+  bool GameCursor::GetHighlightedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos, float& _radius)
+  {
+    WorldObjectId id;
+    bool somethingHighlighted = false;
+    bool found = false;
+
+    if (!TheTaskManagerInterface()->m_visible)
+    {
+      somethingHighlighted = g_app->m_locationInput->GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
     }
     else
     {
-      if (somethingHighlighted && !(somethingSelected && highlightedId.GetUnitId() == UNIT_BUILDINGS))
+      Task* task = g_taskManager->GetTask(TheTaskManagerInterface()->m_highlightedTaskId);
+      if (task && task->m_objId.IsValid())
       {
-        DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
-        float camDist = DirectX::XMVectorGetX(
-          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&highlightedWorldPos))));
-        if (camDist > 100 || !somethingSelected || selectedId != highlightedId)
+        id = task->m_objId;
+        somethingHighlighted = true;
+      }
+    }
+
+
+    if (somethingHighlighted)
+    {
+      if (id.GetUnitId() == UNIT_BUILDINGS)
+      {
+        // Found a building
+        Building* building = g_location->GetBuilding(id.GetUniqueId());
+        if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge || building->m_type == Building::TypeGunTurret ||
+            building->m_type == Building::TypeFenceSwitch)
         {
+          _id = id;
+          _pos = building->m_centrePos;
+          _radius = building->m_radius;
+          found = true;
+          if (building->m_type == Building::TypeGunTurret)
+          {
+            _pos.y += _radius * 0.5f;
+          }
+        }
+      }
+      else if (id.GetIndex() == -1)
+      {
+        // Found a unit
+        Unit* unit = g_location->GetUnit(id);
+        if (unit)
+        {
+          _id = id;
+          DirectX::XMStoreFloat3(&_pos,
+                                 DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&unit->m_vel), DirectX::XMVectorReplicate(g_predictionTime),
+                                                              DirectX::XMLoadFloat3(&unit->m_centrePos)));
+          _radius = unit->m_radius;
+          found = true;
+
+          // Add the centre pos
+          for (int i = 0; i < unit->m_entities.Size(); ++i)
+          {
+            if (unit->m_entities.ValidIndex(i))
+            {
+              Entity* ent = unit->m_entities[i];
+              DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&ent->m_centrePos)));
+              break;
+            }
+          }
+        }
+      }
+      else
+      {
+        // Found an entity
+        Entity* entity = g_location->GetEntity(id);
+        _id = id;
+        DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorAdd(DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&entity->m_vel),
+                                                                                        DirectX::XMVectorReplicate(g_predictionTime),
+                                                                                        DirectX::XMLoadFloat3(&entity->m_pos)),
+                                                           DirectX::XMLoadFloat3(&entity->m_centrePos)));
+        _radius = entity->m_radius * 1.5f;
+        if (entity->m_type == Entity::TypeCitizen)
+          _radius = entity->m_radius * 2.0f;
+        found = true;
+      }
+    }
+
+    return found;
+  }
+
+
+  void GameCursor::CreateMarker(DirectX::XMFLOAT3 const& _pos)
+  {
+    DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(_pos.x, _pos.z);
+    // operator^ was the cross product; g_upVector is (0,1,0).
+    DirectX::XMFLOAT3 front;
+    DirectX::XMStoreFloat3(&front, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
+
+    auto marker = std::make_unique<MouseCursorMarker>();
+    marker->m_pos = _pos;
+    marker->m_front = front;
+    marker->m_up = landNormal;
+    marker->m_startTime = GetHighResTime();
+
+    m_markers.push_back(std::move(marker));
+  }
+
+
+  void GameCursor::BoostSelectionArrows(float _seconds) { m_selectionArrowBoost = std::max(m_selectionArrowBoost, _seconds); }
+
+
+  void GameCursor::RenderMarkers()
+  {
+    for (int i = 0; i < static_cast<int>(m_markers.size()); ++i)
+    {
+      MouseCursorMarker* marker = m_markers[i].get();
+      float timeSync = GetHighResTime() - marker->m_startTime;
+      if (timeSync > 0.5f)
+      {
+        // The erase destroys it.
+        m_markers.erase(m_markers.begin() + i);
+        --i;
+      }
+      else
+      {
+        m_cursorPlacement->SetSize(20.0f - timeSync * 40.0f);
+        m_cursorPlacement->SetAnimation(false);
+        m_cursorPlacement->Render3D(marker->m_pos, marker->m_front, marker->m_up, false);
+      }
+    }
+  }
+
+
+  void GameCursor::Render()
+  {
+    START_PROFILE(g_profiler, "Render GameCursor");
+
+    float nearPlaneStart = g_renderer->GetNearPlane();
+    TheCamera()->SetupProjectionMatrix(nearPlaneStart * 1.05f, g_renderer->GetFarPlane());
+
+    int screenX = g_target->X();
+    int screenY = g_target->Y();
+    DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
+    mousePos.y = std::max(1.0f, mousePos.y);
+
+    bool cursorRendered = false;
+    bool chatLog = false;
+
+    m_highlightingSomething = false;
+    m_validPlacementOpportunity = false;
+    m_moveableEntitySelected = false;
+
+    // Set mip mapping for game cursor
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    if (g_editing || EclGetWindows()->size() > 0)
+    {
+      // Editing
+    }
+    else if (chatLog)
+    {
+      // Reading Sepulveda's history
+    }
+    else if (!TheCamera()->IsInteractive())
+    {
+      // Cut scene of some sort, no player control, so no cursor
+      cursorRendered = true;
+    }
+    else if (!g_location)
+    {
+      // We are in the global world
+      GlobalLocation* highlightedLocation = g_globalWorld->GetHighlightedLocation();
+      bool locAvailable = highlightedLocation && highlightedLocation->m_missionFilename != "null" && highlightedLocation->m_available;
+      g_renderer->SetupMatricesFor2D();
+      m_cursorPlacement->SetAnimation(locAvailable);
+      m_cursorPlacement->SetSize(40.0f);
+      m_cursorPlacement->Render(screenX, screenY);
+      if (!locAvailable)
+        m_cursorDisabled->Render(screenX, screenY);
+      g_renderer->SetupMatricesFor3D();
+      cursorRendered = true;
+    }
+    else if (g_location)
+    {
+      // We are at a location
+      Task* task = g_taskManager->GetCurrentTask();
+
+      WorldObjectId selectedId;
+      // Braced to zero: GetSelectedObject and GetHighlightedObject leave these
+      // untouched when they return false, and Vector3's constructor is what made
+      // that the origin. Both are read below whether or not they were written.
+      DirectX::XMFLOAT3 selectedWorldPos{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 highlightedWorldPos{0.0f, 0.0f, 0.0f};
+      WorldObjectId highlightedId;
+      float highlightedRadius;
+
+      bool somethingSelected = GetSelectedObject(selectedId, selectedWorldPos);
+      bool somethingHighlighted = GetHighlightedObject(highlightedId, highlightedWorldPos, highlightedRadius);
+
+      if (TheTaskManagerInterface()->m_visible)
+      {
+        // Looking at the task manager
+        if (somethingSelected && selectedId.GetUnitId() != UNIT_BUILDINGS)
+        {
+          RenderSelectionArrows(selectedId, selectedWorldPos);
+        }
+
+        if (somethingHighlighted)
+        {
+          DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+          float camDist = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&highlightedWorldPos))));
           float posX, posY;
           TheCamera()->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
           m_cursorSelection->SetSize(highlightedRadius * 100 / sqrt(camDist));
@@ -431,663 +370,743 @@ void GameCursor::Render()
           g_renderer->SetupMatricesFor2D();
           m_cursorSelection->Render(posX, g_renderer->ScreenH() - posY);
           g_renderer->SetupMatricesFor3D();
-
-          m_highlightingSomething = true;
         }
       }
-
-      if (somethingSelected && selectedId.GetUnitId() != UNIT_BUILDINGS)
+      else if (task && task->m_state == Task::StateStarted && task->m_type != GlobalResearch::TypeOfficer && !somethingHighlighted)
       {
-        int entityType = Entity::TypeInvalid;
-        if (selectedId.GetIndex() == -1)
-          entityType = g_location->GetUnit(selectedId)->m_troopType;
-        else
-          entityType = g_location->GetEntity(selectedId)->m_type;
-
-        RenderSelectionArrows(selectedId, selectedWorldPos);
-        m_moveableEntitySelected = true;
-
-        bool highlightedBuilding = (somethingHighlighted && highlightedId.GetUnitId() == UNIT_BUILDINGS);
-
-        if ((entityType == Entity::TypeInsertionSquadie || entityType == Entity::TypeOfficer) && highlightedBuilding)
-        {
-          Building* building = g_location->GetBuilding(highlightedId.GetUniqueId());
-
-          if (building && building->m_type == Building::TypeRadarDish)
-          {
-            // Squadies/officer trying to get into a teleport
-            RadarDish* dish = (RadarDish*)building;
-            if (dish->Connected())
-            {
-              // Braced to zero: GetEntrance writes both, but Vector3's
-              // constructor is what made that true before the call.
-              DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
-              DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
-              dish->GetEntrance(entrancePos, entranceFront);
-              float posX, posY;
-              TheCamera()->Get2DScreenPos(entrancePos, &posX, &posY);
-              g_renderer->SetupMatricesFor2D();
-              m_cursorPlacement->SetSize(60.0f);
-              m_cursorPlacement->SetAnimation(true);
-              m_cursorPlacement->Render(posX, g_renderer->ScreenH() - posY);
-              g_renderer->SetupMatricesFor3D();
-            }
-          }
-        }
-
-        // Selected a unit OR an entity
-        if (!somethingHighlighted || highlightedId.GetUnitId() == UNIT_BUILDINGS)
-        {
-          DirectX::XMVECTOR const targetFrontVec =
-            DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&mousePos), DirectX::XMLoadFloat3(&selectedWorldPos)));
-          DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
-          DirectX::XMVECTOR const normal = DirectX::XMLoadFloat3(&landNormal);
-          DirectX::XMVECTOR const targetRight = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(targetFrontVec, normal));
-          DirectX::XMFLOAT3 targetFront;
-          DirectX::XMStoreFloat3(&targetFront, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(targetRight, normal)));
-          m_cursorMoveHere->SetSize(30.0f);
-          m_cursorMoveHere->Render3D(mousePos, targetFront, landNormal);
-          cursorRendered = true;
-        }
-      }
-
-      if (somethingSelected && selectedId.GetUnitId() == UNIT_BUILDINGS)
-      {
-        // Selected a building - render a targetting crosshair
-        g_renderer->SetupMatricesFor2D();
-        m_cursorTurretTarget->SetSize(200.0f);
-        m_cursorTurretTarget->Render(screenX, screenY);
-        g_renderer->SetupMatricesFor3D();
-      }
-
-      if (!somethingSelected && !somethingHighlighted)
-      {
-        // Looking at empty landscape
+        // The player is placing a task
+        bool validPlacement = g_taskManager->IsValidTargetArea(task->m_id, mousePos);
+        m_cursorPlacement->SetAnimation(validPlacement);
+        m_cursorPlacement->SetSize(40.0f);
         DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
         DirectX::XMFLOAT3 front;
         DirectX::XMStoreFloat3(&front,
                                DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
-        m_cursorHighlight->SetAnimation(false);
-        m_cursorHighlight->SetSize(30.0f);
-        m_cursorHighlight->Render3D(mousePos, front, landNormal);
+        m_cursorPlacement->Render3D(mousePos, front, landNormal);
+        if (!validPlacement)
+          m_cursorDisabled->Render3D(mousePos, front, landNormal);
+        else
+          m_validPlacementOpportunity = true;
+
         cursorRendered = true;
       }
+      else if (TheCamera()->IsInMode(Camera::Mode::ModeEntityTrack))
+      {
+        if (false)
+        {
+          if (task && task->m_type == GlobalResearch::TypeSquad && task->m_state == Task::StateRunning)
+          {
+            if (g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected /* ControlType::ControlUnitStartSecondaryFireDirected */))
+            {
+              InputDetails details;
+              g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected, details);
+
+              InsertionSquad* squad = (InsertionSquad*)g_location->GetMyTeam()->GetMyUnit();
+              Squadie* pointMan = (Squadie*)squad->GetPointMan();
+
+              DirectX::XMFLOAT3 t = pointMan->GetSecondaryWeaponTarget();
+
+              DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(t.x, t.z);
+              DirectX::XMFLOAT3 front;
+              DirectX::XMStoreFloat3(
+                &front, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
+
+              RenderWeaponMarker(t, front, landNormal);
+            }
+          }
+        }
+        cursorRendered = true;
+      }
+      else
+      {
+        if (somethingHighlighted && !(somethingSelected && highlightedId.GetUnitId() == UNIT_BUILDINGS))
+        {
+          DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+          float camDist = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&highlightedWorldPos))));
+          if (camDist > 100 || !somethingSelected || selectedId != highlightedId)
+          {
+            float posX, posY;
+            TheCamera()->Get2DScreenPos(highlightedWorldPos, &posX, &posY);
+            m_cursorSelection->SetSize(highlightedRadius * 100 / sqrt(camDist));
+            m_cursorSelection->SetColour(RGBAColour(255, 255, 100, 255));
+            m_cursorSelection->SetAnimation(false);
+            g_renderer->SetupMatricesFor2D();
+            m_cursorSelection->Render(posX, g_renderer->ScreenH() - posY);
+            g_renderer->SetupMatricesFor3D();
+
+            m_highlightingSomething = true;
+          }
+        }
+
+        if (somethingSelected && selectedId.GetUnitId() != UNIT_BUILDINGS)
+        {
+          int entityType = Entity::TypeInvalid;
+          if (selectedId.GetIndex() == -1)
+            entityType = g_location->GetUnit(selectedId)->m_troopType;
+          else
+            entityType = g_location->GetEntity(selectedId)->m_type;
+
+          RenderSelectionArrows(selectedId, selectedWorldPos);
+          m_moveableEntitySelected = true;
+
+          bool highlightedBuilding = (somethingHighlighted && highlightedId.GetUnitId() == UNIT_BUILDINGS);
+
+          if ((entityType == Entity::TypeInsertionSquadie || entityType == Entity::TypeOfficer) && highlightedBuilding)
+          {
+            Building* building = g_location->GetBuilding(highlightedId.GetUniqueId());
+
+            if (building && building->m_type == Building::TypeRadarDish)
+            {
+              // Squadies/officer trying to get into a teleport
+              RadarDish* dish = (RadarDish*)building;
+              if (dish->Connected())
+              {
+                // Braced to zero: GetEntrance writes both, but Vector3's
+                // constructor is what made that true before the call.
+                DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
+                DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
+                dish->GetEntrance(entrancePos, entranceFront);
+                float posX, posY;
+                TheCamera()->Get2DScreenPos(entrancePos, &posX, &posY);
+                g_renderer->SetupMatricesFor2D();
+                m_cursorPlacement->SetSize(60.0f);
+                m_cursorPlacement->SetAnimation(true);
+                m_cursorPlacement->Render(posX, g_renderer->ScreenH() - posY);
+                g_renderer->SetupMatricesFor3D();
+              }
+            }
+          }
+
+          // Selected a unit OR an entity
+          if (!somethingHighlighted || highlightedId.GetUnitId() == UNIT_BUILDINGS)
+          {
+            DirectX::XMVECTOR const targetFrontVec =
+              DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&mousePos), DirectX::XMLoadFloat3(&selectedWorldPos)));
+            DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
+            DirectX::XMVECTOR const normal = DirectX::XMLoadFloat3(&landNormal);
+            DirectX::XMVECTOR const targetRight = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(targetFrontVec, normal));
+            DirectX::XMFLOAT3 targetFront;
+            DirectX::XMStoreFloat3(&targetFront, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(targetRight, normal)));
+            m_cursorMoveHere->SetSize(30.0f);
+            m_cursorMoveHere->Render3D(mousePos, targetFront, landNormal);
+            cursorRendered = true;
+          }
+        }
+
+        if (somethingSelected && selectedId.GetUnitId() == UNIT_BUILDINGS)
+        {
+          // Selected a building - render a targetting crosshair
+          g_renderer->SetupMatricesFor2D();
+          m_cursorTurretTarget->SetSize(200.0f);
+          m_cursorTurretTarget->Render(screenX, screenY);
+          g_renderer->SetupMatricesFor3D();
+        }
+
+        if (!somethingSelected && !somethingHighlighted)
+        {
+          // Looking at empty landscape
+          DirectX::XMFLOAT3 landNormal = g_location->m_landscape.m_normalMap->GetValue(mousePos.x, mousePos.z);
+          DirectX::XMFLOAT3 front;
+          DirectX::XMStoreFloat3(&front,
+                                 DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
+          m_cursorHighlight->SetAnimation(false);
+          m_cursorHighlight->SetSize(30.0f);
+          m_cursorHighlight->Render3D(mousePos, front, landNormal);
+          cursorRendered = true;
+        }
+      }
     }
-  }
 
-  if (!cursorRendered && g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
-  {
-    // Nobody has drawn a cursor yet
-    // So give us the default
-    g_renderer->SetupMatricesFor2D();
-    RenderStandardCursor(screenX, screenY);
-    g_renderer->SetupMatricesFor3D();
-  }
-
-  if (g_location && g_location->GetMyTeam())
-  {
-    // RenderSphere( g_location->GetMyTeam()->m_currentMousePos, 10 );
-  }
-
-  RenderMarkers();
-
-  TheCamera()->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
-
-  END_PROFILE(g_profiler, "Render GameCursor");
-}
-
-
-void GameCursor::RenderStandardCursor(float _screenX, float _screenY) { m_cursorStandard->Render(_screenX, _screenY); }
-
-
-void LeftArrow(int x, int y, int size)
-{
-  glBegin(GL_TRIANGLES);
-  glTexCoord2f(0.0f, 0.0f);
-  glVertex2i(x - size, y - size / 2);
-  glTexCoord2f(1.0f, 0.5f);
-  glVertex2i(x, y);
-  glTexCoord2f(0.0f, 1.0f);
-  glVertex2i(x - size, y + size / 2);
-  glEnd();
-}
-
-
-void RightArrow(int x, int y, int size)
-{
-  glBegin(GL_TRIANGLES);
-  glTexCoord2f(0.0f, 0.0f);
-  glVertex2i(x + size, y - size / 2);
-  glTexCoord2f(1.0f, 0.5f);
-  glVertex2i(x, y);
-  glTexCoord2f(0.0f, 1.0f);
-  glVertex2i(x + size, y + size / 2);
-  glEnd();
-}
-
-
-void TopArrow(int x, int y, int size)
-{
-  glBegin(GL_TRIANGLES);
-  glTexCoord2f(0.0f, 1.0f);
-  glVertex2i(x - size / 2, y - size);
-  glTexCoord2f(0.0f, 0.0f);
-  glVertex2i(x + size / 2, y - size);
-  glTexCoord2f(1.0f, 0.5f);
-  glVertex2i(x, y);
-  glEnd();
-}
-
-
-void BottomArrow(int x, int y, int size)
-{
-  glBegin(GL_TRIANGLES);
-  glTexCoord2f(1.0f, 0.5f);
-  glVertex2i(x, y);
-  glTexCoord2f(0.0f, 1.0f);
-  glVertex2i(x + size / 2, y + size);
-  glTexCoord2f(0.0f, 0.0f);
-  glVertex2i(x - size / 2, y + size);
-  glEnd();
-}
-
-
-void GameCursor::FindScreenEdge(DirectX::XMFLOAT2 const& _line, float* _posX, float* _posY)
-{
-  //    y = mx + c
-  //    c = y - mx
-  //    x = (y - c) / m
-
-  int screenH = g_renderer->ScreenH();
-  int screenW = g_renderer->ScreenW();
-
-  float m = _line.y / _line.x;
-  float c = (screenH / 2.0f) - m * (screenW / 2.0f);
-
-  if (_line.y < 0)
-  {
-    // Intersect with top view plane
-    float x = (0 - c) / m;
-    if (x >= 0 && x <= screenW)
+    if (!cursorRendered && g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
     {
-      *_posX = x;
-      *_posY = 0;
-      return;
+      // Nobody has drawn a cursor yet
+      // So give us the default
+      g_renderer->SetupMatricesFor2D();
+      RenderStandardCursor(screenX, screenY);
+      g_renderer->SetupMatricesFor3D();
     }
-  }
-  else
-  {
-    // Intersect with the bottom view plane
-    float x = (screenH - c) / m;
-    if (x >= 0 && x <= screenW)
+
+    if (g_location && g_location->GetMyTeam())
     {
-      *_posX = x;
-      *_posY = screenH;
-      return;
+      // RenderSphere( g_location->GetMyTeam()->m_currentMousePos, 10 );
     }
+
+    RenderMarkers();
+
+    TheCamera()->SetupProjectionMatrix(nearPlaneStart, g_renderer->GetFarPlane());
+
+    END_PROFILE(g_profiler, "Render GameCursor");
   }
 
-  if (_line.x < 0)
+
+  void GameCursor::RenderStandardCursor(float _screenX, float _screenY) { m_cursorStandard->Render(_screenX, _screenY); }
+
+
+  void LeftArrow(int x, int y, int size)
   {
-    // Intersect with left view plane
-    float y = m * 0 + c;
-    if (y >= 0 && y <= screenH)
+    glBegin(GL_TRIANGLES);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2i(x - size, y - size / 2);
+    glTexCoord2f(1.0f, 0.5f);
+    glVertex2i(x, y);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2i(x - size, y + size / 2);
+    glEnd();
+  }
+
+
+  void RightArrow(int x, int y, int size)
+  {
+    glBegin(GL_TRIANGLES);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2i(x + size, y - size / 2);
+    glTexCoord2f(1.0f, 0.5f);
+    glVertex2i(x, y);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2i(x + size, y + size / 2);
+    glEnd();
+  }
+
+
+  void TopArrow(int x, int y, int size)
+  {
+    glBegin(GL_TRIANGLES);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2i(x - size / 2, y - size);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2i(x + size / 2, y - size);
+    glTexCoord2f(1.0f, 0.5f);
+    glVertex2i(x, y);
+    glEnd();
+  }
+
+
+  void BottomArrow(int x, int y, int size)
+  {
+    glBegin(GL_TRIANGLES);
+    glTexCoord2f(1.0f, 0.5f);
+    glVertex2i(x, y);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2i(x + size / 2, y + size);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2i(x - size / 2, y + size);
+    glEnd();
+  }
+
+
+  void GameCursor::FindScreenEdge(DirectX::XMFLOAT2 const& _line, float* _posX, float* _posY)
+  {
+    //    y = mx + c
+    //    c = y - mx
+    //    x = (y - c) / m
+
+    int screenH = g_renderer->ScreenH();
+    int screenW = g_renderer->ScreenW();
+
+    float m = _line.y / _line.x;
+    float c = (screenH / 2.0f) - m * (screenW / 2.0f);
+
+    if (_line.y < 0)
     {
-      *_posX = 0;
-      *_posY = y;
-      return;
+      // Intersect with top view plane
+      float x = (0 - c) / m;
+      if (x >= 0 && x <= screenW)
+      {
+        *_posX = x;
+        *_posY = 0;
+        return;
+      }
     }
-  }
-  else
-  {
-    // Intersect with right view plane
-    float y = m * screenW + c;
-    if (y >= 0 && y <= screenH)
-    {
-      *_posX = screenW;
-      *_posY = y;
-      return;
-    }
-  }
-
-  // We should never ever get here
-  DEBUG_ASSERT(false);
-  *_posX = 0;
-  *_posY = 0;
-}
-
-
-void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _screenDX, float _screenDY, float _size, float _alpha)
-{
-  DirectX::XMFLOAT2 pos(_screenX, _screenY);
-  DirectX::XMFLOAT2 gradient(_screenDX, _screenDY);
-  DirectX::XMFLOAT2 rightAngle = gradient;
-  float tempX = rightAngle.x;
-  rightAngle.x = rightAngle.y;
-  rightAngle.y = tempX * -1;
-
-  // The four corners, worked out once instead of six times. glVertex2fv used
-  // to read Vector2::GetData(); XMFLOAT2 has no such accessor and the two
-  // components are clearer written out than round-tripped through an array.
-  float const halfX = rightAngle.x * _size / 2.0f;
-  float const halfY = rightAngle.y * _size / 2.0f;
-  float const alongX = gradient.x * _size;
-  float const alongY = gradient.y * _size;
-
-  glEnable(GL_BLEND);
-  glDisable(GL_CULL_FACE);
-  glDepthMask(false);
-
-  glColor4f(_alpha, _alpha, _alpha, 0.0f);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowShadowFilename.c_str()));
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(pos.x - halfX, pos.y - halfY);
-  glTexCoord2i(0, 0);
-  glVertex2f(pos.x - halfX + alongX, pos.y - halfY + alongY);
-  glTexCoord2i(1, 0);
-  glVertex2f(pos.x + halfX + alongX, pos.y + halfY + alongY);
-  glTexCoord2i(1, 1);
-  glVertex2f(pos.x + halfX, pos.y + halfY);
-  glEnd();
-
-  glColor4f(1.0f, 1.0f, 0.3f, _alpha);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowFilename.c_str()));
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(pos.x - halfX, pos.y - halfY);
-  glTexCoord2i(0, 0);
-  glVertex2f(pos.x - halfX + alongX, pos.y - halfY + alongY);
-  glTexCoord2i(1, 0);
-  glVertex2f(pos.x + halfX + alongX, pos.y + halfY + alongY);
-  glTexCoord2i(1, 1);
-  glVertex2f(pos.x + halfX, pos.y + halfY);
-  glEnd();
-
-  glDepthMask(true);
-  glDisable(GL_TEXTURE_2D);
-  glEnable(GL_CULL_FACE);
-}
-
-
-void GameCursor::RenderSelectionArrows(WorldObjectId _id, DirectX::XMFLOAT3 const& _pos)
-{
-  Entity* ent = g_location->GetEntity(_id);
-  Unit* unit = g_location->GetUnit(_id);
-  if (!ent && !unit)
-    return;
-  if (ent && ent->m_dead)
-    return;
-  if (unit && unit->NumAliveEntities() == 0)
-    return;
-
-  float triSize = 40.0f;
-
-  static bool onScreen = true;
-
-  int screenH = g_renderer->ScreenH();
-  int screenW = g_renderer->ScreenW();
-
-  //
-  // Project worldTarget into screen co-ordinates
-  // Is the _pos on screen or not?
-
-  float screenX, screenY;
-  TheCamera()->Get2DScreenPos(_pos, &screenX, &screenY);
-  screenY = screenH - screenY;
-
-  DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
-  DirectX::XMFLOAT3 const camFrontStore = TheCamera()->GetFront();
-  DirectX::XMVECTOR const camFront = DirectX::XMLoadFloat3(&camFrontStore);
-  DirectX::XMVECTOR const toCam = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_pos));
-  // operator* between two Vector3s was the DOT product.
-  float angle = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toCam, camFront));
-  DirectX::XMVECTOR const rotationVector = DirectX::XMVector3Cross(toCam, camFront);
-
-  if (angle <= 0.0f && screenX >= 0 && screenX < screenW && screenY >= 0 && screenY < screenH)
-  {
-    // _pos is onscreen
-    float camDist = DirectX::XMVectorGetX(DirectX::XMVector3Length(toCam));
-    m_selectionArrowBoost -= g_advanceTime * 0.4f;
-
-    float distanceOut = 1000 / sqrtf(camDist);
-    float alpha = std::min(m_selectionArrowBoost, 0.9f);
-
-    if (camDist > 200.0f)
-    {
-      alpha = std::max(std::min((camDist - 200.0f) / 200.0f, 0.9f), alpha);
-    }
-    g_renderer->SetupMatricesFor2D();
-    RenderSelectionArrow(screenX, screenY - distanceOut, 0, -1, triSize, alpha);
-    RenderSelectionArrow(screenX, screenY + distanceOut, 0, 1, triSize, alpha);
-    RenderSelectionArrow(screenX - distanceOut, screenY, -1, 0, triSize, alpha);
-    RenderSelectionArrow(screenX + distanceOut, screenY, 1, 0, triSize, alpha);
-    g_renderer->SetupMatricesFor3D();
-
-    if (!onScreen)
-      BoostSelectionArrows(2.0f);
-    onScreen = true;
-  }
-  else
-  {
-    // _pos is offscreen
-    DirectX::XMVECTOR const camPos = DirectX::XMVectorMultiplyAdd(camFront, DirectX::XMVectorReplicate(1000.0f), DirectX::XMLoadFloat3(&camPosStore));
-    // SetLength answered a zero-length input with (100,0,0). The camera is a
-    // thousand units in front of itself here, so _pos landing exactly on
-    // camPos would mean the selected object sitting on that point -- reachable
-    // in principle and a QNaN on screen if it happened, so the fallback stands.
-    DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), camPos);
-    DirectX::XMVECTOR camToTarget;
-    if (NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget)), 0.0f))
-      camToTarget = DirectX::XMVectorSet(100.0f, 0.0f, 0.0f, 0.0f);
     else
-      camToTarget = DirectX::XMVectorScale(DirectX::XMVector3Normalize(toTarget), 100.0f);
+    {
+      // Intersect with the bottom view plane
+      float x = (screenH - c) / m;
+      if (x >= 0 && x <= screenW)
+      {
+        *_posX = x;
+        *_posY = screenH;
+        return;
+      }
+    }
 
-    float camX = screenW / 2.0f;
-    float camY = screenH / 2.0f;
-    float posX, posY;
-    DirectX::XMFLOAT3 arrowTarget;
-    DirectX::XMStoreFloat3(&arrowTarget, DirectX::XMVectorAdd(camPos, camToTarget));
-    TheCamera()->Get2DScreenPos(arrowTarget, &posX, &posY);
+    if (_line.x < 0)
+    {
+      // Intersect with left view plane
+      float y = m * 0 + c;
+      if (y >= 0 && y <= screenH)
+      {
+        *_posX = 0;
+        *_posY = y;
+        return;
+      }
+    }
+    else
+    {
+      // Intersect with right view plane
+      float y = m * screenW + c;
+      if (y >= 0 && y <= screenH)
+      {
+        *_posX = screenW;
+        *_posY = y;
+        return;
+      }
+    }
 
-    DirectX::XMFLOAT2 lineNormal(posX - camX, posY - camY);
-    DirectX::XMStoreFloat2(&lineNormal, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&lineNormal)));
-
-    float edgeX, edgeY;
-    FindScreenEdge(lineNormal, &edgeX, &edgeY);
-
-    lineNormal.x *= -1;
-
-    g_renderer->SetupMatricesFor2D();
-    RenderSelectionArrow(edgeX, screenH - edgeY, lineNormal.x, lineNormal.y, triSize * 1.5f, 0.9f);
-    g_renderer->SetupMatricesFor3D();
-
-    onScreen = false;
+    // We should never ever get here
+    DEBUG_ASSERT(false);
+    *_posX = 0;
+    *_posY = 0;
   }
-}
 
 
-/*
-void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
-{
-  float triSize = 36.0f;          // + fabs(sinf(g_gameTime*4)) * 10;
-  float xOut = 24.0f;
-  float yOut = 24.0f;
+  void GameCursor::RenderSelectionArrow(float _screenX, float _screenY, float _screenDX, float _screenDY, float _size, float _alpha)
+  {
+    DirectX::XMFLOAT2 pos(_screenX, _screenY);
+    DirectX::XMFLOAT2 gradient(_screenDX, _screenDY);
+    DirectX::XMFLOAT2 rightAngle = gradient;
+    float tempX = rightAngle.x;
+    rightAngle.x = rightAngle.y;
+    rightAngle.y = tempX * -1;
+
+    // The four corners, worked out once instead of six times. glVertex2fv used
+    // to read Vector2::GetData(); XMFLOAT2 has no such accessor and the two
+    // components are clearer written out than round-tripped through an array.
+    float const halfX = rightAngle.x * _size / 2.0f;
+    float const halfY = rightAngle.y * _size / 2.0f;
+    float const alongX = gradient.x * _size;
+    float const alongY = gradient.y * _size;
+
+    glEnable(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(false);
+
+    glColor4f(_alpha, _alpha, _alpha, 0.0f);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowShadowFilename.c_str()));
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(pos.x - halfX, pos.y - halfY);
+    glTexCoord2i(0, 0);
+    glVertex2f(pos.x - halfX + alongX, pos.y - halfY + alongY);
+    glTexCoord2i(1, 0);
+    glVertex2f(pos.x + halfX + alongX, pos.y + halfY + alongY);
+    glTexCoord2i(1, 1);
+    glVertex2f(pos.x + halfX, pos.y + halfY);
+    glEnd();
+
+    glColor4f(1.0f, 1.0f, 0.3f, _alpha);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_selectionArrowFilename.c_str()));
+
+    glBegin(GL_QUADS);
+    glTexCoord2i(0, 1);
+    glVertex2f(pos.x - halfX, pos.y - halfY);
+    glTexCoord2i(0, 0);
+    glVertex2f(pos.x - halfX + alongX, pos.y - halfY + alongY);
+    glTexCoord2i(1, 0);
+    glVertex2f(pos.x + halfX + alongX, pos.y + halfY + alongY);
+    glTexCoord2i(1, 1);
+    glVertex2f(pos.x + halfX, pos.y + halfY);
+    glEnd();
+
+    glDepthMask(true);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_CULL_FACE);
+  }
+
+
+  void GameCursor::RenderSelectionArrows(WorldObjectId _id, DirectX::XMFLOAT3 const& _pos)
+  {
+    Entity* ent = g_location->GetEntity(_id);
+    Unit* unit = g_location->GetUnit(_id);
+    if (!ent && !unit)
+      return;
+    if (ent && ent->m_dead)
+      return;
+    if (unit && unit->NumAliveEntities() == 0)
+      return;
+
+    float triSize = 40.0f;
 
     static bool onScreen = true;
 
-  // Project worldTarget into screen co-ordinates
     int screenH = g_renderer->ScreenH();
     int screenW = g_renderer->ScreenW();
+
+    //
+    // Project worldTarget into screen co-ordinates
+    // Is the _pos on screen or not?
+
     float screenX, screenY;
-    TheCamera()->Get2DScreenPos( _pos, &screenX, &screenY );
+    TheCamera()->Get2DScreenPos(_pos, &screenX, &screenY);
     screenY = screenH - screenY;
 
-  // Calculate alpha
-  Vector3 toCam = TheCamera()->GetPos() - _pos;
-  float distance = toCam.Mag();
+    DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+    DirectX::XMFLOAT3 const camFrontStore = TheCamera()->GetFront();
+    DirectX::XMVECTOR const camFront = DirectX::XMLoadFloat3(&camFrontStore);
+    DirectX::XMVECTOR const toCam = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_pos));
+    // operator* between two Vector3s was the DOT product.
+    float angle = DirectX::XMVectorGetX(DirectX::XMVector3Dot(toCam, camFront));
+    DirectX::XMVECTOR const rotationVector = DirectX::XMVector3Cross(toCam, camFront);
 
-    if( distance < 400.0f )
+    if (angle <= 0.0f && screenX >= 0 && screenX < screenW && screenY >= 0 && screenY < screenH)
     {
-        xOut += ( 100.0f - distance/4.0f );
-        yOut += ( 100.0f - distance/4.0f );
-    }
+      // _pos is onscreen
+      float camDist = DirectX::XMVectorGetX(DirectX::XMVector3Length(toCam));
+      m_selectionArrowBoost -= g_advanceTime * 0.4f;
 
-    float alpha = 0.0f;
-  if (distance > 350.0f)
-  {
-    distance -= 350.0f;
-    alpha = distance / 300.0f;
-    alpha = min(alpha, SELECTION_ARROWS_MAX_ALPHA);
-  }
+      float distanceOut = 1000 / sqrtf(camDist);
+      float alpha = std::min(m_selectionArrowBoost, 0.9f);
 
-  if (m_selectionArrowBoost > alpha)
-  {
-    alpha = min(m_selectionArrowBoost, SELECTION_ARROWS_MAX_ALPHA);
-  }
-  static double lastTime = g_gameTime;
-  double deltaTime = g_gameTime - lastTime;
-  lastTime = g_gameTime;
-  m_selectionArrowBoost -= g_advanceTime * BOOST_FADE_RATE;
+      if (camDist > 200.0f)
+      {
+        alpha = std::max(std::min((camDist - 200.0f) / 200.0f, 0.9f), alpha);
+      }
+      g_renderer->SetupMatricesFor2D();
+      RenderSelectionArrow(screenX, screenY - distanceOut, 0, -1, triSize, alpha);
+      RenderSelectionArrow(screenX, screenY + distanceOut, 0, 1, triSize, alpha);
+      RenderSelectionArrow(screenX - distanceOut, screenY, -1, 0, triSize, alpha);
+      RenderSelectionArrow(screenX + distanceOut, screenY, 1, 0, triSize, alpha);
+      g_renderer->SetupMatricesFor3D();
 
-  // Deal with the selected unit not being on screen
-  float angle = toCam * TheCamera()->GetFront();
-  Vector3 rotationVector = toCam ^ TheCamera()->GetFront();
-  if (angle > 0.0f)
-  {
-    // Unit is behind camera
-
-    alpha = SELECTION_ARROWS_MAX_ALPHA;
-
-    if (rotationVector.y < 0.0f)
-    {
-      screenX = screenW + xOut - triSize / 3.0f;
+      if (!onScreen)
+        BoostSelectionArrows(2.0f);
+      onScreen = true;
     }
     else
     {
-      screenX = -xOut + triSize / 3.0f;
-    }
-    screenY = screenH / 2;
+      // _pos is offscreen
+      DirectX::XMVECTOR const camPos =
+        DirectX::XMVectorMultiplyAdd(camFront, DirectX::XMVectorReplicate(1000.0f), DirectX::XMLoadFloat3(&camPosStore));
+      // SetLength answered a zero-length input with (100,0,0). The camera is a
+      // thousand units in front of itself here, so _pos landing exactly on
+      // camPos would mean the selected object sitting on that point -- reachable
+      // in principle and a QNaN on screen if it happened, so the fallback stands.
+      DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), camPos);
+      DirectX::XMVECTOR camToTarget;
+      if (NearlyEquals(DirectX::XMVectorGetX(DirectX::XMVector3Length(toTarget)), 0.0f))
+        camToTarget = DirectX::XMVectorSet(100.0f, 0.0f, 0.0f, 0.0f);
+      else
+        camToTarget = DirectX::XMVectorScale(DirectX::XMVector3Normalize(toTarget), 100.0f);
 
-        triSize *= 1.5f;
-        onScreen = false;
+      float camX = screenW / 2.0f;
+      float camY = screenH / 2.0f;
+      float posX, posY;
+      DirectX::XMFLOAT3 arrowTarget;
+      DirectX::XMStoreFloat3(&arrowTarget, DirectX::XMVectorAdd(camPos, camToTarget));
+      TheCamera()->Get2DScreenPos(arrowTarget, &posX, &posY);
+
+      DirectX::XMFLOAT2 lineNormal(posX - camX, posY - camY);
+      DirectX::XMStoreFloat2(&lineNormal, DirectX::XMVector2Normalize(DirectX::XMLoadFloat2(&lineNormal)));
+
+      float edgeX, edgeY;
+      FindScreenEdge(lineNormal, &edgeX, &edgeY);
+
+      lineNormal.x *= -1;
+
+      g_renderer->SetupMatricesFor2D();
+      RenderSelectionArrow(edgeX, screenH - edgeY, lineNormal.x, lineNormal.y, triSize * 1.5f, 0.9f);
+      g_renderer->SetupMatricesFor3D();
+
+      onScreen = false;
+    }
   }
-  else
+
+
+  /*
+  void GameCursor::RenderSelectionArrows( WorldObjectId _id, Vector3 const &_pos )
   {
-    // Unit is infront of camera
+    float triSize = 36.0f;          // + fabs(sinf(g_gameTime*4)) * 10;
+    float xOut = 24.0f;
+    float yOut = 24.0f;
 
-        if( !onScreen )
-        {
-            BoostSelectionArrows( 2.0f );
-        }
+      static bool onScreen = true;
 
-    if (screenX > screenW + xOut)
+    // Project worldTarget into screen co-ordinates
+      int screenH = g_renderer->ScreenH();
+      int screenW = g_renderer->ScreenW();
+      float screenX, screenY;
+      TheCamera()->Get2DScreenPos( _pos, &screenX, &screenY );
+      screenY = screenH - screenY;
+
+    // Calculate alpha
+    Vector3 toCam = TheCamera()->GetPos() - _pos;
+    float distance = toCam.Mag();
+
+      if( distance < 400.0f )
+      {
+          xOut += ( 100.0f - distance/4.0f );
+          yOut += ( 100.0f - distance/4.0f );
+      }
+
+      float alpha = 0.0f;
+    if (distance > 350.0f)
     {
+      distance -= 350.0f;
+      alpha = distance / 300.0f;
+      alpha = min(alpha, SELECTION_ARROWS_MAX_ALPHA);
+    }
+
+    if (m_selectionArrowBoost > alpha)
+    {
+      alpha = min(m_selectionArrowBoost, SELECTION_ARROWS_MAX_ALPHA);
+    }
+    static double lastTime = g_gameTime;
+    double deltaTime = g_gameTime - lastTime;
+    lastTime = g_gameTime;
+    m_selectionArrowBoost -= g_advanceTime * BOOST_FADE_RATE;
+
+    // Deal with the selected unit not being on screen
+    float angle = toCam * TheCamera()->GetFront();
+    Vector3 rotationVector = toCam ^ TheCamera()->GetFront();
+    if (angle > 0.0f)
+    {
+      // Unit is behind camera
+
       alpha = SELECTION_ARROWS_MAX_ALPHA;
-      screenX = screenW + xOut - triSize / 3.0f;
-      screenY = screenH / 2.0f;
-            //screenY = min( screenY, screenH );
-            //screenY = max( screenY, 0 );
-            onScreen = false;
-            triSize *= 1.5f;
-    }
-    else if (screenX < -xOut)
-    {
-      alpha = SELECTION_ARROWS_MAX_ALPHA;
-      screenX = -xOut + triSize / 3.0f;
-      screenY = screenH / 2.0f;
-            //screenY = min( screenY, screenH );
-            //screenY = max( screenY, 0 );
-            triSize *= 1.5f;
-            onScreen = false;
-    }
-    else if (screenY > screenH + yOut)
-    {
-      alpha = SELECTION_ARROWS_MAX_ALPHA;
-      screenX = screenW / 2.0f;
-      screenY = screenH + yOut - triSize / 3.0f;
-            triSize *= 1.5f;
-            onScreen = false;
-    }
-    else if (screenY < -yOut)
-    {
-      alpha = SELECTION_ARROWS_MAX_ALPHA;
-      screenX = screenW / 2.0f;
-      screenY = -yOut + triSize / 3.0f;
-            triSize *= 1.5f;
-            onScreen = false;
-    }
-        else
-        {
-            onScreen = true;
-        }
-    }
 
-    if( !onScreen )
-    {
-        Vector3 camPos = TheCamera()->GetPos() + TheCamera()->GetFront() * 1000;
-        Vector3 camToTarget = ( _pos - camPos ).SetLength( 100 );
+      if (rotationVector.y < 0.0f)
+      {
+        screenX = screenW + xOut - triSize / 3.0f;
+      }
+      else
+      {
+        screenX = -xOut + triSize / 3.0f;
+      }
+      screenY = screenH / 2;
 
-        float camX = screenW / 2.0f;
-        float camY = screenH / 2.0f;
-        float posX, posY;
-        TheCamera()->Get2DScreenPos( camPos + camToTarget, &posX, &posY );
-
-        Vector2 lineNormal( posX - camX, posY - camY );
-        lineNormal.Normalise();
-
-        float edgeX, edgeY;
-        FindScreenEdge( lineNormal, &edgeX, &edgeY );
-
-        lineNormal.x *= -1;
-
-        g_renderer->SetupMatricesFor2D();
-
-        RenderSelectionArrow( edgeX, screenH - edgeY, lineNormal.x, lineNormal.y, triSize, 1.0f );
-
-        g_renderer->SetupMatricesFor3D();
+          triSize *= 1.5f;
+          onScreen = false;
     }
     else
     {
-      // Get ready to render
-        g_renderer->SetupMatricesFor2D();
-        glEnable        ( GL_BLEND );
-        glDisable       ( GL_CULL_FACE );
-    //	glEnable		( GL_TEXTURE_2D );
-    //	glBindTexture	( GL_TEXTURE_2D, g_resource->GetTexture("selection_arrow") );
+      // Unit is infront of camera
 
-      // Do subtractive pass
+          if( !onScreen )
+          {
+              BoostSelectionArrows( 2.0f );
+          }
+
+      if (screenX > screenW + xOut)
       {
-        glColor4f       ( 0.9f, 0.9f, 0.1f, alpha/2.0f );
-        glBlendFunc		( GL_ZERO, GL_ONE_MINUS_SRC_ALPHA );
-
-        LeftArrow ( screenX - xOut, screenY, triSize );
-        RightArrow( screenX + xOut, screenY, triSize );
-        TopArrow  ( screenX, screenY - yOut, triSize );
-        BottomArrow(screenX, screenY + yOut, triSize );
+        alpha = SELECTION_ARROWS_MAX_ALPHA;
+        screenX = screenW + xOut - triSize / 3.0f;
+        screenY = screenH / 2.0f;
+              //screenY = min( screenY, screenH );
+              //screenY = max( screenY, 0 );
+              onScreen = false;
+              triSize *= 1.5f;
+      }
+      else if (screenX < -xOut)
+      {
+        alpha = SELECTION_ARROWS_MAX_ALPHA;
+        screenX = -xOut + triSize / 3.0f;
+        screenY = screenH / 2.0f;
+              //screenY = min( screenY, screenH );
+              //screenY = max( screenY, 0 );
+              triSize *= 1.5f;
+              onScreen = false;
+      }
+      else if (screenY > screenH + yOut)
+      {
+        alpha = SELECTION_ARROWS_MAX_ALPHA;
+        screenX = screenW / 2.0f;
+        screenY = screenH + yOut - triSize / 3.0f;
+              triSize *= 1.5f;
+              onScreen = false;
+      }
+      else if (screenY < -yOut)
+      {
+        alpha = SELECTION_ARROWS_MAX_ALPHA;
+        screenX = screenW / 2.0f;
+        screenY = -yOut + triSize / 3.0f;
+              triSize *= 1.5f;
+              onScreen = false;
+      }
+          else
+          {
+              onScreen = true;
+          }
       }
 
-      // Do additive pass
+      if( !onScreen )
       {
-        float myTriSize = triSize - 8.0f;
-        float myXOut = xOut + 5.0f;
-        float myYOut = yOut + 5.0f;
+          Vector3 camPos = TheCamera()->GetPos() + TheCamera()->GetFront() * 1000;
+          Vector3 camToTarget = ( _pos - camPos ).SetLength( 100 );
 
-        glColor4f       ( 0.9f, 0.9f, 0.1f, alpha );
-        glBlendFunc		( GL_SRC_ALPHA, GL_ONE );
+          float camX = screenW / 2.0f;
+          float camY = screenH / 2.0f;
+          float posX, posY;
+          TheCamera()->Get2DScreenPos( camPos + camToTarget, &posX, &posY );
 
-        LeftArrow ( screenX - myXOut, screenY, myTriSize );
-        RightArrow( screenX + myXOut, screenY, myTriSize );
-        TopArrow  ( screenX, screenY - myYOut, myTriSize );
-        BottomArrow(screenX, screenY + myYOut, myTriSize );
+          Vector2 lineNormal( posX - camX, posY - camY );
+          lineNormal.Normalise();
+
+          float edgeX, edgeY;
+          FindScreenEdge( lineNormal, &edgeX, &edgeY );
+
+          lineNormal.x *= -1;
+
+          g_renderer->SetupMatricesFor2D();
+
+          RenderSelectionArrow( edgeX, screenH - edgeY, lineNormal.x, lineNormal.y, triSize, 1.0f );
+
+          g_renderer->SetupMatricesFor3D();
       }
+      else
+      {
+        // Get ready to render
+          g_renderer->SetupMatricesFor2D();
+          glEnable        ( GL_BLEND );
+          glDisable       ( GL_CULL_FACE );
+      //	glEnable		( GL_TEXTURE_2D );
+      //	glBindTexture	( GL_TEXTURE_2D, g_resource->GetTexture("selection_arrow") );
 
-        glDisable       ( GL_BLEND );
-        glEnable        ( GL_CULL_FACE );
-    //	glDisable		( GL_TEXTURE_2D );
+        // Do subtractive pass
+        {
+          glColor4f       ( 0.9f, 0.9f, 0.1f, alpha/2.0f );
+          glBlendFunc		( GL_ZERO, GL_ONE_MINUS_SRC_ALPHA );
 
-        g_renderer->SetupMatricesFor3D();
-    }
-}*/
+          LeftArrow ( screenX - xOut, screenY, triSize );
+          RightArrow( screenX + xOut, screenY, triSize );
+          TopArrow  ( screenX, screenY - yOut, triSize );
+          BottomArrow(screenX, screenY + yOut, triSize );
+        }
 
-void GameCursor::RenderWeaponMarker(DirectX::XMFLOAT3 _pos, DirectX::XMFLOAT3 _front, DirectX::XMFLOAT3 _up)
-{
-  m_cursorPlacement->SetSize(40.0f);
-  m_cursorPlacement->SetShadowed(true);
-  m_cursorPlacement->SetAnimation(true);
-  m_cursorPlacement->Render3D(_pos, _front, _up);
-}
+        // Do additive pass
+        {
+          float myTriSize = triSize - 8.0f;
+          float myXOut = xOut + 5.0f;
+          float myYOut = yOut + 5.0f;
 
+          glColor4f       ( 0.9f, 0.9f, 0.1f, alpha );
+          glBlendFunc		( GL_SRC_ALPHA, GL_ONE );
 
-// ****************************************************************************
-//  Class MouseCursor
-// ****************************************************************************
+          LeftArrow ( screenX - myXOut, screenY, myTriSize );
+          RightArrow( screenX + myXOut, screenY, myTriSize );
+          TopArrow  ( screenX, screenY - myYOut, myTriSize );
+          BottomArrow(screenX, screenY + myYOut, myTriSize );
+        }
 
-MouseCursor::MouseCursor(char const* _filename)
-  : m_hotspotX(0.0f),
-    m_hotspotY(0.0f),
-    m_size(20.0f),
-    m_animating(false),
-    m_shadowed(true)
-{
-  // Still strdup, because the destructor still free()s these two —
-  // ownership/T3 is what makes them std::string.
-  m_mainFilename = strdup(_filename);
+          glDisable       ( GL_BLEND );
+          glEnable        ( GL_CULL_FACE );
+      //	glDisable		( GL_TEXTURE_2D );
 
-  std::unique_ptr<BinaryReader> binReader(g_resource->GetBinaryReader(m_mainFilename));
-  ASSERT_TEXT(binReader, "Failed to open mouse cursor resource {}", _filename);
-  BitmapRGBA bmp(binReader.get(), "bmp");
-  binReader.reset();
+          g_renderer->SetupMatricesFor3D();
+      }
+  }*/
 
-  g_resource->AddBitmap(m_mainFilename, bmp);
-
-  m_shadowFilename = strdup(std::format("shadow_{}", _filename).c_str());
-  bmp.ApplyBlurFilter(10.0f);
-  g_resource->AddBitmap(m_shadowFilename, bmp);
-
-  m_colour.Set(255, 255, 255, 255);
-}
-
-MouseCursor::~MouseCursor()
-{
-  free(m_mainFilename);
-  free(m_shadowFilename);
-}
-
-float MouseCursor::GetSize()
-{
-  float size = m_size;
-
-  if (m_animating)
+  void GameCursor::RenderWeaponMarker(DirectX::XMFLOAT3 _pos, DirectX::XMFLOAT3 _front, DirectX::XMFLOAT3 _up)
   {
-    size += fabs(sinf(g_gameTime * 4.0f)) * size * 0.6f;
+    m_cursorPlacement->SetSize(40.0f);
+    m_cursorPlacement->SetShadowed(true);
+    m_cursorPlacement->SetAnimation(true);
+    m_cursorPlacement->Render3D(_pos, _front, _up);
   }
 
-  return size;
-}
 
+  // ****************************************************************************
+  //  Class MouseCursor
+  // ****************************************************************************
 
-void MouseCursor::SetSize(float _size) { m_size = _size; }
-
-
-void MouseCursor::SetAnimation(bool _onOrOff) { m_animating = _onOrOff; }
-
-
-void MouseCursor::SetShadowed(bool _onOrOff) { m_shadowed = _onOrOff; }
-
-
-void MouseCursor::SetHotspot(float x, float y)
-{
-  m_hotspotX = x;
-  m_hotspotY = y;
-}
-
-
-void MouseCursor::SetColour(RGBAColour const& _col) { m_colour = _col; }
-
-
-void MouseCursor::Render(float _x, float _y)
-{
-  float s = GetSize();
-  float x = (float)_x - s * m_hotspotX;
-  float y = (float)_y - s * m_hotspotY;
-
-  glEnable(GL_TEXTURE_2D);
-  glEnable(GL_BLEND);
-  glDisable(GL_CULL_FACE);
-  glDepthMask(false);
-
-  if (m_shadowed)
+  MouseCursor::MouseCursor(char const* _filename)
+    : m_hotspotX(0.0f),
+      m_hotspotY(0.0f),
+      m_size(20.0f),
+      m_animating(false),
+      m_shadowed(true)
   {
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-    glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
+    // Still strdup, because the destructor still free()s these two —
+    // ownership/T3 is what makes them std::string.
+    m_mainFilename = strdup(_filename);
+
+    std::unique_ptr<BinaryReader> binReader(g_resource->GetBinaryReader(m_mainFilename));
+    ASSERT_TEXT(binReader, "Failed to open mouse cursor resource {}", _filename);
+    BitmapRGBA bmp(binReader.get(), "bmp");
+    binReader.reset();
+
+    g_resource->AddBitmap(m_mainFilename, bmp);
+
+    m_shadowFilename = strdup(std::format("shadow_{}", _filename).c_str());
+    bmp.ApplyBlurFilter(10.0f);
+    g_resource->AddBitmap(m_shadowFilename, bmp);
+
+    m_colour.Set(255, 255, 255, 255);
+  }
+
+  MouseCursor::~MouseCursor()
+  {
+    free(m_mainFilename);
+    free(m_shadowFilename);
+  }
+
+  float MouseCursor::GetSize()
+  {
+    float size = m_size;
+
+    if (m_animating)
+    {
+      size += fabs(sinf(g_gameTime * 4.0f)) * size * 0.6f;
+    }
+
+    return size;
+  }
+
+
+  void MouseCursor::SetSize(float _size) { m_size = _size; }
+
+
+  void MouseCursor::SetAnimation(bool _onOrOff) { m_animating = _onOrOff; }
+
+
+  void MouseCursor::SetShadowed(bool _onOrOff) { m_shadowed = _onOrOff; }
+
+
+  void MouseCursor::SetHotspot(float x, float y)
+  {
+    m_hotspotX = x;
+    m_hotspotY = y;
+  }
+
+
+  void MouseCursor::SetColour(RGBAColour const& _col) { m_colour = _col; }
+
+
+  void MouseCursor::Render(float _x, float _y)
+  {
+    float s = GetSize();
+    float x = (float)_x - s * m_hotspotX;
+    float y = (float)_y - s * m_hotspotY;
+
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(false);
+
+    if (m_shadowed)
+    {
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+      glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
+      glBegin(GL_QUADS);
+      glTexCoord2i(0, 1);
+      glVertex2f(x, y);
+      glTexCoord2i(1, 1);
+      glVertex2f(x + s, y);
+      glTexCoord2i(1, 0);
+      glVertex2f(x + s, y + s);
+      glTexCoord2i(0, 0);
+      glVertex2f(x, y + s);
+      glEnd();
+    }
+
+    glColor4ubv(m_colour.GetData());
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_mainFilename));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glBegin(GL_QUADS);
     glTexCoord2i(0, 1);
     glVertex2f(x, y);
@@ -1098,63 +1117,64 @@ void MouseCursor::Render(float _x, float _y)
     glTexCoord2i(0, 0);
     glVertex2f(x, y + s);
     glEnd();
+
+    glDepthMask(true);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_CULL_FACE);
   }
 
-  glColor4ubv(m_colour.GetData());
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_mainFilename));
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  glVertex2f(x, y);
-  glTexCoord2i(1, 1);
-  glVertex2f(x + s, y);
-  glTexCoord2i(1, 0);
-  glVertex2f(x + s, y + s);
-  glTexCoord2i(0, 0);
-  glVertex2f(x, y + s);
-  glEnd();
 
-  glDepthMask(true);
-  glDisable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_TEXTURE_2D);
-  glEnable(GL_CULL_FACE);
-}
-
-
-void MouseCursor::Render3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, bool _cameraScale)
-{
-  DirectX::XMVECTOR const front = DirectX::XMLoadFloat3(&_front);
-  DirectX::XMVECTOR const rightAngle = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::XMLoadFloat3(&_up)));
-
-  glEnable(GL_TEXTURE_2D);
-
-  glEnable(GL_BLEND);
-  glDisable(GL_CULL_FACE);
-  // glDisable       (GL_DEPTH_TEST );
-  glDepthMask(false);
-
-  float scale = GetSize();
-  if (_cameraScale)
+  void MouseCursor::Render3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, bool _cameraScale)
   {
-    DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
-    float camDist =
-      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_pos))));
-    scale *= sqrtf(camDist) / 40.0f;
-  }
+    DirectX::XMVECTOR const front = DirectX::XMLoadFloat3(&_front);
+    DirectX::XMVECTOR const rightAngle = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, DirectX::XMLoadFloat3(&_up)));
 
-  DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&_pos);
-  pos = DirectX::XMVectorSubtract(pos, DirectX::XMVectorScale(rightAngle, m_hotspotX * scale));
-  pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, m_hotspotY * scale));
+    glEnable(GL_TEXTURE_2D);
 
-  DirectX::XMVECTOR const alongRight = DirectX::XMVectorScale(rightAngle, scale);
-  DirectX::XMVECTOR const alongFront = DirectX::XMVectorScale(front, scale);
+    glEnable(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+    // glDisable       (GL_DEPTH_TEST );
+    glDepthMask(false);
 
-  if (m_shadowed)
-  {
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-    glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
+    float scale = GetSize();
+    if (_cameraScale)
+    {
+      DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
+      float camDist =
+        DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&_pos))));
+      scale *= sqrtf(camDist) / 40.0f;
+    }
+
+    DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&_pos);
+    pos = DirectX::XMVectorSubtract(pos, DirectX::XMVectorScale(rightAngle, m_hotspotX * scale));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, m_hotspotY * scale));
+
+    DirectX::XMVECTOR const alongRight = DirectX::XMVectorScale(rightAngle, scale);
+    DirectX::XMVECTOR const alongFront = DirectX::XMVectorScale(front, scale);
+
+    if (m_shadowed)
+    {
+      glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_shadowFilename));
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+      glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
+
+      glBegin(GL_QUADS);
+      glTexCoord2i(0, 1);
+      EmitVertex(pos);
+      glTexCoord2i(1, 1);
+      EmitVertex(DirectX::XMVectorAdd(pos, alongRight));
+      glTexCoord2i(1, 0);
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, alongFront), alongRight));
+      glTexCoord2i(0, 0);
+      EmitVertex(DirectX::XMVectorSubtract(pos, alongFront));
+      glEnd();
+    }
+
+    glColor4ubv(m_colour.GetData());
+    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_mainFilename));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 1);
@@ -1166,27 +1186,12 @@ void MouseCursor::Render3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 cons
     glTexCoord2i(0, 0);
     EmitVertex(DirectX::XMVectorSubtract(pos, alongFront));
     glEnd();
+
+    glDepthMask(true);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_CULL_FACE);
   }
-
-  glColor4ubv(m_colour.GetData());
-  glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(m_mainFilename));
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-  glBegin(GL_QUADS);
-  glTexCoord2i(0, 1);
-  EmitVertex(pos);
-  glTexCoord2i(1, 1);
-  EmitVertex(DirectX::XMVectorAdd(pos, alongRight));
-  glTexCoord2i(1, 0);
-  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, alongFront), alongRight));
-  glTexCoord2i(0, 0);
-  EmitVertex(DirectX::XMVectorSubtract(pos, alongFront));
-  glEnd();
-
-  glDepthMask(true);
-  glEnable(GL_DEPTH_TEST);
-  glDisable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_TEXTURE_2D);
-  glEnable(GL_CULL_FACE);
-}
+} // namespace Species

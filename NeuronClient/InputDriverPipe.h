@@ -12,39 +12,43 @@
 // using [spec1, spec2, ..., specn] -> converter_spec syntax
 // in the input preferences file.
 
-struct InputFilterWithArgs;
 
-class PipeInputDriver : public InputDriver
+namespace Neuron
 {
-  private:
-    // List of lists of InputSpec
-    std::vector<std::unique_ptr<InputFilterWithArgs>> m_specs;
-    std::string& lastError;
+  struct InputFilterWithArgs;
 
-    // Parse an individual spec which is part of the left hand side of the
-    // piping operator, add it to the list and empty the stream.
-    InputParserState parseInputSpec(std::ostringstream& stream, InputSpecList& speclist);
+  class PipeInputDriver : public InputDriver
+  {
+    private:
+      // List of lists of InputSpec
+      std::vector<std::unique_ptr<InputFilterWithArgs>> m_specs;
+      std::string& lastError;
 
-  public:
-    PipeInputDriver();
+      // Parse an individual spec which is part of the left hand side of the
+      // piping operator, add it to the list and empty the stream.
+      InputParserState parseInputSpec(std::ostringstream& stream, InputSpecList& speclist);
 
-    // Out of line on purpose. m_specs holds unique_ptr to a type that is only
-    // forward-declared here, and unique_ptr's deleter needs the complete type
-    // at the point of destruction. Defining this in the .cpp, below the struct,
-    // is what supplies it.
-    ~PipeInputDriver();
+    public:
+      PipeInputDriver();
 
-    // Return STATE_DONE if we managed to parse these tokens, and put the parsed information
-    // into spec. Anything else means we failed.
-    InputParserState parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec);
+      // Out of line on purpose. m_specs holds unique_ptr to a type that is only
+      // forward-declared here, and unique_ptr's deleter needs the complete type
+      // at the point of destruction. Defining this in the .cpp, below the struct,
+      // is what supplies it.
+      ~PipeInputDriver();
 
-    // Get input state. True if the input was triggered (input condition met). If true,
-    // details are placed in details.
-    bool getInput(InputSpec const& spec, InputDetails& details);
+      // Return STATE_DONE if we managed to parse these tokens, and put the parsed information
+      // into spec. Anything else means we failed.
+      InputParserState parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec);
 
-    // This triggers a read from the input hardware and does message polling
-    void Advance();
+      // Get input state. True if the input was triggered (input condition met). If true,
+      // details are placed in details.
+      bool getInput(InputSpec const& spec, InputDetails& details);
 
-    // Return a helpful error string when there's a problem
-    const std::string& getLastParseError(InputParserState state);
-};
+      // This triggers a read from the input hardware and does message polling
+      void Advance();
+
+      // Return a helpful error string when there's a problem
+      const std::string& getLastParseError(InputParserState state);
+  };
+} // namespace Neuron
