@@ -207,12 +207,24 @@ comparison with a comment apologising for it, that is why, and it can go.
 failures in a row during `directxmath-migration` T10, every one a call site a
 type sweep did not reach. Vector3 has methods and operators and XMFLOAT3 has
 neither, so `vel.Mag()` stops compiling without ever mentioning the type's
-name. It also reports the one failure mode neither the compiler nor CI can
-see: Vector3's default constructor zeroed and XMFLOAT3's does not, so a
-converted member that something accumulates into changes behaviour silently.
-It resolves by member NAME like `check_containers.py`, and skips a name
-declared as both a native and a legacy type rather than guessing — four are
-contended today (`m_pos`, `m_vel`, `m_centre`, `m_angVel`).
+name. It also reports two failure modes neither the compiler nor CI can see:
+Vector3's default constructor zeroed and XMFLOAT3's does not, so a converted
+member that something accumulates into changes behaviour silently; and a rename
+that leaves a use behind, which binds to a different local rather than failing.
+
+It has grown with every task since. It now resolves members, locals,
+**function parameters**, `XMVECTOR`s, matrix rows and typed receivers — a
+converted *signature* leaves its parameter's uses behind exactly as a converted
+local does, and `obj->m_pos.Set(...)` names no type either.
+
+Like `check_containers.py` it resolves by NAME, and **skips a name that means
+two things rather than guessing** — sixteen are contended today, including
+`m_pos`, `m_front` and `m_up`. That skip is the tool's governing trade:
+under-reporting is recoverable, and crying wolf gets a check switched off. Every
+gap ever found in it has closed by making a *narrower* claim about where a
+name's type is known, never by broadening a regex; two rules that broadened
+instead were measured, found to accuse correct lines, and refused. Keep that
+shape if you extend it.
 
 `check_containers.py` exists because three CI failures in a row were the same
 mistake: a call site a container sweep did not reach, still asking a
@@ -306,12 +318,13 @@ a name that fails to resolve produces a smaller group rather than a crash.
 
 **Run at `36dd038` (2026-08-04), on the DirectXMath migration's converted
 engine layers** — NeuronCore's math and geometry, NeuronClient's renderers and
-sound, and the wire types. Owner-reported: the game runs. One observation is
-open rather than resolved — the procedurally generated landscape looks
-different in shape, shading unaffected — and no mechanism has been found for
-it; `tasks/directxmath-migration.yaml` T13 carries the evidence and the
-checksum commit that will settle it. Recorded here as a partial run, not a
-clean one.
+sound, and the wire types. Owner-reported: the game runs. One observation was
+open at the time — the procedurally generated landscape looked different in
+shape, shading unaffected — and it is now **closed**: the height-map checksums
+are equal on both builds, so the terrain is bit-identical and the difference
+was in rendering or in the eye. The temporary checksum commit that answered it
+(`57386fb`) has been reverted. `tasks/directxmath-migration.yaml` T13 carries
+the detail.
 
 Earlier runs, kept because the sequence is the evidence:
 
@@ -472,24 +485,19 @@ Real, currently true, and worth knowing before you trip over them:
     lost — but a client carrying this change desyncs against one without it.
     `determinism.yaml` T2 is the owner-run smoke test that confirms it, and is
     still open.
-- **The Garden landscape may have changed shape, and nobody knows why.**
-  Reported by the owner on 2026-08-04 against the DirectXMath migration's
-  converted engine layers (`36dd038`): the procedurally generated terrain looks
-  different in shape, shading unaffected. **No mechanism has been found.**
-  `LandscapeTile::GenerateHeightMap` reseeds the RNG from the level's own
-  `m_randomSeed` immediately before the diamond-square loop, so nothing drawn
-  from the shared stream beforehand can reach it; `Landscape.cpp` and
-  `Landscape.h` are untouched by that plan; `LandscapeRenderer.cpp`'s only
-  change is a comment and a `static_assert`; and the renderer's RNG use feeds
-  `GetLandscapeColour`, which is colour rather than geometry.
-  - A temporary commit (`57386fb`) writes a height-map checksum and the tile
-    parameters that determine it to `landscape-checksum.txt`, so the two builds
-    can be compared as a number rather than an impression. **It is throwaway and
-    must be reverted once the question is answered.**
-  - Equal checksums mean the terrain is bit-identical and the difference is in
-    rendering or in the eye. Unequal with the same tile parameters means
-    generation genuinely moved with no known cause, `directxmath-migration` T13
-    reopens, and the GameLogic wave should stop until it is explained.
+- ~~**The Garden landscape may have changed shape.**~~ **Answered 2026-08-04
+  and no longer an issue.** The owner reported against `36dd038` that the
+  procedurally generated terrain looked different in shape, with shading
+  unaffected, and no mechanism was ever found by reading. A temporary commit
+  (`57386fb`) made it answerable as a number rather than an impression, by
+  dumping a height-map checksum and the tile parameters that determine it.
+  **The checksums are equal**, so the terrain is bit-identical across the two
+  builds and the difference was in rendering or in the eye. `57386fb` has been
+  reverted. Kept here rather than deleted because the reasoning is the useful
+  part: terrain generation is a pure function of the level's `m_randomSeed` and
+  its tile parameters — `GenerateHeightMap` reseeds immediately before the
+  diamond-square loop — so it was never reachable from the RNG changes this
+  branch made, and the checksum proved it instead of arguing it.
 - **`LandscapeRenderer::GetLandscapeColour` draws from and reseeds the
   simulation's RNG from rendering code** — `speciesSeedRandom(_x | _y +
   speciesRandom())`. That is the same class of latent determinism bug as the

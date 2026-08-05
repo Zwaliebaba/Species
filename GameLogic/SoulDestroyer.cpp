@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "Resource.h"
 #include "Matrix34.h"
@@ -46,12 +47,29 @@ SoulDestroyer::SoulDestroyer()
   float range = 10.0f;
   for (int i = 0; i < SOULDESTROYER_MAXSPIRITS; ++i)
   {
-    m_spiritPosition[i] = Vector3(syncsfrand(range), syncsfrand(range), syncsfrand(range));
+    // The three syncsfrand calls stay in this order: they advance the RNG.
+    m_spiritPosition[i] = DirectX::XMFLOAT3(syncsfrand(range), syncsfrand(range), syncsfrand(range));
   }
 
   m_routeTriggerDistance = 50.0f;
 }
 
+
+// The tail segments are drawn, exploded and shadowed from the same pair of
+// history points, and every site scaled the three basis rows while leaving the
+// position row alone.
+static DirectX::XMFLOAT4X4 ScaledTailBasis(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position, float _scale)
+{
+  DirectX::XMMATRIX mat = BasisFromFrontAndUp(_front, _up, _position);
+  DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_scale);
+  mat.r[0] = DirectX::XMVectorMultiply(mat.r[0], scale);
+  mat.r[1] = DirectX::XMVectorMultiply(mat.r[1], scale);
+  mat.r[2] = DirectX::XMVectorMultiply(mat.r[2], scale);
+
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, mat);
+  return result;
+}
 
 void SoulDestroyer::Begin()
 {
@@ -79,7 +97,9 @@ void SoulDestroyer::ChangeHealth(int _amount)
 
     Panic(2.0f + syncfrand(2.0f));
 
-    Matrix34 transform(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 transform;
+    DirectX::XMStoreFloat4x4(&transform,
+                             BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
     g_explosionManager.AddExplosion(m_shape, transform, fractionDead);
 
     if (m_dead)
@@ -87,13 +107,14 @@ void SoulDestroyer::ChangeHealth(int _amount)
       // We just died
       for (int i = 1; i < static_cast<int>(m_positionHistory.size()); i += 1)
       {
-        Vector3 pos1 = *&m_positionHistory[i];
-        Vector3 pos2 = *&m_positionHistory[i - 1];
+        DirectX::XMVECTOR const p1 = DirectX::XMLoadFloat3(&m_positionHistory[i]);
+        DirectX::XMVECTOR const p2 = DirectX::XMLoadFloat3(&m_positionHistory[i - 1]);
+        DirectX::XMVECTOR const step = DirectX::XMVectorSubtract(p2, p1);
 
-        Vector3 pos = pos1 + (pos2 - pos1);
-        Vector3 front = (pos2 - pos1).Normalise();
-        Vector3 right = front ^ g_upVector;
-        Vector3 up = right ^ front;
+        DirectX::XMVECTOR pos = DirectX::XMVectorAdd(p1, step);
+        DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(step);
+        DirectX::XMVECTOR const right = DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1);
+        DirectX::XMVECTOR const up = DirectX::XMVector3Cross(right, front);
 
         float scale = 1.0f - ((float)i / (float)static_cast<int>(m_positionHistory.size()));
         scale *= 1.5f;
@@ -101,12 +122,7 @@ void SoulDestroyer::ChangeHealth(int _amount)
           scale = 0.8f;
         scale = std::max(scale, 0.5f);
 
-        Matrix34 tailMat(front, up, pos);
-        tailMat.u *= scale;
-        tailMat.r *= scale;
-        tailMat.f *= scale;
-
-        g_explosionManager.AddExplosion(m_shape, tailMat, 1.0f);
+        g_explosionManager.AddExplosion(m_shape, ScaledTailBasis(front, up, pos, scale), 1.0f);
       }
     }
   }
@@ -132,7 +148,8 @@ bool SoulDestroyer::Advance(Unit* _unit)
     WorldObject* target = g_location->GetEntity(m_targetEntity);
     if (target)
     {
-      float distance = (target->m_pos - m_pos).Mag();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&target->m_pos), DirectX::XMLoadFloat3(&m_pos))));
       m_targetPos = target->m_pos;
 
       if (distance > SOULDESTROYER_MAXSEARCHRANGE)
@@ -149,7 +166,10 @@ bool SoulDestroyer::Advance(Unit* _unit)
   m_retargetTimer -= SERVER_ADVANCE_PERIOD;
 
   bool arrived = AdvanceToTargetPosition();
-  if (arrived || m_targetPos == g_zeroVector || m_retargetTimer < 0.0f)
+  // Was `m_targetPos == g_zeroVector`, which is Vector3::operator== -- a
+  // PER-COMPONENT NearlyEquals at 1e-6, not an exact comparison.
+  if (arrived || DirectX::XMVector3NearEqual(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)) ||
+      m_retargetTimer < 0.0f)
   {
     m_retargetTimer = 5.0f;
     bool found = false;
@@ -168,7 +188,7 @@ bool SoulDestroyer::Advance(Unit* _unit)
 }
 
 
-void SoulDestroyer::Attack(Vector3 const& _pos)
+void SoulDestroyer::Attack(DirectX::XMFLOAT3 const& _pos)
 {
   int numFound;
   WorldObjectId* ids = g_location->m_entityGrid->GetEnemies(_pos.x, _pos.z, SOULDESTROYER_DAMAGERANGE, &numFound, m_id.GetTeamId());
@@ -179,16 +199,20 @@ void SoulDestroyer::Attack(Vector3 const& _pos)
     Entity* entity = (Entity*)g_location->GetEntity(id);
     bool killed = false;
 
-    Vector3 pushVector = (entity->m_pos - _pos);
-    float distance = pushVector.Mag();
+    DirectX::XMVECTOR pushVector = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&_pos));
+    float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(pushVector));
     if (distance < SOULDESTROYER_DAMAGERANGE)
     {
       g_soundSystem->TriggerEntityEvent(SoundSourceOf(this), "Attack");
 
-      pushVector.SetLength(SOULDESTROYER_DAMAGERANGE - distance);
+      // SetLength, whose zero-length fallback left (len, 0, 0). distance can be
+      // exactly zero, so the fallback is kept rather than storing QNaN into an
+      // entity's position.
+      pushVector = NearlyEquals(distance, 0.0f) ? DirectX::XMVectorSet(SOULDESTROYER_DAMAGERANGE - distance, 0.0f, 0.0f, 0.0f)
+                                                : DirectX::XMVectorScale(pushVector, (SOULDESTROYER_DAMAGERANGE - distance) / distance);
 
       g_location->m_entityGrid->RemoveObject(id, entity->m_pos.x, entity->m_pos.z, entity->m_radius);
-      entity->m_pos += pushVector;
+      DirectX::XMStoreFloat3(&entity->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&entity->m_pos), pushVector));
       g_location->m_entityGrid->AddObject(id, entity->m_pos.x, entity->m_pos.z, entity->m_radius);
 
       bool dead = entity->m_dead;
@@ -220,9 +244,19 @@ void SoulDestroyer::Attack(Vector3 const& _pos)
       Zombie* zombie = new Zombie();
       zombie->m_pos = entity->m_pos;
       zombie->m_front = entity->m_front;
-      zombie->m_up = g_upVector;
-      zombie->m_up.RotateAround(zombie->m_front * syncsfrand());
-      zombie->m_vel = m_vel * 0.5f;
+      zombie->m_up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+
+      // RotateAround's angle is the vector's magnitude, with its own 1e-8 guard.
+      DirectX::XMVECTOR const spinAxis = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&zombie->m_front), syncsfrand());
+      float const spinLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(spinAxis));
+      if (spinLengthSquared >= 1e-8f)
+      {
+        float const spin = sqrtf(spinLengthSquared);
+        DirectX::XMStoreFloat3(&zombie->m_up,
+                               DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&zombie->m_up),
+                                                           DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(spinAxis, 1.0f / spin), spin)));
+      }
+      DirectX::XMStoreFloat3(&zombie->m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 0.5f));
       zombie->m_vel.y = 20.0f + syncfrand(25.0f);
       int index = g_location->m_effects.PutData(zombie);
       zombie->m_id.Set(id.GetTeamId(), UNIT_EFFECTS, index, -1);
@@ -253,10 +287,12 @@ bool SoulDestroyer::SearchForRetreatPosition()
     DEBUG_ASSERT(obj);
 
     float distance = 50.0f;
-    Vector3 retreatVector = (m_pos - obj->m_pos).Normalise();
+    DirectX::XMVECTOR retreatVector =
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&obj->m_pos)));
     float angle = syncsfrand(M_PI * 1.0f);
-    retreatVector.RotateAroundY(angle);
-    m_targetPos = m_pos + retreatVector * distance;
+    retreatVector = DirectX::XMVector3TransformNormal(retreatVector, DirectX::XMMatrixRotationY(angle));
+    DirectX::XMStoreFloat3(&m_targetPos,
+                           DirectX::XMVectorMultiplyAdd(retreatVector, DirectX::XMVectorReplicate(distance), DirectX::XMLoadFloat3(&m_pos)));
     m_targetPos.y = std::min(m_targetPos.y, 300.0f);
     return true;
   }
@@ -308,28 +344,30 @@ bool SoulDestroyer::SearchForTargetEnemy()
 
 bool SoulDestroyer::SearchForRandomPosition()
 {
-  Vector3 toSpawnPoint = (m_pos - m_spawnPoint);
-  toSpawnPoint.y = 0.0f;
-  float distToSpawnPoint = toSpawnPoint.Mag();
+  DirectX::XMVECTOR const toSpawnPoint =
+    DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_spawnPoint)), 0.0f);
+  float distToSpawnPoint = DirectX::XMVectorGetX(DirectX::XMVector3Length(toSpawnPoint));
   float chanceOfReturn = (distToSpawnPoint / m_roamRange);
   if (chanceOfReturn >= 1.0f || syncfrand(1.0f) <= chanceOfReturn)
   {
     // We have strayed too far from our spawn point
     // So head back there now
-    Vector3 targetPos = m_spawnPoint;
+    DirectX::XMFLOAT3 targetPos = m_spawnPoint;
     targetPos.y = g_location->m_landscape.m_heightMap->GetValue(targetPos.x, targetPos.z);
     targetPos.y += 100.0f + syncsfrand(100.0f);
 
-    Vector3 returnVector = (targetPos - m_pos);
-    returnVector.SetLength(160.0f);
-    m_targetPos = m_pos + returnVector;
+    // SetLength, unreachable at zero length: this branch needs the destroyer to
+    // have strayed from its spawn point.
+    DirectX::XMVECTOR const returnVector = DirectX::XMVectorScale(
+      DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&targetPos), DirectX::XMLoadFloat3(&m_pos))), 160.0f);
+    DirectX::XMStoreFloat3(&m_targetPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), returnVector));
   }
   else
   {
     float distance = 160.0f;
     float angle = syncsfrand(2.0f * M_PI);
 
-    m_targetPos = m_pos + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
+    m_targetPos = DirectX::XMFLOAT3(m_pos.x + sinf(angle) * distance, m_pos.y, m_pos.z + cosf(angle) * distance);
     m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
     m_targetPos.y += (100.0f + syncsfrand(100.0f));
   }
@@ -340,8 +378,11 @@ bool SoulDestroyer::SearchForRandomPosition()
 
 void SoulDestroyer::RecordHistoryPosition()
 {
-  Matrix34 mat(m_front, m_up, m_pos);
-  Vector3 tailPos = s_tailMarker->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const tailPos = s_tailMarker->GetWorldMatrix(mat).pos;
   m_positionHistory.insert(m_positionHistory.begin(), tailPos);
 
   // int maxHistorys = 11;
@@ -356,16 +397,17 @@ void SoulDestroyer::RecordHistoryPosition()
 }
 
 
-bool SoulDestroyer::GetTrailPosition(Vector3& _pos, Vector3& _vel)
+bool SoulDestroyer::GetTrailPosition(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _vel)
 {
   if (static_cast<int>(m_positionHistory.size()) < 2)
     return false;
 
-  Vector3 pos1 = *&m_positionHistory[1];
-  Vector3 pos2 = *&m_positionHistory[0];
+  DirectX::XMVECTOR const pos1 = DirectX::XMLoadFloat3(&m_positionHistory[1]);
+  DirectX::XMVECTOR const pos2 = DirectX::XMLoadFloat3(&m_positionHistory[0]);
+  DirectX::XMVECTOR const step = DirectX::XMVectorSubtract(pos2, pos1);
 
-  _pos = pos1 + (pos2 - pos1);
-  _vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&_pos, DirectX::XMVectorAdd(pos1, step));
+  DirectX::XMStoreFloat3(&_vel, DirectX::XMVectorScale(step, 1.0f / SERVER_ADVANCE_PERIOD));
 
   return true;
 }
@@ -374,44 +416,57 @@ bool SoulDestroyer::GetTrailPosition(Vector3& _pos, Vector3& _vel)
 bool SoulDestroyer::AdvanceToTargetPosition()
 {
   float amountToTurn = SERVER_ADVANCE_PERIOD * 2.0f;
-  Vector3 targetDir = (m_targetPos - m_pos).Normalise();
+  DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&m_pos);
+  DirectX::XMVECTOR targetDir = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), ourPos));
   if (!m_targetEntity.IsValid())
   {
-    Vector3 right1 = m_front ^ m_up;
-    targetDir.RotateAround(right1 * sinf(g_gameTime * 6.0f) * 1.5f);
+    // RotateAround's angle is the vector's magnitude, with its own 1e-8 guard.
+    DirectX::XMVECTOR const right1 = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up));
+    DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(right1, sinf(g_gameTime * 6.0f) * 1.5f);
+    float const rotationLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+    if (rotationLengthSquared >= 1e-8f)
+    {
+      float const spin = sqrtf(rotationLengthSquared);
+      targetDir = DirectX::XMVector3Transform(targetDir, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / spin), spin));
+    }
   }
 
   // Look ahead to see if we're about to hit the ground
-  Vector3 forwardPos = m_pos + targetDir * 50.0f;
+  DirectX::XMFLOAT3 forwardPos;
+  DirectX::XMStoreFloat3(&forwardPos, DirectX::XMVectorMultiplyAdd(targetDir, DirectX::XMVectorReplicate(50.0f), ourPos));
   float landHeight = g_location->m_landscape.m_heightMap->GetValue(forwardPos.x, forwardPos.z);
   if (forwardPos.y <= landHeight)
   {
-    targetDir = g_upVector;
+    targetDir = DirectX::g_XMIdentityR1;
   }
 
-  Vector3 actualDir = m_front * (1.0f - amountToTurn) + targetDir * amountToTurn;
-  actualDir.Normalise();
+  DirectX::XMVECTOR const actualDir = DirectX::XMVector3Normalize(DirectX::XMVectorLerp(DirectX::XMLoadFloat3(&m_front), targetDir, amountToTurn));
   float speed = m_stats[StatSpeed];
   speed = 130.0f;
 
-  Vector3 oldPos = m_pos;
-  Vector3 newPos = m_pos + actualDir * speed * SERVER_ADVANCE_PERIOD;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
+  DirectX::XMFLOAT3 newPos;
+  DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(speed * SERVER_ADVANCE_PERIOD), ourPos));
   landHeight = g_location->m_landscape.m_heightMap->GetValue(newPos.x, newPos.z);
   // newPos.y = max( newPos.y, landHeight );
 
-  Vector3 moved = newPos - oldPos;
-  if (moved.Mag() > speed * SERVER_ADVANCE_PERIOD)
-    moved.SetLength(speed * SERVER_ADVANCE_PERIOD);
-  newPos = m_pos + moved;
+  DirectX::XMVECTOR const old = DirectX::XMLoadFloat3(&oldPos);
+  DirectX::XMVECTOR moved = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&newPos), old);
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(moved)) > speed * SERVER_ADVANCE_PERIOD)
+  {
+    // SetLength, guarded by the test above, so never zero-length here.
+    moved = DirectX::XMVectorScale(DirectX::XMVector3Normalize(moved), speed * SERVER_ADVANCE_PERIOD);
+  }
 
-  m_pos = newPos;
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
-  m_front = actualDir;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorAdd(ourPos, moved));
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), old), 1.0f / SERVER_ADVANCE_PERIOD));
+  DirectX::XMStoreFloat3(&m_front, actualDir);
 
-  Vector3 right = m_front ^ g_upVector;
-  m_up = right ^ m_front;
+  DirectX::XMVECTOR const right = DirectX::XMVector3Cross(actualDir, DirectX::g_XMIdentityR1);
+  DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Cross(right, actualDir));
 
-  return (m_pos - m_targetPos).Mag() < 40.0f;
+  return DirectX::XMVectorGetX(
+           DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_targetPos)))) < 40.0f;
 }
 
 
@@ -426,14 +481,19 @@ void SoulDestroyer::ListSoundEvents(std::vector<const char*>* _list)
 
 void SoulDestroyer::RenderShapes(float _predictionTime)
 {
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
-  Vector3 predictedFront = m_front;
-  Vector3 predictedUp = m_up;
-  Vector3 predictedRight = predictedUp ^ predictedFront;
-  predictedFront = predictedRight ^ predictedUp;
-  predictedFront.Normalise();
-  predictedUp.Normalise();
-  Matrix34 mat(predictedFront, predictedUp, predictedPos);
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
+
+  // front is RECOMPUTED orthogonal to up and both are normalised before the
+  // basis is built -- passing m_front here would be a different matrix.
+  DirectX::XMVECTOR const rawUp = DirectX::XMLoadFloat3(&m_up);
+  DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(rawUp, DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(predictedRight, rawUp));
+  DirectX::XMVECTOR const predictedUp = DirectX::XMVector3Normalize(rawUp);
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(predictedFront, predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
 
   glEnable(GL_NORMALIZE);
   glDisable(GL_TEXTURE_2D);
@@ -445,15 +505,16 @@ void SoulDestroyer::RenderShapes(float _predictionTime)
 
   for (int i = 1; i < static_cast<int>(m_positionHistory.size()); i += 1)
   {
-    Vector3 pos1 = *&m_positionHistory[i];
-    Vector3 pos2 = *&m_positionHistory[i - 1];
+    DirectX::XMVECTOR const p1 = DirectX::XMLoadFloat3(&m_positionHistory[i]);
+    DirectX::XMVECTOR const p2 = DirectX::XMLoadFloat3(&m_positionHistory[i - 1]);
+    DirectX::XMVECTOR const step = DirectX::XMVectorSubtract(p2, p1);
 
-    Vector3 pos = pos1 + (pos2 - pos1);
-    Vector3 front = (pos2 - pos1).Normalise();
-    Vector3 right = front ^ g_upVector;
-    Vector3 up = right ^ front;
-    Vector3 vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
-    pos += vel * _predictionTime;
+    DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(step);
+    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1);
+    DirectX::XMVECTOR const up = DirectX::XMVector3Cross(right, front);
+
+    DirectX::XMVECTOR const vel = DirectX::XMVectorScale(step, 1.0f / SERVER_ADVANCE_PERIOD);
+    DirectX::XMVECTOR const pos = DirectX::XMVectorMultiplyAdd(vel, DirectX::XMVectorReplicate(_predictionTime), DirectX::XMVectorAdd(p1, step));
 
     float scale = 1.0f - ((float)i / (float)static_cast<int>(m_positionHistory.size()));
     scale *= 1.5f;
@@ -461,10 +522,7 @@ void SoulDestroyer::RenderShapes(float _predictionTime)
       scale = 0.8f;
     scale = std::max(scale, 0.5f);
 
-    Matrix34 tailMat(front, up, pos);
-    tailMat.u *= scale;
-    tailMat.r *= scale;
-    tailMat.f *= scale;
+    DirectX::XMFLOAT4X4 const tailMat = ScaledTailBasis(front, up, pos, scale);
 
     s_shapeTail->Render(_predictionTime, tailMat);
   }
@@ -477,26 +535,33 @@ void SoulDestroyer::RenderShapes(float _predictionTime)
 
 void SoulDestroyer::RenderShapesForPixelEffect(float _predictionTime)
 {
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
-  Vector3 predictedFront = m_front;
-  Vector3 predictedUp = m_up;
-  Vector3 predictedRight = predictedUp ^ predictedFront;
-  predictedFront = predictedRight ^ predictedUp;
-  Matrix34 mat(predictedFront, predictedUp, predictedPos);
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
+
+  // front is RECOMPUTED orthogonal to up, and deliberately NOT normalised
+  // here -- unlike the Render path, which normalises both.
+  DirectX::XMVECTOR const predictedUp = DirectX::XMLoadFloat3(&m_up);
+  DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(predictedUp, DirectX::XMLoadFloat3(&m_front));
+  DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Cross(predictedRight, predictedUp);
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(predictedFront, predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
 
   g_renderer->MarkUsedCells(s_shapeHead, mat);
 
   for (int i = 1; i < static_cast<int>(m_positionHistory.size()); i += 1)
   {
-    Vector3 pos1 = *&m_positionHistory[i];
-    Vector3 pos2 = *&m_positionHistory[i - 1];
+    DirectX::XMVECTOR const p1 = DirectX::XMLoadFloat3(&m_positionHistory[i]);
+    DirectX::XMVECTOR const p2 = DirectX::XMLoadFloat3(&m_positionHistory[i - 1]);
+    DirectX::XMVECTOR const step = DirectX::XMVectorSubtract(p2, p1);
 
-    Vector3 pos = pos1 + (pos2 - pos1);
-    Vector3 front = (pos2 - pos1).Normalise();
-    Vector3 right = front ^ g_upVector;
-    Vector3 up = right ^ front;
-    Vector3 vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
-    pos += vel * _predictionTime;
+    DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(step);
+    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(front, DirectX::g_XMIdentityR1);
+    DirectX::XMVECTOR const up = DirectX::XMVector3Cross(right, front);
+
+    DirectX::XMVECTOR const vel = DirectX::XMVectorScale(step, 1.0f / SERVER_ADVANCE_PERIOD);
+    DirectX::XMVECTOR const pos = DirectX::XMVectorMultiplyAdd(vel, DirectX::XMVectorReplicate(_predictionTime), DirectX::XMVectorAdd(p1, step));
 
     float scale = 1.0f - ((float)i / (float)static_cast<int>(m_positionHistory.size()));
     scale *= 1.5f;
@@ -504,10 +569,7 @@ void SoulDestroyer::RenderShapesForPixelEffect(float _predictionTime)
       scale = 0.8f;
     scale = std::max(scale, 0.5f);
 
-    Matrix34 tailMat(front, up, pos);
-    tailMat.u *= scale;
-    tailMat.r *= scale;
-    tailMat.f *= scale;
+    DirectX::XMFLOAT4X4 const tailMat = ScaledTailBasis(front, up, pos, scale);
 
     g_renderer->MarkUsedCells(s_shapeTail, tailMat);
   }
@@ -522,12 +584,18 @@ void SoulDestroyer::Render(float _predictionTime)
   {
     glDisable(GL_TEXTURE_2D);
 
-    Vector3 predictedPos = m_pos + m_vel * _predictionTime;
-    Vector3 predictedFront = m_front;
-    Vector3 predictedUp = m_up;
-    Vector3 predictedRight = predictedUp ^ predictedFront;
-    predictedFront = predictedRight ^ predictedUp;
-    Matrix34 mat(predictedFront, predictedUp, predictedPos);
+    DirectX::XMFLOAT3 predictedPos;
+    DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                       DirectX::XMLoadFloat3(&m_pos)));
+
+    // front is RECOMPUTED orthogonal to up, and deliberately NOT normalised
+    // here -- unlike the Render path, which normalises both.
+    DirectX::XMVECTOR const predictedUp = DirectX::XMLoadFloat3(&m_up);
+    DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(predictedUp, DirectX::XMLoadFloat3(&m_front));
+    DirectX::XMVECTOR const predictedFront = DirectX::XMVector3Cross(predictedRight, predictedUp);
+
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(predictedFront, predictedUp, DirectX::XMLoadFloat3(&predictedPos)));
 
     //        RenderSphere( m_targetPos, 5.0f );
     //        RenderSphere( predictedPos, 300.0f );
@@ -546,12 +614,13 @@ void SoulDestroyer::Render(float _predictionTime)
 
     for (int i = 1; i < static_cast<int>(m_positionHistory.size()); i += 1)
     {
-      Vector3 pos1 = *&m_positionHistory[i];
-      Vector3 pos2 = *&m_positionHistory[i - 1];
+      DirectX::XMVECTOR const p1 = DirectX::XMLoadFloat3(&m_positionHistory[i]);
+      DirectX::XMVECTOR const p2 = DirectX::XMLoadFloat3(&m_positionHistory[i - 1]);
+      DirectX::XMVECTOR const step = DirectX::XMVectorSubtract(p2, p1);
+      DirectX::XMVECTOR const vel = DirectX::XMVectorScale(step, 1.0f / SERVER_ADVANCE_PERIOD);
 
-      Vector3 pos = pos1 + (pos2 - pos1);
-      Vector3 vel = (pos2 - pos1) / SERVER_ADVANCE_PERIOD;
-      pos += vel * _predictionTime;
+      DirectX::XMFLOAT3 pos;
+      DirectX::XMStoreFloat3(&pos, DirectX::XMVectorMultiplyAdd(vel, DirectX::XMVectorReplicate(_predictionTime), DirectX::XMVectorAdd(p1, step)));
 
       float scale = 1.0f - ((float)i / (float)static_cast<int>(m_positionHistory.size()));
       scale *= 1.5f;
@@ -589,8 +658,10 @@ void SoulDestroyer::Render(float _predictionTime)
           float alpha = 1.0f - (timeNow - m_spirits[i]) / 60.0f;
           alpha = std::min(alpha, 1.0f);
           alpha = std::max(alpha, 0.0f);
-          Vector3 pos = m_pos + m_spiritPosition[i];
-          pos += m_vel * _predictionTime;
+          DirectX::XMFLOAT3 pos;
+          DirectX::XMStoreFloat3(
+            &pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                               DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&m_spiritPosition[i]))));
           RenderSpirit(pos, alpha);
         }
       }
@@ -609,9 +680,17 @@ void SoulDestroyer::Render(float _predictionTime)
 }
 
 
-void SoulDestroyer::RenderSpirit(Vector3 const& _pos, float _alpha)
+void SoulDestroyer::RenderSpirit(DirectX::XMFLOAT3 const& _pos, float _alpha)
 {
-  Vector3 pos = _pos;
+  DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
+
+  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
+  // of the eight vertices below, which each called them afresh.
+  DirectX::XMFLOAT3 const camPosStore = g_camera->GetPos();
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   int innerAlpha = 200 * _alpha;
   int outerAlpha = 100 * _alpha;
@@ -619,25 +698,25 @@ void SoulDestroyer::RenderSpirit(Vector3 const& _pos, float _alpha)
   int spiritOuterSize = 12 * _alpha;
 
   RGBAColour colour(100, 50, 50);
-  float distToParticle = (g_camera->GetPos() - pos).Mag();
+  float distToParticle = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), pos)));
 
   float size = spiritInnerSize / sqrtf(sqrtf(distToParticle));
   glColor4ub(colour.r, colour.g, colour.b, innerAlpha);
 
   glBegin(GL_QUADS);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), pos));
   glEnd();
 
   size = spiritOuterSize / sqrtf(sqrtf(distToParticle));
   glColor4ub(colour.r, colour.g, colour.b, outerAlpha);
   glBegin(GL_QUADS);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), pos));
   glEnd();
 }
 
@@ -656,7 +735,7 @@ bool SoulDestroyer::RenderPixelEffect(float _predictionTime)
   return false;
 }
 
-void SoulDestroyer::SetWaypoint(const Vector3 _waypoint) { m_targetPos = _waypoint; }
+void SoulDestroyer::SetWaypoint(DirectX::XMFLOAT3 const _waypoint) { m_targetPos = _waypoint; }
 
 
 Zombie::Zombie()
@@ -681,7 +760,7 @@ bool Zombie::Advance()
     return true;
   }
 
-  m_vel *= 0.9f;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 0.9f));
 
   //
   // Make me hover around a bit
@@ -707,8 +786,10 @@ bool Zombie::Advance()
   m_hover.y = sinf(m_positionOffset) * m_yaxisRate;
   m_hover.z = sinf(m_positionOffset) * m_zaxisRate;
 
-  m_pos += m_hover * SERVER_ADVANCE_PERIOD;
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hover), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMLoadFloat3(&m_pos)));
 
   return false;
 }
@@ -716,12 +797,12 @@ bool Zombie::Advance()
 
 void Zombie::Render(float _predictionTime)
 {
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
-  predictedPos += m_hover * _predictionTime;
+  DirectX::XMVECTOR const predictedPos = DirectX::XMVectorMultiplyAdd(
+    DirectX::XMLoadFloat3(&m_hover), DirectX::XMVectorReplicate(_predictionTime),
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos)));
 
-  Vector3 predictedFront = m_front;
-  Vector3 predictedUp = m_up;
-  Vector3 predictedRight = predictedFront ^ predictedUp;
+  DirectX::XMVECTOR const predictedUp = DirectX::XMLoadFloat3(&m_up);
+  DirectX::XMVECTOR const predictedRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_front), predictedUp);
 
   float size = 5.0f;
 
@@ -745,26 +826,34 @@ void Zombie::Render(float _predictionTime)
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 0);
-  glVertex3fv((predictedPos - size * predictedRight - size * predictedUp).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(predictedPos, DirectX::XMVectorScale(predictedRight, size)),
+                                       DirectX::XMVectorScale(predictedUp, size)));
   glTexCoord2i(1, 0);
-  glVertex3fv((predictedPos + size * predictedRight - size * predictedUp).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(predictedPos, DirectX::XMVectorScale(predictedRight, size)),
+                                       DirectX::XMVectorScale(predictedUp, size)));
   glTexCoord2i(1, 1);
-  glVertex3fv((predictedPos + size * predictedRight + size * predictedUp).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(predictedPos, DirectX::XMVectorScale(predictedRight, size)),
+                                  DirectX::XMVectorScale(predictedUp, size)));
   glTexCoord2i(0, 1);
-  glVertex3fv((predictedPos - size * predictedRight + size * predictedUp).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(predictedPos, DirectX::XMVectorScale(predictedRight, size)),
+                                  DirectX::XMVectorScale(predictedUp, size)));
   glEnd();
 
   size *= 2.0f;
   glColor4f(0.9f, 0.9f, 1.0f, outerAlpha);
   glBegin(GL_QUADS);
   glTexCoord2i(0, 0);
-  glVertex3fv((predictedPos - size * predictedRight - size * predictedUp).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(predictedPos, DirectX::XMVectorScale(predictedRight, size)),
+                                       DirectX::XMVectorScale(predictedUp, size)));
   glTexCoord2i(1, 0);
-  glVertex3fv((predictedPos + size * predictedRight - size * predictedUp).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(predictedPos, DirectX::XMVectorScale(predictedRight, size)),
+                                       DirectX::XMVectorScale(predictedUp, size)));
   glTexCoord2i(1, 1);
-  glVertex3fv((predictedPos + size * predictedRight + size * predictedUp).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(predictedPos, DirectX::XMVectorScale(predictedRight, size)),
+                                  DirectX::XMVectorScale(predictedUp, size)));
   glTexCoord2i(0, 1);
-  glVertex3fv((predictedPos - size * predictedRight + size * predictedUp).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(predictedPos, DirectX::XMVectorScale(predictedRight, size)),
+                                  DirectX::XMVectorScale(predictedUp, size)));
   glEnd();
 
   glDisable(GL_TEXTURE_2D);

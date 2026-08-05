@@ -66,27 +66,38 @@ void AntHill::Damage(float _damage)
 
     if (healthBandAfter != healthBandBefore)
     {
-      Matrix34 mat(m_front, g_upVector, m_pos);
+      DirectX::XMFLOAT4X4 mat;
+      DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
       g_explosionManager.AddExplosion(m_shape, mat, 1.0f - (float)m_health / 100.0f);
       g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "Damage");
     }
 
     if (m_health <= 0)
     {
-      Matrix34 mat(m_front, g_upVector, m_pos);
+      DirectX::XMFLOAT4X4 mat;
+      DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
       g_explosionManager.AddExplosion(m_shape, mat);
 
       int numSpirits = m_numAntsInside + m_numSpiritsInside;
       for (int i = 0; i < numSpirits; ++i)
       {
-        Vector3 pos = m_pos;
+        // The three syncfrand calls stay in this order: they advance the
+        // synchronised RNG, and the migration may not change the sequence.
         float radius = syncfrand(20.0f);
         float theta = syncfrand(M_PI * 2);
-        pos.x += radius * sinf(theta);
-        pos.z += radius * cosf(theta);
+        DirectX::XMFLOAT3 const pos(m_pos.x + radius * sinf(theta), m_pos.y, m_pos.z + radius * cosf(theta));
 
-        Vector3 vel = (pos - m_pos);
-        vel.SetLength(syncfrand(50.0f));
+        // SetLength on (pos - m_pos), which is (radius*sin, 0, radius*cos).
+        // radius can be zero -- syncfrand's range is inclusive of it -- and the
+        // legacy fallback then left (len, 0, 0), a real direction. The native
+        // normalise would give QNaN and spawn a spirit that never moves, so
+        // this reproduces the fallback rather than taking the divergence.
+        DirectX::XMVECTOR const offset = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&pos), DirectX::XMLoadFloat3(&m_pos));
+        float const offsetLength = DirectX::XMVectorGetX(DirectX::XMVector3Length(offset));
+        float const speed = syncfrand(50.0f);
+        DirectX::XMFLOAT3 vel;
+        DirectX::XMStoreFloat3(&vel, NearlyEquals(offsetLength, 0.0f) ? DirectX::XMVectorSet(speed, 0.0f, 0.0f, 0.0f)
+                                                                      : DirectX::XMVectorScale(offset, speed / offsetLength));
 
         g_location->SpawnSpirit(pos, vel, m_id.GetTeamId(), WorldObjectId());
       }
@@ -103,12 +114,13 @@ void AntHill::Destroy(float _intensity)
   m_health = 0;
 }
 
-bool AntHill::SearchingArea(Vector3 _pos)
+bool AntHill::SearchingArea(DirectX::XMFLOAT3 _pos)
 {
   for (int i = 0; i < static_cast<int>(m_objectives.size()); ++i)
   {
     AntObjective* obj = m_objectives[i];
-    float distance = (obj->m_pos - _pos).Mag();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&obj->m_pos), DirectX::XMLoadFloat3(&_pos))));
     if (distance < 20.0f)
       return true;
   }
@@ -130,14 +142,15 @@ bool AntHill::TargettedEntity(WorldObjectId _id)
 }
 
 
-bool AntHill::SearchForSpirits(Vector3& _pos)
+bool AntHill::SearchForSpirits(DirectX::XMFLOAT3& _pos)
 {
   for (int i = 0; i < g_location->m_spirits.Size(); ++i)
   {
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (s->m_pos - m_pos).Mag();
+      float theDist =
+        DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&s->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
       if (theDist <= ANTHILL_SEARCHRANGE && !SearchingArea(s->m_pos) && (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
       {
@@ -151,7 +164,7 @@ bool AntHill::SearchForSpirits(Vector3& _pos)
 }
 
 
-bool AntHill::SearchForCitizens(Vector3& _pos, WorldObjectId& _id)
+bool AntHill::SearchForCitizens(DirectX::XMFLOAT3& _pos, WorldObjectId& _id)
 {
   int numFound;
   WorldObjectId* ids = g_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z, ANTHILL_SEARCHRANGE, &numFound, m_id.GetTeamId());
@@ -163,7 +176,8 @@ bool AntHill::SearchForCitizens(Vector3& _pos, WorldObjectId& _id)
     if (entity && entity->m_type == Entity::TypeCitizen)
     {
       Citizen* citizen = (Citizen*)entity;
-      float theDist = (entity->m_pos - m_pos).Mag();
+      float theDist = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
       if (theDist <= ANTHILL_SEARCHRANGE && citizen->m_state != Citizen::StateCapturedByAnt && !TargettedEntity(entity->m_id))
       {
@@ -178,7 +192,7 @@ bool AntHill::SearchForCitizens(Vector3& _pos, WorldObjectId& _id)
 }
 
 
-bool AntHill::SearchForEnemies(Vector3& _pos, WorldObjectId& _id)
+bool AntHill::SearchForEnemies(DirectX::XMFLOAT3& _pos, WorldObjectId& _id)
 {
   int numFound;
   WorldObjectId* ids = g_location->m_entityGrid->GetEnemies(m_pos.x, m_pos.z, ANTHILL_SEARCHRANGE, &numFound, m_id.GetTeamId());
@@ -188,7 +202,8 @@ bool AntHill::SearchForEnemies(Vector3& _pos, WorldObjectId& _id)
     WorldObjectId id = ids[i];
     Entity* entity = g_location->GetEntity(id);
 
-    float theDist = (entity->m_pos - m_pos).Mag();
+    float theDist = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
     if (theDist <= ANTHILL_SEARCHRANGE && !TargettedEntity(entity->m_id))
     {
@@ -202,9 +217,9 @@ bool AntHill::SearchForEnemies(Vector3& _pos, WorldObjectId& _id)
 }
 
 
-bool AntHill::SearchForScoutArea(Vector3& _pos)
+bool AntHill::SearchForScoutArea(DirectX::XMFLOAT3& _pos)
 {
-  Vector3 scoutPos = m_pos;
+  DirectX::XMFLOAT3 scoutPos = m_pos;
   float radius = ANTHILL_SEARCHRANGE / 2.0f + syncfrand(ANTHILL_SEARCHRANGE / 2.0f);
   float theta = syncfrand(M_PI * 2);
   scoutPos.x += radius * sinf(theta);
@@ -239,7 +254,8 @@ bool AntHill::PopulationLocked()
         if (building && building->m_type == TypeSpawnPopulationLock)
         {
           SpawnPopulationLock* lock = (SpawnPopulationLock*)building;
-          float distance = (building->m_pos - m_pos).Mag();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
           if (distance < lock->m_searchRadius)
           {
             m_populationLock = lock->m_id.GetUniqueId();
@@ -290,7 +306,7 @@ bool AntHill::Advance()
 
   if (!popLocked && GetHighResTime() > m_objectiveTimer && static_cast<int>(m_objectives.size()) < 3)
   {
-    Vector3 targetPos;
+    DirectX::XMFLOAT3 targetPos{0.0f, 0.0f, 0.0f};
     WorldObjectId targetId;
     bool targetFound = false;
 
@@ -330,14 +346,15 @@ bool AntHill::Advance()
 
     int chosenIndex = syncrand() % static_cast<int>(m_objectives.size());
     AntObjective* objective = m_objectives[chosenIndex];
-    Vector3 spawnPos = m_pos;
+    DirectX::XMFLOAT3 spawnPos = m_pos;
     spawnPos.y = g_location->m_landscape.m_heightMap->GetValue(spawnPos.x, spawnPos.z);
 
     WorldObjectId spawnedId = g_location->SpawnEntities(spawnPos, m_id.GetTeamId(), m_unitId, Entity::TypeArmyAnt, 1, g_zeroVector, 10.0f);
     ArmyAnt* ant = (ArmyAnt*)g_location->GetEntity(spawnedId);
 
     ant->m_buildingId = m_id.GetUniqueId();
-    ant->m_front = (ant->m_pos - m_pos).Normalise();
+    DirectX::XMStoreFloat3(&ant->m_front,
+                           DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&ant->m_pos), DirectX::XMLoadFloat3(&m_pos))));
     ant->m_orders = ArmyAnt::ScoutArea;
     ant->m_wayPoint = objective->m_pos;
     ant->m_targetId = objective->m_targetId;
@@ -386,7 +403,8 @@ bool AntHill::Advance()
 
 void AntHill::Render(float _predictionTime)
 {
-  Matrix34 mat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 const worldMat = GetWorldMatrix();
+  DirectX::XMMATRIX basis = DirectX::XMLoadFloat4x4(&worldMat);
 
   //
   // If we are damaged, flicked in and out based on our health
@@ -395,15 +413,20 @@ void AntHill::Render(float _predictionTime)
   {
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
     float thefrand = frand();
+
+    // r is row 0, u row 1, f row 2, in the row-vector convention.
     if (thefrand > 0.7f)
-      mat.f *= (1.0f - sinf(timeIndex) * 0.7f);
+      basis.r[2] = DirectX::XMVectorScale(basis.r[2], 1.0f - sinf(timeIndex) * 0.7f);
     else if (thefrand > 0.4f)
-      mat.u *= (1.0f - sinf(timeIndex) * 0.5f);
+      basis.r[1] = DirectX::XMVectorScale(basis.r[1], 1.0f - sinf(timeIndex) * 0.5f);
     else
-      mat.r *= (1.0f - sinf(timeIndex) * 0.7f);
+      basis.r[0] = DirectX::XMVectorScale(basis.r[0], 1.0f - sinf(timeIndex) * 0.7f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
   }
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, basis);
 
   m_shape->Render(_predictionTime, mat);
 

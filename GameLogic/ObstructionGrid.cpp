@@ -48,7 +48,7 @@ void ObstructionGrid::CalculateBuildingArea(int _buildingId)
         float cellCentreZ = (float)z * m_cells.m_cellSizeY + m_cells.m_cellSizeY / 2.0f;
         float cellRadius = m_cells.m_cellSizeX * 0.5f;
 
-        Vector3 cellPos(cellCentreX, 0.0f, cellCentreZ);
+        DirectX::XMFLOAT3 cellPos(cellCentreX, 0.0f, cellCentreZ);
         cellPos.y = g_location->m_landscape.m_heightMap->GetValue(cellPos.x, cellPos.z);
 
         if (building->DoesSphereHit(cellPos, cellRadius))
@@ -67,13 +67,16 @@ void ObstructionGrid::CalculateBuildingArea(int _buildingId)
         {
           Building* link = g_location->GetBuilding(building->GetBuildingLink());
 
-          Vector3 direction = (link->m_pos - building->m_pos);
+          DirectX::XMVECTOR const basePos = DirectX::XMLoadFloat3(&building->m_pos);
+          DirectX::XMVECTOR const direction = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&link->m_pos), basePos);
 
-          int numCells = (link->m_pos - building->m_pos).Mag() + 1;
+          int numCells = DirectX::XMVectorGetX(DirectX::XMVector3Length(direction)) + 1;
 
           for (int i = 0; i < numCells; ++i)
           {
-            Vector3 pos = building->m_pos + (direction / numCells) * i;
+            DirectX::XMFLOAT3 pos;
+            DirectX::XMStoreFloat3(&pos, DirectX::XMVectorMultiplyAdd(DirectX::XMVectorScale(direction, 1.0f / numCells),
+                                                                      DirectX::XMVectorReplicate(static_cast<float>(i)), basePos));
             int cellX = m_cells.GetMapIndexX(pos.x);
             int cellY = m_cells.GetMapIndexY(pos.z);
 

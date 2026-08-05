@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "AppCommands.h"
 #include "Debug.h"
 #include "LanguageTable.h"
@@ -69,38 +70,40 @@ GlobalEventCondition::GlobalEventCondition()
     m_id(-1),
     m_locationId(-1),
     m_stringId(nullptr),
-    m_cutScene(nullptr) {}
+    m_cutScene(nullptr)
+{
+}
 
 GlobalEventCondition::GlobalEventCondition(const GlobalEventCondition& _other)
   : m_type(_other.m_type),
     m_id(_other.m_id),
     m_locationId(_other.m_locationId),
     m_stringId(NewStr(_other.m_stringId)),
-    m_cutScene(NewStr(_other.m_cutScene)) {}
+    m_cutScene(NewStr(_other.m_cutScene))
+{
+}
 
 GlobalEventCondition::~GlobalEventCondition()
 {
-  delete [] m_stringId;
-  delete [] m_cutScene;
+  delete[] m_stringId;
+  delete[] m_cutScene;
 }
 
 void GlobalEventCondition::SetStringId(const char* _stringId)
 {
-  delete [] m_stringId;
+  delete[] m_stringId;
   m_stringId = NewStr(_stringId);
 }
 
 void GlobalEventCondition::SetCutScene(char* _cutScene)
 {
-  delete [] m_cutScene;
+  delete[] m_cutScene;
   m_cutScene = NewStr(_cutScene);
 }
 
 const char* GlobalEventCondition::GetTypeName(int _type)
 {
-  static const char* names[] = {
-    "AlwaysTrue", "BuildingOnline", "BuildingOffline", "ResearchOwned", "NotInLocation", "DebugKey", "NeverTrue"
-  };
+  static const char* names[] = {"AlwaysTrue", "BuildingOnline", "BuildingOffline", "ResearchOwned", "NotInLocation", "DebugKey", "NeverTrue"};
 
   DEBUG_ASSERT(_type >= 0 && _type < NumConditions);
 
@@ -126,20 +129,20 @@ bool GlobalEventCondition::Evaluate()
     return true;
 
   case BuildingOnline:
-    {
-      GlobalBuilding* building = g_globalWorld->GetBuilding(m_id, m_locationId);
-      if (building)
-        return building->m_online;
-      break;
-    }
+  {
+    GlobalBuilding* building = g_globalWorld->GetBuilding(m_id, m_locationId);
+    if (building)
+      return building->m_online;
+    break;
+  }
 
   case BuildingOffline:
-    {
-      GlobalBuilding* building = g_globalWorld->GetBuilding(m_id, m_locationId);
-      if (building)
-        return !building->m_online;
-      break;
-    }
+  {
+    GlobalBuilding* building = g_globalWorld->GetBuilding(m_id, m_locationId);
+    if (building)
+      return !building->m_online;
+    break;
+  }
 
   case ResearchOwned:
     return (g_globalWorld->m_research->HasResearch(m_id));
@@ -150,7 +153,8 @@ bool GlobalEventCondition::Evaluate()
   case NeverTrue:
     return false;
 
-  default: DEBUG_ASSERT(false);
+  default:
+    DEBUG_ASSERT(false);
   }
 
   return false;
@@ -239,7 +243,8 @@ void GlobalEventAction::Write(FileWriter* _out)
     _out->printf("%s", locationName);
     break;
 
-  default: DEBUG_ASSERT(false);
+  default:
+    DEBUG_ASSERT(false);
   }
 
   _out->printf("\n");
@@ -247,30 +252,30 @@ void GlobalEventAction::Write(FileWriter* _out)
 
 void GlobalEventAction::Execute()
 {
-
   switch (m_type)
   {
   case SetMission:
-    {
-      GlobalLocation* loc = g_globalWorld->GetLocation(m_locationId);
-      DEBUG_ASSERT(loc);
-      strcpy(loc->m_missionFilename, m_filename);
-      break;
-    }
+  {
+    GlobalLocation* loc = g_globalWorld->GetLocation(m_locationId);
+    DEBUG_ASSERT(loc);
+    strcpy(loc->m_missionFilename, m_filename);
+    break;
+  }
   case RunScript:
-    {
-      g_script->RunScript(m_filename);
-      break;
-    }
+  {
+    g_script->RunScript(m_filename);
+    break;
+  }
   case MakeAvailable:
-    {
-      GlobalLocation* loc = g_globalWorld->GetLocation(m_locationId);
-      DEBUG_ASSERT(loc);
-      loc->m_available = true;
-      break;
-    }
+  {
+    GlobalLocation* loc = g_globalWorld->GetLocation(m_locationId);
+    DEBUG_ASSERT(loc);
+    loc->m_available = true;
+    break;
+  }
 
-  default: DEBUG_ASSERT(false);
+  default:
+    DEBUG_ASSERT(false);
   }
 }
 
@@ -388,7 +393,7 @@ void GlobalEvent::Read(TextReader* _in)
       char* word = _in->GetNextToken();
       if (stricmp(word, "end") == 0)
         break;
-      DEBUG_ASSERT(stricmp( word, "action" ) == 0);
+      DEBUG_ASSERT(stricmp(word, "action") == 0);
 
       auto action = new GlobalEventAction;
       action->Read(_in);
@@ -487,7 +492,9 @@ void GlobalResearch::EvaluateLevel(int _type)
       sprintf(sepStringId, "research_%s_v%d", GetTypeName(_type), m_researchLevel[_type]);
       strlwr(sepStringId);
 
-      if (ISLANGUAGEPHRASE(sepStringId)) {}
+      if (ISLANGUAGEPHRASE(sepStringId))
+      {
+      }
 
       if (currentLevel > 0)
       {
@@ -517,7 +524,9 @@ void GlobalResearch::SetCurrentResearch(int _type)
     sprintf(sepStringId, "research_%s", GetTypeName(_type));
     strlwr(sepStringId);
 
-    if (ISLANGUAGEPHRASE(sepStringId)) {}
+    if (ISLANGUAGEPHRASE(sepStringId))
+    {
+    }
   }
 }
 
@@ -614,9 +623,7 @@ void GlobalResearch::Read(TextReader* _in)
 
 const char* GlobalResearch::GetTypeName(int _type)
 {
-  const char* names[] = {
-    "Citizen", "Officer", "Squad", "Laser", "Grenade", "Rocket", "Controller", "AirStrike", "Armour", "TaskManager", "Engineer"
-  };
+  const char* names[] = {"Citizen", "Officer", "Squad", "Laser", "Grenade", "Rocket", "Controller", "AirStrike", "Armour", "TaskManager", "Engineer"};
 
   DEBUG_ASSERT(_type >= 0 && _type < NumResearchItems);
   return names[_type];
@@ -652,7 +659,7 @@ int GlobalResearch::GetType(char* _name)
 void ColourShapeFragment(ShapeFragment* _frag, const RGBAColour& _colour)
 {
   if (_frag->m_numColours == 0)
-    _frag->m_colours = new RGBAColour [1];
+    _frag->m_colours = new RGBAColour[1];
   _frag->m_colours[0] = _colour;
 
   for (int i = 0; i < _frag->m_numVertices; ++i)
@@ -780,8 +787,12 @@ void SphereWorld::RenderSpirits()
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Glow.bmp"));
 
-  Vector3 camRight = g_camera->GetRight();
-  Vector3 camUp = g_camera->GetUp();
+  // CameraAccess's getters are pure virtuals and still return Vector3 -- they
+  // move with their implementors in T12/T22.
+  DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
+  DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&cameraRight);
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&cameraUp);
 
   for (int locationId = 0; locationId < static_cast<int>(m_spirits.size()); ++locationId)
   {
@@ -792,56 +803,58 @@ void SphereWorld::RenderSpirits()
       {
         float* thisSpirit = &m_spirits[locationId][i];
 
-        Vector3 fromPos = g_globalWorld->GetLocationPosition(locationId);
+        DirectX::XMFLOAT3 const fromPos = g_globalWorld->GetLocationPosition(locationId);
 
         float alphaValue = *thisSpirit * 3.0f;
         if (alphaValue > 1.0f)
           alphaValue = 1.0f;
 
-        Vector3 position = fromPos * (*thisSpirit);
+        DirectX::XMFLOAT3 positionStore;
+        DirectX::XMStoreFloat3(&positionStore, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&fromPos), *thisSpirit));
         float timeOffset = g_gameTime / 2.0f;
         float posOffset = 1000;
 
-        position.x += sinf(*thisSpirit * 14 + timeOffset) * posOffset;
-        position.y += sinf(*thisSpirit * 15 + timeOffset) * posOffset;
-        position.z += sinf(*thisSpirit * 16 + timeOffset) * posOffset;
+        positionStore.x += sinf(*thisSpirit * 14 + timeOffset) * posOffset;
+        positionStore.y += sinf(*thisSpirit * 15 + timeOffset) * posOffset;
+        positionStore.z += sinf(*thisSpirit * 16 + timeOffset) * posOffset;
+        DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&positionStore);
 
         float scale = 0.4f;
 
         glColor4f(0.6f, 0.2f, 0.1f, alphaValue);
         glBegin(GL_QUADS);
         glTexCoord2f(0.5f, 0.5f);
-        glVertex3fv((position + camUp * 300 * scale).GetData());
+        EmitVertex(DirectX::XMVectorAdd(position, DirectX::XMVectorScale(camUp, 300.0f * scale)));
         glTexCoord2f(0.5f, 0.5f);
-        glVertex3fv((position + camRight * 300 * scale).GetData());
+        EmitVertex(DirectX::XMVectorAdd(position, DirectX::XMVectorScale(camRight, 300.0f * scale)));
         glTexCoord2f(0.5f, 0.5f);
-        glVertex3fv((position - camUp * 300 * scale).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(position, DirectX::XMVectorScale(camUp, 300.0f * scale)));
         glTexCoord2f(0.5f, 0.5f);
-        glVertex3fv((position - camRight * 300 * scale).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(position, DirectX::XMVectorScale(camRight, 300.0f * scale)));
         glEnd();
 
         glColor4f(0.6f, 0.2f, 0.1f, alphaValue);
         glBegin(GL_QUADS);
         glTexCoord2f(0.5f, 0.5f);
-        glVertex3fv((position + camUp * 100 * scale).GetData());
+        EmitVertex(DirectX::XMVectorAdd(position, DirectX::XMVectorScale(camUp, 100.0f * scale)));
         glTexCoord2f(0.5f, 0.5f);
-        glVertex3fv((position + camRight * 100 * scale).GetData());
+        EmitVertex(DirectX::XMVectorAdd(position, DirectX::XMVectorScale(camRight, 100.0f * scale)));
         glTexCoord2f(0.5f, 0.5f);
-        glVertex3fv((position - camUp * 100 * scale).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(position, DirectX::XMVectorScale(camUp, 100.0f * scale)));
         glTexCoord2f(0.5f, 0.5f);
-        glVertex3fv((position - camRight * 100 * scale).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(position, DirectX::XMVectorScale(camRight, 100.0f * scale)));
         glEnd();
 
         glColor4f(0.6f, 0.2f, 0.1f, alphaValue / 4.0f);
         glBegin(GL_QUADS);
         glTexCoord2i(0, 0);
-        glVertex3fv((position + camUp * 6000 * scale).GetData());
+        EmitVertex(DirectX::XMVectorAdd(position, DirectX::XMVectorScale(camUp, 6000.0f * scale)));
         glTexCoord2i(1, 0);
-        glVertex3fv((position + camRight * 6000 * scale).GetData());
+        EmitVertex(DirectX::XMVectorAdd(position, DirectX::XMVectorScale(camRight, 6000.0f * scale)));
         glTexCoord2i(1, 1);
-        glVertex3fv((position - camUp * 6000 * scale).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(position, DirectX::XMVectorScale(camUp, 6000.0f * scale)));
         glTexCoord2i(0, 1);
-        glVertex3fv((position - camRight * 6000 * scale).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(position, DirectX::XMVectorScale(camRight, 6000.0f * scale)));
         glEnd();
       }
     }
@@ -910,7 +923,7 @@ void SphereWorld::RenderWorldShape()
 
 void SphereWorld::RenderTrunkLinks()
 {
-  //if( g_editing ) return;
+  // if( g_editing ) return;
 
   Matrix34 rootMat(0);
 
@@ -929,27 +942,29 @@ void SphereWorld::RenderTrunkLinks()
 
       if (fromLoc && toLoc && (fromLoc->m_available && toLoc->m_available) || g_editing)
       {
-        Vector3 fromPos = g_globalWorld->GetLocationPosition(building->m_locationId);
-        Vector3 toPos = g_globalWorld->GetLocationPosition(building->m_link);
+        DirectX::XMFLOAT3 const fromPosStore = g_globalWorld->GetLocationPosition(building->m_locationId);
+        DirectX::XMFLOAT3 const toPosStore = g_globalWorld->GetLocationPosition(building->m_link);
+        DirectX::XMVECTOR const fromPos = DirectX::XMLoadFloat3(&fromPosStore);
+        DirectX::XMVECTOR const toPos = DirectX::XMLoadFloat3(&toPosStore);
 
         if (building->m_online)
           glColor4f(0.4f, 0.3f, 1.0f, 1.0f);
         else
           glColor4f(0.4f, 0.3f, 1.0f, 0.4f);
 
-        //fromPos *= 120.0f;
-        //toPos *= 120.0f;
+        // fromPos *= 120.0f;
+        // toPos *= 120.0f;
 
-        Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
-        Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
-        Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
+        DirectX::XMVECTOR const midPoint = DirectX::XMVectorAdd(fromPos, DirectX::XMVectorScale(DirectX::XMVectorSubtract(toPos, fromPos), 0.5f));
+        DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+        DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), midPoint);
+        DirectX::XMVECTOR const rightAngle = DirectX::XMVectorScale(
+          DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camToMidPoint, DirectX::XMVectorSubtract(midPoint, toPos))), 200.0f);
 
-        rightAngle *= 200.0f;
-
-        glVertex3fv((fromPos - rightAngle).GetData());
-        glVertex3fv((fromPos + rightAngle).GetData());
-        glVertex3fv((toPos + rightAngle).GetData());
-        glVertex3fv((toPos - rightAngle).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(fromPos, rightAngle));
+        EmitVertex(DirectX::XMVectorAdd(fromPos, rightAngle));
+        EmitVertex(DirectX::XMVectorAdd(toPos, rightAngle));
+        EmitVertex(DirectX::XMVectorSubtract(toPos, rightAngle));
       }
     }
   }
@@ -972,8 +987,12 @@ void SphereWorld::RenderHeaven()
   glPushMatrix();
   glScalef(120.0f, 120.0f, 120.0f);
 
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  // CameraAccess's getters are pure virtuals and still return Vector3 -- they
+  // move with their implementors in T12/T22.
+  DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
+  DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&cameraUp);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&cameraRight);
 
   glDepthMask(false);
   glEnable(GL_BLEND);
@@ -983,7 +1002,7 @@ void SphereWorld::RenderHeaven()
 
   for (int i = 0; i < 50; ++i)
   {
-    Vector3 pos(sinf(i / g_gameTime + i) * 20, sinf(g_gameTime + i) * i, cosf(i / g_gameTime + i) * 20);
+    DirectX::XMVECTOR const pos = DirectX::XMVectorSet(sinf(i / g_gameTime + i) * 20, sinf(g_gameTime + i) * i, cosf(i / g_gameTime + i) * 20, 0.0f);
 
     float size = i;
 
@@ -991,13 +1010,14 @@ void SphereWorld::RenderHeaven()
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, DirectX::XMVectorScale(camRight, size)), DirectX::XMVectorScale(camUp, size)));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(camRight, size)), DirectX::XMVectorScale(camUp, size)));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(camRight, size)), DirectX::XMVectorScale(camUp, size)));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(
+      DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, DirectX::XMVectorScale(camRight, size)), DirectX::XMVectorScale(camUp, size)));
     glEnd();
   }
 
@@ -1060,11 +1080,15 @@ void SphereWorld::RenderIslands()
 
   glMatrixMode(GL_MODELVIEW);
 
-  Vector3 rayStart, rayDir;
-  g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+  // GetClickRay takes Vector3* out-parameters, and the seam does not reach
+  // through a pointer -- AsLegacy is what bridges that until T12/T22.
+  DirectX::XMFLOAT3 rayStart, rayDir;
+  g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
 
-  Vector3 camRight = g_camera->GetRight();
-  Vector3 camUp = g_camera->GetUp();
+  DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
+  DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&cameraRight);
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&cameraUp);
 
   //    glColor4f       ( 1.0f, 1.0f, 1.0f, 1.0f );
   glColor4f(0.6f, 0.2f, 0.1f, 1.0f);
@@ -1079,7 +1103,8 @@ void SphereWorld::RenderIslands()
   {
     if (loc->m_available || g_editing)
     {
-      Vector3 islandPos = g_globalWorld->GetLocationPosition(loc->m_id);
+      DirectX::XMFLOAT3 const islandPosStore = g_globalWorld->GetLocationPosition(loc->m_id);
+      DirectX::XMVECTOR const islandPos = DirectX::XMLoadFloat3(&islandPosStore);
 
       int numRedraws = 5;
       if (!loc->m_missionCompleted && stricmp(loc->m_missionFilename, "null") != 0 && fmodf(g_gameTime, 1.0f) < 0.7f)
@@ -1089,13 +1114,13 @@ void SphereWorld::RenderIslands()
       for (int j = 0; j <= numRedraws; ++j)
       {
         glTexCoord2i(0, 0);
-        glVertex3fv((islandPos + camUp * 1000 * j).GetData());
+        EmitVertex(DirectX::XMVectorAdd(islandPos, DirectX::XMVectorScale(camUp, 1000.0f * j)));
         glTexCoord2i(1, 0);
-        glVertex3fv((islandPos + camRight * 1000 * j).GetData());
+        EmitVertex(DirectX::XMVectorAdd(islandPos, DirectX::XMVectorScale(camRight, 1000.0f * j)));
         glTexCoord2i(1, 1);
-        glVertex3fv((islandPos - camUp * 1000 * j).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(islandPos, DirectX::XMVectorScale(camUp, 1000.0f * j)));
         glTexCoord2i(0, 1);
-        glVertex3fv((islandPos - camRight * 1000 * j).GetData());
+        EmitVertex(DirectX::XMVectorSubtract(islandPos, DirectX::XMVectorScale(camRight, 1000.0f * j)));
       }
       glEnd();
     }
@@ -1116,37 +1141,54 @@ void SphereWorld::RenderIslands()
   {
     if (loc->m_available || g_editing)
     {
-      Vector3 islandPos = g_globalWorld->GetLocationPosition(loc->m_id);
+      DirectX::XMFLOAT3 islandPos = g_globalWorld->GetLocationPosition(loc->m_id);
       char* islandName = strdup(g_globalWorld->GetLocationNameTranslated(loc->m_id));
       strupr(islandName);
 
-      float size = 5.0f * sqrtf((g_camera->GetPos() - islandPos).Mag());
+      // size is overwritten on the next line; the sqrtf is kept because it is
+      // what the legacy code did, dead or not.
+      DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+      float size = 5.0f * sqrtf(DirectX::XMVectorGetX(DirectX::XMVector3Length(
+                            DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&islandPos)))));
       size = 1000.0f;
+
+      DirectX::XMFLOAT3 titlePos;
+      DirectX::XMFLOAT3 belowPos;
+      DirectX::XMStoreFloat3(&titlePos,
+                             DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size * 1.5f), DirectX::XMLoadFloat3(&islandPos)));
+      DirectX::XMStoreFloat3(&belowPos,
+                             DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&islandPos)));
 
       g_gameFont.SetRenderShadow(true);
       glColor4f(0.7f, 0.7f, 0.7f, 0.0f);
-      g_gameFont.DrawText3DCentre(islandPos + camUp * size * 1.5f, size * 3.0f, islandName);
+      g_gameFont.DrawText3DCentre(titlePos, size * 3.0f, islandName);
 
       if (g_editing)
       {
         g_gameFont.DrawText3DCentre(islandPos, size, loc->m_mapFilename);
-        g_gameFont.DrawText3DCentre(islandPos - camUp * size, size, loc->m_missionFilename);
+        g_gameFont.DrawText3DCentre(belowPos, size, loc->m_missionFilename);
       }
 
-      islandPos += camUp * size * 0.3f;
-      islandPos += camRight * size * 0.1f;
+      // The shadow pass above draws at islandPos; the lit pass below draws at
+      // the same point nudged up and right, exactly as the legacy code did by
+      // mutating islandPos between the two.
+      DirectX::XMVECTOR nudged = DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size * 0.3f), DirectX::XMLoadFloat3(&islandPos));
+      nudged = DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size * 0.1f), nudged);
+      DirectX::XMStoreFloat3(&islandPos, nudged);
+      DirectX::XMStoreFloat3(&titlePos, DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size * 1.5f), nudged));
+      DirectX::XMStoreFloat3(&belowPos, DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), nudged));
 
       g_gameFont.SetRenderShadow(false);
       glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
       if (stricmp(loc->m_missionFilename, "null") == 0)
         glColor4f(0.5f, 0.5f, 0.5f, 1.0f);
 
-      g_gameFont.DrawText3DCentre(islandPos + camUp * size * 1.5f, size * 3.0f, islandName);
+      g_gameFont.DrawText3DCentre(titlePos, size * 3.0f, islandName);
 
       if (g_editing)
       {
         g_gameFont.DrawText3DCentre(islandPos, size, loc->m_mapFilename);
-        g_gameFont.DrawText3DCentre(islandPos - camUp * size, size, loc->m_missionFilename);
+        g_gameFont.DrawText3DCentre(belowPos, size, loc->m_missionFilename);
       }
 
       free(islandName);
@@ -1223,8 +1265,8 @@ void GlobalWorld::Advance()
       // Edit locations
       if (g_inputManager->controlEvent(ControlSelectLocation))
       {
-        Vector3 rayStart, rayDir;
-        g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+        DirectX::XMFLOAT3 rayStart, rayDir;
+        g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
         int locId = LocationHit(rayStart, rayDir);
         if (locId != -1)
         {
@@ -1240,8 +1282,8 @@ void GlobalWorld::Advance()
       // Move locations
       if (g_inputManager->controlEvent(ControlSelectLocation))
       {
-        Vector3 rayStart, rayDir;
-        g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+        DirectX::XMFLOAT3 rayStart, rayDir;
+        g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
         m_editorSelectionId = LocationHit(rayStart, rayDir);
       }
       else if (g_inputManager->controlEvent(ControlLocationDragActive))
@@ -1249,8 +1291,10 @@ void GlobalWorld::Advance()
         GlobalLocation* loc = GetLocation(m_editorSelectionId);
         if (loc)
         {
-          Vector3 mousePos3D = g_userInput->GetMousePos3d();
-          loc->m_pos = mousePos3D / 120.0f;
+          // UserInputAccess::GetMousePos3d is a pure virtual and still returns
+          // Vector3 -- it moves with its implementor in T12/T22.
+          DirectX::XMFLOAT3 const mousePos3D = g_userInput->GetMousePos3d();
+          DirectX::XMStoreFloat3(&loc->m_pos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&mousePos3D), 1.0f / 120.0f));
         }
       }
       else if (g_inputManager->controlEvent(ControlDeselectLocation))
@@ -1264,8 +1308,8 @@ void GlobalWorld::Advance()
     // Has the user clicked on a location?
     if (g_inputManager->controlEvent(ControlSelectLocation) && m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
-      Vector3 rayStart, rayDir;
-      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+      DirectX::XMFLOAT3 rayStart, rayDir;
+      g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
       int locId = LocationHit(rayStart, rayDir);
       if (locId != -1)
       {
@@ -1297,8 +1341,8 @@ void GlobalWorld::Advance()
     // Is the cursor attracted to a point?
     else if (m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
-      Vector3 rayStart, rayDir;
-      g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
+      DirectX::XMFLOAT3 rayStart, rayDir;
+      g_camera->GetClickRay(g_target->X(), g_target->Y(), &AsLegacy(rayStart), &AsLegacy(rayDir));
       int locId = LocationHit(rayStart, rayDir, 10000.0f);
       if (locId != -1)
       {
@@ -1342,15 +1386,18 @@ void GlobalWorld::Render()
 
 // Returns the ID of the location the line intersects. Returns -1 if line
 // does not intersect any location
-int GlobalWorld::LocationHit(const Vector3& _pos, const Vector3& _dir, float locationRadius)
+int GlobalWorld::LocationHit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _dir, float locationRadius)
 {
-  //float locationRadius = 5000.0f;
+  // float locationRadius = 5000.0f;
 
   for (GlobalLocation* gl : m_locations)
   {
-    Vector3 locPos = GetLocationPosition(gl->m_id);
+    // RaySphereIntersection still takes Vector3 const& -- MathUtils' geometry
+    // API has no converting task, and the seam handles the conversion here
+    // because these are references rather than pointers. See T18's notes.
+    DirectX::XMFLOAT3 const locPos = GetLocationPosition(gl->m_id);
 
-    bool hit = RaySphereIntersection(_pos, _dir, locPos, locationRadius);
+    bool hit = RaySphereIntersection(AsLegacy(_pos), AsLegacy(_dir), AsLegacy(locPos), locationRadius);
     if (hit)
       return gl->m_id;
   }
@@ -1374,8 +1421,8 @@ GlobalLocation* GlobalWorld::GetHighlightedLocation()
   int screenX = g_target->X();
   int screenY = g_target->Y();
 
-  Vector3 rayStart, rayDir;
-  g_camera->GetClickRay(screenX, screenY, &rayStart, &rayDir);
+  DirectX::XMFLOAT3 rayStart, rayDir;
+  g_camera->GetClickRay(screenX, screenY, &AsLegacy(rayStart), &AsLegacy(rayDir));
   int locId = g_globalWorld->LocationHit(rayStart, rayDir);
 
   GlobalLocation* loc = GetLocation(locId);
@@ -1440,12 +1487,15 @@ char* GlobalWorld::GetLocationNameTranslated(int _id)
   return loc->m_name;
 }
 
-Vector3 GlobalWorld::GetLocationPosition(int _id)
+DirectX::XMFLOAT3 GlobalWorld::GetLocationPosition(int _id)
 {
   GlobalLocation* location = GetLocation(_id);
   if (!location)
-    return g_zeroVector;
-  return location->m_pos * 120.0f;
+    return DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+  DirectX::XMFLOAT3 result;
+  DirectX::XMStoreFloat3(&result, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&location->m_pos), 120.0f));
+  return result;
 }
 
 GlobalBuilding* GlobalWorld::GetBuilding(int _id, int _locationId)
@@ -1512,8 +1562,8 @@ void GlobalWorld::WriteBuildings(FileWriter* _out)
 
   for (GlobalBuilding* building : m_buildings)
   {
-    _out->printf("\t%4d %4d %6d %6d %6d %6d\n", building->m_id, building->m_teamId, building->m_locationId, building->m_type,
-                 building->m_link, building->m_online);
+    _out->printf("\t%4d %4d %6d %6d %6d %6d\n", building->m_id, building->m_teamId, building->m_locationId, building->m_type, building->m_link,
+                 building->m_online);
   }
 
   _out->printf("Buildings_EndDefinition\n\n");
@@ -1594,7 +1644,7 @@ void GlobalWorld::ParseEvents(TextReader* _in)
     if (stricmp(word, "events_enddefinition") == 0)
       return;
 
-    DEBUG_ASSERT(stricmp( word, "Event" ) == 0);
+    DEBUG_ASSERT(stricmp(word, "Event") == 0);
 
     auto event = new GlobalEvent();
     event->Read(_in);
@@ -1672,7 +1722,6 @@ void GlobalWorld::LoadGame(const char* _filename)
 
   for (GlobalLocation* loc : m_locations)
   {
-
     // Load all the level files for the location
     LevelFile levFile("null", loc->m_mapFilename);
     for (Building* building : levFile.m_buildings)
@@ -1691,8 +1740,7 @@ void GlobalWorld::LoadGame(const char* _filename)
       {
         AddLevelBuildingToGlobalBuildings(building, loc->m_id);
 
-        if (building->m_type == Building::TypeAntHill || building->m_type == Building::TypeTriffid || building->m_type ==
-          Building::TypeIncubator)
+        if (building->m_type == Building::TypeAntHill || building->m_type == Building::TypeTriffid || building->m_type == Building::TypeIncubator)
         {
           if (!building->m_dynamic)
           {
@@ -1750,9 +1798,7 @@ void GlobalWorld::SaveGame(const char* _filename)
   delete out;
 }
 
-void GlobalWorld::WriteTutorial(FileWriter* _out)
-{
-}
+void GlobalWorld::WriteTutorial(FileWriter* _out) {}
 
 void GlobalWorld::ParseTutorial(TextReader* _in)
 {
@@ -1787,7 +1833,7 @@ void GlobalWorld::LoadLocations(const char* _filename)
 
     GlobalLocation* location = GetLocation(locIndex);
     if (location)
-      location->m_pos.Set(posX, posY, posZ);
+      location->m_pos = DirectX::XMFLOAT3(posX, posY, posZ);
   }
 
   delete in;
@@ -1880,8 +1926,8 @@ void GlobalWorld::SetupLights()
   float black[] = {0, 0, 0, 0};
   float colour1[] = {2.0f, 1.5f, 0.75f, 1.0f};
 
-  Vector3 light0(0, 1, 0);
-  light0.Normalise();
+  DirectX::XMFLOAT3 light0;
+  DirectX::XMStoreFloat3(&light0, DirectX::XMVector3Normalize(DirectX::g_XMIdentityR1));
   GLfloat light0AsFourFloats[] = {light0.x, light0.y, light0.z, 0.0f};
 
   glLightfv(GL_LIGHT0, GL_POSITION, light0AsFourFloats);
@@ -1904,7 +1950,7 @@ void GlobalWorld::SetupFog()
   glFogf(GL_FOG_END, 19000.0f);
   glFogfv(GL_FOG_COLOR, fogCol);
   glFogi(GL_FOG_MODE, GL_LINEAR);
-  //glEnable    (GL_FOG);
+  // glEnable    (GL_FOG);
 }
 
 float GlobalWorld::GetSize()

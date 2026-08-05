@@ -990,23 +990,27 @@ tasks:
       OWNER RAN IT, 2026-08-04, ON THE CONVERTED ENGINE LAYERS AT 36dd038.
       Reported: "it works". The game launches, loads and plays.
 
-      ONE OBSERVATION IS STILL OPEN and this task does not get to paper over
-      it: the procedurally generated landscape looks different in SHAPE, with
-      shading unaffected. No mechanism has been found. GenerateHeightMap
+      ONE OBSERVATION WAS LEFT OPEN and is now CLOSED, 2026-08-04. The
+      procedurally generated landscape looked different in SHAPE, with shading
+      unaffected, and no mechanism was found by reading: GenerateHeightMap
       reseeds the RNG from the level's m_randomSeed immediately before the
       diamond-square loop, so nothing drawn from the shared stream beforehand
       reaches it; Landscape.cpp and Landscape.h are untouched by this plan;
       LandscapeRenderer's only change is a comment and a static_assert; and its
       RNG reseed feeds GetLandscapeColour, which is colour, not geometry.
 
-      A temporary commit (57386fb) writes a height-map checksum and the tile
-      parameters that determine it, so the two builds can be compared as a
-      number rather than an impression. IF THAT COMES BACK UNEQUAL WITH
-      IDENTICAL TILE PARAMETERS, THIS TASK REOPENS and the GameLogic wave
-      should stop until it is explained — a generation change with no known
-      cause is exactly what a gate exists to catch.
+      A temporary commit (57386fb) wrote a height-map checksum and the tile
+      parameters that determine it, so the two builds could be compared as a
+      number rather than an impression. OWNER RAN IT AND THE CHECKSUMS ARE
+      EQUAL: the terrain is bit-identical and the difference was in rendering or
+      in the eye. 57386fb is reverted, the condition attached to the GameLogic
+      wave is discharged, and AGENTS.md records the answer.
 
-      Proceeding on the owner's instruction, with that condition attached.
+      WORTH KEEPING RATHER THAN DELETING: this is the case for measuring instead
+      of arguing. Reading the code produced a correct argument that generation
+      could not have moved, and it did not settle anything — the observation
+      stood for a day and gated six tasks. Fifty-nine throwaway lines answered
+      it in one run.
 
   # ------------------------------------------------------------------
   # Wave 4 — GameLogic, six groups, all parallel
@@ -1055,11 +1059,256 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
       Read CODING_STANDARDS.md#determinism before starting. The float results
       change by design here; the RNG call sequence and the iteration order must
       not. Those are separate properties and only the first one is sanctioned.
+
+      TAKEN 2026-08-04. MEASURED BEFORE EDITING ANYTHING, and the measurement
+      says this task cannot land as scoped. It is the STRUCTURAL RULE from T20's
+      notes for the FOURTH time, and this is the largest instance in the plan:
+      a task scoped by FILE LIST over storage whose surface is public across the
+      whole tree.
+
+      m_pos and m_vel are declared on WorldObject, which is the base class of
+      every entity, every building and every effect in GameLogic. This task owns
+      WorldObject.h. Nothing else in the wave does. So the moment they become
+      XMFLOAT3:
+
+        364 lines in 40 files stop compiling  (m_pos / m_vel)
+         92 lines in 26 files stop compiling  (m_front, m_angVel, m_centrePos,
+                                               m_spawnPoint on Entity, all public)
+        ---
+        456 lines in ~45 files, none of them in this task's file list
+
+      Measured at cd61487 with a member-name-and-operator sweep, comments
+      stripped, excluding the ~20 classes that declare a SHADOWING m_pos or
+      m_vel of their own (Camera, ParticleSystem, Virii, Explosion, Rocket,
+      Clouds, Flag, GlobalWorld, RoutingSystem, LevelFile and the rest — those
+      convert under their own tasks and are unaffected). 71 of the 364 and 26 of
+      the 92 MUTATE through the member (`m_vel *= f`, `m_pos.Normalise()`), so
+      they cannot be repaired by wrapping the read in a temporary.
+
+      The worst hit are all owned by other tasks: Weapons.cpp 67 (T19),
+      Spider.cpp 41 (T15), SoulDestroyer.cpp 31 (T15), Spam.cpp 24 (T19),
+      Centipede.cpp 25 (T15), Tripod.cpp 26 (T15), LaserFence.cpp 18 (T17).
+
+      WHY T10's ESCAPE DOES NOT WORK HERE. T10 hit the same wall at 89 sites and
+      got out of it for free: those were CALLS PASSING a Matrix34 by value, so
+      adding the implicit conversion pair collapsed all 89 to zero. These are
+      METHOD AND OPERATOR CALLS ON THE MEMBER ITSELF. C++ does not consult a
+      user-defined conversion on the left operand of a member operator, and
+      XMFLOAT3 has no members to call, so no seam improvement reaches them. This
+      one has to be paid.
+
+      AND THE SAFETY NET IS BLIND TO IT. tools/check_math_types.py skips a member
+      name declared as both a native and a legacy type, and reports today:
+
+        skipped, declared as both a native and a legacy type:
+          m_angVel, m_centre, m_pos, m_vel
+
+      m_pos and m_vel are contended because SoundSource, SoundInstance and Shape
+      already declare native ones. Converting WorldObject's does NOT resolve
+      that — Water.h, LevelFile.h, AntHill.h and sixteen others keep a legacy
+      m_pos — so the checker written for exactly this migration will stay silent
+      on exactly the two members this task converts. The tool is not wrong; the
+      name is genuinely ambiguous. It means this task's only compiler is CI.
+
+      AWAITING THE OWNER'S DECISION. Both answers are defensible and the
+      precedent points at (a), which is what T10 was given at a quarter of this
+      scale:
+
+        (a) THIS TASK OWNS THE ~456 SEAM REPAIRS, in 45 files belonging to
+            T15-T19, T22 and T24. Mechanical, and uniform if the seam gains a
+            transitional `Vector3& AsLegacy(XMFLOAT3&)` reinterpretation (legal
+            today — Vector3.h's static_asserts already pin the layout, and T25
+            deletes it with everything else). Keeps the plan's task shape and
+            keeps every wave-5 task independently CI-green.
+            Cost: one commit writing ~456 deliberately-legacy lines into files
+            six other tasks own, none of it compilable here.
+
+        (b) THE WAVE IS NOT PARALLEL AND THE PLAN SHOULD STOP SAYING IT IS.
+            T14-T19 all read WorldObject's storage, so they are one unit as far
+            as m_pos is concerned. Land them as a sequence of reviewable commits
+            on one branch, CI-green at the END of the wave rather than after
+            each task. No seam repairs are written and none are later unwritten.
+            Cost: a red-until-finished branch, which this repo has not done
+            before, and T21's gate moves no earlier.
+
+      Recommend (a), on the same reasoning the owner accepted for T10: it keeps
+      each task independently verifiable, and (b) trades that for avoiding work
+      that is mechanical rather than difficult. But (a) is four times the size of
+      the T10 estimate that was already wrong by four times, so the recommendation
+      is offered with that on the record.
+
+      OWNER CHOSE (a), 2026-08-04: this task owns the external repairs and lands
+      as one unit. Its `files` list therefore understates its touch set, exactly
+      as T10's did.
+
+      WHAT HAS LANDED SO FAR, and the tree DOES NOT COMPILE at this point — said
+      plainly because the branch is red on purpose and a reviewer should know it
+      is not a mistake. Nothing compiles between the first converted member and
+      the last repaired call site; that is inherent to (a) and is what option (b)
+      was offering to avoid.
+
+        Reformat        21 files whole-file, no behaviour change, own commit
+        AsLegacy        the reverse half of the seam, in Vector3.h, tested
+        BasisFromFrontAndUp   the native Matrix34(front, up, pos), in
+                              NeuronMath.h, tested against the legacy ctor
+        WorldObject.h/.cpp    CONVERTED — m_pos and m_vel are XMFLOAT3
+        Entity.h              CONVERTED — storage and every virtual signature
+        Entity.cpp            CONVERTED
+
+      ALL TWENTY-THREE FILES ARE NOW CONVERTED. Ten legacy references remain and
+      every one is a deliberate, commented seam rather than a miss:
+
+        WorldObject.h    the #include of Vector3.h, kept ON PURPOSE. Fifty files
+                         below read m_pos through AsLegacy and every one reaches
+                         this header; dropping the include breaks all of them at
+                         once, which is failure mode 3 and the one no checker
+                         sees. T25 removes it.
+        Ai.h/.cpp        AITarget and AISpawnPoint's DoesSphereHit and
+                         DoesShapeHit -- four overrides of Building's virtuals,
+                         and Building converts in T16. An override matches its
+                         base exactly or silently stops overriding, leaving the
+                         class abstract. This is T12's trap, avoided rather than
+                         re-learned.
+        InsertionSquad.cpp   one Matrix34 local off ShapeMarker::GetWorldMatrix,
+                             which T10 deliberately left legacy because 43 sites
+                             in fourteen files read .pos or .f off it.
+
+      LANDED. CI RUN 438 GREEN at 1fc7541 -- x64 Debug builds, the unit suite
+      passes, and Server.exe reached sequence id 20 in 2.03s with no client.
+      Nine red rounds before it: 420, 422, 424, 426, 429, 430, 432, 434, 436.
+
+      WHAT THE NINE ROUNDS WERE, because the shape matters more than the count.
+      Not one was a wrong conversion -- no transposed matrix, no mirrored basis,
+      no reversed cross product. Every single one was a CALL SITE THE SWEEP DID
+      NOT REACH, which is T10's finding repeated at ten times the scale. The
+      five failure modes on T10's list all appeared, and this task adds a sixth:
+
+        6. A CONTENDED NAME THAT IS NOT A MATH TYPE AT ALL. ArmyAnt::m_orders is
+           an enum; Citizen::m_orders is an XMFLOAT3. The shadow detection only
+           looks for legacy MATH declarations, so it did not see the collision
+           and wrapped the enum. Cave::m_spawnPoint is a ShapeMarker* and went
+           the same way. Both are invisible to a name-based sweep by
+           construction, and both were caught only by the compiler.
+
+      THE RULE THAT EXPLAINS MOST OF IT, and the one to carry into T15-T19: AN
+      IMPLICIT CONVERSION APPLIES TO THE RIGHT OPERAND OF A MEMBER OPERATOR AND
+      NOT THE LEFT. `rayStart - entity->m_pos` compiles untouched; `entity->
+      m_pos - rayStart` does not. That asymmetry is why T10's escape did not
+      work here, why only five of Species/'s forty-odd sites broke, and why the
+      repair count was 490 rather than 40.
+
+      AND THE SWEEP IS NOT A ONE-OFF. It has to be re-run after EVERY header a
+      task converts, because each one adds member names to it. Running it once
+      at the start missed eleven names and cost two rounds.
+
+      TWO BUGS OF MY OWN, both caught by the compiler rather than by me, both
+      recorded because a reviewer should know they happened. Converting
+      Engineer's bridge-tower loop I replaced the `if` half of an if/else and
+      orphaned the `else`, silently dropping the half-turn applied to the far-end
+      tower. And the AsLegacy sweep wrapped ArmyAnt's enum. The first would have
+      been a visible geometry change; the second would not compile.
+
+      WHAT IS STILL LEGACY HERE, all deliberate, all commented at the site:
+      WorldObject.h keeps its Vector3.h include (fifty files below reach
+      AsLegacy through it); Ai's four Building overrides; one Matrix34 local off
+      ShapeMarker::GetWorldMatrix; and roughly 490 AsLegacy calls across 50
+      files. `grep -rl AsLegacy` is the live worklist for T15-T19, T22 and T24 --
+      each of those tasks removes its own file's calls as it converts.
+
+      NOT VERIFIED BY ANY OF THIS: that the game still works. T14 changed what
+      Location::Advance computes on the hot path and the unit suite covers none
+      of it. T21 is that gate.
+
+      WORTH RECORDING ABOUT THE VERIFICATION ITSELF: the script that checked for
+      leftover legacy types reported nine, not ten. It strips /* */ blocks before
+      matching, and an unbalanced comment opener in InsertionSquad.cpp swallowed
+      the rest of the file. A plain grep found the tenth. A checker that parses
+      is not automatically better than one that does not.
+
+      THE EXTERNAL REPAIRS ARE DONE: about 480 lines across 50 files, wrapped in
+      AsLegacy. Applied by script and then corrected by hand, because two things
+      a script gets wrong here are worth recording:
+
+        A DECLARATION IN THE PAIRED HEADER SHADOWS JUST AS WELL AS ONE IN THE
+        .CPP. The first attempt looked only at the file itself and wrapped 137
+        lines of Species/Camera.cpp -- every one of them Camera's OWN m_pos and
+        m_vel, declared in Camera.h. Nineteen more files had the same shape.
+
+        RESOLVING THE CONTENDED NAMES BY FUNCTION SCOPE DOES NOT WORK EITHER.
+        The second attempt tracked which class each definition belonged to and
+        was wrong in a different direction, wrapping genuine legacy members
+        reached through a pointer -- `vertex1.m_pos` inside a Water method --
+        and producing `m_nodes[i].AsLegacy(m_pos)`, which is not even syntax.
+
+      So the rule this settled on is check_containers.py's, arrived at the same
+      way: SKIP A CONTENDED NAME RATHER THAN GUESS, and do those files by hand.
+      Only one file genuinely needed it -- Virii.cpp, where Virii::m_pos is
+      Entity's converted member and ViriiHistory::m_pos is the file's own legacy
+      one, both spelled m_pos, seventeen lines apart in places.
+
+      A wrong wrap is a COMPILE error and never a silent one, which is what made
+      scripting acceptable at this scale. Two guards ran over the result: a grep
+      for `.AsLegacy(` and `->AsLegacy(`, which catches a wrap that swallowed
+      part of an object chain (4 found, all in Spider and Tripod, all where an
+      array index broke the chain), and a paren-balance check on every changed
+      line (0 found).
+
+      STILL TO REPAIR: the virtual OVERRIDES that
+      moved when Entity's signatures did. Those are in files this task does not
+      own and were not on the 456 list, because an override is found by neither
+      a type grep nor a member grep:
+
+        Centipede.h/.cpp     Attack(Vector3 const&)
+        SoulDestroyer.h/.cpp Attack, SetWaypoint
+        Armour.h             SetWayPoint
+        Species/Camera.cpp   reads GetCameraFocusPoint's return type
+
+      THE IDIOM THIS TASK SETTLED ON, written down so the remaining nineteen
+      files do not each invent one:
+
+        storage        DirectX::XMFLOAT3 m_x{0.0f, 0.0f, 0.0f};  ALWAYS braced
+        compute        XMLoadFloat3 -> XMVector* -> XMStoreFloat3, fully
+                       qualified DirectX::, no `using namespace`
+        legacy VALUE   DirectX::XMFLOAT3 const v = LegacyCall();  copy-init
+                       takes the seam without naming Vector3. A REFERENCE would
+                       bind to the temporary the conversion operator returns and
+                       dangle -- do not write `XMFLOAT3 const& v = call()`.
+        legacy OUT-arg LegacyCall(AsLegacy(v))  and  &AsLegacy(v) for a pointer
+        legacy BY-VALUE arg   pass the XMFLOAT3; Vector3's converting ctor takes it
+        a matrix     BasisFromFrontAndUp(front, up, pos), stored with
+                     XMStoreFloat4x4; Matrix34's implicit conversion carries it
+                     into any API T16-T18 have not converted yet
+        up / zero    DirectX::g_XMIdentityR1 and DirectX::XMVectorZero(),
+                     not g_upVector and g_zeroVector
+        identity     XMFLOAT4X4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1) as a local
+
+      BEHAVIOUR CHANGES MADE DELIBERATELY IN THE CONVERTED FILES, each commented
+      at the site, none of them reproducible from the old code:
+
+        Vector3::SetLength on a zero-length vector left (len,0,0) behind.
+        Entity::Attack and Entity::AdvanceInWater now yield zero instead, per
+        the normalise decision. In PushFromObstructions the old fallback was
+        LOAD-BEARING -- the push loop does not terminate without it -- so that
+        one site keeps an explicit guard rather than taking the native answer.
+        Nothing said the fallback mattered there; reading the loop is how it
+        was found, and it is the shape to look for in the remaining files.
+
+        `targetPos != g_zeroVector` is Vector3::operator!=, which is a
+        PER-COMPONENT NearlyEquals at 1e-6 and not an exact comparison.
+        XMVector3NotEqual would have been a different test; XMVector3NearEqual
+        with 1e-6 in every lane is the same one. Expect more of these.
+
+      AND THE CHECKER GOT BLINDER, which is worth watching. check_math_types.py
+      skipped 4 contended member names before this task and skips 7 now --
+      m_centrePos, m_front and m_spawnPoint joined m_pos, m_vel, m_centre and
+      m_angVel, because nineteen other classes still declare legacy ones. Every
+      member this task converts REMOVES itself from the checker's coverage until
+      the whole wave lands. Do not read a green check_math_types as evidence.
 
   - id: T15
     title: Convert the creature entities
@@ -1100,8 +1349,154 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
+    notes: |
+      CLOSED. Twenty-two files, the largest task in the wave by AsLegacy count
+      (229) and the first with NO keystone: not one T15 header declares a
+      virtual carrying a math type, so the inheritance sweep that T16 and T17
+      needed came back empty. AntHill and Triffid derive from Building and
+      their overrides were already native from T16's keystone commit.
 
+      IT STILL RETIRED SIX REPAIRS. Armour's and ArmyAnt's signatures going
+      native cleared AsLegacy wraps in Citizen and ConstructionYard -- files
+      this task does not own. Third task running where converting a class
+      removes work from files it never touches.
+
+      THE ZERO-LENGTH FALLBACK IS NOT ONE DECISION, IT IS TWELVE. T16 and T17
+      each had a handful of SetLength sites; T15 has about twenty, and they do
+      not all resolve the same way. Reproduced where the zero case is
+      REACHABLE and the QNaN would stick:
+
+        AntHill      spirit scatter -- syncfrand(20) can roll exactly 0
+        Centipede    Attack push -- an entity standing on the centipede
+        SoulDestroyer  same push, same reason
+        SporeGenerator  targetVel when distanceToTarget is 0, and the tail
+                     lag s_vel which starts at zero on the first frame
+        Triffid      four Spawn velocities rolled from syncsfrand
+        Virii        glowDiff when the worm has not moved since the last
+                     history point, and the compass step when it is already
+                     standing on its spawn point
+        Spider       IsPathOK when the destination is our own position
+
+      Taken natively where the zero case is unreachable or the site is
+      rendering-only, each commented with WHY at the site rather than left to
+      the reader.
+
+      AND ONE Normalise FALLBACK REPRODUCED, against the plan's own default.
+      T1 recorded that XMVector3Normalize's zero result replaces Vector3's
+      (0,0,1) and that this is sanctioned. Virii::SearchForIdleDirection is the
+      exception: it builds a direction from two integers each in {-1,0,1}, so
+      (0,0,0) is a ROLL, not a degenerate edge, and the legacy (0,0,1) is the
+      worm choosing north rather than the worm choosing QNaN. Called out
+      because it is a deliberate departure from a decision the owner made.
+
+      THREE LOAD-BEARING STEERING DEADLOCKS, same shape as GunTurret's in T16.
+      Armour, Spider and (via CalcAttackUpVector) Tripod all steer by crossing
+      front with the direction to their target and feeding the result to
+      RotateAround. Facing exactly away makes that cross zero, and SetLength's
+      (angle, 0, 0) fallback is what breaks the deadlock. All three reproduce it.
+
+      A DEAD LOCAL DROPPED. Tripod::Advance computed frontHoriNorm and never
+      used it. Converting it would have meant writing a native no-op, so it is
+      gone, noted here rather than silently.
+
+      THE ADDRESS-OF TRAP CAME BACK IN ITS PLAIN FORM. T16 found it on
+      Matrix34 ROWS and the checker learned that shape; Tripod hit it on a bare
+      Vector3 LOCAL, kept legacy on purpose to feed RayRayDist's out-parameters
+      and then handed to XMLoadFloat3. Same cause -- the seam converts by
+      reference, and a reference conversion does nothing for an address -- with
+      no matrix anywhere in sight. The checker covers both now.
+
+      AND ONE CHECKER CHANGE MADE AND THEN DELIBERATELY REVERTED. Tripod also
+      hit `m_directions[i] ^ delta`, an XMFLOAT2 ARRAY member, which every rule
+      in the tool walks straight past because they all stop at the `[`.
+      Teaching DECL to match array declarations and the rules to see through a
+      subscript does catch it -- and also reports three CORRECT lines, because
+      m_mousePos is an int[3] in InputDriverWin32 and m_right is a float* in
+      SoundLibrary3d. That is T14's failure mode 6, a contended name that is
+      not a math type at all, and the tool cannot see it. Its own header says
+      under-reporting is recoverable and crying wolf gets it switched off, so
+      the trade was refused and the reasoning written at the DECL regex.
+
+      Array members are a HAND-SWEEP item instead. There are exactly three in
+      the tree -- Tripod's m_directions, SoulDestroyer's m_spiritPosition and
+      SphereRenderer's m_corner -- and all three are clean as of this task.
+
+      CHECK_MATH_TYPES EARNED ITS KEEP MID-TASK. The local-tracking rules added
+      after T17's CI round caught m_hitcheckCentre in Tree during T17 and then,
+      in T15, forty-eight sites in Egg and three in AntHill that the file-level
+      greps had missed -- billboard vertices and a damaged-shape wobble, none
+      of which name a legacy type. Those would all have been CI errors.
+
+      AND THEN COST A SECOND CI ROUND ANYWAY, sixteen errors on a green
+      checker. Worth writing down what each one says about the tool, because
+      three of the four causes were closeable and one was not:
+
+        TWO I SURVEYED AND THEN DID NOT CONVERT. `m_targetPos == g_zeroVector`
+        in SoulDestroyer and Centipede. The == rule existed and was silent,
+        because m_targetPos is XMFLOAT3 on six converted classes and still
+        Vector3 on Airstrike and Spam, and the contended-name skip is
+        TREE-WIDE. Closed: X.cpp's paired X.h is not a guess about which class
+        a bare m_x belongs to, so a contended name declared native in the
+        file's own header is now checked in that file -- for BARE uses only,
+        since without that restriction Citizen.h's XMFLOAT3 m_orders made three
+        correct `officer->m_orders` lines look wrong. Measured before keeping:
+        both real bugs caught, nothing else reported.
+
+        THREE MATRIX ROWS in a second Triffid wobble block, `mat.f *= ...`.
+        Skipped because Triffid's GetHead loads an `XMMATRIX mat` and the
+        blanket local skip gave up all four row names. But XMMATRIX has exactly
+        ONE of them -- r -- so .pos, .u and .f stay unambiguous under that
+        contention. Two of the three now caught; the .r line is genuinely
+        beyond the tool and stays a reading job.
+
+        TWO HorizontalAndNormalise ON AN XMVECTOR. An XMVECTOR has no methods
+        at all, so this needed no contention reasoning, just a rule that
+        existed for members and not for locals. Added.
+
+        ONE `XMFLOAT2 = XMFLOAT3` and one `zombie->m_up.RotateAround`. The
+        compiler's job; nothing for the checker to learn.
+
+      THE RULE THE TOOL KEEPS RE-LEARNING. Every gap above is the same shape:
+      a name whose type the checker knows in one place and not in another, and
+      the fix is never a broader regex -- it is a NARROWER claim about where
+      the name's type is known. Bare-use-only, and .pos/.u/.f-but-not-.r, are
+      both that. The two rules that had to be refused (array members, and the
+      first cut of this one) failed for the opposite reason.
+
+      A SEPARATE BUG IN THE TOOL ITSELF, found while closing the above. The
+      non-math declaration regex -- the one that models failure mode 6 -- read
+      `return m_avoidObstruction;` as a declaration of m_avoidObstruction with
+      type `return`, which marked it contended and switched every rule off for
+      it. Statement keywords are excluded now. It cost four names off the skip
+      list, and it is the second time in this migration that a regex written to
+      widen coverage silently narrowed it instead.
+
+      A THIRD ROUND, AND ITS ONE ERROR WAS A RENAME RATHER THAN A TYPE. Fixing
+      the Triffid wobble meant telling the pre-wobble head from the post-wobble
+      one, so `mat` became `headMatrix` -- and the stem line thirty lines above
+      kept saying `mat`, which then bound to the NEW `mat` declared forty lines
+      BELOW it. Every rule in check_math_types is about a type that changed;
+      this is a name that moved, and nothing in the tool had any view of it.
+
+      Closed, because it turns out to be cheap and precise: a math local used
+      ABOVE the line that declares it. Two narrowings, both measured rather
+      than guessed -- a line that itself declares the name is not a use of the
+      later one, and a name declared twice in a body is two variables in two
+      scopes and is skipped. With both, the tree reports the Triffid bug and
+      nothing else; with neither, four correct lines are accused. The two
+      variables are also just named apart now, headMatrix and wobbledHead,
+      which is what should have happened in the first place.
+
+      AND ONE BEHAVIOUR CHANGE I INTRODUCED AND CAUGHT BY READING. Three
+      SoulDestroyer blocks recompute front as right^up before building the
+      basis; my first conversion passed the RAW m_front to
+      BasisFromFrontAndUp and dropped the Render path's two explicit
+      Normalise calls. Nothing in the tree would have reported it -- both
+      versions compile and neither is a math-type error. Verified against the
+      pre-conversion source and fixed, with the normalising Render path and the
+      non-normalising MarkUsedCells and RenderPixelEffect paths now commented
+      apart at each site, since they differ deliberately.
   - id: T16
     title: Convert the structural buildings
     intent: >
@@ -1141,7 +1536,126 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
+    notes: |
+      MEASURED ON TAKING THE WAVE, 2026-08-04. T16 IS THE KEYSTONE OF T15-T17
+      AND THE PLAN DOES NOT SAY SO. Building declares five virtuals carrying
+      math types -- PerformDepthSort, GetPortPosition, DoesSphereHit,
+      DoesShapeHit and DoesRayHit -- and they are overridden in FIFTEEN headers
+      spread across three tasks:
+
+        T16  StaticShape, ResearchItem, SpawnPoint, GunTurret, RadarDish, Tree
+        T17  LaserFence, FeedingTube, SafeArea, ScriptTrigger, TrunkPort
+        T15  Triffid
+        T14  Ai -- already converted, and its four overrides were LEFT LEGACY
+             on purpose, with a comment saying they clear when Building moves
+
+      A virtual override matches its base exactly or silently stops overriding,
+      so Building's signatures and all fifteen overriders have to land in one
+      commit. That is T12's finding a second time, one layer up: it is why T12
+      could not be done before T18 and T22, and it is why T16 cannot be done
+      after T15 and T17.
+
+      SO THE ORDER WITHIN THIS WAVE IS NOT FREE, whatever parallel_safe says.
+      Building's storage -- m_front, m_up, m_centrePos -- is also what a large
+      share of T14's ~490 AsLegacy repairs point at, so converting it first
+      removes repairs rather than adding them.
+
+      Taking T16 first, then T17, then T15's Building-derived stragglers, then
+      T18 and T19. Recorded rather than silently reordered.
+
+      CLOSED. Three commits: the keystone (Building plus all fifteen
+      overriders), the 25 sites that exposed, and the remaining twenty-two
+      bodies. What the second half turned up:
+
+      A SECOND KEYSTONE INSIDE T17, FOUND BY GREPPING FOR THE FIRST ONE.
+      RadarDish derives from Teleport, not from Building directly, and Teleport
+      declares FOUR more virtuals carrying math types -- GetEntrance, GetExit,
+      GetStartPoint, GetEndPoint -- overridden by RadarDish here and by Bridge
+      under T17. Same rule, same trap, one layer further down. RadarDish's four
+      are therefore LEFT LEGACY with a comment, exactly as T14 left Ai's, and
+      T17 converts the family with Teleport. The lesson generalises: before
+      converting a class, grep for what DERIVES from it AND for what it derives
+      from -- the second question is the one that catches this.
+
+      THE T10 SEAM IS STILL OPEN AND IS NOW THE LOUDEST THING IN THESE FILES.
+      ShapeMarker::GetWorldMatrix takes an XMFLOAT4X4 and returns a Matrix34.
+      Roughly twenty sites here call it, and where only .pos is wanted they
+      collapse to a native XMFLOAT3; where the whole basis is wanted the local
+      stays Matrix34 with a comment. Every one is marked "T10's seam" so the
+      follow-up can grep them.
+
+      A REAL BUG, PRE-EXISTING, FIXED IN PASSING. ControlTower::Advance tested
+      `m_dishMatrix == Matrix34()` to decide whether it had computed the dish
+      basis yet. Matrix34's default constructor leaves the matrix
+      UNINITIALISED, so that compared indeterminate memory against
+      indeterminate memory and only worked because a fresh allocation happens
+      to be zeroed. The member is braced to zero now and the test is an
+      explicit IsUncomputed. Called out because it is a behaviour change the
+      migration would otherwise have smuggled in.
+
+      TWO DEGENERATE-CASE DIVERGENCES, DECIDED DIFFERENTLY ON PURPOSE.
+      Vector3::SetLength left (len, 0, 0) for a zero-length vector; the native
+      normalise gives QNaN. In GunTurret's aiming rotation that fallback is
+      LOAD-BEARING -- when the turret points exactly away from its target the
+      cross product is zero, and the fallback's rotation about world X is what
+      breaks the deadlock -- so it is reproduced explicitly. In the four
+      rendering sites (Generator's power line, SpawnPoint's spirit link) it
+      only degenerates one quad with the camera exactly collinear, so those
+      take the native behaviour. Both choices are commented at the site.
+
+      GUARD THRESHOLDS ARE NOT INTERCHANGEABLE. Vector3::RotateAround skips
+      below 1e-8; Matrix34::RotateAround skips below 1e-5. RadarDish uses both,
+      about eighty lines apart. Each converted site names which one it is.
+
+      XMVector3Transform VERSUS XMVector3TransformNormal. Transform adds the
+      matrix's translation row and writes w = 1. Harmless when the result is
+      stored to an XMFLOAT3, which is every site T14 wrote -- but it would have
+      silently corrupted the ShapeFragment basis rows in RadarDish's
+      SpinBasisRows, where the xyz are identical and only w differs, so nothing
+      would have failed until something downstream multiplied the transform.
+      Rows are directions: use TransformNormal.
+
+      GLVERTEX3FV IS INFRASTRUCTURE, NOT A PER-FILE PROBLEM. 513 call sites
+      across 52 files, all needing the same XMVECTOR-to-XMFLOAT3 round trip.
+      T10 and T14 had already written five byte-identical file-static
+      EmitVertex helpers, each commented as being the same as the others. Those
+      are folded onto NeuronClient/GlVertex.h now. It is NOT transitional and
+      does not die with T25: it bridges DirectXMath to OpenGL, not old math to
+      new.
+
+      THE ADDRESS-OF TRAP, WHICH IS A NEW FAILURE MODE AND THE ONE THAT COST
+      THIS TASK ITS LAST RED ROUND. Vector3 converts to XMFLOAT3 through
+      `operator XMFLOAT3 const&`. That makes `XMFLOAT3 const a = someVector3;`
+      compile, which reads as though the two types are interchangeable. They
+      are NOT interchangeable through a POINTER: `&someVector3` is a Vector3*
+      and XMLoadFloat3 wants an XMFLOAT3*. Every Matrix34 row is a Vector3, so
+      `XMLoadFloat3(&mat.f)` on a matrix from ShapeMarker::GetWorldMatrix does
+      not compile. Six sites. The fix is a copy-initialised local, which is
+      what actually runs the conversion.
+
+      Add it to the list in T14's notes as mode 7: the seam converts by
+      reference, and a reference conversion does nothing for an address.
+
+      CHECK_MATH_TYPES HAD TWO GAPS AND BOTH ARE CLOSED. It missed the above
+      entirely -- no rule for it -- and it missed `m_x += y` because its
+      arithmetic pattern required an identifier after the operator and `+=` has
+      an `=` there. Compound assignment is exactly the mutating case that
+      matters most. Eight of the twenty-four errors in that round were things
+      the tool could have caught in two seconds. Both rules are added and both
+      were verified by re-introducing the real bugs and watching them fire.
+
+      WHAT IS STILL NOT CHECKED, and what to do about it. The tool skips
+      CONTENDED member names -- m_pos, m_front, m_up, m_vel, m_target and six
+      others are native on one class and legacy on another, so resolving them
+      needs a type checker. Those are the highest-traffic names in the
+      migration, so after converting a file, sweep them by hand against that
+      file's own members; T16 did and it was clean.
+
+      DEAD DECLARATION LEFT ALONE. DynamicHub::GetPowerLocation is declared in
+      GenericHub.h and never defined or called. Converted with the rest rather
+      than deleted -- removing it is not this task's business, but the next
+      person to touch that header should know it is dead.
 
   - id: T17
     title: Convert the functional buildings
@@ -1186,8 +1700,82 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: done
+    notes: |
+      CLOSED. T16's closing notes predicted the keystone here and it was
+      exactly as measured: Teleport declares four virtuals carrying math types
+      -- GetEntrance, GetExit, GetStartPoint, GetEndPoint -- overridden by
+      Bridge in this task and by RadarDish in T16, which left its four legacy
+      on purpose and waited. All three classes moved in one commit. That is the
+      third time this shape has appeared (T12's Building overriders, T16's
+      Building keystone, T17's Teleport keystone) and the rule that finds it is
+      now written down: before converting a class, grep for what derives FROM
+      it AND for what it derives from.
 
+      CONVERTING A BASE REMOVES REPAIRS. Teleport's four going native retired
+      TEN AsLegacy wraps that T14 had put into Officer, Citizen, InsertionSquad
+      and Entity -- files this task does not own and did not otherwise touch.
+      That is the same effect T16 saw and it is the argument for the ordering:
+      bases before readers.
+
+      A SECOND PRE-EXISTING BUG FIXED IN PASSING, and the second one this wave.
+      TrunkPort::SetDetail allocated its height map with new[] and freed it
+      with scalar delete. Undefined behaviour that happened to work because the
+      element type is trivially destructible. The line had to change for the
+      type anyway, so it is delete[] now. Called out rather than smuggled.
+
+      A PRE-EXISTING BUG DELIBERATELY *NOT* FIXED. Bridge::UpdateEntityInTransit
+      computes its arrival velocity as (entityPos - signalPos), pointing AWAY
+      from the target, where every other velocity in that function points
+      towards it. The entity steps to 2*pos - target before the branch below
+      overwrites m_pos. It is preserved exactly, with a comment saying so. The
+      migration is not the place to change behaviour -- but the next person to
+      read that function should know it is not a conversion artefact.
+
+      TWO SCALED BASES IN ONE CLASS. LaserFence built a scaled world matrix at
+      eight sites, and they are not all the same matrix: the render and marker
+      paths level the fence against the WORLD up, the hit tests use the
+      building's own m_up. Collapsed to two named helpers rather than one, so
+      the difference is visible. Merging them would have tilted the hit volume
+      away from the rendered fence, and nothing would have failed to compile.
+
+      A MEMBER RENAMED, WHICH THE MIGRATION NORMALLY DOES NOT DO.
+      MineBuilding::m_trackMatrix1/2 were Matrix34 caches whose only read was
+      .pos -- the matrix half was never used. Keeping the name over an
+      XMFLOAT4X4 would have meant storing sixteen floats to fish out three;
+      keeping the name over an XMFLOAT3 would have meant a name that lies. They
+      are m_trackPosition1/2 now. Contained entirely in Mine.h and Mine.cpp.
+
+      TWO ERRORS REACHED CI AND BOTH WERE THE SAME GAP: THE CHECKER ONLY SAW
+      MEMBERS. Converting a LOCAL's type leaves every use of that local behind,
+      and those uses name no type either -- `mat.ConvertToOpenGLFormat()` where
+      mat became an XMFLOAT4X4, and `(a - b).Normalise()` where both became
+      XMFLOAT3. check_math_types tracked member declarations only, so it was
+      blind to the whole category. It tracks native locals now, with the same
+      contended-name discipline it already used for members: a name that is an
+      XMFLOAT4X4 in one function and an XMMATRIX in another is skipped, because
+      XMMATRIX really does have r[].
+
+      AND THE BANNER-LINE BUG, FOR THE THIRD TIME IN THIS MIGRATION. Adding
+      those rules needed block comments stripped, and the obvious
+      text.find("/*") finds one inside every
+
+        //*****************************************
+
+      banner line in the tree, then blanks everything to the next "*/". That
+      exact mistake gave two of T14's own verification scripts wrong answers.
+      check_math_types now carries a real scanner -- line comments beat block
+      comments, string literals hide both -- with the reasoning written at the
+      function so the fourth person does not rediscover it. Its tracked-member
+      count is the canary: it went 31 to 24 when the naive version ate real
+      declarations, and back to 31 when the scanner replaced it.
+
+      THE T10 SEAM IS THE LOUDEST REMAINING THING, same as T16 found.
+      ShapeMarker::GetWorldMatrix takes an XMFLOAT4X4 and returns a Matrix34,
+      and roughly thirty sites here call it. Where only .pos is wanted they
+      collapse to a native XMFLOAT3; where the whole basis is wanted the local
+      stays Matrix34 with a "T10's seam" comment. grep for that phrase to find
+      the follow-up work.
   - id: T18
     title: Convert the world, landscape and routing
     intent: >
@@ -1231,13 +1819,100 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: true
-    status: todo
+    status: done
     notes: |
+      CLOSED, with two documented exceptions rather than a clean sweep. Six
+      commits: the nine leaf files, BlueprintStore, the SurfaceMap2D
+      specialisation, Landscape, GlobalWorld, and Location. Three CI rounds.
+
+      THE TWO EXCEPTIONS, both structural and both commented at the
+      declaration. Location::GetSoundSource overrides
+      LocationAccess::GetSoundSource and moves with it in T12. Landscape's ray
+      and sphere API passes its out-pointers into MathUtils, which has no
+      converting task — see the gap recorded below. Everything else in the
+      twenty-three files is native.
+
       Landscape.cpp holds the SegRayIntersection2D and RayTriIntersection call
       sites, so it depends on T7 having landed even though the edge is through
       T13. LevelFile parses positions out of GameData text — the parse must
       keep producing the same floats, which is a different question from the
       arithmetic being allowed to diverge.
+
+      TWO GAPS IN THE PLAN ITSELF, both found by doing this task rather than by
+      reading it, and both blocking work this task was told to finish.
+
+      ONE: MATHUTILS' GEOMETRY API HAS NO CONVERTING TASK. T7 and T8 rebuilt
+      RayTriIntersection and RayRayDist on DirectXMath but deliberately kept
+      their Vector3 signatures so callers compiled unchanged — that is written
+      into both tasks' acceptance. Nothing after them converts those
+      signatures, and PointSegDist2D and SegRayIntersection2D still take
+      Vector2 const& and Vector2*. T25 then deletes Vector2 and Vector3.
+
+      That is what stops Landscape's ray and sphere API moving. RayHit,
+      RayHitCell, UnsafeRayHit and SphereHit all pass their out-pointer
+      straight into MathUtils, and THE SEAM DOES NOT REACH THROUGH A POINTER —
+      the same asymmetry T14 recorded as failure mode 7, one level up, in a
+      signature rather than a call. Both ends are stuck: seventeen call sites
+      in ten files pass `&someVector3` to Landscape::RayHit, and those ten
+      files belong to four different tasks.
+
+      So Landscape's storage converts here — m_normalMap and the normal
+      generation — and its ray and sphere API does not, commented at the
+      declaration. Recorded rather than quietly dropped, because the plan's own
+      acceptance for this task says no legacy math type remains in these files,
+      and that is now known to be unreachable until MathUtils has an owner.
+      A task for MathUtils' 3D and 2D geometry signatures needs to exist, and
+      T25 depends on it.
+
+      TWO: SurfaceMap2D HAD NO TASK EITHER, and it is not mentioned anywhere in
+      this file. Landscape::m_normalMap is a SurfaceMap2D<Vector3>, so Vector3
+      cannot be deleted while that stands, and the element type could not
+      change because the generic GetValue interpolates with `T * float` and
+      `T + T` — which XMFLOAT3 has by design not got.
+
+      Fixed here rather than deferred, because unlike the MathUtils gap it is
+      ten lines and touches nothing else: NeuronClient/2dSurfaceMap.h gains an
+      explicit GetValue specialisation for XMFLOAT3 that does the same four
+      weighted terms through XMVECTOR, in the same order, with separate
+      multiplies and adds so the rounding is unchanged. No operator layer, no
+      wrapper — the arithmetic moved to the one place that needed it. That
+      header is outside this task's file list and outside its project, which is
+      why it landed in its own commit.
+
+      EIGHT CI ERRORS, AND BOTH BLIND SPOTS THEY EXPOSED ARE NOW CLOSED.
+      check_math_types was green on all eight, for two distinct reasons:
+
+        THREE WERE CONVERTED PARAMETERS. Converting a SIGNATURE leaves every
+        use of the parameter behind exactly as converting a local does —
+        `(_target - _pos).Mag()` in a body whose header now says XMFLOAT3 — and
+        every local regex in the tool ended at `=` or `;`, so a parameter
+        ending at `,` or `)` matched none of them. This task converted fifteen
+        Location signatures, which is the most any task has moved at once.
+
+        FIVE WERE MEMBERS REACHED THROUGH A TYPED RECEIVER: vertex1.m_pos.Set,
+        cmnt->m_front.Normalise, location->m_pos.Set. The tree-wide member
+        rules are silent on m_pos, m_front and m_up because those are the three
+        most contended names in the codebase, and the per-file rescue added
+        during T15 only covers BARE uses. So the three commonest member names
+        of all were completely unchecked.
+
+        A typed receiver removes the ambiguity rather than guessing at it: cmnt
+        is declared CameraMount* in LevelFile.cpp and CameraMount is declared
+        in LevelFile.h, so there is nothing left to resolve. Same shape as
+        every other narrowing this tool has taken — a smaller claim about where
+        a name's type is known, not a broader regex.
+
+      AND THE COMMA-DECLARATOR BUG, FOR THE SECOND TIME IN TWO TASKS. The first
+      cut of the receiver rule caught vertex1 and not vertex2, because
+      `LandVertex vertex1, vertex2;` declares two and the regex captured one —
+      exactly what the used-before-declared rule got wrong a task earlier with
+      `Vector3 pos, normal;`. Both now read the whole declarator run.
+
+      A SMALLER THING WORTH KEEPING. GenerateNormals normalises three times —
+      both face normals, then their sum — and only the last one looks
+      redundant. It is not: normalising the two faces first is what makes the
+      average unweighted, so dropping either would tilt every landscape normal
+      toward the steeper face.
 
   - id: T19
     title: Convert weapons, effects and the task manager
@@ -1280,6 +1955,13 @@ tasks:
       there) is still open. If that gate has not been run when this task
       starts, this conversion lands a second unverified simulation change on
       the same file. Check determinism.yaml before taking this task.
+
+      RESET FROM in_progress TO todo, 2026-08-04. The commit that closed T14
+      claimed T15 through T19 in one go; T15, T16, T17 and T18 were then done
+      and this one was never started — Weapons.cpp still carries 86 legacy math
+      occurrences. A task marked in_progress that nobody is doing is worse than
+      one marked todo: --next stops offering it, so the claim has been dropped
+      rather than left standing.
 
   - id: T20
     title: Convert the in-game windows
@@ -1475,6 +2157,31 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
     status: todo
+    notes: |
+      BLOCKED ON WORK NO TASK OWNS, found while doing T18 and recorded here
+      because this is the task that trips over it.
+
+      MathUtils' geometry API still takes the legacy types, and nothing in this
+      plan converts it. T7 and T8 rebuilt RayTriIntersection and RayRayDist on
+      DirectXMath but deliberately kept their Vector3 signatures so callers
+      compiled unchanged -- that is written into both tasks' acceptance -- and
+      PointSegDist2D and SegRayIntersection2D still take Vector2 const& and
+      Vector2*. This task's third acceptance criterion cannot pass while that
+      is true, because those signatures ARE the remaining Vector3 and Vector2
+      identifiers.
+
+      It is not merely a rename. Their out-parameters are POINTERS, and the
+      seam converts values and references but not pointers, so each signature
+      has to move together with every caller. Landscape's ray and sphere API is
+      the largest instance: seventeen call sites in ten files across four tasks
+      pass &someVector3 into Landscape::RayHit alone, and T18 left that API
+      legacy for exactly this reason.
+
+      A TASK FOR IT NEEDS TO EXIST, in NeuronCore, owning MathUtils.h and .cpp
+      and the call sites in Landscape, Location, RoutingSystem, Weapons and the
+      editor windows, and this task should depend on it. Not added unilaterally:
+      it changes the shape of the plan and the wave order, which is the owner's
+      call.
 
   - id: T26
     title: Bring the documentation in line with what landed
@@ -1505,6 +2212,35 @@ tasks:
       permitted to differ between implementations, which makes them a desync
       between two clients on the same build — the one thing this plan is not
       allowed to cause.
+
+      PART OF THIS IS ALREADY DONE, 2026-08-04, because it went stale faster
+      than this task could wait for T25. Checked rather than assumed:
+
+        AGENTS.md already names DirectXMath as a header-only Windows SDK
+        dependency — criterion 1 is satisfied.
+
+        CODING_STANDARDS.md#determinism already carries the *Est ban, the
+        row-vector and right-handed conventions and the no-self-zeroing rule,
+        and has gained three more standing rules that GameLogic taught: the
+        zero-length fallbacks decide per site, the seam does not reach through
+        a pointer, and a virtual cannot move without its overriders. Criterion
+        3 is satisfied.
+
+        AGENTS.md's check_math_types paragraph and
+        tasks/_restart-directxmath.md were rewritten at the same time. Neither
+        is on this task's file list; both were simply wrong about the tree.
+
+      WHAT IS ACTUALLY LEFT HERE, and all of it genuinely needs T25 or T21:
+
+        The cross-architecture bullet in AGENTS.md, which still says "unproven"
+        and should say "not supported" with the reason. The bullet itself says
+        this task is where that wording lands, and it should not move until the
+        migration it describes has finished.
+
+        docs/BUILD.md recording the Windows SDK requirement.
+
+        The repository map's NeuronCore line, which cannot be final until T25
+        deletes the wrapper headers.
 
   - id: T27
     title: Owner runs the Garden smoke test on the wrapper-free tree

@@ -30,7 +30,7 @@ class PowerBuilding : public Building
     void RenderAlphas(float _predictionTime);
 
     bool IsInView();
-    Vector3 GetPowerLocation();
+    DirectX::XMFLOAT3 GetPowerLocation();
     virtual void TriggerSurge(float _initValue);
 
     void ListSoundEvents(std::vector<const char*>* _list);

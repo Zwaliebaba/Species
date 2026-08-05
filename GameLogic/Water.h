@@ -15,7 +15,7 @@
 
 #include "RgbColour.h"
 #include "2dSurfaceMap.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 
 // ****************************************************************************
@@ -34,9 +34,9 @@ class WaterTriangleStrip
 class WaterVertex
 {
   public:
-    Vector3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     RGBAColour m_col;
-    Vector3 m_normal;
+    DirectX::XMFLOAT3 m_normal{0.0f, 0.0f, 0.0f};
 };
 
 // ****************************************************************************

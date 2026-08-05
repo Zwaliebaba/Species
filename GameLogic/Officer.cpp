@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "Resource.h"
 #include "Shape.h"
@@ -46,8 +47,9 @@ Officer::Officer()
 
   m_flagMarker = m_shape->m_rootFragment->LookupMarker("MarkerFlag");
 
-  m_centrePos = m_shape->CalculateCentre(g_identityMatrix34);
-  m_radius = m_shape->CalculateRadius(g_identityMatrix34, m_centrePos);
+  DirectX::XMFLOAT4X4 const identity(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+  m_centrePos = m_shape->CalculateCentre(identity);
+  m_radius = m_shape->CalculateRadius(identity, m_centrePos);
 }
 
 
@@ -68,7 +70,8 @@ void Officer::Begin()
   m_wayPoint = m_pos;
 
   m_flag.SetPosition(m_pos);
-  m_flag.SetOrientation(m_front, g_upVector);
+  // Flag converts in T19; the seam takes both arguments.
+  m_flag.SetOrientation(m_front, DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
   m_flag.SetSize(20.0f);
   m_flag.Initialise();
 
@@ -89,7 +92,10 @@ void Officer::ChangeHealth(int amount)
     int shieldLoss = std::min(m_shield * 10, -amount);
     for (int i = 0; i < shieldLoss / 10.0f; ++i)
     {
-      Vector3 vel(syncsfrand(40.0f), 0.0f, syncsfrand(40.0f));
+      // Both draws stay, in order, one per iteration.
+      float const velX = syncsfrand(40.0f);
+      float const velZ = syncsfrand(40.0f);
+      DirectX::XMFLOAT3 const vel(velX, 0.0f, velZ);
       g_location->SpawnSpirit(m_pos, vel, 0, WorldObjectId());
     }
     m_shield -= shieldLoss / 10.0f;
@@ -101,7 +107,9 @@ void Officer::ChangeHealth(int amount)
   if (!dead && m_dead)
   {
     // We just died
-    Matrix34 transform(m_front, g_upVector, m_pos);
+    DirectX::XMFLOAT4X4 transform;
+    DirectX::XMStoreFloat4x4(&transform,
+                             BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
     g_explosionManager.AddExplosion(m_shape, transform);
   }
 }
@@ -118,10 +126,15 @@ void Officer::Render(float _predictionTime)
   }
 }
 
-
-void Officer::RenderSpirit(Vector3 const& _pos)
+void Officer::RenderSpirit(DirectX::XMFLOAT3 const& _pos)
 {
-  Vector3 pos = _pos;
+  DirectX::XMFLOAT3 pos = _pos;
+
+  // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
+  DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
+  DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
+  DirectX::XMVECTOR const camUpAxis = DirectX::XMLoadFloat3(&cameraUp);
+  DirectX::XMVECTOR const camRightAxis = DirectX::XMLoadFloat3(&cameraRight);
 
   int innerAlpha = 255;
   int outerAlpha = 40;
@@ -137,20 +150,20 @@ void Officer::RenderSpirit(Vector3 const& _pos)
   glDisable(GL_TEXTURE_2D);
 
   glBegin(GL_QUADS);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUpAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRightAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUpAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRightAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
   glEnd();
 
   size = spiritOuterSize;
   glColor4ub(100, 250, 100, outerAlpha);
 
   glBegin(GL_QUADS);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUpAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRightAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUpAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRightAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
   glEnd();
 
   size = spiritGlowSize;
@@ -160,13 +173,13 @@ void Officer::RenderSpirit(Vector3 const& _pos)
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Glow.bmp"));
   glBegin(GL_QUADS);
   glTexCoord2i(0, 0);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUpAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
   glTexCoord2i(1, 0);
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRightAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
   glTexCoord2i(1, 1);
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUpAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
   glTexCoord2i(0, 1);
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRightAxis, DirectX::XMVectorReplicate(size), DirectX::XMLoadFloat3(&pos)));
   glEnd();
   glDisable(GL_TEXTURE_2D);
 }
@@ -181,12 +194,14 @@ void Officer::RenderShield(float _predictionTime)
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   predictedPos.y += 10.0f;
 
   for (int i = 0; i < m_shield; ++i)
   {
-    Vector3 spiritPos = predictedPos;
+    DirectX::XMFLOAT3 spiritPos = predictedPos;
     spiritPos.x += sinf(timeIndex * 1.8f + i * 2.0f) * 10.0f;
     spiritPos.y += cosf(timeIndex * 2.1f + i * 1.2f) * 6.0f;
     spiritPos.z += sinf(timeIndex * 2.4f + i * 1.4f) * 10.0f;
@@ -206,21 +221,34 @@ void Officer::RenderFlag(float _predictionTime)
   float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
   float size = 20.0f;
 
-  Vector3 up = g_upVector;
-  Vector3 front = m_front * -1;
-  front.y = 0;
-  front.Normalise();
+  DirectX::XMVECTOR up = DirectX::g_XMIdentityR1;
+  DirectX::XMVECTOR const front =
+    DirectX::XMVector3Normalize(DirectX::XMVectorSetY(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), -1.0f), 0.0f));
 
   if (m_orders != OrderNone)
   {
-    up.RotateAround(front * sinf(timeIndex * 2) * 0.3f);
+    // RotateAround's angle is the vector's magnitude, with the same 1e-8 guard.
+    DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(front, sinf(timeIndex * 2) * 0.3f);
+    float const rotationLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+    if (rotationLengthSquared >= 1e-8f)
+    {
+      float const angle = sqrtf(rotationLengthSquared);
+      up = DirectX::XMVector3Transform(up, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / angle), angle));
+    }
   }
 
-  Vector3 entityUp = g_upVector;
-  Vector3 entityRight(m_front ^ entityUp);
-  Vector3 entityFront = entityUp ^ entityRight;
-  Matrix34 mat(entityFront, entityUp, m_pos + m_vel * _predictionTime);
-  Vector3 flagPos = m_flagMarker->GetWorldMatrix(mat).pos;
+  DirectX::XMVECTOR const entityUp = DirectX::g_XMIdentityR1;
+  DirectX::XMVECTOR const entityRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_front), entityUp);
+  DirectX::XMVECTOR const entityFront = DirectX::XMVector3Cross(entityUp, entityRight);
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(
+    &mat, BasisFromFrontAndUp(
+            entityFront, entityUp,
+            DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos))));
+
+  // GetWorldMatrix still returns a legacy matrix -- T10's recorded seam.
+  DirectX::XMFLOAT3 const flagPos = m_flagMarker->GetWorldMatrix(mat).pos;
 
   int texId = -1;
   if (m_orders == OrderNone)
@@ -234,7 +262,13 @@ void Officer::RenderFlag(float _predictionTime)
 
   m_flag.SetTexture(texId);
   m_flag.SetPosition(flagPos);
-  m_flag.SetOrientation(front, up);
+
+  // Flag converts in T19; store the computed basis before handing it over.
+  DirectX::XMFLOAT3 flagFront;
+  DirectX::XMFLOAT3 flagUp;
+  DirectX::XMStoreFloat3(&flagFront, front);
+  DirectX::XMStoreFloat3(&flagUp, up);
+  m_flag.SetOrientation(flagFront, flagUp);
   m_flag.SetSize(size);
   m_flag.Render();
 }
@@ -248,16 +282,19 @@ bool Officer::RenderPixelEffect(float _predictionTime)
   //
   // Calculate where we are
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   if (m_onGround && m_inWater == -1)
   {
     predictedPos.y = g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z);
   }
-  Vector3 entityUp = g_upVector;
-  Vector3 entityRight(m_front ^ entityUp);
-  Vector3 entityFront = entityUp ^ entityRight;
+  DirectX::XMVECTOR const entityUp = DirectX::g_XMIdentityR1;
+  DirectX::XMVECTOR const entityRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_front), entityUp);
+  DirectX::XMVECTOR const entityFront = DirectX::XMVector3Cross(entityUp, entityRight);
 
-  Matrix34 mat(entityFront, entityUp, predictedPos);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(entityFront, entityUp, DirectX::XMLoadFloat3(&predictedPos)));
 
   //
   // If we are damaged, flicked in and out based on our health
@@ -266,12 +303,17 @@ bool Officer::RenderPixelEffect(float _predictionTime)
   {
     float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
     float thefrand = frand();
+    // Matrix34 named its rows r/u/f; XMFLOAT4X4 numbers them, and the
+    // convention is row 0 = right, row 1 = up, row 2 = front. Scaling one row
+    // squashes the model along that axis, which is the damage flicker.
+    DirectX::XMMATRIX squashed = DirectX::XMLoadFloat4x4(&mat);
     if (thefrand > 0.7f)
-      mat.f *= (1.0f - sinf(timeIndex) * 0.5f);
+      squashed.r[2] = DirectX::XMVectorScale(squashed.r[2], 1.0f - sinf(timeIndex) * 0.5f);
     else if (thefrand > 0.4f)
-      mat.u *= (1.0f - sinf(timeIndex) * 0.2f);
+      squashed.r[1] = DirectX::XMVectorScale(squashed.r[1], 1.0f - sinf(timeIndex) * 0.2f);
     else
-      mat.r *= (1.0f - sinf(timeIndex) * 0.5f);
+      squashed.r[0] = DirectX::XMVectorScale(squashed.r[0], 1.0f - sinf(timeIndex) * 0.5f);
+    DirectX::XMStoreFloat4x4(&mat, squashed);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
   }
@@ -306,7 +348,7 @@ bool Officer::AdvanceIdle()
     return false;
   }
 
-  m_vel.Zero();
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
   return false;
 }
@@ -329,19 +371,22 @@ bool Officer::AdvanceToTargetPosition()
   //
   // Work out where we want to be next
 
-  if ((m_wayPoint - m_pos).Mag() > 5.0f)
+  DirectX::XMVECTOR const toWayPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_wayPoint), DirectX::XMLoadFloat3(&m_pos));
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(toWayPoint)) > 5.0f)
   {
     float speed = m_stats[StatSpeed];
     if (m_state == StateIdle)
       speed *= 0.2f;
 
     float amountToTurn = SERVER_ADVANCE_PERIOD * 3.0f;
-    Vector3 targetDir = (m_wayPoint - m_pos).Normalise();
-    Vector3 actualDir = m_front * (1.0f - amountToTurn) + targetDir * amountToTurn;
-    actualDir.Normalise();
+    DirectX::XMVECTOR const targetDir = DirectX::XMVector3Normalize(toWayPoint);
+    DirectX::XMVECTOR const actualDir = DirectX::XMVector3Normalize(DirectX::XMVectorMultiplyAdd(
+      targetDir, DirectX::XMVectorReplicate(amountToTurn), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), 1.0f - amountToTurn)));
 
-    Vector3 oldPos = m_pos;
-    Vector3 newPos = m_pos + actualDir * speed * SERVER_ADVANCE_PERIOD;
+    DirectX::XMFLOAT3 const oldPos = m_pos;
+    DirectX::XMFLOAT3 newPos;
+    DirectX::XMStoreFloat3(
+      &newPos, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(speed * SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos)));
 
 
     //
@@ -355,16 +400,19 @@ bool Officer::AdvanceToTargetPosition()
       factor = 0.1f;
     if (factor > 2.0f)
       factor = 2.0f;
-    newPos = m_pos + actualDir * speed * factor * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(speed * factor * SERVER_ADVANCE_PERIOD),
+                                                                 DirectX::XMLoadFloat3(&m_pos)));
     newPos = PushFromObstructions(newPos);
 
     m_pos = newPos;
-    m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
-    m_front = (newPos - oldPos).Normalise();
+
+    DirectX::XMVECTOR const travelled = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos));
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(travelled, 1.0f / SERVER_ADVANCE_PERIOD));
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(travelled));
   }
   else
   {
-    m_vel.Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     return true;
   }
 
@@ -375,9 +423,10 @@ bool Officer::AdvanceGivingOrders()
 {
   if (m_orders == OrderGoto)
   {
-    m_front = (m_orderPosition - m_pos).Normalise();
+    DirectX::XMStoreFloat3(
+      &m_front, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_orderPosition), DirectX::XMLoadFloat3(&m_pos))));
   }
-  m_vel.Zero();
+  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   return false;
 }
 
@@ -387,7 +436,8 @@ bool Officer::SearchForRandomPosition()
   float distance = 30.0f;
   float angle = syncsfrand(2.0f * M_PI);
 
-  m_wayPoint = m_pos + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
+  DirectX::XMStoreFloat3(&m_wayPoint, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos),
+                                                           DirectX::XMVectorSet(sinf(angle) * distance, 0.0f, cosf(angle) * distance, 0.0f)));
 
   m_wayPoint = PushFromObstructions(m_wayPoint);
   m_wayPoint.y = g_location->m_landscape.m_heightMap->GetValue(m_wayPoint.x, m_wayPoint.z);
@@ -410,7 +460,8 @@ void Officer::Absorb()
     Entity* entity = g_location->GetEntity(id);
     if (entity && entity->m_type == Entity::TypeCitizen && !entity->m_dead)
     {
-      float distance = (entity->m_pos - m_pos).Mag();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&m_pos))));
       if (distance < nearestDistance)
       {
         nearestDistance = distance;
@@ -481,7 +532,7 @@ bool Officer::Advance(Unit* _unit)
     if (syncfrand() < 0.05f)
     {
       OfficerOrders* orders = new OfficerOrders();
-      orders->m_pos = m_pos + Vector3(0, 2, 0);
+      orders->m_pos = DirectX::XMFLOAT3(m_pos.x, m_pos.y + 2.0f, m_pos.z);
       orders->m_wayPoint = m_orderPosition;
       int index = g_location->m_effects.PutData(orders);
       orders->m_id.Set(m_id.GetTeamId(), UNIT_EFFECTS, index, -1);
@@ -508,7 +559,8 @@ bool Officer::Advance(Unit* _unit)
       entity->ChangeHealth(-10);
       m_shield--;
 
-      Vector3 themToUs = m_pos - entity->m_pos;
+      DirectX::XMFLOAT3 themToUs;
+      DirectX::XMStoreFloat3(&themToUs, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&entity->m_pos)));
       g_location->SpawnSpirit(m_pos, themToUs, 0, WorldObjectId());
     }
   }
@@ -525,10 +577,13 @@ bool Officer::Advance(Unit* _unit)
     {
       m_ordersBuildingId = teleportId;
       Teleport* teleport = (Teleport*)g_location->GetBuilding(teleportId);
-      Vector3 exitPos, exitFront;
+      // Teleport converts in T17, so its out-parameters are still legacy.
+      DirectX::XMFLOAT3 exitPos{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 exitFront{0.0f, 0.0f, 0.0f};
       bool exitFound = teleport->GetExit(exitPos, exitFront);
       if (exitFound)
-        m_wayPoint = exitPos + exitFront * 30.0f;
+        DirectX::XMStoreFloat3(&m_wayPoint, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&exitFront), DirectX::XMVectorReplicate(30.0f),
+                                                                         DirectX::XMLoadFloat3(&exitPos)));
       if (m_orders == OrderGoto)
         m_orders = OrderNone;
       m_wayPointTeleportId = -1;
@@ -539,7 +594,7 @@ bool Officer::Advance(Unit* _unit)
 }
 
 
-void Officer::SetWaypoint(Vector3 const& _wayPoint)
+void Officer::SetWaypoint(DirectX::XMFLOAT3 const& _wayPoint)
 {
   m_wayPoint = _wayPoint;
   m_state = StateToWaypoint;
@@ -553,12 +608,15 @@ void Officer::SetWaypoint(Vector3 const& _wayPoint)
     Building* building = g_location->GetBuilding(buildingId);
     if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge)
     {
-      float distance = (building->m_pos - _wayPoint).Mag();
+      float distance = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&_wayPoint))));
       Teleport* teleport = (Teleport*)building;
       if (distance < 5.0f && teleport->Connected())
       {
         m_wayPointTeleportId = building->m_id.GetUniqueId();
-        Vector3 entrancePos, entranceFront;
+        // Teleport converts in T17, so its out-parameters are still legacy.
+        DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
         teleport->GetEntrance(entrancePos, entranceFront);
         m_wayPoint = entrancePos;
         break;
@@ -588,7 +646,7 @@ void Officer::CancelOrderSounds()
 }
 
 
-void Officer::SetOrders(Vector3 const& _orders)
+void Officer::SetOrders(DirectX::XMFLOAT3 const& _orders)
 {
   static float lastOrderSet = 0.0f;
 
@@ -597,7 +655,8 @@ void Officer::SetOrders(Vector3 const& _orders)
   }
   else
   {
-    float distanceToOrders = (_orders - m_pos).Mag();
+    float distanceToOrders =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_orders), DirectX::XMLoadFloat3(&m_pos))));
 
     if (distanceToOrders > 20.0f)
     {
@@ -618,12 +677,15 @@ void Officer::SetOrders(Vector3 const& _orders)
         Building* building = g_location->GetBuilding(buildingId);
         if (building->m_type == Building::TypeRadarDish || building->m_type == Building::TypeBridge)
         {
-          float distance = (building->m_pos - _orders).Mag();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&_orders))));
           if (distance < 5.0f)
           {
             Teleport* teleport = (Teleport*)building;
             m_ordersBuildingId = building->m_id.GetUniqueId();
-            Vector3 entrancePos, entranceFront;
+            // Teleport converts in T17; same seam as above.
+            DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
+            DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
             teleport->GetEntrance(entrancePos, entranceFront);
             m_orderPosition = entrancePos;
             foundTeleport = true;
@@ -653,8 +715,8 @@ void Officer::SetOrders(Vector3 const& _orders)
         {
           if (orders.m_arrivedTimer < 0.0f)
           {
-            g_particleSystem->CreateParticle(orders.m_pos, g_zeroVector, Particle::TypeMuzzleFlash, 50.0f);
-            g_particleSystem->CreateParticle(orders.m_pos, g_zeroVector, Particle::TypeMuzzleFlash, 40.0f);
+            g_particleSystem->CreateParticle(orders.m_pos, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), Particle::TypeMuzzleFlash, 50.0f);
+            g_particleSystem->CreateParticle(orders.m_pos, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), Particle::TypeMuzzleFlash, 40.0f);
           }
           if (orders.Advance())
             break;
@@ -890,35 +952,37 @@ bool OfficerOrders::Advance()
   if (m_arrivedTimer >= 0.0f)
   {
     // We are already here, so just fade out
-    m_vel.Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     m_arrivedTimer += SERVER_ADVANCE_PERIOD;
     if (m_arrivedTimer > 1.0f)
       return true;
   }
   else
   {
-    float speed = m_vel.Mag();
+    float speed = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel)));
     speed *= 1.1f;
     speed = std::max(speed, 30.0f);
     speed = std::min(speed, 150.0f);
 
-    Vector3 toWaypoint = (m_wayPoint - m_pos);
-    toWaypoint.y = 0.0f;
-    float distance = toWaypoint.Mag();
+    DirectX::XMVECTOR const toWaypoint =
+      DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_wayPoint), DirectX::XMLoadFloat3(&m_pos)), 0.0f);
+    float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(toWaypoint));
 
-    toWaypoint.Normalise();
-    m_vel = toWaypoint * speed;
-    Vector3 oldPos = m_pos;
-    m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(toWaypoint), speed));
+
+    DirectX::XMFLOAT3 const oldPos = m_pos;
+    DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                DirectX::XMLoadFloat3(&m_pos)));
 
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     m_pos.y = landHeight + 2.0f;
 
-    m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos)),
+                                                          1.0f / SERVER_ADVANCE_PERIOD));
 
-    g_particleSystem->CreateParticle(oldPos, g_zeroVector, Particle::TypeMuzzleFlash, 30.0f);
+    g_particleSystem->CreateParticle(oldPos, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), Particle::TypeMuzzleFlash, 30.0f);
 
-    if (m_vel.Mag() * SERVER_ADVANCE_PERIOD > distance)
+    if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&m_vel))) * SERVER_ADVANCE_PERIOD > distance)
       m_arrivedTimer = 0.0f;
     if (distance < 3.0f)
       m_arrivedTimer = 0.0f;
@@ -931,7 +995,9 @@ bool OfficerOrders::Advance()
 void OfficerOrders::Render(float _time)
 {
   float size = 15.0f;
-  Vector3 predictedPos = m_pos + m_vel * _time;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(
+    &predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_time), DirectX::XMLoadFloat3(&m_pos)));
 
   float alpha = 0.7f;
   if (m_arrivedTimer >= 0.0f)
@@ -943,8 +1009,12 @@ void OfficerOrders::Render(float _time)
     size *= fraction;
   }
 
-  Vector3 camUp = g_camera->GetUp() * size;
-  Vector3 camRight = g_camera->GetRight() * size;
+  // CameraAccess still returns legacy vectors; T12 converts it, behind T22.
+  DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
+  DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
+
+  DirectX::XMVECTOR const camUp = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), size);
+  DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), size);
 
   glColor4f(1.0f, 0.3f, 1.0f, alpha);
 
@@ -954,13 +1024,13 @@ void OfficerOrders::Render(float _time)
 
   glBegin(GL_QUADS);
   glTexCoord2i(0, 0);
-  glVertex3fv((predictedPos - camRight + camUp).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&predictedPos), camRight), camUp));
   glTexCoord2i(1, 0);
-  glVertex3fv((predictedPos + camRight + camUp).GetData());
+  EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&predictedPos), camRight), camUp));
   glTexCoord2i(1, 1);
-  glVertex3fv((predictedPos + camRight - camUp).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&predictedPos), camRight), camUp));
   glTexCoord2i(0, 1);
-  glVertex3fv((predictedPos - camRight - camUp).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&predictedPos), camRight), camUp));
   glEnd();
 
   glEnable(GL_DEPTH_TEST);

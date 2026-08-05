@@ -312,7 +312,7 @@ bool FuelGenerator::Advance()
 
   float previousPumpPos = m_previousPumpPos;
   Vector3 pumpPos = GetPumpPos();
-  m_previousPumpPos = (pumpPos.y - m_pos.y) / -80.0f;
+  m_previousPumpPos = (pumpPos.y - AsLegacy(m_pos).y) / -80.0f;
 
   if (fuelVal > 0.0f && pumpPos.y > m_pos.y - 20.0f)
   {
@@ -497,7 +497,7 @@ bool FuelStation::Advance()
           if (entity && entity->m_type == Entity::TypeCitizen)
           {
             Citizen* citizen = (Citizen*)entity;
-            float distance = (entity->m_pos - m_pos).Mag();
+            float distance = (AsLegacy(entity->m_pos) - AsLegacy(m_pos)).Mag();
             if (distance < 300.0f && (citizen->m_state == Citizen::StateIdle || citizen->m_state == Citizen::StateWorshipSpirit))
             {
               citizen->BoardRocket(m_id.GetUniqueId());
@@ -530,7 +530,7 @@ bool FuelStation::BoardRocket(WorldObjectId _id)
     if (result)
     {
       Entity* entity = g_location->GetEntity(_id);
-      Vector3 entityPos = entity ? entity->m_pos : g_zeroVector;
+      Vector3 entityPos = entity ? AsLegacy(entity->m_pos) : g_zeroVector;
       entityPos.y += 2;
 
       int numFlashes = 4 + speciesRandom() % 4;
@@ -579,7 +579,7 @@ void FuelStation::RenderAlphas(float _predictionTime)
       Vector3 screenFront = m_front;
       // screenFront.RotateAroundY( 0.33f * M_PI );
       Vector3 screenRight = screenFront ^ g_upVector;
-      Vector3 screenPos = m_pos + Vector3(0, 150, 0);
+      Vector3 screenPos = AsLegacy(m_pos) + Vector3(0, 150, 0);
       screenPos -= screenRight * screenSize * 0.5f;
       screenPos += screenFront * 30;
       Vector3 screenUp = g_upVector;
@@ -663,8 +663,8 @@ void FuelStation::RenderAlphas(float _predictionTime)
 
       glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
 
-      Vector3 ourPos = m_pos + Vector3(0, 90, 0);
-      Vector3 theirPos = m_pos + Vector3(0, 200, 0);
+      Vector3 ourPos = AsLegacy(m_pos) + Vector3(0, 90, 0);
+      Vector3 theirPos = AsLegacy(m_pos) + Vector3(0, 200, 0);
       theirPos += screenFront * 30.0f;
 
       Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
@@ -706,7 +706,7 @@ void FuelStation::RenderAlphas(float _predictionTime)
 }
 
 
-bool FuelStation::PerformDepthSort(Vector3& _centrePos)
+bool FuelStation::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
 {
   _centrePos = m_centrePos;
   return true;
@@ -1005,7 +1005,7 @@ void EscapeRocket::AdvanceReady()
       Building* spawnBuilding = g_location->GetBuilding(m_spawnBuildingId);
       if (spawnBuilding)
       {
-        Vector3 spawnPos = spawnBuilding->m_pos + spawnBuilding->m_front * 40.0f;
+        Vector3 spawnPos = AsLegacy(spawnBuilding->m_pos) + AsLegacy(spawnBuilding->m_front) * 40.0f;
         g_location->SpawnEntities(spawnPos, 1, -1, Entity::TypeCitizen, 1, g_zeroVector, 40.0f);
       }
     }
@@ -1050,8 +1050,8 @@ void EscapeRocket::AdvanceFlight()
 
   m_vel.Set(0, thrust, 0);
 
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
-  m_centrePos += m_vel * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_pos) += m_vel * SERVER_ADVANCE_PERIOD;
+  AsLegacy(m_centrePos) += m_vel * SERVER_ADVANCE_PERIOD;
 
   SetupSpectacle();
 }
@@ -1185,7 +1185,7 @@ void EscapeRocket::SetupAttackers()
         if (entity && entity->m_type == Entity::TypeCitizen)
         {
           Citizen* citizen = (Citizen*)entity;
-          float range = (citizen->m_pos - m_pos).Mag();
+          float range = (AsLegacy(citizen->m_pos) - AsLegacy(m_pos)).Mag();
           if (range < 350.0f)
           {
             citizen->AttackBuilding(m_id.GetUniqueId());
@@ -1290,7 +1290,7 @@ bool EscapeRocket::Advance()
 
 bool EscapeRocket::SafeToLaunch()
 {
-  Vector3 testPos = m_pos + Vector3(330, 0, 50);
+  Vector3 testPos = AsLegacy(m_pos) + Vector3(330, 0, 50);
   float testRadius = 100.0f;
 
   int numEnemies = g_location->m_entityGrid->GetNumEnemies(testPos.x, testPos.z, testRadius, 0);
@@ -1301,7 +1301,7 @@ bool EscapeRocket::SafeToLaunch()
 
 void EscapeRocket::Render(float _predictionTime)
 {
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + m_vel * _predictionTime;
 
   Matrix34 mat(m_front, m_up, predictedPos);
 
@@ -1324,7 +1324,7 @@ void EscapeRocket::RenderAlphas(float _predictionTime)
     return;
   }
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + m_vel * _predictionTime;
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
   //    g_editorFont.DrawText3DCentre( predictedPos+Vector3(0,120,0), 10, "Fuel : %2.2f", m_fuel );

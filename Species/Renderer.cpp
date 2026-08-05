@@ -950,7 +950,7 @@ void Renderer::PreRenderPixelEffect()
           {
             if (unit->IsInView())
             {
-              float distance = (unit->m_centrePos - camPos).Mag();
+              float distance = (AsLegacy(unit->m_centrePos) - camPos).Mag();
               if (distance < cutoff)
               {
                 for (int j = 0; j < unit->m_entities.Size(); ++j)
@@ -965,7 +965,7 @@ void Renderer::PreRenderPixelEffect()
                       rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
                     if (rendered)
                     {
-                      float distance = (entity->m_pos - TheCamera()->GetPos()).Mag();
+                      float distance = (AsLegacy(entity->m_pos) - TheCamera()->GetPos()).Mag();
                       if (distance < nearest)
                         nearest = distance;
                     }
@@ -984,7 +984,7 @@ void Renderer::PreRenderPixelEffect()
           Entity* entity = g_location->m_teams[t].m_others[i];
           if (entity->IsInView())
           {
-            float distance = (entity->m_pos - camPos).Mag();
+            float distance = (AsLegacy(entity->m_pos) - camPos).Mag();
             if (distance < cutoff)
             {
               bool rendered = false;
@@ -994,7 +994,7 @@ void Renderer::PreRenderPixelEffect()
                 rendered = entity->RenderPixelEffect(g_predictionTime + SERVER_ADVANCE_PERIOD);
               if (rendered)
               {
-                float distance = (entity->m_pos - TheCamera()->GetPos()).Mag();
+                float distance = (AsLegacy(entity->m_pos) - TheCamera()->GetPos()).Mag();
                 if (distance < nearest)
                   nearest = distance;
               }
@@ -1010,13 +1010,13 @@ void Renderer::PreRenderPixelEffect()
     if (g_location->m_buildings.ValidIndex(i))
     {
       Building* building = g_location->m_buildings[i];
-      float distance = (building->m_centrePos - camPos).Mag();
+      float distance = (AsLegacy(building->m_centrePos) - camPos).Mag();
       if (distance < cutoff)
       {
         bool rendered = building->RenderPixelEffect(g_predictionTime);
         if (rendered)
         {
-          float distance = (building->m_pos - TheCamera()->GetPos()).Mag();
+          float distance = (AsLegacy(building->m_pos) - TheCamera()->GetPos()).Mag();
           if (distance < nearest)
             nearest = distance;
         }

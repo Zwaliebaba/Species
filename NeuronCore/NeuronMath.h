@@ -10,11 +10,20 @@
 // See tasks/directxmath-migration.yaml T1.
 //
 // DirectXMath is header-only and ships in the Windows SDK, so including it adds
-// no library to link and no dependency to vendor. Nothing else in this header
-// is a type or a function: the storage types ARE DirectX::XMFLOAT2/3,
-// XMFLOAT3X3 and XMFLOAT4X4, and the arithmetic IS XMLoad / XMVector* /
-// XMStore at the call site. There is no Neuron vector type and there will not
-// be one.
+// no library to link and no dependency to vendor. This header declares no TYPE:
+// the storage types ARE DirectX::XMFLOAT2/3, XMFLOAT3X3 and XMFLOAT4X4, and the
+// arithmetic IS XMLoad / XMVector* / XMStore at the call site. There is no
+// Neuron vector type and there will not be one.
+//
+// It declares exactly one FUNCTION, at the bottom, and T14 added it under
+// protest of the sentence that used to stand here. BasisFromFrontAndUp replaces
+// the Matrix34(front, up, pos) CONSTRUCTOR, which the tree calls 196 times.
+// That constructor is not arithmetic — it is the row-vector convention itself,
+// written out, and this header exists to fix that convention once. Writing it
+// out 196 times instead is 196 chances to get a cross product backwards, in a
+// migration whose stated worst failure mode is ending up half transposed. It is
+// not the thin end of an operator layer: there is no operator+, no operator*,
+// and adding one is still the thing this plan forbids.
 //
 //
 // TYPES
@@ -137,3 +146,35 @@
 // It does NOT change the RNG call sequence, iteration order, container
 // identity, or the wire format. Those are separate properties and none of them
 // is sanctioned to move.
+
+
+// Build a world matrix from a front vector, an up hint and a position — the
+// replacement for Matrix34(_f, _u, _pos), which 196 sites in the tree call.
+//
+// The rows are right / up / front / position, per the convention block above.
+// Three details are reproduced from the legacy constructor deliberately, and
+// each of them is observable:
+//
+//   The FRONT ROW IS NOT NORMALISED. The legacy constructor stored _f exactly as
+//   given and normalised only the two rows it derived. Callers that pass a
+//   scaled front are therefore scaling the model, and several do.
+//
+//   The RIGHT ROW IS up x front, and the UP ROW IS front x right — in that
+//   order, each normalised. Reversing either flips a basis vector, which
+//   mirrors the model rather than failing to compile.
+//
+//   A DEGENERATE BASIS gives what XMVector3Normalize gives, per the normalise
+//   decision above: front parallel to up yields a zero cross product and the
+//   rows come back zero or QNaN rather than falling back to anything.
+inline DirectX::XMMATRIX XM_CALLCONV BasisFromFrontAndUp(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position)
+{
+  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(_up, _front));
+  DirectX::XMVECTOR const up = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(_front, right));
+
+  DirectX::XMMATRIX result;
+  result.r[0] = DirectX::XMVectorSetW(right, 0.0f);
+  result.r[1] = DirectX::XMVectorSetW(up, 0.0f);
+  result.r[2] = DirectX::XMVectorSetW(_front, 0.0f);
+  result.r[3] = DirectX::XMVectorSetW(_position, 1.0f);
+  return result;
+}

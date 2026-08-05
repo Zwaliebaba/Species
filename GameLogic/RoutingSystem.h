@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 
 // ****************************************************************************
@@ -11,7 +11,7 @@
 class WayPoint
 {
   protected:
-    Vector3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
 
   public:
     enum
@@ -24,11 +24,11 @@ class WayPoint
     int m_type;
     int m_buildingId;
 
-    WayPoint(int _type, Vector3 const& _pos);
+    WayPoint(int _type, DirectX::XMFLOAT3 const& _pos);
     ~WayPoint();
 
-    Vector3 GetPos();
-    void SetPos(Vector3 const& _pos);
+    DirectX::XMFLOAT3 GetPos();
+    void SetPos(DirectX::XMFLOAT3 const& _pos);
 };
 
 
@@ -45,12 +45,12 @@ class Route
     Route(int _id);
     ~Route();
 
-    void AddWayPoint(Vector3 const& _pos);
+    void AddWayPoint(DirectX::XMFLOAT3 const& _pos);
     void AddWayPoint(int _buildingId);
     WayPoint* GetWayPoint(int _id);
 
-    int GetIdOfNearestWayPoint(Vector3 const& _pos);
-    int GetIdOfNearestEdge(Vector3 const& _pos, float* _dist);
+    int GetIdOfNearestWayPoint(DirectX::XMFLOAT3 const& _pos);
+    int GetIdOfNearestEdge(DirectX::XMFLOAT3 const& _pos, float* _dist);
 
     void Render();
 };

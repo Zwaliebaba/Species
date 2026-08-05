@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 
 #define GLOBALINTERNET_ITERATIONS 7
@@ -20,7 +20,7 @@ class GlobalInternetNode
     GlobalInternetNode();
     void AddLink(int id);
 
-    Vector3 m_pos;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
     unsigned char m_size;
     float m_burst;
 
@@ -61,7 +61,7 @@ class GlobalInternet
     float m_nearestDistance;
 
     void GenerateInternet();
-    unsigned short GenerateInternet(Vector3 const& _pos, unsigned char _size);
+    unsigned short GenerateInternet(DirectX::XMFLOAT3 const& _pos, unsigned char _size);
     void DeleteInternet();
 
     void TriggerPacket(unsigned short _nodeId, unsigned short _fromLinkId);

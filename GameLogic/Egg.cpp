@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "DebugRender.h"
 #include "MathUtils.h"
 #include "Resource.h"
@@ -60,10 +61,17 @@ void Egg::Render(float predictionTime)
     alpha = 0.1f;
   glColor4ub(255, 255, 255, 255 * alpha);
 
-  Vector3 pos = m_pos + m_vel * predictionTime;
+  DirectX::XMFLOAT3 pos;
+  DirectX::XMStoreFloat3(
+    &pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime), DirectX::XMLoadFloat3(&m_pos)));
   pos.y += 3.0f;
-  Vector3 up = g_camera->GetUp();
-  Vector3 right = g_camera->GetRight();
+
+  // Camera's accessors are still legacy -- Species belongs to T22.
+  DirectX::XMFLOAT3 const upStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const rightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const up = DirectX::XMLoadFloat3(&upStore);
+  DirectX::XMVECTOR const right = DirectX::XMLoadFloat3(&rightStore);
+  DirectX::XMVECTOR const posVec = DirectX::XMLoadFloat3(&pos);
   float size = 4.0f;
 
   //
@@ -73,13 +81,13 @@ void Egg::Render(float predictionTime)
   {
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - right * size - up * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - right * size + up * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + right * size + up * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + right * size - up * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
     glEnd();
 
 
@@ -100,13 +108,13 @@ void Egg::Render(float predictionTime)
 
       glBegin(GL_QUADS);
       glTexCoord2i(0, 0);
-      glVertex3fv((pos - right * size - up * size).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2i(0, 1);
-      glVertex3fv((pos - right * size + up * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2i(1, 1);
-      glVertex3fv((pos + right * size + up * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2i(1, 0);
-      glVertex3fv((pos + right * size - up * size).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glEnd();
 
 
@@ -122,13 +130,13 @@ void Egg::Render(float predictionTime)
 
       glBegin(GL_QUADS);
       glTexCoord2i(0, 0);
-      glVertex3fv((pos - right * size - up * size).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2i(0, 1);
-      glVertex3fv((pos - right * size + up * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2i(1, 1);
-      glVertex3fv((pos + right * size + up * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2i(1, 0);
-      glVertex3fv((pos + right * size - up * size).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(posVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glEnd();
     }
   }
@@ -147,7 +155,7 @@ void Egg::Render(float predictionTime)
 
     for (int i = 0; i < 3; ++i)
     {
-      Vector3 fragmentPos = pos;
+      DirectX::XMFLOAT3 fragmentPos = pos;
       if (i == 0)
         fragmentPos.x += 10.0f - predictedHealth / 10.0f;
       if (i == 1)
@@ -155,6 +163,8 @@ void Egg::Render(float predictionTime)
       if (i == 2)
         fragmentPos.x -= 10.0f - predictedHealth / 10.0f;
       fragmentPos.y += (fragmentPos.y - landHeight) * i * 0.5f;
+
+      DirectX::XMVECTOR const fragmentPosVec = DirectX::XMLoadFloat3(&fragmentPos);
 
       float tleft = 0.0f;
       float tright = 1.0f;
@@ -179,13 +189,16 @@ void Egg::Render(float predictionTime)
 
       glBegin(GL_QUADS);
       glTexCoord2f(tleft, tbottom);
-      glVertex3fv((fragmentPos - right * size + up * size).GetData());
+      EmitVertex(
+        DirectX::XMVectorAdd(DirectX::XMVectorSubtract(fragmentPosVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2f(tright, tbottom);
-      glVertex3fv((fragmentPos + right * size + up * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(fragmentPosVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2f(tright, ttop);
-      glVertex3fv((fragmentPos + right * size - up * size).GetData());
+      EmitVertex(
+        DirectX::XMVectorSubtract(DirectX::XMVectorAdd(fragmentPosVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glTexCoord2f(tleft, ttop);
-      glVertex3fv((fragmentPos - right * size - up * size).GetData());
+      EmitVertex(
+        DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(fragmentPosVec, DirectX::XMVectorScale(right, size)), DirectX::XMVectorScale(up, size)));
       glEnd();
     }
   }
@@ -208,7 +221,7 @@ bool Egg::Advance(Unit* _unit)
   if (g_location->m_spirits.ValidIndex(m_spiritId))
   {
     Spirit* spirit = g_location->m_spirits.GetPointer(m_spiritId);
-    spirit->m_pos = m_pos + Vector3(0, 3, 0);
+    spirit->m_pos = DirectX::XMFLOAT3(m_pos.x, m_pos.y + 3.0f, m_pos.z);
   }
 
   if (!m_dead)
@@ -266,7 +279,8 @@ bool Egg::Advance(Unit* _unit)
   }
   else
   {
-    m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                DirectX::XMLoadFloat3(&m_pos)));
   }
 
   if (m_pos.y <= 0.0f)

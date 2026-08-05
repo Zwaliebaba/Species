@@ -29,7 +29,9 @@ class SpawnBuilding : public Building
     std::vector<SpawnBuildingLink*> m_links;
     ShapeMarker* m_spiritLink;
 
-    Vector3 m_visibilityMidpoint;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and SpawnBuilding's constructor never assigned it.
+    DirectX::XMFLOAT3 m_visibilityMidpoint{0.0f, 0.0f, 0.0f};
     float m_visibilityRadius;
 
   public:
@@ -44,9 +46,9 @@ class SpawnBuilding : public Building
     bool IsInView();
     void Render(float _predictionTime);
     void RenderAlphas(float _predictionTime);
-    void RenderSpirit(Vector3 const& _pos);
+    void RenderSpirit(DirectX::XMFLOAT3 const& _pos);
 
-    Vector3 GetSpiritLink();
+    DirectX::XMFLOAT3 GetSpiritLink();
     void SetBuildingLink(int _buildingId);
     void ClearLinks();
 
@@ -109,7 +111,7 @@ class SpawnPoint : public SpawnBuilding
 
     bool Advance();
 
-    bool PerformDepthSort(Vector3& _centrePos);
+    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos);
 
     void TriggerSpirit(SpawnBuildingSpirit* _spirit);
 
@@ -146,6 +148,6 @@ class SpawnPopulationLock : public Building
     void Read(TextReader* _in, bool _dynamic);
     void Write(FileWriter* _out);
 
-    bool DoesSphereHit(Vector3 const& _pos, float _radius);
-    bool DoesShapeHit(Shape* _shape, Matrix34 _transform);
+    bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
+    bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);
 };

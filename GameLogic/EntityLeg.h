@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 class Entity;
 class ShapeMarker;
@@ -23,12 +23,14 @@ class EntityFoot
       Pouncing
     };
 
-    Vector3 m_pos;
-    Vector3 m_targetPos;
+    // Braced to zero throughout: EntityFoot has no constructor, so Vector3's
+    // default one was doing the work and XMFLOAT3's does not.
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_targetPos{0.0f, 0.0f, 0.0f};
     FootState m_state;
     float m_leftGroundTimeStamp;
-    Vector3 m_lastGroundPos;
-    Vector3 m_bodyToFoot; // Used whilst pouncing
+    DirectX::XMFLOAT3 m_lastGroundPos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_bodyToFoot{0.0f, 0.0f, 0.0f}; // Used whilst pouncing
 };
 
 
@@ -54,11 +56,11 @@ class EntityLeg
     Entity* m_parent;
 
   protected:
-    Vector3 GetLegRootPos();
-    Vector3 CalcFootHomePos(float _targetHoverHeight);
-    Vector3 CalcDesiredFootPos(float _targetHoverHeight);
-    Vector3 CalcKneePos(Vector3 const& _footPos, Vector3 const& _rootPos, Vector3 const& _centrePos);
-    Vector3 GetIdealSwingingFootPos(float _fractionComplete);
+    DirectX::XMFLOAT3 GetLegRootPos();
+    DirectX::XMFLOAT3 CalcFootHomePos(float _targetHoverHeight);
+    DirectX::XMFLOAT3 CalcDesiredFootPos(float _targetHoverHeight);
+    DirectX::XMFLOAT3 CalcKneePos(DirectX::XMFLOAT3 const& _footPos, DirectX::XMFLOAT3 const& _rootPos, DirectX::XMFLOAT3 const& _centrePos);
+    DirectX::XMFLOAT3 GetIdealSwingingFootPos(float _fractionComplete);
 
   public:
     EntityLeg(int _legNum, Entity* _parent, char const* _shapeNameUpper, char const* _shapeNameLower, char const* _rootMarkerName);
@@ -69,6 +71,6 @@ class EntityLeg
 
     bool Advance(); // Returns true if the foot was planted this frame
     void AdvanceSpiderPounce(float _fractionComplete);
-    void Render(float _predictionTime, Vector3 const& _predictedMovement);
-    bool RenderPixelEffect(float _predictionTime, Vector3 const& _predictedMovement);
+    void Render(float _predictionTime, DirectX::XMFLOAT3 const& _predictedMovement);
+    bool RenderPixelEffect(float _predictionTime, DirectX::XMFLOAT3 const& _predictedMovement);
 };

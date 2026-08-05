@@ -183,6 +183,7 @@
     <ClInclude Include="LocationAccess.h" />
     <ClInclude Include="LocationEditorAccess.h" />
     <ClInclude Include="GameCursorAccess.h" />
+    <ClInclude Include="GlVertex.h" />
     <ClInclude Include="ScriptAccess.h" />
     <ClInclude Include="RendererAccess.h" />
     <ClInclude Include="AppState.h" />

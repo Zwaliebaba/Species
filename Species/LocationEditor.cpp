@@ -947,7 +947,7 @@ void LocationEditor::RenderModeBuilding()
     {
       Vector3 height(0, 10, 0);
       Vector3 mousePos(TheUserInput()->GetMousePos3d());
-      Vector3 arrowDir(mousePos - building->m_pos);
+      Vector3 arrowDir(mousePos - AsLegacy(building->m_pos));
       Vector3 arrowSize(0, 3, 0);
 
       glEnable(GL_LINE_SMOOTH);
@@ -955,7 +955,7 @@ void LocationEditor::RenderModeBuilding()
       glLineWidth(1.0f);
       glColor3f(1.0f, 0.5f, 0.5f);
       glBegin(GL_LINES);
-      glVertex3fv((building->m_pos + height).GetData());
+      glVertex3fv((AsLegacy(building->m_pos) + height).GetData());
       glVertex3fv((mousePos).GetData());
 
       glVertex3fv((mousePos).GetData());
@@ -1057,7 +1057,7 @@ void LocationEditor::Render()
     for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
     {
       CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
-      Vector3 camToMount = TheCamera()->GetPos() - mount->m_pos;
+      Vector3 camToMount = TheCamera()->GetPos() - AsLegacy(mount->m_pos);
       if (camToMount.Mag() < 20.0f)
         continue;
       mat.OrientFU(mount->m_front, mount->m_up);

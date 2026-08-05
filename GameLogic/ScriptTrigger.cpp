@@ -95,7 +95,10 @@ bool ScriptTrigger::Advance()
           }
           else if (m_entityType == SCRIPTRIGGER_RUNCAMENTER)
           {
-            float camDistance = (g_camera->GetPos() - m_pos).Mag();
+            // Camera's accessors are still legacy -- Species belongs to T22.
+            DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+            float camDistance = DirectX::XMVectorGetX(
+              DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
             Vector3 camVel = g_camera->GetVel();
             bool camInteractive = g_camera->IsInteractive();
 
@@ -106,7 +109,10 @@ bool ScriptTrigger::Advance()
           }
           else if (m_entityType == SCRIPTRIGGER_RUNCAMVIEW)
           {
-            float camDistance = (g_camera->GetPos() - m_pos).Mag();
+            // Camera's accessors are still legacy -- Species belongs to T22.
+            DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+            float camDistance = DirectX::XMVectorGetX(
+              DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), DirectX::XMLoadFloat3(&m_pos))));
             Vector3 camVel = g_camera->GetVel();
             bool camInteractive = g_camera->IsInteractive();
             bool inView = RaySphereIntersection(g_camera->GetPos(), g_camera->GetFront(), m_pos, m_range);
@@ -171,19 +177,20 @@ void ScriptTrigger::RenderAlphas(float predictionTime)
     RenderSphere(m_pos, m_range, colour);
     RenderSphere(m_pos, m_range, colour);
 
-    g_editorFont.DrawText3DCentre(m_pos + Vector3(0, 30, 0), 10, "%s", m_scriptFilename);
-    g_editorFont.DrawText3DCentre(m_pos + Vector3(0, 20, 0), 10, "%d", m_triggered);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 30.0f, m_pos.z), 10, "%s", m_scriptFilename);
+    g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 20.0f, m_pos.z), 10, "%d", m_triggered);
   }
 };
 
 
-bool ScriptTrigger::DoesSphereHit(Vector3 const& _pos, float _radius) { return false; }
+bool ScriptTrigger::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
 
 
-bool ScriptTrigger::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return false; }
+bool ScriptTrigger::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }
 
 
-bool ScriptTrigger::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* _norm)
+bool ScriptTrigger::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                               DirectX::XMFLOAT3* _norm)
 {
   if (g_editing)
   {

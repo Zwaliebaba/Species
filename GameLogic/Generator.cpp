@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include "Debug.h"
@@ -46,7 +47,7 @@ void PowerBuilding::Initialise(Building* _template)
   m_powerLink = ((PowerBuilding*)_template)->m_powerLink;
 }
 
-Vector3 PowerBuilding::GetPowerLocation()
+DirectX::XMFLOAT3 PowerBuilding::GetPowerLocation()
 {
   if (!m_powerLocation)
   {
@@ -54,9 +55,9 @@ Vector3 PowerBuilding::GetPowerLocation()
     DEBUG_ASSERT(m_powerLocation);
   }
 
-  Matrix34 rootMat(m_front, m_up, m_pos);
-  Matrix34 worldPos = m_powerLocation->GetWorldMatrix(rootMat);
-  return worldPos.pos;
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+  return m_powerLocation->GetWorldMatrix(rootMat).pos;
 }
 
 
@@ -66,10 +67,15 @@ bool PowerBuilding::IsInView()
 
   if (powerLink)
   {
-    Vector3 midPoint = (powerLink->m_centrePos + m_centrePos) / 2.0f;
-    float radius = (powerLink->m_centrePos - m_centrePos).Mag() / 2.0f;
+    DirectX::XMVECTOR const theirCentre = DirectX::XMLoadFloat3(&powerLink->m_centrePos);
+    DirectX::XMVECTOR const ourCentre = DirectX::XMLoadFloat3(&m_centrePos);
+
+    DirectX::XMFLOAT3 midPoint;
+    DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirCentre, ourCentre), 0.5f));
+    float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirCentre, ourCentre))) / 2.0f;
     radius += m_radius;
 
+    // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
     return (g_camera->SphereInViewFrustum(midPoint, radius));
   }
   else
@@ -81,7 +87,7 @@ bool PowerBuilding::IsInView()
 
 void PowerBuilding::Render(float _predictionTime)
 {
-  Matrix34 mat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
   m_shape->Render(_predictionTime, mat);
 }
 
@@ -97,16 +103,26 @@ void PowerBuilding::RenderAlphas(float _predictionTime)
     // Render the power line itself
     PowerBuilding* powerBuilding = (PowerBuilding*)powerLink;
 
-    Vector3 ourPos = GetPowerLocation();
-    Vector3 theirPos = powerBuilding->GetPowerLocation();
+    DirectX::XMFLOAT3 const ourPosStore = GetPowerLocation();
+    DirectX::XMFLOAT3 const theirPosStore = powerBuilding->GetPowerLocation();
+    DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&ourPosStore);
+    DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&theirPosStore);
+    DirectX::XMVECTOR const alongLine = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-    Vector3 camToOurPos = g_camera->GetPos() - ourPos;
-    Vector3 ourPosRight = camToOurPos ^ (theirPos - ourPos);
-    ourPosRight.SetLength(2.0f);
+    // Camera's accessors are still legacy -- Species belongs to T22.
+    DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
+    DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
-    Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
-    Vector3 theirPosRight = camToTheirPos ^ (theirPos - ourPos);
-    theirPosRight.SetLength(2.0f);
+    // SetLength, which on a zero-length vector left (2, 0, 0); XMVector3Normalize
+    // yields QNaN there instead. That needs the camera exactly collinear with the
+    // power line, and it only degenerates one rendered quad, so this takes the
+    // native behaviour rather than reproducing the fallback -- the same call the
+    // three simulation sites in Entity, Citizen and Building do guard, because
+    // there the fallback is what terminates a push loop.
+    DirectX::XMVECTOR const ourPosRight =
+      DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, ourPos), alongLine)), 2.0f);
+    DirectX::XMVECTOR const theirPosRight =
+      DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, theirPos), alongLine)), 2.0f);
 
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -121,13 +137,13 @@ void PowerBuilding::RenderAlphas(float _predictionTime)
 
     glBegin(GL_QUADS);
     glTexCoord2f(0.1f, 0);
-    glVertex3fv((ourPos - ourPosRight).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(ourPos, ourPosRight));
     glTexCoord2f(0.1f, 1);
-    glVertex3fv((ourPos + ourPosRight).GetData());
+    EmitVertex(DirectX::XMVectorAdd(ourPos, ourPosRight));
     glTexCoord2f(0.9f, 1);
-    glVertex3fv((theirPos + theirPosRight).GetData());
+    EmitVertex(DirectX::XMVectorAdd(theirPos, theirPosRight));
     glTexCoord2f(0.9f, 0);
-    glVertex3fv((theirPos - theirPosRight).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(theirPos, theirPosRight));
     glEnd();
 
     //
@@ -138,8 +154,10 @@ void PowerBuilding::RenderAlphas(float _predictionTime)
 
     float surgeSize = 25.0f;
     glColor4f(0.5f, 0.5f, 1.0f, 1.0f);
-    Vector3 camUp = g_camera->GetUp() * surgeSize;
-    Vector3 camRight = g_camera->GetRight() * surgeSize;
+    DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+    DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+    DirectX::XMVECTOR const camUp = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), surgeSize);
+    DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), surgeSize);
     glBegin(GL_QUADS);
     for (int i = 0; i < static_cast<int>(m_surges.size()); ++i)
     {
@@ -149,15 +167,15 @@ void PowerBuilding::RenderAlphas(float _predictionTime)
         thisSurge = 0.0f;
       if (thisSurge > 1.0f)
         thisSurge = 1.0f;
-      Vector3 thisSurgePos = ourPos + (theirPos - ourPos) * thisSurge;
+      DirectX::XMVECTOR const thisSurgePos = DirectX::XMVectorMultiplyAdd(alongLine, DirectX::XMVectorReplicate(thisSurge), ourPos);
       glTexCoord2i(0, 0);
-      glVertex3fv((thisSurgePos - camUp - camRight).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(thisSurgePos, camUp), camRight));
       glTexCoord2i(1, 0);
-      glVertex3fv((thisSurgePos - camUp + camRight).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(thisSurgePos, camUp), camRight));
       glTexCoord2i(1, 1);
-      glVertex3fv((thisSurgePos + camUp + camRight).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(thisSurgePos, camUp), camRight));
       glTexCoord2i(0, 1);
-      glVertex3fv((thisSurgePos + camUp - camRight).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(thisSurgePos, camUp), camRight));
     }
     glEnd();
 
@@ -337,7 +355,12 @@ void Generator::Render(float _predictionTime)
   // if( m_enabled ) g_gameFont.DrawText3DCentre( m_pos + Vector3(0,180,0), 10.0f, "Enabled" );
   // g_gameFont.DrawText3DCentre( m_pos + Vector3(0,170,0), 10.0f, "Output : %d Gq/s", int(m_throughput*10.0f) );
 
-  Matrix34 generatorMat(m_front, g_upVector, m_pos);
+  DirectX::XMFLOAT4X4 generatorMat;
+  DirectX::XMStoreFloat4x4(&generatorMat,
+                           BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- so the
+  // counter's own basis stays legacy here and converts when that seam closes.
   Matrix34 counterMat = m_counter->GetWorldMatrix(generatorMat);
 
   glColor4f(0.6f, 0.8f, 0.9f, 1.0f);
@@ -434,7 +457,8 @@ void PylonStart::RenderAlphas(float _predictionTime)
     Building* req = g_location->GetBuilding(m_reqBuildingId);
     if (req)
     {
-      RenderArrow(m_pos + Vector3(0, 50, 0), req->m_pos + Vector3(0, 50, 0), 2.0f, RGBAColour(255, 0, 0));
+      RenderArrow(DirectX::XMFLOAT3(m_pos.x, m_pos.y + 50.0f, m_pos.z), DirectX::XMFLOAT3(req->m_pos.x, req->m_pos.y + 50.0f, req->m_pos.z), 2.0f,
+                  RGBAColour(255, 0, 0));
     }
   }
 #endif
@@ -526,8 +550,7 @@ SolarPanel::SolarPanel()
 void SolarPanel::Initialise(Building* _template)
 {
   _template->m_up = g_location->m_landscape.m_normalMap->GetValue(_template->m_pos.x, _template->m_pos.z);
-  Vector3 right = Vector3(1, 0, 0);
-  _template->m_front = right ^ _template->m_up;
+  DirectX::XMStoreFloat3(&_template->m_front, DirectX::XMVector3Cross(DirectX::g_XMIdentityR0, DirectX::XMLoadFloat3(&_template->m_up)));
 
   PowerBuilding::Initialise(_template);
 }
@@ -571,8 +594,10 @@ void SolarPanel::RenderPorts()
 
   for (int i = 0; i < GetNumPorts(); ++i)
   {
-    Matrix34 rootMat(m_front, m_up, m_pos);
-    Matrix34 worldMat = m_statusMarkers[i]->GetWorldMatrix(rootMat);
+    DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 const statusPos = m_statusMarkers[i]->GetWorldMatrix(rootMat).pos;
 
 
     //
@@ -580,10 +605,13 @@ void SolarPanel::RenderPorts()
 
     float size = 6.0f;
 
-    Vector3 camR = g_camera->GetRight() * size;
-    Vector3 camU = g_camera->GetUp() * size;
+    // Camera's accessors are still legacy -- Species belongs to T22.
+    DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+    DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+    DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);
+    DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), size);
 
-    Vector3 statusPos = worldMat.pos;
+    DirectX::XMVECTOR const status = DirectX::XMLoadFloat3(&statusPos);
 
     if (GetPortOccupant(i).IsValid())
       glColor4f(0.3f, 1.0f, 0.3f, 1.0f);
@@ -592,13 +620,13 @@ void SolarPanel::RenderPorts()
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((statusPos - camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(status, camR), camU));
     glTexCoord2i(1, 0);
-    glVertex3fv((statusPos + camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(status, camR), camU));
     glTexCoord2i(1, 1);
-    glVertex3fv((statusPos + camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(status, camR), camU));
     glTexCoord2i(0, 1);
-    glVertex3fv((statusPos - camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(status, camR), camU));
     glEnd();
   }
 
@@ -615,8 +643,7 @@ void SolarPanel::Render(float _predictionTime)
   if (g_editing)
   {
     m_up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-    Vector3 right(1, 0, 0);
-    m_front = right ^ m_up;
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Cross(DirectX::g_XMIdentityR0, DirectX::XMLoadFloat3(&m_up)));
   }
 
   glShadeModel(GL_SMOOTH);
@@ -633,7 +660,7 @@ void SolarPanel::RenderAlphas(float _predictionTime)
 
   if (fractionOccupied > 0.0f)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
     float glowWidth = 60.0f;
     float glowHeight = 40.0f;
     float alphaValue = fabs(sinf(g_gameTime)) * fractionOccupied;
@@ -648,6 +675,9 @@ void SolarPanel::RenderAlphas(float _predictionTime)
 
     for (int i = 0; i < SOLARPANEL_NUMGLOWS; ++i)
     {
+      // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
+      // this block wants the marker's whole basis, not just its position, so it
+      // stays legacy until that seam closes.
       Matrix34 thisGlow = m_glowMarker[i]->GetWorldMatrix(mat);
 
       glBegin(GL_QUADS);

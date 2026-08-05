@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
@@ -48,15 +49,20 @@ void Incubator::Initialise(Building* _template)
 {
   Building::Initialise(_template);
 
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  Vector3 spiritCentre = m_spiritCentre->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const spiritCentre = m_spiritCentre->GetWorldMatrix(mat).pos;
 
   m_numStartingSpirits = static_cast<Incubator*>(_template)->m_numStartingSpirits;
 
   for (int i = 0; i < m_numStartingSpirits; ++i)
   {
     Spirit* s = m_spirits.GetPointer(m_spirits.GetNextFree());
-    s->m_pos = spiritCentre + Vector3(sfrand(20.0f), sfrand(20.0f), sfrand(20.0f));
+    // The three sfrand calls stay in this order: they advance the RNG.
+    DirectX::XMFLOAT3 const scatter(sfrand(20.0f), sfrand(20.0f), sfrand(20.0f));
+    DirectX::XMStoreFloat3(&s->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&spiritCentre), DirectX::XMLoadFloat3(&scatter)));
     s->m_teamId = m_id.GetTeamId();
     s->Begin();
     s->m_state = Spirit::StateInStore;
@@ -120,8 +126,12 @@ bool Incubator::Advance()
 
 void Incubator::SpawnEntity()
 {
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  Matrix34 exit = m_exit->GetWorldMatrix(mat);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, and this
+  // one wants both the exit position and its facing.
+  Matrix34 const exit = m_exit->GetWorldMatrix(mat);
 
   //
   // Spawn the entity
@@ -133,7 +143,7 @@ void Incubator::SpawnEntity()
 
   //
   // Remove a spirit
-  Vector3 spiritPos;
+  DirectX::XMFLOAT3 spiritPos{0.0f, 0.0f, 0.0f};
   for (int i = 0; i < m_spirits.Size(); ++i)
   {
     if (m_spirits.ValidIndex(i))
@@ -156,9 +166,10 @@ void Incubator::SpawnEntity()
   int numFlashes = 4 + speciesRandom() % 4;
   for (int i = 0; i < numFlashes; ++i)
   {
-    Vector3 vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
+    // The three RNG calls stay in this order.
+    DirectX::XMFLOAT3 const vel(sfrand(15.0f), frand(35.0f), sfrand(15.0f));
     g_particleSystem->CreateParticle(exit.pos, vel, Particle::TypeControlFlash);
-    //g_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
+    // g_particleSystem->CreateParticle( spiritPos, vel, Particle::TypeControlFlash );
   }
 
   //
@@ -169,11 +180,17 @@ void Incubator::SpawnEntity()
 
 void Incubator::AddSpirit(Spirit* _spirit)
 {
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  Vector3 spiritCentre = m_spiritCentre->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const spiritCentre = m_spiritCentre->GetWorldMatrix(mat).pos;
 
   Spirit* s = m_spirits.GetPointer(m_spirits.GetNextFree());
-  s->m_pos = spiritCentre + Vector3(sfrand(20.0f), sfrand(20.0f), sfrand(20.0f));
+
+  // The three sfrand calls stay in this order: they advance the RNG.
+  DirectX::XMFLOAT3 const scatter(sfrand(20.0f), sfrand(20.0f), sfrand(20.0f));
+  DirectX::XMStoreFloat3(&s->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&spiritCentre), DirectX::XMLoadFloat3(&scatter)));
   s->m_teamId = _spirit->m_teamId;
   s->m_state = Spirit::StateInStore;
 
@@ -186,10 +203,13 @@ void Incubator::AddSpirit(Spirit* _spirit)
   g_soundSystem->TriggerBuildingEvent(SoundSourceOf(this), "AddSpirit");
 }
 
-void Incubator::GetDockPoint(Vector3& _pos, Vector3& _front)
+void Incubator::GetDockPoint(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  Matrix34 dock = m_dock->GetWorldMatrix(mat);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  Matrix34 const dock = m_dock->GetWorldMatrix(mat);
   _pos = dock.pos;
   _pos = PushFromBuilding(_pos, 5.0f);
   _front = dock.f;
@@ -248,8 +268,11 @@ void Incubator::RenderAlphas(float _predictionTime)
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Laser.bmp"));
 
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  Vector3 entrances[3];
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 entrances[3];
   entrances[0] = m_spiritEntrance[0]->GetWorldMatrix(mat).pos;
   entrances[1] = m_spiritEntrance[1]->GetWorldMatrix(mat).pos;
   entrances[2] = m_spiritEntrance[2]->GetWorldMatrix(mat).pos;
@@ -257,26 +280,28 @@ void Incubator::RenderAlphas(float _predictionTime)
   for (int i = 0; i < static_cast<int>(m_incoming.size()); ++i)
   {
     IncubatorIncoming* ii = m_incoming[i];
-    Vector3 fromPos = ii->m_pos;
-    Vector3 toPos = entrances[ii->m_entrance];
+    DirectX::XMVECTOR const fromPos = DirectX::XMLoadFloat3(&ii->m_pos);
+    DirectX::XMVECTOR const toPos = DirectX::XMLoadFloat3(&entrances[ii->m_entrance]);
 
-    Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
-    Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
-    Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
+    DirectX::XMVECTOR const midPoint = DirectX::XMVectorScale(DirectX::XMVectorAdd(fromPos, toPos), 0.5f);
 
-    rightAngle *= 1.5f;
+    // Camera's accessors are still legacy -- Species belongs to T22.
+    DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+    DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), midPoint);
+    DirectX::XMVECTOR const rightAngle =
+      DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camToMidPoint, DirectX::XMVectorSubtract(midPoint, toPos))), 1.5f);
 
     glColor4f(1.0f, 1.0f, 0.2f, ii->m_alpha);
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((fromPos - rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(fromPos, rightAngle));
     glTexCoord2i(0, 1);
-    glVertex3fv((fromPos + rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(fromPos, rightAngle));
     glTexCoord2i(1, 1);
-    glVertex3fv((toPos + rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorAdd(toPos, rightAngle));
     glTexCoord2i(1, 0);
-    glVertex3fv((toPos - rightAngle).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(toPos, rightAngle));
     glEnd();
   }
 

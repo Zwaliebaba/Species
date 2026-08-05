@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 
 #include <float.h>
 
@@ -58,7 +59,7 @@ GlobalInternet::GlobalInternet()
 GlobalInternet::~GlobalInternet() { DeleteInternet(); }
 
 
-unsigned short GlobalInternet::GenerateInternet(Vector3 const& _pos, unsigned char _size)
+unsigned short GlobalInternet::GenerateInternet(DirectX::XMFLOAT3 const& _pos, unsigned char _size)
 {
   GetHighResTime();
 
@@ -69,7 +70,7 @@ unsigned short GlobalInternet::GenerateInternet(Vector3 const& _pos, unsigned ch
   m_numNodes++;
   DEBUG_ASSERT(m_numNodes < GLOBALINTERNET_MAXNODES);
 
-  float distanceToCentre = _pos.Mag();
+  float distanceToCentre = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&_pos)));
   if (distanceToCentre < m_nearestDistance)
   {
     m_nearestDistance = distanceToCentre;
@@ -84,7 +85,7 @@ unsigned short GlobalInternet::GenerateInternet(Vector3 const& _pos, unsigned ch
     float z = sfrand(distance);
     float y = sfrand(distance);
     float x = sfrand(distance);
-    Vector3 newPos = _pos + Vector3(x, y, z);
+    DirectX::XMFLOAT3 const newPos(_pos.x + x, _pos.y + y, _pos.z + z);
     unsigned short newIndex = GenerateInternet(newPos, _size - 1);
     m_links[m_numLinks].m_from = nodeIndex;
     m_links[m_numLinks].m_to = newIndex;
@@ -110,12 +111,12 @@ void GlobalInternet::GenerateInternet()
   m_links = new GlobalInternetLink[GLOBALINTERNET_MAXLINKS];
   m_nodes = new GlobalInternetNode[GLOBALINTERNET_MAXNODES];
 
-  // Vector3 centre(200, 200, 200);
-  // Vector3 centre(449,1787,-139);
-  Vector3 centre(-797, 1949, -1135);
+  // XMFLOAT3 centre(200, 200, 200);
+  // XMFLOAT3 centre(449,1787,-139);
+  DirectX::XMFLOAT3 const centre(-797.0f, 1949.0f, -1135.0f);
   unsigned short firstNode = GenerateInternet(centre, GLOBALINTERNET_ITERATIONS);
 
-  m_nodes[m_numNodes].m_pos.Zero();
+  m_nodes[m_numNodes].m_pos = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_nodes[m_numNodes].m_size = 0.0f;
   unsigned short nodeIndex = m_numNodes;
   m_numNodes++;
@@ -236,22 +237,21 @@ void GlobalInternet::Render()
       GlobalInternetNode* from = &m_nodes[link->m_from];
       GlobalInternetNode* to = &m_nodes[link->m_to];
 
-      Vector3 fromPos = from->m_pos;
-      Vector3 toPos = to->m_pos;
-      Vector3 midPoint = (toPos + fromPos) / 2.0f;
-      Vector3 camToMidPoint = g_zeroVector - midPoint;
-      Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
-
-      rightAngle *= link->m_size * 0.5f;
+      DirectX::XMVECTOR const fromPos = DirectX::XMLoadFloat3(&from->m_pos);
+      DirectX::XMVECTOR const toPos = DirectX::XMLoadFloat3(&to->m_pos);
+      DirectX::XMVECTOR const midPoint = DirectX::XMVectorScale(DirectX::XMVectorAdd(toPos, fromPos), 0.5f);
+      DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorNegate(midPoint);
+      DirectX::XMVECTOR const rightAngle = DirectX::XMVectorScale(
+        DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camToMidPoint, DirectX::XMVectorSubtract(midPoint, toPos))), link->m_size * 0.5f);
 
       glTexCoord2i(0, 0);
-      glVertex3fv((fromPos - rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(fromPos, rightAngle));
       glTexCoord2i(0, 1);
-      glVertex3fv((fromPos + rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorAdd(fromPos, rightAngle));
       glTexCoord2i(1, 1);
-      glVertex3fv((toPos + rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorAdd(toPos, rightAngle));
       glTexCoord2i(1, 0);
-      glVertex3fv((toPos - rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(toPos, rightAngle));
     }
     glEnd();
 
@@ -279,19 +279,21 @@ void GlobalInternet::Render()
     {
       GlobalInternetNode* node = &m_nodes[i];
 
-      Vector3 camToMidPoint = (g_zeroVector - node->m_pos).Normalise();
-      Vector3 right = camToMidPoint ^ Vector3(0, 0, 1);
-      Vector3 up = right ^ camToMidPoint;
-      right *= nodeSize;
-      up *= nodeSize;
+      DirectX::XMVECTOR const nodePos = DirectX::XMLoadFloat3(&node->m_pos);
+      DirectX::XMVECTOR const camToMidPoint = DirectX::XMVector3Normalize(DirectX::XMVectorNegate(nodePos));
+      // up is crossed from the UNSCALED right, then both are scaled -- taking
+      // it from the scaled one would square nodeSize.
+      DirectX::XMVECTOR const rightAxis = DirectX::XMVector3Cross(camToMidPoint, DirectX::g_XMIdentityR2);
+      DirectX::XMVECTOR const right = DirectX::XMVectorScale(rightAxis, nodeSize);
+      DirectX::XMVECTOR const up = DirectX::XMVectorScale(DirectX::XMVector3Cross(rightAxis, camToMidPoint), nodeSize);
       glTexCoord2i(0, 0);
-      glVertex3fv((node->m_pos - up - right).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(nodePos, up), right));
       glTexCoord2i(1, 0);
-      glVertex3fv((node->m_pos - up + right).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(nodePos, up), right));
       glTexCoord2i(1, 1);
-      glVertex3fv((node->m_pos + up + right).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(nodePos, up), right));
       glTexCoord2i(0, 1);
-      glVertex3fv((node->m_pos + up - right).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(nodePos, up), right));
     }
     glEnd();
 
@@ -383,8 +385,12 @@ void GlobalInternet::RenderPackets()
   // Advance / render all packets
 
   float packetSize = 30.0f;
-  Vector3 camRight = g_camera->GetRight() * packetSize;
-  Vector3 camUp = g_camera->GetUp() * packetSize;
+  // CameraAccess::GetRight and GetUp still return Vector3 -- they are pure
+  // virtuals, so they move with their implementors in T12/T22, not here.
+  DirectX::XMFLOAT3 const cameraRight = g_camera->GetRight();
+  DirectX::XMFLOAT3 const cameraUp = g_camera->GetUp();
+  DirectX::XMVECTOR const camRight = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), packetSize);
+  DirectX::XMVECTOR const camUp = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), packetSize);
   float posChange = g_advanceTime;
 
   glColor4f(0.25f, 0.25f, 0.5f, 0.8f);
@@ -428,25 +434,30 @@ void GlobalInternet::RenderPackets()
 
       GlobalInternetNode* from = &m_nodes[link->m_from];
       GlobalInternetNode* to = &m_nodes[link->m_to];
-      Vector3 packetPos;
+      // Zeroed, and load-bearing: neither branch runs when packetVal is
+      // exactly 0, and Vector3's default constructor zeroed where XMVECTOR
+      // carries whatever was in the register.
+      DirectX::XMVECTOR packetPos = DirectX::XMVectorZero();
+      DirectX::XMVECTOR const fromPos = DirectX::XMLoadFloat3(&from->m_pos);
+      DirectX::XMVECTOR const toPos = DirectX::XMLoadFloat3(&to->m_pos);
       if (packetVal > 0.0f)
       {
-        packetPos = to->m_pos + (from->m_pos - to->m_pos) * packetVal;
+        packetPos = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorSubtract(fromPos, toPos), DirectX::XMVectorReplicate(packetVal), toPos);
       }
       else if (packetVal < 0.0f)
       {
-        packetPos = from->m_pos + (to->m_pos - from->m_pos) * -packetVal;
+        packetPos = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorSubtract(toPos, fromPos), DirectX::XMVectorReplicate(-packetVal), fromPos);
       }
 
       glBegin(GL_QUADS);
       glTexCoord2i(0, 0);
-      glVertex3fv((packetPos - camUp - camRight).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(packetPos, camUp), camRight));
       glTexCoord2i(1, 0);
-      glVertex3fv((packetPos - camUp + camRight).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(packetPos, camUp), camRight));
       glTexCoord2i(1, 1);
-      glVertex3fv((packetPos + camUp + camRight).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(packetPos, camUp), camRight));
       glTexCoord2i(0, 1);
-      glVertex3fv((packetPos + camUp - camRight).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(packetPos, camUp), camRight));
       glEnd();
     }
   }

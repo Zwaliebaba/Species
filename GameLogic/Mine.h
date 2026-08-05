@@ -20,8 +20,11 @@ class MineBuilding : public Building
     ShapeMarker* m_trackMarker1;
     ShapeMarker* m_trackMarker2;
 
-    Matrix34 m_trackMatrix1;
-    Matrix34 m_trackMatrix2;
+    // RENAMED FROM m_trackMatrix1/2, which were Matrix34 caches whose only
+    // read was .pos -- the matrix half was never used. Storing an XMFLOAT4X4
+    // to fish three floats out of row 3 would have kept a name that lies.
+    DirectX::XMFLOAT3 m_trackPosition1{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_trackPosition2{0.0f, 0.0f, 0.0f};
 
     std::vector<MineCart*> m_carts;
 
@@ -52,8 +55,8 @@ class MineBuilding : public Building
     void RenderAlphas(float _predictionTime);
     void RenderCart(MineCart* _cart, float _predictionTime);
 
-    Vector3 GetTrackMarker1();
-    Vector3 GetTrackMarker2();
+    DirectX::XMFLOAT3 GetTrackMarker1();
+    DirectX::XMFLOAT3 GetTrackMarker2();
 
     virtual void TriggerCart(MineCart* _cart, float _initValue);
 

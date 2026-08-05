@@ -4,6 +4,7 @@
 
 #include "SliceWalker.h"
 #include "SlotMap.h"
+#include "NeuronMath.h"
 #include "Vector3.h"
 
 #include "Landscape.h"
@@ -67,7 +68,7 @@ class Location : public LocationAccess
 
     void DoMissionCompleteActions();
 
-    Vector3 FindValidSpawnPosition(Vector3 const& _pos, float _spread);
+    DirectX::XMFLOAT3 FindValidSpawnPosition(DirectX::XMFLOAT3 const& _pos, float _spread);
 
   public:
     Landscape m_landscape;
@@ -112,38 +113,39 @@ class Location : public LocationAccess
 
     void RemoveTeam(unsigned char _teamId);
 
-    int GetBuildingId(Vector3 const& startRay, Vector3 const& direction, unsigned char teamId, float _maxDistance = FLT_MAX, float* _range = nullptr);
-    int GetUnitId(Vector3 const& startRay, Vector3 const& direction, unsigned char teamId, float* _range = nullptr);
-    WorldObjectId GetEntityId(Vector3 const& startRay, Vector3 const& direction, unsigned char teamId, float* _range = nullptr);
+    int GetBuildingId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 const& direction, unsigned char teamId, float _maxDistance = FLT_MAX,
+                      float* _range = nullptr);
+    int GetUnitId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 const& direction, unsigned char teamId, float* _range = nullptr);
+    WorldObjectId GetEntityId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 const& direction, unsigned char teamId, float* _range = nullptr);
 
-    bool IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evaluateCliffs = false);
-    bool IsVisible(Vector3 const& _from, Vector3 const& _to);
+    bool IsWalkable(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to, bool _evaluateCliffs = false);
+    bool IsVisible(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to);
 
     void UpdateTeam(unsigned char teamId, TeamControls const& teamControls);
 
-    int SpawnSpirit(Vector3 const& _pos, Vector3 const& _vel, unsigned char _teamId, WorldObjectId _id);
-    void ThrowWeapon(Vector3 const& _pos, Vector3 const& _target, int _type, unsigned char _fromTeamId);
-    void FireRocket(Vector3 const& _pos, Vector3 const& _target, unsigned char _fromTeamId);
-    void FireLaser(Vector3 const& _pos, Vector3 const& _vel, unsigned char _fromTeamId);
-    void FireTurretShell(Vector3 const& _pos, Vector3 const& _vel);
-    void Bang(Vector3 const& _pos, float _range, float _damage);
-    void CreateShockwave(Vector3 const& _pos, float _size, unsigned char _teamId = 255);
+    int SpawnSpirit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, unsigned char _teamId, WorldObjectId _id);
+    void ThrowWeapon(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _target, int _type, unsigned char _fromTeamId);
+    void FireRocket(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _target, unsigned char _fromTeamId);
+    void FireLaser(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, unsigned char _fromTeamId);
+    void FireTurretShell(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel);
+    void Bang(DirectX::XMFLOAT3 const& _pos, float _range, float _damage);
+    void CreateShockwave(DirectX::XMFLOAT3 const& _pos, float _size, unsigned char _teamId = 255);
 
     bool MissionComplete();
 
     void AdvanceChristmas();
     static int ChristmasModEnabled(); // 0 = unavailable, 1 = enabled, 2 = disabled
 
-    WorldObjectId SpawnEntities(Vector3 const& _pos, unsigned char _teamId, int _unitId, unsigned char _type, int _numEntities, Vector3 const& _vel,
-                                float _spread, float _range = -1.0f, int _routeId = -1, int _routeWaypointId = -1);
+    WorldObjectId SpawnEntities(DirectX::XMFLOAT3 const& _pos, unsigned char _teamId, int _unitId, unsigned char _type, int _numEntities,
+                                DirectX::XMFLOAT3 const& _vel, float _spread, float _range = -1.0f, int _routeId = -1, int _routeWaypointId = -1);
 
     int GetSpirit(WorldObjectId _id);
 
     bool IsFriend(unsigned char _teamId1, unsigned char _teamId2);
 
     Team* GetMyTeam();
-    Entity* GetEntity(Vector3 const& _rayStart, Vector3 const& _rayDir);
-    Building* GetBuilding(Vector3 const& _rayStart, Vector3 const& _rayDir);
+    Entity* GetEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir);
+    Building* GetBuilding(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir);
 
     WorldObject* GetWorldObject(WorldObjectId _id);
     Entity* GetEntity(WorldObjectId _id);
@@ -163,5 +165,9 @@ class Location : public LocationAccess
 
     float GroundHeight(float _worldX, float _worldZ) override;
     bool WorldObjectExists(WorldObjectId const& _id) override;
+    // STAYS LEGACY UNTIL T12. This overrides LocationAccess::GetSoundSource,
+    // and an override must match its base exactly -- no implicit conversion is
+    // consulted, so the two signatures move in one commit or not at all. T12
+    // owns the base and depends on this task; see its notes.
     bool GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* _vel) override;
 };

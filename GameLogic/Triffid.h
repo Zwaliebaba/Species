@@ -8,62 +8,63 @@
 
 class Triffid : public Building
 {
-protected:
-    ShapeMarker     *m_launchPoint;
-    ShapeMarker     *m_stem;
-    float           m_timerSync;
-    float           m_damage;
-    bool            m_triggered;
-    float           m_triggerTimer;
-    bool            m_renderDamaged;
+  protected:
+    ShapeMarker* m_launchPoint;
+    ShapeMarker* m_stem;
+    float m_timerSync;
+    float m_damage;
+    bool m_triggered;
+    float m_triggerTimer;
+    bool m_renderDamaged;
 
-public:
+  public:
     enum
     {
-        SpawnVirii,
-        SpawnCentipede,
-        SpawnSpider,
-        SpawnSpirits,
-        SpawnEggs,
-        SpawnTriffidEggs,
-        SpawnCitizens,
-        NumSpawnTypes
+      SpawnVirii,
+      SpawnCentipede,
+      SpawnSpider,
+      SpawnSpirits,
+      SpawnEggs,
+      SpawnTriffidEggs,
+      SpawnCitizens,
+      NumSpawnTypes
     };
 
-    bool            m_spawn[NumSpawnTypes];
-    float           m_size;
-    float           m_reloadTime;
-    float           m_pitch;
-    float           m_force;
-    float           m_variance;                 // Horizontal
+    bool m_spawn[NumSpawnTypes];
+    float m_size;
+    float m_reloadTime;
+    float m_pitch;
+    float m_force;
+    float m_variance; // Horizontal
 
-    int             m_useTrigger;               // Num enemies required to trigger
-    Vector3         m_triggerLocation;          // Offset from m_pos
-    float           m_triggerRadius;
+    int m_useTrigger; // Num enemies required to trigger
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+    DirectX::XMFLOAT3 m_triggerLocation{0.0f, 0.0f, 0.0f}; // Offset from m_pos
+    float m_triggerRadius;
 
-    Matrix34        GetHead();                  // So to speak
+    DirectX::XMFLOAT4X4 GetHead(); // So to speak
 
-public:
+  public:
     Triffid();
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
-    void Launch         ();
-    void Render         ( float _predictionTime );
-    void RenderAlphas   ( float _predictionTime );
+    void Initialise(Building* _template);
+    bool Advance();
+    void Launch();
+    void Render(float _predictionTime);
+    void RenderAlphas(float _predictionTime);
 
-    void Damage         ( float _damage );
+    void Damage(float _damage);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
-    bool DoesRayHit     (Vector3 const &_rayStart, Vector3 const &_rayDir,
-                         float _rayLen=1e10, Vector3 *_pos=nullptr, Vector3 *_norm=nullptr);
+    bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen = 1e10, DirectX::XMFLOAT3* _pos = nullptr,
+                    DirectX::XMFLOAT3* _norm = nullptr);
 
-    static char const *GetSpawnName( int _spawnType );
-    static char const *GetSpawnNameTranslated( int _spawnType );
+    static char const* GetSpawnName(int _spawnType);
+    static char const* GetSpawnNameTranslated(int _spawnType);
 
-    void Read   ( TextReader *_in, bool _dynamic );
-    void Write  ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 };
 
 
@@ -74,27 +75,27 @@ public:
 
 class TriffidEgg : public Entity
 {
-protected:
-    Vector3     m_up;
-    float       m_force;
-    float       m_timerSync;
-    float       m_life;
+  protected:
+    // TriffidEgg's own basis. Braced to zero for the same reason as above.
+    DirectX::XMFLOAT3 m_up{0.0f, 0.0f, 0.0f};
+    float m_force;
+    float m_timerSync;
+    float m_life;
 
-public:
-    float       m_size;
-    int         m_spawnType;
-    Vector3     m_spawnPoint;
-    float       m_spawnRange;
+  public:
+    float m_size;
+    int m_spawnType;
+    DirectX::XMFLOAT3 m_spawnPoint{0.0f, 0.0f, 0.0f};
+    float m_spawnRange;
 
-public:
+  public:
     TriffidEgg();
 
-    void ChangeHealth       ( int _amount );
-    void Spawn              ();
-    bool Advance            ( Unit *_unit );
-    void Render             ( float _predictionTime );
-    bool RenderPixelEffect  ( float _predictionTime );
+    void ChangeHealth(int _amount);
+    void Spawn();
+    bool Advance(Unit* _unit);
+    void Render(float _predictionTime);
+    bool RenderPixelEffect(float _predictionTime);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 };
-

@@ -15,15 +15,16 @@
 
 Clouds::Clouds()
 {
-  m_offset.Set(0.0f, 0.0f, 0.0f);
-  m_vel.Set(0.04f, 0.0f, 0.0f);
+  m_offset = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+  m_vel = DirectX::XMFLOAT3(0.04f, 0.0f, 0.0f);
 }
 
 
 void Clouds::Advance()
 {
-  m_vel.Set(0.03f, 0.0f, -0.01f);
-  m_offset += m_vel * SERVER_ADVANCE_PERIOD;
+  m_vel = DirectX::XMFLOAT3(0.03f, 0.0f, -0.01f);
+  DirectX::XMStoreFloat3(&m_offset, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                 DirectX::XMLoadFloat3(&m_offset)));
 }
 
 
@@ -99,7 +100,9 @@ void Clouds::RenderFlat(float _predictionTime)
 
   int cloudDetail = g_prefsManager->GetInt("RenderCloudDetail", 1);
 
-  Vector3 offset = m_offset + m_vel * _predictionTime;
+  DirectX::XMFLOAT3 offset;
+  DirectX::XMStoreFloat3(&offset, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                               DirectX::XMLoadFloat3(&m_offset)));
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture("Textures/Clouds.bmp"));
@@ -156,7 +159,9 @@ void Clouds::RenderBlobby(float _predictionTime)
   float zEnd = 1000.0f + 1000.0f * r;
   float detail = 9.0f;
 
-  Vector3 offset = m_offset + m_vel * _predictionTime;
+  DirectX::XMFLOAT3 offset;
+  DirectX::XMStoreFloat3(&offset, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                               DirectX::XMLoadFloat3(&m_offset)));
 
   int cloudDetail = g_prefsManager->GetInt("RenderCloudDetail", 1);
 

@@ -1,11 +1,12 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include <math.h>
 
 #include "MathUtils.h"
 #include "Resource.h"
-#include "Matrix34.h"
+#include "NeuronMath.h"
 #include "Shape.h"
 #include "Debug.h"
 #include "TextRenderer.h"
@@ -46,7 +47,8 @@ Engineer::Engineer()
 
   m_shape = g_resource->GetShape("Engineer.shp");
 
-  Matrix34 mat(Vector3(0, 0, 1), g_upVector, g_zeroVector);
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::g_XMIdentityR2, DirectX::g_XMIdentityR1, DirectX::XMVectorZero()));
   m_centrePos = m_shape->CalculateCentre(mat);
   m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 }
@@ -60,7 +62,7 @@ void Engineer::Begin()
 }
 
 
-void Engineer::SetWaypoint(Vector3 const& _wayPoint)
+void Engineer::SetWaypoint(DirectX::XMFLOAT3 const& _wayPoint)
 {
   m_retargetTimer = 0.0f;
   m_wayPoint = _wayPoint;
@@ -105,7 +107,8 @@ bool Engineer::SearchForSpirits()
       if (g_location->m_spirits.ValidIndex(i))
       {
         Spirit* s = g_location->m_spirits.GetPointer(i);
-        float theDist = (s->m_pos - m_pos).Mag();
+        float theDist =
+          DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&s->m_pos), DirectX::XMLoadFloat3(&m_pos))));
 
         if (theDist <= ENGINEER_SEARCHRANGE && theDist < closest && (s->m_state == Spirit::StateBirth || s->m_state == Spirit::StateFloating))
         {
@@ -141,10 +144,13 @@ bool Engineer::SearchForControlTowers()
       if (building->m_type == Building::TypeControlTower)
       {
         ControlTower* ct = (ControlTower*)building;
-        Vector3 pos, front;
-        if ((ct->m_id.GetTeamId() != m_id.GetTeamId() || ct->m_ownership < 100.0f) && ct->GetAvailablePosition(pos, front) != -1)
+        // ControlTower converts in T16, so its out-parameters are still legacy.
+        DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 front{0.0f, 0.0f, 0.0f};
+        if ((ct->m_id.GetTeamId() != m_id.GetTeamId() || ct->m_ownership < 100.0f) && ct->GetAvailablePosition(AsLegacy(pos), AsLegacy(front)) != -1)
         {
-          float theDist = (building->m_pos - m_pos).Mag();
+          float theDist = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
           if (theDist <= ENGINEER_SEARCHRANGE && theDist < closest)
           {
             buildingIndex = i;
@@ -180,9 +186,13 @@ bool Engineer::SearchForBridges()
       if (building->m_type == Building::TypeBridge)
       {
         Bridge* bridge = (Bridge*)building;
-        Vector3 pos, front;
-        float theDist = (building->m_pos - m_pos).Mag();
-        if (bridge->GetAvailablePosition(pos, front) && bridge->m_status < 100.0f && theDist <= ENGINEER_SEARCHRANGE && theDist < closest)
+        // Bridge converts in T17; same seam.
+        DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 front{0.0f, 0.0f, 0.0f};
+        float theDist = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
+        if (bridge->GetAvailablePosition(AsLegacy(pos), AsLegacy(front)) && bridge->m_status < 100.0f && theDist <= ENGINEER_SEARCHRANGE &&
+            theDist < closest)
         {
           buildingIndex = i;
           closest = theDist;
@@ -216,7 +226,8 @@ bool Engineer::SearchForResearchItems()
       if (building->m_type == Building::TypeResearchItem)
       {
         ResearchItem* item = (ResearchItem*)building;
-        float theDist = (building->m_pos - m_pos).Mag();
+        float theDist = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
         if (item->NeedsReprogram() && theDist <= ENGINEER_SEARCHRANGE && theDist < closest)
         {
           buildingIndex = i;
@@ -230,8 +241,13 @@ bool Engineer::SearchForResearchItems()
   {
     Building* building = g_location->m_buildings[buildingIndex];
     m_buildingId = building->m_id.GetUniqueId();
-    Vector3 usToThem = (building->m_pos - m_pos).SetLength(35.0f);
-    m_targetPos = building->m_pos - usToThem;
+    // SetLength(35) on a zero-length delta left (35,0,0); native normalise
+    // gives zero, so an engineer standing exactly on a building targets the
+    // building itself rather than a point 35 units along +x.
+    DirectX::XMVECTOR const buildingPos = DirectX::XMLoadFloat3(&building->m_pos);
+    DirectX::XMVECTOR const usToThem =
+      DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(buildingPos, DirectX::XMLoadFloat3(&m_pos))), 35.0f);
+    DirectX::XMStoreFloat3(&m_targetPos, DirectX::XMVectorSubtract(buildingPos, usToThem));
     m_targetPos.y = g_location->m_landscape.m_heightMap->GetValue(m_targetPos.x, m_targetPos.z);
     m_targetPos.y += m_hoverHeight;
     m_state = StateToResearchItem;
@@ -266,7 +282,7 @@ void Engineer::ChangeHealth(int amount)
     else
     {
       m_stats[StatHealth] += amount;
-      g_particleSystem->CreateParticle(m_pos, g_zeroVector, Particle::TypeMuzzleFlash);
+      g_particleSystem->CreateParticle(m_pos, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), Particle::TypeMuzzleFlash);
     }
 
     int healthBandAfter = int(m_stats[StatHealth] / 50.0f);
@@ -277,7 +293,9 @@ void Engineer::ChangeHealth(int amount)
 
     if (fractionDead == 1.0f || healthBandAfter < healthBandBefore)
     {
-      Matrix34 transform(m_front, g_upVector, m_pos);
+      DirectX::XMFLOAT4X4 transform;
+      DirectX::XMStoreFloat4x4(&transform,
+                               BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
       g_explosionManager.AddExplosion(m_shape, transform, fractionDead);
     }
   }
@@ -376,11 +394,11 @@ bool Engineer::Advance(Unit* _unit)
   //
   // Update position history
 
-  m_positionHistory.insert(m_positionHistory.begin(), new Vector3(m_pos));
+  m_positionHistory.insert(m_positionHistory.begin(), new DirectX::XMFLOAT3(m_pos));
   int maxSpirits = GetMaxSpirits();
   while (ValidIndex(m_positionHistory, maxSpirits + 1))
   {
-    Vector3* position = m_positionHistory[maxSpirits + 1];
+    DirectX::XMFLOAT3* position = m_positionHistory[maxSpirits + 1];
     m_positionHistory.erase(m_positionHistory.begin() + maxSpirits + 1);
     delete position;
   }
@@ -400,7 +418,9 @@ bool Engineer::Advance(Unit* _unit)
         if (ValidIndex(m_positionHistory, i + 1))
         {
           s->m_pos = *m_positionHistory[i + 1];
-          s->m_vel = (*m_positionHistory[i] - *m_positionHistory[i + 1]) / SERVER_ADVANCE_PERIOD;
+          DirectX::XMStoreFloat3(&s->m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(m_positionHistory[i]),
+                                                                                             DirectX::XMLoadFloat3(m_positionHistory[i + 1])),
+                                                                   1.0f / SERVER_ADVANCE_PERIOD));
         }
       }
     }
@@ -443,7 +463,8 @@ bool Engineer::Advance(Unit* _unit)
   Bridge* bridge = (Bridge*)g_location->GetBuilding(m_bridgeId);
   if (bridge && bridge->m_type == Building::TypeBridge)
   {
-    float range = (bridge->m_pos - m_pos).Mag();
+    float range = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&bridge->m_pos), DirectX::XMLoadFloat3(&m_pos))));
     if (range > 100.0f)
     {
       EndBridge();
@@ -456,43 +477,53 @@ bool Engineer::Advance(Unit* _unit)
 
 bool Engineer::AdvanceToTargetPos()
 {
-  Vector3 distance = (m_targetPos - m_pos);
-  distance.y = 0.0f;
+  DirectX::XMVECTOR const toTarget = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_targetPos), DirectX::XMLoadFloat3(&m_pos));
+  DirectX::XMVECTOR const distance = DirectX::XMVectorSetY(toTarget, 0.0f);
+  float const distanceLength = DirectX::XMVectorGetX(DirectX::XMVector3Length(distance));
 
-  if (distance.Mag() > 5.0f)
+  if (distanceLength > 5.0f)
   {
-    Vector3 oldPos = m_pos;
+    DirectX::XMFLOAT3 const oldPos = m_pos;
 
     float amountToTurn = SERVER_ADVANCE_PERIOD * 3.0f;
-    Vector3 targetDir = (m_targetPos - m_pos).Normalise();
-    Vector3 actualDir = m_front * (1.0f - amountToTurn) + targetDir * amountToTurn;
-    actualDir.Normalise();
 
-    float desiredSpeed = distance.Mag();
+    // targetDir is normalised from the UNFLATTENED delta -- the y component
+    // was dropped for the distance test only, and reproducing that split
+    // matters because the engineer hovers.
+    DirectX::XMVECTOR const targetDir = DirectX::XMVector3Normalize(toTarget);
+    DirectX::XMVECTOR const actualDir = DirectX::XMVector3Normalize(DirectX::XMVectorMultiplyAdd(
+      targetDir, DirectX::XMVectorReplicate(amountToTurn), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_front), 1.0f - amountToTurn)));
+
+    float desiredSpeed = distanceLength;
     desiredSpeed = std::min(desiredSpeed, static_cast<float>(m_stats[StatSpeed]));
     if (m_state == StateIdle)
       desiredSpeed *= 0.25f;
 
-    Vector3 newPos = m_pos + actualDir * desiredSpeed * SERVER_ADVANCE_PERIOD;
+    DirectX::XMFLOAT3 newPos;
+    DirectX::XMStoreFloat3(&newPos, DirectX::XMVectorMultiplyAdd(actualDir, DirectX::XMVectorReplicate(desiredSpeed * SERVER_ADVANCE_PERIOD),
+                                                                 DirectX::XMLoadFloat3(&m_pos)));
     newPos = PushFromObstructions(newPos);
 
-    Vector3 moved = newPos - oldPos;
-    if (moved.Mag() > desiredSpeed * SERVER_ADVANCE_PERIOD)
-      moved.SetLength(desiredSpeed * SERVER_ADVANCE_PERIOD);
-    newPos = m_pos + moved;
+    DirectX::XMVECTOR moved = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&newPos), DirectX::XMLoadFloat3(&oldPos));
+    if (DirectX::XMVectorGetX(DirectX::XMVector3Length(moved)) > desiredSpeed * SERVER_ADVANCE_PERIOD)
+    {
+      moved = DirectX::XMVectorScale(DirectX::XMVector3Normalize(moved), desiredSpeed * SERVER_ADVANCE_PERIOD);
+    }
+    DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), moved));
 
-    m_pos = newPos;
     float targetHeight = std::max(g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z), 0.0f) + m_hoverHeight;
     m_pos.y = targetHeight;
-    m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
-    m_front = m_vel;
-    m_front.Normalise();
+
+    DirectX::XMVECTOR const velocity =
+      DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos)), 1.0f / SERVER_ADVANCE_PERIOD);
+    DirectX::XMStoreFloat3(&m_vel, velocity);
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Normalize(velocity));
 
     return false;
   }
   else
   {
-    m_vel.Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     // if( m_targetFront != g_zeroVector ) m_front = m_targetFront;
     return true;
   }
@@ -504,7 +535,8 @@ bool Engineer::SearchForRandomPosition()
   float distance = 30.0f;
   float angle = syncsfrand(2.0f * M_PI);
 
-  m_targetPos = m_pos + Vector3(sinf(angle) * distance, 0.0f, cosf(angle) * distance);
+  DirectX::XMStoreFloat3(&m_targetPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos),
+                                                            DirectX::XMVectorSet(sinf(angle) * distance, 0.0f, cosf(angle) * distance, 0.0f)));
 
   return true;
 }
@@ -562,7 +594,7 @@ bool Engineer::AdvanceIdle()
 bool Engineer::AdvanceToWaypoint()
 {
   m_targetPos = m_wayPoint;
-  m_targetFront.Zero();
+  m_targetFront = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
   bool arrived = AdvanceToTargetPos();
   if (arrived)
@@ -588,7 +620,7 @@ bool Engineer::AdvanceToSpirit()
   }
 
   m_targetPos = s->m_pos;
-  m_targetFront.Zero();
+  m_targetFront = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   bool arrived = AdvanceToTargetPos();
   if (arrived)
   {
@@ -627,7 +659,8 @@ bool Engineer::SearchForIncubator()
       Building* building = g_location->m_buildings[i];
       if (building->m_type == Building::TypeIncubator && g_location->IsFriend(building->m_id.GetTeamId(), m_id.GetTeamId()))
       {
-        float distance = (building->m_pos - m_pos).Mag();
+        float distance = DirectX::XMVectorGetX(
+          DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&m_pos))));
         int population = ((Incubator*)building)->NumSpiritsInside();
         distance += population * 10;
 
@@ -662,7 +695,8 @@ bool Engineer::AdvanceToIncubator()
   }
 
 
-  incubator->GetDockPoint(m_targetPos, m_targetFront);
+  // Incubator converts in T17; its out-parameters are still legacy.
+  incubator->GetDockPoint(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
   bool arrived = AdvanceToTargetPos();
   if (arrived)
   {
@@ -701,7 +735,8 @@ bool Engineer::AdvanceToControlTower()
   DEBUG_ASSERT(building->m_type == Building::TypeControlTower);
 
   ControlTower* ct = (ControlTower*)building;
-  int positionId = ct->GetAvailablePosition(m_targetPos, m_targetFront);
+  // ControlTower converts in T16; same seam.
+  int positionId = ct->GetAvailablePosition(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
 
   if ((ct->m_id.GetTeamId() == m_id.GetTeamId() && ct->m_ownership >= 100.0f) || positionId == -1)
   {
@@ -766,17 +801,30 @@ bool Engineer::AdvanceResearching()
   //
   // Spark
 
-  Vector3 end1, end2;
-  item->GetEndPositions(end1, end2);
+  // ResearchItem converts in T16, so its out-parameters are still legacy.
+  DirectX::XMFLOAT3 end1{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 end2{0.0f, 0.0f, 0.0f};
+  item->GetEndPositions(AsLegacy(end1), AsLegacy(end2));
+
   float time = g_gameTime + m_id.GetIndex();
-  Vector3 toPos = end1;
-  toPos += (end2 - end1) / 2.0f;
-  toPos += (end2 - end1) * sinf(time) * 0.5f;
+  DirectX::XMVECTOR const span = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&end2), DirectX::XMLoadFloat3(&end1));
+
+  DirectX::XMFLOAT3 toPos;
+  DirectX::XMStoreFloat3(
+    &toPos, DirectX::XMVectorMultiplyAdd(span, DirectX::XMVectorReplicate(sinf(time) * 0.5f),
+                                         DirectX::XMVectorMultiplyAdd(span, DirectX::XMVectorReplicate(0.5f), DirectX::XMLoadFloat3(&end1))));
 
   for (int i = 0; i < 2; ++i)
   {
-    Vector3 particleVel = m_pos - toPos;
-    particleVel += Vector3(sfrand() * 15.0f, frand() * 10.0f, sfrand() * 15.0f);
+    // Three unsynchronised draws per iteration, in order and count unchanged.
+    // frand/sfrand are the RENDER stream, not speciesRandom's.
+    float const scatterX = sfrand() * 15.0f;
+    float const scatterY = frand() * 10.0f;
+    float const scatterZ = sfrand() * 15.0f;
+
+    DirectX::XMFLOAT3 particleVel;
+    DirectX::XMStoreFloat3(&particleVel, DirectX::XMVectorAdd(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&toPos)),
+                                                              DirectX::XMVectorSet(scatterX, scatterY, scatterZ, 0.0f)));
     g_particleSystem->CreateParticle(toPos, particleVel, Particle::TypeBlueSpark);
   }
 
@@ -784,19 +832,28 @@ bool Engineer::AdvanceResearching()
   //
   // Make us float around a bit while we work
 
-  m_targetFront = (toPos - m_pos).Normalise();
-  Vector3 targetFront = m_targetFront;
-  m_front = (targetFront * SERVER_ADVANCE_PERIOD) + (m_front * (1.0f - SERVER_ADVANCE_PERIOD));
+  DirectX::XMStoreFloat3(&m_targetFront,
+                         DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&toPos), DirectX::XMLoadFloat3(&m_pos))));
+  DirectX::XMStoreFloat3(&m_front,
+                         DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front), DirectX::XMVectorReplicate(1.0f - SERVER_ADVANCE_PERIOD),
+                                                      DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_targetFront), SERVER_ADVANCE_PERIOD)));
 
-  Vector3 oldPos = m_pos;
-  Vector3 targetPos = m_targetPos;
-  Vector3 rightAngle = m_targetFront ^ g_upVector;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
+
+  DirectX::XMVECTOR const targetFrontAxis = DirectX::XMLoadFloat3(&m_targetFront);
+  DirectX::XMVECTOR const rightAngle = DirectX::XMVector3Cross(targetFrontAxis, DirectX::g_XMIdentityR1);
   float scale = 2.0f;
-  targetPos += m_targetFront * sinf(g_gameTime + m_id.GetUniqueId() * 10.0f) * scale;
-  targetPos += rightAngle * cosf(g_gameTime + m_id.GetUniqueId() * 10.0f) * scale * 1.5f;
 
-  m_pos = (targetPos * SERVER_ADVANCE_PERIOD) + (m_pos * (1.0f - SERVER_ADVANCE_PERIOD));
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+  DirectX::XMVECTOR targetPos = DirectX::XMLoadFloat3(&m_targetPos);
+  targetPos =
+    DirectX::XMVectorMultiplyAdd(targetFrontAxis, DirectX::XMVectorReplicate(sinf(g_gameTime + m_id.GetUniqueId() * 10.0f) * scale), targetPos);
+  targetPos =
+    DirectX::XMVectorMultiplyAdd(rightAngle, DirectX::XMVectorReplicate(cosf(g_gameTime + m_id.GetUniqueId() * 10.0f) * scale * 1.5f), targetPos);
+
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorReplicate(1.0f - SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMVectorScale(targetPos, SERVER_ADVANCE_PERIOD)));
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos)),
+                                                        1.0f / SERVER_ADVANCE_PERIOD));
 
   return false;
 }
@@ -834,27 +891,38 @@ bool Engineer::AdvanceReprogramming()
   //
   // Make us float around a bit while we work
 
-  Vector3 consolePos;
-  ct->GetConsolePosition(m_positionId, consolePos);
+  // ControlTower converts in T16, so this out-parameter is still legacy.
+  DirectX::XMFLOAT3 consolePos{0.0f, 0.0f, 0.0f};
+  ct->GetConsolePosition(m_positionId, AsLegacy(consolePos));
 
-  Vector3 targetFront = (consolePos - m_pos).Normalise();
-  m_front = (targetFront * SERVER_ADVANCE_PERIOD) + (m_front * (1.0f - SERVER_ADVANCE_PERIOD));
+  DirectX::XMVECTOR const targetFront =
+    DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&consolePos), DirectX::XMLoadFloat3(&m_pos)));
+  DirectX::XMStoreFloat3(&m_front,
+                         DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_front), DirectX::XMVectorReplicate(1.0f - SERVER_ADVANCE_PERIOD),
+                                                      DirectX::XMVectorScale(targetFront, SERVER_ADVANCE_PERIOD)));
 
-  Vector3 oldPos = m_pos;
-  Vector3 targetPos = m_targetPos;
-  Vector3 rightAngle = m_targetFront ^ g_upVector;
+  DirectX::XMFLOAT3 const oldPos = m_pos;
+
+  DirectX::XMVECTOR const targetFrontAxis = DirectX::XMLoadFloat3(&m_targetFront);
+  DirectX::XMVECTOR const rightAngle = DirectX::XMVector3Cross(targetFrontAxis, DirectX::g_XMIdentityR1);
   float scale = 2.0f;
-  targetPos += m_targetFront * sinf(g_gameTime + m_id.GetUniqueId() * 10.0f) * scale;
-  targetPos += rightAngle * cosf(g_gameTime + m_id.GetUniqueId() * 10.0f) * scale * 1.5f;
 
-  m_pos = (targetPos * SERVER_ADVANCE_PERIOD) + (m_pos * (1.0f - SERVER_ADVANCE_PERIOD));
-  m_vel = (m_pos - oldPos) / SERVER_ADVANCE_PERIOD;
+  DirectX::XMVECTOR targetPos = DirectX::XMLoadFloat3(&m_targetPos);
+  targetPos =
+    DirectX::XMVectorMultiplyAdd(targetFrontAxis, DirectX::XMVectorReplicate(sinf(g_gameTime + m_id.GetUniqueId() * 10.0f) * scale), targetPos);
+  targetPos =
+    DirectX::XMVectorMultiplyAdd(rightAngle, DirectX::XMVectorReplicate(cosf(g_gameTime + m_id.GetUniqueId() * 10.0f) * scale * 1.5f), targetPos);
+
+  DirectX::XMStoreFloat3(&m_pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorReplicate(1.0f - SERVER_ADVANCE_PERIOD),
+                                                              DirectX::XMVectorScale(targetPos, SERVER_ADVANCE_PERIOD)));
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), DirectX::XMLoadFloat3(&oldPos)),
+                                                        1.0f / SERVER_ADVANCE_PERIOD));
 
   return false;
 }
 
 
-void Engineer::BeginBridge(Vector3 _to)
+void Engineer::BeginBridge(DirectX::XMFLOAT3 _to)
 {
   int engineerLevel = g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeEngineer);
   if (engineerLevel < 5)
@@ -869,9 +937,9 @@ void Engineer::BeginBridge(Vector3 _to)
   //
   // Calculate the size of our bridge
 
-  Vector3 bridgeSpan(_to - m_wayPoint);
-  int numComponents = int(bridgeSpan.Mag() / 80.0f);
-  Vector3 componentSpan = bridgeSpan / (float)numComponents;
+  DirectX::XMVECTOR const bridgeSpan = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_to), DirectX::XMLoadFloat3(&m_wayPoint));
+  int numComponents = int(DirectX::XMVectorGetX(DirectX::XMVector3Length(bridgeSpan)) / 80.0f);
+  DirectX::XMVECTOR const componentSpan = DirectX::XMVectorScale(bridgeSpan, 1.0f / (float)numComponents);
 
   //
   // Create bridge towers
@@ -884,23 +952,34 @@ void Engineer::BeginBridge(Vector3 _to)
     g_location->m_buildings.PutData(component);
     component->m_id.SetUniqueId(g_globalWorld->GenerateBuildingId());
     component->m_nextBridgeId = linkBuildingId;
-    component->m_pos = m_wayPoint + componentSpan * (float)i;
-    component->m_pos += Vector3(syncsfrand(15.0f), 0.0f, syncsfrand(15.0f));
+    // Both draws stay, in order, one pair per component.
+    float const jitterX = syncsfrand(15.0f);
+    float const jitterZ = syncsfrand(15.0f);
+
+    DirectX::XMStoreFloat3(&component->m_pos, DirectX::XMVectorAdd(DirectX::XMVectorMultiplyAdd(componentSpan, DirectX::XMVectorReplicate((float)i),
+                                                                                                DirectX::XMLoadFloat3(&m_wayPoint)),
+                                                                   DirectX::XMVectorSet(jitterX, 0.0f, jitterZ, 0.0f)));
     component->m_pos.y = g_location->m_landscape.m_heightMap->GetValue(component->m_pos.x, component->m_pos.z);
-    component->m_front = (_to - m_wayPoint).Normalise();
+
+    // The legacy chain was: front = normalise(_to - m_wayPoint), then a
+    // quarter turn for the middle components or a half turn for the far end,
+    // then right = front x up and front = right x up. Kept whole -- the
+    // earlier conversion split the if/else and left an orphaned `else`.
+    DirectX::XMVECTOR bridgeFront = DirectX::XMVector3Normalize(bridgeSpan);
     if (i < numComponents && i > 0)
     {
-      component->m_front.RotateAroundY(0.5f * M_PI);
+      bridgeFront = DirectX::XMVector3Transform(bridgeFront, DirectX::XMMatrixRotationY(0.5f * M_PI));
     }
     else if (i == numComponents)
     {
-      component->m_front.RotateAroundY(M_PI);
+      bridgeFront = DirectX::XMVector3Transform(bridgeFront, DirectX::XMMatrixRotationY(M_PI));
     }
+
     component->m_id.SetTeamId(m_id.GetTeamId());
     linkBuildingId = component->m_id.GetUniqueId();
 
-    Vector3 right = component->m_front ^ g_upVector;
-    component->m_front = right ^ g_upVector;
+    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(bridgeFront, DirectX::g_XMIdentityR1);
+    DirectX::XMStoreFloat3(&component->m_front, DirectX::XMVector3Cross(right, DirectX::g_XMIdentityR1));
 
     if (i == numComponents || i == 0)
     {
@@ -940,7 +1019,8 @@ bool Engineer::AdvanceToBridge()
   if (building && building->m_type == Building::TypeBridge)
   {
     Bridge* bridge = (Bridge*)building;
-    bool positionAvailable = bridge->GetAvailablePosition(m_targetPos, m_targetFront);
+    // Bridge converts in T17; same seam.
+    bool positionAvailable = bridge->GetAvailablePosition(AsLegacy(m_targetPos), AsLegacy(m_targetFront));
     if (!positionAvailable)
     {
       m_state = StateIdle;
@@ -952,7 +1032,7 @@ bool Engineer::AdvanceToBridge()
       if (arrived)
       {
         m_state = StateOperatingBridge;
-        m_vel.Zero();
+        m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
         bridge->BeginOperation();
       }
     }
@@ -971,9 +1051,8 @@ bool Engineer::AdvanceOperatingBridge()
   Building* building = g_location->GetBuilding(m_buildingId);
   if (building && building->m_type == Building::TypeBridge)
   {
-    Vector3 front;
     Bridge* bridge = (Bridge*)building;
-    // Nothing to do really
+    // Nothing to do really -- `front` was declared and never used.
   }
   else
   {
@@ -1009,21 +1088,22 @@ bool Engineer::AdvanceToResearchItem()
   return false;
 }
 
-
 void Engineer::RenderShape(float predictionTime)
 {
-  Vector3 predictedPos = m_pos + m_vel * predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   if (m_onGround)
   {
     predictedPos.y = std::max(g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z), 0.0f /*sea level*/) + m_hoverHeight;
   }
 
-  Vector3 entityUp = g_upVector;
-  Vector3 entityFront = m_front;
-  entityFront.y *= 0.5f;
-  entityFront.Normalise();
-  Vector3 entityRight = entityFront ^ entityUp;
-  entityUp = entityRight ^ entityFront;
+  DirectX::XMFLOAT3 flattenedFront = m_front;
+  flattenedFront.y *= 0.5f;
+
+  DirectX::XMVECTOR entityFront = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&flattenedFront));
+  DirectX::XMVECTOR const entityRight = DirectX::XMVector3Cross(entityFront, DirectX::g_XMIdentityR1);
+  DirectX::XMVECTOR const entityUp = DirectX::XMVector3Cross(entityRight, entityFront);
 
   g_renderer->SetObjectLighting();
 
@@ -1032,11 +1112,13 @@ void Engineer::RenderShape(float predictionTime)
   glEnable(GL_COLOR_MATERIAL);
   glDisable(GL_BLEND);
 
-  if (entityFront.y > 0.5f)
+  if (DirectX::XMVectorGetY(entityFront) > 0.5f)
   {
-    entityFront.Set(1, 0, 0);
+    entityFront = DirectX::g_XMIdentityR0;
   }
-  Matrix34 mat(entityFront, entityUp, predictedPos);
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(entityFront, entityUp, DirectX::XMLoadFloat3(&predictedPos)));
   m_shape->Render(predictionTime, mat);
 
   glEnable(GL_BLEND);
@@ -1054,7 +1136,9 @@ void Engineer::Render(float predictionTime)
   //
   // Work out our predicted position and orientation
 
-  Vector3 predictedPos = m_pos + m_vel * predictionTime;
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(predictionTime),
+                                                                     DirectX::XMLoadFloat3(&m_pos)));
   if (m_onGround)
   {
     predictedPos.y = std::max(g_location->m_landscape.m_heightMap->GetValue(predictedPos.x, predictedPos.z), 0.0f /*sea level*/) + m_hoverHeight;
@@ -1075,8 +1159,8 @@ void Engineer::Render(float predictionTime)
 
   if (m_state == StateReprogramming || m_state == StateOperatingBridge || m_state == StateResearching)
   {
-    Vector3 fromPos = m_pos;
-    Vector3 toPos;
+    DirectX::XMFLOAT3 const fromPos = m_pos;
+    DirectX::XMFLOAT3 toPos{0.0f, 0.0f, 0.0f};
 
     Building* building = g_location->GetBuilding(m_buildingId);
     if (building)
@@ -1084,31 +1168,42 @@ void Engineer::Render(float predictionTime)
       if (building->m_type == Building::TypeControlTower)
       {
         ControlTower* tower = (ControlTower*)building;
-        tower->GetConsolePosition(m_positionId, toPos);
+        // ControlTower converts in T16; its out-parameter is still legacy.
+        tower->GetConsolePosition(m_positionId, AsLegacy(toPos));
       }
       else if (building->m_type == Building::TypeBridge)
       {
-        Vector3 front;
+        // Bridge converts in T17; same seam.
+        DirectX::XMFLOAT3 front{0.0f, 0.0f, 0.0f};
         Bridge* bridge = (Bridge*)building;
-        bridge->GetAvailablePosition(toPos, front);
+        bridge->GetAvailablePosition(AsLegacy(toPos), AsLegacy(front));
       }
       else if (building->m_type == Building::TypeResearchItem)
       {
         ResearchItem* item = (ResearchItem*)building;
-        Vector3 end1, end2;
-        item->GetEndPositions(end1, end2);
+        // ResearchItem converts in T16; same seam.
+        DirectX::XMFLOAT3 end1{0.0f, 0.0f, 0.0f};
+        DirectX::XMFLOAT3 end2{0.0f, 0.0f, 0.0f};
+        item->GetEndPositions(AsLegacy(end1), AsLegacy(end2));
+
         float time = g_gameTime + m_id.GetIndex();
-        toPos = end1;
-        toPos += (end2 - end1) / 2.0f;
-        toPos += (end2 - end1) * sinf(time) * 0.5f;
+        DirectX::XMVECTOR const span = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&end2), DirectX::XMLoadFloat3(&end1));
+        DirectX::XMStoreFloat3(
+          &toPos, DirectX::XMVectorMultiplyAdd(span, DirectX::XMVectorReplicate(sinf(time) * 0.5f),
+                                               DirectX::XMVectorMultiplyAdd(span, DirectX::XMVectorReplicate(0.5f), DirectX::XMLoadFloat3(&end1))));
       }
 
 
-      Vector3 midPoint = fromPos + (toPos - fromPos) / 2.0f;
-      Vector3 camToMidPoint = g_camera->GetPos() - midPoint;
-      Vector3 rightAngle = (camToMidPoint ^ (midPoint - toPos)).Normalise();
+      DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&fromPos);
+      DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&toPos);
+      DirectX::XMVECTOR const midPoint = DirectX::XMVectorScale(DirectX::XMVectorAdd(from, to), 0.5f);
 
-      rightAngle *= 0.5f;
+      // CameraAccess still returns a legacy vector; T12 converts it, behind T22.
+      DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+      DirectX::XMVECTOR const camToMidPoint = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&cameraPos), midPoint);
+
+      DirectX::XMVECTOR const rightAngle =
+        DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camToMidPoint, DirectX::XMVectorSubtract(midPoint, to))), 0.5f);
 
       glColor4f(0.2f, 0.4f, 1.0f, fabs(sinf(g_gameTime * 3.0f)));
 
@@ -1120,13 +1215,13 @@ void Engineer::Render(float predictionTime)
 
       glBegin(GL_QUADS);
       glTexCoord2i(0, 0);
-      glVertex3fv((fromPos - rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(from, rightAngle));
       glTexCoord2i(0, 1);
-      glVertex3fv((fromPos + rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorAdd(from, rightAngle));
       glTexCoord2i(1, 1);
-      glVertex3fv((toPos + rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorAdd(to, rightAngle));
       glTexCoord2i(1, 0);
-      glVertex3fv((toPos - rightAngle).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(to, rightAngle));
       glEnd();
 
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

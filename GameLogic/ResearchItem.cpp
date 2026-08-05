@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 
 #include "FileWriter.h"
@@ -37,7 +38,7 @@ ResearchItem::ResearchItem()
 
   SetShape(g_resource->GetShape("ResearchItem.shp"));
 
-  m_front.RotateAroundY(frand(2.0f * M_PI));
+  DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), DirectX::XMMatrixRotationY(frand(2.0f * M_PI))));
 
   m_end1 = m_shape->m_rootFragment->LookupMarker("MarkerGrab1");
   m_end2 = m_shape->m_rootFragment->LookupMarker("MarkerGrab2");
@@ -58,7 +59,7 @@ void ResearchItem::SetDetail(int _detail)
   m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
   m_pos.y += 20.0f;
 
-  Matrix34 mat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
   m_centrePos = m_shape->CalculateCentre(mat);
   m_radius = m_shape->CalculateRadius(mat, m_centrePos);
 }
@@ -66,18 +67,24 @@ void ResearchItem::SetDetail(int _detail)
 
 bool ResearchItem::Advance()
 {
-  if (m_vel.Mag() > 1.0f)
+  DirectX::XMVECTOR const vel = DirectX::XMLoadFloat3(&m_vel);
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Length(vel)) > 1.0f)
   {
-    m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+    DirectX::XMStoreFloat3(&m_pos,
+                           DirectX::XMVectorMultiplyAdd(vel, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos)));
     m_pos.y = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
-    m_vel *= (1.0f - SERVER_ADVANCE_PERIOD * 0.5f);
+    DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(vel, 1.0f - SERVER_ADVANCE_PERIOD * 0.5f));
 
-    Matrix34 mat(m_front, g_upVector, m_pos);
+    // g_upVector, not m_up: this one path deliberately re-levels the item as it
+    // settles, and BasisFromFrontAndUp is fed the world up rather than the
+    // building's own. GetWorldMatrix would quietly change that.
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
     m_centrePos = m_shape->CalculateCentre(mat);
   }
   else
   {
-    m_vel.Zero();
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   }
 
   if (m_researchType > -1 && g_globalWorld->m_research->HasResearch(m_researchType) &&
@@ -89,7 +96,7 @@ bool ResearchItem::Advance()
 
   if (m_reprogrammed <= 0.0f)
   {
-    Matrix34 mat(m_front, m_up, m_pos);
+    DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
     g_explosionManager.AddExplosion(m_shape, mat, 1.0f);
 
     int existingLevel = g_globalWorld->m_research->CurrentLevel(m_researchType);
@@ -126,10 +133,11 @@ bool ResearchItem::Reprogram()
 }
 
 
-void ResearchItem::GetEndPositions(Vector3& _end1, Vector3& _end2)
+void ResearchItem::GetEndPositions(DirectX::XMFLOAT3& _end1, DirectX::XMFLOAT3& _end2)
 {
-  Matrix34 mat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   _end1 = m_end1->GetWorldMatrix(mat).pos;
   _end2 = m_end2->GetWorldMatrix(mat).pos;
 }
@@ -140,23 +148,40 @@ void ResearchItem::Render(float _predictionTime)
   if (m_reprogrammed <= 0.0f)
     return;
 
-  Vector3 rotateAround = g_upVector;
-  rotateAround.RotateAroundX(g_gameTime * 1.0f);
-  rotateAround.RotateAroundZ(g_gameTime * 0.7f);
-  rotateAround.Normalise();
+  DirectX::XMVECTOR rotateAround = DirectX::g_XMIdentityR1;
+  rotateAround = DirectX::XMVector3Transform(rotateAround, DirectX::XMMatrixRotationX(g_gameTime * 1.0f));
+  rotateAround = DirectX::XMVector3Transform(rotateAround, DirectX::XMMatrixRotationZ(g_gameTime * 0.7f));
+  rotateAround = DirectX::XMVector3Normalize(rotateAround);
 
-  m_front.RotateAround(rotateAround * g_advanceTime);
-  m_up.RotateAround(rotateAround * g_advanceTime);
+  // RotateAround's angle is the vector's magnitude, with the same 1e-8 guard.
+  // rotateAround is unit length above, so the angle here is just g_advanceTime,
+  // but the guard is kept rather than assumed away -- g_advanceTime is zero
+  // while the game is paused, and the legacy code returned untouched then.
+  DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(rotateAround, g_advanceTime);
+  float const rotationLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+  if (rotationLengthSquared >= 1e-8f)
+  {
+    float const angle = sqrtf(rotationLengthSquared);
+    DirectX::XMMATRIX const spin = DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / angle), angle);
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_front), spin));
+    DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_up), spin));
+  }
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
-  Matrix34 mat(m_front, m_up, predictedPos);
+  DirectX::XMVECTOR const predicted =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos));
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, predicted);
+
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), predicted));
 
   m_shape->Render(0.0f, mat);
 
   if (g_editing && m_researchType != -1)
   {
-    g_gameFont.DrawText3DCentre(predictedPos + Vector3(0, 25, 0), 5, GlobalResearch::GetTypeName(m_researchType));
-    g_gameFont.DrawText3DCentre(predictedPos + Vector3(0, 20, 0), 5, "%2.2f", m_reprogrammed);
+    g_gameFont.DrawText3DCentre(DirectX::XMFLOAT3(predictedPos.x, predictedPos.y + 25.0f, predictedPos.z), 5,
+                                GlobalResearch::GetTypeName(m_researchType));
+    g_gameFont.DrawText3DCentre(DirectX::XMFLOAT3(predictedPos.x, predictedPos.y + 20.0f, predictedPos.z), 5, "%2.2f", m_reprogrammed);
   }
 }
 
@@ -165,8 +190,12 @@ void ResearchItem::RenderAlphas(float _predictionTime)
 {
   Building::RenderAlphas(_predictionTime);
 
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  // Camera's accessors are still legacy -- Species belongs to T22 -- so these
+  // convert on the way in rather than at each of the sixteen vertices below.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   glDepthMask(false);
   glEnable(GL_BLEND);
@@ -187,26 +216,28 @@ void ResearchItem::RenderAlphas(float _predictionTime)
 
   for (int i = 0; i < maxBlobs; ++i)
   {
-    Vector3 pos = m_centrePos;
-    pos.x += sinf(timeIndex + i) * i * 0.3f;
-    pos.y += cosf(timeIndex + i) * sinf(i * 10) * 5;
-    pos.z += cosf(timeIndex + i) * i * 0.3f;
+    DirectX::XMVECTOR const pos = DirectX::XMVectorAdd(
+      DirectX::XMLoadFloat3(&m_centrePos),
+      DirectX::XMVectorSet(sinf(timeIndex + i) * i * 0.3f, cosf(timeIndex + i) * sinf(i * 10) * 5, cosf(timeIndex + i) * i * 0.3f, 0.0f));
 
     float size = 5.0f + sinf(timeIndex + i * 10) * 7.0f;
     size = std::max(size, 2.0f);
+
+    DirectX::XMVECTOR const right = DirectX::XMVectorScale(camRight, size);
+    DirectX::XMVECTOR const up = DirectX::XMVectorScale(camUp, size);
 
     // glColor4f( 0.6f, 0.2f, 0.1f, alpha);
     glColor4f(0.1f, 0.2f, 0.8f, alpha);
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((pos - camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, right), up));
     glTexCoord2i(1, 0);
-    glVertex3fv((pos + camRight * size + camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(1, 1);
-    glVertex3fv((pos + camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, right), up));
     glTexCoord2i(0, 1);
-    glVertex3fv((pos - camRight * size - camUp * size).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, right), up));
     glEnd();
   }
 
@@ -229,27 +260,29 @@ void ResearchItem::RenderAlphas(float _predictionTime)
 
     for (int i = 0; i < numStars; ++i)
     {
-      Vector3 pos = m_centrePos;
-      pos.x += sinf(timeIndex + i) * i * 0.3f;
-      pos.y += (cosf(timeIndex + i) * cosf(i * 10) * 2);
-      pos.z += cosf(timeIndex + i) * i * 0.3f;
+      DirectX::XMVECTOR const pos = DirectX::XMVectorAdd(
+        DirectX::XMLoadFloat3(&m_centrePos),
+        DirectX::XMVectorSet(sinf(timeIndex + i) * i * 0.3f, cosf(timeIndex + i) * cosf(i * 10) * 2, cosf(timeIndex + i) * i * 0.3f, 0.0f));
 
       float size = i * 10 * alpha;
       if (i > numStars - 2)
         size = i * 20 * alpha;
+
+      DirectX::XMVECTOR const right = DirectX::XMVectorScale(camRight, size);
+      DirectX::XMVECTOR const up = DirectX::XMVectorScale(camUp, size);
 
       // glColor4f( 1.0f, 0.4f, 0.2f, alpha );
       glColor4f(0.1f, 0.2f, 0.8f, alpha);
 
       glBegin(GL_QUADS);
       glTexCoord2i(0, 0);
-      glVertex3fv((pos - camRight * size + camUp * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(pos, right), up));
       glTexCoord2i(1, 0);
-      glVertex3fv((pos + camRight * size + camUp * size).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(pos, right), up));
       glTexCoord2i(1, 1);
-      glVertex3fv((pos + camRight * size - camUp * size).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(pos, right), up));
       glTexCoord2i(0, 1);
-      glVertex3fv((pos - camRight * size - camUp * size).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(pos, right), up));
       glEnd();
     }
   }
@@ -271,32 +304,44 @@ void ResearchItem::RenderAlphas(float _predictionTime)
 
     glBegin(GL_QUADS);
     glColor4f(0.1f, 0.2f, 0.8f, alpha);
-    glTexCoord2i(0, 0);
-    glVertex3fv((m_pos + Vector3(0, -50, 0) - camRight * w).GetData());
-    glTexCoord2i(0, 1);
-    glVertex3fv((m_pos + Vector3(0, -50, 0) + camRight * w).GetData());
+    {
+      DirectX::XMVECTOR const bottom = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, -50.0f, 0.0f, 0.0f));
+      DirectX::XMVECTOR const top = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 1000.0f, 0.0f, 0.0f));
+      DirectX::XMVECTOR const halfWidth = DirectX::XMVectorScale(camRight, w);
 
-    glColor4f(0.1f, 0.2f, 0.8f, 0.0f);
-    glTexCoord2i(1, 1);
-    glVertex3fv((m_pos + Vector3(0, 1000, 0) + camRight * w).GetData());
-    glTexCoord2i(1, 0);
-    glVertex3fv((m_pos + Vector3(0, 1000, 0) - camRight * w).GetData());
+      glTexCoord2i(0, 0);
+      EmitVertex(DirectX::XMVectorSubtract(bottom, halfWidth));
+      glTexCoord2i(0, 1);
+      EmitVertex(DirectX::XMVectorAdd(bottom, halfWidth));
+
+      glColor4f(0.1f, 0.2f, 0.8f, 0.0f);
+      glTexCoord2i(1, 1);
+      EmitVertex(DirectX::XMVectorAdd(top, halfWidth));
+      glTexCoord2i(1, 0);
+      EmitVertex(DirectX::XMVectorSubtract(top, halfWidth));
+    }
     glEnd();
 
     w *= 0.3f;
 
     glBegin(GL_QUADS);
     glColor4f(0.1f, 0.2f, 0.8f, alpha);
-    glTexCoord2i(0, 0);
-    glVertex3fv((m_pos + Vector3(0, -50, 0) - camRight * w).GetData());
-    glTexCoord2i(0, 1);
-    glVertex3fv((m_pos + Vector3(0, -50, 0) + camRight * w).GetData());
+    {
+      DirectX::XMVECTOR const bottom = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, -50.0f, 0.0f, 0.0f));
+      DirectX::XMVECTOR const top = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 1000.0f, 0.0f, 0.0f));
+      DirectX::XMVECTOR const halfWidth = DirectX::XMVectorScale(camRight, w);
 
-    glColor4f(0.1f, 0.2f, 0.8f, 0.0f);
-    glTexCoord2i(1, 1);
-    glVertex3fv((m_pos + Vector3(0, 1000, 0) + camRight * w).GetData());
-    glTexCoord2i(1, 0);
-    glVertex3fv((m_pos + Vector3(0, 1000, 0) - camRight * w).GetData());
+      glTexCoord2i(0, 0);
+      EmitVertex(DirectX::XMVectorSubtract(bottom, halfWidth));
+      glTexCoord2i(0, 1);
+      EmitVertex(DirectX::XMVectorAdd(bottom, halfWidth));
+
+      glColor4f(0.1f, 0.2f, 0.8f, 0.0f);
+      glTexCoord2i(1, 1);
+      EmitVertex(DirectX::XMVectorAdd(top, halfWidth));
+      glTexCoord2i(1, 0);
+      EmitVertex(DirectX::XMVectorSubtract(top, halfWidth));
+    }
     glEnd();
   }
 
@@ -346,13 +391,14 @@ void ResearchItem::ListSoundEvents(std::vector<const char*>* _list)
 }
 
 
-bool ResearchItem::DoesSphereHit(Vector3 const& _pos, float _radius) { return false; }
+bool ResearchItem::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) { return false; }
 
 
-bool ResearchItem::DoesShapeHit(Shape* _shape, Matrix34 _transform) { return false; }
+bool ResearchItem::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) { return false; }
 
 
-bool ResearchItem::DoesRayHit(Vector3 const& _rayStart, Vector3 const& _rayDir, float _rayLen, Vector3* _pos, Vector3* norm)
+bool ResearchItem::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                              DirectX::XMFLOAT3* norm)
 {
   return RaySphereIntersection(_rayStart, _rayDir, m_pos, m_radius, _rayLen);
 }
@@ -363,7 +409,10 @@ bool ResearchItem::IsInView()
   if (Building::IsInView())
     return true;
 
-  if (g_camera->PosInViewFrustum(m_pos + Vector3(0, g_camera->GetPos().y, 0)))
+  // PosInViewFrustum still takes a Vector3 -- Camera belongs to T22 -- and the
+  // XMFLOAT3 converts on the way in through the seam.
+  DirectX::XMFLOAT3 const eyeLevelPos(m_pos.x, m_pos.y + g_camera->GetPos().y, m_pos.z);
+  if (g_camera->PosInViewFrustum(eyeLevelPos))
   {
     return true;
   }

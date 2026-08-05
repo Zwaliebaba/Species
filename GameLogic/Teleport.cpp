@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 
 #include <math.h>
 
@@ -95,13 +96,17 @@ bool Teleport::Advance()
 
 bool Teleport::IsInView()
 {
-  Vector3 startPoint = GetStartPoint();
-  Vector3 endPoint = GetEndPoint();
+  DirectX::XMFLOAT3 const startPointStore = GetStartPoint();
+  DirectX::XMFLOAT3 const endPointStore = GetEndPoint();
+  DirectX::XMVECTOR const startPoint = DirectX::XMLoadFloat3(&startPointStore);
+  DirectX::XMVECTOR const endPoint = DirectX::XMLoadFloat3(&endPointStore);
 
-  Vector3 midPoint = (startPoint + endPoint) / 2.0f;
-  float radius = (startPoint - endPoint).Mag() / 2.0f;
+  DirectX::XMFLOAT3 midPoint;
+  DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(startPoint, endPoint), 0.5f));
+  float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
   radius += m_radius;
 
+  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   if (g_camera->SphereInViewFrustum(midPoint, radius))
   {
     return true;
@@ -132,7 +137,9 @@ void Teleport::RenderAlphas(float predictionTime)
     if (obj)
     {
       Entity* ent = (Entity*)obj;
-      Vector3 pos = obj->m_pos + obj->m_vel * predictionTime;
+      DirectX::XMFLOAT3 pos;
+      DirectX::XMStoreFloat3(&pos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&obj->m_vel), DirectX::XMVectorReplicate(predictionTime),
+                                                                DirectX::XMLoadFloat3(&obj->m_pos)));
       RenderSpirit(pos, ent->m_id.GetTeamId());
     }
   }
@@ -146,9 +153,16 @@ void Teleport::RenderAlphas(float predictionTime)
 }
 
 
-void Teleport::RenderSpirit(Vector3 const& _pos, int _teamId)
+void Teleport::RenderSpirit(DirectX::XMFLOAT3 const& _pos, int _teamId)
 {
-  Vector3 pos = _pos;
+  DirectX::XMVECTOR const pos = DirectX::XMLoadFloat3(&_pos);
+
+  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
+  // of the eight vertices below, which each called them afresh.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
 
   int innerAlpha = 100;
   int outerAlpha = 50;
@@ -163,19 +177,19 @@ void Teleport::RenderSpirit(Vector3 const& _pos, int _teamId)
   glColor4ub(colour.r, colour.g, colour.b, innerAlpha);
 
   glBegin(GL_QUADS);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), pos));
   glEnd();
 
   size = spiritOuterSize;
   glColor4ub(colour.r, colour.g, colour.b, outerAlpha);
   glBegin(GL_QUADS);
-  glVertex3fv((pos - g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos + g_camera->GetRight() * size).GetData());
-  glVertex3fv((pos + g_camera->GetUp() * size).GetData());
-  glVertex3fv((pos - g_camera->GetRight() * size).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(size), pos));
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(size), pos));
   glEnd();
 }
 
@@ -192,7 +206,7 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
 
   if (entity)
   {
-    Vector3 oldPos = entity->m_pos;
+    DirectX::XMFLOAT3 oldPos = entity->m_pos;
 
     if (!_relay)
     {
@@ -280,10 +294,17 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
           }
           else
           {
-            Vector3 exitPos, exitFront;
+            DirectX::XMFLOAT3 exitPos, exitFront;
             GetExit(exitPos, exitFront);
-            Vector3 newWayPoint(exitPos + exitFront * 50.0f);
-            newWayPoint += Vector3(syncsfrand(35.0f), 0.0f, syncsfrand(35.0f));
+
+            // The two syncsfrand calls stay in this order: they advance the
+            // synchronised RNG, and the migration may not change the sequence.
+            DirectX::XMFLOAT3 const scatter(syncsfrand(35.0f), 0.0f, syncsfrand(35.0f));
+            DirectX::XMFLOAT3 newWayPoint;
+            DirectX::XMStoreFloat3(
+              &newWayPoint, DirectX::XMVectorAdd(DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&exitFront), DirectX::XMVectorReplicate(50.0f),
+                                                                              DirectX::XMLoadFloat3(&exitPos)),
+                                                 DirectX::XMLoadFloat3(&scatter)));
             newWayPoint.y = g_location->m_landscape.m_heightMap->GetValue(newWayPoint.x, newWayPoint.z);
             newUnit->SetWayPoint(newWayPoint);
           }
@@ -310,7 +331,7 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
         entity->m_id.SetUniqueId(newUniqueId);
         entity->m_onGround = false;
         entity->m_enabled = false;
-        entity->m_vel.Zero();
+        entity->m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 
         newUnit->RecalculateOffsets();
       }
@@ -325,31 +346,35 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
   }
 }
 
-bool Teleport::GetEntrance(Vector3& _pos, Vector3& _front)
+bool Teleport::GetEntrance(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
-  Matrix34 rootMat(m_front, m_up, m_pos);
-  Matrix34 worldMat = m_entrance->GetWorldMatrix(rootMat);
+  DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  Matrix34 const worldMat = m_entrance->GetWorldMatrix(rootMat);
   _pos = worldMat.pos;
   _front = worldMat.f;
   return true;
 }
 
-bool Teleport::GetExit(Vector3& _pos, Vector3& _front)
+bool Teleport::GetExit(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
 {
   DEBUG_ASSERT(false);
   return false;
 }
 
-Vector3 Teleport::GetStartPoint()
+DirectX::XMFLOAT3 Teleport::GetStartPoint()
 {
   DEBUG_ASSERT(false);
-  return Vector3();
+
+  // Vector3() zeroed; XMFLOAT3() does not, so this states the zero.
+  return DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
 
-Vector3 Teleport::GetEndPoint()
+DirectX::XMFLOAT3 Teleport::GetEndPoint()
 {
   DEBUG_ASSERT(false);
-  return Vector3();
+  return DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
 
 bool Teleport::UpdateEntityInTransit(Entity* _entity)

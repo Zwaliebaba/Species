@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "DebugRender.h"
 #include "FileWriter.h"
@@ -35,7 +36,10 @@ Tree::Tree()
     m_seed(0),
     m_leafColour(0xffffffff),
     m_branchColour(0xffffffff),
-    m_leafDropRate(0) { m_type = TypeTree; }
+    m_leafDropRate(0)
+{
+  m_type = TypeTree;
+}
 
 Tree::~Tree() { DeleteDisplayLists(); }
 
@@ -71,7 +75,8 @@ void Tree::SetDetail(int _detail)
   Generate();
 
   m_iterations = oldIterations;
-  m_centrePos = m_pos + m_hitcheckCentre * m_height;
+  DirectX::XMStoreFloat3(&m_centrePos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre), DirectX::XMVectorReplicate(m_height),
+                                                                    DirectX::XMLoadFloat3(&m_pos)));
   m_radius = m_hitcheckRadius * m_height * 1.5f;
 }
 
@@ -92,8 +97,9 @@ bool Tree::Advance()
     int numFire = actualHeight / 5;
     for (int i = 0; i < numFire; ++i)
     {
-      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
-      fireSpawn += Vector3(sfrand(actualHeight * 1.0f), sfrand(actualHeight * 0.5f), sfrand(actualHeight * 1.0f));
+      // The three sfrand calls stay in this order: they advance the RNG.
+      DirectX::XMFLOAT3 const scatter(sfrand(actualHeight * 1.0f), sfrand(actualHeight * 0.5f), sfrand(actualHeight * 1.0f));
+      DirectX::XMFLOAT3 const fireSpawn(m_pos.x + scatter.x, m_pos.y + actualHeight + scatter.y, m_pos.z + scatter.z);
       float fireSize = actualHeight * 2.0f;
       fireSize *= (1.0f + sfrand(0.5f));
       g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeFire, fireSize);
@@ -101,8 +107,9 @@ bool Tree::Advance()
 
     if (frand(100.0f) < 10.0f)
     {
-      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
-      fireSpawn += Vector3(sfrand(actualHeight * 0.75f), sfrand(actualHeight * 0.75f), sfrand(actualHeight * 0.75f));
+      // The three sfrand calls stay in this order: they advance the RNG.
+      DirectX::XMFLOAT3 const scatter(sfrand(actualHeight * 0.75f), sfrand(actualHeight * 0.75f), sfrand(actualHeight * 0.75f));
+      DirectX::XMFLOAT3 const fireSpawn(m_pos.x + scatter.x, m_pos.y + actualHeight + scatter.y, m_pos.z + scatter.z);
       g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeExplosionDebris);
     }
 
@@ -116,7 +123,9 @@ bool Tree::Advance()
     //
     // Spread to nearby trees
 
-    Vector3 hitCentre = m_pos + m_hitcheckCentre * actualHeight;
+    DirectX::XMFLOAT3 hitCentre;
+    DirectX::XMStoreFloat3(&hitCentre, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre),
+                                                                    DirectX::XMVectorReplicate(actualHeight), DirectX::XMLoadFloat3(&m_pos)));
     float hitRadius = m_hitcheckRadius * actualHeight;
 
     for (int b = 0; b < g_location->m_buildings.Size(); ++b)
@@ -127,7 +136,8 @@ bool Tree::Advance()
         if (building != this && building->m_type == TypeTree)
         {
           auto tree = static_cast<Tree*>(building);
-          float distance = (tree->m_pos - m_pos).Mag();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&tree->m_pos), DirectX::XMLoadFloat3(&m_pos))));
           float theirActualHeight = tree->GetActualHeight(0.0f);
           float theirRadius = theirActualHeight * tree->m_hitcheckRadius * 1.5f;
           float ourRadius = actualHeight * m_hitcheckRadius * 1.5f;
@@ -161,8 +171,9 @@ bool Tree::Advance()
     if (rand() % (51 - m_leafDropRate) == 0)
     {
       float actualHeight = GetActualHeight(0.0f);
-      Vector3 fireSpawn = m_pos + Vector3(0, actualHeight, 0);
-      fireSpawn += Vector3(sfrand(actualHeight * 1.0f), sfrand(actualHeight * 0.25f), sfrand(actualHeight * 1.0f));
+      // The three sfrand calls stay in this order: they advance the RNG.
+      DirectX::XMFLOAT3 const scatter(sfrand(actualHeight * 1.0f), sfrand(actualHeight * 0.25f), sfrand(actualHeight * 1.0f));
+      DirectX::XMFLOAT3 const fireSpawn(m_pos.x + scatter.x, m_pos.y + actualHeight + scatter.y, m_pos.z + scatter.z);
       g_particleSystem->CreateParticle(fireSpawn, g_zeroVector, Particle::TypeLeaf, -1.0f,
                                        RGBAColour(m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2]));
     }
@@ -212,7 +223,7 @@ void Tree::DeleteDisplayLists()
 
 void Tree::Generate()
 {
-  m_hitcheckCentre.Zero();
+  m_hitcheckCentre = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_hitcheckRadius = 0.0f;
   m_numLeafs = 0;
 
@@ -234,7 +245,7 @@ void Tree::Generate()
   m_branchDisplayListId = glGenLists(1);
   glNewList(m_branchDisplayListId, GL_COMPILE);
   glBegin(GL_QUADS);
-  RenderBranch(g_zeroVector, g_upVector, m_iterations, false, true, false);
+  RenderBranch(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f), m_iterations, false, true, false);
   glEnd();
   glEndList();
 
@@ -242,7 +253,7 @@ void Tree::Generate()
   m_leafDisplayListId = glGenLists(1);
   glNewList(m_leafDisplayListId, GL_COMPILE);
   glBegin(GL_QUADS);
-  RenderBranch(g_zeroVector, g_upVector, m_iterations, false, false, true);
+  RenderBranch(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f), m_iterations, false, false, true);
   glEnd();
   glEndList();
 
@@ -250,16 +261,17 @@ void Tree::Generate()
   // We now have all the leaf positions accumulated in m_hitcheckCentre
   // So we can calculate the actual centre position, then the radius
 
-  m_hitcheckCentre /= static_cast<float>(m_numLeafs);
-  RenderBranch(g_zeroVector, g_upVector, m_iterations, true, false, true);
+  DirectX::XMStoreFloat3(&m_hitcheckCentre, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_hitcheckCentre), 1.0f / (float)m_numLeafs));
+  RenderBranch(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f), m_iterations, true, false, true);
   m_hitcheckRadius *= 0.8f;
 }
 
 void Tree::Render(float _predictionTime) {}
 
-bool Tree::PerformDepthSort(Vector3& _centrePos)
+bool Tree::PerformDepthSort(DirectX::XMFLOAT3& _centrePos)
 {
-  _centrePos = m_pos + m_hitcheckCentre * m_height;
+  DirectX::XMStoreFloat3(&_centrePos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre), DirectX::XMVectorReplicate(m_height),
+                                                                   DirectX::XMLoadFloat3(&m_pos)));
   return true;
 }
 
@@ -287,8 +299,13 @@ void Tree::RenderAlphas(float _predictionTime)
 
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
-  Matrix34 mat(m_front, g_upVector, m_pos);
-  glMultMatrixf(mat.ConvertToOpenGLFormat());
+  DirectX::XMFLOAT4X4 mat;
+  DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+  // Matrix34::ConvertToOpenGLFormat wrote r, u, f and pos consecutively into a
+  // float[16], which is exactly XMFLOAT4X4's row-major memory -- and handing
+  // row-major rows to a column-major reader is the row-vector-to-column-vector
+  // transpose glMultMatrixf needs. Same as T10's MultiplyGLMatrix in Shape.cpp.
+  glMultMatrixf(&mat._11);
   glScalef(actualHeight, actualHeight, actualHeight);
 
   if (Location::ChristmasModEnabled() == 1)
@@ -322,7 +339,10 @@ void Tree::RenderHitCheck()
   float actualHeight = GetActualHeight(0.0f);
 
   RenderSphere(m_pos, 10.0f);
-  RenderSphere(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight);
+  DirectX::XMFLOAT3 debugCentre;
+  DirectX::XMStoreFloat3(&debugCentre, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre),
+                                                                    DirectX::XMVectorReplicate(actualHeight), DirectX::XMLoadFloat3(&m_pos)));
+  RenderSphere(debugCentre, m_hitcheckRadius * actualHeight);
 #endif
 }
 
@@ -351,20 +371,23 @@ void Tree::Damage(float _damage)
   }
 }
 
-bool Tree::DoesSphereHit(const Vector3& _pos, float _radius)
+bool Tree::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   if (SphereSphereIntersection(m_pos, 10.0f, _pos, _radius))
     return true;
 
   float actualHeight = GetActualHeight(0.0f);
 
-  if (SphereSphereIntersection(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _pos, _radius))
+  DirectX::XMFLOAT3 hitCentre;
+  DirectX::XMStoreFloat3(&hitCentre, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre), DirectX::XMVectorReplicate(actualHeight),
+                                                                  DirectX::XMLoadFloat3(&m_pos)));
+  if (SphereSphereIntersection(hitCentre, m_hitcheckRadius * actualHeight, _pos, _radius))
     return true;
 
   return false;
 }
 
-bool Tree::DoesShapeHit(Shape* _shape, Matrix34 _transform)
+bool Tree::DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform)
 {
   SpherePackage packageA(m_pos, 10.0f);
   if (_shape->SphereHit(&packageA, _transform))
@@ -372,44 +395,57 @@ bool Tree::DoesShapeHit(Shape* _shape, Matrix34 _transform)
 
   float actualHeight = GetActualHeight(0.0f);
 
-  SpherePackage packageB(m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight);
+  DirectX::XMFLOAT3 hitCentre;
+  DirectX::XMStoreFloat3(&hitCentre, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre), DirectX::XMVectorReplicate(actualHeight),
+                                                                  DirectX::XMLoadFloat3(&m_pos)));
+  SpherePackage packageB(hitCentre, m_hitcheckRadius * actualHeight);
   if (_shape->SphereHit(&packageB, _transform))
     return true;
 
   return false;
 }
 
-bool Tree::DoesRayHit(const Vector3& _rayStart, const Vector3& _rayDir, float _rayLen, Vector3* _pos, Vector3* _norm)
+bool Tree::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen, DirectX::XMFLOAT3* _pos,
+                      DirectX::XMFLOAT3* _norm)
 {
-  if (RaySphereIntersection(_rayStart, _rayDir, m_pos, 10.00f, _rayLen, _pos, _norm))
+  // Same seam as LaserFence: MathUtils kept its Vector3* out-parameters.
+  Vector3* const legacyHit = _pos ? &AsLegacy(*_pos) : nullptr;
+  Vector3* const legacyNorm = _norm ? &AsLegacy(*_norm) : nullptr;
+
+  if (RaySphereIntersection(_rayStart, _rayDir, m_pos, 10.00f, _rayLen, legacyHit, legacyNorm))
     return true;
 
   float actualHeight = GetActualHeight(0.0f);
 
-  if (RaySphereIntersection(_rayStart, _rayDir, m_pos + m_hitcheckCentre * actualHeight, m_hitcheckRadius * actualHeight, _rayLen, _pos,
-                            _norm))
+  DirectX::XMFLOAT3 hitCentre;
+  DirectX::XMStoreFloat3(&hitCentre, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre), DirectX::XMVectorReplicate(actualHeight),
+                                                                  DirectX::XMLoadFloat3(&m_pos)));
+  if (RaySphereIntersection(_rayStart, _rayDir, hitCentre, m_hitcheckRadius * actualHeight, _rayLen, legacyHit, legacyNorm))
     return true;
 
   return false;
 }
 
-void Tree::RenderBranch(Vector3 _from, Vector3 _to, int _iterations, bool _calcRadius, bool _renderBranch, bool _renderLeaf)
+void Tree::RenderBranch(DirectX::XMFLOAT3 _from, DirectX::XMFLOAT3 _to, int _iterations, bool _calcRadius, bool _renderBranch, bool _renderLeaf)
 {
   if (_iterations == 0)
     return;
   _iterations--;
 
+  DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
+  DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&_to);
+
   if (_iterations == 0)
   {
     if (_calcRadius)
     {
-      float distToCentre = (_to - m_hitcheckCentre).Mag();
+      float distToCentre = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(to, DirectX::XMLoadFloat3(&m_hitcheckCentre))));
       if (distToCentre > m_hitcheckRadius)
         m_hitcheckRadius = distToCentre;
     }
     else if (_renderLeaf)
     {
-      m_hitcheckCentre += _to;
+      DirectX::XMStoreFloat3(&m_hitcheckCentre, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_hitcheckCentre), to));
       m_numLeafs++;
     }
   }
@@ -421,59 +457,66 @@ void Tree::RenderBranch(Vector3 _from, Vector3 _to, int _iterations, bool _calcR
                  sinf(g_gameTime * (7-_iterations))*0.005f * _iterations );
   */
 
-  Vector3 rightAngleA = ((_to - _from) ^ _to).Normalise();
-  Vector3 rightAngleB = (rightAngleA ^ (_to - _from)).Normalise();
+  DirectX::XMVECTOR const thisBranch = DirectX::XMVectorSubtract(to, from);
 
-  Vector3 thisBranch = (_to - _from);
+  DirectX::XMVECTOR const rightAngleA = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(thisBranch, to));
+  DirectX::XMVECTOR const rightAngleB = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(rightAngleA, thisBranch));
 
-  float thickness = thisBranch.Mag();
+  float thickness = DirectX::XMVectorGetX(DirectX::XMVector3Length(thisBranch));
 
   float budsize = 0.1f;
 
   if (_iterations == 0)
     budsize *= m_budsize;
 
-  Vector3 camRightA = rightAngleA * thickness * budsize;
-  Vector3 camRightB = rightAngleB * thickness * budsize;
+  DirectX::XMVECTOR const camRightA = DirectX::XMVectorScale(rightAngleA, thickness * budsize);
+  DirectX::XMVECTOR const camRightB = DirectX::XMVectorScale(rightAngleB, thickness * budsize);
 
   if ((_iterations == 0 && _renderLeaf) || (_iterations != 0 && _renderBranch))
   {
     glTexCoord2f(0.0f, 0.0f);
-    glVertex3fv((_from - camRightA).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(from, camRightA));
     glTexCoord2f(0.0f, 1.0f);
-    glVertex3fv((_from + camRightA).GetData());
+    EmitVertex(DirectX::XMVectorAdd(from, camRightA));
     glTexCoord2f(1.0f, 1.0f);
-    glVertex3fv((_to + camRightA).GetData());
+    EmitVertex(DirectX::XMVectorAdd(to, camRightA));
     glTexCoord2f(1.0f, 0.0f);
-    glVertex3fv((_to - camRightA).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(to, camRightA));
 
     glTexCoord2f(0.0f, 0.0f);
-    glVertex3fv((_from - camRightB).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(from, camRightB));
     glTexCoord2f(0.0f, 1.0f);
-    glVertex3fv((_from + camRightB).GetData());
+    EmitVertex(DirectX::XMVectorAdd(from, camRightB));
     glTexCoord2f(1.0f, 1.0f);
-    glVertex3fv((_to + camRightB).GetData());
+    EmitVertex(DirectX::XMVectorAdd(to, camRightB));
     glTexCoord2f(1.0f, 0.0f);
-    glVertex3fv((_to - camRightB).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(to, camRightB));
   }
 
   int numBranches = 4;
 
   for (int i = 0; i < numBranches; ++i)
   {
-    Vector3 thisRightAngle;
+    DirectX::XMVECTOR thisRightAngle = DirectX::XMVectorZero();
     if (i == 0)
       thisRightAngle = rightAngleA;
     if (i == 1)
-      thisRightAngle = -rightAngleA;
+      thisRightAngle = DirectX::XMVectorNegate(rightAngleA);
     if (i == 2)
       thisRightAngle = rightAngleB;
     if (i == 3)
-      thisRightAngle = -rightAngleB;
+      thisRightAngle = DirectX::XMVectorNegate(rightAngleB);
 
+    // frand stays inside the loop: it advances the RNG once per branch.
     float distance = 0.3f + frand(0.6f);
-    Vector3 thisFrom = _from + thisBranch * distance;
-    Vector3 thisTo = thisFrom + thisRightAngle * thickness * 0.4f * m_pushOut + thisBranch * (1.0f - distance) * m_pushUp;
+    DirectX::XMVECTOR const thisFromVec = DirectX::XMVectorMultiplyAdd(thisBranch, DirectX::XMVectorReplicate(distance), from);
+    DirectX::XMVECTOR const thisToVec = DirectX::XMVectorMultiplyAdd(
+      thisBranch, DirectX::XMVectorReplicate((1.0f - distance) * m_pushUp),
+      DirectX::XMVectorMultiplyAdd(thisRightAngle, DirectX::XMVectorReplicate(thickness * 0.4f * m_pushOut), thisFromVec));
+
+    DirectX::XMFLOAT3 thisFrom, thisTo;
+    DirectX::XMStoreFloat3(&thisFrom, thisFromVec);
+    DirectX::XMStoreFloat3(&thisTo, thisToVec);
     RenderBranch(thisFrom, thisTo, _iterations, _calcRadius, _renderBranch, _renderLeaf);
   }
 }

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -465,17 +466,6 @@ namespace
       SaveGLEnabled m_textureEnabled, m_depthTestEnabled, m_cullFaceEnabled, m_lightingEnabled, m_blendEnabled;
   };
 } // namespace
-
-// Stores a computed vertex and hands it to OpenGL. The 3D text paths build
-// every corner as an XMVECTOR expression, and glVertex3fv wants three floats in
-// memory, so the store has to happen somewhere; doing it here keeps the quad
-// emission below readable.
-static void EmitVertex(DirectX::FXMVECTOR _point)
-{
-  DirectX::XMFLOAT3 stored;
-  DirectX::XMStoreFloat3(&stored, _point);
-  glVertex3fv(&stored.x);
-}
 
 
 void TextRenderer::DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text)

@@ -68,6 +68,32 @@ namespace NeuronCoreTests
         Assert::AreEqual(6.0f, roundTripped.z);
       }
 
+      // AsLegacy is the other half of the seam, added by T14 so that the 45
+      // files reading WorldObject's converted storage keep compiling until
+      // their own tasks convert them. The property that matters is that it
+      // ALIASES: 97 of those sites mutate through the member, and a helper that
+      // copied would drop their writes with nothing to catch it.
+      TEST_METHOD(AsLegacyAliasesTheNativeTypeRatherThanCopyingIt)
+      {
+        DirectX::XMFLOAT3 native(1.0f, 2.0f, 3.0f);
+
+        Assert::IsTrue(static_cast<void const*>(&AsLegacy(native)) == static_cast<void const*>(&native));
+        Assert::AreEqual(1.0f, AsLegacy(native).x);
+        AssertNearlyEqual(sqrtf(14.0f), AsLegacy(native).Mag());
+
+        // A write through the legacy view has to land in the native object.
+        AsLegacy(native) *= 2.0f;
+        Assert::AreEqual(2.0f, native.x);
+        Assert::AreEqual(4.0f, native.y);
+        Assert::AreEqual(6.0f, native.z);
+
+        AsLegacy(native).Normalise();
+        AssertNearlyEqual(1.0f, AsLegacy(native).Mag());
+
+        DirectX::XMFLOAT3 const readOnly(7.0f, 8.0f, 9.0f);
+        Assert::AreEqual(8.0f, AsLegacy(readOnly).y);
+      }
+
       TEST_METHOD(Vector2ConvertsToAndFromTheNativeType)
       {
         Vector2 legacy(1.5f, 2.5f);
@@ -80,6 +106,96 @@ namespace NeuronCoreTests
         Vector2 roundTripped = DirectX::XMFLOAT2(3.5f, 4.5f);
         Assert::AreEqual(3.5f, roundTripped.x);
         Assert::AreEqual(4.5f, roundTripped.y);
+      }
+
+      // Vector3::FastRotateAround is Rodrigues' formula, and the conversion
+      // every remaining task reaches for is XMVector3Transform with
+      // XMMatrixRotationAxis. That they agree is a CLAIM ABOUT HANDEDNESS, and
+      // DirectXMath's own documentation describes its rotations as clockwise
+      // looking along the axis, which reads like the opposite convention. It is
+      // not -- the matrix is the same one -- but "reads like the opposite" is
+      // exactly how a migration ends up mirrored, so it is pinned rather than
+      // argued. T14 converts three of these; T15 converts far more.
+      TEST_METHOD(NativeAxisRotationMatchesTheLegacyRodriguesRotation)
+      {
+        Vector3 const axis = Vector3(0.3f, 0.8f, -0.5f).Normalise();
+        float const angle = 0.9f;
+
+        Vector3 legacy(4.0f, -2.0f, 7.0f);
+        legacy.FastRotateAround(axis, angle);
+
+        DirectX::XMFLOAT3 const start(4.0f, -2.0f, 7.0f);
+        DirectX::XMFLOAT3 native;
+        DirectX::XMStoreFloat3(&native, DirectX::XMVector3Transform(
+                                          DirectX::XMLoadFloat3(&start),
+                                          DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(axis)), angle)));
+
+        AssertNearlyEqual(legacy.x, native.x);
+        AssertNearlyEqual(legacy.y, native.y);
+        AssertNearlyEqual(legacy.z, native.z);
+      }
+
+      // The same claim for the axis-aligned helper, which is the one T14 uses.
+      TEST_METHOD(NativeRotationYMatchesLegacyRotateAroundY)
+      {
+        Vector3 legacy(4.0f, -2.0f, 7.0f);
+        legacy.RotateAroundY(0.9f);
+
+        DirectX::XMFLOAT3 const start(4.0f, -2.0f, 7.0f);
+        DirectX::XMFLOAT3 native;
+        DirectX::XMStoreFloat3(&native, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&start), DirectX::XMMatrixRotationY(0.9f)));
+
+        AssertNearlyEqual(legacy.x, native.x);
+        AssertNearlyEqual(legacy.y, native.y);
+        AssertNearlyEqual(legacy.z, native.z);
+      }
+
+      // BasisFromFrontAndUp replaces the Matrix34(front, up, pos) constructor
+      // that 196 sites call, so it is asserted AGAINST that constructor rather
+      // than against my reading of it — the discipline T1 settled on. A
+      // reversed cross product mirrors the model and compiles perfectly.
+      TEST_METHOD(BasisFromFrontAndUpReproducesTheLegacyConstructor)
+      {
+        Vector3 const front(0.3f, 0.6f, -0.74f);
+        Vector3 const up(0.0f, 1.0f, 0.0f);
+        Vector3 const position(11.0f, -3.0f, 7.5f);
+
+        Matrix34 const legacy(front, up, position);
+
+        DirectX::XMFLOAT4X4 native;
+        DirectX::XMStoreFloat4x4(&native, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(front)),
+                                                              DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(up)),
+                                                              DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(position))));
+
+        DirectX::XMFLOAT4X4 const expected = legacy.ToNative();
+        for (int row = 0; row < 4; ++row)
+        {
+          for (int column = 0; column < 4; ++column)
+          {
+            AssertNearlyEqual(expected.m[row][column], native.m[row][column]);
+          }
+        }
+      }
+
+      // The legacy constructor stored the front vector EXACTLY as given and
+      // normalised only the two rows it derived. Several callers pass a scaled
+      // front and are scaling the model by doing it, so normalising row 2
+      // "for tidiness" would silently resize geometry.
+      TEST_METHOD(BasisFromFrontAndUpLeavesTheFrontRowUnnormalised)
+      {
+        Vector3 const front(0.0f, 0.0f, 4.0f);
+        Vector3 const up(0.0f, 1.0f, 0.0f);
+        Vector3 const position(0.0f, 0.0f, 0.0f);
+
+        DirectX::XMFLOAT4X4 native;
+        DirectX::XMStoreFloat4x4(&native, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(front)),
+                                                              DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(up)),
+                                                              DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(position))));
+
+        AssertNearlyEqual(4.0f, native._33);
+        AssertNearlyEqual(1.0f, native._11); // right stays unit
+        AssertNearlyEqual(1.0f, native._22); // and so does up
+        Assert::AreEqual(1.0f, native._44);
       }
 
       // THE TEST THIS WHOLE TASK EXISTS FOR. If the row-vector decision is

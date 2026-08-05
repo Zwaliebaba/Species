@@ -165,7 +165,7 @@ bool EntityGridCell::RemoveObjectId(WorldObjectId _objectId)
 // ****************************************************************************
 
 
-void LogEntityGridError(WorldObjectId _id, Vector3 const& _pos, int _error) { DEBUG_ASSERT(false); }
+void LogEntityGridError(WorldObjectId _id, DirectX::XMFLOAT3 const& _pos, int _error) { DEBUG_ASSERT(false); }
 
 
 // *** Constructor
@@ -306,7 +306,7 @@ void EntityGrid::RemoveObject(WorldObjectId _objectID, float _worldX, float _wor
     EntityGridCell* gridCell = GetCell(_worldX, _worldZ, teamId);
     bool success = gridCell->RemoveObjectId(_objectID);
     if (!success)
-      LogEntityGridError(_objectID, Vector3(_worldX, 0.0f, _worldZ), 2);
+      LogEntityGridError(_objectID, DirectX::XMFLOAT3(_worldX, 0.0f, _worldZ), 2);
   }
   else
   {
@@ -327,7 +327,7 @@ void EntityGrid::RemoveObject(WorldObjectId _objectID, float _worldX, float _wor
         EntityGridCell* ogc = GetCell(x, z, teamId);
         bool success = ogc->RemoveObjectId(_objectID);
         if (!success)
-          LogEntityGridError(_objectID, Vector3(x * m_cellSizeX, 0.0f, z * m_cellSizeZ), 2);
+          LogEntityGridError(_objectID, DirectX::XMFLOAT3(x * m_cellSizeX, 0.0f, z * m_cellSizeZ), 2);
       }
     }
   }
@@ -472,7 +472,7 @@ WorldObjectId* EntityGrid::GetNeighbours(float _worldX, float _worldZ, float _ra
             Entity* obj = g_location->GetEntity(objId);
             if (!obj)
             {
-              LogEntityGridError(objId, Vector3(x * m_cellSizeX, 0.0f, z * m_cellSizeZ), 1);
+              LogEntityGridError(objId, DirectX::XMFLOAT3(x * m_cellSizeX, 0.0f, z * m_cellSizeZ), 1);
               continue;
             }
 
@@ -684,7 +684,7 @@ void EntityGrid::Render()
           glVertex3f(worldX, worldY, worldZ + cellSizeZ);
           glEnd();
 
-          g_editorFont.DrawText3DCentre(Vector3(worldX, worldY, worldZ), 5.0f, "%d", numEntities);
+          g_editorFont.DrawText3DCentre(DirectX::XMFLOAT3(worldX, worldY, worldZ), 5.0f, "%d", numEntities);
         }
       }
     }

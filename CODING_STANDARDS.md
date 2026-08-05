@@ -386,8 +386,9 @@ Simulation code is `GameLogic/`, plus the world, entity, team and physics code i
 
 `tasks/directxmath-migration.yaml` is replacing the inherited `Vector3`,
 `Matrix34` and friends with `DirectX::XMFLOAT3`, `XMFLOAT4X4` and `XMVECTOR`.
-Three rules come with that, and they apply to converted code today rather than
-when the migration finishes:
+These rules apply to converted code today rather than when the migration
+finishes. The first three are properties of the native types; the last three
+were learned by converting GameLogic and cost a red CI round each:
 
 - **The `*Est` family is banned in simulation code.** `XMVector3NormalizeEst`,
   `XMVectorReciprocalEst` and the rest are explicitly permitted to differ
@@ -403,6 +404,27 @@ when the migration finishes:
   explicit initialiser. `tools/check_math_types.py` reports the ones that lack
   one, and this is the only failure mode on its list that neither the compiler
   nor CI can see.
+- **The zero-length fallbacks are gone, and each site decides.**
+  `Vector3::Normalise` answered a zero-length input with `(0,0,1)` and
+  `SetLength` with `(len,0,0)`; `XMVector3Normalize` answers with zero or QNaN.
+  The default is **not** to reproduce them — that was decided in T1 — but where
+  the zero case is genuinely reachable and the QNaN would stick, reproduce it
+  and say why at the site. Steering code that crosses `front` with a direction
+  to a target is the recurring example: facing exactly away makes the cross
+  zero, and the old fallback is what broke the deadlock. A one-line comment at
+  the site is the standard here, because the next reader cannot tell a
+  considered choice from an oversight.
+- **The seam converts values and references, never pointers.** `Vector3`
+  converts to `XMFLOAT3` through a conversion operator, so a parameter or a
+  return value crosses for free — but `&someVector3` is a `Vector3*` and will
+  not bind to an `XMFLOAT3*`. **Any API with an out-pointer therefore cannot
+  convert until both ends convert together**, which is a sequencing constraint
+  on plans, not a call-site detail. Where the callee is deliberately staying
+  legacy, `&AsLegacy(*_pos)` is a `Vector3*` onto native storage.
+- **A virtual signature cannot move without every overrider in the same
+  commit.** An override must match its base exactly; no implicit conversion is
+  consulted, and a mismatch silently stops overriding rather than failing. Map a
+  class's virtuals in both directions before converting it.
 
 **The migration deliberately changes what the simulation computes** — lane
 arithmetic does not reproduce the current scalar arithmetic bit for bit, so a

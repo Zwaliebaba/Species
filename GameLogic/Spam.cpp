@@ -35,7 +35,7 @@ Spam::Spam()
   m_type = TypeSpam;
   m_timer = syncfrand(SpamReloadTime());
 
-  m_front.RotateAroundY(frand(2.0f * M_PI));
+  AsLegacy(m_front).RotateAroundY(frand(2.0f * M_PI));
 
   SetShape(g_resource->GetShape("ResearchItem.shp"));
 }
@@ -113,10 +113,10 @@ void Spam::Render(float _predictionTime)
   rotateAround.RotateAroundZ(g_gameTime * 0.7f);
   rotateAround.Normalise();
 
-  m_front.RotateAround(rotateAround * g_advanceTime);
-  m_up.RotateAround(rotateAround * g_advanceTime);
+  AsLegacy(m_front).RotateAround(rotateAround * g_advanceTime);
+  AsLegacy(m_up).RotateAround(rotateAround * g_advanceTime);
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
   Matrix34 mat(m_front, m_up, predictedPos);
 
   m_shape->Render(0.0f, mat);
@@ -148,8 +148,8 @@ void Spam::RenderAlphas(float _predictionTime)
 
   float alpha = 1.0f;
 
-  Vector3 predictedPos = m_pos + m_vel * _predictionTime;
-  Vector3 centreToMpos = m_pos - m_centrePos;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _predictionTime;
+  Vector3 centreToMpos = AsLegacy(m_pos) - AsLegacy(m_centrePos);
 
   for (int i = 0; i < maxBlobs; ++i)
   {
@@ -258,7 +258,7 @@ bool Spam::Advance()
 
   if (!m_onGround)
   {
-    m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+    AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
 
     float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
     if (m_pos.y <= landHeight + 20.0f)
@@ -267,9 +267,9 @@ bool Spam::Advance()
       m_pos.y = landHeight + 20.0f;
       m_vel.x += syncsfrand(20.0f);
       m_vel.z += syncsfrand(30.0f);
-      float speed = m_vel.Mag();
+      float speed = AsLegacy(m_vel).Mag();
       m_vel.y = 0.0f;
-      m_vel.SetLength(speed);
+      AsLegacy(m_vel).SetLength(speed);
     }
 
     Matrix34 mat(m_front, m_up, m_pos);
@@ -277,10 +277,10 @@ bool Spam::Advance()
   }
   else if (m_onGround)
   {
-    if (m_vel.Mag() > 1.0f)
+    if (AsLegacy(m_vel).Mag() > 1.0f)
     {
-      m_vel *= (1.0f - SERVER_ADVANCE_PERIOD * 0.3f);
-      m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+      AsLegacy(m_vel) *= (1.0f - SERVER_ADVANCE_PERIOD * 0.3f);
+      AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
       float landHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
       m_pos.y = landHeight + 20.0f;
 
@@ -289,7 +289,7 @@ bool Spam::Advance()
     }
     else
     {
-      m_vel.Zero();
+      AsLegacy(m_vel).Zero();
     }
 
     //
@@ -305,8 +305,8 @@ bool Spam::Advance()
           bool intersect = SphereSphereIntersection(m_centrePos, m_radius, b->m_centrePos, b->m_radius);
           if (intersect)
           {
-            Vector3 dir = (m_pos - b->m_pos);
-            m_vel += dir * 0.25f;
+            Vector3 dir = (AsLegacy(m_pos) - AsLegacy(b->m_pos));
+            AsLegacy(m_vel) += dir * 0.25f;
           }
         }
       }
@@ -387,7 +387,7 @@ bool SpamInfection::SearchForRandomPosition()
   Building* building = g_location->GetBuilding(m_parentId);
   if (building)
   {
-    float distance = (building->m_pos - m_pos).Mag();
+    float distance = (AsLegacy(building->m_pos) - AsLegacy(m_pos)).Mag();
     if (distance > 400.0f)
     {
       m_targetPos = building->m_pos;
@@ -423,7 +423,7 @@ bool SpamInfection::SearchForSpirits()
     if (g_location->m_spirits.ValidIndex(i))
     {
       Spirit* s = g_location->m_spirits.GetPointer(i);
-      float theDist = (s->m_pos - m_pos).Mag();
+      float theDist = (AsLegacy(s->m_pos) - AsLegacy(m_pos)).Mag();
 
       if (theDist <= SPAMINFECTION_MAXSEARCHRANGE && theDist >= SPAMINFECTION_MINSEARCHRANGE && theDist < nearest &&
           s->m_state == Spirit::StateFloating && s->m_pos.y > 10.0f)
@@ -518,7 +518,7 @@ void SpamInfection::AdvanceAttackingEntity()
     {
       Vector3 vel(sfrand(15.0f), frand(15.0f), sfrand(15.0f));
       float size = i * 30;
-      Vector3 pos = m_pos + Vector3(0, 50, 0);
+      Vector3 pos = AsLegacy(m_pos) + Vector3(0, 50, 0);
       g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeFire, size);
     }
 
@@ -564,7 +564,7 @@ void SpamInfection::AdvanceAttackingSpirit()
     {
       Vector3 vel(sfrand(15.0f), frand(15.0f), sfrand(15.0f));
       float size = i * 30;
-      Vector3 pos = m_pos + Vector3(0, 50, 0);
+      Vector3 pos = AsLegacy(m_pos) + Vector3(0, 50, 0);
       g_particleSystem->CreateParticle(m_pos, vel, Particle::TypeFire, size);
     }
 
@@ -583,12 +583,12 @@ bool SpamInfection::AdvanceToTargetPosition()
     m_positionHistory.erase(m_positionHistory.begin() + i);
   }
 
-  Vector3 targetVel = (m_targetPos - m_pos).SetLength(200.0f);
+  Vector3 targetVel = (m_targetPos - AsLegacy(m_pos)).SetLength(200.0f);
   float factor = SERVER_ADVANCE_PERIOD * 0.5f;
-  m_vel = m_vel * (1.0f - factor) + targetVel * factor;
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
+  m_vel = AsLegacy(m_vel) * (1.0f - factor) + targetVel * factor;
+  AsLegacy(m_pos) += AsLegacy(m_vel) * SERVER_ADVANCE_PERIOD;
 
-  float distance = (m_targetPos - m_pos).Mag();
+  float distance = (m_targetPos - AsLegacy(m_pos)).Mag();
   return (distance < 20.0f);
 }
 
@@ -615,7 +615,7 @@ bool SpamInfection::Advance()
 
 void SpamInfection::Render(float _time)
 {
-  Vector3 predictedPos = m_pos + m_vel * _time;
+  Vector3 predictedPos = AsLegacy(m_pos) + AsLegacy(m_vel) * _time;
 
   // RenderSphere( predictedPos, 200.0f, RGBAColour(255,0,0,255) );
   // RenderArrow( predictedPos, m_targetPos, 1.0f, RGBAColour(255,255,255,255) );

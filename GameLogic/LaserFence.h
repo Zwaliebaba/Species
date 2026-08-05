@@ -6,7 +6,7 @@ class Shape;
 class ShapeFragment;
 class TextReader;
 
-#define LASERFENCE_RAISESPEED       0.3f
+#define LASERFENCE_RAISESPEED 0.3f
 
 class LaserFence : public Building
 {
@@ -45,7 +45,7 @@ class LaserFence : public Building
     void RenderAlphas(float predictionTime) override;
     void RenderLights() override;
 
-    bool PerformDepthSort(Vector3& _centrePos) override;
+    bool PerformDepthSort(DirectX::XMFLOAT3& _centrePos) override;
     bool IsInView() override;
 
     void Read(TextReader* _in, bool _dynamic) override;
@@ -57,19 +57,29 @@ class LaserFence : public Building
     bool IsEnabled();
 
     void Spark();
-    void Electrocute(const Vector3& _pos);
+    void Electrocute(DirectX::XMFLOAT3 const& _pos);
 
     int GetBuildingLink() override;
     void SetBuildingLink(int _buildingId) override;
 
     float GetFenceFullHeight();
 
-    bool DoesSphereHit(const Vector3& _pos, float _radius) override;
-    bool DoesRayHit(const Vector3& _rayStart, const Vector3& _rayDir, float _rayLen = 1e10, Vector3* _pos = nullptr,
-                    Vector3* _norm = nullptr) override;
-    bool DoesShapeHit(Shape* _shape, Matrix34 _transform) override;
+    // Eight sites in the .cpp built a world matrix and then scaled its three
+    // basis rows by m_scale. They are NOT all the same matrix: the render and
+    // marker paths level the fence against the world up, while the hit tests
+    // use the building's own m_up. Both are stated here rather than inline so
+    // the difference is visible instead of buried in eight near-identical
+    // blocks -- getting it wrong would tilt the hit volume away from the
+    // rendered fence.
+    DirectX::XMFLOAT4X4 GetScaledLevelMatrix() const; // front, WORLD up, pos
+    DirectX::XMFLOAT4X4 GetScaledWorldMatrix() const; // front, m_up, pos
+
+    bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius) override;
+    bool DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir, float _rayLen = 1e10, DirectX::XMFLOAT3* _pos = nullptr,
+                    DirectX::XMFLOAT3* _norm = nullptr) override;
+    bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform) override;
 
     void ListSoundEvents(std::vector<const char*>* _list) override;
 
-    Vector3 GetTopPosition();
+    DirectX::XMFLOAT3 GetTopPosition();
 };

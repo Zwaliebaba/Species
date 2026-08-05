@@ -23,13 +23,16 @@ EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, 
   ASSERT_TEXT(m_shapeUpper, "EntityLeg: Couldn't load leg shape {}", _shapeNameUpper);
   ASSERT_TEXT(m_shapeLower, "EntityLeg: Couldn't load leg shape {}", _shapeNameLower);
 
+  // ShapeMarker::GetWorldMatrix still returns a legacy matrix -- T10 left that
+  // signature deliberately, because 43 sites in fourteen GameLogic files read
+  // .pos or .f off it. Reading .pos here is that seam, not an oversight.
+  DirectX::XMFLOAT4X4 const identity(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
   ShapeMarker* endMarker = m_shapeUpper->m_rootFragment->LookupMarker("MarkerEnd");
-  const Matrix34& endMatrix = endMarker->GetWorldMatrix(Matrix34(0));
-  m_thighLen = endMatrix.pos.Mag();
+  m_thighLen = endMarker->GetWorldMatrix(identity).pos.Mag();
 
   endMarker = m_shapeLower->m_rootFragment->LookupMarker("MarkerEnd");
-  const Matrix34& endMatrixLower = endMarker->GetWorldMatrix(Matrix34(0));
-  m_shinLen = endMatrixLower.pos.Mag();
+  m_shinLen = endMarker->GetWorldMatrix(identity).pos.Mag();
 
   m_rootMarker = m_parent->m_shape->m_rootFragment->LookupMarker(_rootMarkerName);
   ASSERT_TEXT(m_rootMarker, "EntityLeg: Couldn't find root marker {}", _rootMarkerName);
@@ -37,26 +40,36 @@ EntityLeg::EntityLeg(int _legNum, Entity* _parent, const char* _shapeNameUpper, 
   m_foot.m_state = EntityFoot::FootState::OnGround;
 }
 
-Vector3 EntityLeg::GetLegRootPos()
+DirectX::XMFLOAT3 EntityLeg::GetLegRootPos()
 {
-  Matrix34 rootMat(m_parent->m_front, g_upVector, m_parent->m_pos);
-  const Matrix34& resultMat = m_rootMarker->GetWorldMatrix(rootMat);
+  DirectX::XMFLOAT4X4 rootMat;
+  DirectX::XMStoreFloat4x4(
+    &rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_parent->m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_parent->m_pos)));
 
-  return resultMat.pos;
+  // Legacy return type, per the GetWorldMatrix seam noted in the constructor.
+  return m_rootMarker->GetWorldMatrix(rootMat).pos;
 }
 
-Vector3 EntityLeg::CalcFootHomePos(float _targetHoverHeight)
+DirectX::XMFLOAT3 EntityLeg::CalcFootHomePos(float _targetHoverHeight)
 {
-  Vector3 rootWorldPos = GetLegRootPos();
+  DirectX::XMFLOAT3 const rootWorldPos = GetLegRootPos();
+  DirectX::XMVECTOR const root = DirectX::XMLoadFloat3(&rootWorldPos);
 
-  Vector3 fromCentreToRoot = rootWorldPos - m_parent->m_pos;
-  fromCentreToRoot.HorizontalAndNormalise();
+  // HorizontalAndNormalise: flatten to the xz plane, then normalise. The legacy
+  // one divided by an unguarded sqrtf(x*x + z*z), so a leg root exactly above
+  // the body centre already produced infinities; the native normalise answers
+  // zero instead. Degenerate either way -- see the normalise decision in
+  // NeuronMath.h, and T1's audit, which names this function.
+  DirectX::XMVECTOR fromCentreToRoot =
+    DirectX::XMVector3Normalize(DirectX::XMVectorSetY(DirectX::XMVectorSubtract(root, DirectX::XMLoadFloat3(&m_parent->m_pos)), 0.0f));
 
-  Vector3 groundNormal = g_location->m_landscape.m_normalMap->GetValue(m_parent->m_pos.x, m_parent->m_pos.z);
-  fromCentreToRoot *= groundNormal.y;
+  // The landscape converts in T18, so its normal map still yields a legacy vector.
+  DirectX::XMFLOAT3 const groundNormal = g_location->m_landscape.m_normalMap->GetValue(m_parent->m_pos.x, m_parent->m_pos.z);
+  fromCentreToRoot = DirectX::XMVectorScale(fromCentreToRoot, groundNormal.y);
 
-  Vector3 returnVal = rootWorldPos;
-  returnVal += fromCentreToRoot * (m_idealLegSlope * _targetHoverHeight);
+  DirectX::XMFLOAT3 returnVal;
+  DirectX::XMStoreFloat3(&returnVal,
+                         DirectX::XMVectorMultiplyAdd(fromCentreToRoot, DirectX::XMVectorReplicate(m_idealLegSlope * _targetHoverHeight), root));
   returnVal.y -= _targetHoverHeight;
 
   return returnVal;
@@ -64,11 +77,11 @@ Vector3 EntityLeg::CalcFootHomePos(float _targetHoverHeight)
 
 float EntityLeg::CalcFootsDesireToMove(float _targetHoverHeight)
 {
-  Vector3 homePos = CalcFootHomePos(_targetHoverHeight);
-  Vector3 delta = m_foot.m_pos - homePos;
-  Vector3 deltaHoriNorm = delta;
-  deltaHoriNorm.HorizontalAndNormalise();
+  DirectX::XMFLOAT3 const homePos = CalcFootHomePos(_targetHoverHeight);
+  DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_foot.m_pos), DirectX::XMLoadFloat3(&homePos));
 
+  // deltaHoriNorm was computed and never read -- the only use is inside the
+  // commented-out block below. Left out rather than computed and discarded.
   float scoreDueToDirection = 1.0f;
   //	if (m_parent->m_vel.Mag() > 0.1f)
   //	{
@@ -76,34 +89,41 @@ float EntityLeg::CalcFootsDesireToMove(float _targetHoverHeight)
   //		velHoriNorm.HorizontalAndNormalise();
   //		scoreDueToDirection = -(deltaHoriNorm * velHoriNorm);
   //	}
-  float scoreDueToDist = delta.Mag();
+  float scoreDueToDist = DirectX::XMVectorGetX(DirectX::XMVector3Length(delta));
   float score = scoreDueToDirection * scoreDueToDist;
 
   return score;
 }
 
-Vector3 EntityLeg::CalcDesiredFootPos(float _targetHoverHeight)
+DirectX::XMFLOAT3 EntityLeg::CalcDesiredFootPos(float _targetHoverHeight)
 {
-  Vector3 rv = CalcFootHomePos(_targetHoverHeight);
+  DirectX::XMFLOAT3 rv = CalcFootHomePos(_targetHoverHeight);
 
   float expectedRotation = 1.2f * m_parent->m_angVel.y;
-  Vector3 averageExpectedVel = m_parent->m_vel;
-  averageExpectedVel.RotateAroundY(expectedRotation * 0.5f);
-  rv += averageExpectedVel * m_lookAheadCoef;
+
+  // Vector3::RotateAroundY(a) built its own sin/cos rotation about +y. The
+  // native equivalent is a rotation matrix about the same axis; row-vector
+  // order, so the vector goes on the left.
+  DirectX::XMVECTOR const averageExpectedVel =
+    DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&m_parent->m_vel), DirectX::XMMatrixRotationY(expectedRotation * 0.5f));
+
+  DirectX::XMStoreFloat3(&rv,
+                         DirectX::XMVectorMultiplyAdd(averageExpectedVel, DirectX::XMVectorReplicate(m_lookAheadCoef), DirectX::XMLoadFloat3(&rv)));
 
   return rv;
 }
 
-Vector3 EntityLeg::CalcKneePos(const Vector3& _footPos, const Vector3& _rootPos, const Vector3& _centrePos)
+DirectX::XMFLOAT3 EntityLeg::CalcKneePos(DirectX::XMFLOAT3 const& _footPos, DirectX::XMFLOAT3 const& _rootPos, DirectX::XMFLOAT3 const& _centrePos)
 {
-  Vector3 rootToFoot(_footPos - _rootPos);
-  float rootToFootLen = rootToFoot.Mag();
+  DirectX::XMVECTOR const footPos = DirectX::XMLoadFloat3(&_footPos);
+  DirectX::XMVECTOR const rootToFoot = DirectX::XMVectorSubtract(footPos, DirectX::XMLoadFloat3(&_rootPos));
+  float rootToFootLen = DirectX::XMVectorGetX(DirectX::XMVector3Length(rootToFoot));
 
-  Vector3 rootToFootHoriNorm(rootToFoot);
-  rootToFootHoriNorm.HorizontalAndNormalise();
-  Vector3 centreToRoot(_rootPos - _centrePos);
-  centreToRoot.HorizontalAndNormalise();
-  Vector3 axis((centreToRoot ^ g_upVector).Normalise());
+  // rootToFootHoriNorm was computed and never used. Dropped rather than carried.
+  DirectX::XMVECTOR const centreToRoot = DirectX::XMVector3Normalize(
+    DirectX::XMVectorSetY(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_rootPos), DirectX::XMLoadFloat3(&_centrePos)), 0.0f));
+  DirectX::XMVECTOR const axis = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(centreToRoot, DirectX::g_XMIdentityR1));
+
   float cosTheta = (rootToFootLen * 0.4f) / m_thighLen;
   // FIXME
   // cosTheta should never be greater than one, yet sometimes it is
@@ -111,11 +131,24 @@ Vector3 EntityLeg::CalcKneePos(const Vector3& _footPos, const Vector3& _rootPos,
     cosTheta = 1.0f;
   float theta = -acosf(cosTheta);
 
-  Vector3 footToKnee(-rootToFoot);
-  footToKnee.SetLength(m_shinLen);
-  footToKnee.RotateAround(axis * theta);
+  // SetLength(m_shinLen) on the reversed leg vector, then RotateAround(axis *
+  // theta) -- whose ANGLE IS THE VECTOR'S MAGNITUDE, and which returned early
+  // without rotating when that magnitude squared was below 1e-8. Both halves
+  // are reproduced: the guard because a degenerate axis would otherwise give a
+  // NaN knee, and the negative theta because it sets the direction of bend.
+  DirectX::XMVECTOR footToKnee = DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVectorNegate(rootToFoot)), m_shinLen);
 
-  return _footPos + footToKnee;
+  DirectX::XMVECTOR const rotation = DirectX::XMVectorScale(axis, theta);
+  float const rotationLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(rotation));
+  if (rotationLengthSquared >= 1e-8f)
+  {
+    float const angle = sqrtf(rotationLengthSquared);
+    footToKnee = DirectX::XMVector3Transform(footToKnee, DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(rotation, 1.0f / angle), angle));
+  }
+
+  DirectX::XMFLOAT3 kneePos;
+  DirectX::XMStoreFloat3(&kneePos, DirectX::XMVectorAdd(footPos, footToKnee));
+  return kneePos;
 }
 
 void EntityLeg::LiftFoot(float _targetHoverHeight)
@@ -133,10 +166,14 @@ void EntityLeg::PlantFoot()
   m_foot.m_state = EntityFoot::FootState::OnGround;
 }
 
-Vector3 EntityLeg::GetIdealSwingingFootPos(float _fractionComplete)
+DirectX::XMFLOAT3 EntityLeg::GetIdealSwingingFootPos(float _fractionComplete)
 {
   float fractionIncomplete = 1.0f - _fractionComplete;
-  Vector3 pos = m_foot.m_lastGroundPos * fractionIncomplete + m_foot.m_targetPos * _fractionComplete;
+
+  DirectX::XMFLOAT3 pos;
+  DirectX::XMStoreFloat3(&pos,
+                         DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_foot.m_lastGroundPos), DirectX::XMVectorReplicate(fractionIncomplete),
+                                                      DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_foot.m_targetPos), _fractionComplete)));
 
   if (_fractionComplete < 0.33f)
     pos.y += _fractionComplete * 3.0f * m_legLift;
@@ -167,21 +204,30 @@ bool EntityLeg::Advance()
 
 void EntityLeg::AdvanceSpiderPounce(float _fractionComplete)
 {
-  Vector3 offset = m_foot.m_bodyToFoot;
+  DirectX::XMVECTOR offset = DirectX::XMLoadFloat3(&m_foot.m_bodyToFoot);
   if (_fractionComplete < 0.5f)
-    offset *= 1.0f - _fractionComplete;
+    offset = DirectX::XMVectorScale(offset, 1.0f - _fractionComplete);
   else
-    offset *= _fractionComplete;
-  m_foot.m_pos = m_parent->m_pos - offset + m_parent->m_vel * _fractionComplete * 0.05f;
+    offset = DirectX::XMVectorScale(offset, _fractionComplete);
+
+  DirectX::XMVECTOR const drift = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_parent->m_vel), _fractionComplete * 0.05f);
+  DirectX::XMStoreFloat3(&m_foot.m_pos, DirectX::XMVectorAdd(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_parent->m_pos), offset), drift));
   m_foot.m_lastGroundPos = m_foot.m_pos;
   m_foot.m_targetPos = m_foot.m_pos;
 }
 
-void EntityLeg::Render(float _predictionTime, const Vector3& _predictedMovement)
+void EntityLeg::Render(float _predictionTime, DirectX::XMFLOAT3 const& _predictedMovement)
 {
-  Vector3 predictedPos = m_parent->m_pos + _predictedMovement;
-  Vector3 rootPos(_predictedMovement + GetLegRootPos());
-  Vector3 footPos;
+  DirectX::XMVECTOR const movement = DirectX::XMLoadFloat3(&_predictedMovement);
+
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_parent->m_pos), movement));
+
+  DirectX::XMFLOAT3 const legRootPos = GetLegRootPos();
+  DirectX::XMFLOAT3 rootPos;
+  DirectX::XMStoreFloat3(&rootPos, DirectX::XMVectorAdd(movement, DirectX::XMLoadFloat3(&legRootPos)));
+
+  DirectX::XMFLOAT3 footPos{0.0f, 0.0f, 0.0f};
 
   switch (m_foot.m_state)
   {
@@ -197,37 +243,47 @@ void EntityLeg::Render(float _predictionTime, const Vector3& _predictedMovement)
   }
 
   case EntityFoot::FootState::Pouncing:
-    footPos = m_foot.m_pos + _predictedMovement;
-    // footPos = predictedPos - m_foot.m_bodyToFoot;
+    DirectX::XMStoreFloat3(&footPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_foot.m_pos), movement));
     break;
   }
 
-  Vector3 kneePos = CalcKneePos(footPos, rootPos, predictedPos);
+  DirectX::XMFLOAT3 const kneePos = CalcKneePos(footPos, rootPos, predictedPos);
+
+  DirectX::XMVECTOR const foot = DirectX::XMLoadFloat3(&footPos);
+  DirectX::XMVECTOR const knee = DirectX::XMLoadFloat3(&kneePos);
+  DirectX::XMVECTOR const root = DirectX::XMLoadFloat3(&rootPos);
 
   {
-    Vector3 up((kneePos - footPos).Normalise());
-    Vector3 front(up ^ g_upVector);
-    Matrix34 mat(front, up, footPos);
+    DirectX::XMVECTOR const up = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(knee, foot));
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Cross(up, DirectX::g_XMIdentityR1), up, foot));
     m_shapeLower->Render(_predictionTime, mat);
 
     // RenderArrow( kneePos, footPos, 1.0f );
   }
 
   {
-    Vector3 up((rootPos - kneePos).Normalise());
-    Vector3 front(up ^ g_upVector);
-    Matrix34 mat(front, up, kneePos);
+    DirectX::XMVECTOR const up = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(root, knee));
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Cross(up, DirectX::g_XMIdentityR1), up, knee));
     m_shapeUpper->Render(_predictionTime, mat);
 
     // RenderArrow( rootPos, kneePos, 1.0f );
   }
 }
 
-bool EntityLeg::RenderPixelEffect(float _predictionTime, const Vector3& _predictedMovement)
+bool EntityLeg::RenderPixelEffect(float _predictionTime, DirectX::XMFLOAT3 const& _predictedMovement)
 {
-  Vector3 predictedPos = m_parent->m_pos + _predictedMovement;
-  Vector3 rootPos(_predictedMovement + GetLegRootPos());
-  Vector3 footPos;
+  DirectX::XMVECTOR const movement = DirectX::XMLoadFloat3(&_predictedMovement);
+
+  DirectX::XMFLOAT3 predictedPos;
+  DirectX::XMStoreFloat3(&predictedPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_parent->m_pos), movement));
+
+  DirectX::XMFLOAT3 const legRootPos = GetLegRootPos();
+  DirectX::XMFLOAT3 rootPos;
+  DirectX::XMStoreFloat3(&rootPos, DirectX::XMVectorAdd(movement, DirectX::XMLoadFloat3(&legRootPos)));
+
+  DirectX::XMFLOAT3 footPos{0.0f, 0.0f, 0.0f};
 
   switch (m_foot.m_state)
   {
@@ -243,23 +299,29 @@ bool EntityLeg::RenderPixelEffect(float _predictionTime, const Vector3& _predict
   }
 
   case EntityFoot::FootState::Pouncing:
-    footPos = m_foot.m_pos + _predictedMovement; // - m_foot.m_bodyToFoot;
+    DirectX::XMStoreFloat3(&footPos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_foot.m_pos), movement));
     break;
   }
 
-  Vector3 kneePos = CalcKneePos(footPos, rootPos, predictedPos);
+  DirectX::XMFLOAT3 const kneePos = CalcKneePos(footPos, rootPos, predictedPos);
+
+  DirectX::XMVECTOR const foot = DirectX::XMLoadFloat3(&footPos);
+  DirectX::XMVECTOR const knee = DirectX::XMLoadFloat3(&kneePos);
+  DirectX::XMVECTOR const root = DirectX::XMLoadFloat3(&rootPos);
 
   {
-    Vector3 up((kneePos - footPos).Normalise());
-    Vector3 front(up ^ Vector3(1, 0, 0).Normalise());
-    Matrix34 mat(front, up, footPos);
+    DirectX::XMVECTOR const up = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(knee, foot));
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Cross(up, DirectX::g_XMIdentityR0), up, foot));
+    // RendererAccess still takes a legacy matrix -- it converts in T12,
+    // behind T22 -- so Matrix34's implicit conversion carries this across.
     g_renderer->MarkUsedCells(m_shapeLower, mat);
   }
 
   {
-    Vector3 up((rootPos - kneePos).Normalise());
-    Vector3 front(up ^ Vector3(1, 0, 0).Normalise());
-    Matrix34 mat(front, up, kneePos);
+    DirectX::XMVECTOR const up = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(root, knee));
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMVector3Cross(up, DirectX::g_XMIdentityR0), up, knee));
     g_renderer->MarkUsedCells(m_shapeUpper, mat);
   }
 

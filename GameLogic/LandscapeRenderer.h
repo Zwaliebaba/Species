@@ -4,7 +4,7 @@
 #include "2dSurfaceMap.h"
 #include "RgbColour.h"
 #include "TextureUv.h"
-#include "Vector3.h"
+#include "NeuronMath.h"
 
 
 class BitmapRGBA;
@@ -13,8 +13,8 @@ class BitmapRGBA;
 class LandVertex
 {
   public:
-    Vector3 m_pos;
-    Vector3 m_norm;
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 m_norm{0.0f, 0.0f, 0.0f};
     RGBAColour m_col;
     TextureUV m_uv;
 };

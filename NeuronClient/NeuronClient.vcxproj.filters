@@ -306,6 +306,7 @@
     <ClInclude Include="DebugRender.h" />
     <ClInclude Include="FileWriter.h" />
     <ClInclude Include="FilesysUtils.h" />
+    <ClInclude Include="GlVertex.h" />
     <ClInclude Include="InvertMatrix.h" />
     <ClInclude Include="LanguageTable.h" />
     <ClInclude Include="MouseCursor.h" />

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 #include "SoundSources.h"
 #include "Debug.h"
 #include "FileWriter.h"
@@ -42,7 +43,7 @@ void ReceiverBuilding::Initialise(Building* _template)
   m_spiritLink = ((ReceiverBuilding*)_template)->m_spiritLink;
 }
 
-Vector3 ReceiverBuilding::GetSpiritLocation()
+DirectX::XMFLOAT3 ReceiverBuilding::GetSpiritLocation()
 {
   if (!m_spiritLocation)
   {
@@ -50,9 +51,10 @@ Vector3 ReceiverBuilding::GetSpiritLocation()
     DEBUG_ASSERT(m_spiritLocation);
   }
 
-  Matrix34 rootMat(m_front, m_up, m_pos);
-  Matrix34 worldPos = m_spiritLocation->GetWorldMatrix(rootMat);
-  return worldPos.pos;
+  DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  return m_spiritLocation->GetWorldMatrix(rootMat).pos;
 }
 
 
@@ -62,8 +64,12 @@ bool ReceiverBuilding::IsInView()
 
   if (spiritLink)
   {
-    Vector3 midPoint = (spiritLink->m_centrePos + m_centrePos) / 2.0f;
-    float radius = (spiritLink->m_centrePos - m_centrePos).Mag() / 2.0f;
+    DirectX::XMVECTOR const theirCentre = DirectX::XMLoadFloat3(&spiritLink->m_centrePos);
+    DirectX::XMVECTOR const ourCentre = DirectX::XMLoadFloat3(&m_centrePos);
+
+    DirectX::XMFLOAT3 midPoint;
+    DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(theirCentre, ourCentre), 0.5f));
+    float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(theirCentre, ourCentre))) / 2.0f;
     radius += m_radius;
     return (g_camera->SphereInViewFrustum(midPoint, radius));
   }
@@ -84,7 +90,7 @@ void ReceiverBuilding::ListSoundEvents(std::vector<const char*>* _list)
 
 void ReceiverBuilding::Render(float _predictionTime)
 {
-  Matrix34 mat(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
   m_shape->Render(_predictionTime, mat);
 }
 
@@ -106,14 +112,18 @@ void ReceiverBuilding::RenderAlphas(float _predictionTime)
 
     ReceiverBuilding* receiverBuilding = (ReceiverBuilding*)spiritLink;
 
-    Vector3 ourPos = GetSpiritLocation();
-    Vector3 theirPos = receiverBuilding->GetSpiritLocation();
+    DirectX::XMFLOAT3 const ourPosStore = GetSpiritLocation();
+    DirectX::XMFLOAT3 const theirPosStore = receiverBuilding->GetSpiritLocation();
+    DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&ourPosStore);
+    DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&theirPosStore);
+    DirectX::XMVECTOR const alongLink = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-    Vector3 camToOurPos = g_camera->GetPos() - ourPos;
-    Vector3 ourPosRight = camToOurPos ^ (theirPos - ourPos);
+    // Camera's accessors are still legacy -- Species belongs to T22.
+    DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
+    DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
-    Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
-    Vector3 theirPosRight = camToTheirPos ^ (theirPos - ourPos);
+    DirectX::XMVECTOR ourPosRight = DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, ourPos), alongLink);
+    DirectX::XMVECTOR theirPosRight = DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, theirPos), alongLink);
 
     glDisable(GL_CULL_FACE);
     glDepthMask(false);
@@ -134,18 +144,22 @@ void ReceiverBuilding::RenderAlphas(float _predictionTime)
       size = 1.0f;
     }
 
-    ourPosRight.SetLength(size);
-    theirPosRight.SetLength(size);
+    // SetLength; see the note on the same call in Generator.cpp. Rendering
+    // only, and degenerate only with the camera exactly on the link, so this
+    // takes the native normalise rather than reproducing the fallback. size is
+    // set above and the two are scaled here rather than at declaration.
+    ourPosRight = DirectX::XMVectorScale(DirectX::XMVector3Normalize(ourPosRight), size);
+    theirPosRight = DirectX::XMVectorScale(DirectX::XMVector3Normalize(theirPosRight), size);
 
     glBegin(GL_QUADS);
     glTexCoord2f(0.1f, 0);
-    glVertex3fv((ourPos - ourPosRight).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(ourPos, ourPosRight));
     glTexCoord2f(0.1f, 1);
-    glVertex3fv((ourPos + ourPosRight).GetData());
+    EmitVertex(DirectX::XMVectorAdd(ourPos, ourPosRight));
     glTexCoord2f(0.9f, 1);
-    glVertex3fv((theirPos + theirPosRight).GetData());
+    EmitVertex(DirectX::XMVectorAdd(theirPos, theirPosRight));
     glTexCoord2f(0.9f, 0);
-    glVertex3fv((theirPos - theirPosRight).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(theirPos, theirPosRight));
     glEnd();
 
     glDisable(GL_TEXTURE_2D);
@@ -163,7 +177,8 @@ void ReceiverBuilding::RenderAlphas(float _predictionTime)
         thisSpirit = 0.0f;
       if (thisSpirit > 1.0f)
         thisSpirit = 1.0f;
-      Vector3 thisSpiritPos = ourPos + (theirPos - ourPos) * thisSpirit;
+      DirectX::XMFLOAT3 thisSpiritPos;
+      DirectX::XMStoreFloat3(&thisSpiritPos, DirectX::XMVectorMultiplyAdd(alongLink, DirectX::XMVectorReplicate(thisSpirit), ourPos));
       RenderUnprocessedSpirit(thisSpiritPos, 1.0f);
     }
     EndRenderUnprocessedSpirits();
@@ -263,52 +278,57 @@ void ReceiverBuilding::BeginRenderUnprocessedSpirits()
 }
 
 
-void ReceiverBuilding::RenderUnprocessedSpirit(Vector3 const& _pos, float _life)
+void ReceiverBuilding::RenderUnprocessedSpirit(DirectX::XMFLOAT3 const& _pos, float _life)
 {
-  Vector3 position = _pos;
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
+
+  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
+  // of the quads below, which each called them afresh.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
   float scale = 2.0f * _life;
   float alphaValue = _life;
 
   glColor4f(0.6f, 0.2f, 0.1f, alphaValue);
   glBegin(GL_QUADS);
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(3 * scale), position));
   glEnd();
 
   glColor4f(0.6f, 0.2f, 0.1f, alphaValue);
   glBegin(GL_QUADS);
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(1 * scale), position));
   glEnd();
 
   int buildingDetail = g_prefsManager->GetInt("RenderBuildingDetail", 1);
@@ -318,80 +338,90 @@ void ReceiverBuilding::RenderUnprocessedSpirit(Vector3 const& _pos, float _life)
     glColor4f(0.6f, 0.2f, 0.1f, alphaValue / 1.5f);
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((position + camUp * 30 * scale).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(30 * scale), position));
     glTexCoord2i(1, 0);
-    glVertex3fv((position + camRight * 30 * scale).GetData());
+    EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(30 * scale), position));
     glTexCoord2i(1, 1);
-    glVertex3fv((position - camUp * 30 * scale).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(30 * scale), position));
     glTexCoord2i(0, 1);
-    glVertex3fv((position - camRight * 30 * scale).GetData());
+    EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(30 * scale), position));
     glEnd();
     glDisable(GL_TEXTURE_2D);
   }
 }
 
-void ReceiverBuilding::RenderUnprocessedSpirit_basic(Vector3 const& _pos, float _life)
+void ReceiverBuilding::RenderUnprocessedSpirit_basic(DirectX::XMFLOAT3 const& _pos, float _life)
 {
-  Vector3 position = _pos;
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
+
+  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
+  // of the quads below, which each called them afresh.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
   float scale = 2.0f * _life;
   float alphaValue = _life;
 
   glColor4f(0.6f, 0.2f, 0.1f, alphaValue);
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(3 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 3 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(3 * scale), position));
 
   glColor4f(0.6f, 0.2f, 0.1f, alphaValue);
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(1 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 1 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(1 * scale), position));
 }
 
-void ReceiverBuilding::RenderUnprocessedSpirit_detail(Vector3 const& _pos, float _life)
+void ReceiverBuilding::RenderUnprocessedSpirit_detail(DirectX::XMFLOAT3 const& _pos, float _life)
 {
-  Vector3 position = _pos;
-  Vector3 camUp = g_camera->GetUp();
-  Vector3 camRight = g_camera->GetRight();
+  DirectX::XMVECTOR const position = DirectX::XMLoadFloat3(&_pos);
+
+  // Camera's accessors are still legacy -- Species belongs to T22. Hoisted out
+  // of the quads below, which each called them afresh.
+  DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+  DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+  DirectX::XMVECTOR const camUp = DirectX::XMLoadFloat3(&camUpStore);
+  DirectX::XMVECTOR const camRight = DirectX::XMLoadFloat3(&camRightStore);
   float scale = 2.0f * _life;
   float alphaValue = _life;
 
   glColor4f(0.6f, 0.2f, 0.1f, alphaValue / 1.5f);
   glTexCoord2i(0, 0);
-  glVertex3fv((position + camUp * 30 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camUp, DirectX::XMVectorReplicate(30 * scale), position));
   glTexCoord2i(1, 0);
-  glVertex3fv((position + camRight * 30 * scale).GetData());
+  EmitVertex(DirectX::XMVectorMultiplyAdd(camRight, DirectX::XMVectorReplicate(30 * scale), position));
   glTexCoord2i(1, 1);
-  glVertex3fv((position - camUp * 30 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camUp, DirectX::XMVectorReplicate(30 * scale), position));
   glTexCoord2i(0, 1);
-  glVertex3fv((position - camRight * 30 * scale).GetData());
+  EmitVertex(DirectX::XMVectorNegativeMultiplySubtract(camRight, DirectX::XMVectorReplicate(30 * scale), position));
 }
 
 
@@ -435,7 +465,8 @@ void SpiritProcessor::Initialise(Building* _building)
     float sizeX = g_location->m_landscape.GetWorldSizeX();
     float sizeZ = g_location->m_landscape.GetWorldSizeZ();
     float posY = syncfrand(1000.0f);
-    Vector3 spawnPos = Vector3(syncfrand(sizeX), posY, syncfrand(sizeZ));
+    // The two syncfrand calls stay in this order: they advance the RNG.
+    DirectX::XMFLOAT3 const spawnPos(syncfrand(sizeX), posY, syncfrand(sizeZ));
 
     UnprocessedSpirit* spirit = new UnprocessedSpirit();
     spirit->m_pos = spawnPos;
@@ -520,7 +551,8 @@ bool SpiritProcessor::Advance()
     float sizeX = g_location->m_landscape.GetWorldSizeX();
     float sizeZ = g_location->m_landscape.GetWorldSizeZ();
     float posY = 700.0f + syncfrand(300.0f);
-    Vector3 spawnPos = Vector3(syncfrand(sizeX), posY, syncfrand(sizeZ));
+    // The two syncfrand calls stay in this order: they advance the RNG.
+    DirectX::XMFLOAT3 const spawnPos(syncfrand(sizeX), posY, syncfrand(sizeZ));
     UnprocessedSpirit* spirit = new UnprocessedSpirit();
     spirit->m_pos = spawnPos;
     m_floatingSpirits.push_back(spirit);
@@ -553,9 +585,11 @@ void SpiritProcessor::RenderAlphas(float _predictionTime)
   for (int i = 0; i < static_cast<int>(m_floatingSpirits.size()); ++i)
   {
     UnprocessedSpirit* spirit = m_floatingSpirits[i];
-    Vector3 pos = spirit->m_pos;
-    pos += spirit->m_vel * _predictionTime;
-    pos += spirit->m_hover * _predictionTime;
+    DirectX::XMVECTOR drift = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&spirit->m_vel), DirectX::XMVectorReplicate(_predictionTime),
+                                                           DirectX::XMLoadFloat3(&spirit->m_pos));
+    drift = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&spirit->m_hover), DirectX::XMVectorReplicate(_predictionTime), drift);
+    DirectX::XMFLOAT3 pos;
+    DirectX::XMStoreFloat3(&pos, drift);
     float life = spirit->GetLife();
     RenderUnprocessedSpirit(pos, life);
   }
@@ -630,8 +664,7 @@ SpiritReceiver::SpiritReceiver()
 void SpiritReceiver::Initialise(Building* _template)
 {
   _template->m_up = g_location->m_landscape.m_normalMap->GetValue(_template->m_pos.x, _template->m_pos.z);
-  Vector3 right = Vector3(1, 0, 0);
-  _template->m_front = right ^ _template->m_up;
+  DirectX::XMStoreFloat3(&_template->m_front, DirectX::XMVector3Cross(DirectX::g_XMIdentityR0, DirectX::XMLoadFloat3(&_template->m_up)));
 
   ReceiverBuilding::Initialise(_template);
 }
@@ -652,15 +685,16 @@ bool SpiritReceiver::Advance()
       UnprocessedSpirit* spirit = processor->m_floatingSpirits[i];
       if (spirit->m_state == UnprocessedSpirit::StateUnprocessedFloating)
       {
-        Vector3 themToUs = (m_pos - spirit->m_pos);
-        float distance = themToUs.Mag();
-        Vector3 targetPos = m_pos;
+        DirectX::XMVECTOR const spiritPos = DirectX::XMLoadFloat3(&spirit->m_pos);
+        DirectX::XMVECTOR themToUs = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_pos), spiritPos);
+        float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(themToUs));
         if (distance < 100.0f)
         {
           float fraction = 1.0f - distance / 100.0f;
-          targetPos += Vector3(0, 100.0f * fraction, 0);
-          themToUs = targetPos - spirit->m_pos;
-          distance = themToUs.Mag();
+          DirectX::XMVECTOR const targetPos =
+            DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&m_pos), DirectX::XMVectorSet(0.0f, 100.0f * fraction, 0.0f, 0.0f));
+          themToUs = DirectX::XMVectorSubtract(targetPos, spiritPos);
+          distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(themToUs));
         }
 
         if (distance < 10.0f)
@@ -674,8 +708,12 @@ bool SpiritReceiver::Advance()
         {
           float fraction = 1.0f - distance / 200.0f;
           fraction *= fractionOccupied;
-          themToUs.SetLength(20.0f * fraction);
-          spirit->m_vel += themToUs * SERVER_ADVANCE_PERIOD;
+          // SetLength. distance is at least 10 in this branch, so the
+          // zero-length fallback is unreachable and this takes the native
+          // normalise.
+          DirectX::XMVECTOR const pull = DirectX::XMVectorScale(DirectX::XMVector3Normalize(themToUs), 20.0f * fraction);
+          DirectX::XMStoreFloat3(&spirit->m_vel, DirectX::XMVectorMultiplyAdd(pull, DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD),
+                                                                              DirectX::XMLoadFloat3(&spirit->m_vel)));
         }
       }
     }
@@ -690,32 +728,41 @@ void SpiritReceiver::Render(float _predictionTime)
   if (g_editing)
   {
     m_up = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
-    Vector3 right(1, 0, 0);
-    m_front = right ^ m_up;
+    DirectX::XMStoreFloat3(&m_front, DirectX::XMVector3Cross(DirectX::g_XMIdentityR0, DirectX::XMLoadFloat3(&m_up)));
   }
 
   ReceiverBuilding::Render(_predictionTime);
 
-  Matrix34 mat(m_front, m_up, m_pos);
-  Vector3 headPos = m_headMarker->GetWorldMatrix(mat).pos;
-  Vector3 up = g_upVector;
-  Vector3 right(1, 0, 0);
-  Vector3 front = up ^ right;
-  Matrix34 headMat(front, up, headPos);
+  DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldMatrix(mat).pos;
+
+  // The head is deliberately levelled: world up, world right, and a front that
+  // falls out of the two. Not the building's own basis.
+  DirectX::XMVECTOR const front = DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, DirectX::g_XMIdentityR0);
+
+  DirectX::XMFLOAT4X4 headMat;
+  DirectX::XMStoreFloat4x4(&headMat, BasisFromFrontAndUp(front, DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&headPos)));
   m_headShape->Render(_predictionTime, headMat);
 }
 
 
-Vector3 SpiritReceiver::GetSpiritLocation()
+DirectX::XMFLOAT3 SpiritReceiver::GetSpiritLocation()
 {
-  Matrix34 mat(m_front, m_up, m_pos);
-  Vector3 headPos = m_headMarker->GetWorldMatrix(mat).pos;
-  Vector3 up = g_upVector;
-  Vector3 right(1, 0, 0);
-  Vector3 front = up ^ right;
-  Matrix34 headMat(front, up, headPos);
-  Vector3 spiritLinkPos = m_spiritLink->GetWorldMatrix(headMat).pos;
-  return spiritLinkPos;
+  DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldMatrix(mat).pos;
+
+  // The head is deliberately levelled: world up, world right, and a front that
+  // falls out of the two. Not the building's own basis.
+  DirectX::XMVECTOR const front = DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, DirectX::g_XMIdentityR0);
+
+  DirectX::XMFLOAT4X4 headMat;
+  DirectX::XMStoreFloat4x4(&headMat, BasisFromFrontAndUp(front, DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&headPos)));
+
+  return m_spiritLink->GetWorldMatrix(headMat).pos;
 }
 
 
@@ -730,17 +777,22 @@ void SpiritReceiver::RenderPorts()
 
   for (int i = 0; i < GetNumPorts(); ++i)
   {
-    Matrix34 rootMat(m_front, m_up, m_pos);
-    Matrix34 worldMat = m_statusMarkers[i]->GetWorldMatrix(rootMat);
+    DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+
+    // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+    DirectX::XMFLOAT3 const statusPosStore = m_statusMarkers[i]->GetWorldMatrix(rootMat).pos;
 
     //
     // Render the status light
 
     float size = 6.0f;
-    Vector3 camR = g_camera->GetRight() * size;
-    Vector3 camU = g_camera->GetUp() * size;
+    // Camera's accessors are still legacy -- Species belongs to T22.
+    DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+    DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+    DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camRightStore), size);
+    DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&camUpStore), size);
 
-    Vector3 statusPos = worldMat.pos;
+    DirectX::XMVECTOR const statusPos = DirectX::XMLoadFloat3(&statusPosStore);
 
     if (GetPortOccupant(i).IsValid())
       glColor4f(0.3f, 1.0f, 0.3f, 1.0f);
@@ -749,13 +801,13 @@ void SpiritReceiver::RenderPorts()
 
     glBegin(GL_QUADS);
     glTexCoord2i(0, 0);
-    glVertex3fv((statusPos - camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(statusPos, camR), camU));
     glTexCoord2i(1, 0);
-    glVertex3fv((statusPos + camR - camU).GetData());
+    EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(statusPos, camR), camU));
     glTexCoord2i(1, 1);
-    glVertex3fv((statusPos + camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(statusPos, camR), camU));
     glTexCoord2i(0, 1);
-    glVertex3fv((statusPos - camR + camU).GetData());
+    EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(statusPos, camR), camU));
     glEnd();
   }
 
@@ -797,7 +849,7 @@ UnprocessedSpirit::UnprocessedSpirit()
 
 bool UnprocessedSpirit::Advance()
 {
-  m_vel *= 0.9f;
+  DirectX::XMStoreFloat3(&m_vel, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&m_vel), 0.9f));
 
   //
   // Make me float around slowly
@@ -857,10 +909,12 @@ bool UnprocessedSpirit::Advance()
     break;
   }
 
-  Vector3 oldPos = m_pos;
+  DirectX::XMFLOAT3 oldPos = m_pos;
 
-  m_pos += m_vel * SERVER_ADVANCE_PERIOD;
-  m_pos += m_hover * SERVER_ADVANCE_PERIOD;
+  DirectX::XMVECTOR drift =
+    DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), DirectX::XMLoadFloat3(&m_pos));
+  drift = DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_hover), DirectX::XMVectorReplicate(SERVER_ADVANCE_PERIOD), drift);
+  DirectX::XMStoreFloat3(&m_pos, drift);
   float worldSizeX = g_location->m_landscape.GetWorldSizeX();
   float worldSizeZ = g_location->m_landscape.GetWorldSizeZ();
   if (m_pos.x < 0.0f)

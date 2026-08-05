@@ -24,7 +24,7 @@ class ViriiUnit : public Unit
     bool m_cameraClose;
 
   public:
-    ViriiUnit(int teamId, int unitId, int numEntities, Vector3 const& _pos);
+    ViriiUnit(int teamId, int unitId, int numEntities, DirectX::XMFLOAT3 const& _pos);
 
     bool Advance(int _slice);
     void Render(float _predictionTime);
@@ -52,10 +52,11 @@ class Virii : public Entity
     WorldObjectId m_enemyId;
     WorldObjectId m_eggId;
     int m_spiritId;
-    Vector3 m_wayPoint;
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does not.
+    DirectX::XMFLOAT3 m_wayPoint{0.0f, 0.0f, 0.0f};
     float m_historyTimer;
 
-    Vector3 m_prevPos;
+    DirectX::XMFLOAT3 m_prevPos{0.0f, 0.0f, 0.0f};
     float m_prevPosTimer;
 
   protected:
@@ -65,11 +66,11 @@ class Virii : public Entity
     bool SearchForIdleDirection();
 
     WorldObjectId FindNearbyEgg(int _spiritId, float _autoAccept = 99999.9f);
-    WorldObjectId FindNearbyEgg(Vector3 const& _pos);
+    WorldObjectId FindNearbyEgg(DirectX::XMFLOAT3 const& _pos);
 
-    bool AdvanceToTargetPos(Vector3 const& _pos); // returns have-I-Arrived?
-    void RecordHistoryPosition(bool _required);   // if !_required this is simply to make it smoother
-    Vector3 AdvanceDeadPositionVector(int _index, Vector3 const& _pos, float _time);
+    bool AdvanceToTargetPos(DirectX::XMFLOAT3 const& _pos); // returns have-I-Arrived?
+    void RecordHistoryPosition(bool _required);             // if !_required this is simply to make it smoother
+    DirectX::XMFLOAT3 AdvanceDeadPositionVector(int _index, DirectX::XMFLOAT3 const& _pos, float _time);
 
     std::vector<ViriiHistory*> m_positionHistory;
 
@@ -99,10 +100,12 @@ class Virii : public Entity
 class ViriiHistory
 {
   public:
-    Vector3 m_pos;      // Position in world
-    Vector3 m_right;    // Right vector (front is to next point, up is land normal)
-    Vector3 m_glowDiff; // Diff to previous history point, sized for glow effect
-    float m_distance;   // Distance to previous history point
-    bool m_required;    // True means this is an absolute history position (eg direction change)
-                        // false means its just to smooth out the path (eg height change)
+    // Braced to zero: Vector3's default constructor did it, XMFLOAT3's does
+    // not, and ViriiHistory is filled in by assignment after construction.
+    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};      // Position in world
+    DirectX::XMFLOAT3 m_right{0.0f, 0.0f, 0.0f};    // Right vector (front is to next point, up is land normal)
+    DirectX::XMFLOAT3 m_glowDiff{0.0f, 0.0f, 0.0f}; // Diff to previous history point, sized for glow effect
+    float m_distance;                               // Distance to previous history point
+    bool m_required;                                // True means this is an absolute history position (eg direction change)
+                                                    // false means its just to smooth out the path (eg height change)
 };

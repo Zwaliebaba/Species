@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 
 #include <math.h>
 
@@ -41,14 +42,18 @@ void FeedingTube::Initialise(Building* _template)
 
 bool FeedingTube::Advance()
 {
-  Matrix34 rootMat(m_front, g_upVector, m_pos);
-  Matrix34 worldMat = m_focusMarker->GetWorldMatrix(rootMat);
-  Vector3 dishPos = worldMat.pos;
+  DirectX::XMFLOAT4X4 rootMat;
+  DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  DirectX::XMFLOAT3 const dishPos = m_focusMarker->GetWorldMatrix(rootMat).pos;
 
   FeedingTube* ft = (FeedingTube*)g_location->GetBuilding(m_receiverId);
   if (ft && ft->m_type == Building::TypeFeedingTube)
   {
-    m_range = (ft->GetDishPos(0.0f) - dishPos).Mag();
+    DirectX::XMFLOAT3 const theirDishPos = ft->GetDishPos(0.0f);
+    m_range = DirectX::XMVectorGetX(
+      DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&theirDishPos), DirectX::XMLoadFloat3(&dishPos))));
   }
   else
   {
@@ -59,60 +64,77 @@ bool FeedingTube::Advance()
 }
 
 
-Vector3 FeedingTube::GetDishPos(float _predictionTime)
+DirectX::XMFLOAT3 FeedingTube::GetDishPos(float _predictionTime)
 {
-  Matrix34 rootMat(m_front, g_upVector, m_pos);
-  Matrix34 worldMat = m_focusMarker->GetWorldMatrix(rootMat);
+  DirectX::XMFLOAT4X4 rootMat;
+  DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  Matrix34 const worldMat = m_focusMarker->GetWorldMatrix(rootMat);
   return worldMat.pos;
 }
 
 
-Vector3 FeedingTube::GetDishFront(float _predictionTime)
+DirectX::XMFLOAT3 FeedingTube::GetDishFront(float _predictionTime)
 {
   if (m_receiverId != -1)
   {
     FeedingTube* receiver = (FeedingTube*)g_location->GetBuilding(m_receiverId);
     if (receiver)
     {
-      Vector3 ourDishPos = GetDishPos(_predictionTime);
-      Vector3 receiverDishPos = receiver->GetDishPos(_predictionTime);
-      return (receiverDishPos - ourDishPos).Normalise();
+      DirectX::XMFLOAT3 const ourDishPos = GetDishPos(_predictionTime);
+      DirectX::XMFLOAT3 const receiverDishPos = receiver->GetDishPos(_predictionTime);
+
+      DirectX::XMFLOAT3 result;
+      DirectX::XMStoreFloat3(
+        &result, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&receiverDishPos), DirectX::XMLoadFloat3(&ourDishPos))));
+      return result;
     }
   }
 
-  Matrix34 rootMat(m_front, g_upVector, m_pos);
-  Matrix34 worldMat = m_focusMarker->GetWorldMatrix(rootMat);
-  return worldMat.f;
+  DirectX::XMFLOAT4X4 rootMat;
+  DirectX::XMStoreFloat4x4(&rootMat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  return m_focusMarker->GetWorldMatrix(rootMat).f;
 }
 
-Vector3 FeedingTube::GetForwardsClippingDir(float _predictionTime, FeedingTube* _sender)
+DirectX::XMFLOAT3 FeedingTube::GetForwardsClippingDir(float _predictionTime, FeedingTube* _sender)
 {
   if (_sender == nullptr)
   {
     return GetDishFront(_predictionTime);
   }
 
-  Vector3 senderDishFront = _sender->GetDishFront(_predictionTime);
-
-  Vector3 dishFront = GetDishFront(_predictionTime);
+  DirectX::XMFLOAT3 const senderDishFrontStore = _sender->GetDishFront(_predictionTime);
+  DirectX::XMFLOAT3 const dishFrontStore = GetDishFront(_predictionTime);
+  DirectX::XMVECTOR senderDishFront = DirectX::XMLoadFloat3(&senderDishFrontStore);
+  DirectX::XMVECTOR dishFront = DirectX::XMLoadFloat3(&dishFrontStore);
 
   // Make the two dishFronts point at each other.
 
-  Vector3 SR = GetDishPos(_predictionTime) - _sender->GetDishPos(_predictionTime);
-  SR.Normalise();
+  DirectX::XMFLOAT3 const ourPos = GetDishPos(_predictionTime);
+  DirectX::XMFLOAT3 const theirPos = _sender->GetDishPos(_predictionTime);
+  DirectX::XMVECTOR const SR =
+    DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&ourPos), DirectX::XMLoadFloat3(&theirPos)));
 
-  if (SR * senderDishFront < 0)
-    senderDishFront *= -1;
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Dot(SR, senderDishFront)) < 0)
+    senderDishFront = DirectX::XMVectorNegate(senderDishFront);
 
-  if (SR * dishFront > 0)
-    dishFront *= -1;
+  if (DirectX::XMVectorGetX(DirectX::XMVector3Dot(SR, dishFront)) > 0)
+    dishFront = DirectX::XMVectorNegate(dishFront);
 
-  Vector3 combinedDirection = -senderDishFront + dishFront;
+  DirectX::XMVECTOR const combinedDirection = DirectX::XMVectorSubtract(dishFront, senderDishFront);
 
-  if (combinedDirection.MagSquared() < 0.5f)
-    return -dishFront;
+  DirectX::XMFLOAT3 result;
+  if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(combinedDirection)) < 0.5f)
+  {
+    DirectX::XMStoreFloat3(&result, DirectX::XMVectorNegate(dishFront));
+    return result;
+  }
 
-  return combinedDirection.Normalise();
+  DirectX::XMStoreFloat3(&result, DirectX::XMVector3Normalize(combinedDirection));
+  return result;
 }
 
 void FeedingTube::Render(float _predictionTime) { Building::Render(_predictionTime); }
@@ -141,13 +163,12 @@ void FeedingTube::RenderSignal(float _predictionTime, float _radius, float _alph
   if (!receiver)
     return;
 
-  Vector3 startPos = GetStartPoint();
-  Vector3 endPos = GetEndPoint();
-  Vector3 delta = endPos - startPos;
-  Vector3 deltaNorm = delta;
-  deltaNorm.Normalise();
+  DirectX::XMFLOAT3 const startPos = GetStartPoint();
+  DirectX::XMFLOAT3 const endPos = GetEndPoint();
+  DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&endPos), DirectX::XMLoadFloat3(&startPos));
+  DirectX::XMVECTOR const deltaNorm = DirectX::XMVector3Normalize(delta);
 
-  float distance = (startPos - endPos).Mag();
+  float distance = DirectX::XMVectorGetX(DirectX::XMVector3Length(delta));
   float numRadii = 20.0f;
   int numSteps = int(distance / 200.0f);
   numSteps = std::max(1, numSteps);
@@ -182,18 +203,18 @@ void FeedingTube::RenderSignal(float _predictionTime, float _radius, float _alph
 
   glMatrixMode(GL_MODELVIEW);
   glTranslatef(startPos.x, startPos.y, startPos.z);
-  Vector3 dishFront = GetForwardsClippingDir(_predictionTime, receiver);
+  DirectX::XMFLOAT3 const dishFront = GetForwardsClippingDir(_predictionTime, receiver);
   double eqn1[4] = {dishFront.x, dishFront.y, dishFront.z, -1.0f};
   glClipPlane(GL_CLIP_PLANE0, eqn1);
 
 
-  Vector3 receiverPos = receiver->GetDishPos(_predictionTime);
-  Vector3 receiverFront = receiver->GetForwardsClippingDir(_predictionTime, this);
+  DirectX::XMFLOAT3 const receiverPos = receiver->GetDishPos(_predictionTime);
+  DirectX::XMFLOAT3 const receiverFront = receiver->GetForwardsClippingDir(_predictionTime, this);
   glTranslatef(-startPos.x, -startPos.y, -startPos.z);
   glTranslatef(receiverPos.x, receiverPos.y, receiverPos.z);
 
-  Vector3 diff = receiverPos - startPos;
-  float thisDistance = -(receiverFront * diff);
+  DirectX::XMVECTOR const diff = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&receiverPos), DirectX::XMLoadFloat3(&startPos));
+  float thisDistance = -DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&receiverFront), diff));
 
   thisDistance = -1.0f;
 
@@ -222,22 +243,30 @@ void FeedingTube::RenderSignal(float _predictionTime, float _radius, float _alph
 
     for (int s = 0; s < numSteps; ++s)
     {
-      Vector3 deltaFrom = 1.2f * delta * (float)s / (float)numSteps;
-      Vector3 deltaTo = 1.2f * delta * (float)(s + 1) / (float)numSteps;
+      DirectX::XMVECTOR const deltaFrom = DirectX::XMVectorScale(delta, 1.2f * (float)s / (float)numSteps);
+      DirectX::XMVECTOR const deltaTo = DirectX::XMVectorScale(delta, 1.2f * (float)(s + 1) / (float)numSteps);
 
-      Vector3 currentPos = (-delta * 0.1f) + Vector3(0, _radius, 0);
+      DirectX::XMVECTOR currentPos = DirectX::XMVectorAdd(DirectX::XMVectorScale(delta, -0.1f), DirectX::XMVectorSet(0.0f, _radius, 0.0f, 0.0f));
+
+      // Vector3::RotateAround's 1e-8 guard, not the 1e-5 one Matrix34 used.
+      DirectX::XMVECTOR const spinStep = DirectX::XMVectorScale(deltaNorm, 2.0f * M_PI / (float)numRadii);
+      float const spinLengthSquared = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(spinStep));
+      DirectX::XMMATRIX const spin =
+        spinLengthSquared >= 1e-8f
+          ? DirectX::XMMatrixRotationAxis(DirectX::XMVectorScale(spinStep, 1.0f / sqrtf(spinLengthSquared)), sqrtf(spinLengthSquared))
+          : DirectX::XMMatrixIdentity();
 
       for (int r = 0; r <= numRadii; ++r)
       {
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, texXInner, r / numRadii);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, texXOuter, r / numRadii);
-        glVertex3fv((currentPos + deltaFrom).GetData());
+        EmitVertex(DirectX::XMVectorAdd(currentPos, deltaFrom));
 
         gglMultiTexCoord2fARB(GL_TEXTURE0_ARB, texXInner + 10.0f / (float)numSteps, (r) / numRadii);
         gglMultiTexCoord2fARB(GL_TEXTURE1_ARB, texXOuter + distance / (200.0f * (float)numSteps), (r) / numRadii);
-        glVertex3fv((currentPos + deltaTo).GetData());
+        EmitVertex(DirectX::XMVectorAdd(currentPos, deltaTo));
 
-        currentPos.RotateAround(deltaNorm * (2.0f * M_PI / (float)numRadii));
+        currentPos = DirectX::XMVector3TransformNormal(currentPos, spin);
       }
 
       texXInner += 10.0f / (float)numSteps;
@@ -269,10 +298,19 @@ void FeedingTube::RenderSignal(float _predictionTime, float _radius, float _alph
   END_PROFILE(g_profiler, "Signal");
 }
 
-Vector3 FeedingTube::GetStartPoint() { return GetDishPos(0.0f); }
+DirectX::XMFLOAT3 FeedingTube::GetStartPoint() { return GetDishPos(0.0f); }
 
 
-Vector3 FeedingTube::GetEndPoint() { return GetDishPos(0.0f) + (GetDishFront(0.0f) * m_range); }
+DirectX::XMFLOAT3 FeedingTube::GetEndPoint()
+{
+  DirectX::XMFLOAT3 const dishPos = GetDishPos(0.0f);
+  DirectX::XMFLOAT3 const dishFront = GetDishFront(0.0f);
+
+  DirectX::XMFLOAT3 endPoint;
+  DirectX::XMStoreFloat3(
+    &endPoint, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&dishFront), DirectX::XMVectorReplicate(m_range), DirectX::XMLoadFloat3(&dishPos)));
+  return endPoint;
+}
 
 
 void FeedingTube::ListSoundEvents(std::vector<const char*>* _list)
@@ -286,7 +324,7 @@ void FeedingTube::ListSoundEvents(std::vector<const char*>* _list)
 }
 
 
-bool FeedingTube::DoesSphereHit(Vector3 const& _pos, float _radius)
+bool FeedingTube::DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius)
 {
   // This method is overridden for Radar Dish in order to expand the number
   // of cells the Radar Dish is placed into.  We were having problems where
@@ -295,7 +333,7 @@ bool FeedingTube::DoesSphereHit(Vector3 const& _pos, float _radius)
   // building at all
 
   SpherePackage sphere(_pos, _radius * 1.5f);
-  Matrix34 transform(m_front, m_up, m_pos);
+  DirectX::XMFLOAT4X4 transform = GetWorldMatrix();
   return m_shape->SphereHit(&sphere, transform);
 }
 
@@ -331,13 +369,17 @@ void FeedingTube::Write(FileWriter* _out)
 
 bool FeedingTube::IsInView()
 {
-  Vector3 startPoint = GetStartPoint();
-  Vector3 endPoint = GetEndPoint();
+  DirectX::XMFLOAT3 const startPointStore = GetStartPoint();
+  DirectX::XMFLOAT3 const endPointStore = GetEndPoint();
+  DirectX::XMVECTOR const startPoint = DirectX::XMLoadFloat3(&startPointStore);
+  DirectX::XMVECTOR const endPoint = DirectX::XMLoadFloat3(&endPointStore);
 
-  Vector3 midPoint = (startPoint + endPoint) / 2.0f;
-  float radius = (startPoint - endPoint).Mag() / 2.0f;
+  DirectX::XMFLOAT3 midPoint;
+  DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(startPoint, endPoint), 0.5f));
+  float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
   radius += m_radius;
 
+  // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
   if (g_camera->SphereInViewFrustum(midPoint, radius))
   {
     return true;

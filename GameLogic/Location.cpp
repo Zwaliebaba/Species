@@ -118,6 +118,8 @@ float Location::GroundHeight(float _worldX, float _worldZ)
 bool Location::WorldObjectExists(WorldObjectId const& _id) { return GetWorldObject(_id) != nullptr; }
 
 
+// STAYS LEGACY UNTIL T12 -- this overrides LocationAccess::GetSoundSource, and
+// an override must match its base exactly. See the note in Location.h.
 bool Location::GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* _vel)
 {
   WorldObject* object = GetWorldObject(_id);
@@ -125,6 +127,10 @@ bool Location::GetSoundSource(WorldObjectId const& _id, Vector3* _pos, Vector3* 
     return false;
 
   // A building is heard from its centre. Everything else from where it is.
+  // Both branches are native now that Building has converted, so the
+  // ternary picks XMFLOAT3 and the seam converts on assignment. It needed
+  // the opposite repair one commit ago -- that is what a half-converted
+  // tree looks like from a file that reads both sides of it.
   *_pos = _id.GetUnitId() == UNIT_BUILDINGS ? ((Building*)object)->m_centrePos : object->m_pos;
   *_vel = object->m_vel;
   return true;
@@ -276,8 +282,8 @@ void Location::InitTeams()
 // *** SpawnEntities
 // Returns id of last entity spawned
 // Only useful if we've only spawned one entity, eg an engineer
-WorldObjectId Location::SpawnEntities(Vector3 const& _pos, unsigned char _teamId, int _unitId, unsigned char _type, int _numEntities,
-                                      Vector3 const& _vel, float _spread, float _range, int _routeId, int _routeWaypointId)
+WorldObjectId Location::SpawnEntities(DirectX::XMFLOAT3 const& _pos, unsigned char _teamId, int _unitId, unsigned char _type, int _numEntities,
+                                      DirectX::XMFLOAT3 const& _vel, float _spread, float _range, int _routeId, int _routeWaypointId)
 {
   DEBUG_ASSERT(_teamId < NUM_TEAMS && m_teams[_teamId].m_teamType > Team::TeamTypeUnused);
 
@@ -294,14 +300,16 @@ WorldObjectId Location::SpawnEntities(Vector3 const& _pos, unsigned char _teamId
     s->m_pos = FindValidSpawnPosition(_pos, _spread);
     s->m_onGround = false;
     s->m_vel = _vel;
-    if (s->m_vel.MagSquared() > 0.0f)
+    // The zero case is REACHABLE -- SpawnEntities is called with a zero
+    // velocity all over the tree -- and the legacy fallback was an explicit
+    // (1,0,0) rather than Normalise's, so the branch is kept as it was.
+    if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMLoadFloat3(&s->m_vel))) > 0.0f)
     {
-      s->m_front = _vel;
-      s->m_front.Normalise();
+      DirectX::XMStoreFloat3(&s->m_front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_vel)));
     }
     else
     {
-      s->m_front.Set(1, 0, 0);
+      s->m_front = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
     }
     s->m_id.SetTeamId(_teamId);
     s->m_id.SetUnitId(_unitId);
@@ -329,13 +337,13 @@ WorldObjectId Location::SpawnEntities(Vector3 const& _pos, unsigned char _teamId
 }
 
 
-Vector3 Location::FindValidSpawnPosition(Vector3 const& _pos, float _spread)
+DirectX::XMFLOAT3 Location::FindValidSpawnPosition(DirectX::XMFLOAT3 const& _pos, float _spread)
 {
   int tries = 10;
 
   while (tries > 0)
   {
-    Vector3 randomPos = _pos;
+    DirectX::XMFLOAT3 randomPos = _pos;
 
     float radius = syncfrand(_spread);
     float theta = syncfrand(M_PI * 2);
@@ -360,7 +368,7 @@ Vector3 Location::FindValidSpawnPosition(Vector3 const& _pos, float _spread)
   //
   // Failed to find a valid pos
 
-  Vector3 pos = _pos;
+  DirectX::XMFLOAT3 pos = _pos;
   pos.x = std::max(pos.x, 20.0f);
   pos.z = std::max(pos.z, 20.0f);
   pos.x = std::min(pos.x, m_landscape.GetWorldSizeX() - 20);
@@ -370,13 +378,13 @@ Vector3 Location::FindValidSpawnPosition(Vector3 const& _pos, float _spread)
 }
 
 
-int Location::SpawnSpirit(Vector3 const& _pos, Vector3 const& _vel, unsigned char _teamId, WorldObjectId _id)
+int Location::SpawnSpirit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, unsigned char _teamId, WorldObjectId _id)
 {
   DEBUG_ASSERT(_teamId < NUM_TEAMS);
 
   int index = m_spirits.GetNextFree();
   Spirit* s = m_spirits.GetPointer(index);
-  s->m_pos = _pos + g_upVector;
+  DirectX::XMStoreFloat3(&s->m_pos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&_pos), DirectX::g_XMIdentityR1));
   s->m_vel = _vel;
   s->m_teamId = _teamId;
   s->m_worldObjectId = _id;
@@ -494,7 +502,7 @@ Entity* Location::GetEntity(WorldObjectId _id)
 }
 
 
-Entity* Location::GetEntity(Vector3 const& _rayStart, Vector3 const& _rayDir)
+Entity* Location::GetEntity(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir)
 {
   for (unsigned int i = 0; i < NUM_TEAMS; ++i)
   {
@@ -571,7 +579,7 @@ Building* Location::GetBuilding(int _id)
 }
 
 
-Building* Location::GetBuilding(Vector3 const& _rayStart, Vector3 const& _rayDir)
+Building* Location::GetBuilding(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT3 const& _rayDir)
 {
   for (unsigned int i = 0; i < m_buildings.Size(); ++i)
   {
@@ -589,20 +597,32 @@ Building* Location::GetBuilding(Vector3 const& _rayStart, Vector3 const& _rayDir
 }
 
 
-bool Location::IsVisible(Vector3 const& _from, Vector3 const& _to)
+bool Location::IsVisible(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to)
 {
-  Vector3 rayDir = (_to - _from).Normalise();
-  float tolerance = 20.0f;
-  Vector3 startPos = _from + rayDir * tolerance;
+  DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
+  DirectX::XMVECTOR const delta = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_to), from);
 
+  float tolerance = 20.0f;
+  DirectX::XMFLOAT3 rayDir;
+  DirectX::XMStoreFloat3(&rayDir, DirectX::XMVector3Normalize(delta));
+
+  DirectX::XMFLOAT3 startPos;
+  DirectX::XMStoreFloat3(&startPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&rayDir), DirectX::XMVectorReplicate(tolerance), from));
+
+  // Landscape::RayHit still takes Vector3 -- its out-pointer reaches MathUtils,
+  // which has no converting task. See T18's notes.
   Vector3 hitPos;
-  bool landHit = g_location->m_landscape.RayHit(startPos, rayDir, &hitPos);
+  bool landHit = g_location->m_landscape.RayHit(AsLegacy(startPos), AsLegacy(rayDir), &hitPos);
 
   if (!landHit)
     return true;
 
-  float distanceToTarget = (_to - _from).Mag();
-  float distanceToHit = (hitPos - _from).Mag();
+  // The seam's conversion operator, bound to a name so its address is an
+  // XMFLOAT3* -- `&hitPos` would be a Vector3*, which is T14's failure mode 7.
+  DirectX::XMFLOAT3 const& hitNative = hitPos;
+
+  float distanceToTarget = DirectX::XMVectorGetX(DirectX::XMVector3Length(delta));
+  float distanceToHit = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&hitNative), from)));
   if (distanceToHit > distanceToTarget + tolerance)
     return true;
 
@@ -610,7 +630,7 @@ bool Location::IsVisible(Vector3 const& _from, Vector3 const& _to)
 }
 
 
-bool Location::IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evaluateCliffs)
+bool Location::IsWalkable(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const& _to, bool _evaluateCliffs)
 {
   float waterLevel = -1.0f;
 
@@ -622,13 +642,16 @@ bool Location::IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evalua
   START_PROFILE(g_profiler, "QueryWalkable");
 
   float stepSize = 50.0f;
-  float totalDistance = (_from - _to).Mag();
+  DirectX::XMVECTOR const from = DirectX::XMLoadFloat3(&_from);
+  DirectX::XMVECTOR const to = DirectX::XMLoadFloat3(&_to);
+  float totalDistance = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(from, to)));
   int numSteps = totalDistance / stepSize;
-  Vector3 diff = (_to - _from) / (float)numSteps;
+  DirectX::XMFLOAT3 diff;
+  DirectX::XMStoreFloat3(&diff, DirectX::XMVectorScale(DirectX::XMVectorSubtract(to, from), 1.0f / (float)numSteps));
   float distanceUnderWater = 0.0f;
 
-  Vector3 position = _from;
-  Vector3 oldPosition = _from;
+  DirectX::XMFLOAT3 position = _from;
+  DirectX::XMFLOAT3 oldPosition = _from;
   for (int i = 0; i < numSteps; ++i)
   {
     position.y = m_landscape.m_heightMap->GetValue(position.x, position.z);
@@ -653,7 +676,7 @@ bool Location::IsWalkable(Vector3 const& _from, Vector3 const& _to, bool _evalua
       }
     }
 
-    position += diff;
+    DirectX::XMStoreFloat3(&position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&position), DirectX::XMLoadFloat3(&diff)));
   }
 
   END_PROFILE(g_profiler, "QueryWalkable");
@@ -919,7 +942,7 @@ void Location::AdvanceChristmas()
       float sizeX = m_landscape.GetWorldSizeX();
       float sizeZ = m_landscape.GetWorldSizeZ();
       float posY = syncfrand(1000.0f);
-      Vector3 spawnPos = Vector3(syncfrand(sizeX), posY, syncfrand(sizeZ));
+      DirectX::XMFLOAT3 spawnPos(syncfrand(sizeX), posY, syncfrand(sizeZ));
       Snow* snow = new Snow();
       snow->m_pos = spawnPos;
       int index = m_effects.PutData(snow);
@@ -935,7 +958,7 @@ void Location::AdvanceChristmas()
     float sizeX = m_landscape.GetWorldSizeX();
     float sizeZ = m_landscape.GetWorldSizeZ();
     float posY = 700.0f + syncfrand(300.0f);
-    Vector3 spawnPos = Vector3(syncfrand(sizeX), posY, syncfrand(sizeZ));
+    DirectX::XMFLOAT3 spawnPos(syncfrand(sizeX), posY, syncfrand(sizeZ));
     Snow* snow = new Snow();
     snow->m_pos = spawnPos;
     int index = m_effects.PutData(snow);
@@ -1089,8 +1112,8 @@ void Location::RenderBuildings()
     float black[] = {0, 0, 0, 0};
     float colour1[] = {2.0f, 1.5f, 0.75f, 1.0f};
 
-    Vector3 light0(0, 1, 0.5);
-    light0.Normalise();
+    DirectX::XMFLOAT3 light0;
+    DirectX::XMStoreFloat3(&light0, DirectX::XMVector3Normalize(DirectX::XMVectorSet(0.0f, 1.0f, 0.5f, 0.0f)));
     GLfloat light0AsFourFloats[] = {light0.x, light0.y, light0.z, 0.0f};
 
     glLightfv(GL_LIGHT0, GL_POSITION, light0AsFourFloats);
@@ -1189,10 +1212,12 @@ void Location::RenderBuildingAlphas()
       Building* building = m_buildings.GetData(i);
       if (building->IsInView())
       {
-        Vector3 centrePos;
+        DirectX::XMFLOAT3 centrePos;
         if (building->PerformDepthSort(centrePos))
         {
-          float distance = (centrePos - g_camera->GetPos()).MagSquared();
+          DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+          float distance = DirectX::XMVectorGetX(
+            DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&centrePos), DirectX::XMLoadFloat3(&cameraPos))));
           s_sortedBuildings[s_nextSortedBuilding].m_buildingIndex = i;
           s_sortedBuildings[s_nextSortedBuilding].m_distance = distance;
           s_nextSortedBuilding++;
@@ -1381,7 +1406,7 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
       continue;
 
     Team* team = &g_location->m_teams[iu->m_teamId];
-    Vector3 pos(iu->m_posX, 0, iu->m_posZ);
+    DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
     pos.y = m_landscape.m_heightMap->GetValue(pos.x, pos.z);
     int unitId = -1;
     Unit* newUnit = nullptr;
@@ -1393,22 +1418,24 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
       iu->m_routeId = -1;
     }
 
-    WorldObjectId spawnedId =
-      SpawnEntities(pos, iu->m_teamId, unitId, iu->m_type, iu->m_number, g_zeroVector, iu->m_spread, -1.0f, iu->m_routeId, iu->m_routeWaypointId);
+    WorldObjectId spawnedId = SpawnEntities(pos, iu->m_teamId, unitId, iu->m_type, iu->m_number, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), iu->m_spread,
+                                            -1.0f, iu->m_routeId, iu->m_routeWaypointId);
 
     //
     // Is the waypoint in a Radar Dish?
 
-    Vector3 targetPos(iu->m_waypointX, 0, iu->m_waypointZ);
+    DirectX::XMFLOAT3 targetPos(iu->m_waypointX, 0.0f, iu->m_waypointZ);
     std::vector<int> const* buildingIds = m_obstructionGrid->GetBuildings(iu->m_waypointX, iu->m_waypointZ);
     for (int buildingId : *buildingIds)
     {
       Building* building = GetBuilding(buildingId);
       if (building && building->m_type == Building::TypeRadarDish)
       {
-        Vector3 waypointToBuilding = (building->m_pos - targetPos);
+        DirectX::XMFLOAT3 waypointToBuilding;
+        DirectX::XMStoreFloat3(&waypointToBuilding,
+                               DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&building->m_pos), DirectX::XMLoadFloat3(&targetPos)));
         waypointToBuilding.y = 0;
-        if (waypointToBuilding.Mag() < building->m_radius)
+        if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&waypointToBuilding))) < building->m_radius)
         {
           targetPos = building->m_pos;
           break;
@@ -1452,19 +1479,19 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
     {
       if (program->m_type == Entity::TypeEngineer)
       {
-        Vector3 pos(program->m_positionX[0], 0, program->m_positionZ[0]);
+        DirectX::XMFLOAT3 pos(program->m_positionX[0], 0.0f, program->m_positionZ[0]);
         pos.y = m_landscape.m_heightMap->GetValue(pos.x, pos.z);
-        WorldObjectId objId = SpawnEntities(pos, _teamId, -1, Entity::TypeEngineer, 1, g_zeroVector, 0.0f);
+        WorldObjectId objId = SpawnEntities(pos, _teamId, -1, Entity::TypeEngineer, 1, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 0.0f);
         Engineer* engineer = (Engineer*)GetEntitySafe(objId, Entity::TypeEngineer);
         engineer->m_state = program->m_state;
-        engineer->m_wayPoint.Set(program->m_waypointX, 0, program->m_waypointZ);
+        engineer->m_wayPoint = DirectX::XMFLOAT3(program->m_waypointX, 0.0f, program->m_waypointZ);
         engineer->m_wayPoint.y = m_landscape.m_heightMap->GetValue(program->m_waypointX, program->m_waypointZ);
         engineer->m_stats[Entity::StatHealth] = program->m_health[0];
 
         // m_data = num spirits carried
         for (int s = 0; s < program->m_data; ++s)
         {
-          int index = SpawnSpirit(engineer->m_pos, g_zeroVector, 1, WorldObjectId());
+          int index = SpawnSpirit(engineer->m_pos, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 1, WorldObjectId());
           engineer->CollectSpirit(index);
         }
 
@@ -1477,18 +1504,18 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
 
       if (program->m_type == Entity::TypeInsertionSquadie)
       {
-        Vector3 pos(program->m_positionX[0], 0, program->m_positionZ[0]);
+        DirectX::XMFLOAT3 pos(program->m_positionX[0], 0.0f, program->m_positionZ[0]);
         pos.y = m_landscape.m_heightMap->GetValue(pos.x, pos.z);
 
         int unitId;
         InsertionSquad* squad = (InsertionSquad*)GetMyTeam()->NewUnit(Entity::TypeInsertionSquadie, program->m_count, &unitId, pos);
 
-        Vector3 waypoint(program->m_waypointX, 0, program->m_waypointZ);
+        DirectX::XMFLOAT3 waypoint(program->m_waypointX, 0.0f, program->m_waypointZ);
         waypoint.y = m_landscape.m_heightMap->GetValue(program->m_waypointX, program->m_waypointZ);
         // squad->SetWayPoint( waypoint );
         squad->SetWeaponType(program->m_data);
 
-        SpawnEntities(pos, _teamId, unitId, Entity::TypeInsertionSquadie, program->m_count, g_zeroVector, 10.0f);
+        SpawnEntities(pos, _teamId, unitId, Entity::TypeInsertionSquadie, program->m_count, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 10.0f);
 
         for (int s = 0; s < squad->m_entities.Size(); ++s)
         {
@@ -1553,7 +1580,7 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
       // answers a zero-length input with (0,0,1) and XMVector3Normalize does
       // not, and a mouse position exactly on a unit's centre is reachable. This
       // line converts properly with the rest of Location in T18.
-      unit->m_targetDir = (Vector3(teamControls.m_mousePos) - unit->m_centrePos).Normalise();
+      unit->m_targetDir = (Vector3(teamControls.m_mousePos) - AsLegacy(unit->m_centrePos)).Normalise();
       unit->RecalculateOffsets();
 
       //
@@ -1630,7 +1657,11 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
 }
 
 
-int Location::GetUnitId(Vector3 const& startRay, Vector3 const& direction, unsigned char team, float* _range)
+// The Vector3 locals below feed RaySphereIntersection's out-pointer and
+// CameraAccess::Get2DScreenPos, neither of which converts before T12 and the
+// MathUtils task that does not yet exist. The seam handles the reference
+// arguments; the pointer is what has to stay legacy. See T18's notes.
+int Location::GetUnitId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 const& direction, unsigned char team, float* _range)
 {
   if (team == 255)
     return -1;
@@ -1649,7 +1680,7 @@ int Location::GetUnitId(Vector3 const& startRay, Vector3 const& direction, unsig
     if (m_teams[team].m_units.ValidIndex(unit))
     {
       Unit* theUnit = m_teams[team].m_units.GetData(unit);
-      bool rayHit = RaySphereIntersection(startRay, direction, theUnit->m_centrePos, theUnit->m_radius * 1.5f);
+      bool rayHit = RaySphereIntersection(AsLegacy(startRay), AsLegacy(direction), AsLegacy(theUnit->m_centrePos), theUnit->m_radius * 1.5f);
       if (rayHit && theUnit->NumAliveEntities() > 0)
       {
         for (int i = 0; i < theUnit->m_entities.Size(); ++i)
@@ -1657,11 +1688,11 @@ int Location::GetUnitId(Vector3 const& startRay, Vector3 const& direction, unsig
           if (theUnit->m_entities.ValidIndex(i))
           {
             Entity* entity = theUnit->m_entities[i];
-            Vector3 spherePos = entity->m_pos + entity->m_centrePos;
+            Vector3 spherePos = AsLegacy(entity->m_pos) + AsLegacy(entity->m_centrePos);
             float sphereRadius = entity->m_radius * 1.5f;
             Vector3 hitPos;
 
-            bool entityHit = RaySphereIntersection(startRay, direction, spherePos, sphereRadius, 1e10, &hitPos);
+            bool entityHit = RaySphereIntersection(AsLegacy(startRay), AsLegacy(direction), spherePos, sphereRadius, 1e10, &hitPos);
             if (entityHit && !entity->m_dead)
             {
               float centrePosX, centrePosY, rayHitX, rayHitY;
@@ -1690,7 +1721,7 @@ int Location::GetUnitId(Vector3 const& startRay, Vector3 const& direction, unsig
 }
 
 
-WorldObjectId Location::GetEntityId(Vector3 const& startRay, Vector3 const& direction, unsigned char teamId, float* _range)
+WorldObjectId Location::GetEntityId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 const& direction, unsigned char teamId, float* _range)
 {
   if (teamId == 255)
     return WorldObjectId();
@@ -1706,10 +1737,10 @@ WorldObjectId Location::GetEntityId(Vector3 const& startRay, Vector3 const& dire
       Entity* ent = m_teams[teamId].m_others.GetData(i);
       if (!ent->m_dead)
       {
-        Vector3 spherePos = ent->m_pos + ent->m_centrePos;
+        Vector3 spherePos = AsLegacy(ent->m_pos) + AsLegacy(ent->m_centrePos);
         float sphereRadius = ent->m_radius * 1.5f;
         Vector3 hitPos;
-        bool rayHit = RaySphereIntersection(startRay, direction, spherePos, sphereRadius, 1e10, &hitPos);
+        bool rayHit = RaySphereIntersection(AsLegacy(startRay), AsLegacy(direction), spherePos, sphereRadius, 1e10, &hitPos);
         if (rayHit)
         {
           float centrePosX, centrePosY, rayHitX, rayHitY;
@@ -1736,7 +1767,8 @@ WorldObjectId Location::GetEntityId(Vector3 const& startRay, Vector3 const& dire
 }
 
 
-int Location::GetBuildingId(Vector3 const& rayStart, Vector3 const& rayDir, unsigned char teamId, float _maxDistance, float* _range)
+int Location::GetBuildingId(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir, unsigned char teamId, float _maxDistance,
+                            float* _range)
 {
   float closestRangeSqd = FLT_MAX;
   int buildingId = -1;
@@ -1757,12 +1789,13 @@ int Location::GetBuildingId(Vector3 const& rayStart, Vector3 const& rayDir, unsi
         {
           rayHit = building->DoesRayHit(rayStart, rayDir, 1e10);
           if (rayHit)
-            RaySphereIntersection(rayStart, rayDir, building->m_centrePos, building->m_radius, _maxDistance, &hitPos);
+            RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(building->m_centrePos), building->m_radius, _maxDistance, &hitPos);
           // Have to do the raySphereIntersection in order to calculate the hitPos
         }
         else
         {
-          rayHit = RaySphereIntersection(rayStart, rayDir, building->m_centrePos, building->m_radius, _maxDistance, &hitPos);
+          rayHit =
+            RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(building->m_centrePos), building->m_radius, _maxDistance, &hitPos);
         }
 
         if (rayHit)
@@ -1791,9 +1824,10 @@ int Location::GetBuildingId(Vector3 const& rayStart, Vector3 const& rayDir, unsi
 }
 
 
-void Location::ThrowWeapon(Vector3 const& _pos, Vector3 const& _target, int _type, unsigned char _fromTeamId)
+void Location::ThrowWeapon(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _target, int _type, unsigned char _fromTeamId)
 {
-  float distance = (_target - _pos).Mag();
+  float distance =
+    DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_target), DirectX::XMLoadFloat3(&_pos))));
   float force = sqrtf(distance) * 8.0f;
 
   int grenadeResearch = g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeGrenade);
@@ -1805,9 +1839,14 @@ void Location::ThrowWeapon(Vector3 const& _pos, Vector3 const& _target, int _typ
   if (force > maxForce)
     force = maxForce;
 
-  Vector3 front = (_target - _pos).Normalise();
+  // Two normalises with a y override between them, as the legacy code had it:
+  // the first fixes the horizontal direction, the second re-unitises after y
+  // is forced to 1.
+  DirectX::XMFLOAT3 front;
+  DirectX::XMStoreFloat3(&front,
+                         DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_target), DirectX::XMLoadFloat3(&_pos))));
   front.y = 1.0f;
-  front.Normalise();
+  DirectX::XMStoreFloat3(&front, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&front)));
 
   ThrowableWeapon* weapon = nullptr;
 
@@ -1833,7 +1872,7 @@ void Location::ThrowWeapon(Vector3 const& _pos, Vector3 const& _target, int _typ
   //
   // Create muzzle flash
 
-  Vector3 flashFront = front;
+  DirectX::XMFLOAT3 const flashFront = front;
   MuzzleFlash* mf = new MuzzleFlash(_pos, flashFront, 20.0f, 3.0f);
   int index = m_effects.PutData(mf);
   mf->m_id.Set(_fromTeamId, UNIT_EFFECTS, index, -1);
@@ -1841,7 +1880,7 @@ void Location::ThrowWeapon(Vector3 const& _pos, Vector3 const& _target, int _typ
 }
 
 
-void Location::FireRocket(Vector3 const& _pos, Vector3 const& _target, unsigned char _teamId)
+void Location::FireRocket(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _target, unsigned char _teamId)
 {
   Rocket* r = new Rocket(_pos, _target);
   r->m_fromTeamId = _teamId;
@@ -1855,8 +1894,9 @@ void Location::FireRocket(Vector3 const& _pos, Vector3 const& _target, unsigned 
   //
   // Create muzzle flash
 
-  Vector3 flashFront = _target - _pos;
-  flashFront.Normalise();
+  DirectX::XMFLOAT3 flashFront;
+  DirectX::XMStoreFloat3(&flashFront,
+                         DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_target), DirectX::XMLoadFloat3(&_pos))));
   MuzzleFlash* mf = new MuzzleFlash(_pos, flashFront, 20.0f, 3.0f);
   int index = m_effects.PutData(mf);
   mf->m_id.Set(_teamId, UNIT_EFFECTS, index, -1);
@@ -1864,7 +1904,7 @@ void Location::FireRocket(Vector3 const& _pos, Vector3 const& _target, unsigned 
 }
 
 
-void Location::FireTurretShell(Vector3 const& _pos, Vector3 const& _vel)
+void Location::FireTurretShell(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel)
 {
   int armourResearch = g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeArmour);
   float lifeTime = 0.0f;
@@ -1899,8 +1939,8 @@ void Location::FireTurretShell(Vector3 const& _pos, Vector3 const& _vel)
   //
   // Create muzzle flash
 
-  Vector3 flashFront = _vel;
-  flashFront.Normalise();
+  DirectX::XMFLOAT3 flashFront;
+  DirectX::XMStoreFloat3(&flashFront, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_vel)));
 
   MuzzleFlash* mf = new MuzzleFlash(_pos, flashFront, 40.0f, 2.0f);
   int index = m_effects.PutData(mf);
@@ -1909,7 +1949,7 @@ void Location::FireTurretShell(Vector3 const& _pos, Vector3 const& _vel)
 }
 
 
-void Location::FireLaser(Vector3 const& _pos, Vector3 const& _vel, unsigned char _teamId)
+void Location::FireLaser(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _vel, unsigned char _teamId)
 {
   int laserResearch = g_globalWorld->m_research->CurrentLevel(GlobalResearch::TypeLaser);
   float lifetime = 0.0f;
@@ -1945,8 +1985,8 @@ void Location::FireLaser(Vector3 const& _pos, Vector3 const& _vel, unsigned char
   //
   // Create muzzle flash
 
-  Vector3 flashFront = _vel;
-  flashFront.Normalise();
+  DirectX::XMFLOAT3 flashFront;
+  DirectX::XMStoreFloat3(&flashFront, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_vel)));
   MuzzleFlash* mf = new MuzzleFlash(_pos, flashFront, 20.0f * lifetime, 1.0f);
   int index = m_effects.PutData(mf);
   mf->m_id.Set(_teamId, UNIT_EFFECTS, index, -1);
@@ -1968,7 +2008,7 @@ Team* Location::GetMyTeam()
 // Private Methods
 // ****************************************************************************
 
-void Location::Bang(Vector3 const& _pos, float _range, float _damage)
+void Location::Bang(DirectX::XMFLOAT3 const& _pos, float _range, float _damage)
 {
   int numCores = _range * _damage * 0.01f;
   numCores += syncfrand(numCores);
@@ -1976,7 +2016,13 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
   {
     Vector3 vel(syncsfrand(20.0f), 10.0f + syncfrand(10.0f), syncsfrand(20.0f));
     float size = 120.0f + syncfrand(60.0f);
-    g_particleSystem->CreateParticle(_pos + g_upVector * _range * 0.3f, vel, Particle::TypeExplosionCore, size);
+    // ParticleSystem::CreateParticle still takes Vector3 const& -- it belongs
+    // to T19. The seam converts the arguments; the local stays legacy so the
+    // syncsfrand call order above is untouched.
+    DirectX::XMFLOAT3 corePos;
+    DirectX::XMStoreFloat3(
+      &corePos, DirectX::XMVectorMultiplyAdd(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(_range * 0.3f), DirectX::XMLoadFloat3(&_pos)));
+    g_particleSystem->CreateParticle(AsLegacy(corePos), vel, Particle::TypeExplosionCore, size);
   }
 
   int numDebris = static_cast<int>(std::max(1.0f, _range * _damage * 0.005f));
@@ -1984,7 +2030,10 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
   {
     Vector3 vel(syncsfrand(30.0f), 20.0f + syncfrand(20.0f), syncsfrand(30.0f));
     float size = 30.0f + syncfrand(20.0f);
-    g_particleSystem->CreateParticle(_pos + g_upVector * _range * 0.5f, vel, Particle::TypeExplosionDebris, size);
+    DirectX::XMFLOAT3 debrisPos;
+    DirectX::XMStoreFloat3(
+      &debrisPos, DirectX::XMVectorMultiplyAdd(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(_range * 0.5f), DirectX::XMLoadFloat3(&_pos)));
+    g_particleSystem->CreateParticle(AsLegacy(debrisPos), vel, Particle::TypeExplosionDebris, size);
   }
 
 
@@ -1999,7 +2048,8 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
     WorldObject* obj = g_location->GetEntity(id);
     Entity* entity = (Entity*)obj;
 
-    float distance = (entity->m_pos - _pos).Mag();
+    float distance =
+      DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&_pos))));
     float fraction = (_range * 2.0f - distance) / _range * 2.0f;
     // fraction *= (1.0f + syncfrand(0.3f));
     // fraction *= 1.5f;
@@ -2007,8 +2057,12 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
 
     entity->ChangeHealth(_damage * fraction * -1.0f);
 
-    Vector3 push(entity->m_pos - _pos);
-    push.Normalise();
+    // Two normalises with a y override between them, as the legacy code had
+    // it. Both are taken natively: the zero case needs the entity to be exactly
+    // on the blast point, and the y override immediately makes it non-zero.
+    DirectX::XMFLOAT3 push;
+    DirectX::XMStoreFloat3(
+      &push, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&_pos))));
 
     if (entity->m_onGround)
     {
@@ -2019,10 +2073,9 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
       push.y = -1;
     }
 
-    push.Normalise();
-    push *= fraction;
+    DirectX::XMVECTOR const pushVector = DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&push)), fraction);
 
-    entity->m_vel += push;
+    DirectX::XMStoreFloat3(&entity->m_vel, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&entity->m_vel), pushVector));
     entity->m_onGround = false;
   }
 
@@ -2030,9 +2083,12 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
   //
   // Is visible?
 
+  // Landscape::RayHit still takes Vector3 -- see T18's notes. tmp stays legacy
+  // because it is an out-POINTER, which the seam does not reach through.
+  Vector3 const cameraPos = g_camera->GetPos();
   Vector3 tmp;
-  bool isVisible = !m_landscape.RayHit(g_camera->GetPos(), _pos - g_camera->GetPos(), &tmp) ||
-                   (tmp - g_camera->GetPos()).Mag() > (_pos - g_camera->GetPos()).Mag() - 0.3f;
+  bool isVisible =
+    !m_landscape.RayHit(cameraPos, AsLegacy(_pos) - cameraPos, &tmp) || (tmp - cameraPos).Mag() > (AsLegacy(_pos) - cameraPos).Mag() - 0.3f;
 
   //
   // Shockwave
@@ -2053,7 +2109,8 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
     if (m_buildings.ValidIndex(i))
     {
       Building* building = m_buildings[i];
-      float dist = (_pos - building->m_pos).Mag();
+      float dist = DirectX::XMVectorGetX(
+        DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&building->m_pos))));
 
       if (dist < maxBuildingRange)
       {
@@ -2068,7 +2125,7 @@ void Location::Bang(Vector3 const& _pos, float _range, float _damage)
 }
 
 
-void Location::CreateShockwave(Vector3 const& _pos, float _size, unsigned char _teamId)
+void Location::CreateShockwave(DirectX::XMFLOAT3 const& _pos, float _size, unsigned char _teamId)
 {
   Shockwave* s = new Shockwave(_teamId, _size);
   s->m_pos = _pos;
@@ -2118,8 +2175,8 @@ void Location::SetupLights()
 
     GLfloat ambCol[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
-    Vector3 front(light->m_front[0], light->m_front[1], light->m_front[2]);
-    front.Normalise();
+    DirectX::XMFLOAT3 front;
+    DirectX::XMStoreFloat3(&front, DirectX::XMVector3Normalize(DirectX::XMVectorSet(light->m_front[0], light->m_front[1], light->m_front[2], 0.0f)));
     GLfloat frontAsFourFloats[] = {front.x, front.y, front.z, 0.0f};
     GLfloat colourAsFourFloats[] = {light->m_colour[0], light->m_colour[1], light->m_colour[2], light->m_colour[3]};
 

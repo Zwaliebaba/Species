@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "GlVertex.h"
 
 #include <math.h>
 
@@ -252,18 +253,24 @@ void FenceSwitch::RenderAlphas(float predictionTime)
   }
 }
 
-void FenceSwitch::RenderConnection(Vector3 _targetPos, bool _active)
+void FenceSwitch::RenderConnection(DirectX::XMFLOAT3 _targetPos, bool _active)
 {
-  Vector3 ourPos = GetConnectionLocation();
-  Vector3 theirPos = _targetPos;
+  DirectX::XMFLOAT3 const ourPosStore = GetConnectionLocation();
+  DirectX::XMVECTOR const ourPos = DirectX::XMLoadFloat3(&ourPosStore);
+  DirectX::XMVECTOR const theirPos = DirectX::XMLoadFloat3(&_targetPos);
+  DirectX::XMVECTOR const alongLink = DirectX::XMVectorSubtract(theirPos, ourPos);
 
-  Vector3 camToOurPos = g_camera->GetPos() - ourPos;
-  Vector3 ourPosRight = camToOurPos ^ (theirPos - ourPos);
-  ourPosRight.SetLength(2.0f);
+  // Camera's accessors are still legacy -- Species belongs to T22.
+  DirectX::XMFLOAT3 const cameraPosStore = g_camera->GetPos();
+  DirectX::XMVECTOR const cameraPos = DirectX::XMLoadFloat3(&cameraPosStore);
 
-  Vector3 camToTheirPos = g_camera->GetPos() - theirPos;
-  Vector3 theirPosRight = camToTheirPos ^ (theirPos - ourPos);
-  theirPosRight.SetLength(2.0f);
+  // SetLength; see the note on the same call in Generator.cpp. Rendering only,
+  // and degenerate only with the camera exactly on the link, so this takes the
+  // native normalise rather than reproducing the (2, 0, 0) fallback.
+  DirectX::XMVECTOR const ourPosRight =
+    DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, ourPos), alongLink)), 2.0f);
+  DirectX::XMVECTOR const theirPosRight =
+    DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(cameraPos, theirPos), alongLink)), 2.0f);
 
   glDisable(GL_CULL_FACE);
   glEnable(GL_BLEND);
@@ -286,13 +293,13 @@ void FenceSwitch::RenderConnection(Vector3 _targetPos, bool _active)
 
   glBegin(GL_QUADS);
   glTexCoord2f(0.1f, 0);
-  glVertex3fv((ourPos - ourPosRight).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(ourPos, ourPosRight));
   glTexCoord2f(0.1f, 1);
-  glVertex3fv((ourPos + ourPosRight).GetData());
+  EmitVertex(DirectX::XMVectorAdd(ourPos, ourPosRight));
   glTexCoord2f(0.9f, 1);
-  glVertex3fv((theirPos + theirPosRight).GetData());
+  EmitVertex(DirectX::XMVectorAdd(theirPos, theirPosRight));
   glTexCoord2f(0.9f, 0);
-  glVertex3fv((theirPos - theirPosRight).GetData());
+  EmitVertex(DirectX::XMVectorSubtract(theirPos, theirPosRight));
   glEnd();
 }
 
@@ -373,10 +380,8 @@ void FenceSwitch::RenderLink()
     Building* linkBuilding = g_location->GetBuilding(buildingId);
     if (linkBuilding)
     {
-      Vector3 start = m_pos;
-      start.y += 10.0f;
-      Vector3 end = linkBuilding->m_pos;
-      end.y += 10.0f;
+      DirectX::XMFLOAT3 const start(m_pos.x, m_pos.y + 10.0f, m_pos.z);
+      DirectX::XMFLOAT3 const end(linkBuilding->m_pos.x, linkBuilding->m_pos.y + 10.0f, linkBuilding->m_pos.z);
       RenderArrow(start, end, 6.0f, RGBAColour(255, 0, 0));
     }
   }
@@ -419,13 +424,19 @@ void FenceSwitch::RenderLights()
       for (int i = 0; i < static_cast<int>(m_lights.size()); ++i)
       {
         ShapeMarker* marker = m_lights[i];
-        Matrix34 rootMat(m_front, m_up, m_pos);
-        Matrix34 worldMat = marker->GetWorldMatrix(rootMat);
-        Vector3 lightPos = worldMat.pos;
+        DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+
+        // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+        DirectX::XMFLOAT3 const lightPosStore = marker->GetWorldMatrix(rootMat).pos;
+        DirectX::XMVECTOR const lightPos = DirectX::XMLoadFloat3(&lightPosStore);
 
         float signalSize = 6.0f;
-        Vector3 camR = g_camera->GetRight();
-        Vector3 camU = g_camera->GetUp();
+
+        // Camera's accessors are still legacy -- Species belongs to T22.
+        DirectX::XMFLOAT3 const camRightStore = g_camera->GetRight();
+        DirectX::XMFLOAT3 const camUpStore = g_camera->GetUp();
+        DirectX::XMVECTOR const camR = DirectX::XMLoadFloat3(&camRightStore);
+        DirectX::XMVECTOR const camU = DirectX::XMLoadFloat3(&camUpStore);
 
         if (m_switchValue == m_linkedBuildingId)
         {
@@ -449,15 +460,19 @@ void FenceSwitch::RenderLights()
         for (int i = 0; i < 10; ++i)
         {
           float size = signalSize * (float)i / 10.0f;
+
+          DirectX::XMVECTOR const right = DirectX::XMVectorScale(camR, size);
+          DirectX::XMVECTOR const up = DirectX::XMVectorScale(camU, size);
+
           glBegin(GL_QUADS);
           glTexCoord2f(0.0f, 0.0f);
-          glVertex3fv((lightPos - camR * size - camU * size).GetData());
+          EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(lightPos, right), up));
           glTexCoord2f(1.0f, 0.0f);
-          glVertex3fv((lightPos + camR * size - camU * size).GetData());
+          EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(lightPos, right), up));
           glTexCoord2f(1.0f, 1.0f);
-          glVertex3fv((lightPos + camR * size + camU * size).GetData());
+          EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(lightPos, right), up));
           glTexCoord2f(0.0f, 1.0f);
-          glVertex3fv((lightPos - camR * size + camU * size).GetData());
+          EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(lightPos, right), up));
           glEnd();
         }
 
@@ -472,7 +487,7 @@ void FenceSwitch::RenderLights()
   }
 }
 
-Vector3 FenceSwitch::GetConnectionLocation()
+DirectX::XMFLOAT3 FenceSwitch::GetConnectionLocation()
 {
   if (!m_connectionLocation)
   {
@@ -480,25 +495,29 @@ Vector3 FenceSwitch::GetConnectionLocation()
     DEBUG_ASSERT(m_connectionLocation);
   }
 
-  Matrix34 rootMat(m_front, m_up, m_pos);
-  Matrix34 worldPos = m_connectionLocation->GetWorldMatrix(rootMat);
-  return worldPos.pos;
+  DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
+
+  // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
+  return m_connectionLocation->GetWorldMatrix(rootMat).pos;
 }
 
 bool FenceSwitch::IsInView()
 {
   if (m_linkedBuildingId != -1)
   {
-    Vector3 startPoint = m_pos;
+    DirectX::XMVECTOR const startPoint = DirectX::XMLoadFloat3(&m_pos);
     Building* b = g_location->GetBuilding(m_linkedBuildingId);
     if (b)
     {
-      Vector3 endPoint = b->m_pos;
-      Vector3 midPoint = (startPoint + endPoint) / 2.0f;
+      DirectX::XMVECTOR const endPoint = DirectX::XMLoadFloat3(&b->m_pos);
 
-      float radius = (startPoint - endPoint).Mag() / 2.0f;
+      DirectX::XMFLOAT3 midPoint;
+      DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(startPoint, endPoint), 0.5f));
+
+      float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
       radius += m_radius;
 
+      // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
       if (g_camera->SphereInViewFrustum(midPoint, radius))
       {
         return true;
@@ -508,16 +527,19 @@ bool FenceSwitch::IsInView()
 
   if (m_linkedBuildingId2 != -1)
   {
-    Vector3 startPoint = m_pos;
+    DirectX::XMVECTOR const startPoint = DirectX::XMLoadFloat3(&m_pos);
     Building* b = g_location->GetBuilding(m_linkedBuildingId2);
     if (b)
     {
-      Vector3 endPoint = b->m_pos;
-      Vector3 midPoint = (startPoint + endPoint) / 2.0f;
+      DirectX::XMVECTOR const endPoint = DirectX::XMLoadFloat3(&b->m_pos);
 
-      float radius = (startPoint - endPoint).Mag() / 2.0f;
+      DirectX::XMFLOAT3 midPoint;
+      DirectX::XMStoreFloat3(&midPoint, DirectX::XMVectorScale(DirectX::XMVectorAdd(startPoint, endPoint), 0.5f));
+
+      float radius = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(startPoint, endPoint))) / 2.0f;
       radius += m_radius;
 
+      // SphereInViewFrustum still takes a Vector3 -- Camera belongs to T22.
       if (g_camera->SphereInViewFrustum(midPoint, radius))
       {
         return true;

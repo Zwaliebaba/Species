@@ -15,32 +15,31 @@ class FileWriter;
 
 class DynamicBase : public Building
 {
-protected:
-    int             m_buildingLink;
+  protected:
+    int m_buildingLink;
 
-public:
-    char            m_shapeName[256];
+  public:
+    char m_shapeName[256];
 
-public:
+  public:
     DynamicBase();
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
-    void Render         ( float _predictionTime );
+    void Initialise(Building* _template);
+    bool Advance();
+    void Render(float _predictionTime);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
-    void Read           ( TextReader *_in, bool _dynamic );
-    void Write          ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 
-    int  GetBuildingLink();
-    void SetBuildingLink( int _buildingId );
+    int GetBuildingLink();
+    void SetBuildingLink(int _buildingId);
 
-    Vector3 GetPowerLocation();
+    DirectX::XMFLOAT3 GetPowerLocation();
 
-    void SetShapeName   ( char *_shapeName );
+    void SetShapeName(char* _shapeName);
 };
-
 
 
 // ****************************************************************************
@@ -49,40 +48,40 @@ public:
 
 class DynamicHub : public DynamicBase
 {
-protected:
-    bool    m_enabled;          // set to true once all connected nodes are active
-    bool    m_reprogrammed;     // set to true if a connected Control Tower is reprogrammed, or no tower is connected
+  protected:
+    bool m_enabled;      // set to true once all connected nodes are active
+    bool m_reprogrammed; // set to true if a connected Control Tower is reprogrammed, or no tower is connected
 
-    int     m_numLinks;         // the number of Nodes linked to this Hub
-    int     m_activeLinks;      // the number of active nodes linked to this hub
+    int m_numLinks;    // the number of Nodes linked to this Hub
+    int m_activeLinks; // the number of active nodes linked to this hub
 
-public:
-    int     m_currentScore;     // the current number of 'points' this hub has recieved from connected Nodes
-    int     m_requiredScore;    // the required number of 'points' before this Hub will activate
-    int     m_minActiveLinks;   // if scores mode is being used, this is the mimimum number of buildings required in addition to the score requirement
+  public:
+    int m_currentScore;   // the current number of 'points' this hub has recieved from connected Nodes
+    int m_requiredScore;  // the required number of 'points' before this Hub will activate
+    int m_minActiveLinks; // if scores mode is being used, this is the mimimum number of buildings required in addition to the score requirement
 
-public:
+  public:
     DynamicHub();
 
-    void Initialise     ( Building *_template );
+    void Initialise(Building* _template);
 
-    void ReprogramComplete  ();
-    char const *GetObjectiveCounter();
+    void ReprogramComplete();
+    char const* GetObjectiveCounter();
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
-    bool Advance            ();
-    void Render             ( float _predictionTime );
+    bool Advance();
+    void Render(float _predictionTime);
 
-    void ActivateLink       ();
-    void DeactivateLink     ();
+    void ActivateLink();
+    void DeactivateLink();
 
-    bool ChangeScore        ( int _points );
+    bool ChangeScore(int _points);
 
-    void Read           ( TextReader *_in, bool _dynamic );
-    void Write          ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 
-    int  PointsPerHub    ();     // the number of points each node supplies if there is a minimum active node limit
+    int PointsPerHub(); // the number of points each node supplies if there is a minimum active node limit
 };
 
 
@@ -92,30 +91,29 @@ public:
 
 class DynamicNode : public DynamicBase
 {
-protected:
+  protected:
     bool m_operating;
 
-public:
-    int m_scoreValue;       // the number of points that will be added to the connected hubs score every second, if this Node is active
+  public:
+    int m_scoreValue; // the number of points that will be added to the connected hubs score every second, if this Node is active
     float m_scoreTimer;
-    int m_scoreSupplied;     // the number of points this node has already given the hub
+    int m_scoreSupplied; // the number of points this node has already given the hub
 
-public:
+  public:
     DynamicNode();
 
 
-    void Initialise     ( Building *_template );
-    bool Advance        ();
+    void Initialise(Building* _template);
+    bool Advance();
 
-    void Render         ( float _predictionTime );
-    void RenderPorts    ();
-    void RenderAlphas   ( float _predictionTime );
+    void Render(float _predictionTime);
+    void RenderPorts();
+    void RenderAlphas(float _predictionTime);
 
     void ListSoundEvents(std::vector<const char*>* _list);
 
     void ReprogramComplete();
 
-    void Read           ( TextReader *_in, bool _dynamic );
-    void Write          ( FileWriter *_out );
+    void Read(TextReader* _in, bool _dynamic);
+    void Write(FileWriter* _out);
 };
-
