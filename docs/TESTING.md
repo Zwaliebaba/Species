@@ -19,11 +19,12 @@ in [`BUILD.md`](BUILD.md) true.
 | Project | Covers | State |
 |---|---|---|
 | `Tests/NeuronCoreTests` | `NeuronCore` | Real coverage. IP conversion, the `speciesRandom` sequence, the `ByteStream` wire macros, `WorldObjectId` identity, the containers, the preferences file format, and the native-math conversions and geometry routines. |
-| `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`, of the bytes `FileWriter::printf` emits — every format the level and profile writers use, including the width-specified location row and the encrypted form — and of `ShapeMarker`'s parse of a shape-file marker block. |
+| `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`, of the bytes `FileWriter::printf` emits — every format the level and profile writers use, including the width-specified location row and the encrypted form — of `ShapeMarker`'s parse of a shape-file marker block, and of `ControlBindings`' name lookup. |
 | `Tests/NeuronServerTests` | `NeuronServer` | Wiring smoke test only — the layer is a stub with no behaviour yet. |
 | `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker, `InputField` and `LevelFile`'s constructors. `LinkStubs.cpp` is empty and on its way out. |
 
-**185 tests at `a676611` (2026-08-05).** Read the number off a run's *Total
+**191 tests at `95524ff` (2026-08-05)**, the last seven being
+`ControlBindingsTests`. Read the number off a run's *Total
 tests* line rather than from prose — `AGENTS.md` has carried a wrong figure
 twice now, once low by eleven and once low by five, and a stale count is worse
 than none: it makes a green run look exactly like new tests that were never
@@ -227,6 +228,22 @@ reached upward and a test could not include a header without it. They no longer
 do, so a test that reaches up now fails to compile rather than waiting for the
 checker to notice.
 
+### A test DLL is outside the game namespace
+
+`GameLogic` and the `Species` executable are in `namespace Species`; the test
+projects are not. So a `GameLogicTests` source that names a game type needs a
+`using namespace Species;`, and all five of the ones that do carry one, next to
+the `CppUnitTestFramework` directive they already had.
+
+**Put it in the `.cpp`, never in `pch.h`.** Nothing includes a test source, so a
+using-directive there reaches exactly the file that needs it. In the shared
+header it would reach every test in the project, including ones that should be
+failing to see a game type.
+
+Engine types need nothing: `NeuronCore.h` ends with `using namespace Neuron;`
+and every test pch reaches it, the same as every other translation unit in the
+tree.
+
 ---
 
 ## What cannot be tested yet
@@ -318,7 +335,7 @@ exists: **say what you actually ran.**
 
 - "The suite passes" means you ran it. If you built and did not run, say that.
 - A green suite is not evidence the game works. It covers wire encoding, string
-  helpers and identity — a few hundred lines out of 113,000. The Garden smoke
+  helpers and identity — a few hundred lines out of 115,000. The Garden smoke
   test in [`AGENTS.md`](../AGENTS.md#what-working-looks-like) is still the thing
   that would tell you the game runs, and it still cannot be run.
 - If you changed behaviour and no test failed, that is information. Either the

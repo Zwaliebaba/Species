@@ -309,7 +309,7 @@ plan is open: `strings-modernised`, with five tasks.
 | Plan | done | todo | What is left |
 |---|---:|---:|---|
 | the ten archived plans | 122 | 0 | — |
-| `strings-modernised` | 15 | 5 | T11, T12, T17 ready; T13 and T9 blocked |
+| `strings-modernised` | 17 | 3 | T13 and T17 ready; T9 is the plan's last node |
 
 **`language-hygiene/T11` — scope ControlType.** 267 enumerator uses across 38
 files, which is the corrected measurement rather than the 473-in-64 the plan
@@ -355,11 +355,37 @@ and every structural invariant was verified by script over the whole tree —
 brace balance, no `#include` inside a wrapper, no name clash across the
 namespace boundary, no global whose declaration and definition straddle it.
 
-**What this leaves for the next batch.** `strings/T17` and `strings/T11` are
-still the disjoint pair measured below, and they are now the only ready work
-alongside `strings/T12`. Every one of them is in a file that has just moved
-into a namespace and been reindented, so **re-measure before starting**: the
-collision table below was taken before 396 files changed.
+### And then T12 and T11 landed too
+
+`strings-modernised` is at **17 of 20**. The owner asked for the plan finished
+rather than for a batch, so T12 went first — the two-overload split it needs
+makes T11's `m_caption` sites free — and T11 followed.
+
+**`strings/T12`** replaced ten variadic `DrawText` entry points with a plain
+`std::string_view` overload and a `std::format` template each. The template
+takes AT LEAST ONE ARGUMENT, which is what keeps the pair unambiguous; 147 of
+the 199 call sites pass only text. 92 format strings were rewritten. Nothing
+changed output: no zero-argument literal contained a `%`, and no site used a
+bare `%f`, which is the one spec whose default differs between printf and
+std::format.
+
+**`strings/T11`** made the Eclipse widget names and captions `std::string`.
+The predicted case-sensitivity trap was real and it was seventeen sites — the UI
+matches buttons on their captions with `stricmp` while Eclipse's own lookup
+uses `strcmp`, so a blanket sweep to `==` would have broken the first and left
+the second correct. They call `Neuron::StrEqualsIgnoreCase` now. Four defects
+fell out on the way, including `EclButton::SetProperties` silently REFUSING a
+name longer than 256 — the button kept the name "New Button" and every lookup
+by the intended name missed.
+
+**What is left: T13, T17 and T9.** T13 narrows five Eclipse functions and
+`SoundSystem::ParseSoundEvent` to `string_view` and deletes the 30 `.c_str()`
+calls T11 just added — it is the natural next task and its scope is now exactly
+known. T17 is FileWriter's variadic printf, still the largest single piece.
+T9 is the plan's last node and depends on both.
+
+**Re-measure before starting any of them.** Every collision number below was
+taken before 396 files moved into namespaces and two of the five tasks landed.
 
 ---
 

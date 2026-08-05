@@ -493,12 +493,12 @@ tasks:
       the three classes, and the acceptance grep for a C-string call on a widget
       name comes back empty.
 
-      THE CASE-SENSITIVITY TRAP WAS REAL AND IT WAS SIXTEEN SITES. The notes
+      THE CASE-SENSITIVITY TRAP WAS REAL AND IT WAS SEVENTEEN SITES. The notes
       below predicted it; here is what it actually was. Eclipse's own lookup —
       EclGetWindowIndex, EclWindow::GetButton, RemoveButton — compared with
       strcmp, and std::string's == is the same comparison, so those are exactly
-      unchanged. But sixteen call sites in the UI compared a widget name or
-      caption with stricmp: ProfileWindow matches its buttons on their captions
+      unchanged. But seventeen call sites in the UI compared a widget name
+      or caption with stricmp: ProfileWindow matches its buttons on their captions
       ("Min", "Avg", "Max"), and LandscapeWindow, InstantUnitWindow and
       CameraAnimWindow match theirs against a LANGUAGEPHRASE. Sweeping those to
       == would have made each one stop matching whenever the language file's

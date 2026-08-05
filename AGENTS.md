@@ -25,7 +25,7 @@ survive persistently.
 
 It is not that yet. The codebase began as the Darwinia source and is partway
 through being reshaped: renamed, relayered, and modernised into something a
-persistent authoritative server can be built on. Roughly 113,000 lines of C++
+persistent authoritative server can be built on. Roughly 115,000 lines of C++
 across six MSBuild projects. It links only against the OS (OpenGL, GLU, WinMM,
 DirectSound, Winsock) and takes one header-only dependency, **DirectXMath**,
 which ships in the Windows SDK — no library to link and nothing vendored.
@@ -106,19 +106,28 @@ Directory.Build.props     Settings shared by every project. Defines $(SpeciesRoo
 GameData.targets          Stages GameData/ next to the executable after each build.
 GameData/                 Game content: levels, shapes, textures, sounds, scripts.
 
-NeuronCore/       ~2.4k   Foundation: sockets, threads, byte streams, the wire
+NeuronCore/       ~4.8k   Foundation: sockets, threads, byte streams, the wire
                           protocol, filesystem, assertions, and the math
                           conventions in NeuronMath.h. It holds no math TYPES:
                           Vector2/3, Matrix33/34 and Plane were deleted, and
                           storage is DirectXMath's own. Static library.
-NeuronClient/     ~30k    Presentation: OpenGL renderer, sound, input drivers,
-                          the Eclipse UI toolkit, resource loading. Static library.
-NeuronServer/     ~0.5k   Authoritative simulation host: Server, ServerToClient,
-                          the client and team registries. Static library.
-GameLogic/        ~48k    Entities, buildings, teams, unit behaviour, in-game
-                          windows. The bulk of the inherited code. Static library.
-Species/          ~32k    Client executable: app, world, camera, landscape,
-                          task manager, level loading.
+                          PARTLY in namespace Neuron — see Namespaces below.
+NeuronClient/     ~24k    Presentation: OpenGL renderer, sound, input drivers,
+                          the Eclipse UI toolkit, resource loading. Static
+                          library, all of it in namespace Neuron.
+NeuronServer/     ~0.6k   Authoritative simulation host: Server, ServerToClient,
+                          the client and team registries. Static library, all of
+                          it in namespace Neuron.
+GameLogic/        ~65k    Entities, buildings, teams, unit behaviour, in-game
+                          windows, AND THE WHOLE WORLD MODEL — Location,
+                          GlobalWorld, LevelFile, Landscape, Team, Unit, which
+                          layering-inversion moved down out of the executable.
+                          The bulk of the inherited code. Static library, all of
+                          it in namespace Species.
+Species/          ~16k    Client executable: app and main loop, camera, renderer
+                          entry, task manager interface, location editor. NOT
+                          the world model any more. In namespace Species except
+                          WinMain.
 Server/           ~0.1k   Headless server executable. Links NeuronCore and
                           NeuronServer only; ticks the host at 10 Hz.
 
@@ -144,11 +153,13 @@ yet; the host sequences whatever clients send it, which is what it always did.
 The intended dependency direction, enforced by `tools/check_layering.py`:
 
 ```
-NeuronCore                   no dependencies
-  NeuronClient               -> NeuronCore
-  NeuronServer               -> NeuronCore
+NeuronCore                   no dependencies            namespace Neuron, in part
+  NeuronClient               -> NeuronCore              namespace Neuron
+  NeuronServer               -> NeuronCore              namespace Neuron
     GameLogic                -> NeuronCore, NeuronClient, NeuronServer
+                                                        namespace Species
       Species  (exe)         -> GameLogic, NeuronClient, NeuronCore
+                                                        namespace Species
       Server   (exe)         -> GameLogic, NeuronServer, NeuronCore
 ```
 
@@ -176,6 +187,38 @@ upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 
 ---
 
+## Namespaces
+
+**Engine code is in `namespace Neuron`; game code is in `namespace Species`.**
+`tasks/Archive/namespace-migration.yaml` finished this on 2026-08-05, all five
+tasks. `docs/ARCHITECTURE.md#namespaces` has the detail; three facts belong
+here because they change how you write a change:
+
+1. **You do not qualify engine names.** `NeuronCore.h` ends with
+   `using namespace Neuron;` and every project's pch includes it. That is why
+   396 files moved into namespaces without a single call site changing.
+2. **`NeuronCore` is only PARTLY in `Neuron`.** Its converted helpers —
+   `FileSys`, `Debug`, `NeuronHelper`, `SlotMap`, `SliceWalker`, `LookupTable`,
+   `VectorUtils` — are; the networking and protocol types, `Profiler` and
+   `TeamControls` are not. "Is this a Neuron type?" is a per-type question in
+   that layer.
+3. **The game namespace has no using-directive and must not gain one.**
+   `GameLogic` and the `Species` executable are its only code and both are
+   inside it. The one exception is `Tests/GameLogicTests`, whose five
+   game-touching sources each carry `using namespace Species;` — in the `.cpp`,
+   never in `pch.h`.
+
+**What a namespace change breaks is forward declarations, not call sites.** A
+using-directive makes a name findable; it does not make `class Renderer;`
+declare `Neuron::Renderer`. It declares a new `::Renderer`, and the error comes
+out at LINK time pointing somewhere else. `check_layering.py` sees none of
+this — a forward declaration includes nothing. Three more shapes cost a CI round
+each and are written up in `docs/ARCHITECTURE.md`: a block-scope `extern` binds
+to the GLOBAL namespace, a member of a global class cannot be defined inside a
+namespace, and `void f(class Profiler*)` silently declares a new type.
+
+---
+
 ## Ownership
 
 **Migration stage 5 is COMPLETE.** `tasks/Archive/ownership.yaml` is the plan;
@@ -185,11 +228,12 @@ are `std::unique_ptr` and values, and all three legacy greps are at zero:
 definitions included.
 
 **Raw ownership is not extinct, and stage 5 ending does not claim it is.**
-Four things outlived the plan's scope, and NONE has an owning task. A fifth was
-measured on 2026-08-05 while scoping Batch 6 and **does** have one:
-`EclButton::m_caption` and `m_tooltip` are `new char[]`/`delete[]` with a
-`strcpy` each, and `strings-modernised/T11` retires them along with the widget
-`char[N]` members. The four without an owner:
+Four things outlived the plan's scope, and NONE has an owning task. A fifth
+had one and is **gone**: `EclButton::m_caption` and `m_tooltip` were
+`new char[]`/`delete[]` with a copy each, and `strings-modernised/T11` retired
+them on 2026-08-05 along with the widget `char[N]` members — `~EclButton` no
+longer exists, because the class no longer owns anything. The four without an
+owner:
 
 ```
 SAFE_DELETE_ARRAY   2 callers in NeuronClient/Shape.cpp. The last of the
@@ -357,13 +401,30 @@ the standard, and it is not optional reading for anything that touches wire
 format, the simulation, or a file being converted.
 
 **Does the game work?** The suite cannot tell you. It covers a few hundred
-lines out of 113,000 — encoding, string helpers, object identity — so "it
+lines out of 115,000 — encoding, string helpers, object identity — so "it
 compiles and the suite passes" is not the same claim, and a green suite must
 never stand in for the smoke test below.
 
 The game **does** run, so the smoke test is something you can actually perform
 rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
+
+**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-05.** CI is green at
+`17b0778` — that build carries `language-hygiene` T11 and the whole of
+`namespace-migration`, so the namespaced tree compiles, links and passes the
+suite. **Everything after `17b0778` has NOT been compiled by anyone**: that is
+`strings-modernised` T12 and T11, written on Linux against the seven Python
+checks alone.
+
+Three CI rounds were needed to get the namespaced tree green, and what each
+caught is worth knowing because none of them was findable by any check in
+`tools/`:
+
+| Round | What it was |
+|---|---|
+| 1 | a macro parameter named `name` capturing the `.name` member it read; a member of a global class defined inside a namespace; an explicit `::Type` that no longer named anything; a forward declaration left outside its wrapper |
+| 2 | a block-scope `extern` binding to the global namespace |
+| 3 | green |
 
 **This is the smoke test.**
 
@@ -545,32 +606,21 @@ chosen and it carries the record of the previous ones.
 
 **Ten plans are complete and in `tasks/Archive/`** — `determinism` and
 `ownership` joined them on 2026-08-05, and `language-hygiene` and
-`namespace-migration` on the same day. **One is open with five tasks** —
-`strings-modernised`.
+`namespace-migration` on the same day. **One is open with three tasks** —
+`strings-modernised`, at 17 of 20. T12 (the TextRenderer format API) and T11
+(the Eclipse widget names) landed on 2026-08-05; T13, T17 and T9 are left, and
+T9 is the plan's last node by construction.
 
-**The tree is namespaced.** `NeuronCore` is still only partly in
-`namespace Neuron`; `NeuronClient` and `NeuronServer` are fully in it, and
-`GameLogic` and `Species` are in `namespace Species`. `NeuronCore.h` ends with
-`using namespace Neuron;` and every pch includes it, so engine names resolve
-unqualified everywhere and the migration changed no caller. **The game
-namespace has no such directive on purpose** — GameLogic and Species are its
-only code and they are both inside it. The exception is
-`Tests/GameLogicTests`, whose five sources each carry a `using namespace
-Species;` because a test DLL sits outside looking in.
-
-**Forward declarations are what a namespace change breaks**, and they are what
-to check first if something here does not link: a using-directive makes a name
-findable without making `class Renderer;` declare `Neuron::Renderer`. 51 of
-them across the tree are now wrapped. `tools/check_layering.py` cannot see any
-of this — a forward declaration includes nothing.
+The tree is namespaced; that is its own section, [above](#namespaces).
 
 **Nothing is gated on the owner, and migration stage 5 is finished.** Every
 open task is startable by an agent today — which is not the same as saying they
-can be started *at the same time*. **Batch 6 measured all five ready tasks and
-found exactly ONE disjoint pair**, `strings/T17` and `strings/T11`; the other
-nine pairs contest between three and fourteen files each. The wide, shallow
-ready sets that let three and four agents run at once are gone, because the
-isolated conversions went first.
+can be started *at the same time*. Batch 6 measured all five tasks that were
+ready then and found exactly ONE disjoint pair; the other nine pairs contested
+between three and fourteen files each. **With three tasks left the question is
+nearly moot** — T13 and T17 are the only ready ones, T9 waits on both, and the
+wide, shallow ready sets that let three and four agents run at once are gone,
+because the isolated conversions went first.
 
 **But T6 is the one to be sceptical about.** Its acceptance asked for the game
 to reach the main menu after each of its four commits, and that check was NOT
@@ -627,7 +677,7 @@ reachable from `Location::Advance`.
 
 **Do not reformat files you are not otherwise changing.** Formatting is enforced
 on changed lines only, deliberately: a repo-wide reformat would destroy `git
-blame` across 113,000 lines. Whole-file formatting is a migration task, done
+blame` across 115,000 lines. Whole-file formatting is a migration task, done
 deliberately, one file at a time, in its own commit.
 
 **Test what you build.** New behaviour ships with the tests that cover it, in
@@ -658,7 +708,7 @@ Real, currently true, and worth knowing before you trip over them:
   (2026-08-05), and it is also the most recent with an explicit
   all-seven-steps breakdown — see *What working looks like*. CI builds and runs
   the unit suite; it does not launch the client, and neither does any agent
-  working on Linux. A change that compiles and passes 184 tests can still break
+  working on Linux. A change that compiles and passes 191 tests can still break
   the game on the first frame.
   - Batch 5 is the standing example in both directions. Four tasks went in on
     CI evidence alone; CI then caught two real compile errors a name-keyed
@@ -746,10 +796,14 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **184** tests as of `ownership`
-  T7 (2026-08-05) — one FEWER than before, which is rare here and is why it is
-  spelled out: T7 deleted the transitional `SlotMap::EmptyAndDelete` helper,
-  and the single test that existed to characterise it went with it. The rest
+- **The test suite is thin.** Four projects, **191** tests as of
+  `strings-modernised` T11 (2026-08-05). The seven newest are
+  `ControlBindingsTests`, which characterise the control-name lookup —
+  including the edge where the EMPTY STRING matches and returns a real,
+  bindable `ControlNull`. Before them the count was 184, one FEWER than the run
+  before that, which is rare here and worth spelling out: `ownership` T7 deleted
+  the transitional `SlotMap::EmptyAndDelete` helper and the single test
+  characterising it went too. The rest
   cover IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path

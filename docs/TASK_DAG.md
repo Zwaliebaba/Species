@@ -278,6 +278,29 @@ If a task turns out to be wrong — the intent no longer holds, or the breakdown
 mistaken — do not quietly reshape it. Set it `blocked` or `abandoned` with a note,
 and add the corrected tasks. The graph is a record as well as a plan.
 
+### An edge orders the work; it does not promise a buildable state between
+
+`depends_on` says B is done after A. It does NOT say the tree compiles in
+between, and the difference has bitten once.
+
+`namespace-migration` T4 put `GameLogic` in `namespace Species` and T5 put the
+`Species` executable in the same namespace. Landing T4 alone leaves every
+unqualified GameLogic name in the executable unresolvable, because there is no
+using-directive for the game namespace — a tree that does not build. The two
+landed in one commit, with the reason recorded on both tasks.
+
+When you find a pair like that, say so in the notes rather than splitting the
+commit to match the graph. And record the ordering that WOULD have had
+buildable intermediates if there is one: for those two it was the reverse,
+because the executable inside the namespace still finds global GameLogic names
+by ordinary outward lookup.
+
+**A file list is not a promise either.** Eight declared lists in this tree have
+been found wrong — one naming a file that does not exist, one naming a file with
+none of the work in it, and six under-reporting by between three and six times.
+`ls` the list and measure the reach before starting; `tasks/_next-batch.md`
+carries the method and the tally.
+
 ---
 
 ## Waves and concurrency
