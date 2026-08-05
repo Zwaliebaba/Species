@@ -3,7 +3,7 @@
 #include "RendererAccess.h"
 #include "WorldPointers.h"
 
-#define PIXEL_EFFECT_GRID_RES	16
+#define PIXEL_EFFECT_GRID_RES 16
 
 class Shape;
 class ShapeFragment;
@@ -34,7 +34,7 @@ class Renderer : public RendererAccess
     double m_totalMatrix[16]; // Modelview matrix * Projection matrix
 
     float m_fadedness; // 1.0 means black screen. 0.0 means not fade out at all.
-    float m_fadeRate; // +ve means fading out, -ve means fading in
+    float m_fadeRate;  // +ve means fading out, -ve means fading in
     float m_fadeDelay; // Amount of time left to wait before starting fade
 
     unsigned int m_pixelEffectTexId;
