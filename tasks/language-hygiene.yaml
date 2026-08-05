@@ -824,7 +824,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: |
       Split out of T9 on 2026-08-05. 106 use sites across 19 files.
 
