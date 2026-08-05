@@ -623,20 +623,20 @@ void SpeciesWindow::Update()
 
   if (strcmp(EclGetCurrentFocus(), m_name) == 0)
   {
-    if (g_inputManager->controlEvent(ControlMenuDown))
+    if (g_inputManager->controlEvent(ControlType::ControlMenuDown))
     {
       m_buttonChangedThisUpdate = true;
       m_currentButton++;
       m_currentButton = std::min(m_currentButton, static_cast<int>(m_buttonOrder.size()) - 1);
     }
-    if (g_inputManager->controlEvent(ControlMenuUp))
+    if (g_inputManager->controlEvent(ControlType::ControlMenuUp))
     {
       m_buttonChangedThisUpdate = true;
       m_currentButton--;
       m_currentButton = std::max(0, m_currentButton);
     }
 
-    if (g_inputManager->controlEvent(ControlMenuActivate))
+    if (g_inputManager->controlEvent(ControlType::ControlMenuActivate))
     {
       EclButton* b = m_buttonOrder[m_currentButton];
       if (b)
@@ -645,7 +645,7 @@ void SpeciesWindow::Update()
       }
     }
 
-    if (g_inputManager->controlEvent(ControlMenuClose) && !g_atMainMenu)
+    if (g_inputManager->controlEvent(ControlType::ControlMenuClose) && !g_atMainMenu)
     {
       EclRemoveWindow(m_name);
     }

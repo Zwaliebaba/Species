@@ -150,11 +150,11 @@ void TaskManagerInterface::AdvanceTab()
     int index = -1;
     bool changeTask = false;
     bool gesturesCycle = false;
-    if (g_inputManager->controlEvent(ControlGesturesSwitchUnit) && g_prefsManager->GetInt("ControlMethod", 0) == 0)
+    if (g_inputManager->controlEvent(ControlType::ControlGesturesSwitchUnit) && g_prefsManager->GetInt("ControlMethod", 0) == 0)
     {
       gesturesCycle = true;
     }
-    if (g_inputManager->controlEvent(ControlUnitCycleRight) || gesturesCycle)
+    if (g_inputManager->controlEvent(ControlType::ControlUnitCycleRight) || gesturesCycle)
     {
       changeTask = true;
       for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
@@ -177,7 +177,7 @@ void TaskManagerInterface::AdvanceTab()
       }
     }
 
-    if (g_inputManager->controlEvent(ControlUnitCycleLeft))
+    if (g_inputManager->controlEvent(ControlType::ControlUnitCycleLeft))
     {
       changeTask = true;
       for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)

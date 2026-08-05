@@ -1117,9 +1117,9 @@ void Location::RenderBuildings()
   }
 
 #ifdef CHEATMENU_ENABLED
-  if (g_inputManager->controlEvent(ControlRTLoaderPixelWaveIncrease))
+  if (g_inputManager->controlEvent(ControlType::ControlRTLoaderPixelWaveIncrease))
     g_prefsManager->SetInt("RenderSpecialLighting", 1);
-  if (g_inputManager->controlEvent(ControlRTLoaderPixelWaveDecrease))
+  if (g_inputManager->controlEvent(ControlType::ControlRTLoaderPixelWaveDecrease))
     g_prefsManager->SetInt("RenderSpecialLighting", 0);
 #endif
 

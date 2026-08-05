@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 #include <string>
 
@@ -61,8 +62,10 @@ class InputManager
     // Returns a description of the first bound input of a control event
     bool getInputDescription(InputSpec const& spec, InputDescription& desc);
 
-    // Get the ID corresponding to a control name
-    controltype_t getControlID(std::string const& control);
+    // Get the ID corresponding to a control name, or nothing if there is no
+    // such control. Returned -1 until language-hygiene T11; see
+    // ControlBindings::getControlID for why that did not become an enumerator.
+    std::optional<ControlType> getControlID(std::string const& control);
 
     // Inverse of getControlID
     void getControlString(ControlType type, std::string& name);

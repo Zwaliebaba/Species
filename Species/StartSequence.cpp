@@ -82,7 +82,7 @@ bool StartSequence::Advance()
     return false;
   }
 
-  if (g_inputManager->controlEvent(ControlSkipMessage) || g_requestQuit || (GetHighResTime() - m_startTime) > 90)
+  if (g_inputManager->controlEvent(ControlType::ControlSkipMessage) || g_requestQuit || (GetHighResTime() - m_startTime) > 90)
   {
     g_soundSystem->StopAllSounds(WorldObjectId(), "Music StartSequence");
     return true;

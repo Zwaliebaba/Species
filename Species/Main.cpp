@@ -211,7 +211,7 @@ bool HandleCommonConditions()
   static bool oldWindowFocus = true;
 
   static bool controllerPlugged = true;
-  if (controllerPlugged && g_inputManager->controlEvent(ControlControllerUnplugged))
+  if (controllerPlugged && g_inputManager->controlEvent(ControlType::ControlControllerUnplugged))
   {
     auto owned = std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_unplugged1"), LANGUAGEPHRASE("dialog_unplugged2"));
     MessageDialog* dialog = owned.get();
@@ -219,7 +219,7 @@ bool HandleCommonConditions()
     controllerPlugged = false;
   }
 
-  if (!controllerPlugged && g_inputManager->controlEvent(ControlControllerPlugged))
+  if (!controllerPlugged && g_inputManager->controlEvent(ControlType::ControlControllerPlugged))
   {
     EclRemoveWindow(LANGUAGEPHRASE("dialog_unplugged1"));
     controllerPlugged = true;
@@ -398,7 +398,7 @@ void LocationGameLoop()
     }
 
     g_inputManager->PollForEvents();
-    if (g_inputManager->controlEvent(ControlMenuEscape) && TheRenderer()->IsFadeComplete())
+    if (g_inputManager->controlEvent(ControlType::ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
       if (g_script && TheScript()->IsRunningScript())
       {
@@ -663,7 +663,7 @@ void SwitchTaskManagerForX360Controller()
 #ifdef LOCATION_EDITOR
 void LocationEditorLoop()
 {
-  while (!g_inputManager->controlEvent(ControlMenuEscape))
+  while (!g_inputManager->controlEvent(ControlType::ControlMenuEscape))
   {
     g_inputManager->PollForEvents();
 
@@ -713,7 +713,7 @@ void GlobalWorldGameLoop()
 
     g_inputManager->PollForEvents();
 
-    if (g_inputManager->controlEvent(ControlMenuEscape) && TheRenderer()->IsFadeComplete())
+    if (g_inputManager->controlEvent(ControlType::ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
       if (WindowsOnScreen())
         RemoveAllWindows();
@@ -772,7 +772,7 @@ void GlobalWorldEditorLoop()
   {
     g_inputManager->PollForEvents();
 
-    if (g_inputManager->controlEvent(ControlMenuEscape))
+    if (g_inputManager->controlEvent(ControlType::ControlMenuEscape))
     {
       g_editing = false;
       return;

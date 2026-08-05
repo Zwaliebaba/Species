@@ -660,18 +660,19 @@ void TeamControls::Advance()
 
   m_mousePos = g_userInput->GetMousePos3d();
 
-  m_primaryFireTarget |= g_inputManager->controlEvent(ControlUnitPrimaryFireTarget);
-  m_secondaryFireTarget |= g_inputManager->controlEvent(ControlUnitSecondaryFireTarget);
-  m_primaryFireDirected |= g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && !g_inputManager->controlEvent(ControlCameraRotate);
-  m_secondaryFireDirected |=
-    g_inputManager->controlEvent(ControlUnitSecondaryFireDirected) /* && g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected ) */;
+  m_primaryFireTarget |= g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireTarget);
+  m_secondaryFireTarget |= g_inputManager->controlEvent(ControlType::ControlUnitSecondaryFireTarget);
+  m_primaryFireDirected |=
+    g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected) && !g_inputManager->controlEvent(ControlType::ControlCameraRotate);
+  m_secondaryFireDirected |= g_inputManager->controlEvent(
+    ControlType::ControlUnitSecondaryFireDirected) /* && g_inputManager->controlEvent( ControlType::ControlUnitStartSecondaryFireDirected ) */;
   m_cameraEntityTracking |= g_camera->IsInMode(CameraAccess::Mode::ModeEntityTrack);
-  m_unitMove |= g_inputManager->controlEvent(ControlUnitSetTarget) && !m_secondaryFireTarget;
-  m_unitSecondaryMode |= g_inputManager->controlEvent(ControlUnitStartSecondaryFireDirected);
-  m_endSetTarget |= g_inputManager->controlEvent(ControlUnitEndSetTarget);
+  m_unitMove |= g_inputManager->controlEvent(ControlType::ControlUnitSetTarget) && !m_secondaryFireTarget;
+  m_unitSecondaryMode |= g_inputManager->controlEvent(ControlType::ControlUnitStartSecondaryFireDirected);
+  m_endSetTarget |= g_inputManager->controlEvent(ControlType::ControlUnitEndSetTarget);
 
   InputDetails details;
-  if (g_inputManager->controlEvent(ControlUnitMove, details))
+  if (g_inputManager->controlEvent(ControlType::ControlUnitMove, details))
   {
     DirectX::XMFLOAT3 const controlVector = g_camera->GetControlVector();
 
@@ -689,7 +690,8 @@ void TeamControls::Advance()
     g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondMoveCameraOrUnit);
   }
 
-  if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details) && !g_inputManager->controlEvent(ControlCameraRotate))
+  if (g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected, details) &&
+      !g_inputManager->controlEvent(ControlType::ControlCameraRotate))
   {
     m_primaryFireDirected = true;
     m_directUnitFireDx = details.x;

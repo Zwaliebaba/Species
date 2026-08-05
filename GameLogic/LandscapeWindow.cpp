@@ -545,7 +545,8 @@ class GuideGrid : public EclButton
       int mouseX = g_target->X();
       int mouseY = g_target->Y();
       // TODO: What should this really be?
-      bool mousePressed = g_inputManager->controlEvent(ControlEclipseLMousePressed) || g_inputManager->controlEvent(ControlEclipseRMousePressed);
+      bool mousePressed = g_inputManager->controlEvent(ControlType::ControlEclipseLMousePressed) ||
+                          g_inputManager->controlEvent(ControlType::ControlEclipseRMousePressed);
       if (mousePressed && mouseX >= m_x + m_parent->m_x && mouseY >= m_y + m_parent->m_y && mouseX < m_x + m_w + m_parent->m_x &&
           mouseY < m_y + m_h + m_parent->m_y)
       {
@@ -563,7 +564,7 @@ class GuideGrid : public EclButton
               {
               case LandscapeGuideGridWindow::GuideGridToolFreehand:
                 // TODO: What should this really be?
-                if (g_inputManager->controlEvent(ControlEclipseLMousePressed))
+                if (g_inputManager->controlEvent(ControlType::ControlEclipseLMousePressed))
                 {
                   newVal = currentVal + parent->m_toolSize * effect;
                 }
@@ -586,7 +587,7 @@ class GuideGrid : public EclButton
 
               case LandscapeGuideGridWindow::GuideGridToolBinary:
                 // TODO: What should this really be?
-                if (g_inputManager->controlEvent(ControlEclipseLMousePressed))
+                if (g_inputManager->controlEvent(ControlType::ControlEclipseLMousePressed))
                 {
                   newVal = 255;
                 }

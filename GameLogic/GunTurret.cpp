@@ -312,8 +312,9 @@ bool GunTurret::Advance()
     }
     m_target = g_userInput->GetMousePos3d();
 
-    primaryFire = g_inputManager->controlEvent(ControlUnitPrimaryFireTarget) || g_inputManager->controlEvent(ControlUnitStartSecondaryFireDirected);
-    secondaryFire = g_inputManager->controlEvent(ControlUnitSecondaryFireTarget);
+    primaryFire = g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireTarget) ||
+                  g_inputManager->controlEvent(ControlType::ControlUnitStartSecondaryFireDirected);
+    secondaryFire = g_inputManager->controlEvent(ControlType::ControlUnitSecondaryFireTarget);
   }
   else
   {

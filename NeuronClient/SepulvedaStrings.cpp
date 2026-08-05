@@ -215,12 +215,12 @@ bool consumeKeyMarker(char const* _baseString, char* _dest, CaptionParserMode& _
     {
       const std::string buf(in + 4, len);
 
-      controltype_t eventId = g_inputManager->getControlID(buf.c_str());
-      if (eventId >= 0)
+      std::optional<ControlType> const eventId = g_inputManager->getControlID(buf);
+      if (eventId.has_value())
       {
         // Lookup the key name for the binding
         InputDescription desc;
-        if (g_inputManager->getBoundInputDescription(static_cast<ControlType>(eventId), desc))
+        if (g_inputManager->getBoundInputDescription(*eventId, desc))
         {
           char const* keyName = desc.noun.c_str();
 

@@ -393,10 +393,10 @@ void GameCursor::Render()
       {
         if (task && task->m_type == GlobalResearch::TypeSquad && task->m_state == Task::StateRunning)
         {
-          if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected /* ControlUnitStartSecondaryFireDirected */))
+          if (g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected /* ControlType::ControlUnitStartSecondaryFireDirected */))
           {
             InputDetails details;
-            g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details);
+            g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected, details);
 
             InsertionSquad* squad = (InsertionSquad*)g_location->GetMyTeam()->GetMyUnit();
             Squadie* pointMan = (Squadie*)squad->GetPointMan();

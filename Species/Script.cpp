@@ -464,7 +464,7 @@ bool Script::Skip()
 
 void Script::Advance()
 {
-  if (g_inputManager->controlEvent(ControlSkipCutscene))
+  if (g_inputManager->controlEvent(ControlType::ControlSkipCutscene))
     if (Skip())
       return;
 

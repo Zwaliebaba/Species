@@ -71,8 +71,8 @@ bool secondaryInputEnabled() { return (EclGetWindows()->size() == 0) && !g_taskM
 void TargetCursor::Advance()
 {
   InputDetails details;
-  if ((g_inputManager->controlEvent(ControlTargetMove, details) ||
-       (secondaryInputEnabled() && g_inputManager->controlEvent(ControlTargetMoveSecondary, details))) &&
+  if ((g_inputManager->controlEvent(ControlType::ControlTargetMove, details) ||
+       (secondaryInputEnabled() && g_inputManager->controlEvent(ControlType::ControlTargetMoveSecondary, details))) &&
       InputType::INPUT_TYPE_2D == details.type)
   {
     m_velocity[AXIS_X] = details.x;
@@ -86,7 +86,7 @@ void TargetCursor::Advance()
   else
     m_velocity[AXIS_X] = m_velocity[AXIS_Y] = 0;
 
-  if (g_inputManager->controlEvent(ControlTargetMoveZ, details) && InputType::INPUT_TYPE_1D == details.type)
+  if (g_inputManager->controlEvent(ControlType::ControlTargetMoveZ, details) && InputType::INPUT_TYPE_1D == details.type)
   {
     m_velocity[AXIS_Z] = details.x;
     m_screenCoords[AXIS_Z] += m_velocity[AXIS_Z];

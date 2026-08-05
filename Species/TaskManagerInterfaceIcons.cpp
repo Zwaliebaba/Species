@@ -77,37 +77,39 @@ TaskManagerInterfaceIcons::TaskManagerInterfaceIcons()
   //
   // Create keyboard shortcuts
 
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeSquad, ControlIconsTaskManagerNewSquad));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeEngineer, ControlIconsTaskManagerNewEngineer));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeOfficer, ControlIconsTaskManagerNewOfficer));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeArmour, ControlIconsTaskManagerNewArmour));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeSquad, ControlType::ControlIconsTaskManagerNewSquad));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeEngineer, ControlType::ControlIconsTaskManagerNewEngineer));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeOfficer, ControlType::ControlIconsTaskManagerNewOfficer));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("NewTask", GlobalResearch::TypeArmour, ControlType::ControlIconsTaskManagerNewArmour));
 
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeGrenade, ControlIconsTaskManagerSelectGrenade));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeRocket, ControlIconsTaskManagerSelectRocket));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeAirStrike, ControlIconsTaskManagerSelectAirStrike));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeController, ControlIconsTaskManagerSelectController));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeGrenade, ControlType::ControlIconsTaskManagerSelectGrenade));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeRocket, ControlType::ControlIconsTaskManagerSelectRocket));
+  m_keyboardShortcuts.push_back(
+    new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeAirStrike, ControlType::ControlIconsTaskManagerSelectAirStrike));
+  m_keyboardShortcuts.push_back(
+    new KeyboardShortcut("SelectWeapon", GlobalResearch::TypeController, ControlType::ControlIconsTaskManagerSelectController));
 
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 0, ControlTaskManagerSelectTask1));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 1, ControlTaskManagerSelectTask2));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 2, ControlTaskManagerSelectTask3));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 3, ControlTaskManagerSelectTask4));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 4, ControlTaskManagerSelectTask5));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 5, ControlTaskManagerSelectTask6));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 6, ControlTaskManagerSelectTask7));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 7, ControlTaskManagerSelectTask8));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 8, ControlTaskManagerSelectTask9));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 0, ControlType::ControlTaskManagerSelectTask1));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 1, ControlType::ControlTaskManagerSelectTask2));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 2, ControlType::ControlTaskManagerSelectTask3));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 3, ControlType::ControlTaskManagerSelectTask4));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 4, ControlType::ControlTaskManagerSelectTask5));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 5, ControlType::ControlTaskManagerSelectTask6));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 6, ControlType::ControlTaskManagerSelectTask7));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 7, ControlType::ControlTaskManagerSelectTask8));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("SelectTask", 8, ControlType::ControlTaskManagerSelectTask9));
 
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("DeleteTask", -1, ControlTaskManagerEndTask));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("DeleteTask", -1, ControlType::ControlTaskManagerEndTask));
 
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlUnitCycleLeft));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlUnitCycleRight));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlCameraForwards));
-  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlCameraBackwards));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlType::ControlUnitCycleLeft));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlType::ControlUnitCycleRight));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenUp", -1, ControlType::ControlCameraForwards));
+  m_keyboardShortcuts.push_back(new KeyboardShortcut("ScreenDown", -1, ControlType::ControlCameraBackwards));
 }
 
 void TaskManagerInterfaceIcons::AdvanceTerminate()
 {
-  if (g_inputManager->controlEvent(ControlIconsTaskManagerEndTask))
+  if (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerEndTask))
   {
     g_taskManager->TerminateTask(g_taskManager->m_currentTaskId);
     g_taskManager->m_currentTaskId = -1;
@@ -163,8 +165,8 @@ void TaskManagerInterfaceIcons::Advance()
     return;
   }
 
-  if (!m_visible &&
-      (g_inputManager->controlEvent(ControlIconsTaskManagerDisplay) || g_inputManager->controlEvent(ControlIconsTaskManagerDisplayDown)))
+  if (!m_visible && (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplay) ||
+                     g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayDown)))
   {
     // Tab key just pressed
     // Pop up the task manager
@@ -177,13 +179,13 @@ void TaskManagerInterfaceIcons::Advance()
 
     g_soundSystem->TriggerOtherEvent("Show", SoundSourceBlueprint::TypeInterface);
 
-    if (g_inputManager->controlEvent(ControlIconsTaskManagerDisplayDown))
+    if (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayDown))
     {
       // Controller activated the task manager, record the time
       m_taskManagerDownTime = GetHighResTime();
     }
   }
-  else if (m_visible && g_inputManager->controlEvent(ControlIconsTaskManagerHide))
+  else if (m_visible && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerHide))
   {
     // Tab key pressed while visible
     // So remove the task manager
@@ -197,7 +199,7 @@ void TaskManagerInterfaceIcons::Advance()
   AdvanceTerminate();
   AdvanceQuickUnit();
 
-  if (g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnit))
+  if (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerQuickUnit))
   {
     if (!m_quickUnitVisible)
       CreateQuickUnitInterface();
@@ -458,7 +460,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
       }
     }
 
-    if (g_inputManager->controlEvent(ControlMenuDown) && m_currentScrollZone != 3)
+    if (g_inputManager->controlEvent(ControlType::ControlMenuDown) && m_currentScrollZone != 3)
     {
       int numZones = static_cast<int>(m_screenZones.size());
       int zonesRemaining = numZones;
@@ -473,7 +475,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
       }
     }
 
-    if (g_inputManager->controlEvent(ControlMenuUp) && m_currentScrollZone != 3)
+    if (g_inputManager->controlEvent(ControlType::ControlMenuUp) && m_currentScrollZone != 3)
     {
       int numZones = static_cast<int>(m_screenZones.size());
       int zonesRemaining = numZones;
@@ -491,7 +493,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
     bool changeScrollZone = false;
     if (m_screenId == ScreenTaskManager)
     {
-      if (g_inputManager->controlEvent(ControlMenuLeft))
+      if (g_inputManager->controlEvent(ControlType::ControlMenuLeft))
       {
         if (m_currentScrollZone == 1)
         {
@@ -517,7 +519,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
         }
       }
 
-      if (g_inputManager->controlEvent(ControlMenuRight))
+      if (g_inputManager->controlEvent(ControlType::ControlMenuRight))
       {
         if (m_currentScrollZone == 2)
         {
@@ -631,7 +633,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
   //
   // Handle mouse clickage
 
-  if (m_currentScreenZone != -1 && (g_inputManager->controlEvent(ControlActivateTMButton) || ButtonHeldAndReleased()) && !highlightOnly)
+  if (m_currentScreenZone != -1 && (g_inputManager->controlEvent(ControlType::ControlActivateTMButton) || ButtonHeldAndReleased()) && !highlightOnly)
   {
     ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
     if (currentZone)
@@ -641,7 +643,10 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
 
 bool TaskManagerInterfaceIcons::ButtonHeld() { return GetHighResTime() - m_taskManagerDownTime > 0.5; }
 
-bool TaskManagerInterfaceIcons::ButtonHeldAndReleased() { return ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayUp); }
+bool TaskManagerInterfaceIcons::ButtonHeldAndReleased()
+{
+  return ButtonHeld() && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayUp);
+}
 
 void TaskManagerInterfaceIcons::AdvanceKeyboardShortcuts()
 {
@@ -2429,9 +2434,9 @@ bool TaskManagerInterfaceIcons::ControlEvent(TMControl _type)
   switch (_type)
   {
   case TMControl::TMTerminate:
-    return g_inputManager->controlEvent(ControlIconsTaskManagerEndTask);
+    return g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerEndTask);
   case TMControl::TMDisplay:
-    return g_inputManager->controlEvent(ControlIconsTaskManagerDisplay);
+    return g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplay);
   default:
     return false;
   }
@@ -2466,14 +2471,14 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
   if (numAvailable > 1 && m_quickUnitDirection == 0)
   {
     InputDetails cameraDetails, targetDetails;
-    g_inputManager->controlEvent(ControlTargetMove, targetDetails);
-    g_inputManager->controlEvent(ControlCameraMove, cameraDetails);
+    g_inputManager->controlEvent(ControlType::ControlTargetMove, targetDetails);
+    g_inputManager->controlEvent(ControlType::ControlCameraMove, cameraDetails);
 
-    bool right = (g_inputManager->controlEvent(ControlUnitCycleLeft) || cameraDetails.x < -10 || targetDetails.x < -10 ||
-                  g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitLeft));
+    bool right = (g_inputManager->controlEvent(ControlType::ControlUnitCycleLeft) || cameraDetails.x < -10 || targetDetails.x < -10 ||
+                  g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerQuickUnitLeft));
 
-    bool left = (g_inputManager->controlEvent(ControlUnitCycleRight) || cameraDetails.x > 10 || targetDetails.x > 10 ||
-                 g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitRight));
+    bool left = (g_inputManager->controlEvent(ControlType::ControlUnitCycleRight) || cameraDetails.x > 10 || targetDetails.x > 10 ||
+                 g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerQuickUnitRight));
 
     if (left)
     {
@@ -2518,7 +2523,7 @@ void TaskManagerInterfaceIcons::AdvanceQuickUnit()
         TheTaskManagerInterface()->SetCurrentMessage(MessageSuccess, taskId, 3.0f);
     }
 
-    if (g_inputManager->controlEvent(ControlIconsTaskManagerQuickUnitCreate))
+    if (g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerQuickUnitCreate))
     {
       int taskId = GetQuickUnitTask();
       if (taskId != -1)
@@ -2618,7 +2623,7 @@ int TaskManagerInterfaceIcons::GetQuickUnitTask(int _position)
 
 bool TaskManagerInterfaceIcons::AdviseCreateControlHelpBlue()
 {
-  return m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayPressed) &&
+  return m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayPressed) &&
          g_taskManager->CapacityUsed() < g_taskManager->Capacity();
 }
 
@@ -2642,7 +2647,7 @@ bool TaskManagerInterfaceIcons::AdviseCloseControlHelp()
   if (!m_visible)
     return false;
 
-  if (m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlIconsTaskManagerDisplayPressed))
+  if (m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayPressed))
     return false;
 
   return true;

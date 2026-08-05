@@ -830,11 +830,11 @@ void Squadie::ListSoundEvents(std::vector<const char*>* _list)
 
 DirectX::XMFLOAT3 Squadie::GetCameraFocusPoint()
 {
-  if (g_inputManager->controlEvent(ControlUnitPrimaryFireDirected /* ControlUnitStartSecondaryFireDirected */) &&
+  if (g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected /* ControlType::ControlUnitStartSecondaryFireDirected */) &&
       g_camera->IsInMode(CameraAccess::Mode::ModeEntityTrack))
   {
     InputDetails details;
-    g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details);
+    g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected, details);
 
     DirectX::XMFLOAT3 const t = GetSecondaryWeaponTarget();
 
@@ -849,7 +849,7 @@ DirectX::XMFLOAT3 Squadie::GetCameraFocusPoint()
 DirectX::XMFLOAT3 Squadie::GetSecondaryWeaponTarget()
 {
   InputDetails details;
-  g_inputManager->controlEvent(ControlUnitPrimaryFireDirected, details);
+  g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected, details);
 
   DirectX::XMFLOAT3 t = m_pos;
 

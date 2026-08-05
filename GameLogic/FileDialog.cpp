@@ -288,7 +288,7 @@ void FileDialog::RefreshFileList()
 
 void FileDialog::FileClicked(int index)
 {
-  bool ctrlKey = g_inputManager->controlEvent(ControlFileMultiSelect);
+  bool ctrlKey = g_inputManager->controlEvent(ControlType::ControlFileMultiSelect);
 
   if (!m_allowMultiSelect || !ctrlKey)
   {

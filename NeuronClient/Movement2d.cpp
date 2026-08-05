@@ -53,8 +53,8 @@ DPadMovement::DPadMovement(ControlType _north, ControlType _south, ControlType _
     south(_south),
     east(_east),
     west(_west),
-    up(ControlNull),
-    down(ControlNull),
+    up(ControlType::ControlNull),
+    down(ControlType::ControlNull),
     sensitivity(_sensitivity)
 {
 }

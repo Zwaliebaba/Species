@@ -64,8 +64,8 @@ void InputManager::parseInputPrefs(TextReader& reader, bool replace)
       }
 
       string inputspec = reader.GetRestOfLine();
-      controltype_t control_id = getControlID(control);
-      if (control_id >= 0)
+      std::optional<ControlType> const control_id = getControlID(control);
+      if (control_id.has_value())
       {
         if (iconline)
         {
@@ -76,8 +76,8 @@ void InputManager::parseInputPrefs(TextReader& reader, bool replace)
               inputspec = inputspec.substr(0, len--);
             if (inputspec[len] == '\r')
               inputspec = inputspec.substr(0, len);
-            bindings.setIcon(control_id, inputspec);
-            derr << "Treated as icon: " << Q(bindings.getIcon(control_id)) << endl;
+            bindings.setIcon(*control_id, inputspec);
+            derr << "Treated as icon: " << Q(bindings.getIcon(*control_id)) << endl;
           }
           else
             derr << "Empty icon line." << endl;
@@ -88,7 +88,7 @@ void InputManager::parseInputPrefs(TextReader& reader, bool replace)
         string err;
         if (PARSE_SUCCESS(parseInputSpecString(inputspec, spec, err)))
         {
-          if (bindings.bind(control_id, spec, replace))
+          if (bindings.bind(*control_id, spec, replace))
             derr << "Success. Driver = " << drivers[spec.driver]->getName() << endl;
           else
             derr << "Binding failed." << endl;
@@ -269,7 +269,7 @@ bool InputManager::getInputDescription(InputSpec const& spec, InputDescription& 
 }
 
 
-controltype_t InputManager::getControlID(string const& control) { return bindings.getControlID(control); }
+std::optional<ControlType> InputManager::getControlID(string const& control) { return bindings.getControlID(control); }
 
 
 void InputManager::getControlString(ControlType type, std::string& name) { bindings.getControlString(type, name); }
@@ -298,9 +298,13 @@ InputMode InputManager::getInputMode() { return m_inputMode; }
 
 void InputManager::printNumBindings()
 {
-  for (controltype_t i = 0; i < NumControlTypes; ++i)
+  // ENUM_HELPER's range rather than an int loop: it walks
+  // [ControlMenuLeft, ControlNull], which is the same 0..NumControlTypes-1 the
+  // int loop walked, without a value that can be compared against a foreign
+  // enum on the way.
+  for (ControlType const type : RangeControlType())
   {
-    const InputSpecList& specs = bindings[i];
-    cout << "There are " << specs.size() << " binding for type " << i << endl;
+    const InputSpecList& specs = bindings[type];
+    cout << "There are " << specs.size() << " binding for type " << Neuron::I(type) << endl;
   }
 }

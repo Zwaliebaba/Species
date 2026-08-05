@@ -227,7 +227,7 @@ void ClientToServer::ReceiveLetter(std::unique_ptr<ServerToClientLetter> letter)
   // Simulate network packet loss
 
 #ifdef _DEBUG
-  if (g_inputManager->controlEvent(ControlDebugDropPacket))
+  if (g_inputManager->controlEvent(ControlType::ControlDebugDropPacket))
   {
     return;
   }

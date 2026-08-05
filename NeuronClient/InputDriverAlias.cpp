@@ -20,11 +20,17 @@ InputParserState AliasInputDriver::parseInputSpecification(InputSpecTokens const
   if (idx >= tokens.length())
     return state;
 
-  spec.control_id = g_inputManager->getControlID(tokens[idx++]);
-  if (spec.control_id < 0)
+  // THIS DRIVER IS THE ONLY ONE THAT STORES A ControlType IN A control_id_t.
+  // Every other driver's control_id is a keycode or a button number, so the
+  // field cannot become the enum; the conversion happens here and is undone by
+  // the two bounds checks below. That is the boundary language-hygiene T11
+  // lists rather than removes.
+  std::optional<ControlType> const control = g_inputManager->getControlID(tokens[idx++]);
+  if (!control.has_value())
   {
     return state;
   }
+  spec.control_id = static_cast<control_id_t>(*control);
 
   spec.type = InputType::INPUT_TYPE_BOOL;
 
@@ -34,7 +40,11 @@ InputParserState AliasInputDriver::parseInputSpecification(InputSpecTokens const
 
 bool AliasInputDriver::getInput(InputSpec const& spec, InputDetails& details)
 {
-  if (0 <= spec.control_id && spec.control_id < NumControlTypes)
+  // spec.control_id is a DRIVER's raw id (control_id_t, an int) that this
+  // driver alone happens to fill with a ControlType, so the bound has to be
+  // brought down to int rather than the id being lifted to the enum — a
+  // boundary language-hygiene T11 lists rather than casts away.
+  if (0 <= spec.control_id && spec.control_id < static_cast<control_id_t>(ControlType::NumControlTypes))
     return g_inputManager->controlEvent(static_cast<ControlType>(spec.control_id), details);
   else
     return false; // We should never get here!
@@ -69,7 +79,11 @@ bool AliasInputDriver::getInputDescription(InputSpec const& spec, InputDescripti
 {
   // TODO: This isn't quite right.
   // May break translations.
-  if (0 <= spec.control_id && spec.control_id < NumControlTypes)
+  // spec.control_id is a DRIVER's raw id (control_id_t, an int) that this
+  // driver alone happens to fill with a ControlType, so the bound has to be
+  // brought down to int rather than the id being lifted to the enum — a
+  // boundary language-hygiene T11 lists rather than casts away.
+  if (0 <= spec.control_id && spec.control_id < static_cast<control_id_t>(ControlType::NumControlTypes))
     return g_inputManager->getBoundInputDescription(static_cast<ControlType>(spec.control_id), desc);
   else
     return false; // We should never get here!

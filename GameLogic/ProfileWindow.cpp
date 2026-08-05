@@ -137,7 +137,7 @@ void ProfileWindow::RenderElementProfile(ProfiledElement* _pe, unsigned int _ind
       glColor3ub(brightness, brightness, brightness);
 
       // Deal with mouse clicks to expand or unexpand a node
-      if (g_inputManager->controlEvent(ControlEclipseLMousePressed)) // g_inputManager->GetRawLmbClicked()
+      if (g_inputManager->controlEvent(ControlType::ControlEclipseLMousePressed)) // g_inputManager->GetRawLmbClicked()
       {
         int x = g_target->X();
         int y = g_target->Y();

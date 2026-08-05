@@ -33,49 +33,49 @@ struct ControlName
 };
 
 
-static ControlName s_controls[] = {ControlCameraLeft,
+static ControlName s_controls[] = {ControlType::ControlCameraLeft,
                                    false,
                                    "control_event_left",
-                                   ControlCameraRight,
+                                   ControlType::ControlCameraRight,
                                    false,
                                    "control_event_right",
-                                   ControlCameraForwards,
+                                   ControlType::ControlCameraForwards,
                                    false,
                                    "control_event_forwards",
-                                   ControlCameraBackwards,
+                                   ControlType::ControlCameraBackwards,
                                    false,
                                    "control_event_backwards",
-                                   ControlCameraUp,
+                                   ControlType::ControlCameraUp,
                                    false,
                                    "control_event_up",
-                                   ControlCameraDown,
+                                   ControlType::ControlCameraDown,
                                    false,
                                    "control_event_down",
-                                   ControlCameraZoom,
+                                   ControlType::ControlCameraZoom,
                                    false,
                                    "control_event_zoom",
-                                   ControlUnitDeselect,
+                                   ControlType::ControlUnitDeselect,
                                    true,
                                    "control_event_deselect",
-                                   ControlSkipMessage,
+                                   ControlType::ControlSkipMessage,
                                    true,
                                    "control_event_skipmessage",
 
-                                   ControlGesturesChatLog,
+                                   ControlType::ControlGesturesChatLog,
                                    true,
                                    "control_event_chatlog",
 
-                                   ControlIconsChatLog,
+                                   ControlType::ControlIconsChatLog,
                                    true,
                                    "control_event_iconschatlog",
-                                   ControlIconsTaskManagerDisplay,
+                                   ControlType::ControlIconsTaskManagerDisplay,
                                    true,
                                    "control_event_iconstaskmanagerdisplay",
-                                   ControlIconsTaskManagerEndTask,
+                                   ControlType::ControlIconsTaskManagerEndTask,
                                    true,
                                    "control_event_iconstaskmanagerendtask",
 
-                                   ControlNull,
+                                   ControlType::ControlNull,
                                    false,
                                    nullptr};
 
@@ -122,15 +122,15 @@ class ApplyKeybindingsButton : public SpeciesButton
         prefsMan.SetString(key.c_str(), val.c_str());
         g_inputManager->replacePrimaryBinding(s_controls[i].type, val);
 
-        if (ControlIconsTaskManagerDisplay == s_controls[i].type)
+        if (ControlType::ControlIconsTaskManagerDisplay == s_controls[i].type)
         {
           string::size_type pos = val.find("down", 0);
           if (pos != string::npos)
           {
-            g_inputManager->getControlString(ControlIconsTaskManagerHide, key);
+            g_inputManager->getControlString(ControlType::ControlIconsTaskManagerHide, key);
             val = val.replace(pos, 4, "up", 0, 2);
             prefsMan.SetString(key.c_str(), val.c_str());
-            g_inputManager->replacePrimaryBinding(ControlIconsTaskManagerHide, val);
+            g_inputManager->replacePrimaryBinding(ControlType::ControlIconsTaskManagerHide, val);
           }
         }
       }
@@ -236,7 +236,7 @@ PrefsKeybindingsWindow::PrefsKeybindingsWindow()
   : SpeciesWindow(LANGUAGEPHRASE("dialog_inputoptions"))
 {
   unsigned i;
-  for (i = 0; s_controls[i].type != ControlNull; ++i)
+  for (i = 0; s_controls[i].type != ControlType::ControlNull; ++i)
   {
     std::unique_ptr<InputDescription> desc(new InputDescription());
     g_inputManager->getBoundInputDescription(s_controls[i].type, *desc);

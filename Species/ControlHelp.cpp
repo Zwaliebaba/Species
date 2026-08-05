@@ -682,15 +682,15 @@ bool ControlHelpSystem::CheckCondition(int _condition)
            TheCamera()->IsInMode(Camera::Mode::ModeRadarAim);
 
   case CondFireGrenades:
-    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
            WeaponSelected(GlobalResearch::TypeGrenade);
 
   case CondFireRocket:
-    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
            WeaponSelected(GlobalResearch::TypeRocket);
 
   case CondFireAirstrike:
-    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
+    return !TheTaskManagerInterface()->m_visible && g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected) && SquaddieSelected() &&
            WeaponSelected(GlobalResearch::TypeAirStrike);
 
   case CondOfficerSetGoto:

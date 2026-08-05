@@ -58,18 +58,18 @@ void UserInput::AdvanceMenus()
   InputManager* im = g_inputManager;
   int mouseX = g_target->X();
   int mouseY = g_target->Y();
-  bool lmb = im->controlEvent(ControlEclipseLMousePressed);
-  bool rmb = im->controlEvent(ControlEclipseRMousePressed);
+  bool lmb = im->controlEvent(ControlType::ControlEclipseLMousePressed);
+  bool rmb = im->controlEvent(ControlType::ControlEclipseRMousePressed);
 
   EclUpdateMouse(mouseX, mouseY, lmb, rmb);
   EclUpdate();
 
-  if (im->controlEvent(ControlEclipseLMouseDown))
+  if (im->controlEvent(ControlType::ControlEclipseLMouseDown))
   {
     EclWindow* winUnderMouse = EclGetWindow(mouseX, mouseY);
     if (winUnderMouse)
     {
-      im->suppressEvent(ControlEclipseLMouseDown);
+      im->suppressEvent(ControlType::ControlEclipseLMouseDown);
     }
   }
 }
@@ -97,20 +97,20 @@ void UserInput::Advance()
   bool modsEnabled = g_prefsManager->GetInt("ModSystemEnabled", 0) != 0;
 
 
-  if (g_inputManager->controlEvent(ControlGamePause))
+  if (g_inputManager->controlEvent(ControlType::ControlGamePause))
     g_app->m_clientToServer->RequestPause();
 
 //    if (g_keyDeltas[KEY_F2]) DebugKeyBindings::DebugCameraButton();
 #ifdef LOCATION_EDITOR
   if (modsEnabled)
   {
-    if (g_inputManager->controlEvent(ControlToggleEditor))
+    if (g_inputManager->controlEvent(ControlType::ControlToggleEditor))
       DebugKeyBindings::EditorButton();
   }
 #endif
 //
 #ifdef CHEATMENU_ENABLED
-  if (g_inputManager->controlEvent(ControlToggleCheatMenu))
+  if (g_inputManager->controlEvent(ControlType::ControlToggleCheatMenu))
     DebugKeyBindings::CheatButton();
 #endif
 

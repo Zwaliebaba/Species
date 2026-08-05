@@ -1262,7 +1262,7 @@ void GlobalWorld::Advance()
     if (m_editorMode == 0)
     {
       // Edit locations
-      if (g_inputManager->controlEvent(ControlSelectLocation))
+      if (g_inputManager->controlEvent(ControlType::ControlSelectLocation))
       {
         DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
@@ -1280,14 +1280,14 @@ void GlobalWorld::Advance()
     else
     {
       // Move locations
-      if (g_inputManager->controlEvent(ControlSelectLocation))
+      if (g_inputManager->controlEvent(ControlType::ControlSelectLocation))
       {
         DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
         m_editorSelectionId = LocationHit(rayStart, rayDir);
       }
-      else if (g_inputManager->controlEvent(ControlLocationDragActive))
+      else if (g_inputManager->controlEvent(ControlType::ControlLocationDragActive))
       {
         GlobalLocation* loc = GetLocation(m_editorSelectionId);
         if (loc)
@@ -1296,7 +1296,7 @@ void GlobalWorld::Advance()
           DirectX::XMStoreFloat3(&loc->m_pos, DirectX::XMVectorScale(DirectX::XMLoadFloat3(&mousePos3D), 1.0f / 120.0f));
         }
       }
-      else if (g_inputManager->controlEvent(ControlDeselectLocation))
+      else if (g_inputManager->controlEvent(ControlType::ControlDeselectLocation))
         m_editorSelectionId = -1;
     }
   }
@@ -1305,7 +1305,7 @@ void GlobalWorld::Advance()
     bool chatLog = false;
 
     // Has the user clicked on a location?
-    if (g_inputManager->controlEvent(ControlSelectLocation) && m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
+    if (g_inputManager->controlEvent(ControlType::ControlSelectLocation) && m_locationRequested == -1 && EclGetWindows()->size() == 0 && !chatLog)
     {
       DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};

@@ -875,6 +875,36 @@ tasks:
       - NeuronClient/ControlBindings.cpp
       - NeuronClient/Input.h
       - NeuronClient/Input.cpp
+      - NeuronClient/InputDriverAlias.cpp
+      - NeuronClient/SepulvedaStrings.cpp
+      - NeuronClient/ClientToServer.cpp
+      - NeuronClient/Movement2d.cpp
+      - NeuronClient/TargetCursor.cpp
+      - GameLogic/FileDialog.cpp
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/GunTurret.cpp
+      - GameLogic/InputField.cpp
+      - GameLogic/InsertionSquad.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/Location.cpp
+      - GameLogic/Mine.cpp
+      - GameLogic/PrefsKeybindingsWindow.cpp
+      - GameLogic/ProfileWindow.cpp
+      - GameLogic/Rocket.cpp
+      - GameLogic/SpeciesWindow.cpp
+      - GameLogic/Team.cpp
+      - Species/Camera.cpp
+      - Species/ControlHelp.cpp
+      - Species/GameCursor.cpp
+      - Species/LocationEditor.cpp
+      - Species/LocationInput.cpp
+      - Species/Main.cpp
+      - Species/Script.cpp
+      - Species/StartSequence.cpp
+      - Species/TaskManagerInterface.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - Species/UserInput.cpp
+      - Tests/NeuronClientTests/ControlBindingsTests.cpp
     acceptance:
       - ControlType is enum class with an explicit underlying type
       - controltype_t names ControlType or is gone
@@ -885,9 +915,19 @@ tasks:
       - python3 tools/check_layering.py
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\NeuronClientTests.dll
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE 2026-08-05. Every acceptance line is met; what each one cost, and
+      the four decisions that were not mechanical, are at the end of this note.
+
+      NOT COMPILED. Linux, no MSVC. The seven Python checks pass and the
+      requalification was verified by grep to be total, but nothing here has
+      been through a compiler and nothing has been run. The static_asserts
+      described below are the part most likely to need a second pass, because
+      they are the only construct in the diff that is not a requalification.
+
       Split out of T9 on 2026-08-05, sized at 473 use sites across 64 files,
       which was the argument for it being alone in a batch.
 
@@ -958,6 +998,104 @@ tasks:
       none is a printf, so the collision is file-level rather than line-level
       — but it is why this task is not in Batch 6 alongside T17. It also
       contests nine files with strings/T11 and twelve with strings/T12.
+
+      ---- WHAT LANDED ----
+
+      Two commits. The first whole-file reformats ControlTypes.h,
+      ControlBindings.h and Input.h, because all three are tab-indented legacy
+      files that this task rewrites enough of for the changed-lines format
+      check to demand nearly the whole file anyway — the practice AGENTS.md
+      sets and the one ownership/T6 followed for Species/App.h. The second is
+      the conversion: 196 requalifications in 27 files, plus the six files
+      above that needed real thought.
+
+      THE MEASUREMENT HELD. 267 lines in 38 files was the prediction and 38
+      files is what changed, with one file the reach measurement DID find and
+      did not flag as interesting: InputDriverAlias.cpp, whose two bounds
+      checks the measurement counted but whose THIRD site — the assignment
+      into spec.control_id — it did not, because that line names no
+      enumerator. See the boundary section below. Reach measurement finds
+      files; it does not find expressions, which is what Batch 5 recorded
+      after lh/T10 and is now true twice.
+
+      FOUR DECISIONS THAT WERE NOT MECHANICAL:
+
+      1. getControlID RETURNS std::optional<ControlType>, not an enumerator.
+         It returned -1, and the temptation is ControlNull. That would be
+         wrong in the same way mapping InputDriverWin32's `return -1` to
+         INPUT_TYPE_FAIL would have been wrong in T10: ControlNull is a REAL
+         index into all three of ControlBindings' arrays and a bindable one,
+         so a caller that stopped checking would silently bind to it instead
+         of rejecting the name. Both callers tested `>= 0` and neither used
+         the value, so nothing needed the integer. std::optional says what -1
+         was standing in for. LevelFile.h/.cpp already use std::optional, so
+         this is not the tree's first.
+
+      2. THE FIVE DOUBLE DECLARATIONS COLLAPSED TO THE CHECKED BODY. This is
+         the fourth boundary, the one the split did not name and the one worth
+         reading before touching this class again. operator[] and getIcon were
+         each declared twice — on ControlType and on controltype_t — and
+         DIFFERED IN BEHAVIOUR, not just in type: the enum ones indexed
+         unchecked, the int ones bounds-checked and threw. `using controltype_t
+         = ControlType` makes each pair one function, so one body had to win.
+         The checked one did. That is a behaviour change confined to inputs
+         that were already out of bounds; every reachable caller passes a real
+         enumerator or a value getControlID has vouched for, so nothing that
+         works today starts throwing.
+
+      3. THE TABLE AGREEMENT IS ASSERTED, NOT TESTED. The acceptance offered
+         either. ControlBindings.cpp now walks ControlTypes.inc a THIRD time
+         with a DEF_CONTROL_TYPE that emits one static_assert per line:
+         s_actions[I(ControlType::Control##name)].name == #name. All 133 pairs,
+         generated from the same file both tables are generated from, so they
+         cannot drift without the build naming the first row that did. Three
+         more assert the tail: the table is NumControlTypes + 1 long,
+         ControlNull's row is the empty-name row, and the row at
+         NumControlTypes is the null terminator getControlID stops on.
+         s_actions became constexpr to make this possible; nothing ever wrote
+         to it. THIS IS THE ONE PART OF THE DIFF THAT COULD FAIL TO COMPILE
+         for a reason other than a missed call site — it constant-evaluates
+         std::string_view over a constexpr array of string literals.
+
+      4. memset(suppressed, 0, NumControlTypes) BECAME sizeof(suppressed)
+         rather than Neuron::I(ControlType::NumControlTypes). Identical bytes
+         today, because the array is unsigned char and NumControlTypes long.
+         The point is that it stays identical if the element type ever stops
+         being one byte, which the old spelling did not.
+
+      THE BOUNDARIES, listed as the acceptance line requires. Three, all in
+      NeuronClient, and all three are the same boundary seen from different
+      sides — InputSpec::control_id is a control_id_t (int) that holds a
+      keycode for every driver except the alias driver, where it holds a
+      ControlType:
+
+        InputDriverAlias.cpp parseInputSpecification  static_cast<control_id_t>
+                             on the way in, replacing a `< 0` test that was
+                             getControlID's old sentinel.
+        InputDriverAlias.cpp getInput                 the bound comes DOWN to
+        InputDriverAlias.cpp getInputDescription      int rather than the id
+                                                      going up to the enum,
+                                                      because the field cannot
+                                                      become the enum.
+
+      No C-style cast anywhere; the existing static_cast<ControlType>(...) in
+      those two functions is unchanged.
+
+      Input.cpp's printNumBindings and ControlBindings::Clear both walk
+      RangeControlType() now. It covers [ControlMenuLeft, ControlNull], which
+      is 0..NumControlTypes-1 — the same range both int loops walked, asserted
+      in the new test rather than argued.
+
+      TESTS: Tests/NeuronClientTests/ControlBindingsTests.cpp, seven methods,
+      new project entry. They characterise the name lookup, which had no
+      coverage at all: first and last generated row, case-insensitivity
+      (stricmp, which is what lets inconsistently-cased preferences files
+      load), an unknown name, the round trip through getControlString, and the
+      range's size. THE NEGATIVE CONTROL IS THE INTERESTING ONE — the empty
+      string MATCHES, because ControlNull's row has an empty name and sits
+      before the terminator, so getControlID("") returns a real bindable
+      control type. Pre-existing, harmless, deliberately not changed, and
+      written down so nobody "fixes" the bound and breaks the terminator.
 
   - id: T12
     title: Scope Camera::Mode

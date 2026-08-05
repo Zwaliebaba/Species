@@ -325,11 +325,11 @@ void InputScroller::Render(int realX, int realY, bool highlighted, bool clicked)
 {
   SpeciesButton::Render(realX, realY, highlighted, clicked);
 
-  if (m_mouseDownStartTime > 0.0f && m_inputField && g_inputManager->controlEvent(ControlEclipseLMousePressed) && g_target->X() >= realX &&
-      g_target->X() < realX + m_w && g_target->Y() >= realY && g_target->Y() < realY + m_h)
+  if (m_mouseDownStartTime > 0.0f && m_inputField && g_inputManager->controlEvent(ControlType::ControlEclipseLMousePressed) &&
+      g_target->X() >= realX && g_target->X() < realX + m_w && g_target->Y() >= realY && g_target->Y() < realY + m_h)
   {
     float change = m_change;
-    if (g_inputManager->controlEvent(ControlScrollSpeedup))
+    if (g_inputManager->controlEvent(ControlType::ControlScrollSpeedup))
       change *= 5.0f;
 
     float timeDelta = GetHighResTime() - m_mouseDownStartTime;
@@ -363,7 +363,7 @@ void InputScroller::Render(int realX, int realY, bool highlighted, bool clicked)
 
 void InputScroller::MouseDown()
 {
-  if (g_inputManager->controlEvent(ControlEclipseLMousePressed))
+  if (g_inputManager->controlEvent(ControlType::ControlEclipseLMousePressed))
   {
     m_mouseDownStartTime = GetHighResTime() - INTEGER_INCREMENT_PERIOD;
   }

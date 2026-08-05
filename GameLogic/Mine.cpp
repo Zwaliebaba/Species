@@ -536,7 +536,7 @@ float MineBuilding::RefinerySpeed()
   float speed = s_refineryPopulation * fabs(sinf(g_gameTime * 2.0f)) * 0.5f;
 
 #ifdef CHEATMENU_ENABLED
-  if (g_inputManager->controlEvent(ControlScrollSpeedup))
+  if (g_inputManager->controlEvent(ControlType::ControlScrollSpeedup))
   {
     speed *= 10.0f;
   }

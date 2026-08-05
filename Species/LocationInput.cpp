@@ -42,7 +42,7 @@
 // *** AdvanceTeleportControl
 void LocationInput::AdvanceRadarDishControl(Building* _building)
 {
-  if (g_inputManager->controlEvent(ControlUnitSetTarget))
+  if (g_inputManager->controlEvent(ControlType::ControlUnitSetTarget))
   {
     // Braced to zero, as Vector3's default constructor did; GetClickRay writes
     // both, but that was true before it was called too.
@@ -125,7 +125,7 @@ bool LocationInput::GetObjectUnderMouse(WorldObjectId& _id, int _teamId)
 // *** AdvanceNoSelection
 void LocationInput::AdvanceNoSelection()
 {
-  if (g_inputManager->controlEvent(ControlSelectLocation) && !TheTaskManagerInterface()->m_visible)
+  if (g_inputManager->controlEvent(ControlType::ControlSelectLocation) && !TheTaskManagerInterface()->m_visible)
   {
     WorldObjectId id;
     bool objectFound = GetObjectUnderMouse(id, g_globalWorld->m_myTeamId);
@@ -264,8 +264,8 @@ void LocationInput::AdvanceTeamControl()
   //
   // Have we clicked to select something?
 
-  if (g_inputManager->controlEvent(ControlUnitSetTarget) && // TODO: Really?
-                                                            //! g_inputManager->m_rmb &&
+  if (g_inputManager->controlEvent(ControlType::ControlUnitSetTarget) && // TODO: Really?
+                                                                         //! g_inputManager->m_rmb &&
       !TheTaskManagerInterface()->m_visible && !taskStarted)
   {
     WorldObjectId id;
@@ -283,7 +283,7 @@ void LocationInput::AdvanceTeamControl()
   // Space key should deselect current unit or building
   bool objectSelected = team->m_currentUnitId != -1 || team->m_currentEntityId != -1 || team->m_currentBuildingId != -1;
 
-  if (g_inputManager->controlEvent(ControlUnitDeselect))
+  if (g_inputManager->controlEvent(ControlType::ControlUnitDeselect))
   {
     if (objectSelected)
     {
@@ -302,7 +302,7 @@ void LocationInput::AdvanceTeamControl()
 
   if (taskStarted && !TheTaskManagerInterface()->m_visible)
   {
-    if (g_inputManager->controlEvent(ControlUnitCreate))
+    if (g_inputManager->controlEvent(ControlType::ControlUnitCreate))
     {
       DirectX::XMFLOAT3 mousePos = TheUserInput()->GetMousePos3d();
       g_app->m_clientToServer->RequestTargetProgram(g_globalWorld->m_myTeamId, g_taskManager->m_currentTaskId, mousePos);
@@ -359,18 +359,18 @@ void LocationInput::AdvanceTeamControl()
         }
 
         Officer* officer = (Officer*)ent;
-        if (g_inputManager->controlEvent(ControlWeaponCycleLeft))
+        if (g_inputManager->controlEvent(ControlType::ControlWeaponCycleLeft))
         {
           officer->SetPreviousMode();
         }
-        else if (g_inputManager->controlEvent(ControlWeaponCycleRight))
+        else if (g_inputManager->controlEvent(ControlType::ControlWeaponCycleRight))
         {
           officer->SetNextMode();
         }
       }
       else if (ent->m_type == Entity::TypeArmour)
       {
-        if (g_inputManager->controlEvent(ControlWeaponCycleLeft) || g_inputManager->controlEvent(ControlWeaponCycleRight))
+        if (g_inputManager->controlEvent(ControlType::ControlWeaponCycleLeft) || g_inputManager->controlEvent(ControlType::ControlWeaponCycleRight))
         {
           Armour* armour = (Armour*)ent;
           armour->SetDirectOrders();
@@ -420,7 +420,7 @@ void LocationInput::AdvanceTeamControl()
           if (static_cast<int>(weaponList.size()) > 1)
           {
             int oldWeapon = currentWeapon;
-            if (g_inputManager->controlEvent(ControlWeaponCycleLeft))
+            if (g_inputManager->controlEvent(ControlType::ControlWeaponCycleLeft))
             {
               currentWeapon--;
               if (currentWeapon < 0)
@@ -429,7 +429,7 @@ void LocationInput::AdvanceTeamControl()
               }
             }
 
-            if (g_inputManager->controlEvent(ControlWeaponCycleRight))
+            if (g_inputManager->controlEvent(ControlType::ControlWeaponCycleRight))
             {
               currentWeapon++;
               if (currentWeapon >= static_cast<int>(weaponList.size()))

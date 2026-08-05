@@ -950,7 +950,7 @@ bool EscapeRocket::BoardRocket(WorldObjectId _id)
 void EscapeRocket::ProvideFuel(float _level)
 {
 #ifdef CHEATMENU_ENABLED
-  if (g_inputManager->controlEvent(ControlScrollSpeedup))
+  if (g_inputManager->controlEvent(ControlType::ControlScrollSpeedup))
   {
     _level *= 100;
   }
