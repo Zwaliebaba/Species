@@ -2527,12 +2527,40 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: |
       GenerateSyncValue is inside #ifdef TARGET_DEBUG. It is the only runtime
       determinism check the game has, so it must keep summing the same fields
       in the same order — the values it produces are allowed to change, the
       traversal is not.
+
+      DONE at 2cb2b5f, CI run 527 green. Closed 2026-08-05; the conversion
+      landed a day before the status did, which is the habit this plan keeps
+      warning about — write the plan file with the commit, not after it.
+
+      WHAT THE SEVEN FILES ACTUALLY HELD, so the next reader does not go
+      looking for more:
+
+        Main.cpp             GenerateSyncValue's four accumulators
+        ControlHelp.cpp      a file-local HelpIcon on Vector2 screen coords
+        StartSequence.cpp    a Vector2 cursor position
+        ServerUpdates.cpp    one comparison, commented
+        Script.cpp           one g_upVector use, now g_XMIdentityR1
+        GameMenu.cpp         nothing
+        TaskManagerInterface.cpp  nothing but the include
+
+      The accumulators are the part worth re-reading. They were
+      default-constructed Vector3s and XMFLOAT3 does not zero, so converted
+      straight they would have summed thousands of entity positions onto
+      uninitialised stack and fired the desync assert spuriously — failure
+      mode 5, in the one function whose job is detecting divergence. They are
+      XMVECTORs explicitly zeroed instead, and the final sum keeps the original
+      left-association ((u + e) + l) + f, because float addition is not
+      associative and this total is compared across clients.
+
+      Three `#include "Vector3.h"` and one `#include "Vector2.h"` survive in
+      Main.cpp, ServerUpdates.cpp and TaskManagerInterface.cpp. They are seam
+      includes with no legacy type behind them and T25 removes them.
 
   - id: T24
     title: Convert the tests
