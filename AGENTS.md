@@ -90,7 +90,7 @@ allowlist stood at 628 when this phase ended and is **gone** —
 `tasks/Archive/layering-inversion.yaml` took it to zero and deleted it.
 
 > **Note:** the game runs again — first at `7ee8c00` (2026-08-02), most
-> recently at `1af4979` (2026-08-05). That is recorded here because
+> recently at `acf283b` (2026-08-05), all seven steps. That is recorded here because
 > this file is where it gets recorded — see *What working looks like*. It does
 > not lower the bar for a change: a successful compile is still not evidence that
 > anything works, and most agents cannot launch the client at all. Report what
@@ -354,17 +354,42 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**POST-MIGRATION BASELINE: `1af4979` (2026-08-05), owner-reported successful,
+**CURRENT BASELINE: `acf283b` (2026-08-05), owner-reported, ALL SEVEN STEPS
+PASS.** This is the most recent run, the most recent run with an explicit
+per-step breakdown, and the build any future divergence is measured against.
+
+It closes `determinism` T6 and with it that whole plan, 6 of 6 —
+`tasks/Archive/determinism.yaml`. It was run on the Batch 5 branch rather than
+on `main`, which is more than the gate asked for: **it is also the first
+running-game evidence for Batch 5's four tasks** — `ownership` T11,
+`language-hygiene` T10 and T13, `strings` T18 — which until then had only ever
+been checked by CI. Steps 2, 5 and 6 are the ones that would have caught a
+mistake in them.
+
+**THE SIMULATION MOVED, AND THIS IS WHERE IT MOVED TO.** `determinism` T5
+postdates the `1af4979` baseline below and changes the `syncrand` call
+sequence, so the sync value this build produces is NOT the one `1af4979`
+produced. A client from before T5 desyncs against one after it. That cost was
+accepted on T1 and T5 and is now confirmed against a running game rather than
+assumed.
+
+What the run does **not** cover: three of T5's six fixed sites — Spam, GodDish
+and Library — are not in The Garden and remain unexercised. Laser fences and
+incubators are, and `LaserFence.cpp:66` was the one outright desync of the six.
+It also does **not** discharge `ownership` T6, which has not been started and
+needs the main menu reached after each of its own commits.
+
+**Previous baseline: `1af4979` (2026-08-05), owner-reported successful,
 on the WRAPPER-FREE build.** This is the run `directxmath-migration` T27 was
 waiting on, and it closes that plan: `Vector2`, `Vector3`, `Matrix33` and
 `Matrix34` are deleted, there is no conversion seam, and every math value in
 the tree is a DirectXMath type. `bb4a110` sits on top of it and is
 documentation only, so the binary is `1af4979`'s tree.
 
-**This run is the new baseline for the simulation.** From here the sync value
-is whatever native math produces, and any future divergence is measured
-against this build rather than against anything before it. A build from before
-the migration does not agree with this one, and is not supposed to.
+**This was the baseline until `acf283b` above.** It is the run that established
+that the sync value is whatever native math produces; a build from before the
+migration does not agree with it, and is not supposed to. It stopped being the
+measuring stick when `determinism` T5 shifted the RNG sequence on top of it.
 
 Why the run was needed when CI was green: T25 deleted the seam, which changed
 how every converted call site resolves its types, and three of this migration's
@@ -486,17 +511,17 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-Six plans are complete and in `tasks/Archive/`. **Five are open with twelve
+**Seven plans are complete and in `tasks/Archive/`** — `determinism` joined
+them on 2026-08-05 when its T6 smoke test passed. **Four are open with eleven
 tasks between them** — `strings-modernised` (5), `namespace-migration` (3),
-`ownership` (2), `language-hygiene` (1) and `determinism` (1). Batch 5 landed
-four of them on 2026-08-05: `ownership` T11, `language-hygiene` T10 and T13,
-and `strings-modernised` T18.
+`ownership` (2) and `language-hygiene` (1). Batch 5 landed four tasks on
+2026-08-05: `ownership` T11, `language-hygiene` T10 and T13, and
+`strings-modernised` T18.
 
-Two of those twelve are owner-run smoke tests rather than agent work:
-`determinism` T6, and `ownership` T6 needs one after each of its commits.
-**Both are now on the critical path for everything else.** With T11 landed,
-`ownership` is T6 → T7 and nothing else; `namespace` T5 waits on T6 as well.
-The tree has more work gated on the owner than on agents.
+**One of those eleven is owner work rather than agent work, and everything
+else in `ownership` and `namespace` is behind it:** `ownership` T6 needs the
+game to reach the main menu after each of its commits. With T11 landed,
+`ownership` is T6 → T7 and nothing else, and `namespace` T5 waits on T6 too.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:
@@ -573,12 +598,16 @@ warrants a question first.
 Real, currently true, and worth knowing before you trip over them:
 
 - **The game runs, and almost nothing here proves your change kept it that
-  way.** The most recent owner-reported successful run is `1af4979`
-  (2026-08-05); the last run with an explicit all-seven-steps breakdown is
-  `b0bde71` — see *What working looks like*. CI builds and runs the unit suite;
-  it does not launch the client, and neither does any agent working on Linux. A
-  change that compiles and passes 185 tests can still break the game on the
-  first frame.
+  way.** The most recent owner-reported successful run is `acf283b`
+  (2026-08-05), and it is also the most recent with an explicit
+  all-seven-steps breakdown — see *What working looks like*. CI builds and runs
+  the unit suite; it does not launch the client, and neither does any agent
+  working on Linux. A change that compiles and passes 185 tests can still break
+  the game on the first frame.
+  - Batch 5 is the standing example in both directions. Four tasks went in on
+    CI evidence alone; CI then caught two real compile errors a name-keyed
+    sweep had missed, and the owner's run afterwards is the only thing that
+    says the tree still plays. Neither check substitutes for the other.
 - **THERE ARE TWO RANDOM STREAMS, AND THE DOCUMENTATION SAID THERE WAS ONE.**
   This is the correction that retired the two determinism bullets that used to
   stand here, and it is the thing to know before reading any RNG call in this
@@ -611,9 +640,14 @@ Real, currently true, and worth knowing before you trip over them:
     there the position of every SpamInfection in `m_effects`).
   - **The RNG sequence changed with that fix**, so a client carrying it
     desyncs against one without — the same cost `determinism.yaml` T1 accepted
-    and for the same reason. **`determinism.yaml` T6 is the owner-run Garden
-    smoke test that confirms it, and it is open.** Until it closes, T5 is
-    landed but unverified against a running game.
+    and for the same reason. **T6 confirmed it against a running game on
+    2026-08-05 at `acf283b`, all seven steps, and that closed the plan** —
+    `tasks/Archive/determinism.yaml`. The shifted sequence is why `acf283b`
+    rather than `1af4979` is now the simulation baseline.
+    - **Three of the six sites are still unexercised.** `Spam.cpp`,
+      `GodDish` and `Library` do not appear in The Garden, so that run says
+      nothing about them; they will first be seen on a level that has them.
+      Laser fences and incubators were in front of the owner.
   - **Nobody has swept the remaining LCG sites.** 186 of them were classified
     far enough to find the six; a site-by-site record of which feed simulation
     state does not exist and has no owning task.

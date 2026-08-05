@@ -13,6 +13,12 @@
 > what it teaches are at [**What CI caught**](#what-ci-caught). Three of the
 > four tasks were green on CI as they landed; `language-hygiene/T10` was red
 > on two errors and is green after a follow-up.
+>
+> **AND THEN THE OWNER RAN THE GAME.** All seven Garden steps pass at
+> `acf283b`, 2026-08-05. That closes `determinism/T6` and its whole plan, and
+> because the run was on this branch rather than on `main` it is also the
+> first running-game evidence for all four of Batch 5's tasks. See
+> [**What the smoke test settled**](#what-the-smoke-test-settled).
 
 Written 2026-08-05 at `50560ab`. This is a proposal, not a plan — the plans are
 the five YAML files beside it. It answers one question: **of everything that is
@@ -251,19 +257,21 @@ except `ownership/T11`, which met three of four and says so.
 
 ### Where every plan stands now
 
-Twelve tasks open across five plans, down from sixteen.
+Eleven tasks open across four plans, down from sixteen. `determinism` closed.
 
 | Plan | done | todo | What is left |
 |---|---:|---:|---|
-| `determinism` | 5 | 1 | **T6, and it is yours** |
+| `determinism` | 6 | 0 | **CLOSED 2026-08-05** — archived |
 | `ownership` | 9 | 2 | **T6 (yours) → T7, and nothing else.** Stage 5 ends there. |
 | `language-hygiene` | 12 | 1 | T11 only — 473 sites, now unblocked |
 | `namespace-migration` | 2 | 3 | T2 → T4 → T5, and T5 waits on `ownership/T6` |
 | `strings-modernised` | 15 | 5 | the largest remaining plan |
 
-**The tree now has more work gated on the owner than on agents.** Both
-remaining `ownership` tasks are T6 and the task behind it; `namespace/T5` waits
-on T6 too. That was true before this batch and is sharper now.
+**One gate closed and one did not.** `determinism/T6` is done. `ownership/T6`
+is untouched, and everything left in `ownership` and `namespace` is behind it:
+`ownership` is T6 → T7 and nothing else, and `namespace/T5` waits on T6 as
+well. It cannot be discharged by the run above — its acceptance needs the main
+menu reached after each of ITS OWN commits, and nobody has made them.
 
 ### What the batch got wrong about itself
 
@@ -365,6 +373,29 @@ shaped Batch 5 was about WHICH FILES a task touches, and it was good for
 that. It says nothing about which EXPRESSIONS inside those files a conversion
 reaches. Both errors were in `InputDriverWin32.cpp` — a file the measurement
 named correctly, and had counted 19 sites in.
+
+### What the smoke test settled
+
+**All seven Garden steps pass at `acf283b`, owner-reported, 2026-08-05.**
+
+The proposal said to run `determinism/T6` on `main` so the RNG change could be
+judged alone. It was run on this branch instead, and that turned out to be the
+better trade: one run closed the gate AND put four CI-only tasks in front of a
+running game for the first time. Steps 2, 5 and 6 are what would have caught a
+mistake in `ownership/T11`'s GlobalWorld ownership or `lh/T10`'s input enum.
+
+**The cost of combining them is real even though it did not bite.** Had a step
+failed, the cause would have been ambiguous between the RNG change and four
+unrelated conversions. It did not fail, so the ambiguity is moot — but a
+future gate should not assume combining runs is free.
+
+**`acf283b` is the new simulation baseline.** `determinism/T5` postdates
+`1af4979` and shifts the `syncrand` sequence, so this build's sync value is
+not the one `1af4979` produced. A pre-T5 client desyncs against a post-T5 one.
+
+**What it did not cover**, and AGENTS.md now says so: three of T5's six fixed
+sites — Spam, GodDish and Library — are not in The Garden. Laser fences and
+incubators are, and `LaserFence.cpp:66` was the one outright desync of the six.
 
 ### What was NOT done, and should be read as a gap
 

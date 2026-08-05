@@ -532,7 +532,6 @@ tasks:
     acceptance:
       - All seven Garden smoke-test steps pass on the changed build, owner-reported
       - AGENTS.md records the run with the commit hash, per "What working looks like"
-    status: todo
     notes: |
       Blocked on owner execution -- agents in this environment cannot launch a
       Windows client.
@@ -554,3 +553,43 @@ tasks:
       their spirits are present in The Garden. Spam, GodDish and Library are
       not, so those three sites go unexercised by this run and will first be
       seen on a level that has them; say so rather than implying otherwise.
+
+      DONE 2026-08-05. OWNER RAN IT AND ALL SEVEN STEPS PASS, at acf283b.
+      That closes this task and with it the whole plan, 6 of 6.
+
+      IT WAS RUN ON THE BATCH 5 BRANCH, NOT ON main, and that is worth more
+      than this task asked for. The plan proposed running it on what was in
+      main (50560ab) so the RNG change could be judged alone. acf283b is that
+      plus the whole of Batch 5 -- ownership T11, language-hygiene T10 and
+      T13, strings T18 -- so one run closes this gate AND is the first
+      running-game evidence for four tasks that had only ever been checked by
+      CI. Those four touch GlobalWorld's ownership, the input layer's enum,
+      the camera transition enum and NetLib's debug output; steps 2, 5 and 6
+      are what would have caught a mistake in them.
+
+      THE COST OF THAT CHOICE, stated because it is real: the run does not
+      isolate T5. If a step had failed, the cause would have been ambiguous
+      between the RNG change and four unrelated conversions. It did not fail,
+      so the ambiguity is moot -- but a future gate should not assume that
+      combining runs is free.
+
+      THIS IS A NEW SIMULATION BASELINE. determinism T5 postdates the
+      1af4979 post-migration baseline and changes the speciesRandom/syncrand
+      call sequence, so the sync value acf283b produces is not the one
+      1af4979 produced. A client from before T5 desyncs against one after it.
+      That was the accepted cost recorded on T1 and T5, and it is now
+      confirmed against a running game rather than assumed.
+
+      WHAT THIS RUN DOES NOT COVER, and the task said to say so rather than
+      imply otherwise. Three of T5's six fixed sites are not in The Garden --
+      Spam, GodDish and Library -- so they remain unexercised and will first
+      be seen on a level that has them. Laser fences and incubators ARE in
+      The Garden and were in front of the owner; LaserFence.cpp:66 was the
+      one outright desync of the six.
+
+      IT DOES NOT CLOSE ownership/T6. That task has not been started, and its
+      acceptance needs the main menu reached after each of ITS OWN commits.
+      This run is evidence about the tree as it stands, not about a change
+      nobody has made yet.
+
+    status: done
