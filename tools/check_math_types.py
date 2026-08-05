@@ -397,7 +397,12 @@ def main():
             kind, member = found.group(1), found.group(2)
             native_members.setdefault(member, ("matrix" if kind in NATIVE_MATRICES else "vector", rel))
             # A declaration that neither initialises nor is a function parameter.
-            if kind in NATIVE_VECTORS and found.group("init") == ";":
+            # Matrices are checked too, and were not until a ShapeMarker shipped
+            # with an uninitialised fourth column. XMFLOAT4X4 has a column that
+            # Matrix34 did not, so a parser that writes the old twelve floats
+            # leaves four holding stack garbage -- and XMMatrixMultiply reads
+            # all sixteen.
+            if found.group("init") == ";":
                 uninitialised.append((rel, number, member, kind, raw.strip()))
 
     ambiguous = sorted(set(native_members) & (legacy_members | non_math_members))
@@ -630,9 +635,12 @@ def main():
     if uninitialised:
         if problems:
             print()
-        print("Native vector members with no initialiser. Vector3's default constructor")
-        print("zeroed and XMFLOAT3's does not, so anything that accumulated into one, or")
-        print("read it before first write, silently changed behaviour:")
+        print("Native math members with no initialiser. The legacy types default-")
+        print("constructed to something usable and the native ones do not: Vector3()")
+        print("zeroed where XMFLOAT3() does not, and Matrix34 had no fourth column at")
+        print("all where XMFLOAT4X4 has one that stays whatever was on the stack. So")
+        print("anything that accumulated into one, or read it before first write, or")
+        print("wrote only the twelve floats the old type had, silently changed:")
         for rel, number, member, kind, text in uninitialised:
             print("  %s:%d: %s (%s)\n      %s" % (rel, number, member, kind, text))
 

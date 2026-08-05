@@ -63,7 +63,14 @@ class SpherePackage
 class ShapeMarker
 {
   public:
-    DirectX::XMFLOAT4X4 m_transform;
+    // IDENTITY BY DEFAULT, and this is load-bearing rather than tidiness.
+    // Matrix34 was twelve floats with no fourth column, and ToNative() supplied
+    // (0,0,0,1) for it. XMFLOAT4X4 has that column for real, and the shape-file
+    // parser writes only front, up and pos -- nine floats -- so _14, _24, _34
+    // and _44 were left holding whatever was on the stack. XMMatrixMultiply
+    // reads all sixteen, so a garbage _44 propagated straight into the
+    // translation and put markers at coordinates around -1e12.
+    DirectX::XMFLOAT4X4 m_transform{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
     char* m_name;
     char* m_parentName;
     int m_depth; // Number of levels in the shape fragment tree from root to self
@@ -151,7 +158,8 @@ class ShapeFragment
 
     char* m_name;
     char* m_parentName;
-    DirectX::XMFLOAT4X4 m_transform;
+    DirectX::XMFLOAT4X4 m_transform{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                                    0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}; // identity by default -- see ShapeMarker above
     DirectX::XMFLOAT3 m_angVel{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 

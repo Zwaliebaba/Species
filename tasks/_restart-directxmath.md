@@ -62,14 +62,30 @@ but 3.
 | 2 | A converted **member's** name | `vel.Mag()` contains no type name |
 | 3 | A **transitive include** | the header stops supplying `Vector3` to files that got it through it |
 | 4 | The **replaced type's field** names | `GetWorldMatrix(m).pos` — `XMFLOAT4X4` numbers its rows `_11.._44` |
-| 5 | **Default construction** | `Vector3()` zeroed; `XMFLOAT3()` does not |
+| 5 | **Default construction** | `Vector3()` zeroed; `XMFLOAT3()` does not — and `Matrix34` had no fourth column where `XMFLOAT4X4` has one |
 | 6 | A contended name that **is not a math type at all** | `ArmyAnt::m_orders` is an `int`, `m_mousePos` an `int[3]`, `m_right` a `float*` |
 | 7 | **The address-of trap** | the seam converts by REFERENCE, which does nothing through a pointer |
 
 Number 5 is the dangerous one: invisible to the compiler *and* to CI. It shipped
-twice before anything noticed — `Shape::CalculateCentre` accumulating fragment
-centres onto uninitialised memory, and the sound system's cached positions with
-nothing at all to catch it.
+three times before anything noticed — `Shape::CalculateCentre` accumulating
+fragment centres onto uninitialised memory, the sound system's cached positions
+with nothing at all to catch it, and then `ShapeMarker::m_transform`.
+
+**That third one is the shape to remember, because it is not the zeroing
+difference at all.** `Matrix34` was twelve floats: r, u, f and pos, with no
+fourth column, and `ToNative()` supplied `(0,0,0,1)` for the one it did not
+have. `XMFLOAT4X4` has that column for real and nothing fills it in. The
+shape-file parser writes nine floats — front, up and pos — so `_14`, `_24`,
+`_34` and `_44` kept whatever was on the stack, and `XMMatrixMultiply` reads all
+sixteen: `row3 = _41*r0 + _42*r1 + _43*r2 + _44*r3`, so a `_44` of about -1e9
+times a building position of about 1200 put every marker at roughly -1.2e12.
+
+It surfaced as two unrelated-looking reports — a research item that stopped
+appearing (`Library::Advance` spawns it *at* a marker's world position) and a
+`GenerateSyncValue` assert on a total of -2.5e12 — and both were this. **A
+converted type that is WIDER than the one it replaced needs the same audit as
+one that stopped zeroing: find every writer and check it fills the new fields.**
+`tools/check_math_types.py` now checks matrix members too.
 
 Number 7 is the one that shapes the remaining tasks. `&someVector3` is a
 `Vector3*` and will not bind to an `XMFLOAT3*`, so **any API with an
