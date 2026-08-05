@@ -365,16 +365,42 @@ Simulation code is `GameLogic/`, plus the world, entity, team and physics code i
   an accumulator, or hoisting a term out of a loop, changes results.
 - **Do not use `std::execution` parallel policies.** Non-deterministic reduction
   order.
-- **Do not introduce a new random source.** There is exactly one:
-  `speciesRandom()` in `NeuronCore/Random.cpp`, a linear congruential
-  generator over a single global `holdrand`. It is deterministic only because
-  every client makes the *same sequence of calls*. Adding a call, removing one,
-  or making one conditional shifts the stream for everything downstream.
-  `rand()`, `std::mt19937` and `std::random_device` are all forbidden here.
-- **Never call `speciesRandom()` from rendering, UI, sound or the editor.**
-  Those run at frame rate rather than tick rate, so they would consume the shared
-  stream at a client-dependent rate. Use a separate generator for anything
-  cosmetic.
+- **There are TWO random sources and picking the wrong one is a desync.** This
+  paragraph used to say there was exactly one, which was wrong, and that error
+  is what produced two false alarms in `AGENTS.md`'s Known issues — see
+  `tasks/determinism.yaml` T3.
+
+  | | Where | Use it for |
+  |---|---|---|
+  | `syncrand()`, `syncfrand()`, `syncsfrand()` | `NeuronCore/MathUtils.cpp` — Mersenne Twister over `mt[]` | **Simulation state.** Anything a position, velocity, timer or decision depends on. |
+  | `speciesRandom()`, `frand()`, `sfrand()` | `NeuronCore/Random.cpp` — LCG over `holdrand` | **Cosmetics only.** Particles, render jitter, muzzle-flash sizes, UI placement. |
+
+  `syncrand()` is the synchronised one. It is never explicitly seeded, so
+  `init_genrand(5489UL)` runs on first use and every client starts from the
+  same state; it stays in step only because every client makes the *same
+  sequence of calls*. Adding a call, removing one, or making one conditional on
+  anything client-local shifts the stream for everything downstream.
+
+  `speciesRandom()` is **not** synchronised and cannot be made so: terrain
+  generation, tree generation and `LandscapeRenderer::GetLandscapeColour`
+  reseed it wholesale through `speciesSeedRandom`, and sound, the Eclipse UI
+  and the frame loop consume it at a client-dependent rate. Treat its state as
+  arbitrary at any moment.
+
+  `rand()`, `std::mt19937` and `std::random_device` are all forbidden in
+  simulation code.
+- **Never draw simulation state from `frand`/`sfrand`/`speciesRandom`.** This is
+  the failure that actually happens here, and it is easy to write because the
+  two families differ by four characters. `determinism.yaml` T5 fixed six of
+  them; the worst — `LaserFence::Initialise` — set a timer from `frand` that
+  then gated a `syncfrand` draw inside `Advance`, so two clients drew from the
+  *synchronised* stream on different ticks and diverged permanently.
+- **Never call `syncrand()` from rendering, UI, sound or the editor.** Those run
+  at frame rate rather than tick rate, so they would consume the synchronised
+  stream at a client-dependent rate. `frand`/`sfrand` are the generator for
+  anything cosmetic, and that is what the rest of the tree already uses them
+  for. Note that this rule points the opposite way round from the one it
+  replaces, which named the wrong function.
 - **Be careful with `sinf`, `cosf`, `powf`, `acosf`, `asinf`, `expf`.** The
   simulation calls them heavily — over 270 sites in `GameLogic/` and `Species/`.
   IEEE-754 pins down `+ - * /` and `sqrt`; it does **not** pin down the
