@@ -10,233 +10,238 @@
 #include "SoundSource.h"
 #include "WorldObjectId.h"
 
-class TextReader;
-class SoundInstance;
 class Profiler;
-class FileWriter;
 
 //*****************************************************************************
 // Class SoundEventBlueprint
 //*****************************************************************************
 
-class SoundEventBlueprint
+
+namespace Neuron
 {
-  public:
-    char* m_eventName;
-    SoundInstance* m_instance;
+  class TextReader;
+  class SoundInstance;
+  class FileWriter;
 
-    SoundEventBlueprint();
+  class SoundEventBlueprint
+  {
+    public:
+      char* m_eventName;
+      SoundInstance* m_instance;
 
-    void SetEventName(const char* _name);
-};
+      SoundEventBlueprint();
 
-//*****************************************************************************
-// Class SoundSourceBlueprint
-//*****************************************************************************
+      void SetEventName(const char* _name);
+  };
 
-class SoundSourceBlueprint
-{
-  public:
-    enum // Other types of Sound Source
-    {
-      TypeLaser,
-      TypeGrenade,
-      TypeRocket,
-      TypeAirstrikeBomb,
-      TypeSpirit,
-      TypeSepulveda,
-      TypeGesture,
-      TypeAmbience,
-      TypeMusic,
-      TypeInterface,
-      NumOtherSoundSources
-    };
+  //*****************************************************************************
+  // Class SoundSourceBlueprint
+  //*****************************************************************************
 
-    std::vector<SoundEventBlueprint*> m_events;
+  class SoundSourceBlueprint
+  {
+    public:
+      enum // Other types of Sound Source
+      {
+        TypeLaser,
+        TypeGrenade,
+        TypeRocket,
+        TypeAirstrikeBomb,
+        TypeSpirit,
+        TypeSepulveda,
+        TypeGesture,
+        TypeAmbience,
+        TypeMusic,
+        TypeInterface,
+        NumOtherSoundSources
+      };
 
-    static int GetSoundSoundType(const char* _name);
-    static const char* GetSoundSourceName(int _type);
-    static void ListSoundEvents(int _type, std::vector<const char*>* _list);
-};
+      std::vector<SoundEventBlueprint*> m_events;
 
-//*****************************************************************************
-// Class DspParameterBlueprint
-//*****************************************************************************
+      static int GetSoundSoundType(const char* _name);
+      static const char* GetSoundSourceName(int _type);
+      static void ListSoundEvents(int _type, std::vector<const char*>* _list);
+  };
 
-class DspParameterBlueprint
-{
-  public:
-    char m_name[256];
-    float m_min;
-    float m_max;
-    float m_default;
-    int m_dataType; // 0 = float, 1 = long
-};
+  //*****************************************************************************
+  // Class DspParameterBlueprint
+  //*****************************************************************************
 
-//*****************************************************************************
-// Class DspBlueprint
-//*****************************************************************************
+  class DspParameterBlueprint
+  {
+    public:
+      char m_name[256];
+      float m_min;
+      float m_max;
+      float m_default;
+      int m_dataType; // 0 = float, 1 = long
+  };
 
-class DspBlueprint
-{
-  public:
-    char m_name[256];
-    SlotMap<DspParameterBlueprint*> m_params;
+  //*****************************************************************************
+  // Class DspBlueprint
+  //*****************************************************************************
 
-    char* GetParameter(int _param, float* _min = nullptr, float* _max = nullptr, float* _default = nullptr, int* _dataType = nullptr);
-};
+  class DspBlueprint
+  {
+    public:
+      char m_name[256];
+      SlotMap<DspParameterBlueprint*> m_params;
 
-//*****************************************************************************
-// Class SampleGroup
-//*****************************************************************************
+      char* GetParameter(int _param, float* _min = nullptr, float* _max = nullptr, float* _default = nullptr, int* _dataType = nullptr);
+  };
 
-class SampleGroup
-{
-  public:
-    char m_name[256];
-    std::vector<char*> m_samples;
+  //*****************************************************************************
+  // Class SampleGroup
+  //*****************************************************************************
 
-    ~SampleGroup();
-    void SetName(const char* _name);
-    void AddSample(const char* _sample);
-};
+  class SampleGroup
+  {
+    public:
+      char m_name[256];
+      std::vector<char*> m_samples;
 
-//*****************************************************************************
-// Class SoundSystem
-//*****************************************************************************
+      ~SampleGroup();
+      void SetName(const char* _name);
+      void AddSample(const char* _sample);
+  };
 
-class SoundSystem
-{
-  public:
-    enum
-    {
-      SoundSourceNoError,
-      // Remember to update g_soundSourceErrors in soundsystem.cpp
-      SoundSourceNotMono,
-      SoundSourceFileDoesNotExist,
-      SoundSourceFilenameHasSpace,
-      SoundSourceNumErrors
-    };
+  //*****************************************************************************
+  // Class SoundSystem
+  //*****************************************************************************
 
-    float m_timeSync;
-    bool m_propagateBlueprints; // If true, looping sounds will sync with blueprints
-    Profiler* m_mainProfiler;
-    Profiler* m_eventProfiler;
-    bool m_quitWithoutSave;
+  class SoundSystem
+  {
+    public:
+      enum
+      {
+        SoundSourceNoError,
+        // Remember to update g_soundSourceErrors in soundsystem.cpp
+        SoundSourceNotMono,
+        SoundSourceFileDoesNotExist,
+        SoundSourceFilenameHasSpace,
+        SoundSourceNumErrors
+      };
 
-    DirectX::XMFLOAT3 m_editorPos{0.0f, 0.0f, 0.0f};
-    SoundInstanceId m_editorInstanceId;
+      float m_timeSync;
+      bool m_propagateBlueprints; // If true, looping sounds will sync with blueprints
+      Profiler* m_mainProfiler;
+      Profiler* m_eventProfiler;
+      bool m_quitWithoutSave;
 
-    // OWNING. A slot holds the instance until ShutdownSound resets it, and
-    // nothing else deletes a registered instance.
-    FastSlotMap<std::unique_ptr<SoundInstance>> m_sounds; // All the sounds that want to play
-    // OWNING, and deliberately NOT in m_sounds: the music instance is never
-    // registered, which is what used to make ShutdownSound serve two
-    // populations. It is shut down by resetting these, not through
-    // ShutdownSound.
-    std::unique_ptr<SoundInstance> m_music; // There can only be one piece of music at a time
-    std::unique_ptr<SoundInstance> m_requestedMusic;
+      DirectX::XMFLOAT3 m_editorPos{0.0f, 0.0f, 0.0f};
+      SoundInstanceId m_editorInstanceId;
 
-    SoundInstanceId* m_channels;
-    int m_numChannels;
+      // OWNING. A slot holds the instance until ShutdownSound resets it, and
+      // nothing else deletes a registered instance.
+      FastSlotMap<std::unique_ptr<SoundInstance>> m_sounds; // All the sounds that want to play
+      // OWNING, and deliberately NOT in m_sounds: the music instance is never
+      // registered, which is what used to make ShutdownSound serve two
+      // populations. It is shut down by resetting these, not through
+      // ShutdownSound.
+      std::unique_ptr<SoundInstance> m_music; // There can only be one piece of music at a time
+      std::unique_ptr<SoundInstance> m_requestedMusic;
 
-    SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_entityBlueprints;   // Indexed on Entity::m_type
-    SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_buildingBlueprints; // Indexed on Building::m_type
-    SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_otherBlueprints;    // Indexed on SoundSourceBlueprint
-    SlotMap<std::unique_ptr<DspBlueprint>> m_filterBlueprints;           // Indexed on SoundLibrary3d::FX types
+      SoundInstanceId* m_channels;
+      int m_numChannels;
 
-    SlotMap<std::unique_ptr<SampleGroup>> m_sampleGroups;
+      SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_entityBlueprints;   // Indexed on Entity::m_type
+      SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_buildingBlueprints; // Indexed on Building::m_type
+      SlotMap<std::unique_ptr<SoundSourceBlueprint>> m_otherBlueprints;    // Indexed on SoundSourceBlueprint
+      SlotMap<std::unique_ptr<DspBlueprint>> m_filterBlueprints;           // Indexed on SoundLibrary3d::FX types
 
-  protected:
-    void ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, const char* _entityName);
-    void ParseSoundEffect(TextReader* _in, SoundEventBlueprint* _blueprint);
-    void ParseSampleGroup(TextReader* _in, SampleGroup* _group);
+      SlotMap<std::unique_ptr<SampleGroup>> m_sampleGroups;
 
-    void WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event);
-    void WriteSampleGroup(FileWriter* _file, SampleGroup* _group);
+    protected:
+      void ParseSoundEvent(TextReader* _in, SoundSourceBlueprint* _source, const char* _entityName);
+      void ParseSoundEffect(TextReader* _in, SoundEventBlueprint* _blueprint);
+      void ParseSampleGroup(TextReader* _in, SampleGroup* _group);
 
-    void SaveBlueprints(const char* _filename);
+      void WriteSoundEvent(FileWriter* _file, SoundEventBlueprint* _event);
+      void WriteSampleGroup(FileWriter* _file, SampleGroup* _group);
 
-    int FindBestAvailableChannel();
+      void SaveBlueprints(const char* _filename);
 
-    static bool SoundLibraryMainCallback(unsigned int _channel, signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
-    static bool SoundLibraryMusicCallback(signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
+      int FindBestAvailableChannel();
 
-  public:
-    SoundSystem();
-    ~SoundSystem();
+      static bool SoundLibraryMainCallback(unsigned int _channel, signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
+      static bool SoundLibraryMusicCallback(signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
 
-    void Initialise();
-    void RestartSoundLibrary();
+    public:
+      SoundSystem();
+      ~SoundSystem();
 
-    void LoadEffects();
-    void LoadBlueprints();
-    void SaveBlueprints();
-    bool AreBlueprintsModified();
+      void Initialise();
+      void RestartSoundLibrary();
 
-    void Advance();
+      void LoadEffects();
+      void LoadBlueprints();
+      void SaveBlueprints();
+      bool AreBlueprintsModified();
 
-    // TAKES OWNERSHIP EITHER WAY. On success the instance is registered in
-    // m_sounds and lives there; on the monophonic folding path its object ids
-    // are merged into the existing instance and it is destroyed here. The
-    // caller never holds something it must clean up, which is what the raw
-    // parameter made undecidable rather than merely untidy.
-    bool InitialiseSound(std::unique_ptr<SoundInstance> _instance);
+      void Advance();
 
-    // REGISTERED INSTANCES ONLY -- one contract, unlike the raw-pointer
-    // version which was called both with instances m_sounds held and with
-    // instances it never accepted. Stops the sound and destroys it. The slot
-    // is released only when it still holds THIS instance; see the .cpp.
-    void ShutdownSound(SoundInstance* _instance);
+      // TAKES OWNERSHIP EITHER WAY. On success the instance is registered in
+      // m_sounds and lives there; on the monophonic folding path its object ids
+      // are merged into the existing instance and it is destroyed here. The
+      // caller never holds something it must clean up, which is what the raw
+      // parameter made undecidable rather than merely untidy.
+      bool InitialiseSound(std::unique_ptr<SoundInstance> _instance);
 
-    int IsSoundPlaying(SoundInstanceId _id);
-    int NumInstancesPlaying(WorldObjectId _id, const char* _eventName);
-    int NumInstances(WorldObjectId _id, const char* _eventName);
+      // REGISTERED INSTANCES ONLY -- one contract, unlike the raw-pointer
+      // version which was called both with instances m_sounds held and with
+      // instances it never accepted. Stops the sound and destroys it. The slot
+      // is released only when it still holds THIS instance; see the .cpp.
+      void ShutdownSound(SoundInstance* _instance);
 
-    int NumSoundInstances();
-    int NumChannelsUsed();
-    int NumSoundsDiscarded();
+      int IsSoundPlaying(SoundInstanceId _id);
+      int NumInstancesPlaying(WorldObjectId _id, const char* _eventName);
+      int NumInstances(WorldObjectId _id, const char* _eventName);
 
-    // These took an Entity*, a Building* and a WorldObject* until
-    // tasks/layering-inversion.yaml T17. Each body read the same four fields
-    // off whatever it was handed, so SoundSource carries those instead and no
-    // GameLogic type appears in this header. GameLogic/SoundSources.h fills one
-    // from a live object.
-    void TriggerEntityEvent(SoundSource const& _source, const char* _eventName);
-    void TriggerBuildingEvent(SoundSource const& _source, const char* _eventName);
+      int NumSoundInstances();
+      int NumChannelsUsed();
+      int NumSoundsDiscarded();
 
-    // A sound with no object behind it — gestures, music, the interface.
-    void TriggerOtherEvent(const char* _eventName, int _type);
-    void TriggerOtherEvent(SoundSource const& _source, const char* _eventName, int _type);
+      // These took an Entity*, a Building* and a WorldObject* until
+      // tasks/layering-inversion.yaml T17. Each body read the same four fields
+      // off whatever it was handed, so SoundSource carries those instead and no
+      // GameLogic type appears in this header. GameLogic/SoundSources.h fills one
+      // from a live object.
+      void TriggerEntityEvent(SoundSource const& _source, const char* _eventName);
+      void TriggerBuildingEvent(SoundSource const& _source, const char* _eventName);
 
-  private:
-    // Both public forms land here. Nullable because the blueprint machinery
-    // treats an unattached sound as one with no position of its own.
-    void TriggerOtherEvent(SoundSource const* _source, const char* _eventName, int _type);
+      // A sound with no object behind it — gestures, music, the interface.
+      void TriggerOtherEvent(const char* _eventName, int _type);
+      void TriggerOtherEvent(SoundSource const& _source, const char* _eventName, int _type);
 
-  public:
-    void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in nullptr to stop every event.
-    // Full event name required, eg "Citizen SeenThreat"
+    private:
+      // Both public forms land here. Nullable because the blueprint machinery
+      // treats an unattached sound as one with no position of its own.
+      void TriggerOtherEvent(SoundSource const* _source, const char* _eventName, int _type);
 
-    void StopAllDSPEffects();
+    public:
+      void StopAllSounds(WorldObjectId _id, const char* _eventName = nullptr); // Pass in nullptr to stop every event.
+      // Full event name required, eg "Citizen SeenThreat"
 
-    void TriggerDuplicateSound(SoundInstance* _instance);
+      void StopAllDSPEffects();
 
-    void PropagateBlueprints(); // Call this to update all looping sounds
-    void RuntimeVerify();       // Verifies that the sound system has screwed it's own datastructures
-    void LoadtimeVerify();      // Verifies that the data load from sounds.txt is OK
-    const char* IsSoundSourceOK(const char* _soundName);
-    // Tests that file names and file formats are OK, returns an error code from the SoundSource enum
-    bool IsSampleUsed(const char* _soundName); // Looks to see if that sound name is used in any blueprints
+      void TriggerDuplicateSound(SoundInstance* _instance);
 
-    SampleGroup* GetSampleGroup(const char* _name);
-    SampleGroup* NewSampleGroup(const char* _name = nullptr);
-    bool RenameSampleGroup(const char* _oldName, const char* _newName);
+      void PropagateBlueprints(); // Call this to update all looping sounds
+      void RuntimeVerify();       // Verifies that the sound system has screwed it's own datastructures
+      void LoadtimeVerify();      // Verifies that the data load from sounds.txt is OK
+      const char* IsSoundSourceOK(const char* _soundName);
+      // Tests that file names and file formats are OK, returns an error code from the SoundSource enum
+      bool IsSampleUsed(const char* _soundName); // Looks to see if that sound name is used in any blueprints
 
-    SoundInstance* GetSoundInstance(SoundInstanceId id);
-};
+      SampleGroup* GetSampleGroup(const char* _name);
+      SampleGroup* NewSampleGroup(const char* _name = nullptr);
+      bool RenameSampleGroup(const char* _oldName, const char* _newName);
 
-// Owned by App, which assigns this during startup. Declared here so the layers
-// below Species can reach the subsystem without including App.h — see
-// tasks/layering-inversion.yaml T8.
-extern SoundSystem* g_soundSystem;
+      SoundInstance* GetSoundInstance(SoundInstanceId id);
+  };
+
+  // Owned by App, which assigns this during startup. Declared here so the layers
+  // below Species can reach the subsystem without including App.h — see
+  // tasks/layering-inversion.yaml T8.
+  extern SoundSystem* g_soundSystem;
+} // namespace Neuron

@@ -5,9 +5,12 @@
 #include "Building.h"
 
 
-class Shape;
-class ShapeFragment;
-class ShapeMarker;
+namespace Neuron
+{
+  class Shape;
+  class ShapeFragment;
+  class ShapeMarker;
+} // namespace Neuron
 
 
 class FenceSwitch : public Building

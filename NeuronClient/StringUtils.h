@@ -2,10 +2,10 @@
 
 #include <string.h>
 
-void StrToLower(char *_string);
 
-inline char *NewStr(const char *src)
+namespace Neuron
 {
-	return strcpy(new char[strlen(src)+1], src);
-}
+  void StrToLower(char* _string);
 
+  inline char* NewStr(const char* src) { return strcpy(new char[strlen(src) + 1], src); }
+} // namespace Neuron

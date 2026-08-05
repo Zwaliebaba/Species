@@ -6,7 +6,10 @@
 #include "WindowManager.h"
 #include "WindowManagerWin32.h"
 
-static HINSTANCE g_hInstance;
+
+namespace Neuron
+{
+  static HINSTANCE g_hInstance;
 
 #define WH_KEYBOARD_LL 13
 
@@ -388,3 +391,4 @@ void WindowManager::OpenWebsite(const char* _url)
 }
 
 void SetWin32InstanceHandle(HINSTANCE _hInstance) { g_hInstance = _hInstance; }
+} // namespace Neuron

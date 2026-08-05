@@ -5,35 +5,32 @@
 #include "InputDriver.h"
 
 
-class SimpleInputDriver : public InputDriver {
+namespace Neuron
+{
+  class SimpleInputDriver : public InputDriver
+  {
+    private:
+    protected:
+      virtual bool acceptToken(InputParserState& state, std::string const& token, InputSpec& spec);
 
-private:
+      virtual bool acceptDriver(std::string const& name) = 0;
 
-protected:
-	virtual bool acceptToken( InputParserState &state, std::string const &token,
-	                          InputSpec &spec );
+      virtual control_id_t getControlID(std::string const& name) = 0;
 
-	virtual bool acceptDriver( std::string const &name ) = 0;
+      virtual inputtype_t getControlType(control_id_t control_id) = 0;
 
-	virtual control_id_t getControlID( std::string const &name ) = 0;
+      virtual InputParserState writeExtraSpecInfo(InputSpec& spec);
 
-	virtual inputtype_t getControlType( control_id_t control_id ) = 0;
+      virtual InputParserState parseExtraToken(std::string const& token, InputSpec& spec);
 
-	virtual InputParserState writeExtraSpecInfo( InputSpec &spec );
+      virtual condition_t getConditionID(std::string const& name, inputtype_t& type);
 
-	virtual InputParserState parseExtraToken( std::string const &token, InputSpec &spec );
+    public:
+      // Return STATE_DONE if we managed to parse these tokens, and put the parsed information
+      // into spec. Anything else means we failed.
+      virtual InputParserState parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec);
 
-	virtual condition_t getConditionID( std::string const &name, inputtype_t &type );
-
-public:
-	// Return STATE_DONE if we managed to parse these tokens, and put the parsed information
-	// into spec. Anything else means we failed.
-	virtual InputParserState parseInputSpecification( InputSpecTokens const &tokens,
-		                                              InputSpec &spec );
-
-	// Return a helpful error string when there's a problem
-	virtual const std::string &getLastParseError( InputParserState state );
-
-};
-
-
+      // Return a helpful error string when there's a problem
+      virtual const std::string& getLastParseError(InputParserState state);
+  };
+} // namespace Neuron

@@ -12,44 +12,49 @@
 // naming one does not need ControlHelp.h. ControlHelpSystem derives from this
 // class, so `ControlHelpSystem::CondCameraAim` and the MaxConditions array
 // bounds still resolve for the Species-side code that spells them that way.
-class ControlHelpAccess
+
+
+namespace Neuron
 {
-  public:
-    virtual ~ControlHelpAccess() = default;
+  class ControlHelpAccess
+  {
+    public:
+      virtual ~ControlHelpAccess() = default;
 
-    enum
-    {
-      CondDestroyUnit,
-      CondTaskManagerCreateBlue,
-      CondTaskManagerCloseBlue,
-      CondTaskManagerCloseRed,
-      CondDeselectUnit,
-      CondMoveUnit,
-      CondSelectUnit,
-      CondTaskManagerCreateGreen,
-      CondTaskManagerSelect,
-      CondPlaceUnit,
-      CondPromoteOfficer,
-      CondMoveCameraOrUnit,
-      CondZoom,
-      CondCameraAim,
-      CondSquaddieFire,
-      CondChangeWeapon,
-      CondChangeOrders,
-      CondCameraUp,
-      CondCameraDown,
-      CondFireGrenades,
-      CondFireRocket,
-      CondFireAirstrike,
-      CondOfficerSetGoto,
-      CondOfficerSetFollow,
-      CondArmourSetTurret,
-      CondSwitchPrevUnit,
-      CondSwitchNextUnit,
-      CondRadarAim,
-      CondSkipCutscene,
-      MaxConditions
-    };
+      enum
+      {
+        CondDestroyUnit,
+        CondTaskManagerCreateBlue,
+        CondTaskManagerCloseBlue,
+        CondTaskManagerCloseRed,
+        CondDeselectUnit,
+        CondMoveUnit,
+        CondSelectUnit,
+        CondTaskManagerCreateGreen,
+        CondTaskManagerSelect,
+        CondPlaceUnit,
+        CondPromoteOfficer,
+        CondMoveCameraOrUnit,
+        CondZoom,
+        CondCameraAim,
+        CondSquaddieFire,
+        CondChangeWeapon,
+        CondChangeOrders,
+        CondCameraUp,
+        CondCameraDown,
+        CondFireGrenades,
+        CondFireRocket,
+        CondFireAirstrike,
+        CondOfficerSetGoto,
+        CondOfficerSetFollow,
+        CondArmourSetTurret,
+        CondSwitchPrevUnit,
+        CondSwitchNextUnit,
+        CondRadarAim,
+        CondSkipCutscene,
+        MaxConditions
+      };
 
-    virtual void RecordCondUsed(int _cond) = 0;
-};
+      virtual void RecordCondUsed(int _cond) = 0;
+  };
+} // namespace Neuron

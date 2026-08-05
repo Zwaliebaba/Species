@@ -13,7 +13,10 @@
 
 #include "Input.h"
 
-LangTable* g_langTable = nullptr;
+
+namespace Neuron
+{
+  LangTable* g_langTable = nullptr;
 
 #define DEBUG_PRINT_LANGTABLE 0
 
@@ -613,3 +616,4 @@ std::vector<char*>* WordWrapText(const char* _string, float _lineWidth, float _f
 
   return lines;
 }
+} // namespace Neuron

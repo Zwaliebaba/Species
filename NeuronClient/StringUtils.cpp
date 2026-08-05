@@ -5,12 +5,14 @@
 #include "StringUtils.h"
 
 
-void StrToLower(char *_string)
+namespace Neuron
 {
-	while (*_string != '\0')
-	{
-		*_string = tolower(*_string);
-		_string++;
-	}
-}
-
+  void StrToLower(char* _string)
+  {
+    while (*_string != '\0')
+    {
+      *_string = tolower(*_string);
+      _string++;
+    }
+  }
+} // namespace Neuron

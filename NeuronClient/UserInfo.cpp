@@ -6,8 +6,12 @@
 
 // Parses the user id file and fills in those fields
 // Which must be allocated beforehand
-bool GetUserInfoData( char const *_userInfoFilename, char const **_username, char const **_email )
+
+
+namespace Neuron
 {
+  bool GetUserInfoData(char const* _userInfoFilename, char const** _username, char const** _email)
+  {
     static char *s_username = nullptr;
     static char *s_email = nullptr;
 
@@ -35,5 +39,5 @@ bool GetUserInfoData( char const *_userInfoFilename, char const **_username, cha
     *_email = s_email;
 
     return( s_username && s_email );
-}
-
+  }
+} // namespace Neuron

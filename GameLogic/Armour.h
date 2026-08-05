@@ -6,8 +6,11 @@
 #include "Entity.h"
 #include "Flag.h"
 
-class ShapeMarker;
-class Shape;
+namespace Neuron
+{
+  class ShapeMarker;
+  class Shape;
+} // namespace Neuron
 
 #define ARMOUR_UNLOADPERIOD 0.1f
 

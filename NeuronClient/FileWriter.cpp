@@ -4,38 +4,32 @@
 #include "FileWriter.h"
 
 
-static unsigned int s_offsets[] = {
-	31, 7, 9, 1,
-	11, 2, 5, 5,
-	3, 17, 40, 12,
-	35, 22, 27, 2
-};
-
-
-FileWriter::FileWriter(char const *_filename, bool _encrypt)
-:	m_offsetIndex(0),
-	m_encrypt(_encrypt)
+namespace Neuron
 {
-	m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "w");
-
-	ASSERT_TEXT(m_file, "Couldn't create file {}", _filename);
-
-	if (_encrypt)
-	{
-		fprintf(m_file, "redshirt2");
-	}
-}
+  static unsigned int s_offsets[] = {31, 7, 9, 1, 11, 2, 5, 5, 3, 17, 40, 12, 35, 22, 27, 2};
 
 
-FileWriter::~FileWriter()
-{
-	fclose(m_file);
-}
+  FileWriter::FileWriter(char const* _filename, bool _encrypt)
+    : m_offsetIndex(0),
+      m_encrypt(_encrypt)
+  {
+    m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "w");
+
+    ASSERT_TEXT(m_file, "Couldn't create file {}", _filename);
+
+    if (_encrypt)
+    {
+      fprintf(m_file, "redshirt2");
+    }
+  }
 
 
-int FileWriter::printf(char const *_fmt, ...)
-{
-	char buf[10240];
+  FileWriter::~FileWriter() { fclose(m_file); }
+
+
+  int FileWriter::printf(char const* _fmt, ...)
+  {
+    char buf[10240];
     va_list ap;
     va_start (ap, _fmt);
     int len = vsprintf(buf, _fmt, ap);
@@ -55,4 +49,5 @@ int FileWriter::printf(char const *_fmt, ...)
 	}
 
 	return fprintf(m_file, "%s", buf);
-}
+  }
+} // namespace Neuron

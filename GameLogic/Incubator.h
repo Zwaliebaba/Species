@@ -6,7 +6,10 @@
 #include "Building.h"
 #include "Spirit.h"
 
-class ShapeMarker;
+namespace Neuron
+{
+  class ShapeMarker;
+} // namespace Neuron
 
 #define INCUBATOR_PROCESSTIME 5.0f
 

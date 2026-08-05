@@ -8,7 +8,10 @@
 #define ANTHILL_SEARCHRANGE 400.0f
 
 
-class FileWriter;
+namespace Neuron
+{
+  class FileWriter;
+} // namespace Neuron
 
 
 struct AntObjective

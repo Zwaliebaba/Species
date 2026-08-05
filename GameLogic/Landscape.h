@@ -3,8 +3,11 @@
 #include "2dArray.h"
 #include "2dSurfaceMap.h"
 
-class BitmapRGBA;
-class RGBAColour;
+namespace Neuron
+{
+  class BitmapRGBA;
+  class RGBAColour;
+} // namespace Neuron
 class LandscapeFlattenArea;
 class Landscape;
 class LandscapeDef;

@@ -10,37 +10,39 @@
 #include "SoundParameter.h"
 
 
-SoundParameter::SoundParameter()
-:   m_type( TypeFixedValue ),
-    m_link( LinkedToNothing ),
-    m_updateType( UpdateConstantly ),
-    m_inputLower(0.0f),
-    m_outputLower(0.0f),
-    m_inputUpper(0.0f),
-    m_outputUpper(0.0f),
-    m_input(0.0f),
-    m_output(0.0f),
-    m_desiredOutput(0.0f),
-    m_smooth(0.0f)
+namespace Neuron
 {
-}
+  SoundParameter::SoundParameter()
+    : m_type(TypeFixedValue),
+      m_link(LinkedToNothing),
+      m_updateType(UpdateConstantly),
+      m_inputLower(0.0f),
+      m_outputLower(0.0f),
+      m_inputUpper(0.0f),
+      m_outputUpper(0.0f),
+      m_input(0.0f),
+      m_output(0.0f),
+      m_desiredOutput(0.0f),
+      m_smooth(0.0f)
+  {
+  }
 
 
-SoundParameter::SoundParameter( float _fixedValue )
-:   m_type( TypeFixedValue ),
-    m_link( LinkedToNothing ),
-    m_updateType( UpdateConstantly ),
-    m_inputLower(0.0f),
-    m_outputLower(0.0f),
-    m_inputUpper(0.0f),
-    m_outputUpper(0.0f),
-    m_input(0.0f),
-    m_output(0.0f),
-    m_desiredOutput(0.0f),
-    m_smooth(0.0f)
-{
+  SoundParameter::SoundParameter(float _fixedValue)
+    : m_type(TypeFixedValue),
+      m_link(LinkedToNothing),
+      m_updateType(UpdateConstantly),
+      m_inputLower(0.0f),
+      m_outputLower(0.0f),
+      m_inputUpper(0.0f),
+      m_outputUpper(0.0f),
+      m_input(0.0f),
+      m_output(0.0f),
+      m_desiredOutput(0.0f),
+      m_smooth(0.0f)
+  {
     m_outputLower = _fixedValue;
-}
+  }
 
 
 void SoundParameter::Copy( SoundParameter *_copyMe )
@@ -276,3 +278,4 @@ int SoundParameter::GetUpdateType( char *_name )
     }
     return -1;
 }
+} // namespace Neuron

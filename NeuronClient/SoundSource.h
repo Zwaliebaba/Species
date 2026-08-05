@@ -13,19 +13,24 @@
 //
 // GameLogic fills one from a live object through the `SoundSourceOf` overloads
 // in GameLogic/SoundSources.h. See tasks/layering-inversion.yaml T17.
-struct SoundSource
+
+
+namespace Neuron
 {
-    WorldObjectId m_id;
+  struct SoundSource
+  {
+      WorldObjectId m_id;
 
-    // Entity type for TriggerEntityEvent, building type for
-    // TriggerBuildingEvent. Unused by TriggerOtherEvent, which is told its
-    // blueprint type separately.
-    int m_type;
+      // Entity type for TriggerEntityEvent, building type for
+      // TriggerBuildingEvent. Unused by TriggerOtherEvent, which is told its
+      // blueprint type separately.
+      int m_type;
 
-    DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
+      DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
 
-    // Read only by TriggerEntityEvent. TriggerBuildingEvent set the instance's
-    // position and left its velocity as the blueprint had it, and this keeps
-    // doing that.
-    DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
-};
+      // Read only by TriggerEntityEvent. TriggerBuildingEvent set the instance's
+      // position and left its velocity as the blueprint had it, and this keeps
+      // doing that.
+      DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
+  };
+} // namespace Neuron

@@ -15,21 +15,26 @@
 // during startup before SoundSystem::Initialise reads any blueprints.
 //
 // See tasks/layering-inversion.yaml T17.
-class WorldTypeNames
+
+
+namespace Neuron
 {
-  public:
-    virtual ~WorldTypeNames() = default;
+  class WorldTypeNames
+  {
+    public:
+      virtual ~WorldTypeNames() = default;
 
-    virtual int NumEntityTypes() const = 0;
-    virtual int EntityTypeId(char const* _name) const = 0;
-    virtual char const* EntityTypeName(int _type) const = 0;
+      virtual int NumEntityTypes() const = 0;
+      virtual int EntityTypeId(char const* _name) const = 0;
+      virtual char const* EntityTypeName(int _type) const = 0;
 
-    virtual int NumBuildingTypes() const = 0;
-    virtual int BuildingTypeId(char const* _name) const = 0;
-    virtual char const* BuildingTypeName(int _type) const = 0;
-};
+      virtual int NumBuildingTypes() const = 0;
+      virtual int BuildingTypeId(char const* _name) const = 0;
+      virtual char const* BuildingTypeName(int _type) const = 0;
+  };
 
-// Null until App installs it, and null in a test DLL. SoundSystem checks —
-// without a roster it has no blueprints to load, which is the correct
-// behaviour for a sound system with no game attached rather than a crash.
-extern WorldTypeNames* g_worldTypeNames;
+  // Null until App installs it, and null in a test DLL. SoundSystem checks —
+  // without a roster it has no blueprints to load, which is the correct
+  // behaviour for a sound system with no game attached rather than a crash.
+  extern WorldTypeNames* g_worldTypeNames;
+} // namespace Neuron

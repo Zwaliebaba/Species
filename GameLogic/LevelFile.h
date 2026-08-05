@@ -16,10 +16,16 @@
 
 
 class Building;
-class TextReader;
+namespace Neuron
+{
+  class TextReader;
+} // namespace Neuron
 class Route;
 class GlobalEventCondition;
-class FileWriter;
+namespace Neuron
+{
+  class FileWriter;
+} // namespace Neuron
 
 
 class CameraMount

@@ -4,8 +4,11 @@
 #include "NeuronMath.h"
 
 class Entity;
-class ShapeMarker;
-class Shape;
+namespace Neuron
+{
+  class ShapeMarker;
+  class Shape;
+} // namespace Neuron
 
 
 //*****************************************************************************

@@ -3,44 +3,39 @@
 #include "MathUtils.h"
 #include "RgbColour.h"
 
-RGBAColour g_colourBlack(0,0,0);
-RGBAColour g_colourWhite(255,255,255);
 
-
-// *** Constructor
-RGBAColour::RGBAColour()
+namespace Neuron
 {
-}
+  RGBAColour g_colourBlack(0, 0, 0);
+  RGBAColour g_colourWhite(255, 255, 255);
 
 
-// *** Constructor
-RGBAColour::RGBAColour(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _a)
-{
-    Set( _r, _g, _b, _a );
-}
-
-RGBAColour::RGBAColour(int _col)
-{
-    Set( _col);
-}
-
-// *** Set
-void RGBAColour::Set(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _a)
-{
-	r = _r;
-	g = _g;
-	b = _b;
-	a = _a;
-}
+  // *** Constructor
+  RGBAColour::RGBAColour() {}
 
 
-void RGBAColour::Set(int _col)
-{
+  // *** Constructor
+  RGBAColour::RGBAColour(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _a) { Set(_r, _g, _b, _a); }
+
+  RGBAColour::RGBAColour(int _col) { Set(_col); }
+
+  // *** Set
+  void RGBAColour::Set(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _a)
+  {
+    r = _r;
+    g = _g;
+    b = _b;
+    a = _a;
+  }
+
+
+  void RGBAColour::Set(int _col)
+  {
     r = (_col & 0xff000000) >> 24;
     g = (_col & 0x00ff0000) >> 16;
     b = (_col & 0x0000ff00) >> 8;
     a = (_col & 0x000000ff) >> 0;
-}
+  }
 
 
 // *** Operator +
@@ -196,3 +191,4 @@ void RGBAColour::MultiplyWithClamp(float _scale)
 	else
 		a = 255;
 }
+} // namespace Neuron

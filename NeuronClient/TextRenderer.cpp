@@ -16,8 +16,10 @@
 #include "WorldPointers.h"
 
 
-TextRenderer g_gameFont;
-TextRenderer g_editorFont;
+namespace Neuron
+{
+  TextRenderer g_gameFont;
+  TextRenderer g_editorFont;
 
 
 // Horizontal size as a proportion of vertical size
@@ -642,3 +644,4 @@ void TextRenderer::DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 c
 
 
 float TextRenderer::GetTextWidth(unsigned int _numChars, float _size) { return _numChars * _size * HORIZONTAL_SIZE; }
+} // namespace Neuron

@@ -5,8 +5,11 @@
 
 #define PIXEL_EFFECT_GRID_RES 16
 
-class Shape;
-class ShapeFragment;
+namespace Neuron
+{
+  class Shape;
+  class ShapeFragment;
+} // namespace Neuron
 
 class Renderer : public RendererAccess
 {

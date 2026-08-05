@@ -8,34 +8,34 @@
 #include "Win32EventProc.h"
 
 
-class W32EventHandler : public EventHandler, public W32EventProcessor {
+namespace Neuron
+{
+  class W32EventHandler : public EventHandler, public W32EventProcessor
+  {
+    private:
+      std::vector<W32EventProcessor*> w32eventprocs;
 
-private:
-	std::vector <W32EventProcessor *>w32eventprocs;
+    public:
+      W32EventHandler();
 
-public:
-	W32EventHandler();
+      // Called by the WindowManager
+      LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-	// Called by the WindowManager
-	LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam );
+      // Register driver for Windows callbacks
+      void AddEventProcessor(W32EventProcessor* _driver);
 
-	// Register driver for Windows callbacks
-	void AddEventProcessor( W32EventProcessor *_driver );
+      // Unregister driver (if it is still the registered one)
+      void RemoveEventProcessor(W32EventProcessor* _driver);
 
-	// Unregister driver (if it is still the registered one)
-	void RemoveEventProcessor( W32EventProcessor *_driver );
+      void ResetWindowHandle();
 
-	void ResetWindowHandle();
+      void BindAltTab();
 
-	void BindAltTab();
+      void UnbindAltTab();
 
-	void UnbindAltTab();
-
-	bool WindowHasFocus();
-
-};
-
-
-W32EventHandler *getW32EventHandler();
+      bool WindowHasFocus();
+  };
 
 
+  W32EventHandler* getW32EventHandler();
+} // namespace Neuron

@@ -8,298 +8,302 @@
 // Class TextReader
 //*****************************************************************************
 
-static unsigned int s_offsets[] = {31, 7, 9, 1, 11, 2, 5, 5, 3, 17, 40, 12, 35, 22, 27, 2};
 
-TextReader::TextReader()
-  : m_offsetIndex(0),
-    m_fileEncrypted(-1),
-    m_tokenIndex(0),
-    m_maxLineLen(INITIAL_LINE_LEN),
-    m_lineNum(0)
+namespace Neuron
 {
-  m_filename[0] = '\0';
-  m_line = new char[INITIAL_LINE_LEN + 1]; // Don't forget space for the null terminator
-  m_line[0] = '\0';                        // ReadLine() may never run, or may hit EOF on its first call
-  m_seperatorChars = DEFAULT_SEPERATOR_CHARS;
-}
+  static unsigned int s_offsets[] = {31, 7, 9, 1, 11, 2, 5, 5, 3, 17, 40, 12, 35, 22, 27, 2};
 
-TextReader::~TextReader() { delete[] m_line; }
-
-void TextReader::DoubleMaxLineLen()
-{
-  ASSERT_TEXT(m_maxLineLen < 65536, "Text file contains line with more than 65536 characters");
-  auto newLine = new char[m_maxLineLen * 2 + 1];
-  memcpy(newLine, m_line, m_maxLineLen + 1);
-  delete[] m_line;
-  m_line = newLine;
-  m_maxLineLen *= 2;
-}
-
-void TextReader::CleanLine()
-{
-  //
-  // Decryption stuff
-
-  if (m_fileEncrypted != 0)
+  TextReader::TextReader()
+    : m_offsetIndex(0),
+      m_fileEncrypted(-1),
+      m_tokenIndex(0),
+      m_maxLineLen(INITIAL_LINE_LEN),
+      m_lineNum(0)
   {
-    int len = strlen(m_line);
+    m_filename[0] = '\0';
+    m_line = new char[INITIAL_LINE_LEN + 1]; // Don't forget space for the null terminator
+    m_line[0] = '\0';                        // ReadLine() may never run, or may hit EOF on its first call
+    m_seperatorChars = DEFAULT_SEPERATOR_CHARS;
+  }
 
-    // Check if file is encrypted
-    if (m_fileEncrypted == -1)
-    {
-      if (strnicmp(m_line, "redshirt2", 9) == 0)
-      {
-        m_fileEncrypted = 1;
-        for (int i = 9; i < len; ++i)
-          m_line[i - 9] = m_line[i];
-        len -= 9;
-      }
-      else
-        m_fileEncrypted = 0;
-    }
+  TextReader::~TextReader() { delete[] m_line; }
 
-    // Decrypt this line if necessary
-    if (m_fileEncrypted)
+  void TextReader::DoubleMaxLineLen()
+  {
+    ASSERT_TEXT(m_maxLineLen < 65536, "Text file contains line with more than 65536 characters");
+    auto newLine = new char[m_maxLineLen * 2 + 1];
+    memcpy(newLine, m_line, m_maxLineLen + 1);
+    delete[] m_line;
+    m_line = newLine;
+    m_maxLineLen *= 2;
+  }
+
+  void TextReader::CleanLine()
+  {
+    //
+    // Decryption stuff
+
+    if (m_fileEncrypted != 0)
     {
-      for (int i = 0; i < len; ++i)
+      int len = strlen(m_line);
+
+      // Check if file is encrypted
+      if (m_fileEncrypted == -1)
       {
-        if (m_line[i] > 32)
+        if (strnicmp(m_line, "redshirt2", 9) == 0)
         {
-          m_offsetIndex++;
-          m_offsetIndex %= 16;
-          int j = m_line[i] - s_offsets[m_offsetIndex];
-          if (j < 33)
-            j += 95;
-          m_line[i] = j;
+          m_fileEncrypted = 1;
+          for (int i = 9; i < len; ++i)
+            m_line[i - 9] = m_line[i];
+          len -= 9;
+        }
+        else
+          m_fileEncrypted = 0;
+      }
+
+      // Decrypt this line if necessary
+      if (m_fileEncrypted)
+      {
+        for (int i = 0; i < len; ++i)
+        {
+          if (m_line[i] > 32)
+          {
+            m_offsetIndex++;
+            m_offsetIndex %= 16;
+            int j = m_line[i] - s_offsets[m_offsetIndex];
+            if (j < 33)
+              j += 95;
+            m_line[i] = j;
+          }
         }
       }
     }
+
+    //
+    // Scan for comments (which we remove) and merge conflict markers (which we assert on)
+
+    int numAdjacentAngleBracketsFound = 0;
+    char* c = m_line;
+    while (c[0] != '\0')
+    {
+      if (c[0] == '<' || c[0] == '>')
+      {
+        numAdjacentAngleBracketsFound++;
+        DEBUG_ASSERT(numAdjacentAngleBracketsFound < 3);
+        // Looks like you've got a merge error mate
+      }
+      else
+      {
+        numAdjacentAngleBracketsFound = 0;
+        if (c[0] == '#')
+        {
+          c[0] = '\0';
+          break;
+        }
+      }
+      c++;
+    }
   }
 
-  //
-  // Scan for comments (which we remove) and merge conflict markers (which we assert on)
+  void TextReader::SetSeperatorChars(const char* _seperatorChars) { m_seperatorChars = _seperatorChars; }
 
-  int numAdjacentAngleBracketsFound = 0;
-  char* c = m_line;
-  while (c[0] != '\0')
+  void TextReader::SetDefaultSeperatorChars() { m_seperatorChars = DEFAULT_SEPERATOR_CHARS; }
+
+  bool TextReader::TokenAvailable()
   {
-    if (c[0] == '<' || c[0] == '>')
+    unsigned int i = m_tokenIndex;
+
+    while (m_line[i] != '\0')
     {
-      numAdjacentAngleBracketsFound++;
-      DEBUG_ASSERT(numAdjacentAngleBracketsFound < 3);
-      // Looks like you've got a merge error mate
+      if (strchr(m_seperatorChars.c_str(), m_line[i]) == nullptr)
+        return true;
+
+      ++i;
     }
-    else
+
+    return false;
+  }
+
+  const char* TextReader::GetFilename() { return m_filename.c_str(); }
+
+  // Returns the next token on the current line. Strips all separator
+  // characters from the start and end of the token, so "blah, wibble:7"
+  // would yield the tokens "blah", "wibble" and "7". If there are
+  // trailing separator characters at the end of the line, then they are
+  // also discarded (the naive implementation would return the empty string
+  // for the last token)
+  char* TextReader::GetNextToken()
+  {
+    // Make sure there is more input on the line
+    if (m_line[m_tokenIndex] == '\0')
+      return nullptr;
+
+    // Skip over initial separator characters
+    int m_tokenStart = m_tokenIndex;
+    while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars.c_str(), m_line[m_tokenStart]) != nullptr)
     {
-      numAdjacentAngleBracketsFound = 0;
-      if (c[0] == '#')
+      m_tokenStart++;
+    }
+
+    // Make sure that we haven't found an empty token
+    if (m_line[m_tokenStart] == '\0')
+      return nullptr;
+
+    // Find the end of the token. Note this has to test m_tokenIndex, not
+    // m_tokenStart: strchr() matches the terminator itself, so testing the
+    // (never advancing) start index let a token that runs to the end of the
+    // line leave m_tokenIndex one past the '\0', and the next call then read
+    // and wrote beyond the end of m_line.
+    m_tokenIndex = m_tokenStart;
+    while (m_line[m_tokenIndex] != '\0')
+    {
+      if (strchr(m_seperatorChars.c_str(), m_line[m_tokenIndex]) != nullptr)
       {
-        c[0] = '\0';
+        m_line[m_tokenIndex] = '\0';
+        m_tokenIndex++;
         break;
       }
-    }
-    c++;
-  }
-}
-
-void TextReader::SetSeperatorChars(const char* _seperatorChars) { m_seperatorChars = _seperatorChars; }
-
-void TextReader::SetDefaultSeperatorChars() { m_seperatorChars = DEFAULT_SEPERATOR_CHARS; }
-
-bool TextReader::TokenAvailable()
-{
-  unsigned int i = m_tokenIndex;
-
-  while (m_line[i] != '\0')
-  {
-    if (strchr(m_seperatorChars.c_str(), m_line[i]) == nullptr)
-      return true;
-
-    ++i;
-  }
-
-  return false;
-}
-
-const char* TextReader::GetFilename() { return m_filename.c_str(); }
-
-// Returns the next token on the current line. Strips all separator
-// characters from the start and end of the token, so "blah, wibble:7"
-// would yield the tokens "blah", "wibble" and "7". If there are
-// trailing separator characters at the end of the line, then they are
-// also discarded (the naive implementation would return the empty string
-// for the last token)
-char* TextReader::GetNextToken()
-{
-  // Make sure there is more input on the line
-  if (m_line[m_tokenIndex] == '\0')
-    return nullptr;
-
-  // Skip over initial separator characters
-  int m_tokenStart = m_tokenIndex;
-  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars.c_str(), m_line[m_tokenStart]) != nullptr)
-  {
-    m_tokenStart++;
-  }
-
-  // Make sure that we haven't found an empty token
-  if (m_line[m_tokenStart] == '\0')
-    return nullptr;
-
-  // Find the end of the token. Note this has to test m_tokenIndex, not
-  // m_tokenStart: strchr() matches the terminator itself, so testing the
-  // (never advancing) start index let a token that runs to the end of the
-  // line leave m_tokenIndex one past the '\0', and the next call then read
-  // and wrote beyond the end of m_line.
-  m_tokenIndex = m_tokenStart;
-  while (m_line[m_tokenIndex] != '\0')
-  {
-    if (strchr(m_seperatorChars.c_str(), m_line[m_tokenIndex]) != nullptr)
-    {
-      m_line[m_tokenIndex] = '\0';
       m_tokenIndex++;
-      break;
     }
-    m_tokenIndex++;
+
+    return &m_line[m_tokenStart];
   }
 
-  return &m_line[m_tokenStart];
-}
-
-char* TextReader::GetRestOfLine()
-{
-  // Make sure there is more input on the line
-  if (m_line[m_tokenIndex] == '\0')
-    return nullptr;
-
-  // Skip over initial separator characters
-  int m_tokenStart = m_tokenIndex;
-  while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars.c_str(), m_line[m_tokenStart]) != nullptr)
+  char* TextReader::GetRestOfLine()
   {
-    m_tokenStart++;
-  }
+    // Make sure there is more input on the line
+    if (m_line[m_tokenIndex] == '\0')
+      return nullptr;
 
-  return &m_line[m_tokenStart];
-}
-
-//*****************************************************************************
-// Class TextFileReader
-//*****************************************************************************
-
-TextFileReader::TextFileReader(const char* _filename)
-  : TextReader()
-{
-  m_filename = _filename;
-  m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
-}
-
-TextFileReader::TextFileReader(const std::string& _filename)
-  : TextReader()
-{
-  m_filename = _filename;
-  m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
-}
-
-TextFileReader::~TextFileReader()
-{
-  if (m_file)
-    fclose(m_file);
-}
-
-bool TextFileReader::IsOpen() { return (m_file && m_line); }
-
-// Reads a line from m_file. Removes comments that are marked with
-// a hash ('#', aka the pound sign or indeed the octothorpe) character.
-// Returns 0 on EOF, 1 otherwise
-bool TextFileReader::ReadLine()
-{
-  bool eof = false;
-  m_tokenIndex = 0;
-
-  //
-  // Read some data from the file
-
-  // If fgets returns nullptr that means we've found the EOF
-  if (fgets(m_line, m_maxLineLen + 1, m_file) == nullptr)
-    eof = true;
-
-  //
-  // Make sure we read a whole line
-
-  bool found = false;
-  while (!found && !eof)
-  {
-    if (strchr(m_line, '\n'))
-      found = true;
-
-    if (!found)
+    // Skip over initial separator characters
+    int m_tokenStart = m_tokenIndex;
+    while (m_line[m_tokenStart] != '\0' && strchr(m_seperatorChars.c_str(), m_line[m_tokenStart]) != nullptr)
     {
-      unsigned int oldLineLen = m_maxLineLen;
-      DoubleMaxLineLen();
-      if (fgets(&m_line[oldLineLen], oldLineLen + 1, m_file) == nullptr)
-        eof = true;
+      m_tokenStart++;
     }
+
+    return &m_line[m_tokenStart];
   }
 
-  CleanLine();
-  m_lineNum++;
+  //*****************************************************************************
+  // Class TextFileReader
+  //*****************************************************************************
 
-  return !eof;
-}
-
-//*****************************************************************************
-// Class TextDataReader
-//*****************************************************************************
-
-TextDataReader::TextDataReader(const char* _data, unsigned int _dataSize, const char* _filename)
-  : TextReader(),
-    m_data(_data),
-    m_dataSize(_dataSize),
-    m_offset(0)
-{
-  m_filename = _filename;
-}
-
-bool TextDataReader::IsOpen() { return true; }
-
-// Reads a line from a block of text data. Removes comments that are marked with
-// a hash ('#', aka the pound sign or indeed the octothorpe) character.
-// Returns 0 on EOF, 1 otherwise
-bool TextDataReader::ReadLine()
-{
-  bool eof = false;
-
-  m_tokenIndex = 0;
-
-  // Find the next '\n' character
-  unsigned int eolOffset = m_offset;
-  for (eolOffset = m_offset; eolOffset < m_dataSize; ++eolOffset)
+  TextFileReader::TextFileReader(const char* _filename)
+    : TextReader()
   {
-    if (m_data[eolOffset] == '\n')
-      break;
+    m_filename = _filename;
+    m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
   }
-  if (eolOffset == m_dataSize)
+
+  TextFileReader::TextFileReader(const std::string& _filename)
+    : TextReader()
   {
-    eolOffset--;
-    eof = true;
+    m_filename = _filename;
+    m_file = fopen(FileSys::GetFullPathA(_filename).c_str(), "r");
   }
 
-  // Make sure the line buffer is big enough to accomodate our painful length
-  unsigned int lineLen = eolOffset - m_offset + 1;
-  while (lineLen > m_maxLineLen)
+  TextFileReader::~TextFileReader()
   {
-    DoubleMaxLineLen();
+    if (m_file)
+      fclose(m_file);
   }
 
-  // Copy from the data block into m_line
-  memcpy(m_line, &m_data[m_offset], lineLen);
-  m_line[lineLen] = '\0';
+  bool TextFileReader::IsOpen() { return (m_file && m_line); }
 
-  // Move m_offset on
-  m_offset += lineLen;
+  // Reads a line from m_file. Removes comments that are marked with
+  // a hash ('#', aka the pound sign or indeed the octothorpe) character.
+  // Returns 0 on EOF, 1 otherwise
+  bool TextFileReader::ReadLine()
+  {
+    bool eof = false;
+    m_tokenIndex = 0;
 
-  CleanLine();
-  m_lineNum++;
+    //
+    // Read some data from the file
 
-  return !eof;
-}
+    // If fgets returns nullptr that means we've found the EOF
+    if (fgets(m_line, m_maxLineLen + 1, m_file) == nullptr)
+      eof = true;
+
+    //
+    // Make sure we read a whole line
+
+    bool found = false;
+    while (!found && !eof)
+    {
+      if (strchr(m_line, '\n'))
+        found = true;
+
+      if (!found)
+      {
+        unsigned int oldLineLen = m_maxLineLen;
+        DoubleMaxLineLen();
+        if (fgets(&m_line[oldLineLen], oldLineLen + 1, m_file) == nullptr)
+          eof = true;
+      }
+    }
+
+    CleanLine();
+    m_lineNum++;
+
+    return !eof;
+  }
+
+  //*****************************************************************************
+  // Class TextDataReader
+  //*****************************************************************************
+
+  TextDataReader::TextDataReader(const char* _data, unsigned int _dataSize, const char* _filename)
+    : TextReader(),
+      m_data(_data),
+      m_dataSize(_dataSize),
+      m_offset(0)
+  {
+    m_filename = _filename;
+  }
+
+  bool TextDataReader::IsOpen() { return true; }
+
+  // Reads a line from a block of text data. Removes comments that are marked with
+  // a hash ('#', aka the pound sign or indeed the octothorpe) character.
+  // Returns 0 on EOF, 1 otherwise
+  bool TextDataReader::ReadLine()
+  {
+    bool eof = false;
+
+    m_tokenIndex = 0;
+
+    // Find the next '\n' character
+    unsigned int eolOffset = m_offset;
+    for (eolOffset = m_offset; eolOffset < m_dataSize; ++eolOffset)
+    {
+      if (m_data[eolOffset] == '\n')
+        break;
+    }
+    if (eolOffset == m_dataSize)
+    {
+      eolOffset--;
+      eof = true;
+    }
+
+    // Make sure the line buffer is big enough to accomodate our painful length
+    unsigned int lineLen = eolOffset - m_offset + 1;
+    while (lineLen > m_maxLineLen)
+    {
+      DoubleMaxLineLen();
+    }
+
+    // Copy from the data block into m_line
+    memcpy(m_line, &m_data[m_offset], lineLen);
+    m_line[lineLen] = '\0';
+
+    // Move m_offset on
+    m_offset += lineLen;
+
+    CleanLine();
+    m_lineNum++;
+
+    return !eof;
+  }
+} // namespace Neuron

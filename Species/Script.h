@@ -3,7 +3,10 @@
 #include "ScriptAccess.h"
 #include "WorldPointers.h"
 
-class TextReader;
+namespace Neuron
+{
+  class TextReader;
+} // namespace Neuron
 class LevelFile;
 
 

@@ -11,7 +11,10 @@
 #define CENTIPEDE_NUMSPIRITSTOREGROW 4
 #define CENTIPEDE_MAXSIZE 20
 
-class Shape;
+namespace Neuron
+{
+  class Shape;
+} // namespace Neuron
 
 
 class Centipede : public Entity

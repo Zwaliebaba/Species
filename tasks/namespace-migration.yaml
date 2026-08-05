@@ -80,10 +80,109 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    notes: >
-      Large mechanical churn — land as several commits grouped by subsystem
-      (sound, input, UI, rendering, resources) within the one task.
-    status: in_progress
+    notes: |
+      Large mechanical churn — the plan suggested landing it as several commits
+      grouped by subsystem. It went in as one instead, because the wrap is
+      generated rather than hand-written and a partial NeuronClient does not
+      compile: a header inside namespace Neuron and its .cpp outside it are two
+      different classes, so the split would have to be per FILE PAIR, and the
+      subsystems share headers.
+
+      DONE 2026-08-05. 151 of NeuronClient's 158 files are wrapped; the seven
+      skipped are pch.h/pch.cpp, NeuronClient.h, KeyDefs.h, PreferenceNames.h
+      and MouseCursor.h/.cpp — all pure #include or #define, with no
+      declaration to put in a namespace.
+
+      NOT COMPILED. Linux, no MSVC. Everything below was verified structurally
+      — by script, over the whole project — and nothing has been near a
+      compiler. For a change of this shape that is a weaker guarantee than
+      usual: namespace migrations fail at the point where a name resolves
+      differently, and only a compiler resolves names.
+
+      WHY IT NEEDED NO CALLER CHANGES, which is the fact the plan's summary
+      does not state and the thing that makes this tractable at all:
+      NeuronCore.h ends with `using namespace Neuron;` and every project's pch
+      includes it. So GameLogic and Species see every NeuronClient type
+      unqualified exactly as before. T3 found the same and said so; it is worth
+      repeating because the acceptance line "callers qualify names explicitly"
+      reads as though thousands of call sites were going to move. None did.
+
+      WHAT DID BREAK, and it is the one class of thing that does: FORWARD
+      DECLARATIONS. A using-directive makes a name findable; it does not make
+      `class Renderer;` in a GameLogic header declare Neuron::Renderer. It
+      declares a NEW ::Renderer, and the error surfaces at link time pointing
+      somewhere else — T3's first trap, at 45x the scale.
+
+        45 forward declarations in 24 files outside NeuronClient are now
+        `namespace Neuron { class X; }`. Building.h and Species/App.h had five
+        each.
+
+        Inside NeuronClient, the same problem runs the other way: a forward
+        declaration sitting above the wrapper declares ::X while the definition
+        below it is Neuron::X. The 18 OWN forward declarations were moved
+        inside the namespace and the 15 FOREIGN ones deliberately left outside
+        — NetLib, NetMutex, NetSocket, NetSocketListener, NetworkUpdate,
+        ServerToClientLetter and Profiler are NeuronCore types that are still
+        at global scope; CameraAnimation, GlobalWorld, Location,
+        ParticleSystem, TaskManager and WorldObject are GameLogic's;
+        jpeg_decoder and IDirectSoundBuffer are third-party. Six names that
+        LOOK foreign are not — BitmapFileHeader, BitmapInfoHeader,
+        DirectSoundChannel, DirectSoundData, SoftwareChannel and
+        InputFilterWithArgs are declared in a header and defined in a
+        NeuronClient .cpp, so they are Neuron's and went inside.
+
+      TWO THINGS CHECKED BECAUSE THEY WOULD HAVE BEEN SILENT:
+
+        NAME CLASHES. `using namespace Neuron;` turns a name defined both in
+        Neuron and at global scope from a redefinition error into an AMBIGUOUS
+        lookup at every unqualified use. Every type defined in NeuronClient was
+        compared against every type defined in NeuronCore, GameLogic and
+        Species. Zero clashes.
+
+        STRADDLING GLOBALS. A global declared `extern` in one project's header
+        and defined in another project's .cpp would now have its declaration
+        and definition in different namespaces — a link error with no obvious
+        cause. All 64 externs declared in NeuronClient headers are defined in
+        NeuronClient .cpp files, and nothing outside NeuronClient declares one
+        that NeuronClient defines. Zero.
+
+      THREE FILES NEEDED HAND WORK:
+
+        SoundLibrary2d.cpp had two #includes BELOW two definitions. Wrapping
+        would have pulled HiResTime.h and SoundSystem.h into namespace Neuron.
+        They moved above the definitions.
+
+        AppState.h already carried `namespace Neuron { class Server; }` from
+        T3. Wrapping the file around it would have declared
+        Neuron::Neuron::Server. The block is gone and `extern Server* g_server`
+        is unqualified again, in both the header and AppState.cpp.
+
+        Win32EventHandler.cpp was the only file where clang-format's
+        changed-lines mode would not converge — its tab indentation and the
+        namespace reindent fought each other. Whole-file formatted.
+
+      THE DIFF IS MOSTLY WHITESPACE, as T3 predicted: .clang-format sets
+      NamespaceIndentation: All, so wrapping reindents every line inside the
+      wrapper. About 11,000 of NeuronClient's 23,700 lines moved two columns.
+      That is inherent to the change and not separable — there is nothing to
+      reformat until the wrapper exists — so it is not split out the way a
+      standalone reformat would be. It does mean `git blame` on NeuronClient
+      now stops here for most lines, which is the cost the plan accepted when
+      it chose to namespace at all.
+
+      IT ALSO BROKE A CHECK, and the fix is worth reading before T4 and T5
+      repeat it a hundredfold. tools/check_math_types.py finds a math local
+      used above the line declaring it, and it found the first "body" in a file
+      by looking for a brace at depth zero. `namespace Neuron {` IS a brace at
+      depth zero, so a wrapped file read as ONE body containing every function
+      in it — and DebugRender.cpp then looked like it used `end` fifty lines
+      before declaring it, because `end` is a parameter of RenderArrow and a
+      local of RenderPointMarker. The tool now classifies each brace as it
+      opens and only code braces nest a body. That is a NARROWING, which is the
+      only direction that file accepts changes in: it still reports the Triffid
+      bug the rule was written for, at global scope and inside a namespace
+      both, and it reports nothing else tree-wide.
+    status: done
 
   - id: T3
     title: Bring NeuronServer fully into namespace Neuron

@@ -11,7 +11,10 @@
 #define SOULDESTROYER_DAMAGERANGE 25.0f
 #define SOULDESTROYER_MAXSPIRITS 50
 
-class Shape;
+namespace Neuron
+{
+  class Shape;
+} // namespace Neuron
 
 
 class SoulDestroyer : public Entity

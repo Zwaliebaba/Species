@@ -2,7 +2,10 @@
 
 #include "Building.h"
 
-class ShapeMarker;
+namespace Neuron
+{
+  class ShapeMarker;
+} // namespace Neuron
 
 
 class Cave : public Building

@@ -7,130 +7,134 @@
 
 using namespace std;
 
-typedef std::vector<std::unique_ptr<string>>::iterator KeyIt;
 
-
-enum
+namespace Neuron
 {
-  COND_TRUE,
-  COND_FALSE
-};
+  typedef std::vector<std::unique_ptr<string>>::iterator KeyIt;
 
 
-PrefsInputDriver::PrefsInputDriver()
-  : m_keys()
-{
-  setName("Prefs");
-}
-
-
-InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
-{
-  InputParserState state = InputParserState::STATE_WANT_DRIVER;
-  int idx = 0;
-  if ((idx >= tokens.length()) || (tokens[idx++] != "pref"))
-    return state;
-
-  state = InputParserState::STATE_WANT_CONTROL;
-  if (idx >= tokens.length())
-    return state;
-
-  string key = tokens[idx++];
-  spec.condition = COND_TRUE;
-  if ("not" == key || "!" == key)
+  enum
   {
-    spec.condition = COND_FALSE;
+    COND_TRUE,
+    COND_FALSE
+  };
+
+
+  PrefsInputDriver::PrefsInputDriver()
+    : m_keys()
+  {
+    setName("Prefs");
+  }
+
+
+  InputParserState PrefsInputDriver::parseInputSpecification(InputSpecTokens const& tokens, InputSpec& spec)
+  {
+    InputParserState state = InputParserState::STATE_WANT_DRIVER;
+    int idx = 0;
+    if ((idx >= tokens.length()) || (tokens[idx++] != "pref"))
+      return state;
+
+    state = InputParserState::STATE_WANT_CONTROL;
     if (idx >= tokens.length())
       return state;
-    key = tokens[idx++];
-  }
 
-  if ('!' == key[0])
-  {
-    if ('!' == key[1])
-      return InputParserState::STATE_WANT_COND;
-    if (COND_FALSE == spec.condition)
-      return InputParserState::STATE_WANT_COND;
-    spec.condition = COND_FALSE;
-    key = key.substr(1, key.length() - 1);
-  }
-
-  if (!g_prefsManager->DoesKeyExist(key.c_str()))
-    return state;
-  spec.control_id = keyPosition(key);
-
-  spec.type = InputType::INPUT_TYPE_BOOL;
-
-  return (idx < tokens.length()) ? InputParserState::STATE_OVERSTEP : InputParserState::STATE_DONE;
-}
-
-
-bool PrefsInputDriver::getInput(InputSpec const& spec, InputDetails& details)
-{
-  details.type = InputType::INPUT_TYPE_BOOL;
-  if (0 <= spec.control_id && spec.control_id < m_keys.size())
-  {
-    bool val = (g_prefsManager->GetInt(m_keys[spec.control_id]->c_str(), 0) > 0);
-    switch (spec.condition)
+    string key = tokens[idx++];
+    spec.condition = COND_TRUE;
+    if ("not" == key || "!" == key)
     {
-    case COND_TRUE:
-      return val;
-    case COND_FALSE:
-      return !val;
-    default:
-      return false; // Should never get here!
+      spec.condition = COND_FALSE;
+      if (idx >= tokens.length())
+        return state;
+      key = tokens[idx++];
+    }
+
+    if ('!' == key[0])
+    {
+      if ('!' == key[1])
+        return InputParserState::STATE_WANT_COND;
+      if (COND_FALSE == spec.condition)
+        return InputParserState::STATE_WANT_COND;
+      spec.condition = COND_FALSE;
+      key = key.substr(1, key.length() - 1);
+    }
+
+    if (!g_prefsManager->DoesKeyExist(key.c_str()))
+      return state;
+    spec.control_id = keyPosition(key);
+
+    spec.type = InputType::INPUT_TYPE_BOOL;
+
+    return (idx < tokens.length()) ? InputParserState::STATE_OVERSTEP : InputParserState::STATE_DONE;
+  }
+
+
+  bool PrefsInputDriver::getInput(InputSpec const& spec, InputDetails& details)
+  {
+    details.type = InputType::INPUT_TYPE_BOOL;
+    if (0 <= spec.control_id && spec.control_id < m_keys.size())
+    {
+      bool val = (g_prefsManager->GetInt(m_keys[spec.control_id]->c_str(), 0) > 0);
+      switch (spec.condition)
+      {
+      case COND_TRUE:
+        return val;
+      case COND_FALSE:
+        return !val;
+      default:
+        return false; // Should never get here!
+      }
+    }
+    return false; // Should never get here!
+  }
+
+
+  void PrefsInputDriver::Advance() {}
+
+
+  // In the same order as enum InputParserState (see inputdriver.h)
+  static string errors[] = {"An unknown error occurred.",
+                            "The driver type was not recognised.",
+                            "The preference key was not recognised.",
+                            "Double negatives not allowed.",
+                            "",
+                            "",
+                            "There are too many tokens in the input description.",
+                            "",
+                            "There was no parsing error."};
+
+
+  // PRE-EXISTING AND PRESERVED: this table has NINE strings and
+  // InputParserState has TEN enumerators, so errors[STATE_DONE] reads one past
+  // the end, and every message from STATE_WANT_OPTIONAL on is off by one —
+  // STATE_WANT_OPTIONAL gets BAD_EXTRA's text, and so on. The cast below makes
+  // the indexing explicit; it does not change which string comes back. Surfaced
+  // by language-hygiene T4, which had to look at the indexing to compile it.
+  // Fixing it is a behaviour change and is recorded on that task, not done here.
+  const std::string& PrefsInputDriver::getLastParseError(InputParserState state) { return errors[static_cast<size_t>(state)]; }
+
+
+  bool PrefsInputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc)
+  {
+    InputDetails details;
+    return getInput(spec, details);
+  }
+
+
+  int PrefsInputDriver::keyPosition(string const& key)
+  {
+    KeyIt i;
+    for (i = m_keys.begin(); i != m_keys.end(); ++i)
+      if (**i == key)
+        break;
+
+    if (i == m_keys.end())
+    {
+      m_keys.push_back(std::unique_ptr<string>(new string(key)));
+      return m_keys.size();
+    }
+    else
+    {
+      return i - m_keys.begin();
     }
   }
-  return false; // Should never get here!
-}
-
-
-void PrefsInputDriver::Advance() {}
-
-
-// In the same order as enum InputParserState (see inputdriver.h)
-static string errors[] = {"An unknown error occurred.",
-                          "The driver type was not recognised.",
-                          "The preference key was not recognised.",
-                          "Double negatives not allowed.",
-                          "",
-                          "",
-                          "There are too many tokens in the input description.",
-                          "",
-                          "There was no parsing error."};
-
-
-// PRE-EXISTING AND PRESERVED: this table has NINE strings and
-// InputParserState has TEN enumerators, so errors[STATE_DONE] reads one past
-// the end, and every message from STATE_WANT_OPTIONAL on is off by one —
-// STATE_WANT_OPTIONAL gets BAD_EXTRA's text, and so on. The cast below makes
-// the indexing explicit; it does not change which string comes back. Surfaced
-// by language-hygiene T4, which had to look at the indexing to compile it.
-// Fixing it is a behaviour change and is recorded on that task, not done here.
-const std::string& PrefsInputDriver::getLastParseError(InputParserState state) { return errors[static_cast<size_t>(state)]; }
-
-
-bool PrefsInputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc)
-{
-  InputDetails details;
-  return getInput(spec, details);
-}
-
-
-int PrefsInputDriver::keyPosition(string const& key)
-{
-  KeyIt i;
-  for (i = m_keys.begin(); i != m_keys.end(); ++i)
-    if (**i == key)
-      break;
-
-  if (i == m_keys.end())
-  {
-    m_keys.push_back(std::unique_ptr<string>(new string(key)));
-    return m_keys.size();
-  }
-  else
-  {
-    return i - m_keys.begin();
-  }
-}
+} // namespace Neuron

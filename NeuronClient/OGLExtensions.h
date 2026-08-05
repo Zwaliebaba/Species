@@ -14,10 +14,14 @@
 #define GL_SOURCE0_ALPHA_ARB              0x8588
 #define GL_TEXTURE0_ARB                   0x84C0
 #define GL_TEXTURE1_ARB                   0x84C1
-typedef void (__stdcall *MultiTexCoord2fARB) (int, float, float);
-typedef void (__stdcall *ActiveTextureARB) (int);
-extern MultiTexCoord2fARB gglMultiTexCoord2fARB;
-extern ActiveTextureARB gglActiveTextureARB;
+
+
+namespace Neuron
+{
+  typedef void(__stdcall* MultiTexCoord2fARB)(int, float, float);
+  typedef void(__stdcall* ActiveTextureARB)(int);
+  extern MultiTexCoord2fARB gglMultiTexCoord2fARB;
+  extern ActiveTextureARB gglActiveTextureARB;
 
 // Extension 11: WGL_ARB_pbuffer
 #define WGL_DRAW_TO_PBUFFER_ARB		   0x202D
@@ -125,4 +129,4 @@ extern ChoosePixelFormatARB gglChoosePixelFormatARB;
 
 void InitialiseOGLExtensions();
 int IsOGLExtensionSupported(const char *extension);
-
+} // namespace Neuron

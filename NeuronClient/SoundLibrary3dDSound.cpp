@@ -21,30 +21,34 @@
 
 // Formatted lazily by DSoundErrorString and SOUNDASSERT. Static because
 // DSoundErrorString returns a pointer into it.
-static std::string s_dxErrorText;
 
-// DXGetErrorString9/DXGetErrorDescription9 came from DXERR9.H in the retired
-// DirectX SDK, which no longer ships with the Windows SDK. FormatMessage gives
-// us the same information for a DirectSound HRESULT.
-static char const* DSoundErrorString(HRESULT _hr)
+
+namespace Neuron
 {
-  static char buf[256];
+  static std::string s_dxErrorText;
 
-  DWORD len = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, (DWORD)_hr, 0, buf, sizeof(buf), nullptr);
-  if (len == 0)
+  // DXGetErrorString9/DXGetErrorDescription9 came from DXERR9.H in the retired
+  // DirectX SDK, which no longer ships with the Windows SDK. FormatMessage gives
+  // us the same information for a DirectSound HRESULT.
+  static char const* DSoundErrorString(HRESULT _hr)
   {
-    s_dxErrorText = std::format("HRESULT 0x{:08x}", static_cast<unsigned long>(_hr));
-    return s_dxErrorText.c_str();
-  }
-  else
-  {
-    // Trim the trailing newline FormatMessage appends
-    while (len > 0 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
-      buf[--len] = '\0';
-  }
+    static char buf[256];
 
-  return buf;
-}
+    DWORD len = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, (DWORD)_hr, 0, buf, sizeof(buf), nullptr);
+    if (len == 0)
+    {
+      s_dxErrorText = std::format("HRESULT 0x{:08x}", static_cast<unsigned long>(_hr));
+      return s_dxErrorText.c_str();
+    }
+    else
+    {
+      // Trim the trailing newline FormatMessage appends
+      while (len > 0 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
+        buf[--len] = '\0';
+    }
+
+    return buf;
+  }
 
 // DSoundErrorString returns a pointer into s_dxErrorText, so the two calls the
 // old macro made could not both be live at once — the first was overwritten by
@@ -1197,3 +1201,4 @@ void SoundLibrary3dDirectSound::DisableDspFX(int _channel)
   errCode = buffer->Play(0, 0, DSBPLAY_LOOPING);
   SOUNDASSERT(errCode, "Direct sound couldn't play a secondary buffer");
 }
+} // namespace Neuron

@@ -7,9 +7,12 @@
 #include "SphereRenderer.h"
 #include "NeuronMath.h"
 
-class FileWriter;
-class TextReader;
-class Shape;
+namespace Neuron
+{
+  class FileWriter;
+  class TextReader;
+  class Shape;
+} // namespace Neuron
 class Building;
 class GlobalInternet;
 

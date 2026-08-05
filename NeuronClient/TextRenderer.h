@@ -1,6 +1,5 @@
 #pragma once
 
-class RGBAColour;
 #include "NeuronMath.h"
 
 
@@ -11,53 +10,59 @@ class RGBAColour;
 //  Class TextRenderer
 // ****************************************************************************
 
-class TextRenderer
+
+namespace Neuron
 {
-  protected:
-    double m_projectionMatrix[16];
-    double m_modelviewMatrix[16];
-    char* m_filename;
-    unsigned int m_textureID;
-    unsigned int m_bitmapWidth;
-    unsigned int m_bitmapHeight;
-    bool m_renderShadow;
-    bool m_renderOutline;
+  class RGBAColour;
 
-    float GetTexCoordX(unsigned char theChar);
-    float GetTexCoordY(unsigned char theChar);
+  class TextRenderer
+  {
+    protected:
+      double m_projectionMatrix[16];
+      double m_modelviewMatrix[16];
+      char* m_filename;
+      unsigned int m_textureID;
+      unsigned int m_bitmapWidth;
+      unsigned int m_bitmapHeight;
+      bool m_renderShadow;
+      bool m_renderOutline;
 
-  public:
-    void Initialise(char const* _filename);
+      float GetTexCoordX(unsigned char theChar);
+      float GetTexCoordY(unsigned char theChar);
 
-    void BuildOpenGlState();
+    public:
+      void Initialise(char const* _filename);
 
-    void BeginText2D();
-    void EndText2D();
+      void BuildOpenGlState();
 
-    void SetRenderShadow(bool _renderShadow);
-    void SetRenderOutline(bool _renderOutline);
+      void BeginText2D();
+      void EndText2D();
 
-    void DrawText2DSimple(float _x, float _y, float _size, char const* _text);
-    void DrawText2D(float _x, float _y, float _size, char const* _text, ...);       // Like simple but with variable args
-    void DrawText2DRight(float _x, float _y, float _size, char const* _text, ...);  // Like above but with right justify
-    void DrawText2DCentre(float _x, float _y, float _size, char const* _text, ...); // Like above but with centre justify
-    void DrawText2DJustified(float _x, float _y, float _size, int _xJustification, char const* _text,
-                             ...);                                                // Like above but with variable justification
-    void DrawText2DUp(float _x, float _y, float _size, char const* _text, ...);   // Like above but rotated 90 ccw
-    void DrawText2DDown(float _x, float _y, float _size, char const* _text, ...); // Like above but rotated 90 cw
+      void SetRenderShadow(bool _renderShadow);
+      void SetRenderOutline(bool _renderOutline);
 
-
-    void DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text);
-    void DrawText3D(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
-    void DrawText3DCentre(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
-    void DrawText3DRight(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
-
-    void DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, float _size, char const* _text,
-                    ...);
-
-    float GetTextWidth(unsigned int _numChars, float _size = 13.0f);
-};
+      void DrawText2DSimple(float _x, float _y, float _size, char const* _text);
+      void DrawText2D(float _x, float _y, float _size, char const* _text, ...);       // Like simple but with variable args
+      void DrawText2DRight(float _x, float _y, float _size, char const* _text, ...);  // Like above but with right justify
+      void DrawText2DCentre(float _x, float _y, float _size, char const* _text, ...); // Like above but with centre justify
+      void DrawText2DJustified(float _x, float _y, float _size, int _xJustification, char const* _text,
+                               ...);                                                // Like above but with variable justification
+      void DrawText2DUp(float _x, float _y, float _size, char const* _text, ...);   // Like above but rotated 90 ccw
+      void DrawText2DDown(float _x, float _y, float _size, char const* _text, ...); // Like above but rotated 90 cw
 
 
-extern TextRenderer g_gameFont;
-extern TextRenderer g_editorFont;
+      void DrawText3DSimple(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text);
+      void DrawText3D(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
+      void DrawText3DCentre(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
+      void DrawText3DRight(DirectX::XMFLOAT3 const& _pos, float _size, char const* _text, ...);
+
+      void DrawText3D(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up, float _size, char const* _text,
+                      ...);
+
+      float GetTextWidth(unsigned int _numChars, float _size = 13.0f);
+  };
+
+
+  extern TextRenderer g_gameFont;
+  extern TextRenderer g_editorFont;
+} // namespace Neuron

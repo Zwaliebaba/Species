@@ -9,13 +9,22 @@
 
 class Camera;
 class Location;
-class ClientToServer;
+namespace Neuron
+{
+  class ClientToServer;
+} // namespace Neuron
 class Renderer;
 class UserInput;
-class Resource;
-class SoundSystem;
+namespace Neuron
+{
+  class Resource;
+  class SoundSystem;
+} // namespace Neuron
 class LocationInput;
-class LangTable;
+namespace Neuron
+{
+  class LangTable;
+} // namespace Neuron
 class GlobalWorld;
 class ParticleSystem;
 class TaskManager;
@@ -31,7 +40,10 @@ class StartSequence;
 class AttractMode;
 class ControlHelpSystem;
 class PrefsManager;
-class BitmapRGBA;
+namespace Neuron
+{
+  class BitmapRGBA;
+} // namespace Neuron
 class GameMenu;
 
 

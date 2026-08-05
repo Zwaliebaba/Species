@@ -16,15 +16,19 @@
 
 // Here is the equation that we use for this filter:
 // y(n) = a0*x(n) + a1*x(n-1)  + a2*x(n-2) - b1*y(n-1)  - b2*y(n-2)
-DspResLowPass::DspResLowPass(int _sampleRate)
-:	DspEffect(_sampleRate)
+
+
+namespace Neuron
 {
+  DspResLowPass::DspResLowPass(int _sampleRate)
+    : DspEffect(_sampleRate)
+  {
     m_xn1 = m_xn2 = m_yn1 = m_yn2 = 0.0f;
     m_a0 = m_a1 = m_a2 = m_b1 = m_b2 = 0.0f;
 
 	// Initially configure as a low pass filter
 	CalcCoefs(1000.0, 1.0f, 1.0f);
-}
+  }
 
 
 void DspResLowPass::CalcCoefs( float _frequency, float _resonance, float _gain )
@@ -426,3 +430,4 @@ void DspReverb::Process(signed short *_data, unsigned int _numSamples)
 		m_currentBufferIndex = i % delaySize;
 	}
 }
+} // namespace Neuron

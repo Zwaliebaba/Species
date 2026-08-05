@@ -2,9 +2,12 @@
 
 #include "Building.h"
 
-class Shape;
-class ShapeFragment;
-class TextReader;
+namespace Neuron
+{
+  class Shape;
+  class ShapeFragment;
+  class TextReader;
+} // namespace Neuron
 
 #define LASERFENCE_RAISESPEED 0.3f
 

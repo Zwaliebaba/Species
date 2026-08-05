@@ -8,24 +8,24 @@
 #include "SystemInfo.h"
 
 
-SystemInfo *g_systemInfo = nullptr;
-
-
-SystemInfo::SystemInfo()
+namespace Neuron
 {
-	GetLocaleDetails();
-	GetAudioDetails();
-	GetDirectXVersion();
-}
+  SystemInfo* g_systemInfo = nullptr;
 
 
-SystemInfo::~SystemInfo()
-{
-}
+  SystemInfo::SystemInfo()
+  {
+    GetLocaleDetails();
+    GetAudioDetails();
+    GetDirectXVersion();
+  }
 
 
-void SystemInfo::GetLocaleDetails()
-{
+  SystemInfo::~SystemInfo() {}
+
+
+  void SystemInfo::GetLocaleDetails()
+  {
     int size;
     bool languageSuccess = false;
 
@@ -42,7 +42,7 @@ void SystemInfo::GetLocaleDetails()
 	m_localeInfo.m_country = new char[size + 1];
 	ASSERT_TEXT(GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGCOUNTRY, m_localeInfo.m_country, size),
 				  "Couldn't get country details");
-}
+  }
 
 
 void SystemInfo::GetAudioDetails()
@@ -193,3 +193,4 @@ void SystemInfo::GetDirectXVersion()
 //			CoUninitialize();
 //	}
 }
+} // namespace Neuron

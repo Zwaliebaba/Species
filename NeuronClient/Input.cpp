@@ -15,28 +15,30 @@
 using namespace std;
 
 
-InputManager* g_inputManager = nullptr;
-
-
-InputManager::InputManager()
-  : drivers(),
-    m_idle(true),
-    m_inputMode(InputMode::INPUT_MODE_KEYBOARD)
+namespace Neuron
 {
-}
+  InputManager* g_inputManager = nullptr;
 
 
-InputManager::~InputManager()
-{
-  for (unsigned i = 0; i < drivers.size(); ++i)
-    if (drivers[i])
-      delete drivers[i];
-}
+  InputManager::InputManager()
+    : drivers(),
+      m_idle(true),
+      m_inputMode(InputMode::INPUT_MODE_KEYBOARD)
+  {
+  }
 
 
-void InputManager::parseInputPrefs(TextReader& reader, bool replace)
-{
-  int line = 1;
+  InputManager::~InputManager()
+  {
+    for (unsigned i = 0; i < drivers.size(); ++i)
+      if (drivers[i])
+        delete drivers[i];
+  }
+
+
+  void InputManager::parseInputPrefs(TextReader& reader, bool replace)
+  {
+    int line = 1;
 #ifdef TARGET_DEBUG
   ofstream derr("inputprefs_debug.txt");
 #else
@@ -102,7 +104,7 @@ void InputManager::parseInputPrefs(TextReader& reader, bool replace)
     else
       derr << "Blank line." << endl;
   }
-}
+  }
 
 
 InputParserState InputManager::parseInputSpecString(string const& description, InputSpec& spec, string& err)
@@ -308,3 +310,4 @@ void InputManager::printNumBindings()
     cout << "There are " << specs.size() << " binding for type " << Neuron::I(type) << endl;
   }
 }
+} // namespace Neuron

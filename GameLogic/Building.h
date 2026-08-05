@@ -10,12 +10,18 @@
 
 #include "ProtocolLimits.h"
 
-class Shape;
-class ShapeFragment;
-class ShapeMarker;
-class TextReader;
+namespace Neuron
+{
+  class Shape;
+  class ShapeFragment;
+  class ShapeMarker;
+  class TextReader;
+} // namespace Neuron
 class BuildingPort;
-class FileWriter;
+namespace Neuron
+{
+  class FileWriter;
+} // namespace Neuron
 
 
 class Building : public WorldObject

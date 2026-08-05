@@ -3,4 +3,7 @@
 #include "EventHandler.h"
 
 
-EventHandler * g_eventHandler = nullptr;
+namespace Neuron
+{
+  EventHandler* g_eventHandler = nullptr;
+} // namespace Neuron

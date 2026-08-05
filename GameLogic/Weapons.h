@@ -4,7 +4,10 @@
 #include "Entity.h"
 #include "WorldObject.h"
 
-class Shape;
+namespace Neuron
+{
+  class Shape;
+} // namespace Neuron
 
 
 // ****************************************************************************

@@ -5,7 +5,10 @@
 #include "SpiritStore.h"
 
 
-class FileWriter;
+namespace Neuron
+{
+  class FileWriter;
+} // namespace Neuron
 
 
 class Factory: public Building

@@ -7,7 +7,10 @@
 #include "NeuronMath.h"
 
 
-class BitmapRGBA;
+namespace Neuron
+{
+  class BitmapRGBA;
+} // namespace Neuron
 
 
 class LandVertex

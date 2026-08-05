@@ -8,7 +8,10 @@
 
 class Unit;
 class InsertionSquad;
-class Shape;
+namespace Neuron
+{
+  class Shape;
+} // namespace Neuron
 class TeamControls;
 
 // ****************************************************************************

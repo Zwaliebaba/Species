@@ -25,330 +25,334 @@
 
 // What Matrix34::Normalise did: re-orthonormalise the basis rows, front first,
 // leaving the translation alone.
-static DirectX::XMMATRIX NormaliseBasis(DirectX::FXMMATRIX _matrix)
+
+
+namespace Neuron
 {
-  DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(_matrix.r[2]);
-  DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(_matrix.r[1], front));
-  DirectX::XMVECTOR const up = DirectX::XMVector3Cross(front, right);
-
-  return DirectX::XMMATRIX(right, up, front, _matrix.r[3]);
-}
-
-
-static void MultiplyGLMatrix(DirectX::XMFLOAT4X4 const& _matrix) { glMultMatrixf(&_matrix._11); }
-
-
-// *** Constructor
-// This constructor is used in the export process. The m_parents array is never
-// populated in the exporter, so it is intentionally left blank
-ShapeMarker::ShapeMarker(char const* _name, char* _parentName, int _depth, DirectX::XMFLOAT4X4 const& _transform)
-  : m_depth(_depth),
-    m_transform(_transform)
-{
-  m_name = _name;
-  m_parentName = _parentName;
-
-  // The two hand-rolled compaction loops these replace stripped every space in
-  // place, which is what std::erase does.
-  std::erase(m_name, ' ');
-  std::erase(m_parentName, ' ');
-}
-
-
-// *** Constructor
-ShapeMarker::ShapeMarker(TextReader* _in, char const* _name)
-{
-  m_name = _name ? _name : "";
-  while (_in->ReadLine())
+  static DirectX::XMMATRIX NormaliseBasis(DirectX::FXMMATRIX _matrix)
   {
-    char* firstWord = _in->GetNextToken();
+    DirectX::XMVECTOR const front = DirectX::XMVector3Normalize(_matrix.r[2]);
+    DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(_matrix.r[1], front));
+    DirectX::XMVECTOR const up = DirectX::XMVector3Cross(front, right);
 
-    if (firstWord)
+    return DirectX::XMMATRIX(right, up, front, _matrix.r[3]);
+  }
+
+
+  static void MultiplyGLMatrix(DirectX::XMFLOAT4X4 const& _matrix) { glMultMatrixf(&_matrix._11); }
+
+
+  // *** Constructor
+  // This constructor is used in the export process. The m_parents array is never
+  // populated in the exporter, so it is intentionally left blank
+  ShapeMarker::ShapeMarker(char const* _name, char* _parentName, int _depth, DirectX::XMFLOAT4X4 const& _transform)
+    : m_depth(_depth),
+      m_transform(_transform)
+  {
+    m_name = _name;
+    m_parentName = _parentName;
+
+    // The two hand-rolled compaction loops these replace stripped every space in
+    // place, which is what std::erase does.
+    std::erase(m_name, ' ');
+    std::erase(m_parentName, ' ');
+  }
+
+
+  // *** Constructor
+  ShapeMarker::ShapeMarker(TextReader* _in, char const* _name)
+  {
+    m_name = _name ? _name : "";
+    while (_in->ReadLine())
     {
+      char* firstWord = _in->GetNextToken();
+
+      if (firstWord)
+      {
+        if (stricmp(firstWord, "ParentName") == 0)
+        {
+          char* secondWord = _in->GetNextToken();
+          if (secondWord)
+            m_parentName = secondWord;
+        }
+        else if (stricmp(firstWord, "Depth") == 0)
+        {
+          char* secondWord = _in->GetNextToken();
+          m_depth = atoi(secondWord);
+        }
+        else if (stricmp(firstWord, "front") == 0)
+        {
+          char* secondWord = _in->GetNextToken();
+          m_transform._31 = (float)atof(secondWord);
+          m_transform._32 = (float)atof(_in->GetNextToken());
+          m_transform._33 = (float)atof(_in->GetNextToken());
+        }
+        else if (stricmp(firstWord, "up") == 0)
+        {
+          char* secondWord = _in->GetNextToken();
+          m_transform._21 = (float)atof(secondWord);
+          m_transform._22 = (float)atof(_in->GetNextToken());
+          m_transform._23 = (float)atof(_in->GetNextToken());
+        }
+        else if (stricmp(firstWord, "pos") == 0)
+        {
+          char* secondWord = _in->GetNextToken();
+          m_transform._41 = (float)atof(secondWord);
+          m_transform._42 = (float)atof(_in->GetNextToken());
+          m_transform._43 = (float)atof(_in->GetNextToken());
+        }
+        else if (stricmp(firstWord, "MarkerEnd") == 0)
+        {
+          break;
+        }
+      }
+    }
+
+    DirectX::XMStoreFloat4x4(&m_transform, NormaliseBasis(DirectX::XMLoadFloat4x4(&m_transform)));
+
+    m_parents.assign(m_depth, nullptr);
+
+    // "unknown" when the file supplied nothing, exactly as the null tests these
+    // replace did. Empty is equivalent to null here because
+    // TextReader::GetNextToken returns nullptr for an empty token and never an
+    // empty string, so a name that is present is never "".
+    if (m_name.empty())
+      m_name = "unknown";
+    if (m_parentName.empty())
+      m_parentName = "unknown";
+  }
+
+  ShapeMarker::~ShapeMarker()
+  {
+    // m_name and m_parentName release themselves. m_parents needs no release
+    // either: it observes fragments the tree owns. The question the old comment
+    // asked is answered in the header.
+  }
+
+  // *** GetWorldMatrix
+  DirectX::XMFLOAT4X4 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
+  {
+    DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&_rootTransform);
+    for (int i = 0; i < m_depth; ++i)
+    {
+      mat = DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_parents[i]->m_transform), mat);
+    }
+    mat = DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), mat);
+
+    DirectX::XMFLOAT4X4 result;
+    DirectX::XMStoreFloat4x4(&result, mat);
+    return result;
+  }
+
+
+  // *** GetWorldPosition
+  DirectX::XMFLOAT3 ShapeMarker::GetWorldPosition(DirectX::XMFLOAT4X4 const& _rootTransform)
+  {
+    DirectX::XMFLOAT4X4 const world = GetWorldMatrix(_rootTransform);
+    return DirectX::XMFLOAT3(world._41, world._42, world._43);
+  }
+
+
+  // OpenGL reads sixteen floats as COLUMN-major and DirectXMath stores XMFLOAT4X4
+  // ROW-major, so the same memory already is the transpose OpenGL wants and there
+  // is nothing to do but hand it over. That coincidence is exactly why this must
+  // live in renderer code rather than on the matrix type: a Direct3D backend
+  // wants a different answer and would change it here and nowhere else. See
+  // NeuronMath.h, "no math type knows which graphics API it is feeding".
+
+
+  void ShapeMarker::WriteToFile(FILE* _out) const
+  {
+    fprintf(_out, "Marker: %s\n", m_name.c_str());
+    fprintf(_out, "\tParentName: %s\n", m_parentName.c_str());
+    fprintf(_out, "\tDepth: %d\n", m_depth);
+    fprintf(_out, "\tUp:    %5.2f %5.2f %5.2f\n", m_transform._21, m_transform._22, m_transform._23);
+    fprintf(_out, "\tFront: %5.2f %5.2f %5.2f\n", m_transform._31, m_transform._32, m_transform._33);
+    fprintf(_out, "\tPos:   %5.2f %5.2f %5.2f\n", m_transform._41, m_transform._42, m_transform._43);
+    fprintf(_out, "\tMarkerEnd\n\n\n");
+  }
+
+
+  // ****************************************************************************
+  // Class ShapeFragment
+  // ****************************************************************************
+
+  // This constructor is used to load a shape from a file.
+  ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
+    : m_displayListName(nullptr),
+      m_numPositions(0),
+      m_positions(nullptr),
+      m_positionsInWS(nullptr),
+      m_numNormals(0),
+      m_normals(nullptr),
+      m_numColours(0),
+      m_colours(nullptr),
+      m_numVertices(0),
+      m_vertices(nullptr),
+      m_numTriangles(0),
+      m_maxTriangles(0),
+      m_triangles(nullptr),
+      m_transform(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f),
+      m_angVel(0, 0, 0),
+      m_vel(0, 0, 0),
+      m_useCylinder(false),
+      m_centre(0.0f, 0.0f, 0.0f),
+      m_radius(-1.0f),
+      m_mostPositiveY(0.0f),
+      m_mostNegativeY(0.0f)
+  {
+    m_maxTriangles = 1;
+    m_triangles = new ShapeTriangle[m_maxTriangles];
+
+    DEBUG_ASSERT(_name);
+    m_name = _name;
+
+    DirectX::XMStoreFloat4x4(&m_transform, DirectX::XMMatrixIdentity());
+    m_angVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+    while (_in->ReadLine())
+    {
+      if (!_in->TokenAvailable())
+        continue;
+
+      char* firstWord = _in->GetNextToken();
+      char* secondWord = _in->GetNextToken();
+
       if (stricmp(firstWord, "ParentName") == 0)
       {
-        char* secondWord = _in->GetNextToken();
         if (secondWord)
           m_parentName = secondWord;
       }
-      else if (stricmp(firstWord, "Depth") == 0)
-      {
-        char* secondWord = _in->GetNextToken();
-        m_depth = atoi(secondWord);
-      }
       else if (stricmp(firstWord, "front") == 0)
       {
-        char* secondWord = _in->GetNextToken();
         m_transform._31 = (float)atof(secondWord);
         m_transform._32 = (float)atof(_in->GetNextToken());
         m_transform._33 = (float)atof(_in->GetNextToken());
       }
       else if (stricmp(firstWord, "up") == 0)
       {
-        char* secondWord = _in->GetNextToken();
         m_transform._21 = (float)atof(secondWord);
         m_transform._22 = (float)atof(_in->GetNextToken());
         m_transform._23 = (float)atof(_in->GetNextToken());
       }
       else if (stricmp(firstWord, "pos") == 0)
       {
-        char* secondWord = _in->GetNextToken();
         m_transform._41 = (float)atof(secondWord);
         m_transform._42 = (float)atof(_in->GetNextToken());
         m_transform._43 = (float)atof(_in->GetNextToken());
       }
-      else if (stricmp(firstWord, "MarkerEnd") == 0)
+      else if (stricmp(firstWord, "Positions") == 0)
       {
+        int numPositions = atoi(secondWord);
+        ParsePositionBlock(_in, numPositions);
+      }
+      else if (stricmp(firstWord, "Normals") == 0)
+      {
+        int numNorms = atoi(secondWord);
+        ParseNormalBlock(_in, numNorms);
+      }
+      else if (stricmp(firstWord, "Colours") == 0)
+      {
+        int numColours = atoi(secondWord);
+        ParseColourBlock(_in, numColours);
+      }
+      else if (stricmp(firstWord, "Vertices") == 0)
+      {
+        int numVerts = atoi(secondWord);
+        ParseVertexBlock(_in, numVerts);
+      }
+      else if (stricmp(firstWord, "Strips") == 0)
+      {
+        int numStrips = atoi(secondWord);
+        ParseAllStripBlocks(_in, numStrips);
+        break;
+      }
+      else if (stricmp(firstWord, "Triangles") == 0)
+      {
+        int numTriangles = atoi(secondWord);
+        ParseTriangleBlock(_in, numTriangles);
         break;
       }
     }
+
+    DirectX::XMStoreFloat4x4(&m_transform, NormaliseBasis(DirectX::XMLoadFloat4x4(&m_transform)));
+
+    // "unknown" when the file supplied nothing — see ShapeMarker's constructor
+    // for why empty is equivalent to the null test this replaces.
+    if (m_name.empty())
+      m_name = "unknown";
+    if (m_parentName.empty())
+      m_parentName = "unknown";
+
+    GenerateNormals();
+
+    m_positionsInWS = new DirectX::XMFLOAT3[m_numVertices];
   }
 
-  DirectX::XMStoreFloat4x4(&m_transform, NormaliseBasis(DirectX::XMLoadFloat4x4(&m_transform)));
 
-  m_parents.assign(m_depth, nullptr);
-
-  // "unknown" when the file supplied nothing, exactly as the null tests these
-  // replace did. Empty is equivalent to null here because
-  // TextReader::GetNextToken returns nullptr for an empty token and never an
-  // empty string, so a name that is present is never "".
-  if (m_name.empty())
-    m_name = "unknown";
-  if (m_parentName.empty())
-    m_parentName = "unknown";
-}
-
-ShapeMarker::~ShapeMarker()
-{
-  // m_name and m_parentName release themselves. m_parents needs no release
-  // either: it observes fragments the tree owns. The question the old comment
-  // asked is answered in the header.
-}
-
-// *** GetWorldMatrix
-DirectX::XMFLOAT4X4 ShapeMarker::GetWorldMatrix(DirectX::XMFLOAT4X4 const& _rootTransform)
-{
-  DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&_rootTransform);
-  for (int i = 0; i < m_depth; ++i)
+  // This constructor is used when you want to build a shape from scratch yourself,
+  // eg in the exporter.
+  ShapeFragment::ShapeFragment(char const* _name, char const* _parentName)
+    : m_displayListName(nullptr),
+      m_numPositions(0),
+      m_positions(nullptr),
+      m_numNormals(0),
+      m_normals(nullptr),
+      m_numColours(0),
+      m_colours(nullptr),
+      m_numVertices(0),
+      m_vertices(nullptr),
+      m_positionsInWS(nullptr),
+      m_numTriangles(0),
+      m_maxTriangles(0),
+      m_triangles(nullptr),
+      m_useCylinder(false),
+      m_centre(0.0f, 0.0f, 0.0f),
+      m_radius(-1.0f),
+      m_mostPositiveY(0.0f),
+      m_mostNegativeY(0.0f)
   {
-    mat = DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_parents[i]->m_transform), mat);
+    m_maxTriangles = 1;
+    m_triangles = new ShapeTriangle[m_maxTriangles];
+
+    DirectX::XMStoreFloat4x4(&m_transform, DirectX::XMMatrixIdentity());
+    m_angVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+    m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+    m_name = _name;
+    m_parentName = _parentName;
+
+    // The two hand-rolled compaction loops these replace stripped every space in
+    // place, which is what std::erase does.
+    std::erase(m_name, ' ');
+    std::erase(m_parentName, ' ');
   }
-  mat = DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&m_transform), mat);
-
-  DirectX::XMFLOAT4X4 result;
-  DirectX::XMStoreFloat4x4(&result, mat);
-  return result;
-}
 
 
-// *** GetWorldPosition
-DirectX::XMFLOAT3 ShapeMarker::GetWorldPosition(DirectX::XMFLOAT4X4 const& _rootTransform)
-{
-  DirectX::XMFLOAT4X4 const world = GetWorldMatrix(_rootTransform);
-  return DirectX::XMFLOAT3(world._41, world._42, world._43);
-}
-
-
-// OpenGL reads sixteen floats as COLUMN-major and DirectXMath stores XMFLOAT4X4
-// ROW-major, so the same memory already is the transpose OpenGL wants and there
-// is nothing to do but hand it over. That coincidence is exactly why this must
-// live in renderer code rather than on the matrix type: a Direct3D backend
-// wants a different answer and would change it here and nowhere else. See
-// NeuronMath.h, "no math type knows which graphics API it is feeding".
-
-
-void ShapeMarker::WriteToFile(FILE* _out) const
-{
-  fprintf(_out, "Marker: %s\n", m_name.c_str());
-  fprintf(_out, "\tParentName: %s\n", m_parentName.c_str());
-  fprintf(_out, "\tDepth: %d\n", m_depth);
-  fprintf(_out, "\tUp:    %5.2f %5.2f %5.2f\n", m_transform._21, m_transform._22, m_transform._23);
-  fprintf(_out, "\tFront: %5.2f %5.2f %5.2f\n", m_transform._31, m_transform._32, m_transform._33);
-  fprintf(_out, "\tPos:   %5.2f %5.2f %5.2f\n", m_transform._41, m_transform._42, m_transform._43);
-  fprintf(_out, "\tMarkerEnd\n\n\n");
-}
-
-
-// ****************************************************************************
-// Class ShapeFragment
-// ****************************************************************************
-
-// This constructor is used to load a shape from a file.
-ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
-  : m_displayListName(nullptr),
-    m_numPositions(0),
-    m_positions(nullptr),
-    m_positionsInWS(nullptr),
-    m_numNormals(0),
-    m_normals(nullptr),
-    m_numColours(0),
-    m_colours(nullptr),
-    m_numVertices(0),
-    m_vertices(nullptr),
-    m_numTriangles(0),
-    m_maxTriangles(0),
-    m_triangles(nullptr),
-    m_transform(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f),
-    m_angVel(0, 0, 0),
-    m_vel(0, 0, 0),
-    m_useCylinder(false),
-    m_centre(0.0f, 0.0f, 0.0f),
-    m_radius(-1.0f),
-    m_mostPositiveY(0.0f),
-    m_mostNegativeY(0.0f)
-{
-  m_maxTriangles = 1;
-  m_triangles = new ShapeTriangle[m_maxTriangles];
-
-  DEBUG_ASSERT(_name);
-  m_name = _name;
-
-  DirectX::XMStoreFloat4x4(&m_transform, DirectX::XMMatrixIdentity());
-  m_angVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-
-  while (_in->ReadLine())
+  ShapeFragment::~ShapeFragment()
   {
-    if (!_in->TokenAvailable())
-      continue;
+    SAFE_DELETE_ARRAY(m_positions);
+    SAFE_DELETE_ARRAY(m_positionsInWS);
 
-    char* firstWord = _in->GetNextToken();
-    char* secondWord = _in->GetNextToken();
-
-    if (stricmp(firstWord, "ParentName") == 0)
-    {
-      if (secondWord)
-        m_parentName = secondWord;
-    }
-    else if (stricmp(firstWord, "front") == 0)
-    {
-      m_transform._31 = (float)atof(secondWord);
-      m_transform._32 = (float)atof(_in->GetNextToken());
-      m_transform._33 = (float)atof(_in->GetNextToken());
-    }
-    else if (stricmp(firstWord, "up") == 0)
-    {
-      m_transform._21 = (float)atof(secondWord);
-      m_transform._22 = (float)atof(_in->GetNextToken());
-      m_transform._23 = (float)atof(_in->GetNextToken());
-    }
-    else if (stricmp(firstWord, "pos") == 0)
-    {
-      m_transform._41 = (float)atof(secondWord);
-      m_transform._42 = (float)atof(_in->GetNextToken());
-      m_transform._43 = (float)atof(_in->GetNextToken());
-    }
-    else if (stricmp(firstWord, "Positions") == 0)
-    {
-      int numPositions = atoi(secondWord);
-      ParsePositionBlock(_in, numPositions);
-    }
-    else if (stricmp(firstWord, "Normals") == 0)
-    {
-      int numNorms = atoi(secondWord);
-      ParseNormalBlock(_in, numNorms);
-    }
-    else if (stricmp(firstWord, "Colours") == 0)
-    {
-      int numColours = atoi(secondWord);
-      ParseColourBlock(_in, numColours);
-    }
-    else if (stricmp(firstWord, "Vertices") == 0)
-    {
-      int numVerts = atoi(secondWord);
-      ParseVertexBlock(_in, numVerts);
-    }
-    else if (stricmp(firstWord, "Strips") == 0)
-    {
-      int numStrips = atoi(secondWord);
-      ParseAllStripBlocks(_in, numStrips);
-      break;
-    }
-    else if (stricmp(firstWord, "Triangles") == 0)
-    {
-      int numTriangles = atoi(secondWord);
-      ParseTriangleBlock(_in, numTriangles);
-      break;
-    }
-  }
-
-  DirectX::XMStoreFloat4x4(&m_transform, NormaliseBasis(DirectX::XMLoadFloat4x4(&m_transform)));
-
-  // "unknown" when the file supplied nothing — see ShapeMarker's constructor
-  // for why empty is equivalent to the null test this replaces.
-  if (m_name.empty())
-    m_name = "unknown";
-  if (m_parentName.empty())
-    m_parentName = "unknown";
-
-  GenerateNormals();
-
-  m_positionsInWS = new DirectX::XMFLOAT3[m_numVertices];
-}
-
-
-// This constructor is used when you want to build a shape from scratch yourself,
-// eg in the exporter.
-ShapeFragment::ShapeFragment(char const* _name, char const* _parentName)
-  : m_displayListName(nullptr),
-    m_numPositions(0),
-    m_positions(nullptr),
-    m_numNormals(0),
-    m_normals(nullptr),
-    m_numColours(0),
-    m_colours(nullptr),
-    m_numVertices(0),
-    m_vertices(nullptr),
-    m_positionsInWS(nullptr),
-    m_numTriangles(0),
-    m_maxTriangles(0),
-    m_triangles(nullptr),
-    m_useCylinder(false),
-    m_centre(0.0f, 0.0f, 0.0f),
-    m_radius(-1.0f),
-    m_mostPositiveY(0.0f),
-    m_mostNegativeY(0.0f)
-{
-  m_maxTriangles = 1;
-  m_triangles = new ShapeTriangle[m_maxTriangles];
-
-  DirectX::XMStoreFloat4x4(&m_transform, DirectX::XMMatrixIdentity());
-  m_angVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-  m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-  m_name = _name;
-  m_parentName = _parentName;
-
-  // The two hand-rolled compaction loops these replace stripped every space in
-  // place, which is what std::erase does.
-  std::erase(m_name, ' ');
-  std::erase(m_parentName, ' ');
-}
-
-
-ShapeFragment::~ShapeFragment()
-{
-  SAFE_DELETE_ARRAY(m_positions);
-  SAFE_DELETE_ARRAY(m_positionsInWS);
-
-  delete[] m_vertices;
-  m_vertices = nullptr;
-  delete[] m_normals;
-  m_normals = nullptr;
-  delete[] m_colours;
-  m_colours = nullptr;
-  delete[] m_triangles;
-  m_triangles = nullptr;
-  // clear() rather than leaving it to the member destructors, so the children
-  // still die here — before the display list below — and fragments still go
-  // before markers. Both destructors reach GL.
-  m_childFragments.clear();
-  m_childMarkers.clear();
+    delete[] m_vertices;
+    m_vertices = nullptr;
+    delete[] m_normals;
+    m_normals = nullptr;
+    delete[] m_colours;
+    m_colours = nullptr;
+    delete[] m_triangles;
+    m_triangles = nullptr;
+    // clear() rather than leaving it to the member destructors, so the children
+    // still die here — before the display list below — and fragments still go
+    // before markers. Both destructors reach GL.
+    m_childFragments.clear();
+    m_childMarkers.clear();
 #ifndef EXPORTER_BUILD
   g_resource->DeleteDisplayList(m_displayListName);
   delete[] m_displayListName;
   m_displayListName = nullptr;
 #endif
-}
+  }
 
 
 void ShapeFragment::BuildDisplayList()
@@ -1591,3 +1595,4 @@ float Shape::CalculateRadius(DirectX::XMFLOAT4X4 const& _transform, DirectX::XMF
 
   return radius;
 }
+} // namespace Neuron

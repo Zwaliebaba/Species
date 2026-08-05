@@ -8,7 +8,10 @@
 #include "Building.h"
 
 
-class FileWriter;
+namespace Neuron
+{
+  class FileWriter;
+} // namespace Neuron
 
 
 // ****************************************************************************
