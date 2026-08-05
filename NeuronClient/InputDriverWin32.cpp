@@ -97,13 +97,15 @@ bool W32InputDriver::getKeyInput(InputSpec const& spec, InputDetails& details)
   DEBUG_ASSERT(0 <= button && button < KEY_MAX);
   details.type = INPUT_TYPE_BOOL;
 
-  switch (spec.condition)
+  // spec.condition is a driver-defined int; this driver reads it as an
+  // InputCondition, which is what the cast says. See InputSpec.h.
+  switch (static_cast<InputCondition>(spec.condition))
   {
-  case COND_DOWN:
+  case InputCondition::COND_DOWN:
     return (g_keyDeltas[button] == 1);
-  case COND_UP:
+  case InputCondition::COND_UP:
     return (g_keyDeltas[button] == -1);
-  case COND_PRESSED:
+  case InputCondition::COND_PRESSED:
     return (g_keys[button] == 1);
   default:
     return false; // We should never get here!
@@ -141,13 +143,13 @@ bool W32InputDriver::getMouseInput(InputSpec const& spec, InputDetails& details)
 
   if (button >= 0)
   {
-    switch (spec.condition)
+    switch (static_cast<InputCondition>(spec.condition))
     {
-    case COND_DOWN:
+    case InputCondition::COND_DOWN:
       return (m_mbDeltas[button] == 1);
-    case COND_UP:
+    case InputCondition::COND_UP:
       return (m_mbDeltas[button] == -1);
-    case COND_PRESSED:
+    case InputCondition::COND_PRESSED:
       return (m_mb[button]);
     default:
       return false; // We should never get here!
@@ -155,11 +157,12 @@ bool W32InputDriver::getMouseInput(InputSpec const& spec, InputDetails& details)
   }
 
   bool reading = false;
-  switch (spec.condition)
+  switch (static_cast<InputCondition>(spec.condition))
   {
-  case COND_READ:
+  case InputCondition::COND_READ:
     reading = true;
-  case COND_MOVED:
+    [[fallthrough]];
+  case InputCondition::COND_MOVED:
     if (MOUSE_MOVEMENT == spec.control_id)
     {
       details.x = m_mouseVel[X];
@@ -219,7 +222,7 @@ bool W32InputDriver::getFirstActiveInput(InputSpec& spec, bool instant)
   //			case M: spec.control_id = MOUSE_MIDBUTTON; break;
   //			default: return false; // We should never get here!
   //		}
-  //		spec.condition = COND_DOWN;
+  //		spec.condition = InputCondition::COND_DOWN;
   //		spec.type = INPUT_TYPE_BOOL;
   //		return true;
   //	}
@@ -234,9 +237,9 @@ bool W32InputDriver::getFirstActiveInput(InputSpec& spec, bool instant)
       spec.handler_id = KEY_DRIVER;
       spec.control_id = i;
       if (instant)
-        spec.condition = COND_DOWN;
+        spec.condition = static_cast<condition_t>(InputCondition::COND_DOWN);
       else
-        spec.condition = COND_PRESSED;
+        spec.condition = static_cast<condition_t>(InputCondition::COND_PRESSED);
       spec.type = INPUT_TYPE_BOOL;
       return true;
     }
@@ -555,7 +558,7 @@ bool W32InputDriver::getInputDescription(InputSpec const& spec, InputDescription
     std::string mouseCondition;
     if (MOUSE_WHEEL == spec.control_id)
     {
-      if (COND_MOVED == spec.condition)
+      if (InputCondition::COND_MOVED == static_cast<InputCondition>(spec.condition))
       {
         desc.verb = "control_verb_scroll";
         getDefaultPrefsString(spec.condition, type, mouseCondition);

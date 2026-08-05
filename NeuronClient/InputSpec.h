@@ -7,6 +7,12 @@
 
 typedef int control_id_t;
 typedef int inputtype_t;
+// Driver-defined, and it stays an int deliberately. Three drivers put three
+// unrelated things in InputSpec::condition: InputCondition's enumerators
+// (the default driver), the anonymous {COND_TRUE, COND_FALSE} enum in
+// InputDriverPrefs.cpp, and a millisecond count IdleInputDriver parses out of
+// the binding string. Naming any one of those types here would be wrong for
+// the other two. See language-hygiene T9's notes.
 typedef int condition_t;
 typedef int handler_id_t;
 
