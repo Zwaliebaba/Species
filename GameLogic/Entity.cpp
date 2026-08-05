@@ -856,7 +856,7 @@ void Entity::FollowRoute()
     m_routeWayPointId = 0;
   }
 
-  WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId];
+  WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId].get();
 
   // Copy-initialising the native type takes the seam without naming it.
   DirectX::XMFLOAT3 const wayPointPos = waypoint->GetPos();

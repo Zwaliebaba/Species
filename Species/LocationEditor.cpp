@@ -82,7 +82,7 @@ int LocationEditor::DoesRayHitBuilding(DirectX::XMFLOAT3 const& rayStart, Direct
 {
   Location* location = g_location;
 
-  for (Building* building : location->m_levelFile->m_buildings)
+  for (auto const& building : location->m_levelFile->m_buildings)
   {
     bool result = building->DoesRayHit(rayStart, rayDir);
     if (result)
@@ -101,7 +101,7 @@ int LocationEditor::DoesRayHitInstantUnit(DirectX::XMFLOAT3 const& rayStart, Dir
 
   for (int i = 0; i < static_cast<int>(location->m_levelFile->m_instantUnits.size()); i++)
   {
-    InstantUnit* iu = location->m_levelFile->m_instantUnits[i];
+    InstantUnit* iu = location->m_levelFile->m_instantUnits[i].get();
     DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
     pos.y = location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
     bool result = RaySphereIntersection(rayStart, rayDir, pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
@@ -125,7 +125,7 @@ int LocationEditor::DoesRayHitCameraMount(DirectX::XMFLOAT3 const& rayStart, Dir
 
   for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
   {
-    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
+    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
     if (RaySphereIntersection(rayStart, rayDir, mount->m_pos, radius))
     {
       return i;
@@ -288,7 +288,7 @@ void LocationEditor::AdvanceModeNone()
 
 void LocationEditor::MoveBuildingsInTile(LandscapeTile* _tile, float _dX, float _dZ)
 {
-  for (Building* building : g_location->m_levelFile->m_buildings)
+  for (auto const& building : g_location->m_levelFile->m_buildings)
   {
     if (building->m_pos.x >= _tile->m_posX && building->m_pos.z >= _tile->m_posZ && building->m_pos.x <= _tile->m_posX + _tile->m_size &&
         building->m_pos.z <= _tile->m_posZ + _tile->m_size)
@@ -632,7 +632,7 @@ void LocationEditor::AdvanceModeCameraMount()
       int mountId = DoesRayHitCameraMount(rayStart, rayDir);
       if (mountId != -1)
       {
-        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[mountId];
+        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[mountId].get();
         DEBUG_ASSERT(mount);
 
         CameraAnimation* anim = g_location->m_levelFile->GetCameraAnim(m_selectionId);
@@ -1006,20 +1006,20 @@ void LocationEditor::RenderModeCameraMount()
   RGBAColour bright(255, 255, 0);
   RGBAColour dim(90, 90, 0);
 
-  std::vector<CameraAnimation*>* list = &g_location->m_levelFile->m_cameraAnimations;
+  auto* list = &g_location->m_levelFile->m_cameraAnimations;
   for (int i = 0; i < static_cast<int>(list->size()); ++i)
   {
-    CameraAnimation* anim = (*list)[i];
+    CameraAnimation* anim = (*list)[i].get();
     // An animation with no nodes draws nothing. The loop below already skipped
     // it by never running, but only because the legacy list's GetData(0) answered an empty
     // list with nullptr rather than reading off the front of it.
     if (anim->m_nodes.empty())
       continue;
 
-    CamAnimNode* lastNode = anim->m_nodes[0];
+    CamAnimNode* lastNode = anim->m_nodes[0].get();
     for (int j = 1; j < static_cast<int>(anim->m_nodes.size()); ++j)
     {
-      CamAnimNode* node = anim->m_nodes[j];
+      CamAnimNode* node = anim->m_nodes[j].get();
       if (stricmp(node->m_mountName, MAGIC_MOUNT_NAME_START_POS) == 0 || stricmp(lastNode->m_mountName, MAGIC_MOUNT_NAME_START_POS) == 0)
       {
         continue;
@@ -1049,14 +1049,14 @@ void LocationEditor::Render()
 
   g_renderer->SetObjectLighting();
   LevelFile* levelFile = g_location->m_levelFile;
-  for (Building* b : levelFile->m_buildings)
+  for (auto const& b : levelFile->m_buildings)
   {
     b->Render(0.0f);
   }
   g_renderer->UnsetObjectLighting();
   if (m_mode == ModeBuilding)
   {
-    for (Building* b : levelFile->m_buildings)
+    for (auto const& b : levelFile->m_buildings)
     {
       b->RenderAlphas(0.0f);
       b->RenderLink();
@@ -1074,7 +1074,7 @@ void LocationEditor::Render()
 
     for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
     {
-      CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
+      CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
       DirectX::XMFLOAT3 const camPosStore = TheCamera()->GetPos();
       DirectX::XMVECTOR const camToMount = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&camPosStore), DirectX::XMLoadFloat3(&mount->m_pos));
       if (DirectX::XMVectorGetX(DirectX::XMVector3Length(camToMount)) < 20.0f)
@@ -1098,9 +1098,9 @@ void LocationEditor::Render()
   //
   // Render our instant units
 
-  for (InstantUnit* iu : levelFile->m_instantUnits)
+  for (auto const& iu : levelFile->m_instantUnits)
   {
-    RenderUnit(iu);
+    RenderUnit(iu.get());
   }
 
   switch (m_mode)

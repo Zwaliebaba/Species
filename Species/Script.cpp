@@ -82,7 +82,7 @@ void Script::RunCommand_CamAnim(const char* _animName)
 
   int animId = g_location->m_levelFile->GetCameraAnimId(_animName);
   ASSERT_TEXT(animId != -1, "Invalid camera animation requested {}", _animName);
-  CameraAnimation* camAnim = g_location->m_levelFile->m_cameraAnimations[animId];
+  CameraAnimation* camAnim = g_location->m_levelFile->m_cameraAnimations[animId].get();
   // animId came from GetCameraAnimId, which returns a loop index into this
   // same list or -1, and the assert above rules out -1.
   TheCamera()->PlayAnimation(camAnim);

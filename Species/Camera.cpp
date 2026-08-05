@@ -2383,7 +2383,7 @@ bool Camera::SetTarget(const char* _mountName)
 
   for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
   {
-    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
+    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
     if (stricmp(mount->m_name.c_str(), _mountName) == 0)
     {
       SetTarget(mount->m_pos, mount->m_front, mount->m_up);

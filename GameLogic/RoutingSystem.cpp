@@ -81,21 +81,17 @@ Route::Route(int _id)
 
 
 // *** Destructor
-Route::~Route() { EmptyAndDelete(m_wayPoints); }
+Route::~Route() = default;
 
 
-void Route::AddWayPoint(DirectX::XMFLOAT3 const& _pos)
-{
-  WayPoint* wayPoint = new WayPoint(WayPoint::Type3DPos, _pos);
-  m_wayPoints.push_back(wayPoint);
-}
+void Route::AddWayPoint(DirectX::XMFLOAT3 const& _pos) { m_wayPoints.push_back(std::make_unique<WayPoint>(WayPoint::Type3DPos, _pos)); }
 
 
 void Route::AddWayPoint(int _buildingId)
 {
-  WayPoint* wayPoint = new WayPoint(WayPoint::TypeBuilding, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
+  auto wayPoint = std::make_unique<WayPoint>(WayPoint::TypeBuilding, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
   wayPoint->m_buildingId = _buildingId;
-  m_wayPoints.push_back(wayPoint);
+  m_wayPoints.push_back(std::move(wayPoint));
 }
 
 
@@ -103,8 +99,7 @@ WayPoint* Route::GetWayPoint(int _id)
 {
   if (ValidIndex(m_wayPoints, _id))
   {
-    WayPoint* wayPoint = m_wayPoints[_id];
-    return wayPoint;
+    return m_wayPoints[_id].get();
   }
 
   return nullptr;
@@ -119,7 +114,7 @@ int Route::GetIdOfNearestWayPoint(DirectX::XMFLOAT3 const& _pos)
   int size = static_cast<int>(m_wayPoints.size());
   for (int i = 0; i < size; ++i)
   {
-    WayPoint* wp = m_wayPoints[i];
+    WayPoint* wp = m_wayPoints[i].get();
     DirectX::XMFLOAT3 const wayPointPos = wp->GetPos();
     float distSqrd =
       DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), DirectX::XMLoadFloat3(&wayPointPos))));
@@ -141,14 +136,14 @@ int Route::GetIdOfNearestEdge(DirectX::XMFLOAT3 const& _pos, float* _dist)
   float distToNearest = FLT_MAX;
 
   DirectX::XMFLOAT2 pos(_pos.x, _pos.z);
-  WayPoint* wp = m_wayPoints[0];
+  WayPoint* wp = m_wayPoints[0].get();
   DirectX::XMFLOAT3 newPos = wp->GetPos();
   DirectX::XMFLOAT2 oldPos(newPos.x, newPos.z);
 
   int size = static_cast<int>(m_wayPoints.size());
   for (int i = 1; i < size; ++i)
   {
-    wp = m_wayPoints[i];
+    wp = m_wayPoints[i].get();
     newPos = wp->GetPos();
     DirectX::XMFLOAT2 temp(newPos.x, newPos.z);
     float dist = PointSegDist2D(pos, oldPos, temp);
@@ -177,7 +172,7 @@ void Route::Render()
 
   for (int i = 0; i < static_cast<int>(m_wayPoints.size()); ++i)
   {
-    WayPoint* wayPoint = m_wayPoints[i];
+    WayPoint* wayPoint = m_wayPoints[i].get();
     DirectX::XMFLOAT3 const thisPos = wayPoint->GetPos();
     if (i > 0)
     {

@@ -745,9 +745,9 @@ bool AISpawnPoint::Advance()
   bool greenVictory = false;
   if (m_online)
   {
-    std::vector<GlobalEventCondition*>* objectivesList = &g_location->m_levelFile->m_primaryObjectives;
+    auto* objectivesList = &g_location->m_levelFile->m_primaryObjectives;
     greenVictory = true;
-    for (GlobalEventCondition* gec : *objectivesList)
+    for (auto const& gec : *objectivesList)
     {
       if (!gec->Evaluate())
       {

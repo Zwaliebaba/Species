@@ -425,11 +425,11 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
   // Copy the newly generated screenzone list over
   // Remove the old set of screen zones
 
-  EmptyAndDelete(m_screenZones);
+  m_screenZones.clear();
   while (static_cast<int>(m_newScreenZones.size()) > 0)
   {
-    ScreenZone* zone = m_newScreenZones[0];
-    m_screenZones.push_back(zone);
+    ScreenZone* zone = m_newScreenZones[0].get();
+    m_screenZones.push_back(std::move(m_newScreenZones[0]));
     m_newScreenZones.erase(m_newScreenZones.begin() + 0);
     if (m_currentScreenZone == -1 && zone->m_scrollZone == m_currentScrollZone)
       m_currentScreenZone = static_cast<int>(m_screenZones.size()) - 1;
@@ -444,7 +444,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
   {
     for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
     {
-      ScreenZone* zone = m_screenZones[i];
+      ScreenZone* zone = m_screenZones[i].get();
       if (ScreenZoneHighlighted(zone))
       {
         if (m_currentScreenZone != i && m_currentMouseScreenZone != i)
@@ -594,7 +594,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
       {
         for (int i = 0; i < static_cast<int>(m_screenZones.size()); ++i)
         {
-          ScreenZone* zone = m_screenZones[i];
+          ScreenZone* zone = m_screenZones[i].get();
           if (stricmp(zone->m_name, "SelectTask") == 0 && zone->m_data == taskIndex)
           {
             if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
@@ -617,12 +617,12 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
   m_highlightedTaskId = -1;
   if (m_currentScreenZone != -1)
   {
-    ScreenZone* currentZone = m_screenZones[m_currentScreenZone];
+    ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
     if (currentZone)
     {
       if (stricmp(currentZone->m_name, "SelectTask") == 0 && ValidIndex(g_taskManager->m_tasks, currentZone->m_data))
       {
-        Task* task = g_taskManager->m_tasks[currentZone->m_data];
+        Task* task = g_taskManager->m_tasks[currentZone->m_data].get();
         m_highlightedTaskId = task->m_id;
       }
     }
@@ -633,7 +633,7 @@ void TaskManagerInterfaceIcons::AdvanceScreenZones()
 
   if (m_currentScreenZone != -1 && (g_inputManager->controlEvent(ControlActivateTMButton) || ButtonHeldAndReleased()) && !highlightOnly)
   {
-    ScreenZone* currentZone = m_screenZones[m_currentScreenZone];
+    ScreenZone* currentZone = m_screenZones[m_currentScreenZone].get();
     if (currentZone)
       RunScreenZone(currentZone->m_name, currentZone->m_data);
   }
@@ -688,7 +688,7 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
   {
     if (ValidIndex(g_taskManager->m_tasks, _data))
     {
-      Task* nextTask = g_taskManager->m_tasks[_data];
+      Task* nextTask = g_taskManager->m_tasks[_data].get();
       g_taskManager->m_currentTaskId = nextTask->m_id;
       g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
       g_soundSystem->TriggerOtherEvent("SelectTask", SoundSourceBlueprint::TypeInterface);
@@ -802,12 +802,11 @@ void TaskManagerInterfaceIcons::RunScreenZone(const char* _name, int _data)
     // whose operator[] returns nullptr for an out-of-range read, so the assert
     // below was doing double duty as a range check on an objectiveId derived
     // from a screen-zone id. std::vector would have been undefined behaviour.
-    std::vector<GlobalEventCondition*> const& objectives =
-      primary ? g_location->m_levelFile->m_primaryObjectives : g_location->m_levelFile->m_secondaryObjectives;
+    auto const& objectives = primary ? g_location->m_levelFile->m_primaryObjectives : g_location->m_levelFile->m_secondaryObjectives;
 
     GlobalEventCondition* gec = nullptr;
     if (objectiveId >= 0 && objectiveId < static_cast<int>(objectives.size()))
-      gec = objectives[objectiveId];
+      gec = objectives[objectiveId].get();
     DEBUG_ASSERT(gec);
 
     if (gec->m_cutScene)
@@ -1191,11 +1190,12 @@ void TaskManagerInterfaceIcons::RenderTaskManager()
       glEnd();
     }
 
-    auto zoneLeft = new ScreenZone("ScreenUp", LANGUAGEPHRASE("newcontrols_showresearch"), m_screenW - 60, 10, 40, 20, -1);
-    auto zoneRight = new ScreenZone("ScreenDown", LANGUAGEPHRASE("newcontrols_showobjectives"), m_screenW - 60, m_screenH - 50, 40, 20, -1);
+    auto zoneLeft = std::make_unique<ScreenZone>("ScreenUp", LANGUAGEPHRASE("newcontrols_showresearch"), m_screenW - 60, 10, 40, 20, -1);
+    auto zoneRight =
+      std::make_unique<ScreenZone>("ScreenDown", LANGUAGEPHRASE("newcontrols_showobjectives"), m_screenW - 60, m_screenH - 50, 40, 20, -1);
 
-    m_newScreenZones.push_back(zoneLeft);
-    m_newScreenZones.push_back(zoneRight);
+    m_newScreenZones.push_back(std::move(zoneLeft));
+    m_newScreenZones.push_back(std::move(zoneRight));
   }
 }
 
@@ -1288,9 +1288,9 @@ void TaskManagerInterfaceIcons::RenderCreateTaskMenu()
       std::string tooltipId;
       tooltipId = std::format("newcontrols_create_{}", GlobalResearch::GetTypeName(taskType));
 
-      auto zone = new ScreenZone("NewTask", LANGUAGEPHRASE(tooltipId.c_str()), x + 5, y - h / 3, w - 10, h, taskType);
+      auto zone = std::make_unique<ScreenZone>("NewTask", LANGUAGEPHRASE(tooltipId.c_str()), x + 5, y - h / 3, w - 10, h, taskType);
       zone->m_scrollZone = 1;
-      m_newScreenZones.push_back(zone);
+      m_newScreenZones.push_back(std::move(zone));
 
       //
       // Render task name and F-key shortcut
@@ -1480,7 +1480,7 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
   for (int i = 0; i < numTasks; ++i)
   {
-    Task* task = g_taskManager->m_tasks[i];
+    Task* task = g_taskManager->m_tasks[i].get();
     std::string bmpFilename;
     bmpFilename = std::format("Icons/Icon{}.bmp", Task::GetTaskName(task->m_type));
     unsigned int texId = g_resource->GetTexture(bmpFilename.c_str());
@@ -1493,9 +1493,10 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
     if (task->m_state == Task::StateStarted)
       captionId = std::format("newcontrols_place_{}", Task::GetTaskName(task->m_type));
 
-    auto zone = new ScreenZone("SelectTask", LANGUAGEPHRASE(captionId.c_str()), iconX - iconSize / 2, iconY - iconSize / 2, iconSize, iconSize, i);
-    m_newScreenZones.push_back(zone);
+    auto zone = std::make_unique<ScreenZone>("SelectTask", LANGUAGEPHRASE(captionId.c_str()), iconX - iconSize / 2, iconY - iconSize / 2, iconSize,
+                                             iconSize, i);
     zone->m_scrollZone = 2;
+    m_newScreenZones.push_back(std::move(zone));
 
     bool invisible = (task->m_state == Task::StateStarted && fmod(g_gameTime, 1.0) < 0.4);
 
@@ -1658,10 +1659,10 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
 
             std::string captionId;
             captionId = std::format("newcontrols_select_{}", Task::GetTaskName(weaponType));
-            auto zone = new ScreenZone("SelectWeapon", LANGUAGEPHRASE(captionId.c_str()), weaponX - weaponSize / 2, weaponY - weaponSize / 2,
-                                       weaponSize, weaponSize, weaponType);
-            m_newScreenZones.push_back(zone);
+            auto zone = std::make_unique<ScreenZone>("SelectWeapon", LANGUAGEPHRASE(captionId.c_str()), weaponX - weaponSize / 2,
+                                                     weaponY - weaponSize / 2, weaponSize, weaponSize, weaponType);
             zone->m_scrollZone = 3;
+            m_newScreenZones.push_back(std::move(zone));
 
             weaponX += weaponSize;
             weaponX += weaponGap;
@@ -1720,9 +1721,9 @@ void TaskManagerInterfaceIcons::RenderRunningTasks()
       std::string captionId;
       captionId = std::format("newcontrols_delete_{}", Task::GetTaskName(task->m_type));
 
-      auto zone = new ScreenZone("DeleteTask", LANGUAGEPHRASE(captionId.c_str()), deleteX - deleteSize / 2.0f, deleteY - deleteSize / 2.0f,
-                                 deleteSize, deleteSize, task->m_id);
-      m_newScreenZones.push_back(zone);
+      auto zone = std::make_unique<ScreenZone>("DeleteTask", LANGUAGEPHRASE(captionId.c_str()), deleteX - deleteSize / 2.0f,
+                                               deleteY - deleteSize / 2.0f, deleteSize, deleteSize, task->m_id);
+      m_newScreenZones.push_back(std::move(zone));
     }
 
     iconY += iconSize;
@@ -1924,7 +1925,7 @@ void TaskManagerInterfaceIcons::RenderObjectives()
 
   for (int o = 0; o < 2; ++o)
   {
-    std::vector<GlobalEventCondition*>* objectives = nullptr;
+    decltype(&g_location->m_levelFile->m_primaryObjectives) objectives = nullptr;
     if (o == 0)
       objectives = &g_location->m_levelFile->m_primaryObjectives;
     else
@@ -1998,12 +1999,12 @@ void TaskManagerInterfaceIcons::RenderObjectives()
       float objectiveId = i + 10;
       if (o == 1)
         objectiveId *= -1;
-      auto zone = new ScreenZone("Objective", LANGUAGEPHRASE("help_explainobjective"), boxX + 10, m_screenH + textY - textH / 2, boxW - 20,
-                                 textH * 1.5f, objectiveId);
+      auto zone = std::make_unique<ScreenZone>("Objective", LANGUAGEPHRASE("help_explainobjective"), boxX + 10, m_screenH + textY - textH / 2,
+                                               boxW - 20, textH * 1.5f, objectiveId);
       zone->m_scrollZone = 1;
-      m_newScreenZones.push_back(zone);
+      m_newScreenZones.push_back(std::move(zone));
 
-      GlobalEventCondition* condition = (*objectives)[i];
+      GlobalEventCondition* condition = (*objectives)[i].get();
       bool completed = condition->Evaluate();
 
       char* descriptor = LANGUAGEPHRASE(condition->m_stringId);
@@ -2067,9 +2068,10 @@ void TaskManagerInterfaceIcons::RenderObjectives()
       glEnd();
     }
 
-    auto zoneLeft = new ScreenZone("ScreenUp", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, m_screenH + 10, 40, 20, -1);
+    auto zoneLeft =
+      std::make_unique<ScreenZone>("ScreenUp", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, m_screenH + 10, 40, 20, -1);
 
-    m_newScreenZones.push_back(zoneLeft);
+    m_newScreenZones.push_back(std::move(zoneLeft));
   }
 }
 
@@ -2201,9 +2203,9 @@ void TaskManagerInterfaceIcons::RenderResearch()
 
       std::string tooltipId;
       tooltipId = std::format("newcontrols_research_{}", GlobalResearch::GetTypeName(i));
-      auto zone = new ScreenZone("Research", LANGUAGEPHRASE(tooltipId.c_str()), 40, -m_screenH + iconY, m_screenW - 160, iconSize, i);
+      auto zone = std::make_unique<ScreenZone>("Research", LANGUAGEPHRASE(tooltipId.c_str()), 40, -m_screenH + iconY, m_screenW - 160, iconSize, i);
       zone->m_scrollZone = 1;
-      m_newScreenZones.push_back(zone);
+      m_newScreenZones.push_back(std::move(zone));
 
       //
       // Render the shadow
@@ -2416,9 +2418,9 @@ void TaskManagerInterfaceIcons::RenderResearch()
       glEnd();
     }
 
-    auto zoneRight = new ScreenZone("ScreenDown", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, -50, 40, 20, -1);
+    auto zoneRight = std::make_unique<ScreenZone>("ScreenDown", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, -50, 40, 20, -1);
     zoneRight->m_scrollZone = -1;
-    m_newScreenZones.push_back(zoneRight);
+    m_newScreenZones.push_back(std::move(zoneRight));
   }
 }
 
@@ -2677,9 +2679,9 @@ void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
         if (!buttonFound ||
             (buttonFound && static_cast<int>(m_quickUnitButtons.size()) >= numAvailable && static_cast<int>(m_quickUnitButtons.size()) < 5))
         {
-          auto button = new QuickUnitButton();
+          auto button = std::make_unique<QuickUnitButton>();
           button->m_taskId = runnableTaskType[i];
-          m_quickUnitButtons.push_back(button);
+          m_quickUnitButtons.push_back(std::move(button));
         }
       }
 
@@ -2695,7 +2697,7 @@ void TaskManagerInterfaceIcons::CreateQuickUnitInterface()
 
 void TaskManagerInterfaceIcons::DestroyQuickUnitInterface()
 {
-  EmptyAndDelete(m_quickUnitButtons);
+  m_quickUnitButtons.clear();
   m_quickUnitVisible = false;
   m_currentQuickUnit = -1;
   m_quickUnitDirection = 0;

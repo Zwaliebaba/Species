@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "Entity.h"
 #include "WorldObject.h"
 #include "TaskManagerInterface.h"
@@ -25,8 +28,11 @@ class TaskManagerInterfaceIcons : public TaskManagerInterface
 
     float m_chatLogY;
 
-    std::vector<ScreenZone*> m_screenZones;             // All clickable areas on-screen
-    std::vector<ScreenZone*> m_newScreenZones;          // New zones generated this frame
+    // Both owning. A zone moves from m_newScreenZones to m_screenZones once a
+    // frame; the transfer is a move, and the old m_screenZones contents are
+    // destroyed at the same point EmptyAndDelete used to destroy them.
+    std::vector<std::unique_ptr<ScreenZone>> m_screenZones;    // All clickable areas on-screen
+    std::vector<std::unique_ptr<ScreenZone>> m_newScreenZones; // New zones generated this frame
     std::vector<KeyboardShortcut*> m_keyboardShortcuts; // Keyboard shortcuts to screenzones
     int m_currentScreenZone;
     int m_currentMouseScreenZone;
@@ -37,7 +43,7 @@ class TaskManagerInterfaceIcons : public TaskManagerInterface
   public:
     int m_currentQuickUnit;
     int m_quickUnitDirection;
-    std::vector<QuickUnitButton*> m_quickUnitButtons;
+    std::vector<std::unique_ptr<QuickUnitButton>> m_quickUnitButtons;
 
   protected:
     void AdvanceScrolling();

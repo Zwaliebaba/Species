@@ -507,23 +507,97 @@ tasks:
       - GameLogic/LevelFile.cpp
       - GameLogic/LevelFile.h
       - GameLogic/Explosion.cpp
+      - GameLogic/Explosion.h
       - Species/TaskManagerInterfaceIcons.cpp
-      - GameLogic/GlobalWorld.cpp
+      - Species/TaskManagerInterfaceIcons.h
       - GameLogic/RoutingSystem.cpp
+      - GameLogic/RoutingSystem.h
       - GameLogic/TaskManager.cpp
+      - GameLogic/TaskManager.h
       - Species/GameCursor.cpp
+      - Species/GameCursor.h
+      # No ownership below this line: these observe a converted member and
+      # were not in the list until the task ran. See notes.
+      - GameLogic/Location.cpp
+      - GameLogic/Citizen.cpp
+      - GameLogic/Entity.cpp
+      - GameLogic/Unit.cpp
+      - GameLogic/Teleport.cpp
+      - GameLogic/Ai.cpp
+      - GameLogic/CameraMountWindow.cpp
+      - GameLogic/CameraAnimWindow.cpp
+      - GameLogic/InstantUnitWindow.cpp
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/BuildingsWindow.cpp
+      - GameLogic/TreeWindow.cpp
+      - Species/LocationEditor.cpp
+      - Species/TaskManagerInterface.cpp
+      - Species/Camera.cpp
+      - Species/Script.cpp
     acceptance:
       - grep -wE "EmptyAndDelete|SAFE_DELETE" over the listed files returns nothing
+      - No raw owning new or delete remains in the twelve owning files; observers stay raw and say .get()
     verify:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: true
-    notes: >
+    status: done
+    notes: |
       Paths shown pre-move. layering-inversion T15 relocates LevelFile,
       Explosion, GlobalWorld and RoutingSystem into GameLogic and rewrites
       this list as part of its own acceptance; containers-replaced T12 and
       T13, which gate this task, already wait on that move.
-    status: in_progress
+
+      DONE 2026-08-05, AND SPLIT ON THE WAY. GlobalWorld.cpp came out into T11
+      rather than being rushed onto the end of an already-large diff;
+      everything else in the original list is converted. Same move strings/T8
+      made when it became T8 + T19, for the same reason.
+
+      THE OWNER CHOSE THE INTENT OVER THE ACCEPTANCE LINE when asked, and the
+      distinction was real. Two of the eight declared files -- LevelFile.cpp/.h
+      and GlobalWorld.cpp -- carry ZERO EmptyAndDelete or SAFE_DELETE, so the
+      old acceptance grep was already satisfied for them. What they carry is
+      raw new/delete: 47 and 38 respectively. Following the grep would have
+      closed this task having converted neither.
+
+      THE FILE LIST WAS EIGHT AND THE REACH IS TWENTY-SEVEN. Twelve files hold
+      no ownership at all and appear only because they OBSERVE a converted
+      member -- Location.cpp walking m_levelFile->m_buildings, Camera.cpp
+      indexing m_cameraMounts, Script.cpp taking a camera animation. This is
+      the blast-radius lesson T1's notes already record ("changing a member's
+      type makes the blast radius EVERY mention of that member"), and it cost
+      the same again: a file list is written from where ownership LIVES, and
+      the work is wherever the member is NAMED.
+
+      m_buildings MEANS FOUR DIFFERENT THINGS, which is why check_containers.py
+      skips the name. LevelFile::m_buildings (converted here) has 10 external
+      uses; Location::m_buildings is a FastSlotMap with 117 and is NOT this
+      task; GlobalWorld::m_buildings is T11's; ObstructionGrid::m_buildings is
+      a vector<int>. A name-based sweep would have converted the simulation's
+      live building list, whose SlotMap indices are network identity.
+
+      TWO SIGNATURES TOOK OWNERSHIP, following T9's precedent:
+      TaskManager::RunTask and RegisterTask now take std::unique_ptr<Task>.
+      THAT FIXES A LEAK AND IS STATED AS A FIX rather than as part of the
+      conversion: both returned false without taking the task when at
+      capacity, and every caller passed a bare `new Task()`, so a task that
+      failed to register leaked. It now dies with the parameter.
+
+      TWO USE-AFTER-MOVE BUGS WERE INTRODUCED AND CAUGHT before commit, both in
+      TaskManagerInterfaceIcons.cpp: the raw code set zone->m_scrollZone AFTER
+      push_back(zone), which is harmless with a raw pointer and undefined with
+      a moved-from unique_ptr. The assignment moved above the transfer. A scan
+      for "member used after std::move of the same local" over every changed
+      file found no others, and is worth re-running on T11.
+
+      DETERMINISM: every erase-then-delete pair became a plain erase, which
+      destroys at the same statement. Explosion.cpp is the sync-relevant one
+      and its Advance loop destroys on exactly the tick it did before.
+
+      NOT COMPILED. No MSVC here. The seven Python checks pass; nothing in this
+      diff has been through a compiler, and a 27-file type change is exactly
+      the shape where that matters. The diff is net NEGATIVE (-9 lines), which
+      T1's notes name as the right signal for a stage-5 conversion.
 
   - id: T6
     title: Make App own its subsystems with unique_ptr
@@ -558,7 +632,7 @@ tasks:
       With zero users, the macros leave NeuronCore.h, and with them the
       invitation to write new legacy-style ownership. Closes stage 5.
     project: NeuronCore
-    depends_on: [T1, T2, T3, T4, T5, T6, T10]
+    depends_on: [T1, T2, T3, T4, T5, T6, T10, T11]
     files:
       - NeuronCore/NeuronCore.h
     acceptance:
@@ -801,3 +875,50 @@ tasks:
       NeuronClientTests gains five tests that have never been run. See T20 for
       what they cover.
 
+  - id: T11
+    title: Adopt unique_ptr in GlobalWorld
+    intent: >
+      The half of T5 that was split out rather than rushed. GlobalWorld owns
+      its locations, buildings and events through raw vectors, and the three
+      global subsystems -- GlobalInternet, SphereWorld, GlobalResearch --
+      through raw members it deletes by hand. None of it is reachable from
+      Location::Advance, which is why it could be separated from the rest of
+      T5 without splitting a lifetime question in half.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/GlobalWorld.cpp
+      - GameLogic/GlobalWorld.h
+    acceptance:
+      - No raw owning new or delete remains in GlobalWorld.cpp; observers stay raw and say .get()
+      - m_locations, m_buildings and m_events are vectors of unique_ptr, and every file naming
+        one of them outside GlobalWorld.cpp is listed in notes with what it needed
+      - The three subsystem members are unique_ptr and the destructor does not delete them by hand
+      - A scan for a member used after std::move of the same local finds nothing
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+    notes: |
+      Split out of T5 on 2026-08-05, at the point T5 had converted its other
+      seven owning files and the diff had reached twenty-seven files. Nothing
+      technical blocks this; it was a reviewability decision.
+
+      MEASURED AT THAT COMMIT: 23 raw `new` and 19 raw `delete` in
+      GlobalWorld.cpp. Five owning vectors -- m_locations, m_buildings and
+      m_events on GlobalWorld, plus m_conditions and m_actions on GlobalEvent
+      -- and three raw subsystem members deleted in the destructor. The
+      TextFileReader and FileWriter locals are the same scoped-resource shape
+      T5 converted in LevelFile.cpp; copy that.
+
+      GlobalWorld::m_buildings IS NOT LevelFile::m_buildings AND IS NOT
+      Location::m_buildings. Four members share that name and
+      check_containers.py skips it for exactly this reason. Location's is a
+      FastSlotMap whose indices are network identity and must not be touched.
+
+      READ T5's NOTES BEFORE STARTING. Two use-after-move bugs were introduced
+      and caught there by a scan for "member used after std::move of the same
+      local"; the same scan belongs in this task's verification, and its
+      acceptance says so.

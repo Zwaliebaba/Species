@@ -59,7 +59,7 @@ class TreeButton : public SpeciesButton
         newBuilding->Initialise(building);
         newBuilding->SetDetail(g_prefsManager->GetInt("RenderBuildingDetail", 1));
         newBuilding->m_id.SetUniqueId(g_globalWorld->GenerateBuildingId());
-        g_location->m_levelFile->m_buildings.push_back(newBuilding);
+        g_location->m_levelFile->m_buildings.push_back(std::unique_ptr<Building>(newBuilding));
 
         speciesSeedRandom(time(nullptr));
         Tree* newTree = (Tree*)newBuilding;

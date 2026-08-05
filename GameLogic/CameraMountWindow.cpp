@@ -33,7 +33,7 @@ class NewMountButton : public SpeciesButton
       mount->m_up = g_camera->GetUp();
       mount->m_name = std::format("blah{}", speciesRandom());
 
-      g_location->m_levelFile->m_cameraMounts.push_back(mount);
+      g_location->m_levelFile->m_cameraMounts.push_back(std::unique_ptr<CameraMount>(mount));
 
       EclWindow* parent = m_parent;
       parent->Remove();
@@ -59,7 +59,7 @@ class GotoMountButton : public SpeciesButton
     {
       for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
       {
-        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
+        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
         if (stricmp(mount->m_name.c_str(), m_mountName->c_str()) == 0)
         {
           g_camera->SetTarget(mount->m_pos, mount->m_front, mount->m_up);
@@ -90,7 +90,7 @@ class DeleteMountButton : public SpeciesButton
     {
       for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
       {
-        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
+        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
         if (stricmp(mount->m_name.c_str(), m_mountName->c_str()) == 0)
         {
           g_location->m_levelFile->m_cameraMounts.erase(g_location->m_levelFile->m_cameraMounts.begin() + i);
@@ -126,7 +126,7 @@ class UpdateMountButton : public SpeciesButton
     {
       for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
       {
-        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
+        CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
         if (stricmp(mount->m_name.c_str(), m_mountName->c_str()) == 0)
         {
           mount->m_pos = g_camera->GetPos();
@@ -175,7 +175,7 @@ void CameraMountEditWindow::Create()
 
   for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
   {
-    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
+    CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i].get();
 
     // The button label was formatted into a char[64] from a label plus a name
     // of up to 63 characters, so a long mount name ran off the end of it

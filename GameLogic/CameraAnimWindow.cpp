@@ -31,7 +31,7 @@ class NewAnimButton : public SpeciesButton
     {
       CameraAnimation* anim = new CameraAnimation;
       anim->m_name = std::format("CamAnim{}", speciesRandom() & 0x3ff);
-      g_location->m_levelFile->m_cameraAnimations.push_back(anim);
+      g_location->m_levelFile->m_cameraAnimations.push_back(std::unique_ptr<CameraAnimation>(anim));
 
       CameraAnimMainEditWindow* parent = (CameraAnimMainEditWindow*)m_parent;
       parent->RemoveButtons();
@@ -45,12 +45,12 @@ class DeleteAnimButton : public SpeciesButton
   public:
     void MouseUp()
     {
-      std::vector<CameraAnimation*>* anims = &g_location->m_levelFile->m_cameraAnimations;
+      auto* anims = &g_location->m_levelFile->m_cameraAnimations;
       for (int i = 0; i < static_cast<int>(anims->size()); ++i)
       {
         if (stricmp((*anims)[i]->m_name.c_str(), m_name) == 0)
         {
-          delete (*anims)[i];
+          // The erase destroys it.
           anims->erase(anims->begin() + i);
           break;
         }
@@ -118,7 +118,7 @@ void CameraAnimMainEditWindow::AddButtons()
 
   height += 10;
 
-  for (CameraAnimation* anim : g_location->m_levelFile->m_cameraAnimations)
+  for (auto const& anim : g_location->m_levelFile->m_cameraAnimations)
   {
     // The label was built in a char[64] from a prefix plus a name of up to 63
     // characters, which overran it before ever reaching the 256-byte button

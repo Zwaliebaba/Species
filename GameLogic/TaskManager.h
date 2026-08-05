@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "Entity.h"
 #include "WorldObject.h"
 
@@ -26,7 +29,7 @@ class Task
     int m_state;
     WorldObjectId m_objId;
 
-    Route* m_route; // Only used when this is a Controller task
+    std::unique_ptr<Route> m_route; // Only used when this is a Controller task; owning
 
   public:
     Task();
@@ -74,7 +77,10 @@ class TaskTargetArea
 class TaskManager
 {
   public:
-    std::vector<Task*> m_tasks;
+    // The task manager owns its tasks. RunTask and RegisterTask take that
+    // ownership in their signatures, so a task that fails to register is
+    // destroyed rather than leaked.
+    std::vector<std::unique_ptr<Task>> m_tasks;
 
     int m_nextTaskId;
     int m_currentTaskId;
@@ -89,9 +95,9 @@ class TaskManager
     int Capacity();
     int CapacityUsed();
 
-    bool RunTask(Task* _task); // Starts the task, registers it
+    bool RunTask(std::unique_ptr<Task> _task); // Starts the task, registers it; takes ownership either way
     bool RunTask(int _type);
-    bool RegisterTask(Task* _task); // Assumes task is already started, just registers it
+    bool RegisterTask(std::unique_ptr<Task> _task); // Assumes task is already started; takes ownership either way
 
     int MapGestureToTask(int _gestureId); // Maps a gesture to a task type
 

@@ -119,11 +119,11 @@ class DeleteInstantUnitButton : public SpeciesButton
       }
       else
       {
-        std::vector<InstantUnit*>& units = g_location->m_levelFile->m_instantUnits;
+        auto& units = g_location->m_levelFile->m_instantUnits;
         const int selectionId = g_locationEditor->GetSelectionId();
         if (selectionId >= 0 && selectionId < static_cast<int>(units.size()))
         {
-          delete units[selectionId];
+          // The erase destroys it; it used to be deleted first and then erased.
           units.erase(units.begin() + selectionId);
         }
         EclRemoveWindow(LANGUAGEPHRASE("editor_instantuniteditor"));
@@ -225,7 +225,7 @@ class CreateButton : public SpeciesButton
           iu->m_type = i;
           iu->m_inAUnit = false;
           g_locationEditor->SetSelectionId(static_cast<int>(g_location->m_levelFile->m_instantUnits.size()));
-          g_location->m_levelFile->m_instantUnits.push_back(iu);
+          g_location->m_levelFile->m_instantUnits.push_back(std::unique_ptr<InstantUnit>(iu));
 
           // Create an edit window for the new instant unit
           EclWindow* cw = EclGetWindow(LANGUAGEPHRASE("editor_instantunits"));

@@ -313,7 +313,7 @@ class ScaleLandscapeButton : public SpeciesButton
       //
       // Buildings
 
-      for (Building* building : levelFile->m_buildings)
+      for (auto const& building : levelFile->m_buildings)
       {
         building->m_pos.x *= m_scaleFactor;
         building->m_pos.z *= m_scaleFactor;
@@ -324,7 +324,7 @@ class ScaleLandscapeButton : public SpeciesButton
 
       for (int i = 0; i < static_cast<int>(levelFile->m_instantUnits.size()); ++i)
       {
-        InstantUnit* unit = levelFile->m_instantUnits[i];
+        InstantUnit* unit = levelFile->m_instantUnits[i].get();
         unit->m_posX *= m_scaleFactor;
         unit->m_posZ *= m_scaleFactor;
         unit->m_spread *= m_scaleFactor;
@@ -335,7 +335,7 @@ class ScaleLandscapeButton : public SpeciesButton
 
       for (int i = 0; i < static_cast<int>(levelFile->m_cameraMounts.size()); ++i)
       {
-        CameraMount* mount = levelFile->m_cameraMounts[i];
+        CameraMount* mount = levelFile->m_cameraMounts[i].get();
         mount->m_pos.x *= m_scaleFactor;
         mount->m_pos.z *= m_scaleFactor;
       }

@@ -490,7 +490,7 @@ void Unit::FollowRoute()
     m_routeWayPointId = 0;
   }
 
-  WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId];
+  WayPoint* waypoint = route->m_wayPoints[m_routeWayPointId].get();
 
   m_wayPoint = waypoint->GetPos();
 
