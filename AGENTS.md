@@ -185,7 +185,11 @@ are `std::unique_ptr` and values, and all three legacy greps are at zero:
 definitions included.
 
 **Raw ownership is not extinct, and stage 5 ending does not claim it is.**
-Four things outlived the plan's scope, and NONE has an owning task:
+Four things outlived the plan's scope, and NONE has an owning task. A fifth was
+measured on 2026-08-05 while scoping Batch 6 and **does** have one:
+`EclButton::m_caption` and `m_tooltip` are `new char[]`/`delete[]` with a
+`strcpy` each, and `strings-modernised/T11` retires them along with the widget
+`char[N]` members. The four without an owner:
 
 ```
 SAFE_DELETE_ARRAY   2 callers in NeuronClient/Shape.cpp. The last of the
@@ -545,7 +549,12 @@ between them** — `strings-modernised` (5), `namespace-migration` (3) and
 `language-hygiene` (1).
 
 **Nothing is gated on the owner, and migration stage 5 is finished.** Every
-open task is startable by an agent today.
+open task is startable by an agent today — which is not the same as saying they
+can be started *at the same time*. **Batch 6 measured all five ready tasks and
+found exactly ONE disjoint pair**, `strings/T17` and `strings/T11`; the other
+nine pairs contest between three and fourteen files each. The wide, shallow
+ready sets that let three and four agents run at once are gone, because the
+isolated conversions went first.
 
 **But T6 is the one to be sceptical about.** Its acceptance asked for the game
 to reach the main menu after each of its four commits, and that check was NOT

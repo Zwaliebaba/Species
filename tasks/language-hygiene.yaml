@@ -888,8 +888,49 @@ tasks:
     parallel_safe: false
     status: todo
     notes: |
-      Split out of T9 on 2026-08-05. 473 use sites across 64 files, which is
-      why it is alone: that is more than one reviewable diff on its own.
+      Split out of T9 on 2026-08-05, sized at 473 use sites across 64 files,
+      which was the argument for it being alone in a batch.
+
+      THAT SIZE IS WRONG AND THE TASK IS SMALLER THAN IT LOOKS. Re-measured
+      2026-08-05 at 18d13ed while scoping Batch 6, by generating the
+      enumerator list from ControlTypes.inc rather than guessing at its shape
+      — 133 DEF_CONTROL_TYPE lines, so 133 `Control<X>` enumerators, plus
+      ControlNull, NumControlTypes, ControlType and controltype_t. Grepping
+      exactly those names:
+
+        267 lines / 298 occurrences, in 38 files
+        (was: 473 sites in 64 files)
+
+      Plus ControlTypes.inc itself, which spells no enumerator — it generates
+      them by token-pasting `Control##x` — so it is in the work and in no
+      grep. Biggest holders: TaskManagerInterfaceIcons.cpp 44, Camera.cpp 28,
+      ControlBindings.cpp 21, PrefsKeybindingsWindow.cpp 19, LocationEditor.cpp
+      17, ControlBindings.h 16.
+
+      WHERE THE EXTRA 175 CAME FROM, because it is a repeatable mistake rather
+      than a slip. A loose `\bControl[A-Z]\w*` grep returns 449 occurrences in
+      58 files, which is within rounding of the recorded 473/64. 186 of those
+      are not enumerators at all: ControlTower (45 — a BUILDING),
+      ControlHelpSystem (28), ControlMethod (27), ControlBindings (25),
+      ControlHelpAccess (14), ControlEventFunctor (13), ControlHelp (7). The
+      prefix that names this enum's members is also the prefix of a building
+      class and of a Species subsystem. GameLogic/ControlTower.* and
+      Species/ControlHelp.* are NOT in this task's reach, and a collision
+      analysis run off the loose number puts them there.
+
+      This is the same failure the tree keeps finding in the other direction:
+      language-hygiene/T12 was a false positive from a shared enumerator name,
+      and this is a false positive from a shared identifier PREFIX. Regenerate
+      the enumerator list from the .inc before believing any count here.
+
+      EVERY ONE OF THE 267 IS AN EDIT, even though most are not errors. The
+      enumerators are unscoped today, so `controlEvent(ControlSelectLocation)`
+      compiles; under `enum class ControlType` it must become
+      `ControlType::ControlSelectLocation`. controlEvent already takes a
+      ControlType (Input.h:38-39), so the parameter types need nothing — it is
+      the enumerator NAMES that all move. Reach and edit-count coincide here,
+      which is not usually true (strings/T18 reached nine files and needed
+      seven).
 
       THREE INTEGER BOUNDARIES TO DECIDE, all in ControlBindings.cpp and none
       of them a cast you can add without thinking:
@@ -899,6 +940,24 @@ tasks:
         - operator[] indexes `bindings[id]` with the enum directly.
         - the constructor does `memset(suppressed, 0, NumControlTypes)`.
       Neuron::I() is the intended spelling for the index and the size.
+
+      A FOURTH BOUNDARY THE SPLIT DID NOT NAME, and it is the one lh/T10 was
+      caught by. ControlBindings.h declares operator[], getIcon, bind,
+      setIcon and isAcceptibleInputType TWICE each — once on ControlType and
+      once on controltype_t, which is `typedef int`. Those overload pairs are
+      the same function under a scoped enum, because controltype_t stops being
+      a distinct type the moment the acceptance line "controltype_t names
+      ControlType or is gone" is met. Decide which of each pair survives
+      before converting, not after the redefinition errors arrive. And read
+      every `return` in the functions that RETURN one — lh/T10's two CI
+      failures were both `return -1;`, which names no enumerator and which no
+      sweep over enumerator names can see.
+
+      NOT DISJOINT FROM strings/T17: GlobalWorld.cpp (5 sites), Mine.cpp (1)
+      and Rocket.cpp (1) are on both. All seven are controlEvent calls and
+      none is a printf, so the collision is file-level rather than line-level
+      — but it is why this task is not in Batch 6 alongside T17. It also
+      contests nine files with strings/T11 and twelve with strings/T12.
 
   - id: T12
     title: Scope Camera::Mode
