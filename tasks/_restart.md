@@ -30,7 +30,7 @@ after which seven tasks landed — see *What the restart actually did*:
 |---|---|---|
 | `strings-modernised` | 5 of 16 | Stage 4. **T5 landed 2026-08-05** and with it the critical path; T8, T11 and T12 are all ready now. |
 | `ownership` | 5 of 9 | Stage 5. T4 became ready when T5 landed; T8 needs an ownership decision before it can start. |
-| `language-hygiene` | 1 of 9 | Only T9 — the four enums that `int` typedefs stand in for. |
+| `language-hygiene` | 3 of 12 | **T9 re-scoped 2026-08-05.** It was one task for four enums and ~900 sites; it is now T9 (InputCondition, done) plus T10, T11 and T12. `condition_t` turned out not to be an enum at all — see T9's notes. |
 | `namespace-migration` | 3 of 5 | Sequenced last by design. Untouched. |
 
 A fifth was added on 2026-08-03 and is not part of the modernisation:

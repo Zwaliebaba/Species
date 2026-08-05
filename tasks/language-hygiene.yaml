@@ -283,68 +283,76 @@ tasks:
       because a macro body is the one place a scoped enumerator is easy to miss.
 
   - id: T9
-    title: Convert the enums that int typedefs stand in for
+    title: Scope InputCondition, and settle what condition_t is
     intent: >
-      ControlType, InputType, InputCondition and — as of T5 — Camera::Mode are
-      the enums the old T4 could not have carried. Each has an `int` typedef used interchangeably with it
-      across the driver API — controltype_t, inputtype_t and condition_t — so
-      making the enum strong means deciding what those typedefs become, and
-      that is an API change to ControlBindings and InputDriver rather than a
-      keyword swap. InputType is additionally a BIT FIELD, so enum class costs
-      it the operators it is built on.
+      InputCondition is the default input driver's vocabulary for
+      InputSpec::condition. Scoping it makes that vocabulary a type and turns
+      every place it meets the driver-defined integer into a cast that says so.
+      The task also answers the question the old wording got wrong: condition_t
+      is NOT this enum and cannot become it.
     project: NeuronClient
     depends_on: [T4]
     files:
-      - NeuronClient/ControlTypes.h
-      - NeuronClient/InputTypes.h
-      - NeuronClient/InputSpec.h
       - NeuronClient/InputDriver.h
-      - NeuronClient/ControlBindings.h
-      - NeuronClient/ControlBindings.cpp
-      - NeuronClient/Input.h
-      - NeuronClient/Input.cpp
+      - NeuronClient/InputDriver.cpp
       - NeuronClient/InputDriverWin32.cpp
-      - NeuronClient/CameraAccess.h
-      - Species/Camera.h
-      - Species/Camera.cpp
+      - NeuronClient/InputSpec.h
     acceptance:
-      - The three enums are enum class with an explicit underlying type
-      - controltype_t, inputtype_t and condition_t either name the enum type or are gone; no signature takes a bare int where an enumerator is meant
-      - InputType's bitwise operators are defined on the enum class rather than reached through a cast, and INPUT_TYPE_1D still implies ANALOG
-      - The 421 Control* and 216 INPUT_TYPE_* use sites compile without a C-style cast, except at the ControlTypes.inc table boundary, which is listed in notes
+      - InputCondition is enum class with an explicit underlying type
+      - condition_t stays an int, with the reason written at the typedef
+      - No use of a COND_ enumerator is unqualified, and every conversion to or from InputSpec::condition is an explicit cast
+      - The two defects in the condition lookup are recorded, not fixed
     verify:
       - python3 tools/check_layering.py
+      - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
-      - Owner runs the Garden smoke test — every step needs input to work at all
-    parallel_safe: false
-    status: in_progress
+    parallel_safe: true
+    status: done
     notes: |
-      Split out of T4 on 2026-08-03, measured at fdf9421 before either was
-      started. The three things that make this its own task, none of which the
-      original T4 mentions:
+      Split out of T4 on 2026-08-03. RE-SCOPED 2026-08-05, from four enums down
+      to one, and the other three are now T10, T11 and T12. What forced that is
+      below; the short version is that the old task was four independent
+      conversions and about 900 use sites wearing one number, and one of its
+      four acceptance criteria was wrong.
 
-      (1) THE INT TYPEDEFS. InputSpec.h has `typedef int inputtype_t` and
-      `typedef int condition_t`, ControlTypes.h has `typedef int
-      controltype_t`, and 46 sites use them where the enum is meant —
-      ControlBindings::getControlID RETURNS controltype_t, operator[] and bind
-      TAKE it. Converting the enum without deciding what these become leaves an
-      implicit conversion the enum class was supposed to remove.
+      condition_t CANNOT NAME AN ENUM, which is the finding. The old acceptance
+      asked that controltype_t, inputtype_t and condition_t "either name the
+      enum type or are gone". InputSpec::condition is driver-defined, and three
+      drivers put three unrelated things in it:
+        - the default driver writes InputCondition's enumerators;
+        - InputDriverPrefs.cpp writes its own anonymous {COND_TRUE, COND_FALSE};
+        - IdleInputDriver::getConditionID does `str >> num` on the binding
+          string and returns the NUMBER, which getInput then compares against
+          an idle time in milliseconds.
+      Naming any one of those in the field is wrong for the other two. This is
+      the shape the plan's own restart note warned about — surveying integer
+      interop by variable NAME rather than by what is actually stored — and it
+      is what cost four red builds on the earlier enum tasks. Found by reading
+      the three drivers rather than by grepping condition_t.
 
-      (2) INPUT_TYPE_* IS A BIT FIELD, which the enumerator values say out
-      loud: FAIL 0, BOOL 1, ANALOG 2, 1D 6, 2D 10, ANY 15 — 1D and 2D both
-      carry ANALOG's bit, and ControlBindings.cpp:52-53 tests and ORs them.
-      enum class has no bitwise operators, so this needs them defined or it
-      needs to stay a plain enum with a documented reason. That is a design
-      decision, not a conversion.
+      TWO DEFECTS, PRESERVED AND COMMENTED WHERE THEY LIVE. Both predate this
+      task and neither is fixed here, per CODING_STANDARDS: a conversion commit
+      that also changes behaviour cannot be reviewed or reverted cleanly.
+        1. s_conditions holds eight entries and a terminator, but both lookups
+           bound the search with NumInputConditions, which is ten. An unmatched
+           name leaves i at 8, 8 < 10 passes, and the failure path reads the
+           TERMINATOR: getDefaultConditionID returns its cond (COND_DOWN, 0)
+           instead of -1.
+        2. Worse in getDefaultPrefsString, which on the same path assigns the
+           terminator's nullptr to a std::string. That is undefined behaviour,
+           not a wrong answer.
+      A malformed control binding in a preferences file reaches both. Whoever
+      fixes them owns deciding what the failure value should be, and the answer
+      is probably a real sentinel rather than -1 in an int.
 
-      (3) AN INTEGER LOOP OVER THE RANGE. Input.cpp:293 runs
-      `for (controltype_t i = 0; i < NumControlTypes; ++i)`. NeuronHelper.h's
-      ENUM_HELPER is what this plan's T5 points at for exactly this case.
+      The enumerators keep their COND_ prefix, matching InputMode and
+      InputParserState in the same two headers.
 
-      Also worth knowing before starting: ControlTypes.h builds its enumerators
-      by including ControlTypes.inc through a DEF_CONTROL_TYPE macro, so the
-      enumerator list is generated and the table in ControlTypes.cpp is keyed
-      to it positionally. The two must not drift.
+      Two NULLs went with the table's terminator; both were zero and both still
+      are, since INPUT_TYPE_FAIL and COND_DOWN are 0. One NULL is left in
+      NeuronClient, in ControlTypes.cpp, which T10 owns.
+
+      Not compiled here (Linux).
 
   - id: T5
     title: Convert the game-side enums to enum class
@@ -617,3 +625,133 @@ tasks:
       single player either.
     status: done
 
+  - id: T10
+    title: Scope InputType, the bit field
+    intent: >
+      InputType's enumerator values are bit flags — FAIL 0, BOOL 1, ANALOG 2,
+      1D 6, 2D 10, ANY 15 — and 1D and 2D both carry ANALOG's bit. Scoping it
+      costs the bitwise operators it is built on, so this task is the decision
+      about how it keeps them, not a keyword swap. inputtype_t is a genuine
+      alias for it, unlike condition_t, and goes.
+    project: NeuronClient
+    depends_on: [T9]
+    files:
+      - NeuronClient/InputTypes.h
+      - NeuronClient/InputSpec.h
+      - NeuronClient/InputDriver.h
+      - NeuronClient/InputDriver.cpp
+      - NeuronClient/ControlBindings.h
+      - NeuronClient/ControlBindings.cpp
+      - NeuronClient/ControlTypes.cpp
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/InputDriverSimple.cpp
+      - NeuronClient/InputDriverIdle.cpp
+      - NeuronClient/InputDriverPrefs.cpp
+    acceptance:
+      - InputType is enum class with an explicit underlying type
+      - Neuron::ENUM_HELPER supplies its bitwise operators, or the task records why a plain enum was kept instead
+      - INPUT_TYPE_1D and INPUT_TYPE_2D still each carry INPUT_TYPE_ANALOG's bit, and ControlBindings::isAcceptibleInputType still ORs INPUT_TYPE_1D into a BOOL binding
+      - inputtype_t names InputType or is gone
+      - The 216 INPUT_TYPE_ use sites compile without a C-style cast, except where the task lists an integer boundary and says why
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+    notes: |
+      Split out of T9 on 2026-08-05. 216 use sites across 19 files.
+
+      ENUM_HELPER IS UNUSED TODAY. NeuronCore/NeuronHelper.h defines it — ++,
+      --, the six bitwise operators, SizeOfT() and an iterable RangeT — and
+      nothing in the tree instantiates it. This task and T11 would be its first
+      two users, so expect to debug the macro itself rather than only the
+      conversion. Its operators are constexpr and take T by value, which is
+      what InputType needs.
+
+      ControlTypes.cpp IS DEAD AND BROKEN, and this task is where that has to
+      be dealt with because it is the file's InputType column that stops
+      compiling. The whole file is one static ControlAction s_actions[] that
+      NOTHING references — the real table is in ControlBindings.cpp — and its
+      macro is `#define DEF_CONTROL_TYPE(x,y) "x", y,`, which produces the
+      literal two-character string "x" for every entry rather than
+      stringifying the name. ControlBindings.cpp gets it right with {#name,
+      type}. The dead copy is also brace-elided and terminated with
+      `nullptr, NULL`, which is the last NULL in NeuronClient. It is compiled:
+      NeuronClient.vcxproj lists it. Deleting the file is almost certainly
+      right, and it is a file removal rather than a conversion, so do it in its
+      own commit with check_project_files.py run after.
+
+  - id: T11
+    title: Scope ControlType
+    intent: >
+      The largest of the four and the one with the generated enumerator list.
+      ControlTypes.h builds its enumerators by including ControlTypes.inc
+      through a DEF_CONTROL_TYPE macro, and ControlBindings.cpp's action table
+      is keyed to that list positionally, so the two must not drift.
+    project: NeuronClient
+    depends_on: [T10]
+    files:
+      - NeuronClient/ControlTypes.h
+      - NeuronClient/ControlTypes.inc
+      - NeuronClient/ControlBindings.h
+      - NeuronClient/ControlBindings.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+    acceptance:
+      - ControlType is enum class with an explicit underlying type
+      - controltype_t names ControlType or is gone
+      - The generated enumerator list and ControlBindings.cpp's table still agree positionally, checked by an assertion or a test rather than by eye
+      - Input.cpp's integer loop over the range uses Neuron::ENUM_HELPER's range rather than an int
+      - The 473 Control use sites compile without a C-style cast, except at the boundaries the task lists
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: false
+    status: todo
+    notes: |
+      Split out of T9 on 2026-08-05. 473 use sites across 64 files, which is
+      why it is alone: that is more than one reviewable diff on its own.
+
+      THREE INTEGER BOUNDARIES TO DECIDE, all in ControlBindings.cpp and none
+      of them a cast you can add without thinking:
+        - getControlID RETURNS -1 for an unknown name. Same shape as the
+          condition lookup T9 recorded, and it has the same off-by-one smell:
+          check whether i can land on the terminator and pass the bound.
+        - operator[] indexes `bindings[id]` with the enum directly.
+        - the constructor does `memset(suppressed, 0, NumControlTypes)`.
+      Neuron::I() is the intended spelling for the index and the size.
+
+  - id: T12
+    title: Scope Camera::Mode
+    intent: >
+      The one enum of the four outside NeuronClient. It is declared on
+      CameraAccess so that code below Species can name a mode, so scoping it
+      changes a header two layers can see.
+    project: Species
+    depends_on: []
+    files:
+      - NeuronClient/CameraAccess.h
+      - Species/Camera.h
+      - Species/Camera.cpp
+    acceptance:
+      - Camera::Mode is enum class with an explicit underlying type
+      - The 106 Mode use sites compile without a C-style cast, except at the boundaries the task lists
+      - Nothing below Species names a mode through an int
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+    notes: |
+      Split out of T9 on 2026-08-05. 106 use sites across 19 files.
+
+      Reassigned to T9 from T5 on 2026-08-03 and now to its own node: it is in
+      a different project from the other three and shares no file with them, so
+      it can run at any time and in parallel with T10 and T11.
+
+      layering-inversion moved the enumerators onto CameraAccess and Camera
+      inherits them, so `Camera::ModeFreeMovement` resolves through the base.
+      Scoping changes that spelling everywhere, including in GameLogic.
