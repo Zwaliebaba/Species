@@ -47,25 +47,31 @@
 
 static char const* g_transitionModeNames[] = {"Move", "Cut"};
 
+// The table is indexed BY the enum, so a transition added without a name here
+// would read off the end of it. Checked rather than trusted, because both the
+// parse and the editor's drop-down index this array.
+static_assert(sizeof(g_transitionModeNames) / sizeof(g_transitionModeNames[0]) == Neuron::I(CamAnimNode::Transition::TransitionNumModes),
+              "g_transitionModeNames needs one name per CamAnimNode::Transition");
 
-int CamAnimNode::GetTransitModeId(char const* _word)
+
+std::optional<CamAnimNode::Transition> CamAnimNode::GetTransitModeId(char const* _word)
 {
-  for (int i = 0; i < TransitionNumModes; ++i)
+  for (int i = 0; i < static_cast<int>(Neuron::I(Transition::TransitionNumModes)); ++i)
   {
     if (stricmp(_word, g_transitionModeNames[i]) == 0)
     {
-      return i;
+      return static_cast<Transition>(i);
     }
   }
 
-  return -1;
+  return std::nullopt;
 }
 
 
-char const* CamAnimNode::GetTransitModeName(int _modeId)
+char const* CamAnimNode::GetTransitModeName(Transition _mode)
 {
-  DEBUG_ASSERT(_modeId >= 0 && _modeId < TransitionNumModes);
-  return g_transitionModeNames[_modeId];
+  DEBUG_ASSERT(_mode >= Transition::TransitionMove && _mode < Transition::TransitionNumModes);
+  return g_transitionModeNames[Neuron::I(_mode)];
 }
 
 
@@ -271,9 +277,9 @@ void LevelFile::ParseCameraAnims(TextReader* _in)
       CamAnimNode* node = nodeOwned.get();
 
       // Read camera mode
-      node->m_transitionMode = CamAnimNode::GetTransitModeId(word);
-      ASSERT_TEXT(node->m_transitionMode >= 0 && node->m_transitionMode < static_cast<int>(Neuron::I(CameraAccess::Mode::ModeNumModes)),
-                  "Bad camera animation camera mode in level file {}", m_missionFilename);
+      std::optional<CamAnimNode::Transition> transitionMode = CamAnimNode::GetTransitModeId(word);
+      ASSERT_TEXT(transitionMode.has_value(), "Bad camera animation camera mode in level file {}", m_missionFilename);
+      node->m_transitionMode = *transitionMode;
 
 
       word = _in->GetNextToken();

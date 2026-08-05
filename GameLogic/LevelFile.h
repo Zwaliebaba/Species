@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include "NeuronMath.h"
@@ -37,21 +38,31 @@ class CameraMount
 class CamAnimNode
 {
   public:
-    enum
+    // Scoped by language-hygiene T13. This enum was anonymous and
+    // m_transitionMode was an int, which is how LevelFile.cpp came to bound a
+    // parsed transition against CameraAccess::Mode::ModeNumModes -- sixteen,
+    // for a two-valued enum. Naming the type is what makes that comparison
+    // stop compiling rather than stop being noticed.
+    //
+    // The values are pinned. A level file stores a transition by NAME, so the
+    // file format does not depend on them; the editor's drop-down does,
+    // because DropDownMenu::AddOption assigns option values 0, 1, ... in
+    // declaration order and writes the selected one straight back here.
+    enum class Transition : int
     {
-      TransitionMove,
-      TransitionCut,
+      TransitionMove = 0,
+      TransitionCut = 1,
       TransitionNumModes
     };
 
-    int m_transitionMode;
+    Transition m_transitionMode;
     char* m_mountName;
     float m_duration;
 
   public:
     CamAnimNode()
-      : m_mountName(nullptr),
-        m_transitionMode(CamAnimNode::TransitionMove),
+      : m_transitionMode(Transition::TransitionMove),
+        m_mountName(nullptr),
         m_duration(1.0f)
     {
     }
@@ -62,8 +73,12 @@ class CamAnimNode
       m_mountName = nullptr;
     }
 
-    static int GetTransitModeId(char const* _word);
-    static char const* GetTransitModeName(int _modeId);
+    // Answers nullopt for a word that names no transition. This used to be a
+    // -1 sentinel in an int, which is exactly what let the caller check it
+    // against the wrong enum's bound; there is no numeric bound to get wrong
+    // now, and the caller cannot forget to test it.
+    static std::optional<Transition> GetTransitModeId(char const* _word);
+    static char const* GetTransitModeName(Transition _mode);
 };
 
 

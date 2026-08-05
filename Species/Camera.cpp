@@ -2079,9 +2079,9 @@ void Camera::AdvanceAnim()
   {
     switch (node->m_transitionMode)
     {
-    case CamAnimNode::TransitionMove:
+    case CamAnimNode::Transition::TransitionMove:
       break;
-    case CamAnimNode::TransitionCut:
+    case CamAnimNode::Transition::TransitionCut:
       CutToTarget();
       break;
     }
@@ -2095,11 +2095,11 @@ void Camera::AdvanceAnim()
 
       switch (node->m_transitionMode)
       {
-      case CamAnimNode::TransitionMove:
+      case CamAnimNode::Transition::TransitionMove:
         RequestMode(Mode::ModeMoveToTarget);
         SetMoveDuration(node->m_duration);
         break;
-      case CamAnimNode::TransitionCut:
+      case CamAnimNode::Transition::TransitionCut:
         RequestMode(Mode::ModeDoNothing);
         break;
       }
@@ -2502,11 +2502,11 @@ void Camera::PlayAnimation(CameraAnimation* _anim)
 
   switch (node->m_transitionMode)
   {
-  case CamAnimNode::TransitionMove:
+  case CamAnimNode::Transition::TransitionMove:
     RequestMode(Mode::ModeMoveToTarget);
     SetMoveDuration(node->m_duration);
     break;
-  case CamAnimNode::TransitionCut:
+  case CamAnimNode::Transition::TransitionCut:
     RequestMode(Mode::ModeDoNothing);
     break;
   }

@@ -321,12 +321,14 @@ void CameraAnimSecondaryEditWindow::AddButtons()
 
       DropDownMenu* modeBut = new DropDownMenu();
       modeBut->SetShortProperties("Mode", x, height, 60);
-      modeBut->RegisterInt(&node->m_transitionMode);
-      for (int i = 0; i < CamAnimNode::TransitionNumModes; ++i)
+      // Options are added in enumerator order and AddOption numbers them from
+      // zero, so an option's value IS its Transition. RegisterEnum relies on
+      // that, and so did RegisterInt before it.
+      for (int i = 0; i < static_cast<int>(Neuron::I(CamAnimNode::Transition::TransitionNumModes)); ++i)
       {
-        modeBut->AddOption(CamAnimNode::GetTransitModeName(i));
+        modeBut->AddOption(CamAnimNode::GetTransitModeName(static_cast<CamAnimNode::Transition>(i)));
       }
-      modeBut->SelectOption(node->m_transitionMode);
+      modeBut->RegisterEnum(&node->m_transitionMode);
       x += 70;
       CopyInto(modeBut->m_name, std::format("mode:{}", node->m_mountName));
       RegisterButton(modeBut);
