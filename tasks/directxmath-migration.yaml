@@ -1974,8 +1974,8 @@ tasks:
       when picking this up.
 
       STILL LEGACY: Weapons (103 occurrences), Rocket (77), Spam (36),
-      Airstrike (29), Explosion (27), TaskManager (21), Flag (17), Spirit (4).
-      329 in total when this started, of which 15 are done.
+      Airstrike (29), TaskManager (21), Flag (17), Spirit (4). 329 in total
+      when this started, of which 42 are done — ParticleSystem and Explosion.
 
       WHAT PARTICLESYSTEM COST, so the next eight are cheaper:
         - Particle's constructor assigns nothing, so m_pos and m_vel needed
