@@ -57,7 +57,7 @@ DirectX::XMFLOAT3 PowerBuilding::GetPowerLocation()
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
-  return m_powerLocation->GetWorldMatrix(rootMat).pos;
+  return m_powerLocation->GetWorldPosition(rootMat);
 }
 
 
@@ -359,16 +359,32 @@ void Generator::Render(float _predictionTime)
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- so the
   // counter's own basis stays legacy here and converts when that seam closes.
-  Matrix34 counterMat = m_counter->GetWorldMatrix(generatorMat);
+  DirectX::XMFLOAT4X4 counterMat = m_counter->GetWorldMatrix(generatorMat);
 
   glColor4f(0.6f, 0.8f, 0.9f, 1.0f);
-  g_gameFont.DrawText3D(counterMat.pos, counterMat.f, counterMat.u, 7.0f, "%d", int(m_throughput * 10.0f));
-  counterMat.pos += counterMat.f * 0.1f;
-  counterMat.pos += (counterMat.f ^ counterMat.u) * 0.2f;
-  counterMat.pos += counterMat.u * 0.2f;
+  g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
+                        DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
+                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "%d", int(m_throughput * 10.0f));
+  // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
+  // operator^ was the cross product, and front x up is the RIGHT vector -- the
+  // opposite hand from GetRight()'s up x front, which is why it is spelled out
+  // in this order rather than reached for from elsewhere.
+  {
+    DirectX::XMVECTOR const front = DirectX::XMVectorSet(counterMat._31, counterMat._32, counterMat._33, 0.0f);
+    DirectX::XMVECTOR const up = DirectX::XMVectorSet(counterMat._21, counterMat._22, counterMat._23, 0.0f);
+    DirectX::XMVECTOR pos = DirectX::XMVectorSet(counterMat._41, counterMat._42, counterMat._43, 0.0f);
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, 0.1f));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(DirectX::XMVector3Cross(front, up), 0.2f));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(up, 0.2f));
+    counterMat._41 = DirectX::XMVectorGetX(pos);
+    counterMat._42 = DirectX::XMVectorGetY(pos);
+    counterMat._43 = DirectX::XMVectorGetZ(pos);
+  }
   g_gameFont.SetRenderShadow(true);
   glColor4f(0.6f, 0.8f, 0.9f, 0.0f);
-  g_gameFont.DrawText3D(counterMat.pos, counterMat.f, counterMat.u, 7.0f, "%d", int(m_throughput * 10.0f));
+  g_gameFont.DrawText3D(DirectX::XMFLOAT3(counterMat._41, counterMat._42, counterMat._43),
+                        DirectX::XMFLOAT3(counterMat._31, counterMat._32, counterMat._33),
+                        DirectX::XMFLOAT3(counterMat._21, counterMat._22, counterMat._23), 7.0f, "%d", int(m_throughput * 10.0f));
   g_gameFont.SetRenderShadow(false);
 }
 
@@ -595,7 +611,7 @@ void SolarPanel::RenderPorts()
     DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const statusPos = m_statusMarkers[i]->GetWorldMatrix(rootMat).pos;
+    DirectX::XMFLOAT3 const statusPos = m_statusMarkers[i]->GetWorldPosition(rootMat);
 
 
     //
@@ -675,17 +691,20 @@ void SolarPanel::RenderAlphas(float _predictionTime)
       // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
       // this block wants the marker's whole basis, not just its position, so it
       // stays legacy until that seam closes.
-      Matrix34 thisGlow = m_glowMarker[i]->GetWorldMatrix(mat);
+      DirectX::XMFLOAT4X4 thisGlow = m_glowMarker[i]->GetWorldMatrix(mat);
+      DirectX::XMVECTOR const glowPos = DirectX::XMVectorSet(thisGlow._41, thisGlow._42, thisGlow._43, 0.0f);
+      DirectX::XMVECTOR const glowRight = DirectX::XMVectorScale(DirectX::XMVectorSet(thisGlow._11, thisGlow._12, thisGlow._13, 0.0f), glowHeight);
+      DirectX::XMVECTOR const glowFront = DirectX::XMVectorScale(DirectX::XMVectorSet(thisGlow._31, thisGlow._32, thisGlow._33, 0.0f), glowWidth);
 
       glBegin(GL_QUADS);
       glTexCoord2i(0, 0);
-      glVertex3fv((thisGlow.pos - thisGlow.r * glowHeight + thisGlow.f * glowWidth).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorSubtract(glowPos, glowRight), glowFront));
       glTexCoord2i(0, 1);
-      glVertex3fv((thisGlow.pos + thisGlow.r * glowHeight + thisGlow.f * glowWidth).GetData());
+      EmitVertex(DirectX::XMVectorAdd(DirectX::XMVectorAdd(glowPos, glowRight), glowFront));
       glTexCoord2i(1, 1);
-      glVertex3fv((thisGlow.pos + thisGlow.r * glowHeight - thisGlow.f * glowWidth).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorAdd(glowPos, glowRight), glowFront));
       glTexCoord2i(1, 0);
-      glVertex3fv((thisGlow.pos - thisGlow.r * glowHeight - thisGlow.f * glowWidth).GetData());
+      EmitVertex(DirectX::XMVectorSubtract(DirectX::XMVectorSubtract(glowPos, glowRight), glowFront));
       glEnd();
     }
 

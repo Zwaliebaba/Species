@@ -8,7 +8,6 @@
 #include "Debug.h"
 #include "FileWriter.h"
 #include "MathUtils.h"
-#include "Matrix34.h"
 #include "Resource.h"
 #include "Shape.h"
 #include "TextStreamReaders.h"
@@ -367,9 +366,9 @@ void Building::RenderLights()
       {
         ShapeMarker* marker = m_lights[i];
         DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
-        Matrix34 worldMat = marker->GetWorldMatrix(rootMat);
+        DirectX::XMFLOAT4X4 worldMat = marker->GetWorldMatrix(rootMat);
         // GetWorldMatrix on a ShapeMarker still returns Matrix34 -- T10's seam.
-        DirectX::XMFLOAT3 const lightPos = worldMat.pos;
+        DirectX::XMFLOAT3 const lightPos = DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
 
         float signalSize = 6.0f;
 
@@ -515,7 +514,7 @@ void Building::RenderPorts()
     DirectX::XMVECTOR const camR = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraRight), size);
     DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), size);
 
-    DirectX::XMFLOAT3 const statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 const statusPos = s_controlPadStatus->GetWorldPosition(mat);
 
     if (GetPortOccupant(i).IsValid())
       glColor4f(0.3f, 1.0f, 0.3f, 1.0f);

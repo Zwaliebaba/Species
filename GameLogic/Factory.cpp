@@ -51,7 +51,7 @@ void Factory::Initialise(Building* _template)
                            BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const markerPos = markerSpiritStore->GetWorldMatrix(rootTransform).pos;
+  DirectX::XMFLOAT3 const markerPos = markerSpiritStore->GetWorldPosition(rootTransform);
   DirectX::XMFLOAT3 const spiritStorePos(markerPos.x, markerPos.y + 11.0f, markerPos.z);
   m_spiritStore.Initialise(m_initialCapacity, 200, spiritStorePos, 5.0f, 10.0f, 5.0f);
 }

@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "SoundSources.h"
 #include "Resource.h"
-#include "Matrix34.h"
 #include "Shape.h"
 #include "HiResTime.h"
 #include "MathUtils.h"
@@ -33,8 +32,10 @@ Armour::Armour()
   m_markerEntrance = m_shape->m_rootFragment->LookupMarker("MarkerEntrance");
   m_markerFlag = m_shape->m_rootFragment->LookupMarker("MarkerFlag");
 
-  m_centrePos = m_shape->CalculateCentre(g_identityMatrix34);
-  m_radius = m_shape->CalculateRadius(g_identityMatrix34, m_centrePos);
+  DirectX::XMFLOAT4X4 identity; // was g_identityMatrix34
+  DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity());
+  m_centrePos = m_shape->CalculateCentre(identity);
+  m_radius = m_shape->CalculateRadius(identity, m_centrePos);
 }
 
 Armour::~Armour()
@@ -463,9 +464,9 @@ void Armour::GetEntrance(DirectX::XMFLOAT3& _exitPos, DirectX::XMFLOAT3& _exitDi
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  Matrix34 const entranceMat = m_markerEntrance->GetWorldMatrix(mat);
-  _exitPos = entranceMat.pos;
-  _exitDir = entranceMat.f;
+  DirectX::XMFLOAT4X4 const entranceMat = m_markerEntrance->GetWorldMatrix(mat);
+  _exitPos = DirectX::XMFLOAT3(entranceMat._41, entranceMat._42, entranceMat._43);
+  _exitDir = DirectX::XMFLOAT3(entranceMat._31, entranceMat._32, entranceMat._33);
 }
 
 void Armour::ListSoundEvents(std::vector<const char*>* _list)
@@ -594,7 +595,7 @@ void Armour::Render(float _predictionTime)
 
   float timeIndex = g_gameTime + m_id.GetUniqueId() * 10;
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const flagPos = m_markerFlag->GetWorldMatrix(bodyMat).pos;
+  DirectX::XMFLOAT3 const flagPos = m_markerFlag->GetWorldPosition(bodyMat);
   m_flag.SetPosition(flagPos);
 
   DirectX::XMFLOAT3 flagFront, flagUp;

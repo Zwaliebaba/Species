@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Debug.h"
-#include "Vector3.h"
 #include "TextRenderer.h"
 #include "MathUtils.h"
 #include "Preferences.h"

@@ -9,7 +9,6 @@
 #include "Profiler.h"
 #include "Resource.h"
 #include "Shape.h"
-#include "Vector2.h"
 
 #include "EntityLeg.h"
 #include "Tripod.h"

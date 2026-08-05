@@ -2867,8 +2867,55 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE. Vector2, Vector3, Matrix33 and Matrix34 are deleted from disk, from
+      NeuronCore.vcxproj and from its filters. 2,543 lines removed against 482
+      added, across 73 files.
+
+      FOUR THINGS HAD TO MOVE FIRST, and none of them was in this task's file
+      list -- which is the shape every wave-closing task in this plan has had:
+
+        ShapeMarker::GetWorldMatrix, the last deliberately-legacy signature in
+        the tree, with 75 call sites. Sixty-seven of them wanted `.pos` and
+        nothing else, so ShapeMarker gained GetWorldPosition and they call
+        that. The rest hold the matrix; two wanted `.f`. `check_math_types`
+        found 128 row accesses on the converted locals, which is exactly the
+        rule it was given in T16 after ShapeMarker's own uninitialised fourth
+        column shipped -- and it found every one of them.
+
+        The two legacy GLOBALS, kept BY NAME as native constants in
+        NeuronMath.h rather than deleted. Twenty-eight live sites pass
+        g_upVector or g_zeroVector straight into a parameter that takes
+        XMFLOAT3 storage, and DirectX::g_XMIdentityR1 and XMVectorZero() are
+        XMVECTORs, so they do not fit. This is what the acceptance criterion's
+        "or are native constants" was for. g_identityMatrix34 IS deleted: its
+        five callers each build XMMatrixIdentity locally.
+
+        Twenty-two &AsLegacy and AsLegacy calls that were no longer doing
+        anything -- Engineer, Citizen, Location and GlobalWorldEditorWindow
+        were passing a legacy view of native storage to a callee whose
+        signature had already converted underneath them.
+
+        Location::UpdateTeamControls' m_targetDir, the last live zero-length
+        fallback in the plan. It is REPRODUCED, not taken natively, and says so
+        at the site: a mouse position exactly on a unit's centre is reachable
+        and this is a simulation value.
+
+      WHAT THE TESTS COST. Twelve of NeuronMathTests' seventeen methods
+      compared a native result against the class it replaced, and a test that
+      cannot name its subject cannot be updated. They are deleted, and the file
+      says so at the top rather than leaving the next reader to wonder. Three
+      native-only tests replace them: the rows are right/up/front/position, a
+      transform is row-vector, and the front row is stored as given. Two of the
+      deleted ones -- the yaw/dive/roll composition order and the reversed
+      Matrix33 product -- caught readings that compiled and were wrong, which
+      is the argument for having written them.
+
+      THE COMMENTS WENT WITH IT. Thirty stale notes across ten files said an
+      API "converts in T15/T16/T17/T18/T19" or was "still legacy". All of them
+      were false by the time this task ran.
+
       THE GAP BELOW IS NOW OWNED BY T28, added 2026-08-05, and this task
       depends on it. The text is kept because it is the reasoning that produced
       that task, and because the third acceptance criterion here is still what

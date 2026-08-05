@@ -184,7 +184,7 @@ void Triffid::Render(float _predictionTime)
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam. The
   // PRE-wobble head, as the legacy code had it: the stem line is drawn before
   // the damage flicker scales a row.
-  DirectX::XMFLOAT3 const stemPos = m_stem->GetWorldMatrix(headMatrix).pos;
+  DirectX::XMFLOAT3 const stemPos = m_stem->GetWorldPosition(headMatrix);
 
   // SetLength; rendering only, so this takes the native normalise.
   DirectX::XMVECTOR const midPoint = DirectX::XMVectorMultiplyAdd(
@@ -234,12 +234,12 @@ void Triffid::Render(float _predictionTime)
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, and
     // this one wants the marker's whole basis: the egg is drawn with the
     // launch point's UP as its front and its negated FRONT as its up.
-    Matrix34 const launchMat = m_launchPoint->GetWorldMatrix(wobbledHead);
+    DirectX::XMFLOAT4X4 const launchMat = m_launchPoint->GetWorldMatrix(wobbledHead);
     Shape* eggShape = g_resource->GetShape("TriffidEgg.shp");
 
-    DirectX::XMFLOAT3 const eggFront = launchMat.u;
-    DirectX::XMFLOAT3 const eggPos = launchMat.pos;
-    DirectX::XMFLOAT3 const launchFront = launchMat.f;
+    DirectX::XMFLOAT3 const eggFront = DirectX::XMFLOAT3(launchMat._21, launchMat._22, launchMat._23);
+    DirectX::XMFLOAT3 const eggPos = DirectX::XMFLOAT3(launchMat._41, launchMat._42, launchMat._43);
+    DirectX::XMFLOAT3 const launchFront = DirectX::XMFLOAT3(launchMat._31, launchMat._32, launchMat._33);
 
     DirectX::XMMATRIX egg = BasisFromFrontAndUp(DirectX::XMLoadFloat3(&eggFront), DirectX::XMVectorNegate(DirectX::XMLoadFloat3(&launchFront)),
                                                 DirectX::XMLoadFloat3(&eggPos));
@@ -274,9 +274,9 @@ void Triffid::RenderAlphas(float _predictionTime)
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&headPos)));
 
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    Matrix34 const launchMat = m_launchPoint->GetWorldMatrix(mat);
-    DirectX::XMFLOAT3 const launchPos = launchMat.pos;
-    DirectX::XMFLOAT3 const launchFront = launchMat.f;
+    DirectX::XMFLOAT4X4 const launchMat = m_launchPoint->GetWorldMatrix(mat);
+    DirectX::XMFLOAT3 const launchPos = DirectX::XMFLOAT3(launchMat._41, launchMat._42, launchMat._43);
+    DirectX::XMFLOAT3 const launchFront = DirectX::XMFLOAT3(launchMat._31, launchMat._32, launchMat._33);
 
     DirectX::XMVECTOR const point1 = DirectX::XMLoadFloat3(&launchPos);
 
@@ -409,9 +409,9 @@ void Triffid::Launch()
   DirectX::XMFLOAT4X4 mat = GetHead();
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  Matrix34 const launchMat = m_launchPoint->GetWorldMatrix(mat);
-  DirectX::XMFLOAT3 const launchFront = launchMat.f;
-  DirectX::XMFLOAT3 const launchPos = launchMat.pos;
+  DirectX::XMFLOAT4X4 const launchMat = m_launchPoint->GetWorldMatrix(mat);
+  DirectX::XMFLOAT3 const launchFront = DirectX::XMFLOAT3(launchMat._31, launchMat._32, launchMat._33);
+  DirectX::XMFLOAT3 const launchPos = DirectX::XMFLOAT3(launchMat._41, launchMat._42, launchMat._43);
 
   DirectX::XMFLOAT3 velocity;
   DirectX::XMStoreFloat3(&velocity, DirectX::XMVectorScale(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&launchFront)),

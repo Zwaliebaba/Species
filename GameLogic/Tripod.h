@@ -1,7 +1,7 @@
 #pragma once
 
+#include "NeuronMath.h"
 
-#include "Vector2.h"
 
 #include "Entity.h"
 

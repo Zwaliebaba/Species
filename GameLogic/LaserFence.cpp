@@ -7,7 +7,6 @@
 #include "MathUtils.h"
 #include "Debug.h"
 #include "FileWriter.h"
-#include "Matrix33.h"
 #include "Profiler.h"
 #include "Shape.h"
 #include "Resource.h"
@@ -241,8 +240,8 @@ float LaserFence::GetFenceFullHeight()
   DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const marker1 = m_marker1->GetWorldMatrix(mat).pos;
-  DirectX::XMFLOAT3 const marker2 = m_marker2->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const marker1 = m_marker1->GetWorldPosition(mat);
+  DirectX::XMFLOAT3 const marker2 = m_marker2->GetWorldPosition(mat);
 
   return (marker2.y - marker1.y);
 }
@@ -630,5 +629,5 @@ DirectX::XMFLOAT3 LaserFence::GetTopPosition()
   DirectX::XMFLOAT4X4 mat = GetScaledLevelMatrix();
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_marker2->GetWorldMatrix(mat).pos;
+  return m_marker2->GetWorldPosition(mat);
 }

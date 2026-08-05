@@ -53,7 +53,6 @@
 #include "Unit.h"
 #include "UpdateAvailableWindow.h"
 #include "UserInput.h"
-#include "Vector3.h"
 #include "Water.h"
 #include "Win32EventHandler.h"
 #include "WindowManager.h"

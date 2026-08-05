@@ -37,7 +37,7 @@ bool Library::Advance()
 
       // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
       // only the marker's position is wanted here.
-      DirectX::XMFLOAT3 const scrollPos = scrollMarker->GetWorldMatrix(rootMat).pos;
+      DirectX::XMFLOAT3 const scrollPos = scrollMarker->GetWorldPosition(rootMat);
 
       ResearchItem* item = new ResearchItem();
       item->m_researchType = i;

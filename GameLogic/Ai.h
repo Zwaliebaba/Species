@@ -57,10 +57,6 @@ class AITarget : public Building
 
     float IsNearTo(int _aiTargetId); // returns distance or -1
 
-    // DELIBERATELY LEGACY. These override Building's virtuals, and Building
-    // converts in T16. An override must match its base declaration exactly --
-    // no implicit conversion is consulted -- so moving these first would leave
-    // the class abstract rather than failing loudly. Same trap as T12.
     bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
     bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);
 };
@@ -100,10 +96,6 @@ class AISpawnPoint : public Building
     int GetBuildingLink();
     void SetBuildingLink(int _buildingId);
 
-    // DELIBERATELY LEGACY. These override Building's virtuals, and Building
-    // converts in T16. An override must match its base declaration exactly --
-    // no implicit conversion is consulted -- so moving these first would leave
-    // the class abstract rather than failing loudly. Same trap as T12.
     bool DoesSphereHit(DirectX::XMFLOAT3 const& _pos, float _radius);
     bool DoesShapeHit(Shape* _shape, DirectX::XMFLOAT4X4 _transform);
 };

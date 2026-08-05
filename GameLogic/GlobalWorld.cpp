@@ -14,7 +14,6 @@
 #include "StringUtils.h"
 #include "TextRenderer.h"
 #include "TextStreamReaders.h"
-#include "Vector3.h"
 #include "Eclipse.h"
 #include "GlobalInternet.h"
 #include "GlobalWorld.h"
@@ -904,9 +903,11 @@ void SphereWorld::RenderWorldShape()
   //
   // Render outer
 
-  m_shapeOuter->Render(0.0f, g_identityMatrix34);
-  m_shapeMiddle->Render(0.0f, g_identityMatrix34);
-  m_shapeInner->Render(0.0f, g_identityMatrix34);
+  DirectX::XMFLOAT4X4 identity; // was g_identityMatrix34
+  DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity());
+  m_shapeOuter->Render(0.0f, identity);
+  m_shapeMiddle->Render(0.0f, identity);
+  m_shapeInner->Render(0.0f, identity);
 
   glDisable(GL_NORMALIZE);
   glPopMatrix();
@@ -923,7 +924,9 @@ void SphereWorld::RenderTrunkLinks()
 {
   // if( g_editing ) return;
 
-  Matrix34 rootMat(0);
+  // Matrix34(0) was the identity, whatever the argument looked like.
+  DirectX::XMFLOAT4X4 rootMat;
+  DirectX::XMStoreFloat4x4(&rootMat, DirectX::XMMatrixIdentity());
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);

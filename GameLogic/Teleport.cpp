@@ -349,9 +349,9 @@ bool Teleport::GetEntrance(DirectX::XMFLOAT3& _pos, DirectX::XMFLOAT3& _front)
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  Matrix34 const worldMat = m_entrance->GetWorldMatrix(rootMat);
-  _pos = worldMat.pos;
-  _front = worldMat.f;
+  DirectX::XMFLOAT4X4 const worldMat = m_entrance->GetWorldMatrix(rootMat);
+  _pos = DirectX::XMFLOAT3(worldMat._41, worldMat._42, worldMat._43);
+  _front = DirectX::XMFLOAT3(worldMat._31, worldMat._32, worldMat._33);
   return true;
 }
 

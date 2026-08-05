@@ -121,7 +121,6 @@ void InsertionSquad::SetWayPoint(DirectX::XMFLOAT3 const& _pos)
   Task* controller = g_taskManager->GetTask(m_controllerId);
   if (controller)
   {
-    // LevelFile's WayPoint converts in T18, so GetPos is still legacy.
     DirectX::XMFLOAT3 const lastAddedPos = controller->m_route->m_wayPoints[static_cast<int>(controller->m_route->m_wayPoints.size()) - 1]->GetPos();
     float distance = DirectX::XMVectorGetX(
       DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&lastAddedPos), DirectX::XMLoadFloat3(&addedWayPoint->m_pos))));
@@ -147,7 +146,6 @@ void InsertionSquad::SetWayPoint(DirectX::XMFLOAT3 const& _pos)
       if (distance < 5.0f && teleport->Connected())
       {
         m_teleportId = building->m_id.GetUniqueId();
-        // Teleport converts in T17, so its out-parameters are still legacy.
         DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
         teleport->GetEntrance(entrancePos, entranceFront);
@@ -464,7 +462,6 @@ bool Squadie::Advance(Unit* _theUnit)
       float currentHeight = g_location->m_landscape.m_heightMap->GetValue(m_pos.x, m_pos.z);
       float nextHeight = g_location->m_landscape.m_heightMap->GetValue(nextPos.x, nextPos.z);
 
-      // The landscape converts in T18, so its normal map is still legacy.
       DirectX::XMFLOAT3 const landNormal = g_location->m_landscape.m_normalMap->GetValue(m_pos.x, m_pos.z);
 
       float factor = 1.0f - (currentHeight - nextHeight) / -3.0f;
@@ -732,7 +729,7 @@ void Squadie::Attack(DirectX::XMFLOAT3 const& _pos)
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
     // GetWorldMatrix still returns a legacy matrix -- T10's recorded seam.
-    DirectX::XMFLOAT3 const fromPos = m_laser->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 const fromPos = m_laser->GetWorldPosition(mat);
 
     // Both syncsfrand draws stay, in order and unconditional.
     float const spreadX = syncsfrand(7.0f);
@@ -752,7 +749,7 @@ void Squadie::Attack(DirectX::XMFLOAT3 const& _pos)
     // GetWorldMatrix still returns Matrix34 -- T10's recorded seam, because 43
     // sites in fourteen GameLogic files read .pos or .f off it. Both are read
     // here. It clears when that signature moves.
-    Matrix34 brass = m_brass->GetWorldMatrix(mat);
+    DirectX::XMFLOAT4X4 brass = m_brass->GetWorldMatrix(mat);
 
     // Four syncfrand/syncsfrand draws, in the same order and count as before.
     float const brassSpeed = 5.0f + syncfrand(10.0f);
@@ -762,12 +759,12 @@ void Squadie::Attack(DirectX::XMFLOAT3 const& _pos)
 
     // brass is the legacy Matrix34 above, so its rows are Vector3 and cannot
     // be addressed as XMFLOAT3. Copy-initialising takes the seam's conversion.
-    DirectX::XMFLOAT3 const brassFront = brass.f;
+    DirectX::XMFLOAT3 const brassFront = DirectX::XMFLOAT3(brass._31, brass._32, brass._33);
 
     DirectX::XMFLOAT3 particleVel;
     DirectX::XMStoreFloat3(&particleVel, DirectX::XMVectorAdd(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&brassFront), brassSpeed),
                                                               DirectX::XMVectorSet(scatterX, scatterY, scatterZ, 0.0f)));
-    g_particleSystem->CreateParticle(brass.pos, particleVel, Particle::TypeBrass);
+    g_particleSystem->CreateParticle(DirectX::XMFLOAT3(brass._41, brass._42, brass._43), particleVel, Particle::TypeBrass);
 
 
     //
@@ -791,7 +788,7 @@ void Squadie::FireSecondaryWeapon(DirectX::XMFLOAT3 const& _pos)
   {
     DirectX::XMFLOAT4X4 mat;
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
-    DirectX::XMFLOAT3 const laserPos = m_laser->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 const laserPos = m_laser->GetWorldPosition(mat);
 
     switch (squad->m_weaponType)
     {

@@ -66,7 +66,7 @@ void TrunkPort::SetDetail(int _detail)
   DirectX::XMStoreFloat4x4(&transform, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const worldPosStore = marker->GetWorldMatrix(transform).pos;
+  DirectX::XMFLOAT3 const worldPosStore = marker->GetWorldPosition(transform);
   DirectX::XMVECTOR const worldPos = DirectX::XMLoadFloat3(&worldPosStore);
 
   float size = 90.0f;
@@ -147,26 +147,54 @@ void TrunkPort::Render(float predictionTime)
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and
   // this block wants the marker's whole basis to orient the text, so destMat
   // stays legacy until that seam closes.
-  Matrix34 destMat = m_destination1->GetWorldMatrix(portMat);
+  DirectX::XMFLOAT4X4 destMat = m_destination1->GetWorldMatrix(portMat);
   glColor4f(0.9f, 0.8f, 0.8f, 1.0f);
-  g_gameFont.DrawText3D(destMat.pos, destMat.f, destMat.u, fontSize, "%s", caption);
+  g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
+                        DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "%s", caption);
   g_gameFont.SetRenderShadow(true);
-  destMat.pos += destMat.f * 0.1f;
-  destMat.pos += (destMat.f ^ destMat.u) * 0.2f;
-  destMat.pos += destMat.u * 0.2f;
+  // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
+  // operator^ was the cross product, and front x up is the RIGHT vector -- the
+  // opposite hand from GetRight()'s up x front, which is why it is spelled out
+  // in this order rather than reached for from elsewhere.
+  {
+    DirectX::XMVECTOR const front = DirectX::XMVectorSet(destMat._31, destMat._32, destMat._33, 0.0f);
+    DirectX::XMVECTOR const up = DirectX::XMVectorSet(destMat._21, destMat._22, destMat._23, 0.0f);
+    DirectX::XMVECTOR pos = DirectX::XMVectorSet(destMat._41, destMat._42, destMat._43, 0.0f);
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, 0.1f));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(DirectX::XMVector3Cross(front, up), 0.2f));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(up, 0.2f));
+    destMat._41 = DirectX::XMVectorGetX(pos);
+    destMat._42 = DirectX::XMVectorGetY(pos);
+    destMat._43 = DirectX::XMVectorGetZ(pos);
+  }
   glColor4f(0.9f, 0.8f, 0.8f, 0.0f);
-  g_gameFont.DrawText3D(destMat.pos, destMat.f, destMat.u, fontSize, "%s", caption);
+  g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
+                        DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "%s", caption);
 
   g_gameFont.SetRenderShadow(false);
   glColor4f(0.9f, 0.8f, 0.8f, 1.0f);
   destMat = m_destination2->GetWorldMatrix(portMat);
-  g_gameFont.DrawText3D(destMat.pos, destMat.f, destMat.u, fontSize, "%s", caption);
+  g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
+                        DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "%s", caption);
   g_gameFont.SetRenderShadow(true);
-  destMat.pos += destMat.f * 0.1f;
-  destMat.pos += (destMat.f ^ destMat.u) * 0.2f;
-  destMat.pos += destMat.u * 0.2f;
+  // The shadow offset: a tenth of a unit forward, a fifth right, a fifth up.
+  // operator^ was the cross product, and front x up is the RIGHT vector -- the
+  // opposite hand from GetRight()'s up x front, which is why it is spelled out
+  // in this order rather than reached for from elsewhere.
+  {
+    DirectX::XMVECTOR const front = DirectX::XMVectorSet(destMat._31, destMat._32, destMat._33, 0.0f);
+    DirectX::XMVECTOR const up = DirectX::XMVectorSet(destMat._21, destMat._22, destMat._23, 0.0f);
+    DirectX::XMVECTOR pos = DirectX::XMVectorSet(destMat._41, destMat._42, destMat._43, 0.0f);
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(front, 0.1f));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(DirectX::XMVector3Cross(front, up), 0.2f));
+    pos = DirectX::XMVectorAdd(pos, DirectX::XMVectorScale(up, 0.2f));
+    destMat._41 = DirectX::XMVectorGetX(pos);
+    destMat._42 = DirectX::XMVectorGetY(pos);
+    destMat._43 = DirectX::XMVectorGetZ(pos);
+  }
   glColor4f(0.9f, 0.8f, 0.8f, 0.0f);
-  g_gameFont.DrawText3D(destMat.pos, destMat.f, destMat.u, fontSize, "%s", caption);
+  g_gameFont.DrawText3D(DirectX::XMFLOAT3(destMat._41, destMat._42, destMat._43), DirectX::XMFLOAT3(destMat._31, destMat._32, destMat._33),
+                        DirectX::XMFLOAT3(destMat._21, destMat._22, destMat._23), fontSize, "%s", caption);
 
   g_gameFont.SetRenderShadow(false);
 
@@ -196,7 +224,7 @@ void TrunkPort::RenderAlphas(float predictionTime)
                              BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const markerPosStore = marker->GetWorldMatrix(transform).pos;
+    DirectX::XMFLOAT3 const markerPosStore = marker->GetWorldPosition(transform);
     DirectX::XMVECTOR const markerPos = DirectX::XMLoadFloat3(&markerPosStore);
     float maxDistance = 40.0f;
 

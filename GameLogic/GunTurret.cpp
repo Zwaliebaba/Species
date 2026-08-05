@@ -111,9 +111,9 @@ void GunTurret::ExplodeBody()
   // rows are Vector3. XMLoadFloat3 needs an XMFLOAT3*, and &row is a Vector3*;
   // the seam's conversion is to a REFERENCE, so it does not apply to taking an
   // address. Copy-initialising these two locals is what runs it.
-  Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretPos);
-  DirectX::XMFLOAT3 const barrelMountFront = barrelMount.f;
-  DirectX::XMFLOAT3 const barrelMountPos = barrelMount.pos;
+  DirectX::XMFLOAT4X4 const barrelMount = m_barrelMount->GetWorldMatrix(turretPos);
+  DirectX::XMFLOAT3 const barrelMountFront = DirectX::XMFLOAT3(barrelMount._31, barrelMount._32, barrelMount._33);
+  DirectX::XMFLOAT3 const barrelMountPos = DirectX::XMFLOAT3(barrelMount._41, barrelMount._42, barrelMount._43);
 
   DirectX::XMFLOAT4X4 barrelMat;
   DirectX::XMStoreFloat4x4(
@@ -214,9 +214,9 @@ void GunTurret::PrimaryFire()
 
       // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, whose
       // rows are Vector3; see ExplodeBody for why these copy through locals.
-      Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretMat);
-      DirectX::XMFLOAT3 const markerFront = barrelMount.f;
-      DirectX::XMFLOAT3 const markerPos = barrelMount.pos;
+      DirectX::XMFLOAT4X4 const barrelMount = m_barrelMount->GetWorldMatrix(turretMat);
+      DirectX::XMFLOAT3 const markerFront = DirectX::XMFLOAT3(barrelMount._31, barrelMount._32, barrelMount._33);
+      DirectX::XMFLOAT3 const markerPos = DirectX::XMFLOAT3(barrelMount._41, barrelMount._42, barrelMount._43);
 
       DirectX::XMVECTOR const barrelUp = DirectX::XMLoadFloat3(&m_barrelUp);
       DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&markerFront), barrelUp);
@@ -224,9 +224,9 @@ void GunTurret::PrimaryFire()
 
       DirectX::XMFLOAT4X4 barrelMountMat;
       DirectX::XMStoreFloat4x4(&barrelMountMat, BasisFromFrontAndUp(barrelMountFront, barrelUp, DirectX::XMLoadFloat3(&markerPos)));
-      Matrix34 const barrelMat = m_barrelEnd[m_nextBarrel]->GetWorldMatrix(barrelMountMat);
+      DirectX::XMFLOAT4X4 const barrelMat = m_barrelEnd[m_nextBarrel]->GetWorldMatrix(barrelMountMat);
 
-      DirectX::XMFLOAT3 const shellPos = barrelMat.pos;
+      DirectX::XMFLOAT3 const shellPos = DirectX::XMFLOAT3(barrelMat._41, barrelMat._42, barrelMat._43);
       DirectX::XMFLOAT3 shellVel;
       DirectX::XMStoreFloat3(&shellVel, DirectX::XMVectorScale(DirectX::XMVector3Normalize(barrelMountFront), 500.0f));
 
@@ -372,7 +372,7 @@ bool GunTurret::Advance()
                            BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_turretFront), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const barrelPosStore = m_barrelMount->GetWorldMatrix(turretPos).pos;
+  DirectX::XMFLOAT3 const barrelPosStore = m_barrelMount->GetWorldPosition(turretPos);
   DirectX::XMVECTOR const barrelPos = DirectX::XMLoadFloat3(&barrelPosStore);
 
   DirectX::XMVECTOR const targetVec = DirectX::XMLoadFloat3(&m_target);
@@ -452,9 +452,9 @@ void GunTurret::Render(float _predictionTime)
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, whose
   // rows are Vector3; see ExplodeBody for why these copy through locals.
-  Matrix34 const barrelMount = m_barrelMount->GetWorldMatrix(turretPos);
-  DirectX::XMFLOAT3 const markerFront = barrelMount.f;
-  DirectX::XMFLOAT3 const markerPos = barrelMount.pos;
+  DirectX::XMFLOAT4X4 const barrelMount = m_barrelMount->GetWorldMatrix(turretPos);
+  DirectX::XMFLOAT3 const markerFront = DirectX::XMFLOAT3(barrelMount._31, barrelMount._32, barrelMount._33);
+  DirectX::XMFLOAT3 const markerPos = DirectX::XMFLOAT3(barrelMount._41, barrelMount._42, barrelMount._43);
 
   DirectX::XMVECTOR const barrelUp = DirectX::XMLoadFloat3(&m_barrelUp);
   DirectX::XMVECTOR const barrelRight = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&markerFront), barrelUp);
@@ -520,7 +520,7 @@ void GunTurret::RenderPorts()
     DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const statusPos = m_statusMarkers[i]->GetWorldMatrix(rootMat).pos;
+    DirectX::XMFLOAT3 const statusPos = m_statusMarkers[i]->GetWorldPosition(rootMat);
 
     //
     // Render the status light

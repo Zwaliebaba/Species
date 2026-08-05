@@ -54,7 +54,7 @@ bool Cave::Advance()
 
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- so
     // the marker's position comes back off a legacy row.
-    DirectX::XMFLOAT3 spawnPoint = m_spawnPoint->GetWorldMatrix(rootMat).pos;
+    DirectX::XMFLOAT3 spawnPoint = m_spawnPoint->GetWorldPosition(rootMat);
     spawnPoint.y = g_location->m_landscape.m_heightMap->GetValue(spawnPoint.x, spawnPoint.z);
 
     int numFound;

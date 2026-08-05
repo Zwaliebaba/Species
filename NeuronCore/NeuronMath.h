@@ -148,6 +148,23 @@
 // is sanctioned to move.
 
 
+// THE TWO LEGACY CONSTANTS, kept by NAME and converted rather than deleted.
+//
+// g_upVector and g_zeroVector were `extern Vector3 const` in Vector3.cpp and
+// T25 had to answer for them. Twenty-eight live sites pass one straight into a
+// parameter — SpawnEntities' velocity, CreateParticle's velocity, an entity's
+// initial m_up — and every one of them reads better for the name than for a
+// braced literal repeated in place. DirectX::g_XMIdentityR1 and
+// XMVectorZero() are the right answer where an XMVECTOR is wanted; these are
+// for the sites that want STORAGE, which is what the parameter takes.
+//
+// They are the only two names in this header that are not a DirectXMath
+// spelling, and they exist because deleting them would have been churn rather
+// than progress. Nothing here computes: a constant is not an operator layer.
+inline constexpr DirectX::XMFLOAT3 g_upVector{0.0f, 1.0f, 0.0f};
+inline constexpr DirectX::XMFLOAT3 g_zeroVector{0.0f, 0.0f, 0.0f};
+
+
 // Build a world matrix from a front vector, an up hint and a position — the
 // replacement for Matrix34(_f, _u, _pos), which 196 sites in the tree call.
 //

@@ -13,7 +13,6 @@
 #include "Profiler.h"
 #include "LanguageTable.h"
 #include "MathUtils.h"
-#include "Matrix33.h"
 #include "Resource.h"
 #include "Shape.h"
 #include "TextRenderer.h"
@@ -1565,13 +1564,17 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
     if (unitMove)
     {
       unit->SetWayPoint(teamControls.m_mousePos);
-      // TeamControls::m_mousePos is an XMFLOAT3 as of directxmath-migration T9.
-      // Converting back to Vector3 here rather than going native keeps this
-      // simulation line computing exactly what it did: Vector3::Normalise
-      // answers a zero-length input with (0,0,1) and XMVector3Normalize does
-      // not, and a mouse position exactly on a unit's centre is reachable. This
-      // line converts properly with the rest of Location in T18.
-      unit->m_targetDir = (Vector3(teamControls.m_mousePos) - AsLegacy(unit->m_centrePos)).Normalise();
+      // THE ZERO-LENGTH FALLBACK IS REPRODUCED HERE, not taken natively.
+      // Vector3::Normalise answered a zero-length input with (0,0,1) and
+      // XMVector3Normalize answers with zero; a mouse position exactly on a
+      // unit's centre is reachable, this is a SIMULATION value, and a zero
+      // target direction would leave the unit with no facing at all.
+      DirectX::XMVECTOR const toMouse =
+        DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&teamControls.m_mousePos), DirectX::XMLoadFloat3(&unit->m_centrePos));
+      if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(toMouse)) > 0.0f)
+        DirectX::XMStoreFloat3(&unit->m_targetDir, DirectX::XMVector3Normalize(toMouse));
+      else
+        unit->m_targetDir = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
       unit->RecalculateOffsets();
 
       //
@@ -2008,26 +2011,25 @@ void Location::Bang(DirectX::XMFLOAT3 const& _pos, float _range, float _damage)
   numCores += syncfrand(numCores);
   for (int p = 0; p < numCores; ++p)
   {
-    Vector3 vel(syncsfrand(20.0f), 10.0f + syncfrand(10.0f), syncsfrand(20.0f));
+    // The three syncsfrand calls stay in this one initialiser and in this
+    // order: the RNG call sequence is not sanctioned to change.
+    DirectX::XMFLOAT3 const vel(syncsfrand(20.0f), 10.0f + syncfrand(10.0f), syncsfrand(20.0f));
     float size = 120.0f + syncfrand(60.0f);
-    // ParticleSystem::CreateParticle still takes Vector3 const& -- it belongs
-    // to T19. The seam converts the arguments; the local stays legacy so the
-    // syncsfrand call order above is untouched.
     DirectX::XMFLOAT3 corePos;
     DirectX::XMStoreFloat3(
       &corePos, DirectX::XMVectorMultiplyAdd(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(_range * 0.3f), DirectX::XMLoadFloat3(&_pos)));
-    g_particleSystem->CreateParticle(AsLegacy(corePos), vel, Particle::TypeExplosionCore, size);
+    g_particleSystem->CreateParticle(corePos, vel, Particle::TypeExplosionCore, size);
   }
 
   int numDebris = static_cast<int>(std::max(1.0f, _range * _damage * 0.005f));
   for (int p = 0; p < numDebris; ++p)
   {
-    Vector3 vel(syncsfrand(30.0f), 20.0f + syncfrand(20.0f), syncsfrand(30.0f));
+    DirectX::XMFLOAT3 const vel(syncsfrand(30.0f), 20.0f + syncfrand(20.0f), syncsfrand(30.0f));
     float size = 30.0f + syncfrand(20.0f);
     DirectX::XMFLOAT3 debrisPos;
     DirectX::XMStoreFloat3(
       &debrisPos, DirectX::XMVectorMultiplyAdd(DirectX::g_XMIdentityR1, DirectX::XMVectorReplicate(_range * 0.5f), DirectX::XMLoadFloat3(&_pos)));
-    g_particleSystem->CreateParticle(AsLegacy(debrisPos), vel, Particle::TypeExplosionDebris, size);
+    g_particleSystem->CreateParticle(debrisPos, vel, Particle::TypeExplosionDebris, size);
   }
 
 

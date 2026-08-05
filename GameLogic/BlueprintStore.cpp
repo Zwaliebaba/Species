@@ -77,7 +77,7 @@ DirectX::XMFLOAT4X4 BlueprintBuilding::GetMarker(float _predictionTime)
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
     // ToNative copies the rows as they are; rebuilding the basis from front
     // and up would discard a marker matrix's own right row.
-    return m_marker->GetWorldMatrix(mat).ToNative();
+    return m_marker->GetWorldMatrix(mat);
   }
   else
   {
@@ -671,7 +671,7 @@ void BlueprintConsole::RenderPorts()
     DirectX::XMVECTOR const camU = DirectX::XMVectorScale(DirectX::XMLoadFloat3(&cameraUp), size);
 
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 statusPos = s_controlPadStatus->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 statusPos = s_controlPadStatus->GetWorldPosition(mat);
     statusPos.y = g_location->m_landscape.m_heightMap->GetValue(statusPos.x, statusPos.z);
     statusPos.y += 5.0f;
     DirectX::XMVECTOR const status = DirectX::XMLoadFloat3(&statusPos);

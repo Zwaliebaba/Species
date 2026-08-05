@@ -70,7 +70,6 @@ void Officer::Begin()
   m_wayPoint = m_pos;
 
   m_flag.SetPosition(m_pos);
-  // Flag converts in T19; the seam takes both arguments.
   m_flag.SetOrientation(m_front, DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
   m_flag.SetSize(20.0f);
   m_flag.Initialise();
@@ -247,7 +246,7 @@ void Officer::RenderFlag(float _predictionTime)
             DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&m_vel), DirectX::XMVectorReplicate(_predictionTime), DirectX::XMLoadFloat3(&m_pos))));
 
   // GetWorldMatrix still returns a legacy matrix -- T10's recorded seam.
-  DirectX::XMFLOAT3 const flagPos = m_flagMarker->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const flagPos = m_flagMarker->GetWorldPosition(mat);
 
   int texId = -1;
   if (m_orders == OrderNone)
@@ -262,7 +261,6 @@ void Officer::RenderFlag(float _predictionTime)
   m_flag.SetTexture(texId);
   m_flag.SetPosition(flagPos);
 
-  // Flag converts in T19; store the computed basis before handing it over.
   DirectX::XMFLOAT3 flagFront;
   DirectX::XMFLOAT3 flagUp;
   DirectX::XMStoreFloat3(&flagFront, front);
@@ -576,7 +574,6 @@ bool Officer::Advance(Unit* _unit)
     {
       m_ordersBuildingId = teleportId;
       Teleport* teleport = (Teleport*)g_location->GetBuilding(teleportId);
-      // Teleport converts in T17, so its out-parameters are still legacy.
       DirectX::XMFLOAT3 exitPos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 exitFront{0.0f, 0.0f, 0.0f};
       bool exitFound = teleport->GetExit(exitPos, exitFront);
@@ -613,7 +610,6 @@ void Officer::SetWaypoint(DirectX::XMFLOAT3 const& _wayPoint)
       if (distance < 5.0f && teleport->Connected())
       {
         m_wayPointTeleportId = building->m_id.GetUniqueId();
-        // Teleport converts in T17, so its out-parameters are still legacy.
         DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
         teleport->GetEntrance(entrancePos, entranceFront);
@@ -682,7 +678,6 @@ void Officer::SetOrders(DirectX::XMFLOAT3 const& _orders)
           {
             Teleport* teleport = (Teleport*)building;
             m_ordersBuildingId = building->m_id.GetUniqueId();
-            // Teleport converts in T17; same seam as above.
             DirectX::XMFLOAT3 entrancePos{0.0f, 0.0f, 0.0f};
             DirectX::XMFLOAT3 entranceFront{0.0f, 0.0f, 0.0f};
             teleport->GetEntrance(entrancePos, entranceFront);

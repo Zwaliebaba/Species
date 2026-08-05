@@ -9,7 +9,6 @@
 // while they wait for their own conversion task, and every one of them reaches
 // this header. Dropping the include here would break them all at once — which
 // is failure mode 3 on T10's list, the one no checker sees. T25 removes it.
-#include "Vector3.h"
 
 
 // ****************************************************************************

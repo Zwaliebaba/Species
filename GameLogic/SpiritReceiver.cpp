@@ -54,7 +54,7 @@ DirectX::XMFLOAT3 ReceiverBuilding::GetSpiritLocation()
   DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_spiritLocation->GetWorldMatrix(rootMat).pos;
+  return m_spiritLocation->GetWorldPosition(rootMat);
 }
 
 
@@ -732,7 +732,7 @@ void SpiritReceiver::Render(float _predictionTime)
   DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldPosition(mat);
 
   // The head is deliberately levelled: world up, world right, and a front that
   // falls out of the two. Not the building's own basis.
@@ -749,7 +749,7 @@ DirectX::XMFLOAT3 SpiritReceiver::GetSpiritLocation()
   DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const headPos = m_headMarker->GetWorldPosition(mat);
 
   // The head is deliberately levelled: world up, world right, and a front that
   // falls out of the two. Not the building's own basis.
@@ -758,7 +758,7 @@ DirectX::XMFLOAT3 SpiritReceiver::GetSpiritLocation()
   DirectX::XMFLOAT4X4 headMat;
   DirectX::XMStoreFloat4x4(&headMat, BasisFromFrontAndUp(front, DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&headPos)));
 
-  return m_spiritLink->GetWorldMatrix(headMat).pos;
+  return m_spiritLink->GetWorldPosition(headMat);
 }
 
 
@@ -776,7 +776,7 @@ void SpiritReceiver::RenderPorts()
     DirectX::XMFLOAT4X4 rootMat = GetWorldMatrix();
 
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const statusPosStore = m_statusMarkers[i]->GetWorldMatrix(rootMat).pos;
+    DirectX::XMFLOAT3 const statusPosStore = m_statusMarkers[i]->GetWorldPosition(rootMat);
 
     //
     // Render the status light

@@ -238,7 +238,6 @@ void LaserTrooper::Render(float predictionTime, int teamId)
 
   float size = 2.0f;
 
-  // The landscape converts in T18, so its normal map still yields a legacy vector.
   DirectX::XMFLOAT3 const landNormal = g_location->m_landscape.m_normalMap->GetValue(predictedPos.x, predictedPos.z);
   DirectX::XMVECTOR entityUp = DirectX::XMLoadFloat3(&landNormal);
   //	float wobble = m_wobble;

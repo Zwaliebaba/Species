@@ -69,7 +69,7 @@ DirectX::XMFLOAT3 FuelBuilding::GetFuelPosition()
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam -- and its
   // rows are Vector3. Returning .pos runs the seam's conversion on the way out.
-  return m_fuelMarker->GetWorldMatrix(mat).pos;
+  return m_fuelMarker->GetWorldPosition(mat);
 }
 
 
@@ -368,7 +368,7 @@ bool FuelGenerator::Advance()
       DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&pumpPos)));
 
       // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-      DirectX::XMFLOAT3 const particlePos = m_pumpTip->GetWorldMatrix(mat).pos;
+      DirectX::XMFLOAT3 const particlePos = m_pumpTip->GetWorldPosition(mat);
       float size = 150.0f + frand(150.0f);
 
       g_particleSystem->CreateParticle(particlePos, pumpVel, Particle::TypeCitizenFire, size);
@@ -563,7 +563,7 @@ DirectX::XMFLOAT3 FuelStation::GetEntrance()
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  return m_entrance->GetWorldMatrix(mat).pos;
+  return m_entrance->GetWorldPosition(mat);
 }
 
 
@@ -1157,10 +1157,10 @@ void EscapeRocket::AdvanceExploding()
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam, whose
     // rows are Vector3. XMLoadFloat3 needs an XMFLOAT3*, and &row is a Vector3*;
     // the seam converts by reference, so these locals are what run it.
-    Matrix34 const windowMat = m_window[windowIndex]->GetWorldMatrix(mat);
-    DirectX::XMFLOAT3 const windowFront = windowMat.f;
-    DirectX::XMFLOAT3 const windowUp = windowMat.u;
-    DirectX::XMFLOAT3 const windowPos = windowMat.pos;
+    DirectX::XMFLOAT4X4 const windowMat = m_window[windowIndex]->GetWorldMatrix(mat);
+    DirectX::XMFLOAT3 const windowFront = DirectX::XMFLOAT3(windowMat._31, windowMat._32, windowMat._33);
+    DirectX::XMFLOAT3 const windowUp = DirectX::XMFLOAT3(windowMat._21, windowMat._22, windowMat._23);
+    DirectX::XMFLOAT3 const windowPos = DirectX::XMFLOAT3(windowMat._41, windowMat._42, windowMat._43);
 
     DirectX::XMVECTOR vel = DirectX::XMLoadFloat3(&windowFront);
     float angle = syncsfrand(M_PI * 0.25f);
@@ -1205,10 +1205,10 @@ void EscapeRocket::AdvanceExploding()
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
     // T10's seam again; see AdvanceExploding's passenger block above.
-    Matrix34 const windowMat = m_window[i]->GetWorldMatrix(mat);
-    DirectX::XMFLOAT3 const windowFront = windowMat.f;
-    DirectX::XMFLOAT3 const windowUp = windowMat.u;
-    DirectX::XMFLOAT3 const windowPos = windowMat.pos;
+    DirectX::XMFLOAT4X4 const windowMat = m_window[i]->GetWorldMatrix(mat);
+    DirectX::XMFLOAT3 const windowFront = DirectX::XMFLOAT3(windowMat._31, windowMat._32, windowMat._33);
+    DirectX::XMFLOAT3 const windowUp = DirectX::XMFLOAT3(windowMat._21, windowMat._22, windowMat._23);
+    DirectX::XMFLOAT3 const windowPos = DirectX::XMFLOAT3(windowMat._41, windowMat._42, windowMat._43);
 
     DirectX::XMVECTOR vel = DirectX::XMLoadFloat3(&windowFront);
     float angle = syncsfrand(M_PI * 0.25f);
@@ -1383,7 +1383,7 @@ bool EscapeRocket::Advance()
     DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&m_pos)));
 
     // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-    DirectX::XMFLOAT3 const boosterPos = m_booster->GetWorldMatrix(mat).pos;
+    DirectX::XMFLOAT3 const boosterPos = m_booster->GetWorldPosition(mat);
 
     for (int i = 0; i < 15; ++i)
     {

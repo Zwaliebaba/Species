@@ -5,7 +5,6 @@
 #include "SliceWalker.h"
 #include "SlotMap.h"
 #include "NeuronMath.h"
-#include "Vector3.h"
 
 #include "Landscape.h"
 #include "Building.h"

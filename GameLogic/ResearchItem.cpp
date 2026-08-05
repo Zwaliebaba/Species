@@ -138,8 +138,8 @@ void ResearchItem::GetEndPositions(DirectX::XMFLOAT3& _end1, DirectX::XMFLOAT3& 
   DirectX::XMFLOAT4X4 mat = GetWorldMatrix();
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  _end1 = m_end1->GetWorldMatrix(mat).pos;
-  _end2 = m_end2->GetWorldMatrix(mat).pos;
+  _end1 = m_end1->GetWorldPosition(mat);
+  _end2 = m_end2->GetWorldPosition(mat);
 }
 
 

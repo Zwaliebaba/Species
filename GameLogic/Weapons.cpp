@@ -6,7 +6,6 @@
 #include "MathUtils.h"
 #include "Resource.h"
 #include "Profiler.h"
-#include "Vector2.h"
 #include "GlVertex.h"
 #include "Shape.h"
 #include "HiResTime.h"
@@ -1165,7 +1164,7 @@ bool Missile::Advance()
   DirectX::XMStoreFloat4x4(&mat, BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up), DirectX::XMLoadFloat3(&m_pos)));
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  DirectX::XMFLOAT3 const boosterPosStore = m_booster->GetWorldMatrix(mat).pos;
+  DirectX::XMFLOAT3 const boosterPosStore = m_booster->GetWorldPosition(mat);
   DirectX::XMVECTOR const boosterPos = DirectX::XMLoadFloat3(&boosterPosStore);
   DirectX::XMVECTOR const velVec = DirectX::XMLoadFloat3(&m_vel);
 
@@ -1209,7 +1208,7 @@ void Missile::Render(float _predictionTime)
   glDisable(GL_CULL_FACE);
 
   // ShapeMarker::GetWorldMatrix still returns Matrix34 -- T10's seam.
-  m_fire.m_pos = m_booster->GetWorldMatrix(mat).pos;
+  m_fire.m_pos = m_booster->GetWorldPosition(mat);
   m_fire.m_vel = m_vel;
   m_fire.m_size = 30.0f + frand(20.0f);
   DirectX::XMStoreFloat3(&m_fire.m_front, DirectX::XMVectorNegate(DirectX::XMLoadFloat3(&m_front)));
