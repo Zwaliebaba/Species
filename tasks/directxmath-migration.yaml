@@ -1838,6 +1838,24 @@ tasks:
       runs 513 and 514. No test in this tree renders a tree. NeuronMathTests now
       pins the divergence itself, with a negative control that fails if anyone
       gives XMVector3Normalize the legacy fallback.
+
+      THE REST OF THE TREE WAS SWEPT FOR THE SAME SHAPE, and Tree was the only
+      instance. The net that finds it: for each XMVector3Cross(X, Y), resolve X
+      one level through its local XMVECTOR assignment and ask whether Y is an
+      operand of the resulting difference -- Cross(a - b, a) is zero whenever a
+      and b are parallel, which includes either being the origin. Resolving BOTH
+      sides is what makes the net miss, because `thisBranch` resolves to
+      XMVectorSubtract(to, from) while `to` resolves to XMLoadFloat3(&_to) and
+      the two stop matching textually. Compare the resolved left against the
+      UNRESOLVED right.
+
+      Verified by running it against the pre-fix revision, where it finds
+      Tree.cpp:462, and then across GameLogic, NeuronClient, NeuronCore and
+      Species, where it finds that site and nothing else. NOT added to tools/:
+      one site, now guarded, is not worth a check that would have to learn the
+      difference between guarded and unguarded to avoid crying wolf -- and this
+      plan's checks earn their place by making narrower claims, not broader
+      ones. The recipe is written down here instead.
   - id: T18
     title: Convert the world, landscape and routing
     intent: >
