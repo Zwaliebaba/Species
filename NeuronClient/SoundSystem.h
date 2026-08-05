@@ -127,9 +127,15 @@ class SoundSystem
     DirectX::XMFLOAT3 m_editorPos{0.0f, 0.0f, 0.0f};
     SoundInstanceId m_editorInstanceId;
 
-    FastSlotMap<SoundInstance*> m_sounds; // All the sounds that want to play
-    SoundInstance* m_music;               // There can only be one piece of music at a time
-    SoundInstance* m_requestedMusic;
+    // OWNING. A slot holds the instance until ShutdownSound resets it, and
+    // nothing else deletes a registered instance.
+    FastSlotMap<std::unique_ptr<SoundInstance>> m_sounds; // All the sounds that want to play
+    // OWNING, and deliberately NOT in m_sounds: the music instance is never
+    // registered, which is what used to make ShutdownSound serve two
+    // populations. It is shut down by resetting these, not through
+    // ShutdownSound.
+    std::unique_ptr<SoundInstance> m_music; // There can only be one piece of music at a time
+    std::unique_ptr<SoundInstance> m_requestedMusic;
 
     SoundInstanceId* m_channels;
     int m_numChannels;
@@ -170,8 +176,18 @@ class SoundSystem
 
     void Advance();
 
-    bool InitialiseSound(SoundInstance* _instance); // Sets up sound, adds to instance list
-    void ShutdownSound(SoundInstance* _instance);   // Stops / deletes sound + removes refs
+    // TAKES OWNERSHIP EITHER WAY. On success the instance is registered in
+    // m_sounds and lives there; on the monophonic folding path its object ids
+    // are merged into the existing instance and it is destroyed here. The
+    // caller never holds something it must clean up, which is what the raw
+    // parameter made undecidable rather than merely untidy.
+    bool InitialiseSound(std::unique_ptr<SoundInstance> _instance);
+
+    // REGISTERED INSTANCES ONLY -- one contract, unlike the raw-pointer
+    // version which was called both with instances m_sounds held and with
+    // instances it never accepted. Stops the sound and destroys it. The slot
+    // is released only when it still holds THIS instance; see the .cpp.
+    void ShutdownSound(SoundInstance* _instance);
 
     int IsSoundPlaying(SoundInstanceId _id);
     int NumInstancesPlaying(WorldObjectId _id, const char* _eventName);

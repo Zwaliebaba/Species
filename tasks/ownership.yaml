@@ -688,7 +688,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
     parallel_safe: false
-    status: in_progress
+    status: done
     notes: |
       Split out of T3 on 2026-08-03, after the other five containers converted
       mechanically and this one would not.
@@ -749,6 +749,48 @@ tasks:
       takes this task is in the right place to take that one, and they want
       separate commits — a lifetime conversion and an RNG question in one diff
       is exactly the review nobody can judge.
+
+      DONE 2026-08-05. Both owner decisions implemented as recorded above.
+
+      THE SECOND POPULATION WAS THE MUSIC, and finding that is what made the
+      "one contract" line achievable rather than aspirational. m_music and
+      m_requestedMusic are never registered in m_sounds -- TriggerOtherEvent's
+      music branch stores the instance straight into m_requestedMusic without
+      calling InitialiseSound at all -- and ShutdownSound(m_music) was the one
+      caller passing something the map had never accepted. Both members are
+      unique_ptr now and the music is released by resetting them, at the same
+      program point. That is what lets ShutdownSound serve registered
+      instances only.
+
+      A LEAK WENT WITH IT, unlooked for. TriggerOtherEvent allocates the
+      instance BEFORE testing whether the same music is already playing, and
+      the already-playing branch did nothing with it -- so every redundant
+      music trigger leaked a SoundInstance. make_unique ends that without
+      anyone deciding to; the local simply dies. Stated here because it is a
+      behaviour change, even though nothing observable depends on it.
+
+      WHAT MOVED, per call site. Four callers did `new` + InitialiseSound +
+      ShutdownSound-on-failure; all four now hand the instance over and drop
+      the failure branch, because the folding path destroys it inside
+      InitialiseSound. TriggerDuplicateSound keeps a raw observer across the
+      move because it reads m_id afterwards -- valid only when registration
+      succeeded, which is what the code already tested.
+
+      EVERY REMAINING ShutdownSound CALLER PASSES A REGISTERED INSTANCE,
+      checked one at a time: five come from m_sounds[i].get() and three from
+      GetSoundInstance, which reads the same map. The ten apparent callers
+      below them are inside the commented-out Advance at :1525-1770 and are
+      not compiled.
+
+      NOT CONVERTED, deliberately: SoundEventBlueprint::m_instance
+      (SoundSystem.cpp:742) is a template the blueprint owns, never
+      registered and never shut down. It is a different lifetime question and
+      no acceptance line here reaches it.
+
+      NOT COMPILED. No MSVC here; the seven Python checks pass. The owner
+      smoke test this task's acceptance asks for is still outstanding, and a
+      lifetime mistake in this file is silent rather than a crash.
+
 
   - id: T9
     title: Make EclRegisterWindow take ownership in its signature
