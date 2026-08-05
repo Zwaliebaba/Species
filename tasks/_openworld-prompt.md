@@ -126,7 +126,7 @@ pointers — **re-verify each by reading; the tree moves**:
 | The Garden is 2,002×2,002 world-units at `cellSize 10.66` (~188×188 height samples); defaults are 2,000×2,000 at 12 | `GameData/Levels/MapGarden.txt`, `LevelFile.h` `LandscapeDef` |
 | Terrain is a single merged `SurfaceMap2D<float>` heightmap + normal map, generated at load by seeded diamond-square tiles, then flattened under buildings | `LandscapeTile::Generate`, `Landscape::GenerateHeightMap`, `LandscapeFlattenArea` |
 | The heightmap container lives in the presentation layer | `NeuronClient/2dSurfaceMap.h` |
-| Positions are 32-bit float `Vector3` throughout (mid-migration to `XMFLOAT3`) | `NeuronCore/Vector3.h`, `tasks/directxmath-migration.yaml` |
+| Positions are 32-bit float `Vector3` throughout (mid-migration to `XMFLOAT3`) | `NeuronCore/Vector3.h`, `tasks/Archive/directxmath-migration.yaml` |
 | Spatial indexes are whole-map allocations: `EntityGrid` at 8×8 units *per team*, `ObstructionGrid` at 64×64 | `Location.cpp` (`Init`), `EntityGrid.h`, `ObstructionGrid.h` |
 | Simulation is `Location::Advance` — 10 Hz ticks × 10 slices, five categories, one shared LCG whose call sequence is load-bearing, a sync checksum over every position and velocity | `Location.cpp`, `SliceWalker`, `speciesRandom`, `GenerateSyncValue` |
 | The `#pragma omp parallel for` across the five Advance categories is **inert** — no project enables OpenMP — and would race the shared LCG if it ever ran | `Location::Advance`, absence of `<OpenMPSupport>` in any `.vcxproj` |

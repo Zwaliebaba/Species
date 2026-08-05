@@ -7,7 +7,7 @@
 
 // The tree's math conventions, fixed once so that a 200-file migration cannot
 // end up half transposed. Read this before converting a call site.
-// See tasks/directxmath-migration.yaml T1.
+// See tasks/Archive/directxmath-migration.yaml T1.
 //
 // DirectXMath is header-only and ships in the Windows SDK, so including it adds
 // no library to link and no dependency to vendor. This header declares no TYPE:
@@ -37,8 +37,34 @@
 //   Computation loads to XMVECTOR / XMMATRIX and stores back. XMVECTOR and
 //   XMMATRIX are 16-byte aligned and MUST NOT become data members of
 //   heap-allocated game objects without a deliberate alignment decision — that
-//   is why storage is the XMFLOAT types. Functions taking vectors by value use
-//   XM_CALLCONV with FXMVECTOR / GXMVECTOR / CXMVECTOR in the documented order.
+//   is why storage is the XMFLOAT types.
+//
+//
+// WHICH ONE A PARAMETER TAKES
+//
+//   XMFLOAT3 const&   the value is STORAGE the caller holds in memory — an
+//                     entity's m_pos, a shape marker's world position, a
+//                     landscape query's ray. This is most of the tree's APIs.
+//
+//   FXMVECTOR         the value is a LINK IN A COMPUTATION the caller is
+//                     already doing in registers. Then, and only then, the
+//                     load is work the caller has done anyway and passing the
+//                     register saves a round trip through memory.
+//                     A function taking one MUST be XM_CALLCONV, with
+//                     FXMVECTOR / GXMVECTOR / HXMVECTOR / CXMVECTOR in the
+//                     documented order for the 1st-3rd, 4th, 5th-6th and
+//                     remaining vector parameters.
+//
+//   FXMVECTOR WITHOUT XM_CALLCONV is the one combination to avoid: it asks for
+//   a register type and then passes it by the default convention, which costs
+//   the alignment constraint and buys none of the speed.
+//
+//   Do NOT convert a storage-facing API to FXMVECTOR as a tidy-up. Moving the
+//   XMLoadFloat3 out of ten callee bodies and into two hundred call sites is a
+//   loss, several of those callees only read .x and .z and would spill the
+//   register straight back to the stack, and the *Access interfaces are
+//   virtual — an override has to match its base exactly, so the choice is not
+//   local to one function.
 //
 //
 // MULTIPLICATION IS ROW-VECTOR: v * M, NOT M * v

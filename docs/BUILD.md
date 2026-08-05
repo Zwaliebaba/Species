@@ -17,7 +17,7 @@ and `<DirectXCollision.h>` ship in the Windows SDK 10 that the toolchain row
 above already requires, so there is nothing to fetch and no library to link.
 Every math type in the tree is one of its — `XMFLOAT2/3`, `XMFLOAT3X3`,
 `XMFLOAT4X4`, `XMVECTOR`, `XMMATRIX` — as of
-`tasks/directxmath-migration.yaml`. An SDK old enough to lack
+`tasks/Archive/directxmath-migration.yaml`. An SDK old enough to lack
 `DirectXCollision.h`'s `TriangleTests` will not compile `NeuronCore`.
 
 The solution is `Species.slnx` — the XML solution format, which requires

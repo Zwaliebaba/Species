@@ -6,7 +6,7 @@ for picking the remaining ones back up, and the repair of the one place the
 graph was known to be wrong.
 
 > **This file is about the modernisation plans (stages 3-5). It predates
-> `tasks/directxmath-migration.yaml`, which is a separate, larger effort that
+> `tasks/Archive/directxmath-migration.yaml`, which is a separate, larger effort that
 > is CODE-COMPLETE as of 2026-08-05 — 27 of its 28 tasks are done and the
 > remaining one is an owner-run smoke test. Its restart note,
 > [`_restart-directxmath.md`](_restart-directxmath.md), is now a handover for

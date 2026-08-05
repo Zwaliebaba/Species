@@ -583,7 +583,7 @@ void Camera::AdvanceSphereWorldFocusMode()
 // experience if it travelled in the specified direction. A blockage is defined
 // as a piece of land more than 10 metres higher than the camera's current
 // height. If there is no blockage FLT_MAX is returned.
-float Camera::DistanceToBlockage(DirectX::FXMVECTOR _dir, const float _maxDist)
+float XM_CALLCONV Camera::DistanceToBlockage(DirectX::FXMVECTOR _dir, const float _maxDist)
 {
   if (!g_location)
     return FLT_MAX;
@@ -1296,7 +1296,7 @@ finishMode:
   RequestMode(ModeFreeMovement);
 }
 
-void Camera::GetHighestTangentPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location)
+void XM_CALLCONV Camera::GetHighestTangentPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location)
 {
   constexpr unsigned int numSteps = 40;
   const float distStep = _maxDist / static_cast<float>(numSteps);
@@ -1338,7 +1338,7 @@ void Camera::GetHighestTangentPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR
   }
 }
 
-void Camera::GetHighestPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location)
+void XM_CALLCONV Camera::GetHighestPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location)
 {
   constexpr unsigned int numSteps = 40;
   const float distStep = _maxDist / static_cast<float>(numSteps);
@@ -1367,7 +1367,7 @@ void Camera::GetHighestPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, f
 // experience if it travelled in the specified direction. A blockage is defined
 // as a piece of land more than 10 metres higher than the camera's current
 // height. If there is no blockage FLT_MAX is returned.
-float Camera::DirectDistanceToBlockage(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, const float _maxDist)
+float XM_CALLCONV Camera::DirectDistanceToBlockage(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, const float _maxDist)
 {
   if (!g_location)
     return FLT_MAX;

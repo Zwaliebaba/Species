@@ -29,7 +29,7 @@ persistent authoritative server can be built on. Roughly 113,000 lines of C++
 across six MSBuild projects. It links only against the OS (OpenGL, GLU, WinMM,
 DirectSound, Winsock) and takes one header-only dependency, **DirectXMath**,
 which ships in the Windows SDK — no library to link and nothing vendored.
-`tasks/directxmath-migration.yaml` replaced the inherited hand-rolled math with
+`tasks/Archive/directxmath-migration.yaml` replaced the inherited hand-rolled math with
 it and then deleted it: there is no Neuron vector or matrix type, storage is
 `XMFLOAT2/3`, `XMFLOAT3X3` and `XMFLOAT4X4`, and `NeuronCore/NeuronMath.h`
 holds the conventions rather than a class.
@@ -312,7 +312,26 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**Last full run: all seven steps pass at `b0bde71` (2026-08-03), on the
+**POST-MIGRATION BASELINE: `1af4979` (2026-08-05), owner-reported successful,
+on the WRAPPER-FREE build.** This is the run `directxmath-migration` T27 was
+waiting on, and it closes that plan: `Vector2`, `Vector3`, `Matrix33` and
+`Matrix34` are deleted, there is no conversion seam, and every math value in
+the tree is a DirectXMath type. `bb4a110` sits on top of it and is
+documentation only, so the binary is `1af4979`'s tree.
+
+**This run is the new baseline for the simulation.** From here the sync value
+is whatever native math produces, and any future divergence is measured
+against this build rather than against anything before it. A build from before
+the migration does not agree with this one, and is not supposed to.
+
+Why the run was needed when CI was green: T25 deleted the seam, which changed
+how every converted call site resolves its types, and three of this migration's
+worst defects were invisible to both the compiler and CI — a member that
+stopped zeroing itself, a matrix column left as stack garbage, and a normalise
+of an exactly-zero cross product. All three were found by the owner looking at
+the game. None of them would fail a build.
+
+**Last full run before that: all seven steps pass at `b0bde71` (2026-08-03), on the
 renamed build — the whole of stage 3, the `Darwinian`→`Citizen` rename and
 six of the stage-4 string conversions.** Reported by the project owner, not
 observed by the agent that wrote this line. This is the run
@@ -327,7 +346,7 @@ open at the time — the procedurally generated landscape looked different in
 shape, shading unaffected — and it is now **closed**: the height-map checksums
 are equal on both builds, so the terrain is bit-identical and the difference
 was in rendering or in the eye. The temporary checksum commit that answered it
-(`57386fb`) has been reverted. `tasks/directxmath-migration.yaml` T13 carries
+(`57386fb`) has been reverted. `tasks/Archive/directxmath-migration.yaml` T13 carries
 the detail.
 
 **Run at `bd03d4e` (2026-08-05), owner-reported: THE SMOKE TEST FINISHED

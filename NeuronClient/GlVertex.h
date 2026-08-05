@@ -26,7 +26,7 @@
 // It is NOT transitional. Unlike AsLegacy, this outlives T25, because the
 // mismatch it bridges is between DirectXMath and OpenGL rather than between the
 // old math types and the new ones.
-inline void EmitVertex(DirectX::FXMVECTOR _position)
+inline void XM_CALLCONV EmitVertex(DirectX::FXMVECTOR _position)
 {
   DirectX::XMFLOAT3 vertex;
   DirectX::XMStoreFloat3(&vertex, _position);

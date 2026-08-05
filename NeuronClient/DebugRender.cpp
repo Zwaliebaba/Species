@@ -173,7 +173,8 @@ void RenderSphere(DirectX::XMFLOAT3 const& _centre, float _radius, RGBAColour co
 
 // A point on a circle of _radius about _centre, in the plane spanned by the two
 // axes. The three loops below differ only in where the circle sits.
-static DirectX::XMVECTOR RingPoint(DirectX::FXMVECTOR _centre, DirectX::FXMVECTOR _axis2, DirectX::FXMVECTOR _axis3, float _theta, float _radius)
+static DirectX::XMVECTOR XM_CALLCONV RingPoint(DirectX::FXMVECTOR _centre, DirectX::FXMVECTOR _axis2, DirectX::FXMVECTOR _axis3, float _theta,
+                                               float _radius)
 {
   DirectX::XMVECTOR point = DirectX::XMVectorMultiplyAdd(_axis2, DirectX::XMVectorReplicate(sinf(_theta) * _radius), _centre);
   return DirectX::XMVectorMultiplyAdd(_axis3, DirectX::XMVectorReplicate(cosf(_theta) * _radius), point);

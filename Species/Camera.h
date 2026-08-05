@@ -40,10 +40,10 @@ class Camera : public CameraAccess
     void AdvanceSphereWorldFocusMode();
     void AdvanceMainMenuMode();
 
-    float DistanceToBlockage(DirectX::FXMVECTOR _dir, float _maxDist);
-    float DirectDistanceToBlockage(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float const _maxDist);
-    void GetHighestPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location);
-    void GetHighestTangentPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location);
+    float XM_CALLCONV DistanceToBlockage(DirectX::FXMVECTOR _dir, float _maxDist);
+    float XM_CALLCONV DirectDistanceToBlockage(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float const _maxDist);
+    void XM_CALLCONV GetHighestPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location);
+    void XM_CALLCONV GetHighestTangentPoint(DirectX::FXMVECTOR _from, DirectX::FXMVECTOR _to, float _maxDist, DirectX::XMFLOAT3& location);
 
     bool GetEntityToTrack(WorldObjectId& selection);
     void AdvanceAutomaticTracking();

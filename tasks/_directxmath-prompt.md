@@ -287,7 +287,7 @@ mark dependent tasks `blocked`. At minimum resolve:
 
 ## Step 5 — deliverables
 
-1. `tasks/directxmath-migration.yaml` — valid under
+1. `tasks/Archive/directxmath-migration.yaml` — valid under
    `python3 tools/check_task_dag.py`, every task `todo`, summary carrying your
    re-measured counts and the commands that produced them, plus the four
    decisions above and whatever Step 4 resolved.

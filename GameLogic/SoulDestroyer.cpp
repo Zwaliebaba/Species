@@ -57,7 +57,7 @@ SoulDestroyer::SoulDestroyer()
 // The tail segments are drawn, exploded and shadowed from the same pair of
 // history points, and every site scaled the three basis rows while leaving the
 // position row alone.
-static DirectX::XMFLOAT4X4 ScaledTailBasis(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position, float _scale)
+static DirectX::XMFLOAT4X4 XM_CALLCONV ScaledTailBasis(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position, float _scale)
 {
   DirectX::XMMATRIX mat = BasisFromFrontAndUp(_front, _up, _position);
   DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_scale);

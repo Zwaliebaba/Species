@@ -384,7 +384,7 @@ Simulation code is `GameLogic/`, plus the world, entity, team and physics code i
 
 ### Native math
 
-`tasks/directxmath-migration.yaml` replaced the inherited `Vector3`,
+`tasks/Archive/directxmath-migration.yaml` replaced the inherited `Vector3`,
 `Matrix34` and friends with `DirectX::XMFLOAT3`, `XMFLOAT4X4` and `XMVECTOR`,
 and then deleted them. There is no legacy math type to fall back to and no
 conversion seam; these rules are the whole of how math is written here. The first four are properties of the native types; the last three were
@@ -428,6 +428,16 @@ something worse — it reached a player, twice over, from one uninitialised fiel
   consulted, and a mismatch silently stops overriding rather than failing. Map a
   class's virtuals in both directions before changing it. This outlived the
   migration that learned it — it is a fact about C++, not about the seam.
+- **A parameter takes `XMFLOAT3 const&` when it is STORAGE and `FXMVECTOR` when
+  it is a link in a COMPUTATION** — and an `FXMVECTOR` parameter obliges the
+  function to be `XM_CALLCONV`. `FXMVECTOR` without `XM_CALLCONV` asks for a
+  register type and then passes it by the default convention, which costs the
+  alignment constraint and buys none of the speed. Most of the tree's APIs take
+  a value a caller holds in memory — an entity's `m_pos`, a marker's world
+  position — and those stay `XMFLOAT3 const&`. Converting one to `FXMVECTOR` as
+  a tidy-up moves the `XMLoadFloat3` from the callee to every call site, and
+  the `*Access` interfaces are virtual, so the choice is not local to one
+  function. `NeuronMath.h` has the long version.
 - **`g_upVector` and `g_zeroVector` are native constants** in `NeuronMath.h`,
   `(0,1,0)` and `(0,0,0)` as `XMFLOAT3` storage. They are for the sites that
   pass one straight into a parameter. Where an `XMVECTOR` is wanted, reach for
@@ -438,7 +448,7 @@ The two rules that used to sit here about the conversion SEAM — that it crosse
 values and references but never pointers, and that `AsLegacy` was the escape
 hatch through an out-pointer — are gone with the seam itself. If you are reading
 an old commit message that mentions them, `Vector3` and `AsLegacy` were deleted
-by `tasks/directxmath-migration.yaml` T25.
+by `tasks/Archive/directxmath-migration.yaml` T25.
 
 **The migration deliberately changes what the simulation computes** — lane
 arithmetic does not reproduce the current scalar arithmetic bit for bit, so a

@@ -76,7 +76,7 @@ static void SetLengthPreservingFallback(DirectX::XMFLOAT3& _vector, float _lengt
 
 // TriffidEgg is drawn and exploded at m_size, scaling the three basis rows and
 // leaving the position row alone.
-static DirectX::XMFLOAT4X4 ScaledEggBasis(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position, float _size)
+static DirectX::XMFLOAT4X4 XM_CALLCONV ScaledEggBasis(DirectX::FXMVECTOR _front, DirectX::FXMVECTOR _up, DirectX::FXMVECTOR _position, float _size)
 {
   DirectX::XMMATRIX mat = BasisFromFrontAndUp(_front, _up, _position);
   DirectX::XMVECTOR const scale = DirectX::XMVectorReplicate(_size);

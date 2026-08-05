@@ -169,7 +169,7 @@ static DirectX::XMFLOAT4X4 ScaleCentipedeBasis(DirectX::FXMMATRIX _basis, float 
   return result;
 }
 
-DirectX::XMFLOAT4X4 Centipede::GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const
+DirectX::XMFLOAT4X4 XM_CALLCONV Centipede::GetScaledLevelMatrix(DirectX::FXMVECTOR _position) const
 {
   return ScaleCentipedeBasis(BasisFromFrontAndUp(DirectX::XMLoadFloat3(&m_front), DirectX::g_XMIdentityR1, _position), m_size);
 }

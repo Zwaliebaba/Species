@@ -3082,9 +3082,21 @@ tasks:
     acceptance:
       - All seven Garden smoke-test steps pass on the wrapper-free build, owner-reported
       - AGENTS.md records the run with its commit hash and notes that it is the post-migration baseline
-    status: todo
+    status: done
     notes: |
-      Blocked on owner execution. This run is also the new baseline for the
-      simulation: from here the sync value is whatever native math produces,
-      and any future divergence is measured against this build rather than
-      against anything before it.
+      DONE. Owner-reported successful at 1af4979, 2026-08-05, on the
+      wrapper-free build. AGENTS.md records it as the POST-MIGRATION BASELINE.
+      THIS PLAN IS COMPLETE: 28 of 28.
+
+      This run is also the new baseline for the simulation: from here the sync
+      value is whatever native math produces, and any future divergence is
+      measured against this build rather than against anything before it. A
+      build from before the migration does not agree with this one and is not
+      supposed to.
+
+      It found nothing, which is worth recording rather than passing over. The
+      two runs before it each found a real defect that seven local checks, CI
+      and 180 tests had all passed -- Tree::RenderBranch's zero-length
+      normalise, and ShapeMarker's uninitialised fourth column. That this one
+      was clean is evidence about the deletion, not a reason to conclude the
+      gate was unnecessary.
