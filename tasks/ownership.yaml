@@ -729,7 +729,7 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: in_progress
     notes: |
       T10 WAS ADDED TO depends_on ON 2026-08-05 at 97b5844, because this
       task's acceptance could not have reached zero without it. The tree's
