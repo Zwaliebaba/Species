@@ -329,7 +329,7 @@ void GameCursor::Render()
   {
     // We are in the global world
     GlobalLocation* highlightedLocation = g_globalWorld->GetHighlightedLocation();
-    bool locAvailable = highlightedLocation && strcmp(highlightedLocation->m_missionFilename, "null") != 0 && highlightedLocation->m_available;
+    bool locAvailable = highlightedLocation && highlightedLocation->m_missionFilename != "null" && highlightedLocation->m_available;
     g_renderer->SetupMatricesFor2D();
     m_cursorPlacement->SetAnimation(locAvailable);
     m_cursorPlacement->SetSize(40.0f);

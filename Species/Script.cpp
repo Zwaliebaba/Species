@@ -193,7 +193,7 @@ void Script::RunCommand_SetMission(char* _locName, char* _missionName)
 {
   GlobalLocation* loc = g_globalWorld->GetLocation(_locName);
   DEBUG_ASSERT(loc);
-  strcpy(loc->m_missionFilename, _missionName);
+  loc->m_missionFilename = _missionName;
   loc->m_missionCompleted = false;
 }
 
