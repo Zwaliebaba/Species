@@ -585,14 +585,9 @@ bool LaserFence::DoesRayHit(DirectX::XMFLOAT3 const& _rayStart, DirectX::XMFLOAT
     bool hitTri1 = false;
     bool hitTri2 = false;
 
-    // MathUtils still takes a Vector3* out-parameter: T6 and T7 rebuilt those
-    // bodies natively but deliberately left the signatures, so their fourteen
-    // caller files could convert under their own tasks. This is one of them.
-    Vector3* const legacyHit = _pos ? &AsLegacy(*_pos) : nullptr;
-
-    hitTri1 = RayTriIntersection(_rayStart, _rayDir, pos1, pos2, pos4, _rayLen, legacyHit);
+    hitTri1 = RayTriIntersection(_rayStart, _rayDir, pos1, pos2, pos4, _rayLen, _pos);
     if (!hitTri1)
-      hitTri2 = RayTriIntersection(_rayStart, _rayDir, pos4, pos3, pos1, _rayLen, legacyHit);
+      hitTri2 = RayTriIntersection(_rayStart, _rayDir, pos4, pos3, pos1, _rayLen, _pos);
 
     if (hitTri1 || hitTri2)
     {

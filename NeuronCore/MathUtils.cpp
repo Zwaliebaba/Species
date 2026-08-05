@@ -3,8 +3,6 @@
 #include <math.h>
 
 #include "MathUtils.h"
-#include "Vector2.h"
-#include "Vector3.h"
 
 
 float Log2(float x)
@@ -162,52 +160,55 @@ unsigned long syncrand()
 
 // Finds the point on the line segment that is nearest to the specified point.
 // Often this will be one of the end points of the line segment
-float PointSegDist2D(Vector2 const& p,                     // Point
-                     Vector2 const& l0, Vector2 const& l1, // Line seg
-                     Vector2* result)
+float PointSegDist2D(DirectX::XMFLOAT2 const& p,                               // Point
+                     DirectX::XMFLOAT2 const& l0, DirectX::XMFLOAT2 const& l1, // Line seg
+                     DirectX::XMFLOAT2* result)
 {
+  DirectX::XMVECTOR const point = DirectX::XMLoadFloat2(&p);
+  DirectX::XMVECTOR const start = DirectX::XMLoadFloat2(&l0);
+  DirectX::XMVECTOR const end = DirectX::XMLoadFloat2(&l1);
+
   // Get direction of line
-  Vector2 v = l1 - l0;
+  DirectX::XMVECTOR const v = DirectX::XMVectorSubtract(end, start);
 
   // Get vector from start of line to point
-  Vector2 w = p - l0;
+  DirectX::XMVECTOR const w = DirectX::XMVectorSubtract(point, start);
 
   // Compute w dot v;
-  float c1 = w.x * v.x + w.y * v.y;
+  float c1 = DirectX::XMVectorGetX(DirectX::XMVector2Dot(w, v));
 
   // If c1 <= 0.0f then the end point l0 is the nearest to p
   if (c1 <= 0.0f)
   {
     if (result)
       *result = l0;
-    Vector2 delta = l0 - p;
-    return delta.Mag();
+    return DirectX::XMVectorGetX(DirectX::XMVector2Length(DirectX::XMVectorSubtract(start, point)));
   }
 
   // Compute length squared of v, equivalent to v dot v (a dot b = |a| |b| cos theta)
-  float c2 = v.MagSquared();
+  float c2 = DirectX::XMVectorGetX(DirectX::XMVector2LengthSq(v));
 
   // If c2 <= c1 then the end point l1 is the nearest to p
   if (c2 <= c1)
   {
     if (result)
       *result = l1;
-    Vector2 delta = l1 - p;
-    return delta.Mag();
+    return DirectX::XMVectorGetX(DirectX::XMVector2Length(DirectX::XMVectorSubtract(end, point)));
   }
 
   // Otherwise the nearest point is somewhere along the segment
   float b = c1 / c2;
+  DirectX::XMVECTOR const nearest = DirectX::XMVectorMultiplyAdd(v, DirectX::XMVectorReplicate(b), start);
   if (result)
-    *result = l0 + b * v;
+    DirectX::XMStoreFloat2(result, nearest);
 
-  Vector2 delta = (l0 + b * v) - p;
-  return delta.Mag();
+  return DirectX::XMVectorGetX(DirectX::XMVector2Length(DirectX::XMVectorSubtract(nearest, point)));
 }
 
 
 // Adapted from comp.graphics.algorithms FAQ item 1.03
-bool SegRayIntersection2D(Vector2 const& _lineStart, Vector2 const& _lineEnd, Vector2 const& _rayStart, Vector2 const& _rayDir, Vector2* _result)
+bool SegRayIntersection2D(DirectX::XMFLOAT2 const& _lineStart, DirectX::XMFLOAT2 const& _lineEnd, DirectX::XMFLOAT2 const& _rayStart,
+                          DirectX::XMFLOAT2 const& _rayDir, DirectX::XMFLOAT2* _result)
 {
   float r = (_lineStart.y - _rayStart.y) * _rayDir.x - (_lineStart.x - _rayStart.x) * _rayDir.y;
   r /= (_lineEnd.x - _lineStart.x) * _rayDir.y - (_lineEnd.y - _lineStart.y) * _rayDir.x;
@@ -219,7 +220,8 @@ bool SegRayIntersection2D(Vector2 const& _lineStart, Vector2 const& _lineEnd, Ve
   {
     if (_result)
     {
-      *_result = _rayStart + _rayDir * s;
+      DirectX::XMStoreFloat2(
+        _result, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat2(&_rayDir), DirectX::XMVectorReplicate(s), DirectX::XMLoadFloat2(&_rayStart)));
     }
 
     return true;
@@ -235,18 +237,23 @@ bool SegRayIntersection2D(Vector2 const& _lineStart, Vector2 const& _lineEnd, Ve
 
 // Returns the distance between to infinite 3D lines, assuming that they are skew.
 // Stores the points of closest approach in posOnA and posOnB
-float RayRayDist(Vector3 const& a, Vector3 const& aDir, Vector3 const& b, Vector3 const& bDir, Vector3* posOnA, Vector3* posOnB)
+float RayRayDist(DirectX::XMFLOAT3 const& a, DirectX::XMFLOAT3 const& aDir, DirectX::XMFLOAT3 const& b, DirectX::XMFLOAT3 const& bDir,
+                 DirectX::XMFLOAT3* posOnA, DirectX::XMFLOAT3* posOnB)
 {
-  Vector3 temp1, temp2;
+  // Braced to zero, as Vector3's default constructor did: these stand in for a
+  // caller that passed nullptr, and the degenerate branch below leaves
+  // whatever they hold.
+  DirectX::XMFLOAT3 temp1{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 temp2{0.0f, 0.0f, 0.0f};
   if (posOnA == nullptr)
     posOnA = &temp1;
   if (posOnB == nullptr)
     posOnB = &temp2;
 
-  DirectX::XMVECTOR const aStart = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(a));
-  DirectX::XMVECTOR const bStart = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(b));
-  DirectX::XMVECTOR const aDirection = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(aDir));
-  DirectX::XMVECTOR const bDirection = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(bDir));
+  DirectX::XMVECTOR const aStart = DirectX::XMLoadFloat3(&a);
+  DirectX::XMVECTOR const bStart = DirectX::XMLoadFloat3(&b);
+  DirectX::XMVECTOR const aDirection = DirectX::XMLoadFloat3(&aDir);
+  DirectX::XMVECTOR const bDirection = DirectX::XMLoadFloat3(&bDir);
 
   // The connecting line is perpendicular to both, so a plane containing one ray
   // and parallel to it also contains the other ray's closest approach.
@@ -264,22 +271,21 @@ float RayRayDist(Vector3 const& a, Vector3 const& aDir, Vector3 const& b, Vector
   // degenerate pair still yields whatever the caller passed in rather than
   // propagating a NaN into the simulation.
   if (!DirectX::XMVector3IsNaN(onA))
-    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*posOnA), onA);
+    DirectX::XMStoreFloat3(posOnA, onA);
   if (!DirectX::XMVector3IsNaN(onB))
-    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*posOnB), onB);
+    DirectX::XMStoreFloat3(posOnB, onB);
 
-  DirectX::XMVECTOR const separation = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(*posOnA)),
-                                                                 DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(*posOnB)));
+  DirectX::XMVECTOR const separation = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(posOnA), DirectX::XMLoadFloat3(posOnB));
 
   return DirectX::XMVectorGetX(DirectX::XMVector3Length(separation));
 }
 
 
-bool RayTriIntersection(Vector3 const& orig, Vector3 const& dir, Vector3 const& vert0, Vector3 const& vert1, Vector3 const& vert2, float _rayLen,
-                        Vector3* _result)
+bool RayTriIntersection(DirectX::XMFLOAT3 const& orig, DirectX::XMFLOAT3 const& dir, DirectX::XMFLOAT3 const& vert0, DirectX::XMFLOAT3 const& vert1,
+                        DirectX::XMFLOAT3 const& vert2, float _rayLen, DirectX::XMFLOAT3* _result)
 {
-  DirectX::XMVECTOR const origin = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(orig));
-  DirectX::XMVECTOR const direction = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(dir));
+  DirectX::XMVECTOR const origin = DirectX::XMLoadFloat3(&orig);
+  DirectX::XMVECTOR const direction = DirectX::XMLoadFloat3(&dir);
 
   // TriangleTests::Intersects REQUIRES a unit direction and asserts on one that
   // is not, so this normalises rather than trusting the caller. Every call site
@@ -293,9 +299,8 @@ bool RayTriIntersection(Vector3 const& orig, Vector3 const& dir, Vector3 const& 
   DirectX::XMVECTOR const unitDirection = DirectX::XMVectorDivide(direction, DirectX::XMVectorReplicate(dirLength));
 
   float distance = 0.0f;
-  if (!DirectX::TriangleTests::Intersects(origin, unitDirection, DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(vert0)),
-                                          DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(vert1)),
-                                          DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(vert2)), distance))
+  if (!DirectX::TriangleTests::Intersects(origin, unitDirection, DirectX::XMLoadFloat3(&vert0), DirectX::XMLoadFloat3(&vert1),
+                                          DirectX::XMLoadFloat3(&vert2), distance))
   {
     return false;
   }
@@ -304,19 +309,18 @@ bool RayTriIntersection(Vector3 const& orig, Vector3 const& dir, Vector3 const& 
     return false;
 
   if (_result)
-    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*_result),
-                           DirectX::XMVectorMultiplyAdd(unitDirection, DirectX::XMVectorReplicate(distance), origin));
+    DirectX::XMStoreFloat3(_result, DirectX::XMVectorMultiplyAdd(unitDirection, DirectX::XMVectorReplicate(distance), origin));
 
   return true;
 }
 
 
-bool RaySphereIntersection(Vector3 const& rayStart, Vector3 const& rayDir, Vector3 const& spherePos, float sphereRadius, float _rayLen, Vector3* pos,
-                           Vector3* normal)
+bool RaySphereIntersection(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3 const& rayDir, DirectX::XMFLOAT3 const& spherePos, float sphereRadius,
+                           float _rayLen, DirectX::XMFLOAT3* pos, DirectX::XMFLOAT3* normal)
 {
-  DirectX::XMVECTOR const start = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(rayStart));
-  DirectX::XMVECTOR const direction = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(rayDir));
-  DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(spherePos));
+  DirectX::XMVECTOR const start = DirectX::XMLoadFloat3(&rayStart);
+  DirectX::XMVECTOR const direction = DirectX::XMLoadFloat3(&rayDir);
+  DirectX::XMVECTOR const centre = DirectX::XMLoadFloat3(&spherePos);
 
   // Geometric solution, kept because BoundingSphere::Intersects reports a
   // distance and this routine's callers want the point and the surface normal.
@@ -340,16 +344,16 @@ bool RaySphereIntersection(Vector3 const& rayStart, Vector3 const& rayDir, Vecto
   DirectX::XMVECTOR const hit = DirectX::XMVectorMultiplyAdd(direction, DirectX::XMVectorReplicate(t), start);
 
   if (pos)
-    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*pos), hit);
+    DirectX::XMStoreFloat3(pos, hit);
 
   if (normal)
-    DirectX::XMStoreFloat3(&static_cast<DirectX::XMFLOAT3&>(*normal), DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(hit, centre)));
+    DirectX::XMStoreFloat3(normal, DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(hit, centre)));
 
   return true;
 }
 
 
-bool SphereSphereIntersection(Vector3 const& _sphere1Pos, float _sphere1Radius, Vector3 const& _sphere2Pos, float _sphere2Radius)
+bool SphereSphereIntersection(DirectX::XMFLOAT3 const& _sphere1Pos, float _sphere1Radius, DirectX::XMFLOAT3 const& _sphere2Pos, float _sphere2Radius)
 {
   DirectX::BoundingSphere const sphere1(_sphere1Pos, _sphere1Radius);
   DirectX::BoundingSphere const sphere2(_sphere2Pos, _sphere2Radius);
@@ -358,11 +362,10 @@ bool SphereSphereIntersection(Vector3 const& _sphere1Pos, float _sphere1Radius, 
 }
 
 
-bool SphereTriangleIntersection(Vector3 const& sphereCentre, float sphereRadius, Vector3 const& t1, Vector3 const& t2, Vector3 const& t3)
+bool SphereTriangleIntersection(DirectX::XMFLOAT3 const& sphereCentre, float sphereRadius, DirectX::XMFLOAT3 const& t1, DirectX::XMFLOAT3 const& t2,
+                                DirectX::XMFLOAT3 const& t3)
 {
   DirectX::BoundingSphere const sphere(sphereCentre, sphereRadius);
 
-  return sphere.Intersects(DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(t1)),
-                           DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(t2)),
-                           DirectX::XMLoadFloat3(&static_cast<DirectX::XMFLOAT3 const&>(t3)));
+  return sphere.Intersects(DirectX::XMLoadFloat3(&t1), DirectX::XMLoadFloat3(&t2), DirectX::XMLoadFloat3(&t3));
 }

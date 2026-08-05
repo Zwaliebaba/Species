@@ -1076,8 +1076,6 @@ void SphereWorld::RenderIslands()
 
   glMatrixMode(GL_MODELVIEW);
 
-  // GetClickRay took Vector3* out-parameters until T22 moved it to XMFLOAT3*,
-  // so the &AsLegacy that used to bridge that is gone.
   DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
   DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
   g_camera->GetClickRay(g_target->X(), g_target->Y(), &rayStart, &rayDir);
@@ -1391,12 +1389,9 @@ int GlobalWorld::LocationHit(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 co
 
   for (GlobalLocation* gl : m_locations)
   {
-    // RaySphereIntersection still takes Vector3 const& -- MathUtils' geometry
-    // API has no converting task, and the seam handles the conversion here
-    // because these are references rather than pointers. See T18's notes.
     DirectX::XMFLOAT3 const locPos = GetLocationPosition(gl->m_id);
 
-    bool hit = RaySphereIntersection(AsLegacy(_pos), AsLegacy(_dir), AsLegacy(locPos), locationRadius);
+    bool hit = RaySphereIntersection(_pos, _dir, locPos, locationRadius);
     if (hit)
       return gl->m_id;
   }

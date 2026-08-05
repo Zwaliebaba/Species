@@ -165,37 +165,33 @@ int Tripod::CalcWhichFootToMove()
 void Tripod::DoFallForTwoLegs()
 {
   // Calc point between feet and point under body
-  // RayRayDist still takes Vector3* out-parameters -- T6 and T7 rebuilt those
-  // bodies natively but deliberately left the signatures for their callers to
-  // convert under their own tasks. This is one of them, so these three stay
-  // legacy until MathUtils' signatures move.
-  Vector3 footToFoot;
-  Vector3 pointBetweenFeet;
-  Vector3 pointUnderBody;
+  //
+  // Braced to zero: RayRayDist leaves an out-parameter untouched when the two
+  // rays are parallel, so all three read back whatever they held -- which
+  // Vector3's default constructor made the origin.
+  DirectX::XMFLOAT3 footToFootStore{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 betweenFeetStore{0.0f, 0.0f, 0.0f};
+  DirectX::XMFLOAT3 underBodyStore{0.0f, 0.0f, 0.0f};
+  // g_upVector, which is (0,1,0).
+  DirectX::XMFLOAT3 const worldUp(0.0f, 1.0f, 0.0f);
   if (m_legs[0]->m_foot.m_state != EntityFoot::FootState::OnGround)
   {
-    footToFoot = (AsLegacy(m_legs[1]->m_foot.m_pos) - AsLegacy(m_legs[2]->m_foot.m_pos));
-    RayRayDist(m_legs[1]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
+    DirectX::XMStoreFloat3(
+      &footToFootStore, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_legs[1]->m_foot.m_pos), DirectX::XMLoadFloat3(&m_legs[2]->m_foot.m_pos)));
+    RayRayDist(m_legs[1]->m_foot.m_pos, footToFootStore, m_pos, worldUp, &betweenFeetStore, &underBodyStore);
   }
   else if (m_legs[1]->m_foot.m_state != EntityFoot::FootState::OnGround)
   {
-    footToFoot = (AsLegacy(m_legs[2]->m_foot.m_pos) - AsLegacy(m_legs[0]->m_foot.m_pos));
-    RayRayDist(m_legs[0]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
+    DirectX::XMStoreFloat3(
+      &footToFootStore, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_legs[2]->m_foot.m_pos), DirectX::XMLoadFloat3(&m_legs[0]->m_foot.m_pos)));
+    RayRayDist(m_legs[0]->m_foot.m_pos, footToFootStore, m_pos, worldUp, &betweenFeetStore, &underBodyStore);
   }
   else
   {
-    footToFoot = (AsLegacy(m_legs[0]->m_foot.m_pos) - AsLegacy(m_legs[1]->m_foot.m_pos));
-    RayRayDist(m_legs[0]->m_foot.m_pos, footToFoot, m_pos, g_upVector, &pointBetweenFeet, &pointUnderBody);
+    DirectX::XMStoreFloat3(
+      &footToFootStore, DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&m_legs[0]->m_foot.m_pos), DirectX::XMLoadFloat3(&m_legs[1]->m_foot.m_pos)));
+    RayRayDist(m_legs[0]->m_foot.m_pos, footToFootStore, m_pos, worldUp, &betweenFeetStore, &underBodyStore);
   }
-
-  // The three locals above are Vector3 because RayRayDist writes through
-  // Vector3* out-parameters. &aVector3 is a Vector3*, and the seam's conversion
-  // is to a REFERENCE, so it does not apply through a pointer -- these
-  // copy-initialised locals are what runs it. Same trap as GunTurret's Matrix34
-  // rows in T16.
-  DirectX::XMFLOAT3 const betweenFeetStore = pointBetweenFeet;
-  DirectX::XMFLOAT3 const underBodyStore = pointUnderBody;
-  DirectX::XMFLOAT3 const footToFootStore = footToFoot;
 
   // Calc moment due to centre of gravity and the contact point on the ground not being vertically aligned
   DirectX::XMVECTOR const betweenFeet = DirectX::XMLoadFloat3(&betweenFeetStore);

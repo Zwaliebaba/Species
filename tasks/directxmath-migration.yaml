@@ -2757,8 +2757,43 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
+      DONE. The last legacy signatures in the tree are gone, and with them
+      every &AsLegacy in the six projects except the one in NeuronMathTests
+      that tests AsLegacy itself.
+
+      RE-MEASURED BEFORE STARTING, and the counts below were smaller than the
+      ones this task was scoped from -- because T20 and T22 had already moved
+      the storage at most of the call sites, so this task mostly DELETED seam
+      calls. Landscape's family had 12 call sites outside Landscape.cpp, not
+      the "20 caller files" recorded here; RaySphereIntersection had 13 files
+      but only six needed an edit, the rest already passing native values.
+
+      WHAT ACTUALLY HAD TO CHANGE, beyond the signatures:
+
+        Vector2's CONVERTING CONSTRUCTOR FROM Vector3, which dropped y. That
+        projection is what let the 2D segment tests be handed a 3D ray, in
+        Landscape::RayHit, Landscape::UnsafeRayHit and Weapons. XMFLOAT2 has
+        no such constructor, so the (x, z) projection is written out at each
+        of the three -- and the decorative `0.0f` those segment endpoints
+        carried in y went with it.
+
+        Tripod's RayRayDist locals, which were three Vector3s copied into
+        three XMFLOAT3s immediately afterwards. Both halves collapse.
+
+        LaserFence and Tree, each of which built a `Vector3* const legacyHit`
+        from its own XMFLOAT3* out-parameter. Both are one deleted line.
+
+        NeuronMathTests' five geometry test classes, converted whole. The
+        seam's own tests -- the Vector3/Vector2 conversion tests, the Matrix33
+        pins and the zero-length normalise test -- stay legacy: they are
+        testing the seam, and T25 deletes them with it.
+
+      THE OUT-PARAMETER DEFAULTS ARE UNCHANGED, as this task's own note
+      required: five of these functions default their out-pointer to nullptr
+      and callers rely on it.
+
       ADDED 2026-08-05. T25's notes recorded this gap when T18 found it and
       declined to add the task unilaterally, because it changes the plan's wave
       order and that was the owner's call; the task is added now with T25

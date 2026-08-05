@@ -12,10 +12,6 @@
 #include "TargetCursor.h"
 #include "MathUtils.h"
 #include "Profiler.h"
-// For AsLegacy, which four calls below still need: Landscape::RayHit and
-// RaySphereIntersection keep their Vector3 out-pointers until
-// directxmath-migration T28, which removes both this include and those calls.
-#include "Vector3.h"
 #include "Resource.h"
 #include "Shape.h"
 #include "TextRenderer.h"
@@ -203,15 +199,10 @@ void UserInput::RecalcMousePos3d()
   ASSERT_VECTOR3_IS_SANE(rayDir);
   // `rayStart += rayDir * 0.0f` added nothing and is dropped.
 
-  // THE SEAM IS STILL HERE, deliberately. Landscape::RayHit and
-  // RaySphereIntersection take Vector3 and a Vector3 out-POINTER, which the
-  // seam cannot cross -- directxmath-migration T28 owns both signatures and
-  // every caller together. Until it lands these four calls read
-  // &AsLegacy(...) onto native storage, which is what AsLegacy is for.
   bool landscapeHit = false;
   if (g_location)
   {
-    landscapeHit = g_location->m_landscape.RayHit(AsLegacy(rayStart), AsLegacy(rayDir), &AsLegacy(m_mousePos3d));
+    landscapeHit = g_location->m_landscape.RayHit(rayStart, rayDir, &m_mousePos3d);
   }
   else
   {
@@ -225,7 +216,7 @@ void UserInput::RecalcMousePos3d()
     DirectX::XMStoreFloat3(&rayStart,
                            DirectX::XMVectorMultiplyAdd(dir, DirectX::XMVectorReplicate(sphereRadius * 4.0f), DirectX::XMLoadFloat3(&rayStart)));
     DirectX::XMStoreFloat3(&rayDir, DirectX::XMVectorNegate(dir));
-    landscapeHit = RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(sphereCentre), sphereRadius, 1e10, &AsLegacy(m_mousePos3d));
+    landscapeHit = RaySphereIntersection(rayStart, rayDir, sphereCentre, sphereRadius, 1e10, &m_mousePos3d);
     return;
   }
 
@@ -249,7 +240,7 @@ void UserInput::RecalcMousePos3d()
     DirectX::XMStoreFloat3(&rayStart,
                            DirectX::XMVectorMultiplyAdd(dir, DirectX::XMVectorReplicate(sphereRadius * 4.0f), DirectX::XMLoadFloat3(&rayStart)));
     DirectX::XMStoreFloat3(&rayDir, DirectX::XMVectorNegate(dir));
-    landscapeHit = RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(sphereCentre), sphereRadius, 1e10, &AsLegacy(m_mousePos3d));
+    landscapeHit = RaySphereIntersection(rayStart, rayDir, sphereCentre, sphereRadius, 1e10, &m_mousePos3d);
     // DEBUG_ASSERT(landscapeHit);
   }
 }

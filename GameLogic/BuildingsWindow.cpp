@@ -203,11 +203,8 @@ class CloneBuildingButton : public SpeciesButton
       DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
       g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-      // Landscape::RayHit keeps its Vector3 out-pointer until
-      // directxmath-migration T28, and the seam does not reach through a
-      // pointer, so &AsLegacy is what writes native storage from it.
       DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
-      g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
+      g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
       Building* building = g_location->GetBuilding(g_locationEditor->GetSelectionId());
       DEBUG_ASSERT(building);
@@ -519,11 +516,8 @@ class NewBuildingButton : public SpeciesButton
       DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
       g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-      // Landscape::RayHit keeps its Vector3 out-pointer until
-      // directxmath-migration T28, and the seam does not reach through a
-      // pointer, so &AsLegacy is what writes native storage from it.
       DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
-      g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
+      g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
       BuildingsCreateWindow* bcw = (BuildingsCreateWindow*)m_parent;
       Building* building = Building::CreateBuilding(bcw->m_buildingType);

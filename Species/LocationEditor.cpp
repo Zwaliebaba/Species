@@ -19,9 +19,6 @@
 #include "Input.h"
 #include "TargetCursor.h"
 #include "MathUtils.h"
-// For AsLegacy: RaySphereIntersection keeps its Vector3 parameters until
-// directxmath-migration T28, which removes this include with them.
-#include "Vector3.h"
 #include "Resource.h"
 #include "Shape.h"
 #include "TextRenderer.h"
@@ -107,10 +104,7 @@ int LocationEditor::DoesRayHitInstantUnit(DirectX::XMFLOAT3 const& rayStart, Dir
     InstantUnit* iu = location->m_levelFile->m_instantUnits[i];
     DirectX::XMFLOAT3 pos(iu->m_posX, 0.0f, iu->m_posZ);
     pos.y = location->m_landscape.m_heightMap->GetValue(pos.x, pos.z);
-    // RaySphereIntersection still takes Vector3 const&; directxmath-migration
-    // T28 owns that signature and every caller, and removes these AsLegacy
-    // calls with it.
-    bool result = RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(pos), sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
+    bool result = RaySphereIntersection(rayStart, rayDir, pos, sqrtf(iu->m_number) * INSTANT_UNIT_SIZE_FACTOR);
     if (result)
     {
       return i;
@@ -132,7 +126,7 @@ int LocationEditor::DoesRayHitCameraMount(DirectX::XMFLOAT3 const& rayStart, Dir
   for (int i = 0; i < static_cast<int>(g_location->m_levelFile->m_cameraMounts.size()); ++i)
   {
     CameraMount* mount = g_location->m_levelFile->m_cameraMounts[i];
-    if (RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(mount->m_pos), radius))
+    if (RaySphereIntersection(rayStart, rayDir, mount->m_pos, radius))
     {
       return i;
     }

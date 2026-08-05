@@ -427,39 +427,45 @@ namespace NeuronCoreTests
   {
       // A right triangle on the ground plane, so the geometry is easy to reason
       // about: corner at the origin, ten units along x, ten along z.
-      static Vector3 T1() { return Vector3(0.0f, 0.0f, 0.0f); }
-      static Vector3 T2() { return Vector3(10.0f, 0.0f, 0.0f); }
-      static Vector3 T3() { return Vector3(0.0f, 0.0f, 10.0f); }
+      static DirectX::XMFLOAT3 T1() { return DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f); }
+      static DirectX::XMFLOAT3 T2() { return DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f); }
+      static DirectX::XMFLOAT3 T3() { return DirectX::XMFLOAT3(0.0f, 0.0f, 10.0f); }
 
     public:
       TEST_METHOD(ASphereAboveTheFaceIntersectsWhenItReachesThePlane)
       {
-        Assert::IsTrue(SphereTriangleIntersection(Vector3(2.0f, 1.0f, 2.0f), 2.0f, T1(), T2(), T3()));
+        Assert::IsTrue(SphereTriangleIntersection(DirectX::XMFLOAT3(2.0f, 1.0f, 2.0f), 2.0f, T1(), T2(), T3()));
       }
 
-      TEST_METHOD(ASphereTooHighAboveTheFaceMisses) { Assert::IsFalse(SphereTriangleIntersection(Vector3(2.0f, 50.0f, 2.0f), 2.0f, T1(), T2(), T3())); }
+      TEST_METHOD(ASphereTooHighAboveTheFaceMisses)
+      {
+        Assert::IsFalse(SphereTriangleIntersection(DirectX::XMFLOAT3(2.0f, 50.0f, 2.0f), 2.0f, T1(), T2(), T3()));
+      }
 
       TEST_METHOD(ASphereTouchingAnEdgeIntersects)
       {
         // Centre sits two units outside the x-axis edge, radius three.
-        Assert::IsTrue(SphereTriangleIntersection(Vector3(5.0f, 0.0f, -2.0f), 3.0f, T1(), T2(), T3()));
+        Assert::IsTrue(SphereTriangleIntersection(DirectX::XMFLOAT3(5.0f, 0.0f, -2.0f), 3.0f, T1(), T2(), T3()));
       }
 
-      TEST_METHOD(ASphereJustShortOfAnEdgeMisses) { Assert::IsFalse(SphereTriangleIntersection(Vector3(5.0f, 0.0f, -8.0f), 3.0f, T1(), T2(), T3())); }
+      TEST_METHOD(ASphereJustShortOfAnEdgeMisses)
+      {
+        Assert::IsFalse(SphereTriangleIntersection(DirectX::XMFLOAT3(5.0f, 0.0f, -8.0f), 3.0f, T1(), T2(), T3()));
+      }
 
       TEST_METHOD(ASphereContainingTheWholeTriangleIntersects)
       {
-        Assert::IsTrue(SphereTriangleIntersection(Vector3(3.0f, 0.0f, 3.0f), 100.0f, T1(), T2(), T3()));
+        Assert::IsTrue(SphereTriangleIntersection(DirectX::XMFLOAT3(3.0f, 0.0f, 3.0f), 100.0f, T1(), T2(), T3()));
       }
 
-      TEST_METHOD(ASphereAtAVertexIntersects) { Assert::IsTrue(SphereTriangleIntersection(Vector3(0.0f, 0.0f, 0.0f), 0.5f, T1(), T2(), T3())); }
+      TEST_METHOD(ASphereAtAVertexIntersects) { Assert::IsTrue(SphereTriangleIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 0.5f, T1(), T2(), T3())); }
 
       // The outside-the-triangle-but-near-the-plane case, which is what the six
       // deleted helpers existed to handle. Beyond the hypotenuse, far enough out
       // that only the edge distance can decide it.
       TEST_METHOD(ASphereBeyondTheHypotenuseMisses)
       {
-        Assert::IsFalse(SphereTriangleIntersection(Vector3(20.0f, 0.0f, 20.0f), 3.0f, T1(), T2(), T3()));
+        Assert::IsFalse(SphereTriangleIntersection(DirectX::XMFLOAT3(20.0f, 0.0f, 20.0f), 3.0f, T1(), T2(), T3()));
       }
   };
 
@@ -490,15 +496,16 @@ namespace NeuronCoreTests
 
       // A triangle standing in the x/y plane ten units down z, straddling the
       // axis so a ray along z passes through its middle.
-      static Vector3 V0() { return Vector3(-5.0f, -5.0f, 10.0f); }
-      static Vector3 V1() { return Vector3(5.0f, -5.0f, 10.0f); }
-      static Vector3 V2() { return Vector3(0.0f, 5.0f, 10.0f); }
+      static DirectX::XMFLOAT3 V0() { return DirectX::XMFLOAT3(-5.0f, -5.0f, 10.0f); }
+      static DirectX::XMFLOAT3 V1() { return DirectX::XMFLOAT3(5.0f, -5.0f, 10.0f); }
+      static DirectX::XMFLOAT3 V2() { return DirectX::XMFLOAT3(0.0f, 5.0f, 10.0f); }
 
     public:
       TEST_METHOD(ARayThroughTheMiddleHitsAtTheTrianglesDepth)
       {
-        Vector3 result;
-        Assert::IsTrue(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 1e10f, &result));
+        DirectX::XMFLOAT3 result;
+        Assert::IsTrue(
+          RayTriIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 1e10f, &result));
 
         AssertNearlyEqual(0.0f, result.x);
         AssertNearlyEqual(0.0f, result.y);
@@ -507,18 +514,18 @@ namespace NeuronCoreTests
 
       TEST_METHOD(ARayBesideTheTriangleMisses)
       {
-        Assert::IsFalse(RayTriIntersection(Vector3(50.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 1e10f));
+        Assert::IsFalse(RayTriIntersection(DirectX::XMFLOAT3(50.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 1e10f));
       }
 
       TEST_METHOD(ARayPointingAwayMisses)
       {
-        Assert::IsFalse(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, -1.0f), V0(), V1(), V2(), 1e10f));
+        Assert::IsFalse(RayTriIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), V0(), V1(), V2(), 1e10f));
       }
 
       TEST_METHOD(TheRayLengthCutoffRejectsAHitBeyondIt)
       {
-        Assert::IsTrue(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 11.0f));
-        Assert::IsFalse(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 9.0f));
+        Assert::IsTrue(RayTriIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 11.0f));
+        Assert::IsFalse(RayTriIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f), V0(), V1(), V2(), 9.0f));
       }
 
       // Backfaces still count. Moller's formulation here rejected only a
@@ -528,8 +535,9 @@ namespace NeuronCoreTests
       // in, so this is load-bearing rather than incidental.
       TEST_METHOD(ARayHittingTheBackFaceStillHits)
       {
-        Vector3 result;
-        Assert::IsTrue(RayTriIntersection(Vector3(0.0f, 0.0f, 20.0f), Vector3(0.0f, 0.0f, -1.0f), V0(), V1(), V2(), 1e10f, &result));
+        DirectX::XMFLOAT3 result;
+        Assert::IsTrue(
+          RayTriIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 20.0f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), V0(), V1(), V2(), 1e10f, &result));
 
         AssertNearlyEqual(10.0f, result.z);
       }
@@ -538,15 +546,16 @@ namespace NeuronCoreTests
       // point must land in the same place either way.
       TEST_METHOD(ANonUnitDirectionIsHandledRatherThanAsserted)
       {
-        Vector3 result;
-        Assert::IsTrue(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 7.0f), V0(), V1(), V2(), 1e10f, &result));
+        DirectX::XMFLOAT3 result;
+        Assert::IsTrue(
+          RayTriIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 7.0f), V0(), V1(), V2(), 1e10f, &result));
 
         AssertNearlyEqual(10.0f, result.z);
       }
 
       TEST_METHOD(AZeroLengthDirectionMissesRatherThanDividingByZero)
       {
-        Assert::IsFalse(RayTriIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), V0(), V1(), V2(), 1e10f));
+        Assert::IsFalse(RayTriIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), V0(), V1(), V2(), 1e10f));
       }
   };
 
@@ -569,9 +578,9 @@ namespace NeuronCoreTests
       // face is at x=8 and the normal there points back down the ray.
       TEST_METHOD(ARayHitsTheNearFaceAndTheNormalPointsOutwards)
       {
-        Vector3 pos, normal;
-        Assert::IsTrue(
-          RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f, 1e10f, &pos, &normal));
+        DirectX::XMFLOAT3 pos, normal;
+        Assert::IsTrue(RaySphereIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+                                             DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f), 2.0f, 1e10f, &pos, &normal));
 
         AssertNearlyEqual(8.0f, pos.x);
         AssertNearlyEqual(0.0f, pos.y);
@@ -580,19 +589,23 @@ namespace NeuronCoreTests
 
       TEST_METHOD(ARayPointingAwayFromTheSphereMisses)
       {
-        Assert::IsFalse(RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(-1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f));
+        Assert::IsFalse(RaySphereIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f),
+                                              DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f), 2.0f));
       }
 
       TEST_METHOD(ARayPassingBesideTheSphereMisses)
       {
-        Assert::IsFalse(RaySphereIntersection(Vector3(0.0f, 50.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f));
+        Assert::IsFalse(RaySphereIntersection(DirectX::XMFLOAT3(0.0f, 50.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+                                              DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f), 2.0f));
       }
 
       // The cutoff is a world distance, and the near face is eight units out.
       TEST_METHOD(TheRayLengthCutoffRejectsAHitBeyondIt)
       {
-        Assert::IsTrue(RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f, 9.0f));
-        Assert::IsFalse(RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f, 7.0f));
+        Assert::IsTrue(RaySphereIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+                                             DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f), 2.0f, 9.0f));
+        Assert::IsFalse(RaySphereIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+                                              DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f), 2.0f, 7.0f));
       }
 
       // Asking for the normal WITHOUT the position. The body this replaces
@@ -603,26 +616,29 @@ namespace NeuronCoreTests
       // local, so the shape is safe rather than accidentally unreached.
       TEST_METHOD(TheNormalCanBeAskedForWithoutThePosition)
       {
-        Vector3 normal;
-        Assert::IsTrue(
-          RaySphereIntersection(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(10.0f, 0.0f, 0.0f), 2.0f, 1e10f, nullptr, &normal));
+        DirectX::XMFLOAT3 normal;
+        Assert::IsTrue(RaySphereIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+                                             DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f), 2.0f, 1e10f, nullptr, &normal));
 
         AssertNearlyEqual(-1.0f, normal.x);
       }
 
       TEST_METHOD(SpheresThatOverlapIntersect)
       {
-        Assert::IsTrue(SphereSphereIntersection(Vector3(0.0f, 0.0f, 0.0f), 5.0f, Vector3(8.0f, 0.0f, 0.0f), 5.0f));
+        Assert::IsTrue(SphereSphereIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 5.0f, DirectX::XMFLOAT3(8.0f, 0.0f, 0.0f), 5.0f));
       }
 
-      TEST_METHOD(SpheresThatAreApartDoNot) { Assert::IsFalse(SphereSphereIntersection(Vector3(0.0f, 0.0f, 0.0f), 5.0f, Vector3(20.0f, 0.0f, 0.0f), 5.0f)); }
+      TEST_METHOD(SpheresThatAreApartDoNot)
+      {
+        Assert::IsFalse(SphereSphereIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 5.0f, DirectX::XMFLOAT3(20.0f, 0.0f, 0.0f), 5.0f));
+      }
 
       // Exactly touching counts as intersecting, which is what the <= in the
       // routine this replaces did. Worth pinning: it is the kind of boundary a
       // library swap silently flips.
       TEST_METHOD(SpheresExactlyTouchingIntersect)
       {
-        Assert::IsTrue(SphereSphereIntersection(Vector3(0.0f, 0.0f, 0.0f), 5.0f, Vector3(10.0f, 0.0f, 0.0f), 5.0f));
+        Assert::IsTrue(SphereSphereIntersection(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 5.0f, DirectX::XMFLOAT3(10.0f, 0.0f, 0.0f), 5.0f));
       }
   };
 
@@ -643,9 +659,9 @@ namespace NeuronCoreTests
       // five units up. The closest approach is the vertical gap between them.
       TEST_METHOD(PerpendicularSkewLinesAreSeparatedByTheGapBetweenThem)
       {
-        Vector3 posOnA, posOnB;
-        float const dist =
-          RayRayDist(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), &posOnA, &posOnB);
+        DirectX::XMFLOAT3 posOnA, posOnB;
+        float const dist = RayRayDist(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f),
+                                      DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f), &posOnA, &posOnB);
 
         AssertNearlyEqual(5.0f, dist);
         AssertNearlyEqual(0.0f, posOnA.y);
@@ -654,9 +670,9 @@ namespace NeuronCoreTests
 
       TEST_METHOD(IntersectingLinesAreZeroApart)
       {
-        Vector3 posOnA, posOnB;
-        float const dist =
-          RayRayDist(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(3.0f, 0.0f, -4.0f), Vector3(0.0f, 0.0f, 1.0f), &posOnA, &posOnB);
+        DirectX::XMFLOAT3 posOnA, posOnB;
+        float const dist = RayRayDist(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(3.0f, 0.0f, -4.0f),
+                                      DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f), &posOnA, &posOnB);
 
         AssertNearlyEqual(0.0f, dist);
         AssertNearlyEqual(3.0f, posOnA.x);
@@ -664,7 +680,8 @@ namespace NeuronCoreTests
 
       TEST_METHOD(TheOutParametersAreOptional)
       {
-        float const dist = RayRayDist(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
+        float const dist = RayRayDist(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f),
+                                      DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f));
 
         AssertNearlyEqual(5.0f, dist);
       }
@@ -684,11 +701,11 @@ namespace NeuronCoreTests
       // NaN escapes", not a distance.
       TEST_METHOD(ParallelLinesLeaveTheOutParametersAloneRatherThanReturningNaN)
       {
-        Vector3 posOnA(1.0f, 2.0f, 3.0f);
-        Vector3 posOnB(4.0f, 5.0f, 6.0f);
+        DirectX::XMFLOAT3 posOnA(1.0f, 2.0f, 3.0f);
+        DirectX::XMFLOAT3 posOnB(4.0f, 5.0f, 6.0f);
 
-        float const dist =
-          RayRayDist(Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), &posOnA, &posOnB);
+        float const dist = RayRayDist(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f),
+                                      DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f), &posOnA, &posOnB);
 
         Assert::IsFalse(std::isnan(posOnA.x) || std::isnan(posOnA.y) || std::isnan(posOnA.z));
         Assert::IsFalse(std::isnan(posOnB.x) || std::isnan(posOnB.y) || std::isnan(posOnB.z));
@@ -702,7 +719,7 @@ namespace NeuronCoreTests
 
   // THE ZERO-LENGTH NORMALISE DIVERGENCE, pinned after it shipped.
   //
-  // NeuronMath.h records the decision: Vector3::Normalise answered a
+  // NeuronMath.h records the decision: DirectX::XMFLOAT3::Normalise answered a
   // zero-length input with (0,0,1), XMVector3Normalize answers zero, and the
   // migration takes the native behaviour rather than reproducing the fallback.
   // Every call site was supposed to be audited for whether it can actually see

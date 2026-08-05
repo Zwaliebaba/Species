@@ -603,20 +603,17 @@ bool Location::IsVisible(DirectX::XMFLOAT3 const& _from, DirectX::XMFLOAT3 const
   DirectX::XMFLOAT3 startPos;
   DirectX::XMStoreFloat3(&startPos, DirectX::XMVectorMultiplyAdd(DirectX::XMLoadFloat3(&rayDir), DirectX::XMVectorReplicate(tolerance), from));
 
-  // Landscape::RayHit still takes Vector3 -- its out-pointer reaches MathUtils,
-  // which has no converting task. See T18's notes.
-  Vector3 hitPos;
-  bool landHit = g_location->m_landscape.RayHit(AsLegacy(startPos), AsLegacy(rayDir), &hitPos);
+  // Braced to zero: the early return below is what stops an unwritten hitPos
+  // being read, and Vector3's default constructor is what made that safe
+  // before the return existed.
+  DirectX::XMFLOAT3 hitPos{0.0f, 0.0f, 0.0f};
+  bool landHit = g_location->m_landscape.RayHit(startPos, rayDir, &hitPos);
 
   if (!landHit)
     return true;
 
-  // The seam's conversion operator, bound to a name so its address is an
-  // XMFLOAT3* -- `&hitPos` would be a Vector3*, which is T14's failure mode 7.
-  DirectX::XMFLOAT3 const& hitNative = hitPos;
-
   float distanceToTarget = DirectX::XMVectorGetX(DirectX::XMVector3Length(delta));
-  float distanceToHit = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&hitNative), from)));
+  float distanceToHit = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&hitPos), from)));
   if (distanceToHit > distanceToTarget + tolerance)
     return true;
 
@@ -1651,10 +1648,6 @@ void Location::UpdateTeam(unsigned char teamId, TeamControls const& teamControls
 }
 
 
-// The Vector3 locals below feed RaySphereIntersection's out-pointer, which is
-// the last thing here that has not converted -- directxmath-migration T28 owns
-// that signature and every caller. The seam handles the reference arguments;
-// the pointer is what has to stay legacy.
 int Location::GetUnitId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 const& direction, unsigned char team, float* _range)
 {
   if (team == 255)
@@ -1674,7 +1667,7 @@ int Location::GetUnitId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 con
     if (m_teams[team].m_units.ValidIndex(unit))
     {
       Unit* theUnit = m_teams[team].m_units.GetData(unit);
-      bool rayHit = RaySphereIntersection(AsLegacy(startRay), AsLegacy(direction), AsLegacy(theUnit->m_centrePos), theUnit->m_radius * 1.5f);
+      bool rayHit = RaySphereIntersection(startRay, direction, theUnit->m_centrePos, theUnit->m_radius * 1.5f);
       if (rayHit && theUnit->NumAliveEntities() > 0)
       {
         for (int i = 0; i < theUnit->m_entities.Size(); ++i)
@@ -1682,11 +1675,15 @@ int Location::GetUnitId(DirectX::XMFLOAT3 const& startRay, DirectX::XMFLOAT3 con
           if (theUnit->m_entities.ValidIndex(i))
           {
             Entity* entity = theUnit->m_entities[i];
-            Vector3 spherePos = AsLegacy(entity->m_pos) + AsLegacy(entity->m_centrePos);
+            DirectX::XMFLOAT3 spherePos;
+            DirectX::XMStoreFloat3(&spherePos,
+                                   DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&entity->m_centrePos)));
             float sphereRadius = entity->m_radius * 1.5f;
-            Vector3 hitPos;
+            // Braced to zero: only read inside the `if (entityHit)` below,
+            // but Vector3's constructor is what made that true beforehand.
+            DirectX::XMFLOAT3 hitPos{0.0f, 0.0f, 0.0f};
 
-            bool entityHit = RaySphereIntersection(AsLegacy(startRay), AsLegacy(direction), spherePos, sphereRadius, 1e10, &hitPos);
+            bool entityHit = RaySphereIntersection(startRay, direction, spherePos, sphereRadius, 1e10, &hitPos);
             if (entityHit && !entity->m_dead)
             {
               float centrePosX, centrePosY, rayHitX, rayHitY;
@@ -1731,10 +1728,11 @@ WorldObjectId Location::GetEntityId(DirectX::XMFLOAT3 const& startRay, DirectX::
       Entity* ent = m_teams[teamId].m_others.GetData(i);
       if (!ent->m_dead)
       {
-        Vector3 spherePos = AsLegacy(ent->m_pos) + AsLegacy(ent->m_centrePos);
+        DirectX::XMFLOAT3 spherePos;
+        DirectX::XMStoreFloat3(&spherePos, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&ent->m_pos), DirectX::XMLoadFloat3(&ent->m_centrePos)));
         float sphereRadius = ent->m_radius * 1.5f;
-        Vector3 hitPos;
-        bool rayHit = RaySphereIntersection(AsLegacy(startRay), AsLegacy(direction), spherePos, sphereRadius, 1e10, &hitPos);
+        DirectX::XMFLOAT3 hitPos{0.0f, 0.0f, 0.0f};
+        bool rayHit = RaySphereIntersection(startRay, direction, spherePos, sphereRadius, 1e10, &hitPos);
         if (rayHit)
         {
           float centrePosX, centrePosY, rayHitX, rayHitY;
@@ -1776,20 +1774,22 @@ int Location::GetBuildingId(DirectX::XMFLOAT3 const& rayStart, DirectX::XMFLOAT3
 
       if (building->m_type != Building::TypeControlTower && teamMatch)
       {
-        Vector3 hitPos;
+        // Braced to zero: the TypeRadarDish branch below only fills this in
+        // when DoesRayHit already said yes, and the Get2DScreenPos call that
+        // reads it runs under the same test.
+        DirectX::XMFLOAT3 hitPos{0.0f, 0.0f, 0.0f};
         bool rayHit = false;
 
         if (building->m_type == Building::TypeRadarDish)
         {
           rayHit = building->DoesRayHit(rayStart, rayDir, 1e10);
           if (rayHit)
-            RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(building->m_centrePos), building->m_radius, _maxDistance, &hitPos);
+            RaySphereIntersection(rayStart, rayDir, building->m_centrePos, building->m_radius, _maxDistance, &hitPos);
           // Have to do the raySphereIntersection in order to calculate the hitPos
         }
         else
         {
-          rayHit =
-            RaySphereIntersection(AsLegacy(rayStart), AsLegacy(rayDir), AsLegacy(building->m_centrePos), building->m_radius, _maxDistance, &hitPos);
+          rayHit = RaySphereIntersection(rayStart, rayDir, building->m_centrePos, building->m_radius, _maxDistance, &hitPos);
         }
 
         if (rayHit)
@@ -2077,12 +2077,18 @@ void Location::Bang(DirectX::XMFLOAT3 const& _pos, float _range, float _damage)
   //
   // Is visible?
 
-  // Landscape::RayHit still takes Vector3 -- see T18's notes. tmp stays legacy
-  // because it is an out-POINTER, which the seam does not reach through.
-  Vector3 const cameraPos = g_camera->GetPos();
-  Vector3 tmp;
-  bool isVisible =
-    !m_landscape.RayHit(cameraPos, AsLegacy(_pos) - cameraPos, &tmp) || (tmp - cameraPos).Mag() > (AsLegacy(_pos) - cameraPos).Mag() - 0.3f;
+  DirectX::XMFLOAT3 const cameraPos = g_camera->GetPos();
+  DirectX::XMVECTOR const camera = DirectX::XMLoadFloat3(&cameraPos);
+  DirectX::XMVECTOR const cameraToPos = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&_pos), camera);
+  DirectX::XMFLOAT3 cameraToPosStore;
+  DirectX::XMStoreFloat3(&cameraToPosStore, cameraToPos);
+
+  // Braced to zero: RayHit leaves it alone when it misses, and the short-circuit
+  // below is what stops the second term reading it in that case.
+  DirectX::XMFLOAT3 tmp{0.0f, 0.0f, 0.0f};
+  bool isVisible = !m_landscape.RayHit(cameraPos, cameraToPosStore, &tmp) ||
+                   DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&tmp), camera))) >
+                     DirectX::XMVectorGetX(DirectX::XMVector3Length(cameraToPos)) - 0.3f;
 
   //
   // Shockwave

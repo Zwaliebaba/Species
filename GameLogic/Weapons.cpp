@@ -604,10 +604,7 @@ bool Laser::Advance()
       DirectX::XMFLOAT3 vel;
       DirectX::XMStoreFloat3(&vel, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&m_vel)));
 
-      // Landscape::RayHit still takes a Vector3 out-pointer -- T28 owns it -- and
-      // the seam converts by reference, so it does nothing through an address.
-      // AsLegacy is the escape hatch until both ends convert together.
-      g_location->m_landscape.RayHit(oldPos, vel, &AsLegacy(hitPoint));
+      g_location->m_landscape.RayHit(oldPos, vel, &hitPoint);
 
       DirectX::XMVECTOR const velVec = DirectX::XMLoadFloat3(&m_vel);
       float distanceTravelled =
@@ -690,7 +687,12 @@ bool Laser::Advance()
         WorldObject* wobj = g_location->GetEntity(id);
         Entity* entity = (Entity*)wobj;
 
-        if (PointSegDist2D(Vector2(entity->m_pos), Vector2(rayStart), Vector2(rayEnd)) < 10.0f)
+        // Vector2's converting constructor from a Vector3 dropped y; XMFLOAT2
+        // has no such constructor, so the (x, z) projection is written out.
+        DirectX::XMFLOAT2 const entityPos2D(entity->m_pos.x, entity->m_pos.z);
+        DirectX::XMFLOAT2 const rayStart2D(rayStart.x, rayStart.z);
+        DirectX::XMFLOAT2 const rayEnd2D(rayEnd.x, rayEnd.z);
+        if (PointSegDist2D(entityPos2D, rayStart2D, rayEnd2D) < 10.0f)
         {
           g_soundSystem->TriggerOtherEvent(SoundSourceOf(this), "HitEntity", SoundSourceBlueprint::TypeLaser);
           if (entity->m_type == Entity::TypeSpider || entity->m_type == Entity::TypeSporeGenerator || entity->m_type == Entity::TypeEngineer ||

@@ -92,11 +92,8 @@ class SpawnCitizensButton : public SpeciesButton
         DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        // Landscape::RayHit keeps its Vector3 out-pointer until
-        // directxmath-migration T28, and the seam does not reach through a
-        // pointer, so &AsLegacy is what writes native storage from it.
         DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
-        g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
+        g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
         g_location->SpawnEntities(_pos, m_teamId, -1, Entity::TypeCitizen, 20, s_noVelocity, 30);
       }
@@ -113,11 +110,8 @@ class SpawnTankButton : public SpeciesButton
         DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        // Landscape::RayHit keeps its Vector3 out-pointer until
-        // directxmath-migration T28, and the seam does not reach through a
-        // pointer, so &AsLegacy is what writes native storage from it.
         DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
-        g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
+        g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
         g_location->SpawnEntities(_pos, 2, -1, Entity::TypeArmour, 1, s_noVelocity, 0);
       }
@@ -134,11 +128,8 @@ class SpawnViriiButton : public SpeciesButton
         DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        // Landscape::RayHit keeps its Vector3 out-pointer until
-        // directxmath-migration T28, and the seam does not reach through a
-        // pointer, so &AsLegacy is what writes native storage from it.
         DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
-        g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
+        g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
         g_location->SpawnEntities(_pos, 1, -1, Entity::TypeVirii, 20, s_noVelocity, 0, 1000.0f);
       }
@@ -155,11 +146,8 @@ class SpawnSpiritButton : public SpeciesButton
         DirectX::XMFLOAT3 rayStart{0.0f, 0.0f, 0.0f};
         DirectX::XMFLOAT3 rayDir{0.0f, 0.0f, 0.0f};
         g_camera->GetClickRay(g_renderer->ScreenW() / 2, g_renderer->ScreenH() / 2, &rayStart, &rayDir);
-        // Landscape::RayHit keeps its Vector3 out-pointer until
-        // directxmath-migration T28, and the seam does not reach through a
-        // pointer, so &AsLegacy is what writes native storage from it.
         DirectX::XMFLOAT3 _pos{0.0f, 0.0f, 0.0f};
-        g_location->m_landscape.RayHit(rayStart, rayDir, &AsLegacy(_pos));
+        g_location->m_landscape.RayHit(rayStart, rayDir, &_pos);
 
         for (int i = 0; i < 10; ++i)
         {
