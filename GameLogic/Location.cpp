@@ -150,7 +150,7 @@ void Location::Init(char const* _missionFilename, char const* _mapFilename)
   }
   else
   {
-    for (Building* building : m_levelFile->m_buildings)
+    for (auto const& building : m_levelFile->m_buildings)
     {
       building->m_pos.y = m_landscape.m_heightMap->GetValue(building->m_pos.x, building->m_pos.z);
     }
@@ -225,7 +225,7 @@ void Location::InitLandscape() { m_landscape.Init(&m_levelFile->m_landscape); }
 
 void Location::InitLights()
 {
-  for (Light* levelLight : m_levelFile->m_lights)
+  for (auto const& levelLight : m_levelFile->m_lights)
   {
     Light* light = new Light();
     light->SetColour(levelLight->m_colour);
@@ -237,7 +237,7 @@ void Location::InitLights()
 
 void Location::InitBuildings()
 {
-  for (Building* building : m_levelFile->m_buildings)
+  for (auto const& building : m_levelFile->m_buildings)
   {
     Building* existing = g_location->GetBuilding(building->m_id.GetUniqueId());
     if (existing)
@@ -251,7 +251,7 @@ void Location::InitBuildings()
     }
     Building* newBuilding = Building::CreateBuilding(building->m_type);
     m_buildings.PutData(newBuilding);
-    newBuilding->Initialise(building);
+    newBuilding->Initialise(building.get());
     newBuilding->SetDetail(g_prefsManager->GetInt("RenderBuildingDetail", 1));
   }
 }
@@ -864,9 +864,9 @@ bool Location::MissionComplete()
   if (m_missionComplete)
     return true;
 
-  std::vector<GlobalEventCondition*>* objectivesList = &m_levelFile->m_primaryObjectives;
+  auto* objectivesList = &m_levelFile->m_primaryObjectives;
 
-  for (GlobalEventCondition* gec : *objectivesList)
+  for (auto const& gec : *objectivesList)
   {
     if (!gec->Evaluate())
     {
@@ -1385,13 +1385,13 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
     DebugTrace("CLIENT : Assigned team {}\n", _teamId);
     g_globalWorld->m_myTeamId = _teamId;
     //		g_target->SetMousePos(g_renderer->ScreenW(), g_renderer->ScreenH());
-    //		g_camera->RequestMode(CameraAccess::ModeFreeMovement);
+    //		g_camera->RequestMode(CameraAccess::Mode::ModeFreeMovement);
   }
 
   // Create instant units that belong to this team
   for (int i = 0; i < static_cast<int>(m_levelFile->m_instantUnits.size()); i++)
   {
-    InstantUnit* iu = m_levelFile->m_instantUnits[i];
+    InstantUnit* iu = m_levelFile->m_instantUnits[i].get();
     if (team->m_teamId != iu->m_teamId)
       continue;
 
@@ -1465,7 +1465,7 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
 
   if (_teamType == Team::TeamTypeLocalPlayer)
   {
-    for (RunningProgram* program : m_levelFile->m_runningPrograms)
+    for (auto const& program : m_levelFile->m_runningPrograms)
     {
       if (program->m_type == Entity::TypeEngineer)
       {
@@ -1485,11 +1485,11 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
           engineer->CollectSpirit(index);
         }
 
-        Task* task = new Task();
+        auto task = std::make_unique<Task>();
         task->m_type = GlobalResearch::TypeEngineer;
         task->m_objId = objId;
         task->m_state = Task::StateRunning;
-        g_taskManager->RegisterTask(task);
+        g_taskManager->RegisterTask(std::move(task));
       }
 
       if (program->m_type == Entity::TypeInsertionSquadie)
@@ -1514,11 +1514,11 @@ void Location::InitialiseTeam(unsigned char _teamId, unsigned char _teamType)
           entity->m_stats[Entity::StatHealth] = program->m_health[s];
         }
 
-        Task* task = new Task();
+        auto task = std::make_unique<Task>();
         task->m_type = GlobalResearch::TypeSquad;
         task->m_objId.Set(_teamId, unitId, -1, -1);
         task->m_state = Task::StateRunning;
-        g_taskManager->RegisterTask(task);
+        g_taskManager->RegisterTask(std::move(task));
       }
     }
   }

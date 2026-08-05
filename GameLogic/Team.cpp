@@ -655,7 +655,7 @@ void Team::RenderOthers(float _predictionTime)
 // has no place in the foundation.
 void TeamControls::Advance()
 {
-  if (g_camera->IsInMode(CameraAccess::ModeBuildingFocus))
+  if (g_camera->IsInMode(CameraAccess::Mode::ModeBuildingFocus))
     return;
 
   m_mousePos = g_userInput->GetMousePos3d();
@@ -665,7 +665,7 @@ void TeamControls::Advance()
   m_primaryFireDirected |= g_inputManager->controlEvent(ControlUnitPrimaryFireDirected) && !g_inputManager->controlEvent(ControlCameraRotate);
   m_secondaryFireDirected |=
     g_inputManager->controlEvent(ControlUnitSecondaryFireDirected) /* && g_inputManager->controlEvent( ControlUnitStartSecondaryFireDirected ) */;
-  m_cameraEntityTracking |= g_camera->IsInMode(CameraAccess::ModeEntityTrack);
+  m_cameraEntityTracking |= g_camera->IsInMode(CameraAccess::Mode::ModeEntityTrack);
   m_unitMove |= g_inputManager->controlEvent(ControlUnitSetTarget) && !m_secondaryFireTarget;
   m_unitSecondaryMode |= g_inputManager->controlEvent(ControlUnitStartSecondaryFireDirected);
   m_endSetTarget |= g_inputManager->controlEvent(ControlUnitEndSetTarget);

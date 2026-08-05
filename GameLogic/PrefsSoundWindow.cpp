@@ -58,7 +58,7 @@ class RestartSoundButton : public SpeciesButton
         {
           if (g_soundSystem->m_sounds.ValidIndex(i))
           {
-            SoundInstance* instance = g_soundSystem->m_sounds[i];
+            SoundInstance* instance = g_soundSystem->m_sounds[i].get();
             if (instance->m_cachedSampleHandle)
             {
               g_deletingCachedSampleHandle = true;

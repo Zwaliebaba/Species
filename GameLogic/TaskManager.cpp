@@ -45,12 +45,12 @@ Task::Task()
   : m_type(GlobalResearch::TypeSquad),
     m_id(-1),
     m_state(StateIdle),
-    m_route(nullptr)
+    m_route()
 {
 }
 
 
-Task::~Task() { delete m_route; }
+Task::~Task() = default;
 
 
 void Task::Start() { m_state = StateStarted; }
@@ -314,9 +314,9 @@ bool Task::Advance()
 
 void Task::SwitchTo()
 {
-  if (g_camera->IsInMode(CameraAccess::ModeRadarAim) || g_camera->IsInMode(CameraAccess::ModeTurretAim))
+  if (g_camera->IsInMode(CameraAccess::Mode::ModeRadarAim) || g_camera->IsInMode(CameraAccess::Mode::ModeTurretAim))
   {
-    g_camera->RequestMode(CameraAccess::ModeFreeMovement);
+    g_camera->RequestMode(CameraAccess::Mode::ModeFreeMovement);
   }
 
   int teamId = g_globalWorld->m_myTeamId;
@@ -340,7 +340,7 @@ void Task::SwitchTo()
   {
     for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
     {
-      Task* task = g_taskManager->m_tasks[i];
+      Task* task = g_taskManager->m_tasks[i].get();
       if (task->m_type == GlobalResearch::TypeSquad && task->m_objId == m_objId)
       {
         g_taskManager->SelectTask(task->m_id);
@@ -415,15 +415,16 @@ TaskManager::TaskManager()
 }
 
 
-bool TaskManager::RunTask(Task* _task)
+bool TaskManager::RunTask(std::unique_ptr<Task> _task)
 {
   if (CapacityUsed() < Capacity())
   {
     _task->m_id = m_nextTaskId;
     ++m_nextTaskId;
-    m_tasks.push_back(_task);
-    _task->Start();
-    m_currentTaskId = _task->m_id;
+    Task* task = _task.get();
+    m_tasks.push_back(std::move(_task));
+    task->Start();
+    m_currentTaskId = task->m_id;
 
     return true;
   }
@@ -445,9 +446,9 @@ bool TaskManager::RunTask(int _type)
   case GlobalResearch::TypeOfficer:
   case GlobalResearch::TypeArmour:
   {
-    Task* task = new Task();
+    auto task = std::make_unique<Task>();
     task->m_type = _type;
-    bool success = RunTask(task);
+    bool success = RunTask(std::move(task));
     if (success)
     {
       int teamId = g_globalWorld->m_myTeamId;
@@ -469,12 +470,13 @@ bool TaskManager::RunTask(int _type)
 
         if (!GetTask(squad->m_controllerId))
         {
-          Task* controller = new Task();
+          auto controllerOwned = std::make_unique<Task>();
+          Task* controller = controllerOwned.get();
           controller->m_type = _type;
           controller->m_objId = WorldObjectId(squad->m_teamId, squad->m_unitId, -1, -1);
-          controller->m_route = new Route(-1);
+          controller->m_route = std::make_unique<Route>(-1);
           controller->m_route->AddWayPoint(squad->m_centrePos);
-          bool success = RunTask(controller);
+          bool success = RunTask(std::move(controllerOwned));
           if (success)
           {
             squad->m_controllerId = controller->m_id;
@@ -518,13 +520,13 @@ bool TaskManager::RunTask(int _type)
 }
 
 
-bool TaskManager::RegisterTask(Task* _task)
+bool TaskManager::RegisterTask(std::unique_ptr<Task> _task)
 {
   if (CapacityUsed() < Capacity())
   {
     _task->m_id = m_nextTaskId;
     ++m_nextTaskId;
-    m_tasks.push_back(_task);
+    m_tasks.push_back(std::move(_task));
     return true;
   }
 
@@ -536,13 +538,14 @@ bool TaskManager::TerminateTask(int _id)
 {
   for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
-    Task* task = m_tasks[i];
+    Task* task = m_tasks[i].get();
     if (task->m_id == _id)
     {
       g_taskManagerInterface->SetCurrentMessage(TaskManagerInterfaceAccess::MessageShutdown, task->m_type, 3.0f);
+      // Held alive across Stop(), exactly as the erase-then-delete pair did.
+      std::unique_ptr<Task> const dying = std::move(m_tasks[i]);
       m_tasks.erase(m_tasks.begin() + i);
       task->Stop();
-      delete task;
 
       if (m_currentTaskId == _id)
       {
@@ -612,7 +615,7 @@ void TaskManager::AdvanceTasks()
 
   for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
-    Task* task = m_tasks[i];
+    Task* task = m_tasks[i].get();
     bool amIDone = task->Advance();
     if (amIDone)
     {
@@ -625,7 +628,6 @@ void TaskManager::AdvanceTasks()
 
       m_tasks.erase(m_tasks.begin() + i);
       --i;
-      delete task;
     }
   }
 }
@@ -633,7 +635,7 @@ void TaskManager::AdvanceTasks()
 
 void TaskManager::StopAllTasks()
 {
-  EmptyAndDelete(m_tasks);
+  m_tasks.clear();
   m_currentTaskId = -1;
 }
 
@@ -654,7 +656,7 @@ void TaskManager::SelectTask(int _id)
     int currentIndex = -1;
     for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
     {
-      Task* task = m_tasks[i];
+      Task* task = m_tasks[i].get();
       if (task->m_id == m_currentTaskId)
       {
         currentIndex = i;
@@ -664,7 +666,7 @@ void TaskManager::SelectTask(int _id)
 
     ASSERT_TEXT(currentIndex != -1, "Error in TaskManager::SelectTask. Tried to select a task that doesn't exist.");
 
-    Task* task = m_tasks[currentIndex];
+    Task* task = m_tasks[currentIndex].get();
     // m_tasks.erase(m_tasks.begin() + currentIndex);
     // m_tasks.insert(m_tasks.begin(),  task );
     task->SwitchTo();
@@ -678,7 +680,7 @@ void TaskManager::SelectTask(WorldObjectId _id)
 {
   for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
-    Task* task = m_tasks[i];
+    Task* task = m_tasks[i].get();
     if (task->m_objId.GetTeamId() == _id.GetTeamId() && task->m_objId.GetUnitId() == _id.GetUnitId() && task->m_objId.GetIndex() == _id.GetIndex())
     {
       SelectTask(task->m_id);
@@ -695,7 +697,7 @@ Task* TaskManager::GetTask(int _id)
 {
   for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
-    Task* task = m_tasks[i];
+    Task* task = m_tasks[i].get();
     if (task->m_id == _id)
     {
       return task;
@@ -710,7 +712,7 @@ Task* TaskManager::GetTask(WorldObjectId _id)
 {
   for (int i = 0; i < static_cast<int>(m_tasks.size()); ++i)
   {
-    Task* task = m_tasks[i];
+    Task* task = m_tasks[i].get();
     if (task->m_objId == _id)
     {
       return task;

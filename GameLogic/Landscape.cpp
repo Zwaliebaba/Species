@@ -411,7 +411,7 @@ void Landscape::GenerateHeightMap(LandscapeDef* _def)
   // Join the tiles together to form the whole level
   for (int i = 0; i < static_cast<int>(_def->m_tiles.size()); ++i)
   {
-    LandscapeTile* aTile = _def->m_tiles[i];
+    LandscapeTile* aTile = _def->m_tiles[i].get();
     aTile->m_outsideHeight = m_outsideHeight;
     aTile->Generate(_def);
     MergeTileIntoLandscape(aTile);
@@ -419,9 +419,9 @@ void Landscape::GenerateHeightMap(LandscapeDef* _def)
 
   // Apply flatten areas
   {
-    for (LandscapeFlattenArea* area : _def->m_flattenAreas)
+    for (auto const& area : _def->m_flattenAreas)
     {
-      FlattenArea(area);
+      FlattenArea(area.get());
     }
   }
 
@@ -432,8 +432,7 @@ void Landscape::GenerateHeightMap(LandscapeDef* _def)
 
 void Landscape::DeleteTile(int tileId)
 {
-  LandscapeTile* tile = g_location->m_levelFile->m_landscape.m_tiles[tileId];
-  delete tile;
+  // The erase destroys it; it used to be deleted first and then erased.
   g_location->m_levelFile->m_landscape.m_tiles.erase(g_location->m_levelFile->m_landscape.m_tiles.begin() + tileId);
   LandscapeDef* def = &g_location->m_levelFile->m_landscape;
   Init(def);

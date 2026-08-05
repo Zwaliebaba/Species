@@ -79,21 +79,23 @@ char const* CamAnimNode::GetTransitModeName(int _modeId)
 
 void LevelFile::ParseMissionFile(char const* _filename)
 {
-  TextReader* in = nullptr;
+  std::unique_ptr<TextReader> inOwned;
 
   if (!g_editing)
   {
     // Try to load a save game first
     const std::string fullFilename = std::format("{}users/{}/{}", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
     if (DoesFileExist(fullFilename.c_str()))
-      in = new TextFileReader(fullFilename.c_str());
+      inOwned = std::make_unique<TextFileReader>(fullFilename.c_str());
   }
 
-  if (!in)
+  if (!inOwned)
   {
     const std::string fullFilename = std::format("Levels/{}", _filename);
-    in = g_resource->GetTextReader(fullFilename.c_str());
+    inOwned.reset(g_resource->GetTextReader(fullFilename.c_str()));
   }
+
+  TextReader* in = inOwned.get();
 
   ASSERT_TEXT(in && in->IsOpen(), "Invalid level specified");
 
@@ -146,14 +148,13 @@ void LevelFile::ParseMissionFile(char const* _filename)
       DEBUG_ASSERT(0);
     }
   }
-
-  delete in;
 }
 
 void LevelFile::ParseMapFile(char const* _levelFilename)
 {
   const std::string fullFilename = std::format("Levels/{}", _levelFilename);
-  TextReader* in = g_resource->GetTextReader(fullFilename.c_str());
+  std::unique_ptr<TextReader> const inOwned(g_resource->GetTextReader(fullFilename.c_str()));
+  TextReader* in = inOwned.get();
   ASSERT_TEXT(in && in->IsOpen(), "Invalid map file specified ({})", _levelFilename);
 
   while (in->ReadLine())
@@ -187,8 +188,6 @@ void LevelFile::ParseMapFile(char const* _levelFilename)
       DEBUG_ASSERT(0);
     }
   }
-
-  delete in;
 }
 
 
@@ -203,7 +202,8 @@ void LevelFile::ParseCameraMounts(TextReader* _in)
     if (stricmp("CameraMounts_EndDefinition", word) == 0)
       return;
 
-    CameraMount* cmnt = new CameraMount();
+    auto cmntOwned = std::make_unique<CameraMount>();
+    CameraMount* cmnt = cmntOwned.get();
 
     // Read name. The truncation is kept rather than dropped with the array it
     // used to bound: it is what a level file carrying a longer name loads as
@@ -237,7 +237,7 @@ void LevelFile::ParseCameraMounts(TextReader* _in)
     cmnt->m_up.z = atof(word);
     DirectX::XMStoreFloat3(&cmnt->m_up, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&cmnt->m_up)));
 
-    m_cameraMounts.push_back(cmnt);
+    m_cameraMounts.push_back(std::move(cmntOwned));
   }
 }
 
@@ -253,7 +253,8 @@ void LevelFile::ParseCameraAnims(TextReader* _in)
     if (stricmp("CameraAnimations_EndDefinition", word) == 0)
       return;
 
-    CameraAnimation* anim = new CameraAnimation();
+    auto animOwned = std::make_unique<CameraAnimation>();
+    CameraAnimation* anim = animOwned.get();
     anim->m_name = std::string_view{word}.substr(0, CAMERA_ANIM_MAX_NAME_LEN);
 
     while (_in->ReadLine())
@@ -266,11 +267,12 @@ void LevelFile::ParseCameraAnims(TextReader* _in)
         break;
       }
 
-      CamAnimNode* node = new CamAnimNode();
+      auto nodeOwned = std::make_unique<CamAnimNode>();
+      CamAnimNode* node = nodeOwned.get();
 
       // Read camera mode
       node->m_transitionMode = CamAnimNode::GetTransitModeId(word);
-      ASSERT_TEXT(node->m_transitionMode >= 0 && node->m_transitionMode < CameraAccess::ModeNumModes,
+      ASSERT_TEXT(node->m_transitionMode >= 0 && node->m_transitionMode < static_cast<int>(Neuron::I(CameraAccess::Mode::ModeNumModes)),
                   "Bad camera animation camera mode in level file {}", m_missionFilename);
 
 
@@ -286,10 +288,10 @@ void LevelFile::ParseCameraAnims(TextReader* _in)
       node->m_duration = atof(word);
       ASSERT_TEXT(node->m_duration >= 0.0f && node->m_duration < 60.0f, "Bad camera animation transition time in level file {}", m_missionFilename);
 
-      anim->m_nodes.push_back(node);
+      anim->m_nodes.push_back(std::move(nodeOwned));
     }
 
-    m_cameraAnimations.push_back(anim);
+    m_cameraAnimations.push_back(std::move(animOwned));
   }
 }
 
@@ -366,7 +368,9 @@ void LevelFile::ParseBuildings(TextReader* _in, bool _dynamic)
         }
       }
 
-      m_buildings.push_back(building);
+      // Building::CreateBuilding still returns a raw owning pointer, so the
+      // vector adopts it at the same point it used to be pushed.
+      m_buildings.push_back(std::unique_ptr<Building>(building));
     }
   }
 }
@@ -395,7 +399,8 @@ void LevelFile::ParseInstantUnits(TextReader* _in)
       continue;
     }
 
-    InstantUnit* iu = new InstantUnit();
+    auto iuOwned = std::make_unique<InstantUnit>();
+    InstantUnit* iu = iuOwned.get();
     int numCopies = 0;
     iu->m_type = entityType;
 
@@ -449,12 +454,13 @@ void LevelFile::ParseInstantUnits(TextReader* _in)
       }
     }
 
-    m_instantUnits.push_back(iu);
+    m_instantUnits.push_back(std::move(iuOwned));
 
     // Create some additional centipedes if necessary
     for (int i = 0; i < numCopies; i++)
     {
-      InstantUnit* copy = new InstantUnit;
+      auto copyOwned = std::make_unique<InstantUnit>();
+      InstantUnit* copy = copyOwned.get();
       *copy = *iu;
       // Spread them out a bit. SYNCHRONISED: these are entity spawn positions,
       // and GenerateSyncValue sums every entity's m_pos, so drawing them from
@@ -462,7 +468,7 @@ void LevelFile::ParseInstantUnits(TextReader* _in)
       // desync checksum. determinism.yaml T5.
       copy->m_posX = iu->m_posX + syncsfrand(60);
       copy->m_posZ = iu->m_posZ + syncsfrand(60);
-      m_instantUnits.push_back(copy);
+      m_instantUnits.push_back(std::move(copyOwned));
     }
   }
 }
@@ -527,8 +533,8 @@ void LevelFile::ParseLandscapeTiles(TextReader* _in)
       return;
     }
 
-    LandscapeTile* def = new LandscapeTile();
-    m_landscape.m_tiles.push_back(def);
+    m_landscape.m_tiles.push_back(std::make_unique<LandscapeTile>());
+    LandscapeTile* def = m_landscape.m_tiles.back().get();
 
     def->m_posX = atoi(word);
 
@@ -585,8 +591,8 @@ void LevelFile::ParseLandFlattenAreas(TextReader* _in)
       return;
     }
 
-    LandscapeFlattenArea* def = new LandscapeFlattenArea();
-    m_landscape.m_flattenAreas.push_back(def);
+    m_landscape.m_flattenAreas.push_back(std::make_unique<LandscapeFlattenArea>());
+    LandscapeFlattenArea* def = m_landscape.m_flattenAreas.back().get();
 
     def->m_centre.x = (float)atof(word);
 
@@ -630,8 +636,8 @@ void LevelFile::ParseLights(TextReader* _in)
     if (ignoreLights)
       continue;
 
-    Light* light = new Light;
-    m_lights.push_back(light);
+    m_lights.push_back(std::make_unique<Light>());
+    Light* light = m_lights.back().get();
 
     light->m_front[0] = atof(word);
 
@@ -658,7 +664,8 @@ void LevelFile::ParseLights(TextReader* _in)
 
 void LevelFile::ParseRoute(TextReader* _in, int _id)
 {
-  Route* r = new Route(_id);
+  auto rOwned = std::make_unique<Route>(_id);
+  Route* r = rOwned.get();
 
   while (_in->ReadLine())
   {
@@ -692,15 +699,15 @@ void LevelFile::ParseRoute(TextReader* _in, int _id)
       break;
     }
 
-    WayPoint* wp = new WayPoint(type, pos);
+    auto wp = std::make_unique<WayPoint>(type, pos);
     if (buildingId != -1)
     {
       wp->m_buildingId = buildingId;
     }
-    r->m_wayPoints.push_back(wp);
+    r->m_wayPoints.push_back(std::move(wp));
   }
 
-  m_routes.push_back(r);
+  m_routes.push_back(std::move(rOwned));
 }
 
 
@@ -739,7 +746,8 @@ void LevelFile::ParsePrimaryObjectives(TextReader* _in)
       return;
     }
 
-    GlobalEventCondition* condition = new GlobalEventCondition;
+    auto conditionOwned = std::make_unique<GlobalEventCondition>();
+    GlobalEventCondition* condition = conditionOwned.get();
     condition->m_type = condition->GetType(word);
     DEBUG_ASSERT(condition->m_type != -1);
 
@@ -782,7 +790,7 @@ void LevelFile::ParsePrimaryObjectives(TextReader* _in)
       condition->SetCutScene(cutScene);
     }
 
-    m_primaryObjectives.push_back(condition);
+    m_primaryObjectives.push_back(std::move(conditionOwned));
   }
 }
 
@@ -794,15 +802,15 @@ void LevelFile::GenerateAutomaticObjectives()
 
   if (m_primaryObjectives.empty())
   {
-    GlobalEventCondition* objective = new GlobalEventCondition;
+    auto objective = std::make_unique<GlobalEventCondition>();
     objective->m_type = GlobalEventCondition::NeverTrue;
-    m_primaryObjectives.push_back(objective);
+    m_primaryObjectives.push_back(std::move(objective));
   }
 
   //
   // Add secondary objectives for trunk ports and research items
 
-  for (Building* building : m_buildings)
+  for (auto const& building : m_buildings)
   {
     if (building->m_type != Building::TypeResearchItem && building->m_type != Building::TypeTrunkPort)
     {
@@ -811,7 +819,7 @@ void LevelFile::GenerateAutomaticObjectives()
 
     // Make sure this building isn't already in the primary objectives list
     bool found = false;
-    for (GlobalEventCondition* primaryObjective : m_primaryObjectives)
+    for (auto const& primaryObjective : m_primaryObjectives)
     {
       if (primaryObjective->m_id == building->m_id.GetUniqueId())
       {
@@ -820,7 +828,7 @@ void LevelFile::GenerateAutomaticObjectives()
       }
 
       if (primaryObjective->m_type == GlobalEventCondition::ResearchOwned && building->m_type == Building::TypeResearchItem &&
-          ((ResearchItem*)building)->m_researchType == primaryObjective->m_id)
+          ((ResearchItem*)building.get())->m_researchType == primaryObjective->m_id)
       {
         found = true;
         break;
@@ -841,12 +849,12 @@ void LevelFile::GenerateAutomaticObjectives()
           // is below that of this ResearchItem - eg we have level 1 and this item is level 2.
           // However GlobalEventCondition isn't currently able to store the level data, so it
           // ends up being an auto-completed objective.
-          GlobalEventCondition* condition = new GlobalEventCondition();
+          auto condition = std::make_unique<GlobalEventCondition>();
           condition->m_locationId = locationId;
           condition->m_type = GlobalEventCondition::ResearchOwned;
           condition->m_id = item->m_researchType;
           condition->SetStringId("objective_research");
-          m_secondaryObjectives.push_back(condition);
+          m_secondaryObjectives.push_back(std::move(condition));
         }
       }
       else if (building->m_type == Building::TypeTrunkPort)
@@ -857,7 +865,7 @@ void LevelFile::GenerateAutomaticObjectives()
           //
           // Is there a Control Tower that can enable this trunk port?
           bool towerFound = false;
-          for (Building* thisBuilding : m_buildings)
+          for (auto const& thisBuilding : m_buildings)
           {
             if (thisBuilding->m_type == Building::TypeControlTower && thisBuilding->GetBuildingLink() == building->m_id.GetUniqueId())
             {
@@ -868,12 +876,12 @@ void LevelFile::GenerateAutomaticObjectives()
 
           if (towerFound)
           {
-            GlobalEventCondition* condition = new GlobalEventCondition;
+            auto condition = std::make_unique<GlobalEventCondition>();
             condition->m_locationId = locationId;
             condition->m_type = GlobalEventCondition::BuildingOnline;
             condition->m_id = building->m_id.GetUniqueId();
             condition->SetStringId("objective_capture_trunk");
-            m_secondaryObjectives.push_back(condition);
+            m_secondaryObjectives.push_back(std::move(condition));
           }
         }
       }
@@ -890,7 +898,7 @@ void LevelFile::WriteInstantUnits(FileWriter* _out)
 
   for (int i = 0; i < static_cast<int>(m_instantUnits.size()); i++)
   {
-    InstantUnit* iu = m_instantUnits[i];
+    InstantUnit* iu = m_instantUnits[i].get();
     _out->printf("\t%-15s %2d %7.1f %7.1f %6d %4d %7d %7.1f %7.1f %7.1f %4d %4d\n", Entity::GetTypeName(iu->m_type), iu->m_teamId, iu->m_posX,
                  iu->m_posZ, iu->m_number, iu->m_inAUnit, iu->m_state, iu->m_spread, iu->m_waypointX, iu->m_waypointZ, iu->m_routeId,
                  iu->m_routeWaypointId);
@@ -927,7 +935,7 @@ void LevelFile::WriteCameraMounts(FileWriter* _out)
 
   for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); i++)
   {
-    CameraMount* cmnt = m_cameraMounts[i];
+    CameraMount* cmnt = m_cameraMounts[i].get();
     _out->printf("\t%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f\n", cmnt->m_name.c_str(), cmnt->m_pos.x, cmnt->m_pos.y, cmnt->m_pos.z,
                  cmnt->m_front.x, cmnt->m_front.y, cmnt->m_front.z, cmnt->m_up.x, cmnt->m_up.y, cmnt->m_up.z);
   }
@@ -940,13 +948,13 @@ void LevelFile::WriteCameraAnims(FileWriter* _out)
 {
   _out->printf("CameraAnimations_StartDefinition\n");
 
-  for (CameraAnimation* anim : m_cameraAnimations)
+  for (auto const& anim : m_cameraAnimations)
   {
     _out->printf("\t%s\n", anim->m_name.c_str());
 
     for (int j = 0; j < static_cast<int>(anim->m_nodes.size()); ++j)
     {
-      CamAnimNode* node = anim->m_nodes[j];
+      CamAnimNode* node = anim->m_nodes[j].get();
       char const* camModeName = CamAnimNode::GetTransitModeName(node->m_transitionMode);
       _out->printf("\t\t%-8s %-15s %.2f\n", camModeName, node->m_mountName, node->m_duration);
     }
@@ -963,7 +971,7 @@ void LevelFile::WriteBuildings(FileWriter* _out, bool _dynamic)
   _out->printf("\t# Type              id      x       z       tm      rx      rz      isGlobal\n");
   _out->printf("\t# ==========================================================================\n");
 
-  for (Building* building : m_buildings)
+  for (auto const& building : m_buildings)
   {
     if (building->m_dynamic == _dynamic)
     {
@@ -998,7 +1006,7 @@ void LevelFile::WriteLandscapeTiles(FileWriter* _out)
 
   for (int i = 0; i < static_cast<int>(m_landscape.m_tiles.size()); ++i)
   {
-    LandscapeTile* _def = m_landscape.m_tiles[i];
+    LandscapeTile* _def = m_landscape.m_tiles[i].get();
     _out->printf("\t%6d %6.2f %6d ", _def->m_posX, _def->m_posY, _def->m_posZ);
     _out->printf("%6d ", _def->m_size);
     _out->printf("%5.2f ", _def->m_fractalDimension);
@@ -1023,7 +1031,7 @@ void LevelFile::WriteLandFlattenAreas(FileWriter* _out)
   _out->printf("LandFlattenAreas_StartDefinition\n");
   _out->printf("\t# x      y       z      size\n");
   _out->printf("\t# ==========================\n");
-  for (LandscapeFlattenArea* area : m_landscape.m_flattenAreas)
+  for (auto const& area : m_landscape.m_flattenAreas)
   {
     _out->printf("\t%6.1f %6.1f %6.1f %6.1f\n", area->m_centre.x, area->m_centre.y, area->m_centre.z, area->m_size);
   }
@@ -1034,13 +1042,13 @@ void LevelFile::WriteLandFlattenAreas(FileWriter* _out)
 void LevelFile::WriteRoutes(FileWriter* _out)
 {
   _out->printf("Routes_StartDefinition\n");
-  for (Route* r : m_routes)
+  for (auto const& r : m_routes)
   {
     _out->printf("\tRoute %d\n", r->m_id);
 
     for (int j = 0; j < static_cast<int>(r->m_wayPoints.size()); ++j)
     {
-      WayPoint* wp = r->m_wayPoints[j];
+      WayPoint* wp = r->m_wayPoints[j].get();
       DirectX::XMFLOAT3 const pos = wp->GetPos();
       if (wp->m_type == WayPoint::Type3DPos)
       {
@@ -1066,7 +1074,7 @@ void LevelFile::WritePrimaryObjectives(FileWriter* _out)
 {
   _out->printf("PrimaryObjectives_StartDefinition\n");
 
-  for (GlobalEventCondition* gec : m_primaryObjectives)
+  for (auto const& gec : m_primaryObjectives)
   {
     //_out->printf( "\t%s:%d", gec->GetTypeName(gec->m_type), gec->m_id);
     _out->printf("\t");
@@ -1121,36 +1129,10 @@ LevelFile::LevelFile(char const* _missionFilename, char const* _mapFilename)
 }
 
 
-LevelFile::~LevelFile()
-{
-  for (CameraMount* mount : m_cameraMounts)
-    delete mount;
-  m_cameraMounts.clear();
-  for (CameraAnimation* anim : m_cameraAnimations)
-    delete anim;
-  m_cameraAnimations.clear();
-  for (Building* building : m_buildings)
-    delete building;
-  m_buildings.clear();
-  for (InstantUnit* unit : m_instantUnits)
-    delete unit;
-  m_instantUnits.clear();
-  for (Light* light : m_lights)
-    delete light;
-  m_lights.clear();
-  for (Route* route : m_routes)
-    delete route;
-  m_routes.clear();
-  for (RunningProgram* program : m_runningPrograms)
-    delete program;
-  m_runningPrograms.clear();
-  for (GlobalEventCondition* objective : m_primaryObjectives)
-    delete objective;
-  m_primaryObjectives.clear();
-  for (GlobalEventCondition* objective : m_secondaryObjectives)
-    delete objective;
-  m_secondaryObjectives.clear();
-}
+// Defined here rather than defaulted in the header: the nine vectors hold
+// unique_ptrs to types the header only forward-declares, and destroying one
+// needs the complete type. This translation unit has them all.
+LevelFile::~LevelFile() = default;
 
 
 void LevelFile::Save()
@@ -1173,35 +1155,36 @@ void LevelFile::SaveMapFile(char const* _filename)
 {
   const std::string fullFilename = std::format("Levels/{}", _filename);
 
-  FileWriter* out = g_resource->GetFileWriter(fullFilename.c_str(), false);
-  WriteLandscapeData(out);
-  WriteLandscapeTiles(out);
-  WriteLandFlattenAreas(out);
-  WriteLights(out);
-  WriteBuildings(out, false);
-  delete out;
+  std::unique_ptr<FileWriter> const out(g_resource->GetFileWriter(fullFilename.c_str(), false));
+  WriteLandscapeData(out.get());
+  WriteLandscapeTiles(out.get());
+  WriteLandFlattenAreas(out.get());
+  WriteLights(out.get());
+  WriteBuildings(out.get(), false);
 }
 
 
 void LevelFile::SaveMissionFile(char const* _filename)
 {
-  FileWriter* out = nullptr;
+  std::unique_ptr<FileWriter> outOwned;
 
   if (!g_editing)
   {
     const std::string fullFilename = std::format("{}users/{}/{}", g_appCommands->ProfileDirectory(), g_userProfileName, _filename);
 #ifdef TARGET_DEBUG
-    out = new FileWriter(fullFilename.c_str(), false);
+    outOwned = std::make_unique<FileWriter>(fullFilename.c_str(), false);
 #else
-    out = new FileWriter(fullFilename.c_str(), true);
+    outOwned = std::make_unique<FileWriter>(fullFilename.c_str(), true);
 #endif
   }
 
-  if (!out)
+  if (!outOwned)
   {
     const std::string fullFilename = std::format("Levels/{}", _filename);
-    out = g_resource->GetFileWriter(fullFilename.c_str(), false);
+    outOwned.reset(g_resource->GetFileWriter(fullFilename.c_str(), false));
   }
+
+  FileWriter* out = outOwned.get();
 
   WriteDifficulty(out);
   WriteCameraMounts(out);
@@ -1211,18 +1194,16 @@ void LevelFile::SaveMissionFile(char const* _filename)
   WriteRoutes(out);
   WritePrimaryObjectives(out);
   WriteRunningPrograms(out);
-
-  delete out;
 }
 
 
 Building* LevelFile::GetBuilding(int _id)
 {
-  for (Building* building : m_buildings)
+  for (auto const& building : m_buildings)
   {
     if (building->m_id.GetUniqueId() == _id)
     {
-      return building;
+      return building.get();
     }
   }
   return nullptr;
@@ -1233,7 +1214,7 @@ CameraMount* LevelFile::GetCameraMount(char const* _name)
 {
   for (int i = 0; i < static_cast<int>(m_cameraMounts.size()); ++i)
   {
-    CameraMount* mount = m_cameraMounts[i];
+    CameraMount* mount = m_cameraMounts[i].get();
     if (stricmp(mount->m_name.c_str(), _name) == 0)
     {
       return mount;
@@ -1247,7 +1228,7 @@ int LevelFile::GetCameraAnimId(char const* _name)
 {
   for (int i = 0; i < static_cast<int>(m_cameraAnimations.size()); ++i)
   {
-    CameraAnimation* anim = m_cameraAnimations[i];
+    CameraAnimation* anim = m_cameraAnimations[i].get();
     if (stricmp(anim->m_name.c_str(), _name) == 0)
     {
       return i;
@@ -1261,7 +1242,7 @@ CameraAnimation* LevelFile::GetCameraAnim(int _id)
 {
   if (_id < 0 || _id >= static_cast<int>(m_cameraAnimations.size()))
     return nullptr;
-  return m_cameraAnimations[_id];
+  return m_cameraAnimations[_id].get();
 }
 
 
@@ -1269,7 +1250,7 @@ InstantUnit* LevelFile::GetInstantUnit(int _id)
 {
   if (_id < 0 || _id >= static_cast<int>(m_instantUnits.size()))
     return nullptr;
-  return m_instantUnits[_id];
+  return m_instantUnits[_id].get();
 }
 
 
@@ -1277,11 +1258,11 @@ void LevelFile::RemoveBuilding(int _id)
 {
   for (int i = 0; i < static_cast<int>(m_buildings.size()); ++i)
   {
-    Building* building = m_buildings[i];
+    Building* building = m_buildings[i].get();
     if (building->m_id.GetUniqueId() == _id)
     {
+      // The erase destroys it; it used to be erased and then deleted.
       m_buildings.erase(m_buildings.begin() + i);
-      delete building;
       break;
     }
   }
@@ -1293,7 +1274,7 @@ int LevelFile::GenerateNewRouteId()
   for (int i = 0; i < static_cast<int>(m_routes.size()); ++i)
   {
     bool idNotUsed = true;
-    for (Route* r : m_routes)
+    for (auto const& r : m_routes)
     {
       if (i == r->m_id)
       {
@@ -1314,11 +1295,11 @@ int LevelFile::GenerateNewRouteId()
 
 Route* LevelFile::GetRoute(int _id)
 {
-  for (Route* route : m_routes)
+  for (auto const& route : m_routes)
   {
     if (route->m_id == _id)
     {
-      return route;
+      return route.get();
     }
   }
 
@@ -1328,8 +1309,6 @@ Route* LevelFile::GetRoute(int _id)
 
 void LevelFile::GenerateInstantUnits()
 {
-  for (InstantUnit* unit : m_instantUnits)
-    delete unit;
   m_instantUnits.clear();
 
   //
@@ -1366,7 +1345,8 @@ void LevelFile::GenerateInstantUnits()
           DirectX::XMStoreFloat3(&centrePos, DirectX::XMVectorScale(centrePosSum, 1.0f / (float)numFound));
           roamRange /= (float)numFound;
 
-          InstantUnit* instant = new InstantUnit();
+          auto instantOwned = std::make_unique<InstantUnit>();
+          InstantUnit* instant = instantOwned.get();
           instant->m_type = unit->m_troopType;
           instant->m_teamId = unit->m_teamId;
           instant->m_posX = centrePos.x;
@@ -1376,7 +1356,7 @@ void LevelFile::GenerateInstantUnits()
           instant->m_spread = roamRange;
           instant->m_routeId = unit->m_routeId;
           instant->m_routeWaypointId = unit->m_routeWayPointId;
-          m_instantUnits.push_back(instant);
+          m_instantUnits.push_back(std::move(instantOwned));
         }
       }
     }
@@ -1403,7 +1383,8 @@ void LevelFile::GenerateInstantUnits()
             bool insideSpawnArea = DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMVectorSubtract(
                                      DirectX::XMLoadFloat3(&entity->m_pos), DirectX::XMLoadFloat3(&entity->m_spawnPoint)))) < entity->m_roamRange;
 
-            InstantUnit* unit = new InstantUnit();
+            auto unitOwned = std::make_unique<InstantUnit>();
+            InstantUnit* unit = unitOwned.get();
             unit->m_type = entity->m_type;
             unit->m_teamId = t;
             unit->m_posX = insideSpawnArea ? entity->m_spawnPoint.x : entity->m_pos.x;
@@ -1428,7 +1409,7 @@ void LevelFile::GenerateInstantUnits()
               }
             }
 
-            m_instantUnits.push_back(unit);
+            m_instantUnits.push_back(std::move(unitOwned));
           }
         }
       }
@@ -1443,7 +1424,8 @@ void LevelFile::GenerateInstantUnits()
           if (entity->m_type == Entity::TypeOfficer && entity->m_enabled)
           {
             Officer* officer = (Officer*)entity;
-            InstantUnit* unit = new InstantUnit();
+            auto unitOwned = std::make_unique<InstantUnit>();
+            InstantUnit* unit = unitOwned.get();
             unit->m_type = entity->m_type;
             unit->m_teamId = t;
             unit->m_posX = entity->m_pos.x;
@@ -1456,14 +1438,14 @@ void LevelFile::GenerateInstantUnits()
             unit->m_waypointZ = officer->m_orderPosition.z;
             unit->m_routeId = officer->m_routeId;
             unit->m_routeWaypointId = officer->m_routeWayPointId;
-            m_instantUnits.push_back(unit);
+            m_instantUnits.push_back(std::move(unitOwned));
           }
           else if (entity->m_type == Entity::TypeArmour)
           {
             bool taskControlled = false;
             for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
             {
-              Task* task = g_taskManager->m_tasks[i];
+              Task* task = g_taskManager->m_tasks[i].get();
               if (task->m_type == GlobalResearch::TypeArmour && task->m_objId == entity->m_id)
               {
                 taskControlled = true;
@@ -1473,7 +1455,8 @@ void LevelFile::GenerateInstantUnits()
             if (!taskControlled)
             {
               Armour* armour = (Armour*)entity;
-              InstantUnit* unit = new InstantUnit();
+              auto unitOwned = std::make_unique<InstantUnit>();
+              InstantUnit* unit = unitOwned.get();
               unit->m_type = Entity::TypeArmour;
               unit->m_teamId = t;
               unit->m_posX = armour->m_pos.x;
@@ -1486,7 +1469,7 @@ void LevelFile::GenerateInstantUnits()
               unit->m_waypointZ = armour->m_wayPoint.z;
               unit->m_routeId = armour->m_routeId;
               unit->m_routeWaypointId = armour->m_routeWayPointId;
-              m_instantUnits.push_back(unit);
+              m_instantUnits.push_back(std::move(unitOwned));
             }
           }
         }
@@ -1528,7 +1511,8 @@ void LevelFile::GenerateInstantUnits()
           }
           else
           {
-            InstantUnit* unit = new InstantUnit();
+            auto unitOwned = std::make_unique<InstantUnit>();
+            InstantUnit* unit = unitOwned.get();
             unit->m_type = entity->m_type;
             unit->m_teamId = id.GetTeamId();
             unit->m_posX = exitPos.x;
@@ -1541,7 +1525,7 @@ void LevelFile::GenerateInstantUnits()
             unit->m_routeWaypointId = entity->m_routeWayPointId;
             // unit->m_waypointX = officer->m_orderPosition.x;
             // unit->m_waypointZ = officer->m_orderPosition.z;
-            m_instantUnits.push_back(unit);
+            m_instantUnits.push_back(std::move(unitOwned));
           }
         }
       }
@@ -1559,14 +1543,13 @@ void LevelFile::GenerateDynamicBuildings()
 
   for (int i = 0; i < static_cast<int>(m_buildings.size()); ++i)
   {
-    Building* building = m_buildings[i];
+    Building* building = m_buildings[i].get();
     if (building && building->m_dynamic)
     {
       Building* locBuilding = g_location->GetBuilding(building->m_id.GetUniqueId());
       if (!locBuilding)
       {
         m_buildings.erase(m_buildings.begin() + i);
-        delete building;
         --i;
       }
       else
@@ -1631,7 +1614,7 @@ void LevelFile::GenerateDynamicBuildings()
           newBuilding->m_type = building->m_type;
           newBuilding->m_dynamic = building->m_dynamic;
           newBuilding->m_isGlobal = building->m_isGlobal;
-          m_buildings.push_back(newBuilding);
+          m_buildings.push_back(std::unique_ptr<Building>(newBuilding));
         }
       }
     }
@@ -1652,7 +1635,8 @@ void LevelFile::ParseRunningPrograms(TextReader* _in)
       return;
     }
 
-    RunningProgram* program = new RunningProgram();
+    auto programOwned = std::make_unique<RunningProgram>();
+    RunningProgram* program = programOwned.get();
     program->m_type = Entity::GetTypeId(word);
     program->m_count = atoi(_in->GetNextToken());
     program->m_state = atoi(_in->GetNextToken());
@@ -1667,7 +1651,7 @@ void LevelFile::ParseRunningPrograms(TextReader* _in)
       program->m_health[i] = atoi(_in->GetNextToken());
     }
 
-    m_runningPrograms.push_back(program);
+    m_runningPrograms.push_back(std::move(programOwned));
   }
 }
 
@@ -1689,7 +1673,7 @@ void LevelFile::WriteRunningPrograms(FileWriter* _out)
 
     for (int t = 0; t < static_cast<int>(g_taskManager->m_tasks.size()); ++t)
     {
-      Task* task = g_taskManager->m_tasks[t];
+      Task* task = g_taskManager->m_tasks[t].get();
       if (task->m_state == Task::StateRunning)
       {
         if (task->m_type == GlobalResearch::TypeEngineer)

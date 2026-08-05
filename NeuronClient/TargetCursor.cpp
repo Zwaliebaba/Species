@@ -80,7 +80,7 @@ void TargetCursor::Advance()
     m_screenCoords[AXIS_X] += m_velocity[AXIS_X];
     m_screenCoords[AXIS_Y] += m_velocity[AXIS_Y];
 
-    if (g_camera->IsInMode(CameraAccess::ModeFreeMovement))
+    if (g_camera->IsInMode(CameraAccess::Mode::ModeFreeMovement))
       g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondCameraAim);
   }
   else

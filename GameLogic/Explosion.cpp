@@ -281,7 +281,7 @@ ExplosionManager g_explosionManager;
 ExplosionManager::ExplosionManager() {}
 
 
-ExplosionManager::~ExplosionManager() { EmptyAndDelete(m_explosions); }
+ExplosionManager::~ExplosionManager() = default;
 
 
 void ExplosionManager::AddExplosion(ShapeFragment* _frag, DirectX::XMFLOAT4X4 const& _transform, bool _recurse, float _fraction)
@@ -293,8 +293,7 @@ void ExplosionManager::AddExplosion(ShapeFragment* _frag, DirectX::XMFLOAT4X4 co
 
   if (_frag->m_numTriangles > 0)
   {
-    Explosion* explosion = new Explosion(_frag, _transform, _fraction);
-    m_explosions.push_back(explosion);
+    m_explosions.push_back(std::make_unique<Explosion>(_frag, _transform, _fraction));
   }
 
   if (_recurse)
@@ -318,7 +317,7 @@ void ExplosionManager::AddExplosion(Shape* _shape, DirectX::XMFLOAT4X4 const& _t
 }
 
 
-void ExplosionManager::Reset() { EmptyAndDelete(m_explosions); }
+void ExplosionManager::Reset() { m_explosions.clear(); }
 
 
 void ExplosionManager::Advance()
@@ -329,9 +328,8 @@ void ExplosionManager::Advance()
   {
     if (m_explosions[i]->Advance())
     {
-      Explosion* explosion = m_explosions[i];
+      // The erase destroys it, at the same tick the delete used to.
       m_explosions.erase(m_explosions.begin() + i);
-      delete explosion;
       --i;
     }
   }

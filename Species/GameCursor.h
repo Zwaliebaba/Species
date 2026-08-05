@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 /*
     Renders all mouse cursors of any kind in-game.
     Responsible for figuring out which mouse cursor to render.
@@ -22,14 +25,16 @@ class MouseCursorMarker;
 class GameCursor : public GameCursorAccess
 {
   protected:
-    MouseCursor* m_cursorStandard;
-    MouseCursor* m_cursorPlacement;
-    MouseCursor* m_cursorHighlight;
-    MouseCursor* m_cursorSelection;
-    MouseCursor* m_cursorMoveHere;
-    MouseCursor* m_cursorDisabled;
-    MouseCursor* m_cursorMissile;
-    MouseCursor* m_cursorTurretTarget;
+    // All eight owning. m_cursorMissile is the only one that starts empty and
+    // is assigned later.
+    std::unique_ptr<MouseCursor> m_cursorStandard;
+    std::unique_ptr<MouseCursor> m_cursorPlacement;
+    std::unique_ptr<MouseCursor> m_cursorHighlight;
+    std::unique_ptr<MouseCursor> m_cursorSelection;
+    std::unique_ptr<MouseCursor> m_cursorMoveHere;
+    std::unique_ptr<MouseCursor> m_cursorDisabled;
+    std::unique_ptr<MouseCursor> m_cursorMissile;
+    std::unique_ptr<MouseCursor> m_cursorTurretTarget;
 
     std::string m_selectionArrowFilename;
     std::string m_selectionArrowShadowFilename;
@@ -52,7 +57,7 @@ class GameCursor : public GameCursorAccess
     void RenderMarkers();
     void FindScreenEdge(DirectX::XMFLOAT2 const& _line, float* _posX, float* _posY);
 
-    std::vector<MouseCursorMarker*> m_markers;
+    std::vector<std::unique_ptr<MouseCursorMarker>> m_markers;
 
   public:
   public:

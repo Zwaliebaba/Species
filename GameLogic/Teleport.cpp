@@ -256,22 +256,23 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
             // Shut down the old task
             for (int i = 0; i < static_cast<int>(g_taskManager->m_tasks.size()); ++i)
             {
-              Task* task = g_taskManager->m_tasks[i];
+              Task* task = g_taskManager->m_tasks[i].get();
               if (task->m_type == GlobalResearch::TypeSquad && task->m_objId == WorldObjectId(oldUnit->m_teamId, oldUnit->m_unitId, -1, -1))
               {
+                // The erase destroys it.
                 g_taskManager->m_tasks.erase(g_taskManager->m_tasks.begin() + i);
-                delete task;
                 break;
               }
             }
 
-            Task* task = new Task();
-            task->m_type = GlobalResearch::TypeSquad;
-            task->m_state = Task::StateRunning;
-            task->m_objId.Set(newUnit->m_teamId, newUnit->m_unitId, -1, -1);
-            bool success = g_taskManager->RegisterTask(task);
+            auto taskOwned = std::make_unique<Task>();
+            Task* newTask = taskOwned.get();
+            newTask->m_type = GlobalResearch::TypeSquad;
+            newTask->m_state = Task::StateRunning;
+            newTask->m_objId.Set(newUnit->m_teamId, newUnit->m_unitId, -1, -1);
+            bool success = g_taskManager->RegisterTask(std::move(taskOwned));
             if (success)
-              g_taskManager->SelectTask(task->m_id);
+              g_taskManager->SelectTask(newTask->m_id);
 
             ((InsertionSquad*)newUnit)->m_weaponType = ((InsertionSquad*)oldUnit)->m_weaponType;
             ((InsertionSquad*)newUnit)->m_controllerId = ((InsertionSquad*)oldUnit)->m_controllerId;
@@ -279,7 +280,7 @@ void Teleport::EnterTeleport(WorldObjectId _id, bool _relay)
             Task* controller = g_taskManager->GetTask(((InsertionSquad*)newUnit)->m_controllerId);
             if (controller)
             {
-              controller->m_objId = task->m_objId;
+              controller->m_objId = newTask->m_objId;
               controller->m_route->AddWayPoint(m_id.GetUniqueId());
             }
           }

@@ -176,6 +176,43 @@ upward include paths from `NeuronCore.vcxproj` and made `Server.exe` tick.
 
 ---
 
+## Ownership
+
+Migration stage 5 — raw owning pointers become `std::unique_ptr` and values —
+is nearly done, and what is left is worth knowing because two greps that used
+to be noisy are now almost silent.
+
+```
+EmptyAndDelete   ZERO call sites. Only the two transitional definitions
+                 remain, in NeuronCore/SlotMap.h and NeuronCore/VectorUtils.h,
+                 and both are now dead code.
+SAFE_FREE        ZERO call sites. Gone with ShapeMarker's names.
+SAFE_DELETE      17, all in Species/App.cpp, plus the definition in
+                 NeuronCore.h. That is ownership T6 and then T7.
+```
+
+**`App.cpp` is the whole of what is left of the macro**, and it is deliberately
+last: it constructs and tears down the entire subsystem graph, and subsystems
+reach each other during teardown, so construction and destruction ORDER is
+load-bearing. `ownership` T6 does it in small commits, each one owner-verified
+to reach the main menu. T7 then deletes the macros, and the two transitional
+`EmptyAndDelete` helpers can go with them — they have no users left.
+
+Two rules that came out of doing the rest of it, both learned the expensive
+way:
+
+- **A task's file list is written from where ownership LIVES; the work is
+  wherever the member is NAMED.** `ownership` T5 declared eight files and
+  touched twenty-seven. Twelve of those hold no ownership at all — they only
+  observe a converted member. Grep the member name tree-wide, with no
+  assumption about the expression that reaches it, and read every hit.
+- **Converting a raw pointer to `unique_ptr` can introduce use-after-move.**
+  `x->field = v;` after `push_back(x)` is harmless with a raw pointer and
+  undefined with a moved-from `unique_ptr`. Two were introduced and caught in
+  T5. Scan every changed file for a local used after `std::move` of itself.
+
+---
+
 ## Building
 
 ```powershell
@@ -250,10 +287,11 @@ judge **the lines your change writes**, not the file you wrote them in. A legacy
 file with two hundred `sprintf`s stays legal until its conversion task; add one
 more and only that line is reported. It is a ratchet, so it only ever turns one
 way. A genuine exception is marked `hygiene-ok` in a comment on the line, with a
-reason — there is exactly **one** in the tree today, `Camera::Mode` in
-`NeuronClient/CameraAccess.h`, waiting on `language-hygiene` T12. The mechanism
-is explained in `tasks/language-hygiene.yaml` T1; the second marker that used to
-sit beside it went with the file that carried it.
+reason — and **there are none left in the tree**. The last one was `Camera::Mode`
+in `NeuronClient/CameraAccess.h`, and it went with the enum when
+`language-hygiene` T12 scoped it on 2026-08-05. The mechanism is explained in
+`tasks/language-hygiene.yaml` T1 and is still available; nothing is currently
+using it, which is the state to keep it in.
 
 Then build **and run the tests**. A change that has not been compiled is not
 finished; a change with new behaviour and no test is not finished either.
@@ -448,10 +486,11 @@ which files, which `--next` cannot tell you because it reasons one plan at a
 time; and what the current batch is. It is rewritten each time a batch is
 chosen and it carries the record of the previous ones.
 
-Six plans are complete and in `tasks/Archive/`. **Five are open with seventeen
-tasks between them** — `strings-modernised` (6), `ownership` (4),
-`language-hygiene` (3), `namespace-migration` (3) and `determinism` (1).
-`determinism`'s one is T6, an owner-run smoke test rather than an agent task.
+Six plans are complete and in `tasks/Archive/`. **Five are open with sixteen
+tasks between them** — `strings-modernised` (6), `language-hygiene` (3),
+`namespace-migration` (3), `ownership` (3) and `determinism` (1).
+Two of those sixteen are owner-run smoke tests rather than agent work:
+`determinism` T6, and `ownership` T6 needs one after each of its commits.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:
@@ -532,7 +571,7 @@ Real, currently true, and worth knowing before you trip over them:
   (2026-08-05); the last run with an explicit all-seven-steps breakdown is
   `b0bde71` — see *What working looks like*. CI builds and runs the unit suite;
   it does not launch the client, and neither does any agent working on Linux. A
-  change that compiles and passes 180 tests can still break the game on the
+  change that compiles and passes 185 tests can still break the game on the
   first frame.
 - **THERE ARE TWO RANDOM STREAMS, AND THE DOCUMENTATION SAID THERE WAS ONE.**
   This is the correction that retired the two determinism bullets that used to
@@ -611,8 +650,8 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **180** tests as CI counted them on
-  2026-08-05 at `6b38509`, covering IP conversion,
+- **The test suite is thin.** Four projects, **185** tests at `a676611`
+  (2026-08-05), covering IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
   helpers, `WorldObjectId` including its 16-byte wire layout, the state a new
@@ -621,15 +660,17 @@ Real, currently true, and worth knowing before you trip over them:
   emits for every format the level and profile writers use, `LevelFile`'s
   constructors, the native-math conversions and
   geometry routines, the entity grid, the routing system's waypoints, the slice
-  walker, `InputField`'s keystroke write-back, and the two `Matrix33` rotation
+  walker, `InputField`'s keystroke write-back, `ShapeMarker`'s parse of a marker
+  block, and the two `Matrix33` rotation
   mappings — each with a negative control asserting that the intuitive reading
   is measurably wrong. That is the encoding, identity
   and protocol layer plus a thin skin over the rest — no entity behaviour, no
   rendering, no level loading, and nothing at all that would notice the game
   failing to start.
-  - **The figure recorded here before was also 180, and it was wrong.** CI
-    counted **169** at `e7a1a88`; `strings-modernised` T8 added eleven and made
-    the stale number true by accident. Read the count off a CI run's *Total
+  - **This figure has been wrong here before, twice.** It said 180 when CI
+    counted **169** at `e7a1a88`, and `strings-modernised` T8's eleven then made
+    the stale number true by accident; it stayed at 180 while `strings/T20`
+    added five more. Read the count off a CI run's *Total
     tests* line or off `git grep -c TEST_METHOD -- 'Tests/*.cpp'`, and note that
     those two agree only because every `TEST_METHOD` in the tree is compiled —
     a test file missing from its `.vcxproj` would make the grep the higher of

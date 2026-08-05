@@ -15,7 +15,7 @@ class CameraAnimation;
 
 // Mode and the debug-mode enumerators are inherited from CameraAccess rather
 // than declared here, so that code below Species can name a mode without this
-// header. `Camera::ModeFreeMovement` still resolves through the base, which is
+// header. `Camera::Mode::ModeFreeMovement` still resolves through the base, which is
 // why the Species-side spellings did not have to change.
 class Camera : public CameraAccess
 {
@@ -63,7 +63,7 @@ class Camera : public CameraAccess
     // XMFLOAT3's does not. The constructor writes m_pos, m_front, m_up and
     // m_controlVector itself; every other member below was reaching a zeroed
     // default and several are read before their first write — m_targetPos on
-    // the frame RequestMode(ModeFreeMovement) has not run yet, m_cameraTarget
+    // the frame RequestMode(Mode::ModeFreeMovement) has not run yet, m_cameraTarget
     // in AdvanceAutomaticTracking, and all three m_*BeforeAnim if a script
     // cuts to a mount before anything has recorded a position.
     DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
@@ -95,7 +95,7 @@ class Camera : public CameraAccess
     float m_currentDistance; // Used in Manual Camera Rotation when tracking entities
     float m_heightMultiplier;
 
-    int m_mode;
+    Mode m_mode;
     int m_debugMode;
     int m_framesInThisMode;
 
@@ -108,7 +108,7 @@ class Camera : public CameraAccess
     CameraAnimation* m_anim;
     int m_animCurrentNode;
     float m_animNodeStartTime;
-    int m_modeBeforeAnim;
+    Mode m_modeBeforeAnim;
     DirectX::XMFLOAT3 m_posBeforeAnim{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 m_upBeforeAnim{0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT3 m_frontBeforeAnim{0.0f, 0.0f, 0.0f};
@@ -151,7 +151,7 @@ class Camera : public CameraAccess
     void SetDebugMode(int _mode);
     void SetNextDebugMode();
 
-    void RequestMode(int _mode);
+    void RequestMode(Mode _mode);
     void RequestBuildingFocusMode(Building* _building, float _range, float _height);
     void RequestSphereFocusMode();
     void RequestRadarAimMode(Building* _building);
@@ -163,13 +163,13 @@ class Camera : public CameraAccess
 
     bool IsMoving();
     bool IsInteractive();
-    bool IsInMode(int _mode);
+    bool IsInMode(Mode _mode);
 
     void RecordCameraPosition(); // So you can return easily
     void RestoreCameraPosition(bool _cut = false);
 
     // SetTarget() only sets the target data. To make these changes take effect, call either
-    // CutToTarget() or RequestMode(Camera::ModeMoveToTarget), depending on whether you
+    // CutToTarget() or RequestMode(Camera::Mode::ModeMoveToTarget), depending on whether you
     // want an instant cut or a smooth transition
     // The default for _up was g_upVector, a Vector3 constant T25 retires.
     // s_defaultUp is the same (0,1,0) as an XMFLOAT3, kept as a default

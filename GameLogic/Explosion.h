@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 
 #include "NeuronMath.h"
 #include "RgbColour.h"
@@ -82,7 +85,10 @@ class Explosion
 class ExplosionManager
 {
   protected:
-    std::vector<Explosion*> m_explosions;
+    // Owning. Object lifetimes here are sync-relevant: an explosion is
+    // destroyed at exactly the tick Advance says so, and the erase below is
+    // that point.
+    std::vector<std::unique_ptr<Explosion>> m_explosions;
 
   public:
     ExplosionManager();
@@ -95,7 +101,7 @@ class ExplosionManager
     void Advance();
     void Render();
 
-    const std::vector<Explosion*>& GetExplosionList() { return m_explosions; } // read access for DeformEffect
+    const std::vector<std::unique_ptr<Explosion>>& GetExplosionList() { return m_explosions; } // read access for DeformEffect
 };
 
 

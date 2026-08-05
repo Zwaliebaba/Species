@@ -46,48 +46,48 @@ GameCursor::GameCursor()
     m_validPlacementOpportunity(false),
     m_moveableEntitySelected(false)
 {
-  m_cursorStandard = new MouseCursor("Icons/MouseMain.bmp");
+  m_cursorStandard = std::make_unique<MouseCursor>("Icons/MouseMain.bmp");
   m_cursorStandard->SetHotspot(0.055f, 0.070f);
   m_cursorStandard->SetSize(25.0f);
 
-  m_cursorPlacement = new MouseCursor("Icons/MousePlacement.bmp");
+  m_cursorPlacement = std::make_unique<MouseCursor>("Icons/MousePlacement.bmp");
   m_cursorPlacement->SetHotspot(0.5f, 0.5f);
   m_cursorPlacement->SetSize(40.0f);
 
-  m_cursorDisabled = new MouseCursor("Icons/MouseDisabled.bmp");
+  m_cursorDisabled = std::make_unique<MouseCursor>("Icons/MouseDisabled.bmp");
   m_cursorDisabled->SetHotspot(0.5f, 0.5f);
   m_cursorDisabled->SetSize(60.0f);
   m_cursorDisabled->SetColour(RGBAColour(255, 0, 0, 255));
 
-  m_cursorMoveHere = new MouseCursor("Icons/MouseMoveHere.bmp");
+  m_cursorMoveHere = std::make_unique<MouseCursor>("Icons/MouseMoveHere.bmp");
   m_cursorMoveHere->SetHotspot(0.5f, 0.5f);
   m_cursorMoveHere->SetSize(30.0f);
   m_cursorMoveHere->SetAnimation(true);
   m_cursorMoveHere->SetColour(RGBAColour(255, 255, 150, 255));
 
-  m_cursorHighlight = new MouseCursor("Icons/MouseHighlight.bmp");
+  m_cursorHighlight = std::make_unique<MouseCursor>("Icons/MouseHighlight.bmp");
   m_cursorHighlight->SetHotspot(0.5f, 0.5f);
   m_cursorHighlight->SetAnimation(true);
 
-  m_cursorTurretTarget = new MouseCursor("Icons/MouseTurretTarget.bmp");
+  m_cursorTurretTarget = std::make_unique<MouseCursor>("Icons/MouseTurretTarget.bmp");
   m_cursorTurretTarget->SetHotspot(0.5f, 0.5f);
   m_cursorTurretTarget->SetColour(RGBAColour(255, 255, 255, 255));
   m_cursorTurretTarget->SetShadowed(false);
 
-  m_cursorSelection = new MouseCursor("Icons/MouseSelection.bmp");
+  m_cursorSelection = std::make_unique<MouseCursor>("Icons/MouseSelection.bmp");
   m_cursorSelection->SetHotspot(0.5f, 0.5f);
 
-  m_cursorMissile = nullptr;
+  m_cursorMissile.reset();
 
   //
   // Load selection arrow graphic
 
   SetArrowFilenames("Icons/SelectionArrow.bmp");
 
-  BinaryReader* binReader = g_resource->GetBinaryReader(m_selectionArrowFilename.c_str());
+  std::unique_ptr<BinaryReader> binReader(g_resource->GetBinaryReader(m_selectionArrowFilename.c_str()));
   ASSERT_TEXT(binReader, "Failed to open mouse cursor resource {}", m_selectionArrowFilename);
-  BitmapRGBA bmp(binReader, "bmp");
-  SAFE_DELETE(binReader);
+  BitmapRGBA bmp(binReader.get(), "bmp");
+  binReader.reset();
 
   g_resource->AddBitmap(m_selectionArrowFilename.c_str(), bmp);
 
@@ -95,17 +95,7 @@ GameCursor::GameCursor()
   g_resource->AddBitmap(m_selectionArrowShadowFilename.c_str(), bmp);
 }
 
-GameCursor::~GameCursor()
-{
-  SAFE_DELETE(m_cursorStandard);
-  SAFE_DELETE(m_cursorPlacement);
-  SAFE_DELETE(m_cursorDisabled);
-  SAFE_DELETE(m_cursorMoveHere);
-  SAFE_DELETE(m_cursorHighlight);
-  SAFE_DELETE(m_cursorTurretTarget);
-  SAFE_DELETE(m_cursorSelection);
-  SAFE_DELETE(m_cursorMissile);
-}
+GameCursor::~GameCursor() = default;
 
 bool GameCursor::GetSelectedObject(WorldObjectId& _id, DirectX::XMFLOAT3& _pos)
 {
@@ -254,13 +244,13 @@ void GameCursor::CreateMarker(DirectX::XMFLOAT3 const& _pos)
   DirectX::XMFLOAT3 front;
   DirectX::XMStoreFloat3(&front, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&landNormal), DirectX::g_XMIdentityR1)));
 
-  MouseCursorMarker* marker = new MouseCursorMarker();
+  auto marker = std::make_unique<MouseCursorMarker>();
   marker->m_pos = _pos;
   marker->m_front = front;
   marker->m_up = landNormal;
   marker->m_startTime = GetHighResTime();
 
-  m_markers.push_back(marker);
+  m_markers.push_back(std::move(marker));
 }
 
 
@@ -271,12 +261,12 @@ void GameCursor::RenderMarkers()
 {
   for (int i = 0; i < static_cast<int>(m_markers.size()); ++i)
   {
-    MouseCursorMarker* marker = m_markers[i];
+    MouseCursorMarker* marker = m_markers[i].get();
     float timeSync = GetHighResTime() - marker->m_startTime;
     if (timeSync > 0.5f)
     {
+      // The erase destroys it.
       m_markers.erase(m_markers.begin() + i);
-      delete marker;
       --i;
     }
     else
@@ -397,7 +387,7 @@ void GameCursor::Render()
 
       cursorRendered = true;
     }
-    else if (TheCamera()->IsInMode(Camera::ModeEntityTrack))
+    else if (TheCamera()->IsInMode(Camera::Mode::ModeEntityTrack))
     {
       if (false)
       {
@@ -1030,10 +1020,10 @@ MouseCursor::MouseCursor(char const* _filename)
   // ownership/T3 is what makes them std::string.
   m_mainFilename = strdup(_filename);
 
-  BinaryReader* binReader = g_resource->GetBinaryReader(m_mainFilename);
+  std::unique_ptr<BinaryReader> binReader(g_resource->GetBinaryReader(m_mainFilename));
   ASSERT_TEXT(binReader, "Failed to open mouse cursor resource {}", _filename);
-  BitmapRGBA bmp(binReader, "bmp");
-  SAFE_DELETE(binReader);
+  BitmapRGBA bmp(binReader.get(), "bmp");
+  binReader.reset();
 
   g_resource->AddBitmap(m_mainFilename, bmp);
 

@@ -70,7 +70,7 @@ bool StartSequence::Advance()
     started = true;
     g_soundSystem->TriggerOtherEvent("StartSequence", SoundSourceBlueprint::TypeMusic);
     TheCamera()->SetDebugMode(Camera::DebugModeAuto);
-    TheCamera()->RequestMode(Camera::ModeSphereWorldIntro);
+    TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldIntro);
   }
 
   g_inputManager->PollForEvents();

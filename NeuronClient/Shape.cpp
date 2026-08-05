@@ -45,44 +45,20 @@ ShapeMarker::ShapeMarker(char const* _name, char* _parentName, int _depth, Direc
   : m_depth(_depth),
     m_transform(_transform)
 {
-  m_name = strdup(_name);
-  m_parentName = strdup(_parentName);
+  m_name = _name;
+  m_parentName = _parentName;
 
-  // Remove spaces from m_name
-  char* c = m_name;
-  char* d = m_name;
-  while (d[0] != '\0')
-  {
-    c[0] = d[0];
-    if (c[0] != ' ')
-    {
-      c++;
-    }
-    d++;
-  }
-  c[0] = '\0';
-
-  // Remove spaces from m_parentName
-  c = m_parentName;
-  d = m_parentName;
-  while (d[0] != '\0')
-  {
-    c[0] = d[0];
-    if (c[0] != ' ')
-    {
-      c++;
-    }
-    d++;
-  }
-  c[0] = '\0';
+  // The two hand-rolled compaction loops these replace stripped every space in
+  // place, which is what std::erase does.
+  std::erase(m_name, ' ');
+  std::erase(m_parentName, ' ');
 }
 
 
 // *** Constructor
 ShapeMarker::ShapeMarker(TextReader* _in, char const* _name)
 {
-  m_name = strdup(_name);
-  m_parentName = nullptr;
+  m_name = _name ? _name : "";
   while (_in->ReadLine())
   {
     char* firstWord = _in->GetNextToken();
@@ -92,7 +68,8 @@ ShapeMarker::ShapeMarker(TextReader* _in, char const* _name)
       if (stricmp(firstWord, "ParentName") == 0)
       {
         char* secondWord = _in->GetNextToken();
-        m_parentName = strdup(secondWord);
+        if (secondWord)
+          m_parentName = secondWord;
       }
       else if (stricmp(firstWord, "Depth") == 0)
       {
@@ -131,18 +108,21 @@ ShapeMarker::ShapeMarker(TextReader* _in, char const* _name)
 
   m_parents.assign(m_depth, nullptr);
 
-  if (!m_name)
-    m_name = strdup("unknown");
-  if (!m_parentName)
-    m_parentName = strdup("unknown");
+  // "unknown" when the file supplied nothing, exactly as the null tests these
+  // replace did. Empty is equivalent to null here because
+  // TextReader::GetNextToken returns nullptr for an empty token and never an
+  // empty string, so a name that is present is never "".
+  if (m_name.empty())
+    m_name = "unknown";
+  if (m_parentName.empty())
+    m_parentName = "unknown";
 }
 
 ShapeMarker::~ShapeMarker()
 {
-  SAFE_FREE(m_parentName);
-  SAFE_FREE(m_name);
-  // m_parents needs no release: it observes fragments the tree owns. The
-  // question the old comment asked is answered in the header.
+  // m_name and m_parentName release themselves. m_parents needs no release
+  // either: it observes fragments the tree owns. The question the old comment
+  // asked is answered in the header.
 }
 
 // *** GetWorldMatrix
@@ -179,8 +159,8 @@ DirectX::XMFLOAT3 ShapeMarker::GetWorldPosition(DirectX::XMFLOAT4X4 const& _root
 
 void ShapeMarker::WriteToFile(FILE* _out) const
 {
-  fprintf(_out, "Marker: %s\n", m_name);
-  fprintf(_out, "\tParentName: %s\n", m_parentName);
+  fprintf(_out, "Marker: %s\n", m_name.c_str());
+  fprintf(_out, "\tParentName: %s\n", m_parentName.c_str());
   fprintf(_out, "\tDepth: %d\n", m_depth);
   fprintf(_out, "\tUp:    %5.2f %5.2f %5.2f\n", m_transform._21, m_transform._22, m_transform._23);
   fprintf(_out, "\tFront: %5.2f %5.2f %5.2f\n", m_transform._31, m_transform._32, m_transform._33);
@@ -208,8 +188,6 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
     m_numTriangles(0),
     m_maxTriangles(0),
     m_triangles(nullptr),
-    m_name(nullptr),
-    m_parentName(nullptr),
     m_transform(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f),
     m_angVel(0, 0, 0),
     m_vel(0, 0, 0),
@@ -223,7 +201,7 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
   m_triangles = new ShapeTriangle[m_maxTriangles];
 
   DEBUG_ASSERT(_name);
-  m_name = strdup(_name);
+  m_name = _name;
 
   DirectX::XMStoreFloat4x4(&m_transform, DirectX::XMMatrixIdentity());
   m_angVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -239,7 +217,8 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
 
     if (stricmp(firstWord, "ParentName") == 0)
     {
-      m_parentName = strdup(secondWord);
+      if (secondWord)
+        m_parentName = secondWord;
     }
     else if (stricmp(firstWord, "front") == 0)
     {
@@ -295,10 +274,12 @@ ShapeFragment::ShapeFragment(TextReader* _in, char const* _name)
 
   DirectX::XMStoreFloat4x4(&m_transform, NormaliseBasis(DirectX::XMLoadFloat4x4(&m_transform)));
 
-  if (!m_name)
-    m_name = strdup("unknown");
-  if (!m_parentName)
-    m_parentName = strdup("unknown");
+  // "unknown" when the file supplied nothing — see ShapeMarker's constructor
+  // for why empty is equivalent to the null test this replaces.
+  if (m_name.empty())
+    m_name = "unknown";
+  if (m_parentName.empty())
+    m_parentName = "unknown";
 
   GenerateNormals();
 
@@ -334,36 +315,13 @@ ShapeFragment::ShapeFragment(char const* _name, char const* _parentName)
   DirectX::XMStoreFloat4x4(&m_transform, DirectX::XMMatrixIdentity());
   m_angVel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
   m_vel = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-  m_name = strdup(_name);
-  m_parentName = strdup(_parentName);
+  m_name = _name;
+  m_parentName = _parentName;
 
-  // Remove spaces from m_name
-  char* c = m_name;
-  char* d = m_name;
-  while (d[0] != '\0')
-  {
-    c[0] = d[0];
-    if (c[0] != ' ')
-    {
-      c++;
-    }
-    d++;
-  }
-  c[0] = '\0';
-
-  // Remove spaces from m_parentName
-  c = m_parentName;
-  d = m_parentName;
-  while (d[0] != '\0')
-  {
-    c[0] = d[0];
-    if (c[0] != ' ')
-    {
-      c++;
-    }
-    d++;
-  }
-  c[0] = '\0';
+  // The two hand-rolled compaction loops these replace stripped every space in
+  // place, which is what std::erase does.
+  std::erase(m_name, ' ');
+  std::erase(m_parentName, ' ');
 }
 
 
@@ -371,10 +329,7 @@ ShapeFragment::~ShapeFragment()
 {
   SAFE_DELETE_ARRAY(m_positions);
   SAFE_DELETE_ARRAY(m_positionsInWS);
-  free(m_name);
-  m_name = nullptr;
-  free(m_parentName);
-  m_parentName = nullptr;
+
   delete[] m_vertices;
   m_vertices = nullptr;
   delete[] m_normals;
@@ -413,10 +368,10 @@ void ShapeFragment::WriteToFile(FILE* _out) const
 {
   int i;
 
-  if (stricmp(m_name, "SceneRoot") != 0)
+  if (stricmp(m_name.c_str(), "SceneRoot") != 0)
   {
-    fprintf(_out, "Fragment: %s\n", m_name);
-    fprintf(_out, "\tParentName: %s\n", m_parentName);
+    fprintf(_out, "Fragment: %s\n", m_name.c_str());
+    fprintf(_out, "\tParentName: %s\n", m_parentName.c_str());
     fprintf(_out, "\tup:    %5.2f %5.2f %5.2f\n", m_transform._21, m_transform._22, m_transform._23);
     fprintf(_out, "\tfront: %5.2f %5.2f %5.2f\n", m_transform._31, m_transform._32, m_transform._33);
     fprintf(_out, "\tpos: %.2f %.2f %.2f\n", m_transform._41, m_transform._42, m_transform._43);
@@ -1035,7 +990,7 @@ void ShapeFragment::RenderSlow()
 // Recursively look through all child fragments until we find a name match
 ShapeFragment* ShapeFragment::LookupFragment(char const* _name)
 {
-  if (stricmp(_name, m_name) == 0)
+  if (stricmp(_name, m_name.c_str()) == 0)
   {
     return this;
   }
@@ -1064,7 +1019,7 @@ ShapeMarker* ShapeFragment::LookupMarker(char const* _name)
   for (i = 0; i < numMarkers; ++i)
   {
     ShapeMarker* marker = m_childMarkers[i].get();
-    if (stricmp(_name, marker->m_name) == 0)
+    if (stricmp(_name, marker->m_name.c_str()) == 0)
     {
       return marker;
     }
@@ -1377,7 +1332,6 @@ Shape::Shape() {}
 Shape::Shape(char const* filename, bool _animating)
   : m_displayListName(nullptr),
     m_rootFragment(),
-    m_name(nullptr),
     m_animating(_animating)
 {
   TextFileReader in(filename);
@@ -1401,7 +1355,6 @@ Shape::Shape(TextReader* in, bool _animating)
 Shape::~Shape()
 {
   m_rootFragment.reset();
-  free(m_name);
 #ifndef EXPORTER_BUILD
   g_resource->DeleteDisplayList(m_displayListName);
   delete[] m_displayListName;
@@ -1426,7 +1379,7 @@ void Shape::BuildDisplayList()
 
 void Shape::Load(TextReader* _in)
 {
-  m_name = strdup(_in->GetFilename());
+  m_name = _in->GetFilename();
 
   int const maxFrags = 100;
   int const maxMarkers = 100;
@@ -1471,7 +1424,7 @@ void Shape::Load(TextReader* _in)
   // We need to build the hierarchy of fragments from the flat array
   for (int i = 0; i < currentFrag; ++i)
   {
-    if (stricmp(allFrags[i]->m_parentName, "SceneRoot") == 0)
+    if (stricmp(allFrags[i]->m_parentName.c_str(), "SceneRoot") == 0)
     {
       m_rootFragment->m_childFragments.push_back(std::move(allFragsOwned[i]));
     }
@@ -1483,8 +1436,8 @@ void Shape::Load(TextReader* _in)
       {
         if (i == j)
           continue;
-        DEBUG_ASSERT(stricmp(allFrags[i]->m_name, allFrags[j]->m_name) != 0);
-        if (stricmp(allFrags[i]->m_parentName, allFrags[j]->m_name) == 0)
+        DEBUG_ASSERT(stricmp(allFrags[i]->m_name.c_str(), allFrags[j]->m_name.c_str()) != 0);
+        if (stricmp(allFrags[i]->m_parentName.c_str(), allFrags[j]->m_name.c_str()) == 0)
         {
           allFrags[j]->m_childFragments.push_back(std::move(allFragsOwned[i]));
           break;
@@ -1497,16 +1450,16 @@ void Shape::Load(TextReader* _in)
   // Add the ShapeMarkers into the fragment tree
   for (int i = 0; i < currentMarker; ++i)
   {
-    ShapeFragment* parent = m_rootFragment->LookupFragment(allMarkers[i]->m_parentName);
+    ShapeFragment* parent = m_rootFragment->LookupFragment(allMarkers[i]->m_parentName.c_str());
     DEBUG_ASSERT(parent);
     parent->m_childMarkers.push_back(std::move(allMarkersOwned[i]));
 
     int depth = allMarkers[i]->m_depth - 1;
     allMarkers[i]->m_parents[depth] = parent;
     depth--;
-    while (stricmp(parent->m_name, "SceneRoot") != 0)
+    while (stricmp(parent->m_name.c_str(), "SceneRoot") != 0)
     {
-      parent = m_rootFragment->LookupFragment(parent->m_parentName);
+      parent = m_rootFragment->LookupFragment(parent->m_parentName.c_str());
       DEBUG_ASSERT(parent && depth >= 0);
       allMarkers[i]->m_parents[depth] = parent;
       depth--;

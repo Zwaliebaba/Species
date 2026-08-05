@@ -279,7 +279,7 @@ void GameMenu::CreateMenu()
   EclRegisterWindow(std::make_unique<GameMenuWindow>());
 
   // set the camera to a position with a good view of the internet
-  TheCamera()->RequestMode(Camera::ModeMainMenu);
+  TheCamera()->RequestMode(Camera::Mode::ModeMainMenu);
   TheCamera()->SetDebugMode(Camera::DebugModeNever);
   TheCamera()->SetTarget(DirectX::XMFLOAT3(-900000, 3000000, 397000), DirectX::XMFLOAT3(0, 0.5f, -1));
   TheCamera()->CutToTarget();

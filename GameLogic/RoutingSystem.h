@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <vector>
 
 #include "NeuronMath.h"
 
@@ -40,7 +42,9 @@ class Route
 {
   public:
     int m_id;
-    std::vector<WayPoint*> m_wayPoints;
+    // The route owns its waypoints. GetWayPoint and everything outside this
+    // class observe them; nothing but the vector releases one.
+    std::vector<std::unique_ptr<WayPoint>> m_wayPoints;
 
     Route(int _id);
     ~Route();

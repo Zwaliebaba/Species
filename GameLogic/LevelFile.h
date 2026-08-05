@@ -1,7 +1,9 @@
 #pragma once
 
 #include <stdlib.h>
+#include <memory>
 #include <string>
+#include <vector>
 #include "NeuronMath.h"
 #include "WorldObject.h"
 #include "Landscape.h"
@@ -68,15 +70,9 @@ class CamAnimNode
 class CameraAnimation
 {
   public:
-    std::vector<CamAnimNode*> m_nodes;
+    // Owns its nodes. Everything outside this class observes them.
+    std::vector<std::unique_ptr<CamAnimNode>> m_nodes;
     std::string m_name;
-
-    ~CameraAnimation()
-    {
-      for (CamAnimNode* node : m_nodes)
-        delete node;
-      m_nodes.clear();
-    }
 };
 
 
@@ -125,8 +121,9 @@ class LandscapeFlattenArea
 class LandscapeDef
 {
   public:
-    std::vector<LandscapeTile*> m_tiles;
-    std::vector<LandscapeFlattenArea*> m_flattenAreas;
+    // Both owning. The vectors release their contents; nothing else does.
+    std::vector<std::unique_ptr<LandscapeTile>> m_tiles;
+    std::vector<std::unique_ptr<LandscapeFlattenArea>> m_flattenAreas;
     float m_cellSize;
     int m_worldSizeX;
     int m_worldSizeZ;
@@ -140,15 +137,6 @@ class LandscapeDef
     {
     }
 
-    ~LandscapeDef()
-    {
-      for (LandscapeTile* tile : m_tiles)
-        delete tile;
-      m_tiles.clear();
-      for (LandscapeFlattenArea* area : m_flattenAreas)
-        delete area;
-      m_flattenAreas.clear();
-    }
 };
 
 
@@ -218,17 +206,21 @@ class LevelFile
     std::string m_wavesColourFilename;
     std::string m_waterColourFilename;
 
-    std::vector<CameraMount*> m_cameraMounts;
-    std::vector<CameraAnimation*> m_cameraAnimations;
-    std::vector<Building*> m_buildings;
-    std::vector<InstantUnit*> m_instantUnits;
-    std::vector<Light*> m_lights;
-    std::vector<Route*> m_routes;
-    std::vector<RunningProgram*> m_runningPrograms;
-    std::vector<GlobalEventCondition*> m_primaryObjectives;
-    std::vector<GlobalEventCondition*> m_secondaryObjectives; // This data isn't stored in the map or mission files
-                                                              // directly, but is calculated at load time for your
-                                                              // convenience
+    // The level file owns everything it parses. These nine vectors are the
+    // whole of that ownership -- the destructor used to be nine delete loops
+    // and is now defaulted. Everything that reaches in from outside observes,
+    // and says .get() to prove it.
+    std::vector<std::unique_ptr<CameraMount>> m_cameraMounts;
+    std::vector<std::unique_ptr<CameraAnimation>> m_cameraAnimations;
+    std::vector<std::unique_ptr<Building>> m_buildings;
+    std::vector<std::unique_ptr<InstantUnit>> m_instantUnits;
+    std::vector<std::unique_ptr<Light>> m_lights;
+    std::vector<std::unique_ptr<Route>> m_routes;
+    std::vector<std::unique_ptr<RunningProgram>> m_runningPrograms;
+    std::vector<std::unique_ptr<GlobalEventCondition>> m_primaryObjectives;
+    std::vector<std::unique_ptr<GlobalEventCondition>> m_secondaryObjectives; // This data isn't stored in the map or mission files
+                                                                              // directly, but is calculated at load time for your
+                                                                              // convenience
     int m_levelDifficulty;                                    // The difficulty factor that this level represents.
 
     LandscapeDef m_landscape;

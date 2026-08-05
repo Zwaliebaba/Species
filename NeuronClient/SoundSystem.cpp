@@ -243,8 +243,8 @@ SoundSystem::SoundSystem()
     m_mainProfiler(nullptr),
     m_eventProfiler(nullptr),
     m_quitWithoutSave(false),
-    m_music(nullptr),
-    m_requestedMusic(nullptr),
+    m_music(),
+    m_requestedMusic(),
     m_channels(nullptr),
     m_numChannels(0)
 {
@@ -262,7 +262,7 @@ SoundSystem::~SoundSystem()
 #endif
   delete[] m_channels;
 
-  m_sounds.EmptyAndDelete();
+  m_sounds.Empty();
 
   delete g_soundLibrary3d;
   delete g_soundLibrary2d;
@@ -328,7 +328,7 @@ void SoundSystem::StopAllDSPEffects()
   {
     if (m_sounds.ValidIndex(i))
     {
-      SoundInstance* instance = m_sounds[i];
+      SoundInstance* instance = m_sounds[i].get();
       // Was `while (ValidIndex(0))` — a subscript standing in for an
       // emptiness test, which the legacy list answered and std::vector does not.
       for (DspHandle* handle : instance->m_dspFX)
@@ -413,7 +413,7 @@ bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _n
   if (!g_soundSystem)
     return false;
 
-  SoundInstance* instance = g_soundSystem->m_music;
+  SoundInstance* instance = g_soundSystem->m_music.get();
 
   if (instance && instance->m_cachedSampleHandle)
   {
@@ -907,7 +907,7 @@ void SoundSystem::WriteSampleGroup(FileWriter* _file, SampleGroup* _group)
   }
 }
 
-bool SoundSystem::InitialiseSound(SoundInstance* _instance)
+bool SoundSystem::InitialiseSound(std::unique_ptr<SoundInstance> _instance)
 {
   bool createNewSound = true;
 
@@ -919,7 +919,7 @@ bool SoundSystem::InitialiseSound(SoundInstance* _instance)
     {
       if (m_sounds.ValidIndex(i))
       {
-        SoundInstance* thisInstance = m_sounds[i];
+        SoundInstance* thisInstance = m_sounds[i].get();
         if (thisInstance->m_instanceType != SoundInstance::Polyphonic && stricmp(thisInstance->m_eventName, _instance->m_eventName) == 0)
         {
           for (int j = 0; j < static_cast<int>(_instance->m_objIds.size()); ++j)
@@ -936,11 +936,19 @@ bool SoundSystem::InitialiseSound(SoundInstance* _instance)
 
   if (createNewSound)
   {
-    _instance->m_id.m_index = m_sounds.PutData(_instance);
-    _instance->m_id.m_uniqueId = SoundInstanceId::GenerateUniqueId();
-    _instance->m_restartAttempts = 3; // int( 1.0f + (float) _instance->m_volume.GetOutput() / 5.0f );
+    // The observer is taken before the move, because everything after works
+    // through it -- the slot holds the instance from here on.
+    SoundInstance* instance = _instance.get();
+    instance->m_id.m_index = m_sounds.PutData(std::move(_instance));
+    instance->m_id.m_uniqueId = SoundInstanceId::GenerateUniqueId();
+    instance->m_restartAttempts = 3; // int( 1.0f + (float) _instance->m_volume.GetOutput() / 5.0f );
     return true;
   }
+
+  // The folding path. The object ids were merged into the existing instance
+  // above, and this one is destroyed HERE rather than in the caller's
+  // ShutdownSound -- the one program point this conversion moves, stated in
+  // the header and in ownership T8.
   return false;
 }
 
@@ -982,11 +990,26 @@ int SoundSystem::FindBestAvailableChannel()
 
 void SoundSystem::ShutdownSound(SoundInstance* _instance)
 {
-  if (m_sounds.ValidIndex(_instance->m_id.m_index))
-    m_sounds.MarkNotUsed(_instance->m_id.m_index);
+  const int index = _instance->m_id.m_index;
 
+  // THE IDENTITY CHECK IS A FIX, not part of the conversion -- see ownership
+  // T8. The old code tested ValidIndex alone, so after an index was reused it
+  // would un-register whoever held the slot NOW and delete the argument
+  // anyway. Sound destructors stop audio channels, so that failure was
+  // silent. The slot is released only when it still holds this instance.
+  if (m_sounds.ValidIndex(index) && m_sounds[index].get() == _instance)
+  {
+    // Reset the slot while operator[] is still valid; MarkNotUsed only clears
+    // the occupancy bit and would leave the instance alive and unreachable.
+    std::unique_ptr<SoundInstance> const dying = std::move(m_sounds[index]);
+    m_sounds.MarkNotUsed(index);
+    dying->StopPlaying();
+    return;
+  }
+
+  // Not ours. Registered instances are the whole contract, so there is
+  // nothing to release and nothing to delete.
   _instance->StopPlaying();
-  delete _instance;
 }
 
 SoundInstance* SoundSystem::GetSoundInstance(SoundInstanceId id)
@@ -994,7 +1017,7 @@ SoundInstance* SoundSystem::GetSoundInstance(SoundInstanceId id)
   if (!m_sounds.ValidIndex(id.m_index))
     return nullptr;
 
-  SoundInstance* found = m_sounds[id.m_index];
+  SoundInstance* found = m_sounds[id.m_index].get();
   if (found->m_id == id)
     return found;
 
@@ -1018,14 +1041,13 @@ void SoundSystem::TriggerEntityEvent(SoundSource const& _source, const char* _ev
       if (stricmp(seb->m_eventName, _eventName) == 0)
       {
         DEBUG_ASSERT(seb->m_instance);
-        auto instance = new SoundInstance();
+        auto instance = std::make_unique<SoundInstance>();
         instance->Copy(seb->m_instance);
         instance->m_objIds.push_back(new WorldObjectId(objId));
         instance->m_pos = _source.m_pos;
         instance->m_vel = _source.m_vel;
-        bool success = InitialiseSound(instance);
-        if (!success)
-          ShutdownSound(instance);
+        // InitialiseSound owns it either way -- no ShutdownSound on failure.
+        InitialiseSound(std::move(instance));
       }
     }
   }
@@ -1048,13 +1070,11 @@ void SoundSystem::TriggerBuildingEvent(SoundSource const& _source, const char* _
       if (stricmp(seb->m_eventName, _eventName) == 0)
       {
         DEBUG_ASSERT(seb->m_instance);
-        auto instance = new SoundInstance();
+        auto instance = std::make_unique<SoundInstance>();
         instance->Copy(seb->m_instance);
         instance->m_objIds.push_back(new WorldObjectId(_source.m_id));
         instance->m_pos = _source.m_pos;
-        bool success = InitialiseSound(instance);
-        if (!success)
-          ShutdownSound(instance);
+        InitialiseSound(std::move(instance));
       }
     }
   }
@@ -1097,18 +1117,19 @@ void SoundSystem::TriggerOtherEvent(SoundSource const* _other, const char* _even
       {
         // We have a match
         DEBUG_ASSERT(seb->m_instance);
-        auto instance = new SoundInstance();
+        auto instance = std::make_unique<SoundInstance>();
         instance->Copy(seb->m_instance);
         if (_type == musicType)
         {
           // if( m_music && stricmp( m_music->m_eventName+6, _eventName ) == 0 )
           if (m_music && stricmp(m_music->m_soundName, seb->m_instance->m_soundName) == 0)
           {
-            // The music is already playing
+            // The music is already playing. `instance` dies here -- with the
+            // raw pointer it was simply leaked, every time this branch ran.
           }
           else
           {
-            m_requestedMusic = instance;
+            m_requestedMusic = std::move(instance);
             if (m_music)
               m_music->BeginRelease(true);
           }
@@ -1120,9 +1141,7 @@ void SoundSystem::TriggerOtherEvent(SoundSource const* _other, const char* _even
             instance->m_pos = _other->m_pos;
             instance->m_objIds.push_back(new WorldObjectId(_other->m_id));
           }
-          bool success = InitialiseSound(instance);
-          if (!success)
-            ShutdownSound(instance);
+          InitialiseSound(std::move(instance));
         }
       }
     }
@@ -1133,7 +1152,8 @@ void SoundSystem::TriggerOtherEvent(SoundSource const* _other, const char* _even
 
 void SoundSystem::TriggerDuplicateSound(SoundInstance* _instance)
 {
-  auto newInstance = new SoundInstance();
+  auto newInstanceOwned = std::make_unique<SoundInstance>();
+  SoundInstance* newInstance = newInstanceOwned.get();
   newInstance->Copy(_instance);
   newInstance->m_parent = _instance->m_parent;
   newInstance->m_pos = _instance->m_pos;
@@ -1145,11 +1165,11 @@ void SoundSystem::TriggerDuplicateSound(SoundInstance* _instance)
     newInstance->m_objIds.push_back(new WorldObjectId(*id));
   }
 
-  bool success = InitialiseSound(newInstance);
+  // The observer is only valid if registration succeeded; on the folding path
+  // InitialiseSound has already destroyed it.
+  const bool success = InitialiseSound(std::move(newInstanceOwned));
   if (success && newInstance->m_positionType == SoundInstance::TypeInEditor)
     m_editorInstanceId = newInstance->m_id;
-  else if (!success)
-    ShutdownSound(newInstance);
 }
 
 void SoundSystem::StopAllSounds(WorldObjectId _id, const char* _eventName)
@@ -1165,7 +1185,7 @@ void SoundSystem::StopAllSounds(WorldObjectId _id, const char* _eventName)
     {
       if (m_sounds.ValidIndex(i))
       {
-        SoundInstance* instance = m_sounds[i];
+        SoundInstance* instance = m_sounds[i].get();
 
         if (instance->m_objId == _id)
         {
@@ -1219,7 +1239,7 @@ int SoundSystem::NumInstances(WorldObjectId _id, const char* _eventName)
   {
     if (m_sounds.ValidIndex(i))
     {
-      SoundInstance* instance = m_sounds[i];
+      SoundInstance* instance = m_sounds[i].get();
       bool instanceMatch = !_id.IsValid() || instance->m_objId == _id;
 
       if (instance && instanceMatch && stricmp(instance->m_eventName, _eventName) == 0)
@@ -1297,16 +1317,18 @@ void SoundSystem::Advance()
       if (amIDone)
       {
         START_PROFILE(g_profiler, "Shutdown Music");
-        ShutdownSound(m_music);
-        m_music = nullptr;
+        // Never registered in m_sounds, so it is released here rather than
+        // through ShutdownSound -- that is what "registered instances only"
+        // buys. Same program point as before.
+        m_music->StopPlaying();
+        m_music.reset();
         END_PROFILE(g_profiler, "Shutdown Music");
       }
     }
 
-    if (m_music == nullptr && m_requestedMusic != nullptr)
+    if (!m_music && m_requestedMusic)
     {
-      m_music = m_requestedMusic;
-      m_requestedMusic = nullptr;
+      m_music = std::move(m_requestedMusic);
       m_music->OpenStream(false);
       m_music->m_channelIndex = g_soundLibrary3d->m_musicChannelId;
       g_soundLibrary3d->ResetChannel(m_music->m_channelIndex);
@@ -1349,7 +1371,7 @@ void SoundSystem::Advance()
     {
       if (m_sounds.ValidIndex(i))
       {
-        SoundInstance* instance = m_sounds[i];
+        SoundInstance* instance = m_sounds[i].get();
         if (!instance->IsPlaying() && !instance->m_loopType)
           instance->m_restartAttempts--;
         if (instance->m_restartAttempts < 0)
@@ -1667,7 +1689,7 @@ void SoundSystem::Advance()
         {
             if( m_sounds.ValidIndex(i) )
             {
-                SoundInstance *instance = m_sounds[i];
+                SoundInstance* instance = m_sounds[i].get();
                 instance->RecalculatePriority();
 
                 if( instance->m_positionType == SoundInstance::Type3DAttachedToObject &&
@@ -1690,7 +1712,7 @@ void SoundSystem::Advance()
         {
             if( m_sounds.ValidIndex(i) )
             {
-                SoundInstance *instance = m_sounds[i];
+                SoundInstance* instance = m_sounds[i].get();
                 {
                     if( !instance->IsPlaying() )
                     {
@@ -2086,7 +2108,7 @@ void SoundSystem::PropagateBlueprints()
   {
     if (m_sounds.ValidIndex(i))
     {
-      SoundInstance* instance = m_sounds[i];
+      SoundInstance* instance = m_sounds[i].get();
       instance->PropagateBlueprints();
     }
   }

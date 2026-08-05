@@ -31,15 +31,16 @@ class CameraAccess
 
     // Declared here rather than in Camera so that a caller naming a mode does
     // not need Camera.h for the enumerator. Camera derives from this class, so
-    // `Camera::ModeFreeMovement` still resolves for the Species-side code that
+    // `Camera::Mode::ModeFreeMovement` still resolves for the Species-side code that
     // spells it that way.
     //
-    // Still an unscoped enum, and moved verbatim rather than converted: Camera
-    // stores m_mode as an int, indexes a string table with it and compares it
-    // against ints throughout Camera.cpp. Making it an enum class is a change
-    // to that machinery, not to this seam — tasks/language-hygiene.yaml T12
-    // owns it. (T5 first, then T9, then T12 when T9 split on 2026-08-05.)
-    enum Mode // hygiene-ok: moved unchanged, see above; converted by language-hygiene T12
+    // Scoped by language-hygiene T12. Camera stored m_mode as an int, compared
+    // it against ints and indexed a string table with it; all three are typed
+    // now, and the one remaining integer boundary is GetModeName's index,
+    // which spells the conversion Neuron::I(). The values are pinned because
+    // they were explicit before and a level file's camera-animation node
+    // writes a transition mode as a number.
+    enum class Mode : int
     {
       ModeReplay = 0,
       ModeSphereWorld = 1,
@@ -59,6 +60,10 @@ class CameraAccess
       ModeMainMenu = 15,
       ModeNumModes
     };
+
+    // The enumerators are spelled Mode::ModeFreeMovement now. Code below
+    // Species that named one as CameraAccess::Mode::ModeFreeMovement says
+    // CameraAccess::Mode::ModeFreeMovement.
 
     enum
     {
@@ -91,8 +96,8 @@ class CameraAccess
     virtual void CreateCameraShake(float _intensity) = 0;
 
     virtual bool IsInteractive() = 0;
-    virtual bool IsInMode(int _mode) = 0;
-    virtual void RequestMode(int _mode) = 0;
+    virtual bool IsInMode(Mode _mode) = 0;
+    virtual void RequestMode(Mode _mode) = 0;
 
     // Follow a particular object. Asked for by the task manager, which moves
     // down in tasks/layering-inversion.yaml T15.

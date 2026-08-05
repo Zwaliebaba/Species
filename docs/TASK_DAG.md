@@ -218,6 +218,28 @@ If T2 could technically start before T1 finishes, do not add the edge.
 `NeuronCore/Server.cpp` will conflict. Listing the touch set makes that visible
 before two agents start editing the same file.
 
+**Run a closing node's acceptance grep the day you WRITE it.** A plan that ends
+with "grep X over the tree returns nothing" has one criterion that is testable
+immediately, years before its dependencies exist — and it is the criterion whose
+failure costs the most, because it surfaces when the plan is otherwise finished.
+Two plans here were unfinishable for months and neither knew it:
+`strings-modernised/T9` greps `\bsprintf\b`, which does not match `vsprintf`,
+so eleven unbounded calls were invisible to the node that declares stage 4 over;
+`ownership/T7` greps `SAFE_DELETE|SAFE_FREE`, and the only `SAFE_FREE` calls
+left in the tree sat in a file whose own task's grep named `SAFE_DELETE` alone.
+Both were found by running the closing grep, once, while scoping a batch. Run
+it, list what it returns, and give every hit an owning task before the plan is
+committed.
+
+**A declared path is not checked against the disk.** `check_task_dag.py`
+validates the graph — ids, edges, acyclicity, status transitions — and nothing
+about whether `files` entries exist. A path that rots when a file moves stays
+valid forever, and the first person to find out is an agent opening a file that
+is not there. `determinism/T4` declared `Species/LandscapeRenderer.cpp`, a path
+`layering-inversion` had already retired before the task was written — so this
+is not only rot in old plans, it is a wrong path passing validation in a plan
+written the same week. `ls` a task's file list before starting it.
+
 **Intent is the part that survives.** By the time someone reads the plan again,
 the code has moved on. `intent` is what tells them whether the task still makes
 sense.
