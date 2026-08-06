@@ -192,7 +192,38 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06. CI green at 8f1e54a, first round.
+
+      WHAT WENT: SwitchTaskManagerForX360Controller and its per-frame call, the
+      ControllerUnplugged/ControllerPlugged dialog pair in
+      HandleCommonConditions, both control types, 69 XInput binding lines and
+      the 18 gamepad glyph icon lines that decorated them. Every one of those
+      waited on a gamepad EVENT that no driver in the tree can report.
+
+      WHAT STAYED, and the acceptance criterion above was amended during the
+      work rather than quietly missed: twenty INPUT_MODE_GAMEPAD consumers
+      across eight files. They are the controller USER INTERFACE, not vestige -
+      LanguageTable's per-mode phrase table m_phrasesXin (6 sites),
+      TaskManagerInterfaceIcons' 360 button prompts (8), ControlHelp (2, and
+      ControlHelpSystem::Advance early-returns unless the mode IS gamepad, so
+      that whole overlay is gamepad-only by construction), plus Camera's
+      tracking default, GameCursor's cursor rendering, TaskManager, Main's
+      order-given test and Renderer's debug readout. Deleting them removes a
+      feature and turns reintroducing a controller into a UI rewrite instead of
+      a new driver.
+
+      A FINDING, recorded rather than acted on: controlIcon has NO consumer
+      outside the input system - nothing renders a control icon anywhere. The
+      icon data is parsed into a map that is never read. Removing the icon
+      plumbing is ControlBindings surgery and belongs with T8/T9, which rework
+      that area; only the gamepad icon DATA went here.
+
+      The end-of-table test was repointed at IconsTaskManagerQuickUnitRight
+      rather than deleted. What it and FindsTheFirstGeneratedControlByName pin
+      together is that the generated table and the enum agree at both ends; one
+      without the other pins nothing. Suite still holds 198 tests.
     notes: >
       Collides with sound-xaudio2 T8 and network-transport T9 over
       Species/Main.cpp - do not run concurrently with them.
