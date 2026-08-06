@@ -317,11 +317,17 @@ namespace Species
 
     if (_teamControls.m_directUnitMove)
     {
+      // THE WAYPOINT IS THE POINT MAN'S OWN POSITION, and it always has been.
+      // Two offsets used to be added here from TeamControls members that
+      // NetworkUpdate's Alive codec never wrote or read, so they were zero at
+      // every read on every machine. input-native-events T3 deleted the members
+      // and these two additions of zero with them.
+      //
+      // That leaves direct unit move setting a waypoint where the squaddie
+      // already stands, which does nothing visible. The feature is broken, was
+      // broken before this, and fixing it means deciding what the wire should
+      // carry — a task, not a tidy-up. Recorded in that plan's notes.
       DirectX::XMFLOAT3 t = pointMan->m_pos;
-
-      t.x += _teamControls.m_directUnitMoveDx;
-      t.z += _teamControls.m_directUnitMoveDy;
-      // t+= front * - _teamControls.m_directUnitMoveDy;
 
       std::vector<int> const* nearbyBuildings = g_location->m_obstructionGrid->GetBuildings(t.x, t.z);
       for (int buildingId : *nearbyBuildings)

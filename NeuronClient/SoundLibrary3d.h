@@ -7,9 +7,10 @@
 // These channels are positioned in the 3D sound
 // stage by means of distance attenuation, panning, low-pass filtering and
 // reverb. Some of these effects may not be available on low end hardware.
-// Currently two implementations are available; one that wraps DirectSound's
-// 3D API and one does all the mixing and positioning itself and sends the
-// output to a SoundLibrary2D implementation.
+// One implementation remains: SoundLibraryXAudio2. The DirectSound wrapper and
+// the software mixer that fed a SoundLibrary2D output layer were deleted by
+// sound-xaudio2 T7 and T8. The interface is still virtual because the seam is
+// what let the replacement be A/B'd against them.
 //*****************************************************************************
 
 
@@ -36,26 +37,36 @@ namespace Neuron
 
       // This callback is called whenever SoundLibrary3d needs some more sound data for a certain channel.
       // The return value is true if some audio was written, or false if silence was written
+      //
+      // Both count FRAMES. The main callback has no channel count because an
+      // effect channel is mono and nothing may change that: the voices are
+      // positioned individually, and X3DAudio pans a mono source. The music
+      // callback is handed the width of the music voice, and must write that
+      // many interleaved channels per frame whatever the sample it is reading
+      // from happens to hold.
       bool (*m_mainCallback)(unsigned int, signed short*, unsigned int, int*);
-      bool (*m_musicCallback)(signed short*, unsigned int, int*);
+      bool (*m_musicCallback)(signed short*, unsigned int, int, int*);
 
     public:
+      // THIS ENUM IS GameData/Effects.txt, POSITION FOR POSITION.
+      // SoundSystem::LoadEffects appends one blueprint per EFFECT block, so an
+      // effect's index is its line position in that file and the two must be
+      // edited together. Nothing checks the alignment at build or load time; a
+      // mismatch reads the wrong blueprint and the game still runs.
+      //
+      // The nine DirectX 8 media objects that used to sit above these went with
+      // sound-xaudio2 T4. Seven had no usage in the data at all. I3DL2Reverb
+      // survives with its prefix dropped, because I3DL2 is not a DirectSound
+      // legacy — it is the interchange format XAUDIO2FX speaks natively, which
+      // is what ReverbConvertI3DL2ToNative converts from.
       enum
       {
-        DSP_DSOUND_CHORUS, // 0
-        DSP_DSOUND_COMPRESSOR,
-        DSP_DSOUND_DISTORTION, // 2
-        DSP_DSOUND_ECHO,
-        DSP_DSOUND_FLANGER, // 4
-        DSP_DSOUND_GARGLE,
-        DSP_DSOUND_I3DL2REVERB, // 6
-        DSP_DSOUND_PARAMEQ,
-        DSP_DSOUND_WAVESREVERB, // 8
-        DSP_RESONANTLOWPASS,
-        DSP_BITCRUSHER, // 10
-        DSP_GARGLE,
-        DSP_ECHO, // 12
-        DSP_SIMPLE_REVERB,
+        DSP_RESONANTLOWPASS, // 0
+        DSP_BITCRUSHER,
+        DSP_GARGLE, // 2
+        DSP_ECHO,
+        DSP_SIMPLE_REVERB, // 4
+        DSP_I3DL2REVERB,
         NUM_FILTERS
       };
 
@@ -66,21 +77,23 @@ namespace Neuron
       };
 
       int m_musicChannelId;
-      bool m_hw3dDesired;
       Profiler* m_profiler;
 
     public:
       SoundLibrary3d();
       virtual ~SoundLibrary3d();
 
-      virtual void Initialise(int _mixFreq, int _numChannels, bool hw3d, int _mainBufNumSamples, int _musicBufNumSamples) = 0;
+      // The hardware-3D flag that used to sit between _numChannels and the
+      // buffer sizes is gone with DirectSound. It selected DSBCAPS_LOCHARDWARE,
+      // which no machine has granted since Vista made DirectSound a software
+      // emulation over WASAPI, so the capability it asked about always answered
+      // no. XAudio2 has no equivalent question.
+      virtual void Initialise(int _numChannels) = 0;
       void SetMainCallback(bool (*_callback)(unsigned int, signed short*, unsigned int, int*));
-      void SetMusicCallback(bool (*_callback)(signed short*, unsigned int, int*));
+      void SetMusicCallback(bool (*_callback)(signed short*, unsigned int, int, int*));
       void SetMasterVolume(int _volume);
 
-      virtual bool Hardware3DSupport() = 0;
       virtual int GetMaxChannels() = 0;
-      virtual int GetCPUOverhead() = 0;
       virtual float GetChannelHealth(int _channel) = 0; // 0.0 = BAD, 1.0 = GOOD
       int GetSampleRate() { return m_sampleRate; }
       virtual int GetChannelBufSize(int _channel) const = 0;
@@ -103,10 +116,19 @@ namespace Neuron
 
       virtual void Advance() = 0;
 
-      void WriteSilence(signed short* _data, unsigned int _numSamples);
+      // Whether there is an audio device to play through RIGHT NOW -- a LEVEL,
+      // not the edge of losing one. False covers three cases that a caller
+      // cannot tell apart and should not have to: the machine has no audio
+      // hardware, opening it failed, or it was working and has gone.
+      //
+      // The distinction matters to SoundSystem::Advance, which retries
+      // RestartSoundLibrary while this is false but only once it has seen it
+      // true. Asking "did you lose a device" instead would stop the retries
+      // dead: a rebuild that also fails produces a backend that has lost
+      // nothing, and a device unplugged and plugged back in would never return.
+      virtual bool HasOutputDevice() const = 0;
 
-      virtual void StartRecordToFile(char const* _filename) {}
-      virtual void EndRecordToFile() {}
+      void WriteSilence(signed short* _data, unsigned int _numSamples);
   };
 
 

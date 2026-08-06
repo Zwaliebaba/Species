@@ -65,16 +65,18 @@ subject matter no longer exists.
 **When a plan has no task left in `todo`, `in_progress` or `blocked`, move it to
 `tasks/Archive/`.** That keeps `tasks/` to the plans someone might still pick
 up. Archived plans are still LOADED by `check_task_dag.py` and still resolve
-`blocked_by` — **all 65 such edges point into them as of 2026-08-05**, because
-every plan is now archived, and an edge into a plan the loader cannot see is an
-unresolvable reference rather than a satisfied one. They are not validated or
+`blocked_by` — 65 such edges pointed into them when the modernisation closed on
+2026-08-05, and an edge into a plan the loader cannot see is an unresolvable
+reference rather than a satisfied one. They are not validated or
 reported by default, because a finished plan does not need re-listing on every
 run.
 
-> **As of 2026-08-05 `tasks/` holds no plan at all.** Eleven are in `Archive/`,
-> every task in every one of them `done` or `abandoned`, and what is left beside
-> `Archive/` is `_template.yaml` and the reading orders. The next piece of work
-> starts by writing a plan, not by picking one up.
+> **As of 2026-08-06 `tasks/` holds three open plans**, the first work since
+> the modernisation closed: `sound-xaudio2`, `input-native-events` and
+> `network-transport`. Eleven finished plans are in `Archive/`, every task in
+> every one of them `done` or `abandoned`. Read
+> `python3 tools/check_task_dag.py --next tasks/<plan>.yaml` for what can be
+> started rather than any prose count, here or in `AGENTS.md`.
 
 **Archiving is not one-way.** A finished plan whose subject turns out to have
 unowned work in it comes back out of `Archive/` with that work as new tasks
@@ -113,8 +115,8 @@ tasks:                               # required. non-empty list
     blocked_by:                      # optional. tasks in ANOTHER plan, plan/Tn
       - containers-replaced/T4       # see "Ordering across plans" below
     files:                           # optional but strongly encouraged
-      - NeuronCore/Server.cpp        # the expected touch set; used to spot
-      - NeuronCore/Server.h          # collisions between concurrent tasks
+      - NeuronServer/Server.cpp      # the expected touch set; used to spot
+      - NeuronServer/Server.h        # collisions between concurrent tasks
     acceptance:                      # required. non-empty. observable outcomes
       - Server.cpp no longer includes App.h or Globals.h
       - Neither NeuronCore.vcxproj nor Server.cpp names a project above NeuronCore
@@ -142,6 +144,19 @@ tasks:                               # required. non-empty list
 
 The validator enforces that a task is only `in_progress` or `done` when all of its
 dependencies are `done` or `abandoned`.
+
+### One key, once
+
+**A repeated key in a task is rejected**, with the line number. PyYAML accepts
+one and lets the last occurrence win, discarding everything the earlier one
+held without a word, and that is not a theoretical hazard: two completed tasks
+each grew a second `notes:` when a collision warning was appended below a long
+completion note, and every parser — the checker included — then read the warning
+and nothing else. The full record of what those tasks did was sitting in the
+file and invisible to every tool. Three archived plans had the same defect.
+
+If a task needs to say two things in `notes`, they go in one block separated by
+a blank line. There is no second key to reach for.
 
 ---
 
@@ -225,7 +240,7 @@ added for narrative tidiness is a dependency that needlessly serialises the work
 If T2 could technically start before T1 finishes, do not add the edge.
 
 **Declare `files`.** Two tasks in the same wave that both list
-`NeuronCore/Server.cpp` will conflict. Listing the touch set makes that visible
+`NeuronServer/Server.cpp` will conflict. Listing the touch set makes that visible
 before two agents start editing the same file.
 
 **Run a closing node's acceptance grep the day you WRITE it.** A plan that ends

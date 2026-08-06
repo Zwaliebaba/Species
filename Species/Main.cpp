@@ -36,8 +36,7 @@
 #include "Server.h"
 #include "ServerToClientLetter.h"
 #include "ServerUpdates.h"
-#include "SoundLibrary2d.h"
-#include "SoundLibrary3dDSound.h"
+#include "SoundLibrary3d.h"
 #include "SoundSystem.h"
 #include "StartSequence.h"
 #include "SystemInfo.h"
@@ -554,7 +553,6 @@ void LocationGameLoop()
       // The following are candidates for running in parallel
       // using something like OpenMP
       g_location->m_water->Advance();
-      g_soundLibrary2d->TopupBuffer();
       TheCamera()->Advance();
       g_app->m_locationInput->Advance();
       g_taskManager->Advance();
@@ -840,11 +838,8 @@ void Initialise()
 
 void Finalise()
 {
-  g_soundLibrary2d->Stop();
   delete g_soundLibrary3d;
   g_soundLibrary3d = nullptr;
-  delete g_soundLibrary2d;
-  g_soundLibrary2d = nullptr;
 
   delete g_resource;
   delete g_windowManager;

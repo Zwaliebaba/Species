@@ -28,31 +28,6 @@ namespace Neuron
 
 
   //*****************************************************************************
-  // Class AudioInfo
-  //*****************************************************************************
-
-  class AudioInfo
-  {
-    public:
-      char** m_deviceNames;
-      unsigned int m_numDevices;
-      int m_preferredDevice;
-
-      AudioInfo()
-        : m_deviceNames(nullptr),
-          m_numDevices(0)
-      {
-      }
-      ~AudioInfo()
-      {
-        for (unsigned int i = 0; i < m_numDevices; ++i)
-          free(m_deviceNames[i]);
-        delete[] m_deviceNames;
-      }
-  };
-
-
-  //*****************************************************************************
   // Class SystemInfo
   //*****************************************************************************
 
@@ -60,12 +35,10 @@ namespace Neuron
   {
     private:
       void GetLocaleDetails();
-      void GetAudioDetails();
       void GetDirectXVersion();
 
     public:
       LocaleInfo m_localeInfo;
-      AudioInfo m_audioInfo;
       int m_directXVersion;
 
       SystemInfo();

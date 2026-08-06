@@ -25,7 +25,7 @@ into a foundation an authoritative world server can be built on.
 Engine code is in `namespace Neuron`, game code in `namespace Species`. Includes
 point downward only, with no allowlist.
 
-~115,000 lines of C++23. No third-party dependencies — it links only against the
+~113,000 lines of C++23. No third-party dependencies — it links only against the
 operating system.
 
 ## Building
@@ -69,12 +69,13 @@ python3 tools/check_layering.py        # no upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
 python3 tools/check_containers.py      # no legacy container call on a vector
 python3 tools/check_math_types.py      # no legacy math call on a native type
+python3 tools/check_sound_effects.py   # Effects.txt and the FX enum still line up
 python3 tools/check_format.py          # changed lines match .clang-format
 python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum
 ```
 
-then build and run the suite. CI runs the same seven and fails on anything
+then build and run the suite. CI runs the same eight and fails on anything
 skipped; [`AGENTS.md`](AGENTS.md) explains what each one exists to catch.
 
 ## Licence

@@ -599,9 +599,12 @@ ones have landed **for the file they touch** — do not skip ahead within a file
 
 **There is no per-file stage to look up any more.** The staged sweeps are done
 tree-wide and their plans are archived, so nothing here tells you which stage a
-file is at — that question no longer has an answer, and `tasks/` holds no plan
-that owns a file. This section governs a file you are converting for some other
-reason, and a conversion still needs a plan written before code is written.
+file is at — that question no longer has an answer, and no open plan owns a
+file for staged conversion. Plans opened since do own files, for their own
+subjects; a plan's `files` list is the authority on which, and it is what stops
+two agents editing the same file. This section governs a file you are converting
+for some other reason, and a conversion still needs a plan written before code
+is written.
 [`AGENTS.md`](AGENTS.md) carries the status; `docs/TASK_DAG.md` the standard.
 
 1. Read it first. Darwinia code has non-obvious invariants, especially around

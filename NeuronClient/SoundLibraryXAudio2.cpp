@@ -11,6 +11,7 @@
 #include <xapofx.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <memory>
 #include <vector>
@@ -37,6 +38,15 @@ namespace Neuron
     // ring was sized to survive cursor-chasing, and there is no cursor here.
     constexpr int BlocksPerChannel = 6;
     constexpr int BlocksPerSecond = 20;
+
+    // The highest rate any sample in GameData uses. See Initialise for why a
+    // nominal rate still matters when XAudio2 resamples everything anyway.
+    constexpr int NominalSampleRate = 44100;
+
+    // The music voice's width. Effect voices are mono and must stay mono —
+    // X3DAudio positions them and it pans a mono source — so this is the one
+    // voice in the backend that is not 1.
+    constexpr int MusicChannels = 2;
 
     // The largest pitch multiplier the blueprints ask for is 2.17 (measured over
     // GameData/Sounds.txt), and a voice cannot exceed the ratio it was created
@@ -91,7 +101,13 @@ namespace Neuron
       // allocated and untouched for as long as it is queued — which is what the
       // rotation through BlocksPerChannel guarantees.
       std::vector<signed short> m_blocks;
-      int m_blockSamples = 0;
+
+      // FRAMES per block, and the width of a frame. Every effect voice is mono,
+      // so for those two the width is 1 and a frame is a short; the music voice
+      // is stereo and a frame is two. Keeping both means no expression below has
+      // to guess which unit it is in.
+      int m_blockFrames = 0;
+      int m_voiceChannels = 1;
       int m_nextBlock = 0;
 
       // Owned by the SoundSystem callbacks, which count down a sound's trailing
@@ -144,7 +160,9 @@ namespace Neuron
       DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
-      signed short* Block(int _index) { return m_blocks.data() + static_cast<size_t>(_index) * m_blockSamples; }
+      int BlockShorts() const { return m_blockFrames * m_voiceChannels; }
+
+      signed short* Block(int _index) { return m_blocks.data() + static_cast<size_t>(_index) * BlockShorts(); }
   };
 
 
@@ -152,12 +170,43 @@ namespace Neuron
   // Class XAudio2Data
   //*****************************************************************************
 
+  // XAudio2 calls this ON ITS OWN AUDIO THREAD, which is the whole reason it is
+  // shaped this way: it sets one atomic flag and returns. Everything that
+  // actually reacts — destroying voices, releasing the engine, telling
+  // SoundSystem — happens on the game thread in Advance, where all the rest of
+  // this backend already lives.
+  //
+  // The engine is unusable after OnCriticalError. It is not an error to
+  // recover from in place; the only route back is a new IXAudio2, which is what
+  // SoundSystem::RestartSoundLibrary builds.
+  class XAudio2EngineCallback : public IXAudio2EngineCallback
+  {
+    public:
+      std::atomic<bool> m_deviceLost{false};
+
+      void STDMETHODCALLTYPE OnProcessingPassStart() noexcept override {}
+      void STDMETHODCALLTYPE OnProcessingPassEnd() noexcept override {}
+
+      void STDMETHODCALLTYPE OnCriticalError(HRESULT _error) noexcept override
+      {
+        m_deviceLost.store(true, std::memory_order_relaxed);
+        (void)_error;
+      }
+  };
+
+
   class XAudio2Data
   {
     public:
       IXAudio2* m_engine = nullptr;
       IXAudio2MasteringVoice* m_masteringVoice = nullptr;
       bool m_ownsCom = false;
+
+      XAudio2EngineCallback m_engineCallback;
+
+      // Set on the game thread once the flag above has been acted on, so the
+      // teardown runs once rather than on every tick that follows.
+      bool m_deviceTornDown = false;
 
       // X3DAudio replaces DS3D. The instance is a plain byte array holding the
       // speaker geometry, computed once from the endpoint's channel mask.
@@ -189,7 +238,12 @@ namespace Neuron
   SoundLibraryXAudio2::~SoundLibraryXAudio2() { Shutdown(); }
 
 
-  void SoundLibraryXAudio2::Shutdown()
+  // Everything that owns a device handle, released in the one order that is
+  // legal. Shutdown calls it on the way out and the device-loss path calls it
+  // mid-game; what is left afterwards is exactly the state Initialise leaves
+  // when there is no audio device at all — blocks allocated, every m_voice
+  // null — which every entry point in this file already handles.
+  void SoundLibraryXAudio2::TearDownDevice()
   {
     if (!m_data)
       return;
@@ -221,9 +275,22 @@ namespace Neuron
 
     if (m_data->m_engine)
     {
+      // Before the Release, so the audio thread cannot be inside a callback on
+      // an object that is about to go. UnregisterForCallbacks waits for one in
+      // flight to finish.
+      m_data->m_engine->UnregisterForCallbacks(&m_data->m_engineCallback);
       m_data->m_engine->Release();
       m_data->m_engine = nullptr;
     }
+  }
+
+
+  void SoundLibraryXAudio2::Shutdown()
+  {
+    if (!m_data)
+      return;
+
+    TearDownDevice();
 
     // Balanced against the CoInitializeEx in Initialise, and only when that call
     // is the one that initialised COM on this thread. The DirectSound backend
@@ -236,19 +303,23 @@ namespace Neuron
   }
 
 
-  void SoundLibraryXAudio2::Initialise(int _mixFreq, int _numChannels, bool _hw3d, int _mainBufNumSamples, int _musicBufNumSamples)
+  void SoundLibraryXAudio2::Initialise(int _numChannels)
   {
     ASSERT_TEXT(_numChannels > 0, "SoundLibrary3d asked to create too few channels");
 
-    m_sampleRate = _mixFreq;
-    m_hw3dDesired = _hw3d;
+    // A NOMINAL rate, not a mix rate, and nothing is resampled to it. XAudio2
+    // converts every voice to whatever the endpoint runs at, so the old
+    // SoundMixFreq preference had nothing left to choose and T8 retired it.
+    // What this number still does is size a block and give a voice its opening
+    // format, and it is the highest rate any sample in the game uses so that a
+    // block is never SHORTER than 50ms once ResetChannel adopts the sample's
+    // own rate — a lower nominal would make the ring shrink in wall-clock
+    // terms for 44kHz samples.
+    m_sampleRate = NominalSampleRate;
     m_numChannels = std::min(_numChannels, GetMaxChannels());
     m_musicChannelId = -1;
 
-    // NOT derived from _mainBufNumSamples or _musicBufNumSamples. Those are the
-    // DirectSound ring sizes — 20,000 and 200,000 samples — and reproducing them
-    // would reproduce the latency they cost. Both are ignored deliberately.
-    const int blockSamples = std::max(m_sampleRate / BlocksPerSecond, 1);
+    const int blockFrames = std::max(m_sampleRate / BlocksPerSecond, 1);
 
     // Storage first, and unconditionally: with no device the callbacks still run
     // (see TopUpChannel), so every sound still starts, ends and releases at the
@@ -266,11 +337,21 @@ namespace Neuron
     m_data->m_channels.resize(GetNumMainChannels());
     for (XAudio2Voice& channel : m_data->m_channels)
     {
-      channel.m_blockSamples = blockSamples;
-      channel.m_blocks.assign(static_cast<size_t>(blockSamples) * BlocksPerChannel, 0);
+      channel.m_blockFrames = blockFrames;
+      channel.m_voiceChannels = 1;
+      channel.m_blocks.assign(static_cast<size_t>(channel.BlockShorts()) * BlocksPerChannel, 0);
     }
-    m_data->m_musicChannel.m_blockSamples = blockSamples;
-    m_data->m_musicChannel.m_blocks.assign(static_cast<size_t>(blockSamples) * BlocksPerChannel, 0);
+
+    // The music voice is stereo and stays stereo, rather than being rebuilt to
+    // match whatever track is playing. A source voice's channel count is fixed
+    // at creation, so matching the sample would mean destroying and recreating
+    // the voice on every track change — and the callback has to be able to fan
+    // a mono sample out anyway, because every music file the game ships is
+    // mono. Once it can do that, a permanently stereo voice costs one extra
+    // block of memory and removes the whole recreate path.
+    m_data->m_musicChannel.m_blockFrames = blockFrames;
+    m_data->m_musicChannel.m_voiceChannels = MusicChannels;
+    m_data->m_musicChannel.m_blocks.assign(static_cast<size_t>(m_data->m_musicChannel.BlockShorts()) * BlocksPerChannel, 0);
 
     //
     // Initialise COM. XAudio2Create needs it, and RPC_E_CHANGED_MODE means
@@ -293,6 +374,11 @@ namespace Neuron
       m_data->m_engine = nullptr;
       return;
     }
+
+    // The only way to hear about a device that goes away. Without it an
+    // unplugged headset leaves every voice queued forever, the game silent, and
+    // nothing anywhere aware that anything happened.
+    m_data->m_engine->RegisterForCallbacks(&m_data->m_engineCallback);
 
     // Device defaults throughout: XAudio2 resamples every voice to whatever the
     // endpoint runs at, so there is no mix rate for us to choose or for the
@@ -337,17 +423,17 @@ namespace Neuron
     // starting point — ResetChannel replaces it with the sample's own rate the
     // first time a sound lands on the channel.
 
-    WAVEFORMATEX format = {};
-    format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = 1;
-    format.nSamplesPerSec = static_cast<DWORD>(m_sampleRate);
-    format.wBitsPerSample = 16;
-    format.nBlockAlign = static_cast<WORD>(format.nChannels * format.wBitsPerSample / 8);
-    format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
-    format.cbSize = 0;
-
     auto createVoice = [&](XAudio2Voice& _channel)
     {
+      WAVEFORMATEX format = {};
+      format.wFormatTag = WAVE_FORMAT_PCM;
+      format.nChannels = static_cast<WORD>(_channel.m_voiceChannels);
+      format.nSamplesPerSec = static_cast<DWORD>(m_sampleRate);
+      format.wBitsPerSample = 16;
+      format.nBlockAlign = static_cast<WORD>(format.nChannels * format.wBitsPerSample / 8);
+      format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+      format.cbSize = 0;
+
       // USEFILTER is what makes the resonant low pass free: it is XAudio2's own
       // per-voice biquad, so that effect needs no object in the chain at all.
       // It has to be asked for at creation or SetFilterParameters does nothing.
@@ -404,31 +490,39 @@ namespace Neuron
     if (!voice)
       return;
 
-    const unsigned int numSamples = static_cast<unsigned int>(voice->m_blockSamples);
+    const unsigned int numFrames = static_cast<unsigned int>(voice->m_blockFrames);
+    const unsigned int numShorts = static_cast<unsigned int>(voice->BlockShorts());
 
     if (_channel == m_musicChannelId)
     {
       if (m_musicCallback)
-        m_musicCallback(_block, numSamples, &voice->m_silenceRemaining);
+        m_musicCallback(_block, numFrames, voice->m_voiceChannels, &voice->m_silenceRemaining);
       else
-        WriteSilence(_block, numSamples);
+        WriteSilence(_block, numShorts);
     }
     else
     {
       if (m_mainCallback)
-        m_mainCallback(static_cast<unsigned int>(_channel), _block, numSamples, &voice->m_silenceRemaining);
+        m_mainCallback(static_cast<unsigned int>(_channel), _block, numFrames, &voice->m_silenceRemaining);
       else
-        WriteSilence(_block, numSamples);
+        WriteSilence(_block, numShorts);
     }
 
     // The effects XAudio2 has no equivalent of, run over the block that has
     // just been filled — the same place, on the same 16-bit samples, at the
     // same point in the signal path as the DirectSound backend ran them in
     // PopulateBuffer. Everything else is in the voice's own effect chain.
+    //
+    // numShorts, not numFrames: these walk samples and know nothing about
+    // interleaving. BitCrusher is memoryless and correct either way; Gargle
+    // advances an LFO per sample, so on a stereo voice its rate would come out
+    // doubled. Only music is stereo and no music blueprint asks for either
+    // effect, so that is a property to know about rather than a bug to see —
+    // and the place it would first appear is a modded Sounds.txt.
     for (std::unique_ptr<DspEffect> const& effect : voice->m_inFillEffects)
     {
       if (effect)
-        effect->Process(_block, numSamples);
+        effect->Process(_block, numShorts);
     }
   }
 
@@ -461,7 +555,7 @@ namespace Neuron
       FillBlock(_channel, block);
 
       XAUDIO2_BUFFER buffer = {};
-      buffer.AudioBytes = static_cast<UINT32>(voice->m_blockSamples * sizeof(signed short));
+      buffer.AudioBytes = static_cast<UINT32>(voice->BlockShorts() * sizeof(signed short));
       buffer.pAudioData = reinterpret_cast<BYTE const*>(block);
       voice->m_voice->SubmitSourceBuffer(&buffer);
 
@@ -474,6 +568,19 @@ namespace Neuron
   {
     if (!m_data)
       return;
+
+    // THE DEVICE-LOSS REACTION, and it is here rather than in the callback
+    // because this is the game thread. Everything below carries on afterwards:
+    // TopUpChannel's no-device path still consumes one block per call, so every
+    // sound still starts, ends and releases on the schedule it would have had.
+    // A lost device makes the game silent, not different — the same contract
+    // Initialise honours when there was never a device to begin with.
+    if (m_data->m_engineCallback.m_deviceLost.load(std::memory_order_relaxed) && !m_data->m_deviceTornDown)
+    {
+      DebugTrace("SOUND : the audio device reported a critical error; going silent and retrying\n");
+      TearDownDevice();
+      m_data->m_deviceTornDown = true;
+    }
 
     // Positioning first, so a block filled below is mixed with the panning that
     // matches where the listener is this tick rather than the previous one.
@@ -746,14 +853,12 @@ namespace Neuron
         continue;
 
       case DSP_ECHO:
-      case DSP_DSOUND_ECHO:
         if (FAILED(CreateFX(__uuidof(FXEcho), &effect)))
           effect = nullptr;
         break;
 
       case DSP_SIMPLE_REVERB:
-      case DSP_DSOUND_I3DL2REVERB:
-      case DSP_DSOUND_WAVESREVERB:
+      case DSP_I3DL2REVERB:
         if (FAILED(XAudio2CreateReverb(&effect)))
           effect = nullptr;
         break;
@@ -767,9 +872,9 @@ namespace Neuron
         continue;
 
       default:
-        // The remaining DirectX 8 media objects — chorus, compressor,
-        // distortion, flanger, gargle, parametric EQ. No sound in the data
-        // asks for one, and T4 removes them from the effect list outright.
+        // Unreachable while every enumerator above has a case, which is the
+        // point of leaving it: a filter added to Effects.txt and the enum but
+        // not to this switch plays dry rather than doing something undefined.
         continue;
       }
 
@@ -861,39 +966,30 @@ namespace Neuron
     switch (_filterType)
     {
     case DSP_ECHO:
-    case DSP_DSOUND_ECHO:
     {
+      // WetDryMix 0..100, Delay in ms, Attenuation 0..100 — DspEcho's layout,
+      // and now the only echo layout. T4 rewrote the six DirectSound echo
+      // usages into this one: their RightDelay and PanDelay were already being
+      // ignored here, because the voices are mono and two delays are one.
       FXECHO_PARAMETERS echo = {};
-
-      if (_filterType == DSP_ECHO)
-      {
-        // WetDryMix 0..100, Delay in ms, Attenuation 0..100 — DspEcho's layout.
-        echo.WetDryMix = std::clamp(_params[0] * 0.01f, FXECHO_MIN_WETDRYMIX, FXECHO_MAX_WETDRYMIX);
-        echo.Delay = std::clamp(_params[1], FXECHO_MIN_DELAY, FXECHO_MAX_DELAY);
-        echo.Feedback = std::clamp(_params[2] * 0.01f, FXECHO_MIN_FEEDBACK, FXECHO_MAX_FEEDBACK);
-      }
-      else
-      {
-        // DirectSound's layout: WetDryMix, Feedback, LeftDelay, RightDelay,
-        // PanDelay. The voices are mono, so the two delays are one delay.
-        echo.WetDryMix = std::clamp(_params[0] * 0.01f, FXECHO_MIN_WETDRYMIX, FXECHO_MAX_WETDRYMIX);
-        echo.Feedback = std::clamp(_params[1] * 0.01f, FXECHO_MIN_FEEDBACK, FXECHO_MAX_FEEDBACK);
-        echo.Delay = std::clamp(_params[2], FXECHO_MIN_DELAY, FXECHO_MAX_DELAY);
-      }
+      echo.WetDryMix = std::clamp(_params[0] * 0.01f, FXECHO_MIN_WETDRYMIX, FXECHO_MAX_WETDRYMIX);
+      echo.Delay = std::clamp(_params[1], FXECHO_MIN_DELAY, FXECHO_MAX_DELAY);
+      echo.Feedback = std::clamp(_params[2] * 0.01f, FXECHO_MIN_FEEDBACK, FXECHO_MAX_FEEDBACK);
 
       voice->m_voice->SetEffectParameters(static_cast<UINT32>(index), &echo, sizeof(echo));
       break;
     }
 
     case DSP_SIMPLE_REVERB:
-    case DSP_DSOUND_I3DL2REVERB:
-    case DSP_DSOUND_WAVESREVERB:
+    case DSP_I3DL2REVERB:
     {
       // I3DL2 is the interchange format: XAudio2 converts it to its own native
-      // parameters, and the game's own I3DL2 block is field for field the same
-      // standard. The other two reverbs carry less information, so they fill
-      // the parts they have and take the I3DL2 defaults for the rest — which
-      // are the same defaults Effects.txt lists.
+      // parameters, and the game's I3DL2 block is field for field the same
+      // standard. SimpleReverb carries only a mix and takes the defaults below
+      // for everything else. Those are the I3DL2 default preset, and two of
+      // them are deliberately finer than Effects.txt can express: the file
+      // writes {:8.2f}, so it rounds 0.007 and 0.011 to 0.01. A block that
+      // states its own delays overrides these; SimpleReverb gets the exact ones.
       XAUDIO2FX_REVERB_I3DL2_PARAMETERS i3dl2 = {};
       i3dl2.WetDryMix = 100.0f;
       i3dl2.Room = -1000;
@@ -909,31 +1005,24 @@ namespace Neuron
       i3dl2.Density = 100.0f;
       i3dl2.HFReference = 5000.0f;
 
-      if (_filterType == DSP_DSOUND_I3DL2REVERB && _numParams >= 12)
+      if (_filterType == DSP_I3DL2REVERB && _numParams >= 13)
       {
-        i3dl2.Room = static_cast<INT32>(_params[0]);
-        i3dl2.RoomHF = static_cast<INT32>(_params[1]);
-        i3dl2.RoomRolloffFactor = _params[2];
-        i3dl2.DecayTime = _params[3];
-        i3dl2.DecayHFRatio = _params[4];
-        i3dl2.Reflections = static_cast<INT32>(_params[5]);
-        i3dl2.ReflectionsDelay = _params[6];
-        i3dl2.Reverb = static_cast<INT32>(_params[7]);
-        i3dl2.ReverbDelay = _params[8];
-        i3dl2.Diffusion = _params[9];
-        i3dl2.Density = _params[10];
-        i3dl2.HFReference = _params[11];
-        // _params[12] is DirectSound's Quality knob. XAudio2's reverb has no
-        // equivalent and does not need one; it is dropped rather than faked.
-      }
-      else if (_filterType == DSP_DSOUND_WAVESREVERB && _numParams >= 4)
-      {
-        // InGain, ReverbMix, ReverbTime, HighFreqRTRatio. The mix is decibels
-        // of attenuation, so it becomes a percentage the same way every other
-        // volume in this file does.
-        i3dl2.WetDryMix = std::clamp(100.0f * HundredthsOfDecibelToAmplitude(_params[1] * 100.0f), 0.0f, 100.0f);
-        i3dl2.DecayTime = std::max(_params[2] * 0.001f, 0.1f);
-        i3dl2.DecayHFRatio = std::clamp(_params[3], 0.1f, 2.0f);
+        // WetDryMix leads, then the twelve standard fields in I3DL2 order.
+        // DirectSound's Quality knob used to trail them; XAudio2's reverb has
+        // no equivalent, so T4 dropped it from the data rather than faking one.
+        i3dl2.WetDryMix = std::clamp(_params[0], 0.0f, 100.0f);
+        i3dl2.Room = static_cast<INT32>(_params[1]);
+        i3dl2.RoomHF = static_cast<INT32>(_params[2]);
+        i3dl2.RoomRolloffFactor = _params[3];
+        i3dl2.DecayTime = _params[4];
+        i3dl2.DecayHFRatio = _params[5];
+        i3dl2.Reflections = static_cast<INT32>(_params[6]);
+        i3dl2.ReflectionsDelay = _params[7];
+        i3dl2.Reverb = static_cast<INT32>(_params[8]);
+        i3dl2.ReverbDelay = _params[9];
+        i3dl2.Diffusion = _params[10];
+        i3dl2.Density = _params[11];
+        i3dl2.HFReference = _params[12];
       }
       else if (_filterType == DSP_SIMPLE_REVERB && _numParams >= 1)
       {
@@ -993,13 +1082,7 @@ namespace Neuron
   }
 
 
-  bool SoundLibraryXAudio2::Hardware3DSupport() { return false; }
-
-
   int SoundLibraryXAudio2::GetMaxChannels() { return 64; }
-
-
-  int SoundLibraryXAudio2::GetCPUOverhead() { return 0; }
 
 
   float SoundLibraryXAudio2::GetChannelHealth(int _channel)
@@ -1015,12 +1098,25 @@ namespace Neuron
   }
 
 
+  // The mastering voice is the honest test: Initialise leaves it null when there
+  // is no device or opening one failed, and the device-loss teardown in Advance
+  // destroys it. The flag is read as well, so the tick between OnCriticalError
+  // firing on the audio thread and Advance reacting on this one does not report
+  // a device that has already gone.
+  bool SoundLibraryXAudio2::HasOutputDevice() const
+  {
+    return m_data && m_data->m_masteringVoice != nullptr && !m_data->m_engineCallback.m_deviceLost.load(std::memory_order_relaxed);
+  }
+
+
+  // FRAMES, and it has to be: the callbacks compare it against a frame count
+  // when they work out how much trailing silence a finished sound still owes.
   int SoundLibraryXAudio2::GetChannelBufSize(int _channel) const
   {
     XAudio2Voice const* voice = GetVoice(_channel);
     if (!voice)
       return 0;
 
-    return voice->m_blockSamples * BlocksPerChannel;
+    return voice->m_blockFrames * BlocksPerChannel;
   }
 } // namespace Neuron

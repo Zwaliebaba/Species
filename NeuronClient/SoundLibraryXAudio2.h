@@ -58,17 +58,20 @@ namespace Neuron
       // otherwise erase the other.
       void ApplyFrequencyRatio(XAudio2Voice& _voice);
 
+      // Releases every device handle and leaves the library in the silent state
+      // Initialise produces when there is no audio device. Shutdown uses it, and
+      // so does Advance when the engine reports a critical error.
+      void TearDownDevice();
+
       void Shutdown();
 
     public:
       SoundLibraryXAudio2();
       ~SoundLibraryXAudio2() override;
 
-      void Initialise(int _mixFreq, int _numChannels, bool _hw3d, int _mainBufNumSamples, int _musicBufNumSamples) override;
+      void Initialise(int _numChannels) override;
 
-      bool Hardware3DSupport() override;
       int GetMaxChannels() override;
-      int GetCPUOverhead() override;
       float GetChannelHealth(int _channel) override; // 0.0 = BAD, 1.0 = GOOD
       int GetChannelBufSize(int _channel) const override;
 
@@ -88,5 +91,6 @@ namespace Neuron
                                DirectX::XMFLOAT3 const& _vel) override;
 
       void Advance() override;
+      bool HasOutputDevice() const override;
   };
 } // namespace Neuron

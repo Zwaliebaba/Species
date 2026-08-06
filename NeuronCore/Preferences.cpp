@@ -175,11 +175,6 @@ bool PrefsManager::IsLineEmpty(char const* _line)
 
 int GetDefaultHelpEnabled() { return 1; }
 
-const char* GetDefaultSoundLibrary()
-{
-  return "xaudio2";
-}
-
 int GetDefaultSoundDSP() { return 1; }
 
 int GetDefaultSoundChannels() { return 32; }
@@ -201,15 +196,10 @@ void PrefsManager::CreateDefaultValues()
 
   AddLine("\n");
 
-  AddLine(std::format("SoundLibrary = {}", GetDefaultSoundLibrary()).c_str());
-
-  AddLine("SoundMixFreq = 22050");
   AddLine("SoundMasterVolume = 255");
   AddLine(std::format("SoundChannels = {}", GetDefaultSoundChannels()).c_str());
-  AddLine("SoundHW3D = 0");
   AddLine("SoundSwapStereo = 0");
   AddLine("SoundMemoryUsage = 1");
-  AddLine("SoundBufferSize = 512"); // Must be a power of 2 for Linux
   AddLine(std::format("SoundDSP = {}", GetDefaultSoundDSP()).c_str());
 
   AddLine("\n");

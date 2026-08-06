@@ -23,12 +23,22 @@ in [`BUILD.md`](BUILD.md) true.
 | `Tests/NeuronServerTests` | `NeuronServer` | Wiring smoke test only — the layer is a stub with no behaviour yet. |
 | `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker, `InputField` and `LevelFile`'s constructors. `LinkStubs.cpp` is empty and on its way out. |
 
-**191 tests at `95524ff` (2026-08-05)**, the last seven being
-`ControlBindingsTests`. Read the number off a run's *Total
-tests* line rather than from prose — `AGENTS.md` has carried a wrong figure
-twice now, once low by eleven and once low by five, and a stale count is worse
-than none: it makes a green run look exactly like new tests that were never
-compiled.
+**198 tests at `c907bfb` (2026-08-06)** — 117 in `NeuronCoreTests`, 43 in
+`NeuronClientTests`, 33 in `GameLogicTests`, 5 in `NeuronServerTests`. Read the
+number off a run's *Total tests* line rather than from prose — `AGENTS.md` has
+carried a wrong figure twice, **and so had this paragraph**, which said 191 for
+a day after the count had moved. A stale count is worse than none: it makes a
+green run look exactly like new tests that were never compiled.
+
+Nothing in `sound-xaudio2` or `input-native-events` added a test, and the reason
+is worth stating rather than leaving as a gap. Both plans work at the boundary
+with the operating system — a source voice, a device that disappears, a window
+message — and this suite cannot reach any of it. What those tasks did instead is
+in their notes: frame arithmetic and a device-recovery state machine lifted
+verbatim into standalone programs and run under ASan and UBSan, and one
+cross-file invariant that no unit test could see moved into
+`tools/check_sound_effects.py`. **That is not a substitute for a test and is not
+offered as one** — it is what was available, recorded so the absence is legible.
 
 **`ShapeMarkerTests` is worth reading before you write a conversion test**, and
 it is five tests over one constructor. Four pin behaviour a `std::string`
@@ -335,7 +345,7 @@ exists: **say what you actually ran.**
 
 - "The suite passes" means you ran it. If you built and did not run, say that.
 - A green suite is not evidence the game works. It covers wire encoding, string
-  helpers and identity — a few hundred lines out of 115,000. The Garden smoke
+  helpers and identity — a few hundred lines out of 113,000. The Garden smoke
   test in [`AGENTS.md`](../AGENTS.md#what-working-looks-like) is still the thing
   that would tell you the game runs, and it still cannot be run.
 - If you changed behaviour and no test failed, that is information. Either the

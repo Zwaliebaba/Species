@@ -136,6 +136,14 @@ namespace Neuron
       Profiler* m_eventProfiler;
       bool m_quitWithoutSave;
 
+      // Device recovery, both explained at the one place that uses them in
+      // SoundSystem::Advance. The timer counts only while the backend reports no
+      // output device; the flag is what keeps a machine that has never had one
+      // from rebuilding the library forever. It survives RestartSoundLibrary,
+      // which is the whole point of it living here rather than in the backend.
+      float m_deviceRetryTimer{0.0f};
+      bool m_hadOutputDevice{false};
+
       DirectX::XMFLOAT3 m_editorPos{0.0f, 0.0f, 0.0f};
       SoundInstanceId m_editorInstanceId;
 
@@ -172,7 +180,7 @@ namespace Neuron
       int FindBestAvailableChannel();
 
       static bool SoundLibraryMainCallback(unsigned int _channel, signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
-      static bool SoundLibraryMusicCallback(signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
+      static bool SoundLibraryMusicCallback(signed short* _data, unsigned int _numFrames, int _numChannels, int* _silenceRemaining);
 
     public:
       SoundSystem();

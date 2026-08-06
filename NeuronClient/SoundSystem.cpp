@@ -15,12 +15,9 @@
 
 
 #include "SampleCache.h"
-#include "SoundLibrary2d.h" // FIXME
 #include "SoundLibrary3d.h"
 #include "SoundSystem.h"
 #include "SoundStreamDecoder.h"
-#include "SoundLibrary3dDSound.h"
-#include "SoundLibrary3dSoftware.h"
 #include "SoundLibraryXAudio2.h"
 
 #include "GameTime.h"
@@ -36,14 +33,20 @@ namespace Neuron
 
 #define SOUNDSYSTEM_UPDATEPERIOD 0.05f
 
-//*****************************************************************************
-// Class SoundEventBlueprint
-//*****************************************************************************
+  // How long to wait between attempts to rebuild the sound library after the
+  // audio device has gone. Long enough that a machine left with a dead device is
+  // not rebuilding it constantly, short enough that plugging a headset back in
+  // brings sound back before anyone reaches for the options window.
+  constexpr float DeviceRetryPeriod = 5.0f;
+
+  //*****************************************************************************
+  // Class SoundEventBlueprint
+  //*****************************************************************************
 
   SoundEventBlueprint::SoundEventBlueprint()
     : m_instance(nullptr)
   {
-}
+  }
 
 void SoundEventBlueprint::SetEventName(const char* _name) { m_eventName = _name ? _name : ""; }
 
@@ -244,9 +247,7 @@ SoundSystem::~SoundSystem()
   m_sounds.Empty();
 
   delete g_soundLibrary3d;
-  delete g_soundLibrary2d;
   g_soundLibrary3d = nullptr;
-  g_soundLibrary2d = nullptr;
 }
 
 void SoundSystem::Initialise()
@@ -266,39 +267,23 @@ void SoundSystem::RestartSoundLibrary()
   {
     delete[] m_channels;
     delete g_soundLibrary3d;
-    delete g_soundLibrary2d;
-    g_soundLibrary2d = nullptr;
     g_soundLibrary3d = nullptr;
   }
 
   //
   // Start up a new sound library
 
-  int mixrate = g_prefsManager->GetInt("SoundMixFreq", 22050);
   int volume = g_prefsManager->GetInt("SoundMasterVolume", 255);
   m_numChannels = g_prefsManager->GetInt("SoundChannels", 32);
-  int hw3d = g_prefsManager->GetInt("SoundHW3D", 0);
-  const char* libName = g_prefsManager->GetString("SoundLibrary", "dsound");
-  int bufSize = 20000;
 
-  g_soundLibrary2d = new SoundLibrary2d;
-  g_soundLibrary3d = nullptr;
-
-  // The native backend, opt-in by preference until sound-xaudio2 T6 makes it the
-  // default. It does not use SoundLibrary2d at all — that object is still built
-  // above because the software mixer needs it, and sound-xaudio2 T8 removes both.
-  if (stricmp(libName, "xaudio2") == 0)
-    g_soundLibrary3d = new SoundLibraryXAudio2();
-
-#ifdef HAVE_DSOUND
-  if (!g_soundLibrary3d && stricmp(libName, "dsound") == 0)
-    g_soundLibrary3d = new SoundLibrary3dDirectSound();
-#endif
-  if (!g_soundLibrary3d)
-    g_soundLibrary3d = new SoundLibrary3dSoftware();
+  // One backend, so no choice to make and no SoundLibrary preference to read.
+  // T7 deleted DirectSound and T8 the software mixer; a preferences file still
+  // naming either is simply ignored rather than honoured, because there is
+  // nothing left for it to select.
+  g_soundLibrary3d = new SoundLibraryXAudio2();
 
   g_soundLibrary3d->SetMasterVolume(volume);
-  g_soundLibrary3d->Initialise(mixrate, m_numChannels, hw3d, bufSize, bufSize * 10);
+  g_soundLibrary3d->Initialise(m_numChannels);
 
   m_numChannels = g_soundLibrary3d->GetNumMainChannels();
   m_channels = new SoundInstanceId[m_numChannels];
@@ -323,6 +308,8 @@ void SoundSystem::StopAllDSPEffects()
   }
 }
 
+// AN EFFECT CHANNEL IS MONO, so here a frame is a short and the two counts are
+// the same number. That is not an assumption, it is enforced below.
 bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* _data, unsigned int _numSamples, int* _silenceRemaining)
 {
   if (!g_soundSystem)
@@ -330,6 +317,20 @@ bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* 
 
   SoundInstanceId soundId = g_soundSystem->m_channels[_channel];
   SoundInstance* instance = g_soundSystem->GetSoundInstance(soundId);
+
+  // A non-mono sample on an effect channel would read m_numChannels shorts per
+  // frame into a block sized for one, which is a write past the end of the
+  // voice's ring — not a wrong noise, memory corruption. SoundSourceNotMono is
+  // supposed to catch this at load, but its only caller is IsSoundSourceOK,
+  // reached only from LoadtimeVerify, whose one call site is commented out. So
+  // the rule is enforced where the damage would happen instead: a modded
+  // Sounds.txt naming a stereo sample makes that sound silent, and nothing else.
+  if (instance && instance->m_cachedSampleHandle && instance->m_cachedSampleHandle->GetNumChannels() != 1)
+  {
+    DebugTrace("SOUND : sample on channel {} is not mono; effect channels are mono only, so it is silent\n", _channel);
+    g_soundLibrary3d->WriteSilence(_data, _numSamples);
+    return false;
+  }
 
   if (instance && instance->m_cachedSampleHandle)
   {
@@ -393,7 +394,47 @@ bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* 
   return false;
 }
 
-bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _numSamples, int* _silenceRemaining)
+namespace
+{
+  // Reads frames from a music sample into a buffer that is _numChannels wide,
+  // whatever width the sample itself is. Returns FRAMES written.
+  //
+  // Every music file the game ships is mono and the music voice is stereo, so
+  // this fan-out is the normal path rather than the exceptional one. It reads
+  // the mono frames into the front of the block and then expands BACKWARDS, so
+  // a frame is never overwritten before it has been read — frame N's source
+  // sits at index N and its destination starts at N * _numChannels, which is at
+  // or ahead of it for every N.
+  unsigned int ReadMusicFrames(CachedSampleHandle* _handle, signed short* _data, unsigned int _numFrames, int _numChannels)
+  {
+    const int sampleChannels = static_cast<int>(_handle->GetNumChannels());
+
+    if (sampleChannels == _numChannels)
+      return _handle->Read(_data, _numFrames);
+
+    // A sample wider than the voice has no meaning to give it; the decoder
+    // caps at two channels, so with a stereo music voice this is unreachable
+    // today. Silence rather than a guess, and never a partial interleave.
+    if (sampleChannels != 1)
+      return 0;
+
+    const unsigned int framesRead = _handle->Read(_data, _numFrames);
+
+    for (int frame = static_cast<int>(framesRead) - 1; frame >= 0; --frame)
+    {
+      const signed short sample = _data[frame];
+      for (int channel = 0; channel < _numChannels; ++channel)
+        _data[frame * _numChannels + channel] = sample;
+    }
+
+    return framesRead;
+  }
+} // namespace
+
+// COUNTS ARE FRAMES AND OFFSETS ARE SHORTS, which is why every pointer step
+// below carries _numChannels and no count does. _silenceRemaining is a frame
+// count too, because it is compared against GetChannelBufSize.
+bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _numFrames, int _numChannels, int* _silenceRemaining)
 {
   if (!g_soundSystem)
     return false;
@@ -409,44 +450,56 @@ bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _n
     //
     // Fill the space with sample data
 
-    int numSamplesWritten = instance->m_cachedSampleHandle->Read(_data, _numSamples);
+    int numFramesWritten = ReadMusicFrames(instance->m_cachedSampleHandle, _data, _numFrames, _numChannels);
 
-    if (numSamplesWritten < _numSamples)
+    if (numFramesWritten < _numFrames)
     {
-      signed short* loopStart = _data + numSamplesWritten;
-      unsigned int numSamplesRemaining = _numSamples - numSamplesWritten;
+      signed short* loopStart = _data + numFramesWritten * _numChannels;
+      unsigned int numFramesRemaining = _numFrames - numFramesWritten;
 
       if (instance->m_loopType == SoundInstance::Looped || instance->m_loopType == SoundInstance::LoopedADSR)
       {
-        while (numSamplesRemaining > 0)
+        while (numFramesRemaining > 0)
         {
           bool looped = instance->AdvanceLoop();
           if (looped)
           {
-            unsigned int numWritten = instance->m_cachedSampleHandle->Read(loopStart, numSamplesRemaining);
-            loopStart += numWritten;
-            numSamplesRemaining -= numWritten;
+            unsigned int numWritten = ReadMusicFrames(instance->m_cachedSampleHandle, loopStart, numFramesRemaining, _numChannels);
+
+            // A loop that yields nothing would spin here forever. The old code
+            // could not reach that state because Read only returned zero at the
+            // end of a sample, which AdvanceLoop had just rewound; ReadMusicFrames
+            // can also return zero for a sample too wide for the voice.
+            if (numWritten == 0)
+            {
+              g_soundLibrary3d->WriteSilence(loopStart, numFramesRemaining * _numChannels);
+              numFramesRemaining = 0;
+              break;
+            }
+
+            loopStart += numWritten * _numChannels;
+            numFramesRemaining -= numWritten;
           }
           else
           {
-            g_soundLibrary3d->WriteSilence(loopStart, numSamplesRemaining);
-            numSamplesRemaining = 0;
+            g_soundLibrary3d->WriteSilence(loopStart, numFramesRemaining * _numChannels);
+            numFramesRemaining = 0;
           }
         }
       }
       else if (instance->m_loopType == SoundInstance::SinglePlay)
       {
-        if (numSamplesWritten > 0)
+        if (numFramesWritten > 0)
         {
           // The sound just came to an end, so write a whole buffers worth of silence
-          g_soundLibrary3d->WriteSilence(loopStart, numSamplesRemaining);
-          *_silenceRemaining = g_soundLibrary3d->GetChannelBufSize(g_soundLibrary3d->m_musicChannelId) - numSamplesRemaining;
+          g_soundLibrary3d->WriteSilence(loopStart, numFramesRemaining * _numChannels);
+          *_silenceRemaining = g_soundLibrary3d->GetChannelBufSize(g_soundLibrary3d->m_musicChannelId) - numFramesRemaining;
         }
         else
         {
           // The sound came to an end and now we are writing silence
-          g_soundLibrary3d->WriteSilence(loopStart, numSamplesRemaining);
-          *_silenceRemaining -= numSamplesRemaining;
+          g_soundLibrary3d->WriteSilence(loopStart, numFramesRemaining * _numChannels);
+          *_silenceRemaining -= numFramesRemaining;
           if (*_silenceRemaining <= 0)
             instance->BeginRelease(false);
         }
@@ -458,7 +511,7 @@ bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _n
 #endif
     return true;
   }
-  g_soundLibrary3d->WriteSilence(_data, _numSamples);
+  g_soundLibrary3d->WriteSilence(_data, _numFrames * _numChannels);
   return false;
 }
 
@@ -1298,6 +1351,37 @@ void SoundSystem::Advance()
   {
     m_timeSync -= SOUNDSYSTEM_UPDATEPERIOD;
 
+    // DEVICE RECOVERY. A backend with no output device gets one rebuild attempt
+    // every DeviceRetryPeriod seconds, for as long as it has none.
+    // RestartSoundLibrary is the same call the options window's Apply button
+    // makes, so a mid-game rebuild is a supported thing to do rather than a new
+    // risk taken here.
+    //
+    // m_hadOutputDevice is what stops that from being a busy loop on a machine
+    // with no sound card: retries begin only once a device has been seen
+    // working at least once. It is remembered HERE rather than asked of the
+    // backend because RestartSoundLibrary destroys the backend — a rebuilt one
+    // that also fails has no memory of anything having worked, and the retries
+    // would stop on the first failed attempt, which is exactly the case they
+    // exist for.
+    if (g_soundLibrary3d)
+    {
+      if (g_soundLibrary3d->HasOutputDevice())
+      {
+        m_hadOutputDevice = true;
+        m_deviceRetryTimer = 0.0f;
+      }
+      else if (m_hadOutputDevice)
+      {
+        m_deviceRetryTimer += SOUNDSYSTEM_UPDATEPERIOD;
+        if (m_deviceRetryTimer >= DeviceRetryPeriod)
+        {
+          m_deviceRetryTimer = 0.0f;
+          RestartSoundLibrary();
+        }
+      }
+    }
+
     START_PROFILE(g_profiler, "Advance SoundSystem");
 
     //
@@ -1513,253 +1597,6 @@ void SoundSystem::Advance()
     END_PROFILE(g_profiler, "Advance SoundSystem");
   }
 }
-
-/*
-void SoundSystem::Advance()
-{
-
-  if (g_requestQuit && !m_quitWithoutSave)
-  {
-    if (AreBlueprintsModified())
-    {
-      g_requestQuit = false;
-    }
-  }
-
-    if( !m_channels ) return;
-
-#ifdef PROFILER_ENABLED
-    m_mainProfiler->Advance();
-    m_eventProfiler->Advance();
-#endif
-
-    m_timeSync += g_advanceTime;
-    if( m_timeSync >= SOUNDSYSTEM_UPDATEPERIOD )
-    {
-        m_timeSync -= SOUNDSYSTEM_UPDATEPERIOD;
-
-        START_PROFILE(g_profiler, "Advance SoundSystem");
-
-        //
-        // Resync with blueprints (changed by editor)
-
-        START_PROFILE(g_profiler,  "Propagate Blueprints" );
-        if( m_propagateBlueprints )
-        {
-            PropagateBlueprints();
-        }
-        END_PROFILE(g_profiler,  "Propagate Blueprints" );
-
-
-        //
-        // Build a list of change requests, ordered on priority
-
-        START_PROFILE(g_profiler,  "HandleRequests" );
-
-        int maxChannelChanges = 1;
-        int numChannelChanges = 0;
-
-        std::vector<int> newRequests;                           // Indexes of the channels
-
-        for( int i = 0; i < m_numChannels; ++i )
-        {
-            SoundChannel *channel = &m_channels[i];
-            SoundInstance *requestedSound = GetSoundInstance( channel->m_requestedSound );
-
-            if( requestedSound )
-            {
-                bool inserted = false;
-                for( int x = 0; x < static_cast<int>(newRequests.size()); ++x )
-                {
-                    if( x > maxChannelChanges ) break;
-                    int channelIndex = newRequests[x];
-                    SoundChannel *thisChannel = &m_channels[channelIndex];
-                    SoundInstance *thisRequestedSound = GetSoundInstance( thisChannel->m_requestedSound );
-                    DEBUG_ASSERT( thisRequestedSound );
-                    if( requestedSound->m_calculatedPriority > thisRequestedSound->m_calculatedPriority )
-                    {
-                        newRequests.insert( newRequests.begin() + x, i );
-                        inserted = true;
-                        break;
-                    }
-                }
-                if( !inserted && static_cast<int>(newRequests.size()) < maxChannelChanges )
-                {
-                    newRequests.push_back( i );
-                }
-            }
-        }
-
-        END_PROFILE(g_profiler,  "HandleRequests" );
-
-
-        //
-        // Start the highest priority new requests
-
-        START_PROFILE(g_profiler,  "StartNewSound" );
-
-        while( !newRequests.empty() &&
-               numChannelChanges < maxChannelChanges )
-        {
-            int channelIndex = newRequests[0];
-            newRequests.erase( newRequests.begin() );
-
-            SoundChannel *channel = &m_channels[channelIndex];
-            SoundInstance *currentSound = GetSoundInstance( channel->m_currentSound );
-            if( currentSound && !currentSound->m_loopType )
-            {
-                ShutdownSound( currentSound );
-            }
-            else if( currentSound )
-            {
-                currentSound->StopPlaying();
-            }
-            channel->m_currentSound.SetInvalid();
-
-            SoundInstance *requestedSound = GetSoundInstance( channel->m_requestedSound );
-            bool success = requestedSound->StartPlaying( channelIndex );
-            if( success )
-            {
-                channel->m_currentSound = channel->m_requestedSound;
-            }
-            else
-            {
-                // This is fairly bad, the sound failed to play
-                // Which means it failed to load, or to go into a channel
-                ShutdownSound( requestedSound );
-            }
-            channel->m_requestedSound.SetInvalid();
-
-            g_soundLibrary3d->ResetChannel( channelIndex );
-            numChannelChanges++;
-
-        }
-
-        END_PROFILE(g_profiler,  "StartNewSound" );
-
-
-        //
-        // Advance all our channels
-        // Clear out all the sound requests that have failed to start
-
-        START_PROFILE(g_profiler,  "Advance Channels" );
-
-        for( int i = 0; i < m_numChannels; ++i )
-        {
-            SoundChannel *channel = &m_channels[i];
-
-            SoundInstance *currentSound = GetSoundInstance( channel->m_currentSound );
-            if( currentSound )
-            {
-                bool amIDone = currentSound->Advance();
-                if( amIDone )
-                {
-                    ShutdownSound( currentSound );
-                }
-            }
-
-            SoundInstance *requestedSound = GetSoundInstance( channel->m_requestedSound );
-            channel->m_requestedSound.SetInvalid();
-            if(  requestedSound &&
-                !requestedSound->m_loopType &&
-                 requestedSound->m_restartAttempts <= 0 )
-            {
-                ShutdownSound( requestedSound );
-            }
-        }
-
-        END_PROFILE(g_profiler,  "Advance Channels" );
-
-
-        //
-        // Recalculate all sound priorities
-        // If we're attached to a bogus object then give up trying
-
-        START_PROFILE(g_profiler,  "UpdatePriority" );
-
-        for( int i = 0; i < m_sounds.Size(); ++i )
-        {
-            if( m_sounds.ValidIndex(i) )
-            {
-                SoundInstance* instance = m_sounds[i].get();
-                instance->RecalculatePriority();
-
-                if( instance->m_positionType == SoundInstance::Type3DAttachedToObject &&
-                    !instance->ResolveAttachedObject() )
-                {
-                    ShutdownSound( instance );
-                }
-            }
-        }
-
-        END_PROFILE(g_profiler,  "UpdatePriority" );
-
-
-        //
-        // If we're a looping sound and we're not playing, try to start us playing now
-        // If we're not looping but still have restart attempts left, try to restart now
-
-        START_PROFILE(g_profiler,  "Restart loops" );
-        for( int i = 0; i < m_sounds.Size(); ++i )
-        {
-            if( m_sounds.ValidIndex(i) )
-            {
-                SoundInstance* instance = m_sounds[i].get();
-                {
-                    if( !instance->IsPlaying() )
-                    {
-                        if( !instance->m_loopType && instance->m_restartAttempts <= 0 )
-                        {
-                            ShutdownSound( instance );
-                        }
-                        else if( instance->m_loopType || instance->m_restartAttempts > 0 )
-                        {
-                            bool success = RequestSound( instance );
-                            if( !success && !instance->m_loopType && instance->m_restartAttempts <= 0 )
-                            {
-                                ShutdownSound( instance );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        END_PROFILE(g_profiler,  "Restart loops" );
-
-
-        //
-        // Update our listener position
-
-        START_PROFILE(g_profiler, "UpdateListener" );
-
-        DirectX::XMFLOAT3 camUp = g_camera->GetUp();
-        if( g_prefsManager->GetInt("SoundSwapStereo",0) == 1 )
-        {
-            camUp.y *= -1.0f;
-        }
-
-        g_soundLibrary3d->SetListenerPosition( g_camera->GetPos(),
-                                            g_camera->GetFront(),
-                                            camUp,
-                                            g_camera->GetVel() );
-
-        END_PROFILE(g_profiler, "UpdateListener" );
-
-
-        //
-        // Advance our sound library
-
-        START_PROFILE(g_profiler, "SoundLibrary3d Commit" );
-        g_soundLibrary3d->CommitChanges();
-        END_PROFILE(g_profiler, "SoundLibrary3d Commit" );
-        START_PROFILE(g_profiler, "SoundLibrary3d Advance" );
-        g_soundLibrary3d->Advance();
-        END_PROFILE(g_profiler, "SoundLibrary3d Advance" );
-
-        END_PROFILE(g_profiler, "Advance SoundSystem");
-    }
-}
-*/
 
 void SoundSystem::RuntimeVerify()
 {

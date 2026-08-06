@@ -26,12 +26,12 @@ namespace Neuron
       int m_fileType;
 
       void ReadWavHeader();
-      unsigned ReadWavData(signed short* _data, unsigned int _numSamples);
+      unsigned ReadWavData(signed short* _data, unsigned int _numFrames);
 
     public:
       unsigned int m_numChannels;
       unsigned int m_freq;
-      unsigned int m_numSamples;
+      unsigned int m_numSamples; // FRAMES, not shorts — a stereo frame is two shorts
 
       enum
       {
@@ -42,7 +42,9 @@ namespace Neuron
       SoundStreamDecoder(BinaryReader* _in);
       ~SoundStreamDecoder();
 
-      unsigned int Read(signed short* _data, unsigned int _numSamples);
+      // Reads up to _numFrames FRAMES and returns how many it got. _data must
+      // hold _numFrames * m_numChannels shorts, interleaved.
+      unsigned int Read(signed short* _data, unsigned int _numFrames);
       void Restart();
   };
 } // namespace Neuron

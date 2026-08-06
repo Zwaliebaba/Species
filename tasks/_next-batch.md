@@ -3,11 +3,16 @@
 > # THERE IS NO NEXT BATCH. EVERY PLAN IS FINISHED.
 >
 > `strings-modernised` closed on 2026-08-05 at 20 of 20 and is in
-> `tasks/Archive/` with the other ten. `tasks/` now holds `_template.yaml`, the
-> three reading orders and the archive — no plan, no ready task, nothing to
-> schedule. **This file is a record, not a proposal.** Read it before writing
-> the next plan, for how its predictions turned out; do not read it to find
-> work.
+> `tasks/Archive/` with the other ten. **This file is a record, not a
+> proposal.** Read it before writing the next plan, for how its predictions
+> turned out; do not read it to find work.
+>
+> **There IS work again, and it is not here.** Three plans opened on 2026-08-06
+> on the owner's direction — `sound-xaudio2`, `input-native-events` and
+> `network-transport` — so the sentence this banner used to carry, that `tasks/`
+> held no plan and no ready task, stopped being true the day after it was
+> written. `python3 tools/check_task_dag.py --next tasks/<plan>.yaml` is the
+> authority; nothing below this line describes them.
 >
 > What closed it, after the proposal below was overtaken:
 >

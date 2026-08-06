@@ -636,9 +636,6 @@ dialog_mousebuttons                    Botones del Ratón
 
 dialog_soundoptions                    Opciones de Sonido
 dialog_unavailable                     no disponible
-dialog_soundlibrary                    Biblioteca de Sonidos
-dialog_directsound                     DirectSound
-dialog_softwaresound                   Sonido por Software
 dialog_mixfrequency                    Frecuencia de Mezcla
 dialog_11khz                           11 Khz Calidad Baja
 dialog_22khz                           22 Khz Calidad Media

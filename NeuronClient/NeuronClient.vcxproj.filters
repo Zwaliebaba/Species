@@ -25,16 +25,7 @@
     <ClCompile Include="SoundInstance.cpp">
       <Filter>Audio</Filter>
     </ClCompile>
-    <ClCompile Include="SoundLibrary2d.cpp">
-      <Filter>Audio</Filter>
-    </ClCompile>
     <ClCompile Include="SoundLibrary3d.cpp">
-      <Filter>Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="SoundLibrary3dDSound.cpp">
-      <Filter>Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="SoundLibrary3dSoftware.cpp">
       <Filter>Audio</Filter>
     </ClCompile>
     <ClCompile Include="SoundLibraryXAudio2.cpp">
@@ -152,16 +143,7 @@
     <ClInclude Include="SoundInstance.h">
       <Filter>Audio</Filter>
     </ClInclude>
-    <ClInclude Include="SoundLibrary2d.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
     <ClInclude Include="SoundLibrary3d.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="SoundLibrary3dDSound.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="SoundLibrary3dSoftware.h">
       <Filter>Audio</Filter>
     </ClInclude>
     <ClInclude Include="SoundLibraryXAudio2.h">

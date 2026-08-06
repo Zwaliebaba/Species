@@ -91,16 +91,26 @@ Presentation and platform services for a graphical client.
 - **Rendering:** OpenGL, `Shape`/`ShapeFragment` model system, `Texture`,
   `Bitmap`, sprites, text renderers, `OGLExtensions`.
 - **Sound:** `SoundSystem`, `SoundInstance`, `SoundParameter` above a
-  `SoundLibrary3d` backend. THREE backends exist during the `sound-xaudio2`
-  migration and one will survive it: `SoundLibraryXAudio2` (per-channel source
-  voices, X3DAudio positioning, effects on XAudio2 — the target, opt-in by the
-  `SoundLibrary` preference), `SoundLibrary3dDSound` (DirectSound, still the
-  default) and `SoundLibrary3dSoftware` over `SoundLibrary2d`'s WinMM output.
-  The plan deletes the last two once the owner has A/B'd the first.
-- **Input:** a composable driver stack — `InputDriverSimple`, `Chord`,
-  `Conjoin`, `Invert`, `Idle` — resolving to `ControlTypes`. `Alias`, `Pipe`
-  and `Prefs` were deleted by `input-native-events` T1: no binding data used
-  them and `Pipe` was never even registered.
+  `SoundLibrary3d` backend. ONE backend remains: `SoundLibraryXAudio2` — a mono
+  source voice per channel plus a stereo one for music, X3DAudio positioning and
+  doppler, the resonant low pass on XAudio2's own per-voice biquad, echo on
+  FXECHO and reverb on XAUDIO2FX. `SoundLibrary3dDSound`,
+  `SoundLibrary3dSoftware` and `SoundLibrary2d`'s WinMM output layer were
+  deleted by `sound-xaudio2` T7 and T8, and the `SoundLibrary` preference that
+  chose between them by T10. The seam stays virtual because it is what let the
+  replacement be A/B'd against them. A device that disappears mid-game is
+  reported through `IXAudio2EngineCallback::OnCriticalError`, which parks the
+  backend silent; `SoundSystem::Advance` then rebuilds it every five seconds
+  until a device comes back.
+- **Input:** `InputDriverWin32` pumps the Win32 message queue and holds the
+  key and button state; above it a composable driver stack — `InputDriverSimple`,
+  `Chord`, `Conjoin`, `Invert`, `Idle` — resolves a binding to a `ControlType`.
+  `input-native-events` T1 deleted nine drivers and filters that no binding data
+  used: `Alias`, `Pipe` (never even registered), `Prefs`, `Value` and the whole
+  `InputFilter` family. T2 removed the X360 controller path, T4 the `RegisterHotKey`
+  Alt-Tab binding and the per-message `GetForegroundWindow` polling — focus now
+  arrives as `WM_ACTIVATE`, and losing it releases every key. The rest of the
+  plan turns this into an event stream with a consuming router.
 - **UI:** the **Eclipse** toolkit (`Eclipse`, `EclWindow`, `EclButton`), which
   every in-game window derives from.
 - **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,
@@ -124,7 +134,7 @@ headless server impossible again.
 
 ### GameLogic
 
-The bulk of the inherited code, ~48k lines. Entities (`Citizen`, `Engineer`,
+The bulk of the inherited code, ~66k lines. Entities (`Citizen`, `Engineer`,
 `Officer`, `Armour`, `Spider`, `Centipede`, `SoulDestroyer`, …), buildings
 (`Factory`, `Generator`, `RadarDish`, `GunTurret`, `LaserFence`, `Teleport`, …),
 `Ai`, `Weapons`, and the in-game windows built on Eclipse.
