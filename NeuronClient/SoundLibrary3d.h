@@ -66,21 +66,23 @@ namespace Neuron
       };
 
       int m_musicChannelId;
-      bool m_hw3dDesired;
       Profiler* m_profiler;
 
     public:
       SoundLibrary3d();
       virtual ~SoundLibrary3d();
 
-      virtual void Initialise(int _mixFreq, int _numChannels, bool hw3d, int _mainBufNumSamples, int _musicBufNumSamples) = 0;
+      // The hardware-3D flag that used to sit between _numChannels and the
+      // buffer sizes is gone with DirectSound. It selected DSBCAPS_LOCHARDWARE,
+      // which no machine has granted since Vista made DirectSound a software
+      // emulation over WASAPI, so the capability it asked about always answered
+      // no. XAudio2 has no equivalent question.
+      virtual void Initialise(int _mixFreq, int _numChannels, int _mainBufNumSamples, int _musicBufNumSamples) = 0;
       void SetMainCallback(bool (*_callback)(unsigned int, signed short*, unsigned int, int*));
       void SetMusicCallback(bool (*_callback)(signed short*, unsigned int, int*));
       void SetMasterVolume(int _volume);
 
-      virtual bool Hardware3DSupport() = 0;
       virtual int GetMaxChannels() = 0;
-      virtual int GetCPUOverhead() = 0;
       virtual float GetChannelHealth(int _channel) = 0; // 0.0 = BAD, 1.0 = GOOD
       int GetSampleRate() { return m_sampleRate; }
       virtual int GetChannelBufSize(int _channel) const = 0;

@@ -68,7 +68,6 @@
     <ClCompile Include="SoundInstance.cpp" />
     <ClCompile Include="SoundLibrary2d.cpp" />
     <ClCompile Include="SoundLibrary3d.cpp" />
-    <ClCompile Include="SoundLibrary3dDSound.cpp" />
     <ClCompile Include="SoundLibrary3dSoftware.cpp" />
     <ClCompile Include="SoundLibraryXAudio2.cpp" />
     <ClCompile Include="SoundParameter.cpp" />
@@ -138,7 +137,6 @@
     <ClInclude Include="SoundInstance.h" />
     <ClInclude Include="SoundLibrary2d.h" />
     <ClInclude Include="SoundLibrary3d.h" />
-    <ClInclude Include="SoundLibrary3dDSound.h" />
     <ClInclude Include="SoundLibrary3dSoftware.h" />
     <ClInclude Include="SoundLibraryXAudio2.h" />
     <ClInclude Include="SoundParameter.h" />

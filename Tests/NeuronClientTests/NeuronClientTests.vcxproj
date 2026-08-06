@@ -91,7 +91,7 @@
     <Link>
       <!-- NeuronClient.lib is the renderer and sound layer, so anything the
            linker pulls out of it can reach the graphics and audio imports. -->
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;dsound.lib;dxguid.lib;xaudio2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;xaudio2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

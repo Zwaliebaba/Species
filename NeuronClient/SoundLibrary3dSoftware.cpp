@@ -128,7 +128,7 @@ namespace Neuron
   }
 
 
-  void SoundLibrary3dSoftware::Initialise(int _mixFreq, int _numChannels, bool _hw3d, int _mainBufNumSamples, int _musicBufNumSamples)
+  void SoundLibrary3dSoftware::Initialise(int _mixFreq, int _numChannels, int _mainBufNumSamples, int _musicBufNumSamples)
   {
     m_sampleRate = _mixFreq;
     m_musicChannelId = _numChannels - 1;
@@ -446,13 +446,7 @@ namespace Neuron
   }
 
 
-  bool SoundLibrary3dSoftware::Hardware3DSupport() { return false; }
-
-
   int SoundLibrary3dSoftware::GetMaxChannels() { return 64; }
-
-
-  int SoundLibrary3dSoftware::GetCPUOverhead() { return 1; }
 
 
   float SoundLibrary3dSoftware::GetChannelHealth(int _channel) { return 1.0f; }

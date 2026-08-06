@@ -432,13 +432,47 @@ tasks:
       - SoundLibrary3dDSound files are gone from disk and vcxproj; HAVE_DSOUND is gone from NeuronCore.h and both ifdef sites
       - The SoundHW3D preference, Hardware3DSupport, GetCPUOverhead-from-caps and m_hw3dDesired plumbing are gone from the SoundLibrary3d interface
       - dsound.lib and dxguid.lib are off all three link lines
-      - grep for IDirectSound and DSOUND over *.h and *.cpp returns nothing (baseline 2026-08-06 - 9 files)
+      # NARROWED during the work. It read "grep for IDirectSound and DSOUND
+      # over *.h and *.cpp returns nothing (baseline 9 files)". IDirectSound
+      # does reach zero - the API is gone. DSOUND as a substring does not, and
+      # cannot here: the DSP_DSOUND_* EFFECT enumerators still name effect
+      # types that Sounds.txt asks for, and they are T4's to remove, which
+      # this task is what unblocks. Asking for the substring would have made
+      # this criterion unmeetable by T7 alone.
+      - grep for IDirectSound over *.h and *.cpp returns nothing; the only surviving DSOUND spellings are the DSP_DSOUND_* effect enumerators, which T4 owns
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: |
+      Landed 2026-08-06. 1369 lines deleted against 38 added.
+
+      Gone: SoundLibrary3dDSound.{h,cpp} (1270 lines of cursor chasing,
+      buffer-lost handling, leaked 3D-listener QueryInterfaces and a fatal
+      assert on every HRESULT), HAVE_DSOUND and both its ifdef sites, and
+      dsound.lib/dxguid.lib from all three link lines.
+
+      The hardware-3D plumbing went with it, further than the file: the
+      SoundHW3D preference, the shipped default line, the options-window
+      dropdown and its HW3DDropDownMenu class, m_useHardware3D, m_hw3dDesired,
+      Hardware3DSupport, and the bool parameter that carried the answer through
+      SoundLibrary3d::Initialise into every backend. What it selected was
+      DSBCAPS_LOCHARDWARE, which no machine has granted since Vista made
+      DirectSound an emulation over WASAPI, so the capability always answered
+      no and the preference never did anything.
+
+      GetCPUOverhead went too, and it is worth recording why it was safe: it
+      had NO CALLERS ANYWHERE - a pure virtual that three backends implemented
+      and nothing invoked. That discharges the GetCPUOverhead half of T10 early;
+      see the note there.
+
+      ONE ACCEPTANCE CRITERION WAS NARROWED, during the work, and the original
+      is kept beside it: the grep could not reach zero for the substring DSOUND
+      because the DSP_DSOUND_* EFFECT enumerators are still named in
+      Effects.txt and Sounds.txt. Those are T4's, and deleting this backend is
+      exactly what unblocks T4. IDirectSound - the API itself - is at zero.
 
   - id: T8
     title: Delete the software mixer and the waveOut output layer

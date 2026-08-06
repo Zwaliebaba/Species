@@ -18,7 +18,6 @@
 #define SOUND_LIBRARY "SoundLibrary"
 #define SOUND_MIXFREQ "SoundMixFreq"
 #define SOUND_CHANNELS "SoundChannels"
-#define SOUND_HW3D "SoundHW3D"
 #define SOUND_SWAPSTEREO "SoundSwapStereo"
 #define SOUND_DSPEFFECTS "SoundDSP"
 #define SOUND_MEMORY "SoundMemoryUsage"
@@ -44,7 +43,6 @@ namespace Species
 
         g_prefsManager->SetInt(SOUND_MIXFREQ, parent->m_mixFreq);
         g_prefsManager->SetInt(SOUND_CHANNELS, parent->m_numChannels);
-        g_prefsManager->SetInt(SOUND_HW3D, parent->m_useHardware3D);
         g_prefsManager->SetInt(SOUND_SWAPSTEREO, parent->m_swapStereo);
         g_prefsManager->SetInt(SOUND_DSPEFFECTS, parent->m_dspEffects);
         g_prefsManager->SetInt(SOUND_MEMORY, parent->m_memoryUsage);
@@ -111,34 +109,6 @@ namespace Species
   };
 
 
-  class HW3DDropDownMenu : public DropDownMenu
-  {
-    public:
-      void Render(int realX, int realY, bool highlighted, bool clicked)
-      {
-        bool available = g_soundLibrary3d->Hardware3DSupport();
-        if (available)
-        {
-          DropDownMenu::Render(realX, realY, highlighted, clicked);
-        }
-        else
-        {
-          SpeciesWindow* parent = (SpeciesWindow*)m_parent;
-          g_editorFont.DrawText2D(realX + 10, realY + 9, parent->GetMenuSize(13), LANGUAGEPHRASE("dialog_unavailable"));
-        }
-      }
-
-      void MouseUp()
-      {
-        bool available = g_soundLibrary3d->Hardware3DSupport();
-        if (available)
-        {
-          DropDownMenu::MouseUp();
-        }
-      }
-  };
-
-
   PrefsSoundWindow::PrefsSoundWindow()
     : SpeciesWindow(LANGUAGEPHRASE("dialog_soundoptions"))
   {
@@ -147,7 +117,6 @@ namespace Species
 
     m_mixFreq = g_prefsManager->GetInt(SOUND_MIXFREQ, 22050);
     m_numChannels = g_prefsManager->GetInt(SOUND_CHANNELS, 16);
-    m_useHardware3D = g_prefsManager->GetInt(SOUND_HW3D, 0);
     m_swapStereo = g_prefsManager->GetInt(SOUND_SWAPSTEREO, 0);
     m_dspEffects = g_prefsManager->GetInt(SOUND_DSPEFFECTS, 1);
     m_memoryUsage = g_prefsManager->GetInt(SOUND_MEMORY, 1);
@@ -236,15 +205,6 @@ namespace Species
     RegisterButton(swapStereo);
     m_buttonOrder.push_back(swapStereo);
 
-    HW3DDropDownMenu* hw3d = new HW3DDropDownMenu();
-    hw3d->SetShortProperties(LANGUAGEPHRASE("dialog_hw3dsound"), x, y += h, buttonW, buttonH);
-    hw3d->AddOption(LANGUAGEPHRASE("dialog_enabled"), 1);
-    hw3d->AddOption(LANGUAGEPHRASE("dialog_disabled"), 0);
-    hw3d->RegisterInt(&m_useHardware3D);
-    hw3d->m_fontSize = fontSize;
-    RegisterButton(hw3d);
-    m_buttonOrder.push_back(hw3d);
-
     DropDownMenu* dspEffects = new DropDownMenu();
     dspEffects->SetShortProperties(LANGUAGEPHRASE("dialog_realtimeeffects"), x, y += h, buttonW, buttonH);
     dspEffects->AddOption(LANGUAGEPHRASE("dialog_enabled"), 1);
@@ -292,7 +252,6 @@ void PrefsSoundWindow::Render(bool _hasFocus)
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_numchannels"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_memoryusage"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_swapstereo"));
-  g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_hw3dsound"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_realtimeeffects"));
 
 

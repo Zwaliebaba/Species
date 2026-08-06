@@ -19,7 +19,6 @@ namespace Neuron
 
   SoundLibrary3d::SoundLibrary3d()
     : m_masterVolume(0),
-      m_hw3dDesired(false),
       m_mainCallback(nullptr),
       m_musicCallback(nullptr),
       m_musicChannelId(-1),

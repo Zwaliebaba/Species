@@ -19,7 +19,6 @@
 #include "SoundLibrary3d.h"
 #include "SoundSystem.h"
 #include "SoundStreamDecoder.h"
-#include "SoundLibrary3dDSound.h"
 #include "SoundLibrary3dSoftware.h"
 #include "SoundLibraryXAudio2.h"
 
@@ -277,28 +276,28 @@ void SoundSystem::RestartSoundLibrary()
   int mixrate = g_prefsManager->GetInt("SoundMixFreq", 22050);
   int volume = g_prefsManager->GetInt("SoundMasterVolume", 255);
   m_numChannels = g_prefsManager->GetInt("SoundChannels", 32);
-  int hw3d = g_prefsManager->GetInt("SoundHW3D", 0);
-  const char* libName = g_prefsManager->GetString("SoundLibrary", "dsound");
+  const char* libName = g_prefsManager->GetString("SoundLibrary", "xaudio2");
   int bufSize = 20000;
 
   g_soundLibrary2d = new SoundLibrary2d;
   g_soundLibrary3d = nullptr;
 
-  // The native backend, opt-in by preference until sound-xaudio2 T6 makes it the
-  // default. It does not use SoundLibrary2d at all — that object is still built
-  // above because the software mixer needs it, and sound-xaudio2 T8 removes both.
-  if (stricmp(libName, "xaudio2") == 0)
+  // The native backend, and the default since T6. XAudio2 does not use
+  // SoundLibrary2d at all — that object is still constructed above only
+  // because the software mixer needs it, and T8 removes both.
+  //
+  // "dsound" no longer selects anything, because T7 deleted that backend; a
+  // preferences file still naming it lands here on XAudio2. Only the explicit
+  // string "software" reaches the mixer, and T8 takes that away too, after
+  // which this whole choice is one construction.
+  if (stricmp(libName, "software") != 0)
     g_soundLibrary3d = new SoundLibraryXAudio2();
 
-#ifdef HAVE_DSOUND
-  if (!g_soundLibrary3d && stricmp(libName, "dsound") == 0)
-    g_soundLibrary3d = new SoundLibrary3dDirectSound();
-#endif
   if (!g_soundLibrary3d)
     g_soundLibrary3d = new SoundLibrary3dSoftware();
 
   g_soundLibrary3d->SetMasterVolume(volume);
-  g_soundLibrary3d->Initialise(mixrate, m_numChannels, hw3d, bufSize, bufSize * 10);
+  g_soundLibrary3d->Initialise(mixrate, m_numChannels, bufSize, bufSize * 10);
 
   m_numChannels = g_soundLibrary3d->GetNumMainChannels();
   m_channels = new SoundInstanceId[m_numChannels];

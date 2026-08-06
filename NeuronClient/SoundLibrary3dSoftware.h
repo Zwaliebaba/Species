@@ -37,14 +37,12 @@ namespace Neuron
       SoundLibrary3dSoftware();
       ~SoundLibrary3dSoftware() override;
 
-      void Initialise(int _mixFreq, int _numChannels, bool hw3d, int _mainBufNumSamples, int _musicBufNumSamples) override;
+      void Initialise(int _mixFreq, int _numChannels, int _mainBufNumSamples, int _musicBufNumSamples) override;
 
       void Advance() override;
       void Callback(StereoSample* _buf, unsigned int _numSamples); // Called from SoundLibrary2d
 
-      bool Hardware3DSupport() override;
       int GetMaxChannels() override;
-      int GetCPUOverhead() override;
       float GetChannelHealth(int _channel) override; // 0.0 = BAD, 1.0 = GOOD
       int GetChannelBufSize(int _channel) const override;
 

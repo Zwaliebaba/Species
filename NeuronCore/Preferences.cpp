@@ -186,8 +186,10 @@ int GetDefaultHelpEnabled() { return 1; }
 const char* GetDefaultSoundLibrary()
 {
   // The native backend, default since sound-xaudio2 T6 and the owner's A/B run
-  // of 2026-08-06. "dsound" and "software" still select the two legacy paths
-  // until T7 and T8 delete them; nothing writes those values any more.
+  // of 2026-08-06. It is very nearly the only answer now: T7 deleted the
+  // DirectSound backend, so "dsound" in an old preferences file selects
+  // nothing and falls through to here. "software" still reaches the mixer
+  // until T8 removes it.
   return "xaudio2";
 }
 
@@ -217,7 +219,6 @@ void PrefsManager::CreateDefaultValues()
   AddLine("SoundMixFreq = 22050");
   AddLine("SoundMasterVolume = 255");
   AddLine(std::format("SoundChannels = {}", GetDefaultSoundChannels()).c_str());
-  AddLine("SoundHW3D = 0");
   AddLine("SoundSwapStereo = 0");
   AddLine("SoundMemoryUsage = 1");
   AddLine("SoundBufferSize = 512"); // Must be a power of 2 for Linux

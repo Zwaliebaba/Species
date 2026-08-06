@@ -236,12 +236,11 @@ namespace Neuron
   }
 
 
-  void SoundLibraryXAudio2::Initialise(int _mixFreq, int _numChannels, bool _hw3d, int _mainBufNumSamples, int _musicBufNumSamples)
+  void SoundLibraryXAudio2::Initialise(int _mixFreq, int _numChannels, int _mainBufNumSamples, int _musicBufNumSamples)
   {
     ASSERT_TEXT(_numChannels > 0, "SoundLibrary3d asked to create too few channels");
 
     m_sampleRate = _mixFreq;
-    m_hw3dDesired = _hw3d;
     m_numChannels = std::min(_numChannels, GetMaxChannels());
     m_musicChannelId = -1;
 
@@ -993,13 +992,7 @@ namespace Neuron
   }
 
 
-  bool SoundLibraryXAudio2::Hardware3DSupport() { return false; }
-
-
   int SoundLibraryXAudio2::GetMaxChannels() { return 64; }
-
-
-  int SoundLibraryXAudio2::GetCPUOverhead() { return 0; }
 
 
   float SoundLibraryXAudio2::GetChannelHealth(int _channel)
