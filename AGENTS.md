@@ -80,8 +80,13 @@ comes next; nothing in the tree does. What that means for a task in front of you
 today:
 
 - **In scope, and now unblocked:** the work that was deliberately deferred while
-  the foundation moved. `tasks/_openworld-prompt.md` is the one written-down
-  candidate — it is a design prompt, not a plan, and it has not been run.
+  the foundation moved. There are **two** written-down candidates, both design
+  prompts rather than plans, and **neither has been run**:
+  `tasks/_openworld-prompt.md` designs the int64×int64 procedural open world,
+  and `tasks/_large-location-prompt.md` designs its first milestone — one
+  finite Location raised to 65,536 × 65,536 world units at today's cell size,
+  under a no-regression performance bar measured against The Garden. The second
+  is written as a sibling of the first and conforms to it; read both together.
 - **In scope, and unowned:** the leftovers the closed plans recorded rather than
   fixed. They are listed where they were found — the three raw-ownership
   survivors under *Ownership*, and under *Known issues* the unswept LCG sites,
